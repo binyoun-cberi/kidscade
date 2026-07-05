@@ -1,0 +1,1607 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>그릴 마스터 3D DX</title>
+  <style>
+    :root{
+      --bg:#130c09;
+      --panel:rgba(31,20,15,.84);
+      --panel2:rgba(255,242,224,.1);
+      --line:rgba(255,229,197,.2);
+      --text:#fff5e4;
+      --muted:#d9bea4;
+      --good:#7ee39a;
+      --warn:#ffd166;
+      --bad:#ff6b6b;
+      --accent:#ff9f43;
+      --accent2:#ff6b35;
+      --shadow:0 16px 48px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);}
+    #gameCanvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 8%,#3b2117 0%,#130c09 58%,#080403 100%);}
+    .hud{position:fixed;inset:0;pointer-events:none;display:grid;grid-template-rows:auto 1fr auto;padding:16px;gap:12px;}
+    .topbar{display:grid;grid-template-columns:1.06fr .95fr .9fr;gap:12px;align-items:start;}
+    .card{pointer-events:auto;background:linear-gradient(180deg,rgba(46,28,20,.88),rgba(18,12,9,.78));border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;backdrop-filter:blur(10px);overflow:hidden;}
+    .card.pad{padding:14px;}
+    .titleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+    .miniTitle{font-size:13px;color:var(--muted);font-weight:850;letter-spacing:.02em;}
+    .orderName{font-size:22px;font-weight:1000;line-height:1.1;margin:0 0 6px;}
+    .orderText{font-size:14px;color:#ffe3be;line-height:1.35;margin:0;}
+    .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid rgba(255,229,197,.22);background:rgba(255,255,255,.08);padding:5px 9px;font-size:12px;color:#ffe9ce;font-weight:850;white-space:nowrap;}
+    .meatBadge{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 10px;border-radius:999px;background:rgba(255,159,67,.14);border:1px solid rgba(255,194,118,.26);font-size:13px;font-weight:900;color:#ffe6be;}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+    .stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:9px 10px;min-height:56px;}
+    .stat .label{font-size:11px;color:var(--muted);font-weight:750;}
+    .stat .value{font-size:18px;font-weight:1000;margin-top:3px;}
+    .gaugeList{display:grid;gap:8px;}
+    .gaugeHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-weight:850;margin-bottom:4px;}
+    .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.08);overflow:hidden;}
+    .fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff514a,#ff9f43,#573326,#080604);transition:width .12s linear;}
+    .fill.heat{background:linear-gradient(90deg,#555,#ffd166,#ff6b35,#ff2222);}
+    .fill.core{background:linear-gradient(90deg,#6ad4ff,#ff6b6b,#c0392b);}
+    .fill.special{background:linear-gradient(90deg,#73d2ff,#ffe083,#ffad60);}
+    .tasteRow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+    .tasteChip{font-size:12px;font-weight:900;color:#fff0d4;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);}
+    .tasteChip.on{background:rgba(255,159,67,.22);border-color:rgba(255,207,138,.32);}
+    .middle{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+    .toast{align-self:start;max-width:470px;opacity:0;transform:translateY(-8px);transition:.25s ease;background:rgba(24,15,10,.78);border:1px solid rgba(255,220,170,.22);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-weight:850;color:#ffe8c7;line-height:1.35;}
+    .toast.show{opacity:1;transform:translateY(0);}
+    .comboBox{pointer-events:none;align-self:end;justify-self:end;text-align:right;text-shadow:0 3px 16px rgba(0,0,0,.65);}
+    .comboBox .big{font-size:54px;font-weight:1000;letter-spacing:-.05em;line-height:.9;color:#fff1c8;}
+    .comboBox .small{font-size:15px;color:#ffd190;font-weight:950;}
+    .controls{pointer-events:auto;display:grid;grid-template-columns:1.05fr 1.8fr .9fr;gap:12px;align-items:stretch;}
+    .controlPanel{padding:12px;border-radius:20px;}
+    .heatPanel{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;}
+    .heatReadout{font-size:28px;font-weight:1000;text-align:center;min-width:54px;color:#fff0d4;text-shadow:0 2px 12px rgba(255,111,49,.5);}
+    button{font:inherit;color:var(--text);border:1px solid rgba(255,220,170,.22);background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));border-radius:15px;min-height:48px;padding:10px 12px;font-weight:950;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .08s ease,filter .15s ease,background .15s ease;}
+    button:active{transform:translateY(2px) scale(.99);}
+    button:disabled{opacity:.45;filter:grayscale(1);cursor:not-allowed;}
+    .primary{background:linear-gradient(180deg,#ffb85c,#ff6b35);border-color:rgba(255,255,255,.25);color:#25100b;}
+    .danger{background:linear-gradient(180deg,#ff796e,#b52f28);}
+    .good{background:linear-gradient(180deg,#9cf0a6,#33aa4b);color:#09230e;}
+    .buttonGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;}
+    .buttonGrid button{padding-left:8px;padding-right:8px;}
+    .smallBtn{min-height:44px;font-size:14px;}
+    .servePanel{display:grid;grid-template-rows:auto 1fr;gap:10px;}
+    .log{font-size:14px;line-height:1.45;color:#ffe2bc;min-height:56px;}
+    .help{font-size:12px;color:rgba(255,236,208,.7);line-height:1.35;margin-top:8px;}
+    .screen{position:fixed;inset:0;background:radial-gradient(circle at 50% 30%,rgba(70,38,24,.72),rgba(0,0,0,.78));display:none;align-items:center;justify-content:center;z-index:10;padding:20px;}
+    .screen.show{display:flex;}
+    .modal{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(180deg,rgba(58,34,24,.98),rgba(20,12,9,.98));border:1px solid rgba(255,225,185,.24);border-radius:26px;box-shadow:0 30px 90px rgba(0,0,0,.62);padding:24px;}
+    .modal h1{margin:0 0 8px;font-size:40px;letter-spacing:-.04em;}
+    .modal p{color:#ffe2bc;line-height:1.5;}
+    .featureGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0;}
+    .feature{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:13px;font-size:13px;line-height:1.42;color:#ffe8c7;}
+    .feature b{display:block;font-size:15px;color:#fff6e8;margin-bottom:5px;}
+    .modalActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+    .rank{font-size:64px;font-weight:1000;line-height:1;color:#ffe083;text-shadow:0 4px 20px rgba(255,183,64,.38);}
+    .scoreGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+    .scoreLine{padding:12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);}
+    .scoreLine .k{font-size:12px;color:var(--muted);font-weight:800;}
+    .scoreLine .v{font-size:19px;font-weight:1000;margin-top:4px;}
+    .floatingKeys{position:fixed;right:16px;bottom:122px;font-size:12px;color:rgba(255,238,216,.55);text-align:right;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+    #floatLayer{position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden;}
+    .popText{position:absolute;left:50%;top:50%;font-weight:1000;font-size:30px;color:#fff0c5;text-shadow:0 4px 22px rgba(0,0,0,.8);transform:translate(-50%,-50%);animation:popText 1.05s ease-out forwards;white-space:nowrap;}
+    .popText.small{font-size:22px;}
+    .popText.warn{color:#ffcc8a;}
+    .popText.bad{color:#ff8888;}
+    @keyframes popText{0%{opacity:0;transform:translate(-50%,-25%) scale(.72) rotate(-2deg);}15%{opacity:1;transform:translate(-50%,-50%) scale(1.13) rotate(1deg);}100%{opacity:0;transform:translate(-50%,-120%) scale(.94) rotate(-1deg);}}
+    @media (max-width:900px){
+      .hud{padding:10px;grid-template-rows:auto 1fr auto;}
+      .topbar{grid-template-columns:1fr;gap:8px;}
+      .stats{grid-template-columns:repeat(3,1fr);}
+      .controls{grid-template-columns:1fr;gap:8px;}
+      .buttonGrid{grid-template-columns:repeat(3,1fr);}
+      .servePanel{grid-template-rows:auto;}
+      .comboBox .big{font-size:38px;}
+      .floatingKeys{display:none;}
+      .featureGrid,.scoreGrid{grid-template-columns:1fr;}
+      .modal h1{font-size:32px;}
+    }
+    @media (max-width:520px){
+      .card.pad{padding:11px;}
+      .orderName{font-size:19px;}
+      .stat{min-height:48px;padding:7px;}
+      .stat .value{font-size:16px;}
+      .buttonGrid{grid-template-columns:repeat(2,1fr);}
+      button{min-height:45px;font-size:14px;}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="floatLayer"></div>
+
+  <div class="hud" id="hud">
+    <div class="topbar">
+      <section class="card pad">
+        <div class="titleRow">
+          <span class="miniTitle">현재 주문</span>
+          <span class="pill" id="roundPill">ROUND 1 / 5</span>
+        </div>
+        <div class="meatBadge" id="meatBadge">🥩 소고기 스테이크</div>
+        <h2 class="orderName" id="orderName">미디엄 레어 · 노릇한 시어링</h2>
+        <p class="orderText" id="orderText">속은 촉촉하게, 겉은 노릇한 시어링으로 부탁해요.</p>
+        <div class="stats">
+          <div class="stat"><div class="label">남은 시간</div><div class="value" id="timeValue">75.0</div></div>
+          <div class="stat"><div class="label">총점</div><div class="value" id="totalScore">0</div></div>
+          <div class="stat"><div class="label">팁 배율</div><div class="value" id="tipValue">x1.00</div></div>
+        </div>
+      </section>
+
+      <section class="card pad">
+        <div class="titleRow"><span class="miniTitle">재료 상태</span><span class="pill" id="doneLabel">생고기</span></div>
+        <div class="gaugeList">
+          <div><div class="gaugeHead"><span>내부 온도</span><span id="coreText">22℃</span></div><div class="bar"><div class="fill core" id="coreFill"></div></div></div>
+          <div><div class="gaugeHead"><span>윗면 시어링</span><span id="topText">0%</span></div><div class="bar"><div class="fill" id="topFill"></div></div></div>
+          <div><div class="gaugeHead"><span>아랫면 시어링</span><span id="bottomText">0%</span></div><div class="bar"><div class="fill" id="bottomFill"></div></div></div>
+          <div><div class="gaugeHead"><span id="specialLabel">육즙</span><span id="specialText">100%</span></div><div class="bar"><div class="fill special" id="specialFill"></div></div></div>
+        </div>
+        <div class="tasteRow">
+          <span class="tasteChip" id="saltChip">소금 0</span>
+          <span class="tasteChip" id="pepperChip">후추 0</span>
+          <span class="tasteChip" id="butterChip">버터 OFF</span>
+          <span class="tasteChip" id="restChip">레스팅 0초</span>
+        </div>
+      </section>
+
+      <section class="card pad">
+        <div class="titleRow"><span class="miniTitle">조리 힌트</span><span class="pill" id="panSide">아랫면 조리 중</span></div>
+        <div class="log" id="cookLog">중불로 양면을 맞춘 뒤 마지막에 센 불로 시어링해보세요. 재료마다 안전 온도와 약점이 다릅니다.</div>
+        <div class="help">키보드: F 뒤집기 · S 소금 · P 후추 · B 버터 · R 레스팅 · Enter 제출 · ↑↓ 불 조절</div>
+      </section>
+    </div>
+
+    <div class="middle">
+      <div class="toast" id="toast">좋아요!</div>
+      <div class="comboBox" id="comboBox">
+        <div class="big" id="comboBig">READY</div>
+        <div class="small" id="comboSmall">주문을 확인하세요</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <section class="card controlPanel heatPanel">
+        <button class="smallBtn" id="heatDown">불 낮추기</button>
+        <div>
+          <div class="miniTitle" style="text-align:center">불 세기</div>
+          <div class="heatReadout" id="heatReadout">3</div>
+          <div class="bar"><div class="fill heat" id="heatFill"></div></div>
+        </div>
+        <button class="smallBtn primary" id="heatUp">불 올리기</button>
+      </section>
+
+      <section class="card controlPanel">
+        <div class="buttonGrid">
+          <button class="primary" id="flipBtn">뒤집기</button>
+          <button id="saltBtn">소금</button>
+          <button id="pepperBtn">후추</button>
+          <button id="butterBtn">버터</button>
+          <button id="restBtn">레스팅</button>
+          <button class="good" id="serveBtn">플레이팅</button>
+        </div>
+      </section>
+
+      <section class="card controlPanel servePanel">
+        <div class="miniTitle">오늘의 포인트</div>
+        <div class="log" id="proteinTip">소고기는 내부 온도와 양면 시어링 균형이 핵심입니다.</div>
+      </section>
+    </div>
+  </div>
+
+  <div class="floatingKeys">F 뒤집기 · S 소금 · P 후추 · B 버터<br>R 레스팅 · Enter 플레이팅 · ↑↓ 불 조절</div>
+
+  <div class="screen show" id="startScreen">
+    <div class="modal">
+      <h1>그릴 마스터 3D DX</h1>
+      <p>손님 주문에 맞춰 소고기, 연어, 닭가슴살, 삼겹살, 흰살생선을 구워보세요. 재료마다 익는 속도, 타는 속도, 특수 판정이 다릅니다.</p>
+      <div class="featureGrid">
+        <div class="feature"><b>분리된 양념 액션</b>소금은 하얀 입자, 후추는 검은 입자, 버터는 녹는 큐브와 거품으로 연출됩니다.</div>
+        <div class="feature"><b>재료별 규칙</b>연어는 껍질, 닭가슴살은 안전 온도, 삼겹살은 지방 렌더링, 흰살생선은 살결 보존이 중요합니다.</div>
+        <div class="feature"><b>게임식 피드백</b>뒤집기, 양념, 버터, 완벽한 타이밍마다 팝업·파티클·효과음이 나옵니다.</div>
+      </div>
+      <div class="modalActions">
+        <button class="primary" id="startBtn">게임 시작</button>
+        <button id="practiceBtn">연습 모드</button>
+      </div>
+      <p class="help">모바일에서는 아래 버튼으로 조작하면 됩니다. 사운드는 시작 버튼을 누른 뒤 활성화됩니다.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="resultScreen">
+    <div class="modal">
+      <div class="titleRow">
+        <div>
+          <div class="miniTitle">플레이팅 결과</div>
+          <h1 id="resultTitle">플레이팅 완료!</h1>
+        </div>
+        <div class="rank" id="rankText">A</div>
+      </div>
+      <p id="resultComment">훌륭한 요리입니다.</p>
+      <div class="scoreGrid">
+        <div class="scoreLine"><div class="k">이번 점수</div><div class="v" id="scoreValue">0</div></div>
+        <div class="scoreLine"><div class="k">내부 온도</div><div class="v" id="tempResult">0℃</div></div>
+        <div class="scoreLine"><div class="k">시어링 균형</div><div class="v" id="searResult">0%</div></div>
+        <div class="scoreLine"><div class="k">양념·버터</div><div class="v" id="tasteResult">0</div></div>
+        <div class="scoreLine"><div class="k">재료 특수 판정</div><div class="v" id="specialResult">0</div></div>
+        <div class="scoreLine"><div class="k">조리 메모</div><div class="v" id="memoResult">-</div></div>
+      </div>
+      <div class="modalActions">
+        <button class="primary" id="nextBtn">다음 손님</button>
+        <button id="retryBtn">처음부터</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+    const $ = (id) => document.getElementById(id);
+    const clamp = (v,min,max) => Math.max(min, Math.min(max, v));
+    const lerp = (a,b,t) => a + (b-a)*t;
+    const ease = (t) => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+    const rand = (a,b) => a + Math.random()*(b-a);
+
+    const ui = {
+      startScreen:$('startScreen'), resultScreen:$('resultScreen'), floatLayer:$('floatLayer'),
+      startBtn:$('startBtn'), practiceBtn:$('practiceBtn'), nextBtn:$('nextBtn'), retryBtn:$('retryBtn'),
+      heatDown:$('heatDown'), heatUp:$('heatUp'), heatReadout:$('heatReadout'), heatFill:$('heatFill'),
+      flipBtn:$('flipBtn'), saltBtn:$('saltBtn'), pepperBtn:$('pepperBtn'), butterBtn:$('butterBtn'), restBtn:$('restBtn'), serveBtn:$('serveBtn'),
+      roundPill:$('roundPill'), meatBadge:$('meatBadge'), orderName:$('orderName'), orderText:$('orderText'), timeValue:$('timeValue'), totalScore:$('totalScore'), tipValue:$('tipValue'),
+      doneLabel:$('doneLabel'), coreText:$('coreText'), topText:$('topText'), bottomText:$('bottomText'), coreFill:$('coreFill'), topFill:$('topFill'), bottomFill:$('bottomFill'),
+      specialLabel:$('specialLabel'), specialText:$('specialText'), specialFill:$('specialFill'), saltChip:$('saltChip'), pepperChip:$('pepperChip'), butterChip:$('butterChip'), restChip:$('restChip'),
+      panSide:$('panSide'), cookLog:$('cookLog'), proteinTip:$('proteinTip'), toast:$('toast'), comboBig:$('comboBig'), comboSmall:$('comboSmall'),
+      resultTitle:$('resultTitle'), rankText:$('rankText'), resultComment:$('resultComment'), scoreValue:$('scoreValue'), tempResult:$('tempResult'), searResult:$('searResult'), tasteResult:$('tasteResult'), specialResult:$('specialResult'), memoResult:$('memoResult')
+    };
+
+    const DONENESS_BEEF = [
+      {name:'레어', min:46, max:51, target:49, desc:'속은 붉고 촉촉하게, 겉은 살짝만 구워주세요.'},
+      {name:'미디엄 레어', min:52, max:56, target:54, desc:'속은 분홍빛, 겉은 노릇한 시어링으로 부탁해요.'},
+      {name:'미디엄', min:57, max:63, target:60, desc:'속은 촉촉한 분홍색, 겉은 확실하게 구워주세요.'},
+      {name:'미디엄 웰던', min:64, max:69, target:66, desc:'속은 거의 익히고 육즙은 조금 남겨주세요.'},
+      {name:'웰던', min:70, max:76, target:73, desc:'바짝 익히되 새까맣게 태우지는 말아주세요.'}
+    ];
+    const DONENESS_SALMON = [
+      {name:'촉촉한 연어', min:50, max:56, target:53, desc:'속살은 촉촉하게, 겉은 부드럽게 익혀주세요.'},
+      {name:'껍질 바삭 연어', min:55, max:61, target:58, desc:'속살은 촉촉하게 두고 껍질면은 바삭하게 부탁해요.'}
+    ];
+    const DONENESS_CHICKEN = [
+      {name:'촉촉한 닭가슴살', min:72, max:78, target:74, desc:'안전하게 익히되 퍽퍽하지 않게 구워주세요.'},
+      {name:'노릇한 닭가슴살', min:74, max:81, target:77, desc:'속은 완전히 익히고 겉은 노릇하게 구워주세요.'}
+    ];
+    const DONENESS_PORK = [
+      {name:'바삭 삼겹살', min:72, max:82, target:77, desc:'기름을 충분히 빼고 겉은 바삭하게 구워주세요.'},
+      {name:'쫄깃 삼겹살', min:70, max:78, target:74, desc:'너무 태우지 말고 지방은 고소하게 녹여주세요.'}
+    ];
+    const DONENESS_WHITEFISH = [
+      {name:'촉촉한 흰살생선', min:54, max:61, target:58, desc:'살결이 부서지지 않게 부드럽게 익혀주세요.'},
+      {name:'담백한 생선구이', min:58, max:65, target:61, desc:'겉은 살짝 노릇하고 속은 촉촉하게 부탁해요.'}
+    ];
+    const CRUSTS = [
+      {name:'은은한 시어링', min:22, max:42, target:33},
+      {name:'노릇한 시어링', min:40, max:63, target:52},
+      {name:'강한 시어링', min:58, max:78, target:68}
+    ];
+
+    const PROTEINS = [
+      {
+        key:'beef', icon:'🥩', name:'소고기 스테이크', short:'소고기', shape:'steak', doneness:DONENESS_BEEF,
+        startCore:22, surfaceRate:1.0, coreRate:.48, airRate:.10, burnPoint:86, saltBase:2, pepperBase:1, butterWanted:.55,
+        specialLabel:'육즙', tip:'소고기는 내부 온도와 양면 시어링 균형이 핵심입니다. 마지막 강불 시어링이 강력해요.',
+        orderNote:'레스팅을 해주면 육즙 보너스가 붙습니다.', scale:[1.16,.28,.82]
+      },
+      {
+        key:'salmon', icon:'🐟', name:'연어 스테이크', short:'연어', shape:'salmon', doneness:DONENESS_SALMON,
+        startCore:18, surfaceRate:.92, coreRate:.56, airRate:.12, burnPoint:78, saltBase:1, pepperBase:1, butterWanted:.7,
+        specialLabel:'껍질 바삭도', tip:'연어는 아랫면이 껍질입니다. 껍질면을 충분히 굽되 속살을 과하게 말리면 감점됩니다.',
+        orderNote:'버터와 후추가 잘 어울립니다.', scale:[1.05,.25,.72]
+      },
+      {
+        key:'chicken', icon:'🍗', name:'닭가슴살 스테이크', short:'닭가슴살', shape:'chicken', doneness:DONENESS_CHICKEN,
+        startCore:14, surfaceRate:.82, coreRate:.42, airRate:.08, burnPoint:84, saltBase:2, pepperBase:2, butterWanted:.5,
+        specialLabel:'촉촉함', tip:'닭가슴살은 반드시 안전 온도까지 익혀야 하지만, 너무 오래 익히면 촉촉함이 빠르게 떨어집니다.',
+        orderNote:'약불로 내부를 올린 뒤 중강불로 마무리하면 좋아요.', scale:[1.18,.34,.68]
+      },
+      {
+        key:'pork', icon:'🥓', name:'삼겹살', short:'삼겹살', shape:'pork', doneness:DONENESS_PORK,
+        startCore:20, surfaceRate:1.16, coreRate:.46, airRate:.14, burnPoint:88, saltBase:1, pepperBase:1, butterWanted:.12,
+        specialLabel:'지방 렌더링', tip:'삼겹살은 지방 렌더링과 바삭함이 핵심입니다. 기름이 많이 튀니 강불을 오래 쓰면 위험해요.',
+        orderNote:'버터보다는 자체 기름과 후추가 잘 어울립니다.', scale:[1.35,.22,.74]
+      },
+      {
+        key:'whitefish', icon:'🐠', name:'흰살생선 구이', short:'흰살생선', shape:'whitefish', doneness:DONENESS_WHITEFISH,
+        startCore:16, surfaceRate:.72, coreRate:.54, airRate:.10, burnPoint:74, saltBase:1, pepperBase:0, butterWanted:.38,
+        specialLabel:'살결 보존', tip:'흰살생선은 약합니다. 강불과 잦은 뒤집기는 살결을 무너뜨립니다.',
+        orderNote:'한두 번만 조심스럽게 뒤집는 것이 좋아요.', scale:[1.22,.20,.62]
+      }
+    ];
+    const PROTEIN_BY_KEY = Object.fromEntries(PROTEINS.map(p=>[p.key,p]));
+    const CUSTOMERS = ['민준 손님','서연 손님','지우 손님','도윤 손님','하린 손님','유준 손님','시우 손님','서아 손님','태오 손님','이안 손님'];
+
+    const game = {
+      mode:'normal', started:false, round:0, maxRounds:5, totalScore:0, totalTip:1,
+      heat:3, timeLimit:80, timeLeft:80, resting:0, resultOpen:false, finalShown:false,
+      order:null, comboTimer:0, lastLog:'', steak:null, audio:null, lastTickSecond:99
+    };
+
+    function newFood(protein){
+      return {
+        localTop:0, localBottom:0, core:protein.startCore, salt:0, pepper:0, butter:0, butterUsed:false, rested:0,
+        flipped:false, flipping:false, flipT:0, flipStart:0, flipTarget:0,
+        served:false, actionCount:0, flipCount:0, moisture:100, integrity:100, fatRender:0, oilPop:0
+      };
+    }
+
+    function generateOrder(){
+      let protein;
+      if(game.mode === 'practice') protein = PROTEINS[Math.floor(Math.random()*PROTEINS.length)];
+      else {
+        const sequence = ['beef','salmon','chicken','pork','whitefish'];
+        protein = PROTEIN_BY_KEY[sequence[(game.round-1) % sequence.length]] || PROTEINS[0];
+      }
+      const d = protein.doneness[Math.floor(Math.random()*protein.doneness.length)];
+      let crust;
+      if(protein.key === 'whitefish') crust = Math.random() < .75 ? CRUSTS[0] : CRUSTS[1];
+      else if(protein.key === 'pork') crust = Math.random() < .75 ? CRUSTS[2] : CRUSTS[1];
+      else if(protein.key === 'salmon' && d.name.includes('껍질')) crust = CRUSTS[2];
+      else if(d.name.includes('레어')) crust = Math.random() < .7 ? CRUSTS[0] : CRUSTS[1];
+      else crust = CRUSTS[Math.floor(Math.random()*CRUSTS.length)];
+      const wantsButter = Math.random() < protein.butterWanted;
+      const saltTarget = protein.saltBase + (Math.random() < .3 ? 1 : 0);
+      const pepperTarget = protein.pepperBase + (Math.random() < .28 ? 1 : 0);
+      const customer = CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)];
+      return {protein, doneness:d, crust, wantsButter, saltTarget, pepperTarget, customer};
+    }
+
+    let renderer, scene, camera, clock;
+    let foodGroup, foodMesh, foodMats, topLines=[], bottomLines=[], butterMesh, saltSurfaceGroup, pepperSurfaceGroup, heatGlow, flameRing, panMesh;
+    let smokeParticles=[], effectParticles=[], bubbleParticles=[];
+    let tableGroup, saltShaker, pepperMill, butterDrop, flashRing;
+    let currentFoodShape = null, currentFoodHeight = .28;
+    let lastGrainFlash = 0;
+
+    function initThree(){
+      const canvas = $('gameCanvas');
+      renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance'});
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x140d0a, 6, 16);
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, .1, 100);
+      camera.position.set(0, 4.8, 6.2);
+      camera.lookAt(0, .2, 0);
+      clock = new THREE.Clock();
+
+      const ambient = new THREE.HemisphereLight(0xffe6c2, 0x180b06, 1.8);
+      scene.add(ambient);
+      const key = new THREE.DirectionalLight(0xffd2a0, 3.2);
+      key.position.set(3.5, 6, 4);
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024,1024);
+      key.shadow.camera.near = .5; key.shadow.camera.far = 18;
+      key.shadow.camera.left = -5; key.shadow.camera.right = 5; key.shadow.camera.top = 5; key.shadow.camera.bottom = -5;
+      scene.add(key);
+      const warm = new THREE.PointLight(0xff7836, 2.8, 7);
+      warm.position.set(-2, 1.2, 2.2);
+      scene.add(warm);
+
+      createKitchen();
+      createPan();
+      createActionProps();
+      createFoodModel(PROTEINS[0]);
+      createParticlePools();
+      window.addEventListener('resize', onResize);
+    }
+
+    function createKitchen(){
+      tableGroup = new THREE.Group();
+      const tableMat = new THREE.MeshStandardMaterial({color:0x4a2b1c, roughness:.65, metalness:.05});
+      const table = new THREE.Mesh(new THREE.BoxGeometry(9, .35, 7), tableMat);
+      table.position.y = -.35;
+      table.receiveShadow = true;
+      tableGroup.add(table);
+
+      const backMat = new THREE.MeshStandardMaterial({color:0x251711, roughness:.9});
+      const back = new THREE.Mesh(new THREE.BoxGeometry(10,5,.28), backMat);
+      back.position.set(0,2.1,-3.6);
+      back.receiveShadow = true;
+      tableGroup.add(back);
+
+      for(let i=-4;i<=4;i++){
+        const seam = new THREE.Mesh(new THREE.BoxGeometry(.025,5.05,.03), new THREE.MeshBasicMaterial({color:0x3a251a, transparent:true, opacity:.55}));
+        seam.position.set(i,2.1,-3.44);
+        tableGroup.add(seam);
+      }
+      scene.add(tableGroup);
+    }
+
+    function createPan(){
+      const pan = new THREE.Group();
+      const metal = new THREE.MeshStandardMaterial({color:0x151515, roughness:.38, metalness:.75});
+      const rimMat = new THREE.MeshStandardMaterial({color:0x22201d, roughness:.3, metalness:.85});
+      panMesh = new THREE.Mesh(new THREE.CylinderGeometry(2.55,2.65,.34,96), metal);
+      panMesh.position.y = .02;
+      panMesh.castShadow = true;
+      panMesh.receiveShadow = true;
+      pan.add(panMesh);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(2.58,.11,18,128), rimMat);
+      rim.rotation.x = Math.PI/2;
+      rim.position.y = .22;
+      rim.castShadow = true;
+      pan.add(rim);
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(2.25,2.35,.05,96), new THREE.MeshStandardMaterial({color:0x080807, roughness:.55, metalness:.65}));
+      inner.position.y = .255;
+      inner.receiveShadow = true;
+      pan.add(inner);
+      for(let i=-4;i<=4;i++){
+        const ridge = new THREE.Mesh(new THREE.BoxGeometry(.08,.08,4.2), new THREE.MeshStandardMaterial({color:0x1d1c1a, roughness:.45, metalness:.75}));
+        ridge.position.set(i*.43,.32,0);
+        ridge.castShadow = true;
+        pan.add(ridge);
+      }
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(.55,.23,3.4), rimMat);
+      handle.position.set(0,.06,3.75);
+      handle.castShadow = true;
+      pan.add(handle);
+      const handleEnd = new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.18,32), rimMat);
+      handleEnd.rotation.x = Math.PI/2;
+      handleEnd.position.set(0,.06,5.45);
+      pan.add(handleEnd);
+
+      heatGlow = new THREE.Mesh(new THREE.CircleGeometry(2.75,96), new THREE.MeshBasicMaterial({color:0xff4b16, transparent:true, opacity:.12, depthWrite:false}));
+      heatGlow.rotation.x = -Math.PI/2;
+      heatGlow.position.y = -.18;
+      pan.add(heatGlow);
+      flameRing = new THREE.Mesh(new THREE.TorusGeometry(2.05,.045,10,96), new THREE.MeshBasicMaterial({color:0xffb23a, transparent:true, opacity:.3}));
+      flameRing.rotation.x = Math.PI/2;
+      flameRing.position.y = -.11;
+      pan.add(flameRing);
+      flashRing = new THREE.Mesh(new THREE.TorusGeometry(1.5,.025,8,96), new THREE.MeshBasicMaterial({color:0xffe083, transparent:true, opacity:0, depthWrite:false}));
+      flashRing.rotation.x = Math.PI/2;
+      flashRing.position.y = .55;
+      pan.add(flashRing);
+      scene.add(pan);
+    }
+
+    function createActionProps(){
+      saltShaker = new THREE.Group();
+      const glass = new THREE.MeshStandardMaterial({color:0xffffff, roughness:.2, metalness:0, transparent:true, opacity:.45});
+      const cap = new THREE.MeshStandardMaterial({color:0xdddddd, roughness:.22, metalness:.65});
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.52,24), glass);
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.09,24), cap);
+      lid.position.y = .305;
+      saltShaker.add(body,lid);
+      saltShaker.position.set(-1.25,2.55,.25);
+      saltShaker.rotation.set(.5,0,.25);
+      saltShaker.visible = false;
+      scene.add(saltShaker);
+
+      pepperMill = new THREE.Group();
+      const wood = new THREE.MeshStandardMaterial({color:0x4a2416, roughness:.55, metalness:0});
+      const mid = new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,.68,24), wood);
+      const top = new THREE.Mesh(new THREE.SphereGeometry(.15,18,12), wood);
+      top.position.y = .42;
+      pepperMill.add(mid,top);
+      pepperMill.position.set(1.25,2.55,.15);
+      pepperMill.rotation.set(.35,0,-.35);
+      pepperMill.visible = false;
+      scene.add(pepperMill);
+
+      butterDrop = new THREE.Mesh(new THREE.BoxGeometry(.42,.16,.32), new THREE.MeshStandardMaterial({color:0xffe6a3, roughness:.3, metalness:0, transparent:true, opacity:0}));
+      butterDrop.position.set(.2,1.85,.0);
+      butterDrop.rotation.set(.2,.25,.1);
+      butterDrop.visible = false;
+      scene.add(butterDrop);
+    }
+
+    function getColorStops(protein, c){
+      const char = [88, new THREE.Color(0x17100d)], black = [100, new THREE.Color(0x050403)];
+      if(protein.key === 'beef') return [[0,new THREE.Color(0xb83c33)],[18,new THREE.Color(0xd75648)],[35,new THREE.Color(0xb56b43)],[55,new THREE.Color(0x7b3f24)],[72,new THREE.Color(0x4f2719)],char,black];
+      if(protein.key === 'salmon') return [[0,new THREE.Color(0xef7e69)],[24,new THREE.Color(0xf09a78)],[45,new THREE.Color(0xe89458)],[62,new THREE.Color(0xb96938)],[78,new THREE.Color(0x5f3121)],char,black];
+      if(protein.key === 'chicken') return [[0,new THREE.Color(0xf1b1a0)],[22,new THREE.Color(0xf4d5bd)],[43,new THREE.Color(0xe9b777)],[62,new THREE.Color(0xbf7540)],[80,new THREE.Color(0x5b2f1d)],char,black];
+      if(protein.key === 'pork') return [[0,new THREE.Color(0xe78b83)],[22,new THREE.Color(0xf0b08e)],[42,new THREE.Color(0xd58a4a)],[63,new THREE.Color(0xa85b2f)],[82,new THREE.Color(0x4b2619)],char,black];
+      return [[0,new THREE.Color(0xf4e6d2)],[20,new THREE.Color(0xfff3df)],[44,new THREE.Color(0xe7c389)],[62,new THREE.Color(0xb47742)],[78,new THREE.Color(0x4e291d)],char,black];
+    }
+
+    function cookColor(protein, c){
+      const stops = getColorStops(protein, c);
+      for(let i=0;i<stops.length-1;i++){
+        const [a,ca]=stops[i], [b,cb]=stops[i+1];
+        if(c>=a && c<=b) return ca.clone().lerp(cb,(c-a)/(b-a));
+      }
+      return stops[stops.length-1][1].clone();
+    }
+
+    function ellipsePoints(count, sx, sz, wobble=0){
+      const pts = [];
+      for(let i=0;i<count;i++){
+        const a = (i/count) * Math.PI * 2;
+        const n = 1 + wobble * (.55*Math.sin(a*3+.4) + .35*Math.sin(a*7+1.5) + .18*Math.cos(a*11));
+        pts.push([Math.cos(a)*sx*n, Math.sin(a)*sz*n]);
+      }
+      return pts;
+    }
+
+    function roundedRectPoints(w, d, r, seg=6){
+      const pts = [];
+      const corners = [
+        [ w/2-r,  d/2-r, 0, Math.PI/2],
+        [-w/2+r,  d/2-r, Math.PI/2, Math.PI],
+        [-w/2+r, -d/2+r, Math.PI, Math.PI*1.5],
+        [ w/2-r, -d/2+r, Math.PI*1.5, Math.PI*2]
+      ];
+      for(const [cx,cz,a0,a1] of corners){
+        for(let i=0;i<=seg;i++){
+          const a = lerp(a0,a1,i/seg);
+          pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);
+        }
+      }
+      return pts;
+    }
+
+    function getFoodShapeData(protein){
+      if(protein.key === 'salmon'){
+        return {
+          height:.24, yaw:.18, topLift:.018, seasonScale:[1.08,.58], grillLen:1.55, grillCount:5, grillGap:.32,
+          points:[[-1.28,-.48],[-.42,-.58],[.92,-.46],[1.32,-.2],[1.18,.36],[.38,.58],[-.92,.54],[-1.36,.18]],
+          kind:'salmon'
+        };
+      }
+      if(protein.key === 'chicken'){
+        const pts=[];
+        for(let i=0;i<42;i++){
+          const a=(i/42)*Math.PI*2;
+          const bulge = 1 + .2*Math.sin(a) - .12*Math.cos(a*2);
+          const taper = 1 - .22*Math.cos(a);
+          pts.push([Math.cos(a)*1.06*bulge, Math.sin(a)*.7*taper]);
+        }
+        return {height:.34, yaw:-.24, topLift:.055, seasonScale:[.98,.6], grillLen:1.45, grillCount:4, grillGap:.34, points:pts, kind:'chicken'};
+      }
+      if(protein.key === 'pork'){
+        return {height:.18, yaw:-.05, topLift:.01, seasonScale:[1.35,.42], grillLen:2.65, grillCount:6, grillGap:.34, points:roundedRectPoints(2.82,.82,.22,7), kind:'pork'};
+      }
+      if(protein.key === 'whitefish'){
+        return {
+          height:.17, yaw:.28, topLift:.014, seasonScale:[1.18,.48], grillLen:1.35, grillCount:4, grillGap:.29,
+          points:[[-1.46,-.18],[-1.18,-.42],[-.38,-.56],[.58,-.5],[1.24,-.28],[1.5,-.02],[1.22,.26],[.48,.49],[-.52,.55],[-1.26,.32]],
+          kind:'whitefish'
+        };
+      }
+      return {height:.30, yaw:-.08, topLift:.03, seasonScale:[1.08,.68], grillLen:1.92, grillCount:5, grillGap:.36, points:ellipsePoints(44,1.38,.9,.12), kind:'beef'};
+    }
+
+    function makeExtrudedFoodGeometry(shape){
+      const pts = shape.points;
+      const h = shape.height;
+      const lift = shape.topLift || 0;
+      const positions = [];
+      const add = (x,y,z)=>{ positions.push(x,y,z); };
+      const startSide = 0;
+      for(let i=0;i<pts.length;i++){
+        const [x1,z1] = pts[i];
+        const [x2,z2] = pts[(i+1)%pts.length];
+        add(x1,-h/2,z1); add(x2,-h/2,z2); add(x2,h/2,z2);
+        add(x1,-h/2,z1); add(x2,h/2,z2); add(x1,h/2,z1);
+      }
+      const sideCount = positions.length/3 - startSide;
+      const startTop = positions.length/3;
+      for(let i=0;i<pts.length;i++){
+        const [x1,z1] = pts[i];
+        const [x2,z2] = pts[(i+1)%pts.length];
+        add(0,h/2+lift,0); add(x1,h/2,z1); add(x2,h/2,z2);
+      }
+      const topCount = positions.length/3 - startTop;
+      const startBottom = positions.length/3;
+      for(let i=0;i<pts.length;i++){
+        const [x1,z1] = pts[i];
+        const [x2,z2] = pts[(i+1)%pts.length];
+        add(0,-h/2,0); add(x2,-h/2,z2); add(x1,-h/2,z1);
+      }
+      const bottomCount = positions.length/3 - startBottom;
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+      geom.clearGroups();
+      geom.addGroup(startSide, sideCount, 0);
+      geom.addGroup(startTop, topCount, 1);
+      geom.addGroup(startBottom, bottomCount, 2);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    function makeFoodGeometry(protein){
+      const shape = getFoodShapeData(protein);
+      currentFoodShape = shape;
+      currentFoodHeight = shape.height;
+      return makeExtrudedFoodGeometry(shape);
+    }
+
+    function topY(extra=.022){ return currentFoodHeight/2 + extra; }
+    function bottomY(extra=.022){ return -currentFoodHeight/2 - extra; }
+
+    function makeTopPlane(w,d,x,z,mat,rotZ=0,yExtra=.024){
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d), mat);
+      m.rotation.x = -Math.PI/2;
+      m.rotation.z = rotZ;
+      m.position.set(x, topY(yExtra), z);
+      m.renderOrder = 3;
+      foodGroup.add(m);
+      return m;
+    }
+
+    function makeBottomPlane(w,d,x,z,mat,rotZ=0,yExtra=.018){
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d), mat);
+      m.rotation.x = Math.PI/2;
+      m.rotation.z = rotZ;
+      m.position.set(x, bottomY(yExtra), z);
+      m.renderOrder = 3;
+      foodGroup.add(m);
+      return m;
+    }
+
+    function createFoodModel(protein){
+      if(foodGroup) scene.remove(foodGroup);
+      topLines=[]; bottomLines=[];
+      foodGroup = new THREE.Group();
+      const shape = getFoodShapeData(protein);
+      currentFoodShape = shape;
+      currentFoodHeight = shape.height;
+      foodGroup.position.set(0,.37 + currentFoodHeight/2,0);
+      foodGroup.rotation.set(0, shape.yaw || 0, -.035);
+      const sideColor = protein.key === 'salmon' ? 0xb85d4e : protein.key === 'whitefish' ? 0xe7d2b7 : protein.key === 'chicken' ? 0xd4947d : protein.key === 'pork' ? 0xb85f51 : 0x743320;
+      foodMats = [
+        new THREE.MeshStandardMaterial({color:sideColor, roughness:.8, metalness:0, side:THREE.DoubleSide}),
+        new THREE.MeshStandardMaterial({color:cookColor(protein,0), roughness:.72, metalness:0, side:THREE.DoubleSide}),
+        new THREE.MeshStandardMaterial({color:cookColor(protein,0), roughness:.72, metalness:0, side:THREE.DoubleSide})
+      ];
+      foodMesh = new THREE.Mesh(makeExtrudedFoodGeometry(shape), foodMats);
+      foodMesh.castShadow = true;
+      foodMesh.receiveShadow = true;
+      foodGroup.add(foodMesh);
+      addFoodDecor(protein);
+      addGrillLines(protein);
+      addSeasonSurfaceGroups(protein);
+      butterMesh = new THREE.Mesh(new THREE.BoxGeometry(.45,.16,.35), new THREE.MeshStandardMaterial({color:0xffe6a3, roughness:.35, metalness:0, transparent:true, opacity:0}));
+      butterMesh.position.set(.2, topY(.16), .02);
+      butterMesh.userData.baseY = butterMesh.position.y;
+      butterMesh.rotation.set(.12,.2,.1);
+      foodGroup.add(butterMesh);
+      scene.add(foodGroup);
+    }
+
+    function addFoodDecor(protein){
+      const cream = new THREE.MeshBasicMaterial({color:0xffe3b9, transparent:true, opacity:.72, depthWrite:false});
+      const pale = new THREE.MeshBasicMaterial({color:0xfff2df, transparent:true, opacity:.55, depthWrite:false});
+      const darkSkin = new THREE.MeshStandardMaterial({color:0x33404a, roughness:.58, metalness:.05, side:THREE.DoubleSide});
+      const silver = new THREE.MeshBasicMaterial({color:0xdfe8ee, transparent:true, opacity:.42, depthWrite:false});
+
+      if(protein.key === 'beef'){
+        // 둥글고 두꺼운 스테이크: 불규칙한 지방 마블링과 가장자리 지방띠
+        for(let i=0;i<7;i++){
+          const w = rand(.28,.62), d = rand(.028,.052);
+          const x = rand(-.75,.75), z = rand(-.42,.42);
+          const l = makeTopPlane(w,d,x,z,cream,rand(-.9,.9),.026);
+          l.userData.decoType = 'marble';
+        }
+        const edgeMat = new THREE.MeshStandardMaterial({color:0xf2cda3, roughness:.72, metalness:0});
+        const edge = new THREE.Mesh(makeExtrudedFoodGeometry({points:roundedRectPoints(.34,1.42,.12,5), height:.055, topLift:0}), edgeMat);
+        edge.position.set(-1.02, topY(-.04), .02);
+        edge.rotation.y = .22;
+        edge.castShadow = true;
+        foodGroup.add(edge);
+      }
+
+      if(protein.key === 'salmon'){
+        // 사다리꼴 연어 필레: 아래에는 회색 껍질, 위에는 흰 지방 결
+        makeBottomPlane(2.45,.93,0,0,darkSkin,.08,.012);
+        const stripeMat = new THREE.MeshBasicMaterial({color:0xfff7e8, transparent:true, opacity:.5, depthWrite:false});
+        for(let i=-3;i<=3;i++){
+          makeTopPlane(.045,1.1,i*.29,.02,stripeMat,.62,.026);
+        }
+        const orangeEdge = new THREE.MeshBasicMaterial({color:0xffb07a, transparent:true, opacity:.28, depthWrite:false});
+        makeTopPlane(1.9,.05,.05,-.42,orangeEdge,.04,.028);
+      }
+
+      if(protein.key === 'chicken'){
+        // 통통한 닭가슴살: 한쪽이 두껍고 가운데 결이 길게 보임
+        const seamMat = new THREE.MeshBasicMaterial({color:0xfff0dc, transparent:true, opacity:.5, depthWrite:false});
+        makeTopPlane(.055,1.25,.02,.0,seamMat,.13,.03);
+        for(let i=-2;i<=2;i++){
+          makeTopPlane(.032,.78,i*.25,.03*Math.sin(i),pale,.34 + i*.05,.032);
+        }
+        const highlight = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.18, depthWrite:false});
+        makeTopPlane(.55,.18,-.28,.24,highlight,.15,.034);
+      }
+
+      if(protein.key === 'pork'){
+        // 길쭉한 삼겹살: 살코기/비계 층이 길게 번갈아 보이도록 분리
+        const fatMat = new THREE.MeshBasicMaterial({color:0xffdfc0, transparent:true, opacity:.82, depthWrite:false});
+        const meatMat = new THREE.MeshBasicMaterial({color:0xe47868, transparent:true, opacity:.45, depthWrite:false});
+        makeTopPlane(2.55,.11,0,-.25,fatMat,.01,.025);
+        makeTopPlane(2.62,.12,0,.02,meatMat,-.015,.026);
+        makeTopPlane(2.5,.12,0,.27,fatMat,.02,.025);
+        for(let i=-3;i<=3;i++){
+          const oil = new THREE.Mesh(new THREE.SphereGeometry(.025,8,8), new THREE.MeshBasicMaterial({color:0xffe19a, transparent:true, opacity:.55, depthWrite:false}));
+          oil.position.set(i*.34, topY(.038), rand(-.28,.28));
+          oil.scale.set(1.8,.35,1.0);
+          foodGroup.add(oil);
+        }
+      }
+
+      if(protein.key === 'whitefish'){
+        // 얇고 길게 빠진 흰살생선: 은빛 가장자리와 살결 라인
+        const flakeMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.58, depthWrite:false});
+        for(let i=-4;i<=4;i++){
+          makeTopPlane(.026,.66,i*.22,.05*Math.sin(i),flakeMat,(i%2?-.48:.48),.026);
+        }
+        makeTopPlane(2.28,.045,.02,.42,silver,.05,.027);
+        makeTopPlane(2.08,.038,-.05,-.42,silver,-.02,.027);
+        const tailMat = new THREE.MeshBasicMaterial({color:0xdad3c4, transparent:true, opacity:.38, depthWrite:false});
+        makeTopPlane(.32,.18,1.25,-.07,tailMat,.25,.03);
+      }
+    }
+
+    function addGrillLines(protein){
+      const lineTop = new THREE.MeshBasicMaterial({color:0x130806, transparent:true, opacity:0, depthWrite:false});
+      const lineBottom = new THREE.MeshBasicMaterial({color:0x130806, transparent:true, opacity:0, depthWrite:false});
+      const shape = currentFoodShape || getFoodShapeData(protein);
+      const len = shape.grillLen || 1.8;
+      const count = shape.grillCount || 5;
+      const gap = shape.grillGap || .34;
+      const lineWidth = protein.key === 'whitefish' ? .055 : protein.key === 'pork' ? .075 : .085;
+      for(let i=0;i<count;i++){
+        const offset = (i-(count-1)/2)*gap;
+        const l = new THREE.Mesh(new THREE.PlaneGeometry(lineWidth,len), lineTop.clone());
+        l.rotation.x = -Math.PI/2;
+        l.rotation.z = protein.key === 'pork' ? Math.PI/2 : .1;
+        l.position.set(offset, topY(.032), 0);
+        l.renderOrder = 4;
+        foodGroup.add(l); topLines.push(l);
+        const b = new THREE.Mesh(new THREE.PlaneGeometry(lineWidth,len), lineBottom.clone());
+        b.rotation.x = Math.PI/2;
+        b.rotation.z = protein.key === 'pork' ? -Math.PI/2 : -.1;
+        b.position.set(offset, bottomY(.032), 0);
+        b.renderOrder = 4;
+        foodGroup.add(b); bottomLines.push(b);
+      }
+    }
+
+    function pointInPolygon(x,z,pts){
+      let inside = false;
+      for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+        const xi=pts[i][0], zi=pts[i][1], xj=pts[j][0], zj=pts[j][1];
+        const intersect = ((zi>z)!==(zj>z)) && (x < (xj-xi)*(z-zi)/(zj-zi+1e-9)+xi);
+        if(intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function randomPointInShape(shape){
+      const xs = shape.points.map(p=>p[0]), zs = shape.points.map(p=>p[1]);
+      const minX=Math.min(...xs), maxX=Math.max(...xs), minZ=Math.min(...zs), maxZ=Math.max(...zs);
+      for(let tries=0; tries<40; tries++){
+        const x=rand(minX,maxX), z=rand(minZ,maxZ);
+        if(pointInPolygon(x,z,shape.points)) return [x,z];
+      }
+      return [0,0];
+    }
+
+    function addSeasonSurfaceGroups(protein){
+      saltSurfaceGroup = new THREE.Group();
+      pepperSurfaceGroup = new THREE.Group();
+      const shape = currentFoodShape || getFoodShapeData(protein);
+      const saltMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.82, depthWrite:false});
+      const pepperMat = new THREE.MeshBasicMaterial({color:0x17100d, transparent:true, opacity:.85, depthWrite:false});
+      for(let i=0;i<45;i++){
+        const [sx,sz] = randomPointInShape(shape);
+        const s = new THREE.Mesh(new THREE.SphereGeometry(.017,8,8), saltMat);
+        s.position.set(sx, topY(.052)+Math.random()*.018, sz);
+        s.visible = false;
+        saltSurfaceGroup.add(s);
+        const [px,pz] = randomPointInShape(shape);
+        const p = new THREE.Mesh(new THREE.SphereGeometry(.014,8,8), pepperMat);
+        p.position.set(px, topY(.055)+Math.random()*.018, pz);
+        p.visible = false;
+        pepperSurfaceGroup.add(p);
+      }
+      foodGroup.add(saltSurfaceGroup, pepperSurfaceGroup);
+    }
+
+    function createParticlePools(){
+      const smokeMat = new THREE.MeshBasicMaterial({color:0xf2e5d2, transparent:true, opacity:0, depthWrite:false});
+      for(let i=0;i<70;i++){
+        const p = new THREE.Mesh(new THREE.SphereGeometry(.08+Math.random()*.08,12,12), smokeMat.clone());
+        p.visible = false;
+        p.userData = {life:0, speed:0, drift:0};
+        scene.add(p);
+        smokeParticles.push(p);
+      }
+      for(let i=0;i<120;i++){
+        const mat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0, depthWrite:false});
+        const p = new THREE.Mesh(new THREE.SphereGeometry(.025,8,8), mat);
+        p.visible = false;
+        p.userData = {life:0, vx:0, vy:0, vz:0, gravity:0, type:'salt'};
+        scene.add(p);
+        effectParticles.push(p);
+      }
+      for(let i=0;i<45;i++){
+        const mat = new THREE.MeshBasicMaterial({color:0xffdf76, transparent:true, opacity:0, depthWrite:false});
+        const b = new THREE.Mesh(new THREE.SphereGeometry(.035,10,10), mat);
+        b.visible = false;
+        b.userData = {life:0, vx:0, vy:0, vz:0};
+        scene.add(b);
+        bubbleParticles.push(b);
+      }
+    }
+
+    function onResize(){
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function initAudio(){
+      if(game.audio) return;
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1) * .5;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.value = 1850; filter.Q.value = .75;
+        const gain = ctx.createGain(); gain.gain.value = 0;
+        noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+        noise.start();
+        game.audio = {ctx, gain};
+      }catch(e){ game.audio = null; }
+    }
+
+    function blip(freq=440, dur=.08, vol=.08, type='triangle'){
+      if(!game.audio) return;
+      const ctx = game.audio.ctx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = type;
+      gain.gain.value = Math.max(vol,.0001);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + dur);
+      osc.stop(ctx.currentTime + dur + .02);
+    }
+
+    function noiseBurst(dur=.08, vol=.08, freq=3000){
+      if(!game.audio) return;
+      const ctx = game.audio.ctx;
+      const size = Math.max(1, Math.floor(ctx.sampleRate*dur));
+      const buf = ctx.createBuffer(1, size, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<size;i++) d[i] = (Math.random()*2-1) * (1-i/size);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = freq; filter.Q.value = 1.2;
+      const gain = ctx.createGain(); gain.gain.value = vol;
+      src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      src.start();
+    }
+
+    function sfxSalt(){ noiseBurst(.12,.052,5200); blip(1200,.035,.025,'sine'); }
+    function sfxPepper(){ for(let i=0;i<4;i++) setTimeout(()=>{ noiseBurst(.035,.035,2600); blip(420+Math.random()*120,.025,.022,'square'); }, i*42); }
+    function sfxButter(){ noiseBurst(.22,.09,1700); blip(330,.11,.04,'sawtooth'); setTimeout(()=>blip(620,.08,.035,'triangle'),80); }
+    function sfxServe(score){ blip(score>=85?760:240,.16,.065); if(score>=85) setTimeout(()=>blip(980,.13,.055),120); }
+
+    function updateAudio(){
+      if(!game.audio || !game.started || game.resultOpen){
+        if(game.audio) game.audio.gain.gain.setTargetAtTime(0, game.audio.ctx.currentTime, .05);
+        return;
+      }
+      const s = game.steak;
+      const panCook = getPanCookValue(s);
+      const burnBoost = panCook > 72 ? .11 : 0;
+      const porkBoost = game.order?.protein.key === 'pork' ? .06 : 0;
+      const butterBoost = s?.butter > 0 ? .08 : 0;
+      const v = clamp((game.heat/5)*.17 + burnBoost + porkBoost + butterBoost, 0, .34);
+      game.audio.gain.gain.setTargetAtTime(v, game.audio.ctx.currentTime, .08);
+    }
+
+    function startGame(mode='normal'){
+      initAudio();
+      game.mode = mode;
+      game.started = true;
+      game.round = 0;
+      game.maxRounds = mode === 'practice' ? 99 : 5;
+      game.totalScore = 0;
+      game.totalTip = 1;
+      ui.startScreen.classList.remove('show');
+      nextRound();
+      showToast(mode === 'practice' ? '연습 모드입니다. 시간은 넉넉하지만 재료별 판정은 그대로예요.' : '첫 손님이 들어왔습니다. 주문에 맞춰 구워보세요.');
+    }
+
+    function nextRound(){
+      game.round++;
+      game.resultOpen = false;
+      game.finalShown = false;
+      game.order = generateOrder();
+      game.steak = newFood(game.order.protein);
+      game.heat = 3;
+      game.timeLimit = game.mode === 'practice' ? 999 : 80;
+      game.timeLeft = game.timeLimit;
+      game.resting = 0;
+      game.lastTickSecond = 99;
+      ui.resultScreen.classList.remove('show');
+      createFoodModel(game.order.protein);
+      resetFoodVisual();
+      updateOrderUI();
+      setCombo('READY','재료별 포인트 확인');
+      showToast(`${game.order.customer}: ${game.order.protein.short}, ${game.order.doneness.name}, ${game.order.crust.name}${game.order.wantsButter ? ', 버터 향 추가' : ''}!`);
+    }
+
+    function resetFoodVisual(){
+      const shape = currentFoodShape || getFoodShapeData(game.order?.protein || PROTEINS[0]);
+      currentFoodHeight = shape.height;
+      foodGroup.position.set(0,.37 + currentFoodHeight/2,0);
+      foodGroup.rotation.set(0, shape.yaw || 0, -.035);
+      if(butterMesh) butterMesh.material.opacity = 0;
+      if(saltSurfaceGroup) for(const s of saltSurfaceGroup.children) s.visible = false;
+      if(pepperSurfaceGroup) for(const p of pepperSurfaceGroup.children) p.visible = false;
+      for(const p of smokeParticles) p.visible = false;
+      for(const p of effectParticles) p.visible = false;
+      for(const b of bubbleParticles) b.visible = false;
+      saltShaker.visible = pepperMill.visible = false;
+      butterDrop.visible = false;
+      updateFoodVisual();
+    }
+
+    function updateOrderUI(){
+      const o = game.order;
+      ui.roundPill.textContent = game.mode === 'practice' ? `PRACTICE ${game.round}` : `ROUND ${game.round} / ${game.maxRounds}`;
+      ui.meatBadge.textContent = `${o.protein.icon} ${o.protein.name}`;
+      ui.orderName.textContent = `${o.doneness.name} · ${o.crust.name}`;
+      ui.orderText.textContent = `${o.customer}: ${o.doneness.desc} ${o.wantsButter ? '마지막에 버터 향도 살짝 부탁해요.' : '담백하게 부탁해요.'} ${o.protein.orderNote}`;
+      ui.proteinTip.textContent = o.protein.tip;
+      ui.specialLabel.textContent = o.protein.specialLabel;
+      ui.totalScore.textContent = Math.round(game.totalScore).toString();
+      ui.tipValue.textContent = `x${game.totalTip.toFixed(2)}`;
+    }
+
+    function getVisibleLocalSide(s){ return s.flipped ? 'localBottom' : 'localTop'; }
+    function getPanLocalSide(s){ return s.flipped ? 'localTop' : 'localBottom'; }
+    function getPanCookValue(s){ return s ? s[getPanLocalSide(s)] : 0; }
+    function getAvgSear(s){ return (s.localTop + s.localBottom) / 2; }
+
+    function getDonenessLabel(core, protein=game.order?.protein || PROTEINS[0]){
+      if(protein.key === 'beef'){
+        if(core < 42) return '생고기';
+        if(core < 46) return '블루 레어';
+        if(core <= 51) return '레어';
+        if(core <= 56) return '미디엄 레어';
+        if(core <= 63) return '미디엄';
+        if(core <= 69) return '미디엄 웰던';
+        if(core <= 76) return '웰던';
+        return '오버쿡';
+      }
+      if(protein.key === 'chicken'){
+        if(core < 60) return '덜 익음';
+        if(core < 72) return '조리 중';
+        if(core <= 81) return '안전하게 익음';
+        return '건조함';
+      }
+      if(protein.key === 'pork'){
+        if(core < 60) return '덜 익음';
+        if(core < 70) return '익는 중';
+        if(core <= 82) return '고소하게 익음';
+        return '바짝 익음';
+      }
+      if(core < 42) return '차가움';
+      if(core < 52) return '반투명';
+      if(core <= 62) return '촉촉하게 익음';
+      if(core <= 68) return '단단함';
+      return '오버쿡';
+    }
+
+    function getSpecialMetric(s=game.steak, protein=game.order?.protein || PROTEINS[0]){
+      if(!s) return {label:protein.specialLabel, value:0, target:100, text:'0%'};
+      if(protein.key === 'beef') return {label:'육즙', value:clamp(s.moisture + Math.min(s.rested,5)*1.5,0,100), target:85, text:`${Math.round(clamp(s.moisture,0,100))}%`};
+      if(protein.key === 'salmon') return {label:'껍질 바삭도', value:clamp(s.localBottom,0,100), target:70, text:`${Math.round(clamp(s.localBottom,0,100))}%`};
+      if(protein.key === 'chicken') return {label:'촉촉함', value:clamp(s.moisture,0,100), target:82, text:`${Math.round(clamp(s.moisture,0,100))}%`};
+      if(protein.key === 'pork') return {label:'지방 렌더링', value:clamp(s.fatRender,0,100), target:76, text:`${Math.round(clamp(s.fatRender,0,100))}%`};
+      return {label:'살결 보존', value:clamp(s.integrity,0,100), target:88, text:`${Math.round(clamp(s.integrity,0,100))}%`};
+    }
+
+    function updateCooking(dt){
+      if(!game.started || game.resultOpen || !game.steak) return;
+      const s = game.steak;
+      const protein = game.order.protein;
+      if(game.resting > 0){
+        game.resting -= dt;
+        s.rested += dt;
+        s.core += (protein.key === 'beef' ? .18 : .10) * dt;
+        s.localTop = Math.max(0, s.localTop - .22*dt);
+        s.localBottom = Math.max(0, s.localBottom - .22*dt);
+        s.moisture = clamp(s.moisture + .18*dt, 0, 100);
+        if(game.resting <= 0) showToast('레스팅 완료. 내부 온도가 안정됐습니다.');
+        return;
+      }
+      if(game.mode !== 'practice'){
+        game.timeLeft -= dt;
+        if(game.timeLeft <= 0){ game.timeLeft = 0; serveFood(true); return; }
+        if(game.timeLeft <= 10 && Math.ceil(game.timeLeft) !== game.lastTickSecond){
+          game.lastTickSecond = Math.ceil(game.timeLeft);
+          if(game.lastTickSecond <= 10 && game.lastTickSecond > 0) blip(180 + game.lastTickSecond*12, .04, .025, 'square');
+        }
+      }
+      if(s.flipping){
+        s.flipT += dt / .58;
+        const t = clamp(s.flipT,0,1);
+        const e = ease(t);
+        foodGroup.rotation.x = lerp(s.flipStart, s.flipTarget, e);
+        foodGroup.position.y = .52 + Math.sin(t*Math.PI) * .72;
+        foodGroup.rotation.z = -.08 + Math.sin(t*Math.PI) * .18;
+        if(t >= 1){
+          s.flipping = false;
+          s.flipped = !s.flipped;
+          foodGroup.rotation.x = s.flipTarget;
+          foodGroup.position.y = .52;
+          foodGroup.rotation.z = -.08;
+          blip(260,.08,.06);
+          emitFlash(.3);
+        }
+        return;
+      }
+
+      const panSide = getPanLocalSide(s);
+      const airSide = panSide === 'localTop' ? 'localBottom' : 'localTop';
+      const hot = game.heat;
+      const butterBoost = s.butter > 0 ? .18 : 0;
+      const flare = protein.key === 'pork' && hot >= 4.5 ? .18 : 0;
+      const surfaceRate = (0.24 + hot*1.16*protein.surfaceRate) * (1 + Math.max(0,hot-4)*.42 + butterBoost + flare);
+      s[panSide] = clamp(s[panSide] + surfaceRate*dt, 0, 112);
+      s[airSide] = clamp(s[airSide] + hot*protein.airRate*dt, 0, 112);
+
+      const avg = getAvgSear(s);
+      const heatCore = hot*protein.coreRate + avg*.012;
+      s.core += heatCore * dt;
+      if(hot <= .2) s.core -= .10*dt;
+      s.core = clamp(s.core, 8, 96);
+
+      const overTarget = Math.max(0, s.core - game.order.doneness.target);
+      const drynessRate = (hot*.04 + overTarget*.09 + Math.max(0, avg-70)*.045) * (protein.key === 'chicken' ? 1.35 : protein.key === 'whitefish' ? 1.25 : protein.key === 'salmon' ? 1.1 : .8);
+      s.moisture = clamp(s.moisture - drynessRate*dt, 0, 100);
+      if(protein.key === 'pork') s.fatRender = clamp(s.fatRender + (avg*.022 + hot*.72 + (hot>=4?1.1:0))*dt, 0, 112);
+      if(protein.key === 'whitefish'){
+        if(hot >= 4) s.integrity -= (hot-3.5)*4.2*dt;
+        if(s.flipCount > 2) s.integrity -= (s.flipCount-2)*2.8*dt;
+        s.integrity = clamp(s.integrity,0,100);
+      }
+      if(protein.key === 'salmon' && panSide === 'localBottom' && hot >= 3) emitTinySparks(dt*.6);
+      if(s.butter > 0){
+        s.butter = Math.max(0, s.butter - dt*.085);
+        emitButterBubbles(dt * (hot+1));
+      }
+
+      if(s[panSide] > 55 && hot > 2.2) spawnSmoke((s[panSide]-52)/60 * hot/5, dt);
+      if(s[panSide] > protein.burnPoint && hot >= 3.5) emitTinySparks(dt*.8);
+      updateSmartLog();
+    }
+
+    function updateSmartLog(){
+      const s = game.steak, o = game.order;
+      if(!s || !o) return;
+      const avg = getAvgSear(s);
+      const diff = Math.abs(s.localTop - s.localBottom);
+      const p = o.protein;
+      let log = '';
+      if(s.core < o.doneness.min - 8) log = `${p.short} 속이 아직 차갑습니다. 내부 온도를 더 올려야 해요.`;
+      else if(s.core > o.doneness.max + 4) log = `내부 온도가 주문보다 높습니다. ${p.key === 'chicken' ? '닭가슴살은 금방 퍽퍽해집니다.' : '바로 플레이팅하는 편이 좋아요.'}`;
+      else if(avg < o.crust.min - 6) log = '내부는 가까워졌지만 겉면 시어링이 부족합니다.';
+      else if(avg > o.crust.max + 8) log = '겉면이 많이 진해졌습니다. 태우기 전에 플레이팅하세요.';
+      else if(diff > 24 && p.key !== 'salmon') log = '양면 시어링 차이가 큽니다. 뒤집어서 균형을 맞추세요.';
+      else if(p.key === 'salmon' && s.localBottom < 58 && o.doneness.name.includes('껍질')) log = '연어 껍질면 바삭도가 아직 부족합니다. 껍질면을 팬에 더 대보세요.';
+      else if(p.key === 'pork' && s.fatRender < 55) log = '삼겹살 지방이 아직 덜 녹았습니다. 중강불로 조금 더 렌더링하세요.';
+      else if(p.key === 'whitefish' && s.integrity < 70) log = '흰살생선 살결이 무너지고 있습니다. 강불과 뒤집기를 줄이세요.';
+      else log = '주문 범위에 가까워지고 있습니다. 내부 온도와 시어링을 같이 보세요.';
+      if(log !== game.lastLog){ ui.cookLog.textContent = log; game.lastLog = log; }
+    }
+
+    function spawnSmoke(amount, dt){
+      const count = Math.floor(clamp(amount*dt*22,0,5));
+      for(let k=0;k<count;k++){
+        const p = smokeParticles.find(x=>!x.visible || x.userData.life<=0);
+        if(!p) return;
+        p.visible = true;
+        p.position.set(rand(-1.0,1.0), .55 + currentFoodHeight, rand(-.62,.62));
+        p.scale.setScalar(.7 + Math.random()*.8);
+        p.material.opacity = .17 + Math.random()*.18;
+        p.userData.life = .7 + Math.random()*.8;
+        p.userData.speed = .38 + Math.random()*.42;
+        p.userData.drift = rand(-.32,.32);
+      }
+    }
+
+    function emitSeasonParticles(type='salt'){
+      const isSalt = type === 'salt';
+      const total = isSalt ? 42 : 34;
+      for(let i=0;i<total;i++){
+        const p = effectParticles.find(x=>!x.visible || x.userData.life<=0);
+        if(!p) break;
+        p.visible = true;
+        p.position.set(rand(isSalt?-1.35:.35, isSalt?-.25:1.35), rand(1.75,2.45), rand(-.75,.75));
+        p.scale.setScalar(isSalt ? rand(.55,.95) : rand(.45,.75));
+        p.material.color.setHex(isSalt ? 0xffffff : 0x17100d);
+        p.material.opacity = isSalt ? .94 : .88;
+        p.userData.life = rand(.75,1.05);
+        p.userData.vx = rand(-.22,.22);
+        p.userData.vy = rand(-1.95,-1.28);
+        p.userData.vz = rand(-.16,.16);
+        p.userData.gravity = -1.4;
+        p.userData.type = type;
+      }
+    }
+
+    function emitButterBubbles(amount){
+      let count = Math.floor(clamp(amount,0,4));
+      if(count < 1 && Math.random() < clamp(amount,0,1)) count = 1;
+      for(let i=0;i<count;i++){
+        const b = bubbleParticles.find(x=>!x.visible || x.userData.life<=0);
+        if(!b) return;
+        b.visible = true;
+        const a = Math.random()*Math.PI*2, r = rand(.35,1.35);
+        b.position.set(Math.cos(a)*r,.42 + currentFoodHeight,Math.sin(a)*r*.6);
+        b.scale.setScalar(rand(.45,1.0));
+        b.material.opacity = .75;
+        b.userData.life = rand(.28,.58);
+        b.userData.vx = Math.cos(a)*rand(.08,.26);
+        b.userData.vy = rand(.18,.42);
+        b.userData.vz = Math.sin(a)*rand(.08,.26);
+      }
+    }
+
+    function emitTinySparks(amount){
+      let count = Math.floor(clamp(amount*6,0,3));
+      if(count < 1 && Math.random() < clamp(amount*6,0,.85)) count = 1;
+      for(let i=0;i<count;i++){
+        const p = effectParticles.find(x=>!x.visible || x.userData.life<=0);
+        if(!p) return;
+        p.visible = true;
+        p.position.set(rand(-1.0,1.0),.44 + currentFoodHeight,rand(-.5,.5));
+        p.scale.setScalar(rand(.55,.9));
+        p.material.color.setHex(0xffc267);
+        p.material.opacity = .9;
+        p.userData.life = rand(.25,.45);
+        p.userData.vx = rand(-.9,.9);
+        p.userData.vy = rand(.55,1.35);
+        p.userData.vz = rand(-.5,.5);
+        p.userData.gravity = -2.6;
+      }
+    }
+
+    function emitFlash(power=.55){
+      if(!flashRing) return;
+      flashRing.material.opacity = Math.max(flashRing.material.opacity, power);
+      flashRing.scale.setScalar(.8);
+    }
+
+    function updateParticles(dt){
+      for(const p of smokeParticles){
+        if(!p.visible) continue;
+        p.userData.life -= dt;
+        p.position.y += p.userData.speed * dt;
+        p.position.x += p.userData.drift * dt;
+        p.position.z += Math.sin(performance.now()*.001 + p.position.x)*.08*dt;
+        p.scale.multiplyScalar(1 + .38*dt);
+        p.material.opacity = Math.max(0, p.userData.life*.18);
+        if(p.userData.life <= 0) p.visible = false;
+      }
+      for(const p of effectParticles){
+        if(!p.visible) continue;
+        p.userData.life -= dt;
+        p.userData.vy += p.userData.gravity*dt;
+        p.position.x += p.userData.vx*dt;
+        p.position.y += p.userData.vy*dt;
+        p.position.z += p.userData.vz*dt;
+        p.rotation.x += dt*5;
+        p.rotation.y += dt*4;
+        p.material.opacity = Math.max(0, Math.min(1, p.userData.life*1.3));
+        const hitY = .42 + currentFoodHeight;
+        if(p.position.y <= hitY && (p.userData.type === 'salt' || p.userData.type === 'pepper')){
+          p.userData.life = 0;
+          p.visible = false;
+          const now = performance.now();
+          if(now - lastGrainFlash > 130){
+            lastGrainFlash = now;
+            emitFlash(.055);
+          }
+        }
+        if(p.userData.life <= 0) p.visible = false;
+      }
+      for(const b of bubbleParticles){
+        if(!b.visible) continue;
+        b.userData.life -= dt;
+        b.position.x += b.userData.vx*dt;
+        b.position.y += b.userData.vy*dt;
+        b.position.z += b.userData.vz*dt;
+        b.scale.multiplyScalar(1 + dt*1.2);
+        b.material.opacity = Math.max(0, b.userData.life*1.8);
+        if(b.userData.life <= 0) b.visible = false;
+      }
+      if(flashRing && flashRing.material.opacity > 0){
+        flashRing.material.opacity = Math.max(0, flashRing.material.opacity - dt*1.8);
+        flashRing.scale.multiplyScalar(1 + dt*2.4);
+      }
+      updateActionProps(dt);
+    }
+
+    function updateActionProps(dt){
+      const now = performance.now();
+      if(saltShaker.visible){
+        saltShaker.rotation.z = .25 + Math.sin(now*.025)*.18;
+        saltShaker.position.y = 2.5 + Math.sin(now*.02)*.04;
+      }
+      if(pepperMill.visible){
+        pepperMill.rotation.y += dt*8;
+        pepperMill.position.y = 2.5 + Math.sin(now*.023)*.04;
+      }
+      if(butterDrop.visible){
+        butterDrop.position.y -= dt*2.1;
+        butterDrop.rotation.x += dt*3;
+        butterDrop.material.opacity = Math.max(0, butterDrop.material.opacity - dt*.2);
+        if(butterDrop.position.y <= .9) butterDrop.visible = false;
+      }
+    }
+
+    function updateFoodVisual(){
+      const s = game.steak || newFood(PROTEINS[0]);
+      const p = game.order?.protein || PROTEINS[0];
+      foodMats[1].color.copy(cookColor(p,s.localTop));
+      foodMats[2].color.copy(cookColor(p,s.localBottom));
+      foodMats[0].color.copy(cookColor(p,getAvgSear(s)*.78));
+      const topO = clamp((s.localTop-20)/58,0,.75);
+      const botO = clamp((s.localBottom-20)/58,0,.75);
+      for(const l of topLines) l.material.opacity = topO;
+      for(const l of bottomLines) l.material.opacity = botO;
+      if(butterMesh){
+        butterMesh.material.opacity = s.butter > 0 ? clamp(.25 + s.butter*.5,0,1) : 0;
+        butterMesh.scale.set(1 + (1-s.butter)*.36, clamp(.55+s.butter*.5,.32,1.05), 1 + (1-s.butter)*.26);
+        butterMesh.position.y = (butterMesh.userData.baseY || topY(.16)) + Math.sin(performance.now()*.015)*.008;
+      }
+      if(saltSurfaceGroup){
+        const visibleSalt = Math.min(s.salt*9, saltSurfaceGroup.children.length);
+        saltSurfaceGroup.children.forEach((x,i)=> x.visible = i < visibleSalt);
+      }
+      if(pepperSurfaceGroup){
+        const visiblePepper = Math.min(s.pepper*9, pepperSurfaceGroup.children.length);
+        pepperSurfaceGroup.children.forEach((x,i)=> x.visible = i < visiblePepper);
+      }
+      heatGlow.material.opacity = .06 + (game.heat/5)*.25;
+      const porkPulse = p.key === 'pork' && game.heat>=4.5 ? .035 + .035*Math.sin(performance.now()*.012) : 0;
+      flameRing.material.opacity = clamp(.08 + (game.heat/5)*.5 + porkPulse, .05, .68);
+      flameRing.scale.setScalar(.84 + game.heat*.045 + Math.sin(performance.now()*.006)*.012);
+    }
+
+    function updateUI(){
+      const s = game.steak;
+      if(!s) return;
+      const p = game.order?.protein || PROTEINS[0];
+      const top = s.localTop, bottom = s.localBottom;
+      const visibleSide = getVisibleLocalSide(s) === 'localTop' ? '윗면' : '아랫면';
+      const panSide = getPanLocalSide(s) === 'localTop' ? '윗면' : '아랫면';
+      const spec = getSpecialMetric(s,p);
+      ui.timeValue.textContent = game.mode === 'practice' ? '∞' : game.timeLeft.toFixed(1);
+      ui.heatReadout.textContent = game.heat.toFixed(game.heat % 1 === 0 ? 0 : 1);
+      ui.heatFill.style.width = `${game.heat/5*100}%`;
+      ui.coreText.textContent = `${Math.round(s.core)}℃`;
+      ui.coreFill.style.width = `${clamp((s.core-10)/78*100,0,100)}%`;
+      ui.topText.textContent = `${Math.round(top)}%`;
+      ui.bottomText.textContent = `${Math.round(bottom)}%`;
+      ui.topFill.style.width = `${clamp(top,0,100)}%`;
+      ui.bottomFill.style.width = `${clamp(bottom,0,100)}%`;
+      ui.specialLabel.textContent = spec.label;
+      ui.specialText.textContent = spec.text;
+      ui.specialFill.style.width = `${clamp(spec.value,0,100)}%`;
+      ui.doneLabel.textContent = getDonenessLabel(s.core,p);
+      ui.panSide.textContent = game.resting > 0 ? `레스팅 ${Math.ceil(game.resting)}초` : `${panSide} 조리 중 · 보이는 면 ${visibleSide}`;
+      ui.totalScore.textContent = Math.round(game.totalScore).toString();
+      ui.tipValue.textContent = `x${game.totalTip.toFixed(2)}`;
+      ui.saltChip.textContent = `소금 ${s.salt}`; ui.saltChip.classList.toggle('on', s.salt>0);
+      ui.pepperChip.textContent = `후추 ${s.pepper}`; ui.pepperChip.classList.toggle('on', s.pepper>0);
+      ui.butterChip.textContent = s.butterUsed ? '버터 ON' : '버터 OFF'; ui.butterChip.classList.toggle('on', s.butterUsed);
+      ui.restChip.textContent = `레스팅 ${Math.round(s.rested)}초`; ui.restChip.classList.toggle('on', s.rested>0);
+      const disabled = game.resultOpen || !game.started;
+      ui.flipBtn.disabled = disabled || s.flipping || game.resting>0;
+      ui.saltBtn.disabled = disabled || s.salt>=5 || game.resting>0;
+      ui.pepperBtn.disabled = disabled || s.pepper>=5 || game.resting>0;
+      ui.butterBtn.disabled = disabled || s.butter>0 || game.resting>0;
+      ui.restBtn.disabled = disabled || game.resting>0 || s.rested>=5;
+      ui.serveBtn.disabled = disabled || s.flipping;
+    }
+
+    let toastTimer=0;
+    function showToast(text){
+      ui.toast.textContent = text;
+      ui.toast.classList.add('show');
+      toastTimer = 2.7;
+    }
+    function updateToast(dt){
+      if(toastTimer>0){
+        toastTimer-=dt;
+        if(toastTimer<=0) ui.toast.classList.remove('show');
+      }
+      if(game.comboTimer>0){
+        game.comboTimer -= dt;
+        if(game.comboTimer <= 0){ ui.comboBig.textContent = 'COOK'; ui.comboSmall.textContent = '온도와 시어링을 보세요'; }
+      }
+    }
+    function setCombo(big, small){
+      ui.comboBig.textContent = big;
+      ui.comboSmall.textContent = small;
+      game.comboTimer = 2.2;
+    }
+    function popText(text, cls=''){
+      const el = document.createElement('div');
+      el.className = `popText ${cls}`;
+      el.textContent = text;
+      el.style.left = `${50 + rand(-10,10)}%`;
+      el.style.top = `${48 + rand(-5,5)}%`;
+      ui.floatLayer.appendChild(el);
+      setTimeout(()=>el.remove(), 1100);
+    }
+
+    function changeHeat(delta){
+      if(!game.started || game.resultOpen) return;
+      game.heat = clamp(Math.round((game.heat + delta)*2)/2, 0, 5);
+      blip(300+game.heat*70,.055,.045);
+      popText(`불 ${game.heat}`, 'small');
+      if(game.heat >= 4.5) showToast('강불입니다. 겉면이 빠르게 타고 기름이 튈 수 있습니다.');
+      else if(game.heat <= 1) showToast('약불입니다. 내부 온도를 천천히 올릴 수 있어요.');
+    }
+
+    function flipFood(){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      const p = game.order.protein;
+      if(s.flipping || game.resting>0) return;
+      s.flipping = true;
+      s.flipT = 0;
+      s.flipStart = foodGroup.rotation.x;
+      s.flipTarget = s.flipStart + Math.PI;
+      s.actionCount++;
+      s.flipCount++;
+      if(p.key === 'whitefish' && s.flipCount > 2) s.integrity = clamp(s.integrity - 10, 0, 100);
+      blip(520,.08,.06);
+      noiseBurst(.06,.035,900);
+      popText('FLIP!');
+      setCombo('FLIP','양면 균형이 중요합니다');
+    }
+
+    function saltFood(){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      if(s.salt >= 5 || game.resting>0) return;
+      s.salt++;
+      s.actionCount++;
+      sfxSalt();
+      emitSeasonParticles('salt');
+      saltShaker.visible = true;
+      setTimeout(()=>{ saltShaker.visible = false; }, 850);
+      showToast(`소금을 ${s.salt}회 뿌렸습니다. 목표보다 많으면 짜서 감점됩니다.`);
+      popText('SALT', 'small');
+      setCombo('SALT','간 맞추기');
+    }
+
+    function pepperFood(){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      if(s.pepper >= 5 || game.resting>0) return;
+      s.pepper++;
+      s.actionCount++;
+      sfxPepper();
+      emitSeasonParticles('pepper');
+      pepperMill.visible = true;
+      setTimeout(()=>{ pepperMill.visible = false; }, 900);
+      showToast(`후추를 ${s.pepper}회 갈았습니다. 재료에 따라 선호량이 달라요.`);
+      popText('PEPPER', 'small');
+      setCombo('PEPPER','향 추가');
+    }
+
+    function butterFood(){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      if(s.butter > 0 || game.resting>0) return;
+      s.butter = 1;
+      s.butterUsed = true;
+      s.actionCount++;
+      sfxButter();
+      butterDrop.visible = true;
+      butterDrop.position.set(.18,1.85,.0);
+      butterDrop.material.opacity = 1;
+      emitButterBubbles(18);
+      emitFlash(.55);
+      showToast('버터를 올렸습니다. 향은 좋아지지만 높은 불에서는 빨리 탑니다.');
+      popText('BUTTER!', 'warn');
+      setCombo('BUTTER','고소한 향 추가');
+    }
+
+    function restFood(){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      if(game.resting>0 || s.rested>=5) return;
+      game.resting = 5;
+      s.actionCount++;
+      blip(420,.08,.045);
+      noiseBurst(.08,.025,1200);
+      showToast('5초 레스팅합니다. 내부 온도가 살짝 오르고 육즙이 안정됩니다.');
+      popText('REST', 'small');
+      setCombo('REST','육즙 안정');
+    }
+
+    function serveFood(timeout=false){
+      if(!game.started || game.resultOpen) return;
+      const s = game.steak;
+      if(s.flipping) return;
+      game.resultOpen = true;
+      const result = evaluateFood(timeout);
+      game.totalScore += result.score;
+      game.totalTip = clamp(game.totalTip + (result.score>=86 ? .12 : result.score>=70 ? .04 : -.05), .75, 1.6);
+      ui.resultTitle.textContent = timeout ? '시간 초과!' : '플레이팅 완료!';
+      ui.rankText.textContent = result.rank;
+      ui.resultComment.textContent = result.comment;
+      ui.scoreValue.textContent = `${Math.round(result.score)}점`;
+      ui.tempResult.textContent = `${Math.round(s.core)}℃ · ${getDonenessLabel(s.core,game.order.protein)}`;
+      ui.searResult.textContent = `평균 ${Math.round(getAvgSear(s))}% / 차이 ${Math.round(Math.abs(s.localTop-s.localBottom))}%`;
+      ui.tasteResult.textContent = `${Math.round(result.taste)}점 · 소금 ${s.salt}/${game.order.saltTarget}, 후추 ${s.pepper}/${game.order.pepperTarget}`;
+      ui.specialResult.textContent = `${Math.round(result.specialScore)}점 · ${result.specialMemo}`;
+      ui.memoResult.textContent = result.memo;
+      ui.nextBtn.textContent = game.mode !== 'practice' && game.round >= game.maxRounds ? '최종 결과' : '다음 손님';
+      ui.resultScreen.classList.add('show');
+      sfxServe(result.score);
+    }
+
+    function evaluateFood(timeout=false){
+      const s = game.steak, o = game.order, p = o.protein;
+      const coreDist = Math.abs(s.core - o.doneness.target);
+      let coreScore = clamp(44 - coreDist*4.9, 0, 44);
+      if(s.core > o.doneness.max + 8) coreScore *= .55;
+      if((p.key === 'chicken' || p.key === 'pork') && s.core < o.doneness.min) coreScore *= .35;
+      const avg = getAvgSear(s);
+      const crustDist = Math.abs(avg - o.crust.target);
+      let crustScore = clamp(20 - crustDist*.78, 0, 20);
+      const evenDiff = Math.abs(s.localTop - s.localBottom);
+      let evenScore = p.key === 'salmon' ? clamp(9 - Math.abs(s.localTop-s.localBottom)*.22, 0, 9) : clamp(10 - evenDiff*.4, 0, 10);
+      const burn = Math.max(0, Math.max(s.localTop,s.localBottom)-p.burnPoint);
+      let burnPenalty = burn*1.35 + (s.core>o.doneness.max+8 ? (s.core-o.doneness.max-8)*1.1 : 0);
+      if(p.key === 'whitefish' && s.integrity < 70) burnPenalty += (70-s.integrity)*.22;
+      const saltScore = clamp(6 - Math.abs(s.salt - o.saltTarget)*2.4, 0, 6);
+      const pepperScore = clamp(5 - Math.abs(s.pepper - o.pepperTarget)*2.1, 0, 5);
+      const butterScore = o.wantsButter ? (s.butterUsed ? 5 : 0) : (s.butterUsed ? (p.key === 'pork' ? 0 : 1.5) : 4);
+      const restScore = s.rested>0 ? (p.key === 'beef' || p.key === 'chicken' ? 2.5 : 1.2) : 0;
+      const taste = saltScore + pepperScore + butterScore + restScore;
+      const special = calcSpecialScore(s,o);
+      let score = coreScore + crustScore + evenScore + taste + special.score - burnPenalty;
+      if(timeout) score -= 18;
+      score = clamp(score * game.totalTip, 0, 100);
+      let rank='D', comment='조금 아쉬워요. 내부 온도와 재료별 특수 판정을 같이 보면서 다시 도전해보세요.';
+      if(score >= 92){ rank='S'; comment='완벽합니다. 주문한 굽기, 시어링, 양념, 재료 특성까지 모두 살아있어요.'; }
+      else if(score >= 82){ rank='A'; comment='훌륭한 요리입니다. 손님이 팁을 두고 갔습니다.'; }
+      else if(score >= 68){ rank='B'; comment='충분히 맛있지만, 온도나 재료별 포인트에서 조금 더 맞출 수 있어요.'; }
+      else if(score >= 50){ rank='C'; comment='먹을 수는 있지만 주문과 차이가 납니다. 불 세기 조절이 중요합니다.'; }
+      if(Math.max(s.localTop,s.localBottom)>98 || s.core>92){ rank = score>50 ? 'C' : 'D'; comment='탄맛이 강합니다. 강불은 마지막에만 짧게 쓰는 편이 좋아요.'; }
+      if((p.key === 'chicken' || p.key === 'pork') && s.core < o.doneness.min){ rank = 'D'; comment='안전 온도에 도달하지 못했습니다. 닭가슴살과 삼겹살은 속까지 충분히 익혀야 합니다.'; }
+      const memo = makeResultMemo(s,o,special);
+      return {score, rank, comment, taste, specialScore:special.score, specialMemo:special.memo, memo};
+    }
+
+    function calcSpecialScore(s,o){
+      const p = o.protein;
+      if(p.key === 'beef'){
+        const v = clamp(s.moisture + Math.min(s.rested,5)*1.5,0,100);
+        return {score:clamp(10 - Math.abs(v-86)*.14,0,10), memo:`육즙 ${Math.round(v)}%`};
+      }
+      if(p.key === 'salmon'){
+        const skin = clamp(s.localBottom,0,100);
+        const skinScore = o.doneness.name.includes('껍질') ? clamp(10 - Math.abs(skin-72)*.22,0,10) : clamp(8 - Math.max(0,skin-76)*.18,0,8);
+        const moistPenalty = Math.max(0,68-s.moisture)*.08;
+        return {score:clamp(skinScore - moistPenalty,0,10), memo:`껍질 ${Math.round(skin)}%, 촉촉함 ${Math.round(s.moisture)}%`};
+      }
+      if(p.key === 'chicken'){
+        const safe = s.core >= o.doneness.min ? 3 : -7;
+        const moist = clamp(7 - Math.max(0,82-s.moisture)*.15,0,7);
+        return {score:clamp(safe+moist,0,10), memo:`촉촉함 ${Math.round(s.moisture)}%`};
+      }
+      if(p.key === 'pork'){
+        const fat = clamp(s.fatRender,0,100);
+        const crisp = clamp(getAvgSear(s),0,100);
+        return {score:clamp(6 - Math.abs(fat-76)*.12,0,6) + clamp(4 - Math.abs(crisp-72)*.1,0,4), memo:`지방 ${Math.round(fat)}%, 바삭함 ${Math.round(crisp)}%`};
+      }
+      const intact = clamp(s.integrity,0,100);
+      const gentle = s.flipCount <= 2 ? 2 : 0;
+      return {score:clamp(8 - Math.max(0,86-intact)*.16,0,8) + gentle, memo:`살결 ${Math.round(intact)}%, 뒤집기 ${s.flipCount}회`};
+    }
+
+    function makeResultMemo(s,o,special){
+      const p = o.protein;
+      if(Math.abs(s.core-o.doneness.target) <= 2 && Math.abs(getAvgSear(s)-o.crust.target) <= 6) return '주문 타이밍이 아주 좋았습니다.';
+      if(s.core < o.doneness.min) return '속 온도를 조금 더 올리면 점수가 크게 좋아집니다.';
+      if(s.core > o.doneness.max) return '다음에는 조금 더 빨리 플레이팅해보세요.';
+      if(p.key === 'whitefish' && s.flipCount > 2) return '흰살생선은 뒤집는 횟수를 줄이면 살결 점수가 오릅니다.';
+      if(p.key === 'pork' && s.fatRender < 60) return '삼겹살은 지방 렌더링을 더 올려보세요.';
+      return special.memo;
+    }
+
+    function handleNext(){
+      if(game.finalShown){ startGame('normal'); return; }
+      if(game.mode !== 'practice' && game.round >= game.maxRounds){
+        const final = Math.round(game.totalScore);
+        ui.resultTitle.textContent = '영업 종료!';
+        ui.rankText.textContent = final>=430 ? 'S' : final>=360 ? 'A' : final>=280 ? 'B' : final>=200 ? 'C' : 'D';
+        ui.resultComment.textContent = `총점 ${final}점입니다. 소고기부터 생선까지 오늘의 그릴 코스를 마쳤습니다.`;
+        ui.scoreValue.textContent = `${final}점`;
+        ui.tempResult.textContent = '5라운드 완료';
+        ui.searResult.textContent = `최종 팁 배율 x${game.totalTip.toFixed(2)}`;
+        ui.tasteResult.textContent = '재도전 가능';
+        ui.specialResult.textContent = 'DX 코스 완료';
+        ui.memoResult.textContent = '새 게임을 누르면 새로운 주문 조합이 나옵니다.';
+        ui.nextBtn.textContent = '새 게임';
+        game.finalShown = true;
+      }else{
+        nextRound();
+      }
+    }
+
+    function animate(){
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), .05);
+      updateCooking(dt);
+      updateParticles(dt);
+      updateFoodVisual();
+      updateUI();
+      updateToast(dt);
+      updateAudio();
+      if(tableGroup) tableGroup.rotation.y = Math.sin(performance.now()*.00025)*.015;
+      camera.position.x = Math.sin(performance.now()*.00018)*.22;
+      camera.lookAt(0,.25,0);
+      renderer.render(scene,camera);
+    }
+
+    ui.startBtn.addEventListener('click',()=>startGame('normal'));
+    ui.practiceBtn.addEventListener('click',()=>startGame('practice'));
+    ui.heatUp.addEventListener('click',()=>changeHeat(.5));
+    ui.heatDown.addEventListener('click',()=>changeHeat(-.5));
+    ui.flipBtn.addEventListener('click',flipFood);
+    ui.saltBtn.addEventListener('click',saltFood);
+    ui.pepperBtn.addEventListener('click',pepperFood);
+    ui.butterBtn.addEventListener('click',butterFood);
+    ui.restBtn.addEventListener('click',restFood);
+    ui.serveBtn.addEventListener('click',()=>serveFood(false));
+    ui.nextBtn.addEventListener('click',handleNext);
+    ui.retryBtn.addEventListener('click',()=>startGame('normal'));
+    window.addEventListener('keydown',(e)=>{
+      if(e.repeat) return;
+      if(e.key === 'ArrowUp') changeHeat(.5);
+      if(e.key === 'ArrowDown') changeHeat(-.5);
+      if(e.key.toLowerCase() === 'f') flipFood();
+      if(e.key.toLowerCase() === 's') saltFood();
+      if(e.key.toLowerCase() === 'p') pepperFood();
+      if(e.key.toLowerCase() === 'b') butterFood();
+      if(e.key.toLowerCase() === 'r') restFood();
+      if(e.key === 'Enter') serveFood(false);
+      if(e.code === 'Space') { e.preventDefault(); flipFood(); }
+    });
+
+    initThree();
+    game.order = {protein:PROTEINS[0], doneness:DONENESS_BEEF[1], crust:CRUSTS[1], wantsButter:false, saltTarget:2, pepperTarget:1, customer:'연습 손님'};
+    game.steak = newFood(PROTEINS[0]);
+    updateOrderUI();
+    updateFoodVisual();
+    animate();
+  </script>
+</body>
+</html>
