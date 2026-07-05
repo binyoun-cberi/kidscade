@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>아이스크림 나눗셈 카운터</title>
+  <style>
+    :root{
+      --bg:#f7dfb9;
+      --ink:#18333c;
+      --panel:#173f4a;
+      --panel2:#0f2c34;
+      --cream:#fff3d4;
+      --mint:#78d5bc;
+      --pink:#ff8fab;
+      --gold:#ffc857;
+      --red:#e75d58;
+      --wood:#965b32;
+      --wood2:#6d3c22;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;margin:0;overflow:hidden;background:linear-gradient(#f5ca94,#f7dfb9 45%,#d8955b);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--cream);}
+    body{display:flex;align-items:center;justify-content:center;}
+    #shell{width:min(100vw,1120px);height:min(100vh,820px);padding:10px;display:flex;flex-direction:column;gap:8px;position:relative;}
+    #gameFrame{position:relative;flex:1;min-height:0;border:4px solid #102a32;background:#102a32;border-radius:18px;box-shadow:0 18px 0 rgba(0,0,0,.16),0 26px 48px rgba(37,17,7,.36);overflow:hidden;}
+    canvas{width:100%;height:100%;display:block;background:#f7dfb9;touch-action:none;}
+    #controls{height:108px;background:linear-gradient(#244d57,#12323a);border:4px solid #0b2228;border-radius:18px;box-shadow:inset 0 4px 0 rgba(255,255,255,.12),0 8px 0 rgba(0,0,0,.2);padding:8px;display:grid;grid-template-columns:1fr 1fr .95fr .95fr 1.2fr 1fr 1.1fr;gap:8px;}
+    button{border:0;border-radius:14px;background:#f8d476;color:#17333b;font-weight:900;font-size:clamp(14px,2.5vw,22px);box-shadow:inset 0 3px 0 rgba(255,255,255,.42),0 6px 0 #9b6a23;cursor:pointer;letter-spacing:-.02em;}
+    button:active{transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.28),0 2px 0 #9b6a23;}
+    .navBtn{background:#8fe0ca;box-shadow:inset 0 3px 0 rgba(255,255,255,.42),0 6px 0 #357c70;}
+    .sendBtn{background:#ff9ab3;box-shadow:inset 0 3px 0 rgba(255,255,255,.42),0 6px 0 #a93c58;}
+    .clearBtn{background:#f2f0da;box-shadow:inset 0 3px 0 rgba(255,255,255,.7),0 6px 0 #8c866a;}
+    #freezerBtn{display:none;background:#a8d8ff;box-shadow:inset 0 3px 0 rgba(255,255,255,.48),0 6px 0 #3b6f9e;}
+    #overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,43,51,.96),rgba(19,54,62,.92));display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:10;}
+    .menuBox{width:min(780px,94vw);border:4px solid #ffe8ad;border-radius:22px;background:#173f4a;box-shadow:0 14px 0 rgba(0,0,0,.18),inset 0 5px 0 rgba(255,255,255,.1);padding:26px;}
+    .menuBox h1{margin:0 0 6px;font-size:clamp(28px,6vw,58px);letter-spacing:-.06em;color:#ffe8ad;text-shadow:0 5px 0 rgba(0,0,0,.28);}
+    .menuBox p{margin:8px auto 22px;color:#dff6ef;font-weight:700;font-size:clamp(15px,2vw,20px);line-height:1.45;max-width:620px;}
+    .modeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    .mode{min-height:116px;background:#f6d072;color:#15343d;border-radius:18px;border:3px solid #ffeab0;box-shadow:0 7px 0 #8e6021;padding:12px;font-weight:900;font-size:clamp(18px,2.8vw,28px);}
+    .mode small{display:block;margin-top:8px;font-size:clamp(12px,1.8vw,15px);font-weight:800;color:#31535c;line-height:1.3;}
+    .subLine{font-size:13px;color:#bfece0;margin-top:16px;font-weight:800;}
+    #pauseBtn{position:absolute;top:18px;right:18px;z-index:5;width:42px;height:42px;border-radius:12px;background:#ffe8ad;font-size:18px;line-height:1;display:none;}
+    @media (max-width:720px){
+      #shell{padding:6px;gap:6px;}
+      #controls{height:132px;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:7px;border-radius:14px;padding:7px;}
+      #controls.rem{height:164px;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);}
+      .modeGrid{grid-template-columns:1fr;}
+      .menuBox{padding:20px 14px;}
+      #gameFrame{border-radius:14px;}
+    }
+  </style>
+</head>
+<body>
+  <div id="shell">
+    <div id="gameFrame">
+      <canvas id="game" aria-label="아이스크림 나눗셈 게임"></canvas>
+      <button id="pauseBtn" aria-label="일시정지">Ⅱ</button>
+      <div id="overlay">
+        <div class="menuBox">
+          <h1>아이스크림 나눗셈 가게</h1>
+          <p>태퍼처럼 줄을 골라 아이스크림을 밀어 보내요. 손님 줄마다 같은 수를 보내면 나눗셈 성공!</p>
+          <div class="modeGrid">
+            <button class="mode" data-mode="classic">기본<small>90초 안에<br>공평하게 나누기</small></button>
+            <button class="mode" data-mode="rush">빠른 서빙<small>75초 동안<br>연속으로 도전</small></button>
+            <button class="mode" data-mode="remainder">나머지<small>100초 안에<br>남은 것은 냉동고로</small></button>
+          </div>
+          <div class="subLine">키보드: ↑↓ 줄 선택 · + - 담기 · 스페이스 보내기 · F 냉동고</div>
+        </div>
+      </div>
+    </div>
+    <div id="controls">
+      <button class="navBtn" id="upBtn">위 줄</button>
+      <button class="navBtn" id="downBtn">아래 줄</button>
+      <button id="minusBtn">- 1</button>
+      <button id="plusBtn">+ 1</button>
+      <button class="sendBtn" id="sendBtn">보내기</button>
+      <button class="clearBtn" id="clearBtn">비우기</button>
+      <button id="freezerBtn">냉동고</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const menuHtml = overlay.innerHTML;
+  const pauseBtn = document.getElementById('pauseBtn');
+  const freezerBtn = document.getElementById('freezerBtn');
+  const controls = document.getElementById('controls');
+  const W = 1000;
+  const H = 650;
+  const laneTop = 162;
+  const laneGap = 91;
+  const playerX = 118;
+  const counterLeft = 166;
+  const counterRight = 850;
+
+  let dpr = 1;
+  let last = performance.now();
+  let audioCtx = null;
+  let paused = false;
+
+  const colors = {
+    ink:'#17313a', hud:'#12333b', hud2:'#0c2229', cream:'#fff0c6', mint:'#7cd8be', mintDark:'#368274', pink:'#ff8dab', pinkDark:'#b34563', gold:'#ffc857', wood:'#92552f', woodDark:'#64351f', red:'#e85c57', blue:'#8dd4ff', floor:'#cf844c', wall:'#f8d9a9', shadow:'rgba(20,20,20,.18)'
+  };
+
+  const state = {
+    screen:'menu',
+    mode:'classic',
+    score:0,
+    round:1,
+    lives:3,
+    combo:0,
+    time:90,
+    timeLimit:90,
+    total:12,
+    divisor:3,
+    target:4,
+    remainder:0,
+    lanes:[],
+    selected:0,
+    scoops:1,
+    deliveries:[],
+    particles:[],
+    floating:[],
+    banner:'',
+    bannerTimer:0,
+    freezerDone:false,
+    freezerFeedback:'',
+    freezerFlash:0,
+    gameOverReason:''
+  };
+
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function getModeTime(mode){
+    if(mode === 'rush') return 75;
+    if(mode === 'remainder') return 100;
+    return 90;
+  }
+  function getModeName(mode){
+    if(mode === 'rush') return '빠른 서빙';
+    if(mode === 'remainder') return '나머지';
+    return '기본';
+  }
+  function laneY(i){ return laneTop + i * laneGap; }
+
+  function ensureAudio(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function beep(freq=440, dur=.08, type='square', gain=.055){
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t+.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t+dur+.02);
+  }
+  function sound(name){
+    if(!audioCtx) return;
+    if(name==='scoop'){ beep(660,.045,'triangle',.045); beep(990,.035,'triangle',.025); }
+    if(name==='send'){ beep(250,.05,'sawtooth',.035); setTimeout(()=>beep(420,.07,'sawtooth',.035),45); }
+    if(name==='good'){ [523,659,784].forEach((n,i)=>setTimeout(()=>beep(n,.09,'square',.05),i*65)); }
+    if(name==='bad'){ beep(160,.14,'sawtooth',.055); setTimeout(()=>beep(115,.12,'sawtooth',.04),90); }
+    if(name==='clear'){ [392,523,659,784,1046].forEach((n,i)=>setTimeout(()=>beep(n,.08,'triangle',.045),i*55)); }
+    if(name==='select'){ beep(420,.035,'square',.028); }
+  }
+
+  function startGame(mode){
+    ensureAudio();
+    state.screen = 'play';
+    state.mode = mode;
+    state.score = 0;
+    state.round = 1;
+    state.lives = mode === 'rush' ? 4 : 3;
+    state.combo = 0;
+    state.timeLimit = getModeTime(mode);
+    state.time = state.timeLimit;
+    state.scoops = 1;
+    state.selected = 0;
+    state.deliveries = [];
+    state.particles = [];
+    state.floating = [];
+    state.banner = '';
+    state.bannerTimer = 0;
+    state.gameOverReason = '';
+    freezerBtn.style.display = mode === 'remainder' ? 'block' : 'none';
+    controls.classList.toggle('rem', mode === 'remainder');
+    overlay.style.display = 'none';
+    pauseBtn.style.display = 'block';
+    paused = false;
+    nextRound(true);
+    sound('clear');
+  }
+
+  function menu(){
+    state.screen = 'menu';
+    overlay.innerHTML = menuHtml;
+    bindModeButtons();
+    overlay.style.display = 'flex';
+    pauseBtn.style.display = 'none';
+    freezerBtn.style.display = 'none';
+    controls.classList.remove('rem');
+    paused = false;
+  }
+
+  function nextRound(first=false){
+    state.deliveries = [];
+    state.particles = [];
+    state.floating = [];
+    state.freezerDone = false;
+    state.freezerFeedback = '';
+    state.freezerFlash = 0;
+
+    const level = first ? 1 : state.round;
+    let divisorMax = level < 4 ? 3 : level < 8 ? 4 : 5;
+    let qMax = level < 3 ? 4 : level < 7 ? 6 : 8;
+    state.divisor = randInt(2, divisorMax);
+    state.target = randInt(2, qMax);
+    state.remainder = 0;
+    if(state.mode === 'remainder'){
+      state.divisor = randInt(2, divisorMax);
+      state.target = randInt(2, Math.max(4, qMax-1));
+      state.remainder = randInt(1, state.divisor-1);
+    }
+    if(state.mode === 'rush'){
+      state.divisor = randInt(2, Math.min(5, 3 + Math.floor(level/4)));
+      state.target = randInt(2, Math.min(9, 4 + Math.floor(level/3)));
+    }
+    state.total = state.divisor * state.target + state.remainder;
+    state.selected = Math.min(state.selected, state.divisor-1);
+    state.scoops = 1;
+    state.lanes = Array.from({length:state.divisor}, (_,i)=>({
+      served:false,
+      received:0,
+      feedback:'',
+      feedbackTimer:0,
+      flash:0,
+      shake:0,
+      kind:i%6
+    }));
+    state.banner = `${state.round}라운드`;
+    state.bannerTimer = 1.0;
+  }
+
+  function addFloat(text,x,y,color=colors.cream){
+    state.floating.push({text,x,y,vy:-34,life:1.0,color});
+  }
+  function burst(x,y,color){
+    for(let i=0;i<20;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = randInt(40,150);
+      state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,r:randInt(2,5),life:.65,color});
+    }
+  }
+
+  function changeLane(delta){
+    if(state.screen !== 'play' || paused) return;
+    state.selected = clamp(state.selected + delta, 0, state.divisor-1);
+    sound('select');
+  }
+  function changeScoops(delta){
+    if(state.screen !== 'play' || paused) return;
+    state.scoops = clamp(state.scoops + delta, 0, 12);
+    sound('scoop');
+  }
+  function clearScoops(){
+    if(state.screen !== 'play' || paused) return;
+    state.scoops = 0;
+    sound('select');
+  }
+  function send(){
+    if(state.screen !== 'play' || paused) return;
+    if(state.scoops <= 0) { addFloat('담아야 해요', 170, laneY(state.selected)-35, colors.gold); sound('bad'); return; }
+    const lane = state.lanes[state.selected];
+    if(lane.served) { addFloat('이미 성공', 735, laneY(state.selected)-38, colors.mint); sound('bad'); return; }
+    const y = laneY(state.selected);
+    state.deliveries.push({type:'lane', lane:state.selected, amount:state.scoops, x:counterLeft+10, y:y-8, tx:counterRight-62, life:0, speed:520});
+    state.scoops = 1;
+    sound('send');
+  }
+  function sendFreezer(){
+    if(state.screen !== 'play' || paused || state.mode !== 'remainder') return;
+    if(state.freezerDone){ addFloat('이미 보관', 118, 565, colors.blue); sound('bad'); return; }
+    if(state.scoops <= 0) { addFloat('남은 개수?', 116, 565, colors.gold); sound('bad'); return; }
+    state.deliveries.push({type:'freezer', lane:0, amount:state.scoops, x:counterLeft+10, y:laneY(state.divisor-1)+42, tx:105, ty:573, life:0, speed:490});
+    state.scoops = 1;
+    sound('send');
+  }
+
+  function evaluateDelivery(d){
+    if(d.type === 'freezer'){
+      if(d.amount === state.remainder){
+        state.freezerDone = true;
+        state.freezerFeedback = '보관 성공';
+        state.freezerFlash = .7;
+        state.score += 80 + state.combo*10;
+        addFloat(`+${80+state.combo*10}`, 118, 520, colors.gold);
+        burst(104, 566, colors.blue);
+        sound('good');
+      }else{
+        state.freezerFeedback = d.amount > state.remainder ? '많아요' : '부족';
+        state.freezerFlash = .7;
+        mistake();
+      }
+      checkRoundClear();
+      return;
+    }
+
+    const lane = state.lanes[d.lane];
+    lane.received = d.amount;
+    lane.feedbackTimer = .85;
+    lane.flash = .65;
+    if(d.amount === state.target){
+      lane.served = true;
+      lane.feedback = '성공';
+      const gain = 100 + state.combo * 20;
+      state.score += gain;
+      state.combo += 1;
+      addFloat(`+${gain}`, d.tx+28, d.y-25, colors.gold);
+      burst(d.tx+42, d.y-6, colors.mint);
+      sound('good');
+    }else{
+      lane.feedback = d.amount > state.target ? '많아요' : '부족';
+      lane.shake = .4;
+      mistake();
+    }
+    checkRoundClear();
+  }
+
+  function mistake(){
+    state.combo = 0;
+    state.lives -= 1;
+    sound('bad');
+    if(state.lives <= 0){
+      state.gameOverReason = '기회가 모두 사라졌어요';
+      setTimeout(gameOver, 450);
+    }
+  }
+
+  function checkRoundClear(){
+    if(state.screen !== 'play') return;
+    const lanesOk = state.lanes.every(l => l.served);
+    const remOk = state.mode !== 'remainder' || state.freezerDone;
+    if(lanesOk && remOk){
+      const equation = state.mode === 'remainder'
+        ? `${state.total} ÷ ${state.divisor} = ${state.target} 나머지 ${state.remainder}`
+        : `${state.total} ÷ ${state.divisor} = ${state.target}`;
+      state.banner = equation;
+      state.bannerTimer = 1.45;
+      state.score += 250;
+      sound('clear');
+      setTimeout(()=>{
+        if(state.screen === 'play'){
+          state.round += 1;
+          nextRound();
+        }
+      }, 1450);
+    }
+  }
+
+  function gameOver(){
+    if(state.screen !== 'play') return;
+    state.screen = 'gameover';
+    pauseBtn.style.display = 'none';
+    freezerBtn.style.display = 'none';
+    controls.classList.remove('rem');
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+      <div class="menuBox">
+        <h1>게임 종료</h1>
+        <p>${state.gameOverReason || '시간이 끝났어요'}<br>점수 ${state.score}점 · ${state.round}라운드까지 도전했어요.</p>
+        <div class="modeGrid">
+          <button class="mode" data-mode="classic">기본<small>90초 도전</small></button>
+          <button class="mode" data-mode="rush">빠른 서빙<small>75초 도전</small></button>
+          <button class="mode" data-mode="remainder">나머지<small>100초 도전</small></button>
+        </div>
+        <div class="subLine">줄을 고르고, 같은 수만큼 보내기!</div>
+      </div>`;
+    bindModeButtons();
+  }
+
+  function update(dt){
+    if(state.screen !== 'play' || paused) return;
+    state.time -= dt;
+    if(state.time <= 0){ state.time = 0; state.gameOverReason = '제한 시간이 끝났어요'; gameOver(); }
+
+    state.bannerTimer = Math.max(0, state.bannerTimer - dt);
+    state.freezerFlash = Math.max(0, state.freezerFlash - dt);
+    for(const lane of state.lanes){
+      lane.feedbackTimer = Math.max(0, lane.feedbackTimer - dt);
+      lane.flash = Math.max(0, lane.flash - dt);
+      lane.shake = Math.max(0, lane.shake - dt);
+    }
+
+    for(let i=state.deliveries.length-1;i>=0;i--){
+      const d = state.deliveries[i];
+      const tx = d.tx;
+      const ty = d.type === 'freezer' ? d.ty : d.y;
+      const dx = tx - d.x;
+      const dy = ty - d.y;
+      const dist = Math.hypot(dx,dy);
+      if(dist < 8){
+        evaluateDelivery(d);
+        state.deliveries.splice(i,1);
+      }else{
+        const step = Math.min(dist, d.speed * dt);
+        d.x += dx/dist * step;
+        d.y += dy/dist * step;
+        d.life += dt;
+      }
+    }
+
+    for(let i=state.particles.length-1;i>=0;i--){
+      const p = state.particles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 240 * dt;
+      if(p.life <= 0) state.particles.splice(i,1);
+    }
+    for(let i=state.floating.length-1;i>=0;i--){
+      const f = state.floating[i];
+      f.life -= dt;
+      f.y += f.vy * dt;
+      if(f.life <= 0) state.floating.splice(i,1);
+    }
+  }
+
+  function roundRect(x,y,w,h,r,fill,stroke,lw=2){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+    if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw; ctx.stroke(); }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    drawBackground();
+    if(state.screen === 'play' || state.screen === 'gameover'){
+      drawHud();
+      drawPlayfield();
+      drawBottomReadout();
+      drawEffects();
+      if(paused) drawPause();
+    } else {
+      drawAttract();
+    }
+  }
+
+  function drawBackground(){
+    ctx.fillStyle = colors.wall;
+    ctx.fillRect(0,0,W,H);
+    for(let i=0;i<18;i++){
+      ctx.fillStyle = i%2 ? 'rgba(255,255,255,.18)' : 'rgba(163,93,50,.05)';
+      ctx.fillRect(i*64, 82, 32, H-82);
+    }
+    ctx.fillStyle = '#f2c58e';
+    ctx.fillRect(0, 455, W, 195);
+    ctx.strokeStyle = 'rgba(126,74,42,.25)';
+    ctx.lineWidth = 2;
+    for(let y=475;y<650;y+=32){ line(0,y,W,y); }
+    for(let x=-40;x<W;x+=76){ line(x,455,x+54,650); }
+    for(let x=40;x<W+80;x+=76){ line(x,455,x-54,650); }
+
+    // back counter and decorative boards, no readable menu text
+    roundRect(42,92,230,64,14,'#68bea9','#15333b',4);
+    ctx.fillStyle = '#f9e3ad';
+    for(let i=0;i<4;i++) roundRect(64+i*48,111,32,8,4,'#f9e3ad',null);
+    roundRect(725,88,225,74,14,'#f7a1b8','#15333b',4);
+    ctx.fillStyle = '#fff1c3';
+    for(let i=0;i<5;i++) roundRect(750+i*36,108,24,8,4,'#fff1c3',null);
+    drawAwning();
+  }
+
+  function drawAwning(){
+    ctx.fillStyle = '#12333b';
+    ctx.fillRect(0,72,W,12);
+    for(let x=0;x<W;x+=60){
+      ctx.fillStyle = (x/60)%2===0 ? colors.pink : colors.cream;
+      ctx.beginPath();
+      ctx.moveTo(x,72); ctx.lineTo(x+60,72); ctx.lineTo(x+50,105); ctx.quadraticCurveTo(x+30,119,x+10,105); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#12333b'; ctx.lineWidth = 3; ctx.stroke();
+    }
+  }
+
+  function drawHud(){
+    roundRect(18,14,964,60,16,colors.hud,colors.hud2,4);
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
+    ctx.fillRect(28,20,944,8);
+    ctx.textBaseline='middle';
+    ctx.font='900 23px system-ui, sans-serif';
+    ctx.fillStyle=colors.cream;
+    ctx.textAlign='left';
+    ctx.fillText(`점수 ${String(state.score).padStart(5,'0')}`, 42, 44);
+    ctx.fillText(`${String(state.round).padStart(2,'0')}라운드`, 238, 44);
+    ctx.textAlign='center';
+    ctx.font='900 34px system-ui, sans-serif';
+    const prob = state.mode === 'remainder'
+      ? `${state.total} ÷ ${state.divisor} = ? ... ?`
+      : `${state.total} ÷ ${state.divisor} = ?`;
+    ctx.fillStyle=colors.gold;
+    ctx.fillText(prob, 520, 44);
+    ctx.textAlign='right';
+    ctx.font='900 22px system-ui, sans-serif';
+    ctx.fillText(`시간 ${Math.ceil(state.time)}`, 870, 44);
+    drawTimeBar(748, 66, 138, 6);
+    drawLives(910, 44);
+  }
+
+  function drawTimeBar(x,y,w,h){
+    const ratio = state.timeLimit > 0 ? clamp(state.time / state.timeLimit, 0, 1) : 0;
+    roundRect(x,y,w,h,3,'rgba(255,255,255,.18)',null);
+    const fill = ratio < .22 ? colors.red : ratio < .45 ? colors.gold : colors.mint;
+    roundRect(x,y,Math.max(2,w*ratio),h,3,fill,null);
+  }
+
+  function drawLives(x,y){
+    for(let i=0;i<4;i++){
+      if(i<state.lives) drawMiniCone(x+i*19,y-2,1);
+      else drawMiniCone(x+i*19,y-2,.25);
+    }
+  }
+
+  function drawPlayfield(){
+    for(let i=0;i<state.divisor;i++) drawLane(i);
+    if(state.mode === 'remainder') drawFreezer();
+    drawPlayer();
+    for(const d of state.deliveries){ drawMovingTray(d.x,d.y,d.amount, .92); }
+  }
+
+  function drawLane(i){
+    const y = laneY(i);
+    const lane = state.lanes[i];
+    const shakeX = lane.shake > 0 ? Math.sin(performance.now()/32)*5 : 0;
+    ctx.save();
+    ctx.translate(shakeX,0);
+    if(i === state.selected){
+      roundRect(152,y-44,740,70,20,'rgba(255,200,87,.16)',colors.gold,5);
+    }
+    roundRect(176,y-22,642,39,18,colors.woodDark,'#32190e',3);
+    roundRect(185,y-31,622,33,16,colors.wood,'#3d2013',3);
+    ctx.fillStyle='rgba(255,255,255,.12)';
+    ctx.fillRect(205,y-26,562,5);
+    for(let x=220;x<770;x+=86){
+      ctx.strokeStyle='rgba(64,32,20,.32)'; ctx.lineWidth=2; line(x,y-30,x-1,y+3);
+    }
+
+    if(lane.flash > 0){
+      ctx.globalAlpha = Math.min(.7,lane.flash*1.2);
+      roundRect(186,y-30,620,34,16,lane.served?colors.mint:colors.red,null);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.fillStyle = colors.cream;
+    ctx.font = '900 18px system-ui, sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(`${i+1}번 줄`, 196, y-52);
+
+    drawCustomers(counterRight-24, y-26, state.target, i, lane.served);
+    if(lane.served){
+      roundRect(counterRight-72,y-58,92,28,14,colors.mint,'#1f695d',3);
+      ctx.fillStyle='#12333b'; ctx.font='900 15px system-ui'; ctx.textAlign='center'; ctx.fillText('완료', counterRight-26, y-44);
+    }
+    if(lane.feedbackTimer > 0){
+      ctx.globalAlpha = Math.min(1,lane.feedbackTimer*2);
+      ctx.font='900 25px system-ui'; ctx.textAlign='center';
+      ctx.fillStyle = lane.feedback === '성공' ? colors.gold : '#ffebe1';
+      ctx.strokeStyle = colors.ink; ctx.lineWidth=5;
+      ctx.strokeText(lane.feedback, 560, y-53);
+      ctx.fillText(lane.feedback, 560, y-53);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  function drawCustomers(baseX, baseY, count, seed, served){
+    const perRow = count <= 4 ? count : Math.ceil(count/2);
+    const startX = baseX - (perRow-1)*30;
+    for(let j=0;j<count;j++){
+      const row = count <= 4 ? 0 : Math.floor(j/perRow);
+      const col = count <= 4 ? j : j%perRow;
+      const x = startX + col*30 + (row?14:0);
+      const y = baseY + row*27;
+      drawCustomer(x,y,(seed+j)%8, served);
+    }
+  }
+
+  function drawCustomer(x,y,kind,served){
+    const skins = ['#f1b07a','#d79259','#8f5b3d','#f7c99e','#b97748','#e6a06c','#754a34','#f4be91'];
+    const shirts = ['#65c4b4','#f495ad','#f5cc62','#87b4ff','#b995ff','#ea796c','#82d873','#ffb66f'];
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.globalAlpha = served ? .78 : 1;
+    // body
+    roundRect(-12,16,24,24,7,shirts[kind%shirts.length],'#17313a',2);
+    // neck
+    roundRect(-4,10,8,10,3,skins[kind],null);
+    // head shadow/hair
+    ctx.fillStyle = ['#5a3422','#2e2827','#6b3e21','#332521'][kind%4];
+    ctx.beginPath(); ctx.arc(0,0,16,Math.PI,Math.PI*2); ctx.lineTo(16,2); ctx.quadraticCurveTo(0,-18,-16,2); ctx.closePath(); ctx.fill();
+    // head
+    ctx.fillStyle = skins[kind];
+    ctx.beginPath(); ctx.ellipse(0,3,15,16,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#17313a'; ctx.lineWidth=2; ctx.stroke();
+    // hair accessory / hat
+    if(kind%3===0){ roundRect(-17,-8,34,8,4,'#f06486','#17313a',1.5); }
+    if(kind%4===1){ roundRect(-16,-18,32,12,4,'#356f7c','#17313a',1.5); }
+    if(kind%5===2){
+      ctx.fillStyle='#4b2b1f';
+      for(let k=-2;k<=2;k++){ ctx.beginPath(); ctx.arc(k*7,-13+Math.abs(k)*2,6,0,Math.PI*2); ctx.fill(); }
+    }
+    // eyes/mouth
+    ctx.fillStyle='#102a32';
+    ctx.beginPath(); ctx.arc(-5,2,2.2,0,Math.PI*2); ctx.arc(5,2,2.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#7a2d2d'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,7,5,0.1,Math.PI-0.1); ctx.stroke();
+    if(served){
+      ctx.fillStyle='rgba(255,255,255,.9)';
+      ctx.beginPath(); ctx.arc(-9,22,2.5,0,Math.PI*2); ctx.arc(9,22,2.5,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    const bob = Math.sin(performance.now()/190)*2;
+    const y = laneY(state.selected)+bob;
+    // vertical position marker
+    ctx.fillStyle='rgba(255,200,87,.18)';
+    ctx.beginPath(); ctx.ellipse(playerX+11,y-3,58,45,0,0,Math.PI*2); ctx.fill();
+    // cart
+    roundRect(46,y+16,110,42,14,'#7cd8be','#12333b',4);
+    ctx.fillStyle='#fff0c6'; ctx.fillRect(60,y+24,72,8);
+    ctx.fillStyle='#17313a';
+    ctx.beginPath(); ctx.arc(68,y+62,9,0,Math.PI*2); ctx.arc(134,y+62,9,0,Math.PI*2); ctx.fill();
+    // employee
+    drawWorker(playerX,y-36);
+    // tray in hands
+    drawServingTray(playerX+72,y-27,state.scoops,.85);
+  }
+
+  function drawWorker(x,y){
+    ctx.save(); ctx.translate(x,y);
+    // legs
+    roundRect(-13,45,10,25,4,'#314f5a','#102a32',2);
+    roundRect(4,45,10,25,4,'#314f5a','#102a32',2);
+    // body apron
+    roundRect(-22,18,44,36,10,'#ffe4a7','#102a32',3);
+    roundRect(-18,21,36,34,8,'#ff8dab','#102a32',2);
+    // arms
+    ctx.strokeStyle='#f0aa77'; ctx.lineWidth=8; ctx.lineCap='round';
+    line(-19,27,-34,39); line(19,27,34,39);
+    // head
+    ctx.fillStyle='#f0aa77'; ctx.beginPath(); ctx.ellipse(0,2,19,21,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#102a32'; ctx.lineWidth=3; ctx.stroke();
+    // hair
+    ctx.fillStyle='#3b271f'; ctx.beginPath(); ctx.arc(0,-5,20,Math.PI,Math.PI*2); ctx.lineTo(18,2); ctx.quadraticCurveTo(0,-20,-18,2); ctx.closePath(); ctx.fill();
+    // cap
+    roundRect(-24,-24,48,14,7,'#7cd8be','#102a32',3);
+    ctx.fillStyle='#102a32'; ctx.beginPath(); ctx.arc(-6,4,2.2,0,Math.PI*2); ctx.arc(6,4,2.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#7a2d2d'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,11,6,.1,Math.PI-.1); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFreezer(){
+    const x=49, y=535;
+    const flash = state.freezerFlash > 0;
+    roundRect(x-8,y-44,124,90,15,flash?colors.blue:'#d5efff','#12333b',4);
+    roundRect(x+9,y-31,90,45,10,'#a8d8ff','#12333b',3);
+    ctx.fillStyle='#17313a'; ctx.font='900 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('냉동고', x+54, y+30);
+    if(state.freezerDone){
+      ctx.fillStyle=colors.mintDark; ctx.fillText('완료', x+54, y-8);
+    } else if(state.mode==='remainder'){
+      ctx.fillStyle='#45636c'; ctx.fillText('남는 것', x+54, y-8);
+    }
+    if(state.freezerFeedback && state.freezerFlash > 0){
+      ctx.fillStyle=state.freezerDone?colors.gold:'#ffebe1'; ctx.strokeStyle=colors.ink; ctx.lineWidth=4; ctx.font='900 20px system-ui';
+      ctx.strokeText(state.freezerFeedback, x+54, y-58); ctx.fillText(state.freezerFeedback, x+54, y-58);
+    }
+  }
+
+  function drawBottomReadout(){
+    const y = 600;
+    roundRect(315,558,370,64,18,colors.hud,'#0c2229',4);
+    ctx.fillStyle=colors.cream; ctx.font='900 22px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('쟁반', 370, y-9);
+    drawServingTray(455,y-8,state.scoops, .8);
+    ctx.font='900 36px system-ui'; ctx.fillStyle=colors.gold;
+    ctx.fillText(`x ${state.scoops}`, 585, y-8);
+
+    if(state.bannerTimer > 0){
+      const alpha = Math.min(1,state.bannerTimer*2);
+      ctx.save(); ctx.globalAlpha = alpha;
+      roundRect(330,92,340,52,18,'rgba(18,51,59,.9)',colors.gold,4);
+      ctx.fillStyle=colors.gold; ctx.textAlign='center'; ctx.font='900 28px system-ui';
+      ctx.fillText(state.banner, 500, 118);
+      ctx.restore();
+    }
+  }
+
+  function drawEffects(){
+    for(const p of state.particles){
+      ctx.globalAlpha = Math.max(0, p.life/.65);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    for(const f of state.floating){
+      ctx.globalAlpha = Math.max(0, f.life);
+      ctx.fillStyle = f.color;
+      ctx.strokeStyle = colors.ink; ctx.lineWidth=5;
+      ctx.font='900 24px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.strokeText(f.text, f.x, f.y); ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawAttract(){
+    drawHudPreview();
+    // frozen sample playfield behind menu
+    const oldDiv = state.divisor, oldTarget = state.target;
+    state.divisor=4; state.target=3; state.selected=1;
+    state.lanes = Array.from({length:4},(_,i)=>({served:i===0,feedback:'',feedbackTimer:0,flash:0,shake:0,kind:i}));
+    drawPlayfield();
+    state.divisor=oldDiv; state.target=oldTarget;
+  }
+
+  function drawHudPreview(){
+    roundRect(18,14,964,60,16,colors.hud,colors.hud2,4);
+    ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.font='900 34px system-ui'; ctx.fillStyle=colors.gold;
+    ctx.fillText('24 ÷ 4 = ?', 500,44);
+  }
+
+  function drawPause(){
+    ctx.fillStyle='rgba(10,22,26,.55)'; ctx.fillRect(0,0,W,H);
+    roundRect(350,260,300,105,20,colors.hud,colors.gold,4);
+    ctx.fillStyle=colors.cream; ctx.font='900 38px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('일시정지',500,312);
+  }
+
+  function drawMiniCone(x,y,alpha=1){
+    ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); ctx.scale(.42,.42);
+    drawCone(0,0,'#ff8dab');
+    ctx.restore(); ctx.globalAlpha=1;
+  }
+
+  function drawServingTray(x,y,count,scale=1){
+    ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+    roundRect(-42,17,84,18,9,'#bdefff','#12333b',3);
+    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fillRect(-28,20,45,4);
+    const max = Math.min(count,8);
+    for(let i=0;i<max;i++){
+      const col = i%4;
+      const row = Math.floor(i/4);
+      const sx = -27 + col*18 + (row?9:0);
+      const sy = 8 - row*14;
+      drawScoop(sx,sy, ['#fff0c6','#ff8dab','#8fe0ca','#b992ff','#d77a44','#ffe16b'][i%6], .58);
+    }
+    if(count>8){
+      roundRect(13,-17,45,28,10,colors.gold,'#12333b',3);
+      ctx.fillStyle='#12333b'; ctx.font='900 18px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`x${count}`,35,-2);
+    }
+    ctx.restore();
+  }
+
+  function drawMovingTray(x,y,count,scale=1){
+    const bob = Math.sin(performance.now()/70)*2;
+    drawServingTray(x,y+bob,count,scale);
+  }
+
+  function drawCone(x,y,color){
+    ctx.save(); ctx.translate(x,y);
+    ctx.fillStyle='#c98345';
+    ctx.beginPath(); ctx.moveTo(-17,10); ctx.lineTo(17,10); ctx.lineTo(0,55); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#7b4526'; ctx.lineWidth=3; ctx.stroke();
+    ctx.strokeStyle='rgba(90,48,24,.35)'; ctx.lineWidth=1.6;
+    for(let i=-12;i<18;i+=8){ line(i,14,i+20,49); line(i+20,14,i,49); }
+    drawScoop(0,4,color,.9);
+    ctx.restore();
+  }
+
+  function drawScoop(x,y,color,scale=1){
+    ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(0,0,18,Math.PI,Math.PI*2);
+    ctx.quadraticCurveTo(22,12,12,15);
+    ctx.quadraticCurveTo(7,20,0,15);
+    ctx.quadraticCurveTo(-9,21,-13,14);
+    ctx.quadraticCurveTo(-24,10,-18,0);
+    ctx.fill();
+    ctx.strokeStyle='#12333b'; ctx.lineWidth=3; ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.4)'; ctx.beginPath(); ctx.ellipse(-7,-7,8,4,-.4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+
+  function loop(now){
+    const dt = Math.min(.033,(now-last)/1000);
+    last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function bindModeButtons(){
+    overlay.querySelectorAll('.mode').forEach(btn => btn.addEventListener('click', () => startGame(btn.dataset.mode)));
+  }
+  bindModeButtons();
+  document.getElementById('upBtn').addEventListener('click', () => { ensureAudio(); changeLane(-1); });
+  document.getElementById('downBtn').addEventListener('click', () => { ensureAudio(); changeLane(1); });
+  document.getElementById('plusBtn').addEventListener('click', () => { ensureAudio(); changeScoops(1); });
+  document.getElementById('minusBtn').addEventListener('click', () => { ensureAudio(); changeScoops(-1); });
+  document.getElementById('sendBtn').addEventListener('click', () => { ensureAudio(); send(); });
+  document.getElementById('clearBtn').addEventListener('click', () => { ensureAudio(); clearScoops(); });
+  freezerBtn.addEventListener('click', () => { ensureAudio(); sendFreezer(); });
+  pauseBtn.addEventListener('click', () => {
+    if(state.screen !== 'play') return;
+    ensureAudio();
+    paused = !paused;
+    pauseBtn.textContent = paused ? '▶' : 'Ⅱ';
+  });
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    if(state.screen !== 'play' || paused) return;
+    ensureAudio();
+    const rect = canvas.getBoundingClientRect();
+    const y = (e.clientY - rect.top) / rect.height * H;
+    for(let i=0;i<state.divisor;i++){
+      if(Math.abs(y - laneY(i)) < 42){ state.selected=i; sound('select'); break; }
+    }
+  });
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){ menu(); return; }
+    if(state.screen !== 'play') return;
+    ensureAudio();
+    if(e.key === 'ArrowUp'){ e.preventDefault(); changeLane(-1); }
+    if(e.key === 'ArrowDown'){ e.preventDefault(); changeLane(1); }
+    if(e.key === '+' || e.key === '='){ e.preventDefault(); changeScoops(1); }
+    if(e.key === '-' || e.key === '_'){ e.preventDefault(); changeScoops(-1); }
+    if(e.code === 'Space' || e.key === 'Enter'){ e.preventDefault(); send(); }
+    if(e.key.toLowerCase() === 'c'){ clearScoops(); }
+    if(e.key.toLowerCase() === 'f'){ sendFreezer(); }
+    if(e.key.toLowerCase() === 'p'){
+      paused = !paused;
+      pauseBtn.textContent = paused ? '▶' : 'Ⅱ';
+    }
+  });
+})();
+</script>
+</body>
+</html>
