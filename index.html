@@ -667,6 +667,121 @@
             box-shadow: var(--soft-shadow);
         }
 
+
+        /* 쑥쑥이 대화 추천 시스템 */
+        .pet-talk-panel {
+            width: 100%;
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.10), rgba(34, 197, 94, 0.08)), var(--bg-color);
+            border: 2px solid rgba(139, 92, 246, 0.28);
+            border-radius: 18px;
+            padding: 14px;
+            box-sizing: border-box;
+            margin: 8px 0 12px;
+            color: var(--text-color);
+            text-align: left;
+        }
+        .pet-talk-title {
+            font-weight: 900;
+            color: #7c3aed;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        body.dark-mode .pet-talk-title { color: #c4b5fd; }
+        .pet-talk-log {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 190px;
+            overflow-y: auto;
+            padding-right: 4px;
+            margin-bottom: 10px;
+        }
+        .pet-msg {
+            border-radius: 16px;
+            padding: 10px 12px;
+            line-height: 1.45;
+            word-break: keep-all;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+        }
+        .pet-msg.sook {
+            align-self: flex-start;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #14532d;
+        }
+        .pet-msg.user {
+            align-self: flex-end;
+            background: #ede9fe;
+            border: 1px solid #c4b5fd;
+            color: #4c1d95;
+        }
+        body.dark-mode .pet-msg.sook { background: #052e16; color: #bbf7d0; border-color: #047857; }
+        body.dark-mode .pet-msg.user { background: #2e1065; color: #ddd6fe; border-color: #6d28d9; }
+        .pet-talk-choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .pet-choice-btn, .pet-rec-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-weight: 900;
+            cursor: pointer;
+            background: white;
+            color: #475569;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .pet-choice-btn:hover, .pet-rec-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+            background: #fef3c7;
+        }
+        body.dark-mode .pet-choice-btn, body.dark-mode .pet-rec-btn { background: #334155; color: #e2e8f0; }
+        .pet-recommendations {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pet-rec-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 16px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .pet-rec-title { font-weight: 900; color: var(--primary-strong); margin-bottom: 3px; }
+        body.dark-mode .pet-rec-title { color: #f9a8d4; }
+        .pet-rec-desc { font-size: 0.82rem; color: #64748b; line-height: 1.35; word-break: keep-all; }
+        body.dark-mode .pet-rec-desc { color: #cbd5e1; }
+        .pet-rec-btn { background: #8b5cf6; color: white; min-width: 74px; }
+        .pet-rec-btn:hover { background: #7c3aed; }
+        .pet-smart-note {
+            width: 100%;
+            background: rgba(34, 197, 94, 0.10);
+            border: 1px dashed rgba(22, 163, 74, 0.45);
+            color: var(--text-color);
+            border-radius: 14px;
+            padding: 10px 12px;
+            box-sizing: border-box;
+            font-size: 0.88em;
+            line-height: 1.45;
+            text-align: center;
+            word-break: keep-all;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 520px) {
+            .pet-talk-choices { grid-template-columns: 1fr; }
+            .pet-rec-card { grid-template-columns: 1fr; }
+        }
+
         /* 반응형 */
         @media (max-width: 768px) {
             .age-screen-title { font-size: 2.5em;
@@ -792,22 +907,32 @@ body.dark-mode .site-credits {
                         <span id="pet-condition-buff" style="font-size: 0.8em; background: #fbbf24; color: #92400e; padding: 2px 8px; border-radius: 10px; display: none;">✨ 컨디션 최상</span>
                     </div>
                     <div class="stat-row"><div class="stat-label">✨ 경험치</div><div class="bar-container"><div class="bar-fill fill-exp" id="bar-exp" style="width: 0%;"></div><div class="bar-text" id="txt-exp">0 / 50</div></div></div>
-                    <div class="stat-row"><div class="stat-label">🍖 포만감</div><div class="bar-container"><div class="bar-fill fill-full" id="bar-full" style="width: 100%;"></div><div class="bar-text" id="txt-full">100%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">❤️ 애정도</div><div class="bar-container"><div class="bar-fill fill-love" id="bar-love" style="width: 50%;"></div><div class="bar-text" id="txt-love">50%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">✨ 청결도</div><div class="bar-container"><div class="bar-fill fill-clean" id="bar-clean" style="width: 100%;"></div><div class="bar-text" id="txt-clean">100%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">⚡ 피로도</div><div class="bar-container"><div class="bar-fill fill-energy" id="bar-energy" style="width: 0%;"></div><div class="bar-text" id="txt-energy">0%</div></div></div>
+                    <div class="stat-row"><div class="stat-label">🌤️ 컨디션</div><div class="bar-container"><div class="bar-fill fill-full" id="bar-full" style="width: 100%;"></div><div class="bar-text" id="txt-full">100%</div></div></div>
+                    <div class="stat-row"><div class="stat-label">🤝 친밀도</div><div class="bar-container"><div class="bar-fill fill-love" id="bar-love" style="width: 50%;"></div><div class="bar-text" id="txt-love">50%</div></div></div>
+                    <div class="stat-row"><div class="stat-label">🏡 방 상태</div><div class="bar-container"><div class="bar-fill fill-clean" id="bar-clean" style="width: 100%;"></div><div class="bar-text" id="txt-clean">100%</div></div></div>
+                    <div class="stat-row"><div class="stat-label">☕ 휴식필요</div><div class="bar-container"><div class="bar-fill fill-energy" id="bar-energy" style="width: 0%;"></div><div class="bar-text" id="txt-energy">0%</div></div></div>
                 </div>
 
+                <div class="pet-smart-note" id="pet-smart-note">🌱 쑥쑥이가 오늘 할 게임을 같이 골라줄 준비를 하고 있어요.</div>
+
                 <div class="pet-btn-grid">
-                    <button class="item-btn btn-buy" id="btn-pet-feed">🍎 먹이주기</button>
+                    <button class="item-btn btn-equip" id="btn-pet-talk" style="grid-column: 1 / -1; background: #8b5cf6; color: white;">💬 쑥쑥이와 이야기하기</button>
+                    <button class="item-btn btn-buy" id="btn-pet-feed">🍎 간식 주기</button>
                     <button class="item-btn btn-equip" id="btn-pet-stroke" style="background: #f48fb1;">👋 쓰다듬기</button>
                     <button class="item-btn btn-buy" id="btn-pet-clean" style="background: #3b82f6; color: white;">🧼 목욕하기</button>
                     <button class="item-btn btn-buy hidden" id="btn-pet-heal" style="background: #ef4444; color: white;">💊 치료하기</button>
                     <button class="item-btn btn-equip hidden" id="btn-pet-sleep" style="background: #64748b;">💤 푹 재우기</button>
                 </div>
                 
+                <div id="pet-talk-panel" class="pet-talk-panel hidden">
+                    <div class="pet-talk-title">💬 쑥쑥이 상담소</div>
+                    <div id="pet-talk-log" class="pet-talk-log"></div>
+                    <div id="pet-talk-choices" class="pet-talk-choices"></div>
+                    <div id="pet-recommendations" class="pet-recommendations hidden"></div>
+                </div>
+
                 <div id="pet-room-hint" style="font-size: 0.85em; color: #718096; text-align: center; word-break: keep-all; line-height: 1.4; margin-top: 10px;">
-                    💡 미니게임을 플레이하면 경험치가 오르지만 피로도도 쌓여요! 상점의 쑥쑥이 용품을 사서 더 쉽게 돌볼 수 있어요.
+                    💡 쑥쑥이는 이제 대화로 오늘 할 게임을 추천하고, 많이 플레이한 분야에 따라 다른 모습으로 성장해요.
                 </div>
             </div>
         </div>
@@ -871,11 +996,11 @@ body.dark-mode .site-credits {
                     <button class="close-btn" onclick="document.getElementById('shop-modal').classList.add('hidden')">닫기 ✖</button>
                 </div>
                 <div class="shop-nav">
-                    <button class="shop-tab active" data-tab="emoji">이모지</button>
+                    <button class="shop-tab active" data-tab="emoji">내 이모지</button>
                     <button class="shop-tab" data-tab="title">칭호</button>
-                    <button class="shop-tab" data-tab="theme">테마</button>
-                    <button class="shop-tab" data-tab="pet">쑥쑥이</button>
-                    <button class="shop-tab" data-tab="gacha">랜덤 뽑기</button>
+                    <button class="shop-tab" data-tab="theme">오락실 테마</button>
+                    <button class="shop-tab" data-tab="pet">쑥쑥이 용품</button>
+                    <button class="shop-tab" data-tab="gacha">랜덤 선물</button>
                 </div>
                 <div class="shop-body" id="shop-items-container"></div>
             </div>
@@ -1399,13 +1524,17 @@ body.dark-mode .site-credits {
                 ],
                 pet: [
                     { id: 'p_apple', name: '아삭 사과', desc: '포만감 +40, 애정도 +5', price: 30, icon: '🍎' },
-                    { id: 'p_cookie', name: '칭찬 쿠키', desc: '애정도 +20, 경험치 +10', price: 80, icon: '🍪' },
-                    { id: 'p_soap', name: '보글보글 비누', desc: '청결도 +45, 똥 1개 청소', price: 40, icon: '🧼' },
-                    { id: 'p_medicine', name: '튼튼 치료약', desc: '아픔 회복, 애정도 +20', price: 50, icon: '💊' },
-                    { id: 'p_bed', name: '포근한 낮잠 쿠션', desc: '피로도 -70, 컨디션 회복', price: 80, icon: '🛏️' }
+                    { id: 'p_cookie', name: '칭찬 쿠키', desc: '친밀도 +20, 경험치 +10', price: 80, icon: '🍪' },
+                    { id: 'p_sticker', name: '응원 스티커', desc: '친밀도 +10, 경험치 +5', price: 45, icon: '🌟' },
+                    { id: 'p_soap', name: '보글보글 비누', desc: '방 상태 +45, 방 정리 1회', price: 40, icon: '🧼' },
+                    { id: 'p_medicine', name: '튼튼 치료약', desc: '아픔 회복, 친밀도 +20', price: 50, icon: '💊' },
+                    { id: 'p_bed', name: '포근한 낮잠 쿠션', desc: '휴식필요 -70, 컨디션 회복', price: 80, icon: '🛏️' },
+                    { id: 'p_hint', name: '진화 힌트 카드', desc: '쑥쑥이의 성장 성향을 알려줘요', price: 60, icon: '🔮' }
                 ],
                 gacha: [
-                    { id: 'g_joke', name: '아재개그 쿠키', desc: '랜덤하게 나오는 유머 한 조각!', price: 100 }
+                    { id: 'g_joke', name: '아재개그 쿠키', desc: '랜덤하게 나오는 유머 한 조각!', price: 100, icon: '🥠' },
+                    { id: 'g_pet_supply', name: '쑥쑥이 랜덤 보급상자', desc: '쑥쑥이 용품 중 하나가 랜덤으로 나와요.', price: 120, icon: '🎁' },
+                    { id: 'g_profile_box', name: '프로필 랜덤 상자', desc: '미보유 이모지나 칭호를 하나 얻을 수 있어요.', price: 300, icon: '🎲' }
                 ]
             };
 
@@ -1647,8 +1776,13 @@ body.dark-mode .site-credits {
                 // 2. 모달 업데이트
                 document.getElementById('pet-room-avatar').innerText = avatar;
                 
-                const animalInfo = pet.level > 1 ? `[${animalDB.find(a=>a.id===pet.animalId)?.type} - ${getLevelName()}]` : `[${getLevelName()}]`;
+                const dominantInfo = getDominantPetCategory();
+                const animalInfo = pet.level > 1 ? `[${animalDB.find(a=>a.id===pet.animalId)?.type} - ${getLevelName()} · ${dominantInfo.label}]` : `[${getLevelName()} · ${dominantInfo.label}]`;
                 document.getElementById('pet-display-name').innerText = `이름: ${pet.name} ${animalInfo}`;
+                const smartNote = document.getElementById('pet-smart-note');
+                if (smartNote) smartNote.innerHTML = `🌱 ${getEvolutionHintText()}<br>💬 고민되면 쑥쑥이와 이야기해서 오늘의 게임을 추천받아 보세요.`;
+                const roomHint = document.getElementById('pet-room-hint');
+                if (roomHint) roomHint.innerHTML = `💡 게임을 할수록 쑥쑥이가 성장해요. 이제 관리는 가볍게, 핵심은 <strong>대화 추천</strong>과 <strong>플레이 성향 진화</strong>예요.`;
                 
                 document.getElementById('bar-exp').style.width = `${expPercent}%`;
                 document.getElementById('txt-exp').innerText = pet.level < 4 ? `${Math.floor(pet.exp)} / ${maxExp}` : "MAX";
@@ -1681,10 +1815,10 @@ body.dark-mode .site-credits {
                 const btnClean = document.getElementById('btn-pet-clean');
                 const btnHeal = document.getElementById('btn-pet-heal');
                 const btnSleep = document.getElementById('btn-pet-sleep');
-                btnFeed.innerText = `🍎 먹이주기 (보유 ${getPetItemCount('p_apple')} / 30💰)`;
-                btnClean.innerText = `🧼 목욕하기 (보유 ${getPetItemCount('p_soap')} / 40💰)`;
+                btnFeed.innerText = `🍎 간식 주기 (보유 ${getPetItemCount('p_apple')} / 30💰)`;
+                btnClean.innerText = `🧼 방 정리 (보유 ${getPetItemCount('p_soap')} / 40💰)`;
                 btnHeal.innerText = `💊 치료하기 (보유 ${getPetItemCount('p_medicine')} / 50💰)`;
-                btnSleep.innerText = `💤 푹 재우기 (보유 ${getPetItemCount('p_bed')} / 80💰)`;
+                btnSleep.innerText = `💤 휴식하기 (보유 ${getPetItemCount('p_bed')} / 80💰)`;
                 if (pet.isSick) { btnHeal.classList.remove('hidden'); } else { btnHeal.classList.add('hidden'); }
                 if (pet.fatigue > 50 || pet.fatigue >= 100) { btnSleep.classList.remove('hidden'); } else { btnSleep.classList.add('hidden'); }
 
@@ -1696,16 +1830,60 @@ body.dark-mode .site-credits {
                 }
             }
 
+
+            function getDominantPetCategory() {
+                const tracks = pet.expTracks || {};
+                const entries = Object.entries(tracks).filter(([key]) => key !== 'all');
+                if (!entries.length) return { key: 'all', label: '균형형', value: 0 };
+                entries.sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0));
+                const [key, value] = entries[0];
+                const labels = { math: '수학·퍼즐형', korean: '국어형', lang: '외국어·한자형', trivia: '상식·생활형', music: '음악·예술형' };
+                return { key, label: labels[key] || '균형형', value: Number(value) || 0 };
+            }
+
+            function pickPetAnimalByStudyTrack() {
+                const dominant = getDominantPetCategory();
+                const evolutionMap = {
+                    math: [2, 10, 13, 16],
+                    korean: [17, 8, 11, 20],
+                    lang: [14, 12, 9, 10],
+                    trivia: [1, 5, 15, 19],
+                    music: [3, 11, 18, 20]
+                };
+                const pool = dominant.value > 0 ? (evolutionMap[dominant.key] || []) : [];
+                if (pool.length === 0) return Math.floor(Math.random() * animalDB.length) + 1;
+                return pool[Math.floor(Math.random() * pool.length)];
+            }
+
+            function getEvolutionHintText() {
+                const dominant = getDominantPetCategory();
+                if (pet.level === 1 && dominant.value <= 0) return '아직 성향이 정해지지 않았어요. 여러 게임을 해보면 쑥쑥이가 방향을 잡아요.';
+                if (pet.level === 1) return `지금은 ${dominant.label}으로 자라는 중이에요. 이 분야 게임을 더 하면 그 느낌의 친구로 부화할 가능성이 커요.`;
+                return `쑥쑥이의 대표 성장 성향은 ${dominant.label}이에요. 다른 분야를 플레이하면 추천도 더 다양해져요.`;
+            }
+
+            function showEvolutionHint() {
+                const animal = pet.level > 1 ? animalDB.find(a => a.id === pet.animalId) : null;
+                const animalText = animal ? `\n현재 계열: ${animal.type}` : '';
+                alert(`🔮 쑥쑥이 진화 힌트\n\n${getEvolutionHintText()}${animalText}\n\n수학·국어·외국어·상식·예술 중 어떤 게임을 많이 했는지에 따라 추천과 성장 방향이 달라져요.`);
+            }
+
             function checkPetEvolution() {
                 let max = getMaxExp();
                 if (pet.level < 4 && pet.exp >= max) {
                     pet.exp = 0;
+                    let evolutionNote = '';
                     if (pet.level === 1) {
-                        pet.animalId = Math.floor(Math.random() * 20) + 1;
+                        pet.animalId = pickPetAnimalByStudyTrack();
+                        const dominant = getDominantPetCategory();
+                        const chosenAnimal = animalDB.find(a => a.id === pet.animalId);
+                        evolutionNote = `
+${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계열로 부화했어요!`;
                     }
                     pet.level++;
                     playUISound('print');
-                    alert(`🎉 축하합니다! 쑥쑥이가 [${getLevelName()}] 로 성장했습니다!\n마이룸에서 새로운 모습을 확인해보세요!`);
+                    alert(`🎉 축하합니다! 쑥쑥이가 [${getLevelName()}] 로 성장했습니다!${evolutionNote}
+마이룸에서 새로운 모습을 확인해보세요!`);
                 }
                 savePet(); updatePetUI();
             }
@@ -1746,7 +1924,8 @@ body.dark-mode .site-credits {
                 if (itemId === 'p_soap' && pet.fatigue >= 100) { showToast("쑥쑥이가 자고 있어요. 깨어난 뒤 씻겨 주세요."); return false; }
                 if (itemId === 'p_medicine' && !pet.isSick) { showToast("지금은 치료가 필요 없어요."); return false; }
                 if (itemId === 'p_bed' && pet.fatigue <= 0 && !pet.isSick) { showToast("이미 충분히 쉬었어요! ⚡"); return false; }
-                if (itemId === 'p_apple' && pet.fullness >= 100 && pet.affection >= 100) { showToast("이미 배도 마음도 가득해요! 🥰"); return false; }
+                if (itemId === 'p_hint' && pet.fatigue >= 100) { showToast("쑥쑥이가 쉬고 있어요. 잠시 뒤에 힌트를 물어봐 주세요."); return false; }
+                if (itemId === 'p_apple' && pet.fullness >= 100 && pet.affection >= 100) { showToast("이미 컨디션도 마음도 가득해요! 🥰"); return false; }
 
                 const hasStock = getPetItemCount(itemId) > 0;
                 const directPrice = options.directPrice ?? item.price;
@@ -1772,6 +1951,19 @@ body.dark-mode .site-credits {
                     pet.exp += 10;
                     animatePetRoomAvatar("rotate(8deg) scale(1.2)");
                     finishPetCare(`칭찬 쿠키를 먹고 기분이 좋아졌어요! 🍪 (${sourceText})`);
+                    return true;
+                }
+                if (itemId === 'p_sticker') {
+                    pet.affection = Math.min(100, pet.affection + 10);
+                    pet.exp += 5;
+                    animatePetRoomAvatar("rotate(-6deg) scale(1.18)");
+                    finishPetCare(`응원 스티커를 붙였어요! 다음 도전이 더 즐거워졌습니다. 🌟 (${sourceText})`);
+                    return true;
+                }
+                if (itemId === 'p_hint') {
+                    showEvolutionHint();
+                    animatePetRoomAvatar("scale(1.12)");
+                    finishPetCare(`진화 힌트를 확인했어요! 🔮 (${sourceText})`, 'open');
                     return true;
                 }
                 if (itemId === 'p_soap') {
@@ -1803,6 +1995,11 @@ body.dark-mode .site-credits {
 
             document.getElementById('pet-widget').addEventListener('click', () => {
                 playUISound('open'); document.getElementById('pet-modal').classList.remove('hidden'); updatePetUI();
+            });
+
+            document.getElementById('btn-pet-talk').addEventListener('click', () => {
+                playUISound('open');
+                startPetTalk();
             });
 
             document.getElementById('btn-pet-feed').addEventListener('click', () => {
@@ -1852,6 +2049,27 @@ body.dark-mode .site-credits {
                 if(coins < item.price) { showToast("코인이 부족합니다! 게임을 더 플레이하세요."); playUISound('click'); return; }
                 if(category === 'gacha') {
                     coins -= item.price; updateCoinUI();
+                    if (item.id === 'g_pet_supply') {
+                        const pool = ['p_apple', 'p_cookie', 'p_sticker', 'p_soap', 'p_medicine', 'p_bed', 'p_hint'];
+                        const pickedId = pool[Math.floor(Math.random() * pool.length)];
+                        const picked = getPetShopItem(pickedId);
+                        changePetItemCount(pickedId, 1);
+                        showToast(`랜덤 보급상자에서 ${picked?.name || '쑥쑥이 용품'} 1개를 얻었습니다!`);
+                        playUISound('print'); renderShop(); updatePetUI(); return;
+                    }
+                    if (item.id === 'g_profile_box') {
+                        const profilePool = [
+                            ...shopDB.emoji.map(i => ({ category: 'emoji', invType: 'emoji', item: i })),
+                            ...shopDB.title.map(i => ({ category: 'title', invType: i.type, item: i }))
+                        ].filter(entry => entry.item.price > 0 && !(inventory[entry.invType] || []).includes(entry.item.id));
+                        if (profilePool.length === 0) { showToast('이미 모든 프로필 아이템을 가지고 있어요!'); playUISound('click'); return; }
+                        const picked = profilePool[Math.floor(Math.random() * profilePool.length)];
+                        if(!inventory[picked.invType]) inventory[picked.invType] = [];
+                        inventory[picked.invType].push(picked.item.id);
+                        localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
+                        showToast(`프로필 상자에서 ${picked.item.name}을 얻었습니다!`);
+                        playUISound('print'); renderShop(); return;
+                    }
                     const joke = jokes[Math.floor(Math.random() * jokes.length)];
                     alert(`🥠 포춘 쿠키를 열었습니다!\n\n"${joke}"`); playUISound('print'); return;
                 }
@@ -1891,7 +2109,7 @@ body.dark-mode .site-credits {
 
                     const el = document.createElement('div');
                     el.className = `shop-item ${isOwned ? 'owned' : ''}`;
-                    let iconHtml = currentShopTab === 'gacha' ? '🥠' : (item.val || item.icon || '✨');
+                    let iconHtml = currentShopTab === 'gacha' ? (item.icon || '🎁') : (item.val || item.icon || '✨');
                     if(currentShopTab === 'title') iconHtml = '🏷️';
                     if(currentShopTab === 'theme') iconHtml = '🎨';
 
@@ -1933,6 +2151,146 @@ body.dark-mode .site-credits {
             const ageNames = { 'toddler': '🐥 유아', 'low': '🎒 초등 저학년', 'high': '🚀 초등 고학년', 'job': '🧑‍🔬 직업체험' };
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술' };
             const visibleGameCount = document.getElementById('visible-game-count');
+            let petTalkState = { answers: {} };
+
+            function appendPetTalkMessage(type, html) {
+                const log = document.getElementById('pet-talk-log');
+                if (!log) return;
+                const msg = document.createElement('div');
+                msg.className = `pet-msg ${type}`;
+                msg.innerHTML = html;
+                log.appendChild(msg);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            function setPetTalkChoices(choices) {
+                const choiceBox = document.getElementById('pet-talk-choices');
+                if (!choiceBox) return;
+                choiceBox.innerHTML = '';
+                choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'pet-choice-btn';
+                    btn.type = 'button';
+                    btn.innerText = choice.label;
+                    btn.onclick = () => {
+                        playUISound('click');
+                        appendPetTalkMessage('user', choice.label);
+                        choice.action();
+                    };
+                    choiceBox.appendChild(btn);
+                });
+            }
+
+            function startPetTalk() {
+                const panel = document.getElementById('pet-talk-panel');
+                const log = document.getElementById('pet-talk-log');
+                const recBox = document.getElementById('pet-recommendations');
+                if (!panel || !log || !recBox) return;
+                panel.classList.remove('hidden');
+                log.innerHTML = '';
+                recBox.innerHTML = '';
+                recBox.classList.add('hidden');
+                petTalkState = { answers: {} };
+                appendPetTalkMessage('sook', `안녕! 나는 ${pet.name}야. 아키네이터처럼 몇 가지 물어보고 오늘 하기 좋은 게임을 골라줄게.`);
+                askPetTalkCategory();
+            }
+
+            function askPetTalkCategory() {
+                appendPetTalkMessage('sook', '오늘은 어떤 느낌의 게임이 끌려?');
+                setPetTalkChoices([
+                    { label: '🧠 머리 쓰는 수학·퍼즐', action: () => { petTalkState.answers.category = 'math'; askPetTalkMood(); } },
+                    { label: '📖 말과 글, 국어', action: () => { petTalkState.answers.category = 'korean'; askPetTalkMood(); } },
+                    { label: '🔠 영어·한자·외국어', action: () => { petTalkState.answers.category = 'lang'; askPetTalkMood(); } },
+                    { label: '💡 상식·생활·직업체험', action: () => { petTalkState.answers.category = 'trivia'; askPetTalkMood(); } },
+                    { label: '🎨 음악·예술·창작', action: () => { petTalkState.answers.category = 'music'; askPetTalkMood(); } },
+                    { label: '🎲 쑥쑥이가 골라줘', action: () => { petTalkState.answers.category = 'any'; askPetTalkMood(); } }
+                ]);
+            }
+
+            function askPetTalkMood() {
+                appendPetTalkMessage('sook', '좋아! 이번에는 플레이 스타일을 골라줘.');
+                setPetTalkChoices([
+                    { label: '⚡ 짧고 가볍게', action: () => { petTalkState.answers.style = 'short'; showPetRecommendations(); } },
+                    { label: '🏆 최고기록 도전', action: () => { petTalkState.answers.style = 'challenge'; showPetRecommendations(); } },
+                    { label: '🌱 최근 안 한 새 느낌', action: () => { petTalkState.answers.style = 'fresh'; showPetRecommendations(); } },
+                    { label: '⭐ 내가 좋아한 게임 위주', action: () => { petTalkState.answers.style = 'favorite'; showPetRecommendations(); } }
+                ]);
+            }
+
+            function scoreCardForPetTalk(card) {
+                const answers = petTalkState.answers || {};
+                const gameId = card.getAttribute('data-id');
+                const category = card.getAttribute('data-category');
+                let score = 0;
+                if (answers.category && answers.category !== 'any' && category === answers.category) score += 12;
+                if (answers.category === 'any') {
+                    const dominant = getDominantPetCategory();
+                    if (dominant.value > 0 && category === dominant.key) score += 6;
+                }
+                if (answers.style === 'favorite' && favorites.includes(gameId)) score += 10;
+                if (answers.style === 'fresh' && !recents.includes(gameId)) score += 5;
+                if (answers.style === 'fresh' && recents.includes(gameId)) score -= 4;
+                if (answers.style === 'challenge' && (card.getAttribute('data-scorekey') || card.getAttribute('data-rankkey'))) score += 4;
+                if (answers.style === 'short') {
+                    const descLen = (card.querySelector('.game-desc')?.innerText || '').length;
+                    if (descLen < 60) score += 2;
+                }
+                const state = getPlayState(gameId, false);
+                if (state.plays <= 0) score -= 20;
+                score += Math.random() * 2;
+                return score;
+            }
+
+            function showPetRecommendations() {
+                const choiceBox = document.getElementById('pet-talk-choices');
+                const recBox = document.getElementById('pet-recommendations');
+                if (choiceBox) choiceBox.innerHTML = '';
+                if (!recBox) return;
+
+                let candidates = Array.from(gameCards).filter(card => {
+                    if (card.classList.contains('disabled')) return false;
+                    if (card.getAttribute('data-age') !== currentAgeGroup) return false;
+                    const wanted = petTalkState.answers.category;
+                    return !wanted || wanted === 'any' || card.getAttribute('data-category') === wanted;
+                });
+                if (candidates.length === 0) {
+                    candidates = Array.from(gameCards).filter(card => !card.classList.contains('disabled') && card.getAttribute('data-age') === currentAgeGroup);
+                }
+                candidates = candidates
+                    .map(card => ({ card, score: scoreCardForPetTalk(card) }))
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 3)
+                    .map(entry => entry.card);
+
+                const categoryLabel = categoryNames[petTalkState.answers.category] || '전체';
+                appendPetTalkMessage('sook', `좋아. ${categoryLabel} 느낌으로 골라봤어! 마음에 드는 게임을 바로 시작해도 돼.`);
+                recBox.innerHTML = '';
+                if (candidates.length === 0) {
+                    recBox.classList.remove('hidden');
+                    recBox.innerHTML = '<div class="pet-rec-card"><div><div class="pet-rec-title">추천할 게임을 찾지 못했어요</div><div class="pet-rec-desc">현재 연령 모드의 게임이 없거나 이용권이 부족할 수 있어요.</div></div></div>';
+                    return;
+                }
+                candidates.forEach(card => {
+                    const title = card.querySelector('.game-title')?.innerText || '추천 게임';
+                    const desc = card.querySelector('.game-desc')?.innerText || '쑥쑥이가 추천한 게임이에요.';
+                    const row = document.createElement('div');
+                    row.className = 'pet-rec-card';
+                    row.innerHTML = `<div><div class="pet-rec-title">${card.querySelector('.game-icon')?.innerText || '🎮'} ${title}</div><div class="pet-rec-desc">${desc}</div></div>`;
+                    const btn = document.createElement('button');
+                    btn.className = 'pet-rec-btn';
+                    btn.type = 'button';
+                    btn.innerText = '시작';
+                    btn.onclick = () => {
+                        document.getElementById('pet-modal').classList.add('hidden');
+                        openGameModal({ target: btn, preventDefault() {}, stopPropagation() {} }, card);
+                    };
+                    row.appendChild(btn);
+                    recBox.appendChild(row);
+                });
+                recBox.classList.remove('hidden');
+                pet.affection = Math.min(100, pet.affection + 3);
+                savePet(); updatePetUI();
+            }
 
             function decorateGameCards() {
                 gameCards.forEach(card => {
@@ -2082,9 +2440,9 @@ body.dark-mode .site-credits {
                     if (sessionMin > 0) {
                         totalPlayTimeMin += sessionMin; localStorage.setItem('kidscade_playtime', totalPlayTimeMin);
                         updatePlayTimeDisplay(); addCoins(sessionMin, `게임 학습 (${sessionMin}분) 보상`);
-                        pet.fatigue += sessionMin * 5; pet.cleanliness -= sessionMin * 3; pet.fullness -= sessionMin * 5;
+                        pet.fatigue += sessionMin * 3; pet.cleanliness -= sessionMin * 1; pet.fullness -= sessionMin * 2;
                     } else {
-                        pet.fatigue += 2; pet.cleanliness -= 1; pet.fullness -= 2;
+                        pet.fatigue += 1; pet.cleanliness -= 0.5; pet.fullness -= 1;
                     }
 
                     normalizePet();
@@ -2097,9 +2455,9 @@ body.dark-mode .site-credits {
                     if (isBuffed) gainedExp = Math.floor(gainedExp * 1.5); 
 
                     if (pet.fatigue >= 100) {
-                        gainedExp = 0; showToast("쑥쑥이가 너무 피곤해서 잠들었어요. 경험치를 얻지 못했습니다. 💤");
+                        gainedExp = 0; showToast("쑥쑥이가 휴식이 필요해요. 쉬게 해주면 다시 함께 성장할 수 있어요. 💤");
                     } else if (pet.isSick) {
-                        gainedExp = Math.floor(gainedExp / 2); showToast("쑥쑥이가 아파서 집중하지 못했어요. 경험치 획득량이 절반으로 줄었습니다. 🤒");
+                        gainedExp = Math.floor(gainedExp / 2); showToast("쑥쑥이 컨디션이 낮아 경험치가 조금 줄었어요. 마이룸에서 돌봐주세요. 🤒");
                     } else {
                         if(isBuffed) showToast("✨ 컨디션 최상 버프! 경험치를 1.5배 획득했습니다!");
                     }
