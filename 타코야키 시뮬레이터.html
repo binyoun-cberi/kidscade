@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>빙글빙글 타코야키집</title>
+<style>
+
+  :root{
+    --ink:#2d1a12;
+    --brown:#5c3827;
+    --line:#8a5939;
+    --paper:#fff8e7;
+    --cream:#fff1c9;
+    --yellow:#ffd966;
+    --orange:#ff914d;
+    --red:#e94b35;
+    --green:#28a66a;
+    --blue:#2688d8;
+    --muted:#7b6757;
+    --shadow:0 5px 0 rgba(82,45,25,.18),0 12px 24px rgba(62,28,9,.13);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overflow:hidden;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;color:var(--ink)}
+  body{background:linear-gradient(180deg,#fff1c9 0%,#f3c27f 58%,#d58b4b 100%)}
+  button{font:inherit;color:inherit;border:0;cursor:pointer}
+  button:disabled{opacity:.34;cursor:not-allowed;filter:saturate(.45)}
+
+  .app{height:100%;padding:10px;display:grid;grid-template-rows:62px minmax(0,1fr) 116px;gap:10px;min-width:980px}
+  .top{display:grid;grid-template-columns:270px minmax(300px,1fr) 330px;gap:10px;align-items:stretch}
+  .card{background:rgba(255,250,234,.95);border:3px solid var(--brown);border-radius:18px;box-shadow:var(--shadow)}
+  .titleCard{padding:10px 16px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  h1{margin:0;font-size:24px;letter-spacing:-.06em;line-height:1.05}
+  .subtitle{font-size:12px;margin-top:4px;color:#5a3826;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dayCard{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 14px;gap:5px}
+  .dayLabel{font-weight:1000;font-size:13px;color:#4b2a1b}
+  .timeBar{width:100%;height:18px;border:3px solid #5a3826;border-radius:100px;background:#4b2b1d;overflow:hidden;box-shadow:inset 0 2px 4px rgba(0,0,0,.25)}
+  .timeFill{height:100%;width:100%;background:linear-gradient(90deg,#39c872,#f2d457,#ee5b42);transition:width .2s linear}
+  .dayRibbon{position:static;background:#ef5b43;color:white;font-weight:1000;padding:3px 12px;border-radius:999px;border:2px solid #9a3829;font-size:13px;letter-spacing:-.04em;white-space:nowrap;box-shadow:none}
+  .statsCard{padding:8px 10px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+  .pill{background:#fff;border:2px solid #7a4a31;border-radius:999px;padding:5px 8px;font-weight:1000;box-shadow:0 2px 0 rgba(92,50,25,.13);font-size:12px;white-space:nowrap}
+  .pill.optional{display:none}
+  .miniHelp{width:28px;height:28px;border:2px solid #7a4a31;border-radius:50%;background:#fff8e7;font-weight:1000;font-size:15px;box-shadow:none}
+
+  .main{display:grid;grid-template-columns:260px minmax(0,1fr) 250px;gap:10px;min-height:0}
+  .queuePanel,.infoPanel{padding:12px;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+  .panelTitle{font-weight:1000;color:#5a3322;font-size:18px;line-height:1;display:flex;justify-content:space-between;align-items:center;letter-spacing:-.05em}
+  .small{font-size:11px;color:#6a4c39;font-weight:800;line-height:1.35}
+  .orders{display:flex;flex-direction:column;gap:8px;overflow:hidden;min-height:0;flex:1}
+  .orderCard{border:3px solid #8e5a3b;border-radius:14px;background:#fffaf0;padding:9px;position:relative;box-shadow:0 3px 0 rgba(109,60,31,.13);transition:box-shadow .16s ease,border-color .16s ease,background .16s ease}
+  .orderCard.first{border-color:#ef7147;background:#fff3dd;box-shadow:0 0 0 3px rgba(239,113,71,.13),0 3px 0 rgba(109,60,31,.13)}
+  .orderTop{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;margin-bottom:6px}
+  .orderName{font-weight:1000;color:#db4b34;font-size:15px;line-height:1.15;letter-spacing:-.04em}
+  .orderWait{font-weight:1000;border:2px solid #8e5a3b;border-radius:999px;padding:2px 7px;background:#fff;font-size:11px;white-space:nowrap}
+  .orderNeed{font-size:12px;font-weight:900;color:#4f3121;line-height:1.28;margin-top:2px}
+  .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+  .tag{font-size:10px;font-weight:1000;border:2px solid #805137;border-radius:999px;background:#fff;padding:2px 6px;color:#4c2b1d}
+  .tag.green{background:#dff6dc}.tag.red{background:#ffe1dc}.tag.yellow{background:#fff2b3}.tag.blue{background:#e1f1ff}
+  .waitBar{height:6px;background:#ead8c4;border:1px solid #9a6c4d;border-radius:999px;overflow:hidden;margin-top:7px}
+  .waitFill{height:100%;width:100%;background:linear-gradient(90deg,#48bd71,#f6ce48,#e74d3b)}
+  .emptyQueue{border:2px dashed #a77b5f;border-radius:14px;padding:14px;background:rgba(255,255,255,.42);color:#7a5640;font-weight:900;text-align:center;line-height:1.4}
+  .recipeMini{border:2px solid rgba(117,72,46,.55);border-radius:12px;background:rgba(255,255,255,.58);padding:7px 8px;font-size:11px;font-weight:900;line-height:1.35;color:#553622}
+  .recipeMini b{color:#db4b34}
+  .activeOrderMini{margin-top:4px;padding-top:4px;border-top:1px dashed rgba(117,72,46,.35);color:#2f6d45;font-weight:1000}
+
+  .stageCard{position:relative;overflow:hidden;background:linear-gradient(180deg,#fff5cf 0%,#ffe0a1 100%);border-radius:20px;min-height:0}
+  #stage{width:100%;height:100%;display:block;touch-action:none}
+  .stageOverlay{position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:8px;pointer-events:none;z-index:4}
+  .notice{background:rgba(255,255,255,.94);border:2px solid #77482e;border-radius:13px;padding:8px 11px;font-weight:1000;box-shadow:0 3px 0 rgba(94,51,28,.13);max-width:380px;line-height:1.32;font-size:13px}
+  .notice.good{border-color:#26945e;color:#166b44}.notice.warn{border-color:#d27b20;color:#884a12}.notice.bad{border-color:#d53d2d;color:#9b271d}
+  .holesBar{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;z-index:4;pointer-events:auto}
+  .holeBtn{width:38px;height:38px;border-radius:12px;border:3px solid #68402c;background:#fff8e5;font-weight:1000;box-shadow:0 3px 0 rgba(88,44,21,.18)}
+  .holeBtn.active{background:#38a7ef;color:white;border-color:#166ca5;transform:translateY(2px);box-shadow:0 1px 0 rgba(88,44,21,.18)}
+  .holeBtn.locked{display:none}
+  .holeBtn.ready{background:#dff7dc}.holeBtn.burning{background:#ffd3ca}
+  .keyboard{display:none}
+  .popupLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
+  .floatText{position:absolute;font-weight:1000;font-size:24px;color:#fff;text-shadow:0 3px 0 #6d3a22,0 0 12px rgba(0,0,0,.3);animation:floatUp .9s ease-out forwards;white-space:nowrap}
+  @keyframes floatUp{0%{transform:translate(-50%,0) scale(.86);opacity:0}12%{opacity:1}100%{transform:translate(-50%,-62px) scale(1.04);opacity:0}}
+  .spark{position:absolute;border-radius:50%;width:8px;height:8px;background:#ffe66a;box-shadow:0 0 12px #ff9d33;animation:spark .52s ease-out forwards}
+  @keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.15);opacity:0}}
+
+  .infoBox{border:3px solid #8e5a3b;border-radius:15px;background:#fffaf0;padding:10px;box-shadow:0 3px 0 rgba(109,60,31,.11)}
+  .infoBox h3{margin:0 0 7px;font-size:16px;color:#5a3322;letter-spacing:-.04em}
+  .infoBox.tip{background:#fff6dc}
+  .slotName{font-weight:1000;color:#df4e31;margin-bottom:6px;line-height:1.2}
+  .meters{display:flex;flex-direction:column;gap:6px}
+  .meter{display:grid;grid-template-columns:44px 1fr 34px;gap:6px;align-items:center;font-size:11px;font-weight:1000;color:#4d3020}
+  .meterTrack{height:12px;border-radius:999px;border:2px solid #6b422d;background:#5b3424;overflow:hidden;box-shadow:inset 0 2px 3px rgba(0,0,0,.18)}
+  .meterFill{height:100%;width:0;background:linear-gradient(90deg,#37bb77,#f3d357,#ed593d);transition:width .16s linear}
+  .guide{font-size:12px;line-height:1.4;font-weight:800;color:#553622}
+  .guide b{color:#d54b2f}
+
+  .bottom{display:block;min-height:0}
+  .controls{padding:9px 12px;display:flex;flex-direction:column;gap:8px;height:100%;min-width:0}
+  .controlTitle{font-weight:1000;color:#5a3322;font-size:14px;display:flex;justify-content:space-between;align-items:center;letter-spacing:-.04em}
+  .dockGrid{display:grid;grid-template-columns:repeat(11,minmax(70px,1fr));gap:7px;min-width:0}
+  .btnGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;min-width:0}
+  .actionBtn{height:38px;border:3px solid #7b482d;border-radius:12px;background:linear-gradient(#fff8d6,#ffd86a);font-weight:1000;box-shadow:0 3px 0 rgba(87,44,20,.18);font-size:13px;letter-spacing:-.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .actionBtn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 rgba(87,44,20,.18)}
+  .actionBtn.main{background:linear-gradient(#fff3bf,#ffad3b)}
+  .actionBtn.green{background:linear-gradient(#ddffe2,#3fc178);color:#153d28}
+  .actionBtn.red{background:linear-gradient(#ffe1dc,#ff815f)}
+  .actionBtn.blue{background:linear-gradient(#e1f2ff,#70c2ff)}
+  .actionBtn.dark{background:linear-gradient(#7d4a2f,#4a2b1e);color:#fff4dc}
+  .actionBtn.secondary{background:linear-gradient(#fffaf0,#f3dec1)}
+  .quickRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:27px}
+  .quickRow .guide{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  #btnHelp{width:86px;height:30px;flex:0 0 auto}
+
+  .resultModal{position:fixed;inset:0;background:rgba(44,22,10,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .resultModal.show{display:flex}
+  .modalCard{width:min(520px,94vw);background:#fff8e7;border:4px solid #5d3725;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:24px;text-align:center}
+  .modalCard h2{margin:0 0 10px;font-size:31px;color:#db4d32;letter-spacing:-.06em}
+  .modalCard p{font-weight:900;line-height:1.5;margin:8px 0;color:#5a3928}
+  .modalStats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0;text-align:left}
+  .modalStat{background:#fff;border:2px solid #9a6b4d;border-radius:12px;padding:9px 10px;font-weight:1000}
+  .bigBtn{height:52px;padding:0 22px;border-radius:15px;border:3px solid #693c27;background:linear-gradient(#eaffdf,#39c271);font-weight:1000;font-size:18px;box-shadow:0 5px 0 rgba(71,36,17,.22)}
+  .startScreen{position:fixed;inset:0;background:linear-gradient(180deg,#fff0c7,#f0b36f);display:flex;align-items:center;justify-content:center;z-index:120;padding:20px}
+  .startCard{width:min(720px,94vw);background:#fff8e7;border:5px solid #5b3424;border-radius:28px;padding:30px;box-shadow:0 20px 50px rgba(70,31,10,.3);text-align:center}
+  .startCard h2{font-size:42px;margin:0 0 12px;color:#db4d32;letter-spacing:-.08em}
+  .lead{font-size:17px;font-weight:900;line-height:1.55;color:#5a3826}
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0;text-align:left}
+  .how div{background:#fff;border:3px solid #8e5a3b;border-radius:15px;padding:12px;font-weight:850;line-height:1.45}
+
+  @media(max-width:1080px){
+    .app{min-width:0;grid-template-rows:58px minmax(0,1fr) 142px;padding:7px;gap:7px}
+    .top{grid-template-columns:1fr 1fr}.statsCard{grid-column:1/3;min-height:0;padding:5px 8px}.titleCard{padding:8px 12px}.dayCard{padding:6px 10px}.main{grid-template-columns:220px minmax(0,1fr)}.infoPanel{display:none}.queuePanel{padding:9px}.bottom{height:auto}.dockGrid{grid-template-columns:repeat(6,1fr)}.actionBtn{height:35px;font-size:12px}.quickRow .guide{font-size:11px}.startCard h2{font-size:34px}.how{grid-template-columns:1fr}
+  }
+
+
+  /* 집중 모드 UI: 시뮬레이터처럼 조리 공간을 먼저 보이게 정리 */
+  .app{
+    padding:8px;
+    gap:8px;
+    min-width:0;
+    grid-template-rows:44px minmax(0,1fr) 86px;
+  }
+  .top{
+    display:grid;
+    grid-template-columns:minmax(260px,1fr) auto;
+    gap:8px;
+  }
+  .titleCard{display:none}
+  .dayCard{
+    min-width:0;
+    flex-direction:row;
+    justify-content:flex-start;
+    gap:10px;
+    padding:7px 12px;
+    border-width:2px;
+    border-radius:14px;
+  }
+  .dayLabel{font-size:12px;min-width:150px;white-space:nowrap}
+  .timeBar{height:14px;border-width:2px;flex:1;min-width:120px}
+  .dayRibbon{display:none}
+  .statsCard{
+    border-width:2px;
+    border-radius:14px;
+    padding:6px 8px;
+    justify-content:flex-end;
+    min-width:250px;
+  }
+  .pill{border-width:2px;font-size:11px;padding:4px 8px;box-shadow:none}
+
+  .main{
+    display:block;
+    position:relative;
+    min-height:0;
+  }
+  .stageCard{
+    position:absolute;
+    inset:0;
+    border-width:2px;
+    border-radius:18px;
+    box-shadow:0 6px 22px rgba(87,44,20,.16);
+  }
+  .queuePanel{
+    position:absolute;
+    z-index:8;
+    left:12px;
+    top:12px;
+    width:min(245px,30vw);
+    max-height:min(50vh,330px);
+    padding:8px;
+    gap:7px;
+    border-width:2px;
+    border-radius:15px;
+    background:rgba(255,250,234,.86);
+    backdrop-filter:blur(8px);
+    box-shadow:0 8px 22px rgba(80,38,14,.16);
+  }
+  .panelTitle{font-size:13px;letter-spacing:-.03em}
+  .orders{gap:6px;overflow:hidden}
+  .orderCard{
+    border-width:2px;
+    border-radius:11px;
+    padding:7px;
+    box-shadow:none;
+    background:rgba(255,250,240,.92);
+  }
+  .orderCard.first{box-shadow:0 0 0 2px rgba(239,113,71,.15);background:rgba(255,243,221,.96)}
+  .orderCard:not(.first){opacity:.68}
+  .orderCard:not(.first) .orderNeed,.orderCard:not(.first) .tags{display:none}
+  .orderTop{margin-bottom:3px;align-items:center}
+  .orderName{font-size:13px;line-height:1.1}
+  .orderNeed{font-size:11px;line-height:1.25}
+  .orderWait{font-size:10px;border-width:1px;padding:1px 6px;background:rgba(255,255,255,.8)}
+  .tags{display:none}
+  .waitBar{height:4px;margin-top:5px;border-width:0;background:rgba(90,55,35,.18)}
+  .emptyQueue{font-size:12px;border-width:2px;padding:10px;background:rgba(255,255,255,.45)}
+  .recipeMini{font-size:10px;padding:6px 7px;border-width:1px;background:rgba(255,255,255,.55)}
+  .activeOrderMini{font-size:10px}
+
+  .stageOverlay{
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    align-items:center;
+    pointer-events:none;
+  }
+  .notice{
+    opacity:0;
+    transform:translateY(-6px);
+    transition:opacity .18s ease, transform .18s ease;
+    padding:7px 11px;
+    max-width:min(360px,46vw);
+    font-size:12px;
+    border-width:2px;
+    box-shadow:0 6px 16px rgba(65,31,12,.14);
+  }
+  .notice.show{opacity:.96;transform:translateY(0)}
+  .holesBar{
+    left:50%;
+    right:auto;
+    bottom:11px;
+    transform:translateX(-50%);
+    width:auto;
+    max-width:calc(100% - 280px);
+    gap:5px;
+  }
+  .holeBtn{
+    width:32px;
+    height:32px;
+    border-width:2px;
+    border-radius:10px;
+    font-size:12px;
+    box-shadow:0 2px 0 rgba(88,44,21,.16);
+  }
+  .holeBtn.active{box-shadow:0 0 0 3px rgba(56,167,239,.25)}
+
+  .infoPanel{
+    position:absolute;
+    z-index:8;
+    right:12px;
+    bottom:54px;
+    width:172px;
+    display:block;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    pointer-events:auto;
+  }
+  .infoPanel .infoBox:first-child,
+  .infoPanel .infoBox.tip{display:none}
+  .infoPanel .infoBox:nth-child(2){
+    padding:7px;
+    border-width:2px;
+    border-radius:14px;
+    background:rgba(255,250,234,.82);
+    backdrop-filter:blur(8px);
+    box-shadow:0 6px 18px rgba(80,38,14,.14);
+  }
+  .infoPanel h3,#fireText{display:none}
+  .infoPanel .btnGrid{grid-template-columns:repeat(3,1fr)!important;gap:5px}
+  .infoPanel .actionBtn{height:29px;min-width:0;padding:0 4px;font-size:11px;border-width:2px;border-radius:9px;box-shadow:none}
+
+  .bottom{min-height:0}
+  .controls{
+    padding:8px;
+    height:100%;
+    gap:0;
+    justify-content:center;
+    border-width:2px;
+    border-radius:15px;
+  }
+  .controlTitle,.quickRow{display:none}
+  .dockGrid{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:7px;
+  }
+  .dockGrid .actionBtn:disabled{display:inline-flex;opacity:.34;filter:saturate(.45);cursor:not-allowed}
+  .actionBtn{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:40px;
+    min-width:76px;
+    padding:0 10px;
+    border-width:2px;
+    border-radius:12px;
+    font-size:13px;
+    box-shadow:0 2px 0 rgba(87,44,20,.16);
+  }
+  .actionBtn:active:not(:disabled){transform:translateY(1px)}
+
+  @media(max-width:980px){
+    .app{grid-template-rows:42px minmax(0,1fr) 92px;padding:6px;gap:6px}
+    .top{grid-template-columns:minmax(160px,1fr) auto;gap:6px}
+    .dayCard{padding:6px 8px;gap:7px}
+    .dayLabel{min-width:112px;font-size:11px}
+    .statsCard{min-width:166px;padding:5px 6px;gap:4px}
+    .pill{font-size:10px;padding:3px 6px}
+    .queuePanel{left:8px;top:8px;width:210px;max-height:42vh;padding:7px}
+    .infoPanel{right:8px;bottom:48px;width:156px}
+    .holesBar{max-width:calc(100% - 32px);bottom:8px}
+    .holeBtn{width:29px;height:29px;font-size:11px}
+    .actionBtn{height:36px;min-width:64px;font-size:12px;padding:0 8px}
+    .notice{max-width:58vw}
+  }
+
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <section class="card titleCard">
+      <h1>빙글빙글 타코야키집</h1>
+      <div class="subtitle" id="todaySummary">1일차 · 기본 타코야키 연습</div>
+    </section>
+    <section class="card dayCard">
+      <div class="dayLabel" id="dayLabel">오늘 장사 시간</div>
+      <div class="timeBar"><div class="timeFill" id="timeFill"></div></div>
+      <div class="dayRibbon" id="dayRibbon">1일차 연습 영업</div>
+    </section>
+    <section class="card statsCard">
+      <span class="pill">점수 <b id="scoreText">0</b></span>
+      <span class="pill">완성 <b id="servedText">0</b></span>
+      <span class="pill">대기 <b id="queueCountText">0</b></span>
+      <span class="pill optional">콤보 <b id="comboText">0</b></span>
+      <span class="pill optional">평판 <b id="rankText">보통</b></span>
+      <button class="miniHelp" id="miniHelp" title="도움말">?</button>
+    </section>
+  </header>
+
+  <main class="main">
+    <aside class="card queuePanel">
+      <div class="panelTitle">주문 <span class="small" id="queueLimitText">최대 2개</span></div>
+      <div class="recipeMini" id="recipeMini">
+        <b>순서</b> 기름 → 반죽 → 속재료 → 굴리기 2~3회 → 주문 토핑 → 포장
+        <div class="activeOrderMini" id="activeOrderMini">첫 주문을 확인하세요.</div>
+      </div>
+      <div class="orders" id="orders"></div>
+    </aside>
+
+    <section class="card stageCard">
+      <canvas id="stage"></canvas>
+      <div class="stageOverlay">
+        <div class="notice" id="notice">기름 → 반죽 → 문어 → 굴리기</div>
+      </div>
+      <div class="holesBar" id="holesBar"></div>
+      <div class="popupLayer" id="popupLayer"></div>
+      <div class="keyboard">1~8 선택 · O/B/T/F 조리 · S/M/K/G 토핑 · Enter 포장</div>
+    </section>
+
+    <aside class="card infoPanel">
+      <div class="infoBox">
+        <h3>선택한 알</h3>
+        <div class="slotName" id="slotName">1번 구멍</div>
+        <div class="guide" id="slotGuide">비어 있습니다. 기름을 먼저 칠하세요.</div>
+        <div class="meters" style="margin-top:9px">
+          <div class="meter"><span>겉면</span><div class="meterTrack"><div class="meterFill" id="mCook"></div></div><b id="mCookText">0</b></div>
+          <div class="meter"><span>속</span><div class="meterTrack"><div class="meterFill" id="mInner"></div></div><b id="mInnerText">0</b></div>
+          <div class="meter"><span>모양</span><div class="meterTrack"><div class="meterFill" id="mShape"></div></div><b id="mShapeText">0</b></div>
+          <div class="meter"><span>탄맛</span><div class="meterTrack"><div class="meterFill" id="mBurn"></div></div><b id="mBurnText">0</b></div>
+        </div>
+      </div>
+      <div class="infoBox">
+        <h3>불 조절</h3>
+        <div class="btnGrid" style="grid-template-columns:repeat(3,1fr)">
+          <button class="actionBtn secondary" id="fire0">끄기</button>
+          <button class="actionBtn main" id="fire1">중불</button>
+          <button class="actionBtn red" id="fire2">강불</button>
+        </div>
+        <div class="small" id="fireText" style="margin-top:8px">현재: 중불</div>
+      </div>
+      <div class="infoBox tip">
+        <h3>오늘 팁</h3>
+        <div class="guide" id="dayGuide">첫날은 4구 팬만 사용합니다.</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="bottom">
+    <section class="card controls actionDock">
+      <div class="controlTitle"><span>조리 버튼</span><span class="small" id="nextOrderText">다음 주문 대기</span></div>
+      <div class="dockGrid">
+        <button class="actionBtn blue" id="btnOil">기름</button>
+        <button class="actionBtn main" id="btnBatter">반죽</button>
+        <button class="actionBtn red" id="btnOcto">문어</button>
+        <button class="actionBtn" id="btnCheese">치즈</button>
+        <button class="actionBtn red" id="btnHot">매운속</button>
+        <button class="actionBtn green" id="btnRoll">굴리기</button>
+        <button class="actionBtn dark" id="btnSauce">소스</button>
+        <button class="actionBtn secondary" id="btnMayo">마요</button>
+        <button class="actionBtn" id="btnKatsu">가쓰오</button>
+        <button class="actionBtn green" id="btnAonori">파래</button>
+        <button class="actionBtn green" id="btnPack">포장</button>
+        <button class="actionBtn secondary" id="btnClean">정리</button>
+      </div>
+      <div class="quickRow">
+        <div class="guide" id="quickTip">주문서 확인 → 기름 → 반죽 → 속재료 → 굴리기 → 토핑 → 포장</div>
+        <button class="actionBtn secondary" id="btnHelp">도움</button>
+      </div>
+    </section>
+  </footer>
+</div>
+
+<div class="startScreen" id="startScreen">
+  <div class="startCard">
+    <h2>빙글빙글 타코야키집</h2>
+    <p class="lead">팬의 구멍을 고르고 타코야키를 굴려 주문대로 포장하세요. 첫날은 기본 메뉴부터 천천히 시작합니다.</p>
+    <div class="how">
+      <div><b>1. 조리</b><br>기름 → 반죽 → 문어 순서로 넣습니다.</div>
+      <div><b>2. 굴리기</b><br>가장자리가 노릇해질 때 굴립니다.</div>
+      <div><b>3. 마무리</b><br>주문서의 소스·마요·가쓰오·파래를 맞추고 포장합니다.</div>
+    </div>
+    <button class="bigBtn" id="startBtn">영업 시작</button>
+  </div>
+</div>
+
+<div class="resultModal" id="resultModal">
+  <div class="modalCard">
+    <h2 id="resultTitle">오늘 영업 끝</h2>
+    <p id="resultComment">수고했어요.</p>
+    <div class="modalStats">
+      <div class="modalStat">오늘 점수 <b id="dayScoreText">0</b></div>
+      <div class="modalStat">완성 주문 <b id="dayServedText">0</b></div>
+      <div class="modalStat">최고 콤보 <b id="bestComboText">0</b></div>
+      <div class="modalStat">가게 평판 <b id="dayRankText">보통</b></div>
+    </div>
+    <button class="bigBtn" id="nextDayBtn">다음날 영업하기</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+const $ = (id)=>document.getElementById(id);
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const now = ()=>performance.now()/1000;
+
+const ORDER_NAMES = {
+  basic:'기본 타코야키',
+  mayo:'마요 타코야키',
+  classic:'소스마요 타코야키',
+  katsu:'가쓰오 타코야키',
+  aonori:'파래 타코야키',
+  cheese:'치즈 타코야키',
+  hot:'매운 타코야키',
+  octoPlus:'문어 듬뿍 타코야키',
+  crispy:'바삭 타코야키',
+  mix:'모둠 토핑 타코야키'
+};
+
+const daySettings = [
+  null,
+  {day:1, duration:120, holes:4, queueMax:2, orderGap:[22,30], menu:['basic'], pieces:[4], guide:'첫날은 4구 팬과 기본 타코야키만 사용합니다. 굴리기 타이밍만 익혀보세요.'},
+  {day:2, duration:125, holes:4, queueMax:2, orderGap:[18,26], menu:['basic','mayo','classic'], pieces:[4], guide:'마요와 소스마요 주문이 추가됩니다. 토핑은 필요한 것만 올리세요.'},
+  {day:3, duration:135, holes:6, queueMax:2, orderGap:[15,23], menu:['basic','mayo','classic','katsu','aonori'], pieces:[4,6], guide:'6구 팬이 열립니다. 가쓰오와 파래 주문이 등장합니다.'},
+  {day:4, duration:145, holes:6, queueMax:3, orderGap:[12,20], menu:['classic','katsu','aonori','cheese','hot','crispy'], pieces:[4,6], guide:'치즈와 매운속이 등장합니다. 주문표의 속재료만 확인하세요.'},
+  {day:5, duration:155, holes:8, queueMax:3, orderGap:[10,17], menu:['classic','katsu','aonori','cheese','hot','octoPlus','crispy','mix'], pieces:[4,6,8], guide:'8구 팬까지 사용합니다. 주문은 쌓이지만 화면은 필요한 정보만 보여줍니다.'}
+];
+
+const game = {
+  started:false,
+  paused:false,
+  day:1,
+  dayStart:0,
+  lastTime:0,
+  dayScore:0,
+  totalScore:0,
+  served:0,
+  dayServed:0,
+  combo:0,
+  bestCombo:0,
+  fire:1,
+  selected:0,
+  slots:[],
+  orders:[],
+  orderViewKey:'',
+  nextOrderAt:0,
+  messageTimer:0,
+  dirtyVisual:true,
+  audio:null,
+  autoTipTimer:0
+};
+
+const elems = {
+  timeFill:$('timeFill'), dayLabel:$('dayLabel'), dayRibbon:$('dayRibbon'), todaySummary:$('todaySummary'),
+  scoreText:$('scoreText'), servedText:$('servedText'), comboText:$('comboText'), rankText:$('rankText'), queueCountText:$('queueCountText'), queueLimitText:$('queueLimitText'),
+  orders:$('orders'), notice:$('notice'), holesBar:$('holesBar'), popupLayer:$('popupLayer'),
+  dayGuide:$('dayGuide'), slotName:$('slotName'), slotGuide:$('slotGuide'),
+  mCook:$('mCook'), mInner:$('mInner'), mShape:$('mShape'), mBurn:$('mBurn'),
+  mCookText:$('mCookText'), mInnerText:$('mInnerText'), mShapeText:$('mShapeText'), mBurnText:$('mBurnText'),
+  fireText:$('fireText'), nextOrderText:$('nextOrderText'), quickTip:$('quickTip'), recipeMini:$('recipeMini'), activeOrderMini:$('activeOrderMini'),
+  startScreen:$('startScreen'), startBtn:$('startBtn'), resultModal:$('resultModal'), nextDayBtn:$('nextDayBtn'), resultTitle:$('resultTitle'), resultComment:$('resultComment'),
+  dayScoreText:$('dayScoreText'), dayServedText:$('dayServedText'), bestComboText:$('bestComboText'), dayRankText:$('dayRankText')
+};
+
+function emptySlot(i){
+  return {
+    i, unlocked:false,
+    oil:0, batter:false, fill:0, filling:null, extraOcto:0,
+    totalCook:0, innerCook:0, phaseCook:0, burn:0, shape:0, collapse:0, rollCount:0,
+    sauce:0, mayo:0, katsu:0, aonori:0,
+    finished:false, cooling:0,
+    lastAction:0, dirty:true
+  };
+}
+
+function resetSlots(){
+  game.slots = Array.from({length:12},(_,i)=>emptySlot(i));
+  const cfg = getCfg();
+  for(let i=0;i<cfg.holes;i++) game.slots[i].unlocked = true;
+  game.selected = 0;
+}
+
+function getCfg(){ return daySettings[Math.min(game.day,5)]; }
+function rand(a,b){ return a + Math.random()*(b-a); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function makeOrder(){
+  const cfg = getCfg();
+  const type = pick(cfg.menu);
+  const pieces = pick(cfg.pieces);
+  const o = {
+    id: Math.random().toString(36).slice(2),
+    type, pieces,
+    filling:'octopus', extraOcto:false, cheese:false, hot:false, crispy:false,
+    sauce:1, mayo:0, katsu:0, aonori:0,
+    age:0, maxWait: game.day===1 ? 95 : Math.max(48, 92 - game.day*7 + pieces*3),
+    created: now()
+  };
+  if(type==='basic'){ o.sauce=1; }
+  if(type==='mayo'){ o.sauce=0; o.mayo=1; }
+  if(type==='classic'){ o.sauce=1; o.mayo=1; }
+  if(type==='katsu'){ o.sauce=1; o.mayo=1; o.katsu=1; }
+  if(type==='aonori'){ o.sauce=1; o.mayo=1; o.aonori=1; }
+  if(type==='cheese'){ o.cheese=true; o.filling='cheese'; o.sauce=1; o.mayo=1; }
+  if(type==='hot'){ o.hot=true; o.filling='hot'; o.sauce=1; o.mayo=0; o.aonori=1; }
+  if(type==='octoPlus'){ o.extraOcto=true; o.sauce=1; o.mayo=1; o.katsu=1; }
+  if(type==='crispy'){ o.crispy=true; o.sauce=1; o.mayo=1; }
+  if(type==='mix'){ o.sauce=1; o.mayo=1; o.katsu=1; o.aonori=1; }
+  return o;
+}
+
+function scheduleNextOrder(){
+  const gap = getCfg().orderGap;
+  game.nextOrderAt = now() + rand(gap[0], gap[1]);
+}
+
+function addOrder(force){
+  const cfg = getCfg();
+  if(!force && game.orders.length >= cfg.queueMax) return false;
+  if(force || game.orders.length < cfg.queueMax){
+    const order = makeOrder();
+    if(force && game.day===1 && game.dayServed===0 && game.orders.length===0){
+      Object.assign(order, {type:'basic', pieces:4, filling:'octopus', extraOcto:false, cheese:false, hot:false, crispy:false, sauce:1, mayo:0, katsu:0, aonori:0, maxWait:105});
+    }
+    game.orders.push(order);
+    setNotice('새 주문이 들어왔습니다.', 'warn');
+    playSound('order');
+    updateOrdersUI();
+    return true;
+  }
+  return false;
+}
+
+function startDay(){
+  const cfg = getCfg();
+  game.started = true;
+  game.paused = false;
+  game.dayStart = now();
+  game.lastTime = now();
+  game.dayScore = 0;
+  game.dayServed = 0;
+  game.combo = 0;
+  game.fire = 1;
+  game.orders = [];
+  game.orderViewKey = '';
+  resetSlots();
+  addOrder(true);
+  scheduleNextOrder();
+  elems.resultModal.classList.remove('show');
+  elems.startScreen.style.display = 'none';
+  elems.dayGuide.textContent = cfg.guide;
+  elems.todaySummary.textContent = `${game.day}일차 · ${cfg.holes}구`;
+  elems.dayRibbon.textContent = game.day === 1 ? '1일차 연습 영업' : `${game.day}일차 영업`;
+  elems.queueLimitText.textContent = `${cfg.queueMax}개까지`;
+  setNotice('기름 → 반죽 → 속재료 → 굴리기 2~3회 → 주문 토핑 → 포장입니다.', 'good');
+  buildHoleButtons();
+  updateUI(true);
+  updateFireUI();
+  createPanObjects();
+}
+
+function endDay(){
+  game.paused = true;
+  const rank = getRank(game.totalScore);
+  elems.resultTitle.textContent = `${game.day}일차 영업 끝`;
+  elems.dayScoreText.textContent = game.dayScore.toString();
+  elems.dayServedText.textContent = game.dayServed.toString();
+  elems.bestComboText.textContent = game.bestCombo.toString();
+  elems.dayRankText.textContent = rank;
+  let comment = '좋아요. 내일은 조금 더 빠르게 주문이 들어옵니다.';
+  if(game.dayServed>=8) comment = '손님들이 만족했어요. 굴리기 타이밍이 점점 좋아지고 있습니다.';
+  if(game.dayServed>=12) comment = '대단해요. 오늘은 줄 서서 먹는 타코야키집이었습니다.';
+  if(game.day===1) comment = '첫날 연습 영업을 마쳤습니다. 다음날부터 토핑 주문이 조금씩 늘어납니다.';
+  elems.resultComment.textContent = comment;
+  elems.resultModal.classList.add('show');
+}
+
+function getRank(score){
+  if(score>=9000) return '명물가게';
+  if(score>=5500) return '인기';
+  if(score>=2500) return '좋음';
+  return '보통';
+}
+
+function setNotice(text, type){
+  elems.notice.textContent = text;
+  elems.notice.className = 'notice show' + (type ? ' '+type : '');
+  game.messageTimer = 2.2;
+}
+
+function getOrdersViewKey(){
+  if(game.orders.length===0) return 'empty';
+  return game.orders.map((o,idx)=>[
+    idx,o.id,o.type,o.pieces,simpleNeed(o)
+  ].join('|')).join('||');
+}
+
+function updateOrderTimers(){
+  game.orders.forEach(o=>{
+    const card = elems.orders.querySelector(`[data-order-id="${o.id}"]`);
+    if(!card) return;
+    const remain = clamp(1 - o.age/o.maxWait,0,1);
+    const wait = card.querySelector('.orderWait');
+    const fill = card.querySelector('.waitFill');
+    if(wait) wait.textContent = `${Math.max(0,Math.ceil(o.maxWait-o.age))}초`;
+    if(fill) fill.style.width = `${remain*100}%`;
+  });
+}
+
+function updateOrdersUI(force){
+  const key = getOrdersViewKey();
+  if(!force && key === game.orderViewKey){
+    updateOrderTimers();
+    elems.queueCountText.textContent = game.orders.length.toString();
+    return;
+  }
+  game.orderViewKey = key;
+  elems.orders.innerHTML = '';
+  if(game.orders.length===0){
+    const div = document.createElement('div');
+    div.className = 'emptyQueue';
+    div.textContent = '잠시 후 주문이 들어옵니다.';
+    elems.orders.appendChild(div);
+  }
+  game.orders.forEach((o,idx)=>{
+    const card = document.createElement('div');
+    card.className = 'orderCard' + (idx===0?' first':'');
+    card.dataset.orderId = o.id;
+    const remain = clamp(1 - o.age/o.maxWait,0,1);
+    const tags = orderTags(o).slice(1).map(t=>`<span class="tag ${t[1]||''}">${t[0]}</span>`).join('');
+    card.innerHTML = `
+      <div class="orderTop"><div class="orderName">${ORDER_NAMES[o.type]}</div><div class="orderWait">${Math.max(0,Math.ceil(o.maxWait-o.age))}초</div></div>
+      <div class="orderNeed">${o.pieces}알 · ${simpleNeed(o)}</div>
+      <div class="tags">${tags}</div>
+      <div class="waitBar"><div class="waitFill" style="width:${remain*100}%"></div></div>
+    `;
+    elems.orders.appendChild(card);
+  });
+  updateOrderTimers();
+  elems.queueCountText.textContent = game.orders.length.toString();
+}
+
+function updateRecipeMini(){
+  if(!elems.activeOrderMini) return;
+  const o = game.orders[0];
+  if(!o){
+    elems.activeOrderMini.textContent = '대기 주문이 없습니다. 팬을 정리하며 기다리세요.';
+    return;
+  }
+  const tops = [];
+  if(o.sauce) tops.push('소스');
+  if(o.mayo) tops.push('마요');
+  if(o.katsu) tops.push('가쓰오');
+  if(o.aonori) tops.push('파래');
+  const filling = o.cheese ? '치즈' : o.hot ? '매운속' : o.extraOcto ? '문어 2개' : '문어';
+  const cooked = game.slots.filter(s=>s.batter && s.rollCount>=2).length;
+  elems.activeOrderMini.textContent = `현재 주문: ${o.pieces}알 · 속재료 ${filling} · 토핑 ${tops.length?tops.join('+'):'없음'} · 준비 ${Math.min(cooked,o.pieces)}/${o.pieces}알`;
+}
+
+function simpleNeed(o){
+  const tops=[];
+  if(o.sauce) tops.push('소스');
+  if(o.mayo) tops.push('마요');
+  if(o.katsu) tops.push('가쓰오');
+  if(o.aonori) tops.push('파래');
+  if(!tops.length) tops.push('토핑 없음');
+  if(o.cheese) tops.unshift('치즈');
+  if(o.hot) tops.unshift('매운속');
+  if(o.extraOcto) tops.unshift('문어 듬뿍');
+  if(o.crispy) tops.push('바삭');
+  return tops.join(' / ');
+}
+
+function describeOrder(o){
+  const parts = [];
+  if(o.cheese) parts.push('치즈 속');
+  else if(o.hot) parts.push('매운 속');
+  else if(o.extraOcto) parts.push('문어 듬뿍');
+  else parts.push('문어 1개씩');
+  if(o.crispy) parts.push('겉은 바삭하게');
+  const tops=[];
+  if(o.sauce) tops.push('소스');
+  if(o.mayo) tops.push('마요');
+  if(o.katsu) tops.push('가쓰오');
+  if(o.aonori) tops.push('파래');
+  if(tops.length) parts.push(tops.join('+'));
+  return parts.join(' · ');
+}
+
+function orderTags(o){
+  const tags = [[`${o.pieces}알`,'yellow']];
+  if(o.cheese) tags.push(['치즈','yellow']);
+  if(o.hot) tags.push(['매운속','red']);
+  if(o.extraOcto) tags.push(['문어 듬뿍','red']);
+  if(o.crispy) tags.push(['바삭','blue']);
+  if(o.sauce) tags.push(['소스','']);
+  if(o.mayo) tags.push(['마요','']);
+  if(o.katsu) tags.push(['가쓰오','green']);
+  if(o.aonori) tags.push(['파래','green']);
+  return tags;
+}
+
+function buildHoleButtons(){
+  elems.holesBar.innerHTML = '';
+  game.slots.forEach((s,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'holeBtn' + (i===game.selected?' active':'') + (!s.unlocked?' locked':'');
+    btn.textContent = i+1;
+    btn.disabled = !s.unlocked;
+    btn.addEventListener('click',()=>selectSlot(i));
+    elems.holesBar.appendChild(btn);
+  });
+}
+
+function refreshHoleButtons(){
+  Array.from(elems.holesBar.children).forEach((btn,i)=>{
+    const s = game.slots[i];
+    btn.className = 'holeBtn' + (i===game.selected?' active':'') + (!s.unlocked?' locked':'') + (isReady(s)?' ready':'') + (s.burn>35?' burning':'');
+  });
+}
+
+function selectSlot(i){
+  const s = game.slots[i];
+  if(!s || !s.unlocked) return;
+  game.selected = i;
+  refreshHoleButtons();
+  updateSlotInfo();
+  playSound('click');
+}
+
+function selectedSlot(){ return game.slots[game.selected]; }
+
+function actionOil(){
+  const s = selectedSlot();
+  if(!s.unlocked) return;
+  if(s.batter){ setNotice('이미 반죽이 들어간 구멍에는 기름을 다시 칠하기 어렵습니다.', 'warn'); return; }
+  s.oil = clamp(s.oil + 1,0,2);
+  s.dirty=true; game.dirtyVisual=true;
+  spawnActionParticles('oil');
+  floatText('기름칠', 50, 48);
+  setNotice('기름 완료. 반죽을 부으세요.', 'good');
+  playSound('oil');
+}
+
+function actionBatter(){
+  const s = selectedSlot();
+  if(!s.unlocked) return;
+  if(s.batter){ setNotice('이미 반죽이 들어 있습니다. 다음 구멍을 선택해보세요.', 'warn'); return; }
+  s.batter = true; s.fill = 1; s.totalCook=0; s.innerCook=0; s.phaseCook=0; s.shape=8; s.burn=0; s.rollCount=0; s.collapse=0; s.cooling=0;
+  s.dirty=true; game.dirtyVisual=true;
+  spawnActionParticles('batter');
+  floatText('반죽', 50, 48);
+  setNotice('반죽 완료. 문어를 넣으세요.', 'good');
+  playSound('pour');
+}
+
+function actionFilling(type){
+  const s = selectedSlot();
+  if(!s.batter){ setNotice('반죽을 먼저 부어야 속재료를 넣을 수 있습니다.', 'warn'); return; }
+  if(s.rollCount>0){ setNotice('이미 굴리기 시작해서 속재료를 넣기 어렵습니다.', 'warn'); return; }
+  if(type==='octopus'){
+    if(s.filling==='octopus') s.extraOcto = clamp(s.extraOcto+1,0,2);
+    else {s.filling='octopus'; s.extraOcto=0;}
+    floatText(s.extraOcto>0?'문어 추가':'문어', 50, 48);
+  }
+  if(type==='cheese'){ s.filling='cheese'; s.extraOcto=0; floatText('치즈',50,48); }
+  if(type==='hot'){ s.filling='hot'; s.extraOcto=0; floatText('매운속',50,48); }
+  s.dirty=true; game.dirtyVisual=true;
+  spawnActionParticles(type);
+  setNotice('속재료 완료. 노릇해지면 굴리세요.', 'good');
+  playSound(type==='hot'?'hot':'drop');
+}
+
+function actionRoll(){
+  const s = selectedSlot();
+  if(!s.batter){ setNotice('굴릴 반죽이 없습니다.', 'warn'); return; }
+  if(s.rollCount>=3){
+    s.shape = clamp(s.shape+5,0,100);
+    s.phaseCook = Math.max(0,s.phaseCook-4);
+    floatText('마무리 굴림',50,48);
+    playSound('roll');
+    return;
+  }
+  const p = s.phaseCook;
+  let msg = '';
+  if(p < 7){
+    s.collapse += 1; s.shape = clamp(s.shape-15,0,100); s.phaseCook *= .45; msg='너무 빨라요'; playSound('bad');
+    setNotice('반죽이 아직 흐물흐물합니다. 조금 더 익힌 뒤 굴리세요.', 'warn');
+  }else if(p <= 18){
+    s.rollCount += 1; s.shape = clamp(s.shape + (s.oil?34:25),0,100); s.phaseCook = 0; msg = s.rollCount>=3 ? '동글동글!' : '굿 롤!'; playSound('roll');
+    setNotice(s.rollCount>=3?'이제 토핑을 올리거나 조금 더 바삭하게 익힐 수 있습니다.':'좋은 타이밍입니다. 조금 더 익힌 뒤 다시 굴려보세요.', 'good');
+  }else{
+    s.rollCount += 1; s.shape = clamp(s.shape+16,0,100); s.burn = clamp(s.burn + (p-18)*2.3,0,100); s.phaseCook = 0; msg='조금 늦음'; playSound('bad');
+    setNotice('늦게 굴려서 바닥이 조금 탔습니다. 다음 알은 더 빨리 굴려보세요.', 'bad');
+  }
+  s.dirty=true; game.dirtyVisual=true;
+  spawnActionParticles('roll');
+  floatText(msg,50,46);
+}
+
+function actionTopping(type){
+  const s = selectedSlot();
+  if(!s.batter || s.rollCount<2){ setNotice('타코야키가 어느 정도 동그랗게 익은 뒤 토핑을 올려주세요.', 'warn'); return; }
+  if(type==='sauce') s.sauce = clamp(s.sauce+1,0,2);
+  if(type==='mayo') s.mayo = clamp(s.mayo+1,0,2);
+  if(type==='katsu') s.katsu = clamp(s.katsu+1,0,2);
+  if(type==='aonori') s.aonori = clamp(s.aonori+1,0,2);
+  s.dirty=true; game.dirtyVisual=true;
+  spawnActionParticles(type);
+  floatText({sauce:'소스',mayo:'마요',katsu:'가쓰오',aonori:'파래'}[type],50,46);
+  setNotice('토핑 완료. 주문서의 토핑을 다 맞췄으면 포장하세요.', 'good');
+  playSound(type);
+}
+
+function cleanSlot(){
+  const s = selectedSlot();
+  if(!s.batter && !s.oil){ setNotice('정리할 것이 없습니다.', 'warn'); return; }
+  game.slots[game.selected] = emptySlot(game.selected);
+  game.slots[game.selected].unlocked = true;
+  game.dirtyVisual=true;
+  setNotice('선택한 구멍을 정리했습니다.', 'good');
+  playSound('clean');
+  buildHoleButtons();
+}
+
+function isReady(s){
+  return s.batter && s.rollCount>=2 && s.totalCook>=24 && s.innerCook>=18 && s.burn<82;
+}
+
+function scoreBall(s,o){
+  if(!s.batter) return {score:0, details:[]};
+  const cookIdeal = o.crispy ? 52 : 42;
+  const innerIdeal = 34;
+  let score = 0;
+  const details = [];
+  const cookScore = clamp(100 - Math.abs(s.totalCook-cookIdeal)*4.2,0,100);
+  const innerScore = clamp(100 - Math.abs(s.innerCook-innerIdeal)*5.2,0,100);
+  const shapeScore = clamp(s.shape - s.collapse*8,0,100);
+  const burnScore = clamp(100 - s.burn*1.55,0,100);
+  score += cookScore*.28 + innerScore*.18 + shapeScore*.22 + burnScore*.18;
+  if(!s.oil) score -= 10;
+  if(o.cheese) score += s.filling==='cheese' ? 18 : -20;
+  else if(o.hot) score += s.filling==='hot' ? 18 : -20;
+  else score += s.filling==='octopus' ? 15 : -18;
+  if(o.extraOcto) score += s.extraOcto>=1 ? 12 : -12;
+  const topScore = toppingMatch(s.sauce,o.sauce) + toppingMatch(s.mayo,o.mayo) + toppingMatch(s.katsu,o.katsu) + toppingMatch(s.aonori,o.aonori);
+  score += topScore;
+  if(o.crispy && s.totalCook>=47 && s.burn<35) score += 12;
+  if(s.cooling>25) score -= (s.cooling-25)*.8;
+  score = clamp(Math.round(score),0,160);
+  details.push(cookScore,innerScore,shapeScore,burnScore);
+  return {score, details};
+}
+
+function toppingMatch(actual, want){
+  if(want){
+    if(actual===1) return 10;
+    if(actual>1) return 5;
+    return -10;
+  }
+  return actual===0 ? 4 : -5;
+}
+
+function actionPack(){
+  if(game.orders.length===0){ setNotice('아직 포장할 주문이 없습니다.', 'warn'); return; }
+  const o = game.orders[0];
+  const candidates = game.slots
+    .map((s,i)=>({s,i,sc:scoreBall(s,o).score,ready:isReady(s)}))
+    .filter(x=>x.s.batter && x.s.rollCount>=2)
+    .sort((a,b)=>(b.ready-a.ready)||b.sc-a.sc);
+  if(candidates.length===0){ setNotice('포장할 타코야키가 없습니다. 먼저 굴려서 익혀주세요.', 'warn'); return; }
+  const chosen = candidates.slice(0,o.pieces);
+  let score = 0;
+  chosen.forEach(x=>score += x.sc);
+  const countPenalty = chosen.length<o.pieces ? (o.pieces-chosen.length)*45 : 0;
+  const waitBonus = Math.round(clamp(1 - o.age/o.maxWait,0,1)*80);
+  const avg = chosen.length ? score/chosen.length : 0;
+  let final = Math.round(score + waitBonus - countPenalty);
+  if(avg>=122 && chosen.length>=o.pieces){ game.combo++; final += game.combo*25; floatText('PERFECT',50,38); }
+  else if(avg>=90 && chosen.length>=o.pieces){ game.combo++; floatText('GOOD',50,38); }
+  else { game.combo=0; floatText('아쉬워요',50,38); }
+  game.bestCombo = Math.max(game.bestCombo, game.combo);
+  final = Math.max(0, final);
+  game.dayScore += final; game.totalScore += final; game.served++; game.dayServed++;
+  chosen.forEach(x=>{
+    const idx = x.i;
+    const unlocked = game.slots[idx].unlocked;
+    game.slots[idx] = emptySlot(idx);
+    game.slots[idx].unlocked = unlocked;
+  });
+  game.orders.shift();
+  setNotice(`${ORDER_NAMES[o.type]} 포장 완료! +${final}점`, avg>=90?'good':'warn');
+  spawnSparkBurst();
+  playSound(avg>=90?'success':'pack');
+  if(game.orders.length===0 && now()<game.dayStart+getCfg().duration-4){
+    game.nextOrderAt = Math.min(game.nextOrderAt, now()+rand(5,9));
+  }
+  game.dirtyVisual=true;
+  updateOrdersUI();
+  buildHoleButtons();
+  updateUI(true);
+}
+
+function updateCooking(dt){
+  if(game.paused || !game.started) return;
+  const heat = game.fire===0 ? 0 : (game.fire===1 ? 1 : 1.55);
+  game.slots.forEach(s=>{
+    if(!s.unlocked || !s.batter) return;
+    if(heat>0){
+      const oilBonus = s.oil ? 1.0 : .78;
+      const shapeBonus = s.rollCount>=2 ? .9 : 1.05;
+      s.totalCook += dt*heat*oilBonus*1.8;
+      s.innerCook += dt*heat*(s.rollCount>=2?1.22:.82);
+      s.phaseCook += dt*heat*shapeBonus*1.8;
+      if(s.phaseCook>20) s.burn = clamp(s.burn + dt*heat*(s.phaseCook-19)*.34,0,100);
+      if(s.totalCook>58) s.burn = clamp(s.burn + dt*heat*(s.totalCook-58)*.10,0,100);
+      if(s.rollCount>=3 && s.shape<100) s.shape = clamp(s.shape + dt*heat*.9,0,100);
+      if(!s.oil && s.phaseCook>12) s.shape = clamp(s.shape - dt*heat*.65,0,100);
+      if(isReady(s)) s.cooling += dt*(game.fire===0?1:.35);
+      s.dirty=true;
+    }else{
+      if(isReady(s)) s.cooling += dt*1.15;
+    }
+  });
+}
+
+function updateOrders(dt){
+  if(game.paused || !game.started) return;
+  game.orders.forEach(o=>o.age += dt);
+  if(game.orders[0] && game.orders[0].age > game.orders[0].maxWait){
+    const lost = game.orders.shift();
+    game.combo = 0;
+    game.dayScore = Math.max(0, game.dayScore-80);
+    game.totalScore = Math.max(0, game.totalScore-80);
+    setNotice(`${ORDER_NAMES[lost.type]} 손님이 기다리다 떠났습니다.`, 'bad');
+    playSound('bad');
+    updateOrdersUI();
+  }
+  if(now()>=game.nextOrderAt){
+    addOrder(false);
+    scheduleNextOrder();
+  }
+}
+
+function updateDayProgress(){
+  if(!game.started) return;
+  const cfg = getCfg();
+  const elapsed = now()-game.dayStart;
+  const remain = clamp(1-elapsed/cfg.duration,0,1);
+  elems.timeFill.style.width = `${remain*100}%`;
+  elems.dayLabel.textContent = `${game.day}일차 장사 시간 · 남은 ${Math.ceil(cfg.duration-elapsed)}초`;
+  if(elapsed>=cfg.duration) endDay();
+}
+
+function updateUI(force){
+  elems.scoreText.textContent = game.totalScore.toString();
+  elems.servedText.textContent = game.served.toString();
+  elems.comboText.textContent = game.combo.toString();
+  elems.rankText.textContent = getRank(game.totalScore);
+  const until = Math.max(0, game.nextOrderAt-now());
+  elems.nextOrderText.textContent = game.orders.length>=getCfg().queueMax ? '대기열 가득' : `다음 주문 ${Math.ceil(until)}초`;
+  updateOrdersUI(!!force);
+  updateRecipeMini();
+  refreshHoleButtons();
+  updateSlotInfo();
+  updateButtonLocks();
+}
+
+function updateSlotInfo(){
+  const s = selectedSlot();
+  elems.slotName.textContent = `${game.selected+1}번 구멍`;
+  let guide = '비어 있습니다. 기름을 먼저 칠하면 달라붙지 않습니다.';
+  if(s.oil && !s.batter) guide='기름이 칠해졌습니다. 반죽을 부어주세요.';
+  if(s.batter && !s.filling) guide='반죽 안에 문어나 속재료를 넣어주세요.';
+  if(s.batter && s.filling && s.rollCount===0) guide='가장자리가 노릇해질 때 굴리세요. 너무 빠르면 무너집니다.';
+  if(s.rollCount===1) guide='반원이 됐습니다. 조금 더 익힌 뒤 한 번 더 굴리세요.';
+  if(s.rollCount===2) guide='거의 동그랗습니다. 마지막으로 굴리면 모양이 좋아집니다.';
+  if(s.rollCount>=3) guide='완성에 가깝습니다. 주문에 맞춰 토핑을 올리고 포장하세요.';
+  if(s.burn>55) guide='탄맛이 강해지고 있습니다. 포장하거나 팬을 정리하세요.';
+  elems.slotGuide.textContent = guide;
+  elems.quickTip.textContent = `${game.selected+1}번 · ${guide}`;
+  const cook = clamp(Math.round(s.totalCook*1.8),0,100);
+  const inner = clamp(Math.round(s.innerCook*2.2),0,100);
+  const shape = clamp(Math.round(s.shape),0,100);
+  const burn = clamp(Math.round(s.burn),0,100);
+  setMeter(elems.mCook, elems.mCookText, cook);
+  setMeter(elems.mInner, elems.mInnerText, inner);
+  setMeter(elems.mShape, elems.mShapeText, shape);
+  setMeter(elems.mBurn, elems.mBurnText, burn);
+}
+function setMeter(bar,text,val){ bar.style.width = `${val}%`; text.textContent = val; }
+
+function updateButtonLocks(){
+  const s = selectedSlot();
+  $('btnCheese').style.display = game.day>=4 ? '' : 'none';
+  $('btnHot').style.display = game.day>=4 ? '' : 'none';
+  $('btnKatsu').style.display = '';
+  $('btnAonori').style.display = '';
+  $('btnKatsu').textContent = game.day>=3 ? '가쓰오' : '가쓰오 3일차';
+  $('btnAonori').textContent = game.day>=3 ? '파래' : '파래 3일차';
+  $('btnOil').disabled = !s.unlocked || s.batter;
+  $('btnBatter').disabled = !s.unlocked || s.batter;
+  $('btnOcto').disabled = !s.unlocked || !s.batter || s.rollCount>0;
+  $('btnCheese').disabled = !s.unlocked || !s.batter || s.rollCount>0;
+  $('btnHot').disabled = !s.unlocked || !s.batter || s.rollCount>0;
+  $('btnRoll').disabled = !s.unlocked || !s.batter;
+  const topDisabled = !s.unlocked || !s.batter || s.rollCount<2;
+  $('btnSauce').disabled = topDisabled;
+  $('btnMayo').disabled = topDisabled;
+  $('btnKatsu').disabled = game.day<3 || topDisabled;
+  $('btnAonori').disabled = game.day<3 || topDisabled;
+  $('btnClean').disabled = !s.unlocked || (!s.batter && !s.oil);
+  const packable = game.slots.some(x=>x.batter && x.rollCount>=2);
+  $('btnPack').disabled = game.orders.length===0 || !packable;
+}
+
+function updateFireUI(){
+  elems.fireText.textContent = `현재: ${game.fire===0?'끄기':game.fire===1?'중불':'강불'}`;
+  ['fire0','fire1','fire2'].forEach((id,i)=>{
+    const b=$(id); b.style.outline = game.fire===i ? '4px solid rgba(38,136,216,.45)' : 'none';
+  });
+}
+function setFire(v){ game.fire=v; updateFireUI(); playSound('click'); }
+
+function showHelp(){
+  setNotice('주문 처리: 주문서 확인 → 필요한 알 수만큼 기름·반죽·속재료 → 굴리기 2~3회 → 주문 토핑 → 포장', 'good');
+  const o = game.orders[0];
+  const orderText = o ? `${ORDER_NAMES[o.type]}: ${o.pieces}알, ${describeOrder(o)}` : '대기 주문이 없습니다.';
+  elems.quickTip.textContent = orderText;
+  if(elems.activeOrderMini) elems.activeOrderMini.textContent = orderText;
+}
+
+// ----- Three.js -----
+let scene, camera, renderer, raycaster, pointer;
+let panGroup, ballGroups=[];
+const slotPositions=[];
+const canvas = $('stage');
+const matCache = {};
+
+function initThree(){
+  if(!window.THREE){
+    setNotice('3D 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.', 'bad');
+    return false;
+  }
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffe7b2);
+  camera = new THREE.PerspectiveCamera(42, 1, .1, 100);
+  camera.position.set(0,7.2,9.2);
+  camera.lookAt(0,0,0);
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  raycaster = new THREE.Raycaster();
+  pointer = new THREE.Vector2();
+
+  const amb = new THREE.HemisphereLight(0xfff2dc,0x5b351f,2.1);
+  scene.add(amb);
+  const sun = new THREE.DirectionalLight(0xffffff,2.6);
+  sun.position.set(3,8,5);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  scene.add(sun);
+  const warm = new THREE.PointLight(0xff8b3d,1.3,10);
+  warm.position.set(0,1.5,2.8);
+  scene.add(warm);
+
+  const tableGeo = new THREE.BoxGeometry(9.4,.35,6.4);
+  const table = new THREE.Mesh(tableGeo, material('table',0x9d5a34,.55,.42));
+  table.position.set(0,-.46,0);
+  table.receiveShadow=true;
+  scene.add(table);
+  const backGeo = new THREE.BoxGeometry(9.8,2.4,.2);
+  const back = new THREE.Mesh(backGeo, material('back',0xffd18b,.8,.18));
+  back.position.set(0,.75,-3.05);
+  back.receiveShadow=true;
+  scene.add(back);
+
+  panGroup = new THREE.Group();
+  scene.add(panGroup);
+  createPanObjects();
+  resizeThree();
+  window.addEventListener('resize', resizeThree);
+  canvas.addEventListener('pointerdown', onCanvasPointer);
+  return true;
+}
+
+function material(key,color,rough,metal){
+  const id = key+'_'+color+'_'+rough+'_'+metal;
+  if(matCache[id]) return matCache[id];
+  matCache[id] = new THREE.MeshStandardMaterial({color, roughness:rough??0.55, metalness:metal??0.05});
+  matCache[id].userData.cached = true;
+  return matCache[id];
+}
+
+function createPanObjects(){
+  if(!panGroup || !window.THREE) return;
+  clearGroup(panGroup);
+  slotPositions.length=0;
+  ballGroups=[];
+  const base = new THREE.Mesh(new THREE.BoxGeometry(7.9,.35,4.8), material('panBase',0x1b1e22,.38,.6));
+  base.position.y=0;
+  base.castShadow=true; base.receiveShadow=true;
+  panGroup.add(base);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(8.25,.22,5.1), material('panLip',0x30343a,.32,.75));
+  lip.position.y=.26;
+  lip.castShadow=true;
+  panGroup.add(lip);
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(7.82,.24,4.72), material('panInner',0x17191d,.38,.65));
+  inner.position.y=.32;
+  inner.castShadow=true; inner.receiveShadow=true;
+  panGroup.add(inner);
+
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.2,.22,2.4,18), material('handle',0x20232a,.55,.35));
+  handle.rotation.z=Math.PI/2;
+  handle.position.set(5.05,.28,0);
+  handle.castShadow=true;
+  panGroup.add(handle);
+
+  const coords=[];
+  const xs=[-2.85,-.95,.95,2.85];
+  const zs=[-1.42,0,1.42];
+  for(let r=0;r<3;r++) for(let c=0;c<4;c++) coords.push([xs[c],zs[r]]);
+  coords.forEach((p,i)=>{
+    const [x,z]=p; slotPositions.push(new THREE.Vector3(x,.53,z));
+    const unlocked = game.slots[i] && game.slots[i].unlocked;
+    const cup = new THREE.Group(); cup.name='slot_'+i;
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(.68,.62,.28,44), material('well'+(unlocked?'':'L'), unlocked?0x0e1116:0x3f362f,.42,.7));
+    well.position.set(x,.46,z); well.castShadow=true; well.receiveShadow=true; cup.add(well);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.69,.055,10,48), material('rim'+(unlocked?'':'L'), unlocked?0x464b50:0x766b61,.35,.65));
+    rim.rotation.x=Math.PI/2; rim.position.set(x,.63,z); rim.castShadow=true; cup.add(rim);
+    const bottom = new THREE.Mesh(new THREE.CircleGeometry(.51,38), material('bottom'+(unlocked?'':'L'), unlocked?0x111317:0x4c4037,.5,.55));
+    bottom.rotation.x=-Math.PI/2; bottom.position.set(x,.625,z); bottom.receiveShadow=true; cup.add(bottom);
+    if(!unlocked){ cup.traverse(o=>{ if(o.material) o.material.transparent=true, o.material.opacity=.45; }); }
+    panGroup.add(cup);
+    const bg = new THREE.Group(); bg.userData.slotIndex=i; ballGroups[i]=bg; panGroup.add(bg);
+  });
+  updateAllBallMeshes();
+}
+
+function updateAllBallMeshes(){
+  if(!window.THREE || !panGroup) return;
+  game.slots.forEach((s,i)=>updateBallMesh(i));
+}
+
+function clearGroup(g){
+  while(g.children.length){
+    const c=g.children.pop();
+    c.traverse?.(o=>{
+      if(o.geometry) o.geometry.dispose?.();
+      if(o.material){
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach(m=>{ if(!m.userData?.cached) m.dispose?.(); });
+      }
+    });
+  }
+}
+
+function updateBallMesh(i){
+  const s=game.slots[i];
+  const g=ballGroups[i];
+  if(!g || !slotPositions[i]) return;
+  clearGroup(g);
+  g.userData.slotIndex=i;
+  const pos=slotPositions[i];
+  if(!s.unlocked) return;
+  if(s.oil && !s.batter){
+    const oil = new THREE.Mesh(new THREE.CircleGeometry(.47,34), new THREE.MeshStandardMaterial({color:0xffd66e,roughness:.28,metalness:.05,transparent:true,opacity:.58}));
+    oil.rotation.x=-Math.PI/2; oil.position.set(pos.x,pos.y+.01,pos.z); g.add(oil);
+    return;
+  }
+  if(!s.batter) return;
+  const color = cookColor(s);
+  let mesh;
+  if(s.rollCount===0){
+    mesh = new THREE.Mesh(new THREE.CylinderGeometry(.57,.55,.13 + clamp(s.totalCook/70,0,.12),40), material('batter'+color,color,.72,.02));
+    mesh.position.set(pos.x,pos.y+.08,pos.z);
+  }else if(s.rollCount===1){
+    mesh = new THREE.Mesh(new THREE.SphereGeometry(.57,32,18,0,Math.PI*2,0,Math.PI*.66), material('ball'+color,color,.68,.02));
+    mesh.scale.y=.72;
+    mesh.position.set(pos.x,pos.y+.08,pos.z);
+  }else{
+    const radius = .48 + clamp(s.shape/100,0,1)*.11;
+    mesh = new THREE.Mesh(new THREE.SphereGeometry(radius,34,24), material('ball'+color,color,.66,.02));
+    mesh.scale.set(1 + s.collapse*.025, .86 + clamp(s.shape/100,0,1)*.18, 1 - s.collapse*.015);
+    mesh.position.set(pos.x,pos.y+.2,pos.z);
+    mesh.rotation.set(s.rollCount*.4, s.totalCook*.02, s.rollCount*.2);
+  }
+  mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData.slotIndex=i; g.add(mesh);
+  if(s.filling && s.rollCount===0){ addFillingMarker(g,pos,s); }
+  if(s.rollCount>=2){ addToppings(g,pos,s); }
+  if(s.burn>45){
+    const ash = new THREE.Mesh(new THREE.SphereGeometry(.49,20,10), new THREE.MeshStandardMaterial({color:0x1b1210,roughness:.9,transparent:true,opacity:clamp((s.burn-45)/75,0,.65)}));
+    ash.position.set(pos.x,pos.y+.25,pos.z); ash.scale.y=.24; g.add(ash);
+  }
+}
+
+function addFillingMarker(g,pos,s){
+  let color = 0xc84c42;
+  if(s.filling==='cheese') color = 0xffdd50;
+  if(s.filling==='hot') color = 0xe33b24;
+  const n = s.extraOcto>0 ? 2 : 1;
+  for(let j=0;j<n;j++){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.18,.08,.18), material('fill'+color,color,.6,.02));
+    m.position.set(pos.x + (j-.5)*(n>1?.22:0), pos.y+.2, pos.z + (j%2)*.12);
+    m.rotation.y = j*.7;
+    m.castShadow=true; g.add(m);
+  }
+}
+
+function addToppings(g,pos,s){
+  if(s.sauce>0){
+    for(let k=0;k<s.sauce;k++){
+      const line = new THREE.Mesh(new THREE.TorusGeometry(.38+.05*k,.028,8,58,Math.PI*1.55), material('sauce',0x5b2218,.42,.03));
+      line.position.set(pos.x,pos.y+.86+.025*k,pos.z); line.rotation.set(Math.PI/2,0,k*.8); g.add(line);
+    }
+  }
+  if(s.mayo>0){
+    for(let k=0;k<s.mayo;k++){
+      const line = new THREE.Mesh(new THREE.TorusGeometry(.32+.05*k,.024,8,58,Math.PI*1.55), material('mayo',0xfff5db,.32,.02));
+      line.position.set(pos.x,pos.y+.92+.025*k,pos.z); line.rotation.set(Math.PI/2,0,Math.PI/2+k*.7); g.add(line);
+    }
+  }
+  if(s.katsu>0){
+    for(let k=0;k<Math.min(8,4+s.katsu*3);k++){
+      const chip = new THREE.Mesh(new THREE.BoxGeometry(.18,.018,.05), material('katsu',0xd8a159,.8,.01));
+      chip.position.set(pos.x+rand(-.28,.28),pos.y+.83+rand(0,.08),pos.z+rand(-.28,.28));
+      chip.rotation.set(rand(0,Math.PI),rand(0,Math.PI),rand(0,Math.PI)); g.add(chip);
+    }
+  }
+  if(s.aonori>0){
+    for(let k=0;k<Math.min(12,5+s.aonori*5);k++){
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(.025,8,6), material('aonori',0x1f7b3a,.8,.01));
+      dot.position.set(pos.x+rand(-.32,.32),pos.y+.84+rand(0,.05),pos.z+rand(-.32,.32)); g.add(dot);
+    }
+  }
+}
+
+function cookColor(s){
+  const t = clamp(s.totalCook/58,0,1);
+  let c1=[255,239,199], c2=[244,177,83], c3=[139,70,36];
+  let rgb;
+  if(t<.55){ const u=t/.55; rgb=c1.map((v,i)=>Math.round(lerp(v,c2[i],u))); }
+  else{ const u=(t-.55)/.45; rgb=c2.map((v,i)=>Math.round(lerp(v,c3[i],u))); }
+  if(s.burn>20){
+    const u=clamp((s.burn-20)/80,0,1); rgb=rgb.map(v=>Math.round(lerp(v,22,u)));
+  }
+  rgb = rgb.map(v=>clamp(Math.round(v/8)*8,0,255));
+  return (rgb[0]<<16) + (rgb[1]<<8) + rgb[2];
+}
+
+function resizeThree(){
+  if(!renderer) return;
+  const rect = canvas.getBoundingClientRect();
+  renderer.setSize(rect.width, rect.height, false);
+  camera.aspect = rect.width/rect.height;
+  camera.updateProjectionMatrix();
+}
+
+function onCanvasPointer(ev){
+  if(!raycaster || !camera) return;
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((ev.clientX-rect.left)/rect.width)*2-1;
+  pointer.y = -((ev.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(pointer,camera);
+  const hits = raycaster.intersectObjects(panGroup.children,true);
+  for(const h of hits){
+    let obj = h.object;
+    while(obj){
+      if(obj.userData && Number.isInteger(obj.userData.slotIndex)){ selectSlot(obj.userData.slotIndex); return; }
+      if(obj.name && obj.name.startsWith('slot_')){ selectSlot(parseInt(obj.name.slice(5),10)); return; }
+      obj = obj.parent;
+    }
+  }
+}
+
+function renderThree(t){
+  if(!renderer) return;
+  if(game.dirtyVisual || Math.floor(t*4)!==Math.floor((t-.016)*4)){
+    updateAllBallMeshes();
+    game.dirtyVisual=false;
+  }
+  panGroup.rotation.y = Math.sin(t*.32)*.035;
+  game.slots.forEach((s,i)=>{
+    const g=ballGroups[i]; if(!g) return;
+    if(i===game.selected) g.position.y = Math.sin(t*5)*.035;
+    else g.position.y = 0;
+  });
+  renderer.render(scene,camera);
+}
+
+// ----- visual effects -----
+function floatText(text,xp,yp){
+  const div = document.createElement('div');
+  div.className='floatText'; div.textContent=text;
+  div.style.left = `${xp}%`; div.style.top = `${yp}%`;
+  elems.popupLayer.appendChild(div);
+  setTimeout(()=>div.remove(),1050);
+}
+function spawnSparkBurst(){
+  for(let i=0;i<22;i++){
+    const sp=document.createElement('div'); sp.className='spark';
+    sp.style.left='50%'; sp.style.top='42%';
+    sp.style.setProperty('--dx',`${rand(-190,190)}px`);
+    sp.style.setProperty('--dy',`${rand(-110,90)}px`);
+    elems.popupLayer.appendChild(sp);
+    setTimeout(()=>sp.remove(),700);
+  }
+}
+function spawnActionParticles(type){
+  const count = type==='roll'?16: type==='sauce'||type==='mayo'?12:10;
+  let color = '#fff2a6';
+  if(type==='sauce') color='#5b2218'; if(type==='mayo') color='#fff8e8'; if(type==='aonori') color='#228543'; if(type==='hot') color='#ef3f2c'; if(type==='oil') color='#ffe27a';
+  for(let i=0;i<count;i++){
+    const sp=document.createElement('div'); sp.className='spark'; sp.style.background=color; sp.style.boxShadow=`0 0 14px ${color}`;
+    sp.style.left=`${50+rand(-8,8)}%`; sp.style.top=`${50+rand(-8,8)}%`;
+    sp.style.setProperty('--dx',`${rand(-70,70)}px`); sp.style.setProperty('--dy',`${rand(-80,50)}px`);
+    elems.popupLayer.appendChild(sp); setTimeout(()=>sp.remove(),650);
+  }
+}
+
+// ----- sound -----
+function ensureAudio(){
+  if(game.audio) return game.audio;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if(!C) return null;
+  const ctx = new C(); game.audio = ctx; return ctx;
+}
+function playSound(type){
+  const ctx = ensureAudio(); if(!ctx) return;
+  if(ctx.state==='suspended') ctx.resume();
+  const t=ctx.currentTime;
+  function osc(freq,dur,gain,wave){
+    const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type=wave||'sine'; o.frequency.setValueAtTime(freq,t); o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.75),t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(gain,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+dur+.02);
+  }
+  function noise(dur,gain){
+    const buffer=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate); const data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(1-i/data.length);
+    const src=ctx.createBufferSource(); src.buffer=buffer; const g=ctx.createGain(); g.gain.value=gain; const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value= type==='oil'?2600: type==='roll'?900:1700;
+    src.connect(f).connect(g).connect(ctx.destination); src.start(t); src.stop(t+dur);
+  }
+  if(type==='click') osc(420,.06,.035,'triangle');
+  else if(type==='order'){ osc(720,.08,.05,'square'); setTimeout(()=>playSound('click'),80); }
+  else if(type==='oil'){ noise(.16,.07); osc(1800,.08,.025,'triangle'); }
+  else if(type==='pour'){ noise(.28,.055); osc(240,.12,.025,'sawtooth'); }
+  else if(type==='drop'){ osc(350,.08,.045,'triangle'); noise(.06,.02); }
+  else if(type==='hot'){ osc(160,.12,.045,'sawtooth'); noise(.1,.04); }
+  else if(type==='roll'){ noise(.12,.055); osc(540,.1,.04,'triangle'); }
+  else if(type==='sauce'){ noise(.18,.045); osc(260,.08,.025,'sine'); }
+  else if(type==='mayo'){ noise(.15,.035); osc(620,.08,.025,'triangle'); }
+  else if(type==='katsu'||type==='aonori'){ noise(.10,.035); osc(1100,.04,.02,'triangle'); }
+  else if(type==='clean'){ noise(.16,.045); osc(300,.08,.03,'triangle'); }
+  else if(type==='success'){ osc(660,.10,.055,'triangle'); setTimeout(()=>{osc(880,.12,.055,'triangle')},90); setTimeout(()=>{osc(1180,.16,.045,'triangle')},190); }
+  else if(type==='bad'){ osc(180,.18,.055,'sawtooth'); }
+  else if(type==='pack'){ osc(500,.12,.05,'triangle'); }
+}
+
+function bindControls(){
+  $('btnOil').onclick=actionOil; $('btnBatter').onclick=actionBatter; $('btnOcto').onclick=()=>actionFilling('octopus');
+  $('btnCheese').onclick=()=>actionFilling('cheese'); $('btnHot').onclick=()=>actionFilling('hot'); $('btnRoll').onclick=actionRoll;
+  $('btnSauce').onclick=()=>actionTopping('sauce'); $('btnMayo').onclick=()=>actionTopping('mayo'); $('btnKatsu').onclick=()=>actionTopping('katsu'); $('btnAonori').onclick=()=>actionTopping('aonori');
+  $('btnClean').onclick=cleanSlot; $('btnPack').onclick=actionPack; $('btnHelp').onclick=showHelp; $('miniHelp').onclick=showHelp;
+  $('fire0').onclick=()=>setFire(0); $('fire1').onclick=()=>setFire(1); $('fire2').onclick=()=>setFire(2);
+  elems.startBtn.onclick=()=>{ ensureAudio(); startDay(); };
+  elems.nextDayBtn.onclick=()=>{ game.day++; startDay(); };
+  window.addEventListener('keydown',(e)=>{
+    if(e.repeat) return;
+    const k=e.key.toLowerCase();
+    if(k>='1'&&k<='9'){ selectSlot(parseInt(k,10)-1); return; }
+    if(k==='0'){ selectSlot(9); return; }
+    if(k==='-'||k==='_'){ selectSlot(10); return; }
+    if(k==='='||k==='+'){ selectSlot(11); return; }
+    if(k==='o') actionOil();
+    else if(k==='b') actionBatter();
+    else if(k==='t') actionFilling('octopus');
+    else if(k==='c') actionFilling('cheese');
+    else if(k==='h') actionFilling('hot');
+    else if(k==='f' || k===' ') { e.preventDefault(); actionRoll(); }
+    else if(k==='s') actionTopping('sauce');
+    else if(k==='m') actionTopping('mayo');
+    else if(k==='k') actionTopping('katsu');
+    else if(k==='g') actionTopping('aonori');
+    else if(k==='r') cleanSlot();
+    else if(k==='enter') actionPack();
+    else if(k==='q') setFire(0);
+    else if(k==='w') setFire(1);
+    else if(k==='e') setFire(2);
+  });
+}
+
+function loop(){
+  requestAnimationFrame(loop);
+  const t=now();
+  const dt=clamp(t-game.lastTime,0,.08); game.lastTime=t;
+  if(game.started && !game.paused){
+    updateCooking(dt);
+    updateOrders(dt);
+    updateDayProgress();
+    if(game.messageTimer>0){
+      game.messageTimer -= dt;
+      if(game.messageTimer<=0){ elems.notice.className = 'notice'; }
+    }
+    updateUI(false);
+  }
+  renderThree(t);
+}
+
+function boot(){
+  resetSlots();
+  bindControls();
+  initThree();
+  buildHoleButtons();
+  updateUI(true);
+  updateFireUI();
+  loop();
+}
+boot();
+})();
+</script>
+</body>
+</html>
