@@ -1,728 +1,577 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 루빅스 큐브 게임</title>
-    <!-- Tailwind CSS for UI styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none; /* Prevent pinch zoom on mobile */
-        }
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            display: block;
-            /* 우클릭 컨텍스트 메뉴 방지 */
-            oncontextmenu="return false;"
-        }
-        /* Custom scrollbar for control panel if needed */
-        .controls-grid::-webkit-scrollbar { width: 6px; }
-        .controls-grid::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 4px; }
-        
-        /* Custom button styles */
-        .btn-custom {
-            @apply px-4 py-2 rounded-md font-bold shadow transition flex items-center justify-center gap-2;
-        }
-        
-        /* 타이머 스타일 */
-        .timer-display {
-            font-variant-numeric: tabular-nums;
-        }
-    </style>
-    
-    <!-- Three.js 모듈 경로를 지정해주는 Import Map 추가 -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>큐브 마스터 DX - 3D 루빅스 큐브</title>
+<style>
+  :root{
+    --bg:#070912;
+    --panel:rgba(16,24,42,.84);
+    --panel-strong:rgba(10,15,28,.94);
+    --line:rgba(255,255,255,.12);
+    --text:#eef5ff;
+    --muted:#9fb0c8;
+    --blue:#38bdf8;
+    --green:#34d399;
+    --yellow:#facc15;
+    --red:#fb7185;
+    --orange:#fb923c;
+    --purple:#a78bfa;
+    --shadow:0 18px 50px rgba(0,0,0,.42);
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;touch-action:none;user-select:none}
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.85;
+    background:
+      radial-gradient(circle at 15% 18%, rgba(56,189,248,.24), transparent 28%),
+      radial-gradient(circle at 82% 16%, rgba(167,139,250,.18), transparent 30%),
+      radial-gradient(circle at 50% 84%, rgba(52,211,153,.16), transparent 26%),
+      linear-gradient(180deg,#080b18,#05060b 64%,#030409);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+    background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 80px 120px,#8ddcff,transparent),radial-gradient(1.5px 1.5px at 160px 70px,#ffe98a,transparent),radial-gradient(1px 1px at 210px 180px,#fff,transparent);
+    background-size:260px 220px;animation:stars 8s linear infinite;
+  }
+  @keyframes stars{from{transform:translateY(0)}to{transform:translateY(18px)}}
+  #canvas-container{position:fixed;inset:0;z-index:1}
+  .ui{position:fixed;inset:0;z-index:5;pointer-events:none;padding:18px;display:grid;grid-template-columns:330px 1fr 300px;grid-template-rows:auto 1fr auto;gap:14px}
+  .card{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+  .brand{grid-column:1;grid-row:1;padding:18px}
+  .brand h1{margin:0;font-size:24px;letter-spacing:-.04em;display:flex;align-items:center;gap:8px}
+  .brand p{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+  .status{grid-column:2;grid-row:1;justify-self:center;display:flex;align-items:stretch;gap:10px;padding:10px;max-width:720px;width:min(720px,100%)}
+  .stat{min-width:110px;flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px 12px;text-align:center}
+  .stat small{display:block;color:var(--muted);font-weight:700;font-size:12px;margin-bottom:4px}.stat b{font-size:23px;font-variant-numeric:tabular-nums}.stat .best{color:var(--green)}.stat .timer{color:var(--yellow)}
+  .top-actions{grid-column:3;grid-row:1;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-self:start}
+  button{font-family:inherit;border:none;cursor:pointer;color:var(--text);font-weight:800;transition:transform .12s ease,filter .12s ease,background .12s ease,border-color .12s ease;touch-action:manipulation}
+  button:active{transform:translateY(2px) scale(.99)}
+  .btn{border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);box-shadow:0 5px 16px rgba(0,0,0,.18);font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px}
+  .btn:hover{filter:brightness(1.12)}.btn.primary{background:linear-gradient(135deg,#2563eb,#0ea5e9);border-color:rgba(125,211,252,.5)}.btn.green{background:linear-gradient(135deg,#059669,#34d399);color:#04130e}.btn.yellow{background:linear-gradient(135deg,#f59e0b,#facc15);color:#160d00}.btn.red{background:linear-gradient(135deg,#be123c,#fb7185)}.btn.ghost{background:rgba(255,255,255,.06)}
+  .mode-card{grid-column:1;grid-row:2;align-self:start;padding:16px}
+  .section-title{margin:0 0 10px;font-size:14px;color:#dbeafe;display:flex;align-items:center;justify-content:space-between;gap:8px}.section-title span{color:var(--muted);font-size:12px;font-weight:700}
+  .mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.mode-row .selected{outline:3px solid rgba(56,189,248,.36);background:rgba(56,189,248,.18)}
+  .guide{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;color:var(--muted);font-size:13px;line-height:1.55}.guide b{color:#fff}.guide kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:1px 6px;color:#fff;font-weight:800}
+  .history{margin-top:12px;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:16px;padding:12px;max-height:160px;overflow:auto;font-size:13px;color:var(--muted);line-height:1.55}.history strong{color:#fff}.history::-webkit-scrollbar{width:6px}.history::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
+  .turn-panel{grid-column:3;grid-row:2;align-self:start;padding:14px}.faces{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.face{border-radius:18px;padding:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06)}.face-head{font-size:13px;font-weight:900;display:flex;align-items:center;gap:7px;margin-bottom:7px}.swatch{width:16px;height:16px;border-radius:5px;border:2px solid rgba(255,255,255,.6);box-shadow:0 1px 8px rgba(0,0,0,.25)}.mini-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mini{height:38px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);font-size:16px}.mini:hover{background:rgba(255,255,255,.14)}
+  .bottom-bar{grid-column:1 / span 3;grid-row:3;justify-self:center;width:min(820px,100%);padding:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}.message{font-weight:800;color:#e5edff;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}.kbd-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kbd{font-size:12px;color:var(--muted);background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:999px;padding:6px 9px}
+  .center-badge{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;pointer-events:none;text-align:center}.toast{display:inline-block;background:rgba(7,11,22,.82);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:13px 20px;font-weight:900;box-shadow:var(--shadow);opacity:0;transform:translateY(12px) scale(.95);transition:.25s}.toast.show{opacity:1;transform:translateY(0) scale(1)}
+  .modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}.modal.show{display:flex}.modal-card{width:min(520px,96vw);background:linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));border:1px solid rgba(255,255,255,.18);border-radius:28px;padding:28px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.6)}.modal-card h2{margin:0 0 8px;font-size:36px;letter-spacing:-.04em}.modal-card p{margin:0 0 20px;color:var(--muted);line-height:1.55}.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.result-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px}.result-box small{display:block;color:var(--muted);font-weight:800;margin-bottom:5px}.result-box b{font-size:22px;color:#fff;font-variant-numeric:tabular-nums}
+  .loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#070912;color:#dbeafe;text-align:center;padding:24px}.loading.hidden{display:none}.loading-card{max-width:520px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:var(--shadow)}.spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,.18);border-top-color:#38bdf8;margin:0 auto 18px;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:980px){
+    .ui{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;padding:10px;gap:8px}.brand{grid-column:1;grid-row:1;padding:12px}.brand h1{font-size:20px}.brand p{display:none}.status{grid-column:1;grid-row:2;max-width:none;padding:7px;gap:6px}.stat{min-width:0;padding:8px 6px}.stat small{font-size:10px}.stat b{font-size:18px}.top-actions{grid-column:1;grid-row:4;grid-template-columns:repeat(4,1fr);padding:8px;align-self:end}.btn{font-size:12px;padding:8px 6px;min-height:38px}.mode-card{grid-column:1;grid-row:3;align-self:start;width:min(360px,100%);padding:10px}.guide,.history{display:none}.turn-panel{grid-column:1;grid-row:4;align-self:end;margin-bottom:62px;padding:10px}.faces{grid-template-columns:repeat(3,1fr);gap:6px}.face{padding:6px;border-radius:14px}.face-head{font-size:11px;margin-bottom:5px}.swatch{width:12px;height:12px}.mini{height:34px;font-size:14px}.bottom-bar{display:none}.result-grid{grid-template-columns:1fr}.modal-card h2{font-size:30px}}
+  @media (max-width:560px){.mode-card{display:none}.top-actions{grid-template-columns:repeat(2,1fr)}.turn-panel{margin-bottom:100px}.faces{grid-template-columns:repeat(2,1fr)}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
 </head>
 <body>
+<div id="loading" class="loading"><div class="loading-card"><div class="spinner"></div><h2>큐브 엔진 불러오는 중</h2><p>3D 렌더링을 위해 Three.js를 사용합니다. 인터넷이 차단된 환경이라면 이 화면에서 멈출 수 있습니다.</p></div></div>
+<div id="canvas-container"></div>
 
-    <!-- BGM Audio (나른한 음악 예시) -->
-    <audio id="bgm" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
+<div class="ui">
+  <section class="card brand">
+    <h1>🧊 큐브 마스터 DX</h1>
+    <p>조작을 단순화하고, 이동 기록·되돌리기·정확한 완성 판정을 추가한 3D 루빅스 큐브입니다.</p>
+  </section>
 
-    <!-- Sound Effects Audio -->
-    <audio id="sfx-click">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="sfx-rotate">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3" type="audio/mpeg">
-    </audio>
+  <section class="card status">
+    <div class="stat"><small>큐브</small><b id="stat-size">3×3×3</b></div>
+    <div class="stat"><small>시간</small><b id="timer" class="timer">00:00.00</b></div>
+    <div class="stat"><small>이동</small><b id="move-count">0</b></div>
+    <div class="stat"><small>최고 기록</small><b id="best-time" class="best">--:--.--</b></div>
+  </section>
 
+  <section class="card top-actions">
+    <button class="btn primary" id="btn-scramble">🔀 섞기</button>
+    <button class="btn ghost" id="btn-undo">↩ 되돌리기</button>
+    <button class="btn ghost" id="btn-camera">🎯 시점</button>
+    <button class="btn ghost" id="btn-sound">🔊 소리</button>
+  </section>
 
-    <!-- UI Overlay -->
-    <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-4 z-10">
-        
-        <!-- Top Bar -->
-        <div class="flex flex-col md:flex-row justify-between items-start pointer-events-auto gap-4">
-            <div class="bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-lg border border-gray-700 backdrop-blur-sm">
-                <div class="flex justify-between items-center mb-3">
-                    <h1 class="text-xl font-bold text-blue-400">3D 루빅스 큐브</h1>
-                    <button id="btn-bgm-toggle" class="p-2 rounded-full hover:bg-gray-700 transition">
-                        <i data-lucide="music" class="text-gray-300"></i>
-                    </button>
-                </div>
-                <div class="flex gap-2 mb-3">
-                    <button id="btn-2x2" class="btn-custom bg-blue-600 hover:bg-blue-500">2x2x2</button>
-                    <button id="btn-3x3" class="btn-custom bg-green-600 hover:bg-green-500">3x3x3</button>
-                </div>
-                <div class="flex gap-2 mb-3">
-                    <button id="btn-scramble" class="btn-custom bg-yellow-500 text-black hover:bg-yellow-400">
-                        <i data-lucide="shuffle" class="w-4 h-4"></i> 무작위 섞기
-                    </button>
-                    <button id="btn-reset" class="btn-custom bg-red-600 hover:bg-red-500">초기화</button>
-                </div>
-                <!-- 타이머 및 최고 기록 표시 -->
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between items-center text-sm text-gray-300">
-                        <span>시간:</span>
-                        <span id="timer" class="timer-display font-bold text-xl text-yellow-400">00:00.00</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs text-gray-400">
-                        <span>최고 기록:</span>
-                        <span id="best-time" class="timer-display font-bold text-green-400">--:--.--</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-lg border border-gray-700 backdrop-blur-sm text-sm w-64">
-                <h3 class="font-bold text-gray-200 mb-2 border-b border-gray-600 pb-1 flex items-center">
-                    <i data-lucide="gamepad-2" class="w-4 h-4 mr-2 text-purple-400"></i> 조작 가이드
-                </h3>
-                <ul class="space-y-1 text-gray-300">
-                    <li><span class="text-yellow-400 font-bold">좌클릭 드래그</span> : 시점 회전</li>
-                    <li><span class="text-yellow-400 font-bold">우클릭 드래그</span> : 면 회전</li>
-                    <li><span class="text-yellow-400 font-bold">마우스 휠</span> : 확대 / 축소</li>
-                    <li><span class="text-yellow-400 font-bold">키보드 방향키</span> : 큐브 전체 회전</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Bottom Controls (오른쪽 하단으로 이동) -->
-        <div class="pointer-events-auto bg-gray-900 bg-opacity-70 p-3 rounded-lg shadow-lg border border-gray-700 backdrop-blur-sm absolute bottom-4 right-4 w-64 transition-all duration-300 hover:bg-opacity-90">
-            <h2 class="text-center font-bold mb-2 text-gray-200 text-sm">화살표를 눌러 각 면을 회전하세요</h2>
-            <div id="controls-grid" class="grid grid-cols-2 gap-2">
-                <!-- Controls will be injected here dynamically -->
-            </div>
-        </div>
-
+  <section class="card mode-card">
+    <h3 class="section-title">난이도 선택 <span>기록은 크기별 저장</span></h3>
+    <div class="mode-row">
+      <button class="btn" id="btn-2">2×2</button>
+      <button class="btn selected" id="btn-3">3×3</button>
     </div>
-
-    <!-- 3D Canvas -->
-    <div id="canvas-container"></div>
-
-    <!-- Three.js Library & OrbitControls -->
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-        // --- 전역 변수 설정 ---
-        let scene, camera, renderer, controls;
-        let cubeGroup = new THREE.Group();
-        let cubies = [];
-        let currentSize = 3;
-        
-        let isAnimating = false;
-        let animationQueue = [];
-
-        // 오디오 요소
-        const bgm = document.getElementById('bgm');
-        const sfxClick = document.getElementById('sfx-click');
-        const sfxRotate = document.getElementById('sfx-rotate');
-        let isBgmPlaying = false;
-
-        // 타이머 관련 변수
-        let startTime;
-        let timerInterval;
-        let isTimerRunning = false;
-        const timerDisplay = document.getElementById('timer');
-        const bestTimeDisplay = document.getElementById('best-time');
-        let bestTime2x2 = localStorage.getItem('bestTime2x2') || null;
-        let bestTime3x3 = localStorage.getItem('bestTime3x3') || null;
-
-        // 큐브 색상 매핑 (Rubik's Standard)
-        // 오른쪽(Red), 왼쪽(Orange), 위(White), 아래(Yellow), 앞(Green), 뒤(Blue)
-        const COLORS = {
-            R: 0xff0000, L: 0xff8800,
-            U: 0xffffff, D: 0xffff00,
-            F: 0x00ff00, B: 0x0000ff,
-            CORE: 0x111111 // 내부 색상
-        };
-
-        // 마우스 드래그 회전 관련 변수
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
-        let isRightDragging = false;
-        let dragStartPoint = null;
-        let clickedCubie = null;
-        let clickedFaceNormal = null;
-
-        init();
-        animateLoop();
-
-        function init() {
-            const container = document.getElementById('canvas-container');
-
-            // 1. Scene 설정
-            scene = new THREE.Scene();
-
-            // 2. Camera 설정
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(5, 5, 7);
-
-            // 3. Renderer 설정
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
-
-            // 4. 조명 설정
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(10, 20, 10);
-            scene.add(dirLight);
-
-            // 5. Controls 설정 (마우스로 카메라 회전)
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enablePan = false; // 우클릭 드래그 회전을 위해 팬 비활성화
-            controls.minDistance = 4;
-            controls.maxDistance = 15;
-            controls.mouseButtons = {
-                LEFT: THREE.MOUSE.ROTATE,
-                MIDDLE: THREE.MOUSE.DOLLY,
-                RIGHT: null // 우클릭은 커스텀 드래그에 사용
-            };
-
-            scene.add(cubeGroup);
-
-            // 6. 이벤트 리스너 설정
-            window.addEventListener('resize', onWindowResize);
-            document.getElementById('btn-2x2').addEventListener('click', () => { playClickSound(); buildCube(2); });
-            document.getElementById('btn-3x3').addEventListener('click', () => { playClickSound(); buildCube(3); });
-            document.getElementById('btn-scramble').addEventListener('click', () => { playClickSound(); scramble(); });
-            document.getElementById('btn-reset').addEventListener('click', () => { playClickSound(); buildCube(currentSize); });
-            
-            document.getElementById('btn-bgm-toggle').addEventListener('click', toggleBgm);
-
-            // 방향키 입력 설정 (큐브 전체 회전)
-            window.addEventListener('keydown', (e) => {
-                if (isAnimating) return;
-                const duration = 200;
-                switch(e.key) {
-                    case 'ArrowLeft':  queueWholeRotation('y', Math.PI/2, duration); break;
-                    case 'ArrowRight': queueWholeRotation('y', -Math.PI/2, duration); break;
-                    case 'ArrowUp':    queueWholeRotation('x', -Math.PI/2, duration); break;
-                    case 'ArrowDown':  queueWholeRotation('x', Math.PI/2, duration); break;
-                }
-            });
-
-            // 마우스 이벤트 리스너 추가 (우클릭 드래그 회전)
-            container.addEventListener('mousedown', onMouseDown);
-            container.addEventListener('mousemove', onMouseMove);
-            container.addEventListener('mouseup', onMouseUp);
-            container.addEventListener('contextmenu', e => e.preventDefault()); // 컨텍스트 메뉴 방지
-
-            // 초기 큐브 생성
-            buildCube(3);
-            
-            // Lucide 아이콘 초기화
-            lucide.createIcons();
-        }
-
-        // --- 마우스 이벤트 핸들러 (우클릭 드래그 회전) ---
-        function onMouseDown(event) {
-            if (event.button !== 2 || isAnimating) return; // 우클릭만 처리, 애니메이션 중이면 무시
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cubies);
-
-            if (intersects.length > 0) {
-                isRightDragging = true;
-                clickedCubie = intersects[0].object;
-                clickedFaceNormal = intersects[0].face.normal.clone();
-                clickedFaceNormal.transformDirection(clickedCubie.matrixWorld); // 월드 좌표계로 변환
-                dragStartPoint = intersects[0].point;
-            }
-        }
-
-        function onMouseMove(event) {
-            if (!isRightDragging || isAnimating) return;
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersectPoint = new THREE.Vector3();
-            raycaster.ray.intersectPlane(new THREE.Plane(clickedFaceNormal, -dragStartPoint.dot(clickedFaceNormal)), intersectPoint);
-
-            if (intersectPoint) {
-                const dragVector = intersectPoint.clone().sub(dragStartPoint);
-                if (dragVector.length() > 0.5) { // 드래그 거리가 충분할 때만 회전
-                    determineRotation(clickedCubie, clickedFaceNormal, dragVector);
-                    isRightDragging = false;
-                    dragStartPoint = null;
-                    clickedCubie = null;
-                    clickedFaceNormal = null;
-                }
-            }
-        }
-
-        function onMouseUp(event) {
-            if (event.button === 2) {
-                isRightDragging = false;
-                dragStartPoint = null;
-                clickedCubie = null;
-                clickedFaceNormal = null;
-            }
-        }
-
-        function determineRotation(cubie, normal, dragVec) {
-            const absNormal = new THREE.Vector3(Math.abs(normal.x), Math.abs(normal.y), Math.abs(normal.z));
-            let axis, angle, value;
-            const cubiePos = new THREE.Vector3();
-            cubie.getWorldPosition(cubiePos);
-
-            if (absNormal.x > 0.9) { // X축 면 클릭
-                if (Math.abs(dragVec.y) > Math.abs(dragVec.z)) {
-                    axis = 'z'; angle = dragVec.y * normal.x > 0 ? -Math.PI/2 : Math.PI/2;
-                } else {
-                    axis = 'y'; angle = dragVec.z * normal.x > 0 ? Math.PI/2 : -Math.PI/2;
-                }
-                value = cubiePos[axis];
-            } else if (absNormal.y > 0.9) { // Y축 면 클릭
-                if (Math.abs(dragVec.x) > Math.abs(dragVec.z)) {
-                    axis = 'z'; angle = dragVec.x * normal.y > 0 ? Math.PI/2 : -Math.PI/2;
-                } else {
-                    axis = 'x'; angle = dragVec.z * normal.y > 0 ? -Math.PI/2 : Math.PI/2;
-                }
-                value = cubiePos[axis];
-            } else if (absNormal.z > 0.9) { // Z축 면 클릭
-                if (Math.abs(dragVec.x) > Math.abs(dragVec.y)) {
-                    axis = 'y'; angle = dragVec.x * normal.z > 0 ? -Math.PI/2 : Math.PI/2;
-                } else {
-                    axis = 'x'; angle = dragVec.y * normal.z > 0 ? Math.PI/2 : -Math.PI/2;
-                }
-                value = cubiePos[axis];
-            }
-            
-            if (axis) {
-                queueLayerRotation(axis, value, angle, 300);
-                playClickSound(); // 드래그 회전 시에도 클릭 사운드 재생
-            }
-        }
-
-
-        // --- 오디오 관련 함수 ---
-        function toggleBgm() {
-            if (isBgmPlaying) {
-                bgm.pause();
-                document.getElementById('btn-bgm-toggle').innerHTML = '<i data-lucide="music" class="text-gray-300"></i>';
-            } else {
-                bgm.play();
-                document.getElementById('btn-bgm-toggle').innerHTML = '<i data-lucide="music-2" class="text-blue-400"></i>';
-            }
-            isBgmPlaying = !isBgmPlaying;
-            lucide.createIcons();
-        }
-
-        function playClickSound() {
-            sfxClick.currentTime = 0;
-            sfxClick.play();
-        }
-
-        function playRotateSound() {
-            sfxRotate.currentTime = 0;
-            sfxRotate.play();
-        }
-
-        // --- 타이머 관련 함수 ---
-        function startTimer() {
-            if (isTimerRunning) return;
-            isTimerRunning = true;
-            startTime = Date.now();
-            timerInterval = setInterval(updateTimer, 10);
-        }
-
-        function stopTimer() {
-            if (!isTimerRunning) return;
-            isTimerRunning = false;
-            clearInterval(timerInterval);
-            const elapsedTime = Date.now() - startTime;
-            checkBestTime(elapsedTime);
-        }
-
-        function resetTimer() {
-            stopTimer();
-            timerDisplay.textContent = "00:00.00";
-            updateBestTimeDisplay();
-        }
-
-        function updateTimer() {
-            const elapsedTime = Date.now() - startTime;
-            timerDisplay.textContent = formatTime(elapsedTime);
-        }
-
-        function formatTime(ms) {
-            const minutes = Math.floor(ms / 60000);
-            const seconds = Math.floor((ms % 60000) / 1000);
-            const centiseconds = Math.floor((ms % 1000) / 10);
-            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
-        }
-
-        function checkBestTime(elapsedTime) {
-            let currentBestTime = currentSize === 2 ? bestTime2x2 : bestTime3x3;
-            if (currentBestTime === null || elapsedTime < currentBestTime) {
-                if (currentSize === 2) {
-                    bestTime2x2 = elapsedTime;
-                    localStorage.setItem('bestTime2x2', bestTime2x2);
-                } else {
-                    bestTime3x3 = elapsedTime;
-                    localStorage.setItem('bestTime3x3', bestTime3x3);
-                }
-                updateBestTimeDisplay();
-            }
-        }
-
-        function updateBestTimeDisplay() {
-            const currentBestTime = currentSize === 2 ? bestTime2x2 : bestTime3x3;
-            bestTimeDisplay.textContent = currentBestTime ? formatTime(currentBestTime) : "--:--.--";
-        }
-
-
-        // --- 큐브 생성 로직 ---
-        function getMaterials(x, y, z, maxOffset) {
-            const coreMat = new THREE.MeshLambertMaterial({ color: COLORS.CORE });
-            return [
-                x === maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.R }) : coreMat, // +X
-                x === -maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.L }) : coreMat, // -X
-                y === maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.U }) : coreMat, // +Y
-                y === -maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.D }) : coreMat, // -Y
-                z === maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.F }) : coreMat, // +Z
-                z === -maxOffset ? new THREE.MeshLambertMaterial({ color: COLORS.B }) : coreMat  // -Z
-            ];
-        }
-
-        function buildCube(size) {
-            resetTimer(); // 큐브 생성 시 타이머 초기화
-            animationQueue = []; // 애니메이션 초기화
-            currentSize = size;
-            
-            // 기존 큐브 삭제
-            while(cubeGroup.children.length > 0) {
-                const child = cubeGroup.children[0];
-                cubeGroup.remove(child);
-                if(child.geometry) child.geometry.dispose();
-                if(child.material) child.material.forEach(m => m.dispose());
-            }
-            cubies = [];
-
-            const offset = (size - 1) / 2;
-            
-            // 각 조각(Cubie) 생성
-            for(let x=0; x<size; x++) {
-                for(let y=0; y<size; y++) {
-                    for(let z=0; z<size; z++) {
-                        const px = x - offset;
-                        const py = y - offset;
-                        const pz = z - offset;
-                        
-                        const geo = new THREE.BoxGeometry(0.96, 0.96, 0.96); // 약간의 틈을 위해 0.96
-                        const mats = getMaterials(px, py, pz, offset);
-                        const mesh = new THREE.Mesh(geo, mats);
-                        
-                        mesh.position.set(px, py, pz);
-                        mesh.userData.initialPosition = new THREE.Vector3(px, py, pz); // 초기 위치 저장
-                        cubeGroup.add(mesh);
-                        cubies.push(mesh);
-                    }
-                }
-            }
-
-            // 카메라 위치 조정
-            camera.position.set(size*1.5, size*1.5, size*2.2);
-            controls.target.set(0, 0, 0);
-            controls.update();
-
-            // UI 컨트롤 업데이트
-            buildControls();
-        }
-
-        // --- UI 컨트롤 패널 생성 ---
-        function buildControls() {
-            const grid = document.getElementById('controls-grid');
-            grid.innerHTML = '';
-            
-            const max = (currentSize - 1) / 2;
-            
-            // 회전시킬 6개의 면 정의 (axis, value, 시계방향 각도 부호)
-            const faces = [
-                { name: '윗면 (Up)', axis: 'y', val: max, sign: -1, bg: 'bg-gray-100 text-gray-800' },
-                { name: '아랫면 (Down)', axis: 'y', val: -max, sign: 1, bg: 'bg-yellow-400 text-gray-900' },
-                { name: '앞면 (Front)', axis: 'z', val: max, sign: -1, bg: 'bg-green-500 text-white' },
-                { name: '뒷면 (Back)', axis: 'z', val: -max, sign: 1, bg: 'bg-blue-500 text-white' },
-                { name: '왼쪽 (Left)', axis: 'x', val: -max, sign: 1, bg: 'bg-orange-500 text-white' },
-                { name: '오른쪽 (Right)', axis: 'x', val: max, sign: -1, bg: 'bg-red-500 text-white' }
-            ];
-
-            faces.forEach(face => {
-                const box = document.createElement('div');
-                box.className = `flex flex-col items-center p-1.5 rounded-lg ${face.bg} shadow-inner border border-gray-600 border-opacity-30`;
-                
-                const title = document.createElement('div');
-                title.className = "text-xs font-bold mb-1 drop-shadow-md";
-                title.innerText = face.name;
-                box.appendChild(title);
-
-                const btnGroup = document.createElement('div');
-                btnGroup.className = "flex gap-1 w-full px-0.5";
-
-                // 시계 방향 버튼
-                const btnCW = document.createElement('button');
-                btnCW.className = "flex-1 bg-black bg-opacity-20 hover:bg-opacity-40 py-0.5 rounded font-bold transition text-sm flex items-center justify-center";
-                btnCW.innerHTML = '<i data-lucide="rotate-cw" class="w-4 h-4"></i>';
-                btnCW.onclick = () => { playClickSound(); queueLayerRotation(face.axis, face.val, face.sign * (Math.PI/2), 300); };
-                
-                // 반시계 방향 버튼
-                const btnCCW = document.createElement('button');
-                btnCCW.className = "flex-1 bg-black bg-opacity-20 hover:bg-opacity-40 py-0.5 rounded font-bold transition text-sm flex items-center justify-center";
-                btnCCW.innerHTML = '<i data-lucide="rotate-ccw" class="w-4 h-4"></i>';
-                btnCCW.onclick = () => { playClickSound(); queueLayerRotation(face.axis, face.val, face.sign * (-Math.PI/2), 300); };
-
-                btnGroup.appendChild(btnCW);
-                btnGroup.appendChild(btnCCW);
-                box.appendChild(btnGroup);
-
-                grid.appendChild(box);
-            });
-            lucide.createIcons();
-        }
-
-        // --- 애니메이션 & 큐레이션 ---
-        function queueLayerRotation(axis, value, angle, duration) {
-            animationQueue.push({ type: 'layer', axis, value, angle, duration });
-            processQueue();
-        }
-
-        function queueWholeRotation(axis, angle, duration) {
-            animationQueue.push({ type: 'whole', axis, angle, duration });
-            processQueue();
-        }
-
-        // scramble 함수에서 타이머 시작을 위한 로직이 포함된 processQueue
-        function processQueue() {
-            if (isAnimating || animationQueue.length === 0) return;
-            
-            isAnimating = true;
-            const next = animationQueue.shift();
-            
-            if (next.type === 'layer') {
-                performLayerRotation(next.axis, next.value, next.angle, next.duration);
-            } else if (next.type === 'whole') {
-                performWholeRotation(next.axis, next.angle, next.duration);
-            } else if (next.type === 'startTimer') {
-                isAnimating = false;
-                startTimer(); // 섞기가 끝나면 타이머 시작
-                processQueue();
-            }
-        }
-
-        // 부동소수점 오류 보정 (스냅)
-        function snapCubies() {
-            cubies.forEach(c => {
-                c.position.x = Math.round(c.position.x * 2) / 2;
-                c.position.y = Math.round(c.position.y * 2) / 2;
-                c.position.z = Math.round(c.position.z * 2) / 2;
-
-                const mat = new THREE.Matrix4().makeRotationFromQuaternion(c.quaternion);
-                const e = mat.elements;
-                for(let i=0; i<16; i++) {
-                    e[i] = Math.round(e[i]);
-                }
-                c.quaternion.setFromRotationMatrix(mat);
-            });
-        }
-        
-        // 큐브 완성 체크
-        function checkCubeCompletion() {
-            if (!isTimerRunning) return; // 타이머가 작동 중일 때만 체크
-
-            const max = (currentSize - 1) / 2;
-            const axes = ['x', 'y', 'z'];
-            const directions = [1, -1];
-
-            for (const axis of axes) {
-                for (const dir of directions) {
-                    const faceCubies = cubies.filter(c => Math.abs(c.position[axis] - (dir * max)) < 0.1);
-                    if (faceCubies.length === 0) continue;
-
-                    // 해당 면의 첫 번째 큐비의 색상을 기준으로 나머지 큐비들의 색상 비교
-                    let materialIndex;
-                    if (axis === 'x') materialIndex = dir === 1 ? 0 : 1; // +X(R), -X(L)
-                    else if (axis === 'y') materialIndex = dir === 1 ? 2 : 3; // +Y(U), -Y(D)
-                    else materialIndex = dir === 1 ? 4 : 5; // +Z(F), -Z(B)
-
-                    const firstColor = faceCubies[0].material[materialIndex].color.getHex();
-                    for (let i = 1; i < faceCubies.length; i++) {
-                        if (faceCubies[i].material[materialIndex].color.getHex() !== firstColor) {
-                            return; // 색상이 다르면 완성되지 않음
-                        }
-                    }
-                }
-            }
-
-            // 모든 면의 색상이 같으면 완성
-            stopTimer();
-            // 축하 효과음이나 메시지를 추가할 수 있음
-            // alert(`축하합니다! 기록: ${timerDisplay.textContent}`);
-        }
-
-
-        // 특정 레이어(면) 회전 실행
-        function performLayerRotation(axis, value, angle, duration) {
-            playRotateSound(); // 회전 시작 시 효과음 재생
-            const pivot = new THREE.Group();
-            scene.add(pivot);
-
-            const activeCubies = [];
-            const epsilon = 0.1;
-
-            // 현재 큐비들의 월드 좌표를 기준으로 회전할 조각들 선택
-            cubies.forEach(c => {
-                const pos = new THREE.Vector3();
-                c.getWorldPosition(pos);
-                if (Math.abs(pos[axis] - value) < epsilon) {
-                    activeCubies.push(c);
-                }
-            });
-
-            activeCubies.forEach(c => pivot.attach(c));
-
-            const startAngle = 0;
-            const startTime = performance.now();
-
-            function animate(time) {
-                const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Ease in-out
-                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-                
-                pivot.rotation[axis] = startAngle + angle * ease;
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    pivot.rotation[axis] = angle;
-                    pivot.updateMatrixWorld();
-                    activeCubies.forEach(c => cubeGroup.attach(c));
-                    scene.remove(pivot);
-                    snapCubies();
-                    isAnimating = false;
-                    processQueue();
-                    // 회전 애니메이션 종료 후 완성 체크
-                    if (animationQueue.length === 0) {
-                        checkCubeCompletion();
-                    }
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        // 큐브 전체 회전 실행 (방향키 조작용)
-        function performWholeRotation(axis, angle, duration) {
-            playRotateSound(); // 회전 시작 시 효과음 재생
-            const pivot = new THREE.Group();
-            scene.add(pivot);
-            cubies.forEach(c => pivot.attach(c));
-
-            const startAngle = 0;
-            const startTime = performance.now();
-
-            function animate(time) {
-                const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-                pivot.rotation[axis] = startAngle + angle * ease;
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    pivot.rotation[axis] = angle;
-                    pivot.updateMatrixWorld();
-                    cubies.forEach(c => cubeGroup.attach(c));
-                    scene.remove(pivot);
-                    snapCubies();
-                    isAnimating = false;
-                    processQueue();
-                    // 회전 애니메이션 종료 후 완성 체크
-                    if (animationQueue.length === 0) {
-                        checkCubeCompletion();
-                    }
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        // --- 큐브 섞기 알고리즘 ---
-        function scramble() {
-            resetTimer(); // 섞기 전 타이머 리셋
-            animationQueue = []; // 큐 비우기
-            const moves = currentSize === 2 ? 25 : 40;
-            const axes = ['x', 'y', 'z'];
-            const angles = [Math.PI/2, -Math.PI/2];
-            
-            // 섞을 때는 중간 레이어도 포함 가능하도록 설정
-            const max = (currentSize - 1) / 2;
-            let values = [];
-            for(let v = -max; v <= max; v++) values.push(v);
-
-            for(let i = 0; i < moves; i++) {
-                const axis = axes[Math.floor(Math.random() * axes.length)];
-                const angle = angles[Math.floor(Math.random() * angles.length)];
-                const val = values[Math.floor(Math.random() * values.length)];
-                // duration을 짧게(30ms) 주어 빠르게 섞이는 효과 연출
-                queueLayerRotation(axis, val, angle, 40);
-            }
-            
-            // 섞기가 완료되면 타이머 시작
-            // 큐에 마지막으로 더미 애니메이션을 추가하여 섞기가 끝났음을 감지하고 타이머를 시작하도록 함
-             animationQueue.push({ type: 'startTimer', duration: 0 });
-        }
-
-        // --- 윈도우 리사이즈 대응 ---
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // --- 렌더링 루프 ---
-        function animateLoop() {
-            requestAnimationFrame(animateLoop);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-    </script>
+    <div class="mode-row">
+      <button class="btn red" id="btn-reset">초기화</button>
+      <button class="btn yellow" id="btn-help">도움말</button>
+    </div>
+    <div class="guide">
+      <b>조작</b><br>
+      마우스/손가락 드래그: 시점 회전<br>
+      휠/핀치: 확대·축소<br>
+      <kbd>U</kbd><kbd>D</kbd><kbd>L</kbd><kbd>R</kbd><kbd>F</kbd><kbd>B</kbd>: 면 회전<br>
+      <kbd>Shift</kbd> + 키: 반대 방향 회전
+    </div>
+    <div class="history" id="history"><strong>이동 기록</strong><br>아직 이동이 없습니다.</div>
+  </section>
+
+  <section class="card turn-panel">
+    <h3 class="section-title">면 회전 <span>↻ / ↺</span></h3>
+    <div class="faces" id="faces"></div>
+  </section>
+
+  <section class="card bottom-bar">
+    <div id="message" class="message">섞기를 누른 뒤 첫 회전부터 시간이 측정됩니다.</div>
+    <div class="kbd-row"><span class="kbd">드래그: 시점</span><span class="kbd">버튼: 면 회전</span><span class="kbd">되돌리기 가능</span></div>
+  </section>
+</div>
+
+<div class="center-badge"><div id="toast" class="toast"></div></div>
+
+<div id="win-modal" class="modal">
+  <div class="modal-card">
+    <h2>🎉 완성!</h2>
+    <p>큐브의 모든 면이 한 색으로 정리되었습니다.</p>
+    <div class="result-grid">
+      <div class="result-box"><small>기록</small><b id="result-time">00:00.00</b></div>
+      <div class="result-box"><small>이동 수</small><b id="result-moves">0</b></div>
+      <div class="result-box"><small>큐브</small><b id="result-size">3×3</b></div>
+    </div>
+    <button class="btn green" id="btn-close-win" style="width:100%;font-size:18px;padding:15px">계속 연습하기</button>
+  </div>
+</div>
+
+<div id="help-modal" class="modal">
+  <div class="modal-card" style="text-align:left">
+    <h2 style="text-align:center">조작 도움말</h2>
+    <p>색이 붙은 6개의 면 버튼을 누르면 해당 면만 90도 회전합니다. ↻는 시계 방향, ↺는 반시계 방향입니다.</p>
+    <p>3×3에서 처음 배우는 학생이라면 마우스 드래그보다 오른쪽 면 회전 버튼을 먼저 쓰는 것이 훨씬 안정적입니다. 이동 기록이 남으므로 실수하면 되돌리기를 눌러 바로 복구할 수 있습니다.</p>
+    <button class="btn primary" id="btn-close-help" style="width:100%;font-size:18px;padding:15px">확인</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const container = document.getElementById('canvas-container');
+const loading = document.getElementById('loading');
+const $ = (id)=>document.getElementById(id);
+
+let scene, camera, renderer, controls, cubeRoot;
+let cubies = [];
+let currentSize = 3;
+let isAnimating = false;
+let queue = [];
+let moveHistory = [];
+let moveCount = 0;
+let readyToSolve = false;
+let soundOn = true;
+let audioCtx = null;
+let timerId = null;
+let startMs = 0;
+let elapsedMs = 0;
+let timerRunning = false;
+
+const COLORS = {
+  R:0xe3342f, L:0xf97316, U:0xf8fafc, D:0xfacc15, F:0x22c55e, B:0x2563eb, CORE:0x111827
+};
+const COLOR_NAMES = {R:'오른쪽',L:'왼쪽',U:'윗면',D:'아랫면',F:'앞면',B:'뒷면'};
+const FACE_DATA = [
+  {key:'R', axis:'x', dir:1, index:0, normal:new THREE.Vector3(1,0,0)},
+  {key:'L', axis:'x', dir:-1, index:1, normal:new THREE.Vector3(-1,0,0)},
+  {key:'U', axis:'y', dir:1, index:2, normal:new THREE.Vector3(0,1,0)},
+  {key:'D', axis:'y', dir:-1, index:3, normal:new THREE.Vector3(0,-1,0)},
+  {key:'F', axis:'z', dir:1, index:4, normal:new THREE.Vector3(0,0,1)},
+  {key:'B', axis:'z', dir:-1, index:5, normal:new THREE.Vector3(0,0,-1)}
+];
+const FACE_CONTROLS = [
+  {key:'U', label:'윗면 U', axis:'y', color:'#f8fafc', text:'#0f172a', cw:-1},
+  {key:'D', label:'아랫면 D', axis:'y', color:'#facc15', text:'#1c1200', cw:1},
+  {key:'F', label:'앞면 F', axis:'z', color:'#22c55e', text:'#02130a', cw:-1},
+  {key:'B', label:'뒷면 B', axis:'z', color:'#2563eb', text:'#ffffff', cw:1},
+  {key:'L', label:'왼쪽 L', axis:'x', color:'#f97316', text:'#ffffff', cw:1},
+  {key:'R', label:'오른쪽 R', axis:'x', color:'#e3342f', text:'#ffffff', cw:-1}
+];
+const keyToFace = Object.fromEntries(FACE_CONTROLS.map(f=>[f.key.toLowerCase(), f]));
+
+function init(){
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, .1, 100);
+  camera.position.set(4.8,4.4,7.2);
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  container.appendChild(renderer.domElement);
+
+  const amb = new THREE.HemisphereLight(0xffffff,0x334155,1.15);
+  scene.add(amb);
+  const key = new THREE.DirectionalLight(0xffffff,2.15);
+  key.position.set(5,8,6);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x60a5fa,.9);
+  rim.position.set(-6,3,-7);
+  scene.add(rim);
+
+  cubeRoot = new THREE.Group();
+  scene.add(cubeRoot);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
+  controls.enableDamping = true;
+  controls.dampingFactor = .08;
+  controls.minDistance = 3.6;
+  controls.maxDistance = 12;
+
+  buildFaceButtons();
+  bindUI();
+  buildCube(3);
+  animate();
+  loading.classList.add('hidden');
+  toast('3D 큐브 준비 완료');
+}
+
+function makeMat(hex){return new THREE.MeshStandardMaterial({color:hex, roughness:.52, metalness:.04});}
+function makeMaterials(x,y,z,max){
+  return FACE_DATA.map(face => {
+    const visible = Math.abs(({x,y,z})[face.axis] - face.dir*max) < .001;
+    return makeMat(visible ? COLORS[face.key] : COLORS.CORE);
+  });
+}
+
+function buildCube(size){
+  stopTimer(false);
+  currentSize = size;
+  readyToSolve = false;
+  queue = [];
+  isAnimating = false;
+  moveHistory = [];
+  moveCount = 0;
+  elapsedMs = 0;
+  updateTimerDisplay(0);
+  updateStats();
+  updateHistory();
+  setModeButtons();
+  $('stat-size').textContent = `${size}×${size}×${size}`;
+
+  while(cubeRoot.children.length){
+    const child = cubeRoot.children[0];
+    cubeRoot.remove(child);
+    child.geometry?.dispose();
+    if(Array.isArray(child.material)) child.material.forEach(m=>m.dispose());
+  }
+  cubies = [];
+  const offset = (size-1)/2;
+  const geo = new THREE.BoxGeometry(.94,.94,.94);
+  const edgesGeo = new THREE.EdgesGeometry(geo);
+  for(let xi=0; xi<size; xi++) for(let yi=0; yi<size; yi++) for(let zi=0; zi<size; zi++){
+    const x = xi-offset, y = yi-offset, z = zi-offset;
+    const mesh = new THREE.Mesh(geo.clone(), makeMaterials(x,y,z,offset));
+    mesh.position.set(x,y,z);
+    const line = new THREE.LineSegments(edgesGeo.clone(), new THREE.LineBasicMaterial({color:0x020617, transparent:true, opacity:.76}));
+    mesh.add(line);
+    mesh.userData.home = new THREE.Vector3(x,y,z);
+    cubeRoot.add(mesh);
+    cubies.push(mesh);
+  }
+  resetCamera();
+  updateBestTime();
+  message('섞기를 누른 뒤 첫 회전부터 시간이 측정됩니다.');
+}
+
+function buildFaceButtons(){
+  const faces = $('faces');
+  faces.innerHTML = '';
+  FACE_CONTROLS.forEach(face=>{
+    const box = document.createElement('div');
+    box.className = 'face';
+    box.innerHTML = `<div class="face-head" style="color:${face.text === '#ffffff' ? '#fff' : '#dbeafe'}"><span class="swatch" style="background:${face.color}"></span>${face.label}</div><div class="mini-row"><button class="mini" data-key="${face.key}" data-dir="cw">↻</button><button class="mini" data-key="${face.key}" data-dir="ccw">↺</button></div>`;
+    faces.appendChild(box);
+  });
+  faces.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const face = FACE_CONTROLS.find(f=>f.key===btn.dataset.key);
+      const sign = btn.dataset.dir === 'cw' ? 1 : -1;
+      userMove(face, sign);
+    });
+  });
+}
+
+function bindUI(){
+  $('btn-2').addEventListener('click',()=>{beep('click'); buildCube(2);});
+  $('btn-3').addEventListener('click',()=>{beep('click'); buildCube(3);});
+  $('btn-reset').addEventListener('click',()=>{beep('click'); buildCube(currentSize);});
+  $('btn-scramble').addEventListener('click',scramble);
+  $('btn-undo').addEventListener('click',undoMove);
+  $('btn-camera').addEventListener('click',()=>{beep('click'); resetCamera(); toast('시점 초기화');});
+  $('btn-sound').addEventListener('click',()=>{soundOn=!soundOn; $('btn-sound').textContent = soundOn?'🔊 소리':'🔇 무음'; beep('click');});
+  $('btn-help').addEventListener('click',()=>{$('help-modal').classList.add('show'); beep('click');});
+  $('btn-close-help').addEventListener('click',()=>{$('help-modal').classList.remove('show'); beep('click');});
+  $('btn-close-win').addEventListener('click',()=>{$('win-modal').classList.remove('show'); beep('click');});
+  window.addEventListener('resize',onResize);
+  window.addEventListener('keydown',onKey);
+}
+
+function setModeButtons(){
+  $('btn-2').classList.toggle('selected', currentSize===2);
+  $('btn-3').classList.toggle('selected', currentSize===3);
+}
+
+function resetCamera(){
+  const d = currentSize === 2 ? 6.2 : 7.2;
+  camera.position.set(d*.68,d*.62,d);
+  controls.target.set(0,0,0);
+  controls.update();
+}
+
+function faceValue(face){return face.axis === 'x' ? (face.key==='R'?1:-1)*(currentSize-1)/2 : face.axis === 'y' ? (face.key==='U'?1:-1)*(currentSize-1)/2 : (face.key==='F'?1:-1)*(currentSize-1)/2;}
+function userMove(face, sign){
+  if(isAnimating) return;
+  const angle = face.cw * sign * Math.PI/2;
+  const label = face.key + (sign===1 ? '' : "'");
+  queueMove({type:'layer', axis:face.axis, value:faceValue(face), angle, duration:260, record:true, label});
+}
+
+function scramble(){
+  if(isAnimating) return;
+  beep('click');
+  stopTimer(false);
+  queue = [];
+  moveHistory = [];
+  moveCount = 0;
+  readyToSolve = false;
+  elapsedMs = 0;
+  updateTimerDisplay(0);
+  updateStats();
+  updateHistory();
+  const moves = currentSize === 2 ? 14 : 24;
+  let lastKey = '';
+  for(let i=0;i<moves;i++){
+    let face;
+    do{ face = FACE_CONTROLS[Math.floor(Math.random()*FACE_CONTROLS.length)]; } while(face.key === lastKey);
+    lastKey = face.key;
+    const sign = Math.random()<.5 ? 1 : -1;
+    queueMove({type:'layer', axis:face.axis, value:faceValue(face), angle:face.cw*sign*Math.PI/2, duration:55, record:false, label:face.key+(sign===1?'':"'")}, false);
+  }
+  queue.push({type:'callback', fn:()=>{readyToSolve=true; message('섞기 완료! 첫 회전부터 시간이 측정됩니다.'); toast('준비 완료');}});
+  processQueue();
+}
+
+function queueMove(move, autoProcess=true){
+  queue.push(move);
+  if(autoProcess) processQueue();
+}
+function processQueue(){
+  if(isAnimating || queue.length===0) return;
+  const item = queue.shift();
+  if(item.type === 'callback'){
+    item.fn?.();
+    processQueue();
+    return;
+  }
+  isAnimating = true;
+  rotateLayer(item);
+}
+
+function rotateLayer(move){
+  if(move.record && readyToSolve && !timerRunning) startTimer();
+  beep(move.record?'move':'soft');
+  const pivot = new THREE.Group();
+  scene.add(pivot);
+  const active = cubies.filter(c => Math.abs(c.position[move.axis] - move.value) < .08);
+  active.forEach(c=>pivot.attach(c));
+  const start = performance.now();
+  function step(now){
+    const t = Math.min(1,(now-start)/move.duration);
+    const ease = t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+    pivot.rotation[move.axis] = move.angle * ease;
+    if(t<1){requestAnimationFrame(step);return;}
+    pivot.rotation[move.axis] = move.angle;
+    pivot.updateMatrixWorld();
+    active.forEach(c=>cubeRoot.attach(c));
+    scene.remove(pivot);
+    snapAll();
+    if(move.record){
+      moveHistory.push({axis:move.axis,value:move.value,angle:move.angle,label:move.label});
+      moveCount++;
+      updateStats();
+      updateHistory();
+    }
+    isAnimating = false;
+    if(queue.length===0 && move.record) checkSolved();
+    processQueue();
+  }
+  requestAnimationFrame(step);
+}
+
+function undoMove(){
+  if(isAnimating || moveHistory.length===0) { toast('되돌릴 이동이 없습니다'); return; }
+  const last = moveHistory.pop();
+  moveCount = Math.max(0, moveCount-1);
+  updateStats();
+  updateHistory();
+  beep('click');
+  queueMove({type:'layer', axis:last.axis, value:last.value, angle:-last.angle, duration:220, record:false, label:'undo'});
+  message(`되돌림: ${last.label}`);
+}
+
+function snapAll(){
+  cubies.forEach(c=>{
+    c.position.x = Math.round(c.position.x*2)/2;
+    c.position.y = Math.round(c.position.y*2)/2;
+    c.position.z = Math.round(c.position.z*2)/2;
+    const m = new THREE.Matrix4().makeRotationFromQuaternion(c.quaternion);
+    const e = m.elements;
+    for(let i=0;i<16;i++) e[i] = Math.round(e[i]);
+    c.quaternion.setFromRotationMatrix(m);
+  });
+}
+
+function roundedNormal(v){
+  return new THREE.Vector3(Math.round(v.x), Math.round(v.y), Math.round(v.z));
+}
+function visibleColor(cubie, axis, dir){
+  for(const face of FACE_DATA){
+    const n = face.normal.clone().applyQuaternion(cubie.quaternion);
+    const r = roundedNormal(n);
+    if(r[axis] === dir && Math.abs(r.x)+Math.abs(r.y)+Math.abs(r.z)===1){
+      return cubie.material[face.index].color.getHex();
+    }
+  }
+  return COLORS.CORE;
+}
+function checkSolved(){
+  if(!readyToSolve && !timerRunning) return;
+  const max = (currentSize-1)/2;
+  for(const axis of ['x','y','z']){
+    for(const dir of [1,-1]){
+      const layer = cubies.filter(c=>Math.abs(c.position[axis] - dir*max)<.08);
+      let first = null;
+      for(const c of layer){
+        const color = visibleColor(c, axis, dir);
+        if(color === COLORS.CORE) return;
+        if(first === null) first = color;
+        else if(first !== color) return;
+      }
+    }
+  }
+  const final = stopTimer(true);
+  readyToSolve = false;
+  showWin(final);
+}
+
+function startTimer(){
+  timerRunning = true;
+  startMs = Date.now();
+  clearInterval(timerId);
+  timerId = setInterval(()=>{
+    elapsedMs = Date.now() - startMs;
+    updateTimerDisplay(elapsedMs);
+  }, 23);
+}
+function stopTimer(save){
+  if(timerRunning){
+    elapsedMs = Date.now() - startMs;
+    clearInterval(timerId);
+  }
+  timerRunning = false;
+  if(save) saveBest(elapsedMs);
+  return elapsedMs;
+}
+function fmt(ms){
+  const m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000), cs = Math.floor((ms%1000)/10);
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+}
+function updateTimerDisplay(ms){$('timer').textContent = fmt(ms);}
+function bestKey(){return `cubeMasterDX_best_${currentSize}`;}
+function saveBest(ms){
+  const old = Number(localStorage.getItem(bestKey()) || 0);
+  if(!old || ms < old) localStorage.setItem(bestKey(), String(ms));
+  updateBestTime();
+}
+function updateBestTime(){
+  const best = Number(localStorage.getItem(bestKey()) || 0);
+  $('best-time').textContent = best ? fmt(best) : '--:--.--';
+}
+function updateStats(){
+  $('move-count').textContent = moveCount;
+  $('result-moves').textContent = moveCount;
+}
+function updateHistory(){
+  const h = $('history');
+  if(moveHistory.length===0){h.innerHTML = '<strong>이동 기록</strong><br>아직 이동이 없습니다.'; return;}
+  const labels = moveHistory.slice(-36).map(m=>`<span>${m.label}</span>`).join(' · ');
+  h.innerHTML = `<strong>이동 기록</strong><br>${labels}`;
+  h.scrollTop = h.scrollHeight;
+}
+function showWin(ms){
+  beep('win');
+  $('result-time').textContent = fmt(ms);
+  $('result-moves').textContent = moveCount;
+  $('result-size').textContent = `${currentSize}×${currentSize}`;
+  $('win-modal').classList.add('show');
+  message(`완성! 기록 ${fmt(ms)}, ${moveCount}수`);
+}
+
+function message(text){$('message').textContent = text;}
+let toastTimer = null;
+function toast(text){
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+function getAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq,dur=.08,type='sine',gain=.05,delay=0){
+  if(!soundOn) return;
+  const ctx = getAudio();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(.0001,ctx.currentTime+delay);
+  g.gain.exponentialRampToValueAtTime(gain,ctx.currentTime+delay+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+delay+dur);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(ctx.currentTime+delay); osc.stop(ctx.currentTime+delay+dur+.04);
+}
+function beep(kind){
+  if(!soundOn) return;
+  if(kind==='click') tone(520,.05,'square',.035);
+  else if(kind==='move') { tone(240,.08,'triangle',.04); tone(360,.06,'sine',.025,.035); }
+  else if(kind==='soft') tone(160,.04,'sine',.015);
+  else if(kind==='win'){ tone(523,.11,'triangle',.06); tone(659,.11,'triangle',.06,.1); tone(784,.18,'triangle',.07,.2); }
+}
+
+function onKey(e){
+  const face = keyToFace[e.key.toLowerCase()];
+  if(!face) return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+  e.preventDefault();
+  userMove(face, e.shiftKey ? -1 : 1);
+}
+function onResize(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+}
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  cubeRoot.rotation.y += 0.0008;
+  renderer.render(scene,camera);
+}
+
+try{ init(); }
+catch(err){
+  console.error(err);
+  loading.innerHTML = `<div class="loading-card"><h2>3D 엔진을 불러오지 못했습니다</h2><p>Three.js CDN 접속이 막혔거나 WebGL을 사용할 수 없는 환경입니다. 인터넷 연결 또는 브라우저 설정을 확인해주세요.</p></div>`;
+}
+</script>
 </body>
 </html>
