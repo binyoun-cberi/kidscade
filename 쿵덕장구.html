@@ -1,839 +1,208 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>신명나는 쿵덕장구!</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Jua', sans-serif;
-            /* 한지 느낌의 배경색 */
-            background: radial-gradient(circle at center, #f5ecd8 0%, #e8d5b5 100%);
-            touch-action: none; 
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .cute-shadow {
-            box-shadow: 0 8px 0 rgba(0,0,0,0.15), 0 15px 20px rgba(0,0,0,0.2);
-        }
-
-        .btn-press {
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .btn-press:active {
-            transform: translateY(6px);
-            box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 5px 10px rgba(0,0,0,0.2);
-        }
-
-        .animate-bounce-custom {
-            animation: bounceCustom 1.5s infinite;
-        }
-
-        @keyframes bounceCustom {
-            0%, 100% { transform: translateY(0) rotate(-2deg); }
-            50% { transform: translateY(-10px) rotate(2deg); }
-        }
-
-        @keyframes popOut {
-            0% { transform: scale(0.5); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 1; }
-            100% { transform: scale(1); opacity: 0; }
-        }
-        .feedback-pop {
-            animation: popOut 0.5s ease-out forwards;
-        }
-
-        #song-list::-webkit-scrollbar {
-            width: 8px;
-        }
-        #song-list::-webkit-scrollbar-track {
-            background: #f5ecd8; 
-            border-radius: 10px;
-        }
-        #song-list::-webkit-scrollbar-thumb {
-            background: #c62828; 
-            border-radius: 10px;
-        }
-        #song-list::-webkit-scrollbar-thumb:hover {
-            background: #b71c1c; 
-        }
-
-        /* Drum UI Highlights */
-        .drum-highlight-blue { background-color: rgba(25, 118, 210, 0.4) !important; }
-        .drum-highlight-red { background-color: rgba(198, 40, 40, 0.4) !important; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>쿵덕장구 리듬놀이 개선본</title>
+<style>
+:root{
+  --paper:#f7ecd2; --paper2:#e7c999; --ink:#39251c; --muted:#76594a;
+  --wood:#3a2119; --wood2:#5a3628; --red:#c62828; --red2:#8e1717; --blue:#1666b1; --blue2:#0d4379;
+  --gold:#f8c84a; --green:#00796b; --cream:#fff9ea; --shadow:0 16px 28px rgba(40,18,10,.28),0 7px 0 rgba(45,22,15,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overflow:hidden;touch-action:none;user-select:none;color:var(--ink);font-family:"Jua","Pretendard","Noto Sans KR",system-ui,-apple-system,sans-serif;background:
+  radial-gradient(circle at 20% 10%,rgba(255,255,255,.6) 0 0.5px,transparent 1px),
+  radial-gradient(circle at 80% 30%,rgba(94,58,31,.1) 0 1px,transparent 2px),
+  linear-gradient(135deg,var(--paper),var(--paper2));background-size:16px 16px,22px 22px,auto}
+button{font:inherit;color:inherit}
+.hidden{display:none!important}.screen{position:absolute;inset:0}.glass{background:rgba(255,249,234,.88);backdrop-filter:blur(10px);border:3px solid rgba(97,59,40,.28);box-shadow:var(--shadow)}
+.menu{display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(180deg,rgba(60,28,16,.5),rgba(18,8,4,.62)),radial-gradient(circle at 50% 0,rgba(255,213,80,.32),transparent 42%)}
+.menu-card{width:min(1000px,94vw);max-height:94vh;overflow:hidden;border-radius:30px;padding:24px;display:grid;grid-template-columns:1.05fr .95fr;gap:20px}.brand{text-align:center;padding:14px 16px 8px}.brand .icon{font-size:72px;filter:drop-shadow(0 8px 4px rgba(0,0,0,.35));animation:float 1.8s infinite ease-in-out}.brand h1{margin:4px 0;font-size:clamp(44px,7vw,78px);letter-spacing:-2px;color:#fff;text-shadow:0 5px 0 var(--red2),0 12px 20px rgba(0,0,0,.45);-webkit-text-stroke:2px var(--red2)}.brand p{font-size:20px;line-height:1.45;margin:8px auto 18px;color:#fff;max-width:560px;text-shadow:0 2px 4px rgba(0,0,0,.55)}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.feature{border-radius:18px;padding:13px;background:rgba(255,255,255,.78);border:2px solid rgba(141,86,55,.18);font-size:16px;line-height:1.35}.feature b{color:var(--red2)}
+.song-panel{border-radius:28px;padding:18px;background:var(--cream);border:4px solid #714837;box-shadow:var(--shadow);min-height:0;display:flex;flex-direction:column}.song-panel h2{margin:0 0 12px;font-size:27px;text-align:center;color:#4d2d21}.song-list{overflow:auto;padding:4px 8px 4px 2px;display:flex;flex-direction:column;gap:11px;min-height:0}.song-list::-webkit-scrollbar{width:10px}.song-list::-webkit-scrollbar-thumb{background:#b94735;border-radius:999px}.song-btn{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;border:0;border-radius:20px;padding:14px 14px;background:linear-gradient(135deg,var(--song,#7b4d39),color-mix(in srgb,var(--song,#7b4d39) 72%,#000));color:#fff;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.18),0 10px 16px rgba(0,0,0,.18);transition:transform .12s,filter .12s}.song-btn:hover{filter:brightness(1.08);transform:translateY(-2px)}.song-btn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.18)}.song-emoji{font-size:28px}.song-title{font-size:21px;font-weight:900}.song-desc{font-size:13px;opacity:.9;margin-top:2px}.badge{font-size:13px;white-space:nowrap;background:rgba(0,0,0,.28);border-radius:999px;padding:7px 10px;font-weight:900}.option-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}.toggle{border:2px solid #d6bfa0;border-radius:16px;background:#f1dfbf;padding:10px 12px;text-align:left;font-weight:900;cursor:pointer}.toggle small{display:block;font-weight:600;color:#674a3d;margin-top:2px}.toggle.on{background:#fff3cf;border-color:#e0a726;color:#7c3c00}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+.game{display:grid;grid-template-rows:auto 1fr auto;background:linear-gradient(180deg,#f5e6c6,#d9b478)}.topbar{display:grid;grid-template-columns:minmax(150px,1fr) repeat(4,auto);gap:10px;align-items:center;padding:12px 14px;background:linear-gradient(90deg,#32170f,#573022);border-bottom:6px solid var(--red);color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.28);z-index:5}.top-title{min-width:0}.top-title b{display:block;font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-title span{font-size:13px;color:#f8dfb8}.stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.17);border-radius:16px;padding:8px 12px;min-width:86px;text-align:center}.stat span{display:block;font-size:12px;color:#f8dfb8}.stat b{font-size:22px}.top-btn{border:0;border-radius:16px;background:#fff1cf;color:#4a2418;font-weight:900;padding:11px 13px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.18)}.top-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}.progress{position:absolute;left:0;right:0;top:0;height:5px;background:rgba(255,255,255,.18);z-index:6}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#fff,var(--gold));transition:width .08s linear}
+.stage{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,251,230,.5),rgba(231,194,129,.42)),radial-gradient(circle at 60% 20%,rgba(255,255,255,.5),transparent 30%)}#gameCanvas{position:absolute;inset:0;width:100%;height:100%}.stage-labels{position:absolute;left:16px;top:50%;transform:translateY(-50%);z-index:2;display:grid;gap:20px;pointer-events:none}.lane-label{width:112px;height:58px;border-radius:22px;color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:900;text-shadow:0 2px 2px rgba(0,0,0,.35);box-shadow:0 6px 0 rgba(0,0,0,.18)}.lane-label.red{background:linear-gradient(#e14646,var(--red2))}.lane-label.blue{background:linear-gradient(#2878c8,var(--blue2))}.lane-label small{font-size:12px;opacity:.92}.center-toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:4;text-align:center;font-weight:900;font-size:clamp(30px,6vw,76px);color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.28),0 0 25px rgba(0,0,0,.35);pointer-events:none;opacity:0}.center-toast.show{animation:toastPop .8s both}@keyframes toastPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:0;transform:translate(-50%,-86%) scale(1)}}
+.guide-card{position:absolute;right:18px;bottom:18px;z-index:4;background:rgba(255,249,234,.86);border:2px solid rgba(100,55,35,.28);border-radius:20px;padding:13px 15px;max-width:340px;box-shadow:0 10px 20px rgba(0,0,0,.15);font-size:15px;line-height:1.4}.guide-card b{color:var(--red2)}.guide-card .measure{font-size:13px;color:var(--muted);margin-top:4px}.countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;pointer-events:none;background:radial-gradient(circle,rgba(50,25,12,.36),transparent 60%);font-size:clamp(70px,16vw,190px);font-weight:1000;color:#fff;text-shadow:0 8px 0 var(--red2),0 16px 26px rgba(0,0,0,.4)}
+.drumdeck{position:relative;min-height:226px;background:linear-gradient(180deg,var(--wood2),var(--wood));border-top:8px solid #a71919;box-shadow:0 -14px 26px rgba(0,0,0,.35);padding:18px 14px 24px}.woodgrain{position:absolute;inset:0;opacity:.16;background:repeating-linear-gradient(90deg,transparent 0 20px,#fff 21px 22px),repeating-linear-gradient(8deg,rgba(255,255,255,.55) 0 2px,transparent 2px 11px);pointer-events:none}.drums{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;width:min(930px,100%);margin:0 auto}.drum{height:190px;border-radius:999px;background:#fff5ce;border:14px solid #5b3729;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;box-shadow:inset 0 0 22px rgba(68,26,10,.18),0 10px 18px rgba(0,0,0,.35);position:relative}.drum::after{content:attr(data-mark);position:absolute;inset:0;display:grid;place-items:center;font-size:92px;font-weight:1000;opacity:.08;pointer-events:none}.pad{border:0;background:transparent;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;color:#fff;text-shadow:0 3px 3px rgba(0,0,0,.55);font-weight:1000;font-size:40px;transition:background .07s,transform .07s}.pad+.pad{border-left:1px solid rgba(0,0,0,.15)}.pad small{font-size:15px;margin-top:3px}.pad.red.active{background:rgba(198,40,40,.42);transform:scale(.96)}.pad.blue.active{background:rgba(22,102,177,.42);transform:scale(.96)}.center-controls{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;min-width:132px}.hit-help{color:#ffeec2;text-align:center;font-size:15px;line-height:1.35;font-weight:900}.big-hit{border:3px solid #f8d677;background:#8e1d17;color:#fff;border-radius:18px;padding:12px 16px;font-weight:1000;box-shadow:0 6px 0 rgba(0,0,0,.3);cursor:pointer}.big-hit:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.result{display:flex;align-items:center;justify-content:center;background:rgba(18,8,4,.72);backdrop-filter:blur(8px);z-index:20;padding:18px}.result-card{width:min(720px,94vw);border-radius:30px;padding:28px;text-align:center}.result-card h2{font-size:clamp(42px,7vw,72px);margin:0 0 12px;color:#f9c848;text-shadow:0 4px 0 var(--red2);-webkit-text-stroke:1px var(--red2)}.grade{font-size:84px;margin:4px 0 8px;font-weight:1000;color:var(--red);text-shadow:0 4px 0 #ffd56d}.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}.result-box{background:#fff7dc;border:2px solid #ead09f;border-radius:18px;padding:14px}.result-box span{font-size:14px;color:#76594a}.result-box b{display:block;font-size:29px;margin-top:5px}.result-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}.main-action{border:0;border-radius:999px;background:var(--red);color:#fff;font-size:24px;font-weight:1000;padding:15px 28px;box-shadow:0 7px 0 var(--red2),0 12px 20px rgba(0,0,0,.2);cursor:pointer}.main-action.secondary{background:#5c4035;box-shadow:0 7px 0 #2b1812,0 12px 20px rgba(0,0,0,.2)}.main-action:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.4)}
+.pause-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,8,4,.56);z-index:30}.pause-card{width:min(440px,92vw);border-radius:26px;padding:24px;text-align:center}.pause-card h3{font-size:42px;margin:0 0 16px}.pause-card .main-action{font-size:21px;margin:6px}
+@media(max-width:860px){.menu-card{grid-template-columns:1fr;overflow:auto}.brand .icon{font-size:54px}.brand h1{font-size:48px}.feature-grid{display:none}.topbar{grid-template-columns:1fr auto auto;gap:8px}.stat:nth-of-type(2),.stat:nth-of-type(3){display:none}.stat{min-width:70px;padding:7px}.stage-labels{left:8px}.lane-label{width:86px;height:48px;font-size:15px}.guide-card{right:10px;left:10px;bottom:10px;max-width:none;font-size:13px;padding:10px}.drumdeck{min-height:232px;padding:14px 8px 20px}.drums{gap:8px;grid-template-columns:1fr 72px 1fr}.drum{height:164px;border-width:10px}.drum::after{font-size:70px}.pad{font-size:32px}.pad small{font-size:12px}.center-controls{min-width:72px}.hit-help{font-size:12px}.big-hit{font-size:13px;padding:10px 9px}.result-grid{grid-template-columns:1fr 1fr}.result-box:last-child{grid-column:1/-1}.top-title span{display:none}}
+@media(max-width:520px){.song-title{font-size:18px}.badge{display:none}.drums{grid-template-columns:1fr 58px 1fr}.drum{height:138px}.pad{font-size:28px}.center-controls{min-width:58px}.hit-help{display:none}.top-btn{padding:9px}.stat b{font-size:18px}.top-title b{font-size:18px}.drumdeck{min-height:196px}}
+</style>
 </head>
-<body class="flex items-center justify-center h-screen w-screen relative text-gray-800">
+<body>
+<div id="menuScreen" class="screen menu">
+  <div class="menu-card glass">
+    <section class="brand">
+      <div class="icon">🥁</div>
+      <h1>쿵덕장구</h1>
+      <p>궁·덕을 보고 치는 장구 리듬놀이. 두 줄 트랙으로 <b>왼손 궁</b>과 <b>오른손 덕</b>을 한눈에 구분해요.</p>
+      <div class="feature-grid">
+        <div class="feature"><b>두 줄 판정선</b><br>붉은 줄은 궁, 푸른 줄은 덕</div>
+        <div class="feature"><b>친절 판정</b><br>처음엔 덩도 한 번으로 연습 가능</div>
+        <div class="feature"><b>오프라인 단일 파일</b><br>외부 CDN 없이 바로 실행</div>
+        <div class="feature"><b>박자 도움</b><br>마디선·카운트다운·진행률 표시</div>
+      </div>
+    </section>
+    <section class="song-panel">
+      <h2>연주할 장단/노래 선택</h2>
+      <div id="songList" class="song-list"></div>
+      <div class="option-row">
+        <button id="assistToggle" class="toggle on" type="button">친절 판정 ON<small>덩/큰덕을 한 번 쳐도 인정</small></button>
+        <button id="melodyToggle" class="toggle on" type="button">멜로디 가이드 ON<small>작은 안내음을 같이 재생</small></button>
+      </div>
+    </section>
+  </div>
+</div>
 
-    <!-- 메인 메뉴 -->
-    <div id="menu-screen" class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 backdrop-blur-sm">
-        <h1 class="text-6xl md:text-7xl text-white mb-2 animate-bounce-custom drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]" style="-webkit-text-stroke: 2px #b71c1c;">🥁 쿵덕 장구!</h1>
-        <p class="text-white text-xl mb-8 drop-shadow-md font-bold">우리 가락에 맞춰 장구를 쳐보세요!</p>
-        
-        <div class="bg-[#fcf8f2] p-6 md:p-8 rounded-3xl cute-shadow w-11/12 max-w-md border-4 border-[#8d6e63]">
-            <h2 class="text-2xl text-center text-[#5d4037] mb-4 font-bold">곡 선택</h2>
-            <div id="song-list" class="space-y-3 max-h-[45vh] overflow-y-auto px-2 pb-2">
-                <!-- 동적으로 곡 목록 생성 -->
-            </div>
-
-            <div class="mt-6 p-4 bg-[#efebe0] rounded-xl text-center border-2 border-[#d7ccc8]">
-                <p class="text-lg text-[#4e342e] font-bold mb-2">조작 방법 (터치 또는 키보드)</p>
-                <div class="text-sm text-[#5d4037] grid grid-cols-2 gap-2 text-left px-2">
-                    <div>🔴 <b class="text-red-600">궁편(왼손)</b> : D, F</div>
-                    <div>🔵 <b class="text-blue-600">채편(오른손)</b> : J, K</div>
-                    <div class="col-span-2 text-center mt-2 text-[#c62828] font-bold">
-                        🌟 덩(큰 궁)은 궁편 두 키를 동시에 치세요!
-                    </div>
-                </div>
-            </div>
-        </div>
+<main id="gameScreen" class="screen game hidden">
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+  <header class="topbar">
+    <div class="top-title"><b id="songTitle">곡 제목</b><span id="songInfo">D/F = 궁 · J/K = 덕 · 큰 음표는 양쪽 키</span></div>
+    <div class="stat"><span>점수</span><b id="uiScore">0</b></div>
+    <div class="stat"><span>연타</span><b id="uiCombo">0</b></div>
+    <div class="stat"><span>정확도</span><b id="uiAcc">100%</b></div>
+    <button id="muteBtn" class="top-btn" type="button">소리 ON</button>
+    <button id="pauseBtn" class="top-btn" type="button">일시정지</button>
+  </header>
+  <section class="stage" id="stage">
+    <canvas id="gameCanvas"></canvas>
+    <div class="stage-labels"><div class="lane-label red">궁<span><small>D / F</small></span></div><div class="lane-label blue">덕<span><small>J / K</small></span></div></div>
+    <div id="centerToast" class="center-toast">얼쑤!</div>
+    <div id="countdown" class="countdown hidden">3</div>
+    <div class="guide-card"><b id="guideMain">판정선에 음표가 닿을 때 쳐요.</b><div class="measure" id="guideSub">붉은 음표는 궁, 푸른 음표는 덕입니다.</div></div>
+  </section>
+  <section class="drumdeck">
+    <div class="woodgrain"></div>
+    <div class="drums">
+      <div class="drum" data-mark="궁">
+        <button class="pad red" id="padD" data-key="d" type="button">D<small>궁 왼쪽</small></button>
+        <button class="pad red" id="padF" data-key="f" type="button">F<small>궁 오른쪽</small></button>
+      </div>
+      <div class="center-controls">
+        <button class="big-hit" id="bigGung" type="button">덩<br><small>D+F</small></button>
+        <div class="hit-help">큰 음표는<br>두 손가락으로!</div>
+        <button class="big-hit" id="bigDeok" type="button" style="background:#0e4f91">큰덕<br><small>J+K</small></button>
+      </div>
+      <div class="drum" data-mark="덕">
+        <button class="pad blue" id="padJ" data-key="j" type="button">J<small>덕 왼쪽</small></button>
+        <button class="pad blue" id="padK" data-key="k" type="button">K<small>덕 오른쪽</small></button>
+      </div>
     </div>
+  </section>
+  <div id="pausePanel" class="pause-panel hidden">
+    <div class="pause-card glass"><h3>잠깐 쉬기</h3><button id="resumeBtn" class="main-action" type="button">계속 연주</button><button id="quitBtn" class="main-action secondary" type="button">메뉴로</button></div>
+  </div>
+</main>
 
-    <!-- 게임 화면 -->
-    <div id="game-screen" class="absolute inset-0 hidden z-10 flex flex-col bg-[#f5ecd8]">
-        
-        <!-- Game Header / Track Area (Canvas) -->
-        <div class="flex-1 relative w-full overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')] bg-[#e8d5b5]">
-            <!-- UI Overlays -->
-            <div class="absolute top-4 left-4 z-30">
-                <div class="bg-white/90 px-4 py-2 rounded-2xl shadow-sm border-2 border-[#8d6e63]">
-                    <span class="text-xl text-[#5d4037] font-bold">점수: </span>
-                    <span id="ui-score" class="text-2xl text-[#c62828] font-bold">0</span>
-                </div>
-            </div>
-            <div class="absolute top-4 right-4 z-30 text-right">
-                <div id="ui-combo-container" class="opacity-0 transition-opacity drop-shadow-lg">
-                    <div id="ui-combo" class="text-6xl text-[#d84315] italic font-black" style="-webkit-text-stroke: 2px white;">0</div>
-                    <div class="text-3xl text-[#b71c1c] font-black" style="-webkit-text-stroke: 1px white;">연타!</div>
-                </div>
-            </div>
-
-            <!-- The Game Canvas -->
-            <canvas id="game-canvas" class="absolute inset-0 w-full h-full"></canvas>
-        </div>
-
-        <!-- 조선 장구 스타일의 하단 터치 UI -->
-        <div class="h-64 sm:h-72 w-full bg-[#3e2723] border-t-8 border-[#c62828] relative flex justify-center items-end pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.5)] z-30">
-            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-50"></div>
-            
-            <div class="flex w-full max-w-4xl justify-around px-2 sm:px-10 z-10">
-                <!-- Left Drum (궁편 - Gungpyeon) -->
-                <div class="relative w-40 h-40 sm:w-56 sm:h-56 rounded-full border-[14px] border-[#5d4037] bg-[#fff8e1] shadow-[0_0_20px_rgba(0,0,0,0.8)] flex overflow-hidden">
-                    <div id="btn-touch-d" class="w-1/2 h-full flex items-center justify-center border-r-[1px] border-black/10 transition-colors duration-75">
-                        <span class="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)] pointer-events-none" style="-webkit-text-stroke: 1px #c62828;">D</span>
-                    </div>
-                    <div id="btn-touch-f" class="w-1/2 h-full flex items-center justify-center transition-colors duration-75">
-                        <span class="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)] pointer-events-none" style="-webkit-text-stroke: 1px #c62828;">F</span>
-                    </div>
-                    <!-- 한글 워터마크 -->
-                    <div class="absolute inset-0 pointer-events-none flex items-center justify-center text-red-600/10 text-6xl sm:text-8xl font-black">궁</div>
-                </div>
-
-                <!-- Right Drum (채편 - Chaepyeon) -->
-                <div class="relative w-40 h-40 sm:w-56 sm:h-56 rounded-full border-[14px] border-[#5d4037] bg-[#fff8e1] shadow-[0_0_20px_rgba(0,0,0,0.8)] flex overflow-hidden">
-                    <div id="btn-touch-j" class="w-1/2 h-full flex items-center justify-center border-r-[1px] border-black/10 transition-colors duration-75">
-                        <span class="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)] pointer-events-none" style="-webkit-text-stroke: 1px #1565c0;">J</span>
-                    </div>
-                    <div id="btn-touch-k" class="w-1/2 h-full flex items-center justify-center transition-colors duration-75">
-                        <span class="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)] pointer-events-none" style="-webkit-text-stroke: 1px #1565c0;">K</span>
-                    </div>
-                    <!-- 한글 워터마크 -->
-                    <div class="absolute inset-0 pointer-events-none flex items-center justify-center text-blue-600/10 text-6xl sm:text-8xl font-black">덕</div>
-                </div>
-            </div>
-            
-        </div>
+<div id="resultScreen" class="screen result hidden">
+  <div class="result-card glass">
+    <h2>연주 완료!</h2>
+    <div id="grade" class="grade">A</div>
+    <div class="result-grid">
+      <div class="result-box"><span>최종 점수</span><b id="resultScore">0</b></div>
+      <div class="result-box"><span>최고 연타</span><b id="resultCombo">0</b></div>
+      <div class="result-box"><span>정확도</span><b id="resultAcc">0%</b></div>
+      <div class="result-box"><span>얼쑤</span><b id="resultPerfect">0</b></div>
+      <div class="result-box"><span>좋다</span><b id="resultGood">0</b></div>
+      <div class="result-box"><span>아차</span><b id="resultMiss">0</b></div>
     </div>
-
-    <!-- 결과 화면 -->
-    <div id="result-screen" class="absolute inset-0 hidden flex-col items-center justify-center z-40 bg-black/70 backdrop-blur-md">
-        <h1 class="text-6xl text-[#fbc02d] mb-6 font-black drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style="-webkit-text-stroke: 2px #c62828;">연주 완료! 🌸</h1>
-        
-        <div class="bg-[#fcf8f2] p-8 rounded-3xl cute-shadow w-11/12 max-w-md border-4 border-[#8d6e63] text-center text-2xl space-y-4">
-            <div class="flex justify-between border-b-2 border-[#d7ccc8] pb-2">
-                <span class="text-[#5d4037]">최고 연타</span>
-                <span id="result-max-combo" class="text-[#d84315] font-bold">0</span>
-            </div>
-            <div class="flex justify-between border-b-2 border-[#d7ccc8] pb-2">
-                <span class="text-[#c62828]">얼쑤! (Perfect)</span>
-                <span id="result-perfect" class="text-[#b71c1c] font-bold">0</span>
-            </div>
-            <div class="flex justify-between border-b-2 border-[#d7ccc8] pb-2">
-                <span class="text-[#1565c0]">좋다! (Good)</span>
-                <span id="result-good" class="text-[#0d47a1] font-bold">0</span>
-            </div>
-            <div class="flex justify-between border-b-2 border-[#d7ccc8] pb-2">
-                <span class="text-gray-500">아차! (Miss)</span>
-                <span id="result-miss" class="text-gray-700 font-bold">0</span>
-            </div>
-            <div class="flex justify-between pt-4 text-4xl">
-                <span class="text-[#3e2723] font-black">최종 점수</span>
-                <span id="result-score" class="text-[#c62828] font-black">0</span>
-            </div>
-        </div>
-
-        <button id="btn-menu" class="mt-8 px-10 py-5 bg-[#c62828] text-white text-3xl font-bold rounded-full cute-shadow btn-press border-4 border-[#fff8e1]">
-            메뉴로 돌아가기
-        </button>
-    </div>
-
-    <script>
-        // --- Audio Engine (Web Audio API) ---
-        let audioCtx;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        const SoundEngine = {
-            playGung: (isBig = false) => { // 왼쪽 궁편 (낮고 울림있는 소리)
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(isBig ? 130 : 180, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (isBig ? 0.3 : 0.2));
-                
-                gain.gain.setValueAtTime(isBig ? 3.0 : 1.5, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (isBig ? 0.3 : 0.2));
-                
-                osc.start(audioCtx.currentTime);
-                osc.stop(audioCtx.currentTime + 0.35);
-            },
-            playDeok: (isBig = false) => { // 오른쪽 채편 (높고 날카로운 소리)
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.value = isBig ? 1200 : 1600;
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(isBig ? 450 : 550, audioCtx.currentTime);
-                
-                gain.gain.setValueAtTime(isBig ? 2.0 : 1.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (isBig ? 0.1 : 0.05));
-                
-                osc.start(audioCtx.currentTime);
-                osc.stop(audioCtx.currentTime + 0.15);
-            },
-            playMelodyNote: (freq, duration, delayOffset) => {
-                if (!audioCtx || !freq) return;
-                const startTime = audioCtx.currentTime + delayOffset;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.type = 'sine'; 
-                osc.frequency.value = freq;
-                
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
-                gain.gain.setValueAtTime(0.15, startTime + duration - 0.05);
-                gain.gain.linearRampToValueAtTime(0, startTime + duration);
-                
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            }
-        };
-
-        const Notes = {
-            'A3': 220.00, 'B3': 246.94, 'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 
-            'D#4': 311.13, 'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 
-            'G#4': 415.30, 'A4': 440.00, 'B4': 493.88, 'C5': 523.25, 'C#5': 554.37, 
-            'D5': 587.33, 'D#5': 622.25, 'E5': 659.25, 'F#5': 739.99, 'G5': 783.99
-        };
-
-        function createBeatmap(bpm, offsetMs, sequenceText) {
-            const msPerBeat = 60000 / bpm;
-            const msPer16th = msPerBeat / 4;
-            const notes = [];
-            let currentTime = offsetMs;
-
-            const tokens = sequenceText.trim().split(/\s+/);
-            
-            tokens.forEach(token => {
-                const parts = token.split(':');
-                const typeChar = parts[0];
-                const pitch = parts[1] !== '-' ? Notes[parts[1]] : null;
-                const length16ths = parseFloat(parts[2]);
-                const durationMs = length16ths * msPer16th;
-
-                if (['D', 'd', 'K', 'k'].includes(typeChar)) {
-                    let noteType = 'gung'; // d
-                    if (typeChar === 'D') noteType = 'gung-big'; // 덩 (큰 궁)
-                    if (typeChar === 'k') noteType = 'deok'; // k
-                    if (typeChar === 'K') noteType = 'deok-big'; // 큰 덕
-
-                    notes.push({
-                        time: currentTime,
-                        type: noteType,
-                        pitch: pitch,
-                        melodyDuration: durationMs / 1000,
-                        cleared: false,
-                        hits: [],
-                        missed: false
-                    });
-                }
-                currentTime += durationMs;
-            });
-
-            return { notes, duration: currentTime + 2000 };
-        }
-
-        // --- 곡 데이터 (비트맵) ---
-        const seqThreeBears = `
-            D:C4:4 d:C4:4 d:C4:4 K:-:4 
-            d:C4:4 d:E4:4 D:G4:4 K:G4:4 
-            k:E4:4 d:C4:4 k:-:4 K:-:4
-            D:G4:4 d:G4:4 k:E4:4 k:C4:4
-            D:G4:4 d:G4:4 K:G4:4 K:-:4
-            D:G4:4 d:G4:4 k:E4:4 k:E4:4
-            d:F4:4 d:F4:4 K:-:8
-            D:G4:4 d:G4:4 k:E4:4 k:E4:4
-            d:F4:4 d:F4:4 K:-:8
-            D:G4:4 d:G4:4 k:E4:4 k:E4:4
-            d:F4:4 d:F4:4 k:F4:4 k:B4:4
-            D:G4:4 d:G4:4 k:C5:4 k:G4:4
-            D:C5:4 K:G4:4 D:C5:8
-        `;
-
-        const seqSchoolBell = `
-            D:G4:4 d:G4:4 K:A4:4 k:A4:4
-            D:G4:4 d:G4:4 D:E4:8
-            d:G4:4 d:G4:4 k:E4:4 k:E4:4
-            K:D4:8 r:-:8
-            D:G4:4 d:G4:4 K:A4:4 k:A4:4
-            D:G4:4 d:G4:4 D:E4:8
-        `;
-
-        const seqJajinmori = `
-            D:A3:6 d:A3:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2
-            D:A3:6 k:E4:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2
-            D:A3:6 d:A3:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2
-            D:A3:6 k:E4:6 D:A3:4 k:E4:2 D:A3:4 k:E4:2
-        `;
-
-        const seqGutgeori = `
-            D:A3:6 k:E4:2 k:E4:4 d:A3:6 k:E4:1.5 k:E4:1.5 k:E4:1.5 k:E4:1.5
-            D:A3:6 k:E4:2 k:E4:4 d:A3:6 k:E4:1.5 k:E4:1.5 k:E4:1.5 k:E4:1.5
-            D:A3:6 k:E4:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2
-        `;
-
-        const seqHwimori = `
-            D:A3:4 k:E4:4 d:A3:4 k:E4:1.5 k:E4:2.5
-            D:A3:4 k:E4:4 d:A3:4 k:E4:1.5 k:E4:2.5
-            D:A3:4 k:E4:4 d:A3:4 k:E4:1 k:E4:1 k:E4:1 k:E4:1
-            D:A3:4 k:E4:4 D:A3:4 r:-:4
-        `;
-
-        const seqSemachi = `
-            D:A3:6 k:E4:2 k:E4:4 d:A3:4 k:E4:2
-            D:A3:6 k:E4:2 k:E4:4 d:A3:4 k:E4:2
-            D:A3:6 D:A3:6 d:A3:4 k:E4:2
-            D:A3:6 r:-:6 d:A3:4 k:E4:2
-        `;
-
-        function generatePractice(type, measures) {
-            let seq = "";
-            for(let i=0; i<measures; i++) {
-                if(type === '4/4') seq += "D:-:4 k:-:4 k:-:4 k:-:4\n";
-                else if(type === '3/4') seq += "D:-:4 k:-:4 k:-:4\n";
-                else if(type === '8bit') seq += "d:-:2 k:-:2 d:-:2 k:-:2 d:-:2 k:-:2 d:-:2 k:-:2\n";
-                else if(type === '16bit') seq += "d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1\n";
-            }
-            return seq;
-        }
-
-        const SongLibrary = [
-            { id: 1, title: "🐻 곰 세마리", bpm: 120, difficulty: "쉬움 (4/4)", color: "bg-[#8d6e63]", data: () => createBeatmap(120, 2000, seqThreeBears) },
-            { id: 2, title: "🏫 학교종", bpm: 130, difficulty: "보통 (4/4)", color: "bg-[#795548]", data: () => createBeatmap(130, 2000, seqSchoolBell) },
-            { id: 3, title: "🇰🇷 굿거리 장단", bpm: 90, difficulty: "국악 (보통)", color: "bg-[#00695c]", data: () => createBeatmap(90, 2000, seqGutgeori) },
-            { id: 4, title: "🇰🇷 자진모리 장단", bpm: 120, difficulty: "국악 (보통)", color: "bg-[#f57f17]", data: () => createBeatmap(120, 2000, seqJajinmori) },
-            { id: 5, title: "🇰🇷 휘모리 장단", bpm: 140, difficulty: "국악 (빠름)", color: "bg-[#c62828]", data: () => createBeatmap(140, 2000, seqHwimori) },
-            { id: 6, title: "🇰🇷 세마치 장단", bpm: 100, difficulty: "국악 (3박)", color: "bg-[#ad1457]", data: () => createBeatmap(100, 2000, seqSemachi) },
-            
-            { id: 'p1', title: "⏱️ [연습] 4/4 박자 기초", bpm: 100, difficulty: "연습 (30마디)", color: "bg-[#5d4037]", data: () => createBeatmap(100, 2000, generatePractice('4/4', 30)) },
-            { id: 'p2', title: "⏱️ [연습] 3/4 왈츠 박자", bpm: 120, difficulty: "연습 (30마디)", color: "bg-[#5d4037]", data: () => createBeatmap(120, 2000, generatePractice('3/4', 30)) },
-            { id: 'p3', title: "⏱️ [연습] 8비트 교차치기", bpm: 130, difficulty: "연습 (20마디)", color: "bg-[#4e342e]", data: () => createBeatmap(130, 2000, generatePractice('8bit', 20)) },
-            { id: 'p4', title: "⏱️ [연습] 16비트 연타", bpm: 120, difficulty: "연습 (15마디)", color: "bg-[#3e2723]", data: () => createBeatmap(120, 2000, generatePractice('16bit', 15)) }
-        ];
-
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        let animationFrameId;
-        
-        let GameState = {
-            isPlaying: false,
-            startTime: 0,
-            notes: [],
-            score: 0,
-            combo: 0,
-            maxCombo: 0,
-            perfectCount: 0,
-            goodCount: 0,
-            missCount: 0,
-            speed: 0.5,
-            hitZoneX: 180, 
-            songDuration: 0,
-            particles: [],
-            feedbacks: []
-        };
-
-        const elMenu = document.getElementById('menu-screen');
-        const elGame = document.getElementById('game-screen');
-        const elResult = document.getElementById('result-screen');
-        const elSongList = document.getElementById('song-list');
-        const elScore = document.getElementById('ui-score');
-        const elCombo = document.getElementById('ui-combo');
-        const elComboContainer = document.getElementById('ui-combo-container');
-
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            GameState.hitZoneX = Math.min(180, canvas.width * 0.25); 
-        }
-        window.addEventListener('resize', resizeCanvas);
-
-        function renderMenu() {
-            elSongList.innerHTML = '';
-            SongLibrary.forEach(song => {
-                const btn = document.createElement('button');
-                btn.className = `w-full text-left p-4 rounded-2xl text-white text-xl cute-shadow btn-press transition-transform ${song.color} mb-3 flex justify-between items-center border-2 border-[#d7ccc8]/30 font-bold`;
-                btn.innerHTML = `
-                    <span>${song.title}</span>
-                    <span class="text-sm bg-black/30 px-3 py-1 rounded-full whitespace-nowrap ml-2">${song.difficulty}</span>
-                `;
-                btn.onclick = () => startGame(song);
-                elSongList.appendChild(btn);
-            });
-        }
-
-        function startGame(song) {
-            initAudio(); 
-            
-            const mapData = song.data();
-            GameState = {
-                isPlaying: true,
-                startTime: performance.now(),
-                notes: mapData.notes,
-                score: 0,
-                combo: 0,
-                maxCombo: 0,
-                perfectCount: 0,
-                goodCount: 0,
-                missCount: 0,
-                speed: canvas.width > 800 ? 0.7 : 0.5, 
-                hitZoneX: Math.min(180, canvas.width * 0.25),
-                songDuration: mapData.duration,
-                particles: [],
-                feedbacks: [],
-                melodyIndex: 0
-            };
-
-            elMenu.classList.add('hidden');
-            elResult.classList.add('hidden');
-            elGame.classList.remove('hidden');
-            
-            updateHUD();
-            resizeCanvas();
-            gameLoop();
-        }
-
-        function stopGame() {
-            GameState.isPlaying = false;
-            cancelAnimationFrame(animationFrameId);
-            
-            elGame.classList.add('hidden');
-            elResult.classList.remove('hidden');
-            elResult.classList.add('flex');
-            
-            document.getElementById('result-max-combo').innerText = GameState.maxCombo;
-            document.getElementById('result-perfect').innerText = GameState.perfectCount;
-            document.getElementById('result-good').innerText = GameState.goodCount;
-            document.getElementById('result-miss').innerText = GameState.missCount;
-            document.getElementById('result-score').innerText = GameState.score;
-        }
-
-        document.getElementById('btn-menu').addEventListener('click', () => {
-            elResult.classList.add('hidden');
-            elResult.classList.remove('flex');
-            elMenu.classList.remove('hidden');
-        });
-
-        // 장구형 키 맵핑 (왼쪽 2키 궁, 오른쪽 2키 덕)
-        const inputMap = {
-            'd': { type: 'gung', id: 'btn-touch-d', highlight: 'drum-highlight-red' },
-            'f': { type: 'gung', id: 'btn-touch-f', highlight: 'drum-highlight-red' },
-            'j': { type: 'deok', id: 'btn-touch-j', highlight: 'drum-highlight-blue' },
-            'k': { type: 'deok', id: 'btn-touch-k', highlight: 'drum-highlight-blue' }
-        };
-
-        window.addEventListener('keydown', (e) => {
-            if (!GameState.isPlaying) return;
-            const key = e.key.toLowerCase();
-            if (inputMap[key]) {
-                handleHit(inputMap[key].type, key);
-                visualHitDrum(inputMap[key].id, inputMap[key].highlight);
-            }
-        });
-
-        Object.keys(inputMap).forEach(key => {
-            const config = inputMap[key];
-            const el = document.getElementById(config.id);
-            if(el) {
-                el.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    if (!GameState.isPlaying) return;
-                    handleHit(config.type, key);
-                    visualHitDrum(config.id, config.highlight);
-                });
-                el.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    if (!GameState.isPlaying) return;
-                    handleHit(config.type, key);
-                    visualHitDrum(config.id, config.highlight);
-                });
-            }
-        });
-
-        function visualHitDrum(elementId, highlightClass) {
-            const el = document.getElementById(elementId);
-            if(el) {
-                el.classList.add(highlightClass);
-                setTimeout(() => el.classList.remove(highlightClass), 100);
-            }
-        }
-
-        function handleHit(hitType, keyId) {
-            const currentTime = performance.now() - GameState.startTime;
-            
-            let nearestNote = null;
-            let minDiff = Infinity;
-
-            for (let note of GameState.notes) {
-                if (note.cleared || note.missed) continue;
-
-                if (note.type.startsWith(hitType)) {
-                    if (note.hits && note.hits.includes(keyId)) continue;
-
-                    const diff = Math.abs(note.time - currentTime);
-                    if (diff < 150 && diff < minDiff) {
-                        minDiff = diff;
-                        nearestNote = note;
-                    }
-                }
-            }
-
-            const isBigHit = nearestNote && nearestNote.type.includes('big');
-            
-            if (hitType === 'gung') SoundEngine.playGung(isBigHit);
-            if (hitType === 'deok') SoundEngine.playDeok(isBigHit);
-            createHitSparks(GameState.hitZoneX, canvas.height / 2, hitType === 'gung' ? '#c62828' : '#1565c0', 8);
-
-            if (nearestNote) {
-                nearestNote.hits.push(keyId);
-                const hitsNeeded = nearestNote.type.includes('big') ? 2 : 1;
-
-                if (nearestNote.hits.length >= hitsNeeded) {
-                    nearestNote.cleared = true;
-                    
-                    let judgment = '아차!';
-                    let points = 0;
-                    let color = '';
-                    
-                    if (minDiff <= 50) {
-                        judgment = '얼쑤!'; // Perfect
-                        points = 10;
-                        GameState.perfectCount++;
-                        GameState.combo++;
-                        color = '#d84315'; 
-                    } else if (minDiff <= 120) {
-                        judgment = '좋다!'; // Good
-                        points = 5; 
-                        GameState.goodCount++;
-                        GameState.combo++;
-                        color = '#2e7d32'; 
-                    }
-
-                    if (points > 0) {
-                        if (hitsNeeded === 2) points *= 2; 
-                        
-                        const comboBonus = Math.floor(GameState.combo / 10);
-                        GameState.score += points + comboBonus;
-                        
-                        if (GameState.combo > GameState.maxCombo) {
-                            GameState.maxCombo = GameState.combo;
-                        }
-                        showFeedbackText(judgment, color);
-
-                        if (hitsNeeded === 2) {
-                            createHitSparks(GameState.hitZoneX, canvas.height / 2, hitType === 'gung' ? '#c62828' : '#1565c0', 25);
-                        }
-                    }
-                    
-                    updateHUD();
-                } else {
-                    nearestNote.halfHit = true;
-                }
-            }
-        }
-
-        function updateHUD() {
-            elScore.innerText = GameState.score;
-            elCombo.innerText = GameState.combo;
-            
-            if (GameState.combo >= 5) {
-                elComboContainer.classList.remove('opacity-0');
-                elCombo.classList.remove('animate-bounce-custom');
-                void elCombo.offsetWidth; 
-                elCombo.classList.add('animate-bounce-custom');
-            } else {
-                elComboContainer.classList.add('opacity-0');
-            }
-        }
-
-        function createHitSparks(x, y, color, count) {
-            for (let i = 0; i < count; i++) {
-                GameState.particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * (count > 10 ? 20 : 12),
-                    vy: (Math.random() - 0.5) * (count > 10 ? 20 : 12),
-                    life: 1,
-                    color: color,
-                    size: Math.random() * (count > 10 ? 12 : 8) + 4
-                });
-            }
-        }
-
-        function showFeedbackText(text, color) {
-            GameState.feedbacks.push({
-                text: text,
-                color: color,
-                y: canvas.height / 2 - 80,
-                life: 1
-            });
-        }
-
-        function gameLoop() {
-            if (!GameState.isPlaying) return;
-
-            const now = performance.now();
-            const currentTime = now - GameState.startTime;
-
-            if (currentTime > GameState.songDuration) {
-                stopGame();
-                return;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const centerY = canvas.height / 2;
-
-            // 1. 단청 테마 트랙 배경
-            ctx.fillStyle = "#004d40"; // Dark Teal
-            ctx.fillRect(0, centerY - 65, canvas.width, 130);
-            
-            // 트랙 상하단 테두리 (단청 색상)
-            ctx.fillStyle = "#c62828"; // Red
-            ctx.fillRect(0, centerY - 70, canvas.width, 5);
-            ctx.fillStyle = "#fbc02d"; // Yellow
-            ctx.fillRect(0, centerY + 65, canvas.width, 5);
-            
-            // 트랙 중앙선
-            ctx.beginPath();
-            ctx.moveTo(0, centerY);
-            ctx.lineTo(canvas.width, centerY);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // 2. 타격 판정선 (Hit Zone) - 전통 문양 느낌의 둥근 테두리
-            ctx.beginPath();
-            ctx.arc(GameState.hitZoneX, centerY, 50, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.arc(GameState.hitZoneX, centerY, 28, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // 3. 멜로디 재생
-            while (GameState.melodyIndex < GameState.notes.length) {
-                const note = GameState.notes[GameState.melodyIndex];
-                if (currentTime >= note.time - 50) { 
-                    if (note.pitch && !note.melodyPlayed) {
-                        SoundEngine.playMelodyNote(note.pitch, note.melodyDuration, 0);
-                        note.melodyPlayed = true;
-                    }
-                    GameState.melodyIndex++;
-                } else {
-                    break;
-                }
-            }
-
-            // 4. 노트 렌더링
-            for (let note of GameState.notes) {
-                if (note.cleared) continue;
-
-                const noteX = GameState.hitZoneX + (note.time - currentTime) * GameState.speed;
-
-                if (!note.missed && noteX < GameState.hitZoneX - 70) {
-                    note.missed = true;
-                    GameState.combo = 0;
-                    GameState.missCount++;
-                    showFeedbackText('아차!', '#757575');
-                    updateHUD();
-                }
-
-                if (!note.missed && noteX > -100 && noteX < canvas.width + 100) {
-                    drawNote(noteX, centerY, note.type, note.halfHit);
-                }
-            }
-
-            // 5. 파티클 렌더링
-            for (let i = GameState.particles.length - 1; i >= 0; i--) {
-                let p = GameState.particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.05;
-                p.size *= 0.92;
-                
-                if (p.life <= 0) {
-                    GameState.particles.splice(i, 1);
-                    continue;
-                }
-
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-            }
-
-            // 6. 판정 텍스트 렌더링
-            for (let i = GameState.feedbacks.length - 1; i >= 0; i--) {
-                let f = GameState.feedbacks[i];
-                f.y -= 1.5;
-                f.life -= 0.04;
-                
-                if (f.life <= 0) {
-                    GameState.feedbacks.splice(i, 1);
-                    continue;
-                }
-
-                ctx.globalAlpha = f.life;
-                ctx.fillStyle = f.color;
-                ctx.font = "black 38px 'Jua'";
-                ctx.textAlign = "center";
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 6;
-                ctx.strokeText(f.text, GameState.hitZoneX, f.y);
-                ctx.fillText(f.text, GameState.hitZoneX, f.y);
-                ctx.globalAlpha = 1.0;
-            }
-
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        function drawNote(x, y, type, halfHit) {
-            const isGung = type.startsWith('gung');
-            const isBig = type.includes('big');
-            
-            const radius = isBig ? 50 : 28; 
-            
-            // 궁(왼손)은 붉은색, 덕(오른손)은 푸른색
-            const bgColor = isGung ? '#c62828' : '#1565c0'; 
-            const outlineColor = '#ffffff';
-
-            ctx.save();
-            ctx.translate(x, y);
-
-            if (halfHit) {
-                ctx.scale(0.9, 0.9);
-                ctx.translate(Math.random() * 4 - 2, Math.random() * 4 - 2);
-                ctx.globalAlpha = 0.8;
-            }
-
-            // 그림자
-            ctx.beginPath();
-            ctx.arc(3, 4, radius, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(0,0,0,0.4)";
-            ctx.fill();
-
-            // 본체
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fillStyle = bgColor;
-            ctx.fill();
-            ctx.lineWidth = isBig ? 4 : 2;
-            ctx.strokeStyle = outlineColor;
-            ctx.stroke();
-
-            // 안쪽 흰 얼굴 바탕
-            ctx.beginPath();
-            ctx.arc(0, 0, radius * 0.7, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255,255,255,0.95)";
-            ctx.fill();
-
-            // 귀여운 표정
-            ctx.fillStyle = "#4e342e";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            
-            const faceScale = isBig ? 1.5 : 0.9;
-            ctx.scale(faceScale, faceScale);
-            
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = "#4e342e";
-            
-            if (isGung) {
-                // 궁(붉은색) 표정
-                ctx.font = "bold 16px Arial";
-                ctx.fillText(">", -8, -2);
-                ctx.fillText("<", 8, -2);
-                ctx.beginPath();
-                ctx.arc(0, 5, 4, 0, Math.PI);
-                ctx.stroke();
-            } else {
-                // 덕(푸른색) 표정
-                ctx.beginPath();
-                ctx.arc(-7, -2, 2.5, 0, Math.PI*2);
-                ctx.arc(7, -2, 2.5, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(0, 5, 3, 0, Math.PI*2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-
-        renderMenu();
-
-    </script>
+    <div class="result-actions"><button id="retryBtn" class="main-action" type="button">다시 연주</button><button id="menuBtn" class="main-action secondary" type="button">곡 선택</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const els = {
+  menu:$('menuScreen'), game:$('gameScreen'), result:$('resultScreen'), songList:$('songList'), assist:$('assistToggle'), melody:$('melodyToggle'),
+  canvas:$('gameCanvas'), stage:$('stage'), title:$('songTitle'), info:$('songInfo'), score:$('uiScore'), combo:$('uiCombo'), acc:$('uiAcc'), progress:$('progressFill'),
+  mute:$('muteBtn'), pause:$('pauseBtn'), pausePanel:$('pausePanel'), resume:$('resumeBtn'), quit:$('quitBtn'), retry:$('retryBtn'), menuBtn:$('menuBtn'),
+  toast:$('centerToast'), countdown:$('countdown'), guideMain:$('guideMain'), guideSub:$('guideSub'), grade:$('grade'), resultScore:$('resultScore'), resultCombo:$('resultCombo'), resultAcc:$('resultAcc'), resultPerfect:$('resultPerfect'), resultGood:$('resultGood'), resultMiss:$('resultMiss'), bigGung:$('bigGung'), bigDeok:$('bigDeok')
+};
+const ctx = els.canvas.getContext('2d');
+let raf = 0, audioCtx = null, master = null, lastSong = null;
+const settings = { assist:true, melody:true, muted:false };
+const Notes = {'A3':220,'B3':246.94,'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392,'A4':440,'B4':493.88,'C5':523.25,'D5':587.33,'E5':659.25,'G5':783.99};
+
+const songs = [
+  {id:'bear',emoji:'🐻',title:'곰 세마리',bpm:120,level:'쉬움',desc:'동요로 가볍게 연습',color:'#8d6e63',seq:`D:C4:4 d:C4:4 d:C4:4 k:-:4 d:C4:4 d:E4:4 D:G4:4 k:G4:4 k:E4:4 d:C4:4 k:-:4 K:-:4 D:G4:4 d:G4:4 k:E4:4 k:C4:4 D:G4:4 d:G4:4 K:G4:4 k:-:4 D:G4:4 d:G4:4 k:E4:4 k:E4:4 d:F4:4 d:F4:4 k:-:8 D:G4:4 d:G4:4 k:E4:4 k:E4:4 d:F4:4 d:F4:4 k:-:8 D:G4:4 d:G4:4 k:E4:4 k:E4:4 d:F4:4 d:F4:4 k:F4:4 k:B4:4 D:G4:4 d:G4:4 k:C5:4 k:G4:4 D:C5:4 k:G4:4 D:C5:8`},
+  {id:'bell',emoji:'🏫',title:'학교종',bpm:128,level:'보통',desc:'짧고 명확한 4박 흐름',color:'#795548',seq:`D:G4:4 d:G4:4 k:A4:4 k:A4:4 D:G4:4 d:G4:4 D:E4:8 d:G4:4 d:G4:4 k:E4:4 k:E4:4 K:D4:8 r:-:8 D:G4:4 d:G4:4 k:A4:4 k:A4:4 D:G4:4 d:G4:4 D:E4:8`},
+  {id:'gut',emoji:'🇰🇷',title:'굿거리 장단',bpm:90,level:'국악 보통',desc:'느긋한 12박 장단 감각',color:'#00695c',seq:`D:A3:6 k:E4:2 k:E4:4 d:A3:6 k:E4:1.5 k:E4:1.5 k:E4:1.5 k:E4:1.5 D:A3:6 k:E4:2 k:E4:4 d:A3:6 k:E4:1.5 k:E4:1.5 k:E4:1.5 k:E4:1.5 D:A3:6 k:E4:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2 D:A3:6 k:E4:2 k:E4:4 d:A3:6 k:E4:1.5 k:E4:1.5 k:E4:1.5 k:E4:1.5`},
+  {id:'jajin',emoji:'🇰🇷',title:'자진모리 장단',bpm:122,level:'국악 보통',desc:'신나는 중간 빠르기',color:'#f57f17',seq:`D:A3:6 d:A3:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2 D:A3:6 k:E4:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2 D:A3:6 d:A3:6 d:A3:4 k:E4:2 d:A3:4 k:E4:2 D:A3:6 k:E4:6 D:A3:4 k:E4:2 D:A3:4 k:E4:2`},
+  {id:'semi',emoji:'🇰🇷',title:'세마치 장단',bpm:102,level:'3박',desc:'덩덕쿵덕 3박 느낌',color:'#ad1457',seq:`D:A3:6 k:E4:2 k:E4:4 d:A3:4 k:E4:2 D:A3:6 k:E4:2 k:E4:4 d:A3:4 k:E4:2 D:A3:6 D:A3:6 d:A3:4 k:E4:2 D:A3:6 r:-:6 d:A3:4 k:E4:2 D:A3:6 k:E4:2 k:E4:4 d:A3:4 k:E4:2`},
+  {id:'hwi',emoji:'🔥',title:'휘모리 장단',bpm:142,level:'빠름',desc:'빠른 반응 연습',color:'#c62828',seq:`D:A3:4 k:E4:4 d:A3:4 k:E4:1.5 k:E4:2.5 D:A3:4 k:E4:4 d:A3:4 k:E4:1.5 k:E4:2.5 D:A3:4 k:E4:4 d:A3:4 k:E4:1 k:E4:1 k:E4:1 k:E4:1 D:A3:4 k:E4:4 D:A3:4 r:-:4 D:A3:4 k:E4:4 d:A3:4 k:E4:1 k:E4:1 k:E4:1 k:E4:1`},
+  {id:'p4',emoji:'⏱️',title:'4박 기초 연습',bpm:96,level:'연습',desc:'덩-덕-덕-덕',color:'#5d4037',seq:practice('4',24)},
+  {id:'p8',emoji:'⚡',title:'8비트 교차치기',bpm:126,level:'연습',desc:'궁덕궁덕 반복',color:'#4e342e',seq:practice('8',18)},
+  {id:'p16',emoji:'🌪️',title:'16비트 짧은 도전',bpm:112,level:'도전',desc:'짧지만 촘촘한 연타',color:'#3e2723',seq:practice('16',10)}
+];
+function practice(type, bars){let s='';for(let i=0;i<bars;i++){ if(type==='4')s+='D:-:4 k:-:4 k:-:4 k:-:4 '; if(type==='8')s+='d:-:2 k:-:2 d:-:2 k:-:2 d:-:2 k:-:2 d:-:2 k:-:2 '; if(type==='16')s+='d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 d:-:1 k:-:1 ';}return s;}
+function parseSong(song){
+  const msBeat = 60000/song.bpm, ms16=msBeat/4, notes=[]; let t=2600, measureMs=msBeat*4, nextMeasure=2600;
+  song.seq.trim().split(/\s+/).forEach(tok=>{ const [ch,pitch,lenRaw]=tok.split(':'); const len=parseFloat(lenRaw||'4'); const dur=len*ms16; if(ch && ch !== 'r'){
+      const lane=(ch==='D'||ch==='d')?'gung':'deok', big=(ch==='D'||ch==='K'), label=lane==='gung'?(big?'덩':'궁'):(big?'큰덕':'덕');
+      notes.push({time:t,duration:dur,lane,big,label,pitch:Notes[pitch]||0,cleared:false,missed:false,hitKeys:new Set(),half:false,played:false,measureStart:t>=nextMeasure-1});
+    } t += dur; while(t>=nextMeasure+measureMs-1) nextMeasure += measureMs; });
+  return {notes,duration:t+1300,measureMs};
+}
+const state = {playing:false,paused:false,start:0,pauseAt:0,song:null,notes:[],duration:0,measureMs:0,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,total:0,hitZone:150,speed:.62,particles:[],texts:[],melodyIndex:0,lastBeat:-1};
+function initAudio(){ if(audioCtx) { if(audioCtx.state==='suspended') audioCtx.resume(); return; } const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC(); master=audioCtx.createGain(); master.gain.value=.23; master.connect(audioCtx.destination); }
+function tone(freq,dur=.12,type='sine',gain=.2,delay=0){ if(!audioCtx||settings.muted||!freq) return; const t=audioCtx.currentTime+delay; const osc=audioCtx.createOscillator(); const g=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+dur); osc.connect(g); g.connect(master); osc.start(t); osc.stop(t+dur+.03); }
+function drum(lane,big=false){ if(!audioCtx||settings.muted) return; if(lane==='gung'){ tone(big?120:170,big?.30:.22,'sine',big?.46:.34); tone(big?72:95,big?.18:.14,'triangle',big?.13:.09,.015); } else { tone(big?560:720,big?.085:.055,'triangle',big?.28:.22); tone(big?1300:1700,big?.05:.035,'square',big?.06:.045,.01); } }
+function melody(freq,dur){ if(settings.melody) tone(freq,Math.min(.65,dur/1000*.7),'sine',.07); }
+function clickBeat(strong=false){ if(!settings.melody) return; tone(strong?900:660,.035,'square',strong?.05:.03); }
+function resize(){ const r=els.stage.getBoundingClientRect(); const dpr=Math.min(window.devicePixelRatio||1,2); els.canvas.width=Math.floor(r.width*dpr); els.canvas.height=Math.floor(r.height*dpr); els.canvas.style.width=r.width+'px'; els.canvas.style.height=r.height+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); state.hitZone=Math.min(178,r.width*.24); state.speed=r.width>900?.78:r.width>560?.62:.48; }
+window.addEventListener('resize',resize);
+function renderMenu(){ els.songList.innerHTML=''; songs.forEach(song=>{ const b=document.createElement('button'); b.type='button'; b.className='song-btn'; b.style.setProperty('--song',song.color); b.innerHTML=`<span class="song-emoji">${song.emoji}</span><span><span class="song-title">${song.title}</span><span class="song-desc">${song.desc} · ${song.bpm}BPM</span></span><span class="badge">${song.level}</span>`; b.onclick=()=>start(song); els.songList.appendChild(b); }); }
+function start(song){ initAudio(); lastSong=song; const map=parseSong(song); Object.assign(state,{playing:true,paused:false,start:performance.now(),pauseAt:0,song,notes:map.notes,duration:map.duration,measureMs:map.measureMs,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,total:map.notes.length,particles:[],texts:[],melodyIndex:0,lastBeat:-1}); els.title.textContent=song.emoji+' '+song.title; els.info.textContent=`${song.bpm}BPM · ${song.level} · 붉은 줄=궁, 푸른 줄=덕`; els.menu.classList.add('hidden'); els.result.classList.add('hidden'); els.game.classList.remove('hidden'); els.pausePanel.classList.add('hidden'); resize(); updateHud(); cancelAnimationFrame(raf); loop(); }
+function currentTime(){ return performance.now()-state.start; }
+function updateHud(){ els.score.textContent=state.score; els.combo.textContent=state.combo; const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.75)/done*100):100; els.acc.textContent=acc+'%'; }
+function setToast(text,color){ els.toast.textContent=text; els.toast.style.color=color||'#fff'; els.toast.classList.remove('show'); void els.toast.offsetWidth; els.toast.classList.add('show'); }
+function addText(text,x,y,color){ state.texts.push({text,x,y,color,life:1,vy:-1.3}); }
+function sparks(x,y,color,count=10){ for(let i=0;i<count;i++){ state.particles.push({x,y,vx:(Math.random()-.5)*(count>18?16:10),vy:(Math.random()-.5)*(count>18?16:10),life:1,size:4+Math.random()*(count>18?8:5),color}); } }
+function laneY(lane,h){ return lane==='gung'?h*.38:h*.62; }
+function pressVisual(id){ const el=$(id); if(!el)return; el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),100); }
+function input(lane,key,forcedBig=false){ if(!state.playing||state.paused) return; initAudio(); const now=currentTime(); drum(lane,forcedBig); const h=els.stage.clientHeight; sparks(state.hitZone,laneY(lane,h),lane==='gung'?'#e53935':'#1e88e5',forcedBig?20:9);
+  let nearest=null, min=9999; for(const n of state.notes){ if(n.cleared||n.missed) continue; if(n.lane!==lane) continue; if(n.hitKeys.has(key)) continue; const diff=Math.abs(n.time-now); if(diff<190 && diff<min){min=diff; nearest=n;} }
+  if(!nearest){ const wrong=state.notes.find(n=>!n.cleared&&!n.missed&&Math.abs(n.time-now)<130); if(wrong){ state.combo=0; updateHud(); addText('엇박!',state.hitZone,laneY(lane,h)-36,'#555'); } return; }
+  nearest.hitKeys.add(key); const need=forcedBig ? 1 : (nearest.big && !settings.assist ? 2 : 1); if(nearest.hitKeys.size<need){ nearest.half=true; addText('한 번 더!',state.hitZone,laneY(lane,h)-36,'#ffca28'); return; }
+  nearest.cleared=true; let text='좋다!', pts=7, color='#2e7d32'; if(min<=48){text='얼쑤!';pts=12;color='#d84315';state.perfect++;} else {state.good++;}
+  if(nearest.big) pts*=2; state.combo++; state.maxCombo=Math.max(state.maxCombo,state.combo); state.score+=pts+Math.floor(state.combo/8); addText(text,state.hitZone,laneY(lane,h)-42,color); sparks(state.hitZone,laneY(lane,h),lane==='gung'?'#f44336':'#2196f3',nearest.big?28:16); if(state.combo&&state.combo%10===0) setToast(state.combo+'연타!', '#fff7c2'); updateHud(); }
+const keyToPad={d:'padD',f:'padF',j:'padJ',k:'padK'};
+const keyLane={d:'gung',f:'gung',j:'deok',k:'deok'};
+window.addEventListener('keydown',e=>{ const k=e.key.toLowerCase(); if(e.repeat) return; if(k==='escape'&&state.playing){togglePause(true);return;} if(keyLane[k]){ e.preventDefault(); pressVisual(keyToPad[k]); input(keyLane[k],k,false); }});
+['padD','padF','padJ','padK'].forEach(id=>{ const el=$(id); el.addEventListener('pointerdown',e=>{e.preventDefault(); const k=el.dataset.key; pressVisual(id); input(keyLane[k],k,false);}); });
+els.bigGung?.addEventListener('pointerdown',e=>{e.preventDefault(); pressVisual('padD');pressVisual('padF');input('gung','big'+performance.now(),true);});
+els.bigDeok?.addEventListener('pointerdown',e=>{e.preventDefault(); pressVisual('padJ');pressVisual('padK');input('deok','big'+performance.now(),true);});
+function togglePause(force){ if(!state.playing) return; if(!state.paused || force){ state.paused=true; state.pauseAt=performance.now(); els.pausePanel.classList.remove('hidden'); cancelAnimationFrame(raf); } else { state.paused=false; state.start += performance.now()-state.pauseAt; els.pausePanel.classList.add('hidden'); loop(); } }
+els.pause.onclick=()=>togglePause(false); els.resume.onclick=()=>togglePause(false); els.quit.onclick=()=>quitToMenu();
+els.mute.onclick=()=>{settings.muted=!settings.muted; els.mute.textContent=settings.muted?'소리 OFF':'소리 ON'; els.mute.style.background=settings.muted?'#d7c4a7':'#fff1cf';};
+els.assist.onclick=()=>{settings.assist=!settings.assist; els.assist.classList.toggle('on',settings.assist); els.assist.firstChild.nodeValue='친절 판정 '+(settings.assist?'ON':'OFF');};
+els.melody.onclick=()=>{settings.melody=!settings.melody; els.melody.classList.toggle('on',settings.melody); els.melody.firstChild.nodeValue='멜로디 가이드 '+(settings.melody?'ON':'OFF');};
+els.retry.onclick=()=>{ if(lastSong) start(lastSong); }; els.menuBtn.onclick=()=>quitToMenu();
+function quitToMenu(){ state.playing=false; cancelAnimationFrame(raf); els.game.classList.add('hidden'); els.result.classList.add('hidden'); els.menu.classList.remove('hidden'); }
+function drawBackground(w,h,now){
+  ctx.clearRect(0,0,w,h); const cy1=h*.38,cy2=h*.62; const left=state.hitZone; ctx.fillStyle='rgba(0,77,64,.88)'; roundRect(0,cy1-54,w,108,28,true); roundRect(0,cy2-54,w,108,28,true); ctx.fillStyle='rgba(255,255,255,.08)'; for(let x=(left-((now*state.speed)%80));x<w;x+=80){ ctx.fillRect(x,cy1-54,3,108); ctx.fillRect(x,cy2-54,3,108); }
+  ctx.fillStyle='#c62828'; ctx.fillRect(0,cy1-61,w,6); ctx.fillStyle='#fbc02d'; ctx.fillRect(0,cy1+55,w,6); ctx.fillStyle='#1565c0'; ctx.fillRect(0,cy2-61,w,6); ctx.fillStyle='#fbc02d'; ctx.fillRect(0,cy2+55,w,6);
+  [cy1,cy2].forEach((cy,idx)=>{ ctx.save(); ctx.translate(left,cy); ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); ctx.arc(0,0,52,0,Math.PI*2); ctx.fill(); ctx.lineWidth=5; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.stroke(); ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.beginPath(); ctx.arc(0,0,31,0,Math.PI*2); ctx.stroke(); ctx.font='900 20px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff'; ctx.fillText(idx===0?'궁':'덕',0,0); ctx.restore(); });
+}
+function roundRect(x,y,w,h,r,fill){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); if(fill)ctx.fill(); }
+function drawNote(n,x,y){ const big=n.big, r=big?43:29, red=n.lane==='gung', col=red?'#d32f2f':'#1976d2'; ctx.save(); ctx.translate(x,y); if(n.half){ctx.globalAlpha=.72; ctx.rotate(Math.sin(performance.now()/30)*.08);} ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8; ctx.shadowOffsetY=5; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.shadowColor='transparent'; ctx.lineWidth=big?5:3; ctx.strokeStyle='#fff'; ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.94)'; ctx.beginPath(); ctx.arc(0,0,r*.68,0,Math.PI*2); ctx.fill(); ctx.fillStyle=col; ctx.font=`900 ${big?25:19}px system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(n.label,0,-2); if(big){ ctx.fillStyle='#3d241b'; ctx.font='900 12px system-ui'; ctx.fillText(red?'D+F':'J+K',0,20); } ctx.restore(); }
+function drawEffects(){ for(let i=state.particles.length-1;i>=0;i--){ const p=state.particles[i]; p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=.045;p.size*=.94; if(p.life<=0){state.particles.splice(i,1);continue;} ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; } for(let i=state.texts.length-1;i>=0;i--){ const t=state.texts[i]; t.y+=t.vy; t.life-=.035; if(t.life<=0){state.texts.splice(i,1);continue;} ctx.globalAlpha=t.life; ctx.font='900 34px system-ui'; ctx.textAlign='center'; ctx.strokeStyle='#fff'; ctx.lineWidth=7; ctx.strokeText(t.text,t.x,t.y); ctx.fillStyle=t.color; ctx.fillText(t.text,t.x,t.y); ctx.globalAlpha=1; } }
+function loop(){ if(!state.playing||state.paused)return; const now=currentTime(); const w=els.stage.clientWidth,h=els.stage.clientHeight; drawBackground(w,h,now); els.progress.style.width=Math.min(100,now/state.duration*100)+'%';
+  const remain=2600-now; if(remain>0){ els.countdown.classList.remove('hidden'); els.countdown.textContent=remain>1800?'3':remain>1000?'2':remain>250?'1':'시작!'; } else els.countdown.classList.add('hidden');
+  const beat=Math.floor((now-2600)/(60000/state.song.bpm)); if(beat!==state.lastBeat && beat>=0){state.lastBeat=beat; clickBeat(beat%4===0);}
+  while(state.melodyIndex<state.notes.length && now>=state.notes[state.melodyIndex].time-20){ const n=state.notes[state.melodyIndex]; if(n.pitch&&!n.played){melody(n.pitch,n.duration); n.played=true;} state.melodyIndex++; }
+  let next=null; for(const n of state.notes){ if(n.cleared) continue; const y=laneY(n.lane,h); const x=state.hitZone+(n.time-now)*state.speed; if(!n.missed && now-n.time>190){ n.missed=true; state.miss++; state.combo=0; addText('아차!',state.hitZone,y-40,'#777'); updateHud(); }
+    if(!n.missed && x>-80 && x<w+120) drawNote(n,x,y); if(!n.cleared&&!n.missed&&n.time>now && !next) next=n; }
+  if(next){ els.guideMain.textContent=`다음: ${next.label} ${next.big?'(큰 음표)':''}`; els.guideSub.textContent= next.lane==='gung' ? '붉은 줄이 판정선에 닿으면 D 또는 F를 치세요.' : '푸른 줄이 판정선에 닿으면 J 또는 K를 치세요.'; }
+  drawEffects(); if(now>state.duration){ finish(); return; } raf=requestAnimationFrame(loop); }
+function finish(){ state.playing=false; cancelAnimationFrame(raf); els.game.classList.add('hidden'); els.result.classList.remove('hidden'); const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.75)/done*100):0; let grade='C'; if(acc>=95)grade='S'; else if(acc>=85)grade='A'; else if(acc>=70)grade='B'; els.grade.textContent=grade; els.resultScore.textContent=state.score; els.resultCombo.textContent=state.maxCombo; els.resultAcc.textContent=acc+'%'; els.resultPerfect.textContent=state.perfect; els.resultGood.textContent=state.good; els.resultMiss.textContent=state.miss; }
+renderMenu();
+})();
+</script>
 </body>
 </html>
