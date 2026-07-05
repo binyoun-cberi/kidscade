@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쌓기나무 3D & 2D 투영 학습기</title>
+    <style>
+        body {
+            margin: 0; overflow: hidden; background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none;
+        }
+        #info {
+            position: absolute; top: 15px; width: 100%; text-align: center;
+            color: #333; pointer-events: none; z-index: 10;
+        }
+        h2 { margin: 0 0 5px 0; }
+        p { margin: 0; font-size: 14px; }
+
+        /* 좌측 패널 */
+        .left-panel {
+            position: absolute; left: 0; top: 0; width: 260px; height: 100%;
+            background: rgba(255, 255, 255, 0.95); box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 20px; box-sizing: border-box; z-index: 20; display: flex; flex-direction: column; gap: 15px;
+        }
+        .left-panel h3 { margin-top: 0; border-bottom: 2px solid #4a90e2; padding-bottom: 8px; font-size: 16px;}
+        .control-group { background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 13px; }
+        
+        .btn {
+            width: 100%; padding: 10px; background: #fff; border: 2px solid #e0e5ec;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; color: #444; margin-bottom: 8px; transition: 0.2s;
+        }
+        .btn:hover { background: #eaf2fb; border-color: #a3c2e7; }
+        .btn-primary { background: #4a90e2; color: white; border-color: #357abd; }
+        .btn-primary:hover { background: #357abd; }
+        .btn-danger { background: #dc3545; color: white; border-color: #c82333; }
+        .btn-warning { background: #ffc107; color: #333; border-color: #e0a800; }
+        .btn-warning.active { background: #d39e00; color: white; }
+
+        /* 우측 패널 (2D 모눈종이) */
+        .right-panel {
+            position: absolute; right: 0; top: 0; width: 220px; height: 100%;
+            background: rgba(255, 255, 255, 0.95); box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            padding: 15px; box-sizing: border-box; z-index: 20; overflow-y: auto;
+        }
+        .right-panel h3 { margin-top: 0; text-align: center; font-size: 15px; color: #333;}
+        .grid-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .grid-wrapper { text-align: center; }
+        .grid-label { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #d32f2f; }
+        
+        .paper-grid {
+            display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px);
+            gap: 2px; background: #ccc; border: 2px solid #666; padding: 2px;
+        }
+        .cell {
+            background: white; cursor: pointer; border: 1px solid #ddd; transition: background 0.1s;
+        }
+        .cell:hover { background: #f0f0f0; }
+        .cell.filled { background: #ff7675; border-color: #d63031; }
+
+        /* 하단 카메라 버튼 */
+        #camera-controls {
+            position: absolute; bottom: 20px; left: calc(50% + 20px); transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 20;
+        }
+        .cam-btn {
+            padding: 8px 16px; border-radius: 20px; border: none; background: #28a745;
+            color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .cam-btn:hover { background: #218838; }
+
+        #toast {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; opacity: 0; transition: opacity 0.3s; z-index: 30; pointer-events: none;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="info">
+        <h2>쌓기나무 3x3x3 관찰기</h2>
+        <p>빈 공간 <b>좌클릭</b>: 블록 추가 / 블록 위 <b>우클릭</b>: 블록 제거 (드래그 회전 가능)</p>
+    </div>
+
+    <div id="toast">메시지</div>
+
+    <div class="left-panel">
+        <h3>도구 상자 🛠️</h3>
+        <div class="control-group">
+            <button class="btn btn-danger" id="btnClear">초기화 (모두 지우기)</button>
+        </div>
+        
+        <h3 style="border-bottom-color: #ffc107;">퀴즈 모드 🎯</h3>
+        <div class="control-group">
+            <p style="margin-top:0; color:#666;">컴퓨터가 만든 무작위 블록을 보고, 우측 모눈종이에 위/앞/옆 모습을 색칠해 보세요.</p>
+            <button class="btn btn-warning" id="btnRandomQuiz">랜덤 문제 생성</button>
+            <button class="btn" id="btnHardMode">하드 모드 (시점 고정) : OFF</button>
+            <button class="btn btn-primary" id="btnSubmit" style="margin-top: 10px;">정답 제출하기</button>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <h3>2D 모눈종이에 그리기 🖍️</h3>
+        <p style="font-size: 11px; color:#666; text-align:center;">칸을 클릭하여 색칠하세요.</p>
+        <div class="grid-container">
+            <div class="grid-wrapper">
+                <div class="grid-label">위에서 본 모양</div>
+                <div class="paper-grid" id="grid-top"></div>
+            </div>
+            <div class="grid-wrapper">
+                <div class="grid-label">앞에서 본 모양</div>
+                <div class="paper-grid" id="grid-front"></div>
+            </div>
+            <div class="grid-wrapper">
+                <div class="grid-label">옆에서 본 모양 (우측)</div>
+                <div class="paper-grid" id="grid-side"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="camera-controls">
+        <button class="cam-btn" onclick="lookFrom('top')">위에서 보기</button>
+        <button class="cam-btn" onclick="lookFrom('front')">앞에서 보기</button>
+        <button class="cam-btn" onclick="lookFrom('side')">옆에서 보기</button>
+        <button class="cam-btn" onclick="lookFrom('iso')" style="background:#17a2b8;">대각선 보기</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 1. Three.js 기본 설정 ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(5, 5, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enablePan = false; // 우클릭 시 카메라 밀림 방지
+        controls.target.set(0, 1.5, 0); 
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // --- 2. 3x3x3 제한선 및 바닥 ---
+        const boxGeo = new THREE.BoxGeometry(3, 3, 3);
+        const edges = new THREE.EdgesGeometry(boxGeo);
+        const boundBox = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.3 }));
+        boundBox.position.set(0, 1.5, 0); 
+        scene.add(boundBox);
+
+        const planeGeo = new THREE.PlaneGeometry(3, 3);
+        planeGeo.rotateX(-Math.PI / 2);
+        const planeMat = new THREE.MeshBasicMaterial({ visible: false }); 
+        const basePlane = new THREE.Mesh(planeGeo, planeMat);
+        scene.add(basePlane);
+
+        const gridHelper = new THREE.GridHelper(3, 3, 0x4a90e2, 0xcccccc);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        const blocks = {}; 
+        let interactables = [basePlane]; 
+
+        const blockGeo = new THREE.BoxGeometry(0.96, 0.96, 0.96); 
+        const blockMat = new THREE.MeshStandardMaterial({ color: '#f3c78b', roughness: 0.8 });
+
+        // 마우스 미리보기용 고스트 블록
+        const rollOverGeo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
+        const rollOverMat = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.4, transparent: true });
+        const rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMat);
+        rollOverMesh.visible = false;
+        scene.add(rollOverMesh);
+
+        // --- 3. 블록 추가/제거 및 좌표 계산 ---
+        function gridToWorld(gx, gy, gz) {
+            return { x: gx - 1, y: gy, z: gz - 1 };
+        }
+
+        function addBlock(gx, gy, gz) {
+            if (gx < 0 || gx > 2 || gy < 0 || gy > 2 || gz < 0 || gz > 2) return; 
+            const key = `${gx},${gy},${gz}`;
+            if (blocks[key]) return; 
+
+            if (gy > 0 && !blocks[`${gx},${gy-1},${gz}`]) {
+                showToast("공중에 블록을 쌓을 수 없어요!");
+                return;
+            }
+
+            const mesh = new THREE.Mesh(blockGeo, blockMat);
+            const line = new THREE.LineSegments(new THREE.EdgesGeometry(blockGeo), new THREE.LineBasicMaterial({ color: 0x8a5a2b }));
+            mesh.add(line);
+
+            const pos = gridToWorld(gx, gy, gz);
+            mesh.position.set(pos.x, pos.y + 0.5, pos.z); 
+            mesh.userData = { gx, gy, gz, key };
+            
+            scene.add(mesh);
+            blocks[key] = mesh;
+            interactables.push(mesh);
+        }
+
+        function removeBlock(gx, gy, gz) {
+            const key = `${gx},${gy},${gz}`;
+            if (!blocks[key]) return;
+
+            if (gy < 2 && blocks[`${gx},${gy+1},${gz}`]) {
+                showToast("위에 있는 블록부터 먼저 치워야 해요!");
+                return;
+            }
+
+            const mesh = blocks[key];
+            scene.remove(mesh);
+            interactables = interactables.filter(obj => obj !== mesh);
+            delete blocks[key];
+            rollOverMesh.visible = false; // 지웠을 때 고스트 숨김
+        }
+
+        // --- 4. 완벽하게 개선된 마우스 레이캐스팅 ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        // 어떤 좌표 칸이 선택되었는지 정교하게 찾아내는 함수
+        function getGridIntersection() {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactables, false);
+            
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                let gx, gy, gz;
+
+                if (intersect.object === basePlane) {
+                    // 바닥 클릭 시 (Math.floor로 -1.5~1.5 범위를 정확히 0, 1, 2로 나눔)
+                    gx = Math.floor(intersect.point.x + 1.5);
+                    gz = Math.floor(intersect.point.z + 1.5);
+                    gy = 0;
+                } else {
+                    // 기존 블록을 클릭한 경우 -> 클릭한 면의 방향(Normal)을 구해서 1칸 옆/위를 특정함
+                    const normal = intersect.face.normal;
+                    gx = intersect.object.userData.gx + Math.round(normal.x);
+                    gy = intersect.object.userData.gy + Math.round(normal.y);
+                    gz = intersect.object.userData.gz + Math.round(normal.z);
+                }
+
+                // 3x3x3 범위를 넘어가면 무효
+                if (gx >= 0 && gx <= 2 && gy >= 0 && gy <= 2 && gz >= 0 && gz <= 2) {
+                    return { gx, gy, gz, object: intersect.object };
+                }
+            }
+            return null;
+        }
+
+        // 우클릭 메뉴 방지
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        // 클릭, 터치 조작 (드래그 회전과 클릭을 완벽히 분리)
+        let isDragging = false;
+        let pointerDownPos = { x: 0, y: 0 };
+
+        window.addEventListener('pointerdown', (e) => {
+            if (e.clientX < 260 || e.clientX > window.innerWidth - 220) return;
+            pointerDownPos.x = e.clientX;
+            pointerDownPos.y = e.clientY;
+            isDragging = false;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            // 마우스를 5px 이상 움직이면 '회전'으로 간주하여 클릭을 무시함
+            if (Math.abs(e.clientX - pointerDownPos.x) > 5 || Math.abs(e.clientY - pointerDownPos.y) > 5) {
+                isDragging = true;
+            }
+
+            // 고스트 블록(미리보기) 처리
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            if (e.clientX > 260 && e.clientX < window.innerWidth - 220 && !hardMode) {
+                const target = getGridIntersection();
+                if (target) {
+                    const pos = gridToWorld(target.gx, target.gy, target.gz);
+                    rollOverMesh.position.set(pos.x, pos.y + 0.5, pos.z);
+                    rollOverMesh.visible = true;
+                } else {
+                    rollOverMesh.visible = false;
+                }
+            } else {
+                rollOverMesh.visible = false;
+            }
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (isDragging) return; // 화면 회전 중이었다면 아무 것도 안 함
+            if (e.clientX < 260 || e.clientX > window.innerWidth - 220) return; // UI 영역 패스
+            if (hardMode) return; // 하드모드에서는 조작 불가
+
+            const target = getGridIntersection();
+            if (target) {
+                if (e.button === 0) {
+                    // 좌클릭: 추가
+                    addBlock(target.gx, target.gy, target.gz);
+                } else if (e.button === 2 && target.object !== basePlane) {
+                    // 우클릭: 기존 블록의 데이터 가져와서 제거
+                    const { gx, gy, gz } = target.object.userData;
+                    removeBlock(gx, gy, gz);
+                }
+            }
+        });
+
+        // --- 5. 이하 UI 로직 (이전과 동일) ---
+        function initGrids() {
+            ['top', 'front', 'side'].forEach(view => {
+                const container = document.getElementById(`grid-${view}`);
+                container.innerHTML = '';
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.r = r; cell.dataset.c = c;
+                        cell.onclick = () => cell.classList.toggle('filled');
+                        container.appendChild(cell);
+                    }
+                }
+            });
+        }
+        initGrids();
+
+        function getUserGrid(view) {
+            const arr = [[0,0,0], [0,0,0], [0,0,0]];
+            document.querySelectorAll(`#grid-${view} .cell.filled`).forEach(cell => {
+                arr[parseInt(cell.dataset.r)][parseInt(cell.dataset.c)] = 1;
+            });
+            return arr;
+        }
+
+        function getTruthGrids() {
+            const top = [[0,0,0], [0,0,0], [0,0,0]];
+            const front = [[0,0,0], [0,0,0], [0,0,0]];
+            const side = [[0,0,0], [0,0,0], [0,0,0]];
+
+            Object.values(blocks).forEach(mesh => {
+                const { gx, gy, gz } = mesh.userData;
+                top[gz][gx] = 1; 
+                front[2 - gy][gx] = 1;
+                side[2 - gy][2 - gz] = 1;
+            });
+            return { top, front, side };
+        }
+
+        function arraysEqual(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+        let hardMode = false;
+        window.lookFrom = function(view) {
+            if (hardMode) { showToast("하드 모드 작동 중! 시점을 변경할 수 없습니다."); return; }
+            if (view === 'top') { camera.position.set(0, 10, 0.01); camera.lookAt(0,0,0); }
+            else if (view === 'front') { camera.position.set(0, 1.5, 10); camera.lookAt(0,1.5,0); }
+            else if (view === 'side') { camera.position.set(10, 1.5, 0); camera.lookAt(0,1.5,0); }
+            else if (view === 'iso') { camera.position.set(5, 5, 5); camera.lookAt(0,1.5,0); }
+        };
+
+        document.getElementById('btnClear').onclick = () => {
+            Object.values(blocks).forEach(mesh => scene.remove(mesh));
+            Object.keys(blocks).forEach(key => delete blocks[key]);
+            interactables = [basePlane];
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('filled'));
+            rollOverMesh.visible = false;
+        };
+
+        document.getElementById('btnRandomQuiz').onclick = () => {
+            document.getElementById('btnClear').click();
+            const count = Math.floor(Math.random() * 5) + 5; 
+            addBlock(1, 0, 1); 
+            for(let i = 0; i < count; i++) {
+                const existing = Object.values(blocks);
+                const target = existing[Math.floor(Math.random() * existing.length)].userData;
+                const dirs = [[1,0,0], [-1,0,0], [0,1,0], [0,0,1], [0,0,-1]];
+                const d = dirs[Math.floor(Math.random() * dirs.length)];
+                addBlock(target.gx + d[0], target.gy + d[1], target.gz + d[2]);
+            }
+            if (hardMode) lookFrom('iso');
+            showToast("퀴즈 생성 완료! 2D 모눈종이에 색칠해 보세요.");
+        };
+
+        document.getElementById('btnHardMode').onclick = (e) => {
+            hardMode = !hardMode;
+            rollOverMesh.visible = false;
+            if (hardMode) {
+                e.target.innerText = "하드 모드 (시점 고정) : ON";
+                e.target.classList.add('active');
+                lookFrom('iso');
+                controls.enabled = false; 
+            } else {
+                e.target.innerText = "하드 모드 (시점 고정) : OFF";
+                e.target.classList.remove('active');
+                controls.enabled = true;
+            }
+        };
+
+        document.getElementById('btnSubmit').onclick = () => {
+            if (Object.keys(blocks).length === 0) {
+                showToast("화면에 블록이 없습니다!"); return;
+            }
+            const truth = getTruthGrids();
+            const okTop = arraysEqual(truth.top, getUserGrid('top'));
+            const okFront = arraysEqual(truth.front, getUserGrid('front'));
+            const okSide = arraysEqual(truth.side, getUserGrid('side'));
+
+            if (okTop && okFront && okSide) alert("🎉 완벽합니다! 3방향의 투영도를 모두 맞췄습니다!");
+            else {
+                let msg = "앗, 틀린 부분이 있어요.\n";
+                if (!okTop) msg += "- [위에서 본 모양] 틀림\n";
+                if (!okFront) msg += "- [앞에서 본 모양] 틀림\n";
+                if (!okSide) msg += "- [옆에서 본 모양] 틀림\n";
+                alert(msg + "\n하단의 카메라 버튼을 눌러 실제 모습을 확인해 보세요!");
+            }
+        };
+
+        let toastTimeout;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = 1;
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => t.style.opacity = 0, 2500);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!hardMode) controls.update(); 
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

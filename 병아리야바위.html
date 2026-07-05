@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>병아리는 어디에? 🐣</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        :root {
+            --primary: #FFD166;
+            --secondary: #06D6A0;
+            --danger: #EF476F;
+            --text: #26547C;
+            --bg: #F8FFE5;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Jua', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 1.5rem;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: none; /* 시작 전엔 숨김 */
+        }
+
+        #board {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .slot {
+            position: absolute;
+            bottom: 20px;
+            width: 100px;
+            height: 120px;
+            margin-left: -50px; /* 중앙 정렬용 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+            /* transform 설정은 JS에서 제어 */
+        }
+
+        /* 컵 스타일 (🥤) */
+        .cup-emoji {
+            font-size: 80px;
+            line-height: 1;
+            position: absolute;
+            bottom: 0;
+            z-index: 2;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.2));
+        }
+
+        /* 컵이 들릴 때 */
+        .slot.lift .cup-emoji {
+            transform: translateY(-80px) rotate(-10deg);
+        }
+
+        /* 컵을 가리킬 때 애니메이션 (게임 중일때만) */
+        .slot.interactive:hover .cup-emoji {
+            transform: scale(1.1);
+        }
+        .slot.interactive:active .cup-emoji {
+            transform: scale(0.95);
+        }
+
+        /* 병아리 스타일 (🐤) */
+        .chick-emoji {
+            font-size: 60px;
+            position: absolute;
+            bottom: 10px;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        /* 병아리가 있는 슬롯의 컵이 들리면 병아리 표시 */
+        .slot.has-chick.lift .chick-emoji {
+            opacity: 1;
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        /* UI 오버레이 */
+        #message-area {
+            height: 60px;
+            font-size: 1.8rem;
+            margin-top: 20px;
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(248, 255, 229, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        button {
+            font-family: 'Jua', sans-serif;
+            font-size: 2rem;
+            padding: 15px 40px;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #04a57b;
+            transition: all 0.1s;
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #04a57b;
+        }
+
+        /* 반응형 */
+        @media (max-width: 400px) {
+            .slot { width: 80px; margin-left: -40px; }
+            .cup-emoji { font-size: 70px; }
+            .chick-emoji { font-size: 50px; bottom: 5px;}
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <header>
+            <h1>병아리는 어디에? 🐤</h1>
+            <div class="stats" id="stats-bar">
+                <div>레벨: <span id="level-display">1</span></div>
+                <div>점수: <span id="score-display">0</span></div>
+            </div>
+        </header>
+
+        <div id="board">
+            <!-- 컵들은 JS로 배치됩니다 -->
+        </div>
+
+        <div id="message-area"></div>
+
+        <div id="overlay">
+            <h2 style="font-size: 2rem; margin-bottom: 20px;">시작해볼까요?</h2>
+            <button id="start-btn">게임 시작!</button>
+        </div>
+    </div>
+
+    <script>
+        /** --- 게임 상태 및 설정 --- */
+        let level = 1;
+        let score = 0;
+        let currentSpeed = 1200; // 초기 이동 속도 (매우 느림 - 1.2초)
+        const baseSpeed = 1200;
+        let chickCupIndex = 0; // 병아리가 있는 논리적 컵 번호 (0, 1, 2)
+        let canGuess = false;
+        let shuffleCount = 3; // 처음엔 3번 섞기
+        
+        // 슬롯의 화면 상 X 좌표 퍼센트 (왼쪽, 가운데, 오른쪽)
+        const positions = ['20%', '50%', '80%'];
+        // 물리적 위치(0,1,2)에 논리적 컵(0,1,2)이 어떻게 배치되어 있는지 매핑
+        // index: 위치, value: 컵 번호
+        let currentSlots = [0, 1, 2]; 
+        
+        const board = document.getElementById('board');
+        const messageArea = document.getElementById('message-area');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const statsBar = document.getElementById('stats-bar');
+        const levelDisplay = document.getElementById('level-display');
+        const scoreDisplay = document.getElementById('score-display');
+        
+        const cups = []; // DOM 엘리먼트 배열
+
+        /** --- 오디오 시스템 (Web Audio API) --- */
+        let audioCtx;
+        let bgmOscillators = [];
+        let isBgmPlaying = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 효과음 재생기
+        function playSound(type) {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'pop') { // 병아리 숨을 때
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.5, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                osc.start(t);
+                osc.stop(t + 0.2);
+            } else if (type === 'swoosh') { // 컵 섞일 때 (바람소리 느낌)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(50, t + 0.2);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.1, t + 0.1);
+                gain.gain.linearRampToValueAtTime(0, t + 0.3);
+                osc.start(t);
+                osc.stop(t + 0.3);
+            } else if (type === 'win') { // 정답
+                osc.type = 'square';
+                // 띠-리-링 아르페지오
+                osc.frequency.setValueAtTime(523.25, t); // C5
+                osc.frequency.setValueAtTime(659.25, t + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, t + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, t + 0.3); // C6
+                
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.2, t + 0.05);
+                gain.gain.setValueAtTime(0.2, t + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+                osc.start(t);
+                osc.stop(t + 0.8);
+            } else if (type === 'lose') { // 오답
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, t);
+                osc.frequency.linearRampToValueAtTime(150, t + 0.5);
+                
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.2, t + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+                osc.start(t);
+                osc.stop(t + 0.6);
+            }
+        }
+
+        // BGM 루프 (신나는 멜로디)
+        function startBGM() {
+            if (isBgmPlaying || !audioCtx) return;
+            isBgmPlaying = true;
+            
+            const notes = [
+                392.00, 329.63, 392.00, 329.63, // G4, E4, G4, E4 (도미솔미)
+                392.00, 440.00, 392.00, 0,      // G4, A4, G4, 쉬고
+                349.23, 293.66, 349.23, 293.66, // F4, D4, F4, D4 (파레파레)
+                329.63, 349.23, 392.00, 0       // E4, F4, G4, 쉬고
+            ];
+            const noteDuration = 0.4;
+            let noteIndex = 0;
+            let nextNoteTime = audioCtx.currentTime + 0.1;
+
+            function scheduleBGM() {
+                if (!isBgmPlaying) return;
+                
+                while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                    const freq = notes[noteIndex];
+                    if (freq > 0) {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        gain.gain.setValueAtTime(0.05, nextNoteTime); // 볼륨 작게 (효과음 강조)
+                        gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + noteDuration - 0.05);
+                        
+                        osc.start(nextNoteTime);
+                        osc.stop(nextNoteTime + noteDuration);
+                        bgmOscillators.push(osc); // 정지용
+                    }
+                    
+                    nextNoteTime += noteDuration;
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }
+                requestAnimationFrame(scheduleBGM);
+            }
+            scheduleBGM();
+        }
+
+        /** --- 게임 초기화 및 생성 --- */
+        function createCups() {
+            board.innerHTML = '';
+            cups.length = 0;
+            currentSlots = [0, 1, 2];
+
+            for (let i = 0; i < 3; i++) {
+                const cupDiv = document.createElement('div');
+                cupDiv.className = 'slot';
+                cupDiv.dataset.cupId = i;
+                
+                const chick = document.createElement('div');
+                chick.className = 'chick-emoji';
+                chick.innerText = '🐤';
+                
+                const cup = document.createElement('div');
+                cup.className = 'cup-emoji';
+                cup.innerText = '🥤';
+                
+                cupDiv.appendChild(chick);
+                cupDiv.appendChild(cup);
+                
+                // 초기 위치 설정
+                cupDiv.style.left = positions[i];
+                // transition 속성은 섞을 때 동적으로 할당
+                cupDiv.style.transition = `left ${currentSpeed}ms ease-in-out`;
+                
+                // 클릭 이벤트
+                cupDiv.addEventListener('click', () => handleGuess(i));
+                
+                board.appendChild(cupDiv);
+                cups.push(cupDiv);
+            }
+        }
+
+        function resetBoard() {
+            cups.forEach((cup, i) => {
+                cup.classList.remove('lift', 'has-chick', 'interactive');
+                // 논리적 순서대로 물리적 위치 복구
+                currentSlots[i] = i; 
+                cup.style.transition = 'none'; // 즉시 이동
+                cup.style.left = positions[i];
+                cup.style.zIndex = 10;
+            });
+            // 약간의 딜레이 후 transition 복구 (DOM 렌더링 시간 확보)
+            setTimeout(() => {
+                cups.forEach(cup => {
+                    cup.style.transition = `left ${currentSpeed}ms ease-in-out`;
+                });
+            }, 50);
+        }
+
+        function showMessage(msg, type='text') {
+            messageArea.innerText = msg;
+            messageArea.style.color = type === 'danger' ? 'var(--danger)' : (type === 'success' ? 'var(--secondary)' : 'var(--text)');
+        }
+
+        /** --- 게임 흐름 --- */
+        async function startRound() {
+            canGuess = false;
+            resetBoard();
+            showMessage("병아리가 숨어요!", "text");
+            
+            // 병아리 위치 랜덤 결정
+            chickCupIndex = Math.floor(Math.random() * 3);
+            cups[chickCupIndex].classList.add('has-chick');
+
+            // 1. 숨는 모습 보여주기
+            await sleep(500);
+            playSound('pop');
+            cups[chickCupIndex].classList.add('lift'); // 컵 올리기
+            
+            await sleep(1500); // 1.5초간 보여줌 (유치원생을 위해 길게)
+            cups[chickCupIndex].classList.remove('lift'); // 컵 닫기
+            playSound('pop');
+            
+            await sleep(800);
+            showMessage("잘 보세요!", "danger");
+            
+            // 2. 컵 섞기
+            await shuffleCups();
+            
+            // 3. 입력 대기
+            showMessage("어디에 있을까요? 눌러보세요!", "text");
+            cups.forEach(cup => cup.classList.add('interactive'));
+            canGuess = true;
+        }
+
+        async function shuffleCups() {
+            for (let i = 0; i < shuffleCount; i++) {
+                // 섞을 2개의 위치(slot) 선택
+                let slotA = Math.floor(Math.random() * 3);
+                let slotB;
+                do {
+                    slotB = Math.floor(Math.random() * 3);
+                } while (slotA === slotB);
+
+                await swapSlots(slotA, slotB);
+                await sleep(50); // 연속 스왑 사이의 짧은 텀
+            }
+        }
+
+        function swapSlots(posA, posB) {
+            return new Promise(resolve => {
+                // 현재 해당 위치에 있는 컵의 인덱스를 찾음
+                const cupIdA = currentSlots[posA];
+                const cupIdB = currentSlots[posB];
+
+                const domA = cups[cupIdA];
+                const domB = cups[cupIdB];
+
+                // 시각적으로 교차하는 느낌을 주기 위해 z-index 조절
+                domA.style.zIndex = 20;
+                domB.style.zIndex = 10;
+
+                // 이동 애니메이션 속도 업데이트
+                domA.style.transition = `left ${currentSpeed}ms ease-in-out`;
+                domB.style.transition = `left ${currentSpeed}ms ease-in-out`;
+
+                // 위치 맞교환
+                domA.style.left = positions[posB];
+                domB.style.left = positions[posA];
+
+                // 논리적 배열 업데이트
+                currentSlots[posA] = cupIdB;
+                currentSlots[posB] = cupIdA;
+
+                playSound('swoosh');
+
+                // 애니메이션 끝날 때까지 대기
+                setTimeout(resolve, currentSpeed);
+            });
+        }
+
+        async function handleGuess(clickedCupIndex) {
+            if (!canGuess) return;
+            canGuess = false;
+            cups.forEach(cup => cup.classList.remove('interactive'));
+
+            const clickedCup = cups[clickedCupIndex];
+            clickedCup.classList.add('lift');
+
+            if (clickedCupIndex === chickCupIndex) {
+                // 정답!
+                playSound('win');
+                showMessage("정답이에요! 참 잘했어요! 🎉", "success");
+                score += 10 * level;
+                level++;
+                
+                // 난이도 상승 (속도 증가, 섞는 횟수 증가)
+                currentSpeed = Math.max(300, currentSpeed * 0.85); // 최소 300ms까지 빨라짐
+                if (level % 2 === 0) shuffleCount++; // 2레벨마다 섞는 횟수 1증가
+
+                updateStats();
+                
+                await sleep(2500);
+                startRound();
+            } else {
+                // 오답!
+                playSound('lose');
+                showMessage("앗! 거기가 아니에요. 😭", "danger");
+                
+                // 진짜 병아리 보여주기
+                await sleep(1000);
+                cups[chickCupIndex].classList.add('lift');
+                
+                await sleep(2500);
+                
+                // 초기화 후 재시작 (Game Over 처리 대신 처음부터 다시)
+                level = 1;
+                score = 0;
+                currentSpeed = baseSpeed;
+                shuffleCount = 3;
+                updateStats();
+                
+                showMessage("다시 한 번 해볼까요?", "text");
+                await sleep(1000);
+                startRound();
+            }
+        }
+
+        function updateStats() {
+            levelDisplay.innerText = level;
+            scoreDisplay.innerText = score;
+        }
+
+        // 유틸: 비동기 대기
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        /** --- 이벤트 리스너 --- */
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            startBGM();
+            overlay.style.display = 'none';
+            statsBar.style.display = 'flex';
+            createCups();
+            startRound();
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- 모바일 및 태블릿에서 올바른 비율을 유지하도록 viewport 설정 (확대 방지 추가) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>(사빼기일)각형 넓이 구하기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out forwards',
+            'bounce-slow': 'bounce 2s infinite',
+            'pulse-custom': 'pulseCustom 1.5s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            pulseCustom: {
+              '0%, 100%': { opacity: '1', strokeWidth: '5' },
+              '50%': { opacity: '.6', strokeWidth: '3' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 캔버스 터치 방지 및 사용자 선택 방지 */
+    .touch-none { touch-action: none; }
+    .select-none { user-select: none; -webkit-user-select: none; }
+    /* 밑변 선택 호버 이펙트 */
+    .base-select-line { stroke: transparent; cursor: pointer; transition: stroke 0.2s; }
+    .base-select-line:hover { stroke: rgba(99, 102, 241, 0.5); }
+    /* 계산기 버튼 클릭 효과 최적화 */
+    .calc-btn { user-select: none; transition: background-color 0.1s, transform 0.05s; touch-action: manipulation; }
+    .calc-btn:active { transform: scale(0.95); }
+    /* 우측 패널 스크롤바 커스텀 */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 h-[100dvh] flex flex-col overflow-hidden">
+
+  <!-- 피드백(토스트) 메시지 -->
+  <div id="toast" class="absolute top-16 lg:top-20 left-1/2 -translate-x-1/2 px-6 py-3 bg-slate-800/90 text-white rounded-full shadow-2xl font-bold z-50 pointer-events-none text-center min-w-[280px] lg:min-w-[300px] transition-opacity duration-300 opacity-0 hidden">
+    피드백 메시지
+  </div>
+
+  <!-- 헤더 (작은 화면에서는 패딩을 줄여 공간 확보) -->
+  <header class="bg-white border-b shadow-sm p-3 lg:p-4 flex items-center justify-between z-10 shrink-0">
+    <h1 class="text-lg lg:text-xl font-bold text-indigo-600 flex items-center gap-2">
+      <span class="text-xl lg:text-2xl">✂️</span> 삼각형 잘라서 사각형 만들기
+    </h1>
+    
+    <!-- 모드 표시 뱃지 -->
+    <div class="flex gap-1.5 hidden xl:flex">
+      <span id="badge-create" class="px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-600 text-white transition-colors">1. 모양 만들기</span>
+      <span id="badge-select" class="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-400 transition-colors">2. 밑변 선택</span>
+      <span id="badge-cut" class="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-400 transition-colors">3. 자르기</span>
+      <span id="badge-think" class="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-400 transition-colors">4. 생각하기</span>
+      <span id="badge-drag" class="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-400 transition-colors">5. 붙이기</span>
+    </div>
+  </header>
+
+  <!-- 메인 콘텐츠 영역 (모바일/태블릿 세로 모드 대응을 위해 클래스 조정) -->
+  <main class="flex-1 min-h-0 flex flex-col lg:flex-row p-2 lg:p-4 gap-3 lg:gap-6 max-w-[1400px] mx-auto w-full overflow-hidden">
+    
+    <!-- 캔버스 (좌측/상단) -->
+    <!-- 수정: lg 미만 화면에서는 세로 높이를 40%로 줄여 하단 계산기 및 패널 공간을 더 확보 -->
+    <div class="lg:flex-[2] lg:flex-1 flex-none h-[40vh] lg:h-auto min-h-[220px] lg:min-h-0 bg-white border border-slate-200 rounded-xl shadow-inner relative overflow-hidden flex flex-col touch-none">
+      
+      <!-- 자 도구 버튼 -->
+      <div class="absolute top-2 right-2 lg:top-4 lg:right-4 z-20">
+        <button id="btn-toggle-ruler" class="px-2 py-1.5 lg:px-3 lg:py-2 bg-white border border-slate-300 rounded shadow hover:bg-slate-50 flex items-center gap-1 font-bold text-xs lg:text-sm text-slate-700 transition-colors">
+          📏 자 도구
+        </button>
+      </div>
+
+      <!-- 가이드 영역 -->
+      <div class="absolute top-2 left-2 lg:top-4 lg:left-4 flex flex-col items-center pointer-events-none z-10">
+        <div class="w-8 h-8 lg:w-10 lg:h-10 border-2 border-dashed border-slate-300 bg-white/50 flex items-center justify-center"></div>
+        <span class="text-[10px] lg:text-xs font-semibold text-slate-500 mt-1 bg-white px-1 rounded shadow-sm opacity-80">1 cm²</span>
+      </div>
+
+      <svg id="main-svg" viewBox="0 0 800 480" class="w-full h-full select-none preserveAspectRatio='xMidYMid meet'">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill="#f8fafc" />
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+          </pattern>
+          <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.3" />
+          </filter>
+        </defs>
+
+        <!-- 배경 그리드 -->
+        <rect width="100%" height="100%" fill="url(#grid)" id="svg-bg" />
+
+        <!-- ================= [1, 2단계 렌더링 (자유 다각형)] ================= -->
+        <polygon id="create-poly" class="hidden pointer-events-none transition-colors duration-300" fill="#fef08a" stroke="#ca8a04" stroke-width="3" stroke-linejoin="round" />
+        
+        <!-- 점 드래그 핸들 -->
+        <g id="points-group" class="hidden">
+          <circle id="point1" r="14" fill="#3b82f6" stroke="white" stroke-width="3" class="cursor-grab hover:scale-110 transition-transform drop-shadow-md" style="transform-origin: center; transform-box: fill-box;" />
+          <circle id="point2" r="14" fill="#3b82f6" stroke="white" stroke-width="3" class="cursor-grab hover:scale-110 transition-transform drop-shadow-md" style="transform-origin: center; transform-box: fill-box;" />
+          <circle id="point3" r="14" fill="#3b82f6" stroke="white" stroke-width="3" class="cursor-grab hover:scale-110 transition-transform drop-shadow-md" style="transform-origin: center; transform-box: fill-box;" />
+        </g>
+
+        <!-- 밑변 선택 선분 -->
+        <g id="base-select-group" class="hidden">
+          <line id="line12" stroke-width="20" stroke-linecap="round" class="base-select-line" />
+          <line id="line23" stroke-width="20" stroke-linecap="round" class="base-select-line" />
+          <line id="line31" stroke-width="20" stroke-linecap="round" class="base-select-line" />
+        </g>
+
+        <!-- ================= [3~5단계 렌더링] ================= -->
+        <polygon id="big-para" class="hidden transition-opacity duration-1000 opacity-0 pointer-events-none" fill="#3b82f6" fill-opacity="0.1" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,4" stroke-linejoin="round" />
+        <polygon id="target-poly" class="hidden pointer-events-none" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,6" opacity="0.6" />
+        <polygon id="bottom-poly" class="hidden pointer-events-none transition-colors" stroke="#ca8a04" stroke-width="3" stroke-linejoin="round" />
+
+        <line id="ext-line-bottom" class="hidden pointer-events-none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+        <line id="red-height" class="hidden pointer-events-none" stroke="#ef4444" stroke-width="3" stroke-dasharray="6,4" />
+        <line id="blue-height-bottom" class="hidden pointer-events-none" stroke="#3b82f6" stroke-width="3" />
+        
+        <!-- 명시적 밑변/높이 텍스트 라벨 (위치 분리됨) -->
+        <text id="label-base-text" class="hidden pointer-events-none font-bold text-blue-600 text-[16px]" text-anchor="middle" dominant-baseline="central">밑변</text>
+        <text id="label-height-text" class="hidden pointer-events-none font-bold text-red-500 text-[16px]" text-anchor="middle" dominant-baseline="central">높이</text>
+
+        <!-- 자르기 선 -->
+        <line id="hint-cut-line" class="hidden animate-pulse pointer-events-none opacity-50" stroke="#22c55e" stroke-width="8" stroke-linecap="round" stroke-dasharray="10,10" />
+        <g id="cut-line-group" class="hidden pointer-events-none z-10">
+          <line id="user-cut-line" stroke="#ef4444" stroke-width="4" stroke-dasharray="8,6" stroke-linecap="round" />
+          <text id="user-cut-icon" fontSize="28" dominant-baseline="central" text-anchor="middle" transform="translate(15, -15)">✂️</text>
+        </g>
+
+        <!-- 윗부분 조각 -->
+        <g id="top-piece-group" class="hidden cursor-grab transition-transform duration-300 ease-out z-20">
+          <line id="ext-line-top" class="hidden pointer-events-none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+          <polygon id="top-poly" fill="#fef08a" stroke="#ca8a04" stroke-width="3" stroke-linejoin="round" class="hover:brightness-105" />
+          <line id="blue-height-top" class="hidden pointer-events-none" stroke="#3b82f6" stroke-width="3" />
+          <g id="rot-hint-icon" class="pointer-events-none animate-bounce">
+            <circle id="rot-hint-circle" r="14" fill="white" fill-opacity="0.9" />
+            <text id="rot-hint-text" fontSize="16" text-anchor="middle" dominant-baseline="central">🔄</text>
+          </g>
+        </g>
+
+        <!-- 성공 시 강조 선 및 치수 안내 -->
+        <g id="success-group" class="hidden pointer-events-none">
+          <polygon id="success-outline" fill="none" stroke="#10b981" stroke-width="5" stroke-linejoin="round" class="animate-pulse-custom" />
+          
+          <line id="base-line-main" stroke="#3b82f6" stroke-width="2" />
+          <line id="base-line-left" stroke="#3b82f6" stroke-width="2" />
+          <line id="base-line-right" stroke="#3b82f6" stroke-width="2" />
+          <rect id="base-bg" width="60" height="24" fill="white" fill-opacity="0.9" rx="4" />
+          <text id="base-text" text-anchor="middle" dominant-baseline="central" fill="#3b82f6" font-weight="bold"></text>
+          
+          <line id="height-guide-top" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" />
+          <line id="height-guide-bottom" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" />
+          <line id="height-line-dim" stroke="#ef4444" stroke-width="2" />
+          <polygon id="height-arr-t" fill="#ef4444" points="0,0 -4,6 4,6" />
+          <polygon id="height-arr-b" fill="#ef4444" points="0,0 -4,-6 4,-6" />
+          <rect id="height-bg" width="60" height="24" fill="white" fill-opacity="0.9" rx="4" />
+          <text id="height-text" text-anchor="middle" dominant-baseline="central" fill="#ef4444" font-weight="bold"></text>
+
+          <!-- 절반 높이 치수 추가 -->
+          <line id="half-height-guide-top" stroke="#10b981" stroke-width="1" stroke-dasharray="2,2" />
+          <line id="half-height-guide-bottom" stroke="#10b981" stroke-width="1" stroke-dasharray="2,2" />
+          <line id="half-height-line-dim" stroke="#10b981" stroke-width="2" />
+          <polygon id="half-height-arr-t" fill="#10b981" points="0,0 -4,6 4,6" />
+          <polygon id="half-height-arr-b" fill="#10b981" points="0,0 -4,-6 4,-6" />
+          <rect id="half-height-bg" width="60" height="24" fill="white" fill-opacity="0.9" rx="4" />
+          <text id="half-height-text" text-anchor="middle" dominant-baseline="central" fill="#10b981" font-weight="bold"></text>
+        </g>
+
+        <!-- 자 도구(Ruler) 그룹 -->
+        <g id="ruler-group" class="hidden pointer-events-none z-50">
+          <line id="ruler-line" stroke="#14b8a6" stroke-width="3" stroke-dasharray="6,4" />
+          <circle id="ruler-p1" r="6" fill="#14b8a6" stroke="white" stroke-width="2" />
+          <circle id="ruler-p2" r="6" fill="#14b8a6" stroke="white" stroke-width="2" />
+          <rect id="ruler-text-bg" fill="white" rx="4" opacity="0.9" />
+          <text id="ruler-text-val" font-weight="bold" fill="#0f766e" text-anchor="middle" dominant-baseline="central" class="text-sm"></text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 사이드바 패널 (우측/하단) -->
+    <!-- 수정: 모바일에서는 꽉 차게, 데스크탑에서는 최대 넓이 제한, min-h-0으로 넘침 방지 -->
+    <div class="lg:flex-[1] flex-1 min-h-0 w-full lg:min-w-[320px] lg:max-w-[400px] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden relative">
+      
+      <!-- [상단]: 스크롤 가능한 패널 및 설명 영역 -->
+      <div class="flex-1 min-h-0 p-4 lg:p-5 overflow-y-auto flex flex-col gap-3 lg:gap-4 relative custom-scrollbar">
+        
+        <!-- 1. 만들기 모드 패널 -->
+        <div id="panel-create" class="flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-slate-800 mb-1 lg:mb-2">1. 모양 만들기</h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            파란색 점 세 개를 마우스로 움직여 원하는 모양의 삼각형을 만들어보세요.
+          </p>
+          <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 mb-3 lg:mb-4">
+            <p class="text-[13px] lg:text-sm text-indigo-800 font-medium">비스듬한 모양, 기울어진 모양 등 다양하게 삼각형을 만들어보면 더 재미있어요!</p>
+          </div>
+          <button id="btn-go-select" class="w-full py-2.5 lg:py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-base lg:text-lg">
+            밑변 선택하기 ➔
+          </button>
+        </div>
+
+        <!-- 2. 밑변 선택 모드 패널 -->
+        <div id="panel-select" class="hidden flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-slate-800 mb-1 lg:mb-2">2. 밑변 선택</h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            삼각형의 세 변 중에서 어느 쪽을 밑변으로 할까요?
+          </p>
+          <div class="bg-violet-50 p-3 lg:p-4 rounded-lg border border-violet-100">
+            <p class="font-bold text-violet-700 mb-1.5 lg:mb-2 text-sm lg:text-base">👈 캔버스 클릭</p>
+            <p class="text-[13px] lg:text-sm text-violet-900 leading-relaxed">
+              원하는 선분 근처에 마우스를 올리고 클릭해보세요. 
+              해당 변이 이 삼각형의 <strong class="text-blue-600">'밑변'</strong>이 됩니다!
+            </p>
+          </div>
+        </div>
+
+        <!-- 3. 자르기 모드 패널 -->
+        <div id="panel-cut" class="hidden flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-slate-800 mb-1 lg:mb-2">3. 가위로 자르기</h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            사각형을 만들기 위해 삼각형의 어디를 잘라야 할까요?
+          </p>
+          <div class="bg-red-50 p-3 lg:p-4 rounded-lg border border-red-100">
+            <p class="font-bold text-red-700 mb-1.5 lg:mb-2 text-sm lg:text-base">✂️ 자르는 방법</p>
+            <p class="text-[13px] lg:text-sm text-red-900 leading-relaxed">
+              빨간색 선은 선택한 밑변에 수직인 <strong class="text-red-600">'높이'</strong>를 나타냅니다.<br/><br/>
+              마우스를 드래그해서, 밑변과 <strong>평행</strong>하게 높이의 <strong>절반</strong>을 지나도록 선을 그어 잘라보세요.
+            </p>
+          </div>
+        </div>
+
+        <!-- 4. 생각하기 모드 패널 -->
+        <div id="panel-think" class="hidden flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-slate-800 mb-1 lg:mb-2">4. 생각하고 발표하기</h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            도형을 자르는 데 성공했어요! 이제 발표를 준비해볼까요?
+          </p>
+          <div class="bg-orange-50 p-3 lg:p-4 rounded-lg border border-orange-100 mb-3 lg:mb-4">
+            <p class="font-bold text-orange-700 mb-1.5 lg:mb-2 text-sm lg:text-base">🤔 왜 이렇게 될까?</p>
+            <p class="text-[13px] lg:text-sm text-orange-900 leading-relaxed">
+              삼각형을 잘라서 사각형으로 만드는 과정을 <strong>등적변형</strong>이라고 합니다.<br><br>
+              잘린 조각을 어떻게 돌리고 움직이면 사각형이 완성될지 예상해보고, 친구들에게 발표해 보세요!
+            </p>
+          </div>
+          <button id="btn-go-drag" class="w-full py-2.5 lg:py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-base lg:text-lg">
+            예상해보기 완료 ➔ 조각 붙이기
+          </button>
+        </div>
+
+        <!-- 5. 붙이기 모드 패널 -->
+        <div id="panel-drag" class="hidden flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-slate-800 mb-1 lg:mb-2">5. 조각 붙이기</h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            잘라낸 조각을 돌리고 움직여서 사각형(평행사변형)을 완성하세요.
+          </p>
+          <div class="bg-sky-50 p-3 lg:p-4 rounded-lg border border-sky-100 space-y-3 lg:space-y-4">
+            <button id="btn-rotate" class="w-full py-2.5 lg:py-3 bg-white hover:bg-sky-50 text-sky-700 border-2 border-sky-200 font-bold rounded-lg shadow-sm transition-all active:scale-95 flex justify-center items-center gap-2">
+              <svg id="icon-rotate" class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              조각 180도 회전하기
+            </button>
+            <p class="text-xs text-sky-800 text-center font-medium">마우스로 조각을 드래그해서 맞추세요.</p>
+          </div>
+        </div>
+
+        <!-- 6. 성공 및 넓이 확인 패널 -->
+        <div id="panel-success" class="hidden flex flex-col animate-fade-in">
+          <h2 class="text-xl lg:text-2xl font-extrabold text-emerald-600 mb-1 lg:mb-2 flex items-center gap-2">
+            <span>🎉</span> 도형 완성!
+          </h2>
+          <p class="text-slate-600 text-[13px] lg:text-sm mb-3 lg:mb-4">
+            여러분이 만든 삼각형도 멋진 사각형으로 변신했어요!
+          </p>
+          
+          <div class="bg-emerald-50 p-3 lg:p-4 rounded-lg border border-emerald-100 space-y-2 lg:space-y-3">
+            <div class="font-bold text-emerald-800 mb-1 text-[13px] lg:text-sm">📐 도형 치수 비교:</div>
+            <ul class="space-y-1 text-[12px] lg:text-sm text-emerald-900 font-medium ml-2">
+              <li>• 밑변의 길이: <strong id="info-base" class="text-indigo-600">0 cm</strong></li>
+              <li>• 원래 삼각형 높이: <strong id="info-height" class="text-red-500">0 cm</strong></li>
+              <li>• 완성된 사각형 높이: <strong id="info-half-height" class="text-emerald-600">0 cm</strong></li>
+            </ul>
+
+            <div id="area-input-section" class="mt-3 pt-3 border-t border-emerald-200">
+              <label class="block text-[13px] lg:text-sm font-bold text-slate-700 mb-2">이 삼각형의 넓이는 얼마일까요?</label>
+              <div class="flex gap-2">
+                <input id="input-area" type="number" placeholder="넓이 입력" class="flex-1 px-3 py-1.5 lg:py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm lg:text-base" />
+                <span class="flex items-center text-slate-500 font-medium whitespace-nowrap text-sm">cm²</span>
+                <button id="btn-check-area" class="px-3 py-1.5 lg:px-4 lg:py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-95 whitespace-nowrap text-sm lg:text-base">
+                  확인
+                </button>
+              </div>
+            </div>
+
+            <div id="area-correct-section" class="hidden mt-3 pt-2 lg:pt-3 border-t border-emerald-200 text-center font-bold text-[14px] lg:text-[15px] bg-white p-2 lg:p-3 rounded shadow-sm animate-fade-in">
+              <div class="text-emerald-600 mb-1 lg:mb-2 text-base lg:text-lg">정답입니다! 👏</div>
+              삼각형의 넓이 = <br/>
+              <span id="ans-base" class="text-indigo-600">0</span> × (<span id="ans-height" class="text-red-500">0</span> ÷ 2) = <span id="ans-total">0</span> cm²
+              
+              <div class="mt-3 p-2.5 lg:p-3 bg-indigo-50 border border-indigo-100 rounded text-[12px] lg:text-sm text-indigo-900 font-medium text-left leading-relaxed">
+                💡 <strong>도형의 비밀</strong><br/>
+                우리가 노란색 조각을 이어 붙여 만든 평행사변형은 원래 삼각형과 <strong>밑변은 같고, 높이는 절반</strong>이 된답니다! 그래서 구하는 넓이도 같습니다.
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-reset" class="hidden w-full py-2.5 lg:py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all mt-3 lg:mt-4 animate-fade-in text-sm lg:text-base">
+            처음부터 다시 하기 ➔
+          </button>
+        </div>
+
+        <!-- 힌트 시스템 -->
+        <div id="hint-section" class="hidden mt-auto pt-3 border-t border-slate-100">
+          <button id="btn-hint" class="w-full py-2 lg:py-3 rounded-lg font-bold flex justify-center items-center gap-2 transition-all bg-slate-100 text-slate-400 cursor-not-allowed text-sm lg:text-base">
+            💡 힌트 잠금 해제 ( 60초 )
+          </button>
+          <p id="hint-desc" class="text-[10px] lg:text-[11px] text-slate-400 text-center mt-1.5 lg:mt-2">
+            충분히 고민해 볼 수 있도록 1분 동안 힌트가 잠겨있습니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- [하단]: 미니 계산기 -->
+      <!-- 수정: 공간을 덜 차지하도록 패딩 및 여백 축소 -->
+      <div class="bg-slate-100 p-2.5 lg:p-4 border-t border-slate-200 shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div class="text-[12px] lg:text-[13px] font-bold text-slate-600 mb-1 lg:mb-2 flex items-center gap-1.5">
+          <span class="text-sm lg:text-base">🧮</span> 미니 계산기
+        </div>
+        <div class="bg-white p-2 lg:p-3 rounded-xl border border-slate-200 shadow-sm">
+          <input id="calc-display" type="text" readonly class="w-full text-right bg-slate-50 border border-slate-200 rounded p-1.5 lg:p-2 mb-1.5 lg:mb-2 text-base lg:text-lg font-mono tracking-wider focus:outline-none focus:border-indigo-400" value="" placeholder="0">
+          <div class="grid grid-cols-4 gap-1 lg:gap-1.5">
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="7">7</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="8">8</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="9">9</button>
+            <button class="calc-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 lg:py-1.5 rounded border border-indigo-100 text-sm lg:text-base" data-val="/">÷</button>
+            
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="4">4</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="5">5</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="6">6</button>
+            <button class="calc-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 lg:py-1.5 rounded border border-indigo-100 text-sm lg:text-base" data-val="*">×</button>
+            
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="1">1</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="2">2</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="3">3</button>
+            <button class="calc-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 lg:py-1.5 rounded border border-indigo-100 text-sm lg:text-base" data-val="-">-</button>
+            
+            <button class="calc-btn bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-1 lg:py-1.5 rounded border border-rose-100 text-sm lg:text-base" data-val="C">C</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-medium py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val="0">0</button>
+            <button class="calc-btn bg-slate-50 hover:bg-slate-100 font-bold py-1 lg:py-1.5 rounded border border-slate-200 text-slate-700 text-sm lg:text-base" data-val=".">.</button>
+            <button class="calc-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 lg:py-1.5 rounded border border-indigo-100 text-sm lg:text-base" data-val="+">+</button>
+            
+            <button class="calc-btn col-span-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 lg:py-2 rounded shadow-sm mt-0.5 lg:mt-1 text-sm lg:text-base" data-val="=">=</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // === 상수 정의 ===
+    const GRID_SIZE = 40;
+    
+    // === 상태 관리 ===
+    const state = {
+      step: 'create', // 'create', 'select-base', 'cut', 'think', 'drag', 'success'
+      pts: {
+        P1: { x: 7, y: 3 },
+        P2: { x: 4, y: 10 },
+        P3: { x: 14, y: 8 }
+      },
+      basePts: { A: null, B: null, C: null }, 
+      pos: { x: 0, y: 0 },
+      rot: 0,
+      activeInteraction: 'none',
+      dragTarget: null, 
+      cutLine: null,
+      isAreaCorrect: false,
+      hintTimer: 0,
+      showHint: false,
+      rulerMode: false,
+      ruler: { p1: null, p2: null, current: null }
+    };
+
+    let geom = {};
+    let actualArea = 0;
+    let dispBase = 0, dispHeight = 0;
+
+    let dragStartPos = { x: 0, y: 0 };
+    let pieceStartPos = { x: 0, y: 0 };
+
+    let hintIntervalId = null;
+    let toastTimeoutId = null;
+
+    // === DOM 엘리먼트 ===
+    const svg = document.getElementById('main-svg');
+    
+    const ui = {
+      badges: {
+        create: document.getElementById('badge-create'),
+        select: document.getElementById('badge-select'),
+        cut: document.getElementById('badge-cut'),
+        think: document.getElementById('badge-think'),
+        drag: document.getElementById('badge-drag')
+      },
+      panels: {
+        create: document.getElementById('panel-create'),
+        select: document.getElementById('panel-select'),
+        cut: document.getElementById('panel-cut'),
+        think: document.getElementById('panel-think'),
+        drag: document.getElementById('panel-drag'),
+        success: document.getElementById('panel-success')
+      },
+      btnGoSelect: document.getElementById('btn-go-select'),
+      btnGoDrag: document.getElementById('btn-go-drag'),
+      btnRotate: document.getElementById('btn-rotate'),
+      iconRotate: document.getElementById('icon-rotate'),
+      hintSection: document.getElementById('hint-section'),
+      btnHint: document.getElementById('btn-hint'),
+      hintDesc: document.getElementById('hint-desc'),
+      
+      areaInputSec: document.getElementById('area-input-section'),
+      inputArea: document.getElementById('input-area'),
+      btnCheckArea: document.getElementById('btn-check-area'),
+      areaCorrectSec: document.getElementById('area-correct-section'),
+      btnReset: document.getElementById('btn-reset'),
+      
+      infoBase: document.getElementById('info-base'),
+      infoHeight: document.getElementById('info-height'),
+      infoHalfHeight: document.getElementById('info-half-height'),
+      ansBase: document.getElementById('ans-base'),
+      ansHeight: document.getElementById('ans-height'),
+      ansTotal: document.getElementById('ans-total'),
+      toast: document.getElementById('toast'),
+
+      btnToggleRuler: document.getElementById('btn-toggle-ruler')
+    };
+
+    const svge = {
+      createPoly: document.getElementById('create-poly'),
+      pointsGrp: document.getElementById('points-group'),
+      point1: document.getElementById('point1'),
+      point2: document.getElementById('point2'),
+      point3: document.getElementById('point3'),
+      
+      baseSelectGrp: document.getElementById('base-select-group'),
+      line12: document.getElementById('line12'),
+      line23: document.getElementById('line23'),
+      line31: document.getElementById('line31'),
+
+      bottomPoly: document.getElementById('bottom-poly'),
+      targetPoly: document.getElementById('target-poly'),
+      bigPara: document.getElementById('big-para'), 
+      
+      extLineBottom: document.getElementById('ext-line-bottom'),
+      redHeight: document.getElementById('red-height'),
+      blueHeightBottom: document.getElementById('blue-height-bottom'),
+      labelBaseText: document.getElementById('label-base-text'),
+      labelHeightText: document.getElementById('label-height-text'),
+      
+      hintCutLine: document.getElementById('hint-cut-line'),
+      cutLineGrp: document.getElementById('cut-line-group'),
+      userCutLine: document.getElementById('user-cut-line'),
+      userCutIcon: document.getElementById('user-cut-icon'),
+      
+      topPieceGrp: document.getElementById('top-piece-group'),
+      topPoly: document.getElementById('top-poly'),
+      extLineTop: document.getElementById('ext-line-top'),
+      blueHeightTop: document.getElementById('blue-height-top'),
+      
+      rotHintIcon: document.getElementById('rot-hint-icon'),
+      rotHintCircle: document.getElementById('rot-hint-circle'),
+      rotHintText: document.getElementById('rot-hint-text'),
+      
+      successGrp: document.getElementById('success-group'),
+      successOutline: document.getElementById('success-outline'),
+      baseLineMain: document.getElementById('base-line-main'),
+      baseLineLeft: document.getElementById('base-line-left'),
+      baseLineRight: document.getElementById('base-line-right'),
+      baseBg: document.getElementById('base-bg'),
+      baseText: document.getElementById('base-text'),
+      
+      heightGuideTop: document.getElementById('height-guide-top'),
+      heightGuideBottom: document.getElementById('height-guide-bottom'),
+      heightLineDim: document.getElementById('height-line-dim'),
+      heightArrT: document.getElementById('height-arr-t'),
+      heightArrB: document.getElementById('height-arr-b'),
+      heightBg: document.getElementById('height-bg'),
+      heightText: document.getElementById('height-text'),
+
+      halfHeightGuideTop: document.getElementById('half-height-guide-top'),
+      halfHeightGuideBottom: document.getElementById('half-height-guide-bottom'),
+      halfHeightLineDim: document.getElementById('half-height-line-dim'),
+      halfHeightArrT: document.getElementById('half-height-arr-t'),
+      halfHeightArrB: document.getElementById('half-height-arr-b'),
+      halfHeightBg: document.getElementById('half-height-bg'),
+      halfHeightText: document.getElementById('half-height-text'),
+
+      rulerGrp: document.getElementById('ruler-group'),
+      rulerLine: document.getElementById('ruler-line'),
+      rulerP1: document.getElementById('ruler-p1'),
+      rulerP2: document.getElementById('ruler-p2'),
+      rulerTextBg: document.getElementById('ruler-text-bg'),
+      rulerTextVal: document.getElementById('ruler-text-val')
+    };
+
+    // === 유틸리티 함수 ===
+    const polyStr = (...pts) => pts.map(p => `${p.x},${p.y}`).join(' ');
+    
+    const getPointFromEvent = (e) => {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      pt.y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+
+    const getRotatedPoint = (p, center, angle) => {
+      if (angle === 180) return { x: 2 * center.x - p.x, y: 2 * center.y - p.y };
+      return p;
+    };
+
+    const showToast = (msg) => {
+      ui.toast.textContent = msg;
+      ui.toast.classList.remove('hidden');
+      setTimeout(() => ui.toast.classList.remove('opacity-0'), 10);
+      
+      if (toastTimeoutId) clearTimeout(toastTimeoutId);
+      toastTimeoutId = setTimeout(() => {
+        ui.toast.classList.add('opacity-0');
+        setTimeout(() => ui.toast.classList.add('hidden'), 300);
+      }, 3000);
+    };
+
+    // === 기하학 업데이트 ===
+    const updateGeometry = () => {
+      if (state.step === 'create' || state.step === 'select-base') {
+        render();
+        return;
+      }
+
+      const A = { x: state.basePts.A.x * GRID_SIZE, y: state.basePts.A.y * GRID_SIZE };
+      const B = { x: state.basePts.B.x * GRID_SIZE, y: state.basePts.B.y * GRID_SIZE };
+      const C = { x: state.basePts.C.x * GRID_SIZE, y: state.basePts.C.y * GRID_SIZE };
+      
+      const M1 = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+      const M2 = { x: (A.x + C.x) / 2, y: (A.y + C.y) / 2 };
+      
+      const cx = (A.x + M1.x + M2.x) / 3;
+      const cy = (A.y + M1.y + M2.y) / 3;
+      
+      const targetM1 = { x: 2 * M2.x - M1.x, y: 2 * M2.y - M1.y };
+      const targetM2 = { x: M2.x, y: M2.y };
+      const targetA = { x: 2 * M2.x - A.x, y: 2 * M2.y - A.y }; // == C
+      
+      const C2 = { x: A.x + C.x - B.x, y: A.y + C.y - B.y };
+
+      const bc = { x: C.x - B.x, y: C.y - B.y };
+      const bcLen = Math.hypot(bc.x, bc.y);
+      const u = { x: bc.x / bcLen, y: bc.y / bcLen }; 
+      let n = { x: u.y, y: -u.x }; 
+      
+      const ba = { x: A.x - B.x, y: A.y - B.y };
+      if (ba.x * n.x + ba.y * n.y > 0) {
+          n = { x: -n.x, y: -n.y }; 
+      }
+      
+      const proj = ba.x * u.x + ba.y * u.y;
+      const H = { x: B.x + proj * u.x, y: B.y + proj * u.y }; 
+      const Hmid = { x: (A.x + H.x) / 2, y: (A.y + H.y) / 2 }; 
+
+      let extLineBottom = null;
+      if (proj < 0) extLineBottom = { x1: B.x, y1: B.y, x2: H.x, y2: H.y };
+      else if (proj > bcLen) extLineBottom = { x1: C.x, y1: C.y, x2: H.x, y2: H.y };
+      
+      const m1m2Len = bcLen / 2;
+      const m1a = { x: A.x - M1.x, y: A.y - M1.y };
+      const projTop = m1a.x * u.x + m1a.y * u.y;
+      
+      let extLineTop = null;
+      if (projTop < 0) extLineTop = { x1: M1.x, y1: M1.y, x2: Hmid.x, y2: Hmid.y };
+      else if (projTop > m1m2Len) extLineTop = { x1: M2.x, y1: M2.y, x2: Hmid.x, y2: Hmid.y };
+
+      geom = { A, B, C, C2, M1, M2, cx, cy, targetA, targetM1, targetM2, extLineBottom, extLineTop, H, Hmid, u, n };
+      
+      const uA = state.basePts.A, uB = state.basePts.B, uC = state.basePts.C;
+      const ubcLen = Math.hypot(uC.x - uB.x, uC.y - uB.y);
+      const ubc = { x: (uC.x - uB.x)/ubcLen, y: (uC.y - uB.y)/ubcLen };
+      const uba = { x: uA.x - uB.x, y: uA.y - uB.y };
+      const un = { x: ubc.y, y: -ubc.x };
+      const uheight = Math.abs(uba.x * un.x + uba.y * un.y);
+      
+      dispBase = +ubcLen.toFixed(1);
+      dispHeight = +uheight.toFixed(1);
+      actualArea = (dispBase * dispHeight) / 2;
+
+      render();
+    };
+
+    const startHintTimer = () => {
+      if (hintIntervalId) clearInterval(hintIntervalId);
+      state.hintTimer = 60;
+      state.showHint = false;
+      render();
+      
+      hintIntervalId = setInterval(() => {
+        state.hintTimer--;
+        if (state.hintTimer <= 0) {
+          clearInterval(hintIntervalId);
+          state.hintTimer = 0;
+        }
+        render(); 
+      }, 1000);
+    };
+
+    const activeBadge = (stepName) => {
+      const clsActive = "px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-600 text-white transition-colors";
+      const clsInactive = "px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-400 transition-colors";
+      ui.badges.create.className = (stepName === 'create') ? clsActive : clsInactive;
+      ui.badges.select.className = (stepName === 'select-base') ? clsActive : clsInactive;
+      ui.badges.cut.className = (stepName === 'cut') ? clsActive : clsInactive;
+      ui.badges.think.className = (stepName === 'think') ? clsActive : clsInactive;
+      ui.badges.drag.className = (stepName === 'drag' || stepName === 'success') ? clsActive : clsInactive;
+    }
+
+    // === 렌더링 (DOM 동기화) ===
+    const render = () => {
+      activeBadge(state.step);
+
+      ui.panels.create.classList.toggle('hidden', state.step !== 'create');
+      ui.panels.select.classList.toggle('hidden', state.step !== 'select-base');
+      ui.panels.cut.classList.toggle('hidden', state.step !== 'cut');
+      ui.panels.think.classList.toggle('hidden', state.step !== 'think');
+      ui.panels.drag.classList.toggle('hidden', state.step !== 'drag');
+      ui.panels.success.classList.toggle('hidden', state.step !== 'success');
+
+      if (state.step === 'cut' || state.step === 'drag') {
+        ui.hintSection.classList.remove('hidden');
+        if (state.hintTimer > 0) {
+          ui.btnHint.disabled = true;
+          ui.btnHint.textContent = `💡 힌트 잠금 해제 ( ${state.hintTimer}초 )`;
+          ui.btnHint.className = "w-full py-2 lg:py-3 rounded-lg font-bold flex justify-center items-center gap-2 transition-all bg-slate-100 text-slate-400 cursor-not-allowed text-sm lg:text-base";
+          ui.hintDesc.classList.remove('hidden');
+        } else {
+          ui.btnHint.disabled = false;
+          ui.btnHint.textContent = state.showHint ? '💡 힌트 끄기' : '💡 모르겠어요! 힌트 보기';
+          ui.btnHint.className = `w-full py-2 lg:py-3 rounded-lg font-bold flex justify-center items-center gap-2 transition-all text-sm lg:text-base ${state.showHint ? 'bg-yellow-400 text-yellow-900 shadow-inner' : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 shadow-sm'}`;
+          ui.hintDesc.classList.add('hidden');
+        }
+      } else {
+        ui.hintSection.classList.add('hidden');
+      }
+
+      // 커서 스타일 관리
+      if (state.rulerMode) {
+        svg.className = `w-full h-full select-none preserveAspectRatio='xMidYMid meet' cursor-crosshair`;
+      } else {
+        svg.className = `w-full h-full select-none preserveAspectRatio='xMidYMid meet' ${state.step === 'cut' ? 'cursor-crosshair' : ''}`;
+      }
+
+      // [1, 2단계 렌더링]
+      if (state.step === 'create' || state.step === 'select-base') {
+        const p1x = state.pts.P1.x * GRID_SIZE, p1y = state.pts.P1.y * GRID_SIZE;
+        const p2x = state.pts.P2.x * GRID_SIZE, p2y = state.pts.P2.y * GRID_SIZE;
+        const p3x = state.pts.P3.x * GRID_SIZE, p3y = state.pts.P3.y * GRID_SIZE;
+
+        svge.createPoly.classList.remove('hidden');
+        svge.createPoly.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+
+        if (state.step === 'create') {
+          svge.pointsGrp.classList.remove('hidden');
+          svge.point1.setAttribute('cx', p1x); svge.point1.setAttribute('cy', p1y);
+          svge.point2.setAttribute('cx', p2x); svge.point2.setAttribute('cy', p2y);
+          svge.point3.setAttribute('cx', p3x); svge.point3.setAttribute('cy', p3y);
+          svge.baseSelectGrp.classList.add('hidden');
+        } else {
+          svge.pointsGrp.classList.add('hidden');
+          svge.baseSelectGrp.classList.remove('hidden');
+          svge.line12.setAttribute('x1', p1x); svge.line12.setAttribute('y1', p1y);
+          svge.line12.setAttribute('x2', p2x); svge.line12.setAttribute('y2', p2y);
+          svge.line23.setAttribute('x1', p2x); svge.line23.setAttribute('y1', p2y);
+          svge.line23.setAttribute('x2', p3x); svge.line23.setAttribute('y2', p3y);
+          svge.line31.setAttribute('x1', p3x); svge.line31.setAttribute('y1', p3y);
+          svge.line31.setAttribute('x2', p1x); svge.line31.setAttribute('y2', p1y);
+        }
+      } else {
+        svge.createPoly.classList.add('hidden');
+        svge.pointsGrp.classList.add('hidden');
+        svge.baseSelectGrp.classList.add('hidden');
+      }
+
+      // [3~6단계 렌더링]
+      if (['cut', 'think', 'drag', 'success'].includes(state.step)) {
+        const { A, B, C, C2, M1, M2, cx, cy, targetM1, targetM2, extLineBottom, extLineTop, H, Hmid, u, n } = geom;
+
+        // 하단 다각형
+        svge.bottomPoly.classList.remove('hidden');
+        if (state.step === 'cut') {
+          svge.bottomPoly.setAttribute('points', polyStr(A, B, C));
+          svge.bottomPoly.setAttribute('fill', '#fef08a');
+        } else {
+          svge.bottomPoly.setAttribute('points', polyStr(M1, B, C, M2));
+          svge.bottomPoly.setAttribute('fill', '#fde047');
+        }
+
+        if (extLineBottom) {
+          svge.extLineBottom.classList.remove('hidden');
+          svge.extLineBottom.setAttribute('x1', extLineBottom.x1); svge.extLineBottom.setAttribute('y1', extLineBottom.y1);
+          svge.extLineBottom.setAttribute('x2', extLineBottom.x2); svge.extLineBottom.setAttribute('y2', extLineBottom.y2);
+        } else {
+          svge.extLineBottom.classList.add('hidden');
+        }
+
+        // 전체 높이선 표시 (항상 보임)
+        svge.redHeight.classList.remove('hidden');
+        svge.redHeight.setAttribute('x1', A.x); svge.redHeight.setAttribute('y1', A.y);
+        svge.redHeight.setAttribute('x2', H.x); svge.redHeight.setAttribute('y2', H.y);
+
+        // 라벨 위치
+        svge.labelBaseText.classList.remove('hidden');
+        const midBC = { x: (B.x + C.x)/2, y: (B.y + C.y)/2 };
+        svge.labelBaseText.setAttribute('x', midBC.x + n.x * 20); // 안쪽 라벨
+        svge.labelBaseText.setAttribute('y', midBC.y + n.y * 20);
+        
+        const midAH = { x: (A.x + H.x)/2, y: (A.y + H.y)/2 };
+        // 높이 글자는 항상 빨간선의 '왼쪽'(-u 방향)에 배치하여 겹침 방지
+        svge.labelHeightText.classList.remove('hidden');
+        svge.labelHeightText.setAttribute('x', midAH.x - u.x * 25);
+        svge.labelHeightText.setAttribute('y', midAH.y - u.y * 25);
+
+        // 힌트 선
+        if (state.step === 'cut' && state.showHint) {
+          svge.hintCutLine.classList.remove('hidden');
+          svge.hintCutLine.setAttribute('x1', M1.x - u.x * 40); svge.hintCutLine.setAttribute('y1', M1.y - u.y * 40);
+          svge.hintCutLine.setAttribute('x2', M2.x + u.x * 40); svge.hintCutLine.setAttribute('y2', M2.y + u.y * 40);
+        } else {
+          svge.hintCutLine.classList.add('hidden');
+        }
+
+        if (state.step === 'cut' && state.cutLine) {
+          svge.cutLineGrp.classList.remove('hidden');
+          svge.userCutLine.setAttribute('x1', state.cutLine.start.x);
+          svge.userCutLine.setAttribute('y1', state.cutLine.start.y);
+          svge.userCutLine.setAttribute('x2', state.cutLine.end.x);
+          svge.userCutLine.setAttribute('y2', state.cutLine.end.y);
+          svge.userCutIcon.setAttribute('x', state.cutLine.end.x);
+          svge.userCutIcon.setAttribute('y', state.cutLine.end.y);
+        } else {
+          svge.cutLineGrp.classList.add('hidden');
+        }
+
+        if (['think', 'drag', 'success'].includes(state.step)) {
+          svge.targetPoly.setAttribute('points', polyStr(C, targetM1, targetM2));
+          if (state.step === 'drag' || state.step === 'think') {
+            svge.targetPoly.classList.remove('hidden');
+            if (state.showHint && state.step === 'drag') {
+              svge.targetPoly.setAttribute('fill', '#bbf7d0');
+              svge.targetPoly.setAttribute('stroke', '#22c55e');
+              svge.targetPoly.setAttribute('stroke-width', '4');
+              svge.targetPoly.classList.add('animate-pulse', 'opacity-70');
+              svge.targetPoly.classList.remove('opacity-60');
+            } else {
+              svge.targetPoly.setAttribute('fill', '#f8fafc');
+              svge.targetPoly.setAttribute('stroke', '#cbd5e1');
+              svge.targetPoly.setAttribute('stroke-width', '2');
+              svge.targetPoly.classList.remove('animate-pulse', 'opacity-70');
+              svge.targetPoly.classList.add('opacity-60');
+            }
+          } else {
+            svge.targetPoly.classList.add('hidden');
+          }
+
+          svge.blueHeightBottom.classList.remove('hidden');
+          svge.blueHeightBottom.setAttribute('x1', Hmid.x); svge.blueHeightBottom.setAttribute('y1', Hmid.y);
+          svge.blueHeightBottom.setAttribute('x2', H.x); svge.blueHeightBottom.setAttribute('y2', H.y);
+
+          svge.topPieceGrp.classList.remove('hidden');
+          svge.topPoly.setAttribute('points', polyStr(A, M1, M2));
+          svge.topPieceGrp.setAttribute('transform', `translate(${state.pos.x}, ${state.pos.y}) rotate(${state.rot}, ${cx}, cy)`);
+          svge.topPieceGrp.setAttribute('transform', `translate(${state.pos.x}, ${state.pos.y}) rotate(${state.rot}, ${cx}, ${cy})`);
+          
+          if (state.step === 'think') {
+            svge.topPieceGrp.classList.remove('cursor-grab', 'cursor-grabbing');
+          } else {
+            if (state.activeInteraction === 'piece') {
+              svge.topPoly.setAttribute('filter', 'url(#drop-shadow)');
+              svge.topPieceGrp.classList.add('cursor-grabbing');
+              svge.topPieceGrp.classList.remove('cursor-grab', 'transition-transform');
+            } else {
+              svge.topPoly.removeAttribute('filter');
+              svge.topPieceGrp.classList.add('cursor-grab', 'transition-transform');
+              svge.topPieceGrp.classList.remove('cursor-grabbing');
+            }
+          }
+
+          svge.topPoly.setAttribute('fill', state.step === 'success' ? '#fde047' : '#fef08a');
+
+          svge.blueHeightTop.classList.remove('hidden');
+          svge.blueHeightTop.setAttribute('x1', A.x); svge.blueHeightTop.setAttribute('y1', A.y);
+          svge.blueHeightTop.setAttribute('x2', Hmid.x); svge.blueHeightTop.setAttribute('y2', Hmid.y);
+
+          if (extLineTop) {
+            svge.extLineTop.classList.remove('hidden');
+            svge.extLineTop.setAttribute('x1', extLineTop.x1); svge.extLineTop.setAttribute('y1', extLineTop.y1);
+            svge.extLineTop.setAttribute('x2', extLineTop.x2); svge.extLineTop.setAttribute('y2', extLineTop.y2);
+          } else {
+            svge.extLineTop.classList.add('hidden');
+          }
+
+          if (state.step === 'drag' && state.rot === 0 && state.activeInteraction !== 'piece') {
+            svge.rotHintIcon.classList.remove('hidden');
+            svge.rotHintCircle.setAttribute('cx', cx); svge.rotHintCircle.setAttribute('cy', cy);
+            svge.rotHintText.setAttribute('x', cx); svge.rotHintText.setAttribute('y', cy);
+          } else {
+            svge.rotHintIcon.classList.add('hidden');
+          }
+        } else {
+          svge.topPieceGrp.classList.add('hidden');
+          svge.targetPoly.classList.add('hidden');
+          svge.blueHeightBottom.classList.add('hidden');
+        }
+
+        // 성공 시 시각 효과 렌더링
+        if (state.step === 'success') {
+          svge.successGrp.classList.remove('hidden');
+          svge.successOutline.setAttribute('points', polyStr(M1, B, C, targetM1));
+          
+          svge.bigPara.setAttribute('points', polyStr(B, C, C2, A));
+          svge.bigPara.classList.remove('hidden');
+          setTimeout(() => svge.bigPara.classList.remove('opacity-0'), 100);
+
+          // 밑변 치수 (더 바깥쪽으로 빼서 겹침 방지)
+          const offsetBase = 50; 
+          svge.baseLineMain.setAttribute('x1', B.x + n.x * offsetBase); svge.baseLineMain.setAttribute('y1', B.y + n.y * offsetBase);
+          svge.baseLineMain.setAttribute('x2', C.x + n.x * offsetBase); svge.baseLineMain.setAttribute('y2', C.y + n.y * offsetBase);
+          svge.baseLineLeft.setAttribute('x1', B.x + n.x * (offsetBase - 5)); svge.baseLineLeft.setAttribute('y1', B.y + n.y * (offsetBase - 5));
+          svge.baseLineLeft.setAttribute('x2', B.x + n.x * (offsetBase + 5)); svge.baseLineLeft.setAttribute('y2', B.y + n.y * (offsetBase + 5));
+          svge.baseLineRight.setAttribute('x1', C.x + n.x * (offsetBase - 5)); svge.baseLineRight.setAttribute('y1', C.y + n.y * (offsetBase - 5));
+          svge.baseLineRight.setAttribute('x2', C.x + n.x * (offsetBase + 5)); svge.baseLineRight.setAttribute('y2', C.y + n.y * (offsetBase + 5));
+          
+          svge.baseBg.setAttribute('x', midBC.x + n.x * offsetBase - 30);
+          svge.baseBg.setAttribute('y', midBC.y + n.y * offsetBase - 12);
+          svge.baseText.setAttribute('x', midBC.x + n.x * offsetBase);
+          svge.baseText.setAttribute('y', midBC.y + n.y * offsetBase);
+          svge.baseText.textContent = `${dispBase} cm`;
+
+          // 전체 높이 치수를 오른쪽(+u 방향)으로 빼서 분리
+          const offsetHeight = 45; 
+          
+          svge.heightGuideTop.setAttribute('x1', A.x); svge.heightGuideTop.setAttribute('y1', A.y);
+          svge.heightGuideTop.setAttribute('x2', A.x + u.x * offsetHeight); svge.heightGuideTop.setAttribute('y2', A.y + u.y * offsetHeight);
+          svge.heightGuideBottom.setAttribute('x1', H.x); svge.heightGuideBottom.setAttribute('y1', H.y);
+          svge.heightGuideBottom.setAttribute('x2', H.x + u.x * offsetHeight); svge.heightGuideBottom.setAttribute('y2', H.y + u.y * offsetHeight);
+
+          svge.heightLineDim.setAttribute('x1', A.x + u.x * offsetHeight); svge.heightLineDim.setAttribute('y1', A.y + u.y * offsetHeight);
+          svge.heightLineDim.setAttribute('x2', H.x + u.x * offsetHeight); svge.heightLineDim.setAttribute('y2', H.y + u.y * offsetHeight);
+          
+          // 화살표 머리 각도 계산
+          const angle = Math.atan2(H.y - A.y, H.x - A.x) * 180 / Math.PI;
+          svge.heightArrT.setAttribute('transform', `translate(${A.x + u.x * offsetHeight}, ${A.y + u.y * offsetHeight}) rotate(${angle})`);
+          svge.heightArrB.setAttribute('transform', `translate(${H.x + u.x * offsetHeight}, ${H.y + u.y * offsetHeight}) rotate(${angle})`);
+
+          svge.heightBg.setAttribute('x', midAH.x + u.x * offsetHeight - 30);
+          svge.heightBg.setAttribute('y', midAH.y + u.y * offsetHeight - 12);
+          svge.heightText.setAttribute('x', midAH.x + u.x * offsetHeight);
+          svge.heightText.setAttribute('y', midAH.y + u.y * offsetHeight);
+          svge.heightText.textContent = `${dispHeight} cm`;
+
+          // 절반 높이 (노란 평행사변형 높이) 치수선 추가 (왼쪽 더 바깥 -u 방향)
+          const midH = { x: (Hmid.x + H.x)/2, y: (Hmid.y + H.y)/2 };
+          const halfOffset = -60; // '높이' 글자(-25)보다 더 바깥쪽
+          
+          svge.halfHeightGuideTop.setAttribute('x1', Hmid.x); svge.halfHeightGuideTop.setAttribute('y1', Hmid.y);
+          svge.halfHeightGuideTop.setAttribute('x2', Hmid.x + u.x * halfOffset); svge.halfHeightGuideTop.setAttribute('y2', Hmid.y + u.y * halfOffset);
+          svge.halfHeightGuideBottom.setAttribute('x1', H.x); svge.halfHeightGuideBottom.setAttribute('y1', H.y);
+          svge.halfHeightGuideBottom.setAttribute('x2', H.x + u.x * halfOffset); svge.halfHeightGuideBottom.setAttribute('y2', H.y + u.y * halfOffset);
+
+          svge.halfHeightLineDim.setAttribute('x1', Hmid.x + u.x * halfOffset); svge.halfHeightLineDim.setAttribute('y1', Hmid.y + u.y * halfOffset);
+          svge.halfHeightLineDim.setAttribute('x2', H.x + u.x * halfOffset); svge.halfHeightLineDim.setAttribute('y2', H.y + u.y * halfOffset);
+          
+          svge.halfHeightArrT.setAttribute('transform', `translate(${Hmid.x + u.x * halfOffset}, ${Hmid.y + u.y * halfOffset}) rotate(${angle})`);
+          svge.halfHeightArrB.setAttribute('transform', `translate(${H.x + u.x * halfOffset}, ${H.y + u.y * halfOffset}) rotate(${angle})`);
+
+          svge.halfHeightBg.setAttribute('x', midH.x + u.x * halfOffset - 30);
+          svge.halfHeightBg.setAttribute('y', midH.y + u.y * halfOffset - 12);
+          svge.halfHeightText.setAttribute('x', midH.x + u.x * halfOffset);
+          svge.halfHeightText.setAttribute('y', midH.y + u.y * halfOffset);
+          
+          const halfH = dispHeight / 2;
+          const formattedHalfH = Number.isInteger(halfH) ? halfH : halfH.toFixed(1);
+          svge.halfHeightText.textContent = `${formattedHalfH} cm`;
+
+          ui.infoBase.textContent = `${dispBase} cm`;
+          ui.infoHeight.textContent = `${dispHeight} cm`;
+          ui.infoHalfHeight.textContent = `${formattedHalfH} cm`;
+          
+          if (state.isAreaCorrect) {
+            ui.areaInputSec.classList.add('hidden');
+            ui.areaCorrectSec.classList.remove('hidden');
+            ui.btnReset.classList.remove('hidden');
+            
+            ui.ansBase.textContent = dispBase;
+            ui.ansHeight.textContent = dispHeight;
+            ui.ansTotal.textContent = +actualArea.toFixed(2);
+          } else {
+            ui.areaInputSec.classList.remove('hidden');
+            ui.areaCorrectSec.classList.add('hidden');
+            ui.btnReset.classList.add('hidden');
+          }
+        } else {
+          svge.successGrp.classList.add('hidden');
+          svge.bigPara.classList.add('opacity-0');
+          setTimeout(() => {
+            if (state.step !== 'success') svge.bigPara.classList.add('hidden');
+          }, 500);
+        }
+      } else {
+        svge.bottomPoly.classList.add('hidden');
+        svge.extLineBottom.classList.add('hidden');
+        svge.redHeight.classList.add('hidden');
+        svge.blueHeightBottom.classList.add('hidden');
+        svge.topPieceGrp.classList.add('hidden');
+        svge.targetPoly.classList.add('hidden');
+        svge.successGrp.classList.add('hidden');
+        svge.bigPara.classList.add('hidden');
+        svge.bigPara.classList.add('opacity-0');
+        svge.hintCutLine.classList.add('hidden');
+        svge.cutLineGrp.classList.add('hidden');
+        svge.labelBaseText.classList.add('hidden');
+        svge.labelHeightText.classList.add('hidden');
+      }
+
+      if (state.rot === 180) {
+        ui.iconRotate.classList.add('rotate-180');
+      } else {
+        ui.iconRotate.classList.remove('rotate-180');
+      }
+    };
+
+    // 자(Ruler) 그리기
+    const renderRuler = () => {
+      if (!state.rulerMode || !state.ruler.p1) {
+        svge.rulerGrp.classList.add('hidden');
+        return;
+      }
+      
+      svge.rulerGrp.classList.remove('hidden');
+      const p1 = state.ruler.p1;
+      const p2 = state.ruler.p2 || state.ruler.current;
+      
+      if (p1 && p2) {
+        svge.rulerP1.setAttribute('cx', p1.x); svge.rulerP1.setAttribute('cy', p1.y);
+        svge.rulerP2.setAttribute('cx', p2.x); svge.rulerP2.setAttribute('cy', p2.y);
+        svge.rulerP2.classList.remove('hidden');
+        
+        svge.rulerLine.setAttribute('x1', p1.x); svge.rulerLine.setAttribute('y1', p1.y);
+        svge.rulerLine.setAttribute('x2', p2.x); svge.rulerLine.setAttribute('y2', p2.y);
+        
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        const cm = (dist / GRID_SIZE).toFixed(1);
+        
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        
+        svge.rulerTextBg.setAttribute('x', midX - 25);
+        svge.rulerTextBg.setAttribute('y', midY - 20);
+        svge.rulerTextBg.setAttribute('width', 50);
+        svge.rulerTextBg.setAttribute('height', 24);
+        
+        svge.rulerTextVal.setAttribute('x', midX);
+        svge.rulerTextVal.setAttribute('y', midY - 8);
+        svge.rulerTextVal.textContent = `${cm} cm`;
+      }
+    };
+
+    // 자 모드 토글
+    ui.btnToggleRuler.addEventListener('click', () => {
+      state.rulerMode = !state.rulerMode;
+      if (state.rulerMode) {
+        ui.btnToggleRuler.className = "px-2 py-1.5 lg:px-3 lg:py-2 bg-teal-600 border border-teal-700 rounded shadow flex items-center gap-1 font-bold text-xs lg:text-sm text-white transition-colors";
+        ui.btnToggleRuler.textContent = "📏 측정 초기화 (끄기)";
+        showToast("원하는 두 점을 클릭해 선분의 길이를 재보세요.");
+      } else {
+        ui.btnToggleRuler.className = "px-2 py-1.5 lg:px-3 lg:py-2 bg-white border border-slate-300 rounded shadow hover:bg-slate-50 flex items-center gap-1 font-bold text-xs lg:text-sm text-slate-700 transition-colors";
+        ui.btnToggleRuler.textContent = "📏 자 도구";
+      }
+      state.ruler = { p1: null, p2: null, current: null };
+      renderRuler();
+      render(); 
+    });
+
+
+    // === 미니 계산기 로직 ===
+    const calcDisplay = document.getElementById('calc-display');
+    let calcValue = '';
+    let calcIsResult = false;
+
+    document.querySelectorAll('.calc-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.getAttribute('data-val');
+        if (val === 'C') {
+          calcValue = '';
+          calcDisplay.value = '';
+          calcIsResult = false;
+          return;
+        }
+        if (val === '=') {
+          try {
+            if (!calcValue) return;
+            if (!/^[0-9+\-*/.\s]+$/.test(calcValue)) throw new Error("Invalid");
+            let result = new Function('return ' + calcValue)();
+            result = Math.round(result * 10000) / 10000;
+            calcDisplay.value = result;
+            calcValue = String(result);
+            calcIsResult = true;
+          } catch (e) {
+            calcDisplay.value = 'Error';
+            calcValue = '';
+            calcIsResult = true;
+          }
+          return;
+        }
+        if (calcIsResult) {
+          if (['+', '-', '*', '/'].includes(val)) calcValue += val;
+          else calcValue = val;
+          calcIsResult = false;
+        } else {
+          calcValue += val;
+        }
+        calcDisplay.value = calcValue.replace(/\*/g, '×').replace(/\//g, '÷');
+      });
+    });
+
+
+    // === 이벤트 리스너 등록 ===
+    const handlePointDown = (e, target) => {
+      if (state.step !== 'create' || state.rulerMode) return;
+      e.stopPropagation();
+      e.target.setPointerCapture(e.pointerId);
+      state.activeInteraction = 'point';
+      state.dragTarget = target;
+    };
+    svge.point1.addEventListener('pointerdown', (e) => handlePointDown(e, 'P1'));
+    svge.point2.addEventListener('pointerdown', (e) => handlePointDown(e, 'P2'));
+    svge.point3.addEventListener('pointerdown', (e) => handlePointDown(e, 'P3'));
+
+    const handleBaseClick = (p1_key, p2_key, apex_key) => {
+      if (state.step !== 'select-base' || state.rulerMode) return;
+      let p1 = state.pts[p1_key];
+      let p2 = state.pts[p2_key];
+      let apex = state.pts[apex_key];
+      
+      if (p1.x > p2.x || (p1.x === p2.x && p1.y > p2.y)) { 
+        let temp = p1; p1 = p2; p2 = temp; 
+      }
+
+      state.basePts = { A: apex, B: p1, C: p2 };
+      state.step = 'cut';
+      
+      showToast("밑변이 선택되었습니다! 이제 삼각형을 잘라보세요.");
+      updateGeometry();
+      startHintTimer();
+    };
+    svge.line12.addEventListener('click', () => handleBaseClick('P1', 'P2', 'P3'));
+    svge.line23.addEventListener('click', () => handleBaseClick('P2', 'P3', 'P1'));
+    svge.line31.addEventListener('click', () => handleBaseClick('P3', 'P1', 'P2'));
+
+    svg.addEventListener('pointerdown', (e) => {
+      const pt = getPointFromEvent(e);
+      
+      // 자 모드 이벤트 가로채기
+      if (state.rulerMode) {
+        if (!state.ruler.p1 || (state.ruler.p1 && state.ruler.p2)) {
+          state.ruler = { p1: pt, p2: null, current: pt };
+        } else {
+          state.ruler.p2 = pt;
+        }
+        renderRuler();
+        return;
+      }
+
+      if (state.step === 'cut') {
+        svg.setPointerCapture(e.pointerId);
+        state.activeInteraction = 'cut';
+        state.cutLine = { start: pt, end: pt };
+        render();
+      }
+    });
+
+    svge.topPieceGrp.addEventListener('pointerdown', (e) => {
+      if (state.step === 'drag' && !state.rulerMode) {
+        e.stopPropagation();
+        svge.topPieceGrp.setPointerCapture(e.pointerId);
+        const pt = getPointFromEvent(e);
+        dragStartPos = pt;
+        pieceStartPos = { ...state.pos };
+        state.activeInteraction = 'piece';
+        render();
+      }
+    });
+
+    svg.addEventListener('pointermove', (e) => {
+      const pt = getPointFromEvent(e);
+
+      if (state.rulerMode && state.ruler.p1 && !state.ruler.p2) {
+        state.ruler.current = pt;
+        renderRuler();
+        return;
+      }
+
+      if (state.activeInteraction === 'none') return;
+
+      if (state.activeInteraction === 'point' && state.dragTarget) {
+        let gx = Math.round(pt.x / GRID_SIZE);
+        let gy = Math.round(pt.y / GRID_SIZE);
+        gx = Math.max(1, Math.min(19, gx)); 
+        gy = Math.max(1, Math.min(11, gy)); 
+        state.pts[state.dragTarget] = { x: gx, y: gy };
+        updateGeometry();
+      } 
+      else if (state.activeInteraction === 'cut' && state.cutLine) {
+        state.cutLine.end = pt;
+        render();
+      }
+      else if (state.activeInteraction === 'piece') {
+        const dx = pt.x - dragStartPos.x;
+        const dy = pt.y - dragStartPos.y;
+        state.pos = {
+          x: pieceStartPos.x + dx,
+          y: pieceStartPos.y + dy
+        };
+        render();
+      }
+    });
+
+    const handlePointerUp = (e) => {
+      if (state.activeInteraction === 'none') return;
+      if (e.target.releasePointerCapture) {
+        e.target.releasePointerCapture(e.pointerId);
+      }
+
+      if (state.activeInteraction === 'cut' && state.cutLine) {
+        const { start, end } = state.cutLine;
+        const { M1, M2 } = geom;
+        
+        const vM = { x: M2.x - M1.x, y: M2.y - M1.y };
+        const vU = { x: end.x - start.x, y: end.y - start.y };
+        const lenM = Math.hypot(vM.x, vM.y);
+        const lenU = Math.hypot(vU.x, vU.y);
+
+        const dot = (vM.x * vU.x + vM.y * vU.y) / (lenM * lenU);
+        const isParallel = Math.abs(dot) > 0.866; 
+
+        const midM = { x: (M1.x + M2.x)/2, y: (M1.y + M2.y)/2 };
+        const midU = { x: (start.x + end.x)/2, y: (start.y + end.y)/2 };
+        const distMid = Math.hypot(midU.x - midM.x, midU.y - midM.y);
+        
+        const isClose = distMid < GRID_SIZE * 1.5;
+        const isLongEnough = lenU > lenM * 0.4;
+        
+        if (isParallel && isClose && isLongEnough) {
+          state.step = 'think';
+          showToast("훌륭해요! 이제 잘린 조각을 어떻게 움직일지 예상하고 발표해 보세요.");
+        } else {
+          showToast("자르는 위치가 정확하지 않아요! 밑변과 평행하게 절반 높이로 잘라주세요.");
+        }
+        state.cutLine = null;
+      }
+      else if (state.activeInteraction === 'piece') {
+        const { A, cx, cy, geomC = geom.C } = geom; 
+        const currA_rotated = getRotatedPoint(A, { x: cx, y: cy }, state.rot);
+        const currA_final = { x: currA_rotated.x + state.pos.x, y: currA_rotated.y + state.pos.y };
+        const dist = Math.hypot(currA_final.x - geomC.x, currA_final.y - geomC.y);
+        
+        if (state.rot === 180 && dist < GRID_SIZE * 1.5) {
+          const snapDx = geomC.x - currA_rotated.x;
+          const snapDy = geomC.y - currA_rotated.y;
+          state.pos = { x: snapDx, y: snapDy };
+          state.step = 'success';
+          showToast("정답입니다! 사각형이 완성되었어요.");
+        }
+      }
+
+      state.activeInteraction = 'none';
+      state.dragTarget = null;
+      render();
+    };
+
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    // UI 버튼 이벤트
+    ui.btnGoSelect.addEventListener('click', () => {
+      const p1 = state.pts.P1, p2 = state.pts.P2, p3 = state.pts.P3;
+      const area2 = Math.abs(p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) + p3.x*(p1.y-p2.y));
+      if (area2 === 0) {
+        showToast("세 점이 일직선에 있어요. 삼각형 모양을 제대로 만들어주세요!");
+        return;
+      }
+      state.step = 'select-base';
+      render();
+      showToast("어느 선분을 밑변으로 할까요? 마우스로 클릭해보세요.");
+    });
+
+    ui.btnGoDrag.addEventListener('click', () => {
+      state.step = 'drag';
+      render();
+      startHintTimer(); 
+    });
+
+    ui.btnRotate.addEventListener('click', () => {
+      if (state.step === 'success') return;
+      state.rot = state.rot === 0 ? 180 : 0;
+      render();
+    });
+
+    ui.btnHint.addEventListener('click', () => {
+      if (state.hintTimer > 0) return;
+      state.showHint = !state.showHint;
+      render();
+    });
+
+    const checkArea = () => {
+      if (Math.abs(parseFloat(ui.inputArea.value) - actualArea) < 0.1) {
+        state.isAreaCorrect = true;
+        showToast("정답입니다! 넓이를 완벽하게 구했어요.");
+      } else {
+        showToast("아쉽네요. 다시 한번 계산해 볼까요? (밑변 × 높이 ÷ 2)");
+      }
+      render();
+    };
+
+    ui.btnCheckArea.addEventListener('click', checkArea);
+    ui.inputArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkArea();
+    });
+
+    ui.btnReset.addEventListener('click', () => {
+      state.step = 'create';
+      state.pts = {
+        P1: { x: 7, y: 3 },
+        P2: { x: 4, y: 10 },
+        P3: { x: 14, y: 8 }
+      };
+      state.basePts = { A: null, B: null, C: null };
+      state.pos = { x: 0, y: 0 };
+      state.rot = 0;
+      state.showHint = false;
+      state.isAreaCorrect = false;
+      
+      // 자 도구 초기화
+      state.rulerMode = false;
+      state.ruler = { p1: null, p2: null, current: null };
+      ui.btnToggleRuler.className = "px-2 py-1.5 lg:px-3 lg:py-2 bg-white border border-slate-300 rounded shadow hover:bg-slate-50 flex items-center gap-1 font-bold text-xs lg:text-sm text-slate-700";
+      ui.btnToggleRuler.textContent = "📏 자 도구";
+      renderRuler();
+
+      ui.inputArea.value = '';
+      if (hintIntervalId) clearInterval(hintIntervalId);
+      updateGeometry();
+    });
+
+    // 초기화
+    updateGeometry();
+
+  </script>
+</body>
+</html>

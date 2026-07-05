@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍕 외계인 피자 가게 (Alien Pizza Shop)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #1a1a2e; /* 우주 느낌의 배경 */
+            color: #fff;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 우주 배경 별 반짝임 효과 */
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 4s infinite;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { opacity: 0.8; }
+        }
+
+        /* 분수 스타일링 */
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 4px;
+            font-size: 1.1em;
+        }
+        .fraction span:first-child {
+            border-bottom: 2px solid white;
+            padding: 0 2px;
+        }
+        .fraction span:last-child {
+            padding: 0 2px;
+        }
+
+        /* 외계인 애니메이션 */
+        .alien-container {
+            transition: all 0.5s ease-in-out;
+            transform: translateX(0);
+        }
+        .alien-enter {
+            animation: slideIn 0.5s forwards;
+        }
+        .alien-exit-success {
+            animation: slideOutRight 0.5s forwards;
+        }
+        .alien-exit-fail {
+            animation: slideOutLeft 0.5s forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100vw); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100vw); opacity: 0; }
+        }
+        @keyframes slideOutLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100vw); opacity: 0; }
+        }
+
+        /* 말풍선 꼬리 */
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+            transform: translateX(-50%);
+        }
+
+        /* 피자 SVG 상호작용 */
+        .pizza-slice {
+            cursor: pointer;
+            transition: fill 0.2s, stroke-width 0.2s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+        .pizza-slice:hover {
+            stroke-width: 4px;
+            filter: brightness(1.2);
+        }
+
+        /* 모달 팝업 애니메이션 */
+        .modal-pop {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* 스크롤바 숨기기 */
+        ::-webkit-scrollbar { display: none; }
+
+        /* 소진 시 흔들림 & 경고 애니메이션 */
+        @keyframes warningPulse {
+            0%, 100% { background-color: #ef4444; transform: scale(1); }
+            50% { background-color: #b91c1c; transform: scale(1.05); }
+        }
+        .warning-active {
+            animation: warningPulse 1s infinite ease-in-out;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col relative select-none">
+    <div class="stars"></div>
+
+    <!-- MAIN MENU -->
+    <div id="screen-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <h1 class="text-6xl text-yellow-400 mb-4 text-center" style="text-shadow: 0 0 10px #f59e0b;">🍕 외계인 피자 가게 👽</h1>
+        <p class="text-xl mb-8 text-gray-300 max-w-lg text-center leading-relaxed">
+            분수를 계산하여 까다로운 외계인 손님들의 주문을 맞추세요!<br>
+            돈을 모아 방어권을 사고 새로운 재료를 잠금 해제하세요.
+        </p>
+        <div class="bg-gray-800 p-6 rounded-xl border-2 border-yellow-500 mb-8 text-center w-80">
+            <h2 class="text-2xl text-yellow-400 mb-2">내 자산 (로컬 저장소)</h2>
+            <p class="text-4xl text-green-400 font-bold mb-2"><span id="menu-money">0</span> 원</p>
+            <p class="text-sm text-gray-400">현재 Day: <span id="menu-day" class="text-white">1</span></p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="startGame()" class="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all transform hover:scale-105 active:scale-95">
+                영업 시작 (Day <span id="btn-day">1</span>)
+            </button>
+            <button onclick="showShop()" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all transform hover:scale-105 active:scale-95">
+                🛒 상점 가기
+            </button>
+        </div>
+        <button onclick="openResetModal()" class="mt-10 px-6 py-2 bg-red-900/80 hover:bg-red-700 text-gray-300 rounded-full text-sm transition-all border border-red-700">
+            🔄 데이터 초기화
+        </button>
+    </div>
+
+    <!-- SHOP SCREEN -->
+    <div id="screen-shop" class="absolute inset-0 z-50 hidden flex-col items-center justify-start py-10 bg-black/90 backdrop-blur-md overflow-y-auto">
+        <div class="w-full max-w-4xl px-4">
+            <div class="flex justify-between items-center mb-8 border-b-2 border-gray-700 pb-4">
+                <h1 class="text-5xl text-purple-400">🛒 우주 상점</h1>
+                <div class="text-right">
+                    <p class="text-xl">보유 금액</p>
+                    <p class="text-3xl text-green-400 font-bold"><span id="shop-money">0</span> 원</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="shop-items">
+                <!-- Shop items injected via JS -->
+            </div>
+
+            <div class="mt-10 text-center">
+                <button onclick="hideShop()" class="px-10 py-3 bg-gray-600 hover:bg-gray-500 text-white text-xl rounded-full transition-all">
+                    돌아가기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="flex-1 flex flex-col hidden h-full">
+        <!-- Top HUD -->
+        <div class="h-16 bg-gray-900/80 border-b border-gray-700 flex justify-between items-center px-6 shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="text-2xl text-yellow-400 font-bold">DAY <span id="hud-day">1</span></div>
+                <div class="bg-gray-800 rounded-full px-4 py-1 flex items-center gap-2 border border-gray-600">
+                    <span>⏱️</span>
+                    <span id="hud-time" class="text-xl w-12 text-center text-red-400">02:00</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="bg-gray-800 rounded-full px-4 py-1 flex items-center gap-2 border border-gray-600" title="마이너스 방어권 (1회용)">
+                    <span>🛡️</span>
+                    <span id="hud-shields" class="text-xl">0</span>
+                </div>
+                <div class="text-3xl text-green-400 font-bold tracking-wider">
+                    <span id="hud-money">0</span> ₩
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Customer Area -->
+        <div class="flex-1 relative flex items-end justify-center pb-4">
+            <!-- Counter Desk -->
+            <div class="absolute bottom-0 w-full h-1/4 bg-gradient-to-t from-gray-800 to-transparent z-0"></div>
+            
+            <div id="alien-wrapper" class="alien-container z-10 flex flex-col items-center">
+                <!-- Speech Bubble -->
+                <div class="bg-white text-black p-4 rounded-2xl mb-6 relative speech-bubble max-w-2xl text-center shadow-lg text-2xl" id="order-text">
+                    <!-- Order text goes here -->
+                </div>
+                <!-- Alien Emoji -->
+                <div id="alien-emoji" class="text-9xl filter drop-shadow-2xl">👽</div>
+            </div>
+        </div>
+
+        <!-- Bottom: Workspace -->
+        <div class="h-[45%] bg-gray-800 border-t-4 border-yellow-600 flex flex-col p-4 shrink-0 z-20">
+            <!-- Tools & Ingredients -->
+            <div class="flex justify-between items-center mb-4 bg-gray-900 p-2 rounded-xl">
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-400 ml-2">등분(자르기):</span>
+                    <button onclick="changeSlices(-1)" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 flex items-center justify-center text-2xl">-</button>
+                    <span id="slice-count" class="text-2xl font-bold w-6 text-center text-yellow-400">8</span>
+                    <button onclick="changeSlices(1)" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 flex items-center justify-center text-2xl">+</button>
+                    <span class="text-gray-500 text-sm ml-2">(모든 피자에 적용)</span>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 justify-center" id="topping-selector">
+                    <!-- Toppings injected via JS -->
+                </div>
+
+                <div class="flex gap-2 mr-2">
+                    <button id="btn-early-end" onclick="openEarlyEndModal()" class="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1">
+                        🚨 재료 소진 마감
+                    </button>
+                    <button onclick="clearBoard()" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shadow-md text-sm">
+                        🗑️ 되돌리기
+                    </button>
+                     <button onclick="addPizza()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white shadow-md">
+                        + 피자 추가
+                    </button>
+                    <button onclick="submitOrder()" class="px-6 py-2 bg-green-500 hover:bg-green-400 rounded-lg text-black font-bold text-xl shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+                        서빙하기!
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pizzas Container -->
+            <div id="pizzas-container" class="flex-1 flex items-center justify-center gap-8 overflow-x-auto p-4 bg-gray-700 rounded-xl inner-shadow">
+                <!-- SVG Pizzas injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Day End Modal -->
+    <div id="modal-day-end" class="absolute inset-0 z-[100] hidden flex items-center justify-center bg-black/90">
+        <div class="bg-gray-800 border-4 border-yellow-500 p-8 rounded-2xl text-center max-w-md w-full modal-pop">
+            <h2 class="text-4xl text-yellow-400 mb-4" id="modal-day-end-title">영업 종료!</h2>
+            <p class="text-xl mb-6" id="modal-day-end-subtitle">오늘 하루 수고하셨습니다.</p>
+            <div class="bg-gray-900 p-4 rounded-xl mb-6 text-left">
+                <p class="flex justify-between text-lg mb-2 text-gray-300">오늘 번 돈: <span id="summary-earned" class="text-green-400">0 원</span></p>
+                <p class="flex justify-between text-lg text-gray-300 border-t border-gray-700 pt-2">총 자산: <span id="summary-total" class="text-yellow-400 font-bold">0 원</span></p>
+            </div>
+            <button onclick="closeDayEnd()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-xl font-bold transition-colors">
+                상점으로 가기
+            </button>
+        </div>
+    </div>
+
+    <!-- Early End Confirm Modal (Custom Alternative to window.confirm) -->
+    <div id="modal-early-confirm" class="absolute inset-0 z-[110] hidden flex items-center justify-center bg-black/85">
+        <div class="bg-gray-850 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop">
+            <h2 class="text-3xl text-red-500 mb-3">🚨 영업 마감 확인</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                정말로 재료가 다 떨어졌나요?<br>
+                오늘의 피자 영업을 일찍 마감하고<br>정산을 시작합니다.
+            </p>
+            <div class="flex gap-4">
+                <button onclick="closeEarlyEndModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold">
+                    더 장사하기
+                </button>
+                <button onclick="confirmEarlyEnd()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg">
+                    예, 마감할래요!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirm Modal -->
+    <div id="modal-reset-confirm" class="absolute inset-0 z-[120] hidden flex items-center justify-center bg-black/85">
+        <div class="bg-gray-850 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop">
+            <h2 class="text-3xl text-red-500 mb-3">⚠️ 데이터 초기화</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                모든 돈과 Day, 재고가 초기화됩니다.<br>
+                정말로 처음부터 다시 시작할까요?
+            </p>
+            <div class="flex gap-4">
+                <button onclick="closeResetModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold">
+                    취소
+                </button>
+                <button onclick="confirmReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg">
+                    초기화
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Message Overlay -->
+    <div id="alert-message" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 opacity-0 pointer-events-none shadow-2xl">
+        Message
+    </div>
+
+    <script>
+        // --- 1. Audio System (Web Audio API Synthesizer) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sfx = {
+            click: () => playTone(600, 'sine', 0.1, 0.1),
+            slice: () => playTone(800, 'triangle', 0.1, 0.05),
+            success: () => {
+                playTone(523.25, 'sine', 0.1, 0.1); // C5
+                setTimeout(() => playTone(659.25, 'sine', 0.1, 0.1), 100); // E5
+                setTimeout(() => playTone(783.99, 'sine', 0.3, 0.15), 200); // G5
+            },
+            fail: () => {
+                playTone(300, 'sawtooth', 0.3, 0.1);
+                setTimeout(() => playTone(250, 'sawtooth', 0.4, 0.15), 250);
+            },
+            coin: () => {
+                playTone(1200, 'sine', 0.1, 0.1);
+                setTimeout(() => playTone(1600, 'sine', 0.2, 0.1), 50);
+            },
+            shield: () => {
+                playTone(400, 'square', 0.1, 0.1);
+                setTimeout(() => playTone(600, 'square', 0.2, 0.1), 100);
+            }
+        };
+
+        // --- 2. Game Data & State ---
+        const INGREDIENTS = {
+            empty: { id: 'empty', name: '도우(빈칸)', color: '#fcd34d', price: 0, minDay: 1 }, 
+            pepperoni: { id: 'pepperoni', name: '페퍼로니', color: '#ef4444', price: 2000, packSize: 24, minDay: 1, emoji: '🔴' },
+            mushroom: { id: 'mushroom', name: '버섯', color: '#78350f', price: 3000, packSize: 24, minDay: 2, emoji: '🍄' },
+            cheese: { id: 'cheese', name: '치즈듬뿍', color: '#fef08a', price: 3000, packSize: 24, minDay: 2, emoji: '🧀' },
+            onion: { id: 'onion', name: '양파', color: '#e2e8f0', price: 4000, packSize: 24, minDay: 3, emoji: '🧅' },
+            bacon: { id: 'bacon', name: '베이컨', color: '#be123c', price: 5000, packSize: 24, minDay: 3, emoji: '🥓' },
+            eggplant: { id: 'eggplant', name: '가지', color: '#9333ea', price: 6000, packSize: 24, minDay: 4, emoji: '🍆' },
+            cucumber: { id: 'cucumber', name: '오이', color: '#22c55e', price: 6000, packSize: 24, minDay: 4, emoji: '🥒' },
+            shrimp: { id: 'shrimp', name: '새우', color: '#fca5a5', price: 8000, packSize: 24, minDay: 5, emoji: '🍤' },
+            corn: { id: 'corn', name: '옥수수', color: '#fde047', price: 4000, packSize: 24, minDay: 5, emoji: '🌽' },
+            pineapple: { id: 'pineapple', name: '파인애플', color: '#f59e0b', price: 10000, packSize: 24, minDay: 6, emoji: '🍍' },
+            olive: { id: 'olive', name: '올리브', color: '#111827', price: 8000, packSize: 24, minDay: 6, emoji: '🫒' }
+        };
+
+        const SHIELD_PRICE = 5000;
+        const BASE_PIZZA_REWARD = 12000;
+        const DAY_DURATION_SEC = 120; // 하루 2분으로 단축
+
+        let state = {
+            money: 0,
+            day: 1,
+            shields: 0,
+            inventory: {}, // tracks stock quantities
+            
+            // In-game state
+            timeRemaining: 0,
+            timerInterval: null,
+            currentOrder: null,
+            orderReward: 0,
+            pizzas: [], // Array of { slices: int, toppings: [toppingId, ...] }
+            selectedTopping: 'pepperoni',
+            sliceSetting: 8,
+            dayEarned: 0
+        };
+
+        const ALIENS = ['👽', '👾', '🤖', '🛸', '👻', '🐙'];
+
+        // --- 3. Save/Load & Utilities ---
+        function saveData() {
+            const saveObj = {
+                money: state.money,
+                day: state.day,
+                shields: state.shields,
+                inventory: state.inventory
+            };
+            localStorage.setItem('alienPizzaSave', JSON.stringify(saveObj));
+            updateMenuUI();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('alienPizzaSave');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.money = data.money || 0;
+                    state.day = data.day || 1;
+                    state.shields = data.shields || 0;
+                    state.inventory = data.inventory || {};
+                } catch(e) { console.error("Save load error", e); }
+            }
+            // 첫날 기본 페퍼로니 재고 지급
+            if (!state.inventory['pepperoni'] && state.day === 1) {
+                state.inventory['pepperoni'] = 48; // 충분한 양
+            }
+            // 누락된 재고 데이터 초기화
+            for(let key in INGREDIENTS) {
+                if(key !== 'empty' && state.inventory[key] === undefined) {
+                    state.inventory[key] = 0;
+                }
+            }
+            updateMenuUI();
+            checkBankruptcy(); // 로드 직후 파산 체크
+        }
+
+        // 파산 방지 로직 (진행 불가 방지)
+        function checkBankruptcy() {
+            let totalStock = 0;
+            for(let key in INGREDIENTS) {
+                if(key !== 'empty') totalStock += (state.inventory[key] || 0);
+            }
+            // 돈이 없고, 피자 1판(8조각)을 만들 재고조차 없을 때
+            if (state.money < 2000 && totalStock < 8) {
+                state.money += 3000;
+                state.inventory['pepperoni'] = (state.inventory['pepperoni'] || 0) + 24;
+                saveData();
+                updateMenuUI();
+                
+                setTimeout(() => {
+                    showMessage("🚨 파산 위기! 연합 구조 기금 3,000원과 페퍼로니가 지급되었습니다.", "info");
+                }, 500);
+            }
+        }
+
+        // 초기화 기능
+        function openResetModal() {
+            sfx.click();
+            document.getElementById('modal-reset-confirm').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            sfx.click();
+            document.getElementById('modal-reset-confirm').classList.add('hidden');
+        }
+
+        function confirmReset() {
+            sfx.click();
+            localStorage.removeItem('alienPizzaSave');
+            location.reload();
+        }
+
+        function refundBoard() {
+            // 보드 위에 올라간 재료들을 인벤토리로 환불
+            state.pizzas.forEach(p => {
+                p.toppings.forEach(t => {
+                    if(t !== 'empty') state.inventory[t]++;
+                });
+            });
+            renderToppingSelector();
+            checkOutOfStockWarning(); // 환불에 따른 재고 경고 상태 갱신
+        }
+
+        function clearBoard() {
+            sfx.click();
+            refundBoard();
+            // 모든 피자의 토핑을 비움
+            state.pizzas.forEach(p => {
+                p.toppings = Array(p.slices).fill('empty');
+            });
+            renderPizzas();
+        }
+
+        // --- 4. Math Utilities ---
+        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+        
+        function getFractionHTML(num, den, formatType = 'improper') {
+            const g = gcd(num, den);
+            num /= g; den /= g;
+            
+            if (num === 0) return `0`;
+            if (den === 1) return `${num}판`; // 정수일 때
+
+            if (formatType === 'mixed' && num > den) {
+                const whole = Math.floor(num / den);
+                const remainder = num % den;
+                return `<span class="inline-flex items-center"><span class="mr-1">${whole}</span>과 <span class="fraction text-yellow-300 ml-1"><span>${remainder}</span><span>${den}</span></span></span>`;
+            }
+
+            // 기본 가분수/진분수
+            return `<span class="fraction text-yellow-300"><span>${num}</span><span>${den}</span></span>`;
+        }
+
+        // --- 5. UI Updates & Navigation ---
+        function formatMoney(amount) { return amount.toLocaleString('ko-KR'); }
+
+        function showMessage(msg, type='info') {
+            const el = document.getElementById('alert-message');
+            el.innerHTML = msg;
+            if(type === 'success') { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-green-500 text-white"; }
+            else if(type === 'error') { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-red-600 text-white"; }
+            else { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 shadow-2xl bg-blue-500 text-white"; }
+            
+            el.style.opacity = '1';
+            el.style.transform = 'translate(-50%, 0) scale(1.1)';
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translate(-50%, -20px) scale(1)';
+            }, 2000);
+        }
+
+        function updateMenuUI() {
+            document.getElementById('menu-money').textContent = formatMoney(state.money);
+            document.getElementById('menu-day').textContent = state.day;
+            document.getElementById('btn-day').textContent = state.day;
+            document.getElementById('shop-money').textContent = formatMoney(state.money);
+        }
+
+        function updateGameHUD() {
+            document.getElementById('hud-money').textContent = formatMoney(state.money);
+            document.getElementById('hud-shields').textContent = state.shields;
+            document.getElementById('hud-day').textContent = state.day;
+            
+            const m = Math.floor(state.timeRemaining / 60).toString().padStart(2, '0');
+            const s = (state.timeRemaining % 60).toString().padStart(2, '0');
+            const timeEl = document.getElementById('hud-time');
+            timeEl.textContent = `${m}:${s}`;
+            if(state.timeRemaining <= 30) timeEl.classList.add('animate-pulse', 'text-red-500');
+            else timeEl.classList.remove('animate-pulse', 'text-red-500');
+        }
+
+        // --- 6. Core Game Logic ---
+        function startGame() {
+            sfx.click();
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-shop').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            state.timeRemaining = DAY_DURATION_SEC;
+            state.dayEarned = 0;
+            state.sliceSetting = 8;
+            updateGameHUD();
+            renderToppingSelector();
+            
+            // 초기 마감 관련 버튼 세팅 리셋
+            const earlyEndBtn = document.getElementById('btn-early-end');
+            earlyEndBtn.className = "px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1";
+
+            state.timerInterval = setInterval(() => {
+                state.timeRemaining--;
+                updateGameHUD();
+                if(state.timeRemaining <= 0) {
+                    endDay();
+                }
+            }, 1000);
+
+            nextCustomer();
+        }
+
+        function endDay(isEarly = false) {
+            clearInterval(state.timerInterval);
+            sfx.success();
+            state.day++;
+            saveData();
+            
+            const titleEl = document.getElementById('modal-day-end-title');
+            const subtitleEl = document.getElementById('modal-day-end-subtitle');
+            
+            if (isEarly) {
+                titleEl.textContent = "🚨 재료 소진 마감!";
+                subtitleEl.textContent = "가진 재료가 다 떨어져 영업을 조기 마감했습니다.";
+            } else {
+                titleEl.textContent = "영업 종료!";
+                subtitleEl.textContent = "오늘 하루 수고하셨습니다.";
+            }
+
+            document.getElementById('summary-earned').textContent = formatMoney(state.dayEarned) + ' 원';
+            document.getElementById('summary-total').textContent = formatMoney(state.money) + ' 원';
+            document.getElementById('modal-day-end').classList.remove('hidden');
+        }
+
+        function closeDayEnd() {
+            sfx.click();
+            document.getElementById('modal-day-end').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            checkBankruptcy(); // 상점 가기 전 파산 여부 체크
+            showShop();
+        }
+
+        // --- 실시간 재고 부족 상태 체크 및 마감 버튼 시각 유도 ---
+        function checkOutOfStockWarning() {
+            const earlyEndBtn = document.getElementById('btn-early-end');
+            if(!earlyEndBtn) return;
+
+            // 현재 Day에 잠금 해제되어 판매할 수 있는 모든 토핑의 총 합
+            let totalAvailableStock = 0;
+            for(let key in INGREDIENTS) {
+                const item = INGREDIENTS[key];
+                if(key !== 'empty' && item.minDay <= state.day) {
+                    totalAvailableStock += (state.inventory[key] || 0);
+                }
+            }
+
+            // 피자 판 위에 이미 올라간 토핑도 총 수량에 가산
+            state.pizzas.forEach(p => {
+                p.toppings.forEach(t => {
+                    if (t !== 'empty') totalAvailableStock++;
+                });
+            });
+
+            // 쓸 수 있는 총 재료의 개수가 0개이면 버튼을 경고 스타일로 깜빡이게 유도
+            if(totalAvailableStock === 0) {
+                earlyEndBtn.className = "px-4 py-2 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1 warning-active";
+            } else {
+                earlyEndBtn.className = "px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1";
+            }
+        }
+
+        // --- 조기 마감 모달 제어 ---
+        function openEarlyEndModal() {
+            sfx.click();
+            document.getElementById('modal-early-confirm').classList.remove('hidden');
+        }
+
+        function closeEarlyEndModal() {
+            sfx.click();
+            document.getElementById('modal-early-confirm').classList.add('hidden');
+        }
+
+        function confirmEarlyEnd() {
+            sfx.click();
+            document.getElementById('modal-early-confirm').classList.add('hidden');
+            endDay(true); // 조기 마감(isEarly = true) 상태로 영업 종료 호출
+        }
+
+        // --- Order Generation Algorithm (주문 생성 설정) ---
+        const ORDER_SETTINGS = {
+            denominators: [2, 3, 4, 5, 6, 8, 10, 12], // 등장할 수 있는 분모 (다양화)
+            maxPizzas: 4 // 최대 판 수
+        };
+
+        function generateOrder() {
+            // 1. 불합리한 마이너스 방지: '현재 재고가 1조각 이상 있는' 해금 토핑 안에서만 주문하도록 수정
+            const availableToppings = Object.keys(INGREDIENTS).filter(k => 
+                k !== 'empty' && 
+                INGREDIENTS[k].minDay <= state.day && 
+                (state.inventory[k] || 0) > 0
+            );
+
+            // 만약 쓸 수 있는 재료가 아예 없다면 비상용으로 페퍼로니 추가
+            if (availableToppings.length === 0) {
+                availableToppings.push('pepperoni');
+                state.inventory['pepperoni'] = (state.inventory['pepperoni'] || 0) + 8;
+            }
+
+            let shuffledToppings = [...availableToppings].sort(() => 0.5 - Math.random());
+
+            // 주문 유형 결정 (Day에 따라 진분수, 가분수, 대분수 해금)
+            let possibleTypes = ['proper'];
+            if (state.day >= 2) possibleTypes.push('mixed', 'proper'); 
+            if (state.day >= 3) possibleTypes.push('improper', 'mixed', 'proper'); 
+
+            const orderType = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+            
+            // 타겟 피자 판수 (비율) 설정 - 1판 딱 떨어지는 것을 방지하기 위해 기본 비율 조정
+            let totalPizzasTarget = 1;
+            if (orderType !== 'proper') {
+                totalPizzasTarget = 1 + (Math.random() * 1.5) + 0.2; 
+            } else {
+                totalPizzasTarget = 0.4 + (Math.random() * 0.5); // 진분수는 0.4 ~ 0.9 사이로 유도
+            }
+
+            // 분모 선택
+            const baseDen = ORDER_SETTINGS.denominators[Math.floor(Math.random() * ORDER_SETTINGS.denominators.length)];
+            
+            // 전체 조각 수 계산
+            let totalSlices = Math.floor(totalPizzasTarget * baseDen);
+            if (totalSlices < 1) totalSlices = 1;
+            
+            // 핵심 수정: 합이 딱 1판, 2판 등 정수로 떨어지지 않게 방어
+            if (totalSlices % baseDen === 0) {
+                if (orderType === 'proper' || totalSlices === baseDen) {
+                    totalSlices = Math.max(1, totalSlices - 1); // 1판이면 1조각 빼서 진분수로
+                } else {
+                    totalSlices += 1; // 2판, 3판이면 1조각 더해서 가분수/대분수로
+                }
+            }
+            
+            // Day에 따른 최대 토핑 종류 수 제한 (1일차: 1개, 2일차: 2개, 3일차 이상: 3개)
+            let maxToppingsAllowed = 1;
+            if (state.day === 2) maxToppingsAllowed = 2;
+            if (state.day >= 3) maxToppingsAllowed = 3;
+
+            const maxToppings = Math.min(shuffledToppings.length, maxToppingsAllowed);
+            const toppingsCount = Math.floor(Math.random() * maxToppings) + 1;
+
+            let order = [];
+            let remainingSlices = totalSlices;
+
+            // 조각 분배
+            for (let i = 0; i < toppingsCount; i++) {
+                if (remainingSlices <= 0) break;
+                let slices = 0;
+                
+                if (i === toppingsCount - 1) {
+                    slices = remainingSlices; // 남은 조각 전부 할당
+                } else {
+                    let maxAlloc = remainingSlices - (toppingsCount - 1 - i);
+                    if (maxAlloc < 1) maxAlloc = 1;
+                    slices = Math.floor(Math.random() * maxAlloc) + 1;
+                }
+
+                order.push({
+                    topping: shuffledToppings[i % shuffledToppings.length],
+                    num: slices,
+                    den: baseDen
+                });
+                remainingSlices -= slices;
+            }
+
+            // 중복 토핑 병합
+            let mergedOrderMap = {};
+            order.forEach(o => {
+                if(!mergedOrderMap[o.topping]) mergedOrderMap[o.topping] = { num: 0, den: o.den };
+                mergedOrderMap[o.topping].num += o.num;
+            });
+
+            // 포맷팅 및 보상 계산
+            let finalOrder = [];
+            let rewardCalc = BASE_PIZZA_REWARD;
+
+            for (let t in mergedOrderMap) {
+                let o = mergedOrderMap[t];
+                let val = o.num / o.den;
+                finalOrder.push({ topping: t, num: o.num, den: o.den, floatVal: val });
+                
+                // 2. 비싼 재료를 사용할수록 보상을 크게 주어 자발적인 상점 이용 유도
+                const toppingBonus = INGREDIENTS[t].price * 2; // (ex. 파인애플 사용시 기본 수익 + 막대한 보너스)
+                rewardCalc += (val * toppingBonus); 
+            }
+
+            state.currentOrder = finalOrder;
+            state.orderReward = Math.floor(rewardCalc / 100) * 100; // 100단위 절사
+
+            // 텍스트 생성
+            let textParts = finalOrder.map(o => {
+                return `<span class="inline-block mx-1 font-bold" style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].name} ${getFractionHTML(o.num, o.den, orderType)}</span>`;
+            });
+            
+            const greetings = [
+                "안녕! 나는", "배고파...", "빨리 만들어줘!", "지구 피자가 맛있다며?",
+                orderType === 'mixed' ? "난 대분수가 좋아!" : (orderType === 'improper' ? "가분수 스타일로 부탁해!" : "깔끔하게 진분수로 줘!")
+            ];
+            let text = `${greetings[Math.floor(Math.random()*greetings.length)]}<br>`;
+            text += `피자의 ${textParts.join(', ')} 올려줘!`;
+            
+            document.getElementById('order-text').innerHTML = text;
+        }
+
+        function nextCustomer() {
+            const wrapper = document.getElementById('alien-wrapper');
+            wrapper.className = 'alien-container alien-enter flex flex-col items-center';
+            document.getElementById('alien-emoji').textContent = ALIENS[Math.floor(Math.random()*ALIENS.length)];
+            
+            generateOrder();
+            resetPizzas(); // 피자 판 초기화
+            checkOutOfStockWarning(); // 새 주문 시 재고 상태 재평가
+        }
+
+        // --- Pizza Board Logic ---
+        function resetPizzas() {
+            state.pizzas = [];
+            addPizza(); // 기본 1판
+        }
+
+        function addPizza() {
+            if(state.pizzas.length >= 4) {
+                showMessage("피자는 최대 4판까지만 놓을 수 있습니다.", "error");
+                sfx.fail();
+                return;
+            }
+            sfx.click();
+            state.pizzas.push({ slices: state.sliceSetting, toppings: Array(state.sliceSetting).fill('empty') });
+            renderPizzas();
+        }
+
+        function changeSlices(delta) {
+            sfx.slice();
+            let newSlices = state.sliceSetting + delta;
+            if(newSlices < 2) newSlices = 2;
+            if(newSlices > 12) newSlices = 12; // UI 복잡도 상 12등분 제한
+            
+            refundBoard(); // 등분이 바뀌면 캔버스의 모든 토핑을 재고로 반환
+
+            state.sliceSetting = newSlices;
+            document.getElementById('slice-count').textContent = state.sliceSetting;
+            
+            // 모든 피자의 등분을 변경하고 토핑 초기화
+            state.pizzas.forEach(p => {
+                p.slices = state.sliceSetting;
+                p.toppings = Array(state.sliceSetting).fill('empty');
+            });
+            renderPizzas();
+        }
+
+        function selectTopping(id) {
+            sfx.click();
+            if(id !== 'empty' && state.inventory[id] <= 0) {
+                showMessage("재료가 부족합니다! 상점에서 사오세요.", "error");
+                return;
+            }
+            state.selectedTopping = id;
+            renderToppingSelector();
+        }
+
+        function handleSliceClick(pizzaIndex, sliceIndex) {
+            const oldTopping = state.pizzas[pizzaIndex].toppings[sliceIndex];
+            const newTopping = state.selectedTopping;
+
+            // 같은 재료면 무시
+            if (oldTopping === newTopping) return;
+
+            sfx.click();
+
+            // 새 재료 배치 시 재고 확인 및 차감
+            if (newTopping !== 'empty') {
+                if (state.inventory[newTopping] <= 0) {
+                    showMessage("재료가 부족합니다!", "error");
+                    sfx.fail();
+                    return;
+                }
+                state.inventory[newTopping]--;
+            }
+
+            // 이전 토핑이 비어있지 않았다면 재고로 환불
+            if (oldTopping !== 'empty') {
+                state.inventory[oldTopping]++;
+            }
+
+            state.pizzas[pizzaIndex].toppings[sliceIndex] = newTopping;
+            renderPizzas();
+            renderToppingSelector();
+            checkOutOfStockWarning(); // 재고 상태 업데이트
+        }
+
+        // --- SVG Rendering ---
+        function createSvgPizza(pizzaIndex, pizzaData) {
+            const size = 160;
+            const center = size / 2;
+            const radius = 75;
+            const slices = pizzaData.slices;
+            const anglePerSlice = 360 / slices;
+
+            let svgContent = `<circle cx="${center}" cy="${center}" r="${radius + 4}" fill="#d97706" />`; // 빵 끄트머리 크러스트
+
+            for (let i = 0; i < slices; i++) {
+                const startAngle = (i * anglePerSlice - 90) * (Math.PI / 180);
+                const endAngle = ((i + 1) * anglePerSlice - 90) * (Math.PI / 180);
+
+                const x1 = center + radius * Math.cos(startAngle);
+                const y1 = center + radius * Math.sin(startAngle);
+                const x2 = center + radius * Math.cos(endAngle);
+                const y2 = center + radius * Math.sin(endAngle);
+
+                const largeArcFlag = anglePerSlice > 180 ? 1 : 0;
+                
+                // SVG Path
+                let pathD;
+                if(slices === 1) { // 1등분 (예외처리)
+                    pathD = `M ${center} ${center - radius} A ${radius} ${radius} 0 1 1 ${center} ${center + radius} A ${radius} ${radius} 0 1 1 ${center} ${center - radius} Z`;
+                } else {
+                    pathD = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+                }
+
+                const toppingId = pizzaData.toppings[i];
+                const color = INGREDIENTS[toppingId].color;
+
+                svgContent += `<path class="pizza-slice" d="${pathD}" fill="${color}" onclick="handleSliceClick(${pizzaIndex}, ${i})" />`;
+                
+                // 토핑 이모지/패턴 장식 추가
+                if(toppingId !== 'empty' && INGREDIENTS[toppingId].emoji) {
+                    const midAngle = (startAngle + endAngle) / 2;
+                    const tx = center + (radius * 0.65) * Math.cos(midAngle);
+                    const ty = center + (radius * 0.65) * Math.sin(midAngle);
+                    // 약간의 랜덤 오프셋
+                    const randX = (Math.random() - 0.5) * 10;
+                    const randY = (Math.random() - 0.5) * 10;
+                    svgContent += `<text x="${tx + randX}" y="${ty + randY}" font-size="${18 - (slices>8?4:0)}" text-anchor="middle" dominant-baseline="central" pointer-events="none">${INGREDIENTS[toppingId].emoji}</text>`;
+                }
+            }
+
+            return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="drop-shadow-xl transform transition-transform hover:scale-105">${svgContent}</svg>`;
+        }
+
+        function renderPizzas() {
+            const container = document.getElementById('pizzas-container');
+            container.innerHTML = state.pizzas.map((p, i) => createSvgPizza(i, p)).join('');
+        }
+
+        function renderToppingSelector() {
+            const container = document.getElementById('topping-selector');
+            container.innerHTML = '';
+            
+            for(let key in INGREDIENTS) {
+                const item = INGREDIENTS[key];
+                // 해당 Day에 열려있는 재료만 표시
+                if(item.minDay <= state.day) {
+                    const isSelected = state.selectedTopping === key;
+                    const stock = key === 'empty' ? null : state.inventory[key];
+                    const outOfStock = stock === 0;
+
+                    const btn = document.createElement('button');
+                    btn.className = `relative flex flex-col items-center p-2 rounded-xl border-2 transition-all 
+                        ${isSelected ? 'border-yellow-400 bg-gray-700 scale-110 shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'border-transparent bg-gray-800 hover:bg-gray-700'}
+                        ${outOfStock ? 'opacity-50 grayscale' : ''}`;
+                    btn.onclick = () => selectTopping(key);
+                    
+                    const stockHTML = stock !== null ? `<span class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-gray-800">${stock}</span>` : '';
+
+                    btn.innerHTML = `
+                        <div class="relative w-8 h-8 rounded-full shadow-inner flex items-center justify-center text-sm" style="background-color: ${item.color}">
+                            ${item.emoji || ''}
+                        </div>
+                        ${stockHTML}
+                        <span class="text-xs mt-1 text-gray-300">${item.name}</span>
+                    `;
+                    container.appendChild(btn);
+                }
+            }
+        }
+
+        // --- Order Validation ---
+        function submitOrder() {
+            // 계산 로직
+            let playerTotal = {};
+            
+            state.pizzas.forEach(p => {
+                p.toppings.forEach(t => {
+                    if(t !== 'empty') {
+                        if(!playerTotal[t]) playerTotal[t] = 0;
+                        playerTotal[t] += (1 / p.slices); // 피자 1판 기준의 비율
+                    }
+                });
+            });
+
+            let isCorrect = true;
+            let errorMsg = "";
+
+            // 1. 주문한 토핑이 정확히 있는지 확인
+            for(let o of state.currentOrder) {
+                const pVal = playerTotal[o.topping] || 0;
+                // 부동소수점 오차 방지 (0.01 이하 차이는 허용)
+                if(Math.abs(pVal - o.floatVal) > 0.01) {
+                    isCorrect = false;
+                    errorMsg = "비율이 맞지 않아!";
+                    break;
+                }
+            }
+
+            // 2. 주문하지 않은 불필요한 토핑이 있는지 확인
+            if(isCorrect) {
+                for(let t in playerTotal) {
+                    const ordered = state.currentOrder.find(o => o.topping === t);
+                    if(!ordered) {
+                        isCorrect = false;
+                        errorMsg = "주문 안 한 게 들어있어!";
+                        break;
+                    }
+                }
+            }
+
+            const wrapper = document.getElementById('alien-wrapper');
+
+            if(isCorrect) {
+                sfx.success();
+                sfx.coin();
+                
+                // 보상 처리
+                state.money += state.orderReward;
+                state.dayEarned += state.orderReward;
+                showMessage(`+ ${formatMoney(state.orderReward)}원! 완벽해!`, 'success');
+                updateGameHUD();
+
+                // 애니메이션
+                wrapper.className = 'alien-container alien-exit-success flex flex-col items-center';
+                
+            } else {
+                sfx.fail();
+                
+                // 패널티 방어권 체크
+                if(state.shields > 0) {
+                    sfx.shield();
+                    state.shields--;
+                    showMessage(`방어권 사용! 패널티 면제! (${errorMsg})`, 'info');
+                } else {
+                    state.money -= state.orderReward;
+                    // 마이너스 통장 허용 (파산 빚쟁이 컨셉)
+                    showMessage(`- ${formatMoney(state.orderReward)}원... ${errorMsg}`, 'error');
+                }
+                updateGameHUD();
+
+                // 애니메이션
+                wrapper.className = 'alien-container alien-exit-fail flex flex-col items-center';
+            }
+
+            // 1초 뒤 다음 손님
+            setTimeout(() => {
+                if(state.timeRemaining > 0) nextCustomer();
+            }, 600);
+        }
+
+        // --- 7. Shop System ---
+        function showShop() {
+            sfx.click();
+            updateMenuUI(); // sync
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-shop').classList.remove('hidden');
+            document.getElementById('screen-shop').classList.add('flex');
+            
+            renderShop();
+        }
+
+        function hideShop() {
+            sfx.click();
+            document.getElementById('screen-shop').classList.add('hidden');
+            document.getElementById('screen-shop').classList.remove('flex');
+            document.getElementById('screen-menu').classList.remove('hidden');
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-items');
+            container.innerHTML = '';
+
+            // 방어권 상품
+            const shieldCard = document.createElement('div');
+            shieldCard.className = 'bg-gray-800 p-6 rounded-2xl border border-gray-600 flex justify-between items-center';
+            shieldCard.innerHTML = `
+                <div>
+                    <h3 class="text-2xl text-blue-400 font-bold mb-2">🛡️ 클레임 방어권</h3>
+                    <p class="text-gray-400">틀렸을 때 마이너스를 1회 막아줍니다.<br>(현재 보유: ${state.shields}개)</p>
+                </div>
+                <button onclick="buyItem('shield')" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 rounded-xl font-bold transition-colors">
+                    ${formatMoney(SHIELD_PRICE)} ₩
+                </button>
+            `;
+            container.appendChild(shieldCard);
+
+            // 재료 상품들 (Day에 따라 해금된 항목만 보임)
+            for(let key in INGREDIENTS) {
+                const item = INGREDIENTS[key];
+                if(item.price > 0 && item.minDay <= state.day) {
+                    const currentStock = state.inventory[key] || 0;
+                    const card = document.createElement('div');
+                    card.className = `bg-gray-800 p-6 rounded-2xl border border-purple-500 flex justify-between items-center`;
+                    
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl bg-gray-700" style="color:${item.color}">${item.emoji}</div>
+                            <div>
+                                <h3 class="text-2xl font-bold mb-1" style="color:${item.color}">${item.name}</h3>
+                                <p class="text-gray-400 text-sm">현재 보유량: <span class="text-white font-bold">${currentStock}</span> 조각</p>
+                            </div>
+                        </div>
+                        <button onclick="buyItem('${key}')" class="px-4 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition-colors text-center leading-tight">
+                            ${item.packSize}조각 충전<br><span class="text-sm font-normal text-yellow-300">${formatMoney(item.price)} ₩</span>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                }
+            }
+        }
+
+        function buyItem(id) {
+            sfx.click();
+            let price = id === 'shield' ? SHIELD_PRICE : INGREDIENTS[id].price;
+            
+            if(state.money >= price) {
+                state.money -= price;
+                sfx.coin();
+                
+                if(id === 'shield') {
+                    state.shields++;
+                    showMessage(`방어권 1개 구매 완료! (총 ${state.shields}개)`, 'success');
+                } else {
+                    state.inventory[id] += INGREDIENTS[id].packSize;
+                    showMessage(`${INGREDIENTS[id].name} ${INGREDIENTS[id].packSize}조각 구매 완료!`, 'success');
+                }
+                
+                saveData();
+                renderShop(); // 리렌더링
+                renderToppingSelector(); // 게임화면 반영
+                document.getElementById('shop-money').textContent = formatMoney(state.money);
+            } else {
+                sfx.fail();
+                showMessage("돈이 부족합니다!", "error");
+            }
+        }
+
+        // Initialize
+        loadData();
+
+    </script>
+</body>
+</html>

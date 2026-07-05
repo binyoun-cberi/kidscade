@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>한국사 기억력 게임 (5x5 태극기 에디션)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #e2e8f0; /* 배경을 좀 더 차분하게 */
+            touch-action: manipulation;
+            overflow: hidden; 
+        }
+
+        /* 3D Card Flip CSS */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-inner { transition: transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+
+        /* Board Sizing - 정사각형 제한 해제, 꽉 채우기 */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            width: 100%;
+            height: 100%;
+            gap: clamp(4px, 1.5vmin, 12px);
+        }
+
+        /* Card Text Dynamic Scaling - 텍스트 넘침 방지 및 조절 */
+        .card-content-term { 
+            font-size: clamp(0.9rem, 3.5vmin, 2.2rem); 
+            line-height: 1.2; 
+            word-break: keep-all; 
+        }
+        .card-content-desc { 
+            font-size: clamp(0.7rem, 2.2vmin, 1.1rem); 
+            line-height: 1.35; 
+            word-break: keep-all; 
+        }
+        
+        /* 스크롤은 가능하되 스크롤바는 숨김 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-screen w-screen text-gray-800 flex items-center justify-center p-2 sm:p-4">
+
+    <!-- App Container -->
+    <div id="app" class="w-full max-w-[1200px] bg-white rounded-3xl shadow-2xl overflow-hidden relative h-full flex flex-col border border-slate-200">
+        
+        <!-- Main Menu Screen -->
+        <div id="menu-screen" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 p-4 sm:p-6 overflow-y-auto">
+            <h1 class="text-4xl sm:text-6xl font-black text-indigo-900 mb-2 text-center tracking-tight">역사 짝맞추기 <span class="text-orange-500">마스터</span></h1>
+            <p class="text-slate-600 mb-8 text-center font-bold text-lg">5x5 보드! 100초 안에 최대한 많이 맞추세요!</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-6">
+                <button onclick="startGame('figures')" class="flex flex-col items-center p-6 bg-blue-100 hover:bg-blue-200 rounded-2xl transition shadow-sm border-2 border-blue-200 transform hover:-translate-y-1">
+                    <span class="text-5xl mb-3">👤</span>
+                    <span class="text-xl sm:text-2xl font-bold text-blue-900">인물 모드 (75명)</span>
+                </button>
+                <button onclick="startGame('events')" class="flex flex-col items-center p-6 bg-red-100 hover:bg-red-200 rounded-2xl transition shadow-sm border-2 border-red-200 transform hover:-translate-y-1">
+                    <span class="text-5xl mb-3">⚔️</span>
+                    <span class="text-xl sm:text-2xl font-bold text-red-900">사건 모드 (75건)</span>
+                </button>
+            </div>
+
+            <button onclick="openEncyclopedia()" class="mb-8 w-full max-w-2xl flex items-center justify-center gap-3 p-4 bg-emerald-100 hover:bg-emerald-200 rounded-2xl transition shadow-sm border-2 border-emerald-200">
+                <span class="text-3xl">📖</span>
+                <span class="text-xl font-bold text-emerald-900">역사도감 (수집 현황 확인)</span>
+            </button>
+
+            <!-- High Scores -->
+            <div class="bg-white p-6 rounded-xl shadow-inner w-full max-w-2xl border border-slate-200 flex flex-col sm:flex-row gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 text-center">
+                <div class="flex-1 pt-2 sm:pt-0 flex flex-col items-center justify-center">
+                    <h3 class="font-bold text-slate-500 mb-2">인물 최고 기록</h3>
+                    <div class="text-3xl font-black text-indigo-600 mb-1" id="hs-figures">0점</div>
+                    <div class="text-base font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-md" id="rank-figures">구석기</div>
+                </div>
+                <div class="flex-1 pt-6 sm:pt-0 flex flex-col items-center justify-center">
+                    <h3 class="font-bold text-slate-500 mb-2">사건 최고 기록</h3>
+                    <div class="text-3xl font-black text-indigo-600 mb-1" id="hs-events">0점</div>
+                    <div class="text-base font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-md" id="rank-events">구석기</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Encyclopedia Screen -->
+        <div id="encyclopedia-screen" class="hidden absolute inset-0 z-30 bg-slate-50 flex-col h-full w-full">
+            <header class="bg-emerald-900 text-white p-4 flex justify-between items-center shadow-md">
+                <h2 class="text-2xl font-bold flex items-center gap-2">📖 역사도감 <span class="text-base font-normal bg-emerald-700 px-3 py-1 rounded-lg" id="dex-progress">0/0</span></h2>
+                <button onclick="closeEncyclopedia()" class="bg-emerald-700 hover:bg-emerald-600 px-5 py-2 rounded-lg font-bold transition">돌아가기</button>
+            </header>
+            
+            <div class="flex gap-2 p-4 bg-white border-b shrink-0">
+                <button onclick="renderEncyclopedia('figures')" id="tab-figures" class="flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 transition">👤 인물</button>
+                <button onclick="renderEncyclopedia('events')" id="tab-events" class="flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition">⚔️ 사건</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
+                <div id="dex-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-10">
+                    <!-- Dex items will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden flex-col h-full w-full absolute inset-0 bg-slate-100">
+            <!-- Header -->
+            <header class="bg-indigo-900 text-white p-3 sm:p-4 flex justify-between items-center shadow-md z-10 shrink-0 h-[60px] sm:h-[70px]">
+                <div class="flex items-center gap-2">
+                    <div id="timer-container" class="bg-slate-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xl sm:text-2xl flex items-center gap-2 transition-colors">
+                        <span>⏳</span> <span id="timer" class="w-12 sm:w-16 text-center">준비</span>
+                    </div>
+                </div>
+                <div class="text-lg sm:text-2xl font-bold" id="current-mode-display">모드</div>
+                <div class="bg-indigo-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xl sm:text-2xl flex items-center gap-2">
+                    <span>⭐</span> <span id="score" class="w-8 sm:w-10 text-center">0</span>
+                </div>
+            </header>
+
+            <!-- Board -->
+            <main class="flex-1 p-2 sm:p-4 flex items-center justify-center relative w-full h-[calc(100%-70px)]">
+                <!-- 보드 크기를 최대화 -->
+                <div id="game-board" class="perspective-1000">
+                    <!-- Cards will be injected here -->
+                </div>
+            </main>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="result-screen" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 p-6 backdrop-blur-sm">
+            <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
+                <h2 class="text-4xl font-black text-slate-800 mb-2">시간 종료!</h2>
+                <p class="text-slate-600 mb-4 text-lg">최종 점수</p>
+                <div class="text-8xl font-black text-indigo-600 mb-4" id="final-score">0</div>
+                <div class="text-2xl font-bold text-orange-500 mb-8 bg-orange-50 inline-block px-6 py-3 rounded-xl border border-orange-200" id="final-rank">랭크</div>
+                
+                <div id="new-record" class="hidden text-red-500 font-bold mb-6 animate-bounce text-xl">🎉 최고 기록 경신! 🎉</div>
+                
+                <button onclick="returnToMenu()" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xl transition shadow-lg">
+                    메인 메뉴로 돌아가기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 75 Figures & 75 Events DATA ---
+        const historyData = {
+            figures: [
+                { term: "환웅", desc: "홍익인간의 뜻을 품고 하늘에서 내려온 단군신화의 인물" },
+                { term: "웅녀", desc: "쑥과 마늘을 먹으며 견뎌 사람이 된 후 단군을 낳은 인물" },
+                { term: "단군왕검", desc: "고조선을 건국하고 홍익인간 이념을 널리 편 민족의 시조" },
+                { term: "주몽", desc: "활을 잘 쏘는 인물로 졸본에 고구려를 건국한 동명성왕" },
+                { term: "온조", desc: "하남 위례성에 백제를 건국한 백제의 시조" },
+                { term: "박혁거세", desc: "알에서 태어났다고 전해지며 사로국(신라)을 세운 시조" },
+                { term: "광개토대왕", desc: "영토를 크게 넓히고 신라에 침입한 왜구를 격퇴한 고구려의 왕" },
+                { term: "장수왕", desc: "평양으로 도읍을 옮기고 남진 정책을 적극 추진한 고구려의 왕" },
+                { term: "을지문덕", desc: "살수에서 수나라의 30만 대군을 수공으로 물리친 고구려의 명장" },
+                { term: "연개소문", desc: "당나라의 침입을 물리치고 막강한 권력을 행사한 고구려의 대막리지" },
+                { term: "계백", desc: "황산벌에서 5천 결사대를 이끌고 신라군에 최후까지 맞서 싸운 백제 장군" },
+                { term: "김유신", desc: "신라의 삼국통일에 큰 공을 세운 화랑 출신의 명장" },
+                { term: "원효", desc: "대중 불교를 이끌고 '나무아미타불'만 외우면 극락에 간다고 가르친 승려" },
+                { term: "대조영", desc: "고구려 유민을 이끌고 동모산에 발해를 건국한 인물" },
+                { term: "장보고", desc: "청해진을 설치하여 동아시아 해상 무역을 장악한 해상왕" },
+                { term: "견훤", desc: "완산주를 도읍으로 하여 후백제를 세운 인물" },
+                { term: "궁예", desc: "후고구려를 세웠으나 폭정으로 왕건에게 쫓겨난 인물" },
+                { term: "왕건", desc: "고려를 건국하고 후삼국을 통일한 태조" },
+                { term: "서희", desc: "거란의 1차 침입 때 외교 담판으로 강동 6주를 획득한 고려 문신" },
+                { term: "강감찬", desc: "거란의 10만 대군을 귀주에서 전멸에 가깝게 물리친 고려 명장" },
+                { term: "최무선", desc: "화통도감을 설치하고 화약을 개발하여 왜구를 물리친 고려 말의 무신" },
+                { term: "정몽주", desc: "단심가를 남기며 끝까지 고려를 지키려다 선죽교에서 죽은 충신" },
+                { term: "이성계", desc: "위화도 회군을 통해 조선을 건국한 태조" },
+                { term: "세종대왕", desc: "훈민정음을 창제하고 과학 기술을 획기적으로 발전시킨 조선 제4대 왕" },
+                { term: "장영실", desc: "자격루, 앙부일구 등 과학 기구를 제작한 조선 전기의 천재 과학자" },
+                { term: "신사임당", desc: "율곡 이이의 어머니이자 시와 그림에 능했던 조선 중기의 예술가" },
+                { term: "이황", desc: "도산서원을 세워 후학을 양성하고 주자학을 집대성한 퇴계" },
+                { term: "이순신", desc: "임진왜란 중 거북선을 이끌고 일본 수군을 연파하여 나라를 구한 성웅" },
+                { term: "광해군", desc: "임진왜란 후 복구에 힘쓰고 명과 후금 사이에서 중립 외교를 펼친 왕" },
+                { term: "정조", desc: "규장각 설치와 화성 축조 등을 통해 탕평책을 펼친 조선 후기 개혁 군주" },
+                { term: "정약용", desc: "조선 후기 실학을 집대성하고 거중기를 고안한 다산" },
+                { term: "흥선대원군", desc: "척화비를 세우고 경복궁을 중건하며 강력한 왕권 강화를 추진한 인물" },
+                { term: "전봉준", desc: "탐관오리에 맞서 동학 농민 운동을 이끈 녹두장군" },
+                { term: "안중근", desc: "하얼빈역에서 이토 히로부미를 사살하여 독립 의지를 알린 독립운동가" },
+                { term: "김구", desc: "대한민국 임시정부의 주석으로 평생을 조국 독립에 바친 인물" },
+                { term: "유관순", desc: "천안 아우내 장터에서 3.1 운동을 주도하다 순국한 독립운동가" },
+                { term: "윤봉길", desc: "상하이 훙커우 공원에서 폭탄을 던져 일제 수뇌부를 처단한 독립운동가" },
+                { term: "주시경", desc: "우리말을 체계적으로 연구하고 '한글'이라는 이름을 지은 국어학자" },
+                { term: "진흥왕", desc: "화랑도를 국가 조직으로 개편하고 한강 유역을 차지한 신라의 전성기 왕" },
+                { term: "최치원", desc: "당나라 빈공과에 합격하고 귀국해 시무 10여 조를 올린 통일신라 천재 학자" },
+                { term: "김부식", desc: "고려 인종 때 왕명으로 현존 최고(最古)의 역사서인 삼국사기를 편찬한 문신" },
+                { term: "일연", desc: "고려 충렬왕 때 단군신화가 수록된 역사서 삼국유사를 지은 승려" },
+                { term: "지눌", desc: "수선사 결사를 제창하고 정혜쌍수와 돈오점수를 주장한 고려 승려" },
+                { term: "정중부", desc: "보현원 사건을 계기로 무신정변을 일으켜 문신들을 몰아내고 정권을 잡은 무신" },
+                { term: "최충헌", desc: "교정도감을 설치하여 국정을 총괄하며 강력한 무신 정권을 확립한 인물" },
+                { term: "정도전", desc: "이성계를 도와 조선을 건국하고 한양 도성과 경복궁을 설계한 개국 공신" },
+                { term: "조광조", desc: "중종 때 현량과 실시 등 급진적인 개혁을 추진하다 기묘사화로 죽은 인물" },
+                { term: "박지원", desc: "열하일기를 지어 청의 선진 문물 수용과 수레의 사용을 주장한 실학자" },
+                { term: "김홍도", desc: "서당, 씨름 등 조선 후기 서민들의 생활상을 생동감 있게 그린 풍속화가" },
+                { term: "신윤복", desc: "단오풍정 등 남녀의 사랑과 양반들의 풍류를 섬세하게 그린 풍속화가" },
+                { term: "문무왕", desc: "나당 전쟁을 승리로 이끌고 죽어서도 동해의 용이 되어 나라를 지키겠다 한 신라 왕" },
+                { term: "최승로", desc: "성종에게 시무 28조를 올려 불교의 폐단을 지적하고 유교 정치 이념을 확립한 고려 문신" },
+                { term: "강조", desc: "고려 목종을 폐위하고 현종을 세웠으며, 거란의 2차 침입 때 맞서 싸운 무신" },
+                { term: "윤관", desc: "별무반을 이끌고 여진족을 정벌하여 동북 9성을 개척한 고려 문신" },
+                { term: "이규보", desc: "무신정권기 문인으로 고구려 동명왕의 업적을 기린 영웅 서사시 '동명왕편'을 지은 학자" },
+                { term: "김종서", desc: "세종 때 북방을 개척하여 두만강 유역에 6진을 설치하고 국경선을 확정한 무신" },
+                { term: "성삼문", desc: "세조의 왕위 찬탈에 반대하며 단종의 복위를 꾀하다 발각되어 죽음을 당한 사육신" },
+                { term: "박제가", desc: "북학의를 지어 청의 문물 수용과 소비의 중요성을 강조한 조선 후기의 실학자" },
+                { term: "홍대용", desc: "지전설과 무한 우주론을 주장하여 전통적 우주관을 비판하고 과학 사상을 전개한 실학자" },
+                { term: "최제우", desc: "서학(천주교)에 맞서 사람이 곧 하늘이라는 인내천 사상을 바탕으로 동학을 창시한 사상가" },
+                // 신규 15명 추가 (총 75명)
+                { term: "이자겸", desc: "고려 인종 때 스스로 왕이 되려 난을 일으켰으나 척준경에게 제거된 외척" },
+                { term: "최영", desc: "요동 정벌을 주장하고 홍건적과 왜구를 물리친 고려 말의 명장" },
+                { term: "이색", desc: "성리학을 고려에 도입하고 정몽주, 정도전 등을 길러낸 고려 말의 학자" },
+                { term: "정약전", desc: "유배지 흑산도에서 해양 생물 백과사전인 '자산어보'를 저술한 학자" },
+                { term: "김정희", desc: "청의 고증학을 연구하고 추사체를 창안하며 '세한도'를 그린 학자이자 예술가" },
+                { term: "김대건", desc: "조선인 최초의 가톨릭 신부로 포교 활동을 하다 새남터에서 순교한 인물" },
+                { term: "최익현", desc: "위정척사 사상을 바탕으로 항일 의병 운동을 전개하다 대마도에서 순국한 학자" },
+                { term: "신채호", desc: "'조선상고사'를 지어 민족 사관을 확립하고 의열단 선언을 집필한 독립운동가" },
+                { term: "박은식", desc: "'한국통사'를 지어 일제의 침략 과정을 폭로하고 민족혼을 강조한 역사가" },
+                { term: "이회영", desc: "전 재산을 바쳐 만주에 신흥 무관 학교를 세우고 독립군을 양성한 운동가" },
+                { term: "김원봉", desc: "일제 요인 암살 등을 목적으로 의열단을 조직하고 조선 의용대를 창설한 인물" },
+                { term: "이육사", desc: "'광야', '청포도' 등의 시를 통해 강렬한 독립의 의지를 노래한 저항 시인" },
+                { term: "윤동주", desc: "'서시', '별 헤는 밤' 등을 통해 식민지 지식인의 고뇌를 승화시킨 시인" },
+                { term: "한용운", desc: "'님의 침묵'을 지어 민족의 독립 의지를 일깨우고 3.1 운동의 민족 대표로 참여한 승려" },
+                { term: "안창호", desc: "신민회를 조직하고 대성 학교를 설립하며 평생을 독립 운동에 헌신한 도산" }
+            ],
+            events: [
+                { term: "고조선 건국", desc: "단군왕검이 아사달에 도읍을 정하고 세운 우리 민족 최초의 국가" },
+                { term: "살수대첩", desc: "을지문덕이 살수에서 수나라 대군을 수공으로 크게 물리친 전투" },
+                { term: "안시성 전투", desc: "고구려가 당나라 태종의 대군을 안시성에서 물리쳐 나라를 지킨 방어전" },
+                { term: "황산벌 전투", desc: "백제의 계백과 신라의 김유신이 맞붙은 전투로 백제가 패배함" },
+                { term: "기벌포 전투", desc: "신라가 당나라 수군을 물리치고 삼국 통일을 완성한 나당 전쟁의 전투" },
+                { term: "발해 건국", desc: "대조영이 고구려 유민을 이끌고 건국하여 훗날 '해동성국'이라 불림" },
+                { term: "고려 건국", desc: "왕건이 궁예를 몰아내고 송악을 도읍으로 세워 후삼국 통일의 기틀을 마련함" },
+                { term: "귀주대첩", desc: "강감찬 장군이 거란의 10만 대군을 귀주에서 전멸에 가깝게 물리친 전투" },
+                { term: "별무반 창설", desc: "윤관이 여진족을 토벌하기 위해 신기군, 신보군, 항마군으로 조직한 특수 부대" },
+                { term: "묘청의 서경 천도", desc: "풍수지리설을 내세워 고려의 도읍을 평양(서경)으로 옮기려 한 사건" },
+                { term: "무신정변", desc: "정중부 등 무신들이 차별에 반발하여 문신들을 몰아내고 정권을 장악한 사건" },
+                { term: "삼별초의 항쟁", desc: "몽골의 침입에 항복하지 않고 진도와 제주도로 이동하며 끝까지 항전함" },
+                { term: "위화도 회군", desc: "요동 정벌을 떠났던 이성계가 압록강에서 군대를 돌려 정권을 장악한 사건" },
+                { term: "조선 건국", desc: "이성계와 신진 사대부가 중심이 되어 한양을 도읍으로 세운 새 왕조" },
+                { term: "훈민정음 창제", desc: "세종대왕이 백성들이 쉽게 글을 읽고 쓸 수 있도록 독창적인 문자를 만듦" },
+                { term: "임진왜란", desc: "1592년 일본이 침략하여 7년간 벌어진 전쟁. 이순신과 의병들의 활약으로 승리" },
+                { term: "한산도 대첩", desc: "이순신이 학익진 전법으로 일본 수군을 크게 무찌른 임진왜란 3대 대첩 중 하나" },
+                { term: "병자호란", desc: "1636년 청나라가 침략하여 인조가 남한산성에서 항전하다 결국 삼전도에서 항복함" },
+                { term: "대동법 실시", desc: "광해군 때 특산물 대신 쌀이나 베 등으로 세금을 내게 하여 백성의 부담을 줄임" },
+                { term: "신미양요", desc: "제너럴 셔먼호 사건을 구실로 미국 군함이 강화도를 침략하여 벌어진 전투" },
+                { term: "척화비 건립", desc: "흥선대원군이 서양 세력과 교류하지 않겠다는 굳은 의지를 담아 전국에 세움" },
+                { term: "강화도 조약", desc: "운요호 사건을 계기로 조선이 일본의 강압에 의해 맺은 불평등 근대 조약" },
+                { term: "갑신정변", desc: "김옥균 등 급진 개화파가 3일 만에 실패로 끝난 근대화 개혁 운동" },
+                { term: "동학 농민 운동", desc: "반봉건 반외세를 외치며 전봉준을 중심으로 일어난 농민들의 대규모 무장 봉기" },
+                { term: "갑오개혁", desc: "신분제(노비제)를 폐지하고 근대적인 국가 체제를 갖추려 한 개혁 운동" },
+                { term: "을미사변", desc: "일제가 경복궁에 난입하여 조선의 국모인 명성황후를 시해한 야만적인 사건" },
+                { term: "아관파천", desc: "고종이 일제의 위협을 피해 러시아 공사관으로 약 1년간 거처를 옮긴 사건" },
+                { term: "독립협회 창립", desc: "서재필 등이 독립문을 세우고 만민 공동회를 열어 민권 및 자주 운동을 전개함" },
+                { term: "대한제국 선포", desc: "고종이 원구단에서 황제로 즉위하고 자주독립 국가임을 세계에 선언함" },
+                { term: "을사늑약", desc: "1905년 일제가 무력을 동원해 강제로 대한제국의 외교권을 빼앗은 조약" },
+                { term: "국채보상운동", desc: "일본에 진 빚을 갚아 국권을 회복하고자 대구에서 시작된 전국적인 모금 운동" },
+                { term: "헤이그 특사", desc: "을사늑약의 불법성을 알리기 위해 만국 평화 회의에 이준, 이상설, 이위종을 파견함" },
+                { term: "3.1 운동", desc: "1919년 일제의 식민 통치에 항거하여 전 민족이 일어난 평화적 독립 만세 운동" },
+                { term: "대한민국 임시정부", desc: "3.1 운동의 정신을 계승하여 상하이에 세워진 우리나라 최초의 민주 공화제 정부" },
+                { term: "봉오동 전투", desc: "홍범도 장군이 이끄는 독립군 연합 부대가 봉오동에서 일본군을 대파한 승리" },
+                { term: "청산리 대첩", desc: "김좌진 장군의 독립군 등이 청산리 일대에서 6일간 일본군을 크게 무찌른 최대 승전" },
+                { term: "8.15 광복", desc: "1945년 일본의 무조건 항복으로 일제의 식민 지배에서 벗어나 주권을 되찾은 날" },
+                { term: "6.25 전쟁", desc: "1950년 북한의 기습 남침으로 시작되어 한반도 전체에 큰 상처를 남긴 비극" },
+                { term: "4.19 혁명", desc: "1960년 이승만 정부의 부정 선거와 독재에 항거하여 일어난 학생과 시민의 혁명" },
+                { term: "5.18 민주화운동", desc: "1980년 신군부 세력의 집권에 맞서 광주 시민들이 민주주의를 요구하며 일어난 항쟁" },
+                { term: "6월 민주 항쟁", desc: "1987년 박종철 고문 치사 사건을 계기로 일어나 대통령 직선제 개헌을 이끌어냄" },
+                { term: "백제 건국", desc: "고구려 출신 온조가 남하하여 하남 위례성을 도읍으로 정하고 세운 나라" },
+                { term: "신라 건국", desc: "박혁거세가 경주 지역의 6촌을 통합하여 사로국이라는 이름으로 세운 나라" },
+                { term: "우산국 복속", desc: "지증왕 때 이사부가 우산국(울릉도와 독도)을 신라의 영토로 편입시킨 사건" },
+                { term: "대가야 정복", desc: "진흥왕이 가야 연맹의 마지막 국가인 대가야를 멸망시키고 영토를 크게 넓힘" },
+                { term: "팔만대장경 조판", desc: "고려 몽골 침입 때 부처의 힘으로 외적을 물리치고자 강화도에서 만든 목판" },
+                { term: "홍경래의 난", desc: "순조 때 평안도 지역에 대한 차별과 탐관오리의 착취에 반발하여 일어난 농민 봉기" },
+                { term: "임술 농민 봉기", desc: "철종 때 진주에서 시작되어 삼정의 문란에 항거하며 전국으로 확산된 농민 운동" },
+                { term: "제너럴 셔먼호 사건", desc: "평양 군민들이 통상을 요구하며 행패를 부리던 미국 상선을 대동강에서 불태운 사건" },
+                { term: "운요호 사건", desc: "일본 군함이 강화도에 불법 접근하여 포격을 가하고 무력 시위를 벌인 사건" },
+                { term: "나제 동맹", desc: "고구려 장수왕의 남진 정책에 위협을 느낀 신라와 백제가 맺은 군사 동맹" },
+                { term: "백제 멸망", desc: "660년 나당 연합군의 공격으로 계백의 결사대가 패배하고 사비성이 함락된 사건" },
+                { term: "고구려 멸망", desc: "668년 계속된 전쟁과 연개소문 사후의 내부 분열로 평양성이 나당 연합군에 함락된 사건" },
+                { term: "기인·사심관 제도", desc: "고려 태조 왕건이 지방 호족들을 견제하고 회유하기 위해 실시한 지방 통제 정책" },
+                { term: "최씨 무신정권", desc: "최충헌부터 최의까지 4대에 걸쳐 60여 년간 이어진 강력한 무신 독재 체제" },
+                { term: "계유정난", desc: "수양대군(세조)이 김종서 등을 제거하고 권력을 장악하여 단종을 몰아낸 정치적 사건" },
+                { term: "임오군란", desc: "1882년 신식 군대인 별기군에 비해 차별 대우를 받은 구식 군인들이 일으킨 반란" },
+                { term: "독립신문 창간", desc: "서재필이 귀국하여 백성들을 계몽하기 위해 순한글과 영문으로 발행한 최초의 민간 신문" },
+                { term: "관민공동회", desc: "독립협회가 주최하여 정부 관료와 시민이 함께 모여 국정 개혁안인 헌의 6조를 채택한 집회" },
+                { term: "자유시 참변", desc: "1921년 러시아 자유시로 이동한 독립군이 적색군의 무장 해제 요구에 맞서다 희생된 비극적 사건" },
+                // 신규 15개 추가 (총 75개)
+                { term: "백제 부흥 운동", desc: "백제 멸망 후 흑치상지, 복신 등이 주류성과 임존성을 거점으로 벌인 나라 되찾기 운동" },
+                { term: "고구려 부흥 운동", desc: "고구려 멸망 후 검모잠, 안승 등이 한성 일대에서 나라를 되찾기 위해 벌인 운동" },
+                { term: "노비안검법", desc: "고려 광종 때 억울하게 노비가 된 자들을 양인으로 해방시켜 호족을 견제한 정책" },
+                { term: "과거제 실시", desc: "고려 광종 때 후주 출신 쌍기의 건의를 받아들여 유학적 소양을 갖춘 관리를 선발한 제도" },
+                { term: "최승로 시무 28조", desc: "고려 성종 때 최승로가 올려 유교 중심의 국가 통치 체제를 확립하는 데 기여한 건의문" },
+                { term: "진주 대첩", desc: "임진왜란 중 김시민 장군이 진주성에서 일본군을 크게 무찌른 전투" },
+                { term: "행주 대첩", desc: "임진왜란 중 권율 장군이 행주산성에서 관군과 백성이 합심해 일본군을 무찌른 전투" },
+                { term: "병인양요", desc: "1866년 프랑스 함대가 천주교 박해를 구실로 강화도에 침입하여 문화재를 약탈한 사건" },
+                { term: "오페르트 도굴 사건", desc: "1868년 독일 상인 오페르트가 흥선대원군의 아버지 남연군의 묘를 도굴하려다 실패한 사건" },
+                { term: "독립협회 해산", desc: "고종과 보수파가 황국 협회를 동원하여 만민 공동회를 탄압하고 독립협회를 없앤 사건" },
+                { term: "간도 참변", desc: "1920년 전투에서 패배한 일제가 만주 간도 지역의 한인들을 무차별 학살한 사건" },
+                { term: "신간회 창립", desc: "1927년 비타협적 민족주의 세력과 사회주의 세력이 힘을 합쳐 만든 항일 민족 단체" },
+                { term: "조선어 학회 사건", desc: "1942년 일제가 우리말을 연구하고 사전을 편찬하려던 학자들을 치안 유지법 위반으로 구속한 사건" },
+                { term: "제주 4.3 사건", desc: "1948년 제주도에서 무력 충돌과 토벌 과정에서 수많은 무고한 도민들이 희생된 비극" },
+                { term: "새마을 운동", desc: "1970년대 근면, 자조, 협동 정신을 바탕으로 농촌 환경 개선과 소득 증대를 목표로 추진된 운동" }
+            ]
+        };
+
+        // --- RANK SYSTEM ---
+        function getRank(score) {
+            if(score < 6) return "구석기";
+            if(score < 12) return "신석기";
+            if(score < 18) return "고조선";
+            if(score < 24) return "삼국시대";
+            if(score < 30) return "남북국시대";
+            if(score < 36) return "고려시대";
+            if(score < 42) return "조선시대";
+            if(score < 50) return "대한제국";
+            if(score < 60) return "대한민국";
+            return "역사왕 👑";
+        }
+
+        // --- STATE & CONFIG ---
+        let currentMode = '';
+        let score = 0;
+        let timeRemaining = 100;
+        let timerInterval = null;
+        let previewInterval = null; // 5초 카운트다운용 인터벌 추가
+        let availablePool = [];
+        let flippedCards = [];
+        let isLocked = false;
+        let matchedPairsCount = 0;
+        let pairsPerBoard = 12; // 5x5 grid = 25 tiles. 1 center tile + 24 cards (12 pairs)
+        
+        let unlockedDex = JSON.parse(localStorage.getItem('historyMatchDex') || '[]');
+
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let bgmOscillator;
+        let bgmGain;
+        let isBgmPlaying = false;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'match') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'mismatch') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'over') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 1);
+                osc.start(now);
+                osc.stop(now + 1);
+            } else if (type === 'beep') { 
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'countdown') { // 카운트다운용 크고 명확한 비프음
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, now); 
+                gain.gain.setValueAtTime(0.4, now); // 더 크게
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+
+        function startBGM() {
+            initAudio();
+            if (isBgmPlaying) return;
+            bgmOscillator = audioCtx.createOscillator();
+            bgmGain = audioCtx.createGain();
+            bgmOscillator.type = 'triangle';
+            bgmOscillator.frequency.value = 220; 
+            bgmGain.gain.value = 0.04; 
+            bgmOscillator.connect(bgmGain);
+            bgmGain.connect(audioCtx.destination);
+            
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 2; 
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 0.02;
+            lfo.connect(lfoGain);
+            lfoGain.connect(bgmGain.gain);
+            
+            bgmOscillator.start();
+            lfo.start();
+            isBgmPlaying = true;
+            bgmOscillator.lfo = lfo; 
+        }
+
+        function stopBGM() {
+            if (isBgmPlaying && bgmOscillator) {
+                bgmOscillator.stop();
+                if(bgmOscillator.lfo) bgmOscillator.lfo.stop();
+                bgmOscillator.disconnect();
+                isBgmPlaying = false;
+            }
+        }
+
+        // --- HIGH SCORES & DEX ---
+        function loadHighScores() {
+            const hs = JSON.parse(localStorage.getItem('historyMatchHS') || '{"figures":0, "events":0}');
+            document.getElementById('hs-figures').innerText = hs.figures + '점';
+            document.getElementById('rank-figures').innerText = getRank(hs.figures);
+            
+            document.getElementById('hs-events').innerText = hs.events + '점';
+            document.getElementById('rank-events').innerText = getRank(hs.events);
+            return hs;
+        }
+
+        function saveHighScore(mode, newScore) {
+            const hs = loadHighScores();
+            let isNewRecord = false;
+            if (newScore > hs[mode]) {
+                hs[mode] = newScore;
+                localStorage.setItem('historyMatchHS', JSON.stringify(hs));
+                isNewRecord = true;
+            }
+            return isNewRecord;
+        }
+
+        function saveToDex(term) {
+            if (!unlockedDex.includes(term)) {
+                unlockedDex.push(term);
+                localStorage.setItem('historyMatchDex', JSON.stringify(unlockedDex));
+            }
+        }
+
+        // --- ENCYCLOPEDIA UI ---
+        function openEncyclopedia() {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('encyclopedia-screen').classList.remove('hidden');
+            document.getElementById('encyclopedia-screen').classList.add('flex');
+            renderEncyclopedia('figures'); // Default tab
+        }
+
+        function closeEncyclopedia() {
+            document.getElementById('encyclopedia-screen').classList.add('hidden');
+            document.getElementById('encyclopedia-screen').classList.remove('flex');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+
+        function renderEncyclopedia(mode) {
+            if (mode === 'figures') {
+                document.getElementById('tab-figures').className = "flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 shadow-sm transition";
+                document.getElementById('tab-events').className = "flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition";
+            } else {
+                document.getElementById('tab-events').className = "flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 shadow-sm transition";
+                document.getElementById('tab-figures').className = "flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition";
+            }
+
+            const listEl = document.getElementById('dex-list');
+            listEl.innerHTML = '';
+            
+            const items = historyData[mode];
+            let unlockedCount = 0;
+
+            items.forEach(item => {
+                const isUnlocked = unlockedDex.includes(item.term);
+                if (isUnlocked) unlockedCount++;
+
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border-2 flex flex-col gap-3 ${isUnlocked ? 'bg-white border-emerald-300 shadow-md' : 'bg-slate-100 border-slate-200 opacity-60'}`;
+                
+                if (isUnlocked) {
+                    card.innerHTML = `
+                        <h4 class="font-black text-2xl ${mode === 'figures' ? 'text-blue-800' : 'text-red-800'}">${item.term}</h4>
+                        <p class="text-base text-slate-700 leading-relaxed">${item.desc}</p>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <h4 class="font-black text-2xl text-slate-400 flex items-center gap-2"><span>🔒</span> ???</h4>
+                        <p class="text-base text-slate-400">게임을 플레이하며 해금하세요.</p>
+                    `;
+                }
+                listEl.appendChild(card);
+            });
+
+            document.getElementById('dex-progress').innerText = `${unlockedCount} / ${items.length}`;
+        }
+
+        // --- UTILS ---
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- GAME LOGIC ---
+        function startGame(mode) {
+            initAudio();
+            currentMode = mode;
+            score = 0;
+            timeRemaining = 100;
+            matchedPairsCount = 0;
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            
+            document.getElementById('score').innerText = score;
+            document.getElementById('timer').innerText = '준비';
+            document.getElementById('current-mode-display').innerText = mode === 'figures' ? '👤 인물' : '⚔️ 사건';
+            
+            const timerContainer = document.getElementById('timer-container');
+            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
+            timerContainer.classList.add('bg-slate-800', 'text-white');
+
+            availablePool = JSON.parse(JSON.stringify(historyData[mode]));
+            shuffle(availablePool);
+
+            startBGM();
+            clearInterval(timerInterval);
+            clearInterval(previewInterval);
+            generateBoard();
+        }
+
+        function generateBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            flippedCards = [];
+            isLocked = true; // 암기 시간 중 터치 방지
+            matchedPairsCount = 0;
+            
+            // 새 보드가 생성될 때는 타이머를 잠시 멈춤
+            clearInterval(timerInterval);
+            clearInterval(previewInterval);
+            const timerContainer = document.getElementById('timer-container');
+            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
+            timerContainer.classList.add('bg-slate-800', 'text-white');
+            document.getElementById('timer').innerText = '기억...';
+
+            if (availablePool.length < pairsPerBoard) {
+                let refill = JSON.parse(JSON.stringify(historyData[currentMode]));
+                shuffle(refill);
+                let currentTerms = availablePool.map(i => i.term);
+                refill.forEach(item => {
+                    if(!currentTerms.includes(item.term)) availablePool.push(item);
+                });
+            }
+
+            const currentPairs = availablePool.splice(0, pairsPerBoard);
+            let cards = [];
+
+            currentPairs.forEach(item => {
+                cards.push({ id: item.term, type: 'term', text: item.term });
+                cards.push({ id: item.term, type: 'desc', text: item.desc });
+            });
+
+            shuffle(cards);
+
+            let cardIndex = 0;
+            const cardElementsForPreview = [];
+
+            for (let i = 0; i < 25; i++) {
+                // 중앙 타일 (인덱스 12) 초기에는 5 카운트다운 표시
+                if (i === 12) {
+                    const flagCell = document.createElement('div');
+                    flagCell.className = 'w-full h-full min-h-0 min-w-0 bg-white rounded-xl shadow-inner border-[3px] border-slate-200 flex items-center justify-center pointer-events-none p-2 sm:p-3 opacity-95 transition-all';
+                    flagCell.id = 'center-tile';
+                    flagCell.innerHTML = `<span id="center-countdown" class="text-6xl sm:text-8xl md:text-9xl font-black text-indigo-600 drop-shadow-md">5</span>`;
+                    board.appendChild(flagCell);
+                    continue;
+                }
+
+                const card = cards[cardIndex];
+                cardIndex++;
+
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card relative w-full h-full min-h-0 min-w-0 cursor-pointer perspective-1000 flipped';
+                cardEl.dataset.id = card.id;
+                cardEl.dataset.type = card.type;
+
+                const backColor = card.type === 'term' ? 'bg-pink-400 border-pink-300' : 'bg-blue-500 border-blue-400';
+                const backTextColor = card.type === 'term' ? 'text-pink-100' : 'text-blue-100';
+                
+                const frontColor = card.type === 'term' ? 'bg-pink-50 border-pink-300' : 'bg-blue-50 border-blue-300';
+                const textColor = card.type === 'term' ? 'text-pink-900 font-black card-content-term' : 'text-blue-900 font-bold card-content-desc';
+
+                cardEl.innerHTML = `
+                    <div class="card-inner absolute inset-0 transform-style-3d shadow-md hover:shadow-lg rounded-xl">
+                        <!-- Back -->
+                        <div class="absolute inset-0 backface-hidden ${backColor} rounded-xl border-4 flex items-center justify-center">
+                            <span class="${backTextColor} text-3xl sm:text-5xl opacity-80 font-black">?</span>
+                        </div>
+                        <!-- Front -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 ${frontColor} border-[3px] rounded-xl flex items-center justify-center text-center overflow-hidden p-1 sm:p-2">
+                            <div class="w-full max-h-full overflow-y-auto no-scrollbar flex items-center justify-center">
+                                <span class="${textColor}">${card.text}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                cardEl.addEventListener('click', () => handleCardClick(cardEl));
+                board.appendChild(cardEl);
+                cardElementsForPreview.push(cardEl);
+            }
+
+            // 5초 암기 및 중앙 타일 카운트다운 로직
+            let pTime = 5;
+            playSound('countdown'); // 5 
+            
+            previewInterval = setInterval(() => {
+                pTime--;
+                if (pTime > 0) {
+                    const countEl = document.getElementById('center-countdown');
+                    if (countEl) {
+                        countEl.innerText = pTime;
+                        // 숫자 바뀔 때마다 살짝 크기가 커졌다 작아지는 애니메이션 
+                        countEl.classList.remove('scale-110');
+                        void countEl.offsetWidth; 
+                        countEl.classList.add('scale-110', 'transition-transform');
+                    }
+                    playSound('countdown');
+                } else {
+                    clearInterval(previewInterval);
+                    
+                    // 카운트다운 종료 시 태극기 SVG로 교체
+                    const centerTile = document.getElementById('center-tile');
+                    if (centerTile) {
+                        centerTile.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg" alt="태극기" class="w-full h-full object-contain filter drop-shadow-sm" />`;
+                    }
+                    
+                    playSound('match'); // 게임 시작 알림음 (경쾌하게)
+                    
+                    cardElementsForPreview.forEach(card => card.classList.remove('flipped'));
+                    isLocked = false;
+                    document.getElementById('timer').innerText = timeRemaining;
+
+                    // 메인 타이머 재개
+                    timerInterval = setInterval(() => {
+                        timeRemaining--;
+                        document.getElementById('timer').innerText = timeRemaining;
+                        
+                        if (timeRemaining <= 15 && timeRemaining > 0) {
+                            const tContainer = document.getElementById('timer-container');
+                            tContainer.classList.remove('bg-slate-800', 'text-white');
+                            tContainer.classList.add('bg-red-100', 'text-red-600', 'animate-pulse');
+                            playSound('beep');
+                        }
+
+                        if (timeRemaining <= 0) endGame();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function handleCardClick(card) {
+            if (isLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                isLocked = true;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const card1 = flippedCards[0];
+            const card2 = flippedCards[1];
+
+            if ((card1.dataset.id === card2.dataset.id) && (card1.dataset.type !== card2.dataset.type)) {
+                playSound('match');
+                score++;
+                document.getElementById('score').innerText = score;
+                
+                saveToDex(card1.dataset.id);
+                
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                
+                setTimeout(() => {
+                    card1.querySelector('.card-inner > div:nth-child(2)').classList.add('bg-green-100', 'border-green-500');
+                    card2.querySelector('.card-inner > div:nth-child(2)').classList.add('bg-green-100', 'border-green-500');
+                    card1.style.opacity = '0.4';
+                    card2.style.opacity = '0.4';
+                }, 150);
+
+                matchedPairsCount++;
+                resetTurn();
+
+                if (matchedPairsCount === pairsPerBoard) {
+                    setTimeout(() => generateBoard(), 600);
+                }
+            } else {
+                playSound('mismatch');
+                card1.querySelector('.card-inner > div:nth-child(2)').classList.add('border-red-500', 'bg-red-50');
+                card2.querySelector('.card-inner > div:nth-child(2)').classList.add('border-red-500', 'bg-red-50');
+
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    card1.querySelector('.card-inner > div:nth-child(2)').classList.remove('border-red-500', 'bg-red-50');
+                    card2.querySelector('.card-inner > div:nth-child(2)').classList.remove('border-red-500', 'bg-red-50');
+                    resetTurn();
+                }, 750);
+            }
+        }
+
+        function resetTurn() {
+            flippedCards = [];
+            isLocked = false;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(previewInterval);
+            stopBGM();
+            playSound('over');
+            
+            const timerContainer = document.getElementById('timer-container');
+            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
+            timerContainer.classList.add('bg-slate-800', 'text-white');
+
+            document.getElementById('final-score').innerText = score;
+            const rank = getRank(score);
+            document.getElementById('final-rank').innerText = rank;
+            
+            const isNewRecord = saveHighScore(currentMode, score);
+            const newRecordEl = document.getElementById('new-record');
+            if (isNewRecord) {
+                newRecordEl.classList.remove('hidden');
+            } else {
+                newRecordEl.classList.add('hidden');
+            }
+
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        function returnToMenu() {
+            clearInterval(timerInterval);
+            clearInterval(previewInterval);
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('flex');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            loadHighScores();
+        }
+
+        window.onload = () => {
+            loadHighScores();
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,3369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>심해 다이버 시뮬레이터</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #020617;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #fff;
+      touch-action: none;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #0b84bc;
+    }
+    .screen {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at 50% 15%, rgba(35, 171, 220, 0.34), rgba(2, 6, 23, 0.96) 54%, #020617 100%);
+    }
+    .screen.hidden { display: none; }
+    .panel {
+      width: min(960px, 96vw);
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 22px;
+      border: 2px solid rgba(125, 211, 252, 0.45);
+      border-radius: 24px;
+      background: rgba(8, 22, 48, 0.93);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.55), inset 0 0 35px rgba(14,165,233,0.10);
+      backdrop-filter: blur(8px);
+    }
+    h1, h2, h3 { margin: 0 0 12px; letter-spacing: -0.04em; }
+    h1 {
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1;
+      color: #e0f2fe;
+      text-shadow: 0 0 18px rgba(56,189,248,0.85);
+    }
+    h2 { font-size: clamp(24px, 4vw, 38px); color: #bae6fd; }
+    p { margin: 8px 0; line-height: 1.55; color: #dbeafe; }
+    .muted { color: #93c5fd; font-size: 14px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
+    .button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 18px;
+      margin: 6px 6px 6px 0;
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #075985, 0 16px 30px rgba(0,0,0,0.25);
+      transition: transform 0.08s, filter 0.15s;
+    }
+    .button:hover { filter: brightness(1.08); }
+    .button:active { transform: translateY(5px); box-shadow: 0 3px 0 #075985, 0 10px 20px rgba(0,0,0,0.25); }
+    .button.green { background: linear-gradient(180deg, #22c55e, #15803d); box-shadow: 0 8px 0 #14532d, 0 16px 30px rgba(0,0,0,0.25); }
+    .button.yellow { background: linear-gradient(180deg, #facc15, #ca8a04); box-shadow: 0 8px 0 #854d0e, 0 16px 30px rgba(0,0,0,0.25); color: #172554; }
+    .button.red { background: linear-gradient(180deg, #fb7185, #be123c); box-shadow: 0 8px 0 #881337, 0 16px 30px rgba(0,0,0,0.25); }
+    .button.dark { background: linear-gradient(180deg, #64748b, #334155); box-shadow: 0 8px 0 #0f172a, 0 16px 30px rgba(0,0,0,0.25); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .card {
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid rgba(147,197,253,0.26);
+      background: rgba(15, 46, 88, 0.70);
+    }
+    .card strong { color: #fef08a; }
+    .statline {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(148,163,184,0.16);
+    }
+    .item-list {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      overflow: hidden;
+      border-radius: 14px;
+      background: rgba(2, 6, 23, 0.28);
+    }
+    .item-list th, .item-list td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(148,163,184,0.18);
+    }
+    .item-list th { color: #bae6fd; background: rgba(14,165,233,0.18); }
+    #toast {
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+      min-width: 220px;
+      max-width: min(680px, 92vw);
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: rgba(2, 8, 23, 0.72);
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      color: #fff;
+      text-align: center;
+      font-weight: 800;
+      line-height: 1.35;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(4px); }
+    #mobileControls {
+      position: fixed;
+      inset: 0;
+      z-index: 12;
+      pointer-events: none;
+      display: none;
+    }
+    body.playing #mobileControls { display: block; }
+    .stick-area {
+      position: absolute;
+      left: 22px;
+      bottom: 26px;
+      width: 138px;
+      height: 138px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.24);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    .stick-knob {
+      position: absolute;
+      left: 44px;
+      top: 44px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(186, 230, 253, 0.86);
+      box-shadow: 0 0 20px rgba(56,189,248,0.7);
+    }
+    .mobile-buttons {
+      position: absolute;
+      right: 20px;
+      bottom: 24px;
+      display: grid;
+      grid-template-columns: 72px 72px;
+      grid-template-rows: 72px 72px;
+      gap: 12px;
+      pointer-events: auto;
+    }
+    .m-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      border: 2px solid rgba(255,255,255,0.25);
+      color: white;
+      font-weight: 900;
+      font-size: 14px;
+      background: rgba(14,165,233,0.54);
+      box-shadow: 0 8px 0 rgba(7,89,133,0.75);
+      touch-action: none;
+    }
+    .m-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 rgba(7,89,133,0.75); }
+    .m-btn.boost { background: rgba(250,204,21,0.60); color: #172554; }
+    .m-btn.return { background: rgba(34,197,94,0.62); grid-column: 2; grid-row: 1 / span 2; height: 156px; }
+    .audio-toggle {
+      position: fixed;
+      right: 16px;
+      top: 14px;
+      z-index: 35;
+      border: 1px solid rgba(186,230,253,0.35);
+      border-radius: 999px;
+      padding: 9px 13px;
+      background: rgba(2, 8, 23, 0.68);
+      color: #e0f2fe;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+      backdrop-filter: blur(6px);
+    }
+    .audio-toggle.on {
+      background: rgba(14, 165, 233, 0.78);
+      color: #fff;
+    }
+    .keyboard-help {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px 14px;
+      margin: 12px 0;
+      color: #dbeafe;
+      font-size: 14px;
+    }
+    .keyboard-help span { padding: 7px 9px; border-radius: 10px; background: rgba(255,255,255,0.07); }
+    @media (hover: hover) and (pointer: fine) {
+      #mobileControls { display: none !important; }
+    }
+    @media (max-width: 720px) {
+      .panel { padding: 16px; border-radius: 18px; }
+      .button { width: 100%; margin-right: 0; }
+      .mobile-buttons { right: 14px; bottom: 18px; transform: scale(0.92); transform-origin: right bottom; }
+      .stick-area { left: 14px; bottom: 18px; transform: scale(0.92); transform-origin: left bottom; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="toast"></div>
+  <button id="audioToggleBtn" class="audio-toggle" type="button">🔇 소리 켜기</button>
+
+  <div id="startScreen" class="screen">
+    <div class="panel">
+      <h1>심해 다이버 시뮬레이터</h1>
+      <p><strong>작은 배에서 출발해 깊은 바다를 탐험하고, 산소가 떨어지기 전에 보물을 챙겨 돌아오세요.</strong></p>
+      <p class="muted">조금 더 깊이 내려갈수록 위험하지만 더 귀한 물고기, 광석, 고대 유물이 기다립니다.</p>
+      <div class="keyboard-help">
+        <span>이동: 방향키 또는 WASD</span>
+        <span>스페이스: 그물 던져 물고기 포획</span>
+        <span>E: 채집 / 도감 등록</span>
+        <span>Shift: 짧은 부스터</span>
+        <span>R: 배로 귀환 요청</span>
+        <span>ESC: 일시정지</span>
+        <span>바위벽/동굴벽: 통과 불가, 입구로 진입</span>
+      </div>
+      <div id="startStats" class="grid"></div>
+      <button id="newGameBtn" class="button green">새 게임 시작</button>
+      <button id="continueBtn" class="button">이어하기</button>
+      <button id="resetSaveBtn" class="button red">저장 초기화</button>
+    </div>
+  </div>
+
+  <div id="resultScreen" class="screen hidden">
+    <div class="panel">
+      <h2 id="resultTitle">오늘의 정산</h2>
+      <div id="resultContent"></div>
+      <button id="goUpgradeBtn" class="button yellow">장비 업그레이드</button>
+      <button id="nextDiveBtn" class="button green">다음 잠수 시작</button>
+      <button id="toStartBtn" class="button dark">시작 화면으로</button>
+    </div>
+  </div>
+
+  <div id="upgradeScreen" class="screen hidden">
+    <div class="panel">
+      <h2>장비 업그레이드</h2>
+      <p id="upgradeMoney"></p>
+      <div id="upgradeCards" class="grid"></div>
+      <button id="upgradeBackResultBtn" class="button green">정산 화면으로 돌아가기</button>
+      <button id="upgradeStartDiveBtn" class="button">바로 다음 잠수</button>
+    </div>
+  </div>
+
+  <div id="pauseScreen" class="screen hidden">
+    <div class="panel" style="max-width:520px;text-align:center;">
+      <h2>일시정지</h2>
+      <p>잠시 숨을 고르고 다시 탐험해요.</p>
+      <button id="resumeBtn" class="button green">계속하기</button>
+      <button id="pauseReturnBtn" class="button yellow">배로 귀환 요청</button>
+      <button id="pauseStartBtn" class="button dark">시작 화면으로</button>
+    </div>
+  </div>
+
+  <div id="mobileControls" aria-label="모바일 조작 버튼">
+    <div id="stickArea" class="stick-area">
+      <div id="stickKnob" class="stick-knob"></div>
+    </div>
+    <div class="mobile-buttons">
+      <button id="actionBtn" class="m-btn">채집<br>그물</button>
+      <button id="boostBtn" class="m-btn boost">부스터</button>
+      <button id="returnBtn" class="m-btn return">귀환</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ===== 주요 수치 =====
+  const DIVER_BASE = {
+    maxSpeed: 3.2,
+    accel: 0.16,
+    friction: 0.90,
+    boostSpeed: 5.2,
+    boostCost: 4,
+    oxygenMax: 100,
+    oxygenDrain: 0.62,
+    healthMax: 100,
+    inventoryMax: 10,
+    depthLimit: 250
+  };
+
+  const SAVE_KEY = "deep_diver_simulator_save_v1";
+  const PPM = 4; // pixel per meter
+  const MAX_DEPTH = 1500;
+  const WORLD_HEIGHT = MAX_DEPTH * PPM;
+  const WORLD_HALF_WIDTH = 920;
+  const BOAT_X = 0;
+  const SURFACE_Y = 0;
+  const INTERACT_RANGE = 78;
+  const ENEMY_HIT_COOLDOWN = 1.25;
+
+  // 업그레이드는 한 번에 크게 강해지지 않도록 9단계의 작은 성장으로 구성했습니다.
+  const SUIT_DEPTHS = [250, 320, 400, 500, 650, 800, 900, 1100, 1300, 1500];
+  const OXYGEN_LEVELS = [100, 112, 124, 137, 151, 166, 182, 199, 217, 236];
+  const BAG_LEVELS = [10, 12, 14, 16, 18, 20, 22, 24, 27, 30];
+  const UPGRADE_MAX = 9;
+
+  const UPGRADE_INFO = {
+    oxygen: {
+      name: "산소통",
+      icon: "🫧",
+      max: UPGRADE_MAX,
+      costs: [520, 980, 1700, 2800, 4300, 6300, 8900, 12000, 15800],
+      effect: level => `산소 최대치 ${OXYGEN_LEVELS[level]} / 조금 더 오래 잠수할 수 있어요.`
+    },
+    fins: {
+      name: "오리발",
+      icon: "🦶",
+      max: UPGRADE_MAX,
+      costs: [480, 920, 1600, 2600, 4000, 5900, 8400, 11400, 15000],
+      effect: level => `이동속도 +${level * 4}% / 부스터 효율 +${level * 5}%.`
+    },
+    bag: {
+      name: "가방",
+      icon: "🎒",
+      max: UPGRADE_MAX,
+      costs: [460, 900, 1550, 2500, 3900, 5700, 8100, 11000, 14600],
+      effect: level => `가방 용량 ${BAG_LEVELS[level]}칸.`
+    },
+    harpoon: {
+      name: "포획 그물",
+      icon: "🕸️",
+      max: UPGRADE_MAX,
+      costs: [600, 1100, 1900, 3100, 4800, 7000, 9800, 13200, 17200],
+      effect: level => `그물 사거리 +${level * 14} / 그물 반경 +${level * 4} / 한 번에 더 많이 포획해요.`
+    },
+    suit: {
+      name: "잠수복",
+      icon: "🤿",
+      max: UPGRADE_MAX,
+      costs: [900, 1700, 3000, 5000, 7800, 11200, 15200, 20000, 26000],
+      effect: level => `안전 수심 ${SUIT_DEPTHS[level]}m / 수압 피해가 줄어들어요.`
+    }
+  };
+
+  // 실제 해양 생태계를 참고한 교육용 생물·자원 도감입니다.
+  // 깊이에 따라 산호초 생물 → 중층 회유 생물 → 발광 심해 생물 순으로 등장합니다.
+  const ITEM_DEFS = {
+    smallFish: { name: "산호초 자리돔", group: "fish", price: 95, color: "#fde68a", minHarpoon: 0, size: 15, speed: 0.55, minDepth: 10, maxDepth: 240, fact: "산호초 주변에서 무리 지어 사는 작은 물고기를 본뜬 생물이에요." },
+    clownFish: { name: "흰동가리", group: "fish", price: 130, color: "#fb923c", minHarpoon: 0, size: 16, speed: 0.48, minDepth: 8, maxDepth: 170, fact: "말미잘 주변에서 숨어 지내는 산호초 물고기로 유명해요." },
+    blueFish: { name: "블루탱", group: "fish", price: 165, color: "#60a5fa", minHarpoon: 0, size: 18, speed: 0.64, minDepth: 25, maxDepth: 320, fact: "따뜻한 산호초에서 볼 수 있는 파란빛 물고기를 참고했어요." },
+    seahorse: { name: "해마", group: "fish", price: 210, color: "#f9a8d4", minHarpoon: 1, size: 14, speed: 0.28, minDepth: 20, maxDepth: 260, rare: true, fact: "해초와 산호 사이에 몸을 숨기는 작은 해양 생물이에요." },
+    fastFish: { name: "전갱이 무리", group: "fish", price: 230, color: "#22d3ee", minHarpoon: 1, size: 17, speed: 1.0, minDepth: 180, maxDepth: 540, fact: "빠르게 헤엄치는 회유성 물고기 무리를 참고했어요." },
+    squid: { name: "오징어", group: "fish", price: 310, color: "#e9d5ff", minHarpoon: 1, size: 20, speed: 0.78, minDepth: 170, maxDepth: 650, fact: "제트 추진처럼 물을 뿜어 빠르게 움직이는 두족류예요." },
+    rareFish: { name: "등불물고기", group: "fish", price: 460, color: "#c084fc", minHarpoon: 2, size: 20, speed: 0.72, minDepth: 420, maxDepth: 940, rare: true, fact: "깊은 바다의 희미한 빛 환경에 사는 발광 물고기를 참고했어요." },
+    anglerFish: { name: "초롱아귀", group: "fish", price: 720, color: "#a78bfa", minHarpoon: 3, size: 24, speed: 0.48, minDepth: 760, maxDepth: 1350, rare: true, fact: "머리의 빛나는 미끼로 먹이를 유인하는 심해어로 알려져 있어요." },
+    deepFish: { name: "바이퍼피시", group: "fish", price: 860, color: "#67e8f9", minHarpoon: 4, size: 25, speed: 0.60, minDepth: 900, maxDepth: 1500, rare: true, fact: "큰 이빨과 발광 기관을 가진 심해 포식자를 참고했어요." },
+    shell: { name: "조개", group: "resource", price: 115, color: "#f9a8d4", minDepth: 10, maxDepth: 270, fact: "모래와 바위 주변에서 발견되는 연체동물 껍데기예요." },
+    kelp: { name: "다시마 표본", group: "resource", price: 135, color: "#22c55e", minDepth: 5, maxDepth: 160, fact: "얕은 바다 숲을 만드는 해조류를 참고했어요." },
+    coral: { name: "산호 표본", group: "resource", price: 190, color: "#fb7185", minDepth: 20, maxDepth: 340, fact: "산호초는 많은 물고기와 무척추동물의 집 역할을 해요." },
+    crab: { name: "소라게", group: "resource", price: 240, color: "#f97316", minDepth: 30, maxDepth: 360, fact: "빈 껍데기를 집처럼 사용하는 갑각류를 참고했어요." },
+    ore: { name: "망간단괴", group: "resource", price: 390, color: "#94a3b8", minDepth: 260, maxDepth: 820, fact: "깊은 바다 바닥에서 발견되는 금속 성분 덩어리를 참고했어요." },
+    sponge: { name: "심해 해면", group: "resource", price: 520, color: "#fef3c7", minDepth: 450, maxDepth: 980, rare: true, fact: "바닷물을 걸러 먹이를 얻는 단순한 동물인 해면을 참고했어요." },
+    rareOre: { name: "열수광물", group: "resource", price: 760, color: "#a7f3d0", minDepth: 820, maxDepth: 1500, rare: true, fact: "해저 열수 분출공 주변의 광물 퇴적물을 참고했어요." },
+    caveShrimp: { name: "동굴 새우", group: "fish", price: 360, color: "#fecdd3", minHarpoon: 1, size: 13, speed: 0.32, minDepth: 300, maxDepth: 900, caveOnly: true, fact: "빛이 약한 수중 동굴에 적응한 작은 갑각류를 참고했어요." },
+    blindGoby: { name: "눈먼 동굴망둑", group: "fish", price: 420, color: "#e5e7eb", minHarpoon: 2, size: 16, speed: 0.25, minDepth: 340, maxDepth: 850, caveOnly: true, rare: true, fact: "어두운 동굴 환경에 맞춰 눈이 작아진 물고기를 상상해 만든 생물이에요." },
+    cavePearl: { name: "동굴 진주", group: "treasure", price: 1250, color: "#fafafa", minDepth: 360, maxDepth: 900, caveOnly: true, rare: true, fact: "석회질 동굴 속 희귀한 진주라는 상상 보물이에요." },
+    rustyAnchor: { name: "녹슨 닻", group: "resource", price: 640, color: "#78716c", minDepth: 470, maxDepth: 950, caveOnly: true, fact: "침몰선 주변에서 발견되는 오래된 금속 장비예요." },
+    shipLamp: { name: "선실 램프", group: "treasure", price: 1120, color: "#fbbf24", minDepth: 480, maxDepth: 1000, caveOnly: true, rare: true, fact: "난파선 선실에 남아 있던 항해 도구를 참고했어요." },
+    captainsCompass: { name: "선장 나침반", group: "treasure", price: 1700, color: "#fde68a", minDepth: 560, maxDepth: 1150, caveOnly: true, rare: true, fact: "침몰한 배의 이야기를 상상하게 하는 고가 보물이에요." },
+    tubeWorm: { name: "열수관벌레", group: "resource", price: 690, color: "#fef2f2", minDepth: 840, maxDepth: 1500, caveOnly: true, rare: true, fact: "뜨거운 열수 분출공 주변 생태계를 참고한 생물 표본이에요." },
+    sulfurCrystal: { name: "유황 결정", group: "resource", price: 880, color: "#fde047", minDepth: 840, maxDepth: 1500, caveOnly: true, rare: true, fact: "화산 동굴 주변에서 빛나는 광물 결정이라는 설정이에요." },
+    airMoss: { name: "에어포켓 이끼", group: "resource", price: 520, color: "#86efac", minDepth: 620, maxDepth: 1000, caveOnly: true, fact: "공기가 고인 동굴 천장 가까이에 자라는 식물처럼 표현한 상상 표본이에요." },
+    ancientPottery: { name: "고대 항아리", group: "treasure", price: 900, color: "#d97706", minDepth: 520, maxDepth: 1100, rare: true, fact: "옛 항해자가 남긴 유물이라는 상상 요소예요." },
+    ancientCoin: { name: "고대 동전", group: "treasure", price: 1050, color: "#facc15", minDepth: 560, maxDepth: 1250, rare: true, fact: "난파선 주변에서 발견되는 보물이라는 상상 요소예요." },
+    treasureChest: { name: "난파선 보물상자", group: "treasure", price: 1450, color: "#92400e", minDepth: 820, maxDepth: 1450, rare: true, openNeed: 3, fact: "천천히 열어야 하는 큰 보물상자예요." },
+    deepRelic: { name: "심해 유물", group: "treasure", price: 2400, color: "#f0abfc", minDepth: 940, maxDepth: 1500, rare: true, fact: "심해 탐험의 최상급 보물로 만든 상상 유물이에요." }
+  };
+
+  const ENEMY_DEFS = {
+    jelly: { name: "보름달물해파리", behavior: "jelly", shape: "jelly", minDepth: 220, maxDepth: 760, size: 28, damage: 6, color: "rgba(216,180,254,0.65)", fact: "해파리는 촉수에 닿으면 따가울 수 있어요." },
+    boxJelly: { name: "상자해파리 그림자", behavior: "jelly", shape: "jelly", minDepth: 330, maxDepth: 720, size: 24, damage: 12, color: "rgba(125,211,252,0.50)", fact: "독성이 강한 해파리를 안전하게 변형한 교육용 적이에요." },
+    spike: { name: "쏠배감펭", behavior: "spike", shape: "spike", minDepth: 300, maxDepth: 780, size: 24, damage: 14, color: "#f97316", fact: "화려하지만 독가시가 있어 가까이 가지 않는 것이 좋아요." },
+    stoneFish: { name: "쑤기미", behavior: "spike", shape: "spike", minDepth: 380, maxDepth: 850, size: 27, damage: 18, color: "#a16207", fact: "바위처럼 숨어 있다가 위협이 되는 독가시 물고기를 참고했어요." },
+    shark: { name: "암초상어", behavior: "shark", shape: "shark", minDepth: 500, maxDepth: 1120, size: 50, damage: 24, color: "#64748b", fact: "산호초와 깊은 바다 사이를 오가는 상어를 참고했어요." },
+    mako: { name: "청상아리", behavior: "shark", shape: "shark", minDepth: 620, maxDepth: 1250, size: 54, damage: 30, color: "#475569", fact: "빠르게 헤엄치는 상어의 느낌을 약하게 표현했어요." },
+    eel: { name: "곰치", behavior: "shark", shape: "eel", minDepth: 430, maxDepth: 980, size: 42, damage: 18, color: "#365314", fact: "바위틈에 숨어 있다가 가까이 오면 위협적인 곰치를 참고했어요." },
+    puffer: { name: "복어", behavior: "puffer", shape: "puffer", minDepth: 80, maxDepth: 620, size: 25, damage: 13, color: "#fbbf24", fact: "복어는 위험을 느끼면 몸을 부풀리는 생물로 알려져 있어요. 독이 있을 수 있어 먹으면 안 돼요." },
+    grouper: { name: "그루퍼", behavior: "grouper", shape: "grouper", minDepth: 350, maxDepth: 1050, size: 48, damage: 22, color: "#a16207", fact: "큰 입으로 먹이를 빨아들이는 바위 주변 포식성 어류를 참고했어요." },
+    monster: { name: "대왕오징어 그림자", behavior: "monster", shape: "monster", minDepth: 900, maxDepth: 1500, size: 78, damage: 40, color: "#111827", fact: "실제 심해 대형 오징어의 신비로운 이미지를 바탕으로 만든 존재예요." },
+    siphonophore: { name: "관해파리 군체", behavior: "monster", shape: "jelly", minDepth: 850, maxDepth: 1500, size: 62, damage: 28, color: "rgba(192,132,252,0.35)", fact: "여러 개체가 이어진 듯한 심해 생물 군체를 참고했어요." }
+  };
+
+  const MISSION_LIST = [
+    { id: "small3", type: "collect", key: "smallFish", count: 3, text: "산호초 자리돔 3마리 관찰·포획하기", bonus: 300, maxStartDepth: 250 },
+    { id: "blue2", type: "collect", key: "blueFish", count: 2, text: "블루탱 2마리 포획하기", bonus: 380, maxStartDepth: 320 },
+    { id: "kelp2", type: "collect", key: "kelp", count: 2, text: "다시마 표본 2개 수집하기", bonus: 260, maxStartDepth: 250 },
+    { id: "shell3", type: "collect", key: "shell", count: 3, text: "조개 3개 수집하기", bonus: 320, maxStartDepth: 250 },
+    { id: "depth300", type: "depth", depth: 300, text: "300m 아래까지 내려가기", bonus: 520, minSuit: 1 },
+    { id: "squid1", type: "collect", key: "squid", count: 1, text: "오징어 1마리 포획하기", bonus: 460, minSuit: 1 },
+    { id: "ore2", type: "collect", key: "ore", count: 2, text: "망간단괴 2개 수집하기", bonus: 620, minSuit: 2 },
+    { id: "lantern1", type: "collect", key: "rareFish", count: 1, text: "등불물고기 1마리 발견하기", bonus: 760, minSuit: 4 },
+    { id: "relic1", type: "treasure", count: 1, text: "유물 1개 발견하기", bonus: 900, minSuit: 5 },
+    { id: "caveShrimp2", type: "collect", key: "caveShrimp", count: 2, text: "수중 동굴에서 동굴 새우 2마리 포획하기", bonus: 760, minSuit: 2 },
+    { id: "shipLamp1", type: "collect", key: "shipLamp", count: 1, text: "침몰한 배에서 선실 램프 찾기", bonus: 980, minSuit: 3 },
+    { id: "tubeWorm1", type: "collect", key: "tubeWorm", count: 1, text: "화산 동굴에서 열수관벌레 표본 찾기", bonus: 1180, minSuit: 6 },
+    { id: "oxygen20", type: "oxygenReturn", oxygenPct: 20, text: "산소 20% 이상 남기고 귀환하기", bonus: 450, maxStartDepth: 500 }
+  ];
+
+  // ===== DOM =====
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const toast = document.getElementById("toast");
+  const audioToggleBtn = document.getElementById("audioToggleBtn");
+  const startScreen = document.getElementById("startScreen");
+  const resultScreen = document.getElementById("resultScreen");
+  const upgradeScreen = document.getElementById("upgradeScreen");
+  const pauseScreen = document.getElementById("pauseScreen");
+  const startStats = document.getElementById("startStats");
+  const resultTitle = document.getElementById("resultTitle");
+  const resultContent = document.getElementById("resultContent");
+  const upgradeMoney = document.getElementById("upgradeMoney");
+  const upgradeCards = document.getElementById("upgradeCards");
+  const stickArea = document.getElementById("stickArea");
+  const stickKnob = document.getElementById("stickKnob");
+
+  let cw = 1;
+  let ch = 1;
+  let dpr = 1;
+
+  const keys = Object.create(null);
+  const touchMove = { x: 0, y: 0, active: false };
+
+  const game = {
+    state: "start",
+    previousState: "start",
+    day: 1,
+    money: 0,
+    totalMoney: 0,
+    bestDepth: 0,
+    currentMission: null,
+    upgrades: { oxygen: 0, fins: 0, bag: 0, harpoon: 0, suit: 0 },
+    codex: {},
+    lastResult: null
+  };
+
+  let dive = null;
+  let lastTime = 0;
+  let toastTimer = 0;
+
+  // ===== Web Audio BGM / 효과음 =====
+  const audio = {
+    ctx: null,
+    master: null,
+    musicGain: null,
+    sfxGain: null,
+    enabled: false,
+    musicTimer: null,
+    noteIndex: 0,
+    nextNoteTime: 0
+  };
+  const MUSIC_NOTES = [146.83, 196.00, 220.00, 246.94, 196.00, 164.81, 130.81, 164.81, 196.00, 261.63, 293.66, 246.94];
+
+  function initAudio() {
+    if (audio.ctx) return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) {
+      showToast("이 브라우저는 Web Audio를 지원하지 않아요.");
+      return;
+    }
+    audio.ctx = new AudioCtx();
+    audio.master = audio.ctx.createGain();
+    audio.musicGain = audio.ctx.createGain();
+    audio.sfxGain = audio.ctx.createGain();
+    audio.master.gain.value = 0.72;
+    audio.musicGain.gain.value = 0.18;
+    audio.sfxGain.gain.value = 0.55;
+    audio.musicGain.connect(audio.master);
+    audio.sfxGain.connect(audio.master);
+    audio.master.connect(audio.ctx.destination);
+  }
+
+  function setAudioEnabled(on) {
+    initAudio();
+    if (!audio.ctx) return;
+    if (audio.ctx.state === "suspended") audio.ctx.resume();
+    audio.enabled = on;
+    if (on) startBgm(); else stopBgm();
+    updateAudioButton();
+  }
+
+  function updateAudioButton() {
+    audioToggleBtn.textContent = audio.enabled ? "🔊 소리 켜짐" : "🔇 소리 켜기";
+    audioToggleBtn.classList.toggle("on", audio.enabled);
+  }
+
+  function playTone(freq, duration = 0.12, type = "sine", gain = 0.12, dest = null, when = 0, slideTo = null) {
+    if (!audio.enabled || !audio.ctx) return;
+    const t = Math.max(audio.ctx.currentTime, audio.ctx.currentTime + when);
+    const osc = audio.ctx.createOscillator();
+    const g = audio.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t + duration);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc.connect(g);
+    g.connect(dest || audio.sfxGain);
+    osc.start(t);
+    osc.stop(t + duration + 0.03);
+  }
+
+  function playNoise(duration = 0.18, gain = 0.1, filterFreq = 900) {
+    if (!audio.enabled || !audio.ctx) return;
+    const len = Math.max(1, Math.floor(audio.ctx.sampleRate * duration));
+    const buffer = audio.ctx.createBuffer(1, len, audio.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.4);
+    const src = audio.ctx.createBufferSource();
+    const filter = audio.ctx.createBiquadFilter();
+    const g = audio.ctx.createGain();
+    filter.type = "lowpass";
+    filter.frequency.value = filterFreq;
+    g.gain.value = gain;
+    src.buffer = buffer;
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(audio.sfxGain);
+    src.start();
+  }
+
+  function playSfx(name) {
+    if (!audio.enabled || !audio.ctx) return;
+    if (name === "dive") { playTone(392, 0.12, "sine", 0.09); playTone(261, 0.26, "sine", 0.08, null, 0.06, 174); playNoise(0.35, 0.05, 600); }
+    if (name === "collect") { playTone(660, 0.08, "triangle", 0.09); playTone(880, 0.12, "triangle", 0.08, null, 0.08); }
+    if (name === "rare") { playTone(784, 0.12, "sine", 0.09); playTone(1175, 0.18, "sine", 0.08, null, 0.10); playTone(1568, 0.22, "sine", 0.05, null, 0.22); }
+    if (name === "harpoon") { playTone(520, 0.06, "sawtooth", 0.07, null, 0, 220); }
+    if (name === "boost") { playNoise(0.22, 0.11, 1200); playTone(180, 0.18, "sine", 0.06, null, 0, 260); }
+    if (name === "damage") { playTone(110, 0.18, "square", 0.12, null, 0, 80); playNoise(0.12, 0.09, 500); }
+    if (name === "bump") { playTone(96, 0.08, "triangle", 0.07); playTone(64, 0.12, "sine", 0.05, null, 0.04); }
+    if (name === "oxygen") { playTone(880, 0.08, "square", 0.07); playTone(880, 0.08, "square", 0.07, null, 0.18); }
+    if (name === "cash") { [523, 659, 784].forEach((f, i) => playTone(f, 0.10, "triangle", 0.08, null, i * 0.08)); }
+    if (name === "upgrade") { [392, 523, 659, 1046].forEach((f, i) => playTone(f, 0.11, "sine", 0.08, null, i * 0.07)); }
+    if (name === "rescue") { playTone(330, 0.18, "triangle", 0.08); playTone(247, 0.30, "triangle", 0.08, null, 0.16); }
+  }
+
+  function startBgm() {
+    if (!audio.ctx || audio.musicTimer) return;
+    audio.nextNoteTime = audio.ctx.currentTime;
+    audio.musicTimer = setInterval(scheduleBgm, 160);
+    scheduleBgm();
+  }
+
+  function stopBgm() {
+    if (audio.musicTimer) clearInterval(audio.musicTimer);
+    audio.musicTimer = null;
+  }
+
+  function scheduleBgm() {
+    if (!audio.enabled || !audio.ctx) return;
+    const now = audio.ctx.currentTime;
+    while (audio.nextNoteTime < now + 0.7) {
+      const depth = dive ? yToDepth(dive.diver.y) : 0;
+      const depthShift = depth > 900 ? 0.5 : depth > 500 ? 0.75 : 1;
+      const freq = MUSIC_NOTES[audio.noteIndex % MUSIC_NOTES.length] * depthShift;
+      const duration = depth > 900 ? 0.62 : 0.42;
+      const gain = game.state === "diving" ? (depth > 900 ? 0.055 : 0.075) : 0.035;
+      playTone(freq, duration, depth > 900 ? "sine" : "triangle", gain, audio.musicGain, audio.nextNoteTime - now);
+      if (audio.noteIndex % 4 === 0) playTone(freq / 2, duration * 1.7, "sine", gain * 0.55, audio.musicGain, audio.nextNoteTime - now);
+      audio.noteIndex++;
+      audio.nextNoteTime += depth > 900 ? 0.56 : 0.44;
+    }
+  }
+
+  function resize() {
+    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    cw = Math.floor(window.innerWidth);
+    ch = Math.floor(window.innerHeight);
+    canvas.width = Math.floor(cw * dpr);
+    canvas.height = Math.floor(ch * dpr);
+    canvas.style.width = cw + "px";
+    canvas.style.height = ch + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function rand(min, max) { return min + Math.random() * (max - min); }
+  function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+  function chance(p) { return Math.random() < p; }
+  function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function depthToY(m) { return m * PPM; }
+  function yToDepth(y) { return Math.max(0, y / PPM); }
+  function won(v) { return `${Math.round(v).toLocaleString("ko-KR")}원`; }
+  function percent(v, max) { return Math.max(0, Math.round((v / max) * 100)); }
+
+  function deepMergeSave(raw) {
+    const base = defaultSave();
+    if (!raw || typeof raw !== "object") return base;
+    const upgrades = { ...base.upgrades, ...(raw.upgrades || {}) };
+    Object.keys(upgrades).forEach(key => {
+      upgrades[key] = clamp(Number(upgrades[key]) || 0, 0, UPGRADE_MAX);
+    });
+    return {
+      day: Number(raw.day) || base.day,
+      money: Number(raw.money) || 0,
+      totalMoney: Number(raw.totalMoney) || 0,
+      bestDepth: Number(raw.bestDepth) || 0,
+      upgrades,
+      codex: { ...(raw.codex || {}) }
+    };
+  }
+
+  function defaultSave() {
+    return {
+      day: 1,
+      money: 0,
+      totalMoney: 0,
+      bestDepth: 0,
+      upgrades: { oxygen: 0, fins: 0, bag: 0, harpoon: 0, suit: 0 },
+      codex: {}
+    };
+  }
+
+  function applySave(data) {
+    game.day = data.day;
+    game.money = data.money;
+    game.totalMoney = data.totalMoney;
+    game.bestDepth = data.bestDepth;
+    game.upgrades = data.upgrades;
+    game.codex = data.codex;
+  }
+
+  function saveGame() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      day: game.day,
+      money: game.money,
+      totalMoney: game.totalMoney,
+      bestDepth: game.bestDepth,
+      upgrades: game.upgrades,
+      codex: game.codex
+    }));
+    updateStartStats();
+  }
+
+  function loadGame() {
+    try {
+      const data = deepMergeSave(JSON.parse(localStorage.getItem(SAVE_KEY)));
+      applySave(data);
+      return true;
+    } catch (err) {
+      console.warn(err);
+      applySave(defaultSave());
+      return false;
+    }
+  }
+
+  function resetSave() {
+    localStorage.removeItem(SAVE_KEY);
+    applySave(defaultSave());
+    updateStartStats();
+    showToast("저장을 초기화했어요.");
+  }
+
+  function getStats() {
+    const u = game.upgrades;
+    const finMul = 1 + u.fins * 0.04;
+    return {
+      maxSpeed: DIVER_BASE.maxSpeed * finMul,
+      accel: DIVER_BASE.accel * (1 + u.fins * 0.035),
+      friction: DIVER_BASE.friction,
+      boostSpeed: DIVER_BASE.boostSpeed * (1 + u.fins * 0.05),
+      boostCost: Math.max(2.1, DIVER_BASE.boostCost - u.fins * 0.18),
+      oxygenMax: OXYGEN_LEVELS[u.oxygen],
+      oxygenDrain: DIVER_BASE.oxygenDrain,
+      healthMax: DIVER_BASE.healthMax,
+      inventoryMax: BAG_LEVELS[u.bag],
+      depthLimit: SUIT_DEPTHS[u.suit],
+      netRange: 104 + u.harpoon * 14,
+      netRadius: 42 + u.harpoon * 4,
+      netCatchLimit: 1 + Math.floor(u.harpoon / 3),
+      harpoonRange: 104 + u.harpoon * 14,
+      harpoonLevel: u.harpoon,
+      lightRadius: 150 + u.suit * 9 + u.oxygen * 5
+    };
+  }
+
+  function totalCodexCount() {
+    return Object.keys(ITEM_DEFS).length + Object.keys(ENEMY_DEFS).length;
+  }
+
+  function discoveredCodexCount() {
+    return Object.values(game.codex).filter(Boolean).length;
+  }
+
+  function showScreen(name) {
+    startScreen.classList.toggle("hidden", name !== "start");
+    resultScreen.classList.toggle("hidden", name !== "result");
+    upgradeScreen.classList.toggle("hidden", name !== "upgrade");
+    pauseScreen.classList.toggle("hidden", name !== "pause");
+    document.body.classList.toggle("playing", name === "diving");
+  }
+
+  function setState(state) {
+    game.state = state;
+    showScreen(state);
+  }
+
+  function showToast(message, seconds = 2.1) {
+    toast.textContent = message;
+    toast.classList.add("show");
+    toastTimer = seconds;
+  }
+
+  function updateStartStats() {
+    const stats = getStats();
+    const hasSave = !!localStorage.getItem(SAVE_KEY);
+    document.getElementById("continueBtn").disabled = !hasSave;
+    document.getElementById("continueBtn").style.opacity = hasSave ? "1" : "0.45";
+    startStats.innerHTML = `
+      <div class="card"><strong>현재 돈</strong><br>${won(game.money)}</div>
+      <div class="card"><strong>누적 잠수</strong><br>${game.day - 1}회 완료 / 다음은 ${game.day}일차</div>
+      <div class="card"><strong>최고 수심</strong><br>${Math.round(game.bestDepth)}m</div>
+      <div class="card"><strong>도감</strong><br>${discoveredCodexCount()} / ${totalCodexCount()}종 발견</div>
+      <div class="card"><strong>안전 수심</strong><br>${stats.depthLimit}m</div>
+      <div class="card"><strong>가방</strong><br>${stats.inventoryMax}칸</div>
+    `;
+  }
+
+  function chooseMission() {
+    const suitLevel = game.upgrades.suit;
+    const safeDepth = SUIT_DEPTHS[suitLevel];
+    let options = MISSION_LIST.filter(m => {
+      if (m.minSuit !== undefined && suitLevel < m.minSuit) return false;
+      if (m.maxStartDepth !== undefined && safeDepth > m.maxStartDepth + 450 && Math.random() < 0.35) return false;
+      return true;
+    });
+    if (game.day <= 2) options = MISSION_LIST.filter(m => ["small3", "blue2", "shell3", "oxygen20"].includes(m.id));
+    return structuredClone(options[randInt(0, options.length - 1)]);
+  }
+
+  function startDive() {
+    const stats = getStats();
+    game.currentMission = chooseMission();
+    dive = {
+      stats,
+      diver: {
+        x: BOAT_X,
+        y: 36,
+        vx: 0,
+        vy: 0,
+        angle: Math.PI / 2,
+        oxygen: stats.oxygenMax,
+        health: stats.healthMax
+      },
+      camera: { x: 0, y: 170 },
+      objects: [],
+      enemies: [],
+      bubbles: [],
+      nets: [],
+      caves: [],
+      terrain: [],
+      silhouettes: [],
+      inventory: [],
+      collectedCounts: {},
+      treasureFound: 0,
+      maxDepth: 0,
+      codexBonus: 0,
+      newCodex: [],
+      rescued: false,
+      rescueReason: "",
+      lostItems: [],
+      autoReturn: false,
+      boostCooldown: 0,
+      harpoonFlash: 0,
+      damageFlash: 0,
+      oxygenFlash: 0,
+      pressureWarnTimer: 0,
+      lowOxygenWarnTimer: 0,
+      caveHintTimer: 0,
+      airPocketTimer: 0,
+      solidHintTimer: 0,
+      currentCave: null,
+      time: 0,
+      bubbleTimer: 0,
+      returnStarted: false
+    };
+    generateDiveMap();
+    resetTouchStick();
+    setState("diving");
+    playSfx("dive");
+    showToast(`${game.day}일차 잠수 시작! 미션: ${game.currentMission.text}`, 3);
+  }
+
+  function generateDiveMap() {
+    dive.objects.length = 0;
+    dive.enemies.length = 0;
+    dive.bubbles.length = 0;
+    dive.nets.length = 0;
+    dive.silhouettes.length = 0;
+    dive.terrain = buildTerrain();
+    dive.caves = buildCaves();
+
+    const spawnItem = (key, x, depth) => {
+      const def = ITEM_DEFS[key];
+      const radius = def.group === "fish" ? Math.max(10, def.size * 0.7) : 18;
+      const pos = findOpenSpawnPosition(x, depthToY(depth), radius);
+      dive.objects.push({
+        id: cryptoRandomId(),
+        kind: def.group,
+        key,
+        x: pos.x,
+        y: pos.y,
+        vx: def.group === "fish" ? (chance(0.5) ? 1 : -1) * def.speed : 0,
+        phase: rand(0, Math.PI * 2),
+        openProgress: 0,
+        taken: false,
+        sparkle: rand(0, 10)
+      });
+    };
+
+    const spawnMany = (count, minD, maxD, keys) => {
+      for (let i = 0; i < count; i++) {
+        const key = keys[randInt(0, keys.length - 1)];
+        const def = ITEM_DEFS[key];
+        const d1 = Math.max(minD, def.minDepth);
+        const d2 = Math.min(maxD, def.maxDepth);
+        if (d1 >= d2) continue;
+        spawnItem(key, rand(-WORLD_HALF_WIDTH + 70, WORLD_HALF_WIDTH - 70), rand(d1, d2));
+      }
+    };
+
+    spawnMany(52, 8, 250, ["smallFish", "smallFish", "clownFish", "blueFish", "seahorse", "shell", "kelp", "kelp", "coral", "crab"]);
+    spawnMany(46, 250, 500, ["blueFish", "fastFish", "fastFish", "squid", "ore", "coral", "crab", "shell"]);
+    spawnMany(40, 500, 900, ["rareFish", "squid", "ore", "sponge", "ancientPottery", "ancientCoin", "shell"]);
+    spawnMany(36, 900, 1500, ["deepFish", "anglerFish", "rareOre", "rareOre", "treasureChest", "deepRelic", "ancientCoin", "sponge"]);
+
+    const spawnEnemy = (key, count, cave = null) => {
+      const def = ENEMY_DEFS[key];
+      for (let i = 0; i < count; i++) {
+        const depth = cave ? yToDepth(rand(cave.y - cave.h * 0.34, cave.y + cave.h * 0.34)) : rand(def.minDepth, def.maxDepth);
+        const spawnX = cave ? rand(cave.x - cave.w * 0.36, cave.x + cave.w * 0.36) : rand(-WORLD_HALF_WIDTH + 90, WORLD_HALF_WIDTH - 90);
+        const spawnY = depthToY(clamp(depth, def.minDepth, def.maxDepth));
+        const pos = findOpenSpawnPosition(spawnX, spawnY, Math.max(18, def.size * 0.45), cave);
+        dive.enemies.push({
+          id: cryptoRandomId(),
+          key,
+          caveId: cave ? cave.id : null,
+          x: pos.x,
+          y: pos.y,
+          homeX: 0,
+          homeY: pos.y,
+          vx: rand(-0.45, 0.45),
+          vy: rand(-0.25, 0.25),
+          phase: rand(0, Math.PI * 2),
+          hitCooldown: 0,
+          chargeTimer: 0,
+          state: "patrol"
+        });
+        dive.enemies[dive.enemies.length - 1].homeX = dive.enemies[dive.enemies.length - 1].x;
+      }
+    };
+    spawnEnemy("jelly", 12);
+    spawnEnemy("boxJelly", 5);
+    spawnEnemy("spike", 7);
+    spawnEnemy("stoneFish", 5);
+    spawnEnemy("puffer", 8);
+    spawnEnemy("eel", 5);
+    spawnEnemy("grouper", 4);
+    spawnEnemy("shark", 5);
+    spawnEnemy("mako", 3);
+    spawnEnemy("monster", 4);
+    spawnEnemy("siphonophore", 3);
+
+    spawnCaveLife(spawnItem, spawnEnemy);
+
+    for (let d = 120; d < MAX_DEPTH; d += rand(110, 220)) {
+      dive.silhouettes.push({
+        x: rand(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH),
+        y: depthToY(d),
+        size: rand(36, d > 900 ? 160 : 95),
+        type: chance(0.5) ? "fish" : "rock",
+        phase: rand(0, Math.PI * 2)
+      });
+    }
+  }
+
+
+  function buildTerrain() {
+    const terrain = [];
+    for (let depth = 180; depth <= 1450; depth += rand(110, 190)) {
+      const side = chance(0.5) ? -1 : 1;
+      terrain.push({
+        type: "shelf",
+        x: side * rand(360, 770),
+        y: depthToY(depth),
+        w: rand(210, 460),
+        h: rand(28, 66),
+        phase: rand(0, Math.PI * 2)
+      });
+    }
+    for (let i = 0; i < 28; i++) {
+      terrain.push({
+        type: "rock",
+        x: rand(-WORLD_HALF_WIDTH + 60, WORLD_HALF_WIDTH - 60),
+        y: depthToY(rand(90, 1470)),
+        w: rand(24, 82),
+        h: rand(18, 58),
+        phase: rand(0, Math.PI * 2)
+      });
+    }
+    return terrain;
+  }
+
+  function buildCaves() {
+    return [
+      {
+        id: "waterCave",
+        name: "수중 동굴",
+        type: "waterCave",
+        x: -520,
+        y: depthToY(360),
+        w: 500,
+        h: 250,
+        color: "rgba(8,47,73,0.72)",
+        label: "석회암 수중 동굴",
+        entrance: "right",
+        itemKeys: ["caveShrimp", "blindGoby", "cavePearl", "shell", "sponge"],
+        enemyKeys: ["jelly", "eel", "puffer"]
+      },
+      {
+        id: "wreck",
+        name: "침몰한 배",
+        type: "wreck",
+        x: 500,
+        y: depthToY(620),
+        w: 560,
+        h: 280,
+        color: "rgba(30,41,59,0.75)",
+        label: "난파선 생태계",
+        entrance: "left",
+        itemKeys: ["rustyAnchor", "shipLamp", "captainsCompass", "ancientCoin", "treasureChest"],
+        enemyKeys: ["grouper", "eel", "shark"]
+      },
+      {
+        id: "airPocket",
+        name: "에어포켓 동굴",
+        type: "airPocket",
+        x: -470,
+        y: depthToY(790),
+        w: 520,
+        h: 280,
+        color: "rgba(12,74,110,0.68)",
+        label: "공기가 고인 동굴",
+        entrance: "right",
+        airPocket: true,
+        itemKeys: ["airMoss", "cavePearl", "blindGoby", "sponge"],
+        enemyKeys: ["boxJelly", "puffer", "grouper"]
+      },
+      {
+        id: "volcano",
+        name: "화산 동굴",
+        type: "volcano",
+        x: 480,
+        y: depthToY(1120),
+        w: 620,
+        h: 340,
+        color: "rgba(69,10,10,0.72)",
+        label: "열수 분출공 생태계",
+        entrance: "left",
+        heat: true,
+        itemKeys: ["tubeWorm", "sulfurCrystal", "rareOre", "deepRelic", "anglerFish"],
+        enemyKeys: ["siphonophore", "monster", "grouper"]
+      }
+    ];
+  }
+
+  function ellipseValue(x, y, cx, cy, rx, ry) {
+    const dx = (x - cx) / rx;
+    const dy = (y - cy) / ry;
+    return dx * dx + dy * dy;
+  }
+
+  function pointInCaveInterior(x, y, cave) {
+    if (!cave) return false;
+    return ellipseValue(x, y, cave.x, cave.y, cave.w * 0.47, cave.h * 0.43) <= 1;
+  }
+
+  function pointInCaveEntrance(x, y, cave, pad = 0) {
+    if (!cave) return false;
+    const dir = cave.entrance === "left" ? -1 : 1;
+    const mouthStart = cave.x + dir * cave.w * 0.35;
+    const mouthEnd = cave.x + dir * cave.w * 0.68;
+    const inX = dir > 0 ? (x >= mouthStart - pad && x <= mouthEnd + pad) : (x <= mouthStart + pad && x >= mouthEnd - pad);
+    const inY = Math.abs(y - cave.y) <= cave.h * 0.16 + pad;
+    return inX && inY;
+  }
+
+  function pointInCave(x, y, cave) {
+    return pointInCaveInterior(x, y, cave) || pointInCaveEntrance(x, y, cave, 6);
+  }
+
+  function findCurrentCave() {
+    if (!dive || !dive.caves) return null;
+    return dive.caves.find(cave => pointInCave(dive.diver.x, dive.diver.y, cave)) || null;
+  }
+
+  function inAirPocket(cave, x, y) {
+    if (!cave || !cave.airPocket) return false;
+    const dx = Math.abs(x - cave.x);
+    return dx < cave.w * 0.24 && y < cave.y - cave.h * 0.23 && y > cave.y - cave.h * 0.48;
+  }
+
+  function isSolidAt(x, y, radius = 16) {
+    if (!dive) return false;
+    if (dive.terrain) {
+      for (const t of dive.terrain) {
+        if (terrainCollisionInfo({ x, y, vx: 0, vy: 0 }, radius, t)) return true;
+      }
+    }
+    if (dive.caves) {
+      for (const cave of dive.caves) {
+        if (caveWallCollisionInfo({ x, y, vx: 0, vy: 0 }, radius, cave)) return true;
+      }
+    }
+    return false;
+  }
+
+  function findOpenSpawnPosition(x, y, radius = 18, cave = null) {
+    if (!dive) return { x, y };
+    if (cave) {
+      for (let i = 0; i < 22; i++) {
+        const px = rand(cave.x - cave.w * 0.34, cave.x + cave.w * 0.34);
+        const py = rand(cave.y - cave.h * 0.28, cave.y + cave.h * 0.30);
+        if (pointInCaveInterior(px, py, cave) && !isSolidAt(px, py, radius)) return { x: px, y: py };
+      }
+      return { x, y };
+    }
+    const depth = yToDepth(y);
+    for (let i = 0; i < 28; i++) {
+      const px = i === 0 ? x : rand(-WORLD_HALF_WIDTH + 80, WORLD_HALF_WIDTH - 80);
+      const py = i === 0 ? y : depthToY(clamp(depth + rand(-35, 35), 10, MAX_DEPTH - 10));
+      if (!isSolidAt(px, py, radius)) return { x: px, y: py };
+    }
+    return { x, y };
+  }
+
+  function terrainCollisionInfo(entity, radius, t) {
+    if (t.type === "shelf") {
+      const left = t.x - t.w / 2;
+      const right = t.x + t.w / 2;
+      const top = t.y - 8;
+      const bottom = t.y + t.h;
+      const nx = clamp(entity.x, left, right);
+      const ny = clamp(entity.y, top, bottom);
+      let dx = entity.x - nx;
+      let dy = entity.y - ny;
+      let dist = Math.hypot(dx, dy);
+      if (dist < radius) {
+        if (dist < 0.001) {
+          const toLeft = Math.abs(entity.x - left);
+          const toRight = Math.abs(right - entity.x);
+          const toTop = Math.abs(entity.y - top);
+          const toBottom = Math.abs(bottom - entity.y);
+          const min = Math.min(toLeft, toRight, toTop, toBottom);
+          if (min === toLeft) { dx = -1; dy = 0; dist = 1; }
+          else if (min === toRight) { dx = 1; dy = 0; dist = 1; }
+          else if (min === toTop) { dx = 0; dy = -1; dist = 1; }
+          else { dx = 0; dy = 1; dist = 1; }
+        }
+        return { nx: dx / dist, ny: dy / dist, overlap: radius - dist, type: "terrain" };
+      }
+      return null;
+    }
+
+    const rx = t.w * 0.5 + radius;
+    const ry = t.h * 0.5 + radius;
+    const dx = entity.x - t.x;
+    const dy = entity.y - t.y;
+    const q = Math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2);
+    if (q < 1) {
+      const safeQ = Math.max(q, 0.001);
+      const targetX = t.x + dx / safeQ;
+      const targetY = t.y + dy / safeQ;
+      const px = targetX - entity.x;
+      const py = targetY - entity.y;
+      const len = Math.hypot(px, py) || 1;
+      return { nx: px / len, ny: py / len, overlap: len, type: "terrain" };
+    }
+    return null;
+  }
+
+  function caveWallCollisionInfo(entity, radius, cave) {
+    if (pointInCaveEntrance(entity.x, entity.y, cave, radius * 0.7)) return null;
+    const outerRx = cave.w * 0.61 + radius;
+    const outerRy = cave.h * 0.58 + radius;
+    const innerRx = Math.max(20, cave.w * 0.47 - radius * 0.35);
+    const innerRy = Math.max(20, cave.h * 0.43 - radius * 0.35);
+    const dx = entity.x - cave.x;
+    const dy = entity.y - cave.y;
+    const qOuter = Math.sqrt((dx / outerRx) ** 2 + (dy / outerRy) ** 2);
+    const qInner = Math.sqrt((dx / innerRx) ** 2 + (dy / innerRy) ** 2);
+    if (qOuter <= 1 && qInner >= 1) {
+      const innerGap = qInner - 1;
+      const outerGap = 1 - qOuter;
+      const pushToInner = innerGap <= outerGap;
+      const q = Math.max(pushToInner ? qInner : qOuter, 0.001);
+      const scale = pushToInner ? 0.985 / q : 1.02 / q;
+      const targetX = cave.x + dx * scale;
+      const targetY = cave.y + dy * scale;
+      const px = targetX - entity.x;
+      const py = targetY - entity.y;
+      const len = Math.hypot(px, py) || 1;
+      return { nx: px / len, ny: py / len, overlap: len, type: "cave" };
+    }
+    return null;
+  }
+
+  function resolveSolidCollisions(entity, radius = 18, showHint = false) {
+    if (!dive) return false;
+    let collided = false;
+    for (let pass = 0; pass < 3; pass++) {
+      let hit = null;
+      if (dive.terrain) {
+        for (const t of dive.terrain) {
+          hit = terrainCollisionInfo(entity, radius, t);
+          if (hit) break;
+        }
+      }
+      if (!hit && dive.caves) {
+        for (const cave of dive.caves) {
+          hit = caveWallCollisionInfo(entity, radius, cave);
+          if (hit) break;
+        }
+      }
+      if (!hit) break;
+      collided = true;
+      entity.x += hit.nx * (hit.overlap + 0.6);
+      entity.y += hit.ny * (hit.overlap + 0.6);
+      const dot = (entity.vx || 0) * hit.nx + (entity.vy || 0) * hit.ny;
+      if (dot < 0) {
+        entity.vx -= dot * hit.nx * 1.35;
+        entity.vy -= dot * hit.ny * 1.35;
+      }
+      entity.vx *= 0.62;
+      entity.vy *= 0.62;
+    }
+    if (collided && showHint && dive.solidHintTimer <= 0) {
+      showToast("바위벽과 지형은 통과할 수 없어요. 입구를 찾아 돌아가세요!", 1.8);
+      dive.solidHintTimer = 4;
+      playSfx("bump");
+    }
+    return collided;
+  }
+
+  function spawnCaveLife(spawnItem, spawnEnemy) {
+    if (!dive || !dive.caves) return;
+    for (const cave of dive.caves) {
+      const itemCount = cave.type === "volcano" ? 13 : 11;
+      for (let i = 0; i < itemCount; i++) {
+        const key = cave.itemKeys[randInt(0, cave.itemKeys.length - 1)];
+        const x = rand(cave.x - cave.w * 0.36, cave.x + cave.w * 0.36);
+        const y = rand(cave.y - cave.h * 0.30, cave.y + cave.h * 0.34);
+        spawnItem(key, x, yToDepth(y));
+      }
+      const enemyCount = cave.type === "volcano" ? 3 : 2;
+      for (let i = 0; i < enemyCount; i++) {
+        const key = cave.enemyKeys[randInt(0, cave.enemyKeys.length - 1)];
+        spawnEnemy(key, 1, cave);
+      }
+    }
+  }
+
+  function cryptoRandomId() {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+
+  function startAutoReturn() {
+    if (!dive || game.state !== "diving") return;
+    dive.autoReturn = true;
+    dive.returnStarted = true;
+    playSfx("boost");
+    showToast("배로 자동 귀환 중! 산소를 아끼며 올라갑니다.", 2.4);
+  }
+
+  function rescueDive(reason) {
+    if (!dive || game.state !== "diving") return;
+    dive.rescued = true;
+    dive.rescueReason = reason;
+    const loseCount = Math.floor(dive.inventory.length / 2);
+    dive.lostItems = [];
+    for (let i = 0; i < loseCount; i++) {
+      const index = randInt(0, dive.inventory.length - 1);
+      dive.lostItems.push(dive.inventory.splice(index, 1)[0]);
+    }
+    dive.diver.x = BOAT_X;
+    dive.diver.y = 32;
+    playSfx("rescue");
+    finishDive();
+  }
+
+  function finishDive() {
+    if (!dive) return;
+    const inv = [...dive.inventory];
+    const counts = {};
+    let income = 0;
+    inv.forEach(key => {
+      counts[key] = (counts[key] || 0) + 1;
+      income += ITEM_DEFS[key].price;
+    });
+
+    const mission = game.currentMission;
+    const missionComplete = isMissionComplete(true);
+    const missionBonus = missionComplete ? mission.bonus : 0;
+    const totalGain = income + dive.codexBonus + missionBonus;
+
+    game.money += totalGain;
+    game.totalMoney += totalGain;
+    game.bestDepth = Math.max(game.bestDepth, dive.maxDepth);
+
+    playSfx("cash");
+
+    game.lastResult = {
+      day: game.day,
+      maxDepth: dive.maxDepth,
+      inventory: inv,
+      counts,
+      income,
+      codexBonus: dive.codexBonus,
+      newCodex: [...dive.newCodex],
+      mission: structuredClone(mission),
+      missionComplete,
+      missionBonus,
+      totalGain,
+      moneyAfter: game.money,
+      rescued: dive.rescued,
+      rescueReason: dive.rescueReason,
+      lostItems: [...dive.lostItems],
+      oxygenLeft: dive.diver.oxygen,
+      oxygenMax: dive.stats.oxygenMax
+    };
+
+    game.day += 1;
+    saveGame();
+    renderResultScreen();
+    setState("result");
+  }
+
+  function isMissionComplete(finalCheck = false) {
+    if (!dive || !game.currentMission) return false;
+    const m = game.currentMission;
+    if (m.type === "collect") return (dive.collectedCounts[m.key] || 0) >= m.count;
+    if (m.type === "depth") return dive.maxDepth >= m.depth;
+    if (m.type === "treasure") return dive.treasureFound >= m.count;
+    if (m.type === "oxygenReturn") return finalCheck && !dive.rescued && percent(dive.diver.oxygen, dive.stats.oxygenMax) >= m.oxygenPct;
+    return false;
+  }
+
+  function missionProgressText() {
+    if (!dive || !game.currentMission) return "";
+    const m = game.currentMission;
+    if (m.type === "collect") return `${m.text} (${Math.min(dive.collectedCounts[m.key] || 0, m.count)}/${m.count})`;
+    if (m.type === "depth") return `${m.text} (${Math.min(Math.floor(dive.maxDepth), m.depth)}/${m.depth}m)`;
+    if (m.type === "treasure") return `${m.text} (${Math.min(dive.treasureFound, m.count)}/${m.count})`;
+    if (m.type === "oxygenReturn") return `${m.text} (귀환할 때 확인)`;
+    return m.text;
+  }
+
+  function renderResultScreen() {
+    const r = game.lastResult;
+    if (!r) return;
+    resultTitle.textContent = r.rescued ? "구조되었습니다! 오늘의 정산" : "무사 귀환! 오늘의 정산";
+
+    const rows = Object.entries(r.counts).map(([key, count]) => {
+      const def = ITEM_DEFS[key];
+      return `<tr><td>${def.name}</td><td>${count}개</td><td>${won(def.price)}</td><td>${won(def.price * count)}</td></tr>`;
+    }).join("") || `<tr><td colspan="4">수집품이 없어요. 다음에는 가까운 조개부터 모아봐요!</td></tr>`;
+
+    const lostText = r.lostItems.length
+      ? `<p style="color:#fecaca;"><strong>구조 중 손실:</strong> ${r.lostItems.map(k => ITEM_DEFS[k].name).join(", ")}</p>`
+      : "";
+
+    const codexText = r.newCodex.length
+      ? `<div class="card"><strong>새 도감</strong>${r.newCodex.map(c => `<p><strong>${c.name}</strong> · ${c.fact} <span class="muted">(+${won(c.bonus)})</span></p>`).join("")}</div>`
+      : `<p class="muted">새로 등록한 도감은 없어요.</p>`;
+
+    resultContent.innerHTML = `
+      ${r.rescued ? `<div class="card" style="border-color:rgba(251,113,133,.6);"><strong>${r.rescueReason}</strong><br>수집품의 절반을 잃고 배로 돌아왔어요. 실패해도 괜찮아요. 업그레이드 후 다시 도전해요!</div>` : `<div class="card"><strong>훌륭해요!</strong><br>배로 안전하게 돌아왔어요.</div>`}
+      ${lostText}
+      <div class="grid">
+        <div class="card"><strong>잠수 일차</strong><br>${r.day}일차</div>
+        <div class="card"><strong>도달한 최대 수심</strong><br>${Math.round(r.maxDepth)}m</div>
+        <div class="card"><strong>도감</strong><br>${discoveredCodexCount()} / ${totalCodexCount()}종 발견</div>
+        <div class="card"><strong>현재 돈</strong><br>${won(r.moneyAfter)}</div>
+      </div>
+      <table class="item-list">
+        <thead><tr><th>수집품</th><th>수량</th><th>가격</th><th>금액</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${codexText}
+      <div class="grid">
+        <div class="card"><strong>수집품 판매</strong><br>${won(r.income)}</div>
+        <div class="card"><strong>도감 등록 보너스</strong><br>${won(r.codexBonus)}</div>
+        <div class="card"><strong>미션</strong><br>${r.mission.text}<br>${r.missionComplete ? "성공! +" + won(r.missionBonus) : "아쉽지만 다음 기회!"}</div>
+        <div class="card"><strong>총 수익</strong><br>${won(r.totalGain)}</div>
+      </div>
+    `;
+  }
+
+  function renderUpgradeScreen() {
+    upgradeMoney.textContent = `현재 돈: ${won(game.money)}`;
+    upgradeCards.innerHTML = "";
+    Object.entries(UPGRADE_INFO).forEach(([key, info]) => {
+      const level = game.upgrades[key] || 0;
+      const maxed = level >= info.max;
+      const cost = maxed ? 0 : info.costs[level];
+      const nextEffect = maxed ? "최고 레벨입니다!" : info.effect(level + 1);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${info.icon} ${info.name}</h3>
+        <div class="statline"><span>현재 레벨</span><strong>${level} / ${info.max}</strong></div>
+        <p>${info.effect(level)}</p>
+        <p class="muted">다음 효과: ${nextEffect}</p>
+        <p><strong>${maxed ? "구매 완료" : "비용: " + won(cost)}</strong></p>
+      `;
+      const btn = document.createElement("button");
+      btn.className = "button " + (maxed ? "dark" : "green");
+      btn.textContent = maxed ? "최고 레벨" : "업그레이드";
+      btn.disabled = maxed;
+      btn.style.opacity = maxed ? "0.55" : "1";
+      btn.addEventListener("click", () => buyUpgrade(key));
+      card.appendChild(btn);
+      upgradeCards.appendChild(card);
+    });
+  }
+
+  function buyUpgrade(key) {
+    const info = UPGRADE_INFO[key];
+    const level = game.upgrades[key] || 0;
+    if (level >= info.max) {
+      showToast("이미 최고 레벨이에요.");
+      return;
+    }
+    const cost = info.costs[level];
+    if (game.money < cost) {
+      showToast("돈이 부족해요!");
+      return;
+    }
+    game.money -= cost;
+    game.upgrades[key] = level + 1;
+    saveGame();
+    renderUpgradeScreen();
+    playSfx("upgrade");
+    showToast(`${info.name} 업그레이드 완료!`, 1.7);
+  }
+
+  // ===== 입력 =====
+  window.addEventListener("keydown", e => {
+    const block = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Space", "Shift", "ShiftLeft", "ShiftRight"].includes(e.key) || [" ", "w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key);
+    if (block) e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    if (game.state !== "diving" || e.repeat) return;
+    if (e.key === " " || e.code === "Space") captureFish();
+    if (e.key.toLowerCase() === "e") interact();
+    if (e.key === "Shift") boost();
+    if (e.key.toLowerCase() === "r") startAutoReturn();
+  }, { passive: false });
+
+  window.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  function togglePause() {
+    if (game.state === "diving") {
+      game.previousState = "diving";
+      setState("pause");
+    } else if (game.state === "pause") {
+      setState("diving");
+    }
+  }
+
+  function mobileAction() {
+    if (game.state !== "diving") return;
+    const target = findNearestInteractable();
+    if (target && distance(dive.diver, target) < INTERACT_RANGE) interact();
+    else captureFish();
+  }
+
+  function bindMobileButton(id, fn) {
+    const el = document.getElementById(id);
+    const handler = e => { e.preventDefault(); fn(); };
+    el.addEventListener("touchstart", handler, { passive: false });
+    el.addEventListener("pointerdown", handler);
+  }
+  bindMobileButton("actionBtn", mobileAction);
+  bindMobileButton("boostBtn", boost);
+  bindMobileButton("returnBtn", startAutoReturn);
+
+  let stickPointerId = null;
+  stickArea.addEventListener("pointerdown", e => {
+    stickPointerId = e.pointerId;
+    stickArea.setPointerCapture(e.pointerId);
+    touchMove.active = true;
+    updateStick(e);
+  });
+  stickArea.addEventListener("pointermove", e => {
+    if (e.pointerId === stickPointerId) updateStick(e);
+  });
+  stickArea.addEventListener("pointerup", endStick);
+  stickArea.addEventListener("pointercancel", endStick);
+
+  function updateStick(e) {
+    const rect = stickArea.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const max = rect.width * 0.35;
+    const len = Math.hypot(dx, dy) || 1;
+    const k = Math.min(1, len / max);
+    touchMove.x = (dx / len) * k;
+    touchMove.y = (dy / len) * k;
+    stickKnob.style.left = `${44 + touchMove.x * 42}px`;
+    stickKnob.style.top = `${44 + touchMove.y * 42}px`;
+  }
+
+  function endStick(e) {
+    if (stickPointerId !== null && e.pointerId !== stickPointerId) return;
+    resetTouchStick();
+  }
+
+  function resetTouchStick() {
+    stickPointerId = null;
+    touchMove.x = 0;
+    touchMove.y = 0;
+    touchMove.active = false;
+    if (stickKnob) {
+      stickKnob.style.left = "44px";
+      stickKnob.style.top = "44px";
+    }
+  }
+
+  // ===== 상호작용 =====
+  function findNearestInteractable() {
+    if (!dive) return null;
+    let best = null;
+    let bestD = Infinity;
+    const all = [...dive.objects.filter(o => !o.taken), ...dive.enemies];
+    for (const obj of all) {
+      const d = Math.hypot(obj.x - dive.diver.x, obj.y - dive.diver.y);
+      if (d < bestD) {
+        bestD = d;
+        best = obj;
+      }
+    }
+    return best;
+  }
+
+  function interact() {
+    if (!dive || game.state !== "diving") return;
+    const target = findNearestInteractable();
+    if (!target || distance(dive.diver, target) > INTERACT_RANGE) {
+      showToast("가까이 다가가서 E키를 눌러보세요.", 1.6);
+      return;
+    }
+
+    if (target.key && ENEMY_DEFS[target.key]) {
+      registerCodex("enemy:" + target.key);
+      return;
+    }
+
+    const def = ITEM_DEFS[target.key];
+    if (!def) return;
+    registerCodex("item:" + target.key);
+
+    if (def.group === "fish") {
+      showToast(`${def.name} 도감 확인! 물고기는 스페이스로 그물을 던져 잡아요.`, 1.5);
+      return;
+    }
+
+    if (def.group === "treasure" && def.openNeed) {
+      target.openProgress += 1;
+      if (target.openProgress < def.openNeed) {
+        showToast(`보물상자 여는 중... (${target.openProgress}/${def.openNeed})`, 1.2);
+        return;
+      }
+    }
+
+    collectObject(target);
+  }
+
+  function captureFish() {
+    if (!dive || game.state !== "diving") return;
+    const diver = dive.diver;
+    const range = dive.stats.netRange || dive.stats.harpoonRange;
+    const radius = dive.stats.netRadius || 42;
+    const fx = Math.cos(diver.angle);
+    const fy = Math.sin(diver.angle);
+    const targetX = clamp(diver.x + fx * range, -WORLD_HALF_WIDTH + 45, WORLD_HALF_WIDTH - 45);
+    const targetY = clamp(diver.y + fy * range, 20, WORLD_HEIGHT - 20);
+    const catchLimit = dive.stats.netCatchLimit || 1;
+
+    dive.harpoonFlash = 0.25;
+    dive.nets.push({
+      x: diver.x + fx * 20,
+      y: diver.y + fy * 20,
+      targetX,
+      targetY,
+      r: 8,
+      maxR: radius,
+      life: 0.42,
+      maxLife: 0.42
+    });
+    playSfx("harpoon");
+
+    const candidates = [];
+    for (const obj of dive.objects) {
+      if (obj.taken) continue;
+      const def = ITEM_DEFS[obj.key];
+      if (!def || def.group !== "fish") continue;
+      const dist = Math.hypot(obj.x - targetX, obj.y - targetY);
+      if (dist <= radius + def.size) candidates.push({ obj, def, dist });
+    }
+    candidates.sort((a, b) => a.dist - b.dist);
+
+    if (dive.inventory.length >= dive.stats.inventoryMax) {
+      showToast("가방이 가득 찼어요! 배로 돌아가세요!", 1.8);
+      return;
+    }
+
+    let caught = 0;
+    let blockedName = "";
+    for (const c of candidates) {
+      if (caught >= catchLimit) break;
+      if (dive.inventory.length >= dive.stats.inventoryMax) break;
+      if (dive.stats.harpoonLevel < c.def.minHarpoon) {
+        blockedName = c.def.name;
+        continue;
+      }
+      registerCodex("item:" + c.obj.key);
+      collectObject(c.obj, true);
+      caught++;
+    }
+
+    if (caught > 0) {
+      addBubbles(targetX, targetY, 10 + caught * 4, "#dbeafe");
+      showToast(`그물을 던져 ${caught}마리 포획!`, 1.55);
+    } else if (blockedName) {
+      showToast(`${blockedName}은 더 튼튼한 그물이 필요해요!`, 1.8);
+    } else {
+      showToast("물고기가 모여 있는 곳에 그물을 던져보세요.", 1.4);
+    }
+  }
+
+  function collectObject(obj, quiet = false) {
+    const def = ITEM_DEFS[obj.key];
+    if (!def || obj.taken) return;
+    if (dive.inventory.length >= dive.stats.inventoryMax) {
+      showToast("가방이 가득 찼어요! 배로 돌아가세요!", 2);
+      return;
+    }
+    obj.taken = true;
+    dive.inventory.push(obj.key);
+    dive.collectedCounts[obj.key] = (dive.collectedCounts[obj.key] || 0) + 1;
+    if (def.group === "treasure") dive.treasureFound += 1;
+    addBubbles(obj.x, obj.y, 12, def.rare ? "#f0abfc" : "#e0f2fe");
+    playSfx(def.rare ? "rare" : "collect");
+    if (!quiet) showToast(`${def.name} 획득! +${won(def.price)}`, 1.45);
+  }
+
+  function getCodexFact(code) {
+    if (code.startsWith("item:")) {
+      const def = ITEM_DEFS[code.slice(5)];
+      return def && def.fact ? def.fact : "새로운 해양 생물을 발견했어요.";
+    }
+    if (code.startsWith("enemy:")) {
+      const def = ENEMY_DEFS[code.slice(6)];
+      return def && def.fact ? def.fact : "위험 생물은 관찰하고 거리를 두는 것이 좋아요.";
+    }
+    return "새로운 발견이에요.";
+  }
+
+  function registerCodex(code) {
+    if (game.codex[code]) return false;
+    game.codex[code] = true;
+    let name = "새 발견";
+    let bonus = 80;
+    if (code.startsWith("item:")) {
+      const key = code.slice(5);
+      const def = ITEM_DEFS[key];
+      name = def.name;
+      bonus = Math.max(70, Math.round(def.price * 0.24));
+    } else if (code.startsWith("enemy:")) {
+      const key = code.slice(6);
+      const def = ENEMY_DEFS[key];
+      name = def.name;
+      bonus = Math.round(90 + def.damage * 8 + def.size * 1.2);
+    }
+    const fact = getCodexFact(code);
+    dive.codexBonus += bonus;
+    dive.newCodex.push({ name, fact, bonus });
+    playSfx("rare");
+    showToast(`${name} 도감 등록! ${fact} 연구 보너스 +${won(bonus)}`, 3.0);
+    saveGame();
+    return true;
+  }
+
+  function boost() {
+    if (!dive || game.state !== "diving") return;
+    if (dive.boostCooldown > 0) return;
+    if (dive.diver.oxygen <= dive.stats.boostCost + 1) {
+      showToast("산소가 부족해서 부스터를 못 써요!", 1.4);
+      return;
+    }
+    const diver = dive.diver;
+    let mx = 0;
+    let my = 0;
+    if (keys["arrowleft"] || keys["a"]) mx -= 1;
+    if (keys["arrowright"] || keys["d"]) mx += 1;
+    if (keys["arrowup"] || keys["w"]) my -= 1;
+    if (keys["arrowdown"] || keys["s"]) my += 1;
+    mx += touchMove.x;
+    my += touchMove.y;
+    let len = Math.hypot(mx, my);
+    if (len < 0.1) {
+      mx = Math.cos(diver.angle);
+      my = Math.sin(diver.angle);
+      len = 1;
+    }
+    mx /= len;
+    my /= len;
+    diver.vx += mx * dive.stats.boostSpeed;
+    diver.vy += my * dive.stats.boostSpeed;
+    diver.oxygen = Math.max(0, diver.oxygen - dive.stats.boostCost);
+    dive.boostCooldown = 0.7;
+    addBubbles(diver.x - mx * 16, diver.y - my * 16, 18, "#bae6fd");
+    playSfx("boost");
+  }
+
+  // ===== 업데이트 =====
+  function update(dt) {
+    if (toastTimer > 0) {
+      toastTimer -= dt;
+      if (toastTimer <= 0) toast.classList.remove("show");
+    }
+
+    if (game.state !== "diving" || !dive) return;
+
+    dive.time += dt;
+    dive.boostCooldown = Math.max(0, dive.boostCooldown - dt);
+    dive.harpoonFlash = Math.max(0, dive.harpoonFlash - dt);
+    dive.damageFlash = Math.max(0, dive.damageFlash - dt * 1.8);
+    dive.oxygenFlash = Math.max(0, dive.oxygenFlash - dt * 2.6);
+    dive.pressureWarnTimer = Math.max(0, dive.pressureWarnTimer - dt);
+    dive.lowOxygenWarnTimer = Math.max(0, dive.lowOxygenWarnTimer - dt);
+    dive.caveHintTimer = Math.max(0, dive.caveHintTimer - dt);
+    dive.airPocketTimer = Math.max(0, dive.airPocketTimer - dt);
+    dive.solidHintTimer = Math.max(0, dive.solidHintTimer - dt);
+
+    updateDiver(dt);
+    if (game.state !== "diving" || !dive) return;
+    updateObjects(dt);
+    updateNets(dt);
+    updateEnemies(dt);
+    if (game.state !== "diving" || !dive) return;
+    updateCaveStatus(dt);
+    updateBubbles(dt);
+    updateCamera(dt);
+    updateSurvival(dt);
+  }
+
+  function updateDiver(dt) {
+    const diver = dive.diver;
+    const s = dive.stats;
+    let mx = 0;
+    let my = 0;
+
+    if (dive.autoReturn) {
+      const tx = BOAT_X;
+      const ty = 18;
+      mx = tx - diver.x;
+      my = ty - diver.y;
+      const len = Math.hypot(mx, my) || 1;
+      mx /= len;
+      my /= len;
+      if (len < 34 && diver.y < 60) {
+        finishDive();
+        return;
+      }
+    } else {
+      if (keys["arrowleft"] || keys["a"]) mx -= 1;
+      if (keys["arrowright"] || keys["d"]) mx += 1;
+      if (keys["arrowup"] || keys["w"]) my -= 1;
+      if (keys["arrowdown"] || keys["s"]) my += 1;
+      mx += touchMove.x;
+      my += touchMove.y;
+      const len = Math.hypot(mx, my);
+      if (len > 1) { mx /= len; my /= len; }
+    }
+
+    if (Math.hypot(mx, my) > 0.08) {
+      diver.angle = Math.atan2(my, mx);
+      diver.vx += mx * s.accel * 60 * dt;
+      diver.vy += my * s.accel * 60 * dt;
+    }
+
+    const speed = Math.hypot(diver.vx, diver.vy);
+    const maxSpeed = dive.autoReturn ? s.maxSpeed * 1.25 : s.maxSpeed;
+    if (speed > maxSpeed) {
+      diver.vx = (diver.vx / speed) * maxSpeed;
+      diver.vy = (diver.vy / speed) * maxSpeed;
+    }
+
+    diver.x += diver.vx * 60 * dt;
+    diver.y += diver.vy * 60 * dt;
+    resolveSolidCollisions(diver, 18, true);
+    diver.vx *= Math.pow(s.friction, 60 * dt);
+    diver.vy *= Math.pow(s.friction, 60 * dt);
+
+    diver.x = clamp(diver.x, -WORLD_HALF_WIDTH + 35, WORLD_HALF_WIDTH - 35);
+    diver.y = clamp(diver.y, 20, WORLD_HEIGHT - 20);
+
+    const d = yToDepth(diver.y);
+    dive.maxDepth = Math.max(dive.maxDepth, d);
+
+    if (!dive.autoReturn && diver.y < 46 && Math.abs(diver.x - BOAT_X) < 84 && dive.inventory.length > 0) {
+      showToast("배에 도착했어요! R키를 누르면 정산해요.", 1.5);
+    }
+  }
+
+  function updateObjects(dt) {
+    const diver = dive.diver;
+    for (const obj of dive.objects) {
+      if (obj.taken) continue;
+      obj.phase += dt;
+      obj.sparkle += dt;
+      const def = ITEM_DEFS[obj.key];
+      if (def.group === "fish") {
+        obj.x += obj.vx * 60 * dt;
+        obj.y += Math.sin(obj.phase * 2.1) * 0.25 * 60 * dt;
+        if (obj.x < -WORLD_HALF_WIDTH + 50 || obj.x > WORLD_HALF_WIDTH - 50) obj.vx *= -1;
+        resolveSolidCollisions(obj, Math.max(9, def.size * 0.65), false);
+        const dist = Math.hypot(obj.x - diver.x, obj.y - diver.y);
+        if (dist < 80) {
+          obj.vx += Math.sign(obj.x - diver.x || 1) * 0.012 * 60 * dt;
+          obj.vx = clamp(obj.vx, -def.speed * 1.55, def.speed * 1.55);
+        }
+      }
+    }
+    dive.objects = dive.objects.filter(o => !o.taken);
+  }
+
+
+  function updateNets(dt) {
+    if (!dive) return;
+    for (const n of dive.nets) {
+      n.life -= dt;
+      const t = 1 - Math.max(0, n.life) / n.maxLife;
+      n.x += (n.targetX - n.x) * Math.min(1, dt * 14);
+      n.y += (n.targetY - n.y) * Math.min(1, dt * 14);
+      n.r = n.maxR * Math.sin(Math.min(1, t) * Math.PI * 0.82);
+    }
+    dive.nets = dive.nets.filter(n => n.life > 0);
+  }
+
+  function updateCaveStatus(dt) {
+    const before = dive.currentCave;
+    const cave = findCurrentCave();
+    dive.currentCave = cave;
+    if (cave && (!before || before.id !== cave.id) && dive.caveHintTimer <= 0) {
+      playSfx(cave.airPocket ? "rare" : "collect");
+      showToast(`${cave.name} 발견! ${cave.label}`, 2.2);
+      dive.caveHintTimer = 4;
+    }
+    if (cave && inAirPocket(cave, dive.diver.x, dive.diver.y)) {
+      dive.diver.oxygen = Math.min(dive.stats.oxygenMax, dive.diver.oxygen + 13 * dt);
+      if (dive.airPocketTimer <= 0) {
+        showToast("에어포켓에서 산소를 조금 회복해요!", 1.8);
+        playSfx("oxygen");
+        dive.airPocketTimer = 3.5;
+      }
+      addBubbles(dive.diver.x + rand(-10, 10), dive.diver.y - 16, 1, "#fef9c3");
+    }
+  }
+
+  function updateEnemies(dt) {
+    const diver = dive.diver;
+    for (const e of dive.enemies) {
+      const def = ENEMY_DEFS[e.key];
+      e.phase += dt;
+      e.hitCooldown = Math.max(0, e.hitCooldown - dt);
+      e.chargeTimer = Math.max(0, e.chargeTimer - dt);
+
+      const dx = diver.x - e.x;
+      const dy = diver.y - e.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const behavior = def.behavior || e.key;
+
+      if (behavior === "jelly") {
+        e.vx += Math.sin(e.phase * 0.7) * 0.003;
+        e.vy += Math.cos(e.phase * 0.9) * 0.003;
+        e.vx = clamp(e.vx, -0.24, 0.24);
+        e.vy = clamp(e.vy, -0.18, 0.18);
+      } else if (behavior === "spike") {
+        if (dist < 155 && e.chargeTimer <= 0 && e.state !== "charge") {
+          e.state = "charge";
+          e.chargeTimer = 0.75;
+          e.vx = (dx / dist) * 1.55;
+          e.vy = (dy / dist) * 1.55;
+        } else if (e.state === "charge" && e.chargeTimer <= 0) {
+          e.state = "patrol";
+          e.chargeTimer = 2.2;
+          e.vx *= 0.3;
+          e.vy *= 0.3;
+        } else if (e.state !== "charge") {
+          e.vx += Math.sin(e.phase) * 0.004;
+          e.vy += Math.cos(e.phase * 0.8) * 0.004;
+          e.vx = clamp(e.vx, -0.38, 0.38);
+          e.vy = clamp(e.vy, -0.25, 0.25);
+        }
+      } else if (behavior === "puffer") {
+        e.inflated = dist < 88;
+        e.vx += Math.sin(e.phase * 0.9) * 0.004 + (e.homeX - e.x) * 0.000012;
+        e.vy += Math.cos(e.phase * 0.7) * 0.004 + (e.homeY - e.y) * 0.000012;
+        if (dist < 70) {
+          e.vx -= (dx / dist) * 0.012;
+          e.vy -= (dy / dist) * 0.012;
+        }
+        e.vx = clamp(e.vx, -0.42, 0.42);
+        e.vy = clamp(e.vy, -0.34, 0.34);
+      } else if (behavior === "grouper") {
+        if (dist < 210) {
+          e.vx += (dx / dist) * 0.026;
+          e.vy += (dy / dist) * 0.018;
+        } else {
+          e.vx += (e.homeX - e.x) * 0.000028 + Math.sin(e.phase * 0.55) * 0.006;
+          e.vy += (e.homeY - e.y) * 0.000028 + Math.cos(e.phase * 0.44) * 0.004;
+        }
+        e.vx = clamp(e.vx, -0.92, 0.92);
+        e.vy = clamp(e.vy, -0.56, 0.56);
+      } else if (behavior === "shark") {
+        if (dist < 275) {
+          e.vx += (dx / dist) * 0.035;
+          e.vy += (dy / dist) * 0.025;
+        } else {
+          e.vx += Math.sin(e.phase * 0.45) * 0.006;
+          e.vy += (e.homeY - e.y) * 0.000015;
+        }
+        e.vx = clamp(e.vx, -1.28, 1.28);
+        e.vy = clamp(e.vy, -0.75, 0.75);
+      } else if (behavior === "monster") {
+        const reacts = dist < 245 || (dist < 330 && yToDepth(diver.y) > 900);
+        if (reacts) {
+          e.vx += (dx / dist) * 0.018;
+          e.vy += (dy / dist) * 0.016;
+        } else {
+          e.vx += (e.homeX - e.x) * 0.000018 + Math.sin(e.phase * 0.25) * 0.004;
+          e.vy += (e.homeY - e.y) * 0.000018 + Math.cos(e.phase * 0.31) * 0.003;
+        }
+        e.vx = clamp(e.vx, -0.82, 0.82);
+        e.vy = clamp(e.vy, -0.62, 0.62);
+      }
+
+      e.x += e.vx * 60 * dt;
+      e.y += e.vy * 60 * dt;
+      resolveSolidCollisions(e, Math.max(16, def.size * 0.42), false);
+      e.vx *= Math.pow(0.985, 60 * dt);
+      e.vy *= Math.pow(0.985, 60 * dt);
+      e.x = clamp(e.x, -WORLD_HALF_WIDTH + 50, WORLD_HALF_WIDTH - 50);
+      e.y = clamp(e.y, depthToY(def.minDepth), depthToY(def.maxDepth));
+
+      const dangerSize = def.size + (e.inflated ? 12 : 0);
+      if (dist < dangerSize + 15 && e.hitCooldown <= 0) {
+        e.hitCooldown = ENEMY_HIT_COOLDOWN;
+        const damage = Math.round(def.damage * (e.inflated ? 1.35 : 1));
+        takeDamage(damage, `${def.name}에 부딪혔어요!`);
+        const push = 2.8;
+        diver.vx -= (dx / dist) * push;
+        diver.vy -= (dy / dist) * push;
+      }
+    }
+  }
+
+  function updateBubbles(dt) {
+    dive.bubbleTimer -= dt;
+    if (dive.bubbleTimer <= 0) {
+      dive.bubbleTimer = 0.12;
+      const a = dive.diver.angle + Math.PI + rand(-0.6, 0.6);
+      addBubbles(dive.diver.x + Math.cos(a) * 12, dive.diver.y + Math.sin(a) * 12, 1, "#bfdbfe");
+    }
+    for (const b of dive.bubbles) {
+      b.x += b.vx * 60 * dt;
+      b.y += b.vy * 60 * dt;
+      b.life -= dt;
+      b.r += dt * 2;
+    }
+    dive.bubbles = dive.bubbles.filter(b => b.life > 0 && b.y > -80);
+  }
+
+  function addBubbles(x, y, count, color) {
+    if (!dive) return;
+    for (let i = 0; i < count; i++) {
+      dive.bubbles.push({
+        x: x + rand(-10, 10),
+        y: y + rand(-8, 8),
+        vx: rand(-0.16, 0.16),
+        vy: rand(-0.85, -0.25),
+        r: rand(2, 5),
+        life: rand(0.7, 1.8),
+        color
+      });
+    }
+  }
+
+  function updateCamera(dt) {
+    const targetY = clamp(dive.diver.y, 170, WORLD_HEIGHT - ch * 0.45);
+    const targetX = clamp(dive.diver.x, -WORLD_HALF_WIDTH + cw * 0.35, WORLD_HALF_WIDTH - cw * 0.35);
+    dive.camera.x += (targetX - dive.camera.x) * Math.min(1, dt * 6);
+    dive.camera.y += (targetY - dive.camera.y) * Math.min(1, dt * 6);
+  }
+
+  function updateSurvival(dt) {
+    const diver = dive.diver;
+    const depth = yToDepth(diver.y);
+    const deepMul = 1 + depth / 2600;
+    diver.oxygen -= dive.stats.oxygenDrain * deepMul * dt;
+
+    if (diver.oxygen <= 0) {
+      diver.oxygen = 0;
+      rescueDive("산소가 떨어져 구조되었습니다!");
+      return;
+    }
+
+    if (depth > dive.stats.depthLimit) {
+      const over = depth - dive.stats.depthLimit;
+      diver.health -= (0.7 + over / 170) * dt;
+      if (dive.pressureWarnTimer <= 0) {
+        showToast("현재 잠수복으로는 너무 깊어요! 업그레이드 후 다시 도전하세요!", 2.2);
+        dive.pressureWarnTimer = 5.2;
+      }
+      if (diver.health <= 0) {
+        diver.health = 0;
+        rescueDive("수압 때문에 체력이 떨어져 구조되었습니다!");
+        return;
+      }
+    }
+
+    const oxygenPct = percent(diver.oxygen, dive.stats.oxygenMax);
+    if (oxygenPct <= 30 && dive.lowOxygenWarnTimer <= 0) {
+      showToast("산소가 부족해요! 위로 올라가세요!", 2.2);
+      playSfx("oxygen");
+      dive.lowOxygenWarnTimer = oxygenPct <= 10 ? 3 : 6;
+    }
+    if (oxygenPct <= 10) dive.oxygenFlash = Math.max(dive.oxygenFlash, 0.4);
+  }
+
+  function takeDamage(amount, message) {
+    if (!dive || game.state !== "diving") return;
+    dive.diver.health = Math.max(0, dive.diver.health - amount);
+    dive.damageFlash = 1;
+    playSfx("damage");
+    showToast(message, 1.4);
+    if (dive.diver.health <= 0) {
+      rescueDive("체력이 떨어져 구조되었습니다!");
+    }
+  }
+
+  // ===== 그리기 =====
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+
+    if (game.state === "start" || !dive) {
+      drawIdleOcean();
+      return;
+    }
+
+    drawBackground();
+
+    ctx.save();
+    const cam = dive.camera;
+    ctx.translate(cw / 2 - cam.x, ch / 2 - cam.y);
+
+    drawWorldDetails();
+    drawCaves();
+    drawBoat();
+    drawSilhouettes();
+    drawObjects();
+    drawEnemies();
+    drawBubbles();
+    drawNetEffects();
+    drawDiver();
+
+    ctx.restore();
+
+    drawDarknessOverlay();
+    drawScreenEffects();
+    drawHUD();
+  }
+
+  function colorForDepth(depth) {
+    const stops = [
+      { d: 0, c: [92, 213, 255] },
+      { d: 250, c: [11, 139, 197] },
+      { d: 500, c: [6, 69, 122] },
+      { d: 900, c: [9, 18, 56] },
+      { d: 1500, c: [3, 2, 16] }
+    ];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const a = stops[i], b = stops[i + 1];
+      if (depth >= a.d && depth <= b.d) {
+        const t = (depth - a.d) / (b.d - a.d);
+        const c = a.c.map((v, idx) => Math.round(v + (b.c[idx] - v) * t));
+        return `rgb(${c[0]},${c[1]},${c[2]})`;
+      }
+    }
+    return "rgb(3,2,16)";
+  }
+
+  function drawBackground() {
+    const topDepth = yToDepth(dive.camera.y - ch / 2);
+    const bottomDepth = yToDepth(dive.camera.y + ch / 2);
+    const grad = ctx.createLinearGradient(0, 0, 0, ch);
+    grad.addColorStop(0, colorForDepth(topDepth));
+    grad.addColorStop(0.45, colorForDepth((topDepth + bottomDepth) / 2));
+    grad.addColorStop(1, colorForDepth(bottomDepth));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.save();
+    ctx.globalAlpha = clamp(0.32 - topDepth / 1100, 0, 0.32);
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    for (let i = 0; i < 16; i++) {
+      const x = (i * 137 + dive.time * 18) % (cw + 160) - 80;
+      ctx.beginPath();
+      ctx.ellipse(x, 35 + Math.sin(dive.time + i) * 7, 80, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawIdleOcean() {
+    const fake = { camera: { y: 170 }, time: performance.now() / 1000 };
+    const old = dive;
+    dive = fake;
+    drawBackground();
+    dive = old;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = "#fff";
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 91 + performance.now() * 0.015) % (cw + 80) - 40;
+      const y = 100 + (i * 57) % (ch - 100);
+      ctx.beginPath();
+      ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawWorldDetails() {
+    // 수면
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let x = -WORLD_HALF_WIDTH - 200; x <= WORLD_HALF_WIDTH + 200; x += 24) {
+      const y = SURFACE_Y + Math.sin(x * 0.025 + dive.time * 1.7) * 5;
+      if (x === -WORLD_HALF_WIDTH - 200) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // 구역 경계선
+    const lines = [250, 500, 900, 1500];
+    ctx.save();
+    ctx.font = "bold 17px system-ui";
+    ctx.textAlign = "left";
+    lines.forEach(m => {
+      const y = depthToY(m);
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.setLineDash([10, 14]);
+      ctx.beginPath();
+      ctx.moveTo(-WORLD_HALF_WIDTH, y);
+      ctx.lineTo(WORLD_HALF_WIDTH, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillText(`${m}m`, -WORLD_HALF_WIDTH + 20, y - 10);
+    });
+    ctx.restore();
+
+    // 바닥 근처 암석
+    drawTerrainFeatures();
+
+    ctx.save();
+    ctx.fillStyle = "rgba(15,23,42,0.75)";
+    ctx.beginPath();
+    ctx.moveTo(-WORLD_HALF_WIDTH, WORLD_HEIGHT + 70);
+    for (let x = -WORLD_HALF_WIDTH; x <= WORLD_HALF_WIDTH; x += 70) {
+      ctx.lineTo(x, WORLD_HEIGHT - 25 + Math.sin(x * 0.03) * 26 + Math.cos(x * 0.011) * 38);
+    }
+    ctx.lineTo(WORLD_HALF_WIDTH, WORLD_HEIGHT + 80);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+
+  function drawTerrainFeatures() {
+    if (!dive || !dive.terrain) return;
+    ctx.save();
+    for (const t of dive.terrain) {
+      if (!isOnScreen(t.x, t.y, 180)) continue;
+      if (t.type === "shelf") {
+        ctx.fillStyle = "rgba(15,23,42,0.58)";
+        ctx.strokeStyle = "rgba(148,163,184,0.20)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(t.x - t.w / 2, t.y);
+        for (let i = 0; i <= 8; i++) {
+          const px = t.x - t.w / 2 + (t.w * i) / 8;
+          const py = t.y + Math.sin(i + t.phase) * 10;
+          ctx.lineTo(px, py);
+        }
+        ctx.lineTo(t.x + t.w / 2, t.y + t.h);
+        ctx.lineTo(t.x - t.w / 2, t.y + t.h * 0.8);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillStyle = "rgba(30,41,59,0.56)";
+        ctx.strokeStyle = "rgba(148,163,184,0.15)";
+        ctx.beginPath();
+        ctx.ellipse(t.x, t.y, t.w * 0.5, t.h * 0.5, t.phase, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawCaves() {
+    if (!dive || !dive.caves) return;
+    ctx.save();
+    for (const cave of dive.caves) {
+      if (!isOnScreen(cave.x, cave.y, Math.max(cave.w, cave.h) + 160)) continue;
+      const active = dive.currentCave && dive.currentCave.id === cave.id;
+      const dir = cave.entrance === "left" ? -1 : 1;
+      ctx.save();
+      ctx.translate(cave.x, cave.y);
+
+      // 바깥 바위 덩어리: 실제 충돌 판정이 있는 단단한 벽입니다.
+      const shellGrad = ctx.createRadialGradient(0, 0, 40, 0, 0, cave.w * 0.62);
+      shellGrad.addColorStop(0, cave.type === "volcano" ? "rgba(69,10,10,0.92)" : "rgba(15,23,42,0.92)");
+      shellGrad.addColorStop(1, cave.type === "volcano" ? "rgba(24,5,5,0.98)" : "rgba(2,6,23,0.98)");
+      ctx.fillStyle = shellGrad;
+      ctx.strokeStyle = active ? "rgba(254,249,195,0.92)" : "rgba(148,163,184,0.34)";
+      ctx.lineWidth = active ? 4 : 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, cave.w * 0.61, cave.h * 0.58, Math.sin(dive.time * 0.2) * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 입구 터널: 이 통로로만 동굴 벽을 통과할 수 있습니다.
+      ctx.fillStyle = cave.color;
+      ctx.strokeStyle = active ? "rgba(254,249,195,0.72)" : "rgba(125,211,252,0.24)";
+      ctx.lineWidth = 3;
+      const tunnelX = dir > 0 ? cave.w * 0.34 : -cave.w * 0.69;
+      ctx.beginPath();
+      ctx.roundRect(tunnelX, -cave.h * 0.16, cave.w * 0.35, cave.h * 0.32, 22);
+      ctx.fill();
+      ctx.stroke();
+
+      // 안쪽 빈 공간
+      ctx.fillStyle = cave.color;
+      ctx.strokeStyle = "rgba(15,23,42,0.92)";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, cave.w * 0.47, cave.h * 0.43, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 울퉁불퉁한 벽 느낌
+      ctx.strokeStyle = "rgba(203,213,225,0.14)";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 18; i++) {
+        const a = (Math.PI * 2 * i) / 18 + Math.sin(dive.time * 0.15 + i) * 0.03;
+        const x1 = Math.cos(a) * cave.w * 0.47;
+        const y1 = Math.sin(a) * cave.h * 0.43;
+        const x2 = Math.cos(a) * cave.w * 0.57;
+        const y2 = Math.sin(a) * cave.h * 0.53;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      if (cave.type === "wreck") drawWreckCaveDetails(cave);
+      if (cave.type === "volcano") drawVolcanoCaveDetails(cave);
+      if (cave.airPocket) drawAirPocketDetails(cave);
+      if (cave.type === "waterCave") drawWaterCaveDetails(cave);
+
+      ctx.fillStyle = active ? "#fef9c3" : "rgba(219,234,254,0.78)";
+      ctx.font = "bold 16px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(cave.name, 0, -cave.h * 0.55 - 18);
+      ctx.font = "bold 12px system-ui";
+      ctx.fillStyle = active ? "#fde68a" : "rgba(186,230,253,0.65)";
+      ctx.fillText(cave.entrance === "left" ? "입구 ◀" : "▶ 입구", dir * cave.w * 0.55, -cave.h * 0.20);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawWaterCaveDetails(cave) {
+    ctx.strokeStyle = "rgba(125,211,252,0.25)";
+    ctx.lineWidth = 3;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 46, -cave.h * 0.42);
+      ctx.lineTo(i * 35 + Math.sin(dive.time + i) * 8, -cave.h * 0.18);
+      ctx.stroke();
+    }
+  }
+
+  function drawWreckCaveDetails(cave) {
+    ctx.save();
+    ctx.rotate(-0.08);
+    ctx.fillStyle = "rgba(120,53,15,0.72)";
+    ctx.strokeStyle = "rgba(253,186,116,0.38)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-cave.w * 0.28, 20);
+    ctx.lineTo(cave.w * 0.26, 8);
+    ctx.lineTo(cave.w * 0.18, 58);
+    ctx.lineTo(-cave.w * 0.34, 68);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    for (let i = -2; i <= 2; i++) {
+      ctx.strokeRect(i * 42 - 12, 23, 24, 18);
+    }
+    ctx.restore();
+  }
+
+  function drawVolcanoCaveDetails(cave) {
+    ctx.save();
+    for (let i = -2; i <= 2; i++) {
+      const x = i * 58;
+      ctx.fillStyle = "rgba(127,29,29,0.78)";
+      ctx.beginPath();
+      ctx.moveTo(x - 28, cave.h * 0.34);
+      ctx.lineTo(x, cave.h * 0.05);
+      ctx.lineTo(x + 28, cave.h * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = `rgba(248,113,113,${0.18 + Math.sin(dive.time * 3 + i) * 0.08})`;
+      ctx.beginPath();
+      ctx.ellipse(x, cave.h * 0.08, 18, 45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawAirPocketDetails(cave) {
+    ctx.save();
+    ctx.fillStyle = "rgba(254,249,195,0.30)";
+    ctx.strokeStyle = "rgba(254,240,138,0.62)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -cave.h * 0.34, cave.w * 0.22, cave.h * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.font = "bold 13px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("산소 회복", 0, -cave.h * 0.34 - 6);
+    ctx.restore();
+  }
+
+  function drawBoat() {
+    ctx.save();
+    ctx.translate(BOAT_X, -28 + Math.sin(dive.time * 1.8) * 2);
+    ctx.fillStyle = "#7c2d12";
+    ctx.beginPath();
+    ctx.moveTo(-78, 8);
+    ctx.lineTo(78, 8);
+    ctx.lineTo(46, 36);
+    ctx.lineTo(-52, 36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#fef3c7";
+    ctx.fillRect(-22, -18, 44, 26);
+    ctx.fillStyle = "#0ea5e9";
+    ctx.fillRect(-10, -12, 20, 12);
+    ctx.strokeStyle = "#f8fafc";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(38, 8);
+    ctx.lineTo(38, -46);
+    ctx.stroke();
+    ctx.fillStyle = "#f43f5e";
+    ctx.beginPath();
+    ctx.moveTo(40, -44);
+    ctx.lineTo(82, -32);
+    ctx.lineTo(40, -20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function isOnScreen(x, y, pad = 140) {
+    const sx = x - dive.camera.x + cw / 2;
+    const sy = y - dive.camera.y + ch / 2;
+    return sx > -pad && sx < cw + pad && sy > -pad && sy < ch + pad;
+  }
+
+  function drawSilhouettes() {
+    ctx.save();
+    for (const s of dive.silhouettes) {
+      if (!isOnScreen(s.x, s.y, 220)) continue;
+      const depth = yToDepth(s.y);
+      ctx.globalAlpha = clamp(depth / 1700, 0.05, 0.20);
+      ctx.fillStyle = depth > 900 ? "#020617" : "#0f172a";
+      ctx.save();
+      ctx.translate(s.x + Math.sin(dive.time * 0.2 + s.phase) * 8, s.y);
+      if (s.type === "fish") {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s.size, s.size * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-s.size * 0.9, 0);
+        ctx.lineTo(-s.size * 1.35, -s.size * 0.22);
+        ctx.lineTo(-s.size * 1.35, s.size * 0.22);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s.size * 0.75, s.size * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawObjects() {
+    for (const obj of dive.objects) {
+      if (!isOnScreen(obj.x, obj.y)) continue;
+      const def = ITEM_DEFS[obj.key];
+      if (def.group === "fish") drawFish(obj, def);
+      else if (def.group === "resource") drawResource(obj, def);
+      else drawTreasure(obj, def);
+    }
+  }
+
+  function drawFish(obj, def) {
+    if (obj.key === "seahorse") return drawSeahorse(obj, def);
+    if (obj.key === "fastFish") return drawFishSchool(obj, def);
+    if (obj.key === "squid") return drawSquidItem(obj, def);
+    if (obj.key === "caveShrimp") return drawShrimpItem(obj, def);
+    if (obj.key === "anglerFish") return drawAnglerItem(obj, def);
+    if (obj.key === "deepFish") return drawViperItem(obj, def);
+    if (obj.key === "clownFish") return drawClownFish(obj, def);
+    if (obj.key === "blueFish") return drawBlueTang(obj, def);
+    if (obj.key === "rareFish") return drawLanternFish(obj, def);
+    drawGenericFish(obj, def);
+  }
+
+  function drawGenericFish(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(2,6,23,0.45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, def.size, def.size * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-def.size * 0.9, 0);
+    ctx.lineTo(-def.size * 1.55, -def.size * 0.48);
+    ctx.lineTo(-def.size * 1.55, def.size * 0.48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(def.size * 0.55, -def.size * 0.18, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    drawItemLabelIfNear(obj, def);
+    if (def.rare) drawRareRing(def.size + 7, obj.sparkle);
+    ctx.restore();
+  }
+
+  function drawClownFish(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = "#fb923c";
+    ctx.strokeStyle = "#7c2d12";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(-30, -10); ctx.lineTo(-30, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#fff7ed"; ctx.lineWidth = 5;
+    for (const x of [-7, 6]) { ctx.beginPath(); ctx.moveTo(x, -9); ctx.lineTo(x + 2, 9); ctx.stroke(); }
+    ctx.strokeStyle = "#111827"; ctx.lineWidth = 1.5;
+    for (const x of [-7, 6]) { ctx.beginPath(); ctx.moveTo(x + 3, -9); ctx.lineTo(x + 5, 9); ctx.stroke(); }
+    ctx.fillStyle = "#111827"; ctx.beginPath(); ctx.arc(11, -3, 2.4, 0, Math.PI * 2); ctx.fill();
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawBlueTang(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = "#2563eb";
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, 20, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(-35, -10); ctx.lineTo(-32, 0); ctx.lineTo(-35, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#020617"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.bezierCurveTo(-8, -9, 3, -2, 14, -9); ctx.stroke();
+    ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(12, -4, 2.6, 0, Math.PI * 2); ctx.fill();
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawSeahorse(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.strokeStyle = def.color;
+    ctx.fillStyle = def.color;
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(3, -18);
+    ctx.bezierCurveTo(-12, -16, -9, 4, 3, 7);
+    ctx.bezierCurveTo(16, 10, 12, 25, -3, 22);
+    ctx.stroke();
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(5, -18); ctx.lineTo(22, -17); ctx.stroke();
+    ctx.fillStyle = "#0f172a"; ctx.beginPath(); ctx.arc(5, -21, 2.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#fbcfe8"; ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(-5, -10 + i * 6); ctx.lineTo(-14, -7 + i * 5); ctx.stroke(); }
+    drawItemLabelIfNear(obj, def);
+    drawRareRing(26, obj.sparkle);
+    ctx.restore();
+  }
+
+  function drawFishSchool(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    const offsets = [[0,0],[-22,-9],[-18,11],[19,-5],[16,12]];
+    for (let i = 0; i < offsets.length; i++) {
+      const [ox, oy] = offsets[i];
+      ctx.save();
+      ctx.translate(ox + Math.sin(dive.time * 4 + i) * 2, oy);
+      ctx.fillStyle = i === 0 ? "#38bdf8" : "#67e8f9";
+      ctx.strokeStyle = "rgba(8,47,73,0.65)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(0, 0, 12, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-20, -6); ctx.lineTo(-20, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#0f172a"; ctx.beginPath(); ctx.arc(7, -2, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawSquidItem(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(88,28,135,0.65)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.quadraticCurveTo(4, -19, -18, -12);
+    ctx.quadraticCurveTo(-12, 0, -18, 12);
+    ctx.quadraticCurveTo(4, 19, 18, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#0f172a"; ctx.beginPath(); ctx.arc(5, -5, 2.3, 0, Math.PI * 2); ctx.arc(5, 5, 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = def.color; ctx.lineWidth = 3; ctx.lineCap = "round";
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath(); ctx.moveTo(-16, i * 3); ctx.quadraticCurveTo(-31, i * 4 + Math.sin(dive.time * 4 + i) * 4, -38, i * 6); ctx.stroke();
+    }
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawShrimpItem(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.strokeStyle = def.color;
+    ctx.fillStyle = def.color;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 0, 15, Math.PI * 0.15, Math.PI * 1.35);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(-2 + i * 4, 7); ctx.lineTo(-8 + i * 4, 18); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(12, -5); ctx.lineTo(26, -15); ctx.moveTo(13, -2); ctx.lineTo(30, -6); ctx.stroke();
+    ctx.fillStyle = "#0f172a"; ctx.beginPath(); ctx.arc(10, -6, 2, 0, Math.PI * 2); ctx.fill();
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawLanternFish(obj, def) {
+    drawGenericFish(obj, def);
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = "#a7f3d0";
+    ctx.shadowColor = "#a7f3d0";
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(11, 8, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-5, 6, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAnglerItem(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = "#312e81";
+    ctx.strokeStyle = "#c4b5fd";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, 26, 18, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(-38, -13); ctx.lineTo(-34, 0); ctx.lineTo(-38, 13); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#c4b5fd"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(8, -15); ctx.quadraticCurveTo(18, -36, 33, -25); ctx.stroke();
+    ctx.fillStyle = "#fde68a"; ctx.shadowColor = "#fde68a"; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(35, -24, 5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = "#f8fafc"; ctx.beginPath(); ctx.arc(14, -6, 3, 0, Math.PI * 2); ctx.fill();
+    drawItemLabelIfNear(obj, def);
+    drawRareRing(35, obj.sparkle);
+    ctx.restore();
+  }
+
+  function drawViperItem(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = "#0f172a";
+    ctx.strokeStyle = "#67e8f9";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, 30, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-24, 0); ctx.lineTo(-44, -10); ctx.lineTo(-42, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#f8fafc";
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(10 + i * 4, 3); ctx.lineTo(12 + i * 4, 14); ctx.lineTo(15 + i * 4, 3); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = "#67e8f9"; ctx.shadowColor = "#67e8f9"; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(12, -5, 3, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    drawItemLabelIfNear(obj, def);
+    drawRareRing(38, obj.sparkle);
+    ctx.restore();
+  }
+
+  function drawRareRing(radius, phase = 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(dive.time * 5 + phase) * 0.25;
+    ctx.strokeStyle = "#fff7ed";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawItemLabelIfNear(obj, def) {
+    if (!dive || !dive.diver) return;
+    const d = Math.hypot(obj.x - dive.diver.x, obj.y - dive.diver.y);
+    const always = obj.key === "shell" || obj.key === "treasureChest" || def.rare;
+    if (!always && d > 130) return;
+    if (always && d > 260) return;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font = "bold 11px system-ui";
+    ctx.fillStyle = "rgba(2,6,23,0.58)";
+    const text = def.group === "fish" ? def.name : `${def.name}  E`;
+    const w = ctx.measureText(text).width + 12;
+    roundRect(-w / 2, -36, w, 20, 8, true, false);
+    ctx.fillStyle = def.group === "fish" ? "#e0f2fe" : "#fef3c7";
+    ctx.fillText(text, 0, -32);
+    ctx.restore();
+  }
+
+  function drawResource(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.key === "shell") {
+      ctx.fillStyle = "rgba(250,204,21,0.22)";
+      ctx.beginPath();
+      ctx.ellipse(0, 14, 30, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = def.color;
+      ctx.strokeStyle = "rgba(255,255,255,0.82)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(0, 5, 21, Math.PI, 0);
+      ctx.lineTo(21, 9);
+      ctx.quadraticCurveTo(0, 26, -21, 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(131,24,67,0.35)";
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(i * 6.5, -13 + Math.abs(i)); ctx.stroke();
+      }
+      drawSparkle(16, -14, dive.time + obj.sparkle);
+    } else if (obj.key === "coral") {
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(0, 16); ctx.lineTo(0, -10); ctx.moveTo(0, 0); ctx.lineTo(-13, -15); ctx.moveTo(0, -2); ctx.lineTo(14, -17); ctx.moveTo(-2, 7); ctx.lineTo(-16, 0); ctx.stroke();
+    } else if (obj.key === "kelp") {
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 6, 18);
+        ctx.bezierCurveTo(i * 6 + Math.sin(dive.time + i) * 8, 4, i * 6 - 7, -10, i * 6 + 5, -24);
+        ctx.stroke();
+      }
+    } else if (obj.key === "crab") {
+      ctx.fillStyle = def.color;
+      ctx.strokeStyle = "#7c2d12";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, 18, 13, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      for (let i = -1; i <= 1; i += 2) {
+        ctx.beginPath(); ctx.moveTo(i * 12, 0); ctx.lineTo(i * 25, -9); ctx.moveTo(i * 12, 5); ctx.lineTo(i * 27, 12); ctx.stroke();
+      }
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath(); ctx.arc(-6, -5, 2, 0, Math.PI * 2); ctx.arc(6, -5, 2, 0, Math.PI * 2); ctx.fill();
+    } else if (obj.key === "sponge") {
+      ctx.fillStyle = def.color;
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(-15, -19, 30, 38, 9); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(120,53,15,0.45)";
+      for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc(-8 + i * 3, -10 + (i % 3) * 10, 2.4, 0, Math.PI * 2); ctx.fill(); }
+      drawSparkle(0, -27, dive.time + obj.sparkle);
+    } else if (obj.key === "tubeWorm") {
+      ctx.strokeStyle = "#f8fafc";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 7, 18); ctx.lineTo(i * 6, -12 - Math.sin(dive.time * 2 + i) * 3); ctx.stroke(); }
+      ctx.fillStyle = "#ef4444";
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(i * 6, -15, 5, 0, Math.PI * 2); ctx.fill(); }
+      drawSparkle(0, -27, dive.time + obj.sparkle);
+    } else if (obj.key === "sulfurCrystal") {
+      ctx.fillStyle = def.color;
+      ctx.strokeStyle = "#fef08a";
+      ctx.lineWidth = 2;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 10, -24); ctx.lineTo(i * 10 + 10, 10); ctx.lineTo(i * 10 - 10, 15); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+      }
+      drawSparkle(0, -30, dive.time + obj.sparkle);
+    } else if (obj.key === "airMoss") {
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(i * 6, 18); ctx.quadraticCurveTo(i * 3, 0, i * 8 + Math.sin(dive.time + i) * 4, -18); ctx.stroke(); }
+    } else if (obj.key === "rustyAnchor") {
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(0, 18); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -29, 7, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 4, 22, 0.15, Math.PI - 0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-18, 16); ctx.lineTo(-28, 5); ctx.moveTo(18, 16); ctx.lineTo(28, 5); ctx.stroke();
+    } else {
+      ctx.fillStyle = def.color;
+      ctx.strokeStyle = def.rare ? "#ecfeff" : "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 7; i++) {
+        const a = (Math.PI * 2 * i) / 7;
+        const r = i % 2 ? 14 : 22;
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      if (def.rare) drawSparkle(0, -29, dive.time + obj.sparkle);
+    }
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawTreasure(obj, def) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    if (obj.key === "treasureChest") {
+      ctx.fillStyle = "#78350f";
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 3;
+      ctx.fillRect(-24, -12, 48, 30);
+      ctx.strokeRect(-24, -12, 48, 30);
+      ctx.fillStyle = "#a16207";
+      ctx.fillRect(-24, -22, 48, 15);
+      ctx.strokeRect(-24, -22, 48, 15);
+      ctx.fillStyle = "#facc15";
+      ctx.fillRect(-5, -4, 10, 12);
+      if (obj.openProgress > 0) {
+        ctx.fillStyle = "#fff7ed";
+        ctx.font = "bold 12px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(`${obj.openProgress}/${def.openNeed}`, 0, -30);
+      }
+    } else if (obj.key === "ancientCoin") {
+      ctx.fillStyle = "#facc15";
+      ctx.strokeStyle = "#fef3c7";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#92400e";
+      ctx.font = "bold 18px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("古", 0, 1);
+    } else if (obj.key === "deepRelic") {
+      ctx.fillStyle = "#581c87";
+      ctx.strokeStyle = "#f0abfc";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, -25);
+      ctx.lineTo(20, 0);
+      ctx.lineTo(0, 25);
+      ctx.lineTo(-20, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      drawSparkle(0, -34, dive.time + obj.sparkle);
+    } else {
+      ctx.fillStyle = "#b45309";
+      ctx.strokeStyle = "#fed7aa";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 6, 15, 19, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillRect(-8, -19, 16, 12);
+      ctx.strokeRect(-8, -19, 16, 12);
+    }
+    if (def.rare) {
+      ctx.globalAlpha = 0.65 + Math.sin(dive.time * 5 + obj.sparkle) * 0.25;
+      ctx.strokeStyle = "#fef9c3";
+      ctx.beginPath();
+      ctx.arc(0, 0, 34, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    drawItemLabelIfNear(obj, def);
+    ctx.restore();
+  }
+
+  function drawSparkle(x, y, t) {
+    const r = 5 + Math.sin(t * 5) * 2;
+    ctx.save();
+    ctx.strokeStyle = "#fff7ed";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - r, y); ctx.lineTo(x + r, y);
+    ctx.moveTo(x, y - r); ctx.lineTo(x, y + r);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawEnemies() {
+    for (const e of dive.enemies) {
+      if (!isOnScreen(e.x, e.y, 180)) continue;
+      const def = ENEMY_DEFS[e.key];
+      const shape = def.shape || e.key;
+      if (shape === "jelly") drawJelly(e, def);
+      if (shape === "spike") drawSpikeFish(e, def);
+      if (shape === "puffer") drawPuffer(e, def);
+      if (shape === "grouper") drawGrouper(e, def);
+      if (shape === "shark") drawShark(e, def);
+      if (shape === "eel") drawEel(e, def);
+      if (shape === "monster") drawMonster(e, def);
+    }
+  }
+
+  function drawJelly(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, def.size * 0.7, Math.PI, 0);
+    ctx.quadraticCurveTo(def.size * 0.7, def.size * 0.45, 0, def.size * 0.55);
+    ctx.quadraticCurveTo(-def.size * 0.7, def.size * 0.45, -def.size * 0.7, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(216,180,254,0.65)";
+    ctx.lineWidth = 2;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 7, def.size * 0.4);
+      ctx.bezierCurveTo(i * 7 + Math.sin(dive.time * 2 + i) * 9, 35, i * 5, 48, i * 8, 60);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawSpikeFish(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "#7c2d12";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 16, Math.sin(a) * 16);
+      ctx.lineTo(Math.cos(a) * 27, Math.sin(a) * 27);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 22, 17, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#111827";
+    ctx.beginPath(); ctx.arc(10, -5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+
+  function drawPuffer(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    const puff = e.inflated ? 1.35 + Math.sin(dive.time * 8) * 0.04 : 1;
+    ctx.scale(puff, puff);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "#854d0e";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI * 2 * i) / 12;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 17, Math.sin(a) * 15);
+      ctx.lineTo(Math.cos(a) * 25, Math.sin(a) * 22);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 24, 20, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-20, 0); ctx.lineTo(-36, -12); ctx.lineTo(-34, 12); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#111827";
+    ctx.beginPath(); ctx.arc(10, -6, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.beginPath(); ctx.arc(16, 6, 5, 0, Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGrouper(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(69,26,3,0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, def.size * 0.95, def.size * 0.52, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-32, 0); ctx.lineTo(-62, -24); ctx.lineTo(-55, 0); ctx.lineTo(-62, 24); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(254,215,170,0.30)";
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.ellipse(i * 14, 0, 5, 18, 0.1, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath(); ctx.arc(28, -9, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(38, 7, 12, 0.15, Math.PI * 0.82); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawShark(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(15,23,42,0.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, def.size, def.size * 0.33, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-45, 0); ctx.lineTo(-72, -26); ctx.lineTo(-66, 0); ctx.lineTo(-72, 26); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5, -18); ctx.lineTo(8, -54); ctx.lineTo(22, -15); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#020617";
+    ctx.beginPath(); ctx.arc(32, -7, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawEel(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = def.color;
+    ctx.strokeStyle = "rgba(15,23,42,0.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, def.size * 1.15, def.size * 0.28, Math.sin(e.phase) * 0.18, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(34, -1, def.size * 0.36, def.size * 0.23, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fef2f2";
+    ctx.beginPath(); ctx.arc(45, -6, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#dc2626";
+    ctx.beginPath(); ctx.moveTo(42, 8); ctx.lineTo(56, 11); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawMonster(e, def) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.fillStyle = "rgba(2,6,23,0.92)";
+    ctx.strokeStyle = "rgba(99,102,241,0.35)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, def.size, def.size * 0.55, Math.sin(e.phase) * 0.1, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-45, 5); ctx.quadraticCurveTo(-95, -35, -118, -6); ctx.quadraticCurveTo(-78, 25, -45, 5);
+    ctx.fill();
+    for (let i = -2; i <= 2; i++) {
+      ctx.strokeStyle = "rgba(2,6,23,0.82)";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(-5 + i * 16, 30);
+      ctx.bezierCurveTo(-40 + i * 16, 78, 45 + i * 12, 94, 12 + i * 20, 130);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#67e8f9";
+    ctx.shadowColor = "#67e8f9";
+    ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(28, -10, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(55, -4, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  function drawBubbles() {
+    ctx.save();
+    for (const b of dive.bubbles) {
+      if (!isOnScreen(b.x, b.y, 60)) continue;
+      ctx.globalAlpha = clamp(b.life, 0, 0.8);
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+
+  function drawNetEffects() {
+    if (!dive || !dive.nets) return;
+    ctx.save();
+    for (const n of dive.nets) {
+      if (!isOnScreen(n.x, n.y, n.maxR + 40)) continue;
+      const t = Math.max(0, n.life / n.maxLife);
+      ctx.globalAlpha = Math.min(0.85, t + 0.15);
+      ctx.strokeStyle = "rgba(226,232,240,0.88)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, Math.max(5, n.r), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(186,230,253,0.62)";
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo(n.x - n.r, n.y + i * n.r * 0.25);
+        ctx.lineTo(n.x + n.r, n.y + i * n.r * 0.25);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(n.x + i * n.r * 0.25, n.y - n.r);
+        ctx.lineTo(n.x + i * n.r * 0.25, n.y + n.r);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawDiver() {
+    const d = dive.diver;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.angle);
+
+    // 조명 방향 표시
+    const cone = ctx.createLinearGradient(10, 0, 130, 0);
+    cone.addColorStop(0, "rgba(186,230,253,0.18)");
+    cone.addColorStop(1, "rgba(186,230,253,0)");
+    ctx.fillStyle = cone;
+    ctx.beginPath();
+    ctx.moveTo(8, -20);
+    ctx.lineTo(150, -55);
+    ctx.lineTo(150, 55);
+    ctx.lineTo(8, 20);
+    ctx.closePath();
+    ctx.fill();
+
+    // 그물 투척 방향 표시
+    if (dive.harpoonFlash > 0) {
+      ctx.strokeStyle = "rgba(254,249,195,0.78)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 7]);
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(dive.stats.netRange || dive.stats.harpoonRange, 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(dive.stats.netRange || dive.stats.harpoonRange, 0, dive.stats.netRadius || 42, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 몸통
+    ctx.fillStyle = "#f97316";
+    ctx.strokeStyle = "#7c2d12";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-13, -13, 32, 26, 10);
+    ctx.fill(); ctx.stroke();
+
+    // 머리와 마스크
+    ctx.fillStyle = "#fbbf24";
+    ctx.beginPath(); ctx.arc(23, 0, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#0ea5e9";
+    ctx.beginPath(); ctx.ellipse(28, -2, 9, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+    // 산소통
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillRect(-24, -11, 14, 22);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillRect(-26, -5, 4, 10);
+
+    // 팔
+    ctx.strokeStyle = "#fed7aa";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(2, -9); ctx.lineTo(24, -20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2, 9); ctx.lineTo(24, 20); ctx.stroke();
+
+    // 오리발
+    ctx.fillStyle = "#22d3ee";
+    ctx.beginPath(); ctx.ellipse(-24, -11, 13, 5, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-24, 11, 13, 5, 0.2, 0, Math.PI * 2); ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawDarknessOverlay() {
+    const depth = yToDepth(dive.diver.y);
+    const alpha = clamp((depth - 120) / 1150, 0, 0.72);
+    if (alpha <= 0.01) return;
+
+    const sx = dive.diver.x - dive.camera.x + cw / 2;
+    const sy = dive.diver.y - dive.camera.y + ch / 2;
+    const radius = dive.stats.lightRadius;
+
+    ctx.save();
+    ctx.fillStyle = `rgba(0, 0, 12, ${alpha})`;
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.globalCompositeOperation = "destination-out";
+    const light = ctx.createRadialGradient(sx, sy, 20, sx, sy, radius);
+    light.addColorStop(0, "rgba(255,255,255,0.90)");
+    light.addColorStop(0.55, "rgba(255,255,255,0.40)");
+    light.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawScreenEffects() {
+    if (!dive) return;
+    if (dive.damageFlash > 0) {
+      ctx.save();
+      ctx.fillStyle = `rgba(239, 68, 68, ${0.24 * dive.damageFlash})`;
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.restore();
+    }
+
+    const oxyPct = percent(dive.diver.oxygen, dive.stats.oxygenMax);
+    if (oxyPct <= 10 || dive.oxygenFlash > 0) {
+      const a = oxyPct <= 10 ? 0.42 + Math.sin(dive.time * 12) * 0.22 : 0.20 * dive.oxygenFlash;
+      ctx.save();
+      ctx.strokeStyle = `rgba(248, 113, 113, ${a})`;
+      ctx.lineWidth = 14;
+      ctx.strokeRect(7, 7, cw - 14, ch - 14);
+      ctx.restore();
+    }
+  }
+
+  function drawHUD() {
+    const diver = dive.diver;
+    const stats = dive.stats;
+    const depth = yToDepth(diver.y);
+    const zone = getZoneName(depth);
+    const oxPct = percent(diver.oxygen, stats.oxygenMax);
+    const hpPct = percent(diver.health, stats.healthMax);
+
+    ctx.save();
+    ctx.font = "bold 15px system-ui";
+    ctx.textBaseline = "top";
+
+    const panelW = Math.min(390, cw - 20);
+    ctx.fillStyle = "rgba(2,6,23,0.58)";
+    ctx.strokeStyle = "rgba(125,211,252,0.35)";
+    ctx.lineWidth = 1;
+    roundRect(10, 10, panelW, 192, 16, true, true);
+
+    drawBar(24, 28, panelW - 48, 18, diver.oxygen / stats.oxygenMax, oxPct <= 30 ? (oxPct <= 10 ? "#ef4444" : "#facc15") : "#38bdf8", "산소", `${oxPct}%`);
+    drawBar(24, 58, panelW - 48, 18, diver.health / stats.healthMax, hpPct <= 30 ? "#ef4444" : "#22c55e", "체력", `${hpPct}%`);
+
+    ctx.fillStyle = "#e0f2fe";
+    ctx.fillText(`수심: ${Math.floor(depth)}m`, 24, 90);
+    ctx.fillStyle = depth > stats.depthLimit ? "#facc15" : "#bae6fd";
+    ctx.fillText(`안전 수심: ${stats.depthLimit}m`, 132, 90);
+    const caveText = dive.currentCave ? ` / ${dive.currentCave.name}` : "";
+    ctx.fillStyle = dive.currentCave ? "#fef3c7" : "#fef08a";
+    ctx.fillText(`구역: ${zone}${caveText}`, 24, 116);
+    ctx.fillStyle = "#bbf7d0";
+    ctx.fillText(`돈: ${won(game.money)}`, 24, 142);
+    ctx.fillStyle = dive.inventory.length >= stats.inventoryMax ? "#fecaca" : "#dbeafe";
+    ctx.fillText(`가방: ${dive.inventory.length}/${stats.inventoryMax}`, 156, 142);
+    ctx.fillStyle = isMissionComplete(false) ? "#86efac" : "#fde68a";
+    ctx.fillText(`미션: ${missionProgressText()}`, 24, 168);
+
+    if (oxPct <= 30) {
+      drawCenterMessage(oxPct <= 10 ? "산소 위험! 배로 올라가세요!" : "산소가 부족해요! 위로 올라가세요!", oxPct <= 10 ? "#fecaca" : "#fef08a");
+    } else if (depth > stats.depthLimit) {
+      drawCenterMessage("현재 잠수복으로는 너무 깊어요!", "#fde68a");
+    } else if (dive.inventory.length >= stats.inventoryMax) {
+      drawCenterMessage("가방이 가득 찼어요! 배로 돌아가세요!", "#fef08a");
+    }
+
+    drawBoatArrow();
+    drawMiniGuide();
+    ctx.restore();
+  }
+
+  function drawBar(x, y, w, h, t, color, label, value) {
+    t = clamp(t, 0, 1);
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    roundRect(x, y, w, h, h / 2, true, false);
+    ctx.fillStyle = color;
+    roundRect(x, y, w * t, h, h / 2, true, false);
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    roundRect(x, y, w, h, h / 2, false, true);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 13px system-ui";
+    ctx.fillText(`${label} ${value}`, x + 8, y + 1);
+  }
+
+  function drawCenterMessage(text, color) {
+    ctx.save();
+    ctx.font = "900 24px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(2,6,23,0.55)";
+    roundRect(cw / 2 - 210, 84, 420, 48, 18, true, false);
+    ctx.fillStyle = color;
+    ctx.fillText(text, cw / 2, 108);
+    ctx.restore();
+  }
+
+  function drawBoatArrow() {
+    const d = dive.diver;
+    const dx = BOAT_X - d.x;
+    const dy = SURFACE_Y - d.y;
+    const angle = Math.atan2(dy, dx);
+    const x = cw - 78;
+    const y = 78;
+    ctx.save();
+    ctx.fillStyle = "rgba(2,6,23,0.55)";
+    ctx.strokeStyle = "rgba(186,230,253,0.4)";
+    roundRect(x - 42, y - 42, 84, 84, 22, true, true);
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = "#fef08a";
+    ctx.beginPath();
+    ctx.moveTo(30, 0);
+    ctx.lineTo(-12, -17);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-12, 17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(-angle);
+    ctx.fillStyle = "#e0f2fe";
+    ctx.font = "bold 12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("배", 0, 26);
+    ctx.restore();
+  }
+
+  function drawMiniGuide() {
+    const x = cw - 66;
+    const top = 148;
+    const h = Math.min(360, ch - 250);
+    if (h < 170) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(2,6,23,0.45)";
+    roundRect(x - 22, top - 10, 44, h + 20, 14, true, false);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + h); ctx.stroke();
+    const marks = [0, 250, 500, 900, 1500];
+    ctx.font = "bold 10px system-ui";
+    ctx.fillStyle = "#bfdbfe";
+    ctx.textAlign = "center";
+    marks.forEach(m => {
+      const y = top + (m / MAX_DEPTH) * h;
+      ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y); ctx.stroke();
+      ctx.fillText(String(m), x, y + 4);
+    });
+    const py = top + (clamp(yToDepth(dive.diver.y), 0, MAX_DEPTH) / MAX_DEPTH) * h;
+    ctx.fillStyle = "#f97316";
+    ctx.beginPath(); ctx.arc(x, py, 7, 0, Math.PI * 2); ctx.fill();
+    const limitY = top + (dive.stats.depthLimit / MAX_DEPTH) * h;
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 15, limitY); ctx.lineTo(x + 15, limitY); ctx.stroke();
+    ctx.restore();
+  }
+
+  function getZoneName(depth) {
+    if (depth < 250) return "얕은 바다";
+    if (depth < 500) return "중간 바다";
+    if (depth < 900) return "어두운 바다";
+    return "심해";
+  }
+
+  function roundRect(x, y, w, h, r, fill, stroke) {
+    if (w < 0) return;
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  // ===== 루프 =====
+  function gameLoop(timestamp) {
+    const t = timestamp / 1000;
+    const dt = Math.min(0.033, Math.max(0, t - lastTime || 0));
+    lastTime = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ===== 버튼 =====
+  audioToggleBtn.addEventListener("click", () => setAudioEnabled(!audio.enabled));
+
+  document.getElementById("newGameBtn").addEventListener("click", () => {
+    applySave(defaultSave());
+    saveGame();
+    startDive();
+  });
+  document.getElementById("continueBtn").addEventListener("click", () => {
+    loadGame();
+    startDive();
+  });
+  document.getElementById("resetSaveBtn").addEventListener("click", resetSave);
+  document.getElementById("goUpgradeBtn").addEventListener("click", () => { renderUpgradeScreen(); setState("upgrade"); });
+  document.getElementById("nextDiveBtn").addEventListener("click", startDive);
+  document.getElementById("toStartBtn").addEventListener("click", () => { updateStartStats(); setState("start"); });
+  document.getElementById("upgradeBackResultBtn").addEventListener("click", () => { renderResultScreen(); setState("result"); });
+  document.getElementById("upgradeStartDiveBtn").addEventListener("click", startDive);
+  document.getElementById("resumeBtn").addEventListener("click", () => setState("diving"));
+  document.getElementById("pauseReturnBtn").addEventListener("click", () => { setState("diving"); startAutoReturn(); });
+  document.getElementById("pauseStartBtn").addEventListener("click", () => { updateStartStats(); setState("start"); });
+
+  // Canvas roundRect가 없는 오래된 브라우저 대비
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (typeof r === "number") r = { tl: r, tr: r, br: r, bl: r };
+      this.moveTo(x + r.tl, y);
+      this.lineTo(x + w - r.tr, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+      this.lineTo(x + w, y + h - r.br);
+      this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+      this.lineTo(x + r.bl, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+      this.lineTo(x, y + r.tl);
+      this.quadraticCurveTo(x, y, x + r.tl, y);
+      return this;
+    };
+  }
+
+  loadGame();
+  updateStartStats();
+  updateAudioButton();
+  setState("start");
+  requestAnimationFrame(gameLoop);
+})();
+</script>
+</body>
+</html>

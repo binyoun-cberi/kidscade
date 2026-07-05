@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>3D 블록 색칠 놀이</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #dfefff;
+      color: #172033;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .panel {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 260px;
+      max-width: calc(100vw - 28px);
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 22px;
+      padding: 14px;
+      box-shadow: 0 12px 32px rgba(31, 62, 122, 0.18);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .title {
+      font-weight: 900;
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pill {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #49607f;
+      font-weight: 700;
+    }
+
+    .section {
+      margin-top: 12px;
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607089;
+      margin-bottom: 7px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor: pointer;
+      background: #edf3ff;
+      color: #22314f;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.06);
+      touch-action: manipulation;
+    }
+
+    button.active {
+      background: #336dff;
+      color: white;
+    }
+
+    button.danger {
+      background: #ffe9e9;
+      color: #b21d2b;
+    }
+
+    button.small {
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .color {
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      border: 3px solid transparent;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    .color.active {
+      border-color: #111827;
+      transform: translateY(-2px);
+    }
+
+    .help {
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #51627b;
+      background: #f4f8ff;
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .bottomBar {
+      position: absolute;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      box-shadow: 0 12px 32px rgba(31, 62, 122, 0.18);
+      z-index: 10;
+    }
+
+    .counter {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #334155;
+      box-shadow: 0 12px 32px rgba(31, 62, 122, 0.16);
+      z-index: 10;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .panel {
+        width: calc(100vw - 28px);
+        padding: 12px;
+      }
+
+      .help {
+        display: none;
+      }
+
+      .bottomBar {
+        bottom: 12px;
+      }
+
+      button {
+        padding: 9px 10px;
+      }
+
+      .counter {
+        top: auto;
+        right: 14px;
+        bottom: 78px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="panel">
+    <div class="title">
+      3D 블록 색칠 놀이
+      <span class="pill">단일 HTML</span>
+    </div>
+
+    <div class="section">
+      <div class="label">도구</div>
+      <div class="row">
+        <button id="modeBuild" class="active">쌓기</button>
+        <button id="modePaint">색칠</button>
+        <button id="modeErase">지우기</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">색깔</div>
+      <div id="palette" class="row"></div>
+    </div>
+
+    <div class="section">
+      <div class="label">저장</div>
+      <div class="row">
+        <button id="downloadBtn" class="small">파일 저장</button>
+        <button id="uploadBtn" class="small">파일 불러오기</button>
+        <button id="clearBtn" class="small danger">전체 삭제</button>
+        <input id="fileInput" type="file" accept="application/json" />
+      </div>
+    </div>
+
+    <div class="help">
+      마우스/손가락으로 드래그하면 화면이 돌아가요.<br>
+      블록을 누르면 현재 도구가 적용돼요.<br>
+      키보드: 1 쌓기, 2 색칠, 3 지우기, R 회전
+    </div>
+  </div>
+
+  <div class="counter" id="counter">블록 0개</div>
+
+  <div class="bottomBar">
+    <button id="rotLeft" class="small">↶</button>
+    <button id="zoomIn" class="small">＋</button>
+    <button id="zoomOut" class="small">－</button>
+    <button id="rotRight" class="small">↷</button>
+  </div>
+</div>
+
+<script type="module">
+  import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+
+  const app = document.getElementById("app");
+  const counter = document.getElementById("counter");
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdfefff);
+
+  const camera = new THREE.PerspectiveCamera(
+    55,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  app.appendChild(renderer.domElement);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x8aa3c7, 1.8);
+  scene.add(hemi);
+
+  const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+  sun.position.set(8, 14, 10);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 2048;
+  sun.shadow.mapSize.height = 2048;
+  scene.add(sun);
+
+  const gridSize = 18;
+  const half = gridSize / 2;
+  const maxHeight = 14;
+
+  const floorGeo = new THREE.PlaneGeometry(gridSize, gridSize);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0xf7fbff,
+    roughness: 0.82,
+    transparent: true,
+    opacity: 0.95
+  });
+
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  floor.userData.type = "floor";
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(gridSize, gridSize, 0x8da2c2, 0xc9d6ec);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  const blocksGroup = new THREE.Group();
+  scene.add(blocksGroup);
+
+  const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+  const edgeGeo = new THREE.EdgesGeometry(blockGeo);
+
+  const ghostMat = new THREE.MeshBasicMaterial({
+    color: 0x111827,
+    transparent: true,
+    opacity: 0.22,
+    wireframe: true
+  });
+
+  const ghost = new THREE.Mesh(blockGeo, ghostMat);
+  ghost.visible = false;
+  scene.add(ghost);
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
+  const blocks = new Map();
+
+  const colors = [
+    "#ff595e", "#ffca3a", "#8ac926", "#1982c4",
+    "#6a4c93", "#f72585", "#ffffff", "#2b2d42",
+    "#f4a261", "#2a9d8f", "#a7c957", "#bde0fe"
+  ];
+
+  let selectedColor = colors[0];
+  let mode = "build";
+
+  let yaw = Math.PI * 0.25;
+  let pitch = 0.92;
+  let distance = 19;
+  const target = new THREE.Vector3(0, 3.2, 0);
+
+  let isPointerDown = false;
+  let pointerMoved = false;
+  let lastX = 0;
+  let lastY = 0;
+  let downX = 0;
+  let downY = 0;
+
+  function updateCamera() {
+    pitch = Math.max(0.25, Math.min(1.38, pitch));
+    distance = Math.max(8, Math.min(34, distance));
+
+    const x = Math.sin(yaw) * Math.cos(pitch) * distance;
+    const y = Math.sin(pitch) * distance;
+    const z = Math.cos(yaw) * Math.cos(pitch) * distance;
+
+    camera.position.set(target.x + x, target.y + y, target.z + z);
+    camera.lookAt(target);
+  }
+
+  updateCamera();
+
+  function keyOf(cell) {
+    return `${cell.x},${cell.y},${cell.z}`;
+  }
+
+  function inside(cell) {
+    return (
+      cell.x >= -half &&
+      cell.x < half &&
+      cell.z >= -half &&
+      cell.z < half &&
+      cell.y >= 0 &&
+      cell.y < maxHeight
+    );
+  }
+
+  function makeMaterial(color) {
+    return new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.72,
+      metalness: 0.02
+    });
+  }
+
+  function addBlock(cell, color = selectedColor, save = true) {
+    if (!inside(cell)) return;
+    const key = keyOf(cell);
+    if (blocks.has(key)) return;
+
+    const mesh = new THREE.Mesh(blockGeo, makeMaterial(color));
+    mesh.position.set(cell.x + 0.5, cell.y + 0.5, cell.z + 0.5);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.type = "block";
+    mesh.userData.cell = { ...cell };
+
+    const edges = new THREE.LineSegments(
+      edgeGeo,
+      new THREE.LineBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.18
+      })
+    );
+    mesh.add(edges);
+
+    blocks.set(key, mesh);
+    blocksGroup.add(mesh);
+
+    updateCounter();
+    if (save) saveLocal();
+  }
+
+  function removeBlock(mesh, save = true) {
+    const key = keyOf(mesh.userData.cell);
+    blocks.delete(key);
+    blocksGroup.remove(mesh);
+
+    mesh.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose?.();
+      if (obj.material) obj.material.dispose?.();
+    });
+
+    updateCounter();
+    if (save) saveLocal();
+  }
+
+  function paintBlock(mesh, color = selectedColor, save = true) {
+    mesh.material.color.set(color);
+    if (save) saveLocal();
+  }
+
+  function updateCounter() {
+    counter.textContent = `블록 ${blocks.size}개`;
+  }
+
+  function setMode(nextMode) {
+    mode = nextMode;
+
+    document.getElementById("modeBuild").classList.toggle("active", mode === "build");
+    document.getElementById("modePaint").classList.toggle("active", mode === "paint");
+    document.getElementById("modeErase").classList.toggle("active", mode === "erase");
+
+    updateGhostFromLastPointer();
+  }
+
+  document.getElementById("modeBuild").onclick = () => setMode("build");
+  document.getElementById("modePaint").onclick = () => setMode("paint");
+  document.getElementById("modeErase").onclick = () => setMode("erase");
+
+  const palette = document.getElementById("palette");
+
+  colors.forEach((color, index) => {
+    const btn = document.createElement("button");
+    btn.className = "color";
+    btn.style.background = color;
+    btn.title = color;
+    if (index === 0) btn.classList.add("active");
+
+    btn.addEventListener("click", () => {
+      selectedColor = color;
+      document.querySelectorAll(".color").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+    });
+
+    palette.appendChild(btn);
+  });
+
+  function setPointerFromEvent(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  }
+
+  function getHit(event) {
+    setPointerFromEvent(event);
+    raycaster.setFromCamera(pointer, camera);
+
+    const objects = [floor, ...blocks.values()];
+    const hits = raycaster.intersectObjects(objects, false);
+
+    if (!hits.length) return null;
+    return hits[0];
+  }
+
+  function cellFromHit(hit) {
+    if (!hit) return null;
+
+    if (hit.object.userData.type === "floor") {
+      const x = Math.floor(hit.point.x);
+      const z = Math.floor(hit.point.z);
+      const cell = { x, y: 0, z };
+      return inside(cell) ? cell : null;
+    }
+
+    if (hit.object.userData.type === "block") {
+      const base = hit.object.userData.cell;
+
+      const normal = hit.face.normal
+        .clone()
+        .transformDirection(hit.object.matrixWorld)
+        .round();
+
+      if (mode === "build") {
+        const cell = {
+          x: base.x + normal.x,
+          y: base.y + normal.y,
+          z: base.z + normal.z
+        };
+        return inside(cell) ? cell : null;
+      }
+
+      return { ...base };
+    }
+
+    return null;
+  }
+
+  let lastPointerEvent = null;
+
+  function updateGhostFromLastPointer() {
+    if (!lastPointerEvent) return;
+    updateGhost(lastPointerEvent);
+  }
+
+  function updateGhost(event) {
+    lastPointerEvent = event;
+
+    if (mode !== "build") {
+      ghost.visible = false;
+      return;
+    }
+
+    const hit = getHit(event);
+    const cell = cellFromHit(hit);
+
+    if (!cell || blocks.has(keyOf(cell))) {
+      ghost.visible = false;
+      return;
+    }
+
+    ghost.position.set(cell.x + 0.5, cell.y + 0.5, cell.z + 0.5);
+    ghost.visible = true;
+  }
+
+  function applyTool(event) {
+    const hit = getHit(event);
+    if (!hit) return;
+
+    if (mode === "build") {
+      const cell = cellFromHit(hit);
+      if (cell) addBlock(cell);
+      updateGhost(event);
+      return;
+    }
+
+    if (hit.object.userData.type !== "block") return;
+
+    if (mode === "paint") {
+      paintBlock(hit.object);
+      return;
+    }
+
+    if (mode === "erase") {
+      removeBlock(hit.object);
+      updateGhost(event);
+    }
+  }
+
+  renderer.domElement.addEventListener("contextmenu", event => {
+    event.preventDefault();
+  });
+
+  renderer.domElement.addEventListener("pointerdown", event => {
+    if (event.target !== renderer.domElement) return;
+
+    isPointerDown = true;
+    pointerMoved = false;
+
+    downX = lastX = event.clientX;
+    downY = lastY = event.clientY;
+
+    renderer.domElement.setPointerCapture(event.pointerId);
+  });
+
+  renderer.domElement.addEventListener("pointermove", event => {
+    if (isPointerDown) {
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+
+      if (Math.hypot(event.clientX - downX, event.clientY - downY) > 8) {
+        pointerMoved = true;
+      }
+
+      if (pointerMoved) {
+        yaw -= dx * 0.008;
+        pitch += dy * 0.006;
+        updateCamera();
+        ghost.visible = false;
+      }
+
+      lastX = event.clientX;
+      lastY = event.clientY;
+    } else {
+      updateGhost(event);
+    }
+  });
+
+  renderer.domElement.addEventListener("pointerup", event => {
+    if (!isPointerDown) return;
+
+    isPointerDown = false;
+
+    try {
+      renderer.domElement.releasePointerCapture(event.pointerId);
+    } catch {}
+
+    if (!pointerMoved) {
+      if (event.button === 2) {
+        const previous = mode;
+        mode = "erase";
+        applyTool(event);
+        mode = previous;
+        setMode(previous);
+      } else {
+        applyTool(event);
+      }
+    }
+  });
+
+  renderer.domElement.addEventListener("wheel", event => {
+    event.preventDefault();
+    distance += event.deltaY * 0.015;
+    updateCamera();
+  }, { passive: false });
+
+  document.getElementById("rotLeft").onclick = () => {
+    yaw -= 0.35;
+    updateCamera();
+  };
+
+  document.getElementById("rotRight").onclick = () => {
+    yaw += 0.35;
+    updateCamera();
+  };
+
+  document.getElementById("zoomIn").onclick = () => {
+    distance -= 2;
+    updateCamera();
+  };
+
+  document.getElementById("zoomOut").onclick = () => {
+    distance += 2;
+    updateCamera();
+  };
+
+  function exportData() {
+    return {
+      version: 1,
+      blocks: Array.from(blocks.values()).map(mesh => ({
+        cell: mesh.userData.cell,
+        color: "#" + mesh.material.color.getHexString()
+      }))
+    };
+  }
+
+  function clearAll(save = true) {
+    Array.from(blocks.values()).forEach(mesh => removeBlock(mesh, false));
+    blocks.clear();
+    updateCounter();
+    ghost.visible = false;
+    if (save) saveLocal();
+  }
+
+  function loadData(data) {
+    clearAll(false);
+
+    if (!data || !Array.isArray(data.blocks)) {
+      alert("불러올 수 없는 파일이에요.");
+      return;
+    }
+
+    data.blocks.forEach(item => {
+      if (!item.cell) return;
+      addBlock(
+        {
+          x: Number(item.cell.x),
+          y: Number(item.cell.y),
+          z: Number(item.cell.z)
+        },
+        item.color || "#ff595e",
+        false
+      );
+    });
+
+    updateCounter();
+    saveLocal();
+  }
+
+  function saveLocal() {
+    localStorage.setItem("threeBlockPainterSave", JSON.stringify(exportData()));
+  }
+
+  function loadLocal() {
+    const raw = localStorage.getItem("threeBlockPainterSave");
+    if (!raw) return false;
+
+    try {
+      loadData(JSON.parse(raw));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  document.getElementById("downloadBtn").onclick = () => {
+    const blob = new Blob(
+      [JSON.stringify(exportData(), null, 2)],
+      { type: "application/json" }
+    );
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "my-3d-block-art.json";
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  document.getElementById("uploadBtn").onclick = () => {
+    document.getElementById("fileInput").click();
+  };
+
+  document.getElementById("fileInput").addEventListener("change", event => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        loadData(JSON.parse(reader.result));
+      } catch {
+        alert("JSON 파일을 읽을 수 없어요.");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  });
+
+  document.getElementById("clearBtn").onclick = () => {
+    const ok = confirm("전체 블록을 삭제할까요?");
+    if (ok) clearAll(true);
+  };
+
+  window.addEventListener("keydown", event => {
+    if (event.key === "1") setMode("build");
+    if (event.key === "2") setMode("paint");
+    if (event.key === "3") setMode("erase");
+
+    if (event.key.toLowerCase() === "r") {
+      yaw += 0.35;
+      updateCamera();
+    }
+
+    if (event.key === "+" || event.key === "=") {
+      distance -= 2;
+      updateCamera();
+    }
+
+    if (event.key === "-" || event.key === "_") {
+      distance += 2;
+      updateCamera();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  });
+
+  function addStarterBlocks() {
+    const starter = [
+      { x: -2, y: 0, z: -1, c: "#ff595e" },
+      { x: -1, y: 0, z: -1, c: "#ffca3a" },
+      { x: 0, y: 0, z: -1, c: "#8ac926" },
+      { x: 1, y: 0, z: -1, c: "#1982c4" },
+      { x: -1, y: 1, z: -1, c: "#f72585" },
+      { x: 0, y: 1, z: -1, c: "#6a4c93" }
+    ];
+
+    starter.forEach(b => addBlock({ x: b.x, y: b.y, z: b.z }, b.c, false));
+    saveLocal();
+  }
+
+  if (!loadLocal()) {
+    addStarterBlocks();
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,3003 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>빛의 반사: 레이저 각도 퍼즐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* body에 있던 touch-action: none;을 제거하여 메뉴 스크롤이 가능하게 합니다. */
+        body { overflow: hidden; background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        /* 캔버스에만 touch-action: none;을 주어 드래그 시 화면이 흔들리지 않게 합니다. */
+        canvas { touch-action: none; background-color: #1e293b; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); cursor: crosshair; }
+        .hidden { display: none !important; }
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%; background: #38bdf8; cursor: pointer; margin-top: -10px; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer; background: #475569; border-radius: 4px;
+        }
+        #stage-grid::-webkit-scrollbar { width: 6px; }
+        #stage-grid::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        #stage-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        .concept-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            font-size: 11px; font-weight: 800;
+            background: rgba(14, 165, 233, 0.14); color: #7dd3fc;
+            border: 1px solid rgba(125, 211, 252, 0.28);
+            white-space: nowrap;
+        }
+        .difficulty-pill {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 3px 8px; border-radius: 999px;
+            font-size: 10px; font-weight: 900;
+            background: rgba(251, 191, 36, 0.13); color: #fcd34d;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+        .lesson-card {
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(125, 211, 252, 0.22);
+            border-radius: 14px;
+            padding: 10px 12px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+        }
+        .angle-chip {
+            min-width: 64px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(2, 6, 23, 0.55);
+        }
+        .tool-btn {
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 900;
+            color: #e0f2fe;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            transition: transform .12s ease, background .12s ease, border-color .12s ease;
+        }
+        .tool-btn:hover { background: rgba(51, 65, 85, 0.98); border-color: rgba(56, 189, 248, 0.6); }
+        .tool-btn:active { transform: scale(0.96); }
+        .tool-btn.primary { background: rgba(14, 165, 233, 0.9); border-color: rgba(125, 211, 252, 0.8); color: white; }
+        .tool-btn.warn { background: rgba(251, 191, 36, 0.15); color: #fde68a; border-color: rgba(251, 191, 36, 0.45); }
+        @media (max-width: 640px) {
+            #controls-panel { bottom: 0.5rem; }
+            .lesson-card { padding: 8px 10px; }
+        }
+
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <div id="start-screen" class="max-w-4xl w-full bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl text-center border border-slate-700 flex flex-col max-h-full">
+        <div class="flex justify-center mb-4 shrink-0">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2v20M2 12h20"></path>
+                <path d="m4.93 4.93 14.14 14.14M19.07 4.93 4.93 19.07"></path>
+            </svg>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 shrink-0">빛의 반사</h1>
+        <p class="text-slate-400 mb-6 text-sm shrink-0">각도·직각·예각·둔각·반사각을 배우며 로봇에게 에너지를 전달하세요!</p>
+        
+        <div id="stage-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 overflow-y-auto p-1 shrink h-full min-h-[200px]">
+            </div>
+    </div>
+
+    <div id="game-screen" class="hidden w-full max-w-4xl flex flex-col gap-3 sm:gap-4 h-full max-h-[800px]">
+        <div class="flex justify-between items-center bg-slate-800 p-3 sm:p-4 rounded-xl border border-slate-700 shadow-lg shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="btn-ingame-menu" class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 transition-colors" title="메뉴로 돌아가기">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </button>
+                <div>
+                    <span id="level-indicator" class="text-sky-400 font-bold text-xs sm:text-sm tracking-wider">LEVEL 1</span>
+                    <h2 id="level-title" class="text-sm sm:text-lg font-bold text-slate-100 truncate max-w-[150px] sm:max-w-none">거울 조작하기</h2>
+                </div>
+            </div>
+            <div class="text-right shrink-0">
+                <span class="text-slate-400 text-xs">진행 시간</span>
+                <div id="timer-display" class="text-lg sm:text-xl font-mono font-bold text-white">00:00</div>
+            </div>
+        </div>
+
+        <div id="lesson-panel" class="lesson-card shrink-0">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span id="lesson-concept" class="concept-pill">📐 각도</span>
+                <span id="lesson-difficulty" class="difficulty-pill">기초</span>
+                <span class="text-[11px] text-slate-400 font-bold">오늘의 개념</span>
+            </div>
+            <div id="lesson-text" class="text-xs sm:text-sm text-slate-200 leading-relaxed text-left break-keep">
+                거울을 눌러 각도를 조절하고 빛의 반사를 관찰하세요.
+            </div>
+        </div>
+
+        <div class="relative flex-grow flex items-center justify-center min-h-[300px]">
+            <canvas id="game-canvas" width="800" height="600" class="max-w-full max-h-full w-auto h-auto object-contain"></canvas>
+            
+            <div id="controls-panel" class="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur p-3 sm:p-4 rounded-xl border border-slate-600 flex flex-col gap-2 w-[95%] max-w-xl shadow-2xl transition-opacity">
+                <div class="flex items-center gap-2 sm:gap-3 w-full">
+                    <label id="control-label" class="text-slate-300 text-xs sm:text-sm whitespace-nowrap font-medium">거울 각도:</label>
+                    <input type="range" id="angle-slider" min="0" max="180" step="1" value="0" class="flex-grow">
+                    <input type="number" id="angle-input" min="0" max="360" step="1" class="w-14 sm:w-16 bg-slate-900 border border-slate-600 rounded p-1 text-center font-mono text-sky-400 focus:outline-none focus:border-sky-400 text-sm sm:text-base">
+                    <span class="text-slate-400 font-serif text-sm">°</span>
+                    <span id="angle-type-label" class="angle-chip text-sky-200">각도</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 w-full">
+                    <button id="btn-angle-minus" class="tool-btn">-5°</button>
+                    <button id="btn-angle-plus" class="tool-btn">+5°</button>
+                    <button id="btn-stage-hint" class="tool-btn warn">힌트</button>
+                    <button id="btn-snap-solution" class="tool-btn primary">선택 정답</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 w-full">
+                    <button id="btn-toggle-guide" class="tool-btn">정답선 보기</button>
+                    <div id="angle-help-text" class="text-[11px] sm:text-xs text-slate-300 bg-slate-950/40 rounded-lg px-2 py-2 text-left break-keep">거울이나 발사기를 선택하세요.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="hidden max-w-md w-full bg-slate-800 p-8 rounded-2xl shadow-2xl text-center border border-slate-700 z-50">
+        <h1 id="result-title" class="text-3xl font-bold mb-2 text-emerald-400">LEVEL 1 CLEAR!</h1>
+        <p class="text-slate-300 mb-8">로봇에게 에너지가 전달되었습니다.</p>
+        
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                <p class="text-xs text-slate-500 mb-1">걸린 시간</p>
+                <p id="final-time" class="text-xl font-mono text-white">00:00</p>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-amber-900 shadow-[0_0_10px_rgba(251,191,36,0.1)] relative">
+                <p class="text-xs text-amber-500/70 mb-1">최고 기록</p>
+                <p id="new-best-time" class="text-xl font-mono text-amber-400">00:00</p>
+                <div id="new-record-badge" class="hidden absolute -top-3 -right-3 bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-bounce shadow-lg">
+                    NEW!
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-3">
+            <button id="btn-next-level" class="w-full py-3 sm:py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-lg transition-transform active:scale-95">
+                다음 스테이지
+            </button>
+            <button id="btn-retry-level" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-transform active:scale-95">
+                다시 도전
+            </button>
+            <button id="btn-to-menu" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl font-bold transition-transform active:scale-95 border border-slate-700">
+                스테이지 선택으로
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // Audio Engine (Web Audio API)
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmInterval = null;
+
+        const soundEffects = {
+            playTone: (freq, type, attack, release, vol=0.1) => {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attack + release);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + attack + release);
+            },
+            click: () => soundEffects.playTone(1200, 'square', 0.01, 0.05, 0.05),
+            hit: () => soundEffects.playTone(1500, 'triangle', 0.05, 0.2, 0.1),
+            clearLevel: () => {
+                soundEffects.playTone(440, 'sine', 0.1, 0.2, 0.1);
+                setTimeout(() => soundEffects.playTone(554, 'sine', 0.1, 0.2, 0.1), 150);
+                setTimeout(() => soundEffects.playTone(659, 'sine', 0.1, 0.4, 0.15), 300);
+            },
+            startBGM: () => {
+                if(bgmInterval) return;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                let idx = 0;
+                bgmInterval = setInterval(() => {
+                    soundEffects.playTone(notes[idx], 'sine', 0.2, 0.5, 0.03);
+                    idx = (idx + 1) % notes.length;
+                }, 600);
+            },
+            stopBGM: () => {
+                if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
+            }
+        };
+
+        // ==========================================
+        // Level Data
+        // ==========================================
+        const LEVELS = [
+            {
+                        "id": 1,
+                        "title": "직선으로 나아가는 빛",
+                        "concept": "직선 · 0°",
+                        "difficulty": "기초",
+                        "lesson": "거울 없이 발사기 각도만 맞춥니다. 0°는 오른쪽, 90°는 아래쪽, 180°는 왼쪽, 270°는 위쪽입니다.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 300,
+                                    "angle": 18,
+                                    "rotatable": true,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 650,
+                                    "y": 300,
+                                    "radius": 26
+                        },
+                        "assistRadius": 45,
+                        "mirrors": [],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 오른쪽에 있으면 발사기는 0°입니다.",
+                                    "레이저가 직선으로 나아가는 성질을 먼저 확인하세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {}
+                        }
+            },
+            {
+                        "id": 2,
+                        "title": "위쪽으로 쏘기",
+                        "concept": "직각 · 90°",
+                        "difficulty": "기초",
+                        "lesson": "방향이 90°씩 바뀌면 직각 회전입니다. 위쪽은 화면 기준 270°입니다.",
+                        "emitter": {
+                                    "x": 400,
+                                    "y": 520,
+                                    "angle": 288,
+                                    "rotatable": true,
+                                    "solutionAngle": 270
+                        },
+                        "target": {
+                                    "x": 400,
+                                    "y": 120,
+                                    "radius": 26
+                        },
+                        "assistRadius": 45,
+                        "mirrors": [],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 발사기 바로 위에 있습니다.",
+                                    "발사기 각도를 270° 근처로 맞춰 보세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 270,
+                                    "mirrors": {}
+                        }
+            },
+            {
+                        "id": 3,
+                        "title": "첫 번째 반사",
+                        "concept": "입사각=반사각",
+                        "difficulty": "기초",
+                        "lesson": "거울에서는 들어오는 각도와 나가는 각도가 같습니다. 레이저를 ㄱ자로 꺾어 보세요.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 400,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 360,
+                                    "y": 140,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 360,
+                                                "y": 400,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "거울을 누르면 각도기가 보입니다.",
+                                    "ㄱ자로 꺾이려면 거울이 45° 기울어진 것처럼 보여야 합니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135
+                                    }
+                        }
+            },
+            {
+                        "id": 4,
+                        "title": "예각 거울",
+                        "concept": "예각",
+                        "difficulty": "기초",
+                        "lesson": "90°보다 작은 각을 예각이라고 합니다. 작은 기울기의 거울로 빛을 살짝 아래로 꺾어 보세요.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 230,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 620,
+                                    "y": 420,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 380,
+                                                "y": 230,
+                                                "length": 110,
+                                                "angle": 37,
+                                                "solutionAngle": 19,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 오른쪽 아래에 있으므로 빛이 조금 아래로 꺾여야 합니다.",
+                                    "거울 각도는 예각 범위에 있습니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 19
+                                    }
+                        }
+            },
+            {
+                        "id": 5,
+                        "title": "둔각 거울",
+                        "concept": "둔각",
+                        "difficulty": "기초",
+                        "lesson": "90°보다 큰 각을 둔각이라고 합니다. 둔각 거울은 빛을 위쪽 방향으로 크게 돌릴 수 있습니다.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 350,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 250,
+                                    "y": 80,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 420,
+                                                "y": 350,
+                                                "length": 110,
+                                                "angle": 137,
+                                                "solutionAngle": 119,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 왼쪽 위에 있습니다.",
+                                    "거울 각도는 90°보다 큽니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 119
+                                    }
+                        }
+            },
+            {
+                        "id": 6,
+                        "title": "직각으로 돌아가기",
+                        "concept": "직각 반사",
+                        "difficulty": "기초",
+                        "lesson": "직각으로 꺾이는 반사는 입사각과 반사각이 각각 45°인 대표적인 예입니다.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 300,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 400,
+                                    "y": 90,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 400,
+                                                "y": 300,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "오른쪽으로 온 빛을 위쪽으로 돌려야 합니다.",
+                                    "45°처럼 기울어진 거울을 떠올려 보세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135
+                                    }
+                        }
+            },
+            {
+                        "id": 7,
+                        "title": "30° 예각 반사",
+                        "concept": "30° 예각",
+                        "difficulty": "기초",
+                        "lesson": "작은 예각으로 빛을 부드럽게 꺾는 스테이지입니다.",
+                        "emitter": {
+                                    "x": 120,
+                                    "y": 250,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 670,
+                                    "y": 410,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 390,
+                                                "y": 250,
+                                                "length": 110,
+                                                "angle": 33,
+                                                "solutionAngle": 15,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 오른쪽 아래에 있습니다.",
+                                    "거울의 정답 각도는 30° 근처입니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 15
+                                    }
+                        }
+            },
+            {
+                        "id": 8,
+                        "title": "60° 반사",
+                        "concept": "60° 예각",
+                        "difficulty": "기초",
+                        "lesson": "60°는 예각이지만 30°보다 더 크게 꺾입니다. 각도가 커질수록 빛의 방향 변화도 달라집니다.",
+                        "emitter": {
+                                    "x": 120,
+                                    "y": 250,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 230,
+                                    "y": 520,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 390,
+                                                "y": 250,
+                                                "length": 110,
+                                                "angle": 78,
+                                                "solutionAngle": 60,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "목표가 왼쪽 아래에 있습니다.",
+                                    "거울의 정답 각도는 60° 근처입니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 60
+                                    }
+                        }
+            },
+            {
+                        "id": 9,
+                        "title": "두 번 반사하기",
+                        "concept": "다중 반사",
+                        "difficulty": "중급",
+                        "lesson": "거울을 두 개 사용하면 빛을 더 멀리 우회시킬 수 있습니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 500,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 650,
+                                    "y": 140,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 300,
+                                                "y": 500,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 300,
+                                                "y": 140,
+                                                "length": 110,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 370,
+                                                "y": 250,
+                                                "w": 260,
+                                                "h": 28
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "첫 번째 거울은 빛을 위로 보냅니다.",
+                                    "두 번째 거울은 빛을 다시 오른쪽으로 보냅니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135
+                                    }
+                        }
+            },
+            {
+                        "id": 10,
+                        "title": "Z자 반사",
+                        "concept": "반사 경로",
+                        "difficulty": "중급",
+                        "lesson": "빛의 길을 Z자 모양으로 만들어 보세요. 각 거울의 역할이 달라집니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 130,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 360,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 300,
+                                                "y": 130,
+                                                "length": 110,
+                                                "angle": 42,
+                                                "solutionAngle": 24,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 500,
+                                                "y": 360,
+                                                "length": 110,
+                                                "angle": 0,
+                                                "solutionAngle": 24,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 거울은 오른쪽 아래로 보내야 합니다.",
+                                    "두 번째 거울은 다시 오른쪽으로 보내야 합니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 24,
+                                                "2": 24
+                                    }
+                        }
+            },
+            {
+                        "id": 11,
+                        "title": "역Z 반사",
+                        "concept": "예각과 둔각 혼합",
+                        "difficulty": "중급",
+                        "lesson": "예각과 둔각을 번갈아 쓰면 반대 방향의 Z자 경로도 만들 수 있습니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 470,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 160,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 320,
+                                                "y": 470,
+                                                "length": 110,
+                                                "angle": 168,
+                                                "solutionAngle": 150,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 500,
+                                                "y": 160,
+                                                "length": 110,
+                                                "angle": 126,
+                                                "solutionAngle": 150,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 거울은 오른쪽 위로 보냅니다.",
+                                    "두 번째 거울은 오른쪽으로 평평하게 보냅니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 150,
+                                                "2": 150
+                                    }
+                        }
+            },
+            {
+                        "id": 12,
+                        "title": "직각 두 번 꺾기",
+                        "concept": "직각 연속",
+                        "difficulty": "중급",
+                        "lesson": "직각 반사를 여러 번 연결하면 빛이 장애물을 피해 이동할 수 있습니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 420,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 420,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 260,
+                                                "y": 420,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 260,
+                                                "y": 130,
+                                                "length": 110,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 560,
+                                                "y": 130,
+                                                "length": 110,
+                                                "angle": 60,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 560,
+                                                "y": 420,
+                                                "length": 110,
+                                                "angle": 27,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 330,
+                                                "y": 230,
+                                                "w": 160,
+                                                "h": 60
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "거울마다 90°씩 방향을 바꾸는 느낌입니다.",
+                                    "아래→위→오른쪽→아래→오른쪽 순서의 길을 만드세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 45,
+                                                "4": 45
+                                    }
+                        }
+            },
+            {
+                        "id": 13,
+                        "title": "삼각형 길",
+                        "concept": "삼각형 각도",
+                        "difficulty": "중급",
+                        "lesson": "빛의 길을 삼각형처럼 만들며 예각과 둔각을 함께 써 봅니다.",
+                        "emitter": {
+                                    "x": 110,
+                                    "y": 500,
+                                    "angle": 304,
+                                    "rotatable": false,
+                                    "solutionAngle": 304
+                        },
+                        "target": {
+                                    "x": 700,
+                                    "y": 300,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 350,
+                                                "y": 150,
+                                                "length": 110,
+                                                "angle": 18,
+                                                "solutionAngle": 180,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 590,
+                                                "y": 500,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 177,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 거울은 오른쪽 위, 두 번째는 오른쪽 아래로 보냅니다.",
+                                    "마지막 거울은 로봇 쪽으로 살짝 올려야 합니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 304,
+                                    "mirrors": {
+                                                "1": 180,
+                                                "2": 177
+                                    }
+                        }
+            },
+            {
+                        "id": 14,
+                        "title": "장애물 우회 1",
+                        "concept": "반사와 장애물",
+                        "difficulty": "중급",
+                        "lesson": "벽을 직접 통과할 수 없으므로 거울을 이용해 돌아가야 합니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 500,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 700,
+                                    "y": 360,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 250,
+                                                "y": 500,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 250,
+                                                "y": 110,
+                                                "length": 110,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 620,
+                                                "y": 110,
+                                                "length": 110,
+                                                "angle": 51,
+                                                "solutionAngle": 36,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 340,
+                                                "y": 210,
+                                                "w": 300,
+                                                "h": 34
+                                    },
+                                    {
+                                                "x": 90,
+                                                "y": 250,
+                                                "w": 120,
+                                                "h": 34
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "왼쪽 아래에서 위로 올라간 뒤 오른쪽으로 이동하세요.",
+                                    "마지막에는 로봇 쪽으로 빛을 내려 보냅니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 36
+                                    }
+                        }
+            },
+            {
+                        "id": 15,
+                        "title": "발사기와 거울",
+                        "concept": "발사각",
+                        "difficulty": "중급",
+                        "lesson": "이번에는 발사기와 거울을 모두 조절합니다. 먼저 레이저가 거울에 닿게 하세요.",
+                        "emitter": {
+                                    "x": 120,
+                                    "y": 500,
+                                    "angle": 333,
+                                    "rotatable": true,
+                                    "solutionAngle": 315
+                        },
+                        "target": {
+                                    "x": 650,
+                                    "y": 260,
+                                    "radius": 26
+                        },
+                        "assistRadius": 42,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 360,
+                                                "y": 260,
+                                                "length": 110,
+                                                "angle": 176,
+                                                "solutionAngle": 158,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "발사기를 거울 쪽으로 먼저 맞춥니다.",
+                                    "그다음 거울이 로봇 쪽으로 반사하도록 조절하세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 315,
+                                    "mirrors": {
+                                                "1": 158
+                                    }
+                        }
+            },
+            {
+                        "id": 16,
+                        "title": "고정 거울 배우기",
+                        "concept": "고정 거울",
+                        "difficulty": "중급",
+                        "lesson": "자물쇠가 있는 거울은 움직이지 않습니다. 움직일 수 있는 거울만 조절해 경로를 완성하세요.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 310,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 650,
+                                    "y": 130,
+                                    "radius": 26
+                        },
+                        "assistRadius": 38,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 250,
+                                                "y": 310,
+                                                "length": 110,
+                                                "angle": 156,
+                                                "solutionAngle": 156,
+                                                "fixed": true,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 410,
+                                                "y": 130,
+                                                "length": 110,
+                                                "angle": 132,
+                                                "solutionAngle": 156,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 번째 거울은 고정되어 있습니다.",
+                                    "두 번째 거울만 눌러 오른쪽으로 보내세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 156,
+                                                "2": 156
+                                    }
+                        }
+            },
+            {
+                        "id": 17,
+                        "title": "좁은 복도",
+                        "concept": "정확한 반사",
+                        "difficulty": "중급",
+                        "lesson": "장애물이 많을수록 빛의 길을 더 계획적으로 만들어야 합니다.",
+                        "emitter": {
+                                    "x": 80,
+                                    "y": 520,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 500,
+                                    "radius": 26
+                        },
+                        "assistRadius": 34,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 260,
+                                                "y": 520,
+                                                "length": 110,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 260,
+                                                "y": 90,
+                                                "length": 110,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 540,
+                                                "y": 90,
+                                                "length": 110,
+                                                "angle": 60,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 540,
+                                                "y": 500,
+                                                "length": 110,
+                                                "angle": 27,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 330,
+                                                "y": 170,
+                                                "w": 140,
+                                                "h": 270
+                                    },
+                                    {
+                                                "x": 80,
+                                                "y": 250,
+                                                "w": 120,
+                                                "h": 28
+                                    },
+                                    {
+                                                "x": 600,
+                                                "y": 180,
+                                                "w": 120,
+                                                "h": 28
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "첫 번째는 위로, 두 번째는 오른쪽으로, 세 번째는 아래로 보냅니다.",
+                                    "각 거울이 다음 거울의 중심을 바라보게 만드세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 45,
+                                                "4": 45
+                                    }
+                        }
+            },
+            {
+                        "id": 18,
+                        "title": "반사각 45° 실험",
+                        "concept": "45°",
+                        "difficulty": "중급",
+                        "lesson": "45° 거울은 직각으로 방향을 바꾸는 데 자주 쓰입니다.",
+                        "emitter": {
+                                    "x": 90,
+                                    "y": 300,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 710,
+                                    "y": 300,
+                                    "radius": 26
+                        },
+                        "assistRadius": 34,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 300,
+                                                "y": 300,
+                                                "length": 95,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 300,
+                                                "y": 95,
+                                                "length": 95,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 570,
+                                                "y": 95,
+                                                "length": 95,
+                                                "angle": 60,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 570,
+                                                "y": 300,
+                                                "length": 95,
+                                                "angle": 27,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "45° 방향 전환이 세 번 이어집니다.",
+                                    "빛이 가로와 세로로 번갈아 이동하게 해 보세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 45,
+                                                "4": 45
+                                    }
+                        }
+            },
+            {
+                        "id": 19,
+                        "title": "예각 둔각 섞기",
+                        "concept": "예각·둔각 비교",
+                        "difficulty": "고급",
+                        "lesson": "같은 반사라도 거울 각도가 예각인지 둔각인지에 따라 빛이 전혀 다른 곳으로 갑니다.",
+                        "emitter": {
+                                    "x": 90,
+                                    "y": 120,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 730,
+                                    "y": 420,
+                                    "radius": 26
+                        },
+                        "assistRadius": 34,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 300,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 49,
+                                                "solutionAngle": 31,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 470,
+                                                "y": 450,
+                                                "length": 95,
+                                                "angle": 160,
+                                                "solutionAngle": 4,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 650,
+                                                "y": 200,
+                                                "length": 95,
+                                                "angle": 23,
+                                                "solutionAngle": 8,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 번째 거울은 오른쪽 아래로 크게 보냅니다.",
+                                    "두 번째와 세 번째 거울은 목표 쪽으로 방향을 조금씩 바꿉니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 31,
+                                                "2": 4,
+                                                "3": 8
+                                    }
+                        }
+            },
+            {
+                        "id": 20,
+                        "title": "네 번 반사",
+                        "concept": "다중 반사 고급",
+                        "difficulty": "고급",
+                        "lesson": "여러 번 반사할수록 작은 오차가 커집니다. 하나씩 차례로 맞추는 전략이 필요합니다.",
+                        "emitter": {
+                                    "x": 70,
+                                    "y": 520,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 180,
+                                    "radius": 26
+                        },
+                        "assistRadius": 32,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 230,
+                                                "y": 520,
+                                                "length": 95,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 230,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 430,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 60,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 430,
+                                                "y": 470,
+                                                "length": 95,
+                                                "angle": 27,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 5,
+                                                "x": 620,
+                                                "y": 470,
+                                                "length": 95,
+                                                "angle": 166,
+                                                "solutionAngle": 145,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 295,
+                                                "y": 250,
+                                                "w": 80,
+                                                "h": 90
+                                    },
+                                    {
+                                                "x": 500,
+                                                "y": 230,
+                                                "w": 90,
+                                                "h": 90
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "맨 앞 거울부터 차례로 맞추는 것이 쉽습니다.",
+                                    "레이저가 다음 거울의 중심을 지나가는지 확인하세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 45,
+                                                "4": 45,
+                                                "5": 145
+                                    }
+                        }
+            },
+            {
+                        "id": 21,
+                        "title": "반사 대칭",
+                        "concept": "대칭",
+                        "difficulty": "고급",
+                        "lesson": "반사는 거울선을 기준으로 방향이 대칭으로 바뀌는 현상입니다.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 100,
+                                    "angle": 42,
+                                    "rotatable": false,
+                                    "solutionAngle": 42
+                        },
+                        "target": {
+                                    "x": 720,
+                                    "y": 120,
+                                    "radius": 26
+                        },
+                        "assistRadius": 34,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 280,
+                                                "y": 260,
+                                                "length": 95,
+                                                "angle": 18,
+                                                "solutionAngle": 0,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 460,
+                                                "y": 100,
+                                                "length": 95,
+                                                "angle": 156,
+                                                "solutionAngle": 0,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 640,
+                                                "y": 260,
+                                                "length": 95,
+                                                "angle": 6,
+                                                "solutionAngle": 171,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "빛이 위아래로 대칭처럼 움직입니다.",
+                                    "각 거울의 기울기가 서로 비슷한지 비교하세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 42,
+                                    "mirrors": {
+                                                "1": 0,
+                                                "2": 0,
+                                                "3": 171
+                                    }
+                        }
+            },
+            {
+                        "id": 22,
+                        "title": "미로 속 직각",
+                        "concept": "직각 미로",
+                        "difficulty": "고급",
+                        "lesson": "직각 반사를 이용해 미로의 꺾인 길을 따라가 보세요.",
+                        "emitter": {
+                                    "x": 70,
+                                    "y": 70,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 730,
+                                    "y": 500,
+                                    "radius": 26
+                        },
+                        "assistRadius": 32,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 220,
+                                                "y": 70,
+                                                "length": 95,
+                                                "angle": 63,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 220,
+                                                "y": 520,
+                                                "length": 95,
+                                                "angle": 21,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 410,
+                                                "y": 520,
+                                                "length": 95,
+                                                "angle": 150,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 410,
+                                                "y": 80,
+                                                "length": 95,
+                                                "angle": 117,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 5,
+                                                "x": 620,
+                                                "y": 80,
+                                                "length": 95,
+                                                "angle": 66,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 6,
+                                                "x": 620,
+                                                "y": 500,
+                                                "length": 95,
+                                                "angle": 30,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 280,
+                                                "y": 130,
+                                                "w": 80,
+                                                "h": 330
+                                    },
+                                    {
+                                                "x": 470,
+                                                "y": 140,
+                                                "w": 80,
+                                                "h": 300
+                                    },
+                                    {
+                                                "x": 90,
+                                                "y": 280,
+                                                "w": 90,
+                                                "h": 30
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "가로와 세로 이동이 번갈아 나옵니다.",
+                                    "벽을 피하기 위해 90°씩 꺾어야 합니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 45,
+                                                "2": 45,
+                                                "3": 135,
+                                                "4": 135,
+                                                "5": 45,
+                                                "6": 45
+                                    }
+                        }
+            },
+            {
+                        "id": 23,
+                        "title": "별빛 계단",
+                        "concept": "각도 추론",
+                        "difficulty": "고급",
+                        "lesson": "거울을 계단처럼 배열해 빛을 한 칸씩 올려 보냅니다.",
+                        "emitter": {
+                                    "x": 70,
+                                    "y": 500,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 730,
+                                    "y": 120,
+                                    "radius": 26
+                        },
+                        "assistRadius": 32,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 210,
+                                                "y": 500,
+                                                "length": 95,
+                                                "angle": 174,
+                                                "solutionAngle": 156,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 310,
+                                                "y": 390,
+                                                "length": 95,
+                                                "angle": 132,
+                                                "solutionAngle": 156,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 430,
+                                                "y": 390,
+                                                "length": 95,
+                                                "angle": 169,
+                                                "solutionAngle": 154,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 530,
+                                                "y": 260,
+                                                "length": 95,
+                                                "angle": 136,
+                                                "solutionAngle": 154,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 5,
+                                                "x": 650,
+                                                "y": 260,
+                                                "length": 95,
+                                                "angle": 171,
+                                                "solutionAngle": 150,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "빛이 오른쪽으로 가다가 한 단계씩 위로 올라갑니다.",
+                                    "각 거울은 다음 계단으로 보내는 역할을 합니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 156,
+                                                "2": 156,
+                                                "3": 154,
+                                                "4": 154,
+                                                "5": 150
+                                    }
+                        }
+            },
+            {
+                        "id": 24,
+                        "title": "마지막 수동 반사",
+                        "concept": "종합",
+                        "difficulty": "고급",
+                        "lesson": "예각, 직각, 둔각을 모두 이용하는 종합 스테이지입니다.",
+                        "emitter": {
+                                    "x": 70,
+                                    "y": 320,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 730,
+                                    "y": 260,
+                                    "radius": 26
+                        },
+                        "assistRadius": 32,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 220,
+                                                "y": 320,
+                                                "length": 95,
+                                                "angle": 170,
+                                                "solutionAngle": 152,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 360,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 128,
+                                                "solutionAngle": 152,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 510,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 51,
+                                                "solutionAngle": 36,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 610,
+                                                "y": 420,
+                                                "length": 95,
+                                                "angle": 171,
+                                                "solutionAngle": 9,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [],
+                        "portals": [],
+                        "hints": [
+                                    "첫 번째는 오른쪽 위로, 두 번째는 오른쪽으로, 세 번째는 오른쪽 아래로 보냅니다.",
+                                    "마지막 거울은 로봇 쪽으로 빛을 되돌립니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 152,
+                                                "2": 152,
+                                                "3": 36,
+                                                "4": 9
+                                    }
+                        }
+            },
+            {
+                        "id": 25,
+                        "title": "웜홀 입문",
+                        "concept": "직선과 이동",
+                        "difficulty": "응용",
+                        "lesson": "웜홀에 들어간 빛은 다른 웜홀에서 같은 방향으로 나옵니다. 먼저 발사각을 맞춰 입구로 보내세요.",
+                        "emitter": {
+                                    "x": 120,
+                                    "y": 300,
+                                    "angle": 18,
+                                    "rotatable": true,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 650,
+                                    "y": 300,
+                                    "radius": 26
+                        },
+                        "assistRadius": 45,
+                        "mirrors": [],
+                        "walls": [
+                                    {
+                                                "x": 370,
+                                                "y": 0,
+                                                "w": 26,
+                                                "h": 600
+                                    }
+                        ],
+                        "portals": [
+                                    {
+                                                "id": 1,
+                                                "in": {
+                                                            "x": 260,
+                                                            "y": 300
+                                                },
+                                                "out": {
+                                                            "x": 520,
+                                                            "y": 300
+                                                },
+                                                "radius": 28,
+                                                "color": "#a855f7"
+                                    }
+                        ],
+                        "hints": [
+                                    "발사기를 오른쪽 0°로 맞추면 웜홀 입구로 들어갑니다.",
+                                    "웜홀에서 나온 빛도 같은 방향으로 계속 갑니다."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {}
+                        }
+            },
+            {
+                        "id": 26,
+                        "title": "웜홀과 직각 반사",
+                        "concept": "웜홀·직각",
+                        "difficulty": "응용",
+                        "lesson": "웜홀로 위치를 바꾼 뒤, 거울로 직각 반사를 만들어 목표에 도달합니다.",
+                        "emitter": {
+                                    "x": 100,
+                                    "y": 500,
+                                    "angle": 270,
+                                    "rotatable": false,
+                                    "solutionAngle": 270
+                        },
+                        "target": {
+                                    "x": 690,
+                                    "y": 130,
+                                    "radius": 26
+                        },
+                        "assistRadius": 40,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 600,
+                                                "y": 300,
+                                                "length": 115,
+                                                "angle": 128,
+                                                "solutionAngle": 104,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 350,
+                                                "y": 0,
+                                                "w": 26,
+                                                "h": 600
+                                    }
+                        ],
+                        "portals": [
+                                    {
+                                                "id": 1,
+                                                "in": {
+                                                            "x": 100,
+                                                            "y": 140
+                                                },
+                                                "out": {
+                                                            "x": 600,
+                                                            "y": 500
+                                                },
+                                                "radius": 26,
+                                                "color": "#3b82f6"
+                                    }
+                        ],
+                        "hints": [
+                                    "왼쪽 웜홀로 들어가면 오른쪽 아래에서 나옵니다.",
+                                    "나온 뒤에는 거울을 이용해 오른쪽 위 로봇에게 보내세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 270,
+                                    "mirrors": {
+                                                "1": 104
+                                    }
+                        }
+            },
+            {
+                        "id": 27,
+                        "title": "최종 전 단계",
+                        "concept": "종합 반사",
+                        "difficulty": "도전",
+                        "lesson": "여러 반사를 순서대로 연결하는 고난도 스테이지입니다. 힌트를 활용해도 좋습니다.",
+                        "emitter": {
+                                    "x": 60,
+                                    "y": 540,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 730,
+                                    "y": 390,
+                                    "radius": 26
+                        },
+                        "assistRadius": 30,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 190,
+                                                "y": 540,
+                                                "length": 95,
+                                                "angle": 153,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 190,
+                                                "y": 90,
+                                                "length": 95,
+                                                "angle": 111,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 360,
+                                                "y": 90,
+                                                "length": 95,
+                                                "angle": 47,
+                                                "solutionAngle": 32,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 510,
+                                                "y": 390,
+                                                "length": 95,
+                                                "angle": 164,
+                                                "solutionAngle": 2,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 5,
+                                                "x": 650,
+                                                "y": 160,
+                                                "length": 95,
+                                                "angle": 27,
+                                                "solutionAngle": 6,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 280,
+                                                "y": 210,
+                                                "w": 55,
+                                                "h": 220
+                                    },
+                                    {
+                                                "x": 600,
+                                                "y": 260,
+                                                "w": 45,
+                                                "h": 110
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "첫 거울부터 마지막 거울까지 순서대로 맞춰야 합니다.",
+                                    "막히면 선택한 거울을 누르고 ‘선택 정답’ 버튼으로 비교해 보세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 135,
+                                                "2": 135,
+                                                "3": 32,
+                                                "4": 2,
+                                                "5": 6
+                                    }
+                        }
+            },
+            {
+                        "id": 28,
+                        "title": "빛의 반사 마스터",
+                        "concept": "최종 도전",
+                        "difficulty": "도전",
+                        "lesson": "예각, 직각, 둔각, 다중 반사를 모두 활용하는 최종 스테이지입니다.",
+                        "emitter": {
+                                    "x": 60,
+                                    "y": 80,
+                                    "angle": 0,
+                                    "rotatable": false,
+                                    "solutionAngle": 0
+                        },
+                        "target": {
+                                    "x": 740,
+                                    "y": 260,
+                                    "radius": 26
+                        },
+                        "assistRadius": 30,
+                        "mirrors": [
+                                    {
+                                                "id": 1,
+                                                "x": 210,
+                                                "y": 80,
+                                                "length": 95,
+                                                "angle": 63,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 2,
+                                                "x": 210,
+                                                "y": 520,
+                                                "length": 95,
+                                                "angle": 21,
+                                                "solutionAngle": 45,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 3,
+                                                "x": 370,
+                                                "y": 520,
+                                                "length": 95,
+                                                "angle": 150,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 4,
+                                                "x": 370,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 117,
+                                                "solutionAngle": 135,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 5,
+                                                "x": 540,
+                                                "y": 120,
+                                                "length": 95,
+                                                "angle": 57,
+                                                "solutionAngle": 36,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    },
+                                    {
+                                                "id": 6,
+                                                "x": 650,
+                                                "y": 450,
+                                                "length": 95,
+                                                "angle": 168,
+                                                "solutionAngle": 3,
+                                                "fixed": false,
+                                                "type": "mirror"
+                                    }
+                        ],
+                        "walls": [
+                                    {
+                                                "x": 280,
+                                                "y": 180,
+                                                "w": 55,
+                                                "h": 250
+                                    },
+                                    {
+                                                "x": 470,
+                                                "y": 190,
+                                                "w": 45,
+                                                "h": 220
+                                    },
+                                    {
+                                                "x": 90,
+                                                "y": 250,
+                                                "w": 80,
+                                                "h": 28
+                                    }
+                        ],
+                        "portals": [],
+                        "hints": [
+                                    "차례대로 경로를 완성하세요: 오른쪽 → 아래 → 오른쪽 → 위 → 오른쪽 → 아래쪽 → 목표",
+                                    "정답 각도를 본 뒤 왜 그런 각도가 되는지 입사각과 반사각을 비교해 보세요."
+                        ],
+                        "solutions": {
+                                    "emitter": 0,
+                                    "mirrors": {
+                                                "1": 45,
+                                                "2": 45,
+                                                "3": 135,
+                                                "4": 135,
+                                                "5": 36,
+                                                "6": 3
+                                    }
+                        }
+            }
+];
+
+        // ==========================================
+        // Game State & Storage
+        // ==========================================
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'start'; 
+        let currentLevelIndex = 0;
+        let timeElapsed = 0;
+        let timerInterval = null;
+        let animationFrame = null;
+        
+        let levelData = null;
+        let mirrors = [];
+        let portals = [];
+        let selectedMirrorId = null;
+        let selectedEmitter = false;
+        let isDragging = false;
+        let isTargetHit = false;
+        let targetHitTimer = 0;
+
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+        const controlsPanel = document.getElementById('controls-panel');
+        const controlLabel = document.getElementById('control-label');
+        const angleSlider = document.getElementById('angle-slider');
+        const angleInput = document.getElementById('angle-input');
+        const lessonConcept = document.getElementById('lesson-concept');
+        const lessonDifficulty = document.getElementById('lesson-difficulty');
+        const lessonText = document.getElementById('lesson-text');
+        const angleTypeLabel = document.getElementById('angle-type-label');
+        const angleHelpText = document.getElementById('angle-help-text');
+        const btnAngleMinus = document.getElementById('btn-angle-minus');
+        const btnAnglePlus = document.getElementById('btn-angle-plus');
+        const btnStageHint = document.getElementById('btn-stage-hint');
+        const btnSnapSolution = document.getElementById('btn-snap-solution');
+        const btnToggleGuide = document.getElementById('btn-toggle-guide');
+        
+        const formatTime = (sec) => {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        };
+
+        let hintStep = 0;
+        let guideVisible = false;
+
+        const normalizeAngle = (angle, max = 180) => {
+            let value = Number(angle) || 0;
+            value %= max;
+            if (value < 0) value += max;
+            return Math.round(value);
+        };
+
+        const getAngleKind = (angle, max = 180) => {
+            const a = max === 360 ? normalizeAngle(angle, 360) : normalizeAngle(angle, 180);
+            if (max === 360) {
+                const cardinal = [0, 90, 180, 270].some(v => Math.abs(a - v) <= 2);
+                if (cardinal) return '직각 방향';
+                if (a < 90) return '예각 방향';
+                if (a < 180) return '둔각 방향';
+                if (a < 270) return '반대 둔각';
+                return '반대 예각';
+            }
+            if (Math.abs(a - 90) <= 2) return '직각';
+            if (a < 90) return '예각';
+            return '둔각';
+        };
+
+        const getSelectedMirror = () => mirrors.find(m => m.id === selectedMirrorId);
+        const getSelectedAngle = () => {
+            if (selectedEmitter && levelData.emitter.rotatable) return levelData.emitter.angle;
+            const m = getSelectedMirror();
+            return m ? m.angle : null;
+        };
+        const getSelectedMax = () => selectedEmitter ? 360 : 180;
+        const getSelectedSolution = () => {
+            if (selectedEmitter && levelData.emitter.rotatable) return levelData.emitter.solutionAngle ?? levelData.solutions?.emitter;
+            const m = getSelectedMirror();
+            if (!m) return null;
+            return m.solutionAngle ?? levelData.solutions?.mirrors?.[m.id];
+        };
+
+        const setLessonMessage = (message) => {
+            lessonText.innerText = message || levelData?.lesson || '거울을 조절해 레이저를 목표에 보내세요.';
+        };
+
+        const updateAngleHelp = () => {
+            const angle = getSelectedAngle();
+            if (angle === null) {
+                angleTypeLabel.innerText = '각도';
+                angleHelpText.innerText = '거울이나 발사기를 선택하세요. 힌트 버튼을 누르면 단계별 도움을 받을 수 있습니다.';
+                return;
+            }
+            const max = getSelectedMax();
+            angleTypeLabel.innerText = getAngleKind(angle, max);
+            const sol = getSelectedSolution();
+            const targetText = sol !== null && sol !== undefined ? `정답선 기준 ${Math.round(sol)}°` : '정답선 없음';
+            angleHelpText.innerText = `${Math.round(angle)}° · ${angleTypeLabel.innerText}입니다. ${targetText}.`;
+        };
+
+        const selectEmitterControl = () => {
+            if (!levelData.emitter.rotatable) return false;
+            selectedEmitter = true;
+            selectedMirrorId = null;
+            controlsPanel.classList.remove('hidden');
+            controlLabel.innerText = '발사기 각도:';
+            angleSlider.max = 360;
+            angleInput.max = 360;
+            angleSlider.value = normalizeAngle(levelData.emitter.angle, 360);
+            angleInput.value = normalizeAngle(levelData.emitter.angle, 360);
+            updateAngleHelp();
+            return true;
+        };
+
+        const selectMirrorControl = (m) => {
+            if (!m || m.fixed) return false;
+            selectedMirrorId = m.id;
+            selectedEmitter = false;
+            controlsPanel.classList.remove('hidden');
+            controlLabel.innerText = getLabelForType(m.type);
+            angleSlider.max = 180;
+            angleInput.max = 180;
+            angleSlider.value = normalizeAngle(m.angle, 180);
+            angleInput.value = normalizeAngle(m.angle, 180);
+            updateAngleHelp();
+            return true;
+        };
+
+        const getBestTimes = () => JSON.parse(localStorage.getItem('laserPuzzleBestTimes')) || {};
+        const setBestTime = (levelId, time) => {
+            const times = getBestTimes();
+            if (!times[levelId] || time < times[levelId]) {
+                times[levelId] = time;
+                localStorage.setItem('laserPuzzleBestTimes', JSON.stringify(times));
+                return true; 
+            }
+            return false;
+        };
+
+        const renderStageSelection = () => {
+            const grid = document.getElementById('stage-grid');
+            grid.innerHTML = '';
+            const bestTimes = getBestTimes();
+
+            LEVELS.forEach((lvl, idx) => {
+                const bestTimeVal = bestTimes[lvl.id];
+                const bestTimeStr = bestTimeVal ? formatTime(bestTimeVal) : '--:--';
+                
+                const btn = document.createElement('button');
+                btn.className = "p-3 sm:p-4 bg-slate-900 border border-slate-700 hover:border-sky-500 rounded-xl flex flex-col items-center justify-between transition-colors text-left w-full min-h-36 shadow-md hover:shadow-sky-500/20";
+                
+                btn.innerHTML = `
+                    <div class="relative w-full flex items-center justify-between gap-1">
+                        <span class="text-sky-400 font-bold text-xs sm:text-sm">LEVEL ${lvl.id}</span>
+                        <span class="difficulty-pill">${lvl.difficulty || '기초'}</span>
+                    </div>
+                    <div class="text-slate-100 font-extrabold text-xs sm:text-sm text-center leading-snug line-clamp-2">${lvl.title}</div>
+                    <div class="concept-pill justify-center max-w-full overflow-hidden text-ellipsis">${lvl.concept || '각도'}</div>
+                    <div class="text-amber-400 font-mono text-[10px] sm:text-xs mt-auto w-full text-center bg-slate-950/50 rounded py-1">BEST ${bestTimeStr}</div>
+                `;
+                btn.onclick = () => {
+                    soundEffects.click();
+                    audioCtx.resume();
+                    soundEffects.startBGM();
+                    startGame(idx);
+                };
+                grid.appendChild(btn);
+            });
+        };
+
+        renderStageSelection();
+
+        const startGame = (levelIndex) => {
+            screens.start.classList.add('hidden');
+            screens.result.classList.add('hidden');
+            screens.game.classList.remove('hidden');
+            
+            currentLevelIndex = levelIndex;
+            loadLevel(currentLevelIndex);
+            gameState = 'playing';
+            loop();
+        };
+
+        const loadLevel = (index) => {
+            timeElapsed = 0;
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                document.getElementById('timer-display').innerText = formatTime(timeElapsed);
+            }, 1000);
+            document.getElementById('timer-display').innerText = "00:00";
+
+            levelData = JSON.parse(JSON.stringify(LEVELS[index]));
+            mirrors = levelData.mirrors || [];
+            portals = levelData.portals || [];
+            selectedMirrorId = null;
+            selectedEmitter = false;
+            isTargetHit = false;
+            targetHitTimer = 0;
+            controlsPanel.classList.add('hidden');
+            hintStep = 0;
+            guideVisible = false;
+            btnToggleGuide.innerText = '정답선 보기';
+            lessonConcept.innerText = `📐 ${levelData.concept || '각도'}`;
+            lessonDifficulty.innerText = levelData.difficulty || '기초';
+            setLessonMessage(levelData.lesson);
+            updateAngleHelp();
+            
+            document.getElementById('level-indicator').innerText = `LEVEL ${levelData.id}`;
+            document.getElementById('level-title').innerText = levelData.title;
+        };
+
+        const goMenu = () => {
+            gameState = 'start';
+            clearInterval(timerInterval);
+            cancelAnimationFrame(animationFrame);
+            soundEffects.stopBGM();
+            
+            screens.game.classList.add('hidden');
+            screens.result.classList.add('hidden');
+            screens.start.classList.remove('hidden');
+            renderStageSelection(); 
+        };
+
+        const levelClear = () => {
+            gameState = 'result';
+            clearInterval(timerInterval);
+            cancelAnimationFrame(animationFrame);
+            
+            screens.game.classList.add('hidden');
+            screens.result.classList.remove('hidden');
+            
+            document.getElementById('result-title').innerText = `LEVEL ${levelData.id} CLEAR!`;
+            document.getElementById('final-time').innerText = formatTime(timeElapsed);
+            
+            const isNewRecord = setBestTime(levelData.id, timeElapsed);
+            const bestTimes = getBestTimes();
+            document.getElementById('new-best-time').innerText = formatTime(bestTimes[levelData.id]);
+            
+            const badge = document.getElementById('new-record-badge');
+            if (isNewRecord) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            const nextBtn = document.getElementById('btn-next-level');
+            if (currentLevelIndex + 1 < LEVELS.length) {
+                nextBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.add('hidden');
+            }
+        };
+
+        document.getElementById('btn-ingame-menu').addEventListener('click', () => { soundEffects.click(); goMenu(); });
+        document.getElementById('btn-to-menu').addEventListener('click', () => { soundEffects.click(); goMenu(); });
+        document.getElementById('btn-retry-level').addEventListener('click', () => {
+            soundEffects.click();
+            startGame(currentLevelIndex);
+        });
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            soundEffects.click();
+            startGame(currentLevelIndex + 1);
+        });
+
+        // ==========================================
+        // Input Handling
+        // ==========================================
+        const updateAngle = (angle) => {
+            if (selectedEmitter && levelData.emitter.rotatable) {
+                levelData.emitter.angle = normalizeAngle(angle, 360);
+                angleSlider.value = levelData.emitter.angle;
+                angleInput.value = levelData.emitter.angle;
+            } else if (selectedMirrorId !== null) {
+                const m = mirrors.find(m => m.id === selectedMirrorId);
+                if (m && !m.fixed) {
+                    m.angle = normalizeAngle(angle, 180);
+                    angleSlider.value = m.angle;
+                    angleInput.value = m.angle;
+                }
+            }
+            updateAngleHelp();
+        };
+
+        angleSlider.addEventListener('input', (e) => updateAngle(parseInt(e.target.value)));
+        angleInput.addEventListener('input', (e) => {
+            let val = parseInt(e.target.value);
+            if(!isNaN(val)) updateAngle(val);
+        });
+
+        btnAngleMinus.addEventListener('click', () => {
+            soundEffects.click();
+            const current = getSelectedAngle();
+            if (current !== null) updateAngle(current - 5);
+        });
+
+        btnAnglePlus.addEventListener('click', () => {
+            soundEffects.click();
+            const current = getSelectedAngle();
+            if (current !== null) updateAngle(current + 5);
+        });
+
+        btnStageHint.addEventListener('click', () => {
+            soundEffects.click();
+            const hints = levelData.hints || [];
+            if (hints.length === 0) {
+                setLessonMessage('거울을 하나씩 선택해 레이저가 다음 장치의 중심을 지나가도록 맞춰 보세요.');
+                return;
+            }
+            setLessonMessage(`힌트 ${Math.min(hintStep + 1, hints.length)}: ${hints[hintStep % hints.length]}`);
+            hintStep++;
+        });
+
+        btnToggleGuide.addEventListener('click', () => {
+            soundEffects.click();
+            guideVisible = !guideVisible;
+            btnToggleGuide.innerText = guideVisible ? '정답선 숨기기' : '정답선 보기';
+            setLessonMessage(guideVisible ? '노란 점선은 정답 각도입니다. 현재 거울 각도와 비교해 입사각=반사각을 확인하세요.' : levelData.lesson);
+        });
+
+        btnSnapSolution.addEventListener('click', () => {
+            soundEffects.click();
+            if (!selectedEmitter && selectedMirrorId === null) {
+                if (!selectEmitterControl()) {
+                    const first = mirrors.find(m => !m.fixed);
+                    if (first) selectMirrorControl(first);
+                }
+            }
+            const sol = getSelectedSolution();
+            if (sol === null || sol === undefined) {
+                setLessonMessage('이 장치에는 저장된 정답 각도가 없습니다. 다른 거울을 선택해 보세요.');
+                return;
+            }
+            updateAngle(sol);
+            guideVisible = true;
+            btnToggleGuide.innerText = '정답선 숨기기';
+            setLessonMessage(`선택한 장치를 정답 각도 ${Math.round(sol)}°로 맞췄습니다. 왜 이 각도가 되는지 레이저의 들어오는 길과 나가는 길을 비교해 보세요.`);
+        });
+
+        const getMousePos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        };
+
+        const getLabelForType = (type) => {
+            switch(type) {
+                case 'convex_mirror': return '볼록거울 각도:';
+                case 'concave_mirror': return '오목거울 각도:';
+                case 'convex_lens': return '볼록렌즈 각도:';
+                case 'concave_lens': return '오목렌즈 각도:';
+                default: return '거울 각도:';
+            }
+        }
+
+        const onPointerDown = (e) => {
+            if (gameState !== 'playing') return;
+            const pos = getMousePos(e);
+            
+            // 모바일 터치를 위해 발사기 인식 범위를 넓힘 (35 -> 50)
+            if (levelData.emitter.rotatable) {
+                const dist = Math.hypot(pos.x - levelData.emitter.x, pos.y - levelData.emitter.y);
+                if (dist < 50) { 
+                    soundEffects.click();
+                    isDragging = true;
+                    selectEmitterControl();
+                    return;
+                }
+            }
+
+            let clicked = null;
+            for (let m of mirrors) {
+                if (m.fixed) continue;
+                const dist = Math.hypot(pos.x - m.x, pos.y - m.y);
+                // 모바일 터치를 위해 거울 인식 범위를 넓힘 (+30 -> +50)
+                if (dist < m.length / 2 + 50) {
+                    clicked = m;
+                    break;
+                }
+            }
+
+            if (clicked) {
+                soundEffects.click();
+                isDragging = true;
+                selectMirrorControl(clicked);
+            } else {
+                selectedMirrorId = null;
+                selectedEmitter = false;
+                controlsPanel.classList.add('hidden');
+            }
+        };
+
+        const onPointerMove = (e) => {
+            if (!isDragging || gameState !== 'playing') return;
+            e.preventDefault(); // 스와이프로 인한 스크롤 방지
+            const pos = getMousePos(e);
+            
+            if (selectedEmitter) {
+                let angleRad = Math.atan2(pos.y - levelData.emitter.y, pos.x - levelData.emitter.x);
+                let angleDeg = Math.round(angleRad * 180 / Math.PI);
+                if (angleDeg < 0) angleDeg += 360;
+                updateAngle(angleDeg);
+            } else if (selectedMirrorId !== null) {
+                const m = mirrors.find(x => x.id === selectedMirrorId);
+                if (m) {
+                    let angleRad = Math.atan2(pos.y - m.y, pos.x - m.x);
+                    let angleDeg = Math.round(angleRad * 180 / Math.PI);
+                    if (angleDeg < 0) angleDeg += 360;
+                    updateAngle(angleDeg);
+                }
+            }
+        };
+
+        const onPointerUp = () => { isDragging = false; };
+
+        // 마우스 이벤트
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        
+        // 터치 이벤트
+        canvas.addEventListener('touchstart', onPointerDown, {passive: false});
+        canvas.addEventListener('touchmove', onPointerMove, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+        // ==========================================
+        // Math / Physics
+        // ==========================================
+        const getIntersection = (x1, y1, x2, y2, x3, y3, x4, y4) => {
+            const den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (den === 0) return null;
+            const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / den;
+            const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
+            if (t > 0 && t < 1 && u > 0 && u < 1) { return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), t }; }
+            return null;
+        };
+
+        const getCircleIntersection = (x1, y1, x2, y2, cx, cy, r) => {
+            const dx = x2 - x1; const dy = y2 - y1;
+            const fx = x1 - cx; const fy = y1 - cy;
+            const a = dx * dx + dy * dy;
+            const b = 2 * (fx * dx + fy * dy);
+            const c = (fx * fx + fy * fy) - r * r;
+            let discriminant = b * b - 4 * a * c;
+            if (discriminant < 0) return null;
+            discriminant = Math.sqrt(discriminant);
+            const t1 = (-b - discriminant) / (2 * a);
+            const t2 = (-b + discriminant) / (2 * a);
+            let t = -1;
+            if (t1 >= 0 && t1 <= 1) t = t1;
+            if (t2 >= 0 && t2 <= 1 && (t === -1 || t2 < t)) t = t2;
+            if (t !== -1) return { x: x1 + t * dx, y: y1 + t * dy, t };
+            return null;
+        };
+
+        // ==========================================
+        // Rendering
+        // ==========================================
+        const loop = () => {
+            if (gameState !== 'playing') return;
+            draw();
+            animationFrame = requestAnimationFrame(loop);
+        };
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const timeAnim = performance.now() / 500; 
+            
+            // Grid background
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+            for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+
+            // 1. Draw Walls
+            ctx.fillStyle = '#475569';
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            levelData.walls.forEach(w => {
+                ctx.fillRect(w.x, w.y, w.w, w.h);
+                ctx.strokeRect(w.x, w.y, w.w, w.h);
+                ctx.beginPath();
+                for(let i = 0; i < w.w + w.h; i += 10) {
+                    ctx.moveTo(w.x + i, w.y);
+                    ctx.lineTo(w.x, w.y + i);
+                }
+                ctx.stroke();
+            });
+
+            // 2. Draw Target
+            const tgt = levelData.target;
+            const hitRadius = levelData.assistRadius || tgt.radius;
+            if (hitRadius > tgt.radius) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(tgt.x, tgt.y, hitRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.08)';
+                ctx.fill();
+                ctx.setLineDash([8, 8]);
+                ctx.strokeStyle = 'rgba(134, 239, 172, 0.55)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.beginPath();
+            ctx.arc(tgt.x, tgt.y, tgt.radius, 0, Math.PI * 2);
+            ctx.fillStyle = isTargetHit ? '#34d399' : '#f87171';
+            ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(tgt.x - 10, tgt.y - 10, 6, 6);
+            ctx.fillRect(tgt.x + 4, tgt.y - 10, 6, 6);
+            ctx.fillRect(tgt.x - 8, tgt.y + 5, 16, 4);
+
+            // 3. Draw Portals
+            portals.forEach(p => {
+                [p.in, p.out].forEach((node, idx) => {
+                    ctx.save();
+                    ctx.translate(node.x, node.y);
+                    
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fill();
+                    
+                    ctx.shadowBlur = 0;
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = p.color;
+                    ctx.rotate((idx === 0 ? timeAnim : -timeAnim));
+                    ctx.setLineDash([15, 10]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.rotate(Math.PI / 4);
+                    ctx.setLineDash([5, 15]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius - 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            });
+
+            // 4. Draw Emitter
+            const em = levelData.emitter;
+            if (selectedEmitter) {
+                ctx.save();
+                ctx.translate(em.x, em.y);
+                ctx.beginPath();
+                ctx.arc(0, 0, 90, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.15)'; 
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '10px Tahoma';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                for(let a = 0; a < 360; a += 15) {
+                    const rad = a * Math.PI / 180;
+                    const isMajor = a % 45 === 0;
+                    const len = isMajor ? 12 : 6;
+                    ctx.beginPath();
+                    ctx.moveTo((90 - len) * Math.cos(rad), (90 - len) * Math.sin(rad));
+                    ctx.lineTo(90 * Math.cos(rad), 90 * Math.sin(rad));
+                    ctx.strokeStyle = isMajor ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)';
+                    ctx.stroke();
+                    if(isMajor) {
+                        let textAngle = a;
+                        if (textAngle > 180) textAngle -= 360;
+                        ctx.fillText(textAngle + '°', (90 + 18) * Math.cos(rad), (90 + 18) * Math.sin(rad));
+                    }
+                }
+                if (guideVisible && levelData.emitter.solutionAngle !== undefined) {
+                    ctx.rotate(levelData.emitter.solutionAngle * Math.PI / 180);
+                    ctx.setLineDash([8, 8]);
+                    ctx.strokeStyle = '#facc15';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(110, 0);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.translate(em.x, em.y);
+            ctx.rotate(em.angle * Math.PI / 180);
+            if (em.rotatable) {
+                ctx.shadowBlur = selectedEmitter ? 20 : 10;
+                ctx.shadowColor = '#fbbf24';
+                ctx.strokeStyle = '#fcd34d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-15, -15, 30, 30);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.moveTo(15, -10); ctx.lineTo(35, 0); ctx.lineTo(15, 10); ctx.fill();
+            ctx.restore();
+
+            // 5. Draw Mirrors and Lenses
+            mirrors.forEach(m => {
+                const isSelected = m.id === selectedMirrorId;
+                const mType = m.type || 'mirror';
+                const solutionAngle = m.solutionAngle ?? levelData.solutions?.mirrors?.[m.id];
+
+                if (guideVisible && solutionAngle !== undefined && !m.fixed) {
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.rotate(solutionAngle * Math.PI / 180);
+                    ctx.setLineDash([8, 8]);
+                    ctx.strokeStyle = '#facc15';
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length / 2 - 10, 0);
+                    ctx.lineTo(m.length / 2 + 10, 0);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                if (isSelected) {
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 90, Math.PI, 0);
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 90, 0, Math.PI);
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+                    ctx.fill();
+
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = '12px Tahoma';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    for(let a = 0; a <= 180; a += 15) {
+                        const rad = (180 - a) * Math.PI / 180;
+                        const isMajor = a % 45 === 0;
+                        const len = isMajor ? 12 : 6;
+                        ctx.beginPath();
+                        ctx.moveTo((90 - len) * Math.cos(rad), -(90 - len) * Math.sin(rad));
+                        ctx.lineTo(90 * Math.cos(rad), -90 * Math.sin(rad));
+                        ctx.strokeStyle = isMajor ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)';
+                        ctx.stroke();
+                        if(isMajor) {
+                            ctx.fillText(a.toString() + '°', (90 + 18) * Math.cos(rad), -(90 + 18) * Math.sin(rad));
+                        }
+                    }
+                    ctx.restore();
+                }
+
+                ctx.save();
+                ctx.translate(m.x, m.y);
+                ctx.rotate(m.angle * Math.PI / 180);
+                if(isSelected) { ctx.shadowBlur = 15; ctx.shadowColor = '#38bdf8'; }
+
+                if (mType === 'mirror') {
+                    ctx.fillStyle = isSelected ? '#0ea5e9' : '#64748b';
+                    ctx.fillRect(-m.length / 2, -5, m.length, 10);
+                    ctx.fillStyle = '#e0f2fe';
+                    ctx.fillRect(-m.length / 2, -2, m.length, 4);
+                } 
+                else if (mType === 'convex_mirror') { 
+                    ctx.fillStyle = isSelected ? '#0ea5e9' : '#64748b';
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, 5);
+                    ctx.lineTo(m.length/2, 5);
+                    ctx.quadraticCurveTo(0, -20, -m.length/2, 5);
+                    ctx.fill();
+                    ctx.strokeStyle = '#e0f2fe';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, 5);
+                    ctx.quadraticCurveTo(0, -20, m.length/2, 5);
+                    ctx.stroke();
+                }
+                else if (mType === 'concave_mirror') { 
+                    ctx.fillStyle = isSelected ? '#0ea5e9' : '#64748b';
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, -5);
+                    ctx.lineTo(m.length/2, -5);
+                    ctx.quadraticCurveTo(0, 20, -m.length/2, -5);
+                    ctx.fill();
+                    ctx.strokeStyle = '#e0f2fe';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, -5);
+                    ctx.quadraticCurveTo(0, 20, m.length/2, -5);
+                    ctx.stroke();
+                }
+                else if (mType === 'convex_lens') { 
+                    ctx.fillStyle = isSelected ? 'rgba(56, 189, 248, 0.6)' : 'rgba(148, 163, 184, 0.4)';
+                    ctx.strokeStyle = isSelected ? '#38bdf8' : '#94a3b8';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, 0);
+                    ctx.quadraticCurveTo(0, -20, m.length/2, 0);
+                    ctx.quadraticCurveTo(0, 20, -m.length/2, 0);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                else if (mType === 'concave_lens') { 
+                    ctx.fillStyle = isSelected ? 'rgba(56, 189, 248, 0.6)' : 'rgba(148, 163, 184, 0.4)';
+                    ctx.strokeStyle = isSelected ? '#38bdf8' : '#94a3b8';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-m.length/2, -10);
+                    ctx.quadraticCurveTo(0, -2, m.length/2, -10);
+                    ctx.lineTo(m.length/2, 10);
+                    ctx.quadraticCurveTo(0, 2, -m.length/2, 10);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                
+                if (m.fixed) {
+                    ctx.rotate(-m.angle * Math.PI / 180);
+                    ctx.fillStyle = '#facc15';
+                    ctx.font = 'bold 18px Tahoma';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🔒', 0, -24);
+                }
+                ctx.restore();
+            });
+
+            // 6. Raycasting Physics Logic
+            let rayOrigin = { x: em.x, y: em.y };
+            let rayAngle = em.angle * Math.PI / 180;
+            let currentHitTarget = false;
+            let rayPoints = [rayOrigin];
+            
+            const MAX_BOUNCES = 15;
+            let bounces = 0;
+            let lastHitObjId = null;
+
+            while (bounces < MAX_BOUNCES) {
+                let endX = rayOrigin.x + Math.cos(rayAngle) * 3000;
+                let endY = rayOrigin.y + Math.sin(rayAngle) * 3000;
+                let closestHit = null;
+                let hitType = null;
+                let hitObj = null;
+
+                const tHit = getCircleIntersection(rayOrigin.x, rayOrigin.y, endX, endY, tgt.x, tgt.y, levelData.assistRadius || tgt.radius);
+                if (tHit) { closestHit = tHit; hitType = 'target'; }
+
+                levelData.walls.forEach(w => {
+                    const lines = [
+                        [w.x, w.y, w.x+w.w, w.y], [w.x, w.y, w.x, w.y+w.h],
+                        [w.x+w.w, w.y, w.x+w.w, w.y+w.h], [w.x, w.y+w.h, w.x+w.w, w.y+w.h]
+                    ];
+                    lines.forEach(l => {
+                        const hit = getIntersection(rayOrigin.x, rayOrigin.y, endX, endY, l[0], l[1], l[2], l[3]);
+                        if (hit && hit.t > 0.001 && (!closestHit || hit.t < closestHit.t)) {
+                            closestHit = hit; hitType = 'wall';
+                        }
+                    });
+                });
+
+                mirrors.forEach(m => {
+                    const rad = m.angle * Math.PI / 180;
+                    const mx1 = m.x - (m.length/2) * Math.cos(rad);
+                    const my1 = m.y - (m.length/2) * Math.sin(rad);
+                    const mx2 = m.x + (m.length/2) * Math.cos(rad);
+                    const my2 = m.y + (m.length/2) * Math.sin(rad);
+
+                    const hit = getIntersection(rayOrigin.x, rayOrigin.y, endX, endY, mx1, my1, mx2, my2);
+                    if (hit && hit.t > 0.005 && m.id !== lastHitObjId && (!closestHit || hit.t < closestHit.t)) {
+                        closestHit = hit; hitType = 'optic'; hitObj = m;
+                    }
+                });
+
+                portals.forEach(p => {
+                    const distIn = Math.hypot(rayOrigin.x - p.in.x, rayOrigin.y - p.in.y);
+                    if (distIn > p.radius) {
+                        const hitIn = getCircleIntersection(rayOrigin.x, rayOrigin.y, endX, endY, p.in.x, p.in.y, p.radius);
+                        if (hitIn && hitIn.t > 0.001 && (!closestHit || hitIn.t < closestHit.t)) {
+                            closestHit = hitIn; hitType = 'portal'; hitObj = { portal: p, type: 'in' };
+                        }
+                    }
+                    const distOut = Math.hypot(rayOrigin.x - p.out.x, rayOrigin.y - p.out.y);
+                    if (distOut > p.radius) {
+                        const hitOut = getCircleIntersection(rayOrigin.x, rayOrigin.y, endX, endY, p.out.x, p.out.y, p.radius);
+                        if (hitOut && hitOut.t > 0.001 && (!closestHit || hitOut.t < closestHit.t)) {
+                            closestHit = hitOut; hitType = 'portal'; hitObj = { portal: p, type: 'out' };
+                        }
+                    }
+                });
+
+                if (closestHit) {
+                    rayPoints.push({ x: closestHit.x, y: closestHit.y });
+                    if (hitType === 'target') {
+                        currentHitTarget = true;
+                        break;
+                    } else if (hitType === 'wall') {
+                        break;
+                    } else if (hitType === 'optic') {
+                        const mType = hitObj.type || 'mirror';
+                        const vx = Math.cos(rayAngle); 
+                        const vy = Math.sin(rayAngle);
+                        const rad = hitObj.angle * Math.PI / 180;
+                        
+                        const d = (closestHit.x - hitObj.x) * Math.cos(rad) + (closestHit.y - hitObj.y) * Math.sin(rad);
+
+                        if (mType === 'mirror' || mType === 'convex_mirror' || mType === 'concave_mirror') {
+                            let normalAngle = rad + Math.PI / 2;
+                            if (mType === 'convex_mirror') normalAngle += d * 0.015;
+                            else if (mType === 'concave_mirror') normalAngle -= d * 0.015;
+
+                            let nx = Math.cos(normalAngle);
+                            let ny = Math.sin(normalAngle);
+                            if (vx * nx + vy * ny > 0) { nx = -nx; ny = -ny; }
+                            const dot = vx * nx + vy * ny;
+                            const rx = vx - 2 * dot * nx;
+                            const ry = vy - 2 * dot * ny;
+                            
+                            rayAngle = Math.atan2(ry, rx);
+                            rayOrigin = { x: closestHit.x, y: closestHit.y };
+                        } 
+                        else if (mType === 'convex_lens' || mType === 'concave_lens') {
+                            const dx = Math.cos(rad) * d;
+                            const dy = Math.sin(rad) * d;
+                            const strength = 0.02;
+                            
+                            let nx_v, ny_v;
+                            if (mType === 'convex_lens') {
+                                nx_v = vx - dx * strength;
+                                ny_v = vy - dy * strength;
+                            } else {
+                                nx_v = vx + dx * strength;
+                                ny_v = vy + dy * strength;
+                            }
+                            
+                            rayAngle = Math.atan2(ny_v, nx_v);
+                            rayOrigin = { x: closestHit.x, y: closestHit.y };
+                            rayOrigin.x += Math.cos(rayAngle) * 0.1;
+                            rayOrigin.y += Math.sin(rayAngle) * 0.1;
+                        }
+
+                        lastHitObjId = hitObj.id;
+                        bounces++;
+                    } else if (hitType === 'portal') {
+                        const targetNode = hitObj.type === 'in' ? hitObj.portal.out : hitObj.portal.in;
+                        rayOrigin = { x: targetNode.x, y: targetNode.y }; 
+                        rayPoints.push(null); 
+                        rayPoints.push({ x: targetNode.x, y: targetNode.y }); 
+                        lastHitObjId = null; 
+                        bounces++;
+                    }
+                } else {
+                    rayPoints.push({ x: endX, y: endY });
+                    break;
+                }
+            }
+
+            // Draw Laser (Glow)
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = currentHitTarget ? '#34d399' : '#f87171';
+            ctx.strokeStyle = currentHitTarget ? '#a7f3d0' : '#fca5a5';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            for(let i=0; i<rayPoints.length; i++) {
+                if (rayPoints[i] === null) {
+                    ctx.stroke(); ctx.beginPath(); 
+                    if (i + 1 < rayPoints.length) ctx.moveTo(rayPoints[i+1].x, rayPoints[i+1].y);
+                } else {
+                    if (i === 0 || rayPoints[i-1] === null) ctx.moveTo(rayPoints[i].x, rayPoints[i].y);
+                    else ctx.lineTo(rayPoints[i].x, rayPoints[i].y);
+                }
+            }
+            ctx.stroke();
+
+            // Draw Laser (Core)
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for(let i=0; i<rayPoints.length; i++) {
+                if (rayPoints[i] === null) {
+                    ctx.stroke(); ctx.beginPath();
+                    if (i + 1 < rayPoints.length) ctx.moveTo(rayPoints[i+1].x, rayPoints[i+1].y);
+                } else {
+                    if (i === 0 || rayPoints[i-1] === null) ctx.moveTo(rayPoints[i].x, rayPoints[i].y);
+                    else ctx.lineTo(rayPoints[i].x, rayPoints[i].y);
+                }
+            }
+            ctx.stroke();
+
+            // Handle Target Hit state
+            if (currentHitTarget) {
+                targetHitTimer++;
+                if (!isTargetHit) {
+                    isTargetHit = true;
+                    soundEffects.hit();
+                }
+                if (targetHitTimer > 18) {
+                    soundEffects.clearLevel();
+                    levelClear();
+                }
+            } else {
+                isTargetHit = false;
+                targetHitTimer = 0;
+            }
+        };
+
+    </script>
+</body>
+</html>

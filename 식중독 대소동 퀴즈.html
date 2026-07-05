@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>우당탕탕 주방 대소동: 식중독을 피하라!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Jua', sans-serif; background-color: #f3f4f6; user-select: none; transition: background-color 0.5s; }
+        .game-container { max-width: 600px; margin: 0 auto; height: 100vh; background-color: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; transition: background-color 0.5s; }
+        .btn-bounce { transition: transform 0.1s, box-shadow 0.1s; }
+        .btn-bounce:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .timer-bar { transition: width 0.1s linear, background-color 0.3s; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 랭크별 배경 애니메이션 */
+        .rank-bg-1 { background-color: #fef08a; } /* 강철 위장 (노랑) */
+        .rank-bg-2 { background-color: #bfdbfe; } /* 튼튼 위장 (파랑) */
+        .rank-bg-3 { background-color: #bbf7d0; } /* 평범 건강 (초록) */
+        .rank-bg-4 { background-color: #fed7aa; } /* 배탈 직전 (주황) */
+        .rank-bg-5 { background-color: #e9d5ff; } /* 심한 장염 (보라) */
+        .rank-bg-6 { animation: poisonPulse 2s infinite alternate; } /* 식중독 (진녹색 깜빡임) */
+        
+        @keyframes poisonPulse {
+            0% { background-color: #166534; }
+            100% { background-color: #14532d; }
+        }
+
+        .score-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="game-container text-gray-800">
+    
+    <!-- 시작 화면 -->
+    <div id="screen-start" class="flex-1 flex flex-col items-center justify-center p-6 bg-yellow-100 text-center relative">
+        <h1 class="text-4xl text-orange-600 mb-2 drop-shadow-md leading-tight">우당탕탕 주방 대소동<br><span class="text-5xl text-green-700 font-bold mt-2 inline-block">식중독을 피하라!</span></h1>
+        <div class="text-7xl mb-6 mt-4 drop-shadow-lg">👨‍🍳🦠👩‍🍳</div>
+        <p class="text-lg text-gray-700 mb-8 bg-white p-5 rounded-2xl shadow-md leading-relaxed border-2 border-yellow-300">
+            교묘해진 식중독균의 함정!<br>
+            가장 정확하고 안전한 방법을 <span class="text-blue-600 font-bold">빨리</span> 찾아내세요.<br><br>
+            <span class="text-green-600 font-bold">빨리 맞힐수록 보너스 점수 UP!</span><br>
+            <span class="text-red-500 font-bold">오답/시간초과 시 점수 감점 (-50점)</span><br>
+            마지막까지 포기하지 마세요! <span class="text-orange-500 font-bold">최종 점수</span>로 랭크가 결정됩니다!
+        </p>
+        <button onclick="startGame()" class="btn-bounce bg-orange-500 text-white text-3xl py-4 px-12 rounded-full shadow-lg border-b-4 border-orange-700 hover:bg-orange-400 w-full max-w-sm">
+            도전하기!
+        </button>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="screen-game" class="flex-1 flex flex-col hidden bg-gray-50">
+        <!-- 상단 상태바 -->
+        <div class="flex justify-between items-center p-4 bg-white shadow-sm z-10 border-b-2 border-gray-100">
+            <div id="health-bar" class="text-2xl text-red-500 flex space-x-1 drop-shadow-sm flex-1">
+                <!-- 하트 아이콘 -->
+            </div>
+            <div class="flex-1 text-center">
+                <div id="score-display" class="text-2xl font-bold text-orange-500 drop-shadow-sm">점수: 0</div>
+            </div>
+            <div class="text-xl text-blue-600 bg-blue-50 px-3 py-1 rounded-lg flex-1 text-right whitespace-nowrap">
+                <i class="fa-solid fa-flag-checkered mr-1"></i> <span id="question-count">1/15</span>
+            </div>
+        </div>
+
+        <!-- 타이머 -->
+        <div class="w-full bg-gray-200 h-4 shadow-inner">
+            <div id="timer-bar" class="timer-bar bg-green-500 h-full w-full"></div>
+        </div>
+
+        <!-- 문제 영역 -->
+        <div class="flex-1 flex flex-col p-5 overflow-y-auto pb-6">
+            <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-indigo-100 mb-6 relative">
+                <div class="absolute -top-5 -left-3 text-5xl drop-shadow-md">⏱️</div>
+                <h2 id="question-text" class="text-2xl text-gray-800 text-center leading-relaxed mt-4 break-keep">문제 내용</h2>
+            </div>
+
+            <!-- 선택지 -->
+            <div id="options-container" class="flex flex-col space-y-4">
+                <!-- 버튼 동적 생성 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 결과 피드백 모달 -->
+    <div id="modal-feedback" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 px-5">
+        <div class="bg-white w-full max-w-md rounded-3xl p-7 text-center shadow-2xl transform transition-transform scale-95" id="feedback-card">
+            <div id="feedback-icon" class="text-7xl mb-1 drop-shadow-md">⭕</div>
+            <h3 id="feedback-title" class="text-3xl mb-1 font-bold">정답입니다!</h3>
+            <p id="feedback-points" class="text-xl font-bold text-orange-500 mb-4 h-6"></p> <!-- 획득 점수 표시 -->
+            <div id="feedback-desc" class="text-lg text-gray-700 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 leading-relaxed text-left break-keep h-40 overflow-y-auto">해설</div>
+            <button onclick="nextQuestion()" class="btn-bounce w-full bg-blue-500 text-white text-2xl py-4 rounded-xl shadow-md border-b-4 border-blue-700 hover:bg-blue-400">
+                다음으로
+            </button>
+        </div>
+    </div>
+
+    <!-- 최종 결과 및 오답노트 화면 -->
+    <div id="screen-result" class="flex-1 flex flex-col hidden overflow-y-auto p-6 transition-colors duration-500">
+        <div class="text-center mb-6">
+            <div id="result-emoji" class="text-8xl mb-2 drop-shadow-xl mt-4">🏆</div>
+            <h2 id="result-rank" class="text-5xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">무적의 강철 위장</h2>
+            <div class="bg-white bg-opacity-95 p-5 rounded-2xl shadow-lg mb-2 border-4 border-yellow-200">
+                <p class="text-xl font-bold text-gray-600 mb-1">최종 점수</p>
+                <p id="result-score-text" class="text-5xl font-bold text-orange-600 score-pop">0점</p>
+            </div>
+            <p id="result-desc" class="text-lg bg-white bg-opacity-90 p-4 rounded-xl font-bold text-gray-800 shadow-md">설명</p>
+        </div>
+
+        <!-- 오답 노트 영역 -->
+        <div id="wrong-note-container" class="bg-white p-5 rounded-2xl shadow-lg border border-gray-200 mb-6 flex-1 hidden flex-col">
+            <h3 class="text-2xl text-red-600 mb-4 border-b-2 border-red-100 pb-2"><i class="fa-solid fa-book-open"></i> 나의 오답 노트</h3>
+            <div id="wrong-list" class="flex-1 overflow-y-auto space-y-4 pr-2">
+                <!-- 오답 리스트가 여기에 들어감 -->
+            </div>
+        </div>
+
+        <button onclick="showStartScreen()" class="btn-bounce bg-gray-800 text-white text-2xl py-4 px-6 rounded-2xl shadow-xl border-b-4 border-black hover:bg-gray-700 w-full mt-auto">
+            <i class="fa-solid fa-rotate-right mr-2"></i> 게임 다시 하기
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // 문제 은행 (고난도/헷갈리는 문제들 유지)
+    const allQuestions = [
+        // --- 1. 주방 안전 (화재, 감전, 도구 사용) ---
+        { q: "뜨거운 오븐에서 빵이 구워져 나왔습니다. 트레이를 꺼낼 때 올바른 방법은?", c: ["젖은 행주로 감싸서 꺼낸다.", "두껍고 완전히 마른 방열 장갑(오븐 전용 장갑)을 끼고 꺼낸다.", "맨손으로 재빨리 꺼낸다."], a: 1, r: "젖은 장갑이나 행주를 쓰면 오븐의 열기 때문에 물이 순식간에 끓어올라 수증기 화상을 입게 됩니다! 꼭 마른 장갑을 쓰세요." },
+        { q: "가스레인지를 사용해 요리를 마친 후, 안전을 위해 가장 마지막에 해야 할 일은?", c: ["가스 불만 끄고 밸브는 항상 열어둔다.", "물을 뿌려서 가스레인지를 식힌다.", "가스 불을 끄고, 연결된 중간 밸브(콕)를 확실하게 잠근다."], a: 2, r: "가스레인지는 사용 후 반드시 중간 밸브를 잠가야 가스 누출로 인한 화재나 폭발 사고를 확실하게 막을 수 있어요." },
+        { q: "프라이팬에 기름을 많이 두르고 튀김 요리를 하다가 그만 기름에 불이 붙어버렸습니다! 어떻게 해야 할까요?", c: ["물을 한 바가지 확 부어버린다.", "입으로 후후 불어서 끈다.", "젖은 수건이나 잎이 넓은 배추 등으로 덮거나, 냄비 뚜껑을 덮어 공기를 차단한다."], a: 2, r: "기름 화재에 물을 부으면 물이 순식간에 수증기로 변하며 끓는 기름을 사방으로 튀게 만들어 집 전체가 불바다가 됩니다! 절대 금지!" },
+        { q: "믹서기나 오븐 등을 사용하기 위해 전기 플러그를 콘센트에 꽂을 때 주의할 점은?", c: ["젖은 손으로 전선을 꽉 잡고 힘껏 잡아당겨 뽑는다.", "손에 물기를 완전히 닦고 마른 손으로 플러그의 둥근 몸체를 잡고 꽂거나 뺀다.", "젓가락으로 콘센트 구멍을 찔러본 후 꽂는다."], a: 1, r: "젖은 손으로 전기 기구를 만지면 물을 타고 전기가 흘러 감전 사고가 날 수 있습니다. 주방에선 항상 마른 손으로 만지세요." },
+        { q: "주방에서 칼을 사용하다가 다른 사람에게 건네줄 때 올바른 방법은?", c: ["손잡이를 내가 꽉 쥐고 칼날 쪽을 상대에게 들이민다.", "바닥에 던져서 알아서 줍게 한다.", "칼날이 내 쪽(바닥)을 향하게 잡고, 칼 손잡이 부분이 상대방을 향하도록 조심스럽게 건넨다."], a: 2, r: "칼이나 가위 같은 날카로운 도구는 받는 사람이 손잡이를 즉시 안전하게 쥘 수 있도록 배려해서 건네주어야 합니다." },
+        { q: "전자레인지에 음식을 데울 때, 절대로 넣으면 안 되는 것은?", c: ["전자레인지 전용 플라스틱 용기", "은박지(알루미늄 포일)나 금속 테두리가 있는 그릇", "유리컵"], a: 1, r: "금속성 물질이 들어가면 전자레인지의 마이크로파를 반사시켜 불꽃이 튀고 화재가 발생할 수 있어 매우 위험합니다." },
+        { q: "펄펄 끓는 찌개 냄비의 뚜껑을 열 때 화상을 예방하는 올바른 방법은?", c: ["얼굴을 냄비 가까이 대고 뚜껑을 내 쪽으로 확 연다.", "뚜껑을 몸 반대쪽(바깥쪽)으로 먼저 비스듬히 열어 뜨거운 증기가 나를 향하지 않게 빼낸다.", "맨손으로 뚜껑을 집어 던진다."], a: 1, r: "냄비 안의 수증기는 100도가 넘습니다. 뚜껑을 내 쪽으로 열면 증기가 얼굴을 덮쳐 심각한 화상을 입을 수 있습니다." },
+        { q: "유리컵을 깨뜨렸을 때 바닥에 남은 미세한 유리 파편을 안전하게 치우는 꿀팁은?", c: ["맨발로 밟아서 가루로 만든다.", "물티슈 한 장으로 대충 훔친다.", "장갑을 끼고 큰 조각을 주운 뒤, 물에 적신 탈지면(솜)이나 테이프, 식빵 조각으로 바닥을 두드려 눈에 안 띄는 파편을 닦아낸다."], a: 2, r: "눈에 보이지 않는 미세한 유리 조각은 물 묻은 솜이나 끈적이는 테이프, 부드러운 빵의 단면에 아주 잘 달라붙습니다." },
+        
+        // --- 2. 자연 독성 (식물, 씨앗 등) ---
+        { q: "산에서 뜯어온 생고사리를 요리하려고 합니다. 가장 안전한 방법은?", c: ["흐르는 물에 씻어서 바로 생 샐러드로 먹는다.", "끓는 물에 충분히 삶고 찬물에 오래 담가 독성을 완전히 뺀 후 조리한다.", "햇볕에 30분 말린 뒤 그냥 씹어 먹는다."], a: 1, r: "고사리에는 '프타퀼로사이드'라는 발암성 독성 물질이 있어요. 다행히 수용성이고 열에 약해 삶고 물에 여러 번 우리면 안전하답니다." },
+        { q: "덜 익은 청매실이나 복숭아, 사과 등의 씨앗에는 공통적으로 주의해야 할 점이 있습니다. 무엇일까요?", c: ["비타민이 가장 많으므로 무조건 씨앗까지 통째로 씹어 먹는다.", "'아미그달린'이라는 자연 독소가 있으므로 날것으로 먹거나 씨를 씹어 먹지 않는다.", "껍질에만 독이 있으니 껍질을 까서 생으로 먹는다."], a: 1, r: "이 씨앗들의 독소는 뱃속에서 청산가리 성분으로 변할 수 있어요. 그래서 매실은 설탕에 오래 절이거나 술을 담가 독성을 분해해서 먹는 거랍니다." },
+        { q: "강낭콩이나 팥 같은 단단한 콩류를 요리할 때 주의할 점은?", c: ["영양소를 위해 생으로 씹어 먹거나 살짝만 데친다.", "찬물에 5분만 담갔다가 바로 볶아 먹는다.", "물에 충분히 불린 뒤 끓는 물에 푹 삶거나 익혀서 렉틴 등의 독성 물질을 파괴한 후 먹는다."], a: 2, r: "익히지 않은 생콩에는 구토나 설사를 유발하는 '렉틴'이라는 독소가 듬뿍 들어있어요. 푹 익히면 모두 사라지니 반드시 푹 삶아 드세요!" },
+        { q: "감자에 싹이 나거나 껍질이 초록색으로 변했습니다. 올바른 섭취 방법은?", c: ["초록색으로 변한 껍질과 싹 주변을 아주 깊고 넓게 도려내고 섭취한다.", "끓는 물에 1시간 이상 삶으면 독이 사라지므로 그냥 먹는다.", "싹만 손톱으로 톡 떼어내고 껍질째 튀겨 먹는다."], a: 0, r: "초록색 부분과 싹에는 '솔라닌'이라는 자연 독소가 있습니다. 열을 가해도 절대 파괴되지 않으므로 아예 깊게 파내서 버려야 합니다." },
+        { q: "덜 익어서 아직 '초록색'을 띠는 토마토를 먹어도 될까요?", c: ["새콤하고 맛있으니 그냥 먹어도 된다.", "냉장고에 넣어서 차갑게 먹으면 안전하다.", "'토마틴'이라는 독소가 있어 복통을 유발하므로 붉게 익을 때까지 실온에서 숙성시킨 후 먹는다."], a: 2, r: "덜 익은 초록 토마토의 '토마틴' 독소는 감자의 솔라닌과 비슷하여 먹으면 배가 아프고 마비가 올 수 있어요. 빨갛게 익으면 독성이 사라집니다." },
+        
+        // --- 3. 미생물 및 식중독균 심화 ---
+        { q: "김밥이나 샌드위치를 만들 때 맨손으로 요리하면 피부의 상처에서 번식하기 쉬운 이 식중독균의 이름은?", c: ["노로바이러스", "황색포도상구균", "클로스트리디움 보툴리눔"], a: 1, r: "황색포도상구균은 사람의 피부 상처나 곪은 곳에 존재하며, 이 균이 뿜어낸 독소는 끓여도 파괴되지 않는 아주 무서운 특징이 있습니다." },
+        { q: "추운 겨울철에도 살아남으며, 굴 같은 어패류를 생으로 먹을 때 주로 감염되는 전염성 강한 식중독 바이러스는?", c: ["살모넬라균", "노로바이러스", "장염비브리오균"], a: 1, r: "노로바이러스는 영하 20도에서도 생존하며 전염성이 매우 강해 겨울철 식중독의 주범입니다. 85도 이상에서 1분 이상 가열해야 죽습니다." },
+        { q: "여름철 바닷물 온도가 올라갈 때 주로 번식하며, 오염된 생선회나 조개를 날로 먹었을 때 걸리는 식중독균은?", c: ["장염비브리오균", "바실러스 세레우스", "캠필로박터균"], a: 0, r: "장염비브리오균은 소금기가 있는 바닷물에서 증식합니다. 수돗물(맹물)로 해산물을 꼼꼼히 씻기만 해도 균이 삼투압에 의해 터져서 죽는 특징이 있습니다." },
+        { q: "식당에서 남은 볶음밥이나 상온에 오래 방치된 찬밥에서 주로 발생하며, 구토를 유발하는 식중독균은?", c: ["살모넬라균", "바실러스 세레우스", "병원성 대장균"], a: 1, r: "바실러스 세레우스는 쌀이나 파스타 등에 흔하며 열에 강한 방어막(포자)을 형성하여 밥을 끓이거나 데워도 잘 죽지 않습니다. 남은 밥은 즉시 냉동 보관해야 합니다." },
+        { q: "생닭을 손질할 때 물이 튀면서 주변 식재료를 오염시켜 발생하는 식중독균으로, 가금류 내장에 주로 사는 것은?", c: ["캠필로박터 제주니", "장출혈성 대장균(O157)", "리스테리아"], a: 0, r: "캠필로박터균은 닭고기 등 가금류 내장에 많으며, 생닭을 씻을 때 수압에 의해 주변으로 튀어 샐러드 등 다른 식재료를 오염(교차오염)시킵니다." },
+        { q: "상한 음식에서 나는 고약한 냄새를 맡고, 아까운 마음에 펄펄 끓여서 먹기로 했습니다. 결과는?", c: ["끓이면 모든 균과 독소가 사라져서 100% 안전하다.", "균 자체는 죽을 수 있지만, 균이 이미 뿜어낸 '내열성 독소'는 파괴되지 않아 심각한 식중독에 걸린다.", "음식의 양만 줄어든다."], a: 1, r: "이미 상해서 냄새가 나는 음식은 세균이 '내열성 독소'를 뿜어놓은 상태입니다. 펄펄 끓여도 이 독소는 남아서 위장을 파괴합니다. 아까워도 당장 버리세요!" },
+
+        // --- 4. 육류 및 어패류 취급 ---
+        { q: "돼지고기를 가장 오랫동안 신선하게 보관할 수 있는 완벽한 방법은?", c: ["구입한 포장팩 그대로 김치냉장고 육류칸에 보관한다.", "미지근한 물에 10분 담근 후 랩으로 싼다.", "표면의 수분과 핏물을 키친타월로 완벽히 닦고 1회 분량씩 소분하여 랩으로 밀착 포장한 뒤 냉동한다."], a: 2, r: "핏물과 수분은 세균 번식과 산패의 원인입니다. 완벽히 제거하고 산소를 차단(밀착 포장)하여 소분 냉동하는 것이 정석입니다." },
+        { q: "냉동실에서 꽁꽁 언 소고기를 가장 안전하게 해동(녹이는)하는 방법은?", c: ["뜨거운 물에 30분 담가 육즙을 가둔다.", "조리 하루 전, 냉장실로 옮겨 천천히 해동한다.", "상온(식탁)에 3~4시간 두어 자연 해동한다."], a: 1, r: "상온이나 뜨거운 물 해동은 고기 표면 온도를 빠르게 높여 세균이 폭발적으로 증식하게 만듭니다. 냉장 해동이 가장 안전합니다." },
+        { q: "닭고기가 속까지 완벽히 익었는지 확인하는 가장 정확한 기준은?", c: ["겉 껍질이 갈색으로 바삭해질 때", "가장 두꺼운 부분을 찔렀을 때 흘러나오는 맑은 육즙과 뼈 주변에 핏기가 완전히 사라졌을 때", "전자레인지 조리 기준 3분이 지났을 때"], a: 1, r: "가금류는 속이나 뼈 주변이 붉은색을 띠면 아직 덜 익은 것입니다. 투명한 육즙이 나오고 핏기가 없어야 안전합니다." },
+        { q: "다진 고기(함박스테이크용 등)의 취급 방법으로 옳은 것은?", c: ["덩어리 고기보다 공기와 닿는 면적이 넓어 훨씬 빨리 상하므로 당일 섭취나 즉시 냉동한다.", "속까지 균이 들어갈 수 없으므로 상온에 두어도 안전하다.", "표면만 살짝 익히는 미디엄 레어로 구워 육즙을 즐긴다."], a: 0, r: "다진 고기는 분쇄 과정에서 겉면에 있던 세균이 속까지 섞이게 되므로, 부패 속도가 매우 빠르고 속까지 100% 완벽히 익혀야 합니다." },
+        { q: "생선을 손질할 때 비린내와 식중독 위험을 동시에 줄이는 가장 중요한 과정은?", c: ["아가미와 내장을 완벽히 제거하고 핏물을 깨끗한 물로 씻어낸다.", "표면에 소금을 두껍게 뿌리고 3일간 실온 방치한다.", "내장을 제거하지 않고 통째로 냉동실에 얼린다."], a: 0, r: "생선의 내장과 아가미, 핏물에는 부패를 일으키는 미생물과 효소가 가득합니다. 보관 전 반드시 제거해야 합니다." },
+        { q: "살아있는 조개류(바지락, 꼬막)를 해감(모래 빼기)하는 가장 효과적인 방법은?", c: ["맹물에 식초를 넣고 밝은 햇빛 아래 둔다.", "바닷물과 비슷한 염도의 소금물에 담그고 뚜껑이나 검은 봉지를 덮어 어둡게 해준다.", "뜨거운 물을 붓는다."], a: 1, r: "조개는 어둡고 짠 물 환경이 조성되어야 뻘 속인 줄 착각하고 안심하여 호흡하며 모래를 뱉어냅니다." },
+        { q: "조개탕을 15분 이상 펄펄 끓였는데도 입을 굳게 닫고 있는 조개가 발견되었습니다. 대처법은?", c: ["칼로 억지로 비틀어 열어 먹는다.", "아직 덜 익은 것이니 30분 더 끓인다.", "조리 전부터 이미 죽어서 상한 조개일 확률이 높으므로 즉시 버린다."], a: 2, r: "열을 가해도 입을 벌리지 않는 조개는 이미 부패하여 근육이 굳어버린 상태입니다. 독소가 퍼져있을 수 있으니 절대 먹으면 안 됩니다." },
+        
+        // --- 5. 채소, 과일, 견과류 보관 ---
+        { q: "사과를 다른 과일이나 채소(특히 바나나, 시금치)와 함께 밀폐 용기에 섞어 보관하면 안 되는 이유는?", c: ["사과에서 '에틸렌 가스'가 뿜어져 나와 주변 과일/채소를 순식간에 숙성시키고 썩게 만들기 때문에", "사과가 수분을 모두 흡수하기 때문에", "서로 색이 물들기 때문에"], a: 0, r: "사과는 식물 숙성 호르몬인 에틸렌 가스 방출량이 아주 높습니다. 다른 과일과 보관 시 사과만 랩이나 봉투로 꽁꽁 싸매야 합니다." },
+        { q: "파를 썰 때 눈이 맵고 눈물이 나는 것을 최소화하는 과학적인 꿀팁은?", c: ["도마 주변에 향초를 켜둔다.", "칼을 찬물에 수시로 적시거나 양파/파를 차갑게 두었다가 썬다.", "파를 전자레인지에 2분 돌린다."], a: 1, r: "눈을 맵게 하는 황화합물 성분은 물에 잘 녹고(수용성), 차가울수록 공기 중으로 덜 퍼지는 성질이 있습니다." },
+        { q: "수박을 잘라서 보관할 때 세균 번식이 가장 폭발적으로 일어나는 최악의 방법은?", c: ["과육만 깍둑썰기하여 밀폐 용기에 담아 냉장 보관", "남은 수박 단면에 주방용 랩을 빈틈없이 쫙 붙여서 냉장 보관", "씨와 껍질을 모두 분리하여 과육만 지퍼백 보관"], a: 1, r: "수박 껍질 표면에 있던 세균이 칼을 통해 단면에 묻고, 랩을 씌우면 세균이 번식하기 딱 좋은 밀폐 온실이 되어 세균이 수천 배 폭증합니다." },
+        { q: "땅콩이나 호두를 잘못 보관하여 곰팡이가 피고 퀴퀴한 냄새가 날 때의 대처법은?", c: ["물로 깨끗이 헹군 뒤 바싹 말려 먹는다.", "맹독성 발암물질(아플라톡신)이 생겼을 수 있으니 통째로 버린다.", "프라이팬에 강불로 바싹 볶아서 균을 태우고 먹는다."], a: 1, r: "견과류 곰팡이 독소인 '아플라톡신'은 250도 이상으로 가열해도 절대 파괴되지 않는 강력한 1급 발암물질입니다." },
+        { q: "바나나를 냉장고에 넣으면 어떻게 될까요?", c: ["껍질이 까맣게 변한다. (갈변 현상)", "더 달콤하고 노랗게 변한다.", "바나나 싹이 자라난다."], a: 0, r: "바나나는 열대 과일이라 추운 냉장고에 들어가면 얼어붙어 껍질이 새까맣게 변하는 냉해를 입습니다. 실온에 보관하세요!" },
+        { q: "양파와 감자를 부엌 다용도실에 보관하려 합니다. 가장 좋은 방법은?", c: ["하나의 큰 바구니에 감자와 양파를 뒤섞어 보관한다.", "양파의 수분과 가스가 감자를 썩게 하므로 멀리 떨어뜨려 따로 보관한다.", "둘 다 냉장고 신선칸에 밀어 넣는다."], a: 1, r: "양파는 수분이 많고 에틸렌 가스를 내뿜어 주변의 감자를 금방 싹 트게 하고 물러 썩게 만드는 앙숙 관계입니다." },
+        { q: "토마토의 맛과 영양을 최상으로 유지하기 위한 올바른 보관 장소는?", c: ["냉장고 야채칸 깊숙한 곳", "영하 18도 냉동실", "햇빛이 들지 않고 통풍이 잘 되는 실온(상온)"], a: 2, r: "토마토를 냉장 보관하면 세포벽이 파괴되어 껍질이 질겨지고 특유의 단맛과 향이 날아가는 '냉해'를 입습니다." },
+
+        // --- 6. 위생 수칙 및 교차 오염 ---
+        { q: "식중독을 예방하는 주방의 '교차 오염' 방지 원칙에 해당하는 것은?", c: ["도마 하나로 고기, 생선, 채소를 순서대로 썬다.", "생고기를 자른 가위로 다 익은 고기도 자른다.", "육류용, 어패류용, 채소용 도마와 칼을 구분하여 따로 사용한다."], a: 2, r: "날재료에 있던 세균이 도마나 칼을 통해 바로 입으로 들어가는 채소나 익은 고기로 옮겨가는 것을 '교차 오염'이라고 하며, 도구 분리가 유일한 예방책입니다." },
+        { q: "사용한 칼을 설거지할 때 발생할 수 있는 치명적인 사고를 막는 방법은?", c: ["거품이 가득한 설거지통 속에 담가둔다.", "칼날을 쥐고 수세미를 비빈다.", "사용 직후 즉시 씻어내며, 다른 식기류와 섞이지 않게 따로 관리한다."], a: 2, r: "비눗물 속에 칼을 숨겨두면 보이지 않아 손을 깊게 베이는 사고가 발생합니다. 꼭 바로바로 씻어서 치워야 합니다." },
+        { q: "주방 행주를 가장 위생적으로 관리하는 방법은?", c: ["물로 헹궈서 물기가 뚝뚝 떨어지는 채로 싱크대에 구겨 놓는다.", "사용한 행주는 끓는 물에 삶거나 소독한 뒤, 햇빛에 바싹 말려 건조 상태를 유지한다.", "한 달에 한 번만 주방 세제로 빤다."], a: 1, r: "젖은 행주를 상온에 조금만 방치해도 식중독균이 수백만 마리로 증식합니다. 건조와 살균(삶기)이 생명입니다." },
+        { q: "달걀의 신선도를 유지하기 위한 올바른 냉장고 보관 방법은?", c: ["문쪽 계란틀에 둔다.", "씻지 않은 채로 둥근 부분이 위를 향하게 하여 냉장고 안쪽에 보관한다.", "물로 깨끗하게 씻은 뒤 둥근 부분이 아래를 향하게 보관한다."], a: 1, r: "냉장고 문쪽은 온도 변화가 커서 달걀이 쉽게 상합니다. 안쪽에 보관하고, 둥근 쪽의 숨구멍(기실)이 위로 가도록 씻지 않고 보관합니다." },
+        { q: "달걀을 깨고 껍데기를 만진 손으로 해야 할 다음 행동으로 알맞은 것은?", c: ["키친타월로 닦고 샐러드 채소를 손질한다.", "물에 3초 헹구고 다른 재료를 만진다.", "반드시 비누를 사용하여 흐르는 물에 30초 이상 손을 씻는다."], a: 2, r: "달걀 껍데기에는 식중독을 일으키는 살모넬라균이 묻어있을 확률이 높습니다. 만진 후에는 무조건 비누로 손을 씻어야 합니다." },
+        { q: "뜨거운 국이나 카레를 한 솥 끓인 후 남았습니다. 가장 안전한 보관 절차는?", c: ["펄펄 끓는 상태로 냄비째 냉장고에 쑤셔 넣는다.", "상온에서 하루 종일 천천히 식히고 다음 날 저녁에 넣는다.", "얼음물이나 찬물에 냄비를 담가 최대한 빠르게 식힌 후, 작은 용기에 나누어 냉장/냉동 보관한다."], a: 2, r: "뜨거운 채로 냉장고에 넣으면 냉장고 온도가 올라가 다른 음식을 다 상하게 합니다. 세균이 번식하기 전 '빠르게 식히는 것'이 포인트입니다." },
+        { q: "여름철 소풍으로 김밥을 싸갈 때 식중독균 번식을 억제하는 과학적인 요리 꿀팁은?", c: ["밥에 참기름과 설탕을 듬뿍 넣어 달콤하게 만든다.", "밥을 지을 때 다시마 한 장과 매실액(또는 식초)을 약간 넣어 산도를 높인다.", "재료를 볶지 않고 모두 생으로 크게 썰어 넣는다."], a: 1, r: "식초나 매실액의 산성 성분은 식중독균의 증식을 억제하는 천연 방부제 역할을 합니다. 밥이 덜 상하게 도와줍니다." },
+        { q: "플라스틱 용기에 담긴 즉석밥(햇반 등)을 전자레인지에 데울 때 터지는 것을 방지하는 필수 행동은?", c: ["밀봉된 상태 그대로 뒤집어서 돌린다.", "포장지를 점선 부위까지만 살짝 뜯어 수증기가 빠져나갈 공기구멍을 만들어 준다.", "포장지를 모두 뜯고 물을 반 컵 붓는다."], a: 1, r: "공기구멍을 내지 않으면 내부의 수분이 끓으면서 팽창하여 펑! 하고 터지며 화상을 입을 수 있습니다." }
+    ];
+
+    // 게임 상태 변수
+    let currentQuestions = [];
+    let currentQuestionIndex = 0;
+    let health = 100; // 하트용 (100 = 5개)
+    let score = 0;    // 총 획득 점수
+    let maxQuestions = 15; 
+    let timer;
+    let timeLeft = 15; 
+    let wrongAnswersRecord = []; 
+    
+    // UI 요소
+    const elements = {
+        app: document.getElementById('app'),
+        startScreen: document.getElementById('screen-start'),
+        gameScreen: document.getElementById('screen-game'),
+        resultScreen: document.getElementById('screen-result'),
+        healthBar: document.getElementById('health-bar'),
+        scoreDisplay: document.getElementById('score-display'),
+        questionCount: document.getElementById('question-count'),
+        timerBar: document.getElementById('timer-bar'),
+        questionText: document.getElementById('question-text'),
+        optionsContainer: document.getElementById('options-container'),
+        modalFeedback: document.getElementById('modal-feedback'),
+        feedbackIcon: document.getElementById('feedback-icon'),
+        feedbackTitle: document.getElementById('feedback-title'),
+        feedbackPoints: document.getElementById('feedback-points'),
+        feedbackDesc: document.getElementById('feedback-desc'),
+        feedbackCard: document.getElementById('feedback-card'),
+        resultEmoji: document.getElementById('result-emoji'),
+        resultRank: document.getElementById('result-rank'),
+        resultScoreText: document.getElementById('result-score-text'),
+        resultDesc: document.getElementById('result-desc'),
+        wrongNoteContainer: document.getElementById('wrong-note-container'),
+        wrongList: document.getElementById('wrong-list')
+    };
+
+    // 배열 섞기
+    function shuffleArray(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // 게임 시작
+    function startGame() {
+        currentQuestions = shuffleArray(allQuestions).slice(0, maxQuestions);
+        currentQuestionIndex = 0;
+        health = 100;
+        score = 0;
+        wrongAnswersRecord = [];
+        
+        elements.app.className = "game-container text-gray-800"; 
+        elements.resultScreen.classList.add('hidden');
+        elements.startScreen.classList.add('hidden');
+        elements.gameScreen.classList.remove('hidden');
+        elements.wrongNoteContainer.classList.add('hidden');
+        elements.wrongList.innerHTML = '';
+        
+        updateScoreDisplay();
+        updateHealthBar();
+        showQuestion();
+    }
+
+    function updateScoreDisplay() {
+        elements.scoreDisplay.innerText = `점수: ${score}`;
+    }
+
+    // 체력 바 업데이트 (시각적 페널티용, 게임오버 없음)
+    function updateHealthBar() {
+        let hearts = Math.max(0, Math.ceil(health / 20)); 
+        let html = '';
+        for(let i=0; i<5; i++) {
+            if(i < hearts) html += '<i class="fa-solid fa-heart"></i>'; 
+            else html += '<i class="fa-solid fa-heart-crack text-gray-300"></i>'; 
+        }
+        elements.healthBar.innerHTML = html;
+        // 즉시 식중독 게임오버 규칙이 삭제되어 여기서 끝내지 않습니다.
+    }
+
+    // 문제 표시
+    function showQuestion() {
+        let qData = currentQuestions[currentQuestionIndex];
+        
+        elements.questionCount.innerText = `${currentQuestionIndex + 1}/${maxQuestions}`;
+        elements.questionText.innerText = qData.q;
+        
+        elements.optionsContainer.innerHTML = '';
+        
+        // 보기 섞기
+        let choices = qData.c.map((text, idx) => ({ text, isCorrect: idx === qData.a }));
+        choices = shuffleArray(choices);
+
+        choices.forEach((choice, index) => {
+            let btn = document.createElement('button');
+            btn.className = "btn-bounce bg-white border-2 border-indigo-100 text-gray-800 text-left py-4 px-5 rounded-2xl shadow-sm hover:bg-indigo-50 active:bg-indigo-100 flex items-start leading-snug";
+            btn.innerHTML = `<span class="bg-indigo-100 text-indigo-700 font-bold rounded-full w-8 h-8 flex items-center justify-center mr-3 mt-1 shrink-0">${index + 1}</span> <span class="flex-1 mt-1">${choice.text}</span>`;
+            btn.onclick = () => handleAnswer(choice.isCorrect, choice.text);
+            elements.optionsContainer.appendChild(btn);
+        });
+
+        resetTimer();
+    }
+
+    // 타이머 (제한시간 15초)
+    function resetTimer() {
+        clearInterval(timer);
+        timeLeft = 15; 
+        elements.timerBar.style.width = '100%';
+        elements.timerBar.className = 'timer-bar bg-green-500 h-full w-full';
+        
+        timer = setInterval(() => {
+            timeLeft -= 0.1;
+            let percent = (timeLeft / 15) * 100;
+            elements.timerBar.style.width = percent + '%';
+            
+            if(percent < 40 && percent >= 15) elements.timerBar.className = 'timer-bar bg-yellow-400 h-full w-full';
+            else if(percent < 15) elements.timerBar.className = 'timer-bar bg-red-500 h-full w-full';
+
+            if(timeLeft <= 0) {
+                clearInterval(timer);
+                handleTimeOut();
+            }
+        }, 100);
+    }
+
+    function handleTimeOut() {
+        health -= 20;
+        score -= 50; // 시간 초과 감점 적용
+        updateScoreDisplay();
+        
+        let qData = currentQuestions[currentQuestionIndex];
+        
+        wrongAnswersRecord.push({
+            q: qData.q,
+            userAns: "시간 초과 ⏰",
+            correctAns: qData.c[qData.a],
+            desc: qData.r
+        });
+        
+        updateHealthBar();
+        showFeedback(false, "시간 초과! ⏰"); // 체력 상관없이 항상 피드백 표시
+    }
+
+    function handleAnswer(isCorrect, selectedText) {
+        clearInterval(timer);
+        let qData = currentQuestions[currentQuestionIndex];
+        let earnedPoints = 0;
+        
+        if (isCorrect) {
+            // 정답 시 점수: 기본 100점 + 남은 시간(1초당 10점) 보너스
+            earnedPoints = 100 + Math.floor(timeLeft * 10);
+            score += earnedPoints;
+            updateScoreDisplay();
+        } else {
+            // 오답 시 페널티
+            health -= 20;
+            score -= 50; // 오답 감점 적용
+            updateScoreDisplay();
+            
+            wrongAnswersRecord.push({
+                q: qData.q,
+                userAns: selectedText,
+                correctAns: qData.c[qData.a],
+                desc: qData.r
+            });
+            updateHealthBar();
+        }
+        
+        showFeedback(isCorrect, null, earnedPoints); // 체력 상관없이 항상 피드백 표시
+    }
+
+    // 피드백 모달
+    function showFeedback(isCorrect, customTitle = null, earnedPoints = 0) {
+        let qData = currentQuestions[currentQuestionIndex];
+        
+        elements.modalFeedback.classList.remove('hidden');
+        elements.feedbackCard.classList.remove('scale-95');
+        elements.feedbackCard.classList.add('scale-100');
+
+        if (isCorrect) {
+            elements.feedbackIcon.innerHTML = '⭕';
+            elements.feedbackIcon.className = 'text-7xl mb-1 text-green-500 drop-shadow-md';
+            elements.feedbackTitle.innerText = "정답입니다!";
+            elements.feedbackTitle.className = 'text-3xl mb-1 text-green-600 font-bold';
+            elements.feedbackPoints.innerHTML = `+${earnedPoints}점 획득! <span class="text-sm text-gray-500">(시간 보너스 포함)</span>`;
+        } else {
+            elements.feedbackIcon.innerHTML = '❌';
+            elements.feedbackIcon.className = 'text-7xl mb-1 text-red-500 drop-shadow-md';
+            elements.feedbackTitle.innerText = customTitle || "앗! 틀렸어요!";
+            elements.feedbackTitle.className = 'text-3xl mb-1 text-red-600 font-bold';
+            elements.feedbackPoints.innerHTML = `<span class="text-red-500">감점 -50점 / 하트 감소</span>`;
+            if(navigator.vibrate) navigator.vibrate(200);
+        }
+        
+        elements.feedbackDesc.innerHTML = `<span class="text-indigo-600 font-bold mb-1 block"><i class="fa-solid fa-lightbulb text-yellow-500"></i> 요리사의 팁!</span>${qData.r}`;
+    }
+
+    function nextQuestion() {
+        elements.modalFeedback.classList.add('hidden');
+        // health <= 0 조기 종료 규칙 제거 (끝까지 진행)
+
+        currentQuestionIndex++;
+        
+        if(currentQuestionIndex >= maxQuestions) {
+            showResultScreen();
+        } else {
+            showQuestion();
+        }
+    }
+
+    // 결과 화면 (총 점수를 기준으로 랭크 계산)
+    function showResultScreen() {
+        elements.modalFeedback.classList.add('hidden');
+        elements.gameScreen.classList.add('hidden');
+        elements.resultScreen.classList.remove('hidden');
+        
+        let rankData = getRankData(score, health);
+        
+        // 랭크 UI 설정
+        elements.resultEmoji.innerText = rankData.emoji;
+        elements.resultRank.innerText = rankData.title;
+        elements.resultRank.className = `text-5xl font-bold mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] ${rankData.titleColor}`;
+
+        localStorage.setItem('foodPoisonRank', rankData.title);
+        let bestScore = parseInt(localStorage.getItem('foodPoisonScore') || 0);
+        if (score > bestScore) {
+        localStorage.setItem('foodPoisonScore', score);
+        }
+        
+        // 최종 점수 텍스트 애니메이션
+        elements.resultScoreText.innerText = `${score}점`;
+        elements.resultScoreText.classList.remove('score-pop');
+        void elements.resultScoreText.offsetWidth; // 리플로우 강제 (애니메이션 재시작)
+        elements.resultScoreText.classList.add('score-pop');
+        
+        elements.resultDesc.innerHTML = rankData.desc;
+        
+        elements.app.className = `game-container text-gray-800 ${rankData.bgClass}`;
+
+        // 오답 노트 렌더링
+        if(wrongAnswersRecord.length > 0) {
+            elements.wrongNoteContainer.classList.remove('hidden');
+            elements.wrongNoteContainer.classList.add('flex');
+            
+            wrongAnswersRecord.forEach((wrong, idx) => {
+                let div = document.createElement('div');
+                div.className = "bg-red-50 p-4 rounded-xl border border-red-100 text-left";
+                div.innerHTML = `
+                    <p class="font-bold text-gray-800 mb-2">Q. ${wrong.q}</p>
+                    <p class="text-sm text-red-500 mb-1 line-through"><span class="font-bold">내가 고른 답:</span> ${wrong.userAns}</p>
+                    <p class="text-sm text-blue-600 mb-2"><span class="font-bold">정답:</span> ${wrong.correctAns}</p>
+                    <p class="text-sm text-gray-700 bg-white p-2 rounded border border-gray-200">${wrong.desc}</p>
+                `;
+                elements.wrongList.appendChild(div);
+            });
+        } else {
+            elements.wrongNoteContainer.classList.add('hidden');
+        }
+
+        if(score > 0) createConfetti();
+    }
+
+    // 점수 및 체력에 따른 랭크 데이터 (조기 게임오버 없이 순수 점수로 판별)
+    function getRankData(finalScore, remainingHealth) {
+        if (finalScore >= 2500) return {
+            emoji: '🏆👨‍🍳', title: '무적의 강철 위장', titleColor: 'text-yellow-400', bgClass: 'rank-bg-1',
+            desc: '놀라운 스피드와 완벽한 지식!<br>어떤 식중독균도 당신을 뚫을 수 없습니다.'
+        };
+        else if (finalScore >= 1800) return {
+            emoji: '🏅💪', title: '튼튼한 위장', titleColor: 'text-blue-500', bgClass: 'rank-bg-2',
+            desc: '훌륭해요! 높은 점수를 기록했습니다.<br>배탈 걱정 없이 안전하게 맛있는 요리를 할 수 있어요.'
+        };
+        else if (finalScore >= 1000) return {
+            emoji: '👨‍🍳🟢', title: '평범한 건강', titleColor: 'text-green-600', bgClass: 'rank-bg-3',
+            desc: '나쁘지 않은 점수입니다!<br>하지만 가끔씩 실수를 하면 위험할 수 있으니 위생 지식을 조금 더 복습해 볼까요?'
+        };
+        else if (finalScore >= 400) return {
+            emoji: '⚠️🚽', title: '아슬아슬 배탈 직전', titleColor: 'text-orange-500', bgClass: 'rank-bg-4',
+            desc: '삐용삐용! 점수가 꽤 낮아요.<br>아래 오답 노트를 꼭 확인하고 잘못된 위생 습관을 당장 고쳐야 해요!'
+        };
+        else if (finalScore > 0) return { 
+            emoji: '🤒🚑', title: '심한 장염', titleColor: 'text-purple-600', bgClass: 'rank-bg-5',
+            desc: '콜록콜록... 오답이 많아서 배가 아파요.<br>다시 퀴즈에 도전해서 점수와 위생 관념을 함께 높여보세요!'
+        };
+        else return { // 0 이하일 경우 (너무 많이 틀리거나 시간초과가 잦을 때)
+            emoji: '🤢☠️', title: '끔찍한 식중독', titleColor: 'text-red-400', bgClass: 'rank-bg-6',
+            desc: '으악! 오답투성이 주방에서 요리하다 결국 식중독에 걸렸습니다...<br>이대로라면 주방 출입 금지입니다! 전면 재교육 필수!'
+        };
+    }
+
+    function showStartScreen() {
+        elements.resultScreen.classList.add('hidden');
+        elements.app.className = "game-container text-gray-800"; 
+        elements.startScreen.classList.remove('hidden');
+    }
+
+    function createConfetti() {
+        for(let i=0; i<40; i++) {
+            let conf = document.createElement('div');
+            conf.innerText = ['🎉','✨','🌟','👏','🌭','🥗'][Math.floor(Math.random()*6)];
+            conf.style.position = 'absolute';
+            conf.style.left = Math.random() * 100 + 'vw';
+            conf.style.top = '-50px';
+            conf.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            conf.style.transition = 'transform 3s linear, top 3s linear';
+            document.body.appendChild(conf);
+            
+            setTimeout(() => {
+                conf.style.top = '100vh';
+                conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+            }, 10);
+            
+            setTimeout(() => conf.remove(), 3000);
+        }
+    }
+
+</script>
+</body>
+</html>

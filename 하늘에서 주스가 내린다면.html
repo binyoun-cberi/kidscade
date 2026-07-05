@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>과일 농장 주스 메이커</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; touch-action: none; background-color: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 100%; max-width: 600px; height: 100dvh; max-height: 900px; background: linear-gradient(180deg, #60a5fa 0%, #bae6fd 100%); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        @media (min-width: 600px) { #game-container { border-radius: 1.5rem; height: 90vh; border: 8px solid #1e293b; } }
+        canvas { display: block; width: 100%; height: 100%; cursor: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer" class="absolute inset-0 pointer-events-none p-4 sm:p-6 flex flex-col justify-between">
+        <div class="flex justify-between items-start text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <div>
+                <div id="lives-display" class="text-2xl sm:text-3xl font-bold tracking-widest text-red-500">❤️❤️❤️❤️❤️</div>
+                <div id="mission-display" class="mt-2 text-3xl sm:text-4xl font-black text-yellow-300 stroke-black animate-pulse">사과주스!</div>
+                <div id="collect-progress" class="text-xl sm:text-2xl font-bold mt-1 text-white bg-black/40 px-3 py-1 rounded-full inline-block">🍎 0 / 10</div>
+            </div>
+            <div class="text-right">
+                <div id="score-display" class="text-3xl sm:text-4xl font-black text-white">주스 0 잔</div>
+                <div id="highscore-display" class="text-sm sm:text-lg font-bold text-yellow-200 mt-2 bg-black/50 px-3 py-1 rounded-full inline-block">최고기록: 0잔</div>
+            </div>
+        </div>
+        
+        <div id="mission-alert" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/85 text-white px-8 py-6 rounded-3xl text-3xl sm:text-4xl font-black opacity-0 transition-opacity duration-300 text-center pointer-events-none drop-shadow-2xl border-4 border-yellow-400 w-max">
+            ⭐ 임무 갱신! ⭐<br><span id="mission-alert-fruit" class="text-yellow-400 text-5xl sm:text-6xl mt-2 inline-block">바나나</span>주스!
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center hidden z-50 p-6 text-center">
+        <h1 class="text-6xl font-black text-red-500 mb-2 animate-bounce">GAME OVER</h1>
+        <p class="text-lg text-gray-300 mb-6">목표 과일을 떨어뜨리거나 폭탄을 너무 많이 받았습니다.</p>
+        <div class="bg-white/10 p-6 rounded-3xl mb-8 border border-white/20">
+            <p id="final-score" class="text-4xl font-bold text-yellow-300 mb-2">만든 주스: 0잔</p>
+            <p id="final-highscore" class="text-xl text-gray-300">최고기록: 0잔</p>
+        </div>
+        <button id="restart-btn" class="px-10 py-4 bg-yellow-400 hover:bg-yellow-300 text-slate-900 text-2xl font-black rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] transform transition active:scale-95 pointer-events-auto">다시 하기</button>
+    </div>
+
+    <div id="start-screen" class="absolute inset-0 bg-sky-950/95 flex flex-col items-center justify-center z-50 backdrop-blur-md text-center p-6">
+        <div class="text-7xl mb-4">🧑‍🌾🍹</div>
+        <h1 class="text-4xl sm:text-5xl font-black text-white mb-6 leading-tight drop-shadow-lg">주스 마스터<br><span class="text-yellow-400 text-5xl sm:text-6xl">과일농장</span></h1>
+        
+        <div class="text-left text-white text-base sm:text-lg space-y-3 mb-10 bg-black/40 p-5 rounded-2xl border border-white/10 w-full max-w-sm">
+            <p class="flex items-center gap-2"><span>👆</span> 마우스나 터치로 좌우 이동</p>
+            <p class="flex items-center gap-2"><span>🍎</span> 임무 과일을 받아 10개 모으기</p>
+            <p class="flex items-center gap-2"><span>🚫</span> 다른 과일을 받으면 <strong class="text-orange-400">모은 과일 -1</strong></p>
+            <p class="flex items-center gap-2"><span>⚠️</span> 임무 과일을 놓치면 <strong class="text-red-400">하트 감소</strong></p>
+            <p class="flex items-center gap-2"><span>💣</span> 폭탄을 받으면 <strong class="text-red-400">하트 감소</strong></p>
+            <p class="flex items-center gap-2"><span>🪨</span> 장애물을 받으면 3초간 <strong class="text-blue-300">느려짐</strong></p>
+        </div>
+        
+        <button id="start-btn" class="px-12 py-5 bg-green-500 hover:bg-green-400 text-white text-3xl font-black rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] transform transition active:scale-95 animate-pulse border-b-4 border-green-700 pointer-events-auto">게임 시작</button>
+    </div>
+</div>
+
+<script>
+// 로컬 스토리지를 이용한 최고 기록 저장
+let dbHighScore = parseInt(localStorage.getItem('juiceFarmHighScore')) || 0;
+
+function updateUIHighScore() {
+    document.getElementById('highscore-display').innerText = `최고기록: ${dbHighScore}잔`;
+}
+updateUIHighScore();
+
+function saveHighScore(newScore) {
+    if (newScore > dbHighScore) {
+        dbHighScore = newScore;
+        localStorage.setItem('juiceFarmHighScore', dbHighScore);
+        updateUIHighScore();
+    }
+}
+
+// --- 사운드 엔진 (Web Audio API) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let isBgmPlaying = false;
+let bgmInterval;
+
+function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playTone(freq, type, duration, vol = 0.1) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function playSound(type) {
+    initAudio();
+    switch(type) {
+        case 'catchRight': playTone(880, 'sine', 0.1, 0.15); break;
+        case 'catchWrong': playTone(200, 'sawtooth', 0.2, 0.15); break;
+        case 'bomb': playTone(100, 'square', 0.5, 0.2); break;
+        case 'rock': playTone(150, 'triangle', 0.2, 0.2); break;
+        case 'juice': 
+            playTone(523.25, 'sine', 0.1, 0.2);
+            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100);
+            setTimeout(() => playTone(783.99, 'sine', 0.2, 0.2), 200);
+            setTimeout(() => playTone(1046.50, 'sine', 0.4, 0.2), 300);
+            break;
+        case 'drop':
+            playTone(300, 'sawtooth', 0.1, 0.15);
+            setTimeout(() => playTone(250, 'sawtooth', 0.3, 0.15), 100);
+            break;
+        case 'gameover':
+            playTone(200, 'sawtooth', 0.5, 0.2);
+            setTimeout(() => playTone(150, 'sawtooth', 1.0, 0.2), 400);
+            break;
+    }
+}
+
+const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00]; 
+let noteIndex = 0;
+
+function startBGM() {
+    if (!audioCtx) initAudio();
+    if (isBgmPlaying) return;
+    isBgmPlaying = true;
+    
+    function playNextNote() {
+        if (!isBgmPlaying) return;
+        playTone(melody[noteIndex], 'triangle', 0.15, 0.03);
+        noteIndex = (noteIndex + 1) % melody.length;
+        bgmInterval = setTimeout(playNextNote, 300);
+    }
+    playNextNote();
+}
+
+function stopBGM() {
+    isBgmPlaying = false;
+    clearTimeout(bgmInterval);
+}
+// ---------------------------------
+
+// 2. 게임 변수 및 상태
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = 'START'; 
+let lastTime = 0;
+let lives = 5;
+let score = 0;
+let fruitCount = 0;
+
+const fruits = [
+    { emoji: '🍎', name: '사과' },
+    { emoji: '🍌', name: '바나나' },
+    { emoji: '🍇', name: '포도' }
+];
+let currentTarget = fruits[0];
+
+let fallingObjects = [];
+let particles = [];
+let floatingTexts = [];
+let juiceAnim = null;
+
+let inputX = window.innerWidth / 2;
+let farmerX = window.innerWidth / 2;
+let farmerY = 0;
+
+let slowTimer = 0;
+let shakeTimer = 0;
+let missionTimer = 0;
+let spawnTimer = 1000;
+
+let prevLives = -1, prevScore = -1, prevCount = -1, prevTarget = '';
+
+// 구름 배경 효과
+const clouds = [
+    { x: 10, y: 50, speed: 15, size: 40 },
+    { x: 200, y: 120, speed: 25, size: 60 },
+    { x: 400, y: 80, speed: 10, size: 50 }
+];
+
+// 3. 캔버스 리사이징
+function resizeCanvas() {
+    const container = document.getElementById('game-container');
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    farmerY = canvas.height - 70;
+    
+    if(clouds[2].x > canvas.width) clouds[2].x = canvas.width - 100;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 4. 입력 처리
+function updateInputX(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    inputX = (clientX - rect.left) * (canvas.width / rect.width);
+}
+canvas.addEventListener('mousemove', (e) => updateInputX(e.clientX));
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    updateInputX(e.touches[0].clientX);
+}, { passive: false });
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    updateInputX(e.touches[0].clientX);
+}, { passive: false });
+
+// 5. 게임 로직
+function initGame() {
+    initAudio();
+    startBGM();
+    gameState = 'PLAYING';
+    lives = 5;
+    score = 0;
+    fruitCount = 0;
+    fallingObjects = [];
+    particles = [];
+    floatingTexts = [];
+    juiceAnim = null;
+    currentTarget = fruits[0];
+    missionTimer = 0;
+    slowTimer = 0;
+    shakeTimer = 0;
+    spawnTimer = 1000;
+    
+    farmerX = canvas.width / 2;
+    inputX = canvas.width / 2;
+
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.add('hidden');
+    
+    prevLives = -1; prevScore = -1; prevCount = -1; prevTarget = '';
+    
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+function loseLife() {
+    lives--;
+    shakeTimer = 300;
+    if (lives <= 0) {
+        playSound('gameover');
+        stopBGM();
+        gameState = 'GAMEOVER';
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `만든 주스: ${score}잔`;
+        document.getElementById('final-highscore').innerText = `최고기록: ${Math.max(score, dbHighScore)}잔`;
+        saveHighScore(score); 
+    }
+}
+
+function showMissionBanner(fruitName) {
+    const banner = document.getElementById('mission-alert');
+    document.getElementById('mission-alert-fruit').innerText = fruitName;
+    banner.classList.remove('opacity-0');
+    banner.classList.add('opacity-100');
+    
+    setTimeout(() => {
+        banner.classList.remove('opacity-100');
+        banner.classList.add('opacity-0');
+    }, 2500);
+}
+
+function createFloatingText(x, y, text, color) {
+    floatingTexts.push({ x, y, text, color, life: 800, maxLife: 800 });
+}
+
+function createJuiceExplosion(x, y) {
+    juiceAnim = { time: 0, maxTime: 2000, x: x, y: y };
+    
+    for (let i = 0; i < 40; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 600,
+            vy: (Math.random() - 0.5) * 600 - 200,
+            color: `hsl(${Math.random() * 360}, 100%, 60%)`,
+            size: Math.random() * 12 + 6,
+            life: 1.5,
+            maxLife: 1.5 + Math.random() * 0.5
+        });
+    }
+}
+
+function handleCatch(obj) {
+    if (obj.emoji === currentTarget.emoji) {
+        fruitCount++;
+        playSound('catchRight');
+        createFloatingText(obj.x, obj.y, "+1", "green");
+        
+        if (fruitCount >= 10) {
+            fruitCount = 0;
+            score++;
+            playSound('juice');
+            createJuiceExplosion(farmerX, farmerY);
+            saveHighScore(score);
+        }
+    } else if (obj.emoji === '💣') {
+        playSound('bomb');
+        loseLife();
+        createFloatingText(obj.x, obj.y, "펑!", "red");
+    } else if (obj.emoji === '🪨') {
+        playSound('rock');
+        slowTimer = 3000;
+        createFloatingText(obj.x, obj.y, "무거워!", "blue");
+    } else {
+        playSound('catchWrong');
+        fruitCount = Math.max(0, fruitCount - 1);
+        createFloatingText(obj.x, obj.y, "-1", "red");
+    }
+}
+
+function update(dt) {
+    if (gameState !== 'PLAYING') return;
+
+    if (slowTimer > 0) slowTimer -= dt;
+    if (shakeTimer > 0) shakeTimer -= dt;
+    
+    missionTimer += dt;
+    if (missionTimer >= 60000) {
+        missionTimer = 0;
+        if (Math.random() < 0.4) {
+            currentTarget = fruits[Math.floor(Math.random() * fruits.length)];
+            showMissionBanner(currentTarget.name);
+        }
+    }
+
+    let lerpFactor = 12;
+    if (slowTimer > 0) {
+        lerpFactor = 12 * 0.75;
+    }
+    farmerX += (inputX - farmerX) * lerpFactor * (dt / 1000);
+    farmerX = Math.max(30, Math.min(canvas.width - 30, farmerX));
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+        let baseSpawn = 1200 - (score * 20);
+        if (baseSpawn < 400) baseSpawn = 400; 
+        spawnTimer = baseSpawn + Math.random() * 400;
+        
+        let type = Math.random();
+        let objEmoji = '';
+        
+        if (type < 0.65) {
+            if (Math.random() < 0.6) {
+                objEmoji = currentTarget.emoji;
+            } else {
+                let otherFruits = fruits.filter(f => f.emoji !== currentTarget.emoji);
+                objEmoji = otherFruits[Math.floor(Math.random() * otherFruits.length)].emoji;
+            }
+        } else if (type < 0.82) {
+            objEmoji = '💣';
+        } else {
+            objEmoji = '🪨'; 
+        }
+        
+        let baseFallSpeed = canvas.height * (0.3 + score * 0.015);
+        let finalSpeed = baseFallSpeed + Math.random() * (canvas.height * 0.1);
+
+        fallingObjects.push({
+            x: Math.random() * (canvas.width - 60) + 30,
+            y: -40,
+            emoji: objEmoji,
+            speed: finalSpeed
+        });
+    }
+
+    for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        let obj = fallingObjects[i];
+        obj.y += obj.speed * (dt / 1000);
+        
+        let dist = Math.hypot(obj.x - farmerX, obj.y - (farmerY + 15));
+        if (dist < 45) { 
+            handleCatch(obj);
+            fallingObjects.splice(i, 1);
+            continue;
+        }
+        
+        if (obj.y > canvas.height + 30) {
+            if (obj.emoji === currentTarget.emoji) {
+                playSound('drop');
+                loseLife();
+                createFloatingText(obj.x, canvas.height - 30, "놓침!", "red");
+            }
+            fallingObjects.splice(i, 1);
+        }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx * (dt / 1000);
+        p.y += p.vy * (dt / 1000);
+        p.vy += 800 * (dt / 1000);
+        p.life -= dt / 1000;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+    
+    clouds.forEach(c => {
+        c.x += c.speed * (dt / 1000);
+        if (c.x > canvas.width + c.size) c.x = -c.size * 2;
+    });
+
+    if (prevLives !== lives) {
+        document.getElementById('lives-display').innerText = '❤️'.repeat(Math.max(0, lives));
+        prevLives = lives;
+    }
+    if (prevScore !== score) {
+        document.getElementById('score-display').innerText = `주스 ${score} 잔`;
+        prevScore = score;
+    }
+    if (prevCount !== fruitCount || prevTarget !== currentTarget.emoji) {
+        document.getElementById('collect-progress').innerText = `${currentTarget.emoji} ${fruitCount} / 10`;
+        prevCount = fruitCount;
+    }
+    if (prevTarget !== currentTarget.emoji) {
+        document.getElementById('mission-display').innerText = `${currentTarget.name}주스!`;
+        prevTarget = currentTarget.emoji;
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let isShaking = shakeTimer > 0;
+    if (isShaking) {
+        ctx.save();
+        let dx = (Math.random() - 0.5) * 15;
+        let dy = (Math.random() - 0.5) * 15;
+        ctx.translate(dx, dy);
+    }
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    clouds.forEach(c => {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+        ctx.arc(c.x + c.size * 0.8, c.y - c.size * 0.3, c.size * 0.8, 0, Math.PI * 2);
+        ctx.arc(c.x + c.size * 1.5, c.y, c.size * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+    ctx.fillStyle = '#654321';
+    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    }
+    ctx.globalAlpha = 1.0;
+
+    ctx.font = "45px Arial";
+    for (let obj of fallingObjects) {
+        ctx.fillText(obj.emoji, obj.x, obj.y);
+    }
+
+    ctx.font = "65px Arial";
+    ctx.fillText('🧑‍🌾', farmerX, farmerY - 10);
+    
+    if (slowTimer > 0) {
+        ctx.font = "30px Arial";
+        ctx.fillText('💧', farmerX + 35, farmerY - 35);
+        
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#93c5fd';
+        ctx.beginPath();
+        ctx.ellipse(farmerX, farmerY + 15, 45, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    ctx.font = "55px Arial";
+    ctx.fillText('🧺', farmerX, farmerY + 15);
+
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        let ft = floatingTexts[i];
+        ft.life -= 16; 
+        ft.y -= 1; 
+        
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+        } else {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+            ctx.font = "bold 24px 'Pretendard', sans-serif";
+            
+            if (ft.color === "red") ctx.fillStyle = "#ef4444";
+            else if (ft.color === "green") ctx.fillStyle = "#4ade80";
+            else if (ft.color === "blue") ctx.fillStyle = "#93c5fd";
+            else ctx.fillStyle = "#ffffff";
+            
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 3;
+            ctx.strokeText(ft.text, ft.x, ft.y);
+            ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.restore();
+        }
+    }
+
+    if (juiceAnim) {
+        juiceAnim.time += 16; 
+        let progress = juiceAnim.time / juiceAnim.maxTime;
+        let scale = 1 + Math.sin(progress * Math.PI) * 3.5; 
+        let alpha = 1 - Math.pow(progress, 3); 
+        let animY = juiceAnim.y - progress * 250; 
+        
+        ctx.save();
+        ctx.translate(canvas.width / 2, animY);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = alpha;
+        ctx.font = "70px Arial";
+        ctx.fillText('🍹', 0, 0);
+        ctx.restore();
+        
+        if (juiceAnim.time >= juiceAnim.maxTime) juiceAnim = null;
+    }
+
+    if (isShaking) {
+        ctx.restore(); 
+    }
+}
+
+function gameLoop(time) {
+    let dt = time - lastTime;
+    if (dt > 50) dt = 50; 
+    lastTime = time;
+
+    update(dt);
+    draw();
+
+    if (gameState === 'PLAYING') {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// 이벤트 리스너 바인딩
+document.getElementById('start-btn').addEventListener('click', initGame);
+document.getElementById('restart-btn').addEventListener('click', initGame);
+</script>
+</body>
+</html>

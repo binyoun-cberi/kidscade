@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세계 국기 & 수도 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+        }
+        .flash-green { background-color: rgba(34, 197, 94, 0.4); opacity: 1; }
+        .flash-red { background-color: rgba(239, 68, 68, 0.4); opacity: 1; }
+        
+        .combo-text {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .rank-icon {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="flash-overlay" class="flash-overlay"></div>
+
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative min-h-[600px]">
+        
+        <div class="bg-indigo-600 text-white p-4 flex justify-between items-center shadow-md z-10">
+            <h1 class="text-2xl font-bold tracking-tight">🌍 세계 마스터</h1>
+            <div id="header-stats" class="text-right hidden">
+                <div class="text-sm opacity-80">최고 점수: <span id="nav-highscore">0</span></div>
+                <div class="text-lg font-bold text-yellow-300">점수: <span id="nav-score">0</span></div>
+            </div>
+        </div>
+
+        <div id="content-area" class="flex-1 flex flex-col p-6 overflow-y-auto">
+            </div>
+
+    </div>
+
+    <script>
+        // --- 1. Data Base (정확도 향상을 위한 동의어 추가) ---
+        const countryData = [
+            { code: 'kr', name: ['대한민국', '한국', '남한'], capital: ['서울', '서울시', '서울특별시'] },
+            { code: 'kp', name: ['조선민주주의인민공화국', '북한'], capital: ['평양', '평양시'] },
+            { code: 'jp', name: ['일본'], capital: ['도쿄', '동경'] },
+            { code: 'cn', name: ['중국', '중화인민공화국'], capital: ['베이징', '북경'] },
+            { code: 'tw', name: ['대만', '타이완'], capital: ['타이베이', '타이페이'] },
+            { code: 'mn', name: ['몽골'], capital: ['울란바토르', '울란바타르'] },
+            { code: 'vn', name: ['베트남'], capital: ['하노이'] },
+            { code: 'th', name: ['태국', '타이'], capital: ['방콕'] },
+            { code: 'ph', name: ['필리핀'], capital: ['마닐라'] },
+            { code: 'id', name: ['인도네시아'], capital: ['자카르타', '누산타라'] },
+            { code: 'my', name: ['말레이시아'], capital: ['쿠알라룸푸르'] },
+            { code: 'sg', name: ['싱가포르', '싱가폴'], capital: ['싱가포르', '싱가폴'] },
+            { code: 'in', name: ['인도'], capital: ['뉴델리', '델리'] },
+            { code: 'pk', name: ['파키스탄'], capital: ['이슬라마바드'] },
+            { code: 'bd', name: ['방글라데시'], capital: ['다카'] },
+            { code: 'np', name: ['네팔'], capital: ['카트만두'] },
+            { code: 'lk', name: ['스리랑카'], capital: ['스리자야와르데네푸라코테', '콜롬보'] },
+            { code: 'ir', name: ['이란'], capital: ['테헤란'] },
+            { code: 'iq', name: ['이라크'], capital: ['바그다드'] },
+            { code: 'sa', name: ['사우디아라비아', '사우디'], capital: ['리야드'] },
+            { code: 'ae', name: ['아랍에미리트', 'uae', '아랍에미레이트'], capital: ['아부다비'] },
+            { code: 'il', name: ['이스라엘'], capital: ['예루살렘'] },
+            { code: 'tr', name: ['튀르키예', '터키'], capital: ['앙카라'] },
+            { code: 'gb', name: ['영국', '유나이티드킹덤', 'uk'], capital: ['런던'] },
+            { code: 'fr', name: ['프랑스'], capital: ['파리'] },
+            { code: 'de', name: ['독일'], capital: ['베를린'] },
+            { code: 'it', name: ['이탈리아', '이태리'], capital: ['로마'] },
+            { code: 'es', name: ['스페인'], capital: ['마드리드'] },
+            { code: 'pt', name: ['포르투갈'], capital: ['리스본'] },
+            { code: 'nl', name: ['네덜란드'], capital: ['암스테르담'] },
+            { code: 'be', name: ['벨기에'], capital: ['브뤼셀'] },
+            { code: 'ch', name: ['스위스'], capital: ['베른'] },
+            { code: 'at', name: ['오스트리아'], capital: ['빈', '비엔나'] },
+            { code: 'se', name: ['스웨덴'], capital: ['스톡홀름'] },
+            { code: 'no', name: ['노르웨이'], capital: ['오슬로'] },
+            { code: 'dk', name: ['덴마크'], capital: ['코펜하겐'] },
+            { code: 'fi', name: ['핀란드'], capital: ['헬싱키'] },
+            { code: 'pl', name: ['폴란드'], capital: ['바르샤바'] },
+            { code: 'cz', name: ['체코'], capital: ['프라하'] },
+            { code: 'hu', name: ['헝가리'], capital: ['부다페스트'] },
+            { code: 'gr', name: ['그리스'], capital: ['아테네'] },
+            { code: 'ru', name: ['러시아'], capital: ['모스크바'] },
+            { code: 'ua', name: ['우크라이나'], capital: ['키이우', '키예프'] },
+            { code: 'us', name: ['미국', '미합중국', 'usa'], capital: ['워싱턴 d.c.', '워싱턴', '워싱턴 dc'] },
+            { code: 'ca', name: ['캐나다'], capital: ['오타와'] },
+            { code: 'mx', name: ['멕시코'], capital: ['멕시코시티'] },
+            { code: 'br', name: ['브라질'], capital: ['브라질리아'] },
+            { code: 'ar', name: ['아르헨티나'], capital: ['부에노스아이레스'] },
+            { code: 'cl', name: ['칠레'], capital: ['산티아고'] },
+            { code: 'co', name: ['콜롬비아'], capital: ['보고타'] },
+            { code: 'pe', name: ['페루'], capital: ['리마'] },
+            { code: 'cu', name: ['쿠바'], capital: ['아바나', '하바나'] },
+            { code: 'jm', name: ['자메이카'], capital: ['킹스턴'] },
+            { code: 'eg', name: ['이집트'], capital: ['카이로'] },
+            { code: 'za', name: ['남아프리카 공화국', '남아공'], capital: ['프리토리아', '케이프타운', '블룸폰테인'] },
+            { code: 'ng', name: ['나이지리아'], capital: ['아부자'] },
+            { code: 'ke', name: ['케냐'], capital: ['나이로비'] },
+            { code: 'et', name: ['에티오피아'], capital: ['아디스아바바'] },
+            { code: 'ma', name: ['모로코'], capital: ['라바트'] },
+            { code: 'gh', name: ['가나'], capital: ['아크라'] },
+            { code: 'au', name: ['호주', '오스트레일리아'], capital: ['캔버라'] },
+            { code: 'nz', name: ['뉴질랜드'], capital: ['웰링턴'] },
+            { code: 'fj', name: ['피지'], capital: ['수바'] },
+            { code: 'kz', name: ['카자흐스탄'], capital: ['아스타나', '누르술탄'] },
+            { code: 'uz', name: ['우즈베키스탄'], capital: ['타슈켄트'] },
+            { code: 'af', name: ['아프가니스탄'], capital: ['카불'] },
+            { code: 'mm', name: ['미얀마', '버마'], capital: ['네피도'] },
+            { code: 'kh', name: ['캄보디아'], capital: ['프놈펜'] },
+            { code: 'la', name: ['라오스'], capital: ['비엔티안'] },
+            { code: 'ro', name: ['루마니아'], capital: ['부쿠레슈티'] },
+            { code: 'bg', name: ['불가리아'], capital: ['소피아'] },
+            { code: 'hr', name: ['크로아티아'], capital: ['자그레브'] },
+            { code: 'rs', name: ['세르비아'], capital: ['베오그라드'] },
+            { code: 'ie', name: ['아일랜드'], capital: ['더블린'] },
+            { code: 'is', name: ['아이슬란드'], capital: ['레이캬비크'] },
+            { code: 've', name: ['베네수엘라'], capital: ['카라카스'] },
+            { code: 'uy', name: ['우루과이'], capital: ['몬테비데오'] },
+            { code: 'py', name: ['파라과이'], capital: ['아순시온'] },
+            { code: 'bo', name: ['볼리비아'], capital: ['수크레', '라파스'] },
+            { code: 'ec', name: ['에콰도르'], capital: ['키토'] },
+            { code: 'dz', name: ['알제리'], capital: ['알제'] },
+            { code: 'sd', name: ['수단'], capital: ['하르툼'] },
+            { code: 'tz', name: ['탄자니아'], capital: ['도도마'] },
+            { code: 'ao', name: ['앙골라'], capital: ['루안다'] },
+            { code: 'mz', name: ['모잠비크'], capital: ['마푸투'] },
+            { code: 'mg', name: ['마다가스카르'], capital: ['안타나나리보'] },
+            { code: 'sy', name: ['시리아'], capital: ['다마스쿠스'] },
+            { code: 'jo', name: ['요르단'], capital: ['암만'] },
+            { code: 'lb', name: ['레바논'], capital: ['베이루트'] }
+        ];
+
+        // --- 2. Rank System ---
+        const ranks = [
+            { name: "아이언", score: 0, color: "text-gray-500", icon: "🪨" },
+            { name: "브론즈", score: 100, color: "text-amber-700", icon: "🥉" },
+            { name: "실버", score: 300, color: "text-gray-400", icon: "🥈" },
+            { name: "골드", score: 700, color: "text-yellow-500", icon: "🥇" },
+            { name: "플래티넘", score: 1500, color: "text-teal-400", icon: "💠" },
+            { name: "에메랄드", score: 3100, color: "text-green-500", icon: "❇️" },
+            { name: "다이아몬드", score: 6300, color: "text-blue-400", icon: "💎" },
+            { name: "마스터", score: 12700, color: "text-purple-500", icon: "🔮" },
+            { name: "그랜드마스터", score: 25000, color: "text-red-500", icon: "🔥" },
+            { name: "에픽", score: 50000, color: "text-pink-500", icon: "🌟" },
+            { name: "레전더리", score: 100000, color: "text-orange-500", icon: "👑" },
+            { name: "챌린저", score: 200000, color: "text-indigo-600", icon: "⚡" }
+        ];
+
+        // --- 3. State Management ---
+        let state = {
+            mode: null,
+            score: 0,
+            combo: 0,
+            highScore: parseInt(localStorage.getItem('flagQuizHighScore')) || 0,
+            currentQuestion: null,
+            options: [],
+            isAnimating: false,
+            questionPool: [],
+            failedPool: []
+        };
+
+        const contentArea = document.getElementById('content-area');
+        const navScore = document.getElementById('nav-score');
+        const navHighScore = document.getElementById('nav-highscore');
+        const headerStats = document.getElementById('header-stats');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        // --- 4. Audio System (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1); // C6
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            }
+        }
+
+        // --- 5. Image Error & Logic Functions ---
+
+        // 국기 이미지 로드 실패 시 원본 데이터와 문제 풀에서 해당 국가 삭제 후 자동 넘김
+        window.handleImageError = function(code) {
+            console.warn(`국기 로드 실패 (자동 스킵): ${code}`);
+            
+            // 데이터 베이스에서 영구 삭제 (현재 세션 동안)
+            const idx = countryData.findIndex(c => c.code === code);
+            if(idx > -1) countryData.splice(idx, 1);
+            
+            // 큐에서 삭제
+            state.questionPool = state.questionPool.filter(c => c.code !== code);
+            state.failedPool = state.failedPool.filter(c => c.code !== code);
+            
+            // 현재 화면에 에러난 국기가 포함되어 있다면 다음 문제로 리로드
+            if (state.currentQuestion && state.currentQuestion.code === code) {
+                nextQuestion();
+            } else if (state.mode === 3 && state.options.some(o => o.code === code)) {
+                nextQuestion();
+            }
+        };
+
+        function getRank(score) {
+            let currentRank = ranks[0];
+            for (let i = 0; i < ranks.length; i++) {
+                if (score >= ranks[i].score) {
+                    currentRank = ranks[i];
+                } else {
+                    break;
+                }
+            }
+            return currentRank;
+        }
+
+        function getNextRank(score) {
+            for (let i = 0; i < ranks.length; i++) {
+                if (score < ranks[i].score) return ranks[i];
+            }
+            return null;
+        }
+
+        function normalizeText(text) {
+            return text.replace(/[\s\.\,]/g, '').toLowerCase();
+        }
+
+        function checkInputMatch(input, validAnswersArray) {
+            if (!input) return false;
+            const normInput = normalizeText(input);
+            return validAnswersArray.some(ans => normalizeText(ans) === normInput);
+        }
+
+        function getFlagUrl(code) {
+            return `https://flagcdn.com/w320/${code}.png`;
+        }
+
+        function getRandomCountries(count, excludeCode = null) {
+            let shuffled = [...countryData].sort(() => 0.5 - Math.random());
+            if (excludeCode) {
+                shuffled = shuffled.filter(c => c.code !== excludeCode);
+            }
+            return shuffled.slice(0, count);
+        }
+
+        function saveHighScore() {
+            if (state.score > state.highScore) {
+                state.highScore = state.score;
+                localStorage.setItem('flagQuizHighScore', state.highScore);
+            }
+        }
+
+        // --- 6. Render Functions ---
+        
+        function renderMenu() {
+            headerStats.classList.add('hidden');
+            saveHighScore();
+            const currentRank = getRank(state.highScore);
+            const nextRank = getNextRank(state.highScore);
+            
+            let progressHtml = '';
+            if (nextRank) {
+                const prevRankScore = currentRank.score;
+                const range = nextRank.score - prevRankScore;
+                const currentProgress = state.highScore - prevRankScore;
+                const percent = Math.min(100, Math.max(0, (currentProgress / range) * 100));
+                
+                progressHtml = `
+                    <div class="mt-4 w-full max-w-md mx-auto">
+                        <div class="flex justify-between text-sm mb-1 font-medium text-gray-600">
+                            <span>${currentRank.name}</span>
+                            <span>${nextRank.name}까지 ${nextRank.score - state.highScore}점</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                progressHtml = `<div class="mt-4 text-indigo-600 font-bold">🎉 최고 랭크 도달! 🎉</div>`;
+            }
+
+            contentArea.innerHTML = `
+                <div class="flex flex-col items-center justify-center flex-1 text-center animate-fade-in">
+                    
+                    <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl mb-8 w-full shadow-sm">
+                        <h2 class="text-lg text-gray-500 mb-1">나의 랭크</h2>
+                        <div class="text-6xl mb-2 rank-icon">${currentRank.icon}</div>
+                        <div class="text-3xl font-extrabold ${currentRank.color}">${currentRank.name}</div>
+                        <div class="text-gray-700 mt-2 font-medium">최고 점수: ${state.highScore.toLocaleString()}점</div>
+                        ${progressHtml}
+                    </div>
+
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">게임 모드 선택</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                        <button onclick="startGame(1)" class="group flex flex-col items-center justify-center p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all shadow-sm hover:shadow-md">
+                            <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🇰🇷</span>
+                            <span class="font-bold text-gray-800">모드 1: 나라 맞추기</span>
+                            <span class="text-sm text-gray-500 mt-2">국기를 보고 나라 이름 입력<br>(빈 칸 1개)</span>
+                        </button>
+                        
+                        <button onclick="startGame(2)" class="group flex flex-col items-center justify-center p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all shadow-sm hover:shadow-md">
+                            <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🏛️</span>
+                            <span class="font-bold text-gray-800">모드 2: 나라 & 수도</span>
+                            <span class="text-sm text-gray-500 mt-2">국기 보고 나라, 수도 입력<br>(빈 칸 2개)</span>
+                        </button>
+                        
+                        <button onclick="startGame(3)" class="group flex flex-col items-center justify-center p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all shadow-sm hover:shadow-md">
+                            <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🔍</span>
+                            <span class="font-bold text-gray-800">모드 3: 국기 찾기</span>
+                            <span class="text-sm text-gray-500 mt-2">나라 이름 보고 국기 선택<br>(4지 선다)</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startGame(mode) {
+            state.mode = mode;
+            state.score = 0;
+            state.combo = 0;
+            state.questionPool = [...countryData].sort(() => 0.5 - Math.random());
+            state.failedPool = [];
+            
+            headerStats.classList.remove('hidden');
+            updateHeader();
+            nextQuestion();
+        }
+
+        function updateHeader() {
+            navScore.innerText = state.score.toLocaleString();
+            navHighScore.innerText = Math.max(state.score, state.highScore).toLocaleString();
+        }
+
+        function flashScreen(isCorrect) {
+            flashOverlay.className = 'flash-overlay';
+            void flashOverlay.offsetWidth;
+            flashOverlay.classList.add(isCorrect ? 'flash-green' : 'flash-red');
+            setTimeout(() => {
+                flashOverlay.className = 'flash-overlay';
+            }, 300);
+        }
+
+        function handleAnswerResult(isCorrect, baseScore) {
+            state.isAnimating = true;
+            flashScreen(isCorrect);
+            
+            const feedbackEl = document.getElementById('feedback-area');
+            
+            if (isCorrect) {
+                playSound('correct');
+                state.combo++;
+                const comboBonus = Math.max(0, (state.combo - 1) * Math.floor(baseScore * 0.5));
+                const earnedScore = baseScore + comboBonus;
+                state.score += earnedScore;
+                
+                feedbackEl.innerHTML = `
+                    <div class="text-green-600 font-bold text-2xl combo-text flex flex-col items-center">
+                        <div>정답입니다! +${earnedScore}</div>
+                        ${state.combo > 1 ? `<div class="text-sm text-orange-500 bg-orange-100 px-2 py-1 rounded mt-1">${state.combo} 콤보!</div>` : ''}
+                    </div>
+                `;
+                updateHeader();
+                
+                setTimeout(() => {
+                    nextQuestion();
+                }, 700);
+                
+            } else {
+                playSound('wrong');
+                state.combo = 0;
+                state.failedPool.push(state.currentQuestion);
+                
+                let answerText = '';
+                if (state.mode === 1 || state.mode === 3) answerText = state.currentQuestion.name[0];
+                if (state.mode === 2) answerText = `${state.currentQuestion.name[0]} / ${state.currentQuestion.capital[0]}`;
+                
+                feedbackEl.innerHTML = `
+                    <div class="text-red-500 font-bold text-xl flex flex-col items-center">
+                        <div>틀렸습니다!</div>
+                        <div class="text-gray-700 text-base mt-1 bg-red-50 px-3 py-1 rounded border border-red-100">정답: <span class="font-black">${answerText}</span></div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1800);
+            }
+        }
+
+        function checkMode1() {
+            if(state.isAnimating) return;
+            const input = document.getElementById('m1-input').value;
+            if(!input.trim()) return;
+            
+            const isCorrect = checkInputMatch(input, state.currentQuestion.name);
+            handleAnswerResult(isCorrect, 10);
+        }
+
+        function checkMode2() {
+            if(state.isAnimating) return;
+            const countryInput = document.getElementById('m2-country').value;
+            const capitalInput = document.getElementById('m2-capital').value;
+            if(!countryInput.trim() || !capitalInput.trim()) return;
+            
+            const isCountryCorrect = checkInputMatch(countryInput, state.currentQuestion.name);
+            const isCapitalCorrect = checkInputMatch(capitalInput, state.currentQuestion.capital);
+            
+            const isCorrect = isCountryCorrect && isCapitalCorrect;
+            handleAnswerResult(isCorrect, 25);
+        }
+
+        function checkMode3(selectedIndex) {
+            if(state.isAnimating) return;
+            const selectedCountry = state.options[selectedIndex];
+            const isCorrect = selectedCountry.code === state.currentQuestion.code;
+            handleAnswerResult(isCorrect, 10);
+        }
+
+        function nextQuestion() {
+            state.isAnimating = false;
+            
+            if (state.questionPool.length === 0) {
+                if (state.failedPool.length > 0) {
+                    state.questionPool = [...state.failedPool].sort(() => 0.5 - Math.random());
+                    state.failedPool = [];
+                } else {
+                    state.questionPool = [...countryData].sort(() => 0.5 - Math.random());
+                }
+            }
+            
+            state.currentQuestion = state.questionPool.pop();
+            // Data array might be empty if all images failed (edge case)
+            if(!state.currentQuestion) return; 
+
+            const topBar = `
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="renderMenu()" class="text-gray-500 hover:text-gray-800 font-medium px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200 transition">← 메뉴로</button>
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs font-bold text-gray-500 bg-gray-100 border border-gray-200 px-2 py-1 rounded">남은 국기: ${state.questionPool.length + state.failedPool.length + 1}</span>
+                        ${state.combo >= 3 ? `<div class="font-bold text-red-500 animate-pulse">🔥 ${state.combo} COMBO 🔥</div>` : `<div class="font-bold text-gray-400">COMBO ${state.combo}</div>`}
+                    </div>
+                </div>
+            `;
+
+            let gameHtml = '';
+
+            // 이미지 로딩 UI 컴포넌트 (배경색 bg-gray-50 적용, img 태그에 테두리와 배경색 추가)
+            const imgContainer = (code) => `
+                <div class="w-full h-48 mb-8 flex justify-center items-center p-2 border border-gray-200 rounded-lg bg-gray-50 shadow-sm relative overflow-hidden">
+                    <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium z-0" id="loading-${code}">국기 불러오는 중...</div>
+                    <img src="${getFlagUrl(code)}" 
+                         onload="document.getElementById('loading-${code}').style.display='none'"
+                         onerror="handleImageError('${code}')"
+                         alt="국기" 
+                         class="max-w-full max-h-full object-contain drop-shadow-sm relative z-10 transition-opacity duration-300 border border-gray-200/60 rounded-sm bg-white">
+                </div>
+            `;
+
+            if (state.mode === 1) {
+                gameHtml = `
+                    <div class="flex flex-col items-center w-full max-w-md mx-auto">
+                        ${imgContainer(state.currentQuestion.code)}
+                        <h3 class="text-lg font-bold mb-4 text-gray-700">이 국기의 나라는?</h3>
+                        <div class="w-full flex gap-2">
+                            <input type="text" id="m1-input" class="flex-1 border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:border-indigo-500 transition-colors" placeholder="나라 이름 입력" autocomplete="off" autofocus onkeypress="if(event.key === 'Enter') checkMode1()">
+                            <button onclick="checkMode1()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md">확인</button>
+                        </div>
+                    </div>
+                `;
+            } else if (state.mode === 2) {
+                gameHtml = `
+                    <div class="flex flex-col items-center w-full max-w-md mx-auto">
+                        ${imgContainer(state.currentQuestion.code)}
+                        <h3 class="text-lg font-bold mb-4 text-gray-700">이 국기의 나라와 수도는?</h3>
+                        <div class="w-full flex flex-col gap-3">
+                            <input type="text" id="m2-country" class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:border-indigo-500 transition-colors" placeholder="나라 이름 입력" autocomplete="off" autofocus onkeypress="if(event.key === 'Enter') document.getElementById('m2-capital').focus()">
+                            <input type="text" id="m2-capital" class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:border-indigo-500 transition-colors" placeholder="수도 이름 입력" autocomplete="off" onkeypress="if(event.key === 'Enter') checkMode2()">
+                            <button onclick="checkMode2()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-lg mt-2 transition-colors shadow-md">확인</button>
+                        </div>
+                    </div>
+                `;
+            } else if (state.mode === 3) {
+                const wrongs = getRandomCountries(3, state.currentQuestion.code);
+                state.options = [state.currentQuestion, ...wrongs].sort(() => 0.5 - Math.random());
+                
+                // 모드 3 버튼 UI 수정 (배경색 bg-gray-50 적용, img 태그 테두리 추가)
+                const buttonsHtml = state.options.map((opt, idx) => `
+                    <button onclick="checkMode3(${idx})" class="w-full h-32 p-2 relative overflow-hidden rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all transform hover:scale-[1.02] bg-gray-50 group flex justify-center items-center">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-300 text-xs font-medium z-0" id="loading-opt-${opt.code}">로딩중...</div>
+                        <img src="${getFlagUrl(opt.code)}" 
+                             onload="document.getElementById('loading-opt-${opt.code}').style.display='none'"
+                             onerror="handleImageError('${opt.code}')"
+                             class="max-w-full max-h-full object-contain drop-shadow-sm relative z-10 border border-gray-200/60 rounded-sm bg-white" alt="Option">
+                    </button>
+                `).join('');
+
+                gameHtml = `
+                    <div class="flex flex-col items-center w-full">
+                        <h2 class="text-3xl font-black mb-8 text-gray-800 bg-gray-100 px-8 py-4 rounded-xl border border-gray-200 shadow-inner">
+                            ${state.currentQuestion.name[0]}
+                        </h2>
+                        <h3 class="text-md font-medium mb-6 text-gray-500">위 나라의 국기를 선택하세요.</h3>
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-lg">
+                            ${buttonsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
+            contentArea.innerHTML = `
+                ${topBar}
+                <div class="flex-1 flex flex-col justify-center relative">
+                    ${gameHtml}
+                    <div id="feedback-area" class="h-20 mt-6 flex justify-center items-center"></div>
+                </div>
+            `;
+
+            if (state.mode === 1) setTimeout(() => document.getElementById('m1-input')?.focus(), 10);
+            if (state.mode === 2) setTimeout(() => document.getElementById('m2-country')?.focus(), 10);
+        }
+
+        window.onload = () => {
+            renderMenu();
+        };
+
+    </script>
+</body>
+</html>

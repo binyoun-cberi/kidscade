@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>하늘반 승무원 시뮬레이터</title>
+<style>
+:root{
+  --sky:#dff6ff;
+  --blue:#42a5f5;
+  --deep:#1565c0;
+  --navy:#16324f;
+  --mint:#b8f7d4;
+  --yellow:#fff2a8;
+  --orange:#ffb74d;
+  --pink:#ffccdf;
+  --red:#ef5350;
+  --green:#43a047;
+  --paper:#fffdf7;
+  --line:#d6e2ef;
+  --shadow:0 8px 22px rgba(21,101,192,.18);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:linear-gradient(180deg,#c7efff,#f7fdff 65%,#fff7dc);
+  color:#17324d;
+  overflow:hidden;
+}
+button, .clickable{cursor:pointer; touch-action:manipulation;}
+button{
+  border:0;
+  border-radius:16px;
+  padding:12px 16px;
+  font-weight:900;
+  font-size:15px;
+  color:#16324f;
+  background:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.13), var(--shadow);
+  transition:transform .08s, filter .1s;
+}
+button:hover{filter:brightness(1.03)}
+button:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.13), 0 4px 14px rgba(21,101,192,.16)}
+button.primary{background:linear-gradient(180deg,#ffed73,#ffc24b)}
+button.blue{background:linear-gradient(180deg,#8bd4ff,#42a5f5); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25)}
+button.green{background:linear-gradient(180deg,#a8f5c7,#43a047); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25)}
+button.red{background:linear-gradient(180deg,#ffb5b5,#ef5350); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25)}
+button.ghost{background:#eef7ff; box-shadow:none; border:2px solid #cde9ff;}
+button:disabled{opacity:.48; cursor:not-allowed; transform:none; filter:grayscale(.2)}
+#game{
+  width:100vw;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+#hud{
+  min-height:70px;
+  padding:8px 12px;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(8px);
+  border-bottom:2px solid rgba(66,165,245,.22);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  z-index:5;
+}
+.logoBadge{
+  width:50px;height:50px;border-radius:17px;
+  background:linear-gradient(180deg,#7bd9ff,#3f8cff);
+  display:flex; align-items:center; justify-content:center;
+  font-size:27px; box-shadow:var(--shadow);
+}
+.hudMain{flex:1; min-width:0;}
+.hudTitle{font-weight:1000; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hudGoal{font-size:13px; opacity:.86; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hudStats{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center; max-width:58%;}
+.stat{
+  background:#f5fbff;
+  border:1px solid #d9efff;
+  border-radius:13px;
+  padding:6px 8px;
+  font-size:12px;
+  font-weight:800;
+}
+#screen{
+  position:relative;
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:14px;
+}
+.screenWrap{max-width:1100px; margin:0 auto; min-height:100%;}
+.centerScreen{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:calc(100vh - 120px); text-align:center;}
+.titleHero{
+  background:rgba(255,255,255,.78);
+  border:3px solid #fff;
+  box-shadow:var(--shadow);
+  border-radius:30px;
+  padding:28px;
+  max-width:760px;
+}
+.bigTitle{font-size:clamp(34px,7vw,70px); margin:0 0 8px; line-height:1.05; color:#1565c0; text-shadow:0 4px 0 #fff;}
+.subtitle{font-size:clamp(17px,3vw,24px); font-weight:850; margin:4px 0 20px;}
+.row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center;}
+.grid{display:grid; gap:12px;}
+.grid.cards{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+.card{
+  background:rgba(255,255,255,.92);
+  border:2px solid #fff;
+  box-shadow:var(--shadow);
+  border-radius:22px;
+  padding:16px;
+}
+.card h2,.card h3{margin:0 0 8px;}
+.card p{margin:6px 0; line-height:1.45;}
+.locked{opacity:.58; filter:grayscale(.4);}
+.pill{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 9px; border-radius:999px;
+  background:#eef8ff; border:1px solid #d2ebff;
+  font-size:12px; font-weight:850; margin:2px;
+}
+.notice{
+  background:#fff8d2;
+  border:2px dashed #ffc54d;
+  border-radius:18px;
+  padding:10px 12px;
+  font-weight:850;
+  margin:8px 0;
+}
+.area{
+  position:relative;
+  width:100%;
+  min-height:520px;
+  border-radius:26px;
+  overflow:hidden;
+  background:#f8fdff;
+  border:3px solid #fff;
+  box-shadow:var(--shadow);
+}
+.airportArea{
+  background:
+    linear-gradient(90deg, rgba(21,101,192,.05) 49%, rgba(21,101,192,.13) 50%, rgba(21,101,192,.05) 51%),
+    linear-gradient(0deg,#f9fdff,#dff3ff);
+  background-size:80px 80px, auto;
+}
+.floorText{position:absolute; color:rgba(21,101,192,.15); font-weight:1000; font-size:54px; transform:rotate(-12deg);}
+.actor{
+  position:absolute;
+  width:44px; height:44px;
+  border-radius:15px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px;
+  background:#fff;
+  border:3px solid #1565c0;
+  box-shadow:0 4px 10px rgba(0,0,0,.15);
+  z-index:3;
+  user-select:none;
+}
+.gate{
+  position:absolute;
+  width:104px; height:74px;
+  border-radius:20px;
+  background:#ffffff;
+  border:4px solid #42a5f5;
+  box-shadow:var(--shadow);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-weight:1000;
+}
+.gate.good{border-color:#43a047; background:#ecfff3; animation:pulse 1s infinite alternate;}
+@keyframes pulse{from{transform:scale(1)} to{transform:scale(1.04)}}
+.terminalItem{position:absolute; border-radius:18px; background:rgba(255,255,255,.75); border:2px solid #d6edff; padding:10px; font-weight:900;}
+#mobileControls{
+  position:absolute; right:14px; bottom:14px; z-index:8;
+  display:grid; grid-template-columns:54px 54px 54px; grid-template-rows:54px 54px 54px; gap:6px;
+  opacity:.95;
+}
+#mobileControls button{padding:0; border-radius:17px; font-size:22px; background:#fff;}
+#mobileControls .up{grid-column:2;grid-row:1}.left{grid-column:1;grid-row:2}.right{grid-column:3;grid-row:2}.down{grid-column:2;grid-row:3}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+.itemLine{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px; border-radius:15px; background:#f5fbff; margin:7px 0; border:1px solid #d8efff;}
+.itemName{font-weight:900;}
+.counter{display:flex; align-items:center; gap:7px;}
+.counter span{min-width:28px; text-align:center; font-weight:1000; font-size:18px;}
+.smallBtn{padding:8px 10px; min-width:38px; border-radius:12px;}
+.passengerList{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px;}
+.ticket,.passengerCard{
+  background:#fff;
+  border:2px solid #d9efff;
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 4px 12px rgba(21,101,192,.1);
+}
+.ticket.done,.passengerCard.done{background:#ecfff3; border-color:#8ae4ad;}
+.ticket.wrong{border-color:#ffb0b0; background:#fff2f2;}
+.avatar{font-size:32px; display:inline-block; margin-right:4px;}
+.planeCabin{
+  background:linear-gradient(90deg,#e8f5ff 0 13%, #fff 13% 87%, #e8f5ff 87% 100%);
+  border:4px solid #9bd5ff;
+  border-radius:42px;
+  padding:18px 12px;
+  max-width:760px;
+  margin:0 auto;
+  box-shadow:inset 0 0 0 4px #fff, var(--shadow);
+}
+.cockpit,.galley{
+  text-align:center; font-weight:1000; padding:10px; margin:4px auto 10px; width:70%; border-radius:22px; background:#dff3ff; border:2px solid #c4e8ff;
+}
+.seatRow{display:grid; grid-template-columns:1fr 1fr .9fr 1fr 1fr; gap:8px; align-items:center; margin:7px 0;}
+.aisle{text-align:center; font-size:12px; font-weight:900; color:#82a2bd;}
+.seat{
+  min-height:66px;
+  border-radius:17px;
+  background:#f7fbff;
+  border:2px solid #cde9ff;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  font-weight:950;
+  position:relative;
+  padding:4px;
+}
+.seat.selected{outline:4px solid #ffca28;}
+.seat.occupied{background:#fff8de; border-color:#ffda75;}
+.seat.problem{background:#fff1f1; border-color:#ff9c9c; animation:pulse .8s infinite alternate;}
+.seat.request{background:#eefaf1; border-color:#91d99f;}
+.seat .bubble{
+  position:absolute;
+  top:-12px; right:-9px;
+  background:#fff;
+  border:2px solid #ffca28;
+  border-radius:99px;
+  padding:3px 6px;
+  font-size:18px;
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+.problemCard{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; margin:8px 0; background:#fff7f7; border:2px solid #ffd2d2; border-radius:16px;}
+.demoCards{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:18px 0;}
+.demoCard{min-width:190px; padding:16px; border-radius:19px; background:#fff; border:2px solid #d9efff; box-shadow:var(--shadow); font-weight:950;}
+.demoCard.good{background:#ecfff3; border-color:#79d99c;}
+.skyAnim{height:350px; border-radius:30px; overflow:hidden; position:relative; background:linear-gradient(180deg,#93dfff,#e8f9ff); border:3px solid #fff; box-shadow:var(--shadow);}
+.cloud{position:absolute; background:#fff; border-radius:999px; opacity:.85; box-shadow:35px 8px 0 4px #fff, 70px 0 0 0 #fff; width:80px; height:34px; animation:floatCloud 9s linear infinite;}
+@keyframes floatCloud{from{left:-130px} to{left:110%}}
+.planeIcon{position:absolute; left:50%; top:60%; transform:translate(-50%,-50%) rotate(-8deg); font-size:90px; animation:takeoff 3s ease-in-out infinite alternate;}
+@keyframes takeoff{from{top:68%; left:40%} to{top:34%; left:61%}}
+.serviceLayout{display:grid; grid-template-columns:260px 1fr 250px; gap:12px; align-items:start;}
+.cartBox,.eventBox{position:sticky; top:8px;}
+.cartSlot{display:inline-flex; align-items:center; gap:4px; margin:3px; padding:5px 8px; border-radius:999px; background:#eef8ff; font-weight:900; font-size:12px;}
+.eventItem{padding:10px; border-radius:16px; background:#fff8df; border:2px solid #ffdf7d; margin:8px 0;}
+.cleanGrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;}
+.cleanItem{min-height:96px; border-radius:18px; background:#fff; border:2px solid #d9efff; display:flex; flex-direction:column; justify-content:center; align-items:center; font-weight:950; font-size:15px; box-shadow:0 4px 12px rgba(21,101,192,.1);}
+.cleanItem.done{background:#ecfff3; border-color:#7edb9c; opacity:.75;}
+.resultBig{font-size:42px; font-weight:1000; color:#1565c0;}
+.star{font-size:30px; letter-spacing:2px; color:#f9a825; text-shadow:0 2px 0 #fff;}
+.toast{
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+  background:#16324f; color:white; padding:12px 18px; border-radius:999px;
+  font-weight:900; box-shadow:0 8px 30px rgba(0,0,0,.25); z-index:20;
+  max-width:90vw; text-align:center;
+}
+.modalShade{position:fixed; inset:0; background:rgba(11,38,66,.36); z-index:30; display:flex; align-items:center; justify-content:center; padding:16px;}
+.modal{background:#fff; border-radius:26px; padding:18px; max-width:620px; width:100%; box-shadow:0 20px 70px rgba(0,0,0,.28); border:3px solid #fff;}
+.hidden{display:none!important;}
+.shake{animation:shake .18s linear 8;}
+@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+.darkEvent .area,.darkEvent .planeCabin{filter:brightness(.58)}
+@media (max-width:820px){
+  #hud{min-height:92px; align-items:flex-start;}
+  .hudStats{max-width:100%; justify-content:flex-start;}
+  .split,.serviceLayout{grid-template-columns:1fr;}
+  .cartBox,.eventBox{position:relative; top:auto;}
+  .seatRow{grid-template-columns:1fr 1fr .55fr 1fr 1fr; gap:5px;}
+  .seat{min-height:58px; font-size:12px;}
+  #screen{padding:10px; padding-bottom:170px;}
+  #mobileControls{left:50%; right:auto; transform:translateX(-50%); bottom:14px;}
+}
+@media (min-width:1000px){#mobileControls{opacity:.55}}
+
+
+/* ===== 비주얼 리마스터: 쯔꾸르 감성 + 부드러운 웹 애니메이션 ===== */
+:root{
+  --sky:#bcecff;
+  --blue:#4fb3ff;
+  --deep:#3468f6;
+  --navy:#21345f;
+  --mint:#a8f4d0;
+  --yellow:#ffe874;
+  --orange:#ffac4b;
+  --pink:#ffb8dc;
+  --red:#ff6370;
+  --green:#3bcf7c;
+  --paper:#fffaf0;
+  --line:#cfe6ff;
+  --shadow:0 18px 42px rgba(33,52,95,.18), 0 5px 0 rgba(255,255,255,.55) inset;
+  --hardShadow:0 9px 0 rgba(34,49,87,.13), 0 20px 55px rgba(33,52,95,.22);
+  --tileA:#e9f8ff;
+  --tileB:#d9f0ff;
+  --tileLine:rgba(70,151,220,.17);
+}
+html{background:#95ddff;}
+body{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.95) 0 42px, transparent 43px),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.75) 0 34px, transparent 35px),
+    linear-gradient(180deg,#8bdcff 0%,#dff7ff 46%,#fff7d3 100%);
+}
+body::before, body::after{
+  content:"";
+  position:fixed;
+  inset:auto auto 0 0;
+  pointer-events:none;
+  z-index:-1;
+}
+body::before{
+  width:200%; height:170px; top:82px; left:-40%;
+  background:
+    radial-gradient(ellipse at 70px 70px, rgba(255,255,255,.86) 0 38px, transparent 39px),
+    radial-gradient(ellipse at 140px 80px, rgba(255,255,255,.75) 0 52px, transparent 53px),
+    radial-gradient(ellipse at 230px 70px, rgba(255,255,255,.78) 0 35px, transparent 36px);
+  background-size:520px 145px;
+  animation: cloudsDrift 38s linear infinite;
+  opacity:.55;
+}
+body::after{
+  width:100%; height:120px; bottom:0;
+  background:
+    radial-gradient(ellipse at 8% 100%, #a9dc81 0 70px, transparent 71px),
+    radial-gradient(ellipse at 32% 100%, #b7e991 0 90px, transparent 91px),
+    radial-gradient(ellipse at 75% 100%, #98d270 0 76px, transparent 77px);
+  opacity:.34;
+}
+@keyframes cloudsDrift{from{transform:translateX(0)}to{transform:translateX(520px)}}
+#hud{
+  min-height:78px;
+  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(240,250,255,.88));
+  border-bottom:1px solid rgba(83,168,255,.36);
+  box-shadow:0 12px 32px rgba(44,108,176,.11);
+}
+.logoBadge{
+  border-radius:20px;
+  background:linear-gradient(145deg,#fff 0%,#dff7ff 18%,#71c8ff 58%,#326aff 100%);
+  border:3px solid rgba(255,255,255,.95);
+  box-shadow:0 10px 25px rgba(29,110,210,.22), inset 0 -8px 16px rgba(36,77,194,.22);
+  animation: badgeFloat 2.6s ease-in-out infinite;
+}
+@keyframes badgeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.hudTitle{font-size:19px; letter-spacing:-.02em; color:#1d3d73;}
+.hudGoal{color:#54708b; font-weight:750;}
+.stat{
+  border:1px solid rgba(107,181,255,.26);
+  background:linear-gradient(180deg,#fff,#edf8ff);
+  box-shadow:0 4px 12px rgba(42,116,187,.09);
+  color:#294766;
+}
+#screen{
+  background:
+    linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,0)),
+    radial-gradient(circle at 10% 10%,rgba(255,255,255,.35),transparent 28%),
+    radial-gradient(circle at 90% 20%,rgba(255,255,255,.25),transparent 24%);
+}
+.screenWrap{animation:screenPop .34s cubic-bezier(.2,.9,.2,1);}
+@keyframes screenPop{from{opacity:0; transform:translateY(14px) scale(.985)}to{opacity:1; transform:translateY(0) scale(1)}}
+.titleHero{
+  position:relative;
+  overflow:hidden;
+  padding:34px 32px 30px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.94),rgba(249,253,255,.86)),
+    radial-gradient(circle at 30% 15%,rgba(255,232,116,.55),transparent 28%);
+  border:4px solid rgba(255,255,255,.92);
+  box-shadow:var(--hardShadow);
+  transform-style:preserve-3d;
+}
+.titleHero::before{
+  content:"";
+  position:absolute;
+  left:-10%; right:-10%; bottom:-42px;
+  height:120px;
+  background:
+    linear-gradient(90deg,transparent 0 9%,rgba(32,70,128,.08) 9% 10%,transparent 10% 19%,rgba(32,70,128,.08) 19% 20%,transparent 20%),
+    linear-gradient(180deg,#dcecff,#b8d8ff);
+  border-radius:50% 50% 0 0;
+  opacity:.78;
+}
+.titleHero::after{
+  content:"✈️";
+  position:absolute;
+  top:24px; left:-78px;
+  font-size:44px;
+  filter:drop-shadow(0 10px 14px rgba(29,92,166,.25));
+  animation:heroPlane 7s ease-in-out infinite;
+}
+@keyframes heroPlane{0%{transform:translateX(0) translateY(50px) rotate(-13deg);opacity:0}14%{opacity:1}75%{opacity:1}100%{transform:translateX(920px) translateY(-42px) rotate(9deg);opacity:0}}
+.bigTitle{
+  position:relative;
+  z-index:1;
+  color:#2456c9;
+  text-shadow:0 4px 0 #fff, 0 11px 24px rgba(42,98,183,.20);
+}
+.subtitle{position:relative; z-index:1; color:#315070;}
+button{
+  border-radius:18px;
+  border:2px solid rgba(255,255,255,.86);
+  box-shadow:0 7px 0 rgba(28,48,91,.12), 0 16px 28px rgba(33,52,95,.15), inset 0 1px 0 rgba(255,255,255,.75);
+  transform:translateZ(0);
+}
+button:hover{filter:brightness(1.05) saturate(1.05); transform:translateY(-1px)}
+button:active{transform:translateY(4px) scale(.99); box-shadow:0 3px 0 rgba(28,48,91,.13), 0 8px 20px rgba(33,52,95,.13)}
+button.primary{background:linear-gradient(180deg,#fff59b 0%,#ffd25a 54%,#ffab3d 100%); color:#573b00;}
+button.blue{background:linear-gradient(180deg,#9ee6ff 0%,#57bbff 47%,#3468f6 100%);}
+button.green{background:linear-gradient(180deg,#b7ffd6 0%,#43d98b 54%,#24a860 100%);}
+button.red{background:linear-gradient(180deg,#ffd0d6 0%,#ff7380 55%,#e84a59 100%);}
+button.ghost{background:linear-gradient(180deg,#fff,#eff8ff); border-color:#cde9ff;}
+.card{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(245,251,255,.92));
+  border:2px solid rgba(255,255,255,.95);
+  box-shadow:0 12px 0 rgba(55,89,142,.07), 0 22px 50px rgba(33,52,95,.15), inset 0 1px 0 rgba(255,255,255,.96);
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto 0;
+  height:7px;
+  background:linear-gradient(90deg,#6bd6ff,#ffd76b,#ff9eca,#7df0b6);
+  opacity:.74;
+}
+.card:hover{transform:translateY(-2px); box-shadow:0 14px 0 rgba(55,89,142,.06),0 28px 60px rgba(33,52,95,.18)}
+.card h2,.card h3{color:#1e4c96; letter-spacing:-.02em;}
+.pill{
+  background:linear-gradient(180deg,#ffffff,#eef8ff);
+  border:1px solid rgba(91,173,255,.34);
+  box-shadow:0 5px 10px rgba(69,128,197,.07);
+}
+.notice{
+  background:linear-gradient(180deg,#fff9d7,#ffefb4);
+  border:2px solid rgba(255,197,77,.55);
+  box-shadow:0 8px 18px rgba(255,172,75,.12);
+}
+.area{
+  border:4px solid rgba(255,255,255,.95);
+  box-shadow:0 18px 0 rgba(55,89,142,.06),0 28px 70px rgba(33,52,95,.19), inset 0 0 0 1px rgba(51,122,220,.08);
+}
+.airportArea{
+  background:
+    linear-gradient(45deg,var(--tileLine) 25%,transparent 25% 75%,var(--tileLine) 75%),
+    linear-gradient(45deg,var(--tileLine) 25%,transparent 25% 75%,var(--tileLine) 75%),
+    linear-gradient(180deg,var(--tileA),var(--tileB));
+  background-position:0 0,24px 24px,0 0;
+  background-size:48px 48px,48px 48px,auto;
+}
+.airportArea::before{
+  content:"";
+  position:absolute;
+  left:0; right:0; top:0; height:82px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.48) 0 8%,transparent 8% 14%,rgba(255,255,255,.48) 14% 22%,transparent 22% 30%,rgba(255,255,255,.48) 30% 38%,transparent 38% 100%),
+    linear-gradient(180deg,#9bd7ff,#62abf6);
+  border-bottom:5px solid rgba(42,89,154,.18);
+  opacity:.75;
+}
+.airportArea::after{
+  content:"";
+  position:absolute;
+  width:360px; height:720px; left:-220px; top:-120px;
+  background:linear-gradient(75deg,transparent 0 45%,rgba(255,255,255,.26) 48% 52%,transparent 55% 100%);
+  animation:lightSweep 6.5s ease-in-out infinite;
+}
+@keyframes lightSweep{0%,18%{transform:translateX(0)}55%,100%{transform:translateX(1400px)}}
+.floorText{color:rgba(40,90,170,.09); text-shadow:0 2px 0 rgba(255,255,255,.4)}
+.terminalItem{
+  background:linear-gradient(180deg,#fff,#eaf7ff);
+  border:2px solid rgba(77,165,255,.33);
+  box-shadow:0 10px 18px rgba(47,103,164,.10);
+}
+.gate{
+  border-radius:20px 20px 16px 16px;
+  background:linear-gradient(180deg,#fff 0%,#e9f7ff 68%,#c9e7ff 100%);
+  border:3px solid #6ec5ff;
+  box-shadow:0 8px 0 rgba(39,83,142,.12), 0 20px 28px rgba(31,86,150,.15);
+}
+.gate::before{
+  content:"";
+  position:absolute; left:12px; right:12px; top:7px; height:10px;
+  border-radius:999px;
+  background:rgba(84,185,255,.25);
+}
+.gate.good{
+  border-color:#28c979;
+  background:linear-gradient(180deg,#fff,#e7fff2 70%,#bdf2d6);
+  animation:gateGlow 1.1s ease-in-out infinite alternate;
+}
+@keyframes gateGlow{from{box-shadow:0 8px 0 rgba(39,83,142,.12),0 0 0 rgba(40,201,121,0)}to{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 0 rgba(39,83,142,.10),0 0 34px rgba(40,201,121,.36)}}
+.actor{
+  width:52px; height:52px;
+  border-radius:18px 18px 20px 20px;
+  background:linear-gradient(180deg,#fff,#eaf7ff);
+  border:3px solid #2f6adf;
+  filter:drop-shadow(0 10px 10px rgba(26,55,106,.20));
+  transition:left .07s linear, top .07s linear;
+  animation:actorBreathe 1.3s ease-in-out infinite;
+}
+.actor::after{
+  content:"";
+  position:absolute;
+  left:9px; right:9px; bottom:-12px; height:10px;
+  background:rgba(17,43,91,.18);
+  border-radius:50%;
+  z-index:-1;
+}
+@keyframes actorBreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+#mobileControls button{
+  background:linear-gradient(180deg,#ffffff,#dff4ff);
+  border:2px solid rgba(255,255,255,.9);
+  color:#2e5796;
+  box-shadow:0 8px 20px rgba(24,71,142,.2);
+}
+.split{gap:18px;}
+.itemLine,.ticket,.passengerCard,.problemCard,.eventItem,.cleanItem{
+  box-shadow:0 8px 18px rgba(33,52,95,.08);
+  border-color:rgba(95,175,255,.30);
+}
+.ticket,.passengerCard{
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.ticket:hover,.passengerCard:hover,.cleanItem:hover{transform:translateY(-2px); box-shadow:0 14px 24px rgba(33,52,95,.13)}
+.avatar{filter:drop-shadow(0 4px 4px rgba(33,52,95,.15)); animation:tinyBob 2.3s ease-in-out infinite;}
+@keyframes tinyBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.planeCabin{
+  position:relative;
+  background:
+    radial-gradient(ellipse at 50% -25%,rgba(116,191,255,.32),transparent 30%),
+    linear-gradient(90deg,#b7ddff 0 10%,#f8fcff 10% 90%,#b7ddff 90% 100%);
+  border:5px solid #7bc8ff;
+  border-radius:64px 64px 44px 44px;
+  padding:28px 18px 24px;
+  box-shadow:inset 0 0 0 7px rgba(255,255,255,.88), inset 0 0 44px rgba(73,151,230,.15), 0 23px 60px rgba(33,52,95,.18);
+}
+.planeCabin::before,.planeCabin::after{
+  content:"";
+  position:absolute;
+  top:80px; bottom:72px; width:34px;
+  background:repeating-linear-gradient(180deg,#d3efff 0 24px,#ffffff 24px 31px);
+  border-radius:18px;
+  opacity:.8;
+}
+.planeCabin::before{left:16px}.planeCabin::after{right:16px}
+.cockpit,.galley{
+  background:linear-gradient(180deg,#e9f8ff,#c8eaff);
+  border:2px solid rgba(89,173,255,.35);
+  box-shadow:inset 0 2px 0 #fff,0 7px 18px rgba(46,101,167,.08);
+}
+.seatRow{gap:10px; margin:8px 0;}
+.aisle{
+  align-self:stretch;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  background:repeating-linear-gradient(180deg,rgba(52,104,246,.06) 0 12px,rgba(52,104,246,.13) 12px 15px);
+  color:#7192ad;
+}
+.seat{
+  min-height:72px;
+  border-radius:19px 19px 16px 16px;
+  background:linear-gradient(180deg,#ffffff 0%,#eff8ff 58%,#dcefff 100%);
+  border:2px solid rgba(92,171,255,.42);
+  box-shadow:inset 0 -6px 0 rgba(51,121,201,.08),0 8px 14px rgba(40,82,137,.08);
+  transition:transform .12s ease, filter .12s ease;
+}
+.seat:hover{transform:translateY(-2px); filter:brightness(1.03)}
+.seat.occupied{background:linear-gradient(180deg,#fff9db 0%,#ffe9a3 70%,#ffd774 100%); border-color:#ffc75b;}
+.seat.selected{outline:4px solid #ffb72e; box-shadow:0 0 0 6px rgba(255,201,40,.2),0 10px 20px rgba(40,82,137,.13)}
+.seat.problem{background:linear-gradient(180deg,#fff,#ffe7e8); border-color:#ff7e8d; animation:problemPulse .7s ease-in-out infinite alternate;}
+@keyframes problemPulse{from{transform:translateY(0);box-shadow:0 6px 14px rgba(255,99,112,.10)}to{transform:translateY(-2px);box-shadow:0 0 28px rgba(255,99,112,.35)}}
+.seat.request{background:linear-gradient(180deg,#f4fff8,#dafbe8); border-color:#68db9c;}
+.seat .bubble{
+  animation:bubblePop 1s ease-in-out infinite alternate;
+  box-shadow:0 8px 16px rgba(255,172,75,.18);
+}
+@keyframes bubblePop{from{transform:translateY(0) scale(1)}to{transform:translateY(-4px) scale(1.06)}}
+.demoCard{transition:transform .14s ease; background:linear-gradient(180deg,#fff,#f0f8ff)}
+.demoCard:hover{transform:translateY(-3px) rotate(-.5deg)}
+.skyAnim{
+  background:linear-gradient(180deg,#72ceff 0%,#d9f7ff 75%,#fff5c7 100%);
+  border:4px solid rgba(255,255,255,.95);
+  box-shadow:0 22px 60px rgba(33,52,95,.18);
+}
+.skyAnim::before{
+  content:"";
+  position:absolute; inset:auto 0 0 0; height:55px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.35));
+}
+.cloud{filter:drop-shadow(0 8px 10px rgba(43,108,175,.08));}
+.planeIcon{filter:drop-shadow(0 18px 15px rgba(26,71,132,.25));}
+.serviceLayout{grid-template-columns:280px 1fr 270px;}
+.cartBox,.eventBox{top:14px;}
+.cartSlot{
+  background:linear-gradient(180deg,#fff,#eaf7ff);
+  border:1px solid rgba(89,173,255,.32);
+  box-shadow:0 4px 10px rgba(33,52,95,.08);
+}
+.eventItem{
+  background:linear-gradient(180deg,#fff9dc,#fff0b2);
+  border:2px solid rgba(255,191,72,.52);
+}
+.cleanItem{
+  background:linear-gradient(180deg,#fff,#eef8ff);
+  transition:transform .14s ease, box-shadow .14s ease;
+}
+.cleanItem.done{background:linear-gradient(180deg,#f0fff5,#d5f8e2)}
+.resultBig{color:#2456c9; text-shadow:0 3px 0 #fff,0 13px 24px rgba(42,98,183,.18)}
+.star{animation:starShine 1.5s ease-in-out infinite alternate;}
+@keyframes starShine{from{filter:brightness(1)}to{filter:brightness(1.2); transform:scale(1.03)}}
+.toast{
+  background:linear-gradient(180deg,#263f72,#182b52);
+  border:2px solid rgba(255,255,255,.26);
+  box-shadow:0 14px 40px rgba(24,43,82,.38);
+  animation:toastIn .18s ease-out;
+}
+@keyframes toastIn{from{opacity:0; transform:translateX(-50%) translateY(18px) scale(.97)}to{opacity:1; transform:translateX(-50%) translateY(0) scale(1)}}
+.modalShade{backdrop-filter:blur(6px); background:rgba(23,47,86,.34);}
+.modal{
+  background:linear-gradient(180deg,#fff,#f2f9ff);
+  border:3px solid rgba(255,255,255,.95);
+  box-shadow:0 24px 80px rgba(20,41,82,.35);
+  animation:modalPop .2s ease-out;
+}
+@keyframes modalPop{from{opacity:0; transform:scale(.94) translateY(12px)}to{opacity:1; transform:scale(1) translateY(0)}}
+.clickSpark{
+  position:fixed;
+  width:10px; height:10px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:999;
+  background:#fff176;
+  box-shadow:0 0 0 4px rgba(255,241,118,.35),0 0 18px rgba(255,183,77,.75);
+  animation:sparkFly .48s ease-out forwards;
+}
+@keyframes sparkFly{to{opacity:0; transform:translateY(-24px) scale(2.5)}}
+@media (max-width:820px){
+  .titleHero{padding:26px 18px; border-radius:26px;}
+  .serviceLayout{grid-template-columns:1fr;}
+  .planeCabin{padding:22px 10px; border-radius:42px;}
+  .planeCabin::before,.planeCabin::after{display:none;}
+  .seat{min-height:62px;}
+}
+
+.dangerStat{background:#fff1f1!important;color:#b42318!important;border-color:#ffc7c7!important}
+.comboStat{background:#fff7df!important;color:#9a5a00!important;border-color:#ffd98a!important}
+.hardNotice{border-color:#ffbf69!important;background:linear-gradient(180deg,#fff9e8,#fff2d8)!important;color:#5c3600!important}
+.miniText{font-size:12px;color:#60728a;line-height:1.35}
+.seat.request{box-shadow:0 0 0 3px rgba(255,192,80,.28),0 10px 22px rgba(255,145,0,.16)}
+.seat.request .bubble{background:#ffca3a;color:#412400}
+.seat.request small{font-weight:900;color:#9a5a00}
+.ticket:not(.done):hover,.seat:hover{filter:brightness(1.03);transform:translateY(-2px)}
+.modal .smallBtn{margin:4px}
+.resultBig::after{content:'';display:block;width:88px;height:6px;border-radius:99px;background:#ffbf69;margin:10px auto 0}
+
+.briefList{line-height:1.9;font-weight:800}.briefList li{margin:4px 0}
+
+
+/* RPG-like interaction upgrade */
+.soundBtn{border:1px solid #cfe0f5;background:#fff;color:#17324d;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(21,101,192,.12)}
+.cabinRpg{position:relative;min-height:560px;border-radius:28px;border:4px solid #9cc8e7;background:
+  linear-gradient(90deg, transparent 0 43%, rgba(40,90,140,.08) 43% 57%, transparent 57%),
+  repeating-linear-gradient(0deg,#f9fcff 0 36px,#eef7ff 36px 72px);overflow:hidden;box-shadow:inset 0 0 0 6px rgba(255,255,255,.7),0 18px 36px rgba(16,65,112,.16)}
+.cabinRpg::before{content:'';position:absolute;left:43%;right:43%;top:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(212,233,255,.35));border-left:2px dashed rgba(75,123,170,.25);border-right:2px dashed rgba(75,123,170,.25)}
+.rpgCockpit,.rpgGalley{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#17324d;color:white;border-radius:18px;padding:10px 18px;font-weight:900;box-shadow:0 8px 16px rgba(0,0,0,.16)}
+.rpgCockpit{top:14px}.rpgGalley{bottom:12px;background:#375a7d}.rpgGalley.near{background:#21a66b;animation:pulse 0.55s ease-in-out infinite alternate}
+.mapSeat{position:absolute;width:72px;height:58px;border-radius:17px;background:linear-gradient(180deg,#ffffff,#e7f3ff);border:3px solid #a7cdeb;box-shadow:0 8px 18px rgba(56,112,160,.13);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;transition:.12s transform,.12s filter,.12s box-shadow;cursor:pointer;z-index:4}
+.mapSeat:hover,.mapSeat.near{transform:translateY(-2px) scale(1.03);box-shadow:0 0 0 5px rgba(255,198,77,.30),0 12px 22px rgba(56,112,160,.2)}
+.mapSeat .seatMini{font-size:11px;position:absolute;top:3px;left:7px;color:#55718e}.mapSeat .passMini{font-size:24px}.mapSeat .seatMood{position:absolute;right:-9px;top:-13px;background:#ffca3a;border:3px solid #fff;border-radius:999px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(194,113,0,.24);animation:bob 1s ease-in-out infinite}
+.mapSeat.done{opacity:.68;background:linear-gradient(180deg,#f2fff6,#d6f8df)}.mapSeat.alert{box-shadow:0 0 0 5px rgba(255,98,98,.18),0 12px 22px rgba(160,56,56,.18)}
+.rpgActor{position:absolute;width:48px;height:48px;border-radius:18px;background:#fff;border:3px solid #ffd15c;box-shadow:0 10px 20px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:29px;z-index:12;transition:left .045s linear,top .045s linear;animation:bob .8s ease-in-out infinite}.rpgActor::after{content:'';position:absolute;width:38px;height:10px;border-radius:50%;background:rgba(0,0,0,.18);bottom:-12px;left:5px;filter:blur(1px)}
+.rpgCart{position:absolute;width:34px;height:34px;border-radius:12px;background:#fff5c7;border:3px solid #f0b735;box-shadow:0 8px 16px rgba(100,77,0,.20);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:10;transition:left .08s linear,top .08s linear}
+.interactPanel{position:sticky;bottom:0;z-index:20;margin-top:10px;padding:10px;border-radius:20px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:2px solid #dbe8f6;box-shadow:0 10px 24px rgba(35,82,126,.15);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.interactBtn{font-size:18px;padding:13px 18px;border-radius:18px;background:linear-gradient(180deg,#34c78a,#18a86d)!important;color:#fff!important;box-shadow:0 8px 18px rgba(25,166,105,.26)}
+.safetyInspect{margin-top:12px;border-radius:24px;border:3px solid #d8e9fb;background:linear-gradient(180deg,#fff,#f4fbff);padding:14px;box-shadow:0 10px 20px rgba(35,82,126,.12)}
+.statusIcons{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.statusIcon{width:48px;height:48px;border-radius:15px;background:#eef7ff;border:2px solid #b7d9f2;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900}.statusIcon.missing{background:#fff1d6;border-color:#ffbd5b;animation:pulse .6s ease-in-out infinite alternate}.answerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}.answerGrid button{min-height:54px}.screenWipe{animation:fadeSlide .32s ease both}
+@keyframes fadeSlide{from{opacity:.15;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:800px){.cabinRpg{min-height:620px}.mapSeat{width:58px;height:52px}.serviceLayout{grid-template-columns:1fr!important}.interactPanel{position:relative}.rpgActor{width:44px;height:44px}.rpgCart{width:31px;height:31px}}
+
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="hud"></div>
+  <main id="screen"></main>
+  <div id="mobileControls" class="hidden">
+    <button class="up" data-dir="up">▲</button>
+    <button class="left" data-dir="left">◀</button>
+    <button class="right" data-dir="right">▶</button>
+    <button class="down" data-dir="down">▼</button>
+  </div>
+</div>
+<div id="modalRoot"></div>
+<script>
+'use strict';
+
+const SAVE_KEY = 'skyCabinCrewSimulator_v2';
+const $ = (sel) => document.querySelector(sel);
+const hud = $('#hud');
+const screen = $('#screen');
+const modalRoot = $('#modalRoot');
+const mobileControls = $('#mobileControls');
+
+const ITEM = {
+  water:{name:'물', icon:'💧'}, juice:{name:'주스', icon:'🧃'}, milk:{name:'우유', icon:'🥛'}, coffee:{name:'커피', icon:'☕'},
+  sandwich:{name:'샌드위치', icon:'🥪'}, snack:{name:'과자', icon:'🍪'}, cookie:{name:'쿠키', icon:'🍪'}, fruit:{name:'과일', icon:'🍎'},
+  blanket:{name:'담요', icon:'🧣'}, tissue:{name:'휴지', icon:'🧻'}, motionBag:{name:'멀미 봉투', icon:'🛍️'}, toy:{name:'장난감', icon:'🧸'},
+  firstAid:{name:'구급상자', icon:'🧰'}, trashBag:{name:'쓰레기봉투', icon:'🗑️'}, flashlight:{name:'손전등', icon:'🔦'}
+};
+const BASIC_ITEMS = ['water','juice','sandwich','snack','blanket','tissue'];
+const EXTRA_ITEMS = ['motionBag','toy','firstAid','trashBag','flashlight','milk','coffee','fruit'];
+const REQUESTS = ['water','juice','sandwich','snack','blanket','tissue'];
+const PASSENGER_TYPES = {
+  general:{name:'일반 승객', icon:'🙂'}, child:{name:'어린이 승객', icon:'🧒'}, elderly:{name:'어르신 승객', icon:'👵'}, sick:{name:'아픈 승객', icon:'🤒'}, pet:{name:'반려동물 동반 승객', icon:'🐶'}, vlogger:{name:'브이로거 승객', icon:'📹'}
+};
+const FLIGHTS = [
+  {id:'jeju', name:'제주행 짧은 비행', dest:'제주', gate:'A3', seats:8, level:1, time:'짧음', special:'어린이 1명', eventRate:.25, plane:'tiny'},
+  {id:'busan', name:'부산행 보통 비행', dest:'부산', gate:'B1', seats:12, level:2, time:'보통', special:'어르신 1명, 아픈 승객 1명', eventRate:.45, plane:'small'},
+  {id:'tokyo', name:'도쿄행 국제선', dest:'도쿄', gate:'C2', seats:16, level:6, time:'김', special:'어린이, 브이로거, 반려동물 동반 승객', eventRate:.65, plane:'medium'}
+];
+const PLANES = {
+  tiny:{name:'꼬마 비행기', seats:8, desc:'초반 기본 기체'},
+  small:{name:'작은 여객기', seats:12, desc:'더 많은 승객 탑승', cost:800},
+  medium:{name:'중형 여객기', seats:16, desc:'국제선과 이벤트 증가', cost:1400}
+};
+const UPGRADE_LIST = [
+  {id:'shoes', name:'빠른 신발', icon:'👟', cost:300, desc:'공항과 기내 이동 속도 증가'},
+  {id:'cart', name:'큰 서비스 카트', icon:'🛒', cost:500, desc:'한 번에 들 수 있는 물품 수 증가'},
+  {id:'kindBadge', name:'친절 배지', icon:'🏅', cost:400, desc:'친절 점수 보너스'},
+  {id:'gloves', name:'정리 장갑', icon:'🧤', cost:350, desc:'청소 보너스 증가'},
+  {id:'mic', name:'안내 마이크', icon:'🎤', cost:600, desc:'안전 안내 점수 보너스'},
+  {id:'medkit', name:'응급 키트', icon:'🧰', cost:700, desc:'아픈 승객 대응 점수 증가'},
+  {id:'toySet', name:'어린이 선물 세트', icon:'🧸', cost:450, desc:'어린이 승객 만족도 증가'},
+  {id:'crew', name:'동료 승무원', icon:'🧑‍✈️', cost:1000, desc:'쓰레기 수거와 일부 서빙을 자동 보조'}
+];
+
+let state = createDefaultState();
+let keys = {};
+let moveLoop = null;
+let timerLoop = null;
+let servicePressureLoop = null;
+let timerSeconds = 0;
+let currentScreen = 'home';
+let actor = {x:40,y:380};
+let gateRects = [];
+let audioCtx = null;
+let bgmLoop = null;
+let soundOn = true;
+let bgmStep = 0;
+const BGM_NOTES = [392,440,494,587,494,440,392,330,392,440,523,659,587,494,440,392];
+function initAudio(){
+  if(!soundOn) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    startBgm();
+  }catch(e){soundOn=false;}
+}
+function toggleAudio(){
+  soundOn = !soundOn;
+  if(soundOn){initAudio(); playSfx('ok');}
+  else stopBgm();
+  updateHud();
+}
+function stopBgm(){ if(bgmLoop){clearInterval(bgmLoop); bgmLoop=null;} }
+function startBgm(){
+  if(!soundOn || !audioCtx || bgmLoop) return;
+  bgmLoop = setInterval(()=>{
+    if(currentScreen==='home' || currentScreen==='flightSelect' || currentScreen==='upgrades') return;
+    playTone(BGM_NOTES[bgmStep++ % BGM_NOTES.length], .045, .055, 'triangle');
+  }, 430);
+}
+function playTone(freq, dur=.08, vol=.07, type='sine'){
+  if(!soundOn || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(vol, now+.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(now); osc.stop(now+dur+.02);
+}
+function playSfx(name){
+  if(!soundOn) return;
+  initAudio();
+  const map = {click:[520,.035,.04,'square'], ok:[784,.07,.06,'sine'], bad:[160,.09,.07,'sawtooth'], coin:[1046,.08,.07,'triangle'], step:[220,.025,.025,'square'], gate:[660,.09,.06,'triangle']};
+  const a = map[name] || map.click;
+  playTone(a[0],a[1],a[2],a[3]);
+  if(name==='coin') setTimeout(()=>playTone(1318,.08,.06,'triangle'),90);
+}
+
+function createDefaultState(){
+  return {
+    coins:0, level:1, xp:0, totalFlights:0, bestScore:0,
+    upgrades:{}, unlockedPlanes:{tiny:true, small:false, medium:false},
+    stage:'시작', goal:'게임을 시작해요', timeText:'--',
+    currentFlight:null, passengers:[], selectedPassengerId:null,
+    inventory:{}, cart:[], neededSupplies:{},
+    scores:{safety:80, service:80, kindness:80, time:80},
+    bonusCoins:0, boardedCount:0, selectedTicketId:null, wrongTicketsDone:[], mistakes:0, combo:0,
+    safetyProblems:[], selectedSafetySeat:null, selectedLandingSeat:null, seatQueueOrder:[], boardingOrder:[], demoProgress:0, serviceEvents:[], cleanItems:[], flightResult:null
+  };
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const save = JSON.parse(raw);
+    state.coins = Number(save.coins||0);
+    state.level = Number(save.level||1);
+    state.xp = Number(save.xp||0);
+    state.totalFlights = Number(save.totalFlights||0);
+    state.bestScore = Number(save.bestScore||0);
+    state.upgrades = save.upgrades || {};
+    state.unlockedPlanes = Object.assign({tiny:true,small:false,medium:false}, save.unlockedPlanes||{});
+  }catch(e){console.warn('load failed', e)}
+}
+function saveGame(){
+  const save = {
+    coins:state.coins, level:state.level, xp:state.xp, totalFlights:state.totalFlights,
+    bestScore:state.bestScore, upgrades:state.upgrades, unlockedPlanes:state.unlockedPlanes
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+}
+function resetSave(){
+  showConfirm('저장 초기화', '코인, 레벨, 업그레이드가 모두 초기화돼요. 정말 초기화할까요?', ()=>{
+    localStorage.removeItem(SAVE_KEY);
+    state = createDefaultState();
+    renderHome();
+    toast('저장을 초기화했어요.');
+  });
+}
+function showScreen(name){
+  currentScreen = name;
+  stopMovement();
+  clearTimer();
+  clearServicePressure();
+  mobileControls.classList.add('hidden');
+  document.body.classList.remove('darkEvent');
+  updateHud();
+}
+function updateHud(){
+  const f = state.currentFlight;
+  hud.innerHTML = `
+    <div class="logoBadge">✈️</div>
+    <div class="hudMain">
+      <div class="hudTitle">${state.stage || '하늘반 승무원 시뮬레이터'}</div>
+      <div class="hudGoal">목표: ${state.goal || '오늘의 비행을 준비해요'} ${f?` · ${f.dest}행 ${f.gate}`:''}</div>
+    </div>
+    <div class="hudStats">
+      <span class="stat">⏱ ${state.timeText || '--'}</span>
+      <span class="stat">🛡 안전 ${state.scores.safety}</span>
+      <span class="stat">🍱 서비스 ${state.scores.service}</span>
+      <span class="stat">💬 친절 ${state.scores.kindness}</span>
+      <span class="stat dangerStat">⚠ 실수 ${state.mistakes||0}</span>
+      <span class="stat comboStat">🔥 콤보 ${state.combo||0}</span>
+      <span class="stat">⭐ Lv.${state.level}</span>
+      <span class="stat">🪙 ${state.coins}</span>
+      <button class="soundBtn" onclick="toggleAudio()" title="소리 켜기/끄기">${soundOn?'🔊':'🔇'}</button>
+    </div>`;
+}
+function setStage(stage, goal){state.stage = stage; state.goal = goal; updateHud();}
+function adjustScore(type, delta){
+  if(!state.scores[type] && state.scores[type] !== 0) return;
+  state.scores[type] = Math.max(0, Math.min(120, state.scores[type] + delta));
+  updateHud();
+}
+function addMistake(reason, heavy=false){
+  state.mistakes = (state.mistakes||0) + (heavy?2:1);
+  state.combo = 0;
+  toast(reason || '실수가 누적됐어요.');
+  updateHud();
+}
+function addCombo(){
+  state.combo = (state.combo||0) + 1;
+  if(state.combo>1 && state.combo%3===0){
+    state.bonusCoins += 20;
+    toast(`연속 정확 처리 ${state.combo}콤보! 보너스 +20`);
+  }
+  updateHud();
+}
+function clearTimer(){ if(timerLoop){clearInterval(timerLoop); timerLoop=null;} state.timeText='--'; updateHud(); }
+function clearServicePressure(){ if(servicePressureLoop){clearInterval(servicePressureLoop); servicePressureLoop=null;} }
+function startTimer(seconds, onEnd){
+  clearTimer();
+  timerSeconds = seconds;
+  const tick = ()=>{
+    const m = String(Math.floor(timerSeconds/60)).padStart(2,'0');
+    const s = String(timerSeconds%60).padStart(2,'0');
+    state.timeText = `${m}:${s}`;
+    updateHud();
+    if(timerSeconds <= 0){
+      clearTimer();
+      if(onEnd) onEnd();
+      return;
+    }
+    timerSeconds--;
+  };
+  tick();
+  timerLoop = setInterval(tick,1000);
+}
+function toast(msg){
+  const div = document.createElement('div'); div.className='toast'; div.textContent=msg;
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(),1700);
+}
+function showConfirm(title, msg, yes){
+  modalRoot.innerHTML = `<div class="modalShade"><div class="modal"><h2>${title}</h2><p>${msg}</p><div class="row"><button class="red" id="confirmYes">네</button><button id="confirmNo">아니요</button></div></div></div>`;
+  $('#confirmYes').onclick = ()=>{modalRoot.innerHTML=''; yes();};
+  $('#confirmNo').onclick = ()=>{modalRoot.innerHTML='';};
+}
+function openModal(html){modalRoot.innerHTML = `<div class="modalShade"><div class="modal">${html}<div class="row"><button class="blue" onclick="closeModal()">닫기</button></div></div></div>`;}
+function closeModal(){modalRoot.innerHTML='';}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffleArray(arr){
+  const a = Array.isArray(arr) ? arr.slice() : [];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function clamp(n,min,max){return Math.max(min, Math.min(max,n));}
+function cartCapacity(){return state.upgrades.cart ? 6 : 2;}
+function moveSpeed(){return state.upgrades.shoes ? 7 : 4.5;}
+function passengerIcon(type){return PASSENGER_TYPES[type]?.icon || '🙂';}
+function passengerTypeName(type){return PASSENGER_TYPES[type]?.name || '승객';}
+function itemLabel(id){return `${ITEM[id]?.icon||'❔'} ${ITEM[id]?.name||id}`;}
+
+function renderHome(){
+  showScreen('home');
+  setStage('시작 화면', '게임을 시작하거나 방법을 확인해요');
+  screen.innerHTML = `
+  <div class="centerScreen">
+    <div class="titleHero">
+      <div style="font-size:76px">✈️☁️</div>
+      <h1 class="bigTitle">하늘반 승무원<br>시뮬레이터</h1>
+      <p class="subtitle">오늘도 안전하고 친절한 비행을 준비해요!</p>
+      <div class="row">
+        <button class="primary" onclick="startGame()">게임 시작</button>
+        <button class="blue" onclick="showHowTo()">방법 보기</button>
+        <button class="ghost" onclick="resetSave()">저장 초기화</button>
+      </div>
+      <div class="notice">현재 저장: Lv.${state.level} · 코인 ${state.coins} · 비행 ${state.totalFlights}회 · 최고점수 ${state.bestScore}</div>
+    </div>
+  </div>`;
+}
+function showHowTo(){
+  openModal(`<h2>게임 방법</h2>
+  <div class="card"><p>승무원은 승객의 안전과 편안한 비행을 돕는 직업이에요.</p>
+  <p>안전벨트, 좌석, 짐, 기내식, 승객 요청을 확인해요.</p>
+  <p>친절한 말을 고르면 승객 만족도가 올라가요.</p>
+  <p>비행을 마치면 코인을 얻고 장비를 업그레이드할 수 있어요.</p></div>`);
+}
+function startGame(){initAudio(); playSfx('ok'); renderFlightSelect();}
+
+function renderFlightSelect(){
+  showScreen('flightSelect');
+  setStage('오늘의 비행 선택', '운항할 항공편을 골라요');
+  const cards = FLIGHTS.map(f=>{
+    const lockedLevel = state.level < f.level;
+    const lockedPlane = !state.unlockedPlanes[f.plane];
+    const locked = lockedLevel || lockedPlane;
+    const lockReason = lockedLevel ? `레벨 ${f.level}부터 가능` : lockedPlane ? `${PLANES[f.plane].name} 해금 필요` : '';
+    return `<div class="card ${locked?'locked':''}">
+      <h2>${f.name}</h2>
+      <p><span class="pill">목적지 ${f.dest}</span><span class="pill">게이트 ${f.gate}</span><span class="pill">승객 ${f.seats}명</span></p>
+      <p>비행 시간: ${f.time}</p><p>특별 승객: ${f.special}</p><p>이벤트 확률: ${f.eventRate<.3?'낮음':f.eventRate<.55?'보통':'높음'}</p>
+      <p>사용 기체: ${PLANES[f.plane].name}</p>
+      ${locked?`<div class="notice">🔒 ${lockReason}</div>`:`<button class="primary" onclick="selectFlight('${f.id}')">이 비행 선택</button>`}
+    </div>`;
+  }).join('');
+  screen.innerHTML = `<div class="screenWrap"><div class="row" style="justify-content:space-between;margin-bottom:10px"><button onclick="renderHome()">← 시작 화면</button><button class="blue" onclick="renderUpgrades()">업그레이드</button></div><div class="grid cards">${cards}</div></div>`;
+}
+function selectFlight(id){
+  const f = FLIGHTS.find(x=>x.id===id);
+  if(!f) return;
+  state.currentFlight = JSON.parse(JSON.stringify(f));
+  state.scores = {safety:85, service:85, kindness:85, time:85};
+  state.bonusCoins = 0; state.inventory={}; state.cart=[]; state.boardedCount=0; state.selectedPassengerId=null; state.selectedTicketId=null; state.wrongTicketsDone=[]; state.mistakes=0; state.combo=0; state.selectedSafetySeat=null; state.selectedLandingSeat=null; state.seatQueueOrder=[]; state.boardingOrder=[];
+  generatePassengers();
+  state.seatQueueOrder = shuffleArray(state.passengers.map(p=>p.id));
+  renderAirport();
+}
+function generatePassengers(){
+  const f = state.currentFlight;
+  const seatLabels = [];
+  const rows = Math.ceil(f.seats/4);
+  ['A','B','C','D'];
+  for(let r=1;r<=rows;r++) for(const c of ['A','B','C','D']) if(seatLabels.length<f.seats) seatLabels.push(`${r}${c}`);
+  const types = [];
+  if(f.id==='jeju'){types.push('child');}
+  if(f.id==='busan'){types.push('elderly','sick');}
+  if(f.id==='tokyo'){types.push('child','elderly','sick','pet','vlogger');}
+  while(types.length < f.seats){
+    const pool = ['general','general','general'];
+    if(state.level>=2) pool.push('elderly');
+    if(state.level>=3) pool.push('sick');
+    if(state.level>=4) pool.push('pet');
+    if(state.level>=5) pool.push('vlogger');
+    types.push(rand(pool));
+  }
+  state.passengers = seatLabels.map((seat,i)=>({
+    id:i+1, name:`승객 ${i+1}`, type:types[i], seat, dest:f.dest, gate:f.gate,
+    boarded:false, seated:false, served:false, trash:false, request:null, wait:0, happy:80, specialDone:false
+  }));
+}
+
+function renderAirport(){
+  showScreen('airport');
+  setStage('공항 이동', `${state.currentFlight.gate} 게이트로 이동하세요`);
+  actor = {x:50,y:385};
+  screen.innerHTML = `<div class="screenWrap screenWipe">
+    <div class="notice">전광판에 적힌 게이트를 기억하고 직접 찾아가세요. 가까이 다가가면 자동으로 확인됩니다.</div>
+    <div id="airportArea" class="area airportArea">
+      <div class="floorText" style="left:26%;top:34%">AIRPORT</div>
+      <div class="terminalItem" style="left:40px;top:40px">🧳 체크인</div>
+      <div class="terminalItem" style="left:58%;top:42px">☕ 카페</div>
+      <div class="terminalItem" style="left:35%;top:235px">🛂 보안검색</div>
+      <div class="terminalItem" style="left:70%;top:42px">🖥️ 전광판: ${state.currentFlight.gate}</div>
+      ${makeGate('A1',7,120)}${makeGate('A2',24,120)}${makeGate('A3',41,120)}${makeGate('B1',66,300)}${makeGate('C2',83,120)}
+      <div id="actor" class="actor" style="left:${actor.x}px;top:${actor.y}px">🧑‍✈️</div>
+    </div>
+  </div>`;
+  gateRects = Array.from(document.querySelectorAll('.gate')).map(el=>({
+    id:el.dataset.gate, x:el.offsetLeft, y:el.offsetTop, w:el.offsetWidth, h:el.offsetHeight
+  }));
+  startTimer(35,()=>{adjustScore('time',-8); toast('시간이 조금 지났어요. 서둘러 이동해요!');});
+  startMovement('airportArea', checkAirportGate);
+}
+function makeGate(id,x,y){return `<div class="gate" data-gate="${id}" style="left:${x}%;top:${y}px"><div style="font-size:25px">🚪</div><div>Gate ${id}</div></div>`;}
+function startMovement(areaId, checker){
+  stopMovement();
+  mobileControls.classList.remove('hidden');
+  const area = document.getElementById(areaId);
+  const actorEl = document.getElementById('actor');
+  moveLoop = setInterval(()=>{
+    let dx=0, dy=0;
+    if(keys.ArrowLeft||keys.a) dx-=moveSpeed(); if(keys.ArrowRight||keys.d) dx+=moveSpeed();
+    if(keys.ArrowUp||keys.w) dy-=moveSpeed(); if(keys.ArrowDown||keys.s) dy+=moveSpeed();
+    if(!dx&&!dy) return;
+    const maxX = area.clientWidth-52, maxY = area.clientHeight-52;
+    actor.x = clamp(actor.x+dx, 0, maxX); actor.y = clamp(actor.y+dy, 0, maxY);
+    actorEl.style.left = actor.x+'px'; actorEl.style.top = actor.y+'px';
+    checker && checker();
+  },30);
+}
+function stopMovement(){if(moveLoop){clearInterval(moveLoop); moveLoop=null;} mobileControls.classList.add('hidden');}
+function checkAirportGate(){
+  const target = gateRects.find(g=>g.id===state.currentFlight.gate);
+  const cx = actor.x+22, cy=actor.y+22;
+  for(const g of gateRects){
+    if(cx>g.x && cx<g.x+g.w && cy>g.y && cy<g.y+g.h){
+      if(g.id===target.id){
+        stopMovement(); clearTimer(); adjustScore('time',5); playSfx('gate'); toast('게이트 확인 완료. 탑승 준비로 이동합니다.'); setTimeout(renderSupplies,500);
+      }else {adjustScore('time',-1); playSfx('bad'); toast('게이트가 다릅니다. 전광판을 다시 확인하세요.');}
+      break;
+    }
+  }
+}
+
+function calculateNeededSupplies(){
+  const n = state.passengers.length;
+  const needed = {water:Math.ceil(n*.55), juice:Math.ceil(n*.35), sandwich:Math.ceil(n*.45), snack:Math.ceil(n*.45), blanket:2, tissue:2, motionBag:1, trashBag:1};
+  for(const p of state.passengers){
+    if(p.type==='child'){needed.toy=(needed.toy||0)+1; needed.snack++;}
+    if(p.type==='elderly') needed.blanket++;
+    if(p.type==='sick'){needed.motionBag=(needed.motionBag||0)+1; needed.firstAid=(needed.firstAid||0)+1; needed.water++;}
+    if(p.type==='pet') needed.tissue++;
+  }
+  if(state.level>=5) needed.flashlight = 1;
+  return needed;
+}
+function supplyBriefing(){
+  const counts = state.passengers.reduce((acc,p)=>{acc[p.type]=(acc[p.type]||0)+1; return acc;},{});
+  const lines = [
+    `총 승객 ${state.passengers.length}명`,
+    counts.child?`어린이 승객 ${counts.child}명: 간식/장난감 수요가 높음`:null,
+    counts.elderly?`어르신 승객 ${counts.elderly}명: 담요와 물을 넉넉히`:null,
+    counts.sick?`몸이 불편한 승객 ${counts.sick}명: 물, 멀미 봉투, 구급 물품 필요`:null,
+    counts.pet?`반려동물 동반 승객 ${counts.pet}명: 휴지 여유분 필요`:null,
+    `비행 시간: ${state.currentFlight.time} · 이벤트 확률: ${state.currentFlight.eventRate<.3?'낮음':state.currentFlight.eventRate<.55?'보통':'높음'}`
+  ].filter(Boolean);
+  return lines.map(x=>`<li>${x}</li>`).join('');
+}
+function renderSupplies(){
+  showScreen('supplies');
+  state.neededSupplies = calculateNeededSupplies();
+  state.inventory = {};
+  setStage('항공편 준비', '오늘 필요한 물품을 카트에 담아요');
+  const allItems = [...new Set([...BASIC_ITEMS, ...Object.keys(state.neededSupplies).filter(x=>!BASIC_ITEMS.includes(x))])];
+  screen.innerHTML = `<div class="screenWrap">
+    <div class="split">
+      <div class="card"><h2>오늘의 브리핑</h2><p>승객 구성을 보고 필요한 물품 수량을 예측하세요.</p><ul class="briefList">${supplyBriefing()}</ul><div class="notice">부족하면 비행 중 곤란하고, 과하게 담으면 준비 시간이 손해납니다.</div></div>
+      <div class="card"><h2>물품 보관함</h2><p>+ / - 버튼으로 준비 수량을 정하세요. 비행 중 실제 요청을 버틸 수 있어야 합니다.</p><div id="supplyItems">${allItems.map(id=>supplyLine(id)).join('')}</div><div class="notice" id="supplyHint">비행 중 카트에 담아 승객에게 제공합니다.</div><div class="row"><button class="primary" onclick="finishSupplies()">이 수량으로 출발</button></div></div>
+    </div>
+  </div>`;
+  startTimer(45,()=>{adjustScore('time',-8); addMistake('물품 준비가 지연됐어요.');});
+}
+function supplyLine(id){
+  const val = state.inventory[id]||0;
+  return `<div class="itemLine"><span class="itemName">${itemLabel(id)}</span><div class="counter"><button class="smallBtn" onclick="changeSupply('${id}',-1)">-</button><span id="cnt_${id}">${val}</span><button class="smallBtn" onclick="changeSupply('${id}',1)">+</button></div></div>`;
+}
+function changeSupply(id,delta){
+  state.inventory[id] = Math.max(0,(state.inventory[id]||0)+delta);
+  const el = document.getElementById('cnt_'+id); if(el) el.textContent=state.inventory[id];
+}
+function finishSupplies(){
+  clearTimer();
+  let diff=0, exact=0;
+  for(const id of Object.keys(state.neededSupplies)){
+    const have = state.inventory[id]||0, need = state.neededSupplies[id];
+    if(have===need) exact++;
+    diff += Math.abs(have-need);
+  }
+  if(diff===0){adjustScore('service',8); adjustScore('time',3); toast('물품을 정확히 준비했어요!');}
+  else {adjustScore('service',-Math.min(16,diff*2)); if(diff>5) addMistake('물품 준비 예측이 크게 빗나갔어요.'); toast(`물품 예측 오차 ${diff}개. 비행 중 부족하거나 시간이 손해날 수 있어요.`);}
+  setTimeout(renderBoarding,700);
+}
+
+function getWrongTickets(){
+  return [
+    {id:'w1', name:'민준 승객', type:'general', seat:'9A', dest:'부산', gate:'A1', wrong:true},
+    {id:'w2', name:'서연 승객', type:'elderly', seat:'2B', dest:state.currentFlight.dest, gate:'Z9', wrong:true},
+    {id:'w3', name:'도윤 승객', type:'child', seat:'1C', dest:'제주', gate:state.currentFlight.gate, wrong: state.currentFlight.dest!=='제주'}
+  ].filter(x=>x.wrong && !(state.wrongTicketsDone||[]).includes(x.id));
+}
+function renderBoarding(){
+  showScreen('boarding');
+  setStage('보딩 심사', '티켓의 목적지와 게이트를 보고 직접 판단해요');
+  const wrongs = getWrongTickets();
+  const rawList = [...state.passengers.map(p=>Object.assign({},p)), ...wrongs];
+  if(!state.boardingOrder || state.boardingOrder.length===0){
+    state.boardingOrder = shuffleArray(rawList.map(p=>String(p.id)));
+  }
+  const list = rawList.sort((a,b)=>{
+    const ai = state.boardingOrder.indexOf(String(a.id));
+    const bi = state.boardingOrder.indexOf(String(b.id));
+    return (ai<0?999:ai) - (bi<0?999:bi);
+  });
+  screen.innerHTML = `<div class="screenWrap screenWipe"><div class="passengerList">${list.map(ticketCard).join('')}</div><div class="row" style="margin-top:12px"><button class="primary" ${state.boardedCount>=state.passengers.length?'':'disabled'} onclick="renderSeatGuide()">모든 승객 탑승 완료</button></div></div>`;
+}
+function boardingPriority(type){return type==='elderly'||type==='sick'?1:type==='child'||type==='pet'?2:3;}
+function ticketCard(p){
+  const isReal = !p.wrong;
+  const realP = isReal ? state.passengers.find(x=>x.id===p.id) : p;
+  const done = isReal && realP.boarded;
+  return `<div class="ticket ${done?'done':''}" onclick="selectTicket('${p.id}')">
+    <div><span class="avatar">${passengerIcon(p.type)}</span><b>${p.name}</b></div>
+    <p>${passengerTypeName(p.type)}</p>
+    <p>🎫 목적지 <b>${p.dest}</b> · 게이트 <b>${p.gate}</b> · 좌석 <b>${p.seat}</b></p>
+    ${done?'<b>탑승 완료</b>':`<div class="row"><button class="blue" onclick="event.stopPropagation(); checkTicket('${p.id}','board')">탑승 안내</button><button onclick="event.stopPropagation(); checkTicket('${p.id}','redirect')">다른 게이트 안내</button></div>`}
+  </div>`;
+}
+function selectTicket(id){state.selectedTicketId=id;}
+function checkTicket(id, action){
+  let p = state.passengers.find(x=>String(x.id)===String(id));
+  const wrong = getWrongTickets().find(x=>String(x.id)===String(id));
+  if(p){
+    if(p.boarded){toast('이미 탑승했어요.'); return;}
+    if(action==='board'){
+      p.boarded=true; state.boardedCount++;
+      adjustScore('kindness',2); adjustScore('service',2); addCombo(); toast(`${p.name} 탑승 안내 완료!`);
+    }else{
+      adjustScore('kindness',-7); adjustScore('service',-6); addMistake('정상 승객을 잘못 돌려보냈어요.');
+    }
+  }else if(wrong){
+    state.wrongTicketsDone = state.wrongTicketsDone || [];
+    state.wrongTicketsDone.push(wrong.id);
+    if(action==='redirect'){
+      adjustScore('kindness',3); adjustScore('service',3); addCombo(); toast('잘못 온 승객을 친절하게 안내했어요.');
+    }else{
+      adjustScore('safety',-12); adjustScore('service',-10); addMistake('다른 항공편 승객을 탑승시킬 뻔했어요!', true);
+    }
+  }
+  renderBoarding();
+}
+
+function renderSeatGuide(){
+  showScreen('seatGuide');
+  setStage('좌석 안내', '흩어진 승객을 알맞은 좌석으로 안내해요');
+  if(!state.seatQueueOrder || state.seatQueueOrder.length===0) state.seatQueueOrder = shuffleArray(state.passengers.map(p=>p.id));
+  const unseated = state.passengers.filter(p=>!p.seated).sort((a,b)=>state.seatQueueOrder.indexOf(a.id)-state.seatQueueOrder.indexOf(b.id));
+  screen.innerHTML = `<div class="screenWrap screenWipe"><div class="split"><div class="card"><h2>대기 승객</h2><p>승객 티켓을 보고 알맞은 좌석으로 안내하세요.</p><div class="passengerList">${unseated.map(p=>`<div class="passengerCard ${state.selectedPassengerId===p.id?'done':''}" onclick="pickPassenger(${p.id})"><span class="avatar">${passengerIcon(p.type)}</span><b>${p.name}</b><p>${passengerTypeName(p.type)} · 티켓 ${p.seat}</p></div>`).join('') || '<p>모든 승객이 앉았어요.</p>'}</div><div class="row"><button class="primary" ${unseated.length===0?'':'disabled'} onclick="renderSafetyCheck()">좌석 안내 완료</button></div></div><div>${renderCabin('seatGuide')}</div></div></div>`;
+}
+function pickPassenger(id){state.selectedPassengerId=id; renderSeatGuide();}
+function renderCabin(mode){
+  const rows = Math.ceil(state.currentFlight.seats/4);
+  let html = `<div class="planeCabin"><div class="cockpit">👨‍✈️ 조종석</div>`;
+  for(let r=1;r<=rows;r++){
+    html += `<div class="seatRow">`;
+    for(const c of ['A','B','aisle','C','D']){
+      if(c==='aisle'){html += `<div class="aisle">통로</div>`; continue;}
+      const label = `${r}${c}`;
+      const p = state.passengers.find(x=>x.seat===label && x.seated);
+      const safety = state.safetyProblems.find(x=>x.seat===label && !x.done);
+      let cls = 'seat'; let content = `<div>${label}</div>`; let click='';
+      if(mode==='seatGuide') click=`onclick="clickSeat('${label}')"`;
+      if(p){cls+=' occupied'; content += `<div>${passengerIcon(p.type)}</div><small>${p.name}</small>`;}
+      if(mode==='safety'){
+        click=`onclick="inspectSafetySeat('${label}')"`;
+        if(state.selectedSafetySeat===label){cls+=' selected';}
+      }
+      if(mode==='service'){
+        const sp = state.passengers.find(x=>x.seat===label);
+        if(sp){
+          cls+=' occupied';
+          content = `<div>${label}</div><div>${passengerIcon(sp.type)}</div><small>${sp.name}</small>`;
+          if(sp.request && !sp.served){cls+=' request'; content += `<span class="bubble">${sp.wait>6?'💢':'💬'}</span><small>${patienceLabel(sp)}</small>`;}
+          if(sp.trash){content += `<span class="bubble">🗑️</span>`;}
+          click=`onclick="openServeModal(${sp.id})"`;
+        }
+      }
+      if(mode==='landing'){
+        const problem = state.safetyProblems.find(x=>x.seat===label && !x.done);
+        const sp = state.passengers.find(x=>x.seat===label);
+        if(sp){cls+=' occupied'; content += `<div>${passengerIcon(sp.type)}</div>`;}
+        click=`onclick="inspectLandingSeat('${label}')"`;
+        if(state.selectedLandingSeat===label){cls+=' selected';}
+      }
+      html += `<div class="${cls}" ${click}>${content}</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="galley">🍱 갤리 / 🚻 화장실</div></div>`;
+  return html;
+}
+function clickSeat(label){
+  const p = state.passengers.find(x=>x.id===state.selectedPassengerId);
+  if(!p){toast('먼저 승객을 선택하세요.'); return;}
+  if(p.seat === label){p.seated=true; state.selectedPassengerId=null; adjustScore('service',2); toast(`${p.name}을 ${label} 좌석으로 안내했어요.`);}
+  else {adjustScore('service',-4); addMistake('좌석 안내를 잘못했습니다. 티켓을 다시 확인하세요.');}
+  renderSeatGuide();
+}
+
+const SAFETY_ACTIONS = {
+  belt:{label:'안전벨트', icon:'🔒'}, table:{label:'테이블', icon:'📥'}, seatback:{label:'의자 등받이', icon:'💺'}, bag:{label:'통로 가방', icon:'🧳'}, bin:{label:'수납장', icon:'🗄️'}, standing:{label:'착석', icon:'🪑'}, phone:{label:'비행기 모드', icon:'📵'}, trash:{label:'쓰레기', icon:'🗑️'}, none:{label:'이상 없음', icon:'✅'}
+};
+function makeSafetyProblems(kind){
+  const labels = kind==='landing'
+    ? [ ['belt','안전벨트'], ['table','테이블'], ['seatback','의자'], ['trash','쓰레기'], ['bag','통로 가방'], ['bin','수납장'] ]
+    : [ ['belt','안전벨트'], ['table','테이블'], ['seatback','의자'], ['bag','통로 가방'], ['bin','수납장'], ['standing','서 있음'], ['phone','휴대전화'] ];
+  const count = Math.min(Math.max(4, Math.floor(state.passengers.length*.5)), state.passengers.length);
+  const seats = shuffleArray(state.passengers.map(p=>p.seat));
+  const probs=[];
+  for(let i=0;i<count;i++){
+    const l = rand(labels);
+    probs.push({id:`${kind}_${i}_${Date.now()}`, seat:seats[i], type:l[0], label:l[1], done:false});
+  }
+  return probs;
+}
+function renderSafetyCheck(){
+  showScreen('safetyCheck');
+  state.safetyProblems = makeSafetyProblems('takeoff');
+  state.selectedSafetySeat = null;
+  setStage('이륙 전 안전 점검', '좌석을 열어 보고 빠진 안전 항목을 찾아요');
+  renderSafetyScreen();
+  startTimer(75,()=>{adjustScore('time',-8); adjustScore('safety',-5); toast('점검 시간이 길어졌어요. 끝까지 확인해요!');});
+}
+function renderSafetyScreen(){
+  const unresolved = state.safetyProblems.filter(p=>!p.done);
+  screen.innerHTML = `<div class="screenWrap screenWipe"><div class="split"><div>${renderCabin('safety')}</div><div class="card"><h2>남은 점검 ${unresolved.length}개</h2><p>좌석을 눌러 승객 상태를 확인하고, 아래 아이콘 중 빠진 항목을 골라 넣으세요.</p>${safetyInspectPanel('takeoff')}<div class="row"><button class="primary" ${unresolved.length===0?'':'disabled'} onclick="renderSafetyDemo()">이륙 준비 완료</button></div></div></div></div>`;
+}
+function safetyMessage(type){
+  return {belt:'안전벨트를 채웠습니다.', table:'테이블을 접었습니다.', seatback:'의자를 바로 세웠습니다.', bag:'통로 가방을 정리했습니다.', bin:'수납장을 닫았습니다.', standing:'승객을 자리에 앉혔습니다.', phone:'비행기 모드로 바꾸도록 안내했습니다.', trash:'쓰레기를 수거했습니다.'}[type] || '안전하게 정리했습니다.';
+}
+function inspectSafetySeat(label){
+  state.selectedSafetySeat = label;
+  playSfx('click');
+  renderSafetyScreen();
+}
+function safetyInspectPanel(kind){
+  const label = kind==='landing' ? state.selectedLandingSeat : state.selectedSafetySeat;
+  if(!label) return `<div class="safetyInspect"><h3>좌석을 선택하세요</h3><p>좌석을 누르면 승객 상태가 열립니다.</p></div>`;
+  const problem = state.safetyProblems.find(x=>x.seat===label && !x.done);
+  const actionKeys = kind==='landing' ? ['belt','table','seatback','trash','bag','bin','none'] : ['belt','table','seatback','bag','bin','standing','phone','none'];
+  const icons = actionKeys.filter(k=>k!=='none').map(k=> problem && problem.type===k ? `<span class="statusIcon missing">❓</span>` : `<span class="statusIcon">${SAFETY_ACTIONS[k].icon}</span>`).join('');
+  const buttons = actionKeys.map(k=>`<button onclick="answerSafetyProblem('${kind}','${k}')">${SAFETY_ACTIONS[k].icon} ${SAFETY_ACTIONS[k].label}</button>`).join('');
+  const passenger = state.passengers.find(p=>p.seat===label);
+  return `<div class="safetyInspect"><h3>${label} 좌석 ${passenger?passengerIcon(passenger.type):''}</h3><p>상태판에서 빠진 표시를 찾아 선택하세요.</p><div class="statusIcons">${icons}</div><div class="answerGrid">${buttons}</div></div>`;
+}
+function answerSafetyProblem(kind, answer){
+  const label = kind==='landing' ? state.selectedLandingSeat : state.selectedSafetySeat;
+  if(!label) return;
+  const p = state.safetyProblems.find(x=>x.seat===label && !x.done);
+  if(!p){
+    if(answer==='none'){
+      adjustScore('time',-1); toast('이 좌석은 이상 없습니다. 다른 좌석을 확인하세요.'); playSfx('click');
+    }else{
+      adjustScore('time',-2); adjustScore('safety',-3); addMistake('문제가 없는 좌석에 잘못 조치했습니다.'); playSfx('bad');
+    }
+    if(kind==='landing') renderLandingScreen(); else renderSafetyScreen();
+    return;
+  }
+  if(answer===p.type){
+    p.done=true; adjustScore('safety',6); addCombo(); playSfx('ok'); toast(`${p.seat}: ${safetyMessage(p.type)}`);
+    if(state.safetyProblems.every(x=>x.done)){clearTimer(); adjustScore('time',5);}
+  }else{
+    adjustScore('safety',-5); adjustScore('time',-2); addMistake('빠진 안전 항목을 잘못 판단했습니다.'); playSfx('bad');
+  }
+  if(kind==='landing') renderLandingScreen(); else renderSafetyScreen();
+}
+function resolveSafetyProblem(id){
+  const p = state.safetyProblems.find(x=>x.id===id); if(!p||p.done) return;
+  p.done=true; adjustScore('safety',5); addCombo(); toast(`${p.seat}: ${safetyMessage(p.type)}`);
+  if(state.safetyProblems.every(x=>x.done)){clearTimer(); adjustScore('time',5);}
+  renderSafetyScreen();
+}
+
+const DEMO_ORDER = ['안전벨트를 매요.','비상구 위치를 확인해요.','산소마스크 사용법을 알아요.','승무원의 안내를 잘 들어요.'];
+function renderSafetyDemo(){
+  showScreen('safetyDemo');
+  state.demoProgress=0;
+  setStage('안전 안내 방송', '안전 안내 카드를 올바른 순서로 눌러요');
+  renderDemoCards();
+}
+function renderDemoCards(){
+  const shuffled = [...DEMO_ORDER].sort(()=>Math.random()-.5);
+  screen.innerHTML = `<div class="screenWrap centerScreen"><div class="card" style="max-width:850px;width:100%"><h2>안전 안내 순서 맞추기</h2><p>기내 안전 안내에 어울리는 순서대로 카드를 고르세요.</p><div class="demoCards">${shuffled.map(txt=>`<div class="demoCard ${DEMO_ORDER.indexOf(txt)<state.demoProgress?'good':''}" onclick="clickDemoCard('${txt}')">${txt}</div>`).join('')}</div><div class="notice">신중히 고르면 안전 점수가 올라갑니다.</div></div></div>`;
+}
+
+function clickDemoCard(txt){
+  if(txt === DEMO_ORDER[state.demoProgress]){
+    state.demoProgress++; adjustScore('safety', state.upgrades.mic?5:3); toast('좋아요!');
+    if(state.demoProgress>=DEMO_ORDER.length){setTimeout(renderTakeoff,600);} else renderDemoCards();
+  }else{
+    state.demoProgress=0; adjustScore('safety',-5); addMistake('안전 안내 순서가 틀렸어요.'); renderDemoCards();
+  }
+}
+
+function renderTakeoff(){
+  showScreen('takeoff');
+  setStage('이륙', '무서워하는 승객에게 친절하게 말해요');
+  screen.innerHTML = `<div class="screenWrap"><div class="skyAnim"><div class="cloud" style="top:60px;animation-delay:0s"></div><div class="cloud" style="top:170px;animation-delay:2s"></div><div class="cloud" style="top:260px;animation-delay:4s"></div><div class="planeIcon">✈️</div></div><div class="card" style="margin-top:12px"><h2>승객: “비행기가 흔들려서 무서워요.”</h2><div class="grid cards"><button class="green" onclick="takeoffChoice(true)">괜찮아요. 이륙할 때는 조금 흔들릴 수 있어요. 안전벨트를 매고 있으면 안전해요.</button><button onclick="takeoffChoice(false)">그냥 참으세요.</button><button onclick="takeoffChoice(false)">저도 잘 모르겠어요.</button></div></div></div>`;
+}
+function takeoffChoice(ok){
+  if(ok){adjustScore('kindness', state.upgrades.kindBadge?12:8); toast('승객이 안심했어요.');}
+  else {adjustScore('kindness',-8); toast('조금 더 친절한 말이 좋겠어요.');}
+  setTimeout(renderService,700);
+}
+
+function generateServiceRequests(){
+  for(const p of state.passengers){
+    if(p.type==='child') p.request = rand(['juice','snack','toy'].filter(x=>state.inventory[x]!==undefined || x==='toy'));
+    else if(p.type==='elderly') p.request = rand(['water','blanket','juice']);
+    else if(p.type==='sick') p.request = rand(['water','motionBag','tissue']);
+    else if(p.type==='vlogger') p.request = rand(['juice','water']);
+    else p.request = rand(REQUESTS);
+    p.served=false; p.trash=false; p.wait=0;
+  }
+  state.serviceEvents = [];
+  const eventCount = state.level>=5 ? 3 : state.level>=3 ? 2 : 1;
+  const pool = ['spill','sick','turbulence'];
+  if(state.level>=4) pool.push('petRun');
+  if(state.level>=5) pool.push('phone','lights');
+  if(state.level>=7) pool.push('oxygen');
+  for(let i=0;i<eventCount;i++) addServiceEvent(rand(pool));
+}
+function addServiceEvent(type){
+  const names = {spill:'물을 쏟았어요', sick:'멀미 승객', turbulence:'난기류로 수납장 열림', petRun:'반려동물이 도망갔어요', phone:'휴대전화 사용 승객', lights:'전등이 잠깐 꺼졌어요', oxygen:'산소마스크 안내 훈련'};
+  state.serviceEvents.push({id:`ev_${Date.now()}_${Math.random()}`, type, name:names[type], done:false});
+}
+function startServicePressure(){
+  clearServicePressure();
+  servicePressureLoop = setInterval(()=>{
+    if(currentScreen!=='service') return;
+    let angry = 0;
+    for(const p of state.passengers){
+      if(!p.served){
+        p.wait = (p.wait||0) + 1;
+        if(p.wait>4){p.happy -= 2; angry++;}
+        if(p.wait===7){adjustScore('service',-3); toast(`${p.name}이 오래 기다리고 있어요.`);}
+        if(p.wait>10 && p.wait%3===0){adjustScore('kindness',-2); adjustScore('service',-2);}
+      }
+    }
+    if(angry) renderServiceScreen();
+  }, 4000);
+}
+
+function renderService(){
+  showScreen('service');
+  generateServiceRequests();
+  actor = {x:300,y:Math.min(520, 120 + Math.ceil(state.currentFlight.seats/4)*82)};
+  setStage('순항 중 기내 서비스', '카트를 끌고 좌석 가까이 이동해 서비스해요');
+  renderServiceScreen();
+  startServicePressure();
+  startTimer(state.currentFlight.id==='jeju'?125:state.currentFlight.id==='busan'?155:185,()=>{
+    adjustScore('time',-10); adjustScore('service',-6); toast('서비스 시간이 길어졌어요. 남은 일을 마무리해요.');
+  });
+}
+function renderServiceScreen(){
+  const allServed = state.passengers.every(p=>p.served);
+  const trashLeft = state.passengers.some(p=>p.trash);
+  const eventLeft = state.serviceEvents.some(e=>!e.done);
+  const servedCount = state.passengers.filter(p=>p.served).length;
+  const trashCount = state.passengers.filter(p=>p.trash).length;
+  screen.innerHTML = `<div class="screenWrap screenWipe"><div class="serviceLayout">
+    <div class="card cartBox"><h2>서비스 카트</h2><p>직접 갤리로 가서 물품을 담고, 좌석 옆에서 상호작용하세요.</p><p>용량: ${state.cart.length}/${cartCapacity()}</p><div id="cartSlots">${state.cart.map(id=>`<span class="cartSlot">${itemLabel(id)}</span>`).join('') || '<p>비어 있음</p>'}</div><div class="row" style="margin-top:8px"><button onclick="clearCart()">카트 비우기</button></div><hr><p>서빙 ${servedCount}/${state.passengers.length}<br>쓰레기 ${trashCount}개 남음<br>불만 승객 ${state.passengers.filter(p=>!p.served && p.wait>6).length}명</p></div>
+    <div>${renderRpgCabin()}<div class="interactPanel"><b id="nearText">좌석이나 갤리 가까이 이동하세요.</b><button class="interactBtn" onclick="interactService()">상호작용 E/Space</button><button class="primary" ${allServed&&!trashLeft&&!eventLeft?'':'disabled'} onclick="renderLandingCheck()">착륙 준비로 이동</button></div></div>
+    <div class="card eventBox"><h2>승객 요청 / 돌발상황</h2>${state.serviceEvents.map(eventHtml).join('') || '<p>현재 이벤트가 없어요.</p>'}<div class="notice">일부 상황은 필요한 물품을 카트에 담아야 해결됩니다.</div></div>
+  </div></div>`;
+  if(state.serviceEvents.some(e=>!e.done && e.type==='lights')) document.body.classList.add('darkEvent'); else document.body.classList.remove('darkEvent');
+  startCabinMovement();
+  updateNearbyText();
+}
+function renderRpgCabin(){
+  const rows = Math.ceil(state.currentFlight.seats/4);
+  const h = Math.max(560, rows*88+150);
+  const seats = seatPositions();
+  const seatHtml = seats.map(pos=>{
+    const p = state.passengers.find(x=>x.seat===pos.label);
+    let cls='mapSeat'; let mood='';
+    if(p){
+      if(p.served && !p.trash) cls+=' done';
+      if(p.request && !p.served) mood = `<span class="seatMood">${p.wait>8?'💢':'💬'}</span>`;
+      if(p.trash) mood = `<span class="seatMood">🗑️</span>`;
+      if(p.wait>8) cls+=' alert';
+    }
+    return `<div class="${cls}" data-seat="${pos.label}" onclick="tryOpenSeat('${pos.label}')" style="left:${pos.x}px;top:${pos.y}px"><span class="seatMini">${pos.label}</span><span class="passMini">${p?passengerIcon(p.type):''}</span>${mood}</div>`;
+  }).join('');
+  return `<div id="serviceArea" class="cabinRpg" style="height:${h}px"><div class="rpgCockpit">조종석</div>${seatHtml}<div id="rpgGalley" class="rpgGalley">🍱 갤리 / 카트 보충</div><div id="cartActor" class="rpgCart" style="left:${actor.x-34}px;top:${actor.y+12}px">🛒</div><div id="actor" class="rpgActor" style="left:${actor.x}px;top:${actor.y}px">🧑‍✈️</div></div>`;
+}
+function seatPositions(){
+  const rows = Math.ceil(state.currentFlight.seats/4);
+  const xs = {A:70,B:158,C:370,D:458};
+  const arr=[];
+  for(let r=1;r<=rows;r++) for(const c of ['A','B','C','D']){
+    const label = `${r}${c}`;
+    if(state.passengers.some(p=>p.seat===label)) arr.push({label,x:xs[c],y:70+(r-1)*86});
+  }
+  return arr;
+}
+function startCabinMovement(){
+  stopMovement();
+  mobileControls.classList.remove('hidden');
+  const area = document.getElementById('serviceArea');
+  const actorEl = document.getElementById('actor');
+  const cartEl = document.getElementById('cartActor');
+  if(!area || !actorEl) return;
+  moveLoop = setInterval(()=>{
+    let dx=0, dy=0;
+    if(keys.ArrowLeft||keys.a) dx-=moveSpeed(); if(keys.ArrowRight||keys.d) dx+=moveSpeed();
+    if(keys.ArrowUp||keys.w) dy-=moveSpeed(); if(keys.ArrowDown||keys.s) dy+=moveSpeed();
+    if(keys.e||keys[' ']||keys.Enter){keys.e=false;keys[' ']=false;keys.Enter=false;interactService();}
+    if(!dx&&!dy) return;
+    const maxX = area.clientWidth-54, maxY = area.clientHeight-58;
+    actor.x = clamp(actor.x+dx, 0, maxX); actor.y = clamp(actor.y+dy, 0, maxY);
+    actorEl.style.left = actor.x+'px'; actorEl.style.top = actor.y+'px';
+    if(cartEl){cartEl.style.left=(actor.x-34)+'px'; cartEl.style.top=(actor.y+14)+'px';}
+    if(Math.random()<.06) playSfx('step');
+    updateNearbyText();
+  },30);
+}
+function nearestServiceSeat(maxDist=82){
+  let best=null, bestD=9999;
+  for(const pos of seatPositions()){
+    const dx=(actor.x+24)-(pos.x+36), dy=(actor.y+24)-(pos.y+29);
+    const d=Math.hypot(dx,dy);
+    if(d<bestD){bestD=d; best=pos;}
+  }
+  return bestD<=maxDist ? best : null;
+}
+function isNearGalley(){
+  const area = document.getElementById('serviceArea');
+  if(!area) return false;
+  return actor.y > area.clientHeight-130 && actor.x > area.clientWidth*.28 && actor.x < area.clientWidth*.72;
+}
+function updateNearbyText(){
+  const el = document.getElementById('nearText');
+  const galley = document.getElementById('rpgGalley');
+  if(!el) return;
+  document.querySelectorAll('.mapSeat.near').forEach(x=>x.classList.remove('near'));
+  if(galley) galley.classList.toggle('near', isNearGalley());
+  const n = nearestServiceSeat();
+  if(isNearGalley()) el.textContent = '갤리: 카트에 물품을 담을 수 있습니다.';
+  else if(n){
+    const seatEl = document.querySelector(`.mapSeat[data-seat="${n.label}"]`); if(seatEl) seatEl.classList.add('near');
+    el.textContent = `${n.label} 좌석 근처: 승객을 확인할 수 있습니다.`;
+  }else el.textContent = '좌석이나 갤리 가까이 이동하세요.';
+}
+function interactService(){
+  if(modalRoot.innerHTML.trim()) return;
+  if(isNearGalley()){openGalleyModal(); return;}
+  const n = nearestServiceSeat();
+  if(n){tryOpenSeat(n.label); return;}
+  toast('상호작용할 대상이 너무 멀어요.');
+}
+function tryOpenSeat(label){
+  const n = nearestServiceSeat();
+  if(!n || n.label!==label){toast('좌석 가까이 이동해야 확인할 수 있어요.'); adjustScore('time',-1); return;}
+  const p = state.passengers.find(x=>x.seat===label);
+  if(p) openServeModal(p.id);
+}
+function openGalleyModal(){
+  const buttons = availableServiceItems().map(id=>`<button class="smallBtn" onclick="loadCart('${id}')">${itemLabel(id)} <small>(${['trashBag','flashlight'].includes(id)?'∞':(state.inventory[id]||0)})</small></button>`).join('') || '<p>담을 수 있는 물품이 없습니다.</p>';
+  openModal(`<h2>🍱 갤리</h2><div class="card"><p>카트 용량: ${state.cart.length}/${cartCapacity()}</p><p>${state.cart.map(itemLabel).join(' · ') || '카트가 비어 있습니다.'}</p></div><h3>물품 담기</h3><div class="row">${buttons}</div><div class="row"><button onclick="clearCart();closeModal();renderServiceScreen();">카트 비우기</button></div>`);
+}
+
+function availableServiceItems(){
+  const ids = [...new Set([...BASIC_ITEMS,'toy','motionBag','firstAid','trashBag','flashlight'])];
+  return ids.filter(id=> (state.inventory[id]||0)>0 || ['trashBag','flashlight'].includes(id));
+}
+function loadCart(id){
+  if(state.cart.length >= cartCapacity()){toast('카트가 가득 찼어요.'); playSfx('bad'); return;}
+  if((state.inventory[id]||0)<=0 && !['trashBag','flashlight'].includes(id)){toast(`${ITEM[id].name}이 부족해요.`); adjustScore('service',-2); playSfx('bad'); return;}
+  if(!['trashBag','flashlight'].includes(id)) state.inventory[id]--;
+  state.cart.push(id); playSfx('ok'); closeModal(); renderServiceScreen();
+}
+function clearCart(){
+  for(const id of state.cart){if(!['trashBag','flashlight'].includes(id)) state.inventory[id]=(state.inventory[id]||0)+1;}
+  state.cart=[]; renderServiceScreen();
+}
+function takeFromCart(id){
+  const idx = state.cart.indexOf(id);
+  if(idx>=0){state.cart.splice(idx,1); return true;}
+  return false;
+}
+function patienceLabel(p){
+  if(p.trash) return '정리 필요';
+  if(p.wait>8) return '매우 불만';
+  if(p.wait>5) return '기다리는 중';
+  return '주문 요청';
+}
+function serviceClue(id, type){
+  const clues = {
+    water:'목이 말라요. 가장 기본적인 음료가 필요해요.',
+    juice:'달콤한 음료가 마시고 싶어요.',
+    sandwich:'배가 고파요. 든든한 식사가 필요해요.',
+    snack:'가볍게 먹을 간식이 있나요?',
+    blanket:'조금 추워요. 몸을 덮을 게 필요해요.',
+    tissue:'손이나 자리를 닦을 것이 필요해요.',
+    toy:'심심해요. 가지고 놀 만한 것이 있나요?',
+    motionBag:'속이 좋지 않아요. 혹시 모를 때 쓰는 봉투가 필요해요.',
+    firstAid:'몸 상태가 좋지 않아요. 응급 물품이 필요해요.'
+  };
+  if(type==='child' && id==='snack') return '아이 승객이 출출해 보여요. 달콤한 간식이 좋겠어요.';
+  if(type==='elderly' && id==='blanket') return '어르신 승객이 팔을 감싸고 있어요. 따뜻하게 도와드려야 해요.';
+  if(type==='sick') return clues[id] || '아픈 승객에게 필요한 물품을 골라야 해요.';
+  return clues[id] || '승객의 말을 잘 듣고 필요한 물품을 골라요.';
+}
+function openServeModal(id){
+  const p = state.passengers.find(x=>x.id===id); if(!p) return;
+  if(p.trash){collectTrash(id); return;}
+  if(p.served){toast('이미 서비스를 완료한 승객이에요.'); return;}
+  const cartButtons = state.cart.length ? state.cart.map((item,idx)=>`<button class="smallBtn" onclick="giveItemToPassenger(${p.id}, '${item}', ${idx})">${itemLabel(item)}</button>`).join('') : '<p>카트가 비어 있어요. 갤리에서 물품을 담아오세요.</p>';
+  openModal(`<h2>${passengerIcon(p.type)} ${p.name} · ${p.seat}</h2><div class="card"><p><b>승객의 말/행동:</b><br>${serviceClue(p.request, p.type)}</p><p>기다린 시간: ${p.wait} · 기분: ${Math.max(0,p.happy)}점</p></div><h3>카트에서 제공할 물품 선택</h3><div class="row">${cartButtons}</div><div class="row"><button onclick="askOrderAgain(${p.id})">주문 다시 확인하기</button><button class="red" onclick="fallbackServePassenger(${p.id})">재고 부족/대체 안내</button></div><div class="notice">틀린 물품을 주면 물품과 시간이 모두 손해납니다. 재고가 완전히 부족하면 대체 안내로 마무리할 수 있지만 큰 감점이 있습니다.</div>`);
+}
+function fallbackServePassenger(id){
+  const p = state.passengers.find(x=>x.id===id); if(!p || p.served) return;
+  p.served = true;
+  p.trash = false;
+  p.happy = Math.max(0, (p.happy||80) - 30);
+  adjustScore('service', -12);
+  adjustScore('kindness', -6);
+  addMistake(`${p.name}에게 필요한 물품을 제공하지 못해 대체 안내로 마무리했습니다.`, true);
+  closeModal();
+  renderServiceScreen();
+}
+function askOrderAgain(id){
+  const p = state.passengers.find(x=>x.id===id); if(!p) return;
+  p.wait += 2; p.happy -= 4; adjustScore('time',-2); adjustScore('service',-1);
+  toast(`${p.name}: “${ITEM[p.request]?.name || '필요한 물품'} 부탁드려요.”`);
+  closeModal(); setTimeout(()=>openServeModal(id), 150);
+}
+function giveItemToPassenger(id, itemId, cartIndex){
+  const p = state.passengers.find(x=>x.id===id); if(!p) return;
+  const idx = Number(cartIndex);
+  if(state.cart[idx] !== itemId){toast('카트 물품이 바뀌었어요.'); closeModal(); renderServiceScreen(); return;}
+  state.cart.splice(idx,1);
+  if(itemId === p.request || (p.request==='toy' && itemId==='snack' && p.type==='child')){
+    p.served=true; p.trash=true; p.happy+=12; addCombo();
+    const comboBonus = Math.min(8, Math.floor((state.combo||0)/2));
+    adjustScore('service',6+comboBonus);
+    if(p.type==='child') adjustScore('kindness', state.upgrades.toySet?8:4);
+    if(p.type==='elderly') adjustScore('kindness',4);
+    if(p.type==='sick') adjustScore('safety', state.upgrades.medkit?6:3);
+    playSfx('ok'); toast(`${p.seat} ${p.name}에게 알맞은 물품을 제공했어요!`);
+  }else{
+    p.wait += 3; p.happy -= 18; adjustScore('service',-9); adjustScore('kindness',-3);
+    playSfx('bad'); addMistake(`${p.name}: “이건 제가 부탁한 게 아니에요.”`);
+  }
+  closeModal(); autoCrewHelp(); renderServiceScreen();
+}
+function collectTrash(id){
+  const p = state.passengers.find(x=>x.id===id); if(!p||!p.trash) return;
+  p.trash=false; adjustScore('service', state.upgrades.crew?4:3); addCombo(); playSfx('ok'); toast(`${p.seat} 좌석 쓰레기를 수거했어요.`);
+  autoCrewHelp(); renderServiceScreen();
+}
+function servePassenger(id){ openServeModal(id); }
+
+function autoCrewHelp(){
+  if(!state.upgrades.crew || Math.random()>.35) return;
+  const p = state.passengers.find(x=>x.trash);
+  if(p){p.trash=false; adjustScore('service',2); toast('동료 승무원이 쓰레기 수거를 도와줬어요.');}
+}
+function eventHtml(e){
+  if(e.done) return `<div class="eventItem" style="opacity:.65;background:#ecfff3;border-color:#9be1ad"><b>✅ ${e.name}</b><p>해결 완료</p></div>`;
+  const action = {spill:'휴지로 닦기', sick:'물과 멀미 봉투 제공', turbulence:'수납장 닫기', petRun:'반려동물 찾기', phone:'비행기 모드 안내', lights:'손전등 사용', oxygen:'마스크 착용 돕기'}[e.type] || '해결';
+  return `<div class="eventItem"><b>⚠️ ${e.name}</b><p>${eventDescription(e.type)}</p><button class="blue" onclick="resolveServiceEvent('${e.id}')">${action}</button></div>`;
+}
+function eventDescription(type){
+  return {
+    spill:'승객이 물을 쏟았어요. 휴지로 닦아주세요.', sick:'속이 안 좋은 승객이 있어요. 차분히 도와주세요.', turbulence:'비행기가 조금 흔들려 수납장이 열렸어요.', petRun:'작은 반려동물이 통로로 나왔어요. 천천히 찾아주세요.', phone:'이륙/착륙 전 휴대전화 안내가 필요해요.', lights:'전등이 잠깐 꺼졌어요. 손전등으로 안심시켜요.', oxygen:'훈련 상황이에요. 마스크를 착용하지 않은 승객을 도와주세요.'
+  }[type] || '침착하게 해결해요.';
+}
+function resolveServiceEvent(id){
+  const e = state.serviceEvents.find(x=>x.id===id); if(!e || e.done) return;
+  if(e.type==='spill'){
+    if(!takeFromCart('tissue')){
+      adjustScore('service',-8); adjustScore('kindness',-4); addMistake('휴지가 부족해 물 쏟음 상황을 깔끔하게 처리하지 못했습니다.', true);
+      e.done=true; toast('대체 안내로 상황을 마무리했지만 큰 감점이 있습니다.'); setTimeout(renderServiceScreen,250); return;
+    }
+    adjustScore('service',6); adjustScore('kindness',3); addCombo();
+  }else if(e.type==='sick'){
+    const hasWater = takeFromCart('water'); const hasBag = takeFromCart('motionBag');
+    if(!hasWater || !hasBag){
+      if(hasWater) state.cart.push('water'); if(hasBag) state.cart.push('motionBag');
+      adjustScore('safety',-10); adjustScore('kindness',-5); addMistake('아픈 승객 대응 물품이 부족해 임기응변으로 마무리했습니다.', true);
+      e.done=true; toast('필요 물품 부족으로 큰 감점이 있습니다.'); setTimeout(renderServiceScreen,250); return;
+    }
+    adjustScore('safety', state.upgrades.medkit?10:7); adjustScore('kindness',4); addCombo();
+  }else if(e.type==='turbulence'){
+    document.querySelector('.screenWrap')?.classList.add('shake'); adjustScore('safety',8); adjustScore('service',3); addCombo();
+  }else if(e.type==='petRun'){
+    adjustScore('kindness',7); adjustScore('service',4); addCombo();
+  }else if(e.type==='phone'){
+    adjustScore('safety',5); adjustScore('kindness',2); addCombo();
+  }else if(e.type==='lights'){
+    if(!state.cart.includes('flashlight')){
+      adjustScore('safety',-8); adjustScore('kindness',-5); addMistake('손전등 없이 어두운 기내를 해결해 승객 불안이 커졌습니다.', true);
+      e.done=true; toast('손전등 없이 마무리해 큰 감점이 있습니다.'); setTimeout(renderServiceScreen,250); return;
+    }
+    adjustScore('safety',6); adjustScore('kindness',4);
+  }else if(e.type==='oxygen'){
+    adjustScore('safety',12); addCombo();
+  }
+  e.done=true; toast('침착하게 해결했어요!'); setTimeout(renderServiceScreen,250);
+}
+
+function renderLandingCheck(){
+  showScreen('landingCheck');
+  state.safetyProblems = makeSafetyProblems('landing');
+  state.selectedLandingSeat = null;
+  setStage('착륙 전 점검', '좌석 상태판에서 빠진 항목을 찾아 정리해요');
+  renderLandingScreen();
+  startTimer(75,()=>{adjustScore('time',-8); adjustScore('safety',-5); toast('착륙 전 점검 시간이 길어졌어요.');});
+}
+function renderLandingScreen(){
+  const unresolved = state.safetyProblems.filter(p=>!p.done);
+  screen.innerHTML = `<div class="screenWrap screenWipe"><div class="split"><div>${renderCabin('landing')}</div><div class="card"><h2>남은 착륙 점검 ${unresolved.length}개</h2><p>착륙 전에는 테이블, 안전벨트, 쓰레기, 수납장까지 다시 확인해야 합니다.</p>${safetyInspectPanel('landing')}<div class="row"><button class="primary" ${unresolved.length===0?'':'disabled'} onclick="renderLanding()">착륙 준비 완료</button></div></div></div></div>`;
+}
+function inspectLandingSeat(label){
+  state.selectedLandingSeat = label;
+  playSfx('click');
+  renderLandingScreen();
+}
+function resolveLandingProblem(id){
+  const p = state.safetyProblems.find(x=>x.id===id); if(!p||p.done) return;
+  p.done=true; adjustScore('safety',5); addCombo(); toast(`${p.seat} 착륙 점검 완료!`);
+  if(state.safetyProblems.every(x=>x.done)){clearTimer(); adjustScore('time',5);}
+  renderLandingScreen();
+}
+
+function renderLanding(){
+  showScreen('landing');
+  setStage('착륙', '승객에게 도착 안내를 해요');
+  screen.innerHTML = `<div class="screenWrap"><div class="skyAnim" style="background:linear-gradient(180deg,#d9f4ff,#bfe8ff 60%,#b6e38b 61%,#77c66b)"><div class="cloud" style="top:50px"></div><div style="position:absolute;bottom:25px;left:5%;right:5%;height:42px;background:#555;border-radius:18px;border:4px dashed #fff"></div><div class="planeIcon" style="animation:none;top:56%;left:52%;transform:translate(-50%,-50%) rotate(8deg)">✈️</div></div><div class="card" style="margin-top:12px;text-align:center"><h2>${state.currentFlight.dest}에 도착했습니다!</h2><p>승객들이 안전하게 도착했어요.</p><button class="primary" onclick="renderCleaning()">도착 후 정리하기</button></div></div>`;
+}
+
+function renderCleaning(){
+  showScreen('cleaning');
+  setStage('도착 후 청소', '쓰레기와 분실물을 정리해요');
+  const lost = ['모자','인형','책','물병','휴대폰'];
+  state.cleanItems = [];
+  const count = state.currentFlight.id==='jeju'?8:state.currentFlight.id==='busan'?11:14;
+  for(let i=0;i<count;i++){
+    const type = i%4===0?'분실물': i%3===0?'화장실 점검': i%2===0?'좌석 정리':'쓰레기';
+    const icon = type==='분실물'?'🧢':type==='화장실 점검'?'🚻':type==='좌석 정리'?'💺':'🗑️';
+    state.cleanItems.push({id:i, type, name:type==='분실물'?rand(lost):type, icon, done:false});
+  }
+  renderCleaningScreen();
+  startTimer(60,()=>{adjustScore('time',-5); adjustScore('service',-3); toast('청소 시간이 길어졌어요.');});
+}
+function renderCleaningScreen(){
+  const left = state.cleanItems.filter(x=>!x.done).length;
+  screen.innerHTML = `<div class="screenWrap"><div class="card"><h2>기내 정리</h2><p>남은 정리: ${left}개</p><div class="cleanGrid">${state.cleanItems.map(c=>`<div class="cleanItem ${c.done?'done':''}" onclick="cleanOne(${c.id})"><div style="font-size:34px">${c.done?'✅':c.icon}</div><div>${c.name}</div>${c.type==='분실물'&&!c.done?'<small>추가 코인</small>':''}</div>`).join('')}</div><div class="row" style="margin-top:12px"><button class="primary" ${left===0?'':'disabled'} onclick="finishFlight()">비행 결과 보기</button></div></div></div>`;
+}
+function cleanOne(id){
+  const c = state.cleanItems.find(x=>x.id===id); if(!c||c.done) return;
+  c.done=true; adjustScore('service', state.upgrades.gloves?4:3);
+  if(c.type==='분실물'){state.bonusCoins+=25; adjustScore('kindness',3); toast(`${c.name}을 찾아 보관했어요!`);} else toast(`${c.name} 완료!`);
+  if(state.cleanItems.every(x=>x.done)){clearTimer(); adjustScore('time',3);}
+  renderCleaningScreen();
+}
+
+function finishFlight(){
+  clearTimer();
+  clearServicePressure();
+  const avg = Math.round((state.scores.safety + state.scores.service + state.scores.kindness + state.scores.time)/4);
+  const failed = avg < 55 || (state.mistakes||0) >= 9 || state.scores.safety < 45;
+  let base = 180 + state.passengers.length*22 + avg*3;
+  const vlogger = state.passengers.filter(p=>p.type==='vlogger').length;
+  const tip = vlogger ? (avg>=85?120:avg>=65?45:0)*vlogger : 0;
+  let earned = Math.round(base + state.bonusCoins + tip - (state.mistakes||0)*28);
+  let xpGain = Math.round(45 + avg/2 + state.passengers.length*3 - (state.mistakes||0)*3);
+  if(failed){
+    earned = Math.max(20, Math.round(earned*.35));
+    xpGain = Math.max(10, Math.round(xpGain*.45));
+  }else{
+    earned = Math.max(80, earned);
+    xpGain = Math.max(25, xpGain);
+  }
+  state.coins += earned; state.xp += xpGain; state.totalFlights++;
+  let levelUps = 0;
+  while(state.xp >= xpNeed(state.level)){state.xp -= xpNeed(state.level); state.level++; levelUps++;}
+  const totalScore = avg;
+  state.bestScore = Math.max(state.bestScore, totalScore);
+  unlockByLevel();
+  state.flightResult = {avg, earned, xpGain, levelUps, tip, failed, mistakes:state.mistakes||0, stars:stars(avg, failed), praise:praise(avg, failed), improve:improveText()};
+  saveGame();
+  renderResults();
+}
+
+function xpNeed(lv){return 100 + lv*45;}
+function unlockByLevel(){
+  if(state.level>=3) state.unlockedPlanes.small = true;
+  if(state.level>=6) state.unlockedPlanes.medium = true;
+}
+function stars(avg, failed=false){const full = failed ? 1 : Math.max(1, Math.min(5, Math.round(avg/20))); return '★'.repeat(full)+'☆'.repeat(5-full);}
+function praise(avg, failed=false){
+  if(failed) return '재훈련이 필요한 비행이었어요. 다음에는 판단과 동선을 더 신중히 해봐요.';
+  if(avg>=95) return '완벽한 비행이었어요! 승객들이 매우 만족했어요.';
+  if(avg>=85) return '승객을 차분하고 친절하게 도왔어요!';
+  if(avg>=70) return '끝까지 책임감 있게 비행을 마쳤어요.';
+  return '아슬아슬하게 마쳤어요. 실수를 줄이면 보상이 크게 올라가요.';
+}
+function improveText(){
+  const s=state.scores; const min = Object.keys(s).sort((a,b)=>s[a]-s[b])[0];
+  return {safety:'다음에는 안전 점검을 조금 더 꼼꼼히 해봐요.', service:'다음에는 주문 물품을 더 정확히 준비해봐요.', kindness:'다음에는 더 친절한 말로 승객을 안심시켜봐요.', time:'다음에는 조금 더 빠르게 이동하고 정리해봐요.'}[min];
+}
+function renderResults(){
+  showScreen('results');
+  const r = state.flightResult;
+  setStage('비행 결과', '보상을 받고 업그레이드할 수 있어요');
+  screen.innerHTML = `<div class="screenWrap centerScreen"><div class="card" style="max-width:760px;width:100%;text-align:center"><div class="resultBig">${r.failed?'재훈련 비행 결과':'오늘의 비행 결과'}</div><div class="star">${r.stars}</div><div class="notice ${r.failed?'hardNotice':''}">${r.failed?'안전/서비스 실수가 많아 보상이 크게 줄었습니다.':'좋은 비행일수록 보상과 팁이 커집니다.'}</div><div class="grid cards" style="margin-top:12px;text-align:left"><div class="card"><h3>점수</h3><p>안전 점수: <b>${state.scores.safety}점</b></p><p>서비스 점수: <b>${state.scores.service}점</b></p><p>친절 점수: <b>${state.scores.kindness}점</b></p><p>시간 점수: <b>${state.scores.time}점</b></p><p>누적 실수: <b>${r.mistakes}회</b></p></div><div class="card"><h3>보상</h3><p>획득 코인: <b>${r.earned}코인</b></p><p>경험치: <b>${r.xpGain}XP</b></p><p>브이로거 팁: <b>${r.tip}코인</b></p><p>현재 코인: <b>${state.coins}코인</b></p>${r.levelUps?`<p class="notice">레벨이 ${r.levelUps} 올랐어요! 현재 Lv.${state.level}</p>`:''}</div></div><div class="notice">오늘의 칭찬: “${r.praise}”<br>개선할 점: ${r.improve}</div><div class="row"><button class="blue" onclick="renderUpgrades()">업그레이드 하기</button><button class="primary" onclick="renderFlightSelect()">다음 비행 선택</button></div></div></div>`;
+}
+
+function renderUpgrades(){
+  showScreen('upgrades');
+  setStage('업그레이드', '코인으로 장비와 기체를 해금해요');
+  const upCards = UPGRADE_LIST.map(u=>`<div class="card"><h3>${u.icon} ${u.name}</h3><p>${u.desc}</p><p><b>${u.cost}코인</b></p>${state.upgrades[u.id]?'<button disabled>구입 완료</button>':`<button class="primary" onclick="buyUpgrade('${u.id}')">구입</button>`}</div>`).join('');
+  const planeCards = Object.keys(PLANES).map(id=>{
+    const p=PLANES[id]; const unlocked=state.unlockedPlanes[id]; const cost=p.cost||0;
+    return `<div class="card"><h3>✈️ ${p.name}</h3><p>${p.desc}</p>${unlocked?'<button disabled>해금 완료</button>':`<p><b>${cost}코인</b></p><button class="blue" onclick="buyPlane('${id}')">기체 해금</button>`}</div>`;
+  }).join('');
+  screen.innerHTML = `<div class="screenWrap"><div class="row" style="justify-content:space-between;margin-bottom:10px"><button onclick="renderFlightSelect()">← 비행 선택</button><button onclick="renderHome()">시작 화면</button></div><div class="notice">현재 코인 ${state.coins} · 레벨 ${state.level} · 경험치 ${state.xp}/${xpNeed(state.level)}</div><h2>장비 업그레이드</h2><div class="grid cards">${upCards}</div><h2>비행기 해금</h2><div class="grid cards">${planeCards}</div></div>`;
+}
+function buyUpgrade(id){
+  const u = UPGRADE_LIST.find(x=>x.id===id); if(!u) return;
+  if(state.upgrades[id]){toast('이미 구입했어요.'); return;}
+  if(state.coins < u.cost){toast('코인이 부족해요.'); return;}
+  state.coins -= u.cost; state.upgrades[id]=true; saveGame(); toast(`${u.name} 구입 완료!`); renderUpgrades();
+}
+function buyPlane(id){
+  const p = PLANES[id]; if(!p || state.unlockedPlanes[id]) return;
+  if(state.coins < p.cost){toast('코인이 부족해요.'); return;}
+  state.coins -= p.cost; state.unlockedPlanes[id]=true; saveGame(); toast(`${p.name} 해금 완료!`); renderUpgrades();
+}
+
+window.addEventListener('keydown', e=>{keys[e.key]=true; keys[e.key.toLowerCase()]=true; if(currentScreen==='service' && (e.key===' '||e.key==='Enter'||e.key.toLowerCase()==='e')){e.preventDefault();} if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();});
+window.addEventListener('keyup', e=>{keys[e.key]=false; keys[e.key.toLowerCase()]=false;});
+mobileControls.addEventListener('pointerdown', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const d=b.dataset.dir; if(d==='up') keys.ArrowUp=true; if(d==='down') keys.ArrowDown=true; if(d==='left') keys.ArrowLeft=true; if(d==='right') keys.ArrowRight=true;
+});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>mobileControls.addEventListener(ev,()=>{keys.ArrowUp=keys.ArrowDown=keys.ArrowLeft=keys.ArrowRight=false;}));
+
+
+function createClickSpark(x,y){
+  const s=document.createElement('span');
+  s.className='clickSpark';
+  s.style.left=(x-5)+'px';
+  s.style.top=(y-5)+'px';
+  document.body.appendChild(s);
+  setTimeout(()=>s.remove(),520);
+}
+document.addEventListener('pointerdown', e=>{
+  if(e.pointerType==='mouse' && e.button!==0) return;
+  const target=e.target.closest('button,.seat,.mapSeat,.ticket,.passengerCard,.cleanItem,.gate,.itemLine,.demoCard,.soundBtn');
+  if(target){ initAudio(); playSfx('click'); createClickSpark(e.clientX,e.clientY); }
+}, {passive:true});
+
+loadGame();
+renderHome();
+</script>
+</body>
+</html>

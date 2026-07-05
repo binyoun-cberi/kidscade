@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥪 우주 샌드위치 가게 - 도형의 넓이</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #0b1026; /* 심우주 배경 */
+            color: #fff;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 우주 배경 별 반짝임 효과 */
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, rgba(123,223,242,0.8), rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 50px 160px, rgba(255,209,102,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, rgba(123,223,242,0.8), rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 160px 120px, rgba(255,209,102,0.8), rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 4s infinite;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+
+        /* 외계인 애니메이션 (패널 내부용) */
+        .alien-container {
+            transition: all 0.5s ease-in-out;
+        }
+        
+        @keyframes popInAlien {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes flyOutSuccess {
+            from { transform: translateY(0) scale(1); opacity: 1; }
+            to { transform: translateY(-100px) scale(0.5); opacity: 0; }
+        }
+        @keyframes shakeOutFail {
+            0% { transform: translateX(0); opacity: 1; }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); opacity: 0.5; }
+            80% { transform: translateX(10px); }
+            100% { transform: translateX(0) scale(0.8); opacity: 0; }
+        }
+
+        .alien-enter { animation: popInAlien 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .alien-exit-success { animation: flyOutSuccess 0.6s forwards; }
+        .alien-exit-fail { animation: shakeOutFail 0.6s forwards; }
+
+        /* 말풍선 꼬리 (위쪽 방향) */
+        .speech-bubble-up::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            border-width: 0 12px 12px;
+            border-style: solid;
+            border-color: transparent transparent white transparent;
+            transform: translateX(-50%);
+        }
+
+        /* 스크롤바 커스텀 */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        /* 모달 팝업 애니메이션 */
+        .modal-pop {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .fraction { color: #ffd166; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col relative select-none">
+    <div class="stars"></div>
+
+    <!-- MAIN MENU -->
+    <div id="screen-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <h1 class="text-6xl text-yellow-400 mb-4 text-center drop-shadow-[0_0_15px_#f59e0b]">🥪 우주 샌드위치 가게 🛸</h1>
+        <p class="text-xl mb-8 text-gray-300 max-w-lg text-center leading-relaxed">
+            외계 손님들은 정확한 넓이의 샌드위치를 원합니다!<br>
+            도형의 넓이를 계산하고 재료를 올려 판매하세요.
+        </p>
+        <div class="bg-gray-800 p-6 rounded-xl border-2 border-yellow-500 mb-8 text-center w-80 shadow-[0_0_20px_rgba(255,209,102,0.2)]">
+            <h2 class="text-2xl text-yellow-400 mb-2">가게 금고</h2>
+            <p class="text-4xl text-green-400 font-bold mb-2"><span id="menu-money">0</span> ₩</p>
+            <p class="text-lg text-gray-400">현재 Day: <span id="menu-day" class="text-white">1</span></p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="startGame()" class="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all transform hover:scale-105 active:scale-95">
+                영업 시작 (Day <span id="btn-day">1</span>)
+            </button>
+            <button onclick="showShop()" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all transform hover:scale-105 active:scale-95">
+                🛒 재료 상점
+            </button>
+        </div>
+        <button onclick="openResetModal()" class="mt-10 px-6 py-2 bg-red-900/80 hover:bg-red-700 text-gray-300 rounded-full text-sm transition-all border border-red-700">
+            🔄 데이터 초기화
+        </button>
+    </div>
+
+    <!-- SHOP SCREEN -->
+    <div id="screen-shop" class="absolute inset-0 z-50 hidden flex-col items-center justify-start py-10 bg-[#0b1026]/95 backdrop-blur-md overflow-y-auto custom-scrollbar">
+        <div class="w-full max-w-4xl px-4">
+            <div class="flex justify-between items-center mb-8 border-b-2 border-gray-700 pb-4">
+                <h1 class="text-4xl md:text-5xl text-purple-400 font-bold">🛒 우주 식자재 마트</h1>
+                <div class="text-right">
+                    <p class="text-lg md:text-xl text-gray-300">보유 금액</p>
+                    <p class="text-2xl md:text-3xl text-green-400 font-bold"><span id="shop-money">0</span> ₩</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="shop-items">
+                <!-- Shop items injected via JS -->
+            </div>
+            <div class="mt-10 text-center pb-10">
+                <button onclick="hideShop()" class="px-10 py-3 bg-gray-600 hover:bg-gray-500 text-white text-xl rounded-full transition-all">
+                    가게로 돌아가기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="flex-1 flex flex-col hidden h-full">
+        <!-- Top HUD -->
+        <div class="h-16 bg-[#0e142e] border-b border-gray-700/80 flex justify-between items-center px-4 md:px-8 shrink-0 z-30 shadow-md">
+            <div class="flex items-center gap-4">
+                <div class="text-xl md:text-2xl text-yellow-400 font-bold">DAY <span id="hud-day">1</span></div>
+                <div class="bg-gray-800/80 rounded-full px-3 md:px-4 py-1 flex items-center gap-2 border border-gray-600 shadow-inner">
+                    <span>⏱️</span>
+                    <span id="hud-time" class="text-lg md:text-xl w-12 text-center text-yellow-400">02:00</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="bg-gray-800/80 rounded-full px-3 md:px-4 py-1 flex items-center gap-2 border border-gray-600 shadow-inner" title="클레임 방어권">
+                    <span>🛡️</span>
+                    <span id="hud-shields" class="text-lg md:text-xl text-blue-300">0</span>
+                </div>
+                <div class="text-2xl md:text-3xl text-green-400 font-bold tracking-wider">
+                    <span id="hud-money">0</span> ₩
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            
+            <!-- Left: Canvas Area (Workspace) -->
+            <div class="flex-1 p-4 lg:p-8 flex flex-col items-center justify-center relative overflow-y-auto custom-scrollbar">
+                
+                <!-- 컨트롤 상단 (모눈 & 단위) -->
+                <div class="flex w-full max-w-[600px] justify-between mb-4 text-sm md:text-base text-gray-200 bg-gray-800/80 px-5 py-3 rounded-2xl border border-gray-600 shadow-lg backdrop-blur-sm">
+                    <div class="flex gap-2 items-center">
+                        <label class="font-bold">모눈 크기:</label>
+                        <select id="gridSize" class="bg-gray-900 text-white rounded-lg px-2 py-1 border border-gray-600 focus:outline-none focus:border-yellow-400 transition-colors cursor-pointer">
+                            <option value="6">6 × 6</option>
+                            <option value="8">8 × 8</option>
+                            <option value="10">10 × 10</option>
+                            <option value="12" selected>12 × 12</option>
+                            <option value="15">15 × 15</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <label class="font-bold">단위 설정:</label>
+                        <select id="unitSelect" class="bg-gray-900 text-yellow-300 font-bold rounded-lg px-2 py-1 border border-gray-600 focus:outline-none focus:border-yellow-400 transition-colors cursor-pointer">
+                            <option value="cm²">cm²</option>
+                            <option value="m²">m²</option>
+                            <option value="km²">km²</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 캔버스 본체 -->
+                <canvas id="board" width="600" height="600" class="w-full max-w-[600px] max-h-[60vh] object-contain aspect-square bg-[#101735] border-[3px] border-cyan-500/50 rounded-3xl shadow-[0_0_40px_rgba(123,223,242,0.15)] cursor-crosshair touch-none"></canvas>
+
+                <!-- 컨트롤 하단 (취소/지우기 & 현재 넓이) -->
+                <div class="flex flex-col sm:flex-row w-full max-w-[600px] justify-between items-center mt-5 gap-4">
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <button onclick="undoPoint()" class="flex-1 sm:flex-none px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-bold shadow-lg transition-colors border border-gray-600 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg> 취소
+                        </button>
+                        <button onclick="clearBoard()" class="flex-1 sm:flex-none px-6 py-3 bg-red-900/80 hover:bg-red-800 rounded-xl text-white font-bold shadow-lg transition-colors border border-red-700 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg> 지우기
+                        </button>
+                    </div>
+                    <div class="w-full sm:w-auto text-xl font-bold bg-gray-900/80 px-6 py-3 rounded-xl border border-cyan-500/30 shadow-lg text-center flex justify-center items-center">
+                        <span class="text-gray-400 text-lg mr-3">현재 넓이:</span>
+                        <span id="areaNow" class="text-cyan-300 text-2xl">0 cm²</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Control Panel (Customer, Inventory, Action) -->
+            <div class="w-full md:w-[360px] lg:w-[420px] bg-[#171d3a] border-t-4 md:border-t-0 md:border-l-4 border-yellow-500 flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.3)] shrink-0 h-full">
+                
+                <!-- Customer Area -->
+                <div class="p-5 border-b border-gray-700/50 bg-gray-900/40 shrink-0">
+                    <div id="alien-wrapper" class="alien-container flex flex-col items-center relative w-full">
+                        <div id="alien-emoji" class="text-6xl md:text-7xl drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] mb-3 z-10">👽</div>
+                        <div class="bg-white text-black p-4 rounded-2xl relative speech-bubble-up w-full text-center shadow-lg text-lg lg:text-xl font-bold z-20 leading-snug break-keep" id="order-text">
+                            주문 대기 중...
+                        </div>
+                    </div>
+                    
+                    <!-- Formula Helper -->
+                    <div class="mt-5 bg-black/50 p-3 rounded-xl border border-gray-700/50 text-sm text-gray-300 flex flex-col gap-1 shadow-inner">
+                        <p>■ <b>사각형 넓이</b>: 가로 × 세로</p>
+                        <p>▲ <b>삼각형 넓이</b>: 밑변 × 높이 ÷ 2</p>
+                    </div>
+                </div>
+
+                <!-- Inventory -->
+                <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
+                    <h3 class="text-yellow-400 mb-4 text-lg font-bold border-b border-gray-700 pb-2 flex justify-between items-center">
+                        <span>🥪 샌드위치 재료</span>
+                        <span class="text-gray-400 text-sm font-normal">클릭하여 선택</span>
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3" id="topping-selector">
+                        <!-- Toppings injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Serve Action -->
+                <div class="p-5 bg-gray-900/90 border-t border-gray-700 shrink-0">
+                    <button onclick="serveSandwich()" class="w-full py-4 bg-green-500 hover:bg-green-400 rounded-xl text-black font-bold text-2xl shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-transform active:scale-95 flex justify-center items-center gap-2">
+                        🛎️ 서빙하기!
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals (Day End, Reset) -->
+    <div id="modal-day-end" class="absolute inset-0 z-[100] hidden flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div class="bg-[#171d3a] border-4 border-yellow-500 p-8 rounded-3xl text-center max-w-md w-full modal-pop shadow-[0_0_50px_rgba(250,204,21,0.2)]">
+            <h2 class="text-4xl text-yellow-400 mb-4 font-bold">영업 종료!</h2>
+            <p class="text-xl mb-6 text-gray-300">오늘 하루 수고하셨습니다.</p>
+            <div class="bg-gray-900 p-5 rounded-2xl mb-6 text-left border border-gray-700 shadow-inner">
+                <p class="flex justify-between text-xl mb-3 text-gray-300">오늘 번 돈: <span id="summary-earned" class="text-green-400 font-bold">0 ₩</span></p>
+                <p class="flex justify-between text-xl text-gray-300 border-t border-gray-700 pt-3">총 자산: <span id="summary-total" class="text-yellow-400 font-bold">0 ₩</span></p>
+            </div>
+            <button onclick="closeDayEnd()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-xl font-bold transition-transform active:scale-95 shadow-lg">
+                상점 들르기 🛒
+            </button>
+        </div>
+    </div>
+
+    <div id="modal-reset-confirm" class="absolute inset-0 z-[120] hidden flex items-center justify-center bg-black/85 backdrop-blur-sm">
+        <div class="bg-gray-800 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop shadow-2xl">
+            <h2 class="text-3xl text-red-500 mb-3 font-bold">⚠️ 데이터 초기화</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                모든 돈과 Day, 재고가 초기화됩니다.<br>정말로 처음부터 다시 시작할까요?
+            </p>
+            <div class="flex gap-4">
+                <button onclick="closeResetModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold transition-colors">취소</button>
+                <button onclick="confirmReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-[0_0_15px_rgba(220,38,38,0.5)]">초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Message -->
+    <div id="alert-message" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 opacity-0 pointer-events-none shadow-2xl text-center min-w-[300px]">
+        Message
+    </div>
+
+    <script>
+        // --- 1. Audio System (Web Audio API Synthesizer) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sfx = {
+            click: () => playTone(520, 'square', 0.05, 0.03),
+            point: () => playTone(800, 'sine', 0.08, 0.05),
+            success: () => {
+                playTone(523.25, 'sine', 0.1, 0.05); // C
+                setTimeout(() => playTone(659.25, 'sine', 0.1, 0.05), 100); // E
+                setTimeout(() => playTone(783.99, 'sine', 0.3, 0.08), 200); // G
+            },
+            fail: () => {
+                playTone(200, 'sawtooth', 0.2, 0.05);
+                setTimeout(() => playTone(150, 'sawtooth', 0.3, 0.05), 150);
+            },
+            coin: () => {
+                playTone(1200, 'sine', 0.1, 0.05);
+                setTimeout(() => playTone(1600, 'sine', 0.2, 0.05), 50);
+            },
+            shield: () => {
+                playTone(400, 'square', 0.1, 0.05);
+                setTimeout(() => playTone(600, 'square', 0.2, 0.05), 100);
+            }
+        };
+
+        // --- 2. Game Data & State ---
+        const INGREDIENTS = {
+            jam: { id: 'jam', name: '기본 딸기잼', color: '#fb7185', price: 0, packSize: '무한', minDay: 1, emoji: '🍓', infinite: true }, 
+            cheese: { id: 'cheese', name: '외계 치즈', color: '#fef08a', price: 2000, packSize: 10, minDay: 1, emoji: '🧀', infinite: false },
+            ham: { id: 'ham', name: '우주 햄', color: '#fca5a5', price: 3000, packSize: 10, minDay: 2, emoji: '🥓', infinite: false },
+            egg: { id: 'egg', name: '별빛 계란', color: '#fde047', price: 4000, packSize: 10, minDay: 3, emoji: '🍳', infinite: false },
+            lettuce: { id: 'lettuce', name: '은하수 양상추', color: '#86efac', price: 5000, packSize: 10, minDay: 4, emoji: '🥬', infinite: false },
+            steak: { id: 'steak', name: '운석 스테이크', color: '#78350f', price: 8000, packSize: 10, minDay: 5, emoji: '🥩', infinite: false }
+        };
+
+        const SHIELD_PRICE = 5000;
+        const BASE_REWARD = 1000;
+        const DAY_DURATION_SEC = 120; // 2분
+        const ALIENS = ['👽', '👾', '🤖', '🛸', '👻', '🐙'];
+        const UNITS = ["cm²", "m²", "km²"];
+        const AREA_POOL = {
+            rect: [4,6,8,9,10,12,15,16,18,20,24,25,30,36,40,42,48,50,60,64,72,80,100],
+            tri: [3,4,5,6,8,9,10,12,15,16,18,20,24,25,30,32,36,40,48,50,60]
+        };
+
+        let state = {
+            money: 0,
+            day: 1,
+            shields: 0,
+            inventory: {}, 
+            
+            // In-game
+            timeRemaining: 0,
+            timerInterval: null,
+            order: null, // { shape: 'rect'|'tri', area: 12, unit: 'cm²', topping: 'jam', reward: 0 }
+            dayEarned: 0,
+            
+            // Canvas state
+            points: [],
+            selectedTopping: 'jam'
+        };
+
+        // --- 3. Save/Load & Utils ---
+        function saveData() {
+            localStorage.setItem('alienSandwichSave2', JSON.stringify({
+                money: state.money,
+                day: state.day,
+                shields: state.shields,
+                inventory: state.inventory
+            }));
+            updateMenuUI();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('alienSandwichSave2');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.money = data.money || 0;
+                    state.day = data.day || 1;
+                    state.shields = data.shields || 0;
+                    state.inventory = data.inventory || {};
+                } catch(e) {}
+            }
+            // Initialize missing inventory
+            for(let key in INGREDIENTS) {
+                if(!INGREDIENTS[key].infinite && state.inventory[key] === undefined) {
+                    state.inventory[key] = 0;
+                }
+            }
+            updateMenuUI();
+        }
+
+        function formatMoney(amount) { return amount.toLocaleString('ko-KR'); }
+
+        function showMessage(msg, type='info') {
+            const el = document.getElementById('alert-message');
+            el.innerHTML = msg;
+            if(type === 'success') { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-green-500 text-white min-w-[300px] text-center"; }
+            else if(type === 'error') { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-red-600 text-white min-w-[300px] text-center"; }
+            else { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 shadow-2xl bg-blue-500 text-white min-w-[300px] text-center"; }
+            
+            el.style.opacity = '1';
+            el.style.transform = 'translate(-50%, 0) scale(1.1)';
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translate(-50%, -20px) scale(1)';
+            }, 2000);
+        }
+
+        function updateMenuUI() {
+            document.getElementById('menu-money').textContent = formatMoney(state.money);
+            document.getElementById('menu-day').textContent = state.day;
+            document.getElementById('btn-day').textContent = state.day;
+            document.getElementById('shop-money').textContent = formatMoney(state.money);
+        }
+
+        function updateGameHUD() {
+            document.getElementById('hud-money').textContent = formatMoney(state.money);
+            document.getElementById('hud-shields').textContent = state.shields;
+            document.getElementById('hud-day').textContent = state.day;
+            
+            const m = Math.floor(state.timeRemaining / 60).toString().padStart(2, '0');
+            const s = (state.timeRemaining % 60).toString().padStart(2, '0');
+            const timeEl = document.getElementById('hud-time');
+            timeEl.textContent = `${m}:${s}`;
+            if(state.timeRemaining <= 30) timeEl.classList.add('animate-pulse', 'text-red-500');
+            else timeEl.classList.remove('animate-pulse', 'text-red-500');
+        }
+
+        // --- 4. Canvas & Drawing Logic ---
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const gridSizeEl = document.getElementById('gridSize');
+        const unitSelect = document.getElementById('unitSelect');
+
+        function getCanvasPoint(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (evt.clientX - rect.left) * scaleX;
+            const y = (evt.clientY - rect.top) * scaleY;
+            
+            const n = Number(gridSizeEl.value);
+            const pad = 40;
+            const size = canvas.width - pad*2;
+            const cell = size / n;
+            
+            const gx = Math.round((x - pad) / cell);
+            const gy = Math.round((y - pad) / cell);
+            
+            if(gx < 0 || gy < 0 || gx > n || gy > n) return null;
+            return {x: gx, y: gy};
+        }
+
+        function drawGrid() {
+            const n = Number(gridSizeEl.value);
+            const pad = 40;
+            const size = canvas.width - pad*2;
+            const cell = size / n;
+
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+
+            // Background fill
+            ctx.fillStyle = "#101735";
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            // Paper area
+            ctx.fillStyle = "rgba(123,223,242,0.05)";
+            ctx.fillRect(pad, pad, size, size);
+
+            // Grid lines
+            ctx.strokeStyle = "rgba(123,223,242,0.2)";
+            ctx.lineWidth = 2;
+            for(let i=0; i<=n; i++) {
+                const p = pad + i*cell;
+                ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, pad+size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(pad+size, p); ctx.stroke();
+            }
+
+            // Draw shape
+            const pts = state.points.map(p => ({x: pad + p.x*cell, y: pad + p.y*cell}));
+            if(pts.length > 0) {
+                const toppingInfo = INGREDIENTS[state.selectedTopping];
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = toppingInfo.color;
+                
+                // rgba convert for fill
+                ctx.fillStyle = toppingInfo.color + "66"; // 40% opacity hex
+                
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+
+                // If 2 points and drawing a rect
+                if(pts.length === 2 && (!state.order || state.order.shape === 'rect')) {
+                    const w = pts[1].x - pts[0].x;
+                    const h = pts[1].y - pts[0].y;
+                    ctx.rect(pts[0].x, pts[0].y, w, h);
+                    ctx.fill(); ctx.stroke();
+                } else {
+                    // Triangle or lines
+                    for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    if(pts.length === 3) ctx.closePath();
+                    ctx.fill(); ctx.stroke();
+                }
+            }
+
+            // Draw points
+            state.points.forEach((p, idx) => {
+                const x = pad + p.x*cell, y = pad + p.y*cell;
+                ctx.beginPath();
+                ctx.fillStyle = "#fff";
+                ctx.arc(x, y, 10, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = "#000";
+                ctx.font = "bold 14px Jua";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(idx+1, x, y+2); // y+2 for visual centering
+            });
+
+            // Labels
+            ctx.fillStyle = "rgba(255,255,255,0.7)";
+            ctx.font = "20px Jua";
+            ctx.textAlign = "left";
+            ctx.fillText(`${n} × ${n} 모눈`, pad, 25);
+            ctx.textAlign = "right";
+            ctx.fillText(`1칸 = 1${unitSelect.value}`, pad+size, 25);
+        }
+
+        function calcArea() {
+            const pts = state.points;
+            if(state.order?.shape === "rect" || (!state.order && pts.length === 2)) {
+                if(pts.length < 2) return 0;
+                return Math.abs((pts[1].x - pts[0].x) * (pts[1].y - pts[0].y));
+            }
+            if(pts.length < 3) return 0;
+            const s = Math.abs(
+                pts[0].x*pts[1].y + pts[1].x*pts[2].y + pts[2].x*pts[0].y
+                - pts[1].x*pts[0].y - pts[2].x*pts[1].y - pts[0].x*pts[2].y
+            ) / 2;
+            return s;
+        }
+
+        function updateAreaText() {
+            const area = calcArea();
+            const unit = unitSelect.value;
+            let pretty = Number.isInteger(area) ? area : area.toFixed(1);
+            document.getElementById('areaNow').textContent = `${pretty} ${unit}`;
+        }
+
+        canvas.addEventListener('pointerdown', (evt) => {
+            if(!state.order) return;
+            const p = getCanvasPoint(evt);
+            if(!p) return;
+
+            const maxPoints = state.order.shape === 'rect' ? 2 : 3;
+            if(state.points.length >= maxPoints) state.points = []; // Reset if max reached
+            
+            state.points.push(p);
+            sfx.point();
+            drawGrid();
+            updateAreaText();
+        });
+
+        function undoPoint() {
+            if(state.points.length > 0) {
+                state.points.pop();
+                sfx.click();
+                drawGrid();
+                updateAreaText();
+            }
+        }
+
+        function clearBoard() {
+            state.points = [];
+            sfx.click();
+            drawGrid();
+            updateAreaText();
+        }
+
+        gridSizeEl.addEventListener('change', () => { clearBoard(); });
+        unitSelect.addEventListener('change', () => { drawGrid(); updateAreaText(); });
+
+        // --- 5. Gameplay Logic ---
+        function renderToppingSelector() {
+            const container = document.getElementById('topping-selector');
+            container.innerHTML = '';
+            
+            for(let key in INGREDIENTS) {
+                const item = INGREDIENTS[key];
+                if(item.minDay <= state.day) {
+                    const isSelected = state.selectedTopping === key;
+                    const stock = item.infinite ? '∞' : (state.inventory[key] || 0);
+                    const outOfStock = !item.infinite && stock <= 0;
+
+                    const btn = document.createElement('button');
+                    btn.className = `relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all 
+                        ${isSelected ? 'border-yellow-400 bg-gray-700 scale-105 shadow-[0_0_15px_rgba(250,204,21,0.4)]' : 'border-gray-600 bg-gray-800 hover:bg-gray-700'}
+                        ${outOfStock ? 'opacity-40 grayscale cursor-not-allowed border-red-900 bg-gray-900' : ''}`;
+                    
+                    btn.onclick = () => {
+                        if(outOfStock) {
+                            showMessage("재료가 부족합니다!", "error");
+                            sfx.fail();
+                            return;
+                        }
+                        sfx.click();
+                        state.selectedTopping = key;
+                        renderToppingSelector();
+                        drawGrid(); // Update canvas color
+                    };
+                    
+                    const badgeColor = outOfStock ? 'bg-red-600' : 'bg-blue-600';
+                    const stockHTML = `<span class="absolute -top-2 -right-2 ${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full border border-gray-800">${stock}</span>`;
+
+                    btn.innerHTML = `
+                        <div class="text-3xl drop-shadow-md mb-1">${item.emoji}</div>
+                        ${stockHTML}
+                        <span class="text-[13px] text-gray-300 font-bold whitespace-nowrap">${item.name}</span>
+                    `;
+                    container.appendChild(btn);
+                }
+            }
+        }
+
+        function generateOrder() {
+            // Find available toppings
+            const available = Object.keys(INGREDIENTS).filter(k => 
+                INGREDIENTS[k].minDay <= state.day && (INGREDIENTS[k].infinite || state.inventory[k] > 0)
+            );
+            if(available.length === 0) available.push('jam'); // Fallback
+            
+            const topping = available[Math.floor(Math.random() * available.length)];
+            const shape = Math.random() < 0.5 ? 'rect' : 'tri';
+            const areaList = AREA_POOL[shape];
+            
+            // Limit difficulty based on day
+            const maxIdx = Math.min(areaList.length - 1, 8 + state.day * 3);
+            const area = areaList[Math.floor(Math.random() * (maxIdx + 1))];
+            const unit = UNITS[Math.floor(Math.random() * UNITS.length)];
+            
+            // Reward calculation
+            const unitBonus = unit === 'km²' ? 500 : (unit === 'm²' ? 200 : 0);
+            const toppingBonus = INGREDIENTS[topping].price * 0.5; 
+            const reward = BASE_REWARD + (area * 10) + unitBonus + toppingBonus;
+
+            state.order = { shape, area, unit, topping, reward: Math.floor(reward/100)*100 };
+            
+            const shapeName = shape === 'rect' ? '사각형' : '삼각형';
+            const tColor = INGREDIENTS[topping].color;
+            const tName = INGREDIENTS[topping].name;
+
+            const texts = [
+                `넓이가 <span class="text-yellow-400 font-bold">${area} ${unit}</span>인<br><b style="color:${tColor}">${tName}</b> <b class="text-cyan-300">${shapeName}</b> 샌드위치 줘!`,
+                `배고파! <b style="color:${tColor}">${tName}</b> 넣어서<br><span class="text-yellow-400 font-bold">${area} ${unit}</span> <b class="text-cyan-300">${shapeName}</b> 모양으로 부탁해.`,
+                `<b class="text-cyan-300">${shapeName}</b> 샌드위치 주문이요.<br>넓이는 <span class="text-yellow-400 font-bold">${area} ${unit}</span>, 재료는 <b style="color:${tColor}">${tName}</b>!`,
+            ];
+
+            document.getElementById('order-text').innerHTML = texts[Math.floor(Math.random() * texts.length)];
+        }
+
+        function nextCustomer() {
+            const wrapper = document.getElementById('alien-wrapper');
+            wrapper.className = 'alien-container alien-enter flex flex-col items-center relative w-full';
+            document.getElementById('alien-emoji').textContent = ALIENS[Math.floor(Math.random()*ALIENS.length)];
+            
+            generateOrder();
+            clearBoard();
+            
+            // Auto select requested topping if available
+            if(INGREDIENTS[state.order.topping].infinite || state.inventory[state.order.topping] > 0) {
+                state.selectedTopping = state.order.topping;
+            } else {
+                state.selectedTopping = 'jam'; // fallback
+            }
+            renderToppingSelector();
+        }
+
+        function startGame() {
+            sfx.click();
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            state.timeRemaining = DAY_DURATION_SEC;
+            state.dayEarned = 0;
+            updateGameHUD();
+            
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.timeRemaining--;
+                updateGameHUD();
+                if(state.timeRemaining <= 0) endDay();
+            }, 1000);
+
+            nextCustomer();
+        }
+
+        function endDay() {
+            clearInterval(state.timerInterval);
+            sfx.success();
+            state.day++;
+            saveData();
+            
+            document.getElementById('summary-earned').textContent = formatMoney(state.dayEarned) + ' ₩';
+            document.getElementById('summary-total').textContent = formatMoney(state.money) + ' ₩';
+            document.getElementById('modal-day-end').classList.remove('hidden');
+        }
+
+        function closeDayEnd() {
+            sfx.click();
+            document.getElementById('modal-day-end').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            showShop();
+        }
+
+        function serveSandwich() {
+            if(!state.order) return;
+            const reqPoints = state.order.shape === 'rect' ? 2 : 3;
+            
+            if(state.points.length < reqPoints) {
+                showMessage(`꼭짓점 ${reqPoints}개를 찍어야 완성됩니다!`, "error");
+                sfx.fail();
+                return;
+            }
+
+            const madeArea = calcArea();
+            const unitOk = unitSelect.value === state.order.unit;
+            const areaOk = Math.abs(madeArea - state.order.area) < 0.001;
+            const toppingOk = state.selectedTopping === state.order.topping;
+
+            let errorMsg = "";
+            if(!toppingOk) errorMsg = "재료가 달라!";
+            else if(!unitOk) errorMsg = "단위가 틀렸어!";
+            else if(!areaOk) errorMsg = "넓이가 안 맞아!";
+            else if(madeArea === 0) errorMsg = "도형이 아니잖아!";
+
+            const wrapper = document.getElementById('alien-wrapper');
+
+            if(errorMsg === "") {
+                // Success
+                sfx.success();
+                sfx.coin();
+                
+                // Deduct topping
+                if(!INGREDIENTS[state.selectedTopping].infinite) {
+                    state.inventory[state.selectedTopping]--;
+                }
+
+                state.money += state.order.reward;
+                state.dayEarned += state.order.reward;
+                showMessage(`완벽해! +${formatMoney(state.order.reward)} ₩`, "success");
+                
+                wrapper.className = 'alien-container alien-exit-success flex flex-col items-center relative w-full';
+                updateGameHUD();
+                
+            } else {
+                // Fail
+                sfx.fail();
+                if(state.shields > 0) {
+                    sfx.shield();
+                    state.shields--;
+                    showMessage(`방어권 사용! (${errorMsg})`, "info");
+                } else {
+                    const penalty = Math.floor(state.order.reward / 2);
+                    state.money -= penalty;
+                    showMessage(`- ${formatMoney(penalty)} ₩... ${errorMsg}`, "error");
+                }
+                wrapper.className = 'alien-container alien-exit-fail flex flex-col items-center relative w-full';
+                updateGameHUD();
+            }
+
+            setTimeout(() => {
+                if(state.timeRemaining > 0) nextCustomer();
+            }, 600);
+        }
+
+        // --- 6. Shop System ---
+        function showShop() {
+            sfx.click();
+            updateMenuUI();
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-shop').classList.remove('hidden');
+            document.getElementById('screen-shop').classList.add('flex');
+            renderShop();
+        }
+
+        function hideShop() {
+            sfx.click();
+            document.getElementById('screen-shop').classList.add('hidden');
+            document.getElementById('screen-shop').classList.remove('flex');
+            document.getElementById('screen-menu').classList.remove('hidden');
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-items');
+            container.innerHTML = '';
+
+            // Shield
+            const shieldCard = document.createElement('div');
+            shieldCard.className = 'bg-gray-800 p-6 rounded-2xl border border-blue-500 flex justify-between items-center shadow-lg';
+            shieldCard.innerHTML = `
+                <div>
+                    <h3 class="text-2xl text-blue-400 font-bold mb-2">🛡️ 클레임 방어권</h3>
+                    <p class="text-gray-400">오답 패널티를 1회 막아줍니다.<br>(현재 보유: <span class="text-white font-bold">${state.shields}</span>개)</p>
+                </div>
+                <button onclick="buyItem('shield')" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-transform active:scale-95">
+                    ${formatMoney(SHIELD_PRICE)} ₩
+                </button>
+            `;
+            container.appendChild(shieldCard);
+
+            // Ingredients
+            for(let key in INGREDIENTS) {
+                const item = INGREDIENTS[key];
+                if(!item.infinite && item.minDay <= state.day) {
+                    const stock = state.inventory[key] || 0;
+                    const card = document.createElement('div');
+                    card.className = `bg-gray-800 p-6 rounded-2xl border border-purple-500 flex justify-between items-center shadow-lg`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center text-4xl bg-gray-700 shadow-inner" style="color:${item.color}">${item.emoji}</div>
+                            <div>
+                                <h3 class="text-2xl font-bold mb-1" style="color:${item.color}">${item.name}</h3>
+                                <p class="text-gray-400 text-sm">보유량: <span class="text-white font-bold">${stock}</span> 조각</p>
+                            </div>
+                        </div>
+                        <button onclick="buyItem('${key}')" class="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-transform active:scale-95 text-center leading-tight">
+                            ${item.packSize}조각 묶음<br><span class="text-yellow-300">${formatMoney(item.price)} ₩</span>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                }
+            }
+        }
+
+        function buyItem(id) {
+            sfx.click();
+            let price = id === 'shield' ? SHIELD_PRICE : INGREDIENTS[id].price;
+            
+            if(state.money >= price) {
+                state.money -= price;
+                sfx.coin();
+                
+                if(id === 'shield') {
+                    state.shields++;
+                    showMessage(`방어권 구매! (총 ${state.shields}개)`, 'success');
+                } else {
+                    state.inventory[id] += INGREDIENTS[id].packSize;
+                    showMessage(`${INGREDIENTS[id].name} 충전 완료!`, 'success');
+                }
+                
+                saveData();
+                renderShop();
+                document.getElementById('shop-money').textContent = formatMoney(state.money);
+            } else {
+                sfx.fail();
+                showMessage("돈이 부족합니다!", "error");
+            }
+        }
+
+        // Reset
+        function openResetModal() {
+            sfx.click();
+            document.getElementById('modal-reset-confirm').classList.remove('hidden');
+        }
+        function closeResetModal() {
+            sfx.click();
+            document.getElementById('modal-reset-confirm').classList.add('hidden');
+        }
+        function confirmReset() {
+            sfx.click();
+            localStorage.removeItem('alienSandwichSave2');
+            location.reload();
+        }
+
+        // Init
+        loadData();
+    </script>
+</body>
+</html>

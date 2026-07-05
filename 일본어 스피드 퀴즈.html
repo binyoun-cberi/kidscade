@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>일본어 문장 스피드 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #F06292; /* 일본의 벚꽃을 상징하는 핑크색 톤으로 변경 */
+            --primary-hover: #D81B60;
+            --bg-color: #FFF0F5;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --rank-bronze: #cd7f32;
+            --rank-silver: #bdc3c7;
+            --rank-gold: #f1c40f;
+            --rank-platinum: #7f8c8d;
+            --rank-diamond: #3498db;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.8s ease; 
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 95vh;
+            position: relative;
+            z-index: 10;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        /* 공통 유틸리티 */
+        .hidden { display: none !important; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+            margin-top: 5px;
+        }
+        .btn:hover { background-color: var(--primary-hover); opacity: 0.9; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .flex-row { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* 랭크 뱃지 스타일 */
+        .rank-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .rank-unranked { background: #95a5a6; }
+        .rank-bronze { background: var(--rank-bronze); }
+        .rank-silver { background: var(--rank-silver); color: #333; }
+        .rank-gold { background: var(--rank-gold); color: #333; }
+        .rank-platinum { background: var(--rank-platinum); }
+        .rank-diamond { background: var(--rank-diamond); }
+
+        .rank-result {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 설정 화면 */
+        .setting-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .setting-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+        .radio-group label {
+            flex: 1;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: normal;
+            margin: 0;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label {
+            background: #FCE4EC;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 힌트 모달 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.show {
+            opacity: 1; pointer-events: auto;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 15px; 
+            max-width: 450px; width: 90%; text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            line-height: 1.6;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content b { color: var(--primary-color); }
+        .modal-content .highlight { color: var(--danger-color); font-weight: bold; }
+
+        /* 게임 화면 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .bgm-toggle-btn {
+            background: #f9f9f9;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .bgm-toggle-btn.off {
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        .score-board {
+            background: #FCE4EC;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .timer {
+            font-size: 24px;
+            color: var(--primary-color);
+            transition: color 0.3s;
+        }
+        .timer.danger {
+            color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 콤보 효과 */
+        .combo-display {
+            font-size: 20px;
+            font-weight: 900;
+            color: #FF9800;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        .combo-display.active {
+            opacity: 1;
+            animation: combo-pop 0.3s ease-in-out forwards;
+        }
+        .combo-display.combo-high {
+            color: var(--danger-color);
+            font-size: 24px;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+        }
+        @keyframes combo-pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .question-box {
+            background: #f9f9f9;
+            padding: 30px 20px;
+            border-radius: 12px;
+            font-size: 22px; 
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            word-break: keep-all;
+            border: 1px solid #eee;
+            color: var(--primary-color);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 객관식 버튼 */
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 12px;
+        }
+        .choice-btn {
+            background: #f1f1f1;
+            border: 2px solid transparent;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: keep-all;
+            line-height: 1.4;
+            text-align: left;
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: #e2e2e2;
+        }
+        
+        .choice-btn.correct {
+            background-color: var(--success-color) !important;
+            color: white;
+            border-color: var(--success-color);
+        }
+        .choice-btn.wrong {
+            background-color: var(--danger-color) !important;
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* 결과 화면 */
+        .result-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #FDFBF7;
+            border-radius: 12px;
+            border: 1px solid #F1E5D1;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        .best-score {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+        
+        /* 오답 노트 */
+        .wrong-list {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .wrong-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .wrong-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .wrong-desc { color: var(--text-main); margin-bottom: 8px; font-weight: bold; font-size: 16px;}
+        .wrong-word { color: var(--success-color); font-weight: bold; font-size: 15px; display: block; margin-top: 4px; }
+        .user-word { color: var(--danger-color); text-decoration: line-through; font-size: 15px; display: block;}
+
+        /* ================= 방해 애니메이션(Distractions) ================= */
+        #distraction-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .distraction-entity {
+            position: absolute;
+            font-size: 50px;
+            user-select: none;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes anim-ghost { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 0.9; transform: scale(1.5); } 100% { opacity: 0; transform: scale(2); } }
+        .anim-ghost { animation: anim-ghost 3s ease-in-out forwards; }
+
+        @keyframes anim-float { 0% { transform: translateY(110vh) rotate(-10deg); } 100% { transform: translateY(-20vh) rotate(10deg); } }
+        .anim-float { top: 0; animation: anim-float 6s linear forwards; }
+
+        @keyframes anim-jump { 0% { transform: translate(-10vw, 90vh); } 20% { transform: translate(10vw, 60vh); } 40% { transform: translate(30vw, 90vh); } 60% { transform: translate(50vw, 60vh); } 80% { transform: translate(70vw, 90vh); } 100% { transform: translate(110vw, 60vh); } }
+        .anim-jump { top: 0; left: 0; animation: anim-jump 4s linear forwards; }
+
+        @keyframes anim-climb { 0% { transform: translateY(110vh) rotate(10deg); } 50% { transform: translateY(50vh) rotate(-10deg); } 100% { transform: translateY(-20vh) rotate(10deg); } }
+        .anim-climb { top: 0; animation: anim-climb 5s ease-in-out forwards; }
+
+        @keyframes anim-run-fast { 0% { transform: translateX(-20vw) scaleX(-1); } 100% { transform: translateX(120vw) scaleX(-1); } }
+        .anim-run-fast { left: 0; animation: anim-run-fast 3s linear forwards; }
+
+        @keyframes anim-fly-arc { 0% { transform: translate(-10vw, 60vh) rotate(0deg); } 50% { transform: translate(50vw, 20vh) rotate(360deg); } 100% { transform: translate(120vw, 70vh) rotate(720deg); } }
+        .anim-fly-arc { top: 0; left: 0; animation: anim-fly-arc 4s linear forwards; }
+
+        @keyframes anim-jump-catch { 0% { transform: translate(-20vw, 90vh) scaleX(-1); } 50% { transform: translate(45vw, 30vh) scaleX(-1); } 100% { transform: translate(110vw, 90vh) scaleX(-1); } }
+        .anim-jump-catch { top: 0; left: 0; animation: anim-jump-catch 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        @keyframes anim-erratic { 0% { transform: translate(-10vw, 50vh); } 25% { transform: translate(30vw, 10vh); } 50% { transform: translate(60vw, 80vh); } 75% { transform: translate(80vw, 20vh); } 100% { transform: translate(110vw, 50vh); } }
+        .anim-erratic { top: 0; left: 0; font-size: 30px; animation: anim-erratic 5s linear forwards; }
+
+        @keyframes anim-spaceship { 0% { transform: translate(-20vw, 20vh) scale(0.5); } 25% { transform: translate(30vw, 5vh) scale(1.5) rotate(15deg); } 50% { transform: translate(80vw, 40vh) scale(2) rotate(-15deg); } 75% { transform: translate(30vw, 80vh) scale(1) rotate(20deg); } 100% { transform: translate(-20vw, 20vh) scale(0.5); } }
+        .anim-spaceship { top: 0; left: 0; font-size: 60px; animation: anim-spaceship 6s ease-in-out forwards; }
+    </style>
+</head>
+<body>
+
+<div id="distraction-layer"></div>
+
+<!-- 개념 설명 힌트 모달 -->
+<div id="hint-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>💡 일본어 문장 핵심 꿀팁!</h3>
+        <p><b>1. 일본어의 기본 어순은 우리말과 같아요!</b><br>
+        <span class="highlight">'주어 + 목적어 + 동사'</span> 순서라 해석하기 아주 쉽답니다.<br>
+        <i>예: 私は(나는) + ご飯を(밥을) + 食べます(먹습니다).</i></p>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+        <p><b>2. 히라가나, 가타카나, 한자가 섞여 있어요!</b><br>
+        일본어는 3가지 문자를 함께 씁니다. 모르는 한자가 나와도 당황하지 마세요.<br>
+        <i>예: 私は(한자+히라가나) テレビ(가타카나)を 見ます(한자+히라가나).</i></p>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+        <p><b>3. 괄호 안의 한국어 발음을 보며 소리 내어 읽어보세요!</b><br>
+        눈으로만 보지 않고 입으로 말하면 훨씬 빨리 외워집니다.</p>
+        <button class="btn" style="margin-top: 15px;" onclick="closeHint()">확인했어요!</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1>일본어 문장 스피드 퀴즈</h1>
+        <p style="color: var(--text-muted); margin-bottom: 10px;">기초부터 실전까지! 일본어 필수 문장 500개 정복!</p>
+        
+        <button class="btn" style="background-color: #f39c12; margin-bottom: 20px; font-size: 14px;" onclick="openHint()">💡 일본어 문장 핵심 꿀팁 보기</button>
+
+        <div id="my-rank-display" class="rank-badge rank-unranked">현재 랭크: 언랭크</div>
+        
+        <div class="setting-group" style="margin-top: 5px;">
+            <label>제한 시간 (1문제 당)</label>
+            <div class="radio-group">
+                <input type="radio" id="time15" name="timeSetting" value="15">
+                <label for="time15">15초</label>
+                <input type="radio" id="time30" name="timeSetting" value="30" checked>
+                <label for="time30">30초</label>
+                <input type="radio" id="time60" name="timeSetting" value="60">
+                <label for="time60">60초</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label>문제 유형</label>
+            <div class="radio-group">
+                <input type="radio" id="typeWord" name="typeSetting" value="word" checked>
+                <label for="typeWord">일본어 보고 뜻 맞추기</label>
+                <input type="radio" id="typeDesc" name="typeSetting" value="desc">
+                <label for="typeDesc">뜻 보고 일본어 맞추기</label>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <button class="btn" style="background-color: #2ecc71; flex: 1; font-size:14px;" onclick="startGame(false, 'normal')">연습 (1판)</button>
+            <button class="btn" id="rank-btn" style="flex: 2; font-size:15px;" onclick="startGame(false, 'rank')">배치고사 시작 (5판)</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <div id="question-counter">문제 1 / 20</div>
+            <div style="display:flex; gap: 5px;">
+                <button id="bgm-toggle" class="bgm-toggle-btn" onclick="toggleBGM()">🎵 BGM ON</button>
+            </div>
+            <div id="timer-display" class="timer">30초</div>
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <div id="current-score-display" class="score-board" style="margin-bottom: 0;">현재 점수: 0점</div>
+            <div id="combo-display" class="combo-display"></div>
+        </div>
+        
+        <div id="question-text" class="question-box"></div>
+
+        <div id="choice-input-container" class="choice-grid hidden">
+            <!-- 동적 생성 -->
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen" class="hidden">
+        <h2 id="result-title">게임 종료!</h2>
+        <div class="result-box">
+            <p id="result-subtitle" style="margin: 0;">당신의 최종 점수</p>
+            <div id="final-score" class="score-display">0점</div>
+            <div id="rank-result-display" class="rank-result hidden">다이아몬드</div>
+            <div id="best-score" class="best-score">역대 최고 점수: 0점</div>
+        </div>
+
+        <!-- 오답 노트 영역 -->
+        <div class="setting-group">
+            <label style="color: var(--danger-color);">오답 노트 (틀린 문제)</label>
+            <div id="wrong-answers-list" class="wrong-list">
+                <!-- 자바스크립트로 생성됨 -->
+            </div>
+        </div>
+
+        <!-- 종료 화면에서의 설정 영역 -->
+        <div id="res-setting-group">
+            <div class="setting-group">
+                <label>제한 시간 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-time15" name="resTimeSetting" value="15">
+                    <label for="res-time15">15초</label>
+                    <input type="radio" id="res-time30" name="resTimeSetting" value="30" checked>
+                    <label for="res-time30">30초</label>
+                    <input type="radio" id="res-time60" name="resTimeSetting" value="60">
+                    <label for="res-time60">60초</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>문제 유형 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-typeWord" name="resTypeSetting" value="word" checked>
+                    <label for="res-typeWord">일본어 보고 뜻 맞추기</label>
+                    <input type="radio" id="res-typeDesc" name="resTypeSetting" value="desc">
+                    <label for="res-typeDesc">뜻 보고 일본어 맞추기</label>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <button id="res-next-round-btn" class="btn hidden" style="background-color:#9b59b6;" onclick="startNextRound()">다음 라운드 시작</button>
+            <button id="res-restart-btn" class="btn" onclick="startGame(true, currentMode)">다시 하기</button>
+            <button class="btn" onclick="goHome()" style="background-color: #999; margin-top: 0;">메인으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const safeStorage = {
+        getItem(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+        setItem(key, value) { try { localStorage.setItem(key, value); } catch(e) {} }
+    };
+
+    // 일본어 500 문장 데이터 (기초 회화, JLPT N5~N4 필수 문장)
+    const wordDictionary = [
+        // 1. 기초 인사 및 대답 (1~50)
+        {word:"はい。 (하이)", desc:"네."}, {word:"いいえ。 (이-에)", desc:"아니요."},
+        {word:"おはようございます。 (오하요- 고자이마스)", desc:"좋은 아침입니다."},
+        {word:"こんにちは。 (곤니찌와)", desc:"안녕하세요. (낮인사)"},
+        {word:"こんばんは。 (곰방와)", desc:"안녕하세요. (저녁인사)"},
+        {word:"おやすみなさい。 (오야스미나사이)", desc:"안녕히 주무세요."},
+        {word:"さようなら。 (사요-나라)", desc:"안녕히 가세요."},
+        {word:"じゃあね。 (쟈-네)", desc:"안녕(헤어질 때)."},
+        {word:"またね。 (마타네)", desc:"또 봐."},
+        {word:"また明日。 (마타 아시타)", desc:"내일 또 봐요."},
+        {word:"ありがとうございます。 (아리가토- 고자이마스)", desc:"감사합니다."},
+        {word:"どういたしまして。 (도-이타시마시테)", desc:"천만에요."},
+        {word:"すみません。 (스미마센)", desc:"죄송합니다. / 저기요."},
+        {word:"ごめんなさい。 (고멘나사이)", desc:"미안합니다."},
+        {word:"いただきます。 (이타다키마스)", desc:"잘 먹겠습니다."},
+        {word:"ごちそうさまでした。 (고치소-사마데시타)", desc:"잘 먹었습니다."},
+        {word:"いってきます。 (잇테키마스)", desc:"다녀오겠습니다."},
+        {word:"いってらっしゃい。 (잇테랏샤이)", desc:"다녀오세요."},
+        {word:"ただいま。 (타다이마)", desc:"다녀왔습니다."},
+        {word:"おかえりなさい。 (오카에리나사이)", desc:"다녀오셨어요."},
+        {word:"はじめまして。 (하지메마시테)", desc:"처음 뵙겠습니다."},
+        {word:"よろしくお願いします。 (요로시쿠 오네가이시마스)", desc:"잘 부탁드립니다."},
+        {word:"お元気ですか？ (오겐키데스카?)", desc:"잘 지내세요?"},
+        {word:"はい、元気です。 (하이, 겐키데스)", desc:"네, 잘 지냅니다."},
+        {word:"お久しぶりです。 (오히사시부리데스)", desc:"오랜만입니다."},
+        {word:"おめでとうございます。 (오메데토- 고자이마스)", desc:"축하합니다."},
+        {word:"お誕生日おめでとう。 (오탄조-비 오메데토-)", desc:"생일 축하해."},
+        {word:"あけましておめでとうございます。 (아케마시테 오메데토- 고자이마스)", desc:"새해 복 많이 받으세요."},
+        {word:"乾杯！ (칸파이!)", desc:"건배!"},
+        {word:"気をつけて。 (키오 츠케테)", desc:"조심해."},
+        {word:"お大事に。 (오다이지니)", desc:"몸조심하세요. (환자에게)"},
+        {word:"お疲れ様でした。 (오츠카레사마데시타)", desc:"수고하셨습니다."},
+        {word:"ようこそ。 (요-코소)", desc:"환영합니다."},
+        {word:"いらっしゃいませ。 (이랏샤이마세)", desc:"어서 오세요."},
+        {word:"お願いします。 (오네가이시마스)", desc:"부탁합니다."},
+        {word:"ちょっと待ってください。 (춋토 맛테 쿠다사이)", desc:"잠시만 기다려 주세요."},
+        {word:"待って。 (맛테)", desc:"기다려."},
+        {word:"大丈夫ですか？ (다이조-부데스카?)", desc:"괜찮으세요?"},
+        {word:"大丈夫です。 (다이조-부데스)", desc:"괜찮습니다."},
+        {word:"もちろんです。 (모치론데스)", desc:"물론입니다."},
+        {word:"本当ですか？ (혼토-데스카?)", desc:"정말입니까?"},
+        {word:"本当です。 (혼토-데스)", desc:"정말입니다."},
+        {word:"うそでしょ。 (우소데쇼)", desc:"거짓말이지요."},
+        {word:"わかりました。 (와카리마시타)", desc:"알겠습니다."},
+        {word:"わかりません。 (와카리마센)", desc:"모르겠습니다."},
+        {word:"知りません。 (시리마센)", desc:"모릅니다."},
+        {word:"知っています。 (싯테이마스)", desc:"알고 있습니다."},
+        {word:"もう一度お願いします。 (모- 이치도 오네가이시마스)", desc:"다시 한 번 부탁드립니다."},
+        {word:"ゆっくりお願いします。 (윳쿠리 오네가이시마스)", desc:"천천히 부탁드립니다."},
+        {word:"いいですよ。 (이-데스요)", desc:"좋아요."},
+
+        // 2. 자기소개 및 신상 (51~100)
+        {word:"私は韓国人です。 (와타시와 칸코쿠진데스)", desc:"나는 한국인입니다."},
+        {word:"私は学生です。 (와타시와 가쿠세-데스)", desc:"나는 학생입니다."},
+        {word:"会社員です。 (카이샤인데스)", desc:"회사원입니다."},
+        {word:"先生です。 (센세-데스)", desc:"선생님입니다."},
+        {word:"お名前は何ですか？ (오나마에와 난데스카?)", desc:"이름이 무엇입니까?"},
+        {word:"私の名前はキムです。 (와타시노 나마에와 키무데스)", desc:"제 이름은 김입니다."},
+        {word:"何歳ですか？ (난사이데스카?)", desc:"몇 살입니까?"},
+        {word:"私は二十歳です。 (와타시와 하타치데스)", desc:"나는 스무 살입니다."},
+        {word:"出身はどこですか？ (슛신와 도코데스카?)", desc:"출신은 어디입니까?"},
+        {word:"ソウルから来ました。 (소우루카라 키마시타)", desc:"서울에서 왔습니다."},
+        {word:"趣味は何ですか？ (슈미와 난데스카?)", desc:"취미가 무엇입니까?"},
+        {word:"趣味は読書です。 (슈미와 독쇼데스)", desc:"취미는 독서입니다."},
+        {word:"家族は何人ですか？ (카조쿠와 난닌데스카?)", desc:"가족은 몇 명입니까?"},
+        {word:"四人家族です。 (요닌카조쿠데스)", desc:"4인 가족입니다."},
+        {word:"父 (치치)", desc:"아버지 (나의)"}, {word:"お父さん (오토-산)", desc:"아버지 (남의)"},
+        {word:"母 (하하)", desc:"어머니 (나의)"}, {word:"お母さん (오카-산)", desc:"어머니 (남의)"},
+        {word:"兄 (아니)", desc:"형/오빠"}, {word:"姉 (아네)", desc:"누나/언니"},
+        {word:"弟 (오토-토)", desc:"남동생"}, {word:"妹 (이모-토)", desc:"여동생"},
+        {word:"祖父 (소후)", desc:"할아버지"}, {word:"祖母 (소보)", desc:"할머니"},
+        {word:"夫 (옷토)", desc:"남편"}, {word:"妻 (츠마)", desc:"아내"},
+        {word:"息子 (무스코)", desc:"아들"}, {word:"娘 (무스메)", desc:"딸"},
+        {word:"友達 (토모다치)", desc:"친구"},
+        {word:"彼氏 (카레시)", desc:"남자친구"}, {word:"彼女 (카노조)", desc:"여자친구 / 그녀"},
+        {word:"独身です。 (도쿠신데스)", desc:"미혼입니다."},
+        {word:"結婚しています。 (켓콘시테이마스)", desc:"결혼했습니다."},
+        {word:"ペットを飼っています。 (펫토오 캇테이마스)", desc:"반려동물을 기르고 있습니다."},
+        {word:"犬が好きです。 (이누가 스키데스)", desc:"개를 좋아합니다."},
+        {word:"猫が好きです。 (네코가 스키데스)", desc:"고양이를 좋아합니다."},
+        {word:"誰ですか？ (다레데스카?)", desc:"누구입니까?"},
+        {word:"彼は友達です。 (카레わ 토모다치데스)", desc:"그는 친구입니다."},
+        {word:"彼女は美しいです。 (카노조와 우つく시이데스)", desc:"그녀는 아름답습니다."},
+        {word:"彼はかっこいいです。 (카레와 캇코이-데스)", desc:"그는 멋있습니다."},
+        {word:"優しいです。 (야사시-데스)", desc:"상냥합니다."},
+        {word:"面白い人です。 (오모시로이 히토데스)", desc:"재미있는 사람입니다."},
+        {word:"真面目です。 (マジメ데스)", desc:"성실합니다."},
+        {word:"どこに住んでいますか？ (도코니 슨데이마스카?)", desc:"어디에 살고 있습니까?"},
+        {word:"ソウルに住んでいます。 (소우루니 슨데이마스)", desc:"서울에 살고 있습니다."},
+        {word:"一人暮らしです。 (히トリぐ라시데스)", desc:"혼자 살고 있습니다."},
+        {word:"血液型は何型ですか？ (케츠에키가타와 나니가타데스카?)", desc:"혈액형이 무엇입니까?"},
+        {word:"A型です。 (에-가타데스)", desc:"A형입니다."},
+        {word:"誕生日はいつですか？ (탄조-비와 이츠데스카?)", desc:"생일은 언제입니까?"},
+        {word:"よろしくね。 (요로시쿠네)", desc:"잘 부탁해."},
+
+        // 3. 시간, 날짜, 숫자, 날씨 (101~150)
+        {word:"今、何時ですか？ (이마 난지데스카?)", desc:"지금 몇 시입니까?"},
+        {word:"十時です。 (쥬-지데스)", desc:"10시입니다."},
+        {word:"一時半です。 (이치지한데스)", desc:"1시 반입니다."},
+        {word:"今日は何曜日ですか？ (쿄-와 난요-비데스카?)", desc:"오늘은 무슨 요일입니까?"},
+        {word:"月曜日です。 (げつ요-비데스)", desc:"월요일입니다."},
+        {word:"火曜日です。 (か요-비데스)", desc:"화요일입니다."},
+        {word:"水曜日です。 (すい요-비데스)", desc:"수요일입니다."},
+        {word:"木曜日です。 (もく요-비데스)", desc:"목요일입니다."},
+        {word:"金曜日です。 (きん요-비데스)", desc:"금요일입니다."},
+        {word:"土曜日です。 (ど요-비데스)", desc:"토요일입니다."},
+        {word:"日曜日です。 (にち요-비데스)", desc:"일요일입니다."},
+        {word:"今日 (쿄-)", desc:"오늘"}, {word:"明日 (아시타)", desc:"내일"},
+        {word:"昨日 (키노-)", desc:"어제"}, {word:"明後日 (아さッテ)", desc:"모레"},
+        {word:"今週 (콘슈-)", desc:"이번 주"}, {word:"来週 (라이슈-)", desc:"다음 주"},
+        {word:"先週 (센슈-)", desc:"지난 주"}, {word:"今月 (콘게츠)", desc:"이번 달"},
+        {word:"来月 (라이게츠)", desc:"다음 달"}, {word:"先月 (센게츠)", desc:"지난 달"},
+        {word:"今年 (코토시)", desc:"올해"}, {word:"来年 (라이넨)", desc:"내년"},
+        {word:"去年 (쿄넨)", desc:"작년"}, {word:"いつですか？ (이츠데스카?)", desc:"언제입니까?"},
+        {word:"春 (하루)", desc:"봄"}, {word:"夏 (나츠)", desc:"여름"},
+        {word:"秋 (아키)", desc:"가을"}, {word:"冬 (후유)", desc:"겨울"},
+        {word:"暑いです。 (아츠이데스)", desc:"덥습니다."},
+        {word:"寒いです。 (사무이데스)", desc:"춥습니다."},
+        {word:"暖かいです。 (아타타카이데스)", desc:"따뜻합니다."},
+        {word:"涼しいです。 (스즈시이데스)", desc:"시원합니다."},
+        {word:"いい天気ですね。 (이- 텐키데스네)", desc:"좋은 날씨네요."},
+        {word:"雨が降っています。 (아메가 훗테이마스)", desc:"비가 내리고 있습니다."},
+        {word:"雪が降っています。 (유키가 훗테이마스)", desc:"눈이 내리고 있습니다."},
+        {word:"曇りです。 (쿠모리데스)", desc:"흐립니다."},
+        {word:"風が強いです。 (카제가 츠요이데스)", desc:"바람이 강합니다."},
+        {word:"傘を持っていますか？ (카사오 못테이마스카?)", desc:"우산을 가지고 있습니까?"},
+        {word:"晴れです。 (하레데스)", desc:"맑습니다."},
+        {word:"蒸し暑いです。 (무시아츠이데스)", desc:"무덥습니다."},
+        {word:"天気予報 (텐키요호-)", desc:"일기예보"},
+        {word:"気温は何度ですか？ (키온와 난도데스카?)", desc:"기온은 몇 도 입니까?"},
+        {word:"零度です。 (레이도데스)", desc:"0도입니다."},
+        {word:"十度です。 (쥬-도데스)", desc:"10도입니다."},
+        {word:"寒くないですか？ (사무쿠나이데스카?)", desc:"춥지 않습니까?"},
+        {word:"一つ (히토츠)", desc:"하나"}, {word:"二つ (후타츠)", desc:"둘"},
+        {word:"三つ (밋츠)", desc:"셋"}, {word:"半分 (함분)", desc:"절반"},
+
+        // 4. 일상생활 동사 (151~200)
+        {word:"朝七時に起きます。 (아사 시치지니 오키마스)", desc:"아침 7시에 일어납니다."},
+        {word:"夜十一時に寝ます。 (요루 쥬-이치지니 네마스)", desc:"밤 11시에 잡니다."},
+        {word:"ご飯を食べます。 (고항오 타베마스)", desc:"밥을 먹습니다."},
+        {word:"水を飲みます。 (미즈오 노미마스)", desc:"물을 마십니다."},
+        {word:"学校へ行きます。 (각코-エ 이키마스)", desc:"학교에 갑니다."},
+        {word:"友達が来ます。 (토모다치가 키마스)", desc:"친구가 옵니다."},
+        {word:"家へ帰ります。 (이에エ 카에리마스)", desc:"집으로 돌아갑니다."},
+        {word:"テレビを見ます。 (테레비오 미마스)", desc:"TV를 봅니다."},
+        {word:"音楽を聞きます。 (온가쿠오 키키마스)", desc:"음악을 듣습니다."},
+        {word:"本を読みます。 (ほん오 요미마스)", desc:"책을 읽습니다."},
+        {word:"手紙を書きます。 (테가미오 카키마스)", desc:"편지를 씁니다."},
+        {word:"日本語を話します。 (니혼고오 하나시마스)", desc:"일본어를 말합니다."},
+        {word:"服を買います。 (후쿠오 카이마스)", desc:"옷을 삽니다."},
+        {word:"写真を撮ります。 (샤신오 토리마스)", desc:"사진을 찍습니다."},
+        {word:"友達に会います。 (토모다치니 아이마스)", desc:"친구를 만납니다."},
+        {word:"公園で遊びます。 (코-엔데 아소비마스)", desc:"공원에서 놉니다."},
+        {word:"週末は休みます。 (슈-마츠와 야스미마스)", desc:"주말에는 쉽니다."},
+        {word:"毎日働きます。 (마いにち 하타라키마스)", desc:"매일 일합니다."},
+        {word:"英語を勉強します。 (에-고오 벤쿄-시마스)", desc:"영어를 공부합니다."},
+        {word:"部屋を掃除します。 (헤야오 소-지시마스)", desc:"방을 청소합니다."},
+        {word:"料理をします。 (료-리오 시마스)", desc:"요리를 합니다."},
+        {word:"服を洗濯します。 (후쿠오 센타쿠시마스)", desc:"옷을 세탁합니다."},
+        {word:"シャワーを浴びます。 (샤와-오 아비마스)", desc:"샤워를 합니다."},
+        {word:"お風呂に入ります。 (오후로니 하이리마스)", desc:"목욕을 합니다."},
+        {word:"歯を磨きます。 (하오 미가키마스)", desc:"이를 닦습니다."},
+        {word:"顔を洗います。 (카오오 아라이마스)", desc:"얼굴을 씻습니다."},
+        {word:"服を着替えます。 (후쿠오 키가에마스)", desc:"옷を 갈아입습니다."},
+        {word:"ドアを開けます。 (도아오 아케마스)", desc:"문을 엽니다."},
+        {word:"ドアを閉めます。 (도아오 시메마스)", desc:"문을 닫습니다."},
+        {word:"電気をつけます。 (뎅키오 츠케마스)", desc:"불을 켭니다."},
+        {word:"電気を消します。 (뎅키오 케시마스)", desc:"불을 끕니다."},
+        {word:"散歩します。 (산포시마스)", desc:"산책합니다."},
+        {word:"走ります。 (하시리마스)", desc:"달립니다."},
+        {word:"歩きます。 (아루키마스)", desc:"걷습니다."},
+        {word:"急ぎます。 (이소기마스)", desc:"서두릅니다."},
+        {word:"バスを待ちます。 (바스오 마치마스)", desc:"버스를 기다립니다."},
+        {word:"鍵を探します。 (카기오 사가시마스)", desc:"열쇠를 찾습니다."},
+        {word:"財布を見つけました。 (사이후오 미츠케마시타)", desc:"지갑을 찾았습니다."},
+        {word:"約束を忘れました。 (야쿠소쿠오 와스레마시타)", desc:"약속을 잊어버렸습니다."},
+        {word:"単語を覚えます。 (탄고오 おぼえ마스)", desc:"단어를 외웁니다."},
+        {word:"考えます。 (캉가에마스)", desc:"생각합니다."},
+        {word:"韓国語を教えます。 (칸코쿠고오 오시에마스)", desc:"한국어를 가르칩니다."},
+        {word:"ピアノを習います。 (피아노오 나라이마스)", desc:"피아노를 배웁니다."},
+        {word:"歌を歌います。 (うた오 우타이마스)", desc:"노래를 부릅니다."},
+        {word:"踊ります。 (오도리마스)", desc:"춤을 춥니다."},
+        {word:"パソコンを使います。 (파소콘오 츠카이마스)", desc:"컴퓨터를 사용합니다."},
+        {word:"電話をかけます。 (뎅와오 카케마스)", desc:"전화를 겁니다."},
+        {word:"ゲームをします。 (게-무오 시마스)", desc:"게임을 합니다."},
+        {word:"お金を払います。 (오카네오 ハらい마스)", desc:"돈을 지불합니다."},
+        {word:"タバコを吸います。 (타바코오 す이마스)", desc:"담배를 피웁니다."},
+
+        // 5. 식사 및 식당 (201~250)
+        {word:"お腹が空きました。 (오나카가 스키마시타)", desc:"배가 고픕니다."},
+        {word:"喉が渇きました。 (노도가 카와키마시타)", desc:"목이 마릅니다."},
+        {word:"何をたべますか？ (나니오 타베마스카?)", desc:"무엇을 먹을까요?"},
+        {word:"メニューをお願いします。 (메뉴-오 오네가이시마스)", desc:"메뉴판 부탁합니다."},
+        {word:"注文をお願いします。 (츄-몬오 오네가이시마스)", desc:"주문할게요."},
+        {word:"これをください。 (코레오 쿠다사이)", desc:"이걸로 주세요."},
+        {word:"水をお願いします。 (미즈오 오네가이시마스)", desc:"물 좀 주세요."},
+        {word:"これは美味しいです。 (코레와 오이시이데스)", desc:"이것は 맛있습니다."},
+        {word:"まずいです。 (마즈이데스)", desc:"맛없습니다."},
+        {word:"辛いです。 (카라이데스)", desc:"맵습니다."},
+        {word:"甘いです。 (아마이데스)", desc:"답니다."},
+        {word:"しょっぱいです。 (숏파이데스)", desc:"짭니다."},
+        {word:"酸っぱいです。 (슷파이데스)", desc:"십니다."},
+        {word:"苦いです。 (니가이데스)", desc:"씁니다."},
+        {word:"熱いです。 (아ツい데스)", desc:"뜨겁습니다."},
+        {word:"冷たいです。 (츠메타이데스)", desc:"차갑습니다."},
+        {word:"お勘定をお願いします。 (오칸조-오 오네가이시마스)", desc:"계산해 주세요."},
+        {word:"別々でお願いします。 (베ツ베ツ데 오네가이시마스)", desc:"따로따로 계산해 주세요."},
+        {word:"ごちそうさまでした。 (고치소-사마데시타)", desc:"잘 먹었습니다."},
+        {word:"お箸をください。 (오하시오 쿠다사이)", desc:"젓가락을 주세요."},
+        {word:"フォークはありますか？ (포-쿠와 아리마스카?)", desc:"포크 있나요?"},
+        {word:"テイクアウトできますか？ (테이쿠아우토 데키마스카?)", desc:"포장 되나요?"},
+        {word:"ここで食べます。 (코코데 타베마스)", desc:"여기서 먹고 갈게요."},
+        {word:"肉を食べません。 (니쿠오 타베마센)", desc:"고기를 먹지 않습니다."},
+        {word:"おすすめは何ですか？ (오ススメ와 난데스카?)", desc:"추천 메뉴는 무엇인가요?"},
+        {word:"生ビールを一つ。 (나마비-루오 히토츠)", desc:"생맥주 하나요."},
+        {word:"おかわりをお願いします。 (오카와리오 오네가이시마스)", desc:"한 그릇 더 주세요 (리필)."},
+        {word:"朝ご飯 (아さごはん)", desc:"아침밥"},
+        {word:"昼ご飯 (히루ごはん)", desc:"점심밥"},
+        {word:"晩ご飯 (방ごはん)", desc:"저녁밥"},
+        {word:"野菜 (야사이)", desc:"채소"},
+        {word:"果物 (쿠다모노)", desc:"과일"},
+        {word:"魚 (사カナ)", desc:"생선"},
+        {word:"肉 (니쿠)", desc:"고기"},
+        {word:"牛肉 (규-니쿠)", desc:"소고기"},
+        {word:"豚肉 (부타니쿠)", desc:"돼지고기"},
+        {word:"鶏肉 (토리니쿠)", desc:"닭고기"},
+        {word:"パン (팡)", desc:"빵"},
+        {word:"お茶 (오챠)", desc:"차 (마시는)"},
+        {word:"お酒 (오사케)", desc:"술"},
+        {word:"コーヒー (코-히-)", desc:"커피"},
+        {word:"紅茶 (코-챠)", desc:"홍차"},
+        {word:"牛乳 (규-뉴-)", desc:"우유"},
+        {word:"卵 (타마고)", desc:"계란"},
+        {word:"塩 (시오)", desc:"소금"},
+        {word:"砂糖 (사토-)", desc:"설탕"},
+        {word:"醤油 (쇼-유)", desc:"간장"},
+        {word:"お腹がいっぱいです。 (오나카가 잇파이데스)", desc:"배가 부릅니다."},
+        {word:"デザート (데자-토)", desc:"디저트"},
+        {word:"食事 (쇼쿠지)", desc:"식사"},
+
+        // 6. 교통 및 방향 (251~300)
+        {word:"どこへ行きますか？ (도코エ 이키마스카?)", desc:"어디에 갑니까?"},
+        {word:"空港へ行きます。 (쿠-코-エ 이키마스)", desc:"공항에 갑니다."},
+        {word:"どうやって行きますか？ (도-얏테 이키마스카?)", desc:"어떻게 갑니까?"},
+        {word:"地下鉄で行きます。 (치카테츠데 이키마스)", desc:"지하철로 갑니다."},
+        {word:"タクシーで行きましょう。 (타쿠시-데 이키마쇼-)", desc:"택시로 갑시다."},
+        {word:"駅はどこですか？ (에키와 도코데스카?)", desc:"역은 어디에 있습니까?"},
+        {word:"ここから遠いですか？ (코코카라 토-이데스카?)", desc:"여기서 멉니까?"},
+        {word:"近いです。 (치카이데스)", desc:"가깝습니다."},
+        {word:"歩いて五分です。 (아루이테 고フン데스)", desc:"걸어서 5분입니다."},
+        {word:"まっすぐ行ってください。 (맛스구 잇테 쿠다사이)", desc:"쭉 직진해 주세요."},
+        {word:"右へ曲がってください。 (미기エ 마갓테 쿠다사이)", desc:"오른쪽으로 돌아 주세요."},
+        {word:"左へ曲がってください。 (히다리エ 마갓테 쿠다사이)", desc:"왼쪽으로 돌아 주세요."},
+        {word:"交差点 (코-사텐)", desc:"교차로, 사거리"},
+        {word:"信号 (신고-)", desc:"신호등"},
+        {word:"横断歩道 (오-단호도-)", desc:"횡단보도"},
+        {word:"切符はどこで買えますか？ (킵푸わ 도코데 카에마스카?)", desc:"표는 어디서 살 수 있나요?"},
+        {word:"大人一枚お願いします。 (오토나 이치마이 오네가이시마스)", desc:"어른 한 장 부탁합니다."},
+        {word:"病院はコンビニの隣です。 (뵤-인와 콘비니노 토나리데스)", desc:"병원은 편의점 옆입니다."},
+        {word:"道に迷いました。 (미치니 마요이마시타)", desc:"길을 잃었습니다."},
+        {word:"助けてください。 (타스케테 쿠다사이)", desc:"도와주세요."},
+        {word:"着いたら教えてください。 (츠이타라 오시에테 쿠다사이)", desc:"도착하면 알려주세요."},
+        {word:"入り口で待っています。 (이리구치데 맛테이마스)", desc:"입구에서 기다리고 있습니다."},
+        {word:"この電車は東京に行きますか？ (코노 덴샤와 토-쿄-니 이키마스카?)", desc:"이 전철은 도쿄에 갑니까?"},
+        {word:"シートベルトを締めてください。 (시-토베루토오 시메테 쿠다사이)", desc:"안전벨트를 매어 주세요."},
+        {word:"降ります。 (오리마스)", desc:"내립니다."},
+        {word:"バス停 (바스테-)", desc:"버스 정류장"},
+        {word:"飛行機 (히코-키)", desc:"비행기"},
+        {word:"自転車 (지텐샤)", desc:"자전거"},
+        {word:"車 (쿠루마)", desc:"자동차"},
+        {word:"船 (후네)", desc:"배"},
+        {word:"前 (마에)", desc:"앞"}, {word:"後ろ (우시로)", desc:"뒤"},
+        {word:"右 (미기)", desc:"오른쪽"}, {word:"左 (히다리)", desc:"왼쪽"},
+        {word:"上 (우에)", desc:"위"}, {word:"下 (시타)", desc:"아래"},
+        {word:"中 (나카)", desc:"안"}, {word:"外 (소토)", desc:"밖"},
+        {word:"隣 (토나리)", desc:"옆"}, {word:"近く (치카쿠)", desc:"근처"},
+        {word:"地図 (치즈)", desc:"지도"}, {word:"道 (미치)", desc:"길"},
+        {word:"乗り換え (노리카에)", desc:"환승"},
+        {word:"時刻表 (지코쿠효-)", desc:"시간표"},
+        {word:"出発します。 (슛パツ시마스)", desc:"출발합니다."},
+        {word:"到着します。 (토-챠쿠시마스)", desc:"도착합니다."},
+        {word:"特急 (톡큐-)", desc:"특급"}, {word:"急行 (큣코-)", desc:"급행"},
+        {word:"普通 (후츠-)", desc:"보통 (일반)"}, {word:"満員電車 (만인덴샤)", desc:"만원 전철"},
+
+        // 7. 쇼핑 및 물건 (301~350)
+        {word:"いくらですか？ (이쿠라데스카?)", desc:"얼마입니까?"},
+        {word:"百円です。 (햐쿠엔데스)", desc:"100엔입니다."},
+        {word:"高すぎます！ (타カ스기마스!)", desc:"너무 비쌉니다!"},
+        {word:"少し安くしてください。 (스코시 야스쿠 시테 쿠다사이)", desc:"조금 싸게 해 주세요."},
+        {word:"これを買います。 (코레오 카이마스)", desc:"이것을 사겠습니다."},
+        {word:"試着してもいいですか？ (시챠쿠 시테모 이-데스카?)", desc:"입어봐도 되나요?"},
+        {word:"もう少し大きいのはありますか？ (모- 스코시 오-키-노와 아리마스카?)", desc:"조금 더 큰 것은 있나요?"},
+        {word:"小さいのに交換してください。 (치-사이노니 코-칸시테 쿠다사이)", desc:"작은 것으로 교환해 주세요."},
+        {word:"何色がいいですか？ (나니이로가 이-데스카?)", desc:"어떤 색깔이 좋습니까?"},
+        {word:"赤が好きです。 (아카가 스키데스)", desc:"빨간색을 좋아합니다."},
+        {word:"全部でいくらですか？ (젠부데 이쿠라데스카?)", desc:"전부 해서 얼마입니까?"},
+        {word:"クレジットカードは使えますか？ (쿠레ジット카-도와 츠카에마스카?)", desc:"신용카드 사용할 수 있나요?"},
+        {word:"カードで払います。 (카-도데 ハ라이마스)", desc:"카드로 계산할게요."},
+        {word:"現金で払います。 (겐킨데 ハ라이마스)", desc:"현금으로 계산할게요."},
+        {word:"お釣りです。 (오ツ리데스)", desc:"거스름돈입니다."},
+        {word:"袋はいりません。 (ふくろ와 이리마센)", desc:"봉투는 필요 없습니다."},
+        {word:"返品できますか？ (ヘンピン 데키마스카?)", desc:"반품 되나요?"},
+        {word:"これはセール品ですか？ (코레와 세-루힌데스카?)", desc:"이것은 세일 상품인가요?"},
+        {word:"20％オフです。 (니쥬- 파-센토 オフ데스)", desc:"20% 할인입니다."},
+        {word:"レシートをください。 (レシー토오 쿠다사이)", desc:"영수증 주세요."},
+        {word:"似合いますか？ (니아이마스카?)", desc:"잘 어울리나요?"},
+        {word:"とても似合っています。 (토테모 니앗테이마스)", desc:"매우 잘 어울립니다."},
+        {word:"靴を買いたいです。 (쿠츠오 카이타이데스)", desc:"신발을 사고 싶습니다."},
+        {word:"スマホの充電が切れました。 (스마호노 쥬-덴가 키레마시타)", desc:"스마트폰 배터리가 다 되었습니다."},
+        {word:"ペンを貸してください。 (펜오 카시테 쿠다사이)", desc:"펜 좀 빌려 주세요."},
+        {word:"これは誰の本ですか？ (코레와 다레노 혼데스카?)", desc:"이것은 누구의 책입니까?"},
+        {word:"それは私のです。 (そレワ 와타シノ데스)", desc:"그것은 내 것입니다."},
+        {word:"プレゼント用に包んでください。 (프레젠토요-니 츠츤데 쿠다사이)", desc:"선물용으로 포장해 주세요."},
+        {word:"服 (후쿠)", desc:"옷"}, {word:"ズボン (즈본)", desc:"바지"},
+        {word:"スカート (스카-토)", desc:"치마"}, {word:"靴下 (쿠ツ시タ)", desc:"양말"},
+        {word:"帽子 (ボウシ)", desc:"모자"}, {word:"時計 (토케이)", desc:"시계"},
+        {word:"カバン (카방)", desc:"가방"}, {word:"財布 (사이후)", desc:"지갑"},
+        {word:"傘 (카사)", desc:"우산"}, {word:"眼鏡 (메가네)", desc:"안경"},
+        {word:"色 (이로)", desc:"색"}, {word:"黒 (쿠로)", desc:"검은색"},
+        {word:"白 (시로)", desc:"흰색"}, {word:"青 (아오)", desc:"파란색"},
+        {word:"黄色 (키-로)", desc:"노란색"}, {word:"緑 (미도리)", desc:"초록색"},
+        {word:"お土産 (오미야게)", desc:"기념품"}, {word:"免税 (メンゼイ)", desc:"면세"},
+        {word:"試食 (시쇼쿠)", desc:"시식"}, {word:"おすすめ (오ススメ)", desc:"추천"},
+        {word:"人気があります。 (닌키가 아리마스)", desc:"인기가 있습니다."},
+        {word:"ちょっと見てるだけです。 (춋토 미테루 다케데스)", desc:"그냥 구경하는 중입니다."},
+
+        // 8. 감정, 상태, 형용사 (351~400)
+        {word:"嬉しいです。 (우레시-데스)", desc:"기쁩니다."},
+        {word:"悲しいです。 (카나시-데스)", desc:"슬픕니다."},
+        {word:"怒っています。 (오콧테이마스)", desc:"화가 났습니다."},
+        {word:"疲れています。 (츠카레테이마스)", desc:"피곤합니다."},
+        {word:"忙しいです。 (이소가시-데스)", desc:"바쁩니다."},
+        {word:"暇です。 (히마데스)", desc:"한가합니다."},
+        {word:"どう思いますか？ (도- 오모이마스카?)", desc:"어떻게 생각합니까?"},
+        {word:"いいと思います。 (이- 토 오모이마스)", desc:"좋다고 생각합니다."},
+        {word:"賛成です。 (산세-데스)", desc:"찬성합니다."},
+        {word:"反対です。 (한타이데스)", desc:"반대합니다."},
+        {word:"多分そうです。 (타분 소-데스)", desc:"아마 그럴 것입니다."},
+        {word:"信じられません。 (신지라레마센)", desc:"믿을 수 없습니다."},
+        {word:"冗談です。 (죠-단데스)", desc:"농담です."},
+        {word:"心配しないでください。 (심파이 시나이데 쿠다사이)", desc:"걱정하지 마세요."},
+        {word:"安心してください。 (안신시테 쿠다사이)", desc:"안심하세요."},
+        {word:"びっくりしました！ (빗쿠리 시마시타!)", desc:"깜짝 놀랐습니다!"},
+        {word:"変です。 (ヘン데스)", desc:"이상합니다."},
+        {word:"面白いです。 (오모시로이데스)", desc:"재미있습니다."},
+        {word:"つまらないです。 (츠ま라나이데스)", desc:"지루합니다(재미없습니다)."},
+        {word:"緊張しています。 (킨쵸-시테이마스)", desc:"긴장하고 있습니다."},
+        {word:"病気になりました。 (뵤-키니 나리마시타)", desc:"병에 걸렸습니다."},
+        {word:"頭が痛いです。 (아타마가 이타이데스)", desc:"머리가 아픕니다."},
+        {word:"病院へ行ってください。 (뵤-인エ 잇테 쿠다사이)", desc:"병원에 가보세요."},
+        {word:"早く良くなってください。 (하야쿠 요쿠 낫테 쿠다사이)", desc:"빨리 낫길 바랍니다."},
+        {word:"家族に会いたいです。 (카조쿠니 아이타이데스)", desc:"가족이 보고 싶습니다."},
+        {word:"そうだといいですね。 (소-다토 이-데스네)", desc:"그랬으면 좋겠네요."},
+        {word:"いいアイデアですね！ (이- 아이데아데스네!)", desc:"좋은 생각이네요!"},
+        {word:"忘れました。 (와스레마시타)", desc:"잊어버렸습니다."},
+        {word:"覚えました。 (オボエマシタ)", desc:"외웠습니다(기억했습니다)."},
+        {word:"可愛いです。 (카와이-데스)", desc:"귀엽습니다."},
+        {word:"綺麗です。 (키레이데스)", desc:"예쁩니다 / 깨끗합니다."},
+        {word:"うるさいです。 (우루사이데스)", desc:"시끄럽습니다."},
+        {word:"静かです。 (시즈카데스)", desc:"조용합니다."},
+        {word:"新しいです。 (아타라시-데스)", desc:"새롭습니다."},
+        {word:"古いです。 (후루이데스)", desc:"오래되었습니다."},
+        {word:"高いです。 (타카이데스)", desc:"비쌉니다 / 높습니다."},
+        {word:"安いです。 (야스이데스)", desc:"쌉니다."},
+        {word:"広いです。 (히로이데스)", desc:"넓습니다."},
+        {word:"狭いです。 (세마이데스)", desc:"좁습니다."},
+        {word:"近いです。 (치카이데스)", desc:"가깝습니다."},
+        {word:"遠いです。 (토-이데스)", desc:"멉니다."},
+        {word:"難しいです。 (무즈카시-데스)", desc:"어렵습니다."},
+        {word:"簡単です。 (칸탄데스)", desc:"간단합니다."},
+        {word:"危ないです。 (아부나이데스)", desc:"위험합니다."},
+        {word:"安全です。 (안젠데스)", desc:"안전합니다."},
+        {word:"便利です。 (벤리데스)", desc:"편리합니다."},
+        {word:"不便です。 (후ベン데스)", desc:"불편합니다."},
+        {word:"好きです。 (스키데스)", desc:"좋아합니다."},
+        {word:"嫌いです。 (키라이데스)", desc:"싫어합니다."},
+        {word:"痛いです。 (이타이데스)", desc:"아픕니다."},
+
+        // 9. 학교, 직장 및 동사 활용 (401~450)
+        {word:"どこで勉強していますか？ (도코데 벤쿄-시테이마스카?)", desc:"어디서 공부하고 있습니까?"},
+        {word:"日本語を勉強しています。 (니혼고오 벤쿄-시테이마스)", desc:"일본어를 공부하고 있습니다."},
+        {word:"日本語は難しいですか？ (니혼고와 무즈카시-데스카?)", desc:"일본어는 어렵습니까?"},
+        {word:"漢字を書くのは難しいです。 (칸지오 카쿠노와 무즈카시-데스)", desc:"한자를 쓰는 것은 어렵습니다."},
+        {word:"でも、発音は易しいです。 (데모, 하츠온와 야사시-데스)", desc:"하지만 발음은 쉽습니다."},
+        {word:"授業が始まりました。 (쥬교-가 하지마리마시타)", desc:"수업이 시작되었습니다."},
+        {word:"授業が終わりました。 (쥬교-가 오와리마시타)", desc:"수업이 끝났습니다."},
+        {word:"本を開いてください。 (혼오 히라이테 쿠다사이)", desc:"책을 펴 주세요."},
+        {word:"私について読んでください。 (와타시ニ 츠이테 욘데 쿠다사이)", desc:"저를 따라 읽어 주세요."},
+        {word:"テストは難しかったです。 (테스토와 무즈카시캇타데스)", desc:"시험은 어려웠습니다."},
+        {word:"成績は良かったです。 (세-세키와 요캇타데스)", desc:"성적은 좋았습니다."},
+        {word:"宿題をしなければなりません。 (슈쿠다이오 시나케레바 나리마센)", desc:"숙제를 해야 합니다."},
+        {word:"私の専攻は英語です。 (와타시노 센코-와 에-고데스)", desc:"나의 전공은 영어입니다."},
+        {word:"卒業した後... (소츠교-시타 아토...)", desc:"졸업한 이후에..."},
+        {word:"会社へ行きます。 (카이샤エ 이키마스)", desc:"회사에 갑니다 (출근)."},
+        {word:"退社します。 (타이샤시마스)", desc:"퇴근합니다."},
+        {word:"社長はいません。 (샤쵸-와 이마센)", desc:"사장은 없습니다."},
+        {word:"同僚 (도-료-)", desc:"동료"},
+        {word:"会議をします。 (카이기오 시마스)", desc:"회의를 합니다."},
+        {word:"彼は出張に行きました。 (카레와 슛쵸-니 이키마시타)", desc:"그는 출장을 갔습니다."},
+        {word:"今日は残業です。 (쿄-와 잔교-데스)", desc:"오늘은 야근입니다."},
+        {word:"電話してください。 (뎅와 시테 쿠다사이)", desc:"전화해 주세요."},
+        {word:"メールを送ります。 (메-루오 오쿠리마스)", desc:"이메일을 보냅니다."},
+        {word:"少々お待ちください。 (쇼-쇼- 오마ち 쿠다사이)", desc:"잠시 기다려 주세요."},
+        {word:"もう一度言ってください。 (모- 이치도 잇테 쿠다사이)", desc:"다시 한 번 말해 주세요."},
+        {word:"もう少しゆっくり言ってください。 (모- 스코시 윳쿠리 잇테 쿠다사이)", desc:"조금 더 천천히 말해 주세요."},
+        {word:"どういう意味ですか？ (도- 유- 이미데스카?)", desc:"무슨 의미인가요?"},
+        {word:"よくわかりません。 (요쿠 와카리마센)", desc:"잘 모르겠습니다."},
+        {word:"みんな一緒に！ (민나 잇쇼니!)", desc:"모두 함께!"},
+        {word:"頑張って！ (간밧테!)", desc:"파이팅! (힘내요!)"},
+        {word:"学校 (각코-)", desc:"학교"}, {word:"学生 (가쿠세-)", desc:"학생"},
+        {word:"教室 (쿄-시츠)", desc:"교실"}, {word:"宿題 (슈쿠다이)", desc:"숙제"},
+        {word:"質問 (시츠몬)", desc:"질문"}, {word:"答え (코타에)", desc:"대답"},
+        {word:"会社 (카이샤)", desc:"회사"}, {word:"仕事 (시고토)", desc:"일, 직업"},
+        {word:"休み (야스미)", desc:"휴일, 휴식"}, {word:"旅行 (료코-)", desc:"여행"},
+        {word:"行きたいです。 (이키타이데스)", desc:"가고 싶습니다."},
+        {word:"食べたいです。 (타베타이데스)", desc:"먹고 싶습니다."},
+        {word:"飲みたくないです。 (노미타쿠나이데스)", desc:"마시고 싶지 않습니다."},
+        {word:"見てもいいですか？ (미테모 이-데스카?)", desc:"봐도 됩니까?"},
+        {word:"入ってはいけません。 (하이테와 이케마센)", desc:"들어가면 안 됩니다."},
+        {word:"しなければなりません。 (시나케레바 나리마센)", desc:"해야 합니다."},
+        {word:"しなくてもいいです。 (시나쿠테も 이-데스)", desc:"하지 않아도 됩니다."},
+        {word:"したことがあります。 (시타 코토가 아리마스)", desc:"한 적이 있습니다."},
+        {word:"することができます。 (수루 코토가 데키마스)", desc:"할 수 있습니다."},
+        {word:"するつもりです。 (수루 츠모리데스)", desc:"할 작정(생각)입니다."},
+
+        // 10. 생활 회화 및 기타 표현 (451~500)
+        {word:"ちょっと手伝ってください。 (춋토 테ツ다ッテ 쿠다사이)", desc:"좀 도와주세요."},
+        {word:"何をしていますか？ (나니오 시테이마스카?)", desc:"무엇을 하고 있습니까?"},
+        {word:"映画を見ています。 (에-가오 미테이마스)", desc:"영화를 보고 있습니다."},
+        {word:"どこに行きましたか？ (도코니 이키마시타카?)", desc:"어디에 갔었습니까?"},
+        {word:"何も買いませんでした。 (나니모 카이마센데시타)", desc:"아무것도 사지 않았습니다."},
+        {word:"誰と行きますか？ (다레토 이키마스카?)", desc:"누구와 갑니까?"},
+        {word:"友達と行きます。 (토모다치토 이키마스)", desc:"친구와 갑니다."},
+        {word:"どうしてですか？ (도-시테데스카?)", desc:"어째서 입니까?"},
+        {word:"疲れたからです。 (츠카레타 카라데스)", desc:"피곤하기 때문입니다."},
+        {word:"どんな映画が好きですか？ (돈나 에-가가 스키데스카?)", desc:"어떤 영화를 좋아합니까?"},
+        {word:"コメディが好きです。 (코메디가 스키데스)", desc:"코미디를 좋아합니다."},
+        {word:"とても美味しいですね。 (토테모 오이시-데스네)", desc:"정말 맛있네요."},
+        {word:"もっと食べますか？ (못토 타베마스카?)", desc:"더 먹을래요?"},
+        {word:"もう十分です。 (모- 쥬-분데스)", desc:"이제 충분합니다."},
+        {word:"お腹がいっぱいです。 (오나카가 잇파이데스)", desc:"배가 부릅니다."},
+        {word:"これは日本語で何と言いますか？ (코레와 니혼고데 난토 이-마스카?)", desc:"이것은 일본어로 뭐라고 합니까?"},
+        {word:"辞書で調べてみます。 (지쇼데 시라베테미마스)", desc:"사전으로 찾아보겠습니다."},
+        {word:"明日は暇ですか？ (아시타와 히마데스카?)", desc:"내일 한가합니까?"},
+        {word:"はい、暇です。 (하이, 히마데스)", desc:"네, 한가합니다."},
+        {word:"約束があります。 (야쿠소쿠가 아리마스)", desc:"약속이 있습니다."},
+        {word:"映画館で会いましょう。 (에-가칸데 아이마쇼-)", desc:"영화관에서 만납시다."},
+        {word:"遅れてすみません。 (오쿠레테 스미마센)", desc:"늦어서 죄송합니다."},
+        {word:"気をつけて帰ってください。 (키오 츠케테 카엣테 쿠다사이)", desc:"조심して 돌아가세요."},
+        {word:"楽しかったです。 (타노시캇타데스)", desc:"즐거웠습니다."},
+        {word:"また誘ってください。 (마타 사솟테 쿠다사이)", desc:"또 초대해 주세요."},
+        {word:"パスポートを見せてください。 (파스포-토오 미세테 쿠다사이)", desc:"여권을 보여주세요."},
+        {word:"観光で来ました。 (칸코-데 키마시타)", desc:"관광하러 왔습니다."},
+        {word:"一週間滞在します。 (잇슈-칸 타이자이시마스)", desc:"일주일 머무릅니다."},
+        {word:"写真を撮ってもいいですか？ (샤신오 톳테も 이-데스카?)", desc:"사진을 찍어도 됩니까?"},
+        {word:"トイレはどこですか？ (토이레와 도코데스카?)", desc:"화장실은 어디입니까?"},
+        {word:"Wi-Fiのパスワードは何ですか？ (와이파이노 파스와-도와 난데스카?)", desc:"와이파이 비밀번호는 무엇입니까?"},
+        {word:"チェックインをお願いします。 (쳇쿠인오 오네가이시마스)", desc:"체크인 부탁합니다."},
+        {word:"チェックアウトは何時ですか？ (쳇쿠아우토와 난지데스카?)", desc:"체크아웃은 몇 시입니까?"},
+        {word:"荷物を預かってもらえますか？ (니모ツ오 아즈캇테 모라에마스카?)", desc:"짐을 맡아주실 수 있나요?"},
+        {word:"タクシーを呼んでください。 (타쿠시-오 욘데 쿠다사이)", desc:"택시를 불러주세요."},
+        {word:"お会計をお願いします。 (오카이케이오 오네가이시마스)", desc:"계산 부탁합니다."},
+        {word:"クレジットカードでお願いします。 (쿠레짓토카-도데 오네가이시마스)", desc:"신용카드로 부탁합니다."},
+        {word:"これは私のおごりです。 (코레와 와타시노 오고리데스)", desc:"이것은 제가 쏘는 겁니다."},
+        {word:"道が混んでいます。 (미치가 콘데이마스)", desc:"길이 막혀 있습니다."},
+        {word:"急いでください。 (이소이데 쿠다사이)", desc:"서둘러 주세요."},
+        {word:"ここに書いてください。 (코코니 카이테 쿠다사이)", desc:"여기에 써 주세요."},
+        {word:"サインをお願いします。 (사인오 오네가이시마스)", desc:"사인 부탁합니다."},
+        {word:"領収書をください。 (료-슈-쇼오 쿠다사이)", desc:"영수증을 주세요."},
+        {word:"これをお願いします。 (코레오 오네가이시마스)", desc:"이걸로 부탁합니다."},
+        {word:"少し考えます。 (스코시 캉가에마스)", desc:"조금 생각해보겠습니다."},
+        {word:"また来ます。 (마타 키마스)", desc:"또 오겠습니다."},
+        {word:"お待たせしました。 (오마타세 시마시타)", desc:"오래 기다리셨습니다."},
+        {word:"どうしましたか？ (도- 시마시타카?)", desc:"무슨 일이시죠?"},
+        {word:"気分が悪いです。 (키분가 와루이데스)", desc:"기분이(몸 상태가) 안 좋습니다."},
+        {word:"助けて！ (타스케테!)", desc:"도와줘!"}
+    ];
+
+    // 힌트 모달 제어 함수
+    function openHint() { document.getElementById('hint-modal').classList.add('show'); }
+    function closeHint() { document.getElementById('hint-modal').classList.remove('show'); }
+
+    // 게임 상태 변수
+    const TOTAL_QUESTIONS = 20; 
+    const TOTAL_ROUNDS = 5;
+    let currentMode = 'normal';
+    let currentRound = 1;
+    let rankScores = [];
+    
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let totalScore = 0;
+    let currentCombo = 0; 
+    let timeLimit = 30; // 문장 읽는 시간을 고려해 기본 30초
+    let quizType = 'word';
+    let timeLeft = 0;
+    let timerInterval = null;
+    let wrongAnswers = []; 
+    
+    let audioCtx;
+    let myRank = '언랭크';
+
+    // 안전한 오디오 컨텍스트 초기화 함수
+    function initAudioSafe() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx && !audioCtx) {
+                audioCtx = new AudioCtx();
+                bgmController.init(audioCtx);
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        } catch (e) {
+            console.warn("오디오를 지원하지 않는 환경입니다.", e);
+        }
+    }
+
+    // ================= BGM 컨트롤러 =================
+    let isBgmEnabled = true;
+    const bgmController = {
+        ctx: null,
+        intervalId: null,
+        notes: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25], 
+        isPlaying: false,
+
+        init: function(context) { this.ctx = context; },
+        playNote: function() {
+            if (!this.ctx || this.ctx.state !== 'running') return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const note = this.notes[Math.floor(Math.random() * this.notes.length)];
+            
+            osc.frequency.value = note;
+            osc.type = 'sine'; 
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            const now = this.ctx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.015, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            
+            osc.start(now);
+            osc.stop(now + 1.0);
+        },
+        start: function() {
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+            this.playNote();
+            this.intervalId = setInterval(() => this.playNote(), 400); 
+        },
+        stop: function() {
+            this.isPlaying = false;
+            clearInterval(this.intervalId);
+        }
+    };
+
+    function toggleBGM() {
+        isBgmEnabled = !isBgmEnabled;
+        const btn = document.getElementById('bgm-toggle');
+        if (isBgmEnabled) {
+            btn.textContent = '🎵 BGM ON';
+            btn.classList.remove('off');
+            if (!screens.game.classList.contains('hidden')) {
+                bgmController.start();
+            }
+        } else {
+            btn.textContent = '🔇 BGM OFF';
+            btn.classList.add('off');
+            bgmController.stop();
+        }
+    }
+
+    // ================= 방해모드 (Distraction) =================
+    let distractionTimerId = null;
+
+    function scheduleNextDistraction() {
+        const delay = Math.random() * 15000 + 10000; 
+        distractionTimerId = setTimeout(() => {
+            triggerRandomDistraction();
+            if (!screens.game.classList.contains('hidden')) {
+                scheduleNextDistraction();
+            }
+        }, delay);
+    }
+
+    function stopDistractions() {
+        clearTimeout(distractionTimerId);
+        document.getElementById('distraction-layer').innerHTML = '';
+    }
+
+    function createDistractionEl(emoji, className, cssText, durationMs) {
+        const layer = document.getElementById('distraction-layer');
+        const el = document.createElement('div');
+        el.className = `distraction-entity ${className}`;
+        el.textContent = emoji;
+        el.style.cssText = cssText;
+        layer.appendChild(el);
+        setTimeout(() => { if(el.parentNode === layer) el.remove(); }, durationMs);
+    }
+
+    function spawnGhost() { createDistractionEl('👻', 'anim-ghost', `left: ${Math.random()*80}vw; top: ${Math.random()*80}vh;`, 3000); }
+    function spawnBalloons() {
+        const count = Math.floor(Math.random()*3) + 1;
+        for(let i=0; i<count; i++) {
+            setTimeout(() => { createDistractionEl('🎈', 'anim-float', `left: ${Math.random()*90}vw;`, 6000); }, i * 500);
+        }
+    }
+    function spawnFrog() { createDistractionEl('🐸', 'anim-jump', '', 4000); }
+    function spawnMonkey() {
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        createDistractionEl('🐒', 'anim-climb', `${side}: 10vw;`, 5000);
+    }
+    function spawnCatMouse() {
+        const y = Math.random() * 60 + 20; 
+        createDistractionEl('🐁', 'anim-run-fast', `bottom: ${y}vh;`, 3000);
+        setTimeout(() => { createDistractionEl('🐈', 'anim-run-fast', `bottom: ${y}vh;`, 3000); }, 400); 
+    }
+    function spawnDogFrisbee() {
+        createDistractionEl('🥏', 'anim-fly-arc', '', 4000);
+        setTimeout(() => { createDistractionEl('🐕', 'anim-jump-catch', '', 4000); }, 500); 
+    }
+    function spawnFly() { createDistractionEl('🪰', 'anim-erratic', '', 5000); }
+    function spawnSpaceship() { createDistractionEl('🛸', 'anim-spaceship', '', 6000); }
+
+    function triggerRandomDistraction() {
+        const actions = [
+            spawnGhost, spawnBalloons, spawnFrog, spawnMonkey,
+            spawnCatMouse, spawnDogFrisbee, spawnFly, spawnSpaceship
+        ];
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        randomAction();
+    }
+
+    // ================= DOM 및 메인 로직 =================
+    const screens = {
+        start: document.getElementById('start-screen'),
+        game: document.getElementById('game-screen'),
+        result: document.getElementById('result-screen')
+    };
+    const ui = {
+        counter: document.getElementById('question-counter'),
+        timer: document.getElementById('timer-display'),
+        currentScore: document.getElementById('current-score-display'),
+        comboDisplay: document.getElementById('combo-display'),
+        question: document.getElementById('question-text'),
+        choiceContainer: document.getElementById('choice-input-container'),
+        finalScore: document.getElementById('final-score'),
+        bestScore: document.getElementById('best-score')
+    };
+
+    function updateRankUI() {
+        const rankEl = document.getElementById('my-rank-display');
+        const rankBtn = document.getElementById('rank-btn');
+        rankEl.className = 'rank-badge'; 
+        
+        let colorClass = 'rank-unranked';
+        let bgColor = 'var(--bg-color)'; 
+        
+        if(myRank === '브론즈') { colorClass = 'rank-bronze'; bgColor = '#F5EBE1'; }
+        else if(myRank === '실버') { colorClass = 'rank-silver'; bgColor = '#EBEDEF'; }
+        else if(myRank === '골드') { colorClass = 'rank-gold'; bgColor = '#FEF9E7'; }
+        else if(myRank === '플래티넘') { colorClass = 'rank-platinum'; bgColor = '#E5E8E8'; }
+        else if(myRank === '다이아몬드') { colorClass = 'rank-diamond'; bgColor = '#EBF5FB'; }
+        
+        rankEl.classList.add(colorClass);
+        rankEl.textContent = `현재 랭크: ${myRank}`;
+        document.body.style.backgroundColor = bgColor;
+
+        if(myRank === '언랭크') { rankBtn.textContent = '배치고사 시작 (5판)'; } 
+        else { rankBtn.textContent = '승급전 시작 (5판)'; }
+    }
+
+    function playBeep(isCorrect) {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!audioCtx && AudioCtx) {
+                audioCtx = new AudioCtx();
+            }
+            if (!audioCtx) return;
+            
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (isCorrect) {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+        } catch(e) {
+            console.warn("효과음 재생 실패", e);
+        }
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function startGame(isRestart = false, mode = 'normal') {
+        currentMode = mode;
+        
+        // 오디오 안전하게 초기화
+        initAudioSafe();
+
+        if (isRestart) {
+            timeLimit = parseInt(document.querySelector('input[name="resTimeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="resTypeSetting"]:checked').value;
+            document.querySelector(`input[name="timeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="typeSetting"][value="${quizType}"]`).checked = true;
+        } else {
+            timeLimit = parseInt(document.querySelector('input[name="timeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="typeSetting"]:checked').value;
+            document.querySelector(`input[name="resTimeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="resTypeSetting"][value="${quizType}"]`).checked = true;
+        }
+
+        if (currentMode === 'rank') {
+            currentRound = 1;
+            rankScores = [];
+        }
+
+        startRound();
+    }
+
+    function startRound() {
+        const shuffledWords = shuffleArray([...wordDictionary]);
+        currentQuestions = shuffledWords.slice(0, TOTAL_QUESTIONS);
+        
+        currentIndex = 0;
+        totalScore = 0;
+        currentCombo = 0; 
+        wrongAnswers = []; 
+
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: 0점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: 0점`;
+        }
+        
+        ui.comboDisplay.className = 'combo-display'; 
+        ui.comboDisplay.textContent = '';
+        
+        showScreen('game');
+        loadQuestion();
+        
+        if (isBgmEnabled && !bgmController.isPlaying) {
+            bgmController.start();
+        }
+        
+        clearTimeout(distractionTimerId);
+        scheduleNextDistraction();
+    }
+
+    function startNextRound() {
+        currentRound++;
+        startRound();
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        ui.counter.textContent = `문제 ${currentIndex + 1} / ${TOTAL_QUESTIONS}`;
+        ui.timer.classList.remove('danger');
+        ui.choiceContainer.classList.remove('hidden');
+        
+        if (quizType === 'word') { 
+            // 일본어 보고 뜻 맞추기
+            ui.question.textContent = currentQ.word;
+            ui.question.classList.remove('desc-mode'); 
+            ui.choiceContainer.classList.add('desc-mode'); 
+        } else { 
+            // 뜻 보고 일본어 맞추기
+            ui.question.textContent = currentQ.desc;
+            ui.question.classList.add('desc-mode');
+            ui.choiceContainer.classList.add('desc-mode'); 
+        }
+
+        setupChoiceMode(currentQ);
+
+        timeLeft = timeLimit;
+        ui.timer.textContent = `${timeLeft}초`;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function setupChoiceMode(currentQ) {
+        ui.choiceContainer.innerHTML = '';
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        const wrongTexts = [];
+        const usedTexts = new Set([correctText]);
+        
+        const shuffled = shuffleArray([...wordDictionary]);
+        
+        for (let item of shuffled) {
+            if (item.word === currentQ.word) continue;
+            if (quizType === 'word' && item.desc === currentQ.desc) continue;
+            
+            let text = quizType === 'word' ? item.desc : item.word;
+            if (!usedTexts.has(text)) {
+                usedTexts.add(text);
+                wrongTexts.push(text);
+            }
+            if (wrongTexts.length === 3) break;
+        }
+
+        const choices = shuffleArray([correctText, ...wrongTexts]);
+
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = text;
+            btn.onclick = (e) => submitAnswer(text, e.target);
+            ui.choiceContainer.appendChild(btn);
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        ui.timer.textContent = `${timeLeft}초`;
+        
+        if (timeLeft <= 3) {
+            ui.timer.classList.add('danger');
+        }
+
+        if (timeLeft <= 0) {
+            submitAnswer(null); 
+        }
+    }
+
+    function submitAnswer(userAnswer, btnElement = null) {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        if (userAnswer === null) {
+            finishQuestion(false, null);
+            return;
+        }
+
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        let isCorrect = (userAnswer === correctText);
+        finishQuestion(isCorrect, btnElement);
+    }
+
+    function finishQuestion(isSuccess, btnElement) {
+        const currentQ = currentQuestions[currentIndex];
+        const choiceButtons = document.querySelectorAll('.choice-btn');
+        choiceButtons.forEach(b => b.disabled = true);
+
+        let scoreEarned = 0;
+
+        if (isSuccess) {
+            if (btnElement) {
+                playBeep(true);
+                btnElement.classList.add('correct');
+            }
+
+            currentCombo++;
+            ui.comboDisplay.textContent = `${currentCombo} COMBO!`;
+            ui.comboDisplay.className = 'combo-display active';
+            if (currentCombo >= 3) {
+                ui.comboDisplay.classList.add('combo-high');
+            }
+            ui.comboDisplay.style.animation = 'none';
+            ui.comboDisplay.offsetHeight;
+            ui.comboDisplay.style.animation = null;
+
+            if (timeLimit === 30 || timeLimit === 60) {
+                scoreEarned = 10;
+            } else {
+                const elapsedTime = timeLimit - timeLeft;
+                if (elapsedTime <= 5) {
+                    scoreEarned = 10;
+                } else {
+                    scoreEarned = 10 - (elapsedTime - 5);
+                    if (scoreEarned < 0) scoreEarned = 0;
+                }
+            }
+        } else {
+            playBeep(false); 
+            scoreEarned = 0; 
+            currentCombo = 0;
+            ui.comboDisplay.className = 'combo-display';
+            ui.comboDisplay.textContent = '';
+            
+            let questionText, correctText, uAnswerText;
+
+            correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+            questionText = quizType === 'word' ? currentQ.word : currentQ.desc;
+            uAnswerText = btnElement ? btnElement.textContent : '시간 초과 / 미선택';
+
+            if (btnElement) btnElement.classList.add('wrong');
+            choiceButtons.forEach(b => {
+                if (b.textContent === correctText) {
+                    b.classList.add('correct');
+                }
+            });
+
+            wrongAnswers.push({
+                question: questionText,
+                correctAnswer: correctText,
+                userAnswer: uAnswerText
+            });
+        }
+
+        totalScore += scoreEarned;
+        
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: ${totalScore}점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: ${totalScore}점`;
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < TOTAL_QUESTIONS) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function updateBestScore(score) {
+        const storageKey = 'japaneseSpeedQuizBestScore';
+        let bestScore = safeStorage.getItem(storageKey) || 0;
+        bestScore = parseInt(bestScore);
+
+        if (score > bestScore) {
+            bestScore = score;
+            safeStorage.setItem(storageKey, bestScore);
+        }
+        ui.bestScore.textContent = `역대 1판 최고 점수: ${bestScore}점`;
+    }
+
+    function endGame() {
+        bgmController.stop(); 
+        stopDistractions(); 
+
+        showScreen('result');
+        
+        const resSettingGroup = document.getElementById('res-setting-group');
+        const resNextRoundBtn = document.getElementById('res-next-round-btn');
+        const resRestartBtn = document.getElementById('res-restart-btn');
+        const resultTitle = document.getElementById('result-title');
+        const resultSubtitle = document.getElementById('result-subtitle');
+        const rankResultDisplay = document.getElementById('rank-result-display');
+        const bestScoreDisplay = document.getElementById('best-score');
+
+        resSettingGroup.classList.remove('hidden');
+        resNextRoundBtn.classList.add('hidden');
+        resRestartBtn.classList.remove('hidden');
+        rankResultDisplay.classList.add('hidden');
+        bestScoreDisplay.classList.remove('hidden');
+
+        if (currentMode === 'normal') {
+            resultTitle.textContent = "연습 게임 종료!";
+            resultSubtitle.textContent = "당신의 최종 점수";
+            ui.finalScore.textContent = `${totalScore}점`;
+            
+            updateBestScore(totalScore);
+            
+            resRestartBtn.textContent = "다시 하기 (연습)";
+            resRestartBtn.onclick = () => startGame(true, 'normal');
+
+        } else if (currentMode === 'rank') {
+            rankScores.push(totalScore);
+            updateBestScore(totalScore); 
+            
+            if (currentRound < TOTAL_ROUNDS) {
+                resultTitle.textContent = `승급전 ${currentRound}라운드 종료`;
+                resultSubtitle.textContent = `이번 라운드 획득 점수`;
+                ui.finalScore.textContent = `${totalScore}점`;
+                
+                resSettingGroup.classList.add('hidden'); 
+                resNextRoundBtn.classList.remove('hidden');
+                resRestartBtn.classList.add('hidden');
+                bestScoreDisplay.classList.add('hidden');
+            } else {
+                const averageScore = rankScores.reduce((a, b) => a + b, 0) / TOTAL_ROUNDS;
+                let newRank = '브론즈';
+                let rankColorClass = 'rank-bronze';
+                
+                if (averageScore >= 180) { newRank = '다이아몬드'; rankColorClass = 'rank-diamond'; }
+                else if (averageScore >= 150) { newRank = '플래티넘'; rankColorClass = 'rank-platinum'; }
+                else if (averageScore >= 120) { newRank = '골드'; rankColorClass = 'rank-gold'; }
+                else if (averageScore >= 90) { newRank = '실버'; rankColorClass = 'rank-silver'; }
+                
+                myRank = newRank;
+                safeStorage.setItem('japaneseSpeedQuizRank', myRank); 
+                updateRankUI();
+
+                resultTitle.textContent = "랭크 판정 완료!";
+                resultSubtitle.textContent = `5판 평균 점수: ${averageScore.toFixed(1)}점`;
+                ui.finalScore.textContent = ``; 
+                
+                rankResultDisplay.textContent = newRank;
+                rankResultDisplay.className = `rank-result ${rankColorClass}`;
+                rankResultDisplay.classList.remove('hidden');
+
+                resSettingGroup.classList.remove('hidden');
+                resRestartBtn.classList.remove('hidden');
+                resRestartBtn.textContent = "승급전 다시 도전";
+                resRestartBtn.onclick = () => startGame(true, 'rank');
+            }
+        }
+        
+        const wrongList = document.getElementById('wrong-answers-list');
+        if (wrongAnswers.length > 0) {
+            wrongList.innerHTML = wrongAnswers.map(item => `
+                <div class="wrong-item">
+                    <div class="wrong-desc">Q. ${item.question}</div>
+                    <div>
+                        <span class="user-word">${item.userAnswer}</span>
+                        <span class="wrong-word">정답: ${item.correctAnswer}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            wrongList.innerHTML = '<div style="text-align:center; padding:15px; color:var(--success-color); font-weight:bold;">모두 맞췄습니다! 완벽해요! 🎉</div>';
+        }
+    }
+
+    function goHome() {
+        bgmController.stop(); 
+        stopDistractions();
+        showScreen('start');
+    }
+
+    window.onload = () => {
+        myRank = safeStorage.getItem('japaneseSpeedQuizRank') || '언랭크';
+        updateRankUI();
+        
+        if(!safeStorage.getItem('japaneseSpeedQuizBestScore')){
+            safeStorage.setItem('japaneseSpeedQuizBestScore', 0);
+        }
+    };
+</script>
+
+</body>
+</html>

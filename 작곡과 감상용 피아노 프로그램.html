@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>피아노 리듬게임 & 작곡 교실</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { overscroll-behavior: none; touch-action: none; }
+        
+        .game-wrapper { width: 100%; height: 55vh; background-color: #111; position: relative; border-radius: 12px 12px 0 0; overflow: hidden; border-bottom: 4px solid #f87171; }
+        #gameCanvas { width: 100%; height: 100%; display: block; }
+
+        .piano-board { position: relative; width: 100%; height: 25vh; background-color: #333; padding: 0 10px 10px 10px; border-radius: 0 0 12px 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; }
+        .white-key { flex: 1; background-color: white; border: 1px solid #ccc; border-bottom: 8px solid #ddd; border-radius: 0 0 8px 8px; position: relative; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; cursor: pointer; user-select: none; transition: transform 0.05s; }
+        .black-key { position: absolute; background-color: #1a202c; border-bottom: 6px solid #000; border-radius: 0 0 6px 6px; top: 0; height: 60%; z-index: 10; cursor: pointer; user-select: none; transition: transform 0.05s; }
+        .white-key.active { background-color: #e5e7eb; border-bottom: 2px solid #ccc; transform: translateY(6px); }
+        .black-key.active { border-bottom: 2px solid #000; transform: translateY(4px); }
+        
+        .game-key.correct { background-color: #4ade80 !important; border-color: #22c55e; }
+        .game-key.wrong { background-color: #f87171 !important; border-color: #ef4444; }
+
+        .key-label { pointer-events: none; font-weight: bold; font-size: 1rem; color: #4a5568; }
+        .key-label.highlight { color: #e53e3e; }
+
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hidden { display: none !important; }
+
+        .rank-diamond { color: #6ee7b7; text-shadow: 0 0 10px #34d399; }
+        .rank-platinum { color: #93c5fd; text-shadow: 0 0 10px #60a5fa; }
+        .rank-gold { color: #fde047; text-shadow: 0 0 10px #facc15; }
+        .rank-silver { color: #d1d5db; text-shadow: 0 0 10px #9ca3af; }
+        .rank-bronze { color: #b45309; text-shadow: 0 0 10px #78350f; }
+
+        /* 작곡 모드 스타일 */
+        #makerGrid { 
+            background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 24px; /* 1비트(0.5초) = 50px, 건반 1개 = 24px */
+            cursor: crosshair;
+        }
+        .maker-note { position: absolute; height: 22px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; }
+        .final-note { background-color: #f43f5e; } /* 확정된 노트 */
+        .active-note { background-color: #f472b6; z-index: 10; } /* 현재 누르고 있는 실시간 노트 */
+        
+        .maker-row-bg:nth-child(even) { background-color: rgba(255,255,255,0.02); }
+        .maker-row-bg.black-key-row { background-color: rgba(0,0,0,0.3); }
+        .mode-btn.active { background-color: #3b82f6; border-color: #60a5fa; color: white; }
+    </style>
+</head>
+<body class="bg-gray-900 h-screen w-screen flex flex-col items-center justify-center overflow-hidden font-sans select-none text-white">
+
+    <div class="w-[95%] max-w-6xl flex justify-between items-center mb-2 px-2">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-black text-pink-400 tracking-tight">🎹 피아노 리듬 & 작곡 교실</h1>
+            <button id="exitBtn" onclick="exitGame()" class="hidden mt-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded p-1 px-4 text-sm transition-colors shadow">
+                ⏹️ 그만하기
+            </button>
+        </div>
+        <div class="text-right flex gap-2 md:gap-4">
+            <div class="bg-gray-800 p-2 rounded-lg text-center hidden md:block">
+                <p class="text-xs text-gray-400">최고 점수</p>
+                <p id="highScoreText" class="font-bold text-yellow-400 text-xl">0</p>
+            </div>
+            <div class="bg-gray-800 p-2 rounded-lg text-center min-w-[80px]">
+                <p class="text-xs text-gray-400">현재 점수</p>
+                <p id="scoreText" class="font-bold text-green-400 text-xl inline-block transform transition-transform">0</p>
+            </div>
+            <div class="bg-gray-800 p-2 rounded-lg text-center min-w-[60px]">
+                <p class="text-xs text-gray-400">콤보</p>
+                <p id="comboText" class="font-bold text-pink-400 text-xl">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContainer" class="flex flex-col w-[95%] max-w-6xl relative">
+        <div class="game-wrapper" id="gameWrapper">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div id="startMenu" class="modal-overlay">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white mt-4">곡을 선택하세요</h2>
+                <div class="w-[90%] max-w-4xl bg-gray-800 p-4 md:p-6 rounded-2xl max-h-[60vh] overflow-y-auto border border-gray-700 shadow-2xl">
+                    <div class="mb-6 flex justify-between items-center border-b border-gray-600 pb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-purple-400">🛠️ 나만의 곡 만들기</h3>
+                            <p class="text-gray-400 text-sm mt-1">내가 직접 피아노를 치거나 그려서 악보를 만들 수 있어요!</p>
+                        </div>
+                        <button onclick="openMaker()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform hover:scale-105">
+                            ➕ 새 곡 만들기
+                        </button>
+                    </div>
+                    <div id="songListContainer" class="flex flex-col gap-6"></div>
+                </div>
+            </div>
+
+            <div id="resultMenu" class="modal-overlay hidden">
+                <h2 class="text-3xl font-bold mb-2 text-white">연주 끝!</h2>
+                <div class="text-center bg-gray-800 p-6 rounded-2xl border-2 border-gray-600 mb-6 min-w-[250px]">
+                    <p class="text-gray-400 mb-1">최종 점수</p>
+                    <p id="finalScore" class="text-5xl font-black mb-2 text-green-400">0</p>
+                    <p id="finalAccuracy" class="text-xl font-bold mb-4 text-blue-300">정확도: 0%</p>
+                    <p class="text-gray-400 mb-1">나의 랭크</p>
+                    <p id="finalRank" class="text-4xl font-black rank-gold">GOLD</p>
+                </div>
+                <button onclick="showStartMenu()" class="bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-8 rounded-xl text-lg shadow-lg transition-transform hover:scale-105">
+                    다시 하기
+                </button>
+            </div>
+        </div>
+        
+        <div id="piano" class="piano-board"></div>
+    </div>
+
+    <div id="makerMenu" class="hidden fixed top-0 left-0 w-full h-full bg-gray-900 z-[100] flex flex-col">
+        <div class="h-16 flex items-center justify-between px-4 bg-gray-800 border-b border-gray-700">
+            <button onclick="closeMaker()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded font-bold">⬅️ 나가기</button>
+            
+            <div class="flex gap-2">
+                <button id="toolDraw" onclick="setMakerTool('draw')" class="mode-btn active border-2 border-transparent bg-gray-700 px-3 py-2 rounded font-bold">✏️ 그리기</button>
+                <button id="toolErase" onclick="setMakerTool('erase')" class="mode-btn border-2 border-transparent bg-gray-700 px-3 py-2 rounded font-bold">🧽 지우기</button>
+                <div class="w-px h-8 bg-gray-600 mx-2 self-center"></div>
+                <button id="btnMakerRecord" onclick="toggleMakerRecord()" class="bg-red-900 hover:bg-red-800 text-red-100 border border-red-500 px-4 py-2 rounded font-bold flex items-center gap-2 transition-colors">
+                    <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse hidden" id="recordIndicator"></span>
+                    <span id="recordText">🔴 1분 녹음</span>
+                </button>
+                <button id="btnMakerPlay" onclick="toggleMakerPlay()" class="bg-green-700 hover:bg-green-600 px-4 py-2 rounded font-bold">▶️ 들어보기</button>
+            </div>
+            
+            <div class="flex gap-2">
+                <button id="btnExportAudio" onclick="exportAudio()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded font-bold transition-colors">🎵 음원 다운로드</button>
+                <button onclick="saveCustomSong()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-bold">💾 저장하기</button>
+            </div>
+        </div>
+        
+        <div class="h-10 flex items-center justify-center gap-2 bg-gray-800 border-b border-gray-700 text-sm">
+            <button onclick="jumpToMeasure('start')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white transition-colors">⏮️ 처음</button>
+            <button onclick="jumpToMeasure(-1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white transition-colors">◀️ 이전 마디</button>
+            <div class="bg-gray-900 px-4 py-1 rounded border border-gray-600 font-bold text-yellow-400 w-28 text-center" id="makerMeasureDisplay">1 마디</div>
+            <button onclick="jumpToMeasure(1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white transition-colors">다음 마디 ▶️</button>
+            <button onclick="jumpToMeasure('end')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white transition-colors">끝 ⏭️</button>
+        </div>
+        
+        <div id="makerScroll" class="flex-1 overflow-auto relative bg-[#111] select-none" style="touch-action: pan-x pan-y;">
+            <div id="makerTimeRuler" class="h-6 w-[6050px] bg-gray-800 sticky top-0 z-20 flex text-xs text-gray-400">
+                </div>
+            <div class="flex w-[6050px] relative">
+                <div id="makerKeys" class="w-12 bg-gray-800 sticky left-0 z-20 border-r border-gray-600 flex flex-col"></div>
+                <div id="makerGrid" class="w-[6000px] h-[600px] relative">
+                    <div id="makerPlayhead" class="absolute top-0 left-0 w-[2px] h-full bg-yellow-400 z-30 pointer-events-none hidden shadow-[0_0_10px_yellow]"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="makerPiano" class="piano-board h-[20vh] !rounded-none"></div>
+    </div>
+
+    <script>
+        // --- 데이터 정의 (키보드 매핑 알파벳 추가) ---
+        const notes = [
+            { name: 'C4', freq: 261.63, type: 'white', label: '도', key: 'Z' }, { name: 'Cs4', freq: 277.18, type: 'black', offset: 1, key: 'S' },
+            { name: 'D4', freq: 293.66, type: 'white', label: '레', key: 'X' }, { name: 'Ds4', freq: 311.13, type: 'black', offset: 2, key: 'D' },
+            { name: 'E4', freq: 329.63, type: 'white', label: '미', key: 'C' }, { name: 'F4', freq: 349.23, type: 'white', label: '파', key: 'V' },
+            { name: 'Fs4', freq: 369.99, type: 'black', offset: 4, key: 'G' }, { name: 'G4', freq: 392.00, type: 'white', label: '솔', key: 'B' },
+            { name: 'Gs4', freq: 415.30, type: 'black', offset: 5, key: 'H' }, { name: 'A4', freq: 440.00, type: 'white', label: '라', key: 'N' },
+            { name: 'As4', freq: 466.16, type: 'black', offset: 6, key: 'J' }, { name: 'B4', freq: 493.88, type: 'white', label: '시', key: 'M' },
+            { name: 'C5', freq: 523.25, type: 'white', label: '도', key: 'Q' }, { name: 'Cs5', freq: 554.37, type: 'black', offset: 8, key: '2' },
+            { name: 'D5', freq: 587.33, type: 'white', label: '레', key: 'W' }, { name: 'Ds5', freq: 622.25, type: 'black', offset: 9, key: '3' },
+            { name: 'E5', freq: 659.25, type: 'white', label: '미', key: 'E' }, { name: 'F5', freq: 698.46, type: 'white', label: '파', key: 'R' },
+            { name: 'Fs5', freq: 739.99, type: 'black', offset: 11, key: '5' }, { name: 'G5', freq: 783.99, type: 'white', label: '솔', key: 'T' },
+            { name: 'Gs5', freq: 830.61, type: 'black', offset: 12, key: '6' }, { name: 'A5', freq: 880.00, type: 'white', label: '라', key: 'Y' },
+            { name: 'As5', freq: 932.33, type: 'black', offset: 13, key: '7' }, { name: 'B5', freq: 987.77, type: 'white', label: '시', key: 'U' },
+            { name: 'C6', freq: 1046.50, type: 'white', label: '도', key: 'I' }
+        ];
+
+        let audioCtx;
+        const oscillators = {};
+        let mediaStreamDest;
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!mediaStreamDest) mediaStreamDest = audioCtx.createMediaStreamDestination();
+        }
+
+        function playSound(noteName) {
+            if (oscillators[noteName]) return;
+            const noteData = notes.find(n => n.name === noteName);
+            if (!noteData) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const now = audioCtx.currentTime;
+
+            osc.type = 'triangle'; 
+            osc.frequency.value = noteData.freq;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+
+            osc.connect(gainNode); 
+            gainNode.connect(audioCtx.destination);
+            
+            if (mediaStreamDest) gainNode.connect(mediaStreamDest);
+
+            osc.start(); 
+            oscillators[noteName] = { osc, gainNode };
+        }
+
+        function stopSound(noteName) {
+            const sound = oscillators[noteName];
+            if (sound) {
+                const now = audioCtx.currentTime;
+                sound.gainNode.gain.cancelScheduledValues(now);
+                sound.gainNode.gain.setValueAtTime(sound.gainNode.gain.value, now);
+                sound.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                sound.osc.stop(now + 0.1);
+                delete oscillators[noteName];
+            }
+        }
+
+        // --- 내장 동요 곡 데이터 세팅 ---
+        const S = (melody, offset) => melody.map(n => ({ n: n.n, t: n.t + offset, d: n.d }));
+        
+        // 1. 비행기
+        const airA = [{n:'E4',t:0,d:0.8},{n:'D4',t:1,d:0.8},{n:'C4',t:2,d:0.8},{n:'D4',t:3,d:0.8},{n:'E4',t:4,d:0.8},{n:'E4',t:5,d:0.8},{n:'E4',t:6,d:1.8}];
+        const airB = [{n:'D4',t:0,d:0.8},{n:'D4',t:1,d:0.8},{n:'D4',t:2,d:1.8},{n:'E4',t:4,d:0.8},{n:'G4',t:5,d:0.8},{n:'G4',t:6,d:1.8}];
+        const airC = [{n:'D4',t:0,d:0.8},{n:'D4',t:1,d:0.8},{n:'E4',t:2,d:0.8},{n:'D4',t:3,d:0.8},{n:'C4',t:4,d:3.8}];
+        const fullAirplane = [...S([...S(airA,0), ...S(airB,8), ...S(airA,16), ...S(airC,24)],2)];
+
+        // 2. 나비야
+        const butA = [{n:'G4',t:0,d:0.8},{n:'E4',t:1,d:0.8},{n:'E4',t:2,d:1.8},{n:'F4',t:4,d:0.8},{n:'D4',t:5,d:0.8},{n:'D4',t:6,d:1.8}];
+        const butB = [{n:'C4',t:0,d:0.8},{n:'D4',t:1,d:0.8},{n:'E4',t:2,d:0.8},{n:'F4',t:3,d:0.8},{n:'G4',t:4,d:0.8},{n:'G4',t:5,d:0.8},{n:'G4',t:6,d:1.8}];
+        const butC = [{n:'C4',t:0,d:0.8},{n:'E4',t:1,d:0.8},{n:'G4',t:2,d:0.8},{n:'G4',t:3,d:0.8},{n:'E4',t:4,d:0.8},{n:'E4',t:5,d:0.8},{n:'E4',t:6,d:1.8}];
+        const fullButterfly = [...S([...S(butA,0), ...S(butB,8), ...S(butA,16), ...S(butC,24)],2)];
+
+        // 3. 학교종
+        const schoolBell = [
+            {n:'G4',t:0,d:0.8}, {n:'G4',t:1,d:0.8}, {n:'A4',t:2,d:0.8}, {n:'A4',t:3,d:0.8}, {n:'G4',t:4,d:0.8}, {n:'G4',t:5,d:0.8}, {n:'E4',t:6,d:1.8},
+            {n:'G4',t:8,d:0.8}, {n:'G4',t:9,d:0.8}, {n:'E4',t:10,d:0.8}, {n:'E4',t:11,d:0.8}, {n:'D4',t:12,d:3.8},
+            {n:'G4',t:16,d:0.8}, {n:'G4',t:17,d:0.8}, {n:'A4',t:18,d:0.8}, {n:'A4',t:19,d:0.8}, {n:'G4',t:20,d:0.8}, {n:'G4',t:21,d:0.8}, {n:'E4',t:22,d:1.8},
+            {n:'G4',t:24,d:0.8}, {n:'E4',t:25,d:0.8}, {n:'D4',t:26,d:0.8}, {n:'E4',t:27,d:0.8}, {n:'C4',t:28,d:3.8}
+        ];
+
+        // 4. 퐁당퐁당
+        const pongDang = [
+            {n:'C4',t:0,d:0.8}, {n:'D4',t:1,d:0.8}, {n:'E4',t:2,d:0.8}, {n:'E4',t:3,d:0.8}, {n:'E4',t:4,d:0.8}, {n:'G4',t:5,d:0.8}, {n:'G4',t:6,d:1.8},
+            {n:'A4',t:8,d:0.8}, {n:'A4',t:9,d:0.8}, {n:'G4',t:10,d:1.8}, {n:'A4',t:12,d:0.8}, {n:'A4',t:13,d:0.8}, {n:'G4',t:14,d:1.8},
+            {n:'E4',t:16,d:0.8}, {n:'C4',t:17,d:0.8}, {n:'D4',t:18,d:1.8}, {n:'E4',t:20,d:0.8}, {n:'E4',t:21,d:0.8}, {n:'D4',t:22,d:0.8}, {n:'C4',t:23,d:0.8}, {n:'C4',t:24,d:1.8}
+        ];
+
+        // 5. 반짝반짝 작은별
+        const littleStarA = [
+            {n:'C4',t:0,d:0.8}, {n:'C4',t:1,d:0.8}, {n:'G4',t:2,d:0.8}, {n:'G4',t:3,d:0.8}, {n:'A4',t:4,d:0.8}, {n:'A4',t:5,d:0.8}, {n:'G4',t:6,d:1.8},
+            {n:'F4',t:8,d:0.8}, {n:'F4',t:9,d:0.8}, {n:'E4',t:10,d:0.8}, {n:'E4',t:11,d:0.8}, {n:'D4',t:12,d:0.8}, {n:'D4',t:13,d:0.8}, {n:'C4',t:14,d:1.8}
+        ];
+        const littleStarB = [
+            {n:'G4',t:0,d:0.8}, {n:'G4',t:1,d:0.8}, {n:'F4',t:2,d:0.8}, {n:'F4',t:3,d:0.8}, {n:'E4',t:4,d:0.8}, {n:'E4',t:5,d:0.8}, {n:'D4',t:6,d:1.8}
+        ];
+        const fullLittleStar = [...S([...littleStarA, ...S(littleStarB, 16), ...S(littleStarB, 24), ...S(littleStarA, 32)], 2)];
+
+        // 6. 산토끼
+        const mountainRabbit = [
+            {n:'G4',t:0,d:0.8}, {n:'E4',t:1,d:0.8}, {n:'E4',t:2,d:1.8}, {n:'G4',t:4,d:0.8}, {n:'E4',t:5,d:0.8}, {n:'C4',t:6,d:1.8},
+            {n:'D4',t:8,d:0.8}, {n:'E4',t:9,d:0.8}, {n:'D4',t:10,d:0.8}, {n:'C4',t:11,d:0.8}, {n:'E4',t:12,d:3.8},
+            {n:'G4',t:16,d:0.8}, {n:'G4',t:17,d:0.8}, {n:'C5',t:18,d:0.8}, {n:'G4',t:19,d:0.8}, {n:'E4',t:20,d:0.8}, {n:'G4',t:21,d:1.8},
+            {n:'D4',t:24,d:0.8}, {n:'F4',t:25,d:0.8}, {n:'E4',t:26,d:0.8}, {n:'D4',t:27,d:0.8}, {n:'C4',t:28,d:3.8}
+        ];
+
+        // 7. 꼬마 인디언
+        const tenIndians = [
+            {n:'C4',t:0,d:0.8}, {n:'E4',t:1,d:0.8}, {n:'C4',t:2,d:0.8}, {n:'E4',t:3,d:0.8}, {n:'C4',t:4,d:0.8}, {n:'C4',t:5,d:0.8}, {n:'E4',t:6,d:1.8},
+            {n:'D4',t:8,d:0.8}, {n:'F4',t:9,d:0.8}, {n:'D4',t:10,d:0.8}, {n:'F4',t:11,d:0.8}, {n:'D4',t:12,d:0.8}, {n:'D4',t:13,d:0.8}, {n:'F4',t:14,d:1.8},
+            {n:'E4',t:16,d:0.8}, {n:'G4',t:17,d:0.8}, {n:'E4',t:18,d:0.8}, {n:'G4',t:19,d:0.8}, {n:'E4',t:20,d:0.8}, {n:'E4',t:21,d:0.8}, {n:'G4',t:22,d:1.8},
+            {n:'G4',t:24,d:0.8}, {n:'F4',t:25,d:0.8}, {n:'E4',t:26,d:0.8}, {n:'D4',t:27,d:0.8}, {n:'C4',t:28,d:3.8}
+        ];
+
+        // 8. 곰 세마리
+        const threeBears = [
+            {n:'C4',t:0,d:0.8}, {n:'C4',t:1,d:0.8}, {n:'C4',t:2,d:0.8}, {n:'C4',t:3,d:0.8}, {n:'C4',t:4,d:1.8},
+            {n:'E4',t:6,d:0.8}, {n:'G4',t:7,d:0.8}, {n:'G4',t:8,d:1.8},
+            {n:'E4',t:10,d:0.8}, {n:'G4',t:11,d:0.8}, {n:'G4',t:12,d:1.8},
+            {n:'G4',t:14,d:0.8}, {n:'G4',t:15,d:0.8}, {n:'E4',t:16,d:0.8}, {n:'C4',t:17,d:0.8}, {n:'G4',t:18,d:1.8},
+            {n:'G4',t:20,d:0.8}, {n:'G4',t:21,d:0.8}, {n:'E4',t:22,d:0.8}, {n:'C4',t:23,d:0.8}, {n:'G4',t:24,d:1.8},
+            {n:'G4',t:26,d:0.8}, {n:'G4',t:27,d:0.8}, {n:'E4',t:28,d:0.8}, {n:'C4',t:29,d:0.8}, {n:'G4',t:30,d:0.8}, {n:'G4',t:31,d:0.8}, {n:'G4',t:32,d:1.8},
+            {n:'C4',t:34,d:0.8}, {n:'G4',t:35,d:0.8}, {n:'C5',t:36,d:0.8}, {n:'G4',t:37,d:0.8}, {n:'C5',t:38,d:1.8}
+        ];
+
+        let songCatalog = [
+            { level: '🌱 왕초보 동요', color: 'text-green-400', btnColor: 'bg-green-600 hover:bg-green-500', songs: [
+                { id: 'airplane', name: '✈️ 비행기', data: fullAirplane }, 
+                { id: 'butterfly', name: '🦋 나비야', data: fullButterfly },
+                { id: 'schoolbell', name: '🔔 학교종', data: S(schoolBell, 2) },
+                { id: 'pongdang', name: '💧 퐁당퐁당', data: S(pongDang, 2) }
+            ]},
+            { level: '🎵 딩동댕 동요', color: 'text-blue-400', btnColor: 'bg-blue-600 hover:bg-blue-500', songs: [
+                { id: 'littlestar', name: '⭐ 작은별', data: fullLittleStar },
+                { id: 'mountainrabbit', name: '🐰 산토끼', data: S(mountainRabbit, 2) },
+                { id: 'tenindians', name: '⛺ 꼬마 인디언', data: S(tenIndians, 2) },
+                { id: 'threebears', name: '🐻 곰 세마리', data: S(threeBears, 2) }
+            ]}
+        ];
+
+        function loadCustomSongs() {
+            const saved = JSON.parse(localStorage.getItem('customSongs') || '[]');
+            songCatalog = songCatalog.filter(cat => cat.level !== '⭐ 내가 만든 곡');
+            if (saved.length > 0) {
+                songCatalog.unshift({
+                    level: '⭐ 내가 만든 곡', color: 'text-yellow-400', btnColor: 'bg-yellow-600 hover:bg-yellow-500',
+                    songs: saved.map(s => ({ id: s.id, name: s.name, data: s.data }))
+                });
+            }
+        }
+
+        function renderMenu() {
+            loadCustomSongs();
+            const container = document.getElementById('songListContainer');
+            container.innerHTML = '';
+            songCatalog.forEach(category => {
+                const section = document.createElement('div');
+                section.innerHTML = `
+                    <div class="mb-2 border-b border-gray-600 pb-2"><h3 class="text-xl md:text-2xl font-bold ${category.color}">${category.level}</h3></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        ${category.songs.map(song => `<button onclick="startGame('${song.id}')" class="${category.btnColor} text-white font-bold py-3 px-2 rounded-xl text-sm md:text-md shadow-lg transition-transform transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-1">
+                            <span>${song.name}</span>
+                            ${category.level.includes('내가 만든') ? `<span class="text-xs opacity-70" onclick="event.stopPropagation(); deleteCustomSong('${song.id}')">🗑️ 삭제</span>` : ''}
+                        </button>`).join('')}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        function deleteCustomSong(id) {
+            if(confirm("이 곡을 삭제할까요?")) {
+                let saved = JSON.parse(localStorage.getItem('customSongs') || '[]');
+                saved = saved.filter(s => s.id !== id);
+                localStorage.setItem('customSongs', JSON.stringify(saved));
+                renderMenu();
+            }
+        }
+
+        // --- 메인 게임 변수 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const BEAT_TIME = 0.5; // 1비트 = 0.5초
+        const FALL_SPEED = 250; 
+
+        let gameState = 'menu';
+        let activeNotes = [];
+        let startTime = 0;
+        let score = 0; let combo = 0; let totalPossibleScore = 0;
+        let animationFrameId;
+        let keyRects = {}; 
+        let pressedKeys = new Set();
+
+        function renderPianoUI(containerId) {
+            const pianoContainer = document.getElementById(containerId);
+            pianoContainer.innerHTML = '';
+            const totalWhiteKeys = notes.filter(n => n.type === 'white').length;
+            const whiteWidthPercent = 100 / totalWhiteKeys; 
+            const blackWidthPercent = whiteWidthPercent * 0.65; 
+
+            notes.forEach(note => {
+                const key = document.createElement('div');
+                key.dataset.note = note.name;
+                key.classList.add('piano-key', 'game-key');
+                if (note.type === 'white') {
+                    key.classList.add('white-key');
+                    key.innerHTML = `
+                        <span class="key-label ${note.label==='도'?'highlight':''} mb-3">${note.label}</span>
+                        <span class="absolute bottom-1 text-[10px] text-gray-400 font-bold pointer-events-none">${note.key}</span>
+                    `;
+                } else {
+                    key.classList.add('black-key');
+                    key.style.width = `${blackWidthPercent}%`;
+                    key.style.left = `calc(${note.offset * whiteWidthPercent}% - ${blackWidthPercent / 2}%)`;
+                    key.innerHTML = `<span class="absolute bottom-1 w-full text-center text-[10px] text-gray-500 font-bold pointer-events-none">${note.key}</span>`;
+                }
+                pianoContainer.appendChild(key);
+            });
+        }
+
+        function updateKeyRects() {
+            const wrapperRect = document.getElementById('gameWrapper').getBoundingClientRect();
+            canvas.width = wrapperRect.width; canvas.height = wrapperRect.height;
+            keyRects = {};
+            document.querySelectorAll('#piano .piano-key').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                keyRects[el.dataset.note] = { x: rect.left - wrapperRect.left, width: rect.width, type: el.classList.contains('white-key') ? 'white' : 'black' };
+            });
+        }
+        window.addEventListener('resize', updateKeyRects);
+
+        function startGame(songId) {
+            initAudio();
+            document.getElementById('startMenu').classList.add('hidden');
+            document.getElementById('resultMenu').classList.add('hidden');
+            document.getElementById('exitBtn').classList.remove('hidden');
+            
+            let song = null;
+            for (let cat of songCatalog) {
+                let found = cat.songs.find(x => x.id === songId);
+                if (found) { song = found.data; break; }
+            }
+            if (!song) return;
+
+            activeNotes = song.map(item => ({
+                note: item.n, startTime: item.t * BEAT_TIME, duration: item.d * BEAT_TIME, hit: false, missed: false
+            }));
+            
+            score = 0; combo = 0;
+            totalPossibleScore = activeNotes.length * 100;
+            updateScoreUI();
+            
+            gameState = 'playing'; startTime = audioCtx.currentTime;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function showStartMenu() {
+            renderMenu();
+            document.getElementById('startMenu').classList.remove('hidden');
+            document.getElementById('resultMenu').classList.add('hidden');
+            document.getElementById('exitBtn').classList.add('hidden');
+            gameState = 'menu'; ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function showResult() {
+            gameState = 'result';
+            document.getElementById('resultMenu').classList.remove('hidden');
+            document.getElementById('exitBtn').classList.add('hidden');
+            let finalScorePercent = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
+            if (finalScorePercent > 100) finalScorePercent = 100;
+            
+            document.getElementById('finalScore').innerText = score + "점";
+            document.getElementById('finalAccuracy').innerText = "정확도: " + finalScorePercent + "%";
+            
+            const rankEl = document.getElementById('finalRank');
+            rankEl.className = "text-4xl font-black mt-2 ";
+            if (finalScorePercent >= 95) { rankEl.innerText = "💎 DIAMOND"; rankEl.classList.add('rank-diamond'); }
+            else if (finalScorePercent >= 80) { rankEl.innerText = "💠 PLATINUM"; rankEl.classList.add('rank-platinum'); }
+            else if (finalScorePercent >= 60) { rankEl.innerText = "🥇 GOLD"; rankEl.classList.add('rank-gold'); }
+            else if (finalScorePercent >= 40) { rankEl.innerText = "🥈 SILVER"; rankEl.classList.add('rank-silver'); }
+            else { rankEl.innerText = "🥉 BRONZE"; rankEl.classList.add('rank-bronze'); }
+
+            let highScore = parseInt(localStorage.getItem('pianoHighScore') || '0');
+            if (score > highScore) { localStorage.setItem('pianoHighScore', score); document.getElementById('highScoreText').innerText = score; }
+        }
+
+        function exitGame() {
+            if (gameState !== 'playing') return;
+            gameState = 'result';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            Object.keys(oscillators).forEach(note => stopSound(note));
+            pressedKeys.clear();
+            document.querySelectorAll('.game-key').forEach(el => el.classList.remove('active', 'correct', 'wrong'));
+            showResult();
+        }
+
+        function updateScoreUI() { document.getElementById('scoreText').innerText = score; document.getElementById('comboText').innerText = combo; }
+        function addScore() { score += 100; combo++; updateScoreUI(); }
+        function subtractScore(amount) {
+            score = Math.max(0, score - amount); combo = 0; updateScoreUI();
+            const scoreText = document.getElementById('scoreText');
+            scoreText.classList.remove('text-green-400'); scoreText.classList.add('text-red-500', 'scale-125');
+            setTimeout(() => { scoreText.classList.remove('text-red-500', 'scale-125'); scoreText.classList.add('text-green-400'); }, 200);
+        }
+
+        function gameLoop() {
+            if (gameState !== 'playing') return;
+            const currentTime = audioCtx.currentTime - startTime;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let allFinished = true;
+            const hitZoneY = canvas.height; 
+
+            activeNotes.forEach(block => {
+                const yBottom = hitZoneY - ((block.startTime - currentTime) * FALL_SPEED);
+                const blockHeight = block.duration * FALL_SPEED;
+                const yTop = yBottom - blockHeight;
+
+                if (yTop < canvas.height) allFinished = false;
+
+                if (yTop < canvas.height && yBottom > 0) {
+                    const rect = keyRects[block.note];
+                    if (rect) {
+                        const padding = rect.type === 'white' ? 4 : 2;
+                        if (block.missed) ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+                        else if (block.hit) ctx.fillStyle = 'rgba(74, 222, 128, 0.8)'; 
+                        else ctx.fillStyle = '#f43f5e'; 
+                        ctx.beginPath(); ctx.roundRect(rect.x + padding, yTop, rect.width - (padding*2), blockHeight, 6); ctx.fill();
+                    }
+                }
+                if (yTop > hitZoneY && !block.hit && !block.missed) { block.missed = true; subtractScore(30); }
+            });
+
+            updateKeyColors(currentTime);
+
+            if (allFinished && currentTime > (activeNotes.length>0 ? activeNotes[activeNotes.length-1].startTime : 0) + 2) {
+                showResult(); return;
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateKeyColors(currentTime) {
+            document.querySelectorAll('#piano .game-key').forEach(el => {
+                if (!pressedKeys.has(el.dataset.note)) el.classList.remove('correct', 'wrong', 'active');
+            });
+            pressedKeys.forEach(noteName => {
+                const el = document.querySelector(`#piano .game-key[data-note="${noteName}"]`);
+                if(!el) return;
+                if (gameState === 'playing') {
+                    const margin = 0.2; 
+                    const matchingBlock = activeNotes.find(b => b.note === noteName && !b.missed && currentTime >= (b.startTime - margin) && currentTime <= (b.startTime + b.duration + margin));
+                    if (matchingBlock) {
+                        el.classList.add('correct'); el.classList.remove('wrong');
+                        if (!matchingBlock.hit) { matchingBlock.hit = true; addScore(); }
+                    } else {
+                        el.classList.add('wrong'); el.classList.remove('correct');
+                    }
+                } else {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // --- 입력 처리 ---
+        function pressKey(noteName) {
+            if (!pressedKeys.has(noteName)) {
+                pressedKeys.add(noteName);
+                playSound(noteName);
+                document.querySelectorAll(`.game-key[data-note="${noteName}"]`).forEach(el => el.classList.add('active'));
+
+                // Maker 모드 녹음 처리
+                if(makerState === 'recording') {
+                    const startT = audioCtx.currentTime - makerStartTime;
+                    const rowIndex = makerRowNotes.findIndex(n => n.name === noteName);
+                    
+                    const noteEl = document.createElement('div');
+                    noteEl.className = 'maker-note active-note';
+                    noteEl.style.top = `${rowIndex * ROW_HEIGHT + 1}px`;
+                    noteEl.style.left = `${startT * (PIXELS_PER_BEAT / BEAT_TIME)}px`;
+                    noteEl.style.width = `10px`; 
+                    
+                    if (rowIndex !== -1) {
+                        document.getElementById('makerGrid').appendChild(noteEl);
+                    }
+                    
+                    makerActivePresses[noteName] = { startTime: startT, el: noteEl };
+                }
+
+                if (gameState === 'playing') {
+                    const currentTime = audioCtx.currentTime - startTime;
+                    const isValidPress = activeNotes.some(b => b.note === noteName && !b.missed && currentTime >= (b.startTime - 0.2) && currentTime <= (b.startTime + b.duration + 0.2));
+                    if (!isValidPress) subtractScore(50);
+                }
+            }
+        }
+
+        function releaseKey(noteName) {
+            pressedKeys.delete(noteName); stopSound(noteName);
+            document.querySelectorAll(`.game-key[data-note="${noteName}"]`).forEach(el => el.classList.remove('active', 'correct', 'wrong'));
+
+            // Maker 모드 녹음 기록
+            if(makerState === 'recording' && makerActivePresses[noteName]) {
+                const press = makerActivePresses[noteName];
+                
+                if(press.el) press.el.remove(); 
+                
+                let duration = (audioCtx.currentTime - makerStartTime) - press.startTime;
+                if(duration < 0.1) duration = 0.1; 
+                
+                makerNotes.push({ n: noteName, t: press.startTime / BEAT_TIME, d: duration / BEAT_TIME });
+                delete makerActivePresses[noteName];
+                
+                renderMakerNotes();
+            }
+        }
+
+        // --- 작곡 모드 (Maker Mode) 전용 로직 ---
+        const PIXELS_PER_BEAT = 50; 
+        const PIXELS_PER_MEASURE = 200; 
+        const ROW_HEIGHT = 24;
+        let makerState = 'idle';
+        let makerTool = 'draw';
+        let makerNotes = [];
+        let makerStartTime = 0;
+        let makerAnimFrame;
+        let makerActivePresses = {};
+        
+        const makerRowNotes = [...notes].reverse();
+
+        function openMaker() {
+            initAudio();
+            document.getElementById('makerMenu').classList.remove('hidden');
+            makerNotes = [];
+            setMakerTool('draw');
+            initMakerGrid();
+            renderMakerNotes();
+            document.getElementById('makerScroll').scrollLeft = 0;
+        }
+
+        function closeMaker() {
+            if(makerState !== 'idle') stopMaker();
+            document.getElementById('makerMenu').classList.add('hidden');
+        }
+
+        function setMakerTool(tool) {
+            makerTool = tool;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            if(tool === 'draw') document.getElementById('toolDraw').classList.add('active');
+            if(tool === 'erase') document.getElementById('toolErase').classList.add('active');
+        }
+
+        function initMakerGrid() {
+            const keysContainer = document.getElementById('makerKeys');
+            const gridContainer = document.getElementById('makerGrid');
+            const timeRuler = document.getElementById('makerTimeRuler');
+            
+            keysContainer.innerHTML = '';
+            gridContainer.querySelectorAll('.maker-row-bg').forEach(e => e.remove());
+            timeRuler.innerHTML = '';
+
+            for(let i=0; i<=60; i++) {
+                const tick = document.createElement('div');
+                const isMeasure = (i % 2 === 0); 
+                tick.className = `absolute h-full pl-1 ${isMeasure ? 'border-l-2 border-yellow-600 text-yellow-500 font-bold' : 'border-l border-gray-600'}`;
+                tick.style.left = `${i * PIXELS_PER_BEAT * 2}px`; 
+                
+                if (isMeasure) tick.innerText = `${(i/2) + 1}마디`;
+                else tick.innerText = `${i}s`;
+                
+                timeRuler.appendChild(tick);
+            }
+
+            makerRowNotes.forEach((note, index) => {
+                const label = document.createElement('div');
+                label.className = `h-[24px] flex items-center justify-center text-[10px] font-bold ${note.type==='black'?'bg-gray-900 text-gray-400':'bg-gray-200 text-black border-b border-gray-300'}`;
+                label.innerText = note.label || '';
+                keysContainer.appendChild(label);
+
+                const row = document.createElement('div');
+                row.className = `maker-row-bg absolute w-full h-[24px] border-b border-white/5 ${note.type==='black'?'black-key-row':''}`;
+                row.style.top = `${index * ROW_HEIGHT}px`;
+                row.dataset.note = note.name;
+                gridContainer.appendChild(row);
+            });
+        }
+
+        function renderMakerNotes() {
+            const grid = document.getElementById('makerGrid');
+            
+            grid.querySelectorAll('.final-note').forEach(e => e.remove());
+            
+            makerNotes.forEach((noteData, idx) => {
+                const rowIndex = makerRowNotes.findIndex(n => n.name === noteData.n);
+                if (rowIndex === -1) return;
+
+                const noteEl = document.createElement('div');
+                noteEl.className = 'maker-note final-note flex items-center justify-center text-[8px] text-white/50 font-bold overflow-hidden';
+                noteEl.style.top = `${rowIndex * ROW_HEIGHT + 1}px`;
+                noteEl.style.left = `${noteData.t * PIXELS_PER_BEAT}px`;
+                noteEl.style.width = `${noteData.d * PIXELS_PER_BEAT - 2}px`; 
+                noteEl.dataset.index = idx;
+                
+                noteEl.style.pointerEvents = 'auto';
+                noteEl.onclick = (e) => {
+                    if (makerTool === 'erase') {
+                        makerNotes.splice(idx, 1);
+                        renderMakerNotes();
+                    }
+                    e.stopPropagation();
+                };
+
+                grid.appendChild(noteEl);
+            });
+        }
+
+        const makerGrid = document.getElementById('makerGrid');
+        let isDrawing = false;
+        let drawStartT = 0;
+        let drawNote = '';
+        let currentDrawEl = null;
+
+        makerGrid.addEventListener('pointerdown', (e) => {
+            if(makerTool !== 'draw' || makerState !== 'idle') return;
+            const rect = makerGrid.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const x = e.clientX - rect.left;
+            
+            const rowIndex = Math.floor(y / ROW_HEIGHT);
+            if (rowIndex >= 0 && rowIndex < makerRowNotes.length) {
+                isDrawing = true;
+                drawNote = makerRowNotes[rowIndex].name;
+                drawStartT = x / PIXELS_PER_BEAT;
+                
+                currentDrawEl = document.createElement('div');
+                currentDrawEl.className = 'maker-note active-note';
+                currentDrawEl.style.top = `${rowIndex * ROW_HEIGHT + 1}px`;
+                currentDrawEl.style.left = `${x}px`;
+                currentDrawEl.style.width = `10px`;
+                makerGrid.appendChild(currentDrawEl);
+            }
+        });
+
+        makerGrid.addEventListener('pointermove', (e) => {
+            if(!isDrawing || !currentDrawEl) return;
+            const rect = makerGrid.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            let width = x - (drawStartT * PIXELS_PER_BEAT);
+            if (width < 10) width = 10;
+            currentDrawEl.style.width = `${width}px`;
+        });
+
+        const endDrawing = (e) => {
+            if(!isDrawing) return;
+            isDrawing = false;
+            if(currentDrawEl) {
+                const widthPx = parseFloat(currentDrawEl.style.width);
+                const durationT = widthPx / PIXELS_PER_BEAT;
+                makerNotes.push({ n: drawNote, t: drawStartT, d: durationT });
+                currentDrawEl.remove();
+                currentDrawEl = null;
+                renderMakerNotes();
+            }
+        };
+        makerGrid.addEventListener('pointerup', endDrawing);
+        makerGrid.addEventListener('pointerleave', endDrawing);
+        makerGrid.addEventListener('pointercancel', endDrawing);
+
+        function toggleMakerRecord() {
+            if(makerState === 'recording') stopMaker();
+            else startMakerRecording();
+        }
+
+        function toggleMakerPlay() {
+            if(makerState === 'playing') stopMaker();
+            else startMakerPlay();
+        }
+
+        function startMakerRecording() {
+            initAudio();
+            stopMaker();
+            makerState = 'recording';
+            document.getElementById('btnMakerRecord').classList.replace('bg-red-900', 'bg-red-600');
+            document.getElementById('recordIndicator').classList.remove('hidden');
+            document.getElementById('recordText').innerText = "정지";
+            document.getElementById('makerPlayhead').classList.remove('hidden');
+            
+            makerStartTime = audioCtx.currentTime;
+            makerActivePresses = {};
+            makerLoop();
+        }
+
+        function startMakerPlay() {
+            initAudio();
+            stopMaker();
+            makerState = 'playing';
+            document.getElementById('btnMakerPlay').innerText = "⏹️ 정지";
+            document.getElementById('makerPlayhead').classList.remove('hidden');
+            
+            makerStartTime = audioCtx.currentTime;
+            makerNotesToPlay = JSON.parse(JSON.stringify(makerNotes)).sort((a,b)=>a.t-b.t);
+            makerLoop();
+        }
+
+        function stopMaker() {
+            makerState = 'idle';
+            cancelAnimationFrame(makerAnimFrame);
+            Object.keys(oscillators).forEach(n => stopSound(n));
+            
+            const currentRelTime = audioCtx.currentTime - makerStartTime;
+            for (let noteName in makerActivePresses) {
+                const press = makerActivePresses[noteName];
+                if(press.el) press.el.remove();
+                
+                let duration = currentRelTime - press.startTime;
+                if(duration < 0.1) duration = 0.1;
+                makerNotes.push({ n: noteName, t: press.startTime / BEAT_TIME, d: duration / BEAT_TIME });
+            }
+            makerActivePresses = {};
+            renderMakerNotes();
+            
+            document.getElementById('btnMakerRecord').classList.replace('bg-red-600', 'bg-red-900');
+            document.getElementById('recordIndicator').classList.add('hidden');
+            document.getElementById('recordText').innerText = "🔴 1분 녹음";
+            document.getElementById('btnMakerPlay').innerText = "▶️ 들어보기";
+            document.getElementById('makerPlayhead').classList.add('hidden');
+        }
+
+        let makerNotesToPlay = [];
+
+        function jumpToMeasure(action) {
+            const scrollArea = document.getElementById('makerScroll');
+            const currentScroll = scrollArea.scrollLeft;
+            let currentMeasure = Math.floor(currentScroll / PIXELS_PER_MEASURE);
+            let targetScroll = 0;
+
+            if (action === 'start') {
+                targetScroll = 0;
+            } else if (action === 'end') {
+                if (makerNotes.length === 0) targetScroll = 0;
+                else {
+                    let maxTime = makerNotes.reduce((max, n) => Math.max(max, n.t + n.d), 0);
+                    targetScroll = (maxTime * PIXELS_PER_BEAT) - (scrollArea.clientWidth / 2);
+                }
+            } else if (typeof action === 'number') {
+                targetScroll = (currentMeasure + action) * PIXELS_PER_MEASURE;
+            }
+
+            if (targetScroll < 0) targetScroll = 0;
+            const maxScroll = scrollArea.scrollWidth - scrollArea.clientWidth;
+            if (targetScroll > maxScroll) targetScroll = maxScroll;
+
+            scrollArea.scrollTo({ left: targetScroll, behavior: 'smooth' });
+        }
+
+        function makerLoop() {
+            if(makerState === 'idle') return;
+            
+            const elapsedTime = audioCtx.currentTime - makerStartTime;
+            
+            if (elapsedTime > 62) { stopMaker(); return; }
+            
+            if (makerState === 'recording') {
+                for (let key in makerActivePresses) {
+                    const press = makerActivePresses[key];
+                    if (press.el) {
+                        let width = (elapsedTime - press.startTime) * (PIXELS_PER_BEAT / BEAT_TIME);
+                        if (width < 10) width = 10;
+                        press.el.style.width = `${width}px`;
+                    }
+                }
+            }
+
+            const currentX = elapsedTime * (PIXELS_PER_BEAT * 2);
+            const playhead = document.getElementById('makerPlayhead');
+            playhead.style.left = `${currentX}px`;
+
+            const scrollArea = document.getElementById('makerScroll');
+            if (currentX > scrollArea.scrollLeft + scrollArea.clientWidth - 100) {
+                scrollArea.scrollLeft = currentX - 100;
+            }
+
+            if (makerState === 'playing') {
+                const currentT = elapsedTime / BEAT_TIME;
+                while(makerNotesToPlay.length > 0 && makerNotesToPlay[0].t <= currentT) {
+                    const note = makerNotesToPlay.shift();
+                    playSound(note.n);
+                    setTimeout(() => stopSound(note.n), note.d * BEAT_TIME * 1000);
+                }
+            }
+
+            makerAnimFrame = requestAnimationFrame(makerLoop);
+        }
+
+        function saveCustomSong() {
+            if(makerNotes.length === 0) { alert("그려진 음표가 없습니다!"); return; }
+            const songName = prompt("이 곡의 이름을 입력해주세요:", "내 멋진 피아노 곡");
+            if(!songName) return;
+
+            const newSong = { id: 'custom_' + Date.now(), name: songName, data: makerNotes };
+            let saved = JSON.parse(localStorage.getItem('customSongs') || '[]');
+            saved.push(newSong);
+            localStorage.setItem('customSongs', JSON.stringify(saved));
+            
+            alert("저장되었습니다! 메인 메뉴에서 플레이할 수 있습니다.");
+            closeMaker();
+            renderMenu();
+        }
+
+        function exportAudio() {
+            if(makerNotes.length === 0) { alert("추출할 음표가 없습니다!"); return; }
+            
+            initAudio(); stopMaker();
+            
+            mediaRecorder = new MediaRecorder(mediaStreamDest.stream);
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            
+            mediaRecorder.onstop = () => {
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const extension = mimeType.includes('mp4') ? 'mp4' : (mimeType.includes('ogg') ? 'ogg' : 'webm');
+                const blob = new Blob(recordedChunks, { type: mimeType }); 
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none'; a.href = url; a.download = `my_piano_song.${extension}`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                
+                alert(`음원 파일(.${extension}) 다운로드가 완료되었습니다!`);
+                document.getElementById('btnExportAudio').innerText = "🎵 음원 다운로드";
+                document.getElementById('btnExportAudio').disabled = false;
+            };
+            
+            let maxTime = makerNotes.reduce((max, n) => Math.max(max, n.t + n.d), 0);
+            let totalDurationMs = (maxTime * BEAT_TIME * 1000) + 1500;
+            
+            if (totalDurationMs > 61500) totalDurationMs = 61500;
+            
+            document.getElementById('btnExportAudio').innerText = "⏳ 추출 중...";
+            document.getElementById('btnExportAudio').disabled = true;
+            
+            mediaRecorder.start(1000); 
+            startMakerPlay();
+            
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                stopMaker();
+            }, totalDurationMs);
+        }
+
+        function setupInputEvents() {
+            document.body.addEventListener('mousedown', (e) => { const key = e.target.closest('.game-key'); if (key) { initAudio(); pressKey(key.dataset.note); } });
+            document.body.addEventListener('mouseover', (e) => { if (e.buttons > 0) { const key = e.target.closest('.game-key'); if (key) pressKey(key.dataset.note); } });
+            document.body.addEventListener('mouseout', (e) => { const key = e.target.closest('.game-key'); if (key) releaseKey(key.dataset.note); });
+            document.addEventListener('mouseup', () => { pressedKeys.forEach(note => releaseKey(note)); });
+
+            const keyMap = {};
+            notes.forEach(n => { keyMap[n.key.toLowerCase()] = n.name; });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; 
+                if (e.repeat) return; 
+                
+                const key = e.key.toLowerCase();
+                if (keyMap[key]) {
+                    initAudio();
+                    pressKey(keyMap[key]);
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (keyMap[key]) {
+                    releaseKey(keyMap[key]);
+                }
+            });
+
+            const activeTouches = {}; 
+            document.body.addEventListener('touchstart', (e) => {
+                if(e.target.closest('#startMenu') || e.target.closest('#makerMenu') && !e.target.closest('.game-key')) return;
+                initAudio();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const key = target ? target.closest('.game-key') : null;
+                    if (key) { 
+                        e.preventDefault(); 
+                        const note = key.dataset.note; pressKey(note); activeTouches[touch.identifier] = note; 
+                    }
+                }
+            }, { passive: false });
+
+            document.body.addEventListener('touchmove', (e) => {
+                if(e.target.closest('#startMenu') || e.target.closest('#makerMenu') && !e.target.closest('.game-key')) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const key = target ? target.closest('.game-key') : null;
+                    const currentNote = activeTouches[touch.identifier];
+                    const newNote = key ? key.dataset.note : null;
+                    if (currentNote !== newNote) {
+                        e.preventDefault();
+                        if (currentNote) releaseKey(currentNote);
+                        if (newNote) { pressKey(newNote); activeTouches[touch.identifier] = newNote; }
+                        else { delete activeTouches[touch.identifier]; }
+                    }
+                }
+            }, { passive: false });
+
+            const handleTouchEnd = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const note = activeTouches[touch.identifier];
+                    if (note) { releaseKey(note); delete activeTouches[touch.identifier]; }
+                }
+            };
+            document.body.addEventListener('touchend', handleTouchEnd);
+            document.body.addEventListener('touchcancel', handleTouchEnd);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPianoUI('piano'); 
+            renderPianoUI('makerPiano');
+            setupInputEvents(); 
+            renderMenu(); 
+            let hs = localStorage.getItem('pianoHighScore');
+            if(hs) document.getElementById('highScoreText').innerText = hs;
+            setTimeout(updateKeyRects, 100);
+
+            document.getElementById('makerScroll').addEventListener('scroll', (e) => {
+                const currentScroll = e.target.scrollLeft;
+                let currentMeasure = Math.floor(currentScroll / PIXELS_PER_MEASURE) + 1;
+                document.getElementById('makerMeasureDisplay').innerText = `${currentMeasure} 마디`;
+            });
+        });
+    </script>
+</body>
+</html>

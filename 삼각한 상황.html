@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각한 상황</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            background-color: #f4f7f6;
+            color: #333;
+            font-family: 'Jua', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin: 10px 0;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+        }
+
+        #game-container {
+            position: relative;
+            background-color: #ffffff;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 3px solid #bdc3c7;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .overlay {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border: 4px solid #3498db;
+            border-radius: 15px;
+            pointer-events: auto;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .overlay h2 {
+            color: #2980b9;
+            font-size: 2.2rem;
+            margin-top: 0;
+        }
+
+        .overlay p {
+            font-size: 1.3rem;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        #shape-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.3rem;
+            font-family: 'Jua', sans-serif;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+        
+        .btn-restart {
+            background-color: #e74c3c;
+        }
+        .btn-restart:hover { background-color: #c0392b; }
+
+        #hud {
+            width: 850px;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 1.5rem;
+            color: #34495e;
+        }
+
+        .hud-item span {
+            color: #e67e22;
+            font-weight: bold;
+        }
+
+        .controls-info {
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>✏️ 삼각한 상황 📐</h1>
+    
+    <div id="hud">
+        <div class="hud-item">도형: <span id="ui-shape">-</span></div>
+        <div class="hud-item">점수: <span id="ui-score">0</span></div>
+        <div class="hud-item">현재 색칠: <span id="ui-area">0</span> / <span id="ui-quad-area" style="display:inline-block; width:50px; border-bottom:2px solid #34495e; text-align:center;">0</span> ㎠</div>
+        <div class="hud-item">목표: <span>색칠 가능 영역 전체</span> 칠하기</div>
+        <div class="hud-item">생명: <span id="ui-lives">3</span></div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="850" height="700"></canvas>
+        <div id="ui-layer">
+            <div id="screen-start" class="overlay active">
+                <h2>어떤 도형을 반으로 잘라볼까요?</h2>
+                <p>원하는 사각형을 선택하면 대각선이 그어집니다.<br>
+                   방향키로 연필을 움직여 색칠 가능한 삼각형 <b>전체</b>를 색칠하세요!<br>
+                   <small style="color: #e67e22;">(힌트: 몬스터들을 회색 '색칠 불가 영역'으로 몰아넣고 선을 그어 가두세요!)</small></p>
+                <div id="shape-buttons">
+                    <button class="btn" onclick="selectShape('square')">정사각형</button>
+                    <button class="btn" onclick="selectShape('rectangle')">직사각형</button>
+                    <button class="btn" onclick="selectShape('parallelogram')">평행사변형</button>
+                </div>
+            </div>
+            
+            <div id="screen-gameover" class="overlay">
+                <h2 style="color: #e74c3c;">앗, 몬스터에게 닿았어요!</h2>
+                <p>최종 점수: <span id="final-score">0</span></p>
+                <button class="btn btn-restart" onclick="goToMenu()">처음으로 돌아가기</button>
+            </div>
+
+            <!-- 수학적 결론을 직관적으로 보여주는 클리어 화면으로 대체 -->
+            <div id="screen-levelclear" class="overlay">
+                <h2 style="color: #27ae60;">삼각형 완성! 🎉</h2>
+                <p>사각형을 대각선으로 자르면 <b>넓이가 똑같은 2개의 삼각형</b>이 됩니다.<br><br>
+                그래서 색칠된 삼각형의 넓이는 <b id="clear-triangle-area" style="color:#d35400; font-size:1.8rem;"></b> <b>㎠</b> 입니다.<br>
+                <small style="color: #7f8c8d;">(전체 사각형 넓이 <span id="clear-quad-area"></span> ㎠ ÷ 2)</small></p>
+                <button class="btn" onclick="goToMenu()">다른 도형 도전하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-info">
+        [방향키] : 연필 이동 | [색칠 불가 영역]은 이동만 가능합니다.
+    </div>
+
+    <script>
+        // --- Audio System ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let nextNoteTime = 0;
+        let bgmStep = 0;
+        const bgmSeq = [220, 261.63, 329.63, 261.63, 293.66, 329.63, 196, 220]; 
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSFX(name) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            if (name === 'die') {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (name === 'gameover') {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 1.0);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.0);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 1.0);
+            } else if (name === 'fill') {
+                playTone(400, 'square', 0.1, 0.1);
+                setTimeout(() => playTone(600, 'square', 0.1, 0.1), 100);
+            } else if (name === 'correct') {
+                playTone(600, 'square', 0.1, 0.1);
+                setTimeout(() => playTone(800, 'square', 0.2, 0.1), 100);
+                setTimeout(() => playTone(1200, 'square', 0.3, 0.1), 200);
+            }
+        }
+
+        function scheduleBGM() {
+            if (!audioCtx || gameState !== STATE_PLAY) return;
+            if (nextNoteTime === 0) nextNoteTime = audioCtx.currentTime + 0.1;
+            
+            while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.value = bgmSeq[bgmStep];
+                gain.gain.setValueAtTime(0.02, nextNoteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.15);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(nextNoteTime);
+                osc.stop(nextNoteTime + 0.15);
+                
+                nextNoteTime += 0.2; 
+                bgmStep = (bgmStep + 1) % bgmSeq.length;
+            }
+        }
+
+        // --- Game System ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const filledCanvas = document.createElement('canvas');
+        filledCanvas.width = canvas.width;
+        filledCanvas.height = canvas.height;
+        const fctx = filledCanvas.getContext('2d');
+
+        const VISUAL_COLS = 50; 
+        const VISUAL_ROWS = 40;
+        const VISUAL_CELL_SIZE = 15;
+        
+        const SUB = 5; 
+        const COLS = VISUAL_COLS * SUB;
+        const ROWS = VISUAL_ROWS * SUB;
+        const CELL_SIZE = VISUAL_CELL_SIZE / SUB;
+
+        const OFFSET_X = 50;
+        const OFFSET_Y = 20;
+
+        const CELL_OUTSIDE = -1;
+        const CELL_EMPTY = 0;         // 색칠할 수 있는 영역 (왼쪽 아래 삼각형)
+        const CELL_SOLID = 1;
+        const CELL_PATH = 2;
+        const CELL_FILLED = 3;
+        const CELL_UNPAINTABLE = 4;   // 색칠 불가능 영역 (오른쪽 위 삼각형)
+
+        const STATE_START = 0;
+        const STATE_PLAY = 1;
+        const STATE_GAMEOVER = 2;
+        const STATE_LEVELCLEAR = 3;
+
+        // 도형 데이터 (사각형 3종만 남기고, 전체 넓이와 목표 삼각형 넓이 구분)
+        const shapeData = {
+            'square': { 
+                name: '정사각형', 
+                vertices: [{x: 10, y: 10}, {x: 30, y: 10}, {x: 30, y: 30}, {x: 10, y: 30}], 
+                quadArea: 400, 
+                trueArea: 200 // 삼각형 하나의 넓이
+            },
+            'rectangle': { 
+                name: '직사각형', 
+                vertices: [{x: 5, y: 10}, {x: 45, y: 10}, {x: 45, y: 30}, {x: 5, y: 30}], 
+                quadArea: 800, 
+                trueArea: 400 
+            },
+            'parallelogram': { 
+                name: '평행사변형', 
+                vertices: [{x: 15, y: 10}, {x: 45, y: 10}, {x: 35, y: 30}, {x: 5, y: 30}], 
+                quadArea: 600, 
+                trueArea: 300 
+            }
+        };
+
+        let gameState = STATE_START;
+        let currentShapeKey = 'square';
+        let grid = [];
+        let score = 0;
+        let lives = 3;
+        
+        let initialEmptyArea = 0;
+        let filledAreaDisplay = 0;
+        let targetAreaDisplay = 0;
+
+        let player = {
+            x: 0, y: 0, dirX: 0, dirY: 0, lastDirX: 0, lastDirY: 0, isDrawing: false, path: [], speed: 2
+        };
+        let enemies = [];
+        let keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        window.selectShape = function(shapeKey) {
+            initAudio(); 
+            currentShapeKey = shapeKey;
+            score = 0;
+            lives = 3;
+            startGame();
+        };
+
+        window.goToMenu = function() {
+            gameState = STATE_START;
+            updateUI();
+        };
+
+        function updateUI() {
+            document.getElementById('ui-shape').innerText = shapeData[currentShapeKey].name;
+            document.getElementById('ui-score').innerText = score;
+            document.getElementById('ui-area').innerText = filledAreaDisplay;
+            document.getElementById('ui-quad-area').innerText = shapeData[currentShapeKey].quadArea;
+            document.getElementById('ui-lives').innerText = lives;
+
+            document.getElementById('screen-start').classList.remove('active');
+            document.getElementById('screen-gameover').classList.remove('active');
+            document.getElementById('screen-levelclear').classList.remove('active');
+
+            if (gameState === STATE_START) document.getElementById('screen-start').classList.add('active');
+            if (gameState === STATE_GAMEOVER) {
+                document.getElementById('screen-gameover').classList.add('active');
+                document.getElementById('final-score').innerText = score;
+            }
+            if (gameState === STATE_LEVELCLEAR) {
+                document.getElementById('screen-levelclear').classList.add('active');
+                document.getElementById('clear-triangle-area').innerText = shapeData[currentShapeKey].trueArea;
+                document.getElementById('clear-quad-area').innerText = shapeData[currentShapeKey].quadArea;
+            }
+        }
+
+        function isInsidePolygon(px, py, vertices) {
+            let inside = false;
+            for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                let xi = vertices[i].x, yi = vertices[i].y;
+                let xj = vertices[j].x, yj = vertices[j].y;
+                let intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function startGame() {
+            gameState = STATE_PLAY;
+            nextNoteTime = 0; 
+            initGrid();
+            initPlayer();
+            initEnemies();
+            calculateArea();
+            updateUI();
+        }
+
+        function initGrid() {
+            grid = [];
+            let verts = shapeData[currentShapeKey].vertices;
+            fctx.clearRect(0, 0, filledCanvas.width, filledCanvas.height);
+
+            for (let x = 0; x < COLS; x++) {
+                grid[x] = [];
+                for (let y = 0; y < ROWS; y++) {
+                    grid[x][y] = CELL_OUTSIDE;
+                }
+            }
+
+            // 사각형을 대각선으로 분리하여 속성 할당
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    let mapX = (x + 0.5) / SUB;
+                    let mapY = (y + 0.5) / SUB;
+                    
+                    if (isInsidePolygon(mapX, mapY, verts)) {
+                        let p1 = verts[0]; // 좌측 상단
+                        let p3 = verts[2]; // 우측 하단
+                        
+                        let dx = p3.x - p1.x;
+                        let dy = p3.y - p1.y;
+                        
+                        // 벡터 외적을 이용한 대각선 분리
+                        let cross = (mapX - p1.x) * dy - (mapY - p1.y) * dx;
+                        
+                        if (cross < 0) {
+                            grid[x][y] = CELL_EMPTY; // 좌하단 타겟 삼각형 (색칠 가능)
+                        } else {
+                            grid[x][y] = CELL_UNPAINTABLE; // 우상단 삼각형 (색칠 불가)
+                        }
+                    }
+                }
+            }
+
+            // 외부 테두리만 SOLID 처리 (대각선은 벽이 아님)
+            let toSolid = [];
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (grid[x][y] === CELL_EMPTY || grid[x][y] === CELL_UNPAINTABLE) {
+                        let isBoundary = false;
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                let nx = x + dx, ny = y + dy;
+                                if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS || grid[nx][ny] === CELL_OUTSIDE) {
+                                    isBoundary = true;
+                                }
+                            }
+                        }
+                        if (isBoundary) toSolid.push({x, y});
+                    }
+                }
+            }
+            for (let pos of toSolid) {
+                grid[pos.x][pos.y] = CELL_SOLID;
+            }
+
+            // 타겟(색칠할 수 있는) 삼각형의 전체 칸 수만 계산
+            initialEmptyArea = 0;
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (grid[x][y] === CELL_EMPTY) initialEmptyArea++;
+                }
+            }
+            
+            let trueArea = shapeData[currentShapeKey].trueArea;
+            targetAreaDisplay = trueArea; 
+            filledAreaDisplay = 0;
+        }
+
+        function initPlayer() {
+            // 하단의 페인트 가능한 벽에서 시작
+            for (let y = ROWS - 1; y >= 0; y--) {
+                for (let x = 0; x < COLS; x++) {
+                    if (grid[x][y] === CELL_SOLID) {
+                        player.x = x; player.y = y;
+                        player.dirX = 0; player.dirY = 0;
+                        player.lastDirX = 0; player.lastDirY = 0;
+                        player.isDrawing = false;
+                        player.path = [];
+                        return;
+                    }
+                }
+            }
+        }
+
+        function initEnemies() {
+            enemies = [];
+            let spawnCells = [];
+            for (let x = 0; x < COLS; x+=SUB) { 
+                for (let y = 0; y < ROWS; y+=SUB) {
+                    // 적은 색칠 가능한 곳, 불가능한 곳 모두 스폰 가능
+                    if (grid[x][y] === CELL_EMPTY || grid[x][y] === CELL_UNPAINTABLE) spawnCells.push({x, y});
+                }
+            }
+
+            let numEnemies = 4;
+            let speed = 0.0625 * SUB; 
+
+            for (let i = 0; i < numEnemies; i++) {
+                if (spawnCells.length === 0) break;
+                let rCell = spawnCells[Math.floor(Math.random() * spawnCells.length)];
+                enemies.push({
+                    x: rCell.x, y: rCell.y,
+                    dx: (Math.random() > 0.5 ? 1 : -1) * speed,
+                    dy: (Math.random() > 0.5 ? 1 : -1) * speed,
+                    radius: 1.5 * SUB, 
+                    icon: (Math.random() > 0.5 ? '👾' : '👻')
+                });
+            }
+        }
+
+        function die() {
+            lives--;
+            ctx.fillStyle = 'rgba(255, 100, 100, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (lives <= 0) {
+                playSFX('gameover');
+                gameState = STATE_GAMEOVER;
+            } else {
+                playSFX('die');
+                for (let x = 0; x < COLS; x++) {
+                    for (let y = 0; y < ROWS; y++) {
+                        if (grid[x][y] === CELL_PATH) grid[x][y] = (grid[x][y] === CELL_UNPAINTABLE ? CELL_UNPAINTABLE : CELL_EMPTY);
+                        // 복원 로직 단순화
+                        if(grid[x][y] === CELL_PATH) grid[x][y] = CELL_EMPTY;
+                    }
+                }
+                initGrid(); 
+                // 대각선 방정식으로 다시 복원 (캐싱 리셋)
+                for (let x = 0; x < COLS; x++) {
+                    for (let y = 0; y < ROWS; y++) {
+                        if (grid[x][y] === CELL_PATH) {
+                            let mapX = (x + 0.5) / SUB;
+                            let mapY = (y + 0.5) / SUB;
+                            let verts = shapeData[currentShapeKey].vertices;
+                            let cross = (mapX - verts[0].x) * (verts[2].y - verts[0].y) - (mapY - verts[0].y) * (verts[2].x - verts[0].x);
+                            grid[x][y] = (cross < 0) ? CELL_EMPTY : CELL_UNPAINTABLE;
+                        }
+                    }
+                }
+                initPlayer();
+            }
+            updateUI();
+        }
+
+        function updatePlayer() {
+            let nextDirX = 0; let nextDirY = 0;
+            if (keys['ArrowUp']) nextDirY = -1;
+            else if (keys['ArrowDown']) nextDirY = 1;
+            else if (keys['ArrowLeft']) nextDirX = -1;
+            else if (keys['ArrowRight']) nextDirX = 1;
+
+            if (nextDirX === 0 && nextDirY === 0) return;
+            if (player.isDrawing && player.path.length > 0) {
+                if (nextDirX === -player.lastDirX && nextDirY === -player.lastDirY) return;
+            }
+
+            for (let step = 0; step < player.speed; step++) {
+                let nx = player.x + nextDirX;
+                let ny = player.y + nextDirY;
+
+                if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS || grid[nx][ny] === CELL_OUTSIDE) break;
+                if (grid[nx][ny] === CELL_PATH) break;
+
+                // 벽(SOLID)이거나 이미 색칠된 곳(FILLED)에 닿으면 선긋기 완료
+                if (grid[nx][ny] === CELL_SOLID || grid[nx][ny] === CELL_FILLED) {
+                    if (player.isDrawing) {
+                        player.path.push({x: nx, y: ny});
+                        fillAreaLogic();
+                        player.isDrawing = false;
+                        player.path = [];
+                    }
+                    player.x = nx; player.y = ny;
+                    player.lastDirX = nextDirX; player.lastDirY = nextDirY;
+                } 
+                // 비어있는 공간(색칠 가능한 곳 + 불가능한 곳 모두) 진입 시
+                else if (grid[nx][ny] === CELL_EMPTY || grid[nx][ny] === CELL_UNPAINTABLE) {
+                    if (!player.isDrawing) {
+                        player.isDrawing = true;
+                        player.path.push({x: player.x, y: player.y});
+                    }
+                    grid[nx][ny] = CELL_PATH;
+                    player.path.push({x: nx, y: ny});
+                    player.x = nx; player.y = ny;
+                    player.lastDirX = nextDirX; player.lastDirY = nextDirY;
+                }
+            }
+        }
+
+        function updateEnemies() {
+            for (let e of enemies) {
+                let hitWallX = false, hitWallY = false, hitPath = false;
+                let r = Math.floor(e.radius);
+                
+                let nextX = e.x + e.dx;
+                for (let dy = -r; dy <= r; dy++) {
+                    let cx = Math.floor(nextX + (e.dx > 0 ? r : -r));
+                    let cy = Math.floor(e.y) + dy;
+                    if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+                        let cell = grid[cx][cy];
+                        // 몬스터는 빈 공간과 색칠 불가능 공간 모두 자유롭게 이동
+                        if (cell !== CELL_EMPTY && cell !== CELL_UNPAINTABLE) {
+                            hitWallX = true;
+                            if (cell === CELL_PATH) hitPath = true;
+                        }
+                    }
+                }
+                if (hitWallX) { e.dx *= -1; e.x += e.dx * 0.5; } else { e.x = nextX; }
+
+                let nextY = e.y + e.dy;
+                for (let dx = -r; dx <= r; dx++) {
+                    let cx = Math.floor(e.x) + dx;
+                    let cy = Math.floor(nextY + (e.dy > 0 ? r : -r));
+                    if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+                        let cell = grid[cx][cy];
+                        if (cell !== CELL_EMPTY && cell !== CELL_UNPAINTABLE) {
+                            hitWallY = true;
+                            if (cell === CELL_PATH) hitPath = true;
+                        }
+                    }
+                }
+                if (hitWallY) { e.dy *= -1; e.y += e.dy * 0.5; } else { e.y = nextY; }
+
+                if (hitPath) { die(); return; }
+
+                if (player.isDrawing) {
+                    if (Math.abs(e.x - player.x) < r + 2 && Math.abs(e.y - player.y) < r + 2) {
+                        die(); return;
+                    }
+                }
+            }
+        }
+
+        function fillAreaLogic() {
+            fctx.fillStyle = 'rgba(46, 204, 113, 0.6)'; 
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (grid[x][y] === CELL_PATH) {
+                        grid[x][y] = CELL_FILLED;
+                        fctx.fillRect(OFFSET_X + x * CELL_SIZE, OFFSET_Y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+
+            let enemyZones = [];
+            for (let x = 0; x < COLS; x++) {
+                enemyZones[x] = [];
+                for (let y = 0; y < ROWS; y++) { enemyZones[x][y] = false; }
+            }
+
+            let queue = [];
+            for (let e of enemies) {
+                let ex = Math.floor(e.x); let ey = Math.floor(e.y);
+                if ((grid[ex][ey] === CELL_EMPTY || grid[ex][ey] === CELL_UNPAINTABLE) && !enemyZones[ex][ey]) {
+                    queue.push({x: ex, y: ey});
+                    enemyZones[ex][ey] = true;
+                }
+            }
+
+            let qHead = 0;
+            let dirs = [{x:1, y:0}, {x:-1, y:0}, {x:0, y:1}, {x:0, y:-1}];
+            while(qHead < queue.length) {
+                let curr = queue[qHead++];
+                for (let d of dirs) {
+                    let nx = curr.x + d.x; let ny = curr.y + d.y;
+                    if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                        if ((grid[nx][ny] === CELL_EMPTY || grid[nx][ny] === CELL_UNPAINTABLE) && !enemyZones[nx][ny]) {
+                            enemyZones[nx][ny] = true;
+                            queue.push({x: nx, y: ny});
+                        }
+                    }
+                }
+            }
+
+            fctx.fillStyle = 'rgba(46, 204, 113, 0.6)';
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    // 색칠 불가능 영역(CELL_UNPAINTABLE)은 폐쇄되어도 색칠되지 않음!
+                    if (grid[x][y] === CELL_EMPTY && !enemyZones[x][y]) {
+                        grid[x][y] = CELL_FILLED;
+                        fctx.fillRect(OFFSET_X + x * CELL_SIZE, OFFSET_Y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+
+            calculateArea();
+            score += Math.floor(player.path.length * 2);
+
+            // 전체(100%)를 칠했을 경우 클리어 처리
+            if (filledAreaDisplay >= targetAreaDisplay && gameState === STATE_PLAY) {
+                gameState = STATE_LEVELCLEAR;
+                enemies = []; 
+                score += 1000;
+                playSFX('correct'); 
+            } else {
+                playSFX('fill'); 
+            }
+            updateUI();
+        }
+
+        function calculateArea() {
+            let currentEmpty = 0;
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (grid[x][y] === CELL_EMPTY) currentEmpty++;
+                }
+            }
+            let filledCells = initialEmptyArea - currentEmpty;
+            let ratio = filledCells / initialEmptyArea;
+            
+            if (gameState === STATE_LEVELCLEAR) {
+                filledAreaDisplay = shapeData[currentShapeKey].trueArea;
+            } else {
+                // 정확하게 100%를 달성하기 전까지는 버림으로 표기 (199 / 200 등)
+                filledAreaDisplay = Math.floor(ratio * shapeData[currentShapeKey].trueArea);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 기본 모눈 그리기
+            ctx.lineWidth = 1;
+            for(let i=0; i<=VISUAL_COLS; i++) {
+                ctx.strokeStyle = (i % 10 === 0) ? '#aeb6bf' : '#ebedef';
+                ctx.beginPath();
+                ctx.moveTo(OFFSET_X + i*VISUAL_CELL_SIZE, OFFSET_Y);
+                ctx.lineTo(OFFSET_X + i*VISUAL_CELL_SIZE, OFFSET_Y + VISUAL_ROWS*VISUAL_CELL_SIZE);
+                ctx.stroke();
+            }
+            for(let i=0; i<=VISUAL_ROWS; i++) {
+                ctx.strokeStyle = (i % 10 === 0) ? '#aeb6bf' : '#ebedef';
+                ctx.beginPath();
+                ctx.moveTo(OFFSET_X, OFFSET_Y + i*VISUAL_CELL_SIZE);
+                ctx.lineTo(OFFSET_X + VISUAL_COLS*VISUAL_CELL_SIZE, OFFSET_Y + i*VISUAL_CELL_SIZE);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#34495e';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for(let i=0; i<=VISUAL_COLS; i+=5) {
+                ctx.fillText(i, OFFSET_X + i*VISUAL_CELL_SIZE, OFFSET_Y + VISUAL_ROWS*VISUAL_CELL_SIZE + 5);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for(let i=0; i<=VISUAL_ROWS; i+=5) {
+                let mathY = VISUAL_ROWS - i;
+                ctx.fillText(mathY, OFFSET_X - 5, OFFSET_Y + i*VISUAL_CELL_SIZE);
+            }
+            ctx.fillText("x축", OFFSET_X + VISUAL_COLS*VISUAL_CELL_SIZE + 20, OFFSET_Y + VISUAL_ROWS*VISUAL_CELL_SIZE + 5);
+            ctx.fillText("y축", OFFSET_X - 5, OFFSET_Y - 10);
+
+            // 도형 패스 클리핑 설정
+            let verts = shapeData[currentShapeKey].vertices;
+            ctx.beginPath();
+            ctx.moveTo(OFFSET_X + verts[0].x * VISUAL_CELL_SIZE, OFFSET_Y + verts[0].y * VISUAL_CELL_SIZE);
+            for(let i=1; i<verts.length; i++) {
+                ctx.lineTo(OFFSET_X + verts[i].x * VISUAL_CELL_SIZE, OFFSET_Y + verts[i].y * VISUAL_CELL_SIZE);
+            }
+            ctx.closePath();
+
+            // 외곽선 렌더링
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#2c3e50';
+            ctx.stroke();
+
+            ctx.save();
+            ctx.clip(); // 사각형 모양으로 캔버스 자르기
+
+            // ★ 색칠 불가 영역(오른쪽 위 삼각형) 그리기
+            let p1 = verts[0], p2 = verts[1], p3 = verts[2]; // 우상단 삼각형의 꼭짓점 3개
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.4)'; // 회색 음영
+            ctx.beginPath();
+            ctx.moveTo(OFFSET_X + p1.x * VISUAL_CELL_SIZE, OFFSET_Y + p1.y * VISUAL_CELL_SIZE);
+            ctx.lineTo(OFFSET_X + p2.x * VISUAL_CELL_SIZE, OFFSET_Y + p2.y * VISUAL_CELL_SIZE);
+            ctx.lineTo(OFFSET_X + p3.x * VISUAL_CELL_SIZE, OFFSET_Y + p3.y * VISUAL_CELL_SIZE);
+            ctx.fill();
+
+            // ★ 대각선 점선 그리기 (사각형을 가로지르는 선)
+            ctx.beginPath();
+            ctx.setLineDash([8, 8]);
+            ctx.moveTo(OFFSET_X + p1.x * VISUAL_CELL_SIZE, OFFSET_Y + p1.y * VISUAL_CELL_SIZE);
+            ctx.lineTo(OFFSET_X + p3.x * VISUAL_CELL_SIZE, OFFSET_Y + p3.y * VISUAL_CELL_SIZE);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); // 점선 해제
+
+            // "색칠 불가 영역" 텍스트 표시
+            let midX = (p1.x + p2.x + p3.x) / 3;
+            let midY = (p1.y + p2.y + p3.y) / 3;
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = 'bold 18px Jua, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("색칠 불가 영역", OFFSET_X + midX * VISUAL_CELL_SIZE, OFFSET_Y + midY * VISUAL_CELL_SIZE);
+
+            // 플레이어가 색칠한 형광펜 캔버스 덧씌우기
+            ctx.drawImage(filledCanvas, 0, 0);
+
+            // 플레이어 궤적 (진행 중인 선)
+            if (player.isDrawing && player.path.length > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = CELL_SIZE * 1.2; 
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                
+                let startP = player.path[0];
+                ctx.moveTo(OFFSET_X + startP.x * CELL_SIZE + CELL_SIZE/2, OFFSET_Y + startP.y * CELL_SIZE + CELL_SIZE/2);
+                for(let i=1; i<player.path.length; i++) {
+                    ctx.lineTo(OFFSET_X + player.path[i].x * CELL_SIZE + CELL_SIZE/2, OFFSET_Y + player.path[i].y * CELL_SIZE + CELL_SIZE/2);
+                }
+                ctx.lineTo(OFFSET_X + player.x * CELL_SIZE + CELL_SIZE/2, OFFSET_Y + player.y * CELL_SIZE + CELL_SIZE/2);
+                ctx.stroke();
+            }
+
+            ctx.restore(); // 클리핑 해제
+
+            // 몬스터 및 플레이어 렌더링
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '16px Arial';
+
+            for (let e of enemies) {
+                let px = OFFSET_X + e.x * CELL_SIZE + CELL_SIZE / 2;
+                let py = OFFSET_Y + e.y * CELL_SIZE + CELL_SIZE / 2;
+                ctx.fillText(e.icon, px, py);
+            }
+
+            let px = OFFSET_X + player.x * CELL_SIZE + CELL_SIZE / 2;
+            let py = OFFSET_Y + player.y * CELL_SIZE + CELL_SIZE / 2;
+            ctx.fillText('✏️', px, py);
+        }
+
+        function gameLoop() {
+            scheduleBGM(); 
+            if (gameState === STATE_PLAY) {
+                updatePlayer();
+                updateEnemies();
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        initGrid(); 
+        updateUI();
+        gameLoop();
+
+    </script>
+</body>
+</html>

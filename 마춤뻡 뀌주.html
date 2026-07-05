@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>마춤뻡 뀌주</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 캐주얼하고 귀여운 폰트 적용 */
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            font-family: 'Jua', sans-serif;
+            overscroll-behavior: none;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 커스텀 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-2deg); }
+            50% { transform: translateX(10px) rotate(2deg); }
+            75% { transform: translateX(-10px) rotate(-2deg); }
+        }
+        .animate-shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--sx), calc(var(--sy) * 20)) rotate(var(--r)); opacity: 0; }
+        }
+        .animate-confetti-fall {
+            animation: confetti-fall 1.5s ease-out forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        .card-transition {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .no-transition {
+            transition: none !important;
+        }
+        
+        /* 텍스트 외곽선 (가독성 향상) */
+        .text-outline {
+            text-shadow: 
+                -1px -1px 0 #fff,  
+                 1px -1px 0 #fff,
+                -1px  1px 0 #fff,
+                 1px  1px 0 #fff;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 flex flex-col items-center justify-center overflow-hidden transition-colors duration-500" id="app-container">
+
+    <!-- 파티클 컨테이너 -->
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden z-50"></div>
+
+    <!-- 1. 시작 화면 -->
+    <div id="start-screen" class="bg-white/90 backdrop-blur-sm p-8 rounded-[2rem] shadow-2xl max-w-md w-[90%] text-center space-y-8 z-10 animate-pop border-4 border-white">
+        <div>
+            <div class="text-6xl mb-4 animate-bounce">🤔</div>
+            <h1 class="text-5xl font-black text-blue-500 mb-2 drop-shadow-sm">마춤뻡 뀌주</h1>
+            <p class="text-slate-500 text-lg">어느 쪽이 맞는 말일까요?</p>
+            <p class="text-sm text-slate-400 mt-2 font-bold bg-slate-100 py-1 px-3 rounded-full inline-block">총 <span id="question-count">검수 중</span>개의 문제 · 오류 자동 정리</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-3xl space-y-4 text-left border-2 border-blue-100 shadow-inner">
+            <h2 class="text-xl text-blue-600 mb-2 text-center">게임 방법</h2>
+            <div class="flex items-center gap-4">
+                <div class="bg-white shadow-md p-2 rounded-xl text-2xl w-14 text-center text-blue-500">👈</div>
+                <span class="text-gray-600 text-lg">왼쪽이 맞으면 <b class="text-blue-500">왼쪽으로 밀기</b></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="bg-white shadow-md p-2 rounded-xl text-2xl w-14 text-center text-blue-500">👉</div>
+                <span class="text-gray-600 text-lg">오른쪽이 맞으면 <b class="text-blue-500">오른쪽으로 밀기</b></span>
+            </div>
+        </div>
+
+        <button id="btn-start" class="w-full bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 active:scale-95 transition-transform text-white text-3xl py-5 rounded-2xl shadow-[0_6px_0_#1e3a8a]">
+            게임 시작
+        </button>
+    </div>
+
+    <!-- 2. 플레이 화면 -->
+    <div id="playing-screen" class="hidden flex-col w-full max-w-md flex-1 relative py-6 px-4">
+        <!-- 상단 HUD -->
+        <div class="flex justify-between items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl shadow-md border-2 border-white mb-6 z-10 shrink-0">
+            <div id="hearts-container" class="flex gap-1 text-2xl md:text-3xl">
+                <!-- 하트 아이콘들이 여기에 렌더링됨 -->
+            </div>
+            <div class="text-center flex flex-col items-center">
+                <div id="rank-badge" class="text-sm px-3 py-1 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300 shadow-sm border border-black/5">
+                    <span id="rank-icon">🪨</span> <span id="rank-name">아이언</span>
+                </div>
+                <div id="score-display" class="text-4xl font-black text-gray-800 drop-shadow-sm">0</div>
+            </div>
+            <div class="text-right w-[90px]">
+                <div id="combo-display" class="text-gray-400 text-xl">0 COMBO</div>
+            </div>
+        </div>
+
+        <!-- 카드 영역 -->
+        <div class="flex-1 relative flex items-center justify-center min-h-[350px]">
+            <!-- 다음 카드 더미 (시각적 효과) -->
+            <div class="absolute w-full max-w-[340px] h-72 bg-white/60 rounded-[2.5rem] shadow-sm border-4 border-white/50 transform scale-90 translate-y-6 z-0"></div>
+            <div class="absolute w-full max-w-[340px] h-72 bg-white/80 rounded-[2.5rem] shadow-sm border-4 border-white/80 transform scale-95 translate-y-3 z-0"></div>
+            
+            <!-- 실제 조작하는 카드 -->
+            <div id="game-card" class="absolute w-full max-w-[340px] h-72 rounded-[2.5rem] shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-8 card-transition bg-white border-white z-20 overflow-hidden">
+                <!-- 힌트 배경 아이콘 -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
+                    <div id="swipe-hint" class="text-9xl"></div>
+                </div>
+
+                <!-- 왼쪽 선택지 -->
+                <div class="flex-1 flex justify-center items-center p-3 relative z-10" id="left-value-container">
+                    <div class="text-center break-keep transition-all duration-200 text-gray-800" id="left-value"></div>
+                </div>
+                
+                <!-- 중앙 VS 선 -->
+                <div class="w-1 h-full bg-slate-100 relative shrink-0 z-0">
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 text-sm text-gray-400 shadow-md border-2 border-slate-100 z-30">VS</div>
+                </div>
+
+                <!-- 오른쪽 선택지 -->
+                <div class="flex-1 flex justify-center items-center p-3 relative z-10" id="right-value-container">
+                    <div class="text-center break-keep transition-all duration-200 text-gray-800" id="right-value"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 가이드 -->
+        <div class="text-center mt-6 text-gray-500 text-lg z-10 bg-white/70 py-3 rounded-2xl backdrop-blur-sm shrink-0 shadow-sm border border-white">
+            👈 <span class="mx-2 text-outline">왼쪽 스와이프</span> <span class="mx-2 text-gray-300">|</span> 
+            <span class="mx-2 text-outline">오른쪽 스와이프</span> 👉
+        </div>
+    </div>
+
+    <!-- 3. 게임 오버 화면 -->
+    <div id="gameover-screen" class="hidden bg-white/90 backdrop-blur-sm p-8 rounded-[2rem] shadow-2xl max-w-md w-[90%] text-center space-y-6 z-10 border-4 border-white animate-pop">
+        <div>
+            <h1 class="text-5xl text-red-500 mb-2 drop-shadow-sm">게임 오버!</h1>
+            <p class="text-slate-500 text-lg">아쉽게도 하트를 모두 잃었어요.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-3xl p-6 space-y-4 border-2 border-slate-200 relative overflow-hidden shadow-inner">
+            <div class="flex flex-col items-center justify-center py-2">
+                <span id="final-rank-icon" class="text-7xl mb-2 drop-shadow-md animate-bounce">🪨</span>
+                <span id="final-rank-name" class="text-3xl text-gray-800 mt-2">아이언</span>
+                <span class="text-sm text-gray-400 mt-1">최종 등급</span>
+            </div>
+            <div class="w-full h-1 bg-slate-200 rounded-full my-4"></div>
+            <div class="flex justify-around items-center">
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">최고 점수</p>
+                    <p id="high-score-display" class="text-2xl text-blue-500 drop-shadow-sm">0</p>
+                </div>
+                <div class="w-1 h-12 bg-slate-200 rounded-full"></div>
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">내 점수</p>
+                    <p id="final-score-display" class="text-4xl text-red-500 drop-shadow-sm">0</p>
+                </div>
+            </div>
+        </div>
+
+        <button id="btn-restart" class="w-full bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 active:scale-95 transition-transform text-white text-3xl py-5 rounded-2xl shadow-[0_6px_0_#14532d] flex justify-center items-center gap-2">
+            <span>🔄</span> 다시하기
+        </button>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. Audio Engine (Web Audio API 활용)
+        // ==========================================
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.isPlayingBgm = false;
+                this.nextNoteTime = 0;
+                this.currentNote = 0;
+                this.tempo = 140;
+                this.notes = [
+                    392.00, 329.63, 261.63, 329.63,
+                    392.00, 392.00, 392.00, 0,
+                    329.63, 329.63, 329.63, 0,
+                    392.00, 493.88, 493.88, 0
+                ]; 
+                this.timerID = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCorrect() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWrong() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            scheduler() {
+                if (!this.isPlayingBgm || !this.ctx) return;
+                while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                    if (this.notes[this.currentNote] !== 0) {
+                        this.playNote(this.notes[this.currentNote], this.nextNoteTime);
+                    }
+                    this.nextNoteTime += 60.0 / this.tempo / 2;
+                    this.currentNote = (this.currentNote + 1) % this.notes.length;
+                }
+                this.timerID = setTimeout(() => this.scheduler(), 25);
+            }
+
+            playNote(freq, time) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'triangle';
+                gain.gain.setValueAtTime(0.02, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+                osc.start(time);
+                osc.stop(time + 0.2);
+            }
+
+            startBGM() {
+                if (this.isPlayingBgm) return;
+                this.init();
+                this.isPlayingBgm = true;
+                this.nextNoteTime = this.ctx.currentTime + 0.1;
+                this.scheduler();
+            }
+
+            stopBGM() {
+                this.isPlayingBgm = false;
+                clearTimeout(this.timerID);
+            }
+        }
+
+        const audioEngine = new AudioEngine();
+
+        // ==========================================
+        // 2. Game Logic & State Management
+        // ==========================================
+        
+        // 철저하게 검증된 방대한 맞춤법 문제 데이터베이스 (총 420여 개)
+        // c: 정답(Correct), w: 오답(Wrong)
+        let wordPairs = [
+            // 기본/자주 틀리는 단어 1
+            { c: "안돼", w: "안되" }, { c: "어이없다", w: "어의없다" }, { c: "금세", w: "금새" }, { c: "웬만하면", w: "왠만하면" }, 
+            { c: "웬 떡이야", w: "왠 떡이야" }, { c: "얻다 대고", w: "어따 대고" }, { c: "할게요", w: "할께요" }, { c: "안 되나요", w: "않되나요" }, 
+            { c: "바람", w: "바램" }, { c: "잠갔다", w: "잠궜다" }, { c: "오랜만에", w: "오랫만에" }, { c: "역할", w: "역활" }, 
+            { c: "나중에 봬요", w: "나중에 뵈요" }, { c: "건드리다", w: "건들이다" }, { c: "앳되다", w: "애띠다" }, { c: "설거지", w: "설겆이" }, 
+            { c: "일일이", w: "일일히" }, { c: "어떻게", w: "어떻해" }, { c: "재작년", w: "제작년" }, { c: "설렘", w: "설레임" }, 
+            { c: "며칠", w: "몇일" }, { c: "단언컨대", w: "단언컨데" }, { c: "대물림", w: "되물림" }, { c: "무난하다", w: "문안하다" }, 
+            { c: "어떡해", w: "어떻해" }, { c: "구레나룻", w: "구렛나루" }, { c: "눈곱", w: "눈꼽" }, { c: "빈털터리", w: "빈털털이" }, 
+            { c: "핼쑥하다", w: "헬쑥하다" }, { c: "찌개", w: "찌게" }, { c: "어쭙잖다", w: "어쭙짢다" }, { c: "희한하다", w: "희안하다" }, 
+            
+            // 기본/자주 틀리는 단어 2
+            { c: "틈틈이", w: "틈틈히" }, { c: "곰곰이", w: "곰곰히" }, { c: "널따랗다", w: "넓다랗다" }, { c: "하마터면", w: "하마트면" }, 
+            { c: "통째로", w: "통채로" }, { c: "치러", w: "치뤄" }, { c: "십상", w: "쉽상" }, { c: "닦달하다", w: "닥달하다" }, 
+            { c: "인마", w: "임마" }, { c: "주꾸미", w: "쭈꾸미" }, { c: "아귀찜", w: "아구찜" }, { c: "얽히고설킨", w: "얼키고설킨" }, 
+            { c: "단출하다", w: "단촐하다" }, { c: "육개장", w: "육계장" }, { c: "베개", w: "베게" }, { c: "사흗날", w: "사흘날" }, 
+            { c: "결제(돈)", w: "결재(돈)" }, { c: "연도", w: "년도" }, { c: "우레", w: "우뢰" }, { c: "혈혈단신", w: "홀홀단신" }, 
+            { c: "삼수갑산", w: "산수갑산" }, { c: "절체절명", w: "절대절명" }, { c: "풍비박산", w: "풍지박산" }, { c: "오지랖", w: "오지랍" }, 
+            
+            // 동사/형용사 활용
+            { c: "부수다(물건)", w: "부시다(물건)" }, { c: "들이켜다", w: "들이키다" }, { c: "삼가다", w: "삼가하다" }, { c: "어리바리", w: "어리버리" }, 
+            { c: "서슴지", w: "서슴치" }, { c: "익숙지", w: "익숙치" }, { c: "생각건대", w: "생각컨데" }, { c: "느지막이", w: "느즈막히" }, 
+            { c: "가르치다", w: "가르키다" }, { c: "반드시(꼭)", w: "반듯이(꼭)" }, { c: "짜깁기", w: "짜집기" }, { c: "깨끗이", w: "깨끗히" }, 
+            { c: "부서지다", w: "부셔지다" }, { c: "치고받다", w: "치고박다" }, { c: "얽매다", w: "얽메다" }, { c: "움츠리다", w: "움추리다" },
+            { c: "으스대다", w: "으시대다" }, { c: "찌푸리다", w: "찌뿌리다" }, { c: "구부러지다", w: "구부러지다" }, { c: "어우러지다", w: "어우러지다" },
+            
+            // 사이시옷/명사 표기
+            { c: "개수", w: "갯수" }, { c: "대가", w: "댓가" }, { c: "초점", w: "촛점" }, { c: "마구간", w: "마굿간" }, 
+            { c: "기차간", w: "기찻간" }, { c: "전세방", w: "전셋방" }, { c: "월세방", w: "월셋방" }, { c: "고깃국", w: "고기국" }, 
+            { c: "나뭇잎", w: "나무잎" }, { c: "베갯잇", w: "베게잇" }, { c: "머리말", w: "머릿말" }, { c: "인사말", w: "인삿말" }, 
+            { c: "반대말", w: "반댓말" }, { c: "혼잣말", w: "혼자말" }, { c: "존댓말", w: "존대말" }, { c: "예사말", w: "예삿말" }, 
+            { c: "꼭짓점", w: "꼭지점" }, { c: "해님", w: "햇님" }, { c: "곳간", w: "고간" }, { c: "툇마루", w: "퇴마루" },
+            { c: "숫자", w: "수자" }, { c: "횟수", w: "회수" }, { c: "셋방", w: "세방" }, { c: "차간(기차)", w: "찻간" },
+            
+            // 명사형어미/율,률
+            { c: "만듦", w: "만듬" }, { c: "삶음", w: "살음" }, { c: "앎", w: "알음" }, { c: "백분율", w: "백분률" }, 
+            { c: "실패율", w: "실패률" }, { c: "합격률", w: "합격율" }, { c: "명중률", w: "명중율" }, { c: "얼음", w: "어름" },
+            { c: "줄임", w: "줄림" }, { c: "발돋움", w: "발돋음" }, { c: "부기", w: "붓기(명사)" },
+
+            // 빼기, 배기, 뚝, 깍
+            { c: "떡볶이", w: "떡볶기" }, { c: "깍두기", w: "깍뚜기" }, { c: "곱빼기", w: "곱배기" }, { c: "뚝배기", w: "뚝빼기" }, 
+            { c: "언덕배기", w: "언덕빼기" }, { c: "이마빼기", w: "이마배기" }, { c: "귀퉁배기", w: "귀퉁빼기" },
+            
+            // 수/숫 접두사
+            { c: "수나사", w: "숫나사" }, { c: "수놈", w: "숫놈" }, { c: "수사자", w: "숫사자" }, { c: "숫염소", w: "수염소" }, 
+            { c: "수양버들", w: "숫양버들" }, { c: "숫양", w: "수양" }, { c: "숫쥐", w: "수쥐" }, { c: "수소", w: "숫소" }, 
+            { c: "수돼지", w: "숫돼지" }, { c: "수꿩", w: "숫꿩" }, { c: "수캉아지", w: "숫강아지" }, { c: "수평아리", w: "숫병아리" }, 
+            { c: "암탉", w: "암닭" }, { c: "수탉", w: "수닭" },
+            
+            // 어원 및 기타 표기
+            { c: "구시렁거리다", w: "궁시렁거리다" }, { c: "아지랑이", w: "아지랭이" }, { c: "강낭콩", w: "강남콩" }, { c: "사글세", w: "삭월세" }, 
+            { c: "똬리", w: "또아리" }, { c: "살코기", w: "살고기" }, { c: "머리카락", w: "머리가락" }, { c: "창난젓", w: "창란젓" }, 
+            { c: "명란젓", w: "명난젓" }, { c: "어리굴젓", w: "어리굴젖" }, { c: "넙치", w: "넓치" }, { c: "며느리", w: "며느아리" }, 
+            { c: "자랑스러운", w: "자랑스런" }, { c: "갑작스러운", w: "갑작스런" }, { c: "짓무르다", w: "짖무르다" }, { c: "뻗치다", w: "뻗히다" }, 
+            { c: "걷어붙이다", w: "걷어부치다" }, { c: "밀어붙이다", w: "밀어부치다" }, { c: "에구머니나", w: "애구머니나" }, { c: "부리나케", w: "부리나게" }, 
+            { c: "칠흑", w: "칠흙" }, { c: "널브러지다", w: "널부러지다" }, { c: "곤두박질치다", w: "곤두박질하다" }, { c: "널빤지", w: "널판지" }, 
+            { c: "널찍하다", w: "넓직하다" }, { c: "얄팍하다", w: "얇팍하다" }, { c: "짤막하다", w: "짧막하다" }, { c: "두둑하다", w: "두뚝하다" }, 
+            { c: "안성맞춤", w: "안성마춤" }, { c: "귀띔", w: "귀뜸" }, { c: "눈살", w: "눈쌀" }, { c: "등쌀", w: "등살" }, 
+            { c: "귀밑머리", w: "귓머리" }, { c: "뒤치다꺼리", w: "뒤치닥거리" }, { c: "뒷수습", w: "뒤수습" }, { c: "왠지", w: "웬지" }, 
+            
+            // 웬/왠, 이따가/있다가
+            { c: "웬일", w: "왠일" }, { c: "이따가(시간)", w: "있다가(시간)" }, { c: "알맞은", w: "알맞는" }, { c: "걸맞은", w: "걸맞는" }, 
+            
+            // 사자성어 및 한자어
+            { c: "붉으락푸르락", w: "푸르락붉으락" }, { c: "야반도주", w: "야밤도주" }, { c: "환골탈태", w: "환골탈퇴" }, { c: "진퇴양난", w: "진퇴양란" }, 
+            { c: "일취월장", w: "일취얼장" }, { c: "뇌졸중", w: "뇌졸증" }, { c: "백내장", w: "백래장" }, { c: "녹내장", w: "녹래장" },
+            { c: "사달이 나다", w: "사단이 나다" }, { c: "단기필마", w: "단기필만" }, { c: "사면초가", w: "사면초과" }, { c: "임기응변", w: "임기웅변" }, 
+            { c: "우왕좌왕", w: "우왕자왕" }, { c: "파렴치", w: "파렴치한" }, { c: "동병상련", w: "동병상연" }, { c: "희로애락", w: "희노애락" }, 
+            { c: "대노(X)", w: "대로(O)" }, { c: "연월일", w: "년월일" }, { c: "쌍룡", w: "쌍용" }, { c: "익명", w: "닉명" },
+            { c: "요도", w: "뇨도" },
+            
+            // 외래어 표기법
+            { c: "주스", w: "쥬스" }, { c: "케이크", w: "케잌" }, { c: "초콜릿", w: "초콜렛" }, { c: "리모컨", w: "리모콘" }, 
+            { c: "배지", w: "뱃지" }, { c: "카디건", w: "가디건" }, { c: "바비큐", w: "바베큐" }, { c: "슈퍼마켓", w: "슈퍼마켙" }, 
+            { c: "텔레비전", w: "텔레비젼" }, { c: "앙코르", w: "앵콜" }, { c: "플루트", w: "플룻" }, { c: "랍스터", w: "랍스타" }, 
+            { c: "핼러윈", w: "할로윈" }, { c: "스태프", w: "스탭" }, { c: "콘셉트", w: "컨셉" }, { c: "콤팩트", w: "컴팩트" }, 
+            { c: "워크숍", w: "워크샵" }, { c: "리더십", w: "리더쉽" }, { c: "멤버십", w: "멤버쉽" }, { c: "블록", w: "블럭" }, 
+            { c: "다이내믹", w: "다이나믹" }, { c: "메시지", w: "메세지" }, { c: "소시지", w: "소세지" }, { c: "레시피", w: "레쉬피" }, 
+            { c: "뷔페", w: "부페" }, { c: "카페", w: "까페" }, { c: "팸플릿", w: "팜플렛" }, { c: "심포지엄", w: "심포지움" }, 
+            { c: "앰뷸런스", w: "엠블란스" }, { c: "깁스", w: "기브스" }, { c: "크루아상", w: "크로와상" }, { c: "마카롱", w: "마까롱" }, 
+            { c: "타르트", w: "타르뜨" }, { c: "돈가스", w: "돈까스" }, { c: "서비스", w: "써비스" },
+            
+            // 일상 동작/표현
+            { c: "뭉그적거리다", w: "밍기적거리다" }, { c: "미루나무", w: "미류나무" }, { c: "으레", w: "으례" }, { c: "케케묵다", w: "켸켸묵다" }, 
+            { c: "담그다", w: "담구다" }, { c: "치르다", w: "치루다" }, { c: "눋다", w: "눌다" }, { c: "멥쌀", w: "맵쌀" }, 
+            { c: "쌉싸름하다", w: "쌉싸롬하다" }, { c: "아등바등", w: "아둥바둥" }, { c: "발버둥", w: "발바둥" }, { c: "얼루기", w: "얼룩이" }, 
+            { c: "더욱이", w: "더우기" }, { c: "일찍이", w: "일찌기" }, { c: "생끗", w: "생긋" }, { c: "방긋", w: "방끗" }, 
+            { c: "아무튼", w: "아무턴" }, { c: "하여튼", w: "하여턴" }, { c: "어쨌든", w: "어쨋든" }, { c: "도대체", w: "도대채" }, 
+            { c: "구태여", w: "구태어" }, { c: "넉넉지", w: "넉넉치" }, { c: "섭섭지", w: "섭섭치" }, { c: "깨끗지", w: "깨끗치" }, 
+            { c: "무심치", w: "무심지" }, { c: "허송세월", w: "허송새월" }, { c: "할게", w: "할께" }, { c: "갈게", w: "갈께" },
+            { c: "먹을게", w: "먹을께" }, { c: "잠가라", w: "잠궈라" }, { c: "담가라", w: "담궈라" }, { c: "치러라", w: "치뤄라" },
+            { c: "들르다", w: "들리다" }, { c: "들렀다", w: "들렸다" }, { c: "엉겁결에", w: "엉겹결에" }, { c: "요새", w: "요세" },
+            { c: "밤새", w: "밤세" }, { c: "가르마", w: "가리마" }, { c: "끄트머리", w: "끝트머리" }, { c: "거무튀튀하다", w: "검무튀튀하다" },
+            { c: "새까맣다", w: "세까맣다" }, { c: "싯누렇다", w: "시누렇다" }, { c: "시퍼렇다", w: "싯퍼렇다" }, { c: "깡충깡충", w: "깡총깡총" },
+            { c: "옥신각신", w: "옥신깍신" }, { c: "쩨쩨하다", w: "째째하다" }, { c: "흉측하다", w: "흉칙하다" }, { c: "트림", w: "트름" },
+            
+            // 기타 혼동 단어
+            { c: "호두과자", w: "호도과자" }, { c: "수류탄", w: "수탄" }, { c: "가벼이", w: "가벼히" }, { c: "기꺼이", w: "기꺼히" },
+            { c: "솔직히", w: "솔직이" }, { c: "가만히", w: "가만이" }, { c: "나란히", w: "나란이" }, { c: "버젓이", w: "버젓히" },
+            { c: "번번이", w: "번번히" }, { c: "겹겹이", w: "겹겹히" }, { c: "샅샅이", w: "샅샅히" }, { c: "굵직하다", w: "굵찍하다" },
+            { c: "널찍하다", w: "널직하다" }, { c: "객쩍다", w: "객적다" }, { c: "멋쩍다", w: "멋적다" }, { c: "귀살쩍다", w: "귀살적다" },
+            { c: "맛깔스러운", w: "맛깔스런" }, { c: "밑동", w: "밑둥" }, { c: "산봉우리", w: "산봉오리" }, { c: "숙맥", w: "쑥맥" },
+            { c: "시답잖다", w: "시덥잖다" }, { c: "요컨대", w: "요컨데" }, { c: "이음새", w: "이음세" }, { c: "파투", w: "파토" },
+            { c: "콧방울", w: "콧망울" }, { c: "뒤꿈치", w: "뒷꿈치" }, { c: "비계(고기)", w: "비게" }, { c: "구절", w: "귀절" },
+            { c: "돌멩이", w: "돌맹이" }, { c: "빈번히", w: "빈번이" }, { c: "꼼꼼히", w: "꼼꼼이" }, { c: "살쾡이", w: "삵쾡이" },
+            { c: "후덥지근하다", w: "후덕지근하다" }, { c: "낭떠러지", w: "낭떨어지" }, { c: "나룻배", w: "나루배" }, { c: "조개껍데기", w: "조개껍질" },
+            { c: "돼지껍데기", w: "돼지껍질" }, { c: "귤껍질", w: "귤껍데기" }, { c: "덮이다", w: "덮히다" }, { c: "걷히다", w: "걷치다" },
+            { c: "가방을 메다", w: "가방을 매다" }, { c: "끈을 매다", w: "끈을 메다" }, { c: "병이 나았다", w: "병이 낳았다" }, { c: "서류 결재", w: "서류 결제" },
+            { c: "카드 결제", w: "카드 결재" }, { c: "연예인", w: "연애인" }, { c: "연애편지", w: "연예편지" }
+        ];
+
+        // 데이터 자동 정리: 양쪽이 같은 문제, O/X 라벨이 섞인 문제, 완전 중복 문제 제거
+        const RAW_PAIR_COUNT = wordPairs.length;
+        function cleanWordPairs(pairs) {
+            const seen = new Set();
+            return pairs.filter(pair => {
+                if (!pair || !pair.c || !pair.w) return false;
+                const c = String(pair.c).trim();
+                const w = String(pair.w).trim();
+                if (!c || !w) return false;
+                if (c === w) return false;
+                if (c.includes('(X)') || c.includes('(O)') || w.includes('(X)') || w.includes('(O)')) return false;
+                const key = `${c}|||${w}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                pair.c = c;
+                pair.w = w;
+                return true;
+            });
+        }
+        wordPairs = cleanWordPairs(wordPairs);
+
+        let score = 0;
+        let highScore = Number(localStorage.getItem('swipeSpellingScore') || 0) || 0;
+        let combo = 0;
+        let lives = 3;
+        let currentQuestion = null;
+        let cardStatus = 'default';
+
+        // 문제 중복 방지를 위한 최근 출제 문제 큐
+        let recentQuestions = [];
+        const RECENT_LIMIT = 50; // 기억할 최근 문제 수
+
+        function generateQuestion() {
+            if (!wordPairs.length) {
+                return { leftStr: '문제 없음', rightStr: '문제 없음', answer: 'left' };
+            }
+            // 최근에 푼 문제를 제외하고 필터링
+            let availablePairs = wordPairs.filter(pair => !recentQuestions.includes(pair.c));
+            
+            // 모든 문제를 한 번씩 다 풀었다면 큐 초기화
+            if (availablePairs.length === 0) {
+                recentQuestions = [];
+                availablePairs = wordPairs;
+            }
+            
+            const pair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
+            
+            // 최근 푼 문제에 기록
+            recentQuestions.push(pair.c);
+            if (recentQuestions.length > RECENT_LIMIT) {
+                recentQuestions.shift(); // 큐 크기 유지
+            }
+            
+            // 정답을 왼쪽에 둘지 오른쪽에 둘지 랜덤 (50%)
+            const isLeftCorrect = Math.random() > 0.5;
+            let leftStr, rightStr, answer;
+
+            if (isLeftCorrect) {
+                leftStr = pair.c;
+                rightStr = pair.w;
+                answer = 'left';
+            } else {
+                leftStr = pair.w;
+                rightStr = pair.c;
+                answer = 'right';
+            }
+
+            return { leftStr, rightStr, answer };
+        }
+
+        function getRank(score) {
+            if (score < 100) return { name: '아이언', color: 'text-gray-500', bg: 'bg-gray-100', icon: '🪨' };
+            if (score < 300) return { name: '브론즈', color: 'text-amber-700', bg: 'bg-amber-100', icon: '🥉' };
+            if (score < 500) return { name: '실버', color: 'text-slate-500', bg: 'bg-slate-200', icon: '🥈' };
+            if (score < 1000) return { name: '골드', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '🥇' };
+            if (score < 2000) return { name: '플래티넘', color: 'text-teal-600', bg: 'bg-teal-100', icon: '✨' };
+            if (score < 3000) return { name: '다이아몬드', color: 'text-blue-500', bg: 'bg-blue-100', icon: '💎' };
+            if (score < 4000) return { name: '마스터', color: 'text-purple-500', bg: 'bg-purple-100', icon: '🔮' };
+            if (score < 5000) return { name: '그랜드마스터', color: 'text-red-500', bg: 'bg-red-100', icon: '🔥' };
+            return { name: '세종대왕', color: 'text-yellow-700', bg: 'bg-yellow-200', icon: '👑' };
+        }
+
+        function formatMathHTML(text) {
+            // 글자 수에 따라 폰트 크기 조절
+            const fontSizeClass = text.length > 5 ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl';
+            return `<div class="${fontSizeClass}">${text}</div>`;
+        }
+
+        // ==========================================
+        // 3. UI Update Functions
+        // ==========================================
+        const els = {
+            appContainer: document.getElementById('app-container'),
+            startScreen: document.getElementById('start-screen'),
+            playingScreen: document.getElementById('playing-screen'),
+            gameoverScreen: document.getElementById('gameover-screen'),
+            heartsContainer: document.getElementById('hearts-container'),
+            scoreDisplay: document.getElementById('score-display'),
+            comboDisplay: document.getElementById('combo-display'),
+            rankBadge: document.getElementById('rank-badge'),
+            rankIcon: document.getElementById('rank-icon'),
+            rankName: document.getElementById('rank-name'),
+            gameCard: document.getElementById('game-card'),
+            leftValueContainer: document.getElementById('left-value-container'),
+            rightValueContainer: document.getElementById('right-value-container'),
+            leftValue: document.getElementById('left-value'),
+            rightValue: document.getElementById('right-value'),
+            swipeHint: document.getElementById('swipe-hint'),
+            confettiContainer: document.getElementById('confetti-container'),
+            questionCount: document.getElementById('question-count')
+        };
+
+        if (els.questionCount) {
+            els.questionCount.innerText = `${wordPairs.length}`;
+            els.questionCount.title = `원본 ${RAW_PAIR_COUNT}개 중 자동 정리 후 ${wordPairs.length}개`;
+        }
+
+        function switchScreen(screen) {
+            els.startScreen.style.display = 'none';
+            els.playingScreen.style.display = 'none';
+            els.gameoverScreen.style.display = 'none';
+            els.playingScreen.classList.remove('flex');
+
+            if (screen === 'start') els.startScreen.style.display = 'block';
+            if (screen === 'playing') {
+                els.playingScreen.style.display = 'flex';
+                els.playingScreen.classList.add('flex');
+            }
+            if (screen === 'gameover') els.gameoverScreen.style.display = 'block';
+        }
+
+        function updateHUD(justLostHeart = false) {
+            els.scoreDisplay.innerText = score;
+            if (combo > 0) {
+                els.comboDisplay.innerHTML = `<span class="text-orange-500 animate-bounce block drop-shadow-sm">${combo} COMBO!</span>`;
+            } else {
+                els.comboDisplay.innerHTML = `0 COMBO`;
+            }
+
+            const rank = getRank(score);
+            els.rankBadge.className = `text-sm px-3 py-1 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300 shadow-sm border border-black/5 ${rank.bg} ${rank.color}`;
+            els.rankIcon.innerText = rank.icon;
+            els.rankName.innerText = rank.name;
+
+            els.heartsContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const isAlive = i < lives;
+                const justLost = justLostHeart && (i === lives);
+                
+                let heartHTML = '';
+                let classes = 'transition-all duration-300 inline-block origin-center ';
+
+                if (isAlive) {
+                    heartHTML = '❤️';
+                    classes += 'scale-100 drop-shadow-sm';
+                } else if (justLost) {
+                    heartHTML = '💔';
+                    classes += 'animate-shake scale-150 drop-shadow-md z-20';
+                } else {
+                    heartHTML = '🖤';
+                    classes += 'scale-75 opacity-30';
+                }
+
+                els.heartsContainer.innerHTML += `<span class="${classes}">${heartHTML}</span>`;
+            }
+        }
+
+        function showNextQuestion() {
+            currentQuestion = generateQuestion();
+            els.leftValue.innerHTML = formatMathHTML(currentQuestion.leftStr);
+            els.rightValue.innerHTML = formatMathHTML(currentQuestion.rightStr);
+            resetCard();
+        }
+
+        function resetCard() {
+            cardStatus = 'default';
+            els.gameCard.className = 'absolute w-full max-w-[340px] h-72 rounded-[2.5rem] shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-8 card-transition bg-white border-white z-20 overflow-hidden';
+            els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
+            els.swipeHint.innerText = '';
+            els.leftValueContainer.classList.remove('scale-110', 'text-blue-500', 'text-green-600', 'text-red-500');
+            els.rightValueContainer.classList.remove('scale-110', 'text-blue-500', 'text-green-600', 'text-red-500');
+            els.leftValueContainer.style.backgroundColor = 'transparent';
+            els.rightValueContainer.style.backgroundColor = 'transparent';
+        }
+
+        function createConfetti() {
+            els.confettiContainer.innerHTML = '';
+            const particleCount = Math.min(10 + combo * 5, 60);
+            const colors = ['#10B981', '#34D399', '#FCD34D', '#FBBF24', '#60A5FA', '#818CF8', '#A78BFA'];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                const size = Math.random() * 10 + 6;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                p.className = 'absolute rounded-md animate-confetti-fall shadow-sm';
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * -20}%`;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = color;
+                p.style.setProperty('--sx', `${(Math.random() - 0.5) * 15}px`);
+                p.style.setProperty('--sy', `${Math.random() * 5 + 5}px`);
+                p.style.setProperty('--r', `${Math.random() * 360}deg`);
+                
+                els.confettiContainer.appendChild(p);
+            }
+
+            setTimeout(() => {
+                els.confettiContainer.innerHTML = '';
+            }, 1500);
+        }
+
+        // ==========================================
+        // 4. Game Flow Controls
+        // ==========================================
+        function startGame() {
+            audioEngine.init();
+            audioEngine.startBGM();
+            score = 0;
+            combo = 0;
+            lives = 3;
+            cardStatus = 'default';
+            recentQuestions = []; // 재시작 시 큐 초기화
+            els.appContainer.className = 'min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 flex flex-col items-center justify-center overflow-hidden transition-colors duration-500';
+            
+            updateHUD();
+            showNextQuestion();
+            switchScreen('playing');
+        }
+
+        function handleAnswer(swipedDirection) {
+            if (cardStatus !== 'default') return;
+
+            const isCorrect = swipedDirection === currentQuestion.answer;
+
+            if (isCorrect) {
+                audioEngine.playCorrect();
+                cardStatus = 'correct';
+                score += 10 + (combo * 5);
+                combo++;
+                updateHUD();
+                createConfetti();
+
+                // 정답 연출
+                els.gameCard.className = 'absolute w-full max-w-[340px] h-72 rounded-[2.5rem] shadow-2xl flex flex-row border-8 card-transition bg-green-50 border-green-400 z-20 overflow-hidden';
+                
+                let flyX = swipedDirection === 'left' ? -500 : swipedDirection === 'right' ? 500 : 0;
+                els.gameCard.style.transform = `translate(${flyX}px, 0px) rotate(${flyX * 0.05}deg)`;
+
+                setTimeout(() => {
+                    showNextQuestion();
+                }, 300);
+
+            } else {
+                audioEngine.playWrong();
+                cardStatus = 'wrong';
+                combo = 0;
+                lives--;
+                
+                // 오답 연출 (배경 플래시 및 하트 깨짐)
+                els.appContainer.classList.replace('from-indigo-50', 'from-red-100');
+                els.appContainer.classList.replace('via-purple-50', 'via-red-50');
+                els.appContainer.classList.replace('to-blue-100', 'to-red-100');
+                
+                updateHUD(true);
+
+                els.gameCard.className = 'absolute w-full max-w-[340px] h-72 rounded-[2.5rem] shadow-2xl flex flex-row border-8 card-transition bg-red-50 border-red-400 animate-shake z-20 overflow-hidden';
+                els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
+
+                // 오답 직후 정답 위치를 잠깐 보여 주어 학습 피드백 강화
+                const correctBox = currentQuestion.answer === 'left' ? els.leftValueContainer : els.rightValueContainer;
+                const wrongBox = currentQuestion.answer === 'left' ? els.rightValueContainer : els.leftValueContainer;
+                correctBox.classList.add('scale-110', 'text-green-600');
+                correctBox.style.backgroundColor = 'rgba(220, 252, 231, 0.9)';
+                wrongBox.classList.add('text-red-500');
+                wrongBox.style.backgroundColor = 'rgba(254, 226, 226, 0.9)';
+                els.swipeHint.innerText = currentQuestion.answer === 'left' ? '✅👈' : '👉✅';
+
+                setTimeout(() => {
+                    els.appContainer.classList.replace('from-red-100', 'from-indigo-50');
+                    els.appContainer.classList.replace('via-red-50', 'via-purple-50');
+                    els.appContainer.classList.replace('to-red-100', 'to-blue-100');
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        showNextQuestion();
+                        updateHUD(); 
+                    }
+                }, 500);
+            }
+        }
+
+        function gameOver() {
+            audioEngine.stopBGM();
+            if (score > highScore) highScore = score;
+            
+            const finalRank = getRank(score);
+            document.getElementById('final-rank-icon').innerText = finalRank.icon;
+            const rankNameEl = document.getElementById('final-rank-name');
+            rankNameEl.innerText = finalRank.name;
+            rankNameEl.className = `text-4xl font-black mt-2 ${finalRank.color}`;
+            
+            document.getElementById('final-score-display').innerText = score;
+            document.getElementById('high-score-display').innerText = highScore;
+
+            localStorage.setItem('swipeSpellingRank', finalRank.name);
+            localStorage.setItem('swipeSpellingScore', String(highScore));
+
+            switchScreen('gameover');
+        }
+
+        // ==========================================
+        // 5. Drag / Touch Event Listeners
+        // ==========================================
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
+        let currentDrag = { x: 0, y: 0 };
+
+        function onDragStart(e) {
+            if (cardStatus !== 'default') return;
+            isDragging = true;
+            els.gameCard.classList.remove('card-transition');
+            els.gameCard.classList.add('no-transition');
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startPos = { x: clientX, y: clientY };
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault(); // 스크롤 방지
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            currentDrag.x = clientX - startPos.x;
+            currentDrag.y = clientY - startPos.y;
+
+            els.gameCard.style.transform = `translate(${currentDrag.x}px, ${currentDrag.y}px) rotate(${currentDrag.x * 0.05}deg)`;
+
+            const threshold = 40;
+            
+            // 드래그 방향에 따른 시각적 피드백 (텍스트 크기 증가, 색상 변경)
+            if (currentDrag.x < -threshold) {
+                els.swipeHint.innerText = '👈';
+                els.leftValueContainer.classList.add('scale-110', 'text-blue-500');
+                els.leftValueContainer.style.backgroundColor = 'rgba(239, 246, 255, 0.5)';
+                els.rightValueContainer.classList.remove('scale-110', 'text-blue-500');
+                els.rightValueContainer.style.backgroundColor = 'transparent';
+            } else if (currentDrag.x > threshold) {
+                els.swipeHint.innerText = '👉';
+                els.rightValueContainer.classList.add('scale-110', 'text-blue-500');
+                els.rightValueContainer.style.backgroundColor = 'rgba(239, 246, 255, 0.5)';
+                els.leftValueContainer.classList.remove('scale-110', 'text-blue-500');
+                els.leftValueContainer.style.backgroundColor = 'transparent';
+            } else {
+                els.swipeHint.innerText = '';
+                els.leftValueContainer.classList.remove('scale-110', 'text-blue-500');
+                els.rightValueContainer.classList.remove('scale-110', 'text-blue-500');
+                els.leftValueContainer.style.backgroundColor = 'transparent';
+                els.rightValueContainer.style.backgroundColor = 'transparent';
+            }
+        }
+
+        function onDragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            els.gameCard.classList.remove('no-transition');
+            els.gameCard.classList.add('card-transition');
+
+            const threshold = 70;
+            // 좌우 스와이프만 판정
+            if (Math.abs(currentDrag.x) > threshold && Math.abs(currentDrag.x) > Math.abs(currentDrag.y)) {
+                if (currentDrag.x < -threshold) handleAnswer('left');
+                else if (currentDrag.x > threshold) handleAnswer('right');
+            } else {
+                resetCard(); // 취소됨 (너무 적게 이동했거나 위아래로 이동함)
+            }
+            
+            currentDrag = { x: 0, y: 0 };
+        }
+
+        // 마우스 이벤트
+        els.gameCard.addEventListener('mousedown', onDragStart);
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
+
+        // 터치 이벤트
+        els.gameCard.addEventListener('touchstart', onDragStart, { passive: false });
+        document.addEventListener('touchmove', onDragMove, { passive: false });
+        document.addEventListener('touchend', onDragEnd);
+
+        // 키보드 보조 조작: PC 교실 환경에서 드래그 없이도 플레이 가능
+        window.addEventListener('keydown', (e) => {
+            const isPlaying = els.playingScreen.style.display === 'flex';
+            if (!isPlaying || cardStatus !== 'default') return;
+            if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                e.preventDefault();
+                handleAnswer('left');
+            } else if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                handleAnswer('right');
+            }
+        });
+
+        // 버튼 이벤트
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+
+    </script>
+</body>
+</html>

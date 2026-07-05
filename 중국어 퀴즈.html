@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>중국어 문장 스피드 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #E74C3C; /* 중국의 상징적인 붉은색 톤으로 변경 */
+            --primary-hover: #C0392B;
+            --bg-color: #FDF8F5;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --rank-bronze: #cd7f32;
+            --rank-silver: #bdc3c7;
+            --rank-gold: #f1c40f;
+            --rank-platinum: #7f8c8d;
+            --rank-diamond: #3498db;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.8s ease; 
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 95vh;
+            position: relative;
+            z-index: 10;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        /* 공통 유틸리티 */
+        .hidden { display: none !important; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+            margin-top: 5px;
+        }
+        .btn:hover { background-color: var(--primary-hover); opacity: 0.9; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .flex-row { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* 랭크 뱃지 스타일 */
+        .rank-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .rank-unranked { background: #95a5a6; }
+        .rank-bronze { background: var(--rank-bronze); }
+        .rank-silver { background: var(--rank-silver); color: #333; }
+        .rank-gold { background: var(--rank-gold); color: #333; }
+        .rank-platinum { background: var(--rank-platinum); }
+        .rank-diamond { background: var(--rank-diamond); }
+
+        .rank-result {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 설정 화면 */
+        .setting-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .setting-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+        .radio-group label {
+            flex: 1;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: normal;
+            margin: 0;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label {
+            background: #FDEDEC;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 힌트 모달 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.show {
+            opacity: 1; pointer-events: auto;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 15px; 
+            max-width: 450px; width: 90%; text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            line-height: 1.6;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content b { color: var(--primary-color); }
+        .modal-content .highlight { color: var(--danger-color); font-weight: bold; }
+
+        /* 게임 화면 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .bgm-toggle-btn {
+            background: #f9f9f9;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .bgm-toggle-btn.off {
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        .score-board {
+            background: #FDEDEC;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .timer {
+            font-size: 24px;
+            color: var(--primary-color);
+            transition: color 0.3s;
+        }
+        .timer.danger {
+            color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 콤보 효과 */
+        .combo-display {
+            font-size: 20px;
+            font-weight: 900;
+            color: #FF9800;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        .combo-display.active {
+            opacity: 1;
+            animation: combo-pop 0.3s ease-in-out forwards;
+        }
+        .combo-display.combo-high {
+            color: var(--danger-color);
+            font-size: 24px;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+        }
+        @keyframes combo-pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .question-box {
+            background: #f9f9f9;
+            padding: 30px 20px;
+            border-radius: 12px;
+            font-size: 22px; 
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            word-break: keep-all;
+            border: 1px solid #eee;
+            color: var(--primary-color);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 객관식 버튼 */
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 12px;
+        }
+        .choice-btn {
+            background: #f1f1f1;
+            border: 2px solid transparent;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: keep-all;
+            line-height: 1.4;
+            text-align: left;
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: #e2e2e2;
+        }
+        
+        .choice-btn.correct {
+            background-color: var(--success-color) !important;
+            color: white;
+            border-color: var(--success-color);
+        }
+        .choice-btn.wrong {
+            background-color: var(--danger-color) !important;
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* 결과 화면 */
+        .result-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #FDFBF7;
+            border-radius: 12px;
+            border: 1px solid #F1E5D1;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        .best-score {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+        
+        /* 오답 노트 */
+        .wrong-list {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .wrong-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .wrong-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .wrong-desc { color: var(--text-main); margin-bottom: 8px; font-weight: bold; font-size: 16px;}
+        .wrong-word { color: var(--success-color); font-weight: bold; font-size: 15px; display: block; margin-top: 4px; }
+        .user-word { color: var(--danger-color); text-decoration: line-through; font-size: 15px; display: block;}
+
+        /* ================= 방해 애니메이션(Distractions) ================= */
+        #distraction-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .distraction-entity {
+            position: absolute;
+            font-size: 50px;
+            user-select: none;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes anim-ghost { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 0.9; transform: scale(1.5); } 100% { opacity: 0; transform: scale(2); } }
+        .anim-ghost { animation: anim-ghost 3s ease-in-out forwards; }
+
+        @keyframes anim-float { 0% { transform: translateY(110vh) rotate(-10deg); } 100% { transform: translateY(-20vh) rotate(10deg); } }
+        .anim-float { top: 0; animation: anim-float 6s linear forwards; }
+
+        @keyframes anim-jump { 0% { transform: translate(-10vw, 90vh); } 20% { transform: translate(10vw, 60vh); } 40% { transform: translate(30vw, 90vh); } 60% { transform: translate(50vw, 60vh); } 80% { transform: translate(70vw, 90vh); } 100% { transform: translate(110vw, 60vh); } }
+        .anim-jump { top: 0; left: 0; animation: anim-jump 4s linear forwards; }
+
+        @keyframes anim-climb { 0% { transform: translateY(110vh) rotate(10deg); } 50% { transform: translateY(50vh) rotate(-10deg); } 100% { transform: translateY(-20vh) rotate(10deg); } }
+        .anim-climb { top: 0; animation: anim-climb 5s ease-in-out forwards; }
+
+        @keyframes anim-run-fast { 0% { transform: translateX(-20vw) scaleX(-1); } 100% { transform: translateX(120vw) scaleX(-1); } }
+        .anim-run-fast { left: 0; animation: anim-run-fast 3s linear forwards; }
+
+        @keyframes anim-fly-arc { 0% { transform: translate(-10vw, 60vh) rotate(0deg); } 50% { transform: translate(50vw, 20vh) rotate(360deg); } 100% { transform: translate(120vw, 70vh) rotate(720deg); } }
+        .anim-fly-arc { top: 0; left: 0; animation: anim-fly-arc 4s linear forwards; }
+
+        @keyframes anim-jump-catch { 0% { transform: translate(-20vw, 90vh) scaleX(-1); } 50% { transform: translate(45vw, 30vh) scaleX(-1); } 100% { transform: translate(110vw, 90vh) scaleX(-1); } }
+        .anim-jump-catch { top: 0; left: 0; animation: anim-jump-catch 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        @keyframes anim-erratic { 0% { transform: translate(-10vw, 50vh); } 25% { transform: translate(30vw, 10vh); } 50% { transform: translate(60vw, 80vh); } 75% { transform: translate(80vw, 20vh); } 100% { transform: translate(110vw, 50vh); } }
+        .anim-erratic { top: 0; left: 0; font-size: 30px; animation: anim-erratic 5s linear forwards; }
+
+        @keyframes anim-spaceship { 0% { transform: translate(-20vw, 20vh) scale(0.5); } 25% { transform: translate(30vw, 5vh) scale(1.5) rotate(15deg); } 50% { transform: translate(80vw, 40vh) scale(2) rotate(-15deg); } 75% { transform: translate(30vw, 80vh) scale(1) rotate(20deg); } 100% { transform: translate(-20vw, 20vh) scale(0.5); } }
+        .anim-spaceship { top: 0; left: 0; font-size: 60px; animation: anim-spaceship 6s ease-in-out forwards; }
+    </style>
+</head>
+<body>
+
+<div id="distraction-layer"></div>
+
+<!-- 개념 설명 힌트 모달 -->
+<div id="hint-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>💡 중국어 문장 핵심 꿀팁!</h3>
+        <p><b>1. 중국어의 기본 어순 (주어 + 동사 + 목적어)</b><br>
+        우리말과 달리 동사가 먼저 와요!<br>
+        <i>예: 我(나는) + 吃(먹는다) + 饭(밥을).</i></p>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+        <p><b>2. 시간과 장소는 주로 '동사 앞'에!</b><br>
+        언제, 어디서 했는지는 동사보다 먼저 말해요.<br>
+        <i>예: 我 <b>在学校(학교에서)</b> 学习(공부한다).<br>
+        我 <b>明天(내일)</b> 去(간다).</i></p>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+        <p><b>3. 성조와 병음(Pinyin)을 함께 기억해요</b><br>
+        괄호 안의 알파벳은 발음을, 위의 기호는 음의 높낮이(성조)를 나타냅니다. 소리내어 읽어보세요!</p>
+        <button class="btn" style="margin-top: 15px;" onclick="closeHint()">확인했어요!</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1>중국어 문장 스피드 퀴즈</h1>
+        <p style="color: var(--text-muted); margin-bottom: 10px;">기초부터 실전까지! 중국어 필수 문장 300개 정복!</p>
+        
+        <button class="btn" style="background-color: #f39c12; margin-bottom: 20px; font-size: 14px;" onclick="openHint()">💡 중국어 문장 핵심 꿀팁 보기</button>
+
+        <div id="my-rank-display" class="rank-badge rank-unranked">현재 랭크: 언랭크</div>
+        
+        <div class="setting-group" style="margin-top: 5px;">
+            <label>제한 시간 (1문제 당)</label>
+            <div class="radio-group">
+                <input type="radio" id="time15" name="timeSetting" value="15">
+                <label for="time15">15초</label>
+                <input type="radio" id="time30" name="timeSetting" value="30" checked>
+                <label for="time30">30초</label>
+                <input type="radio" id="time60" name="timeSetting" value="60">
+                <label for="time60">60초</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label>문제 유형</label>
+            <div class="radio-group">
+                <input type="radio" id="typeWord" name="typeSetting" value="word" checked>
+                <label for="typeWord">중국어 보고 뜻 맞추기</label>
+                <input type="radio" id="typeDesc" name="typeSetting" value="desc">
+                <label for="typeDesc">뜻 보고 중국어 맞추기</label>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <button class="btn" style="background-color: #2ecc71; flex: 1; font-size:14px;" onclick="startGame(false, 'normal')">연습 (1판)</button>
+            <button class="btn" id="rank-btn" style="flex: 2; font-size:15px;" onclick="startGame(false, 'rank')">배치고사 시작 (5판)</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <div id="question-counter">문제 1 / 20</div>
+            <div style="display:flex; gap: 5px;">
+                <button id="bgm-toggle" class="bgm-toggle-btn" onclick="toggleBGM()">🎵 BGM ON</button>
+            </div>
+            <div id="timer-display" class="timer">30초</div>
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <div id="current-score-display" class="score-board" style="margin-bottom: 0;">현재 점수: 0점</div>
+            <div id="combo-display" class="combo-display"></div>
+        </div>
+        
+        <div id="question-text" class="question-box"></div>
+
+        <div id="choice-input-container" class="choice-grid hidden">
+            <!-- 동적 생성 -->
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen" class="hidden">
+        <h2 id="result-title">게임 종료!</h2>
+        <div class="result-box">
+            <p id="result-subtitle" style="margin: 0;">당신의 최종 점수</p>
+            <div id="final-score" class="score-display">0점</div>
+            <div id="rank-result-display" class="rank-result hidden">다이아몬드</div>
+            <div id="best-score" class="best-score">역대 최고 점수: 0점</div>
+        </div>
+
+        <!-- 오답 노트 영역 -->
+        <div class="setting-group">
+            <label style="color: var(--danger-color);">오답 노트 (틀린 문제)</label>
+            <div id="wrong-answers-list" class="wrong-list">
+                <!-- 자바스크립트로 생성됨 -->
+            </div>
+        </div>
+
+        <!-- 종료 화면에서의 설정 영역 -->
+        <div id="res-setting-group">
+            <div class="setting-group">
+                <label>제한 시간 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-time15" name="resTimeSetting" value="15">
+                    <label for="res-time15">15초</label>
+                    <input type="radio" id="res-time30" name="resTimeSetting" value="30" checked>
+                    <label for="res-time30">30초</label>
+                    <input type="radio" id="res-time60" name="resTimeSetting" value="60">
+                    <label for="res-time60">60초</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>문제 유형 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-typeWord" name="resTypeSetting" value="word" checked>
+                    <label for="res-typeWord">중국어 보고 뜻 맞추기</label>
+                    <input type="radio" id="res-typeDesc" name="resTypeSetting" value="desc">
+                    <label for="res-typeDesc">뜻 보고 중국어 맞추기</label>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <button id="res-next-round-btn" class="btn hidden" style="background-color:#9b59b6;" onclick="startNextRound()">다음 라운드 시작</button>
+            <button id="res-restart-btn" class="btn" onclick="startGame(true, currentMode)">다시 하기</button>
+            <button class="btn" onclick="goHome()" style="background-color: #999; margin-top: 0;">메인으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const safeStorage = {
+        getItem(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+        setItem(key, value) { try { localStorage.setItem(key, value); } catch(e) {} }
+    };
+
+    // 중국어 300 문장 데이터 (기초 회화, HSK 1~3급 수준)
+    const wordDictionary = [
+        // 1. 기초 인사/표현 (1~30)
+        { word: "你好。 (Nǐ hǎo.)", desc: "안녕하세요." },
+        { word: "你好吗？ (Nǐ hǎo ma?)", desc: "잘 지내세요?" },
+        { word: "我很好。 (Wǒ hěn hǎo.)", desc: "나는 잘 지냅니다." },
+        { word: "谢谢。 (Xièxie.)", desc: "감사합니다." },
+        { word: "不客气。 (Bú kèqi.)", desc: "천만에요." },
+        { word: "对不起。 (Duìbuqǐ.)", desc: "미안합니다." },
+        { word: "没关系。 (Méi guānxi.)", desc: "괜찮습니다." },
+        { word: "再见。 (Zàijiàn.)", desc: "안녕히 가세요." },
+        { word: "早上好。 (Zǎoshang hǎo.)", desc: "좋은 아침입니다." },
+        { word: "晚上好。 (Wǎnshang hǎo.)", desc: "좋은 저녁입니다." },
+        { word: "晚安。 (Wǎn'ān.)", desc: "안녕히 주무세요." },
+        { word: "明天见。 (Míngtiān jiàn.)", desc: "내일 뵙겠습니다." },
+        { word: "好久不见。 (Hǎojiǔ bú jiàn.)", desc: "오랜만입니다." },
+        { word: "请进。 (Qǐng jìn.)", desc: "들어오세요." },
+        { word: "请坐。 (Qǐng zuò.)", desc: "앉으세요." },
+        { word: "请问... (Qǐngwèn...)", desc: "말씀 좀 묻겠습니다..." },
+        { word: "没问题。 (Méi wèntí.)", desc: "문제없습니다." },
+        { word: "当然可以。 (Dāngrán kěyǐ.)", desc: "당연히 가능합니다." },
+        { word: "太好了！ (Tài hǎo le!)", desc: "정말 잘됐네요!" },
+        { word: "真棒！ (Zhēn bàng!)", desc: "정말 대단해요!" },
+        { word: "辛苦了。 (Xīnkǔ le.)", desc: "수고하셨습니다." },
+        { word: "欢迎光临。 (Huānyíng guānglín.)", desc: "환영합니다. (어서오세요.)" },
+        { word: "拜拜。 (Báibái.)", desc: "안녕. (바이바이)" },
+        { word: "这是什么？ (Zhè shì shénme?)", desc: "이것은 무엇입니까?" },
+        { word: "那是什么？ (Nà shì shénme?)", desc: "저것은 무엇입니까?" },
+        { word: "我不知道。 (Wǒ bù zhīdào.)", desc: "나는 모릅니다." },
+        { word: "我知道了。 (Wǒ zhīdào le.)", desc: "알겠습니다." },
+        { word: "懂了吗？ (Dǒng le ma?)", desc: "이해하셨나요?" },
+        { word: "听懂了。 (Tīng dǒng le.)", desc: "알아들었습니다." },
+        { word: "我不懂。 (Wǒ bù dǒng.)", desc: "이해하지 못했습니다." },
+
+        // 2. 자기소개/가족 (31~60)
+        { word: "我叫王明。 (Wǒ jiào Wáng Míng.)", desc: "제 이름은 왕밍입니다." },
+        { word: "你叫什么名字？ (Nǐ jiào shénme míngzi?)", desc: "이름이 무엇입니까?" },
+        { word: "我是韩国人。 (Wǒ shì Hánguórén.)", desc: "나는 한국인입니다." },
+        { word: "你是哪国人？ (Nǐ shì nǎ guó rén?)", desc: "어느 나라 사람입니까?" },
+        { word: "认识你很高兴。 (Rènshi nǐ hěn gāoxìng.)", desc: "당신을 알게 되어 기쁩니다." },
+        { word: "我是学生。 (Wǒ shì xuésheng.)", desc: "나는 학생입니다." },
+        { word: "他是老师。 (Tā shì lǎoshī.)", desc: "그는 선생님입니다." },
+        { word: "你做什么工作？ (Nǐ zuò shénme gōngzuò?)", desc: "무슨 일을 하십니까?" },
+        { word: "我今年二十岁。 (Wǒ jīnnián èrshí suì.)", desc: "나는 올해 스무 살입니다." },
+        { word: "你多大了？ (Nǐ duōdà le?)", desc: "나이가 어떻게 되나요?" },
+        { word: "我家有四口人。 (Wǒ jiā yǒu sì kǒu rén.)", desc: "우리 가족은 네 명입니다." },
+        { word: "你家有几口人？ (Nǐ jiā yǒu jǐ kǒu rén?)", desc: "가족이 몇 명입니까?" },
+        { word: "这是我爸爸。 (Zhè shì wǒ bàba.)", desc: "이분은 나의 아버지입니다." },
+        { word: "那是我妈妈。 (Nà shì wǒ māma.)", desc: "저분은 나의 어머니입니다." },
+        { word: "我有一个哥哥。 (Wǒ yǒu yí ge gēge.)", desc: "나에게는 형(오빠)이 한 명 있습니다." },
+        { word: "她没有弟弟。 (Tā méi yǒu dìdi.)", desc: "그녀는 남동생이 없습니다." },
+        { word: "他是我朋友。 (Tā shì wǒ péngyou.)", desc: "그는 내 친구입니다." },
+        { word: "她很漂亮。 (Tā hěn piàoliang.)", desc: "그녀는 매우 예쁩니다." },
+        { word: "他很高。 (Tā hěn gāo.)", desc: "그는 키가 매우 큽니다." },
+        { word: "我爱我的家人。 (Wǒ ài wǒ de jiārén.)", desc: "나는 나의 가족을 사랑합니다." },
+        { word: "你结婚了吗？ (Nǐ jiéhūn le ma?)", desc: "결혼하셨나요?" },
+        { word: "我单身。 (Wǒ dānshēn.)", desc: "나는 미혼입니다." },
+        { word: "他有女朋友。 (Tā yǒu nǚpéngyou.)", desc: "그는 여자친구가 있습니다." },
+        { word: "他们是夫妻。 (Tāmen shì fūqī.)", desc: "그들은 부부입니다." },
+        { word: "我家在首尔。 (Wǒ jiā zài Shǒu'ěr.)", desc: "나의 집은 서울에 있습니다." },
+        { word: "你的生日是几月几号？ (Nǐ de shēngrì shì jǐ yuè jǐ hào?)", desc: "생일이 몇 월 며칠입니까?" },
+        { word: "我的生日是十月一号。 (Wǒ de shēngrì shì shí yuè yī hào.)", desc: "제 생일은 10월 1일입니다." },
+        { word: "我属狗。 (Wǒ shǔ gǒu.)", desc: "나는 개띠입니다." },
+        { word: "他的性格很好。 (Tā de xìnggé hěn hǎo.)", desc: "그는 성격이 좋습니다." },
+        { word: "我喜欢交朋友。 (Wǒ xǐhuan jiāo péngyou.)", desc: "나는 친구 사귀는 것을 좋아합니다." },
+
+        // 3. 숫자/시간/날짜 (61~90)
+        { word: "现在几点？ (Xiànzài jǐ diǎn?)", desc: "지금 몇 시입니까?" },
+        { word: "现在十点。 (Xiànzài shí diǎn.)", desc: "지금은 열 시입니다." },
+        { word: "一点半了。 (Yī diǎn bàn le.)", desc: "한 시 반입니다." },
+        { word: "差五分十二点。 (Chà wǔ fēn shí'èr diǎn.)", desc: "열두 시 오 분 전입니다." },
+        { word: "今天星期几？ (Jīntiān xīngqī jǐ?)", desc: "오늘 무슨 요일입니까?" },
+        { word: "今天星期五。 (Jīntiān xīngqī wǔ.)", desc: "오늘은 금요일입니다." },
+        { word: "昨天星期四。 (Zuótiān xīngqī sì.)", desc: "어제는 목요일이었습니다." },
+        { word: "明天星期六。 (Míngtiān xīngqī liù.)", desc: "내일은 토요일입니다." },
+        { word: "这个周末你做什么？ (Zhège zhōumò nǐ zuò shénme?)", desc: "이번 주말에 뭐 하세요?" },
+        { word: "今天是几号？ (Jīntiān shì jǐ hào?)", desc: "오늘은 며칠입니까?" },
+        { word: "今天八号。 (Jīntiān bā hào.)", desc: "오늘은 8일입니다." },
+        { word: "下个月。 (Xià ge yuè.)", desc: "다음 달." },
+        { word: "上个月。 (Shàng ge yuè.)", desc: "지난 달." },
+        { word: "明年。 (Míngnián.)", desc: "내년." },
+        { word: "去年。 (Qùnián.)", desc: "작년." },
+        { word: "你需要多长时间？ (Nǐ xūyào duō cháng shíjiān?)", desc: "시간이 얼마나 필요한가요?" },
+        { word: "大概十分钟。 (Dàgài shí fēnzhōng.)", desc: "대략 10분 정도요." },
+        { word: "等我一下。 (Děng wǒ yíxià.)", desc: "잠시만 기다려 주세요." },
+        { word: "快一点！ (Kuài yìdiǎn!)", desc: "조금 서두르세요!" },
+        { word: "慢慢来。 (Mànman lái.)", desc: "천천히 하세요." },
+        { word: "早就准备好了。 (Zǎo jiù zhǔnbèi hǎo le.)", desc: "진작에 다 준비했어요." },
+        { word: "时间到了。 (Shíjiān dào le.)", desc: "시간이 다 되었습니다." },
+        { word: "一个小时有六十分钟。 (Yí ge xiǎoshí yǒu liùshí fēnzhōng.)", desc: "한 시간은 60분입니다." },
+        { word: "我每天运动。 (Wǒ měitiān yùndòng.)", desc: "나는 매일 운동합니다." },
+        { word: "一、二、三。 (Yī, èr, sān.)", desc: "일, 이, 삼." },
+        { word: "百、千、万。 (Bǎi, qiān, wàn.)", desc: "백, 천, 만." },
+        { word: "这是第一名。 (Zhè shì dì-yī míng.)", desc: "이것이 1등입니다." },
+        { word: "两个苹果。 (Liǎng ge píngguǒ.)", desc: "사과 두 개." },
+        { word: "一半。 (Yíbàn.)", desc: "절반." },
+        { word: "最后一次。 (Zuìhòu yí cì.)", desc: "마지막 한 번." },
+
+        // 4. 날씨/계절 (91~120)
+        { word: "今天天气怎么样？ (Jīntiān tiānqì zěnmeyàng?)", desc: "오늘 날씨 어때요?" },
+        { word: "今天天气很好。 (Jīntiān tiānqì hěn hǎo.)", desc: "오늘 날씨가 매우 좋습니다." },
+        { word: "下雨了。 (Xià yǔ le.)", desc: "비가 옵니다." },
+        { word: "明天会下雪。 (Míngtiān huì xià xuě.)", desc: "내일은 눈이 올 것입니다." },
+        { word: "今天很热。 (Jīntiān hěn rè.)", desc: "오늘은 매우 덥습니다." },
+        { word: "昨天很冷。 (Zuótiān hěn lěng.)", desc: "어제는 매우 추웠습니다." },
+        { word: "外面刮风了。 (Wàimiàn guā fēng le.)", desc: "밖에 바람이 붑니다." },
+        { word: "天气变凉了。 (Tiānqì biàn liáng le.)", desc: "날씨가 서늘해졌습니다." },
+        { word: "今天多云。 (Jīntiān duōyún.)", desc: "오늘은 구름이 많습니다." },
+        { word: "出太阳了。 (Chū tàiyáng le.)", desc: "해(태양)가 났습니다." },
+        { word: "我喜欢春天。 (Wǒ xǐhuan chūntiān.)", desc: "나는 봄을 좋아합니다." },
+        { word: "夏天太热了。 (Xiàtiān tài rè le.)", desc: "여름은 너무 덥습니다." },
+        { word: "秋天很凉快。 (Qiūtiān hěn liángkuai.)", desc: "가을은 매우 시원합니다." },
+        { word: "冬天很冷。 (Dōngtiān hěn lěng.)", desc: "겨울은 매우 춥습니다." },
+        { word: "带伞了吗？ (Dài sǎn le ma?)", desc: "우산 챙겼어요?" },
+        { word: "雨停了。 (Yǔ tíng le.)", desc: "비가 그쳤습니다." },
+        { word: "空气很新鲜。 (Kōngqì hěn xīnxiān.)", desc: "공기가 매우 신선합니다." },
+        { word: "今天有雾。 (Jīntiān yǒu wù.)", desc: "오늘은 안개가 끼었습니다." },
+        { word: "温度是多少？ (Wēndù shì duōshao?)", desc: "온도가 몇 도인가요?" },
+        { word: "零下五度。 (Língxià wǔ dù.)", desc: "영하 5도입니다." },
+        { word: "天气预报说... (Tiānqì yùbào shuō...)", desc: "일기예보에 따르면..." },
+        { word: "白天很温暖。 (Báitiān hěn wēnnuǎn.)", desc: "낮에는 매우 따뜻합니다." },
+        { word: "气候干燥。 (Qìhòu gānzào.)", desc: "기후가 건조합니다." },
+        { word: "经常下阵雨。 (Jīngcháng xià zhènyǔ.)", desc: "소나기가 자주 내립니다." },
+        { word: "小心感冒。 (Xiǎoxīn gǎnmào.)", desc: "감기 조심하세요." },
+        { word: "天上有很多星星。 (Tiānshang yǒu hěn duō xīngxing.)", desc: "하늘에 별이 많습니다." },
+        { word: "月亮很圆。 (Yuèliang hěn yuán.)", desc: "달이 매우 둥급니다." },
+        { word: "四季分明。 (Sìjì fēnmíng.)", desc: "사계절이 뚜렷합니다." },
+        { word: "我讨厌潮湿。 (Wǒ tǎoyàn cháoshī.)", desc: "나는 습한 것을 싫어합니다." },
+        { word: "太阳落山了。 (Tàiyáng luò shān le.)", desc: "해가 졌습니다." },
+
+        // 5. 취미/활동 (121~150)
+        { word: "你喜欢做什么？ (Nǐ xǐhuan zuò shénme?)", desc: "당신은 무엇을 하는 것을 좋아하나요?" },
+        { word: "我喜欢看电影。 (Wǒ xǐhuan kàn diànyǐng.)", desc: "나는 영화 보는 것을 좋아합니다." },
+        { word: "他爱听音乐。 (Tā ài tīng yīnyuè.)", desc: "그는 음악 듣는 것을 사랑합니다." },
+        { word: "你会唱歌吗？ (Nǐ huì chànggē ma?)", desc: "당신은 노래할 줄 아나요?" },
+        { word: "我不会跳舞。 (Wǒ bú huì tiàowǔ.)", desc: "나는 춤출 줄 모릅니다." },
+        { word: "周末我常去打篮球。 (Zhōumò wǒ cháng qù dǎ lánqiú.)", desc: "주말에 나는 자주 농구하러 갑니다." },
+        { word: "你踢足球吗？ (Nǐ tī zúqiú ma?)", desc: "당신은 축구를 하나요?" },
+        { word: "我每天跑步。 (Wǒ měitiān pǎobù.)", desc: "나는 매일 달리기(조깅)를 합니다." },
+        { word: "游泳对身体好。 (Yóuyǒng duì shēntǐ hǎo.)", desc: "수영은 몸에 좋습니다." },
+        { word: "我在学汉语。 (Wǒ zài xué Hànyǔ.)", desc: "나는 중국어를 배우고 있습니다." },
+        { word: "他在看书。 (Tā zài kàn shū.)", desc: "그는 책을 보고 있습니다." },
+        { word: "我们去散步吧。 (Wǒmen qù sànbù ba.)", desc: "우리 산책하러 가요." },
+        { word: "我会弹钢琴。 (Wǒ huì dǎn gāngqín.)", desc: "나는 피아노를 칠 줄 압니다." },
+        { word: "你画画儿真好看。 (Nǐ huà huàr zhēn hǎokàn.)", desc: "당신은 그림을 정말 예쁘게 그리네요." },
+        { word: "我喜欢拍照。 (Wǒ xǐhuan pāizhào.)", desc: "나는 사진 찍는 것을 좋아합니다." },
+        { word: "他在玩游戏。 (Tā zài wán yóuxì.)", desc: "그는 게임을 하고 있습니다." },
+        { word: "我上网看新闻。 (Wǒ shàngwǎng kàn xīnwén.)", desc: "나는 인터넷으로 뉴스를 봅니다." },
+        { word: "有空的时候我喜欢睡觉。 (Yǒukòng de shíhou wǒ xǐhuan shuìjiào.)", desc: "시간이 날 때 나는 자는 것을 좋아합니다." },
+        { word: "我经常去旅行。 (Wǒ jīngcháng qù lǚxíng.)", desc: "나는 자주 여행을 갑니다." },
+        { word: "这部电影很有意思。 (Zhè bù diànyǐng hěn yǒu yìsi.)", desc: "이 영화는 매우 재미있습니다." },
+        { word: "这本书很无聊。 (Zhè běn shū hěn wúliáo.)", desc: "이 책은 매우 지루합니다." },
+        { word: "我参加了运动会。 (Wǒ cānjiā le yùndònghuì.)", desc: "나는 운동회에 참가했습니다." },
+        { word: "比赛开始了。 (Bǐsài kāishǐ le.)", desc: "시합이 시작되었습니다." },
+        { word: "赢了！ (Yíng le!)", desc: "이겼다!" },
+        { word: "输了。 (Shū le.)", desc: "졌습니다." },
+        { word: "我们一起玩吧。 (Wǒmen yìqǐ wán ba.)", desc: "우리 함께 놉시다." },
+        { word: "我每天写日记。 (Wǒ měitiān xiě rìjì.)", desc: "나는 매일 일기를 씁니다." },
+        { word: "她喜欢做饭。 (Tā xǐhuan zuòfàn.)", desc: "그녀는 요리하는 것을 좋아합니다." },
+        { word: "我爱喝咖啡。 (Wǒ ài hē kāfēi.)", desc: "나는 커피 마시는 것을 사랑합니다." },
+        { word: "周末愉快！ (Zhōumò yùkuài!)", desc: "즐거운 주말 보내세요!" },
+
+        // 6. 음식/주문 (151~180)
+        { word: "你吃饭了吗？ (Nǐ chī fàn le ma?)", desc: "밥 먹었어요?" },
+        { word: "我饿了。 (Wǒ è le.)", desc: "배가 고픕니다." },
+        { word: "我渴了。 (Wǒ kě le.)", desc: "목이 마릅니다." },
+        { word: "你想吃什么？ (Nǐ xiǎng chī shénme?)", desc: "무엇을 먹고 싶습니까?" },
+        { word: "我想吃中国菜。 (Wǒ xiǎng chī Zhōngguó cài.)", desc: "나는 중국 요리를 먹고 싶습니다." },
+        { word: "服务员，点菜！ (Fúwùyuán, diǎn cài!)", desc: "종업원, 주문할게요!" },
+        { word: "来一杯水。 (Lái yì bēi shuǐ.)", desc: "물 한 잔 주세요." },
+        { word: "这个很好吃。 (Zhège hěn hǎochī.)", desc: "이것은 매우 맛있습니다." },
+        { word: "太辣了。 (Tài là le.)", desc: "너무 맵습니다." },
+        { word: "我不能吃辣。 (Wǒ bù néng chī là.)", desc: "나는 매운 것을 못 먹습니다." },
+        { word: "甜的还是咸的？ (Tián de háishi xián de?)", desc: "단 것인가요 아니면 짠 것인가요?" },
+        { word: "多放点儿香菜。 (Duō fàng diǎnr xiāngcài.)", desc: "고수 좀 많이 넣어주세요." },
+        { word: "不要放葱。 (Búyào fàng cōng.)", desc: "파는 넣지 마세요." },
+        { word: "买单！ (Mǎi dān!)", desc: "계산해 주세요!" },
+        { word: "我请客。 (Wǒ qǐngkè.)", desc: "내가 한턱 낼게요." },
+        { word: "干杯！ (Gānbēi!)", desc: "건배!" },
+        { word: "我吃饱了。 (Wǒ chī bǎo le.)", desc: "배부르게 먹었습니다." },
+        { word: "味道怎么样？ (Wèidào zěnmeyàng?)", desc: "맛이 어때요?" },
+        { word: "给我一双筷子。 (Gěi wǒ yì shuāng kuàizi.)", desc: "젓가락 한 켤레 주세요." },
+        { word: "要打包吗？ (Yào dǎbāo ma?)", desc: "포장해 드릴까요?" },
+        { word: "在这里吃。 (Zài zhèlǐ chī.)", desc: "여기서 먹고 갑니다." },
+        { word: "我喜欢吃水果。 (Wǒ xǐhuan chī shuǐguǒ.)", desc: "나는 과일 먹는 것을 좋아합니다." },
+        { word: "来一碗米饭。 (Lái yì wǎn mǐfàn.)", desc: "밥 한 공기 주세요." },
+        { word: "牛肉还是猪肉？ (Niúròu háishi zhūròu?)", desc: "소고기인가요 아니면 돼지고기인가요?" },
+        { word: "我不吃肉。 (Wǒ bù chī ròu.)", desc: "나는 고기를 안 먹습니다." },
+        { word: "有冰水吗？ (Yǒu bīng shuǐ ma?)", desc: "얼음물 있나요?" },
+        { word: "上菜快一点。 (Shàng cài kuài yìdiǎn.)", desc: "음식 좀 빨리 내주세요." },
+        { word: "欢迎下次光临。 (Huānyíng xià cì guānglín.)", desc: "다음에 또 오세요." },
+        { word: "早饭吃什么？ (Zǎofàn chī shénme?)", desc: "아침밥으로 무엇을 먹나요?" },
+        { word: "我喝牛奶。 (Wǒ hē niúnǎi.)", desc: "나는 우유를 마십니다." },
+
+        // 7. 교통/방향 (181~210)
+        { word: "你去哪里？ (Nǐ qù nǎlǐ?)", desc: "어디에 가십니까?" },
+        { word: "我去机场。 (Wǒ qù jīchǎng.)", desc: "공항에 갑니다." },
+        { word: "怎么去？ (Zěnme qù?)", desc: "어떻게 가나요?" },
+        { word: "坐地铁去。 (Zuò dìtiě qù.)", desc: "지하철을 타고 갑니다." },
+        { word: "打车去吧。 (Dǎ chē qù ba.)", desc: "택시 타고 가요." },
+        { word: "这里离地铁站远吗？ (Zhèlǐ lí dìtiězhàn yuǎn ma?)", desc: "여기는 지하철역에서 멉니까?" },
+        { word: "很近，走路五分钟。 (Hěn jìn, zǒulù wǔ fēnzhōng.)", desc: "매우 가깝습니다. 걸어서 5분입니다." },
+        { word: "一直走。 (Yìzhí zǒu.)", desc: "쭉 직진하세요." },
+        { word: "往右拐。 (Wǎng yòu guǎi.)", desc: "오른쪽으로 도세요." },
+        { word: "往左拐。 (Wǎng zuǒ guǎi.)", desc: "왼쪽으로 도세요." },
+        { word: "在十字路口停。 (Zài shízì lùkǒu tíng.)", desc: "사거리에서 세워 주세요." },
+        { word: "你要买哪里的票？ (Nǐ yào mǎi nǎlǐ de piào?)", desc: "어디로 가는 표를 사시겠습니까?" },
+        { word: "两张去北京的火车票。 (Liǎng zhāng qù Běijīng de huǒchē piào.)", desc: "베이징행 기차표 두 장이요." },
+        { word: "请出示护照。 (Qǐng chūshì hùzhào.)", desc: "여권을 보여주세요." },
+        { word: "前面就是医院。 (Qiánmiàn jiù shì yīyuàn.)", desc: "앞에 바로 병원이 있습니다." },
+        { word: "银行在超市旁边。 (Yínháng zài chāoshì pángbiān.)", desc: "은행은 슈퍼마켓 옆에 있습니다." },
+        { word: "过马路。 (Guò mǎlù.)", desc: "길을 건너세요." },
+        { word: "红绿灯。 (Hónglǜdēng.)", desc: "신호등." },
+        { word: "我不认识路。 (Wǒ bù rènshi lù.)", desc: "나는 길을 모릅니다." },
+        { word: "我迷路了。 (Wǒ mílù le.)", desc: "나는 길을 잃었습니다." },
+        { word: "请帮帮我。 (Qǐng bāng bang wǒ.)", desc: "저를 좀 도와주세요." },
+        { word: "到了叫我。 (Dào le jiào wǒ.)", desc: "도착하면 저를 불러주세요." },
+        { word: "我在门口等你。 (Wǒ zài ménkǒu děng nǐ.)", desc: "문 앞에서 당신을 기다릴게요." },
+        { word: "这辆车去火车站吗？ (Zhè liàng chē qù huǒchēzhàn ma?)", desc: "이 차는 기차역에 가나요?" },
+        { word: "请系好安全带。 (Qǐng xì hǎo ānquándài.)", desc: "안전벨트를 매어 주세요." },
+        { word: "下车请刷卡。 (Xià chē qǐng shuā kǎ.)", desc: "내릴 때 카드를 찍어주세요." },
+        { word: "航班晚点了。 (Hángbān wǎndiǎn le.)", desc: "비행기가 연착되었습니다." },
+        { word: "上北下南。 (Shàng běi xià nán.)", desc: "위가 북쪽, 아래가 남쪽." },
+        { word: "对面是警察局。 (Duìmiàn shì jǐngchájú.)", desc: "맞은편은 경찰서입니다." },
+        { word: "快到了。 (Kuài dào le.)", desc: "거의 다 도착했습니다." },
+
+        // 8. 쇼핑/물건 (211~240)
+        { word: "多少钱？ (Duōshao qián?)", desc: "얼마입니까?" },
+        { word: "一百块。 (Yìbǎi kuài.)", desc: "100위안입니다." },
+        { word: "太贵了！ (Tài guì le!)", desc: "너무 비쌉니다!" },
+        { word: "便宜一点儿吧。 (Piányi yìdiǎnr ba.)", desc: "조금 싸게 해 주세요." },
+        { word: "我要买这个。 (Wǒ yào mǎi zhège.)", desc: "이것을 사겠습니다." },
+        { word: "可以试穿吗？ (Kěyǐ shì chuān ma?)", desc: "입어봐도 되나요?" },
+        { word: "有大一点儿的吗？ (Yǒu dà yìdiǎnr de ma?)", desc: "좀 더 큰 것 있나요?" },
+        { word: "换一个小的。 (Huàn yí ge xiǎo de.)", desc: "작은 것으로 바꿔 주세요." },
+        { word: "什么颜色好？ (Shénme yánsè hǎo?)", desc: "어떤 색깔이 좋습니까?" },
+        { word: "我喜欢红色的。 (Wǒ xǐhuan hóngsè de.)", desc: "나는 빨간색을 좋아합니다." },
+        { word: "一共多少钱？ (Yígòng duōshao qián?)", desc: "전부 합해서 얼마입니까?" },
+        { word: "可以用支付宝吗？ (Kěyǐ yòng Zhīfùbǎo ma?)", desc: "알리페이 사용할 수 있나요?" },
+        { word: "刷卡还是现金？ (Shuā kǎ háishi xiànjīn?)", desc: "카드인가요, 현금인가요?" },
+        { word: "给你钱。 (Gěi nǐ qián.)", desc: "여기 돈 있습니다." },
+        { word: "找你十块。 (Zhǎo nǐ shí kuài.)", desc: "10위안 거슬러 드립니다." },
+        { word: "不需要袋子。 (Bù xūyào dàizi.)", desc: "봉투는 필요 없습니다." },
+        { word: "退货。 (Tuìhuò.)", desc: "반품(환불)하다." },
+        { word: "质量很好。 (Zhìliàng hěn hǎo.)", desc: "품질이 매우 좋습니다." },
+        { word: "这是打折的吗？ (Zhè shì dǎzhé de ma?)", desc: "이거 할인하는 건가요?" },
+        { word: "打八折。 (Dǎ bā zhé.)", desc: "20% 할인입니다. (8할 가격)" },
+        { word: "有发票吗？ (Yǒu fāpiào ma?)", desc: "영수증 있나요?" },
+        { word: "好看吗？ (Hǎokàn ma?)", desc: "예쁘게 보이나요?" },
+        { word: "这件衣服很合适。 (Zhè jiàn yīfu hěn héshì.)", desc: "이 옷은 매우 잘 맞습니다." },
+        { word: "我想买一双鞋。 (Wǒ xiǎng mǎi yì shuāng xié.)", desc: "신발 한 켤레를 사고 싶습니다." },
+        { word: "手机没电了。 (Shǒujī méi diàn le.)", desc: "휴대폰 배터리가 다 되었습니다." },
+        { word: "借我用一下笔。 (Jiè wǒ yòng yíxià bǐ.)", desc: "펜 좀 빌려 쓰겠습니다." },
+        { word: "这是谁的书？ (Zhè shì shuí de shū?)", desc: "이것은 누구의 책입니까?" },
+        { word: "这是我的。 (Zhè shì wǒ de.)", desc: "이것은 내 것입니다." },
+        { word: "礼物。 (Lǐwù.)", desc: "선물." },
+        { word: "请包起来。 (Qǐng bāo qǐlai.)", desc: "포장해 주세요." },
+
+        // 9. 감정/상태/의견 (241~270)
+        { word: "我很高兴。 (Wǒ hěn gāoxìng.)", desc: "나는 매우 기쁩니다." },
+        { word: "我很生气。 (Wǒ hěn shēngqì.)", desc: "나는 매우 화가 났습니다." },
+        { word: "别伤心。 (Bié shāngxīn.)", desc: "슬퍼하지 마세요." },
+        { word: "我很累。 (Wǒ hěn lèi.)", desc: "나는 매우 피곤합니다." },
+        { word: "我想休息。 (Wǒ xiǎng xiūxi.)", desc: "나는 쉬고 싶습니다." },
+        { word: "我很忙。 (Wǒ hěn máng.)", desc: "나는 매우 바쁩니다." },
+        { word: "你觉得呢？ (Nǐ juéde ne?)", desc: "당신 생각은 어때요?" },
+        { word: "我觉得很好。 (Wǒ juéde hěn hǎo.)", desc: "내 생각엔 아주 좋습니다." },
+        { word: "我同意。 (Wǒ tóngyì.)", desc: "동의합니다." },
+        { word: "我反对。 (Wǒ fǎnduì.)", desc: "반대합니다." },
+        { word: "可能是吧。 (Kěnéng shì ba.)", desc: "아마 그럴 것입니다." },
+        { word: "我不相信。 (Wǒ bù xiāngxìn.)", desc: "나는 믿지 않습니다." },
+        { word: "真的吗？ (Zhēnde ma?)", desc: "정말인가요?" },
+        { word: "开玩笑。 (Kāiwánxiào.)", desc: "농담입니다." },
+        { word: "别担心。 (Bié dānxīn.)", desc: "걱정하지 마세요." },
+        { word: "放心吧。 (Fàngxīn ba.)", desc: "안심하세요." },
+        { word: "吓死我了！ (Xià sǐ wǒ le!)", desc: "깜짝 놀랐잖아!" },
+        { word: "太奇怪了。 (Tài qíguài le.)", desc: "너무 이상합니다." },
+        { word: "非常有意思。 (Fēicháng yǒu yìsi.)", desc: "아주 흥미롭습니다." },
+        { word: "我很紧张。 (Wǒ hěn jǐnzhāng.)", desc: "나는 매우 긴장됩니다." },
+        { word: "我生病了。 (Wǒ shēngbìng le.)", desc: "나는 병에 걸렸습니다(아픕니다)." },
+        { word: "头疼。 (Tóu téng.)", desc: "머리가 아픕니다." },
+        { word: "去医院看看吧。 (Qù yīyuàn kànkan ba.)", desc: "병원에 가보세요." },
+        { word: "祝你早日康复。 (Zhù nǐ zǎorì kāngfù.)", desc: "빠른 쾌유를 빕니다." },
+        { word: "我想家了。 (Wǒ xiǎng jiā le.)", desc: "집이 그립습니다(향수병)." },
+        { word: "希望如此。 (Xīwàng rúcǐ.)", desc: "그렇기를 바랍니다." },
+        { word: "没意思。 (Méi yìsi.)", desc: "재미없습니다." },
+        { word: "好主意！ (Hǎo zhǔyi!)", desc: "좋은 생각입니다!" },
+        { word: "我忘了。 (Wǒ wàng le.)", desc: "나는 잊어버렸습니다." },
+        { word: "记住了。 (Jì zhù le.)", desc: "기억했습니다." },
+
+        // 10. 학교/직장/기타 (271~300)
+        { word: "你在哪儿上学？ (Nǐ zài nǎr shàngxué?)", desc: "당신은 어디에서 학교를 다니나요?" },
+        { word: "我学习汉语。 (Wǒ xuéxí Hànyǔ.)", desc: "나는 중국어를 공부합니다." },
+        { word: "汉语难不难？ (Hànyǔ nán bu nán?)", desc: "중국어는 어렵나요?" },
+        { word: "写汉字很难。 (Xiě Hànzì hěn nán.)", desc: "한자를 쓰는 것은 매우 어렵습니다." },
+        { word: "但是发音很容易。 (Dànshì fāyīn hěn róngyì.)", desc: "하지만 발음은 매우 쉽습니다." },
+        { word: "上课了。 (Shàng kè le.)", desc: "수업 시작했습니다." },
+        { word: "下课。 (Xià kè.)", desc: "수업 끝 (하교)." },
+        { word: "打开书。 (Dǎkāi shū.)", desc: "책을 펴세요." },
+        { word: "请跟我读。 (Qǐng gēn wǒ dú.)", desc: "저를 따라 읽으세요." },
+        { word: "考试很难。 (Kǎoshì hěn nán.)", desc: "시험이 매우 어렵습니다." },
+        { word: "考得不错。 (Kǎo de búcuò.)", desc: "시험을 잘 봤습니다." },
+        { word: "我要写作业。 (Wǒ yào xiě zuòyè.)", desc: "나는 숙제를 해야 합니다." },
+        { word: "我的专业是英语。 (Wǒ de zhuānyè shì Yīngyǔ.)", desc: "나의 전공은 영어입니다." },
+        { word: "毕业以后... (Bìyè yǐhòu...)", desc: "졸업한 이후에..." },
+        { word: "上班。 (Shàng bān.)", desc: "출근하다." },
+        { word: "下班。 (Xià bān.)", desc: "퇴근하다." },
+        { word: "老板不在。 (Lǎobǎn búzài.)", desc: "사장이 자리에 없습니다." },
+        { word: "同事。 (Tóngshì.)", desc: "동료." },
+        { word: "开会。 (Kāihuì.)", desc: "회의하다." },
+        { word: "他出差了。 (Tā chūchāi le.)", desc: "그는 출장을 갔습니다." },
+        { word: "今天加班。 (Jīntiān jiābān.)", desc: "오늘은 야근입니다." },
+        { word: "打电话给我。 (Dǎ diànhuà gěi wǒ.)", desc: "나에게 전화하세요." },
+        { word: "发邮件。 (Fā yóujiàn.)", desc: "이메일을 보냅니다." },
+        { word: "请稍等。 (Qǐng shāo děng.)", desc: "잠시만 기다려 주세요." },
+        { word: "请再说一遍。 (Qǐng zài shuō yí biàn.)", desc: "다시 한 번 말씀해 주세요." },
+        { word: "慢一点儿说。 (Màn yìdiǎnr shuō.)", desc: "조금 천천히 말씀해 주세요." },
+        { word: "什么意思？ (Shénme yìsi?)", desc: "무슨 뜻인가요?" },
+        { word: "我不明白。 (Wǒ bù míngbai.)", desc: "나는 이해하지 못하겠습니다." },
+        { word: "大家一起来！ (Dàjiā yìqǐ lái!)", desc: "다 함께 합시다!" },
+        { word: "加油！ (Jiāyóu!)", desc: "파이팅! (힘내요!)" }
+    ];
+
+    // 힌트 모달 제어 함수
+    function openHint() { document.getElementById('hint-modal').classList.add('show'); }
+    function closeHint() { document.getElementById('hint-modal').classList.remove('show'); }
+
+    // 게임 상태 변수
+    const TOTAL_QUESTIONS = 20; 
+    const TOTAL_ROUNDS = 5;
+    let currentMode = 'normal';
+    let currentRound = 1;
+    let rankScores = [];
+    
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let totalScore = 0;
+    let currentCombo = 0; 
+    let timeLimit = 30; // 문장 읽는 시간을 고려해 기본 30초
+    let quizType = 'word';
+    let timeLeft = 0;
+    let timerInterval = null;
+    let wrongAnswers = []; 
+    
+    let audioCtx;
+    let myRank = '언랭크';
+
+    // 안전한 오디오 컨텍스트 초기화 함수
+    function initAudioSafe() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx && !audioCtx) {
+                audioCtx = new AudioCtx();
+                bgmController.init(audioCtx);
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        } catch (e) {
+            console.warn("오디오를 지원하지 않는 환경입니다.", e);
+        }
+    }
+
+    // ================= BGM 컨트롤러 =================
+    let isBgmEnabled = true;
+    const bgmController = {
+        ctx: null,
+        intervalId: null,
+        notes: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25], 
+        isPlaying: false,
+
+        init: function(context) { this.ctx = context; },
+        playNote: function() {
+            if (!this.ctx || this.ctx.state !== 'running') return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const note = this.notes[Math.floor(Math.random() * this.notes.length)];
+            
+            osc.frequency.value = note;
+            osc.type = 'sine'; 
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            const now = this.ctx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.015, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            
+            osc.start(now);
+            osc.stop(now + 1.0);
+        },
+        start: function() {
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+            this.playNote();
+            this.intervalId = setInterval(() => this.playNote(), 400); 
+        },
+        stop: function() {
+            this.isPlaying = false;
+            clearInterval(this.intervalId);
+        }
+    };
+
+    function toggleBGM() {
+        isBgmEnabled = !isBgmEnabled;
+        const btn = document.getElementById('bgm-toggle');
+        if (isBgmEnabled) {
+            btn.textContent = '🎵 BGM ON';
+            btn.classList.remove('off');
+            if (!screens.game.classList.contains('hidden')) {
+                bgmController.start();
+            }
+        } else {
+            btn.textContent = '🔇 BGM OFF';
+            btn.classList.add('off');
+            bgmController.stop();
+        }
+    }
+
+    // ================= 방해모드 (Distraction) =================
+    let distractionTimerId = null;
+
+    function scheduleNextDistraction() {
+        const delay = Math.random() * 15000 + 10000; 
+        distractionTimerId = setTimeout(() => {
+            triggerRandomDistraction();
+            if (!screens.game.classList.contains('hidden')) {
+                scheduleNextDistraction();
+            }
+        }, delay);
+    }
+
+    function stopDistractions() {
+        clearTimeout(distractionTimerId);
+        document.getElementById('distraction-layer').innerHTML = '';
+    }
+
+    function createDistractionEl(emoji, className, cssText, durationMs) {
+        const layer = document.getElementById('distraction-layer');
+        const el = document.createElement('div');
+        el.className = `distraction-entity ${className}`;
+        el.textContent = emoji;
+        el.style.cssText = cssText;
+        layer.appendChild(el);
+        setTimeout(() => { if(el.parentNode === layer) el.remove(); }, durationMs);
+    }
+
+    function spawnGhost() { createDistractionEl('👻', 'anim-ghost', `left: ${Math.random()*80}vw; top: ${Math.random()*80}vh;`, 3000); }
+    function spawnBalloons() {
+        const count = Math.floor(Math.random()*3) + 1;
+        for(let i=0; i<count; i++) {
+            setTimeout(() => { createDistractionEl('🎈', 'anim-float', `left: ${Math.random()*90}vw;`, 6000); }, i * 500);
+        }
+    }
+    function spawnFrog() { createDistractionEl('🐸', 'anim-jump', '', 4000); }
+    function spawnMonkey() {
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        createDistractionEl('🐒', 'anim-climb', `${side}: 10vw;`, 5000);
+    }
+    function spawnCatMouse() {
+        const y = Math.random() * 60 + 20; 
+        createDistractionEl('🐁', 'anim-run-fast', `bottom: ${y}vh;`, 3000);
+        setTimeout(() => { createDistractionEl('🐈', 'anim-run-fast', `bottom: ${y}vh;`, 3000); }, 400); 
+    }
+    function spawnDogFrisbee() {
+        createDistractionEl('🥏', 'anim-fly-arc', '', 4000);
+        setTimeout(() => { createDistractionEl('🐕', 'anim-jump-catch', '', 4000); }, 500); 
+    }
+    function spawnFly() { createDistractionEl('🪰', 'anim-erratic', '', 5000); }
+    function spawnSpaceship() { createDistractionEl('🛸', 'anim-spaceship', '', 6000); }
+
+    function triggerRandomDistraction() {
+        const actions = [
+            spawnGhost, spawnBalloons, spawnFrog, spawnMonkey,
+            spawnCatMouse, spawnDogFrisbee, spawnFly, spawnSpaceship
+        ];
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        randomAction();
+    }
+
+    // ================= DOM 및 메인 로직 =================
+    const screens = {
+        start: document.getElementById('start-screen'),
+        game: document.getElementById('game-screen'),
+        result: document.getElementById('result-screen')
+    };
+    const ui = {
+        counter: document.getElementById('question-counter'),
+        timer: document.getElementById('timer-display'),
+        currentScore: document.getElementById('current-score-display'),
+        comboDisplay: document.getElementById('combo-display'),
+        question: document.getElementById('question-text'),
+        choiceContainer: document.getElementById('choice-input-container'),
+        finalScore: document.getElementById('final-score'),
+        bestScore: document.getElementById('best-score')
+    };
+
+    function updateRankUI() {
+        const rankEl = document.getElementById('my-rank-display');
+        const rankBtn = document.getElementById('rank-btn');
+        rankEl.className = 'rank-badge'; 
+        
+        let colorClass = 'rank-unranked';
+        let bgColor = 'var(--bg-color)'; 
+        
+        if(myRank === '브론즈') { colorClass = 'rank-bronze'; bgColor = '#F5EBE1'; }
+        else if(myRank === '실버') { colorClass = 'rank-silver'; bgColor = '#EBEDEF'; }
+        else if(myRank === '골드') { colorClass = 'rank-gold'; bgColor = '#FEF9E7'; }
+        else if(myRank === '플래티넘') { colorClass = 'rank-platinum'; bgColor = '#E5E8E8'; }
+        else if(myRank === '다이아몬드') { colorClass = 'rank-diamond'; bgColor = '#EBF5FB'; }
+        
+        rankEl.classList.add(colorClass);
+        rankEl.textContent = `현재 랭크: ${myRank}`;
+        document.body.style.backgroundColor = bgColor;
+
+        if(myRank === '언랭크') { rankBtn.textContent = '배치고사 시작 (5판)'; } 
+        else { rankBtn.textContent = '승급전 시작 (5판)'; }
+    }
+
+    function playBeep(isCorrect) {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!audioCtx && AudioCtx) {
+                audioCtx = new AudioCtx();
+            }
+            if (!audioCtx) return;
+            
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (isCorrect) {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+        } catch(e) {
+            console.warn("효과음 재생 실패", e);
+        }
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function startGame(isRestart = false, mode = 'normal') {
+        currentMode = mode;
+        
+        // 오디오 안전하게 초기화
+        initAudioSafe();
+
+        if (isRestart) {
+            timeLimit = parseInt(document.querySelector('input[name="resTimeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="resTypeSetting"]:checked').value;
+            document.querySelector(`input[name="timeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="typeSetting"][value="${quizType}"]`).checked = true;
+        } else {
+            timeLimit = parseInt(document.querySelector('input[name="timeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="typeSetting"]:checked').value;
+            document.querySelector(`input[name="resTimeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="resTypeSetting"][value="${quizType}"]`).checked = true;
+        }
+
+        if (currentMode === 'rank') {
+            currentRound = 1;
+            rankScores = [];
+        }
+
+        startRound();
+    }
+
+    function startRound() {
+        const shuffledWords = shuffleArray([...wordDictionary]);
+        currentQuestions = shuffledWords.slice(0, TOTAL_QUESTIONS);
+        
+        currentIndex = 0;
+        totalScore = 0;
+        currentCombo = 0; 
+        wrongAnswers = []; 
+
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: 0점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: 0점`;
+        }
+        
+        ui.comboDisplay.className = 'combo-display'; 
+        ui.comboDisplay.textContent = '';
+        
+        showScreen('game');
+        loadQuestion();
+        
+        if (isBgmEnabled && !bgmController.isPlaying) {
+            bgmController.start();
+        }
+        
+        clearTimeout(distractionTimerId);
+        scheduleNextDistraction();
+    }
+
+    function startNextRound() {
+        currentRound++;
+        startRound();
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        ui.counter.textContent = `문제 ${currentIndex + 1} / ${TOTAL_QUESTIONS}`;
+        ui.timer.classList.remove('danger');
+        ui.choiceContainer.classList.remove('hidden');
+        
+        if (quizType === 'word') { 
+            // 중국어 보고 뜻 맞추기
+            ui.question.textContent = currentQ.word;
+            ui.question.classList.remove('desc-mode'); 
+            ui.choiceContainer.classList.add('desc-mode'); 
+        } else { 
+            // 뜻 보고 중국어 맞추기
+            ui.question.textContent = currentQ.desc;
+            ui.question.classList.add('desc-mode');
+            ui.choiceContainer.classList.add('desc-mode'); 
+        }
+
+        setupChoiceMode(currentQ);
+
+        timeLeft = timeLimit;
+        ui.timer.textContent = `${timeLeft}초`;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function setupChoiceMode(currentQ) {
+        ui.choiceContainer.innerHTML = '';
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        const wrongTexts = [];
+        const usedTexts = new Set([correctText]);
+        
+        const shuffled = shuffleArray([...wordDictionary]);
+        
+        for (let item of shuffled) {
+            if (item.word === currentQ.word) continue;
+            if (quizType === 'word' && item.desc === currentQ.desc) continue;
+            
+            let text = quizType === 'word' ? item.desc : item.word;
+            if (!usedTexts.has(text)) {
+                usedTexts.add(text);
+                wrongTexts.push(text);
+            }
+            if (wrongTexts.length === 3) break;
+        }
+
+        const choices = shuffleArray([correctText, ...wrongTexts]);
+
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = text;
+            btn.onclick = (e) => submitAnswer(text, e.target);
+            ui.choiceContainer.appendChild(btn);
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        ui.timer.textContent = `${timeLeft}초`;
+        
+        if (timeLeft <= 3) {
+            ui.timer.classList.add('danger');
+        }
+
+        if (timeLeft <= 0) {
+            submitAnswer(null); 
+        }
+    }
+
+    function submitAnswer(userAnswer, btnElement = null) {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        if (userAnswer === null) {
+            finishQuestion(false, null);
+            return;
+        }
+
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        let isCorrect = (userAnswer === correctText);
+        finishQuestion(isCorrect, btnElement);
+    }
+
+    function finishQuestion(isSuccess, btnElement) {
+        const currentQ = currentQuestions[currentIndex];
+        const choiceButtons = document.querySelectorAll('.choice-btn');
+        choiceButtons.forEach(b => b.disabled = true);
+
+        let scoreEarned = 0;
+
+        if (isSuccess) {
+            if (btnElement) {
+                playBeep(true);
+                btnElement.classList.add('correct');
+            }
+
+            currentCombo++;
+            ui.comboDisplay.textContent = `${currentCombo} COMBO!`;
+            ui.comboDisplay.className = 'combo-display active';
+            if (currentCombo >= 3) {
+                ui.comboDisplay.classList.add('combo-high');
+            }
+            ui.comboDisplay.style.animation = 'none';
+            ui.comboDisplay.offsetHeight;
+            ui.comboDisplay.style.animation = null;
+
+            if (timeLimit === 30 || timeLimit === 60) {
+                scoreEarned = 10;
+            } else {
+                const elapsedTime = timeLimit - timeLeft;
+                if (elapsedTime <= 5) {
+                    scoreEarned = 10;
+                } else {
+                    scoreEarned = 10 - (elapsedTime - 5);
+                    if (scoreEarned < 0) scoreEarned = 0;
+                }
+            }
+        } else {
+            playBeep(false); 
+            scoreEarned = 0; 
+            currentCombo = 0;
+            ui.comboDisplay.className = 'combo-display';
+            ui.comboDisplay.textContent = '';
+            
+            let questionText, correctText, uAnswerText;
+
+            correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+            questionText = quizType === 'word' ? currentQ.word : currentQ.desc;
+            uAnswerText = btnElement ? btnElement.textContent : '시간 초과 / 미선택';
+
+            if (btnElement) btnElement.classList.add('wrong');
+            choiceButtons.forEach(b => {
+                if (b.textContent === correctText) {
+                    b.classList.add('correct');
+                }
+            });
+
+            wrongAnswers.push({
+                question: questionText,
+                correctAnswer: correctText,
+                userAnswer: uAnswerText
+            });
+        }
+
+        totalScore += scoreEarned;
+        
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: ${totalScore}점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: ${totalScore}점`;
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < TOTAL_QUESTIONS) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function updateBestScore(score) {
+        const storageKey = 'chineseSpeedQuizBestScore';
+        let bestScore = safeStorage.getItem(storageKey) || 0;
+        bestScore = parseInt(bestScore);
+
+        if (score > bestScore) {
+            bestScore = score;
+            safeStorage.setItem(storageKey, bestScore);
+        }
+        ui.bestScore.textContent = `역대 1판 최고 점수: ${bestScore}점`;
+    }
+
+    function endGame() {
+        bgmController.stop(); 
+        stopDistractions(); 
+
+        showScreen('result');
+        
+        const resSettingGroup = document.getElementById('res-setting-group');
+        const resNextRoundBtn = document.getElementById('res-next-round-btn');
+        const resRestartBtn = document.getElementById('res-restart-btn');
+        const resultTitle = document.getElementById('result-title');
+        const resultSubtitle = document.getElementById('result-subtitle');
+        const rankResultDisplay = document.getElementById('rank-result-display');
+        const bestScoreDisplay = document.getElementById('best-score');
+
+        resSettingGroup.classList.remove('hidden');
+        resNextRoundBtn.classList.add('hidden');
+        resRestartBtn.classList.remove('hidden');
+        rankResultDisplay.classList.add('hidden');
+        bestScoreDisplay.classList.remove('hidden');
+
+        if (currentMode === 'normal') {
+            resultTitle.textContent = "연습 게임 종료!";
+            resultSubtitle.textContent = "당신의 최종 점수";
+            ui.finalScore.textContent = `${totalScore}점`;
+            
+            updateBestScore(totalScore);
+            
+            resRestartBtn.textContent = "다시 하기 (연습)";
+            resRestartBtn.onclick = () => startGame(true, 'normal');
+
+        } else if (currentMode === 'rank') {
+            rankScores.push(totalScore);
+            updateBestScore(totalScore); 
+            
+            if (currentRound < TOTAL_ROUNDS) {
+                resultTitle.textContent = `승급전 ${currentRound}라운드 종료`;
+                resultSubtitle.textContent = `이번 라운드 획득 점수`;
+                ui.finalScore.textContent = `${totalScore}점`;
+                
+                resSettingGroup.classList.add('hidden'); 
+                resNextRoundBtn.classList.remove('hidden');
+                resRestartBtn.classList.add('hidden');
+                bestScoreDisplay.classList.add('hidden');
+            } else {
+                const averageScore = rankScores.reduce((a, b) => a + b, 0) / TOTAL_ROUNDS;
+                let newRank = '브론즈';
+                let rankColorClass = 'rank-bronze';
+                
+                if (averageScore >= 180) { newRank = '다이아몬드'; rankColorClass = 'rank-diamond'; }
+                else if (averageScore >= 150) { newRank = '플래티넘'; rankColorClass = 'rank-platinum'; }
+                else if (averageScore >= 120) { newRank = '골드'; rankColorClass = 'rank-gold'; }
+                else if (averageScore >= 90) { newRank = '실버'; rankColorClass = 'rank-silver'; }
+                
+                myRank = newRank;
+                safeStorage.setItem('chineseSpeedQuizRank', myRank); 
+                updateRankUI();
+
+                resultTitle.textContent = "랭크 판정 완료!";
+                resultSubtitle.textContent = `5판 평균 점수: ${averageScore.toFixed(1)}점`;
+                ui.finalScore.textContent = ``; 
+                
+                rankResultDisplay.textContent = newRank;
+                rankResultDisplay.className = `rank-result ${rankColorClass}`;
+                rankResultDisplay.classList.remove('hidden');
+
+                resSettingGroup.classList.remove('hidden');
+                resRestartBtn.classList.remove('hidden');
+                resRestartBtn.textContent = "승급전 다시 도전";
+                resRestartBtn.onclick = () => startGame(true, 'rank');
+            }
+        }
+        
+        const wrongList = document.getElementById('wrong-answers-list');
+        if (wrongAnswers.length > 0) {
+            wrongList.innerHTML = wrongAnswers.map(item => `
+                <div class="wrong-item">
+                    <div class="wrong-desc">Q. ${item.question}</div>
+                    <div>
+                        <span class="user-word">${item.userAnswer}</span>
+                        <span class="wrong-word">정답: ${item.correctAnswer}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            wrongList.innerHTML = '<div style="text-align:center; padding:15px; color:var(--success-color); font-weight:bold;">모두 맞췄습니다! 완벽해요! 🎉</div>';
+        }
+    }
+
+    function goHome() {
+        bgmController.stop(); 
+        stopDistractions();
+        showScreen('start');
+    }
+
+    window.onload = () => {
+        myRank = safeStorage.getItem('chineseSpeedQuizRank') || '언랭크';
+        updateRankUI();
+        
+        if(!safeStorage.getItem('chineseSpeedQuizBestScore')){
+            safeStorage.setItem('chineseSpeedQuizBestScore', 0);
+        }
+    };
+</script>
+
+</body>
+</html>

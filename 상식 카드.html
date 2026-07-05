@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>어휘 솔리테어 - 클래식 에디션</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+        :root {
+            /* 모바일 화면 7열 배치에 최적화된 카드 크기 비율 */
+            --card-w: 13vw;
+            --card-max-w: 75px;
+            --card-h: 19vw;
+            --card-max-h: 110px;
+            --board-bg: #1b5e20;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--board-bg);
+            background-image: radial-gradient(circle, #2e7d32 0%, #102a14 100%);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            color: white;
+            user-select: none;
+        }
+
+        .title-font { font-family: 'Jua', sans-serif; }
+
+        .top-bar {
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slot {
+            width: var(--card-w);
+            max-width: var(--card-max-w);
+            height: var(--card-h);
+            max-height: var(--card-max-h);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            position: relative;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .slot-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            width: 100%;
+            pointer-events: none;
+            word-break: keep-all;
+            line-height: 1.1;
+        }
+
+        .card {
+            width: var(--card-w);
+            max-width: var(--card-max-w);
+            height: var(--card-h);
+            max-height: var(--card-max-h);
+            border-radius: 6px;
+            position: absolute;
+            background-color: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+            word-break: keep-all;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            transition: left 0.3s ease-out, top 0.3s ease-out, transform 0.2s, box-shadow 0.2s;
+            transform-origin: center top;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .card.face-down {
+            background-color: #b91c1c;
+            background-image: 
+                linear-gradient(45deg, #7f1d1d 25%, transparent 25%, transparent 75%, #7f1d1d 75%, #7f1d1d),
+                linear-gradient(45deg, #7f1d1d 25%, transparent 25%, transparent 75%, #7f1d1d 75%, #7f1d1d);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+            border: 2px solid white;
+        }
+
+        .card.face-down .card-content { display: none; }
+
+        .card.dragging {
+            z-index: 9999 !important;
+            transition: none !important;
+            transform: scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+            opacity: 0.95;
+        }
+
+        .slot.highlight {
+            border-color: #FFEB3B;
+            background: rgba(255, 235, 59, 0.3);
+            box-shadow: 0 0 12px #FFEB3B;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px; height: 16px;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+        
+        .mode-btn {
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .mode-btn:active { transform: scale(0.95); }
+
+        .hint-badge {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            background-color: rgba(0,0,0,0.1);
+            color: #555;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            font-size: 9px;
+            display: none; /* 기본 숨김 */
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Start Modal -->
+    <div id="start-modal" class="modal-overlay overflow-y-auto py-8">
+        <div class="bg-white p-5 rounded-2xl text-center max-w-md w-11/12 shadow-2xl my-auto">
+            <div class="text-green-600 text-5xl mb-2"><i class="fa-solid fa-layer-group"></i></div>
+            <h1 class="text-3xl title-font text-green-700 mb-1">어휘 솔리테어</h1>
+            <p class="text-xs text-gray-500 font-bold mb-4 bg-yellow-100 py-1 rounded">초등 맞춤 난이도 패치</p>
+            
+            <div class="text-gray-600 mb-4 text-[13px] text-left bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="font-bold text-blue-700 mb-1"><i class="fa-solid fa-graduation-cap"></i> 게임 규칙</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><b class="text-black">완성 칸(위쪽):</b> 각 주제별로 <b>첫 번째 순서부터(1 ➔ 9) 차례대로</b> 쌓으세요.</li>
+                    <li><b class="text-black">타블로(아래쪽):</b> 주제 상관없이 <b>하나 작은 단계의 카드</b>만 밑에 붙일 수 있습니다. <span class="text-xs bg-gray-200 px-1 rounded">예: '코끼리(8)' 아래에 '사자(7)' 부착 가능</span></li>
+                    <li><span class="text-red-500 font-bold">쉬운 규칙:</span> 타블로의 <b>빈 칸에는 아무 카드나 자유롭게</b> 놓을 수 있습니다!</li>
+                    <li>너무 어려우면 우측 상단의 <b>전구(💡) 버튼</b>을 눌러 힌트를 켜세요.</li>
+                </ul>
+            </div>
+
+            <p class="font-bold text-gray-700 mb-2 mt-4 text-lg">원하는 테마를 선택하세요</p>
+            <div class="space-y-2">
+                <button onclick="startGame('science')" class="mode-btn w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow">
+                    <i class="fa-solid fa-flask mr-2"></i>모드 1 : 과학 탐구
+                </button>
+                <button onclick="startGame('society')" class="mode-btn w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow">
+                    <i class="fa-solid fa-landmark mr-2"></i>모드 2 : 사회와 역사
+                </button>
+                <button onclick="startGame('general')" class="mode-btn w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl shadow">
+                    <i class="fa-solid fa-book-open mr-2"></i>모드 3 : 종합 상식
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="modal-overlay" style="display: none;">
+        <div class="bg-white p-8 rounded-2xl text-center max-w-sm w-11/12 shadow-2xl">
+            <h1 class="text-4xl title-font text-yellow-500 mb-2">대성공! 🎉</h1>
+            <p class="text-gray-600 mb-4">모든 카드를 순서대로 완벽히 모았습니다!</p>
+            <div class="flex justify-center space-x-4 mb-6">
+                <div class="bg-green-100 p-3 rounded-lg w-24">
+                    <span class="block text-xs text-gray-500">이동 횟수</span>
+                    <span id="final-moves" class="font-bold text-green-700 text-xl">0</span>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md active:scale-95 text-xl title-font transition">
+                메인으로
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar flex justify-between items-center p-2 px-4">
+        <div class="flex items-center space-x-3">
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-gray-300">MOVES</span>
+                <span class="font-bold text-base leading-none title-font text-yellow-400" id="move-display">0</span>
+            </div>
+        </div>
+        <div class="title-font text-lg text-white tracking-widest opacity-80" id="theme-title">어휘 솔리테어</div>
+        <div class="flex items-center space-x-2">
+            <!-- 힌트 버튼 추가 -->
+            <button onclick="toggleHints()" class="text-white opacity-60 hover:opacity-100 text-lg p-2" id="hint-btn" title="숫자 힌트 보기">
+                <i class="fa-solid fa-lightbulb"></i>
+            </button>
+            <button onclick="restartCurrentGame()" class="text-white opacity-80 hover:opacity-100 text-lg p-2" title="다시 시작">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button onclick="toggleAudio()" class="text-white opacity-80 hover:opacity-100 text-lg p-2" id="audio-btn">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div id="game-container" class="relative w-full max-w-3xl mx-auto mt-4 px-1 sm:px-2 h-[85vh]">
+        
+        <!-- Top Row: Deck, Waste (Left) & Foundations (Right) -->
+        <div class="flex justify-between w-full mb-4">
+            <div class="flex gap-1 sm:gap-2 relative">
+                <div id="slot-deck" class="slot cursor-pointer border-solid border-gray-400 bg-gray-800/40" onclick="handleDeckClick()">
+                    <div class="slot-title"><i class="fa-solid fa-rotate-right text-xl"></i></div>
+                </div>
+                <div id="slot-waste" class="slot"></div>
+            </div>
+            
+            <div class="flex gap-1 sm:gap-2" id="foundations-container">
+                <!-- Javascript will generate 4 slots here -->
+            </div>
+        </div>
+
+        <!-- Bottom Row: Tableau (7 Cascades) -->
+        <div class="flex justify-between w-full" id="tableau-container">
+            <div id="slot-tab-0" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-1" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-2" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-3" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-4" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-5" class="slot"><div class="slot-title">빈칸</div></div>
+            <div id="slot-tab-6" class="slot"><div class="slot-title">빈칸</div></div>
+        </div>
+
+        <!-- Cards Layer -->
+        <div id="cards-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+    </div>
+
+    <script>
+        // 3가지 테마 및 4가지 카테고리 데이터 (솔리테어 표준 규격: 각 13단계)
+        const themesData = {
+            science: {
+                title: "과학 탐구",
+                categories: [
+                    { id: 'planet', name: '태양계 확장', desc: '태양부터 먼 곳으로', color: '#f59e0b', icon: 'fa-sun' },
+                    { id: 'speed', name: '속력 비교', desc: '느린 것부터 빠른 것', color: '#3b82f6', icon: 'fa-gauge-high' },
+                    { id: 'size', name: '만물의 크기', desc: '아주 작은 것부터', color: '#10b981', icon: 'fa-microscope' },
+                    { id: 'earth', name: '지구와 우주', desc: '땅속부터 우주 끝까지', color: '#8b5cf6', icon: 'fa-earth-americas' }
+                ],
+                words: {
+                    // 1 ~ 13 단계
+                    'planet': ['태양', '수성', '금성', '지구', '화성', '소행성대', '목성', '토성', '천왕성', '해왕성', '명왕성', '카이퍼 벨트', '오르트 구름'],
+                    'speed': ['달팽이', '거북이', '사람(걷기)', '자전거', '우사인 볼트', '자동차', '고속열차', '여객기', '전투기', '소리(음속)', '로켓', '인공위성', '빛(광속)'],
+                    'size': ['원자', 'DNA', '바이러스', '세균', '개미', '쥐', '고양이', '강아지', '사람', '사자', '코끼리', '고래', '지구'],
+                    'earth': ['내핵', '외핵', '하부 맨틀', '상부 맨틀', '지각', '대류권', '성층권', '중간권', '열권', '외기권', '달', '태양계', '우리은하']
+                }
+            },
+            society: {
+                title: "사회와 역사",
+                categories: [
+                    { id: 'history', name: '우리 역사', desc: '옛날부터 오늘날까지', color: '#8b5cf6', icon: 'fa-monument' },
+                    { id: 'admin', name: '공간의 확장', desc: '나부터 우주까지', color: '#10b981', icon: 'fa-map-location-dot' },
+                    { id: 'money', name: '화폐 단위', desc: '적은 금액부터', color: '#f59e0b', icon: 'fa-coins' },
+                    { id: 'time', name: '시간의 흐름', desc: '짧은 시간부터', color: '#3b82f6', icon: 'fa-clock-rotate-left' }
+                ],
+                words: {
+                    'history': ['구석기', '신석기', '청동기', '철기', '고조선', '삼국시대', '통일신라', '발해', '고려', '조선', '대한제국', '일제강점기', '대한민국'],
+                    'admin': ['내 방', '우리 집', '골목길', '동네(동)', '구·군', '시·도', '대한민국', '동아시아', '아시아', '북반구', '지구', '태양계', '우주'],
+                    'money': ['1원', '5원', '10원', '50원', '100원', '500원', '천 원', '5천 원', '1만 원', '5만 원', '10만 원(수표)', '100만 원(수표)', '1억 원'],
+                    'time': ['1초', '1분', '1시간', '하루', '일주일', '보름(15일)', '한 달', '1년', '10년', '1세기(100년)', '천 년', '만 년', '1억 년']
+                }
+            },
+            general: {
+                title: "종합 상식",
+                categories: [
+                    { id: 'number', name: '수의 단위', desc: '작은 수부터 큰 수로', color: '#3b82f6', icon: 'fa-calculator' },
+                    { id: 'life', name: '생애 주기', desc: '태어나서 노인이 될때까지', color: '#10b981', icon: 'fa-person' },
+                    { id: 'distance', name: '거리 단위', desc: '가까운 거리부터', color: '#f59e0b', icon: 'fa-ruler' },
+                    { id: 'temp', name: '온도 변화', desc: '차가운 것부터 뜨거운 것', color: '#ef4444', icon: 'fa-temperature-half' }
+                ],
+                words: {
+                    'number': ['일(1)', '십(10)', '백(100)', '천', '만', '십만', '백만', '천만', '억', '십억', '백억', '조', '경'],
+                    'life': ['태아', '신생아', '영아', '유아', '유치원생', '초등학생', '중학생', '고등학생', '대학생', '청년', '중년', '장년', '노인'],
+                    'distance': ['1mm', '1cm', '10cm', '1m', '10m', '100m', '1km', '10km', '100km', '서울-부산', '지구 둘레', '지구-달', '1광년'],
+                    'temp': ['절대영도', '우주 공간', '드라이아이스', '남극', '겨울 날씨', '냉장고', '찬물', '사람 체온', '따뜻한 물', '끓는 물', '모닥불', '용암', '태양']
+                }
+            }
+        };
+
+        const TOTAL_CARDS = 52; // 13단계 * 4카테고리 = 52장 (표준 솔리테어 덱)
+        let currentMode = '';
+        let currentCategories = [];
+        let currentWordData = {};
+        
+        let moves = 0;
+        let gameState = {
+            deck: [], waste: [],
+            foundations: {},
+            tableau: [ [], [], [], [], [], [], [] ]
+        };
+
+        let cardElements = {};
+        let allCardsData = [];
+        let isAudioMuted = false;
+        let hintsOn = false;
+        let synth, noiseSynth;
+
+        async function setupAudio() {
+            if(Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+            if(!synth) {
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.5 }
+                }).toDestination();
+                synth.volume.value = -12;
+
+                noiseSynth = new Tone.NoiseSynth({
+                    noise: { type: 'pink' },
+                    envelope: { attack: 0.005, decay: 0.05, sustain: 0 }
+                }).toDestination();
+                noiseSynth.volume.value = -15;
+            }
+        }
+
+        function playSound(type) {
+            if(isAudioMuted || !synth) return;
+            const now = Tone.now();
+            switch(type) {
+                case 'flip': noiseSynth.triggerAttackRelease("32n", now); synth.triggerAttackRelease("C5", "64n", now); break;
+                case 'grab': synth.triggerAttackRelease("F4", "32n", now); break;
+                case 'drop': synth.triggerAttackRelease("A4", "32n", now); break;
+                case 'score': synth.triggerAttackRelease(["C5", "E5"], "16n", now); break;
+                case 'error': synth.triggerAttackRelease("C3", "8n", now); break;
+                case 'win':
+                    synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "2n", now);
+                    setTimeout(() => synth.triggerAttackRelease(["D4", "F#4", "A4", "D5"], "2n", now), 400);
+                    break;
+            }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-btn');
+            btn.innerHTML = isAudioMuted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+            btn.classList.toggle('opacity-50', isAudioMuted);
+        }
+
+        function toggleHints() {
+            hintsOn = !hintsOn;
+            document.querySelectorAll('.hint-badge').forEach(el => {
+                el.style.display = hintsOn ? 'flex' : 'none';
+            });
+            const btn = document.getElementById('hint-btn');
+            if (hintsOn) {
+                btn.style.color = '#FFEB3B';
+                btn.classList.remove('opacity-60');
+                btn.classList.add('opacity-100');
+            } else {
+                btn.style.color = 'white';
+                btn.classList.add('opacity-60');
+                btn.classList.remove('opacity-100');
+            }
+        }
+
+        async function startGame(mode) {
+            document.getElementById('start-modal').style.display = 'none';
+            await setupAudio();
+            currentMode = mode;
+            document.getElementById('theme-title').innerText = themesData[mode].title;
+            initGame();
+        }
+
+        function restartCurrentGame() {
+            moves = 0;
+            updateMoves();
+            initGame();
+        }
+
+        function initGame() {
+            currentCategories = themesData[currentMode].categories;
+            currentWordData = themesData[currentMode].words;
+
+            const foundContainer = document.getElementById('foundations-container');
+            foundContainer.innerHTML = '';
+            gameState.foundations = {};
+
+            currentCategories.forEach(cat => {
+                gameState.foundations[cat.id] = [];
+                foundContainer.innerHTML += `
+                    <div id="slot-found-${cat.id}" class="slot border-2 bg-white/5" style="border-color: ${cat.color}80" data-cat="${cat.id}">
+                        <div class="slot-title" style="color: ${cat.color}">
+                            <i class="fa-solid ${cat.icon} mb-0.5 sm:mb-1 block text-sm sm:text-lg"></i>
+                            <span class="font-bold block text-[10px] sm:text-xs">${cat.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            allCardsData = [];
+            currentCategories.forEach(cat => {
+                currentWordData[cat.id].forEach((word, index) => {
+                    allCardsData.push({
+                        id: `c_${cat.id}_${index+1}`,
+                        word: word,
+                        category: cat.id,
+                        color: cat.color,
+                        order: index + 1,
+                        faceUp: false
+                    });
+                });
+            });
+
+            // Fisher-Yates Shuffle
+            for (let i = allCardsData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allCardsData[i], allCardsData[j]] = [allCardsData[j], allCardsData[i]];
+            }
+
+            const layer = document.getElementById('cards-layer');
+            layer.innerHTML = '';
+            cardElements = {};
+
+            allCardsData.forEach(data => {
+                const el = document.createElement('div');
+                el.className = 'card face-down pointer-events-auto';
+                el.id = data.id;
+                
+                // 힌트 뱃지가 숨겨진 상태로 추가됨
+                el.innerHTML = `
+                    <div class="card-content flex items-center justify-center w-full h-full p-1 sm:p-2 relative">
+                        <span class="hint-badge" style="${hintsOn ? 'display:flex;' : 'display:none;'}">${data.order}</span>
+                        <div class="text-[12px] sm:text-sm md:text-base font-black tracking-tight leading-tight" style="color: #222">${data.word}</div>
+                    </div>
+                `;
+                
+                layer.appendChild(el);
+                cardElements[data.id] = el;
+                setupDraggable(el, data.id);
+            });
+
+            gameState.deck = []; 
+            gameState.waste = [];
+            gameState.tableau = [ [], [], [], [], [], [], [] ];
+
+            let cardIndex = 0;
+            
+            // 7열 분배 (총 28장)
+            for (let col = 0; col < 7; col++) {
+                for (let row = 0; row <= col; row++) {
+                    const cData = allCardsData[cardIndex++];
+                    gameState.tableau[col].push(cData.id);
+                    if (row === col) getCardData(cData.id).faceUp = true;
+                }
+            }
+
+            // 남은 8장 덱으로
+            while(cardIndex < allCardsData.length) {
+                gameState.deck.push(allCardsData[cardIndex++].id);
+            }
+
+            window.removeEventListener('resize', updateAllCardPositions);
+            window.addEventListener('resize', updateAllCardPositions);
+            
+            setTimeout(() => {
+                playSound('flip');
+                updateAllCardPositions();
+            }, 100);
+        }
+
+        function getCardData(id) {
+            return allCardsData.find(c => c.id === id);
+        }
+
+        function updateAllCardPositions() {
+            const PADDING_Y = window.innerWidth < 600 ? 18 : 25;
+
+            const slotDeck = document.getElementById('slot-deck').getBoundingClientRect();
+            const containerRect = document.getElementById('game-container').getBoundingClientRect();
+            
+            gameState.deck.forEach((cardId, index) => {
+                const el = cardElements[cardId];
+                setCardState(el, getCardData(cardId), false);
+                moveElement(el, slotDeck.left - containerRect.left - (index*0.3), slotDeck.top - containerRect.top - (index*0.3), index);
+            });
+
+            const slotWaste = document.getElementById('slot-waste').getBoundingClientRect();
+            gameState.waste.forEach((cardId, index) => {
+                const el = cardElements[cardId];
+                setCardState(el, getCardData(cardId), true);
+                const offsetIdx = Math.max(0, index - (gameState.waste.length - 3));
+                moveElement(el, slotWaste.left - containerRect.left + (offsetIdx * 12), slotWaste.top - containerRect.top, index + 100);
+            });
+
+            currentCategories.forEach(cat => {
+                const slotFound = document.getElementById(`slot-found-${cat.id}`).getBoundingClientRect();
+                gameState.foundations[cat.id].forEach((cardId, index) => {
+                    const el = cardElements[cardId];
+                    setCardState(el, getCardData(cardId), true);
+                    moveElement(el, slotFound.left - containerRect.left, slotFound.top - containerRect.top, index + 50);
+                });
+            });
+
+            gameState.tableau.forEach((colArray, colIndex) => {
+                const slotTab = document.getElementById(`slot-tab-${colIndex}`).getBoundingClientRect();
+                colArray.forEach((cardId, rowIndex) => {
+                    const el = cardElements[cardId];
+                    const data = getCardData(cardId);
+                    setCardState(el, data, data.faceUp);
+                    moveElement(el, slotTab.left - containerRect.left, slotTab.top - containerRect.top + (rowIndex * PADDING_Y), rowIndex + 10);
+                });
+            });
+            
+            checkWin();
+        }
+
+        function setCardState(el, data, isFaceUp) {
+            data.faceUp = isFaceUp;
+            if (isFaceUp) {
+                el.classList.remove('face-down');
+                el.style.borderColor = data.color;
+            } else {
+                el.classList.add('face-down');
+                el.style.borderColor = 'white';
+            }
+        }
+
+        function moveElement(el, x, y, z) {
+            el.style.transform = `translate(${x}px, ${y}px)`;
+            el.style.zIndex = z;
+        }
+
+        function handleDeckClick() {
+            playSound('flip');
+            moves++;
+            updateMoves();
+
+            if (gameState.deck.length > 0) {
+                const cardId = gameState.deck.pop();
+                getCardData(cardId).faceUp = true;
+                gameState.waste.push(cardId);
+            } else {
+                if(gameState.waste.length === 0) return;
+                gameState.deck = [...gameState.waste].reverse();
+                gameState.waste = [];
+                gameState.deck.forEach(id => getCardData(id).faceUp = false);
+            }
+            updateAllCardPositions();
+        }
+
+        let activeCards = [];
+        let activeSource = null;
+        let startX, startY;
+        let initialTransforms = {};
+
+        function setupDraggable(el, cardId) {
+            el.addEventListener('pointerdown', (e) => {
+                const sourceInfo = getCardSourceInfo(cardId);
+                
+                if (sourceInfo && sourceInfo.type === 'deck') {
+                    handleDeckClick();
+                    return;
+                }
+
+                const data = getCardData(cardId);
+                if (!data.faceUp) return;
+                if (!sourceInfo) return; 
+                
+                playSound('grab');
+                activeSource = sourceInfo;
+                activeCards = [];
+                initialTransforms = {};
+                
+                if (sourceInfo.type === 'tableau') {
+                    const col = gameState.tableau[sourceInfo.col];
+                    const idx = col.indexOf(cardId);
+                    activeCards = col.slice(idx); 
+                } else {
+                    activeCards = [cardId];
+                }
+
+                activeCards.forEach(id => {
+                    const cardEl = cardElements[id];
+                    cardEl.classList.add('dragging');
+                    cardEl.style.zIndex = parseInt(window.getComputedStyle(cardEl).zIndex || 10) + 1000;
+
+                    const style = window.getComputedStyle(cardEl);
+                    const matrix = new DOMMatrixReadOnly(style.transform);
+                    initialTransforms[id] = { x: matrix.m41, y: matrix.m42 };
+                });
+                
+                el.setPointerCapture(e.pointerId);
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (activeCards.length === 0 || activeCards[0] !== cardId) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                activeCards.forEach(id => {
+                    const cardEl = cardElements[id];
+                    cardEl.style.transform = `translate(${initialTransforms[id].x + dx}px, ${initialTransforms[id].y + dy}px)`;
+                });
+                
+                highlightDropZones(e.clientX, e.clientY, getCardData(cardId), activeCards.length);
+            });
+
+            el.addEventListener('pointerup', (e) => {
+                if (activeCards.length === 0 || activeCards[0] !== cardId) return;
+                
+                activeCards.forEach(id => {
+                    cardElements[id].classList.remove('dragging');
+                });
+                el.releasePointerCapture(e.pointerId);
+                clearHighlights();
+
+                const dropTarget = getValidDropTarget(e.clientX, e.clientY, getCardData(cardId), activeCards.length);
+                
+                if (dropTarget) {
+                    processDrop(activeCards, dropTarget);
+                } else {
+                    playSound('error');
+                    updateAllCardPositions(); 
+                }
+
+                activeCards = [];
+                activeSource = null;
+            });
+        }
+
+        function getCardSourceInfo(cardId) {
+            if (gameState.deck.includes(cardId)) return { type: 'deck' };
+            if (gameState.waste.length > 0 && gameState.waste[gameState.waste.length - 1] === cardId) {
+                return { type: 'waste' };
+            }
+            for (let i = 0; i < 7; i++) {
+                if (gameState.tableau[i].includes(cardId)) {
+                    return { type: 'tableau', col: i };
+                }
+            }
+            return null;
+        }
+
+        function getValidDropTarget(x, y, cardData, dragCount) {
+            const elements = document.elementsFromPoint(x, y);
+            
+            for (let el of elements) {
+                if (el.id && el.id.startsWith('slot-found-')) {
+                    if (dragCount > 1) return null;
+
+                    const catId = el.dataset.cat;
+                    if (catId === cardData.category) {
+                        const expectedOrder = gameState.foundations[catId].length + 1;
+                        if (cardData.order === expectedOrder) {
+                            return { type: 'foundation', cat: catId };
+                        }
+                    }
+                }
+            }
+
+            let targetCol = -1;
+            for (let el of elements) {
+                if (el.classList.contains('card') && !activeCards.includes(el.id)) {
+                     for (let i = 0; i < 7; i++) {
+                        if (gameState.tableau[i].includes(el.id)) {
+                             targetCol = i;
+                             break;
+                        }
+                     }
+                }
+                if (targetCol !== -1) break;
+                
+                if (el.id && el.id.startsWith('slot-tab-')) {
+                    targetCol = parseInt(el.id.replace('slot-tab-', ''));
+                    break;
+                }
+            }
+
+            if (targetCol !== -1 && (!activeSource || activeSource.col !== targetCol)) {
+                const colCards = gameState.tableau[targetCol];
+                
+                if (colCards.length === 0) {
+                    // 패치: 초등학생 난이도 조절을 위해 타블로 빈 칸에 아무 카드나 허용
+                    return { type: 'tableau', col: targetCol };
+                } else {
+                    const lastCardId = colCards[colCards.length - 1];
+                    const targetCardData = getCardData(lastCardId);
+                    
+                    // 패치: 교차 연결(주제 다름) 조건 삭제, 오직 "하나 큰 순서" 아래에만 부착 가능
+                    if (targetCardData.order === cardData.order + 1) {
+                        return { type: 'tableau', col: targetCol };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function highlightDropZones(x, y, cardData, dragCount) {
+            clearHighlights();
+            const target = getValidDropTarget(x, y, cardData, dragCount);
+            if (target) {
+                if (target.type === 'foundation') {
+                    document.getElementById(`slot-found-${target.cat}`).classList.add('highlight');
+                } else if (target.type === 'tableau') {
+                    document.getElementById(`slot-tab-${target.col}`).classList.add('highlight');
+                }
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.slot.highlight').forEach(el => el.classList.remove('highlight'));
+        }
+
+        function processDrop(draggedCards, target) {
+            if (activeSource.type === 'waste') {
+                gameState.waste.pop();
+            } else if (activeSource.type === 'tableau') {
+                const col = gameState.tableau[activeSource.col];
+                col.length = col.length - draggedCards.length;
+                flipTableauLastCard(activeSource.col);
+            }
+
+            if (target.type === 'foundation') {
+                gameState.foundations[target.cat].push(draggedCards[0]);
+                playSound('score');
+            } else if (target.type === 'tableau') {
+                gameState.tableau[target.col].push(...draggedCards);
+                playSound('drop');
+            }
+
+            moves++;
+            updateMoves();
+            updateAllCardPositions();
+        }
+
+        function flipTableauLastCard(colIdx) {
+            const col = gameState.tableau[colIdx];
+            if (col.length > 0) {
+                const lastCardId = col[col.length - 1];
+                const data = getCardData(lastCardId);
+                if (!data.faceUp) {
+                    data.faceUp = true;
+                    setTimeout(() => playSound('flip'), 200);
+                }
+            }
+        }
+
+        function updateMoves() {
+            document.getElementById('move-display').innerText = moves;
+        }
+
+        function checkWin() {
+            let totalInFoundations = 0;
+            for(let key in gameState.foundations) {
+                totalInFoundations += gameState.foundations[key].length;
+            }
+
+            if (totalInFoundations === TOTAL_CARDS) {
+                setTimeout(() => {
+                    playSound('win');
+                    document.getElementById('final-moves').innerText = moves;
+                    
+                    for(let i=0; i<80; i++) {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * 100 + 'vw';
+                        confetti.style.backgroundColor = ['#f00', '#0f0', '#00f', '#ffeb3b', '#ff9800', '#9c27b0'][Math.floor(Math.random()*6)];
+                        confetti.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                        document.body.appendChild(confetti);
+                    }
+
+                    document.getElementById('win-modal').style.display = 'flex';
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>

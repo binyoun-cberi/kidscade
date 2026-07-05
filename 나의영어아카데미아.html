@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hero English Training</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        :root {
+            --m-yellow: #FDE047;
+            --m-red: #EF4444;
+            --m-blue: #3B82F6;
+            --m-dark: #1E293B;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--m-yellow);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(#000 15%, transparent 16%), 
+                radial-gradient(#000 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(253, 224, 71, 0.85);
+            z-index: -1;
+        }
+
+        .font-bangers {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 2px;
+        }
+
+        /* Comic Book brutalist UI */
+        .comic-box {
+            background-color: white;
+            border: 4px solid var(--m-dark);
+            box-shadow: 8px 8px 0px var(--m-dark);
+            border-radius: 8px;
+        }
+
+        .comic-btn {
+            background-color: white;
+            border: 4px solid var(--m-dark);
+            box-shadow: 6px 6px 0px var(--m-dark);
+            transform: skew(-2deg);
+            transition: all 0.1s ease;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .comic-btn:active {
+            box-shadow: 0px 0px 0px var(--m-dark);
+            transform: skew(-2deg) translate(6px, 6px);
+        }
+
+        .comic-btn:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            box-shadow: 2px 2px 0px var(--m-dark);
+            transform: skew(-2deg) translate(4px, 4px);
+            cursor: not-allowed;
+        }
+
+        .comic-btn-red { background-color: var(--m-red); color: white; }
+        .comic-btn-blue { background-color: var(--m-blue); color: white; }
+        .comic-btn-yellow { background-color: var(--m-yellow); color: var(--m-dark); }
+
+        /* Animations */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake-active { animation: shake 0.5s; }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-active { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes burstOut {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            30% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
+        }
+        .burst-anim { animation: burstOut 1s ease-in-out forwards; }
+
+        /* Speech bubble */
+        .speech-bubble {
+            position: relative;
+            background: #fff;
+            border-radius: .4em;
+            border: 4px solid #000;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border: 20px solid transparent;
+            border-top-color: #000;
+            border-bottom: 0;
+            border-left: 0;
+            margin-left: -10px;
+            margin-bottom: -24px;
+        }
+
+        /* Heart (Hero Badge) Icon */
+        .hero-badge {
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            background-color: var(--m-red);
+            border: 2px solid black;
+            width: 32px; height: 32px;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .hero-badge.lost {
+            background-color: #64748B;
+            filter: grayscale(100%);
+            transform: scale(0.8);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="comic-box w-full max-w-3xl h-[95vh] min-h-[600px] max-h-[850px] flex flex-col relative overflow-hidden bg-white">
+        
+        <!-- Settings Button (Global) -->
+        <button onclick="openSettings()" class="absolute top-4 right-4 z-40 bg-white border-4 border-black w-12 h-12 rounded-full shadow-[4px_4px_0_#000] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[2px_2px_0_#000] transition-all text-2xl flex items-center justify-center">
+            ⚙️
+        </button>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="hidden absolute inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <div class="comic-box bg-yellow-300 w-full max-w-sm p-6 flex flex-col gap-6 relative">
+                <div class="flex justify-between items-center border-b-4 border-black pb-2">
+                    <h2 class="font-bangers text-4xl">SETTINGS</h2>
+                    <button onclick="closeSettings()" class="text-2xl font-black bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center">X</button>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="font-bold text-xl">🔊 BGM 볼륨</label>
+                    <input type="range" id="vol-slider" min="0" max="100" value="50" class="w-full h-4 bg-white border-2 border-black rounded-lg appearance-none cursor-pointer" oninput="updateVolume(this.value)">
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="font-bold text-xl">🎵 BGM 트랙</label>
+                    <div class="flex gap-2">
+                        <button onclick="changeTrack(1)" id="btn-track-1" class="flex-1 comic-btn bg-white py-2 border-4 border-black text-sm">트랙 1 (웅장)</button>
+                        <button onclick="changeTrack(2)" id="btn-track-2" class="flex-1 comic-btn bg-gray-300 py-2 border-4 border-black text-sm">트랙 2 (발랄)</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button onclick="toggleBGM()" id="btn-bgm-toggle" class="comic-btn bg-blue-400 text-white py-3 text-xl border-4 border-black">BGM 끄기</button>
+                </div>
+
+                <div class="border-t-4 border-black pt-4 mt-2">
+            <button onclick="goHomeFromSettings()" class="w-full comic-btn bg-red-500 text-white py-4 text-2xl">🏠 메인 화면으로</button>
+        </div>
+    </div>
+</div>
+
+<!-- Header: Score & Lives (Hidden in Main Menu) -->
+<header id="game-header" class="hidden flex justify-between items-center py-3 pl-3 pr-16 md:p-4 md:pr-20 border-b-4 border-black bg-blue-100">
+    <div class="flex items-center gap-1 md:gap-2">
+        <span class="font-bangers text-xl md:text-2xl">LIVES:</span>
+        <div id="lives-container" class="flex gap-1 transform scale-75 md:scale-100 origin-left">
+            <div class="hero-badge"></div>
+            <div class="hero-badge"></div>
+            <div class="hero-badge"></div>
+        </div>
+    </div>
+    <div class="font-bangers text-xl md:text-3xl tracking-widest text-red-600 drop-shadow-md hidden sm:block">
+        <span id="header-mode-title">MODE 1</span>
+    </div>
+    <div class="font-bangers text-xl md:text-2xl whitespace-nowrap">
+        SCORE: <span id="score-display">0</span>
+    </div>
+</header>
+
+<!-- View: Main Menu -->
+        <div id="view-menu" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-8 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjY2NjIi8+PC9zdmc+')]">
+            <div class="space-y-2">
+                <h1 class="font-bangers text-6xl md:text-8xl text-yellow-400 drop-shadow-[4px_4px_0_#000] stroke-black" style="-webkit-text-stroke: 2px black;">HERO ENGLISH</h1>
+                <p class="font-bangers text-3xl text-red-500 drop-shadow-[2px_2px_0_#000]">TRAINING ACADEMY</p>
+            </div>
+            <p class="text-xl font-black bg-white px-4 py-2 border-2 border-black rotate-[-2deg]">영어를 정복하고 최고의 히어로가 되자!</p>
+            
+            <div class="flex flex-col gap-4 w-full max-w-sm pt-8">
+                <button onclick="startGame(1)" class="comic-btn comic-btn-blue py-4 text-xl md:text-2xl flex items-center justify-center gap-2">
+                    <span>🥊 모드 1: 기초 훈련 (알파벳)</span>
+                </button>
+                <button onclick="startGame(2)" class="comic-btn comic-btn-red py-4 text-xl md:text-2xl flex items-center justify-center gap-2">
+                    <span>🦹 모드 2: 실전 스파링 (영단어)</span>
+                </button>
+                <button onclick="startGame(3)" class="comic-btn comic-btn-yellow py-4 text-xl md:text-2xl flex items-center justify-center gap-2">
+                    <span>🤖 모드 3: 실전 역습 (스펠링)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Gameplay Area -->
+        <div id="view-game" class="hidden flex-1 flex flex-col items-center justify-start p-4 relative overflow-y-auto gap-2">
+            
+            <!-- Effect Overlay -->
+            <div id="effect-overlay" class="absolute inset-0 pointer-events-none flex items-center justify-center z-50">
+                <div id="burst-text" class="font-bangers text-7xl md:text-9xl text-yellow-300 drop-shadow-[6px_6px_0_#000] opacity-0" style="-webkit-text-stroke: 3px black;">SMASH!</div>
+            </div>
+
+            <!-- Target Area (Sandbag / Villain) -->
+            <div class="flex flex-col items-center justify-center w-full mt-2">
+                <div id="question-label" class="speech-bubble p-2 mb-4 text-lg font-bold text-center border-4 border-black">
+                    이 알파벳은 어떤 한글 발음과 어울릴까?
+                </div>
+                
+                <div id="target-monster" class="text-[70px] transition-transform duration-300">
+                    🥊
+                </div>
+                
+                <div id="question-text" class="font-bangers text-5xl md:text-7xl mt-2 text-center tracking-widest bg-yellow-300 px-6 py-2 border-4 border-black shadow-[4px_4px_0_#000] skew-x-[-5deg]">
+                    A
+                </div>
+            </div>
+
+            <!-- User Input Boxes (for Mode 2 & 3) -->
+            <div id="input-slots" class="flex flex-wrap justify-center gap-2 my-4 min-h-[56px]">
+                <!-- Slots will be generated here -->
+            </div>
+
+            <!-- Answer Buttons Area -->
+            <div id="options-area" class="w-full flex flex-wrap justify-center gap-2 mb-2 pb-4">
+                <!-- Option buttons generated here -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div id="action-area" class="w-full flex justify-between items-center px-4 hidden pb-4 mt-auto">
+                <button onclick="clearInput()" class="comic-btn bg-gray-200 text-black px-6 py-2 text-lg">지우기</button>
+            </div>
+        </div>
+
+        <!-- View: Game Over / Clear -->
+        <div id="view-result" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6 bg-gray-900 text-white">
+            <h2 id="result-title" class="font-bangers text-7xl md:text-9xl text-red-500 drop-shadow-[4px_4px_0_#fff]">GAME OVER</h2>
+            <p class="text-2xl font-bold bg-black px-6 py-3 border-4 border-white rotate-[-3deg]">최종 점수: <span id="final-score" class="text-yellow-400 text-4xl">0</span></p>
+            <p id="result-message" class="text-xl">다시 훈련에 매진하자!</p>
+            <button onclick="returnToMenu()" class="comic-btn comic-btn-yellow mt-8 py-4 px-8 text-3xl text-black">메인으로 돌아가기</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Audio Setup (Tone.js) ---
+        let isAudioInitialized = false;
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const membrane = new Tone.MembraneSynth().toDestination();
+        
+        // Track 1: 웅장한 히어로 팡파르 (Brass 느낌)
+        const brassSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.05, decay: 0.1, sustain: 0.6, release: 0.5 }
+        }).toDestination();
+        brassSynth.volume.value = -12;
+
+        const kickDrum = new Tone.MembraneSynth().toDestination();
+        kickDrum.volume.value = -6;
+
+        let heroBgmPart;
+        let drumLoop;
+        
+        // Track 2: 발랄한 8비트 느낌
+        const chiptuneSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'square' },
+            envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 0.2 }
+        }).toDestination();
+        chiptuneSynth.volume.value = -12;
+
+        const hihat = new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+        }).toDestination();
+        hihat.volume.value = -15;
+
+        let bgmPart2;
+        let drumLoop2;
+
+        // Settings State
+        let currentTrack = 1;
+        let isBgmOn = true;
+        let userVolume = 50;
+        let isPlayingGame = false; // 게임 중인지 체크
+
+        const comboNotes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"];
+
+        async function initAudio() {
+            if (!isAudioInitialized) {
+                await Tone.start();
+                
+                // Track 1 Setup
+                heroBgmPart = new Tone.Part((time, value) => {
+                    brassSynth.triggerAttackRelease(value.note, value.dur, time);
+                }, [
+                    ["0:0:0", { note: ["C4", "E4", "G4"], dur: "4n" }],
+                    ["0:1:0", { note: ["C4", "E4", "G4"], dur: "8n" }],
+                    ["0:1:2", { note: ["C4", "E4", "G4"], dur: "8n" }],
+                    ["0:2:0", { note: ["F4", "A4", "C5"], dur: "4n" }],
+                    ["0:3:0", { note: ["G4", "B4", "D5"], dur: "4n" }],
+                ]);
+                heroBgmPart.loop = true;
+                heroBgmPart.loopEnd = "1:0:0";
+
+                drumLoop = new Tone.Loop(time => {
+                    kickDrum.triggerAttackRelease("C1", "8n", time);
+                }, "4n");
+
+                // Track 2 Setup
+                bgmPart2 = new Tone.Part((time, value) => {
+                    chiptuneSynth.triggerAttackRelease(value.note, value.dur, time);
+                }, [
+                    ["0:0:0", { note: ["C4", "E4"], dur: "8n" }],
+                    ["0:0:2", { note: ["G4", "C5"], dur: "8n" }],
+                    ["0:1:0", { note: ["E4", "G4"], dur: "8n" }],
+                    ["0:1:2", { note: ["C4", "E4"], dur: "8n" }],
+                    ["0:2:0", { note: ["F4", "A4"], dur: "8n" }],
+                    ["0:2:2", { note: ["C5", "E5"], dur: "8n" }],
+                    ["0:3:0", { note: ["G4", "B4"], dur: "4n" }]
+                ]);
+                bgmPart2.loop = true;
+                bgmPart2.loopEnd = "1:0:0";
+
+                drumLoop2 = new Tone.Loop(time => {
+                    hihat.triggerAttackRelease("16n", time);
+                }, "8n");
+
+                Tone.Transport.bpm.value = 115; 
+                
+                updateVolume(userVolume);
+                isAudioInitialized = true;
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+        function goHomeFromSettings() {
+            closeSettings();
+            stopBGM();
+            returnToMenu();
+        }
+
+        function updateVolume(val) {
+            userVolume = val;
+            if(val == 0) {
+                Tone.Destination.mute = true;
+            } else {
+                Tone.Destination.mute = false;
+                let db = (val / 100) * 30 - 30; // 0~100을 -30~0 dB로 변환
+                Tone.Destination.volume.value = db;
+            }
+        }
+
+        function toggleBGM() {
+            isBgmOn = !isBgmOn;
+            const btn = document.getElementById('btn-bgm-toggle');
+            if(isBgmOn) {
+                btn.innerText = "BGM 끄기";
+                btn.classList.replace('bg-gray-400', 'bg-blue-400');
+                if(isPlayingGame) startBGM();
+            } else {
+                btn.innerText = "BGM 켜기";
+                btn.classList.replace('bg-blue-400', 'bg-gray-400');
+                stopBGM();
+            }
+        }
+
+        function changeTrack(trackNum) {
+            currentTrack = trackNum;
+            document.getElementById('btn-track-1').classList.toggle('bg-white', trackNum === 1);
+            document.getElementById('btn-track-1').classList.toggle('bg-gray-300', trackNum !== 1);
+            document.getElementById('btn-track-2').classList.toggle('bg-white', trackNum === 2);
+            document.getElementById('btn-track-2').classList.toggle('bg-gray-300', trackNum !== 2);
+            
+            if(isBgmOn && isPlayingGame) {
+                stopBGM();
+                startBGM();
+            }
+        }
+
+        function startBGM() {
+            if(isAudioInitialized && isBgmOn) {
+                Tone.Transport.start();
+                if(currentTrack === 1) {
+                    bgmPart2.stop(); drumLoop2.stop();
+                    heroBgmPart.start(0); drumLoop.start(0);
+                } else {
+                    heroBgmPart.stop(); drumLoop.stop();
+                    bgmPart2.start(0); drumLoop2.start(0);
+                }
+            }
+        }
+
+        function stopBGM() {
+            if(isAudioInitialized) {
+                heroBgmPart.stop(); drumLoop.stop();
+                bgmPart2.stop(); drumLoop2.stop();
+                Tone.Transport.pause();
+            }
+        }
+
+        function playCorrectSound() {
+            if(!isAudioInitialized) return;
+            let note = comboNotes[comboCount % comboNotes.length];
+            let note2 = Tone.Frequency(note).transpose(4).toNote();
+            let note3 = Tone.Frequency(note).transpose(7).toNote();
+            synth.triggerAttackRelease([note, note2, note3], "8n");
+            comboCount++;
+        }
+
+        function playWrongSound() {
+            if(!isAudioInitialized) return;
+            membrane.triggerAttackRelease("C2", "8n");
+            membrane.triggerAttackRelease("C1", "8n", "+0.1");
+            comboCount = 0;
+        }
+
+        function playHitSound() {
+            if(!isAudioInitialized) return;
+            synth.triggerAttackRelease("C5", "16n");
+        }
+
+        // --- 2. Game Data ---
+        const consonants = 'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎㄲㄸㅃㅆㅉ'.split('');
+        const vowels = 'ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣㅐㅒㅔㅖㅘㅙㅚㅝㅞㅟㅢ'.split('');
+        const alphabets = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+        // 초등 필수 영단어 100개 이상
+        const wordDic = [
+            { en: 'BAT', ko: ['ㅂ','ㅐ','ㅌ'], desc: '박쥐' },
+            { en: 'PEN', ko: ['ㅍ','ㅔ','ㄴ'], desc: '펜' },
+            { en: 'DOG', ko: ['ㄷ','ㅗ','ㄱ'], desc: '개' },
+            { en: 'CUP', ko: ['ㅋ','ㅓ','ㅍ'], desc: '컵' },
+            { en: 'SUN', ko: ['ㅅ','ㅓ','ㄴ'], desc: '태양' },
+            { en: 'CAT', ko: ['ㅋ','ㅐ','ㅌ'], desc: '고양이' },
+            { en: 'HAT', ko: ['ㅎ','ㅐ','ㅌ'], desc: '모자' },
+            { en: 'PIG', ko: ['ㅍ','ㅣ','ㄱ'], desc: '돼지' },
+            { en: 'MAP', ko: ['ㅁ','ㅐ','ㅍ'], desc: '지도' },
+            { en: 'BAG', ko: ['ㅂ','ㅐ','ㄱ'], desc: '가방' },
+            { en: 'BOX', ko: ['ㅂ','ㅏ','ㄱ','ㅅ'], desc: '상자' },
+            { en: 'FOX', ko: ['ㅍ','ㅏ','ㄱ','ㅅ'], desc: '여우' },
+            { en: 'BUS', ko: ['ㅂ','ㅓ','ㅅ'], desc: '버스' },
+            { en: 'ANT', ko: ['ㅇ','ㅐ','ㄴ','ㅌ'], desc: '개미' },
+            { en: 'EGG', ko: ['ㅇ','ㅔ','ㄱ'], desc: '계란' },
+            { en: 'BED', ko: ['ㅂ','ㅔ','ㄷ'], desc: '침대' },
+            { en: 'RED', ko: ['ㄹ','ㅔ','ㄷ'], desc: '빨강' },
+            { en: 'LEG', ko: ['ㄹ','ㅔ','ㄱ'], desc: '다리' },
+            { en: 'LIP', ko: ['ㄹ','ㅣ','ㅍ'], desc: '입술' },
+            { en: 'SIX', ko: ['ㅅ','ㅣ','ㄱ','ㅅ'], desc: '육(6)' },
+            { en: 'TEN', ko: ['ㅌ','ㅔ','ㄴ'], desc: '십(10)' },
+            { en: 'TOP', ko: ['ㅌ','ㅏ','ㅍ'], desc: '정상/팽이' },
+            { en: 'POT', ko: ['ㅍ','ㅏ','ㅌ'], desc: '냄비' },
+            { en: 'HOT', ko: ['ㅎ','ㅏ','ㅌ'], desc: '뜨거운' },
+            { en: 'MUD', ko: ['ㅁ','ㅓ','ㄷ'], desc: '진흙' },
+            { en: 'NUT', ko: ['ㄴ','ㅓ','ㅌ'], desc: '견과류' },
+            { en: 'RUN', ko: ['ㄹ','ㅓ','ㄴ'], desc: '달리다' },
+            { en: 'SIT', ko: ['ㅅ','ㅣ','ㅌ'], desc: '앉다' },
+            { en: 'HIT', ko: ['ㅎ','ㅣ','ㅌ'], desc: '치다' },
+            { en: 'MOP', ko: ['ㅁ','ㅏ','ㅍ'], desc: '대걸레' },
+            { en: 'LOG', ko: ['ㄹ','ㅏ','ㄱ'], desc: '통나무' },
+            { en: 'BUG', ko: ['ㅂ','ㅓ','ㄱ'], desc: '벌레' },
+            { en: 'HUG', ko: ['ㅎ','ㅓ','ㄱ'], desc: '포옹' },
+            { en: 'JUG', ko: ['ㅈ','ㅓ','ㄱ'], desc: '주전자' },
+            { en: 'WEB', ko: ['ㅇ','ㅔ','ㅂ'], desc: '거미줄' },
+            { en: 'VET', ko: ['ㅂ','ㅔ','ㅌ'], desc: '수의사' },
+            { en: 'NET', ko: ['ㄴ','ㅔ','ㅌ'], desc: '그물' },
+            { en: 'WET', ko: ['ㅇ','ㅔ','ㅌ'], desc: '젖은' },
+            { en: 'YAM', ko: ['ㅇ','ㅑ','ㅁ'], desc: '참마' },
+            { en: 'ZOO', ko: ['ㅈ','ㅜ'], desc: '동물원' },
+            { en: 'COW', ko: ['ㅋ','ㅏ','ㅜ'], desc: '소' },
+            { en: 'OWL', ko: ['ㅇ','ㅏ','ㅜ','ㄹ'], desc: '올빼미' },
+            { en: 'CAR', ko: ['ㅋ','ㅏ','ㄹ'], desc: '자동차' },
+            { en: 'JAR', ko: ['ㅈ','ㅏ','ㄹ'], desc: '항아리' },
+            { en: 'STAR', ko: ['ㅅ','ㅌ','ㅏ','ㄹ'], desc: '별' },
+            { en: 'FISH', ko: ['ㅍ','ㅣ','ㅅ','ㅣ'], desc: '물고기' },
+            { en: 'SHIP', ko: ['ㅅ','ㅣ','ㅍ'], desc: '배' },
+            { en: 'SHOP', ko: ['ㅅ','ㅑ','ㅍ'], desc: '가게' },
+            { en: 'BIRD', ko: ['ㅂ','ㅓ','ㄹ','ㄷ'], desc: '새' },
+            { en: 'MILK', ko: ['ㅁ','ㅣ','ㄹ','ㅋ'], desc: '우유' },
+            { en: 'DESK', ko: ['ㄷ','ㅔ','ㅅ','ㅋ'], desc: '책상' },
+            { en: 'APPLE', ko: ['ㅇ','ㅐ','ㅍ','ㅡ','ㄹ'], desc: '사과' },
+            { en: 'BOY', ko: ['ㅂ','ㅗ','ㅣ'], desc: '소년' },
+            { en: 'GIRL', ko: ['ㄱ','ㅓ','ㄹ'], desc: '소녀' },
+            { en: 'WATER', ko: ['ㅇ','ㅝ','ㅌ','ㅓ'], desc: '물' },
+            { en: 'FIRE', ko: ['ㅍ','ㅏ','ㅣ','ㅓ'], desc: '불' },
+            { en: 'TREE', ko: ['ㅌ','ㅡ','ㄹ','ㅣ'], desc: '나무' },
+            { en: 'MOON', ko: ['ㅁ','ㅜ','ㄴ'], desc: '달' },
+            { en: 'SKY', ko: ['ㅅ','ㅡ','ㅋ','ㅏ','ㅣ'], desc: '하늘' },
+            { en: 'WIND', ko: ['ㅇ','ㅟ','ㄴ','ㄷ'], desc: '바람' },
+            { en: 'RAIN', ko: ['ㄹ','ㅔ','ㅣ','ㄴ'], desc: '비' },
+            { en: 'SNOW', ko: ['ㅅ','ㅡ','ㄴ','ㅗ','ㅜ'], desc: '눈' },
+            { en: 'BEAR', ko: ['ㅂ','ㅔ','ㅓ'], desc: '곰' },
+            { en: 'LION', ko: ['ㄹ','ㅏ','ㅣ','ㅇ','ㅓ','ㄴ'], desc: '사자' },
+            { en: 'HEAD', ko: ['ㅎ','ㅔ','ㄷ'], desc: '머리' },
+            { en: 'EYE', ko: ['ㅇ','ㅏ','ㅣ'], desc: '눈(신체)' },
+            { en: 'EAR', ko: ['ㅣ','ㅓ'], desc: '귀' },
+            { en: 'NOSE', ko: ['ㄴ','ㅗ','ㅈ'], desc: '코' },
+            { en: 'HAND', ko: ['ㅎ','ㅐ','ㄴ','ㄷ'], desc: '손' },
+            { en: 'FOOT', ko: ['ㅍ','ㅜ','ㅌ'], desc: '발' },
+            { en: 'SHOE', ko: ['ㅅ','ㅠ'], desc: '신발' },
+            { en: 'ROOM', ko: ['ㄹ','ㅜ','ㅁ'], desc: '방' },
+            { en: 'DOOR', ko: ['ㄷ','ㅗ','ㅓ'], desc: '문' },
+            { en: 'WALL', ko: ['ㅇ','ㅝ','ㄹ'], desc: '벽' },
+            { en: 'BOOK', ko: ['ㅂ','ㅜ','ㄱ'], desc: '책' },
+            { en: 'FOOD', ko: ['ㅍ','ㅜ','ㄷ'], desc: '음식' },
+            { en: 'MEAT', ko: ['ㅁ','ㅣ','ㅌ'], desc: '고기' },
+            { en: 'TEA', ko: ['ㅌ','ㅣ'], desc: '차(음료)' },
+            { en: 'BABY', ko: ['ㅂ','ㅔ','ㅣ','ㅂ','ㅣ'], desc: '아기' },
+            { en: 'MOM', ko: ['ㅁ','ㅏ','ㅁ'], desc: '엄마' },
+            { en: 'DAD', ko: ['ㄷ','ㅐ','ㄷ'], desc: '아빠' },
+            { en: 'SON', ko: ['ㅅ','ㅓ','ㄴ'], desc: '아들' },
+            { en: 'PLAY', ko: ['ㅍ','ㅡ','ㄹ','ㄹ','ㅔ','ㅣ'], desc: '놀다' },
+            { en: 'WALK', ko: ['ㅇ','ㅝ','ㅋ'], desc: '걷다' },
+            { en: 'JUMP', ko: ['ㅈ','ㅓ','ㅁ','ㅍ'], desc: '점프하다' },
+            { en: 'SWIM', ko: ['ㅅ','ㅜ','ㅣ','ㅁ'], desc: '수영하다' },
+            { en: 'READ', ko: ['ㄹ','ㅣ','ㄷ'], desc: '읽다' },
+            { en: 'SING', ko: ['ㅅ','ㅣ','ㅇ'], desc: '노래하다' },
+            { en: 'DRAW', ko: ['ㄷ','ㅡ','ㄹ','ㅗ'], desc: '그리다' },
+            { en: 'GOOD', ko: ['ㄱ','ㅜ','ㄷ'], desc: '좋은' },
+            { en: 'BAD', ko: ['ㅂ','ㅐ','ㄷ'], desc: '나쁜' },
+            { en: 'BIG', ko: ['ㅂ','ㅣ','ㄱ'], desc: '큰' },
+            { en: 'COLD', ko: ['ㅋ','ㅗ','ㄹ','ㄷ'], desc: '추운' },
+            { en: 'NEW', ko: ['ㄴ','ㅠ'], desc: '새로운' },
+            { en: 'OLD', ko: ['ㅇ','ㅗ','ㄹ','ㄷ'], desc: '낡은/오래된' },
+            { en: 'FAST', ko: ['ㅍ','ㅐ','ㅅ','ㅌ'], desc: '빠른' },
+            { en: 'BLUE', ko: ['ㅂ','ㅡ','ㄹ','ㄹ','ㅜ'], desc: '파란색' },
+            { en: 'ONE', ko: ['ㅇ','ㅝ','ㄴ'], desc: '일(1)' },
+            { en: 'TWO', ko: ['ㅌ','ㅜ'], desc: '이(2)' },
+            { en: 'FIVE', ko: ['ㅍ','ㅏ','ㅣ','ㅂ'], desc: '오(5)' },
+            { en: 'NINE', ko: ['ㄴ','ㅏ','ㅣ','ㄴ'], desc: '구(9)' },
+            { en: 'YES', ko: ['ㅇ','ㅔ','ㅅ'], desc: '네(긍정)' },
+            { en: 'NO', ko: ['ㄴ','ㅗ'], desc: '아니오' },
+            { en: 'BYE', ko: ['ㅂ','ㅏ','ㅣ'], desc: '안녕(작별)' }
+        ];
+
+        function getRandomElements(arr, count) {
+            return [...arr].sort(() => 0.5 - Math.random()).slice(0, count);
+        }
+
+        function generateModeData(mode) {
+            if (mode === 1) {
+                const mode1List = [
+                    { q: 'A', a: ['ㅐ'] }, { q: 'B', a: ['ㅂ'] }, { q: 'C', a: ['ㅋ'] }, { q: 'D', a: ['ㄷ'] },
+                    { q: 'E', a: ['ㅔ'] }, { q: 'F', a: ['ㅍ'] }, { q: 'G', a: ['ㄱ'] }, { q: 'H', a: ['ㅎ'] },
+                    { q: 'I', a: ['ㅣ'] }, { q: 'J', a: ['ㅈ'] }, { q: 'K', a: ['ㅋ'] }, { q: 'L', a: ['ㄹ'] },
+                    { q: 'M', a: ['ㅁ'] }, { q: 'N', a: ['ㄴ'] }, { q: 'O', a: ['ㅗ'] }, { q: 'P', a: ['ㅍ'] },
+                    { q: 'R', a: ['ㄹ'] }, { q: 'S', a: ['ㅅ'] }, { q: 'T', a: ['ㅌ'] }, { q: 'U', a: ['ㅓ'] }, 
+                    { q: 'V', a: ['ㅂ'] }, { q: 'W', a: ['ㅜ'] }, { q: 'Y', a: ['ㅑ'] }, { q: 'Z', a: ['ㅈ'] }
+                ];
+                let pool = [...mode1List, ...mode1List, ...mode1List].sort(() => Math.random() - 0.5);
+                return pool.map(item => {
+                    const allKor = [...consonants, ...vowels];
+                    let wrongOptions = allKor.filter(k => k !== item.a[0]);
+                    let options = [item.a[0], ...getRandomElements(wrongOptions, 5)];
+                    return { q: item.q, a: item.a, options: options.sort(() => Math.random() - 0.5) };
+                });
+            } 
+            else if (mode === 2) {
+                let pool = [...wordDic].sort(() => Math.random() - 0.5);
+                return pool.map(item => {
+                    const allKor = [...consonants, ...vowels];
+                    let uniqueNeeded = [...new Set(item.ko)];
+                    let wrongOptions = allKor.filter(k => !uniqueNeeded.includes(k));
+                    let maxOptions = 9;
+                    let numWrong = Math.max(0, maxOptions - uniqueNeeded.length);
+                    let options = [...uniqueNeeded, ...getRandomElements(wrongOptions, numWrong)];
+                    return { q: item.en, qDesc: `(${item.desc})`, a: item.ko, options: options.sort(() => Math.random() - 0.5) };
+                });
+            }
+            else {
+                let pool = [...wordDic].sort(() => Math.random() - 0.5);
+                return pool.map(item => {
+                    const allEn = alphabets;
+                    const enArr = item.en.split('');
+                    let uniqueNeeded = [...new Set(enArr)];
+                    let wrongOptions = allEn.filter(e => !uniqueNeeded.includes(e));
+                    let maxOptions = 10;
+                    let numWrong = Math.max(0, maxOptions - uniqueNeeded.length);
+                    let options = [...uniqueNeeded, ...getRandomElements(wrongOptions, numWrong)];
+                    return { q: item.ko.join(' '), qDesc: `(${item.desc})`, a: enArr, options: options.sort(() => Math.random() - 0.5) };
+                });
+            }
+        }
+
+        // --- 3. State Management ---
+        let currentMode = 0;
+        let lives = 3;
+        let score = 0;
+        let currentQuestionBank = [];
+        let currentQuestion = null;
+        let userInput = [];
+        let comboCount = 0;
+
+        // --- 4. DOM Elements ---
+        const views = {
+            menu: document.getElementById('view-menu'),
+            game: document.getElementById('view-game'),
+            result: document.getElementById('view-result')
+        };
+        const header = document.getElementById('game-header');
+        const livesContainer = document.getElementById('lives-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const headerModeTitle = document.getElementById('header-mode-title');
+        
+        const qLabel = document.getElementById('question-label');
+        const qText = document.getElementById('question-text');
+        const targetMonster = document.getElementById('target-monster');
+        const optionsArea = document.getElementById('options-area');
+        const inputSlots = document.getElementById('input-slots');
+        const actionArea = document.getElementById('action-area');
+        
+        const effectOverlay = document.getElementById('burst-text');
+        const gameContainer = document.getElementById('game-container');
+
+        // --- 5. Core Logic ---
+        function switchView(viewName) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            views[viewName].classList.remove('hidden');
+            if (viewName === 'game') {
+                header.classList.remove('hidden');
+            } else {
+                header.classList.add('hidden');
+            }
+        }
+
+        async function startGame(mode) {
+            await initAudio();
+            isPlayingGame = true;
+            startBGM();
+            currentMode = mode;
+            lives = 3;
+            score = 0;
+            userInput = [];
+            comboCount = 0;
+            
+            currentQuestionBank = generateModeData(mode);
+            
+            if (mode === 1) {
+                headerModeTitle.innerText = "기초 훈련";
+                targetMonster.innerText = "🥊";
+            } else if (mode === 2) {
+                headerModeTitle.innerText = "실전 스파링";
+                targetMonster.innerText = "🦹";
+            } else {
+                headerModeTitle.innerText = "실전 역습";
+                targetMonster.innerText = "🤖";
+            }
+
+            updateHeader();
+            switchView('game');
+            loadNextQuestion();
+        }
+
+        function updateHeader() {
+            scoreDisplay.innerText = score;
+            const badges = livesContainer.children;
+            for(let i=0; i<3; i++) {
+                if(i < lives) {
+                    badges[i].classList.remove('lost');
+                } else {
+                    badges[i].classList.add('lost');
+                }
+            }
+        }
+
+        function loadNextQuestion() {
+            if (currentQuestionBank.length === 0) {
+                showResult(true);
+                return;
+            }
+            
+            userInput = [];
+            currentQuestion = currentQuestionBank.pop();
+            
+            // Render target
+            qText.innerText = currentQuestion.q;
+            
+            if (currentMode === 1) {
+                qLabel.innerText = "이 알파벳은 어떤 한글 발음과 어울릴까?";
+                inputSlots.classList.add('hidden');
+                actionArea.classList.add('hidden');
+            } else if (currentMode === 2) {
+                qLabel.innerText = `자모를 결합해 타격하라! ${currentQuestion.qDesc}`;
+                inputSlots.classList.remove('hidden');
+                actionArea.classList.remove('hidden');
+            } else {
+                qLabel.innerText = `올바른 스펠링을 나열하라! ${currentQuestion.qDesc}`;
+                inputSlots.classList.remove('hidden');
+                actionArea.classList.remove('hidden');
+            }
+
+            renderSlots();
+            renderOptions();
+            enableOptions();
+        }
+
+        function renderSlots() {
+            if (currentMode === 1) return;
+            
+            inputSlots.innerHTML = '';
+            const totalSlots = currentQuestion.a.length;
+            
+            for (let i = 0; i < totalSlots; i++) {
+                const slot = document.createElement('div');
+                slot.className = `w-12 h-12 md:w-14 md:h-14 flex items-center justify-center border-4 border-black font-bold text-2xl md:text-3xl bg-white shadow-[4px_4px_0_#000] ${i === userInput.length ? 'ring-4 ring-yellow-400' : ''}`;
+                slot.innerText = userInput[i] || '';
+                inputSlots.appendChild(slot);
+            }
+        }
+
+        function renderOptions() {
+            optionsArea.innerHTML = '';
+            const shuffledOptions = [...currentQuestion.options].sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `comic-btn w-12 h-12 md:w-16 md:h-16 text-xl md:text-3xl m-1 ${currentMode === 3 ? 'comic-btn-yellow' : 'comic-btn-blue'} option-btn`;
+                btn.innerText = opt;
+                btn.onclick = () => handleOptionClick(opt);
+                optionsArea.appendChild(btn);
+            });
+        }
+
+        function enableOptions() {
+            const buttons = optionsArea.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = false);
+        }
+
+        function disableOptions() {
+            const buttons = optionsArea.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        function handleOptionClick(char) {
+            playHitSound();
+            
+            if (currentMode === 1) {
+                disableOptions();
+                if (char === currentQuestion.a[0]) {
+                    handleCorrect();
+                } else {
+                    handleWrong();
+                }
+            } else {
+                if (userInput.length < currentQuestion.a.length) {
+                    userInput.push(char);
+                    renderSlots();
+                    
+                    if (userInput.length === currentQuestion.a.length) {
+                        disableOptions();
+                        setTimeout(checkSequenceAnswer, 300);
+                    }
+                }
+            }
+        }
+
+        function clearInput() {
+            if (userInput.length === currentQuestion.a.length) return; 
+            userInput = [];
+            playHitSound();
+            renderSlots();
+            enableOptions();
+        }
+
+        function checkSequenceAnswer() {
+            if (userInput.length !== currentQuestion.a.length) {
+                shakeContainer();
+                return;
+            }
+
+            const isCorrect = userInput.every((val, index) => val === currentQuestion.a[index]);
+            
+            if (isCorrect) {
+                handleCorrect();
+            } else {
+                handleWrong();
+            }
+        }
+
+        const successTexts = ["HEROIC STRIKE!", "SMASH!", "AWESOME!", "PERFECT!", "CRITICAL!", "BOOM!", "POW!", "EXCELLENT!"];
+        const failTexts = ["OUCH!", "OOPS!", "MISS!", "NOPE!", "TRY AGAIN!", "BLOCK!"];
+
+        function handleCorrect() {
+            playCorrectSound();
+            score += 100 * (comboCount > 0 ? comboCount : 1);
+            updateHeader();
+            
+            targetMonster.classList.add('pop-active');
+            
+            const randSuccess = successTexts[Math.floor(Math.random() * successTexts.length)];
+            showBurst(randSuccess);
+            
+            setTimeout(() => {
+                targetMonster.classList.remove('pop-active');
+                loadNextQuestion();
+            }, 1000);
+        }
+
+        function handleWrong() {
+            playWrongSound();
+            lives--;
+            updateHeader();
+            shakeContainer();
+            
+            const randFail = failTexts[Math.floor(Math.random() * failTexts.length)];
+            showBurst(randFail, true);
+
+            if (currentMode !== 1) {
+                setTimeout(() => {
+                    userInput = [];
+                    renderSlots();
+                    enableOptions();
+                }, 1000);
+            } else {
+                 setTimeout(loadNextQuestion, 1000);
+            }
+            
+            if (lives <= 0) {
+                setTimeout(() => showResult(false), 1000);
+            }
+        }
+
+        function shakeContainer() {
+            gameContainer.classList.remove('shake-active');
+            void gameContainer.offsetWidth; 
+            gameContainer.classList.add('shake-active');
+        }
+
+        function showBurst(text, isBad = false) {
+            effectOverlay.innerText = text;
+            effectOverlay.className = `font-bangers text-7xl md:text-9xl drop-shadow-[6px_6px_0_#000] opacity-0 ${isBad ? 'text-red-500' : 'text-yellow-300'}`;
+            effectOverlay.style.webkitTextStroke = '3px black';
+            
+            effectOverlay.classList.remove('burst-anim');
+            void effectOverlay.offsetWidth;
+            effectOverlay.classList.add('burst-anim');
+        }
+
+        function showResult(isClear) {
+            isPlayingGame = false;
+            stopBGM(); 
+            switchView('result');
+            const title = document.getElementById('result-title');
+            const msg = document.getElementById('result-message');
+            document.getElementById('final-score').innerText = score;
+            
+            if (isClear) {
+                title.innerText = "MISSION CLEAR!";
+                title.className = "font-bangers text-6xl md:text-9xl text-yellow-400 drop-shadow-[4px_4px_0_#fff]";
+                msg.innerText = "훌륭한 히어로로 성장했군!";
+                playCorrectSound();
+                setTimeout(playCorrectSound, 200);
+            } else {
+                title.innerText = "GAME OVER";
+                title.className = "font-bangers text-7xl md:text-9xl text-red-600 drop-shadow-[4px_4px_0_#fff]";
+                msg.innerText = "아직 훈련이 더 필요하다!";
+            }
+        }
+
+        function returnToMenu() {
+            isPlayingGame = false;
+            stopBGM();
+            switchView('menu');
+        }
+    </script>
+</body>
+</html>

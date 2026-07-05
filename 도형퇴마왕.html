@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>도형퇴마왕 (Geo Exorcist King)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Yeon+Sung&display=swap');
+
+        body {
+            font-family: 'Yeon Sung', cursive;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #2c1030 0%, #0a050a 100%);
+            color: #e0d4e3;
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 시작 화면 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%233a1c40"/><stop offset="100%" stop-color="%23050205"/></radialGradient><rect width="100%" height="100%" fill="url(%23g)"/><circle cx="50%" cy="50%" r="300" stroke="%23f1c40f" stroke-width="2" fill="none" opacity="0.2" stroke-dasharray="10 20"/><path d="M50% 10% L90% 90% L10% 90% Z" stroke="%23f1c40f" stroke-width="1" fill="none" opacity="0.1"/></svg>') center/cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .title-text {
+            font-size: 5rem;
+            color: #f1c40f;
+            text-shadow: 0 0 20px #e74c3c, 0 0 40px #e74c3c;
+            margin-bottom: 10px;
+            text-align: center;
+            line-height: 1.1;
+            animation: floatTitle 3s ease-in-out infinite;
+        }
+
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .subtitle-text {
+            font-size: 1.5rem;
+            color: #bdc3c7;
+            margin-bottom: 50px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: #fff;
+            border: 2px solid #f1c40f;
+            padding: 15px 50px;
+            font-size: 2rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: 'Yeon Sung', cursive;
+            box-shadow: 0 0 15px #f1c40f, inset 0 0 10px rgba(255,255,255,0.5);
+            transition: all 0.2s;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 5px #f1c40f;
+        }
+
+        /* 게임 UI */
+        #game-ui {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        #ui-top {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-bottom: 2px solid #f1c40f;
+            box-shadow: 0 4px 15px rgba(241, 196, 15, 0.2);
+            z-index: 10;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+            min-width: 80px;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 5px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><circle cx="50%" cy="50%" r="40vw" stroke="rgba(241, 196, 15, 0.15)" stroke-width="2" fill="none"/><polygon points="50%,10% 90%,90% 10%,90%" stroke="rgba(241, 196, 15, 0.1)" stroke-width="1" fill="none"/></svg>') center/contain no-repeat;
+        }
+
+        canvas {
+            background-color: rgba(10, 5, 10, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(192, 57, 43, 0.4);
+            border: 2px solid #8e44ad;
+        }
+
+        #message-overlay {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 0 0 10px #e74c3c, 0 0 20px #e74c3c;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            text-align: center;
+            z-index: 20;
+            white-space: nowrap;
+        }
+
+        #tutorial {
+            padding: 8px;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            font-size: 1rem;
+            line-height: 1.4;
+            z-index: 10;
+            border-top: 1px solid #8e44ad;
+        }
+
+        /* 퇴마도감 버튼 & 모달 */
+        #book-btn {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: #2c1030;
+            color: #f1c40f;
+            border: 2px solid #f1c40f;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Yeon Sung', cursive;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.5);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px #000;
+            transition: transform 0.2s;
+        }
+
+        #book-btn:active {
+            transform: scale(0.9);
+        }
+
+        #book-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 150;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .book-content {
+            background: #1e0d22;
+            border: 3px solid #f1c40f;
+            border-radius: 15px;
+            width: 95%;
+            max-width: 600px;
+            height: 85%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 0 30px #8e44ad;
+            position: relative;
+        }
+
+        .book-content h2 {
+            text-align: center;
+            color: #f1c40f;
+            font-size: 2.5rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #e74c3c;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #e74c3c;
+            font-size: 2.5rem;
+            line-height: 1;
+            cursor: pointer;
+            text-shadow: 0 0 5px #000;
+        }
+
+        .book-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .book-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .book-list::-webkit-scrollbar-thumb {
+            background: #8e44ad;
+            border-radius: 4px;
+        }
+
+        .book-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(241,196,15,0.3);
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .book-item canvas {
+            background: rgba(10,5,10,0.8);
+            border-radius: 8px;
+            margin-right: 15px;
+            border: 1px solid #8e44ad;
+            flex-shrink: 0;
+        }
+
+        .book-desc h3 {
+            margin: 0 0 5px 0;
+            color: #f1c40f;
+            font-size: 1.5rem;
+        }
+
+        .book-desc p {
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+            color: #bdc3c7;
+            line-height: 1.3;
+        }
+
+        .book-desc .tags {
+            font-size: 0.9rem;
+            color: #e056fd;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 8px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        #game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 0, 10, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .game-over-title {
+            font-size: 5rem;
+            color: #c0392b;
+            text-shadow: 0 0 20px #e74c3c;
+            margin-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1 class="title-text">도형퇴마왕</h1>
+        <p class="subtitle-text">형상에 깃든 악귀들을 파악하고, 100초 안에 정화하라!</p>
+        <button class="start-btn" onclick="initAndStartGame()">퇴마 시작</button>
+    </div>
+
+    <!-- 게임 UI -->
+    <div id="game-ui">
+        <div id="ui-top">
+            <div class="stat-box">
+                <span class="text-sm text-gray-400">퇴마 점수</span>
+                <span id="scoreDisplay" class="text-2xl text-yellow-300">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="text-sm text-gray-400">남은 시간</span>
+                <span id="timerDisplay" class="text-3xl text-white font-bold" style="transition: all 0.2s;">100초</span>
+            </div>
+            <div class="stat-box">
+                <span class="text-sm text-gray-400">최고 연쇄</span>
+                <span id="maxComboDisplay" class="text-2xl text-green-400">0</span>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="message-overlay">봉인!</div>
+        </div>
+
+        <button id="book-btn" onclick="openBook()">퇴마<br>도감</button>
+
+        <div id="tutorial">
+            <span class="text-yellow-300">도형의 성질</span>(포함관계)을 이용해 매치해 봉인하세요!<br>
+            <span class="text-red-400">부적(폭탄)</span>끼리 위치를 바꾸면 <b>강력한 퇴마진</b>이 발동됩니다!<br>
+            <span class="text-green-300">100초</span> 안에 최고의 점수를 노리세요! (오답 시 시간 페널티)
+        </div>
+    </div>
+
+    <!-- 퇴마도감 모달 -->
+    <div id="book-modal">
+        <div class="book-content">
+            <button class="close-btn" onclick="closeBook()">&times;</button>
+            <h2>퇴마도감</h2>
+            <div class="book-list" id="book-list">
+                <!-- 자바스크립트로 렌더링 됨 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 게임 오버 화면 -->
+    <div id="game-over-screen">
+        <h1 class="game-over-title">시간 종료!</h1>
+        <p class="text-3xl mb-3 text-gray-300">최종 점수: <span id="finalScore" class="text-yellow-400">0</span></p>
+        <p class="text-3xl mb-8 text-gray-300">최고 연쇄: <span id="finalMaxCombo" class="text-green-400">0</span></p>
+        <button class="start-btn" onclick="startGame()">다시 봉인하기</button>
+    </div>
+
+<script>
+/**
+ * 도형퇴마왕 (Geo Exorcist King)
+ */
+
+// --- 1. Audio System ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioInitialized = false;
+let bgmStarted = false;
+let baseDrone = null;
+let nextNoteTime = 0;
+let noteIndex = 0;
+// 동양 판타지풍의 펜타토닉 스케일 (긴장감 부여)
+const bgmNotes = [220.00, 233.08, 293.66, 329.63, 349.23, 329.63, 293.66, 233.08];
+
+function initAudio() {
+    if (!audioInitialized) {
+        audioCtx.resume();
+        audioInitialized = true;
+    }
+}
+
+function startBGM() {
+    if (bgmStarted) return; 
+    bgmStarted = true;
+    
+    // 1. 배경에 깔리는 낮고 웅장한 드론 사운드
+    baseDrone = audioCtx.createOscillator();
+    const droneGain = audioCtx.createGain();
+    baseDrone.type = 'sine';
+    baseDrone.frequency.value = 55; // A1 (낮은 음)
+    
+    // 드론 볼륨이 숨쉬듯 변하게 하는 LFO
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.15; 
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 0.015; 
+    lfo.connect(lfoGain);
+    lfoGain.connect(droneGain.gain);
+    
+    droneGain.gain.value = 0.025; // SFX를 방해하지 않는 매우 작은 기본 볼륨
+    baseDrone.connect(droneGain);
+    droneGain.connect(audioCtx.destination);
+    
+    baseDrone.start();
+    lfo.start();
+    
+    nextNoteTime = audioCtx.currentTime + 0.1;
+}
+
+function scheduleBGM() {
+    if (!audioInitialized || !bgmStarted) return;
+    
+    // 게임 진행 중이 아닐 때는 멜로디 진행 멈춤 (드론만 유지)
+    if (state === 'START_SCREEN' || state === 'GAME_OVER' || state === 'PAUSED') {
+        nextNoteTime = audioCtx.currentTime + 0.1;
+        return;
+    }
+    
+    // Web Audio API Lookahead 스케줄링 (0.1초 앞서서 미리 예약)
+    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+        // 2. 동양 판타지풍 메인 멜로디 라인
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = bgmNotes[noteIndex];
+        
+        gain.gain.setValueAtTime(0, nextNoteTime);
+        gain.gain.linearRampToValueAtTime(0.03, nextNoteTime + 0.05); // 아주 작은 멜로디 볼륨
+        gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.25);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(nextNoteTime);
+        osc.stop(nextNoteTime + 0.3);
+        
+        // 3. 주기적인 베이스 드럼 (심장 박동 같은 긴장감 부여)
+        if (noteIndex === 0 || noteIndex === 4) {
+            const bass = audioCtx.createOscillator();
+            const bassGain = audioCtx.createGain();
+            bass.type = 'sine';
+            bass.frequency.setValueAtTime(110, nextNoteTime);
+            bass.frequency.exponentialRampToValueAtTime(55, nextNoteTime + 0.2);
+            
+            bassGain.gain.setValueAtTime(0.05, nextNoteTime);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.4);
+            
+            bass.connect(bassGain);
+            bassGain.connect(audioCtx.destination);
+            bass.start(nextNoteTime);
+            bass.stop(nextNoteTime + 0.4);
+        }
+        
+        noteIndex = (noteIndex + 1) % bgmNotes.length;
+        nextNoteTime += 0.25; // 재생 템포
+    }
+}
+
+function playSound(type, combo = 1) {
+    if (!audioInitialized) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (type === 'swap') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+    } else if (type === 'match') {
+        osc.type = 'sine';
+        const baseFreq = 800 + (combo * 100);
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, now + 0.5);
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now); osc.stop(now + 0.5);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
+    } else if (type === 'explosion') {
+        const bufferSize = audioCtx.sampleRate * 0.4;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1000, now);
+        filter.frequency.exponentialRampToValueAtTime(100, now + 0.4);
+
+        noise.connect(filter); filter.connect(gainNode);
+        gainNode.gain.setValueAtTime(0.8, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        noise.start(now);
+    }
+}
+
+// --- 2. Data Definitions ---
+const COLS = 8;
+const ROWS = 8;
+let CELL_SIZE = 50;
+
+const TAG_TIERS = {
+    'iso': 1, 'right': 1, 'trap': 1,
+    'para': 2,
+    'equi': 3, 'rect': 3, 'rhom': 3,
+    'iso_right': 4, 'square': 4
+};
+
+const TAG_NAMES = {
+    'iso': '이등변', 'right': '직각', 'trap': '사다리꼴',
+    'para': '평행사변형', 'equi': '정삼각형', 'rect': '직사각형',
+    'rhom': '마름모', 'iso_right': '직각이등변', 'square': '정사각형'
+};
+
+const SHAPE_DEFS = {
+    'tri_base': { id: 'tri_base', name: '일반 삼각형', tags: [], color: '#7f8c8d', desc: '특징 없는 하급 악귀. 뾰족한 기운만 남았다.' }, 
+    'tri_iso': { id: 'tri_iso', name: '이등변삼각형', tags: ['iso'], color: '#f39c12', desc: '두 변의 길이가 같은 성질을 가진 악귀. 균형을 추구한다.' }, 
+    'tri_right': { id: 'tri_right', name: '직각삼각형', tags: ['right'], color: '#27ae60', desc: '한 각이 90도인 직각 성질을 가진 악귀. 날카롭다.' }, 
+    'tri_equi': { id: 'tri_equi', name: '정삼각형', tags: ['iso', 'equi'], color: '#d35400', desc: '세 변이 모두 같은 악귀. 완벽한 균형을 자랑하며 이등변삼각형의 성질도 포함한다.' }, 
+    'tri_iso_right': { id: 'tri_iso_right', name: '직각이등변', tags: ['iso', 'right', 'iso_right'], color: '#16a085', desc: '직각이면서 이등변인 혼종 악귀. 두 가지 성질을 모두 지녀 다루기 까다롭다.' }, 
+    'quad_base': { id: 'quad_base', name: '일반 사각형', tags: [], color: '#95a5a6', desc: '네 개의 변을 가진 가장 기본적인 사각형 악귀.' }, 
+    'quad_trap': { id: 'quad_trap', name: '사다리꼴', tags: ['trap'], color: '#8e44ad', desc: '한 쌍의 대변이 평행한 성질의 악귀. 어딘가 삐딱하게 치우쳐있다.' }, 
+    'quad_para': { id: 'quad_para', name: '평행사변형', tags: ['trap', 'para'], color: '#2980b9', desc: '두 쌍의 대변이 평행한 악귀. 사다리꼴의 성질을 모두 품고 있다.' }, 
+    'quad_rect': { id: 'quad_rect', name: '직사각형', tags: ['trap', 'para', 'rect'], color: '#3498db', desc: '네 각이 직각인 악귀. 평행사변형의 성질을 베이스로 안정감을 갖는다.' }, 
+    'quad_rhom': { id: 'quad_rhom', name: '마름모', tags: ['trap', 'para', 'rhom'], color: '#e056fd', desc: '네 변의 길이가 같은 악귀. 이 역시 평행사변형의 일종이다.' }, 
+    'quad_square': { id: 'quad_square', name: '정사각형', tags: ['trap', 'para', 'rect', 'rhom', 'square'], color: '#e74c3c', desc: '네 변과 네 각이 모두 같은 최상위 대왕 악귀. 직사각형과 마름모의 성질을 모두 가진 완전체. 퇴치 시 강력한 폭탄 부적이 된다.' } 
+};
+
+const SHAPES = Object.values(SHAPE_DEFS);
+
+// --- 3. Globals ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let board = [];
+let particles = [];
+let floatingTexts = [];
+let bigEffects = [];
+let state = 'START_SCREEN'; // IDLE, SWAPPING, ANIMATING, GAME_OVER, PAUSED, START_SCREEN
+let selectedCell = null;
+let swapProgress = 0;
+let score = 0;
+let combo = 0;
+let maxCombo = parseInt(localStorage.getItem('geomatch_max_combo')) || 0;
+let timeLeft = 100;
+let lastTime = 0;
+let screenShake = 0;
+
+// --- 4. Initialization ---
+window.onload = () => {
+    resizeCanvas();
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        updateBoardPositions();
+    });
+    renderBook(); 
+};
+
+function initAndStartGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-ui').style.display = 'flex';
+    initAudio();
+    startBGM();
+    setTimeout(() => {
+        resizeCanvas();
+        startGame();
+        requestAnimationFrame(loop);
+    }, 50);
+}
+
+function resizeCanvas() {
+    const container = document.getElementById('canvas-container');
+    if(!container) return;
+    
+    const maxW = container.clientWidth - 10;
+    const maxH = container.clientHeight - 10;
+    
+    CELL_SIZE = Math.min(Math.floor(maxW / COLS), Math.floor(maxH / ROWS));
+    if(CELL_SIZE < 35) CELL_SIZE = 35; 
+    
+    canvas.width = CELL_SIZE * COLS;
+    canvas.height = CELL_SIZE * ROWS;
+}
+
+function updateBoardPositions() {
+    if (!board || board.length === 0) return;
+    for (let r = 0; r < ROWS; r++) {
+        if (!board[r]) continue;
+        for (let c = 0; c < COLS; c++) {
+            if(board[r][c]) {
+                board[r][c].x = c * CELL_SIZE;
+                board[r][c].y = r * CELL_SIZE;
+                board[r][c].targetY = r * CELL_SIZE;
+            }
+        }
+    }
+}
+
+function getRandomShape() {
+    return SHAPES[Math.floor(Math.random() * SHAPES.length)];
+}
+
+function createPiece(c, r, shape = null) {
+    return {
+        c, r,
+        x: c * CELL_SIZE,
+        y: r * CELL_SIZE,
+        targetY: r * CELL_SIZE,
+        shape: shape || getRandomShape(),
+        bombType: null, 
+        offsetY: Math.random() * Math.PI * 2 
+    };
+}
+
+function initBoard() {
+    board = [];
+    for (let r = 0; r < ROWS; r++) {
+        let row = [];
+        for (let c = 0; c < COLS; c++) {
+            row.push(createPiece(c, r));
+        }
+        board.push(row);
+    }
+    
+    while (findMatches().length > 0) {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                board[r][c].shape = getRandomShape();
+                board[r][c].bombType = null;
+            }
+        }
+    }
+}
+
+// --- 퇴마도감 로직 ---
+function renderBook() {
+    const listDiv = document.getElementById('book-list');
+    listDiv.innerHTML = '';
+    
+    SHAPES.forEach(shape => {
+        const item = document.createElement('div');
+        item.className = 'book-item';
+        
+        const c = document.createElement('canvas');
+        c.width = 80;
+        c.height = 80;
+        const ctxBook = c.getContext('2d');
+        
+        const fakePiece = {
+            shape: shape,
+            x: 0, y: 0,
+            bombType: null,
+            offsetY: 0
+        };
+        drawShape(ctxBook, fakePiece, 80, 1.0);
+        
+        const descDiv = document.createElement('div');
+        descDiv.className = 'book-desc';
+        
+        const tagsHtml = shape.tags.length > 0 ? `[${shape.tags.map(t => TAG_NAMES[t]).join(', ')}] 포함` : '[고유 성질 없음]';
+        
+        descDiv.innerHTML = `
+            <h3>${shape.name}</h3>
+            <p>${shape.desc}</p>
+            <div class="tags">${tagsHtml}</div>
+        `;
+        
+        item.appendChild(c);
+        item.appendChild(descDiv);
+        listDiv.appendChild(item);
+    });
+}
+
+function openBook() {
+    if(state === 'GAME_OVER') return;
+    state = 'PAUSED';
+    document.getElementById('book-modal').style.display = 'flex';
+}
+
+function closeBook() {
+    document.getElementById('book-modal').style.display = 'none';
+    state = 'IDLE'; 
+}
+
+
+// --- 5. Match Logic ---
+function getHighestTierTag(tags) {
+    let best = null;
+    let maxTier = 0;
+    tags.forEach(t => {
+        if(TAG_TIERS[t] && TAG_TIERS[t] > maxTier) {
+            maxTier = TAG_TIERS[t];
+            best = t;
+        }
+    });
+    return best;
+}
+
+function checkMatchProperties(pieces) {
+    let p1 = pieces[0], p2 = pieces[1], p3 = pieces[2];
+    
+    if(p1.shape.id === p2.shape.id && p2.shape.id === p3.shape.id) {
+        return { isMatch: true, tag: null, name: p1.shape.name, tier: 0 };
+    }
+    
+    let common = p1.shape.tags.filter(t => p2.shape.tags.includes(t) && p3.shape.tags.includes(t));
+    let bestTag = getHighestTierTag(common);
+    
+    if (bestTag) {
+        return { isMatch: true, tag: bestTag, name: TAG_NAMES[bestTag] + '의 혼', tier: TAG_TIERS[bestTag] };
+    }
+    return { isMatch: false };
+}
+
+function findMatches() {
+    let matchGroups = [];
+    let matchedSet = new Set();
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS - 2; c++) {
+            let p1 = board[r][c], p2 = board[r][c+1], p3 = board[r][c+2];
+            if(!p1 || !p2 || !p3) continue;
+
+            let matchInfo = checkMatchProperties([p1, p2, p3]);
+            if (matchInfo.isMatch) {
+                let group = [p1, p2, p3];
+                let nextC = c + 3;
+                while (nextC < COLS && board[r][nextC]) {
+                    if(matchInfo.tag === null) {
+                        if(board[r][nextC].shape.id === p1.shape.id) group.push(board[r][nextC]);
+                        else break;
+                    } else {
+                        if(board[r][nextC].shape.tags.includes(matchInfo.tag)) group.push(board[r][nextC]);
+                        else break;
+                    }
+                    nextC++;
+                }
+                matchGroups.push({ group, type: 'horizontal', info: matchInfo });
+                group.forEach(p => matchedSet.add(`${p.r},${p.c}`));
+                c = nextC - 1;
+            }
+        }
+    }
+
+    for (let c = 0; c < COLS; c++) {
+        for (let r = 0; r < ROWS - 2; r++) {
+            let p1 = board[r][c], p2 = board[r+1][c], p3 = board[r+2][c];
+            if(!p1 || !p2 || !p3) continue;
+
+            let matchInfo = checkMatchProperties([p1, p2, p3]);
+            if (matchInfo.isMatch) {
+                let group = [p1, p2, p3];
+                let nextR = r + 3;
+                while (nextR < ROWS && board[nextR][c]) {
+                    if(matchInfo.tag === null) {
+                        if(board[nextR][c].shape.id === p1.shape.id) group.push(board[nextR][c]);
+                        else break;
+                    } else {
+                        if(board[nextR][c].shape.tags.includes(matchInfo.tag)) group.push(board[nextR][c]);
+                        else break;
+                    }
+                    nextR++;
+                }
+                matchGroups.push({ group, type: 'vertical', info: matchInfo });
+                group.forEach(p => matchedSet.add(`${p.r},${p.c}`));
+                r = nextR - 1;
+            }
+        }
+    }
+
+    return matchGroups;
+}
+
+// --- 6. Input ---
+canvas.addEventListener('mousedown', handleInputStart);
+canvas.addEventListener('touchstart', handleInputStart, {passive: false});
+window.addEventListener('mouseup', handleInputEnd);
+window.addEventListener('touchend', handleInputEnd);
+window.addEventListener('mousemove', handleInputMove);
+window.addEventListener('touchmove', handleInputMove, {passive: false});
+
+let inputStartPos = null;
+
+function getEventPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function handleInputStart(e) {
+    if(e.target === canvas && e.cancelable) e.preventDefault();
+    initAudio();
+    if (state !== 'IDLE') return;
+
+    const pos = getEventPos(e);
+    const c = Math.floor(pos.x / CELL_SIZE);
+    const r = Math.floor(pos.y / CELL_SIZE);
+
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
+        selectedCell = { c, r };
+        inputStartPos = pos;
+    }
+}
+
+function handleInputMove(e) {
+    if (state !== 'IDLE' || !selectedCell || !inputStartPos) return;
+    
+    const pos = getEventPos(e);
+    const dx = pos.x - inputStartPos.x;
+    const dy = pos.y - inputStartPos.y;
+    const threshold = CELL_SIZE / 3;
+
+    if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+        let nextC = selectedCell.c;
+        let nextR = selectedCell.r;
+
+        if (Math.abs(dx) > Math.abs(dy)) nextC += dx > 0 ? 1 : -1;
+        else nextR += dy > 0 ? 1 : -1;
+
+        if (nextC >= 0 && nextC < COLS && nextR >= 0 && nextR < ROWS) {
+            startSwap(selectedCell, {c: nextC, r: nextR});
+        }
+        
+        selectedCell = null;
+        inputStartPos = null;
+    }
+}
+
+function handleInputEnd(e) {
+    inputStartPos = null;
+    selectedCell = null;
+}
+
+function startSwap(cell1, cell2, revert = false) {
+    state = 'SWAPPING';
+    swapProgress = 0;
+    if (!revert) playSound('swap');
+
+    const animateSwap = () => {
+        swapProgress += 0.15;
+        if (swapProgress >= 1) {
+            swapProgress = 1;
+            let p1 = board[cell1.r][cell1.c];
+            let p2 = board[cell2.r][cell2.c];
+            
+            board[cell1.r][cell1.c] = p2;
+            board[cell2.r][cell2.c] = p1;
+            
+            p2.c = cell1.c; p2.r = cell1.r;
+            p1.c = cell2.c; p1.r = cell2.r;
+            updateBoardPositions(); 
+
+            if (revert) {
+                state = 'IDLE';
+            } else {
+                checkMatchesAfterSwap(cell1, cell2);
+            }
+        } else {
+            let p1 = board[cell1.r][cell1.c];
+            let p2 = board[cell2.r][cell2.c];
+            
+            const targetX1 = cell2.c * CELL_SIZE;
+            const targetY1 = cell2.r * CELL_SIZE;
+            const targetX2 = cell1.c * CELL_SIZE;
+            const targetY2 = cell1.r * CELL_SIZE;
+
+            p1.x = p1.c * CELL_SIZE + (targetX1 - p1.c * CELL_SIZE) * swapProgress;
+            p1.y = p1.r * CELL_SIZE + (targetY1 - p1.r * CELL_SIZE) * swapProgress;
+            p2.x = p2.c * CELL_SIZE + (targetX2 - p2.c * CELL_SIZE) * swapProgress;
+            p2.y = p2.r * CELL_SIZE + (targetY2 - p2.r * CELL_SIZE) * swapProgress;
+
+            requestAnimationFrame(animateSwap);
+        }
+    };
+    requestAnimationFrame(animateSwap);
+}
+
+function applyTimePenalty() {
+    playSound('error');
+    timeLeft -= 3;
+    if (timeLeft < 0) timeLeft = 0;
+    
+    const ui = document.getElementById('timerDisplay');
+    ui.style.color = '#e74c3c';
+    ui.style.transform = 'scale(1.2)';
+    setTimeout(() => {
+        ui.style.color = '';
+        ui.style.transform = '';
+    }, 300);
+    
+    floatingTexts.push(new FloatingText("-3초", canvas.width/2 - CELL_SIZE/2, canvas.height/2 - CELL_SIZE/2, '#e74c3c'));
+    updateTimerUI();
+    
+    if (timeLeft === 0) gameOver();
+}
+
+function checkMatchesAfterSwap(cell1, cell2) {
+    let p1 = board[cell1.r][cell1.c];
+    let p2 = board[cell2.r][cell2.c];
+
+    // 특수 부적(폭탄)끼리 교환 시 무조건 발동
+    if (p1.bombType && p2.bombType) {
+        triggerBombCombo(p1, p2);
+        return;
+    }
+
+    let matches = findMatches();
+    if (matches.length === 0) {
+        combo = 0;
+        updateUI();
+        startSwap(cell1, cell2, true); 
+        applyTimePenalty();
+    } else {
+        processMatches(matches);
+    }
+}
+
+// 부적(폭탄) 간의 조합 효과 함수
+function triggerBombCombo(p1, p2) {
+    state = 'ANIMATING';
+    combo++; // 폭탄 교환도 하나의 유효 매치(연쇄)로 간주
+    if (combo > maxCombo) {
+        maxCombo = combo;
+        localStorage.setItem('geomatch_max_combo', maxCombo);
+    }
+
+    let toDestroy = new Set();
+    
+    playSound('explosion');
+    screenShake = 20;
+
+    let t1 = p1.bombType;
+    let t2 = p2.bombType;
+    // 타입을 사전순으로 정렬하여 조합 이름 생성 (ex: col+row, cross+cross)
+    let comboType = [t1, t2].sort().join('+'); 
+    
+    let centerR = p2.r; 
+    let centerC = p2.c;
+
+    let effectText = "퇴마!";
+    let effectColor = '#f1c40f';
+
+    const addIfValid = (r, c) => {
+        if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] && !toDestroy.has(board[r][c])) {
+            toDestroy.add(board[r][c]);
+            return true;
+        }
+        return false;
+    };
+
+    if (comboType === 'row+row') {
+        effectText = "광역 가로 멸진!";
+        for(let r = centerR - 1; r <= centerR + 1; r++) {
+            for(let c=0; c<COLS; c++) addIfValid(r, c);
+        }
+    } else if (comboType === 'col+col') {
+        effectText = "광역 세로 멸진!";
+        for(let c = centerC - 1; c <= centerC + 1; c++) {
+            for(let r=0; r<ROWS; r++) addIfValid(r, c);
+        }
+    } else if (comboType === 'col+row') {
+        effectText = "십자 대폭발!";
+        for(let r = centerR - 1; r <= centerR + 1; r++) {
+            for(let c=0; c<COLS; c++) addIfValid(r, c);
+        }
+        for(let c = centerC - 1; c <= centerC + 1; c++) {
+            for(let r=0; r<ROWS; r++) addIfValid(r, c);
+        }
+    } else if (comboType.includes('cross') && !comboType.includes('cross+cross')) {
+        effectText = "초사방 멸진!";
+        effectColor = '#e056fd';
+        screenShake = 30;
+        // 3줄 두께 십자
+        for(let r = centerR - 1; r <= centerR + 1; r++) {
+            for(let c=0; c<COLS; c++) addIfValid(r, c);
+        }
+        for(let c = centerC - 1; c <= centerC + 1; c++) {
+            for(let r=0; r<ROWS; r++) addIfValid(r, c);
+        }
+        // 대각선 추가
+        for(let i=0; i<Math.max(ROWS, COLS); i++) {
+            addIfValid(centerR - i, centerC - i);
+            addIfValid(centerR + i, centerC + i);
+            addIfValid(centerR - i, centerC + i);
+            addIfValid(centerR + i, centerC - i);
+        }
+    } else if (comboType === 'cross+cross') {
+        effectText = "대퇴마진!!!";
+        effectColor = '#e74c3c';
+        screenShake = 50;
+        for(let r=0; r<ROWS; r++) {
+            for(let c=0; c<COLS; c++) addIfValid(r, c);
+        }
+    }
+
+    bigEffects.push(new BigEffect(effectText, canvas.width/2, canvas.height/2, effectColor));
+
+    p1.triggered = true;
+    p2.triggered = true;
+    toDestroy.add(p1);
+    toDestroy.add(p2);
+
+    finalizeDestruction(toDestroy, true);
+}
+
+
+function triggerBomb(p, toDestroy) {
+    playSound('explosion');
+    for(let i=0; i<30; i++) particles.push(new Particle(p.x + CELL_SIZE/2, p.y + CELL_SIZE/2, i%2===0?'#f1c40f':'#ffffff'));
+
+    const addIfValid = (r, c) => {
+        if(r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] && !toDestroy.has(board[r][c])) {
+            toDestroy.add(board[r][c]);
+            return true;
+        }
+        return false;
+    };
+
+    if (p.bombType === 'row' || p.bombType === 'cross') {
+        for (let i = 0; i < COLS; i++) addIfValid(p.r, i);
+    }
+    if (p.bombType === 'col' || p.bombType === 'cross') {
+        for (let i = 0; i < ROWS; i++) addIfValid(i, p.c);
+    }
+}
+
+function showMessage(text) {
+    const el = document.getElementById('message-overlay');
+    el.innerText = text;
+    el.style.opacity = '1';
+    el.style.transform = 'translate(-50%, -80%) scale(1.2)';
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translate(-50%, -50%) scale(1)';
+    }, 1000);
+}
+
+function processMatches(matchGroups) {
+    state = 'ANIMATING';
+    combo++;
+    if (combo > maxCombo) {
+        maxCombo = combo;
+        localStorage.setItem('geomatch_max_combo', maxCombo);
+    }
+    playSound('match', combo);
+
+    let toDestroy = new Set();
+    let bombTargets = []; 
+    let highestMsg = '';
+    let maxTier = -1;
+
+    matchGroups.forEach(m => {
+        m.group.forEach(p => toDestroy.add(p));
+
+        if(m.info.tier > maxTier) {
+            maxTier = m.info.tier;
+            highestMsg = m.info.name + (combo > 1 ? ` 봉인! ${combo}연쇄!` : ' 봉인!');
+        }
+
+        let createBomb = false;
+        let bType = null;
+        
+        if(m.group.length >= 4) {
+            createBomb = true;
+            bType = m.type === 'horizontal' ? 'row' : 'col';
+        } else if (m.info.tier === 3) {
+            createBomb = true;
+            bType = m.type === 'horizontal' ? 'col' : 'row';
+        } else if (m.info.tier === 4) {
+            createBomb = true;
+            bType = 'cross';
+        }
+
+        if (createBomb) {
+            let center = m.group[Math.floor(m.group.length / 2)];
+            bombTargets.push({r: center.r, c: center.c, type: bType});
+        }
+    });
+
+    if(highestMsg) showMessage(highestMsg);
+
+    let newBombsTriggered = true;
+    while(newBombsTriggered) {
+        newBombsTriggered = false;
+        let currentDestroyArray = Array.from(toDestroy);
+        for (let p of currentDestroyArray) {
+            if (p.bombType && !p.triggered) {
+                p.triggered = true;
+                let prevSize = toDestroy.size;
+                triggerBomb(p, toDestroy);
+                if (toDestroy.size > prevSize) newBombsTriggered = true;
+            }
+        }
+    }
+
+    let multiplier = maxTier > 0 ? (1 + (maxTier-1)*0.5) : 1; 
+    let earnedScore = Math.floor(toDestroy.size * 10 * combo * multiplier);
+    score += earnedScore;
+    updateUI();
+
+    let samplePiece = [...toDestroy][0];
+    if (samplePiece) {
+        floatingTexts.push(new FloatingText(`+${earnedScore}`, samplePiece.x, samplePiece.y, '#f1c40f'));
+    }
+
+    toDestroy.forEach(p => {
+        for(let i=0; i<8; i++) particles.push(new Particle(p.x + CELL_SIZE/2, p.y + CELL_SIZE/2, i%2===0?p.shape.color:'#8e44ad'));
+        
+        let bombDef = bombTargets.find(b => b.r === p.r && b.c === p.c);
+        if (bombDef) {
+            p.bombType = bombDef.type;
+            p.triggered = false; 
+        } else {
+            board[p.r][p.c] = null;
+        }
+    });
+
+    setTimeout(applyGravity, 400);
+}
+
+// 콤보 폭발을 마무리하는 함수
+function finalizeDestruction(toDestroy, isComboBonus) {
+    let newBombsTriggered = true;
+    while(newBombsTriggered) {
+        newBombsTriggered = false;
+        let currentDestroyArray = Array.from(toDestroy);
+        for (let p of currentDestroyArray) {
+            if (p.bombType && !p.triggered) {
+                p.triggered = true;
+                let prevSize = toDestroy.size;
+                triggerBomb(p, toDestroy);
+                if (toDestroy.size > prevSize) newBombsTriggered = true;
+            }
+        }
+    }
+
+    let multiplier = isComboBonus ? 2 : 1;
+    let earnedScore = Math.floor(toDestroy.size * 20 * combo * multiplier);
+    if(earnedScore === 0) earnedScore = 500;
+    score += earnedScore;
+    updateUI();
+
+    toDestroy.forEach(p => {
+        for(let i=0; i<10; i++) particles.push(new Particle(p.x + CELL_SIZE/2, p.y + CELL_SIZE/2, i%2===0?p.shape.color:'#f1c40f'));
+        board[p.r][p.c] = null;
+    });
+
+    setTimeout(applyGravity, 500);
+}
+
+function applyGravity() {
+    let falling = false;
+    for (let c = 0; c < COLS; c++) {
+        let emptySpaces = 0;
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][c] === null) {
+                emptySpaces++;
+            } else if (emptySpaces > 0) {
+                let p = board[r][c];
+                board[r + emptySpaces][c] = p;
+                board[r][c] = null;
+                p.r = r + emptySpaces;
+                p.targetY = p.r * CELL_SIZE;
+                falling = true;
+            }
+        }
+        for (let r = 0; r < emptySpaces; r++) {
+            let newPiece = createPiece(c, r);
+            newPiece.y = -(emptySpaces - r) * CELL_SIZE; 
+            newPiece.targetY = r * CELL_SIZE;
+            board[r][c] = newPiece;
+            falling = true;
+        }
+    }
+    if (falling) animateGravity();
+    else checkCascade();
+}
+
+function animateGravity() {
+    let stillFalling = false;
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            let p = board[r][c];
+            if (p && p.y < p.targetY) {
+                p.y += Math.max(10, CELL_SIZE * 0.25); 
+                if (p.y > p.targetY) p.y = p.targetY;
+                stillFalling = true;
+            }
+        }
+    }
+    if (stillFalling) requestAnimationFrame(animateGravity);
+    else checkCascade();
+}
+
+function checkCascade() {
+    let matches = findMatches();
+    if (matches.length > 0) {
+        processMatches(matches);
+    } else {
+        combo = 0;
+        state = 'IDLE';
+    }
+}
+
+// --- 7. Graphics ---
+function drawGhostFace(ctx, shapeId, size) {
+    ctx.fillStyle = '#111'; 
+    const s = size;
+    
+    const drawEyes = (yOffset = 0, distance = s*0.15) => {
+        ctx.beginPath();
+        ctx.arc(-distance, yOffset, s*0.06, 0, Math.PI*2);
+        ctx.arc(distance, yOffset, s*0.06, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(-distance, yOffset, s*0.02, 0, Math.PI*2);
+        ctx.arc(distance, yOffset, s*0.02, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#111';
+    };
+
+    switch(shapeId) {
+        case 'tri_base':
+            drawEyes(s*0.1);
+            ctx.fillRect(-s*0.1, s*0.2, s*0.2, s*0.02); 
+            break;
+        case 'tri_iso':
+            drawEyes(s*0.1);
+            ctx.beginPath(); ctx.moveTo(-s*0.25, 0); ctx.lineTo(-s*0.05, s*0.05); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(s*0.25, 0); ctx.lineTo(s*0.05, s*0.05); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, s*0.2, s*0.08, 0, Math.PI, false); ctx.fill();
+            break;
+        case 'tri_right':
+            drawEyes(0, s*0.1);
+            ctx.beginPath(); ctx.arc(0, s*0.15, s*0.05, 0, Math.PI*2); ctx.fill();
+            break;
+        case 'tri_equi':
+            ctx.beginPath(); ctx.arc(0, s*0.05, s*0.12, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath(); ctx.arc(0, s*0.05, s*0.04, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.moveTo(-s*0.1, s*0.2); ctx.lineTo(0, s*0.25); ctx.lineTo(s*0.1, s*0.2); ctx.fill();
+            break;
+        case 'tri_iso_right':
+            drawEyes(0, s*0.15);
+            ctx.beginPath(); ctx.arc(0, s*0.15, s*0.08, Math.PI, 0, false); ctx.fill();
+            break;
+        case 'quad_base':
+            drawEyes(0);
+            ctx.beginPath(); ctx.arc(0, s*0.1, s*0.05, 0, Math.PI*2); ctx.fill();
+            break;
+        case 'quad_trap':
+            drawEyes(0);
+            ctx.beginPath(); ctx.moveTo(-s*0.1, s*0.1); ctx.lineTo(s*0.1, s*0.15); ctx.stroke();
+            break;
+        case 'quad_para':
+            drawEyes(-s*0.05);
+            ctx.beginPath(); ctx.arc(s*0.05, s*0.1, s*0.08, 0, Math.PI/2, false); ctx.stroke();
+            break;
+        case 'quad_rect':
+            drawEyes(0);
+            ctx.fillRect(-s*0.1, s*0.1, s*0.2, s*0.05);
+            break;
+        case 'quad_rhom':
+            drawEyes(-s*0.05, s*0.1);
+            ctx.beginPath(); ctx.moveTo(-s*0.1, s*0.1); ctx.lineTo(0, s*0.15); ctx.lineTo(s*0.1, s*0.1); ctx.stroke();
+            break;
+        case 'quad_square':
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(-s*0.15, -s*0.05, s*0.08, 0, Math.PI*2); ctx.arc(s*0.15, -s*0.05, s*0.08, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath(); ctx.arc(-s*0.15, -s*0.05, s*0.03, 0, Math.PI*2); ctx.arc(s*0.15, -s*0.05, s*0.03, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.moveTo(-s*0.2, s*0.1); ctx.lineTo(s*0.2, s*0.1); ctx.lineTo(0, s*0.2); ctx.fill();
+            break;
+    }
+}
+
+function drawShape(ctx, p, size, scaleOffset = 1) {
+    const shapeObj = p.shape;
+    const bombType = p.bombType;
+    
+    const floatY = Math.sin(Date.now() / 300 + p.offsetY) * (size * 0.05);
+    
+    const cx = p.x + size / 2;
+    const cy = p.y + size / 2 + floatY;
+    const s = size * 0.6 * scaleOffset; 
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    if (bombType) {
+        ctx.shadowColor = '#f1c40f';
+        ctx.shadowBlur = 15 + Math.sin(Date.now() / 100) * 10;
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 3;
+    } else {
+        ctx.shadowColor = shapeObj.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 0;
+    }
+
+    ctx.fillStyle = shapeObj.color;
+    ctx.globalAlpha = bombType ? 1.0 : 0.85;
+    
+    ctx.beginPath();
+
+    switch(shapeObj.id) {
+        case 'tri_base':
+            ctx.moveTo(-s/2, s/2.5); ctx.lineTo(s/2, s/2.5); ctx.lineTo(s/4, -s/2.5);
+            break;
+        case 'tri_iso':
+            ctx.moveTo(-s/2.5, s/2.5); ctx.lineTo(s/2.5, s/2.5); ctx.lineTo(0, -s/2.5);
+            break;
+        case 'tri_right':
+            ctx.moveTo(-s/2.5, s/2.5); ctx.lineTo(s/2.5, s/2.5); ctx.lineTo(-s/2.5, -s/2.5);
+            break;
+        case 'tri_equi':
+            ctx.moveTo(-s/2, s/3.5); ctx.lineTo(s/2, s/3.5); ctx.lineTo(0, s/3.5 - s * Math.sin(Math.PI/3));
+            break;
+        case 'tri_iso_right':
+            ctx.moveTo(-s/2, s/2); ctx.lineTo(s/2, s/2); ctx.lineTo(-s/2, -s/2);
+            break;
+        case 'quad_base':
+            ctx.moveTo(-s/2, -s/3.5); ctx.lineTo(s/3, -s/2); ctx.lineTo(s/2, s/2); ctx.lineTo(-s/3.5, s/3.5);
+            break;
+        case 'quad_trap':
+            ctx.moveTo(-s/2, s/2.5); ctx.lineTo(s/2, s/2.5); ctx.lineTo(s/3, -s/2.5); ctx.lineTo(-s/4, -s/2.5);
+            break;
+        case 'quad_para':
+            ctx.moveTo(-s/2, s/2.5); ctx.lineTo(s/3, s/2.5); ctx.lineTo(s/2, -s/2.5); ctx.lineTo(-s/3, -s/2.5);
+            break;
+        case 'quad_rect':
+            ctx.rect(-s/1.8, -s/3, s*1.1, s*0.66);
+            break;
+        case 'quad_rhom':
+            ctx.moveTo(0, s/2); ctx.lineTo(s/2.5, 0); ctx.lineTo(0, -s/2); ctx.lineTo(-s/2.5, 0);
+            break;
+        case 'quad_square':
+            ctx.rect(-s/2.2, -s/2.2, s*0.9, s*0.9);
+            break;
+    }
+    
+    ctx.closePath();
+    ctx.fill();
+    if (bombType) ctx.stroke();
+
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+
+    if (!bombType) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#111';
+        drawGhostFace(ctx, shapeObj.id, s);
+    }
+
+    if (bombType) {
+        ctx.fillStyle = '#f1c40f'; 
+        ctx.fillRect(-s*0.3, -s*0.4, s*0.6, s*0.8);
+        ctx.strokeStyle = '#c0392b'; 
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-s*0.25, -s*0.35, s*0.5, s*0.7);
+        
+        ctx.fillStyle = '#c0392b';
+        ctx.font = `bold ${size*0.3}px 'Yeon Sung'`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        let icon = bombType === 'cross' ? '滅' : (bombType === 'row' ? '破' : '封');
+        ctx.fillText(icon, 0, 0);
+    }
+
+    ctx.restore();
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed - 2; 
+        this.life = 1.0;
+        this.decay = Math.random() * 0.03 + 0.02;
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        this.life -= this.decay;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y - 6);
+        ctx.quadraticCurveTo(this.x + 4, this.y, this.x, this.y + 4);
+        ctx.quadraticCurveTo(this.x - 4, this.y, this.x, this.y - 6);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+class FloatingText {
+    constructor(text, x, y, color) {
+        this.text = text; this.x = x + CELL_SIZE/2; this.y = y + CELL_SIZE/2;
+        this.color = color; this.life = 1.0;
+    }
+    update() {
+        this.y -= 1.5; this.life -= 0.02;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.font = '24px "Yeon Sung"';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.strokeText(this.text, this.x, this.y);
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+class BigEffect {
+    constructor(text, x, y, color) {
+        this.text = text; 
+        this.x = x; 
+        this.y = y;
+        this.color = color; 
+        this.life = 1.0;
+        this.scale = 0.5;
+    }
+    update() {
+        this.y -= 0.5;
+        this.life -= 0.015;
+        this.scale += 0.02;
+    }
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        
+        ctx.fillStyle = this.color;
+        ctx.font = 'bold 60px "Yeon Sung", cursive';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        
+        ctx.strokeText(this.text, 0, 0);
+        ctx.fillText(this.text, 0, 0);
+        
+        ctx.restore();
+    }
+}
+
+
+// --- 8. Game Loop ---
+function updateUI() {
+    document.getElementById('scoreDisplay').innerText = score;
+    document.getElementById('maxComboDisplay').innerText = maxCombo;
+}
+
+function updateTimerUI() {
+    document.getElementById('timerDisplay').innerText = Math.ceil(timeLeft) + "초";
+}
+
+function gameOver() {
+    state = 'GAME_OVER';
+    document.getElementById('finalScore').innerText = score;
+    document.getElementById('finalMaxCombo').innerText = maxCombo;
+    document.getElementById('game-over-screen').style.display = 'flex';
+}
+
+function startGame() {
+    score = 0;
+    combo = 0;
+    timeLeft = 100;
+    lastTime = performance.now();
+    state = 'IDLE';
+    particles = [];
+    floatingTexts = [];
+    bigEffects = [];
+    document.getElementById('game-over-screen').style.display = 'none';
+    
+    updateUI();
+    updateTimerUI();
+    initBoard();
+}
+
+function loop(now) {
+    if (!lastTime) lastTime = now;
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+    
+    // 매 프레임마다 BGM 스케줄링 체크
+    scheduleBGM();
+    
+    if (state !== 'PAUSED' && state !== 'GAME_OVER' && state !== 'START_SCREEN') {
+        timeLeft -= dt;
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            if(state !== 'GAME_OVER') gameOver();
+        }
+        updateTimerUI();
+    }
+
+    if (state === 'PAUSED') {
+        const listDiv = document.getElementById('book-list');
+        const items = listDiv.querySelectorAll('.book-item canvas');
+        items.forEach((c, index) => {
+            const ctxBook = c.getContext('2d');
+            ctxBook.clearRect(0, 0, 80, 80);
+            const fakePiece = {
+                shape: SHAPES[index],
+                x: 0, y: 0,
+                bombType: null,
+                offsetY: 0
+            };
+            drawShape(ctxBook, fakePiece, 80, 1.0);
+        });
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    if (screenShake > 0) {
+        const dx = (Math.random() - 0.5) * screenShake;
+        const dy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(dx, dy);
+        screenShake *= 0.9;
+        if (screenShake < 0.5) screenShake = 0;
+    }
+    
+    ctx.strokeStyle = 'rgba(142, 68, 173, 0.2)';
+    ctx.lineWidth = 1;
+    for (let r = 0; r <= ROWS; r++) {
+        ctx.beginPath(); ctx.moveTo(0, r*CELL_SIZE); ctx.lineTo(canvas.width, r*CELL_SIZE); ctx.stroke();
+    }
+    for (let c = 0; c <= COLS; c++) {
+        ctx.beginPath(); ctx.moveTo(c*CELL_SIZE, 0); ctx.lineTo(c*CELL_SIZE, canvas.height); ctx.stroke();
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+        if (!board[r]) continue;
+        for (let c = 0; c < COLS; c++) {
+            let p = board[r][c];
+            if (p) {
+                let scale = (selectedCell && selectedCell.r === r && selectedCell.c === c) ? 0.8 : 1;
+                drawShape(ctx, p, CELL_SIZE, scale);
+            }
+        }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw(ctx);
+        if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        floatingTexts[i].update();
+        floatingTexts[i].draw(ctx);
+        if (floatingTexts[i].life <= 0) floatingTexts.splice(i, 1);
+    }
+    for (let i = bigEffects.length - 1; i >= 0; i--) {
+        bigEffects[i].update();
+        bigEffects[i].draw(ctx);
+        if (bigEffects[i].life <= 0) bigEffects.splice(i, 1);
+    }
+
+    ctx.restore();
+
+    requestAnimationFrame(loop);
+}
+
+</script>
+</body>
+</html>

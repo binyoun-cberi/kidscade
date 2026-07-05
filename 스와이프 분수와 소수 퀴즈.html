@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>분수 소수 대결!</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 커스텀 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--sx), calc(var(--sy) * 20)) rotate(var(--r)); opacity: 0; }
+        }
+        .animate-confetti-fall {
+            animation: confetti-fall 1.5s ease-out forwards;
+        }
+        .card-transition {
+            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .no-transition {
+            transition: none !important;
+        }
+        .bg-red-200 { background-color: #fecaca !important; }
+        .bg-slate-100 { background-color: #f1f5f9 !important; }
+
+        /* 터치 시 텍스트 선택 및 스크롤 방지 */
+        body {
+            overscroll-behavior: none;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 flex flex-col items-center justify-center font-sans overflow-hidden transition-colors duration-300" id="app-container">
+
+    <!-- 파티클 컨테이너 -->
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden z-50"></div>
+
+    <!-- 1. 시작 화면 -->
+    <div id="start-screen" class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center space-y-8 z-10 block">
+        <div>
+            <h1 class="text-4xl font-extrabold text-blue-600 mb-2">분수 소수 대결!</h1>
+            <p class="text-slate-500 font-medium">누가 더 클까요?</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-2xl space-y-4 text-left">
+            <h2 class="font-bold text-gray-700 mb-2 text-center">게임 방법</h2>
+            <div class="flex items-center gap-3">
+                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">←</div>
+                <span class="text-gray-600 font-medium">왼쪽이 크면 <b class="text-blue-500">왼쪽으로 스와이프</b></span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">→</div>
+                <span class="text-gray-600 font-medium">오른쪽이 크면 <b class="text-blue-500">오른쪽으로 스와이프</b></span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">↓</div>
+                <span class="text-gray-600 font-medium">둘이 같으면 <b class="text-green-500">아래로 스와이프</b></span>
+            </div>
+        </div>
+
+        <button id="btn-start" class="w-full bg-blue-500 hover:bg-blue-600 active:scale-95 transition text-white font-bold text-2xl py-4 rounded-2xl shadow-lg">
+            게임 시작
+        </button>
+    </div>
+
+    <!-- 2. 플레이 화면 -->
+    <div id="playing-screen" class="hidden flex-col w-full max-w-md flex-1 relative py-4 w-full h-full px-4">
+        <!-- 상단 HUD -->
+        <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-4 z-10 shrink-0">
+            <div id="hearts-container" class="flex gap-2 text-2xl">
+                <!-- 하트 아이콘들이 여기에 렌더링됨 -->
+            </div>
+            <div class="text-center flex flex-col items-center">
+                <div id="rank-badge" class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300">
+                    <span id="rank-icon">🪨</span> <span id="rank-name">아이언</span>
+                </div>
+                <div id="score-display" class="text-2xl font-black text-gray-700 leading-none">0</div>
+            </div>
+            <div class="text-right w-[80px]">
+                <div id="combo-display" class="text-gray-400 font-bold text-xl">0 COMBO</div>
+            </div>
+        </div>
+
+        <!-- 카드 영역 -->
+        <div class="flex-1 relative flex items-center justify-center min-h-[300px]">
+            <!-- 다음 카드 더미 (시각적 효과) -->
+            <div class="absolute w-[320px] h-64 bg-white rounded-3xl shadow-sm border border-gray-100 transform scale-95 translate-y-4 opacity-50 z-0"></div>
+            
+            <!-- 실제 조작하는 카드 -->
+            <div id="game-card" class="absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-4 card-transition bg-white border-white z-20">
+                <!-- 힌트 배경 -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                    <div id="swipe-hint" class="text-9xl font-black"></div>
+                </div>
+
+                <div class="flex-1 flex justify-center items-center text-gray-800 p-2" id="left-value"></div>
+                
+                <div class="w-2 h-full bg-slate-100 relative shrink-0">
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 text-sm font-bold text-gray-400 shadow-sm border">VS</div>
+                </div>
+
+                <div class="flex-1 flex justify-center items-center text-gray-800 p-2" id="right-value"></div>
+            </div>
+        </div>
+
+        <!-- 하단 가이드 -->
+        <div class="text-center mt-4 text-gray-400 font-medium z-10 bg-white/50 py-2 rounded-xl backdrop-blur-sm shrink-0 shadow-sm">
+            ← 왼쪽이 큼 <span class="mx-2">|</span> 
+            같음 ↓ <span class="mx-2">|</span> 
+            오른쪽이 큼 →
+        </div>
+    </div>
+
+    <!-- 3. 게임 오버 화면 -->
+    <div id="gameover-screen" class="hidden bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center space-y-6 z-10">
+        <div>
+            <h1 class="text-4xl font-black text-red-500 mb-2">게임 오버!</h1>
+            <p class="text-slate-500 font-medium">아쉽게도 하트를 모두 잃었어요.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-6 space-y-4 border border-slate-100 relative overflow-hidden">
+            <div class="flex flex-col items-center justify-center py-2">
+                <span id="final-rank-icon" class="text-6xl mb-2 drop-shadow-sm animate-bounce">🪨</span>
+                <span id="final-rank-name" class="text-2xl font-black">아이언</span>
+                <span class="text-xs text-gray-400 font-bold mt-1">최종 티어</span>
+            </div>
+            <div class="w-full h-px bg-slate-200 my-2"></div>
+            <div class="flex justify-around items-center">
+                <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">최고 점수</p>
+                    <p id="high-score-display" class="text-xl font-black text-blue-500">0</p>
+                </div>
+                <div class="w-px h-12 bg-slate-200"></div>
+                <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">내 점수</p>
+                    <p id="final-score-display" class="text-3xl font-black text-gray-800">0</p>
+                </div>
+            </div>
+        </div>
+
+        <button id="btn-restart" class="w-full bg-green-500 hover:bg-green-600 active:scale-95 transition text-white font-bold text-2xl py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
+            <span>🔄</span> 다시하기
+        </button>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. Audio Engine (Web Audio API 활용)
+        // ==========================================
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.isPlayingBgm = false;
+                this.nextNoteTime = 0;
+                this.currentNote = 0;
+                this.tempo = 140;
+                this.notes = [
+                    392.00, 329.63, 261.63, 329.63,
+                    392.00, 392.00, 392.00, 0,
+                    329.63, 329.63, 329.63, 0,
+                    392.00, 493.88, 493.88, 0
+                ]; 
+                this.timerID = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCorrect() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWrong() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            scheduler() {
+                while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                    if (this.notes[this.currentNote] !== 0) {
+                        this.playNote(this.notes[this.currentNote], this.nextNoteTime);
+                    }
+                    this.nextNoteTime += 60.0 / this.tempo / 2;
+                    this.currentNote = (this.currentNote + 1) % this.notes.length;
+                }
+                this.timerID = setTimeout(() => this.scheduler(), 25);
+            }
+
+            playNote(freq, time) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'triangle';
+                gain.gain.setValueAtTime(0.02, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+                osc.start(time);
+                osc.stop(time + 0.2);
+            }
+
+            startBGM() {
+                if (this.isPlayingBgm) return;
+                this.init();
+                this.isPlayingBgm = true;
+                this.nextNoteTime = this.ctx.currentTime + 0.1;
+                this.scheduler();
+            }
+
+            stopBGM() {
+                this.isPlayingBgm = false;
+                clearTimeout(this.timerID);
+            }
+        }
+
+        const audioEngine = new AudioEngine();
+
+        // ==========================================
+        // 2. Game Logic & State Management
+        // ==========================================
+        const denominators = [2, 4, 5, 8, 10, 20, 25, 50, 100];
+        let score = 0;
+        let highScore = 0;
+        let combo = 0;
+        let lives = 3;
+        let currentQuestion = null;
+        let cardStatus = 'default';
+
+        function generateQuestion() {
+            const chance = Math.random();
+            let leftStr, rightStr, leftVal, rightVal, answer;
+
+            const generateFraction = () => {
+                const den = denominators[Math.floor(Math.random() * denominators.length)];
+                const num = Math.floor(Math.random() * (den - 1)) + 1;
+                return { str: `${num}/${den}`, val: num / den };
+            };
+
+            const generateDecimal = () => {
+                const num = Math.floor(Math.random() * 99) + 1;
+                return { str: (num / 100).toString(), val: num / 100 };
+            };
+
+            if (chance < 0.2) {
+                const frac = generateFraction();
+                leftStr = frac.str; leftVal = frac.val;
+                rightStr = frac.val.toString(); rightVal = frac.val;
+                answer = 'down';
+            } else {
+                const leftIsFraction = Math.random() > 0.5;
+                if (leftIsFraction) {
+                    const frac = generateFraction();
+                    const dec = generateDecimal();
+                    leftStr = frac.str; leftVal = frac.val;
+                    rightStr = dec.str; rightVal = dec.val;
+                } else {
+                    const dec = generateDecimal();
+                    const frac = generateFraction();
+                    leftStr = dec.str; leftVal = dec.val;
+                    rightStr = frac.str; rightVal = frac.val;
+                }
+                if (leftVal === rightVal) answer = 'down';
+                else if (leftVal > rightVal) answer = 'left';
+                else answer = 'right';
+            }
+            return { leftStr, rightStr, answer };
+        }
+
+        function getRank(score) {
+            if (score < 100) return { name: '아이언', color: 'text-gray-500', bg: 'bg-gray-100', icon: '🪨' };
+            if (score < 300) return { name: '브론즈', color: 'text-amber-700', bg: 'bg-amber-100', icon: '🥉' };
+            if (score < 500) return { name: '실버', color: 'text-slate-500', bg: 'bg-slate-200', icon: '🥈' };
+            if (score < 1000) return { name: '골드', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '🥇' };
+            if (score < 2000) return { name: '플래티넘', color: 'text-teal-600', bg: 'bg-teal-100', icon: '✨' };
+            if (score < 3000) return { name: '다이아몬드', color: 'text-blue-500', bg: 'bg-blue-100', icon: '💎' };
+            if (score < 4000) return { name: '마스터', color: 'text-purple-500', bg: 'bg-purple-100', icon: '🔮' };
+            if (score < 5000) return { name: '그랜드마스터', color: 'text-red-500', bg: 'bg-red-100', icon: '🔥' };
+            return { name: '챌린저', color: 'text-yellow-700', bg: 'bg-yellow-200', icon: '👑' };
+        }
+
+        function formatMathHTML(text) {
+            if (text.includes('/')) {
+                const parts = text.split('/');
+                return `
+                    <div class="flex flex-col items-center justify-center font-bold text-4xl">
+                        <span>${parts[0]}</span>
+                        <hr class="w-10 border-t-4 border-gray-800 my-2 rounded-full" />
+                        <span>${parts[1]}</span>
+                    </div>
+                `;
+            }
+            return `<div class="font-bold text-4xl">${text}</div>`;
+        }
+
+        // ==========================================
+        // 3. UI Update Functions
+        // ==========================================
+        const els = {
+            appContainer: document.getElementById('app-container'),
+            startScreen: document.getElementById('start-screen'),
+            playingScreen: document.getElementById('playing-screen'),
+            gameoverScreen: document.getElementById('gameover-screen'),
+            heartsContainer: document.getElementById('hearts-container'),
+            scoreDisplay: document.getElementById('score-display'),
+            comboDisplay: document.getElementById('combo-display'),
+            rankBadge: document.getElementById('rank-badge'),
+            rankIcon: document.getElementById('rank-icon'),
+            rankName: document.getElementById('rank-name'),
+            gameCard: document.getElementById('game-card'),
+            leftValue: document.getElementById('left-value'),
+            rightValue: document.getElementById('right-value'),
+            swipeHint: document.getElementById('swipe-hint'),
+            confettiContainer: document.getElementById('confetti-container')
+        };
+
+        function switchScreen(screen) {
+            els.startScreen.style.display = 'none';
+            els.playingScreen.style.display = 'none';
+            els.gameoverScreen.style.display = 'none';
+            els.playingScreen.classList.remove('flex');
+
+            if (screen === 'start') els.startScreen.style.display = 'block';
+            if (screen === 'playing') {
+                els.playingScreen.style.display = 'flex';
+                els.playingScreen.classList.add('flex');
+            }
+            if (screen === 'gameover') els.gameoverScreen.style.display = 'block';
+        }
+
+        function updateHUD(justLostHeart = false) {
+            // 점수 및 콤보 업데이트
+            els.scoreDisplay.innerText = score;
+            if (combo > 1) {
+                els.comboDisplay.innerHTML = `<span class="text-orange-500 animate-bounce block">${combo} COMBO!</span>`;
+            } else {
+                els.comboDisplay.innerHTML = `0 COMBO`;
+            }
+
+            // 랭크 업데이트
+            const rank = getRank(score);
+            els.rankBadge.className = `text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300 ${rank.bg} ${rank.color}`;
+            els.rankIcon.innerText = rank.icon;
+            els.rankName.innerText = rank.name;
+
+            // 하트 업데이트
+            els.heartsContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const isAlive = i < lives;
+                const justLost = justLostHeart && (i === lives);
+                
+                let heartHTML = '';
+                let classes = 'transition-all duration-300 inline-block origin-center ';
+
+                if (isAlive) {
+                    heartHTML = '❤️';
+                    classes += 'scale-100';
+                } else if (justLost) {
+                    heartHTML = '💔';
+                    classes += 'animate-shake scale-150 drop-shadow-md z-20';
+                } else {
+                    heartHTML = '🖤';
+                    classes += 'scale-75 opacity-40';
+                }
+
+                els.heartsContainer.innerHTML += `<span class="${classes}">${heartHTML}</span>`;
+            }
+        }
+
+        function showNextQuestion() {
+            currentQuestion = generateQuestion();
+            els.leftValue.innerHTML = formatMathHTML(currentQuestion.leftStr);
+            els.rightValue.innerHTML = formatMathHTML(currentQuestion.rightStr);
+            resetCard();
+        }
+
+        function resetCard() {
+            cardStatus = 'default';
+            els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-4 card-transition bg-white border-white z-20';
+            els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
+            els.swipeHint.innerText = '';
+        }
+
+        function createConfetti() {
+            els.confettiContainer.innerHTML = '';
+            const particleCount = Math.min(10 + combo * 5, 60);
+            const colors = ['#10B981', '#34D399', '#FCD34D', '#FBBF24', '#60A5FA'];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                const size = Math.random() * 10 + 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                p.className = 'absolute rounded-sm animate-confetti-fall';
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * -20}%`;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = color;
+                p.style.setProperty('--sx', `${(Math.random() - 0.5) * 10}px`);
+                p.style.setProperty('--sy', `${Math.random() * 5 + 5}px`);
+                p.style.setProperty('--r', `${Math.random() * 360}deg`);
+                
+                els.confettiContainer.appendChild(p);
+            }
+
+            setTimeout(() => {
+                els.confettiContainer.innerHTML = '';
+            }, 1500);
+        }
+
+        // ==========================================
+        // 4. Game Flow Controls
+        // ==========================================
+        function startGame() {
+            audioEngine.init();
+            audioEngine.startBGM();
+            score = 0;
+            combo = 0;
+            lives = 3;
+            cardStatus = 'default';
+            els.appContainer.className = 'min-h-screen bg-slate-100 flex flex-col items-center justify-center font-sans overflow-hidden transition-colors duration-300';
+            
+            updateHUD();
+            showNextQuestion();
+            switchScreen('playing');
+        }
+
+        function handleAnswer(swipedDirection) {
+            if (cardStatus !== 'default') return;
+
+            const isCorrect = swipedDirection === currentQuestion.answer;
+
+            if (isCorrect) {
+                audioEngine.playCorrect();
+                cardStatus = 'correct';
+                score += 10 + (combo * 5);
+                combo++;
+                updateHUD();
+                createConfetti();
+
+                // 정답 연출
+                els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row border-4 card-transition bg-green-100 border-green-500 z-20';
+                
+                let flyX = swipedDirection === 'left' ? -500 : swipedDirection === 'right' ? 500 : 0;
+                let flyY = swipedDirection === 'down' ? 500 : 0;
+                els.gameCard.style.transform = `translate(${flyX}px, ${flyY}px) rotate(${flyX * 0.05}deg)`;
+
+                setTimeout(() => {
+                    showNextQuestion();
+                }, 300);
+
+            } else {
+                audioEngine.playWrong();
+                cardStatus = 'wrong';
+                combo = 0;
+                lives--;
+                
+                // 오답 연출 (배경 플래시 및 하트 깨짐)
+                els.appContainer.classList.add('bg-red-200');
+                els.appContainer.classList.remove('bg-slate-100');
+                updateHUD(true); // true = 방금 잃은 하트 애니메이션 실행
+
+                els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row border-4 card-transition bg-red-100 border-red-500 animate-shake z-20';
+                els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
+
+                setTimeout(() => {
+                    els.appContainer.classList.remove('bg-red-200');
+                    els.appContainer.classList.add('bg-slate-100');
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        resetCard();
+                        updateHUD(); // 흔들리는 애니메이션 끝난 후 하트를 완전히 까맣게 변경
+                    }
+                }, 500);
+            }
+        }
+
+        function gameOver() {
+            audioEngine.stopBGM();
+            if (score > highScore) highScore = score;
+            
+            const finalRank = getRank(score);
+            document.getElementById('final-rank-icon').innerText = finalRank.icon;
+            const rankNameEl = document.getElementById('final-rank-name');
+            rankNameEl.innerText = finalRank.name;
+            rankNameEl.className = `text-2xl font-black ${finalRank.color}`;
+            
+            document.getElementById('final-score-display').innerText = score;
+            document.getElementById('high-score-display').innerText = highScore;
+
+            localStorage.setItem('swipeFractionRank', finalRank.name);
+            localStorage.setItem('swipeFractionScore', highScore);
+
+            switchScreen('gameover');
+        }
+
+        // ==========================================
+        // 5. Drag / Touch Event Listeners
+        // ==========================================
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
+        let currentDrag = { x: 0, y: 0 };
+
+        function onDragStart(e) {
+            if (cardStatus !== 'default') return;
+            isDragging = true;
+            els.gameCard.classList.remove('card-transition');
+            els.gameCard.classList.add('no-transition');
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startPos = { x: clientX, y: clientY };
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault(); // 스크롤 방지
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            currentDrag.x = clientX - startPos.x;
+            currentDrag.y = clientY - startPos.y;
+
+            els.gameCard.style.transform = `translate(${currentDrag.x}px, ${currentDrag.y}px) rotate(${currentDrag.x * 0.05}deg)`;
+
+            // 힌트 텍스트 업데이트
+            if (currentDrag.x < -50) els.swipeHint.innerText = '←';
+            else if (currentDrag.x > 50) els.swipeHint.innerText = '→';
+            else if (currentDrag.y > 50) els.swipeHint.innerText = '↓';
+            else els.swipeHint.innerText = '';
+        }
+
+        function onDragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            els.gameCard.classList.remove('no-transition');
+            els.gameCard.classList.add('card-transition');
+
+            const threshold = 80;
+            if (Math.abs(currentDrag.x) > Math.abs(currentDrag.y)) {
+                if (currentDrag.x < -threshold) handleAnswer('left');
+                else if (currentDrag.x > threshold) handleAnswer('right');
+                else resetCard();
+            } else {
+                if (currentDrag.y > threshold) handleAnswer('down');
+                else resetCard();
+            }
+            
+            currentDrag = { x: 0, y: 0 };
+        }
+
+        // 마우스 이벤트
+        els.gameCard.addEventListener('mousedown', onDragStart);
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
+
+        // 터치 이벤트
+        els.gameCard.addEventListener('touchstart', onDragStart, { passive: false });
+        document.addEventListener('touchmove', onDragMove, { passive: false });
+        document.addEventListener('touchend', onDragEnd);
+
+        // 버튼 이벤트
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+
+    </script>
+</body>
+</html>

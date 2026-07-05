@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>귀여운 이모지 지뢰찾기 🐾</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Comic Sans MS', 'Malgun Gothic', sans-serif;
+            background-color: #fce4ec;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none; /* 드래그 방지 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        #game-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 95vw;
+        }
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            padding: 0 5px;
+        }
+        .score-box {
+            display: flex;
+            flex-direction: column;
+            background: #f8bbd0;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .score-box span { font-size: 18px; color: #c2185b; }
+        
+        #face {
+            font-size: 40px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin: 0 15px;
+        }
+        #face:active { transform: scale(0.8); }
+        
+        #board {
+            display: grid;
+            /* 모바일 대응을 위해 셀 크기 조정 */
+            grid-template-columns: repeat(10, min(35px, 8vw));
+            grid-template-rows: repeat(10, min(35px, 8vw));
+            gap: 2px;
+            background-color: #ce93d8;
+            padding: 4px;
+            border-radius: 10px;
+            margin: 0 auto;
+        }
+        .cell {
+            background-color: #e1bee7;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset -2px -2px #ba68c8, inset 2px 2px #f3e5f5;
+            font-weight: bold;
+        }
+        .cell:active { box-shadow: inset 2px 2px #ba68c8; }
+        .cell.revealed {
+            background-color: #f3e5f5;
+            box-shadow: inset 1px 1px #ddd;
+            cursor: default;
+        }
+        
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        button.btn {
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        button.btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px rgba(0,0,0,0.2);
+        }
+        #bgm-btn { background-color: #ffb74d; }
+        #mode-btn { background-color: #81c784; }
+        #restart-btn { background-color: #4fc3f7; }
+        
+        /* 숫자 색상 */
+        .n1 { color: #1976d2; }
+        .n2 { color: #388e3c; }
+        .n3 { color: #d32f2f; }
+        .n4 { color: #7b1fa2; }
+        .n5 { color: #f57c00; }
+        .n6 { color: #0097a7; }
+        .n7 { color: #212121; }
+        .n8 { color: #757575; }
+
+        /* 커스텀 모달 (경고창 대체) */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        #modal-content {
+            background: white; padding: 30px; border-radius: 20px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #modal-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; }
+        #modal-close-btn {
+            background: #9e9e9e; color: white; border: none;
+            padding: 10px 20px; border-radius: 10px; font-weight: bold;
+            cursor: pointer; font-size: 16px;
+        }
+        #modal-restart-btn {
+            background: #4fc3f7; color: white; border: none;
+            padding: 10px 20px; border-radius: 10px; font-weight: bold;
+            cursor: pointer; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="header">
+        <div class="score-box">현재 점수<span id="score">0</span></div>
+        <div id="face" onclick="initGame()">😋</div>
+        <div class="score-box">최고 점수<span id="high-score">0</span></div>
+    </div>
+    
+    <div id="board"></div>
+    
+    <div class="controls">
+        <button class="btn" onclick="initGame()" id="restart-btn">🔄 재시작</button>
+        <button class="btn" onclick="toggleMode()" id="mode-btn">⛏️ 파기 모드</button>
+        <button class="btn" onclick="toggleBGM()" id="bgm-btn">🎵 BGM 켜기</button>
+    </div>
+</div>
+
+<!-- 모달 창 -->
+<div id="modal-overlay">
+    <div id="modal-content">
+        <div id="modal-text">메시지</div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="modal-close-btn" onclick="closeModal()">보드 보기</button>
+            <button id="modal-restart-btn" onclick="closeModal(); initGame();">🔄 다시 하기</button>
+        </div>
+    </div>
+</div>
+
+<audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+
+<script>
+    const rows = 10;
+    const cols = 10;
+    const mineCount = 15;
+    let board = [];
+    let revealedCount = 0;
+    let gameOver = false;
+    let score = 0;
+    let highScore = localStorage.getItem('minesweeperHighScore') || 0;
+    let isBgmPlaying = false;
+    let isFlagMode = false;
+
+    const boardElement = document.getElementById('board');
+    const faceElement = document.getElementById('face');
+    const scoreElement = document.getElementById('score');
+    const highScoreElement = document.getElementById('high-score');
+    const bgmElement = document.getElementById('bgm');
+    const bgmBtn = document.getElementById('bgm-btn');
+    const modeBtn = document.getElementById('mode-btn');
+
+    highScoreElement.textContent = highScore;
+
+    // 효과음 설정 (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'flag') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, now);
+            gainNode.gain.setValueAtTime(0.05, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'boom') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now); osc.stop(now + 0.5);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.setValueAtTime(500, now + 0.1);
+            osc.frequency.setValueAtTime(600, now + 0.2);
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + 0.4);
+            osc.start(now); osc.stop(now + 0.4);
+        }
+    }
+
+    // 모달 제어 함수
+    function showModal(message) {
+        document.getElementById('modal-text').innerHTML = message;
+        document.getElementById('modal-overlay').style.display = 'flex';
+    }
+    function closeModal() {
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function toggleBGM() {
+        if (isBgmPlaying) {
+            bgmElement.pause();
+            bgmBtn.textContent = "🎵 BGM 켜기";
+        } else {
+            bgmElement.play().catch(e => console.log("Audio play failed:", e));
+            bgmBtn.textContent = "🔇 BGM 끄기";
+        }
+        isBgmPlaying = !isBgmPlaying;
+    }
+
+    function toggleMode() {
+        isFlagMode = !isFlagMode;
+        if(isFlagMode) {
+            modeBtn.textContent = "🚩 깃발 모드";
+            modeBtn.style.backgroundColor = "#e57373";
+        } else {
+            modeBtn.textContent = "⛏️ 파기 모드";
+            modeBtn.style.backgroundColor = "#81c784";
+        }
+    }
+
+    function initGame() {
+        boardElement.innerHTML = '';
+        board = [];
+        revealedCount = 0;
+        gameOver = false;
+        score = 0;
+        scoreElement.textContent = score;
+        faceElement.textContent = '😋';
+
+        // 보드 데이터 및 DOM 생성
+        for (let r = 0; r < rows; r++) {
+            let row = [];
+            for (let c = 0; c < cols; c++) {
+                row.push({ isMine: false, isRevealed: false, isFlagged: false, neighborMines: 0 });
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+                
+                // 클릭 이벤트 (모바일을 고려해 touch/click 통합 처리)
+                cell.addEventListener('click', () => handleCellInteraction(r, c));
+                
+                // PC 마우스 우클릭
+                cell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if(!isFlagMode) toggleFlag(r, c); // 깃발 모드가 아닐때만 우클릭 플래그 작동
+                });
+                
+                boardElement.appendChild(cell);
+            }
+            board.push(row);
+        }
+
+        // 지뢰 배치
+        let minesPlaced = 0;
+        while (minesPlaced < mineCount) {
+            const r = Math.floor(Math.random() * rows);
+            const c = Math.floor(Math.random() * cols);
+            if (!board[r][c].isMine) {
+                board[r][c].isMine = true;
+                minesPlaced++;
+            }
+        }
+
+        // 주변 지뢰 개수 계산
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!board[r][c].isMine) {
+                    let count = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = r + dr, nc = c + dc;
+                            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].isMine) {
+                                count++;
+                            }
+                        }
+                    }
+                    board[r][c].neighborMines = count;
+                }
+            }
+        }
+    }
+
+    function getCellElement(r, c) {
+        return document.querySelector(`.cell[data-r='${r}'][data-c='${c}']`);
+    }
+
+    function handleCellInteraction(r, c) {
+        if (gameOver) return;
+        if (isFlagMode) {
+            toggleFlag(r, c);
+        } else {
+            revealCell(r, c);
+        }
+    }
+
+    function toggleFlag(r, c) {
+        if (gameOver || board[r][c].isRevealed) return;
+        playSound('flag');
+        
+        const cellData = board[r][c];
+        const cellElement = getCellElement(r, c);
+        
+        cellData.isFlagged = !cellData.isFlagged;
+        cellElement.textContent = cellData.isFlagged ? '🚩' : '';
+    }
+
+    function revealCell(r, c) {
+        if (gameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
+        
+        const cellData = board[r][c];
+        const cellElement = getCellElement(r, c);
+        
+        cellData.isRevealed = true;
+        cellElement.classList.add('revealed');
+        revealedCount++;
+
+        // 지뢰를 밟았을 때
+        if (cellData.isMine) {
+            playSound('boom');
+            cellElement.textContent = '💥';
+            cellElement.style.backgroundColor = '#ffcdd2';
+            endGame(false);
+            return;
+        }
+
+        // 정상적인 타일일 때
+        playSound('click');
+        score += 10;
+        scoreElement.textContent = score;
+
+        if (cellData.neighborMines > 0) {
+            cellElement.textContent = cellData.neighborMines;
+            cellElement.classList.add(`n${cellData.neighborMines}`);
+        } else {
+            // Flood Fill: 주변 0인 칸 연쇄 오픈
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                        revealCell(nr, nc);
+                    }
+                }
+            }
+        }
+
+        checkWin();
+    }
+
+    function checkWin() {
+        if (revealedCount === (rows * cols) - mineCount) {
+            playSound('win');
+            score += 1000; // 승리 보너스 점수
+            scoreElement.textContent = score;
+            endGame(true);
+        }
+    }
+
+    function endGame(isWin) {
+        gameOver = true;
+        faceElement.textContent = isWin ? '😎' : '😵';
+        
+        if (isWin) {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('minesweeperHighScore', highScore);
+                highScoreElement.textContent = highScore;
+                setTimeout(() => showModal('🎉 최고 점수 경신!<br>승리하셨습니다!'), 200);
+            } else {
+                setTimeout(() => showModal('🎉 지뢰를 모두 찾았습니다!'), 200);
+            }
+        } else {
+            // 게임 오버시 모든 지뢰 보여주기
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const el = getCellElement(r, c);
+                    if (board[r][c].isMine && !board[r][c].isFlagged) {
+                        el.textContent = '💣';
+                    } else if (!board[r][c].isMine && board[r][c].isFlagged) {
+                        el.textContent = '❌'; // 잘못된 깃발 표시
+                    }
+                }
+            }
+        }
+    }
+
+    // 초기 게임 실행
+    initGame();
+</script>
+</body>
+</html>

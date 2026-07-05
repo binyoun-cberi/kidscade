@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>달려라! 분리수거 트럭</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            font-family: 'Jua', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #bae6fd;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* 모바일 확대 및 스와이프 방지를 위해 조작 완전 차단 */
+        }
+
+        /* 애니메이션 키프레임 */
+        @keyframes road-move { from { background-position: 0 0; } to { background-position: -120px 0; } }
+        @keyframes bg-move { from { background-position: 0 bottom; } to { background-position: -200px bottom; } }
+        @keyframes cloud-move { from { background-position: 0 20px; } to { background-position: -300px 20px; } }
+        @keyframes drive { from { left: 110vw; } to { left: -20vw; } }
+        @keyframes bounce-truck { 
+            0%, 100% { transform: translateY(0) scaleX(-1); } 
+            50% { transform: translateY(-8px) scaleX(-1); } 
+        }
+        @keyframes float-up { 
+            0% { opacity: 1; transform: translateY(0) scale(1); } 
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); } 
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-2deg); }
+            50% { transform: translateX(10px) rotate(2deg); }
+            75% { transform: translateX(-10px) rotate(-2deg); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-road {
+            animation: road-move 0.3s linear infinite;
+            background-image: linear-gradient(90deg, transparent 50%, #facc15 50%);
+            background-size: 120px 12px;
+            background-position-y: center;
+            background-repeat: repeat-x;
+        }
+        .animate-trees { animation: bg-move 2s linear infinite; }
+        .animate-clouds { animation: cloud-move 20s linear infinite; }
+        
+        .moving-trash {
+            animation-name: drive;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+        .animate-bounce-truck { animation: bounce-truck 0.4s ease-in-out infinite alternate; }
+        .float-anim { animation: float-up 1s ease-out forwards; }
+        .shake-screen { animation: shake 0.4s ease-in-out; }
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .hidden { display: none !important; }
+        .text-shadow { text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper" class="relative w-full min-h-screen bg-sky-200 overflow-hidden flex flex-col">
+        
+        <button id="btn-sound" class="absolute top-4 right-4 z-50 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors shadow-lg">
+            🔊
+        </button>
+
+        <header class="absolute top-4 left-4 right-20 z-40 pointer-events-none">
+            <div class="flex flex-col md:flex-row justify-between items-center bg-white/95 backdrop-blur-md rounded-2xl p-3 md:p-4 border-4 border-sky-400 shadow-xl">
+                <div id="lives-container" class="flex gap-1 md:gap-2 text-2xl md:text-3xl mb-2 md:mb-0">
+                    <span class="heart opacity-100 scale-100 transition-all duration-300">❤️</span>
+                    <span class="heart opacity-100 scale-100 transition-all duration-300">❤️</span>
+                    <span class="heart opacity-100 scale-100 transition-all duration-300">❤️</span>
+                </div>
+                
+                <div class="text-center pointer-events-auto flex-1 px-2 md:px-4 flex flex-col items-center">
+                    <h1 class="text-lg md:text-2xl font-black text-sky-700 hidden sm:block drop-shadow-sm">🚛 달려라! 분리수거 트럭</h1>
+                    <div class="h-6 flex items-center justify-center">
+                        <p id="msg-text" class="text-sm md:text-base font-bold text-rose-500 animate-pulse bg-rose-50 px-4 py-1 rounded-full border border-rose-200 shadow-sm hidden"></p>
+                    </div>
+                </div>
+                
+                <div class="text-right flex flex-col items-end">
+                    <div class="text-3xl md:text-4xl font-black text-blue-600 drop-shadow-sm" id="score-text">0점</div>
+                    <div class="h-6 flex items-center">
+                        <div id="combo-text" class="text-sm md:text-base font-bold text-orange-500 animate-bounce bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shadow-sm hidden">0 콤보 🔥</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main id="play-screen" class="flex-1 relative flex flex-col hidden">
+            
+            <div class="absolute inset-0 z-0 bg-gradient-to-b from-sky-300 to-sky-100"></div>
+            <div class="absolute inset-0 z-0 animate-clouds" id="bg-clouds" style="background-size: 250px;"></div>
+            <div class="absolute bottom-[200px] w-full h-64 z-0 animate-trees opacity-80" id="bg-trees" style="background-size: 150px; background-repeat: repeat-x; background-position: bottom;"></div>
+
+            <div class="absolute top-36 w-full flex justify-center z-20 pointer-events-none">
+                <div id="slot-box" class="w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-white/50 border-gray-400 backdrop-blur-md transition-all duration-300 shadow-xl">
+                    <div class="text-xs md:text-sm font-bold text-gray-500 mb-2 bg-white px-3 py-1 rounded-full shadow-sm" id="slot-label">수거 슬롯</div>
+                    
+                    <div id="slot-empty" class="flex flex-col items-center opacity-40">
+                        <span class="text-4xl">👇</span>
+                        <span class="text-xs font-bold mt-1">대기 중</span>
+                    </div>
+
+                    <div id="slot-item" class="flex flex-col items-center animate-bounce hidden">
+                        <span id="slot-emoji" class="text-5xl md:text-6xl drop-shadow-lg"></span>
+                        <span id="slot-name" class="text-xs md:text-sm font-black text-white bg-slate-800/90 px-3 py-1 rounded-md mt-2 shadow-sm whitespace-nowrap"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-[100px] md:bottom-[120px] w-full h-32 md:h-40 bg-slate-800 border-t-8 border-slate-600 border-b-8 border-slate-900 z-10 flex items-center shadow-inner">
+                <div class="absolute w-full h-full animate-road"></div>
+                
+                <div class="absolute left-2 md:left-12 bottom-6 animate-bounce-truck z-30 pointer-events-none">
+                    <div class="text-[90px] md:text-[130px] drop-shadow-2xl">🚛</div>
+                    <div class="absolute right-[-20px] bottom-4 text-2xl opacity-50 animate-pulse">💨</div>
+                </div>
+
+                <div id="road-area" class="absolute w-full h-full"></div>
+            </div>
+
+            <div id="bins-area" class="absolute bottom-0 w-full h-[100px] md:h-[120px] bg-slate-900 px-2 md:px-4 z-40 flex justify-center items-center gap-2 md:gap-4 overflow-x-auto shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
+                </div>
+        </main>
+
+        <div id="start-modal" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div class="bg-white p-6 md:p-10 rounded-[2rem] text-center max-w-md w-11/12 border-[6px] border-sky-400 shadow-2xl transform transition-transform hover:scale-105">
+                <div class="text-7xl md:text-8xl mb-4 animate-bounce drop-shadow-lg">🚛💨</div>
+                <h1 class="text-3xl md:text-4xl font-black text-sky-600 mb-3 tracking-tight">달려라!<br/>분리수거 트럭</h1>
+                <div class="bg-sky-50 rounded-xl p-4 mb-6 border-2 border-sky-100">
+                    <p class="text-gray-700 font-bold text-sm md:text-base leading-relaxed break-keep">
+                        길가에 나타나는 쓰레기를 <b class="text-sky-600">터치</b>해서 줍고,<br/>
+                        하단의 알맞은 통을 눌러 <b class="text-green-500">분리수거</b> 하세요!
+                    </p>
+                    <p class="text-xs text-rose-500 mt-2 font-bold bg-rose-100 p-2 rounded-lg">
+                        ⚠️ 주의: 치킨 뼈, 조개 껍데기 등 헷갈리기 쉬운 일반쓰레기도 등장합니다!
+                    </p>
+                </div>
+                <button id="btn-start" class="w-full py-4 bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-white font-black text-2xl rounded-2xl shadow-[0_6px_0_#0369a1] active:shadow-none active:translate-y-2 transition-all">
+                    출발하기!
+                </button>
+            </div>
+        </div>
+
+        <div id="gameover-modal" class="absolute inset-0 bg-rose-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 md:p-10 rounded-[2rem] text-center max-w-md w-11/12 border-[6px] border-rose-400 shadow-2xl pop-in">
+                <div class="text-7xl md:text-8xl mb-4 drop-shadow-lg">💥</div>
+                <h1 class="text-3xl md:text-4xl font-black text-rose-600 mb-2 tracking-tight">운행 종료!</h1>
+                <p class="text-gray-600 font-bold mb-4">라이프를 모두 소진했습니다.</p>
+                
+                <div class="bg-slate-100 rounded-2xl p-6 mb-6 border-2 border-slate-200 shadow-inner relative">
+                    <div id="new-record-badge" class="absolute -top-4 -right-4 bg-yellow-400 text-red-600 font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white animate-bounce hidden transform rotate-12">최고 기록 갱신! 🎉</div>
+                    <p class="text-slate-500 font-bold text-sm mb-1 uppercase tracking-widest">Final Score</p>
+                    <p class="text-5xl md:text-6xl font-black text-blue-600 drop-shadow-sm" id="final-score-text">0점</p>
+                    <p class="text-xs text-gray-400 mt-2 font-bold">나의 최고 점수: <span id="best-score-text">0</span>점</p>
+                </div>
+
+                <button id="btn-restart" class="w-full py-4 bg-gradient-to-b from-rose-400 to-rose-600 hover:from-rose-300 hover:to-rose-500 text-white font-black text-2xl rounded-2xl shadow-[0_6px_0_#be123c] active:shadow-none active:translate-y-2 transition-all">
+                    다시 달리기!
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // ==========================================
+    // 1. 오디오 엔진 (Web Audio API)
+    // ==========================================
+    const AudioEngine = (() => {
+        let ctx = null;
+        let isMuted = false;
+        let bgmInterval = null;
+
+        const init = () => {
+            if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') ctx.resume();
+        };
+
+        const playTone = (freq, type, duration, vol, slideFreq = null) => {
+            if (isMuted) return;
+            init();
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                if (slideFreq) {
+                    osc.frequency.exponentialRampToValueAtTime(slideFreq, ctx.currentTime + duration);
+                }
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        };
+
+        return {
+            init,
+            toggle: () => { isMuted = !isMuted; return isMuted; },
+            isMuted: () => isMuted,
+            playCatch: () => playTone(800, 'sine', 0.1, 0.1),
+            playCorrect: () => {
+                playTone(523.25, 'triangle', 0.1, 0.1); 
+                setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.1), 100); 
+                setTimeout(() => playTone(783.99, 'triangle', 0.2, 0.15), 200); 
+            },
+            playWrong: () => {
+                playTone(200, 'sawtooth', 0.2, 0.1);
+                setTimeout(() => playTone(150, 'sawtooth', 0.3, 0.15), 150);
+            },
+            playMiss: () => playTone(300, 'sawtooth', 0.4, 0.1, 100),
+            playOver: () => {
+                playTone(300, 'square', 0.3, 0.1, 150);
+                setTimeout(() => playTone(200, 'square', 0.5, 0.1, 50), 300);
+            },
+            startBGM: () => {
+                if (bgmInterval || isMuted) return;
+                init();
+                const notes = [261.63, 329.63, 392.00, 523.25]; 
+                let step = 0;
+                bgmInterval = setInterval(() => {
+                    if (isMuted || ctx.state !== 'running') return;
+                    playTone(notes[step % notes.length], 'sine', 0.15, 0.02);
+                    if (step % 4 === 0) playTone(130.81, 'triangle', 0.2, 0.03); 
+                    step++;
+                }, 250);
+            },
+            stopBGM: () => {
+                if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
+            }
+        };
+    })();
+
+    // ==========================================
+    // 2. 게임 데이터베이스
+    // ==========================================
+    const TRASH_DATA = [
+        { id: 'g1', name: '오염된 컵라면', emoji: '🍜', type: 'general', level: 1, reason: "국물로 오염된 용기는 재활용이 불가능해요!" },
+        { id: 'g2', name: '두루마리 휴지', emoji: '🧻', type: 'general', level: 1, reason: "이물질이 묻은 휴지는 일반쓰레기예요!" },
+        { id: 'g3', name: '부서진 칫솔', emoji: '🪥', type: 'general', level: 1, reason: "여러 재질이 섞여있어 재활용이 어려워요!" },
+        { id: 'g4', name: '깨진 유리조각', emoji: '💥', type: 'general', level: 1, reason: "깨진 유리는 다칠 위험이 있어 신문지로 싸서 종량제 봉투에!" },
+        
+        { id: 'p1', name: '투명 페트병', emoji: '💧', type: 'plastic', level: 1, reason: "" },
+        { id: 'p2', name: '배달 용기', emoji: '🥡', type: 'plastic', level: 1, reason: "" },
+        { id: 'p3', name: '샴푸통', emoji: '🧴', type: 'plastic', level: 1, reason: "" },
+        { id: 'p4', name: '플라스틱 컵', emoji: '🥤', type: 'plastic', level: 1, reason: "" },
+        
+        { id: 'c1', name: '콜라 캔', emoji: '🥫', type: 'can_glass', level: 1, reason: "" },
+        { id: 'c2', name: '참치 캔', emoji: '🐟', type: 'can_glass', level: 1, reason: "" },
+        { id: 'c3', name: '잼 유리병', emoji: '🫙', type: 'can_glass', level: 1, reason: "" },
+        { id: 'c4', name: '소주병', emoji: '🍶', type: 'can_glass', level: 1, reason: "" },
+        
+        { id: 'pa1', name: '종이 박스', emoji: '📦', type: 'paper', level: 1, reason: "" },
+        { id: 'pa2', name: '다 본 신문지', emoji: '📰', type: 'paper', level: 1, reason: "" },
+        { id: 'pa3', name: '우유팩/주스팩', emoji: '🧃', type: 'paper', level: 1, reason: "" },
+        { id: 'pa4', name: '종이 쇼핑백', emoji: '🛍️', type: 'paper', level: 1, reason: "" },
+        
+        { id: 'f1', name: '사과 껍질', emoji: '🍎', type: 'food', level: 1, reason: "부드러운 과일 껍질은 동물이 먹을 수 있어요!" },
+        { id: 'f2', name: '바나나 껍질', emoji: '🍌', type: 'food', level: 1, reason: "동물이 먹을 수 있는 부드러운 껍질이에요!" },
+        { id: 'f3', name: '먹다 남은 빵', emoji: '🍞', type: 'food', level: 1, reason: "동물의 사료나 비료로 만들 수 있어요!" },
+        { id: 'f4', name: '상한 귤', emoji: '🍊', type: 'food', level: 1, reason: "부드러운 과일류는 음식물이에요!" },
+
+        // 심화 데이터 (점수가 높아지면 등장)
+        { id: 'g5', name: '치킨 뼈다귀', emoji: '🍗', type: 'general', level: 2, reason: "딱딱한 뼈는 동물이 먹을 수 없어 일반쓰레기예요!" },
+        { id: 'g6', name: '계란 껍데기', emoji: '🥚', type: 'general', level: 2, reason: "계란 껍데기는 석회질이라 비료로 쓸 수 없어요!" },
+        { id: 'g7', name: '조개 껍데기', emoji: '🦪', type: 'general', level: 3, reason: "단단한 패각류(조개) 껍데기는 일반쓰레기입니다!" },
+        { id: 'g8', name: '호두 껍데기', emoji: '🌰', type: 'general', level: 3, reason: "호두, 땅콩 등 단단한 견과류 껍질은 일반쓰레기예요!" },
+        { id: 'g9', name: '양파 껍질', emoji: '🧅', type: 'general', level: 4, reason: "양파, 마늘 껍질은 가축의 소화력을 떨어뜨려 일반쓰레기로 버려야 해요!" },
+        { id: 'g10', name: '파뿌리', emoji: '🌿', type: 'general', level: 4, reason: "파뿌리는 매운 향이 강해 사료로 부적합해요!" }
+    ];
+
+    const BINS = [
+        { id: 'general', name: '일반쓰레기', color: 'bg-slate-600', border: 'border-slate-800', hover: 'hover:bg-slate-500', shadow: 'shadow-slate-900', icon: '🗑️' },
+        { id: 'plastic', name: '플라스틱', color: 'bg-blue-500', border: 'border-blue-700', hover: 'hover:bg-blue-400', shadow: 'shadow-blue-800', icon: '♻️' },
+        { id: 'can_glass', name: '캔·유리', color: 'bg-yellow-500', border: 'border-yellow-700', hover: 'hover:bg-yellow-400', shadow: 'shadow-yellow-800', icon: '🧲' },
+        { id: 'paper', name: '종이류', color: 'bg-emerald-500', border: 'border-emerald-700', hover: 'hover:bg-emerald-400', shadow: 'shadow-emerald-800', icon: '📄' },
+        { id: 'food', name: '음식물', color: 'bg-orange-500', border: 'border-orange-700', hover: 'hover:bg-orange-400', shadow: 'shadow-orange-800', icon: '🍲' }
+    ];
+
+    // ==========================================
+    // 3. 게임 상태 및 로직
+    // ==========================================
+    let status = 'start'; 
+    let score = 0;
+    let lives = 3;
+    let combo = 0;
+    let heldTrash = null;
+    let spawnTimer = null;
+    let msgTimer = null;
+
+    // DOM Elements
+    const elGameWrapper = document.getElementById('game-wrapper');
+    const elPlayScreen = document.getElementById('play-screen');
+    const elStartModal = document.getElementById('start-modal');
+    const elGameoverModal = document.getElementById('gameover-modal');
+    const elRoadArea = document.getElementById('road-area');
+    const elBinsArea = document.getElementById('bins-area');
+    
+    const elScoreText = document.getElementById('score-text');
+    const elComboText = document.getElementById('combo-text');
+    const elLivesContainer = document.getElementById('lives-container');
+    const elMsgText = document.getElementById('msg-text');
+    
+    const elSlotBox = document.getElementById('slot-box');
+    const elSlotLabel = document.getElementById('slot-label');
+    const elSlotEmpty = document.getElementById('slot-empty');
+    const elSlotItem = document.getElementById('slot-item');
+    const elSlotEmoji = document.getElementById('slot-emoji');
+    const elSlotName = document.getElementById('slot-name');
+
+    // 배경 SVG 세팅
+    document.getElementById('bg-trees').style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ctext y='80' font-size='80'%3E🌲%3C/text%3E%3C/svg%3E")`;
+    document.getElementById('bg-clouds').style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='100'%3E%3Ctext y='80' font-size='80' opacity='0.5'%3E☁️%3C/text%3E%3C/svg%3E")`;
+
+    // 하단 휴지통 생성 (pointerdown 이벤트 적용)
+    BINS.forEach(bin => {
+        const btn = document.createElement('button');
+        btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-40 cursor-not-allowed grayscale`;
+        btn.innerHTML = `<span class="text-3xl md:text-4xl mb-1 drop-shadow-md">${bin.icon}</span><span class="font-black text-[10px] md:text-sm whitespace-nowrap text-shadow">${bin.name}</span>`;
+        
+        btn.onpointerdown = (e) => {
+            e.preventDefault();
+            handleBinClick(e, bin.id);
+        };
+        
+        btn.id = `bin-${bin.id}`;
+        elBinsArea.appendChild(btn);
+    });
+
+    function getAvailableTrash() {
+        let currentLevel = 1;
+        if (score >= 100) currentLevel = 2;
+        if (score >= 300) currentLevel = 3;
+        if (score >= 500) currentLevel = 4;
+        return TRASH_DATA.filter(t => t.level <= currentLevel);
+    }
+
+    function showMsg(text) {
+        elMsgText.innerText = text;
+        elMsgText.classList.remove('hidden');
+        clearTimeout(msgTimer);
+        msgTimer = setTimeout(() => elMsgText.classList.add('hidden'), 3500);
+    }
+
+    function addFloatText(text, x, y, colorClass) {
+        const el = document.createElement('div');
+        el.className = `fixed z-50 font-black text-3xl float-anim pointer-events-none drop-shadow-md ${colorClass}`;
+        el.style.left = (x - 20) + 'px';
+        el.style.top = (y - 20) + 'px';
+        el.innerText = text;
+        elGameWrapper.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    function triggerShake() {
+        elGameWrapper.classList.add('shake-screen');
+        setTimeout(() => elGameWrapper.classList.remove('shake-screen'), 400);
+    }
+
+    function updateUI() {
+        elScoreText.innerText = score + '점';
+        
+        if (combo > 1) {
+            elComboText.innerText = `${combo} 콤보 🔥`;
+            elComboText.classList.remove('hidden');
+        } else {
+            elComboText.classList.add('hidden');
+        }
+
+        const hearts = elLivesContainer.children;
+        for (let i = 0; i < 3; i++) {
+            if (i < lives) {
+                hearts[i].className = "heart opacity-100 scale-100 transition-all duration-300";
+            } else {
+                hearts[i].className = "heart opacity-20 grayscale scale-75 transition-all duration-300";
+            }
+        }
+
+        // 슬롯 UI 업데이트
+        if (heldTrash) {
+            elSlotEmpty.classList.add('hidden');
+            elSlotItem.classList.remove('hidden');
+            elSlotEmoji.innerText = heldTrash.emoji;
+            elSlotName.innerText = heldTrash.name;
+            
+            elSlotBox.className = "w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-green-50 backdrop-blur-md transition-all duration-300 shadow-xl border-green-400 scale-110 shadow-green-400/40";
+            
+            // 통 버튼 활성화
+            BINS.forEach(bin => {
+                const btn = document.getElementById(`bin-${bin.id}`);
+                btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-100 cursor-pointer ${bin.hover} active:translate-y-2 active:border-b-0`;
+                btn.disabled = false;
+            });
+        } else {
+            elSlotEmpty.classList.remove('hidden');
+            elSlotItem.classList.add('hidden');
+            
+            elSlotBox.className = "w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-white/50 backdrop-blur-md transition-all duration-300 shadow-xl border-gray-400";
+            
+            // 통 버튼 비활성화
+            BINS.forEach(bin => {
+                const btn = document.getElementById(`bin-${bin.id}`);
+                btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-40 cursor-not-allowed grayscale`;
+                btn.disabled = true;
+            });
+        }
+
+        if (lives <= 0 && status === 'playing') {
+            endGame();
+        }
+    }
+
+    function spawnTrash() {
+        if (status !== 'playing') return;
+
+        const available = getAvailableTrash();
+        const trashData = available[Math.floor(Math.random() * available.length)];
+        
+        const el = document.createElement('div');
+        el.className = 'moving-trash absolute bottom-6 z-20 cursor-pointer transition-transform transform hover:scale-110 active:scale-95';
+        
+        const speed = Math.max(2.5, 6.0 - (score / 150));
+        el.style.animationDuration = speed + 's';
+        
+        el.innerHTML = `
+            <div class="bg-white/95 border-4 border-yellow-400 rounded-full w-16 h-16 md:w-20 md:h-20 flex items-center justify-center shadow-xl hover:border-orange-500 hover:shadow-orange-500/50">
+                <span class="text-4xl md:text-5xl drop-shadow-sm pointer-events-none">${trashData.emoji}</span>
+            </div>
+        `;
+
+        // 터치 인식률 100% 개선 (click -> pointerdown 교체)
+        el.onpointerdown = (e) => {
+            e.preventDefault();
+            if (heldTrash) {
+                showMsg('먼저 슬롯의 쓰레기를 비워주세요!');
+                return;
+            }
+            AudioEngine.playCatch();
+            
+            const rect = el.getBoundingClientRect();
+            addFloatText('GET!', rect.left, rect.top, 'text-yellow-300');
+            
+            heldTrash = trashData;
+            el.remove(); // DOM에서 제거
+            showMsg('알맞은 통을 눌러 분류하세요!');
+            updateUI();
+        };
+
+        // 화면 밖으로 나갔을 때 (Miss)
+        el.onanimationend = () => {
+            if (status === 'playing' && document.body.contains(el)) {
+                lives--;
+                combo = 0;
+                showMsg('앗! 쓰레기를 놓쳤어요!');
+                AudioEngine.playMiss();
+                triggerShake();
+                updateUI();
+            }
+            el.remove();
+        };
+
+        elRoadArea.appendChild(el);
+
+        const spawnRate = Math.max(800, 2500 - (score / 20));
+        spawnTimer = setTimeout(spawnTrash, spawnRate);
+    }
+
+    function handleBinClick(e, binId) {
+        if (!heldTrash || status !== 'playing') return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+
+        if (heldTrash.type === binId) {
+            // 정답
+            AudioEngine.playCorrect();
+            const earned = 10 + (combo * 2);
+            score += earned;
+            combo++;
+            showMsg(`나이스! (+${earned}점)`);
+            addFloatText(`+${earned}`, rect.left + rect.width/2, rect.top, 'text-green-400');
+        } else {
+            // 오답
+            AudioEngine.playWrong();
+            triggerShake();
+            lives--;
+            combo = 0;
+            const correctBin = BINS.find(b => b.id === heldTrash.type).name;
+            
+            if (heldTrash.reason) {
+                showMsg(`땡! ${heldTrash.reason}`);
+            } else {
+                showMsg(`땡! [${heldTrash.name}]은(는) ${correctBin}행!`);
+            }
+            
+            addFloatText('MISS', rect.left + rect.width/2, rect.top, 'text-red-500');
+        }
+        
+        heldTrash = null;
+        updateUI();
+    }
+
+    function startGame() {
+        AudioEngine.init();
+        status = 'playing';
+        score = 0;
+        lives = 3;
+        combo = 0;
+        heldTrash = null;
+        elRoadArea.innerHTML = ''; // 기존 쓰레기 청소
+        clearTimeout(spawnTimer);
+        
+        elStartModal.classList.add('hidden');
+        elGameoverModal.classList.add('hidden');
+        elPlayScreen.classList.remove('hidden');
+        
+        showMsg('달리는 길가의 쓰레기를 터치하세요!');
+        updateUI();
+        
+        AudioEngine.startBGM();
+        spawnTimer = setTimeout(spawnTrash, 1500); // 1.5초 후 첫 스폰
+    }
+
+    function endGame() {
+        status = 'gameover';
+        clearTimeout(spawnTimer);
+        AudioEngine.stopBGM();
+        AudioEngine.playOver();
+
+        // 멈추기
+        const garbages = document.querySelectorAll('.moving-trash');
+        garbages.forEach(g => {
+            g.style.animationPlayState = 'paused';
+            g.onpointerdown = null; // 수정된 터치 이벤트 해제
+        });
+
+        document.getElementById('final-score-text').innerText = score + '점';
+        
+        // 최고 점수 처리
+        let bestScore = parseInt(localStorage.getItem('trash_runner_high_score') || '0');
+        const badge = document.getElementById('new-record-badge');
+        
+        if (score > bestScore) {
+            localStorage.setItem('trash_runner_high_score', score);
+            bestScore = score;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+        document.getElementById('best-score-text').innerText = bestScore;
+
+        elGameoverModal.classList.remove('hidden');
+
+        // 포털에 데이터 전송
+        try {
+            window.parent.postMessage({ type: 'GAME_OVER', gameId: 'trash_runner', score: score }, '*');
+        } catch(e) {}
+    }
+
+    // 버튼 이벤트 리스너 (모두 pointerdown 으로 통일하여 딜레이 제거 및 터치율 100% 반영)
+    document.getElementById('btn-start').onpointerdown = (e) => { e.preventDefault(); startGame(); };
+    document.getElementById('btn-restart').onpointerdown = (e) => { e.preventDefault(); startGame(); };
+    document.getElementById('btn-sound').onpointerdown = (e) => {
+        e.preventDefault();
+        const isMuted = AudioEngine.toggle();
+        e.target.innerText = isMuted ? '🔇' : '🔊';
+        if (isMuted) {
+            AudioEngine.stopBGM();
+        } else if (status === 'playing') {
+            AudioEngine.startBGM();
+        }
+    };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>색깔 친구들 연결하기 (자유형)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FFF8E7; 
+            --board-bg: #FAFAFA;
+            --text-color: #5D4037;
+            --btn-bg: #FFD166;
+            --btn-hover: #FFC233;
+            --btn-text: #5D4037;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; 
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Jua', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: radial-gradient(#F0E6D2 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            color: #FF6B6B;
+            text-shadow: 2px 2px 0px #FFE6E6;
+            letter-spacing: 1px;
+        }
+
+        .level-info {
+            font-size: 1.5rem;
+            color: #4ECDC4;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 0 #E2E2E2;
+        }
+
+        #sound-toggle {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+        }
+        #sound-toggle:active { transform: scale(0.9); box-shadow: none; }
+
+        #game-container {
+            position: relative;
+            background-color: var(--board-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.05), inset 0 0 20px rgba(0,0,0,0.02);
+            padding: 0; 
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 20px;
+            background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            font-family: 'Jua', sans-serif;
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            cursor: pointer;
+            box-shadow: 0 4px 0px #D4A373;
+            transition: all 0.1s ease;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0px #D4A373;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.show {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            font-size: 2.5rem;
+            color: #FF9F1C;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 1s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(0); opacity: 0; }
+        }
+
+        #hint-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #FF9F1C;
+            color: white;
+            font-size: 2rem;
+            font-family: 'Jua', sans-serif;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #D47E15, 0 10px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            transition: all 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #hint-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #D47E15, 0 4px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay" class="overlay">
+        <div class="modal show">
+            <h2>🎨 색깔 친구들 연결하기</h2>
+            <p>모눈종이는 안녕!<br>총 15단계의 자유형 퍼즐에 도전하세요!</p>
+            <button id="start-game-btn">게임 시작 🎵</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="overlay" style="display: none;">
+        <div class="modal" id="success-modal">
+            <h2>참 잘했어요! ✨</h2>
+            <p>모든 색깔 친구들을 연결했어요!</p>
+            <button id="next-btn">다음 단계로!</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <h1>자유롭게 이어봐!</h1>
+            <button id="sound-toggle">🔊</button>
+        </div>
+        <div class="level-info" id="level-display">1단계</div>
+    </header>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="reset-btn">다시 그리기 🔄</button>
+    </div>
+
+    <button id="hint-btn" title="정답 보기">❓</button>
+
+    <script>
+        // --- 1. 오디오 시스템 ---
+        let audioCtx;
+        let isSoundOn = true;
+        let nextNoteTime = 0;
+        let currentNoteIndex = 0;
+        let bgmTimerID;
+        
+        const BGM_MELODY = [
+            523.25, 659.25, 783.99, 659.25, 523.25, 0, 587.33, 783.99, 880.00, 783.99, 0
+        ];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (isSoundOn) playBGM();
+        }
+
+        function playTone(frequency, type = 'sine', duration = 0.1, volume = 0.1, isSweep = false) {
+            if (!audioCtx || !isSoundOn) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            if (isSweep) { 
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(frequency * 1.5, audioCtx.currentTime + duration);
+            } else {
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            }
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function sfxClick() { playTone(600, 'sine', 0.1, 0.2); }
+        function sfxConnect() { playTone(523.25, 'triangle', 0.3, 0.2, true); }
+        function sfxSuccess() {
+            setTimeout(() => playTone(523.25, 'square', 0.1, 0.1), 0);
+            setTimeout(() => playTone(659.25, 'square', 0.1, 0.1), 150);
+            setTimeout(() => playTone(783.99, 'square', 0.1, 0.1), 300);
+            setTimeout(() => playTone(1046.50, 'square', 0.4, 0.1), 450);
+        }
+
+        function playBGM() {
+            if (!audioCtx || !isSoundOn) return;
+            function scheduleBGM() {
+                while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                    const freq = BGM_MELODY[currentNoteIndex];
+                    if (freq > 0) playTone(freq, 'sine', 0.3, 0.03); 
+                    nextNoteTime += 0.4;
+                    currentNoteIndex = (currentNoteIndex + 1) % BGM_MELODY.length;
+                }
+                bgmTimerID = requestAnimationFrame(scheduleBGM);
+            }
+            nextNoteTime = audioCtx.currentTime + 0.1;
+            scheduleBGM();
+        }
+
+        function stopBGM() {
+            cancelAnimationFrame(bgmTimerID);
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            isSoundOn = !isSoundOn;
+            const btn = document.getElementById('sound-toggle');
+            if (isSoundOn) { btn.innerText = '🔊'; if(audioCtx) playBGM(); } 
+            else { btn.innerText = '🔇'; stopBGM(); }
+        });
+
+
+        // --- 2. 프리 드로잉 게임 로직 (총 15단계) ---
+        const COLORS = {
+            red: '#FF6B6B',
+            blue: '#4ECDC4',
+            yellow: '#FFE66D',
+            purple: '#9D4EDD',
+            green: '#A7C957',
+            orange: '#FF9F1C',
+            pink: '#FF99C8'
+        };
+
+        const LEVELS = [
+            { // 1단계: 쉬운 평행 (2색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 30}, p2: {x: 80, y: 30} },
+                    { color: 'blue', p1: {x: 20, y: 70}, p2: {x: 80, y: 70} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 30}, {x: 80, y: 30}],
+                    blue: [{x: 20, y: 70}, {x: 80, y: 70}]
+                }
+            },
+            { // 2단계: 크로스 (2색) - 수정된 완벽한 힌트
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 20}, p2: {x: 80, y: 80} },
+                    { color: 'green', p1: {x: 80, y: 20}, p2: {x: 20, y: 80} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 20}, {x: 20, y: 5}, {x: 95, y: 5}, {x: 95, y: 80}, {x: 80, y: 80}],
+                    green: [{x: 80, y: 20}, {x: 20, y: 80}]
+                }
+            },
+            { // 3단계: X자 관통 (3색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 20}, p2: {x: 80, y: 50} },
+                    { color: 'blue', p1: {x: 20, y: 50}, p2: {x: 80, y: 20} },
+                    { color: 'yellow', p1: {x: 50, y: 10}, p2: {x: 50, y: 80} }
+                ],
+                hints: {
+                    yellow: [{x: 50, y: 10}, {x: 50, y: 80}],
+                    red: [{x: 20, y: 20}, {x: 15, y: 20}, {x: 15, y: 90}, {x: 85, y: 90}, {x: 85, y: 50}, {x: 80, y: 50}],
+                    blue: [{x: 20, y: 50}, {x: 5, y: 50}, {x: 5, y: 5}, {x: 95, y: 5}, {x: 95, y: 20}, {x: 80, y: 20}]
+                }
+            },
+            { // 4단계: A-B-C-B'-C' (3색)
+                dots: [
+                    { color: 'blue', p1: {x: 50, y: 15}, p2: {x: 50, y: 85} },
+                    { color: 'red', p1: {x: 15, y: 50}, p2: {x: 65, y: 50} },
+                    { color: 'yellow', p1: {x: 35, y: 50}, p2: {x: 85, y: 50} }
+                ],
+                hints: {
+                    red: [{x: 15, y: 50}, {x: 15, y: 5}, {x: 65, y: 5}, {x: 65, y: 50}],
+                    yellow: [{x: 35, y: 50}, {x: 35, y: 95}, {x: 85, y: 95}, {x: 85, y: 50}],
+                    blue: [{x: 50, y: 15}, {x: 50, y: 30}, {x: 25, y: 30}, {x: 25, y: 70}, {x: 50, y: 70}, {x: 50, y: 85}]
+                }
+            },
+            { // 5단계: 관통과 우회 (4색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 30}, p2: {x: 80, y: 30} },
+                    { color: 'blue', p1: {x: 20, y: 50}, p2: {x: 80, y: 50} },
+                    { color: 'green', p1: {x: 20, y: 70}, p2: {x: 80, y: 70} },
+                    { color: 'purple', p1: {x: 50, y: 20}, p2: {x: 50, y: 80} }
+                ],
+                hints: {
+                    purple: [{x: 50, y: 20}, {x: 50, y: 80}],
+                    red: [{x: 20, y: 30}, {x: 20, y: 10}, {x: 80, y: 10}, {x: 80, y: 30}],
+                    green: [{x: 20, y: 70}, {x: 20, y: 90}, {x: 80, y: 90}, {x: 80, y: 70}],
+                    blue: [{x: 20, y: 50}, {x: 10, y: 50}, {x: 10, y: 95}, {x: 90, y: 95}, {x: 90, y: 50}, {x: 80, y: 50}]
+                }
+            },
+            { // 6단계: 문지기 (4색)
+                dots: [
+                    { color: 'red', p1: {x: 30, y: 20}, p2: {x: 30, y: 80} },
+                    { color: 'blue', p1: {x: 50, y: 20}, p2: {x: 50, y: 80} },
+                    { color: 'green', p1: {x: 70, y: 20}, p2: {x: 70, y: 80} },
+                    { color: 'orange', p1: {x: 15, y: 50}, p2: {x: 85, y: 50} }
+                ],
+                hints: {
+                    red: [{x: 30, y: 20}, {x: 30, y: 80}],
+                    blue: [{x: 50, y: 20}, {x: 50, y: 80}],
+                    green: [{x: 70, y: 20}, {x: 70, y: 80}],
+                    orange: [{x: 15, y: 50}, {x: 15, y: 10}, {x: 85, y: 10}, {x: 85, y: 50}]
+                }
+            },
+            { // 7단계: 크게 돌아가기 (3색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 50}, p2: {x: 80, y: 50} },
+                    { color: 'blue', p1: {x: 50, y: 20}, p2: {x: 50, y: 80} },
+                    { color: 'yellow', p1: {x: 20, y: 20}, p2: {x: 80, y: 80} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 50}, {x: 80, y: 50}],
+                    blue: [{x: 50, y: 20}, {x: 10, y: 20}, {x: 10, y: 80}, {x: 50, y: 80}],
+                    yellow: [{x: 20, y: 20}, {x: 50, y: 5}, {x: 90, y: 50}, {x: 80, y: 80}]
+                }
+            },
+            { // 8단계: 탈출 (4색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 20}, p2: {x: 80, y: 20} },
+                    { color: 'blue', p1: {x: 30, y: 40}, p2: {x: 70, y: 40} },
+                    { color: 'green', p1: {x: 40, y: 60}, p2: {x: 60, y: 60} },
+                    { color: 'yellow', p1: {x: 50, y: 80}, p2: {x: 50, y: 10} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 20}, {x: 80, y: 20}],
+                    blue: [{x: 30, y: 40}, {x: 70, y: 40}],
+                    green: [{x: 40, y: 60}, {x: 60, y: 60}],
+                    yellow: [{x: 50, y: 80}, {x: 10, y: 80}, {x: 10, y: 10}, {x: 50, y: 10}]
+                }
+            },
+            { // 9단계: 사각 교차로 (4색)
+                dots: [
+                    { color: 'blue', p1: {x: 20, y: 50}, p2: {x: 80, y: 50} },
+                    { color: 'red', p1: {x: 30, y: 20}, p2: {x: 70, y: 20} },
+                    { color: 'green', p1: {x: 30, y: 80}, p2: {x: 70, y: 80} },
+                    { color: 'purple', p1: {x: 50, y: 10}, p2: {x: 50, y: 90} }
+                ],
+                hints: {
+                    blue: [{x: 20, y: 50}, {x: 80, y: 50}],
+                    red: [{x: 30, y: 20}, {x: 70, y: 20}],
+                    green: [{x: 30, y: 80}, {x: 70, y: 80}],
+                    purple: [{x: 50, y: 10}, {x: 10, y: 10}, {x: 10, y: 90}, {x: 50, y: 90}]
+                }
+            },
+            { // 10단계: 나선형 (4색)
+                dots: [
+                    { color: 'red', p1: {x: 40, y: 40}, p2: {x: 60, y: 40} },
+                    { color: 'blue', p1: {x: 30, y: 30}, p2: {x: 70, y: 30} },
+                    { color: 'green', p1: {x: 20, y: 20}, p2: {x: 80, y: 20} },
+                    { color: 'yellow', p1: {x: 50, y: 50}, p2: {x: 50, y: 10} }
+                ],
+                hints: {
+                    red: [{x: 40, y: 40}, {x: 60, y: 40}],
+                    blue: [{x: 30, y: 30}, {x: 70, y: 30}],
+                    green: [{x: 20, y: 20}, {x: 80, y: 20}],
+                    yellow: [{x: 50, y: 50}, {x: 50, y: 80}, {x: 90, y: 80}, {x: 90, y: 10}, {x: 50, y: 10}]
+                }
+            },
+            { // 11단계: 별의 직조 (5색)
+                dots: [
+                    { color: 'yellow', p1: {x: 35, y: 20}, p2: {x: 35, y: 80} },
+                    { color: 'red', p1: {x: 50, y: 20}, p2: {x: 50, y: 80} },
+                    { color: 'purple', p1: {x: 65, y: 20}, p2: {x: 65, y: 80} },
+                    { color: 'blue', p1: {x: 20, y: 40}, p2: {x: 80, y: 40} },
+                    { color: 'green', p1: {x: 20, y: 60}, p2: {x: 80, y: 60} }
+                ],
+                hints: {
+                    yellow: [{x: 35, y: 20}, {x: 35, y: 80}],
+                    red: [{x: 50, y: 20}, {x: 50, y: 80}],
+                    purple: [{x: 65, y: 20}, {x: 65, y: 80}],
+                    blue: [{x: 20, y: 40}, {x: 20, y: 10}, {x: 80, y: 10}, {x: 80, y: 40}],
+                    green: [{x: 20, y: 60}, {x: 20, y: 90}, {x: 80, y: 90}, {x: 80, y: 60}]
+                }
+            },
+            { // 12단계: 갈고리 (5색)
+                dots: [
+                    { color: 'green', p1: {x: 50, y: 40}, p2: {x: 50, y: 60} },
+                    { color: 'blue', p1: {x: 35, y: 50}, p2: {x: 65, y: 50} },
+                    { color: 'yellow', p1: {x: 50, y: 15}, p2: {x: 50, y: 85} },
+                    { color: 'red', p1: {x: 20, y: 50}, p2: {x: 80, y: 50} },
+                    { color: 'purple', p1: {x: 10, y: 50}, p2: {x: 90, y: 50} }
+                ],
+                hints: {
+                    green: [{x: 50, y: 40}, {x: 50, y: 60}],
+                    blue: [{x: 35, y: 50}, {x: 35, y: 30}, {x: 65, y: 30}, {x: 65, y: 50}],
+                    yellow: [{x: 50, y: 15}, {x: 75, y: 15}, {x: 75, y: 85}, {x: 50, y: 85}],
+                    red: [{x: 20, y: 50}, {x: 20, y: 75}, {x: 80, y: 75}, {x: 80, y: 50}],
+                    purple: [{x: 10, y: 50}, {x: 10, y: 95}, {x: 90, y: 95}, {x: 90, y: 50}]
+                }
+            },
+            { // 13단계: 철조망 (6색)
+                dots: [
+                    { color: 'red', p1: {x: 30, y: 30}, p2: {x: 70, y: 30} },
+                    { color: 'blue', p1: {x: 30, y: 70}, p2: {x: 70, y: 70} },
+                    { color: 'green', p1: {x: 30, y: 20}, p2: {x: 30, y: 80} },
+                    { color: 'yellow', p1: {x: 70, y: 20}, p2: {x: 70, y: 80} },
+                    { color: 'purple', p1: {x: 50, y: 10}, p2: {x: 50, y: 90} },
+                    { color: 'pink', p1: {x: 10, y: 50}, p2: {x: 90, y: 50} }
+                ],
+                hints: {
+                    red: [{x: 30, y: 30}, {x: 70, y: 30}],
+                    blue: [{x: 30, y: 70}, {x: 70, y: 70}],
+                    green: [{x: 30, y: 20}, {x: 20, y: 20}, {x: 20, y: 80}, {x: 30, y: 80}],
+                    yellow: [{x: 70, y: 20}, {x: 80, y: 20}, {x: 80, y: 80}, {x: 70, y: 80}],
+                    purple: [{x: 50, y: 10}, {x: 95, y: 10}, {x: 95, y: 90}, {x: 50, y: 90}],
+                    pink: [{x: 10, y: 50}, {x: 10, y: 95}, {x: 90, y: 95}, {x: 90, y: 50}]
+                }
+            },
+            { // 14단계: 뱀 (6색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 20}, p2: {x: 80, y: 20} },
+                    { color: 'blue', p1: {x: 20, y: 40}, p2: {x: 80, y: 40} },
+                    { color: 'pink', p1: {x: 20, y: 50}, p2: {x: 80, y: 50} },
+                    { color: 'green', p1: {x: 20, y: 60}, p2: {x: 80, y: 60} },
+                    { color: 'yellow', p1: {x: 20, y: 80}, p2: {x: 80, y: 80} },
+                    { color: 'purple', p1: {x: 50, y: 10}, p2: {x: 50, y: 90} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 20}, {x: 80, y: 20}],
+                    blue: [{x: 20, y: 40}, {x: 80, y: 40}],
+                    pink: [{x: 20, y: 50}, {x: 80, y: 50}],
+                    green: [{x: 20, y: 60}, {x: 80, y: 60}],
+                    yellow: [{x: 20, y: 80}, {x: 80, y: 80}],
+                    // 스네이크(뱀) 라인
+                    purple: [{x: 50, y: 10}, {x: 90, y: 10}, {x: 90, y: 30}, {x: 10, y: 30}, {x: 10, y: 70}, {x: 90, y: 70}, {x: 90, y: 90}, {x: 50, y: 90}]
+                }
+            },
+            { // 15단계: 최후의 구불구불 뱀 (7색)
+                dots: [
+                    { color: 'red', p1: {x: 20, y: 20}, p2: {x: 80, y: 20} },
+                    { color: 'orange', p1: {x: 20, y: 30}, p2: {x: 80, y: 30} },
+                    { color: 'yellow', p1: {x: 20, y: 40}, p2: {x: 80, y: 40} },
+                    { color: 'green', p1: {x: 20, y: 60}, p2: {x: 80, y: 60} },
+                    { color: 'blue', p1: {x: 20, y: 70}, p2: {x: 80, y: 70} },
+                    { color: 'purple', p1: {x: 20, y: 80}, p2: {x: 80, y: 80} },
+                    { color: 'pink', p1: {x: 50, y: 10}, p2: {x: 50, y: 90} }
+                ],
+                hints: {
+                    red: [{x: 20, y: 20}, {x: 80, y: 20}],
+                    orange: [{x: 20, y: 30}, {x: 80, y: 30}],
+                    yellow: [{x: 20, y: 40}, {x: 80, y: 40}],
+                    green: [{x: 20, y: 60}, {x: 80, y: 60}],
+                    blue: [{x: 20, y: 70}, {x: 80, y: 70}],
+                    purple: [{x: 20, y: 80}, {x: 80, y: 80}],
+                    // 궁극의 뱀 꼬기 라인 (절대 다른 선과 닿지 않습니다)
+                    pink: [{x: 50, y: 10}, {x: 90, y: 10}, {x: 90, y: 25}, {x: 10, y: 25}, {x: 10, y: 35}, {x: 90, y: 35}, {x: 90, y: 45}, {x: 10, y: 45}, {x: 10, y: 65}, {x: 90, y: 65}, {x: 90, y: 75}, {x: 10, y: 75}, {x: 10, y: 90}, {x: 50, y: 90}]
+                }
+            }
+        ];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentLevelIndex = 0;
+        let pixelDots = []; 
+        let paths = {};     
+        let dotRadius = 25; 
+        let lineWidth = 16; 
+        
+        let isDrawing = false;
+        let currentColor = null;
+        let targetDot = null;
+        let isLevelCleared = false;
+        let showHint = false; 
+
+        const levelDisplay = document.getElementById('level-display');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const successModal = document.getElementById('success-modal');
+
+        function initGame() {
+            loadLevel(currentLevelIndex);
+        }
+
+        function loadLevel(index) {
+            if (index >= LEVELS.length) {
+                alert("🎉 믿을 수가 없군요! 준비된 모든 15단계를 클리어했습니다! 최고의 천재입니다! 🏆");
+                currentLevelIndex = 0;
+                index = 0;
+            }
+            
+            const levelData = LEVELS[index];
+            paths = {};
+            isLevelCleared = false;
+            showHint = false; 
+            
+            const screenWidth = Math.max(window.innerWidth - 40, 300);
+            const canvasSize = Math.min(screenWidth, 500);
+            
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            dotRadius = Math.max(canvasSize * 0.07, 15);
+            lineWidth = dotRadius * 0.7;
+
+            pixelDots = [];
+            levelData.dots.forEach(d => {
+                pixelDots.push({
+                    color: d.color,
+                    x: (d.p1.x / 100) * canvasSize,
+                    y: (d.p1.y / 100) * canvasSize,
+                    isP1: true
+                });
+                pixelDots.push({
+                    color: d.color,
+                    x: (d.p2.x / 100) * canvasSize,
+                    y: (d.p2.y / 100) * canvasSize,
+                    isP1: false
+                });
+            });
+            
+            levelDisplay.innerText = `${index + 1}단계`;
+            drawBoard();
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 0. 정답(힌트) 그리기 (켜져있을 때만)
+            if (showHint) {
+                const levelData = LEVELS[currentLevelIndex];
+                if (levelData.hints) {
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    
+                    for (const color in levelData.hints) {
+                        const hintPts = levelData.hints[color];
+                        if (!hintPts || hintPts.length < 2) continue;
+
+                        ctx.strokeStyle = COLORS[color] + '80'; // 투명도 부여
+                        ctx.lineWidth = lineWidth * 0.4;
+                        ctx.setLineDash([12, 12]); // 귀여운 점선 효과
+
+                        ctx.beginPath();
+                        const sX = (hintPts[0].x / 100) * canvas.width;
+                        const sY = (hintPts[0].y / 100) * canvas.height;
+                        ctx.moveTo(sX, sY);
+
+                        if (hintPts.length === 2) {
+                            ctx.lineTo((hintPts[1].x / 100) * canvas.width, (hintPts[1].y / 100) * canvas.height);
+                        } else {
+                            for (let i = 1; i < hintPts.length - 1; i++) {
+                                const p1X = (hintPts[i].x / 100) * canvas.width;
+                                const p1Y = (hintPts[i].y / 100) * canvas.height;
+                                const p2X = (hintPts[i+1].x / 100) * canvas.width;
+                                const p2Y = (hintPts[i+1].y / 100) * canvas.height;
+                                const xc = (p1X + p2X) / 2;
+                                const yc = (p1Y + p2Y) / 2;
+                                ctx.quadraticCurveTo(p1X, p1Y, xc, yc);
+                            }
+                            const lastX = (hintPts[hintPts.length - 1].x / 100) * canvas.width;
+                            const lastY = (hintPts[hintPts.length - 1].y / 100) * canvas.height;
+                            ctx.lineTo(lastX, lastY);
+                        }
+                        ctx.stroke();
+                    }
+                    ctx.setLineDash([]); 
+                }
+            }
+
+            // 1. 선(Path) 그리기
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            for (const color in paths) {
+                const path = paths[color];
+                if (path.length < 2) continue;
+
+                ctx.strokeStyle = COLORS[color];
+                ctx.lineWidth = lineWidth;
+                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 4;
+
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.stroke();
+            }
+
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // 2. 점(Dot) 그리기
+            pixelDots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y + 4, dotRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
+                ctx.fillStyle = COLORS[dot.color];
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(dot.x - dotRadius*0.3, dot.y - dotRadius*0.3, dotRadius*0.25, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fill();
+
+                const hasPath = paths[dot.color] && paths[dot.color].length > 1;
+                if (!hasPath) {
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, dotRadius*0.2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.fill();
+                }
+            });
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top,
+                rawX: clientX, rawY: clientY
+            };
+        }
+
+        function getIntersection(p0, p1, p2, p3) {
+            const s1_x = p1.x - p0.x, s1_y = p1.y - p0.y;
+            const s2_x = p3.x - p2.x, s2_y = p3.y - p2.y;
+            const bottom = -s2_x * s1_y + s1_x * s2_y;
+            
+            if (bottom === 0) return null; 
+
+            const s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / bottom;
+            const t = ( s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / bottom;
+
+            if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+                return { x: p0.x + (t * s1_x), y: p0.y + (t * s1_y) };
+            }
+            return null;
+        }
+
+        function createParticle(x, y, color) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.left = (x - 5) + 'px';
+            particle.style.top = (y - 5) + 'px';
+            particle.style.width = '12px';
+            particle.style.height = '12px';
+            particle.style.backgroundColor = color;
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }
+
+        function handleStart(e) {
+            if (isLevelCleared) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+
+            for (let dot of pixelDots) {
+                const dist = Math.hypot(pos.x - dot.x, pos.y - dot.y);
+                if (dist <= dotRadius * 1.5) {
+                    isDrawing = true;
+                    currentColor = dot.color;
+                    targetDot = pixelDots.find(d => d.color === dot.color && d.isP1 !== dot.isP1);
+                    paths[currentColor] = [{x: dot.x, y: dot.y}];
+                    sfxClick();
+                    drawBoard();
+                    return;
+                }
+            }
+
+            for (const color in paths) {
+                const path = paths[color];
+                for(let i = 0; i < path.length; i++) {
+                    if (Math.hypot(pos.x - path[i].x, pos.y - path[i].y) < lineWidth) {
+                        isDrawing = true;
+                        currentColor = color;
+                        targetDot = pixelDots.find(d => d.color === color && Math.hypot(d.x - path[0].x, d.y - path[0].y) > 5); 
+                        paths[color] = path.slice(0, i + 1);
+                        sfxClick();
+                        drawBoard();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function handleMove(e) {
+            if (!isDrawing || !currentColor || isLevelCleared) return;
+            e.preventDefault();
+
+            const pos = getMousePos(e);
+            
+            if(pos.x < 0 || pos.x > canvas.width || pos.y < 0 || pos.y > canvas.height) return;
+
+            const path = paths[currentColor];
+            const lastPos = path[path.length - 1];
+
+            const dist = Math.hypot(pos.x - lastPos.x, pos.y - lastPos.y);
+            if (dist < 5) return;
+
+            for (let dot of pixelDots) {
+                if (dot.color !== currentColor) {
+                    if (Math.hypot(pos.x - dot.x, pos.y - dot.y) < dotRadius + lineWidth/2) {
+                        return; 
+                    }
+                }
+            }
+
+            for (const otherColor in paths) {
+                if (otherColor === currentColor) continue;
+                let otherPath = paths[otherColor];
+                let cutIndex = -1;
+                
+                for (let i = 0; i < otherPath.length - 1; i++) {
+                    if (getIntersection(lastPos, pos, otherPath[i], otherPath[i+1])) {
+                        cutIndex = i;
+                        break;
+                    }
+                }
+                if (cutIndex !== -1) {
+                    paths[otherColor] = otherPath.slice(0, cutIndex);
+                }
+            }
+
+            let selfCutIndex = -1;
+            for (let i = 0; i < path.length - 10; i++) { 
+                if (getIntersection(lastPos, pos, path[i], path[i+1])) {
+                    selfCutIndex = i;
+                    break;
+                }
+            }
+            if (selfCutIndex !== -1) {
+                paths[currentColor] = path.slice(0, selfCutIndex + 1);
+                drawBoard();
+                return;
+            }
+
+            path.push({x: pos.x, y: pos.y});
+            
+            if(path.length % 5 === 0) createParticle(pos.rawX, pos.rawY, COLORS[currentColor]);
+
+            drawBoard();
+
+            if (targetDot) {
+                const targetDist = Math.hypot(pos.x - targetDot.x, pos.y - targetDot.y);
+                if (targetDist < dotRadius) {
+                    path.push({x: targetDot.x, y: targetDot.y});
+                    isDrawing = false;
+                    sfxConnect();
+                    drawBoard();
+                    checkWin();
+                }
+            }
+        }
+
+        function handleEnd(e) {
+            if(isLevelCleared) return;
+            e.preventDefault();
+            isDrawing = false;
+            targetDot = null;
+        }
+
+        function checkWin() {
+            let allConnected = true;
+
+            pixelDots.forEach(dot => {
+                if(dot.isP1) { 
+                    const path = paths[dot.color];
+                    if(!path || path.length < 2) {
+                        allConnected = false;
+                        return;
+                    }
+                    
+                    const first = path[0];
+                    const last = path[path.length - 1];
+                    const otherDot = pixelDots.find(d => d.color === dot.color && !d.isP1);
+
+                    const isConnected1 = (Math.hypot(first.x - dot.x, first.y - dot.y) < dotRadius && Math.hypot(last.x - otherDot.x, last.y - otherDot.y) < dotRadius);
+                    const isConnected2 = (Math.hypot(last.x - dot.x, last.y - dot.y) < dotRadius && Math.hypot(first.x - otherDot.x, first.y - otherDot.y) < dotRadius);
+
+                    if(!isConnected1 && !isConnected2) {
+                        allConnected = false;
+                    }
+                }
+            });
+
+            if (allConnected && !isLevelCleared) {
+                isLevelCleared = true;
+                sfxSuccess();
+                setTimeout(showModal, 500);
+            }
+        }
+
+        function showModal() {
+            modalOverlay.style.display = 'flex';
+            setTimeout(() => successModal.classList.add('show'), 10);
+        }
+
+        function hideModal() {
+            successModal.classList.remove('show');
+            setTimeout(() => modalOverlay.style.display = 'none', 300);
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        canvas.addEventListener('touchend', handleEnd, {passive: false});
+        canvas.addEventListener('touchcancel', handleEnd, {passive: false});
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            sfxClick();
+            paths = {}; 
+            drawBoard();
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            sfxClick();
+            hideModal();
+            currentLevelIndex++;
+            loadLevel(currentLevelIndex);
+        });
+
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            document.getElementById('start-overlay').style.display = 'none';
+            initAudio(); 
+        });
+
+        document.getElementById('hint-btn').addEventListener('click', () => {
+            showHint = !showHint;
+            sfxClick();
+            drawBoard();
+        });
+
+        window.addEventListener('resize', () => {
+            paths = {};
+            initGame();
+        });
+
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>

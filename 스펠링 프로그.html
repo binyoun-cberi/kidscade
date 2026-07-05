@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>스펠링 프로그 DX 🐸 - 영어 단어 점프 어드벤처</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    :root {
+        --pond:#082f49;
+        --pond2:#0f766e;
+        --lime:#7dd3fc;
+        --panel:rgba(15, 23, 42, .76);
+        --stroke:rgba(255,255,255,.16);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 20% 12%, rgba(74,222,128,.22), transparent 30%),
+            radial-gradient(circle at 85% 8%, rgba(56,189,248,.18), transparent 28%),
+            linear-gradient(180deg, #052e2b 0%, #0f172a 60%, #020617 100%);
+        touch-action: none;
+        font-family: 'Comic Sans MS', 'Chalkboard SE', 'Noto Sans KR', sans-serif;
+        color: white;
+    }
+    #game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        max-width: 620px;
+        margin: 0 auto;
+        background: linear-gradient(180deg, #064e3b 0%, #0f172a 100%);
+        box-shadow: 0 0 42px rgba(14,165,233,.25), 0 0 0 1px rgba(255,255,255,.08);
+        overflow: hidden;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+    .ui-layer { position: absolute; inset: 0; pointer-events: none; }
+    .pointer-events-auto { pointer-events: auto; }
+    .glass {
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        box-shadow: 0 10px 30px rgba(0,0,0,.23), inset 0 1px 0 rgba(255,255,255,.1);
+        backdrop-filter: blur(12px);
+    }
+    .text-glow { text-shadow: 0 0 10px rgba(134,239,172,.85), 0 0 24px rgba(56,189,248,.55); }
+    .word-done { color: #facc15; text-shadow: 0 0 12px rgba(250,204,21,.75); display:inline-block; transform: translateY(-1px); }
+    .word-active { color: #86efac; text-shadow: 0 0 16px rgba(74,222,128,.95); display:inline-block; animation: activeLetter .7s ease-in-out infinite alternate; }
+    .word-pending { color: #94a3b8; display:inline-block; }
+    .bar-fill { transform-origin:left center; transition: width .18s linear; }
+    .pop { animation: pop .28s cubic-bezier(.18,1.7,.42,1); }
+    .shake { animation: shake .28s linear; }
+    .reward-pop { animation: rewardPop .75s ease-out; }
+    .screen-flash { animation: flash .45s ease-out; }
+    .bad-flash { animation: badFlash .42s ease-out; }
+    .floaty { animation: floaty 3s ease-in-out infinite; }
+    .shimmer {
+        position: relative;
+        overflow: hidden;
+    }
+    .shimmer::after {
+        content: "";
+        position: absolute;
+        top: -60%;
+        left: -40%;
+        width: 35%;
+        height: 220%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.38), transparent);
+        transform: rotate(25deg);
+        animation: shimmer 2.5s ease-in-out infinite;
+    }
+    .dpad button {
+        pointer-events: auto;
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        background: rgba(15,23,42,.74);
+        border: 1px solid rgba(255,255,255,.22);
+        box-shadow: 0 7px 0 rgba(0,0,0,.22), 0 0 20px rgba(56,189,248,.18);
+        font-size: 24px;
+        font-weight: 900;
+        transition: transform .08s, filter .08s;
+    }
+    .dpad button:active { transform: translateY(6px) scale(.97); filter: brightness(1.2); box-shadow: 0 1px 0 rgba(0,0,0,.22); }
+    @keyframes activeLetter { from { transform: scale(1); } to { transform: scale(1.16) rotate(-2deg); } }
+    @keyframes pop { 0% { transform: scale(.88); } 100% { transform: scale(1); } }
+    @keyframes rewardPop { 0% { transform: scale(.7) rotate(-4deg); opacity:0; } 25% { opacity:1; } 70% { transform: scale(1.08) rotate(2deg); } 100% { transform: scale(1); opacity:1; } }
+    @keyframes flash { from { background: rgba(250,204,21,.55); } to { background: transparent; } }
+    @keyframes badFlash { from { background: rgba(248,113,113,.52); } to { background: transparent; } }
+    @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        20% { transform: translateX(-7px); }
+        40% { transform: translateX(7px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+    }
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes shimmer { 0% { left: -60%; } 58%,100% { left: 130%; } }
+    @media (min-width: 768px) {
+        .dpad { opacity:.52; }
+        .dpad:hover { opacity:1; }
+    }
+</style>
+</head>
+<body>
+<div id="game-container">
+    <canvas id="gameCanvas" width="600" height="800"></canvas>
+    <div id="flash-overlay" class="ui-layer"></div>
+
+    <div class="ui-layer flex flex-col justify-between p-3 md:p-4">
+        <div class="flex gap-3 items-start justify-between">
+            <div id="word-card" class="glass rounded-3xl p-3 min-w-[240px] max-w-[62%] transition-transform">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-[11px] font-black text-sky-200 tracking-wider">SPELLING QUEST</span>
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-emerald-200">
+                        x<span id="ui-multiplier">1.0</span>
+                    </span>
+                </div>
+                <div id="ui-meaning" class="text-lg md:text-xl text-emerald-200 font-black leading-tight truncate">뜻</div>
+                <div class="flex items-end gap-2 mt-1">
+                    <div id="ui-word" class="text-3xl md:text-4xl font-black tracking-[.18em] leading-none"></div>
+                    <div id="ui-target-letter" class="text-sm font-black text-yellow-300 mb-1"></div>
+                </div>
+                <div class="mt-3 h-3 rounded-full bg-slate-950/70 border border-white/10 overflow-hidden">
+                    <div id="ui-timer-fill" class="bar-fill h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-300 to-yellow-300" style="width:100%"></div>
+                </div>
+                <div class="mt-1 text-[11px] text-slate-300 flex justify-between">
+                    <span>단어 제한시간</span><span id="ui-timer-text">0초</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-end gap-2">
+                <div class="glass rounded-2xl px-3 py-2 text-right min-w-[150px]">
+                    <div class="text-[11px] text-slate-300 font-black">SCORE</div>
+                    <div id="ui-score" class="text-2xl font-black text-yellow-300 leading-none">0</div>
+                    <div class="text-[11px] text-purple-200 mt-1">BEST <span id="ui-highscore">0</span></div>
+                </div>
+                <div class="glass rounded-full px-3 py-2 flex items-center gap-2">
+                    <span class="text-[11px] font-black text-rose-100">LIFE</span>
+                    <span id="ui-lives" class="text-xl">❤️❤️❤️</span>
+                </div>
+                <button id="btn-hint" class="pointer-events-auto glass rounded-full px-4 py-2 text-sm font-black text-cyan-200 active:scale-95 transition">
+                    힌트 <span id="ui-hints">3</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end gap-3">
+            <div id="combo-toast" class="glass rounded-2xl px-4 py-3 opacity-0 transition-opacity max-w-[260px]">
+                <div class="text-xs text-slate-300 font-black">현재 콤보</div>
+                <div id="ui-combo" class="text-2xl font-black text-emerald-300">1 WORD</div>
+            </div>
+            <div class="dpad grid grid-cols-3 grid-rows-3 gap-2 pointer-events-none select-none">
+                <div></div><button data-move="0,-1">▲</button><div></div>
+                <button data-move="-1,0">◀</button><button data-move="0,0" id="btn-pause">Ⅱ</button><button data-move="1,0">▶</button>
+                <div></div><button data-move="0,1">▼</button><div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="ui-layer pointer-events-auto flex items-center justify-center bg-black/72 backdrop-blur-md transition-opacity duration-300">
+        <div id="overlay-card" class="glass rounded-[2rem] border-2 border-emerald-300/60 shadow-[0_0_44px_rgba(74,222,128,.35)] max-w-[92%] w-[520px] p-7 md:p-8 text-center reward-pop">
+            <div class="text-7xl mb-2 floaty">🐸</div>
+            <h1 id="overlay-title" class="text-4xl md:text-5xl font-black text-white text-glow mb-2">스펠링 프로그 DX</h1>
+            <p id="overlay-subtitle" class="text-emerald-200 font-black mb-5">단어를 완성하며 강을 건너는 영어 점프 게임</p>
+            <div id="overlay-msg" class="text-slate-100 text-sm md:text-base leading-relaxed space-y-2 mb-6">
+                <p>한국어 뜻을 보고, <b class="text-yellow-300">현재 알파벳</b>이 적힌 통나무로 점프하세요.</p>
+                <p><b class="text-emerald-300">정답 줄 보장</b>으로 막히는 상황을 줄이고, 콤보가 오를수록 강물이 빨라집니다.</p>
+                <p class="bg-sky-500/15 border border-sky-200/20 rounded-2xl p-3">새 기능: 제한시간 · 힌트 · 콤보 배율 · 움직이는 이펙트 · 더 선명한 정답 피드백</p>
+            </div>
+            <div id="difficulty-panel" class="grid grid-cols-3 gap-2 mb-5">
+                <button data-difficulty="easy" class="difficulty-btn shimmer rounded-2xl py-3 bg-emerald-500/25 border border-emerald-300/30 font-black text-emerald-100 active:scale-95">연습</button>
+                <button data-difficulty="normal" class="difficulty-btn shimmer rounded-2xl py-3 bg-sky-500/30 border-2 border-sky-200/60 font-black text-white active:scale-95">기본</button>
+                <button data-difficulty="hard" class="difficulty-btn shimmer rounded-2xl py-3 bg-rose-500/25 border border-rose-300/30 font-black text-rose-100 active:scale-95">도전</button>
+            </div>
+            <button id="btn-start" class="shimmer bg-gradient-to-b from-lime-300 to-emerald-500 hover:from-lime-200 hover:to-emerald-400 text-slate-950 font-black text-2xl py-4 px-10 rounded-full shadow-lg transform transition active:scale-95 border-b-4 border-emerald-800">
+                GAME START
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const rawDict = "A:APPLE=사과,ANIMAL=동물,ANGRY=화난,AIR=공기,ART=예술,ACTOR=배우,ANT=개미,ARM=팔,AUNT=이모,AUTUMN=가을,AGE=나이,ALBUM=앨범,ALIVE=살아있는,ALONE=혼자인,ALWAYS=항상,ANGEL=천사,ANSWER=대답,AREA=지역,AROUND=주변에,ARRIVE=도착하다|B:BEAR=곰,BIRD=새,BLUE=파란색,BOOK=책,BREAD=빵,BABY=아기,BACK=뒤,BALL=공,BAND=밴드,BANK=은행,BASE=기초,BATH=목욕,BEACH=해변,BEAUTIFUL=아름다운,BECAUSE=왜냐하면,BECOME=되다,BED=침대,BEE=벌,BEFORE=전에,BEGIN=시작하다,BEHIND=뒤에,BELL=종,BELOW=아래에,BEST=최고의,BETTER=더나은,BICYCLE=자전거,BIG=큰,BLACK=검은색,BLIND=눈먼,BLOCK=블록,BLOOD=피,BLOW=불다,BOAT=보트,BODY=몸,BONE=뼈,BOSS=상사,BOTTLE=병,BOTTOM=바닥,BOWL=그릇,BOX=상자,BOY=소년,BRAIN=뇌,BRANCH=나뭇가지,BRAVE=용감한,BREAK=부수다,BRIDGE=다리,BRIGHT=밝은,BRING=가져오다,BROTHER=형제,BROWN=갈색,BRUSH=붓,BUILD=짓다,BURN=태우다,BUS=버스,BUSY=바쁜,BUTTER=버터,BUTTON=버튼,BUY=사다|C:CAT=고양이,COLOR=색깔,CLEAN=깨끗한,CLOUD=구름,CITY=도시,CAKE=케이크,CALL=부르다,CAMERA=카메라,CAMP=캠프,CANDY=사탕,CAP=모자,CAR=차,CARD=카드,CARE=돌보다,CARRY=나르다,CASE=상자,CATCH=잡다,CENTER=중심,CHAIR=의자,CHANCE=기회,CHANGE=바꾸다,CHEAP=싼,CHECK=확인하다,CHEESE=치즈,CHICKEN=닭,CHILD=아이,CHOCOLATE=초콜릿,CHOOSE=선택하다,CIRCLE=원,CLASS=수업,CLEVER=영리한,CLIMB=오르다,CLOCK=시계,CLOSE=닫다,CLOTHES=옷,COAT=코트,COFFEE=커피,COIN=동전,COLD=추운,COMPANY=회사,COOK=요리하다,COOL=시원한,COPY=복사하다,CORNER=모서리,COST=비용,COTTON=면,COUNT=세다,COUNTRY=나라,COURSE=코스,COVER=덮다,COW=소,CRAZY=미친,CROSS=건너다,CRY=울다,CUP=컵,CUT=자르다|D:DOG=개,DESK=책상,DREAM=꿈,DRINK=마시다,DANCE=춤추다,DANGER=위험,DARK=어두운,DATE=날짜,DAUGHTER=딸,DAY=낮,DEAD=죽은,DEAR=친애하는,DEEP=깊은,DEER=사슴,DELICIOUS=맛있는,DESIGN=디자인,DIARY=일기,DIE=죽다,DIFFERENT=다른,DIFFICULT=어려운,DIRTY=더러운,DISCOVER=발견하다,DISH=접시,DOOR=문,DOWN=아래로,DRAW=그리다,DRESS=드레스,DRIVE=운전하다,DROP=떨어지다,DRY=마른,DUCK=오리,DUST=먼지|E:ELEPHANT=코끼리,EARTH=지구,EIGHT=숫자8,ENERGY=에너지,EAGLE=독수리,EAR=귀,EARLY=일찍,EAST=동쪽,EASY=쉬운,EAT=먹다,EGG=계란,EMPTY=비어있는,END=끝,ENGINE=엔진,ENJOY=즐기다,ENOUGH=충분한,ENTER=들어가다,EVENING=저녁,EVERY=모든,EXACT=정확한,EXAMPLE=예,EXCUSE=용서하다,EXERCISE=운동,EYE=눈|F:FROG=개구리,FISH=물고기,FRIEND=친구,FRUIT=과일,FACE=얼굴,FACT=사실,FALL=떨어지다,FAMILY=가족,FAMOUS=유명한,FAR=멀리,FARM=농장,FAST=빠른,FAT=뚱뚱한,FATHER=아버지,FEEL=느끼다,FEW=거의없는,FIELD=들판,FIGHT=싸우다,FILL=채우다,FILM=영화,FIND=찾다,FINE=좋은,FINGER=손가락,FINISH=끝내다,FIRE=불,FIRST=첫번째,FIX=고치다,FLAG=깃발,FLAT=평평한,FLOOR=바닥,FLOWER=꽃,FLY=날다,FOCUS=집중하다,FOOD=음식,FOOL=바보,FOOT=발,FORGET=잊다,FORK=포크,FREE=자유로운,FRESH=신선한,FRONT=앞,FULL=가득찬,FUN=재미|G:GIRL=소녀,GREEN=초록색,GREAT=위대한,GAME=게임,GARDEN=정원,GAS=가스,GATE=문,GENTLE=부드러운,GHOST=유령,GIFT=선물,GIVE=주다,GLAD=기쁜,GLASS=유리,GLOVE=장갑,GOAL=목표,GOLD=금,GOOD=좋은,GOOSE=거위,GRAND=웅장한,GRAPE=포도,GRASS=풀,GRAY=회색,GREET=인사하다,GROUND=땅,GROUP=그룹,GROW=자라다,GUESS=추측하다,GUEST=손님,GUIDE=안내하다,GUITAR=기타,GUN=총|H:HORSE=말,HOUSE=집,HEART=심장,HAPPY=행복한,HAIR=머리카락,HALF=절반,HALL=홀,HAND=손,HANDLE=손잡이,HANG=매달다,HAPPEN=일어나다,HARD=어려운,HAT=모자,HATE=싫어하다,HEAD=머리,HEALTH=건강,HEAR=듣다,HEAVY=무거운,HELLO=안녕,HELP=돕다,HERE=여기,HIDE=숨다,HIGH=높은,HILL=언덕,HIT=치다,HOBBY=취미,HOLE=구멍,HOLIDAY=휴일,HOME=집,HONEY=꿀,HOPE=희망,HORN=뿔,HOT=뜨거운,HOTEL=호텔,HOUR=시간,HUMAN=인간,HUNGRY=배고픈,HUNT=사냥하다,HURRY=서두르다,HURT=다치다|I:ICE=얼음,ISLAND=섬,IDEA=생각,IRON=철,ILL=아픈,IMAGE=이미지,IMPORTANT=중요한,INSIDE=안에,INTEREST=흥미,INVENT=발명하다,INVITE=초대하다|J:JUMP=점프하다,JUICE=주스,JOKE=농담,JELLY=젤리,JACKET=재킷,JAM=잼,JAR=항아리,JEWEL=보석,JOIN=참가하다,JOY=기쁨,JUDGE=판단하다,JUNGLE=정글|K:KING=왕,KNEE=무릎,KITE=연,KNIFE=칼,KEEP=유지하다,KEY=열쇠,KICK=차다,KID=아이,KILL=죽이다,KIND=친절한,KISS=키스하다,KITCHEN=부엌,KNOCK=두드리다,KNOW=알다|L:LION=사자,LEMON=레몬,LAKE=호수,LIGHT=빛,LADY=숙녀,LAMP=램프,LAND=땅,LARGE=큰,LAST=마지막,LATE=늦은,LAUGH=웃다,LEAD=이끌다,LEAF=나뭇잎,LEARN=배우다,LEAVE=떠나다,LEFT=왼쪽,LEG=다리,LESSON=수업,LETTER=편지,LEVEL=수준,LIBRARY=도서관,LIFE=삶,LINE=선,LIP=입술,LISTEN=듣다,LITTLE=작은,LIVE=살다,LOCK=자물쇠,LONG=긴,LOOK=보다,LOSE=잃다,LOVE=사랑,LOW=낮은,LUCK=행운,LUNCH=점심|M:MONKEY=원숭이,MUSIC=음악,MOUSE=쥐,MONEY=돈,MACHINE=기계,MAD=미친,MAGIC=마술,MAIL=우편,MAKE=만들다,MAN=남자,MAP=지도,MARK=표시,MARKET=시장,MARRY=결혼하다,MATCH=시합,MATTER=문제,MEAL=식사,MEAN=의미하다,MEAT=고기,MEDICINE=약,MEET=만나다,MEMORY=기억,MERRY=즐거운,MESSAGE=메시지,METAL=금속,MIDDLE=중간,MILK=우유,MIND=마음,MINUTE=분,MIRROR=거울,MISS=놓치다,MODEL=모델,MOMENT=순간,MONTH=달,MOON=달,MORNING=아침,MOTHER=어머니,MOUNTAIN=산,MOUTH=입,MOVE=움직이다,MUCH=많은,MUSEUM=박물관|N:NOSE=코,NIGHT=밤,NURSE=간호사,NATURE=자연,NAME=이름,NARROW=좁은,NATION=국가,NEAR=가까운,NECK=목,NEED=필요하다,NEIGHBOR=이웃,NET=그물,NEVER=결코아니다,NEW=새로운,NEWS=뉴스,NICE=좋은,NOISE=소음,NORTH=북쪽,NOTE=메모,NOW=지금,NUMBER=숫자|O:ORANGE=오렌지,OCEAN=바다,ONION=양파,OFFICE=사무실,OAK=참나무,OASIS=오아시스,OBEY=복종하다,OBJECT=물건,OBSERVE=관찰하다,OFFER=제공하다,OFTEN=종종,OIL=기름,OLD=오래된,ONLY=오직,OPEN=열다,OPINION=의견,ORDER=주문하다,OTHER=다른,OUTSIDE=바깥,OVER=넘어서,OWN=소유하다|P:PIG=돼지,PEACE=평화,PIZZA=피자,PAPER=종이,PAGE=페이지,PAINT=칠하다,PAIR=쌍,PANTS=바지,PARENT=부모,PARK=공원,PART=부분,PARTY=파티,PASS=지나가다,PAST=과거,PAY=지불하다,PEN=펜,PENCIL=연필,PEOPLE=사람들,PEPPER=후추,PERFECT=완벽한,PERSON=사람,PET=애완동물,PIANO=피아노,PICTURE=그림,PIECE=조각,PILOT=조종사,PINE=소나무,PINK=분홍색,PLACE=장소,PLAN=계획,PLANT=식물,PLAY=놀다,PLEASE=제발,POCKET=주머니,POINT=가리키다,POLICE=경찰,POOL=수영장,POOR=가난한,PORK=돼지고기,POTATO=감자,POWER=힘,PRESENT=선물,PRESS=누르다,PRETTY=예쁜,PRICE=가격,PRINCE=왕자,PRINT=인쇄하다,PROBLEM=문제,PROMISE=약속,PROUD=자랑스러운,PULL=당기다,PUMP=펌프,PUSH=밀다,PUT=놓다|Q:QUEEN=여왕,QUICK=빠른,QUIET=조용한,QUARTER=4분의1,QUESTION=질문,QUIZ=퀴즈|R:RABBIT=토끼,RIVER=강,ROSE=장미,RAIN=비,RACE=경주,RADIO=라디오,READ=읽다,READY=준비된,REAL=진짜의,REASON=이유,RECEIVE=받다,RECORD=기록,RED=빨간색,REMEMBER=기억하다,REPEAT=반복하다,REST=휴식,RETURN=돌아오다,RIBBON=리본,RICE=쌀,RICH=부유한,RIDE=타다,RIGHT=오른쪽,RING=반지,ROAD=도로,ROBOT=로봇,ROCK=바위,ROLL=구르다,ROOF=지붕,ROOM=방,ROOT=뿌리,ROPE=밧줄,ROUND=둥근,RULE=규칙,RUN=달리다,RUSH=돌진하다|S:SNAKE=뱀,SPACE=우주,SMILE=미소,STORY=이야기,SAD=슬픈,SAFE=안전한,SAIL=항해하다,SALT=소금,SAME=같은,SAND=모래,SAVE=구하다,SAY=말하다,SCHOOL=학교,SCIENCE=과학,SCORE=점수,SEA=바다,SEASON=계절,SEAT=좌석,SECRET=비밀,SEE=보다,SEED=씨앗,SELL=팔다,SEND=보내다,SENSE=감각,SERVICE=서비스,SHADOW=그림자,SHAKE=흔들다,SHAPE=모양,SHARE=나누다,SHARP=날카로운,SHEEP=양,SHEET=종이한장,SHINE=빛나다,SHIP=배,SHIRT=셔츠,SHOCK=충격,SHOE=신발,SHOOT=쏘다,SHOP=상점,SHORT=짧은,SHOULDER=어깨,SHOUT=외치다,SHOW=보여주다,SHOWER=샤워,SHUT=닫다,SICK=아픈,SIDE=쪽,SIGHT=시야,SIGN=신호,SILENT=침묵하는,SILVER=은,SIMPLE=간단한,SING=노래하다,SINGLE=단일의,SISTER=자매,SIT=앉다,SIZE=크기,SKILL=기술,SKIN=피부,SKIRT=치마,SKY=하늘,SLEEP=잠자다,SLOW=느린,SMALL=작은,SMELL=냄새,SMOKE=연기,SNACK=간식,SNOW=눈,SOAP=비누,SOCCER=축구,SOCK=양말,SOFT=부드러운,SOLDIER=군인,SOLID=단단한,SOME=어떤,SON=아들,SONG=노래,SOON=곧,SORRY=미안한,SOUND=소리,SOUP=수프,SOUTH=남쪽,SPEAK=말하다,SPEED=속도,SPELL=철자를쓰다,SPEND=소비하다,SPIDER=거미,SPOON=숟가락,SPORT=스포츠,SPRING=봄,SQUARE=정사각형,STAGE=무대,STAMP=우표,STAND=서다,STAR=별,START=시작하다,STATE=상태,STATION=역,STAY=머무르다,STEP=걸음,STICK=막대기,STONE=돌,STOP=멈추다,STORE=가게,STORM=폭풍,STREET=거리,STRIKE=치다,STRONG=강한,STUDENT=학생,STUDY=공부하다,STUPID=어리석은,SUCCESS=성공,SUGAR=설탕,SUMMER=여름,SUN=태양,SUPPER=저녁식사,SURE=확신하는,SURPRISE=놀라다,SWEET=달콤한,SWIM=수영하다,SWORD=검,SYSTEM=시스템|T:TIGER=호랑이,TREE=나무,TRAIN=기차,TIME=시간,TABLE=탁자,TAIL=꼬리,TAKE=가져가다,TALK=말하다,TALL=키큰,TASTE=맛,TAXI=택시,TEA=차,TEACH=가르치다,TEAM=팀,TEAR=눈물,TELEPHONE=전화,TELL=말하다,TEMPLE=사원,TENT=텐트,TEST=시험,THANK=감사하다,THICK=두꺼운,THIN=얇은,THING=물건,THINK=생각하다,THIRSTY=목마른,THOUGHT=생각,TICKET=표,TIE=묶다,TIGHT=단단한,TIRED=피곤한,TODAY=오늘,TOGETHER=함께,TOMORROW=내일,TONGUE=혀,TONIGHT=오늘밤,TOO=너무,TOOTH=이빨,TOP=꼭대기,TOUCH=만지다,TOUR=여행,TOWN=마을,TOY=장난감,TRACK=자취,TRADE=무역,TRAFFIC=교통,TRAVEL=여행하다,TRICK=속임수,TRIP=여행,TROUBLE=문제,TRUE=사실의,TRUST=믿다,TRY=시도하다,TURN=돌다,TWIN=쌍둥이|U:UMBRELLA=우산,UNDER=아래에,UNCLE=삼촌,UGLY=못생긴,UNIFORM=제복,UNION=결합,UNIT=단위,UNIVERSE=우주,UP=위로,USE=사용하다,USEFUL=유용한,USUAL=보통의|V:VOICE=목소리,VIDEO=비디오,VIRUS=바이러스,VALLEY=계곡,VALUE=가치,VEGETABLE=채소,VERY=매우,VICTORY=승리,VIEW=경치,VILLAGE=마을,VIOLIN=바이올린,VISIT=방문하다,VOTE=투표하다|W:WATER=물,WORLD=세계,WIND=바람,WHITE=하얀색,WAKE=깨다,WALK=걷다,WALL=벽,WANT=원하다,WAR=전쟁,WARM=따뜻한,WASH=씻다,WASTE=낭비하다,WATCH=시계,WAVE=파도,WAY=길,WEAK=약한,WEALTH=부,WEAR=입다,WEATHER=날씨,WEDDING=결혼식,WEEK=주,WEIGHT=무게,WELCOME=환영하다,WELL=잘,WEST=서쪽,WHEEL=바퀴,WHEN=언제,WHERE=어디,WHICH=어느,WHILE=동안,WHISPER=속삭이다,WHO=누구,WHY=왜,WIDE=넓은,WIFE=아내,WILD=야생의,WILL=의지,WIN=이기다,WINDOW=창문,WING=날개,WINTER=겨울,WISE=지혜로운,WISH=바라다,WITH=함께,WOMAN=여자,WOOD=나무,WORD=단어,WORK=일하다,WORM=벌레,WORRY=걱정하다,WORTH=가치있는,WRITE=쓰다,WRONG=틀린|X:XYLOPHONE=실로폰,XRAY=엑스레이|Y:YELLOW=노란색,YOUTH=젊음,YEAR=연도,YARD=마당,YEAH=네,YEAR=해,YELLOW=노란색,YES=네,YESTERDAY=어제,YET=아직,YOUNG=젊은|Z:ZEBRA=얼룩말,ZERO=숫자0,ZONE=구역,ZOO=동물원";
+
+const dictionary = {};
+rawDict.split('|').forEach(group => {
+    const parts = group.split(':');
+    const letter = parts[0];
+    const words = parts[1].split(',');
+    dictionary[letter] = words.map(item => {
+        const wParts = item.split('=');
+        return { w: wParts[0], m: wParts[1] };
+    });
+});
+
+const DIFFICULTY = {
+    easy:   { name: '연습', lives: 5, hints: 5, speed: .78, timer: 1.25, wrongGrace: 1, targetChance: .48 },
+    normal: { name: '기본', lives: 3, hints: 3, speed: 1.00, timer: 1.00, wrongGrace: 0, targetChance: .38 },
+    hard:   { name: '도전', lives: 3, hints: 1, speed: 1.22, timer: .84, wrongGrace: 0, targetChance: .32 }
+};
+let selectedDifficulty = 'normal';
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const Sound = {
+    tone(freq, type, duration, volume = .08, slideFreq = null, delay = 0) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const start = audioCtx.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, start);
+        if (slideFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideFreq), start + duration);
+        gain.gain.setValueAtTime(volume, start);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + duration);
+    },
+    jump() { this.tone(290, 'sine', .16, .08, 620); },
+    correct() { this.tone(620, 'triangle', .08, .08); this.tone(850, 'triangle', .14, .07, null, .08); },
+    wrong() { this.tone(170, 'sawtooth', .26, .1, 85); },
+    splash() { this.tone(120, 'square', .35, .09, 55); },
+    bonus() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 'square', .09, .055, null, i * .065)); },
+    tick() { this.tone(880, 'sine', .04, .025); },
+    over() { this.tone(220, 'sawtooth', .65, .12, 60); }
+};
+
+let bgmTimer = null;
+function startBGM() {
+    if (bgmTimer) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const seq = [0, 4, 7, 12, 7, 4, 9, 7, 5, 9, 12, 16, 12, 9, 7, 4];
+    let idx = 0;
+    let nextTime = audioCtx.currentTime + .08;
+    function schedule() {
+        const now = audioCtx.currentTime;
+        while (nextTime < now + .12) {
+            if (idx % 4 === 0) {
+                Sound.tone(72, 'square', .08, .025, 28, nextTime - now);
+            }
+            if (idx % 2 === 0) {
+                const freq = 261.63 * Math.pow(2, seq[idx % seq.length] / 12);
+                Sound.tone(freq, 'triangle', .12, .018, null, Math.max(0, nextTime - now));
+            }
+            nextTime += .18;
+            idx++;
+        }
+        bgmTimer = requestAnimationFrame(schedule);
+    }
+    schedule();
+}
+function stopBGM() {
+    if (bgmTimer) cancelAnimationFrame(bgmTimer);
+    bgmTimer = null;
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+if (!ctx.roundRect) {
+    ctx.roundRect = function (x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        return this;
+    };
+}
+
+const TILE = 80;
+const COLS = 7;
+const BOARD_X = (W - COLS * TILE) / 2;
+const CHECKPOINT_GAP = 7;
+const HIGH_KEY = 'spellingFrogDXHighScore';
+
+let state = 'START';
+let stageCombo = 1;
+let score = 0;
+let highScore = Number(localStorage.getItem(HIGH_KEY) || 0);
+let lives = 3;
+let hints = 3;
+let wrongGrace = 0;
+let currentWord = '';
+let currentMeaning = '';
+let targetLetterIndex = 0;
+let wordTime = 20;
+let wordTimeMax = 20;
+let lastFrame = performance.now();
+
+let frog = {};
+let lastSafe = { row: 0, col: Math.floor(COLS / 2) };
+let rowData = {};
+let maxGeneratedRow = 5;
+let camera = { y: 0 };
+let particles = [];
+let floatingTexts = [];
+let rings = [];
+let waterOffset = 0;
+let shakePower = 0;
+let hintTarget = null;
+
+function targetChar() {
+    return currentWord[targetLetterIndex] || currentWord[0] || 'A';
+}
+
+function pickWord(startChar) {
+    const list = dictionary[startChar] || dictionary[startChar?.toUpperCase?.()] || dictionary.A;
+    let selected = list[Math.floor(Math.random() * list.length)];
+    if (currentWord && list.length > 1) {
+        let guard = 0;
+        while (selected.w === currentWord && guard++ < 12) {
+            selected = list[Math.floor(Math.random() * list.length)];
+        }
+    }
+    currentWord = selected.w;
+    currentMeaning = selected.m;
+    targetLetterIndex = 0;
+    resetWordTimer();
+}
+
+function resetWordTimer() {
+    const diff = DIFFICULTY[selectedDifficulty];
+    const base = 10 + Math.min(10, currentWord.length * 2.2);
+    const comboPenalty = Math.min(5.5, Math.floor(stageCombo / 4) * .8);
+    wordTimeMax = Math.max(7, (base - comboPenalty) * diff.timer);
+    wordTime = wordTimeMax;
+}
+
+function initGame(fullReset = true) {
+    const diff = DIFFICULTY[selectedDifficulty];
+    if (fullReset) {
+        stageCombo = 1;
+        score = 0;
+        lives = diff.lives;
+        hints = diff.hints;
+        wrongGrace = diff.wrongGrace;
+        pickWord('A');
+    }
+    rowData = {};
+    maxGeneratedRow = 5;
+    lastSafe = { row: 0, col: Math.floor(COLS / 2) };
+    resetFrogTo(lastSafe.row, lastSafe.col);
+    ensureRowsGenerated(frog.row - 22);
+    updateUI();
+    hideOverlay();
+    state = 'PLAYING';
+    showToast(`${DIFFICULTY[selectedDifficulty].name} 모드 시작!`, '#86efac');
+}
+
+function resetFrogTo(row, col) {
+    frog = {
+        row, col,
+        x: BOARD_X + col * TILE + TILE * .15,
+        y: row * TILE + TILE * .13,
+        targetX: BOARD_X + col * TILE + TILE * .15,
+        targetY: row * TILE + TILE * .13,
+        w: TILE * .72,
+        h: TILE * .72,
+        riding: null,
+        isDead: false,
+        hop: 0,
+        face: 'up',
+        invincible: .55
+    };
+    camera.y = frog.y - H * .68;
+}
+
+function isGrassRow(r) {
+    return Math.abs(r) % CHECKPOINT_GAP === 0;
+}
+
+function ensureRowsGenerated(targetRow) {
+    while (maxGeneratedRow > targetRow) {
+        const r = maxGeneratedRow;
+        rowData[r] = isGrassRow(r)
+            ? { type: 'grass', row: r, checkpoint: true, spark: Math.random() * 100 }
+            : { type: 'water', row: r, platforms: generatePlatformsForRow(r), targetFor: null };
+        maxGeneratedRow--;
+    }
+}
+
+function laneDifficulty(row) {
+    const forward = Math.max(0, Math.abs(row));
+    return 1 + Math.min(1.85, forward * .025 + stageCombo * .035);
+}
+
+function generatePlatformsForRow(r) {
+    const diff = DIFFICULTY[selectedDifficulty];
+    const dir = Math.random() > .5 ? 1 : -1;
+    const lane = laneDifficulty(r);
+    const base = (1.05 + Math.random() * 1.15) * lane * diff.speed;
+    const speed = base * dir;
+    const count = 3 + Math.floor(Math.random() * 2);
+    const wrapLength = W + TILE * 5;
+    const gap = wrapLength / count;
+    const platforms = [];
+    for (let i = 0; i < count; i++) {
+        const widthUnit = Math.random() < .18 ? 1.75 : (.92 + Math.random() * .62);
+        const w = TILE * widthUnit;
+        const x = -TILE * 2 + i * gap + Math.random() * Math.max(16, gap - w);
+        platforms.push(createPlatform(x, r * TILE, w, speed, r, wrapLength));
+    }
+    return platforms;
+}
+
+function createPlatform(x, y, w, speed, row, wrapLength) {
+    const dangerChance = Math.min(.26, .08 + Math.abs(row) * .004 + stageCombo * .005);
+    const isCroc = Math.random() < dangerChance;
+    const bonus = Math.random() < .13 ? 'fly' : null;
+    return {
+        x, y, w, h: TILE * .8,
+        baseSpeed: speed,
+        row, wrapLength,
+        kind: isCroc ? 'croc' : 'log',
+        letter: randomLetter(),
+        active: true,
+        used: false,
+        bonus,
+        blink: Math.random() * 100,
+        targetGlowUntil: 0
+    };
+}
+
+function randomLetter(except = '') {
+    const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let ch = abc[Math.floor(Math.random() * abc.length)];
+    if (except && abc.length > 1) {
+        let guard = 0;
+        while (ch === except && guard++ < 10) ch = abc[Math.floor(Math.random() * abc.length)];
+    }
+    return ch;
+}
+
+function prepareRowForTarget(row, char = targetChar()) {
+    const rowObj = rowData[row];
+    if (!rowObj || rowObj.type !== 'water') return;
+    if (rowObj.targetFor === char) return;
+
+    const activePlatforms = rowObj.platforms.filter(p => !p.used);
+    if (!activePlatforms.length) return;
+
+    for (const p of rowObj.platforms) {
+        if (Math.random() < .75) {
+            p.letter = randomLetter(char);
+            p.active = true;
+        }
+    }
+
+    const target = activePlatforms[Math.floor(Math.random() * activePlatforms.length)];
+    target.letter = char;
+    target.active = true;
+    target.kind = target.kind === 'croc' && Math.random() < .65 ? 'log' : target.kind;
+    target.w = Math.max(target.w, TILE * 1.05);
+    target.targetGlowUntil = performance.now() + 1100;
+    rowObj.targetFor = char;
+
+    if (Math.random() < DIFFICULTY[selectedDifficulty].targetChance) {
+        const second = activePlatforms.find(p => p !== target);
+        if (second) {
+            second.letter = char;
+            second.active = true;
+            second.targetGlowUntil = performance.now() + 800;
+        }
+    }
+}
+
+function refreshAheadForNewTarget() {
+    hintTarget = null;
+    const start = frog.row - 1;
+    for (let r = start; r >= start - 18; r--) {
+        ensureRowsGenerated(r);
+        if (rowData[r] && rowData[r].type === 'water') {
+            rowData[r].targetFor = null;
+            prepareRowForTarget(r, targetChar());
+        }
+    }
+}
+
+function moveFrog(dx, dy) {
+    if (state !== 'PLAYING' || frog.isDead) return;
+    if (dx === 0 && dy === 0) {
+        togglePause();
+        return;
+    }
+    const oldRow = frog.row;
+    const oldCol = frog.col;
+    const newCol = Math.max(0, Math.min(COLS - 1, frog.col + dx));
+    let lowestVisibleRow = Math.ceil((camera.y + H) / TILE);
+    let newRow = Math.min(frog.row + dy, lowestVisibleRow - 1);
+    if (newRow > lastSafe.row + 3) newRow = lastSafe.row + 3;
+
+    ensureRowsGenerated(newRow - 22);
+    if (dy < 0 && rowData[newRow]?.type === 'water') prepareRowForTarget(newRow, targetChar());
+
+    frog.col = newCol;
+    frog.row = newRow;
+    frog.face = dy < 0 ? 'up' : (dy > 0 ? 'down' : (dx < 0 ? 'left' : 'right'));
+    frog.targetX = BOARD_X + frog.col * TILE + TILE * .15;
+    frog.targetY = frog.row * TILE + TILE * .13;
+    frog.x = frog.targetX;
+    frog.y = frog.targetY;
+    frog.riding = null;
+    frog.hop = 1;
+    Sound.jump();
+    rings.push({ x: frog.x + frog.w / 2, y: frog.y + frog.h / 2, r: 8, life: 1, color: '#7dd3fc' });
+    checkLanding(oldRow, oldCol);
+}
+
+function checkLanding(oldRow, oldCol) {
+    const rowObj = rowData[frog.row];
+    if (!rowObj) return;
+    if (rowObj.type === 'grass') {
+        lastSafe = { row: frog.row, col: frog.col };
+        score += Math.max(5, Math.floor(15 * multiplier()));
+        showFloatingText('SAVE', frog.x + frog.w / 2, frog.y - 10, '#86efac');
+        updateUI(true);
+        return;
+    }
+
+    let landed = null;
+    const center = frog.x + frog.w / 2;
+    const margin = selectedDifficulty === 'easy' ? 34 : 26;
+    for (const p of rowObj.platforms) {
+        if (center > p.x - margin && center < p.x + p.w + margin) {
+            landed = p;
+            break;
+        }
+    }
+
+    if (!landed) {
+        Sound.splash();
+        createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#60a5fa', 24);
+        loseLife('물에 풍덩!', oldRow, oldCol);
+        return;
+    }
+
+    frog.riding = landed;
+    frog.x = landed.x + (landed.w - frog.w) / 2;
+    frog.targetX = frog.x;
+    frog.col = Math.max(0, Math.min(COLS - 1, Math.floor((frog.x - BOARD_X + TILE / 2) / TILE)));
+
+    if (!landed.active || landed.used) return;
+
+    if (landed.letter === targetChar()) {
+        handleCorrect(landed);
+    } else {
+        handleWrong(landed, oldRow, oldCol);
+    }
+}
+
+function multiplier() {
+    return 1 + Math.min(2.5, (stageCombo - 1) * .08);
+}
+
+function handleCorrect(platform) {
+    Sound.correct();
+    platform.used = true;
+    platform.active = false;
+    platform.letter = '✓';
+    platform.targetGlowUntil = performance.now() + 700;
+
+    const base = 80 + Math.max(0, currentWord.length - 3) * 10;
+    const gain = Math.floor(base * multiplier());
+    score += gain;
+    targetLetterIndex++;
+    wordTime = Math.min(wordTimeMax, wordTime + 1.4);
+    createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#4ade80', 28);
+    showFloatingText(`+${gain}`, frog.x + frog.w / 2, frog.y - 20, '#bbf7d0');
+    popElement('word-card');
+
+    if (platform.bonus === 'fly') {
+        platform.bonus = null;
+        const bonus = Math.floor(120 * multiplier());
+        score += bonus;
+        wordTime = Math.min(wordTimeMax, wordTime + 2.5);
+        createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#facc15', 22);
+        showFloatingText(`파리 보너스 +${bonus}`, frog.x + frog.w / 2, frog.y - 50, '#fde68a');
+    }
+
+    if (targetLetterIndex >= currentWord.length) {
+        handleWordSuccess();
+    } else {
+        refreshAheadForNewTarget();
+    }
+    updateUI(true);
+}
+
+function handleWrong(platform, oldRow, oldCol) {
+    Sound.wrong();
+    platform.targetGlowUntil = performance.now() + 800;
+    showFloatingText(`${platform.letter} 아니에요!`, frog.x + frog.w / 2, frog.y - 22, '#fca5a5');
+    if (wrongGrace > 0) {
+        wrongGrace--;
+        showFloatingText('보호막 사용', frog.x + frog.w / 2, frog.y - 54, '#93c5fd');
+        bounceBack(oldRow, oldCol);
+        shake(.8);
+        updateUI();
+    } else {
+        loseLife('틀린 스펠링!', oldRow, oldCol);
+    }
+}
+
+function handleWordSuccess() {
+    Sound.bonus();
+    const clearBonus = Math.floor((520 + currentWord.length * 45) * multiplier());
+    score += clearBonus;
+    stageCombo++;
+    showToast(`WORD CLEAR! +${clearBonus}`, '#facc15');
+    document.getElementById('flash-overlay').classList.remove('screen-flash');
+    void document.getElementById('flash-overlay').offsetWidth;
+    document.getElementById('flash-overlay').classList.add('screen-flash');
+
+    const nextStart = currentWord.slice(-1);
+    pickWord(nextStart);
+    refreshAheadForNewTarget();
+
+    // 단어를 완성하면 앞쪽 맵이 새 타깃에 맞춰 살아나서 끊기지 않음
+    for (const r in rowData) {
+        if (Number(r) <= frog.row && rowData[r].type === 'water') {
+            rowData[r].targetFor = null;
+            for (const p of rowData[r].platforms) {
+                p.used = false;
+                p.active = true;
+            }
+        }
+    }
+}
+
+function loseLife(msg, oldRow = lastSafe.row, oldCol = lastSafe.col) {
+    if (frog.invincible > 0 && msg !== '시간 초과!') return;
+    lives--;
+    frog.isDead = true;
+    shake(1.2);
+    document.getElementById('flash-overlay').classList.remove('bad-flash');
+    void document.getElementById('flash-overlay').offsetWidth;
+    document.getElementById('flash-overlay').classList.add('bad-flash');
+    showFloatingText(msg, frog.x + frog.w / 2, frog.y - 18, '#f87171');
+    updateUI();
+
+    if (lives <= 0) {
+        Sound.over();
+        setTimeout(gameOver, 650);
+    } else {
+        setTimeout(() => {
+            targetLetterIndex = 0;
+            resetWordTimer();
+            resetFrogTo(lastSafe.row, lastSafe.col);
+            refreshAheadForNewTarget();
+            updateUI();
+        }, 760);
+    }
+}
+
+function bounceBack(row, col) {
+    frog.row = row;
+    frog.col = col;
+    frog.x = BOARD_X + col * TILE + TILE * .15;
+    frog.y = row * TILE + TILE * .13;
+    frog.targetX = frog.x;
+    frog.targetY = frog.y;
+    frog.riding = null;
+}
+
+function useHint() {
+    if (state !== 'PLAYING') return;
+    if (hints <= 0) {
+        showToast('힌트를 모두 사용했어요', '#fca5a5');
+        return;
+    }
+    hints--;
+    const candidates = [];
+    for (let r = frog.row - 1; r >= frog.row - 9; r--) {
+        ensureRowsGenerated(r - 1);
+        if (rowData[r]?.type === 'water') {
+            prepareRowForTarget(r, targetChar());
+            for (const p of rowData[r].platforms) {
+                if (p.active && !p.used && p.letter === targetChar()) candidates.push(p);
+            }
+        }
+    }
+    hintTarget = candidates[0] || null;
+    if (hintTarget) {
+        hintTarget.targetGlowUntil = performance.now() + 3500;
+        showToast(`다음 글자 ${targetChar()} 발판을 빛나게 표시!`, '#7dd3fc');
+        Sound.tick();
+    }
+    updateUI();
+}
+
+function togglePause() {
+    if (state === 'PLAYING') {
+        state = 'PAUSED';
+        showPauseOverlay();
+    } else if (state === 'PAUSED') {
+        hideOverlay();
+        state = 'PLAYING';
+        lastFrame = performance.now();
+    }
+}
+
+function updateUI(animated = false) {
+    document.getElementById('ui-score').innerText = score;
+    document.getElementById('ui-highscore').innerText = highScore;
+    document.getElementById('ui-lives').innerText = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, DIFFICULTY[selectedDifficulty].lives - lives));
+    document.getElementById('ui-hints').innerText = hints;
+    document.getElementById('ui-combo').innerText = `${stageCombo} WORD`;
+    document.getElementById('ui-multiplier').innerText = multiplier().toFixed(1);
+    document.getElementById('ui-meaning').innerText = currentMeaning;
+    document.getElementById('ui-target-letter').innerText = targetLetterIndex < currentWord.length ? `NEXT ${targetChar()}` : '';
+    const timerPercent = Math.max(0, Math.min(100, wordTime / wordTimeMax * 100));
+    document.getElementById('ui-timer-fill').style.width = `${timerPercent}%`;
+    document.getElementById('ui-timer-text').innerText = `${Math.ceil(wordTime)}초`;
+
+    let html = '';
+    for (let i = 0; i < currentWord.length; i++) {
+        if (i < targetLetterIndex) html += `<span class="word-done">${currentWord[i]}</span> `;
+        else if (i === targetLetterIndex) html += `<span class="word-active">_</span> `;
+        else html += `<span class="word-pending">_</span> `;
+    }
+    document.getElementById('ui-word').innerHTML = html;
+    if (animated) popElement('word-card');
+
+    const toast = document.getElementById('combo-toast');
+    toast.style.opacity = stageCombo >= 2 ? '1' : '.0';
+}
+
+function popElement(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+}
+
+function showToast(text, color = '#fff') {
+    const toast = document.getElementById('combo-toast');
+    toast.style.opacity = '1';
+    toast.querySelector('#ui-combo').innerText = text;
+    toast.querySelector('#ui-combo').style.color = color;
+    popElement('combo-toast');
+    setTimeout(() => {
+        if (state === 'PLAYING') {
+            toast.querySelector('#ui-combo').style.color = '';
+            toast.querySelector('#ui-combo').innerText = `${stageCombo} WORD`;
+        }
+    }, 1200);
+}
+
+function showFloatingText(txt, x, y, color) {
+    floatingTexts.push({ txt, x, y, color, life: 1, size: 28 });
+}
+
+function createParticles(x, y, color, count = 12) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random() - .5) * 10,
+            vy: (Math.random() - .5) * 10,
+            life: 1,
+            color,
+            size: 3 + Math.random() * 5
+        });
+    }
+}
+
+function shake(power = 1) {
+    shakePower = Math.max(shakePower, power);
+    const cont = document.getElementById('game-container');
+    cont.classList.remove('shake');
+    void cont.offsetWidth;
+    cont.classList.add('shake');
+}
+
+function getRankInfo(s) {
+    if (s >= 70000) return { name: '🏆 챌린저', color: 'text-blue-200' };
+    if (s >= 45000) return { name: '🔴 그랜드마스터', color: 'text-red-300' };
+    if (s >= 28000) return { name: '🟣 마스터', color: 'text-purple-300' };
+    if (s >= 17000) return { name: '💎 다이아몬드', color: 'text-cyan-200' };
+    if (s >= 10000) return { name: '💠 플래티넘', color: 'text-teal-200' };
+    if (s >= 6000) return { name: '🥇 골드', color: 'text-yellow-300' };
+    if (s >= 3000) return { name: '🥈 실버', color: 'text-slate-200' };
+    if (s >= 1000) return { name: '🥉 브론즈', color: 'text-amber-500' };
+    return { name: '🪨 아이언', color: 'text-slate-400' };
+}
+
+function gameOver() {
+    state = 'GAMEOVER';
+    stopBGM();
+    const isNew = score > highScore;
+    if (isNew) {
+        highScore = score;
+        localStorage.setItem(HIGH_KEY, String(highScore));
+    }
+    const rank = getRankInfo(score);
+    const overlay = document.getElementById('overlay');
+    const title = document.getElementById('overlay-title');
+    const subtitle = document.getElementById('overlay-subtitle');
+    const msg = document.getElementById('overlay-msg');
+    const panel = document.getElementById('difficulty-panel');
+
+    title.innerText = isNew ? 'NEW RECORD!' : 'GAME OVER';
+    title.className = `text-5xl font-black ${isNew ? 'text-yellow-300' : 'text-rose-400'} mb-2 text-glow`;
+    subtitle.innerText = '다시 도전해서 더 긴 단어 사슬을 만들어 보세요.';
+    panel.classList.remove('hidden');
+    msg.innerHTML = `
+        <div class="grid grid-cols-2 gap-3 text-left">
+            <div class="bg-slate-950/60 rounded-2xl p-4 border border-white/10">
+                <p class="text-xs text-slate-400 font-black">최종 점수</p>
+                <p class="text-3xl font-black text-yellow-300">${score}</p>
+            </div>
+            <div class="bg-slate-950/60 rounded-2xl p-4 border border-white/10">
+                <p class="text-xs text-slate-400 font-black">완성 단어</p>
+                <p class="text-3xl font-black text-emerald-300">${Math.max(0, stageCombo - 1)}</p>
+            </div>
+        </div>
+        <div class="mt-4 bg-slate-950/60 rounded-2xl p-4 border border-white/10">
+            <p class="text-xs text-slate-400 font-black">나의 티어</p>
+            <p class="text-3xl font-black ${rank.color}">${rank.name}</p>
+        </div>
+        ${isNew ? '<p class="mt-3 text-purple-200 font-black animate-pulse">🎉 최고 기록을 갱신했어요!</p>' : ''}
+    `;
+    document.getElementById('btn-start').innerText = '다시 도전하기 🔄';
+    overlay.classList.remove('opacity-0', 'pointer-events-none');
+    popElement('overlay-card');
+}
+
+function showPauseOverlay() {
+    const overlay = document.getElementById('overlay');
+    document.getElementById('overlay-title').innerText = 'PAUSE';
+    document.getElementById('overlay-title').className = 'text-5xl font-black text-sky-200 mb-2 text-glow';
+    document.getElementById('overlay-subtitle').innerText = '잠시 멈췄어요.';
+    document.getElementById('overlay-msg').innerHTML = '<p>계속하려면 아래 버튼이나 가운데 Ⅱ 버튼을 누르세요.</p>';
+    document.getElementById('difficulty-panel').classList.add('hidden');
+    document.getElementById('btn-start').innerText = '계속하기 ▶';
+    overlay.classList.remove('opacity-0', 'pointer-events-none');
+}
+
+function hideOverlay() {
+    document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none');
+}
+
+function update(dt) {
+    if (state !== 'PLAYING') return;
+    waterOffset += dt * 40;
+
+    if (wordTime > 0) {
+        wordTime -= dt;
+        if (wordTime <= 0) {
+            Sound.wrong();
+            loseLife('시간 초과!');
+        }
+    }
+
+    if (frog.invincible > 0) frog.invincible -= dt;
+
+    const targetCam = frog.y - H * .68;
+    camera.y += (targetCam - camera.y) * Math.min(1, dt * 8.5);
+
+    ensureRowsGenerated(Math.floor((camera.y - H) / TILE) - 10);
+    const startRow = Math.floor(camera.y / TILE) - 3;
+    const endRow = Math.ceil((camera.y + H) / TILE) + 3;
+    for (let r = startRow; r <= endRow; r++) {
+        const row = rowData[r];
+        if (!row || row.type === 'grass') continue;
+        for (const p of row.platforms) {
+            let speed = p.baseSpeed;
+            if (!frog.isDead && frog.riding === p) speed = p.baseSpeed;
+            p.x += speed * dt * 60;
+            p.blink += dt * 5;
+            if (p.baseSpeed > 0 && p.x > W + TILE * 2) {
+                p.x -= p.wrapLength;
+                p.letter = randomLetter(targetChar());
+                p.active = true;
+                p.used = false;
+                p.bonus = Math.random() < .13 ? 'fly' : null;
+                row.targetFor = null;
+                prepareRowForTarget(r, targetChar());
+            } else if (p.baseSpeed < 0 && p.x + p.w < -TILE * 2) {
+                p.x += p.wrapLength;
+                p.letter = randomLetter(targetChar());
+                p.active = true;
+                p.used = false;
+                p.bonus = Math.random() < .13 ? 'fly' : null;
+                row.targetFor = null;
+                prepareRowForTarget(r, targetChar());
+            }
+        }
+    }
+
+    if (!frog.isDead && frog.riding) {
+        frog.x += frog.riding.baseSpeed * dt * 60;
+        frog.targetX = frog.x;
+        if (frog.x + frog.w < -TILE || frog.x > W + TILE) {
+            loseLife('화면 밖으로 이탈!');
+        }
+    }
+
+    if (frog.hop > 0) frog.hop = Math.max(0, frog.hop - dt * 5);
+    if (shakePower > 0) shakePower = Math.max(0, shakePower - dt * 3);
+
+    updateEffects(dt);
+    updateUI();
+}
+
+function updateEffects(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt * 60;
+        p.y += p.vy * dt * 60;
+        p.vy += dt * 10;
+        p.life -= dt * 1.8;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+    for (let i = rings.length - 1; i >= 0; i--) {
+        const r = rings[i];
+        r.r += dt * 90;
+        r.life -= dt * 2.2;
+        if (r.life <= 0) rings.splice(i, 1);
+    }
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= dt * 45;
+        ft.life -= dt * 1.25;
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+    }
+}
+
+function draw() {
+    ctx.save();
+    if (shakePower > 0) {
+        ctx.translate((Math.random() - .5) * 8 * shakePower, (Math.random() - .5) * 8 * shakePower);
+    }
+    drawBackground();
+
+    ctx.save();
+    ctx.translate(0, -camera.y);
+    drawRows();
+    drawEffects();
+    drawFrog();
+    ctx.restore();
+
+    drawVignette();
+    ctx.restore();
+}
+
+function drawBackground() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#064e3b');
+    grad.addColorStop(.45, '#075985');
+    grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.globalAlpha = .18;
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 2;
+    for (let y = -20; y < H + 40; y += 36) {
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += 20) {
+            const yy = y + Math.sin((x + waterOffset) * .025) * 5;
+            if (x === 0) ctx.moveTo(x, yy);
+            else ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawRows() {
+    const startRow = Math.floor(camera.y / TILE) - 2;
+    const endRow = Math.ceil((camera.y + H) / TILE) + 2;
+    for (let r = startRow; r <= endRow; r++) {
+        ensureRowsGenerated(r - 1);
+        const row = rowData[r];
+        if (!row) continue;
+        const y = r * TILE;
+        if (row.type === 'grass') drawGrassRow(row, y);
+        else drawWaterRow(row, y);
+    }
+}
+
+function drawGrassRow(row, y) {
+    const g = ctx.createLinearGradient(0, y, 0, y + TILE);
+    g.addColorStop(0, '#15803d');
+    g.addColorStop(1, '#166534');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y, W, TILE);
+    ctx.globalAlpha = .25;
+    ctx.fillStyle = '#bbf7d0';
+    for (let x = -20; x < W + 20; x += 35) {
+        ctx.beginPath();
+        ctx.ellipse(x + Math.sin(row.spark + x) * 8, y + 15 + (x % 3) * 15, 18, 7, Math.sin(x) * .5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 24px Comic Sans MS, sans-serif';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#064e3b';
+    ctx.fillStyle = '#dcfce7';
+    const text = rText(row.row);
+    ctx.strokeText(text, W / 2, y + TILE / 2);
+    ctx.fillText(text, W / 2, y + TILE / 2);
+}
+
+function rText(row) {
+    return row === 0 ? '🌿 START / SAVE ZONE 🌿' : '🌿 CHECKPOINT 🌿';
+}
+
+function drawWaterRow(row, y) {
+    ctx.globalAlpha = .18;
+    ctx.fillStyle = row.row % 2 === 0 ? '#38bdf8' : '#22d3ee';
+    ctx.fillRect(0, y + TILE - 5, W, 4);
+    ctx.globalAlpha = 1;
+
+    for (const p of row.platforms) drawPlatform(p);
+}
+
+function drawPlatform(p) {
+    const now = performance.now();
+    const glowing = p.letter === targetChar() || p.targetGlowUntil > now || p === hintTarget;
+    const y = p.y + TILE * .1;
+    ctx.save();
+    if (glowing) {
+        ctx.shadowBlur = p === hintTarget ? 30 : 20;
+        ctx.shadowColor = p === hintTarget ? '#67e8f9' : '#86efac';
+    }
+
+    const bodyGrad = ctx.createLinearGradient(p.x, y, p.x, y + p.h);
+    if (p.kind === 'croc') {
+        bodyGrad.addColorStop(0, '#047857');
+        bodyGrad.addColorStop(1, '#064e3b');
+    } else {
+        bodyGrad.addColorStop(0, '#b45309');
+        bodyGrad.addColorStop(.45, '#78350f');
+        bodyGrad.addColorStop(1, '#451a03');
+    }
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.roundRect(p.x, y + 5, p.w, p.h * .72, 18);
+    ctx.fill();
+    ctx.lineWidth = glowing ? 5 : 3;
+    ctx.strokeStyle = glowing ? '#bbf7d0' : (p.kind === 'croc' ? '#10b981' : '#92400e');
+    ctx.stroke();
+
+    // 목재 결 또는 악어 눈
+    ctx.globalAlpha = .35;
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 2;
+    if (p.kind === 'log') {
+        for (let i = 18; i < p.w - 12; i += 28) {
+            ctx.beginPath();
+            ctx.arc(p.x + i, y + p.h * .48, 8, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    } else {
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.arc(p.x + 18, y + 24, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x + p.w - 18, y + 24, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    if (p.bonus === 'fly' && p.active) {
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🪰', p.x + p.w * .78, y + 16 + Math.sin(p.blink) * 3);
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 ${p.letter === '✓' ? 32 : 38}px Comic Sans MS, sans-serif`;
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#020617';
+    ctx.fillStyle = p.letter === '✓' ? '#86efac' : (glowing ? '#ecfccb' : '#ffffff');
+    const tx = p.x + p.w / 2;
+    const ty = y + p.h / 2 + 4;
+    ctx.strokeText(p.letter, tx, ty);
+    ctx.fillText(p.letter, tx, ty);
+
+    ctx.restore();
+}
+
+function drawFrog() {
+    if (frog.isDead) return;
+    const cx = frog.x + frog.w / 2;
+    const cy = frog.y + frog.h / 2 - Math.sin(frog.hop * Math.PI) * 18;
+    ctx.save();
+    ctx.translate(cx, cy);
+    const rot = frog.face === 'left' ? -.25 : frog.face === 'right' ? .25 : 0;
+    ctx.rotate(rot);
+    if (frog.invincible > 0 && Math.floor(performance.now() / 90) % 2 === 0) ctx.globalAlpha = .55;
+    ctx.font = `${frog.h}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#86efac';
+    ctx.fillText('🐸', 0, 2);
+    ctx.restore();
+}
+
+function drawEffects() {
+    for (const ring of rings) {
+        ctx.globalAlpha = Math.max(0, ring.life);
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const ft of floatingTexts) {
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `900 ${ft.size}px Comic Sans MS, sans-serif`;
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#020617';
+        ctx.fillStyle = ft.color;
+        ctx.strokeText(ft.txt, ft.x, ft.y);
+        ctx.fillText(ft.txt, ft.x, ft.y);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawVignette() {
+    const grad = ctx.createRadialGradient(W / 2, H / 2, H * .15, W / 2, H / 2, H * .75);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,.34)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+}
+
+let touchStartX = 0;
+let touchStartY = 0;
+canvas.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (Math.abs(dx) > 24) moveFrog(dx > 0 ? 1 : -1, 0);
+    } else {
+        if (Math.abs(dy) > 24) moveFrog(0, dy > 0 ? 1 : -1);
+    }
+    e.preventDefault();
+}, { passive: false });
+
+window.addEventListener('keydown', e => {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyH','Space','Escape'].includes(e.code)) {
+        e.preventDefault();
+    }
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') moveFrog(0, -1);
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') moveFrog(0, 1);
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveFrog(-1, 0);
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') moveFrog(1, 0);
+    if (e.code === 'KeyH') useHint();
+    if (e.code === 'Space' || e.code === 'Escape') togglePause();
+});
+
+document.querySelectorAll('.dpad button[data-move]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const [dx, dy] = btn.dataset.move.split(',').map(Number);
+        moveFrog(dx, dy);
+    });
+});
+document.getElementById('btn-hint').addEventListener('click', useHint);
+document.getElementById('btn-start').addEventListener('click', () => {
+    if (state === 'PAUSED') {
+        hideOverlay();
+        state = 'PLAYING';
+        lastFrame = performance.now();
+        return;
+    }
+    initGame(true);
+    startBGM();
+});
+document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        selectedDifficulty = btn.dataset.difficulty;
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('border-2','border-sky-200/60','bg-sky-500/30'));
+        btn.classList.add('border-2','border-sky-200/60','bg-sky-500/30');
+    });
+});
+
+function loop(now = performance.now()) {
+    const dt = Math.min(.05, (now - lastFrame) / 1000);
+    lastFrame = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+updateUI();
+</script>
+</body>
+</html>

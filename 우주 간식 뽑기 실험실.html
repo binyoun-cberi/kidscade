@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수상한 뽑기방 시뮬레이터</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --bg: #0f0505;
+            --panel: rgba(30, 5, 5, 0.85);
+            --panel-border: rgba(255, 50, 50, 0.2);
+            --text: #f8e5e5;
+            --muted: #a58b8b;
+            --primary: #e11d48;
+            --primary-glow: rgba(225, 29, 72, 0.5);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.4);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.6);
+            --warning: #f59e0b;
+            --debt: #9d174d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: "Pretendard", system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(225, 29, 72, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.15), transparent 25%);
+        }
+
+        .dust {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--panel);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(225, 29, 72, 0.1);
+        }
+        
+        .title-area h1 { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+        .title-area p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .header-btns { display: flex; gap: 10px; }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .glass-panel {
+            background: var(--panel);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .game-area {
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .machine-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .click-guide {
+            color: var(--warning);
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            animation: bounce 1.5s infinite;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .machine-globe {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05), transparent 60%), rgba(20, 5, 5, 0.8);
+            border: 2px solid rgba(225, 29, 72, 0.4);
+            box-shadow: inset 0 0 50px rgba(225, 29, 72, 0.2), 0 10px 40px rgba(0,0,0,0.8);
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 30px;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .machine-base {
+            width: 200px;
+            height: 80px;
+            background: linear-gradient(180deg, #2a0a0a, #140303);
+            border-radius: 0 0 20px 20px;
+            border: 2px solid var(--panel-border);
+            border-top: none;
+            z-index: 1;
+            transform: translateY(-10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dispenser {
+            width: 60px;
+            height: 30px;
+            background: #000;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+
+        .capsule {
+            width: 40px;
+            height: 52px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #444, #222);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: floatCapsule 3s ease-in-out infinite alternate;
+        }
+
+        .capsule:not(.used) {
+            cursor: pointer;
+        }
+
+        .capsule:not(.used):hover {
+            transform: scale(1.15) translateY(-5px) !important;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.6), inset -5px -5px 10px rgba(0,0,0,0.5);
+            border-color: #fff;
+            z-index: 10;
+        }
+
+        .capsule:nth-child(even) { animation-delay: -1.5s; animation-duration: 4s; }
+        .capsule:nth-child(3n) { animation-delay: -0.5s; animation-duration: 3.5s; }
+
+        @keyframes floatCapsule {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .capsule.used {
+            opacity: 0;
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        .capsule.revealed-good { background: linear-gradient(135deg, #10b981, #047857); color: #fff; box-shadow: 0 0 20px var(--success-glow); border-color: #fff; }
+        .capsule.revealed-bad { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; box-shadow: 0 0 20px var(--danger-glow); border-color: #fff; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-2px, -3px) rotate(-1deg); }
+            20% { transform: translate(-4px, 0px) rotate(2deg); }
+            30% { transform: translate(4px, 3px) rotate(0deg); }
+            40% { transform: translate(2px, -2px) rotate(1deg); }
+            50% { transform: translate(-2px, 3px) rotate(-2deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            70% { transform: translate(4px, 2px) rotate(-1deg); }
+            80% { transform: translate(-2px, -2px) rotate(2deg); }
+            90% { transform: translate(2px, 3px) rotate(0deg); }
+            100% { transform: translate(2px, -3px) rotate(-1deg); }
+        }
+        .shake-anim { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        .floating-text {
+            position: absolute; font-weight: 900; font-size: 28px; pointer-events: none;
+            z-index: 100; animation: floatUp 1.2s ease-out forwards; text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(0px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1); }
+        }
+
+        .action-panel {
+            width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border);
+            color: var(--text); padding: 12px 16px; border-radius: 10px;
+            font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        button i { font-size: 18px; }
+        button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #9f1239); border: none; box-shadow: 0 4px 15px var(--primary-glow); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 20px var(--primary-glow); filter: brightness(1.2); }
+        .btn-success { background: linear-gradient(135deg, var(--success), #059669); border: none; color: #fff; box-shadow: 0 4px 15px var(--success-glow); }
+        .btn-danger { background: linear-gradient(135deg, #7f1d1d, #450a0a); border: 1px solid #dc2626; color: #fca5a5; }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), #b45309); border: none; color: #fff;}
+
+        .sidebar { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        /* SCORE & PROBABILITY UI */
+        .score-board { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .score-box {
+            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .score-box.highlight { background: rgba(225, 29, 72, 0.15); border-color: rgba(225, 29, 72, 0.4); }
+        .score-box.debt { background: rgba(157, 23, 77, 0.2); border-color: var(--debt); }
+        .score-label { font-size: 13px; color: var(--muted); }
+        .score-value { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .val-green { color: var(--success); }
+        .val-red { color: var(--danger); }
+        .val-white { color: #fff; }
+
+        .prob-section {
+            background: rgba(0,0,0,0.3); padding: 16px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .prob-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: bold; }
+        .prob-bar-bg {
+            width: 100%; height: 10px; background: var(--danger); border-radius: 5px; overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .prob-bar-fill {
+            height: 100%; background: var(--success); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .item-list { display: flex; flex-direction: column; gap: 8px; }
+        .item-card {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .item-info { display: flex; align-items: center; gap: 10px; }
+        .item-icon { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 18px; }
+        .bg-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .bg-purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .item-name { font-weight: 600; font-size: 14px; }
+        .item-cost { font-size: 12px; color: var(--warning); font-weight: bold; }
+        .item-card button { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+        .alien-guide {
+            display: flex; gap: 15px; align-items: center;
+            background: rgba(225, 29, 72, 0.1); padding: 16px; border-radius: 12px;
+            border: 1px solid rgba(225, 29, 72, 0.2);
+        }
+        .alien-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, #111, #333); display: grid; place-items: center; font-size: 24px;
+            box-shadow: 0 0 15px rgba(225, 29, 72, 0.4); border: 2px solid var(--primary);
+        }
+        .alien-msg { font-size: 13.5px; line-height: 1.5; color: #fecdd3; flex: 1; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: #1a0505; border: 1px solid var(--primary);
+            padding: 30px; border-radius: 16px; width: 90%; max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(225, 29, 72, 0.3);
+            transform: translateY(20px); transition: transform 0.3s; text-align: center;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-title { font-size: 26px; font-weight: 900; margin-bottom: 15px; color: var(--danger); }
+        .modal-body { font-size: 15px; color: #d1d5db; line-height: 1.6; margin-bottom: 25px; word-break: keep-all;}
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 13px; color: #fca5a5;
+        }
+
+        .round-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 10;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border-radius: 16px; transition: opacity 0.3s;
+        }
+        .round-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        @media (max-width: 850px) {
+            main { grid-template-columns: 1fr; }
+            .container { height: auto; padding: 10px; }
+            .machine-globe { width: 220px; height: 220px; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas class="dust" id="dustCanvas"></canvas>
+
+<div class="container">
+    <header>
+        <div class="title-area">
+            <h1><i class="ri-skull-line"></i> 수상한 온라인 뽑기방</h1>
+            <p>달콤한 유혹에 숨겨진 무서운 함정</p>
+        </div>
+        <div class="header-btns">
+            <button id="btnMusic"><i class="ri-music-2-line"></i> BGM</button>
+            <button id="btnRestart" class="btn-warning"><i class="ri-refresh-line"></i> 처음부터 다시</button>
+        </div>
+    </header>
+
+    <main>
+        <section class="glass-panel game-area" id="gameArea">
+            <div class="round-overlay" id="roundOverlay">
+                <h2 style="font-size: 24px; color: var(--primary); margin-bottom: 10px;">Round <span id="overlayRound">1</span></h2>
+                <p style="color: #d1d5db; margin-bottom: 20px;">참가비: <b id="overlayFee" style="color: var(--warning);">10,000</b>원</p>
+                <button id="btnPayFee" class="btn-primary" style="padding: 12px 24px; font-size: 16px;">참가비 내고 게임 시작</button>
+            </div>
+
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                <div class="score-label" style="font-size:14px;"><i class="ri-alarm-warning-line"></i> 경찰 아저씨 출동까지: <span id="uiTime" style="color:var(--danger); font-weight:bold; font-size:18px;">120</span>초</div>
+                <div class="score-label" style="font-size:14px; background: rgba(225,29,72,0.2); padding: 4px 10px; border-radius: 8px;">진행 횟수: <span id="uiRound" style="color:#fff; font-weight:bold;">1</span></div>
+            </div>
+
+            <div class="machine-container" id="machineContainer">
+                <div class="click-guide" id="clickGuide">👇 직접 캡슐을 클릭해서 뽑아보세요! 👇</div>
+                <div class="machine-globe" id="capsuleContainer">
+                    <!-- Capsules injected here -->
+                </div>
+                <div class="machine-base">
+                <div class="dispenser"></div>
+            </div>
+        </div>
+
+        <div class="action-panel">
+            <button id="btnDraw" class="btn-primary" style="grid-column: span 2; padding: 18px; font-size: 18px;"><i class="ri-shuffle-line"></i> 아무거나 랜덤으로 뽑기</button>
+            <button id="btnStop" class="btn-success" style="grid-column: span 2; padding: 16px; font-size: 16px;"><i class="ri-safe-2-line"></i> 그만하고 내 돈 챙기기</button>
+        </div>
+    </section>
+
+    <section class="sidebar">
+        <div class="alien-guide">
+            <div class="alien-avatar">🦹‍♂️</div>
+            <div class="alien-msg" id="alienMsg">"어이 친구, 한 번 더 뽑아봐. 대박 나면 다 갚을 수 있잖아?"</div>
+        </div>
+
+        <div class="prob-section">
+                <div class="prob-header">
+                    <span>💰 당첨(돈 복사) 확률</span>
+                    <span id="uiProbText" class="val-green">0% (0/0)</span>
+                </div>
+                <div class="prob-bar-bg">
+                    <div class="prob-bar-fill" id="uiProbBar" style="width: 0%;"></div>
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-top:8px;" id="uiProbDesc">
+                    붉은색은 꽝(파산) 확률입니다. 조심하세요!
+                </div>
+            </div>
+
+            <div class="score-board">
+            <div class="score-box">
+                <div class="score-label">내 용돈 지갑</div>
+                <div class="score-value val-white"><span id="uiWallet">50,000</span>원</div>
+            </div>
+            <div class="score-box highlight">
+                <div class="score-label">가운데 쌓인 돈</div>
+                <div class="score-value val-green"><span id="uiPot">0</span>원</div>
+            </div>
+            <div class="score-box debt" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="score-label">갚아야 할 빚</div>
+                    <div class="score-value val-red"><span id="uiDebt">0</span>원</div>
+                </div>
+                <button id="btnLoan" class="btn-danger" style="width: 100%; padding: 8px; font-size: 14px;"><i class="ri-bank-card-line"></i> 🦹‍♂️ 무서운 빚내기 (5만)</button>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 16px;">
+                <div class="score-label" style="margin-bottom: 12px; font-weight:bold; color:#fff;">🛒 수상한 아이템 (내 돈으로 구매)</div>
+                <div class="item-list">
+                    <div class="item-card">
+                        <div class="item-info">
+                            <div class="item-icon bg-blue"><i class="ri-search-eye-line"></i></div>
+                            <div>
+                                <div class="item-name">몰래 캡슐 엿보기</div>
+                                <div class="item-cost">-5,000원</div>
+                            </div>
+                        </div>
+                        <button id="btnUsePeek">구매</button>
+                    </div>
+                    <div class="item-card">
+                        <div class="item-info">
+                            <div class="item-icon bg-purple"><i class="ri-shield-flash-line"></i></div>
+                            <div>
+                                <div class="item-name">엉터리 방어막</div>
+                                <div class="item-cost">-15,000원 <span id="uiShieldStatus"></span></div>
+                            </div>
+                        </div>
+                        <button id="btnUseShield">가입</button>
+                    </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center;">
+                    * 아이템 구매 비용은 '내 용돈 지갑'에서 바로 빠져나갑니다.
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Start/Result Modal -->
+<div class="modal-overlay active" id="modalOverlay">
+    <div class="modal-content">
+        <h2 class="modal-title" id="modalTitle">🚨 위험한 뽑기 게임 경고 🚨</h2>
+        <div class="modal-body" id="modalBody">
+            당신은 호기심에 '쉽게 돈을 벌 수 있다'는 수상한 온라인 게임에 들어왔습니다.<br><br>
+            시작 자금으로 내 용돈 <b>50,000원</b>이 주어집니다.<br>
+            게임을 할 때마다 <b>비싼 참가비</b>를 내야 합니다.<br><br>
+            캡슐을 직접 클릭해 돈을 불릴 수도 있지만, <b>'꽝'</b>을 뽑으면<br>
+            가운데 쌓인 돈을 모두 잃고 <b>엄청난 벌금</b>을 빼앗깁니다.<br><br>
+            <b>주의: 꽝을 뽑아도 해당 판은 끝나지 않습니다.</b><br>
+            손해를 만회하려다 영원한 빚의 늪에 빠질 수 있습니다!
+        </div>
+        <button id="btnModalAction" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: bold;">입장하기</button>
+    </div>
+</div>
+
+<script>
+// --- 1. Audio System (Dark Synthwave / Ominous) ---
+const AudioSys = (() => {
+    let ctx = null;
+    let bgmOsc = null, bgmGain = null, bgmFilter = null, bgmInterval = null;
+    let isBgmPlaying = false;
+
+    const init = () => { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); };
+    const resume = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); };
+
+    const playSynth = (type, freq, duration, vol=0.1, slideFreq=null) => {
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        if (slideFreq) {
+            osc.frequency.exponentialRampToValueAtTime(slideFreq, ctx.currentTime + duration);
+        }
+
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    };
+
+    const sfx = {
+        click: () => { init(); resume(); playSynth('square', 400, 0.05, 0.02, 200); },
+        start: () => { init(); resume(); playSynth('sawtooth', 200, 0.5, 0.05, 100); },
+        good: () => { 
+            init(); resume(); 
+            playSynth('triangle', 600, 0.1, 0.05);
+            setTimeout(()=>playSynth('triangle', 800, 0.2, 0.05), 100);
+        },
+        bad: () => { 
+            init(); resume(); 
+            playSynth('sawtooth', 150, 0.5, 0.1, 50); 
+            playSynth('square', 100, 0.5, 0.1, 40);
+        },
+        bank: () => {
+            init(); resume();
+            playSynth('sine', 800, 0.1, 0.05);
+            setTimeout(()=>playSynth('sine', 1200, 0.3, 0.05), 100);
+        },
+        loan: () => {
+            init(); resume();
+            playSynth('sawtooth', 300, 0.3, 0.05, 150);
+        }
+    };
+
+    const toggleBgm = () => {
+        init(); resume();
+        isBgmPlaying = !isBgmPlaying;
+        if (!isBgmPlaying) {
+            clearInterval(bgmInterval);
+            return false;
+        }
+        
+        let step = 0;
+        bgmInterval = setInterval(() => {
+            if(ctx.state !== 'running') return;
+            if (step % 4 === 0) playSynth('sawtooth', 55, 1.0, 0.04, 40);
+            if (step % 8 === 4) playSynth('sine', 110, 0.5, 0.02);
+            step++;
+        }, 500);
+        return true;
+    };
+
+    return { init, sfx, toggleBgm };
+})();
+
+// --- 2. Visual Effects ---
+const FX = (() => {
+    const canvas = document.getElementById('dustCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    const resize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    for(let i=0; i<80; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2,
+            speed: Math.random() * 0.3 + 0.1,
+            opacity: Math.random() * 0.5
+        });
+    }
+
+    const animateDust = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            ctx.fillStyle = `rgba(225, 29, 72, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+            p.y -= p.speed;
+            p.x += Math.sin(p.y * 0.01) * 0.5;
+            if(p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
+        });
+        requestAnimationFrame(animateDust);
+    };
+    animateDust();
+
+    const spawnText = (text, type, x, y) => {
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.textContent = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.color = type === 'good' ? 'var(--success)' : type === 'bad' ? 'var(--danger)' : 'var(--warning)';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1200);
+    };
+
+    const shakeMachine = () => {
+        const mc = document.getElementById('machineContainer');
+        mc.classList.remove('shake-anim');
+        void mc.offsetWidth; 
+        mc.classList.add('shake-anim');
+    };
+
+    return { spawnText, shakeMachine };
+})();
+
+// --- 3. Game Logic ---
+const Game = (() => {
+    let state = {
+        isRunning: false,
+        isRoundActive: false,
+        round: 1,
+        time: 120,
+        wallet: 50000,
+        pot: 0,
+        debt: 0,
+        entryFee: 10000,
+        capsules: [],
+        shieldActive: false,
+        peekedIndex: null,
+        timerId: null
+    };
+
+    // DOM Elements
+    const ui = {
+        machine: document.getElementById('capsuleContainer'),
+        wallet: document.getElementById('uiWallet'),
+        pot: document.getElementById('uiPot'),
+        debt: document.getElementById('uiDebt'),
+        time: document.getElementById('uiTime'),
+        round: document.getElementById('uiRound'),
+        alienMsg: document.getElementById('alienMsg'),
+        shieldStatus: document.getElementById('uiShieldStatus'),
+        
+        probText: document.getElementById('uiProbText'),
+        probBar: document.getElementById('uiProbBar'),
+        
+        modal: document.getElementById('modalOverlay'),
+        modalTitle: document.getElementById('modalTitle'),
+        modalBody: document.getElementById('modalBody'),
+        btnAction: document.getElementById('btnModalAction'),
+        
+        overlay: document.getElementById('roundOverlay'),
+        overlayRound: document.getElementById('overlayRound'),
+        overlayFee: document.getElementById('overlayFee'),
+        btnPayFee: document.getElementById('btnPayFee'),
+
+        btnDraw: document.getElementById('btnDraw'),
+        btnStop: document.getElementById('btnStop'),
+        btnLoan: document.getElementById('btnLoan'),
+        btnPeek: document.getElementById('btnUsePeek'),
+        btnShield: document.getElementById('btnUseShield'),
+        btnRestart: document.getElementById('btnRestart'),
+        clickGuide: document.getElementById('clickGuide')
+    };
+
+    const formatMoney = (num) => num.toLocaleString();
+
+    const generateCapsules = () => {
+        const total = 10;
+        let good = Math.max(3, 7 - Math.floor(state.round / 2)); 
+        let bad = total - good;
+        
+        let arr = Array(good).fill({type: 'good', used: false})
+                 .concat(Array(bad).fill({type: 'bad', used: false}));
+        
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        state.capsules = JSON.parse(JSON.stringify(arr));
+        state.peekedIndex = null;
+        renderCapsules();
+    };
+
+    const getRemaining = () => {
+        const left = state.capsules.filter(c => !c.used);
+        return {
+            total: left.length,
+            good: left.filter(c => c.type === 'good').length,
+            bad: left.filter(c => c.type === 'bad').length
+        };
+    };
+
+    const renderCapsules = () => {
+        ui.machine.innerHTML = '';
+        state.capsules.forEach((c, idx) => {
+            const el = document.createElement('div');
+            el.className = 'capsule';
+            if (c.used) {
+                el.classList.add('used');
+            } else {
+                if (idx === state.peekedIndex) {
+                    el.classList.add(c.type === 'good' ? 'revealed-good' : 'revealed-bad');
+                    el.innerHTML = c.type === 'good' ? '💰' : '💣';
+                } else {
+                    el.innerHTML = '?';
+                }
+                
+                // 직접 클릭 이벤트 추가
+                el.onclick = () => {
+                    if(state.isRoundActive) drawAction(idx);
+                };
+            }
+            ui.machine.appendChild(el);
+        });
+        updateUI();
+    };
+
+    const updateUI = () => {
+        ui.wallet.textContent = formatMoney(state.wallet);
+        ui.pot.textContent = formatMoney(state.pot);
+        ui.debt.textContent = formatMoney(state.debt);
+        ui.time.textContent = state.time;
+        ui.round.textContent = state.round;
+        ui.shieldStatus.textContent = state.shieldActive ? "(적용중)" : "";
+        ui.shieldStatus.style.color = state.shieldActive ? "var(--success)" : "";
+        ui.wallet.parentElement.style.color = state.wallet < 0 ? 'var(--danger)' : '#fff';
+        
+        const r = getRemaining();
+        const canPlay = state.isRunning && state.isRoundActive && r.total > 0;
+        
+        ui.btnDraw.disabled = !canPlay;
+        ui.btnStop.disabled = !canPlay;
+        ui.btnLoan.disabled = !state.isRunning; 
+        ui.btnPeek.disabled = !canPlay || state.peekedIndex !== null || state.wallet < 5000;
+        ui.btnShield.disabled = !canPlay || state.shieldActive || state.wallet < 15000;
+
+        ui.clickGuide.style.display = canPlay ? 'block' : 'none';
+
+        // 확률 막대 업데이트
+        if (r.total === 0) {
+            ui.probText.textContent = "0% (0/0)";
+            ui.probBar.style.width = "0%";
+        } else {
+            const pct = Math.round((r.good / r.total) * 100);
+            ui.probText.textContent = `${pct}% (${r.good}/${r.total})`;
+            ui.probBar.style.width = `${pct}%`;
+            ui.probText.className = pct >= 50 ? 'val-green' : 'val-red';
+            ui.probBar.style.background = pct >= 50 ? 'var(--success)' : 'var(--warning)';
+            if(pct < 30) ui.probBar.style.background = 'var(--danger)';
+        }
+    };
+
+    const setAlienMsg = (msg) => { ui.alienMsg.innerHTML = msg; };
+
+    const getMachineCenter = () => {
+        const rect = document.querySelector('.machine-base').getBoundingClientRect();
+        return { x: rect.left + rect.width/2 - 40, y: rect.top - 20 };
+    };
+
+    const drawAction = (targetIdx = null) => {
+        if (!state.isRoundActive) return;
+        
+        ui.btnDraw.disabled = true;
+        FX.shakeMachine();
+        AudioSys.sfx.click();
+
+        setTimeout(() => {
+            const availIdx = state.capsules.map((c,i) => c.used ? null : i).filter(v => v !== null);
+            if(availIdx.length === 0) return;
+            
+            let drawIdx;
+            // 직접 클릭한 캡슐이 유효하면 해당 인덱스 사용, 아니면 랜덤 또는 미리보기된 것 사용
+            if (targetIdx !== null && !state.capsules[targetIdx].used) {
+                drawIdx = targetIdx;
+            } else {
+                drawIdx = state.peekedIndex !== null ? state.peekedIndex : availIdx[Math.floor(Math.random() * availIdx.length)];
+            }
+
+            const cap = state.capsules[drawIdx];
+            cap.used = true;
+            state.peekedIndex = null; // 엿보기 리셋
+            
+            const pos = getMachineCenter();
+
+            if (cap.type === 'good') {
+                const reward = Math.floor(state.entryFee * 0.4); 
+                state.pot += reward;
+                AudioSys.sfx.good();
+                FX.spawnText(`+${formatMoney(reward)}`, 'good', pos.x, pos.y);
+                setAlienMsg(`💸 캡슐 당첨! 가운데 쌓인 돈: ${formatMoney(state.pot)}원. 계속 돌릴래?`);
+            } else {
+                if (state.shieldActive) {
+                    state.shieldActive = false;
+                    AudioSys.sfx.good(); 
+                    FX.spawnText(`방어막 작동!`, 'warning', pos.x, pos.y);
+                    setAlienMsg("🛡️ 엉터리 방어막이 막아줬어. 하지만 아이템 값도 꽤 비싸지?");
+                } else {
+                    const penalty = state.entryFee * 2; // 참가비의 2배라는 엄청난 벌금 부과
+                    state.wallet -= penalty;
+                    const lostPot = state.pot;
+                    state.pot = 0; // 쌓여있던 돈은 모두 날아감, 하지만 게임은 계속됨
+                    
+                    AudioSys.sfx.bad();
+                    FX.spawnText(`벌금 폭탄!`, 'bad', pos.x, pos.y);
+                    setAlienMsg(`💥 꽝! 모아둔 돈 ${formatMoney(lostPot)}원 증발! 지갑에서도 벌금 ${formatMoney(penalty)}원을 빼앗겼어!<br>그래도 뽑기는 계속할 수 있지. 잃은 돈 생각 안 나?`);
+                }
+            }
+
+            renderCapsules();
+            
+            if (state.isRoundActive && getRemaining().total === 0) {
+                setAlienMsg("캡슐이 떨어졌다. 쌓인 돈을 억지로 내 지갑에 넣을게.");
+                setTimeout(stopAndBank, 1500);
+            }
+        }, 400); 
+    };
+
+    const stopAndBank = () => {
+        if (!state.isRoundActive) return;
+        AudioSys.sfx.bank();
+        
+        state.wallet += state.pot;
+        const saved = state.pot;
+        state.pot = 0;
+        state.isRoundActive = false;
+        
+        const pos = getMachineCenter();
+        FX.spawnText(`+${formatMoney(saved)} 챙김`, 'good', pos.x, pos.y);
+        
+        if(saved === 0) {
+            setAlienMsg(`아무것도 챙기지 못하고 도망치는구나? 참가비랑 벌금만 뜯겼네. 바보 녀석.`);
+        } else {
+            const netProfit = saved - state.entryFee;
+            if(netProfit < 0) {
+                setAlienMsg(`내 돈 챙기기 완료. 근데 참가비를 빼고 나면 오히려 <span style="color:var(--danger)">${formatMoney(Math.abs(netProfit))}원 손해</span>인 거 알아? 바보 녀석.`);
+            } else {
+                setAlienMsg(`내 돈 챙기기 완료! ${formatMoney(netProfit)}원 벌었네. 다음엔 참가비가 더 비싸질 거야.`);
+            }
+        }
+
+        updateUI();
+        setTimeout(prepareNextRound, 2500);
+    };
+
+    const prepareNextRound = () => {
+        if(!state.isRunning) return;
+        state.round++;
+        state.entryFee = 10000 + (state.round - 1) * 5000; 
+        state.shieldActive = false;
+        
+        if (state.debt > 0) {
+            const interest = Math.floor(state.debt * 0.3); // 매 판 30% 무서운 복리 이자 적용
+            state.debt += interest;
+            setAlienMsg(`🦹‍♂️ 흐흐.. 빚에 이자가 ${formatMoney(interest)}원 붙었다. 다음 판 참가비는 ${formatMoney(state.entryFee)}원이야.`);
+        } else {
+            setAlienMsg(`다음 판 참가비는 ${formatMoney(state.entryFee)}원이야. 돈 없으면 빚을 내던가.`);
+        }
+
+        ui.overlayRound.textContent = state.round;
+        ui.overlayFee.textContent = formatMoney(state.entryFee);
+        ui.overlay.classList.remove('hidden');
+        updateUI();
+    };
+
+    const startRound = () => {
+        if(state.wallet < state.entryFee) {
+            setAlienMsg("🦹‍♂️ 참가비가 부족하네. 당장 우측의 '무서운 빚내기' 버튼을 눌러!");
+            AudioSys.sfx.bad();
+            ui.btnLoan.style.transform = 'scale(1.05)';
+            ui.btnLoan.style.boxShadow = '0 0 20px var(--danger)';
+            setTimeout(() => {
+                ui.btnLoan.style.transform = 'scale(1)';
+                ui.btnLoan.style.boxShadow = 'none';
+            }, 500);
+            return;
+        }
+
+        AudioSys.sfx.bank();
+        state.wallet -= state.entryFee;
+        state.isRoundActive = true;
+        ui.overlay.classList.add('hidden');
+        generateCapsules();
+        setAlienMsg("참가비 지불 완료. 캡슐을 직접 눌러서 뽑아봐. 언제 멈출지가 중요하다고.");
+        updateUI();
+    };
+
+    const takeLoan = () => {
+        if(!state.isRunning) return;
+        AudioSys.sfx.loan();
+        state.wallet += 50000;
+        state.debt += 80000; 
+        const pos = getMachineCenter();
+        FX.spawnText(`+50,000 (빚)`, 'warning', pos.x + 80, pos.y);
+        setAlienMsg(`🦹‍♂️ "흐흐.. 5만 원 여기 있다. 갚을 땐 8만 원이고, 매 판 이자도 무섭게 불어날 거다!"`);
+        updateUI();
+    };
+
+    const buyItem = (type) => {
+        if (!state.isRoundActive) return;
+        const pos = getMachineCenter();
+        
+        if (type === 'peek') {
+            if (state.wallet < 5000) return;
+            const availIdx = state.capsules.map((c,i) => c.used ? null : i).filter(v => v !== null);
+            if(availIdx.length > 0) {
+                state.wallet -= 5000;
+                state.peekedIndex = availIdx[Math.floor(Math.random() * availIdx.length)];
+                AudioSys.sfx.click();
+                setAlienMsg("돈을 냈으니 캡슐 하나 몰래 보여줄게.");
+                FX.spawnText(`-5,000`, 'bad', pos.x + 80, pos.y);
+                renderCapsules();
+            }
+        } else if (type === 'shield') {
+            if (state.wallet < 15000) return;
+            state.wallet -= 15000;
+            state.shieldActive = true;
+            AudioSys.sfx.click();
+            setAlienMsg("비싼 방어막을 샀네. 뭐, 한 번은 살려줄게.");
+            FX.spawnText(`-15,000`, 'bad', pos.x + 80, pos.y);
+            updateUI();
+        }
+    };
+
+    const tick = () => {
+        if (!state.isRunning) return;
+        state.time--;
+        if (state.time <= 0) {
+            endGame();
+        } else {
+            ui.time.textContent = state.time;
+            if(state.time <= 10) {
+                ui.time.style.color = 'var(--danger)';
+                if(state.time % 2 === 0) AudioSys.sfx.click(); 
+            }
+        }
+    };
+
+    const resetGame = () => {
+        clearInterval(state.timerId);
+        state.isRunning = false;
+        ui.modalTitle.textContent = "🚨 위험한 뽑기 게임 경고 🚨";
+        ui.modalBody.innerHTML = `
+            당신은 호기심에 '쉽게 돈을 벌 수 있다'는 수상한 온라인 게임에 들어왔습니다.<br><br>
+            시작 자금으로 내 용돈 <b>50,000원</b>이 주어집니다.<br>
+            게임을 할 때마다 <b>비싼 참가비</b>를 내야 합니다.<br><br>
+            캡슐을 직접 클릭해 돈을 불릴 수도 있지만, <b>'꽝'</b>을 뽑으면<br>
+            가운데 쌓인 돈을 모두 잃고 <b>엄청난 벌금</b>을 빼앗깁니다.<br><br>
+            <b>주의: 꽝을 뽑아도 해당 판은 끝나지 않습니다.</b><br>
+            손해를 만회하려다 영원한 빚의 늪에 빠질 수 있습니다!
+        `;
+        ui.btnAction.textContent = "입장하기";
+        ui.modal.classList.add('active');
+        ui.overlay.classList.add('hidden');
+    };
+
+    const startGame = () => {
+        AudioSys.sfx.start();
+        ui.modal.classList.remove('active');
+        clearInterval(state.timerId); // 안전장치
+        state = {
+            isRunning: true,
+            isRoundActive: false,
+            round: 1,
+            time: 120,
+            wallet: 50000,
+            pot: 0,
+            debt: 0,
+            entryFee: 10000,
+            capsules: [],
+            shieldActive: false,
+            peekedIndex: null,
+            timerId: setInterval(tick, 1000)
+        };
+        ui.time.style.color = 'var(--danger)';
+        updateUI();
+        
+        ui.overlayRound.textContent = state.round;
+        ui.overlayFee.textContent = formatMoney(state.entryFee);
+        ui.overlay.classList.remove('hidden');
+        setAlienMsg("참가비를 내야 게임을 시작할 수 있어. 아래 버튼을 눌러.");
+    };
+
+    const endGame = () => {
+        clearInterval(state.timerId);
+        state.isRunning = false;
+        
+        state.wallet += state.pot;
+        const finalBalance = state.wallet - state.debt;
+        
+        AudioSys.sfx.bad();
+        ui.modalTitle.textContent = "🚨 경찰 아저씨 단속 적발!";
+        
+        let resultMsg = "";
+        if (finalBalance < 0) {
+            resultMsg = `
+                <div class="warning-box">
+                    <b>최종 결과: ${formatMoney(finalBalance)}원 (빈털터리 빚쟁이)</b><br><br>
+                    참가비와 아이템 가격 때문에 멈춰도 손해를 보고,<br>
+                    더 뽑으려다 꽝을 밟아 결국 빚더미에 앉았습니다.<br><br>
+                    <b>이것이 불법 도박의 실제 모습입니다. 게임을 만든 나쁜 어른들은 절대 손해보지 않게 만들어져 있습니다.</b>
+                </div>
+            `;
+        } else {
+            resultMsg = `
+                <div class="warning-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #6ee7b7;">
+                    <b>최종 결과: ${formatMoney(finalBalance)}원</b><br><br>
+                    정말 운이 좋았네요! 하지만 명심하세요.<br>
+                    이런 불법 게임은 계속할수록 무조건 돈을 잃게 만들어져 있습니다.<br>
+                    <b>현실에서는 절대로 이런 게임에 소중한 용돈을 쓰지 마세요.</b>
+                </div>
+            `;
+        }
+
+        ui.modalBody.innerHTML = `
+            경찰 아저씨가 불법 오락실을 단속하러 들이닥쳤습니다!<br>
+            게임을 강제로 끝내고 남은 돈을 확인합니다.<br>
+            
+            <ul style="text-align: left; background: rgba(0,0,0,0.5); padding: 15px 15px 15px 35px; border-radius: 8px; margin-top: 15px;">
+                <li>남은 내 돈: ${formatMoney(state.wallet)}원</li>
+                <li style="color: var(--danger)">갚아야 할 무서운 빚: -${formatMoney(state.debt)}원</li>
+            </ul>
+            ${resultMsg}
+        `;
+        ui.btnAction.textContent = "다시 체험하기";
+        ui.modal.classList.add('active');
+        ui.overlay.classList.add('hidden');
+        updateUI();
+    };
+
+    // Event Listeners
+    ui.btnPayFee.addEventListener('click', startRound);
+    ui.btnDraw.addEventListener('click', () => drawAction(null)); // 랜덤 뽑기
+    ui.btnStop.addEventListener('click', stopAndBank);
+    ui.btnLoan.addEventListener('click', takeLoan);
+    ui.btnPeek.addEventListener('click', () => buyItem('peek'));
+    ui.btnShield.addEventListener('click', () => buyItem('shield'));
+    ui.btnAction.addEventListener('click', startGame);
+    ui.btnRestart.addEventListener('click', resetGame);
+
+    const btnMusic = document.getElementById('btnMusic');
+    btnMusic.addEventListener('click', () => {
+        const isPlaying = AudioSys.toggleBgm();
+        btnMusic.style.color = isPlaying ? 'var(--primary)' : 'var(--text)';
+        btnMusic.style.borderColor = isPlaying ? 'var(--primary)' : 'var(--panel-border)';
+    });
+
+    return { init: () => {} };
+})();
+
+window.addEventListener('DOMContentLoaded', () => {
+    Game.init();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>모바일 이모지 팡팡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            background-color: #fdf2f8;
+            color: #4a5568;
+            font-family: 'Jua', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; /* 모바일 브라우저 기본 스크롤 방지 */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        #game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px; /* 태블릿/PC 제한 */
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .header-area {
+            text-align: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: stretch;
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(255, 182, 193, 0.4);
+            border: 4px solid #fbcfe8;
+            width: 100%;
+            flex-grow: 1;
+            max-height: 80vh; /* 화면 벗어남 방지 */
+        }
+
+        .canvas-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            border: 3px dashed #cbd5e1;
+            overflow: hidden; /* 애니메이션 밖으로 나가는 것 방지 */
+        }
+
+        canvas {
+            display: block;
+            /* 캔버스 크기는 JS에서 부모 크기에 맞춰 동적 설정 */
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 120px; /* 모바일에 맞게 축소 */
+            flex-shrink: 0;
+        }
+
+        .info-box {
+            background-color: #fff1f2;
+            padding: 10px;
+            border-radius: 12px;
+            border: 2px solid #ffe4e6;
+            text-align: center;
+        }
+
+        .info-box h3 {
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #9ca3af;
+        }
+
+        #nextCanvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 2/3;
+        }
+
+        .btn {
+            font-family: 'Jua', sans-serif;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 콤보 애니메이션 CSS */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); color: #ec4899; }
+            100% { transform: scale(1); }
+        }
+        .combo-anim {
+            animation: pop 0.3s ease-out;
+        }
+
+        /* 모바일 터치 가이드 */
+        .touch-guide {
+            display: none; /* 기본은 숨김 */
+            font-size: 0.8rem;
+            color: #9ca3af;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .touch-guide { display: block; }
+            .keyboard-guide { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <div class="header-area">
+            <h1 class="text-3xl sm:text-4xl text-pink-500 mb-1 drop-shadow-sm">✨ 이모지 팡팡 ✨</h1>
+        </div>
+
+        <div id="game-container">
+            <!-- 게임 보드 캔버스 컨테이너 (반응형) -->
+            <div class="canvas-container" id="boardContainer">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <!-- 오른쪽 UI 패널 -->
+            <div class="panel">
+                <div class="info-box">
+                    <h3>다음</h3>
+                    <canvas id="nextCanvas"></canvas>
+                </div>
+                
+                <div class="info-box">
+                    <h3>최고 점수</h3>
+                    <p id="bestScoreDisplay" class="text-lg sm:text-xl text-yellow-500 font-bold">0</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>점수</h3>
+                    <p id="scoreDisplay" class="text-xl sm:text-2xl text-pink-500">0</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>콤보</h3>
+                    <p id="chainDisplay" class="text-lg sm:text-xl text-blue-400">0</p>
+                </div>
+
+                <button id="soundBtn" class="btn bg-yellow-400 hover:bg-yellow-300 text-yellow-900 py-2 rounded-xl text-sm mt-auto">
+                    🔊 켜짐
+                </button>
+
+                <button id="startBtn" class="btn bg-pink-500 hover:bg-pink-400 text-white text-base py-3 rounded-xl">
+                    ▶️ 시작
+                </button>
+            </div>
+        </div>
+
+        <div class="keyboard-guide text-xs text-gray-400 mt-2 text-center">
+            ← →: 이동 | ↑: 회전 | ↓: 내리기 | Space: 바로 내리기
+        </div>
+        <div class="touch-guide">
+            👆 스와이프: 좌우/아래 이동 | 터치: 회전
+        </div>
+    </div>
+
+    <!-- 게임 오버 오버레이 -->
+    <div id="overlay" class="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center hidden backdrop-blur-sm z-50">
+        <div class="bg-white p-8 rounded-3xl text-center border-4 border-pink-400 shadow-2xl mx-4 max-w-sm w-full">
+            <h2 class="text-3xl sm:text-4xl text-pink-500 mb-4">앗, 게임 오버! 😭</h2>
+            <p class="text-xl text-gray-600 mb-6">최종 점수: <span id="finalScore" class="text-2xl text-blue-500 font-bold"></span></p>
+            <button id="restartBtn" class="btn w-full bg-pink-500 hover:bg-pink-400 text-white text-xl py-3 rounded-xl border-b-4 border-pink-600">
+                🔄 다시 도전하기
+            </button>
+        </div>
+    </div>
+
+<script>
+/**
+ * 🎵 오디오 시스템
+ */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundEnabled = true;
+let bgmInterval;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (!soundEnabled || !audioCtx) return;
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    switch (type) {
+        case 'move':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+            break;
+        case 'rotate':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+            break;
+        case 'drop':
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+            break;
+        case 'pop':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1108, now + 0.1);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.linearRampToValueAtTime(0.05, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+            break;
+        case 'gameover':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+            osc.start(now); osc.stop(now + 1);
+            break;
+    }
+}
+
+const melody = [261.63, 329.63, 392.00, 523.25];
+let melodyIndex = 0;
+
+function playBGMNote() {
+    if (!soundEnabled || !audioCtx || (gameState !== 'FALLING' && gameState !== 'RESOLVING')) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = melody[melodyIndex];
+    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+    melodyIndex = (melodyIndex + 1) % melody.length;
+}
+
+function startBGM() {
+    stopBGM();
+    bgmInterval = setInterval(playBGMNote, 400);
+}
+
+function stopBGM() {
+    if (bgmInterval) clearInterval(bgmInterval);
+}
+
+/**
+ * 🎨 디자인 및 게임 설정 (반응형 대응)
+ */
+const COLS = 6;
+const ROWS = 12;
+let BLOCK_SIZE = 0; // 리사이즈 시 동적 할당
+
+const TYPES = [
+    null, 
+    { emoji: '🍎', bg: '#ffe4e6' }, 
+    { emoji: '🐸', bg: '#dcfce7' }, 
+    { emoji: '🐳', bg: '#e0f2fe' }, 
+    { emoji: '🐥', bg: '#fef08a' }  
+];
+
+const container = document.getElementById('boardContainer');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('nextCanvas');
+const nextCtx = nextCanvas.getContext('2d');
+
+const scoreDisplay = document.getElementById('scoreDisplay');
+const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+const chainDisplay = document.getElementById('chainDisplay');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const soundBtn = document.getElementById('soundBtn');
+const overlay = document.getElementById('overlay');
+const finalScore = document.getElementById('finalScore');
+
+let grid = [];
+let animGrid = []; // 애니메이션(위치) 보간을 위한 그리드
+let score = 0;
+let bestScore = parseInt(localStorage.getItem('emojiPangBestScore')) || 0;
+let maxChain = 0;
+let currentChain = 0;
+let gameState = 'STOPPED'; 
+let dropCounter = 0;
+let dropInterval = 800; 
+let lastTime = 0;
+let animationId;
+
+let currentPiece = null;
+let nextPiece = null;
+
+// 애니메이션 관리를 위한 변수
+let poppingBlocks = []; // 터지는 중인 블록들
+let lastLogicTime = performance.now();
+const LOGIC_RATE = 1000 / 60; // 초당 60회 로직 업데이트
+
+/**
+ * 반응형 캔버스 리사이징
+ */
+function resizeCanvas() {
+    // 컨테이너 크기에 맞춰 캔버스 비율 유지하며 꽉 채우기
+    const containerW = container.clientWidth;
+    const containerH = container.clientHeight;
+    
+    // 비율 계산 (6:12 = 1:2)
+    let calcW = containerW;
+    let calcH = calcW * (ROWS / COLS);
+    
+    if (calcH > containerH) {
+        calcH = containerH;
+        calcW = calcH * (COLS / ROWS);
+    }
+    
+    canvas.width = calcW;
+    canvas.height = calcH;
+    BLOCK_SIZE = canvas.width / COLS;
+
+    // 넥스트 캔버스 리사이징 (2x3 비율)
+    const nextW = nextCanvas.clientWidth;
+    nextCanvas.width = nextW;
+    nextCanvas.height = nextW * 1.5;
+    
+    // 리사이즈 후 즉시 다시 그리기
+    if(gameState !== 'STOPPED') drawGrid();
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+/**
+ * 🎮 게임 로직
+ */
+function initGrid() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    // 애니메이션을 위해 실제 y 좌표를 저장
+    animGrid = Array.from({ length: ROWS }, (_, r) => 
+        Array.from({ length: COLS }, () => ({ y: r, type: 0 }))
+    );
+}
+
+function syncAnimGrid() {
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            animGrid[r][c].type = grid[r][c];
+            // 목표 위치로 부드럽게 이동 (lerp)
+            animGrid[r][c].y += (r - animGrid[r][c].y) * 0.3; 
+        }
+    }
+}
+
+function startGame() {
+    initAudio();
+    resizeCanvas();
+    
+    initGrid();
+    poppingBlocks = [];
+    score = 0;
+    maxChain = 0;
+    currentChain = 0;
+    dropInterval = 800;
+    updateScore();
+    chainDisplay.innerText = "0";
+    
+    nextPiece = generatePiece();
+    spawnPiece();
+    
+    gameState = 'FALLING';
+    overlay.classList.add('hidden');
+    startBtn.innerText = "🔄 재시작";
+    startBtn.blur(); 
+    
+    startBGM();
+
+    if (animationId) cancelAnimationFrame(animationId);
+    lastTime = performance.now();
+    lastLogicTime = performance.now();
+    update();
+}
+
+function gameOver() {
+    gameState = 'GAMEOVER';
+    stopBGM();
+    playSound('gameover');
+    finalScore.innerText = score;
+    overlay.classList.remove('hidden');
+}
+
+function generatePiece() {
+    return {
+        type1: Math.floor(Math.random() * 4) + 1, 
+        type2: Math.floor(Math.random() * 4) + 1, 
+        x: 2, 
+        y: 0, 
+        animY: 0, // 떨어지는 애니메이션용 y
+        rotation: 0 
+    };
+}
+
+function spawnPiece() {
+    currentPiece = nextPiece;
+    currentPiece.x = 2;
+    currentPiece.y = 0;
+    currentPiece.animY = -1; // 위에서부터 떨어지는 효과
+    currentPiece.rotation = 0;
+    nextPiece = generatePiece();
+    drawNextPiece();
+
+    if (!isValidPos(currentPiece.x, currentPiece.y, currentPiece.rotation)) {
+        gameOver();
+    }
+}
+
+function getSubPos(x, y, rotation) {
+    switch (rotation) {
+        case 0: return { x: x, y: y - 1 };
+        case 1: return { x: x + 1, y: y };
+        case 2: return { x: x, y: y + 1 };
+        case 3: return { x: x - 1, y: y };
+    }
+}
+
+function isValidPos(x, y, rotation) {
+    if (x < 0 || x >= COLS || Math.floor(y) >= ROWS) return false;
+    if (y >= 0 && grid[Math.floor(y)][x] !== 0) return false;
+
+    const sub = getSubPos(x, y, rotation);
+    if (sub.x < 0 || sub.x >= COLS || Math.floor(sub.y) >= ROWS) return false;
+    if (sub.y >= 0 && grid[Math.floor(sub.y)][sub.x] !== 0) return false;
+
+    return true;
+}
+
+function movePiece(dx, dy) {
+    if (gameState !== 'FALLING') return;
+    if (isValidPos(currentPiece.x + dx, currentPiece.y + dy, currentPiece.rotation)) {
+        currentPiece.x += dx;
+        currentPiece.y += dy;
+        if(dx !== 0) playSound('move');
+        return true;
+    }
+    return false;
+}
+
+function rotatePiece() {
+    if (gameState !== 'FALLING') return;
+    let newRot = (currentPiece.rotation + 1) % 4;
+    
+    if (isValidPos(currentPiece.x, currentPiece.y, newRot)) {
+        currentPiece.rotation = newRot;
+        playSound('rotate');
+    } else {
+        if (isValidPos(currentPiece.x - 1, currentPiece.y, newRot)) {
+            currentPiece.x -= 1;
+            currentPiece.rotation = newRot;
+            playSound('rotate');
+        } else if (isValidPos(currentPiece.x + 1, currentPiece.y, newRot)) {
+            currentPiece.x += 1;
+            currentPiece.rotation = newRot;
+            playSound('rotate');
+        }
+    }
+}
+
+function dropPiece() {
+    if (gameState !== 'FALLING') return;
+    if (!movePiece(0, 1)) {
+        lockPiece();
+    }
+    dropCounter = 0; 
+}
+
+function hardDrop() {
+    if (gameState !== 'FALLING') return;
+    let dist = 0;
+    while(isValidPos(currentPiece.x, currentPiece.y + 1, currentPiece.rotation)) {
+        currentPiece.y += 1;
+        dist++;
+    }
+    if(dist > 0) lockPiece();
+    dropCounter = 0;
+}
+
+function lockPiece() {
+    gameState = 'RESOLVING'; 
+    playSound('drop');
+    
+    const { x, y, rotation, type1, type2 } = currentPiece;
+    const py = Math.floor(y);
+    const sub = getSubPos(x, py, rotation);
+
+    if (py >= 0) {
+        grid[py][x] = type1;
+        animGrid[py][x].y = currentPiece.animY; // 방금 떨어진 위치부터 애니메이션 시작
+    }
+    if (sub.y >= 0) {
+        grid[sub.y][sub.x] = type2;
+        animGrid[sub.y][sub.x].y = currentPiece.animY + (sub.y - py);
+    }
+
+    currentChain = 0;
+    setTimeout(resolveBoard, 150);
+}
+
+function resolveBoard() {
+    let moved = applyGravity();
+    
+    setTimeout(() => {
+        let matched = checkMatches();
+        if (matched) {
+            playSound('pop');
+            currentChain++;
+            if (currentChain > maxChain) maxChain = currentChain;
+            
+            chainDisplay.innerText = currentChain;
+            
+            // 콤보 텍스트 애니메이션 트리거
+            chainDisplay.classList.remove('combo-anim');
+            void chainDisplay.offsetWidth; // 리플로우 강제 발생
+            chainDisplay.classList.add('combo-anim');
+            
+            score += matched * 10 * currentChain;
+            updateScore();
+            
+            // 터지는 애니메이션을 위해 400ms 대기 후 다음 중력 적용
+            setTimeout(resolveBoard, 400); 
+        } else {
+            if (gameState !== 'GAMEOVER') {
+                gameState = 'FALLING';
+                spawnPiece();
+            }
+        }
+    }, moved ? 250 : 0); // 블록이 떨어지는 애니메이션 대기
+}
+
+function applyGravity() {
+    let moved = false;
+    for (let c = 0; c < COLS; c++) {
+        let emptyY = ROWS - 1; 
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (grid[r][c] !== 0) {
+                if (emptyY !== r) {
+                    grid[emptyY][c] = grid[r][c];
+                    grid[r][c] = 0;
+                    // animGrid.y 값은 이전 r 값을 유지하다가 draw에서 서서히 내려감
+                    moved = true;
+                }
+                emptyY--;
+            }
+        }
+    }
+    return moved;
+}
+
+function checkMatches() {
+    let visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+    let toRemove = [];
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (grid[r][c] !== 0 && !visited[r][c]) {
+                let type = grid[r][c];
+                let group = [];
+                let stack = [{ r, c }];
+                visited[r][c] = true;
+
+                while (stack.length > 0) {
+                    let curr = stack.pop();
+                    group.push(curr);
+
+                    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                    for (let d of dirs) {
+                        let nr = curr.r + d[0];
+                        let nc = curr.c + d[1];
+
+                        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                            if (!visited[nr][nc] && grid[nr][nc] === type) {
+                                visited[nr][nc] = true;
+                                stack.push({ r: nr, c: nc });
+                            }
+                        }
+                    }
+                }
+
+                if (group.length >= 4) {
+                    toRemove.push(...group);
+                }
+            }
+        }
+    }
+
+    if (toRemove.length > 0) {
+        toRemove.forEach(cell => {
+            // 터지는 애니메이션 배열에 추가
+            poppingBlocks.push({
+                x: cell.c,
+                y: cell.r,
+                type: grid[cell.r][cell.c],
+                scale: 1.0,
+                alpha: 1.0
+            });
+            grid[cell.r][cell.c] = 0;
+        });
+        return toRemove.length; 
+    }
+    
+    return 0; 
+}
+
+/**
+ * 🖌️ 렌더링 (애니메이션 적용)
+ */
+function drawBlock(context, x, y, typeIdx, size, scale = 1, alpha = 1) {
+    if (typeIdx === 0 || !TYPES[typeIdx]) return;
+    
+    const typeInfo = TYPES[typeIdx];
+    const px = x * size;
+    const py = y * size;
+    const offset = size * (1 - scale) / 2;
+
+    context.save();
+    context.globalAlpha = alpha;
+    
+    // 파스텔 배경
+    context.fillStyle = typeInfo.bg;
+    context.beginPath();
+    context.roundRect(px + 2 + offset, py + 2 + offset, (size - 4) * scale, (size - 4) * scale, 8 * scale);
+    context.fill();
+
+    // 이모지
+    context.font = `${size * 0.65 * scale}px Arial`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(typeInfo.emoji, px + size / 2, py + size / 2 + 2);
+    
+    context.restore();
+}
+
+function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 배경 그리드
+    ctx.strokeStyle = "rgba(203, 213, 225, 0.3)"; // 아주 연하게
+    ctx.lineWidth = 1;
+    for(let r=0; r<=ROWS; r++) {
+        ctx.beginPath(); ctx.moveTo(0, r*BLOCK_SIZE); ctx.lineTo(canvas.width, r*BLOCK_SIZE); ctx.stroke();
+    }
+    for(let c=0; c<=COLS; c++) {
+        ctx.beginPath(); ctx.moveTo(c*BLOCK_SIZE, 0); ctx.lineTo(c*BLOCK_SIZE, canvas.height); ctx.stroke();
+    }
+
+    // 쌓인 블록들 그리기 (애니메이션 y 위치 적용)
+    syncAnimGrid();
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (animGrid[r][c].type !== 0) {
+                drawBlock(ctx, c, animGrid[r][c].y, animGrid[r][c].type, BLOCK_SIZE);
+            }
+        }
+    }
+
+    // 터지는 블록 애니메이션 처리
+    for (let i = poppingBlocks.length - 1; i >= 0; i--) {
+        let b = poppingBlocks[i];
+        drawBlock(ctx, b.x, b.y, b.type, BLOCK_SIZE, b.scale, b.alpha);
+        b.scale += 0.05; // 커지면서
+        b.alpha -= 0.1;  // 투명해짐
+        if (b.alpha <= 0) poppingBlocks.splice(i, 1);
+    }
+
+    // 현재 조작 중인 블록 (부드럽게 떨어지는 애니메이션)
+    if (gameState === 'FALLING' && currentPiece) {
+        // 목표 y를 향해 부드럽게 이동
+        currentPiece.animY += (currentPiece.y - currentPiece.animY) * 0.4;
+        
+        if (currentPiece.animY >= -1) {
+            drawBlock(ctx, currentPiece.x, currentPiece.animY, currentPiece.type1, BLOCK_SIZE);
+        }
+        const sub = getSubPos(currentPiece.x, currentPiece.animY, currentPiece.rotation);
+        if (sub.y >= -1) {
+            drawBlock(ctx, sub.x, sub.y, currentPiece.type2, BLOCK_SIZE);
+        }
+    }
+}
+
+function drawNextPiece() {
+    if (!nextPiece) return;
+    const nextSize = nextCanvas.width / 2; // 패널 크기에 맞게 블록 사이즈 계산
+    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    
+    // 중앙 정렬
+    drawBlock(nextCtx, 0.5, 1.5, nextPiece.type1, nextSize);
+    drawBlock(nextCtx, 0.5, 0.5, nextPiece.type2, nextSize);
+}
+
+function updateScore() {
+    scoreDisplay.innerText = score;
+    
+    // 최고 점수 갱신 및 로컬 스토리지 저장 로직
+    if (score > bestScore) {
+        bestScore = score;
+        bestScoreDisplay.innerText = bestScore;
+        localStorage.setItem('emojiPangBestScore', bestScore);
+    }
+
+    dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 50);
+}
+
+function update(time = performance.now()) {
+    if (gameState === 'GAMEOVER') return;
+
+    // 로직 업데이트 (일정 간격 유지)
+    while (time - lastLogicTime >= LOGIC_RATE) {
+        if (gameState === 'FALLING') {
+            dropCounter += LOGIC_RATE;
+            if (dropCounter > dropInterval) {
+                dropPiece();
+            }
+        }
+        lastLogicTime += LOGIC_RATE;
+    }
+
+    // 렌더링은 프레임마다 (애니메이션 부드럽게)
+    drawGrid();
+    animationId = requestAnimationFrame(update);
+}
+
+/**
+ * 📱 모바일 터치 및 스와이프 조작
+ */
+let touchStartX = 0;
+let touchStartY = 0;
+let touchMoved = false;
+
+// 캔버스 컨테이너에 터치 이벤트 부착
+container.addEventListener('touchstart', (e) => {
+    if (gameState !== 'FALLING') return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchMoved = false;
+    e.preventDefault(); // 스크롤 방지
+}, { passive: false });
+
+container.addEventListener('touchmove', (e) => {
+    if (gameState !== 'FALLING') return;
+    if (!touchStartX || !touchStartY) return;
+
+    let touchEndX = e.touches[0].clientX;
+    let touchEndY = e.touches[0].clientY;
+    
+    let dx = touchEndX - touchStartX;
+    let dy = touchEndY - touchStartY;
+
+    // 스와이프 감지 임계값 (픽셀)
+    const threshold = BLOCK_SIZE * 0.8; 
+
+    if (Math.abs(dx) > threshold) {
+        if (dx > 0) movePiece(1, 0); // 우
+        else movePiece(-1, 0);       // 좌
+        touchStartX = touchEndX;     // 연속 이동을 위해 기준점 갱신
+        touchStartY = touchEndY;
+        touchMoved = true;
+    }
+
+    // 아래로 스와이프 시 하드 드롭 또는 빠른 하강
+    if (dy > threshold * 1.5 && Math.abs(dy) > Math.abs(dx)) {
+        hardDrop();
+        touchStartX = touchEndX;
+        touchStartY = touchEndY;
+        touchMoved = true;
+    }
+    
+    e.preventDefault();
+}, { passive: false });
+
+container.addEventListener('touchend', (e) => {
+    if (gameState !== 'FALLING') return;
+    // 터치만 하고 스와이프 안 했으면 회전
+    if (!touchMoved) {
+        rotatePiece();
+    }
+    e.preventDefault();
+}, { passive: false });
+
+
+/**
+ * ⌨️ 키보드 및 버튼 입력
+ */
+document.addEventListener('keydown', (e) => {
+    if (gameState !== 'FALLING') return;
+    switch (e.key) {
+        case 'ArrowLeft': movePiece(-1, 0); break;
+        case 'ArrowRight': movePiece(1, 0); break;
+        case 'ArrowDown': dropPiece(); break;
+        case 'ArrowUp': rotatePiece(); break;
+        case ' ': hardDrop(); break; 
+    }
+});
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+
+soundBtn.addEventListener('click', () => {
+    initAudio(); // 권한 획득 보장
+    soundEnabled = !soundEnabled;
+    soundBtn.innerText = soundEnabled ? "🔊 켜짐" : "🔇 꺼짐";
+    soundBtn.classList.toggle('bg-yellow-400');
+    soundBtn.classList.toggle('bg-gray-300');
+    soundBtn.classList.toggle('text-yellow-900');
+    soundBtn.classList.toggle('text-gray-600');
+    
+    if(!soundEnabled) stopBGM();
+    else if(gameState === 'FALLING' || gameState === 'RESOLVING') startBGM();
+});
+
+// 초기화
+window.addEventListener('load', () => {
+    bestScoreDisplay.innerText = bestScore; // 로드 시 저장된 최고 점수 표시
+    resizeCanvas();
+    initGrid();
+    drawGrid();
+});
+
+</script>
+</body>
+</html>

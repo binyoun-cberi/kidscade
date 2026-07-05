@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Word Snake: 지식 포식자</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+
+        :root {
+            --primary: #4ADE80;
+            --primary-dark: #22C55E;
+            --bg-color: #1E293B;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --text-main: #F8FAFC;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Nunito', sans-serif;
+            touch-action: none; /* 모바일 새로고침 및 브라우저 기본 줌 방지 */
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* UI Overlays */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* 클릭은 캔버스로 통과 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Top HUD */
+        #hud {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .hud-box {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #word-display {
+            text-align: center;
+        }
+
+        #target-word-korean {
+            font-size: 1.2rem;
+            color: #94A3B8;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #word-spelling {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.5rem;
+            letter-spacing: 5px;
+        }
+
+        .letter-found { color: var(--primary); text-shadow: 0 0 10px rgba(74, 222, 128, 0.8); }
+        .letter-next { color: #FBBF24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); animation: pulse 1s infinite; }
+        .letter-missing { color: #475569; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .score-board {
+            font-weight: 900;
+            font-size: 1.2rem;
+            text-align: right;
+        }
+        .score-board span { color: var(--primary); }
+
+        /* Zoom Controls */
+        #zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto; /* 터치 허용 */
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.9);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        /* Screens (Menu / Game Over) */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            transition: opacity 0.3s ease;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 4rem;
+            color: var(--primary);
+            margin: 0;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: #CBD5E1;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        button.menu-btn {
+            background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.5rem;
+            color: #1E293B;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #16A34A, 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        button.menu-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #16A34A, 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        #game-over-screen h2 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            color: #EF4444;
+            margin: 0 0 10px 0;
+        }
+
+        .stats-box {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        .stats-box b { font-size: 1.5rem; color: var(--primary); }
+
+        #virtual-joystick-hint {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="hud" style="display: none;">
+            <div class="hud-box score-board">
+                최고 점수: <span id="hi-score-ui">0</span><br>
+                현재 점수: <span id="score-ui">0</span>
+            </div>
+            
+            <div class="hud-box" id="word-display">
+                <div id="target-word-korean">사과</div>
+                <div id="word-spelling">A P P L E</div>
+            </div>
+
+            <div class="hud-box score-board">
+                단어 완성: <span id="words-completed-ui">0</span>
+            </div>
+        </div>
+
+        <div id="zoom-controls" style="display: none;">
+            <button id="zoom-in-btn" class="zoom-btn">+</button>
+            <button id="zoom-out-btn" class="zoom-btn">-</button>
+        </div>
+
+        <div id="virtual-joystick-hint" style="display: none;">
+            방향 조절: 마우스/터치 드래그<br>
+            화면 확대/축소: 휠 스크롤/두 손가락 핀치
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <h1>Word Snake</h1>
+        <p class="subtitle">지식 포식자: 영단어를 순서대로 먹어 몸집을 키우세요!<br>다른 뱀을 피하거나 몸통으로 감싸 공격하세요.</p>
+        <button id="start-btn" class="menu-btn">게임 시작 (Sound On)</button>
+    </div>
+
+    <div id="game-over-screen" class="screen hidden">
+        <h2>GAME OVER</h2>
+        <div class="stats-box">
+            최종 점수: <b id="final-score">0</b><br>
+            완성한 단어 수: <b id="final-words">0</b><br><br>
+            최고 점수: <b id="final-hi-score">0</b>
+        </div>
+        <button id="restart-btn" class="menu-btn">다시 플레이</button>
+    </div>
+
+    <script>
+        // --- Game Data & Configuration ---
+        const wordDictionary = [
+            { en: "APPLE", ko: "사과" },
+            { en: "BANANA", ko: "바나나" },
+            { en: "ELEPHANT", ko: "코끼리" },
+            { en: "STUDENT", ko: "학생" },
+            { en: "TEACHER", ko: "선생님" },
+            { en: "SCHOOL", ko: "학교" },
+            { en: "COMPUTER", ko: "컴퓨터" },
+            { en: "SCIENCE", ko: "과학" },
+            { en: "FRIEND", ko: "친구" },
+            { en: "FAMILY", ko: "가족" },
+            { en: "ANIMAL", ko: "동물" },
+            { en: "YELLOW", ko: "노란색" },
+            { en: "DOCTOR", ko: "의사" },
+            { en: "SPRING", ko: "봄" },
+            { en: "SUMMER", ko: "여름" }
+        ];
+        
+        const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        const WORLD_SIZE = 3000;
+        const GRID_SIZE = 100;
+        
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d', { alpha: false });
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        
+        // --- State Variables ---
+        let gameState = 'MENU';
+        let score = 0;
+        let wordsCompleted = 0;
+        let highScore = localStorage.getItem('wordSnakeHighScore') || 0;
+        
+        let currentWordObj = null;
+        let currentLetterIndex = 0;
+        
+        // Zoom & Camera
+        let camera = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, zoom: 1 };
+        let targetZoom = 1;
+        let initialPinchDistance = null;
+        let initialZoom = 1;
+
+        let mouse = { x: width/2, y: height/2 }; 
+        
+        let entities = {
+            player: null,
+            bots: [],
+            foods: [],
+            particles: []
+        };
+
+        // --- Audio System ---
+        let audioCtx;
+        let isAudioInitialized = false;
+        const bgmNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+        let bgmIndex = 0;
+        let bgmInterval;
+
+        function initAudio() {
+            if (isAudioInitialized) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                isAudioInitialized = true;
+            } catch (e) {
+                console.warn("Web Audio API not supported");
+            }
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.1, vol = 0.1) {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function startBGM() {
+            if (!audioCtx) return;
+            if (bgmInterval) clearInterval(bgmInterval);
+            
+            bgmInterval = setInterval(() => {
+                if(gameState === 'PLAYING') {
+                    playTone(bgmNotes[bgmIndex] / 2, 'triangle', 0.2, 0.05);
+                    bgmIndex = (bgmIndex + 1) % bgmNotes.length;
+                }
+            }, 300);
+        }
+
+        function playSFX(name) {
+            switch(name) {
+                case 'eat_correct':
+                    playTone(600, 'sine', 0.1, 0.1);
+                    setTimeout(() => playTone(800, 'sine', 0.15, 0.1), 50);
+                    break;
+                case 'eat_wrong':
+                    playTone(150, 'sawtooth', 0.3, 0.1);
+                    break;
+                case 'word_complete':
+                    playTone(400, 'square', 0.1, 0.1);
+                    setTimeout(() => playTone(500, 'square', 0.1, 0.1), 100);
+                    setTimeout(() => playTone(600, 'square', 0.2, 0.15), 200);
+                    setTimeout(() => playTone(800, 'square', 0.4, 0.2), 300);
+                    break;
+                case 'kill':
+                    playTone(200, 'sawtooth', 0.1, 0.2);
+                    setTimeout(() => playTone(100, 'sawtooth', 0.3, 0.2), 100);
+                    break;
+                case 'die':
+                    playTone(300, 'sawtooth', 0.2, 0.2);
+                    setTimeout(() => playTone(250, 'sawtooth', 0.2, 0.2), 200);
+                    setTimeout(() => playTone(200, 'sawtooth', 0.4, 0.2), 400);
+                    break;
+            }
+        }
+
+        // --- Classes ---
+        class Snake {
+            constructor(x, y, isPlayer, name) {
+                this.x = x;
+                this.y = y;
+                this.isPlayer = isPlayer;
+                this.name = name;
+                
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = isPlayer ? 4 : 3 + Math.random() * 1.5;
+                this.baseSpeed = this.speed;
+                this.boost = false;
+                
+                this.radius = 20;
+                this.history = [];
+                this.targetLength = isPlayer ? 10 : 15 + Math.floor(Math.random() * 20);
+                
+                this.color = isPlayer ? '#4ADE80' : `hsl(${Math.random()*360}, 70%, 50%)`;
+                this.headColor = isPlayer ? '#22C55E' : `hsl(${Math.random()*360}, 80%, 40%)`;
+                
+                this.targetAngle = this.angle;
+                this.turnSpeed = 0.05 + Math.random() * 0.05;
+                this.aiTimer = 0;
+            }
+
+            update() {
+                if (this.isPlayer) {
+                    let dx = mouse.x - width / 2;
+                    let dy = mouse.y - height / 2;
+                    let targetA = Math.atan2(dy, dx);
+                    
+                    let diff = targetA - this.angle;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    
+                    this.angle += diff * 0.1;
+                } else {
+                    this.aiTimer--;
+                    if (this.aiTimer <= 0) {
+                        this.aiTimer = 60 + Math.random() * 120;
+                        this.targetAngle = this.angle + (Math.random() - 0.5) * Math.PI;
+                    }
+                    
+                    if (this.x < 200) this.targetAngle = 0;
+                    if (this.x > WORLD_SIZE - 200) this.targetAngle = Math.PI;
+                    if (this.y < 200) this.targetAngle = Math.PI/2;
+                    if (this.y > WORLD_SIZE - 200) this.targetAngle = -Math.PI/2;
+
+                    let diff = this.targetAngle - this.angle;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    this.angle += diff * this.turnSpeed;
+                }
+
+                let currentSpeed = this.boost ? this.speed * 1.5 : this.speed;
+                this.x += Math.cos(this.angle) * currentSpeed;
+                this.y += Math.sin(this.angle) * currentSpeed;
+
+                this.x = Math.max(this.radius, Math.min(WORLD_SIZE - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(WORLD_SIZE - this.radius, this.y));
+
+                this.history.unshift({ x: this.x, y: this.y });
+                
+                let maxHistory = this.targetLength * 10; 
+                if (this.history.length > maxHistory) {
+                    this.history.pop();
+                }
+            }
+
+            draw(ctx) {
+                ctx.lineWidth = this.radius * 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                const step = 8;
+                
+                ctx.beginPath();
+                for (let i = 0; i < this.history.length; i += step) {
+                    let pos = this.history[i];
+                    if (i === 0) ctx.moveTo(pos.x, pos.y);
+                    else ctx.lineTo(pos.x, pos.y);
+                }
+                ctx.strokeStyle = '#0F172A';
+                ctx.lineWidth = this.radius * 2 + 4;
+                ctx.stroke();
+
+                ctx.beginPath();
+                for (let i = 0; i < this.history.length; i += step) {
+                    let pos = this.history[i];
+                    if (i === 0) ctx.moveTo(pos.x, pos.y);
+                    else ctx.lineTo(pos.x, pos.y);
+                }
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = this.radius * 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.headColor;
+                ctx.fill();
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.arc(10, -10, 6, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(10, 10, 6, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.beginPath(); ctx.arc(12, -10, 3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(12, 10, 3, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+
+                if (!this.isPlayer) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '14px Nunito';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, this.x, this.y - this.radius - 10);
+                }
+            }
+
+            getSegments() {
+                let segments = [];
+                const step = 8;
+                for (let i = 0; i < this.history.length; i += step) {
+                    segments.push(this.history[i]);
+                }
+                return segments;
+            }
+        }
+
+        class Food {
+            constructor(x, y, char, isSpecial = false) {
+                this.x = x;
+                this.y = y;
+                this.char = char;
+                this.isSpecial = isSpecial;
+                this.radius = 15;
+                this.floatOffset = Math.random() * Math.PI * 2;
+                this.color = this.generateColor();
+            }
+
+            generateColor() {
+                const colors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                this.floatOffset += 0.05;
+            }
+
+            draw(ctx) {
+                let yOffset = Math.sin(this.floatOffset) * 3;
+                
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y + yOffset, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.shadowBlur = 0; 
+
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 18px "Fredoka One", cursive';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.char, this.x, this.y + yOffset);
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 5 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.02;
+                this.size = Math.random() * 6 + 2;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // --- Core Game Functions ---
+
+        function initGame() {
+            initAudio();
+            startBGM();
+
+            score = 0;
+            wordsCompleted = 0;
+            
+            // Reset Camera & Zoom
+            camera = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, zoom: 1 };
+            targetZoom = 1;
+            
+            entities.player = new Snake(WORLD_SIZE/2, WORLD_SIZE/2, true, "Player");
+            entities.bots = [];
+            entities.foods = [];
+            entities.particles = [];
+
+            const botNames = ["Alpha", "Beta", "Gamma", "Delta", "Echo", "Zeta", "Omega", "Sigma"];
+            for (let i = 0; i < 8; i++) {
+                spawnBot(botNames[i]);
+            }
+
+            selectNewWord();
+            maintainFoods();
+
+            updateHUD();
+            
+            gameState = 'PLAYING';
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('hud').style.display = 'flex';
+            document.getElementById('zoom-controls').style.display = 'flex';
+            document.getElementById('virtual-joystick-hint').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('virtual-joystick-hint').style.display = 'none';
+            }, 4000);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnBot(name) {
+            let x = Math.random() * WORLD_SIZE;
+            let y = Math.random() * WORLD_SIZE;
+            entities.bots.push(new Snake(x, y, false, name));
+        }
+
+        function selectNewWord() {
+            currentWordObj = wordDictionary[Math.floor(Math.random() * wordDictionary.length)];
+            currentLetterIndex = 0;
+            updateHUDWord();
+            ensureTargetLetterExists();
+        }
+
+        function maintainFoods() {
+            const desiredFoods = 100;
+            while(entities.foods.length < desiredFoods) {
+                spawnRandomFood();
+            }
+            ensureTargetLetterExists();
+        }
+
+        function spawnRandomFood() {
+            let x = Math.random() * WORLD_SIZE;
+            let y = Math.random() * WORLD_SIZE;
+            let char = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+            entities.foods.push(new Food(x, y, char, false));
+        }
+
+        function ensureTargetLetterExists() {
+            if (!currentWordObj || currentLetterIndex >= currentWordObj.en.length) return;
+            
+            let targetChar = currentWordObj.en[currentLetterIndex];
+            let exists = entities.foods.some(f => f.char === targetChar);
+            
+            if (!exists) {
+                let px = entities.player.x;
+                let py = entities.player.y;
+                let angle = Math.random() * Math.PI * 2;
+                let dist = 300 + Math.random() * 500;
+                let x = Math.min(Math.max(px + Math.cos(angle)*dist, 100), WORLD_SIZE-100);
+                let y = Math.min(Math.max(py + Math.sin(angle)*dist, 100), WORLD_SIZE-100);
+                
+                entities.foods.push(new Food(x, y, targetChar, true));
+            }
+        }
+
+        function createExplosion(x, y, color, count=20) {
+            for(let i=0; i<count; i++) {
+                entities.particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function createFoodExplosion(snake) {
+            let segments = snake.getSegments();
+            for(let i=0; i<segments.length; i+=3) {
+                let char = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+                let fx = segments[i].x + (Math.random()-0.5)*20;
+                let fy = segments[i].y + (Math.random()-0.5)*20;
+                entities.foods.push(new Food(fx, fy, char, false));
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score-ui').innerText = score;
+            document.getElementById('hi-score-ui').innerText = highScore;
+            document.getElementById('words-completed-ui').innerText = wordsCompleted;
+        }
+
+        function updateHUDWord() {
+            document.getElementById('target-word-korean').innerText = currentWordObj.ko;
+            
+            let spellingHtml = '';
+            let word = currentWordObj.en;
+            for(let i=0; i<word.length; i++) {
+                if (i < currentLetterIndex) {
+                    spellingHtml += `<span class="letter-found">${word[i]}</span> `;
+                } else if (i === currentLetterIndex) {
+                    spellingHtml += `<span class="letter-next">${word[i]}</span> `;
+                } else {
+                    spellingHtml += `<span class="letter-missing">_</span> `;
+                }
+            }
+            document.getElementById('word-spelling').innerHTML = spellingHtml.trim();
+        }
+
+        function checkCollisions() {
+            let p = entities.player;
+
+            // Player eating food
+            for (let i = entities.foods.length - 1; i >= 0; i--) {
+                let f = entities.foods[i];
+                let dx = p.x - f.x;
+                let dy = p.y - f.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < p.radius + f.radius) {
+                    createExplosion(f.x, f.y, f.color, 5);
+                    let targetChar = currentWordObj.en[currentLetterIndex];
+                    
+                    if (f.char === targetChar) {
+                        playSFX('eat_correct');
+                        p.targetLength += 5; 
+                        score += 100;
+                        currentLetterIndex++;
+                        
+                        if (currentLetterIndex >= currentWordObj.en.length) {
+                            playSFX('word_complete');
+                            score += 1000;
+                            wordsCompleted++;
+                            createExplosion(p.x, p.y, '#FBBF24', 50); 
+                            setTimeout(selectNewWord, 1000); 
+                        } else {
+                            updateHUDWord();
+                            ensureTargetLetterExists();
+                        }
+                    } else {
+                        playSFX('eat_wrong');
+                        score = Math.max(0, score - 50);
+                        if (p.targetLength > 10) p.targetLength -= 2;
+                    }
+                    
+                    entities.foods.splice(i, 1);
+                    updateHUD();
+                }
+            }
+
+            // Bots eating food
+            for (let b of entities.bots) {
+                for (let i = entities.foods.length - 1; i >= 0; i--) {
+                    let f = entities.foods[i];
+                    let dx = b.x - f.x;
+                    let dy = b.y - f.y;
+                    if (dx*dx + dy*dy < (b.radius + f.radius)*(b.radius + f.radius)) {
+                        b.targetLength += 1;
+                        entities.foods.splice(i, 1);
+                        break; 
+                    }
+                }
+            }
+
+            maintainFoods();
+
+            // Snake to Snake Collisions
+            let allSnakes = [p, ...entities.bots];
+            
+            for (let A of allSnakes) {
+                for (let B of allSnakes) {
+                    if (A === B) continue;
+                    
+                    let bSegments = B.getSegments();
+                    for (let i = 2; i < bSegments.length; i++) {
+                        let seg = bSegments[i];
+                        let dx = A.x - seg.x;
+                        let dy = A.y - seg.y;
+                        if (dx*dx + dy*dy < (A.radius + B.radius - 5)*(A.radius + B.radius - 5)) {
+                            
+                            if (A.isPlayer) {
+                                gameOver();
+                                return; 
+                            } else {
+                                playSFX('kill');
+                                createExplosion(A.x, A.y, A.color, 30);
+                                createFoodExplosion(A);
+                                
+                                let pDistX = p.x - A.x; let pDistY = p.y - A.y;
+                                if (pDistX*pDistX + pDistY*pDistY < 500*500) {
+                                    score += 500;
+                                    updateHUD();
+                                }
+                                
+                                entities.bots = entities.bots.filter(bot => bot !== A);
+                                setTimeout(() => spawnBot("New Bot"), 2000);
+                            }
+                            break; 
+                        }
+                    }
+                }
+            }
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            playSFX('die');
+            clearInterval(bgmInterval);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('wordSnakeHighScore', highScore);
+            }
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-words').innerText = wordsCompleted;
+            document.getElementById('final-hi-score').innerText = highScore;
+
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('zoom-controls').style.display = 'none';
+            document.getElementById('game-over-screen').classList.remove('hidden');
+        }
+
+        // --- Zoom Control Functions ---
+        function setZoom(newZoom) {
+            targetZoom = Math.max(0.3, Math.min(2.0, newZoom));
+        }
+
+        document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(targetZoom + 0.2));
+        document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(targetZoom - 0.2));
+
+        window.addEventListener('wheel', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.deltaY < 0) {
+                setZoom(targetZoom + 0.1);
+            } else {
+                setZoom(targetZoom - 0.1);
+            }
+        });
+
+        // --- Main Game Loop ---
+        function gameLoop() {
+            if (gameState !== 'PLAYING') return;
+
+            if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                width = canvas.width;
+                height = canvas.height;
+            }
+
+            // Update Phase
+            entities.player.update();
+            entities.bots.forEach(b => b.update());
+            entities.foods.forEach(f => f.update());
+            
+            for(let i=entities.particles.length-1; i>=0; i--) {
+                entities.particles[i].update();
+                if(entities.particles[i].life <= 0) {
+                    entities.particles.splice(i, 1);
+                }
+            }
+
+            checkCollisions();
+
+            if (gameState !== 'PLAYING') return; 
+
+            // Camera Follow & Smooth Zoom
+            camera.x += (entities.player.x - camera.x) * 0.1;
+            camera.y += (entities.player.y - camera.y) * 0.1;
+            camera.zoom += (targetZoom - camera.zoom) * 0.1;
+
+            // Render Phase
+            ctx.fillStyle = '#1E293B'; 
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.save();
+            
+            // Apply Camera Transform (Center anchor -> Scale -> Move to Player)
+            ctx.translate(width / 2, height / 2);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+
+            // Draw Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // 시야 영역을 계산하여 해당 범위 내의 그리드만 그립니다.
+            let viewLeft = camera.x - (width / 2) / camera.zoom;
+            let viewTop = camera.y - (height / 2) / camera.zoom;
+            let viewRight = camera.x + (width / 2) / camera.zoom;
+            let viewBottom = camera.y + (height / 2) / camera.zoom;
+
+            let startX = Math.max(0, Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE);
+            let startY = Math.max(0, Math.floor(viewTop / GRID_SIZE) * GRID_SIZE);
+            let endX = Math.min(WORLD_SIZE, viewRight + GRID_SIZE);
+            let endY = Math.min(WORLD_SIZE, viewBottom + GRID_SIZE);
+
+            for (let x = startX; x <= endX; x += GRID_SIZE) {
+                ctx.moveTo(x, 0); 
+                ctx.lineTo(x, WORLD_SIZE);
+            }
+            for (let y = startY; y <= endY; y += GRID_SIZE) {
+                ctx.moveTo(0, y); 
+                ctx.lineTo(WORLD_SIZE, y);
+            }
+            ctx.stroke();
+
+            // Draw World Bounds
+            ctx.strokeStyle = '#EF4444';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+            // Draw Entities
+            entities.foods.forEach(f => f.draw(ctx));
+            entities.bots.forEach(b => b.draw(ctx));
+            entities.player.draw(ctx);
+            entities.particles.forEach(p => p.draw(ctx));
+
+            ctx.restore();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Touch Input with Pinch-to-Zoom Support
+        window.addEventListener('touchmove', (e) => {
+            if (gameState !== 'PLAYING') return;
+            e.preventDefault(); // 기본 스크롤 및 줌인 방지
+
+            if (e.touches.length === 2) {
+                // 두 손가락 핀치 줌
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (initialPinchDistance === null) {
+                    initialPinchDistance = distance;
+                    initialZoom = targetZoom;
+                } else {
+                    const zoomFactor = distance / initialPinchDistance;
+                    setZoom(initialZoom * zoomFactor);
+                }
+            } else if (e.touches.length === 1) {
+                // 단일 터치 이동
+                initialPinchDistance = null;
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null; // 핀치 초기화
+            }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            initGame();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            initGame();
+        });
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.getElementById('hi-score-ui').innerText = highScore;
+
+    </script>
+</body>
+</html>

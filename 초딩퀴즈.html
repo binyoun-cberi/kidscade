@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>캐치! 초성퀴즈 시한폭탄 에디션</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 캐주얼하고 귀여운 폰트 적용 */
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        body {
+            font-family: 'Jua', sans-serif;
+            margin: 0;
+            overflow: hidden; 
+            background-color: #87CEEB; /* 맑은 하늘색 */
+        }
+
+        #app-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* 둥글고 귀여운 게임 보드 스타일 */
+        .game-board {
+            background-color: #ffffff;
+            border-radius: 2rem;
+            position: relative;
+        }
+
+        /* 텍스트 외곽선 (가독성 향상) */
+        .text-outline {
+            text-shadow: 
+                -2px -2px 0 #1f2937,  
+                 2px -2px 0 #1f2937,
+                -2px  2px 0 #1f2937,
+                 2px  2px 0 #1f2937;
+        }
+
+        /* 버튼 등 팝업 애니메이션 */
+        .pop-anim {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 오답 시 폭탄(보드) 흔들림 애니메이션 */
+        .shake-anim {
+            animation: shake 0.4s ease-in-out both;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            20% { transform: translateX(-10px) rotate(-2deg); }
+            40% { transform: translateX(10px) rotate(2deg); }
+            60% { transform: translateX(-10px) rotate(-2deg); }
+            80% { transform: translateX(10px) rotate(2deg); }
+        }
+
+        .overlay {
+            background: rgba(31, 41, 55, 0.85);
+            backdrop-filter: blur(6px);
+        }
+
+        input:focus { outline: none; }
+        
+        /* 불꽃 이모지 깜빡임 및 흔들림 효과 */
+        .fire-blink {
+            animation: fire-flicker 0.3s infinite alternate;
+            filter: drop-shadow(0 0 10px #ef4444);
+        }
+        @keyframes fire-flicker {
+            0% { transform: translate(-50%, -50%) scale(0.9) rotate(-10deg); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.3) rotate(10deg); opacity: 1; filter: drop-shadow(0 0 15px #f97316); }
+        }
+
+        /* 정답 텍스트 부드럽게 나타나고 확! 사라지는 효과 */
+        #feedback-wrapper {
+            position: fixed;
+            inset: 0;
+            display: none; /* 평소엔 완전 숨김 */
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .show-correct-text {
+            animation: popAndFade 1.2s forwards;
+        }
+        @keyframes popAndFade {
+            0% { transform: scale(0.5); opacity: 0; }
+            15% { transform: scale(1.3) rotate(-5deg); opacity: 1; }
+            30% { transform: scale(1) rotate(0deg); opacity: 1; }
+            80% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        /* 카테고리 버튼 CSS */
+        .cat-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            border: 3px solid #111827;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .cat-btn.active {
+            background-color: #fde047; /* yellow-300 */
+            color: #111827;
+            box-shadow: 0 4px 0 #111827;
+        }
+        .cat-btn.inactive {
+            background-color: #9ca3af; /* gray-400 */
+            color: #374151; /* gray-700 */
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #111827;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 정답 피드백 텍스트를 감싸는 래퍼 (화면 최상단) -->
+    <div id="feedback-wrapper">
+        <div id="feedback-text" class="text-7xl md:text-9xl font-black text-outline text-green-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">정답!</div>
+    </div>
+
+    <div id="app-container">
+        
+        <!-- 상단 기록 표시바 -->
+        <div class="w-full max-w-2xl flex justify-between items-center px-2 mb-4">
+            <div class="bg-yellow-300 text-gray-900 px-5 py-2 rounded-full border-4 border-gray-900 font-bold text-lg shadow-[0_4px_0_#111827]">
+                👑 최고점수: <span id="max-score">0</span>
+            </div>
+            <div class="bg-orange-400 text-white px-5 py-2 rounded-full border-4 border-gray-900 font-bold text-lg shadow-[0_4px_0_#111827]">
+                🔥 최고콤보: <span id="max-combo">0</span>
+            </div>
+        </div>
+
+        <!-- 시한폭탄 타이머 UI -->
+        <div class="w-full max-w-2xl px-2 mb-2">
+            <div class="relative w-full h-8 bg-white rounded-full border-4 border-gray-900 flex items-center shadow-[0_4px_0_#111827]">
+                <!-- 폭탄 아이콘 -->
+                <div class="absolute -left-4 md:-left-6 text-5xl md:text-6xl transform -rotate-12 z-20 drop-shadow-md">💣</div>
+                <!-- 타들어가는 까만 심지 -->
+                <div id="fuse-bar" class="h-3 bg-gray-800 rounded-full absolute left-8 md:left-10" style="width: calc(100% - 3rem); transition: width 0.1s linear;"></div>
+                <!-- 불꽃 이모지 -->
+                <div id="fire-emoji" class="absolute text-3xl md:text-4xl fire-blink z-30" style="left: calc(100% - 1rem); top: 50%;">🔥</div>
+            </div>
+        </div>
+
+        <!-- 메인 게임 보드 -->
+        <div class="relative w-full max-w-2xl">
+            <div id="game-board" class="game-board border-8 border-gray-900 w-full flex flex-col p-6 md:p-8 shadow-[0_12px_0_#111827] relative overflow-hidden mt-4">
+                
+                <!-- 오답 시 조롱 & 정답 안내 오버레이 -->
+                <div id="wrong-overlay" class="absolute inset-0 bg-gray-900 bg-opacity-95 z-30 hidden flex-col justify-center items-center text-center p-4">
+                    <div class="text-7xl md:text-8xl mb-4 animate-bounce">🤪😂😜</div>
+                    <div class="text-white text-3xl md:text-4xl font-bold mb-2">땡! 놀랍게도 정답은:</div>
+                    <div class="text-yellow-400 text-6xl md:text-7xl font-black text-outline mb-6" id="correct-answer-display">정답</div>
+                    <div class="text-gray-300 text-xl md:text-2xl font-bold bg-gray-800 px-6 py-2 rounded-full"><span id="countdown-display">3</span>초 뒤 다음 문제...</div>
+                </div>
+
+                <!-- 상태창 (하트, 점수, 콤보) -->
+                <div class="w-full flex justify-between items-center mb-6">
+                    <div id="hearts-container" class="flex gap-1 text-3xl md:text-4xl">
+                        ❤️❤️❤️
+                    </div>
+                    <div class="text-right">
+                        <div class="text-4xl md:text-5xl font-black text-gray-900 tracking-wider" id="score-display">0점</div>
+                        <div class="text-lg md:text-xl font-bold text-blue-500 mt-1" id="combo-display">0 COMBO!</div>
+                    </div>
+                </div>
+
+                <!-- 퀴즈 영역 -->
+                <div class="flex flex-col items-center relative mb-8">
+                    <!-- 주제 -->
+                    <div class="bg-green-400 text-white border-4 border-gray-900 rounded-xl px-8 py-2 mb-6 shadow-[0_4px_0_#111827] z-10 transform -rotate-2">
+                        <h2 class="text-2xl md:text-3xl font-bold tracking-widest" id="category-display">[ 주제 ]</h2>
+                    </div>
+
+                    <!-- 초성 표시창 -->
+                    <div class="w-full bg-yellow-50 border-4 border-gray-900 rounded-2xl py-12 flex justify-center items-center shadow-inner relative">
+                        <h1 class="text-7xl md:text-8xl font-black text-gray-900 tracking-[0.2em] text-center" id="chosung-display">ㅊㅅ</h1>
+                    </div>
+                </div>
+
+                <!-- 입력 영역 -->
+                <div class="w-full flex gap-3 h-16 md:h-20">
+                    <input type="text" id="answer-input" autocomplete="off" class="flex-1 border-4 border-gray-900 rounded-xl text-center text-3xl md:text-4xl font-bold px-4 bg-gray-50 focus:bg-white transition-all" placeholder="정답 입력">
+                    <button id="submit-btn" class="bg-red-500 hover:bg-red-400 text-white border-4 border-gray-900 rounded-xl text-2xl md:text-3xl font-black px-8 shadow-[0_6px_0_#111827] active:translate-y-2 active:shadow-none transition-all">
+                        확인!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 시작 오버레이 -->
+    <div id="start-screen" class="fixed inset-0 z-50 overlay flex flex-col justify-center items-center text-center p-4">
+        <h1 class="text-6xl md:text-7xl font-black text-white text-outline mb-4 leading-tight">캐치!<br>초성퀴즈<br><span class="text-red-400 text-5xl">시한폭탄 에디션💣</span></h1>
+        <p class="text-yellow-300 text-xl md:text-2xl mb-8 font-bold bg-gray-900 bg-opacity-50 px-6 py-3 rounded-xl">✨ 소리를 켜주시면 더 재밌어요 ✨</p>
+        
+        <!-- 카테고리 필터 UI -->
+        <div class="bg-white bg-opacity-10 p-5 rounded-3xl mb-8 border-4 border-gray-900 shadow-[0_8px_0_#111827] max-w-xl">
+            <p class="text-white text-xl md:text-2xl mb-4 font-bold text-outline">도전할 주제를 선택하세요!</p>
+            <div id="category-filters" class="flex flex-wrap justify-center gap-2">
+                <!-- 버튼 렌더링 -->
+            </div>
+        </div>
+
+        <button id="start-btn" class="bg-blue-500 text-white border-4 border-gray-900 rounded-full text-4xl md:text-5xl font-black px-12 py-5 shadow-[0_8px_0_#111827] hover:bg-blue-400 active:translate-y-2 active:shadow-none transition-all pop-anim" style="animation-delay: 0.2s;">
+            시작하기
+        </button>
+    </div>
+
+    <!-- 게임 오버 오버레이 -->
+    <div id="game-over-screen" class="fixed inset-0 z-50 overlay flex flex-col justify-center items-center hidden text-center p-4">
+        <h1 class="text-6xl md:text-8xl font-black text-white text-outline mb-6">게임 종료!</h1>
+        <div class="bg-white border-8 border-gray-900 rounded-3xl p-8 mb-8 shadow-[0_8px_0_#111827] max-w-md w-full">
+            <p class="text-2xl md:text-3xl font-bold text-gray-600 mb-2">나의 등급은?</p>
+            <div class="text-6xl mb-2" id="final-rank-emoji">👑</div>
+            <div class="text-3xl md:text-4xl font-black text-purple-600 mb-6" id="final-rank-title">전설의 초성왕</div>
+            <div class="w-full h-1 bg-gray-300 mb-6 rounded-full"></div>
+            <p class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">최종 점수: <span id="final-score" class="text-red-500">0</span>점</p>
+            <p class="text-2xl md:text-3xl font-bold text-gray-600">최고 콤보: <span id="final-combo" class="text-blue-500">0</span></p>
+        </div>
+        <button id="restart-btn" class="bg-green-500 text-white border-4 border-gray-900 rounded-full text-3xl md:text-4xl font-black px-10 py-5 shadow-[0_8px_0_#111827] hover:bg-green-400 active:translate-y-2 active:shadow-none transition-all">
+            다시 하기
+        </button>
+    </div>
+
+    <script>
+        // 초등학생이 알만한 방대한 단어 데이터 
+        const wordData = [
+            // --- 음식 ---
+            { word: "김밥", category: "음식" }, { word: "떡볶이", category: "음식" }, { word: "라면", category: "음식" }, { word: "치킨", category: "음식" }, { word: "피자", category: "음식" },
+            { word: "햄버거", category: "음식" }, { word: "돈까스", category: "음식" }, { word: "우동", category: "음식" }, { word: "짜장면", category: "음식" }, { word: "탕수육", category: "음식" },
+            { word: "과자", category: "음식" }, { word: "초콜릿", category: "음식" }, { word: "사탕", category: "음식" }, { word: "아이스크림", category: "음식" }, { word: "우유", category: "음식" },
+            { word: "볶음밥", category: "음식" }, { word: "짬뽕", category: "음식" }, { word: "만두", category: "음식" }, { word: "샌드위치", category: "음식" }, { word: "핫도그", category: "음식" },
+            { word: "팝콘", category: "음식" }, { word: "젤리", category: "음식" }, { word: "빵", category: "음식" }, { word: "케이크", category: "음식" }, { word: "도넛", category: "음식" },
+            { word: "치즈", category: "음식" }, { word: "소시지", category: "음식" }, { word: "불고기", category: "음식" }, { word: "삼겹살", category: "음식" }, { word: "갈비", category: "음식" },
+            { word: "비빔밥", category: "음식" }, { word: "칼국수", category: "음식" }, { word: "냉면", category: "음식" }, { word: "떡국", category: "음식" }, { word: "수제비", category: "음식" },
+            { word: "계란말이", category: "음식" }, { word: "파전", category: "음식" }, { word: "감자튀김", category: "음식" }, { word: "호떡", category: "음식" }, { word: "붕어빵", category: "음식" },
+            { word: "어묵", category: "음식" }, { word: "순대", category: "음식" }, { word: "튀김", category: "음식" }, { word: "빙수", category: "음식" }, { word: "카레", category: "음식" },
+            { word: "초밥", category: "음식" }, { word: "국밥", category: "음식" }, { word: "해장국", category: "음식" }, { word: "설렁탕", category: "음식" }, { word: "삼계탕", category: "음식" },
+            { word: "육개장", category: "음식" }, { word: "김치찌개", category: "음식" }, { word: "된장찌개", category: "음식" }, { word: "청국장", category: "음식" }, { word: "갈비탕", category: "음식" },
+            { word: "감자탕", category: "음식" }, { word: "추어탕", category: "음식" }, { word: "닭갈비", category: "음식" }, { word: "찜닭", category: "음식" }, { word: "아구찜", category: "음식" },
+            { word: "족발", category: "음식" }, { word: "보쌈", category: "음식" }, { word: "회", category: "음식" }, { word: "스테이크", category: "음식" }, { word: "파스타", category: "음식" },
+            { word: "마라탕", category: "음식" }, { word: "마라샹궈", category: "음식" }, { word: "꿔바로우", category: "음식" }, { word: "쌀국수", category: "음식" }, { word: "타코", category: "음식" },
+            { word: "국수", category: "음식" }, { word: "쫄면", category: "음식" }, { word: "샐러드", category: "음식" }, { word: "스프", category: "음식" }, { word: "찌개", category: "음식" },
+            { word: "두부", category: "음식" }, { word: "김치", category: "음식" }, { word: "단무지", category: "음식" }, { word: "장조림", category: "음식" }, { word: "제육볶음", category: "음식" },
+            { word: "갈매기살", category: "음식" }, { word: "소고기", category: "음식" }, { word: "돼지고기", category: "음식" }, { word: "닭고기", category: "음식" }, { word: "짜파게티", category: "음식" },
+            { word: "잡채", category: "음식" }, { word: "깐풍기", category: "음식" }, { word: "마파두부", category: "음식" }, { word: "양꼬치", category: "음식" }, { word: "탕후루", category: "음식" },
+            { word: "떡꼬치", category: "음식" }, { word: "소떡소떡", category: "음식" }, { word: "닭꼬치", category: "음식" }, { word: "국화빵", category: "음식" }, { word: "호두과자", category: "음식" },
+            { word: "계란빵", category: "음식" }, { word: "바게트", category: "음식" }, { word: "크루아상", category: "음식" }, { word: "식빵", category: "음식" }, { word: "소금빵", category: "음식" },
+            { word: "잼", category: "음식" }, { word: "버터", category: "음식" }, { word: "간장", category: "음식" }, { word: "고추장", category: "음식" }, { word: "된장", category: "음식" },
+            { word: "쌈장", category: "음식" }, { word: "소금", category: "음식" }, { word: "후추", category: "음식" }, { word: "설탕", category: "음식" }, { word: "식초", category: "음식" },
+            { word: "참기름", category: "음식" }, { word: "마요네즈", category: "음식" }, { word: "케첩", category: "음식" }, { word: "머스타드", category: "음식" }, { word: "보리차", category: "음식" },
+
+            // --- 스포츠 ---
+            { word: "축구", category: "스포츠" }, { word: "야구", category: "스포츠" }, { word: "농구", category: "스포츠" }, { word: "수영", category: "스포츠" }, { word: "태권도", category: "스포츠" },
+            { word: "줄넘기", category: "스포츠" }, { word: "달리기", category: "스포츠" }, { word: "피구", category: "스포츠" }, { word: "스케이트", category: "스포츠" }, { word: "썰매", category: "스포츠" },
+            { word: "배드민턴", category: "스포츠" }, { word: "테니스", category: "스포츠" }, { word: "탁구", category: "스포츠" }, { word: "볼링", category: "스포츠" }, { word: "씨름", category: "스포츠" },
+            { word: "양궁", category: "스포츠" }, { word: "펜싱", category: "스포츠" }, { word: "복싱", category: "스포츠" }, { word: "유도", category: "스포츠" }, { word: "스키", category: "스포츠" },
+            { word: "보드", category: "스포츠" }, { word: "요가", category: "스포츠" }, { word: "체조", category: "스포츠" }, { word: "마라톤", category: "스포츠" }, { word: "계주", category: "스포츠" },
+            { word: "골프", category: "스포츠" }, { word: "배구", category: "스포츠" }, { word: "족구", category: "스포츠" }, { word: "역도", category: "스포츠" }, { word: "사격", category: "스포츠" },
+            { word: "승마", category: "스포츠" }, { word: "당구", category: "스포츠" }, { word: "검도", category: "스포츠" }, { word: "피겨", category: "스포츠" }, { word: "스쿼시", category: "스포츠" },
+            { word: "다이빙", category: "스포츠" }, { word: "수구", category: "스포츠" }, { word: "육상", category: "스포츠" }, { word: "허들", category: "스포츠" }, { word: "높이뛰기", category: "스포츠" },
+            { word: "멀리뛰기", category: "스포츠" }, { word: "투포환", category: "스포츠" }, { word: "레슬링", category: "스포츠" }, { word: "합기도", category: "스포츠" }, { word: "주짓수", category: "스포츠" },
+            { word: "리듬체조", category: "스포츠" }, { word: "쇼트트랙", category: "스포츠" }, { word: "스노보드", category: "스포츠" }, { word: "봅슬레이", category: "스포츠" }, { word: "루지", category: "스포츠" },
+            { word: "스켈레톤", category: "스포츠" }, { word: "컬링", category: "스포츠" }, { word: "아이스하키", category: "스포츠" }, { word: "조정", category: "스포츠" }, { word: "요트", category: "스포츠" },
+            { word: "카누", category: "스포츠" }, { word: "카약", category: "스포츠" }, { word: "사이클", category: "스포츠" }, { word: "철인삼종", category: "스포츠" }, { word: "서핑", category: "스포츠" },
+
+            // --- 동물 ---
+            { word: "강아지", category: "동물" }, { word: "고양이", category: "동물" }, { word: "호랑이", category: "동물" }, { word: "사자", category: "동물" }, { word: "코끼리", category: "동물" },
+            { word: "토끼", category: "동물" }, { word: "원숭이", category: "동물" }, { word: "돼지", category: "동물" }, { word: "소", category: "동물" }, { word: "기린", category: "동물" },
+            { word: "곰", category: "동물" }, { word: "늑대", category: "동물" }, { word: "여우", category: "동물" }, { word: "사슴", category: "동물" }, { word: "얼룩말", category: "동물" },
+            { word: "하마", category: "동물" }, { word: "코뿔소", category: "동물" }, { word: "악어", category: "동물" }, { word: "낙타", category: "동물" }, { word: "표범", category: "동물" },
+            { word: "다람쥐", category: "동물" }, { word: "너구리", category: "동물" }, { word: "쥐", category: "동물" }, { word: "햄스터", category: "동물" }, { word: "고슴도치", category: "동물" },
+            { word: "박쥐", category: "동물" }, { word: "두더지", category: "동물" }, { word: "캥거루", category: "동물" }, { word: "팬더", category: "동물" }, { word: "코알라", category: "동물" },
+            { word: "수달", category: "동물" }, { word: "펭귄", category: "동물" }, { word: "물개", category: "동물" }, { word: "돌고래", category: "동물" }, { word: "고래", category: "동물" },
+            { word: "상어", category: "동물" }, { word: "거북이", category: "동물" }, { word: "뱀", category: "동물" }, { word: "개구리", category: "동물" }, { word: "도마뱀", category: "동물" },
+            { word: "독수리", category: "동물" }, { word: "부엉이", category: "동물" }, { word: "참새", category: "동물" }, { word: "까마귀", category: "동물" }, { word: "까치", category: "동물" },
+            { word: "비둘기", category: "동물" }, { word: "제비", category: "동물" }, { word: "앵무새", category: "동물" }, { word: "닭", category: "동물" }, { word: "오리", category: "동물" },
+            { word: "거위", category: "동물" }, { word: "백조", category: "동물" }, { word: "타조", category: "동물" }, { word: "공작", category: "동물" }, { word: "개미", category: "동물" },
+            { word: "거미", category: "동물" }, { word: "벌", category: "동물" }, { word: "나비", category: "동물" }, { word: "잠자리", category: "동물" }, { word: "파리", category: "동물" },
+            { word: "모기", category: "동물" }, { word: "매미", category: "동물" }, { word: "사마귀", category: "동물" }, { word: "무당벌레", category: "동물" }, { word: "달팽이", category: "동물" },
+            { word: "지렁이", category: "동물" }, { word: "사슴벌레", category: "동물" }, { word: "장수풍뎅이", category: "동물" }, { word: "메뚜기", category: "동물" }, { word: "귀뚜라미", category: "동물" },
+            { word: "하이에나", category: "동물" }, { word: "치타", category: "동물" }, { word: "재규어", category: "동물" }, { word: "수리부엉이", category: "동물" }, { word: "족제비", category: "동물" },
+            { word: "바다코끼리", category: "동물" }, { word: "문어", category: "동물" }, { word: "오징어", category: "동물" }, { word: "해파리", category: "동물" }, { word: "두꺼비", category: "동물" },
+
+            // --- 식물/과일 ---
+            { word: "나무", category: "식물/과일" }, { word: "꽃", category: "식물/과일" }, { word: "풀", category: "식물/과일" }, { word: "해바라기", category: "식물/과일" }, { word: "장미", category: "식물/과일" },
+            { word: "사과", category: "식물/과일" }, { word: "포도", category: "식물/과일" }, { word: "바나나", category: "식물/과일" }, { word: "수박", category: "식물/과일" }, { word: "딸기", category: "식물/과일" },
+            { word: "배", category: "식물/과일" }, { word: "귤", category: "식물/과일" }, { word: "복숭아", category: "식물/과일" }, { word: "감", category: "식물/과일" }, { word: "자두", category: "식물/과일" },
+            { word: "체리", category: "식물/과일" }, { word: "레몬", category: "식물/과일" }, { word: "오렌지", category: "식물/과일" }, { word: "자몽", category: "식물/과일" }, { word: "파인애플", category: "식물/과일" },
+            { word: "망고", category: "식물/과일" }, { word: "키위", category: "식물/과일" }, { word: "멜론", category: "식물/과일" }, { word: "코코넛", category: "식물/과일" }, { word: "블루베리", category: "식물/과일" },
+            { word: "석류", category: "식물/과일" }, { word: "토마토", category: "식물/과일" }, { word: "오이", category: "식물/과일" }, { word: "당근", category: "식물/과일" }, { word: "가지", category: "식물/과일" },
+            { word: "호박", category: "식물/과일" }, { word: "양파", category: "식물/과일" }, { word: "파", category: "식물/과일" }, { word: "마늘", category: "식물/과일" }, { word: "고추", category: "식물/과일" },
+            { word: "배추", category: "식물/과일" }, { word: "양배추", category: "식물/과일" }, { word: "무", category: "식물/과일" }, { word: "감자", category: "식물/과일" }, { word: "고구마", category: "식물/과일" },
+            { word: "시금치", category: "식물/과일" }, { word: "상추", category: "식물/과일" }, { word: "깻잎", category: "식물/과일" }, { word: "콩", category: "식물/과일" }, { word: "옥수수", category: "식물/과일" },
+            { word: "버섯", category: "식물/과일" }, { word: "미역", category: "식물/과일" }, { word: "개나리", category: "식물/과일" }, { word: "무궁화", category: "식물/과일" }, { word: "벚꽃", category: "식물/과일" },
+            { word: "진달래", category: "식물/과일" }, { word: "코스모스", category: "식물/과일" }, { word: "튤립", category: "식물/과일" }, { word: "민들레", category: "식물/과일" }, { word: "나팔꽃", category: "식물/과일" },
+            { word: "백합", category: "식물/과일" }, { word: "소나무", category: "식물/과일" }, { word: "단풍나무", category: "식물/과일" }, { word: "은행나무", category: "식물/과일" }, { word: "대나무", category: "식물/과일" },
+
+            // --- 탈것 ---
+            { word: "자동차", category: "탈것" }, { word: "버스", category: "탈것" }, { word: "기차", category: "탈것" }, { word: "비행기", category: "탈것" }, { word: "배", category: "탈것" },
+            { word: "자전거", category: "탈것" }, { word: "오토바이", category: "탈것" }, { word: "택시", category: "탈것" }, { word: "트럭", category: "탈것" }, { word: "구급차", category: "탈것" },
+            { word: "소방차", category: "탈것" }, { word: "포크레인", category: "탈것" }, { word: "헬리콥터", category: "탈것" }, { word: "우주선", category: "탈것" }, { word: "잠수함", category: "탈것" },
+            { word: "요트", category: "탈것" }, { word: "뗏목", category: "탈것" }, { word: "열기구", category: "탈것" }, { word: "케이블카", category: "탈것" }, { word: "마차", category: "탈것" }, 
+            { word: "유모차", category: "탈것" }, { word: "킥보드", category: "탈것" }, { word: "지하철", category: "탈것" }, { word: "경찰차", category: "탈것" }, { word: "스포츠카", category: "탈것" },
+            { word: "승합차", category: "탈것" }, { word: "경차", category: "탈것" }, { word: "고속버스", category: "탈것" }, { word: "마을버스", category: "탈것" }, { word: "열차", category: "탈것" },
+            { word: "여객선", category: "탈것" }, { word: "화물선", category: "탈것" }, { word: "보트", category: "탈것" }, { word: "모터보트", category: "탈것" }, { word: "스쿠터", category: "탈것" },
+
+            // --- 전자기기 ---
+            { word: "컴퓨터", category: "전자기기" }, { word: "스마트폰", category: "전자기기" }, { word: "텔레비전", category: "전자기기" }, { word: "냉장고", category: "전자기기" }, { word: "세탁기", category: "전자기기" },
+            { word: "에어컨", category: "전자기기" }, { word: "선풍기", category: "전자기기" }, { word: "청소기", category: "전자기기" }, { word: "전자레인지", category: "전자기기" }, { word: "오븐", category: "전자기기" },
+            { word: "가스레인지", category: "전자기기" }, { word: "밥솥", category: "전자기기" }, { word: "믹서기", category: "전자기기" }, { word: "다리미", category: "전자기기" }, { word: "헤어드라이어", category: "전자기기" },
+            { word: "카메라", category: "전자기기" }, { word: "시계", category: "전자기기" }, { word: "라디오", category: "전자기기" }, { word: "스피커", category: "전자기기" }, { word: "마이크", category: "전자기기" },
+            { word: "로봇", category: "전자기기" }, { word: "드론", category: "전자기기" }, { word: "엘리베이터", category: "전자기기" }, { word: "에스컬레이터", category: "전자기기" }, { word: "태블릿", category: "전자기기" },
+            { word: "노트북", category: "전자기기" }, { word: "공기청정기", category: "전자기기" }, { word: "가습기", category: "전자기기" }, { word: "제습기", category: "전자기기" }, { word: "보일러", category: "전자기기" },
+            { word: "이어폰", category: "전자기기" }, { word: "헤드셋", category: "전자기기" }, { word: "프린터", category: "전자기기" }, { word: "스캐너", category: "전자기기" }, { word: "공유기", category: "전자기기" },
+
+            // --- 장소 ---
+            { word: "집", category: "장소" }, { word: "학교", category: "장소" }, { word: "놀이터", category: "장소" }, { word: "공원", category: "장소" }, { word: "병원", category: "장소" },
+            { word: "경찰서", category: "장소" }, { word: "소방서", category: "장소" }, { word: "마트", category: "장소" }, { word: "도서관", category: "장소" }, { word: "동물원", category: "장소" },
+            { word: "식물원", category: "장소" }, { word: "박물관", category: "장소" }, { word: "미술관", category: "장소" }, { word: "과학관", category: "장소" }, { word: "체육관", category: "장소" },
+            { word: "수영장", category: "장소" }, { word: "영화관", category: "장소" }, { word: "우체국", category: "장소" }, { word: "은행", category: "장소" }, { word: "편의점", category: "장소" },
+            { word: "약국", category: "장소" }, { word: "미용실", category: "장소" }, { word: "세탁소", category: "장소" }, { word: "빵집", category: "장소" }, { word: "식당", category: "장소" },
+            { word: "카페", category: "장소" }, { word: "목욕탕", category: "장소" }, { word: "주유소", category: "장소" }, { word: "주차장", category: "장소" }, { word: "버스정류장", category: "장소" },
+            { word: "기차역", category: "장소" }, { word: "공항", category: "장소" }, { word: "항구", category: "장소" }, { word: "놀이공원", category: "장소" }, { word: "스키장", category: "장소" },
+            { word: "해수욕장", category: "장소" }, { word: "바다", category: "장소" }, { word: "산", category: "장소" }, { word: "숲", category: "장소" }, { word: "강", category: "장소" },
+            { word: "호수", category: "장소" }, { word: "연못", category: "장소" }, { word: "계곡", category: "장소" }, { word: "폭포", category: "장소" }, { word: "섬", category: "장소" },
+            { word: "우주", category: "장소" }, { word: "하늘", category: "장소" }, { word: "땅", category: "장소" }, { word: "지하", category: "장소" }, { word: "동굴", category: "장소" },
+            { word: "문방구", category: "장소" }, { word: "서점", category: "장소" }, { word: "피시방", category: "장소" }, { word: "노래방", category: "장소" }, { word: "학원", category: "장소" },
+            { word: "거실", category: "장소" }, { word: "방", category: "장소" }, { word: "안방", category: "장소" }, { word: "주방", category: "장소" }, { word: "화장실", category: "장소" }, { word: "베란다", category: "장소" }, { word: "현관", category: "장소" }, { word: "마당", category: "장소" }, { word: "정원", category: "장소" }, { word: "다락방", category: "장소" },
+            { word: "유치원", category: "장소" }, { word: "대학교", category: "장소" }, { word: "교실", category: "장소" }, { word: "교무실", category: "장소" }, { word: "보건실", category: "장소" }, { word: "운동장", category: "장소" }, { word: "강당", category: "장소" }, { word: "백화점", category: "장소" }, { word: "터미널", category: "장소" }, { word: "정류장", category: "장소" },
+
+            // --- 직업 ---
+            { word: "선생님", category: "직업" }, { word: "의사", category: "직업" }, { word: "경찰관", category: "직업" }, { word: "소방관", category: "직업" }, { word: "요리사", category: "직업" },
+            { word: "가수", category: "직업" }, { word: "화가", category: "직업" }, { word: "운동선수", category: "직업" }, { word: "과학자", category: "직업" }, { word: "군인", category: "직업" },
+            { word: "간호사", category: "직업" }, { word: "수의사", category: "직업" }, { word: "약사", category: "직업" }, { word: "판사", category: "직업" }, { word: "변호사", category: "직업" },
+            { word: "기자", category: "직업" }, { word: "아나운서", category: "직업" }, { word: "작가", category: "직업" }, { word: "피아니스트", category: "직업" }, { word: "작곡가", category: "직업" },
+            { word: "무용수", category: "직업" }, { word: "발레리나", category: "직업" }, { word: "배우", category: "직업" }, { word: "영화감독", category: "직업" }, { word: "프로게이머", category: "직업" },
+            { word: "제빵사", category: "직업" }, { word: "미용사", category: "직업" }, { word: "이발사", category: "직업" }, { word: "운전기사", category: "직업" }, { word: "우주비행사", category: "직업" },
+            { word: "농부", category: "직업" }, { word: "어부", category: "직업" }, { word: "목수", category: "직업" }, { word: "건축가", category: "직업" }, { word: "마술사", category: "직업" },
+            { word: "승무원", category: "직업" }, { word: "조종사", category: "직업" }, { word: "대통령", category: "직업" }, { word: "경호원", category: "직업" }, { word: "개발자", category: "직업" },
+
+            // --- 물건 ---
+            { word: "걸레", category: "물건" }, { word: "빗자루", category: "물건" }, { word: "쓰레기통", category: "물건" }, { word: "휴지통", category: "물건" }, { word: "리모컨", category: "물건" },
+            { word: "충전기", category: "물건" }, { word: "마우스", category: "물건" }, { word: "키보드", category: "물건" }, { word: "모니터", category: "물건" }, { word: "멀티탭", category: "물건" },
+            { word: "이불", category: "물건" }, { word: "베개", category: "물건" }, { word: "침대", category: "물건" }, { word: "옷장", category: "물건" }, { word: "서랍장", category: "물건" },
+            { word: "신발장", category: "물건" }, { word: "거울", category: "물건" }, { word: "수건", category: "물건" }, { word: "칫솔", category: "물건" }, { word: "치약", category: "물건" },
+            { word: "비누", category: "물건" }, { word: "샴푸", category: "물건" }, { word: "면도기", category: "물건" }, { word: "빗", category: "물건" }, { word: "머리핀", category: "물건" },
+            { word: "안경", category: "물건" }, { word: "시계", category: "물건" }, { word: "반지", category: "물건" }, { word: "목걸이", category: "물건" }, { word: "귀걸이", category: "물건" },
+            { word: "지갑", category: "물건" }, { word: "가방", category: "물건" }, { word: "배낭", category: "물건" }, { word: "캐리어", category: "물건" }, { word: "우산", category: "물건" },
+            { word: "장화", category: "물건" }, { word: "슬리퍼", category: "물건" }, { word: "운동화", category: "물건" }, { word: "구두", category: "물건" }, { word: "양말", category: "물건" },
+            { word: "바지", category: "물건" }, { word: "치마", category: "물건" }, { word: "셔츠", category: "물건" }, { word: "코트", category: "물건" }, { word: "패딩", category: "물건" },
+            { word: "모자", category: "물건" }, { word: "장갑", category: "물건" }, { word: "목도리", category: "물건" }, { word: "벨트", category: "물건" }, { word: "손수건", category: "물건" },
+            { word: "가위", category: "물건" }, { word: "풀", category: "물건" }, { word: "테이프", category: "물건" }, { word: "지우개", category: "물건" }, { word: "연필", category: "물건" },
+            { word: "볼펜", category: "물건" }, { word: "샤프", category: "물건" }, { word: "물감", category: "물건" }, { word: "붓", category: "물건" }, { word: "스케치북", category: "물건" },
+            { word: "공책", category: "물건" }, { word: "다이어리", category: "물건" }, { word: "달력", category: "물건" }, { word: "액자", category: "물건" }, { word: "화분", category: "물건" },
+            { word: "성냥", category: "물건" }, { word: "라이터", category: "물건" }, { word: "건전지", category: "물건" }, { word: "전구", category: "물건" }, { word: "스탠드", category: "물건" },
+            { word: "책상", category: "물건" }, { word: "의자", category: "물건" }, { word: "소파", category: "물건" }, { word: "탁자", category: "물건" }, { word: "식탁", category: "물건" },
+            { word: "커튼", category: "물건" }, { word: "블라인드", category: "물건" }, { word: "창문", category: "물건" }, { word: "문", category: "물건" }, { word: "열쇠", category: "물건" },
+            { word: "자물쇠", category: "물건" }, { word: "우체통", category: "물건" }, { word: "박스", category: "물건" }, { word: "봉투", category: "물건" }, { word: "종이", category: "물건" },
+            { word: "컵", category: "물건" }, { word: "접시", category: "물건" }, { word: "그릇", category: "물건" }, { word: "냄비", category: "물건" }, { word: "프라이팬", category: "물건" },
+            { word: "도마", category: "물건" }, { word: "칼", category: "물건" }, { word: "주걱", category: "물건" }, { word: "국자", category: "물건" }, { word: "젓가락", category: "물건" },
+            { word: "숟가락", category: "물건" }, { word: "포크", category: "물건" }, { word: "바구니", category: "물건" }, { word: "쟁반", category: "물건" }, { word: "고무장갑", category: "물건" },
+            { word: "수세미", category: "물건" }, { word: "파리채", category: "물건" }, { word: "모기장", category: "물건" }, { word: "마스크", category: "물건" }, { word: "물티슈", category: "물건" },
+            { word: "손톱깎이", category: "물건" }, { word: "면봉", category: "물건" }, { word: "반창고", category: "물건" }, { word: "연고", category: "물건" }, { word: "파스", category: "물건" },
+            { word: "형광펜", category: "물건" }, { word: "사인펜", category: "물건" }, { word: "크레파스", category: "물건" }, { word: "색연필", category: "물건" }, { word: "압정", category: "물건" },
+            { word: "클립", category: "물건" }, { word: "스테이플러", category: "물건" }, { word: "펀치", category: "물건" }, { word: "자", category: "물건" }, { word: "각도기", category: "물건" },
+            { word: "컴퍼스", category: "물건" }, { word: "휴지", category: "물건" }, { word: "장난감", category: "물건" }, { word: "인형", category: "물건" }, { word: "로봇", category: "물건" },
+            { word: "레고", category: "물건" }, { word: "블록", category: "물건" }, { word: "퍼즐", category: "물건" }, { word: "주사위", category: "물건" }, { word: "팽이", category: "물건" },
+            { word: "구슬", category: "물건" }, { word: "딱지", category: "물건" }, { word: "연", category: "물건" }, { word: "바람개비", category: "물건" }, { word: "공", category: "물건" }
+        ];
+
+        // 한글 초성 추출 함수
+        function getChosung(str) {
+            const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+            let result = "";
+            for(let i=0; i<str.length; i++) {
+                let code = str.charCodeAt(i) - 44032;
+                if(code > -1 && code < 11172) result += cho[Math.floor(code/588)];
+                else result += str.charAt(i);
+            }
+            return result;
+        }
+
+        // 카테고리 추출 및 선택 로직
+        const allCategories = [...new Set(wordData.map(w => w.category))];
+        let selectedCategories = new Set(allCategories);
+        let activeWordData = [];
+
+        function renderCategoryButtons() {
+            const container = document.getElementById('category-filters');
+            container.innerHTML = '';
+            allCategories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat;
+                const isActive = selectedCategories.has(cat);
+                btn.className = `cat-btn text-lg md:text-xl ${isActive ? 'active' : 'inactive'}`;
+                
+                btn.onclick = () => {
+                    if (selectedCategories.has(cat)) {
+                        if (selectedCategories.size === 1) {
+                            // 마지막 하나는 해제 불가 (경고 흔들림)
+                            btn.classList.add('shake-anim');
+                            setTimeout(() => btn.classList.remove('shake-anim'), 400);
+                            return;
+                        }
+                        selectedCategories.delete(cat);
+                    } else {
+                        selectedCategories.add(cat);
+                    }
+                    renderCategoryButtons();
+                };
+                container.appendChild(btn);
+            });
+        }
+        renderCategoryButtons(); // 초기 렌더링
+
+        // 게임 상태 변수
+        let currentQuestion = null;
+        let score = 0;
+        let combo = 0;
+        let lives = 3;
+        let maxScore = localStorage.getItem('casual_max_score') || 0;
+        let maxCombo = localStorage.getItem('casual_max_combo') || 0;
+        let unusedWords = [];
+        let recentWords = []; // 최근에 나온 문제 큐
+        const RECENT_LIMIT = 80; // 최근 문제는 다시 나오지 않음
+        
+        // 타이머 관련 변수
+        const TIME_LIMIT = 15; // 15초
+        let timeLeft = TIME_LIMIT;
+        let timerInterval;
+        let isWaiting = false;
+
+        // DOM 요소 연결
+        const elMaxScore = document.getElementById('max-score');
+        const elMaxCombo = document.getElementById('max-combo');
+        const elScore = document.getElementById('score-display');
+        const elCombo = document.getElementById('combo-display');
+        const elHearts = document.getElementById('hearts-container');
+        const elCategory = document.getElementById('category-display');
+        const elChosung = document.getElementById('chosung-display');
+        const elInput = document.getElementById('answer-input');
+        const elSubmitBtn = document.getElementById('submit-btn');
+        const elFeedbackWrapper = document.getElementById('feedback-wrapper');
+        const elFeedbackText = document.getElementById('feedback-text');
+        const elGameBoard = document.getElementById('game-board');
+        
+        // 타이머 요소
+        const elFuseBar = document.getElementById('fuse-bar');
+        const elFireEmoji = document.getElementById('fire-emoji');
+        
+        // 오답 팝업 요소
+        const elWrongOverlay = document.getElementById('wrong-overlay');
+        const elCorrectAnswer = document.getElementById('correct-answer-display');
+        const elCountdown = document.getElementById('countdown-display');
+
+        let audioCtx;
+        let bgmInterval;
+        let feedbackTimeout; // 정답 텍스트 숨김용 타이머
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            startBGM();
+        }
+
+        // 귀여운 펜타토닉 루프 BGM
+        function startBGM() {
+            if (bgmInterval) return; 
+            const melody = [
+                { f: 523.25, d: 0.2 }, { f: 587.33, d: 0.2 }, { f: 659.25, d: 0.4 }, 
+                { f: 523.25, d: 0.2 }, { f: 783.99, d: 0.2 }, { f: 659.25, d: 0.4 },
+                { f: 440.00, d: 0.2 }, { f: 523.25, d: 0.2 }, { f: 587.33, d: 0.4 },
+                { f: 392.00, d: 0.2 }, { f: 440.00, d: 0.2 }, { f: 523.25, d: 0.4 }
+            ];
+            let step = 0;
+            function playNextNote() {
+                if(!audioCtx) return;
+                let note = melody[step];
+                playTone(note.f, 'sine', note.d, 0.05); // BGM 볼륨 매우 작게
+                step = (step + 1) % melody.length;
+                bgmInterval = setTimeout(playNextNote, note.d * 1000);
+            }
+            playNextNote();
+        }
+
+        function stopBGM() {
+            if (bgmInterval) {
+                clearTimeout(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        // 신시사이저 (음수 방지 및 호환성 강화)
+        function playTone(freq, type, duration, vol=0.1) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                // 음원 시작 볼륨
+                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+                // 모바일 브라우저 틱 노이즈 방지용 부드러운 페이드아웃
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        // 박수 대신 오락실 느낌의 경쾌한 정답 아르페지오 사운드
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.1, 0.15); // C5
+            setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.15), 80); // E5
+            setTimeout(() => playTone(783.99, 'triangle', 0.1, 0.15), 160); // G5
+            setTimeout(() => playTone(1046.50, 'sine', 0.4, 0.2), 240); // C6 (길게)
+        }
+
+        // 오답 삐- 소리
+        function playWrongSound() {
+            playTone(200, 'sawtooth', 0.2, 0.15);
+            setTimeout(() => playTone(150, 'sawtooth', 0.4, 0.2), 150);
+        }
+
+        function initGame() {
+            // 선택된 카테고리로 단어 필터링
+            activeWordData = wordData.filter(w => selectedCategories.has(w.category));
+
+            score = 0;
+            combo = 0;
+            lives = 3;
+            isWaiting = false;
+            unusedWords = [...activeWordData]; 
+            recentWords = []; // 게임 리셋 시 중복 방지 큐 초기화
+            
+            elMaxScore.innerText = maxScore;
+            elMaxCombo.innerText = maxCombo;
+            updateUI();
+            nextQuestion();
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('flex');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.remove('flex');
+            elInput.focus();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = TIME_LIMIT;
+            elFireEmoji.style.display = 'block'; // 불꽃 보이기
+            updateTimerUI();
+
+            timerInterval = setInterval(() => {
+                if(isWaiting) return;
+
+                timeLeft -= 0.1; 
+                updateTimerUI();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleWrongOrTimeout();
+                }
+            }, 100);
+        }
+
+        function updateTimerUI() {
+            const percentage = Math.max(0, timeLeft / TIME_LIMIT);
+            // 전체 바 너비에서 심지와 불꽃의 위치를 퍼센트로 계산 (가로 선형태)
+            elFuseBar.style.width = `calc(${percentage * 100}% - 3rem)`;
+            
+            // 불꽃 위치 이동
+            elFireEmoji.style.left = `calc(${percentage * 100}% - 0.5rem)`;
+        }
+
+        function nextQuestion() {
+            if (unusedWords.length === 0) {
+                // 리필 시 최근 출제된 단어는 제외하여 중복 방지
+                unusedWords = activeWordData.filter(w => !recentWords.includes(w.word));
+                
+                // 혹시라도 필터링 후 남은 단어가 없으면 전체를 다시 채움
+                if (unusedWords.length === 0) unusedWords = [...activeWordData];
+            }
+            
+            const randomIndex = Math.floor(Math.random() * unusedWords.length);
+            currentQuestion = unusedWords.splice(randomIndex, 1)[0];
+            
+            // 최근 출제 단어 큐 업데이트
+            recentWords.push(currentQuestion.word);
+            
+            // 보유 단어량에 따라 제한치 조절 (무한 루프 방지)
+            const currentLimit = Math.min(RECENT_LIMIT, Math.floor(activeWordData.length * 0.5));
+            if (recentWords.length > currentLimit) {
+                recentWords.shift();
+            }
+            
+            elCategory.innerText = `[ ${currentQuestion.category} ]`;
+            elChosung.innerText = getChosung(currentQuestion.word);
+            elInput.value = '';
+            elInput.disabled = false;
+            elInput.focus();
+            
+            startTimer(); 
+        }
+
+        function updateUI() {
+            elScore.innerText = `${score}점`;
+            elCombo.innerText = `${combo} COMBO!`;
+            
+            let heartsHtml = '';
+            for(let i=0; i<3; i++) heartsHtml += i < lives ? '❤️' : '🖤';
+            elHearts.innerHTML = heartsHtml;
+        }
+
+        function handleWrongOrTimeout() {
+            if(isWaiting) return;
+            isWaiting = true;
+            clearInterval(timerInterval);
+            elFireEmoji.style.display = 'none'; // 틀리면 불꽃 숨김
+            
+            playWrongSound();
+            combo = 0;
+            lives--;
+            updateUI();
+            
+            elGameBoard.classList.remove('shake-anim');
+            void elGameBoard.offsetWidth;
+            elGameBoard.classList.add('shake-anim');
+
+            elInput.disabled = true; 
+            elCorrectAnswer.innerText = currentQuestion.word;
+            elWrongOverlay.classList.remove('hidden');
+            elWrongOverlay.classList.add('flex');
+            
+            let count = 3;
+            elCountdown.innerText = count;
+            
+            const countInterval = setInterval(() => {
+                count--;
+                elCountdown.innerText = count;
+                if(count <= 0) {
+                    clearInterval(countInterval);
+                    elWrongOverlay.classList.remove('flex');
+                    elWrongOverlay.classList.add('hidden');
+                    isWaiting = false;
+
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        nextQuestion();
+                    }
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            if(isWaiting) return;
+
+            const userAnswer = elInput.value.trim();
+            if (!userAnswer || lives <= 0) return;
+
+            // 완성된 한글 단어인지 검사 (초성만 치거나, 'ㄱㅂ' 같은 자음/모음 단독 입력 차단)
+            const isCompleteHangul = /^[가-힣]+$/.test(userAnswer);
+            if (!isCompleteHangul) {
+                elInput.classList.add('shake-anim', 'border-red-500', 'text-red-500');
+                setTimeout(() => elInput.classList.remove('shake-anim', 'border-red-500', 'text-red-500'), 400);
+                elInput.value = '';
+                elInput.placeholder = "완성된 단어만 입력하세요!";
+                setTimeout(() => elInput.placeholder = "정답 입력", 1500);
+                return;
+            }
+
+            // 핵심 로직: 사용자가 입력한 단어의 초성과 출제된 단어의 초성을 비교
+            const targetChosung = getChosung(currentQuestion.word);
+            const userChosung = getChosung(userAnswer);
+
+            let isCorrect = false;
+
+            if (userChosung === targetChosung) {
+                // 입력한 단어가 현재 활성화된 데이터베이스에 있는지 확인
+                const foundWord = activeWordData.find(w => w.word === userAnswer);
+                
+                if (userAnswer === currentQuestion.word) {
+                    isCorrect = true; // 원래 정답과 완벽히 일치
+                } else if (foundWord) {
+                    // 카테고리가 완벽히 일치하는 경우
+                    if (foundWord.category === currentQuestion.category) {
+                        isCorrect = true;
+                    } 
+                    // 융통성: '음식' 카테고리일 때 '식물/과일'도 음식으로 인정
+                    else if (currentQuestion.category === "음식" && foundWord.category === "식물/과일") {
+                        isCorrect = true;
+                    }
+                    else if (currentQuestion.category === "식물/과일" && foundWord.category === "음식") {
+                        isCorrect = true;
+                    }
+                }
+            }
+
+            if (isCorrect) {
+                // 정답 처리
+                playCorrectSound();
+                combo++;
+                score += 10 + (combo * 2); 
+                
+                // 사용자가 입력한 단어로 피드백 텍스트 교체 
+                elFeedbackText.innerHTML = `${userAnswer}<br><span class="text-5xl md:text-6xl text-yellow-300 text-outline drop-shadow-md">정답!</span>`;
+
+                // 잔상 없는 완벽한 정답 텍스트 애니메이션 
+                clearTimeout(feedbackTimeout);
+                elFeedbackWrapper.style.display = 'flex'; // 화면에 래퍼 띄우기
+                elFeedbackText.classList.remove('show-correct-text');
+                void elFeedbackText.offsetWidth; // 리플로우 강제 (애니메이션 초기화)
+                elFeedbackText.classList.add('show-correct-text');
+                
+                // 애니메이션이 끝난 직후(1.2초) 확실하게 숨김 처리
+                feedbackTimeout = setTimeout(() => {
+                    elFeedbackWrapper.style.display = 'none';
+                }, 1200);
+                
+                if (score > maxScore) { maxScore = score; localStorage.setItem('casual_max_score', maxScore); elMaxScore.innerText = maxScore; }
+                if (combo > maxCombo) { maxCombo = combo; localStorage.setItem('casual_max_combo', maxCombo); elMaxCombo.innerText = maxCombo; }
+
+                updateUI();
+                nextQuestion();
+            } else {
+                handleWrongOrTimeout();
+            }
+        }
+
+        function getRank(finalScore) {
+            if (finalScore >= 2000) return { title: "전설의 초성왕", emoji: "👑" };
+            if (finalScore >= 1500) return { title: "초성 신", emoji: "👼" };
+            if (finalScore >= 1000) return { title: "초성 달인", emoji: "🦸‍♂️" };
+            if (finalScore >= 700) return { title: "초성 장인", emoji: "🧙‍♂️" };
+            if (finalScore >= 400) return { title: "전교 1등", emoji: "🥇" };
+            if (finalScore >= 250) return { title: "우리반 에이스", emoji: "🤓" };
+            if (finalScore >= 150) return { title: "초성 마니아", emoji: "😎" };
+            if (finalScore >= 80) return { title: "퀴즈 새싹", emoji: "🌱" };
+            if (finalScore >= 40) return { title: "동네 골목대장", emoji: "👦" };
+            return { title: "초보 탐험가", emoji: "👶" };
+        }
+
+        function gameOver() {
+            stopBGM(); 
+            const rank = getRank(score);
+            document.getElementById('final-rank-emoji').innerText = rank.emoji;
+            document.getElementById('final-rank-title').innerText = rank.title;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-combo').innerText = combo;
+            
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('game-over-screen').classList.add('flex');
+            elInput.blur();
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            initAudio(); 
+            initGame();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            // 다시 하기를 누르면 세팅 화면으로 이동
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('start-screen').classList.add('flex');
+        });
+
+        elSubmitBtn.addEventListener('click', checkAnswer);
+        
+        elInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+
+        elMaxScore.innerText = maxScore;
+        elMaxCombo.innerText = maxCombo;
+
+    </script>
+</body>
+</html>

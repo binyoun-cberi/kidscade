@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>한자 랭크 스피드 퀴즈</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4 font-sans text-slate-800">
+
+  <!-- 메인 앱 컨테이너 -->
+  <div id="app" class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 relative h-[800px] max-h-[90vh]">
+    
+    <!-- 1. 메뉴 스크린 -->
+    <div id="screen-menu" class="screen flex flex-col items-center justify-center h-full space-y-8 p-6 text-center animate-fade-in">
+      <div class="space-y-4">
+        <h1 class="text-5xl font-black text-slate-800 tracking-tight drop-shadow-sm">
+          한자 랭크 <span class="text-indigo-600">스피드 퀴즈</span>
+        </h1>
+        <p class="text-slate-500 text-lg">음과 훈을 빠르게 맞추고 최고 티어에 도전하세요!</p>
+      </div>
+
+      <!-- 랭크가 없을 때 (배치고사 전) -->
+      <div id="menu-no-rank" class="bg-slate-50 p-6 rounded-2xl border border-slate-200 w-full">
+        <p class="text-slate-600 mb-4 font-medium">아직 배치고사를 보지 않았습니다.<br/>5판의 게임으로 당신의 실력을 측정합니다.</p>
+        <button onclick="startGame()" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center w-full">
+          <i data-lucide="alert-circle" class="w-5 h-5 mr-2"></i> 배치고사 시작 (1/5)
+        </button>
+      </div>
+
+      <!-- 랭크가 있을 때 -->
+      <div id="menu-has-rank" class="hidden p-6 rounded-2xl flex flex-col items-center shadow-inner w-full">
+        <p class="text-sm font-semibold text-slate-600 mb-2">현재 랭크</p>
+        <div class="flex items-center space-x-2">
+          <i data-lucide="crown" id="menu-rank-icon" class="w-8 h-8"></i>
+          <span id="menu-rank-name" class="text-3xl font-bold"></span>
+        </div>
+        <button onclick="startGame()" class="mt-6 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center">
+          <i data-lucide="play" class="w-5 h-5 mr-2"></i> 랭크 게임 시작
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. 게임 스크린 -->
+    <div id="screen-playing" class="screen hidden flex flex-col h-full bg-slate-50">
+      <!-- 상단 HUD -->
+      <div class="flex justify-between items-center p-4 bg-white shadow-sm">
+        <div class="flex space-x-1">
+          <i data-lucide="heart" id="heart-0" class="w-6 h-6 transition-all duration-300"></i>
+          <i data-lucide="heart" id="heart-1" class="w-6 h-6 transition-all duration-300"></i>
+          <i data-lucide="heart" id="heart-2" class="w-6 h-6 transition-all duration-300"></i>
+        </div>
+        
+        <div class="flex flex-col items-center">
+          <span id="hud-stage-title" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></span>
+          <span id="hud-question-idx" class="text-sm font-semibold text-slate-700"></span>
+        </div>
+
+        <div class="text-right">
+          <div class="text-xs font-bold text-slate-400">SCORE</div>
+          <div id="hud-score" class="text-xl font-black text-slate-800 font-mono">0</div>
+        </div>
+      </div>
+
+      <!-- 콤보 & 타이머 -->
+      <div class="px-6 pt-4 pb-2">
+        <div class="flex justify-between items-end mb-2">
+          <div id="combo-display" class="flex items-center font-black italic text-2xl transition-all duration-200 text-slate-300">
+            <i data-lucide="zap" id="combo-icon" class="w-6 h-6 mr-1"></i> <span id="combo-text">0 COMBO</span>
+          </div>
+          <div id="timer-display" class="flex items-center font-mono font-bold text-lg text-slate-600">
+            <i data-lucide="clock" class="w-4 h-4 mr-1"></i> <span id="timer-text">7s</span>
+          </div>
+        </div>
+        <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+          <div id="timer-bar" class="h-full transition-all duration-100 ease-linear bg-indigo-500" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- 문제 영역 -->
+      <div class="flex-1 flex flex-col items-center justify-center p-6">
+        <div id="hanja-display" class="text-[120px] font-black text-slate-800 leading-none mb-8 drop-shadow-md select-none">
+          漢
+        </div>
+
+        <!-- 선택지 -->
+        <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+          <button id="opt-btn-0" onclick="handleAnswer(0)" class="opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-700 hover:bg-slate-100 border-2 border-slate-200"></button>
+          <button id="opt-btn-1" onclick="handleAnswer(1)" class="opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-700 hover:bg-slate-100 border-2 border-slate-200"></button>
+          <button id="opt-btn-2" onclick="handleAnswer(2)" class="opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-700 hover:bg-slate-100 border-2 border-slate-200"></button>
+          <button id="opt-btn-3" onclick="handleAnswer(3)" class="opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-700 hover:bg-slate-100 border-2 border-slate-200"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 라운드 결과 스크린 -->
+    <div id="screen-round-result" class="screen hidden flex flex-col items-center justify-center h-full p-6 text-center">
+      <div class="mb-6 animate-bounce">
+        <i data-lucide="medal" class="w-20 h-20 text-indigo-500"></i>
+      </div>
+      <h2 id="round-result-title" class="text-3xl font-bold text-slate-800 mb-2">배치고사 1라운드 종료</h2>
+      <p class="text-lg text-slate-600 mb-8">획득 점수: <span id="round-result-score" class="font-bold text-indigo-600 text-2xl">0</span></p>
+      
+      <button onclick="nextPlacementRound()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-105">
+        다음 라운드 시작 <span id="round-result-next-btn"></span>
+      </button>
+    </div>
+
+    <!-- 4. 랭크 결과 공개 스크린 -->
+    <div id="screen-rank-reveal" class="screen hidden flex flex-col items-center justify-center h-full p-6 text-center animate-fade-in bg-slate-900 text-white">
+      <h2 class="text-2xl font-semibold text-slate-300 mb-8">배치고사 완료! 당신의 티어는...</h2>
+      
+      <div class="relative w-48 h-48 mb-8">
+        <div class="absolute inset-0 bg-white/10 rounded-full animate-ping"></div>
+        <div class="relative z-10 w-full h-full bg-slate-800 rounded-full flex items-center justify-center border-8 border-slate-700 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+          <i data-lucide="crown" id="reveal-rank-icon" class="w-24 h-24"></i>
+        </div>
+      </div>
+
+      <h1 id="reveal-rank-name" class="text-6xl font-black mb-4 drop-shadow-lg"></h1>
+      <p class="text-slate-400 mb-12">총점: <span id="reveal-rank-score">0</span>점</p>
+
+      <button onclick="goToMenu()" class="px-10 py-4 bg-white text-slate-900 hover:bg-slate-200 font-bold rounded-xl shadow-lg transition-transform hover:scale-105">
+        메인으로 이동
+      </button>
+    </div>
+
+    <!-- 5. 게임 오버 / 클리어 스크린 -->
+    <div id="screen-game-over" class="screen hidden flex flex-col items-center justify-center h-full p-6 text-center">
+      <div id="game-over-icon-container" class="mb-6">
+        <!-- JS에서 상황에 따라 Trophy나 ShieldAlert로 교체 -->
+      </div>
+      <h2 id="game-over-title" class="text-4xl font-black text-slate-800 mb-4">GAME OVER</h2>
+      <div class="bg-slate-100 p-6 rounded-2xl w-full max-w-sm mb-8">
+        <p class="text-sm font-semibold text-slate-500 mb-1">최종 점수</p>
+        <p id="game-over-score" class="text-4xl font-mono font-bold text-indigo-600 mb-4">0</p>
+        
+        <div class="flex justify-between text-sm text-slate-600 border-t border-slate-200 pt-4">
+          <span>진행도</span>
+          <span id="game-over-progress" class="font-bold"></span>
+        </div>
+      </div>
+
+      <div class="flex space-x-4">
+        <button onclick="startGame()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg flex items-center transition-transform hover:scale-105">
+          <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i> 다시 하기
+        </button>
+        <button onclick="goToMenu()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-transform hover:scale-105">
+          메뉴로
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- 웹 오디오 API를 이용한 효과음 시스템 (외부 리소스 없이 자체 생성) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      if(type === 'correct') {
+        // 정답 소리: 경쾌한 두 톤의 띠링~
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'incorrect') {
+        // 오답 소리: 둔탁하게 떨어지는 띡- 소리
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      }
+    }
+
+    // --- 대규모 한자 데이터베이스 (5급 기준 총 500자 엄선) ---
+    const HANJA_DB = [];
+    
+    // 8급 (50자)
+    const tier1Data = "一/한 일,二/두 이,三/석 삼,四/넉 사,五/다섯 오,六/여섯 육,七/일곱 칠,八/여덟 팔,九/아홉 구,十/열 십,人/사람 인,山/메 산,水/물 수,木/나무 목,金/쇠 금,土/흙 토,日/날 일,月/달 월,火/불 화,門/문 문,白/흰 백,百/일백 백,萬/일만 만,父/아비 부,母/어미 모,兄/맏 형,弟/아우 제,男/사내 남,女/계집 녀,國/나라 국,天/하늘 천,地/땅 지,春/봄 춘,夏/여름 하,秋/가을 추,冬/겨울 동,東/동녘 동,西/서녘 서,南/남녘 남,北/북녘 북,上/윗 상,中/가운데 중,下/아래 하,左/왼 좌,右/오른 우,前/앞 전,後/뒤 후,內/안 내,外/바깥 외,大/큰 대";
+    
+    // 7급 (100자)
+    const tier2Data = "小/작을 소,多/많을 다,少/적을 소,高/높을 고,低/낮을 저,長/길 장,短/짧을 단,新/새 신,舊/예 구,江/강 강,校/학교 교,敎/가르칠 교,軍/군사 군,年/해 년,民/백성 민,生/날 생,先/먼저 선,室/집 실,王/임금 왕,靑/푸를 청,草/풀 초,寸/마디 촌,學/배울 학,韓/한국 한,家/집 가,歌/노래 가,間/사이 간,答/대답 답,動/움직일 동,物/만물 물,便/편할 편,算/셈할 산,線/줄 선,植/심을 식,心/마음 심,語/말씀 어,音/소리 음,意/뜻 의,作/지을 작,者/놈 자,場/마당 장,晝/낮 주,夜/밤 야,朝/아침 조,夕/저녁 석,紙/종이 지,鐵/쇠 철,平/평평할 평,幸/다행 행,風/바람 풍,寒/찰 한,暑/더울 서,根/뿌리 근,樹/나무 수,休/쉴 휴,食/밥 식,飮/마실 음,車/수레 거,道/길 도,話/말씀 화,活/살 활,會/모일 회,力/힘 력,農/농사 농,村/마을 촌,市/저자 시,郡/고을 군,區/지경 구,洞/골 동,理/다스릴 리,法/법 법,記/기록할 기,字/글자 자,名/이름 명,命/목숨 명,體/몸 체,身/몸 신,首/머리 수,手/손 수,足/발 족,目/눈 목,耳/귀 이,口/입 구,鼻/코 비,毛/털 모,肉/고기 육,骨/뼈 골,皮/가죽 피,血/피 혈,氣/기운 기,空/빌 공,色/빛 색,光/빛 광,明/밝을 명,暗/어두울 암,星/별 성,雲/구름 운,雨/비 우,雪/눈 설,電/번개 전";
+    
+    // 6급 (150자)
+    const tier3Data = "可/옳을 가,假/거짓 가,價/값 가,各/각각 각,角/뿔 각,覺/깨달을 각,幹/줄기 간,看/볼 간,簡/대쪽 간,感/느낄 감,減/덜 감,强/강할 강,開/열 개,客/손 객,更/고칠 경,擧/들 거,建/세울 건,件/물건 건,健/굳셀 건,傑/뛰어날 걸,儉/검소할 검,檢/검사할 검,擊/칠 격,缺/이지러질 결,決/결단할 결,結/맺을 결,潔/깨끗할 결,景/볕 경,輕/가벼울 경,敬/공경 경,競/다툴 경,警/경계할 경,界/지경 계,計/셀 계,古/예 고,故/연고 고,苦/쓸 고,考/생각할 고,告/알릴 고,曲/굽을 곡,穀/곡식 곡,工/장인 공,功/공 공,共/한가지 공,公/공평할 공,果/실과 과,課/과정 과,過/지날 과,關/관계할 관,觀/볼 관,官/벼슬 관,管/대통 관,廣/넓을 광,交/사귈 교,橋/다리 교,具/갖출 구,球/공 구,救/구원할 구,久/오랠 구,局/판 국,君/임금 군,群/무리 군,屈/굽을 굴,弓/활 궁,宮/집 궁,權/권세 권,勸/권할 권,近/가까울 근,勤/부지런할 근,今/이제 금,禁/금할 금,急/급할 급,級/등급 급,給/줄 급,技/재주 기,期/기약할 기,基/터 기,己/몸 기,幾/몇 기,吉/길할 길,暖/따뜻할 난,難/어려울 난,納/들일 납,能/능할 능,泥/진흙 니,茶/차 다,丹/붉을 단,單/홑 단,團/둥글 단,壇/단 단,達/통달할 달,談/말씀 담,堂/집 당,當/마땅 당,代/대신할 대,待/기다릴 대,對/대할 대,帶/띠 대,德/큰 덕,度/법도 도,都/도읍 도,島/섬 도,圖/그림 도,徒/무리 도,讀/읽을 독,獨/홀로 독,毒/독 독,同/한가지 동,童/아이 동,銅/구리 동,頭/머리 두,豆/콩 두,得/얻을 득,等/무리 등,登/오를 등,落/떨어질 락,朗/밝을 랑,浪/물결 랑,來/올 래,冷/찰 랭,量/헤아릴 량,良/어질 량,兩/두 량,領/거느릴 령,令/하여금 령,例/법식 례,禮/예도 례,路/길 로,老/늙을 로,勞/일할 로,綠/푸를 록,論/논할 논,利/이로울 리,里/마을 리,立/설 립";
+    
+    // 5급 (200자)
+    const tier4Data = "馬/말 마,滿/찰 만,晩/늦을 만,末/끝 말,亡/망할 망,忙/바쁠 망,忘/잊을 망,望/바랄 망,海/바다 해,買/살 매,賣/팔 매,每/매양 매,梅/매화 매,麥/보리 맥,面/얼굴 면,免/면할 면,勉/힘쓸 면,眠/잘 면,鳴/울 명,暮/저물 모,牧/칠 목,沒/빠질 몰,夢/꿈 몽,務/힘쓸 무,武/굳셀 무,無/없을 무,舞/춤출 무,問/물을 문,聞/들을 문,文/글월 문,味/맛 미,美/아름다울 미,未/아닐 미,米/쌀 미,尾/꼬리 미,迷/미혹할 미,密/빽빽할 밀,朴/순박할 박,半/반 반,反/돌이킬 반,飯/밥 반,盤/소반 반,發/필 발,放/놓을 방,方/모 방,防/막을 방,房/방 방,訪/찾을 방,拜/절 배,杯/잔 배,倍/곱 배,番/차례 번,犯/범할 범,凡/무릇 범,變/변할 변,別/다를 별,病/병 병,兵/군사 병,保/보전할 보,報/갚을 보,步/걸음 보,寶/보배 보,服/옷 복,福/복 복,復/회복할 복,複/겹칠 복,本/근본 본,奉/받들 봉,逢/만날 봉,部/떼 부,夫/지아비 부,婦/며느리 부,富/부자 부,不/아닐 불,佛/부처 불,氷/얼음 빙,史/역사 사,仕/벼슬 사,使/하여금 사,師/스승 사,私/사사 사,絲/실 사,寺/절 사,思/생각할 사,死/죽을 사,事/일 사,社/모일 사,産/낳을 산,散/흩을 산,殺/죽일 살,商/장사 상,相/서로 상,賞/상줄 상,霜/서리 상,床/평상 상,狀/형상 상,常/항상 상,想/생각할 상,書/글 서,序/차례 서,席/자리 석,石/돌 석,惜/아낄 석,仙/신선 선,選/가릴 선,善/착할 선,船/배 선,鮮/고을 선,設/베풀 설,說/말씀 설,城/재 성,誠/정성 성,聲/소리 성,省/살필 성,世/인간 세,洗/씻을 세,歲/해 세,勢/형세 세,稅/세금 세,所/바 소,消/사라질 소,素/본디 소,笑/웃을 소,速/빠를 속,俗/풍속 속,續/이을 속,孫/손자 손,受/받을 수,授/줄 수,守/지킬 수,收/거둘 수,誰/누구 수,須/모름지기 수,數/셀 수,修/닦을 수,愁/근심 수,順/순할 순,純/순수할 순,勝/이길 승,承/이을 승,乘/탈 승,始/비로소 시,時/때 시,詩/시 시,視/볼 시,試/시험할 시,施/베풀 시,食/밥 식,識/알 식,信/믿을 신,臣/신하 신,神/귀신 신,新/새 신,申/납 신,失/잃을 실,實/열매 실,心/마음 심,深/깊을 심,十/열 십,愛/사랑 애,惡/악할 악,安/편안 안,案/책상 안,暗/어두울 암,央/가운데 앙,仰/우러를 앙,液/진액 액,額/이마 액,野/들 야,弱/약할 약,藥/약 약,約/맺을 약,洋/큰바다 양,羊/양 양,養/기를 양,讓/사양할 양,陽/볕 양,魚/고기 어,漁/고기잡을 어";
+
+    function parseAndLoadHanja(tier, dataString) {
+      dataString.split(',').forEach(item => {
+        const parts = item.split('/');
+        if(parts.length === 2) {
+          HANJA_DB.push({ h: parts[0], e: parts[1], t: tier });
+        }
+      });
+    }
+
+    parseAndLoadHanja(1, tier1Data); // 50
+    parseAndLoadHanja(2, tier2Data); // 100
+    parseAndLoadHanja(3, tier3Data); // 150
+    parseAndLoadHanja(4, tier4Data); // 200
+    // Total DB Count = 500
+
+    const RANKS = [
+      { name: '아이언', color: 'text-gray-500', bg: 'bg-gray-100', threshold: 0 },
+      { name: '브론즈', color: 'text-amber-700', bg: 'bg-amber-100', threshold: 3000 },
+      { name: '실버', color: 'text-slate-400', bg: 'bg-slate-100', threshold: 6000 },
+      { name: '골드', color: 'text-yellow-500', bg: 'bg-yellow-100', threshold: 9000 },
+      { name: '플래티넘', color: 'text-emerald-500', bg: 'bg-emerald-100', threshold: 12000 },
+      { name: '다이아몬드', color: 'text-blue-500', bg: 'bg-blue-100', threshold: 16000 },
+      { name: '마스터', color: 'text-purple-600', bg: 'bg-purple-100', threshold: 20000 },
+      { name: '챌린저', color: 'text-red-600', bg: 'bg-red-100', threshold: 25000 },
+    ];
+
+    const TIME_LIMIT = 7;
+    const MAX_QUESTIONS = 20;
+    const MAX_PLACEMENT_ROUNDS = 5;
+
+    // --- State Variables ---
+    let gameState = 'menu'; // menu, placement, rankReveal, playing, roundResult, gameOver
+    let userRank = null;
+    
+    let placementRound = 1;
+    let totalPlacementScore = 0;
+    
+    let currentQuestionIdx = 1;
+    let lives = 3;
+    let score = 0;
+    let combo = 0;
+    
+    let currentHanja = null;
+    let currentOptions = [];
+    let timeLeft = TIME_LIMIT;
+    let isAnswerRevealed = false;
+    let selectedOptionIdx = null;
+
+    let timerInterval = null;
+    let nextQuestionTimeout = null;
+
+    // --- Initialization ---
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      renderMenu();
+    });
+
+    function switchScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // --- Menu Rendering ---
+    function renderMenu() {
+      gameState = 'menu';
+      switchScreen('screen-menu');
+      
+      const noRankDiv = document.getElementById('menu-no-rank');
+      const hasRankDiv = document.getElementById('menu-has-rank');
+
+      if (userRank) {
+        noRankDiv.classList.add('hidden');
+        hasRankDiv.classList.remove('hidden');
+        
+        hasRankDiv.className = `p-6 rounded-2xl flex flex-col items-center shadow-inner w-full ${userRank.bg}`;
+        
+        const rankIcon = document.getElementById('menu-rank-icon');
+        rankIcon.setAttribute('class', `lucide lucide-crown w-8 h-8 ${userRank.color}`);
+        
+        const rankName = document.getElementById('menu-rank-name');
+        rankName.textContent = userRank.name;
+        rankName.className = `text-3xl font-bold ${userRank.color}`;
+      } else {
+        noRankDiv.classList.remove('hidden');
+        hasRankDiv.classList.add('hidden');
+      }
+    }
+
+    function goToMenu() {
+      renderMenu();
+    }
+
+    // --- Game Logic ---
+    function startGame() {
+      // 오디오 컨텍스트가 정지되어 있다면 브라우저 정책에 맞춰 재개
+      if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      if (!userRank) {
+        placementRound = 1;
+        totalPlacementScore = 0;
+        startRound(true);
+      } else {
+        startRound(false);
+      }
+    }
+
+    function startRound(isPlacement = false) {
+      gameState = isPlacement ? 'placement' : 'playing';
+      lives = 3;
+      score = 0;
+      combo = 0;
+      currentQuestionIdx = 1;
+      
+      switchScreen('screen-playing');
+      generateQuestion();
+    }
+
+    function generateQuestion() {
+      let allowedTiers = [];
+      
+      if (gameState === 'placement') {
+        if (placementRound === 1) allowedTiers = [1];
+        else if (placementRound === 2) allowedTiers = [1, 2];
+        else if (placementRound === 3) allowedTiers = [2, 3];
+        else if (placementRound === 4) allowedTiers = [3, 4];
+        else allowedTiers = [1, 2, 3, 4];
+      } else if (userRank) {
+        const rankIdx = RANKS.findIndex(r => r.name === userRank.name);
+        if (rankIdx <= 1) allowedTiers = [1, 2]; 
+        else if (rankIdx <= 3) allowedTiers = [2, 3]; 
+        else if (rankIdx <= 5) allowedTiers = [3, 4]; 
+        else allowedTiers = [4]; 
+      }
+
+      const filteredDB = HANJA_DB.filter(h => allowedTiers.includes(h.t));
+      const targetDB = filteredDB.length > 10 ? filteredDB : HANJA_DB; 
+      
+      currentHanja = targetDB[Math.floor(Math.random() * targetDB.length)];
+      
+      let wrongOptions = [];
+      while (wrongOptions.length < 3) {
+        const randomWrong = HANJA_DB[Math.floor(Math.random() * HANJA_DB.length)];
+        if (randomWrong.e !== currentHanja.e && !wrongOptions.includes(randomWrong.e)) {
+          wrongOptions.push(randomWrong.e);
+        }
+      }
+
+      currentOptions = [...wrongOptions, currentHanja.e].sort(() => Math.random() - 0.5);
+      
+      timeLeft = TIME_LIMIT;
+      isAnswerRevealed = false;
+      selectedOptionIdx = null;
+
+      updateGameUI();
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft -= 0.1;
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          handleAnswerTimeout();
+        }
+        updateTimerUI();
+      }, 100);
+    }
+
+    function handleAnswerTimeout() {
+      clearInterval(timerInterval);
+      playSound('incorrect'); // 시간 초과 시 오답 효과음
+      isAnswerRevealed = true;
+      combo = 0;
+      lives -= 1;
+      
+      updateOptionsUI();
+      updateGameUI(); 
+
+      nextQuestionTimeout = setTimeout(() => proceedNextQuestion(), 1500);
+    }
+
+    function handleAnswer(idx) {
+      if (isAnswerRevealed) return;
+      
+      clearInterval(timerInterval);
+      isAnswerRevealed = true;
+      selectedOptionIdx = idx;
+      
+      const selectedEumhun = currentOptions[idx];
+
+      if (selectedEumhun === currentHanja.e) {
+        // 정답
+        playSound('correct'); // 정답 효과음 재생
+        combo += 1;
+        const basePoints = 100;
+        const comboBonus = combo * 20;
+        const timeBonus = Math.floor(timeLeft * 10);
+        score += (basePoints + comboBonus + timeBonus);
+        
+        updateOptionsUI();
+        updateGameUI();
+        nextQuestionTimeout = setTimeout(() => proceedNextQuestion(), 1000);
+      } else {
+        // 오답
+        playSound('incorrect'); // 오답 효과음 재생
+        combo = 0;
+        lives -= 1;
+        
+        updateOptionsUI();
+        updateGameUI();
+        nextQuestionTimeout = setTimeout(() => proceedNextQuestion(), 1500);
+      }
+    }
+
+    function proceedNextQuestion() {
+      if (lives <= 0) {
+        endRound(true);
+      } else if (currentQuestionIdx >= MAX_QUESTIONS) {
+        endRound(false);
+      } else {
+        currentQuestionIdx += 1;
+        generateQuestion();
+      }
+    }
+
+    function endRound(isDead) {
+      if (gameState === 'placement') {
+        totalPlacementScore += score;
+        
+        if (placementRound >= MAX_PLACEMENT_ROUNDS) {
+          calculateRank(totalPlacementScore);
+        } else {
+          showRoundResult();
+        }
+      } else {
+        showGameOver(isDead);
+      }
+    }
+
+    function calculateRank(finalScore) {
+      userRank = RANKS[0];
+      for (let i = RANKS.length - 1; i >= 0; i--) {
+        if (finalScore >= RANKS[i].threshold) {
+          userRank = RANKS[i];
+          break;
+        }
+      }
+     localStorage.setItem('hanjaRank', userRank.name);
+     let bestScore = parseInt(localStorage.getItem('hanjaScore') || 0);
+     if (finalScore > bestScore) {
+         localStorage.setItem('hanjaScore', finalScore);
+     }     
+
+      showRankReveal();
+    }
+
+    // --- UI Update Functions ---
+    function updateGameUI() {
+      document.getElementById('hud-stage-title').textContent = gameState === 'placement' ? `배치고사 ${placementRound}/5` : userRank?.name;
+      document.getElementById('hud-question-idx').textContent = `문제 ${currentQuestionIdx}/${MAX_QUESTIONS}`;
+      document.getElementById('hud-score').textContent = score.toLocaleString();
+
+      for (let i = 0; i < 3; i++) {
+        const heart = document.getElementById(`heart-${i}`);
+        if (i < lives) {
+          heart.setAttribute('class', 'lucide lucide-heart w-6 h-6 text-rose-500 fill-rose-500 transition-all duration-300');
+        } else {
+          heart.setAttribute('class', 'lucide lucide-heart w-6 h-6 text-slate-200 transition-all duration-300');
+        }
+      }
+
+      const comboDiv = document.getElementById('combo-display');
+      const comboIcon = document.getElementById('combo-icon');
+      document.getElementById('combo-text').textContent = `${combo} COMBO`;
+      
+      if (combo > 0) {
+        comboDiv.className = "flex items-center font-black italic text-2xl transition-all duration-200 text-amber-500 scale-110";
+        comboIcon.setAttribute('class', 'lucide lucide-zap w-6 h-6 mr-1 fill-amber-500');
+      } else {
+        comboDiv.className = "flex items-center font-black italic text-2xl transition-all duration-200 text-slate-300";
+        comboIcon.setAttribute('class', 'lucide lucide-zap w-6 h-6 mr-1');
+      }
+
+      document.getElementById('hanja-display').textContent = currentHanja.h;
+      if (!isAnswerRevealed) {
+        updateOptionsUI();
+      }
+      updateTimerUI();
+    }
+
+    function updateOptionsUI() {
+      for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById(`opt-btn-${i}`);
+        btn.textContent = currentOptions[i];
+        btn.disabled = isAnswerRevealed;
+        
+        if (isAnswerRevealed) {
+          if (currentOptions[i] === currentHanja.e) {
+            btn.className = "opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-emerald-500 text-white border-emerald-600 scale-105 shadow-lg z-10";
+          } else if (i === selectedOptionIdx) {
+            btn.className = "opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-rose-500 text-white border-rose-600 opacity-80";
+          } else {
+            btn.className = "opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-300 border-slate-100 opacity-50";
+          }
+        } else {
+          btn.className = "opt-btn py-6 text-2xl font-bold rounded-2xl transition-all duration-200 bg-white text-slate-700 hover:bg-slate-100 border-2 border-slate-200";
+        }
+      }
+    }
+
+    function updateTimerUI() {
+      const timerDisplay = document.getElementById('timer-display');
+      const timerBar = document.getElementById('timer-bar');
+      const timerText = document.getElementById('timer-text');
+
+      timerText.textContent = `${Math.ceil(timeLeft)}s`;
+      timerBar.style.width = `${(timeLeft / TIME_LIMIT) * 100}%`;
+
+      if (timeLeft <= 2) {
+        timerDisplay.className = "flex items-center font-mono font-bold text-lg text-rose-500 animate-pulse";
+        timerBar.className = "h-full transition-all duration-100 ease-linear bg-rose-500";
+      } else {
+        timerDisplay.className = "flex items-center font-mono font-bold text-lg text-slate-600";
+        timerBar.className = "h-full transition-all duration-100 ease-linear bg-indigo-500";
+      }
+    }
+
+    // --- Flow Screens ---
+    function showRoundResult() {
+      gameState = 'roundResult';
+      switchScreen('screen-round-result');
+      
+      document.getElementById('round-result-title').textContent = `배치고사 ${placementRound}라운드 종료`;
+      document.getElementById('round-result-score').textContent = score.toLocaleString();
+      document.getElementById('round-result-next-btn').textContent = `(${placementRound + 1}/5)`;
+    }
+
+    function nextPlacementRound() {
+      placementRound += 1;
+      startRound(true);
+    }
+
+    function showRankReveal() {
+      gameState = 'rankReveal';
+      switchScreen('screen-rank-reveal');
+      
+      const rankIcon = document.getElementById('reveal-rank-icon');
+      rankIcon.setAttribute('class', `lucide lucide-crown w-24 h-24 ${userRank.color}`);
+      
+      const rankName = document.getElementById('reveal-rank-name');
+      rankName.textContent = userRank.name;
+      rankName.className = `text-6xl font-black mb-4 ${userRank.color} drop-shadow-lg`;
+      
+      document.getElementById('reveal-rank-score').textContent = totalPlacementScore.toLocaleString();
+    }
+
+    function showGameOver(isDead) {
+      gameState = 'gameOver';
+      switchScreen('screen-game-over');
+      
+      const iconContainer = document.getElementById('game-over-icon-container');
+      if (isDead) {
+        iconContainer.innerHTML = '<i data-lucide="shield-alert" class="w-20 h-20 text-rose-500"></i>';
+        document.getElementById('game-over-title').textContent = 'GAME OVER';
+      } else {
+        iconContainer.innerHTML = '<i data-lucide="trophy" class="w-20 h-20 text-yellow-500"></i>';
+        document.getElementById('game-over-title').textContent = 'ROUND CLEAR!';
+      }
+      lucide.createIcons({ root: iconContainer });
+
+      document.getElementById('game-over-score').textContent = score.toLocaleString();
+      document.getElementById('game-over-progress').textContent = `${currentQuestionIdx} / ${MAX_QUESTIONS}`;
+    }
+
+  </script>
+</body>
+</html>

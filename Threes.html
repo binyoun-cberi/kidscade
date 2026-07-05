@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Threes! 스타일: 1+2=3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800;900&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f1f5f9; /* 밝고 부드러운 배경 (slate-100) */
+            color: #1e293b;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        .game-board {
+            background-color: #cbd5e1; /* 보드 배경 (slate-300) */
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            margin: 0 auto;
+            padding: 2%;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.05), 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .grid-cell {
+            background-color: #94a3b8; /* 빈 칸 (slate-400) */
+            border-radius: 8px;
+            width: 22.5%;
+            height: 22.5%;
+            position: absolute;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tile {
+            position: absolute;
+            width: 22.5%;
+            height: 22.5%;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: top 0.15s ease-out, left 0.15s ease-out, transform 0.1s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1); /* 약간의 입체감 */
+            z-index: 10;
+        }
+
+        .tile-inner-val {
+            font-weight: 900;
+            line-height: 1;
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes appear {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .tile-appear { animation: appear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .tile-pop { animation: pop 0.2s ease-in-out forwards; }
+
+        /* Ranks Custom Colors (밝은 배경에 맞게 조정) */
+        .rank-text-iron { color: #64748b; }
+        .rank-text-bronze { color: #b45309; }
+        .rank-text-silver { color: #94a3b8; }
+        .rank-text-gold { color: #d97706; text-shadow: 0 0 8px rgba(217,119,6,0.3); }
+        .rank-text-platinum { color: #0d9488; text-shadow: 0 0 8px rgba(13,148,136,0.3); }
+        .rank-text-emerald { color: #059669; }
+        .rank-text-diamond { color: #0284c7; }
+        .rank-text-master { color: #7c3aed; }
+        .rank-text-grandmaster { color: #dc2626; }
+        .rank-text-challenger { color: #ca8a04; text-shadow: 0 0 10px rgba(202,138,4,0.5); }
+        .rank-text-faker {
+            background: linear-gradient(to right, #dc2626, #d97706, #059669, #2563eb, #9333ea);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: 900;
+        }
+
+        .combo-badge { transition: transform 0.1s; }
+        .combo-active { transform: scale(1.1); color: #ea580c; text-shadow: 0 0 10px rgba(234,88,12,0.3); }
+
+        /* Next Tile Preview */
+        .next-preview-box {
+            width: 40px; height: 40px;
+            border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 900; font-size: 1.2rem;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4">
+
+    <!-- Header & Controls -->
+    <div class="w-full max-w-[420px] flex justify-between items-end mb-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800">1 + 2 = 3</h1>
+            <p class="text-sm text-slate-500 mt-1 font-bold">Threes! 한 칸씩만 움직이세요</p>
+        </div>
+        <div class="flex flex-col gap-2 items-end">
+            <button id="soundToggleBtn" class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1 text-slate-700">
+                <span id="soundIcon">🔇</span> 소리
+            </button>
+            <div class="flex items-center gap-2 bg-slate-200 px-3 py-1.5 rounded-lg">
+                <span class="text-xs font-bold text-slate-500">NEXT</span>
+                <div id="nextTileDisplay" class="next-preview-box bg-sky-400 text-white">1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scores & Combo -->
+    <div class="w-full max-w-[420px] grid grid-cols-3 gap-2 mb-4">
+        <div class="bg-white rounded-xl p-2 text-center shadow-sm border border-slate-200">
+            <div class="text-xs text-slate-400 font-bold">점수</div>
+            <div id="scoreDisplay" class="text-lg font-black text-slate-700">0</div>
+        </div>
+        <div class="bg-white rounded-xl p-2 text-center shadow-sm border border-slate-200">
+            <div class="text-xs text-slate-400 font-bold">최고 점수</div>
+            <div id="bestScoreDisplay" class="text-lg font-black text-slate-700">0</div>
+        </div>
+        <div class="bg-white rounded-xl p-2 text-center shadow-sm border border-slate-200 flex flex-col justify-center">
+            <div class="text-xs text-slate-400 font-bold">현재 콤보</div>
+            <div id="comboDisplay" class="text-xl font-black combo-badge text-slate-700">x1.0</div>
+        </div>
+    </div>
+
+    <!-- Rank Progress -->
+    <div class="w-full max-w-[420px] bg-white rounded-xl p-3 mb-6 shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-1">
+            <div class="text-sm font-bold text-slate-500">티어: <span id="rankNameDisplay" class="rank-text-iron text-base">아이언</span></div>
+            <div class="text-xs text-slate-400 font-semibold" id="nextRankReq">다음: 브론즈</div>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 shadow-inner">
+            <div id="rankProgressBar" class="bg-gradient-to-r from-sky-400 to-rose-400 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div class="game-board" id="gameBoard">
+        <!-- Background Grid (4x4) -->
+        <script>
+            for(let r=0; r<4; r++) {
+                for(let c=0; c<4; c++) {
+                    document.write(`<div class="grid-cell" style="top: ${2 + r*24.5}%; left: ${2 + c*24.5}%;"></div>`);
+                }
+            }
+        </script>
+
+        <!-- Tiles container -->
+        <div id="tileContainer"></div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameOverOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-xl opacity-0 pointer-events-none transition-opacity duration-300">
+            <h2 class="text-4xl font-black text-white mb-2 drop-shadow-lg">게임 오버!</h2>
+            <p id="finalRankDisplay" class="text-xl font-bold mb-6 text-white drop-shadow">최종 티어: <span>아이언</span></p>
+            <button id="restartBtn" class="bg-white text-slate-800 hover:bg-slate-100 px-8 py-3 rounded-full font-bold text-lg shadow-lg transform transition hover:scale-105 border-b-4 border-slate-300">
+                다시 시작하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Rank System for Threes (점수 스케일 조정) ---
+        const RANKS = [
+            { name: '아이언', req: 0, class: 'rank-text-iron' },
+            { name: '브론즈', req: 50, class: 'rank-text-bronze' },
+            { name: '실버', req: 200, class: 'rank-text-silver' },
+            { name: '골드', req: 800, class: 'rank-text-gold' },
+            { name: '플래티넘', req: 2500, class: 'rank-text-platinum' },
+            { name: '에메랄드', req: 8000, class: 'rank-text-emerald' },
+            { name: '다이아몬드', req: 25000, class: 'rank-text-diamond' },
+            { name: '마스터', req: 80000, class: 'rank-text-master' },
+            { name: '그랜드마스터', req: 200000, class: 'rank-text-grandmaster' },
+            { name: '챌린저', req: 500000, class: 'rank-text-challenger' },
+            { name: '페이커', req: 1500000, class: 'rank-text-faker' }
+        ];
+
+        // --- Game State ---
+        let activeTiles = []; 
+        let board = Array(4).fill(null).map(() => Array(4).fill(null)); 
+        let score = 0;
+        let bestScore = 0;
+        let combo = 0;
+        let isAnimating = false;
+        let isGameOver = false;
+        let tileIdCounter = 0;
+        let nextTileVal = 1;
+
+        // UI Elements
+        const tileContainer = document.getElementById('tileContainer');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const rankNameDisplay = document.getElementById('rankNameDisplay');
+        const nextRankReq = document.getElementById('nextRankReq');
+        const rankProgressBar = document.getElementById('rankProgressBar');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const nextTileDisplay = document.getElementById('nextTileDisplay');
+        
+        // --- Audio System ---
+        let audioCtx = null;
+        let soundEnabled = false;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) {
+                initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }
+
+        function playSound(type, val = 3, comboLevel = 0) {
+            if (!audioCtx || !soundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'move') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'merge') {
+                osc.type = 'triangle';
+                // 값이 클수록 피치가 조금씩 높아짐
+                const baseFreq = 400 + (Math.log2(val) * 40);
+                osc.frequency.setValueAtTime(baseFreq, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+
+                if (comboLevel > 2) {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'square';
+                    osc2.frequency.setValueAtTime(baseFreq * 1.5, now); // 화음
+                    gain2.gain.setValueAtTime(0.05, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.start(now);
+                    osc2.stop(now + 0.2);
+                }
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+                osc.start(now);
+                osc.stop(now + 1);
+            }
+        }
+
+        // --- View & Style ---
+        function formatNumber(num) {
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+            return num.toLocaleString();
+        }
+
+        function getTileStyle(val) {
+            if (val === 1) return { bg: '#38bdf8', text: '#ffffff' }; // Sky Blue
+            if (val === 2) return { bg: '#fb7185', text: '#ffffff' }; // Rose Red
+            // 3 이상은 기본 하얀색, 숫자가 커지면 미세하게 그림자 효과
+            return { bg: '#ffffff', text: '#1e293b', shadow: '0 4px 0 #cbd5e1, 0 4px 6px rgba(0,0,0,0.1)' };
+        }
+
+        function updateTileDOMElement(el, tile) {
+            el.style.top = `${2 + tile.r * 24.5}%`;
+            el.style.left = `${2 + tile.c * 24.5}%`;
+            
+            const style = getTileStyle(tile.val);
+            el.style.backgroundColor = style.bg;
+            el.style.color = style.text;
+            if (style.shadow && tile.val >= 3) el.style.boxShadow = style.shadow;
+            else el.style.boxShadow = '0 4px 0 rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1)';
+
+            let valClass = "tile-inner-val";
+            if (tile.val >= 1000) valClass += " text-3xl";
+            else if (tile.val >= 100) valClass += " text-4xl";
+            else valClass += " text-5xl";
+
+            el.innerHTML = `<div class="${valClass}">${tile.val}</div>`;
+        }
+
+        function createTileDOM(tile) {
+            const el = document.createElement('div');
+            el.className = 'tile tile-appear';
+            el.id = `tile-${tile.id}`;
+            updateTileDOMElement(el, tile);
+            return el;
+        }
+
+        function updateNextTileUI() {
+            const style = getTileStyle(nextTileVal);
+            nextTileDisplay.style.backgroundColor = style.bg;
+            nextTileDisplay.style.color = style.text;
+            nextTileDisplay.innerText = nextTileVal;
+            // 높은 숫자가 나올 경우 텍스트 크기 조절
+            if(nextTileVal >= 100) nextTileDisplay.style.fontSize = '0.9rem';
+            else nextTileDisplay.style.fontSize = '1.2rem';
+        }
+
+        function generateNextTileVal() {
+            // 기본적으로 1, 2, 3이 나옴. 아주 가끔 보너스 높은 타일
+            const rand = Math.random();
+            if (rand < 0.33) return 1;
+            if (rand < 0.66) return 2;
+            if (rand < 0.98) return 3;
+            // 2% 확률로 현재 보드의 최대 타일보다 한참 아래의 큰 타일 등장 (최대 12)
+            let maxBoard = 3;
+            activeTiles.forEach(t => { if(t.val > maxBoard) maxBoard = t.val; });
+            if (maxBoard >= 48) return 6;
+            if (maxBoard >= 192) return 12;
+            return 3;
+        }
+
+        function updateUI() {
+            scoreDisplay.innerText = formatNumber(score);
+            bestScoreDisplay.innerText = formatNumber(bestScore);
+            
+            const comboMultiplier = 1.0 + (combo * 0.2);
+            comboDisplay.innerText = `x${comboMultiplier.toFixed(1)}`;
+            if (combo > 0) comboDisplay.classList.add('combo-active');
+            else comboDisplay.classList.remove('combo-active');
+
+            // Rank Calc
+            let currentRank = RANKS[0], nextRank = RANKS[1], progress = 0;
+            for (let i = 0; i < RANKS.length; i++) {
+                if (score >= RANKS[i].req) {
+                    currentRank = RANKS[i];
+                    nextRank = RANKS[i + 1] || null;
+                } else break;
+            }
+
+            rankNameDisplay.className = `text-base ${currentRank.class}`;
+            rankNameDisplay.innerText = currentRank.name;
+
+            if (nextRank) {
+                let range = nextRank.req - currentRank.req;
+                let earned = score - currentRank.req;
+                progress = Math.min(100, Math.max(0, (earned / range) * 100));
+                nextRankReq.innerText = `다음: ${nextRank.name} (${formatNumber(nextRank.req)})`;
+            } else {
+                progress = 100;
+                nextRankReq.innerText = "최고 등급 도달!";
+            }
+            rankProgressBar.style.width = `${progress}%`;
+        }
+
+        // --- Core Engine (Threes Rules) ---
+        function canMerge(val1, val2) {
+            if (val1 === 1 && val2 === 2) return true;
+            if (val1 === 2 && val2 === 1) return true;
+            if (val1 >= 3 && val1 === val2) return true;
+            return false;
+        }
+
+        function mergeValues(val1, val2) {
+            if (val1 === 1 || val1 === 2) return 3;
+            return val1 * 2;
+        }
+
+        function addRandomTileAtStart() {
+            let emptyCells = [];
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (!board[r][c]) emptyCells.push({r, c});
+                }
+            }
+            if (emptyCells.length === 0) return;
+            const {r, c} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            
+            // 초기 9개 정도 타일 생성
+            const val = Math.random() < 0.4 ? 1 : (Math.random() < 0.8 ? 2 : 3);
+            const newTile = { id: tileIdCounter++, r, c, val };
+            activeTiles.push(newTile);
+            board[r][c] = newTile;
+            tileContainer.appendChild(createTileDOM(newTile));
+        }
+
+        function initGame() {
+            board = Array(4).fill(null).map(() => Array(4).fill(null));
+            activeTiles = [];
+            tileContainer.innerHTML = '';
+            score = 0;
+            combo = 0;
+            isGameOver = false;
+            gameOverOverlay.style.opacity = '0';
+            gameOverOverlay.style.pointerEvents = 'none';
+            
+            // 초기 보드 세팅 (Threes는 시작 시 타일이 꽤 많음)
+            for(let i=0; i<9; i++) {
+                addRandomTileAtStart();
+            }
+            
+            nextTileVal = generateNextTileVal();
+            updateNextTileUI();
+            updateUI();
+        }
+
+        // Threes! 전용 "1칸 이동" 로직
+        function move(direction) {
+            if (isAnimating || isGameOver) return;
+
+            let moved = false;
+            let movedLines = []; // 어느 줄이 움직였는지 추적 (새 타일 스폰용)
+            let tilesToRemove = [];
+            let scoreGained = 0;
+            let mergesThisTurn = 0;
+
+            for(let i=0; i<4; i++) {
+                // 한 줄의 데이터를 가져옴 (벽 쪽이 인덱스 0이 되도록)
+                let lineArr = [];
+                for(let j=0; j<4; j++) {
+                    let r = (direction==='Left'||direction==='Right') ? i : j;
+                    let c = (direction==='Up'||direction==='Down') ? i : j;
+                    if(direction==='Right' || direction==='Down') {
+                        r = (direction==='Right') ? i : 3-j;
+                        c = (direction==='Right') ? 3-j : i;
+                    }
+                    lineArr.push(board[r][c]);
+                }
+
+                let lineMoved = false;
+
+                // 앞에서부터(벽쪽부터) 검사하여 딱 한 번만 이동/병합을 수행
+                for(let j=0; j<3; j++) {
+                    let curr = lineArr[j];
+                    let next = lineArr[j+1];
+
+                    if (curr === null && next !== null) {
+                        // 빈칸으로 전진
+                        for(let k=j; k<3; k++) {
+                            lineArr[k] = lineArr[k+1];
+                        }
+                        lineArr[3] = null;
+                        lineMoved = true;
+                        break;
+                    } else if (curr !== null && next !== null && canMerge(curr.val, next.val)) {
+                        // 병합 성사
+                        curr.nextVal = mergeValues(curr.val, next.val);
+                        curr.isMergedThisTurn = true;
+                        
+                        next.mergeTarget = curr; // 애니메이션 이동 타겟 설정
+                        tilesToRemove.push(next);
+                        
+                        // 뒤에 있는 타일들을 앞으로 한 칸씩 땡김
+                        for(let k=j+1; k<3; k++) {
+                            lineArr[k] = lineArr[k+1];
+                        }
+                        lineArr[3] = null;
+
+                        lineMoved = true;
+                        mergesThisTurn++;
+                        scoreGained += curr.nextVal;
+                        break;
+                    }
+                }
+
+                if (lineMoved) {
+                    moved = true;
+                    movedLines.push(i);
+                    // 다시 보드에 갱신 및 DOM 애니메이션 좌표 업데이트
+                    for(let j=0; j<4; j++) {
+                        let r = (direction==='Left'||direction==='Right') ? i : j;
+                        let c = (direction==='Up'||direction==='Down') ? i : j;
+                        if(direction==='Right' || direction==='Down') {
+                            r = (direction==='Right') ? i : 3-j;
+                            c = (direction==='Right') ? 3-j : i;
+                        }
+
+                        if (lineArr[j]) {
+                            board[r][c] = lineArr[j];
+                            lineArr[j].targetR = r;
+                            lineArr[j].targetC = c;
+                        } else {
+                            board[r][c] = null;
+                        }
+                    }
+                }
+            }
+
+            // 사라질 타일들의 목적지도 합쳐질 대상과 동일하게 맞춤
+            tilesToRemove.forEach(tile => {
+                if(tile.mergeTarget) {
+                    tile.targetR = tile.mergeTarget.targetR;
+                    tile.targetC = tile.mergeTarget.targetC;
+                }
+            });
+
+            if (moved) {
+                isAnimating = true;
+
+                // 1. DOM 위치 업데이트 (CSS 트랜지션)
+                activeTiles.forEach(tile => {
+                    const el = document.getElementById(`tile-${tile.id}`);
+                    if(el && (tile.r !== tile.targetR || tile.c !== tile.targetC)) {
+                        el.style.top = `${2 + tile.targetR * 24.5}%`;
+                        el.style.left = `${2 + tile.targetC * 24.5}%`;
+                        if(tilesToRemove.includes(tile)) el.style.zIndex = '5';
+                    }
+                    // 좌표 데이터 갱신
+                    if(tile.targetR !== undefined) {
+                        tile.r = tile.targetR;
+                        tile.c = tile.targetC;
+                    }
+                });
+
+                // 2. 새 타일(Next Tile) 스폰 (이동한 줄 중에서 랜덤)
+                let spawnLineIndex = movedLines[Math.floor(Math.random() * movedLines.length)];
+                let sr, sc;
+                if(direction==='Left') { sr = spawnLineIndex; sc = 3; }
+                if(direction==='Right') { sr = spawnLineIndex; sc = 0; }
+                if(direction==='Up') { sr = 3; sc = spawnLineIndex; }
+                if(direction==='Down') { sr = 0; sc = spawnLineIndex; }
+
+                const newTile = { id: tileIdCounter++, r: sr, c: sc, val: nextTileVal };
+                activeTiles.push(newTile);
+                board[sr][sc] = newTile;
+                
+                // 새 타일 생성 (잠시 후 나타나게)
+                setTimeout(() => {
+                    tileContainer.appendChild(createTileDOM(newTile));
+                }, 100);
+
+                // Next 타일 미리보기 갱신
+                nextTileVal = generateNextTileVal();
+                updateNextTileUI();
+
+                // 점수 및 사운드
+                if (mergesThisTurn > 0) {
+                    combo++;
+                    score += Math.floor(scoreGained * (1.0 + (combo * 0.2)));
+                    if(score > bestScore) bestScore = score;
+                    playSound('merge', Math.max(...activeTiles.map(t=>t.val)), combo);
+                } else {
+                    combo = 0;
+                    playSound('move');
+                }
+                updateUI();
+
+                // 3. 이동 애니메이션 종료 후 후처리
+                setTimeout(() => {
+                    // 삭제 타일 정리
+                    tilesToRemove.forEach(t => {
+                        const el = document.getElementById(`tile-${t.id}`);
+                        if(el) el.remove();
+                        activeTiles = activeTiles.filter(at => at.id !== t.id);
+                    });
+
+                    // 병합된 타일 값 갱신 및 팝 효과
+                    activeTiles.forEach(t => {
+                        const el = document.getElementById(`tile-${t.id}`);
+                        if(el && t.isMergedThisTurn) {
+                            t.isMergedThisTurn = false;
+                            t.val = t.nextVal;
+                            updateTileDOMElement(el, t);
+                            el.classList.remove('tile-pop', 'tile-appear');
+                            void el.offsetWidth; // reflow
+                            el.classList.add('tile-pop');
+                        }
+                    });
+
+                    checkGameOver();
+                    isAnimating = false;
+                }, 150);
+            } else {
+                // 이동 실패 시 (흔들림 효과 등은 생략)
+            }
+        }
+
+        function checkGameOver() {
+            let canMove = false;
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (!board[r][c]) canMove = true;
+                    if (board[r][c]) {
+                        if (r < 3 && board[r+1][c] && canMerge(board[r][c].val, board[r+1][c].val)) canMove = true;
+                        if (c < 3 && board[r][c+1] && canMerge(board[r][c].val, board[r][c+1].val)) canMove = true;
+                    }
+                }
+            }
+
+            if (!canMove) {
+                isGameOver = true;
+                playSound('gameover');
+                document.getElementById('finalRankDisplay').innerHTML = `최종 티어: <span class="${rankNameDisplay.className}">${rankNameDisplay.innerText}</span>`;
+                gameOverOverlay.style.opacity = '1';
+                gameOverOverlay.style.pointerEvents = 'auto';
+            }
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('keydown', (e) => {
+            if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
+                e.preventDefault();
+                initAudio();
+            }
+            if(e.key === 'ArrowUp' || e.key === 'w') move('Up');
+            if(e.key === 'ArrowDown' || e.key === 's') move('Down');
+            if(e.key === 'ArrowLeft' || e.key === 'a') move('Left');
+            if(e.key === 'ArrowRight' || e.key === 'd') move('Right');
+        });
+
+        let touchStartX = 0, touchStartY = 0;
+        const gameBoardEl = document.getElementById('gameBoard');
+
+        gameBoardEl.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+            initAudio();
+        }, {passive: true});
+
+        gameBoardEl.addEventListener('touchend', e => {
+            if(isGameOver) return;
+            let dx = e.changedTouches[0].screenX - touchStartX;
+            let dy = e.changedTouches[0].screenY - touchStartY;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (Math.abs(dx) > 30) dx > 0 ? move('Right') : move('Left');
+            } else {
+                if (Math.abs(dy) > 30) dy > 0 ? move('Down') : move('Up');
+            }
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', initGame);
+        document.getElementById('soundToggleBtn').addEventListener('click', toggleSound);
+
+        // Start game
+        initGame();
+
+    </script>
+</body>
+</html>

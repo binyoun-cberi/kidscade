@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>남극 탐험 대작전</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none; /* 모바일에서 스크롤 방지 */
+            user-select: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 40%, #FFFFFF 40%, #E0F2FE 100%);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .hud-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #1e3a8a; /* blue-900 */
+            text-shadow: 2px 2px 0px #fff;
+        }
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto; /* 오버레이는 클릭 가능 */
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            backdrop-filter: blur(2px);
+        }
+        .btn {
+            margin-top: 20px;
+            padding: 12px 36px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            background-color: #3b82f6; /* blue-500 */
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn:hover { background-color: #2563eb; }
+        .btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="ui-layer">
+        <div class="flex justify-between w-full">
+            <div class="hud-text">점수: <span id="scoreDisplay">0</span></div>
+            <div class="hud-text text-yellow-600">최고: <span id="highScoreDisplay">0</span></div>
+        </div>
+        
+        <!-- 모바일 조작 안내용 힌트 -->
+        <div class="flex justify-between w-full opacity-40 text-sm font-bold text-blue-900 md:hidden">
+            <div>&lt; 좌측 터치</div>
+            <div>상단 터치 (점프)</div>
+            <div>우측 터치 &gt;</div>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <h1 class="text-5xl font-extrabold mb-4 text-blue-300 drop-shadow-lg" id="overlayTitle">남극 탐험</h1>
+        <p class="text-xl mb-6 leading-relaxed" id="overlayDesc">
+            <span class="font-bold text-yellow-300">PC:</span> 좌/우 방향키 이동, 스페이스바 점프<br>
+            <span class="font-bold text-yellow-300">모바일:</span> 화면 좌/우 하단 터치 이동, 상단 터치 점프
+        </p>
+        <button id="actionBtn" class="btn">게임 시작</button>
+    </div>
+</div>
+
+<script>
+    /** ==========================================
+     * 오디오 시스템 (Web Audio API 활용)
+     * ========================================== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playTone(freq, type, duration, vol=0.1) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+        return osc;
+    }
+
+    // MIDI 노트를 주파수로 변환하는 함수
+    const m2f = m => 440 * Math.pow(2, (m - 69) / 12);
+    
+    // 신나고 캐주얼한 8비트 아르페지오 멜로디 루프
+    const bgmNotes = [72, 76, 79, 76, 72, 67, 72, 67, 74, 77, 81, 77, 74, 69, 74, 69];
+    let bgmInterval = null;
+    let currentNote = 0;
+
+    const Sound = {
+        jump: () => {
+            const osc = playTone(300, 'sine', 0.3, 0.1);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+        },
+        coin: () => {
+            playTone(1200, 'square', 0.1, 0.05);
+            setTimeout(() => playTone(1600, 'square', 0.15, 0.05), 50);
+        },
+        hit: () => {
+            const osc = playTone(150, 'sawtooth', 0.5, 0.2);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+        },
+        step: () => {
+            // 귀여운 '뾱!' 하는 발소리 (짧은 트라이앵글 파동)
+            const osc = playTone(800, 'triangle', 0.05, 0.015);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+        },
+        startBGM: () => {
+            if (bgmInterval) clearInterval(bgmInterval);
+            currentNote = 0;
+            bgmInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') return;
+                const note = bgmNotes[currentNote % bgmNotes.length];
+                playTone(m2f(note), 'square', 0.1, 0.02); // 메인 멜로디
+                playTone(m2f(note - 12), 'triangle', 0.15, 0.03); // 베이스
+                currentNote++;
+            }, 180); // 180ms 간격으로 경쾌하게 재생
+        },
+        stopBGM: () => {
+            if (bgmInterval) clearInterval(bgmInterval);
+        }
+    };
+
+
+    /** ==========================================
+     * 게임 설정 및 상태
+     * ========================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreUI = document.getElementById('scoreDisplay');
+    const highScoreUI = document.getElementById('highScoreDisplay');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayDesc = document.getElementById('overlayDesc');
+    const actionBtn = document.getElementById('actionBtn');
+
+    let gameState = 'START'; 
+    let score = 0;
+    let distance = 0;
+    let highScore = localStorage.getItem('antarctic_highscore') || 0;
+    highScoreUI.textContent = Math.floor(highScore);
+
+    // 3D 렌더링 카메라 (FOV 및 높이)
+    const FOV = 300;
+    const HORIZON_Y = 240; 
+    const CAMERA_Y = 100;
+    
+    // 플레이어 객체
+    const player = {
+        x: 0,           
+        y: 0,           
+        z: 120,         // 기존 50에서 120으로 수정! 화면 하단에 안정적으로 보이게 됨
+        vx: 0,          
+        vy: 0,          
+        isJumping: false,
+        size: 20,
+        stepTimer: 0    // 발소리 재생을 위한 타이머
+    };
+
+    let baseSpeed = 200; 
+    let currentSpeed = baseSpeed;
+    let objects = []; 
+    let spawnTimer = 0;
+    let time = 0; 
+    
+    // 키 및 터치 상태 관리 (터치를 개별 변수로 분리하여 충돌 방지)
+    const keys = { Left: false, Right: false };
+
+
+    /** ==========================================
+     * 입력 처리 (키보드 및 멀티 터치)
+     * ========================================== */
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'ArrowLeft' || e.code === 'ArrowLeft') keys.Left = true;
+        if(e.key === 'ArrowRight' || e.code === 'ArrowRight') keys.Right = true;
+        if(e.key === ' ' || e.code === 'Space') {
+            if(gameState === 'PLAYING' && !player.isJumping) doJump();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if(e.key === 'ArrowLeft' || e.code === 'ArrowLeft') keys.Left = false;
+        if(e.key === 'ArrowRight' || e.code === 'ArrowRight') keys.Right = false;
+    });
+
+    function handleTouch(e) {
+        e.preventDefault();
+        if(gameState !== 'PLAYING') return;
+        
+        keys.Left = false;
+        keys.Right = false;
+        
+        const rect = canvas.getBoundingClientRect();
+        
+        for(let i=0; i<e.touches.length; i++) {
+            const touchX = e.touches[i].clientX - rect.left;
+            const touchY = e.touches[i].clientY - rect.top;
+            
+            // 상단 50% 터치는 점프
+            if(touchY < rect.height / 2) {
+                if(e.type === 'touchstart' && !player.isJumping) doJump();
+            } else {
+                // 하단은 좌우 이동
+                if(touchX < rect.width / 2) keys.Left = true;
+                else keys.Right = true;
+            }
+        }
+    }
+
+    canvas.addEventListener('touchstart', handleTouch, {passive: false});
+    canvas.addEventListener('touchmove', handleTouch, {passive: false});
+    canvas.addEventListener('touchend', handleTouch, {passive: false});
+    canvas.addEventListener('touchcancel', handleTouch, {passive: false});
+
+    actionBtn.addEventListener('click', () => {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        if(gameState === 'START' || gameState === 'GAMEOVER') {
+            startGame();
+        }
+    });
+
+
+    /** ==========================================
+     * 게임 로직 및 물리
+     * ========================================== */
+    function startGame() {
+        gameState = 'PLAYING';
+        score = 0;
+        distance = 0;
+        currentSpeed = baseSpeed;
+        objects = [];
+        player.x = 0;
+        player.y = 0;
+        player.vy = 0;
+        player.isJumping = false;
+        player.stepTimer = 0;
+        keys.Left = false;
+        keys.Right = false;
+        overlay.style.display = 'none';
+        lastTime = performance.now();
+        Sound.startBGM(); // 게임 시작 시 BGM 재생
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        gameState = 'GAMEOVER';
+        Sound.stopBGM(); // 게임 오버 시 BGM 정지
+        Sound.hit();
+        
+        if(score > highScore) {
+            highScore = score;
+            localStorage.setItem('antarctic_highscore', highScore);
+            highScoreUI.textContent = Math.floor(highScore);
+            overlayTitle.textContent = "새로운 최고 점수!";
+            overlayTitle.className = "text-5xl font-extrabold mb-4 text-yellow-400 drop-shadow-lg";
+        } else {
+            overlayTitle.textContent = "게임 오버";
+            overlayTitle.className = "text-5xl font-extrabold mb-4 text-red-400 drop-shadow-lg";
+        }
+        
+        overlayDesc.innerHTML = `최종 점수: <span class="text-white font-bold">${Math.floor(score)}</span>`;
+        actionBtn.textContent = "다시 하기";
+        overlay.style.display = 'flex';
+    }
+
+    function doJump() {
+        player.vy = 180; 
+        player.isJumping = true;
+        Sound.jump();
+    }
+
+    function spawnObject() {
+        const typeRoll = Math.random();
+        let type = 'hole'; 
+        
+        if(typeRoll < 0.3) type = 'fish'; 
+        else if (typeRoll < 0.5 && currentSpeed > 250) type = 'seal'; 
+
+        objects.push({
+            type: type,
+            x: (Math.random() - 0.5) * 260, // -130 ~ 130 트랙 내 무작위 생성
+            y: (type === 'fish') ? 30 : 0, 
+            z: 800, 
+            size: (type === 'fish') ? 15 : 30,
+            active: true,
+            sealTimer: Math.random() * Math.PI * 2
+        });
+    }
+
+    function update(dt) {
+        time += dt;
+
+        currentSpeed += dt * 5; 
+        distance += currentSpeed * dt;
+        score += dt * 10;
+        scoreUI.textContent = Math.floor(score);
+
+        // 플레이어 좌우 이동 (속도를 높여서 조작감을 개선)
+        const moveSpeed = 350;
+        if(keys.Left) player.x -= moveSpeed * dt;
+        if(keys.Right) player.x += moveSpeed * dt;
+        
+        // 트랙 벗어남 방지 한계선 설정
+        if(player.x < -130) player.x = -130;
+        if(player.x > 130) player.x = 130;
+
+        // 플레이어 중력 및 점프 처리
+        if(player.isJumping) {
+            player.y += player.vy * dt;
+            player.vy -= 600 * dt; 
+            if(player.y <= 0) {
+                player.y = 0;
+                player.isJumping = false;
+                player.vy = 0;
+            }
+        } else {
+            // 점프 중이 아닐 때 발소리 재생
+            player.stepTimer += dt;
+            // 이동 속도(currentSpeed)에 비례하여 발소리 간격 조절 (속도가 빠를수록 발소리도 빠름)
+            const stepInterval = Math.max(0.1, 0.2 * (baseSpeed / currentSpeed));
+            if (player.stepTimer > stepInterval) {
+                Sound.step();
+                player.stepTimer = 0;
+            }
+        }
+
+        // 오브젝트 생성
+        let spawnInterval = Math.max(0.4, 1.5 - (currentSpeed - baseSpeed) * 0.003);
+        spawnTimer += dt;
+        if(spawnTimer > spawnInterval) {
+            spawnObject();
+            spawnTimer = 0;
+        }
+
+        // 오브젝트 이동 및 충돌 체크
+        for(let i = objects.length - 1; i >= 0; i--) {
+            let obj = objects[i];
+            obj.z -= currentSpeed * dt;
+
+            if(obj.type === 'seal') {
+                obj.sealTimer += dt * 5;
+                obj.y = Math.max(0, Math.sin(obj.sealTimer) * 30);
+            }
+
+            // 플레이어 Z값(120) 근처 도달 시 충돌 감지
+            if(obj.active && Math.abs(obj.z - player.z) < 20) {
+                if(Math.abs(obj.x - player.x) < (player.size + obj.size) * 0.8) {
+                    if(obj.type === 'fish') {
+                        score += 500;
+                        Sound.coin();
+                        obj.active = false; 
+                    } else {
+                        const hitThreshold = (obj.type === 'seal') ? obj.y + 20 : 10;
+                        if(player.y < hitThreshold) {
+                            gameOver();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // 카메라 뒤로 넘어가면 삭제
+            if(obj.z < 0) objects.splice(i, 1);
+        }
+    }
+
+
+    /** ==========================================
+     * 렌더링 (원근법 및 그래픽 처리)
+     * ========================================== */
+    function project(x, y, z) {
+        const scale = FOV / Math.max(1, z); 
+        const sx = canvas.width / 2 + x * scale;
+        // 카메라 높이를 고려한 Y좌표 계산
+        const sy = HORIZON_Y + (CAMERA_Y - y) * scale; 
+        return { x: sx, y: sy, scale: scale };
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 하늘
+        ctx.fillStyle = "#87CEEB"; 
+        ctx.fillRect(0, 0, canvas.width, HORIZON_Y);
+
+        // 단순화된 빙산 배경
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(0, HORIZON_Y); ctx.lineTo(100, HORIZON_Y - 80); ctx.lineTo(200, HORIZON_Y);
+        ctx.fill();
+        
+        ctx.fillStyle = "#e0f2fe";
+        ctx.beginPath();
+        ctx.moveTo(150, HORIZON_Y); ctx.lineTo(300, HORIZON_Y - 120); ctx.lineTo(450, HORIZON_Y);
+        ctx.fill();
+
+        // 눈밭 지면
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, HORIZON_Y, canvas.width, canvas.height - HORIZON_Y);
+
+        ctx.strokeStyle = "#cbd5e1"; 
+        ctx.lineWidth = 2;
+        
+        // 주행 트랙 라인
+        const lines = [-150, -50, 50, 150];
+        lines.forEach(lx => {
+            ctx.beginPath();
+            const p1 = project(lx, 0, 800);
+            const p2 = project(lx, 0, 10);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        });
+
+        // 가로선 (앞으로 전진하는 스크롤 속도감 제공)
+        ctx.strokeStyle = "#e2e8f0";
+        for(let z = (distance % 50); z < 800; z += 50) {
+            const zPos = 800 - z;
+            const pLeft = project(-200, 0, zPos);
+            const pRight = project(200, 0, zPos);
+            ctx.beginPath();
+            ctx.moveTo(pLeft.x, pLeft.y);
+            ctx.lineTo(pRight.x, pRight.y);
+            ctx.stroke();
+        }
+
+        // 렌더링 정렬 (멀리 있는 것부터)
+        let renderList = objects.filter(o => o.active).map(o => ({...o, isPlayer: false}));
+        renderList.push({ ...player, isPlayer: true });
+        renderList.sort((a, b) => b.z - a.z);
+
+        // 오브젝트 및 그림자 그리기
+        renderList.forEach(obj => {
+            // 구멍이 아닌 모든 물체에 바닥 그림자 부여 (공간감 확보)
+            if(obj.type !== 'hole') {
+                const groundP = project(obj.x, 0, obj.z);
+                ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+                ctx.beginPath();
+                const shadowSize = obj.size * groundP.scale;
+                ctx.ellipse(groundP.x, groundP.y, shadowSize, shadowSize * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const p = project(obj.x, obj.y, obj.z);
+            
+            if(obj.isPlayer) {
+                drawPenguin(p.x, p.y, p.scale);
+            } else {
+                if(obj.type === 'hole') {
+                    drawHole(p.x, p.y, p.scale, obj.size);
+                } else if (obj.type === 'fish') {
+                    drawFish(p.x, p.y, p.scale, obj.size);
+                } else if (obj.type === 'seal') {
+                    const base = project(obj.x, 0, obj.z);
+                    drawHole(base.x, base.y, base.scale, 30);
+                    drawSeal(p.x, p.y, p.scale, obj.size);
+                }
+            }
+        });
+    }
+
+    /** 그래픽 그리기 함수들 (좌표 기준을 발끝/바닥으로 수정하여 둥둥 뜨지 않게 앵커링) */
+    function drawHole(x, y, scale, size) {
+        ctx.fillStyle = "#1e3a8a"; 
+        ctx.beginPath();
+        ctx.ellipse(x, y, size * scale * 1.5, size * scale * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawFish(x, y, scale, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.translate(0, Math.sin(time * 5) * 5 * scale); // 둥둥 떠다니는 모션
+        ctx.scale(scale, scale);
+
+        ctx.fillStyle = "#06b6d4"; 
+        ctx.beginPath(); ctx.ellipse(0, 0, size, size * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-size * 0.8, 0); ctx.lineTo(-size * 1.5, -size * 0.6); ctx.lineTo(-size * 1.5, size * 0.6); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawSeal(x, y, scale, size) {
+        ctx.save();
+        const s = size * scale;
+        ctx.translate(x, y); 
+        ctx.scale(scale, scale);
+        ctx.translate(0, -size); // 바닥 앵커 조정
+
+        ctx.fillStyle = "#854d0e";
+        ctx.beginPath(); ctx.arc(0, 0, size, Math.PI, 0); ctx.lineTo(size, size); ctx.lineTo(-size, size); ctx.fill();
+        
+        ctx.fillStyle = "black";
+        ctx.beginPath(); ctx.arc(-size*0.3, -size*0.3, size*0.15, 0, Math.PI*2); ctx.arc(size*0.3, -size*0.3, size*0.15, 0, Math.PI*2); ctx.fill();
+
+        ctx.strokeStyle = "black"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-size*0.2, 0); ctx.lineTo(-size*0.8, -size*0.1); ctx.moveTo(-size*0.2, size*0.1); ctx.lineTo(-size*0.8, size*0.2);
+        ctx.moveTo(size*0.2, 0); ctx.lineTo(size*0.8, -size*0.1); ctx.moveTo(size*0.2, size*0.1); ctx.lineTo(size*0.8, size*0.2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawPenguin(x, y, scale) {
+        ctx.save();
+        const s = player.size * scale;
+        
+        // 위치를 발끝(Ground) 기준으로 렌더링하도록 Y축을 위로 이동
+        ctx.translate(x, y - s);
+        
+        let wobble = 0;
+        if(!player.isJumping) wobble = Math.sin(time * 15) * 0.15; 
+        ctx.rotate(wobble);
+        
+        // 다리 (교차 이동)
+        ctx.fillStyle = "#f97316";
+        const legAnim = player.isJumping ? 0 : Math.cos(time * 15) * s * 0.5;
+        ctx.beginPath();
+        ctx.ellipse(-s*0.4, s*0.8 + legAnim, s*0.3, s*0.15, 0, 0, Math.PI*2);
+        ctx.ellipse(s*0.4, s*0.8 - legAnim, s*0.3, s*0.15, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        // 몸
+        ctx.fillStyle = "#000000";
+        ctx.beginPath(); ctx.ellipse(0, 0, s*0.9, s, 0, 0, Math.PI * 2); ctx.fill();
+
+        // 배
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.ellipse(0, s*0.2, s*0.65, s*0.7, 0, 0, Math.PI * 2); ctx.fill();
+
+        // 눈 (더 크고 귀엽게)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(-s*0.3, -s*0.4, s*0.25, 0, Math.PI*2); ctx.arc(s*0.3, -s*0.4, s*0.25, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.beginPath(); ctx.arc(-s*0.3, -s*0.4, s*0.12, 0, Math.PI*2); ctx.arc(s*0.3, -s*0.4, s*0.12, 0, Math.PI*2); ctx.fill();
+
+        // 부리
+        ctx.fillStyle = "#f97316";
+        ctx.beginPath(); ctx.moveTo(-s*0.2, -s*0.1); ctx.lineTo(s*0.2, -s*0.1); ctx.lineTo(0, s*0.1); ctx.fill();
+
+        ctx.restore();
+    }
+
+
+    /** ==========================================
+     * 메인 루프 처리
+     * ========================================== */
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+        if(gameState !== 'PLAYING') return;
+        
+        let dt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+        if(dt > 0.1) dt = 0.1;
+
+        update(dt);
+        draw();
+
+        if(gameState === 'PLAYING') {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    draw(); // 초기 정지 화면 그리기
+</script>
+</body>
+</html>

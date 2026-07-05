@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 필수 영단어 스피드 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --primary-hover: #357ABD;
+            --bg-color: #F4F7F6;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --rank-bronze: #cd7f32;
+            --rank-silver: #bdc3c7;
+            --rank-gold: #f1c40f;
+            --rank-platinum: #7f8c8d;
+            --rank-diamond: #3498db;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.8s ease; 
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 95vh;
+            position: relative;
+            z-index: 10;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        /* 공통 유틸리티 */
+        .hidden { display: none !important; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+            margin-top: 5px;
+        }
+        .btn:hover { background-color: var(--primary-hover); opacity: 0.9; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .flex-row { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* 랭크 뱃지 스타일 */
+        .rank-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .rank-unranked { background: #95a5a6; }
+        .rank-bronze { background: var(--rank-bronze); }
+        .rank-silver { background: var(--rank-silver); color: #333; }
+        .rank-gold { background: var(--rank-gold); color: #333; }
+        .rank-platinum { background: var(--rank-platinum); }
+        .rank-diamond { background: var(--rank-diamond); }
+
+        .rank-result {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 설정 화면 */
+        .setting-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .setting-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+        .radio-group label {
+            flex: 1;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: normal;
+            margin: 0;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label {
+            background: #E8F0FE;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 게임 화면 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .bgm-toggle-btn {
+            background: #f9f9f9;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .bgm-toggle-btn.off {
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        .score-board {
+            background: #E8F0FE;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .timer {
+            font-size: 24px;
+            color: var(--primary-color);
+            transition: color 0.3s;
+        }
+        .timer.danger {
+            color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 콤보 효과 */
+        .combo-display {
+            font-size: 20px;
+            font-weight: 900;
+            color: #FF9800;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        .combo-display.active {
+            opacity: 1;
+            animation: combo-pop 0.3s ease-in-out forwards;
+        }
+        .combo-display.combo-high {
+            color: var(--danger-color);
+            font-size: 24px;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+        }
+        @keyframes combo-pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .question-box {
+            background: #f9f9f9;
+            padding: 30px 20px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            word-break: keep-all;
+            border: 1px solid #eee;
+            color: var(--primary-color);
+        }
+        .question-box.word-mode {
+            font-size: 32px;
+        }
+        
+        /* 객관식 버튼 */
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .choice-grid.desc-mode {
+            grid-template-columns: 1fr 1fr; /* 영단어는 짧아서 2줄도 괜찮음 */
+        }
+        .choice-btn {
+            background: #f1f1f1;
+            border: 2px solid transparent;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: #e2e2e2;
+        }
+        
+        .choice-btn.correct {
+            background-color: var(--success-color) !important;
+            color: white;
+            border-color: var(--success-color);
+        }
+        .choice-btn.wrong {
+            background-color: var(--danger-color) !important;
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* 결과 화면 */
+        .result-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #FDFBF7;
+            border-radius: 12px;
+            border: 1px solid #F1E5D1;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        .best-score {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+        
+        /* 오답 노트 */
+        .wrong-list {
+            max-height: 180px;
+            overflow-y: auto;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .wrong-item {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .wrong-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .wrong-desc { color: var(--text-main); margin-bottom: 6px; font-weight: bold; font-size: 16px;}
+        .wrong-word { color: var(--success-color); font-weight: bold; }
+        .user-word { color: var(--danger-color); text-decoration: line-through; margin-right: 8px; }
+
+        /* ================= 방해 애니메이션(Distractions) ================= */
+        #distraction-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none; /* 클릭을 막지 않음 */
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .distraction-entity {
+            position: absolute;
+            font-size: 50px;
+            user-select: none;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes anim-ghost {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.9; transform: scale(1.5); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .anim-ghost { animation: anim-ghost 3s ease-in-out forwards; }
+
+        @keyframes anim-float {
+            0% { transform: translateY(110vh) rotate(-10deg); }
+            100% { transform: translateY(-20vh) rotate(10deg); }
+        }
+        .anim-float { top: 0; animation: anim-float 6s linear forwards; }
+
+        @keyframes anim-jump {
+            0% { transform: translate(-10vw, 90vh); }
+            20% { transform: translate(10vw, 60vh); }
+            40% { transform: translate(30vw, 90vh); }
+            60% { transform: translate(50vw, 60vh); }
+            80% { transform: translate(70vw, 90vh); }
+            100% { transform: translate(110vw, 60vh); }
+        }
+        .anim-jump { top: 0; left: 0; animation: anim-jump 4s linear forwards; }
+
+        @keyframes anim-climb {
+            0% { transform: translateY(110vh) rotate(10deg); }
+            50% { transform: translateY(50vh) rotate(-10deg); }
+            100% { transform: translateY(-20vh) rotate(10deg); }
+        }
+        .anim-climb { top: 0; animation: anim-climb 5s ease-in-out forwards; }
+
+        @keyframes anim-run-fast {
+            0% { transform: translateX(-20vw) scaleX(-1); }
+            100% { transform: translateX(120vw) scaleX(-1); }
+        }
+        .anim-run-fast { left: 0; animation: anim-run-fast 3s linear forwards; }
+
+        @keyframes anim-fly-arc {
+            0% { transform: translate(-10vw, 60vh) rotate(0deg); }
+            50% { transform: translate(50vw, 20vh) rotate(360deg); }
+            100% { transform: translate(120vw, 70vh) rotate(720deg); }
+        }
+        .anim-fly-arc { top: 0; left: 0; animation: anim-fly-arc 4s linear forwards; }
+
+        @keyframes anim-jump-catch {
+            0% { transform: translate(-20vw, 90vh) scaleX(-1); }
+            50% { transform: translate(45vw, 30vh) scaleX(-1); }
+            100% { transform: translate(110vw, 90vh) scaleX(-1); }
+        }
+        .anim-jump-catch { top: 0; left: 0; animation: anim-jump-catch 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        @keyframes anim-erratic {
+            0% { transform: translate(-10vw, 50vh); }
+            25% { transform: translate(30vw, 10vh); }
+            50% { transform: translate(60vw, 80vh); }
+            75% { transform: translate(80vw, 20vh); }
+            100% { transform: translate(110vw, 50vh); }
+        }
+        .anim-erratic { top: 0; left: 0; font-size: 30px; animation: anim-erratic 5s linear forwards; }
+
+        @keyframes anim-spaceship {
+            0% { transform: translate(-20vw, 20vh) scale(0.5); }
+            25% { transform: translate(30vw, 5vh) scale(1.5) rotate(15deg); }
+            50% { transform: translate(80vw, 40vh) scale(2) rotate(-15deg); }
+            75% { transform: translate(30vw, 80vh) scale(1) rotate(20deg); }
+            100% { transform: translate(-20vw, 20vh) scale(0.5); }
+        }
+        .anim-spaceship { top: 0; left: 0; font-size: 60px; animation: anim-spaceship 6s ease-in-out forwards; }
+    </style>
+</head>
+<body>
+
+<!-- 방해 애니메이션을 그려줄 전용 레이어 -->
+<div id="distraction-layer"></div>
+
+<div class="container">
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1>초등 영단어 퀴즈</h1>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">초등학교 5~6학년 필수 영단어 500개 총집합!</p>
+        
+        <div id="my-rank-display" class="rank-badge rank-unranked">현재 랭크: 언랭크</div>
+        
+        <div class="setting-group" style="margin-top: 5px;">
+            <label>제한 시간 (1문제 당)</label>
+            <div class="radio-group">
+                <input type="radio" id="time5" name="timeSetting" value="5">
+                <label for="time5">5초</label>
+                <input type="radio" id="time10" name="timeSetting" value="10" checked>
+                <label for="time10">10초</label>
+                <input type="radio" id="time15" name="timeSetting" value="15">
+                <label for="time15">15초</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label>문제 유형</label>
+            <div class="radio-group">
+                <input type="radio" id="typeWord" name="typeSetting" value="word" checked>
+                <label for="typeWord">영단어 보고 뜻 맞추기</label>
+                <input type="radio" id="typeDesc" name="typeSetting" value="desc">
+                <label for="typeDesc">뜻 보고 영단어 맞추기</label>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <button class="btn" style="background-color: #2ecc71; flex: 1; font-size:14px;" onclick="startGame(false, 'normal')">연습 (1판)</button>
+            <button class="btn" id="rank-btn" style="flex: 2; font-size:15px;" onclick="startGame(false, 'rank')">배치고사 시작 (5판)</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <div id="question-counter">문제 1 / 20</div>
+            <div style="display:flex; gap: 5px;">
+                <button id="bgm-toggle" class="bgm-toggle-btn" onclick="toggleBGM()">🎵 BGM ON</button>
+            </div>
+            <div id="timer-display" class="timer">10초</div>
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <div id="current-score-display" class="score-board" style="margin-bottom: 0;">현재 점수: 0점</div>
+            <div id="combo-display" class="combo-display"></div>
+        </div>
+        
+        <div id="question-text" class="question-box">문제 설명이 여기에 나옵니다.</div>
+
+        <div id="choice-input-container" class="choice-grid hidden">
+            <!-- 동적 생성 -->
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen" class="hidden">
+        <h2 id="result-title">게임 종료!</h2>
+        <div class="result-box">
+            <p id="result-subtitle" style="margin: 0;">당신의 최종 점수</p>
+            <div id="final-score" class="score-display">0점</div>
+            <div id="rank-result-display" class="rank-result hidden">다이아몬드</div>
+            <div id="best-score" class="best-score">역대 최고 점수: 0점</div>
+        </div>
+
+        <!-- 오답 노트 영역 -->
+        <div class="setting-group">
+            <label style="color: var(--danger-color);">오답 노트 (틀린 문제)</label>
+            <div id="wrong-answers-list" class="wrong-list">
+                <!-- 자바스크립트로 생성됨 -->
+            </div>
+        </div>
+
+        <!-- 종료 화면에서의 설정 영역 -->
+        <div id="res-setting-group">
+            <div class="setting-group">
+                <label>제한 시간 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-time5" name="resTimeSetting" value="5">
+                    <label for="res-time5">5초</label>
+                    <input type="radio" id="res-time10" name="resTimeSetting" value="10" checked>
+                    <label for="res-time10">10초</label>
+                    <input type="radio" id="res-time15" name="resTimeSetting" value="15">
+                    <label for="res-time15">15초</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>문제 유형 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-typeWord" name="resTypeSetting" value="word" checked>
+                    <label for="res-typeWord">영단어 보고 뜻 맞추기</label>
+                    <input type="radio" id="res-typeDesc" name="resTypeSetting" value="desc">
+                    <label for="res-typeDesc">뜻 보고 영단어 맞추기</label>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <button id="res-next-round-btn" class="btn hidden" style="background-color:#9b59b6;" onclick="startNextRound()">다음 라운드 시작</button>
+            <button id="res-restart-btn" class="btn" onclick="startGame(true, currentMode)">다시 하기</button>
+            <button class="btn" onclick="goHome()" style="background-color: #999; margin-top: 0;">메인으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 초등 5~6학년 필수 영단어 500개 데이터
+    const wordDictionary = [
+        // 명사 (사람/가족)
+        { word: "family", desc: "가족" }, { word: "parents", desc: "부모님" }, { word: "father", desc: "아버지" },
+        { word: "mother", desc: "어머니" }, { word: "brother", desc: "남자 형제" }, { word: "sister", desc: "여자 형제" },
+        { word: "uncle", desc: "삼촌, 아저씨" }, { word: "aunt", desc: "이모, 고모" }, { word: "cousin", desc: "사촌" },
+        { word: "grandfather", desc: "할아버지" }, { word: "grandmother", desc: "할머니" }, { word: "child", desc: "아이" },
+        { word: "children", desc: "아이들" }, { word: "friend", desc: "친구" }, { word: "boy", desc: "소년" },
+        { word: "girl", desc: "소녀" }, { word: "man", desc: "남자" }, { word: "woman", desc: "여자" },
+        { word: "people", desc: "사람들" }, { word: "baby", desc: "아기" }, { word: "student", desc: "학생" },
+        { word: "teacher", desc: "선생님" }, { word: "doctor", desc: "의사" }, { word: "nurse", desc: "간호사" },
+        { word: "farmer", desc: "농부" }, { word: "singer", desc: "가수" }, { word: "dancer", desc: "무용수" },
+        { word: "actor", desc: "배우" }, { word: "writer", desc: "작가" }, { word: "artist", desc: "화가, 예술가" },
+        { word: "pilot", desc: "조종사" }, { word: "police", desc: "경찰관" }, { word: "cook", desc: "요리사" },
+        { word: "engineer", desc: "엔지니어, 기술자" }, { word: "scientist", desc: "과학자" },
+        
+        // 신체/건강
+        { word: "head", desc: "머리" }, { word: "hair", desc: "머리카락" }, { word: "face", desc: "얼굴" },
+        { word: "eye", desc: "눈" }, { word: "ear", desc: "귀" }, { word: "nose", desc: "코" },
+        { word: "mouth", desc: "입" }, { word: "lip", desc: "입술" }, { word: "tooth", desc: "치아 (단수)" },
+        { word: "teeth", desc: "치아들 (복수)" }, { word: "neck", desc: "목" }, { word: "shoulder", desc: "어깨" },
+        { word: "arm", desc: "팔" }, { word: "hand", desc: "손" }, { word: "finger", desc: "손가락" },
+        { word: "leg", desc: "다리" }, { word: "foot", desc: "발 (단수)" }, { word: "feet", desc: "발들 (복수)" },
+        { word: "toe", desc: "발가락" }, { word: "body", desc: "몸" }, { word: "heart", desc: "심장, 마음" },
+        { word: "blood", desc: "피, 혈액" }, { word: "bone", desc: "뼈" }, { word: "health", desc: "건강" },
+        { word: "hospital", desc: "병원" }, { word: "medicine", desc: "약" }, { word: "cold", desc: "감기, 추운" },
+        { word: "fever", desc: "열" }, { word: "pain", desc: "통증, 아픔" }, { word: "sick", desc: "아픈" },
+        
+        // 음식/음료
+        { word: "food", desc: "음식" }, { word: "water", desc: "물" }, { word: "milk", desc: "우유" },
+        { word: "juice", desc: "주스" }, { word: "coffee", desc: "커피" }, { word: "tea", desc: "차" },
+        { word: "bread", desc: "빵" }, { word: "rice", desc: "쌀, 밥" }, { word: "meat", desc: "고기" },
+        { word: "beef", desc: "소고기" }, { word: "pork", desc: "돼지고기" }, { word: "chicken", desc: "닭고기" },
+        { word: "fish", desc: "물고기, 생선" }, { word: "egg", desc: "달걀" }, { word: "cheese", desc: "치즈" },
+        { word: "fruit", desc: "과일" }, { word: "apple", desc: "사과" }, { word: "banana", desc: "바나나" },
+        { word: "orange", desc: "오렌지" }, { word: "grape", desc: "포도" }, { word: "strawberry", desc: "딸기" },
+        { word: "peach", desc: "딸기" }, { word: "watermelon", desc: "수박" }, { word: "lemon", desc: "레몬" },
+        { word: "vegetable", desc: "채소" }, { word: "tomato", desc: "토마토" }, { word: "potato", desc: "감자" },
+        { word: "onion", desc: "양파" }, { word: "carrot", desc: "당근" }, { word: "salad", desc: "샐러드" },
+        { word: "soup", desc: "수프, 국" }, { word: "sugar", desc: "설탕" }, { word: "salt", desc: "소금" },
+        { word: "pepper", desc: "후추" }, { word: "snack", desc: "간식" }, { word: "candy", desc: "사탕" },
+        { word: "cookie", desc: "과자" }, { word: "chocolate", desc: "초콜릿" }, { word: "ice cream", desc: "아이스크림" },
+        { word: "cake", desc: "케이크" }, { word: "pizza", desc: "피자" }, { word: "hamburger", desc: "햄버거" },
+        { word: "sandwich", desc: "샌드위치" }, { word: "breakfast", desc: "아침 식사" }, { word: "lunch", desc: "점심 식사" },
+        { word: "dinner", desc: "저녁 식사" }, { word: "meal", desc: "식사" }, { word: "menu", desc: "메뉴" },
+        
+        // 자연/동물
+        { word: "nature", desc: "자연" }, { word: "sky", desc: "하늘" }, { word: "sun", desc: "태양" },
+        { word: "moon", desc: "달" }, { word: "star", desc: "별" }, { word: "earth", desc: "지구, 땅" },
+        { word: "world", desc: "세계" }, { word: "space", desc: "우주" }, { word: "mountain", desc: "산" },
+        { word: "hill", desc: "언덕" }, { word: "river", desc: "강" }, { word: "lake", desc: "호수" },
+        { word: "sea", desc: "바다" }, { word: "ocean", desc: "대양, 바다" }, { word: "island", desc: "섬" },
+        { word: "forest", desc: "숲" }, { word: "tree", desc: "나무" }, { word: "flower", desc: "꽃" },
+        { word: "grass", desc: "풀, 잔디" }, { word: "leaf", desc: "나뭇잎" }, { word: "wind", desc: "바람" },
+        { word: "cloud", desc: "구름" }, { word: "rain", desc: "비" }, { word: "snow", desc: "눈" },
+        { word: "ice", desc: "얼음" }, { word: "fire", desc: "불" }, { word: "light", desc: "빛" },
+        { word: "dark", desc: "어둠, 어두운" }, { word: "air", desc: "공기" }, { word: "stone", desc: "돌" },
+        { word: "rock", desc: "바위" }, { word: "sand", desc: "모래" }, { word: "animal", desc: "동물" },
+        { word: "dog", desc: "개" }, { word: "cat", desc: "고양이" }, { word: "mouse", desc: "쥐" },
+        { word: "cow", desc: "소" }, { word: "pig", desc: "돼지" }, { word: "horse", desc: "말" },
+        { word: "sheep", desc: "양" }, { word: "goat", desc: "염소" }, { word: "bird", desc: "새" },
+        { word: "chicken", desc: "닭" }, { word: "duck", desc: "오리" }, { word: "lion", desc: "사자" },
+        { word: "tiger", desc: "호랑이" }, { word: "bear", desc: "곰" }, { word: "elephant", desc: "코끼리" },
+        { word: "monkey", desc: "원숭이" }, { word: "rabbit", desc: "토끼" }, { word: "deer", desc: "사슴" },
+        { word: "fox", desc: "여우" }, { word: "wolf", desc: "늑대" }, { word: "frog", desc: "개구리" },
+        { word: "snake", desc: "뱀" }, { word: "turtle", desc: "거북이" }, { word: "insect", desc: "곤충" },
+        { word: "bee", desc: "벌" }, { word: "ant", desc: "개미" }, { word: "butterfly", desc: "나비" },
+        { word: "spider", desc: "거미" }, { word: "fly", desc: "파리" }, { word: "whale", desc: "고래" },
+        { word: "shark", desc: "상어" }, { word: "dolphin", desc: "돌고래" }, { word: "penguin", desc: "펭귄" },
+        
+        // 장소/물건
+        { word: "house", desc: "집" }, { word: "home", desc: "가정, 집" }, { word: "room", desc: "방" },
+        { word: "living room", desc: "거실" }, { word: "bedroom", desc: "침실" }, { word: "bathroom", desc: "욕실" },
+        { word: "kitchen", desc: "부엌" }, { word: "door", desc: "문" }, { word: "window", desc: "창문" },
+        { word: "wall", desc: "벽" }, { word: "floor", desc: "바닥" }, { word: "roof", desc: "지붕" },
+        { word: "bed", desc: "침대" }, { word: "chair", desc: "의자" }, { word: "desk", desc: "책상" },
+        { word: "table", desc: "탁자" }, { word: "sofa", desc: "소파" }, { word: "lamp", desc: "램프, 전등" },
+        { word: "clock", desc: "시계" }, { word: "mirror", desc: "거울" }, { word: "picture", desc: "사진, 그림" },
+        { word: "computer", desc: "컴퓨터" }, { word: "phone", desc: "전화기" }, { word: "television", desc: "텔레비전" },
+        { word: "radio", desc: "라디오" }, { word: "camera", desc: "사진기" }, { word: "bag", desc: "가방" },
+        { word: "box", desc: "상자" }, { word: "cup", desc: "컵" }, { word: "glass", desc: "유리잔, 유리" },
+        { word: "plate", desc: "접시" }, { word: "bowl", desc: "그릇" }, { word: "spoon", desc: "숟가락" },
+        { word: "fork", desc: "포크" }, { word: "knife", desc: "칼" }, { word: "bottle", desc: "병" },
+        { word: "book", desc: "책" }, { word: "notebook", desc: "공책" }, { word: "pencil", desc: "연필" },
+        { word: "pen", desc: "펜" }, { word: "eraser", desc: "지우개" }, { word: "ruler", desc: "자" },
+        { word: "paper", desc: "종이" }, { word: "school", desc: "학교" }, { word: "classroom", desc: "교실" },
+        { word: "library", desc: "도서관" }, { word: "park", desc: "공원" }, { word: "garden", desc: "정원" },
+        { word: "zoo", desc: "동물원" }, { word: "museum", desc: "박물관" }, { word: "bank", desc: "은행" },
+        { word: "post office", desc: "우체국" }, { word: "police station", desc: "경찰서" }, { word: "fire station", desc: "소방서" },
+        { word: "restaurant", desc: "식당" }, { word: "hotel", desc: "호텔" }, { word: "market", desc: "시장" },
+        { word: "supermarket", desc: "슈퍼마켓" }, { word: "shop", desc: "가게" }, { word: "store", desc: "상점" },
+        { word: "bakery", desc: "빵집" }, { word: "hospital", desc: "병원" }, { word: "pharmacy", desc: "약국" },
+        { word: "airport", desc: "공항" }, { word: "station", desc: "역" }, { word: "bus stop", desc: "버스 정류장" },
+        { word: "street", desc: "거리" }, { word: "road", desc: "도로" }, { word: "bridge", desc: "다리" },
+        { word: "city", desc: "도시" }, { word: "town", desc: "마을" }, { word: "village", desc: "시골 마을" },
+        { word: "country", desc: "국가, 시골" },
+        
+        // 옷/색깔
+        { word: "clothes", desc: "옷" }, { word: "shirt", desc: "셔츠" }, { word: "t-shirt", desc: "티셔츠" },
+        { word: "pants", desc: "바지" }, { word: "jeans", desc: "청바지" }, { word: "skirt", desc: "치마" },
+        { word: "dress", desc: "원피스" }, { word: "coat", desc: "코트" }, { word: "jacket", desc: "재킷" },
+        { word: "sweater", desc: "스웨터" }, { word: "hat", desc: "모자 (테가 있는)" }, { word: "cap", desc: "모자 (야구모자)" },
+        { word: "shoe", desc: "신발 (한 짝)" }, { word: "shoes", desc: "신발 (양쪽)" }, { word: "sock", desc: "양말 (한 짝)" },
+        { word: "socks", desc: "양말 (양쪽)" }, { word: "glove", desc: "장갑 (한 짝)" }, { word: "gloves", desc: "장갑 (양쪽)" },
+        { word: "scarf", desc: "목도리" }, { word: "belt", desc: "허리띠" }, { word: "ring", desc: "반지" },
+        { word: "glasses", desc: "안경" }, { word: "umbrella", desc: "우산" }, { word: "color", desc: "색깔" },
+        { word: "red", desc: "빨간색" }, { word: "blue", desc: "파란색" }, { word: "yellow", desc: "노란색" },
+        { word: "green", desc: "초록색" }, { word: "orange", desc: "주황색" }, { word: "purple", desc: "보라색" },
+        { word: "pink", desc: "분홍색" }, { word: "brown", desc: "갈색" }, { word: "black", desc: "검은색" },
+        { word: "white", desc: "흰색" }, { word: "gray", desc: "회색" }, { word: "silver", desc: "은색" },
+        { word: "gold", desc: "금색" },
+        
+        // 시간/날씨/방향
+        { word: "time", desc: "시간" }, { word: "hour", desc: "시간, 시" }, { word: "minute", desc: "분" },
+        { word: "second", desc: "초" }, { word: "morning", desc: "아침" }, { word: "afternoon", desc: "오후" },
+        { word: "evening", desc: "저녁" }, { word: "night", desc: "밤" }, { word: "today", desc: "오늘" },
+        { word: "tomorrow", desc: "내일" }, { word: "yesterday", desc: "어제" }, { word: "day", desc: "날, 하루" },
+        { word: "week", desc: "주, 일주일" }, { word: "month", desc: "달, 개월" }, { word: "year", desc: "년, 해" },
+        { word: "Monday", desc: "월요일" }, { word: "Tuesday", desc: "화요일" }, { word: "Wednesday", desc: "수요일" },
+        { word: "Thursday", desc: "목요일" }, { word: "Friday", desc: "금요일" }, { word: "Saturday", desc: "토요일" },
+        { word: "Sunday", desc: "일요일" }, { word: "weekend", desc: "주말" }, { word: "spring", desc: "봄" },
+        { word: "summer", desc: "여름" }, { word: "fall", desc: "가을" }, { word: "winter", desc: "겨울" },
+        { word: "season", desc: "계절" }, { word: "weather", desc: "날씨" }, { word: "sunny", desc: "화창한" },
+        { word: "cloudy", desc: "구름 낀" }, { word: "rainy", desc: "비가 오는" }, { word: "snowy", desc: "눈이 오는" },
+        { word: "windy", desc: "바람이 부는" }, { word: "hot", desc: "뜨거운, 더운" }, { word: "cold", desc: "추운" },
+        { word: "warm", desc: "따뜻한" }, { word: "cool", desc: "시원한" }, { word: "north", desc: "북쪽" },
+        { word: "south", desc: "남쪽" }, { word: "east", desc: "동쪽" }, { word: "west", desc: "서쪽" },
+        { word: "right", desc: "오른쪽, 옳은" }, { word: "left", desc: "왼쪽, 남겨진" }, { word: "up", desc: "위로" },
+        { word: "down", desc: "아래로" }, { word: "front", desc: "앞" }, { word: "back", desc: "뒤" },
+        
+        // 동사 (행동)
+        { word: "do", desc: "하다" }, { word: "make", desc: "만들다" }, { word: "go", desc: "가다" },
+        { word: "come", desc: "오다" }, { word: "have", desc: "가지다, 먹다" }, { word: "get", desc: "얻다, 구하다" },
+        { word: "take", desc: "가져가다, 잡다" }, { word: "give", desc: "주다" }, { word: "look", desc: "보다 (의식적으로)" },
+        { word: "see", desc: "보다 (눈에 보여서)" }, { word: "watch", desc: "보다 (지켜보다)" }, { word: "listen", desc: "듣다 (귀 기울여)" },
+        { word: "hear", desc: "듣다 (들려서)" }, { word: "speak", desc: "말하다 (언어를)" }, { word: "talk", desc: "이야기하다" },
+        { word: "say", desc: "말하다 (내용을)" }, { word: "tell", desc: "말하다 (누구에게)" }, { word: "read", desc: "읽다" },
+        { word: "write", desc: "쓰다" }, { word: "eat", desc: "먹다" }, { word: "drink", desc: "마시다" },
+        { word: "sleep", desc: "자다" }, { word: "wake", desc: "깨다" }, { word: "wash", desc: "씻다" },
+        { word: "clean", desc: "청소하다" }, { word: "play", desc: "놀다, 연주하다" }, { word: "study", desc: "공부하다" },
+        { word: "learn", desc: "배우다" }, { word: "teach", desc: "가르치다" }, { word: "work", desc: "일하다" },
+        { word: "help", desc: "돕다" }, { word: "walk", desc: "걷다" }, { word: "run", desc: "달리다" },
+        { word: "jump", desc: "점프하다" }, { word: "swim", desc: "수영하다" }, { word: "fly", desc: "날다" },
+        { word: "ride", desc: "타다" }, { word: "drive", desc: "운전하다" }, { word: "stop", desc: "멈추다" },
+        { word: "wait", desc: "기다리다" }, { word: "sit", desc: "앉다" }, { word: "stand", desc: "서다" },
+        { word: "open", desc: "열다" }, { word: "close", desc: "닫다" }, { word: "push", desc: "밀다" },
+        { word: "pull", desc: "당기다" }, { word: "throw", desc: "던지다" }, { word: "catch", desc: "잡다" },
+        { word: "hit", desc: "치다, 때리다" }, { word: "kick", desc: "차다" }, { word: "draw", desc: "그리다" },
+        { word: "paint", desc: "색칠하다" }, { word: "sing", desc: "노래하다" }, { word: "dance", desc: "춤추다" },
+        { word: "smile", desc: "미소 짓다" }, { word: "laugh", desc: "소리내어 웃다" }, { word: "cry", desc: "울다" },
+        { word: "shout", desc: "외치다" }, { word: "think", desc: "생각하다" }, { word: "know", desc: "알다" },
+        { word: "understand", desc: "이해하다" }, { word: "remember", desc: "기억하다" }, { word: "forget", desc: "잊다" },
+        { word: "want", desc: "원하다" }, { word: "need", desc: "필요하다" }, { word: "like", desc: "좋아하다" },
+        { word: "love", desc: "사랑하다" }, { word: "hate", desc: "싫어하다" }, { word: "hope", desc: "희망하다" },
+        { word: "enjoy", desc: "즐기다" }, { word: "feel", desc: "느끼다" }, { word: "find", desc: "찾다" },
+        { word: "lose", desc: "잃어버리다, 지다" }, { word: "win", desc: "이기다" }, { word: "buy", desc: "사다" },
+        { word: "sell", desc: "팔다" }, { word: "pay", desc: "지불하다" }, { word: "cost", desc: "비용이 들다" },
+        { word: "meet", desc: "만나다" }, { word: "visit", desc: "방문하다" }, { word: "invite", desc: "초대하다" },
+        { word: "welcome", desc: "환영하다" }, { word: "start", desc: "시작하다" }, { word: "begin", desc: "시작하다" },
+        { word: "finish", desc: "끝내다" }, { word: "end", desc: "끝나다" }, { word: "try", desc: "시도하다, 노력하다" },
+        { word: "use", desc: "사용하다" }, { word: "show", desc: "보여주다" }, { word: "hide", desc: "숨기다" },
+        { word: "keep", desc: "유지하다, 보관하다" }, { word: "change", desc: "바꾸다" }, { word: "grow", desc: "자라다, 기르다" },
+        { word: "build", desc: "짓다, 건설하다" }, { word: "break", desc: "부수다" }, { word: "cut", desc: "자르다" },
+        { word: "cook", desc: "요리하다" }, { word: "bake", desc: "굽다" }, { word: "boil", desc: "끓이다" },
+        { word: "mix", desc: "섞다" },
+        
+        // 형용사/부사 (상태/성질)
+        { word: "good", desc: "좋은" }, { word: "bad", desc: "나쁜" }, { word: "big", desc: "큰" },
+        { word: "small", desc: "작은" }, { word: "tall", desc: "키가 큰" }, { word: "short", desc: "키가 작은, 짧은" },
+        { word: "long", desc: "긴" }, { word: "high", desc: "높은" }, { word: "low", desc: "낮은" },
+        { word: "heavy", desc: "무거운" }, { word: "light", desc: "가벼운, 밝은" }, { word: "fast", desc: "빠른" },
+        { word: "quick", desc: "빠른" }, { word: "slow", desc: "느린" }, { word: "early", desc: "일찍" },
+        { word: "late", desc: "늦은" }, { word: "new", desc: "새로운" }, { word: "old", desc: "오래된, 늙은" },
+        { word: "young", desc: "어린" }, { word: "beautiful", desc: "아름다운" }, { word: "pretty", desc: "예쁜" },
+        { word: "handsome", desc: "잘생긴" }, { word: "ugly", desc: "못생긴" }, { word: "cute", desc: "귀여운" },
+        { word: "clean", desc: "깨끗한" }, { word: "dirty", desc: "더러운" }, { word: "strong", desc: "강한" },
+        { word: "weak", desc: "약한" }, { word: "hard", desc: "단단한, 어려운" }, { word: "soft", desc: "부드러운" },
+        { word: "easy", desc: "쉬운" }, { word: "difficult", desc: "어려운" }, { word: "happy", desc: "행복한" },
+        { word: "glad", desc: "기쁜" }, { word: "sad", desc: "슬픈" }, { word: "angry", desc: "화난" },
+        { word: "mad", desc: "화가 난" }, { word: "tired", desc: "피곤한" }, { word: "hungry", desc: "배고픈" },
+        { word: "thirsty", desc: "목마른" }, { word: "full", desc: "배부른, 가득 찬" }, { word: "empty", desc: "텅 빈" },
+        { word: "hot", desc: "뜨거운, 매운" }, { word: "cold", desc: "차가운" }, { word: "warm", desc: "따뜻한" },
+        { word: "cool", desc: "시원한, 멋진" }, { word: "sweet", desc: "달콤한" }, { word: "sour", desc: "신" },
+        { word: "salty", desc: "짠" }, { word: "bitter", desc: "쓴" }, { word: "spicy", desc: "매운" },
+        { word: "delicious", desc: "맛있는" }, { word: "tasty", desc: "맛있는" }, { word: "great", desc: "훌륭한" },
+        { word: "fine", desc: "좋은, 훌륭한" }, { word: "nice", desc: "좋은" }, { word: "kind", desc: "친절한" },
+        { word: "smart", desc: "똑똑한" }, { word: "clever", desc: "영리한" }, { word: "stupid", desc: "어리석은" },
+        { word: "brave", desc: "용감한" }, { word: "lazy", desc: "게으른" }, { word: "busy", desc: "바쁜" },
+        { word: "free", desc: "한가한, 자유로운" }, { word: "right", desc: "옳은, 오른쪽의" }, { word: "wrong", desc: "틀린" },
+        { word: "true", desc: "사실인, 진실의" }, { word: "false", desc: "거짓의" }, { word: "real", desc: "진짜의" },
+        { word: "fake", desc: "가짜의" }, { word: "rich", desc: "부유한" }, { word: "poor", desc: "가난한" },
+        { word: "cheap", desc: "값싼" }, { word: "expensive", desc: "비싼" }, { word: "loud", desc: "시끄러운" },
+        { word: "noisy", desc: "시끄러운" }, { word: "quiet", desc: "조용한" }, { word: "safe", desc: "안전한" },
+        { word: "dangerous", desc: "위험한" }, { word: "careful", desc: "조심스러운" }, { word: "famous", desc: "유명한" },
+        { word: "popular", desc: "인기 있는" }, { word: "special", desc: "특별한" }, { word: "normal", desc: "평범한, 정상의" },
+        { word: "strange", desc: "이상한" }, { word: "different", desc: "다른" }, { word: "same", desc: "같은" },
+        { word: "similar", desc: "비슷한" }, { word: "alone", desc: "혼자인" }, { word: "together", desc: "함께" },
+        { word: "always", desc: "항상" }, { word: "often", desc: "자주" }, { word: "sometimes", desc: "때때로" },
+        { word: "never", desc: "결코 ~않다" }, { word: "very", desc: "매우" }, { word: "too", desc: "너무, 또한" },
+        { word: "much", desc: "많이" }, { word: "many", desc: "많은" }, { word: "some", desc: "약간의" },
+        { word: "any", desc: "어떤" },
+        
+        // 교통/여행/취미
+        { word: "car", desc: "자동차" }, { word: "bus", desc: "버스" }, { word: "train", desc: "기차" },
+        { word: "subway", desc: "지하철" }, { word: "taxi", desc: "택시" }, { word: "bicycle", desc: "자전거" },
+        { word: "bike", desc: "자전거" }, { word: "airplane", desc: "비행기" }, { word: "ship", desc: "배 (큰 배)" },
+        { word: "boat", desc: "보트 (작은 배)" }, { word: "ticket", desc: "표" }, { word: "travel", desc: "여행하다" },
+        { word: "trip", desc: "여행" }, { word: "tour", desc: "관광, 여행" }, { word: "vacation", desc: "휴가" },
+        { word: "holiday", desc: "방학, 휴일" }, { word: "map", desc: "지도" }, { word: "guide", desc: "안내원" },
+        { word: "picture", desc: "사진" }, { word: "hobby", desc: "취미" }, { word: "game", desc: "게임" },
+        { word: "sports", desc: "스포츠, 운동" }, { word: "soccer", desc: "축구" }, { word: "baseball", desc: "야구" },
+        { word: "basketball", desc: "농구" }, { word: "tennis", desc: "테니스" }, { word: "music", desc: "음악" },
+        { word: "song", desc: "노래" }, { word: "piano", desc: "피아노" }, { word: "guitar", desc: "기타" },
+        { word: "violin", desc: "바이올린" }, { word: "drum", desc: "북" }, { word: "movie", desc: "영화" },
+        
+        // 학용품/학교생활 (심화)
+        { word: "subject", desc: "과목" }, { word: "math", desc: "수학" }, { word: "science", desc: "과학" },
+        { word: "history", desc: "역사" }, { word: "english", desc: "영어" }, { word: "art", desc: "미술" },
+        { word: "music", desc: "음악 (과목)" }, { word: "gym", desc: "체육" }, { word: "homework", desc: "숙제" },
+        { word: "test", desc: "시험" }, { word: "exam", desc: "시험" }, { word: "grade", desc: "성적, 학년" },
+        { word: "question", desc: "질문" }, { word: "answer", desc: "대답, 정답" }, { word: "example", desc: "예시" },
+        { word: "dictionary", desc: "사전" }, { word: "word", desc: "단어" }, { word: "sentence", desc: "문장" },
+        { word: "letter", desc: "편지, 글자" }, { word: "page", desc: "페이지" }, { word: "chapter", desc: "장, 챕터" },
+        
+        // 기타 유용한 6학년 단어 (자연/기술/사회)
+        { word: "machine", desc: "기계" }, { word: "factory", desc: "공장" }, { word: "robot", desc: "로봇" },
+        { word: "energy", desc: "에너지" }, { word: "power", desc: "힘, 전력" }, { word: "light", desc: "빛, 전등" },
+        { word: "electricity", desc: "전기" }, { word: "internet", desc: "인터넷" }, { word: "website", desc: "웹사이트" },
+        { word: "email", desc: "이메일" }, { word: "message", desc: "메시지" }, { word: "information", desc: "정보" },
+        { word: "news", desc: "뉴스" }, { word: "newspaper", desc: "신문" }, { word: "magazine", desc: "잡지" },
+        { word: "story", desc: "이야기" }, { word: "history", desc: "역사" }, { word: "future", desc: "미래" },
+        { word: "present", desc: "현재, 선물" }, { word: "past", desc: "과거" }, { word: "earthquake", desc: "지진" },
+        { word: "volcano", desc: "화산" }, { word: "storm", desc: "폭풍" }, { word: "flood", desc: "홍수" },
+        { word: "recycle", desc: "재활용하다" }, { word: "protect", desc: "보호하다" }, { word: "save", desc: "구하다, 절약하다" },
+        { word: "waste", desc: "낭비하다, 쓰레기" }, { word: "trash", desc: "쓰레기" }, { word: "garbage", desc: "쓰레기" },
+        { word: "pollution", desc: "오염" }, { word: "environment", desc: "환경" }, { word: "nature", desc: "자연" },
+        { word: "planet", desc: "행성" }, { word: "universe", desc: "우주" }, { word: "alien", desc: "외계인" },
+        { word: "rocket", desc: "로켓" }, { word: "astronaut", desc: "우주비행사" }, { word: "discovery", desc: "발견" },
+        { word: "invention", desc: "발명" }, { word: "experiment", desc: "실험" }, { word: "result", desc: "결과" },
+        { word: "reason", desc: "이유" }, { word: "secret", desc: "비밀" }, { word: "surprise", desc: "놀람" },
+        { word: "problem", desc: "문제" }, { word: "solution", desc: "해결책" }, { word: "idea", desc: "아이디어, 생각" },
+        { word: "plan", desc: "계획" }, { word: "goal", desc: "목표" }, { word: "dream", desc: "꿈" },
+        { word: "wish", desc: "소원, 바라다" }, { word: "mind", desc: "마음, 정신" }, { word: "memory", desc: "기억" }
+    ];
+
+    // 게임 상태 변수
+    const TOTAL_QUESTIONS = 20; 
+    const TOTAL_ROUNDS = 5;
+    let currentMode = 'normal'; // 'normal' | 'rank'
+    let currentRound = 1;
+    let rankScores = [];
+    
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let totalScore = 0;
+    let currentCombo = 0; // 콤보 변수 추가
+    let timeLimit = 10;
+    let quizType = 'word';
+    let timeLeft = 0;
+    let timerInterval = null;
+    let wrongAnswers = []; 
+    
+    // 오디오 컨텍스트 (비프음 생성용)
+    let audioCtx;
+    let myRank = '언랭크';
+
+    // ================= BGM 컨트롤러 =================
+    let isBgmEnabled = true;
+    const bgmController = {
+        ctx: null,
+        intervalId: null,
+        notes: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25], // C Major Pentatonic (긍정적/밝은 느낌)
+        isPlaying: false,
+
+        init: function(context) {
+            this.ctx = context;
+        },
+
+        playNote: function() {
+            if (!this.ctx || this.ctx.state !== 'running') return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            const note = this.notes[Math.floor(Math.random() * this.notes.length)];
+            osc.frequency.value = note;
+            osc.type = 'sine'; 
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            const now = this.ctx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.015, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            
+            osc.start(now);
+            osc.stop(now + 1.0);
+        },
+
+        start: function() {
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+            this.playNote();
+            this.intervalId = setInterval(() => this.playNote(), 400); 
+        },
+
+        stop: function() {
+            this.isPlaying = false;
+            clearInterval(this.intervalId);
+        }
+    };
+
+    function toggleBGM() {
+        isBgmEnabled = !isBgmEnabled;
+        const btn = document.getElementById('bgm-toggle');
+        if (isBgmEnabled) {
+            btn.textContent = '🎵 BGM ON';
+            btn.classList.remove('off');
+            if (!screens.game.classList.contains('hidden')) {
+                bgmController.start();
+            }
+        } else {
+            btn.textContent = '🔇 BGM OFF';
+            btn.classList.add('off');
+            bgmController.stop();
+        }
+    }
+
+    // ================= 방해모드 (Distraction) 컨트롤러 =================
+    let distractionTimerId = null;
+
+    function scheduleNextDistraction() {
+        const delay = Math.random() * 15000 + 10000; // 10~25초마다 간혹 생성되도록 변경
+        distractionTimerId = setTimeout(() => {
+            triggerRandomDistraction();
+            // 게임 화면일 때만 다음 스케줄
+            if (!screens.game.classList.contains('hidden')) {
+                scheduleNextDistraction();
+            }
+        }, delay);
+    }
+
+    function stopDistractions() {
+        clearTimeout(distractionTimerId);
+        document.getElementById('distraction-layer').innerHTML = '';
+    }
+
+    function createDistractionEl(emoji, className, cssText, durationMs) {
+        const layer = document.getElementById('distraction-layer');
+        const el = document.createElement('div');
+        el.className = `distraction-entity ${className}`;
+        el.textContent = emoji;
+        el.style.cssText = cssText;
+        layer.appendChild(el);
+        setTimeout(() => {
+            if(el.parentNode === layer) el.remove();
+        }, durationMs);
+    }
+
+    // 각각의 방해 요소 스폰 함수
+    function spawnGhost() {
+        createDistractionEl('👻', 'anim-ghost', `left: ${Math.random()*80}vw; top: ${Math.random()*80}vh;`, 3000);
+    }
+    function spawnBalloons() {
+        const count = Math.floor(Math.random()*3) + 1;
+        for(let i=0; i<count; i++) {
+            setTimeout(() => {
+                createDistractionEl('🎈', 'anim-float', `left: ${Math.random()*90}vw;`, 6000);
+            }, i * 500);
+        }
+    }
+    function spawnFrog() {
+        createDistractionEl('🐸', 'anim-jump', '', 4000);
+    }
+    function spawnMonkey() {
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        createDistractionEl('🐒', 'anim-climb', `${side}: 10vw;`, 5000);
+    }
+    function spawnCatMouse() {
+        const y = Math.random() * 60 + 20; 
+        createDistractionEl('🐁', 'anim-run-fast', `bottom: ${y}vh;`, 3000);
+        setTimeout(() => {
+            createDistractionEl('🐈', 'anim-run-fast', `bottom: ${y}vh;`, 3000);
+        }, 400); // 쥐를 따라 고양이 등장
+    }
+    function spawnDogFrisbee() {
+        createDistractionEl('🥏', 'anim-fly-arc', '', 4000);
+        setTimeout(() => {
+            createDistractionEl('🐕', 'anim-jump-catch', '', 4000);
+        }, 500); // 원반을 따라 강아지 점프
+    }
+    function spawnFly() {
+        createDistractionEl('🪰', 'anim-erratic', '', 5000);
+    }
+    function spawnSpaceship() {
+        createDistractionEl('🛸', 'anim-spaceship', '', 6000);
+    }
+
+    function triggerRandomDistraction() {
+        const actions = [
+            spawnGhost, spawnBalloons, spawnFrog, spawnMonkey,
+            spawnCatMouse, spawnDogFrisbee, spawnFly, spawnSpaceship
+        ];
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        randomAction();
+    }
+
+    // ================= DOM 및 메인 로직 =================
+    const screens = {
+        start: document.getElementById('start-screen'),
+        game: document.getElementById('game-screen'),
+        result: document.getElementById('result-screen')
+    };
+    const ui = {
+        counter: document.getElementById('question-counter'),
+        timer: document.getElementById('timer-display'),
+        currentScore: document.getElementById('current-score-display'),
+        comboDisplay: document.getElementById('combo-display'), // 콤보 UI
+        question: document.getElementById('question-text'),
+        choiceContainer: document.getElementById('choice-input-container'),
+        finalScore: document.getElementById('final-score'),
+        bestScore: document.getElementById('best-score')
+    };
+
+    // 랭크 UI 및 배경색 업데이트
+    function updateRankUI() {
+        const rankEl = document.getElementById('my-rank-display');
+        const rankBtn = document.getElementById('rank-btn');
+        rankEl.className = 'rank-badge'; // 리셋
+        
+        let colorClass = 'rank-unranked';
+        let bgColor = 'var(--bg-color)'; 
+        
+        if(myRank === '브론즈') {
+            colorClass = 'rank-bronze';
+            bgColor = '#F5EBE1'; 
+        }
+        else if(myRank === '실버') {
+            colorClass = 'rank-silver';
+            bgColor = '#EBEDEF'; 
+        }
+        else if(myRank === '골드') {
+            colorClass = 'rank-gold';
+            bgColor = '#FEF9E7'; 
+        }
+        else if(myRank === '플래티넘') {
+            colorClass = 'rank-platinum';
+            bgColor = '#E5E8E8'; 
+        }
+        else if(myRank === '다이아몬드') {
+            colorClass = 'rank-diamond';
+            bgColor = '#EBF5FB'; 
+        }
+        
+        rankEl.classList.add(colorClass);
+        rankEl.textContent = `현재 랭크: ${myRank}`;
+        
+        // 배경색 적용
+        document.body.style.backgroundColor = bgColor;
+
+        if(myRank === '언랭크') {
+            rankBtn.textContent = '배치고사 시작 (5판)';
+        } else {
+            rankBtn.textContent = '승급전 시작 (5판)';
+        }
+    }
+
+    // 비프음 재생
+    function playBeep(isCorrect) {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        if (isCorrect) {
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } else {
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function startGame(isRestart = false, mode = 'normal') {
+        currentMode = mode;
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            bgmController.init(audioCtx);
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        if (isRestart) {
+            timeLimit = parseInt(document.querySelector('input[name="resTimeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="resTypeSetting"]:checked').value;
+            document.querySelector(`input[name="timeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="typeSetting"][value="${quizType}"]`).checked = true;
+        } else {
+            timeLimit = parseInt(document.querySelector('input[name="timeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="typeSetting"]:checked').value;
+            document.querySelector(`input[name="resTimeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="resTypeSetting"][value="${quizType}"]`).checked = true;
+        }
+
+        if (currentMode === 'rank') {
+            currentRound = 1;
+            rankScores = [];
+        }
+
+        startRound();
+    }
+
+    function startRound() {
+        const shuffledWords = shuffleArray([...wordDictionary]);
+        currentQuestions = shuffledWords.slice(0, TOTAL_QUESTIONS);
+        
+        currentIndex = 0;
+        totalScore = 0;
+        currentCombo = 0; // 콤보 초기화
+        wrongAnswers = []; 
+
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: 0점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: 0점`;
+        }
+        
+        // 콤보 UI 초기화
+        ui.comboDisplay.className = 'combo-display'; 
+        ui.comboDisplay.textContent = '';
+        
+        showScreen('game');
+        loadQuestion();
+        
+        if (isBgmEnabled && !bgmController.isPlaying) {
+            bgmController.start();
+        }
+        
+        // 방해모드 항상 작동 (간혹 등장)
+        clearTimeout(distractionTimerId);
+        scheduleNextDistraction();
+    }
+
+    function startNextRound() {
+        currentRound++;
+        startRound();
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        ui.counter.textContent = `문제 ${currentIndex + 1} / ${TOTAL_QUESTIONS}`;
+        ui.timer.classList.remove('danger');
+        ui.choiceContainer.classList.remove('hidden');
+        
+        if (quizType === 'word') { // 영단어 보고 뜻 맞추기
+            ui.question.textContent = currentQ.word;
+            ui.question.classList.add('word-mode'); // 영단어는 크게
+            ui.choiceContainer.classList.add('desc-mode'); // 뜻 보기는 2줄 혹은 1줄로 길게
+        } else { // 뜻 보고 영단어 맞추기
+            ui.question.textContent = currentQ.desc;
+            ui.question.classList.remove('word-mode');
+            ui.choiceContainer.classList.remove('desc-mode');
+        }
+
+        setupChoiceMode(currentQ);
+
+        timeLeft = timeLimit;
+        ui.timer.textContent = `${timeLeft}초`;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function setupChoiceMode(currentQ) {
+        ui.choiceContainer.innerHTML = '';
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        
+        const wrongTexts = wordDictionary
+            .filter(item => item.word !== currentQ.word && item.word)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3)
+            .map(item => quizType === 'word' ? item.desc : item.word);
+            
+        const choices = shuffleArray([correctText, ...wrongTexts]);
+
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = text;
+            btn.onclick = (e) => submitAnswer(text, e.target);
+            ui.choiceContainer.appendChild(btn);
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        ui.timer.textContent = `${timeLeft}초`;
+        
+        if (timeLeft <= 3) {
+            ui.timer.classList.add('danger');
+        }
+
+        if (timeLeft <= 0) {
+            submitAnswer(null); 
+        }
+    }
+
+    function submitAnswer(userAnswer, btnElement = null) {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        let scoreEarned = 0;
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        let questionText = quizType === 'word' ? currentQ.word : currentQ.desc;
+        
+        let isCorrect = (userAnswer === correctText);
+
+        const choiceButtons = document.querySelectorAll('.choice-btn');
+        choiceButtons.forEach(b => b.disabled = true);
+
+        if (isCorrect) {
+            playBeep(true); 
+            
+            // 콤보 증가 및 UI 업데이트
+            currentCombo++;
+            ui.comboDisplay.textContent = `${currentCombo} COMBO!`;
+            ui.comboDisplay.className = 'combo-display active';
+            if (currentCombo >= 3) {
+                ui.comboDisplay.classList.add('combo-high');
+            }
+            // 애니메이션 재시작 트릭
+            ui.comboDisplay.style.animation = 'none';
+            ui.comboDisplay.offsetHeight;
+            ui.comboDisplay.style.animation = null;
+
+            const elapsedTime = timeLimit - timeLeft;
+            
+            if (elapsedTime <= 5) {
+                scoreEarned = 10;
+            } else {
+                scoreEarned = 10 - (elapsedTime - 5);
+                if (scoreEarned < 0) scoreEarned = 0;
+            }
+
+            if (btnElement) {
+                btnElement.classList.add('correct');
+            }
+
+        } else {
+            playBeep(false); 
+            scoreEarned = 0; 
+            
+            // 콤보 끊김
+            currentCombo = 0;
+            ui.comboDisplay.className = 'combo-display';
+            ui.comboDisplay.textContent = '';
+            
+            wrongAnswers.push({
+                question: questionText,
+                correctAnswer: correctText,
+                userAnswer: userAnswer ? userAnswer : '시간 초과 / 미선택'
+            });
+
+            if (btnElement) {
+                btnElement.classList.add('wrong');
+            }
+            choiceButtons.forEach(b => {
+                if (b.textContent === correctText) {
+                    b.classList.add('correct');
+                }
+            });
+        }
+
+        totalScore += scoreEarned;
+        
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: ${totalScore}점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: ${totalScore}점`;
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < TOTAL_QUESTIONS) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function updateBestScore(score) {
+        const storageKey = 'engSpeedQuizBestScore'; // 영단어 퀴즈용 별도 키 사용
+        let bestScore = localStorage.getItem(storageKey) || 0;
+        bestScore = parseInt(bestScore);
+
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem(storageKey, bestScore);
+        }
+        ui.bestScore.textContent = `역대 1판 최고 점수: ${bestScore}점`;
+    }
+
+    function endGame() {
+        bgmController.stop(); 
+        stopDistractions(); // 게임 종료 시 방해 모드 정지
+
+        showScreen('result');
+        
+        const resSettingGroup = document.getElementById('res-setting-group');
+        const resNextRoundBtn = document.getElementById('res-next-round-btn');
+        const resRestartBtn = document.getElementById('res-restart-btn');
+        const resultTitle = document.getElementById('result-title');
+        const resultSubtitle = document.getElementById('result-subtitle');
+        const rankResultDisplay = document.getElementById('rank-result-display');
+        const bestScoreDisplay = document.getElementById('best-score');
+
+        resSettingGroup.classList.remove('hidden');
+        resNextRoundBtn.classList.add('hidden');
+        resRestartBtn.classList.remove('hidden');
+        rankResultDisplay.classList.add('hidden');
+        bestScoreDisplay.classList.remove('hidden');
+
+        if (currentMode === 'normal') {
+            resultTitle.textContent = "연습 게임 종료!";
+            resultSubtitle.textContent = "당신의 최종 점수";
+            ui.finalScore.textContent = `${totalScore}점`;
+            
+            updateBestScore(totalScore);
+            
+            resRestartBtn.textContent = "다시 하기 (연습)";
+            resRestartBtn.onclick = () => startGame(true, 'normal');
+
+        } else if (currentMode === 'rank') {
+            rankScores.push(totalScore);
+            updateBestScore(totalScore); 
+            
+            if (currentRound < TOTAL_ROUNDS) {
+                resultTitle.textContent = `승급전 ${currentRound}라운드 종료`;
+                resultSubtitle.textContent = `이번 라운드 획득 점수`;
+                ui.finalScore.textContent = `${totalScore}점`;
+                
+                resSettingGroup.classList.add('hidden'); 
+                resNextRoundBtn.classList.remove('hidden');
+                resRestartBtn.classList.add('hidden');
+                bestScoreDisplay.classList.add('hidden');
+            } else {
+                const averageScore = rankScores.reduce((a, b) => a + b, 0) / TOTAL_ROUNDS;
+                let newRank = '브론즈';
+                let rankColorClass = 'rank-bronze';
+                
+                if (averageScore >= 180) { newRank = '다이아몬드'; rankColorClass = 'rank-diamond'; }
+                else if (averageScore >= 150) { newRank = '플래티넘'; rankColorClass = 'rank-platinum'; }
+                else if (averageScore >= 120) { newRank = '골드'; rankColorClass = 'rank-gold'; }
+                else if (averageScore >= 90) { newRank = '실버'; rankColorClass = 'rank-silver'; }
+                
+                myRank = newRank;
+                localStorage.setItem('engSpeedQuizRank', myRank); // 영단어 퀴즈용 별도 랭크 저장
+                updateRankUI();
+
+                resultTitle.textContent = "랭크 판정 완료!";
+                resultSubtitle.textContent = `5판 평균 점수: ${averageScore.toFixed(1)}점`;
+                ui.finalScore.textContent = ``; 
+                
+                rankResultDisplay.textContent = newRank;
+                rankResultDisplay.className = `rank-result ${rankColorClass}`;
+                rankResultDisplay.classList.remove('hidden');
+
+                resSettingGroup.classList.remove('hidden');
+                resRestartBtn.classList.remove('hidden');
+                resRestartBtn.textContent = "승급전 다시 도전";
+                resRestartBtn.onclick = () => startGame(true, 'rank');
+            }
+        }
+        
+        const wrongList = document.getElementById('wrong-answers-list');
+        if (wrongAnswers.length > 0) {
+            wrongList.innerHTML = wrongAnswers.map(item => `
+                <div class="wrong-item">
+                    <div class="wrong-desc">Q. ${item.question}</div>
+                    <div>
+                        <span class="user-word">${item.userAnswer}</span>
+                        <span class="wrong-word">정답: ${item.correctAnswer}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            wrongList.innerHTML = '<div style="text-align:center; padding:15px; color:var(--success-color); font-weight:bold;">모두 맞췄습니다! 완벽해요! 🎉</div>';
+        }
+    }
+
+    function goHome() {
+        bgmController.stop(); 
+        stopDistractions();
+        showScreen('start');
+    }
+
+    window.onload = () => {
+        myRank = localStorage.getItem('engSpeedQuizRank') || '언랭크';
+        updateRankUI();
+        
+        if(!localStorage.getItem('engSpeedQuizBestScore')){
+            localStorage.setItem('engSpeedQuizBestScore', 0);
+        }
+    };
+</script>
+
+</body>
+</html>

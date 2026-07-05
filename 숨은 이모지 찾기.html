@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이모지 숨은 그림 찾기</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #2c3e50; /* 바깥 배경은 어둡게 */
+            height: 100vh;
+            display: flex;
+            flex-direction: row; /* 기본은 좌우 배치 */
+            overflow: hidden; /* 전체 화면 스크롤 방지 */
+        }
+
+        /* 왼쪽: 게임 영역 패널 */
+        #left-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: #1a252f;
+            position: relative;
+        }
+
+        /* 오른쪽: UI 컨트롤 패널 */
+        #right-panel {
+            width: 350px;
+            background-color: #f8f9fa;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            padding: 25px 20px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column; /* 모바일에서는 위아래 배치 */
+            }
+            #left-panel {
+                height: 60vh;
+                padding: 10px;
+            }
+            #right-panel {
+                width: 100%;
+                height: 40vh;
+                box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+                padding: 15px;
+                box-sizing: border-box;
+            }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 22px;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        #sound-toggle {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        #sound-toggle:hover {
+            background: #e9ecef;
+        }
+
+        #timer-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e67e22;
+            text-align: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 2px solid #fdebd0;
+        }
+
+        /* 찾을 목록 스타일 */
+        .target-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2열 배치 */
+            gap: 10px;
+        }
+
+        .target-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .target-item.found {
+            color: #95a5a6;
+            text-decoration: line-through;
+            background-color: #ecf0f1;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        /* 메시지 및 다음 버튼 영역 */
+        #status-area {
+            margin-top: auto; /* 남은 공간을 밀어내서 하단에 배치 */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        #message-text {
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 44px;
+        }
+
+        .next-btn {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
+        }
+        .next-btn:hover { background-color: #2980b9; transform: translateY(-2px); }
+        .next-btn:active { transform: translateY(0); }
+
+        #game-wrapper {
+            position: relative;
+            /* 3:2 비율 유지하면서 부모 안에서 최대 크기로 꽉 차게 */
+            aspect-ratio: 3 / 2;
+            width: 100%;
+            max-height: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 6px solid #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #ddd;
+        }
+
+        #game-area {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            cursor: crosshair;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        /* 숨겨진 클릭 영역 (이모지) */
+        .hitbox {
+            position: absolute;
+            cursor: inherit; 
+            font-size: 40px; 
+            /* 1. 투명도를 0.15에서 0.3으로 올려서 조금 더 잘 보이게 조정 */
+            opacity: 0.3;    
+            /* 2. 블렌드 모드는 유지하여 배경과 자연스럽게 섞이게 함 */
+            mix-blend-mode: hard-light;
+            /* 3. 색감을 60%에서 80%로 올려서 약간 더 뚜렷하게 */
+            filter: saturate(80%); 
+            transition: opacity 0.5s ease, transform 0.3s ease, filter 0.3s, mix-blend-mode 0.3s; 
+            user-select: none; 
+            transform: translate(-50%, -50%);
+        }
+
+        /* 화면 크기가 작아지면 이모지 크기도 비율에 맞게 조금 줄임 */
+        @media (max-width: 1000px) { .hitbox { font-size: 30px; } }
+        @media (max-width: 600px) { .hitbox { font-size: 24px; } }
+
+        .hitbox.found-mark {
+            opacity: 1; 
+            /* 찾았을 때는 원래 색상과 질감으로 돌아오게 함 */
+            mix-blend-mode: normal;
+            filter: saturate(100%);
+            cursor: default;
+            pointer-events: none;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            z-index: 10; 
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); 
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.8); }
+            50% { transform: translate(-50%, -50%) scale(1.5); }
+            100% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        #loading {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(221, 221, 221, 0.95);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; font-weight: bold; color: #2c3e50; z-index: 20;
+        }
+
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.98);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 200;
+        }
+        #start-screen h1 { font-size: 40px; margin-bottom: 10px; color: #2c3e50; text-align: center;}
+        
+        #start-game-btn {
+            padding: 20px 40px; font-size: 28px; background-color: #2ecc71; font-weight: bold;
+            color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 30px;
+            box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3); transition: transform 0.2s;
+        }
+        #start-game-btn:hover { transform: scale(1.05); }
+
+        #dev-tools {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        #dev-tools button {
+            background: #7f8c8d; color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1>😊 신나는 이모지<br>숨은 그림 찾기 😊</h1>
+        <p style="font-size: 20px; color: #555; text-align: center; margin-top: 10px;">
+            소리를 켜면 더 재밌어요!<br>배경은 매번 무작위로 바뀝니다.
+        </p>
+        <button id="start-game-btn">게임 시작하기 🎮</button>
+    </div>
+
+    <div id="left-panel">
+        <div id="game-wrapper">
+            <div id="loading" style="display: none;">⏳ 맵을 불러오는 중...</div>
+            <div id="game-area">
+                <!-- 이모지들이 이곳에 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <div id="right-panel">
+        <div class="panel-header">
+            <h1 id="stage-title">🔍 Stage 1</h1>
+            <button id="sound-toggle" title="배경음악 켜기/끄기">🔇</button>
+        </div>
+
+        <div id="timer-display">⏱️ 0.0초</div>
+        
+        <ul class="target-list" id="target-list">
+            <!-- 자바스크립트로 리스트가 생성됩니다 -->
+        </ul>
+
+        <div id="status-area">
+            <div id="message-text"></div>
+            <button id="next-stage-btn" class="next-btn">다음 스테이지 ➡️</button>
+        </div>
+
+        <!-- 제작자 도구 -->
+        <div id="dev-tools">
+            <button id="toggle-dev">숨겨진 이모지 보기 (Off)</button>
+            <div style="color: #555; margin-top: 5px;">
+                랜덤 좌표 활성화 됨.<br>
+                <span id="click-coords" style="color: #c0392b; font-weight: bold;">클릭: (0%, 0%)</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sfxCorrect = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
+        const sfxClear = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+        const bgm = new Audio('https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3');
+        bgm.loop = true;
+        bgm.volume = 0.2;
+        let isSoundOn = false;
+
+        const soundToggleBtn = document.getElementById('sound-toggle');
+        const startScreen = document.getElementById('start-screen');
+        const startGameBtn = document.getElementById('start-game-btn');
+
+        startGameBtn.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            toggleSound(true); 
+            loadStage(currentStageIndex);
+        });
+
+        soundToggleBtn.addEventListener('click', () => {
+            toggleSound(!isSoundOn);
+        });
+
+        function toggleSound(forceOn) {
+            isSoundOn = forceOn;
+            if (isSoundOn) {
+                bgm.play().catch(e => console.log("오디오 대기 중"));
+                soundToggleBtn.innerText = '🔊';
+            } else {
+                bgm.pause();
+                soundToggleBtn.innerText = '🔇';
+            }
+        }
+
+        const stages = [
+            { targets: [ { id: 's1_1', name: '사과', emoji: '🍎' }, { id: 's1_2', name: '바나나', emoji: '🍌' }, { id: 's1_3', name: '포도', emoji: '🍇' }, { id: 's1_4', name: '수박', emoji: '🍉' } ] },
+            { targets: [ { id: 's2_1', name: '버섯', emoji: '🍄' }, { id: 's2_2', name: '나뭇잎', emoji: '🍂' }, { id: 's2_3', name: '다람쥐', emoji: '🐿️' }, { id: 's2_4', name: '해바라기', emoji: '🌻' } ] },
+            { targets: [ { id: 's3_1', name: '야자수', emoji: '🌴' }, { id: 's3_2', name: '게', emoji: '🦀' }, { id: 's3_3', name: '조개', emoji: '🐚' }, { id: 's3_4', name: '물고기', emoji: '🐟' } ] },
+            { targets: [ { id: 's4_1', name: '외계인', emoji: '👽' }, { id: 's4_2', name: '로켓', emoji: '🚀' }, { id: 's4_3', name: 'UFO', emoji: '🛸' }, { id: 's4_4', name: '혜성', emoji: '☄️' } ] },
+            { targets: [ { id: 's5_1', name: '택시', emoji: '🚕' }, { id: 's5_2', name: '빌딩', emoji: '🏢' }, { id: 's5_3', name: '신호등', emoji: '🚦' }, { id: 's5_4', name: '비둘기', emoji: '🕊️' }, { id: 's5_5', name: '스쿠터', emoji: '🛵' }, { id: 's5_6', name: '스케이트보드', emoji: '🛹' } ] },
+            { targets: [ { id: 's6_1', name: '선인장', emoji: '🌵' }, { id: 's6_2', name: '낙타', emoji: '🐫' }, { id: 's6_3', name: '전갈', emoji: '🦂' }, { id: 's6_4', name: '태양', emoji: '☀️' } ] },
+            { targets: [ { id: 's7_1', name: '열대어', emoji: '🐠' }, { id: 's7_2', name: '상어', emoji: '🦈' }, { id: 's7_3', name: '문어', emoji: '🐙' }, { id: 's7_4', name: '인어', emoji: '🧜‍♀️' } ] },
+            { targets: [ { id: 's8_1', name: '소', emoji: '🐄' }, { id: 's8_2', name: '돼지', emoji: '🐖' }, { id: 's8_3', name: '트랙터', emoji: '🚜' }, { id: 's8_4', name: '벼', emoji: '🌾' } ] },
+            { targets: [ { id: 's9_1', name: '가방', emoji: '🎒' }, { id: 's9_2', name: '책', emoji: '📚' }, { id: 's9_3', name: '연필', emoji: '✏️' }, { id: 's9_4', name: '선생님', emoji: '👩‍🏫' } ] },
+            { targets: [ { id: 's10_1', name: '커피', emoji: '☕' }, { id: 's10_2', name: '케이크', emoji: '🍰' }, { id: 's10_3', name: '크루아상', emoji: '🥐' }, { id: 's10_4', name: '화분', emoji: '🪴' }, { id: 's10_5', name: '도넛', emoji: '🍩' }, { id: 's10_6', name: '아이스크림', emoji: '🍦' }, { id: 's10_7', name: '쿠키', emoji: '🍪' } ] },
+            { targets: [ { id: 's11_1', name: '롤러코스터', emoji: '🎢' }, { id: 's11_2', name: '관람차', emoji: '🎡' }, { id: 's11_3', name: '회전목마', emoji: '🎠' }, { id: 's11_4', name: '팝콘', emoji: '🍿' } ] },
+            { targets: [ { id: 's12_1', name: '눈사람', emoji: '⛄' }, { id: 's12_2', name: '스키', emoji: '⛷️' }, { id: 's12_3', name: '눈송이', emoji: '❄️' }, { id: 's12_4', name: '스노보드', emoji: '🏂' } ] },
+            { targets: [ { id: 's13_1', name: '튤립', emoji: '🌷' }, { id: 's13_2', name: '나비', emoji: '🦋' }, { id: 's13_3', name: '꿀벌', emoji: '🐝' }, { id: 's13_4', name: '무당벌레', emoji: '🐞' } ] },
+            { targets: [ { id: 's14_1', name: '프라이팬', emoji: '🍳' }, { id: 's14_2', name: '칼', emoji: '🔪' }, { id: 's14_3', name: '소금', emoji: '🧂' }, { id: 's14_4', name: '접시', emoji: '🍽️' } ] },
+            { targets: [ { id: 's15_1', name: '펼친 책', emoji: '📖' }, { id: 's15_2', name: '안경', emoji: '🤓' }, { id: 's15_3', name: '서류함', emoji: '🗄️' }, { id: 's15_4', name: '두루마리', emoji: '📜' }, { id: 's15_5', name: '신문', emoji: '📰' }, { id: 's15_6', name: '돋보기', emoji: '🔍' } ] },
+            { targets: [ { id: 's16_1', name: '사과', emoji: '🍎' }, { id: 's16_2', name: '브로콜리', emoji: '🥦' }, { id: 's16_3', name: '바게트', emoji: '🥖' }, { id: 's16_4', name: '치즈', emoji: '🧀' } ] },
+            { targets: [ { id: 's17_1', name: '호박', emoji: '🎃' }, { id: 's17_2', name: '유령', emoji: '👻' }, { id: 's17_3', name: '박쥐', emoji: '🦇' }, { id: 's17_4', name: '거미줄', emoji: '🕸️' } ] },
+            { targets: [ { id: 's18_1', name: '트리', emoji: '🎄' }, { id: 's18_2', name: '산타', emoji: '🎅' }, { id: 's18_3', name: '선물', emoji: '🎁' }, { id: 's18_4', name: '순록', emoji: '🦌' } ] },
+            { targets: [ { id: 's19_1', name: '텐트', emoji: '⛺' }, { id: 's19_2', name: '모닥불', emoji: '🔥' }, { id: 's19_3', name: '침낭', emoji: '🛌' }, { id: 's19_4', name: '손전등', emoji: '🔦' } ] },
+            { targets: [ { id: 's20_1', name: '티라노', emoji: '🦖' }, { id: 's20_2', name: '브라키오', emoji: '🦕' }, { id: 's20_3', name: '화산', emoji: '🌋' }, { id: 's20_4', name: '뼈다귀', emoji: '🦴' }, { id: 's20_5', name: '발자국', emoji: '🐾' }, { id: 's20_6', name: '도마뱀', emoji: '🦎' }, { id: 's20_7', name: '알', emoji: '🥚' } ] },
+            { targets: [ { id: 's21_1', name: '구급차', emoji: '🚑' }, { id: 's21_2', name: '청진기', emoji: '🩺' }, { id: 's21_3', name: '알약', emoji: '💊' }, { id: 's21_4', name: '반창고', emoji: '🩹' } ] },
+            { targets: [ { id: 's22_1', name: '비행기', emoji: '✈️' }, { id: 's22_2', name: '가방', emoji: '🧳' }, { id: 's22_3', name: '이륙', emoji: '🛫' }, { id: 's22_4', name: '여권', emoji: '🛂' } ] },
+            { targets: [ { id: 's23_1', name: '인공위성', emoji: '🛰️' }, { id: 's23_2', name: '우주인', emoji: '🧑‍🚀' }, { id: 's23_3', name: '망원경', emoji: '🔭' }, { id: 's23_4', name: '은하수', emoji: '🌌' } ] },
+            { targets: [ { id: 's24_1', name: '프레첼', emoji: '🥨' }, { id: 's24_2', name: '베이글', emoji: '🥯' }, { id: 's24_3', name: '식빵', emoji: '🍞' }, { id: 's24_4', name: '컵케이크', emoji: '🧁' } ] },
+            { targets: [ { id: 's25_1', name: '곰인형', emoji: '🧸' }, { id: 's25_2', name: '요요', emoji: '🪀' }, { id: 's25_3', name: '기차', emoji: '🚂' }, { id: 's25_4', name: '퍼즐', emoji: '🧩' }, { id: 's25_5', name: '로봇', emoji: '🤖' }, { id: 's25_6', name: '로켓', emoji: '🚀' }, { id: 's25_7', name: '연', emoji: '🪁' } ] },
+            { targets: [ { id: 's26_1', name: '해적기', emoji: '🏴‍☠️' }, { id: 's26_2', name: '닻', emoji: '⚓' }, { id: 's26_3', name: '앵무새', emoji: '🦜' }, { id: 's26_4', name: '동전', emoji: '🪙' } ] },
+            { targets: [ { id: 's27_1', name: '원숭이', emoji: '🐒' }, { id: 's27_2', name: '호랑이', emoji: '🐅' }, { id: 's27_3', name: '뱀', emoji: '🐍' }, { id: 's27_4', name: '나뭇잎', emoji: '🌿' } ] },
+            { targets: [ { id: 's28_1', name: '펭귄', emoji: '🐧' }, { id: 's28_2', name: '북극곰', emoji: '🐻‍❄️' }, { id: 's28_3', name: '얼음', emoji: '🧊' }, { id: 's28_4', name: '바다표범', emoji: '🦭' } ] },
+            { targets: [ { id: 's29_1', name: '화산', emoji: '🌋' }, { id: 's29_2', name: '불꽃', emoji: '🔥' }, { id: 's29_3', name: '독수리', emoji: '🦅' }, { id: 's29_4', name: '바위', emoji: '🪨' } ] },
+            { targets: [ { id: 's30_1', name: '무지개', emoji: '🌈' }, { id: 's30_2', name: '유니콘', emoji: '🦄' }, { id: 's30_3', name: '구름', emoji: '☁️' }, { id: 's30_4', name: '풍선', emoji: '🎈' }, { id: 's30_5', name: '리본', emoji: '🎀' }, { id: 's30_6', name: '별', emoji: '⭐' }, { id: 's30_7', name: '달', emoji: '🌙' }, { id: 's30_8', name: '하트', emoji: '❤️' } ] }
+        ];
+
+        let currentStageIndex = 0;
+        let foundCount = 0;
+        let startTime = 0;
+        let timerInterval = null;
+
+        const gameArea = document.getElementById('game-area');
+        const targetListEl = document.getElementById('target-list');
+        const messageTextEl = document.getElementById('message-text');
+        const nextStageBtn = document.getElementById('next-stage-btn');
+        const stageTitleEl = document.getElementById('stage-title');
+        const timerDisplayEl = document.getElementById('timer-display');
+        const loadingEl = document.getElementById('loading');
+
+        const safeKeywords = ['puppy', 'kitten', 'cute', 'park', 'toys', 'balloon', 'zoo', 'garden', 'ocean', 'candy', 'kids', 'playground', 'nature'];
+
+        function getValidPosition(existingPositions) {
+            let left, top;
+            let attempts = 0;
+            const minDistance = 12; 
+            
+            while (attempts < 100) {
+                left = Math.floor(Math.random() * 80) + 10;
+                top = Math.floor(Math.random() * 80) + 10;
+                let isValid = true;
+                
+                for (let pos of existingPositions) {
+                    const dx = pos.left - left;
+                    const dy = pos.top - top;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < minDistance) {
+                        isValid = false;
+                        break;
+                    }
+                }
+                if (isValid) return { left, top };
+                attempts++;
+            }
+            return { left, top }; 
+        }
+
+        function loadStage(index) {
+            const stage = stages[index];
+            foundCount = 0;
+            
+            gameArea.innerHTML = '';
+            targetListEl.innerHTML = '';
+            messageTextEl.innerText = '';
+            nextStageBtn.style.display = 'none';
+            gameArea.style.backgroundImage = 'none'; 
+            
+            clearInterval(timerInterval);
+            timerDisplayEl.innerText = "⏱️ 0.0초";
+            
+            stageTitleEl.innerText = `🔍 Stage ${index + 1} / ${stages.length}`;
+            
+            loadingEl.style.display = 'flex';
+
+            const randomKeyword = safeKeywords[Math.floor(Math.random() * safeKeywords.length)];
+            const randomLock = Math.floor(Math.random() * 1000);
+            const dynamicBackgroundUrl = `https://loremflickr.com/800/533/${randomKeyword}?lock=${randomLock}`;
+
+            const bgImage = new Image();
+            bgImage.onload = function() {
+                loadingEl.style.display = 'none';
+                gameArea.style.backgroundImage = `url('${dynamicBackgroundUrl}')`;
+
+                startTime = Date.now();
+                timerInterval = setInterval(() => {
+                    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                    timerDisplayEl.innerText = `⏱️ ${elapsed}초`;
+                }, 100);
+
+                const usedPositions = []; 
+
+                stage.targets.forEach(target => {
+                    const li = document.createElement('li');
+                    li.className = 'target-item';
+                    li.id = `ui-${target.id}`;
+                    li.innerHTML = `<span style="font-size:20px;">${target.emoji}</span> ${target.name}`; 
+                    targetListEl.appendChild(li);
+
+                    const hitbox = document.createElement('div');
+                    hitbox.className = 'hitbox';
+                    hitbox.id = `hitbox-${target.id}`;
+                    hitbox.innerText = target.emoji;
+                    
+                    const newPos = getValidPosition(usedPositions);
+                    usedPositions.push(newPos);
+                    
+                    hitbox.style.left = newPos.left + '%';
+                    hitbox.style.top = newPos.top + '%';
+
+                    hitbox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        
+                        if (!this.classList.contains('found-mark')) {
+                            if (isSoundOn) {
+                                sfxCorrect.currentTime = 0;
+                                sfxCorrect.play();
+                            }
+
+                            this.classList.add('found-mark');
+                            document.getElementById(`ui-${target.id}`).classList.add('found');
+                            foundCount++;
+                            
+                            if (foundCount === stage.targets.length) {
+                                clearInterval(timerInterval);
+                                const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+                                if (isSoundOn) {
+                                    sfxClear.currentTime = 0;
+                                    sfxClear.play();
+                                }
+
+                                if (currentStageIndex < stages.length - 1) {
+                                    messageTextEl.innerHTML = `<span style="color:#27ae60">🎉 모두 찾았습니다!</span><br><span style="font-size:15px; color:#555;">기록: ${finalTime}초</span>`;
+                                    nextStageBtn.style.display = 'inline-block';
+                                } else {
+                                    messageTextEl.innerHTML = `<span style="color:#8e44ad">🏆 모든 스테이지 클리어! 🏆</span><br><span style="font-size:15px; color:#555;">최종 기록: ${finalTime}초</span>`;
+                                }
+                            }
+                        }
+                    });
+
+                    gameArea.appendChild(hitbox);
+                });
+                
+                if(isDevMode) updateDevModeVisuals();
+            };
+            
+            bgImage.src = dynamicBackgroundUrl;
+        }
+
+        nextStageBtn.addEventListener('click', () => {
+            currentStageIndex++;
+            loadStage(currentStageIndex);
+        });
+
+        let isDevMode = false;
+        const devBtn = document.getElementById('toggle-dev');
+        const coordsText = document.getElementById('click-coords');
+
+        function updateDevModeVisuals() {
+            const hitboxes = document.querySelectorAll('.hitbox:not(.found-mark)');
+            hitboxes.forEach(box => {
+                box.style.opacity = isDevMode ? '0.8' : '0.2';
+                box.style.border = isDevMode ? '2px dashed red' : 'none';
+            });
+        }
+
+        devBtn.addEventListener('click', () => {
+            isDevMode = !isDevMode;
+            devBtn.innerText = `숨겨진 이모지 보기 (${isDevMode ? 'On' : 'Off'})`;
+            updateDevModeVisuals();
+        });
+
+        gameArea.addEventListener('click', function(e) {
+            const rect = gameArea.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const xPercent = (x / rect.width * 100).toFixed(1);
+            const yPercent = (y / rect.height * 100).toFixed(1);
+
+            coordsText.innerText = `클릭: (${xPercent}%, ${yPercent}%)`;
+            
+            if (!isDevMode) {
+                console.log("빈 공간을 클릭했습니다.");
+            }
+        });
+    </script>
+</body>
+</html>

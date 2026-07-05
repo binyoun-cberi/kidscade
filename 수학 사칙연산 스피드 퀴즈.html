@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 혼합계산 스피드 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --primary-hover: #357ABD;
+            --bg-color: #F4F7F6;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --danger-color: #E74C3C;
+            --success-color: #2ECC71;
+            --rank-bronze: #cd7f32;
+            --rank-silver: #bdc3c7;
+            --rank-gold: #f1c40f;
+            --rank-platinum: #7f8c8d;
+            --rank-diamond: #3498db;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.8s ease; 
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 95vh;
+            position: relative;
+            z-index: 10;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        /* 공통 유틸리티 */
+        .hidden { display: none !important; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+            margin-top: 5px;
+        }
+        .btn:hover { background-color: var(--primary-hover); opacity: 0.9; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .flex-row { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* 랭크 뱃지 스타일 */
+        .rank-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .rank-unranked { background: #95a5a6; }
+        .rank-bronze { background: var(--rank-bronze); }
+        .rank-silver { background: var(--rank-silver); color: #333; }
+        .rank-gold { background: var(--rank-gold); color: #333; }
+        .rank-platinum { background: var(--rank-platinum); }
+        .rank-diamond { background: var(--rank-diamond); }
+
+        .rank-result {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 설정 화면 */
+        .setting-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .setting-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+        .radio-group label {
+            flex: 1;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: normal;
+            margin: 0;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label {
+            background: #E8F0FE;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 게임 화면 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .bgm-toggle-btn {
+            background: #f9f9f9;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .bgm-toggle-btn.off {
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        .score-board {
+            background: #E8F0FE;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .timer {
+            font-size: 24px;
+            color: var(--primary-color);
+            transition: color 0.3s;
+        }
+        .timer.danger {
+            color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 콤보 효과 */
+        .combo-display {
+            font-size: 20px;
+            font-weight: 900;
+            color: #FF9800;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        .combo-display.active {
+            opacity: 1;
+            animation: combo-pop 0.3s ease-in-out forwards;
+        }
+        .combo-display.combo-high {
+            color: var(--danger-color);
+            font-size: 24px;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+        }
+        @keyframes combo-pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .question-box {
+            background: #f9f9f9;
+            padding: 30px 20px;
+            border-radius: 12px;
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            word-break: keep-all;
+            border: 1px solid #eee;
+            color: var(--primary-color);
+        }
+        .question-box.desc-mode {
+            font-size: 40px; /* 답이 문제로 나올 때는 더 크게 */
+        }
+        
+        /* 객관식 버튼 */
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .choice-grid.desc-mode {
+            grid-template-columns: 1fr; /* 식(equation)을 선택할 때는 줄바꿈 방지를 위해 1줄로 */
+        }
+        .choice-btn {
+            background: #f1f1f1;
+            border: 2px solid transparent;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: #e2e2e2;
+        }
+        
+        .choice-btn.correct {
+            background-color: var(--success-color) !important;
+            color: white;
+            border-color: var(--success-color);
+        }
+        .choice-btn.wrong {
+            background-color: var(--danger-color) !important;
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* 결과 화면 */
+        .result-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #FDFBF7;
+            border-radius: 12px;
+            border: 1px solid #F1E5D1;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        .best-score {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+        
+        /* 오답 노트 */
+        .wrong-list {
+            max-height: 180px;
+            overflow-y: auto;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .wrong-item {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .wrong-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .wrong-desc { color: var(--text-main); margin-bottom: 6px; font-weight: bold; font-size: 18px;}
+        .wrong-word { color: var(--success-color); font-weight: bold; font-size: 16px; }
+        .user-word { color: var(--danger-color); text-decoration: line-through; margin-right: 8px; font-size: 16px;}
+
+        /* ================= 방해 애니메이션(Distractions) ================= */
+        #distraction-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .distraction-entity {
+            position: absolute;
+            font-size: 50px;
+            user-select: none;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes anim-ghost {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.9; transform: scale(1.5); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .anim-ghost { animation: anim-ghost 3s ease-in-out forwards; }
+
+        @keyframes anim-float {
+            0% { transform: translateY(110vh) rotate(-10deg); }
+            100% { transform: translateY(-20vh) rotate(10deg); }
+        }
+        .anim-float { top: 0; animation: anim-float 6s linear forwards; }
+
+        @keyframes anim-jump {
+            0% { transform: translate(-10vw, 90vh); }
+            20% { transform: translate(10vw, 60vh); }
+            40% { transform: translate(30vw, 90vh); }
+            60% { transform: translate(50vw, 60vh); }
+            80% { transform: translate(70vw, 90vh); }
+            100% { transform: translate(110vw, 60vh); }
+        }
+        .anim-jump { top: 0; left: 0; animation: anim-jump 4s linear forwards; }
+
+        @keyframes anim-climb {
+            0% { transform: translateY(110vh) rotate(10deg); }
+            50% { transform: translateY(50vh) rotate(-10deg); }
+            100% { transform: translateY(-20vh) rotate(10deg); }
+        }
+        .anim-climb { top: 0; animation: anim-climb 5s ease-in-out forwards; }
+
+        @keyframes anim-run-fast {
+            0% { transform: translateX(-20vw) scaleX(-1); }
+            100% { transform: translateX(120vw) scaleX(-1); }
+        }
+        .anim-run-fast { left: 0; animation: anim-run-fast 3s linear forwards; }
+
+        @keyframes anim-fly-arc {
+            0% { transform: translate(-10vw, 60vh) rotate(0deg); }
+            50% { transform: translate(50vw, 20vh) rotate(360deg); }
+            100% { transform: translate(120vw, 70vh) rotate(720deg); }
+        }
+        .anim-fly-arc { top: 0; left: 0; animation: anim-fly-arc 4s linear forwards; }
+
+        @keyframes anim-jump-catch {
+            0% { transform: translate(-20vw, 90vh) scaleX(-1); }
+            50% { transform: translate(45vw, 30vh) scaleX(-1); }
+            100% { transform: translate(110vw, 90vh) scaleX(-1); }
+        }
+        .anim-jump-catch { top: 0; left: 0; animation: anim-jump-catch 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        @keyframes anim-erratic {
+            0% { transform: translate(-10vw, 50vh); }
+            25% { transform: translate(30vw, 10vh); }
+            50% { transform: translate(60vw, 80vh); }
+            75% { transform: translate(80vw, 20vh); }
+            100% { transform: translate(110vw, 50vh); }
+        }
+        .anim-erratic { top: 0; left: 0; font-size: 30px; animation: anim-erratic 5s linear forwards; }
+
+        @keyframes anim-spaceship {
+            0% { transform: translate(-20vw, 20vh) scale(0.5); }
+            25% { transform: translate(30vw, 5vh) scale(1.5) rotate(15deg); }
+            50% { transform: translate(80vw, 40vh) scale(2) rotate(-15deg); }
+            75% { transform: translate(30vw, 80vh) scale(1) rotate(20deg); }
+            100% { transform: translate(-20vw, 20vh) scale(0.5); }
+        }
+        .anim-spaceship { top: 0; left: 0; font-size: 60px; animation: anim-spaceship 6s ease-in-out forwards; }
+
+        /* ================= 연습장 (Scratchpad) ================= */
+        .toggle-pad-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #9b59b6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 90;
+            transition: transform 0.2s;
+        }
+        .toggle-pad-btn:hover {
+            transform: scale(1.05);
+        }
+        .pad-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            box-shadow: -2px 0 15px rgba(0,0,0,0.2);
+            z-index: 95;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .pad-container.open {
+            transform: translateX(0);
+        }
+        .pad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .pad-header button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .pad-header button:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        #math-pad {
+            flex: 1;
+            width: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        @media (max-width: 768px) {
+            .pad-container {
+                width: 100%;
+                height: 50vh;
+                transform: translateY(100%);
+            }
+            .pad-container.open {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="distraction-layer"></div>
+
+<!-- 연습장 토글 버튼 & 컨테이너 -->
+<button class="toggle-pad-btn" onclick="togglePad()">📝 연습장</button>
+<div id="pad-container" class="pad-container">
+    <div class="pad-header">
+        <span>📝 연습장</span>
+        <div>
+            <button onclick="clearPad()">🗑️ 지우기</button>
+            <button onclick="togglePad()">❌ 닫기</button>
+        </div>
+    </div>
+    <canvas id="math-pad"></canvas>
+</div>
+
+<div class="container">
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1>초등 혼합계산 퀴즈</h1>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">5~6학년 사칙연산 혼합계산 정복하기!</p>
+        
+        <div id="my-rank-display" class="rank-badge rank-unranked">현재 랭크: 언랭크</div>
+        
+        <div class="setting-group" style="margin-top: 5px;">
+            <label>제한 시간 (1문제 당)</label>
+            <div class="radio-group">
+                <input type="radio" id="time15" name="timeSetting" value="15">
+                <label for="time15">15초</label>
+                <input type="radio" id="time30" name="timeSetting" value="30" checked>
+                <label for="time30">30초</label>
+                <input type="radio" id="time60" name="timeSetting" value="60">
+                <label for="time60">60초</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label>문제 유형</label>
+            <div class="radio-group">
+                <input type="radio" id="typeWord" name="typeSetting" value="word" checked>
+                <label for="typeWord">식을 보고 답 찾기</label>
+                <input type="radio" id="typeDesc" name="typeSetting" value="desc">
+                <label for="typeDesc">답을 보고 식 찾기</label>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <button class="btn" style="background-color: #2ecc71; flex: 1; font-size:14px;" onclick="startGame(false, 'normal')">연습 (1판)</button>
+            <button class="btn" id="rank-btn" style="flex: 2; font-size:15px;" onclick="startGame(false, 'rank')">배치고사 시작 (5판)</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <div id="question-counter">문제 1 / 20</div>
+            <div style="display:flex; gap: 5px;">
+                <button id="bgm-toggle" class="bgm-toggle-btn" onclick="toggleBGM()">🎵 BGM ON</button>
+            </div>
+            <div id="timer-display" class="timer">30초</div>
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <div id="current-score-display" class="score-board" style="margin-bottom: 0;">현재 점수: 0점</div>
+            <div id="combo-display" class="combo-display"></div>
+        </div>
+        
+        <div id="question-text" class="question-box"></div>
+
+        <div id="choice-input-container" class="choice-grid hidden">
+            <!-- 동적 생성 -->
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen" class="hidden">
+        <h2 id="result-title">게임 종료!</h2>
+        <div class="result-box">
+            <p id="result-subtitle" style="margin: 0;">당신의 최종 점수</p>
+            <div id="final-score" class="score-display">0점</div>
+            <div id="rank-result-display" class="rank-result hidden">다이아몬드</div>
+            <div id="best-score" class="best-score">역대 최고 점수: 0점</div>
+        </div>
+
+        <!-- 오답 노트 영역 -->
+        <div class="setting-group">
+            <label style="color: var(--danger-color);">오답 노트 (틀린 문제)</label>
+            <div id="wrong-answers-list" class="wrong-list">
+                <!-- 자바스크립트로 생성됨 -->
+            </div>
+        </div>
+
+        <!-- 종료 화면에서의 설정 영역 -->
+        <div id="res-setting-group">
+            <div class="setting-group">
+                <label>제한 시간 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-time15" name="resTimeSetting" value="15">
+                    <label for="res-time15">15초</label>
+                    <input type="radio" id="res-time30" name="resTimeSetting" value="30" checked>
+                    <label for="res-time30">30초</label>
+                    <input type="radio" id="res-time60" name="resTimeSetting" value="60">
+                    <label for="res-time60">60초</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>문제 유형 (다음 게임)</label>
+                <div class="radio-group">
+                    <input type="radio" id="res-typeWord" name="resTypeSetting" value="word" checked>
+                    <label for="res-typeWord">식을 보고 답 찾기</label>
+                    <input type="radio" id="res-typeDesc" name="resTypeSetting" value="desc">
+                    <label for="res-typeDesc">답을 보고 식 찾기</label>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <button id="res-next-round-btn" class="btn hidden" style="background-color:#9b59b6;" onclick="startNextRound()">다음 라운드 시작</button>
+            <button id="res-restart-btn" class="btn" onclick="startGame(true, currentMode)">다시 하기</button>
+            <button class="btn" onclick="goHome()" style="background-color: #999; margin-top: 0;">메인으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 혼합계산 문제 자동 생성기 (500문제 생성)
+    const wordDictionary = [];
+
+    function rnd(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateMathQuestions() {
+        // 문제 생성 패턴 (초등 5-6학년 혼합계산)
+        const patterns = [
+            // 1. A × B + C
+            () => { let a=rnd(2,9), b=rnd(2,9), c=rnd(1,20); return { q: `${a} × ${b} + ${c}`, a: a*b+c } },
+            // 2. A × B - C
+            () => { let a=rnd(2,9), b=rnd(2,9), c=rnd(1,a*b-1); return { q: `${a} × ${b} - ${c}`, a: a*b-c } },
+            // 3. A ÷ B + C (나누어 떨어지게)
+            () => { let b=rnd(2,9), ans=rnd(2,9), a=b*ans, c=rnd(1,20); return { q: `${a} ÷ ${b} + ${c}`, a: ans+c } },
+            // 4. A ÷ B - C (음수 안 나오게)
+            () => { let b=rnd(2,9), c=rnd(1,9), ans=rnd(c+1,c+9), a=b*ans; return { q: `${a} ÷ ${b} - ${c}`, a: ans-c } },
+            // 5. (A + B) × C
+            () => { let a=rnd(1,15), b=rnd(1,15), c=rnd(2,9); return { q: `(${a} + ${b}) × ${c}`, a: (a+b)*c } },
+            // 6. (A - B) × C
+            () => { let a=rnd(5,20), b=rnd(1,a-1), c=rnd(2,9); return { q: `(${a} - ${b}) × ${c}`, a: (a-b)*c } },
+            // 7. (A + B) ÷ C
+            () => { let c=rnd(2,9), ans=rnd(2,9), sum=c*ans, a=rnd(1,sum-1), b=sum-a; return { q: `(${a} + ${b}) ÷ ${c}`, a: ans } },
+            // 8. (A - B) ÷ C
+            () => { let c=rnd(2,9), ans=rnd(2,9), diff=c*ans, b=rnd(1,20), a=diff+b; return { q: `(${a} - ${b}) ÷ ${c}`, a: ans } },
+            // 9. A + B × C - D (세 가지 연산 혼합)
+            () => { let a=rnd(10,30), b=rnd(2,9), c=rnd(2,5), d=rnd(1,10); return { q: `${a} + ${b} × ${c} - ${d}`, a: a+b*c-d } },
+            // 10. A - B ÷ C + D
+            () => { let a=rnd(10,30), c=rnd(2,9), ans=rnd(2,9), b=c*ans, d=rnd(1,10); return { q: `${a} - ${b} ÷ ${c} + ${d}`, a: a-ans+d } }
+        ];
+
+        let attempts = 0;
+        // 500개의 중복 없는 문제를 딕셔너리에 추가
+        while(wordDictionary.length < 500 && attempts < 5000) {
+            attempts++;
+            let p = patterns[Math.floor(Math.random() * patterns.length)];
+            let res = p();
+            if(res && res.a >= 0) {
+                // 식(word)이 중복되지 않게 검사
+                if (!wordDictionary.find(item => item.word === res.q)) {
+                    wordDictionary.push({ word: res.q, desc: String(res.a) });
+                }
+            }
+        }
+    }
+    generateMathQuestions();
+
+    // 게임 상태 변수
+    const TOTAL_QUESTIONS = 20; 
+    const TOTAL_ROUNDS = 5;
+    let currentMode = 'normal'; // 'normal' | 'rank'
+    let currentRound = 1;
+    let rankScores = [];
+    
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let totalScore = 0;
+    let currentCombo = 0; 
+    let timeLimit = 30; // 기본 시간 변경
+    let quizType = 'word';
+    let timeLeft = 0;
+    let timerInterval = null;
+    let wrongAnswers = []; 
+    
+    let audioCtx;
+    let myRank = '언랭크';
+
+    // ================= BGM 컨트롤러 =================
+    let isBgmEnabled = true;
+    const bgmController = {
+        ctx: null,
+        intervalId: null,
+        notes: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25], 
+        isPlaying: false,
+
+        init: function(context) {
+            this.ctx = context;
+        },
+
+        playNote: function() {
+            if (!this.ctx || this.ctx.state !== 'running') return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            const note = this.notes[Math.floor(Math.random() * this.notes.length)];
+            osc.frequency.value = note;
+            osc.type = 'sine'; 
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            const now = this.ctx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.015, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            
+            osc.start(now);
+            osc.stop(now + 1.0);
+        },
+
+        start: function() {
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+            this.playNote();
+            this.intervalId = setInterval(() => this.playNote(), 400); 
+        },
+
+        stop: function() {
+            this.isPlaying = false;
+            clearInterval(this.intervalId);
+        }
+    };
+
+    function toggleBGM() {
+        isBgmEnabled = !isBgmEnabled;
+        const btn = document.getElementById('bgm-toggle');
+        if (isBgmEnabled) {
+            btn.textContent = '🎵 BGM ON';
+            btn.classList.remove('off');
+            if (!screens.game.classList.contains('hidden')) {
+                bgmController.start();
+            }
+        } else {
+            btn.textContent = '🔇 BGM OFF';
+            btn.classList.add('off');
+            bgmController.stop();
+        }
+    }
+
+    // ================= 방해모드 (Distraction) =================
+    let distractionTimerId = null;
+
+    function scheduleNextDistraction() {
+        const delay = Math.random() * 15000 + 10000; 
+        distractionTimerId = setTimeout(() => {
+            triggerRandomDistraction();
+            if (!screens.game.classList.contains('hidden')) {
+                scheduleNextDistraction();
+            }
+        }, delay);
+    }
+
+    function stopDistractions() {
+        clearTimeout(distractionTimerId);
+        document.getElementById('distraction-layer').innerHTML = '';
+    }
+
+    function createDistractionEl(emoji, className, cssText, durationMs) {
+        const layer = document.getElementById('distraction-layer');
+        const el = document.createElement('div');
+        el.className = `distraction-entity ${className}`;
+        el.textContent = emoji;
+        el.style.cssText = cssText;
+        layer.appendChild(el);
+        setTimeout(() => {
+            if(el.parentNode === layer) el.remove();
+        }, durationMs);
+    }
+
+    function spawnGhost() { createDistractionEl('👻', 'anim-ghost', `left: ${Math.random()*80}vw; top: ${Math.random()*80}vh;`, 3000); }
+    function spawnBalloons() {
+        const count = Math.floor(Math.random()*3) + 1;
+        for(let i=0; i<count; i++) {
+            setTimeout(() => { createDistractionEl('🎈', 'anim-float', `left: ${Math.random()*90}vw;`, 6000); }, i * 500);
+        }
+    }
+    function spawnFrog() { createDistractionEl('🐸', 'anim-jump', '', 4000); }
+    function spawnMonkey() {
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        createDistractionEl('🐒', 'anim-climb', `${side}: 10vw;`, 5000);
+    }
+    function spawnCatMouse() {
+        const y = Math.random() * 60 + 20; 
+        createDistractionEl('🐁', 'anim-run-fast', `bottom: ${y}vh;`, 3000);
+        setTimeout(() => { createDistractionEl('🐈', 'anim-run-fast', `bottom: ${y}vh;`, 3000); }, 400); 
+    }
+    function spawnDogFrisbee() {
+        createDistractionEl('🥏', 'anim-fly-arc', '', 4000);
+        setTimeout(() => { createDistractionEl('🐕', 'anim-jump-catch', '', 4000); }, 500); 
+    }
+    function spawnFly() { createDistractionEl('🪰', 'anim-erratic', '', 5000); }
+    function spawnSpaceship() { createDistractionEl('🛸', 'anim-spaceship', '', 6000); }
+
+    function triggerRandomDistraction() {
+        const actions = [
+            spawnGhost, spawnBalloons, spawnFrog, spawnMonkey,
+            spawnCatMouse, spawnDogFrisbee, spawnFly, spawnSpaceship
+        ];
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        randomAction();
+    }
+
+    // ================= DOM 및 메인 로직 =================
+    const screens = {
+        start: document.getElementById('start-screen'),
+        game: document.getElementById('game-screen'),
+        result: document.getElementById('result-screen')
+    };
+    const ui = {
+        counter: document.getElementById('question-counter'),
+        timer: document.getElementById('timer-display'),
+        currentScore: document.getElementById('current-score-display'),
+        comboDisplay: document.getElementById('combo-display'),
+        question: document.getElementById('question-text'),
+        choiceContainer: document.getElementById('choice-input-container'),
+        finalScore: document.getElementById('final-score'),
+        bestScore: document.getElementById('best-score')
+    };
+
+    function updateRankUI() {
+        const rankEl = document.getElementById('my-rank-display');
+        const rankBtn = document.getElementById('rank-btn');
+        rankEl.className = 'rank-badge'; 
+        
+        let colorClass = 'rank-unranked';
+        let bgColor = 'var(--bg-color)'; 
+        
+        if(myRank === '브론즈') { colorClass = 'rank-bronze'; bgColor = '#F5EBE1'; }
+        else if(myRank === '실버') { colorClass = 'rank-silver'; bgColor = '#EBEDEF'; }
+        else if(myRank === '골드') { colorClass = 'rank-gold'; bgColor = '#FEF9E7'; }
+        else if(myRank === '플래티넘') { colorClass = 'rank-platinum'; bgColor = '#E5E8E8'; }
+        else if(myRank === '다이아몬드') { colorClass = 'rank-diamond'; bgColor = '#EBF5FB'; }
+        
+        rankEl.classList.add(colorClass);
+        rankEl.textContent = `현재 랭크: ${myRank}`;
+        document.body.style.backgroundColor = bgColor;
+
+        if(myRank === '언랭크') {
+            rankBtn.textContent = '배치고사 시작 (5판)';
+        } else {
+            rankBtn.textContent = '승급전 시작 (5판)';
+        }
+    }
+
+    function playBeep(isCorrect) {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        if (isCorrect) {
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } else {
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function startGame(isRestart = false, mode = 'normal') {
+        currentMode = mode;
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            bgmController.init(audioCtx);
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        if (isRestart) {
+            timeLimit = parseInt(document.querySelector('input[name="resTimeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="resTypeSetting"]:checked').value;
+            document.querySelector(`input[name="timeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="typeSetting"][value="${quizType}"]`).checked = true;
+        } else {
+            timeLimit = parseInt(document.querySelector('input[name="timeSetting"]:checked').value);
+            quizType = document.querySelector('input[name="typeSetting"]:checked').value;
+            document.querySelector(`input[name="resTimeSetting"][value="${timeLimit}"]`).checked = true;
+            document.querySelector(`input[name="resTypeSetting"][value="${quizType}"]`).checked = true;
+        }
+
+        if (currentMode === 'rank') {
+            currentRound = 1;
+            rankScores = [];
+        }
+
+        startRound();
+    }
+
+    function startRound() {
+        const shuffledWords = shuffleArray([...wordDictionary]);
+        currentQuestions = shuffledWords.slice(0, TOTAL_QUESTIONS);
+        
+        currentIndex = 0;
+        totalScore = 0;
+        currentCombo = 0; 
+        wrongAnswers = []; 
+
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: 0점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: 0점`;
+        }
+        
+        ui.comboDisplay.className = 'combo-display'; 
+        ui.comboDisplay.textContent = '';
+        
+        showScreen('game');
+        loadQuestion();
+        
+        if (isBgmEnabled && !bgmController.isPlaying) {
+            bgmController.start();
+        }
+        
+        clearTimeout(distractionTimerId);
+        scheduleNextDistraction();
+    }
+
+    function startNextRound() {
+        currentRound++;
+        startRound();
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        
+        ui.counter.textContent = `문제 ${currentIndex + 1} / ${TOTAL_QUESTIONS}`;
+        ui.timer.classList.remove('danger');
+        ui.choiceContainer.classList.remove('hidden');
+        
+        if (quizType === 'word') { 
+            // 식을 보고 답 맞추기
+            ui.question.textContent = currentQ.word + " = ?";
+            ui.question.classList.remove('desc-mode'); 
+            ui.choiceContainer.classList.remove('desc-mode'); // 답(숫자)는 2줄로 배열
+        } else { 
+            // 답을 보고 식 맞추기
+            ui.question.textContent = "정답이 " + currentQ.desc + "인 식은?";
+            ui.question.classList.add('desc-mode');
+            ui.choiceContainer.classList.add('desc-mode'); // 식은 길어서 1줄로 배열
+        }
+
+        setupChoiceMode(currentQ);
+
+        timeLeft = timeLimit;
+        ui.timer.textContent = `${timeLeft}초`;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function setupChoiceMode(currentQ) {
+        ui.choiceContainer.innerHTML = '';
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        
+        const wrongTexts = [];
+        const usedTexts = new Set([correctText]);
+        
+        // 문제 은행을 섞어서 오답 후보 3개를 찾음
+        const shuffled = shuffleArray([...wordDictionary]);
+        
+        for (let item of shuffled) {
+            // 현재 문제와 똑같은 식은 제외
+            if (item.word === currentQ.word) continue;
+            
+            // "식을 보고 답을 찾을 때" 정답 숫자와 우연히 똑같은 결과가 나오는 식의 답은 제외
+            if (quizType === 'word' && item.desc === currentQ.desc) continue;
+            
+            let text = quizType === 'word' ? item.desc : item.word;
+            
+            if (!usedTexts.has(text)) {
+                usedTexts.add(text);
+                wrongTexts.push(text);
+            }
+            if (wrongTexts.length === 3) break;
+        }
+        
+        const choices = shuffleArray([correctText, ...wrongTexts]);
+
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = text;
+            btn.onclick = (e) => submitAnswer(text, e.target);
+            ui.choiceContainer.appendChild(btn);
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        ui.timer.textContent = `${timeLeft}초`;
+        
+        if (timeLeft <= 3) {
+            ui.timer.classList.add('danger');
+        }
+
+        if (timeLeft <= 0) {
+            submitAnswer(null); 
+        }
+    }
+
+    function submitAnswer(userAnswer, btnElement = null) {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentIndex];
+        let scoreEarned = 0;
+        
+        let correctText = quizType === 'word' ? currentQ.desc : currentQ.word;
+        let questionText = quizType === 'word' ? currentQ.word : `정답: ${currentQ.desc}`;
+        
+        let isCorrect = (userAnswer === correctText);
+
+        const choiceButtons = document.querySelectorAll('.choice-btn');
+        choiceButtons.forEach(b => b.disabled = true);
+
+        if (isCorrect) {
+            playBeep(true); 
+            
+            currentCombo++;
+            ui.comboDisplay.textContent = `${currentCombo} COMBO!`;
+            ui.comboDisplay.className = 'combo-display active';
+            if (currentCombo >= 3) {
+                ui.comboDisplay.classList.add('combo-high');
+            }
+            ui.comboDisplay.style.animation = 'none';
+            ui.comboDisplay.offsetHeight;
+            ui.comboDisplay.style.animation = null;
+
+            // 30초, 60초 모드일 때는 시간 차감 없이 무조건 10점 부여
+            if (timeLimit === 30 || timeLimit === 60) {
+                scoreEarned = 10;
+            } else {
+                // 15초 모드일 때는 5초 이후 1초당 1점 차감
+                const elapsedTime = timeLimit - timeLeft;
+                if (elapsedTime <= 5) {
+                    scoreEarned = 10;
+                } else {
+                    scoreEarned = 10 - (elapsedTime - 5);
+                    if (scoreEarned < 0) scoreEarned = 0;
+                }
+            }
+
+            if (btnElement) {
+                btnElement.classList.add('correct');
+            }
+
+        } else {
+            playBeep(false); 
+            scoreEarned = 0; 
+            
+            currentCombo = 0;
+            ui.comboDisplay.className = 'combo-display';
+            ui.comboDisplay.textContent = '';
+            
+            wrongAnswers.push({
+                question: questionText,
+                correctAnswer: correctText,
+                userAnswer: userAnswer ? userAnswer : '시간 초과 / 미선택'
+            });
+
+            if (btnElement) {
+                btnElement.classList.add('wrong');
+            }
+            choiceButtons.forEach(b => {
+                if (b.textContent === correctText) {
+                    b.classList.add('correct');
+                }
+            });
+        }
+
+        totalScore += scoreEarned;
+        
+        if (currentMode === 'rank') {
+            ui.currentScore.textContent = `[승급전 ${currentRound}/5라] 점수: ${totalScore}점`;
+        } else {
+            ui.currentScore.textContent = `[연습모드] 점수: ${totalScore}점`;
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < TOTAL_QUESTIONS) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function updateBestScore(score) {
+        const storageKey = 'mathSpeedQuizBestScore'; 
+        let bestScore = localStorage.getItem(storageKey) || 0;
+        bestScore = parseInt(bestScore);
+
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem(storageKey, bestScore);
+        }
+        ui.bestScore.textContent = `역대 1판 최고 점수: ${bestScore}점`;
+    }
+
+    function endGame() {
+        bgmController.stop(); 
+        stopDistractions(); 
+
+        showScreen('result');
+        
+        const resSettingGroup = document.getElementById('res-setting-group');
+        const resNextRoundBtn = document.getElementById('res-next-round-btn');
+        const resRestartBtn = document.getElementById('res-restart-btn');
+        const resultTitle = document.getElementById('result-title');
+        const resultSubtitle = document.getElementById('result-subtitle');
+        const rankResultDisplay = document.getElementById('rank-result-display');
+        const bestScoreDisplay = document.getElementById('best-score');
+
+        resSettingGroup.classList.remove('hidden');
+        resNextRoundBtn.classList.add('hidden');
+        resRestartBtn.classList.remove('hidden');
+        rankResultDisplay.classList.add('hidden');
+        bestScoreDisplay.classList.remove('hidden');
+
+        if (currentMode === 'normal') {
+            resultTitle.textContent = "연습 게임 종료!";
+            resultSubtitle.textContent = "당신의 최종 점수";
+            ui.finalScore.textContent = `${totalScore}점`;
+            
+            updateBestScore(totalScore);
+            
+            resRestartBtn.textContent = "다시 하기 (연습)";
+            resRestartBtn.onclick = () => startGame(true, 'normal');
+
+        } else if (currentMode === 'rank') {
+            rankScores.push(totalScore);
+            updateBestScore(totalScore); 
+            
+            if (currentRound < TOTAL_ROUNDS) {
+                resultTitle.textContent = `승급전 ${currentRound}라운드 종료`;
+                resultSubtitle.textContent = `이번 라운드 획득 점수`;
+                ui.finalScore.textContent = `${totalScore}점`;
+                
+                resSettingGroup.classList.add('hidden'); 
+                resNextRoundBtn.classList.remove('hidden');
+                resRestartBtn.classList.add('hidden');
+                bestScoreDisplay.classList.add('hidden');
+            } else {
+                const averageScore = rankScores.reduce((a, b) => a + b, 0) / TOTAL_ROUNDS;
+                let newRank = '브론즈';
+                let rankColorClass = 'rank-bronze';
+                
+                if (averageScore >= 180) { newRank = '다이아몬드'; rankColorClass = 'rank-diamond'; }
+                else if (averageScore >= 150) { newRank = '플래티넘'; rankColorClass = 'rank-platinum'; }
+                else if (averageScore >= 120) { newRank = '골드'; rankColorClass = 'rank-gold'; }
+                else if (averageScore >= 90) { newRank = '실버'; rankColorClass = 'rank-silver'; }
+                
+                myRank = newRank;
+                localStorage.setItem('mathSpeedQuizRank', myRank); 
+                updateRankUI();
+
+                resultTitle.textContent = "랭크 판정 완료!";
+                resultSubtitle.textContent = `5판 평균 점수: ${averageScore.toFixed(1)}점`;
+                ui.finalScore.textContent = ``; 
+                
+                rankResultDisplay.textContent = newRank;
+                rankResultDisplay.className = `rank-result ${rankColorClass}`;
+                rankResultDisplay.classList.remove('hidden');
+
+                resSettingGroup.classList.remove('hidden');
+                resRestartBtn.classList.remove('hidden');
+                resRestartBtn.textContent = "승급전 다시 도전";
+                resRestartBtn.onclick = () => startGame(true, 'rank');
+            }
+        }
+        
+        const wrongList = document.getElementById('wrong-answers-list');
+        if (wrongAnswers.length > 0) {
+            wrongList.innerHTML = wrongAnswers.map(item => `
+                <div class="wrong-item">
+                    <div class="wrong-desc">Q. ${item.question}</div>
+                    <div>
+                        <span class="user-word">${item.userAnswer}</span>
+                        <span class="wrong-word">정답: ${item.correctAnswer}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            wrongList.innerHTML = '<div style="text-align:center; padding:15px; color:var(--success-color); font-weight:bold;">모두 맞췄습니다! 완벽해요! 🎉</div>';
+        }
+    }
+
+    function goHome() {
+        bgmController.stop(); 
+        stopDistractions();
+        showScreen('start');
+    }
+
+    window.onload = () => {
+        myRank = localStorage.getItem('mathSpeedQuizRank') || '언랭크';
+        updateRankUI();
+        
+        if(!localStorage.getItem('mathSpeedQuizBestScore')){
+            localStorage.setItem('mathSpeedQuizBestScore', 0);
+        }
+
+        initPad(); // 연습장 초기화
+    };
+
+    // ================= 연습장 (Scratchpad) 로직 =================
+    const padContainer = document.getElementById('pad-container');
+    const canvas = document.getElementById('math-pad');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function togglePad() {
+        padContainer.classList.toggle('open');
+        if (padContainer.classList.contains('open')) {
+            // 패널 애니메이션이 끝난 후 캔버스 사이즈 조절
+            setTimeout(resizeCanvas, 300); 
+        }
+    }
+
+    function clearPad() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function resizeCanvas() {
+        // 기존 그려둔 내용을 유지하기 위해 임시 캔버스에 백업
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        if(canvas.width > 0) tempCtx.drawImage(canvas, 0, 0);
+
+        // 컨테이너 크기에 맞춰 사이즈 갱신
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        // 펜 설정
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // 기존 내용 복구
+        if(tempCanvas.width > 0) ctx.drawImage(tempCanvas, 0, 0);
+    }
+
+    function initPad() {
+        window.addEventListener('resize', () => {
+            if (padContainer.classList.contains('open')) resizeCanvas();
+        });
+
+        // 마우스 및 터치 좌표 계산 함수
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            e.preventDefault(); // 스크롤 등 기본 동작 방지
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            lastX = pos.x;
+            lastY = pos.y;
+            e.preventDefault();
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+            ctx.closePath();
+        }
+
+        // 데스크탑 마우스 이벤트
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseout', stopDraw);
+
+        // 모바일 터치 이벤트
+        canvas.addEventListener('touchstart', startDraw, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDraw);
+        canvas.addEventListener('touchcancel', stopDraw);
+    }
+</script>
+
+</body>
+</html>
