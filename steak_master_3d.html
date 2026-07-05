@@ -3,112 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>그릴 마스터 3D DX</title>
+  <title>그릴 마스터 3D | Steakhouse Edition</title>
   <style>
     :root{
-      --bg:#130c09;
-      --panel:rgba(31,20,15,.84);
-      --panel2:rgba(255,242,224,.1);
-      --line:rgba(255,229,197,.2);
-      --text:#fff5e4;
-      --muted:#d9bea4;
-      --good:#7ee39a;
-      --warn:#ffd166;
-      --bad:#ff6b6b;
-      --accent:#ff9f43;
-      --accent2:#ff6b35;
-      --shadow:0 16px 48px rgba(0,0,0,.45);
+      --bg:#070504;
+      --ink:#f8ead2;
+      --muted:#b99d7b;
+      --paper:#efe0c3;
+      --paper2:#d7bd91;
+      --charcoal:rgba(9,8,7,.72);
+      --charcoal2:rgba(20,16,13,.84);
+      --line:rgba(238,203,145,.22);
+      --gold:#c89545;
+      --gold2:#f0c477;
+      --ember:#e65b28;
+      --red:#dd4b39;
+      --green:#8ccf82;
+      --shadow:0 22px 70px rgba(0,0,0,.58);
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);}
-    #gameCanvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 8%,#3b2117 0%,#130c09 58%,#080403 100%);}
-    .hud{position:fixed;inset:0;pointer-events:none;display:grid;grid-template-rows:auto 1fr auto;padding:16px;gap:12px;}
-    .topbar{display:grid;grid-template-columns:1.06fr .95fr .9fr;gap:12px;align-items:start;}
-    .card{pointer-events:auto;background:linear-gradient(180deg,rgba(46,28,20,.88),rgba(18,12,9,.78));border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;backdrop-filter:blur(10px);overflow:hidden;}
-    .card.pad{padding:14px;}
-    .titleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
-    .miniTitle{font-size:13px;color:var(--muted);font-weight:850;letter-spacing:.02em;}
-    .orderName{font-size:22px;font-weight:1000;line-height:1.1;margin:0 0 6px;}
-    .orderText{font-size:14px;color:#ffe3be;line-height:1.35;margin:0;}
-    .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid rgba(255,229,197,.22);background:rgba(255,255,255,.08);padding:5px 9px;font-size:12px;color:#ffe9ce;font-weight:850;white-space:nowrap;}
-    .meatBadge{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 10px;border-radius:999px;background:rgba(255,159,67,.14);border:1px solid rgba(255,194,118,.26);font-size:13px;font-weight:900;color:#ffe6be;}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
-    .stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:9px 10px;min-height:56px;}
-    .stat .label{font-size:11px;color:var(--muted);font-weight:750;}
-    .stat .value{font-size:18px;font-weight:1000;margin-top:3px;}
-    .gaugeList{display:grid;gap:8px;}
-    .gaugeHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-weight:850;margin-bottom:4px;}
-    .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.08);overflow:hidden;}
-    .fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff514a,#ff9f43,#573326,#080604);transition:width .12s linear;}
-    .fill.heat{background:linear-gradient(90deg,#555,#ffd166,#ff6b35,#ff2222);}
-    .fill.core{background:linear-gradient(90deg,#6ad4ff,#ff6b6b,#c0392b);}
-    .fill.special{background:linear-gradient(90deg,#73d2ff,#ffe083,#ffad60);}
-    .tasteRow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
-    .tasteChip{font-size:12px;font-weight:900;color:#fff0d4;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);}
-    .tasteChip.on{background:rgba(255,159,67,.22);border-color:rgba(255,207,138,.32);}
-    .middle{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
-    .toast{align-self:start;max-width:470px;opacity:0;transform:translateY(-8px);transition:.25s ease;background:rgba(24,15,10,.78);border:1px solid rgba(255,220,170,.22);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-weight:850;color:#ffe8c7;line-height:1.35;}
-    .toast.show{opacity:1;transform:translateY(0);}
-    .comboBox{pointer-events:none;align-self:end;justify-self:end;text-align:right;text-shadow:0 3px 16px rgba(0,0,0,.65);}
-    .comboBox .big{font-size:54px;font-weight:1000;letter-spacing:-.05em;line-height:.9;color:#fff1c8;}
-    .comboBox .small{font-size:15px;color:#ffd190;font-weight:950;}
-    .controls{pointer-events:auto;display:grid;grid-template-columns:1.05fr 1.8fr .9fr;gap:12px;align-items:stretch;}
-    .controlPanel{padding:12px;border-radius:20px;}
-    .heatPanel{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;}
-    .heatReadout{font-size:28px;font-weight:1000;text-align:center;min-width:54px;color:#fff0d4;text-shadow:0 2px 12px rgba(255,111,49,.5);}
-    button{font:inherit;color:var(--text);border:1px solid rgba(255,220,170,.22);background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));border-radius:15px;min-height:48px;padding:10px 12px;font-weight:950;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .08s ease,filter .15s ease,background .15s ease;}
-    button:active{transform:translateY(2px) scale(.99);}
-    button:disabled{opacity:.45;filter:grayscale(1);cursor:not-allowed;}
-    .primary{background:linear-gradient(180deg,#ffb85c,#ff6b35);border-color:rgba(255,255,255,.25);color:#25100b;}
-    .danger{background:linear-gradient(180deg,#ff796e,#b52f28);}
-    .good{background:linear-gradient(180deg,#9cf0a6,#33aa4b);color:#09230e;}
-    .buttonGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;}
-    .buttonGrid button{padding-left:8px;padding-right:8px;}
-    .smallBtn{min-height:44px;font-size:14px;}
-    .servePanel{display:grid;grid-template-rows:auto 1fr;gap:10px;}
-    .log{font-size:14px;line-height:1.45;color:#ffe2bc;min-height:56px;}
-    .help{font-size:12px;color:rgba(255,236,208,.7);line-height:1.35;margin-top:8px;}
-    .screen{position:fixed;inset:0;background:radial-gradient(circle at 50% 30%,rgba(70,38,24,.72),rgba(0,0,0,.78));display:none;align-items:center;justify-content:center;z-index:10;padding:20px;}
-    .screen.show{display:flex;}
-    .modal{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(180deg,rgba(58,34,24,.98),rgba(20,12,9,.98));border:1px solid rgba(255,225,185,.24);border-radius:26px;box-shadow:0 30px 90px rgba(0,0,0,.62);padding:24px;}
-    .modal h1{margin:0 0 8px;font-size:40px;letter-spacing:-.04em;}
-    .modal p{color:#ffe2bc;line-height:1.5;}
-    .featureGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0;}
-    .feature{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:13px;font-size:13px;line-height:1.42;color:#ffe8c7;}
-    .feature b{display:block;font-size:15px;color:#fff6e8;margin-bottom:5px;}
-    .modalActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
-    .rank{font-size:64px;font-weight:1000;line-height:1;color:#ffe083;text-shadow:0 4px 20px rgba(255,183,64,.38);}
-    .scoreGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
-    .scoreLine{padding:12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);}
-    .scoreLine .k{font-size:12px;color:var(--muted);font-weight:800;}
-    .scoreLine .v{font-size:19px;font-weight:1000;margin-top:4px;}
-    .floatingKeys{position:fixed;right:16px;bottom:122px;font-size:12px;color:rgba(255,238,216,.55);text-align:right;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);}
+    #gameCanvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 13%,#2f1b12 0%,#100907 53%,#050302 100%);}
     #floatLayer{position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden;}
-    .popText{position:absolute;left:50%;top:50%;font-weight:1000;font-size:30px;color:#fff0c5;text-shadow:0 4px 22px rgba(0,0,0,.8);transform:translate(-50%,-50%);animation:popText 1.05s ease-out forwards;white-space:nowrap;}
-    .popText.small{font-size:22px;}
-    .popText.warn{color:#ffcc8a;}
-    .popText.bad{color:#ff8888;}
-    @keyframes popText{0%{opacity:0;transform:translate(-50%,-25%) scale(.72) rotate(-2deg);}15%{opacity:1;transform:translate(-50%,-50%) scale(1.13) rotate(1deg);}100%{opacity:0;transform:translate(-50%,-120%) scale(.94) rotate(-1deg);}}
-    @media (max-width:900px){
-      .hud{padding:10px;grid-template-rows:auto 1fr auto;}
-      .topbar{grid-template-columns:1fr;gap:8px;}
-      .stats{grid-template-columns:repeat(3,1fr);}
-      .controls{grid-template-columns:1fr;gap:8px;}
-      .buttonGrid{grid-template-columns:repeat(3,1fr);}
-      .servePanel{grid-template-rows:auto;}
-      .comboBox .big{font-size:38px;}
-      .floatingKeys{display:none;}
-      .featureGrid,.scoreGrid{grid-template-columns:1fr;}
-      .modal h1{font-size:32px;}
-    }
-    @media (max-width:520px){
-      .card.pad{padding:11px;}
-      .orderName{font-size:19px;}
-      .stat{min-height:48px;padding:7px;}
-      .stat .value{font-size:16px;}
-      .buttonGrid{grid-template-columns:repeat(2,1fr);}
-      button{min-height:45px;font-size:14px;}
-    }
+
+    .hud{position:fixed;inset:0;pointer-events:none;padding:18px;display:grid;grid-template-rows:auto 1fr auto;gap:10px;z-index:5;}
+    .topbar{display:grid;grid-template-columns:minmax(245px,330px) 1fr minmax(240px,300px);gap:12px;align-items:start;}
+    .card{pointer-events:auto;border-radius:14px;box-shadow:var(--shadow);backdrop-filter:blur(10px);overflow:hidden;}
+    .card.pad{padding:12px;}
+
+    /* 주문표: 카드가 아니라 종이 영수증처럼 */
+    .orderTicket{position:relative;min-height:164px;background:linear-gradient(180deg,var(--paper),#cfaf78);color:#24170d;border:1px solid rgba(255,248,225,.34);box-shadow:0 20px 60px rgba(0,0,0,.48), inset 0 0 0 1px rgba(255,255,255,.28);}
+    .orderTicket::before,.orderTicket::after{content:"";position:absolute;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,transparent 0 14px,rgba(71,47,24,.2) 14px 18px,transparent 18px 30px);opacity:.32;}
+    .orderTicket::before{top:0}.orderTicket::after{bottom:0}
+    .titleRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+    .miniTitle{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.12em;text-transform:uppercase;}
+    .orderTicket .miniTitle{color:#7f5b30;}
+    .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid rgba(74,47,21,.25);background:rgba(255,255,255,.28);padding:4px 8px;font-size:11px;color:#3a2818;font-weight:950;white-space:nowrap;}
+    .meatBadge{display:inline-flex;align-items:center;gap:6px;margin:2px 0 8px;padding:5px 8px;border-radius:999px;background:rgba(65,35,12,.12);border:1px solid rgba(74,47,21,.22);font-size:12px;font-weight:950;color:#382414;}
+    .orderName{font-size:22px;font-weight:1000;line-height:1.08;margin:0 0 6px;letter-spacing:-.04em;color:#1d1108;}
+    .orderText{font-size:13px;color:#4a321d;line-height:1.34;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+    .stats{display:flex;gap:6px;margin-top:10px;}
+    .stat{flex:1;min-width:0;background:rgba(255,255,255,.25);border:1px solid rgba(82,52,24,.18);border-radius:10px;padding:6px 7px;}
+    .stat .label{font-size:10px;color:#76532e;font-weight:850;white-space:nowrap;}
+    .stat .value{font-size:15px;font-weight:1000;margin-top:1px;color:#1d1108;}
+
+    /* 가운데는 비워서 팬이 보이게 */
+    .chefNote{align-self:start;justify-self:center;width:min(420px,100%);background:rgba(8,7,6,.45);border:1px solid rgba(240,196,119,.16);color:#e9d6b7;box-shadow:0 16px 50px rgba(0,0,0,.35);opacity:.86;}
+    .chefNote .titleRow{margin-bottom:4px;}
+    .chefNote .pill{background:rgba(240,196,119,.1);border-color:rgba(240,196,119,.2);color:#f4d49d;}
+    .log{font-size:13px;line-height:1.38;color:#e9d6b7;}
+    .chefNote .help{display:none;}
+
+    /* 상태 패널은 작고 명확하게 */
+    .thermoPanel{background:linear-gradient(180deg,rgba(12,10,8,.76),rgba(5,4,3,.66));border:1px solid rgba(238,203,145,.19);box-shadow:0 18px 60px rgba(0,0,0,.48);}
+    .thermoPanel .titleRow{margin-bottom:8px;}
+    .thermoPanel .pill{background:rgba(240,196,119,.12);border-color:rgba(240,196,119,.2);color:#f4d49d;}
+    .gaugeList{display:grid;gap:7px;}
+    .gaugeHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:11px;color:#bfa27b;font-weight:850;margin-bottom:4px;}
+    .bar{height:7px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.07);overflow:hidden;}
+    .fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#6d3723,#c89545,#2a1610);transition:width .12s linear;}
+    .fill.heat{background:linear-gradient(90deg,#403b33,#c89545,#e65b28,#d63820);}
+    .fill.core{background:linear-gradient(90deg,#4c8aaa,#f0c477,#d05d38);}
+    .fill.special{background:linear-gradient(90deg,#8eb6c1,#f0c477,#e28b43);}
+    .tasteRow{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px;}
+    .tasteChip{font-size:11px;font-weight:950;color:#e9d6b7;padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);}
+    .tasteChip.on{background:rgba(200,149,69,.23);border-color:rgba(240,196,119,.28);color:#ffe0a8;}
+
+    .middle{position:relative;display:flex;align-items:flex-start;justify-content:center;}
+    .toast{pointer-events:none;max-width:min(440px,80vw);opacity:0;transform:translateY(-8px);transition:.22s ease;background:rgba(6,5,4,.76);border:1px solid rgba(240,196,119,.2);border-radius:999px;padding:10px 14px;box-shadow:0 16px 48px rgba(0,0,0,.5);font-weight:850;color:#f2ddbd;line-height:1.3;text-align:center;}
+    .toast.show{opacity:1;transform:translateY(0);}
+    .comboBox{pointer-events:none;position:absolute;right:8px;bottom:18px;text-align:right;text-shadow:0 5px 24px rgba(0,0,0,.8);}
+    .comboBox .big{font-size:38px;font-weight:1000;letter-spacing:-.06em;line-height:.9;color:#f4d49d;opacity:.92;}
+    .comboBox .small{font-size:12px;color:#cda977;font-weight:950;}
+
+    /* 하단 조작바: 게임패드처럼 정리 */
+    .controls{pointer-events:auto;align-self:end;display:grid;grid-template-columns:260px minmax(420px,620px) 250px;gap:10px;align-items:end;justify-content:center;}
+    .controlPanel{padding:10px;background:linear-gradient(180deg,rgba(13,11,9,.82),rgba(5,4,3,.76));border:1px solid rgba(238,203,145,.18);box-shadow:0 20px 70px rgba(0,0,0,.52);border-radius:18px;}
+    .heatPanel{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;}
+    .heatReadout{font-size:29px;font-weight:1000;text-align:center;min-width:50px;color:#f3d29b;text-shadow:0 2px 16px rgba(230,91,40,.4);}
+    button{font:inherit;color:#f8ead2;border:1px solid rgba(238,203,145,.22);background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035));border-radius:13px;min-height:44px;padding:9px 11px;font-weight:950;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.28);transition:transform .08s ease,filter .15s ease,background .15s ease;}
+    button:active{transform:translateY(2px) scale(.99);} button:disabled{opacity:.4;filter:grayscale(1);cursor:not-allowed;}
+    .primary{background:linear-gradient(180deg,#f0c477,#c47b30);border-color:rgba(255,244,210,.28);color:#1d1008;}
+    .danger{background:linear-gradient(180deg,#e37465,#8f251f);}.good{background:linear-gradient(180deg,#d7c08f,#8c6a32);color:#130c07;}
+    .buttonGrid{display:grid;grid-template-columns:1.45fr repeat(3,1fr) 1fr 1.15fr;gap:8px;}
+    .buttonGrid #flipBtn{min-height:58px;font-size:18px;}
+    .buttonGrid #serveBtn{min-height:58px;}
+    .smallBtn{min-height:40px;font-size:18px;padding-left:8px;padding-right:8px;}
+    .servePanel{display:grid;gap:4px;}
+    .servePanel .log{font-size:12px;line-height:1.3;color:#cdb894;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .help{font-size:11px;color:rgba(245,222,188,.62);line-height:1.35;margin-top:7px;}
+    .floatingKeys{display:none;}
+
+    .screen{position:fixed;inset:0;background:radial-gradient(circle at 50% 36%,rgba(54,31,20,.74),rgba(0,0,0,.82));display:none;align-items:center;justify-content:center;z-index:10;padding:20px;}
+    .screen.show{display:flex;}.modal{width:min(710px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(180deg,rgba(18,14,11,.98),rgba(7,5,4,.98));border:1px solid rgba(238,203,145,.24);border-radius:24px;box-shadow:0 30px 90px rgba(0,0,0,.65);padding:24px;}
+    .modal h1{margin:0 0 8px;font-size:42px;letter-spacing:-.06em;color:#f4d49d;}.modal p{color:#e5cfad;line-height:1.48;}.featureGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0;}.feature{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;font-size:13px;line-height:1.4;color:#dec7a6;}.feature b{display:block;font-size:14px;color:#f5e1bd;margin-bottom:4px;}.modalActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:17px;}.rank{font-size:64px;font-weight:1000;line-height:1;color:#f0c477;text-shadow:0 4px 20px rgba(255,183,64,.35);}.scoreGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;}.scoreLine{padding:11px;border-radius:13px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);}.scoreLine .k{font-size:11px;color:#bfa27b;font-weight:850;}.scoreLine .v{font-size:17px;font-weight:1000;margin-top:3px;color:#f6dfbd;}
+    .popText{position:absolute;left:50%;top:50%;font-weight:1000;font-size:30px;color:#fff0c5;text-shadow:0 4px 22px rgba(0,0,0,.8);transform:translate(-50%,-50%);animation:popText 1.05s ease-out forwards;white-space:nowrap;}.popText.small{font-size:22px}.popText.warn{color:#ffcc8a}.popText.bad{color:#ff8888}@keyframes popText{0%{opacity:0;transform:translate(-50%,-25%) scale(.72) rotate(-2deg);}15%{opacity:1;transform:translate(-50%,-50%) scale(1.13) rotate(1deg);}100%{opacity:0;transform:translate(-50%,-120%) scale(.94) rotate(-1deg);}}
+
+    @media (max-width:1050px){.topbar{grid-template-columns:minmax(230px,320px) 1fr minmax(210px,260px)}.chefNote{display:none}.controls{grid-template-columns:210px minmax(360px,1fr);}.servePanel{display:none}.buttonGrid{grid-template-columns:1.3fr repeat(3,1fr);}.buttonGrid #restBtn,.buttonGrid #serveBtn{grid-column:auto}.buttonGrid #flipBtn{grid-row:span 2}.buttonGrid #serveBtn{grid-column:4;grid-row:2}.buttonGrid #restBtn{grid-column:3;grid-row:2}}
+    @media (max-width:760px){.hud{padding:10px;grid-template-rows:auto 1fr auto}.topbar{grid-template-columns:1fr auto;gap:8px}.orderTicket{min-height:auto;max-width:none}.orderName{font-size:18px}.orderText{display:none}.meatBadge{margin-bottom:4px}.stats{margin-top:7px}.thermoPanel{width:190px}.thermoPanel .gaugeList > div:nth-child(n+3){display:none}.tasteRow{display:none}.controls{grid-template-columns:1fr;gap:8px}.heatPanel{order:2;grid-template-columns:54px 1fr 54px}.buttonGrid{grid-template-columns:1.25fr 1fr 1fr 1fr;gap:7px}.buttonGrid #flipBtn{grid-row:span 2;min-height:96px}.buttonGrid #serveBtn{grid-column:4;grid-row:2}.buttonGrid #restBtn{grid-column:3;grid-row:2}.comboBox{display:none}.featureGrid,.scoreGrid{grid-template-columns:1fr}.modal h1{font-size:34px}.modal{padding:20px}}
+    @media (max-width:520px){.topbar{grid-template-columns:1fr}.thermoPanel{width:100%;}.thermoPanel .gaugeList{grid-template-columns:1fr 1fr}.thermoPanel .gaugeList > div:nth-child(n+3){display:block}.orderTicket .stats{display:grid;grid-template-columns:repeat(3,1fr)}.stat{padding:5px}.stat .value{font-size:14px}.buttonGrid{grid-template-columns:1fr 1fr 1fr}.buttonGrid #flipBtn{grid-column:1/3;grid-row:auto;min-height:54px}.buttonGrid #serveBtn{grid-column:3;grid-row:1}.buttonGrid #restBtn{grid-column:3}.buttonGrid button{min-height:48px;font-size:14px}.heatReadout{font-size:24px}.modal{border-radius:20px}}
+
   </style>
 </head>
 <body>
@@ -117,27 +111,33 @@
 
   <div class="hud" id="hud">
     <div class="topbar">
-      <section class="card pad">
+      <section class="card pad orderTicket">
         <div class="titleRow">
-          <span class="miniTitle">현재 주문</span>
+          <span class="miniTitle">ORDER</span>
           <span class="pill" id="roundPill">ROUND 1 / 5</span>
         </div>
         <div class="meatBadge" id="meatBadge">🥩 소고기 스테이크</div>
         <h2 class="orderName" id="orderName">미디엄 레어 · 노릇한 시어링</h2>
         <p class="orderText" id="orderText">속은 촉촉하게, 겉은 노릇한 시어링으로 부탁해요.</p>
         <div class="stats">
-          <div class="stat"><div class="label">남은 시간</div><div class="value" id="timeValue">75.0</div></div>
-          <div class="stat"><div class="label">총점</div><div class="value" id="totalScore">0</div></div>
-          <div class="stat"><div class="label">팁 배율</div><div class="value" id="tipValue">x1.00</div></div>
+          <div class="stat"><div class="label">TIME</div><div class="value" id="timeValue">75.0</div></div>
+          <div class="stat"><div class="label">SCORE</div><div class="value" id="totalScore">0</div></div>
+          <div class="stat"><div class="label">TIP</div><div class="value" id="tipValue">x1.00</div></div>
         </div>
       </section>
 
-      <section class="card pad">
-        <div class="titleRow"><span class="miniTitle">재료 상태</span><span class="pill" id="doneLabel">생고기</span></div>
+      <section class="card pad chefNote">
+        <div class="titleRow"><span class="miniTitle">CHEF NOTE</span><span class="pill" id="panSide">아랫면 조리 중</span></div>
+        <div class="log" id="cookLog">내부 온도와 표면 색을 같이 보며 플레이팅 타이밍을 잡으세요.</div>
+        <div class="help">F 뒤집기 · S 소금 · P 후추 · B 버터 · R 레스팅</div>
+      </section>
+
+      <section class="card pad thermoPanel">
+        <div class="titleRow"><span class="miniTitle">TEMP</span><span class="pill" id="doneLabel">생고기</span></div>
         <div class="gaugeList">
-          <div><div class="gaugeHead"><span>내부 온도</span><span id="coreText">22℃</span></div><div class="bar"><div class="fill core" id="coreFill"></div></div></div>
-          <div><div class="gaugeHead"><span>윗면 시어링</span><span id="topText">0%</span></div><div class="bar"><div class="fill" id="topFill"></div></div></div>
-          <div><div class="gaugeHead"><span>아랫면 시어링</span><span id="bottomText">0%</span></div><div class="bar"><div class="fill" id="bottomFill"></div></div></div>
+          <div><div class="gaugeHead"><span>내부</span><span id="coreText">22℃</span></div><div class="bar"><div class="fill core" id="coreFill"></div></div></div>
+          <div><div class="gaugeHead"><span>윗면</span><span id="topText">0%</span></div><div class="bar"><div class="fill" id="topFill"></div></div></div>
+          <div><div class="gaugeHead"><span>아랫면</span><span id="bottomText">0%</span></div><div class="bar"><div class="fill" id="bottomFill"></div></div></div>
           <div><div class="gaugeHead"><span id="specialLabel">육즙</span><span id="specialText">100%</span></div><div class="bar"><div class="fill special" id="specialFill"></div></div></div>
         </div>
         <div class="tasteRow">
@@ -146,12 +146,6 @@
           <span class="tasteChip" id="butterChip">버터 OFF</span>
           <span class="tasteChip" id="restChip">레스팅 0초</span>
         </div>
-      </section>
-
-      <section class="card pad">
-        <div class="titleRow"><span class="miniTitle">조리 힌트</span><span class="pill" id="panSide">아랫면 조리 중</span></div>
-        <div class="log" id="cookLog">중불로 양면을 맞춘 뒤 마지막에 센 불로 시어링해보세요. 재료마다 안전 온도와 약점이 다릅니다.</div>
-        <div class="help">키보드: F 뒤집기 · S 소금 · P 후추 · B 버터 · R 레스팅 · Enter 제출 · ↑↓ 불 조절</div>
       </section>
     </div>
 
@@ -165,16 +159,16 @@
 
     <div class="controls">
       <section class="card controlPanel heatPanel">
-        <button class="smallBtn" id="heatDown">불 낮추기</button>
+        <button class="smallBtn" id="heatDown">－</button>
         <div>
-          <div class="miniTitle" style="text-align:center">불 세기</div>
+          <div class="miniTitle" style="text-align:center">HEAT</div>
           <div class="heatReadout" id="heatReadout">3</div>
           <div class="bar"><div class="fill heat" id="heatFill"></div></div>
         </div>
-        <button class="smallBtn primary" id="heatUp">불 올리기</button>
+        <button class="smallBtn primary" id="heatUp">＋</button>
       </section>
 
-      <section class="card controlPanel">
+      <section class="card controlPanel actionDock">
         <div class="buttonGrid">
           <button class="primary" id="flipBtn">뒤집기</button>
           <button id="saltBtn">소금</button>
@@ -186,28 +180,27 @@
       </section>
 
       <section class="card controlPanel servePanel">
-        <div class="miniTitle">오늘의 포인트</div>
+        <div class="miniTitle">POINT</div>
         <div class="log" id="proteinTip">소고기는 내부 온도와 양면 시어링 균형이 핵심입니다.</div>
       </section>
     </div>
   </div>
-
   <div class="floatingKeys">F 뒤집기 · S 소금 · P 후추 · B 버터<br>R 레스팅 · Enter 플레이팅 · ↑↓ 불 조절</div>
 
   <div class="screen show" id="startScreen">
     <div class="modal">
-      <h1>그릴 마스터 3D DX</h1>
-      <p>손님 주문에 맞춰 소고기, 연어, 닭가슴살, 삼겹살, 흰살생선을 구워보세요. 재료마다 익는 속도, 타는 속도, 특수 판정이 다릅니다.</p>
+      <h1>GRILL MASTER 3D</h1>
+      <p>주문서를 확인하고 팬 위의 재료를 완벽한 타이밍에 플레이팅하세요.</p>
       <div class="featureGrid">
-        <div class="feature"><b>분리된 양념 액션</b>소금은 하얀 입자, 후추는 검은 입자, 버터는 녹는 큐브와 거품으로 연출됩니다.</div>
-        <div class="feature"><b>재료별 규칙</b>연어는 껍질, 닭가슴살은 안전 온도, 삼겹살은 지방 렌더링, 흰살생선은 살결 보존이 중요합니다.</div>
-        <div class="feature"><b>게임식 피드백</b>뒤집기, 양념, 버터, 완벽한 타이밍마다 팝업·파티클·효과음이 나옵니다.</div>
+        <div class="feature"><b>ORDER</b>손님의 굽기와 시어링 취향을 확인합니다.</div>
+        <div class="feature"><b>HEAT</b>불 조절과 뒤집기 타이밍으로 표면을 만듭니다.</div>
+        <div class="feature"><b>PLATE</b>가장 좋은 순간에 플레이팅합니다.</div>
       </div>
       <div class="modalActions">
-        <button class="primary" id="startBtn">게임 시작</button>
-        <button id="practiceBtn">연습 모드</button>
+        <button class="primary" id="startBtn">영업 시작</button>
+        <button id="practiceBtn">연습하기</button>
       </div>
-      <p class="help">모바일에서는 아래 버튼으로 조작하면 됩니다. 사운드는 시작 버튼을 누른 뒤 활성화됩니다.</p>
+      <p class="help">키보드와 화면 버튼을 모두 사용할 수 있습니다.</p>
     </div>
   </div>
 
@@ -215,7 +208,7 @@
     <div class="modal">
       <div class="titleRow">
         <div>
-          <div class="miniTitle">플레이팅 결과</div>
+          <div class="miniTitle">CHEF REPORT</div>
           <h1 id="resultTitle">플레이팅 완료!</h1>
         </div>
         <div class="rank" id="rankText">A</div>
@@ -231,7 +224,7 @@
       </div>
       <div class="modalActions">
         <button class="primary" id="nextBtn">다음 손님</button>
-        <button id="retryBtn">처음부터</button>
+        <button id="retryBtn">새 영업</button>
       </div>
     </div>
   </div>
