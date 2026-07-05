@@ -1,1125 +1,596 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 외계인 피자 가게 (Alien Pizza Shop)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>외계인 피자 가게 DX - UI 정리본</title>
+<style>
 
-        body {
-            font-family: 'Jua', sans-serif;
-            background-color: #1a1a2e; /* 우주 느낌의 배경 */
-            color: #fff;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
+:root{
+  --bg:#0b1020;
+  --bg2:#111833;
+  --panel:#18213f;
+  --panel2:#202b4f;
+  --card:#243058;
+  --ink:#f8fafc;
+  --muted:#aeb8df;
+  --line:rgba(255,255,255,.13);
+  --line2:rgba(255,255,255,.2);
+  --yellow:#ffd166;
+  --green:#3ee28c;
+  --red:#ff6575;
+  --blue:#66aaff;
+  --purple:#b884ff;
+  --orange:#ffb454;
+  --shadow:0 16px 34px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(circle at 15% 15%,rgba(102,170,255,.2),transparent 28%),
+  radial-gradient(circle at 80% 76%,rgba(184,132,255,.18),transparent 30%),
+  linear-gradient(180deg,#080b18 0%,#111833 52%,#0b1020 100%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.42;pointer-events:none;background-image:
+  radial-gradient(2px 2px at 20px 30px,#fff,transparent),
+  radial-gradient(2px 2px at 95px 80px,#93c5fd,transparent),
+  radial-gradient(1px 1px at 150px 150px,#fde68a,transparent),
+  radial-gradient(1px 1px at 180px 45px,#fff,transparent);
+  background-size:220px 220px;animation:stars 6s ease-in-out infinite alternate}
+@keyframes stars{from{opacity:.3;transform:translateY(0)}to{opacity:.65;transform:translateY(-5px)}}
+button,select{font:inherit}button{border:0;cursor:pointer;color:inherit}.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
+.glass{background:rgba(18,26,52,.9);backdrop-filter:blur(12px);border:1px solid var(--line);box-shadow:var(--shadow)}
+.btn{border-radius:14px;padding:13px 18px;font-weight:900;box-shadow:0 7px 0 rgba(0,0,0,.22),0 13px 22px rgba(0,0,0,.22);transition:.12s transform,.12s filter}.btn:hover{filter:brightness(1.07)}.btn:active{transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.25)}.btn.big{font-size:22px;padding:18px 28px}.btn.yellow{background:linear-gradient(180deg,#ffd166,#f59e0b);color:#111827}.btn.purple{background:linear-gradient(180deg,#b884ff,#7c3aed)}.btn.green{background:linear-gradient(180deg,#4ade80,#16a34a);color:#06130b}.btn.red{background:linear-gradient(180deg,#fb7185,#dc2626)}.btn.blue{background:linear-gradient(180deg,#60a5fa,#2563eb)}.btn.gray{background:#374151}.btn.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line);box-shadow:none}
+.menu{align-items:center;justify-content:center;padding:24px}.menu-card{width:min(920px,94vw);border-radius:28px;padding:34px;text-align:center}.title{font-size:clamp(36px,6vw,68px);line-height:1.05;margin:0 0 12px;text-shadow:0 0 18px rgba(255,209,102,.38)}.subtitle{margin:0 auto 24px;color:#d8def5;font-size:clamp(16px,2vw,20px);line-height:1.65;max-width:740px}.menu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px auto 28px;max-width:720px}.statbox{background:rgba(255,255,255,.065);border:1px solid var(--line);border-radius:18px;padding:15px}.statbox small{display:block;color:var(--muted);font-weight:900}.statbox b{display:block;font-size:28px;margin-top:4px;color:var(--yellow)}.row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}.note{color:var(--muted);font-size:14px;margin-top:16px}
+#screen-game{flex-direction:column;min-width:0}.topbar{height:68px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:10px 16px;background:rgba(8,11,24,.88);border-bottom:1px solid var(--line);z-index:5}.brand{display:flex;align-items:center;gap:10px;font-weight:1000;white-space:nowrap}.brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#ffd166,#f97316);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 18px rgba(245,158,11,.25)}.brand-title{font-size:19px}.hud-strip{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;flex-wrap:wrap}.chip{background:rgba(255,255,255,.075);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-weight:900;white-space:nowrap}.chip b{color:var(--yellow)}.top-actions{display:flex;align-items:center;gap:8px}.time-wrap{width:150px;max-width:22vw}.time-text{font-weight:1000;text-align:center;margin-bottom:4px;color:#fff}.timebar{height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}.timefill{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .25s linear}.mini{border-radius:12px;padding:9px 11px;font-size:14px;font-weight:900;background:rgba(255,255,255,.08);border:1px solid var(--line);white-space:nowrap}.mini:hover{filter:brightness(1.16)}
+.game-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(270px,310px) minmax(430px,1fr) minmax(280px,320px);grid-template-rows:1fr;gap:12px;padding:12px;max-width:1500px;width:100%;margin:0 auto}.panel{border-radius:22px;background:rgba(24,33,63,.94);border:1px solid var(--line);box-shadow:var(--shadow);min-height:0;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}.panel-title{font-size:18px;font-weight:1000;color:var(--yellow);letter-spacing:-.02em}.panel-body{padding:14px;min-height:0}.flow-badge{font-size:12px;color:#111827;background:var(--yellow);border-radius:999px;padding:4px 8px;font-weight:1000}.customer{display:flex;flex-direction:column}.customer .panel-body{display:flex;flex-direction:column;gap:12px;overflow:auto}.alien-box{text-align:center;background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:20px;padding:12px}.alien{font-size:66px;line-height:1;filter:drop-shadow(0 10px 10px rgba(0,0,0,.34));animation:float 2.4s ease-in-out infinite}@keyframes float{50%{transform:translateY(-8px)}}.bubble{position:relative;background:white;color:#111827;border-radius:16px;padding:13px;margin-top:11px;font-size:19px;line-height:1.35;font-weight:1000;word-break:keep-all}.bubble::before{content:"";position:absolute;top:-9px;left:50%;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid white}.order-list{display:flex;flex-direction:column;gap:8px}.order-line{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:10px}.order-line .need{font-weight:1000;color:white;text-align:right}.tag{display:inline-block;margin-left:4px;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid var(--line);color:#dbeafe;font-size:12px}.helper{font-size:14px;line-height:1.55;color:#d8ddfa;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:15px;padding:11px}.helper b{color:var(--yellow)}
+.kitchen{display:grid;grid-template-rows:auto 1fr auto}.kitchen-top{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}.cut-panel{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.cut-label{font-size:14px;color:var(--muted);font-weight:1000}.cut-panel button.cut-btn{width:36px;height:36px;border-radius:12px;background:#374151;font-size:22px;font-weight:1000}.cut-num{min-width:42px;text-align:center;color:var(--yellow);font-size:28px;font-weight:1000}.tool-buttons{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.pizza-table{min-height:0;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.13));padding:16px;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;overflow:auto}.pizza-card{position:relative;text-align:center}.pizza-label{font-size:13px;color:#dbeafe;margin-top:5px;font-weight:900}.pizza-svg{width:200px;height:200px;filter:drop-shadow(0 16px 16px rgba(0,0,0,.32));transition:.15s transform}.pizza-svg:hover{transform:scale(1.025)}.slice{cursor:pointer;stroke:rgba(255,255,255,.9);stroke-width:2;transition:.12s filter,.12s stroke-width}.slice:hover{filter:brightness(1.18);stroke-width:4}.serve-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 14px;border-top:1px solid var(--line);background:rgba(8,11,24,.42)}.serve-row .btn{box-shadow:none}.serve-row .btn.green{font-size:22px}.side{display:grid;grid-template-rows:minmax(0,1.1fr) minmax(190px,.9fr)}.side-section{min-height:0;display:flex;flex-direction:column}.side-section+.side-section{border-top:1px solid var(--line)}.inventory{padding:14px;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}.topping{position:relative;min-height:88px;border-radius:16px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.055);padding:9px;text-align:center;transition:.12s transform,.12s border-color}.topping:hover{transform:translateY(-2px)}.topping.selected{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,209,102,.18);background:rgba(255,209,102,.12)}.topping.disabled{opacity:.44;filter:grayscale(.55)}.topping .swatch{width:36px;height:36px;border-radius:999px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:21px;border:2px solid rgba(255,255,255,.35)}.topping .name{font-size:13px;font-weight:900;color:#f8fafc}.stock{position:absolute;top:-8px;right:-8px;background:var(--red);color:white;border-radius:999px;min-width:28px;padding:3px 7px;font-size:12px;font-weight:1000;border:2px solid #1b2140}.requested{position:absolute;top:-8px;left:-8px;background:var(--yellow);color:#111827;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:1000;border:2px solid #1b2140}.progress-list{padding:14px;display:flex;flex-direction:column;gap:9px;overflow:auto}.progress-row{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:10px}.progress-head{display:flex;justify-content:space-between;gap:8px;font-weight:900;font-size:14px}.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:7px}.bar span{display:block;height:100%;width:0;background:var(--green);transition:.2s}.bar.over span{background:var(--red)}.bar.missing span{background:var(--yellow)}
+.shop{align-items:flex-start;justify-content:center;padding:24px;overflow:auto}.shop-inner{width:min(980px,96vw);margin:0 auto}.shop-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.shop-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(27,33,64,.92);border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow)}.shop-icon{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:31px;background:rgba(255,255,255,.08);border:1px solid var(--line)}.shop-card h3{margin:0 0 4px;font-size:20px}.shop-card p{margin:0;color:var(--muted);font-size:14px}.locked{opacity:.45;filter:grayscale(.6)}
+.fraction{display:inline-flex;flex-direction:column;vertical-align:middle;align-items:center;margin:0 3px;color:var(--yellow);font-weight:1000;line-height:1}.fraction span:first-child{border-bottom:2px solid currentColor;padding:0 3px}.fraction span:last-child{padding:0 3px}.toast{position:fixed;left:50%;top:82px;transform:translate(-50%,-15px) scale(.96);opacity:0;pointer-events:none;z-index:250;max-width:min(780px,92vw);background:#111827;color:white;border:1px solid var(--line2);border-radius:999px;padding:13px 22px;font-weight:1000;text-align:center;box-shadow:var(--shadow);transition:.22s}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.success{background:#065f46}.toast.error{background:#991b1b}.toast.info{background:#1d4ed8}.shake{animation:shake .42s ease-in-out}.happy{animation:happy .55s ease-out}@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}@keyframes happy{50%{transform:translateY(-10px) scale(1.03)}}.modal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:200;padding:20px}.modal.active{display:flex}.modal-card{width:min(460px,92vw);background:var(--panel);border:2px solid var(--yellow);border-radius:24px;padding:24px;text-align:center;box-shadow:var(--shadow);animation:pop .18s ease-out}.modal-card h2{margin:0 0 10px;font-size:34px;color:var(--yellow)}@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}.summary{background:rgba(0,0,0,.24);border:1px solid var(--line);border-radius:18px;padding:14px;margin:18px 0}.summary p{display:flex;justify-content:space-between;margin:9px 0;font-size:18px}
+@media(max-width:1180px){body{overflow:auto}.screen{min-height:100dvh;position:absolute}.topbar{height:auto;grid-template-columns:1fr;align-items:start}.brand{justify-content:center}.hud-strip{justify-content:center}.top-actions{justify-content:center;flex-wrap:wrap}.time-wrap{width:220px;max-width:100%}.game-layout{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow:auto}.panel{overflow:visible}.customer .panel-body{overflow:visible}.side{grid-template-rows:auto auto}.pizza-table{min-height:330px}.inventory{grid-template-columns:repeat(4,1fr)}.shop-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.menu-card{padding:24px 18px}.menu-stats{grid-template-columns:1fr}.title{font-size:40px}.subtitle{font-size:16px}.game-layout{padding:9px;gap:9px}.panel{border-radius:18px}.panel-head,.kitchen-top,.serve-row{padding:11px}.kitchen-top{grid-template-columns:1fr}.tool-buttons{justify-content:stretch}.tool-buttons .mini{flex:1 1 42%}.serve-row{grid-template-columns:1fr}.inventory{grid-template-columns:repeat(2,1fr)}.pizza-svg{width:162px;height:162px}.bubble{font-size:17px}.order-line{grid-template-columns:1fr}.order-line .need{text-align:left}.shop-head{flex-direction:column;align-items:flex-start}.btn.big{width:100%}.top-actions .mini{flex:1}.time-wrap{width:100%}}
 
-        /* 우주 배경 별 반짝임 효과 */
-        .stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
-            background-repeat: repeat;
-            background-size: 200px 200px;
-            animation: twinkle 4s infinite;
-        }
-        @keyframes twinkle {
-            0% { opacity: 0.8; }
-            50% { opacity: 0.4; }
-            100% { opacity: 0.8; }
-        }
-
-        /* 분수 스타일링 */
-        .fraction {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            vertical-align: middle;
-            margin: 0 4px;
-            font-size: 1.1em;
-        }
-        .fraction span:first-child {
-            border-bottom: 2px solid white;
-            padding: 0 2px;
-        }
-        .fraction span:last-child {
-            padding: 0 2px;
-        }
-
-        /* 외계인 애니메이션 */
-        .alien-container {
-            transition: all 0.5s ease-in-out;
-            transform: translateX(0);
-        }
-        .alien-enter {
-            animation: slideIn 0.5s forwards;
-        }
-        .alien-exit-success {
-            animation: slideOutRight 0.5s forwards;
-        }
-        .alien-exit-fail {
-            animation: slideOutLeft 0.5s forwards;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100vw); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100vw); opacity: 0; }
-        }
-        @keyframes slideOutLeft {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(-100vw); opacity: 0; }
-        }
-
-        /* 말풍선 꼬리 */
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            border-width: 15px 15px 0;
-            border-style: solid;
-            border-color: white transparent transparent transparent;
-            transform: translateX(-50%);
-        }
-
-        /* 피자 SVG 상호작용 */
-        .pizza-slice {
-            cursor: pointer;
-            transition: fill 0.2s, stroke-width 0.2s;
-            stroke: #fff;
-            stroke-width: 2px;
-        }
-        .pizza-slice:hover {
-            stroke-width: 4px;
-            filter: brightness(1.2);
-        }
-
-        /* 모달 팝업 애니메이션 */
-        .modal-pop {
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        /* 스크롤바 숨기기 */
-        ::-webkit-scrollbar { display: none; }
-
-        /* 소진 시 흔들림 & 경고 애니메이션 */
-        @keyframes warningPulse {
-            0%, 100% { background-color: #ef4444; transform: scale(1); }
-            50% { background-color: #b91c1c; transform: scale(1.05); }
-        }
-        .warning-active {
-            animation: warningPulse 1s infinite ease-in-out;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
-        }
-    </style>
+</style>
 </head>
-<body class="w-screen h-screen flex flex-col relative select-none">
-    <div class="stars"></div>
+<body>
 
-    <!-- MAIN MENU -->
-    <div id="screen-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-        <h1 class="text-6xl text-yellow-400 mb-4 text-center" style="text-shadow: 0 0 10px #f59e0b;">🍕 외계인 피자 가게 👽</h1>
-        <p class="text-xl mb-8 text-gray-300 max-w-lg text-center leading-relaxed">
-            분수를 계산하여 까다로운 외계인 손님들의 주문을 맞추세요!<br>
-            돈을 모아 방어권을 사고 새로운 재료를 잠금 해제하세요.
-        </p>
-        <div class="bg-gray-800 p-6 rounded-xl border-2 border-yellow-500 mb-8 text-center w-80">
-            <h2 class="text-2xl text-yellow-400 mb-2">내 자산 (로컬 저장소)</h2>
-            <p class="text-4xl text-green-400 font-bold mb-2"><span id="menu-money">0</span> 원</p>
-            <p class="text-sm text-gray-400">현재 Day: <span id="menu-day" class="text-white">1</span></p>
-        </div>
-        <div class="flex gap-4">
-            <button onclick="startGame()" class="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all transform hover:scale-105 active:scale-95">
-                영업 시작 (Day <span id="btn-day">1</span>)
-            </button>
-            <button onclick="showShop()" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all transform hover:scale-105 active:scale-95">
-                🛒 상점 가기
-            </button>
-        </div>
-        <button onclick="openResetModal()" class="mt-10 px-6 py-2 bg-red-900/80 hover:bg-red-700 text-gray-300 rounded-full text-sm transition-all border border-red-700">
-            🔄 데이터 초기화
-        </button>
+<section id="screen-menu" class="screen menu active">
+  <div class="menu-card glass">
+    <h1 class="title">🍕 외계인 피자 가게 DX</h1>
+    <p class="subtitle">손님의 <b style="color:var(--yellow)">분수 주문</b>을 보고 피자를 나눈 뒤, 필요한 만큼 토핑을 올려 서빙하세요.<br>이번 UI는 주문·제작·토핑·현재량이 한 화면 흐름으로 보이도록 다시 정리했습니다.</p>
+    <div class="menu-stats">
+      <div class="statbox"><small>보유 금액</small><b><span id="menu-money">0</span>원</b></div>
+      <div class="statbox"><small>현재 영업일</small><b>DAY <span id="menu-day">1</span></b></div>
+      <div class="statbox"><small>최고 콤보</small><b><span id="menu-best">0</span></b></div>
     </div>
-
-    <!-- SHOP SCREEN -->
-    <div id="screen-shop" class="absolute inset-0 z-50 hidden flex-col items-center justify-start py-10 bg-black/90 backdrop-blur-md overflow-y-auto">
-        <div class="w-full max-w-4xl px-4">
-            <div class="flex justify-between items-center mb-8 border-b-2 border-gray-700 pb-4">
-                <h1 class="text-5xl text-purple-400">🛒 우주 상점</h1>
-                <div class="text-right">
-                    <p class="text-xl">보유 금액</p>
-                    <p class="text-3xl text-green-400 font-bold"><span id="shop-money">0</span> 원</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="shop-items">
-                <!-- Shop items injected via JS -->
-            </div>
-
-            <div class="mt-10 text-center">
-                <button onclick="hideShop()" class="px-10 py-3 bg-gray-600 hover:bg-gray-500 text-white text-xl rounded-full transition-all">
-                    돌아가기
-                </button>
-            </div>
-        </div>
+    <div class="row">
+      <button class="btn big yellow" onclick="startGame()">영업 시작</button>
+      <button class="btn big purple" onclick="showShop()">🛒 재료 상점</button>
     </div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" onclick="openResetModal()">데이터 초기화</button></div>
+    <p class="note">저장 데이터는 이 기기의 브라우저에만 저장됩니다. 단일 HTML 파일로 실행됩니다.</p>
+  </div>
+</section>
 
-    <!-- GAME SCREEN -->
-    <div id="screen-game" class="flex-1 flex flex-col hidden h-full">
-        <!-- Top HUD -->
-        <div class="h-16 bg-gray-900/80 border-b border-gray-700 flex justify-between items-center px-6 shrink-0">
-            <div class="flex items-center gap-4">
-                <div class="text-2xl text-yellow-400 font-bold">DAY <span id="hud-day">1</span></div>
-                <div class="bg-gray-800 rounded-full px-4 py-1 flex items-center gap-2 border border-gray-600">
-                    <span>⏱️</span>
-                    <span id="hud-time" class="text-xl w-12 text-center text-red-400">02:00</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-6">
-                <div class="bg-gray-800 rounded-full px-4 py-1 flex items-center gap-2 border border-gray-600" title="마이너스 방어권 (1회용)">
-                    <span>🛡️</span>
-                    <span id="hud-shields" class="text-xl">0</span>
-                </div>
-                <div class="text-3xl text-green-400 font-bold tracking-wider">
-                    <span id="hud-money">0</span> ₩
-                </div>
-            </div>
-        </div>
-
-        <!-- Middle: Customer Area -->
-        <div class="flex-1 relative flex items-end justify-center pb-4">
-            <!-- Counter Desk -->
-            <div class="absolute bottom-0 w-full h-1/4 bg-gradient-to-t from-gray-800 to-transparent z-0"></div>
-            
-            <div id="alien-wrapper" class="alien-container z-10 flex flex-col items-center">
-                <!-- Speech Bubble -->
-                <div class="bg-white text-black p-4 rounded-2xl mb-6 relative speech-bubble max-w-2xl text-center shadow-lg text-2xl" id="order-text">
-                    <!-- Order text goes here -->
-                </div>
-                <!-- Alien Emoji -->
-                <div id="alien-emoji" class="text-9xl filter drop-shadow-2xl">👽</div>
-            </div>
-        </div>
-
-        <!-- Bottom: Workspace -->
-        <div class="h-[45%] bg-gray-800 border-t-4 border-yellow-600 flex flex-col p-4 shrink-0 z-20">
-            <!-- Tools & Ingredients -->
-            <div class="flex justify-between items-center mb-4 bg-gray-900 p-2 rounded-xl">
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-400 ml-2">등분(자르기):</span>
-                    <button onclick="changeSlices(-1)" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 flex items-center justify-center text-2xl">-</button>
-                    <span id="slice-count" class="text-2xl font-bold w-6 text-center text-yellow-400">8</span>
-                    <button onclick="changeSlices(1)" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 flex items-center justify-center text-2xl">+</button>
-                    <span class="text-gray-500 text-sm ml-2">(모든 피자에 적용)</span>
-                </div>
-                
-                <div class="flex flex-wrap gap-2 justify-center" id="topping-selector">
-                    <!-- Toppings injected via JS -->
-                </div>
-
-                <div class="flex gap-2 mr-2">
-                    <button id="btn-early-end" onclick="openEarlyEndModal()" class="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1">
-                        🚨 재료 소진 마감
-                    </button>
-                    <button onclick="clearBoard()" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shadow-md text-sm">
-                        🗑️ 되돌리기
-                    </button>
-                     <button onclick="addPizza()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white shadow-md">
-                        + 피자 추가
-                    </button>
-                    <button onclick="submitOrder()" class="px-6 py-2 bg-green-500 hover:bg-green-400 rounded-lg text-black font-bold text-xl shadow-[0_0_10px_rgba(34,197,94,0.5)]">
-                        서빙하기!
-                    </button>
-                </div>
-            </div>
-
-            <!-- Pizzas Container -->
-            <div id="pizzas-container" class="flex-1 flex items-center justify-center gap-8 overflow-x-auto p-4 bg-gray-700 rounded-xl inner-shadow">
-                <!-- SVG Pizzas injected via JS -->
-            </div>
-        </div>
+<section id="screen-shop" class="screen shop">
+  <div class="shop-inner">
+    <div class="shop-head">
+      <div>
+        <h1 class="title" style="font-size:42px;margin:0">🛒 우주 식자재 상점</h1>
+        <p style="color:var(--muted);margin:6px 0 0">재료 1조각은 피자 한 조각에 올라갑니다. 비싼 재료 주문은 보상도 커집니다.</p>
+      </div>
+      <div class="statbox" style="min-width:210px"><small>보유 금액</small><b><span id="shop-money">0</span>원</b></div>
     </div>
+    <div id="shop-grid" class="shop-grid"></div>
+    <div class="row" style="margin:22px 0 40px"><button class="btn gray" onclick="hideShop()">가게로 돌아가기</button></div>
+  </div>
+</section>
 
-    <!-- Day End Modal -->
-    <div id="modal-day-end" class="absolute inset-0 z-[100] hidden flex items-center justify-center bg-black/90">
-        <div class="bg-gray-800 border-4 border-yellow-500 p-8 rounded-2xl text-center max-w-md w-full modal-pop">
-            <h2 class="text-4xl text-yellow-400 mb-4" id="modal-day-end-title">영업 종료!</h2>
-            <p class="text-xl mb-6" id="modal-day-end-subtitle">오늘 하루 수고하셨습니다.</p>
-            <div class="bg-gray-900 p-4 rounded-xl mb-6 text-left">
-                <p class="flex justify-between text-lg mb-2 text-gray-300">오늘 번 돈: <span id="summary-earned" class="text-green-400">0 원</span></p>
-                <p class="flex justify-between text-lg text-gray-300 border-t border-gray-700 pt-2">총 자산: <span id="summary-total" class="text-yellow-400 font-bold">0 원</span></p>
-            </div>
-            <button onclick="closeDayEnd()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-xl font-bold transition-colors">
-                상점으로 가기
-            </button>
+<section id="screen-game" class="screen">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">🍕</div><div><div class="brand-title">외계인 피자 가게 DX</div><div style="font-size:12px;color:var(--muted);font-weight:800">분수 주문 제작</div></div></div>
+    <div class="hud-strip">
+      <div class="chip">DAY <b id="hud-day">1</b></div>
+      <div class="chip">💰 <b id="hud-money">0</b>원</div>
+      <div class="chip">🛡️ <b id="hud-shields">0</b></div>
+      <div class="chip">🔥 콤보 <b id="hud-combo">0</b></div>
+    </div>
+    <div class="top-actions">
+      <button class="mini" onclick="togglePause()" id="pause-btn">⏸️ 일시정지</button>
+      <button class="mini" onclick="toggleSound()" id="sound-btn">🔊 소리</button>
+      <div class="time-wrap">
+        <div class="time-text" id="hud-time">02:00</div>
+        <div class="timebar"><div class="timefill" id="time-fill"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="game-layout">
+    <aside class="panel customer">
+      <div class="panel-head"><div class="panel-title">1. 주문 확인</div><span class="flow-badge">읽기</span></div>
+      <div class="panel-body">
+        <div class="alien-box" id="alien-box">
+          <div class="alien" id="alien-emoji">👽</div>
+          <div class="bubble" id="order-text">주문 대기 중...</div>
         </div>
-    </div>
-
-    <!-- Early End Confirm Modal (Custom Alternative to window.confirm) -->
-    <div id="modal-early-confirm" class="absolute inset-0 z-[110] hidden flex items-center justify-center bg-black/85">
-        <div class="bg-gray-850 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop">
-            <h2 class="text-3xl text-red-500 mb-3">🚨 영업 마감 확인</h2>
-            <p class="text-gray-300 mb-6 leading-relaxed">
-                정말로 재료가 다 떨어졌나요?<br>
-                오늘의 피자 영업을 일찍 마감하고<br>정산을 시작합니다.
-            </p>
-            <div class="flex gap-4">
-                <button onclick="closeEarlyEndModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold">
-                    더 장사하기
-                </button>
-                <button onclick="confirmEarlyEnd()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg">
-                    예, 마감할래요!
-                </button>
-            </div>
+        <div>
+          <div class="panel-title" style="font-size:16px;margin-bottom:8px">📋 주문 분석</div>
+          <div id="order-list" class="order-list"></div>
         </div>
-    </div>
+        <div class="helper" id="order-helper">피자를 주문 분모와 같은 등분으로 자르면 훨씬 쉽습니다.</div>
+      </div>
+    </aside>
 
-    <!-- Reset Confirm Modal -->
-    <div id="modal-reset-confirm" class="absolute inset-0 z-[120] hidden flex items-center justify-center bg-black/85">
-        <div class="bg-gray-850 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop">
-            <h2 class="text-3xl text-red-500 mb-3">⚠️ 데이터 초기화</h2>
-            <p class="text-gray-300 mb-6 leading-relaxed">
-                모든 돈과 Day, 재고가 초기화됩니다.<br>
-                정말로 처음부터 다시 시작할까요?
-            </p>
-            <div class="flex gap-4">
-                <button onclick="closeResetModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold">
-                    취소
-                </button>
-                <button onclick="confirmReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg">
-                    초기화
-                </button>
-            </div>
+    <section class="panel kitchen">
+      <div class="kitchen-top">
+        <div class="cut-panel">
+          <span class="cut-label">2. 피자 자르기</span>
+          <button class="cut-btn" onclick="changeSlices(-1)">−</button>
+          <span class="cut-num" id="slice-count">8</span>
+          <button class="cut-btn" onclick="changeSlices(1)">+</button>
+          <button class="mini" onclick="setCutsToOrder()">주문 등분으로 맞추기</button>
         </div>
+        <div class="tool-buttons">
+          <button class="mini" onclick="addPizza()">+ 피자</button>
+          <button class="mini" onclick="undoLast()">↩ 되돌리기</button>
+          <button class="mini" onclick="clearBoard()">🧽 비우기</button>
+          <button class="mini" onclick="showHint()">💡 힌트</button>
+        </div>
+      </div>
+      <div class="pizza-table" id="pizzas-container"></div>
+      <div class="serve-row">
+        <button class="btn green" onclick="submitOrder()">🛎️ 4. 서빙하기</button>
+        <button class="btn red" onclick="endDay(true)">영업 마감</button>
+      </div>
+    </section>
+
+    <aside class="panel side">
+      <section class="side-section">
+        <div class="panel-head"><div class="panel-title">3. 토핑 선택</div><span class="flow-badge">클릭</span></div>
+        <div id="topping-selector" class="inventory"></div>
+      </section>
+      <section class="side-section">
+        <div class="panel-head"><div class="panel-title">현재 제작량</div><span class="flow-badge">비교</span></div>
+        <div id="progress-list" class="progress-list"></div>
+      </section>
+    </aside>
+  </main>
+</section>
+
+<div id="modal-day-end" class="modal">
+  <div class="modal-card">
+    <h2 id="day-end-title">영업 종료!</h2>
+    <p id="day-end-sub" style="color:var(--muted);font-size:18px">오늘 하루 수고했습니다.</p>
+    <div class="summary">
+      <p><span>오늘 번 돈</span><b id="summary-earned" style="color:var(--green)">0원</b></p>
+      <p><span>총 자산</span><b id="summary-total" style="color:var(--yellow)">0원</b></p>
+      <p><span>최고 콤보</span><b id="summary-combo" style="color:var(--purple)">0</b></p>
     </div>
-
-    <!-- Alert Message Overlay -->
-    <div id="alert-message" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 opacity-0 pointer-events-none shadow-2xl">
-        Message
-    </div>
-
-    <script>
-        // --- 1. Audio System (Web Audio API Synthesizer) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(freq, type, duration, vol=0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        const sfx = {
-            click: () => playTone(600, 'sine', 0.1, 0.1),
-            slice: () => playTone(800, 'triangle', 0.1, 0.05),
-            success: () => {
-                playTone(523.25, 'sine', 0.1, 0.1); // C5
-                setTimeout(() => playTone(659.25, 'sine', 0.1, 0.1), 100); // E5
-                setTimeout(() => playTone(783.99, 'sine', 0.3, 0.15), 200); // G5
-            },
-            fail: () => {
-                playTone(300, 'sawtooth', 0.3, 0.1);
-                setTimeout(() => playTone(250, 'sawtooth', 0.4, 0.15), 250);
-            },
-            coin: () => {
-                playTone(1200, 'sine', 0.1, 0.1);
-                setTimeout(() => playTone(1600, 'sine', 0.2, 0.1), 50);
-            },
-            shield: () => {
-                playTone(400, 'square', 0.1, 0.1);
-                setTimeout(() => playTone(600, 'square', 0.2, 0.1), 100);
-            }
-        };
-
-        // --- 2. Game Data & State ---
-        const INGREDIENTS = {
-            empty: { id: 'empty', name: '도우(빈칸)', color: '#fcd34d', price: 0, minDay: 1 }, 
-            pepperoni: { id: 'pepperoni', name: '페퍼로니', color: '#ef4444', price: 2000, packSize: 24, minDay: 1, emoji: '🔴' },
-            mushroom: { id: 'mushroom', name: '버섯', color: '#78350f', price: 3000, packSize: 24, minDay: 2, emoji: '🍄' },
-            cheese: { id: 'cheese', name: '치즈듬뿍', color: '#fef08a', price: 3000, packSize: 24, minDay: 2, emoji: '🧀' },
-            onion: { id: 'onion', name: '양파', color: '#e2e8f0', price: 4000, packSize: 24, minDay: 3, emoji: '🧅' },
-            bacon: { id: 'bacon', name: '베이컨', color: '#be123c', price: 5000, packSize: 24, minDay: 3, emoji: '🥓' },
-            eggplant: { id: 'eggplant', name: '가지', color: '#9333ea', price: 6000, packSize: 24, minDay: 4, emoji: '🍆' },
-            cucumber: { id: 'cucumber', name: '오이', color: '#22c55e', price: 6000, packSize: 24, minDay: 4, emoji: '🥒' },
-            shrimp: { id: 'shrimp', name: '새우', color: '#fca5a5', price: 8000, packSize: 24, minDay: 5, emoji: '🍤' },
-            corn: { id: 'corn', name: '옥수수', color: '#fde047', price: 4000, packSize: 24, minDay: 5, emoji: '🌽' },
-            pineapple: { id: 'pineapple', name: '파인애플', color: '#f59e0b', price: 10000, packSize: 24, minDay: 6, emoji: '🍍' },
-            olive: { id: 'olive', name: '올리브', color: '#111827', price: 8000, packSize: 24, minDay: 6, emoji: '🫒' }
-        };
-
-        const SHIELD_PRICE = 5000;
-        const BASE_PIZZA_REWARD = 12000;
-        const DAY_DURATION_SEC = 120; // 하루 2분으로 단축
-
-        let state = {
-            money: 0,
-            day: 1,
-            shields: 0,
-            inventory: {}, // tracks stock quantities
-            
-            // In-game state
-            timeRemaining: 0,
-            timerInterval: null,
-            currentOrder: null,
-            orderReward: 0,
-            pizzas: [], // Array of { slices: int, toppings: [toppingId, ...] }
-            selectedTopping: 'pepperoni',
-            sliceSetting: 8,
-            dayEarned: 0
-        };
-
-        const ALIENS = ['👽', '👾', '🤖', '🛸', '👻', '🐙'];
-
-        // --- 3. Save/Load & Utilities ---
-        function saveData() {
-            const saveObj = {
-                money: state.money,
-                day: state.day,
-                shields: state.shields,
-                inventory: state.inventory
-            };
-            localStorage.setItem('alienPizzaSave', JSON.stringify(saveObj));
-            updateMenuUI();
-        }
-
-        function loadData() {
-            const saved = localStorage.getItem('alienPizzaSave');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    state.money = data.money || 0;
-                    state.day = data.day || 1;
-                    state.shields = data.shields || 0;
-                    state.inventory = data.inventory || {};
-                } catch(e) { console.error("Save load error", e); }
-            }
-            // 첫날 기본 페퍼로니 재고 지급
-            if (!state.inventory['pepperoni'] && state.day === 1) {
-                state.inventory['pepperoni'] = 48; // 충분한 양
-            }
-            // 누락된 재고 데이터 초기화
-            for(let key in INGREDIENTS) {
-                if(key !== 'empty' && state.inventory[key] === undefined) {
-                    state.inventory[key] = 0;
-                }
-            }
-            updateMenuUI();
-            checkBankruptcy(); // 로드 직후 파산 체크
-        }
-
-        // 파산 방지 로직 (진행 불가 방지)
-        function checkBankruptcy() {
-            let totalStock = 0;
-            for(let key in INGREDIENTS) {
-                if(key !== 'empty') totalStock += (state.inventory[key] || 0);
-            }
-            // 돈이 없고, 피자 1판(8조각)을 만들 재고조차 없을 때
-            if (state.money < 2000 && totalStock < 8) {
-                state.money += 3000;
-                state.inventory['pepperoni'] = (state.inventory['pepperoni'] || 0) + 24;
-                saveData();
-                updateMenuUI();
-                
-                setTimeout(() => {
-                    showMessage("🚨 파산 위기! 연합 구조 기금 3,000원과 페퍼로니가 지급되었습니다.", "info");
-                }, 500);
-            }
-        }
-
-        // 초기화 기능
-        function openResetModal() {
-            sfx.click();
-            document.getElementById('modal-reset-confirm').classList.remove('hidden');
-        }
-
-        function closeResetModal() {
-            sfx.click();
-            document.getElementById('modal-reset-confirm').classList.add('hidden');
-        }
-
-        function confirmReset() {
-            sfx.click();
-            localStorage.removeItem('alienPizzaSave');
-            location.reload();
-        }
-
-        function refundBoard() {
-            // 보드 위에 올라간 재료들을 인벤토리로 환불
-            state.pizzas.forEach(p => {
-                p.toppings.forEach(t => {
-                    if(t !== 'empty') state.inventory[t]++;
-                });
-            });
-            renderToppingSelector();
-            checkOutOfStockWarning(); // 환불에 따른 재고 경고 상태 갱신
-        }
-
-        function clearBoard() {
-            sfx.click();
-            refundBoard();
-            // 모든 피자의 토핑을 비움
-            state.pizzas.forEach(p => {
-                p.toppings = Array(p.slices).fill('empty');
-            });
-            renderPizzas();
-        }
-
-        // --- 4. Math Utilities ---
-        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
-        
-        function getFractionHTML(num, den, formatType = 'improper') {
-            const g = gcd(num, den);
-            num /= g; den /= g;
-            
-            if (num === 0) return `0`;
-            if (den === 1) return `${num}판`; // 정수일 때
-
-            if (formatType === 'mixed' && num > den) {
-                const whole = Math.floor(num / den);
-                const remainder = num % den;
-                return `<span class="inline-flex items-center"><span class="mr-1">${whole}</span>과 <span class="fraction text-yellow-300 ml-1"><span>${remainder}</span><span>${den}</span></span></span>`;
-            }
-
-            // 기본 가분수/진분수
-            return `<span class="fraction text-yellow-300"><span>${num}</span><span>${den}</span></span>`;
-        }
-
-        // --- 5. UI Updates & Navigation ---
-        function formatMoney(amount) { return amount.toLocaleString('ko-KR'); }
-
-        function showMessage(msg, type='info') {
-            const el = document.getElementById('alert-message');
-            el.innerHTML = msg;
-            if(type === 'success') { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-green-500 text-white"; }
-            else if(type === 'error') { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-red-600 text-white"; }
-            else { el.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 shadow-2xl bg-blue-500 text-white"; }
-            
-            el.style.opacity = '1';
-            el.style.transform = 'translate(-50%, 0) scale(1.1)';
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transform = 'translate(-50%, -20px) scale(1)';
-            }, 2000);
-        }
-
-        function updateMenuUI() {
-            document.getElementById('menu-money').textContent = formatMoney(state.money);
-            document.getElementById('menu-day').textContent = state.day;
-            document.getElementById('btn-day').textContent = state.day;
-            document.getElementById('shop-money').textContent = formatMoney(state.money);
-        }
-
-        function updateGameHUD() {
-            document.getElementById('hud-money').textContent = formatMoney(state.money);
-            document.getElementById('hud-shields').textContent = state.shields;
-            document.getElementById('hud-day').textContent = state.day;
-            
-            const m = Math.floor(state.timeRemaining / 60).toString().padStart(2, '0');
-            const s = (state.timeRemaining % 60).toString().padStart(2, '0');
-            const timeEl = document.getElementById('hud-time');
-            timeEl.textContent = `${m}:${s}`;
-            if(state.timeRemaining <= 30) timeEl.classList.add('animate-pulse', 'text-red-500');
-            else timeEl.classList.remove('animate-pulse', 'text-red-500');
-        }
-
-        // --- 6. Core Game Logic ---
-        function startGame() {
-            sfx.click();
-            document.getElementById('screen-menu').classList.add('hidden');
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('screen-game').classList.remove('hidden');
-            
-            state.timeRemaining = DAY_DURATION_SEC;
-            state.dayEarned = 0;
-            state.sliceSetting = 8;
-            updateGameHUD();
-            renderToppingSelector();
-            
-            // 초기 마감 관련 버튼 세팅 리셋
-            const earlyEndBtn = document.getElementById('btn-early-end');
-            earlyEndBtn.className = "px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1";
-
-            state.timerInterval = setInterval(() => {
-                state.timeRemaining--;
-                updateGameHUD();
-                if(state.timeRemaining <= 0) {
-                    endDay();
-                }
-            }, 1000);
-
-            nextCustomer();
-        }
-
-        function endDay(isEarly = false) {
-            clearInterval(state.timerInterval);
-            sfx.success();
-            state.day++;
-            saveData();
-            
-            const titleEl = document.getElementById('modal-day-end-title');
-            const subtitleEl = document.getElementById('modal-day-end-subtitle');
-            
-            if (isEarly) {
-                titleEl.textContent = "🚨 재료 소진 마감!";
-                subtitleEl.textContent = "가진 재료가 다 떨어져 영업을 조기 마감했습니다.";
-            } else {
-                titleEl.textContent = "영업 종료!";
-                subtitleEl.textContent = "오늘 하루 수고하셨습니다.";
-            }
-
-            document.getElementById('summary-earned').textContent = formatMoney(state.dayEarned) + ' 원';
-            document.getElementById('summary-total').textContent = formatMoney(state.money) + ' 원';
-            document.getElementById('modal-day-end').classList.remove('hidden');
-        }
-
-        function closeDayEnd() {
-            sfx.click();
-            document.getElementById('modal-day-end').classList.add('hidden');
-            document.getElementById('screen-game').classList.add('hidden');
-            checkBankruptcy(); // 상점 가기 전 파산 여부 체크
-            showShop();
-        }
-
-        // --- 실시간 재고 부족 상태 체크 및 마감 버튼 시각 유도 ---
-        function checkOutOfStockWarning() {
-            const earlyEndBtn = document.getElementById('btn-early-end');
-            if(!earlyEndBtn) return;
-
-            // 현재 Day에 잠금 해제되어 판매할 수 있는 모든 토핑의 총 합
-            let totalAvailableStock = 0;
-            for(let key in INGREDIENTS) {
-                const item = INGREDIENTS[key];
-                if(key !== 'empty' && item.minDay <= state.day) {
-                    totalAvailableStock += (state.inventory[key] || 0);
-                }
-            }
-
-            // 피자 판 위에 이미 올라간 토핑도 총 수량에 가산
-            state.pizzas.forEach(p => {
-                p.toppings.forEach(t => {
-                    if (t !== 'empty') totalAvailableStock++;
-                });
-            });
-
-            // 쓸 수 있는 총 재료의 개수가 0개이면 버튼을 경고 스타일로 깜빡이게 유도
-            if(totalAvailableStock === 0) {
-                earlyEndBtn.className = "px-4 py-2 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1 warning-active";
-            } else {
-                earlyEndBtn.className = "px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white font-bold text-sm shadow-md transition-all flex items-center gap-1";
-            }
-        }
-
-        // --- 조기 마감 모달 제어 ---
-        function openEarlyEndModal() {
-            sfx.click();
-            document.getElementById('modal-early-confirm').classList.remove('hidden');
-        }
-
-        function closeEarlyEndModal() {
-            sfx.click();
-            document.getElementById('modal-early-confirm').classList.add('hidden');
-        }
-
-        function confirmEarlyEnd() {
-            sfx.click();
-            document.getElementById('modal-early-confirm').classList.add('hidden');
-            endDay(true); // 조기 마감(isEarly = true) 상태로 영업 종료 호출
-        }
-
-        // --- Order Generation Algorithm (주문 생성 설정) ---
-        const ORDER_SETTINGS = {
-            denominators: [2, 3, 4, 5, 6, 8, 10, 12], // 등장할 수 있는 분모 (다양화)
-            maxPizzas: 4 // 최대 판 수
-        };
-
-        function generateOrder() {
-            // 1. 불합리한 마이너스 방지: '현재 재고가 1조각 이상 있는' 해금 토핑 안에서만 주문하도록 수정
-            const availableToppings = Object.keys(INGREDIENTS).filter(k => 
-                k !== 'empty' && 
-                INGREDIENTS[k].minDay <= state.day && 
-                (state.inventory[k] || 0) > 0
-            );
-
-            // 만약 쓸 수 있는 재료가 아예 없다면 비상용으로 페퍼로니 추가
-            if (availableToppings.length === 0) {
-                availableToppings.push('pepperoni');
-                state.inventory['pepperoni'] = (state.inventory['pepperoni'] || 0) + 8;
-            }
-
-            let shuffledToppings = [...availableToppings].sort(() => 0.5 - Math.random());
-
-            // 주문 유형 결정 (Day에 따라 진분수, 가분수, 대분수 해금)
-            let possibleTypes = ['proper'];
-            if (state.day >= 2) possibleTypes.push('mixed', 'proper'); 
-            if (state.day >= 3) possibleTypes.push('improper', 'mixed', 'proper'); 
-
-            const orderType = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
-            
-            // 타겟 피자 판수 (비율) 설정 - 1판 딱 떨어지는 것을 방지하기 위해 기본 비율 조정
-            let totalPizzasTarget = 1;
-            if (orderType !== 'proper') {
-                totalPizzasTarget = 1 + (Math.random() * 1.5) + 0.2; 
-            } else {
-                totalPizzasTarget = 0.4 + (Math.random() * 0.5); // 진분수는 0.4 ~ 0.9 사이로 유도
-            }
-
-            // 분모 선택
-            const baseDen = ORDER_SETTINGS.denominators[Math.floor(Math.random() * ORDER_SETTINGS.denominators.length)];
-            
-            // 전체 조각 수 계산
-            let totalSlices = Math.floor(totalPizzasTarget * baseDen);
-            if (totalSlices < 1) totalSlices = 1;
-            
-            // 핵심 수정: 합이 딱 1판, 2판 등 정수로 떨어지지 않게 방어
-            if (totalSlices % baseDen === 0) {
-                if (orderType === 'proper' || totalSlices === baseDen) {
-                    totalSlices = Math.max(1, totalSlices - 1); // 1판이면 1조각 빼서 진분수로
-                } else {
-                    totalSlices += 1; // 2판, 3판이면 1조각 더해서 가분수/대분수로
-                }
-            }
-            
-            // Day에 따른 최대 토핑 종류 수 제한 (1일차: 1개, 2일차: 2개, 3일차 이상: 3개)
-            let maxToppingsAllowed = 1;
-            if (state.day === 2) maxToppingsAllowed = 2;
-            if (state.day >= 3) maxToppingsAllowed = 3;
-
-            const maxToppings = Math.min(shuffledToppings.length, maxToppingsAllowed);
-            const toppingsCount = Math.floor(Math.random() * maxToppings) + 1;
-
-            let order = [];
-            let remainingSlices = totalSlices;
-
-            // 조각 분배
-            for (let i = 0; i < toppingsCount; i++) {
-                if (remainingSlices <= 0) break;
-                let slices = 0;
-                
-                if (i === toppingsCount - 1) {
-                    slices = remainingSlices; // 남은 조각 전부 할당
-                } else {
-                    let maxAlloc = remainingSlices - (toppingsCount - 1 - i);
-                    if (maxAlloc < 1) maxAlloc = 1;
-                    slices = Math.floor(Math.random() * maxAlloc) + 1;
-                }
-
-                order.push({
-                    topping: shuffledToppings[i % shuffledToppings.length],
-                    num: slices,
-                    den: baseDen
-                });
-                remainingSlices -= slices;
-            }
-
-            // 중복 토핑 병합
-            let mergedOrderMap = {};
-            order.forEach(o => {
-                if(!mergedOrderMap[o.topping]) mergedOrderMap[o.topping] = { num: 0, den: o.den };
-                mergedOrderMap[o.topping].num += o.num;
-            });
-
-            // 포맷팅 및 보상 계산
-            let finalOrder = [];
-            let rewardCalc = BASE_PIZZA_REWARD;
-
-            for (let t in mergedOrderMap) {
-                let o = mergedOrderMap[t];
-                let val = o.num / o.den;
-                finalOrder.push({ topping: t, num: o.num, den: o.den, floatVal: val });
-                
-                // 2. 비싼 재료를 사용할수록 보상을 크게 주어 자발적인 상점 이용 유도
-                const toppingBonus = INGREDIENTS[t].price * 2; // (ex. 파인애플 사용시 기본 수익 + 막대한 보너스)
-                rewardCalc += (val * toppingBonus); 
-            }
-
-            state.currentOrder = finalOrder;
-            state.orderReward = Math.floor(rewardCalc / 100) * 100; // 100단위 절사
-
-            // 텍스트 생성
-            let textParts = finalOrder.map(o => {
-                return `<span class="inline-block mx-1 font-bold" style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].name} ${getFractionHTML(o.num, o.den, orderType)}</span>`;
-            });
-            
-            const greetings = [
-                "안녕! 나는", "배고파...", "빨리 만들어줘!", "지구 피자가 맛있다며?",
-                orderType === 'mixed' ? "난 대분수가 좋아!" : (orderType === 'improper' ? "가분수 스타일로 부탁해!" : "깔끔하게 진분수로 줘!")
-            ];
-            let text = `${greetings[Math.floor(Math.random()*greetings.length)]}<br>`;
-            text += `피자의 ${textParts.join(', ')} 올려줘!`;
-            
-            document.getElementById('order-text').innerHTML = text;
-        }
-
-        function nextCustomer() {
-            const wrapper = document.getElementById('alien-wrapper');
-            wrapper.className = 'alien-container alien-enter flex flex-col items-center';
-            document.getElementById('alien-emoji').textContent = ALIENS[Math.floor(Math.random()*ALIENS.length)];
-            
-            generateOrder();
-            resetPizzas(); // 피자 판 초기화
-            checkOutOfStockWarning(); // 새 주문 시 재고 상태 재평가
-        }
-
-        // --- Pizza Board Logic ---
-        function resetPizzas() {
-            state.pizzas = [];
-            addPizza(); // 기본 1판
-        }
-
-        function addPizza() {
-            if(state.pizzas.length >= 4) {
-                showMessage("피자는 최대 4판까지만 놓을 수 있습니다.", "error");
-                sfx.fail();
-                return;
-            }
-            sfx.click();
-            state.pizzas.push({ slices: state.sliceSetting, toppings: Array(state.sliceSetting).fill('empty') });
-            renderPizzas();
-        }
-
-        function changeSlices(delta) {
-            sfx.slice();
-            let newSlices = state.sliceSetting + delta;
-            if(newSlices < 2) newSlices = 2;
-            if(newSlices > 12) newSlices = 12; // UI 복잡도 상 12등분 제한
-            
-            refundBoard(); // 등분이 바뀌면 캔버스의 모든 토핑을 재고로 반환
-
-            state.sliceSetting = newSlices;
-            document.getElementById('slice-count').textContent = state.sliceSetting;
-            
-            // 모든 피자의 등분을 변경하고 토핑 초기화
-            state.pizzas.forEach(p => {
-                p.slices = state.sliceSetting;
-                p.toppings = Array(state.sliceSetting).fill('empty');
-            });
-            renderPizzas();
-        }
-
-        function selectTopping(id) {
-            sfx.click();
-            if(id !== 'empty' && state.inventory[id] <= 0) {
-                showMessage("재료가 부족합니다! 상점에서 사오세요.", "error");
-                return;
-            }
-            state.selectedTopping = id;
-            renderToppingSelector();
-        }
-
-        function handleSliceClick(pizzaIndex, sliceIndex) {
-            const oldTopping = state.pizzas[pizzaIndex].toppings[sliceIndex];
-            const newTopping = state.selectedTopping;
-
-            // 같은 재료면 무시
-            if (oldTopping === newTopping) return;
-
-            sfx.click();
-
-            // 새 재료 배치 시 재고 확인 및 차감
-            if (newTopping !== 'empty') {
-                if (state.inventory[newTopping] <= 0) {
-                    showMessage("재료가 부족합니다!", "error");
-                    sfx.fail();
-                    return;
-                }
-                state.inventory[newTopping]--;
-            }
-
-            // 이전 토핑이 비어있지 않았다면 재고로 환불
-            if (oldTopping !== 'empty') {
-                state.inventory[oldTopping]++;
-            }
-
-            state.pizzas[pizzaIndex].toppings[sliceIndex] = newTopping;
-            renderPizzas();
-            renderToppingSelector();
-            checkOutOfStockWarning(); // 재고 상태 업데이트
-        }
-
-        // --- SVG Rendering ---
-        function createSvgPizza(pizzaIndex, pizzaData) {
-            const size = 160;
-            const center = size / 2;
-            const radius = 75;
-            const slices = pizzaData.slices;
-            const anglePerSlice = 360 / slices;
-
-            let svgContent = `<circle cx="${center}" cy="${center}" r="${radius + 4}" fill="#d97706" />`; // 빵 끄트머리 크러스트
-
-            for (let i = 0; i < slices; i++) {
-                const startAngle = (i * anglePerSlice - 90) * (Math.PI / 180);
-                const endAngle = ((i + 1) * anglePerSlice - 90) * (Math.PI / 180);
-
-                const x1 = center + radius * Math.cos(startAngle);
-                const y1 = center + radius * Math.sin(startAngle);
-                const x2 = center + radius * Math.cos(endAngle);
-                const y2 = center + radius * Math.sin(endAngle);
-
-                const largeArcFlag = anglePerSlice > 180 ? 1 : 0;
-                
-                // SVG Path
-                let pathD;
-                if(slices === 1) { // 1등분 (예외처리)
-                    pathD = `M ${center} ${center - radius} A ${radius} ${radius} 0 1 1 ${center} ${center + radius} A ${radius} ${radius} 0 1 1 ${center} ${center - radius} Z`;
-                } else {
-                    pathD = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-                }
-
-                const toppingId = pizzaData.toppings[i];
-                const color = INGREDIENTS[toppingId].color;
-
-                svgContent += `<path class="pizza-slice" d="${pathD}" fill="${color}" onclick="handleSliceClick(${pizzaIndex}, ${i})" />`;
-                
-                // 토핑 이모지/패턴 장식 추가
-                if(toppingId !== 'empty' && INGREDIENTS[toppingId].emoji) {
-                    const midAngle = (startAngle + endAngle) / 2;
-                    const tx = center + (radius * 0.65) * Math.cos(midAngle);
-                    const ty = center + (radius * 0.65) * Math.sin(midAngle);
-                    // 약간의 랜덤 오프셋
-                    const randX = (Math.random() - 0.5) * 10;
-                    const randY = (Math.random() - 0.5) * 10;
-                    svgContent += `<text x="${tx + randX}" y="${ty + randY}" font-size="${18 - (slices>8?4:0)}" text-anchor="middle" dominant-baseline="central" pointer-events="none">${INGREDIENTS[toppingId].emoji}</text>`;
-                }
-            }
-
-            return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="drop-shadow-xl transform transition-transform hover:scale-105">${svgContent}</svg>`;
-        }
-
-        function renderPizzas() {
-            const container = document.getElementById('pizzas-container');
-            container.innerHTML = state.pizzas.map((p, i) => createSvgPizza(i, p)).join('');
-        }
-
-        function renderToppingSelector() {
-            const container = document.getElementById('topping-selector');
-            container.innerHTML = '';
-            
-            for(let key in INGREDIENTS) {
-                const item = INGREDIENTS[key];
-                // 해당 Day에 열려있는 재료만 표시
-                if(item.minDay <= state.day) {
-                    const isSelected = state.selectedTopping === key;
-                    const stock = key === 'empty' ? null : state.inventory[key];
-                    const outOfStock = stock === 0;
-
-                    const btn = document.createElement('button');
-                    btn.className = `relative flex flex-col items-center p-2 rounded-xl border-2 transition-all 
-                        ${isSelected ? 'border-yellow-400 bg-gray-700 scale-110 shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'border-transparent bg-gray-800 hover:bg-gray-700'}
-                        ${outOfStock ? 'opacity-50 grayscale' : ''}`;
-                    btn.onclick = () => selectTopping(key);
-                    
-                    const stockHTML = stock !== null ? `<span class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-gray-800">${stock}</span>` : '';
-
-                    btn.innerHTML = `
-                        <div class="relative w-8 h-8 rounded-full shadow-inner flex items-center justify-center text-sm" style="background-color: ${item.color}">
-                            ${item.emoji || ''}
-                        </div>
-                        ${stockHTML}
-                        <span class="text-xs mt-1 text-gray-300">${item.name}</span>
-                    `;
-                    container.appendChild(btn);
-                }
-            }
-        }
-
-        // --- Order Validation ---
-        function submitOrder() {
-            // 계산 로직
-            let playerTotal = {};
-            
-            state.pizzas.forEach(p => {
-                p.toppings.forEach(t => {
-                    if(t !== 'empty') {
-                        if(!playerTotal[t]) playerTotal[t] = 0;
-                        playerTotal[t] += (1 / p.slices); // 피자 1판 기준의 비율
-                    }
-                });
-            });
-
-            let isCorrect = true;
-            let errorMsg = "";
-
-            // 1. 주문한 토핑이 정확히 있는지 확인
-            for(let o of state.currentOrder) {
-                const pVal = playerTotal[o.topping] || 0;
-                // 부동소수점 오차 방지 (0.01 이하 차이는 허용)
-                if(Math.abs(pVal - o.floatVal) > 0.01) {
-                    isCorrect = false;
-                    errorMsg = "비율이 맞지 않아!";
-                    break;
-                }
-            }
-
-            // 2. 주문하지 않은 불필요한 토핑이 있는지 확인
-            if(isCorrect) {
-                for(let t in playerTotal) {
-                    const ordered = state.currentOrder.find(o => o.topping === t);
-                    if(!ordered) {
-                        isCorrect = false;
-                        errorMsg = "주문 안 한 게 들어있어!";
-                        break;
-                    }
-                }
-            }
-
-            const wrapper = document.getElementById('alien-wrapper');
-
-            if(isCorrect) {
-                sfx.success();
-                sfx.coin();
-                
-                // 보상 처리
-                state.money += state.orderReward;
-                state.dayEarned += state.orderReward;
-                showMessage(`+ ${formatMoney(state.orderReward)}원! 완벽해!`, 'success');
-                updateGameHUD();
-
-                // 애니메이션
-                wrapper.className = 'alien-container alien-exit-success flex flex-col items-center';
-                
-            } else {
-                sfx.fail();
-                
-                // 패널티 방어권 체크
-                if(state.shields > 0) {
-                    sfx.shield();
-                    state.shields--;
-                    showMessage(`방어권 사용! 패널티 면제! (${errorMsg})`, 'info');
-                } else {
-                    state.money -= state.orderReward;
-                    // 마이너스 통장 허용 (파산 빚쟁이 컨셉)
-                    showMessage(`- ${formatMoney(state.orderReward)}원... ${errorMsg}`, 'error');
-                }
-                updateGameHUD();
-
-                // 애니메이션
-                wrapper.className = 'alien-container alien-exit-fail flex flex-col items-center';
-            }
-
-            // 1초 뒤 다음 손님
-            setTimeout(() => {
-                if(state.timeRemaining > 0) nextCustomer();
-            }, 600);
-        }
-
-        // --- 7. Shop System ---
-        function showShop() {
-            sfx.click();
-            updateMenuUI(); // sync
-            document.getElementById('screen-menu').classList.add('hidden');
-            document.getElementById('screen-game').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('hidden');
-            document.getElementById('screen-shop').classList.add('flex');
-            
-            renderShop();
-        }
-
-        function hideShop() {
-            sfx.click();
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('flex');
-            document.getElementById('screen-menu').classList.remove('hidden');
-        }
-
-        function renderShop() {
-            const container = document.getElementById('shop-items');
-            container.innerHTML = '';
-
-            // 방어권 상품
-            const shieldCard = document.createElement('div');
-            shieldCard.className = 'bg-gray-800 p-6 rounded-2xl border border-gray-600 flex justify-between items-center';
-            shieldCard.innerHTML = `
-                <div>
-                    <h3 class="text-2xl text-blue-400 font-bold mb-2">🛡️ 클레임 방어권</h3>
-                    <p class="text-gray-400">틀렸을 때 마이너스를 1회 막아줍니다.<br>(현재 보유: ${state.shields}개)</p>
-                </div>
-                <button onclick="buyItem('shield')" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 rounded-xl font-bold transition-colors">
-                    ${formatMoney(SHIELD_PRICE)} ₩
-                </button>
-            `;
-            container.appendChild(shieldCard);
-
-            // 재료 상품들 (Day에 따라 해금된 항목만 보임)
-            for(let key in INGREDIENTS) {
-                const item = INGREDIENTS[key];
-                if(item.price > 0 && item.minDay <= state.day) {
-                    const currentStock = state.inventory[key] || 0;
-                    const card = document.createElement('div');
-                    card.className = `bg-gray-800 p-6 rounded-2xl border border-purple-500 flex justify-between items-center`;
-                    
-                    card.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl bg-gray-700" style="color:${item.color}">${item.emoji}</div>
-                            <div>
-                                <h3 class="text-2xl font-bold mb-1" style="color:${item.color}">${item.name}</h3>
-                                <p class="text-gray-400 text-sm">현재 보유량: <span class="text-white font-bold">${currentStock}</span> 조각</p>
-                            </div>
-                        </div>
-                        <button onclick="buyItem('${key}')" class="px-4 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition-colors text-center leading-tight">
-                            ${item.packSize}조각 충전<br><span class="text-sm font-normal text-yellow-300">${formatMoney(item.price)} ₩</span>
-                        </button>
-                    `;
-                    container.appendChild(card);
-                }
-            }
-        }
-
-        function buyItem(id) {
-            sfx.click();
-            let price = id === 'shield' ? SHIELD_PRICE : INGREDIENTS[id].price;
-            
-            if(state.money >= price) {
-                state.money -= price;
-                sfx.coin();
-                
-                if(id === 'shield') {
-                    state.shields++;
-                    showMessage(`방어권 1개 구매 완료! (총 ${state.shields}개)`, 'success');
-                } else {
-                    state.inventory[id] += INGREDIENTS[id].packSize;
-                    showMessage(`${INGREDIENTS[id].name} ${INGREDIENTS[id].packSize}조각 구매 완료!`, 'success');
-                }
-                
-                saveData();
-                renderShop(); // 리렌더링
-                renderToppingSelector(); // 게임화면 반영
-                document.getElementById('shop-money').textContent = formatMoney(state.money);
-            } else {
-                sfx.fail();
-                showMessage("돈이 부족합니다!", "error");
-            }
-        }
-
-        // Initialize
-        loadData();
-
-    </script>
+    <button class="btn yellow" style="width:100%" onclick="closeDayEnd()">상점 들르기</button>
+  </div>
+</div>
+
+<div id="modal-reset" class="modal">
+  <div class="modal-card" style="border-color:var(--red)">
+    <h2 style="color:var(--red)">데이터 초기화</h2>
+    <p style="color:var(--muted);line-height:1.6">돈, Day, 재고, 최고 콤보가 모두 사라집니다.<br>처음부터 다시 시작할까요?</p>
+    <div class="row" style="margin-top:18px"><button class="btn gray" onclick="closeResetModal()">취소</button><button class="btn red" onclick="confirmReset()">초기화</button></div>
+  </div>
+</div>
+
+<div id="toast" class="toast">Message</div>
+
+<script>
+(() => {
+'use strict';
+
+const SAVE_KEY = 'alienPizzaDXSave';
+const DAY_DURATION = 120;
+const BASE_REWARD = 2800;
+const SHIELD_PRICE = 4500;
+const MAX_PIZZAS = 4;
+const ALIENS = ['👽','👾','🤖','🛸','🐙','👻','🪐'];
+const DEN_BY_DAY = [2,3,4,6,8,10,12];
+
+const INGREDIENTS = {
+  empty: {id:'empty', name:'도우 지우개', color:'#f6c56b', price:0, packSize:0, minDay:1, emoji:'🧽'},
+  pepperoni: {id:'pepperoni', name:'페퍼로니', color:'#ef4444', price:1800, packSize:24, minDay:1, emoji:'🔴'},
+  mushroom: {id:'mushroom', name:'달버섯', color:'#8b5e34', price:2600, packSize:24, minDay:2, emoji:'🍄'},
+  cheese: {id:'cheese', name:'별빛치즈', color:'#fde047', price:3000, packSize:24, minDay:2, emoji:'🧀'},
+  onion: {id:'onion', name:'은하양파', color:'#e5e7eb', price:3600, packSize:24, minDay:3, emoji:'🧅'},
+  bacon: {id:'bacon', name:'운석베이컨', color:'#be123c', price:4600, packSize:24, minDay:3, emoji:'🥓'},
+  corn: {id:'corn', name:'노란옥수수', color:'#facc15', price:4300, packSize:24, minDay:4, emoji:'🌽'},
+  olive: {id:'olive', name:'블랙올리브', color:'#111827', price:6200, packSize:24, minDay:4, emoji:'🫒'},
+  shrimp: {id:'shrimp', name:'우주새우', color:'#fb7185', price:7600, packSize:24, minDay:5, emoji:'🍤'},
+  pineapple: {id:'pineapple', name:'토성파인애플', color:'#f59e0b', price:9200, packSize:24, minDay:6, emoji:'🍍'}
+};
+
+const state = {
+  money:0, day:1, shields:0, inventory:{}, bestCombo:0,
+  timeRemaining:DAY_DURATION, timer:null, paused:false, soundOn:true,
+  currentOrder:[], orderDen:8, orderReward:0, dayEarned:0, combo:0,
+  pizzas:[], selectedTopping:'pepperoni', sliceSetting:8, history:[], locked:false
+};
+
+const $ = id => document.getElementById(id);
+const screenMenu = $('screen-menu'), screenShop = $('screen-shop'), screenGame = $('screen-game');
+let audioCtx = null;
+
+function initAudio(){
+  if(!state.soundOn) return;
+  if(!audioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    audioCtx = new Ctx();
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq,type='sine',dur=.12,gain=.06,delay=0){
+  if(!state.soundOn) return;
+  initAudio();
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  const t = audioCtx.currentTime + delay;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(gain,t+.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t+dur+.03);
+}
+const sfx = {
+  click(){tone(580,'square',.045,.035)},
+  slice(){tone(820,'triangle',.06,.04);tone(520,'sine',.08,.02,.035)},
+  success(){tone(523,'sine',.1,.05);tone(659,'sine',.1,.05,.09);tone(784,'sine',.18,.06,.18)},
+  fail(){tone(210,'sawtooth',.14,.05);tone(140,'sawtooth',.2,.05,.11)},
+  coin(){tone(1180,'sine',.07,.05);tone(1580,'sine',.13,.04,.05)},
+  shield(){tone(360,'square',.08,.04);tone(540,'square',.16,.04,.08)}
+};
+
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);return b?gcd(b,a%b):(a||1)}
+function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}
+function reduce(num,den){if(num===0) return {num:0,den:1}; const g=gcd(num,den); return {num:num/g, den:den/g}}
+function addFrac(a,b){return reduce(a.num*b.den + b.num*a.den, a.den*b.den)}
+function cmpFrac(a,b){return a.num*b.den - b.num*a.den}
+function fracValue(f){return f.num/f.den}
+function fracText(num, den){
+  const f = reduce(num,den);
+  if(f.num===0) return '0';
+  if(f.den===1) return `${f.num}판`;
+  if(f.num>f.den){
+    const w = Math.floor(f.num/f.den), r = f.num%f.den;
+    if(r===0) return `${w}판`;
+    return `${w}과 ${r}/${f.den}`;
+  }
+  return `${f.num}/${f.den}`;
+}
+function fracHTML(num, den){
+  const f = reduce(num,den);
+  if(f.num===0) return '0';
+  if(f.den===1) return `${f.num}판`;
+  if(f.num>f.den){
+    const w = Math.floor(f.num/f.den), r = f.num%f.den;
+    if(r===0) return `${w}판`;
+    return `<span>${w}과 </span><span class="fraction"><span>${r}</span><span>${f.den}</span></span>`;
+  }
+  return `<span class="fraction"><span>${f.num}</span><span>${f.den}</span></span>`;
+}
+function money(n){return Math.floor(n).toLocaleString('ko-KR')}
+function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
+function deepCopy(v){return JSON.parse(JSON.stringify(v))}
+
+function showOnly(screen){[screenMenu,screenShop,screenGame].forEach(s=>s.classList.remove('active'));screen.classList.add('active')}
+function toast(msg,type='info'){
+  const el=$('toast'); el.innerHTML=msg; el.className='toast '+type+' show';
+  clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),1900);
+}
+function updateMenuUI(){
+  $('menu-money').textContent=money(state.money); $('menu-day').textContent=state.day; $('menu-best').textContent=state.bestCombo;
+  $('shop-money').textContent=money(state.money);
+}
+function updateHUD(){
+  $('hud-day').textContent=state.day; $('hud-money').textContent=money(state.money); $('hud-shields').textContent=state.shields; $('hud-combo').textContent=state.combo;
+  const m=String(Math.floor(state.timeRemaining/60)).padStart(2,'0'), s=String(state.timeRemaining%60).padStart(2,'0');
+  $('hud-time').textContent=`${m}:${s}`; $('time-fill').style.width=(state.timeRemaining/DAY_DURATION*100)+'%';
+}
+function saveData(){
+  localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,bestCombo:state.bestCombo}));
+  updateMenuUI();
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(raw){const d=JSON.parse(raw); state.money=d.money||0; state.day=d.day||1; state.shields=d.shields||0; state.inventory=d.inventory||{}; state.bestCombo=d.bestCombo||0;}
+  }catch(e){}
+  Object.keys(INGREDIENTS).forEach(k=>{if(k!=='empty' && state.inventory[k]===undefined) state.inventory[k]=0});
+  if((state.inventory.pepperoni||0)<16 && state.day===1){state.inventory.pepperoni=48;}
+  checkRescue(); updateMenuUI();
+}
+function checkRescue(){
+  const total=Object.keys(INGREDIENTS).filter(k=>k!=='empty').reduce((sum,k)=>sum+(state.inventory[k]||0),0);
+  if(state.money<1800 && total<6){state.money+=2500;state.inventory.pepperoni=(state.inventory.pepperoni||0)+24;saveData();setTimeout(()=>toast('🚨 재료 부족 구조 지원: 2,500원과 페퍼로니 24조각 지급','info'),300)}
+}
+
+function getUnlockedToppings(includeEmpty=false){
+  return Object.keys(INGREDIENTS).filter(k=>(includeEmpty||k!=='empty') && INGREDIENTS[k].minDay<=state.day);
+}
+function firstAvailableTopping(){
+  const t=getUnlockedToppings().find(k=>(state.inventory[k]||0)>0); return t||'pepperoni';
+}
+
+function pushHistory(){
+  state.history.push({pizzas:deepCopy(state.pizzas), inventory:deepCopy(state.inventory), sliceSetting:state.sliceSetting, selectedTopping:state.selectedTopping});
+  if(state.history.length>25) state.history.shift();
+}
+function undoLast(){
+  const h=state.history.pop();
+  if(!h){toast('되돌릴 작업이 없습니다.','info');return}
+  Object.assign(state.inventory,h.inventory); state.pizzas=h.pizzas; state.sliceSetting=h.sliceSetting; state.selectedTopping=h.selectedTopping;
+  $('slice-count').textContent=state.sliceSetting;
+  sfx.click(); renderAllBoard(); toast('이전 상태로 되돌렸습니다.','info');
+}
+function refundBoard(){
+  state.pizzas.forEach(p=>p.toppings.forEach(t=>{if(t!=='empty') state.inventory[t]=(state.inventory[t]||0)+1}));
+}
+function clearBoard(){
+  if(!state.pizzas.length) return;
+  pushHistory(); refundBoard();
+  state.pizzas.forEach(p=>{p.toppings=Array(p.slices).fill('empty')});
+  sfx.click(); renderAllBoard(); toast('올려둔 재료를 재고로 돌렸습니다.','info');
+}
+
+function resetPizzasForOrder(){
+  state.history=[]; state.pizzas=[]; state.sliceSetting=state.orderDen; $('slice-count').textContent=state.sliceSetting; addPizza(false);
+}
+function addPizza(record=true){
+  if(state.pizzas.length>=MAX_PIZZAS){toast('피자는 최대 4판까지만 놓을 수 있습니다.','error');sfx.fail();return}
+  if(record) pushHistory();
+  state.pizzas.push({slices:state.sliceSetting,toppings:Array(state.sliceSetting).fill('empty')});
+  sfx.click(); renderAllBoard();
+}
+function changeSlices(delta){
+  const next=Math.max(2,Math.min(12,state.sliceSetting+delta));
+  if(next===state.sliceSetting) return;
+  pushHistory(); refundBoard(); state.sliceSetting=next; $('slice-count').textContent=next;
+  state.pizzas.forEach(p=>{p.slices=next;p.toppings=Array(next).fill('empty')});
+  sfx.slice(); renderAllBoard();
+}
+function setCutsToOrder(){
+  if(state.sliceSetting===state.orderDen){toast('이미 주문 분모와 같은 등분입니다.','info');return}
+  pushHistory(); refundBoard(); state.sliceSetting=state.orderDen; $('slice-count').textContent=state.sliceSetting;
+  state.pizzas.forEach(p=>{p.slices=state.sliceSetting;p.toppings=Array(state.sliceSetting).fill('empty')});
+  sfx.slice(); renderAllBoard(); toast(`${state.orderDen}등분으로 맞췄습니다.`,'success');
+}
+
+function generateOrder(){
+  let available=getUnlockedToppings().filter(k=>(state.inventory[k]||0)>0);
+  if(!available.length){state.inventory.pepperoni=(state.inventory.pepperoni||0)+12; available=['pepperoni']; toast('긴급 페퍼로니 12조각이 지급되었습니다.','info')}
+  const denChoices=DEN_BY_DAY.filter(d=>d<=Math.min(12,4+state.day*2));
+  let order=null;
+  for(let attempt=0; attempt<80; attempt++){
+    const den=pick(denChoices);
+    const maxByStock=Math.min(den*MAX_PIZZAS, available.reduce((s,k)=>s+(state.inventory[k]||0),0));
+    if(maxByStock<1) continue;
+    const canImproper=state.day>=2 && maxByStock>den;
+    let totalSlices;
+    if(!canImproper || Math.random()<.62){ totalSlices=rand(1,Math.min(den-1,maxByStock)); }
+    else { totalSlices=rand(den+1,Math.min(maxByStock,den*Math.min(MAX_PIZZAS,2+Math.floor(state.day/3)))); }
+    if(totalSlices<1) totalSlices=1;
+    const maxKinds=Math.min(available.length,totalSlices,state.day>=4?3:(state.day>=2?2:1));
+    const kinds=rand(1,maxKinds);
+    const chosen=shuffle(available).slice(0,kinds).filter(k=>(state.inventory[k]||0)>0);
+    const counts={}; chosen.forEach(k=>counts[k]=0);
+    let remaining=totalSlices;
+    shuffle(chosen).forEach(k=>{ if(remaining>0 && counts[k] < (state.inventory[k]||0)){counts[k]++; remaining--;}});
+    while(remaining>0){
+      const choices=chosen.filter(k=>counts[k] < (state.inventory[k]||0));
+      if(!choices.length) break;
+      counts[pick(choices)]++; remaining--;
+    }
+    if(remaining===0){ order={den, entries:Object.keys(counts).filter(k=>counts[k]>0).map(k=>({topping:k,num:counts[k],den}))}; break; }
+  }
+  if(!order){order={den:8, entries:[{topping:'pepperoni',num:1,den:8}]}; state.inventory.pepperoni=(state.inventory.pepperoni||0)+8}
+  state.orderDen=order.den;
+  state.currentOrder=order.entries;
+  const slices=order.entries.reduce((s,o)=>s+o.num,0);
+  let reward=BASE_REWARD + slices*650 + state.day*220;
+  order.entries.forEach(o=>{reward += Math.round((INGREDIENTS[o.topping].price||0) * (o.num/o.den) * 1.45)});
+  state.orderReward=Math.max(1000,Math.floor(reward/100)*100);
+}
+function renderOrder(){
+  const alien=pick(ALIENS); $('alien-emoji').textContent=alien;
+  const parts=state.currentOrder.map(o=>`<b style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].name}</b> ${fracHTML(o.num,o.den)}`);
+  const totalPieces=state.currentOrder.reduce((s,o)=>s+o.num,0);
+  $('order-text').innerHTML=`${alien} 배고파!<br>${parts.join('<br>')} 올린 피자 부탁해!`;
+  $('order-list').innerHTML=state.currentOrder.map(o=>`
+    <div class="order-line">
+      <span><b style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].emoji} ${INGREDIENTS[o.topping].name}</b></span>
+      <span class="need">${fracHTML(o.num,o.den)} <span class="tag">${o.den}등분 ${o.num}조각</span></span>
+    </div>`).join('');
+  $('order-helper').innerHTML=`이번 주문의 기준은 <b>${state.orderDen}등분</b>입니다. 피자 한 판을 ${state.orderDen}조각으로 자르면, 필요한 총 토핑은 <b>${totalPieces}조각</b>입니다.<br>다른 등분으로 만들어도 같은 분수면 정답이지만, 처음에는 <b>주문 등분으로 맞추기</b> 버튼을 쓰는 편이 쉽습니다.`;
+}
+function nextCustomer(){
+  state.locked=false; generateOrder(); state.selectedTopping=state.currentOrder[0]?.topping || firstAvailableTopping(); renderOrder(); resetPizzasForOrder(); renderToppingSelector(); renderProgress();
+  $('alien-box').classList.remove('shake','happy'); void $('alien-box').offsetWidth;
+}
+
+function countRequested(topping){return state.currentOrder.find(o=>o.topping===topping)}
+function renderToppingSelector(){
+  const wrap=$('topping-selector');
+  wrap.innerHTML=getUnlockedToppings(true).map(k=>{
+    const item=INGREDIENTS[k], stock=k==='empty'?'∞':(state.inventory[k]||0), req=countRequested(k), selected=state.selectedTopping===k, disabled=k!=='empty' && stock<=0;
+    return `<button class="topping ${selected?'selected':''} ${disabled?'disabled':''}" onclick="selectTopping('${k}')">
+      ${req?'<span class="requested">주문</span>':''}${k==='empty'?'':`<span class="stock">${stock}</span>`}
+      <div class="swatch" style="background:${item.color};color:${k==='olive'?'white':'#111827'}">${item.emoji||''}</div>
+      <div class="name">${item.name}</div>
+    </button>`;
+  }).join('');
+}
+function selectTopping(id){
+  if(id!=='empty' && (state.inventory[id]||0)<=0){toast('재료가 부족합니다. 상점에서 충전하세요.','error');sfx.fail();return}
+  state.selectedTopping=id; sfx.click(); renderToppingSelector();
+}
+
+function handleSliceClick(pizzaIndex,sliceIndex){
+  if(state.locked || state.paused) return;
+  const p=state.pizzas[pizzaIndex]; if(!p) return;
+  const old=p.toppings[sliceIndex]; const next=state.selectedTopping;
+  if(old===next) return;
+  if(next!=='empty' && (state.inventory[next]||0)<=0){toast('재료가 부족합니다.','error');sfx.fail();return}
+  pushHistory();
+  if(old!=='empty') state.inventory[old]=(state.inventory[old]||0)+1;
+  if(next!=='empty') state.inventory[next]--;
+  p.toppings[sliceIndex]=next;
+  sfx.slice(); renderAllBoard();
+}
+
+function createSvgPizza(pizzaIndex,p){
+  const size=200, c=100, r=82, crust=90, slices=p.slices, aStep=360/slices;
+  let svg=`<div class="pizza-card"><svg class="pizza-svg" viewBox="0 0 ${size} ${size}" aria-label="피자 ${pizzaIndex+1}">`;
+  svg+=`<circle cx="${c}" cy="${c}" r="${crust}" fill="#b45309"/><circle cx="${c}" cy="${c}" r="${r}" fill="#fbbf24"/>`;
+  for(let i=0;i<slices;i++){
+    const a1=(i*aStep-90)*Math.PI/180, a2=((i+1)*aStep-90)*Math.PI/180;
+    const x1=c+r*Math.cos(a1), y1=c+r*Math.sin(a1), x2=c+r*Math.cos(a2), y2=c+r*Math.sin(a2);
+    const large=aStep>180?1:0, id=p.toppings[i], item=INGREDIENTS[id];
+    const d=`M ${c} ${c} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+    svg+=`<path class="slice" d="${d}" fill="${item.color}" onclick="handleSliceClick(${pizzaIndex},${i})"></path>`;
+    if(id!=='empty'){
+      const mid=(a1+a2)/2; const jitter=((pizzaIndex+1)*(i+3))%7-3;
+      const tx=c+(r*.62)*Math.cos(mid)+(jitter*.8), ty=c+(r*.62)*Math.sin(mid)-jitter;
+      svg+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="${slices>8?15:19}" text-anchor="middle" dominant-baseline="central" pointer-events="none">${item.emoji}</text>`;
+    }
+  }
+  svg+=`<circle cx="${c}" cy="${c}" r="7" fill="rgba(255,255,255,.9)"/></svg><div class="pizza-label">피자 ${pizzaIndex+1} · ${slices}등분</div></div>`;
+  return svg;
+}
+function renderPizzas(){ $('pizzas-container').innerHTML=state.pizzas.map((p,i)=>createSvgPizza(i,p)).join('') }
+function computePlayerTotals(){
+  const totals={};
+  state.pizzas.forEach(p=>p.toppings.forEach(t=>{
+    if(t==='empty') return;
+    totals[t]=addFrac(totals[t]||{num:0,den:1},{num:1,den:p.slices});
+  }));
+  return totals;
+}
+function renderProgress(){
+  const totals=computePlayerTotals();
+  const rows=[];
+  state.currentOrder.forEach(o=>{
+    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den); const cmp=cmpFrac(made,req);
+    const pct=Math.min(100,Math.round(fracValue(made)/fracValue(req)*100));
+    rows.push(`<div class="progress-row">
+      <div class="progress-head"><span style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].emoji} ${INGREDIENTS[o.topping].name}</span><span>${fracText(made.num,made.den)} / ${fracText(req.num,req.den)}</span></div>
+      <div class="bar ${cmp>0?'over':(cmp<0?'missing':'')}"><span style="width:${pct}%"></span></div>
+    </div>`);
+  });
+  Object.keys(totals).forEach(t=>{ if(!state.currentOrder.find(o=>o.topping===t)){ rows.push(`<div class="progress-row" style="border-color:rgba(255,93,108,.55)"><div class="progress-head"><span style="color:${INGREDIENTS[t].color}">${INGREDIENTS[t].emoji} ${INGREDIENTS[t].name}</span><span>주문 외 ${fracText(totals[t].num,totals[t].den)}</span></div><div class="bar over"><span style="width:100%"></span></div></div>`) }});
+  if(!rows.length) rows.push(`<div class="helper">아직 토핑이 없습니다. 주문 재료를 선택하고 피자 조각을 눌러보세요.</div>`);
+  $('progress-list').innerHTML=rows.join('');
+}
+function renderAllBoard(){renderPizzas();renderToppingSelector();renderProgress();updateHUD();}
+
+function mismatchText(){
+  const totals=computePlayerTotals();
+  for(const o of state.currentOrder){
+    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den); const cmp=cmpFrac(made,req);
+    if(cmp!==0){
+      const diff=cmp<0?'부족해요':'많아요';
+      return `${INGREDIENTS[o.topping].name}: 주문 ${fracText(req.num,req.den)}, 현재 ${fracText(made.num,made.den)}라서 ${diff}.`;
+    }
+  }
+  for(const t in totals){ if(!state.currentOrder.find(o=>o.topping===t)) return `${INGREDIENTS[t].name}은 주문하지 않았어요.`; }
+  return '';
+}
+function submitOrder(){
+  if(state.locked || state.paused || !state.currentOrder.length) return;
+  const err=mismatchText();
+  state.locked=true;
+  const box=$('alien-box'); box.classList.remove('shake','happy'); void box.offsetWidth;
+  if(!err){
+    const bonus=state.combo*180;
+    const earned=state.orderReward+bonus;
+    state.money+=earned; state.dayEarned+=earned; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo,state.bestCombo);
+    sfx.success(); sfx.coin(); toast(`완벽한 피자! +${money(earned)}원${bonus?` · 콤보 보너스 ${money(bonus)}원`:''}`,'success'); box.classList.add('happy');
+  }else{
+    state.combo=0;
+    if(state.shields>0){ state.shields--; sfx.shield(); toast(`방어권 사용! ${err}`,'info'); }
+    else { const penalty=Math.floor(state.orderReward*.45/100)*100; state.money=Math.max(0,state.money-penalty); sfx.fail(); toast(`클레임 발생 -${money(penalty)}원 · ${err}`,'error'); }
+    box.classList.add('shake');
+  }
+  saveData(); updateHUD();
+  setTimeout(()=>{ if(state.timeRemaining>0) nextCustomer(); },850);
+}
+function showHint(){
+  const totals=computePlayerTotals();
+  for(const o of state.currentOrder){
+    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den);
+    if(cmpFrac(made,req)<0){
+      const remain=reduce(req.num*made.den - made.num*req.den, req.den*made.den);
+      state.selectedTopping=o.topping; renderToppingSelector();
+      toast(`힌트: ${INGREDIENTS[o.topping].name}이 ${fracText(remain.num,remain.den)} 더 필요해요. ${state.orderDen}등분 기준으로 생각해보세요.`,'info');
+      return;
+    }
+  }
+  const extra=Object.keys(totals).find(t=>!state.currentOrder.find(o=>o.topping===t));
+  if(extra){state.selectedTopping='empty';renderToppingSelector();toast(`${INGREDIENTS[extra].name}은 주문 외 재료예요. 지우개로 빼보세요.`,'info');return}
+  toast('현재 제작량은 주문과 딱 맞습니다. 서빙해도 됩니다!','success');
+}
+
+function startGame(){
+  initAudio(); sfx.click(); clearInterval(state.timer);
+  state.timeRemaining=DAY_DURATION; state.dayEarned=0; state.combo=0; state.paused=false; state.locked=false;
+  $('pause-btn').textContent='⏸️ 일시정지'; showOnly(screenGame); updateHUD(); nextCustomer();
+  state.timer=setInterval(()=>{ if(state.paused) return; state.timeRemaining--; updateHUD(); if(state.timeRemaining<=0) endDay(false); },1000);
+}
+function endDay(early=false){
+  if(screenGame.classList.contains('active')){ refundBoard(); }
+  clearInterval(state.timer); state.timer=null; state.paused=false; state.locked=true; state.day++; saveData();
+  $('day-end-title').textContent=early?'영업 조기 마감':'영업 종료!';
+  $('day-end-sub').textContent=early?'재료를 정리하고 오늘 장사를 마쳤습니다.':'오늘 하루 수고했습니다.';
+  $('summary-earned').textContent=money(state.dayEarned)+'원'; $('summary-total').textContent=money(state.money)+'원'; $('summary-combo').textContent=state.bestCombo;
+  $('modal-day-end').classList.add('active'); sfx.success();
+}
+function closeDayEnd(){ $('modal-day-end').classList.remove('active'); checkRescue(); showShop(); }
+function togglePause(){ state.paused=!state.paused; $('pause-btn').textContent=state.paused?'▶ 계속하기':'⏸️ 일시정지'; toast(state.paused?'잠시 멈췄습니다.':'다시 영업합니다.', 'info'); }
+function toggleSound(){ state.soundOn=!state.soundOn; $('sound-btn').textContent=state.soundOn?'🔊 소리':'🔇 무음'; if(state.soundOn) sfx.click(); }
+
+function showShop(){ sfx.click(); clearInterval(state.timer); state.timer=null; showOnly(screenShop); updateMenuUI(); renderShop(); }
+function hideShop(){ sfx.click(); showOnly(screenMenu); updateMenuUI(); }
+function renderShop(){
+  const grid=$('shop-grid');
+  const cards=[];
+  cards.push(`<div class="shop-card"><div style="display:flex;align-items:center;gap:12px"><div class="shop-icon">🛡️</div><div><h3 style="color:var(--blue)">클레임 방어권</h3><p>오답 패널티를 1회 막습니다. 보유 ${state.shields}개</p></div></div><button class="btn blue" onclick="buyItem('shield')">${money(SHIELD_PRICE)}원</button></div>`);
+  Object.keys(INGREDIENTS).forEach(k=>{
+    const item=INGREDIENTS[k]; if(k==='empty') return;
+    const locked=item.minDay>state.day;
+    cards.push(`<div class="shop-card ${locked?'locked':''}">
+      <div style="display:flex;align-items:center;gap:12px"><div class="shop-icon" style="color:${item.color}">${item.emoji}</div><div><h3 style="color:${item.color}">${item.name}</h3><p>${locked?`DAY ${item.minDay}에 해금`: `보유 ${state.inventory[k]||0}조각 · ${item.packSize}조각 묶음`}</p></div></div>
+      ${locked?`<button class="btn gray" disabled>잠김</button>`:`<button class="btn purple" onclick="buyItem('${k}')">${money(item.price)}원</button>`}
+    </div>`);
+  });
+  grid.innerHTML=cards.join('');
+}
+function buyItem(id){
+  const price=id==='shield'?SHIELD_PRICE:INGREDIENTS[id].price;
+  if(state.money<price){sfx.fail();toast('돈이 부족합니다.','error');return}
+  state.money-=price;
+  if(id==='shield'){state.shields++;toast('방어권을 구매했습니다.','success')}
+  else{state.inventory[id]=(state.inventory[id]||0)+INGREDIENTS[id].packSize;toast(`${INGREDIENTS[id].name} ${INGREDIENTS[id].packSize}조각 충전!`,'success')}
+  sfx.coin(); saveData(); renderShop(); renderToppingSelector();
+}
+function openResetModal(){sfx.click();$('modal-reset').classList.add('active')}
+function closeResetModal(){sfx.click();$('modal-reset').classList.remove('active')}
+function confirmReset(){localStorage.removeItem(SAVE_KEY);location.reload()}
+
+window.startGame=startGame; window.showShop=showShop; window.hideShop=hideShop; window.buyItem=buyItem;
+window.openResetModal=openResetModal; window.closeResetModal=closeResetModal; window.confirmReset=confirmReset;
+window.changeSlices=changeSlices; window.setCutsToOrder=setCutsToOrder; window.addPizza=addPizza; window.undoLast=undoLast; window.clearBoard=clearBoard;
+window.selectTopping=selectTopping; window.handleSliceClick=handleSliceClick; window.submitOrder=submitOrder; window.showHint=showHint; window.endDay=endDay;
+window.closeDayEnd=closeDayEnd; window.togglePause=togglePause; window.toggleSound=toggleSound;
+
+loadData(); renderShop(); renderToppingSelector(); updateHUD();
+})();
+</script>
 </body>
 </html>
