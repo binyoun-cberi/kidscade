@@ -9,8 +9,8 @@
       --body-blue: #0084ff;
       --deep-blue: #0059b3;
       --soft-bg: #f0f4f8;
-      --tile-radius: 10px;
-      --gap: 6px;
+      --tile-radius: 8px;
+      --gap: 4px;
     }
 
     * { box-sizing: border-box; }
@@ -28,14 +28,14 @@
     }
 
     .game-body {
-      width: min(94vw, 620px);
+      width: min(96vw, 760px);
       background: linear-gradient(180deg, #0d92ff 0%, var(--body-blue) 70%, #0073df 100%);
       border-radius: 24px;
       box-shadow:
         0 22px 48px rgba(0, 54, 120, 0.35),
         inset 0 3px 10px rgba(255,255,255,0.35),
         inset 0 -8px 18px rgba(0,0,0,0.12);
-      padding: clamp(16px, 3vw, 28px);
+      padding: clamp(14px, 2.7vw, 26px);
       color: #fff;
       position: relative;
     }
@@ -45,7 +45,7 @@
       grid-template-columns: 1fr auto 1fr;
       gap: 12px;
       align-items: start;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .stat-box {
@@ -60,14 +60,14 @@
     .stat-label {
       color: rgba(219, 234, 254, 0.9);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 4px;
     }
 
     .stat-value {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-weight: 900;
-      font-size: clamp(17px, 3vw, 25px);
+      font-weight: 1000;
+      font-size: clamp(16px, 2.7vw, 25px);
       line-height: 1.05;
       letter-spacing: -0.04em;
     }
@@ -79,7 +79,7 @@
     }
 
     .title-main {
-      font-size: clamp(20px, 4vw, 32px);
+      font-size: clamp(20px, 3.6vw, 32px);
       font-weight: 1000;
       letter-spacing: 0.02em;
       text-shadow: 0 3px 0 rgba(0,0,0,0.12);
@@ -91,12 +91,68 @@
       font-size: 12px;
       color: rgba(219, 234, 254, 0.95);
       margin-top: 6px;
+      font-weight: 900;
+    }
+
+    .life-row {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .life-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(0, 40, 100, 0.24);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      padding: 10px 12px;
+      min-height: 50px;
+    }
+
+    .heart-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .heart-icons {
+      color: #fecdd3;
+      text-shadow: 0 2px 0 rgba(127, 29, 29, .24);
+      font-size: clamp(19px, 3vw, 25px);
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .life-main {
+      font-weight: 1000;
+      font-size: 14px;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .life-sub {
+      color: rgba(219, 234, 254, 0.94);
+      font-size: 12px;
       font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .limit-number {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(18px, 3vw, 25px);
+      font-weight: 1000;
+      color: #fef08a;
+      white-space: nowrap;
     }
 
     .controls {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 8px;
       margin-bottom: 14px;
     }
@@ -133,7 +189,7 @@
     .board-shell {
       background: #004f9e;
       border-radius: 18px;
-      padding: clamp(8px, 2vw, 14px);
+      padding: clamp(7px, 1.7vw, 12px);
       box-shadow:
         inset 0 8px 18px rgba(0,0,0,0.42),
         0 6px 18px rgba(0,0,0,0.18);
@@ -169,17 +225,18 @@
       cursor: pointer;
       user-select: none;
       box-shadow:
-        inset 0 -5px 0 rgba(0,0,0,0.15),
-        inset 0 3px 0 rgba(255,255,255,0.28),
-        0 4px 7px rgba(0,0,0,0.22);
+        inset 0 -4px 0 rgba(0,0,0,0.15),
+        inset 0 2px 0 rgba(255,255,255,0.28),
+        0 3px 6px rgba(0,0,0,0.22);
       text-shadow: 0 2px 0 rgba(0,0,0,0.14);
       will-change: transform;
       -webkit-tap-highlight-color: transparent;
     }
 
     .tile.hint {
-      outline: 5px solid rgba(250, 204, 21, 0.95);
-      filter: brightness(1.08);
+      outline: 4px solid rgba(250, 204, 21, 0.95);
+      filter: brightness(1.12);
+      z-index: 3;
     }
 
     .bottom-row {
@@ -218,7 +275,7 @@
     .hidden { display: none !important; }
 
     .start-panel, .modal-card {
-      width: min(88%, 340px);
+      width: min(90%, 370px);
       background: #fff;
       color: #1f2937;
       border-radius: 22px;
@@ -261,6 +318,12 @@
       background: #38bdf8;
       color: #082f49;
       box-shadow: 0 6px 0 rgba(7, 89, 133, 0.32), inset 0 2px 0 rgba(255,255,255,0.4);
+    }
+
+    .danger-button {
+      background: #fb7185;
+      color: #7f1d1d;
+      box-shadow: 0 6px 0 rgba(127, 29, 29, 0.25), inset 0 2px 0 rgba(255,255,255,0.38);
     }
 
     .info-list {
@@ -313,7 +376,7 @@
       to { opacity: 1; transform: scale(1); }
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 620px) {
       body { align-items: flex-start; padding: 10px 0; }
       .game-body { border-radius: 18px; }
       .top-bar {
@@ -325,8 +388,15 @@
         order: -1;
       }
       .stat-box { min-height: 58px; }
-      .controls, .bottom-row { gap: 6px; }
+      .life-row {
+        grid-template-columns: 1fr;
+      }
+      .controls { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .bottom-row { gap: 6px; }
       .mode-btn, .plain-btn { font-size: 12px; padding-left: 4px; padding-right: 4px; }
+      .life-card {
+        min-height: 44px;
+      }
     }
   </style>
 </head>
@@ -341,20 +411,42 @@
 
       <div class="title-box">
         <div class="title-main">BIG PUZZLE</div>
-        <div class="title-sub" id="modeText">5×5 큰 퍼즐</div>
+        <div class="title-sub" id="modeText">4×4 퍼즐</div>
       </div>
 
       <div class="stat-box" style="text-align:right;">
         <div class="stat-label">경과 시간</div>
         <div id="timerDisplay" class="stat-value">00:00.00</div>
-        <div id="movesDisplay" class="stat-label" style="margin-top:5px;">이동 0회</div>
+        <div id="movesDisplay" class="stat-label" style="margin-top:5px;">이동 0/--회</div>
+      </div>
+    </section>
+
+    <section class="life-row" aria-label="하트와 이동 제한">
+      <div class="life-card">
+        <div class="heart-wrap">
+          <div id="heartDisplay" class="heart-icons">♥♥♥</div>
+          <div>
+            <div id="heartText" class="life-main">하트 3/3</div>
+            <div id="rechargeText" class="life-sub">가득 참</div>
+          </div>
+        </div>
+      </div>
+      <div class="life-card">
+        <div>
+          <div class="life-main">이동 제한</div>
+          <div id="limitDetail" class="life-sub">기준 -- + 여유 5</div>
+        </div>
+        <div id="limitDisplay" class="limit-number">--회</div>
       </div>
     </section>
 
     <section class="controls" aria-label="난이도 선택">
-      <button class="mode-btn" data-size="4">4×4 기본</button>
-      <button class="mode-btn active" data-size="5">5×5 큰 퍼즐</button>
-      <button class="mode-btn" data-size="6">6×6 초대형</button>
+      <button class="mode-btn active" data-size="4">4×4</button>
+      <button class="mode-btn" data-size="5">5×5</button>
+      <button class="mode-btn" data-size="6">6×6</button>
+      <button class="mode-btn" data-size="8">8×8</button>
+      <button class="mode-btn" data-size="9">9×9</button>
+      <button class="mode-btn" data-size="10">10×10</button>
     </section>
 
     <section class="board-shell">
@@ -363,8 +455,9 @@
       <div id="startOverlay" class="overlay">
         <div class="start-panel">
           <div class="emoji">🧩</div>
-          <h2>큰 퍼즐에 도전!</h2>
-          <p id="startDescription">1부터 24까지 순서대로 맞추고 마지막 칸을 비워 두세요.</p>
+          <h2>퍼즐에 도전!</h2>
+          <p id="startDescription">1부터 15까지 순서대로 맞추고 마지막 칸을 비워 두세요.</p>
+          <p id="startRuleText" style="font-weight:900;color:#0f172a;">이동 제한: 기준 16회 + 여유 5회</p>
           <button id="startBtn" class="start-button">게임 시작</button>
         </div>
       </div>
@@ -377,7 +470,27 @@
           <p id="finalTime" style="font-size:26px;font-weight:1000;color:#0284c7;margin:2px 0;">00:00.00</p>
           <p id="finalMoves" style="font-weight:900;color:#0f172a;">이동 0회</p>
           <p id="newRecordText" style="color:#ea580c;font-weight:900;"></p>
-          <button id="restartBtn" class="restart-button">다시 하기</button>
+          <button id="restartBtn" class="restart-button">새 퍼즐</button>
+        </div>
+      </div>
+
+      <div id="loseModal" class="overlay hidden">
+        <div class="modal-card">
+          <div class="emoji">💔</div>
+          <h2>실패!</h2>
+          <p id="loseText">이동 횟수를 모두 사용했어요.</p>
+          <p id="loseHeartText" style="font-weight:1000;color:#be123c;"></p>
+          <button id="loseRestartBtn" class="restart-button danger-button">다시 도전</button>
+        </div>
+      </div>
+
+      <div id="heartModal" class="overlay hidden">
+        <div class="modal-card">
+          <div class="emoji">⏳</div>
+          <h2>하트 충전 중</h2>
+          <p id="lockedHeartText">하트가 없어서 지금은 플레이할 수 없어요.</p>
+          <p id="lockedRechargeText" style="font-weight:1000;color:#0284c7;"></p>
+          <button id="lockedOkBtn" class="restart-button">확인</button>
         </div>
       </div>
 
@@ -389,8 +502,9 @@
           <ul class="info-list">
             <li><span>👆</span><span>빈 칸과 맞닿은 타일을 누르면 그 타일이 빈 칸으로 이동합니다.</span></li>
             <li><span>🔢</span><span>1부터 차례대로 정렬하고, 마지막 칸은 비워 두면 성공입니다.</span></li>
+            <li><span>🎯</span><span>퍼즐은 정해진 기준 이동 수에 여유 5회를 더한 횟수 안에 풀어야 합니다.</span></li>
+            <li><span>💔</span><span>실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다.</span></li>
             <li><span>⌨️</span><span>컴퓨터에서는 방향키로도 움직일 수 있습니다.</span></li>
-            <li><span>🏆</span><span>최고 기록은 퍼즐 크기별로 현재 기기에 저장됩니다.</span></li>
           </ul>
         </div>
       </div>
@@ -398,13 +512,13 @@
 
     <section class="bottom-row">
       <button id="hintBtn" class="plain-btn">힌트</button>
-      <button id="shuffleBtn" class="plain-btn">다시 섞기</button>
+      <button id="shuffleBtn" class="plain-btn">새 퍼즐</button>
       <button id="infoBtn" class="plain-btn">설명</button>
     </section>
 
     <div class="brand">
       ✨ PUZZLE TIME ✨
-      <small>4×4 · 5×5 · 6×6 숫자 슬라이딩 퍼즐</small>
+      <small>4×4 · 5×5 · 6×6 · 8×8 · 9×9 · 10×10 숫자 슬라이딩 퍼즐</small>
     </div>
   </main>
 
@@ -421,6 +535,14 @@
     const finalMoves = document.getElementById('finalMoves');
     const newRecordText = document.getElementById('newRecordText');
     const restartBtn = document.getElementById('restartBtn');
+    const loseModal = document.getElementById('loseModal');
+    const loseText = document.getElementById('loseText');
+    const loseHeartText = document.getElementById('loseHeartText');
+    const loseRestartBtn = document.getElementById('loseRestartBtn');
+    const heartModal = document.getElementById('heartModal');
+    const lockedHeartText = document.getElementById('lockedHeartText');
+    const lockedRechargeText = document.getElementById('lockedRechargeText');
+    const lockedOkBtn = document.getElementById('lockedOkBtn');
     const infoBtn = document.getElementById('infoBtn');
     const infoModal = document.getElementById('infoModal');
     const closeInfoBtn = document.getElementById('closeInfoBtn');
@@ -429,28 +551,59 @@
     const modeButtons = [...document.querySelectorAll('.mode-btn')];
     const modeText = document.getElementById('modeText');
     const startDescription = document.getElementById('startDescription');
+    const startRuleText = document.getElementById('startRuleText');
+    const heartDisplay = document.getElementById('heartDisplay');
+    const heartText = document.getElementById('heartText');
+    const rechargeText = document.getElementById('rechargeText');
+    const limitDisplay = document.getElementById('limitDisplay');
+    const limitDetail = document.getElementById('limitDetail');
+
+    const MAX_HEARTS = 3;
+    const HEART_REGEN_MS = 5 * 60 * 1000;
+    const MOVE_MARGIN = 5;
+
+    const baselineMovesBySize = {
+      4: 16,
+      5: 25,
+      6: 36,
+      8: 64,
+      9: 81,
+      10: 100
+    };
 
     const tilePalette = [
       '#ff5a36', '#ffb3c6', '#ffd100', '#6ed3ff', '#00bfff',
       '#8b5cf6', '#34d399', '#fb923c', '#f472b6', '#22c55e'
     ];
 
-    let size = 5;
+    let size = 4;
     let state = [];
     let tilesDOM = new Map();
     let isPlaying = false;
     let startTime = 0;
     let timerInterval = null;
+    let heartInterval = null;
     let currentTimeMs = 0;
     let moveCount = 0;
+    let minimumMoveCount = baselineMovesBySize[size];
+    let moveLimit = minimumMoveCount + MOVE_MARGIN;
     let tileStep = 0;
     let tileInner = 0;
-    let gap = 6;
+    let gap = 4;
     let audioCtx = null;
     let hintTimeout = null;
+    let solutionMoveMap = new Map();
+    let heartState = {
+      hearts: MAX_HEARTS,
+      lastHeartAt: Date.now()
+    };
 
     function storageKey() {
-      return `bigPuzzleRecord_${size}x${size}`;
+      return `bigPuzzleRecord_v3_${size}x${size}`;
+    }
+
+    function heartStorageKey() {
+      return 'bigPuzzleHeartState_v1';
     }
 
     function solvedState(n = size) {
@@ -460,12 +613,23 @@
       return arr;
     }
 
+    function serialize(arr) {
+      return arr.join(',');
+    }
+
     function formatTime(ms) {
       const totalSeconds = Math.floor(ms / 1000);
       const minutes = Math.floor(totalSeconds / 60);
       const seconds = totalSeconds % 60;
       const centiseconds = Math.floor((ms % 1000) / 10);
       return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+    }
+
+    function formatCountdown(ms) {
+      const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${String(seconds).padStart(2, '0')}`;
     }
 
     function loadBestRecord() {
@@ -498,6 +662,98 @@
       return isBetter;
     }
 
+    function loadHeartState() {
+      const raw = localStorage.getItem(heartStorageKey());
+      if (!raw) {
+        heartState = { hearts: MAX_HEARTS, lastHeartAt: Date.now() };
+        saveHeartState();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        const hearts = Number.isFinite(parsed.hearts) ? Math.max(0, Math.min(MAX_HEARTS, parsed.hearts)) : MAX_HEARTS;
+        const lastHeartAt = Number.isFinite(parsed.lastHeartAt) ? parsed.lastHeartAt : Date.now();
+        heartState = { hearts, lastHeartAt };
+      } catch {
+        heartState = { hearts: MAX_HEARTS, lastHeartAt: Date.now() };
+        saveHeartState();
+      }
+    }
+
+    function saveHeartState() {
+      localStorage.setItem(heartStorageKey(), JSON.stringify(heartState));
+    }
+
+    function syncHearts() {
+      const now = Date.now();
+      if (heartState.hearts < MAX_HEARTS) {
+        const gained = Math.floor((now - heartState.lastHeartAt) / HEART_REGEN_MS);
+        if (gained > 0) {
+          heartState.hearts = Math.min(MAX_HEARTS, heartState.hearts + gained);
+          if (heartState.hearts >= MAX_HEARTS) {
+            heartState.lastHeartAt = now;
+          } else {
+            heartState.lastHeartAt += gained * HEART_REGEN_MS;
+          }
+          saveHeartState();
+        }
+      }
+      updateHeartUI();
+    }
+
+    function getTimeUntilNextHeart() {
+      if (heartState.hearts >= MAX_HEARTS) return 0;
+      return Math.max(0, HEART_REGEN_MS - (Date.now() - heartState.lastHeartAt));
+    }
+
+    function updateHeartUI() {
+      const hearts = Math.max(0, Math.min(MAX_HEARTS, heartState.hearts));
+      heartDisplay.textContent = '♥'.repeat(hearts) + '♡'.repeat(MAX_HEARTS - hearts);
+      heartText.textContent = `하트 ${hearts}/${MAX_HEARTS}`;
+
+      if (hearts >= MAX_HEARTS) {
+        rechargeText.textContent = '가득 참';
+      } else {
+        rechargeText.textContent = `다음 하트 ${formatCountdown(getTimeUntilNextHeart())}`;
+      }
+
+      if (!isPlaying && !startOverlay.classList.contains('hidden')) {
+        startBtn.textContent = hearts <= 0 ? '하트 충전 중' : '게임 시작';
+      }
+
+      if (!heartModal.classList.contains('hidden')) {
+        lockedHeartText.textContent = hearts <= 0
+          ? '하트가 없어서 지금은 플레이할 수 없어요.'
+          : `하트가 ${hearts}개 충전됐어요.`;
+        lockedRechargeText.textContent = hearts <= 0
+          ? `다음 하트까지 ${formatCountdown(getTimeUntilNextHeart())}`
+          : '이제 다시 플레이할 수 있어요.';
+      }
+    }
+
+    function consumeHeart() {
+      syncHearts();
+      if (heartState.hearts <= 0) return false;
+
+      const now = Date.now();
+      if (heartState.hearts >= MAX_HEARTS) {
+        heartState.lastHeartAt = now;
+      }
+      heartState.hearts -= 1;
+      saveHeartState();
+      syncHearts();
+      return true;
+    }
+
+    function updateMoveRuleText() {
+      minimumMoveCount = baselineMovesBySize[size];
+      moveLimit = minimumMoveCount + MOVE_MARGIN;
+      limitDisplay.textContent = `${moveLimit - moveCount}회 남음`;
+      limitDetail.textContent = `기준 ${minimumMoveCount} + 여유 ${MOVE_MARGIN}`;
+      movesDisplay.textContent = `이동 ${moveCount}/${moveLimit}회`;
+      startRuleText.textContent = `이동 제한: 기준 ${minimumMoveCount}회 + 여유 ${MOVE_MARGIN}회`;
+    }
+
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -522,6 +778,23 @@
         return;
       }
 
+      if (type === 'lose') {
+        [220, 185, 147].forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.09);
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime + i * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + i * 0.09 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.09 + 0.18);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + i * 0.09);
+          osc.stop(audioCtx.currentTime + i * 0.09 + 0.2);
+        });
+        return;
+      }
+
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
@@ -536,23 +809,28 @@
     }
 
     function updateModeText() {
-      const label = size === 4 ? '4×4 기본 퍼즐' : size === 5 ? '5×5 큰 퍼즐' : '6×6 초대형 퍼즐';
+      const label = `${size}×${size} 퍼즐`;
       modeText.textContent = label;
       startDescription.textContent = `1부터 ${size * size - 1}까지 순서대로 맞추고 마지막 칸을 비워 두세요.`;
       modeButtons.forEach(btn => btn.classList.toggle('active', Number(btn.dataset.size) === size));
+      updateMoveRuleText();
     }
 
     function calculateBoardSize() {
-      const shellPadding = window.innerWidth <= 520 ? 16 : 28;
-      const maxByViewport = Math.min(window.innerWidth * 0.86, 540);
-      const maxByGame = Math.min(document.querySelector('.game-body').clientWidth - shellPadding * 2, 540);
-      const boardPx = Math.floor(Math.max(280, Math.min(maxByViewport, maxByGame)));
-      gap = size >= 6 ? 5 : 6;
+      const gameBody = document.querySelector('.game-body');
+      const shellPadding = window.innerWidth <= 620 ? 16 : 24;
+      const maxByViewport = Math.min(window.innerWidth * 0.9, 620);
+      const maxByGame = Math.min(gameBody.clientWidth - shellPadding * 2, 620);
+      const boardPx = Math.floor(Math.max(300, Math.min(maxByViewport, maxByGame)));
+
+      gap = size >= 10 ? 3 : 4;
       tileStep = (boardPx + gap) / size;
       tileInner = tileStep - gap;
+
       boardEl.style.width = `${boardPx}px`;
       boardEl.style.height = `${boardPx}px`;
       document.documentElement.style.setProperty('--gap', `${gap}px`);
+      document.documentElement.style.setProperty('--tile-radius', `${size >= 10 ? 6 : 7}px`);
     }
 
     function createTiles() {
@@ -564,7 +842,7 @@
         tile.className = 'tile';
         tile.textContent = num;
         tile.style.backgroundColor = tilePalette[(num - 1) % tilePalette.length];
-        tile.style.fontSize = `${Math.max(16, tileInner * (size >= 6 ? 0.35 : 0.42))}px`;
+        tile.style.fontSize = `${getTileFontSize()}px`;
         tile.style.width = `${tileInner}px`;
         tile.style.height = `${tileInner}px`;
         tile.addEventListener('pointerdown', (e) => {
@@ -576,6 +854,15 @@
       }
     }
 
+    function getTileFontSize() {
+      if (size >= 10) return Math.max(10, Math.min(18, tileInner * 0.34));
+      if (size >= 9) return Math.max(11, Math.min(19, tileInner * 0.36));
+      if (size >= 8) return Math.max(12, Math.min(22, tileInner * 0.38));
+      if (size >= 6) return Math.max(15, Math.min(30, tileInner * 0.40));
+      if (size >= 5) return Math.max(18, Math.min(36, tileInner * 0.42));
+      return Math.max(22, Math.min(46, tileInner * 0.44));
+    }
+
     function renderBoard(animate = true) {
       state.forEach((num, index) => {
         if (num === 0) return;
@@ -584,7 +871,7 @@
         const col = index % size;
         tile.style.width = `${tileInner}px`;
         tile.style.height = `${tileInner}px`;
-        tile.style.fontSize = `${Math.max(16, tileInner * (size >= 6 ? 0.35 : 0.42))}px`;
+        tile.style.fontSize = `${getTileFontSize()}px`;
         tile.style.transition = animate ? 'transform 0.14s ease-out' : 'none';
         tile.style.transform = `translate(${col * tileStep}px, ${row * tileStep}px)`;
       });
@@ -592,11 +879,11 @@
 
     function resetForCurrentSize() {
       stopTimer();
+      clearHint();
       isPlaying = false;
       currentTimeMs = 0;
       moveCount = 0;
       timerDisplay.textContent = '00:00.00';
-      movesDisplay.textContent = '이동 0회';
       state = solvedState();
       updateModeText();
       calculateBoardSize();
@@ -604,8 +891,11 @@
       renderBoard(false);
       loadBestRecord();
       winModal.classList.add('hidden');
+      loseModal.classList.add('hidden');
+      heartModal.classList.add('hidden');
       infoModal.classList.add('hidden');
       startOverlay.classList.remove('hidden');
+      syncHearts();
     }
 
     function startTimer() {
@@ -632,19 +922,92 @@
       return neighbors;
     }
 
+    function getManhattan(indexA, indexB) {
+      const rowA = Math.floor(indexA / size);
+      const colA = indexA % size;
+      const rowB = Math.floor(indexB / size);
+      const colB = indexB % size;
+      return Math.abs(rowA - rowB) + Math.abs(colA - colB);
+    }
+
     function shuffleBoard() {
       state = solvedState();
-      let prevZeroIndex = -1;
-      const shuffleMoves = size === 4 ? 170 : size === 5 ? 320 : 520;
+      solutionMoveMap = new Map();
 
-      for (let i = 0; i < shuffleMoves; i++) {
+      const targetMoves = baselineMovesBySize[size];
+      const seen = new Set([serialize(state)]);
+      let prevZeroIndex = -1;
+      let targetZeroIndex = Math.floor(Math.random() * state.length);
+
+      for (let i = 0; i < targetMoves; i++) {
         const zeroIdx = state.indexOf(0);
-        let neighbors = getNeighbors(zeroIdx).filter(idx => idx !== prevZeroIndex);
-        if (neighbors.length === 0) neighbors = getNeighbors(zeroIdx);
-        const randomIdx = neighbors[Math.floor(Math.random() * neighbors.length)];
-        state[zeroIdx] = state[randomIdx];
-        state[randomIdx] = 0;
-        prevZeroIndex = zeroIdx;
+
+        if (zeroIdx === targetZeroIndex || i % Math.max(10, size + 2) === 0) {
+          targetZeroIndex = Math.floor(Math.random() * state.length);
+        }
+
+        let candidates = getNeighbors(zeroIdx)
+          .filter(idx => idx !== prevZeroIndex)
+          .map(idx => {
+            const movingNumber = state[idx];
+            const preview = state.slice();
+            preview[zeroIdx] = movingNumber;
+            preview[idx] = 0;
+            return {
+              idx,
+              movingNumber,
+              key: serialize(preview),
+              distance: getManhattan(idx, targetZeroIndex),
+              random: Math.random()
+            };
+          })
+          .filter(candidate => !seen.has(candidate.key));
+
+        if (candidates.length === 0) {
+          candidates = getNeighbors(zeroIdx)
+            .filter(idx => idx !== prevZeroIndex)
+            .map(idx => {
+              const movingNumber = state[idx];
+              const preview = state.slice();
+              preview[zeroIdx] = movingNumber;
+              preview[idx] = 0;
+              return {
+                idx,
+                movingNumber,
+                key: serialize(preview),
+                distance: getManhattan(idx, targetZeroIndex),
+                random: Math.random()
+              };
+            });
+        }
+
+        if (candidates.length === 0) {
+          candidates = getNeighbors(zeroIdx).map(idx => {
+            const movingNumber = state[idx];
+            const preview = state.slice();
+            preview[zeroIdx] = movingNumber;
+            preview[idx] = 0;
+            return {
+              idx,
+              movingNumber,
+              key: serialize(preview),
+              distance: getManhattan(idx, targetZeroIndex),
+              random: Math.random()
+            };
+          });
+        }
+
+        candidates.sort((a, b) => (a.distance - b.distance) || (a.random - b.random));
+        const chosen = candidates[Math.random() < 0.76 ? 0 : Math.floor(Math.random() * candidates.length)];
+        const zeroBefore = zeroIdx;
+
+        state[zeroIdx] = chosen.movingNumber;
+        state[chosen.idx] = 0;
+
+        const afterKey = serialize(state);
+        solutionMoveMap.set(afterKey, chosen.movingNumber);
+        seen.add(afterKey);
+        prevZeroIndex = zeroBefore;
       }
 
       if (isSolved()) shuffleBoard();
@@ -671,14 +1034,16 @@
       const movingNumber = state[tileIdx];
       state[zeroIdx] = movingNumber;
       state[tileIdx] = 0;
+
       if (countMove) {
         moveCount++;
-        movesDisplay.textContent = `이동 ${moveCount}회`;
         clearHint();
         playTone('move');
+        updateMoveRuleText();
       }
+
       renderBoard(true);
-      checkWin();
+      checkResult();
     }
 
     function isSolved() {
@@ -688,49 +1053,165 @@
       return state[state.length - 1] === 0;
     }
 
-    function checkWin() {
-      if (!isPlaying || !isSolved()) return;
+    function checkResult() {
+      if (!isPlaying) return;
+
+      if (isSolved()) {
+        winGame();
+        return;
+      }
+
+      if (moveCount >= moveLimit) {
+        failGame();
+      }
+    }
+
+    function winGame() {
       isPlaying = false;
       stopTimer();
       playTone('win');
+
       const isNewRecord = saveRecordIfBetter(currentTimeMs, moveCount);
       finalTime.textContent = formatTime(currentTimeMs);
-      finalMoves.textContent = `이동 ${moveCount}회`;
+      finalMoves.textContent = `이동 ${moveCount}/${moveLimit}회`;
       newRecordText.textContent = isNewRecord ? '🏆 새로운 최고 기록!' : '';
+
       winModal.classList.remove('hidden');
+      loseModal.classList.add('hidden');
+      startOverlay.classList.add('hidden');
+    }
+
+    function failGame() {
+      isPlaying = false;
+      stopTimer();
+      playTone('lose');
+      consumeHeart();
+
+      loseText.textContent = `이동 제한 ${moveLimit}회를 모두 사용했어요.`;
+      if (heartState.hearts > 0) {
+        loseHeartText.textContent = `남은 하트 ${heartState.hearts}/${MAX_HEARTS}`;
+        loseRestartBtn.textContent = '다시 도전';
+      } else {
+        loseHeartText.textContent = `남은 하트 0/${MAX_HEARTS} · 다음 하트 ${formatCountdown(getTimeUntilNextHeart())}`;
+        loseRestartBtn.textContent = '하트 충전 기다리기';
+      }
+
+      loseModal.classList.remove('hidden');
+      winModal.classList.add('hidden');
+      startOverlay.classList.add('hidden');
+    }
+
+    function canStartGame() {
+      syncHearts();
+      if (heartState.hearts <= 0) {
+        showHeartLocked();
+        return false;
+      }
+      return true;
     }
 
     function startGame() {
       initAudio();
+      if (!canStartGame()) return;
+
       stopTimer();
+      clearHint();
       shuffleBoard();
+
       currentTimeMs = 0;
       moveCount = 0;
       timerDisplay.textContent = '00:00.00';
-      movesDisplay.textContent = '이동 0회';
+      updateMoveRuleText();
+
       winModal.classList.add('hidden');
+      loseModal.classList.add('hidden');
+      heartModal.classList.add('hidden');
       infoModal.classList.add('hidden');
       startOverlay.classList.add('hidden');
+
       isPlaying = true;
       startTimer();
     }
 
+    function showHeartLocked() {
+      syncHearts();
+      lockedHeartText.textContent = '하트가 없어서 지금은 플레이할 수 없어요.';
+      lockedRechargeText.textContent = `다음 하트까지 ${formatCountdown(getTimeUntilNextHeart())}`;
+      heartModal.classList.remove('hidden');
+      winModal.classList.add('hidden');
+      loseModal.classList.add('hidden');
+      infoModal.classList.add('hidden');
+    }
+
     function clearHint() {
       if (hintTimeout) clearTimeout(hintTimeout);
+      hintTimeout = null;
       tilesDOM.forEach(tile => tile.classList.remove('hint'));
+    }
+
+    function getRecommendedHintTile() {
+      const currentKey = serialize(state);
+      if (solutionMoveMap.has(currentKey)) return solutionMoveMap.get(currentKey);
+
+      const maxDepth = MOVE_MARGIN;
+      const queue = [{ board: state.slice(), depth: 0, firstMove: null }];
+      const visited = new Set([currentKey]);
+      let head = 0;
+
+      while (head < queue.length) {
+        const item = queue[head++];
+
+        if (item.depth >= maxDepth) continue;
+
+        const zeroIdx = item.board.indexOf(0);
+        const neighbors = getNeighbors(zeroIdx);
+
+        for (const idx of neighbors) {
+          const next = item.board.slice();
+          const movingNumber = next[idx];
+          next[zeroIdx] = movingNumber;
+          next[idx] = 0;
+
+          const key = serialize(next);
+          if (visited.has(key)) continue;
+          visited.add(key);
+
+          const firstMove = item.firstMove ?? movingNumber;
+          if (solutionMoveMap.has(key) || isSolvedArray(next)) {
+            return firstMove;
+          }
+
+          queue.push({
+            board: next,
+            depth: item.depth + 1,
+            firstMove
+          });
+        }
+      }
+
+      const zeroIdx = state.indexOf(0);
+      const candidates = getNeighbors(zeroIdx);
+      const recommendedIdx = candidates[Math.floor(Math.random() * candidates.length)];
+      return state[recommendedIdx];
+    }
+
+    function isSolvedArray(arr) {
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i] !== i + 1) return false;
+      }
+      return arr[arr.length - 1] === 0;
     }
 
     function showHint() {
       clearHint();
       if (!isPlaying) return;
-      const zeroIdx = state.indexOf(0);
-      const candidates = getNeighbors(zeroIdx);
-      const recommendedIdx = candidates[Math.floor(Math.random() * candidates.length)];
-      const num = state[recommendedIdx];
+
+      const num = getRecommendedHintTile();
       const tile = tilesDOM.get(num);
       if (!tile) return;
+
       tile.classList.add('hint');
-      hintTimeout = setTimeout(clearHint, 1200);
+      hintTimeout = setTimeout(clearHint, 1300);
     }
 
     function moveByKeyboard(key) {
@@ -757,6 +1238,14 @@
 
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
+    loseRestartBtn.addEventListener('click', () => {
+      if (heartState.hearts <= 0) {
+        showHeartLocked();
+        return;
+      }
+      startGame();
+    });
+    lockedOkBtn.addEventListener('click', () => heartModal.classList.add('hidden'));
     shuffleBtn.addEventListener('click', startGame);
     hintBtn.addEventListener('click', showHint);
     infoBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
@@ -774,6 +1263,9 @@
       renderBoard(false);
     });
 
+    loadHeartState();
+    syncHearts();
+    heartInterval = setInterval(syncHearts, 1000);
     resetForCurrentSize();
   </script>
 </body>
