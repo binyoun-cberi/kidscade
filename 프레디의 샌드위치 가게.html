@@ -1,887 +1,198 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🥪 우주 샌드위치 가게 - 도형의 넓이</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-
-        body {
-            font-family: 'Jua', sans-serif;
-            background-color: #0b1026; /* 심우주 배경 */
-            color: #fff;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
-
-        /* 우주 배경 별 반짝임 효과 */
-        .stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 40px 70px, rgba(123,223,242,0.8), rgba(0,0,0,0)),
-                radial-gradient(3px 3px at 50px 160px, rgba(255,209,102,0.8), rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-                radial-gradient(2px 2px at 130px 80px, rgba(123,223,242,0.8), rgba(0,0,0,0)),
-                radial-gradient(3px 3px at 160px 120px, rgba(255,209,102,0.8), rgba(0,0,0,0));
-            background-repeat: repeat;
-            background-size: 200px 200px;
-            animation: twinkle 4s infinite;
-        }
-        @keyframes twinkle {
-            0% { opacity: 0.8; }
-            50% { opacity: 0.3; }
-            100% { opacity: 0.8; }
-        }
-
-        /* 외계인 애니메이션 (패널 내부용) */
-        .alien-container {
-            transition: all 0.5s ease-in-out;
-        }
-        
-        @keyframes popInAlien {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes flyOutSuccess {
-            from { transform: translateY(0) scale(1); opacity: 1; }
-            to { transform: translateY(-100px) scale(0.5); opacity: 0; }
-        }
-        @keyframes shakeOutFail {
-            0% { transform: translateX(0); opacity: 1; }
-            20% { transform: translateX(-10px); }
-            40% { transform: translateX(10px); }
-            60% { transform: translateX(-10px); opacity: 0.5; }
-            80% { transform: translateX(10px); }
-            100% { transform: translateX(0) scale(0.8); opacity: 0; }
-        }
-
-        .alien-enter { animation: popInAlien 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .alien-exit-success { animation: flyOutSuccess 0.6s forwards; }
-        .alien-exit-fail { animation: shakeOutFail 0.6s forwards; }
-
-        /* 말풍선 꼬리 (위쪽 방향) */
-        .speech-bubble-up::after {
-            content: '';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            border-width: 0 12px 12px;
-            border-style: solid;
-            border-color: transparent transparent white transparent;
-            transform: translateX(-50%);
-        }
-
-        /* 스크롤바 커스텀 */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-
-        /* 모달 팝업 애니메이션 */
-        .modal-pop {
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .fraction { color: #ffd166; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>프레디의 샌드위치 가게 - 도형 넓이</title>
+<style>
+:root{
+  --bg:#080d22;
+  --bg2:#11183a;
+  --panel:#171f46;
+  --panel2:#202a5a;
+  --line:#344176;
+  --text:#f8fafc;
+  --muted:#a9b4d8;
+  --yellow:#ffd166;
+  --orange:#ff9f1c;
+  --green:#46d783;
+  --red:#ff5d73;
+  --blue:#7bdff2;
+  --purple:#b88cff;
+  --shadow:0 18px 45px rgba(0,0,0,.35);
+  --soft:0 8px 18px rgba(0,0,0,.24);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;touch-action:manipulation}
+button,select{font-family:inherit}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(circle at 15% 12%,rgba(123,223,242,.24),transparent 28%),
+  radial-gradient(circle at 85% 18%,rgba(255,209,102,.18),transparent 24%),
+  radial-gradient(circle at 50% 100%,rgba(184,140,255,.2),transparent 30%),
+  linear-gradient(160deg,#060817,#0c1436 55%,#101735)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.9;background-image:
+  radial-gradient(1.5px 1.5px at 40px 60px,rgba(255,255,255,.9),transparent),
+  radial-gradient(2px 2px at 130px 140px,rgba(123,223,242,.8),transparent),
+  radial-gradient(1.5px 1.5px at 230px 80px,rgba(255,209,102,.8),transparent),
+  radial-gradient(1px 1px at 310px 180px,rgba(255,255,255,.7),transparent);background-size:340px 240px;animation:stars 9s ease-in-out infinite alternate}
+@keyframes stars{from{opacity:.55;transform:translateY(0)}to{opacity:.95;transform:translateY(-8px)}}
+.hidden{display:none!important}.flex{display:flex!important}
+.screen{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}.blur{background:rgba(0,0,0,.68);backdrop-filter:blur(10px)}
+.card{background:linear-gradient(180deg,rgba(32,42,90,.98),rgba(19,27,63,.98));border:2px solid rgba(255,209,102,.45);border-radius:28px;box-shadow:var(--shadow)}
+.menu-card{width:min(980px,94vw);padding:34px;text-align:center}.title{margin:0;font-size:clamp(40px,7vw,76px);line-height:1.05;letter-spacing:-1px;color:var(--yellow);text-shadow:0 0 28px rgba(255,209,102,.35),0 5px 0 rgba(0,0,0,.3)}
+.subtitle{max-width:720px;margin:16px auto 26px;color:#d8def7;font-size:clamp(16px,2.2vw,21px);line-height:1.6}.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:26px auto;max-width:680px}.vault,.tips{background:rgba(5,9,26,.62);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:20px;text-align:left}.vault strong{display:block;font-size:36px;color:var(--green);margin-top:6px}.tips p{margin:7px 0;color:#cdd6ff;line-height:1.45}.btn-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}.btn{border:0;border-radius:18px;padding:15px 24px;font-weight:900;font-size:18px;cursor:pointer;box-shadow:0 8px 0 rgba(0,0,0,.26),0 14px 22px rgba(0,0,0,.18);transition:.12s transform,.12s box-shadow,.15s filter}.btn:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(0,0,0,.25),0 6px 12px rgba(0,0,0,.18)}.btn:hover{filter:brightness(1.08)}.primary{background:linear-gradient(180deg,#ffe082,#ffb703);color:#201000}.shopbtn{background:linear-gradient(180deg,#c9a8ff,#8b5cf6);color:white}.ghostbtn{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#eaf1ff;box-shadow:none}.danger{background:#81192a;color:white}.green{background:linear-gradient(180deg,#67e8a5,#22c55e);color:#06160b}.blue{background:linear-gradient(180deg,#7bdff2,#1d9bd1);color:#061018}.red{background:linear-gradient(180deg,#ff8798,#ef476f);color:white}
+#screen-game{position:absolute;inset:0;display:none;flex-direction:column;z-index:10}.topbar{height:72px;background:rgba(11,16,38,.92);border-bottom:1px solid rgba(255,255,255,.09);display:flex;justify-content:space-between;align-items:center;padding:10px 18px;box-shadow:var(--soft)}.hud-left,.hud-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.hud-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font-weight:900;color:#e8edff}.hud-value{color:var(--yellow);font-size:21px}.money{color:var(--green)}.time-danger{color:var(--red)!important;animation:pulse .7s infinite alternate}@keyframes pulse{to{transform:scale(1.08)}}
+.progress{position:absolute;left:0;right:0;top:72px;height:6px;background:rgba(255,255,255,.09);z-index:30}.progress>div{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .25s linear}
+.game-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(480px,1fr) 410px;gap:0}.workspace{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;min-width:0;overflow:hidden}.board-tools{width:min(690px,100%);display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.tool-group{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.select-wrap{display:flex;gap:8px;align-items:center;background:rgba(9,14,38,.72);border:1px solid rgba(123,223,242,.22);padding:10px 12px;border-radius:16px;color:#dfe7ff;font-weight:900}select{background:#090f2a;color:white;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 10px;font-weight:900;outline:none}#board{width:min(690px,calc(100vw - 455px));height:min(690px,calc(100vh - 210px));max-width:690px;max-height:690px;aspect-ratio:1/1;background:#101735;border:3px solid rgba(123,223,242,.5);border-radius:28px;box-shadow:0 0 40px rgba(123,223,242,.12),var(--shadow);touch-action:none;cursor:crosshair}.board-bottom{width:min(690px,100%);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:12px}.edit-actions{display:flex;gap:10px}.mini-btn{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#eef4ff;border-radius:14px;padding:12px 14px;font-weight:900;cursor:pointer}.mini-btn:active{transform:translateY(2px)}.area-card{display:flex;align-items:center;gap:10px;justify-content:center;background:rgba(5,9,26,.74);border:1px solid rgba(123,223,242,.28);border-radius:17px;padding:12px 18px;font-weight:900}.area-card span:first-child{color:var(--muted)}#area-now{font-size:25px;color:var(--blue)}
+.side{background:linear-gradient(180deg,#171f46,#101735);border-left:4px solid var(--yellow);display:flex;flex-direction:column;min-height:0;box-shadow:-10px 0 28px rgba(0,0,0,.28)}.customer{padding:18px;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.16)}.alien-wrap{text-align:center}.alien{font-size:72px;filter:drop-shadow(0 10px 8px rgba(0,0,0,.45));animation:bob 1.6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-8px)}}.order-box{position:relative;background:white;color:#111827;border-radius:20px;padding:17px 15px;font-size:20px;line-height:1.35;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.2)}.order-box:before{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:12px solid white}.order-chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#fef3c7;color:#92400e}.helper{margin-top:14px;display:grid;gap:8px}.helper-line{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;color:#d8e1ff;font-size:14px;line-height:1.35}.helper-line b{color:var(--yellow)}.hint-box{margin-top:10px;background:rgba(123,223,242,.08);border:1px dashed rgba(123,223,242,.38);border-radius:14px;padding:10px 12px;color:#dff8ff;line-height:1.38;font-weight:750}.stock-panel{padding:18px;flex:1;min-height:0;overflow:auto}.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:10px;color:var(--yellow);font-size:19px;font-weight:900}.small{font-size:13px;color:var(--muted);font-weight:700}.toppings{display:grid;grid-template-columns:1fr 1fr;gap:10px}.topping{position:relative;min-height:96px;border-radius:16px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;cursor:pointer;transition:.12s}.topping:hover{background:rgba(255,255,255,.1)}.topping.selected{border-color:var(--yellow);box-shadow:0 0 18px rgba(255,209,102,.28);transform:scale(1.03)}.topping.disabled{opacity:.38;filter:grayscale(.8);cursor:not-allowed}.topping .emoji{font-size:32px}.topping .name{font-size:13px;font-weight:900;text-align:center;line-height:1.15}.badge{position:absolute;right:-5px;top:-7px;background:#2563eb;border:2px solid #0c1436;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900}.disabled .badge{background:#ef4444}.serve-panel{padding:16px;background:rgba(0,0,0,.35);border-top:1px solid rgba(255,255,255,.08);display:grid;gap:10px}.serve-panel .btn{width:100%;font-size:22px}.feedback{min-height:58px;border-radius:15px;padding:10px 12px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.09);color:#dbe7ff;font-weight:800;line-height:1.35}.feedback.good{border-color:rgba(70,215,131,.6);background:rgba(70,215,131,.12);color:#dcffe9}.feedback.bad{border-color:rgba(255,93,115,.6);background:rgba(255,93,115,.12);color:#ffe3e7}.shake{animation:shake .35s}@keyframes shake{25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}.fly{animation:fly .55s forwards}@keyframes fly{to{transform:translateY(-75px) scale(.55);opacity:0}}.enter{animation:enter .35s cubic-bezier(.2,1.2,.2,1)}@keyframes enter{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+.shop-screen{position:absolute;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:34px 16px;background:rgba(5,9,26,.92);backdrop-filter:blur(10px)}.shop-card{width:min(1000px,96vw);padding:24px}.shop-head{display:flex;justify-content:space-between;gap:18px;align-items:center;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:18px;margin-bottom:18px}.shop-head h2{margin:0;font-size:42px;color:var(--purple)}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.shop-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:18px}.shop-item h3{margin:0 0 6px;font-size:22px}.shop-item p{margin:0;color:var(--muted);line-height:1.35}.shop-item button{min-width:126px}.locked{opacity:.45;filter:grayscale(.8)}
+.modal{position:absolute;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);padding:20px}.modal-card{width:min(460px,94vw);padding:26px;text-align:center}.modal-card h2{margin:0 0 10px;color:var(--yellow);font-size:40px}.summary{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;margin:18px 0;text-align:left}.summary-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:20px;font-weight:900}.toast{position:fixed;z-index:200;top:92px;left:50%;transform:translate(-50%,-20px) scale(.95);opacity:0;pointer-events:none;transition:.22s;max-width:min(560px,92vw);text-align:center;border-radius:999px;padding:14px 22px;font-weight:900;font-size:18px;box-shadow:var(--shadow)}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.info{background:#2563eb}.toast.good{background:#16a34a}.toast.bad{background:#dc2626}.confetti{position:absolute;width:10px;height:10px;border-radius:3px;pointer-events:none;animation:confetti .7s ease-out forwards}@keyframes confetti{to{transform:translate(var(--x),var(--y)) rotate(420deg);opacity:0}}
+@media(max-width:960px){body{overflow:auto}.screen{position:fixed}.topbar{height:auto;min-height:70px;align-items:flex-start}.progress{top:70px}.game-body{display:flex;flex-direction:column;overflow:auto}.workspace{min-height:560px;justify-content:flex-start;padding:14px}.board-tools{flex-direction:column;align-items:stretch}.tool-group{justify-content:space-between}.select-wrap{flex:1;justify-content:center}#board{width:min(94vw,560px);height:min(94vw,560px)}.board-bottom{grid-template-columns:1fr}.edit-actions{justify-content:center}.side{border-left:0;border-top:4px solid var(--yellow);min-height:auto}.customer{padding:14px}.alien{font-size:56px}.order-box{font-size:17px}.menu-grid,.shop-grid{grid-template-columns:1fr}.menu-card{padding:24px 16px}.shop-head{flex-direction:column;text-align:center}.hud-left,.hud-right{gap:6px}.hud-pill{font-size:13px;padding:7px 9px}.hud-value{font-size:17px}}
+@media(max-width:540px){.title{font-size:40px}.btn{width:100%}.btn-row{flex-direction:column}.toppings{grid-template-columns:1fr}.topbar{padding:8px}.hud-left,.hud-right{width:100%;justify-content:space-between}.topbar{flex-direction:column}.progress{top:102px}.workspace{padding-top:28px}.tool-group{flex-direction:column}.select-wrap{width:100%}.shop-item{grid-template-columns:1fr}.shop-item button{width:100%}}
+</style>
 </head>
-<body class="w-screen h-screen flex flex-col relative select-none">
-    <div class="stars"></div>
-
-    <!-- MAIN MENU -->
-    <div id="screen-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-        <h1 class="text-6xl text-yellow-400 mb-4 text-center drop-shadow-[0_0_15px_#f59e0b]">🥪 우주 샌드위치 가게 🛸</h1>
-        <p class="text-xl mb-8 text-gray-300 max-w-lg text-center leading-relaxed">
-            외계 손님들은 정확한 넓이의 샌드위치를 원합니다!<br>
-            도형의 넓이를 계산하고 재료를 올려 판매하세요.
-        </p>
-        <div class="bg-gray-800 p-6 rounded-xl border-2 border-yellow-500 mb-8 text-center w-80 shadow-[0_0_20px_rgba(255,209,102,0.2)]">
-            <h2 class="text-2xl text-yellow-400 mb-2">가게 금고</h2>
-            <p class="text-4xl text-green-400 font-bold mb-2"><span id="menu-money">0</span> ₩</p>
-            <p class="text-lg text-gray-400">현재 Day: <span id="menu-day" class="text-white">1</span></p>
-        </div>
-        <div class="flex gap-4">
-            <button onclick="startGame()" class="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all transform hover:scale-105 active:scale-95">
-                영업 시작 (Day <span id="btn-day">1</span>)
-            </button>
-            <button onclick="showShop()" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-2xl rounded-full font-bold shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all transform hover:scale-105 active:scale-95">
-                🛒 재료 상점
-            </button>
-        </div>
-        <button onclick="openResetModal()" class="mt-10 px-6 py-2 bg-red-900/80 hover:bg-red-700 text-gray-300 rounded-full text-sm transition-all border border-red-700">
-            🔄 데이터 초기화
-        </button>
+<body>
+<div id="screen-menu" class="screen blur">
+  <section class="menu-card card">
+    <h1 class="title">🥪 프레디의 샌드위치 가게</h1>
+    <p class="subtitle">외계 손님이 원하는 <b style="color:var(--yellow)">도형 넓이</b>만큼 샌드위치를 잘라 주세요.<br>모눈 위에 꼭짓점을 찍고, 재료와 단위까지 맞히면 프레디가 돈을 벌어요!</p>
+    <div class="menu-grid">
+      <div class="vault"><span>가게 금고</span><strong><span id="menu-money">0</span> ₩</strong><p>현재 DAY <b id="menu-day">1</b> · 클레임 쿠폰 <b id="menu-shields">0</b>개</p></div>
+      <div class="tips"><p>■ 사각형은 <b>대각선 꼭짓점 2개</b></p><p>▲ 삼각형은 <b>꼭짓점 3개</b></p><p>💡 힌트는 돈을 깎지 않고, 식을 보여줘요.</p></div>
     </div>
-
-    <!-- SHOP SCREEN -->
-    <div id="screen-shop" class="absolute inset-0 z-50 hidden flex-col items-center justify-start py-10 bg-[#0b1026]/95 backdrop-blur-md overflow-y-auto custom-scrollbar">
-        <div class="w-full max-w-4xl px-4">
-            <div class="flex justify-between items-center mb-8 border-b-2 border-gray-700 pb-4">
-                <h1 class="text-4xl md:text-5xl text-purple-400 font-bold">🛒 우주 식자재 마트</h1>
-                <div class="text-right">
-                    <p class="text-lg md:text-xl text-gray-300">보유 금액</p>
-                    <p class="text-2xl md:text-3xl text-green-400 font-bold"><span id="shop-money">0</span> ₩</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="shop-items">
-                <!-- Shop items injected via JS -->
-            </div>
-            <div class="mt-10 text-center pb-10">
-                <button onclick="hideShop()" class="px-10 py-3 bg-gray-600 hover:bg-gray-500 text-white text-xl rounded-full transition-all">
-                    가게로 돌아가기
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- GAME SCREEN -->
-    <div id="screen-game" class="flex-1 flex flex-col hidden h-full">
-        <!-- Top HUD -->
-        <div class="h-16 bg-[#0e142e] border-b border-gray-700/80 flex justify-between items-center px-4 md:px-8 shrink-0 z-30 shadow-md">
-            <div class="flex items-center gap-4">
-                <div class="text-xl md:text-2xl text-yellow-400 font-bold">DAY <span id="hud-day">1</span></div>
-                <div class="bg-gray-800/80 rounded-full px-3 md:px-4 py-1 flex items-center gap-2 border border-gray-600 shadow-inner">
-                    <span>⏱️</span>
-                    <span id="hud-time" class="text-lg md:text-xl w-12 text-center text-yellow-400">02:00</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 md:gap-6">
-                <div class="bg-gray-800/80 rounded-full px-3 md:px-4 py-1 flex items-center gap-2 border border-gray-600 shadow-inner" title="클레임 방어권">
-                    <span>🛡️</span>
-                    <span id="hud-shields" class="text-lg md:text-xl text-blue-300">0</span>
-                </div>
-                <div class="text-2xl md:text-3xl text-green-400 font-bold tracking-wider">
-                    <span id="hud-money">0</span> ₩
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-            
-            <!-- Left: Canvas Area (Workspace) -->
-            <div class="flex-1 p-4 lg:p-8 flex flex-col items-center justify-center relative overflow-y-auto custom-scrollbar">
-                
-                <!-- 컨트롤 상단 (모눈 & 단위) -->
-                <div class="flex w-full max-w-[600px] justify-between mb-4 text-sm md:text-base text-gray-200 bg-gray-800/80 px-5 py-3 rounded-2xl border border-gray-600 shadow-lg backdrop-blur-sm">
-                    <div class="flex gap-2 items-center">
-                        <label class="font-bold">모눈 크기:</label>
-                        <select id="gridSize" class="bg-gray-900 text-white rounded-lg px-2 py-1 border border-gray-600 focus:outline-none focus:border-yellow-400 transition-colors cursor-pointer">
-                            <option value="6">6 × 6</option>
-                            <option value="8">8 × 8</option>
-                            <option value="10">10 × 10</option>
-                            <option value="12" selected>12 × 12</option>
-                            <option value="15">15 × 15</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-2 items-center">
-                        <label class="font-bold">단위 설정:</label>
-                        <select id="unitSelect" class="bg-gray-900 text-yellow-300 font-bold rounded-lg px-2 py-1 border border-gray-600 focus:outline-none focus:border-yellow-400 transition-colors cursor-pointer">
-                            <option value="cm²">cm²</option>
-                            <option value="m²">m²</option>
-                            <option value="km²">km²</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 캔버스 본체 -->
-                <canvas id="board" width="600" height="600" class="w-full max-w-[600px] max-h-[60vh] object-contain aspect-square bg-[#101735] border-[3px] border-cyan-500/50 rounded-3xl shadow-[0_0_40px_rgba(123,223,242,0.15)] cursor-crosshair touch-none"></canvas>
-
-                <!-- 컨트롤 하단 (취소/지우기 & 현재 넓이) -->
-                <div class="flex flex-col sm:flex-row w-full max-w-[600px] justify-between items-center mt-5 gap-4">
-                    <div class="flex gap-3 w-full sm:w-auto">
-                        <button onclick="undoPoint()" class="flex-1 sm:flex-none px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-bold shadow-lg transition-colors border border-gray-600 flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg> 취소
-                        </button>
-                        <button onclick="clearBoard()" class="flex-1 sm:flex-none px-6 py-3 bg-red-900/80 hover:bg-red-800 rounded-xl text-white font-bold shadow-lg transition-colors border border-red-700 flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg> 지우기
-                        </button>
-                    </div>
-                    <div class="w-full sm:w-auto text-xl font-bold bg-gray-900/80 px-6 py-3 rounded-xl border border-cyan-500/30 shadow-lg text-center flex justify-center items-center">
-                        <span class="text-gray-400 text-lg mr-3">현재 넓이:</span>
-                        <span id="areaNow" class="text-cyan-300 text-2xl">0 cm²</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right: Control Panel (Customer, Inventory, Action) -->
-            <div class="w-full md:w-[360px] lg:w-[420px] bg-[#171d3a] border-t-4 md:border-t-0 md:border-l-4 border-yellow-500 flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.3)] shrink-0 h-full">
-                
-                <!-- Customer Area -->
-                <div class="p-5 border-b border-gray-700/50 bg-gray-900/40 shrink-0">
-                    <div id="alien-wrapper" class="alien-container flex flex-col items-center relative w-full">
-                        <div id="alien-emoji" class="text-6xl md:text-7xl drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] mb-3 z-10">👽</div>
-                        <div class="bg-white text-black p-4 rounded-2xl relative speech-bubble-up w-full text-center shadow-lg text-lg lg:text-xl font-bold z-20 leading-snug break-keep" id="order-text">
-                            주문 대기 중...
-                        </div>
-                    </div>
-                    
-                    <!-- Formula Helper -->
-                    <div class="mt-5 bg-black/50 p-3 rounded-xl border border-gray-700/50 text-sm text-gray-300 flex flex-col gap-1 shadow-inner">
-                        <p>■ <b>사각형 넓이</b>: 가로 × 세로</p>
-                        <p>▲ <b>삼각형 넓이</b>: 밑변 × 높이 ÷ 2</p>
-                    </div>
-                </div>
-
-                <!-- Inventory -->
-                <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
-                    <h3 class="text-yellow-400 mb-4 text-lg font-bold border-b border-gray-700 pb-2 flex justify-between items-center">
-                        <span>🥪 샌드위치 재료</span>
-                        <span class="text-gray-400 text-sm font-normal">클릭하여 선택</span>
-                    </h3>
-                    <div class="grid grid-cols-2 gap-3" id="topping-selector">
-                        <!-- Toppings injected via JS -->
-                    </div>
-                </div>
-
-                <!-- Serve Action -->
-                <div class="p-5 bg-gray-900/90 border-t border-gray-700 shrink-0">
-                    <button onclick="serveSandwich()" class="w-full py-4 bg-green-500 hover:bg-green-400 rounded-xl text-black font-bold text-2xl shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-transform active:scale-95 flex justify-center items-center gap-2">
-                        🛎️ 서빙하기!
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Modals (Day End, Reset) -->
-    <div id="modal-day-end" class="absolute inset-0 z-[100] hidden flex items-center justify-center bg-black/90 backdrop-blur-sm">
-        <div class="bg-[#171d3a] border-4 border-yellow-500 p-8 rounded-3xl text-center max-w-md w-full modal-pop shadow-[0_0_50px_rgba(250,204,21,0.2)]">
-            <h2 class="text-4xl text-yellow-400 mb-4 font-bold">영업 종료!</h2>
-            <p class="text-xl mb-6 text-gray-300">오늘 하루 수고하셨습니다.</p>
-            <div class="bg-gray-900 p-5 rounded-2xl mb-6 text-left border border-gray-700 shadow-inner">
-                <p class="flex justify-between text-xl mb-3 text-gray-300">오늘 번 돈: <span id="summary-earned" class="text-green-400 font-bold">0 ₩</span></p>
-                <p class="flex justify-between text-xl text-gray-300 border-t border-gray-700 pt-3">총 자산: <span id="summary-total" class="text-yellow-400 font-bold">0 ₩</span></p>
-            </div>
-            <button onclick="closeDayEnd()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black text-2xl rounded-xl font-bold transition-transform active:scale-95 shadow-lg">
-                상점 들르기 🛒
-            </button>
-        </div>
-    </div>
-
-    <div id="modal-reset-confirm" class="absolute inset-0 z-[120] hidden flex items-center justify-center bg-black/85 backdrop-blur-sm">
-        <div class="bg-gray-800 border-4 border-red-500 p-6 rounded-2xl text-center max-w-sm w-full modal-pop shadow-2xl">
-            <h2 class="text-3xl text-red-500 mb-3 font-bold">⚠️ 데이터 초기화</h2>
-            <p class="text-gray-300 mb-6 leading-relaxed">
-                모든 돈과 Day, 재고가 초기화됩니다.<br>정말로 처음부터 다시 시작할까요?
-            </p>
-            <div class="flex gap-4">
-                <button onclick="closeResetModal()" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold transition-colors">취소</button>
-                <button onclick="confirmReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-[0_0_15px_rgba(220,38,38,0.5)]">초기화</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Alert Message -->
-    <div id="alert-message" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 opacity-0 pointer-events-none shadow-2xl text-center min-w-[300px]">
-        Message
-    </div>
-
-    <script>
-        // --- 1. Audio System (Web Audio API Synthesizer) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(freq, type, duration, vol=0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        const sfx = {
-            click: () => playTone(520, 'square', 0.05, 0.03),
-            point: () => playTone(800, 'sine', 0.08, 0.05),
-            success: () => {
-                playTone(523.25, 'sine', 0.1, 0.05); // C
-                setTimeout(() => playTone(659.25, 'sine', 0.1, 0.05), 100); // E
-                setTimeout(() => playTone(783.99, 'sine', 0.3, 0.08), 200); // G
-            },
-            fail: () => {
-                playTone(200, 'sawtooth', 0.2, 0.05);
-                setTimeout(() => playTone(150, 'sawtooth', 0.3, 0.05), 150);
-            },
-            coin: () => {
-                playTone(1200, 'sine', 0.1, 0.05);
-                setTimeout(() => playTone(1600, 'sine', 0.2, 0.05), 50);
-            },
-            shield: () => {
-                playTone(400, 'square', 0.1, 0.05);
-                setTimeout(() => playTone(600, 'square', 0.2, 0.05), 100);
-            }
-        };
-
-        // --- 2. Game Data & State ---
-        const INGREDIENTS = {
-            jam: { id: 'jam', name: '기본 딸기잼', color: '#fb7185', price: 0, packSize: '무한', minDay: 1, emoji: '🍓', infinite: true }, 
-            cheese: { id: 'cheese', name: '외계 치즈', color: '#fef08a', price: 2000, packSize: 10, minDay: 1, emoji: '🧀', infinite: false },
-            ham: { id: 'ham', name: '우주 햄', color: '#fca5a5', price: 3000, packSize: 10, minDay: 2, emoji: '🥓', infinite: false },
-            egg: { id: 'egg', name: '별빛 계란', color: '#fde047', price: 4000, packSize: 10, minDay: 3, emoji: '🍳', infinite: false },
-            lettuce: { id: 'lettuce', name: '은하수 양상추', color: '#86efac', price: 5000, packSize: 10, minDay: 4, emoji: '🥬', infinite: false },
-            steak: { id: 'steak', name: '운석 스테이크', color: '#78350f', price: 8000, packSize: 10, minDay: 5, emoji: '🥩', infinite: false }
-        };
-
-        const SHIELD_PRICE = 5000;
-        const BASE_REWARD = 1000;
-        const DAY_DURATION_SEC = 120; // 2분
-        const ALIENS = ['👽', '👾', '🤖', '🛸', '👻', '🐙'];
-        const UNITS = ["cm²", "m²", "km²"];
-        const AREA_POOL = {
-            rect: [4,6,8,9,10,12,15,16,18,20,24,25,30,36,40,42,48,50,60,64,72,80,100],
-            tri: [3,4,5,6,8,9,10,12,15,16,18,20,24,25,30,32,36,40,48,50,60]
-        };
-
-        let state = {
-            money: 0,
-            day: 1,
-            shields: 0,
-            inventory: {}, 
-            
-            // In-game
-            timeRemaining: 0,
-            timerInterval: null,
-            order: null, // { shape: 'rect'|'tri', area: 12, unit: 'cm²', topping: 'jam', reward: 0 }
-            dayEarned: 0,
-            
-            // Canvas state
-            points: [],
-            selectedTopping: 'jam'
-        };
-
-        // --- 3. Save/Load & Utils ---
-        function saveData() {
-            localStorage.setItem('alienSandwichSave2', JSON.stringify({
-                money: state.money,
-                day: state.day,
-                shields: state.shields,
-                inventory: state.inventory
-            }));
-            updateMenuUI();
-        }
-
-        function loadData() {
-            const saved = localStorage.getItem('alienSandwichSave2');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    state.money = data.money || 0;
-                    state.day = data.day || 1;
-                    state.shields = data.shields || 0;
-                    state.inventory = data.inventory || {};
-                } catch(e) {}
-            }
-            // Initialize missing inventory
-            for(let key in INGREDIENTS) {
-                if(!INGREDIENTS[key].infinite && state.inventory[key] === undefined) {
-                    state.inventory[key] = 0;
-                }
-            }
-            updateMenuUI();
-        }
-
-        function formatMoney(amount) { return amount.toLocaleString('ko-KR'); }
-
-        function showMessage(msg, type='info') {
-            const el = document.getElementById('alert-message');
-            el.innerHTML = msg;
-            if(type === 'success') { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-green-500 text-white min-w-[300px] text-center"; }
-            else if(type === 'error') { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-8 py-4 rounded-full font-bold text-2xl transition-all duration-300 shadow-2xl bg-red-600 text-white min-w-[300px] text-center"; }
-            else { el.className = "fixed top-24 left-1/2 transform -translate-x-1/2 z-[300] px-6 py-3 rounded-full font-bold text-xl transition-all duration-300 shadow-2xl bg-blue-500 text-white min-w-[300px] text-center"; }
-            
-            el.style.opacity = '1';
-            el.style.transform = 'translate(-50%, 0) scale(1.1)';
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transform = 'translate(-50%, -20px) scale(1)';
-            }, 2000);
-        }
-
-        function updateMenuUI() {
-            document.getElementById('menu-money').textContent = formatMoney(state.money);
-            document.getElementById('menu-day').textContent = state.day;
-            document.getElementById('btn-day').textContent = state.day;
-            document.getElementById('shop-money').textContent = formatMoney(state.money);
-        }
-
-        function updateGameHUD() {
-            document.getElementById('hud-money').textContent = formatMoney(state.money);
-            document.getElementById('hud-shields').textContent = state.shields;
-            document.getElementById('hud-day').textContent = state.day;
-            
-            const m = Math.floor(state.timeRemaining / 60).toString().padStart(2, '0');
-            const s = (state.timeRemaining % 60).toString().padStart(2, '0');
-            const timeEl = document.getElementById('hud-time');
-            timeEl.textContent = `${m}:${s}`;
-            if(state.timeRemaining <= 30) timeEl.classList.add('animate-pulse', 'text-red-500');
-            else timeEl.classList.remove('animate-pulse', 'text-red-500');
-        }
-
-        // --- 4. Canvas & Drawing Logic ---
-        const canvas = document.getElementById('board');
-        const ctx = canvas.getContext('2d');
-        const gridSizeEl = document.getElementById('gridSize');
-        const unitSelect = document.getElementById('unitSelect');
-
-        function getCanvasPoint(evt) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const x = (evt.clientX - rect.left) * scaleX;
-            const y = (evt.clientY - rect.top) * scaleY;
-            
-            const n = Number(gridSizeEl.value);
-            const pad = 40;
-            const size = canvas.width - pad*2;
-            const cell = size / n;
-            
-            const gx = Math.round((x - pad) / cell);
-            const gy = Math.round((y - pad) / cell);
-            
-            if(gx < 0 || gy < 0 || gx > n || gy > n) return null;
-            return {x: gx, y: gy};
-        }
-
-        function drawGrid() {
-            const n = Number(gridSizeEl.value);
-            const pad = 40;
-            const size = canvas.width - pad*2;
-            const cell = size / n;
-
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-
-            // Background fill
-            ctx.fillStyle = "#101735";
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-
-            // Paper area
-            ctx.fillStyle = "rgba(123,223,242,0.05)";
-            ctx.fillRect(pad, pad, size, size);
-
-            // Grid lines
-            ctx.strokeStyle = "rgba(123,223,242,0.2)";
-            ctx.lineWidth = 2;
-            for(let i=0; i<=n; i++) {
-                const p = pad + i*cell;
-                ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, pad+size); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(pad+size, p); ctx.stroke();
-            }
-
-            // Draw shape
-            const pts = state.points.map(p => ({x: pad + p.x*cell, y: pad + p.y*cell}));
-            if(pts.length > 0) {
-                const toppingInfo = INGREDIENTS[state.selectedTopping];
-                ctx.lineWidth = 6;
-                ctx.strokeStyle = toppingInfo.color;
-                
-                // rgba convert for fill
-                ctx.fillStyle = toppingInfo.color + "66"; // 40% opacity hex
-                
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-
-                // If 2 points and drawing a rect
-                if(pts.length === 2 && (!state.order || state.order.shape === 'rect')) {
-                    const w = pts[1].x - pts[0].x;
-                    const h = pts[1].y - pts[0].y;
-                    ctx.rect(pts[0].x, pts[0].y, w, h);
-                    ctx.fill(); ctx.stroke();
-                } else {
-                    // Triangle or lines
-                    for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                    if(pts.length === 3) ctx.closePath();
-                    ctx.fill(); ctx.stroke();
-                }
-            }
-
-            // Draw points
-            state.points.forEach((p, idx) => {
-                const x = pad + p.x*cell, y = pad + p.y*cell;
-                ctx.beginPath();
-                ctx.fillStyle = "#fff";
-                ctx.arc(x, y, 10, 0, Math.PI*2);
-                ctx.fill();
-                ctx.fillStyle = "#000";
-                ctx.font = "bold 14px Jua";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(idx+1, x, y+2); // y+2 for visual centering
-            });
-
-            // Labels
-            ctx.fillStyle = "rgba(255,255,255,0.7)";
-            ctx.font = "20px Jua";
-            ctx.textAlign = "left";
-            ctx.fillText(`${n} × ${n} 모눈`, pad, 25);
-            ctx.textAlign = "right";
-            ctx.fillText(`1칸 = 1${unitSelect.value}`, pad+size, 25);
-        }
-
-        function calcArea() {
-            const pts = state.points;
-            if(state.order?.shape === "rect" || (!state.order && pts.length === 2)) {
-                if(pts.length < 2) return 0;
-                return Math.abs((pts[1].x - pts[0].x) * (pts[1].y - pts[0].y));
-            }
-            if(pts.length < 3) return 0;
-            const s = Math.abs(
-                pts[0].x*pts[1].y + pts[1].x*pts[2].y + pts[2].x*pts[0].y
-                - pts[1].x*pts[0].y - pts[2].x*pts[1].y - pts[0].x*pts[2].y
-            ) / 2;
-            return s;
-        }
-
-        function updateAreaText() {
-            const area = calcArea();
-            const unit = unitSelect.value;
-            let pretty = Number.isInteger(area) ? area : area.toFixed(1);
-            document.getElementById('areaNow').textContent = `${pretty} ${unit}`;
-        }
-
-        canvas.addEventListener('pointerdown', (evt) => {
-            if(!state.order) return;
-            const p = getCanvasPoint(evt);
-            if(!p) return;
-
-            const maxPoints = state.order.shape === 'rect' ? 2 : 3;
-            if(state.points.length >= maxPoints) state.points = []; // Reset if max reached
-            
-            state.points.push(p);
-            sfx.point();
-            drawGrid();
-            updateAreaText();
-        });
-
-        function undoPoint() {
-            if(state.points.length > 0) {
-                state.points.pop();
-                sfx.click();
-                drawGrid();
-                updateAreaText();
-            }
-        }
-
-        function clearBoard() {
-            state.points = [];
-            sfx.click();
-            drawGrid();
-            updateAreaText();
-        }
-
-        gridSizeEl.addEventListener('change', () => { clearBoard(); });
-        unitSelect.addEventListener('change', () => { drawGrid(); updateAreaText(); });
-
-        // --- 5. Gameplay Logic ---
-        function renderToppingSelector() {
-            const container = document.getElementById('topping-selector');
-            container.innerHTML = '';
-            
-            for(let key in INGREDIENTS) {
-                const item = INGREDIENTS[key];
-                if(item.minDay <= state.day) {
-                    const isSelected = state.selectedTopping === key;
-                    const stock = item.infinite ? '∞' : (state.inventory[key] || 0);
-                    const outOfStock = !item.infinite && stock <= 0;
-
-                    const btn = document.createElement('button');
-                    btn.className = `relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all 
-                        ${isSelected ? 'border-yellow-400 bg-gray-700 scale-105 shadow-[0_0_15px_rgba(250,204,21,0.4)]' : 'border-gray-600 bg-gray-800 hover:bg-gray-700'}
-                        ${outOfStock ? 'opacity-40 grayscale cursor-not-allowed border-red-900 bg-gray-900' : ''}`;
-                    
-                    btn.onclick = () => {
-                        if(outOfStock) {
-                            showMessage("재료가 부족합니다!", "error");
-                            sfx.fail();
-                            return;
-                        }
-                        sfx.click();
-                        state.selectedTopping = key;
-                        renderToppingSelector();
-                        drawGrid(); // Update canvas color
-                    };
-                    
-                    const badgeColor = outOfStock ? 'bg-red-600' : 'bg-blue-600';
-                    const stockHTML = `<span class="absolute -top-2 -right-2 ${badgeColor} text-white text-[11px] font-bold px-2 py-0.5 rounded-full border border-gray-800">${stock}</span>`;
-
-                    btn.innerHTML = `
-                        <div class="text-3xl drop-shadow-md mb-1">${item.emoji}</div>
-                        ${stockHTML}
-                        <span class="text-[13px] text-gray-300 font-bold whitespace-nowrap">${item.name}</span>
-                    `;
-                    container.appendChild(btn);
-                }
-            }
-        }
-
-        function generateOrder() {
-            // Find available toppings
-            const available = Object.keys(INGREDIENTS).filter(k => 
-                INGREDIENTS[k].minDay <= state.day && (INGREDIENTS[k].infinite || state.inventory[k] > 0)
-            );
-            if(available.length === 0) available.push('jam'); // Fallback
-            
-            const topping = available[Math.floor(Math.random() * available.length)];
-            const shape = Math.random() < 0.5 ? 'rect' : 'tri';
-            const areaList = AREA_POOL[shape];
-            
-            // Limit difficulty based on day
-            const maxIdx = Math.min(areaList.length - 1, 8 + state.day * 3);
-            const area = areaList[Math.floor(Math.random() * (maxIdx + 1))];
-            const unit = UNITS[Math.floor(Math.random() * UNITS.length)];
-            
-            // Reward calculation
-            const unitBonus = unit === 'km²' ? 500 : (unit === 'm²' ? 200 : 0);
-            const toppingBonus = INGREDIENTS[topping].price * 0.5; 
-            const reward = BASE_REWARD + (area * 10) + unitBonus + toppingBonus;
-
-            state.order = { shape, area, unit, topping, reward: Math.floor(reward/100)*100 };
-            
-            const shapeName = shape === 'rect' ? '사각형' : '삼각형';
-            const tColor = INGREDIENTS[topping].color;
-            const tName = INGREDIENTS[topping].name;
-
-            const texts = [
-                `넓이가 <span class="text-yellow-400 font-bold">${area} ${unit}</span>인<br><b style="color:${tColor}">${tName}</b> <b class="text-cyan-300">${shapeName}</b> 샌드위치 줘!`,
-                `배고파! <b style="color:${tColor}">${tName}</b> 넣어서<br><span class="text-yellow-400 font-bold">${area} ${unit}</span> <b class="text-cyan-300">${shapeName}</b> 모양으로 부탁해.`,
-                `<b class="text-cyan-300">${shapeName}</b> 샌드위치 주문이요.<br>넓이는 <span class="text-yellow-400 font-bold">${area} ${unit}</span>, 재료는 <b style="color:${tColor}">${tName}</b>!`,
-            ];
-
-            document.getElementById('order-text').innerHTML = texts[Math.floor(Math.random() * texts.length)];
-        }
-
-        function nextCustomer() {
-            const wrapper = document.getElementById('alien-wrapper');
-            wrapper.className = 'alien-container alien-enter flex flex-col items-center relative w-full';
-            document.getElementById('alien-emoji').textContent = ALIENS[Math.floor(Math.random()*ALIENS.length)];
-            
-            generateOrder();
-            clearBoard();
-            
-            // Auto select requested topping if available
-            if(INGREDIENTS[state.order.topping].infinite || state.inventory[state.order.topping] > 0) {
-                state.selectedTopping = state.order.topping;
-            } else {
-                state.selectedTopping = 'jam'; // fallback
-            }
-            renderToppingSelector();
-        }
-
-        function startGame() {
-            sfx.click();
-            document.getElementById('screen-menu').classList.add('hidden');
-            document.getElementById('screen-game').classList.remove('hidden');
-            
-            state.timeRemaining = DAY_DURATION_SEC;
-            state.dayEarned = 0;
-            updateGameHUD();
-            
-            clearInterval(state.timerInterval);
-            state.timerInterval = setInterval(() => {
-                state.timeRemaining--;
-                updateGameHUD();
-                if(state.timeRemaining <= 0) endDay();
-            }, 1000);
-
-            nextCustomer();
-        }
-
-        function endDay() {
-            clearInterval(state.timerInterval);
-            sfx.success();
-            state.day++;
-            saveData();
-            
-            document.getElementById('summary-earned').textContent = formatMoney(state.dayEarned) + ' ₩';
-            document.getElementById('summary-total').textContent = formatMoney(state.money) + ' ₩';
-            document.getElementById('modal-day-end').classList.remove('hidden');
-        }
-
-        function closeDayEnd() {
-            sfx.click();
-            document.getElementById('modal-day-end').classList.add('hidden');
-            document.getElementById('screen-game').classList.add('hidden');
-            showShop();
-        }
-
-        function serveSandwich() {
-            if(!state.order) return;
-            const reqPoints = state.order.shape === 'rect' ? 2 : 3;
-            
-            if(state.points.length < reqPoints) {
-                showMessage(`꼭짓점 ${reqPoints}개를 찍어야 완성됩니다!`, "error");
-                sfx.fail();
-                return;
-            }
-
-            const madeArea = calcArea();
-            const unitOk = unitSelect.value === state.order.unit;
-            const areaOk = Math.abs(madeArea - state.order.area) < 0.001;
-            const toppingOk = state.selectedTopping === state.order.topping;
-
-            let errorMsg = "";
-            if(!toppingOk) errorMsg = "재료가 달라!";
-            else if(!unitOk) errorMsg = "단위가 틀렸어!";
-            else if(!areaOk) errorMsg = "넓이가 안 맞아!";
-            else if(madeArea === 0) errorMsg = "도형이 아니잖아!";
-
-            const wrapper = document.getElementById('alien-wrapper');
-
-            if(errorMsg === "") {
-                // Success
-                sfx.success();
-                sfx.coin();
-                
-                // Deduct topping
-                if(!INGREDIENTS[state.selectedTopping].infinite) {
-                    state.inventory[state.selectedTopping]--;
-                }
-
-                state.money += state.order.reward;
-                state.dayEarned += state.order.reward;
-                showMessage(`완벽해! +${formatMoney(state.order.reward)} ₩`, "success");
-                
-                wrapper.className = 'alien-container alien-exit-success flex flex-col items-center relative w-full';
-                updateGameHUD();
-                
-            } else {
-                // Fail
-                sfx.fail();
-                if(state.shields > 0) {
-                    sfx.shield();
-                    state.shields--;
-                    showMessage(`방어권 사용! (${errorMsg})`, "info");
-                } else {
-                    const penalty = Math.floor(state.order.reward / 2);
-                    state.money -= penalty;
-                    showMessage(`- ${formatMoney(penalty)} ₩... ${errorMsg}`, "error");
-                }
-                wrapper.className = 'alien-container alien-exit-fail flex flex-col items-center relative w-full';
-                updateGameHUD();
-            }
-
-            setTimeout(() => {
-                if(state.timeRemaining > 0) nextCustomer();
-            }, 600);
-        }
-
-        // --- 6. Shop System ---
-        function showShop() {
-            sfx.click();
-            updateMenuUI();
-            document.getElementById('screen-menu').classList.add('hidden');
-            document.getElementById('screen-game').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('hidden');
-            document.getElementById('screen-shop').classList.add('flex');
-            renderShop();
-        }
-
-        function hideShop() {
-            sfx.click();
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('flex');
-            document.getElementById('screen-menu').classList.remove('hidden');
-        }
-
-        function renderShop() {
-            const container = document.getElementById('shop-items');
-            container.innerHTML = '';
-
-            // Shield
-            const shieldCard = document.createElement('div');
-            shieldCard.className = 'bg-gray-800 p-6 rounded-2xl border border-blue-500 flex justify-between items-center shadow-lg';
-            shieldCard.innerHTML = `
-                <div>
-                    <h3 class="text-2xl text-blue-400 font-bold mb-2">🛡️ 클레임 방어권</h3>
-                    <p class="text-gray-400">오답 패널티를 1회 막아줍니다.<br>(현재 보유: <span class="text-white font-bold">${state.shields}</span>개)</p>
-                </div>
-                <button onclick="buyItem('shield')" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-transform active:scale-95">
-                    ${formatMoney(SHIELD_PRICE)} ₩
-                </button>
-            `;
-            container.appendChild(shieldCard);
-
-            // Ingredients
-            for(let key in INGREDIENTS) {
-                const item = INGREDIENTS[key];
-                if(!item.infinite && item.minDay <= state.day) {
-                    const stock = state.inventory[key] || 0;
-                    const card = document.createElement('div');
-                    card.className = `bg-gray-800 p-6 rounded-2xl border border-purple-500 flex justify-between items-center shadow-lg`;
-                    card.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-full flex items-center justify-center text-4xl bg-gray-700 shadow-inner" style="color:${item.color}">${item.emoji}</div>
-                            <div>
-                                <h3 class="text-2xl font-bold mb-1" style="color:${item.color}">${item.name}</h3>
-                                <p class="text-gray-400 text-sm">보유량: <span class="text-white font-bold">${stock}</span> 조각</p>
-                            </div>
-                        </div>
-                        <button onclick="buyItem('${key}')" class="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-transform active:scale-95 text-center leading-tight">
-                            ${item.packSize}조각 묶음<br><span class="text-yellow-300">${formatMoney(item.price)} ₩</span>
-                        </button>
-                    `;
-                    container.appendChild(card);
-                }
-            }
-        }
-
-        function buyItem(id) {
-            sfx.click();
-            let price = id === 'shield' ? SHIELD_PRICE : INGREDIENTS[id].price;
-            
-            if(state.money >= price) {
-                state.money -= price;
-                sfx.coin();
-                
-                if(id === 'shield') {
-                    state.shields++;
-                    showMessage(`방어권 구매! (총 ${state.shields}개)`, 'success');
-                } else {
-                    state.inventory[id] += INGREDIENTS[id].packSize;
-                    showMessage(`${INGREDIENTS[id].name} 충전 완료!`, 'success');
-                }
-                
-                saveData();
-                renderShop();
-                document.getElementById('shop-money').textContent = formatMoney(state.money);
-            } else {
-                sfx.fail();
-                showMessage("돈이 부족합니다!", "error");
-            }
-        }
-
-        // Reset
-        function openResetModal() {
-            sfx.click();
-            document.getElementById('modal-reset-confirm').classList.remove('hidden');
-        }
-        function closeResetModal() {
-            sfx.click();
-            document.getElementById('modal-reset-confirm').classList.add('hidden');
-        }
-        function confirmReset() {
-            sfx.click();
-            localStorage.removeItem('alienSandwichSave2');
-            location.reload();
-        }
-
-        // Init
-        loadData();
-    </script>
+    <div class="btn-row"><button id="btn-start" class="btn primary">영업 시작</button><button id="btn-shop" class="btn shopbtn">🛒 재료 상점</button><button id="btn-reset" class="btn ghostbtn">초기화</button></div>
+  </section>
+</div>
+
+<div id="screen-game">
+  <header class="topbar">
+    <div class="hud-left"><div class="hud-pill">DAY <span id="hud-day" class="hud-value">1</span></div><div class="hud-pill">⏱️ <span id="hud-time" class="hud-value">02:00</span></div><div class="hud-pill">연속 성공 <span id="hud-combo" class="hud-value">0</span></div></div>
+    <div class="hud-right"><div class="hud-pill">🛡️ <span id="hud-shields" class="hud-value">0</span></div><div class="hud-pill">금고 <span id="hud-money" class="hud-value money">0</span> ₩</div><button id="btn-pause" class="mini-btn">일시정지</button></div>
+  </header>
+  <div class="progress"><div id="timebar"></div></div>
+  <main class="game-body">
+    <section class="workspace">
+      <div class="board-tools">
+        <div class="tool-group"><label class="select-wrap">모눈 <select id="grid-size"><option value="6">6×6</option><option value="8">8×8</option><option value="10">10×10</option><option value="12" selected>12×12</option><option value="15">15×15</option></select></label><label class="select-wrap">단위 <select id="unit-select"><option value="cm²">cm²</option><option value="m²">m²</option><option value="km²">km²</option></select></label></div>
+        <div class="tool-group"><button id="btn-hint" class="mini-btn">💡 힌트</button><button id="btn-sound" class="mini-btn">🔊 소리</button></div>
+      </div>
+      <canvas id="board" width="720" height="720" aria-label="도형 제작 모눈판"></canvas>
+      <div class="board-bottom">
+        <div class="edit-actions"><button id="btn-undo" class="mini-btn">↩ 꼭짓점 취소</button><button id="btn-clear" class="mini-btn">🧽 지우기</button></div>
+        <div class="area-card"><span>현재 넓이</span><strong id="area-now">0 cm²</strong></div>
+      </div>
+    </section>
+    <aside class="side">
+      <section class="customer">
+        <div id="alien-wrap" class="alien-wrap enter"><div id="alien" class="alien">👽</div><div id="order-box" class="order-box">주문 대기 중...</div></div>
+        <div class="helper"><div class="helper-line">■ <b>사각형</b>: 가로 × 세로. 대각선 꼭짓점 2개를 찍으면 자동으로 완성됩니다.</div><div class="helper-line">▲ <b>삼각형</b>: 밑변 × 높이 ÷ 2. 꼭짓점 3개를 찍어 주세요.</div></div>
+        <div id="hint-box" class="hint-box hidden"></div>
+      </section>
+      <section class="stock-panel"><div class="panel-title"><span>🥪 재료 선택</span><span class="small">주문 재료와 같아야 함</span></div><div id="toppings" class="toppings"></div></section>
+      <section class="serve-panel"><div id="feedback" class="feedback">주문을 보고 모눈 위에 도형을 만들어 주세요.</div><button id="btn-serve" class="btn green">🛎️ 서빙하기</button></section>
+    </aside>
+  </main>
+</div>
+
+<div id="screen-shop" class="shop-screen">
+  <section class="shop-card card">
+    <div class="shop-head"><h2>🛒 우주 식자재 마트</h2><div><div class="small">보유 금액</div><div style="font-size:32px;font-weight:900;color:var(--green)"><span id="shop-money">0</span> ₩</div></div></div>
+    <div id="shop-grid" class="shop-grid"></div>
+    <div class="btn-row" style="margin-top:22px"><button id="btn-shop-back" class="btn ghostbtn">가게로 돌아가기</button></div>
+  </section>
+</div>
+
+<div id="modal-day" class="modal"><section class="modal-card card"><h2>영업 종료!</h2><p style="color:var(--muted);font-weight:800">오늘의 샌드위치 영업이 끝났습니다.</p><div class="summary"><div class="summary-row"><span>오늘 번 돈</span><span id="summary-earned" style="color:var(--green)">0 ₩</span></div><div class="summary-row"><span>성공 / 실패</span><span><b id="summary-ok">0</b> / <b id="summary-bad">0</b></span></div><div class="summary-row"><span>총 자산</span><span id="summary-total" style="color:var(--yellow)">0 ₩</span></div></div><div class="btn-row"><button id="btn-next-shop" class="btn shopbtn">상점 들르기</button><button id="btn-next-menu" class="btn primary">메뉴로</button></div></section></div>
+<div id="modal-reset" class="modal"><section class="modal-card card" style="border-color:rgba(255,93,115,.7)"><h2 style="color:var(--red)">초기화할까요?</h2><p style="color:var(--muted);font-weight:800;line-height:1.5">돈, DAY, 재료, 쿠폰이 모두 사라집니다.</p><div class="btn-row"><button id="btn-reset-cancel" class="btn ghostbtn">취소</button><button id="btn-reset-ok" class="btn danger">초기화</button></div></section></div>
+<div id="toast" class="toast info">메시지</div>
+
+<script>
+(() => {
+'use strict';
+const DAY_SECONDS = 120;
+const BASE_REWARD = 900;
+const SAVE_KEY = 'freddySandwichAreaSave_v3';
+const ALIENS = ['👽','👾','🤖','🛸','🐙','🦊','🐸','🧑‍🚀'];
+const UNITS = ['cm²','m²','km²'];
+const INGREDIENTS = {
+  jam:{id:'jam',name:'기본 딸기잼',emoji:'🍓',color:'#fb7185',price:0,pack:Infinity,minDay:1,infinite:true},
+  cheese:{id:'cheese',name:'외계 치즈',emoji:'🧀',color:'#fde047',price:1800,pack:8,minDay:1},
+  ham:{id:'ham',name:'우주 햄',emoji:'🥓',color:'#fca5a5',price:2600,pack:8,minDay:2},
+  egg:{id:'egg',name:'별빛 계란',emoji:'🍳',color:'#facc15',price:3400,pack:8,minDay:3},
+  lettuce:{id:'lettuce',name:'은하 양상추',emoji:'🥬',color:'#86efac',price:4300,pack:8,minDay:4},
+  steak:{id:'steak',name:'운석 스테이크',emoji:'🥩',color:'#92400e',price:6500,pack:8,minDay:5}
+};
+const SHIELD_PRICE = 4500;
+const $ = id => document.getElementById(id);
+const els = {
+  menu:$('screen-menu'), game:$('screen-game'), shop:$('screen-shop'), modalDay:$('modal-day'), modalReset:$('modal-reset'),
+  board:$('board'), grid:$('grid-size'), unit:$('unit-select'), area:$('area-now'), order:$('order-box'), alien:$('alien'), alienWrap:$('alien-wrap'), hint:$('hint-box'),
+  toppings:$('toppings'), feedback:$('feedback'), toast:$('toast'), timebar:$('timebar')
+};
+const ctx = els.board.getContext('2d');
+let audioCtx = null;
+let state = {
+  money:0, day:1, shields:0, inventory:{}, muted:false,
+  running:false, paused:false, time:DAY_SECONDS, timer:null, order:null, points:[], selected:'jam', earned:0, ok:0, bad:0, combo:0, bestCombo:0, lastPointer:null
+};
+function money(n){ return Math.round(n).toLocaleString('ko-KR'); }
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function show(el){ el.classList.remove('hidden'); el.classList.add('flex'); }
+function hide(el){ el.classList.add('hidden'); el.classList.remove('flex'); }
+function initAudio(){ if(state.muted) return; if(!audioCtx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return; audioCtx = new AC(); } if(audioCtx.state === 'suspended') audioCtx.resume(); }
+function tone(freq,dur=.1,type='sine',gain=.04,delay=0){ if(state.muted) return; initAudio(); if(!audioCtx) return; const t=audioCtx.currentTime+delay; const osc=audioCtx.createOscillator(); const g=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t+dur+.03); }
+const sfx = { click(){tone(520,.04,'square',.025)}, point(){tone(860,.06,'sine',.045)}, success(){tone(523,.08,'triangle',.05);tone(659,.09,'triangle',.05,.08);tone(784,.16,'triangle',.055,.17)}, fail(){tone(180,.16,'sawtooth',.045);tone(130,.2,'sawtooth',.04,.12)}, coin(){tone(1200,.06,'sine',.04);tone(1600,.09,'sine',.04,.06)}, shield(){tone(400,.08,'square',.045);tone(630,.12,'square',.04,.09)} };
+function toast(msg,type='info'){ els.toast.textContent = msg; els.toast.className = 'toast '+type+' show'; clearTimeout(toast.t); toast.t=setTimeout(()=>els.toast.classList.remove('show'),1900); }
+function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,muted:state.muted})); updateMenuUI(); }
+function load(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const d=JSON.parse(raw); state.money=d.money||0; state.day=d.day||1; state.shields=d.shields||0; state.inventory=d.inventory||{}; state.muted=!!d.muted; } }catch(e){} Object.values(INGREDIENTS).forEach(i=>{ if(!i.infinite && typeof state.inventory[i.id] !== 'number') state.inventory[i.id]=0; }); updateMenuUI(); }
+function updateMenuUI(){ $('menu-money').textContent=money(state.money); $('menu-day').textContent=state.day; $('menu-shields').textContent=state.shields; $('shop-money').textContent=money(state.money); $('btn-sound').textContent=state.muted?'🔇 소리':'🔊 소리'; }
+function updateHUD(){ $('hud-day').textContent=state.day; $('hud-money').textContent=money(state.money); $('hud-shields').textContent=state.shields; $('hud-combo').textContent=state.combo; const m=String(Math.floor(state.time/60)).padStart(2,'0'); const s=String(state.time%60).padStart(2,'0'); const timeEl=$('hud-time'); timeEl.textContent=`${m}:${s}`; timeEl.classList.toggle('time-danger',state.time<=25); els.timebar.style.width = `${Math.max(0,state.time/DAY_SECONDS*100)}%`; }
+function unlockedIngredients(){ return Object.values(INGREDIENTS).filter(i=>i.minDay<=state.day); }
+function availableIngredients(){ const a=unlockedIngredients().filter(i=>i.infinite || state.inventory[i.id]>0); return a.length?a:[INGREDIENTS.jam]; }
+function factorPairs(area){ const pairs=[]; for(let w=1;w<=15;w++){ for(let h=1;h<=15;h++){ if(w*h===area) pairs.push([w,h]); } } return pairs; }
+function trianglePairs(area){ const pairs=[]; for(let b=1;b<=15;b++){ for(let h=1;h<=15;h++){ if(b*h/2===area) pairs.push([b,h]); } } return pairs; }
+function makeArea(shape){ const n=Number(els.grid.value); const pool=[]; if(shape==='rect'){ for(let w=1;w<=n;w++) for(let h=1;h<=n;h++) if(w*h>=4 && w*h<=Math.min(110,n*n) && (state.day>2 || w*h<=40)) pool.push(w*h); }
+  else{ for(let b=1;b<=n;b++) for(let h=1;h<=n;h++){ const a=b*h/2; if(Number.isInteger(a) && a>=3 && a<=Math.min(90,n*n/2) && (state.day>2 || a<=36)) pool.push(a); } }
+  return pick([...new Set(pool)]); }
+function generateOrder(){ const shape = Math.random() < Math.min(.42 + state.day*.04,.62) ? 'tri' : 'rect'; const ingredient = pick(availableIngredients()); const unit = pick(UNITS.slice(0, Math.min(UNITS.length, 1 + Math.floor((state.day+1)/2)))); const area = makeArea(shape); const reward = Math.floor((BASE_REWARD + area*18 + (unit==='m²'?200:unit==='km²'?450:0) + (ingredient.infinite?0:ingredient.price*.32) + state.day*80)/100)*100; state.order={shape,area,unit,topping:ingredient.id,reward}; const shapeName=shape==='rect'?'사각형':'삼각형'; const need=shape==='rect'?'대각선 꼭짓점 2개':'꼭짓점 3개'; els.alien.textContent=pick(ALIENS); els.order.innerHTML=`<span class="order-chip">${ingredient.emoji} ${ingredient.name}</span><br><b style="color:#0891b2">${shapeName}</b> 샌드위치<br>넓이 <b style="color:#d97706">${area} ${unit}</b> · ${need}`; els.unit.value=unit; state.selected=ingredient.id; state.points=[]; els.hint.classList.add('hidden'); els.feedback.className='feedback'; els.feedback.innerHTML='모눈 위에 주문 도형을 만들고 <b>서빙하기</b>를 누르세요.'; els.alienWrap.className='alien-wrap enter'; renderToppings(); draw(); updateArea(); }
+function renderToppings(){ els.toppings.innerHTML=''; unlockedIngredients().forEach(item=>{ const stock=item.infinite?'∞':state.inventory[item.id]; const disabled=!item.infinite && stock<=0; const btn=document.createElement('button'); btn.className='topping'+(state.selected===item.id?' selected':'')+(disabled?' disabled':''); btn.type='button'; btn.innerHTML=`<span class="badge">${stock}</span><span class="emoji">${item.emoji}</span><span class="name">${item.name}</span>`; btn.addEventListener('click',()=>{ if(disabled){ toast('재료가 부족해요. 상점에서 사야 합니다.','bad'); sfx.fail(); return; } state.selected=item.id; renderToppings(); draw(); sfx.click(); }); els.toppings.appendChild(btn); }); }
+function canvasMetrics(){ const pad=52; const size=els.board.width-pad*2; const n=Number(els.grid.value); const cell=size/n; return {pad,size,n,cell}; }
+function toCanvasPoint(p){ const m=canvasMetrics(); return {x:m.pad+p.x*m.cell,y:m.pad+p.y*m.cell}; }
+function getPoint(evt){ const rect=els.board.getBoundingClientRect(); const scaleX=els.board.width/rect.width; const scaleY=els.board.height/rect.height; const x=(evt.clientX-rect.left)*scaleX; const y=(evt.clientY-rect.top)*scaleY; const m=canvasMetrics(); const gx=Math.round((x-m.pad)/m.cell); const gy=Math.round((y-m.pad)/m.cell); if(gx<0||gy<0||gx>m.n||gy>m.n) return null; return {x:gx,y:gy}; }
+function calcArea(){ const pts=state.points; if(!state.order){ return 0; } if(state.order.shape==='rect'){ if(pts.length<2) return 0; return Math.abs((pts[1].x-pts[0].x)*(pts[1].y-pts[0].y)); } if(pts.length<3) return 0; return Math.abs(pts[0].x*pts[1].y + pts[1].x*pts[2].y + pts[2].x*pts[0].y - pts[1].x*pts[0].y - pts[2].x*pts[1].y - pts[0].x*pts[2].y)/2; }
+function formulaText(){ if(!state.order) return ''; if(state.order.shape==='rect' && state.points.length>=2){ const w=Math.abs(state.points[1].x-state.points[0].x); const h=Math.abs(state.points[1].y-state.points[0].y); return `가로 ${w} × 세로 ${h} = ${w*h}`; } if(state.order.shape==='tri' && state.points.length>=3){ const a=calcArea(); return `삼각형 넓이 = ${Number.isInteger(a)?a:a.toFixed(1)}`; } return '꼭짓점을 더 찍어 주세요.'; }
+function updateArea(){ const area=calcArea(); const nice=Number.isInteger(area)?area:area.toFixed(1); els.area.textContent=`${nice} ${els.unit.value}`; }
+function draw(){ const m=canvasMetrics(); ctx.clearRect(0,0,els.board.width,els.board.height); ctx.fillStyle='#101735'; ctx.fillRect(0,0,els.board.width,els.board.height); const grd=ctx.createLinearGradient(0,0,els.board.width,els.board.height); grd.addColorStop(0,'rgba(123,223,242,.08)'); grd.addColorStop(1,'rgba(255,209,102,.05)'); ctx.fillStyle=grd; roundRect(ctx,m.pad,m.pad,m.size,m.size,18,true,false);
+  ctx.strokeStyle='rgba(123,223,242,.18)'; ctx.lineWidth=2; for(let i=0;i<=m.n;i++){ const p=m.pad+i*m.cell; ctx.beginPath(); ctx.moveTo(p,m.pad); ctx.lineTo(p,m.pad+m.size); ctx.stroke(); ctx.beginPath(); ctx.moveTo(m.pad,p); ctx.lineTo(m.pad+m.size,p); ctx.stroke(); }
+  for(let i=0;i<=m.n;i++){ if(i%2===0||m.n<=8){ const p=m.pad+i*m.cell; ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='16px system-ui'; ctx.textAlign='center'; ctx.fillText(i,p,m.pad+m.size+28); ctx.textAlign='right'; ctx.fillText(i,m.pad-18,p+5); } }
+  drawShape(); ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='bold 22px system-ui'; ctx.textAlign='left'; ctx.fillText(`${m.n} × ${m.n} 모눈`,m.pad,33); ctx.textAlign='right'; ctx.fillText(`1칸 = 1 ${els.unit.value}`,m.pad+m.size,33); }
+function roundRect(c,x,y,w,h,r,fill,stroke){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); if(fill)c.fill(); if(stroke)c.stroke(); }
+function drawShape(){ if(state.points.length===0) return; const item=INGREDIENTS[state.selected]||INGREDIENTS.jam; const pts=state.points.map(toCanvasPoint); ctx.save(); ctx.lineWidth=7; ctx.strokeStyle=item.color; ctx.fillStyle=item.color+'66'; ctx.shadowColor=item.color; ctx.shadowBlur=18; ctx.beginPath(); if(state.order?.shape==='rect' && pts.length>=2){ const x1=pts[0].x,y1=pts[0].y,x2=pts[1].x,y2=pts[1].y; ctx.rect(x1,y1,x2-x1,y2-y1); ctx.fill(); ctx.stroke(); drawDimensionLabel(Math.abs(state.points[1].x-state.points[0].x), (x1+x2)/2, Math.min(y1,y2)-16); drawDimensionLabel(Math.abs(state.points[1].y-state.points[0].y), Math.max(x1,x2)+22, (y1+y2)/2); }
+  else { ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); if(state.order?.shape==='tri' && pts.length===3) ctx.closePath(); if(pts.length>=3) ctx.fill(); ctx.stroke(); }
+  ctx.shadowBlur=0; state.points.forEach((p,i)=>{ const cp=toCanvasPoint(p); ctx.beginPath(); ctx.fillStyle='#fff'; ctx.arc(cp.x,cp.y,12,0,Math.PI*2); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle=item.color; ctx.stroke(); ctx.fillStyle='#071026'; ctx.font='900 15px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i+1,cp.x,cp.y+1); }); ctx.restore(); }
+function drawDimensionLabel(text,x,y){ ctx.save(); ctx.shadowBlur=0; ctx.font='900 18px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; const s=String(text); const w=ctx.measureText(s).width+18; ctx.fillStyle='rgba(0,0,0,.68)'; roundRect(ctx,x-w/2,y-14,w,28,10,true,false); ctx.fillStyle='#fff'; ctx.fillText(s,x,y+1); ctx.restore(); }
+function addPoint(evt){ if(!state.running || state.paused || !state.order) return; const p=getPoint(evt); if(!p) return; const max=state.order.shape==='rect'?2:3; if(state.points.length>=max) state.points=[]; const last=state.points[state.points.length-1]; if(last && last.x===p.x && last.y===p.y) return; state.points.push(p); sfx.point(); draw(); updateArea(); }
+function clearBoard(){ state.points=[]; draw(); updateArea(); }
+function undo(){ state.points.pop(); draw(); updateArea(); sfx.click(); }
+function showHint(){ if(!state.order) return; let html=''; if(state.order.shape==='rect'){ const pairs=factorPairs(state.order.area).filter(([w,h])=>w<=Number(els.grid.value)&&h<=Number(els.grid.value)); const pair=pairs.find(([w,h])=>w!==1&&h!==1)||pairs[0]; html=pair?`힌트: <b>가로 ${pair[0]}, 세로 ${pair[1]}</b>인 사각형이면 ${pair[0]} × ${pair[1]} = ${state.order.area} ${state.order.unit}예요.`:'힌트: 모눈 크기를 키워 보면 만들 수 있어요.'; } else { const pairs=trianglePairs(state.order.area).filter(([b,h])=>b<=Number(els.grid.value)&&h<=Number(els.grid.value)); const pair=pairs.find(([b,h])=>b>1&&h>1)||pairs[0]; html=pair?`힌트: <b>밑변 ${pair[0]}, 높이 ${pair[1]}</b>인 삼각형이면 ${pair[0]} × ${pair[1]} ÷ 2 = ${state.order.area} ${state.order.unit}예요.`:'힌트: 밑변×높이가 목표 넓이의 2배가 되게 해 보세요.'; } els.hint.innerHTML=html; els.hint.classList.remove('hidden'); sfx.click(); }
+function serve(){ if(!state.running || state.paused || !state.order) return; const need=state.order.shape==='rect'?2:3; if(state.points.length<need){ fail(`꼭짓점 ${need}개가 필요해요.`); return; } const made=calcArea(); const areaOk=Math.abs(made-state.order.area)<0.001; const unitOk=els.unit.value===state.order.unit; const toppingOk=state.selected===state.order.topping; let msg=''; if(!toppingOk) msg='재료가 주문과 달라요.'; else if(!unitOk) msg=`단위가 달라요. 주문 단위는 ${state.order.unit}입니다.`; else if(made===0) msg='넓이가 0인 도형이에요.'; else if(!areaOk) msg=`넓이가 달라요. 현재 ${Number.isInteger(made)?made:made.toFixed(1)} ${els.unit.value} / 주문 ${state.order.area} ${state.order.unit}`; if(msg){ fail(msg,true); return; } success(); }
+function success(){ const reward=state.order.reward + state.combo*40; if(!INGREDIENTS[state.selected].infinite) state.inventory[state.selected]--; state.money+=reward; state.earned+=reward; state.ok++; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo); sfx.success(); setTimeout(()=>sfx.coin(),170); els.feedback.className='feedback good'; els.feedback.innerHTML=`완벽해요! <b>${formulaText()}</b><br>+${money(reward)} ₩ · 연속 성공 ${state.combo}`; els.alienWrap.className='alien-wrap fly'; confetti(); updateHUD(); renderToppings(); setTimeout(()=>{ if(state.time>0 && state.running) generateOrder(); },720); }
+function fail(msg,educate=false){ sfx.fail(); state.bad++; state.combo=0; if(state.shields>0){ state.shields--; sfx.shield(); els.feedback.className='feedback bad'; els.feedback.innerHTML=`🛡️ 클레임 쿠폰으로 패널티를 막았어요.<br>${msg}`; toast('클레임 쿠폰 사용!', 'info'); } else { const penalty=Math.floor(state.order.reward*.38/100)*100; state.money-=penalty; els.feedback.className='feedback bad'; els.feedback.innerHTML=`${msg}<br><b>-${money(penalty)} ₩</b>${educate?`<br>${formulaText()}`:''}`; toast('손님이 화났어요!', 'bad'); } els.alienWrap.className='alien-wrap shake'; updateHUD(); saveSoft(); setTimeout(()=>{ if(state.time>0 && state.running) generateOrder(); },850); }
+function saveSoft(){ localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,muted:state.muted})); }
+function confetti(){ const rect=els.board.getBoundingClientRect(); for(let i=0;i<24;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.background=pick(['#ffd166','#7bdff2','#46d783','#ff5d73','#b88cff']); c.style.left=(rect.left+rect.width*.5)+'px'; c.style.top=(rect.top+rect.height*.45)+'px'; c.style.setProperty('--x',rand(-180,180)+'px'); c.style.setProperty('--y',rand(-160,120)+'px'); document.body.appendChild(c); setTimeout(()=>c.remove(),750); } }
+function startGame(){ initAudio(); sfx.click(); hide(els.menu); hide(els.shop); hide(els.modalDay); state.running=true; state.paused=false; state.time=DAY_SECONDS; state.earned=0; state.ok=0; state.bad=0; state.combo=0; state.bestCombo=0; updateHUD(); els.game.style.display='flex'; clearInterval(state.timer); state.timer=setInterval(()=>{ if(state.paused) return; state.time--; updateHUD(); if(state.time<=0) endDay(); },1000); generateOrder(); }
+function endDay(){ if(!state.running) return; clearInterval(state.timer); state.running=false; state.day++; save(); els.game.style.display='none'; $('summary-earned').textContent=money(state.earned)+' ₩'; $('summary-ok').textContent=state.ok; $('summary-bad').textContent=state.bad; $('summary-total').textContent=money(state.money)+' ₩'; show(els.modalDay); sfx.success(); }
+function pauseToggle(){ if(!state.running) return; state.paused=!state.paused; $('btn-pause').textContent=state.paused?'계속하기':'일시정지'; els.feedback.className='feedback'; els.feedback.textContent=state.paused?'일시정지 중입니다. 계속하기를 누르면 재개됩니다.':'다시 영업을 시작합니다!'; sfx.click(); }
+function showShop(){ sfx.click(); hide(els.menu); els.game.style.display='none'; hide(els.modalDay); els.shop.classList.remove('hidden'); els.shop.style.display='flex'; renderShop(); updateMenuUI(); }
+function hideShop(){ sfx.click(); els.shop.style.display='none'; els.shop.classList.add('hidden'); show(els.menu); }
+function renderShop(){ const grid=$('shop-grid'); grid.innerHTML=''; const shield=shopCard('🛡️','클레임 쿠폰',`오답 패널티를 1회 막아줍니다.<br>보유: <b>${state.shields}</b>개`,SHIELD_PRICE,()=>buy('shield')); grid.appendChild(shield); Object.values(INGREDIENTS).forEach(item=>{ if(item.infinite) return; const locked=item.minDay>state.day; const desc=locked?`DAY ${item.minDay}부터 구매 가능`:`${item.pack}조각 묶음 · 보유 ${state.inventory[item.id]||0}조각`; const card=shopCard(item.emoji,item.name,desc,item.price,()=>buy(item.id),locked,item.color); grid.appendChild(card); }); }
+function shopCard(emoji,name,desc,price,onBuy,locked=false,color='var(--purple)'){ const div=document.createElement('div'); div.className='shop-item'+(locked?' locked':''); div.innerHTML=`<div><h3 style="color:${color}">${emoji} ${name}</h3><p>${desc}</p></div><button class="btn ${locked?'ghostbtn':'shopbtn'}" ${locked?'disabled':''}>${locked?'잠김':money(price)+' ₩'}</button>`; div.querySelector('button').addEventListener('click',onBuy); return div; }
+function buy(id){ sfx.click(); const price=id==='shield'?SHIELD_PRICE:INGREDIENTS[id].price; if(state.money<price){ toast('돈이 부족해요.', 'bad'); sfx.fail(); return; } state.money-=price; if(id==='shield') state.shields++; else state.inventory[id]+=INGREDIENTS[id].pack; sfx.coin(); toast(id==='shield'?'클레임 쿠폰 구매 완료!':`${INGREDIENTS[id].name} 구매 완료!`,'good'); save(); renderShop(); updateMenuUI(); }
+function reset(){ localStorage.removeItem(SAVE_KEY); location.reload(); }
+function bind(){ $('btn-start').addEventListener('click',startGame); $('btn-shop').addEventListener('click',showShop); $('btn-shop-back').addEventListener('click',hideShop); $('btn-reset').addEventListener('click',()=>{sfx.click();show(els.modalReset)}); $('btn-reset-cancel').addEventListener('click',()=>{sfx.click();hide(els.modalReset)}); $('btn-reset-ok').addEventListener('click',reset); $('btn-next-shop').addEventListener('click',showShop); $('btn-next-menu').addEventListener('click',()=>{hide(els.modalDay);show(els.menu)}); $('btn-pause').addEventListener('click',pauseToggle); $('btn-undo').addEventListener('click',undo); $('btn-clear').addEventListener('click',()=>{clearBoard();sfx.click()}); $('btn-hint').addEventListener('click',showHint); $('btn-sound').addEventListener('click',()=>{state.muted=!state.muted; save(); updateMenuUI(); toast(state.muted?'소리를 껐어요.':'소리를 켰어요.','info'); if(!state.muted) sfx.click();}); $('btn-serve').addEventListener('click',serve); els.board.addEventListener('pointerdown',addPoint); els.grid.addEventListener('change',()=>{clearBoard(); sfx.click();}); els.unit.addEventListener('change',()=>{draw(); updateArea(); sfx.click();}); window.addEventListener('keydown',e=>{ if(e.key==='Escape' && state.running) endDay(); if(e.key===' ' && state.running){ e.preventDefault(); serve(); } if(e.key.toLowerCase()==='h' && state.running) showHint(); }); window.addEventListener('resize',draw); }
+bind(); load(); draw(); updateArea();
+})();
+</script>
 </body>
 </html>
