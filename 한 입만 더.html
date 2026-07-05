@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한 입만 더 (Mosquito Simulator)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Malgun Gothic', sans-serif;
+            overflow: hidden;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            border: 2px solid #333;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .stat-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-label {
+            font-family: 'Teko', sans-serif;
+            font-size: 24px;
+            color: #fff;
+            margin-right: 15px;
+            letter-spacing: 2px;
+        }
+
+        .progress-bg {
+            width: 200px;
+            height: 16px;
+            background: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-right: 15px;
+            border: 1px solid #111;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear, background-color 0.2s;
+        }
+
+        .progress-fill.blood {
+            background: linear-gradient(90deg, #8e0000, #ff2a2a);
+            box-shadow: 0 0 10px #ff2a2a;
+        }
+
+        .progress-fill.threat {
+            background: linear-gradient(90deg, #b8860b, #ff4500);
+            box-shadow: 0 0 10px #ff4500;
+        }
+
+        .stat-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            width: 60px;
+            text-align: right;
+        }
+
+        #instruction-text {
+            align-self: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 12, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.5s;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #start-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 100px;
+            color: #fff;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            letter-spacing: 5px;
+        }
+
+        #start-desc {
+            font-size: 24px;
+            color: #ccc;
+            margin-bottom: 40px;
+        }
+
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #start-btn:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        #end-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 100px;
+            color: #ff2a2a;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(255, 42, 42, 0.5);
+            letter-spacing: 5px;
+        }
+
+        #clear-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 100px;
+            color: #2ecc71;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+            letter-spacing: 5px;
+        }
+
+        #end-desc {
+            font-size: 24px;
+            color: #ccc;
+            margin-bottom: 40px;
+        }
+
+        #restart-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            background: transparent;
+            color: #fff;
+            border: 2px solid #ff2a2a;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #restart-btn:hover {
+            background: #ff2a2a;
+            color: #000;
+            box-shadow: 0 0 20px #ff2a2a;
+        }
+
+        #next-stage-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            background: transparent;
+            color: #fff;
+            border: 2px solid #2ecc71;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #next-stage-btn:hover {
+            background: #2ecc71;
+            color: #000;
+            box-shadow: 0 0 20px #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <div id="ui-layer">
+            <div id="start-screen" class="overlay">
+                <h1 id="start-title">한 입만 더</h1>
+                <p id="start-desc">소리가 포함되어 있습니다. 이어폰/헤드폰을 권장합니다.</p>
+                <button id="start-btn">게임 시작</button>
+            </div>
+
+            <div class="top-bar">
+                <div class="stat-container">
+                    <div class="stat-label">BLOOD</div>
+                    <div class="progress-bg">
+                        <div id="blood-fill" class="progress-fill blood"></div>
+                    </div>
+                    <div id="blood-text" class="stat-value">0%</div>
+                </div>
+                
+                <div class="stat-container">
+                    <div class="stat-label">THREAT</div>
+                    <div class="progress-bg">
+                        <div id="threat-fill" class="progress-fill threat"></div>
+                    </div>
+                    <div id="threat-text" class="stat-value">0%</div>
+                </div>
+            </div>
+            
+            <div id="instruction-text">마우스 드래그로 이동, 클릭 유지로 흡혈</div>
+            
+            <div id="game-over-screen" class="overlay hidden">
+                <h1 id="end-title">GAME OVER</h1>
+                <p id="end-desc">찰싹! 모기가 잡혔습니다.</p>
+                <button id="restart-btn">다시 시작 (F5)</button>
+            </div>
+            
+            <div id="stage-clear-screen" class="overlay hidden">
+                <h1 id="clear-title">STAGE CLEAR</h1>
+                <p id="end-desc">충분한 피를 모았습니다! 배부른 모기가 되었습니다.</p>
+                <button id="next-stage-btn" onclick="location.reload()">다음 밤으로 (F5)</button>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    </div>
+    
+    <script>
+        class AudioManager {
+            constructor() {
+                this.ctx = null;
+                this.initialized = false;
+                
+                this.bgmOsc = null;
+                this.bgmGain = null;
+                
+                this.buzzOsc = null;
+                this.buzzGain = null;
+                
+                this.heartbeatTimer = 0;
+            }
+            
+            init() {
+                if (this.initialized) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+                
+                // Setup BGM (Ambient Drone)
+                this.bgmOsc = this.ctx.createOscillator();
+                this.bgmOsc.type = 'sine';
+                this.bgmOsc.frequency.value = 55; 
+                
+                this.bgmGain = this.ctx.createGain();
+                this.bgmGain.gain.value = 0.3;
+                
+                this.bgmOsc.connect(this.bgmGain);
+                this.bgmGain.connect(this.ctx.destination);
+                this.bgmOsc.start();
+                
+                // Setup Mosquito Buzz
+                this.buzzOsc = this.ctx.createOscillator();
+                this.buzzOsc.type = 'sawtooth';
+                this.buzzOsc.frequency.value = 500;
+                
+                this.buzzGain = this.ctx.createGain();
+                this.buzzGain.gain.value = 0;
+                
+                // Bandpass filter for realistic buzz
+                const buzzFilter = this.ctx.createBiquadFilter();
+                buzzFilter.type = 'bandpass';
+                buzzFilter.frequency.value = 1200;
+                buzzFilter.Q.value = 1.5;
+                
+                this.buzzOsc.connect(buzzFilter);
+                buzzFilter.connect(this.buzzGain);
+                this.buzzGain.connect(this.ctx.destination);
+                this.buzzOsc.start();
+                
+                this.initialized = true;
+            }
+            
+            updateMosquito(speed, state) {
+                if (!this.initialized) return;
+                
+                if (state === 'sucking') {
+                    // Pulse the buzz and lower pitch
+                    this.buzzOsc.frequency.setTargetAtTime(250 + Math.sin(this.ctx.currentTime * 15) * 50, this.ctx.currentTime, 0.1);
+                    this.buzzGain.gain.setTargetAtTime(0.08, this.ctx.currentTime, 0.1);
+                } else if (state === 'flying') {
+                    // Pitch depends on speed
+                    this.buzzOsc.frequency.setTargetAtTime(450 + (speed * 0.4), this.ctx.currentTime, 0.1);
+                    this.buzzGain.gain.setTargetAtTime(0.02 + (speed / 10000), this.ctx.currentTime, 0.1);
+                }
+            }
+            
+            updateThreat(threat, dt) {
+                if (!this.initialized) return;
+                
+                // BGM gets slightly more dissonant/louder as threat goes up
+                this.bgmGain.gain.setTargetAtTime(0.3 + (threat / 200), this.ctx.currentTime, 0.5);
+                this.bgmOsc.frequency.setTargetAtTime(55 + (threat / 5), this.ctx.currentTime, 0.5);
+                
+                // Heartbeat logic
+                if (threat > 40) {
+                    this.heartbeatTimer -= dt;
+                    const beatInterval = Math.max(0.2, 1.0 - (threat / 100) * 0.85);
+                    if (this.heartbeatTimer <= 0) {
+                        this.playHeartbeat(threat);
+                        this.heartbeatTimer = beatInterval;
+                    }
+                }
+            }
+            
+            playHeartbeat(threat) {
+                if (!this.initialized) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.1);
+                
+                const volume = (threat / 100) * 0.8;
+                gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+            
+            playSlap() {
+                if (!this.initialized) return;
+                
+                const bufferSize = this.ctx.sampleRate * 0.5; 
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1; // White noise
+                }
+                
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(2000, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+                
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                noise.start();
+            }
+            
+            stopAll() {
+                if (!this.initialized) return;
+                this.bgmGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+                this.buzzGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.width = 1280;
+                this.height = 720;
+                
+                this.worldWidth = 4000;
+                this.worldHeight = 4000;
+                
+                this.blood = 0;
+                this.threat = 0;
+                this.gameOver = false;
+                this.stageCleared = false;
+                this.isStarted = false;
+                
+                this.ui = {
+                    startScreen: document.getElementById('start-screen'),
+                    startBtn: document.getElementById('start-btn'),
+                    bloodFill: document.getElementById('blood-fill'),
+                    bloodText: document.getElementById('blood-text'),
+                    threatFill: document.getElementById('threat-fill'),
+                    threatText: document.getElementById('threat-text'),
+                    gameOverScreen: document.getElementById('game-over-screen'),
+                    stageClearScreen: document.getElementById('stage-clear-screen'),
+                    restartBtn: document.getElementById('restart-btn')
+                };
+                
+                this.audio = new AudioManager();
+                
+                this.ui.startBtn.addEventListener('click', () => {
+                    this.audio.init();
+                    this.ui.startScreen.classList.add('hidden');
+                    this.isStarted = true;
+                    this.lastTime = performance.now();
+                    requestAnimationFrame((time) => this.loop(time));
+                });
+                
+                this.ui.restartBtn.addEventListener('click', () => {
+                    location.reload();
+                });
+                
+                this.camera = new Camera(this);
+                this.environment = new Environment(this);
+                this.particles = new ParticleSystem(this);
+                this.mosquito = new Mosquito(this); 
+                this.handSystem = new HandSystem(this);
+                
+                this.input = {
+                    isDragging: false,
+                    mouseX: 0,
+                    mouseY: 0
+                };
+                
+                this.initEvents();
+            }
+            
+            initEvents() {
+                this.canvas.addEventListener('pointerdown', (e) => {
+                    if (this.gameOver || this.stageCleared || !this.isStarted) return;
+                    this.input.isDragging = true;
+                    this.updateMousePos(e);
+                });
+                
+                window.addEventListener('pointerup', () => {
+                    this.input.isDragging = false;
+                });
+                
+                window.addEventListener('pointermove', (e) => {
+                    this.updateMousePos(e);
+                });
+                
+                this.canvas.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
+                this.canvas.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
+            }
+            
+            updateMousePos(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                
+                this.input.mouseX = (e.clientX - rect.left) * scaleX;
+                this.input.mouseY = (e.clientY - rect.top) * scaleY;
+            }
+            
+            addBlood(amount) {
+                if(this.gameOver || this.stageCleared) return;
+                this.blood = Math.min(100, this.blood + amount);
+                
+                let currentHighScore = parseInt(localStorage.getItem('mosquitoHighScore') || '0');
+                if (Math.floor(this.blood) > currentHighScore) {
+                    localStorage.setItem('mosquitoHighScore', Math.floor(this.blood));
+                }
+
+                if(this.blood >= 100) {
+                    this.triggerStageClear();
+                }
+            }
+            
+            addThreat(amount) {
+                if(this.gameOver || this.stageCleared) return;
+                this.threat = Math.min(100, this.threat + amount);
+            }
+            
+            triggerGameOver() {
+                if(this.gameOver || this.stageCleared) return;
+                this.gameOver = true;
+                this.audio.stopAll();
+                this.ui.gameOverScreen.classList.remove('hidden');
+            }
+            
+            triggerStageClear() {
+                if(this.gameOver || this.stageCleared) return;
+                this.stageCleared = true;
+                this.audio.stopAll();
+                this.ui.stageClearScreen.classList.remove('hidden');
+            }
+            
+            updateUI() {
+                this.ui.bloodFill.style.width = `${this.blood}%`;
+                this.ui.bloodText.innerText = `${Math.floor(this.blood)}%`;
+                
+                this.ui.threatFill.style.width = `${this.threat}%`;
+                this.ui.threatText.innerText = `${Math.floor(this.threat)}%`;
+                
+                if (this.threat > 80) {
+                    this.ui.threatFill.style.boxShadow = `0 0 ${20 + Math.sin(Date.now() / 50) * 15}px #ff4500`;
+                } else {
+                    this.ui.threatFill.style.boxShadow = `0 0 10px #ff4500`;
+                }
+            }
+            
+            loop(time) {
+                const dt = Math.min((time - this.lastTime) / 1000, 0.1);
+                this.lastTime = time;
+                
+                if (!this.gameOver && !this.stageCleared) {
+                    this.update(dt);
+                }
+                
+                this.draw();
+                
+                requestAnimationFrame((t) => this.loop(t));
+            }
+            
+            update(dt) {
+                this.mosquito.update(dt, this.input, this.camera);
+                this.camera.update(this.mosquito);
+                this.particles.update(dt);
+                this.handSystem.update(dt);
+                this.audio.updateThreat(this.threat, dt);
+                this.updateUI();
+            }
+            
+            draw() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                this.ctx.save();
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+                
+                this.environment.draw(this.ctx, this.camera);
+                this.particles.draw(this.ctx, this.camera);
+                this.mosquito.draw(this.ctx);
+                this.handSystem.draw(this.ctx, this.camera);
+                
+                this.ctx.restore();
+            }
+        }
+
+        class Camera {
+            constructor(game) {
+                this.game = game;
+                this.x = 0;
+                this.y = 0;
+                this.width = game.width;
+                this.height = game.height;
+            }
+            
+            update(target) {
+                let targetX = target.x - this.width / 2;
+                let targetY = target.y - this.height / 2;
+                
+                targetX = Math.max(0, Math.min(targetX, this.game.worldWidth - this.width));
+                targetY = Math.max(0, Math.min(targetY, this.game.worldHeight - this.height));
+                
+                this.x += (targetX - this.x) * 0.1;
+                this.y += (targetY - this.y) * 0.1;
+            }
+        }
+
+        class Mosquito {
+            constructor(game) {
+                this.game = game;
+                this.x = game.worldWidth / 2;
+                this.y = game.worldHeight / 2;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 15;
+                this.maxSpeed = 800;
+                this.acceleration = 3500;
+                this.friction = 0.94;
+                this.heading = -Math.PI / 2;
+                
+                this.state = 'flying'; 
+                this.suckTimer = 0;
+                this.bodySwelling = 0;
+                this.slowdownTimer = 0; 
+            }
+            
+            applyDamage(type) {
+                if(type === 'fatal') {
+                    this.game.triggerGameOver();
+                } else if (type === 'glance') {
+                    this.slowdownTimer = 2.0; 
+                }
+            }
+            
+            update(dt, input, camera) {
+                if(this.slowdownTimer > 0) {
+                    this.slowdownTimer -= dt;
+                }
+                
+                const currentMaxSpeed = this.slowdownTimer > 0 ? this.maxSpeed * 0.3 : this.maxSpeed;
+                const currentAcceleration = this.slowdownTimer > 0 ? this.acceleration * 0.3 : this.acceleration;
+                
+                let inLight = false;
+                for(let light of this.game.environment.lightZones) {
+                    const dx = this.x - light.x;
+                    const dy = this.y - light.y;
+                    if(Math.sqrt(dx*dx + dy*dy) < light.radius * 0.8) { 
+                        inLight = true;
+                        break;
+                    }
+                }
+                
+                if (input.isDragging) {
+                    const targetWorldX = input.mouseX + camera.x;
+                    const targetWorldY = input.mouseY + camera.y;
+                    
+                    const dx = targetWorldX - this.x;
+                    const dy = targetWorldY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    let onBloodSpot = false;
+                    for(let spot of this.game.environment.bloodSpots) {
+                        const sdx = this.x - spot.x;
+                        const sdy = this.y - spot.y;
+                        if(Math.sqrt(sdx*sdx + sdy*sdy) < spot.radius) {
+                            onBloodSpot = true;
+                            break;
+                        }
+                    }
+                    
+                    if (onBloodSpot && dist < 50) {
+                        this.state = 'sucking';
+                    } else {
+                        this.state = 'flying';
+                        this.suckTimer = 0;
+                    }
+                    
+                    if (this.state === 'flying' && dist > 10) {
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        
+                        this.vx += nx * currentAcceleration * dt;
+                        this.vy += ny * currentAcceleration * dt;
+                    }
+                } else {
+                    this.state = 'flying';
+                    this.suckTimer = 0;
+                }
+                
+                if (this.state === 'sucking') {
+                    this.vx *= 0.8; 
+                    this.vy *= 0.8;
+                    this.suckTimer += dt;
+                    
+                    const bloodGain = (1 + Math.pow(1.8, this.suckTimer)) * 0.5 * dt;
+                    let threatGain = (1 + Math.pow(2.2, this.suckTimer)) * 0.6 * dt;
+                    
+                    if (inLight) threatGain *= 2.0; 
+                    
+                    this.game.addBlood(bloodGain);
+                    this.game.addThreat(threatGain);
+                    
+                    this.bodySwelling = Math.min(10, this.bodySwelling + 2 * dt);
+                } else {
+                    this.bodySwelling = Math.max(0, this.bodySwelling - 10 * dt);
+                    
+                    if (inLight) {
+                        this.game.addThreat(15 * dt); 
+                    } else {
+                        this.game.threat = Math.max(0, this.game.threat - 20 * dt); 
+                    }
+                }
+                
+                this.vx *= Math.pow(this.friction, dt * 60);
+                this.vy *= Math.pow(this.friction, dt * 60);
+                
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > currentMaxSpeed) {
+                    this.vx = (this.vx / speed) * currentMaxSpeed;
+                    this.vy = (this.vy / speed) * currentMaxSpeed;
+                }
+                
+                if (speed > 50 && this.state === 'flying') {
+                    this.heading = Math.atan2(this.vy, this.vx);
+                }
+                
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                
+                if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.5; }
+                if (this.x > this.game.worldWidth - this.radius) { this.x = this.game.worldWidth - this.radius; this.vx *= -0.5; }
+                if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.5; }
+                if (this.y > this.game.worldHeight - this.radius) { this.y = this.game.worldHeight - this.radius; this.vy *= -0.5; }
+                
+                // Update audio based on speed and state
+                this.game.audio.updateMosquito(speed, this.state);
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.heading);
+                
+                if (this.slowdownTimer > 0) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius + 10, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                    ctx.fill();
+                }
+                
+                const time = Date.now() / 1000;
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                
+                let flapSpeed = 0;
+                let wingAngle = 0;
+                if (this.state === 'flying') {
+                    flapSpeed = 50 + (speed / 10);
+                    wingAngle = Math.sin(time * flapSpeed) * 0.6; 
+                } else {
+                    wingAngle = 0.2; 
+                }
+                
+                ctx.beginPath(); ctx.ellipse(0, -this.radius + 2, 20, 8, wingAngle, 0, Math.PI * 2); ctx.fillStyle = 'rgba(200, 255, 255, 0.6)'; ctx.fill();
+                ctx.beginPath(); ctx.ellipse(0, this.radius - 2, 20, 8, -wingAngle, 0, Math.PI * 2); ctx.fillStyle = 'rgba(200, 255, 255, 0.6)'; ctx.fill();
+                
+                const bloodRatio = this.game.blood / 100;
+                ctx.beginPath();
+                ctx.ellipse(-this.bodySwelling, 0, this.radius + (bloodRatio * 10) + this.bodySwelling, this.radius * 0.6 + (bloodRatio * 5), 0, 0, Math.PI * 2);
+                
+                const bodyGrad = ctx.createRadialGradient(-this.bodySwelling, 0, 0, -this.bodySwelling, 0, this.radius + 15);
+                bodyGrad.addColorStop(0, '#444');
+                bodyGrad.addColorStop(1, `rgba(${68 + bloodRatio*180}, 0, 0, 1)`);
+                
+                ctx.fillStyle = bodyGrad;
+                ctx.fill();
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.closePath();
+                
+                ctx.beginPath();
+                ctx.arc(this.radius - 5, 0, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#333';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(this.radius + 3, 0);
+                ctx.lineTo(this.radius + 20, 0);
+                ctx.strokeStyle = '#bbb';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                if (this.state === 'sucking') {
+                    ctx.beginPath();
+                    ctx.arc(this.radius + 18, 0, 3 + Math.sin(time * 20), 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff2a2a';
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class Environment {
+            constructor(game) {
+                this.game = game;
+                
+                this.bloodSpots = [];
+                for (let i = 0; i < 20; i++) {
+                    this.bloodSpots.push({
+                        x: Math.random() * game.worldWidth,
+                        y: Math.random() * game.worldHeight,
+                        radius: Math.random() * 100 + 80,
+                    });
+                }
+                this.bloodSpots.push({ x: game.worldWidth/2 + 200, y: game.worldHeight/2 + 200, radius: 150 });
+                
+                this.lightZones = [];
+                for (let i = 0; i < 15; i++) {
+                    this.lightZones.push({
+                        x: Math.random() * game.worldWidth,
+                        y: Math.random() * game.worldHeight,
+                        radius: Math.random() * 400 + 300,
+                    });
+                }
+                this.lightZones.push({ x: game.worldWidth/2 + 200, y: game.worldHeight/2 + 200, radius: 400 });
+                
+                this.features = [];
+                for (let i = 0; i < 3000; i++) {
+                    this.features.push({
+                        x: Math.random() * game.worldWidth,
+                        y: Math.random() * game.worldHeight,
+                        r: Math.random() * 4 + 1,
+                        color: `rgba(0, 0, 0, ${Math.random() * 0.08 + 0.02})`
+                    });
+                }
+                
+                this.hairs = [];
+                for (let i = 0; i < 1000; i++) {
+                    this.hairs.push({
+                        x: Math.random() * game.worldWidth,
+                        y: Math.random() * game.worldHeight,
+                        length: Math.random() * 40 + 20,
+                        angle: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            draw(ctx, camera) {
+                ctx.fillStyle = '#1a1412';
+                ctx.fillRect(0, 0, this.game.worldWidth, this.game.worldHeight);
+                
+                const padding = 200; 
+                
+                for (const spot of this.bloodSpots) {
+                    if (spot.x > camera.x - spot.radius && spot.x < camera.x + camera.width + spot.radius &&
+                        spot.y > camera.y - spot.radius && spot.y < camera.y + camera.height + spot.radius) {
+                        
+                        const grad = ctx.createRadialGradient(spot.x, spot.y, 0, spot.x, spot.y, spot.radius);
+                        grad.addColorStop(0, 'rgba(150, 0, 0, 0.3)');
+                        grad.addColorStop(1, 'rgba(150, 0, 0, 0)');
+                        
+                        ctx.beginPath();
+                        ctx.arc(spot.x, spot.y, spot.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = grad;
+                        ctx.fill();
+                    }
+                }
+                
+                for (const f of this.features) {
+                    if (f.x > camera.x - padding && f.x < camera.x + camera.width + padding &&
+                        f.y > camera.y - padding && f.y < camera.y + camera.height + padding) {
+                        ctx.beginPath();
+                        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                        ctx.fillStyle = f.color;
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+                
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                for (const h of this.hairs) {
+                    if (h.x > camera.x - padding && h.x < camera.x + camera.width + padding &&
+                        h.y > camera.y - padding && h.y < camera.y + camera.height + padding) {
+                        ctx.beginPath();
+                        ctx.moveTo(h.x, h.y);
+                        ctx.lineTo(h.x + Math.cos(h.angle) * h.length, h.y + Math.sin(h.angle) * h.length);
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.65)'; 
+                ctx.fillRect(camera.x, camera.y, camera.width, camera.height);
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                for(const light of this.lightZones) {
+                    if (light.x > camera.x - light.radius && light.x < camera.x + camera.width + light.radius &&
+                        light.y > camera.y - light.radius && light.y < camera.y + camera.height + light.radius) {
+                        
+                        const grad = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, light.radius);
+                        grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                        grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.8)');
+                        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                        
+                        ctx.beginPath();
+                        ctx.arc(light.x, light.y, light.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = grad;
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        class ParticleSystem {
+            constructor(game) {
+                this.game = game;
+                this.particles = [];
+            }
+            
+            update(dt) {
+                for(let spot of this.game.environment.bloodSpots) {
+                    const cam = this.game.camera;
+                    if (spot.x > cam.x - 500 && spot.x < cam.x + cam.width + 500 &&
+                        spot.y > cam.y - 500 && spot.y < cam.y + cam.height + 500) {
+                        
+                        if (Math.random() < 2 * dt) { 
+                            this.particles.push({
+                                x: spot.x + (Math.random() - 0.5) * spot.radius * 0.8,
+                                y: spot.y + (Math.random() - 0.5) * spot.radius * 0.8,
+                                vx: (Math.random() - 0.5) * 20,
+                                vy: -Math.random() * 30 - 10, 
+                                life: 2.0,
+                                maxLife: 2.0,
+                                radius: Math.random() * 15 + 10
+                            });
+                        }
+                    }
+                }
+                
+                for(let i=this.particles.length-1; i>=0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.life -= dt;
+                    p.radius += 5 * dt; 
+                    if(p.life <= 0) this.particles.splice(i, 1);
+                }
+            }
+            
+            draw(ctx, camera) {
+                for(let p of this.particles) {
+                    const alpha = (p.life / p.maxLife) * 0.4;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(200, 200, 200, ${alpha})`;
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+        }
+
+        class HandSystem {
+            constructor(game) {
+                this.game = game;
+                this.attacks = [];
+                this.attackCooldown = 0;
+            }
+            
+            triggerAttack(forcedType = null) {
+                const types = ['slam', 'swipe', 'clap'];
+                const type = forcedType || types[Math.floor(Math.random() * types.length)];
+                
+                this.attacks.push(new HandAttack(this.game, type, this.game.mosquito.x, this.game.mosquito.y));
+                this.game.threat = Math.max(0, this.game.threat - 40);
+            }
+            
+            update(dt) {
+                if (this.attackCooldown > 0) this.attackCooldown -= dt;
+                
+                if (this.game.threat >= 100 && this.attacks.length === 0) {
+                    this.triggerAttack();
+                } else if (this.game.threat > 60 && this.attackCooldown <= 0) {
+                    if (Math.random() < (this.game.threat / 100) * dt) {
+                        this.triggerAttack();
+                        this.attackCooldown = 5.0; 
+                    }
+                }
+                
+                for(let i=this.attacks.length-1; i>=0; i--) {
+                    let atk = this.attacks[i];
+                    atk.update(dt);
+                    if(atk.isDone) this.attacks.splice(i, 1);
+                }
+            }
+            
+            draw(ctx, camera) {
+                for(let atk of this.attacks) {
+                    atk.draw(ctx, camera);
+                }
+            }
+        }
+
+        class HandAttack {
+            constructor(game, type, targetX, targetY) {
+                this.game = game;
+                this.type = type;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                
+                this.timer = 0;
+                this.warningDuration = 1.2;
+                this.slapDuration = 0.2;
+                this.fadeDuration = 0.5;
+                
+                this.isDone = false;
+                this.hasHit = false;
+            }
+            
+            update(dt) {
+                this.timer += dt;
+                
+                if (!this.hasHit && this.timer > this.warningDuration && this.timer < this.warningDuration + this.slapDuration) {
+                    this.game.audio.playSlap(); // Play slap sound
+                    this.checkCollision();
+                    this.hasHit = true;
+                }
+                
+                if (this.timer > this.warningDuration + this.slapDuration + this.fadeDuration) {
+                    this.isDone = true;
+                }
+            }
+            
+            checkCollision() {
+                const mq = this.game.mosquito;
+                
+                if (this.type === 'slam') {
+                    const dx = mq.x - this.targetX;
+                    const dy = mq.y - this.targetY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const slamRadius = 150;
+                    
+                    if (dist < slamRadius - 20) {
+                        mq.applyDamage('fatal');
+                    } else if (dist < slamRadius + 20) {
+                        mq.applyDamage('glance');
+                    }
+                } else if (this.type === 'swipe') {
+                    const swipeHeight = 200;
+                    if (Math.abs(mq.y - this.targetY) < swipeHeight / 2) {
+                        if(Math.abs(mq.y - this.targetY) < swipeHeight / 2 - 20) {
+                            mq.applyDamage('fatal');
+                        } else {
+                            mq.applyDamage('glance');
+                        }
+                    }
+                } else if (this.type === 'clap') {
+                    const clapWidth = 100;
+                    const clapHeight = 300;
+                    
+                    if (Math.abs(mq.x - this.targetX) < clapWidth && Math.abs(mq.y - this.targetY) < clapHeight/2) {
+                        if (Math.abs(mq.x - this.targetX) < clapWidth - 20) {
+                            mq.applyDamage('fatal');
+                        } else {
+                            mq.applyDamage('glance');
+                        }
+                    }
+                }
+            }
+            
+            draw(ctx, camera) {
+                let alpha = 0;
+                let scale = 1;
+                let isSlapping = false;
+                
+                if (this.timer < this.warningDuration) {
+                    alpha = (this.timer / this.warningDuration) * 0.5;
+                    scale = 1 + (1 - (this.timer / this.warningDuration)) * 0.5;
+                } else if (this.timer < this.warningDuration + this.slapDuration) {
+                    alpha = 0.9;
+                    scale = 1;
+                    isSlapping = true;
+                } else {
+                    const fadeTimer = this.timer - (this.warningDuration + this.slapDuration);
+                    alpha = 0.9 * (1 - (fadeTimer / this.fadeDuration));
+                    scale = 1;
+                }
+                
+                ctx.save();
+                ctx.translate(this.targetX, this.targetY);
+                
+                const shadowColor = `rgba(0, 0, 0, ${alpha})`;
+                const slapColor = `rgba(230, 180, 150, ${alpha})`; 
+                
+                ctx.fillStyle = isSlapping ? slapColor : shadowColor;
+                
+                if (this.type === 'slam') {
+                    const radius = 150 * scale;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if(isSlapping) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, radius + 20, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(255, 255, 255, 0.5)`;
+                        ctx.lineWidth = 10;
+                        ctx.stroke();
+                    }
+                } else if (this.type === 'swipe') {
+                    const width = 1500; 
+                    const height = 200 * scale;
+                    
+                    let offsetX = 0;
+                    if(this.timer < this.warningDuration) {
+                        offsetX = 800 * (1 - (this.timer / this.warningDuration));
+                    } else if (isSlapping) {
+                        offsetX = 0;
+                    } else {
+                        const fadeTimer = this.timer - (this.warningDuration + this.slapDuration);
+                        offsetX = -800 * (fadeTimer / this.fadeDuration);
+                    }
+                    
+                    ctx.fillRect(-width/2 + offsetX, -height/2, width, height);
+                } else if (this.type === 'clap') {
+                    const width = 100 * scale;
+                    const height = 300 * scale;
+                    
+                    let offset = 0;
+                    if(this.timer < this.warningDuration) {
+                        offset = 200 * (1 - (this.timer / this.warningDuration));
+                    }
+                    
+                    ctx.fillRect(-offset - width, -height/2, width, height);
+                    ctx.fillRect(offset, -height/2, width, height);
+                    
+                    if(isSlapping) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 100, 0, Math.PI*2);
+                        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                        ctx.fill();
+                    }
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        window.onload = () => {
+            // Game initialization is now delayed until the start button is clicked
+            new Game();
+        };
+    </script>
+</body>
+</html>
