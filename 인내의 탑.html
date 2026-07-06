@@ -221,6 +221,7 @@
   <canvas id="game" width="900" height="540"></canvas>
 
   <div class="hud">
+    <div class="pill">생명 <b class="red" id="heartNow">♥♥♥</b><span id="regenText" style="font-size:11px; margin-left:6px; color:rgba(255,255,255,0.6);"></span></div>
     <div class="pill">현재 <b id="heightNow">0m</b></div>
     <div class="pill">최고 <b id="heightBest">0m</b></div>
     <div class="pill">낙하 <b class="red" id="fallNow">0m</b></div>
@@ -250,7 +251,7 @@
       <h1>🗼 인내의 탑 v2</h1>
       <p class="subtitle">
         끈기의 숲 감성의 화나는 점핑 등반 게임입니다.<br>
-        v2에서는 재시작, 체크포인트, 높은 고도 표시, 입력 안정성을 손봤습니다.
+        v2에서는 생명력 시스템과 무서운 가시가 추가되었습니다!
       </p>
       <button class="bigStart" id="startBtn">도전 시작</button>
       <div class="options">
@@ -259,7 +260,7 @@
       </div>
       <div class="hint">
         조작: A/D 또는 ←/→ 이동 · Space/W/↑ 점프 · 점프키를 짧게/길게 눌러 높이 조절<br>
-        R: 분노 모드 완전 재시작 / 연습 모드 체크포인트 복귀 · P: 일시정지 · M: 소리 켜기/끄기
+        R: 완전 재시작 / 체크포인트 복귀 · P: 일시정지 · M: 소리 끄기
       </div>
     </div>
   </div>
@@ -277,7 +278,12 @@
   const WORLD_W = 900;
   const PX_PER_M = 44;
 
+  const MAX_HEARTS = 3;
+  const REGEN_TIME = 180; // 3분(180초)
+
   const ui = {
+    heartNow: document.getElementById("heartNow"),
+    regenText: document.getElementById("regenText"),
     heightNow: document.getElementById("heightNow"),
     heightBest: document.getElementById("heightBest"),
     fallNow: document.getElementById("fallNow"),
@@ -308,9 +314,7 @@
   function saveBestMeter(value) {
     try {
       localStorage.setItem("patienceTowerBestM", String(value));
-    } catch (err) {
-      // 저장이 막힌 브라우저에서도 게임 자체는 계속 진행한다.
-    }
+    } catch (err) { }
   }
 
   let audioCtx = null;
@@ -377,13 +381,7 @@
     }, 210);
   }
 
-  const input = {
-    left:false,
-    right:false,
-    jump:false,
-    jumpPressed:false,
-    jumpReleased:false,
-  };
+  const input = { left:false, right:false, jump:false, jumpPressed:false, jumpReleased:false };
 
   const state = {
     started:false,
@@ -405,25 +403,16 @@
     message:"",
     comboFlash:0,
     lastFallWarnMeter:0,
+    hearts: 3,
+    regenTimer: 0,
   };
 
   const player = {
-    x:92,
-    y:-22,
-    prevX:92,
-    prevY:-22,
-    vx:0,
-    vy:0,
-    r:17,
-    face:1,
-    onGround:false,
-    ground:null,
-    coyote:0,
-    jumpBuffer:0,
-    jumpHold:0,
-    squash:0,
-    trail:[],
-    color:"#ffdf64",
+    x:92, y:-22, prevX:92, prevY:-22,
+    vx:0, vy:0, r:17, face:1,
+    onGround:false, ground:null, coyote:0,
+    jumpBuffer:0, jumpHold:0, squash:0,
+    trail:[], color:"#ffdf64", invincible: 0,
   };
 
   let platforms = [];
@@ -435,18 +424,11 @@
   function newPlatform(x, y, w, type="normal", extra={}) {
     return {
       id: nextPlatId++,
-      x, y, w,
-      h: 18,
-      type,
-      active:true,
-      touched:false,
-      timer:0,
+      x, y, w, h: 18, type,
+      active:true, touched:false, timer:0,
       phase:rand(0, Math.PI * 2),
-      baseX:x,
-      range: extra.range || 0,
-      speed: extra.speed || 0,
-      dxLast:0,
-      label: extra.label || "",
+      baseX:x, range: extra.range || 0, speed: extra.speed || 0,
+      dxLast:0, label: extra.label || "",
     };
   }
 
@@ -495,10 +477,7 @@
       let type = chooseType(m);
       let extra = {};
 
-      if (type === "tiny") {
-        width = rand(62, 82);
-        type = "normal";
-      }
+      if (type === "tiny") { width = rand(62, 82); type = "normal"; }
       if (type === "moving") {
         width = clamp(width + 15, 100, 185);
         x = clamp(x, 110, WORLD_W - 110 - width);
@@ -507,6 +486,29 @@
       }
 
       platforms.push(newPlatform(x, y, width, type, extra));
+
+      // 가시 생성 로직 (40m 이상부터 15% 확률)
+      if (m > 40 && Math.random() < 0.15) {
+        const isVertical = Math.random() < 0.5;
+        platforms.push({
+          id: nextPlatId++,
+          x: center + rand(-100, 100), y: y - rand(50, 150),
+          w: 24, h: 24, type: "spike", active: true,
+          axis: isVertical ? 'y' : 'x',
+          baseX: center + rand(-100, 100), baseY: y - rand(50, 150),
+          range: rand(40, 90), speed: rand(1, 2.5), phase: rand(0, Math.PI * 2)
+        });
+      }
+
+      // 희귀 포션 생성 (50m 이상부터 약 2% 확률)
+      if (m > 50 && Math.random() < 0.02) {
+        platforms.push({
+          id: nextPlatId++,
+          x: center + rand(-80, 80), y: y - rand(30, 80),
+          w: 20, h: 20, type: "potion", active: true,
+          baseY: y - rand(30, 80), phase: rand(0, Math.PI * 2)
+        });
+      }
 
       if (m > 70 && Math.random() < 0.18) {
         const sideW = rand(46, 70);
@@ -520,8 +522,6 @@
   }
 
   function cleanupOldPlatforms() {
-    // 무한 등반 게임이라 오래 플레이하면 배열이 계속 커질 수 있다.
-    // 현재 시야보다 충분히 아래쪽의 발판만 정리하되, 큰 추락의 재미는 남겨둔다.
     const keepBelowCamera = 6200;
     platforms = platforms.filter(p => p.type === "ground" || p.y <= state.cameraY + keepBelowCamera);
   }
@@ -545,6 +545,24 @@
     }
   }
 
+  function takeDamage(reason) {
+    if (player.invincible > 0 || state.hearts <= 0) return;
+    
+    state.hearts--;
+    player.invincible = 1.5; // 1.5초 무적
+    state.shake = 0.6;
+    noiseBurst(0.15, 0.15);
+    beep(100, .15, "sawtooth", .2, -50);
+    
+    if (state.hearts <= 0) {
+      toast(`[사망] ${reason}... 처음부터 다시 시작합니다.`);
+      setTimeout(() => hardRestartRun(), 1500); 
+    } else {
+      toast(`${reason}! 생명력 감소!`);
+      player.vy = -350; 
+    }
+  }
+
   function hardRestartRun() {
     resetWorld();
     state.runBestMeter = 0;
@@ -553,28 +571,26 @@
     state.lastFallWarnMeter = 0;
     state.checkpoint = {x:92, y:-22, meter:0};
     state.lastCheckpointMeter = 0;
+    state.hearts = 3;
+    state.regenTimer = 0;
     resetPlayer(false);
   }
 
   function restartOrCheckpoint() {
-    if (state.practice && state.checkpoint.meter > 0) resetPlayer(true);
+    if (state.practice && state.checkpoint.meter > 0) {
+      resetPlayer(true);
+      state.hearts = 3;
+      state.regenTimer = 0;
+    }
     else hardRestartRun();
   }
 
   function resetPlayer(toCheckpoint=false) {
     const cp = state.practice && toCheckpoint ? state.checkpoint : {x:92, y:-22, meter:0};
-    player.x = cp.x;
-    player.y = cp.y;
-    player.prevX = player.x;
-    player.prevY = player.y;
-    player.vx = 0;
-    player.vy = 0;
-    player.onGround = false;
-    player.ground = null;
-    player.coyote = 0;
-    player.jumpBuffer = 0;
-    player.jumpHold = 0;
-    player.trail.length = 0;
+    player.x = cp.x; player.y = cp.y; player.prevX = player.x; player.prevY = player.y;
+    player.vx = 0; player.vy = 0; player.onGround = false; player.ground = null;
+    player.coyote = 0; player.jumpBuffer = 0; player.jumpHold = 0;
+    player.trail.length = 0; player.invincible = 1.0;
     state.cameraY = clamp(player.y - 330, -999999, -440);
     state.targetCameraY = state.cameraY;
     state.fallFromMeter = meterFromY(player.y);
@@ -593,10 +609,11 @@
     ui.menu.style.display = "none";
     resetWorld();
     state.bestMeter = loadBestMeter();
-    state.runBestMeter = 0;
-    state.bestY = -22;
+    state.runBestMeter = 0; state.bestY = -22;
     state.checkpoint = {x:92, y:-22, meter:0};
     state.lastCheckpointMeter = 0;
+    state.hearts = 3;
+    state.regenTimer = 0;
     resetPlayer(false);
     beep(392, .08, "square", .14);
     beep(523, .10, "square", .12);
@@ -612,13 +629,8 @@
   function spawnParticles(x, y, n, kind="dust") {
     for (let i=0;i<n;i++) {
       particles.push({
-        x, y,
-        vx:rand(-140,140),
-        vy:rand(-180,-30),
-        life:rand(.25,.7),
-        max:1,
-        size:rand(2,5),
-        kind,
+        x, y, vx:rand(-140,140), vy:rand(-180,-30),
+        life:rand(.25,.7), max:1, size:rand(2,5), kind,
       });
     }
   }
@@ -633,12 +645,25 @@
   }
 
   function update(dt) {
-    if (!state.started || state.paused) return;
+    if (!state.started || state.paused || state.hearts <= 0) return;
 
     state.time += dt;
     state.comboFlash = Math.max(0, state.comboFlash - dt);
-    player.prevX = player.x;
-    player.prevY = player.y;
+    player.prevX = player.x; player.prevY = player.y;
+    
+    if (player.invincible > 0) player.invincible -= dt;
+
+    if (state.hearts < MAX_HEARTS && state.hearts > 0) {
+      state.regenTimer += dt;
+      if (state.regenTimer >= REGEN_TIME) {
+        state.hearts++;
+        state.regenTimer -= REGEN_TIME;
+        toast("생명력이 1 회복되었습니다! ♥");
+        beep(523, .1, "sine", .1);
+      }
+    } else {
+      state.regenTimer = 0;
+    }
 
     generateUntil(state.cameraY - 2100);
     cleanupOldPlatforms();
@@ -650,15 +675,48 @@
         p.x = p.baseX + Math.sin(state.time * p.speed + p.phase) * p.range;
         p.dxLast = p.x - oldX;
       }
+      
+      if (p.type === "potion") {
+        p.y = p.baseY + Math.sin(state.time * 2 + p.phase) * 5;
+      }
+      
+      if (p.type === "spike") {
+        if (p.axis === 'x') p.x = p.baseX + Math.sin(state.time * p.speed + p.phase) * p.range;
+        if (p.axis === 'y') p.y = p.baseY + Math.sin(state.time * p.speed + p.phase) * p.range;
+        
+        const closestX = clamp(player.x, p.x, p.x + p.w);
+        const closestY = clamp(player.y, p.y, p.y + p.h);
+        const dx = player.x - closestX;
+        const dy = player.y - closestY;
+        if ((dx * dx + dy * dy) < (player.r * player.r)) {
+          takeDamage("가시 충돌");
+        }
+      }
+      
+      if (p.type === "potion" && p.active) {
+        const closestX = clamp(player.x, p.x, p.x + p.w);
+        const closestY = clamp(player.y, p.y, p.y + p.h);
+        const dx = player.x - closestX;
+        const dy = player.y - closestY;
+        if ((dx * dx + dy * dy) < (player.r * player.r)) {
+          p.active = false;
+          if (state.hearts < MAX_HEARTS) {
+            state.hearts++;
+            toast("포션 획득! 생명력 1 회복 ♥");
+            beep(600, .1, "sine", .1);
+            setTimeout(() => beep(800, .15, "sine", .1), 100);
+          } else {
+            toast("포션 획득! (생명력이 이미 가득 찼습니다)");
+            beep(600, .1, "sine", .1);
+          }
+        }
+      }
+
       if (p.type === "crumble") {
         if (p.touched) {
           p.timer += dt;
           if (p.timer > 0.42 && p.timer < 2.55) p.active = false;
-          if (p.timer >= 2.55) {
-            p.active = true;
-            p.touched = false;
-            p.timer = 0;
-          }
+          if (p.timer >= 2.55) { p.active = true; p.touched = false; p.timer = 0; }
         }
       }
     }
@@ -689,91 +747,64 @@
     const gravity = state.easy ? 1660 : 1785;
     player.vy += gravity * dt;
 
-    if (input.jumpPressed) {
-      player.jumpBuffer = state.easy ? 0.16 : 0.11;
-      input.jumpPressed = false;
-    }
+    if (input.jumpPressed) { player.jumpBuffer = state.easy ? 0.16 : 0.11; input.jumpPressed = false; }
     if (input.jumpReleased) {
       if (player.vy < -250) player.vy *= 0.48;
-      player.jumpHold = 0;
-      input.jumpReleased = false;
+      player.jumpHold = 0; input.jumpReleased = false;
     }
 
-    player.coyote -= dt;
-    player.jumpBuffer -= dt;
+    player.coyote -= dt; player.jumpBuffer -= dt;
 
     if (player.jumpBuffer > 0 && (player.onGround || player.coyote > 0)) {
       let power = state.easy ? 735 : 710;
       if (groundType === "spring") power = 910;
-      player.vy = -power;
-      player.onGround = false;
-      player.ground = null;
-      player.coyote = 0;
-      player.jumpBuffer = 0;
-      player.jumpHold = 0.12;
+      player.vy = -power; player.onGround = false; player.ground = null;
+      player.coyote = 0; player.jumpBuffer = 0; player.jumpHold = 0.12;
       player.squash = 1;
       beep(groundType === "spring" ? 760 : 520, .08, "square", .14, groundType === "spring" ? 220 : 40);
       spawnParticles(player.x, player.y + player.r, 8, groundType === "spring" ? "spring" : "dust");
     }
 
     if (input.jump && player.jumpHold > 0 && player.vy < 0) {
-      player.vy -= 1120 * dt;
-      player.jumpHold -= dt;
+      player.vy -= 1120 * dt; player.jumpHold -= dt;
     }
 
-    player.x += player.vx * dt;
-    player.y += player.vy * dt;
+    player.x += player.vx * dt; player.y += player.vy * dt;
 
     const wallPad = player.r + 2;
-    if (player.x < wallPad) {
-      player.x = wallPad;
-      player.vx = Math.abs(player.vx) * .42;
-      beep(120, .05, "sawtooth", .045);
-    }
-    if (player.x > WORLD_W - wallPad) {
-      player.x = WORLD_W - wallPad;
-      player.vx = -Math.abs(player.vx) * .42;
-      beep(120, .05, "sawtooth", .045);
-    }
+    if (player.x < wallPad) { player.x = wallPad; player.vx = Math.abs(player.vx) * .42; beep(120, .05, "sawtooth", .045); }
+    if (player.x > WORLD_W - wallPad) { player.x = WORLD_W - wallPad; player.vx = -Math.abs(player.vx) * .42; beep(120, .05, "sawtooth", .045); }
 
     let landed = false;
     const oldBottom = player.prevY + player.r;
     const newBottom = player.y + player.r;
     const pad = state.easy ? 9 : 5;
 
-    player.onGround = false;
-    player.ground = null;
+    player.onGround = false; player.ground = null;
 
     if (player.vy >= 0) {
       for (const p of platforms) {
-        if (!p.active) continue;
+        if (!p.active || p.type === "spike" || p.type === "potion") continue;
         if (player.prevY > p.y + 48) continue;
-        const left = p.x - pad;
-        const right = p.x + p.w + pad;
-        const top = p.y;
+        const left = p.x - pad; const right = p.x + p.w + pad; const top = p.y;
         const inX = player.x + player.r * 0.55 > left && player.x - player.r * 0.55 < right;
         const crossed = oldBottom <= top + 8 && newBottom >= top - 2;
         if (inX && crossed) {
           const impact = player.vy;
-          player.y = top - player.r;
-          player.vy = 0;
-          player.onGround = true;
-          player.ground = p;
-          player.coyote = state.easy ? 0.14 : 0.1;
+          const fallDist = state.maxThisAirMeter - meterFromY(p.y);
+          
+          if (fallDist >= 100) takeDamage("100m 이상 추락 충격");
+
+          player.y = top - player.r; player.vy = 0;
+          player.onGround = true; player.ground = p; player.coyote = state.easy ? 0.14 : 0.1;
           landed = true;
 
           if (p.type === "moving") player.x += p.dxLast;
           if (p.type === "spring") {
-            player.vy = -900;
-            player.onGround = false;
-            player.ground = null;
-            player.squash = 1.2;
-            beep(820, .09, "square", .15, 260);
-            spawnParticles(player.x, p.y, 12, "spring");
+            player.vy = -900; player.onGround = false; player.ground = null; player.squash = 1.2;
+            beep(820, .09, "square", .15, 260); spawnParticles(player.x, p.y, 12, "spring");
           } else if (p.type === "crumble" && !p.touched) {
-            p.touched = true;
-            p.timer = 0;
-            beep(180, .06, "sawtooth", .075, -60);
+            p.touched = true; p.timer = 0; beep(180, .06, "sawtooth", .075, -60);
           } else {
             if (impact > 620) {
               const volume = clamp((impact - 520) / 800, .04, .16);
@@ -781,48 +812,29 @@
               spawnParticles(player.x, p.y, Math.floor(clamp(impact / 90, 6, 16)), "dust");
             }
           }
-          if (impact > 950) {
-            state.shake = Math.min(.45, state.shake + .22);
-            noiseBurst(.09, .08);
-          }
+          if (impact > 950) { state.shake = Math.min(.45, state.shake + .22); noiseBurst(.09, .08); }
           maybeSavePracticeCheckpoint(p);
           break;
         }
       }
     }
 
-    if (!landed && player.prevY < player.y) {
-      player.coyote = Math.max(0, player.coyote);
-    }
-
+    if (!landed && player.prevY < player.y) player.coyote = Math.max(0, player.coyote);
     player.squash = Math.max(0, player.squash - dt * 4.8);
-    if (!player.onGround) {
-      state.maxThisAirMeter = Math.max(state.maxThisAirMeter, meterFromY(player.y));
-    }
+    if (!player.onGround) state.maxThisAirMeter = Math.max(state.maxThisAirMeter, meterFromY(player.y));
 
     const mNow = meterFromY(player.y);
     if (mNow > state.runBestMeter) {
-      state.runBestMeter = mNow;
-      state.bestY = Math.min(state.bestY, player.y);
-      state.fallFromMeter = mNow;
-      state.maxThisAirMeter = mNow;
-
+      state.runBestMeter = mNow; state.bestY = Math.min(state.bestY, player.y);
+      state.fallFromMeter = mNow; state.maxThisAirMeter = mNow;
       if (mNow > state.bestMeter) {
-        state.bestMeter = mNow;
-        saveBestMeter(state.bestMeter);
-        state.comboFlash = .65;
-        if (mNow > 0 && mNow % 10 === 0) {
-          beep(659, .06, "square", .1);
-          setTimeout(() => beep(880, .08, "square", .1), 60);
-        }
+        state.bestMeter = mNow; saveBestMeter(state.bestMeter); state.comboFlash = .65;
+        if (mNow > 0 && mNow % 10 === 0) { beep(659, .06, "square", .1); setTimeout(() => beep(880, .08, "square", .1), 60); }
       }
-
     }
 
     const fallingLoss = Math.max(0, state.maxThisAirMeter - mNow);
-    if (fallingLoss > 18 && player.vy > 440 && Math.random() < 0.025) {
-      beep(95, .04, "sawtooth", .035, -20);
-    }
+    if (fallingLoss > 18 && player.vy > 440 && Math.random() < 0.025) beep(95, .04, "sawtooth", .035, -20);
     const fallWarn = Math.floor(fallingLoss / 25) * 25;
     if (fallWarn >= 25 && fallWarn > state.lastFallWarnMeter && player.vy > 520) {
       state.lastFallWarnMeter = fallWarn;
@@ -832,13 +844,11 @@
     if (fallingLoss < 5) state.lastFallWarnMeter = 0;
 
     if (player.y > 120) {
-      player.y = 120;
-      player.vy = 0;
-      player.x = clamp(player.x, 70, WORLD_W - 70);
+      if (state.maxThisAirMeter >= 100) takeDamage("100m 이상 추락 충격");
+      player.y = 120; player.vy = 0; player.x = clamp(player.x, 70, WORLD_W - 70);
       if (state.maxThisAirMeter > 20) {
         toast(`${state.maxThisAirMeter}m에서 바닥까지 추락...`);
-        state.shake = .55;
-        noiseBurst(.18, .16);
+        state.shake = .55; noiseBurst(.18, .16);
       }
       state.maxThisAirMeter = 0;
     }
@@ -854,13 +864,23 @@
     player.trail = player.trail.filter(t => t.life > 0);
 
     for (const p of particles) {
-      p.life -= dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 520 * dt;
-      p.vx *= Math.pow(.98, dt * 60);
+      p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 520 * dt; p.vx *= Math.pow(.98, dt * 60);
     }
     particles = particles.filter(p => p.life > 0);
+
+    let heartStr = "";
+    for(let i=0; i<3; i++) heartStr += (i < state.hearts) ? "♥" : "♡";
+    ui.heartNow.textContent = heartStr;
+    
+    if (state.hearts < MAX_HEARTS && state.hearts > 0) {
+      const leftSec = Math.ceil(REGEN_TIME - state.regenTimer);
+      const m = Math.floor(leftSec / 60);
+      const s = String(leftSec % 60).padStart(2, '0');
+      ui.regenText.textContent = `(+${m}:${s})`;
+    } else {
+      ui.regenText.textContent = "";
+    }
 
     ui.heightNow.textContent = `${mNow}m`;
     ui.heightBest.textContent = `${state.bestMeter}m`;
@@ -871,24 +891,12 @@
   function drawBackground(camY, shakeX, shakeY) {
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     const m = meterFromY(camY);
-    if (m < 120) {
-      grad.addColorStop(0, "#244272");
-      grad.addColorStop(.55, "#17213f");
-      grad.addColorStop(1, "#211536");
-    } else if (m < 260) {
-      grad.addColorStop(0, "#18294f");
-      grad.addColorStop(.55, "#1f1b3f");
-      grad.addColorStop(1, "#351b39");
-    } else {
-      grad.addColorStop(0, "#11172e");
-      grad.addColorStop(.55, "#1b1230");
-      grad.addColorStop(1, "#310f24");
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
+    if (m < 120) { grad.addColorStop(0, "#244272"); grad.addColorStop(.55, "#17213f"); grad.addColorStop(1, "#211536"); }
+    else if (m < 260) { grad.addColorStop(0, "#18294f"); grad.addColorStop(.55, "#1f1b3f"); grad.addColorStop(1, "#351b39"); }
+    else { grad.addColorStop(0, "#11172e"); grad.addColorStop(.55, "#1b1230"); grad.addColorStop(1, "#310f24"); }
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
 
-    ctx.save();
-    ctx.translate(shakeX, shakeY);
+    ctx.save(); ctx.translate(shakeX, shakeY);
     for (let layer=0; layer<3; layer++) {
       const speed = [0.08, 0.16, 0.28][layer];
       const alpha = [0.15, 0.18, 0.22][layer];
@@ -898,41 +906,31 @@
         const x = ((i * 131 + layer * 211) % W);
         const y = ((i * 97 + layer * 61 + (-camY * speed)) % (H + 80)) - 40;
         const r = [1.1,1.5,2.0][layer];
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
       }
     }
 
-    // 먼 배경 산/기둥
     for (let i=0;i<6;i++) {
       const x = i*180 - 40;
       const off = ((-camY * 0.13) % 260);
       ctx.fillStyle = `rgba(0,0,0,${0.12 + i%2*.04})`;
       ctx.beginPath();
-      ctx.moveTo(x, H + 40);
-      ctx.lineTo(x + 100, 240 + off + (i%2)*35);
-      ctx.lineTo(x + 220, H + 40);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(x, H + 40); ctx.lineTo(x + 100, 240 + off + (i%2)*35); ctx.lineTo(x + 220, H + 40);
+      ctx.closePath(); ctx.fill();
     }
     ctx.restore();
 
-    // 바람 구간 표시
     const wind = windAtY(camY + H/2);
     if (Math.abs(wind) > 0) {
       ctx.save();
       ctx.globalAlpha = clamp(Math.abs(wind)/130, .12, .34);
-      ctx.strokeStyle = "rgba(255,255,255,.7)";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2;
       for (let i=0;i<18;i++) {
         const yy = (i * 38 + state.time * Math.abs(wind) * 0.55) % (H + 50) - 25;
-        const x0 = wind > 0 ? -80 : W + 80;
-        const x1 = wind > 0 ? W + 80 : -80;
+        const x0 = wind > 0 ? -80 : W + 80; const x1 = wind > 0 ? W + 80 : -80;
         ctx.beginPath();
         ctx.moveTo(x0 + (i%4)*18, yy);
-        ctx.quadraticCurveTo(W/2, yy + Math.sin(i+state.time)*22, x1, yy + 4);
-        ctx.stroke();
+        ctx.quadraticCurveTo(W/2, yy + Math.sin(i+state.time)*22, x1, yy + 4); ctx.stroke();
       }
       ctx.restore();
     }
@@ -952,147 +950,115 @@
   function drawPlatform(p, camY) {
     const sy = p.y - camY;
     if (sy < -80 || sy > H + 80) return;
+    
+    if (p.type === "spike") {
+      ctx.fillStyle = "#ff2a4b";
+      ctx.save();
+      ctx.translate(p.x, sy);
+      ctx.beginPath(); ctx.moveTo(0, p.h); ctx.lineTo(p.w/2, 0); ctx.lineTo(p.w, p.h); ctx.fill();
+      ctx.strokeStyle = "#800b1d"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    if (p.type === "potion") {
+      if (!p.active) return;
+      ctx.save();
+      ctx.translate(p.x, sy);
+      ctx.globalAlpha = 0.5 + Math.sin(state.time * 4) * 0.2;
+      ctx.fillStyle = "#ff6b7a";
+      ctx.beginPath(); ctx.arc(10, 10, 14, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(10, 10, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(8, 5, 4, 10); ctx.fillRect(5, 8, 10, 4);
+      ctx.restore();
+      return;
+    }
+
     if (!p.active) {
-      if (p.type === "crumble") {
-        ctx.globalAlpha = .18;
-      } else return;
+      if (p.type === "crumble") ctx.globalAlpha = .18; else return;
     }
 
     const [c1, c2] = platformColor(p.type);
     const shake = p.type === "crumble" && p.touched && p.active ? Math.sin(state.time * 80) * 2 : 0;
-    const x = p.x + shake;
-    const y = sy;
+    const x = p.x + shake; const y = sy;
 
-    ctx.save();
-    ctx.translate(0, 0);
+    ctx.save(); ctx.translate(0, 0);
 
-    // 그림자
     ctx.fillStyle = "rgba(0,0,0,.25)";
-    roundRect(x + 4, y + 9, p.w, p.h + 8, 10);
-    ctx.fill();
+    roundRect(x + 4, y + 9, p.w, p.h + 8, 10); ctx.fill();
 
     const g = ctx.createLinearGradient(0, y, 0, y+p.h+12);
-    g.addColorStop(0, c1);
-    g.addColorStop(1, c2);
-    ctx.fillStyle = g;
-    roundRect(x, y, p.w, p.h + 10, 10);
-    ctx.fill();
+    g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.fillStyle = g;
+    roundRect(x, y, p.w, p.h + 10, 10); ctx.fill();
 
     ctx.fillStyle = "rgba(255,255,255,.28)";
-    roundRect(x + 8, y + 4, Math.max(12, p.w - 16), 5, 6);
-    ctx.fill();
+    roundRect(x + 8, y + 4, Math.max(12, p.w - 16), 5, 6); ctx.fill();
 
     if (p.type === "ice") {
-      ctx.strokeStyle = "rgba(255,255,255,.55)";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 2;
       for (let i=0;i<3;i++) {
-        ctx.beginPath();
-        ctx.moveTo(x + 18 + i*48, y + 8);
-        ctx.lineTo(x + 44 + i*48, y + 2);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 18 + i*48, y + 8); ctx.lineTo(x + 44 + i*48, y + 2); ctx.stroke();
       }
     }
 
     if (p.type === "spring") {
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.beginPath();
       for (let i=0;i<6;i++) {
-        const xx = x + p.w/2 - 24 + i*10;
-        const yy = y + 20 + (i%2 ? 8 : 0);
+        const xx = x + p.w/2 - 24 + i*10; const yy = y + 20 + (i%2 ? 8 : 0);
         if (i===0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
       }
       ctx.stroke();
     }
 
     if (p.type === "moving") {
-      ctx.strokeStyle = "rgba(103,255,229,.35)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(p.baseX - p.range, y + 33);
-      ctx.lineTo(p.baseX + p.range + p.w, y + 33);
-      ctx.stroke();
+      ctx.strokeStyle = "rgba(103,255,229,.35)"; ctx.lineWidth = 3; ctx.beginPath();
+      ctx.moveTo(p.baseX - p.range, y + 33); ctx.lineTo(p.baseX + p.range + p.w, y + 33); ctx.stroke();
     }
 
     if (p.type === "crumble" && p.touched) {
       ctx.fillStyle = "rgba(70,32,25,.35)";
-      for (let i=0;i<5;i++) {
-        ctx.fillRect(x + 16 + i*(p.w-32)/5, y + 7 + (i%2)*5, 16, 3);
-      }
+      for (let i=0;i<5;i++) ctx.fillRect(x + 16 + i*(p.w-32)/5, y + 7 + (i%2)*5, 16, 3);
     }
-
-    ctx.restore();
-    ctx.globalAlpha = 1;
+    ctx.restore(); ctx.globalAlpha = 1;
   }
 
   function drawPlayer(camY) {
-    const sx = player.x;
-    const sy = player.y - camY;
-    const squash = player.squash;
-    const scaleX = 1 + squash * .18;
-    const scaleY = 1 - squash * .13;
+    if (player.invincible > 0 && Math.floor(state.time * 15) % 2 === 0) return;
 
-    // trail
+    const sx = player.x; const sy = player.y - camY;
+    const squash = player.squash;
+    const scaleX = 1 + squash * .18; const scaleY = 1 - squash * .13;
+
     ctx.save();
     for (const t of player.trail) {
       const a = t.life / .28 * .18;
-      ctx.fillStyle = `rgba(255,224,100,${a})`;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y - camY, player.r * (0.8 + a), 0, Math.PI*2);
-      ctx.fill();
+      ctx.fillStyle = `rgba(255,224,100,${a})`; ctx.beginPath();
+      ctx.arc(t.x, t.y - camY, player.r * (0.8 + a), 0, Math.PI*2); ctx.fill();
     }
     ctx.restore();
 
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.scale(scaleX, scaleY);
+    ctx.save(); ctx.translate(sx, sy); ctx.scale(scaleX, scaleY);
 
-    // 그림자/몸
-    ctx.fillStyle = "rgba(0,0,0,.28)";
-    ctx.beginPath();
-    ctx.ellipse(3, 5, player.r*1.08, player.r*.98, 0, 0, Math.PI*2);
-    ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.beginPath();
+    ctx.ellipse(3, 5, player.r*1.08, player.r*.98, 0, 0, Math.PI*2); ctx.fill();
 
     const body = ctx.createRadialGradient(-7, -8, 3, 0, 0, player.r*1.45);
-    body.addColorStop(0, "#fff3a8");
-    body.addColorStop(0.45, "#ffdf64");
-    body.addColorStop(1, "#f0833c");
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.arc(0, 0, player.r, 0, Math.PI*2);
-    ctx.fill();
+    body.addColorStop(0, "#fff3a8"); body.addColorStop(0.45, "#ffdf64"); body.addColorStop(1, "#f0833c");
+    ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, 0, player.r, 0, Math.PI*2); ctx.fill();
 
-    // 머리띠
-    ctx.strokeStyle = "#df4d67";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, -2, player.r-2, Math.PI*1.1, Math.PI*1.9);
-    ctx.stroke();
+    ctx.strokeStyle = "#df4d67"; ctx.lineWidth = 4; ctx.beginPath();
+    ctx.arc(0, -2, player.r-2, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
 
-    // 눈
-    ctx.fillStyle = "#25202c";
-    ctx.beginPath();
-    ctx.arc(-6, -3, 2.3, 0, Math.PI*2);
-    ctx.arc(7, -3, 2.3, 0, Math.PI*2);
-    ctx.fill();
+    ctx.fillStyle = "#25202c"; ctx.beginPath();
+    ctx.arc(-6, -3, 2.3, 0, Math.PI*2); ctx.arc(7, -3, 2.3, 0, Math.PI*2); ctx.fill();
 
-    // 화난 눈썹
-    ctx.strokeStyle = "#25202c";
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(-10, -9);
-    ctx.lineTo(-3, -6);
-    ctx.moveTo(11, -9);
-    ctx.lineTo(4, -6);
-    ctx.stroke();
+    ctx.strokeStyle = "#25202c"; ctx.lineWidth = 2.4; ctx.beginPath();
+    ctx.moveTo(-10, -9); ctx.lineTo(-3, -6); ctx.moveTo(11, -9); ctx.lineTo(4, -6); ctx.stroke();
 
-    // 발
-    ctx.fillStyle = "#7a4b2d";
-    ctx.beginPath();
-    ctx.ellipse(-8, 15, 6, 3, 0, 0, Math.PI*2);
-    ctx.ellipse(8, 15, 6, 3, 0, 0, Math.PI*2);
-    ctx.fill();
-
+    ctx.fillStyle = "#7a4b2d"; ctx.beginPath();
+    ctx.ellipse(-8, 15, 6, 3, 0, 0, Math.PI*2); ctx.ellipse(8, 15, 6, 3, 0, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
@@ -1100,39 +1066,25 @@
     for (const p of particles) {
       const a = clamp(p.life / .7, 0, 1);
       ctx.globalAlpha = a;
-      if (p.kind === "spring") ctx.fillStyle = "#ff8bff";
-      else ctx.fillStyle = "rgba(255,255,255,.75)";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y - camY, p.size, 0, Math.PI*2);
-      ctx.fill();
+      if (p.kind === "spring") ctx.fillStyle = "#ff8bff"; else ctx.fillStyle = "rgba(255,255,255,.75)";
+      ctx.beginPath(); ctx.arc(p.x, p.y - camY, p.size, 0, Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
 
   function drawHeightMarkers(camY) {
-    ctx.save();
-    ctx.font = "900 13px system-ui, sans-serif";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-
-    const visibleTopY = camY - 30;
-    const visibleBottomY = camY + H + 30;
+    ctx.save(); ctx.font = "900 13px system-ui, sans-serif";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const visibleTopY = camY - 30; const visibleBottomY = camY + H + 30;
     const firstM = Math.max(0, Math.floor(((-visibleBottomY - 22) / PX_PER_M) / 10) * 10);
     const lastM = Math.max(0, Math.ceil(((-visibleTopY - 22) / PX_PER_M) / 10) * 10);
 
     for (let m=firstM; m<=lastM; m += 10) {
-      const y = -m * PX_PER_M - 22;
-      const sy = y - camY;
+      const y = -m * PX_PER_M - 22; const sy = y - camY;
       ctx.strokeStyle = m % 50 === 0 ? "rgba(255,224,107,.42)" : "rgba(255,255,255,.16)";
       ctx.lineWidth = m % 50 === 0 ? 2 : 1;
-      ctx.beginPath();
-      ctx.moveTo(WORLD_W - (m % 50 === 0 ? 76 : 42), sy);
-      ctx.lineTo(WORLD_W - 12, sy);
-      ctx.stroke();
-      if (m % 50 === 0) {
-        ctx.fillStyle = "rgba(255,224,107,.85)";
-        ctx.fillText(`${m}m`, WORLD_W - 84, sy);
-      }
+      ctx.beginPath(); ctx.moveTo(WORLD_W - (m % 50 === 0 ? 76 : 42), sy); ctx.lineTo(WORLD_W - 12, sy); ctx.stroke();
+      if (m % 50 === 0) { ctx.fillStyle = "rgba(255,224,107,.85)"; ctx.fillText(`${m}m`, WORLD_W - 84, sy); }
     }
     ctx.restore();
   }
@@ -1141,18 +1093,10 @@
     if (!state.practice || state.checkpoint.meter <= 0) return;
     const sy = state.checkpoint.y - camY;
     if (sy < -50 || sy > H+50) return;
-    ctx.save();
-    ctx.strokeStyle = "rgba(107,255,178,.7)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(0, sy);
-    ctx.lineTo(W, sy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(107,255,178,.9)";
-    ctx.font = "900 14px system-ui, sans-serif";
-    ctx.fillText(`CHECK ${state.checkpoint.meter}m`, 18, sy - 8);
+    ctx.save(); ctx.strokeStyle = "rgba(107,255,178,.7)"; ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(W, sy); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "rgba(107,255,178,.9)";
+    ctx.font = "900 14px system-ui, sans-serif"; ctx.fillText(`CHECK ${state.checkpoint.meter}m`, 18, sy - 8);
     ctx.restore();
   }
 
@@ -1160,72 +1104,43 @@
     let shakeX = 0, shakeY = 0;
     if (state.shake > 0) {
       const mag = state.shake * 13;
-      shakeX = rand(-mag, mag);
-      shakeY = rand(-mag, mag);
+      shakeX = rand(-mag, mag); shakeY = rand(-mag, mag);
     }
 
     drawBackground(state.cameraY, shakeX, shakeY);
-
-    ctx.save();
-    ctx.translate(shakeX, shakeY);
-
+    ctx.save(); ctx.translate(shakeX, shakeY);
     drawHeightMarkers(state.cameraY);
     drawCheckpoint(state.cameraY);
 
     for (const p of platforms) drawPlatform(p, state.cameraY);
-    drawParticles(state.cameraY);
-    drawPlayer(state.cameraY);
+    drawParticles(state.cameraY); drawPlayer(state.cameraY);
 
-    // 탑 벽면 암시
-    ctx.strokeStyle = "rgba(255,255,255,.08)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(9, 0);
-    ctx.lineTo(9, H);
-    ctx.moveTo(WORLD_W-9, 0);
-    ctx.lineTo(WORLD_W-9, H);
-    ctx.stroke();
-
+    ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(9, 0); ctx.lineTo(9, H); ctx.moveTo(WORLD_W-9, 0); ctx.lineTo(WORLD_W-9, H); ctx.stroke();
     ctx.restore();
 
     if (state.comboFlash > 0) {
-      ctx.save();
-      ctx.globalAlpha = state.comboFlash * .22;
-      ctx.fillStyle = "#ffe06b";
-      ctx.fillRect(0,0,W,H);
-      ctx.restore();
+      ctx.save(); ctx.globalAlpha = state.comboFlash * .22; ctx.fillStyle = "#ffe06b"; ctx.fillRect(0,0,W,H); ctx.restore();
     }
 
     if (state.paused && state.started) {
-      ctx.fillStyle = "rgba(0,0,0,.45)";
-      ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = "#fff";
-      ctx.font = "1000 46px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("일시정지", W/2, H/2 - 10);
-      ctx.font = "700 16px system-ui, sans-serif";
-      ctx.fillText("P 또는 우측 상단 버튼으로 계속", W/2, H/2 + 28);
+      ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = "#fff"; ctx.font = "1000 46px system-ui, sans-serif";
+      ctx.textAlign = "center"; ctx.fillText("일시정지", W/2, H/2 - 10);
+      ctx.font = "700 16px system-ui, sans-serif"; ctx.fillText("P 또는 우측 상단 버튼으로 계속", W/2, H/2 + 28);
     }
   }
 
   function roundRect(x, y, w, h, r) {
-    r = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.arcTo(x+w, y, x+w, y+h, r);
-    ctx.arcTo(x+w, y+h, x, y+h, r);
-    ctx.arcTo(x, y+h, x, y, r);
-    ctx.arcTo(x, y, x+w, y, r);
-    ctx.closePath();
+    r = Math.min(r, w/2, h/2); ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
   }
 
   let last = performance.now();
   function loop(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
-    last = now;
-    update(dt);
-    draw();
-    requestAnimationFrame(loop);
+    const dt = Math.min(0.033, (now - last) / 1000); last = now;
+    update(dt); draw(); requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 
@@ -1241,11 +1156,9 @@
 
   window.addEventListener("keydown", e => {
     if (["ArrowLeft","ArrowRight","ArrowUp","Space"].includes(e.code)) e.preventDefault();
-
     if (e.code === "Enter" && !state.started) startGame();
     if (e.code === "KeyP" && state.started) {
-      state.paused = !state.paused;
-      ui.pauseBtn.textContent = state.paused ? "▶" : "⏸";
+      state.paused = !state.paused; ui.pauseBtn.textContent = state.paused ? "▶" : "⏸";
     }
     if (e.code === "KeyM") setMute(!muted);
     if (e.code === "KeyR" && state.started) restartOrCheckpoint();
@@ -1254,57 +1167,33 @@
 
   window.addEventListener("keyup", e => setKey(e.code, false));
   window.addEventListener("blur", () => {
-    input.left = false;
-    input.right = false;
-    input.jump = false;
-    input.jumpPressed = false;
-    input.jumpReleased = false;
+    input.left = false; input.right = false; input.jump = false; input.jumpPressed = false; input.jumpReleased = false;
   });
 
   document.querySelectorAll(".padBtn").forEach(btn => {
     const k = btn.dataset.key;
     const on = (e) => {
       e.preventDefault();
-      if (k === "left") input.left = true;
-      if (k === "right") input.right = true;
-      if (k === "jump") {
-        if (!input.jump) input.jumpPressed = true;
-        input.jump = true;
-      }
+      if (k === "left") input.left = true; if (k === "right") input.right = true;
+      if (k === "jump") { if (!input.jump) input.jumpPressed = true; input.jump = true; }
     };
     const off = (e) => {
       e.preventDefault();
-      if (k === "left") input.left = false;
-      if (k === "right") input.right = false;
-      if (k === "jump") {
-        if (input.jump) input.jumpReleased = true;
-        input.jump = false;
-      }
+      if (k === "left") input.left = false; if (k === "right") input.right = false;
+      if (k === "jump") { if (input.jump) input.jumpReleased = true; input.jump = false; }
     };
-    btn.addEventListener("pointerdown", on);
-    btn.addEventListener("pointerup", off);
-    btn.addEventListener("pointercancel", off);
-    btn.addEventListener("pointerleave", off);
+    btn.addEventListener("pointerdown", on); btn.addEventListener("pointerup", off);
+    btn.addEventListener("pointercancel", off); btn.addEventListener("pointerleave", off);
   });
 
   ui.startBtn.addEventListener("click", startGame);
-  ui.muteBtn.addEventListener("click", () => {
-    initAudio();
-    setMute(!muted);
-  });
+  ui.muteBtn.addEventListener("click", () => { initAudio(); setMute(!muted); });
   ui.pauseBtn.addEventListener("click", () => {
-    if (!state.started) return;
-    state.paused = !state.paused;
-    ui.pauseBtn.textContent = state.paused ? "▶" : "⏸";
+    if (!state.started) return; state.paused = !state.paused; ui.pauseBtn.textContent = state.paused ? "▶" : "⏸";
   });
-  ui.restartBtn.addEventListener("click", () => {
-    if (!state.started) return;
-    restartOrCheckpoint();
-  });
+  ui.restartBtn.addEventListener("click", () => { if (!state.started) return; restartOrCheckpoint(); });
 
-  // 처음 화면에도 배경과 기본 탑이 보이도록 준비
-  resetWorld();
-  draw();
+  resetWorld(); draw();
 
 })();
 </script>
