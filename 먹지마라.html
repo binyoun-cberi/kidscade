@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>마라탕 한 그릇</title>
+<style>
+  :root{
+    --bg:#fff7ed;
+    --paper:#fffaf4;
+    --ink:#2b1b16;
+    --muted:#8a6b5a;
+    --line:#ead6c6;
+    --accent:#d9480f;
+    --accent2:#f97316;
+    --good:#16a34a;
+    --bad:#dc2626;
+    --shadow:0 18px 45px rgba(84, 42, 20, .13);
+    --radius:24px;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;overflow:hidden;}
+  body{
+    font-family: ui-rounded, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 25% 10%, #fff1d6 0 18%, transparent 38%),
+      radial-gradient(circle at 80% 20%, #ffd8b2 0 10%, transparent 34%),
+      linear-gradient(180deg, #fff7ed 0%, #ffe8d4 100%);
+  }
+
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+  button:disabled{cursor:not-allowed;opacity:.5;}
+
+  .app{
+    width:min(1180px, 100vw);
+    height:100dvh;
+    margin:0 auto;
+    padding:16px;
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    gap:12px;
+  }
+
+  .topbar{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    align-items:stretch;
+  }
+
+  .order-card{
+    min-height:96px;
+    background:rgba(255,250,244,.88);
+    backdrop-filter: blur(12px);
+    border:1px solid rgba(234,214,198,.9);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    overflow:hidden;
+  }
+
+  .customer-face{
+    width:58px;height:58px;border-radius:20px;
+    flex:0 0 auto;
+    background:linear-gradient(145deg,#ffd8ad,#f8b679);
+    box-shadow: inset 0 -7px 0 rgba(99,55,22,.08);
+    position:relative;
+  }
+  .customer-face::before,
+  .customer-face::after{
+    content:""; position:absolute; width:6px;height:6px;border-radius:50%;background:#43251c;top:24px;
+  }
+  .customer-face::before{left:18px;}
+  .customer-face::after{right:18px;}
+  .mouth{position:absolute;left:50%;bottom:14px;width:18px;height:8px;border-bottom:3px solid #713f2a;border-radius:0 0 14px 14px;transform:translateX(-50%);}
+
+  .order-main{min-width:0;flex:1;}
+  .order-title{font-weight:900;font-size:18px;letter-spacing:-.03em;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .order-tags{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+  .tag{
+    font-size:13px;font-weight:800;letter-spacing:-.02em;
+    padding:7px 10px;border-radius:999px;
+    background:#fff0df;border:1px solid #f2cfb3;color:#7a3417;
+  }
+  .tag.warn{background:#fff1f2;border-color:#fecdd3;color:#be123c;}
+  .tag.hot{background:#fee2e2;border-color:#fecaca;color:#b91c1c;}
+  .tag.good{background:#dcfce7;border-color:#bbf7d0;color:#166534;}
+
+  .status-card{
+    width:330px;
+    background:rgba(255,250,244,.86);
+    border:1px solid rgba(234,214,198,.9);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:13px 14px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px 10px;
+    align-content:center;
+  }
+  .stat-label{display:block;font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.02em;}
+  .stat-value{display:block;font-size:18px;font-weight:950;letter-spacing:-.04em;margin-top:2px;}
+
+  .stage{
+    min-height:0;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 400px;
+    gap:12px;
+  }
+  .spice-inline-card, .soup-inline-card{
+    background:#fff7ed;
+    border:1px solid #edd1bd;
+    border-radius:22px;
+    padding:10px 12px;
+    align-self:stretch;
+  }
+  .soup-inline-card .section-title{margin-bottom:8px;}
+  .soup-inline-card .soup-meters{gap:8px;}
+  .soup-inline-card .meter-line{grid-template-columns:46px minmax(0,1fr) 42px;font-size:11px;gap:6px;}
+  .soup-inline-card .meter-line b{font-size:11px;}
+  .soup-inline-card .meter{height:10px;}
+
+  .pot-panel{
+    min-height:0;
+    background:rgba(255,250,244,.72);
+    border:1px solid rgba(234,214,198,.9);
+    border-radius:32px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:14px;
+    padding:18px 20px 18px;
+  }
+  .pot-panel::before{
+    content:"";
+    position:absolute; inset:8% 9% auto auto;
+    width:170px;height:170px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.75), transparent 62%);
+    pointer-events:none;
+  }
+
+  .bottle-station{
+    width:min(100%, 440px);
+    justify-self:center;
+    grid-column:1;
+    grid-row:1;
+  }
+  .tray-side-card{
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    padding:12px;
+    height:100%;
+  }
+  .tray-side-card .section-title{margin-bottom:8px;}
+  .hidden-cook-list{display:none !important;}
+  .pot-bottom-row{
+    grid-column:1;
+    grid-row:3;
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0,420px) minmax(180px, 220px);
+    gap:12px;
+    align-items:end;
+    justify-content:space-between;
+  }
+  .action-panel{
+    background:rgba(255,250,244,.92);
+    border:1px solid rgba(234,214,198,.95);
+    border-radius:22px;
+    box-shadow:0 10px 22px rgba(84,42,20,.07);
+    padding:12px;
+    display:grid;
+    gap:10px;
+    align-self:stretch;
+  }
+  .action-panel .cook-row{grid-template-columns:1fr;gap:10px;}
+  .tray-window{
+    display:grid;
+    grid-template-rows:28px minmax(0,1fr) 28px;
+    gap:6px;
+    min-height:0;
+    flex:1;
+  }
+  .tray-middle{
+    min-height:0;
+    display:grid;
+    grid-template-columns:36px minmax(0,1fr) 36px;
+    align-items:stretch;
+    gap:7px;
+  }
+  .tray-arrow{
+    border-radius:15px;
+    background:linear-gradient(180deg,#fff7ed,#ffe8d4);
+    border:1px solid #edd1bd;
+    color:#8b2e13;
+    font-size:24px;
+    font-weight:1000;
+    box-shadow:0 8px 18px rgba(84,42,20,.08);
+    display:grid;
+    place-items:center;
+    user-select:none;
+    touch-action:manipulation;
+    min-height:0;
+  }
+  .tray-arrow.tray-up,.tray-arrow.tray-down{
+    width:96px;
+    justify-self:center;
+    font-size:18px;
+    line-height:1;
+  }
+  .tray-arrow:active{transform:scale(.96);}
+  .tray-arrow:disabled{opacity:.25;box-shadow:none;}
+  .pot-wrap{width:min(560px, 100%); aspect-ratio:1.18/1; position:relative; justify-self:center; align-self:center; grid-column:1; grid-row:2;}
+
+  .pot-shadow{
+    position:absolute; left:12%; right:12%; bottom:7%; height:36px;
+    background:rgba(91,54,34,.17); border-radius:50%; filter:blur(5px);
+  }
+  .pot{
+    position:absolute; left:7%; right:7%; bottom:10%; height:66%;
+    border-radius:42% 42% 31% 31% / 24% 24% 48% 48%;
+    background:linear-gradient(180deg,#fffaf4 0%, #e7d2bf 58%, #bfa38d 100%);
+    border:10px solid #6b4f43;
+    box-shadow: inset 0 -24px 30px rgba(74,44,31,.15), 0 26px 35px rgba(83,48,30,.14);
+    overflow:visible;
+  }
+  .pot::before,
+  .pot::after{
+    content:""; position:absolute; top:23%; width:20%; height:20%; border:9px solid #6b4f43; border-radius:50%; z-index:4;
+  }
+  .pot::before{left:-14%;}
+  .pot::after{right:-14%;}
+  .broth{
+    position:absolute; left:5%; right:5%; top:9%; height:53%;
+    border-radius:50%;
+    background:radial-gradient(circle at 45% 40%, rgba(255,255,255,.24), transparent 17%), linear-gradient(180deg, #f97316, #dc2626);
+    box-shadow:inset 0 8px 14px rgba(255,255,255,.25), inset 0 -12px 18px rgba(90,15,12,.18);
+    transition:background .25s ease, transform .25s ease;
+  }
+  .broth.cooking{animation:soupBubble .34s infinite alternate ease-in-out;}
+  @keyframes soupBubble{from{transform:scale(1)} to{transform:scale(1.015) translateY(-1px)}}
+
+  .steam{position:absolute; left:0; right:0; top:2%; height:25%; pointer-events:none; opacity:.78;}
+  .steam i{position:absolute; bottom:0; width:22px; height:58px; border-radius:50%; border-left:5px solid rgba(255,255,255,.75); filter:blur(.1px); opacity:0;}
+  .steam i:nth-child(1){left:34%; animation:steam 2.2s .1s infinite;}
+  .steam i:nth-child(2){left:49%; height:70px; animation:steam 2.5s .55s infinite;}
+  .steam i:nth-child(3){left:63%; animation:steam 2.1s .95s infinite;}
+  @keyframes steam{0%{transform:translateY(24px) scale(.65);opacity:0}35%{opacity:.7}100%{transform:translateY(-42px) scale(1.1);opacity:0}}
+
+  .ingredient-in-pot{
+    position:absolute; width:46px; height:30px; border-radius:999px;
+    display:grid;place-items:center;
+    font-size:10px;font-weight:950;color:rgba(35,20,15,.74);
+    border:2px solid rgba(255,255,255,.55);
+    box-shadow:0 4px 8px rgba(68,24,12,.13);
+    transform:translate(-50%,-50%) rotate(var(--r));
+    z-index:2;
+    animation:dropIn .22s ease-out both, floaty 3.8s ease-in-out infinite alternate;
+    background:var(--c);
+  }
+  .ingredient-in-pot.strip{height:18px;width:64px;}
+  .ingredient-in-pot.noodle{height:18px;width:76px;border-radius:12px;background:repeating-linear-gradient(90deg,var(--c) 0 7px,var(--c2) 7px 10px);}
+  .ingredient-in-pot.leaf{width:42px;height:34px;border-radius:4px 22px 4px 22px;}
+  .ingredient-in-pot.mushroom{width:44px;height:32px;border-radius:22px 22px 12px 12px;}
+  .ingredient-in-pot.ball{width:35px;height:35px;border-radius:50%;}
+  .ingredient-in-pot.settled{animation:floaty 4.2s ease-in-out infinite alternate;}
+  @keyframes dropIn{from{opacity:0;transform:translate(-50%,-80%) scale(.6) rotate(var(--r));}to{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(var(--r));}}
+  @keyframes floaty{to{margin-top:-2px;margin-left:1px}}
+
+  .bubble{
+    position:absolute;width:11px;height:11px;border-radius:50%;
+    background:rgba(255,255,255,.48);z-index:3;opacity:0;pointer-events:none;
+    animation:bubble 1s infinite ease-out;
+  }
+  .bubble.b1{left:34%;top:31%;animation-delay:.1s}.bubble.b2{left:55%;top:36%;animation-delay:.35s}.bubble.b3{left:68%;top:27%;animation-delay:.6s}.bubble.b4{left:45%;top:24%;animation-delay:.8s}
+  @keyframes bubble{0%{transform:translateY(18px) scale(.5);opacity:0}35%{opacity:.75}100%{transform:translateY(-28px) scale(1.25);opacity:0}}
+
+  .pot-note{
+    position:absolute; left:50%; bottom:17%; transform:translateX(-50%);
+    font-size:14px;font-weight:900;color:#8a5a44;
+    background:rgba(255,250,244,.78);border:1px solid #edd7c7;border-radius:999px;padding:8px 13px;
+    box-shadow:0 8px 20px rgba(73,38,18,.08);
+    white-space:nowrap;
+  }
+
+  .side-panel{
+    min-height:0;
+    display:grid;
+    grid-template-rows:minmax(0,1fr);
+    gap:12px;
+  }
+  .control-card{
+    background:rgba(255,250,244,.86);
+    border:1px solid rgba(234,214,198,.9);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+  }
+  .section-title{font-size:13px;font-weight:950;color:#6b3c2a;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .small-muted{font-size:12px;font-weight:850;color:var(--muted);}
+
+  .spice-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+  .spice-btn{
+    min-height:48px;border-radius:16px;background:#fff7ed;border:1px solid #f0d7c5;
+    font-size:12px;font-weight:950;color:#7c2d12;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    transition:.15s ease;
+  }
+  .spice-btn .pepper-dot{width:26px;height:8px;border-radius:99px;background:var(--dot);box-shadow:0 3px 0 rgba(0,0,0,.07);}
+  .spice-btn.selected{background:#fee2e2;border-color:#fca5a5;color:#991b1b;transform:translateY(-1px);box-shadow:0 7px 15px rgba(220,38,38,.12);}
+
+  .cook-card{display:grid;gap:10px;}
+  .cook-gauge{height:18px;background:#f3dccb;border-radius:999px;position:relative;overflow:hidden;border:1px solid #e8cbb8;}
+  .target-zone{position:absolute;top:0;bottom:0;left:43%;width:16%;background:rgba(22,163,74,.4);border-left:2px solid rgba(22,101,52,.25);border-right:2px solid rgba(22,101,52,.25);}
+  .needle{position:absolute;top:-4px;width:8px;height:26px;border-radius:99px;background:#3b2419;left:0%;transform:translateX(-50%);box-shadow:0 0 0 3px rgba(255,255,255,.55);}
+  .cook-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .cook-row.triple{grid-template-columns:repeat(3,1fr);}
+  .cook-row.triple .ghost-btn{min-height:42px;font-size:12px;border-radius:14px;}
+
+  .soup-meters{display:grid;gap:7px;margin-bottom:2px;}
+  .meter-line{display:grid;grid-template-columns:64px minmax(0,1fr) 48px;gap:8px;align-items:center;font-size:12px;font-weight:950;color:#6b3c2a;}
+  .meter-line b{font-size:11px;text-align:right;color:#7c2d12;white-space:nowrap;}
+  .meter{height:10px;border-radius:999px;background:#f3dccb;border:1px solid #e8cbb8;overflow:hidden;position:relative;}
+  .meter i{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#60a5fa,#22c55e,#f97316);transition:width .12s linear, background .12s linear;}
+
+  .stove-control{
+    width:100%;
+    justify-self:start;
+    display:grid;
+    grid-template-columns:86px minmax(0,1fr);
+    gap:12px;
+    align-items:center;
+    padding:12px 14px;
+    border-radius:22px;
+    background:rgba(255,242,229,.94);
+    border:1px solid #f0d2bb;
+    box-shadow:0 8px 22px rgba(84,42,20,.08);
+    position:relative;
+    z-index:2;
+  }
+  .stove-control::before{
+    content:"화구 조절";
+    position:absolute;
+    left:16px;
+    top:-11px;
+    padding:3px 8px;
+    border-radius:999px;
+    background:#fff7ed;
+    border:1px solid #edd1bd;
+    color:#8b2e13;
+    font-size:11px;
+    font-weight:950;
+  }
+  .burner{
+    width:80px;height:80px;border-radius:22px;
+    background:radial-gradient(circle,#4b3329 0 24%,#7b5a4a 25% 32%,transparent 33%),
+      repeating-radial-gradient(circle,#e8cbb8 0 5px,#b9917c 6px 8px);
+    position:relative;
+    box-shadow:inset 0 -8px 12px rgba(43,27,22,.18);
+  }
+  .burner .flame{
+    position:absolute;left:50%;top:50%;width:35px;height:35px;
+    transform:translate(-50%,-50%) scale(.6);
+    border-radius:55% 55% 55% 0;
+    background:linear-gradient(135deg,#fef08a,#fb923c 52%,#ef4444);
+    opacity:0;
+    rotate:-45deg;
+    filter:drop-shadow(0 0 12px rgba(249,115,22,.55));
+    transition:.18s ease;
+  }
+  .burner[data-fire="1"] .flame{opacity:.65;transform:translate(-50%,-50%) scale(.58);}
+  .burner[data-fire="2"] .flame{opacity:.88;transform:translate(-50%,-50%) scale(.78);animation:flameFlicker .42s infinite alternate;}
+  .burner[data-fire="3"] .flame{opacity:1;transform:translate(-50%,-50%) scale(1.02);animation:flameFlicker .26s infinite alternate;}
+  @keyframes flameFlicker{to{filter:drop-shadow(0 0 18px rgba(249,115,22,.75));translate:1px -1px;}}
+  .gas-panel{display:grid;gap:7px;}
+  .gas-row{display:flex;align-items:center;gap:10px;}
+  .gas-knob{
+    width:64px;height:64px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fffaf4,#e8cbb8 62%,#9d735c);
+    border:4px solid #6b4f43;
+    box-shadow:inset 0 -8px 11px rgba(43,27,22,.19),0 8px 16px rgba(84,42,20,.12);
+    position:relative;
+    transform:rotate(var(--angle,-120deg));
+    transition:transform .18s ease;
+    flex:0 0 auto;
+    touch-action:manipulation;
+  }
+  .gas-knob::after{
+    content:"";position:absolute;left:50%;top:8px;width:8px;height:23px;border-radius:99px;
+    background:#8b2e13;transform:translateX(-50%);
+    box-shadow:0 1px 0 rgba(255,255,255,.4);
+  }
+  .gas-state{font-size:13px;font-weight:950;color:#6b3c2a;line-height:1.25;}
+  .gas-state b{display:block;font-size:17px;color:#7c2d12;letter-spacing:-.04em;margin-top:2px;}
+  .gas-levels{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+  .gas-levels button{
+    min-height:28px;border-radius:11px;background:#fff7ed;border:1px solid #edd1bd;
+    color:#7c2d12;font-size:11px;font-weight:950;
+  }
+  .gas-levels button.selected{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+
+  .bottle-rack{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    align-items:start;
+  }
+  .bottle-btn{
+    min-height:76px;border-radius:18px;background:#fff7ed;border:1px solid #edd1bd;color:#7c2d12;
+    display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;padding:8px 10px;
+    font-weight:950;text-align:left;overflow:hidden;position:relative;
+    box-shadow:0 7px 16px rgba(84,42,20,.08);
+  }
+  .bottle-icon{
+    width:30px;height:48px;border-radius:8px 8px 10px 10px;position:relative;
+    border:2px solid rgba(79,43,28,.24);
+    box-shadow:inset 0 -8px 0 rgba(0,0,0,.08),0 5px 8px rgba(84,42,20,.08);
+    background:linear-gradient(180deg,rgba(255,255,255,.65),var(--liquid));
+  }
+  .bottle-icon::before{
+    content:"";position:absolute;left:7px;right:7px;top:-10px;height:13px;border-radius:6px 6px 2px 2px;
+    background:#f8e6d5;border:2px solid rgba(79,43,28,.22);border-bottom:0;
+  }
+  .bottle-btn small{display:block;font-size:10px;color:var(--muted);font-weight:850;margin-top:2px;line-height:1.15;}
+  .bottle-btn.pouring .bottle-icon{animation:bottleTilt .42s ease-in-out;}
+  @keyframes bottleTilt{45%{transform:rotate(-24deg) translateY(-2px)}}
+
+  .pour-layer{position:absolute;inset:0;pointer-events:none;z-index:11;overflow:hidden;}
+  .pour-bottle{
+    position:absolute;
+    width:44px;height:72px;
+    filter:drop-shadow(0 8px 16px rgba(84,42,20,.18));
+    transform-origin:50% 16%;
+  }
+  .pour-bottle .pb-neck{
+    position:absolute;left:13px;right:13px;top:0;height:16px;border-radius:7px 7px 3px 3px;
+    background:#f8e6d5;border:2px solid rgba(79,43,28,.22);border-bottom:0;
+  }
+  .pour-bottle .pb-body{
+    position:absolute;left:4px;right:4px;bottom:0;height:58px;border-radius:10px 10px 12px 12px;
+    border:2px solid rgba(79,43,28,.24);overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.62),transparent 35%), linear-gradient(180deg,var(--pour),color-mix(in srgb, var(--pour), #ffffff 18%));
+    box-shadow:inset 0 -8px 0 rgba(0,0,0,.08);
+  }
+  .pour-trail{
+    position:absolute;
+    width:10px;height:0;border-radius:999px;
+    background:var(--pour);opacity:0;
+    box-shadow:0 0 10px color-mix(in srgb, var(--pour), transparent 42%);
+  }
+  .pour-trail.show{animation:trailDrop .32s ease-out forwards;}
+  .pour-hit{
+    position:absolute;width:62px;height:18px;border-radius:50%;
+    background:var(--pour);opacity:0;filter:blur(.2px);transform:translate(-50%,-50%) scale(.6);
+  }
+  .pour-hit.show{animation:trailHit .34s ease-out forwards;}
+  @keyframes trailDrop{0%{height:0;opacity:0}15%{opacity:1}100%{height:var(--drop,94px);opacity:.88}}
+  @keyframes trailHit{30%{opacity:.55;transform:translate(-50%,-50%) scale(.7)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
+
+  .cook-list{display:grid;gap:6px;max-height:190px;overflow:auto;padding-right:2px;}
+  .cook-item{display:grid;grid-template-columns:62px minmax(0,1fr) 54px;gap:7px;align-items:center;padding:7px 8px;border-radius:14px;background:#fff2e5;border:1px solid #f0d2bb;}
+  .cook-item-name{font-size:12px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#5b3425;}
+  .cook-item-state{font-size:11px;font-weight:950;text-align:right;white-space:nowrap;}
+  .doneness-track{height:10px;border-radius:999px;background:#ead2c0;overflow:hidden;position:relative;}
+  .doneness-track::after{content:"";position:absolute;left:54%;width:20%;top:0;bottom:0;background:rgba(22,163,74,.26);border-left:1px solid rgba(22,101,52,.35);border-right:1px solid rgba(22,101,52,.35);}
+  .doneness-track i{display:block;height:100%;width:0%;border-radius:999px;background:#60a5fa;transition:width .14s linear, background .14s linear;position:relative;z-index:1;}
+  .doneness-mini{position:absolute;left:50%;bottom:-13px;width:42px;height:8px;transform:translateX(-50%);background:rgba(255,250,244,.86);border:1px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;box-shadow:0 3px 7px rgba(55,24,11,.12);}
+  .doneness-mini i{display:block;height:100%;width:0%;background:#60a5fa;border-radius:999px;}
+  .ingredient-in-pot.perfect{box-shadow:0 0 0 3px rgba(34,197,94,.22),0 4px 8px rgba(68,24,12,.13);}
+  .ingredient-in-pot.over{filter:saturate(.8) brightness(.88);box-shadow:0 0 0 3px rgba(249,115,22,.2),0 4px 8px rgba(68,24,12,.13);}
+  .ingredient-in-pot.raw{filter:saturate(.88) brightness(.96);}
+  .ingredient-in-pot.burnt{filter:saturate(.7) brightness(.72);box-shadow:0 0 0 3px rgba(220,38,38,.22),0 4px 8px rgba(68,24,12,.13);}
+
+  .primary-btn,.ghost-btn{
+    min-height:48px;border-radius:17px;font-weight:950;letter-spacing:-.03em;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .primary-btn{background:linear-gradient(180deg,#fb923c,#ea580c);color:white;box-shadow:0 11px 22px rgba(234,88,12,.22);}
+  .primary-btn.finish{background:linear-gradient(180deg,#22c55e,#16a34a);box-shadow:0 11px 22px rgba(22,163,74,.2);}
+  .ghost-btn{background:#fff7ed;border:1px solid #edd1bd;color:#7c2d12;}
+
+  .tray-card{min-height:0;display:flex;flex-direction:column;}
+  .ingredient-grid{
+    min-height:0;
+    flex:1;
+    max-height:none;
+    overflow:auto;
+    padding:1px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-auto-rows:64px;
+    gap:8px;
+    scrollbar-width:none;
+    align-content:start;
+    scroll-behavior:smooth;
+    overscroll-behavior:contain;
+  }
+  .ingredient-grid::-webkit-scrollbar{display:none;}
+  .ingredient-btn{
+    min-height:64px;border-radius:18px;background:#fffaf4;border:1px solid #ead2c0;
+    display:grid;grid-template-columns:38px 1fr;align-items:center;gap:8px;padding:8px 9px;
+    text-align:left;transition:.14s ease;position:relative;overflow:hidden;
+  }
+  .ingredient-btn:active{transform:scale(.98)}
+  .ingredient-btn:hover{border-color:#f6b37e;background:#fff5e9;}
+  .ingredient-btn.locked{filter:grayscale(.65);opacity:.47;}
+  .ing-name{font-weight:950;font-size:13px;letter-spacing:-.03em;line-height:1.05;}
+  .ing-desc{font-size:10px;color:var(--muted);font-weight:800;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .ing-icon{width:38px;height:38px;display:grid;place-items:center;position:relative;}
+  .ing-icon::before{content:"";display:block;background:var(--c);box-shadow:inset 0 -5px 0 rgba(0,0,0,.08),0 4px 9px rgba(65,29,16,.1);}
+  .ing-icon.leaf::before{width:30px;height:36px;border-radius:6px 26px 6px 26px;transform:rotate(13deg);}
+  .ing-icon.mushroom::before{width:36px;height:28px;border-radius:24px 24px 11px 11px;}
+  .ing-icon.strip::before{width:38px;height:18px;border-radius:999px;}
+  .ing-icon.noodle::before{width:38px;height:24px;border-radius:10px;background:repeating-linear-gradient(90deg,var(--c) 0 6px,var(--c2) 6px 9px);}
+  .ing-icon.meat::before{width:36px;height:24px;border-radius:57% 43% 54% 46%;background:linear-gradient(135deg,var(--c),var(--c2));}
+  .ing-icon.ball::before{width:31px;height:31px;border-radius:50%;}
+  .ing-icon.cube::before{width:32px;height:30px;border-radius:10px;transform:rotate(5deg);}
+
+  .bottom-actions{display:none;}
+
+  .toast{
+    position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);
+    background:#2b1b16;color:white;border-radius:999px;padding:11px 15px;font-weight:900;font-size:14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.16);opacity:0;pointer-events:none;transition:.22s ease;z-index:30;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .serve-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:10;
+    display:none;
+  }
+  .serve-layer.show{display:block;}
+  .serving-bowl{
+    position:absolute;
+    left:50%;
+    bottom:34%;
+    width:148px;
+    height:92px;
+    transform:translate(-50%,0) scale(.75);
+    opacity:0;
+    animation:serveBowl .92s cubic-bezier(.16,.86,.28,1) forwards;
+  }
+  .serving-bowl::before{
+    content:"";
+    position:absolute;
+    left:10%;
+    right:10%;
+    top:9%;
+    height:48%;
+    border-radius:50%;
+    background:linear-gradient(180deg,#fb923c,#dc2626);
+    box-shadow:inset 0 9px 10px rgba(255,255,255,.22);
+  }
+  .serving-bowl::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:70%;
+    border-radius:12px 12px 56px 56px;
+    background:linear-gradient(180deg,#fffaf4,#e7d2bf);
+    border:5px solid #7c5a4b;
+    box-shadow:0 18px 26px rgba(73,38,18,.18);
+  }
+  .serving-bowl span{
+    position:absolute;
+    left:50%;
+    top:20%;
+    z-index:2;
+    transform:translateX(-50%);
+    font-size:12px;
+    font-weight:1000;
+    color:#fff7ed;
+    background:rgba(67,28,17,.25);
+    border-radius:999px;
+    padding:4px 8px;
+    white-space:nowrap;
+  }
+  @keyframes serveBowl{
+    0%{opacity:0;transform:translate(-50%,34px) scale(.62);}
+    28%{opacity:1;transform:translate(-50%,-12px) scale(.86);}
+    100%{opacity:1;transform:translate(-50%,-190px) scale(1.08);}
+  }
+  .customer-face.viral{
+    box-shadow:0 0 0 4px rgba(239,68,68,.16), inset 0 -7px 0 rgba(99,55,22,.08);
+  }
+  .tag.viral{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(39,21,13,.38);backdrop-filter:blur(7px);
+    display:none;align-items:center;justify-content:center;padding:18px;z-index:20;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{
+    width:min(520px,100%);background:#fffaf4;border:1px solid #ead2c0;border-radius:30px;
+    box-shadow:0 28px 80px rgba(34,18,10,.32);padding:22px;animation:pop .2s ease-out both;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .modal h2{margin:0 0 6px;font-size:27px;letter-spacing:-.06em;}
+  .modal p{margin:0;color:#6b4a3c;font-weight:800;line-height:1.5;}
+  .result-score{font-size:52px;font-weight:1000;letter-spacing:-.08em;margin:12px 0 4px;line-height:1;}
+  .stars{font-size:21px;letter-spacing:2px;color:#b45309;font-weight:1000;margin-bottom:12px;}
+  .result-list{display:grid;gap:7px;margin:14px 0 18px;}
+  .result-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:15px;background:#fff2e5;border:1px solid #f0d2bb;font-weight:900;font-size:14px;}
+  .result-item b{color:#7c2d12;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+  .intro{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff7ed,#ffe3c6);z-index:50;padding:18px;
+  }
+  .intro-card{width:min(680px,100%);background:#fffaf4;border:1px solid #ead2c0;border-radius:34px;padding:28px;box-shadow:var(--shadow);text-align:center;}
+  .logo-pot{width:154px;height:104px;margin:0 auto 10px;position:relative;}
+  .logo-pot .pot{left:0;right:0;bottom:0;height:76%;border-width:7px;}
+  .logo-pot .broth{top:12%;}
+  .intro h1{font-size:44px;letter-spacing:-.08em;margin:4px 0 8px;}
+  .intro p{font-weight:850;color:#6b4a3c;line-height:1.55;margin:0 auto 18px;max-width:520px;}
+  .intro-tips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0;}
+  .tip{background:#fff2e5;border:1px solid #f0d2bb;border-radius:18px;padding:12px;font-weight:900;color:#7c2d12;font-size:14px;}
+
+  @media (max-width: 860px){
+    body{overflow:auto;}
+    html,body{height:auto;min-height:100%;}
+    .app{height:auto;min-height:100dvh;overflow:visible;grid-template-rows:auto auto auto;padding:10px;gap:10px;}
+    .topbar{grid-template-columns:1fr;}
+    .order-card{grid-template-columns:1fr;}
+    .status-card{width:100%;grid-template-columns:repeat(3,1fr);}
+    .stage{grid-template-columns:1fr;}
+    .pot-panel{min-height:360px;padding:12px;border-radius:26px;gap:10px;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) auto;}
+    .bottle-station{width:100%;grid-column:1;grid-row:1;}
+    .pot-wrap{width:min(480px,94vw);grid-column:1;grid-row:2;}
+    .pot-bottom-row{grid-column:1;grid-row:3;grid-template-columns:1fr;}
+    .action-panel .cook-row{grid-template-columns:1fr 1fr;}
+    .side-panel{grid-template-rows:minmax(320px,1fr);}
+    .tray-middle{grid-template-columns:32px minmax(0,1fr) 32px;gap:6px;}
+    .tray-arrow{font-size:21px;border-radius:13px;}
+    .ingredient-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:62px;max-height:none;}
+    .soup-inline-card .meter-line{grid-template-columns:46px minmax(0,1fr) 42px;}
+    .ingredient-btn{grid-template-columns:34px 1fr;justify-items:stretch;text-align:left;min-height:62px;gap:7px;}
+    .ing-desc{display:none;}
+    .order-card{min-height:108px;align-items:flex-start;}
+    .intro h1{font-size:36px;}
+    .intro-tips{grid-template-columns:1fr;}
+  }
+  @media (max-width: 560px){
+    .tray-arrow{font-size:22px;border-radius:14px;}
+    .ingredient-grid{grid-template-columns:1fr;}
+    .status-card{grid-template-columns:repeat(2,1fr);}
+    .customer-face{width:50px;height:50px;border-radius:18px;}
+    .order-title{font-size:16px;white-space:normal;}
+    .tag{font-size:12px;padding:6px 8px;}
+    .pot-panel{min-height:310px;}
+    .pot-note{font-size:12px;}
+    .modal h2{font-size:23px;}
+    .result-score{font-size:44px;}
+  }
+</style>
+</head>
+<body>
+  <div class="intro" id="intro">
+    <div class="intro-card">
+      <div class="logo-pot" aria-hidden="true"><div class="pot"><div class="broth"></div></div></div>
+      <h1>마라탕 한 그릇</h1>
+      <p>손님 주문을 보고 재료와 맵기를 고른 뒤, 불·물·육수·소스를 조절하며 재료마다 알맞게 익혀 한 그릇을 완성하세요.</p>
+      <div class="intro-tips">
+        <div class="tip">재료 탭 → 냄비에 넣기</div>
+        <div class="tip">불·물·소스 조절</div>
+        <div class="tip">리뷰 평균 별점 올리기</div>
+      </div>
+      <button class="primary-btn" id="startBtn" style="width:100%;font-size:18px;">가게 열기</button>
+    </div>
+  </div>
+
+  <main class="app" aria-label="마라탕 가게 게임">
+    <section class="topbar">
+      <div class="order-card">
+        <div class="order-info">
+          <div class="customer-face" id="customerFace"><span class="mouth"></span></div>
+          <div class="order-main">
+            <div class="order-title" id="orderTitle">손님 주문을 준비 중입니다.</div>
+            <div class="order-tags" id="orderTags"></div>
+          </div>
+        </div>
+        <section class="spice-inline-card">
+          <h3 class="section-title">맵기 선택 <span class="small-muted" id="spiceLabel">순한맛</span></h3>
+          <div class="spice-grid" id="spiceGrid"></div>
+        </section>
+        <section class="soup-inline-card">
+          <h3 class="section-title">조리 상태 <span class="small-muted" id="cookHint">재료를 담고 시작</span></h3>
+          <div class="soup-meters" aria-label="조리 상태">
+            <div class="meter-line">
+              <span>불 온도</span>
+              <div class="meter"><i id="tempFill"></i></div>
+              <b id="tempText">0℃</b>
+            </div>
+            <div class="meter-line">
+              <span>국물 양</span>
+              <div class="meter"><i id="waterFill"></i></div>
+              <b id="waterText">보통</b>
+            </div>
+            <div class="meter-line">
+              <span>육수 농도</span>
+              <div class="meter"><i id="brothFill"></i></div>
+              <b id="brothText">보통</b>
+            </div>
+            <div class="meter-line">
+              <span>마라 소스</span>
+              <div class="meter"><i id="sauceFill"></i></div>
+              <b id="sauceText">보통</b>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="status-card" aria-label="게임 상태">
+        <div><span class="stat-label">매출</span><span class="stat-value" id="moneyText">0원</span></div>
+        <div><span class="stat-label">오늘 손님</span><span class="stat-value" id="customerText">1/5</span></div>
+        <div><span class="stat-label">영업일</span><span class="stat-value" id="dayText">1일차</span></div>
+        <div><span class="stat-label">최고점</span><span class="stat-value" id="bestText">0</span></div>
+        <div><span class="stat-label">평균 별점</span><span class="stat-value" id="avgText">-</span></div>
+        <div><span class="stat-label">리뷰</span><span class="stat-value" id="reviewText">0</span></div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <section class="pot-panel" aria-label="마라탕 냄비">
+        <div class="hidden-cook-list" id="cookList" aria-hidden="true"></div>
+
+        <div class="bottle-station">
+          <div class="bottle-rack">
+            <button class="bottle-btn" id="waterBtn" type="button">
+              <span class="bottle-icon" style="--liquid:#93c5fd"></span>
+              <span>물병<small>국물 양 ↑ · 농도 ↓</small></span>
+            </button>
+            <button class="bottle-btn" id="brothBtn" type="button">
+              <span class="bottle-icon" style="--liquid:#f59e0b"></span>
+              <span>육수병<small>깊은맛 ↑</small></span>
+            </button>
+            <button class="bottle-btn" id="sauceBtn" type="button">
+              <span class="bottle-icon" style="--liquid:#dc2626"></span>
+              <span>소스병<small>마라 소스 ↑</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pot-wrap">
+          <div class="steam"><i></i><i></i><i></i></div>
+          <div class="pot-shadow"></div>
+          <div class="pot">
+            <div class="broth" id="broth"></div>
+            <div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div>
+            <div id="potItems"></div>
+          </div>
+          <div class="pot-note" id="potNote">재료 0/12 · 맵기 0단계</div>
+        </div>
+        <div class="pour-layer" id="pourLayer" aria-hidden="true"></div>
+        <div class="serve-layer" id="serveLayer" aria-hidden="true">
+          <div class="serving-bowl"><span id="serveText">서빙!</span></div>
+        </div>
+
+        <div class="pot-bottom-row">
+          <div class="stove-control" aria-label="가스레인지 불 조절">
+            <div class="burner" id="burner" data-fire="0"><span class="flame"></span></div>
+            <div class="gas-panel">
+              <div class="gas-row">
+                <button class="gas-knob" id="gasKnob" type="button" aria-label="가스레인지 레버"></button>
+                <div class="gas-state">가스레인지<b id="gasLabel">불 꺼짐</b></div>
+              </div>
+              <div class="gas-levels" id="gasLevels">
+                <button type="button" data-gas-level="0">끄기</button>
+                <button type="button" data-gas-level="1">약</button>
+                <button type="button" data-gas-level="2">중</button>
+                <button type="button" data-gas-level="3">강</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-panel">
+            <div class="cook-row">
+              <button class="ghost-btn" id="undoBtn">하나 빼기</button>
+              <button class="primary-btn" id="cookBtn">조리 시작</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="control-card tray-card tray-side-card">
+          <h3 class="section-title">재료 트레이 <span class="small-muted" id="trayHint">화살표로 넘기기</span></h3>
+          <div class="tray-window">
+            <button class="tray-arrow tray-up" id="trayUp" type="button" aria-label="위 재료">▲</button>
+            <div class="tray-middle">
+              <button class="tray-arrow" id="trayPrev" type="button" aria-label="왼쪽 재료">‹</button>
+              <div class="ingredient-grid" id="ingredientGrid"></div>
+              <button class="tray-arrow" id="trayNext" type="button" aria-label="오른쪽 재료">›</button>
+            </div>
+            <button class="tray-arrow tray-down" id="trayDown" type="button" aria-label="아래 재료">▼</button>
+          </div>
+        </section>
+
+      </aside>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">평가</h2>
+      <p id="modalText">손님 반응</p>
+      <div class="result-score" id="resultScore">0점</div>
+      <div class="stars" id="stars">☆☆☆☆☆</div>
+      <div class="result-list" id="resultList"></div>
+      <div class="modal-actions">
+        <button class="ghost-btn" id="resetDayBtn" style="display:none;">처음부터</button>
+        <button class="primary-btn" id="nextBtn">다음 손님</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">알림</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const won = (n) => n.toLocaleString("ko-KR") + "원";
+
+  const ingredients = [
+    {name:"청경채", tags:["veg","fresh"], desc:"빨리 익는 채소", shape:"leaf", c:"#5ab769", c2:"#86efac", unlock:1, cookTime:8},
+    {name:"배추", tags:["veg","fresh"], desc:"시원한 채소", shape:"leaf", c:"#b9d66a", c2:"#ecfccb", unlock:1, cookTime:10},
+    {name:"숙주", tags:["veg","light"], desc:"금방 숨이 죽음", shape:"strip", c:"#f4f0c4", c2:"#faf7dc", unlock:1, cookTime:7},
+    {name:"목이버섯", tags:["mushroom","texture"], desc:"천천히 오독하게", shape:"mushroom", c:"#4a2d25", c2:"#7c4a3a", unlock:1, cookTime:14},
+    {name:"팽이버섯", tags:["mushroom","light"], desc:"빠르게 부드러움", shape:"strip", c:"#fff3d0", c2:"#f5deb0", unlock:1, cookTime:8},
+    {name:"푸주", tags:["soy","savory"], desc:"육수를 머금음", shape:"strip", c:"#e9c46a", c2:"#f6d98c", unlock:1, cookTime:17},
+    {name:"분모자", tags:["chewy","noodle"], desc:"오래 끓여야 쫄깃", shape:"noodle", c:"#f7e7d0", c2:"#fffaf0", unlock:1, cookTime:22},
+    {name:"어묵", tags:["protein","soft"], desc:"무난하게 익음", shape:"cube", c:"#f0c17c", c2:"#fbd7a6", unlock:1, cookTime:13},
+
+    {name:"중국당면", tags:["chewy","noodle"], desc:"가장 늦게 익는 면", shape:"noodle", c:"#d9c7b7", c2:"#f2e7df", unlock:2, cookTime:25},
+    {name:"소고기", tags:["protein","rich"], desc:"익힘 타이밍 중요", shape:"meat", c:"#b4533c", c2:"#f0a08f", unlock:2, cookTime:15},
+    {name:"메추리알", tags:["protein","soft"], desc:"따뜻해지면 충분", shape:"ball", c:"#fff6d4", c2:"#fef3c7", unlock:2, cookTime:12},
+    {name:"연근", tags:["veg","crunch"], desc:"아삭하게 익히기", shape:"strip", c:"#e8d5bd", c2:"#fff1d6", unlock:2, cookTime:18},
+
+    {name:"두부피", tags:["soy","savory"], desc:"적당히 부드럽게", shape:"strip", c:"#f6d58a", c2:"#ffecb5", unlock:3, cookTime:15},
+    {name:"새우완자", tags:["protein","rich"], desc:"속까지 익히기", shape:"ball", c:"#fca5a5", c2:"#fecaca", unlock:3, cookTime:19},
+    {name:"옥수수면", tags:["noodle","light"], desc:"퍼지기 전 완성", shape:"noodle", c:"#fde047", c2:"#fef9c3", unlock:3, cookTime:20},
+    {name:"치즈떡", tags:["chewy","soft","rich"], desc:"녹기 전 쫀득하게", shape:"cube", c:"#fff1a8", c2:"#fef08a", unlock:3, cookTime:16},
+
+    {name:"라면사리", tags:["noodle","rich"], desc:"빨리 퍼지는 인기 면", shape:"noodle", c:"#facc15", c2:"#fef3c7", unlock:4, cookTime:13},
+    {name:"유부", tags:["soy","savory","soft"], desc:"국물을 듬뿍 머금음", shape:"cube", c:"#f2b66d", c2:"#fed7aa", unlock:4, cookTime:11},
+    {name:"브로콜리", tags:["veg","fresh"], desc:"너무 익히면 흐물", shape:"leaf", c:"#22c55e", c2:"#86efac", unlock:4, cookTime:12},
+    {name:"소시지", tags:["protein","rich"], desc:"짭짤한 인기 토핑", shape:"strip", c:"#ef7a68", c2:"#fecaca", unlock:4, cookTime:14},
+
+    {name:"납작당면", tags:["chewy","noodle"], desc:"넓고 오래 익는 면", shape:"noodle", c:"#d6bca9", c2:"#f3e8df", unlock:5, cookTime:27},
+    {name:"비엔나", tags:["protein","rich"], desc:"톡 터지는 식감", shape:"strip", c:"#e45d50", c2:"#fca5a5", unlock:5, cookTime:12},
+    {name:"곤약", tags:["light","chewy"], desc:"가볍고 탱글탱글", shape:"cube", c:"#e5e7eb", c2:"#f8fafc", unlock:5, cookTime:17},
+    {name:"표고버섯", tags:["mushroom","savory"], desc:"향이 진한 버섯", shape:"mushroom", c:"#8b5e3c", c2:"#c08a5a", unlock:5, cookTime:16},
+
+    {name:"양고기", tags:["protein","rich"], desc:"진한 향의 고기", shape:"meat", c:"#9f3f35", c2:"#e8796f", unlock:6, cookTime:18},
+    {name:"감자수제비", tags:["chewy","rich"], desc:"속까지 천천히 익음", shape:"cube", c:"#f8e0b0", c2:"#fff7cc", unlock:6, cookTime:23},
+    {name:"새송이버섯", tags:["mushroom","texture"], desc:"쫄깃한 버섯", shape:"mushroom", c:"#d9b98f", c2:"#f3dfc2", unlock:6, cookTime:15},
+    {name:"오징어볼", tags:["protein","chewy"], desc:"탱글하게 익히기", shape:"ball", c:"#f9a8d4", c2:"#fce7f3", unlock:6, cookTime:20},
+
+    {name:"고구마떡", tags:["chewy","soft"], desc:"달큰하고 쫀득함", shape:"cube", c:"#f5b461", c2:"#fde68a", unlock:7, cookTime:18},
+    {name:"치킨볼", tags:["protein","rich"], desc:"속까지 익히기", shape:"ball", c:"#f0b36c", c2:"#fed7aa", unlock:7, cookTime:21},
+    {name:"만두", tags:["protein","rich","soft"], desc:"터지기 전 완성", shape:"cube", c:"#f4d6a0", c2:"#fff3cf", unlock:7, cookTime:22},
+    {name:"죽순", tags:["veg","crunch"], desc:"아삭한 식감", shape:"strip", c:"#e5d18b", c2:"#fef9c3", unlock:7, cookTime:16},
+
+    {name:"꽃게볼", tags:["protein","rich"], desc:"해물맛 토핑", shape:"ball", c:"#fb7185", c2:"#fecdd3", unlock:8, cookTime:20},
+    {name:"마라새우", tags:["protein","rich"], desc:"과하면 질겨짐", shape:"meat", c:"#f97316", c2:"#fdba74", unlock:8, cookTime:14},
+    {name:"분홍소시지", tags:["protein","soft"], desc:"추억의 부드러운 맛", shape:"strip", c:"#f9a8d4", c2:"#fce7f3", unlock:8, cookTime:10},
+    {name:"얼린두부", tags:["soy","savory"], desc:"국물을 많이 머금음", shape:"cube", c:"#fff0b8", c2:"#fde68a", unlock:8, cookTime:19},
+
+    {name:"흑목이버섯", tags:["mushroom","texture"], desc:"오독한 고급 식감", shape:"mushroom", c:"#231815", c2:"#5b4038", unlock:9, cookTime:17},
+    {name:"가래떡", tags:["chewy","soft"], desc:"쫀득하지만 쉽게 퍼짐", shape:"strip", c:"#fff7ed", c2:"#f5e7d7", unlock:9, cookTime:19},
+    {name:"문어완자", tags:["protein","chewy","rich"], desc:"늦게 익는 고급 완자", shape:"ball", c:"#c084fc", c2:"#e9d5ff", unlock:9, cookTime:24},
+    {name:"건두부면", tags:["soy","noodle","savory"], desc:"고소한 면 재료", shape:"noodle", c:"#f1d07a", c2:"#fde68a", unlock:9, cookTime:21},
+
+    {name:"킹새우", tags:["protein","rich"], desc:"고급 해산물", shape:"meat", c:"#fb923c", c2:"#fed7aa", unlock:10, cookTime:18},
+    {name:"우삼겹", tags:["protein","rich"], desc:"기름진 고급 고기", shape:"meat", c:"#b91c1c", c2:"#fca5a5", unlock:10, cookTime:13},
+    {name:"마라치즈볼", tags:["chewy","rich","soft"], desc:"특제 인기 토핑", shape:"ball", c:"#fef08a", c2:"#fde047", unlock:10, cookTime:18},
+    {name:"황금완자", tags:["protein","rich"], desc:"최고급 리뷰 토핑", shape:"ball", c:"#fbbf24", c2:"#fef3c7", unlock:10, cookTime:23}
+  ];
+
+  const unlockMilestones = [
+    {level:1, money:0},
+    {level:2, money:3000},
+    {level:3, money:7000},
+    {level:4, money:12000},
+    {level:5, money:18000},
+    {level:6, money:26000},
+    {level:7, money:36000},
+    {level:8, money:48000},
+    {level:9, money:62000},
+    {level:10, money:78000}
+  ];
+
+  function unlockMoney(level){
+    const found = unlockMilestones.find(m => m.level === level);
+    return found ? found.money : Infinity;
+  }
+
+  function unlockLabel(level){
+    const need = unlockMoney(level);
+    return Number.isFinite(need) ? `매출 ${won(need)} 해금` : `${level}단계 해금`;
+  }
+
+  
+  const spiceInfo = [
+    {name:"순한맛", broth:"linear-gradient(180deg,#fbbf24,#fb923c)", dot:"#fbbf24", sauceTarget:24},
+    {name:"1단계", broth:"linear-gradient(180deg,#fb923c,#f97316)", dot:"#fb923c", sauceTarget:39},
+    {name:"2단계", broth:"linear-gradient(180deg,#f97316,#dc2626)", dot:"#ef4444", sauceTarget:55},
+    {name:"3단계", broth:"linear-gradient(180deg,#ef4444,#991b1b)", dot:"#dc2626", sauceTarget:72},
+    {name:"4단계", broth:"linear-gradient(180deg,#b91c1c,#450a0a)", dot:"#7f1d1d", sauceTarget:90}
+  ];
+
+  const fireInfo = [
+    {name:"끄기", target:0, label:"불 꺼짐"},
+    {name:"약불", target:45, label:"약불"},
+    {name:"중불", target:68, label:"중불"},
+    {name:"강불", target:92, label:"강불"}
+  ];
+
+  const customers = [
+    {name:"첫 방문 손님", face:"linear-gradient(145deg,#ffd8ad,#f8b679)"},
+    {name:"매운맛 도전자", face:"linear-gradient(145deg,#ffc7c7,#f87171)"},
+    {name:"퇴근한 단골", face:"linear-gradient(145deg,#c7d2fe,#93c5fd)"},
+    {name:"든든파 손님", face:"linear-gradient(145deg,#fef3c7,#facc15)"},
+    {name:"채소파 손님", face:"linear-gradient(145deg,#bbf7d0,#86efac)"},
+    {name:"쫄깃파 손님", face:"linear-gradient(145deg,#e9d5ff,#c084fc)"},
+    {name:"먹방 유튜버", face:"linear-gradient(145deg,#fecaca,#ef4444)", viral:true}
+  ];
+
+  const orderTemplates = [
+    {title:"깔끔하게 먹고 싶어요.", spice:1, required:["청경채"], bannedTags:[], prefs:{veg:2}, tags:["청경채 필수","채소 넉넉히"]},
+    {title:"쫄깃한 재료가 많은 게 좋아요.", spice:2, required:["분모자"], bannedTags:[], prefs:{chewy:2}, tags:["분모자 필수","쫄깃한 재료"]},
+    {title:"버섯은 빼고 얼얼하게 주세요.", spice:3, required:["푸주"], bannedTags:["mushroom"], prefs:{soy:1}, tags:["푸주 필수","버섯 제외"]},
+    {title:"안 맵고 부드러운 걸로 부탁해요.", spice:0, required:["어묵"], bannedTags:[], prefs:{soft:1}, tags:["순한맛","어묵 필수"]},
+    {title:"고기랑 든든한 재료가 필요해요.", spice:2, required:["소고기"], bannedTags:[], prefs:{protein:2}, tags:["소고기 필수","단백질 넉넉히"]},
+    {title:"오늘은 채소 위주로 가볍게요.", spice:1, required:["숙주"], bannedTags:["noodle"], prefs:{veg:2, light:1}, tags:["숙주 필수","면 제외"]},
+    {title:"제일 맵게, 고소한 재료도 넣어주세요.", spice:4, required:["두부피"], bannedTags:[], prefs:{soy:2}, tags:["4단계","두부피 필수"]},
+    {title:"버섯 좋아해요. 국물은 보통으로요.", spice:2, required:["목이버섯"], bannedTags:[], prefs:{mushroom:2}, tags:["목이버섯 필수","버섯 취향"]},
+    {title:"탱글탱글한 토핑을 기대할게요.", spice:2, required:["새우완자"], bannedTags:[], prefs:{protein:2, rich:1}, tags:["새우완자 필수","탱글한 토핑"]},
+    {title:"노란 면이 들어간 마라탕으로 주세요.", spice:1, required:["옥수수면"], bannedTags:[], prefs:{noodle:2, light:1}, tags:["옥수수면 필수","가볍게"]},
+    {title:"맵기는 보통, 고소한 재료 위주로요.", spice:2, required:["푸주"], bannedTags:["mushroom"], prefs:{soy:2}, tags:["푸주 필수","버섯 제외"]},
+
+    {title:"아삭한 식감이 살아있으면 좋겠어요.", spice:1, required:["연근"], bannedTags:[], prefs:{crunch:2, veg:1}, tags:["연근 필수","아삭한 식감"]},
+    {title:"치즈떡 넣고 부드럽게 부탁해요.", spice:2, required:["치즈떡"], bannedTags:["mushroom"], prefs:{chewy:1, soft:1, rich:1}, tags:["치즈떡 필수","버섯 제외"]},
+    {title:"라면사리 넣고 국물은 너무 적지 않게요.", spice:2, required:["라면사리"], bannedTags:[], prefs:{noodle:2, rich:1}, tags:["라면사리 필수","국물 보통"]},
+    {title:"유부랑 채소를 같이 넣어주세요.", spice:1, required:["유부","브로콜리"], bannedTags:[], prefs:{soy:1, veg:1, soft:1}, tags:["유부 필수","브로콜리 필수"]},
+    {title:"소시지 들어간 든든한 마라탕 주세요.", spice:2, required:["소시지"], bannedTags:["light"], prefs:{protein:2, rich:1}, tags:["소시지 필수","든든하게"]},
+    {title:"넓은 당면이랑 표고 향이 좋아요.", spice:3, required:["납작당면","표고버섯"], bannedTags:[], prefs:{noodle:1, mushroom:2, savory:1}, tags:["납작당면 필수","표고버섯 필수"]},
+    {title:"가볍지만 쫄깃한 재료 위주로요.", spice:1, required:["곤약"], bannedTags:["rich"], prefs:{light:2, chewy:1}, tags:["곤약 필수","기름진 재료 제외"]},
+    {title:"양고기랑 새송이버섯으로 진하게 먹고 싶어요.", spice:3, required:["양고기","새송이버섯"], bannedTags:[], prefs:{protein:2, mushroom:1, rich:1}, tags:["양고기 필수","새송이버섯 필수"]},
+    {title:"수제비가 속까지 잘 익게 부탁해요.", spice:2, required:["감자수제비"], bannedTags:[], prefs:{chewy:1, rich:1}, tags:["감자수제비 필수","속까지 익히기"]},
+    {title:"오징어볼이랑 매운 국물 조합으로 주세요.", spice:3, required:["오징어볼"], bannedTags:["veg"], prefs:{protein:2, chewy:1}, tags:["오징어볼 필수","채소 제외"]},
+    {title:"만두가 터지지 않게 잘 익혀주세요.", spice:2, required:["만두"], bannedTags:[], prefs:{protein:1, soft:2, rich:1}, tags:["만두 필수","너무 익히지 않기"]},
+    {title:"죽순처럼 아삭한 재료가 좋아요.", spice:1, required:["죽순"], bannedTags:["soft"], prefs:{crunch:2, veg:1}, tags:["죽순 필수","부드러운 재료 제외"]},
+    {title:"꽃게볼이랑 해산물 느낌으로 부탁해요.", spice:2, required:["꽃게볼"], bannedTags:["mushroom"], prefs:{protein:2, rich:1}, tags:["꽃게볼 필수","버섯 제외"]},
+    {title:"마라새우는 질기지 않게 짧게 익혀주세요.", spice:3, required:["마라새우"], bannedTags:[], prefs:{protein:2, rich:1}, tags:["마라새우 필수","익힘 주의"]},
+    {title:"얼린두부가 국물을 먹게 오래 끓여주세요.", spice:2, required:["얼린두부"], bannedTags:[], prefs:{soy:2, savory:1}, tags:["얼린두부 필수","국물 진하게"]},
+    {title:"오독오독한 흑목이버섯이 먹고 싶어요.", spice:3, required:["흑목이버섯"], bannedTags:["soft"], prefs:{mushroom:2, texture:2}, tags:["흑목이버섯 필수","오독한 식감"]},
+    {title:"가래떡은 쫀득하게, 국물은 진하게요.", spice:2, required:["가래떡"], bannedTags:[], prefs:{chewy:2, soft:1}, tags:["가래떡 필수","진한 국물"]},
+    {title:"건두부면 들어간 고소한 마라탕으로 주세요.", spice:2, required:["건두부면"], bannedTags:[], prefs:{soy:2, noodle:1, savory:1}, tags:["건두부면 필수","고소하게"]},
+    {title:"킹새우랑 우삼겹으로 고급스럽게 부탁해요.", spice:3, required:["킹새우","우삼겹"], bannedTags:["light"], prefs:{protein:3, rich:2}, tags:["킹새우 필수","우삼겹 필수"]},
+    {title:"마라치즈볼과 황금완자로 특별하게요.", spice:2, required:["마라치즈볼","황금완자"], bannedTags:["veg"], prefs:{rich:2, protein:1, soft:1}, tags:["마라치즈볼 필수","황금완자 필수"]},
+
+    {title:"촬영 중이에요. 쫄깃하고 맵고 진한 한 그릇 부탁해요!", spice:4, required:["분모자","중국당면","소고기"], bannedTags:["veg"], prefs:{chewy:2, protein:2, rich:1}, tags:["유튜버 등장","4단계","채소 제외","재료 6개 이상"], special:"youtuber", minCount:6, soupTarget:{water:[42,70], broth:[66,88], sauce:[76,100]}},
+    {title:"오늘 콘텐츠는 극한 마라탕이에요. 완자랑 면까지 제대로 익혀주세요!", spice:3, required:["새우완자","옥수수면","푸주"], bannedTags:["mushroom"], prefs:{protein:2, noodle:1, soy:1}, tags:["유튜버 등장","버섯 제외","재료 6개 이상","국물 진하게"], special:"youtuber", minCount:6, soupTarget:{water:[38,72], broth:[64,90], sauce:[64,92]}},
+    {title:"신메뉴 리뷰 갑니다. 치즈떡, 라면사리, 유부 조합으로요!", spice:3, required:["치즈떡","라면사리","유부"], bannedTags:["mushroom"], prefs:{chewy:2, rich:2, soy:1}, tags:["유튜버 등장","신메뉴 리뷰","재료 7개 이상"], special:"youtuber", minCount:7, soupTarget:{water:[40,74], broth:[62,88], sauce:[62,94]}},
+    {title:"구독자 추천 조합이에요. 양고기, 오징어볼, 감자수제비까지 넣어주세요!", spice:4, required:["양고기","오징어볼","감자수제비"], bannedTags:["light"], prefs:{protein:3, chewy:2, rich:2}, tags:["유튜버 등장","4단계","재료 7개 이상"], special:"youtuber", minCount:7, soupTarget:{water:[36,68], broth:[68,94], sauce:[78,100]}},
+    {title:"프리미엄 먹방 찍을게요. 킹새우, 우삼겹, 황금완자 전부 갑니다!", spice:4, required:["킹새우","우삼겹","황금완자"], bannedTags:["veg"], prefs:{protein:4, rich:3}, tags:["유튜버 등장","최고급 재료","재료 8개 이상"], special:"youtuber", minCount:8, soupTarget:{water:[38,70], broth:[70,96], sauce:[78,100]}}
+  ];
+
+  
+  const state = {
+    day: 1,
+    money: 0,
+    customerNo: 1,
+    selected: [],
+    spice: 0,
+    currentOrder: null,
+    currentCustomer: customers[0],
+    cooking: false,
+    heatLevel: 0,
+    temp: 0,
+    water: 70,
+    broth: 55,
+    sauce: 35,
+    raf: null,
+    lastTick: 0,
+    lastRender: 0,
+    best: Number(localStorage.getItem("mala_best_score") || 0),
+    reviewCount: Number(localStorage.getItem("mala_review_count") || 0),
+    reviewSum: Number(localStorage.getItem("mala_review_sum") || 0),
+    unlockedLevel: Math.max(1, Number(localStorage.getItem("mala_unlock_level") || 1))
+  };
+
+  const audio = {
+    ctx: null,
+    init(){
+      if(!this.ctx){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(AC) this.ctx = new AC();
+      }
+    },
+    tone(freq=440, duration=.07, type="sine", gain=.04){
+      if(!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(gain, now + .015);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(g).connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration + .03);
+    },
+    add(){ this.tone(650,.055,"triangle",.035); },
+    remove(){ this.tone(260,.06,"sine",.025); },
+    cook(){ this.tone(180,.08,"sawtooth",.02); setTimeout(()=>this.tone(240,.07,"sawtooth",.018),80); },
+    water(){ this.tone(420,.06,"sine",.026); setTimeout(()=>this.tone(330,.05,"sine",.018),70); },
+    sauce(){ this.tone(520,.055,"triangle",.03); },
+    success(){ [520,660,780].forEach((f,i)=>setTimeout(()=>this.tone(f,.09,"triangle",.045),i*80)); },
+    fail(){ [180,140].forEach((f,i)=>setTimeout(()=>this.tone(f,.11,"sawtooth",.03),i*100)); }
+  };
+
+  function byName(name){ return ingredients.find(i => i.name === name); }
+  function canUseOrder(t){ return t.required.every(n => byName(n)?.unlock <= state.unlockedLevel); }
+
+  function pickOrder(){
+    const list = orderTemplates.filter(canUseOrder);
+    const normalList = list.filter(o => !o.special);
+    const specialList = list.filter(o => o.special);
+    const canSpecial = state.day >= 2 && state.customerNo >= 2 && specialList.length && Math.random() < Math.min(.08 + state.day * .025, .18);
+    if(canSpecial){
+      return JSON.parse(JSON.stringify(specialList[Math.floor(Math.random() * specialList.length)]));
+    }
+    const safeList = normalList.length ? normalList : orderTemplates.slice(0, 3);
+    const levelBias = Math.min(safeList.length, 4 + state.day + state.customerNo);
+    return JSON.parse(JSON.stringify(safeList[Math.floor(Math.random() * levelBias)]));
+  }
+
+  function pickCustomer(order){
+    if(order?.special === "youtuber") return customers.find(c => c.viral);
+    return customers[Math.floor(Math.random() * Math.min(customers.length - 1, 2 + state.day))];
+  }
+
+  function renderSpiceButtons(){
+    const grid = $("spiceGrid");
+    grid.innerHTML = "";
+    spiceInfo.forEach((s, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "spice-btn" + (idx === state.spice ? " selected" : "");
+      btn.innerHTML = `<span class="pepper-dot" style="--dot:${s.dot}"></span><span>${idx}</span>`;
+      btn.title = s.name;
+      btn.disabled = state.cooking;
+      btn.addEventListener("click", () => {
+        audio.init();
+        if(state.cooking) return;
+        state.spice = idx;
+        state.sauce = clamp(24 + idx * 14, 20, 86);
+        audio.tone(360 + idx * 65, .055, "triangle", .032);
+        render();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderIngredients(){
+    const grid = $("ingredientGrid");
+    grid.innerHTML = "";
+    ingredients.forEach(ing => {
+      const locked = ing.unlock > state.unlockedLevel;
+      const btn = document.createElement("button");
+      btn.className = "ingredient-btn" + (locked ? " locked" : "");
+      btn.disabled = locked;
+      btn.innerHTML = `
+        <div class="ing-icon ${ing.shape}" style="--c:${ing.c};--c2:${ing.c2}"></div>
+        <div><div class="ing-name">${ing.name}</div><div class="ing-desc">${locked ? unlockLabel(ing.unlock) : ing.desc}</div></div>
+      `;
+      btn.addEventListener("click", () => addIngredient(ing));
+      grid.appendChild(btn);
+    });
+    updateTrayArrows();
+  }
+
+  function moveTray(dx=0, dy=0){
+    const grid = $("ingredientGrid");
+    const amountX = Math.max(180, Math.round(grid.clientWidth * .7));
+    const amountY = Math.max(92, Math.round(grid.clientHeight * .82));
+    grid.scrollBy({left: dx * amountX, top: dy * amountY, behavior:"smooth"});
+    setTimeout(updateTrayArrows, 260);
+  }
+
+  function updateTrayArrows(){
+    const grid = $("ingredientGrid");
+    const prev = $("trayPrev");
+    const next = $("trayNext");
+    const up = $("trayUp");
+    const down = $("trayDown");
+    if(!grid) return;
+    const maxX = Math.max(0, grid.scrollWidth - grid.clientWidth - 2);
+    const maxY = Math.max(0, grid.scrollHeight - grid.clientHeight - 2);
+    if(prev) prev.disabled = grid.scrollLeft <= 2 || maxX <= 4;
+    if(next) next.disabled = grid.scrollLeft >= maxX || maxX <= 4;
+    if(up) up.disabled = grid.scrollTop <= 2 || maxY <= 4;
+    if(down) down.disabled = grid.scrollTop >= maxY || maxY <= 4;
+  }
+
+  function addIngredient(ing){
+    audio.init();
+    if(state.selected.length >= 12){
+      showToast("냄비가 꽉 찼어요. 하나 빼고 넣어주세요.");
+      audio.fail();
+      return;
+    }
+    const item = {
+      ...ing,
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+      x: 22 + Math.random() * 56,
+      y: 19 + Math.random() * 30,
+      r: (Math.random() * 44 - 22).toFixed(1) + "deg",
+      cook: 0
+    };
+    state.selected.push(item);
+    audio.add();
+    renderPot();
+    renderCook();
+  }
+
+  function undoIngredient(){
+    audio.init();
+    if(state.cooking) return;
+    if(!state.selected.length){ showToast("뺄 재료가 없어요."); return; }
+    state.selected.pop();
+    audio.remove();
+    renderPot();
+    renderCook();
+  }
+
+  function renderOrder(){
+    const order = state.currentOrder;
+    const customer = state.currentCustomer;
+    const face = $("customerFace");
+    face.style.background = customer.face;
+    face.classList.toggle("viral", !!customer.viral);
+    $("orderTitle").textContent = `${customer.name}: “${order.title}”`;
+    const tags = $("orderTags");
+    tags.innerHTML = "";
+    if(order.special === "youtuber") addTag(tags, "촬영 리뷰 영향 큼", "viral");
+    addTag(tags, `${order.spice}단계 ${spiceInfo[order.spice].name}`, "hot");
+    order.tags.forEach(t => addTag(tags, t, t.includes("제외") || t.includes("빼") ? "warn" : (t.includes("유튜버") ? "viral" : "")));
+  }
+
+  function addTag(parent, text, cls=""){
+    const span = document.createElement("span");
+    span.className = "tag" + (cls ? " " + cls : "");
+    span.textContent = text;
+    parent.appendChild(span);
+  }
+
+  function renderPot(){
+    const pot = $("potItems");
+    const liveIds = new Set(state.selected.map(item => item.id));
+
+    // 조리 중에는 재료 DOM을 통째로 지우고 다시 만들지 않습니다.
+    // 그래야 CSS 애니메이션이 매번 재시작되지 않아 깜빡임이 사라집니다.
+    [...pot.querySelectorAll(".ingredient-in-pot")].forEach(el => {
+      if(!liveIds.has(el.dataset.id)) el.remove();
+    });
+
+    state.selected.forEach(item => {
+      const status = donenessStatus(item);
+      let el = pot.querySelector(`[data-id="${cssEscape(item.id)}"]`);
+      if(!el){
+        el = document.createElement("div");
+        el.dataset.id = item.id;
+        el.style.left = item.x + "%";
+        el.style.top = item.y + "%";
+        el.style.setProperty("--r", item.r);
+        el.style.setProperty("--c", item.c);
+        el.style.setProperty("--c2", item.c2);
+        el.className = `ingredient-in-pot ${item.shape} ${status.cls}`;
+        el.innerHTML = `<span class="ing-short">${shortName(item.name)}</span><span class="doneness-mini"><i></i></span>`;
+        pot.appendChild(el);
+        setTimeout(() => el.classList.add("settled"), 260);
+      }else{
+        el.classList.remove("strip", "noodle", "leaf", "mushroom", "ball", "meat", "cube", "raw", "perfect", "over", "burnt");
+        el.classList.add(item.shape, status.cls);
+      }
+      const bar = el.querySelector(".doneness-mini i");
+      if(bar){
+        bar.style.width = status.width + "%";
+        bar.style.background = status.color;
+      }
+    });
+
+    const sauceTint = Math.round(clamp(state.sauce, 0, 100));
+    const base = spiceInfo[state.spice].broth;
+    $("broth").style.background = sauceTint > 75 ? "linear-gradient(180deg,#ef4444,#7f1d1d)" : sauceTint < 35 ? "linear-gradient(180deg,#fbbf24,#fb923c)" : base;
+    $("spiceLabel").textContent = spiceInfo[state.spice].name;
+    $("potNote").textContent = `재료 ${state.selected.length}/12 · ${fireInfo[state.heatLevel].label} · 국물 ${levelWord(state.water)}`;
+  }
+
+  function cssEscape(value){
+    if(window.CSS && typeof CSS.escape === "function") return CSS.escape(value);
+    return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  }
+
+  function shortName(name){
+    const map = {"청경채":"청", "목이버섯":"목이", "팽이버섯":"팽이", "중국당면":"당면", "메추리알":"알", "새우완자":"완자", "옥수수면":"옥면"};
+    return map[name] || name.slice(0,2);
+  }
+
+  function renderStatus(){
+    $("moneyText").textContent = won(state.money);
+    $("customerText").textContent = `${state.customerNo}/5`;
+    $("dayText").textContent = `${state.day}일차`;
+    $("bestText").textContent = state.best;
+    $("reviewText").textContent = state.reviewCount;
+    $("avgText").textContent = state.reviewCount ? `${reviewAverage().toFixed(1)}★` : "-";
+    const nextLevel = state.unlockedLevel + 1;
+    const nextNeed = unlockMoney(nextLevel);
+    const unlockedNow = ingredients.filter(i => i.unlock <= state.unlockedLevel).length;
+    const total = ingredients.length;
+    if(nextNeed < Infinity){
+      const remain = Math.max(0, nextNeed - state.money);
+      $("trayHint").textContent = `${unlockedNow}/${total}개 해금 · 다음 ${won(remain)} 남음`;
+    }else{
+      $("trayHint").textContent = `${unlockedNow}/${total}개 전부 해금`;
+    }
+  }
+
+  function reviewAverage(){
+    return state.reviewCount ? state.reviewSum / state.reviewCount : 0;
+  }
+
+  function saveReview(stars){
+    state.reviewCount += 1;
+    state.reviewSum += stars;
+    localStorage.setItem("mala_review_count", String(state.reviewCount));
+    localStorage.setItem("mala_review_sum", String(state.reviewSum));
+  }
+
+  function colorForMeter(value, type){
+    if(type === "temp"){
+      if(value < 35) return "#60a5fa";
+      if(value < 78) return "#22c55e";
+      return "#ef4444";
+    }
+    if(type === "water"){
+      if(value < 28) return "#ef4444";
+      if(value < 45) return "#f97316";
+      if(value <= 78) return "#22c55e";
+      return "#60a5fa";
+    }
+    if(type === "sauce"){
+      if(value < 35) return "#fbbf24";
+      if(value < 75) return "#f97316";
+      return "#dc2626";
+    }
+    if(value < 38) return "#60a5fa";
+    if(value < 78) return "#22c55e";
+    return "#f97316";
+  }
+
+  function levelWord(v){
+    if(v < 25) return "부족";
+    if(v < 45) return "적음";
+    if(v <= 78) return "보통";
+    return "많음";
+  }
+
+  function concentrationWord(v){
+    if(v < 35) return "연함";
+    if(v <= 74) return "보통";
+    if(v <= 88) return "진함";
+    return "과함";
+  }
+
+  function sauceWord(v){
+    if(v < 30) return "순함";
+    if(v < 55) return "약함";
+    if(v < 78) return "진함";
+    return "강함";
+  }
+
+  function setFill(id, value, color){
+    const el = $(id);
+    if(!el) return;
+    el.style.width = clamp(value, 0, 100) + "%";
+    el.style.background = color;
+  }
+
+  function renderCook(){
+    setFill("tempFill", state.temp, colorForMeter(state.temp, "temp"));
+    setFill("waterFill", state.water, colorForMeter(state.water, "water"));
+    setFill("brothFill", state.broth, colorForMeter(state.broth, "broth"));
+    setFill("sauceFill", state.sauce, colorForMeter(state.sauce, "sauce"));
+    $("tempText").textContent = `${Math.round(state.temp)}℃`;
+    $("waterText").textContent = levelWord(state.water);
+    $("brothText").textContent = concentrationWord(state.broth);
+    $("sauceText").textContent = sauceWord(state.sauce);
+    $("cookBtn").textContent = state.cooking ? "완성하기" : "조리 시작";
+    $("cookBtn").classList.toggle("finish", state.cooking);
+    const perfect = state.selected.filter(i => donenessStatus(i).cls === "perfect").length;
+    $("cookHint").textContent = state.cooking ? `딱 좋음 ${perfect}/${state.selected.length}` : "재료를 담고 시작";
+    $("undoBtn").disabled = state.cooking;
+    $("broth").classList.toggle("cooking", state.cooking && state.temp > 35);
+    const knob = $("gasKnob");
+    const angle = [-125, -42, 40, 123][state.heatLevel] || -125;
+    if(knob){
+      knob.style.setProperty("--angle", `${angle}deg`);
+      knob.setAttribute("aria-valuenow", String(state.heatLevel));
+    }
+    if($("burner")) $("burner").dataset.fire = String(state.heatLevel);
+    if($("gasLabel")) $("gasLabel").textContent = fireInfo[state.heatLevel].label;
+    document.querySelectorAll("[data-gas-level]").forEach(btn => {
+      btn.classList.toggle("selected", Number(btn.dataset.gasLevel) === state.heatLevel);
+    });
+    renderCookList();
+  }
+
+  function renderCookList(){
+    const list = $("cookList");
+    if(!list) return;
+    if(!state.selected.length){
+      if(list.dataset.empty !== "true"){
+        list.dataset.empty = "true";
+        list.innerHTML = `<div class="small-muted" style="padding:4px 2px;">재료를 넣으면 익힘 바가 표시됩니다.</div>`;
+      }
+      return;
+    }
+    if(list.dataset.empty === "true"){
+      list.innerHTML = "";
+    }
+    list.dataset.empty = "false";
+    const liveIds = new Set(state.selected.map(item => item.id));
+    [...list.querySelectorAll(".cook-item")].forEach(row => {
+      if(!liveIds.has(row.dataset.id)) row.remove();
+    });
+
+    state.selected.forEach(item => {
+      const status = donenessStatus(item);
+      let row = list.querySelector(`[data-id="${cssEscape(item.id)}"]`);
+      if(!row){
+        row = document.createElement("div");
+        row.className = "cook-item";
+        row.dataset.id = item.id;
+        row.innerHTML = `
+          <div class="cook-item-name"></div>
+          <div class="doneness-track"><i></i></div>
+          <div class="cook-item-state"></div>
+        `;
+        list.appendChild(row);
+      }
+      row.querySelector(".cook-item-name").textContent = item.name;
+      const bar = row.querySelector(".doneness-track i");
+      bar.style.width = status.width + "%";
+      bar.style.background = status.color;
+      const stateEl = row.querySelector(".cook-item-state");
+      stateEl.textContent = status.text;
+      stateEl.style.color = status.color;
+    });
+  }
+
+  function donenessStatus(item){
+    const pct = item.cookTime ? (item.cook / item.cookTime) * 100 : 0;
+    const width = clamp(pct, 0, 150) / 1.5;
+    if(pct < 45) return {text:"덜 익음", cls:"raw", color:"#60a5fa", width};
+    if(pct < 82) return {text:"익는 중", cls:"raw", color:"#f59e0b", width};
+    if(pct <= 118) return {text:"딱 좋음", cls:"perfect", color:"#16a34a", width};
+    if(pct <= 145) return {text:"너무 익음", cls:"over", color:"#f97316", width};
+    return {text:"푹 퍼짐", cls:"burnt", color:"#dc2626", width};
+  }
+
+  function startCooking(){
+    audio.init();
+    if(!state.selected.length){
+      showToast("재료를 먼저 넣어주세요.");
+      audio.fail();
+      return;
+    }
+    if(state.selected.length < 3){
+      showToast("마라탕이 너무 허전해요. 재료를 3개 이상 담아주세요.");
+      audio.fail();
+      return;
+    }
+    state.cooking = true;
+    state.heatLevel = 2;
+    state.lastTick = performance.now();
+    state.lastRender = 0;
+    audio.cook();
+    render();
+    loopCooking();
+  }
+
+  function loopCooking(){
+    cancelAnimationFrame(state.raf);
+    const tick = (now) => {
+      if(!state.cooking) return;
+      const dt = clamp((now - state.lastTick) / 1000, 0, .08);
+      state.lastTick = now;
+      simulateCooking(dt);
+      if(now - state.lastRender > 110){
+        renderPot();
+        renderCook();
+        state.lastRender = now;
+      }
+      state.raf = requestAnimationFrame(tick);
+    };
+    state.raf = requestAnimationFrame(tick);
+  }
+
+  function simulateCooking(dt){
+    const target = fireInfo[state.heatLevel].target;
+    state.temp += (target - state.temp) * dt * 1.8;
+    state.temp = clamp(state.temp, 0, 100);
+    const heat = state.temp / 100;
+    const boiling = Math.max(0, (state.temp - 35) / 65);
+    const evaporation = state.heatLevel === 0 ? 0 : (0.28 + state.heatLevel * 0.18) * boiling;
+    state.water = clamp(state.water - evaporation * dt * 5.6, 0, 100);
+    if(state.water < 38 && state.temp > 55){
+      state.broth = clamp(state.broth + dt * 1.8, 0, 100);
+      state.sauce = clamp(state.sauce + dt * 1.4, 0, 100);
+    }else if(state.temp > 60){
+      state.broth = clamp(state.broth + dt * .35, 0, 100);
+      state.sauce = clamp(state.sauce + dt * .22, 0, 100);
+    }
+
+    const waterMul = state.water < 18 ? 1.32 : state.water < 32 ? 1.12 : state.water > 86 ? .72 : 1;
+    const tempMul = clamp((state.temp - 30) / 50, 0, 1.35);
+    state.selected.forEach(item => {
+      let rate = tempMul * waterMul;
+      if(item.tags.includes("veg")) rate *= 1.18;
+      if(item.tags.includes("noodle")) rate *= state.water > 42 ? 1.05 : .88;
+      if(item.tags.includes("protein")) rate *= .96;
+      item.cook = clamp(item.cook + dt * rate, 0, item.cookTime * 1.75);
+    });
+  }
+
+  function setFire(level){
+    audio.init();
+    state.heatLevel = clamp(level, 0, 3);
+    audio.tone(220 + level * 90, .055, level === 0 ? "sine" : "sawtooth", .025);
+    renderCook();
+    renderPot();
+  }
+
+  function animateBottle(buttonId, type){
+    const btn = $(buttonId);
+    if(btn){
+      btn.classList.remove("pouring");
+      void btn.offsetWidth;
+      btn.classList.add("pouring");
+      setTimeout(() => btn.classList.remove("pouring"), 460);
+    }
+    playPour(buttonId, type);
+  }
+
+  function playPour(buttonId, type){
+    const layer = $("pourLayer");
+    const btn = $(buttonId);
+    const panel = document.querySelector('.pot-panel');
+    if(!layer || !btn || !panel) return;
+    const colors = {water:"#93c5fd", broth:"#f59e0b", sauce:"#dc2626"};
+    const color = colors[type] || "#f59e0b";
+
+    const panelRect = panel.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const startX = btnRect.left - panelRect.left + btnRect.width * 0.5 - 22;
+    const startY = btnRect.top - panelRect.top + 4;
+    const targetX = panelRect.width * 0.54 - 22;
+    const targetY = panelRect.height * 0.21;
+
+    const bottle = document.createElement('div');
+    bottle.className = 'pour-bottle';
+    bottle.style.setProperty('--pour', color);
+    bottle.style.left = `${startX}px`;
+    bottle.style.top = `${startY}px`;
+    bottle.innerHTML = `<span class="pb-neck"></span><span class="pb-body"></span>`;
+    layer.appendChild(bottle);
+
+    const dx = targetX - startX;
+    const dy = targetY - startY;
+    bottle.animate([
+      { transform:'translate(0,0) rotate(0deg) scale(.95)' },
+      { transform:`translate(${dx * 0.42}px, ${dy * 0.56}px) rotate(-8deg) scale(.98)`, offset:.52 },
+      { transform:`translate(${dx}px, ${dy}px) rotate(-28deg) scale(1)`, offset:.82 },
+      { transform:`translate(${dx}px, ${dy}px) rotate(-28deg) scale(1)`, offset:1 }
+    ], { duration:820, easing:'cubic-bezier(.18,.84,.24,1)', fill:'forwards' });
+
+    setTimeout(() => {
+      const trail = document.createElement('div');
+      trail.className = 'pour-trail';
+      trail.style.setProperty('--pour', color);
+      trail.style.left = `${targetX + 24}px`;
+      trail.style.top = `${targetY + 42}px`;
+      trail.style.setProperty('--drop', `${Math.max(72, panelRect.height * 0.22)}px`);
+
+      const hit = document.createElement('div');
+      hit.className = 'pour-hit';
+      hit.style.setProperty('--pour', color);
+      hit.style.left = `${panelRect.width * 0.51}px`;
+      hit.style.top = `${panelRect.height * 0.44}px`;
+
+      layer.append(trail, hit);
+      trail.classList.add('show');
+      hit.classList.add('show');
+      setTimeout(() => { trail.remove(); hit.remove(); }, 420);
+    }, 500);
+
+    setTimeout(() => bottle.remove(), 950);
+  }
+
+  function addWater(){
+    audio.init();
+    state.water = clamp(state.water + 18, 0, 100);
+    state.broth = clamp(state.broth - 5, 0, 100);
+    state.sauce = clamp(state.sauce - 4, 0, 100);
+    audio.water();
+    animateBottle("waterBtn", "water");
+    showToast("물을 부었어요. 국물 양은 늘고 농도는 조금 연해졌어요.");
+    renderCook();
+    renderPot();
+  }
+
+  function addBroth(){
+    audio.init();
+    state.broth = clamp(state.broth + 12, 0, 100);
+    state.water = clamp(state.water + 5, 0, 100);
+    audio.sauce();
+    animateBottle("brothBtn", "broth");
+    showToast("육수를 부었어요. 국물 맛이 깊어졌어요.");
+    renderCook();
+    renderPot();
+  }
+
+  function addSauce(){
+    audio.init();
+    state.sauce = clamp(state.sauce + 12, 0, 100);
+    audio.sauce();
+    animateBottle("sauceBtn", "sauce");
+    showToast("마라 소스를 부었어요. 더 얼얼해졌어요.");
+    renderCook();
+    renderPot();
+  }
+
+  function finishCooking(){
+    audio.init();
+    state.cooking = false;
+    state.heatLevel = 0;
+    cancelAnimationFrame(state.raf);
+    const result = evaluate();
+    state.money += result.earned;
+    saveReview(result.stars);
+    if(result.score > state.best){
+      state.best = result.score;
+      localStorage.setItem("mala_best_score", String(state.best));
+    }
+    unlockCheck();
+    result.score >= 75 ? audio.success() : audio.fail();
+    render();
+    playServing(result);
+  }
+
+  function playServing(result){
+    const layer = $("serveLayer");
+    const text = $("serveText");
+    text.textContent = result.special === "youtuber" ? "촬영 서빙!" : "서빙!";
+    layer.classList.remove("show");
+    void layer.offsetWidth;
+    layer.classList.add("show");
+    setTimeout(() => {
+      layer.classList.remove("show");
+      showResult(result);
+    }, 980);
+  }
+
+  function evaluate(){
+    const order = state.currentOrder;
+    const names = state.selected.map(i => i.name);
+    const tags = state.selected.flatMap(i => i.tags);
+    const countTag = (tag) => tags.filter(t => t === tag).length;
+    const hasName = (name) => names.includes(name);
+    const hasBanned = (tag) => state.selected.some(i => i.tags.includes(tag));
+
+    let requiredScore = 0;
+    const missing = [];
+    order.required.forEach(name => {
+      if(hasName(name)) requiredScore += 16;
+      else missing.push(name);
+    });
+    requiredScore = clamp(requiredScore, 0, 24);
+
+    let prefScore = 0;
+    Object.entries(order.prefs || {}).forEach(([tag, need]) => {
+      const got = countTag(tag);
+      if(got >= need) prefScore += 9;
+      else if(got > 0) prefScore += 5;
+    });
+    prefScore = clamp(prefScore, 0, 20);
+
+    const bannedHits = (order.bannedTags || []).filter(hasBanned);
+    const bannedScore = bannedHits.length ? 0 : 14;
+
+    const spiceDelta = Math.abs(state.spice - order.spice);
+    const spiceScore = spiceDelta === 0 ? 12 : spiceDelta === 1 ? 7 : spiceDelta === 2 ? 3 : 0;
+
+    const doneness = state.selected.map(i => (i.cook / i.cookTime) * 100);
+    const perfectCount = doneness.filter(p => p >= 82 && p <= 118).length;
+    const rawCount = doneness.filter(p => p < 82).length;
+    const overCount = doneness.filter(p => p > 118).length;
+    const avgCookPenalty = doneness.reduce((sum,p) => sum + Math.min(35, Math.abs(100 - p) * .42), 0) / Math.max(1, doneness.length);
+    const cookScore = clamp(Math.round(22 - avgCookPenalty + perfectCount * .8 - overCount * .7), 0, 22);
+
+    const targetSauce = spiceInfo[order.spice].sauceTarget;
+    const sauceScore = clamp(Math.round(8 - Math.abs(state.sauce - targetSauce) * .16), 0, 8);
+    const brothScore = clamp(Math.round(7 - Math.abs(state.broth - 62) * .13), 0, 7);
+    const waterScore = state.water >= 42 && state.water <= 76 ? 7 : state.water >= 28 && state.water <= 88 ? 4 : 1;
+    const soupScore = sauceScore + brothScore + waterScore;
+
+    const variety = new Set(names).size;
+    const amountScore = state.selected.length >= 5 && state.selected.length <= 10 ? 5 : state.selected.length < 5 ? 2 : 3;
+    const varietyScore = variety >= 4 ? 3 : variety >= 3 ? 2 : 1;
+
+    let score = Math.round(requiredScore + prefScore + bannedScore + spiceScore + cookScore + soupScore + amountScore + varietyScore);
+    score = clamp(score, 0, 100);
+
+    const earned = 900 + Math.round(score * 38) + Math.max(0, state.day - 1) * 120;
+    const stars = Math.max(1, Math.ceil(score / 20));
+
+    const details = [
+      {label:"주문 재료", value: missing.length ? `${missing.join(", ")} 빠짐` : "정확해요", good: !missing.length},
+      {label:"제외 조건", value: bannedHits.length ? "빼야 할 재료가 들어갔어요" : "실수 없음", good: !bannedHits.length},
+      {label:"맵기 단계", value: spiceDelta === 0 ? "딱 맞음" : `${spiceDelta}단계 차이`, good: spiceDelta === 0},
+      {label:"재료 익힘", value: `딱 좋음 ${perfectCount}개 · 덜 익음 ${rawCount}개 · 과익힘 ${overCount}개`, good: cookScore >= 15},
+      {label:"국물 조절", value: `물 ${levelWord(state.water)} · 육수 ${concentrationWord(state.broth)} · 소스 ${sauceWord(state.sauce)}`, good: soupScore >= 16},
+      ...(order.minCount ? [{label:"푸짐함", value: minCountOk ? `${state.selected.length}개로 충분해요` : `${order.minCount}개 이상 필요`, good:minCountOk}] : []),
+      ...(order.special === "youtuber" ? [{label:"유튜버 주문", value: score >= 85 ? "영상각 성공" : "리뷰가 까다로워요", good:score >= 85}] : []),
+      {label:"받은 금액", value: won(earned), good:true}
+    ];
+
+    let comment = "맛있게 완성됐어요.";
+    if(score >= 92) comment = "재료 익힘과 국물 농도가 딱 맞아 손님이 감탄했어요.";
+    else if(score >= 78) comment = "주문과 조리 상태가 잘 맞은 든든한 한 그릇이에요.";
+    else if(score >= 60) comment = "맛은 괜찮지만 몇몇 재료의 익힘이나 국물 조절이 아쉬워요.";
+    else comment = "마라탕은 완성됐지만 덜 익거나 과하게 익은 재료가 많았어요.";
+    if(order.special === "youtuber"){
+      comment = score >= 85 ? "유튜버가 촬영용 리액션을 남겼어요. 리뷰 점수에 크게 도움이 됐어요." : "유튜버 주문은 까다로웠어요. 평균 별점을 올리려면 재료 순서와 국물 농도가 중요해요.";
+    }
+
+    return {score, stars, earned, details, comment, special:order.special};
+  }
+
+  function unlockCheck(){
+    const before = state.unlockedLevel;
+    let target = 1;
+    unlockMilestones.forEach(m => {
+      if(state.money >= m.money) target = Math.max(target, m.level);
+    });
+    target = clamp(target, 1, unlockMilestones[unlockMilestones.length - 1].level);
+    if(target > state.unlockedLevel){
+      state.unlockedLevel = target;
+      localStorage.setItem("mala_unlock_level", String(target));
+      const newItems = ingredients.filter(i => i.unlock > before && i.unlock <= target).map(i => i.name).join(", ");
+      setTimeout(() => showToast(`새 재료 해금: ${newItems}`), 450);
+    }
+  }
+
+  function showResult(result){
+    const endOfDay = state.customerNo >= 5;
+    $("modalTitle").textContent = endOfDay ? `${state.day}일차 영업 마감` : "손님 평가";
+    $("modalText").textContent = result.comment;
+    $("resultScore").textContent = `${result.score}점`;
+    $("stars").textContent = "★".repeat(result.stars) + "☆".repeat(5 - result.stars);
+    const list = $("resultList");
+    list.innerHTML = "";
+    result.details.forEach(d => {
+      const row = document.createElement("div");
+      row.className = "result-item";
+      row.innerHTML = `<span>${d.label}</span><b>${d.value}</b>`;
+      list.appendChild(row);
+    });
+    const reviewRow = document.createElement("div");
+    reviewRow.className = "result-item";
+    reviewRow.innerHTML = `<span>누적 리뷰</span><b>${reviewAverage().toFixed(1)}★ · ${state.reviewCount}개</b>`;
+    list.appendChild(reviewRow);
+    const nextNeed = unlockMoney(state.unlockedLevel + 1);
+    const unlockRow = document.createElement("div");
+    unlockRow.className = "result-item";
+    unlockRow.innerHTML = nextNeed < Infinity
+      ? `<span>다음 재료 해금</span><b>${won(Math.max(0, nextNeed - state.money))} 남음</b>`
+      : `<span>재료 해금</span><b>모든 재료 해금 완료</b>`;
+    list.appendChild(unlockRow);
+    if(endOfDay){
+      const row = document.createElement("div");
+      row.className = "result-item";
+      row.innerHTML = `<span>오늘 총 매출</span><b>${won(state.money)}</b>`;
+      list.appendChild(row);
+      $("nextBtn").textContent = "다음 영업일";
+    }else{
+      $("nextBtn").textContent = "다음 손님";
+    }
+    $("resetDayBtn").style.display = endOfDay ? "flex" : "none";
+    $("modalBackdrop").classList.add("show");
+  }
+
+  function nextCustomer(){
+    $("modalBackdrop").classList.remove("show");
+    if(state.customerNo >= 5){
+      state.day += 1;
+      state.customerNo = 1;
+      showToast(`${state.day}일차 영업 시작`);
+    } else {
+      state.customerNo += 1;
+    }
+    newRound();
+  }
+
+  function resetGame(){
+    state.day = 1;
+    state.money = 0;
+    state.customerNo = 1;
+    state.unlockedLevel = 1;
+    localStorage.setItem("mala_unlock_level", "1");
+    $("modalBackdrop").classList.remove("show");
+    newRound();
+  }
+
+  function newRound(){
+    cancelAnimationFrame(state.raf);
+    state.selected = [];
+    state.spice = 0;
+    state.heatLevel = 0;
+    state.temp = 0;
+    state.water = 70;
+    state.broth = 55;
+    state.sauce = 35;
+    state.cooking = false;
+    state.currentOrder = pickOrder();
+    state.currentCustomer = pickCustomer(state.currentOrder);
+    render();
+  }
+
+  function showToast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => t.classList.remove("show"), 1700);
+  }
+
+  function render(){
+    renderOrder();
+    renderStatus();
+    renderSpiceButtons();
+    renderIngredients();
+    renderPot();
+    renderCook();
+  }
+
+  function bind(){
+    $("startBtn").addEventListener("click", () => {
+      audio.init();
+      audio.success();
+      $("intro").style.display = "none";
+      newRound();
+    });
+    $("undoBtn").addEventListener("click", undoIngredient);
+    $("cookBtn").addEventListener("click", () => state.cooking ? finishCooking() : startCooking());
+    $("waterBtn").addEventListener("click", addWater);
+    $("brothBtn").addEventListener("click", addBroth);
+    $("sauceBtn").addEventListener("click", addSauce);
+    $("trayPrev").addEventListener("click", () => moveTray(-1, 0));
+    $("trayNext").addEventListener("click", () => moveTray(1, 0));
+    $("trayUp").addEventListener("click", () => moveTray(0, -1));
+    $("trayDown").addEventListener("click", () => moveTray(0, 1));
+    $("ingredientGrid").addEventListener("scroll", updateTrayArrows, {passive:true});
+    window.addEventListener("resize", updateTrayArrows);
+    $("gasKnob").addEventListener("click", () => setFire((state.heatLevel + 1) % 4));
+    document.querySelectorAll("[data-gas-level]").forEach(btn => {
+      btn.addEventListener("click", () => setFire(Number(btn.dataset.gasLevel)));
+    });
+    $("nextBtn").addEventListener("click", nextCustomer);
+    $("resetDayBtn").addEventListener("click", resetGame);
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "Enter" && !$("modalBackdrop").classList.contains("show")){
+        state.cooking ? finishCooking() : startCooking();
+      }
+      if(e.key === "Backspace") undoIngredient();
+      if(["1","2","3","4"].includes(e.key) && state.cooking){ setFire(Number(e.key) - 1); }
+      const n = Number(e.key);
+      if(Number.isInteger(n) && n >= 0 && n <= 4 && !state.cooking){ state.spice = n; state.sauce = clamp(24 + n * 14, 20, 86); render(); }
+    });
+  }
+
+  bind();
+  newRound();
+})();
+</script>
+</body>
+</html>
