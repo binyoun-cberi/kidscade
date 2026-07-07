@@ -1,560 +1,1335 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>과일 농장 주스 메이커</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; touch-action: none; background-color: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        #game-container { position: relative; width: 100%; max-width: 600px; height: 100dvh; max-height: 900px; background: linear-gradient(180deg, #60a5fa 0%, #bae6fd 100%); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        @media (min-width: 600px) { #game-container { border-radius: 1.5rem; height: 90vh; border: 8px solid #1e293b; } }
-        canvas { display: block; width: 100%; height: 100%; cursor: none; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>하늘 주스 러시 - 개선판</title>
+<style>
+:root {
+  --ink: #102033;
+  --panel: rgba(255,255,255,.88);
+  --panel-strong: rgba(255,255,255,.96);
+  --sky-top: #5ab7ff;
+  --sky-mid: #b9ecff;
+  --grass: #46b36a;
+  --gold: #f6c945;
+  --red: #ef4444;
+  --blue: #228be6;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  background: #122033;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  color: var(--ink);
+  overflow: hidden;
+  touch-action: none;
+}
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#game {
+  position: relative;
+  width: min(100vw, 640px);
+  height: 100dvh;
+  max-height: 920px;
+  background: linear-gradient(180deg, var(--sky-top), var(--sky-mid) 55%, #e0f7ff 100%);
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+}
+@media (min-width: 680px) {
+  #game {
+    height: min(92vh, 920px);
+    border: 8px solid #1e2c3f;
+    border-radius: 28px;
+  }
+}
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: none;
+}
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.top-hud {
+  display: grid;
+  grid-template-columns: 1.25fr .85fr;
+  gap: 10px;
+  align-items: start;
+}
+.card {
+  background: var(--panel);
+  border: 2px solid rgba(255,255,255,.75);
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(31, 64, 96, .18);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+}
+.order-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 1000;
+  font-size: clamp(18px, 4vw, 29px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+.order-fruit-chip {
+  border-radius: 999px;
+  background: #fff2bd;
+  color: #7c4a00;
+  padding: 5px 10px;
+  font-size: clamp(13px, 3vw, 17px);
+  white-space: nowrap;
+  border: 2px solid #ffd166;
+}
+.progress-wrap {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.progress-track {
+  height: 18px;
+  background: #d9eef8;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid #b6deed;
+}
+#progressFill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #33d17a, #f6c945);
+  transition: width .16s ease-out;
+}
+#progressText {
+  font-weight: 1000;
+  font-size: 18px;
+  min-width: 52px;
+  text-align: right;
+}
+.score-card {
+  text-align: right;
+}
+.label {
+  font-size: 12px;
+  font-weight: 900;
+  color: #47657d;
+}
+.big-number {
+  font-weight: 1000;
+  font-size: clamp(24px, 5.2vw, 38px);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+#hearts {
+  color: #ef4444;
+  font-size: clamp(18px, 4vw, 28px);
+  font-weight: 1000;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 0 rgba(255,255,255,.65);
+}
+.bottom-hud {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.message-card {
+  background: rgba(16, 32, 51, .78);
+  color: white;
+  border-radius: 18px;
+  padding: 10px 12px;
+  box-shadow: 0 7px 18px rgba(0,0,0,.22);
+  min-height: 48px;
+}
+#message {
+  font-weight: 900;
+  font-size: clamp(14px, 3.3vw, 19px);
+  line-height: 1.35;
+  word-break: keep-all;
+}
+#combo {
+  margin-top: 2px;
+  color: #ffe36d;
+  font-size: 13px;
+  font-weight: 900;
+}
+#modeTag {
+  background: rgba(255,255,255,.9);
+  color: #25516d;
+  border: 2px solid rgba(255,255,255,.75);
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-weight: 1000;
+  box-shadow: 0 7px 18px rgba(31,64,96,.14);
+  white-space: nowrap;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 23, 38, .84);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+.overlay.hidden { display: none; }
+.panel {
+  width: min(100%, 430px);
+  background: #ffffff;
+  color: var(--ink);
+  border-radius: 30px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,.36);
+  border: 3px solid rgba(255,255,255,.7);
+}
+.logo {
+  width: 116px;
+  height: 116px;
+  margin: 0 auto 14px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 35% 32%, #fff 0 8%, transparent 9%),
+    radial-gradient(circle at 50% 56%, #ff6b6b 0 18%, transparent 19%),
+    radial-gradient(circle at 67% 54%, #ffd43b 0 17%, transparent 18%),
+    linear-gradient(160deg, #76d3ff, #1c7ed6);
+  box-shadow: inset 0 6px 12px rgba(255,255,255,.55), inset 0 -12px 20px rgba(0,0,0,.15), 0 10px 25px rgba(27,104,165,.25);
+  position: relative;
+}
+.logo::after {
+  content: "";
+  position: absolute;
+  left: 31px;
+  right: 31px;
+  bottom: 23px;
+  height: 28px;
+  border-radius: 5px 5px 22px 22px;
+  background: linear-gradient(180deg, #d1914b, #935f2d);
+  border: 4px solid #633c20;
+}
+h1 {
+  margin: 0 0 8px;
+  font-size: clamp(34px, 8vw, 48px);
+  line-height: .98;
+  letter-spacing: -0.06em;
+}
+.subtitle {
+  margin: 0 auto 18px;
+  color: #4d6375;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.rules {
+  text-align: left;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+.rules li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  align-items: start;
+  background: #f4f8fb;
+  border: 1px solid #e0ecf4;
+  border-radius: 14px;
+  padding: 10px;
+  font-weight: 800;
+  color: #30495d;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+button {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.primary-btn, .secondary-btn {
+  width: 100%;
+  border-radius: 999px;
+  min-height: 58px;
+  font-weight: 1000;
+  font-size: 22px;
+  box-shadow: 0 7px 0 rgba(0,0,0,.18);
+  transition: transform .12s ease, filter .12s ease;
+}
+.primary-btn {
+  background: linear-gradient(180deg, #42d66f, #20b455);
+  color: white;
+  border-bottom: 5px solid #15803d;
+}
+.secondary-btn {
+  background: linear-gradient(180deg, #ffd85f, #f6b93b);
+  color: #673a00;
+  border-bottom: 5px solid #c98317;
+}
+.primary-btn:active, .secondary-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 3px 0 rgba(0,0,0,.18);
+}
+.result-box {
+  background: #f5f8fb;
+  border-radius: 22px;
+  padding: 18px;
+  margin: 18px 0;
+  border: 2px solid #e2edf6;
+}
+.result-main {
+  font-size: 34px;
+  font-weight: 1000;
+  color: #1c7ed6;
+}
+.result-sub {
+  margin-top: 6px;
+  font-weight: 900;
+  color: #52677a;
+}
+@media (max-width: 420px) {
+  #hud { padding: 10px; }
+  .top-hud { grid-template-columns: 1fr; }
+  .score-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    text-align: left;
+    align-items: center;
+    gap: 8px;
+  }
+  .bottom-hud { grid-template-columns: 1fr; }
+  #modeTag { justify-self: start; font-size: 13px; }
+  .panel { padding: 19px; border-radius: 24px; }
+  .rules li { font-size: 14px; }
+}
+</style>
 </head>
 <body>
+<main id="game" aria-label="하늘에서 떨어지는 과일을 받아 주스를 만드는 게임">
+  <canvas id="gameCanvas"></canvas>
 
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="ui-layer" class="absolute inset-0 pointer-events-none p-4 sm:p-6 flex flex-col justify-between">
-        <div class="flex justify-between items-start text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            <div>
-                <div id="lives-display" class="text-2xl sm:text-3xl font-bold tracking-widest text-red-500">❤️❤️❤️❤️❤️</div>
-                <div id="mission-display" class="mt-2 text-3xl sm:text-4xl font-black text-yellow-300 stroke-black animate-pulse">사과주스!</div>
-                <div id="collect-progress" class="text-xl sm:text-2xl font-bold mt-1 text-white bg-black/40 px-3 py-1 rounded-full inline-block">🍎 0 / 10</div>
-            </div>
-            <div class="text-right">
-                <div id="score-display" class="text-3xl sm:text-4xl font-black text-white">주스 0 잔</div>
-                <div id="highscore-display" class="text-sm sm:text-lg font-bold text-yellow-200 mt-2 bg-black/50 px-3 py-1 rounded-full inline-block">최고기록: 0잔</div>
-            </div>
+  <section id="hud" aria-live="polite">
+    <div class="top-hud">
+      <div class="card">
+        <div class="order-title">
+          <span id="orderTitle">주문 준비 중</span>
+          <span id="fruitChip" class="order-fruit-chip">오늘의 도전</span>
         </div>
-        
-        <div id="mission-alert" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/85 text-white px-8 py-6 rounded-3xl text-3xl sm:text-4xl font-black opacity-0 transition-opacity duration-300 text-center pointer-events-none drop-shadow-2xl border-4 border-yellow-400 w-max">
-            ⭐ 임무 갱신! ⭐<br><span id="mission-alert-fruit" class="text-yellow-400 text-5xl sm:text-6xl mt-2 inline-block">바나나</span>주스!
+        <div class="progress-wrap">
+          <div class="progress-track"><div id="progressFill"></div></div>
+          <div id="progressText">0/6</div>
         </div>
+      </div>
+      <div class="card score-card">
+        <div>
+          <div class="label">만든 주스</div>
+          <div id="scoreText" class="big-number">0잔</div>
+        </div>
+        <div>
+          <div class="label">하트</div>
+          <div id="hearts">♥♥♥♥</div>
+        </div>
+      </div>
     </div>
 
-    <div id="game-over-screen" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center hidden z-50 p-6 text-center">
-        <h1 class="text-6xl font-black text-red-500 mb-2 animate-bounce">GAME OVER</h1>
-        <p class="text-lg text-gray-300 mb-6">목표 과일을 떨어뜨리거나 폭탄을 너무 많이 받았습니다.</p>
-        <div class="bg-white/10 p-6 rounded-3xl mb-8 border border-white/20">
-            <p id="final-score" class="text-4xl font-bold text-yellow-300 mb-2">만든 주스: 0잔</p>
-            <p id="final-highscore" class="text-xl text-gray-300">최고기록: 0잔</p>
-        </div>
-        <button id="restart-btn" class="px-10 py-4 bg-yellow-400 hover:bg-yellow-300 text-slate-900 text-2xl font-black rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] transform transition active:scale-95 pointer-events-auto">다시 하기</button>
+    <div class="bottom-hud">
+      <div class="message-card">
+        <div id="message">목표 과일만 받고, 다른 과일은 흘려보내세요.</div>
+        <div id="combo">콤보 0 · 최고 0</div>
+      </div>
+      <div id="modeTag">오늘의 같은 순서</div>
     </div>
+  </section>
 
-    <div id="start-screen" class="absolute inset-0 bg-sky-950/95 flex flex-col items-center justify-center z-50 backdrop-blur-md text-center p-6">
-        <div class="text-7xl mb-4">🧑‍🌾🍹</div>
-        <h1 class="text-4xl sm:text-5xl font-black text-white mb-6 leading-tight drop-shadow-lg">주스 마스터<br><span class="text-yellow-400 text-5xl sm:text-6xl">과일농장</span></h1>
-        
-        <div class="text-left text-white text-base sm:text-lg space-y-3 mb-10 bg-black/40 p-5 rounded-2xl border border-white/10 w-full max-w-sm">
-            <p class="flex items-center gap-2"><span>👆</span> 마우스나 터치로 좌우 이동</p>
-            <p class="flex items-center gap-2"><span>🍎</span> 임무 과일을 받아 10개 모으기</p>
-            <p class="flex items-center gap-2"><span>🚫</span> 다른 과일을 받으면 <strong class="text-orange-400">모은 과일 -1</strong></p>
-            <p class="flex items-center gap-2"><span>⚠️</span> 임무 과일을 놓치면 <strong class="text-red-400">하트 감소</strong></p>
-            <p class="flex items-center gap-2"><span>💣</span> 폭탄을 받으면 <strong class="text-red-400">하트 감소</strong></p>
-            <p class="flex items-center gap-2"><span>🪨</span> 장애물을 받으면 3초간 <strong class="text-blue-300">느려짐</strong></p>
-        </div>
-        
-        <button id="start-btn" class="px-12 py-5 bg-green-500 hover:bg-green-400 text-white text-3xl font-black rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] transform transition active:scale-95 animate-pulse border-b-4 border-green-700 pointer-events-auto">게임 시작</button>
+  <section id="startScreen" class="overlay">
+    <div class="panel">
+      <div class="logo" aria-hidden="true"></div>
+      <h1>하늘 주스<br>러시</h1>
+      <p class="subtitle">운으로 쉬운 판을 기다리는 게임이 아니라, 목표를 보고 판단해서 피하고 받는 게임으로 바꾼 개선판입니다.</p>
+      <ul class="rules">
+        <li><span>1</span><span>주문 카드에 적힌 과일만 받습니다. 빛나는 테두리가 있는 과일이 목표입니다.</span></li>
+        <li><span>2</span><span>다른 과일은 일부러 놓쳐도 됩니다. 받으면 현재 주문 수량이 줄어듭니다.</span></li>
+        <li><span>3</span><span>목표 과일을 놓치거나 폭탄을 받으면 하트가 줄어듭니다.</span></li>
+        <li><span>4</span><span>콤보가 쌓이면 잠시 목표 과일이 바구니 쪽으로 끌려오는 달콤 모드가 켜집니다.</span></li>
+      </ul>
+      <button id="startBtn" class="primary-btn">오늘의 도전 시작</button>
     </div>
-</div>
+  </section>
+
+  <section id="gameOverScreen" class="overlay hidden">
+    <div class="panel">
+      <h1 style="color:#ef4444;">도전 종료</h1>
+      <p class="subtitle" id="gameOverReason">하트가 모두 없어졌습니다.</p>
+      <div class="result-box">
+        <div id="finalScore" class="result-main">0잔</div>
+        <div id="finalBest" class="result-sub">최고 기록 0잔</div>
+        <div id="finalCombo" class="result-sub">최고 콤보 0</div>
+      </div>
+      <button id="restartBtn" class="secondary-btn">다시 도전</button>
+    </div>
+  </section>
+</main>
 
 <script>
-// 로컬 스토리지를 이용한 최고 기록 저장
-let dbHighScore = parseInt(localStorage.getItem('juiceFarmHighScore')) || 0;
+(() => {
+  'use strict';
 
-function updateUIHighScore() {
-    document.getElementById('highscore-display').innerText = `최고기록: ${dbHighScore}잔`;
-}
-updateUIHighScore();
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const gameEl = document.getElementById('game');
 
-function saveHighScore(newScore) {
-    if (newScore > dbHighScore) {
-        dbHighScore = newScore;
-        localStorage.setItem('juiceFarmHighScore', dbHighScore);
-        updateUIHighScore();
+  const startScreen = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const orderTitle = document.getElementById('orderTitle');
+  const fruitChip = document.getElementById('fruitChip');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  const scoreText = document.getElementById('scoreText');
+  const heartsText = document.getElementById('hearts');
+  const messageText = document.getElementById('message');
+  const comboText = document.getElementById('combo');
+  const modeTag = document.getElementById('modeTag');
+  const finalScore = document.getElementById('finalScore');
+  const finalBest = document.getElementById('finalBest');
+  const finalCombo = document.getElementById('finalCombo');
+  const gameOverReason = document.getElementById('gameOverReason');
+
+  const MAX_LIVES = 4;
+  const BEST_KEY = 'skyJuiceRushBest_v1';
+  const BEST_COMBO_KEY = 'skyJuiceRushBestCombo_v1';
+
+  const fruitTypes = [
+    { key: 'apple',  name: '사과',   juice: '사과주스',   main: '#ef4444', light: '#fecaca', dark: '#991b1b' },
+    { key: 'banana', name: '바나나', juice: '바나나주스', main: '#ffd43b', light: '#fff3bf', dark: '#8a5a00' },
+    { key: 'grape',  name: '포도',   juice: '포도주스',   main: '#8b5cf6', light: '#ddd6fe', dark: '#4c1d95' },
+    { key: 'orange', name: '오렌지', juice: '오렌지주스', main: '#fb923c', light: '#fed7aa', dark: '#9a3412' }
+  ];
+
+  let bestScore = Number(localStorage.getItem(BEST_KEY) || 0);
+  let bestCombo = Number(localStorage.getItem(BEST_COMBO_KEY) || 0);
+
+  let state = 'START';
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+
+  let rng = Math.random;
+  let frameId = null;
+  let lastTime = 0;
+
+  let lives = MAX_LIVES;
+  let score = 0;
+  let orderNo = 1;
+  let order = null;
+  let playerX = 0;
+  let inputX = 0;
+  let playerY = 0;
+
+  let objects = [];
+  let particles = [];
+  let floaters = [];
+  let clouds = [];
+  let spawnTimer = 0;
+  let slowTimer = 0;
+  let feverTimer = 0;
+  let shakeTimer = 0;
+  let combo = 0;
+  let runBestCombo = 0;
+  let lastFruitKey = '';
+  let messageTimer = 0;
+  let caughtThisOrder = 0;
+  let missedTargetStreak = 0;
+  let laneCount = 5;
+  let lastLane = -1;
+  let audioCtx = null;
+
+  function localDateKey() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function hashString(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-}
+    return h >>> 0;
+  }
 
-// --- 사운드 엔진 (Web Audio API) ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-let isBgmPlaying = false;
-let bgmInterval;
+  function mulberry32(seed) {
+    return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
 
-function initAudio() {
-    if (!audioCtx) audioCtx = new AudioContext();
+  function randRange(min, max) {
+    return min + rng() * (max - min);
+  }
+
+  function visualRange(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function randInt(max) {
+    return Math.floor(rng() * max);
+  }
+
+  function resize() {
+    const rect = gameEl.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.floor(rect.width);
+    height = Math.floor(rect.height);
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    laneCount = width < 420 ? 5 : 6;
+    playerY = height - 92;
+    playerX = clamp(playerX || width / 2, 44, width - 44);
+    inputX = clamp(inputX || width / 2, 44, width - 44);
+
+    if (clouds.length === 0) {
+      clouds = [
+        { x: width * .15, y: height * .11, size: 34, speed: 11 },
+        { x: width * .58, y: height * .18, size: 48, speed: 8 },
+        { x: width * .82, y: height * .08, size: 38, speed: 14 }
+      ];
+    }
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-}
+  }
 
-function playTone(freq, type, duration, vol = 0.1) {
+  function tone(freq, duration = 0.08, type = 'sine', volume = 0.08, delay = 0) {
     if (!audioCtx) return;
+    const t = audioCtx.currentTime + delay;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(volume, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
+    osc.start(t);
+    osc.stop(t + duration + 0.03);
+  }
 
-function playSound(type) {
+  function sound(name) {
+    if (!audioCtx) return;
+    if (name === 'good') tone(780, .08, 'triangle', .09);
+    if (name === 'wrong') tone(180, .12, 'sawtooth', .09);
+    if (name === 'hurt') { tone(130, .18, 'square', .12); tone(90, .26, 'sawtooth', .09, .1); }
+    if (name === 'juice') { [523, 659, 784, 1046].forEach((f, i) => tone(f, .12 + i * .02, 'sine', .10, i * .07)); }
+    if (name === 'fever') { [880, 988, 1175].forEach((f, i) => tone(f, .1, 'triangle', .08, i * .06)); }
+  }
+
+  function createOrder() {
+    const level = getLevel();
+    const previous = order ? order.fruit.key : '';
+    let candidates = fruitTypes.filter(f => f.key !== previous);
+    if (candidates.length === 0) candidates = fruitTypes.slice();
+    const fruit = candidates[randInt(candidates.length)];
+    const need = clamp(6 + Math.floor(level / 3), 6, 10);
+    order = { fruit, need, got: 0 };
+    caughtThisOrder = 0;
+    setMessage(`${fruit.name}만 받아서 ${fruit.juice}를 만드세요.`);
+  }
+
+  function getLevel() {
+    return 1 + Math.floor(score / 2);
+  }
+
+  function updateHUD() {
+    const percent = order ? (order.got / order.need) * 100 : 0;
+    orderTitle.textContent = order ? `주문 ${orderNo}. ${order.fruit.juice}` : '주문 준비 중';
+    fruitChip.textContent = order ? `${order.fruit.name}만 받기` : '오늘의 도전';
+    progressFill.style.width = `${clamp(percent, 0, 100)}%`;
+    progressText.textContent = order ? `${order.got}/${order.need}` : '0/6';
+    scoreText.textContent = `${score}잔`;
+    heartsText.textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, MAX_LIVES - lives));
+    comboText.textContent = feverTimer > 0
+      ? `달콤 모드 ${Math.ceil(feverTimer / 1000)}초 · 최고 콤보 ${runBestCombo}`
+      : `콤보 ${combo} · 최고 ${runBestCombo}`;
+    modeTag.textContent = `오늘의 같은 순서 · 레벨 ${getLevel()}`;
+  }
+
+  function setMessage(text, duration = 2000) {
+    messageText.textContent = text;
+    messageTimer = duration;
+  }
+
+  function startGame() {
     initAudio();
-    switch(type) {
-        case 'catchRight': playTone(880, 'sine', 0.1, 0.15); break;
-        case 'catchWrong': playTone(200, 'sawtooth', 0.2, 0.15); break;
-        case 'bomb': playTone(100, 'square', 0.5, 0.2); break;
-        case 'rock': playTone(150, 'triangle', 0.2, 0.2); break;
-        case 'juice': 
-            playTone(523.25, 'sine', 0.1, 0.2);
-            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100);
-            setTimeout(() => playTone(783.99, 'sine', 0.2, 0.2), 200);
-            setTimeout(() => playTone(1046.50, 'sine', 0.4, 0.2), 300);
-            break;
-        case 'drop':
-            playTone(300, 'sawtooth', 0.1, 0.15);
-            setTimeout(() => playTone(250, 'sawtooth', 0.3, 0.15), 100);
-            break;
-        case 'gameover':
-            playTone(200, 'sawtooth', 0.5, 0.2);
-            setTimeout(() => playTone(150, 'sawtooth', 1.0, 0.2), 400);
-            break;
-    }
-}
+    const seed = hashString(`sky-juice-rush-${localDateKey()}`);
+    rng = mulberry32(seed);
 
-const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00]; 
-let noteIndex = 0;
-
-function startBGM() {
-    if (!audioCtx) initAudio();
-    if (isBgmPlaying) return;
-    isBgmPlaying = true;
-    
-    function playNextNote() {
-        if (!isBgmPlaying) return;
-        playTone(melody[noteIndex], 'triangle', 0.15, 0.03);
-        noteIndex = (noteIndex + 1) % melody.length;
-        bgmInterval = setTimeout(playNextNote, 300);
-    }
-    playNextNote();
-}
-
-function stopBGM() {
-    isBgmPlaying = false;
-    clearTimeout(bgmInterval);
-}
-// ---------------------------------
-
-// 2. 게임 변수 및 상태
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-let gameState = 'START'; 
-let lastTime = 0;
-let lives = 5;
-let score = 0;
-let fruitCount = 0;
-
-const fruits = [
-    { emoji: '🍎', name: '사과' },
-    { emoji: '🍌', name: '바나나' },
-    { emoji: '🍇', name: '포도' }
-];
-let currentTarget = fruits[0];
-
-let fallingObjects = [];
-let particles = [];
-let floatingTexts = [];
-let juiceAnim = null;
-
-let inputX = window.innerWidth / 2;
-let farmerX = window.innerWidth / 2;
-let farmerY = 0;
-
-let slowTimer = 0;
-let shakeTimer = 0;
-let missionTimer = 0;
-let spawnTimer = 1000;
-
-let prevLives = -1, prevScore = -1, prevCount = -1, prevTarget = '';
-
-// 구름 배경 효과
-const clouds = [
-    { x: 10, y: 50, speed: 15, size: 40 },
-    { x: 200, y: 120, speed: 25, size: 60 },
-    { x: 400, y: 80, speed: 10, size: 50 }
-];
-
-// 3. 캔버스 리사이징
-function resizeCanvas() {
-    const container = document.getElementById('game-container');
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-    farmerY = canvas.height - 70;
-    
-    if(clouds[2].x > canvas.width) clouds[2].x = canvas.width - 100;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-// 4. 입력 처리
-function updateInputX(clientX) {
-    const rect = canvas.getBoundingClientRect();
-    inputX = (clientX - rect.left) * (canvas.width / rect.width);
-}
-canvas.addEventListener('mousemove', (e) => updateInputX(e.clientX));
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    updateInputX(e.touches[0].clientX);
-}, { passive: false });
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    updateInputX(e.touches[0].clientX);
-}, { passive: false });
-
-// 5. 게임 로직
-function initGame() {
-    initAudio();
-    startBGM();
-    gameState = 'PLAYING';
-    lives = 5;
+    state = 'PLAYING';
+    lives = MAX_LIVES;
     score = 0;
-    fruitCount = 0;
-    fallingObjects = [];
+    orderNo = 1;
+    combo = 0;
+    runBestCombo = 0;
+    objects = [];
     particles = [];
-    floatingTexts = [];
-    juiceAnim = null;
-    currentTarget = fruits[0];
-    missionTimer = 0;
+    floaters = [];
+    spawnTimer = 850;
     slowTimer = 0;
+    feverTimer = 0;
     shakeTimer = 0;
-    spawnTimer = 1000;
-    
-    farmerX = canvas.width / 2;
-    inputX = canvas.width / 2;
-
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.add('hidden');
-    
-    prevLives = -1; prevScore = -1; prevCount = -1; prevTarget = '';
-    
+    missedTargetStreak = 0;
+    lastLane = -1;
+    lastFruitKey = '';
+    playerX = width / 2;
+    inputX = width / 2;
+    createOrder();
+    updateHUD();
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
     lastTime = performance.now();
-    requestAnimationFrame(gameLoop);
-}
+    cancelAnimationFrame(frameId);
+    frameId = requestAnimationFrame(loop);
+  }
 
-function loseLife() {
-    lives--;
-    shakeTimer = 300;
+  function endGame(reason) {
+    state = 'GAMEOVER';
+    cancelAnimationFrame(frameId);
+    frameId = null;
+
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem(BEST_KEY, String(bestScore));
+    }
+    if (runBestCombo > bestCombo) {
+      bestCombo = runBestCombo;
+      localStorage.setItem(BEST_COMBO_KEY, String(bestCombo));
+    }
+
+    finalScore.textContent = `${score}잔`;
+    finalBest.textContent = `최고 기록 ${bestScore}잔`;
+    finalCombo.textContent = `이번 최고 콤보 ${runBestCombo} · 전체 최고 ${bestCombo}`;
+    gameOverReason.textContent = reason || '하트가 모두 없어졌습니다.';
+    gameOverScreen.classList.remove('hidden');
+    sound('hurt');
+  }
+
+  function loseLife(reason) {
+    lives -= 1;
+    shakeTimer = 380;
+    combo = 0;
+    setMessage(reason, 1800);
+    sound('hurt');
     if (lives <= 0) {
-        playSound('gameover');
-        stopBGM();
-        gameState = 'GAMEOVER';
-        document.getElementById('game-over-screen').classList.remove('hidden');
-        document.getElementById('final-score').innerText = `만든 주스: ${score}잔`;
-        document.getElementById('final-highscore').innerText = `최고기록: ${Math.max(score, dbHighScore)}잔`;
-        saveHighScore(score); 
+      updateHUD();
+      endGame(reason);
     }
-}
+  }
 
-function showMissionBanner(fruitName) {
-    const banner = document.getElementById('mission-alert');
-    document.getElementById('mission-alert-fruit').innerText = fruitName;
-    banner.classList.remove('opacity-0');
-    banner.classList.add('opacity-100');
-    
-    setTimeout(() => {
-        banner.classList.remove('opacity-100');
-        banner.classList.add('opacity-0');
-    }, 2500);
-}
-
-function createFloatingText(x, y, text, color) {
-    floatingTexts.push({ x, y, text, color, life: 800, maxLife: 800 });
-}
-
-function createJuiceExplosion(x, y) {
-    juiceAnim = { time: 0, maxTime: 2000, x: x, y: y };
-    
-    for (let i = 0; i < 40; i++) {
-        particles.push({
-            x: x,
-            y: y,
-            vx: (Math.random() - 0.5) * 600,
-            vy: (Math.random() - 0.5) * 600 - 200,
-            color: `hsl(${Math.random() * 360}, 100%, 60%)`,
-            size: Math.random() * 12 + 6,
-            life: 1.5,
-            maxLife: 1.5 + Math.random() * 0.5
-        });
-    }
-}
-
-function handleCatch(obj) {
-    if (obj.emoji === currentTarget.emoji) {
-        fruitCount++;
-        playSound('catchRight');
-        createFloatingText(obj.x, obj.y, "+1", "green");
-        
-        if (fruitCount >= 10) {
-            fruitCount = 0;
-            score++;
-            playSound('juice');
-            createJuiceExplosion(farmerX, farmerY);
-            saveHighScore(score);
-        }
-    } else if (obj.emoji === '💣') {
-        playSound('bomb');
-        loseLife();
-        createFloatingText(obj.x, obj.y, "펑!", "red");
-    } else if (obj.emoji === '🪨') {
-        playSound('rock');
-        slowTimer = 3000;
-        createFloatingText(obj.x, obj.y, "무거워!", "blue");
+  function completeOrder() {
+    score += 1;
+    orderNo += 1;
+    combo += 2;
+    runBestCombo = Math.max(runBestCombo, combo);
+    if (score % 5 === 0 && lives < MAX_LIVES) {
+      lives += 1;
+      setMessage('연속 주문 성공! 하트가 1개 회복됐습니다.', 2300);
     } else {
-        playSound('catchWrong');
-        fruitCount = Math.max(0, fruitCount - 1);
-        createFloatingText(obj.x, obj.y, "-1", "red");
+      setMessage('주스 완성! 다음 주문으로 넘어갑니다.', 1800);
     }
-}
+    sound('juice');
+    burstJuice(width / 2, playerY - 60, order.fruit);
+    createOrder();
+  }
 
-function update(dt) {
-    if (gameState !== 'PLAYING') return;
-
-    if (slowTimer > 0) slowTimer -= dt;
-    if (shakeTimer > 0) shakeTimer -= dt;
-    
-    missionTimer += dt;
-    if (missionTimer >= 60000) {
-        missionTimer = 0;
-        if (Math.random() < 0.4) {
-            currentTarget = fruits[Math.floor(Math.random() * fruits.length)];
-            showMissionBanner(currentTarget.name);
-        }
+  function handleCatch(obj) {
+    if (obj.kind === 'bomb') {
+      floatText(obj.x, obj.y, '폭탄!', '#ef4444');
+      loseLife('폭탄을 받았습니다. 폭탄은 반드시 피하세요.');
+      return;
     }
 
-    let lerpFactor = 12;
-    if (slowTimer > 0) {
-        lerpFactor = 12 * 0.75;
+    if (obj.kind === 'rock') {
+      slowTimer = 2600;
+      combo = 0;
+      floatText(obj.x, obj.y, '느려짐', '#228be6');
+      setMessage('돌을 받아서 잠시 느려졌습니다.', 1500);
+      sound('wrong');
+      return;
     }
-    farmerX += (inputX - farmerX) * lerpFactor * (dt / 1000);
-    farmerX = Math.max(30, Math.min(canvas.width - 30, farmerX));
 
+    const isTarget = obj.fruit.key === order.fruit.key;
+    if (isTarget) {
+      const amount = obj.golden ? 3 : 1;
+      order.got = clamp(order.got + amount, 0, order.need);
+      caughtThisOrder += amount;
+      combo += 1;
+      runBestCombo = Math.max(runBestCombo, combo);
+      missedTargetStreak = 0;
+      floatText(obj.x, obj.y, obj.golden ? '+3' : '+1', '#16a34a');
+      splash(obj.x, obj.y, obj.fruit.main);
+      sound('good');
+
+      if (combo > 0 && combo % 7 === 0) {
+        feverTimer = 4200;
+        setMessage('달콤 모드! 목표 과일이 바구니 쪽으로 살짝 끌려옵니다.', 2200);
+        sound('fever');
+      }
+
+      if (order.got >= order.need) completeOrder();
+      return;
+    }
+
+    order.got = Math.max(0, order.got - 1);
+    combo = 0;
+    floatText(obj.x, obj.y, '-1', '#ef4444');
+    setMessage('다른 과일을 받았습니다. 목표 과일만 받으세요.', 1400);
+    sound('wrong');
+  }
+
+  function handleMiss(obj) {
+    if (obj.kind === 'fruit' && obj.fruit.key === order.fruit.key) {
+      missedTargetStreak += 1;
+      floatText(obj.x, height - 78, '놓침', '#ef4444');
+      loseLife('목표 과일을 놓쳤습니다.');
+    }
+  }
+
+  function spawnObject() {
+    const level = getLevel();
+    const lane = chooseLane();
+    const x = laneToX(lane);
+    const r = width < 420 ? 20 : 23;
+    const targetChance = clamp(0.63 - level * 0.018 + missedTargetStreak * 0.05, 0.46, 0.72);
+    const bombChance = clamp(0.08 + level * 0.011, 0.08, 0.18);
+    const rockChance = clamp(0.07 + level * 0.004, 0.07, 0.12);
+    const roll = rng();
+
+    let obj;
+    if (roll < targetChance) {
+      obj = {
+        kind: 'fruit',
+        fruit: order.fruit,
+        golden: rng() < 0.075,
+        x,
+        y: -42,
+        r,
+        lane,
+        speed: height * randRange(0.30 + level * 0.018, 0.37 + level * 0.02),
+        wobble: randRange(-18, 18),
+        spin: randRange(-1.5, 1.5),
+        age: 0
+      };
+    } else if (roll < targetChance + bombChance) {
+      obj = {
+        kind: 'bomb',
+        x,
+        y: -42,
+        r,
+        lane,
+        speed: height * randRange(0.32 + level * 0.018, 0.40 + level * 0.02),
+        wobble: randRange(-10, 10),
+        spin: randRange(-2.5, 2.5),
+        age: 0
+      };
+    } else if (roll < targetChance + bombChance + rockChance) {
+      obj = {
+        kind: 'rock',
+        x,
+        y: -42,
+        r,
+        lane,
+        speed: height * randRange(0.28 + level * 0.014, 0.34 + level * 0.016),
+        wobble: randRange(-12, 12),
+        spin: randRange(-1.5, 1.5),
+        age: 0
+      };
+    } else {
+      const others = fruitTypes.filter(f => f.key !== order.fruit.key && f.key !== lastFruitKey);
+      const fruit = others[randInt(others.length)] || fruitTypes[randInt(fruitTypes.length)];
+      lastFruitKey = fruit.key;
+      obj = {
+        kind: 'fruit',
+        fruit,
+        golden: false,
+        x,
+        y: -42,
+        r,
+        lane,
+        speed: height * randRange(0.30 + level * 0.018, 0.38 + level * 0.02),
+        wobble: randRange(-18, 18),
+        spin: randRange(-1.5, 1.5),
+        age: 0
+      };
+    }
+    objects.push(obj);
+  }
+
+  function chooseLane() {
+    let lane = randInt(laneCount);
+    if (lane === lastLane && rng() < 0.72) {
+      lane = (lane + 1 + randInt(laneCount - 1)) % laneCount;
+    }
+    lastLane = lane;
+    return lane;
+  }
+
+  function laneToX(lane) {
+    const margin = 42;
+    const usable = width - margin * 2;
+    if (laneCount <= 1) return width / 2;
+    return margin + (usable * lane) / (laneCount - 1);
+  }
+
+  function update(dt) {
+    if (state !== 'PLAYING') return;
+
+    if (messageTimer > 0) messageTimer -= dt;
+    if (messageTimer <= 0 && order) {
+      messageText.textContent = feverTimer > 0 ? '달콤 모드 중! 목표 과일을 연속으로 받아보세요.' : '목표 과일은 받고, 방해물은 피하세요.';
+    }
+
+    slowTimer = Math.max(0, slowTimer - dt);
+    feverTimer = Math.max(0, feverTimer - dt);
+    shakeTimer = Math.max(0, shakeTimer - dt);
+
+    const playerSpeed = slowTimer > 0 ? 8.0 : 13.5;
+    playerX += (inputX - playerX) * clamp(playerSpeed * dt / 1000, 0, 1);
+    playerX = clamp(playerX, 40, width - 40);
+
+    const level = getLevel();
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
-        let baseSpawn = 1200 - (score * 20);
-        if (baseSpawn < 400) baseSpawn = 400; 
-        spawnTimer = baseSpawn + Math.random() * 400;
-        
-        let type = Math.random();
-        let objEmoji = '';
-        
-        if (type < 0.65) {
-            if (Math.random() < 0.6) {
-                objEmoji = currentTarget.emoji;
-            } else {
-                let otherFruits = fruits.filter(f => f.emoji !== currentTarget.emoji);
-                objEmoji = otherFruits[Math.floor(Math.random() * otherFruits.length)].emoji;
-            }
-        } else if (type < 0.82) {
-            objEmoji = '💣';
-        } else {
-            objEmoji = '🪨'; 
-        }
-        
-        let baseFallSpeed = canvas.height * (0.3 + score * 0.015);
-        let finalSpeed = baseFallSpeed + Math.random() * (canvas.height * 0.1);
-
-        fallingObjects.push({
-            x: Math.random() * (canvas.width - 60) + 30,
-            y: -40,
-            emoji: objEmoji,
-            speed: finalSpeed
-        });
+      spawnObject();
+      const interval = clamp(900 - level * 42, 430, 900);
+      spawnTimer = interval + randRange(0, 280);
+      if (score >= 6 && rng() < .16) spawnTimer *= .55;
     }
 
-    for (let i = fallingObjects.length - 1; i >= 0; i--) {
-        let obj = fallingObjects[i];
-        obj.y += obj.speed * (dt / 1000);
-        
-        let dist = Math.hypot(obj.x - farmerX, obj.y - (farmerY + 15));
-        if (dist < 45) { 
-            handleCatch(obj);
-            fallingObjects.splice(i, 1);
-            continue;
-        }
-        
-        if (obj.y > canvas.height + 30) {
-            if (obj.emoji === currentTarget.emoji) {
-                playSound('drop');
-                loseLife();
-                createFloatingText(obj.x, canvas.height - 30, "놓침!", "red");
-            }
-            fallingObjects.splice(i, 1);
-        }
+    for (const c of clouds) {
+      c.x += c.speed * dt / 1000;
+      if (c.x > width + c.size * 3) c.x = -c.size * 3;
+    }
+
+    for (let i = objects.length - 1; i >= 0; i--) {
+      const obj = objects[i];
+      obj.age += dt;
+      obj.y += obj.speed * dt / 1000;
+      const wave = Math.sin(obj.age / 380) * obj.wobble;
+      const drawX = obj.x + wave;
+
+      if (feverTimer > 0 && obj.kind === 'fruit' && obj.fruit.key === order.fruit.key && Math.abs(drawX - playerX) < 120 && obj.y > 80) {
+        obj.x += (playerX - obj.x) * 0.035;
+      }
+
+      const basketHalf = width < 420 ? 48 : 56;
+      const basketTop = playerY + 6;
+      const hitX = Math.abs(drawX - playerX) < basketHalf;
+      const hitY = obj.y + obj.r > basketTop && obj.y < basketTop + 46;
+      if (hitX && hitY) {
+        handleCatch(obj);
+        objects.splice(i, 1);
+        continue;
+      }
+
+      if (obj.y > height + 48) {
+        handleMiss(obj);
+        objects.splice(i, 1);
+      }
     }
 
     for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx * (dt / 1000);
-        p.y += p.vy * (dt / 1000);
-        p.vy += 800 * (dt / 1000);
-        p.life -= dt / 1000;
-        if (p.life <= 0) particles.splice(i, 1);
-    }
-    
-    clouds.forEach(c => {
-        c.x += c.speed * (dt / 1000);
-        if (c.x > canvas.width + c.size) c.x = -c.size * 2;
-    });
-
-    if (prevLives !== lives) {
-        document.getElementById('lives-display').innerText = '❤️'.repeat(Math.max(0, lives));
-        prevLives = lives;
-    }
-    if (prevScore !== score) {
-        document.getElementById('score-display').innerText = `주스 ${score} 잔`;
-        prevScore = score;
-    }
-    if (prevCount !== fruitCount || prevTarget !== currentTarget.emoji) {
-        document.getElementById('collect-progress').innerText = `${currentTarget.emoji} ${fruitCount} / 10`;
-        prevCount = fruitCount;
-    }
-    if (prevTarget !== currentTarget.emoji) {
-        document.getElementById('mission-display').innerText = `${currentTarget.name}주스!`;
-        prevTarget = currentTarget.emoji;
-    }
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    let isShaking = shakeTimer > 0;
-    if (isShaking) {
-        ctx.save();
-        let dx = (Math.random() - 0.5) * 15;
-        let dy = (Math.random() - 0.5) * 15;
-        ctx.translate(dx, dy);
+      const p = particles[i];
+      p.x += p.vx * dt / 1000;
+      p.y += p.vy * dt / 1000;
+      p.vy += 720 * dt / 1000;
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
     }
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    clouds.forEach(c => {
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
-        ctx.arc(c.x + c.size * 0.8, c.y - c.size * 0.3, c.size * 0.8, 0, Math.PI * 2);
-        ctx.arc(c.x + c.size * 1.5, c.y, c.size * 0.9, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
-    ctx.fillStyle = '#654321';
-    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let p of particles) {
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-    }
-    ctx.globalAlpha = 1.0;
-
-    ctx.font = "45px Arial";
-    for (let obj of fallingObjects) {
-        ctx.fillText(obj.emoji, obj.x, obj.y);
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.y -= 46 * dt / 1000;
+      f.life -= dt;
+      if (f.life <= 0) floaters.splice(i, 1);
     }
 
-    ctx.font = "65px Arial";
-    ctx.fillText('🧑‍🌾', farmerX, farmerY - 10);
-    
-    if (slowTimer > 0) {
-        ctx.font = "30px Arial";
-        ctx.fillText('💧', farmerX + 35, farmerY - 35);
-        
-        ctx.save();
-        ctx.globalAlpha = 0.3;
-        ctx.fillStyle = '#93c5fd';
-        ctx.beginPath();
-        ctx.ellipse(farmerX, farmerY + 15, 45, 25, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-    
-    ctx.font = "55px Arial";
-    ctx.fillText('🧺', farmerX, farmerY + 15);
+    updateHUD();
+  }
 
-    for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        let ft = floatingTexts[i];
-        ft.life -= 16; 
-        ft.y -= 1; 
-        
-        if (ft.life <= 0) {
-            floatingTexts.splice(i, 1);
-        } else {
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
-            ctx.font = "bold 24px 'Pretendard', sans-serif";
-            
-            if (ft.color === "red") ctx.fillStyle = "#ef4444";
-            else if (ft.color === "green") ctx.fillStyle = "#4ade80";
-            else if (ft.color === "blue") ctx.fillStyle = "#93c5fd";
-            else ctx.fillStyle = "#ffffff";
-            
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 3;
-            ctx.strokeText(ft.text, ft.x, ft.y);
-            ctx.fillText(ft.text, ft.x, ft.y);
-            ctx.restore();
+  function draw() {
+    ctx.save();
+    if (shakeTimer > 0) {
+      ctx.translate((Math.random() - .5) * 12, (Math.random() - .5) * 10);
+    }
+
+    drawBackground();
+    drawFallingObjects();
+    drawPlayer();
+    drawParticlesAndText();
+
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    const sky = ctx.createLinearGradient(0, 0, 0, height);
+    sky.addColorStop(0, '#55b9ff');
+    sky.addColorStop(.56, '#c9f2ff');
+    sky.addColorStop(1, '#efffff');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, height);
+
+    for (const c of clouds) drawCloud(c.x, c.y, c.size);
+
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = '#1c7ed6';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < laneCount; i++) {
+      const x = laneToX(i);
+      ctx.setLineDash([9, 14]);
+      ctx.beginPath();
+      ctx.moveTo(x, 95);
+      ctx.lineTo(x, height - 86);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.fillStyle = '#7bdc8d';
+    ctx.beginPath();
+    ctx.moveTo(0, height - 80);
+    ctx.bezierCurveTo(width * .22, height - 126, width * .45, height - 58, width * .68, height - 96);
+    ctx.bezierCurveTo(width * .84, height - 122, width, height - 92, width, height - 92);
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#42ad62';
+    ctx.fillRect(0, height - 48, width, 48);
+  }
+
+  function drawCloud(x, y, s) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.66)';
+    ctx.beginPath();
+    ctx.arc(x, y, s * .72, 0, Math.PI * 2);
+    ctx.arc(x + s * .62, y - s * .26, s * .86, 0, Math.PI * 2);
+    ctx.arc(x + s * 1.4, y, s * .75, 0, Math.PI * 2);
+    ctx.arc(x + s * .7, y + s * .24, s * .68, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFallingObjects() {
+    for (const obj of objects) {
+      const x = obj.x + Math.sin(obj.age / 380) * obj.wobble;
+      const y = obj.y;
+      const scale = 1 + Math.sin(obj.age / 260) * .035;
+
+      ctx.save();
+      ctx.globalAlpha = clamp((y + 34) / 80, 0.2, 1);
+      if (obj.kind === 'fruit') {
+        const isTarget = obj.fruit.key === order.fruit.key;
+        if (isTarget) {
+          ctx.save();
+          ctx.globalAlpha = obj.golden ? .75 : .45;
+          ctx.fillStyle = obj.golden ? '#facc15' : '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x, y, obj.r + (obj.golden ? 13 : 9) + Math.sin(obj.age / 130) * 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
         }
+        drawFruit(obj.fruit, x, y, obj.r * scale, obj.golden);
+      } else if (obj.kind === 'bomb') {
+        drawBomb(x, y, obj.r * scale);
+      } else {
+        drawRock(x, y, obj.r * scale);
+      }
+
+      const shadowProgress = clamp(y / (height - 100), 0, 1);
+      if (shadowProgress > .72) {
+        ctx.globalAlpha = (shadowProgress - .72) * 1.3;
+        ctx.fillStyle = 'rgba(25, 51, 73, .18)';
+        ctx.beginPath();
+        ctx.ellipse(x, height - 55, obj.r * 1.1, obj.r * .36, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawFruit(fruit, x, y, r, golden) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(y * .012) * .06);
+
+    if (fruit.key === 'apple') {
+      ctx.fillStyle = fruit.main;
+      ctx.beginPath();
+      ctx.arc(-r * .26, 0, r * .72, 0, Math.PI * 2);
+      ctx.arc(r * .26, 0, r * .72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#7c2d12';
+      roundRect(-3, -r * 1.05, 6, r * .42, 3, true);
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.ellipse(r * .32, -r * .92, r * .34, r * .17, -.45, 0, Math.PI * 2);
+      ctx.fill();
+      highlight(-r * .28, -r * .18, r * .18);
+    } else if (fruit.key === 'banana') {
+      ctx.strokeStyle = '#8a5a00';
+      ctx.lineWidth = r * .48;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, -r * .15, r * 1.02, .22 * Math.PI, .82 * Math.PI);
+      ctx.stroke();
+      ctx.strokeStyle = fruit.main;
+      ctx.lineWidth = r * .36;
+      ctx.beginPath();
+      ctx.arc(0, -r * .16, r * 1.02, .23 * Math.PI, .81 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = '#6b3e00';
+      ctx.beginPath();
+      ctx.arc(-r * .82, r * .47, r * .12, 0, Math.PI * 2);
+      ctx.arc(r * .86, r * .43, r * .12, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (fruit.key === 'grape') {
+      const spots = [[0,-.55],[-.48,-.22],[.48,-.22],[-.25,.28],[.25,.28],[0,.72]];
+      ctx.fillStyle = fruit.main;
+      for (const [sx, sy] of spots) {
+        ctx.beginPath();
+        ctx.arc(sx * r, sy * r, r * .36, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.ellipse(r * .22, -r * 1.05, r * .3, r * .14, -.5, 0, Math.PI * 2);
+      ctx.fill();
+      highlight(-r * .12, -r * .45, r * .12);
+    } else {
+      ctx.fillStyle = fruit.main;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * .88, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffedd5';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(i * Math.PI / 3) * r * .74, Math.sin(i * Math.PI / 3) * r * .74);
+        ctx.stroke();
+      }
+      highlight(-r * .25, -r * .28, r * .16);
     }
 
-    if (juiceAnim) {
-        juiceAnim.time += 16; 
-        let progress = juiceAnim.time / juiceAnim.maxTime;
-        let scale = 1 + Math.sin(progress * Math.PI) * 3.5; 
-        let alpha = 1 - Math.pow(progress, 3); 
-        let animY = juiceAnim.y - progress * 250; 
-        
-        ctx.save();
-        ctx.translate(canvas.width / 2, animY);
-        ctx.scale(scale, scale);
-        ctx.globalAlpha = alpha;
-        ctx.font = "70px Arial";
-        ctx.fillText('🍹', 0, 0);
-        ctx.restore();
-        
-        if (juiceAnim.time >= juiceAnim.maxTime) juiceAnim = null;
+    if (golden) {
+      ctx.save();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.23, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
-    if (isShaking) {
-        ctx.restore(); 
-    }
-}
+    ctx.restore();
+  }
 
-function gameLoop(time) {
-    let dt = time - lastTime;
-    if (dt > 50) dt = 50; 
+  function highlight(x, y, r) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBomb(x, y, r) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#1f2937';
+    ctx.beginPath();
+    ctx.arc(0, r * .1, r * .9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, r * .1, r * 1.05, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#111827';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(r * .35, -r * .55);
+    ctx.quadraticCurveTo(r * .85, -r * 1.15, r * .55, -r * 1.45);
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(r * .55, -r * 1.45, r * .18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.beginPath();
+    ctx.arc(-r * .3, -r * .2, r * .16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawRock(x, y, r) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#8a9aa8';
+    ctx.strokeStyle = '#52616e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * .85, -r * .15);
+    ctx.lineTo(-r * .35, -r * .78);
+    ctx.lineTo(r * .48, -r * .62);
+    ctx.lineTo(r * .9, r * .05);
+    ctx.lineTo(r * .38, r * .78);
+    ctx.lineTo(-r * .56, r * .62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.28)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .36, -r * .22);
+    ctx.lineTo(r * .35, -r * .38);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    const x = playerX;
+    const y = playerY;
+    const slow = slowTimer > 0;
+
+    if (feverTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = .2 + Math.sin(performance.now() / 90) * .06;
+      ctx.fillStyle = '#fff3bf';
+      ctx.beginPath();
+      ctx.arc(x, y + 6, 105, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (slow) {
+      ctx.save();
+      ctx.globalAlpha = .26;
+      ctx.fillStyle = '#3bc9db';
+      ctx.beginPath();
+      ctx.ellipse(0, 30, 62, 23, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // body
+    ctx.fillStyle = '#f4a261';
+    ctx.beginPath();
+    ctx.arc(0, -32, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#25516d';
+    roundRect(-25, -16, 50, 44, 16, true);
+
+    // hat
+    ctx.fillStyle = '#f6c945';
+    roundRect(-30, -54, 60, 11, 5, true);
+    ctx.fillStyle = '#d99a2b';
+    roundRect(-22, -68, 44, 18, 9, true);
+
+    // face
+    ctx.fillStyle = '#233142';
+    ctx.beginPath();
+    ctx.arc(-7, -34, 2.5, 0, Math.PI * 2);
+    ctx.arc(7, -34, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#233142';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -28, 6, 0, Math.PI);
+    ctx.stroke();
+
+    // basket
+    ctx.fillStyle = '#c77d36';
+    ctx.strokeStyle = '#6b3e16';
+    ctx.lineWidth = 4;
+    roundRect(-54, 8, 108, 43, 9, true, true);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.lineWidth = 2;
+    for (let i = -38; i <= 38; i += 19) {
+      ctx.beginPath();
+      ctx.moveTo(i, 11);
+      ctx.lineTo(i + 12, 48);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#6b3e16';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 11, 42, Math.PI, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticlesAndText() {
+    for (const p of particles) {
+      ctx.save();
+      ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    for (const f of floaters) {
+      ctx.save();
+      ctx.globalAlpha = clamp(f.life / f.maxLife, 0, 1);
+      ctx.font = `1000 ${f.size}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(16,32,51,.9)';
+      ctx.fillStyle = f.color;
+      ctx.strokeText(f.text, f.x, f.y);
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  function roundRect(x, y, w, h, r, fill, stroke) {
+    const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  function floatText(x, y, text, color) {
+    floaters.push({ x, y, text, color, life: 760, maxLife: 760, size: width < 420 ? 24 : 28 });
+  }
+
+  function splash(x, y, color) {
+    for (let i = 0; i < 12; i++) {
+      particles.push({
+        x, y,
+        vx: visualRange(-110, 110),
+        vy: visualRange(-210, -40),
+        color,
+        size: visualRange(3, 7),
+        life: visualRange(420, 760),
+        maxLife: 760
+      });
+    }
+  }
+
+  function burstJuice(x, y, fruit) {
+    for (let i = 0; i < 44; i++) {
+      particles.push({
+        x: x + visualRange(-26, 26),
+        y: y + visualRange(-18, 18),
+        vx: visualRange(-260, 260),
+        vy: visualRange(-430, -90),
+        color: i % 3 === 0 ? '#fff3bf' : fruit.main,
+        size: visualRange(4, 10),
+        life: visualRange(650, 1200),
+        maxLife: 1200
+      });
+    }
+    floatText(x, y - 10, '주스 완성!', '#f59f00');
+  }
+
+  function loop(time) {
+    const dt = Math.min(50, time - lastTime || 16);
     lastTime = time;
-
     update(dt);
     draw();
+    if (state === 'PLAYING') frameId = requestAnimationFrame(loop);
+  }
 
-    if (gameState === 'PLAYING') {
-        requestAnimationFrame(gameLoop);
-    }
-}
+  function setInputFromClient(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    inputX = clamp(clientX - rect.left, 38, width - 38);
+  }
 
-// 이벤트 리스너 바인딩
-document.getElementById('start-btn').addEventListener('click', initGame);
-document.getElementById('restart-btn').addEventListener('click', initGame);
+  canvas.addEventListener('mousemove', e => setInputFromClient(e.clientX));
+  canvas.addEventListener('pointerdown', e => {
+    setInputFromClient(e.clientX);
+    if (state === 'START') startGame();
+  });
+  canvas.addEventListener('pointermove', e => setInputFromClient(e.clientX));
+
+  window.addEventListener('keydown', e => {
+    if (state !== 'PLAYING') return;
+    if (e.key === 'ArrowLeft') inputX -= 56;
+    if (e.key === 'ArrowRight') inputX += 56;
+    inputX = clamp(inputX, 38, width - 38);
+    if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+  });
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+  window.addEventListener('resize', () => {
+    resize();
+    draw();
+  });
+
+  resize();
+  updateHUD();
+  draw();
+})();
 </script>
 </body>
 </html>
