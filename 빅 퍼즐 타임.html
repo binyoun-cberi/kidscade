@@ -404,7 +404,7 @@
   <main class="game-body" aria-label="큰 숫자 슬라이딩 퍼즐 게임">
     <section class="top-bar">
       <div class="stat-box">
-        <div class="stat-label">최고 기록</div>
+        <div class="stat-label">오늘 최고</div>
         <div id="bestDisplay" class="stat-value">--:--.--</div>
         <div id="bestMovesDisplay" class="stat-label" style="margin-top:5px;">이동 --회</div>
       </div>
@@ -502,8 +502,8 @@
           <ul class="info-list">
             <li><span>👆</span><span>빈 칸과 맞닿은 타일을 누르면 그 타일이 빈 칸으로 이동합니다.</span></li>
             <li><span>🔢</span><span>1부터 차례대로 정렬하고, 마지막 칸은 비워 두면 성공입니다.</span></li>
-            <li><span>🎯</span><span>퍼즐은 정해진 기준 이동 수에 여유 5회를 더한 횟수 안에 풀어야 합니다.</span></li>
-            <li><span>💔</span><span>실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다.</span></li>
+            <li><span>🎯</span><span>같은 날·같은 난이도에서는 같은 퍼즐이 나오며, 새로 뽑기는 포기로 처리됩니다.</span></li>
+            <li><span>💔</span><span>포기하거나 실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다.</span></li>
             <li><span>⌨️</span><span>컴퓨터에서는 방향키로도 움직일 수 있습니다.</span></li>
           </ul>
         </div>
@@ -512,7 +512,7 @@
 
     <section class="bottom-row">
       <button id="hintBtn" class="plain-btn">힌트</button>
-      <button id="shuffleBtn" class="plain-btn">새 퍼즐</button>
+      <button id="shuffleBtn" class="plain-btn">포기</button>
       <button id="infoBtn" class="plain-btn">설명</button>
     </section>
 
@@ -560,15 +560,28 @@
 
     const MAX_HEARTS = 3;
     const HEART_REGEN_MS = 5 * 60 * 1000;
-    const MOVE_MARGIN = 5;
+
+    // 리셋 노가다 방지용 도전 규칙
+    // 기존처럼 n×n 정도만 섞으면 몇 번 클릭으로 풀리는 판이 자주 나옵니다.
+    // 그래서 도전 깊이를 높이고, 같은 날·같은 난이도에서는 같은 퍼즐이 나오게 고정합니다.
+    const CHALLENGE_VERSION = 'daily_reroll_lock_v1';
 
     const baselineMovesBySize = {
-      4: 16,
-      5: 25,
-      6: 36,
-      8: 64,
-      9: 81,
-      10: 100
+      4: 32,
+      5: 50,
+      6: 72,
+      8: 112,
+      9: 135,
+      10: 160
+    };
+
+    const moveMarginBySize = {
+      4: 12,
+      5: 16,
+      6: 22,
+      8: 34,
+      9: 40,
+      10: 48
     };
 
     const tilePalette = [
@@ -586,20 +599,57 @@
     let currentTimeMs = 0;
     let moveCount = 0;
     let minimumMoveCount = baselineMovesBySize[size];
-    let moveLimit = minimumMoveCount + MOVE_MARGIN;
+    let moveMargin = moveMarginBySize[size];
+    let moveLimit = minimumMoveCount + moveMargin;
     let tileStep = 0;
     let tileInner = 0;
     let gap = 4;
     let audioCtx = null;
     let hintTimeout = null;
     let solutionMoveMap = new Map();
+    let hintCount = 0;
     let heartState = {
       hearts: MAX_HEARTS,
       lastHeartAt: Date.now()
     };
 
+    function getTodayStamp() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
     function storageKey() {
-      return `bigPuzzleRecord_v3_${size}x${size}`;
+      return `bigPuzzleRecord_v4_${getTodayStamp()}_${size}x${size}`;
+    }
+
+    function challengeSeed() {
+      return `${CHALLENGE_VERSION}|${getTodayStamp()}|${size}x${size}`;
+    }
+
+    function xmur3(str) {
+      let h = 1779033703 ^ str.length;
+      for (let i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function() {
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        return (h ^= h >>> 16) >>> 0;
+      };
+    }
+
+    function mulberry32(seed) {
+      return function() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function createChallengeRandom() {
+      return mulberry32(xmur3(challengeSeed())());
     }
 
     function heartStorageKey() {
@@ -652,11 +702,15 @@
       }
     }
 
-    function saveRecordIfBetter(timeMs, moves) {
+    function saveRecordIfBetter(timeMs, moves, hints) {
+      // 힌트를 쓴 판은 연습 성공으로만 인정하고, 오늘 최고 기록에는 저장하지 않습니다.
+      if (hints > 0) return false;
+
       const old = loadBestRecord();
-      const isBetter = !old || timeMs < old.timeMs || (timeMs === old.timeMs && moves < old.moves);
+      // 빠른 손보다 정확한 풀이를 먼저 보도록 이동 수를 우선 비교합니다.
+      const isBetter = !old || moves < old.moves || (moves === old.moves && timeMs < old.timeMs);
       if (isBetter) {
-        localStorage.setItem(storageKey(), JSON.stringify({ timeMs, moves }));
+        localStorage.setItem(storageKey(), JSON.stringify({ timeMs, moves, hints, date: getTodayStamp() }));
         loadBestRecord();
       }
       return isBetter;
@@ -747,11 +801,16 @@
 
     function updateMoveRuleText() {
       minimumMoveCount = baselineMovesBySize[size];
-      moveLimit = minimumMoveCount + MOVE_MARGIN;
+      moveMargin = moveMarginBySize[size];
+      moveLimit = minimumMoveCount + moveMargin;
       limitDisplay.textContent = `${moveLimit - moveCount}회 남음`;
-      limitDetail.textContent = `기준 ${minimumMoveCount} + 여유 ${MOVE_MARGIN}`;
-      movesDisplay.textContent = `이동 ${moveCount}/${moveLimit}회`;
-      startRuleText.textContent = `이동 제한: 기준 ${minimumMoveCount}회 + 여유 ${MOVE_MARGIN}회`;
+      limitDetail.textContent = `기준 ${minimumMoveCount} + 여유 ${moveMargin}`;
+      movesDisplay.textContent = `이동 ${moveCount}/${moveLimit}회 · 힌트 ${hintCount}회`;
+      startRuleText.textContent = `오늘의 도전은 같은 날·같은 난이도에서 같은 퍼즐입니다. 이동 제한: 기준 ${minimumMoveCount}회 + 여유 ${moveMargin}회`;
+    }
+
+    function updateActionButtons() {
+      shuffleBtn.textContent = isPlaying ? '포기' : '도전 시작';
     }
 
     function initAudio() {
@@ -809,7 +868,7 @@
     }
 
     function updateModeText() {
-      const label = `${size}×${size} 퍼즐`;
+      const label = `${size}×${size} 오늘의 도전`;
       modeText.textContent = label;
       startDescription.textContent = `1부터 ${size * size - 1}까지 순서대로 맞추고 마지막 칸을 비워 두세요.`;
       modeButtons.forEach(btn => btn.classList.toggle('active', Number(btn.dataset.size) === size));
@@ -883,6 +942,7 @@
       isPlaying = false;
       currentTimeMs = 0;
       moveCount = 0;
+      hintCount = 0;
       timerDisplay.textContent = '00:00.00';
       state = solvedState();
       updateModeText();
@@ -896,6 +956,7 @@
       infoModal.classList.add('hidden');
       startOverlay.classList.remove('hidden');
       syncHearts();
+      updateActionButtons();
     }
 
     function startTimer() {
@@ -934,16 +995,17 @@
       state = solvedState();
       solutionMoveMap = new Map();
 
+      const rng = createChallengeRandom();
       const targetMoves = baselineMovesBySize[size];
       const seen = new Set([serialize(state)]);
       let prevZeroIndex = -1;
-      let targetZeroIndex = Math.floor(Math.random() * state.length);
+      let targetZeroIndex = Math.floor(rng() * state.length);
 
       for (let i = 0; i < targetMoves; i++) {
         const zeroIdx = state.indexOf(0);
 
-        if (zeroIdx === targetZeroIndex || i % Math.max(10, size + 2) === 0) {
-          targetZeroIndex = Math.floor(Math.random() * state.length);
+        if (zeroIdx === targetZeroIndex || i % Math.max(9, size + 1) === 0) {
+          targetZeroIndex = Math.floor(rng() * state.length);
         }
 
         let candidates = getNeighbors(zeroIdx)
@@ -958,7 +1020,7 @@
               movingNumber,
               key: serialize(preview),
               distance: getManhattan(idx, targetZeroIndex),
-              random: Math.random()
+              random: rng()
             };
           })
           .filter(candidate => !seen.has(candidate.key));
@@ -976,7 +1038,7 @@
                 movingNumber,
                 key: serialize(preview),
                 distance: getManhattan(idx, targetZeroIndex),
-                random: Math.random()
+                random: rng()
               };
             });
         }
@@ -992,13 +1054,14 @@
               movingNumber,
               key: serialize(preview),
               distance: getManhattan(idx, targetZeroIndex),
-              random: Math.random()
+              random: rng()
             };
           });
         }
 
+        // 가장 단순한 왕복 이동을 피하면서도 무작위성을 조금 남깁니다.
         candidates.sort((a, b) => (a.distance - b.distance) || (a.random - b.random));
-        const chosen = candidates[Math.random() < 0.76 ? 0 : Math.floor(Math.random() * candidates.length)];
+        const chosen = candidates[rng() < 0.72 ? 0 : Math.floor(rng() * candidates.length)];
         const zeroBefore = zeroIdx;
 
         state[zeroIdx] = chosen.movingNumber;
@@ -1010,7 +1073,13 @@
         prevZeroIndex = zeroBefore;
       }
 
-      if (isSolved()) shuffleBoard();
+      if (isSolved()) {
+        // 시드가 우연히 원상복귀되는 극단 상황 방지
+        const zeroIdx = state.indexOf(0);
+        const n = getNeighbors(zeroIdx)[0];
+        state[zeroIdx] = state[n];
+        state[n] = 0;
+      }
       renderBoard(false);
     }
 
@@ -1071,23 +1140,29 @@
       stopTimer();
       playTone('win');
 
-      const isNewRecord = saveRecordIfBetter(currentTimeMs, moveCount);
+      const isNewRecord = saveRecordIfBetter(currentTimeMs, moveCount, hintCount);
       finalTime.textContent = formatTime(currentTimeMs);
-      finalMoves.textContent = `이동 ${moveCount}/${moveLimit}회`;
-      newRecordText.textContent = isNewRecord ? '🏆 새로운 최고 기록!' : '';
+      finalMoves.textContent = `이동 ${moveCount}/${moveLimit}회 · 힌트 ${hintCount}회`;
+      newRecordText.textContent = hintCount > 0
+        ? '힌트를 사용해서 연습 성공으로 기록돼요.'
+        : (isNewRecord ? '🏆 오늘의 새로운 최고 기록!' : '오늘 최고 기록은 이동 수가 더 적거나 시간이 더 빨라야 바뀌어요.');
 
+      updateActionButtons();
       winModal.classList.remove('hidden');
       loseModal.classList.add('hidden');
       startOverlay.classList.add('hidden');
     }
 
-    function failGame() {
+    function failGame(reason = 'limit') {
       isPlaying = false;
       stopTimer();
       playTone('lose');
       consumeHeart();
+      updateActionButtons();
 
-      loseText.textContent = `이동 제한 ${moveLimit}회를 모두 사용했어요.`;
+      loseText.textContent = reason === 'abandon'
+        ? '도전 중 새 퍼즐 뽑기는 포기로 처리돼요. 같은 난이도에서는 오늘 같은 퍼즐이 다시 나옵니다.'
+        : `이동 제한 ${moveLimit}회를 모두 사용했어요.`;
       if (heartState.hearts > 0) {
         loseHeartText.textContent = `남은 하트 ${heartState.hearts}/${MAX_HEARTS}`;
         loseRestartBtn.textContent = '다시 도전';
@@ -1120,6 +1195,7 @@
 
       currentTimeMs = 0;
       moveCount = 0;
+      hintCount = 0;
       timerDisplay.textContent = '00:00.00';
       updateMoveRuleText();
 
@@ -1130,6 +1206,7 @@
       startOverlay.classList.add('hidden');
 
       isPlaying = true;
+      updateActionButtons();
       startTimer();
     }
 
@@ -1153,7 +1230,7 @@
       const currentKey = serialize(state);
       if (solutionMoveMap.has(currentKey)) return solutionMoveMap.get(currentKey);
 
-      const maxDepth = MOVE_MARGIN;
+      const maxDepth = Math.min(10, moveMargin);
       const queue = [{ board: state.slice(), depth: 0, firstMove: null }];
       const visited = new Set([currentKey]);
       let head = 0;
@@ -1210,6 +1287,8 @@
       const tile = tilesDOM.get(num);
       if (!tile) return;
 
+      hintCount++;
+      updateMoveRuleText();
       tile.classList.add('hint');
       hintTimeout = setTimeout(clearHint, 1300);
     }
@@ -1246,7 +1325,13 @@
       startGame();
     });
     lockedOkBtn.addEventListener('click', () => heartModal.classList.add('hidden'));
-    shuffleBtn.addEventListener('click', startGame);
+    shuffleBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        failGame('abandon');
+        return;
+      }
+      startGame();
+    });
     hintBtn.addEventListener('click', showHint);
     infoBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
     closeInfoBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
