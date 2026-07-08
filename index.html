@@ -431,7 +431,7 @@
 
         .pet-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 10px; }
 
-        /* 게임별 이용권 표시 */
+        /* 게임별 추천 에너지 표시: 없더라도 플레이는 가능, 보상만 기본 지급 */
         .play-limit-badge {
             margin-top: 10px;
             padding: 6px 10px;
@@ -446,8 +446,8 @@
         }
         .play-limit-badge.low { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
         .play-limit-badge.empty { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
-        .game-card.out-of-plays { filter: grayscale(60%) opacity(0.82); border-color: #fca5a5; }
-        .game-card.out-of-plays:hover { transform: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .game-card.out-of-bonus { filter: grayscale(60%) opacity(0.82); border-color: #fca5a5; }
+        .game-card.out-of-bonus:hover { transform: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .mini-card .play-limit-badge { font-size: 0.72em; min-width: auto; padding: 4px 7px; }
         body.dark-mode .play-limit-badge { background: #064e3b; color: #bbf7d0; border-color: #047857; }
         body.dark-mode .play-limit-badge.low { background: #451a03; color: #fde68a; border-color: #b45309; }
@@ -873,6 +873,176 @@ body.dark-mode .site-credits {
         width: fit-content;
     }
 }
+
+
+        /* =========================================
+            🌱 쑥쑥랜드 개편: 추천 · 미션 · 꾸미기 중심
+           ========================================= */
+        .sook-coach-content { border-color: #22c55e !important; }
+        .sook-coach-header {
+            background: linear-gradient(135deg, #22c55e, #8b5cf6) !important;
+            color: white !important;
+        }
+        .sook-coach-body {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding: 18px !important;
+            background: var(--card-bg) !important;
+        }
+        .sook-top-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr);
+            gap: 14px;
+            width: 100%;
+        }
+        .sook-land-room {
+            position: relative;
+            min-height: 210px;
+            border-radius: 22px;
+            overflow: hidden;
+            border: 3px solid rgba(34, 197, 94, 0.34);
+            background: linear-gradient(180deg, #bfdbfe 0%, #e0f2fe 55%, #bbf7d0 56%, #86efac 100%);
+            box-shadow: inset 0 -10px 0 rgba(22, 163, 74, 0.08), 0 12px 24px rgba(15, 23, 42, 0.10);
+        }
+        .sook-room-sky {
+            position: absolute; inset: 0 0 45% 0;
+            background:
+                radial-gradient(circle at 20% 25%, rgba(255,255,255,0.9) 0 18px, transparent 19px),
+                radial-gradient(circle at 78% 18%, rgba(253,224,71,0.9) 0 22px, transparent 23px);
+        }
+        .sook-room-floor {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 44%;
+            background: repeating-linear-gradient(45deg, rgba(22, 163, 74, 0.14) 0 12px, rgba(255,255,255,0.14) 12px 24px);
+        }
+        #pet-room-avatar {
+            position: absolute;
+            left: 50%; bottom: 34px;
+            transform: translateX(-50%);
+            font-size: 5.2rem;
+            z-index: 3;
+            filter: drop-shadow(0 10px 10px rgba(15, 23, 42, 0.18));
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .sook-land-decor {
+            position: absolute;
+            left: 22px; bottom: 24px;
+            font-size: 3.1rem;
+            z-index: 2;
+            filter: drop-shadow(0 8px 8px rgba(15, 23, 42, 0.13));
+        }
+        body.land-desk #sook-land-decor::after { content: " 📚"; }
+        body.land-garden #sook-land-decor::after { content: " 🌳"; }
+        body.land-lab #sook-land-decor::after { content: " 🧪"; }
+        body.land-stage #sook-land-decor::after { content: " 🎹"; }
+        body.land-camp #sook-land-decor::after { content: " ⛺"; }
+        .sook-status-card {
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.09), rgba(139, 92, 246, 0.08)), var(--bg-color);
+            border: 2px solid rgba(139, 92, 246, 0.20);
+            border-radius: 22px;
+            padding: 16px;
+            color: var(--text-color);
+            text-align: left;
+        }
+        .sook-status-title {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #16a34a;
+            margin-bottom: 14px;
+            word-break: keep-all;
+        }
+        body.dark-mode .sook-status-title { color: #86efac; }
+        .sook-mini-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+        .sook-mini-facts span {
+            background: var(--card-bg);
+            border: 1px solid rgba(148, 163, 184, 0.30);
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-weight: 900;
+            font-size: 0.86rem;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+        }
+        .sook-action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 10px;
+            width: 100%;
+            margin-top: 14px;
+        }
+        .sook-panel-block {
+            width: 100%;
+            margin-top: 14px;
+            background: color-mix(in srgb, var(--bg-color) 80%, white 20%);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 20px;
+            padding: 14px;
+            box-sizing: border-box;
+        }
+        .sook-section-title {
+            font-weight: 900;
+            color: #7c3aed;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        body.dark-mode .sook-section-title { color: #c4b5fd; }
+        .sook-mission-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .sook-mission-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-radius: 18px;
+            padding: 12px;
+            text-align: left;
+            color: var(--text-color);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        }
+        .sook-mission-card.done { border-color: #22c55e; background: rgba(34, 197, 94, 0.10); }
+        .mission-title { font-weight: 900; margin-bottom: 5px; word-break: keep-all; }
+        .mission-desc { font-size: 0.82rem; color: #64748b; line-height: 1.35; min-height: 2.6em; word-break: keep-all; }
+        body.dark-mode .mission-desc { color: #cbd5e1; }
+        .mission-progress { margin-top: 8px; font-weight: 900; font-size: 0.86rem; color: #16a34a; }
+        .sook-hint-text {
+            font-size: 0.88rem;
+            color: #64748b;
+            text-align: center;
+            word-break: keep-all;
+            line-height: 1.5;
+            margin-top: 12px;
+        }
+        body.dark-mode .sook-hint-text { color: #cbd5e1; }
+        .shop-item {
+            position: relative;
+            overflow: hidden;
+        }
+        .shop-item::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #22c55e, #fbbf24, #8b5cf6);
+            opacity: 0.8;
+        }
+        body.card-skin-rainbow .game-card::before { background: linear-gradient(90deg, #fb7185, #fbbf24, #34d399, #60a5fa, #a78bfa); }
+        body.card-skin-cloud .game-card::before { background: linear-gradient(90deg, #bae6fd, #e0f2fe, #ffffff, #bae6fd); }
+        body.card-skin-note .game-card::before { background: repeating-linear-gradient(90deg, #fde68a 0 18px, #fca5a5 18px 22px, #bfdbfe 22px 40px); }
+        body.card-skin-forest .game-card::before { background: linear-gradient(90deg, #16a34a, #84cc16, #22c55e); }
+        body.card-skin-neon .game-card::before { background: linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899); }
+        body.card-skin-cloud .game-card { border: 2px solid rgba(125, 211, 252, 0.45); }
+        body.card-skin-note .game-card { border: 2px dashed rgba(251, 191, 36, 0.65); }
+        body.card-skin-forest .game-card { border: 2px solid rgba(34, 197, 94, 0.45); }
+        body.card-skin-neon .game-card { box-shadow: 0 18px 34px rgba(139, 92, 246, 0.20); }
+        @media (max-width: 760px) {
+            .sook-top-grid { grid-template-columns: 1fr; }
+            .sook-action-grid { grid-template-columns: 1fr 1fr; }
+            .sook-mission-list { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 520px) {
+            .sook-action-grid { grid-template-columns: 1fr; }
+        }
+
     </style>
 </head>
 <body>
@@ -888,51 +1058,53 @@ body.dark-mode .site-credits {
     </div>
 
     <div id="pet-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-        <div class="shop-content" style="max-width: 480px; width: 90%;">
-            <div class="shop-header" style="background: #4ade80; color: #064e3b; border-bottom: none;">
-                <span>🏡 쑥쑥이의 마이룸</span>
+        <div class="shop-content sook-coach-content" style="max-width: 760px; width: 92%;">
+            <div class="shop-header sook-coach-header">
+                <span>🌱 쑥쑥이 추천 보드</span>
                 <button class="close-btn" onclick="document.getElementById('pet-modal').classList.add('hidden')">닫기 ✖</button>
             </div>
-            <div class="shop-body" style="flex-direction: column; align-items: center; padding: 20px; background: var(--card-bg);">
-                
-                <div id="pet-room-area">
-                    <div id="pet-room-avatar">🥚</div>
-                    <div id="pet-room-poops"></div> 
-                    <div id="pet-room-overlay">🤒</div> 
-                </div>
-
-                <div id="pet-room-status" style="width: 100%; text-align: left; background: var(--bg-color); padding: 15px; border-radius: 15px; border: 2px solid var(--card-border); color: var(--text-color); margin-bottom: 15px;">
-                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 15px; color: #16a34a; display: flex; justify-content: space-between;">
-                        <span id="pet-display-name">이름: 쑥쑥이 (신비로운 알)</span>
-                        <span id="pet-condition-buff" style="font-size: 0.8em; background: #fbbf24; color: #92400e; padding: 2px 8px; border-radius: 10px; display: none;">✨ 컨디션 최상</span>
+            <div class="shop-body sook-coach-body">
+                <div class="sook-top-grid">
+                    <div id="pet-room-area" class="sook-land-room">
+                        <div class="sook-room-sky"></div>
+                        <div class="sook-room-floor"></div>
+                        <div id="sook-land-decor" class="sook-land-decor">🌼</div>
+                        <div id="pet-room-avatar">🥚</div>
                     </div>
-                    <div class="stat-row"><div class="stat-label">✨ 경험치</div><div class="bar-container"><div class="bar-fill fill-exp" id="bar-exp" style="width: 0%;"></div><div class="bar-text" id="txt-exp">0 / 50</div></div></div>
-                    <div class="stat-row"><div class="stat-label">🌤️ 컨디션</div><div class="bar-container"><div class="bar-fill fill-full" id="bar-full" style="width: 100%;"></div><div class="bar-text" id="txt-full">100%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">🤝 친밀도</div><div class="bar-container"><div class="bar-fill fill-love" id="bar-love" style="width: 50%;"></div><div class="bar-text" id="txt-love">50%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">🏡 방 상태</div><div class="bar-container"><div class="bar-fill fill-clean" id="bar-clean" style="width: 100%;"></div><div class="bar-text" id="txt-clean">100%</div></div></div>
-                    <div class="stat-row"><div class="stat-label">☕ 휴식필요</div><div class="bar-container"><div class="bar-fill fill-energy" id="bar-energy" style="width: 0%;"></div><div class="bar-text" id="txt-energy">0%</div></div></div>
+                    <div id="pet-room-status" class="sook-status-card">
+                        <div class="sook-status-title" id="pet-display-name">이름: 쑥쑥이 [신비로운 알]</div>
+                        <div class="stat-row"><div class="stat-label">✨ 성장</div><div class="bar-container"><div class="bar-fill fill-exp" id="bar-exp" style="width: 0%;"></div><div class="bar-text" id="txt-exp">0 / 50</div></div></div>
+                        <div class="sook-mini-facts">
+                            <span id="sook-seed-chip">🌱 씨앗 0개</span>
+                            <span id="sook-track-chip">🧭 균형형</span>
+                        </div>
+                        <div class="pet-smart-note" id="pet-smart-note">오늘 할 게임을 같이 골라볼게요.</div>
+                    </div>
                 </div>
 
-                <div class="pet-smart-note" id="pet-smart-note">🌱 쑥쑥이가 오늘 할 게임을 같이 골라줄 준비를 하고 있어요.</div>
-
-                <div class="pet-btn-grid">
-                    <button class="item-btn btn-equip" id="btn-pet-talk" style="grid-column: 1 / -1; background: #8b5cf6; color: white;">💬 쑥쑥이와 이야기하기</button>
-                    <button class="item-btn btn-buy" id="btn-pet-feed">🍎 간식 주기</button>
-                    <button class="item-btn btn-equip" id="btn-pet-stroke" style="background: #f48fb1;">👋 쓰다듬기</button>
-                    <button class="item-btn btn-buy" id="btn-pet-clean" style="background: #3b82f6; color: white;">🧼 목욕하기</button>
-                    <button class="item-btn btn-buy hidden" id="btn-pet-heal" style="background: #ef4444; color: white;">💊 치료하기</button>
-                    <button class="item-btn btn-equip hidden" id="btn-pet-sleep" style="background: #64748b;">💤 푹 재우기</button>
+                <div class="sook-action-grid">
+                    <button class="item-btn btn-equip" id="btn-pet-talk">💬 오늘 게임 추천받기</button>
+                    <button class="item-btn btn-buy" id="btn-pet-feed">🎯 오늘의 미션 보기</button>
+                    <button class="item-btn btn-equip" id="btn-pet-stroke">🏡 쑥쑥랜드 꾸미기</button>
+                    <button class="item-btn btn-buy" id="btn-pet-clean">🎁 오늘의 보상 선택</button>
+                    <button class="item-btn btn-buy hidden" id="btn-pet-heal">숨김</button>
+                    <button class="item-btn btn-equip hidden" id="btn-pet-sleep">숨김</button>
                 </div>
-                
+
+                <div class="sook-panel-block">
+                    <div class="sook-section-title">🎯 오늘의 미션</div>
+                    <div id="sook-mission-list" class="sook-mission-list"></div>
+                </div>
+
                 <div id="pet-talk-panel" class="pet-talk-panel hidden">
-                    <div class="pet-talk-title">💬 쑥쑥이 상담소</div>
+                    <div class="pet-talk-title">💬 쑥쑥이 게임 추천소</div>
                     <div id="pet-talk-log" class="pet-talk-log"></div>
                     <div id="pet-talk-choices" class="pet-talk-choices"></div>
                     <div id="pet-recommendations" class="pet-recommendations hidden"></div>
                 </div>
 
-                <div id="pet-room-hint" style="font-size: 0.85em; color: #718096; text-align: center; word-break: keep-all; line-height: 1.4; margin-top: 10px;">
-                    💡 쑥쑥이는 이제 대화로 오늘 할 게임을 추천하고, 많이 플레이한 분야에 따라 다른 모습으로 성장해요.
+                <div id="pet-room-hint" class="sook-hint-text">
+                    💡 쑥쑥이는 <strong>추천, 미션, 꾸미기, 성장</strong>을 도와주는 오락실 친구예요.
                 </div>
             </div>
         </div>
@@ -992,15 +1164,14 @@ body.dark-mode .site-credits {
         <div id="shop-modal" class="hidden">
             <div class="shop-content">
                 <div class="shop-header">
-                    <span>🛒 오락실 상점</span>
+                    <span>🌱 쑥쑥랜드 상점</span>
                     <button class="close-btn" onclick="document.getElementById('shop-modal').classList.add('hidden')">닫기 ✖</button>
                 </div>
                 <div class="shop-nav">
-                    <button class="shop-tab active" data-tab="emoji">내 이모지</button>
-                    <button class="shop-tab" data-tab="title">칭호</button>
-                    <button class="shop-tab" data-tab="theme">오락실 테마</button>
-                    <button class="shop-tab" data-tab="pet">쑥쑥이 용품</button>
-                    <button class="shop-tab" data-tab="gacha">랜덤 선물</button>
+                    <button class="shop-tab active" data-tab="land">쑥쑥랜드</button>
+                    <button class="shop-tab" data-tab="card">카드 스킨</button>
+                    <button class="shop-tab" data-tab="badge">칭호 배지</button>
+                    <button class="shop-tab" data-tab="reward">오늘의 보상</button>
                 </div>
                 <div class="shop-body" id="shop-items-container"></div>
             </div>
@@ -1016,10 +1187,10 @@ body.dark-mode .site-credits {
                 <div class="header-controls">
                     <button class="header-btn age-change-btn" id="btn-change-age">🎒 <span id="current-age-label">초등 고학년</span> 모드</button>
                     <button class="header-btn theme-toggle" id="theme-btn">🌙 다크 모드</button>
-                    <button class="header-btn shop-btn" id="btn-open-shop">🛒 상점 가기</button>
+                    <button class="header-btn shop-btn" id="btn-open-shop">🌱 꾸미기 상점</button>
                 </div>
                 <div class="profile-container">
-                    <div class="coin-display" id="coin-display">💰 0 코인</div>
+                    <div class="coin-display" id="coin-display">🌱 0 씨앗</div>
                     <div class="profile-card">
                         <div class="profile-emoji" id="profile-emoji">🐣</div>
                         <div class="profile-text-wrap">
@@ -1063,7 +1234,7 @@ body.dark-mode .site-credits {
             </div>
             <div class="tool-panel-info">
                 <span id="visible-game-count">게임을 불러오는 중...</span>
-                <span>🎟️ 게임별 이용권은 자동으로 회복돼요</span>
+                <span>⚡ 추천 에너지가 있으면 보상 2배, 없어도 플레이 가능</span>
             </div>
         </section>
 
@@ -1517,57 +1688,62 @@ body.dark-mode .site-credits {
             let claimedRanks = JSON.parse(localStorage.getItem('kidscade_claimed_ranks') || '{}');
             let petItems = JSON.parse(localStorage.getItem('kidscade_pet_items') || '{}');
 
+            if (!inventory.land) inventory.land = ['land_basic'];
+            if (!inventory.card) inventory.card = ['card_basic'];
+            if (!inventory.badge) inventory.badge = ['badge_basic'];
+            if (!equipped.land) equipped.land = 'land_basic';
+            if (!equipped.card) equipped.card = 'card_basic';
+            if (!equipped.badge) equipped.badge = 'badge_basic';
+            localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
+            localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+
             const PLAY_LIMIT_MAX = 5;
             const PLAY_RECHARGE_MS = 5 * 60 * 1000;
             let gamePlayLimits = JSON.parse(localStorage.getItem('kidscade_game_play_limits') || '{}');
             let playLimitTimer = null;
             let activeGameId = null;
+            let activeGameHadBonus = false;
 
             const coinDisplay = document.getElementById('coin-display');
             let activeGameCategory = "all"; 
             
             const shopDB = {
-                emoji: [
-                    { id: 'e_basic', name: '병아리', desc: '기본 지급', price: 0, val: '🐣' },
-                    { id: 'e_fox', name: '여우', desc: '영리한 붉은 여우', price: 500, val: '🦊' },
-                    { id: 'e_robot', name: '로봇', desc: '기계 공학의 결정체', price: 1000, val: '🤖' },
-                    { id: 'e_unicorn', name: '유니콘', desc: '환상속의 동물', price: 2000, val: '🦄' },
-                    { id: 'e_dragon', name: '드래곤', desc: '전설의 지배자', price: 5000, val: '🐉' },
-                    { id: 'e_alien', name: '외계인', desc: '우주에서 온 친구', price: 5000, val: '👽' }
+                land: [
+                    { id: 'land_basic', name: '기본 풀밭', desc: '쑥쑥이가 처음 쉬는 초록 풀밭입니다.', price: 0, icon: '🌼', className: '' },
+                    { id: 'land_desk', name: '책상 공부방', desc: '책과 연필이 놓인 차분한 학습 공간입니다.', price: 160, icon: '📚', className: 'land-desk' },
+                    { id: 'land_garden', name: '반짝 정원', desc: '게임을 할수록 꽃과 나무가 어울리는 공간입니다.', price: 220, icon: '🌳', className: 'land-garden' },
+                    { id: 'land_lab', name: '호기심 실험실', desc: '수학·과학·퍼즐 도전에 잘 어울리는 공간입니다.', price: 260, icon: '🧪', className: 'land-lab' },
+                    { id: 'land_stage', name: '무지개 무대', desc: '음악·예술 게임을 좋아하는 친구를 위한 무대입니다.', price: 260, icon: '🎹', className: 'land-stage' },
+                    { id: 'land_camp', name: '꿈 탐험 캠프', desc: '직업체험과 생활 게임을 즐긴 친구에게 어울립니다.', price: 320, icon: '⛺', className: 'land-camp' }
                 ],
-                title: [
-                    { id: 'tp_basic', type: 'title_p', name: '[접두어] 신입생', desc: '기본 지급', price: 0, val: '신입생' },
-                    { id: 'tp_hot', type: 'title_p', name: '[접두어] 열혈', desc: '불타오르는 열정', price: 500, val: '열혈' },
-                    { id: 'tp_genius', type: 'title_p', name: '[접두어] 천재적인', desc: '머리가 핑핑 돌아가는', price: 1000, val: '천재적인' },
-                    { id: 'tp_legend', type: 'title_p', name: '[접두어] 전설의', desc: '아무도 범접할 수 없는', price: 2000, val: '전설의' },
-                    { id: 'tp_space', type: 'title_p', name: '[접두어] 우주최강', desc: '지구를 넘어선 자', price: 5000, val: '우주최강' },
-                    { id: 'tn_basic', type: 'title_n', name: '[명사] 게이머', desc: '기본 지급', price: 0, val: '게이머' },
-                    { id: 'tn_challenger', type: 'title_n', name: '[명사] 도전자', desc: '포기를 모르는 자', price: 500, val: '도전자' },
-                    { id: 'tn_hero', type: 'title_n', name: '[명사] 영웅', desc: '모두의 모범', price: 1000, val: '영웅' },
-                    { id: 'tn_ruler', type: 'title_n', name: '[명사] 지배자', desc: '오락실을 제패한 자', price: 2000, val: '지배자' },
-                    { id: 'tn_master', type: 'title_n', name: '[명사] 마스터', desc: '경지에 이른 자', price: 5000, val: '마스터' }
+                card: [
+                    { id: 'card_basic', name: '기본 카드', desc: '깔끔한 기본 게임 카드입니다.', price: 0, icon: '🎮', className: '' },
+                    { id: 'card_rainbow', name: '무지개 카드', desc: '게임 카드 위에 알록달록 무지개 띠가 생깁니다.', price: 140, icon: '🌈', className: 'card-skin-rainbow' },
+                    { id: 'card_cloud', name: '구름 카드', desc: '몽실몽실 밝은 느낌의 카드 스킨입니다.', price: 140, icon: '☁️', className: 'card-skin-cloud' },
+                    { id: 'card_note', name: '공책 카드', desc: '학습장처럼 귀여운 줄무늬 카드 스킨입니다.', price: 180, icon: '📒', className: 'card-skin-note' },
+                    { id: 'card_forest', name: '숲속 카드', desc: '초록빛 성장 느낌의 카드 스킨입니다.', price: 180, icon: '🌿', className: 'card-skin-forest' },
+                    { id: 'card_neon', name: '네온 카드', desc: '도전 모드에 어울리는 반짝 카드 스킨입니다.', price: 260, icon: '✨', className: 'card-skin-neon' }
                 ],
-                theme: [
-                    { id: 'th_basic', name: '기본 테마', desc: '가장 편안한 기본 스킨', price: 0, val: '' },
-                    { id: 'th_hacker', name: '해커 스킨', desc: '매트릭스가 떠오르는 코드 테마', price: 10000, val: 'theme-hacker' },
-                    { id: 'th_princess', name: '프린세스 스킨', desc: '블링블링 핑크빛 왕국 테마', price: 10000, val: 'theme-princess' },
-                    { id: 'th_space', name: '우주 스킨', desc: '끝없이 펼쳐진 별빛 테마', price: 10000, val: 'theme-space' }
+                badge: [
+                    { id: 'badge_basic', name: '신입생 게이머', desc: '기본으로 주어지는 배지입니다.', price: 0, icon: '🐣', prefix: '신입생', noun: '게이머' },
+                    { id: 'badge_grow', name: '쑥쑥 탐험가', desc: '오늘의 미션을 즐기는 친구에게 잘 어울립니다.', price: 120, icon: '🌱', prefix: '쑥쑥', noun: '탐험가' },
+                    { id: 'badge_math', name: '반짝 수학가', desc: '수학·퍼즐 게임을 좋아하는 친구를 위한 배지입니다.', price: 180, icon: '🧠', prefix: '반짝', noun: '수학가' },
+                    { id: 'badge_word', name: '말놀이 대장', desc: '국어와 언어 게임을 즐기는 친구에게 어울립니다.', price: 180, icon: '📖', prefix: '말놀이', noun: '대장' },
+                    { id: 'badge_artist', name: '무지개 예술가', desc: '음악·예술·창작 게임을 좋아하는 친구를 위한 배지입니다.', price: 220, icon: '🎨', prefix: '무지개', noun: '예술가' },
+                    { id: 'badge_dream', name: '꿈 찾는 모험가', desc: '직업체험 게임을 많이 해보고 싶은 친구에게 어울립니다.', price: 260, icon: '🚀', prefix: '꿈 찾는', noun: '모험가' }
                 ],
-                pet: [
-                    { id: 'p_apple', name: '아삭 사과', desc: '포만감 +40, 애정도 +5', price: 30, icon: '🍎' },
-                    { id: 'p_cookie', name: '칭찬 쿠키', desc: '친밀도 +20, 경험치 +10', price: 80, icon: '🍪' },
-                    { id: 'p_sticker', name: '응원 스티커', desc: '친밀도 +10, 경험치 +5', price: 45, icon: '🌟' },
-                    { id: 'p_soap', name: '보글보글 비누', desc: '방 상태 +45, 방 정리 1회', price: 40, icon: '🧼' },
-                    { id: 'p_medicine', name: '튼튼 치료약', desc: '아픔 회복, 친밀도 +20', price: 50, icon: '💊' },
-                    { id: 'p_bed', name: '포근한 낮잠 쿠션', desc: '휴식필요 -70, 컨디션 회복', price: 80, icon: '🛏️' },
-                    { id: 'p_hint', name: '진화 힌트 카드', desc: '쑥쑥이의 성장 성향을 알려줘요', price: 60, icon: '🔮' }
+                reward: [
+                    { id: 'daily_seed', name: '씨앗 한 줌', desc: '오늘의 보상으로 씨앗 40개를 바로 받습니다.', price: 0, icon: '🌱', rewardType: 'seed', amount: 40 },
+                    { id: 'daily_growth', name: '성장 물방울', desc: '쑥쑥이 성장 경험치를 25 얻습니다.', price: 0, icon: '💧', rewardType: 'exp', amount: 25 },
+                    { id: 'daily_coupon', name: '꾸미기 할인권', desc: '오늘의 기념 보상으로 씨앗 20개와 경험치 10을 받습니다.', price: 0, icon: '🎟️', rewardType: 'mixed', amount: 20 }
                 ],
-                gacha: [
-                    { id: 'g_joke', name: '아재개그 쿠키', desc: '랜덤하게 나오는 유머 한 조각!', price: 100, icon: '🥠' },
-                    { id: 'g_pet_supply', name: '쑥쑥이 랜덤 보급상자', desc: '쑥쑥이 용품 중 하나가 랜덤으로 나와요.', price: 120, icon: '🎁' },
-                    { id: 'g_profile_box', name: '프로필 랜덤 상자', desc: '미보유 이모지나 칭호를 하나 얻을 수 있어요.', price: 300, icon: '🎲' }
-                ]
-            };
+                // legacy keys kept so older saved data does not break
+                emoji: [{ id: 'e_basic', name: '병아리', desc: '기본 지급', price: 0, val: '🐣' }],
+                title: [{ id: 'tp_basic', type: 'title_p', name: '[접두어] 신입생', desc: '기본 지급', price: 0, val: '신입생' }, { id: 'tn_basic', type: 'title_n', name: '[명사] 게이머', desc: '기본 지급', price: 0, val: '게이머' }],
+                theme: [{ id: 'th_basic', name: '기본 테마', desc: '기본', price: 0, val: '' }],
+                pet: [],
+                gacha: []
+            }
 
             const jokes = [
                 "세상에서 가장 가난한 왕은? 최저임금", "신발이 화나면? 신발끈", "우유가 넘어지면? 아야", "소나무가 삐지면? 칫솔",
@@ -1575,7 +1751,7 @@ body.dark-mode .site-credits {
             ];
 
             function updateCoinUI() {
-                coinDisplay.innerText = `💰 ${coins.toLocaleString()} 코인`;
+                coinDisplay.innerText = `🌱 ${coins.toLocaleString()} 씨앗`;
                 localStorage.setItem('kidscade_coins', coins);
             }
 
@@ -1592,11 +1768,11 @@ body.dark-mode .site-credits {
             function addCoins(amount, reason) {
                 coins += amount;
                 updateCoinUI();
-                showToast(`${reason} (+${amount.toLocaleString()} 코인)`, true);
+                showToast(`${reason} (+${amount.toLocaleString()} 씨앗)`, true);
             }
 
             // =====================================
-            // 게임별 이용권 시스템: 게임마다 최대 5개, 5분마다 1개 회복
+            // 게임별 추천 에너지 시스템: 게임마다 최대 5개, 5분마다 1개 회복. 에너지가 있으면 보상 2배, 없어도 플레이 가능
             // =====================================
             function savePlayLimits() {
                 localStorage.setItem('kidscade_game_play_limits', JSON.stringify(gamePlayLimits));
@@ -1662,15 +1838,15 @@ body.dark-mode .site-credits {
                         card.appendChild(badge);
                     }
                     badge.classList.remove('low', 'empty');
-                    card.classList.toggle('out-of-plays', state.plays <= 0);
+                    card.classList.toggle('out-of-bonus', state.plays <= 0);
                     if (state.plays <= 0) {
                         badge.classList.add('empty');
-                        badge.innerHTML = `🎟️ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 +1</small>`;
+                        badge.innerHTML = `⚡ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 보너스 +1</small>`;
                     } else if (state.plays < PLAY_LIMIT_MAX) {
                         badge.classList.add('low');
-                        badge.innerHTML = `🎟️ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 +1</small>`;
+                        badge.innerHTML = `⚡ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 보너스 +1</small>`;
                     } else {
-                        badge.textContent = `🎟️ ${state.plays}/${PLAY_LIMIT_MAX}`;
+                        badge.textContent = `⚡ 보너스 ${state.plays}/${PLAY_LIMIT_MAX}`;
                     }
                 });
                 savePlayLimits();
@@ -1683,20 +1859,25 @@ body.dark-mode .site-credits {
             }
 
             function applyEquipped() {
-                const em = shopDB.emoji.find(e => e.id === equipped.emoji);
-                if(em) document.getElementById('profile-emoji').innerText = em.val;
-                
-                const tp = shopDB.title.find(t => t.id === equipped.title_p);
-                const tn = shopDB.title.find(t => t.id === equipped.title_n);
-                if(tp) document.getElementById('profile-prefix').innerText = tp.val;
-                if(tn) document.getElementById('profile-noun').innerText = tn.val;
+                const badge = shopDB.badge.find(item => item.id === equipped.badge) || shopDB.badge[0];
+                if (badge) {
+                    document.getElementById('profile-emoji').innerText = badge.icon || '🐣';
+                    document.getElementById('profile-prefix').innerText = badge.prefix || '신입생';
+                    document.getElementById('profile-noun').innerText = badge.noun || '게이머';
+                }
 
                 document.body.classList.remove('theme-hacker', 'theme-princess', 'theme-space');
-                const th = shopDB.theme.find(t => t.id === equipped.theme);
-                if(th && th.val) document.body.classList.add(th.val);
+                shopDB.card.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
+                shopDB.land.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
+
+                const cardSkin = shopDB.card.find(item => item.id === equipped.card);
+                if (cardSkin && cardSkin.className) document.body.classList.add(cardSkin.className);
+                const landSkin = shopDB.land.find(item => item.id === equipped.land);
+                if (landSkin && landSkin.className) document.body.classList.add(landSkin.className);
 
                 localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
                 renderShop();
+                updatePetUI();
             }
 
             // =====================================
@@ -1788,77 +1969,41 @@ body.dark-mode .site-credits {
                 const avatar = getPetAvatar();
                 const maxExp = getMaxExp();
                 const expPercent = pet.level < 4 ? Math.min(100, (pet.exp / maxExp) * 100) : 100;
-                
-                // 1. 위젯 업데이트
-                document.getElementById('pet-widget-avatar').innerText = avatar;
-                document.getElementById('pet-widget').style.background = `conic-gradient(var(--exp-color) ${expPercent}%, var(--card-bg) 0)`;
-                
-                const widgetBadge = document.getElementById('pet-widget-badge');
-                let bubbleText = "오늘도 열공하자! 🚀";
-                widgetBadge.style.display = 'none';
-
-                if (pet.isSick) { bubbleText = "너무 아파요... 🤒 치료해주세요!"; widgetBadge.style.display = 'flex'; widgetBadge.innerText = "!"; }
-                else if (pet.fatigue >= 100) { bubbleText = "Zzz... (너무 피곤해서 잠들었어요)"; widgetBadge.style.display = 'flex'; widgetBadge.innerText = "zZ"; }
-                else if (pet.poops > 0) { bubbleText = "방이 너무 더러워요! 💩 치워주세요!"; widgetBadge.style.display = 'flex'; widgetBadge.innerText = "!"; }
-                else if (pet.fullness < 30) { bubbleText = "배고파요... 🍎 줘요!"; }
-                else if (pet.level === 1) { bubbleText = "열심히 공부하면 알에서 부화해요! 🌱"; }
-                document.getElementById('pet-widget-bubble').innerText = bubbleText;
-
-                // 2. 모달 업데이트
-                document.getElementById('pet-room-avatar').innerText = avatar;
-                
                 const dominantInfo = getDominantPetCategory();
-                const animalInfo = pet.level > 1 ? `[${animalDB.find(a=>a.id===pet.animalId)?.type} - ${getLevelName()} · ${dominantInfo.label}]` : `[${getLevelName()} · ${dominantInfo.label}]`;
-                document.getElementById('pet-display-name').innerText = `이름: ${pet.name} ${animalInfo}`;
+
+                const widgetAvatar = document.getElementById('pet-widget-avatar');
+                const widget = document.getElementById('pet-widget');
+                const widgetBubble = document.getElementById('pet-widget-bubble');
+                const widgetBadge = document.getElementById('pet-widget-badge');
+                if (widgetAvatar) widgetAvatar.innerText = avatar;
+                if (widget) widget.style.background = `conic-gradient(var(--exp-color) ${expPercent}%, var(--card-bg) 0)`;
+                if (widgetBadge) widgetBadge.style.display = 'none';
+                if (widgetBubble) widgetBubble.innerText = '오늘 게임을 같이 골라줄게! 🌱';
+
+                const roomAvatar = document.getElementById('pet-room-avatar');
+                if (roomAvatar) roomAvatar.innerText = avatar;
+
+                const displayName = document.getElementById('pet-display-name');
+                const animal = pet.level > 1 ? animalDB.find(a => a.id === pet.animalId) : null;
+                const animalText = animal ? `${animal.type} · ${getLevelName()}` : getLevelName();
+                if (displayName) displayName.innerText = `이름: ${pet.name} [${animalText} · ${dominantInfo.label}]`;
+
+                const barExp = document.getElementById('bar-exp');
+                const txtExp = document.getElementById('txt-exp');
+                if (barExp) barExp.style.width = `${expPercent}%`;
+                if (txtExp) txtExp.innerText = pet.level < 4 ? `${Math.floor(pet.exp)} / ${maxExp}` : 'MAX';
+
+                const seedChip = document.getElementById('sook-seed-chip');
+                const trackChip = document.getElementById('sook-track-chip');
+                if (seedChip) seedChip.innerText = `🌱 씨앗 ${coins.toLocaleString()}개`;
+                if (trackChip) trackChip.innerText = `🧭 ${dominantInfo.label}`;
+
                 const smartNote = document.getElementById('pet-smart-note');
-                if (smartNote) smartNote.innerHTML = `🌱 ${getEvolutionHintText()}<br>💬 고민되면 쑥쑥이와 이야기해서 오늘의 게임을 추천받아 보세요.`;
+                if (smartNote) smartNote.innerHTML = `🌱 ${getEvolutionHintText()}<br>🎯 게임을 하면 씨앗을 얻고, 미션을 완료하면 쑥쑥랜드를 더 빨리 꾸밀 수 있어요.`;
                 const roomHint = document.getElementById('pet-room-hint');
-                if (roomHint) roomHint.innerHTML = `💡 게임을 할수록 쑥쑥이가 성장해요. 이제 관리는 가볍게, 핵심은 <strong>대화 추천</strong>과 <strong>플레이 성향 진화</strong>예요.`;
-                
-                document.getElementById('bar-exp').style.width = `${expPercent}%`;
-                document.getElementById('txt-exp').innerText = pet.level < 4 ? `${Math.floor(pet.exp)} / ${maxExp}` : "MAX";
-                document.getElementById('bar-full').style.width = `${pet.fullness}%`; document.getElementById('txt-full').innerText = `${Math.floor(pet.fullness)}%`;
-                document.getElementById('bar-love').style.width = `${pet.affection}%`; document.getElementById('txt-love').innerText = `${Math.floor(pet.affection)}%`;
-                document.getElementById('bar-clean').style.width = `${pet.cleanliness}%`; document.getElementById('txt-clean').innerText = `${Math.floor(pet.cleanliness)}%`;
-                document.getElementById('bar-energy').style.width = `${pet.fatigue}%`; document.getElementById('txt-energy').innerText = `${Math.floor(pet.fatigue)}%`;
+                if (roomHint) roomHint.innerHTML = `💡 쑥쑥이는 이제 <strong>오늘의 추천</strong>과 <strong>미션 보상</strong>을 도와주는 오락실 친구예요.`;
 
-                const overlay = document.getElementById('pet-room-overlay');
-                overlay.className = '';
-                if (pet.isSick) { overlay.classList.add('sick-overlay'); overlay.innerText = "🤒 아파요..."; }
-                else if (pet.fatigue >= 100) { overlay.classList.add('sleep-overlay'); overlay.innerText = "💤 Zzz..."; }
-
-                const poopContainer = document.getElementById('pet-room-poops');
-                poopContainer.innerHTML = '';
-                for(let i=0; i<pet.poops; i++) {
-                    const poop = document.createElement('div'); poop.className = 'poop-emoji'; poop.innerText = '💩';
-                    poop.style.left = `${10 + Math.random() * 70}%`; poop.style.top = `${30 + Math.random() * 50}%`;
-                    poop.onclick = () => {
-                        if(pet.poops > 0) {
-                            pet.poops--; pet.cleanliness = Math.min(100, pet.cleanliness + 20);
-                            addCoins(5, "똥 청소 보상"); playUISound('open');
-                            savePet(); updatePetUI();
-                        }
-                    };
-                    poopContainer.appendChild(poop);
-                }
-
-                const btnFeed = document.getElementById('btn-pet-feed');
-                const btnClean = document.getElementById('btn-pet-clean');
-                const btnHeal = document.getElementById('btn-pet-heal');
-                const btnSleep = document.getElementById('btn-pet-sleep');
-                btnFeed.innerText = `🍎 간식 주기 (보유 ${getPetItemCount('p_apple')} / 30💰)`;
-                btnClean.innerText = `🧼 방 정리 (보유 ${getPetItemCount('p_soap')} / 40💰)`;
-                btnHeal.innerText = `💊 치료하기 (보유 ${getPetItemCount('p_medicine')} / 50💰)`;
-                btnSleep.innerText = `💤 휴식하기 (보유 ${getPetItemCount('p_bed')} / 80💰)`;
-                if (pet.isSick) { btnHeal.classList.remove('hidden'); } else { btnHeal.classList.add('hidden'); }
-                if (pet.fatigue > 50 || pet.fatigue >= 100) { btnSleep.classList.remove('hidden'); } else { btnSleep.classList.add('hidden'); }
-
-                const buffUi = document.getElementById('pet-condition-buff');
-                if (pet.fullness > 90 && pet.affection > 90 && pet.cleanliness > 90 && !pet.isSick && pet.fatigue < 50) {
-                    buffUi.style.display = 'inline-block';
-                } else {
-                    buffUi.style.display = 'none';
-                }
+                renderDailyMissions();
             }
 
 
@@ -1962,12 +2107,12 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 const directPrice = options.directPrice ?? item.price;
                 if (!hasStock) {
                     if (!options.allowDirectPurchase) { showToast("상점에서 쑥쑥이 용품을 먼저 구매해 주세요!"); return false; }
-                    if (coins < directPrice) { showToast(`코인이 부족해요! (${directPrice}코인 필요)`); return false; }
+                    if (coins < directPrice) { showToast(`씨앗이 부족해요! (${directPrice}씨앗 필요)`); return false; }
                     coins -= directPrice; updateCoinUI();
                 } else {
                     changePetItemCount(itemId, -1);
                 }
-                const sourceText = hasStock ? "보유 아이템 사용" : `${directPrice}코인 사용`;
+                const sourceText = hasStock ? "보유 아이템 사용" : `${directPrice}씨앗 사용`;
 
                 if (itemId === 'p_apple') {
                     pet.fullness = Math.min(100, pet.fullness + 40);
@@ -2025,7 +2170,9 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
             }
 
             document.getElementById('pet-widget').addEventListener('click', () => {
-                playUISound('open'); document.getElementById('pet-modal').classList.remove('hidden'); updatePetUI();
+                playUISound('open');
+                document.getElementById('pet-modal').classList.remove('hidden');
+                updatePetUI();
             });
 
             document.getElementById('btn-pet-talk').addEventListener('click', () => {
@@ -2034,34 +2181,31 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
             });
 
             document.getElementById('btn-pet-feed').addEventListener('click', () => {
-                usePetCareItem('p_apple', { allowDirectPurchase: true, directPrice: 30 });
-            });
-
-            document.getElementById('btn-pet-clean').addEventListener('click', () => {
-                usePetCareItem('p_soap', { allowDirectPurchase: true, directPrice: 40 });
+                playUISound('click');
+                renderDailyMissions();
+                document.getElementById('sook-mission-list')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
 
             document.getElementById('btn-pet-stroke').addEventListener('click', () => {
-                if (pet.fatigue >= 100) { showToast("쑥쑥이가 자고 있어요."); return; }
-                if (pet.affection >= 100) { showToast("최고의 행복 수치에 도달해 있습니다! 🥰"); return; }
-                pet.affection = Math.min(100, pet.affection + 15);
-                playUISound('open'); showToast("쑥쑥이를 부드럽게 쓰다듬어 주었습니다! ❤️");
-                animatePetRoomAvatar("rotate(15deg) scale(1.15)");
-                savePet(); updatePetUI(); renderShop();
+                playUISound('open');
+                currentShopTab = 'land';
+                document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'land'));
+                document.getElementById('shop-modal').classList.remove('hidden');
+                renderShop();
             });
 
-            document.getElementById('btn-pet-heal').addEventListener('click', () => {
-                usePetCareItem('p_medicine', { allowDirectPurchase: true, directPrice: 50 });
-            });
-
-            document.getElementById('btn-pet-sleep').addEventListener('click', () => {
-                usePetCareItem('p_bed', { allowDirectPurchase: true, directPrice: 80 });
+            document.getElementById('btn-pet-clean').addEventListener('click', () => {
+                playUISound('open');
+                currentShopTab = 'reward';
+                document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'reward'));
+                document.getElementById('shop-modal').classList.remove('hidden');
+                renderShop();
             });
 
             // =====================================
             // 상점 로직
             // =====================================
-            let currentShopTab = 'emoji';
+            let currentShopTab = 'land';
             document.querySelectorAll('.shop-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     playUISound('click');
@@ -2076,97 +2220,103 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 playUISound('open'); document.getElementById('shop-modal').classList.remove('hidden'); renderShop();
             });
 
+            function isOwnedShopItem(category, item) {
+                return (inventory[category] || []).includes(item.id);
+            }
+
+            function getEquippedShopId(category) {
+                return equipped[category];
+            }
+
             function buyItem(category, item) {
-                if(coins < item.price) { showToast("코인이 부족합니다! 게임을 더 플레이하세요."); playUISound('click'); return; }
-                if(category === 'gacha') {
-                    coins -= item.price; updateCoinUI();
-                    if (item.id === 'g_pet_supply') {
-                        const pool = ['p_apple', 'p_cookie', 'p_sticker', 'p_soap', 'p_medicine', 'p_bed', 'p_hint'];
-                        const pickedId = pool[Math.floor(Math.random() * pool.length)];
-                        const picked = getPetShopItem(pickedId);
-                        changePetItemCount(pickedId, 1);
-                        showToast(`랜덤 보급상자에서 ${picked?.name || '쑥쑥이 용품'} 1개를 얻었습니다!`);
-                        playUISound('print'); renderShop(); updatePetUI(); return;
-                    }
-                    if (item.id === 'g_profile_box') {
-                        const profilePool = [
-                            ...shopDB.emoji.map(i => ({ category: 'emoji', invType: 'emoji', item: i })),
-                            ...shopDB.title.map(i => ({ category: 'title', invType: i.type, item: i }))
-                        ].filter(entry => entry.item.price > 0 && !(inventory[entry.invType] || []).includes(entry.item.id));
-                        if (profilePool.length === 0) { showToast('이미 모든 프로필 아이템을 가지고 있어요!'); playUISound('click'); return; }
-                        const picked = profilePool[Math.floor(Math.random() * profilePool.length)];
-                        if(!inventory[picked.invType]) inventory[picked.invType] = [];
-                        inventory[picked.invType].push(picked.item.id);
-                        localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
-                        showToast(`프로필 상자에서 ${picked.item.name}을 얻었습니다!`);
-                        playUISound('print'); renderShop(); return;
-                    }
-                    const joke = jokes[Math.floor(Math.random() * jokes.length)];
-                    alert(`🥠 포춘 쿠키를 열었습니다!\n\n"${joke}"`); playUISound('print'); return;
-                }
-                if(category === 'pet') {
-                    coins -= item.price; updateCoinUI();
-                    changePetItemCount(item.id, 1);
-                    showToast(`${item.name} 1개를 구매했습니다!`);
-                    renderShop(); updatePetUI();
-                    return;
-                }
-                let targetInvType = category; if(item.type) targetInvType = item.type;
-                if(!inventory[targetInvType]) inventory[targetInvType] = [];
-                if(inventory[targetInvType].includes(item.id)) { showToast("이미 보유한 아이템입니다."); return; }
-                coins -= item.price; updateCoinUI();
-                inventory[targetInvType].push(item.id);
+                if (category === 'reward') { claimDailyReward(item); return; }
+                if (!inventory[category]) inventory[category] = [];
+                if (isOwnedShopItem(category, item)) { showToast('이미 가지고 있는 꾸미기예요.'); return; }
+                if (coins < item.price) { showToast(`씨앗이 부족해요! (${item.price}개 필요)`); playUISound('click'); return; }
+                coins -= item.price;
+                inventory[category].push(item.id);
+                equipped[category] = item.id;
+                updateCoinUI();
                 localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
-                showToast(`${item.name} 구매 완료!`); renderShop();
+                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+                showToast(`${item.name}을(를) 얻고 바로 적용했어요!`);
+                playUISound('print');
+                applyEquipped();
             }
 
             function equipItem(category, item) {
                 playUISound('click');
-                let targetType = category; if(item.type) targetType = item.type;
-                equipped[targetType] = item.id;
+                equipped[category] = item.id;
+                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+                showToast(`${item.name} 적용 완료!`);
                 applyEquipped();
+            }
+
+            function getDailyRewardKey() {
+                return new Date().toLocaleDateString('ko-KR');
+            }
+
+            function claimDailyReward(item) {
+                const today = getDailyRewardKey();
+                const claimed = localStorage.getItem('kidscade_daily_reward_claimed');
+                if (claimed === today) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
+                localStorage.setItem('kidscade_daily_reward_claimed', today);
+                if (item.rewardType === 'seed') {
+                    coins += item.amount;
+                    updateCoinUI();
+                    showToast(`${item.name} 선택! 씨앗 ${item.amount}개를 받았어요.`, true);
+                } else if (item.rewardType === 'exp') {
+                    pet.exp += item.amount;
+                    savePet();
+                    showToast(`${item.name} 선택! 쑥쑥이 경험치 +${item.amount}`);
+                    checkPetEvolution();
+                } else {
+                    coins += item.amount;
+                    pet.exp += 10;
+                    updateCoinUI();
+                    savePet();
+                    showToast(`${item.name} 선택! 씨앗 ${item.amount}개와 성장 경험치를 받았어요.`, true);
+                    checkPetEvolution();
+                }
+                renderShop();
+                updatePetUI();
             }
 
             function renderShop() {
                 const container = document.getElementById('shop-items-container');
                 container.innerHTML = '';
-                const items = shopDB[currentShopTab];
+                const items = shopDB[currentShopTab] || [];
+                const todayClaimed = localStorage.getItem('kidscade_daily_reward_claimed') === getDailyRewardKey();
 
                 items.forEach(item => {
-                    let targetInvType = currentShopTab; if(item.type) targetInvType = item.type;
-                    const isConsumable = currentShopTab === 'pet';
-                    const isOwned = (currentShopTab === 'gacha' || isConsumable) ? false : (inventory[targetInvType] && inventory[targetInvType].includes(item.id));
-                    const isEquipped = (currentShopTab === 'gacha' || isConsumable) ? false : (equipped[targetInvType] === item.id);
-
                     const el = document.createElement('div');
-                    el.className = `shop-item ${isOwned ? 'owned' : ''}`;
-                    let iconHtml = currentShopTab === 'gacha' ? (item.icon || '🎁') : (item.val || item.icon || '✨');
-                    if(currentShopTab === 'title') iconHtml = '🏷️';
-                    if(currentShopTab === 'theme') iconHtml = '🎨';
-
-                    const stockHtml = isConsumable ? `<div class="item-stock">보유 ${getPetItemCount(item.id)}개</div>` : '';
-                    el.innerHTML = `<div class="item-icon">${iconHtml}</div><div class="item-name">${item.name}</div><div class="item-desc">${item.desc}</div>${stockHtml}`;
+                    const owned = currentShopTab !== 'reward' && isOwnedShopItem(currentShopTab, item);
+                    const equippedNow = currentShopTab !== 'reward' && getEquippedShopId(currentShopTab) === item.id;
+                    el.className = `shop-item ${owned ? 'owned' : ''}`;
+                    const priceText = currentShopTab === 'reward' ? '하루 1개 선택' : `${item.price.toLocaleString()} 씨앗`;
+                    el.innerHTML = `<div class="item-icon">${item.icon || '✨'}</div><div class="item-name">${item.name}</div><div class="item-desc">${item.desc}</div><div class="item-stock">${priceText}</div>`;
 
                     const btn = document.createElement('button');
-                    if(currentShopTab === 'gacha') {
-                        btn.className = 'item-btn btn-buy'; btn.innerText = `💎 ${item.price.toLocaleString()} 코인`; btn.onclick = () => buyItem(currentShopTab, item);
-                    } else if (isConsumable) {
-                        btn.className = 'item-btn btn-buy'; btn.innerText = `구매 (${item.price.toLocaleString()} 코인)`; btn.onclick = () => buyItem(currentShopTab, item);
-                        if (getPetItemCount(item.id) > 0) {
-                            const useBtn = document.createElement('button');
-                            useBtn.className = 'item-btn btn-equip'; useBtn.innerText = '바로 사용';
-                            useBtn.onclick = () => usePetCareItem(item.id);
-                            el.appendChild(btn); el.appendChild(useBtn); container.appendChild(el);
-                            return;
-                        }
-                    } else if (!isOwned) {
-                        btn.className = 'item-btn btn-buy'; btn.innerText = `구매 (${item.price.toLocaleString()} 코인)`; btn.onclick = () => buyItem(currentShopTab, item);
-                    } else if (isEquipped) {
-                        btn.className = 'item-btn btn-equipped'; btn.innerText = '장착 중'; btn.disabled = true;
+                    if (currentShopTab === 'reward') {
+                        btn.className = todayClaimed ? 'item-btn btn-equipped' : 'item-btn btn-buy';
+                        btn.innerText = todayClaimed ? '오늘 선택 완료' : '오늘 보상 받기';
+                        btn.disabled = todayClaimed;
+                        btn.onclick = () => claimDailyReward(item);
+                    } else if (!owned) {
+                        btn.className = 'item-btn btn-buy';
+                        btn.innerText = item.price === 0 ? '받기' : `구매 (${item.price.toLocaleString()} 씨앗)`;
+                        btn.onclick = () => buyItem(currentShopTab, item);
+                    } else if (equippedNow) {
+                        btn.className = 'item-btn btn-equipped';
+                        btn.innerText = '적용 중';
+                        btn.disabled = true;
                     } else {
-                        btn.className = 'item-btn btn-equip'; btn.innerText = '장착하기'; btn.onclick = () => equipItem(currentShopTab, item);
+                        btn.className = 'item-btn btn-equip';
+                        btn.innerText = '적용하기';
+                        btn.onclick = () => equipItem(currentShopTab, item);
                     }
-                    el.appendChild(btn); container.appendChild(el);
+                    el.appendChild(btn);
+                    container.appendChild(el);
                 });
             }
 
@@ -2181,6 +2331,79 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
             // ★ 직업체험이 추가된 ageNames
             const ageNames = { 'toddler': '🐥 유아', 'low': '🎒 초등 저학년', 'high': '🚀 초등 고학년', 'job': '🧑‍🔬 직업체험' };
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술' };
+
+            function getTodayKey() {
+                return new Date().toLocaleDateString('ko-KR');
+            }
+
+            function buildTodayMissionState() {
+                const categories = ['math', 'korean', 'lang', 'trivia', 'music'];
+                const today = new Date();
+                const category = categories[today.getDate() % categories.length];
+                return {
+                    date: getTodayKey(),
+                    missions: [
+                        { id: 'play_any', icon: '🎮', title: '첫 게임 도전', desc: '아무 게임이나 1번 플레이하기', goal: 1, progress: 0, reward: 20, type: 'any', claimed: false },
+                        { id: 'play_category', icon: '🧭', title: `${categoryNames[category]} 탐험`, desc: `${categoryNames[category]} 게임 1번 플레이하기`, goal: 1, progress: 0, reward: 35, type: 'category', category, claimed: false },
+                        { id: 'play_two', icon: '🔥', title: '두 번의 도전', desc: '오늘 게임을 총 2번 플레이하기', goal: 2, progress: 0, reward: 45, type: 'count', claimed: false }
+                    ]
+                };
+            }
+
+            function getTodayMissionState() {
+                let state;
+                try { state = JSON.parse(localStorage.getItem('kidscade_daily_missions') || 'null'); } catch(e) { state = null; }
+                if (!state || state.date !== getTodayKey() || !Array.isArray(state.missions)) {
+                    state = buildTodayMissionState();
+                    localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
+                }
+                return state;
+            }
+
+            function saveTodayMissionState(state) {
+                localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
+            }
+
+            function renderDailyMissions() {
+                const box = document.getElementById('sook-mission-list');
+                if (!box) return;
+                const state = getTodayMissionState();
+                box.innerHTML = '';
+                state.missions.forEach(mission => {
+                    const done = mission.claimed || mission.progress >= mission.goal;
+                    const card = document.createElement('div');
+                    card.className = `sook-mission-card ${done ? 'done' : ''}`;
+                    card.innerHTML = `<div class="mission-title">${mission.icon} ${mission.title}</div><div class="mission-desc">${mission.desc}<br>완료 보상: 🌱 ${mission.reward}개</div><div class="mission-progress">${mission.claimed ? '완료!' : `${Math.min(mission.progress, mission.goal)} / ${mission.goal}`}</div>`;
+                    box.appendChild(card);
+                });
+            }
+
+            function updateMissionProgress(category, gameId) {
+                const state = getTodayMissionState();
+                let completedCount = 0;
+                state.missions.forEach(mission => {
+                    if (mission.claimed) return;
+                    if (mission.type === 'any') mission.progress += 1;
+                    if (mission.type === 'count') mission.progress += 1;
+                    if (mission.type === 'category' && mission.category === category) mission.progress += 1;
+                    if (mission.progress >= mission.goal) {
+                        mission.progress = mission.goal;
+                        mission.claimed = true;
+                        completedCount++;
+                        coins += mission.reward;
+                        showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개를 받았어요.`, true);
+                    }
+                });
+                if (completedCount > 0) {
+                    pet.exp += completedCount * 10;
+                    savePet();
+                    updateCoinUI();
+                    checkPetEvolution();
+                }
+                saveTodayMissionState(state);
+                renderDailyMissions();
+            }
+
             const visibleGameCount = document.getElementById('visible-game-count');
             let petTalkState = { answers: {} };
 
@@ -2222,12 +2445,12 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 recBox.innerHTML = '';
                 recBox.classList.add('hidden');
                 petTalkState = { answers: {} };
-                appendPetTalkMessage('sook', `안녕! 나는 ${pet.name}야. 아키네이터처럼 몇 가지 물어보고 오늘 하기 좋은 게임을 골라줄게.`);
+                appendPetTalkMessage('sook', `안녕! 나는 ${pet.name}야. 몇 가지 물어보고 오늘 하기 좋은 게임을 골라줄게.`);
                 askPetTalkCategory();
             }
 
             function askPetTalkCategory() {
-                appendPetTalkMessage('sook', '오늘은 어떤 느낌의 게임이 끌려?');
+                appendPetTalkMessage('sook', '오늘은 어떤 느낌의 게임으로 시작해볼까?');
                 setPetTalkChoices([
                     { label: '🧠 머리 쓰는 수학·퍼즐', action: () => { petTalkState.answers.category = 'math'; askPetTalkMood(); } },
                     { label: '📖 말과 글, 국어', action: () => { petTalkState.answers.category = 'korean'; askPetTalkMood(); } },
@@ -2239,7 +2462,7 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
             }
 
             function askPetTalkMood() {
-                appendPetTalkMessage('sook', '좋아! 이번에는 플레이 스타일을 골라줘.');
+                appendPetTalkMessage('sook', '좋아! 오늘의 플레이 스타일도 골라줘.');
                 setPetTalkChoices([
                     { label: '⚡ 짧고 가볍게', action: () => { petTalkState.answers.style = 'short'; showPetRecommendations(); } },
                     { label: '🏆 최고기록 도전', action: () => { petTalkState.answers.style = 'challenge'; showPetRecommendations(); } },
@@ -2298,7 +2521,7 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 recBox.innerHTML = '';
                 if (candidates.length === 0) {
                     recBox.classList.remove('hidden');
-                    recBox.innerHTML = '<div class="pet-rec-card"><div><div class="pet-rec-title">추천할 게임을 찾지 못했어요</div><div class="pet-rec-desc">현재 연령 모드의 게임이 없거나 이용권이 부족할 수 있어요.</div></div></div>';
+                    recBox.innerHTML = '<div class="pet-rec-card"><div><div class="pet-rec-title">추천할 게임을 찾지 못했어요</div><div class="pet-rec-desc">현재 연령 모드에서 추천할 게임을 찾지 못했어요.</div></div></div>';
                     return;
                 }
                 candidates.forEach(card => {
@@ -2319,7 +2542,7 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                     recBox.appendChild(row);
                 });
                 recBox.classList.remove('hidden');
-                pet.affection = Math.min(100, pet.affection + 3);
+                pet.exp += 1;
                 savePet(); updatePetUI();
             }
 
@@ -2369,7 +2592,7 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                     document.getElementById('main-app').style.display = 'block';
                 }, 500);
                 document.getElementById('current-age-label').innerText = ageNames[ageKey];
-                applyFilters();
+                applyFilters(); applyEquipped(); updateCoinUI(); updatePetUI();
                 return true;
             }
 
@@ -2448,16 +2671,17 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 const originCard = document.querySelector(`#game-list .game-card[data-id="${gameId}"]`) || cardElement;
                 if (originCard.classList.contains('disabled')) { playUISound('click'); alert("열심히 준비 중인 게임입니다! 조금만 기다려주세요 😊"); return; }
 
-                if (!consumePlayTicket(gameId)) {
-                    playUISound('click');
-                    showToast(`이 게임의 이용권을 모두 사용했어요. ${formatRechargeTime(getNextRechargeMs(gameId))} 뒤에 1개가 회복됩니다!`);
-                    return;
+                activeGameHadBonus = consumePlayTicket(gameId);
+                if (!activeGameHadBonus) {
+                    showToast(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${formatRechargeTime(getNextRechargeMs(gameId))} 뒤 보너스 +1`);
                 }
 
                 playUISound('open'); playStartTime = Date.now(); activeGameId = gameId;
                 activeGameCategory = originCard.getAttribute('data-category') || "all";
                 trackRecent(gameId);
-                document.getElementById('modal-title-text').innerText = `진행 중: ${originCard.querySelector('.game-title').innerText} · 이용권 ${getPlayState(gameId).plays}/${PLAY_LIMIT_MAX}`;
+                const energyState = getPlayState(gameId);
+                const bonusText = activeGameHadBonus ? `추천 에너지 보너스 적용 · 남은 보너스 ${energyState.plays}/${PLAY_LIMIT_MAX}` : '기본 보상 진행';
+                document.getElementById('modal-title-text').innerText = `진행 중: ${originCard.querySelector('.game-title').innerText} · ${bonusText}`;
                 gameIframe.src = originCard.getAttribute('href');
                 gameModal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
             }
@@ -2466,40 +2690,28 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 playUISound('close'); gameModal.classList.add('hidden'); gameIframe.src = ""; document.body.style.overflow = 'auto'; 
                 
                 if (playStartTime > 0) {
-                    let sessionMin = Math.floor((Date.now() - playStartTime) / 60000);
-                    
-                    if (sessionMin > 0) {
-                        totalPlayTimeMin += sessionMin; localStorage.setItem('kidscade_playtime', totalPlayTimeMin);
-                        updatePlayTimeDisplay(); addCoins(sessionMin, `게임 학습 (${sessionMin}분) 보상`);
-                        pet.fatigue += sessionMin * 3; pet.cleanliness -= sessionMin * 1; pet.fullness -= sessionMin * 2;
-                    } else {
-                        pet.fatigue += 1; pet.cleanliness -= 0.5; pet.fullness -= 1;
-                    }
+                    const sessionMin = Math.floor((Date.now() - playStartTime) / 60000);
+                    const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
+                    const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
+                    const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
+                    const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
 
-                    normalizePet();
-                    if (Math.random() < 0.2 && pet.cleanliness < 50) pet.poops++;
-                    if (pet.fullness <= 0 || pet.cleanliness <= 0) pet.isSick = true;
-                    normalizePet();
-                    
-                    let gainedExp = sessionMin > 0 ? sessionMin * 10 : 3;
-                    let isBuffed = (pet.fullness > 90 && pet.affection > 90 && pet.cleanliness > 90 && !pet.isSick && pet.fatigue < 50);
-                    if (isBuffed) gainedExp = Math.floor(gainedExp * 1.5); 
+                    totalPlayTimeMin += sessionMin;
+                    localStorage.setItem('kidscade_playtime', totalPlayTimeMin);
+                    updatePlayTimeDisplay();
 
-                    if (pet.fatigue >= 100) {
-                        gainedExp = 0; showToast("쑥쑥이가 휴식이 필요해요. 쉬게 해주면 다시 함께 성장할 수 있어요. 💤");
-                    } else if (pet.isSick) {
-                        gainedExp = Math.floor(gainedExp / 2); showToast("쑥쑥이 컨디션이 낮아 경험치가 조금 줄었어요. 마이룸에서 돌봐주세요. 🤒");
-                    } else {
-                        if(isBuffed) showToast("✨ 컨디션 최상 버프! 경험치를 1.5배 획득했습니다!");
-                    }
+                    addCoins(rewardSeeds, activeGameHadBonus ? '추천 에너지 보너스' : (sessionMin > 0 ? `게임 도전 (${sessionMin}분)` : '짧은 도전'));
 
                     if (pet.level < 4 && gainedExp > 0) {
                         pet.exp += gainedExp;
-                        if (activeGameCategory !== "all") pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
+                        if (activeGameCategory !== 'all') pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
                     }
-                    
-                    normalizePet();
-                    checkPetEvolution(); playStartTime = 0; activeGameId = null;
+                    savePet();
+                    updateMissionProgress(activeGameCategory, activeGameId);
+                    checkPetEvolution();
+                    playStartTime = 0;
+                    activeGameId = null;
+                    activeGameHadBonus = false;
                 }
                 syncBadgesAndProfile();
             });
@@ -2671,8 +2883,8 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                     const stamp = document.getElementById('attendance-stamp'); stamp.classList.add('animate-stamp');
                     localStorage.setItem('kidscade_attendance', todayStr); playUISound('open'); 
                     setTimeout(() => {
-                        addCoins(30, "오늘의 출석 보상"); pet.affection = Math.min(100, pet.affection + 20);
-                        showToast("쑥쑥이가 주인을 만나 아주 기뻐합니다! 애정도 +20 ❤️"); savePet(); updatePetUI();
+                        addCoins(30, "오늘의 출석 씨앗"); pet.affection = Math.min(100, pet.affection + 20);
+                        showToast("쑥쑥이가 오늘의 도전을 기대하고 있어요! 🌱"); savePet(); updatePetUI();
                     }, 1500);
                 }
             }
