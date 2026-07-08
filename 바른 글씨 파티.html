@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>바른 글씨 파티</title>
+  <style>
+    :root {
+      --ink: #26213b;
+      --muted: #6f668a;
+      --paper: #fffdfa;
+      --line: rgba(38, 33, 59, 0.13);
+      --pink: #ff4fb8;
+      --pink-dark: #d92d93;
+      --blue: #5577ff;
+      --blue-dark: #3754d7;
+      --cyan: #2dd5f0;
+      --mint: #41e59a;
+      --yellow: #ffd84f;
+      --orange: #ff9f3f;
+      --purple: #a86cff;
+      --red: #ff5b6b;
+      --green: #12c478;
+      --shadow: 0 18px 0 rgba(38, 33, 59, 0.12), 0 22px 35px rgba(38, 33, 59, 0.12);
+      --soft-shadow: 0 9px 0 rgba(38, 33, 59, 0.10), 0 14px 24px rgba(38, 33, 59, 0.10);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 9%, rgba(255, 216, 79, 0.88) 0 4.5rem, transparent 4.6rem),
+        radial-gradient(circle at 92% 18%, rgba(255, 79, 184, 0.60) 0 5.3rem, transparent 5.4rem),
+        radial-gradient(circle at 78% 92%, rgba(65, 229, 154, 0.62) 0 6.6rem, transparent 6.7rem),
+        linear-gradient(135deg, #ffe9f7 0%, #e9ecff 38%, #dffcff 70%, #fff4ca 100%);
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 18rem;
+      height: 18rem;
+      border-radius: 43% 57% 54% 46%;
+      opacity: 0.32;
+      z-index: -1;
+      filter: blur(1px);
+      animation: floatBlob 8s ease-in-out infinite alternate;
+    }
+
+    body::before {
+      left: -5rem;
+      bottom: 8rem;
+      background: var(--cyan);
+      transform: rotate(-12deg);
+    }
+
+    body::after {
+      right: -6rem;
+      top: 35rem;
+      background: var(--purple);
+      animation-delay: -3s;
+    }
+
+    @keyframes floatBlob {
+      from { transform: translateY(0) rotate(-8deg) scale(1); }
+      to { transform: translateY(-22px) rotate(9deg) scale(1.05); }
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    button:disabled { opacity: 0.52; cursor: not-allowed; transform: none !important; }
+
+    .app {
+      width: min(1180px, 100%);
+      display: grid;
+      gap: 16px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: grid; gap: 16px; }
+
+    .top-card,
+    .panel,
+    .paper-card,
+    .canvas-card,
+    .result-pop {
+      background: rgba(255, 253, 250, 0.94);
+      border: 4px solid rgba(38, 33, 59, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .top-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .top-card::before {
+      content: "";
+      position: absolute;
+      inset: auto -20px -54px auto;
+      width: 190px;
+      height: 125px;
+      background: var(--yellow);
+      border: 4px solid rgba(38, 33, 59, 0.92);
+      border-radius: 70% 30% 64% 36%;
+      transform: rotate(-12deg);
+      opacity: 0.65;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--yellow);
+      border: 3px solid var(--ink);
+      font-size: 0.86rem;
+      font-weight: 1000;
+      box-shadow: 0 5px 0 rgba(38, 33, 59, 0.14);
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    .top-card h1 {
+      margin: 12px 0 8px;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      line-height: 0.94;
+      letter-spacing: -0.075em;
+      font-weight: 1000;
+      text-shadow: 0 5px 0 rgba(255, 216, 79, 0.75);
+    }
+
+    .top-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      line-height: 1.45;
+      font-weight: 850;
+    }
+
+    .today-badge {
+      position: relative;
+      z-index: 1;
+      width: min(245px, 100%);
+      border-radius: 28px;
+      padding: 14px;
+      background: linear-gradient(160deg, #fff1a8, #ffd84f);
+      border: 4px solid var(--ink);
+      box-shadow: var(--soft-shadow);
+      text-align: center;
+      transform: rotate(2deg);
+    }
+
+    .today-badge .label {
+      font-size: 0.85rem;
+      font-weight: 1000;
+      color: #755a00;
+    }
+
+    .today-badge .big {
+      margin-top: 4px;
+      font-size: 2rem;
+      font-weight: 1000;
+      letter-spacing: -0.04em;
+    }
+
+    .star-strip {
+      min-height: 26px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+      margin-top: 7px;
+      line-height: 1;
+      font-size: 1.2rem;
+    }
+
+    .panel {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .section-pad { padding: 18px; }
+
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .big-mode {
+      min-height: 128px;
+      border-radius: 30px;
+      border: 4px solid var(--ink);
+      color: var(--ink);
+      padding: 18px;
+      display: grid;
+      align-content: center;
+      text-align: left;
+      box-shadow: var(--soft-shadow);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .big-mode::after {
+      content: "";
+      position: absolute;
+      width: 92px;
+      height: 92px;
+      border-radius: 28px;
+      border: 4px solid rgba(38, 33, 59, 0.9);
+      right: -22px;
+      bottom: -22px;
+      transform: rotate(14deg);
+      background: rgba(255,255,255,0.45);
+    }
+
+    .big-mode.practice { background: linear-gradient(145deg, #8df7ff, #54d6ff); }
+    .big-mode.challenge { background: linear-gradient(145deg, #ff92d4, #ff4fb8); }
+
+    .big-mode:active,
+    .pop-btn:active,
+    .chip:active,
+    .small-action:active { transform: translateY(5px); box-shadow: 0 4px 0 rgba(38, 33, 59, 0.15); }
+
+    .big-mode strong {
+      font-size: 1.8rem;
+      font-weight: 1000;
+      letter-spacing: -0.06em;
+      margin-bottom: 7px;
+    }
+
+    .big-mode span {
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 16px;
+    }
+
+    .setting-card {
+      border-radius: 26px;
+      padding: 14px;
+      border: 3px solid var(--ink);
+      background: #fff8e8;
+      box-shadow: 0 8px 0 rgba(38, 33, 59, 0.10);
+      display: grid;
+      gap: 9px;
+    }
+
+    .setting-card:nth-child(2n) { background: #efffff; }
+    .setting-card:nth-child(3n) { background: #fff0fa; }
+    .setting-card.wide { grid-column: 1 / -1; }
+
+    .setting-title {
+      font-size: 1rem;
+      font-weight: 1000;
+      letter-spacing: -0.04em;
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: white;
+      color: var(--ink);
+      border: 3px solid var(--ink);
+      font-weight: 1000;
+      box-shadow: 0 5px 0 rgba(38, 33, 59, 0.12);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .chip.active {
+      color: white;
+      background: var(--blue);
+    }
+
+    .color-chip {
+      width: 48px;
+      min-width: 48px;
+      padding: 0;
+      color: transparent;
+      border-color: var(--ink);
+    }
+
+    .color-chip.active {
+      outline: 4px solid rgba(255, 216, 79, 0.85);
+      outline-offset: 2px;
+      transform: rotate(-4deg);
+    }
+
+    .custom-area {
+      display: grid;
+      gap: 8px;
+    }
+
+    .custom-area textarea {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      border-radius: 20px;
+      border: 3px solid var(--ink);
+      background: white;
+      color: var(--ink);
+      padding: 12px;
+      font-weight: 850;
+      line-height: 1.5;
+      outline: none;
+      box-shadow: inset 0 3px 0 rgba(38, 33, 59, 0.08);
+    }
+
+    .custom-area textarea:focus { outline: 4px solid rgba(85, 119, 255, 0.18); }
+
+    .custom-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .paper-card {
+      border-radius: 28px;
+      padding: 16px;
+    }
+
+    .paper-card h2,
+    .paper-card h3 {
+      margin-bottom: 8px;
+      font-size: 1.22rem;
+      font-weight: 1000;
+      letter-spacing: -0.04em;
+    }
+
+    .paper-card p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .pop-btn,
+    .small-action,
+    .danger-action {
+      border: 4px solid var(--ink);
+      color: var(--ink);
+      border-radius: 22px;
+      font-weight: 1000;
+      box-shadow: var(--soft-shadow);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+
+    .pop-btn {
+      min-height: 58px;
+      padding: 0 18px;
+      font-size: 1.08rem;
+    }
+
+    .small-action,
+    .danger-action {
+      min-height: 45px;
+      padding: 0 13px;
+      background: white;
+    }
+
+    .pop-btn.blue { background: linear-gradient(180deg, #7a93ff, var(--blue)); color: white; }
+    .pop-btn.yellow { background: linear-gradient(180deg, #ffe87d, var(--yellow)); }
+    .pop-btn.pink { background: linear-gradient(180deg, #ff8ed2, var(--pink)); color: white; }
+    .pop-btn.mint { background: linear-gradient(180deg, #8effc5, var(--mint)); }
+    .pop-btn.orange { background: linear-gradient(180deg, #ffc17a, var(--orange)); }
+    .pop-btn.white { background: white; }
+    .danger-action { background: #ffe4e8; color: #b51935; }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      background: rgba(255, 253, 250, 0.92);
+      border: 4px solid var(--ink);
+      border-radius: 28px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .screen-title {
+      display: grid;
+      gap: 2px;
+    }
+
+    .screen-title strong {
+      font-size: 1.35rem;
+      font-weight: 1000;
+      letter-spacing: -0.05em;
+    }
+
+    .screen-title span {
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 0.92rem;
+    }
+
+    .practice-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .canvas-card {
+      border-radius: var(--radius-xl);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .target-zone {
+      position: relative;
+      border: 4px solid var(--ink);
+      border-radius: 28px;
+      background: linear-gradient(135deg, #fff0fa, #f1fbff);
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .target-zone::before {
+      content: "";
+      position: absolute;
+      width: 75px;
+      height: 75px;
+      border: 4px solid var(--ink);
+      background: var(--yellow);
+      border-radius: 22px;
+      left: -28px;
+      top: -28px;
+      transform: rotate(18deg);
+      opacity: 0.65;
+    }
+
+    .target-label {
+      position: relative;
+      z-index: 1;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 1000;
+    }
+
+    .target-text {
+      position: relative;
+      z-index: 1;
+      white-space: pre-wrap;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      font-size: clamp(1.65rem, 5.5vw, 4rem);
+      line-height: 1.18;
+      font-weight: 1000;
+      letter-spacing: -0.05em;
+    }
+
+    .listen-card {
+      display: none;
+      position: relative;
+      z-index: 1;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .listen-card.active { display: grid; }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      min-height: 315px;
+      border: 4px solid var(--ink);
+      border-radius: 30px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(38,33,59,0.08) 1px, transparent 1px),
+        linear-gradient(rgba(38,33,59,0.08) 1px, transparent 1px),
+        #fffefa;
+      background-size: 36px 36px;
+      box-shadow: inset 0 0 0 7px rgba(255, 216, 79, 0.16);
+      touch-action: none;
+    }
+
+    .canvas-wrap::before,
+    .canvas-wrap::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      background: rgba(255, 79, 184, 0.22);
+      z-index: 0;
+    }
+
+    .canvas-wrap::before { left: 50%; top: 0; width: 3px; height: 100%; transform: translateX(-50%); }
+    .canvas-wrap::after { left: 0; top: 50%; width: 100%; height: 3px; transform: translateY(-50%); }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #guideCanvas { z-index: 1; pointer-events: none; }
+    #drawingCanvas { z-index: 2; touch-action: none; cursor: crosshair; }
+
+    .control-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status-card {
+      display: none;
+      border: 4px solid var(--ink);
+      border-radius: 28px;
+      padding: 14px;
+      background: #fff6cf;
+      box-shadow: var(--soft-shadow);
+      text-align: center;
+    }
+
+    .status-card.active { display: grid; gap: 8px; }
+
+    .status-stars {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .status-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 1000;
+      letter-spacing: -0.04em;
+    }
+
+    .status-desc {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .score-pill {
+      width: fit-content;
+      margin: 0 auto;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 3px solid var(--ink);
+      background: white;
+      font-weight: 1000;
+      box-shadow: 0 4px 0 rgba(38, 33, 59, 0.12);
+    }
+
+    .progress-box {
+      display: grid;
+      gap: 12px;
+    }
+
+    .challenge-progress {
+      border: 4px solid var(--ink);
+      background: linear-gradient(145deg, #fff0fa, #f0fdff);
+      border-radius: 26px;
+      padding: 14px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .challenge-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 1000;
+      margin-bottom: 9px;
+    }
+
+    .meter {
+      height: 22px;
+      border-radius: 999px;
+      border: 3px solid var(--ink);
+      background: white;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--mint), var(--yellow), var(--pink));
+      transition: width 0.25s ease;
+    }
+
+    .record-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .record-item {
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      background: white;
+      padding: 11px;
+      display: grid;
+      gap: 5px;
+      box-shadow: 0 5px 0 rgba(38, 33, 59, 0.10);
+    }
+
+    .record-item strong {
+      font-size: 0.98rem;
+      letter-spacing: -0.03em;
+    }
+
+    .record-item span {
+      color: var(--muted);
+      font-weight: 850;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .empty-box {
+      border: 3px dashed rgba(38, 33, 59, 0.38);
+      border-radius: 22px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 900;
+      background: rgba(255,255,255,0.55);
+    }
+
+    .challenge-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .challenge-card {
+      min-height: 164px;
+      border: 4px solid var(--ink);
+      border-radius: 30px;
+      padding: 16px;
+      box-shadow: var(--soft-shadow);
+      text-align: left;
+      display: grid;
+      align-content: space-between;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .challenge-card:active { transform: translateY(5px); box-shadow: 0 4px 0 rgba(38, 33, 59, 0.14); }
+    .challenge-card.word { background: linear-gradient(145deg, #fff08f, #ffd84f); }
+    .challenge-card.sentence { background: linear-gradient(145deg, #a3f7ff, #56d6ff); }
+    .challenge-card.daily { background: linear-gradient(145deg, #ff95d8, #ff4fb8); color: white; }
+    .challenge-card.small { background: linear-gradient(145deg, #a8ffc7, #41e59a); }
+
+    .challenge-card strong {
+      font-size: 1.32rem;
+      font-weight: 1000;
+      letter-spacing: -0.05em;
+    }
+
+    .challenge-card span {
+      font-weight: 900;
+      line-height: 1.42;
+      opacity: 0.9;
+    }
+
+    .result-pop {
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      text-align: center;
+      display: grid;
+      gap: 12px;
+      max-width: 720px;
+      margin: 0 auto;
+      background: rgba(255,253,250,0.97);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-pop::before {
+      content: "";
+      position: absolute;
+      inset: -80px auto auto -80px;
+      width: 180px;
+      height: 180px;
+      border-radius: 46% 54% 40% 60%;
+      background: rgba(255, 216, 79, 0.82);
+      border: 4px solid var(--ink);
+      transform: rotate(-15deg);
+      z-index: 0;
+    }
+
+    .result-pop > * { position: relative; z-index: 1; }
+
+    .result-pop h2 {
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 1;
+      letter-spacing: -0.075em;
+      font-weight: 1000;
+      text-shadow: 0 4px 0 rgba(255, 216, 79, 0.7);
+    }
+
+    .big-stars {
+      font-size: clamp(2.2rem, 8vw, 5.4rem);
+      line-height: 1;
+      word-break: break-all;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-tile {
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      padding: 12px;
+      background: white;
+      box-shadow: 0 5px 0 rgba(38, 33, 59, 0.10);
+    }
+
+    .summary-tile .num {
+      font-size: 1.8rem;
+      font-weight: 1000;
+      letter-spacing: -0.05em;
+    }
+
+    .summary-tile .label {
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 0.86rem;
+    }
+
+    .confetti-piece {
+      position: fixed;
+      width: 12px;
+      height: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 5px;
+      pointer-events: none;
+      z-index: 20;
+      animation: confettiFall 800ms ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translateY(170px) rotate(210deg) scale(0.78); opacity: 0; }
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(140%);
+      max-width: min(520px, calc(100% - 28px));
+      border: 4px solid var(--ink);
+      border-radius: 999px;
+      background: white;
+      padding: 12px 17px;
+      font-weight: 1000;
+      box-shadow: var(--soft-shadow);
+      z-index: 30;
+      transition: transform 0.22s ease;
+      text-align: center;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 930px) {
+      .menu-grid,
+      .practice-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .challenge-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 10px; }
+      .top-card { grid-template-columns: 1fr; }
+      .today-badge { width: 100%; transform: none; }
+      .mode-buttons,
+      .settings-grid,
+      .side-stack,
+      .challenge-cards,
+      .summary-grid { grid-template-columns: 1fr; }
+      .control-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .canvas-wrap { min-height: 355px; aspect-ratio: 3 / 4; }
+      .target-text { font-size: clamp(1.45rem, 9vw, 2.9rem); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="menuScreen" class="screen active" aria-label="시작메뉴">
+      <div class="top-card">
+        <div>
+          <div class="kicker">또박또박 글씨 놀이</div>
+          <h1>바른 글씨 파티</h1>
+          <p>연습은 마음껏, 기록은 도전에서만 차곡차곡 쌓아요.</p>
+        </div>
+        <div class="today-badge">
+          <div class="label">오늘 모은 별</div>
+          <div id="todayStarCount" class="big">0개</div>
+          <div id="todayStarStrip" class="star-strip"></div>
+        </div>
+      </div>
+
+      <div class="menu-grid">
+        <div class="panel section-pad">
+          <div class="mode-buttons">
+            <button id="practiceStartBtn" class="big-mode practice" type="button">
+              <strong>연습하기</strong>
+              <span>쓰고 지우며 천천히 익혀요.</span>
+            </button>
+            <button id="challengeOpenBtn" class="big-mode challenge" type="button">
+              <strong>도전하기</strong>
+              <span>문제를 풀고 별 기록을 모아요.</span>
+            </button>
+          </div>
+
+          <div class="settings-grid" aria-label="설정">
+            <div class="setting-card">
+              <div class="setting-title">종류</div>
+              <div class="chip-group" data-setting="contentType">
+                <button class="chip active" data-value="word" type="button">단어</button>
+                <button class="chip" data-value="sentence" type="button">문장</button>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">연습장</div>
+              <div class="chip-group" data-setting="practiceMode">
+                <button class="chip active" data-value="trace" type="button">따라쓰기</button>
+                <button class="chip" data-value="soft" type="button">흐린 글씨</button>
+                <button class="chip" data-value="memory" type="button">보고 쓰기</button>
+                <button class="chip" data-value="listen" type="button">듣고 쓰기</button>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">글씨 크기</div>
+              <div class="chip-group" data-setting="textSize">
+                <button class="chip active" data-value="large" type="button">큼</button>
+                <button class="chip" data-value="medium" type="button">보통</button>
+                <button class="chip" data-value="small" type="button">작음</button>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">붓 크기</div>
+              <div class="chip-group" data-setting="brushSize">
+                <button class="chip" data-value="thin" type="button">얇게</button>
+                <button class="chip active" data-value="normal" type="button">보통</button>
+                <button class="chip" data-value="thick" type="button">굵게</button>
+              </div>
+            </div>
+
+            <div class="setting-card wide">
+              <div class="setting-title">색깔</div>
+              <div class="chip-group" data-setting="brushColor">
+                <button class="chip color-chip active" style="background:#25212f" data-value="#25212f" aria-label="검정" type="button">검정</button>
+                <button class="chip color-chip" style="background:#3478ff" data-value="#3478ff" aria-label="파랑" type="button">파랑</button>
+                <button class="chip color-chip" style="background:#12b76a" data-value="#12b76a" aria-label="초록" type="button">초록</button>
+                <button class="chip color-chip" style="background:#ff4d6d" data-value="#ff4d6d" aria-label="빨강" type="button">빨강</button>
+                <button class="chip color-chip" style="background:#8b5cf6" data-value="#8b5cf6" aria-label="보라" type="button">보라</button>
+                <button class="chip color-chip" style="background:#ff9f1c" data-value="#ff9f1c" aria-label="주황" type="button">주황</button>
+              </div>
+            </div>
+
+            <div class="setting-card wide">
+              <div class="setting-title">문제 묶음</div>
+              <div id="bankChips" class="chip-group"></div>
+            </div>
+
+            <div class="setting-card wide">
+              <div class="setting-title">직접 넣기</div>
+              <div class="custom-area">
+                <textarea id="customInput" placeholder="한 줄에 하나씩 적어주세요."></textarea>
+                <div class="custom-row">
+                  <p style="margin:0;color:var(--muted);font-weight:900;font-size:.9rem;line-height:1.35;">입력하면 선택한 묶음 대신 사용해요.</p>
+                  <button id="clearCustomBtn" class="small-action" type="button">비우기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-stack">
+          <div class="paper-card">
+            <h2>기록판</h2>
+            <p>도전 모드를 끝까지 마치면 별과 점수가 저장돼요.</p>
+            <div class="button-row" style="margin-top:12px;">
+              <button id="recordsOpenBtn" class="pop-btn yellow" type="button">기록 보기</button>
+            </div>
+          </div>
+          <div class="paper-card">
+            <h2>오늘 추천</h2>
+            <p id="todayTip">연습으로 손을 풀고 도전에 들어가면 좋아요.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="challengeSelectScreen" class="screen" aria-label="도전 선택">
+      <header class="screen-header">
+        <div class="screen-title">
+          <strong>도전 고르기</strong>
+          <span>도전 기록은 끝까지 마쳤을 때 저장돼요.</span>
+        </div>
+        <button class="small-action" data-go-menu type="button">시작메뉴</button>
+      </header>
+      <div class="panel section-pad">
+        <div class="challenge-cards">
+          <button class="challenge-card word" data-challenge="word5" type="button">
+            <strong>단어 5개 도전</strong>
+            <span>짧고 가볍게 별을 모아요.</span>
+          </button>
+          <button class="challenge-card sentence" data-challenge="sentence3" type="button">
+            <strong>문장 3개 도전</strong>
+            <span>천천히 문장을 완성해요.</span>
+          </button>
+          <button class="challenge-card daily" data-challenge="daily" type="button">
+            <strong>오늘의 도전</strong>
+            <span>단어와 문장이 섞여 나와요.</span>
+          </button>
+          <button class="challenge-card small" data-challenge="small" type="button">
+            <strong>작은 글씨 도전</strong>
+            <span>칸 안에 또박또박 써요.</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="practiceScreen" class="screen" aria-label="연습 화면">
+      <header class="screen-header">
+        <div class="screen-title">
+          <strong id="playTitle">연습하기</strong>
+          <span id="playSubtitle">현재 설정</span>
+        </div>
+        <div class="button-row">
+          <button id="speakBtnTop" class="small-action hidden" type="button">다시 듣기</button>
+          <button class="small-action" data-go-menu type="button">시작메뉴</button>
+        </div>
+      </header>
+
+      <div class="practice-layout">
+        <div class="canvas-card">
+          <div class="target-zone">
+            <div id="targetLabel" class="target-label">이번 문제</div>
+            <div id="targetText" class="target-text">나무</div>
+            <div id="listenCard" class="listen-card">
+              <button id="speakBtnMain" class="pop-btn yellow" type="button">소리 듣기</button>
+              <p style="margin:0;color:var(--muted);font-weight:900;">들은 글씨를 써보세요.</p>
+            </div>
+          </div>
+          <div id="canvasWrap" class="canvas-wrap">
+            <canvas id="guideCanvas"></canvas>
+            <canvas id="drawingCanvas"></canvas>
+          </div>
+          <div class="control-bar">
+            <button id="clearBtn" class="pop-btn white" type="button">지우기</button>
+            <button id="checkBtn" class="pop-btn blue" type="button">평가하기</button>
+            <button id="nextBtn" class="pop-btn mint" type="button">다음</button>
+            <button id="showAnswerBtn" class="pop-btn yellow" type="button">글씨 보기</button>
+          </div>
+        </div>
+
+        <aside class="side-stack">
+          <div id="challengeProgress" class="challenge-progress hidden">
+            <div class="challenge-line">
+              <span id="challengeStep">1 / 5</span>
+              <span id="challengeStars">⭐ 0개</span>
+            </div>
+            <div class="meter"><div id="challengeMeter" class="meter-fill"></div></div>
+          </div>
+
+          <div id="statusCard" class="status-card">
+            <div id="statusStars" class="status-stars"></div>
+            <h3 id="statusTitle" class="status-title"></h3>
+            <div id="statusScore" class="score-pill"></div>
+            <p id="statusDesc" class="status-desc"></p>
+            <button id="challengeNextBtn" class="pop-btn pink hidden" type="button">다음 문제</button>
+          </div>
+
+          <div class="paper-card">
+            <h3>한 번 더 좋아지는 방법</h3>
+            <p id="hintText">가운데에서 크게 천천히 써보세요.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="challengeResultScreen" class="screen" aria-label="도전 결과">
+      <div class="result-pop">
+        <div class="kicker" style="margin:0 auto;">도전 완료</div>
+        <h2 id="finalTitle">멋지게 끝냈어요!</h2>
+        <div id="finalStars" class="big-stars"></div>
+        <div class="summary-grid">
+          <div class="summary-tile"><div id="finalStarCount" class="num">0</div><div class="label">모은 별</div></div>
+          <div class="summary-tile"><div id="finalAvgScore" class="num">0</div><div class="label">평균 점수</div></div>
+          <div class="summary-tile"><div id="finalSuccess" class="num">0</div><div class="label">성공 문제</div></div>
+        </div>
+        <p id="finalComment" style="margin:0;color:var(--muted);font-weight:900;line-height:1.5;"></p>
+        <div class="button-row" style="justify-content:center;">
+          <button id="retryChallengeBtn" class="pop-btn pink" type="button">다시 도전</button>
+          <button id="resultRecordsBtn" class="pop-btn yellow" type="button">기록 보기</button>
+          <button class="pop-btn white" data-go-menu type="button">시작메뉴</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="recordsScreen" class="screen" aria-label="기록 화면">
+      <header class="screen-header">
+        <div class="screen-title">
+          <strong>나의 글씨 기록판</strong>
+          <span>도전에서 모은 별만 보여요.</span>
+        </div>
+        <div class="button-row">
+          <button id="clearRecordsBtn" class="danger-action" type="button">기록 비우기</button>
+          <button class="small-action" data-go-menu type="button">시작메뉴</button>
+        </div>
+      </header>
+      <div class="menu-grid">
+        <div class="panel section-pad">
+          <div class="summary-grid">
+            <div class="summary-tile"><div id="recordTodayStars" class="num">0</div><div class="label">오늘 별</div></div>
+            <div class="summary-tile"><div id="recordWeekStars" class="num">0</div><div class="label">최근 7일 별</div></div>
+            <div class="summary-tile"><div id="recordBestScore" class="num">0</div><div class="label">최고 평균</div></div>
+          </div>
+          <div style="margin-top:16px;" class="paper-card">
+            <h2>최근 도전</h2>
+            <div id="recentRecords" class="record-list"></div>
+          </div>
+        </div>
+        <aside class="side-stack">
+          <div class="paper-card">
+            <h2>오늘의 도장</h2>
+            <div id="recordStampStrip" class="star-strip" style="font-size:1.75rem;justify-content:flex-start;"></div>
+          </div>
+          <div class="paper-card">
+            <h2>응원 한마디</h2>
+            <p id="recordCheer">도전 기록이 쌓이면 여기에 별이 가득해져요.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const banks = {
+      word: {
+        easy: {
+          label: '쉬운 단어',
+          items: ['나무', '바다', '고기', '우유', '모자', '사과', '오이', '구두', '하마', '토끼']
+        },
+        school: {
+          label: '교실 단어',
+          items: ['학교', '연필', '가방', '의자', '책상', '친구', '선생님', '놀이터', '색종이', '그림']
+        },
+        feeling: {
+          label: '마음 단어',
+          items: ['사랑', '기쁨', '행복', '용기', '고마워', '좋아요', '미안해', '괜찮아', '즐거움', '웃음']
+        },
+        nature: {
+          label: '자연 단어',
+          items: ['하늘', '구름', '바람', '햇님', '달님', '별빛', '꽃잎', '나비', '강물', '숲길']
+        }
+      },
+      sentence: {
+        short: {
+          label: '짧은 문장',
+          items: ['나는 웃어요.', '꽃이 피었어요.', '친구와 놀아요.', '하늘이 맑아요.', '물을 마셔요.', '손을 씻어요.']
+        },
+        class: {
+          label: '교실 문장',
+          items: ['바르게 앉아요.', '차례를 기다려요.', '연필을 잡아요.', '친구 말을 들어요.', '책상을 정리해요.', '천천히 걸어요.']
+        },
+        heart: {
+          label: '마음 표현',
+          items: ['나는 기분이 좋아요.', '도와줘서 고마워요.', '다시 해볼 수 있어요.', '친구와 함께하고 싶어요.', '속상할 때 말해요.', '천천히 말해도 괜찮아요.']
+        },
+        teacher: {
+          label: '교사용 문장',
+          items: ['오늘도 멋지게 해냈어요.', '천천히 또박또박 써요.', '끝까지 해보는 힘이 있어요.', '내 글씨를 소중히 여겨요.', '어제보다 조금 더 자랐어요.', '스스로 해보는 모습이 좋아요.']
+        }
+      }
+    };
+
+    const textSizeSettings = {
+      large: { label: '큼', fontRatio: 0.58, guideAlpha: { trace: 0.23, soft: 0.10 }, lineBoost: 1.18 },
+      medium: { label: '보통', fontRatio: 0.45, guideAlpha: { trace: 0.20, soft: 0.085 }, lineBoost: 1.0 },
+      small: { label: '작음', fontRatio: 0.33, guideAlpha: { trace: 0.18, soft: 0.075 }, lineBoost: 0.83 }
+    };
+
+    const brushSizeSettings = {
+      thin: { label: '얇게', width: 9 },
+      normal: { label: '보통', width: 14 },
+      thick: { label: '굵게', width: 20 }
+    };
+
+    const practiceModeLabels = {
+      trace: '따라쓰기',
+      soft: '흐린 글씨',
+      memory: '보고 쓰기',
+      listen: '듣고 쓰기'
+    };
+
+    const contentTypeLabels = { word: '단어', sentence: '문장' };
+
+    const challengeDefs = {
+      word5: { title: '단어 5개 도전', contentType: 'word', count: 5, mode: 'soft' },
+      sentence3: { title: '문장 3개 도전', contentType: 'sentence', count: 3, mode: 'soft' },
+      daily: { title: '오늘의 도전', contentType: 'mixed', count: 6, mode: 'memory' },
+      small: { title: '작은 글씨 도전', contentType: 'word', count: 5, mode: 'trace', forcedTextSize: 'small', forcedBrushSize: 'thin' }
+    };
+
+    const state = {
+      screen: 'menu',
+      contentType: 'word',
+      practiceMode: 'trace',
+      textSize: 'large',
+      brushSize: 'normal',
+      brushColor: '#25212f',
+      bankKey: 'easy',
+      items: [],
+      itemIndex: 0,
+      currentText: '',
+      playKind: 'practice',
+      challenge: null,
+      lastChallengeKey: 'word5',
+      hasAnswered: false,
+      audioReady: false,
+      records: []
+    };
+
+    const els = {
+      menuScreen: document.getElementById('menuScreen'),
+      challengeSelectScreen: document.getElementById('challengeSelectScreen'),
+      practiceScreen: document.getElementById('practiceScreen'),
+      challengeResultScreen: document.getElementById('challengeResultScreen'),
+      recordsScreen: document.getElementById('recordsScreen'),
+      todayStarCount: document.getElementById('todayStarCount'),
+      todayStarStrip: document.getElementById('todayStarStrip'),
+      todayTip: document.getElementById('todayTip'),
+      bankChips: document.getElementById('bankChips'),
+      customInput: document.getElementById('customInput'),
+      clearCustomBtn: document.getElementById('clearCustomBtn'),
+      practiceStartBtn: document.getElementById('practiceStartBtn'),
+      challengeOpenBtn: document.getElementById('challengeOpenBtn'),
+      recordsOpenBtn: document.getElementById('recordsOpenBtn'),
+      playTitle: document.getElementById('playTitle'),
+      playSubtitle: document.getElementById('playSubtitle'),
+      targetLabel: document.getElementById('targetLabel'),
+      targetText: document.getElementById('targetText'),
+      listenCard: document.getElementById('listenCard'),
+      speakBtnTop: document.getElementById('speakBtnTop'),
+      speakBtnMain: document.getElementById('speakBtnMain'),
+      guideCanvas: document.getElementById('guideCanvas'),
+      drawingCanvas: document.getElementById('drawingCanvas'),
+      canvasWrap: document.getElementById('canvasWrap'),
+      clearBtn: document.getElementById('clearBtn'),
+      checkBtn: document.getElementById('checkBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      showAnswerBtn: document.getElementById('showAnswerBtn'),
+      statusCard: document.getElementById('statusCard'),
+      statusStars: document.getElementById('statusStars'),
+      statusTitle: document.getElementById('statusTitle'),
+      statusScore: document.getElementById('statusScore'),
+      statusDesc: document.getElementById('statusDesc'),
+      challengeProgress: document.getElementById('challengeProgress'),
+      challengeStep: document.getElementById('challengeStep'),
+      challengeStars: document.getElementById('challengeStars'),
+      challengeMeter: document.getElementById('challengeMeter'),
+      challengeNextBtn: document.getElementById('challengeNextBtn'),
+      hintText: document.getElementById('hintText'),
+      finalTitle: document.getElementById('finalTitle'),
+      finalStars: document.getElementById('finalStars'),
+      finalStarCount: document.getElementById('finalStarCount'),
+      finalAvgScore: document.getElementById('finalAvgScore'),
+      finalSuccess: document.getElementById('finalSuccess'),
+      finalComment: document.getElementById('finalComment'),
+      retryChallengeBtn: document.getElementById('retryChallengeBtn'),
+      resultRecordsBtn: document.getElementById('resultRecordsBtn'),
+      recordTodayStars: document.getElementById('recordTodayStars'),
+      recordWeekStars: document.getElementById('recordWeekStars'),
+      recordBestScore: document.getElementById('recordBestScore'),
+      recentRecords: document.getElementById('recentRecords'),
+      recordStampStrip: document.getElementById('recordStampStrip'),
+      recordCheer: document.getElementById('recordCheer'),
+      clearRecordsBtn: document.getElementById('clearRecordsBtn'),
+      toast: document.getElementById('toast')
+    };
+
+    const drawCtx = els.drawingCanvas.getContext('2d');
+    const guideCtx = els.guideCanvas.getContext('2d');
+    const refCanvas = document.createElement('canvas');
+    const refCtx = refCanvas.getContext('2d');
+    let isDrawing = false;
+    let lastPoint = null;
+    let resizeTimer = null;
+    let audioCtx = null;
+
+    function showScreen(name) {
+      state.screen = name;
+      ['menuScreen', 'challengeSelectScreen', 'practiceScreen', 'challengeResultScreen', 'recordsScreen'].forEach(key => {
+        els[key].classList.toggle('active', key === name + 'Screen');
+      });
+      if (name === 'menu') refreshMenuStats();
+      if (name === 'records') renderRecords();
+      if (name === 'practice') setTimeout(resizeCanvases, 30);
+    }
+
+    function todayKey() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function loadRecords() {
+      try {
+        state.records = JSON.parse(localStorage.getItem('handwritingPartyRecords') || '[]');
+        if (!Array.isArray(state.records)) state.records = [];
+      } catch (e) {
+        state.records = [];
+      }
+    }
+
+    function saveRecords() {
+      localStorage.setItem('handwritingPartyRecords', JSON.stringify(state.records.slice(0, 80)));
+    }
+
+    function sumTodayStars() {
+      const key = todayKey();
+      return state.records.filter(r => r.date === key).reduce((sum, r) => sum + (r.totalStars || 0), 0);
+    }
+
+    function makeStars(count, maxVisible = 18) {
+      const safeCount = Math.max(0, Number(count) || 0);
+      const shown = Math.min(safeCount, maxVisible);
+      const stars = '⭐'.repeat(shown);
+      return safeCount > maxVisible ? `${stars}+${safeCount - maxVisible}` : stars;
+    }
+
+    function refreshMenuStats() {
+      const today = sumTodayStars();
+      els.todayStarCount.textContent = `${today}개`;
+      els.todayStarStrip.textContent = today ? makeStars(today, 15) : '아직 도전 전';
+      els.todayTip.textContent = today >= 15 ? '오늘 별이 반짝반짝 많아요. 문장 도전도 좋아요.' : '연습으로 손을 풀고 도전에 들어가면 좋아요.';
+    }
+
+    function renderBankChips() {
+      const currentBanks = banks[state.contentType];
+      const keys = Object.keys(currentBanks);
+      if (!currentBanks[state.bankKey]) state.bankKey = keys[0];
+      els.bankChips.innerHTML = '';
+      keys.forEach(key => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chip' + (key === state.bankKey ? ' active' : '');
+        btn.dataset.value = key;
+        btn.textContent = currentBanks[key].label;
+        btn.addEventListener('click', () => {
+          state.bankKey = key;
+          renderBankChips();
+        });
+        els.bankChips.appendChild(btn);
+      });
+    }
+
+    function getCustomItems(contentType = state.contentType) {
+      const raw = els.customInput.value.trim();
+      if (!raw) return [];
+      return raw.split('\n').map(x => x.trim()).filter(Boolean).filter(x => contentType === 'sentence' ? x.length > 1 : x.length > 0);
+    }
+
+    function getItems(contentType = state.contentType, options = {}) {
+      const custom = getCustomItems(contentType);
+      if (custom.length) return shuffle(custom).slice();
+      if (options.mixed) {
+        const wordItems = Object.values(banks.word).flatMap(group => group.items);
+        const sentenceItems = Object.values(banks.sentence).flatMap(group => group.items);
+        return shuffle([...shuffle(wordItems).slice(0, 3), ...shuffle(sentenceItems).slice(0, 3)]);
+      }
+      const bank = banks[contentType][state.bankKey] || Object.values(banks[contentType])[0];
+      return shuffle(bank.items).slice();
+    }
+
+    function shuffle(arr) {
+      const copy = arr.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function setupSettingButtons() {
+      document.querySelectorAll('.chip-group[data-setting]').forEach(group => {
+        group.addEventListener('click', e => {
+          const btn = e.target.closest('.chip');
+          if (!btn) return;
+          const setting = group.dataset.setting;
+          state[setting] = btn.dataset.value;
+          group.querySelectorAll('.chip').forEach(chip => chip.classList.remove('active'));
+          btn.classList.add('active');
+          if (setting === 'contentType') {
+            state.bankKey = state.contentType === 'word' ? 'easy' : 'short';
+            renderBankChips();
+          }
+        });
+      });
+    }
+
+    function initPractice() {
+      state.playKind = 'practice';
+      state.items = getItems(state.contentType);
+      state.itemIndex = 0;
+      state.practiceMode = state.practiceMode || 'trace';
+      state.hasAnswered = false;
+      els.playTitle.textContent = '연습하기';
+      els.nextBtn.classList.remove('hidden');
+      els.challengeProgress.classList.add('hidden');
+      els.challengeNextBtn.classList.add('hidden');
+      showScreen('practice');
+      setCurrentItem();
+    }
+
+    function openChallengeSelect() {
+      showScreen('challengeSelect');
+    }
+
+    function initChallenge(challengeKey) {
+      const def = challengeDefs[challengeKey];
+      state.lastChallengeKey = challengeKey;
+      state.playKind = 'challenge';
+      state.challenge = {
+        key: challengeKey,
+        title: def.title,
+        count: def.count,
+        totalStars: 0,
+        totalScore: 0,
+        successCount: 0,
+        results: [],
+        textSize: def.forcedTextSize || state.textSize,
+        brushSize: def.forcedBrushSize || state.brushSize,
+        mode: def.mode,
+        contentType: def.contentType
+      };
+      const mixed = def.contentType === 'mixed';
+      const list = mixed ? getItems('word', { mixed: true }) : getItems(def.contentType);
+      state.items = list.slice(0, def.count);
+      while (state.items.length < def.count) state.items = state.items.concat(list);
+      state.items = state.items.slice(0, def.count);
+      state.itemIndex = 0;
+      state.hasAnswered = false;
+      els.playTitle.textContent = def.title;
+      els.nextBtn.classList.add('hidden');
+      els.challengeProgress.classList.remove('hidden');
+      els.challengeNextBtn.classList.add('hidden');
+      showScreen('practice');
+      setCurrentItem();
+      updateChallengeProgress();
+    }
+
+    function activeTextSize() {
+      return state.playKind === 'challenge' && state.challenge ? state.challenge.textSize : state.textSize;
+    }
+
+    function activeBrushSize() {
+      return state.playKind === 'challenge' && state.challenge ? state.challenge.brushSize : state.brushSize;
+    }
+
+    function activePracticeMode() {
+      return state.playKind === 'challenge' && state.challenge ? state.challenge.mode : state.practiceMode;
+    }
+
+    function activeContentType() {
+      if (state.playKind === 'challenge' && state.challenge) {
+        if (state.challenge.contentType === 'mixed') return state.currentText.length > 7 || /[.!?。！？]/.test(state.currentText) ? 'sentence' : 'word';
+        return state.challenge.contentType;
+      }
+      return state.contentType;
+    }
+
+    function setCurrentItem() {
+      if (!state.items.length) state.items = getItems(state.contentType);
+      state.currentText = state.items[state.itemIndex % state.items.length];
+      state.hasAnswered = false;
+      updateTargetArea();
+      resizeCanvases();
+      hideStatus();
+      updateHint('가운데에서 천천히 써보세요.');
+      if (activePracticeMode() === 'listen') setTimeout(() => speakCurrent(), 220);
+    }
+
+    function updateTargetArea() {
+      const mode = activePracticeMode();
+      const contentLabel = activeContentType() === 'sentence' ? '이번 문장' : '이번 단어';
+      const isListen = mode === 'listen';
+      els.listenCard.classList.toggle('active', isListen);
+      els.speakBtnTop.classList.toggle('hidden', !isListen);
+      els.targetText.classList.toggle('hidden', isListen && !state.hasAnswered);
+      els.targetText.textContent = state.currentText;
+      els.targetLabel.textContent = isListen && !state.hasAnswered ? '듣고 써요' : contentLabel;
+      const sizeLabel = textSizeSettings[activeTextSize()].label;
+      const brushLabel = brushSizeSettings[activeBrushSize()].label;
+      const modeLabel = practiceModeLabels[mode];
+      if (state.playKind === 'challenge') {
+        els.playSubtitle.textContent = `${modeLabel} · 글씨 ${sizeLabel} · 붓 ${brushLabel}`;
+      } else {
+        els.playSubtitle.textContent = `${contentTypeLabels[state.contentType]} · ${modeLabel} · 글씨 ${sizeLabel} · 붓 ${brushLabel}`;
+      }
+      els.showAnswerBtn.classList.toggle('hidden', mode === 'trace' || mode === 'soft');
+    }
+
+    function resizeCanvases() {
+      const wrap = els.canvasWrap;
+      const rect = wrap.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      [els.drawingCanvas, els.guideCanvas, refCanvas].forEach(c => {
+        c.width = w;
+        c.height = h;
+        c.style.width = `${rect.width}px`;
+        c.style.height = `${rect.height}px`;
+      });
+      [drawCtx, guideCtx, refCtx].forEach(ctx => ctx.setTransform(dpr, 0, 0, dpr, 0, 0));
+      configureBrush();
+      clearDrawing(false);
+      drawGuides();
+    }
+
+    function configureBrush() {
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const brushBase = brushSizeSettings[activeBrushSize()].width;
+      const boost = textSizeSettings[activeTextSize()].lineBoost;
+      drawCtx.lineWidth = brushBase * boost;
+      drawCtx.lineCap = 'round';
+      drawCtx.lineJoin = 'round';
+      drawCtx.strokeStyle = state.brushColor;
+      drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function getCanvasCssSize() {
+      const rect = els.canvasWrap.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }
+
+    function drawGuides() {
+      const { width, height } = getCanvasCssSize();
+      guideCtx.clearRect(0, 0, width, height);
+      refCtx.clearRect(0, 0, width, height);
+      if (!state.currentText) return;
+      const mode = activePracticeMode();
+      const showGuide = mode === 'trace' || mode === 'soft';
+      const size = textSizeSettings[activeTextSize()];
+      const lines = layoutText(state.currentText, width, height, size.fontRatio);
+      if (showGuide) {
+        guideCtx.save();
+        guideCtx.textAlign = 'center';
+        guideCtx.textBaseline = 'middle';
+        guideCtx.lineJoin = 'round';
+        guideCtx.fillStyle = `rgba(38, 33, 59, ${size.guideAlpha[mode]})`;
+        lines.forEach(line => {
+          guideCtx.font = `1000 ${line.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif`;
+          guideCtx.fillText(line.text, width / 2, line.y);
+        });
+        guideCtx.restore();
+      }
+      refCtx.save();
+      refCtx.textAlign = 'center';
+      refCtx.textBaseline = 'middle';
+      refCtx.fillStyle = 'rgba(0,0,0,1)';
+      lines.forEach(line => {
+        refCtx.font = `1000 ${line.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif`;
+        refCtx.fillText(line.text, width / 2, line.y);
+      });
+      refCtx.restore();
+    }
+
+    function layoutText(text, width, height, ratio) {
+      const normalized = String(text).replace(/\s+/g, ' ').trim();
+      const isSentence = normalized.length >= 8 || /[.!?。！？]/.test(normalized);
+      const maxWidth = width * 0.84;
+      let fontSize = Math.min(height * ratio, isSentence ? width / 9 : width / Math.max(2.2, normalized.length * 0.85));
+      fontSize = Math.max(24, Math.min(fontSize, height * 0.62));
+      const temp = guideCtx;
+      let lines = [];
+      for (let attempt = 0; attempt < 16; attempt++) {
+        temp.font = `1000 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif`;
+        lines = wrapText(normalized, maxWidth, temp);
+        const lineHeight = fontSize * 1.2;
+        const totalHeight = lines.length * lineHeight;
+        const widest = Math.max(...lines.map(line => temp.measureText(line).width));
+        if (totalHeight <= height * 0.78 && widest <= maxWidth) break;
+        fontSize *= 0.9;
+      }
+      const lineHeight = fontSize * 1.2;
+      const totalHeight = lines.length * lineHeight;
+      const startY = height / 2 - totalHeight / 2 + lineHeight / 2;
+      return lines.map((line, idx) => ({ text: line, fontSize, y: startY + idx * lineHeight }));
+    }
+
+    function wrapText(text, maxWidth, ctx) {
+      if (!text) return [''];
+      const tokens = text.includes(' ') ? text.split(' ') : Array.from(text);
+      const lines = [];
+      let line = '';
+      tokens.forEach((token, idx) => {
+        const candidate = text.includes(' ') ? (line ? `${line} ${token}` : token) : line + token;
+        if (ctx.measureText(candidate).width <= maxWidth || !line) {
+          line = candidate;
+        } else {
+          lines.push(line);
+          line = token;
+        }
+        if (idx === tokens.length - 1 && line) lines.push(line);
+      });
+      return lines;
+    }
+
+    function getPointerPos(e) {
+      const rect = els.drawingCanvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      e.preventDefault();
+      els.drawingCanvas.setPointerCapture?.(e.pointerId);
+      isDrawing = true;
+      lastPoint = getPointerPos(e);
+      drawCtx.beginPath();
+      drawCtx.moveTo(lastPoint.x, lastPoint.y);
+      drawCtx.lineTo(lastPoint.x + 0.1, lastPoint.y + 0.1);
+      drawCtx.stroke();
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const point = getPointerPos(e);
+      if (!lastPoint) lastPoint = point;
+      const midX = (lastPoint.x + point.x) / 2;
+      const midY = (lastPoint.y + point.y) / 2;
+      drawCtx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
+      drawCtx.stroke();
+      lastPoint = point;
+    }
+
+    function stopDrawing(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      isDrawing = false;
+      lastPoint = null;
+      drawCtx.closePath();
+    }
+
+    function clearDrawing(hide = true) {
+      const { width, height } = getCanvasCssSize();
+      drawCtx.clearRect(0, 0, width, height);
+      if (hide) hideStatus();
+    }
+
+    function hideStatus() {
+      els.statusCard.classList.remove('active');
+      els.challengeNextBtn.classList.add('hidden');
+    }
+
+    function evaluateWriting() {
+      ensureAudio();
+      const result = calculateScore();
+      if (result.userPixels < 30) {
+        showStatus({ stars: 0, score: 0, title: '먼저 써볼까요?', desc: '빈 종이예요. 글씨를 쓰고 평가해보세요.' });
+        playFail();
+        return;
+      }
+      const stars = scoreToStars(result.score);
+      const title = stars === 3 ? '반짝반짝 최고예요!' : stars === 2 ? '아주 잘 썼어요!' : stars === 1 ? '좋아요, 조금만 더!' : '한 번 더 써볼까요?';
+      const desc = makeFeedback(result);
+      state.hasAnswered = true;
+      updateTargetArea();
+      showStatus({ stars, score: result.score, title, desc });
+      updateHint(desc);
+      if (stars > 0) playStarSound(stars); else playFail();
+      if (stars === 3) burstConfetti();
+      if (state.playKind === 'challenge') {
+        saveChallengeStep(result, stars);
+      }
+    }
+
+    function calculateScore() {
+      const w = els.drawingCanvas.width;
+      const h = els.drawingCanvas.height;
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const userData = drawCtx.getImageData(0, 0, w, h).data;
+      const refData = refCtx.getImageData(0, 0, w, h).data;
+      const dilatedRefData = makeDilatedData(refCanvas, Math.round(12 * dpr)).data;
+      const dilatedUserData = makeDilatedData(els.drawingCanvas, Math.round(9 * dpr)).data;
+      let userPixels = 0;
+      let refPixels = 0;
+      let userInside = 0;
+      let refCovered = 0;
+      let ux1 = w, uy1 = h, ux2 = 0, uy2 = 0;
+      let rx1 = w, ry1 = h, rx2 = 0, ry2 = 0;
+
+      for (let i = 0; i < userData.length; i += 4) {
+        const px = (i / 4) % w;
+        const py = Math.floor((i / 4) / w);
+        const hasUser = userData[i + 3] > 18;
+        const hasRef = refData[i + 3] > 18;
+        if (hasUser) {
+          userPixels++;
+          if (dilatedRefData[i + 3] > 18) userInside++;
+          if (px < ux1) ux1 = px;
+          if (px > ux2) ux2 = px;
+          if (py < uy1) uy1 = py;
+          if (py > uy2) uy2 = py;
+        }
+        if (hasRef) {
+          refPixels++;
+          if (dilatedUserData[i + 3] > 18) refCovered++;
+          if (px < rx1) rx1 = px;
+          if (px > rx2) rx2 = px;
+          if (py < ry1) ry1 = py;
+          if (py > ry2) ry2 = py;
+        }
+      }
+
+      if (!userPixels || !refPixels) return { score: 0, userPixels, refPixels, inside: 0, coverage: 0, center: 0, size: 0 };
+
+      const inside = userInside / userPixels;
+      const coverage = refCovered / refPixels;
+      const userBox = { x1: ux1, y1: uy1, x2: ux2, y2: uy2, width: ux2 - ux1 + 1, height: uy2 - uy1 + 1 };
+      const refBox = { x1: rx1, y1: ry1, x2: rx2, y2: ry2, width: rx2 - rx1 + 1, height: ry2 - ry1 + 1 };
+      const userCx = (userBox.x1 + userBox.x2) / 2;
+      const userCy = (userBox.y1 + userBox.y2) / 2;
+      const refCx = (refBox.x1 + refBox.x2) / 2;
+      const refCy = (refBox.y1 + refBox.y2) / 2;
+      const dist = Math.hypot(userCx - refCx, userCy - refCy);
+      const center = Math.max(0, 1 - dist / (Math.min(w, h) * 0.32));
+      const areaRatio = (userBox.width * userBox.height) / Math.max(1, refBox.width * refBox.height);
+      const size = Math.max(0, 1 - Math.abs(Math.log(areaRatio)) / Math.log(3.1));
+      let score = Math.round((inside * 0.38 + coverage * 0.34 + center * 0.16 + size * 0.12) * 100);
+      score = Math.max(0, Math.min(100, Math.round(score * 1.08)));
+      return { score, userPixels, refPixels, inside, coverage, center, size, userBox, refBox };
+    }
+
+    function makeDilatedData(sourceCanvas, radius) {
+      const temp = document.createElement('canvas');
+      temp.width = sourceCanvas.width;
+      temp.height = sourceCanvas.height;
+      const t = temp.getContext('2d');
+      const step = Math.max(2, Math.floor(radius / 2));
+      for (let dx = -radius; dx <= radius; dx += step) {
+        for (let dy = -radius; dy <= radius; dy += step) {
+          if (dx * dx + dy * dy <= radius * radius) t.drawImage(sourceCanvas, dx, dy);
+        }
+      }
+      t.drawImage(sourceCanvas, 0, 0);
+      return t.getImageData(0, 0, temp.width, temp.height);
+    }
+
+    function scoreToStars(score) {
+      if (score >= 82) return 3;
+      if (score >= 64) return 2;
+      if (score >= 42) return 1;
+      return 0;
+    }
+
+    function makeFeedback(result) {
+      if (result.score >= 82) return '가운데에 맞고 글씨 모양도 또렷해요.';
+      const tips = [];
+      if (result.coverage < 0.45) tips.push('빠진 부분을 조금 더 채워보세요');
+      if (result.inside < 0.55) tips.push('회색 글씨 안쪽을 따라가 보세요');
+      if (result.center < 0.72) tips.push('조금 더 가운데에 써보세요');
+      if (result.size < 0.62) tips.push('글씨 크기를 가이드와 비슷하게 맞춰보세요');
+      if (!tips.length) tips.push('천천히 한 번 더 쓰면 더 좋아져요');
+      return tips.slice(0, 2).join('. ') + '.';
+    }
+
+    function showStatus({ stars, score, title, desc }) {
+      els.statusCard.classList.add('active');
+      els.statusStars.textContent = stars > 0 ? '⭐'.repeat(stars) : '💫';
+      els.statusTitle.textContent = title;
+      els.statusScore.textContent = `${score}점`;
+      els.statusDesc.textContent = desc;
+      if (state.playKind === 'challenge' && stars >= 0) els.challengeNextBtn.classList.remove('hidden');
+    }
+
+    function saveChallengeStep(result, stars) {
+      if (!state.challenge || state.challenge.results[state.itemIndex]) return;
+      state.challenge.totalStars += stars;
+      state.challenge.totalScore += result.score;
+      if (stars > 0) state.challenge.successCount += 1;
+      state.challenge.results[state.itemIndex] = {
+        text: state.currentText,
+        stars,
+        score: result.score,
+        feedback: makeFeedback(result)
+      };
+      updateChallengeProgress();
+    }
+
+    function updateChallengeProgress() {
+      if (!state.challenge) return;
+      const done = state.challenge.results.filter(Boolean).length;
+      const total = state.challenge.count;
+      els.challengeStep.textContent = `${Math.min(done + 1, total)} / ${total}`;
+      els.challengeStars.textContent = `⭐ ${state.challenge.totalStars}개`;
+      els.challengeMeter.style.width = `${Math.min(100, (done / total) * 100)}%`;
+    }
+
+    function nextItem() {
+      state.itemIndex = (state.itemIndex + 1) % state.items.length;
+      setCurrentItem();
+    }
+
+    function nextChallengeItem() {
+      if (!state.challenge) return;
+      if (!state.challenge.results[state.itemIndex]) {
+        showToast('먼저 평가하기를 눌러주세요.');
+        return;
+      }
+      if (state.itemIndex >= state.challenge.count - 1) {
+        finishChallenge();
+        return;
+      }
+      state.itemIndex += 1;
+      setCurrentItem();
+      updateChallengeProgress();
+    }
+
+    function finishChallenge() {
+      const ch = state.challenge;
+      const avg = Math.round(ch.totalScore / Math.max(1, ch.results.length));
+      const maxStars = ch.count * 3;
+      const record = {
+        id: Date.now(),
+        date: todayKey(),
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        title: ch.title,
+        totalStars: ch.totalStars,
+        maxStars,
+        avgScore: avg,
+        successCount: ch.successCount,
+        totalCount: ch.count,
+        results: ch.results
+      };
+      state.records.unshift(record);
+      saveRecords();
+      renderChallengeResult(record);
+      playComplete(ch.totalStars >= maxStars ? true : false);
+      burstConfetti();
+      showScreen('challengeResult');
+    }
+
+    function renderChallengeResult(record) {
+      const perfect = record.totalStars === record.maxStars;
+      els.finalTitle.textContent = perfect ? '별이 가득해요!' : '멋지게 끝냈어요!';
+      els.finalStars.textContent = makeStars(record.totalStars, 24) || '💫';
+      els.finalStarCount.textContent = `${record.totalStars}/${record.maxStars}`;
+      els.finalAvgScore.textContent = `${record.avgScore}`;
+      els.finalSuccess.textContent = `${record.successCount}/${record.totalCount}`;
+      els.finalComment.textContent = perfect ? '오늘 글씨가 아주 반짝반짝해요.' : record.avgScore >= 70 ? '글씨 모양이 좋아지고 있어요.' : '연습하고 다시 도전하면 별을 더 모을 수 있어요.';
+    }
+
+    function renderRecords() {
+      const today = todayKey();
+      const todayStars = sumTodayStars();
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      const weekStars = state.records.filter(r => new Date(r.date) >= sevenDaysAgo).reduce((sum, r) => sum + (r.totalStars || 0), 0);
+      const best = state.records.reduce((max, r) => Math.max(max, r.avgScore || 0), 0);
+      els.recordTodayStars.textContent = todayStars;
+      els.recordWeekStars.textContent = weekStars;
+      els.recordBestScore.textContent = best;
+      els.recordStampStrip.textContent = todayStars ? makeStars(todayStars, 20) : '아직 별이 없어요';
+      els.recordCheer.textContent = todayStars >= 12 ? '오늘 별을 많이 모았어요. 정말 꾸준해요.' : '도전 모드를 끝내면 오늘의 별이 여기에 찍혀요.';
+      els.recentRecords.innerHTML = '';
+      if (!state.records.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-box';
+        empty.textContent = '아직 도전 기록이 없어요.';
+        els.recentRecords.appendChild(empty);
+        return;
+      }
+      state.records.slice(0, 12).forEach(record => {
+        const item = document.createElement('div');
+        item.className = 'record-item';
+        item.innerHTML = `<strong>${escapeHtml(record.title)} · ${record.totalStars}/${record.maxStars}⭐</strong><span>${record.date} ${record.time || ''} · 평균 ${record.avgScore}점 · 성공 ${record.successCount}/${record.totalCount}</span>`;
+        els.recentRecords.appendChild(item);
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+    }
+
+    function showAnswer() {
+      state.hasAnswered = true;
+      updateTargetArea();
+      drawGuides();
+      showToast('글씨를 보고 다시 써보세요.');
+    }
+
+    function speakCurrent() {
+      ensureAudio();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(state.currentText);
+        utter.lang = 'ko-KR';
+        utter.rate = 0.82;
+        utter.pitch = 1.05;
+        window.speechSynthesis.speak(utter);
+      } else {
+        playToneSequence([{ f: 620, d: 0.08 }, { f: 760, d: 0.1 }], 'sine', 0.05);
+      }
+    }
+
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTone(freq, start, duration, type = 'sine', gainValue = 0.07) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(gainValue, audioCtx.currentTime + start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + start + duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + start);
+      osc.stop(audioCtx.currentTime + start + duration + 0.02);
+    }
+
+    function playToneSequence(notes, type = 'sine', gain = 0.07) {
+      ensureAudio();
+      let t = 0;
+      notes.forEach(note => {
+        playTone(note.f, t, note.d, type, gain);
+        t += note.d * 0.85;
+      });
+    }
+
+    function playStarSound(stars) {
+      if (stars === 1) playToneSequence([{ f: 620, d: 0.11 }], 'triangle', 0.07);
+      if (stars === 2) playToneSequence([{ f: 620, d: 0.09 }, { f: 820, d: 0.13 }], 'triangle', 0.075);
+      if (stars === 3) playToneSequence([{ f: 620, d: 0.08 }, { f: 820, d: 0.09 }, { f: 1040, d: 0.16 }], 'triangle', 0.08);
+    }
+
+    function playFail() {
+      playToneSequence([{ f: 260, d: 0.09 }, { f: 340, d: 0.12 }], 'sine', 0.05);
+    }
+
+    function playComplete(perfect) {
+      if (perfect) playToneSequence([{ f: 520, d: 0.08 }, { f: 680, d: 0.08 }, { f: 860, d: 0.1 }, { f: 1140, d: 0.2 }], 'triangle', 0.08);
+      else playToneSequence([{ f: 440, d: 0.08 }, { f: 620, d: 0.09 }, { f: 820, d: 0.18 }], 'triangle', 0.07);
+    }
+
+    function burstConfetti() {
+      const colors = ['#ff4fb8', '#ffd84f', '#41e59a', '#5577ff', '#a86cff', '#ff9f3f'];
+      for (let i = 0; i < 22; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${20 + Math.random() * 60}%`;
+        piece.style.top = `${8 + Math.random() * 8}%`;
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDelay = `${Math.random() * 120}ms`;
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 1000);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(text) {
+      els.toast.textContent = text;
+      els.toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.remove('show'), 1800);
+    }
+
+    function updateHint(text) {
+      els.hintText.textContent = text;
+    }
+
+    function bindEvents() {
+      setupSettingButtons();
+      renderBankChips();
+      els.practiceStartBtn.addEventListener('click', initPractice);
+      els.challengeOpenBtn.addEventListener('click', openChallengeSelect);
+      els.recordsOpenBtn.addEventListener('click', () => showScreen('records'));
+      els.clearCustomBtn.addEventListener('click', () => {
+        els.customInput.value = '';
+        showToast('직접 넣은 글씨를 비웠어요.');
+      });
+      document.querySelectorAll('[data-go-menu]').forEach(btn => btn.addEventListener('click', () => showScreen('menu')));
+      document.querySelectorAll('[data-challenge]').forEach(btn => {
+        btn.addEventListener('click', () => initChallenge(btn.dataset.challenge));
+      });
+      els.drawingCanvas.addEventListener('pointerdown', startDrawing);
+      els.drawingCanvas.addEventListener('pointermove', draw);
+      els.drawingCanvas.addEventListener('pointerup', stopDrawing);
+      els.drawingCanvas.addEventListener('pointercancel', stopDrawing);
+      els.drawingCanvas.addEventListener('pointerleave', stopDrawing);
+      els.clearBtn.addEventListener('click', () => clearDrawing(true));
+      els.checkBtn.addEventListener('click', evaluateWriting);
+      els.nextBtn.addEventListener('click', nextItem);
+      els.challengeNextBtn.addEventListener('click', nextChallengeItem);
+      els.showAnswerBtn.addEventListener('click', showAnswer);
+      els.speakBtnTop.addEventListener('click', speakCurrent);
+      els.speakBtnMain.addEventListener('click', speakCurrent);
+      els.retryChallengeBtn.addEventListener('click', () => initChallenge(state.lastChallengeKey));
+      els.resultRecordsBtn.addEventListener('click', () => showScreen('records'));
+      els.clearRecordsBtn.addEventListener('click', () => {
+        if (!state.records.length) {
+          showToast('비울 기록이 없어요.');
+          return;
+        }
+        const ok = confirm('기록을 모두 비울까요?');
+        if (!ok) return;
+        state.records = [];
+        saveRecords();
+        renderRecords();
+        refreshMenuStats();
+        showToast('기록을 비웠어요.');
+      });
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (state.screen === 'practice') resizeCanvases();
+        }, 120);
+      });
+    }
+
+    function init() {
+      loadRecords();
+      bindEvents();
+      refreshMenuStats();
+    }
+
+    init();
+  </script>
+</body>
+</html>
