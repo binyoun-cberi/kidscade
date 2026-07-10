@@ -404,7 +404,7 @@
   <main class="game-body" aria-label="큰 숫자 슬라이딩 퍼즐 게임">
     <section class="top-bar">
       <div class="stat-box">
-        <div class="stat-label">오늘 최고</div>
+        <div class="stat-label">오늘 최고 시간</div>
         <div id="bestDisplay" class="stat-value">--:--.--</div>
         <div id="bestMovesDisplay" class="stat-label" style="margin-top:5px;">이동 --회</div>
       </div>
@@ -502,8 +502,8 @@
           <ul class="info-list">
             <li><span>👆</span><span>빈 칸과 맞닿은 타일을 누르면 그 타일이 빈 칸으로 이동합니다.</span></li>
             <li><span>🔢</span><span>1부터 차례대로 정렬하고, 마지막 칸은 비워 두면 성공입니다.</span></li>
-            <li><span>🎯</span><span>같은 날·같은 난이도에서는 같은 퍼즐이 나오며, 새로 뽑기는 포기로 처리됩니다.</span></li>
-            <li><span>💔</span><span>포기하거나 실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다.</span></li>
+            <li><span>🎯</span><span>시작할 때마다 다른 도전 퍼즐이 나오며, 도전 중 포기·새로고침·닫기는 포기로 처리됩니다.</span></li>
+            <li><span>💔</span><span>포기하거나 실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다. 힌트를 쓰면 기록 저장은 되지 않습니다.</span></li>
             <li><span>⌨️</span><span>컴퓨터에서는 방향키로도 움직일 수 있습니다.</span></li>
           </ul>
         </div>
@@ -561,27 +561,29 @@
     const MAX_HEARTS = 3;
     const HEART_REGEN_MS = 5 * 60 * 1000;
 
-    // 리셋 노가다 방지용 도전 규칙
-    // 기존처럼 n×n 정도만 섞으면 몇 번 클릭으로 풀리는 판이 자주 나옵니다.
-    // 그래서 도전 깊이를 높이고, 같은 날·같은 난이도에서는 같은 퍼즐이 나오게 고정합니다.
-    const CHALLENGE_VERSION = 'daily_reroll_lock_v1';
+    // 악용 방지용 도전 규칙
+    // 1) 4×4가 10초 안에 끝나는 원인을 줄이기 위해 섞기 깊이를 크게 올립니다.
+    // 2) 같은 날 같은 퍼즐을 외워서 깨는 일을 막기 위해 시작할 때마다 새 시드를 만듭니다.
+    // 3) 새로고침·닫기로 포기를 회피하는 일을 줄이기 위해 진행 중 도전을 localStorage에 표시합니다.
+    const CHALLENGE_VERSION = 'attempt_lock_v2';
+    const RECORD_SALT = 'BPT_record_check_v2';
 
     const baselineMovesBySize = {
-      4: 32,
-      5: 50,
-      6: 72,
-      8: 112,
-      9: 135,
-      10: 160
+      4: 76,
+      5: 112,
+      6: 150,
+      8: 230,
+      9: 270,
+      10: 320
     };
 
     const moveMarginBySize = {
-      4: 12,
-      5: 16,
-      6: 22,
-      8: 34,
-      9: 40,
-      10: 48
+      4: 52,
+      5: 72,
+      6: 96,
+      8: 140,
+      9: 165,
+      10: 195
     };
 
     const tilePalette = [
@@ -608,6 +610,7 @@
     let hintTimeout = null;
     let solutionMoveMap = new Map();
     let hintCount = 0;
+    let activeChallenge = null;
     let heartState = {
       hearts: MAX_HEARTS,
       lastHeartAt: Date.now()
@@ -619,11 +622,47 @@
     }
 
     function storageKey() {
+      return `bigPuzzleRecord_v5_${getTodayStamp()}_${size}x${size}`;
+    }
+
+    function legacyStorageKey() {
       return `bigPuzzleRecord_v4_${getTodayStamp()}_${size}x${size}`;
     }
 
+    function activeAttemptKey(n = size) {
+      return `bigPuzzleActiveAttempt_v2_${getTodayStamp()}_${n}x${n}`;
+    }
+
+    function makeRandomToken() {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const data = new Uint32Array(4);
+        window.crypto.getRandomValues(data);
+        return [...data].map(n => n.toString(36)).join('');
+      }
+      return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+    }
+
+    function createNewChallenge() {
+      activeChallenge = {
+        version: CHALLENGE_VERSION,
+        date: getTodayStamp(),
+        size,
+        seed: `${CHALLENGE_VERSION}|${getTodayStamp()}|${size}x${size}|${makeRandomToken()}`,
+        startedAt: Date.now(),
+        completed: false
+      };
+      localStorage.setItem(activeAttemptKey(), JSON.stringify(activeChallenge));
+    }
+
+    function clearActiveChallenge() {
+      if (activeChallenge) localStorage.removeItem(activeAttemptKey(activeChallenge.size || size));
+      localStorage.removeItem(activeAttemptKey());
+      activeChallenge = null;
+    }
+
     function challengeSeed() {
-      return `${CHALLENGE_VERSION}|${getTodayStamp()}|${size}x${size}`;
+      if (!activeChallenge) createNewChallenge();
+      return activeChallenge.seed;
     }
 
     function xmur3(str) {
@@ -656,6 +695,21 @@
       return 'bigPuzzleHeartState_v1';
     }
 
+    function resolveAbandonedAttempts() {
+      [4, 5, 6, 8, 9, 10].forEach(n => {
+        const key = activeAttemptKey(n);
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        try {
+          const attempt = JSON.parse(raw);
+          if (attempt && attempt.completed !== true) {
+            consumeHeart();
+          }
+        } catch {}
+        localStorage.removeItem(key);
+      });
+    }
+
     function solvedState(n = size) {
       const arr = [];
       for (let i = 1; i < n * n; i++) arr.push(i);
@@ -682,20 +736,66 @@
       return `${minutes}:${String(seconds).padStart(2, '0')}`;
     }
 
+    function recordSignature(record) {
+      const source = `${record.timeMs}|${record.moves}|${record.hints}|${record.date}|${record.version}|${size}|${RECORD_SALT}`;
+      let h = 2166136261;
+      for (let i = 0; i < source.length; i++) {
+        h ^= source.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(36);
+    }
+
+    function normalizeRecord(record) {
+      if (!record || !Number.isFinite(record.timeMs) || !Number.isFinite(record.moves)) return null;
+      if (record.timeMs <= 0 || record.moves <= 0) return null;
+      if (record.date && record.date !== getTodayStamp()) return null;
+      if (record.signature && record.signature !== recordSignature(record)) return null;
+      return {
+        timeMs: Math.round(record.timeMs),
+        moves: Math.round(record.moves),
+        hints: Math.max(0, Math.round(record.hints || 0)),
+        date: record.date || getTodayStamp(),
+        version: record.version || 'legacy',
+        signature: record.signature || ''
+      };
+    }
+
     function loadBestRecord() {
-      const raw = localStorage.getItem(storageKey());
+      let raw = localStorage.getItem(storageKey());
+      let usingLegacy = false;
+      if (!raw) {
+        raw = localStorage.getItem(legacyStorageKey());
+        usingLegacy = Boolean(raw);
+      }
       if (!raw) {
         bestDisplay.textContent = '--:--.--';
         bestMovesDisplay.textContent = '이동 --회';
         return null;
       }
       try {
-        const record = JSON.parse(raw);
+        const record = normalizeRecord(JSON.parse(raw));
+        if (!record) throw new Error('invalid record');
+
+        if (usingLegacy) {
+          const migrated = {
+            timeMs: record.timeMs,
+            moves: record.moves,
+            hints: record.hints || 0,
+            date: getTodayStamp(),
+            version: 'legacy_migrated'
+          };
+          migrated.signature = recordSignature(migrated);
+          localStorage.setItem(storageKey(), JSON.stringify(migrated));
+          raw = localStorage.getItem(storageKey());
+        }
+
         bestDisplay.textContent = formatTime(record.timeMs);
         bestMovesDisplay.textContent = `이동 ${record.moves}회`;
         return record;
       } catch {
         localStorage.removeItem(storageKey());
+        localStorage.removeItem(legacyStorageKey());
         bestDisplay.textContent = '--:--.--';
         bestMovesDisplay.textContent = '이동 --회';
         return null;
@@ -705,12 +805,24 @@
     function saveRecordIfBetter(timeMs, moves, hints) {
       // 힌트를 쓴 판은 연습 성공으로만 인정하고, 오늘 최고 기록에는 저장하지 않습니다.
       if (hints > 0) return false;
+      if (!Number.isFinite(timeMs) || !Number.isFinite(moves) || timeMs <= 0 || moves <= 0) return false;
 
+      const cleanTime = Math.round(timeMs);
+      const cleanMoves = Math.round(moves);
       const old = loadBestRecord();
-      // 빠른 손보다 정확한 풀이를 먼저 보도록 이동 수를 우선 비교합니다.
-      const isBetter = !old || moves < old.moves || (moves === old.moves && timeMs < old.timeMs);
+
+      // 기록판의 주 기준은 시간입니다. 시간이 같을 때만 이동 수로 순위를 가릅니다.
+      const isBetter = !old || cleanTime < old.timeMs || (cleanTime === old.timeMs && cleanMoves < old.moves);
       if (isBetter) {
-        localStorage.setItem(storageKey(), JSON.stringify({ timeMs, moves, hints, date: getTodayStamp() }));
+        const record = {
+          timeMs: cleanTime,
+          moves: cleanMoves,
+          hints: 0,
+          date: getTodayStamp(),
+          version: CHALLENGE_VERSION
+        };
+        record.signature = recordSignature(record);
+        localStorage.setItem(storageKey(), JSON.stringify(record));
         loadBestRecord();
       }
       return isBetter;
@@ -806,7 +918,7 @@
       limitDisplay.textContent = `${moveLimit - moveCount}회 남음`;
       limitDetail.textContent = `기준 ${minimumMoveCount} + 여유 ${moveMargin}`;
       movesDisplay.textContent = `이동 ${moveCount}/${moveLimit}회 · 힌트 ${hintCount}회`;
-      startRuleText.textContent = `오늘의 도전은 같은 날·같은 난이도에서 같은 퍼즐입니다. 이동 제한: 기준 ${minimumMoveCount}회 + 여유 ${moveMargin}회`;
+      startRuleText.textContent = `시작할 때마다 새 도전 퍼즐이 나옵니다. 이동 제한: 기준 ${minimumMoveCount}회 + 여유 ${moveMargin}회`;
     }
 
     function updateActionButtons() {
@@ -868,7 +980,7 @@
     }
 
     function updateModeText() {
-      const label = `${size}×${size} 오늘의 도전`;
+      const label = `${size}×${size} 새 도전`;
       modeText.textContent = label;
       startDescription.textContent = `1부터 ${size * size - 1}까지 순서대로 맞추고 마지막 칸을 비워 두세요.`;
       modeButtons.forEach(btn => btn.classList.toggle('active', Number(btn.dataset.size) === size));
@@ -960,9 +1072,9 @@
     }
 
     function startTimer() {
-      startTime = Date.now();
+      startTime = performance.now();
       timerInterval = setInterval(() => {
-        currentTimeMs = Date.now() - startTime;
+        currentTimeMs = Math.max(0, performance.now() - startTime);
         timerDisplay.textContent = formatTime(currentTimeMs);
       }, 30);
     }
@@ -989,6 +1101,16 @@
       const rowB = Math.floor(indexB / size);
       const colB = indexB % size;
       return Math.abs(rowA - rowB) + Math.abs(colA - colB);
+    }
+
+    function getBoardDisorder(arr) {
+      let sum = 0;
+      for (let i = 0; i < arr.length; i++) {
+        const num = arr[i];
+        if (num === 0) continue;
+        sum += getManhattan(i, num - 1);
+      }
+      return sum;
     }
 
     function shuffleBoard() {
@@ -1020,6 +1142,7 @@
               movingNumber,
               key: serialize(preview),
               distance: getManhattan(idx, targetZeroIndex),
+              disorder: getBoardDisorder(preview),
               random: rng()
             };
           })
@@ -1054,14 +1177,16 @@
               movingNumber,
               key: serialize(preview),
               distance: getManhattan(idx, targetZeroIndex),
+              disorder: getBoardDisorder(preview),
               random: rng()
             };
           });
         }
 
-        // 가장 단순한 왕복 이동을 피하면서도 무작위성을 조금 남깁니다.
-        candidates.sort((a, b) => (a.distance - b.distance) || (a.random - b.random));
-        const chosen = candidates[rng() < 0.72 ? 0 : Math.floor(rng() * candidates.length)];
+        // 가장 단순한 왕복 이동을 피하면서도 타일이 충분히 흩어지도록 점수를 줍니다.
+        candidates.sort((a, b) => (b.disorder - a.disorder) || (a.distance - b.distance) || (a.random - b.random));
+        const pickRange = Math.min(candidates.length, Math.max(2, Math.min(4, Math.floor(size / 2))));
+        const chosen = candidates[rng() < 0.78 ? 0 : Math.floor(rng() * pickRange)];
         const zeroBefore = zeroIdx;
 
         state[zeroIdx] = chosen.movingNumber;
@@ -1136,8 +1261,11 @@
     }
 
     function winGame() {
+      currentTimeMs = Math.max(0, performance.now() - startTime);
       isPlaying = false;
       stopTimer();
+      clearActiveChallenge();
+      timerDisplay.textContent = formatTime(currentTimeMs);
       playTone('win');
 
       const isNewRecord = saveRecordIfBetter(currentTimeMs, moveCount, hintCount);
@@ -1145,7 +1273,7 @@
       finalMoves.textContent = `이동 ${moveCount}/${moveLimit}회 · 힌트 ${hintCount}회`;
       newRecordText.textContent = hintCount > 0
         ? '힌트를 사용해서 연습 성공으로 기록돼요.'
-        : (isNewRecord ? '🏆 오늘의 새로운 최고 기록!' : '오늘 최고 기록은 이동 수가 더 적거나 시간이 더 빨라야 바뀌어요.');
+        : (isNewRecord ? '🏆 오늘의 새로운 최고 기록!' : '오늘 최고 기록은 시간이 더 빨라야 바뀌어요. 시간이 같으면 이동 수가 적은 기록을 우선해요.');
 
       updateActionButtons();
       winModal.classList.remove('hidden');
@@ -1156,12 +1284,13 @@
     function failGame(reason = 'limit') {
       isPlaying = false;
       stopTimer();
+      clearActiveChallenge();
       playTone('lose');
       consumeHeart();
       updateActionButtons();
 
       loseText.textContent = reason === 'abandon'
-        ? '도전 중 새 퍼즐 뽑기는 포기로 처리돼요. 같은 난이도에서는 오늘 같은 퍼즐이 다시 나옵니다.'
+        ? '도전 중 포기·새로고침·닫기는 포기로 처리돼요. 다시 시작하면 새 퍼즐이 나옵니다.'
         : `이동 제한 ${moveLimit}회를 모두 사용했어요.`;
       if (heartState.hearts > 0) {
         loseHeartText.textContent = `남은 하트 ${heartState.hearts}/${MAX_HEARTS}`;
@@ -1191,6 +1320,7 @@
 
       stopTimer();
       clearHint();
+      createNewChallenge();
       shuffleBoard();
 
       currentTimeMs = 0;
@@ -1288,6 +1418,10 @@
       if (!tile) return;
 
       hintCount++;
+      if (activeChallenge) {
+        activeChallenge.hintsUsed = hintCount;
+        localStorage.setItem(activeAttemptKey(), JSON.stringify(activeChallenge));
+      }
       updateMoveRuleText();
       tile.classList.add('hint');
       hintTimeout = setTimeout(clearHint, 1300);
@@ -1350,6 +1484,7 @@
 
     loadHeartState();
     syncHearts();
+    resolveAbandonedAttempts();
     heartInterval = setInterval(syncHearts, 1000);
     resetForCurrentSize();
   </script>
