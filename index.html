@@ -1043,7 +1043,397 @@ body.dark-mode .site-credits {
             .sook-action-grid { grid-template-columns: 1fr; }
         }
 
-    </style>
+
+
+        /* =========================================
+            🐠 쑥쑥 펫: Canvas 3D 느낌 선택형 모델
+           ========================================= */
+        .sook-coach-content { max-width: 980px !important; }
+        .sook-top-grid { grid-template-columns: minmax(380px, 1.45fr) minmax(260px, 0.95fr) !important; }
+        .sook-3d-room {
+            height: auto !important;
+            min-height: 430px !important;
+            padding: 12px;
+            box-sizing: border-box;
+            display: grid !important;
+            grid-template-rows: auto 1fr auto;
+            gap: 10px;
+            background:
+                radial-gradient(circle at 22% 14%, rgba(255,255,255,0.95), transparent 18%),
+                linear-gradient(135deg, rgba(224,242,254,0.98), rgba(240,253,244,0.98)) !important;
+            border: 3px solid rgba(59, 130, 246, 0.25) !important;
+        }
+        .sook-pet-picker {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            z-index: 4;
+        }
+        .sook-pet-choice {
+            border: 2px solid rgba(148, 163, 184, 0.24);
+            background: rgba(255,255,255,0.78);
+            color: #334155;
+            border-radius: 16px;
+            padding: 9px 8px;
+            cursor: pointer;
+            font-weight: 900;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+            word-break: keep-all;
+        }
+        .sook-pet-choice:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12); }
+        .sook-pet-choice.active {
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(236,253,245,0.96));
+            border-color: #22c55e;
+            color: #15803d;
+        }
+        .sook-pet-stage-wrap {
+            position: relative;
+            min-height: 300px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.45);
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.54), inset 0 -18px 24px rgba(15,23,42,0.06);
+            z-index: 2;
+        }
+        #sook-pet-canvas { width: 100%; height: 100%; display: block; touch-action: manipulation; }
+        .sook-pet-caption {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 12px;
+            background: rgba(15, 23, 42, 0.74);
+            color: white;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.86rem;
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(15,23,42,0.18);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            word-break: keep-all;
+        }
+        .sook-pet-action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            z-index: 4;
+        }
+        .sook-pet-action-btn {
+            min-height: 44px;
+            border: none;
+            border-radius: 14px;
+            background: white;
+            color: #334155;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+            word-break: keep-all;
+        }
+        .sook-pet-action-btn:hover { transform: translateY(-2px); background: #fef3c7; box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12); }
+        .sook-pet-action-btn[data-sook-action="feed"] { color: #d97706; }
+        .sook-pet-action-btn[data-sook-action="play"] { color: #2563eb; }
+        .sook-3d-statbox {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .sook-need-row {
+            background: rgba(255,255,255,0.72);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            padding: 8px 9px;
+            box-shadow: 0 6px 14px rgba(15,23,42,0.04);
+        }
+        .sook-need-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            font-weight: 900;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+        .sook-need-track { height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .sook-need-fill { height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, #22c55e, #a3e635); transition: width 0.24s ease; }
+        .sook-need-fill.hunger { background: linear-gradient(90deg, #f97316, #facc15); }
+        .sook-need-fill.happy { background: linear-gradient(90deg, #ec4899, #fb7185); }
+        .sook-need-fill.energy { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+        .sook-need-fill.health { background: linear-gradient(90deg, #22c55e, #86efac); }
+        body.dark-mode .sook-pet-choice,
+        body.dark-mode .sook-pet-action-btn,
+        body.dark-mode .sook-need-row { background: rgba(30,41,59,0.82); color: #e2e8f0; border-color: rgba(148,163,184,0.20); }
+        body.dark-mode .sook-pet-choice.active { background: rgba(6,78,59,0.84); color: #bbf7d0; border-color: #22c55e; }
+        @media (max-width: 860px) {
+            .sook-top-grid { grid-template-columns: 1fr !important; }
+            .sook-3d-room { min-height: 420px !important; }
+        }
+        @media (max-width: 620px) {
+            .sook-pet-picker { grid-template-columns: 1fr; }
+            .sook-pet-action-grid { grid-template-columns: 1fr 1fr; }
+            .sook-3d-statbox { grid-template-columns: 1fr; }
+            .sook-3d-room { min-height: 500px !important; }
+        }
+
+
+        .sook-pet-shop-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            z-index: 4;
+        }
+        .sook-pet-shop-btn {
+            min-height: 42px;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.88);
+            color: #334155;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+            transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+            word-break: keep-all;
+            font-size: 0.82rem;
+        }
+        .sook-pet-shop-btn small {
+            display: inline-block;
+            margin-left: 2px;
+            padding: 2px 5px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 0.72rem;
+        }
+        .sook-pet-shop-btn:hover { transform: translateY(-2px); background: #ecfdf5; box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12); }
+        .sook-care-guide {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .sook-care-card {
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.82);
+            padding: 9px 10px;
+            text-align: left;
+            box-shadow: 0 6px 14px rgba(15,23,42,0.04);
+            word-break: keep-all;
+        }
+        .sook-care-card strong {
+            display: block;
+            color: #15803d;
+            font-size: 0.78rem;
+            margin-bottom: 3px;
+        }
+        .sook-care-card span {
+            display: block;
+            color: #475569;
+            font-size: 0.76rem;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+        body.dark-mode .sook-pet-shop-btn,
+        body.dark-mode .sook-care-card { background: rgba(30,41,59,0.82); color: #e2e8f0; border-color: rgba(148,163,184,0.20); }
+        body.dark-mode .sook-care-card strong { color: #86efac; }
+        body.dark-mode .sook-care-card span { color: #cbd5e1; }
+        @media (max-width: 620px) { .sook-care-guide { grid-template-columns: 1fr; } }
+        @media (max-width: 760px) {
+            .sook-pet-shop-grid { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+            .sook-pet-shop-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+    
+
+        /* =========================================
+            🐾 쑥쑥 펫 v7: 용품 확장과 UI 정리
+           ========================================= */
+        .sook-coach-content { max-width: 1120px !important; }
+        .sook-top-grid { grid-template-columns: minmax(520px, 1.35fr) minmax(300px, .9fr) !important; align-items: start; }
+        .sook-3d-room {
+            min-height: 620px !important;
+            padding: 14px !important;
+            gap: 12px !important;
+            border-radius: 26px !important;
+            background:
+                radial-gradient(circle at 14% 8%, rgba(255,255,255,.95), transparent 18%),
+                radial-gradient(circle at 88% 10%, rgba(251,191,36,.18), transparent 22%),
+                linear-gradient(135deg, rgba(224,242,254,.98), rgba(240,253,244,.98)) !important;
+        }
+        .sook-pet-hero {
+            display: grid;
+            grid-template-columns: minmax(210px, 1fr) minmax(240px, 1.1fr);
+            gap: 10px;
+            align-items: stretch;
+            z-index: 5;
+        }
+        .sook-pet-profile-card, .sook-pet-summary-card, .sook-owned-supplies {
+            background: rgba(255,255,255,.84);
+            border: 1px solid rgba(148,163,184,.24);
+            border-radius: 20px;
+            box-shadow: 0 10px 22px rgba(15,23,42,.08);
+            backdrop-filter: blur(10px);
+        }
+        .sook-pet-profile-card {
+            display: grid;
+            grid-template-columns: 54px 1fr;
+            gap: 10px;
+            padding: 12px;
+            text-align: left;
+        }
+        .sook-pet-profile-icon {
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: linear-gradient(135deg,#dcfce7,#dbeafe);
+            font-size: 2rem;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,.8);
+        }
+        .sook-pet-profile-title {
+            font-size: 1.02rem;
+            font-weight: 1000;
+            color: #14532d;
+            margin-bottom: 4px;
+            word-break: keep-all;
+        }
+        .sook-pet-profile-sub {
+            font-size: .78rem;
+            font-weight: 900;
+            color: #64748b;
+            line-height: 1.35;
+            word-break: keep-all;
+        }
+        .sook-pet-summary-card {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 10px;
+        }
+        .sook-pet-summary-chip {
+            min-height: 48px;
+            border-radius: 15px;
+            background: rgba(248,250,252,.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 7px 9px;
+            font-weight: 900;
+            color: #334155;
+            text-align: left;
+        }
+        .sook-pet-summary-chip small {
+            display: block;
+            margin-top: 2px;
+            color: #64748b;
+            font-size: .70rem;
+            line-height: 1.2;
+        }
+        .sook-pet-picker {
+            background: rgba(255,255,255,.56);
+            border: 1px solid rgba(255,255,255,.72);
+            border-radius: 20px;
+            padding: 8px !important;
+        }
+        .sook-pet-choice {
+            min-height: 54px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            padding: 8px 6px !important;
+        }
+        .sook-pet-choice.locked {
+            background: linear-gradient(135deg, rgba(255,251,235,.95), rgba(254,243,199,.88)) !important;
+        }
+        .sook-pet-stage-wrap {
+            min-height: 360px !important;
+            border-radius: 26px !important;
+            box-shadow:
+                inset 0 0 0 3px rgba(255,255,255,.62),
+                inset 0 -20px 26px rgba(15,23,42,.07),
+                0 14px 28px rgba(15,23,42,.10) !important;
+        }
+        .sook-pet-caption {
+            left: 18px !important;
+            right: 18px !important;
+            bottom: 16px !important;
+            border-radius: 20px !important;
+            padding: 10px 14px !important;
+            line-height: 1.35 !important;
+        }
+        .sook-pet-panel-title {
+            margin: 2px 2px -4px;
+            color: #166534;
+            font-weight: 1000;
+            text-align: left;
+            font-size: .92rem;
+            z-index: 4;
+        }
+        .sook-pet-shop-grid {
+            max-height: 118px;
+            overflow-y: auto;
+            padding: 2px 3px 6px;
+        }
+        .sook-pet-shop-btn {
+            min-height: 48px !important;
+            padding: 7px 8px;
+            font-size: .79rem !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .sook-owned-supplies {
+            z-index: 4;
+            padding: 10px 12px;
+            text-align: left;
+            color: #334155;
+            font-size: .80rem;
+            font-weight: 900;
+            line-height: 1.45;
+            max-height: 74px;
+            overflow-y: auto;
+        }
+        .sook-owned-supplies strong { color: #15803d; }
+        .sook-owned-supply-chip {
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #166534;
+            border: 1px solid rgba(34,197,94,.22);
+        }
+        .sook-care-guide {
+            grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        }
+        body.dark-mode .sook-pet-profile-card,
+        body.dark-mode .sook-pet-summary-card,
+        body.dark-mode .sook-owned-supplies { background: rgba(30,41,59,.84); color: #e2e8f0; border-color: rgba(148,163,184,.20); }
+        body.dark-mode .sook-pet-profile-title,
+        body.dark-mode .sook-pet-panel-title,
+        body.dark-mode .sook-owned-supplies strong { color: #86efac; }
+        body.dark-mode .sook-pet-profile-sub,
+        body.dark-mode .sook-pet-summary-chip small { color: #cbd5e1; }
+        body.dark-mode .sook-pet-summary-chip { background: rgba(15,23,42,.55); color: #e2e8f0; }
+        @media (max-width: 960px) {
+            .sook-top-grid { grid-template-columns: 1fr !important; }
+            .sook-3d-room { min-height: 650px !important; }
+        }
+        @media (max-width: 680px) {
+            .sook-pet-hero { grid-template-columns: 1fr; }
+            .sook-pet-summary-card { grid-template-columns: 1fr; }
+            .sook-care-guide { grid-template-columns: 1fr !important; }
+        }
+</style>
 </head>
 <body>
 
@@ -1051,7 +1441,7 @@ body.dark-mode .site-credits {
 
     <div id="pet-widget">
         <div id="pet-widget-inner">
-            <span id="pet-widget-avatar">🥚</span>
+            <span id="pet-widget-avatar">🐟</span>
             <div id="pet-widget-badge" class="pet-status-badge">!</div>
         </div>
         <div id="pet-widget-bubble">오늘도 열공하자! 🚀</div>
@@ -1069,10 +1459,10 @@ body.dark-mode .site-credits {
                         <div class="sook-room-sky"></div>
                         <div class="sook-room-floor"></div>
                         <div id="sook-land-decor" class="sook-land-decor">🌼</div>
-                        <div id="pet-room-avatar">🥚</div>
+                        <div id="pet-room-avatar">🐟</div>
                     </div>
                     <div id="pet-room-status" class="sook-status-card">
-                        <div class="sook-status-title" id="pet-display-name">이름: 쑥쑥이 [신비로운 알]</div>
+                        <div class="sook-status-title" id="pet-display-name">나의 쑥쑥 친구 [선택 대기]</div>
                         <div class="stat-row"><div class="stat-label">✨ 성장</div><div class="bar-container"><div class="bar-fill fill-exp" id="bar-exp" style="width: 0%;"></div><div class="bar-text" id="txt-exp">0 / 50</div></div></div>
                         <div class="sook-mini-facts">
                             <span id="sook-seed-chip">🌱 씨앗 0개</span>
@@ -1087,8 +1477,6 @@ body.dark-mode .site-credits {
                     <button class="item-btn btn-buy" id="btn-pet-feed">🎯 오늘의 미션 보기</button>
                     <button class="item-btn btn-equip" id="btn-pet-stroke">🏡 쑥쑥랜드 꾸미기</button>
                     <button class="item-btn btn-buy" id="btn-pet-clean">🎁 오늘의 보상 선택</button>
-                    <button class="item-btn btn-buy hidden" id="btn-pet-heal">숨김</button>
-                    <button class="item-btn btn-equip hidden" id="btn-pet-sleep">숨김</button>
                 </div>
 
                 <div class="sook-panel-block">
@@ -1168,7 +1556,8 @@ body.dark-mode .site-credits {
                     <button class="close-btn" onclick="document.getElementById('shop-modal').classList.add('hidden')">닫기 ✖</button>
                 </div>
                 <div class="shop-nav">
-                    <button class="shop-tab active" data-tab="land">쑥쑥랜드</button>
+                    <button class="shop-tab active" data-tab="land">방 꾸미기</button>
+                    <button class="shop-tab" data-tab="pet">펫 친구</button>
                     <button class="shop-tab" data-tab="card">카드 스킨</button>
                     <button class="shop-tab" data-tab="badge">칭호 배지</button>
                     <button class="shop-tab" data-tab="reward">오늘의 보상</button>
@@ -1725,23 +2114,69 @@ body.dark-mode .site-credits {
                     { id: 'card_neon', name: '네온 카드', desc: '도전 모드에 어울리는 반짝 카드 스킨입니다.', price: 260, icon: '✨', className: 'card-skin-neon' }
                 ],
                 badge: [
-                    { id: 'badge_basic', name: '신입생 게이머', desc: '기본으로 주어지는 배지입니다.', price: 0, icon: '🐣', prefix: '신입생', noun: '게이머' },
+                    { id: 'badge_basic', name: '신입생 게이머', desc: '기본으로 주어지는 배지입니다.', price: 0, icon: '🌱', prefix: '신입생', noun: '게이머' },
                     { id: 'badge_grow', name: '쑥쑥 탐험가', desc: '오늘의 미션을 즐기는 친구에게 잘 어울립니다.', price: 120, icon: '🌱', prefix: '쑥쑥', noun: '탐험가' },
                     { id: 'badge_math', name: '반짝 수학가', desc: '수학·퍼즐 게임을 좋아하는 친구를 위한 배지입니다.', price: 180, icon: '🧠', prefix: '반짝', noun: '수학가' },
                     { id: 'badge_word', name: '말놀이 대장', desc: '국어와 언어 게임을 즐기는 친구에게 어울립니다.', price: 180, icon: '📖', prefix: '말놀이', noun: '대장' },
                     { id: 'badge_artist', name: '무지개 예술가', desc: '음악·예술·창작 게임을 좋아하는 친구를 위한 배지입니다.', price: 220, icon: '🎨', prefix: '무지개', noun: '예술가' },
                     { id: 'badge_dream', name: '꿈 찾는 모험가', desc: '직업체험 게임을 많이 해보고 싶은 친구에게 어울립니다.', price: 260, icon: '🚀', prefix: '꿈 찾는', noun: '모험가' }
                 ],
+                pet: [
+                    { id: 'pet_unlock_parrot', name: '앵무새 데려오기', desc: '횃대와 장난감이 있는 밝은 새장에서 지내는 친구입니다.', price: 180, icon: '🦜', kind: 'unlock_parrot' },
+                    { id: 'pet_unlock_cat', name: '고양이 데려오기', desc: '스크래처와 숨는 곳이 필요한 조용한 친구입니다.', price: 220, icon: '🐱', kind: 'unlock_cat' },
+                    { id: 'pet_unlock_dog', name: '강아지 데려오기', desc: '산책과 놀이, 기본 예절이 필요한 활발한 친구입니다.', price: 220, icon: '🐶', kind: 'unlock_dog' },
+                    { id: 'pet_unlock_goat', name: '염소 데려오기', desc: '마른 축사와 뛰어놀 공간이 필요한 목장 친구입니다.', price: 260, icon: '🐐', kind: 'unlock_goat' },
+                    { id: 'pet_unlock_minipig', name: '미니돼지 데려오기', desc: '정해진 식사량과 탐색 놀이가 필요한 똑똑한 친구입니다.', price: 260, icon: '🐷', kind: 'unlock_miniPig' },
+                    { id: 'pet_unlock_sugarglider', name: '슈가글라이더 데려오기', desc: '높은 케이지와 주머니집이 필요한 야행성 친구입니다.', price: 300, icon: '🐿️', kind: 'unlock_sugarGlider' },
+                    { id: 'pet_unlock_rabbit', name: '토끼 데려오기', desc: '건초와 숨는 집, 넓은 공간이 필요한 친구입니다.', price: 240, icon: '🐰', kind: 'unlock_rabbit' },
+                    { id: 'pet_unlock_turtle', name: '거북이 데려오기', desc: '물과 육지, 일광욕 자리가 모두 필요한 친구입니다.', price: 240, icon: '🐢', kind: 'unlock_turtle' },
+                    { id: 'pet_fish', name: '물고기 친구 추가', desc: '어항에 새로운 물고기를 한 마리 데려옵니다.', price: 80, icon: '🐟', kind: 'fish' },
+                    { id: 'pet_filter', name: '어항 여과기', desc: '물고기가 살 물을 깨끗하게 관리하는 기본 용품입니다.', price: 85, icon: '🧰', kind: 'filter' },
+                    { id: 'pet_heater', name: '어항 히터', desc: '수온을 안정적으로 맞추는 용품입니다.', price: 75, icon: '🌡️', kind: 'heater' },
+                    { id: 'pet_light', name: '어항 조명', desc: '관찰하기 쉽고 식물이 자라기 좋은 조명을 더합니다.', price: 65, icon: '💡', kind: 'light' },
+                    { id: 'pet_plant', name: '수초 심기', desc: '물고기들이 숨고 쉬는 수초를 추가합니다.', price: 45, icon: '🌿', kind: 'plant' },
+                    { id: 'pet_ornament', name: '어항 기물', desc: '성, 보물상자, 동굴 같은 어항 장식을 추가합니다.', price: 70, icon: '🏰', kind: 'ornament' },
+                    { id: 'pet_shrimp', name: '새우 친구', desc: '어항 바닥을 총총 걷는 새우를 추가합니다.', price: 60, icon: '🦐', kind: 'shrimp' },
+                    { id: 'pet_snail', name: '달팽이 친구', desc: '유리벽을 천천히 오르는 달팽이를 추가합니다.', price: 50, icon: '🐌', kind: 'snail' },
+                    { id: 'pet_ham_house', name: '햄스터 숨는 집', desc: '햄스터가 안정감을 느끼는 은신처를 추가합니다.', price: 75, icon: '🏠', kind: 'hamsterHouse' },
+                    { id: 'pet_ham_wheel', name: '안전 쳇바퀴', desc: '햄스터가 밤에 충분히 움직일 수 있는 운동 기구입니다.', price: 70, icon: '🛞', kind: 'wheel' },
+                    { id: 'pet_ham_sand', name: '모래목욕통', desc: '햄스터가 털을 관리할 수 있게 도와줍니다.', price: 55, icon: '🛁', kind: 'sandBath' },
+                    { id: 'pet_ham_chew', name: '이갈이 나무', desc: '햄스터의 이가 자라기 때문에 씹을 것이 필요합니다.', price: 35, icon: '🪵', kind: 'chewStick' },
+                    { id: 'pet_ham_bottle', name: '급수기', desc: '깨끗한 물을 마실 수 있도록 준비합니다.', price: 45, icon: '💧', kind: 'waterBottle' },
+                    { id: 'pet_ham_tunnel', name: '햄스터 터널', desc: '숨어 다니며 탐색할 수 있는 통로입니다.', price: 60, icon: '🌀', kind: 'tunnel' },
+                    { id: 'pet_iguana_branch', name: '굵은 등반가지', desc: '이구아나가 몸을 올리고 쉬는 튼튼한 가지입니다.', price: 70, icon: '🌳', kind: 'branch' },
+                    { id: 'pet_iguana_rock', name: '일광욕 바위', desc: '몸을 따뜻하게 데우는 장소를 만들어줍니다.', price: 65, icon: '🪨', kind: 'rock' },
+                    { id: 'pet_iguana_uvb', name: 'UVB 조명', desc: '이구아나에게 중요한 조명 환경을 만들어줍니다.', price: 90, icon: '☀️', kind: 'uvbLamp' },
+                    { id: 'pet_iguana_mist', name: '습도 분무기', desc: '테라리움의 습도를 유지하는 데 도움을 줍니다.', price: 70, icon: '💦', kind: 'mist' },
+                    { id: 'pet_iguana_vine', name: '덩굴 장식', desc: '이구아나가 숨고 오를 수 있는 느낌을 더합니다.', price: 55, icon: '🌿', kind: 'vine' },
+                    { id: 'pet_parrot_swing', name: '앵무새 그네', desc: '새장 안에서 균형 잡고 놀 수 있는 용품입니다.', price: 55, icon: '🪢', kind: 'swing' },
+                    { id: 'pet_parrot_ladder', name: '새장 사다리', desc: '앵무새가 오르내릴 수 있는 사다리입니다.', price: 55, icon: '🪜', kind: 'ladder' },
+                    { id: 'pet_parrot_bath', name: '앵무새 목욕통', desc: '깃털을 깨끗하게 관리할 수 있게 돕습니다.', price: 50, icon: '🛁', kind: 'bath' },
+                    { id: 'pet_cat_tower', name: '캣타워', desc: '고양이가 높은 곳에서 쉬고 움직일 수 있는 공간입니다.', price: 90, icon: '🗼', kind: 'catTower' },
+                    { id: 'pet_cat_litter', name: '고양이 화장실', desc: '고양이에게 꼭 필요한 생활 공간입니다.', price: 70, icon: '🚽', kind: 'litterBox' },
+                    { id: 'pet_cat_fountain', name: '고양이 정수기', desc: '물을 더 자주 마실 수 있게 도와줍니다.', price: 80, icon: '💧', kind: 'fountain' },
+                    { id: 'pet_dog_leash', name: '산책 목줄', desc: '안전한 산책을 위해 필요한 용품입니다.', price: 55, icon: '🦮', kind: 'leash' },
+                    { id: 'pet_dog_kennel', name: '강아지 켄넬', desc: '강아지가 안정감을 느끼는 쉬는 공간입니다.', price: 75, icon: '🏠', kind: 'kennel' },
+                    { id: 'pet_goat_hay', name: '건초통', desc: '염소와 토끼에게 중요한 건초를 담아둡니다.', price: 55, icon: '🌾', kind: 'hayRack' },
+                    { id: 'pet_goat_platform', name: '오르기 발판', desc: '염소가 좋아하는 오르기 놀이 공간입니다.', price: 60, icon: '⛰️', kind: 'platform' },
+                    { id: 'pet_pig_root', name: '탐색 매트', desc: '미니돼지가 코로 찾으며 노는 용품입니다.', price: 55, icon: '🧩', kind: 'rootingMat' },
+                    { id: 'pet_pig_mud', name: '진흙놀이 공간', desc: '미니돼지가 더위를 식히고 탐색할 수 있는 공간입니다.', price: 65, icon: '💧', kind: 'mudPool' },
+                    { id: 'pet_glider_pouch', name: '주머니집', desc: '슈가글라이더가 안정감을 느끼는 잠자리입니다.', price: 70, icon: '👜', kind: 'pouch' },
+                    { id: 'pet_glider_rope', name: '타는 밧줄', desc: '높은 곳을 오가며 움직일 수 있게 해줍니다.', price: 55, icon: '🪢', kind: 'rope' },
+                    { id: 'pet_rabbit_litter', name: '토끼 화장실', desc: '토끼 하우스를 깨끗하게 관리하는 데 필요합니다.', price: 70, icon: '🚽', kind: 'litterBox' },
+                    { id: 'pet_rabbit_chew', name: '이갈이 나무', desc: '토끼의 이가 계속 자라기 때문에 꼭 필요합니다.', price: 35, icon: '🪵', kind: 'chewStick' },
+                    { id: 'pet_turtle_dock', name: '일광욕 육지', desc: '거북이가 물 밖으로 올라와 몸을 말리는 장소입니다.', price: 80, icon: '☀️', kind: 'turtleDock' },
+                    { id: 'pet_turtle_filter', name: '거북이 수조 여과기', desc: '거북이 수조 물을 깨끗하게 유지하는 데 필요합니다.', price: 85, icon: '🧰', kind: 'turtleFilter' },
+                    { id: 'pet_turtle_ramp', name: '물가 경사로', desc: '거북이가 물과 육지를 오가기 쉽게 해줍니다.', price: 55, icon: '🌉', kind: 'ramp' }
+                ],
                 reward: [
                     { id: 'daily_seed', name: '씨앗 한 줌', desc: '오늘의 보상으로 씨앗 40개를 바로 받습니다.', price: 0, icon: '🌱', rewardType: 'seed', amount: 40 },
                     { id: 'daily_growth', name: '성장 물방울', desc: '쑥쑥이 성장 경험치를 25 얻습니다.', price: 0, icon: '💧', rewardType: 'exp', amount: 25 },
                     { id: 'daily_coupon', name: '꾸미기 할인권', desc: '오늘의 기념 보상으로 씨앗 20개와 경험치 10을 받습니다.', price: 0, icon: '🎟️', rewardType: 'mixed', amount: 20 }
                 ],
-                // legacy keys kept so older saved data does not break
                 emoji: [{ id: 'e_basic', name: '병아리', desc: '기본 지급', price: 0, val: '🐣' }],
                 title: [{ id: 'tp_basic', type: 'title_p', name: '[접두어] 신입생', desc: '기본 지급', price: 0, val: '신입생' }, { id: 'tn_basic', type: 'title_n', name: '[명사] 게이머', desc: '기본 지급', price: 0, val: '게이머' }],
                 theme: [{ id: 'th_basic', name: '기본 테마', desc: '기본', price: 0, val: '' }],
-                pet: [],
                 gacha: []
             }
 
@@ -1881,7 +2316,7 @@ body.dark-mode .site-credits {
             }
 
             // =====================================
-            // 🐾 고도화된 에듀 펫 시스템 (20종 진화 트리)
+            // 🐾 쑥쑥 친구 성장 기록 시스템
             // =====================================
             const animalDB = [
                 { id: 1, type: "견과", stages: ["🐶", "🐕", "🐺"] },
@@ -1907,7 +2342,7 @@ body.dark-mode .site-credits {
             ];
 
             const defaultPet = {
-                name: "쑥쑥이", level: 1, exp: 0,
+                name: "쑥쑥 친구", level: 2, exp: 0,
                 fullness: 100, affection: 50, cleanliness: 100, fatigue: 0,
                 isSick: false, poops: 0, animalId: 0,
                 expTracks: { math: 0, korean: 0, lang: 0, trivia: 0, music: 0 }
@@ -1945,17 +2380,17 @@ body.dark-mode .site-credits {
             normalizePet(); savePet(); savePetItems();
 
             function getPetAvatar() {
-                if (pet.level === 1) return "🥚";
-                const animal = animalDB.find(a => a.id === pet.animalId);
-                if (!animal) return "🥚";
-                return animal.stages[Math.min(pet.level - 2, 2)];
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem('kidscade_sook_canvas_pet') || '{}'); } catch(e) { saved = {}; }
+                const icons = { fish: '🐟', hamster: '🐹', iguana: '🦎' };
+                return icons[saved.type || 'fish'] || '🐟';
             }
 
             function getLevelName() {
-                if (pet.level === 1) return "신비로운 알";
-                if (pet.level === 2) return "유아기";
-                if (pet.level === 3) return "성장기";
-                return "완성형 (신수)";
+                if (pet.level === 1) return "새 친구";
+                if (pet.level === 2) return "익숙한 친구";
+                if (pet.level === 3) return "든든한 친구";
+                return "베테랑 친구";
             }
 
             function getMaxExp() {
@@ -1984,9 +2419,8 @@ body.dark-mode .site-credits {
                 if (roomAvatar) roomAvatar.innerText = avatar;
 
                 const displayName = document.getElementById('pet-display-name');
-                const animal = pet.level > 1 ? animalDB.find(a => a.id === pet.animalId) : null;
-                const animalText = animal ? `${animal.type} · ${getLevelName()}` : getLevelName();
-                if (displayName) displayName.innerText = `이름: ${pet.name} [${animalText} · ${dominantInfo.label}]`;
+                const animalText = getLevelName();
+                if (displayName) displayName.innerText = `나의 쑥쑥 친구 [${animalText} · ${dominantInfo.label}]`;
 
                 const barExp = document.getElementById('bar-exp');
                 const txtExp = document.getElementById('txt-exp');
@@ -2033,33 +2467,26 @@ body.dark-mode .site-credits {
 
             function getEvolutionHintText() {
                 const dominant = getDominantPetCategory();
-                if (pet.level === 1 && dominant.value <= 0) return '아직 성향이 정해지지 않았어요. 여러 게임을 해보면 쑥쑥이가 방향을 잡아요.';
-                if (pet.level === 1) return `지금은 ${dominant.label}으로 자라는 중이에요. 이 분야 게임을 더 하면 그 느낌의 친구로 부화할 가능성이 커요.`;
-                return `쑥쑥이의 대표 성장 성향은 ${dominant.label}이에요. 다른 분야를 플레이하면 추천도 더 다양해져요.`;
+                if (dominant.value <= 0) return '아직 대표 성향이 정해지지 않았어요. 여러 분야의 게임을 해보면 추천이 더 똑똑해져요.';
+                return `지금은 ${dominant.label} 성향이 가장 강해요. 이 성향은 추천 게임과 쑥쑥랜드 안내에 반영돼요.`;
             }
 
             function showEvolutionHint() {
-                const animal = pet.level > 1 ? animalDB.find(a => a.id === pet.animalId) : null;
-                const animalText = animal ? `\n현재 계열: ${animal.type}` : '';
-                alert(`🔮 쑥쑥이 진화 힌트\n\n${getEvolutionHintText()}${animalText}\n\n수학·국어·외국어·상식·예술 중 어떤 게임을 많이 했는지에 따라 추천과 성장 방향이 달라져요.`);
+                alert(`🔮 쑥쑥 친구 성장 힌트
+
+${getEvolutionHintText()}
+
+수학·국어·외국어·상식·예술 중 어떤 게임을 많이 했는지에 따라 추천과 성장 안내가 달라져요.`);
             }
 
             function checkPetEvolution() {
                 let max = getMaxExp();
                 if (pet.level < 4 && pet.exp >= max) {
                     pet.exp = 0;
-                    let evolutionNote = '';
-                    if (pet.level === 1) {
-                        pet.animalId = pickPetAnimalByStudyTrack();
-                        const dominant = getDominantPetCategory();
-                        const chosenAnimal = animalDB.find(a => a.id === pet.animalId);
-                        evolutionNote = `
-${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계열로 부화했어요!`;
-                    }
                     pet.level++;
                     playUISound('print');
-                    alert(`🎉 축하합니다! 쑥쑥이가 [${getLevelName()}] 로 성장했습니다!${evolutionNote}
-마이룸에서 새로운 모습을 확인해보세요!`);
+                    alert(`🎉 축하합니다! 쑥쑥 친구가 [${getLevelName()}] 단계가 되었어요!
+더 많은 게임과 미션으로 쑥쑥랜드를 꾸며보세요.`);
                 }
                 savePet(); updatePetUI();
             }
@@ -2139,7 +2566,7 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                 if (itemId === 'p_hint') {
                     showEvolutionHint();
                     animatePetRoomAvatar("scale(1.12)");
-                    finishPetCare(`진화 힌트를 확인했어요! 🔮 (${sourceText})`, 'open');
+                    finishPetCare(`성장 힌트를 확인했어요! 🔮 (${sourceText})`, 'open');
                     return true;
                 }
                 if (itemId === 'p_soap') {
@@ -2302,6 +2729,18 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                         btn.innerText = todayClaimed ? '오늘 선택 완료' : '오늘 보상 받기';
                         btn.disabled = todayClaimed;
                         btn.onclick = () => claimDailyReward(item);
+                    } else if (currentShopTab === 'pet') {
+                        const isUnlockPet = item.kind && item.kind.startsWith('unlock_');
+                        const petType = isUnlockPet ? item.kind.replace('unlock_', '') : '';
+                        const alreadyOpen = isUnlockPet && window.sookPetIsUnlocked && window.sookPetIsUnlocked(petType);
+                        btn.className = alreadyOpen ? 'item-btn btn-equip' : 'item-btn btn-buy';
+                        btn.innerText = alreadyOpen ? '선택하기' : (isUnlockPet ? `데려오기 (${item.price.toLocaleString()} 씨앗)` : `추가하기 (${item.price.toLocaleString()} 씨앗)`);
+                        btn.onclick = () => {
+                            if (alreadyOpen && window.sookPetSelect) window.sookPetSelect(petType);
+                            else if (window.sookPetBuy) window.sookPetBuy(item.kind);
+                            else showToast('쑥쑥 친구 방을 먼저 열어주세요.');
+                            renderShop();
+                        };
                     } else if (!owned) {
                         btn.className = 'item-btn btn-buy';
                         btn.innerText = item.price === 0 ? '받기' : `구매 (${item.price.toLocaleString()} 씨앗)`;
@@ -2860,6 +3299,427 @@ ${dominant.label} 경험을 바탕으로 [${chosenAnimal?.type || '신비'}] 계
                     openGameModal(e, this);
                 });
             });
+
+
+
+            // =====================================
+            // 🐠 쑥쑥 펫: Canvas 3D 느낌 선택형 모델
+            // =====================================
+            function setupSookCanvasPets() {
+                const room = document.getElementById('pet-room-area');
+                if (!room || room.dataset.canvasPetReady === 'true') return;
+                room.dataset.canvasPetReady = 'true';
+                room.classList.add('sook-3d-room');
+
+                if (!document.getElementById('sook-pet-extra-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'sook-pet-extra-style';
+                    style.textContent = `
+                        .sook-pet-picker{grid-template-columns:repeat(auto-fit,minmax(112px,1fr));max-height:116px;overflow:auto;padding:2px;}
+                        .sook-pet-choice.locked{opacity:.78;border-color:rgba(251,191,36,.55);background:rgba(255,251,235,.9);color:#92400e;}
+                        .sook-pet-choice.locked.active{border-color:#f59e0b;background:#fffbeb;color:#92400e;}
+                        .sook-pet-choice small{display:block;font-size:.68rem;line-height:1.15;margin-top:2px;color:inherit;opacity:.86;}
+                        .sook-pet-stage-wrap{min-height:310px;}
+                        .sook-pet-shop-grid{grid-template-columns:repeat(auto-fit,minmax(112px,1fr));}
+                    `;
+                    document.head.appendChild(style);
+                }
+
+                room.innerHTML = `
+                    <div class="sook-pet-hero" aria-label="쑥쑥 친구 정보">
+                        <div class="sook-pet-profile-card">
+                            <div class="sook-pet-profile-icon" id="sook-pet-profile-icon">🐟</div>
+                            <div>
+                                <div class="sook-pet-profile-title" id="sook-pet-room-title">물고기 방</div>
+                                <div class="sook-pet-profile-sub" id="sook-pet-room-subtitle">먹이와 환경이 다른 친구들을 바르게 돌봐요.</div>
+                            </div>
+                        </div>
+                        <div class="sook-pet-summary-card">
+                            <div class="sook-pet-summary-chip" id="sook-summary-food">🍽️ 먹이<small>알맞은 먹이</small></div>
+                            <div class="sook-pet-summary-chip" id="sook-summary-climate">🌡️ 환경<small>온도·습도</small></div>
+                            <div class="sook-pet-summary-chip" id="sook-summary-home">🏠 집<small>필요한 용품</small></div>
+                        </div>
+                    </div>
+                    <div class="sook-pet-picker" id="sook-pet-picker" aria-label="쑥쑥 친구 선택"></div>
+                    <div class="sook-pet-stage-wrap">
+                        <canvas id="sook-pet-canvas" width="760" height="450" aria-label="쑥쑥 친구 방"></canvas>
+                        <div class="sook-pet-caption" id="sook-pet-caption">쑥쑥 친구를 골라 함께 놀아봐요.</div>
+                    </div>
+                    <div class="sook-pet-action-grid" aria-label="쑥쑥 친구 상호작용">
+                        <button class="sook-pet-action-btn" type="button" data-sook-action="feed">🍚 밥</button>
+                        <button class="sook-pet-action-btn" type="button" data-sook-action="snack">🍪 간식</button>
+                        <button class="sook-pet-action-btn" type="button" data-sook-action="exercise">🏃 운동</button>
+                        <button class="sook-pet-action-btn" type="button" data-sook-action="play">🎾 놀기</button>
+                    </div>
+                    <div class="sook-pet-panel-title">🛒 지금 친구에게 필요한 용품</div>
+                    <div class="sook-pet-shop-grid" id="sook-pet-shop-grid" aria-label="쑥쑥 친구 구입과 꾸미기"></div>
+                    <div class="sook-owned-supplies" id="sook-owned-supplies"><strong>보유 용품</strong>을 불러오는 중이에요.</div>
+                    <div class="sook-care-guide" id="sook-care-guide" aria-label="동물별 돌봄 정보"></div>
+                    <span id="pet-room-avatar" class="hidden">🐟</span>`;
+
+                const smartNote = document.getElementById('pet-smart-note');
+                if (smartNote && !document.getElementById('sook-3d-statbox')) {
+                    smartNote.insertAdjacentHTML('afterend', `
+                        <div class="sook-3d-statbox" id="sook-3d-statbox">
+                            <div class="sook-need-row"><div class="sook-need-label"><span>🍚 포만</span><b id="need-hunger-text">70</b></div><div class="sook-need-track"><div id="need-hunger" class="sook-need-fill hunger"></div></div></div>
+                            <div class="sook-need-row"><div class="sook-need-label"><span>💗 기분</span><b id="need-happy-text">70</b></div><div class="sook-need-track"><div id="need-happy" class="sook-need-fill happy"></div></div></div>
+                            <div class="sook-need-row"><div class="sook-need-label"><span>⚡ 활력</span><b id="need-energy-text">70</b></div><div class="sook-need-track"><div id="need-energy" class="sook-need-fill energy"></div></div></div>
+                            <div class="sook-need-row"><div class="sook-need-label"><span>🌿 건강</span><b id="need-health-text">85</b></div><div class="sook-need-track"><div id="need-health" class="sook-need-fill health"></div></div></div>
+                        </div>`);
+                }
+
+                const PETS = {
+                    fish: {
+                        label:'물고기', emoji:'🐟', room:'반짝 어항', habitat:'aquarium', cost:0,
+                        temp:'수온 24~26℃', humidity:'깨끗한 물',
+                        food:'열대어 사료를 아주 조금씩 주고, 남은 먹이는 물이 더러워지기 전에 건져요.',
+                        home:'여과기, 수초, 은신처, 깨끗한 물이 필요해요.',
+                        life:'비슷한 수온과 성격의 물고기끼리 함께 키우고 갑작스러운 물갈이를 피해야 해요.',
+                        actions:{feed:'🐟 사료 주기', snack:'🦐 특별 먹이', exercise:'💧 물살 놀이', play:'🫧 버블 놀이'},
+                        captions:{idle:'어항을 천천히 헤엄치며 쉬고 있어요.',feed:'작은 사료를 먹으러 다가오고 있어요.',snack:'특별 먹이를 먹고 활발해졌어요.',exercise:'물살을 따라 헤엄치며 움직이고 있어요.',play:'버블을 따라다니며 놀고 있어요.',sick:'물 상태와 먹이를 확인해 주세요.',sleep:'어두운 시간에는 조용히 쉬고 있어요.'}
+                    },
+                    hamster: {
+                        label:'햄스터', emoji:'🐹', room:'햄스터 케이지', habitat:'hamster', cost:0,
+                        temp:'20~24℃', humidity:'40~60%',
+                        food:'햄스터 전용 사료가 기본이고 채소·과일은 아주 조금만 가끔 줘요.',
+                        home:'마른 바닥재, 숨는 집, 물병, 등이 휘지 않는 안전한 쳇바퀴가 필요해요.',
+                        life:'주로 밤에 활동하고 겁이 많아서 조용한 공간과 천천히 친해지는 시간이 필요해요.',
+                        actions:{feed:'🌾 사료 주기', snack:'🥕 채소 조금', exercise:'🛞 쳇바퀴', play:'🎾 터널 놀이'},
+                        captions:{idle:'톱밥 위를 킁킁거리며 둘러보고 있어요.',feed:'사료를 두 손으로 잡고 먹고 있어요.',snack:'작은 간식을 맛보고 있어요.',exercise:'쳇바퀴에서 똑바로 달리고 있어요.',play:'터널과 공을 살펴보며 놀고 있어요.',sick:'춥거나 케이지가 축축하지 않은지 확인해 주세요.',sleep:'낮에는 포근한 집에서 자주 쉬어요.'}
+                    },
+                    iguana: {
+                        label:'이구아나', emoji:'🦎', room:'따뜻한 테라리움', habitat:'terrarium', cost:0,
+                        temp:'낮 28~32℃', humidity:'65~80%',
+                        food:'잎채소 중심으로 먹고, 과일은 아주 조금만 줘요.',
+                        home:'UVB 조명, 일광욕 바위, 굵은 등반가지, 습도 유지가 필요해요.',
+                        life:'몸을 스스로 데우지 못하므로 따뜻한 자리와 서늘한 자리를 모두 만들어줘야 해요.',
+                        actions:{feed:'🥬 잎채소 주기', snack:'🍓 과일 조금', exercise:'🌳 가지 오르기', play:'☀️ 일광욕 놀이'},
+                        captions:{idle:'따뜻한 가지 위에서 천천히 주변을 보고 있어요.',feed:'신선한 잎채소를 먹고 있어요.',snack:'과일은 아주 조금만 맛보고 있어요.',exercise:'굵은 가지를 천천히 오르고 있어요.',play:'조명 아래에서 몸을 따뜻하게 하고 있어요.',sick:'온도와 습도, 조명을 확인해 주세요.',sleep:'불빛이 낮아지면 조용히 쉬어요.'}
+                    },
+                    parrot: {
+                        label:'앵무새', emoji:'🦜', room:'밝은 새장', habitat:'cage', cost:180,
+                        temp:'22~28℃', humidity:'45~65%',
+                        food:'전용 펠릿과 씨앗을 기본으로 하고 신선한 채소를 조금 더해요.',
+                        home:'가로로 넓은 새장, 횃대, 장난감, 매일 깨끗한 물이 필요해요.',
+                        life:'혼자 오래 있으면 심심해하므로 말을 걸고 관찰하며 안전하게 놀아줘야 해요.',
+                        actions:{feed:'🌻 모이 주기', snack:'🍎 과일 조금', exercise:'🪽 날개 운동', play:'🔔 장난감 놀이'},
+                        captions:{idle:'횃대 위에서 고개를 갸웃하며 보고 있어요.',feed:'모이를 톡톡 쪼아 먹고 있어요.',snack:'과일을 아주 조금 맛보고 있어요.',exercise:'날개를 파닥이며 몸을 풀고 있어요.',play:'방울 장난감을 건드리며 놀고 있어요.',sick:'깃털을 부풀리고 조용하면 컨디션을 살펴봐 주세요.',sleep:'밤에는 조용하고 어두운 곳에서 쉬어요.'}
+                    },
+                    cat: {
+                        label:'고양이', emoji:'🐱', room:'고양이 방', habitat:'home', cost:220,
+                        temp:'20~26℃', humidity:'40~60%',
+                        food:'고양이 전용 사료와 깨끗한 물이 기본이에요.',
+                        home:'숨을 자리, 스크래처, 화장실, 높은 곳에 올라갈 공간이 필요해요.',
+                        life:'혼자 조용히 쉬는 시간도 필요하고 억지로 안기보다 천천히 다가가야 해요.',
+                        actions:{feed:'🥣 사료 주기', snack:'🐟 간식 조금', exercise:'🐾 점프 운동', play:'🧶 낚싯대 놀이'},
+                        captions:{idle:'꼬리를 살짝 흔들며 쉬고 있어요.',feed:'그릇 앞에서 사료를 먹고 있어요.',snack:'작은 간식을 먹고 기분이 좋아졌어요.',exercise:'캣타워를 오르내리며 움직이고 있어요.',play:'장난감을 톡톡 치며 놀고 있어요.',sick:'숨거나 축 처지면 컨디션을 확인해 주세요.',sleep:'따뜻한 자리에서 몸을 말고 쉬고 있어요.'}
+                    },
+                    dog: {
+                        label:'강아지', emoji:'🐶', room:'강아지 방', habitat:'home', cost:220,
+                        temp:'18~25℃', humidity:'40~60%',
+                        food:'강아지 전용 사료를 정해진 양만큼 주고 사람 음식은 조심해요.',
+                        home:'물그릇, 잠자리, 장난감, 산책 후 쉴 공간이 필요해요.',
+                        life:'매일 산책과 놀이, 기본 예절 연습이 필요하고 혼자 오래 두면 외로워해요.',
+                        actions:{feed:'🥣 사료 주기', snack:'🦴 간식 조금', exercise:'🦮 산책 운동', play:'🥎 공놀이'},
+                        captions:{idle:'꼬리를 흔들며 기다리고 있어요.',feed:'사료를 맛있게 먹고 있어요.',snack:'간식은 조금만 먹고 있어요.',exercise:'산책하듯 신나게 움직이고 있어요.',play:'공을 따라가며 놀고 있어요.',sick:'식욕과 활력이 낮으면 상태를 살펴봐 주세요.',sleep:'푹신한 자리에서 쉬고 있어요.'}
+                    },
+                    goat: {
+                        label:'염소', emoji:'🐐', room:'작은 목장', habitat:'yard', cost:260,
+                        temp:'10~25℃', humidity:'건조하고 통풍 좋게',
+                        food:'깨끗한 건초와 풀, 물을 기본으로 해요.',
+                        home:'통풍되는 축사, 마른 바닥, 뛰어놀 울타리 공간이 필요해요.',
+                        life:'무리 생활을 좋아하고 높은 곳에 올라가기를 좋아해요.',
+                        actions:{feed:'🌾 건초 주기', snack:'🍎 간식 조금', exercise:'⛰️ 오르기 운동', play:'🪵 통나무 놀이'},
+                        captions:{idle:'목장 바닥을 천천히 둘러보고 있어요.',feed:'건초를 오물오물 먹고 있어요.',snack:'간식은 조금만 맛보고 있어요.',exercise:'낮은 발판을 오르내리고 있어요.',play:'통나무 주변을 탐색하며 놀고 있어요.',sick:'축축한 바닥과 더위를 조심해 주세요.',sleep:'마른 축사 안에서 쉬고 있어요.'}
+                    },
+                    miniPig: {
+                        label:'미니돼지', emoji:'🐷', room:'미니돼지 우리', habitat:'yard', cost:260,
+                        temp:'18~26℃', humidity:'40~60%',
+                        food:'미니돼지 전용 사료와 채소를 정해진 양만큼 줘요.',
+                        home:'튼튼한 울타리, 미끄럽지 않은 바닥, 코로 탐색할 놀이가 필요해요.',
+                        life:'똑똑하고 호기심이 많아 과식과 지루함을 조심해야 해요.',
+                        actions:{feed:'🥣 사료 주기', snack:'🥒 채소 조금', exercise:'🐾 걷기 운동', play:'🧩 탐색 놀이'},
+                        captions:{idle:'코로 바닥을 킁킁 살펴보고 있어요.',feed:'사료를 천천히 먹고 있어요.',snack:'채소를 조금 맛보고 있어요.',exercise:'울타리 안을 걸으며 움직이고 있어요.',play:'숨겨진 간식을 찾아보고 있어요.',sick:'과식과 미끄러운 바닥을 조심해 주세요.',sleep:'따뜻한 깔개 위에서 쉬고 있어요.'}
+                    },
+                    sugarGlider: {
+                        label:'슈가글라이더', emoji:'🐿️', room:'높은 케이지', habitat:'cage', cost:300,
+                        temp:'24~28℃', humidity:'50~70%',
+                        food:'전용 식단과 과일·단백질을 균형 있게 준비해요.',
+                        home:'높은 케이지, 주머니집, 나뭇가지, 밤에 움직일 공간이 필요해요.',
+                        life:'야행성이고 외로움을 많이 타서 조용히 친해지는 시간이 필요해요.',
+                        actions:{feed:'🍽️ 식단 주기', snack:'🍌 과일 조금', exercise:'🪂 활강 운동', play:'🌙 주머니 놀이'},
+                        captions:{idle:'높은 가지에서 주변을 살피고 있어요.',feed:'작은 식단을 맛보고 있어요.',snack:'과일은 조금만 먹고 있어요.',exercise:'막을 펼쳐 짧게 활강하고 있어요.',play:'주머니집 근처에서 놀고 있어요.',sick:'추위와 외로움을 조심해 주세요.',sleep:'낮에는 주머니집에서 많이 쉬어요.'}
+                    },
+                    rabbit: {
+                        label:'토끼', emoji:'🐰', room:'토끼 하우스', habitat:'hutch', cost:240,
+                        temp:'15~23℃', humidity:'40~60%',
+                        food:'건초가 가장 중요하고 전용 사료와 채소는 알맞게 줘요.',
+                        home:'넓은 공간, 건초통, 물그릇, 숨는 집, 씹을 장난감이 필요해요.',
+                        life:'더위에 약하고 계속 이가 자라므로 건초와 씹을 것이 중요해요.',
+                        actions:{feed:'🌾 건초 주기', snack:'🥬 채소 조금', exercise:'🐇 깡총 운동', play:'🧺 숨숨 놀이'},
+                        captions:{idle:'귀를 세우고 주변 소리를 듣고 있어요.',feed:'건초를 오물오물 먹고 있어요.',snack:'채소를 조금 맛보고 있어요.',exercise:'깡총깡총 뛰며 움직이고 있어요.',play:'숨는 집 주변을 탐색하고 있어요.',sick:'더위와 식욕 저하를 조심해 주세요.',sleep:'조용한 곳에서 몸을 낮추고 쉬고 있어요.'}
+                    },
+                    turtle: {
+                        label:'거북이', emoji:'🐢', room:'물가 테라리움', habitat:'paludarium', cost:240,
+                        temp:'물 24~28℃', humidity:'따뜻한 육지와 물',
+                        food:'거북이 전용 사료와 알맞은 먹이를 조금씩 줘요.',
+                        home:'수영할 물, 올라가 말릴 육지, 일광욕 조명, 여과기가 필요해요.',
+                        life:'물과 육지를 오가며 살고, 등껍질을 말릴 따뜻한 장소가 필요해요.',
+                        actions:{feed:'🐢 사료 주기', snack:'🥬 채소 조금', exercise:'💧 수영 운동', play:'☀️ 등껍질 말리기'},
+                        captions:{idle:'물가와 육지를 천천히 오가고 있어요.',feed:'사료를 천천히 먹고 있어요.',snack:'채소를 조금 맛보고 있어요.',exercise:'물속에서 천천히 헤엄치고 있어요.',play:'따뜻한 곳에서 등껍질을 말리고 있어요.',sick:'물 온도와 조명을 확인해 주세요.',sleep:'물가 근처에서 조용히 쉬고 있어요.'}
+                    }
+                };
+                const FISH_DB = [
+                    { id:'guppy', label:'구피', body:'#22c55e', light:'#bbf7d0', dark:'#15803d', tail:'#a78bfa', pattern:'spot' },
+                    { id:'neonTetra', label:'네온테트라', body:'#3b82f6', light:'#bfdbfe', dark:'#1d4ed8', tail:'#fb7185', pattern:'stripe' },
+                    { id:'platy', label:'플래티', body:'#fb923c', light:'#fed7aa', dark:'#c2410c', tail:'#facc15', pattern:'dot' },
+                    { id:'cory', label:'코리도라스', body:'#94a3b8', light:'#e2e8f0', dark:'#475569', tail:'#cbd5e1', pattern:'plain' },
+                    { id:'betta', label:'베타', body:'#ec4899', light:'#fbcfe8', dark:'#9d174d', tail:'#8b5cf6', pattern:'fan' }
+                ];
+                const INITIAL_PETS = ['fish','hamster','iguana'];
+                const SHOP_COST = { fish:80, plant:45, ornament:70, shrimp:60, snail:50, filter:85, heater:75, light:65, gravel:40, driftwood:55, mossball:45, bubble:55, hamsterHouse:75, wheel:70, hamToy:55, sandBath:55, chewStick:35, waterBottle:45, foodBowl:35, bedding:45, bridge:55, tunnel:60, branch:70, rock:65, leaf:45, uvbLamp:90, mist:70, vine:55, hide:65, foodDish:35, perch:65, cageToy:60, swing:55, mirror:45, bath:50, ladder:55, cuttlebone:35, foragingBox:60, scratcher:65, catTower:90, litterBox:70, fountain:80, bed:70, catTunnel:60, featherToy:45, leash:55, kennel:75, chewToy:45, trainingCone:40, yardToy:60, hayRack:55, mineralBlock:35, platform:60, brush:40, mudPool:65, rootingMat:55, strawBed:50, treatPuzzle:55, shade:60, pouch:70, rope:55, gliderWheel:85, nestBox:70, burrow:70, hayMat:45, rabbitTunnel:60, turtleDock:80, turtleFilter:85, ramp:55, thermometer:35, pondPlant:55 };
+                const actionDuration = { idle:1, feed:2400, snack:2300, exercise:3300, play:2800 };
+                const default3d = {
+                    type:'fish', selectedFish:'guppy', unlockedPets:[...INITIAL_PETS],
+                    fishTank:{ fish:['guppy'], plants:1, ornaments:0, shrimp:0, snails:0, filters:1, heaters:1, lights:1, gravel:1, driftwood:0, mossballs:0, bubbles:1 },
+                    hamsterRoom:{ houses:1, wheels:1, toys:0, sandBaths:0, chewSticks:0, bottles:1, bowls:1, bedding:1, bridges:0, tunnels:0 }, iguanaRoom:{ branches:1, rocks:1, leaves:1, uvb:1, misters:0, vines:0, hides:0, dishes:1 },
+                    rooms:{ parrot:{perches:1,toys:0,swings:0,mirrors:0,baths:0,ladders:0,cuttlebones:0,foraging:0}, cat:{beds:1,toys:0,scratchers:1,towers:0,litter:1,fountains:0,tunnels:0,feathers:0}, dog:{beds:1,toys:0,leashes:0,kennels:0,chews:0,cones:0,bowls:1}, goat:{shelters:1,toys:0,hayRacks:1,minerals:0,platforms:0,brushes:0}, miniPig:{beds:1,toys:0,rooting:0,mud:0,straw:1,puzzles:0,shade:0}, sugarGlider:{pouches:1,branches:1,toys:0,ropes:0,wheels:0,nests:0,foraging:0}, rabbit:{houses:1,toys:0,hayRacks:1,litter:0,tunnels:0,chews:0,hayMats:0,bowls:1}, turtle:{rocks:1,plants:1,docks:1,filters:1,ramps:0,thermometers:0} },
+                    stats:{hunger:76,happy:74,energy:72,health:90}, action:'idle', actionStarted:0, actionUntil:0, lastStatTick:Date.now()
+                };
+                let stored = {};
+                try { stored = JSON.parse(localStorage.getItem('kidscade_sook_canvas_pet') || '{}'); } catch(e) { stored = {}; }
+                let pet3d = { ...default3d, ...stored,
+                    unlockedPets: Array.isArray(stored.unlockedPets) ? Array.from(new Set([...INITIAL_PETS, ...stored.unlockedPets.filter(id => PETS[id])])) : [...INITIAL_PETS],
+                    fishTank:{...default3d.fishTank, ...(stored.fishTank||{})}, hamsterRoom:{...default3d.hamsterRoom, ...(stored.hamsterRoom||{})}, iguanaRoom:{...default3d.iguanaRoom, ...(stored.iguanaRoom||{})},
+                    rooms:{...default3d.rooms, ...(stored.rooms||{})}, stats:{...default3d.stats, ...(stored.stats||{})}
+                };
+                Object.keys(default3d.rooms).forEach(k => { pet3d.rooms[k] = {...default3d.rooms[k], ...(pet3d.rooms[k]||{})}; });
+                if (!PETS[pet3d.type] || !pet3d.unlockedPets.includes(pet3d.type)) pet3d.type = 'fish';
+                const allowedFishIds = FISH_DB.map(f=>f.id);
+                pet3d.fishTank.fish = Array.isArray(pet3d.fishTank.fish) ? pet3d.fishTank.fish.filter(id=>allowedFishIds.includes(id)) : [];
+                if (!pet3d.fishTank.fish.length) pet3d.fishTank.fish=['guppy'];
+                if (!pet3d.fishTank.fish.includes(pet3d.selectedFish)) pet3d.selectedFish = pet3d.fishTank.fish[0] || 'guppy';
+
+                let stageW=700, stageH=420, dpr=1, lastFrame=performance.now();
+                const particles=[];
+                const canvas=document.getElementById('sook-pet-canvas');
+                const ctx=canvas.getContext('2d');
+                const caption=document.getElementById('sook-pet-caption');
+                const miniShop=document.getElementById('sook-pet-shop-grid');
+                const picker=document.getElementById('sook-pet-picker');
+                const suppliesBox=document.getElementById('sook-owned-supplies');
+                const profileIcon=document.getElementById('sook-pet-profile-icon');
+                const roomTitle=document.getElementById('sook-pet-room-title');
+                const roomSubtitle=document.getElementById('sook-pet-room-subtitle');
+                const summaryFood=document.getElementById('sook-summary-food');
+                const summaryClimate=document.getElementById('sook-summary-climate');
+                const summaryHome=document.getElementById('sook-summary-home');
+
+                function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+                function save3d(){ localStorage.setItem('kidscade_sook_canvas_pet', JSON.stringify({ type:pet3d.type, selectedFish:pet3d.selectedFish, unlockedPets:pet3d.unlockedPets, fishTank:pet3d.fishTank, hamsterRoom:pet3d.hamsterRoom, iguanaRoom:pet3d.iguanaRoom, rooms:pet3d.rooms, stats:pet3d.stats, lastStatTick:pet3d.lastStatTick||Date.now() })); }
+                function fishById(id){return FISH_DB.find(f=>f.id===id)||FISH_DB[0];}
+                function spendSeeds(amount){ if(coins<amount){showToast(`씨앗이 부족해요! (${amount}개 필요)`); return false;} coins-=amount; updateCoinUI(); return true; }
+                function spawn(kind,count){ for(let i=0;i<count;i++){ particles.push({kind,x:stageW*(.35+Math.random()*.3),y:stageH*(.42+Math.random()*.22),vx:(Math.random()-.5)*1.6,vy:-.7-Math.random()*1.2,size:14+Math.random()*18,life:.75+Math.random()*.8,hue:Math.random()}); } }
+                function petInfo(){ return PETS[pet3d.type] || PETS.fish; }
+                function isUnlocked(type){ return pet3d.unlockedPets.includes(type); }
+                function unlockPet(type){ const info=PETS[type]; if(!info) return false; if(isUnlocked(type)){ selectPet(type); return true; } if(!spendSeeds(info.cost||0)) return false; pet3d.unlockedPets.push(type); pet3d.type=type; pet3d.stats={hunger:76,happy:78,energy:74,health:90}; spawn('heart',14); showToast(`${info.label}을(를) 새 쑥쑥 친구로 데려왔어요!`, true); save3d(); updatePetStatusUI(); updatePetUI(); playUISound('coin'); return true; }
+                function updateNeed(id,val){ const fill=document.getElementById(id); const text=document.getElementById(`${id}-text`); if(fill) fill.style.width=`${clamp(Math.round(val),0,100)}%`; if(text) text.textContent=`${clamp(Math.round(val),0,100)}`; }
+                function getAutoAction(nowMs){ if(pet3d.action!=='idle' && nowMs<pet3d.actionUntil) return pet3d.action; const hour=new Date().getHours(); if(pet3d.stats.health<25 || pet3d.stats.hunger<10) return 'sick'; if(pet3d.stats.energy<22 || hour>=22 || hour<6) return 'sleep'; return 'idle'; }
+                function actionCaption(action=getAutoAction(performance.now())){ const info=petInfo(); return (info.captions&&info.captions[action])||info.captions.idle; }
+                function updateActionButtons(){ const labels=petInfo().actions||{}; document.querySelectorAll('.sook-pet-action-btn').forEach(btn=>{ const a=btn.dataset.sookAction; if(labels[a]) btn.textContent=labels[a]; }); }
+                function renderCareGuide(){ const box=document.getElementById('sook-care-guide'); if(!box) return; const info=petInfo(); box.innerHTML=`<div class="sook-care-card"><strong>🍽️ 먹이</strong><span>${info.food}</span></div><div class="sook-care-card"><strong>🌡️ 온도·습도</strong><span>${info.temp} · ${info.humidity}</span></div><div class="sook-care-card"><strong>🏠 사는 환경</strong><span>${info.home}</span></div><div class="sook-care-card"><strong>🐾 사는 방식</strong><span>${info.life}</span></div>`; }
+                function decayStats(nowReal){ const last=Number(pet3d.lastStatTick||nowReal); const elapsed=Math.max(0,Math.min(60*60*1000,nowReal-last)); if(elapsed<12000) return; const minutes=elapsed/60000; const auto=getAutoAction(performance.now()); pet3d.stats.hunger=clamp(pet3d.stats.hunger-minutes*.20,0,100); pet3d.stats.happy=clamp(pet3d.stats.happy-minutes*.10,0,100); if(auto==='sleep') pet3d.stats.energy=clamp(pet3d.stats.energy+minutes*1.8,0,100); else pet3d.stats.energy=clamp(pet3d.stats.energy-minutes*.18,0,100); if(pet3d.stats.hunger<20||pet3d.stats.energy<12) pet3d.stats.health=clamp(pet3d.stats.health-minutes*.45,0,100); else pet3d.stats.health=clamp(pet3d.stats.health+minutes*.12,0,100); pet3d.lastStatTick=nowReal; save3d(); }
+                function renderPicker(){ if(!picker) return; picker.innerHTML=Object.entries(PETS).map(([type,info])=>{ const unlocked=isUnlocked(type); const active=pet3d.type===type; return `<button class="sook-pet-choice ${active?'active':''} ${unlocked?'':'locked'}" type="button" data-sook-pet="${type}">${info.emoji} ${info.label}<small>${unlocked?'선택 가능':`잠금 · ${info.cost} 씨앗`}</small></button>`; }).join(''); picker.querySelectorAll('.sook-pet-choice').forEach(btn=>btn.addEventListener('click',()=>{ const type=btn.dataset.sookPet; if(isUnlocked(type)) selectPet(type); else unlockPet(type); })); }
+                function roomDetail(){ const type=pet3d.type; if(type==='fish') return `${fishById(pet3d.selectedFish).label} 대표 · 물고기 ${pet3d.fishTank.fish.length}마리`; if(type==='hamster') return `집 ${pet3d.hamsterRoom.houses} · 쳇바퀴 ${pet3d.hamsterRoom.wheels} · 장난감 ${pet3d.hamsterRoom.toys}`; if(type==='iguana') return `가지 ${pet3d.iguanaRoom.branches} · 바위 ${pet3d.iguanaRoom.rocks} · 잎사귀 ${pet3d.iguanaRoom.leaves}`; const r=pet3d.rooms[type]||{}; if(type==='parrot') return `횃대 ${r.perches} · 장난감 ${r.toys}`; if(type==='cat') return `침대 ${r.beds} · 스크래처 ${r.scratchers} · 장난감 ${r.toys}`; if(type==='dog') return `잠자리 ${r.beds} · 장난감 ${r.toys}`; if(type==='goat') return `쉼터 ${r.shelters} · 놀잇감 ${r.toys}`; if(type==='miniPig') return `깔개 ${r.beds} · 탐색 놀이 ${r.toys}`; if(type==='sugarGlider') return `주머니 ${r.pouches} · 가지 ${r.branches} · 장난감 ${r.toys}`; if(type==='rabbit') return `숨는 집 ${r.houses} · 씹는 장난감 ${r.toys}`; if(type==='turtle') return `일광욕 바위 ${r.rocks} · 수초 ${r.plants}`; return petInfo().room; }
+                function updatePetStatusUI(){ const auto=getAutoAction(performance.now()); renderPicker(); updateNeed('need-hunger',pet3d.stats.hunger); updateNeed('need-happy',pet3d.stats.happy); updateNeed('need-energy',pet3d.stats.energy); updateNeed('need-health',pet3d.stats.health); const display=document.getElementById('pet-display-name'); const dominantInfo=getDominantPetCategory(); if(display) display.textContent=`나의 쑥쑥 친구: ${petInfo().label} [${roomDetail()} · ${dominantInfo.label}]`; const smart=document.getElementById('pet-smart-note'); if(smart) smart.innerHTML=`🌱 ${petInfo().emoji} ${petInfo().label} · ${roomDetail()}<br>새 친구는 씨앗으로 데려올 수 있고, 동물마다 먹이와 온도·습도, 생활 방식이 달라요.`; if(caption) caption.textContent=`${petInfo().emoji} ${petInfo().label} · ${petInfo().room} · ${actionCaption(auto)}`; if(profileIcon) profileIcon.textContent=petInfo().emoji; if(roomTitle) roomTitle.textContent=`${petInfo().label} · ${petInfo().room}`; if(roomSubtitle) roomSubtitle.textContent=roomDetail(); if(summaryFood) summaryFood.innerHTML=`🍽️ 먹이<small>${petInfo().food.slice(0,34)}${petInfo().food.length>34?'…':''}</small>`; if(summaryClimate) summaryClimate.innerHTML=`🌡️ 환경<small>${petInfo().temp} · ${petInfo().humidity}</small>`; if(summaryHome) summaryHome.innerHTML=`🏠 집<small>${petInfo().home.slice(0,34)}${petInfo().home.length>34?'…':''}</small>`; renderOwnedSupplies(); const widget=document.getElementById('pet-widget-avatar'); if(widget) widget.textContent=petInfo().emoji; const hidden=document.getElementById('pet-room-avatar'); if(hidden) hidden.textContent=petInfo().emoji; renderMiniShop(); updateActionButtons(); renderCareGuide(); save3d(); }
+                function selectPet(type){ if(!PETS[type]) return; if(!isUnlocked(type)){ unlockPet(type); return; } pet3d.type=type; pet3d.action='idle'; pet3d.actionStarted=performance.now(); pet3d.actionUntil=0; playUISound('click'); updatePetStatusUI(); updatePetUI(); }
+                function runAction(action){ const auto=getAutoAction(performance.now()); if(auto==='sick' && action==='exercise'){ showToast('컨디션이 낮아서 운동보다 밥이나 간식이 필요해요.'); return; } const now=performance.now(); pet3d.action=action; pet3d.actionStarted=now; pet3d.actionUntil=now+(actionDuration[action]||1800); if(action==='feed'){ pet3d.stats.hunger=clamp(pet3d.stats.hunger+20,0,100); pet3d.stats.energy=clamp(pet3d.stats.energy+4,0,100); pet3d.stats.health=clamp(pet3d.stats.health+4,0,100); spawn('food',12); } if(action==='snack'){ pet3d.stats.happy=clamp(pet3d.stats.happy+17,0,100); pet3d.stats.hunger=clamp(pet3d.stats.hunger+8,0,100); pet3d.stats.health=clamp(pet3d.stats.health+2,0,100); spawn('heart',10); } if(action==='exercise'){ pet3d.stats.energy=clamp(pet3d.stats.energy-14,0,100); pet3d.stats.health=clamp(pet3d.stats.health+8,0,100); pet3d.stats.happy=clamp(pet3d.stats.happy+5,0,100); spawn('spark',16); } if(action==='play'){ pet3d.stats.happy=clamp(pet3d.stats.happy+15,0,100); pet3d.stats.energy=clamp(pet3d.stats.energy-6,0,100); spawn('spark',16); } pet3d.lastStatTick=Date.now(); save3d(); updatePetStatusUI(); playUISound('open'); }
+
+                function supplyChips(){
+                    const type=pet3d.type;
+                    const chips=[];
+                    const add=(icon,label,count)=>{ if(Number(count)>0) chips.push(`<span class="sook-owned-supply-chip">${icon} ${label} ${count}</span>`); };
+                    if(type==='fish'){
+                        const r=pet3d.fishTank;
+                        add('🐟','물고기',r.fish?.length||1); add('🌿','수초',r.plants); add('🏰','기물',r.ornaments); add('🦐','새우',r.shrimp); add('🐌','달팽이',r.snails); add('🧰','여과기',r.filters); add('🌡️','히터',r.heaters); add('💡','조명',r.lights); add('🪨','바닥재',r.gravel); add('🪵','유목',r.driftwood); add('🟢','마리모',r.mossballs); add('🫧','기포기',r.bubbles);
+                    } else if(type==='hamster'){
+                        const r=pet3d.hamsterRoom;
+                        add('🏠','숨는 집',r.houses); add('🛞','쳇바퀴',r.wheels); add('🎾','장난감',r.toys); add('🛁','모래목욕',r.sandBaths); add('🪵','이갈이 나무',r.chewSticks); add('💧','급수기',r.bottles); add('🥣','밥그릇',r.bowls); add('🌾','바닥재',r.bedding); add('🌉','다리',r.bridges); add('🌀','터널',r.tunnels);
+                    } else if(type==='iguana'){
+                        const r=pet3d.iguanaRoom;
+                        add('🌳','등반가지',r.branches); add('🪨','일광욕 바위',r.rocks); add('🍃','잎사귀',r.leaves); add('☀️','UVB 조명',r.uvb); add('💦','분무기',r.misters); add('🌿','덩굴',r.vines); add('🏠','은신처',r.hides); add('🥣','먹이그릇',r.dishes);
+                    } else {
+                        const r=pet3d.rooms[type]||{};
+                        if(type==='parrot'){ add('🌳','횃대',r.perches); add('🔔','장난감',r.toys); add('🪜','사다리',r.ladders); add('🪞','거울',r.mirrors); add('🛁','목욕통',r.baths); add('🦴','갑오징어뼈',r.cuttlebones); add('🎁','탐색상자',r.foraging); add('🪢','그네',r.swings); }
+                        if(type==='cat'){ add('🛏️','침대',r.beds); add('🪵','스크래처',r.scratchers); add('🗼','캣타워',r.towers); add('🚽','화장실',r.litter); add('💧','정수기',r.fountains); add('🌀','터널',r.tunnels); add('🧶','장난감',r.toys); add('🪶','낚싯대',r.feathers); }
+                        if(type==='dog'){ add('🛏️','잠자리',r.beds); add('🥣','밥그릇',r.bowls); add('🦮','목줄',r.leashes); add('🏠','켄넬',r.kennels); add('🦴','씹는 장난감',r.chews); add('🥎','공',r.toys); add('🚩','훈련콘',r.cones); }
+                        if(type==='goat'){ add('🏠','쉼터',r.shelters); add('🌾','건초통',r.hayRacks); add('🧂','미네랄',r.minerals); add('⛰️','발판',r.platforms); add('🪥','빗',r.brushes); add('🪵','놀잇감',r.toys); }
+                        if(type==='miniPig'){ add('🛏️','깔개',r.beds); add('🌾','짚자리',r.straw); add('🧩','탐색 매트',r.rooting); add('💧','진흙놀이',r.mud); add('🎲','퍼즐피더',r.puzzles); add('⛱️','그늘막',r.shade); add('🪵','놀잇감',r.toys); }
+                        if(type==='sugarGlider'){ add('👜','주머니집',r.pouches); add('🌳','가지',r.branches); add('🪢','밧줄',r.ropes); add('🛞','글라이더 휠',r.wheels); add('🏠','둥지상자',r.nests); add('🎁','탐색 장난감',r.foraging); add('🔔','장난감',r.toys); }
+                        if(type==='rabbit'){ add('🏠','숨는 집',r.houses); add('🌾','건초통',r.hayRacks); add('🚽','화장실',r.litter); add('🌀','터널',r.tunnels); add('🪵','이갈이 나무',r.chews); add('🧺','건초매트',r.hayMats); add('🥣','물그릇',r.bowls); add('🎾','장난감',r.toys); }
+                        if(type==='turtle'){ add('🪨','일광욕 바위',r.rocks); add('🌿','수초',r.plants); add('☀️','일광욕 육지',r.docks); add('🧰','여과기',r.filters); add('🌉','경사로',r.ramps); add('🌡️','온도계',r.thermometers); }
+                    }
+                    return chips;
+                }
+                function renderOwnedSupplies(){
+                    if(!suppliesBox) return;
+                    const chips=supplyChips();
+                    suppliesBox.innerHTML=`<strong>보유 용품</strong><br>${chips.length?chips.join(''):'아직 추가 용품이 없어요. 필요한 용품을 하나씩 준비해요.'}`;
+                }
+                function petSupplyButtons(){
+                    const b=(label,kind,cost)=>`<button class="sook-pet-shop-btn" type="button" data-buy="${kind}">${label}${cost?` <small>${cost}</small>`:''}</button>`;
+                    const list=[];
+                    if(pet3d.type==='fish') list.push(['🐟 물고기 친구','fish'],['🌿 수초','plant'],['🏰 숨숨 장식','ornament'],['🦐 새우','shrimp'],['🐌 달팽이','snail'],['🧰 여과기','filter'],['🌡️ 히터','heater'],['💡 조명','light'],['🪨 바닥재','gravel'],['🪵 유목','driftwood'],['🟢 마리모','mossball'],['🫧 기포기','bubble'],['🔄 대표 바꾸기','cycleFish']);
+                    else if(pet3d.type==='hamster') list.push(['🏠 숨는 집','hamsterHouse'],['🛞 안전 쳇바퀴','wheel'],['🎾 터널·공','hamToy'],['🛁 모래목욕통','sandBath'],['🪵 이갈이 나무','chewStick'],['💧 급수기','waterBottle'],['🥣 밥그릇','foodBowl'],['🌾 바닥재','bedding'],['🌉 작은 다리','bridge'],['🌀 연결 터널','tunnel']);
+                    else if(pet3d.type==='iguana') list.push(['🌳 등반가지','branch'],['🪨 일광욕 바위','rock'],['🍃 습도 잎사귀','leaf'],['☀️ UVB 조명','uvbLamp'],['💦 분무기','mist'],['🌿 덩굴','vine'],['🏠 은신처','hide'],['🥣 먹이그릇','foodDish']);
+                    else if(pet3d.type==='parrot') list.push(['🌳 횃대','perch'],['🔔 장난감','cageToy'],['🪢 그네','swing'],['🪞 거울','mirror'],['🛁 목욕통','bath'],['🪜 사다리','ladder'],['🦴 갑오징어뼈','cuttlebone'],['🎁 탐색상자','foragingBox']);
+                    else if(pet3d.type==='cat') list.push(['🛏️ 침대','bed'],['🪵 스크래처','scratcher'],['🗼 캣타워','catTower'],['🚽 화장실','litterBox'],['💧 정수기','fountain'],['🌀 터널','catTunnel'],['🧶 장난감','cageToy'],['🪶 낚싯대','featherToy']);
+                    else if(pet3d.type==='dog') list.push(['🛏️ 잠자리','bed'],['🥣 밥그릇','foodBowl'],['🦮 목줄','leash'],['🏠 켄넬','kennel'],['🦴 씹는 장난감','chewToy'],['🥎 공','yardToy'],['🚩 훈련콘','trainingCone']);
+                    else if(pet3d.type==='goat') list.push(['🏠 쉼터','bed'],['🌾 건초통','hayRack'],['🧂 미네랄 블록','mineralBlock'],['⛰️ 발판','platform'],['🪥 빗','brush'],['🪵 놀잇감','yardToy']);
+                    else if(pet3d.type==='miniPig') list.push(['🛏️ 깔개','bed'],['🌾 짚자리','strawBed'],['🧩 탐색 매트','rootingMat'],['💧 진흙놀이','mudPool'],['🎲 퍼즐피더','treatPuzzle'],['⛱️ 그늘막','shade'],['🪵 놀잇감','yardToy']);
+                    else if(pet3d.type==='sugarGlider') list.push(['👜 주머니집','pouch'],['🌳 가지','perch'],['🪢 밧줄','rope'],['🛞 글라이더 휠','gliderWheel'],['🏠 둥지상자','nestBox'],['🎁 탐색 장난감','foragingBox'],['🔔 장난감','cageToy']);
+                    else if(pet3d.type==='rabbit') list.push(['🏠 숨는 집','burrow'],['🌾 건초통','hayRack'],['🚽 화장실','litterBox'],['🌀 터널','rabbitTunnel'],['🪵 이갈이 나무','chewStick'],['🧺 건초매트','hayMat'],['🥣 물그릇','foodBowl'],['🎾 장난감','yardToy']);
+                    else if(pet3d.type==='turtle') list.push(['🪨 일광욕 바위','rock'],['🌿 수초','pondPlant'],['☀️ 일광욕 육지','turtleDock'],['🧰 여과기','turtleFilter'],['🌉 경사로','ramp'],['🌡️ 온도계','thermometer']);
+                    return list.map(([label,kind])=>b(label,kind,SHOP_COST[kind]||0)).join('');
+                }
+                function renderMiniShop(){ if(!miniShop) return; const b=(label,kind,cost)=>`<button class="sook-pet-shop-btn" type="button" data-buy="${kind}">${label}${cost?` <small>${cost}</small>`:''}</button>`; let html=''; const locked=Object.entries(PETS).filter(([id,info])=>!isUnlocked(id)); if(locked.length) html += locked.slice(0,3).map(([id,info])=>b(`${info.emoji} ${info.label} 데려오기`,`unlock_${id}`,info.cost)).join(''); html += petSupplyButtons(); html += b('🛒 큰 상점 열기','petShop',0); miniShop.innerHTML=html; miniShop.querySelectorAll('.sook-pet-shop-btn').forEach(btn=>btn.addEventListener('click',()=>buyThing(btn.dataset.buy))); }
+                function buyThing(kind){ if(kind==='petShop'){ currentShopTab='pet'; document.querySelectorAll('.shop-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-tab')==='pet')); document.getElementById('shop-modal').classList.remove('hidden'); renderShop(); return; } if(kind.startsWith('unlock_')){ unlockPet(kind.replace('unlock_','')); renderShop(); return; } if(kind==='cycleFish'){ const owned=pet3d.fishTank.fish; const current=owned.indexOf(pet3d.selectedFish); pet3d.selectedFish=owned[(current+1+owned.length)%owned.length]||'guppy'; showToast(`${fishById(pet3d.selectedFish).label}이(가) 대표 물고기가 되었어요.`); updatePetStatusUI(); updatePetUI(); return; } const cost=SHOP_COST[kind]||0; if(cost&&!spendSeeds(cost)) return; if(kind==='fish'){ const next=FISH_DB.find(f=>!pet3d.fishTank.fish.includes(f.id)); if(!next){ if(cost){coins+=cost;updateCoinUI();} showToast('현재 만날 수 있는 물고기를 모두 데려왔어요!'); return; } pet3d.fishTank.fish.push(next.id); pet3d.selectedFish=next.id; showToast(`${next.label}이(가) 어항에 들어왔어요!`,true); }
+                    else if(kind==='plant'){pet3d.fishTank.plants=clamp((pet3d.fishTank.plants||0)+1,0,8); showToast('수초가 더 풍성해졌어요!',true);} else if(kind==='ornament'){pet3d.fishTank.ornaments=clamp((pet3d.fishTank.ornaments||0)+1,0,6); showToast('어항 기물이 추가되었어요!',true);} else if(kind==='shrimp'){pet3d.fishTank.shrimp=clamp((pet3d.fishTank.shrimp||0)+1,0,8); showToast('새우가 어항 바닥을 총총 걸어다녀요!',true);} else if(kind==='snail'){pet3d.fishTank.snails=clamp((pet3d.fishTank.snails||0)+1,0,8); showToast('달팽이가 유리벽을 천천히 올라가요!',true);} else if(kind==='hamsterHouse'){pet3d.hamsterRoom.houses=clamp((pet3d.hamsterRoom.houses||0)+1,1,4); showToast('햄스터 집이 더 포근해졌어요!',true);} else if(kind==='wheel'){pet3d.hamsterRoom.wheels=clamp((pet3d.hamsterRoom.wheels||0)+1,1,3); showToast('쳇바퀴가 더 튼튼해졌어요!',true);} else if(kind==='hamToy'){pet3d.hamsterRoom.toys=clamp((pet3d.hamsterRoom.toys||0)+1,0,6); showToast('햄스터 장난감이 늘었어요!',true);} else if(kind==='branch'){pet3d.iguanaRoom.branches=clamp((pet3d.iguanaRoom.branches||0)+1,1,5); showToast('나뭇가지가 더 풍성해졌어요!',true);} else if(kind==='leaf'){pet3d.iguanaRoom.leaves=clamp((pet3d.iguanaRoom.leaves||0)+1,1,8); showToast('잎사귀가 더 풍성해졌어요!',true);} else if(kind==='rock'){ if(pet3d.type==='turtle'){pet3d.rooms.turtle.rocks=clamp((pet3d.rooms.turtle.rocks||0)+1,1,5);} else {pet3d.iguanaRoom.rocks=clamp((pet3d.iguanaRoom.rocks||0)+1,1,5);} showToast('따뜻한 바위가 추가되었어요!',true);} else if(kind==='perch'){ const r=pet3d.rooms[pet3d.type]; if(pet3d.type==='parrot') r.perches=clamp((r.perches||0)+1,1,5); else r.branches=clamp((r.branches||0)+1,1,5); showToast('오를 수 있는 가지가 늘었어요!',true);} else if(kind==='cageToy'){ const r=pet3d.rooms[pet3d.type]; r.toys=clamp((r.toys||0)+1,0,8); showToast('놀이 장난감이 늘었어요!',true);} else if(kind==='scratcher'){pet3d.rooms.cat.scratchers=clamp((pet3d.rooms.cat.scratchers||0)+1,1,4); showToast('스크래처가 추가되었어요!',true);} else if(kind==='bed'){ const r=pet3d.rooms[pet3d.type]; if('beds' in r) r.beds=clamp((r.beds||0)+1,1,4); else r.shelters=clamp((r.shelters||0)+1,1,4); showToast('쉴 공간이 더 포근해졌어요!',true);} else if(kind==='yardToy'){ const r=pet3d.rooms[pet3d.type]; r.toys=clamp((r.toys||0)+1,0,8); showToast('놀잇감이 늘었어요!',true);} else if(kind==='burrow'){pet3d.rooms.rabbit.houses=clamp((pet3d.rooms.rabbit.houses||0)+1,1,5); showToast('토끼가 숨을 공간이 생겼어요!',true);} else if(kind==='pondPlant'){pet3d.rooms.turtle.plants=clamp((pet3d.rooms.turtle.plants||0)+1,1,8); showToast('ìì´ê° ì¶ê°ëìì´ì!',true);} else if(kind==='filter'){pet3d.fishTank.filters=clamp((pet3d.fishTank.filters||0)+1,0,3); showToast('ì¬ê³¼ê¸°ê° ì¶ê°ëì´ ë¬¼ ê´ë¦¬ê° ë ì¬ìì¡ì´ì!',true);} else if(kind==='heater'){pet3d.fishTank.heaters=clamp((pet3d.fishTank.heaters||0)+1,0,2); showToast('íí°ë¡ ìì¨ì ë ìì ì ì¼ë¡ ë§ì¶ ì ìì´ì!',true);} else if(kind==='light'){pet3d.fishTank.lights=clamp((pet3d.fishTank.lights||0)+1,0,3); showToast('ì´í­ ì¡°ëªì´ ë ë°ìì¡ì´ì!',true);} else if(kind==='gravel'){pet3d.fishTank.gravel=clamp((pet3d.fishTank.gravel||0)+1,0,4); showToast('ë°ë¥ì¬ê° ë íì±í´ì¡ì´ì!',true);} else if(kind==='driftwood'){pet3d.fishTank.driftwood=clamp((pet3d.fishTank.driftwood||0)+1,0,5); showToast('ì ëª© ì¥ìì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mossball'){pet3d.fishTank.mossballs=clamp((pet3d.fishTank.mossballs||0)+1,0,8); showToast('ë§ë¦¬ëª¨ê° ì´í­ì ë¤ì´ìì´ì!',true);} else if(kind==='bubble'){pet3d.fishTank.bubbles=clamp((pet3d.fishTank.bubbles||0)+1,0,4); showToast('ê¸°í¬ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='sandBath'){pet3d.hamsterRoom.sandBaths=clamp((pet3d.hamsterRoom.sandBaths||0)+1,0,3); showToast('ëª¨ëëª©ìíµì´ ìê²¼ì´ì!',true);} else if(kind==='chewStick'){ if(pet3d.type==='rabbit') pet3d.rooms.rabbit.chews=clamp((pet3d.rooms.rabbit.chews||0)+1,0,8); else pet3d.hamsterRoom.chewSticks=clamp((pet3d.hamsterRoom.chewSticks||0)+1,0,8); showToast('ì´ê°ì´ ëë¬´ê° ì¶ê°ëìì´ì!',true);} else if(kind==='waterBottle'){pet3d.hamsterRoom.bottles=clamp((pet3d.hamsterRoom.bottles||0)+1,1,3); showToast('ê¸ìê¸°ê° ì¤ë¹ëìì´ì!',true);} else if(kind==='foodBowl'){ const r=pet3d.rooms[pet3d.type]; if(pet3d.type==='hamster') pet3d.hamsterRoom.bowls=clamp((pet3d.hamsterRoom.bowls||0)+1,1,3); else if(pet3d.type==='iguana') pet3d.iguanaRoom.dishes=clamp((pet3d.iguanaRoom.dishes||0)+1,1,3); else if(pet3d.type==='dog') r.bowls=clamp((r.bowls||0)+1,1,3); else if(pet3d.type==='rabbit') r.bowls=clamp((r.bowls||0)+1,1,3); showToast('ê·¸ë¦ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='bedding'){pet3d.hamsterRoom.bedding=clamp((pet3d.hamsterRoom.bedding||0)+1,1,5); showToast('ë°ë¥ì¬ê° í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='bridge'){pet3d.hamsterRoom.bridges=clamp((pet3d.hamsterRoom.bridges||0)+1,0,5); showToast('ìì ë¤ë¦¬ê° ì¶ê°ëìì´ì!',true);} else if(kind==='tunnel'){pet3d.hamsterRoom.tunnels=clamp((pet3d.hamsterRoom.tunnels||0)+1,0,5); showToast('íì¤í° í°ëì´ ì´ì´ì¡ì´ì!',true);} else if(kind==='uvbLamp'){pet3d.iguanaRoom.uvb=clamp((pet3d.iguanaRoom.uvb||0)+1,1,3); showToast('UVB ì¡°ëªì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mist'){pet3d.iguanaRoom.misters=clamp((pet3d.iguanaRoom.misters||0)+1,0,3); showToast('ìµë ê´ë¦¬ì© ë¶ë¬´ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='vine'){pet3d.iguanaRoom.vines=clamp((pet3d.iguanaRoom.vines||0)+1,0,6); showToast('ë©êµ´ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='hide'){pet3d.iguanaRoom.hides=clamp((pet3d.iguanaRoom.hides||0)+1,0,4); showToast('ìì ì²ê° ìê²¼ì´ì!',true);} else if(kind==='swing'){pet3d.rooms.parrot.swings=clamp((pet3d.rooms.parrot.swings||0)+1,0,4); showToast('ìì¥ì ê·¸ë¤ê° ìê²¼ì´ì!',true);} else if(kind==='mirror'){pet3d.rooms.parrot.mirrors=clamp((pet3d.rooms.parrot.mirrors||0)+1,0,3); showToast('ìµë¬´ì ê±°ì¸ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='bath'){pet3d.rooms.parrot.baths=clamp((pet3d.rooms.parrot.baths||0)+1,0,3); showToast('ëª©ìíµì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='ladder'){pet3d.rooms.parrot.ladders=clamp((pet3d.rooms.parrot.ladders||0)+1,0,4); showToast('ìì¥ ì¬ë¤ë¦¬ê° ì¶ê°ëìì´ì!',true);} else if(kind==='cuttlebone'){pet3d.rooms.parrot.cuttlebones=clamp((pet3d.rooms.parrot.cuttlebones||0)+1,0,5); showToast('ë¶ë¦¬ ê´ë¦¬ì© ê°ì¤ì§ì´ë¼ê° ìê²¼ì´ì!',true);} else if(kind==='foragingBox'){ const r=pet3d.rooms[pet3d.type]; r.foraging=clamp((r.foraging||0)+1,0,5); showToast('ë¨¹ì´ë¥¼ ì°¾ë ëì´ ììê° ì¶ê°ëìì´ì!',true);} else if(kind==='catTower'){pet3d.rooms.cat.towers=clamp((pet3d.rooms.cat.towers||0)+1,0,4); showToast('ìº£íìê° ì¶ê°ëìì´ì!',true);} else if(kind==='litterBox'){ const r=pet3d.rooms[pet3d.type]; r.litter=clamp((r.litter||0)+1,0,3); showToast('íì¥ì¤ ê³µê°ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='fountain'){pet3d.rooms.cat.fountains=clamp((pet3d.rooms.cat.fountains||0)+1,0,3); showToast('ë¬¼ ì ìê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='catTunnel'){pet3d.rooms.cat.tunnels=clamp((pet3d.rooms.cat.tunnels||0)+1,0,5); showToast('ê³ ìì´ í°ëì´ ìê²¼ì´ì!',true);} else if(kind==='featherToy'){pet3d.rooms.cat.feathers=clamp((pet3d.rooms.cat.feathers||0)+1,0,5); showToast('ëì¯ë ì¥ëê°ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='leash'){pet3d.rooms.dog.leashes=clamp((pet3d.rooms.dog.leashes||0)+1,0,3); showToast('ì°ì± ëª©ì¤ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='kennel'){pet3d.rooms.dog.kennels=clamp((pet3d.rooms.dog.kennels||0)+1,0,3); showToast('ê°ìì§ ì¼ë¬ì´ ìê²¼ì´ì!',true);} else if(kind==='chewToy'){pet3d.rooms.dog.chews=clamp((pet3d.rooms.dog.chews||0)+1,0,5); showToast('ì¹ë ì¥ëê°ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='trainingCone'){pet3d.rooms.dog.cones=clamp((pet3d.rooms.dog.cones||0)+1,0,5); showToast('íë ¨ì½ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='hayRack'){ const r=pet3d.rooms[pet3d.type]; r.hayRacks=clamp((r.hayRacks||0)+1,0,4); showToast('ê±´ì´íµì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mineralBlock'){pet3d.rooms.goat.minerals=clamp((pet3d.rooms.goat.minerals||0)+1,0,4); showToast('ë¯¸ë¤ë ë¸ë¡ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='platform'){pet3d.rooms.goat.platforms=clamp((pet3d.rooms.goat.platforms||0)+1,0,5); showToast('ì¼ì ë°íì´ ì¶ê°ëìì´ì!',true);} else if(kind==='brush'){pet3d.rooms.goat.brushes=clamp((pet3d.rooms.goat.brushes||0)+1,0,3); showToast('ë¹ì§ ëêµ¬ê° ì¤ë¹ëìì´ì!',true);} else if(kind==='strawBed'){pet3d.rooms.miniPig.straw=clamp((pet3d.rooms.miniPig.straw||0)+1,0,4); showToast('ì§ìë¦¬ê° ë í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='rootingMat'){pet3d.rooms.miniPig.rooting=clamp((pet3d.rooms.miniPig.rooting||0)+1,0,5); showToast('ì½ë¡ ì°¾ë íì ë§¤í¸ê° ì¶ê°ëìì´ì!',true);} else if(kind==='mudPool'){pet3d.rooms.miniPig.mud=clamp((pet3d.rooms.miniPig.mud||0)+1,0,3); showToast('ëìë¥¼ ìíë ì§íëì´ ê³µê°ì´ ìê²¼ì´ì!',true);} else if(kind==='treatPuzzle'){pet3d.rooms.miniPig.puzzles=clamp((pet3d.rooms.miniPig.puzzles||0)+1,0,5); showToast('í¼ì¦í¼ëê° ì¶ê°ëìì´ì!',true);} else if(kind==='shade'){pet3d.rooms.miniPig.shade=clamp((pet3d.rooms.miniPig.shade||0)+1,0,3); showToast('ê·¸ëë§ì´ ìê²¼ì´ì!',true);} else if(kind==='pouch'){pet3d.rooms.sugarGlider.pouches=clamp((pet3d.rooms.sugarGlider.pouches||0)+1,1,4); showToast('ì£¼ë¨¸ëì§ì´ ë í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='rope'){pet3d.rooms.sugarGlider.ropes=clamp((pet3d.rooms.sugarGlider.ropes||0)+1,0,5); showToast('íê³  ì¤ë¥¼ ë°§ì¤ì´ ìê²¼ì´ì!',true);} else if(kind==='gliderWheel'){pet3d.rooms.sugarGlider.wheels=clamp((pet3d.rooms.sugarGlider.wheels||0)+1,0,3); showToast('ê¸ë¼ì´ë ì ì© í ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='nestBox'){pet3d.rooms.sugarGlider.nests=clamp((pet3d.rooms.sugarGlider.nests||0)+1,0,4); showToast('ë¥ì§ììê° ì¶ê°ëìì´ì!',true);} else if(kind==='hayMat'){pet3d.rooms.rabbit.hayMats=clamp((pet3d.rooms.rabbit.hayMats||0)+1,0,5); showToast('ê±´ì´ë§¤í¸ê° ì¶ê°ëìì´ì!',true);} else if(kind==='rabbitTunnel'){pet3d.rooms.rabbit.tunnels=clamp((pet3d.rooms.rabbit.tunnels||0)+1,0,5); showToast('í ë¼ í°ëì´ ìê²¼ì´ì!',true);} else if(kind==='turtleDock'){pet3d.rooms.turtle.docks=clamp((pet3d.rooms.turtle.docks||0)+1,1,4); showToast('ì¼ê´ì ì¡ì§ê° ëì´ì¡ì´ì!',true);} else if(kind==='turtleFilter'){pet3d.rooms.turtle.filters=clamp((pet3d.rooms.turtle.filters||0)+1,1,4); showToast('ê±°ë¶ì´ ìì¡° ì¬ê³¼ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='ramp'){pet3d.rooms.turtle.ramps=clamp((pet3d.rooms.turtle.ramps||0)+1,0,4); showToast('ë¬¼ê³¼ ì¡ì§ë¥¼ ì¤ê°ë ê²½ì¬ë¡ê° ìê²¼ì´ì!',true);} else if(kind==='thermometer'){pet3d.rooms.turtle.thermometers=clamp((pet3d.rooms.turtle.thermometers||0)+1,0,3); showToast('ì¨ëê³ê° ì¤ë¹ëìì´ì!',true);} spawn('heart',10); save3d(); updatePetStatusUI(); updatePetUI(); playUISound('coin'); }
+
+                function resizeCanvas(){ const wrap=canvas.parentElement; if(!wrap) return; const rect=wrap.getBoundingClientRect(); stageW=Math.max(360,rect.width||680); stageH=Math.max(260,rect.height||330); dpr=Math.min(2,window.devicePixelRatio||1); canvas.width=Math.round(stageW*dpr); canvas.height=Math.round(stageH*dpr); canvas.style.width=`${stageW}px`; canvas.style.height=`${stageH}px`; ctx.setTransform(dpr,0,0,dpr,0,0); }
+                function roundedRect(c,x,y,w,h,r){ const rr=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+rr,y); c.arcTo(x+w,y,x+w,y+h,rr); c.arcTo(x+w,y+h,x,y+h,rr); c.arcTo(x,y+h,x,y,rr); c.arcTo(x,y,x+w,y,rr); c.closePath(); }
+                function ellipseGradient(c,x,y,rx,ry,stops){ const g=c.createRadialGradient(x-rx*.35,y-ry*.55,2,x,y,Math.max(rx,ry)*1.25); stops.forEach(s=>g.addColorStop(s[0],s[1])); return g; }
+                function drawEye(c,x,y,r,closed=false){ c.save(); if(closed){ c.strokeStyle='#1f2937'; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.arc(x,y+2,r*.78,.1,Math.PI-.1); c.stroke(); c.restore(); return; } c.fillStyle='#fff'; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); c.fillStyle='#0f172a'; c.beginPath(); c.arc(x+2,y+1,r*.58,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,.95)'; c.beginPath(); c.arc(x-2,y-3,r*.23,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawSoftShadow(c,x,y,rx,a=.18){ c.save(); c.fillStyle=`rgba(15,23,42,${a})`; c.beginPath(); c.ellipse(x,y,rx,rx*.16,0,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawCareBadge(c,x,y,icon,label,value,color='#22c55e'){ c.save(); c.translate(x,y); c.fillStyle='rgba(255,255,255,.84)'; roundedRect(c,-6,-22,150,43,14); c.fill(); c.strokeStyle='rgba(148,163,184,.28)'; c.lineWidth=1.5; roundedRect(c,-6,-22,150,43,14); c.stroke(); c.font='900 13px 맑은 고딕, sans-serif'; c.fillStyle=color; c.fillText(`${icon} ${label}`,4,-5); c.font='900 12px 맑은 고딕, sans-serif'; c.fillStyle='#475569'; c.fillText(value,4,13); c.restore(); }
+
+                function drawBackground(c,w,h,t){ const habitat=petInfo().habitat; if(habitat==='aquarium') drawAquarium(c,w,h,t); else if(habitat==='terrarium') drawTerrarium(c,w,h,t); else if(habitat==='cage'||habitat==='hamster') drawCageRoom(c,w,h,t,habitat); else if(habitat==='yard') drawYard(c,w,h,t); else if(habitat==='hutch') drawHutch(c,w,h,t); else if(habitat==='paludarium') drawPaludarium(c,w,h,t); else drawHomeRoom(c,w,h,t); }
+                function drawAquarium(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#dbeafe'); g.addColorStop(.38,'#7dd3fc'); g.addColorStop(1,'#0ea5e9'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); const inset=w*.055, top=h*.12, bottom=h*.86; c.strokeStyle='rgba(255,255,255,.72)'; c.lineWidth=4; roundedRect(c,inset,top,w-inset*2,bottom-top,28); c.stroke(); c.fillStyle='rgba(255,255,255,.16)'; c.beginPath(); c.ellipse(w*.50,h*.18,w*.30,h*.04,0,0,Math.PI*2); c.fill(); c.fillStyle='#fde68a'; c.beginPath(); c.moveTo(inset,bottom); c.quadraticCurveTo(w*.5,h*.80,w-inset,bottom); c.lineTo(w-inset,h); c.lineTo(inset,h); c.closePath(); c.fill(); c.fillStyle='rgba(148,163,184,.45)'; for(let i=0;i<42;i++){ c.beginPath(); c.arc(inset+20+(i*37)%Math.max(60,w-inset*2-40),bottom+12+(i*19)%42,2+(i%3),0,Math.PI*2); c.fill(); } for(let i=0;i<pet3d.fishTank.plants;i++) drawSeaPlant(c,inset+42+i*48+(i%2)*10,bottom-8,.62+.07*(i%3),t+i); for(let i=0;i<pet3d.fishTank.ornaments;i++) drawOrnament(c,w*(.60+.07*(i%4)),bottom-8,i%3,t); drawRockCave(c,w*.25,bottom-4,.72); for(let i=0;i<pet3d.fishTank.shrimp;i++) drawShrimp(c,inset+70+((i*87+t*18)%Math.max(90,w-inset*2-140)),bottom+26+(i%2)*12,.62,t+i); for(let i=0;i<pet3d.fishTank.snails;i++) drawSnail(c,w-inset-52-(i*42)%120,bottom-30-((t*12+i*28)%90),.62,t+i); c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=2; for(let i=0;i<14;i++){ const bx=w*.82+Math.sin(t+i)*18, by=bottom-((t*42+i*38)%(bottom-top)); c.beginPath(); c.arc(bx,by,5+(i%4),0,Math.PI*2); c.stroke(); } drawCareBadge(c,18,28,'💧','수온','24~26℃','#0284c7'); }
+                function drawCageRoom(c,w,h,t,kind){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#fff7ed'); g.addColorStop(1,kind==='hamster'?'#fde68a':'#e0f2fe'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.strokeStyle='rgba(100,116,139,.27)'; c.lineWidth=2; for(let x=w*.12;x<w*.92;x+=w*.09){ c.beginPath(); c.moveTo(x,h*.12); c.lineTo(x,h*.78); c.stroke(); } c.fillStyle=kind==='hamster'?'#fbbf24':'#dbeafe'; c.fillRect(0,h*.75,w,h*.25); if(kind==='hamster'){ drawWheel(c,w*.22,h*.62,70,t); drawHouse(c,w*.78,h*.71,80,'#fb923c'); } else { drawPerch(c,w*.20,h*.55,w*.80,h*.50); for(let i=0;i<(pet3d.rooms[pet3d.type]?.toys||0)+1;i++) drawHangingToy(c,w*(.35+i*.14),h*.22,18,t+i); } drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); drawCareBadge(c,176,28,'💧','습도',petInfo().humidity,'#0284c7'); }
+                function drawTerrarium(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#d9f99d'); g.addColorStop(1,'#84cc16'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.strokeStyle='rgba(255,255,255,.65)'; c.lineWidth=4; roundedRect(c,w*.055,h*.10,w*.89,h*.73,28); c.stroke(); c.fillStyle='#c08457'; c.fillRect(0,h*.74,w,h*.26); for(let i=0;i<pet3d.iguanaRoom.branches;i++) drawBranch(c,w*.12,h*.66-i*16,w*.90,h*.30+i*10,t+i); for(let i=0;i<pet3d.iguanaRoom.leaves;i++) drawLeafCluster(c,w*(.10+(i*.13)% .75),h*(.58-(i%3)*.08),.65,t+i); for(let i=0;i<pet3d.iguanaRoom.rocks;i++) drawRock(c,w*(.58+i*.08),h*.79,45-i*3); drawSunSpot(c,w*.82,h*.20,38,t); drawCareBadge(c,18,28,'🌡️','낮 온도','28~32℃','#f97316'); drawCareBadge(c,176,28,'💧','습도','65~80%','#0284c7'); }
+                function drawHomeRoom(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#fef3c7'); g.addColorStop(1,'#fde68a'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='#fbbf24'; c.fillRect(0,h*.76,w,h*.24); drawWindow(c,w*.78,h*.20,90,70); if(pet3d.type==='cat') drawCatTree(c,w*.20,h*.55,t); else drawDogBed(c,w*.22,h*.72,90); drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); drawCareBadge(c,176,28,'💧','습도',petInfo().humidity,'#0284c7'); }
+                function drawYard(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#bfdbfe'); g.addColorStop(.55,'#d9f99d'); g.addColorStop(1,'#86efac'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='rgba(255,255,255,.8)'; c.beginPath(); c.ellipse(w*.28,h*.18,80,24,0,0,Math.PI*2); c.fill(); c.fillStyle='#a16207'; c.fillRect(0,h*.76,w,h*.24); c.strokeStyle='rgba(120,53,15,.45)'; c.lineWidth=5; for(let x=30;x<w;x+=70){ c.beginPath(); c.moveTo(x,h*.60); c.lineTo(x,h*.78); c.stroke(); } c.beginPath(); c.moveTo(0,h*.66); c.lineTo(w,h*.66); c.stroke(); drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); }
+                function drawHutch(c,w,h,t){ drawHomeRoom(c,w,h,t); c.fillStyle='rgba(255,255,255,.25)'; c.fillRect(0,h*.70,w,h*.07); drawHouse(c,w*.18,h*.72,74,'#a16207'); }
+                function drawPaludarium(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#dcfce7'); g.addColorStop(.65,'#bfdbfe'); g.addColorStop(1,'#38bdf8'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='#fde68a'; c.fillRect(0,h*.66,w*.46,h*.34); c.fillStyle='rgba(14,165,233,.38)'; c.fillRect(w*.35,h*.62,w*.65,h*.38); drawRock(c,w*.36,h*.66,76); for(let i=0;i<(pet3d.rooms.turtle.plants||1);i++) drawSeaPlant(c,w*.64+i*44,h*.82,.55,t+i); drawSunSpot(c,w*.80,h*.20,36,t); drawCareBadge(c,18,28,'🌡️','물 온도','24~28℃','#0284c7'); }
+
+                function drawFishPet(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const fishIds=pet3d.fishTank.fish; fishIds.forEach((id,i)=>{ const f=fishById(id); const phase=t*.75+i*1.7; const x=w*(.48+.20*Math.sin(phase)); const y=h*(.46+.12*Math.sin(phase*.8+i)); const s=(id===pet3d.selectedFish?0.43:0.34)*(action==='exercise'?1.05:1); drawFish(c,x,y,s,f,t+i,action); }); if(action==='feed') drawFoodPellets(c,w,h,t); if(action==='snack') drawShrimp(c,w*.45,h*.58,.8,t); if(action==='play') drawHearts(c,w*.53,h*.32,t); if(action==='sleep') drawZzz(c,w*.58,h*.32,t); }
+                function drawPet(c,w,h,t,progress){ const type=pet3d.type; if(type==='hamster') return drawHamster(c,w,h,t,progress); if(type==='iguana') return drawIguana(c,w,h,t,progress); if(type==='parrot') return drawParrot(c,w,h,t,progress); if(type==='cat') return drawCat(c,w,h,t,progress); if(type==='dog') return drawDog(c,w,h,t,progress); if(type==='goat') return drawGoat(c,w,h,t,progress); if(type==='miniPig') return drawPig(c,w,h,t,progress); if(type==='sugarGlider') return drawSugarGlider(c,w,h,t,progress); if(type==='rabbit') return drawRabbit(c,w,h,t,progress); if(type==='turtle') return drawTurtle(c,w,h,t,progress); }
+
+                function drawOwnedSupplies(c,w,h,t){
+                    const type=pet3d.type;
+                    c.save();
+                    c.globalAlpha=.95;
+                    if(type==='fish'){
+                        const r=pet3d.fishTank;
+                        if(r.filters>0) { c.fillStyle='#64748b'; roundedRect(c,w*.86,h*.38,22,92,8); c.fill(); c.fillStyle='#93c5fd'; c.fillRect(w*.864,h*.42,16,50); }
+                        if(r.heaters>0) { c.strokeStyle='#ef4444'; c.lineWidth=5; c.beginPath(); c.moveTo(w*.11,h*.30); c.lineTo(w*.11,h*.62); c.stroke(); }
+                        if(r.lights>1) drawSunSpot(c,w*.49,h*.10,18,t);
+                        for(let i=0;i<(r.driftwood||0);i++) drawBranch(c,w*(.18+i*.09),h*.77-i*5,w*(.38+i*.08),h*.70-i*6,t+i);
+                        for(let i=0;i<(r.mossballs||0);i++){ c.fillStyle='#22c55e'; c.beginPath(); c.arc(w*(.40+i*.055),h*.78+(i%2)*10,13,0,Math.PI*2); c.fill(); }
+                    } else if(type==='hamster'){
+                        const r=pet3d.hamsterRoom;
+                        if(r.sandBaths>0){ c.fillStyle='#fef3c7'; roundedRect(c,w*.08,h*.70,82,34,14); c.fill(); }
+                        if(r.bottles>0){ c.fillStyle='#60a5fa'; roundedRect(c,w*.86,h*.22,18,80,9); c.fill(); c.fillStyle='#64748b'; c.fillRect(w*.868,h*.45,12,34); }
+                        for(let i=0;i<(r.bridges||0);i++) drawBridge(c,w*(.42+i*.12),h*.73,62,22);
+                        for(let i=0;i<(r.tunnels||0);i++) drawTunnel(c,w*(.62+i*.10),h*.75,60,34,'#a78bfa');
+                        for(let i=0;i<(r.chewSticks||0);i++) drawStick(c,w*(.50+i*.045),h*.82,22,t+i);
+                    } else if(type==='iguana'){
+                        const r=pet3d.iguanaRoom;
+                        if(r.uvb>1) drawLamp(c,w*.79,h*.09,52,'#fde68a');
+                        if(r.misters>0){ c.fillStyle='rgba(125,211,252,.35)'; for(let i=0;i<9;i++){ c.beginPath(); c.arc(w*.24+Math.sin(t+i)*25,h*.28+i*18,4,0,Math.PI*2); c.fill(); } }
+                        for(let i=0;i<(r.vines||0);i++) drawVine(c,w*(.18+i*.10),h*.18,80,t+i);
+                        for(let i=0;i<(r.hides||0);i++) drawRockCave(c,w*(.20+i*.18),h*.79,.52);
+                    } else {
+                        const r=pet3d.rooms[type]||{};
+                        if(type==='parrot'){ for(let i=0;i<(r.swings||0);i++) drawSwing(c,w*(.48+i*.12),h*.26,40,t+i); for(let i=0;i<(r.ladders||0);i++) drawLadder(c,w*(.18+i*.10),h*.24,42,100); if(r.mirrors>0) drawMirror(c,w*.77,h*.34,38); if(r.baths>0){ c.fillStyle='#bae6fd'; roundedRect(c,w*.62,h*.72,84,28,14); c.fill(); } }
+                        if(type==='cat'){ if(r.towers>0) drawCatTowerExtra(c,w*.72,h*.66,t); if(r.litter>0){ c.fillStyle='#e2e8f0'; roundedRect(c,w*.06,h*.72,96,36,12); c.fill(); } if(r.fountains>0) drawWaterFountain(c,w*.84,h*.65,t); for(let i=0;i<(r.tunnels||0);i++) drawTunnel(c,w*(.48+i*.12),h*.76,72,36,'#fb7185'); }
+                        if(type==='dog'){ if(r.kennels>0) drawHouse(c,w*.78,h*.72,82,'#f97316'); if(r.leashes>0) drawLeash(c,w*.18,h*.60,t); for(let i=0;i<(r.cones||0);i++) drawCone(c,w*(.55+i*.08),h*.76,24); }
+                        if(type==='goat'){ for(let i=0;i<(r.platforms||0);i++) drawPlatform(c,w*(.45+i*.12),h*.72-i*14,70,22); if(r.hayRacks>0) drawHayRack(c,w*.14,h*.68); if(r.minerals>0) drawBlock(c,w*.82,h*.74,'#f8fafc'); }
+                        if(type==='miniPig'){ if(r.mud>0){ c.fillStyle='rgba(120,53,15,.28)'; c.beginPath(); c.ellipse(w*.73,h*.78,82,22,0,0,Math.PI*2); c.fill(); } if(r.rooting>0) drawMat(c,w*.18,h*.76,110,38); if(r.shade>0) drawShade(c,w*.24,h*.30,100,46); }
+                        if(type==='sugarGlider'){ for(let i=0;i<(r.ropes||0);i++) drawRope(c,w*(.24+i*.11),h*.18,h*.68,t+i); if(r.wheels>0) drawWheel(c,w*.78,h*.64,54,t*2); for(let i=0;i<(r.nests||0);i++) drawHouse(c,w*(.18+i*.12),h*.70,58,'#a16207'); }
+                        if(type==='rabbit'){ if(r.hayRacks>0) drawHayRack(c,w*.16,h*.70); for(let i=0;i<(r.tunnels||0);i++) drawTunnel(c,w*(.55+i*.12),h*.76,72,36,'#fbbf24'); if(r.litter>0){ c.fillStyle='#e2e8f0'; roundedRect(c,w*.78,h*.72,80,34,12); c.fill(); } }
+                        if(type==='turtle'){ if(r.filters>1){ c.fillStyle='#64748b'; roundedRect(c,w*.86,h*.40,20,80,8); c.fill(); } for(let i=0;i<(r.ramps||0);i++) drawBridge(c,w*(.45+i*.12),h*.68,90,20); if(r.thermometers>0) drawThermo(c,w*.16,h*.34); }
+                    }
+                    c.restore();
+                }
+                function drawFrame(now){ const dt=Math.min(.035,(now-lastFrame)/1000); lastFrame=now; decayStats(Date.now()); if(now>pet3d.actionUntil&&pet3d.action!=='idle'){pet3d.action='idle';updatePetStatusUI();} const t=now/1000; ctx.clearRect(0,0,stageW,stageH); drawBackground(ctx,stageW,stageH,t); drawOwnedSupplies(ctx,stageW,stageH,t); const progress=clamp((now-pet3d.actionStarted)/(actionDuration[pet3d.action]||1),0,1); if(pet3d.type==='fish') drawFishPet(ctx,stageW,stageH,t,progress); else drawPet(ctx,stageW,stageH,t,progress); drawParticles(ctx,dt); const auto=getAutoAction(now); if(auto==='sleep'){ ctx.save(); ctx.fillStyle='rgba(15,23,42,.18)'; roundedRect(ctx,0,0,stageW,stageH,24); ctx.fill(); ctx.restore(); } requestAnimationFrame(drawFrame); }
+
+                // small habitat drawings
+                function drawSeaPlant(c,x,y,s,t){ c.save(); c.translate(x,y); c.scale(s,s); c.strokeStyle='#16a34a'; c.lineWidth=8; c.lineCap='round'; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(i*13,0); c.bezierCurveTo(-25+i*20,-40+Math.sin(t+i)*4,18+i*8,-70,4+i*12,-105); c.stroke(); } c.fillStyle='#22c55e'; c.beginPath(); c.ellipse(-18,-58,15,32,-.45,0,Math.PI*2); c.fill(); c.beginPath(); c.ellipse(30,-78,16,36,.4,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawOrnament(c,x,y,kind,t){ c.save(); c.translate(x,y); if(kind===0){ c.fillStyle='#a78bfa'; c.fillRect(-28,-48,56,48); c.fillStyle='#7c3aed'; c.beginPath(); c.moveTo(-34,-48); c.lineTo(0,-86); c.lineTo(34,-48); c.closePath(); c.fill(); } else { drawRock(c,0,-5,34); } c.restore(); }
+                function drawRockCave(c,x,y,s){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='#94a3b8'; c.beginPath(); c.ellipse(0,0,70,36,0,Math.PI,Math.PI*2); c.lineTo(70,8); c.lineTo(-70,8); c.closePath(); c.fill(); c.fillStyle='#475569'; c.beginPath(); c.ellipse(0,4,32,20,0,Math.PI,Math.PI*2); c.lineTo(32,8); c.lineTo(-32,8); c.closePath(); c.fill(); c.restore(); }
+                function drawRock(c,x,y,r){ c.save(); c.translate(x,y); c.fillStyle='#94a3b8'; c.beginPath(); c.ellipse(0,0,r,r*.38,0,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,.25)'; c.beginPath(); c.ellipse(-r*.2,-r*.12,r*.28,r*.08,0,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawShrimp(c,x,y,s,t){ c.save(); c.translate(x,y); c.scale(s,s); c.strokeStyle='#fb7185'; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.arc(0,0,18,Math.PI*.2,Math.PI*1.5); c.stroke(); c.fillStyle='#fda4af'; c.beginPath(); c.ellipse(-3,0,24,12,-.2,0,Math.PI*2); c.fill(); c.strokeStyle='#be123c'; c.lineWidth=2; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(-10+i*8,8); c.lineTo(-18+i*8,20); c.stroke(); } c.restore(); }
+                function drawSnail(c,x,y,s,t){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='#a16207'; c.beginPath(); c.ellipse(0,10,32,11,0,0,Math.PI*2); c.fill(); c.fillStyle='#fbbf24'; c.beginPath(); c.arc(-8,0,17,0,Math.PI*2); c.fill(); c.strokeStyle='#92400e'; c.lineWidth=3; c.beginPath(); c.arc(-8,0,10,0,Math.PI*1.6); c.stroke(); c.strokeStyle='#a16207'; c.beginPath(); c.moveTo(22,4); c.lineTo(40,-12); c.moveTo(25,5); c.lineTo(44,-4); c.stroke(); c.restore(); }
+                function drawWheel(c,x,y,r,t){ c.save(); c.translate(x,y); c.strokeStyle='rgba(100,116,139,.55)'; c.lineWidth=8; c.beginPath(); c.arc(0,0,r,0,Math.PI*2); c.stroke(); c.lineWidth=3; for(let i=0;i<8;i++){ const a=t*2+i*Math.PI/4; c.beginPath(); c.moveTo(0,0); c.lineTo(Math.cos(a)*r,Math.sin(a)*r); c.stroke(); } c.restore(); }
+                function drawHouse(c,x,y,s,color){ c.save(); c.translate(x,y); c.fillStyle=color; roundedRect(c,-s*.55,-s*.45,s*1.1,s*.72,12); c.fill(); c.fillStyle='rgba(0,0,0,.35)'; c.beginPath(); c.arc(0,-s*.1,s*.22,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawPerch(c,x1,y1,x2,y2){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=10; c.lineCap='round'; c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke(); c.restore(); }
+                function drawHangingToy(c,x,y,r,t){ c.save(); c.strokeStyle='rgba(71,85,105,.45)'; c.lineWidth=2; c.beginPath(); c.moveTo(x,y-36); c.lineTo(x,y); c.stroke(); c.fillStyle='#f59e0b'; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(x-5,y-5,r*.28,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawBranch(c,x1,y1,x2,y2,t){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=12; c.lineCap='round'; c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo((x1+x2)/2,y1-35,x2,y2); c.stroke(); c.strokeStyle='#65a30d'; c.lineWidth=5; c.beginPath(); c.moveTo(x1+40,y1-12); c.quadraticCurveTo(x1+20,y1-60,x1+8,y1-88); c.stroke(); c.restore(); }
+                function drawLeafCluster(c,x,y,s,t){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='#22c55e'; for(let i=0;i<5;i++){ c.beginPath(); c.ellipse(Math.cos(i)*18,Math.sin(i)*12,23,9,i,0,Math.PI*2); c.fill(); } c.restore(); }
+                function drawWindow(c,x,y,w,h){ c.save(); c.fillStyle='#bae6fd'; roundedRect(c,x-w/2,y-h/2,w,h,12); c.fill(); c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=4; c.beginPath(); c.moveTo(x,y-h/2); c.lineTo(x,y+h/2); c.moveTo(x-w/2,y); c.lineTo(x+w/2,y); c.stroke(); c.restore(); }
+                function drawCatTree(c,x,y,t){ c.save(); c.strokeStyle='#a16207'; c.lineWidth=14; c.lineCap='round'; c.beginPath(); c.moveTo(x,y+70); c.lineTo(x,y-60); c.stroke(); c.fillStyle='#fbbf24'; roundedRect(c,x-55,y-70,110,28,12); c.fill(); roundedRect(c,x-85,y+10,120,28,12); c.fill(); c.restore(); }
+                function drawDogBed(c,x,y,s){ c.save(); c.translate(x,y); c.fillStyle='#fb7185'; c.beginPath(); c.ellipse(0,0,s,s*.38,0,0,Math.PI*2); c.fill(); c.fillStyle='#fecdd3'; c.beginPath(); c.ellipse(0,-8,s*.62,s*.22,0,0,Math.PI*2); c.fill(); c.restore(); }
+
+                // animal drawings
+                function drawFish(c,x,y,s,f,t,action){ c.save(); c.translate(x,y); c.scale(s,s); c.rotate(Math.sin(t*1.7)*.04); drawSoftShadow(c,0,85,95,.12); const g=ellipseGradient(c,0,0,86,43,[[0,f.light],[.55,f.body],[1,f.dark]]); c.fillStyle=g; c.beginPath(); c.ellipse(0,0,92,45,0,0,Math.PI*2); c.fill(); c.fillStyle=f.tail; c.beginPath(); c.moveTo(-82,0); c.lineTo(-138,-44+Math.sin(t*7)*6); c.quadraticCurveTo(-120,0,-138,44-Math.sin(t*7)*6); c.closePath(); c.fill(); c.fillStyle='rgba(255,255,255,.28)'; c.beginPath(); c.ellipse(-20,-14,36,12,-.15,0,Math.PI*2); c.fill(); if(f.pattern==='stripe'){ c.fillStyle='#ef4444'; c.fillRect(-18,-33,13,66); c.fillStyle='#dbeafe'; c.fillRect(-3,-30,8,60); } if(f.pattern==='dot'){ c.fillStyle='#111827'; c.beginPath(); c.arc(38,12,7,0,Math.PI*2); c.fill(); } if(f.pattern==='spot'){ c.fillStyle='rgba(255,255,255,.55)'; for(let i=0;i<3;i++){ c.beginPath(); c.arc(-26+i*20,14-i*6,6,0,Math.PI*2); c.fill(); } } if(f.pattern==='fan'){ c.fillStyle=f.tail; c.globalAlpha=.78; c.beginPath(); c.ellipse(-115,0,60,48,0,0,Math.PI*2); c.fill(); c.globalAlpha=1; } c.fillStyle='rgba(0,0,0,.16)'; c.beginPath(); c.ellipse(42,8,12,7,.6,0,Math.PI*2); c.fill(); drawEye(c,54,-17,14,action==='sleep'); c.strokeStyle='#78350f'; c.lineWidth=4; c.lineCap='round'; c.beginPath(); if(action==='sick') c.arc(68,6,11,Math.PI*1.1,Math.PI*1.9); else c.arc(66,0,14,.15,Math.PI*.75); c.stroke(); c.restore(); }
+                function drawHamster(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const jump=action==='exercise'?Math.abs(Math.sin(t*7))*18:Math.sin(t*1.8)*3; const x=w*.52, y=h*.68-jump; c.save(); if(action==='exercise') drawWheel(c,w*.36,h*.62,72,t*2); c.translate(x,y); c.scale(.86,.86); drawSoftShadow(c,0,72,105,.15); const body=ellipseGradient(c,0,8,88,82,[[0,'#fde68a'],[.55,'#d99a45'],[1,'#92400e']]); c.fillStyle=body; c.beginPath(); c.ellipse(0,20,88,78,0,0,Math.PI*2); c.fill(); c.fillStyle='#d97706'; c.beginPath(); c.arc(-45,-52,27,0,Math.PI*2); c.arc(45,-52,27,0,Math.PI*2); c.fill(); c.fillStyle='#fecaca'; c.beginPath(); c.arc(-45,-52,14,0,Math.PI*2); c.arc(45,-52,14,0,Math.PI*2); c.fill(); c.fillStyle='#f8c978'; c.beginPath(); c.arc(0,-18,62,0,Math.PI*2); c.fill(); c.fillStyle='#fff7ed'; c.beginPath(); c.ellipse(0,16,42,30,0,0,Math.PI*2); c.fill(); drawEye(c,-22,-28,10,action==='sleep'); drawEye(c,22,-28,10,action==='sleep'); c.fillStyle='#7c2d12'; c.beginPath(); c.arc(0,-11,8,0,Math.PI*2); c.fill(); c.strokeStyle='#7c2d12'; c.lineWidth=3; c.lineCap='round'; c.beginPath(); c.arc(-8,2,10,.15,Math.PI*.85); c.arc(8,2,10,Math.PI*.15,Math.PI*.85); c.stroke(); c.strokeStyle='rgba(120,53,15,.7)'; c.lineWidth=2; [-1,1].forEach(side=>{ for(let i=-1;i<=1;i++){ c.beginPath(); c.moveTo(side*12,-8+i*7); c.lineTo(side*(58+Math.abs(i)*5),-20+i*15); c.stroke(); } }); c.fillStyle='#fff7ed'; c.beginPath(); c.arc(-45,8,14,0,Math.PI*2); c.arc(45,8,14,0,Math.PI*2); c.fill(); if(action==='feed') drawSeed(c,0,34,t); if(action==='snack') drawCarrot(c,0,38,t); if(action==='play') drawBall(c,70,44,17,t); if(action==='sleep') drawZzz(c,42,-74,t); c.restore(); }
+                function drawIguana(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const x=w*.52+(action==='exercise'?Math.sin(t*2.3)*35:0), y=h*.59+Math.sin(t*1.5)*2; c.save(); c.translate(x,y); c.scale(.82,.82); drawSoftShadow(c,-20,92,140,.13); c.fillStyle='#4f8f28'; c.beginPath(); c.moveTo(-102,18); c.bezierCurveTo(-170,2,-220,12,-270,34); c.bezierCurveTo(-212,48,-160,44,-96,29); c.closePath(); c.fill(); const legMove=action==='exercise'?Math.sin(t*6)*12:0; c.strokeStyle='rgba(47,107,22,.48)'; c.lineWidth=8; c.lineCap='round'; [{x:-54,p:-1},{x:50,p:1}].forEach(leg=>{ const m=legMove*leg.p; c.beginPath(); c.moveTo(leg.x,38); c.quadraticCurveTo(leg.x-16+m,60,leg.x-42+m*.35,76); c.stroke(); }); c.fillStyle=ellipseGradient(c,-16,5,118,48,[[0,'#ecfccb'],[.5,'#7cbf3d'],[1,'#326c18']]); c.beginPath(); c.ellipse(-16,12,118,48,.02,0,Math.PI*2); c.fill(); c.fillStyle=ellipseGradient(c,82,-3,65,39,[[0,'#f7fee7'],[.55,'#86c943'],[1,'#3f6212']]); c.beginPath(); c.ellipse(82,-5,68,42,.08,0,Math.PI*2); c.fill(); c.fillStyle=ellipseGradient(c,126,-1,31,24,[[0,'#f7fee7'],[.6,'#75b83b'],[1,'#365314']]); c.beginPath(); c.ellipse(126,-1,35,25,.12,0,Math.PI*2); c.fill(); c.fillStyle='rgba(249,115,22,.40)'; c.beginPath(); c.moveTo(82,24); c.quadraticCurveTo(60,52,34,26); c.quadraticCurveTo(58,59,92,30); c.closePath(); c.fill(); const crest=[[-85,-28],[-62,-37],[-38,-42],[-13,-45],[14,-42],[42,-36],[70,-30],[95,-24]]; crest.forEach((p,i)=>{ const height=15+(i%3)*4+Math.sin(t*1.8+i)*1.5; c.fillStyle=i<2?'#bef264':'#f97316'; c.beginPath(); c.moveTo(p[0]-7,p[1]+8); c.lineTo(p[0],p[1]-height); c.lineTo(p[0]+7,p[1]+8); c.closePath(); c.fill(); }); c.strokeStyle='#2f6b16'; c.lineCap='round'; [{x:-56,p:1},{x:52,p:-1}].forEach(leg=>{ const m=legMove*leg.p; c.lineWidth=10; c.beginPath(); c.moveTo(leg.x,40); c.quadraticCurveTo(leg.x-10+m,65,leg.x-34+m,80); c.stroke(); c.lineWidth=4; [-10,0,10].forEach(toe=>{ c.beginPath(); c.moveTo(leg.x-34+m,80); c.lineTo(leg.x-42+m+toe,86); c.stroke(); }); }); drawEye(c,115,-24,10,action==='sleep'); c.fillStyle='#111827'; c.beginPath(); c.arc(142,-9,3,0,Math.PI*2); c.fill(); c.strokeStyle='#2f6b16'; c.lineWidth=3; c.lineCap='round'; c.beginPath(); if(action==='sick') c.arc(118,8,10,Math.PI*1.1,Math.PI*1.9); else c.arc(120,3,13,.1,Math.PI*.72); c.stroke(); if(action==='feed') drawLeafSnack(c,-10,72,t); if(action==='snack') drawFruitSnack(c,-4,72,t); if(action==='play') drawSunSpot(c,100,62,18,t); if(action==='sleep') drawZzz(c,68,-70,t); c.restore(); }
+                function drawParrot(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const flap=action==='exercise'?Math.sin(t*12)*18:Math.sin(t*2)*4; c.save(); c.translate(w*.54,h*.55-Math.abs(flap)*.2); c.scale(.92,.92); drawSoftShadow(c,0,120,90,.12); c.fillStyle=ellipseGradient(c,0,0,58,74,[[0,'#bbf7d0'],[.55,'#16a34a'],[1,'#065f46']]); c.beginPath(); c.ellipse(0,24,58,76,-.1,0,Math.PI*2); c.fill(); c.fillStyle='#2563eb'; c.beginPath(); c.ellipse(-42,24,25,58,-.55+flap*.01,0,Math.PI*2); c.fill(); c.fillStyle='#ef4444'; c.beginPath(); c.ellipse(44,24,24,58,.55-flap*.01,0,Math.PI*2); c.fill(); c.fillStyle='#22c55e'; c.beginPath(); c.arc(0,-48,45,0,Math.PI*2); c.fill(); c.fillStyle='#facc15'; c.beginPath(); c.moveTo(35,-44); c.lineTo(68,-32); c.lineTo(36,-20); c.closePath(); c.fill(); drawEye(c,-12,-58,9,action==='sleep'); c.fillStyle='#dc2626'; c.beginPath(); c.ellipse(0,-90,22,12,0,0,Math.PI*2); c.fill(); c.fillStyle='#0f766e'; c.beginPath(); c.moveTo(-18,91); c.lineTo(-8,160); c.lineTo(14,92); c.lineTo(34,154); c.lineTo(22,86); c.closePath(); c.fill(); c.strokeStyle='#92400e'; c.lineWidth=8; c.beginPath(); c.moveTo(-58,112); c.lineTo(60,102); c.stroke(); if(action==='feed') drawSeed(c,54,6,t); if(action==='snack') drawFruitSnack(c,55,4,t); if(action==='play') drawHangingToy(c,66,-78,17,t); if(action==='sleep') drawZzz(c,36,-102,t); c.restore(); }
+                function drawCat(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const bounce=action==='exercise'?Math.abs(Math.sin(t*6))*18:Math.sin(t*2)*3; drawFeline(c,w*.52,h*.64-bounce,.9,'#f59e0b','#fed7aa','cat',t,action); }
+                function drawDog(c,w,h,t,progress){ const action=getAutoAction(performance.now()); const x=w*.52+(action==='exercise'?Math.sin(t*4)*36:0); drawFeline(c,x,h*.66,.95,'#b45309','#fde68a','dog',t,action); }
+                function drawFeline(c,x,y,s,body,light,kind,t,action){ c.save(); c.translate(x,y); c.scale(s,s); drawSoftShadow(c,0,92,110,.14); c.fillStyle=body; c.beginPath(); c.ellipse(0,18,84,64,0,0,Math.PI*2); c.fill(); c.fillStyle=body; c.beginPath(); if(kind==='cat'){ c.arc(0,-54,52,0,Math.PI*2); c.moveTo(-38,-86); c.lineTo(-58,-130); c.lineTo(-15,-104); c.moveTo(38,-86); c.lineTo(58,-130); c.lineTo(15,-104); } else { c.arc(0,-48,58,0,Math.PI*2); } c.fill(); if(kind==='dog'){ c.fillStyle='#78350f'; c.beginPath(); c.ellipse(-52,-52,23,45,.45,0,Math.PI*2); c.ellipse(52,-52,23,45,-.45,0,Math.PI*2); c.fill(); } c.fillStyle=light; c.beginPath(); c.ellipse(0,-28,34,24,0,0,Math.PI*2); c.fill(); drawEye(c,-20,-58,9,action==='sleep'); drawEye(c,20,-58,9,action==='sleep'); c.fillStyle='#111827'; c.beginPath(); c.arc(0,-40,7,0,Math.PI*2); c.fill(); c.strokeStyle='#111827'; c.lineWidth=3; c.beginPath(); if(action==='sick') c.arc(0,-23,12,Math.PI*1.1,Math.PI*1.9); else c.arc(0,-29,14,.2,Math.PI-.2); c.stroke(); if(kind==='cat'){ c.strokeStyle='rgba(120,53,15,.65)'; c.lineWidth=2; [-1,1].forEach(side=>{ for(let i=-1;i<=1;i++){ c.beginPath(); c.moveTo(side*12,-36+i*5); c.lineTo(side*(58+Math.abs(i)*5),-45+i*12); c.stroke(); } }); c.strokeStyle=body; c.lineWidth=9; c.beginPath(); c.moveTo(-78,8); c.quadraticCurveTo(-126,-46,-76,-76); c.stroke(); } else { c.strokeStyle=body; c.lineWidth=11; c.beginPath(); c.moveTo(-78,22); c.quadraticCurveTo(-120,-18,-92,-42); c.stroke(); } c.fillStyle=light; c.beginPath(); c.arc(-42,38,14,0,Math.PI*2); c.arc(42,38,14,0,Math.PI*2); c.fill(); if(action==='feed') drawSeed(c,0,68,t); if(action==='snack') drawCookie(c,0,68,t); if(action==='play') drawBall(c,84,56,18,t); if(action==='sleep') drawZzz(c,44,-112,t); c.restore(); }
+                function drawGoat(c,w,h,t,p){ const action=getAutoAction(performance.now()); drawHoofed(c,w*.52,h*.64,.88,'#f8fafc','#d1d5db','goat',t,action); }
+                function drawPig(c,w,h,t,p){ const action=getAutoAction(performance.now()); drawHoofed(c,w*.52,h*.66,.9,'#f9a8d4','#fbcfe8','pig',t,action); }
+                function drawHoofed(c,x,y,s,body,light,kind,t,action){ c.save(); c.translate(x,y); c.scale(s,s); drawSoftShadow(c,0,96,130,.13); c.fillStyle=body; c.beginPath(); c.ellipse(-18,18,98,58,0,0,Math.PI*2); c.fill(); c.fillStyle=body; c.beginPath(); c.ellipse(75,-10,48,38,.05,0,Math.PI*2); c.fill(); if(kind==='goat'){ c.fillStyle='#a16207'; c.beginPath(); c.moveTo(58,-45); c.quadraticCurveTo(42,-90,70,-96); c.lineTo(82,-48); c.moveTo(96,-45); c.quadraticCurveTo(122,-88,100,-98); c.lineTo(88,-48); c.fill(); c.fillStyle='#f8fafc'; c.beginPath(); c.ellipse(92,28,16,24,0,0,Math.PI*2); c.fill(); } else { c.fillStyle='#f472b6'; c.beginPath(); c.ellipse(112,-4,24,17,0,0,Math.PI*2); c.fill(); c.fillStyle='#be185d'; c.beginPath(); c.arc(105,-4,3,0,Math.PI*2); c.arc(119,-4,3,0,Math.PI*2); c.fill(); }
+                    drawEye(c,84,-24,9,action==='sleep'); if(kind==='goat'){ c.fillStyle='#111827'; c.beginPath(); c.arc(116,-8,4,0,Math.PI*2); c.fill(); } c.strokeStyle=kind==='pig'?'#be185d':'#374151'; c.lineWidth=8; c.lineCap='round'; [-66,-24,24,64].forEach((lx,i)=>{ const m=action==='exercise'?Math.sin(t*5+i)*7:0; c.beginPath(); c.moveTo(lx,54); c.lineTo(lx+m,96); c.stroke(); c.lineWidth=5; c.beginPath(); c.moveTo(lx+m,96); c.lineTo(lx+m+12,96); c.stroke(); c.lineWidth=8; }); if(kind==='pig'){ c.strokeStyle='#f472b6'; c.lineWidth=5; c.beginPath(); c.arc(-118,8,18,0,Math.PI*1.8); c.stroke(); } if(action==='feed') drawLeafSnack(c,40,76,t); if(action==='snack') drawFruitSnack(c,45,76,t); if(action==='play') drawBall(c,-105,64,18,t); if(action==='sleep') drawZzz(c,100,-82,t); c.restore(); }
+                function drawSugarGlider(c,w,h,t,p){ const action=getAutoAction(performance.now()); const glide=action==='exercise'?Math.sin(t*3)*50:0; c.save(); c.translate(w*.52+glide,h*.55+Math.sin(t*2)*4); c.scale(.82,.82); drawSoftShadow(c,0,120,92,.12); c.fillStyle='rgba(148,163,184,.65)'; c.beginPath(); c.moveTo(-70,-6); c.quadraticCurveTo(-128,50,-55,70); c.lineTo(55,70); c.quadraticCurveTo(128,50,70,-6); c.closePath(); c.fill(); c.fillStyle=ellipseGradient(c,0,0,62,72,[[0,'#f8fafc'],[.55,'#94a3b8'],[1,'#475569']]); c.beginPath(); c.ellipse(0,14,62,74,0,0,Math.PI*2); c.fill(); c.fillStyle='#94a3b8'; c.beginPath(); c.arc(-34,-55,24,0,Math.PI*2); c.arc(34,-55,24,0,Math.PI*2); c.fill(); c.fillStyle='#f8fafc'; c.beginPath(); c.arc(0,-38,46,0,Math.PI*2); c.fill(); drawEye(c,-18,-48,10,action==='sleep'); drawEye(c,18,-48,10,action==='sleep'); c.fillStyle='#111827'; c.beginPath(); c.arc(0,-32,6,0,Math.PI*2); c.fill(); c.strokeStyle='#475569'; c.lineWidth=7; c.beginPath(); c.moveTo(8,78); c.quadraticCurveTo(40,132,92,118); c.stroke(); if(action==='feed') drawSeed(c,0,60,t); if(action==='snack') drawFruitSnack(c,0,60,t); if(action==='play') drawHangingToy(c,80,-80,14,t); if(action==='sleep') drawZzz(c,38,-92,t); c.restore(); }
+                function drawRabbit(c,w,h,t,p){ const action=getAutoAction(performance.now()); const bounce=action==='exercise'?Math.abs(Math.sin(t*5))*28:Math.sin(t*2)*3; c.save(); c.translate(w*.52,h*.66-bounce); c.scale(.88,.88); drawSoftShadow(c,0,92,105,.13); c.fillStyle='#f8fafc'; c.beginPath(); c.ellipse(0,28,82,64,0,0,Math.PI*2); c.fill(); c.fillStyle='#f8fafc'; c.beginPath(); c.ellipse(-28,-92,18,70,-.18,0,Math.PI*2); c.ellipse(28,-92,18,70,.18,0,Math.PI*2); c.fill(); c.fillStyle='#fecaca'; c.beginPath(); c.ellipse(-28,-92,8,50,-.18,0,Math.PI*2); c.ellipse(28,-92,8,50,.18,0,Math.PI*2); c.fill(); c.fillStyle='#f8fafc'; c.beginPath(); c.arc(0,-24,54,0,Math.PI*2); c.fill(); drawEye(c,-18,-36,9,action==='sleep'); drawEye(c,18,-36,9,action==='sleep'); c.fillStyle='#fb7185'; c.beginPath(); c.arc(0,-18,6,0,Math.PI*2); c.fill(); c.strokeStyle='#475569'; c.lineWidth=2; [-1,1].forEach(side=>{ c.beginPath(); c.moveTo(side*10,-16); c.lineTo(side*50,-24); c.moveTo(side*10,-9); c.lineTo(side*48,-4); c.stroke(); }); c.fillStyle='#f8fafc'; c.beginPath(); c.arc(52,24,20,0,Math.PI*2); c.fill(); if(action==='feed') drawLeafSnack(c,0,68,t); if(action==='snack') drawCarrot(c,0,72,t); if(action==='play') drawBall(c,80,58,16,t); if(action==='sleep') drawZzz(c,46,-122,t); c.restore(); }
+                function drawTurtle(c,w,h,t,p){ const action=getAutoAction(performance.now()); c.save(); c.translate(w*.52+(action==='exercise'?Math.sin(t*2)*28:0),h*.64); c.scale(.9,.9); drawSoftShadow(c,0,80,120,.13); c.fillStyle='#65a30d'; c.beginPath(); c.ellipse(0,14,88,58,0,0,Math.PI*2); c.fill(); c.fillStyle=ellipseGradient(c,0,-2,82,54,[[0,'#d9f99d'],[.55,'#84cc16'],[1,'#3f6212']]); c.beginPath(); c.ellipse(0,0,82,54,0,0,Math.PI*2); c.fill(); c.strokeStyle='rgba(63,98,18,.55)'; c.lineWidth=4; for(let i=-2;i<=2;i++){ c.beginPath(); c.moveTo(i*26,-40); c.lineTo(i*16,42); c.stroke(); } c.fillStyle='#86efac'; c.beginPath(); c.ellipse(98,-8,36,25,.1,0,Math.PI*2); c.fill(); drawEye(c,108,-18,8,action==='sleep'); c.fillStyle='#86efac'; [-62,-24,30,66].forEach((lx,i)=>{ c.beginPath(); c.ellipse(lx,52,22,13,(i%2?-.4:.4),0,Math.PI*2); c.fill(); }); if(action==='feed') drawLeafSnack(c,64,54,t); if(action==='snack') drawCarrot(c,62,54,t); if(action==='play') drawSunSpot(c,0,-72,22,t); if(action==='sleep') drawZzz(c,62,-64,t); c.restore(); }
+                function drawFoodPellets(c,w,h,t){ c.save(); c.fillStyle='#fef08a'; for(let i=0;i<8;i++){ c.beginPath(); c.arc(w*.50+Math.sin(t*3+i)*42,h*.20+((t*42+i*22)%120),3.5,0,Math.PI*2); c.fill(); } c.restore(); }
+                function drawSeed(c,x,y,t){ c.save(); c.translate(x,y); c.rotate(Math.sin(t*3)*.2); c.fillStyle='#a16207'; c.beginPath(); c.ellipse(0,0,24,13,.6,0,Math.PI*2); c.fill(); c.fillStyle='#fde68a'; c.beginPath(); c.ellipse(-6,-4,10,4,.5,0,Math.PI*2); c.fill(); c.restore(); }
+                function drawCookie(c,x,y,t){ c.save(); c.translate(x,y); c.fillStyle='#d97706'; c.beginPath(); c.arc(0,0,21,0,Math.PI*2); c.fill(); c.fillStyle='#78350f'; for(let i=0;i<5;i++){ c.beginPath(); c.arc(Math.cos(i*1.4)*9,Math.sin(i*1.8)*8,3,0,Math.PI*2); c.fill(); } c.restore(); }
+                function drawCarrot(c,x,y,t){ c.save(); c.translate(x,y); c.rotate(Math.sin(t*3)*.2); c.fillStyle='#f97316'; c.beginPath(); c.moveTo(-22,-8); c.lineTo(26,0); c.lineTo(-22,11); c.closePath(); c.fill(); c.strokeStyle='#166534'; c.lineWidth=4; c.beginPath(); c.moveTo(-23,-5); c.lineTo(-39,-19); c.moveTo(-23,2); c.lineTo(-41,2); c.moveTo(-23,8); c.lineTo(-38,21); c.stroke(); c.restore(); }
+                function drawFruitSnack(c,x,y,t){ c.save(); c.translate(x,y); c.rotate(Math.sin(t*3)*.2); c.fillStyle='#fb7185'; c.beginPath(); c.arc(0,0,17,0,Math.PI*2); c.fill(); c.fillStyle='#fef3c7'; c.beginPath(); c.arc(-5,-5,5,0,Math.PI*2); c.fill(); c.strokeStyle='#166534'; c.lineWidth=3; c.beginPath(); c.moveTo(2,-16); c.quadraticCurveTo(14,-28,26,-18); c.stroke(); c.restore(); }
+                function drawSunSpot(c,x,y,r,t){ c.save(); c.translate(x,y); c.fillStyle='rgba(251,191,36,.32)'; c.beginPath(); c.arc(0,0,r*2.3,0,Math.PI*2); c.fill(); c.fillStyle='#fef3c7'; c.beginPath(); c.arc(0,0,r,0,Math.PI*2); c.fill(); c.strokeStyle='#f59e0b'; c.lineWidth=3; for(let i=0;i<8;i++){ const a=i*Math.PI/4+t*.4; c.beginPath(); c.moveTo(Math.cos(a)*r*1.25,Math.sin(a)*r*1.25); c.lineTo(Math.cos(a)*r*1.8,Math.sin(a)*r*1.8); c.stroke(); } c.restore(); }
+                function drawLeafSnack(c,x,y,t){ c.save(); c.translate(x,y); c.fillStyle='#22c55e'; c.beginPath(); c.ellipse(0,0,30,13,Math.sin(t)*.3,0,Math.PI*2); c.fill(); c.strokeStyle='#15803d'; c.beginPath(); c.moveTo(-24,0); c.lineTo(22,0); c.stroke(); c.restore(); }
+                function drawBall(c,x,y,r,t){ c.save(); c.translate(x,y); c.rotate(t*3); const g=c.createRadialGradient(-r*.4,-r*.4,2,0,0,r*1.1); g.addColorStop(0,'#fff'); g.addColorStop(.35,'#60a5fa'); g.addColorStop(1,'#2563eb'); c.fillStyle=g; c.beginPath(); c.arc(0,0,r,0,Math.PI*2); c.fill(); c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=3; c.beginPath(); c.arc(0,0,r*.62,0,Math.PI*2); c.stroke(); c.restore(); }
+                function drawHearts(c,x,y,t){ c.save(); c.fillStyle='#fb7185'; c.font='900 24px sans-serif'; c.fillText('💗',x+Math.sin(t*3)*14,y-20-Math.abs(Math.sin(t*4))*14); c.fillText('✨',x-34,y-8); c.restore(); }
+                function drawZzz(c,x,y,t){ c.save(); c.font='900 24px 맑은 고딕, sans-serif'; c.fillStyle='rgba(51,65,85,.85)'; c.fillText('Z',x,y-Math.sin(t)*5); c.font='900 19px 맑은 고딕, sans-serif'; c.fillText('z',x+26,y-20-Math.sin(t+1)*5); c.font='900 14px 맑은 고딕, sans-serif'; c.fillText('z',x+46,y-36-Math.sin(t+2)*5); c.restore(); }
+                function drawParticles(c,dt){ for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.life-=dt*.7; p.x+=p.vx*60*dt; p.y+=p.vy*45*dt; if(p.life<=0){particles.splice(i,1);continue;} c.save(); c.globalAlpha=clamp(p.life,0,1); if(p.kind==='heart'){ c.font=`${p.size+8}px sans-serif`; c.fillText('💗',p.x,p.y); } else if(p.kind==='food'){ c.fillStyle='#facc15'; c.beginPath(); c.arc(p.x,p.y,p.size*.35,0,Math.PI*2); c.fill(); } else { c.fillStyle=`hsl(${p.hue*360},90%,62%)`; c.beginPath(); c.arc(p.x,p.y,p.size*.32,0,Math.PI*2); c.fill(); } c.restore(); } }
+
+
+                function drawBridge(c,x,y,wid,hei){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=6; c.lineCap='round'; c.beginPath(); c.moveTo(x-wid/2,y); c.quadraticCurveTo(x,y-hei,x+wid/2,y); c.stroke(); c.restore(); }
+                function drawTunnel(c,x,y,wid,hei,color){ c.save(); c.fillStyle=color; roundedRect(c,x-wid/2,y-hei/2,wid,hei,hei/2); c.fill(); c.fillStyle='rgba(15,23,42,.28)'; roundedRect(c,x-wid*.28,y-hei*.32,wid*.56,hei*.64,hei/3); c.fill(); c.restore(); }
+                function drawStick(c,x,y,len,t){ c.save(); c.translate(x,y); c.rotate(Math.sin(t)*.15); c.strokeStyle='#92400e'; c.lineWidth=5; c.lineCap='round'; c.beginPath(); c.moveTo(-len,0); c.lineTo(len,0); c.stroke(); c.restore(); }
+                function drawLamp(c,x,y,r,color){ c.save(); c.fillStyle='rgba(251,191,36,.24)'; c.beginPath(); c.arc(x,y+r*.7,r*1.6,0,Math.PI*2); c.fill(); c.fillStyle=color; c.beginPath(); c.arc(x,y+r*.7,r*.55,0,Math.PI*2); c.fill(); c.fillStyle='#92400e'; c.fillRect(x-r*.42,y-r*.08,r*.84,9); c.restore(); }
+                function drawVine(c,x,y,len,t){ c.save(); c.strokeStyle='#16a34a'; c.lineWidth=6; c.lineCap='round'; c.beginPath(); c.moveTo(x,y); c.bezierCurveTo(x+28,y+len*.28+Math.sin(t)*5,x-20,y+len*.62,x+8,y+len); c.stroke(); c.fillStyle='#22c55e'; for(let i=0;i<3;i++){ c.beginPath(); c.ellipse(x+Math.sin(i*2+t)*20,y+24+i*24,18,8,i,0,Math.PI*2); c.fill(); } c.restore(); }
+                function drawSwing(c,x,y,wid,t){ c.save(); c.strokeStyle='#64748b'; c.lineWidth=3; c.beginPath(); c.moveTo(x-wid/2,y-55); c.lineTo(x-wid/2,y); c.moveTo(x+wid/2,y-55); c.lineTo(x+wid/2,y); c.stroke(); c.strokeStyle='#92400e'; c.lineWidth=7; c.beginPath(); c.moveTo(x-wid*.6,y+Math.sin(t)*3); c.lineTo(x+wid*.6,y-Math.sin(t)*3); c.stroke(); c.restore(); }
+                function drawLadder(c,x,y,wid,hei){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=5; c.lineCap='round'; c.beginPath(); c.moveTo(x-wid/2,y); c.lineTo(x-wid/2,y+hei); c.moveTo(x+wid/2,y); c.lineTo(x+wid/2,y+hei); for(let i=1;i<5;i++){ c.moveTo(x-wid/2,y+i*hei/5); c.lineTo(x+wid/2,y+i*hei/5); } c.stroke(); c.restore(); }
+                function drawMirror(c,x,y,r){ c.save(); c.fillStyle='#bfdbfe'; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); c.strokeStyle='#facc15'; c.lineWidth=6; c.stroke(); c.restore(); }
+                function drawCatTowerExtra(c,x,y,t){ c.save(); c.strokeStyle='#a16207'; c.lineWidth=14; c.lineCap='round'; c.beginPath(); c.moveTo(x,y+60); c.lineTo(x,y-70); c.stroke(); c.fillStyle='#fde68a'; roundedRect(c,x-60,y-85,120,30,12); c.fill(); roundedRect(c,x-82,y-10,112,28,12); c.fill(); c.restore(); }
+                function drawWaterFountain(c,x,y,t){ c.save(); c.fillStyle='#93c5fd'; roundedRect(c,x-34,y-30,68,48,14); c.fill(); c.strokeStyle='#60a5fa'; c.lineWidth=4; c.beginPath(); c.arc(x,y-30,18,0,Math.PI); c.stroke(); c.restore(); }
+                function drawLeash(c,x,y,t){ c.save(); c.strokeStyle='#ef4444'; c.lineWidth=5; c.beginPath(); c.arc(x,y,28,.2,Math.PI*1.9); c.stroke(); c.lineTo(x+62,y+34); c.stroke(); c.restore(); }
+                function drawCone(c,x,y,s){ c.save(); c.fillStyle='#f97316'; c.beginPath(); c.moveTo(x,y-s); c.lineTo(x-s*.7,y+s*.6); c.lineTo(x+s*.7,y+s*.6); c.closePath(); c.fill(); c.fillStyle='#fff'; c.fillRect(x-s*.42,y-s*.1,s*.84,5); c.restore(); }
+                function drawPlatform(c,x,y,wid,hei){ c.save(); c.fillStyle='#a16207'; roundedRect(c,x-wid/2,y-hei/2,wid,hei,8); c.fill(); c.restore(); }
+                function drawHayRack(c,x,y){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=4; roundedRect(c,x-38,y-34,76,62,10); c.stroke(); c.fillStyle='#facc15'; for(let i=0;i<8;i++){ c.fillRect(x-28+i*8,y-22,4,42); } c.restore(); }
+                function drawBlock(c,x,y,color){ c.save(); c.fillStyle=color; roundedRect(c,x-24,y-20,48,34,8); c.fill(); c.strokeStyle='rgba(100,116,139,.3)'; c.stroke(); c.restore(); }
+                function drawMat(c,x,y,wid,hei){ c.save(); c.fillStyle='#fcd34d'; roundedRect(c,x-wid/2,y-hei/2,wid,hei,12); c.fill(); c.fillStyle='rgba(120,53,15,.25)'; for(let i=0;i<12;i++){ c.beginPath(); c.arc(x-wid/2+12+i*8,y+Math.sin(i)*9,3,0,Math.PI*2); c.fill(); } c.restore(); }
+                function drawShade(c,x,y,wid,hei){ c.save(); c.fillStyle='rgba(34,197,94,.55)'; c.beginPath(); c.ellipse(x,y,wid/2,hei/2,0,0,Math.PI*2); c.fill(); c.strokeStyle='#92400e'; c.lineWidth=6; c.beginPath(); c.moveTo(x,y+hei/2); c.lineTo(x,y+hei*2); c.stroke(); c.restore(); }
+                function drawRope(c,x,y1,y2,t){ c.save(); c.strokeStyle='#92400e'; c.lineWidth=5; c.setLineDash([8,7]); c.beginPath(); c.moveTo(x,y1); c.quadraticCurveTo(x+Math.sin(t)*18,(y1+y2)/2,x,y2); c.stroke(); c.setLineDash([]); c.restore(); }
+                function drawThermo(c,x,y){ c.save(); c.fillStyle='rgba(255,255,255,.74)'; roundedRect(c,x-12,y-48,24,96,12); c.fill(); c.fillStyle='#ef4444'; roundedRect(c,x-5,y-28,10,62,5); c.fill(); c.beginPath(); c.arc(x,y+38,13,0,Math.PI*2); c.fill(); c.restore(); }
+                document.querySelectorAll('.sook-pet-action-btn').forEach(btn=>btn.addEventListener('click',()=>runAction(btn.dataset.sookAction)));
+                canvas.addEventListener('click',()=>runAction('play'));
+                window.addEventListener('resize',resizeCanvas);
+                if(window.ResizeObserver) new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+                window.sookPetBuy=buyThing; window.sookPetDo=runAction; window.sookPetIsUnlocked=isUnlocked; window.sookPetSelect=selectPet;
+                const originalUpdatePetUI=updatePetUI;
+                updatePetUI=function(){ originalUpdatePetUI(); updatePetStatusUI(); };
+                resizeCanvas(); renderPicker(); renderMiniShop(); updatePetStatusUI(); requestAnimationFrame(drawFrame);
+            }
+            setupSookCanvasPets();
+
+
 
             syncBadgesAndProfile();
             startPlayLimitTimer();
