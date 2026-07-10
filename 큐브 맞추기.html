@@ -148,8 +148,8 @@
 </div>
 
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+let THREE;
+let OrbitControls;
 
 const container = document.getElementById('canvas-container');
 const loading = document.getElementById('loading');
@@ -174,14 +174,17 @@ const COLORS = {
   R:0xe3342f, L:0xf97316, U:0xf8fafc, D:0xfacc15, F:0x22c55e, B:0x2563eb, CORE:0x111827
 };
 const COLOR_NAMES = {R:'오른쪽',L:'왼쪽',U:'윗면',D:'아랫면',F:'앞면',B:'뒷면'};
-const FACE_DATA = [
-  {key:'R', axis:'x', dir:1, index:0, normal:new THREE.Vector3(1,0,0)},
-  {key:'L', axis:'x', dir:-1, index:1, normal:new THREE.Vector3(-1,0,0)},
-  {key:'U', axis:'y', dir:1, index:2, normal:new THREE.Vector3(0,1,0)},
-  {key:'D', axis:'y', dir:-1, index:3, normal:new THREE.Vector3(0,-1,0)},
-  {key:'F', axis:'z', dir:1, index:4, normal:new THREE.Vector3(0,0,1)},
-  {key:'B', axis:'z', dir:-1, index:5, normal:new THREE.Vector3(0,0,-1)}
-];
+let FACE_DATA = [];
+function setupFaceData(){
+  FACE_DATA = [
+    {key:'R', axis:'x', dir:1, index:0, normal:new THREE.Vector3(1,0,0)},
+    {key:'L', axis:'x', dir:-1, index:1, normal:new THREE.Vector3(-1,0,0)},
+    {key:'U', axis:'y', dir:1, index:2, normal:new THREE.Vector3(0,1,0)},
+    {key:'D', axis:'y', dir:-1, index:3, normal:new THREE.Vector3(0,-1,0)},
+    {key:'F', axis:'z', dir:1, index:4, normal:new THREE.Vector3(0,0,1)},
+    {key:'B', axis:'z', dir:-1, index:5, normal:new THREE.Vector3(0,0,-1)}
+  ];
+}
 const FACE_CONTROLS = [
   {key:'U', label:'윗면 U', axis:'y', color:'#f8fafc', text:'#0f172a', cw:-1},
   {key:'D', label:'아랫면 D', axis:'y', color:'#facc15', text:'#1c1200', cw:1},
@@ -247,6 +250,8 @@ function buildCube(size){
   moveCount = 0;
   elapsedMs = 0;
   updateTimerDisplay(0);
+  $('win-modal').classList.remove('show');
+  $('help-modal').classList.remove('show');
   updateStats();
   updateHistory();
   setModeButtons();
@@ -375,7 +380,9 @@ function rotateLayer(move){
   if(move.record && readyToSolve && !timerRunning) startTimer();
   beep(move.record?'move':'soft');
   const pivot = new THREE.Group();
-  scene.add(pivot);
+  // 피벗은 scene이 아니라 cubeRoot 안에 둡니다. 그래야 시점/큐브 회전과 상관없이
+  // 면 회전축이 항상 큐브의 실제 x/y/z 축과 일치합니다.
+  cubeRoot.add(pivot);
   const active = cubies.filter(c => Math.abs(c.position[move.axis] - move.value) < .08);
   active.forEach(c=>pivot.attach(c));
   const start = performance.now();
@@ -387,7 +394,7 @@ function rotateLayer(move){
     pivot.rotation[move.axis] = move.angle;
     pivot.updateMatrixWorld();
     active.forEach(c=>cubeRoot.attach(c));
-    scene.remove(pivot);
+    cubeRoot.remove(pivot);
     snapAll();
     if(move.record){
       moveHistory.push({axis:move.axis,value:move.value,angle:move.angle,label:move.label});
@@ -563,15 +570,27 @@ function onResize(){
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
-  cubeRoot.rotation.y += 0.0008;
+  // cubeRoot 자체를 매 프레임 돌리면 논리 회전축과 화면 회전축이 어긋날 수 있습니다.
+  // 시점 회전은 OrbitControls만 담당합니다.
   renderer.render(scene,camera);
 }
 
-try{ init(); }
-catch(err){
-  console.error(err);
-  loading.innerHTML = `<div class="loading-card"><h2>3D 엔진을 불러오지 못했습니다</h2><p>Three.js CDN 접속이 막혔거나 WebGL을 사용할 수 없는 환경입니다. 인터넷 연결 또는 브라우저 설정을 확인해주세요.</p></div>`;
+async function boot(){
+  try{
+    // 정적 import를 쓰면 CDN 로딩 실패 시 아래 catch까지 오지 못하고 로딩 화면에서 멈출 수 있습니다.
+    // 동적 import로 바꿔 실패 메시지가 확실히 표시되도록 했습니다.
+    THREE = await import('three');
+    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+    setupFaceData();
+    init();
+  }
+  catch(err){
+    console.error(err);
+    loading.classList.remove('hidden');
+    loading.innerHTML = `<div class="loading-card"><h2>3D 엔진을 불러오지 못했습니다</h2><p>Three.js CDN 접속이 막혔거나 WebGL을 사용할 수 없는 환경입니다. 인터넷 연결, 학교망 차단 여부, 브라우저 WebGL 설정을 확인해주세요.</p><p style="color:#9fb0c8;font-size:13px">GitHub Pages처럼 인터넷 접속이 가능한 환경에서는 정상 실행됩니다.</p></div>`;
+  }
 }
+boot();
 </script>
 </body>
 </html>
