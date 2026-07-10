@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>초딩 생존기</title>
+<style>
+  :root{
+    --ink:#253047;
+    --muted:#6f7890;
+    --paper:#fffdf8;
+    --line:#dce2ec;
+    --shadow:0 18px 50px rgba(35,46,73,.16);
+    --study:#6957d8;
+    --health:#2ea66f;
+    --happy:#f2a23a;
+    --social:#ea6279;
+    --danger:#d94747;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#e9eef7}
+  button{font:inherit;color:inherit}
+  .app{position:relative;width:100%;height:100%;overflow:hidden;background:
+      radial-gradient(circle at 14% 12%,rgba(255,255,255,.95) 0 8%,transparent 9%),
+      radial-gradient(circle at 88% 18%,rgba(255,255,255,.7) 0 6%,transparent 7%),
+      linear-gradient(145deg,#eef4ff 0%,#fff5eb 48%,#edf9f4 100%)}
+  .app:before,.app:after{content:"";position:absolute;border-radius:999px;filter:blur(1px);opacity:.5;pointer-events:none}
+  .app:before{width:360px;height:360px;background:#cfddff;left:-170px;bottom:-150px}
+  .app:after{width:300px;height:300px;background:#ffe0b4;right:-140px;top:-120px}
+  .screen{position:absolute;inset:0;display:none;z-index:2}
+  .screen.active{display:flex}
+  .start-screen{align-items:center;justify-content:center;padding:22px;overflow:auto}
+  .start-card{width:min(880px,100%);min-height:min(620px,92vh);display:grid;grid-template-columns:1.08fr .92fr;background:rgba(255,253,248,.92);border:1px solid rgba(255,255,255,.8);border-radius:34px;box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(18px)}
+  .start-copy{padding:54px;display:flex;flex-direction:column;justify-content:center}
+  .kicker{font-size:13px;font-weight:900;letter-spacing:.16em;color:#6f7890;margin-bottom:16px}
+  h1{font-size:clamp(42px,7vw,78px);line-height:.98;margin:0 0 20px;letter-spacing:-.07em}
+  .sub{font-size:18px;line-height:1.7;color:var(--muted);margin:0 0 26px;max-width:520px}
+  .rule-row{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 28px}
+  .pill{padding:10px 13px;border-radius:999px;background:white;border:1px solid var(--line);font-size:13px;font-weight:800;color:#5c667c}
+  .primary{border:0;border-radius:18px;padding:17px 22px;background:#26324a;color:white;font-weight:900;font-size:17px;cursor:pointer;box-shadow:0 12px 24px rgba(38,50,74,.22);transition:.2s transform,.2s box-shadow}
+  .primary:hover{transform:translateY(-2px);box-shadow:0 15px 30px rgba(38,50,74,.28)}
+  .start-art{position:relative;background:linear-gradient(160deg,#6b59d8 0%,#617dde 55%,#55aeb5 100%);overflow:hidden;min-height:420px}
+  .start-art:before{content:"";position:absolute;width:320px;height:320px;border:56px solid rgba(255,255,255,.12);border-radius:50%;right:-130px;top:-100px}
+  .start-art:after{content:"";position:absolute;width:260px;height:260px;background:rgba(255,255,255,.08);border-radius:42% 58% 66% 34%;left:-90px;bottom:-90px;transform:rotate(25deg)}
+  .poster{position:absolute;inset:38px;display:flex;flex-direction:column;justify-content:space-between;color:white;z-index:1}
+  .poster-top{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:13px;letter-spacing:.12em}
+  .poster-stack{display:grid;gap:12px}
+  .poster-stat{height:58px;border-radius:18px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;padding:0 17px;gap:14px;backdrop-filter:blur(8px)}
+  .poster-stat b{font-size:14px;min-width:54px}
+  .poster-bar{height:8px;flex:1;background:rgba(255,255,255,.24);border-radius:999px;overflow:hidden}.poster-bar i{display:block;height:100%;background:white;border-radius:inherit}
+  .poster-note{font-size:14px;line-height:1.6;color:rgba(255,255,255,.86)}
+
+  .game-screen{flex-direction:column;padding:14px 18px 18px}
+  .hud{height:84px;max-width:1160px;width:100%;margin:0 auto 10px;display:grid;grid-template-columns:180px 1fr 150px;align-items:center;gap:14px}
+  .brand-small{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:-.04em}
+  .brand-mark{width:40px;height:40px;border-radius:14px;background:#26324a;color:white;display:grid;place-items:center;font-weight:1000}
+  .hud-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stat{position:relative;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:10px 11px 9px;box-shadow:0 8px 20px rgba(45,58,90,.08);overflow:hidden}
+  .stat-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;font-weight:900;margin-bottom:7px}.stat-value{font-variant-numeric:tabular-nums}
+  .stat-track{height:8px;border-radius:999px;background:#edf0f5;overflow:hidden}.stat-fill{height:100%;border-radius:inherit;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .stat.study .stat-fill{background:var(--study)}.stat.health .stat-fill{background:var(--health)}.stat.happy .stat-fill{background:var(--happy)}.stat.social .stat-fill{background:var(--social)}
+  .stat.flash{animation:statFlash .45s ease}@keyframes statFlash{50%{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,52,82,.18)}}
+  .hud-actions{display:flex;justify-content:flex-end;gap:8px}.icon-btn{width:43px;height:43px;border-radius:14px;border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.82);cursor:pointer;font-weight:900;box-shadow:0 8px 18px rgba(45,58,90,.08)}
+  .stage{position:relative;flex:1;min-height:0;width:min(1160px,100%);margin:0 auto;display:grid;grid-template-columns:220px minmax(360px,520px) 220px;justify-content:center;align-items:center;gap:26px}
+  .side-choice{height:220px;border-radius:26px;border:2px dashed rgba(38,50,74,.14);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px;opacity:.72;transition:.25s transform,.25s opacity,.25s background,.25s border-color}
+  .side-choice strong{font-size:20px;letter-spacing:-.04em}.side-choice span{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}.side-choice .arrow{font-size:30px;margin-bottom:10px}
+  .side-choice.left.active{transform:scale(1.04);opacity:1;background:rgba(217,71,71,.08);border-color:rgba(217,71,71,.45)}
+  .side-choice.right.active{transform:scale(1.04);opacity:1;background:rgba(46,166,111,.08);border-color:rgba(46,166,111,.45)}
+  .center{height:100%;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;position:relative}
+  .progress-row{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:900;color:#657087}
+  .grade-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.86);box-shadow:0 6px 16px rgba(45,58,90,.08)}
+  .grade-dot{width:9px;height:9px;border-radius:50%;background:#6758d5}.turn{font-variant-numeric:tabular-nums}
+  .deck{position:relative;width:100%;height:min(620px,calc(100vh - 165px));min-height:430px;max-height:620px}
+  .ghost{position:absolute;inset:14px 12px 0;border-radius:28px;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.9);box-shadow:0 15px 35px rgba(40,54,88,.08);transform:scale(.96) translateY(16px)}
+  .card{position:absolute;inset:0;border-radius:30px;background:var(--paper);box-shadow:0 22px 55px rgba(40,54,88,.20);border:1px solid rgba(255,255,255,.95);overflow:hidden;display:flex;flex-direction:column;touch-action:none;user-select:none;cursor:grab;transform-origin:50% 100%;will-change:transform;transition:box-shadow .2s}
+  .card.dragging{cursor:grabbing;box-shadow:0 30px 65px rgba(40,54,88,.28)}
+  .card-banner{height:44%;min-height:190px;position:relative;overflow:hidden;background:linear-gradient(155deg,var(--c1,#6957d8),var(--c2,#8797ed));display:flex;align-items:flex-end;justify-content:center}
+  .card-banner:before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;border:54px solid rgba(255,255,255,.11);left:-120px;top:-150px}
+  .card-banner:after{content:"";position:absolute;width:190px;height:190px;border-radius:45% 55% 35% 65%;background:rgba(255,255,255,.09);right:-60px;bottom:-90px;transform:rotate(24deg)}
+  .avatar{position:relative;width:150px;height:170px;z-index:1}
+  .avatar-head{position:absolute;width:94px;height:94px;border-radius:46% 46% 42% 42%;background:#f8d1b3;left:28px;top:16px;box-shadow:inset 0 -10px 0 rgba(163,93,68,.08)}
+  .avatar-hair{position:absolute;width:102px;height:52px;border-radius:50px 50px 22px 22px;background:#3c3443;left:24px;top:8px}.avatar-hair:after{content:"";position:absolute;width:28px;height:58px;background:#3c3443;right:3px;top:24px;border-radius:8px 20px 20px 12px;transform:rotate(-10deg)}
+  .avatar-eye{position:absolute;width:7px;height:10px;border-radius:50%;background:#333445;top:57px}.avatar-eye.e1{left:50px}.avatar-eye.e2{right:50px}.avatar-mouth{position:absolute;width:22px;height:10px;border:3px solid #a85d5d;border-top:0;border-left-color:transparent;border-right-color:transparent;border-radius:0 0 20px 20px;left:64px;top:82px}
+  .avatar-body{position:absolute;width:132px;height:86px;border-radius:28px 28px 0 0;background:#fff;left:9px;bottom:0;box-shadow:inset 0 12px rgba(255,255,255,.18)}
+  .avatar-body:before{content:"";position:absolute;width:52px;height:52px;border-radius:18px;background:rgba(38,50,74,.12);left:40px;top:18px;transform:rotate(45deg)}
+  .speaker{position:absolute;left:22px;top:18px;z-index:2;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.92);font-size:12px;font-weight:1000;color:#3b4560;box-shadow:0 8px 18px rgba(32,41,65,.12)}
+  .swipe-label{position:absolute;top:26px;z-index:4;padding:10px 16px;border-radius:12px;border:4px solid currentColor;font-weight:1000;font-size:26px;letter-spacing:.06em;opacity:0;transform:rotate(-8deg);pointer-events:none}
+  .swipe-label.no{left:24px;color:#fff;background:rgba(203,58,67,.78)}.swipe-label.yes{right:24px;color:#fff;background:rgba(36,153,98,.78);transform:rotate(8deg)}
+  .card-content{flex:1;display:flex;flex-direction:column;padding:24px 28px 21px;min-height:0}
+  .theme{font-size:12px;font-weight:1000;color:#7d879b;letter-spacing:.11em;margin-bottom:10px}
+  .question{font-size:clamp(20px,2.5vw,27px);line-height:1.45;font-weight:950;letter-spacing:-.045em;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;flex:1}
+  .hint-line{text-align:center;font-size:12px;color:#9299aa;margin-top:10px}
+  .mobile-choices{width:100%;display:none;grid-template-columns:1fr 1fr;gap:10px}.choice-btn{min-height:60px;border:0;border-radius:18px;font-weight:950;font-size:15px;cursor:pointer;padding:10px}.choice-btn.left{background:#ffe9e9;color:#a72f3a}.choice-btn.right{background:#e4f6ed;color:#19754b}
+  .feedback{position:absolute;left:50%;bottom:12px;transform:translate(-50%,20px);z-index:20;width:min(560px,calc(100% - 24px));background:#26324a;color:white;border-radius:20px;padding:15px 17px;box-shadow:0 16px 34px rgba(25,34,55,.25);opacity:0;pointer-events:none;transition:.28s opacity,.28s transform}
+  .feedback.show{opacity:1;transform:translate(-50%,0)}.feedback-title{font-weight:1000;font-size:15px;margin-bottom:7px}.feedback-body{font-size:13px;line-height:1.5;color:#dce2ef}.delta-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.delta{font-size:11px;font-weight:900;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.1)}
+  .modal{position:absolute;inset:0;background:rgba(27,35,55,.42);backdrop-filter:blur(8px);z-index:30;display:none;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modal-card{width:min(480px,100%);background:#fffdf8;border-radius:28px;padding:30px;box-shadow:var(--shadow);text-align:center}.modal-card h2{font-size:30px;letter-spacing:-.05em;margin:0 0 12px}.modal-card p{line-height:1.7;color:var(--muted);margin:0 0 22px}.modal-actions{display:flex;gap:10px}.modal-actions button{flex:1}
+  .secondary{border:1px solid var(--line);border-radius:16px;padding:14px;background:white;font-weight:900;cursor:pointer}
+  .grade-up{position:absolute;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(237,243,251,.8);backdrop-filter:blur(8px)}.grade-up.show{display:flex}.grade-panel{text-align:center;background:#fffdf8;padding:34px 42px;border-radius:30px;box-shadow:var(--shadow)}.grade-panel .big{font-size:64px;font-weight:1000;letter-spacing:-.08em}.grade-panel p{color:var(--muted);line-height:1.6}
+  .danger .stat-track{box-shadow:0 0 0 3px rgba(217,71,71,.12)}
+  @media (max-width:900px){
+    .start-card{grid-template-columns:1fr}.start-art{display:none}.start-copy{padding:40px}
+    .hud{grid-template-columns:1fr auto;height:auto}.brand-small{display:none}.hud-stats{grid-column:1/-1;grid-row:2}.hud-actions{grid-column:2;grid-row:1}
+    .stage{grid-template-columns:minmax(0,520px);gap:8px}.side-choice{display:none}.mobile-choices{display:grid}.deck{height:min(590px,calc(100vh - 235px));min-height:390px}.game-screen{padding:10px}
+  }
+  @media (max-width:560px){
+    .start-copy{padding:30px 24px}.sub{font-size:16px}.hud-stats{gap:5px}.stat{padding:8px 7px;border-radius:13px}.stat-top{font-size:10px}.stat-track{height:6px}.card-content{padding:20px 20px 17px}.question{font-size:21px}.deck{min-height:360px}.avatar{transform:scale(.87);transform-origin:bottom}.card-banner{min-height:165px}.progress-row{font-size:12px}.feedback{bottom:78px}
+  }
+
+  /* 카드별 시각 언어 */
+  .card{--accent:#6957d8;--accent2:#8797ed;--paperTint:#fffdf8}
+  .card:before{content:"";position:absolute;inset:0;border:2px solid color-mix(in srgb,var(--accent) 18%,transparent);border-radius:inherit;pointer-events:none;z-index:8}
+  .card.frame-0{border-radius:30px}.card.frame-1{border-radius:42px 24px 38px 22px}.card.frame-2{border-radius:24px 44px 24px 44px}.card.frame-3{border-radius:36px 36px 18px 18px}
+  .card.frame-1 .card-content{background:linear-gradient(90deg,rgba(255,255,255,.96),var(--paperTint))}
+  .card.frame-2 .card-content{background-image:linear-gradient(rgba(37,48,71,.035) 1px,transparent 1px);background-size:100% 27px}
+  .card.frame-3 .card-content:before{content:"";display:block;width:54px;height:5px;border-radius:99px;background:var(--accent);margin:-6px auto 12px;opacity:.65}
+  .subject-tag{position:absolute;right:20px;top:18px;z-index:3;min-width:48px;height:35px;padding:0 12px;border-radius:12px;display:grid;place-items:center;background:rgba(18,24,39,.18);border:1px solid rgba(255,255,255,.32);color:white;font-size:12px;font-weight:1000;letter-spacing:.08em;backdrop-filter:blur(7px)}
+  .scene-decor{position:absolute;inset:0;z-index:0;pointer-events:none}.scene-decor i{position:absolute;display:block;opacity:.23}
+  .scene-decor i:nth-child(1){width:92px;height:92px;left:34px;bottom:26px;border:13px solid white;border-radius:24px;transform:rotate(15deg)}
+  .scene-decor i:nth-child(2){width:48px;height:48px;right:48px;bottom:34px;background:white;border-radius:50%}
+  .scene-decor i:nth-child(3){width:120px;height:13px;right:20px;top:92px;background:white;border-radius:99px;transform:rotate(-18deg)}
+  .scene-decor i:nth-child(4){width:22px;height:22px;left:52px;top:64px;background:white;transform:rotate(45deg)}
+  .card-banner.style-korean{background:linear-gradient(150deg,#ed756b,#f2a76d)}
+  .style-korean .scene-decor i:nth-child(1){width:112px;height:78px;border-radius:8px;border-width:7px;transform:rotate(-8deg)}
+  .style-korean .scene-decor i:nth-child(2){width:70px;height:9px;border-radius:0;box-shadow:0 20px 0 white,0 40px 0 white}
+  .card-banner.style-math{background:linear-gradient(145deg,#6657d7,#4e83d7)}
+  .style-math .scene-decor{background-image:linear-gradient(rgba(255,255,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.10) 1px,transparent 1px);background-size:30px 30px}
+  .style-math .scene-decor i:nth-child(1){border-radius:50%;border-width:8px}.style-math .scene-decor i:nth-child(2){border-radius:8px;transform:rotate(18deg)}
+  .card-banner.style-social{background:linear-gradient(145deg,#d68545,#d8aa55)}
+  .style-social .scene-decor i:nth-child(1){width:150px;height:100px;border:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 7px white;transform:skewX(-15deg)}
+  .style-social .scene-decor i:nth-child(3){height:7px;box-shadow:0 22px 0 white,0 44px 0 white}
+  .card-banner.style-science{background:linear-gradient(145deg,#1d9a91,#5fbc91)}
+  .style-science .scene-decor i:nth-child(1){border-radius:50%;border-width:6px}.style-science .scene-decor i:nth-child(2){box-shadow:-52px -34px 0 -8px white,34px -64px 0 -12px white}
+  .card-banner.style-english{background:linear-gradient(145deg,#4667b6,#7f72cc)}
+  .style-english .scene-decor i:nth-child(1){border-radius:16px;transform:rotate(8deg)}.style-english .scene-decor i:nth-child(1):after{content:"A";position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:42px;font-style:normal;font-weight:1000}
+  .card-banner.style-pe{background:linear-gradient(145deg,#eb6d62,#e9a648)}
+  .style-pe .scene-decor i:nth-child(1){border-radius:50%;border-width:8px}.style-pe .scene-decor i:nth-child(3){height:8px;box-shadow:0 23px 0 white,0 46px 0 white;transform:rotate(-8deg)}
+  .card-banner.style-art{background:linear-gradient(145deg,#cd5e9d,#8267d0)}
+  .style-art .scene-decor i:nth-child(1){border:0;background:white;border-radius:60% 40% 55% 45%}.style-art .scene-decor i:nth-child(2){border-radius:35% 65% 40% 60%}.style-art .scene-decor i:nth-child(3){height:25px;border-radius:60% 40%}
+  .card-banner.style-music{background:linear-gradient(145deg,#3b547e,#7b579b)}
+  .style-music .scene-decor:before{content:"";position:absolute;inset:55px 22px auto;height:84px;background:repeating-linear-gradient(to bottom,transparent 0 14px,rgba(255,255,255,.2) 15px 17px)}
+  .style-music .scene-decor i:nth-child(2){width:32px;height:32px;box-shadow:58px -22px 0 white}.style-music .scene-decor i:nth-child(3){width:7px;height:82px;transform:rotate(0)}
+  .card-banner.style-life{background:linear-gradient(155deg,var(--c1,#6957d8),var(--c2,#8797ed))}
+
+  /* 인물 중심 카드 일러스트 */
+  .card-banner{height:46%;min-height:220px}
+  .card-banner:before,.card-banner:after{opacity:.42}
+  .scene-decor{opacity:.22}.scene-decor i{opacity:.10}
+  .avatar{
+    --skin:#f3c7a8;--skin-shadow:#dfaa8a;--hair:#3a2d32;--shirt:#f7f1df;
+    position:relative;width:202px;height:202px;z-index:2;
+    filter:drop-shadow(0 17px 14px rgba(21,31,55,.18));
+    transform-origin:50% 100%;
+  }
+  .avatar-body{
+    position:absolute;z-index:1;width:158px;height:92px;left:22px;bottom:-2px;
+    border-radius:34px 34px 8px 8px;background:var(--shirt);
+    box-shadow:inset 0 12px rgba(255,255,255,.24),inset 0 -9px rgba(43,54,78,.05);
+  }
+  .avatar-body:before{
+    content:"";position:absolute;width:54px;height:25px;left:52px;top:4px;
+    border-radius:0 0 28px 28px;background:rgba(255,255,255,.62);
+    transform:none;
+  }
+  .avatar-body:after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px rgba(36,48,71,.05)}
+  .avatar-neck{position:absolute;z-index:2;width:39px;height:31px;left:82px;top:111px;background:var(--skin-shadow);border-radius:0 0 15px 15px}
+  .avatar-head{
+    position:absolute;z-index:3;width:112px;height:116px;left:45px;top:23px;
+    border-radius:48% 48% 45% 45%;background:var(--skin);
+    box-shadow:inset 0 -10px 0 rgba(151,81,62,.055),inset 7px 0 rgba(255,255,255,.08);
+  }
+  .avatar-ear{position:absolute;z-index:2;width:20px;height:29px;top:76px;background:var(--skin);border-radius:50%;box-shadow:inset 0 0 0 2px rgba(140,79,64,.05)}
+  .avatar-ear.left{left:36px}.avatar-ear.right{right:36px}
+  .avatar-hair{
+    position:absolute;z-index:4;width:120px;height:60px;left:41px;top:16px;
+    border-radius:58% 58% 30% 34%;background:var(--hair);
+    transform:none;box-shadow:none;
+  }
+  .avatar-hair:before,.avatar-hair:after{content:"";position:absolute;background:var(--hair)}
+  .avatar-hair:before{width:49px;height:30px;left:10px;bottom:-8px;border-radius:60% 18% 64% 24%;transform:rotate(-9deg)}
+  .avatar-hair:after{width:42px;height:26px;right:9px;bottom:-6px;border-radius:18% 60% 28% 66%;transform:rotate(8deg)}
+  .avatar-brow{position:absolute;z-index:5;width:19px;height:4px;top:75px;background:#634a42;border-radius:99px}
+  .avatar-brow.b1{left:68px;transform:rotate(-4deg)}.avatar-brow.b2{right:68px;transform:rotate(4deg)}
+  .avatar-eye{position:absolute;z-index:5;width:8px;height:11px;top:86px;border-radius:50%;background:#303241;box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
+  .avatar-eye.e1{left:75px}.avatar-eye.e2{right:75px}
+  .avatar-nose{position:absolute;z-index:5;width:8px;height:11px;left:97px;top:93px;border-right:2px solid rgba(126,72,61,.28);border-bottom:2px solid rgba(126,72,61,.20);border-radius:0 0 5px 0}
+  .avatar-mouth{position:absolute;z-index:5;width:25px;height:12px;left:89px;top:112px;border:3px solid #a65c61;border-top:0;border-left-color:transparent;border-right-color:transparent;border-radius:0 0 22px 22px;background:transparent}
+  .avatar-accessory{position:absolute;z-index:6}
+
+  /* 여섯 가지 자연스러운 머리 모양 */
+  .avatar.person-0{--hair:#3d3030;--skin:#f4c7a6;--skin-shadow:#dda889}
+  .avatar.person-0 .avatar-hair{height:55px;border-radius:58% 58% 24% 30%;clip-path:polygon(0 33%,14% 10%,52% 0,100% 20%,100% 74%,74% 69%,60% 39%,42% 62%,0 76%)}
+  .avatar.person-0 .avatar-hair:before{width:42px;height:20px;left:12px;bottom:-2px;border-radius:70% 10% 55% 18%;transform:rotate(-10deg)}
+  .avatar.person-0 .avatar-hair:after{width:18px;height:27px;right:5px;bottom:-10px;border-radius:8px 12px 14px 10px;transform:rotate(4deg)}
+
+  .avatar.person-1{--hair:#5a392f;--skin:#f0bd99;--skin-shadow:#d69a77}
+  .avatar.person-1 .avatar-hair{width:126px;height:72px;left:38px;top:14px;border-radius:52% 52% 30% 30%}
+  .avatar.person-1 .avatar-hair:before{width:25px;height:65px;left:3px;bottom:-43px;border-radius:16px 8px 18px 20px;transform:rotate(3deg)}
+  .avatar.person-1 .avatar-hair:after{width:25px;height:65px;right:3px;bottom:-43px;border-radius:8px 16px 20px 18px;transform:rotate(-3deg)}
+
+  .avatar.person-2{--hair:#242a35;--skin:#efc5aa;--skin-shadow:#dba88c}
+  .avatar.person-2 .avatar-hair{height:39px;top:22px;border-radius:58% 58% 18% 18%}
+  .avatar.person-2 .avatar-hair:before{width:42px;height:18px;left:12px;bottom:-7px;border-radius:12px 3px 16px 8px;transform:rotate(-5deg)}
+  .avatar.person-2 .avatar-hair:after{width:39px;height:16px;right:12px;bottom:-6px;border-radius:3px 12px 8px 16px;transform:rotate(5deg)}
+
+  .avatar.person-3{--hair:#6a4934;--skin:#dca47d;--skin-shadow:#c48763}
+  .avatar.person-3 .avatar-hair{width:118px;height:56px;left:42px;top:18px;border-radius:52% 52% 26% 26%;background:radial-gradient(circle at 9% 70%,var(--hair) 0 19px,transparent 20px),radial-gradient(circle at 29% 38%,var(--hair) 0 24px,transparent 25px),radial-gradient(circle at 52% 30%,var(--hair) 0 26px,transparent 27px),radial-gradient(circle at 75% 40%,var(--hair) 0 24px,transparent 25px),radial-gradient(circle at 94% 70%,var(--hair) 0 19px,transparent 20px),linear-gradient(var(--hair),var(--hair));box-shadow:none}
+  .avatar.person-3 .avatar-hair:before{width:24px;height:24px;left:14px;bottom:-8px;border-radius:50%;box-shadow:24px 3px 0 -1px var(--hair);transform:none}
+  .avatar.person-3 .avatar-hair:after{width:24px;height:24px;right:14px;bottom:-8px;border-radius:50%;box-shadow:-24px 3px 0 -1px var(--hair);transform:none}
+
+  .avatar.person-4{--hair:#202733;--skin:#f2c5a5;--skin-shadow:#dba384}
+  .avatar.person-4 .avatar-hair{height:50px;border-radius:58% 62% 24% 36%}
+  .avatar.person-4 .avatar-hair:before{width:52px;height:24px;left:8px;bottom:-7px;border-radius:55% 18% 50% 22%;transform:rotate(-8deg)}
+  .avatar.person-4 .avatar-hair:after{width:24px;height:52px;right:-14px;top:29px;border-radius:50% 45% 58% 42%;transform:rotate(8deg);box-shadow:-6px -9px 0 -4px rgba(255,255,255,.13)}
+
+  .avatar.person-5{--hair:#4d2f49;--skin:#f5cdb0;--skin-shadow:#dda98a}
+  .avatar.person-5 .avatar-hair{height:59px;border-radius:56% 56% 28% 28%;background:linear-gradient(90deg,var(--hair) 0 48%,#3f273d 49% 100%)}
+  .avatar.person-5 .avatar-hair:before{width:38px;height:34px;left:15px;bottom:-13px;border-radius:55% 12% 55% 18%;transform:rotate(-8deg)}
+  .avatar.person-5 .avatar-hair:after{width:38px;height:34px;right:15px;bottom:-13px;border-radius:12% 55% 18% 55%;transform:rotate(8deg)}
+
+  /* 과목과 역할에 따른 옷·소품 */
+  .avatar.subject-korean{--shirt:#fff0e4}.avatar.subject-math{--shirt:#e8e8ff}.avatar.subject-social{--shirt:#fff0d5}.avatar.subject-science{--shirt:#dcf4ea}.avatar.subject-english{--shirt:#e2eaff}.avatar.subject-pe{--shirt:#ffe5d7}.avatar.subject-art{--shirt:#f5e1f4}.avatar.subject-music{--shirt:#e9e2f4}.avatar.subject-life{--shirt:#f7f1df}
+  .avatar.role-friend{transform:scale(.98);transform-origin:bottom}.avatar.role-friend .avatar-body:after{inset:10px 28px auto;height:56px;border-left:4px solid rgba(45,56,80,.10);border-right:4px solid rgba(45,56,80,.10);border-radius:22px}
+  .avatar.role-parent{transform:scale(1.02);transform-origin:bottom}.avatar.role-parent .avatar-body:before{width:76px;height:28px;left:41px;background:linear-gradient(135deg,rgba(255,255,255,.72) 0 48%,transparent 49%),linear-gradient(225deg,rgba(255,255,255,.72) 0 48%,transparent 49%)}
+  .avatar.role-teacher{transform:scale(1.03);transform-origin:bottom}.avatar.role-teacher .avatar-accessory{width:29px;height:18px;left:65px;top:82px;border:3px solid #4b556d;border-radius:8px;background:rgba(255,255,255,.10);box-shadow:42px 0 0 -3px rgba(255,255,255,.10),42px 0 0 0 #4b556d}
+  .avatar.role-teacher .avatar-accessory:after{content:"";position:absolute;width:13px;height:3px;left:27px;top:5px;background:#4b556d;border-radius:99px}
+
+  .avatar.expression-worried .avatar-mouth{width:22px;height:10px;left:90px;top:116px;border-top:3px solid #a65c61;border-bottom:0;border-radius:20px 20px 0 0}
+  .avatar.expression-worried .avatar-brow.b1{transform:rotate(10deg)}.avatar.expression-worried .avatar-brow.b2{transform:rotate(-10deg)}
+  .avatar.expression-serious .avatar-mouth{width:24px;height:4px;left:89px;top:119px;border:0;background:#98565a;border-radius:99px}
+  .avatar.expression-serious .avatar-brow.b1{transform:rotate(-11deg)}.avatar.expression-serious .avatar-brow.b2{transform:rotate(11deg)}
+  .avatar.expression-happy .avatar-mouth{height:14px;background:#fff5f2;border:3px solid #a65c61;border-top:0}
+
+  /* 선택 전 영향 방향 표시 */
+  .stat:after{position:absolute;right:8px;bottom:4px;font-weight:1000;font-size:16px;opacity:0;transform:translateY(5px);transition:.16s}.stat.preview-up:after{content:"↑";color:#23895e;opacity:1;transform:none}.stat.preview-down:after{content:"↓";color:#c44350;opacity:1;transform:none}.stat.preview-flat:after{content:"·";color:#7d879b;opacity:1;transform:none}
+
+  /* 극적 엔딩 */
+  .ending-screen{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;overflow:hidden;background:#111625;color:white;padding:24px}.ending-screen.show{display:flex}.ending-screen:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,var(--endGlow,#57617b) 0,transparent 43%),linear-gradient(180deg,#151b2a,#090c13);opacity:.95}
+  .ending-noise{position:absolute;inset:0;opacity:.12;background-image:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.12) 4px 5px);mix-blend-mode:screen;animation:endNoise .18s steps(2) infinite}@keyframes endNoise{50%{transform:translate(1px,-1px)}}
+  .ending-curtain{position:absolute;top:0;bottom:0;width:51%;z-index:3;background:#05070d;transition:transform .9s cubic-bezier(.7,0,.2,1)}.curtain-left{left:0}.curtain-right{right:0}.ending-screen.reveal .curtain-left{transform:translateX(-105%)}.ending-screen.reveal .curtain-right{transform:translateX(105%)}
+  .ending-panel{position:relative;z-index:4;width:min(700px,100%);text-align:center;opacity:0;transform:scale(1.12) translateY(24px);filter:blur(12px);transition:1s .45s cubic-bezier(.2,.8,.2,1)}.ending-screen.reveal .ending-panel{opacity:1;transform:none;filter:none}
+  .ending-kicker{font-size:12px;font-weight:1000;letter-spacing:.3em;color:rgba(255,255,255,.58);margin-bottom:18px}.ending-symbol{width:126px;height:126px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,255,255,.35);box-shadow:0 0 0 12px rgba(255,255,255,.045),0 0 70px var(--endGlow,#57617b);font-size:44px;font-weight:1000;animation:endPulse 2.3s ease-in-out infinite}@keyframes endPulse{50%{transform:scale(1.045);box-shadow:0 0 0 18px rgba(255,255,255,.025),0 0 95px var(--endGlow,#57617b)}}
+  .ending-title{font-size:clamp(36px,7vw,68px);line-height:1.02;letter-spacing:-.065em;margin:0 0 20px}.ending-text{font-size:17px;line-height:1.75;color:rgba(255,255,255,.78);max-width:600px;margin:0 auto 18px}.ending-quote{max-width:580px;margin:0 auto 22px;padding:14px 18px;border-left:3px solid rgba(255,255,255,.5);background:rgba(255,255,255,.07);font-size:14px;line-height:1.65;color:rgba(255,255,255,.88);text-align:left;border-radius:4px 14px 14px 4px}
+  .ending-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 auto 24px;max-width:620px}.ending-stat{padding:10px;border-radius:13px;background:rgba(255,255,255,.08);font-size:11px;font-weight:900}.ending-stat b{display:block;font-size:18px;margin-top:4px}.ending-stat.broken{box-shadow:inset 0 0 0 2px rgba(255,255,255,.52);animation:brokenStat .55s ease infinite alternate}@keyframes brokenStat{to{transform:translateY(-3px)}}
+  .ending-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.ending-actions button{min-width:150px;border-radius:16px;padding:14px 18px;font-weight:1000;cursor:pointer}.ending-primary{border:0;background:white;color:#172034}.ending-secondary{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07);color:white}.ending-next{border:0;background:var(--endGlow,#6f85d8);color:white;box-shadow:0 10px 30px rgba(0,0,0,.22)}.ending-next[hidden]{display:none}.ending-screen.cookie-mode .ending-symbol{border-radius:28px;width:150px;height:92px;font-size:28px}.ending-screen.cookie-mode .ending-stats{display:none}.ending-screen.cookie-mode .ending-quote{text-align:center;border-left:0;border-radius:14px}
+  .ending-screen.end-study-low{--endGlow:#4d6289}.ending-screen.end-study-high{--endGlow:#8b62c6}.ending-screen.end-health-low{--endGlow:#487b73}.ending-screen.end-health-high{--endGlow:#d05f4b}.ending-screen.end-happy-low{--endGlow:#536078}.ending-screen.end-happy-high{--endGlow:#d79637}.ending-screen.end-social-low{--endGlow:#5c6c90}.ending-screen.end-social-high{--endGlow:#bb637f}.ending-screen.end-graduate{--endGlow:#58a891;background:#10251f}
+  .app.ending-active .game-screen{animation:worldFall .8s cubic-bezier(.7,0,.3,1) forwards}@keyframes worldFall{to{transform:scale(.82) rotate(-2deg);filter:grayscale(1) blur(7px);opacity:.05}}
+  @media(max-width:560px){.ending-screen{padding:16px}.ending-symbol{width:96px;height:96px;font-size:34px}.ending-text{font-size:15px}.ending-quote{font-size:13px}.ending-stats{grid-template-columns:repeat(2,1fr)}.ending-actions button{min-width:0;flex:1}.subject-tag{right:14px;top:14px}.speaker{left:14px;top:14px}}
+
+
+  /* ──────────────────────────────────────────────────────────
+     인물 중심 카드 렌더러 v2
+     배경 장식보다 얼굴·머리·복장을 먼저 읽을 수 있도록 구성
+  ────────────────────────────────────────────────────────── */
+  .hud-actions{min-width:158px}.icon-btn{position:relative}.icon-btn.active{background:#26324a;color:#fff;border-color:#26324a}.voice-btn{font-size:12px;letter-spacing:-.06em}
+  .speaker{cursor:pointer;transition:.18s transform,.18s box-shadow}.speaker:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(32,41,65,.17)}.speaker:active{transform:scale(.96)}
+  .card-banner:before,.card-banner:after{opacity:.12!important}.scene-decor{opacity:.08!important}.scene-decor i{opacity:.08!important}
+  .card-banner{min-height:238px;height:47%;isolation:isolate}
+  .avatar.avatar-v2{
+    --skin:#efbe9c;--skin-shadow:#d79b78;--hair:#302a2c;--hair2:#4a3b3f;--shirt:#f8f8f5;--cloth2:#dfe7ee;--detail:#536079;--glass:#455269;
+    position:relative;width:230px;height:225px;z-index:3;transform:translateY(2px);filter:drop-shadow(0 15px 12px rgba(26,34,52,.18));
+  }
+  .avatar.avatar-v2 *{box-sizing:border-box}
+  .av-shadow{position:absolute;z-index:0;width:184px;height:22px;left:23px;bottom:-2px;border-radius:50%;background:rgba(29,37,56,.15);filter:blur(7px)}
+  .av-body{position:absolute;z-index:2;width:182px;height:95px;left:24px;bottom:0;border-radius:38px 38px 8px 8px;background:var(--shirt);overflow:hidden;box-shadow:inset 0 10px rgba(255,255,255,.16),inset 0 -7px rgba(30,42,66,.06),0 0 0 2px rgba(36,48,71,.04)}
+  .av-shirt-panel{position:absolute;inset:0;display:grid;place-items:center;font-weight:1000;font-size:28px;color:rgba(255,255,255,.92)}
+  .av-collar{display:none;position:absolute;z-index:3;width:45px;height:31px;top:4px;background:#fff;clip-path:polygon(0 0,100% 0,52% 100%)}.av-collar-l{left:47px;transform:rotate(8deg)}.av-collar-r{right:47px;transform:rotate(-8deg)}
+  .av-outfit-detail{position:absolute;z-index:4}
+  .av-neck{position:absolute;z-index:3;width:39px;height:34px;left:96px;top:125px;background:var(--skin-shadow);border-radius:0 0 14px 14px}
+  .av-head{position:absolute;z-index:5;width:116px;height:119px;left:57px;top:35px;border-radius:47% 47% 44% 44%;background:var(--skin);box-shadow:inset 0 -11px rgba(134,73,54,.055),inset 7px 0 rgba(255,255,255,.075)}
+  .av-ear{position:absolute;z-index:4;width:22px;height:31px;top:85px;background:var(--skin);border-radius:50%;box-shadow:inset 0 0 0 2px rgba(127,68,54,.045)}.av-ear-l{left:47px}.av-ear-r{right:47px}
+  .av-back-hair{display:none;position:absolute;z-index:3;background:var(--hair)}
+  .av-hair{position:absolute;z-index:7;width:126px;height:59px;left:52px;top:25px;border-radius:58% 58% 28% 28%;background:var(--hair)}
+  .av-hair:before,.av-hair:after{content:"";position:absolute;background:var(--hair)}
+  .av-hair-strand{display:none;position:absolute;z-index:8;background:var(--hair2)}
+  .av-brow{position:absolute;z-index:8;width:19px;height:4px;top:86px;border-radius:99px;background:color-mix(in srgb,var(--hair) 62%,#6d5148)}.av-brow-l{left:79px;transform:rotate(-3deg)}.av-brow-r{right:79px;transform:rotate(3deg)}
+  .av-eye{position:absolute;z-index:9;width:8px;height:12px;top:98px;border-radius:50%;background:#2e3342;box-shadow:inset 0 2px rgba(255,255,255,.28)}.av-eye-l{left:86px}.av-eye-r{right:86px}
+  .av-nose{position:absolute;z-index:8;width:8px;height:11px;left:111px;top:106px;border-right:2px solid rgba(121,68,57,.27);border-bottom:2px solid rgba(121,68,57,.18);border-radius:0 0 6px}
+  .av-mouth{position:absolute;z-index:9;width:27px;height:14px;left:102px;top:127px;border:3px solid #a75d62;border-top:0;border-left-color:transparent;border-right-color:transparent;border-radius:0 0 25px 25px;background:#fff7f2}
+  .av-glasses,.av-hat,.av-neckwear,.av-extra{display:none;position:absolute;z-index:12}.av-glasses{left:72px;top:91px;width:86px;height:27px}.av-lens{position:absolute;top:0;width:32px;height:23px;border:3px solid var(--glass);border-radius:9px;background:rgba(236,247,255,.24)}.av-lens-l{left:0}.av-lens-r{right:0}.av-bridge{position:absolute;left:31px;top:8px;width:24px;height:3px;border-radius:9px;background:var(--glass)}
+  .age-child{transform:translateY(5px) scale(.96);transform-origin:50% 100%}.age-child .av-body{height:88px}.age-adult .av-head{height:118px}
+
+  /* 머리 모양: 겹침이 생기지 않도록 각 타입이 독립된 실루엣을 사용 */
+  .hair-center .av-hair{height:58px;border-radius:60% 60% 23% 23%}.hair-center .av-hair:before{width:58px;height:36px;left:2px;bottom:-14px;border-radius:60% 16% 58% 20%;transform:rotate(-7deg)}.hair-center .av-hair:after{width:58px;height:36px;right:2px;bottom:-14px;border-radius:16% 60% 20% 58%;transform:rotate(7deg)}.hair-center .av-hair-strand{display:block;width:5px;height:31px;left:113px;top:27px;border-radius:0 0 8px 8px;background:var(--skin);transform:rotate(1deg)}
+  .hair-short .av-hair{height:46px;top:30px;border-radius:56% 58% 20% 18%}.hair-short .av-hair:before{width:48px;height:19px;left:4px;bottom:-8px;border-radius:0 0 20px 13px;transform:rotate(-6deg)}.hair-short .av-hair:after{width:42px;height:17px;right:6px;bottom:-7px;border-radius:0 0 13px 20px;transform:rotate(5deg)}
+  .hair-side .av-hair{height:57px;border-radius:63% 52% 22% 30%;transform:rotate(-2deg)}.hair-side .av-hair:before{width:80px;height:29px;left:4px;bottom:-13px;border-radius:55% 8% 52% 20%;transform:rotate(-10deg)}.hair-side .av-hair:after{width:27px;height:44px;right:2px;bottom:-27px;border-radius:8px 16px 20px 12px;transform:rotate(5deg)}
+  .hair-bob .av-back-hair{display:block;width:132px;height:125px;left:49px;top:24px;border-radius:58px 58px 35px 35px}.hair-bob .av-hair{height:56px}.hair-bob .av-hair:before{width:31px;height:72px;left:1px;bottom:-54px;border-radius:13px 8px 20px 20px}.hair-bob .av-hair:after{width:31px;height:72px;right:1px;bottom:-54px;border-radius:8px 13px 20px 20px}
+  .hair-curly-long .av-back-hair{display:block;width:150px;height:148px;left:40px;top:18px;border-radius:64px 64px 46px 46px;background:radial-gradient(circle at 16% 78%,var(--hair) 0 25px,transparent 26px),radial-gradient(circle at 84% 78%,var(--hair) 0 25px,transparent 26px),radial-gradient(circle at 24% 52%,var(--hair) 0 32px,transparent 33px),radial-gradient(circle at 76% 52%,var(--hair) 0 32px,transparent 33px),linear-gradient(var(--hair),var(--hair))}.hair-curly-long .av-hair{height:62px;background:radial-gradient(circle at 12% 73%,var(--hair) 0 25px,transparent 26px),radial-gradient(circle at 35% 38%,var(--hair) 0 34px,transparent 35px),radial-gradient(circle at 66% 36%,var(--hair) 0 34px,transparent 35px),radial-gradient(circle at 90% 73%,var(--hair) 0 25px,transparent 26px)}.hair-curly-long .av-hair:before,.hair-curly-long .av-hair:after{display:none}
+  .hair-messy .av-hair{height:55px;clip-path:polygon(0 39%,10% 12%,21% 27%,30% 0,42% 21%,55% 2%,66% 24%,80% 6%,89% 29%,100% 17%,98% 78%,75% 72%,56% 84%,35% 70%,4% 80%)}.hair-messy .av-hair:before,.hair-messy .av-hair:after{display:none}
+  .hair-ponytail .av-back-hair{display:block;width:42px;height:88px;right:28px;top:42px;border-radius:45% 55% 58% 42%;transform:rotate(12deg)}.hair-ponytail .av-hair{height:58px}.hair-ponytail .av-hair:before{width:76px;height:31px;left:3px;bottom:-11px;border-radius:55% 8% 52% 20%;transform:rotate(-8deg)}.hair-ponytail .av-hair:after{width:34px;height:36px;right:2px;bottom:-20px;border-radius:10px 18px 18px 12px}
+  .hair-bun .av-back-hair{display:block;width:46px;height:46px;left:94px;top:3px;border-radius:50%}.hair-bun .av-hair{height:57px}.hair-bun .av-hair:before{width:66px;height:30px;left:2px;bottom:-12px;border-radius:58% 10% 55% 18%;transform:rotate(-8deg)}.hair-bun .av-hair:after{width:38px;height:38px;right:2px;bottom:-21px;border-radius:12px 18px 22px 15px}
+  .hair-undercut .av-hair{height:43px;top:31px;border-radius:62% 42% 15% 20%;transform:skewX(-7deg)}.hair-undercut .av-hair:before{width:72px;height:24px;left:1px;bottom:-11px;border-radius:48% 6% 44% 16%;transform:rotate(-8deg)}.hair-undercut .av-hair:after{width:25px;height:14px;right:3px;bottom:-3px;border-radius:4px 10px 9px 5px}
+  .hair-wavy .av-back-hair{display:block;width:138px;height:130px;left:46px;top:20px;border-radius:60px 60px 42px 42px}.hair-wavy .av-hair{height:61px;clip-path:polygon(0 28%,14% 4%,31% 17%,46% 0,62% 18%,79% 3%,100% 26%,100% 76%,80% 67%,63% 84%,44% 67%,24% 82%,0 69%)}.hair-wavy .av-hair:before,.hair-wavy .av-hair:after{display:none}
+  .hair-streak .av-hair{height:48px;top:29px;border-radius:62% 54% 18% 24%}.hair-streak .av-hair:before{width:75px;height:25px;left:2px;bottom:-11px;border-radius:52% 8% 48% 16%;transform:rotate(-9deg)}.hair-streak .av-hair:after{width:31px;height:30px;right:2px;bottom:-16px;border-radius:8px 14px 16px 10px}.hair-streak .av-hair-strand{display:block;width:17px;height:47px;left:88px;top:27px;border-radius:12px 4px 10px 4px;background:var(--hair2);transform:rotate(-13deg)}
+
+  /* 안경·모자·소품 */
+  .access-glasses .av-glasses,.access-redglasses .av-glasses,.access-sunglasses .av-glasses{display:block}.access-redglasses{--glass:#be3d4e}.access-redglasses .av-lens{border-radius:12px;background:rgba(255,235,239,.22)}.access-sunglasses{--glass:#202733}.access-sunglasses .av-lens{height:21px;background:#344052;border-color:#202733;border-radius:7px}.access-sunglasses .av-eye{opacity:.18}
+  .access-cap .av-hat{display:block;width:132px;height:45px;left:49px;top:13px;border-radius:60px 60px 17px 17px;background:var(--detail);transform:rotate(-2deg);box-shadow:inset 0 -7px rgba(0,0,0,.08)}.access-cap .av-hat:after{content:"";position:absolute;width:68px;height:17px;right:-22px;bottom:-4px;border-radius:0 18px 18px 8px;background:var(--detail);transform:rotate(8deg)}.access-cap .av-hair{top:42px;height:29px}
+  .access-whistle .av-neckwear{display:block;left:108px;top:158px;width:14px;height:22px;border-radius:4px 4px 8px 8px;background:#d6dbe2;box-shadow:0 -20px 0 -6px #e9edf1}.access-whistle .av-neckwear:before{content:"";position:absolute;width:40px;height:42px;left:-13px;top:-36px;border:2px solid #5a6576;border-top:0;border-radius:0 0 20px 20px}
+  .access-headphones .av-extra{display:block;width:143px;height:91px;left:44px;top:38px;border:9px solid #3f4e65;border-bottom:0;border-radius:72px 72px 0 0}.access-headphones .av-extra:before,.access-headphones .av-extra:after{content:"";position:absolute;width:24px;height:42px;top:48px;border-radius:12px;background:#596b86}.access-headphones .av-extra:before{left:-15px}.access-headphones .av-extra:after{right:-15px}
+  .access-pencil .av-extra{display:block;width:9px;height:68px;right:35px;bottom:22px;border-radius:4px;background:linear-gradient(90deg,#e6ae3b 0 70%,#d67873 71%);transform:rotate(13deg);box-shadow:inset -2px 0 rgba(0,0,0,.08)}
+
+  /* 복장 */
+  .outfit-shirt-tie{--shirt:#f7f8fa;--detail:#56657a}.outfit-shirt-tie .av-collar{display:block}.outfit-shirt-tie .av-outfit-detail{display:block;width:17px;height:48px;left:83px;top:18px;background:var(--detail);clip-path:polygon(50% 0,100% 24%,74% 100%,26% 100%,0 24%)}
+  .outfit-tracksuit{--shirt:#252c36;--cloth2:#121820;--detail:#f1b743}.outfit-tracksuit .av-body{background:linear-gradient(90deg,var(--shirt) 0 48%,var(--cloth2) 49% 51%,var(--shirt) 52%)}.outfit-tracksuit .av-body:before,.outfit-tracksuit .av-body:after{content:"";position:absolute;top:12px;width:8px;height:83px;background:var(--detail)}.outfit-tracksuit .av-body:before{left:17px}.outfit-tracksuit .av-body:after{right:17px}.outfit-tracksuit .av-outfit-detail{display:block;width:3px;height:70px;left:90px;top:8px;background:#dce0e3}
+  .outfit-cardigan{--shirt:#c94d59;--cloth2:#fff8ef}.outfit-cardigan .av-body{background:linear-gradient(90deg,var(--shirt) 0 38%,var(--cloth2) 39% 61%,var(--shirt) 62%)}.outfit-cardigan .av-outfit-detail{display:block;width:6px;height:6px;left:62px;top:31px;border-radius:50%;background:#f0c8b9;box-shadow:0 17px #f0c8b9,52px 0 #f0c8b9,52px 17px #f0c8b9}
+  .outfit-lab{--shirt:#f6fafb;--cloth2:#48a59b}.outfit-lab .av-body{background:linear-gradient(90deg,#f6fafb 0 41%,var(--cloth2) 42% 58%,#f6fafb 59%)}.outfit-lab .av-collar{display:block}.outfit-lab .av-outfit-detail{display:block;width:32px;height:22px;right:22px;top:49px;border:2px solid #afbbc3;border-radius:3px;background:#eef4f6}
+  .outfit-soccer{--shirt:#267d65;--cloth2:#d9f2e6}.outfit-soccer .av-body{background:linear-gradient(135deg,var(--shirt) 0 68%,#1d6652 69%)}.outfit-soccer .av-body:before,.outfit-soccer .av-body:after{content:"";position:absolute;width:42px;height:12px;top:9px;background:var(--cloth2)}.outfit-soccer .av-body:before{left:-7px;transform:rotate(28deg)}.outfit-soccer .av-body:after{right:-7px;transform:rotate(-28deg)}.outfit-soccer .av-shirt-panel:after{content:attr(data-number);font-size:35px;font-weight:1000;color:#fff}
+  .outfit-apron{--shirt:#f4d463;--cloth2:#f3f0e8}.outfit-apron .av-body{background:var(--cloth2)}.outfit-apron .av-outfit-detail{display:block;width:92px;height:75px;left:45px;top:18px;border-radius:24px 24px 7px 7px;background:var(--shirt);box-shadow:-28px 19px 0 -25px #e36170,25px 33px 0 -23px #4e8fd0,-7px 50px 0 -24px #4ca56c}
+  .outfit-hoodie{--shirt:#67778e;--cloth2:#4e5d72}.outfit-hoodie .av-body{background:var(--shirt)}.outfit-hoodie .av-body:before{content:"";position:absolute;width:94px;height:48px;left:44px;top:-21px;border:8px solid var(--cloth2);border-bottom:0;border-radius:55px 55px 0 0}.outfit-hoodie .av-outfit-detail{display:block;width:4px;height:34px;left:77px;top:20px;background:#e6e9ee;box-shadow:26px 0 #e6e9ee}.outfit-hoodie .av-outfit-detail:before,.outfit-hoodie .av-outfit-detail:after{content:"";position:absolute;width:9px;height:9px;bottom:-2px;border-radius:50%;background:#e6e9ee}.outfit-hoodie .av-outfit-detail:before{left:-3px}.outfit-hoodie .av-outfit-detail:after{left:23px}
+  .outfit-vest{--shirt:#445a78;--cloth2:#f4f5f2}.outfit-vest .av-body{background:linear-gradient(90deg,var(--shirt) 0 31%,var(--cloth2) 32% 68%,var(--shirt) 69%)}.outfit-vest .av-collar{display:block}.outfit-vest .av-outfit-detail{display:block;width:7px;height:7px;left:87px;top:33px;border-radius:50%;background:#bdc6d3;box-shadow:0 17px #bdc6d3}
+  .outfit-nurse{--shirt:#eaf5f4;--detail:#4c9c92}.outfit-nurse .av-body{background:var(--shirt)}.outfit-nurse .av-collar{display:block}.outfit-nurse .av-outfit-detail{display:block;width:27px;height:27px;right:28px;top:28px;border-radius:50%;background:var(--detail)}.outfit-nurse .av-outfit-detail:before,.outfit-nurse .av-outfit-detail:after{content:"";position:absolute;background:white;border-radius:2px}.outfit-nurse .av-outfit-detail:before{width:15px;height:5px;left:6px;top:11px}.outfit-nurse .av-outfit-detail:after{width:5px;height:15px;left:11px;top:6px}
+  .outfit-jacket{--shirt:#b98a62;--cloth2:#f2e3d2}.outfit-jacket .av-body{background:linear-gradient(90deg,var(--shirt) 0 38%,var(--cloth2) 39% 61%,var(--shirt) 62%)}.outfit-jacket .av-collar{display:block}.outfit-jacket .av-outfit-detail{display:block;width:6px;height:6px;left:61px;top:33px;border-radius:50%;background:#604b3e;box-shadow:54px 0 #604b3e,0 19px #604b3e,54px 19px #604b3e}
+  .outfit-music{--shirt:#65507e;--cloth2:#efe8f6}.outfit-music .av-body{background:var(--shirt)}.outfit-music .av-outfit-detail{display:block;width:38px;height:58px;left:72px;top:15px;border-left:5px solid var(--cloth2);border-bottom:5px solid var(--cloth2);border-radius:0 0 0 20px;transform:rotate(-8deg)}.outfit-music .av-outfit-detail:after{content:"";position:absolute;width:17px;height:13px;left:-14px;bottom:-9px;border-radius:50%;background:var(--cloth2)}
+  .outfit-parent{--shirt:#e8d3b6}.outfit-parent .av-body{background:var(--shirt)}.outfit-parent .av-collar{display:block}.outfit-parent .av-outfit-detail{display:block;width:50px;height:8px;left:66px;top:49px;border-radius:99px;background:rgba(86,67,53,.24)}
+  .outfit-casual{--shirt:#6c86b3}.outfit-casual .av-body{background:var(--shirt)}.outfit-casual .av-outfit-detail{display:block;width:44px;height:28px;left:69px;top:23px;border-radius:8px;border:3px solid rgba(255,255,255,.45)}
+
+  /* 표정 */
+  .mood-worried .av-mouth{width:24px;height:10px;left:103px;top:132px;border-top:3px solid #a75d62;border-bottom:0;border-radius:20px 20px 0 0;background:transparent}.mood-worried .av-brow-l{transform:rotate(10deg)}.mood-worried .av-brow-r{transform:rotate(-10deg)}
+  .mood-serious .av-mouth{width:26px;height:4px;left:102px;top:135px;border:0;border-radius:99px;background:#95555a}.mood-serious .av-brow-l{transform:rotate(-10deg)}.mood-serious .av-brow-r{transform:rotate(10deg)}
+  .mood-cheerful .av-mouth{height:16px;background:#fff;border:3px solid #a75d62;border-top:0}.mood-cheerful .av-eye{height:9px;border-radius:50% 50% 60% 60%}
+  .card.card-enter{animation:cardDeal .34s cubic-bezier(.2,.85,.25,1)}@keyframes cardDeal{from{opacity:.25;transform:translateY(20px) scale(.97) rotate(-1deg)}to{opacity:1;transform:none}}
+  @media(max-width:700px){.hud-actions{min-width:auto}.icon-btn{width:39px;height:39px}.avatar.avatar-v2{transform:translateY(5px) scale(.9);transform-origin:50% 100%}.age-child{transform:translateY(8px) scale(.86)}.card-banner{min-height:210px}}
+
+  .hair-center .av-hair-strand{width:4px;height:22px;left:113px;top:29px;border-radius:0 0 7px 7px}
+  .hair-curly-long .av-back-hair{width:126px;height:132px;left:52px;top:22px;border-radius:58px 58px 36px 36px;background:var(--hair)}
+  .hair-curly-long .av-back-hair:before,.hair-curly-long .av-back-hair:after{content:"";position:absolute;width:27px;height:27px;border-radius:50%;background:var(--hair);top:45px}
+  .hair-curly-long .av-back-hair:before{left:-13px;box-shadow:-1px 25px 0 1px var(--hair),3px 51px 0 0 var(--hair),10px 74px 0 -2px var(--hair)}
+  .hair-curly-long .av-back-hair:after{right:-13px;box-shadow:1px 25px 0 1px var(--hair),-3px 51px 0 0 var(--hair),-10px 74px 0 -2px var(--hair)}
+  .access-kitchen-cap .av-hat{display:block;width:126px;height:37px;left:52px;top:15px;border-radius:62px 62px 13px 13px;background:#f7f8f6;box-shadow:inset 0 -6px #dce4e6}.access-kitchen-cap .av-hat:before{content:"";position:absolute;width:38px;height:31px;left:9px;top:-10px;border-radius:50%;background:#f7f8f6;box-shadow:34px -6px 0 5px #f7f8f6,67px 0 0 1px #f7f8f6}.access-kitchen-cap .av-hair{top:42px;height:31px}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="startScreen" class="screen start-screen active">
+    <div class="start-card">
+      <div class="start-copy">
+        <div class="kicker">LIFE BALANCE SIMULATION</div>
+        <h1>초딩<br>생존기</h1>
+        <p class="sub">공부만 잘해도, 친구가 많기만 해도 완벽한 하루는 아닙니다. 1학년부터 6학년까지 선택을 이어가며 네 가지 삶의 균형을 지켜보세요.</p>
+        <div class="rule-row">
+          <span class="pill">좌우로 카드 넘기기</span>
+          <span class="pill">학년별 30개 사건 진행</span>
+          <span class="pill">총 216개 카드 풀</span>
+          <span class="pill">8개 과목 매 학년 등장</span>
+          <span class="pill">인물별 목소리 · BGM</span>
+        </div>
+        <button id="startBtn" class="primary">1학년 생활 시작</button>
+      </div>
+      <div class="start-art">
+        <div class="poster">
+          <div class="poster-top"><span>GRADE 1 → 6</span><span>BALANCE</span></div>
+          <div class="poster-stack">
+            <div class="poster-stat"><b>학업</b><div class="poster-bar"><i style="width:62%"></i></div></div>
+            <div class="poster-stat"><b>건강</b><div class="poster-bar"><i style="width:52%"></i></div></div>
+            <div class="poster-stat"><b>행복</b><div class="poster-bar"><i style="width:70%"></i></div></div>
+            <div class="poster-stat"><b>평판</b><div class="poster-bar"><i style="width:58%"></i></div></div>
+          </div>
+          <div class="poster-note">어느 한쪽으로 너무 치우치지 않도록<br>나만의 기준을 찾아가는 선택 게임</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="gameScreen" class="screen game-screen">
+    <header class="hud">
+      <div class="brand-small"><div class="brand-mark">초</div><span>초딩 생존기</span></div>
+      <div class="hud-stats">
+        <div class="stat study" data-stat="study"><div class="stat-top"><span>학업</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+        <div class="stat health" data-stat="health"><div class="stat-top"><span>건강</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+        <div class="stat happy" data-stat="happy"><div class="stat-top"><span>행복</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+        <div class="stat social" data-stat="social"><div class="stat-top"><span>평판</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+      </div>
+      <div class="hud-actions"><button id="soundBtn" class="icon-btn active" aria-label="배경음악과 효과음" title="배경음악과 효과음 켜기/끄기">♫</button><button id="voiceBtn" class="icon-btn active voice-btn" aria-label="등장인물 목소리" title="등장인물 목소리 켜기/끄기">말</button><button id="homeBtn" class="icon-btn" aria-label="처음으로" title="처음 화면">⌂</button></div>
+    </header>
+
+    <main class="stage">
+      <div id="leftGuide" class="side-choice left"><div class="arrow">←</div><strong id="leftGuideText">거절한다</strong><span>카드를 왼쪽으로 넘기세요</span></div>
+      <div class="center">
+        <div class="progress-row"><div class="grade-badge"><i class="grade-dot"></i><span id="gradeText">1학년 · 적응기</span></div><div id="turnText" class="turn">1 / 30</div></div>
+        <div class="deck">
+          <div class="ghost"></div>
+          <article id="card" class="card">
+            <div id="cardBanner" class="card-banner style-life">
+              <div id="speaker" class="speaker">엄마</div>
+              <div id="subjectTag" class="subject-tag">생활</div>
+              <div class="scene-decor" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              <div id="noLabel" class="swipe-label no">아니오</div>
+              <div id="yesLabel" class="swipe-label yes">좋아요</div>
+              <div id="avatar" class="avatar avatar-v2 char-homeroom hair-center outfit-shirt-tie access-glasses mood-happy age-adult" aria-hidden="true">
+                <div class="av-shadow"></div>
+                <div class="av-back-hair"></div>
+                <div class="av-body"><div class="av-shirt-panel" data-number=""></div><div class="av-collar av-collar-l"></div><div class="av-collar av-collar-r"></div><div class="av-outfit-detail"></div></div>
+                <div class="av-neck"></div>
+                <div class="av-ear av-ear-l"></div><div class="av-ear av-ear-r"></div>
+                <div class="av-head"></div>
+                <div class="av-hair"></div><div class="av-hair-strand"></div>
+                <div class="av-brow av-brow-l"></div><div class="av-brow av-brow-r"></div>
+                <div class="av-eye av-eye-l"></div><div class="av-eye av-eye-r"></div>
+                <div class="av-nose"></div><div class="av-mouth"></div>
+                <div class="av-glasses"><i class="av-lens av-lens-l"></i><i class="av-bridge"></i><i class="av-lens av-lens-r"></i></div>
+                <div class="av-hat"></div><div class="av-neckwear"></div><div class="av-extra"></div>
+              </div>
+            </div>
+            <div class="card-content">
+              <div id="theme" class="theme">생활 습관</div>
+              <p id="question" class="question">오늘 있었던 일을 이야기해볼까?</p>
+              <div class="hint-line">드래그하거나 아래 버튼을 눌러 선택하세요</div>
+            </div>
+          </article>
+        </div>
+        <div class="mobile-choices"><button id="leftBtn" class="choice-btn left">아니오</button><button id="rightBtn" class="choice-btn right">좋아요</button></div>
+      </div>
+      <div id="rightGuide" class="side-choice right"><div class="arrow">→</div><strong id="rightGuideText">받아들인다</strong><span>카드를 오른쪽으로 넘기세요</span></div>
+    </main>
+    <div id="feedback" class="feedback"><div id="feedbackTitle" class="feedback-title"></div><div id="feedbackBody" class="feedback-body"></div><div id="deltaRow" class="delta-row"></div></div>
+  </section>
+
+  <div id="gradeUp" class="grade-up"><div class="grade-panel"><div id="gradeUpBig" class="big">2학년</div><h2>한 단계 성장했어요</h2><p id="gradeUpText">조금 더 복잡한 선택이 기다리고 있습니다.</p><button id="nextGradeBtn" class="primary">다음 학년 시작</button></div></div>
+  <div id="modal" class="modal"><div class="modal-card"><h2 id="modalTitle">게임 종료</h2><p id="modalText"></p><div class="modal-actions"><button id="modalHome" class="secondary">처음 화면</button><button id="retryBtn" class="primary">다시 도전</button></div></div></div>
+
+  <section id="endingScreen" class="ending-screen" aria-hidden="true">
+    <div class="ending-curtain curtain-left"></div><div class="ending-curtain curtain-right"></div>
+    <div class="ending-noise"></div>
+    <div class="ending-panel">
+      <div id="endingKicker" class="ending-kicker">BALANCE COLLAPSED</div>
+      <div id="endingSymbol" class="ending-symbol">0</div>
+      <h2 id="endingTitle" class="ending-title">균형이 무너졌습니다</h2>
+      <p id="endingText" class="ending-text"></p>
+      <div id="endingQuote" class="ending-quote"></div>
+      <div id="endingStats" class="ending-stats"></div>
+      <div class="ending-actions"><button id="endingHome" class="ending-secondary">처음 화면</button><button id="endingNext" class="ending-next" hidden>그 후의 이야기</button><button id="endingRetry" class="ending-primary">다시 살아보기</button></div>
+    </div>
+  </section>
+</div>
+<script>
+(()=>{
+  const S=(study,health,happy,social)=>({study,health,happy,social});
+  const E=(who,theme,q,left,leftFx,right,rightFx,leftMsg,rightMsg,c1,c2)=>({who,theme,q,left,leftFx,right,rightFx,leftMsg,rightMsg,c1,c2});
+  const decks={
+    1:[
+      E('엄마','수면','내일 아침 일찍 일어나야 하는데 좋아하는 만화가 한 편 남았어. 더 볼까?','한 편 더 본다',S(-2,-8,7,0),'지금 끄고 잔다',S(2,8,-5,1),'재미는 있었지만 아침이 힘들어졌어요.','아쉽지만 몸이 한결 가벼워졌어요.'),
+      E('급식 선생님','식습관','오늘 반찬은 처음 보는 나물이야. 한입 먹어볼까?','먹지 않는다',S(0,-6,4,-2),'작게 한입 먹는다',S(1,7,-2,3),'익숙한 음식만 골랐어요.','생각보다 먹을 만했어요.'),
+      E('친구 민서','놀이 약속','민서가 그네를 오래 기다렸어. 지금 자리를 바꿔줄까?','조금 더 탄다',S(0,2,5,-8),'지금 양보한다',S(0,-1,-3,9),'나는 신났지만 민서의 표정이 어두워졌어요.','조금 아쉽지만 민서가 활짝 웃었어요.'),
+      E('아빠','위생','너무 졸린데 아직 양치하지 않았어. 오늘은 그냥 잘까?','그냥 잔다',S(0,-9,5,-2),'양치하고 잔다',S(0,8,-4,2),'편했지만 이가 찝찝해요.','귀찮아도 개운하게 잠들었어요.'),
+      E('담임 선생님','정리','쉬는 시간이 끝났는데 블록 작품을 아직 정리하지 않았어.','친구에게 맡긴다',S(-1,0,4,-6),'함께 정리한다',S(2,1,-3,7),'빨리 놀러 갔지만 친구가 힘들어했어요.','놀이 시간은 줄었지만 교실이 금방 정돈됐어요.'),
+      E('보건 선생님','안전','운동장에서 뛰다가 무릎이 조금 아파. 계속 놀까?','계속 뛴다',S(0,-8,6,1),'잠깐 쉬며 살핀다',S(0,7,-3,0),'즐거웠지만 통증이 더 커졌어요.','아쉬워도 몸의 신호를 살폈어요.'),
+      E('친구 준','친구 관계','준이가 네 색연필을 빌려달라고 했어. 가장 아끼는 색이야.','빌려주지 않는다',S(0,0,3,-5),'사용 뒤 돌려달라며 빌려준다',S(0,0,-2,7),'물건은 지켰지만 준이가 서운해했어요.','조심해서 함께 쓰기로 했어요.'),
+      E('엄마','숙제','집에 오자마자 블록 성을 만들고 싶어. 숙제는 아직 남았어.','블록부터 만든다',S(-8,1,8,-2),'숙제 뒤에 만든다',S(8,-1,-4,2),'즐거웠지만 숙제가 늦어졌어요.','먼저 끝내니 마음이 편해졌어요.'),
+      E('친구 소라','감정 표현','소라가 실수로 네 그림에 물을 쏟았어. 화가 나는데 소리칠까?','크게 화낸다',S(0,-1,4,-8),'속상하다고 말한다',S(1,0,-2,8),'화는 풀렸지만 소라가 겁먹었어요.','마음을 말하니 함께 해결할 수 있었어요.'),
+      E('아빠','아침 습관','아침밥을 먹으면 늦을 것 같아. 그냥 나갈까?','먹지 않고 간다',S(1,-7,2,0),'조금이라도 먹는다',S(2,7,-2,0),'시간은 벌었지만 배가 고팠어요.','서두르긴 했지만 힘이 생겼어요.'),
+      E('담임 선생님','발표','아는 답이 있지만 틀릴까 봐 걱정돼. 손을 들까?','손을 들지 않는다',S(0,1,3,-3),'용기 내어 발표한다',S(5,-1,-2,6),'마음은 편했지만 기회를 놓쳤어요.','떨렸지만 새로운 자신감이 생겼어요.'),
+      E('친구 현우','규칙','현우가 줄을 새치기하자고 손짓해. 같이 갈까?','같이 새치기한다',S(-1,0,5,-7),'줄 끝으로 간다',S(1,0,-3,6),'빨랐지만 뒤 친구들이 화났어요.','기다렸지만 약속을 지켰어요.'),
+      E('엄마','옷차림','밖이 추운데 두꺼운 외투가 답답해. 얇게 입고 갈까?','얇게 입는다',S(0,-8,4,0),'외투를 입는다',S(0,8,-3,0),'가벼웠지만 금세 추워졌어요.','조금 답답해도 따뜻했어요.'),
+      E('친구 다온','공유','다온이가 네 간식을 한입만 달라고 해. 나도 배가 고파.','혼자 먹는다',S(0,1,4,-5),'조금 나눠 먹는다',S(0,-1,-2,7),'배는 불렀지만 다온이가 아쉬워했어요.','양은 줄었지만 같이 먹어 더 즐거웠어요.'),
+      E('도서관 선생님','독서','그림책 반납일이 오늘이야. 아직 끝까지 읽지 못했어.','며칠 더 몰래 가진다',S(2,0,3,-6),'반납하고 다시 빌린다',S(3,0,-2,6),'책은 더 봤지만 약속을 어겼어요.','번거로워도 규칙대로 다시 빌렸어요.'),
+      E('아빠','운동','비가 그쳤지만 바닥이 조금 젖었어. 밖에서 뛰어놀까?','집에서 영상 본다',S(0,-4,6,0),'안전한 곳에서 산책한다',S(0,6,2,1),'편했지만 몸이 굳었어요.','조심해서 움직이니 기분도 좋아졌어요.'),
+      E('친구 유나','사과','네가 뛰다가 유나의 탑을 무너뜨렸어. 모른 척할까?','모른 척한다',S(0,0,3,-9),'미안하다고 말하고 돕는다',S(1,-1,-3,10),'당장은 편했지만 마음이 불편해졌어요.','창피했지만 함께 다시 만들었어요.'),
+      E('엄마','스스로 하기','신발 끈이 잘 안 묶여. 엄마에게 바로 해달라고 할까?','바로 부탁한다',S(-2,1,3,0),'한 번 더 해본 뒤 도움을 청한다',S(5,-1,-2,1),'빠르게 끝났지만 연습 기회를 놓쳤어요.','시간은 걸려도 조금 더 익숙해졌어요.'),
+      E('담임 선생님','교실 약속','친구들이 조용히 책을 읽고 있는데 재미있는 이야기가 떠올랐어.','지금 크게 말한다',S(-2,0,5,-6),'쉬는 시간에 말한다',S(2,0,-3,5),'나는 신났지만 친구들이 집중하기 어려웠어요.','기다렸다가 모두가 편한 때 이야기했어요.'),
+      E('친구 재이','갈등','재이가 네 자리라고 생각한 곳에 먼저 앉았어. 밀어낼까?','밀고 자리를 차지한다',S(0,-1,4,-9),'말로 순서를 정한다',S(1,0,-2,9),'자리는 얻었지만 싸움이 커졌어요.','시간은 걸렸지만 함께 정했어요.')
+    ],
+    2:[
+      E('담임 선생님','준비물','미술 준비물을 깜빡했어. 옆 친구 것을 몰래 써도 될까?','몰래 사용한다',S(1,0,4,-8),'사정을 말하고 빌린다',S(2,0,-2,8),'들키지 않았지만 마음이 조마조마했어요.','조금 부끄러워도 허락을 받았어요.'),
+      E('친구 민준','게임 규칙','술래잡기에서 잡혔는데 아무도 못 본 것 같아. 계속 뛸까?','잡히지 않은 척한다',S(0,2,5,-8),'술래가 된다',S(0,1,-3,8),'게임은 이어졌지만 신뢰가 줄었어요.','아쉽지만 규칙을 지켰어요.'),
+      E('엄마','시간 관리','내일 받아쓰기인데 지금 놀이터에 가고 싶어.','공부하지 않고 간다',S(-8,5,7,2),'10분 연습 뒤 간다',S(6,3,-3,1),'신나게 놀았지만 준비가 부족했어요.','조금 늦었지만 마음이 든든해졌어요.'),
+      E('친구 세아','비밀','세아가 다른 친구의 비밀을 알려주겠대. 들어볼까?','재미로 듣는다',S(0,0,5,-7),'듣지 않겠다고 한다',S(1,0,-3,7),'궁금증은 풀렸지만 찜찜했어요.','궁금해도 친구의 마음을 지켰어요.'),
+      E('아빠','용돈','문구점에서 예쁜 지우개를 발견했어. 집에 비슷한 것이 있어.','바로 산다',S(0,0,6,-1),'용돈을 아낀다',S(2,0,-4,1),'기분은 좋았지만 용돈이 줄었어요.','아쉽지만 다음 선택을 남겨뒀어요.'),
+      E('도서관 선생님','집중','책 읽는 시간인데 친구가 계속 말을 걸어.','같이 이야기한다',S(-6,0,5,2),'쉬는 시간에 말하자고 한다',S(6,0,-3,-1),'재미있었지만 읽을 분량을 놓쳤어요.','친구는 아쉬워했지만 집중할 수 있었어요.'),
+      E('친구 지호','공정함','체육 팀을 고르는데 운동을 못하는 친구가 마지막에 남았어.','강한 친구만 고른다',S(0,3,3,-8),'남은 친구도 함께 고른다',S(0,-2,-2,9),'이길 가능성은 높였지만 누군가 상처받았어요.','조금 불리해도 모두 함께 시작했어요.'),
+      E('엄마','간식','저녁 직전인데 과자가 먹고 싶어. 한 봉지 먹을까?','한 봉지 먹는다',S(0,-7,6,0),'조금만 먹고 멈춘다',S(0,4,-2,0),'맛있었지만 저녁을 남겼어요.','아쉽지만 스스로 조절했어요.'),
+      E('담임 선생님','도움 요청','수학 문제가 너무 어려워. 그냥 빈칸으로 둘까?','포기하고 넘긴다',S(-7,1,3,0),'힌트를 부탁한다',S(8,-1,-2,2),'마음은 편했지만 방법을 배우지 못했어요.','부끄러워도 한 걸음 더 나아갔어요.'),
+      E('친구 나린','다름 존중','나린이가 좋아하는 놀이가 너와 달라. 네 놀이만 하자고 할까?','내 놀이만 한다',S(0,0,5,-7),'번갈아 한다',S(0,-1,-2,8),'나는 즐거웠지만 나린이는 지루했어요.','둘 다 조금씩 원하는 놀이를 했어요.'),
+      E('아빠','건강','콧물이 나지만 체육대회 연습을 빠지고 싶지 않아.','무리해서 참가한다',S(0,-9,6,3),'쉬며 회복한다',S(0,9,-5,-1),'참여는 했지만 몸이 더 힘들어졌어요.','아쉽지만 회복할 시간을 얻었어요.'),
+      E('친구 건우','장난','건우의 의자를 살짝 빼면 모두 웃을 것 같아.','장난친다',S(-1,-4,6,-10),'하지 않는다',S(0,1,-2,5),'웃음은 났지만 건우가 다칠 뻔했어요.','재미는 덜해도 안전을 지켰어요.'),
+      E('담임 선생님','모둠 활동','모둠 친구가 느려서 답답해. 네가 전부 할까?','혼자 다 한다',S(7,-2,-3,-6),'역할을 나눠 기다린다',S(3,0,2,8),'빨리 끝났지만 친구가 참여하지 못했어요.','조금 느려도 함께 완성했어요.'),
+      E('엄마','디지털 습관','숙제를 끝냈어. 영상 자동재생을 계속 켜둘까?','계속 본다',S(-4,-5,8,0),'두 편 뒤 끈다',S(2,2,-3,0),'재미는 컸지만 시간이 훌쩍 갔어요.','아쉽지만 정한 시간에 멈췄어요.'),
+      E('친구 하율','경쟁','하율이가 시험 점수를 물어봐. 네 점수가 더 높아.','크게 자랑한다',S(2,0,5,-7),'서로 틀린 문제를 본다',S(5,0,1,7),'뿌듯했지만 하율이가 작아졌어요.','점수보다 배운 것을 나눴어요.'),
+      E('아빠','약속','친구와 놀기로 했는데 가족 심부름을 깜빡했어.','친구에게 그냥 간다',S(0,2,5,-6),'사정을 말하고 조금 늦는다',S(1,-1,-3,7),'친구와 놀았지만 가족 약속을 어겼어요.','늦었지만 두 약속을 모두 챙겼어요.'),
+      E('친구 서윤','언어 습관','친구들이 재미로 별명을 부르고 있어. 당사자는 웃지 않아.','같이 부른다',S(0,0,5,-9),'그만하자고 말한다',S(0,0,-4,8),'분위기는 맞췄지만 누군가 상처받았어요.','잠시 어색해도 선을 지켰어요.'),
+      E('보건 선생님','몸의 신호','배가 아픈데 수업을 놓칠까 봐 참고 있어.','계속 참는다',S(2,-8,-2,0),'보건실에 간다',S(-2,8,1,0),'수업은 들었지만 집중하기 어려웠어요.','조금 놓쳤지만 몸을 돌봤어요.'),
+      E('친구 우진','갈등 해결','우진이가 네 말을 끊어서 기분이 나빠. 단체방에 흉을 볼까?','단체방에 말한다',S(-1,0,5,-9),'직접 기분을 말한다',S(1,0,-3,9),'당장은 속이 시원했지만 갈등이 커졌어요.','어렵지만 당사자와 풀어갔어요.'),
+      E('담임 선생님','책임','반려식물 물 주기 당번을 깜빡했어. 아무 말 안 해도 될까?','모른 척한다',S(0,0,3,-7),'말하고 지금 물을 준다',S(2,0,-2,8),'넘어갔지만 책임감이 줄었어요.','실수를 인정하고 바로 고쳤어요.')
+    ],
+    3:[
+      E('친구 준호','일정','준호가 방과 후 축구를 하자고 했어. 오늘은 수학 학원 날이야.','학원에 간다',S(9,-4,-6,-2),'축구를 한다',S(-6,8,7,4),'공부는 했지만 하루가 빡빡했어요.','즐거웠지만 진도를 놓쳤어요.'),
+      E('엄마','스마트폰','약속한 스마트폰 시간이 끝났는데 영상이 가장 재미있는 장면이야.','30분 더 본다',S(-6,-5,8,-4),'지금 끈다',S(4,3,-5,3),'재미는 컸지만 약속이 흔들렸어요.','아쉽지만 스스로 멈췄어요.'),
+      E('모둠 친구','협력','모둠 과제를 네가 혼자 하면 더 완벽할 것 같아.','혼자 한다',S(8,-3,-4,-7),'역할을 나눈다',S(3,0,3,9),'완성도는 높았지만 친구들이 멀어졌어요.','조금 다르지만 모두의 작품이 됐어요.'),
+      E('친구 유진','정직','유진이가 숙제 답을 그대로 보여달라고 해.','답을 보여준다',S(-4,0,-1,7),'풀이만 설명한다',S(6,-1,2,-3),'유진은 좋아했지만 배움은 줄었어요.','잠깐 서운해도 제대로 도왔어요.'),
+      E('담임 선생님','도전','학급 회장에 나가보고 싶지만 발표가 걱정돼.','도전하지 않는다',S(2,2,4,-5),'출마한다',S(-3,-3,3,10),'편안했지만 새로운 경험을 놓쳤어요.','떨렸지만 목소리를 내봤어요.'),
+      E('친구 채은','무리 문화','친구들이 새로 온 아이를 빼고 놀자고 해.','친구들 뜻을 따른다',S(0,0,5,6),'함께 놀자고 제안한다',S(0,0,-4,-5),'무리에는 남았지만 마음이 불편해요.','잠시 눈총을 받았지만 누군가에게 힘이 됐어요.'),
+      E('아빠','용돈 관리','친구들이 모두 새 문구 세트를 샀어. 너도 사고 싶어.','용돈을 다 쓴다',S(0,0,7,4),'이번에는 참는다',S(2,0,-5,-2),'친구들과 맞췄지만 다음 주가 걱정돼요.','아쉽지만 필요한 때를 기다렸어요.'),
+      E('친구 민재','온라인 예절','민재가 게임에서 실수했어. 채팅으로 놀릴까?','놀리는 말을 쓴다',S(-1,0,5,-8),'괜찮다고 말한다',S(0,0,1,7),'잠깐 웃겼지만 분위기가 나빠졌어요.','승패보다 함께하는 분위기를 지켰어요.'),
+      E('엄마','학원','영어 학원을 하나 더 다니면 성적이 오를 거래.','추가한다',S(8,-6,-8,2),'현재 일정만 유지한다',S(-3,4,6,-1),'학습량은 늘었지만 쉴 시간이 줄었어요.','속도는 느려도 숨 쉴 틈을 지켰어요.'),
+      E('친구 소민','비밀','소민이가 부모님께 말하지 말라며 밤늦게 온라인 게임을 하자고 해.','함께 접속한다',S(-5,-6,8,6),'거절하고 잔다',S(3,7,-5,-3),'친밀감은 올랐지만 다음 날이 힘들었어요.','아쉽지만 생활 리듬을 지켰어요.'),
+      E('담임 선생님','발표','모둠 발표에서 어려운 부분을 맡을 사람이 없어.','쉬운 부분을 고른다',S(1,2,4,-4),'어려운 부분을 맡는다',S(7,-3,-3,7),'편했지만 모둠 부담이 커졌어요.','힘들어도 모두에게 도움이 됐어요.'),
+      E('친구 시우','경쟁','시우가 시험에서 너보다 높은 점수를 받았어. 속상한데 틀린 답을 지적할까?','흠을 찾아 말한다',S(1,0,4,-8),'축하하고 공부법을 묻는다',S(6,0,-2,7),'잠깐 마음은 풀렸지만 관계가 차가워졌어요.','자존심은 조금 아파도 배울 점을 찾았어요.'),
+      E('엄마','가족 시간','주말 가족 식사와 친구 생일 파티가 겹쳤어.','생일 파티에 간다',S(0,2,7,5),'가족 식사에 간다',S(0,1,-4,-3),'친구들과 즐거웠지만 가족이 서운했어요.','가족과 함께했지만 친구가 아쉬워했어요.'),
+      E('친구 예린','소문','예린이에 대한 소문을 들었어. 사실인지 모르지만 재미있어.','다른 친구에게 말한다',S(0,0,5,-9),'당사자 확인 전 멈춘다',S(1,0,-3,7),'이야기는 퍼졌지만 신뢰는 줄었어요.','궁금해도 근거 없는 말은 멈췄어요.'),
+      E('체육 선생님','건강','체육 수행평가를 잘하려고 아픈 발목을 숨길까?','참고 뛴다',S(2,-10,3,4),'상태를 말한다',S(-3,8,-2,-1),'점수는 지켰지만 통증이 커졌어요.','점수는 아쉬워도 몸을 지켰어요.'),
+      E('친구 도윤','약속','도윤이가 빌려간 물건을 또 잃어버렸어. 이번에도 괜찮다고 할까?','괜찮다고 넘긴다',S(0,0,-4,6),'속상함과 기준을 말한다',S(1,0,2,-3),'갈등은 피했지만 마음이 쌓였어요.','조금 어색해도 내 기준을 알렸어요.'),
+      E('담임 선생님','반 대표','친구들 의견을 모아 전달하는 역할이 생겼어. 다수 의견만 말할까?','다수 의견만 전한다',S(1,0,2,5),'소수 의견도 함께 전한다',S(2,0,-2,-3),'빠르지만 몇몇 목소리가 사라졌어요.','복잡해도 모두의 의견을 담았어요.'),
+      E('아빠','자기관리','내일 시험인데 너무 피곤해. 밤늦게 더 공부할까?','새벽까지 공부한다',S(9,-9,-6,1),'정리하고 잔다',S(3,8,2,0),'더 봤지만 머리가 무거워졌어요.','분량은 적어도 맑은 상태를 골랐어요.'),
+      E('친구 지민','취향','친구들이 네가 좋아하는 취미를 유치하다고 놀려. 숨길까?','좋아하지 않는 척한다',S(0,0,-6,5),'좋아한다고 말한다',S(0,0,5,-4),'놀림은 피했지만 내 마음을 숨겼어요.','눈치는 보였지만 내 취향을 지켰어요.'),
+      E('엄마','집안일','숙제가 많지만 오늘은 설거지 당번이야.','숙제를 이유로 빠진다',S(6,0,2,-5),'10분 돕고 숙제한다',S(3,-2,-2,6),'시간은 벌었지만 가족 부담이 늘었어요.','조금 바빠도 역할을 나눴어요.')
+    ],
+    4:[
+      E('친구 하준','단체 채팅','친구들이 한 아이를 단체 채팅방에서 빼자고 해.','분위기를 따른다',S(0,0,6,7),'빼지 말자고 말한다',S(0,0,-5,-6),'무리에는 남았지만 누군가가 고립됐어요.','잠시 불편해도 배제를 막았어요.'),
+      E('엄마','성적','이번 시험 점수가 떨어졌어. 학원을 하나 더 늘릴까?','학원을 늘린다',S(9,-6,-8,2),'틀린 문제부터 정리한다',S(6,1,1,0),'시간은 늘었지만 부담도 커졌어요.','천천히 원인을 찾았어요.'),
+      E('친구 수아','SNS','수아가 네 사진을 허락 없이 올렸어. 웃긴 사진이라 반응이 좋아.','그냥 둔다',S(0,0,-4,6),'내려달라고 말한다',S(0,0,4,-4),'인기는 올랐지만 마음은 불편했어요.','반응은 줄어도 내 권리를 지켰어요.'),
+      E('담임 선생님','봉사','행사 준비 봉사자를 뽑는데 시험 기간이야.','봉사를 맡는다',S(-4,-4,3,9),'이번에는 공부를 선택한다',S(7,2,-2,-5),'바빴지만 학급에 도움이 됐어요.','준비는 잘했지만 참여 기회를 놓쳤어요.'),
+      E('친구 태오','갈등','태오와 의견이 달라 단체 과제가 멈췄어. 친구들이 네 편이야.','다수 힘으로 밀어붙인다',S(5,0,4,6),'서로 이유를 다시 듣는다',S(3,-1,-2,-3),'빨리 정했지만 태오는 소외됐어요.','시간은 걸려도 합의점을 찾았어요.'),
+      E('아빠','게임','주말 게임 대회 결승과 가족 약속이 겹쳤어.','대회에 참가한다',S(-2,-3,9,5),'가족 약속을 지킨다',S(0,2,-6,-2),'꿈꾸던 경기는 했지만 가족이 서운했어요.','약속은 지켰지만 경기를 놓쳤어요.'),
+      E('친구 다인','성취','다인이가 네 수행평가 자료를 베껴 쓰고 싶어 해.','파일을 보낸다',S(-5,0,2,7),'자료 찾는 법만 알려준다',S(6,0,1,-3),'다인은 편했지만 둘 다 배움이 줄었어요.','바로 돕진 못해도 방법을 나눴어요.'),
+      E('보건 선생님','외모','친구들이 살을 빼면 더 멋져 보인다고 해. 저녁을 굶을까?','저녁을 굶는다',S(0,-10,-4,4),'규칙적으로 먹는다',S(0,8,3,-2),'잠깐 뿌듯했지만 몸이 힘들어졌어요.','눈치보다 건강을 우선했어요.'),
+      E('엄마','사생활','엄마가 비밀번호를 알려달라고 해. 걱정돼서 그렇대.','말없이 알려준다',S(0,0,-5,5),'사용 규칙을 함께 정한다',S(1,0,4,-3),'갈등은 없었지만 내 공간이 줄었어요.','대화는 길어도 서로의 기준을 정했어요.'),
+      E('친구 유찬','위험 행동','유찬이가 공사장 근처 지름길로 가자고 해.','따라간다',S(0,-9,6,5),'안전한 길로 간다',S(0,4,-4,-3),'빨랐지만 위험한 순간이 있었어요.','늦어도 안전을 골랐어요.'),
+      E('담임 선생님','부정행위','시험 중 옆 친구 답이 보여. 확신 없는 문제야.','슬쩍 본다',S(3,0,2,-8),'내 답을 고수한다',S(-2,0,-2,7),'점수는 지켰지만 정직은 흔들렸어요.','틀릴 수 있어도 내 실력으로 냈어요.'),
+      E('친구 미나','관계','미나가 매일 네 선택을 따라 하라고 압박해. 거절하면 삐질 것 같아.','계속 맞춰준다',S(0,0,-6,7),'내 의견도 말한다',S(0,0,5,-4),'갈등은 없었지만 내가 사라졌어요.','잠시 서운해도 관계의 균형을 찾았어요.'),
+      E('아빠','휴식','시험이 끝났는데 다음 단원 선행을 바로 시작하자고 해.','바로 시작한다',S(8,-5,-7,3),'하루 쉬고 시작한다',S(2,5,7,-1),'앞서갔지만 마음이 지쳤어요.','속도는 늦어도 다시 힘을 채웠어요.'),
+      E('친구 서준','인기','반에서 인기 있는 친구가 누군가를 놀려. 웃어주면 친해질 수 있어.','같이 웃는다',S(0,0,5,7),'웃지 않고 자리를 뜬다',S(0,0,-3,-5),'가까워졌지만 마음은 멀어졌어요.','인기는 줄어도 선을 지켰어요.'),
+      E('담임 선생님','리더십','모둠장이 되어 친구들 일을 계속 확인할까?','모두 세세히 통제한다',S(7,-3,-4,-5),'기한과 기준만 함께 정한다',S(4,0,2,6),'실수는 줄었지만 친구들이 답답해했어요.','조금 불안해도 서로 책임졌어요.'),
+      E('친구 은재','온라인 게임','은재가 아이템을 빌려달라고 해. 계정 비밀번호도 필요하대.','비밀번호를 알려준다',S(-1,0,4,6),'다른 방법으로 돕는다',S(1,0,-2,-3),'친구는 좋아했지만 계정이 위험해졌어요.','조금 서운해도 개인정보를 지켰어요.'),
+      E('엄마','진로 관심','친구들은 모두 유명 학원에 다녀. 너도 따라갈까?','친구 따라 등록한다',S(6,-4,-5,4),'내 목표부터 생각한다',S(3,1,4,-2),'안심은 됐지만 내 이유가 없었어요.','시간은 걸려도 내 기준을 찾았어요.'),
+      E('친구 윤서','화해','윤서와 다퉜는데 먼저 사과하면 진 것 같아.','상대가 먼저 오길 기다린다',S(0,0,-4,-5),'내 잘못부터 말한다',S(1,0,3,7),'자존심은 지켰지만 거리도 멀어졌어요.','용기 내니 다시 이야기할 수 있었어요.'),
+      E('체육 선생님','팀워크','팀 승리를 위해 잘하는 친구만 계속 출전시킬까?','주전만 내보낸다',S(0,4,3,-6),'모두에게 기회를 준다',S(0,-2,1,8),'승산은 높였지만 팀이 갈라졌어요.','조금 불리해도 모두가 팀이 됐어요.'),
+      E('아빠','시간 사용','주말 하루를 공부 계획표로 꽉 채우면 마음이 놓일 것 같아.','빈틈없이 채운다',S(9,-6,-7,1),'쉬는 시간을 함께 넣는다',S(4,5,6,0),'많이 했지만 금방 지쳤어요.','조금 덜 해도 오래 이어갈 수 있어요.')
+    ],
+    5:[
+      E('엄마','선행 학습','중학교 수학을 미리 끝내기 위해 학원을 더 다니자고 해.','모두 다닌다',S(10,-7,-9,4),'가능한 양을 협의한다',S(-4,5,7,-3),'진도는 빨라졌지만 일상이 무거워졌어요.','속도는 늦어도 내 상태를 설명했어요.'),
+      E('친구 지우','관계','지우가 사귀자고 했어. 친구들은 빨리 대답하라고 재촉해.','분위기에 따라 수락한다',S(-3,-2,5,7),'생각할 시간이 필요하다고 한다',S(2,1,4,-5),'주목은 받았지만 내 마음은 아직 복잡해요.','어색해도 내 속도를 지켰어요.'),
+      E('단체 채팅방','사이버 예절','친구가 넘어지는 사진이 단체방에 올라왔어. 공유할까?','재미로 공유한다',S(-2,0,6,7),'삭제를 부탁한다',S(1,0,-4,-7),'반응은 좋았지만 누군가 상처받았어요.','분위기는 식었지만 존중을 지켰어요.'),
+      E('친구 현우','도움 요청','현우가 괴롭힘을 당하지만 아무에게도 말하지 말아 달래.','혼자 해결해준다',S(-4,-5,-7,6),'함께 믿을 만한 어른에게 알린다',S(-1,4,-3,-5),'비밀은 지켰지만 부담이 너무 커졌어요.','처음엔 어색해도 안전한 도움을 찾았어요.'),
+      E('아빠','성적 압박','이번 시험에서 반 1등을 하면 원하는 것을 사준대.','밤잠을 줄여 준비한다',S(11,-10,-8,3),'평소 계획을 유지한다',S(5,5,3,-1),'점수는 올랐지만 몸과 마음이 지쳤어요.','보상보다 지속 가능한 리듬을 골랐어요.'),
+      E('친구 서하','SNS','서하가 네 계정에 함께 찍은 사진을 올려달라고 해. 너는 싫어.','싫지만 올린다',S(0,0,-6,7),'올리지 않겠다고 말한다',S(0,0,5,-5),'관계는 편했지만 내 마음을 무시했어요.','잠시 서운해도 경계를 지켰어요.'),
+      E('담임 선생님','진로','친구들은 모두 의사나 변호사를 말해. 너는 만화를 그리고 싶어.','친구들과 비슷하게 말한다',S(2,0,-6,5),'내 관심을 솔직히 말한다',S(1,0,6,-4),'안전해 보였지만 내 꿈은 숨었어요.','눈치는 보여도 진짜 관심을 꺼냈어요.'),
+      E('친구 민호','시험','민호가 시험 범위를 잘못 알고 있어. 경쟁자라 그냥 둘까?','말하지 않는다',S(4,0,3,-8),'정확한 범위를 알려준다',S(-1,0,2,8),'내 순위는 유리해졌지만 마음은 불편했어요.','경쟁 속에서도 기본적인 공정함을 지켰어요.'),
+      E('엄마','사생활','엄마가 휴대폰 내용을 모두 확인하겠대.','아무 말 없이 보여준다',S(0,0,-7,6),'안전 규칙과 사생활 범위를 협의한다',S(1,0,5,-4),'갈등은 줄었지만 답답함이 커졌어요.','대화는 어렵지만 서로의 선을 정했어요.'),
+      E('친구 나연','무리','친구 모임에 들어가려면 특정 친구와 놀지 말래.','조건을 받아들인다',S(0,0,4,8),'그 조건은 거절한다',S(0,0,5,-7),'무리에는 들어갔지만 관계를 거래했어요.','외로울 수 있어도 내 기준을 지켰어요.'),
+      E('보건 선생님','수면','새벽까지 공부 인증을 올리는 게 유행이야. 너도 참여할까?','새벽까지 공부한다',S(9,-10,-6,5),'정한 시간에 잔다',S(3,9,2,-3),'인증은 남았지만 다음 날이 무너졌어요.','유행보다 몸의 리듬을 지켰어요.'),
+      E('친구 도하','온라인 관계','온라인에서 알게 된 친구가 직접 만나자고 해.','혼자 만나러 간다',S(0,-9,5,4),'보호자에게 알리고 안전하게 확인한다',S(0,6,-2,-2),'설렜지만 위험한 상황이 될 수 있었어요.','조금 번거로워도 안전을 먼저 확인했어요.'),
+      E('담임 선생님','책임','모둠원이 일을 안 해서 마감이 위험해. 이름을 빼버릴까?','이름을 뺀다',S(6,0,3,-6),'이유를 묻고 마지막 역할을 정한다',S(3,-1,-2,5),'결과는 지켰지만 갈등이 커졌어요.','시간은 들었지만 책임질 기회를 줬어요.'),
+      E('아빠','취미','시험 기간에는 좋아하는 운동을 완전히 끊자고 해.','시험까지 끊는다',S(8,-6,-8,2),'짧게라도 계속한다',S(3,6,6,-1),'공부 시간은 늘었지만 활력이 줄었어요.','조금 덜 공부해도 균형을 지켰어요.'),
+      E('친구 은호','농담','친구들이 외모를 소재로 농담해. 당사자도 웃는 척해.','같이 웃는다',S(0,0,5,7),'주제를 바꾸자고 한다',S(0,0,-3,-6),'분위기는 이어졌지만 상처도 남았어요.','잠깐 어색해도 선을 넘지 않았어요.'),
+      E('엄마','비교','엄마가 사촌 성적과 너를 비교해. 화가 나서 문을 닫아버릴까?','대화를 끊는다',S(-2,0,3,-7),'비교가 힘들다고 말한다',S(1,0,-3,5),'당장은 피했지만 오해가 남았어요.','쉽지 않아도 내 감정을 설명했어요.'),
+      E('친구 수빈','과제','수빈이가 AI가 만든 글을 그대로 제출하자고 해.','그대로 제출한다',S(3,0,3,-7),'참고만 하고 다시 쓴다',S(7,-1,-2,4),'빨랐지만 내 생각은 남지 않았어요.','시간은 걸려도 내 글이 됐어요.'),
+      E('체육 선생님','경쟁','주전이 되려면 아픈 사실을 숨겨야 할 것 같아.','숨기고 뛴다',S(1,-10,5,5),'상태를 알린다',S(-2,8,-3,-2),'자리는 지켰지만 부상이 커졌어요.','기회는 줄어도 몸을 지켰어요.'),
+      E('친구 유빈','소문','유빈이에 대한 연애 소문이 퍼졌어. 사실을 캐물을까?','직접 캐묻는다',S(0,0,3,-7),'본인이 말할 때까지 기다린다',S(0,0,-2,6),'궁금증은 풀렸지만 부담을 줬어요.','궁금해도 사생활을 존중했어요.'),
+      E('담임 선생님','리더십','학생회 공약을 지키기 어려워 보여. 인기 있는 말만 계속할까?','인기 있는 약속을 한다',S(1,0,4,8),'가능한 약속만 한다',S(3,0,-2,-5),'반응은 좋았지만 책임이 무거워졌어요.','화려하진 않아도 지킬 수 있게 말했어요.')
+    ],
+    6:[
+      E('부모님','진학','중학교 준비 모의고사와 가족 캠핑 날짜가 겹쳤어.','모의고사를 본다',S(11,-5,-8,-2),'가족 캠핑에 간다',S(-7,7,10,3),'준비는 됐지만 소중한 시간을 놓쳤어요.','공부는 미뤘지만 오래 기억할 하루가 됐어요.'),
+      E('친구 정우','졸업 관계','중학교가 달라질 친구와 요즘 어색해. 먼저 연락할까?','그냥 멀어진다',S(1,0,-4,-5),'먼저 이야기한다',S(0,0,5,7),'마음은 편했지만 관계가 조용히 끝났어요.','어색해도 마지막 시간을 소중히 했어요.'),
+      E('엄마','진학 학원','중학교 입학 전 방학을 학원으로 꽉 채우자고 해.','계획대로 따른다',S(10,-8,-10,5),'휴식과 공부를 함께 조정한다',S(4,6,7,-3),'앞서갔지만 방학이 사라졌어요.','속도보다 오래 갈 리듬을 만들었어요.'),
+      E('단체 채팅방','디지털 시민성','친구의 비공개 고민 캡처가 단체방에 퍼졌어.','읽고 다른 방에도 보낸다',S(-2,0,6,8),'퍼뜨리지 말고 삭제를 요청한다',S(2,0,-5,-8),'이야기는 커졌지만 신뢰는 무너졌어요.','분위기는 차가워져도 권리를 지켰어요.'),
+      E('친구 하린','고백','친구가 너를 좋아한다고 했지만 너는 같은 마음이 아니야.','미안해서 애매하게 받아준다',S(-1,0,-6,6),'고맙지만 어렵다고 솔직히 말한다',S(1,0,4,-5),'당장은 편했지만 더 큰 오해가 생겼어요.','아프더라도 분명하게 존중했어요.'),
+      E('담임 선생님','졸업 프로젝트','졸업 프로젝트 완성도를 위해 친구 의견을 줄일까?','내 방식대로 밀어붙인다',S(8,-3,-4,-6),'핵심 기준을 정해 조율한다',S(5,-1,3,7),'완벽해졌지만 모두의 작품은 아니었어요.','조금 달라도 함께 만든 결과가 됐어요.'),
+      E('아빠','진로 선택','안정적인 꿈을 정하라고 재촉해. 아직 잘 모르겠어.','그럴듯한 꿈을 정한다',S(3,0,-6,5),'모른다고 말하고 탐색한다',S(2,0,5,-3),'대답은 생겼지만 내 마음은 비어 있었어요.','불확실해도 솔직한 출발을 골랐어요.'),
+      E('친구 시온','친구 압력','중학생처럼 보이려면 위험한 장난도 해봐야 한대.','따라 한다',S(-1,-9,6,7),'거절한다',S(1,3,-4,-5),'인정은 받았지만 위험을 감수했어요.','눈치는 보여도 내 선을 지켰어요.'),
+      E('엄마','성적','마지막 시험 성적이 기대보다 낮아. 방학 동안 매일 8시간 공부할까?','매일 8시간 계획한다',S(11,-10,-9,2),'약한 부분과 휴식을 나눈다',S(6,5,5,0),'계획은 대단했지만 금방 지쳤어요.','현실적인 계획이 더 오래 갔어요.'),
+      E('친구 민서','SNS 평판','졸업사진을 보정해서 올리면 반응이 더 좋을 것 같아.','크게 보정한다',S(0,0,3,8),'자연스럽게 올린다',S(0,0,5,-3),'반응은 늘었지만 내 모습이 낯설었어요.','반응은 적어도 내 모습을 받아들였어요.'),
+      E('담임 선생님','공정','친한 친구가 학생회 투표 규칙을 어겼어. 모른 척할까?','친구를 감싼다',S(-1,0,4,7),'규칙대로 알린다',S(2,0,-4,-6),'우정은 지켰지만 공정함이 흔들렸어요.','친구는 서운해도 같은 기준을 적용했어요.'),
+      E('친구 준서','온라인 만남','게임 길드 친구가 선물을 보내준다며 주소를 물어봐.','주소를 알려준다',S(0,-10,5,4),'개인정보라 거절한다',S(1,5,-3,-2),'선물은 기대됐지만 위험한 정보였어요.','아쉬워도 개인정보를 지켰어요.'),
+      E('부모님','의견 충돌','중학교 선택을 두고 부모님과 의견이 달라. 그냥 따를까?','부모님 뜻대로 한다',S(3,0,-7,6),'내 이유를 준비해 대화한다',S(2,-1,5,-4),'갈등은 줄었지만 내 선택감도 줄었어요.','대화는 힘들어도 선택에 참여했어요.'),
+      E('친구 가은','관계 정리','가은이가 계속 비밀을 퍼뜨려. 오래된 친구라 참을까?','계속 참는다',S(0,0,-8,6),'거리와 기준을 말한다',S(0,0,5,-5),'관계는 유지됐지만 상처가 쌓였어요.','외로울 수 있어도 건강한 거리를 만들었어요.'),
+      E('보건 선생님','스트레스','시험 생각만 하면 숨이 답답해. 아무에게도 말하지 말까?','혼자 참는다',S(2,-7,-9,1),'믿을 만한 어른에게 말한다',S(-1,5,6,-2),'겉으로는 버텼지만 마음이 더 무거워졌어요.','말로 꺼내니 도움을 받을 수 있었어요.'),
+      E('친구 도겸','경쟁','중학교 반 배치에 유리하다는 소문 때문에 친구 공부법을 숨길까?','나만 알고 있는다',S(5,0,3,-7),'서로 공부법을 나눈다',S(3,0,2,7),'조금 유리했지만 관계가 계산적으로 변했어요.','경쟁해도 함께 성장할 수 있었어요.'),
+      E('담임 선생님','졸업식','졸업식 대표 낭독을 맡으면 준비 시간이 많이 들어.','대표를 맡는다',S(-3,-3,5,10),'이번에는 쉬운 역할을 맡는다',S(3,3,2,-4),'바빴지만 오래 기억될 경험이 됐어요.','여유는 생겼지만 무대 기회는 놓쳤어요.'),
+      E('친구 예준','유행','모두가 비싼 신발을 신는다고 해. 졸업 선물로 꼭 사달라고 할까?','강하게 조른다',S(0,0,6,6),'필요와 가격을 함께 생각한다',S(2,0,-3,-2),'눈에는 띄었지만 가족 부담이 커졌어요.','유행은 놓쳐도 내 기준을 세웠어요.'),
+      E('아빠','휴대폰','중학생이 되면 새 휴대폰을 사주겠대. 대신 모든 앱을 확인하겠대.','조건을 바로 수락한다',S(0,0,5,6),'사용 규칙을 협의한다',S(1,0,3,-3),'새 기기는 얻었지만 자율성이 줄었어요.','시간은 걸려도 서로 납득할 조건을 만들었어요.'),
+      E('나 자신','마지막 선택','졸업을 앞두고 지난 선택들을 돌아봤어. 완벽하지 못한 나를 인정할까?','부족한 점만 본다',S(3,-2,-10,-1),'성장한 점도 함께 본다',S(1,2,10,2),'더 채찍질했지만 마음이 지쳤어요.','완벽하지 않아도 여기까지 온 나를 인정했어요.')
+    ]
+  };
+
+  const subjectCards={
+    1:[
+      Object.assign(E("담임 선생님","국어","동화책을 소리 내어 읽을 차례야. 모르는 글자가 보여.","작게 얼버무린다",S(-5,3,4,-2),"모른다고 말하고 다시 읽는다",S(7,-4,-3,4),"빨리 지나갔지만 글자는 그대로 낯설었어요.","조금 떨렸지만 새로운 글자를 익혔어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("친구 나은","국어","그림일기에 쓸 말이 생각나지 않아. 나은이 문장을 그대로 따라 쓸까?","그대로 따라 쓴다",S(2,0,4,-7),"내가 한 일을 천천히 떠올린다",S(5,-1,7,2),"금방 끝났지만 내 이야기는 남지 않았어요.","시간은 걸려도 내 문장이 생겼어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("담임 선생님","수학","수 모형으로 더하기를 하고 있어. 손으로 세는 게 느려 보여.","답만 빨리 말한다",S(3,-6,5,2),"모형을 옮기며 확인한다",S(6,-1,3,1),"운 좋게 맞았지만 방법은 헷갈렸어요.","천천히 세니 왜 그런지 알게 됐어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("친구 도하","수학","도하가 블록을 똑같이 나누자고 해. 네가 큰 블록을 갖고 싶어.","큰 것을 먼저 고른다",S(7,-3,-2,4),"같은 수가 되게 나눈다",S(4,1,3,7),"내 몫은 커졌지만 놀이가 어색해졌어요.","모두 같은 수를 가져 편하게 놀았어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("담임 선생님","사회","우리 동네에서 자주 가는 장소를 발표해보자고 해.","친구 발표만 듣는다",S(-5,3,4,-2),"내가 가는 곳을 말한다",S(3,0,-2,6),"편했지만 내 경험은 소개하지 못했어요.","조금 부끄러워도 우리 동네 이야기를 나눴어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("학교 지킴이","사회","복도에서 길을 잃은 동생이 교실을 찾고 있어.","바빠서 지나간다",S(8,-3,-4,0),"함께 안내 표지를 찾는다",S(4,-1,3,7),"내 일은 빨리 했지만 동생은 계속 헤맸어요.","시간은 들었지만 학교 공간을 함께 살폈어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("담임 선생님","과학","운동장 잎의 모양을 관찰하고 있어. 빨리 교실에 들어가고 싶어.","비슷하다고 적는다",S(2,0,4,-6),"가까이 보고 다른 점을 찾는다",S(5,-1,5,1),"활동은 빨리 끝났지만 발견이 적었어요.","자세히 보니 잎마다 무늬가 달랐어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 하린","과학","물에 뜨는 물건을 예상해보자고 해. 하린의 답과 달라.","하린의 답으로 바꾼다",S(1,0,-3,7),"내 예상도 함께 시험한다",S(8,-4,-3,4),"마음은 편했지만 내 생각은 확인하지 못했어요.","결과가 달라도 직접 확인해봤어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","처음 듣는 영어 인사말을 따라 해볼 시간이야.","입만 살짝 움직인다",S(-5,3,4,-2),"틀려도 소리 내어 말한다",S(7,-4,-3,4),"눈에 띄지는 않았지만 입에 익지 않았어요.","조금 어색해도 한 번 말해봤어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 지안","영어","영어 그림 카드 게임에서 모르는 단어가 나왔어.","아는 척 넘긴다",S(2,0,4,-7),"그림을 보고 뜻을 물어본다",S(7,-1,3,1),"게임은 이어졌지만 단어는 남지 않았어요.","질문하니 카드가 더 잘 보이기 시작했어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","줄넘기가 잘 안 돼서 자꾸 걸려. 친구들은 벌써 많이 했어.","그만하고 앉는다",S(-5,3,4,-2),"목표를 다섯 번으로 낮춰 다시 한다",S(8,-3,-3,1),"몸은 편했지만 아쉬움이 남았어요.","작은 목표로 다시 시작했어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 서우","체육","공을 혼자 오래 가지고 있으면 골을 넣을 수 있을 것 같아.","혼자 몰고 간다",S(7,-3,-2,4),"서우에게 패스한다",S(4,1,3,7),"멋진 장면을 노렸지만 친구가 멈춰 섰어요.","공을 나누니 팀이 함께 움직였어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","하늘을 꼭 파란색으로 칠하지 않아도 된대. 어떤 색을 쓸까?","친구 그림과 같게 한다",S(1,0,-3,6),"내가 떠올린 색을 쓴다",S(5,-1,6,2),"안전했지만 내 하늘은 숨어버렸어요.","낯선 색이지만 내 장면이 되었어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 이든","미술","찰흙이 조금밖에 남지 않았어. 이든도 필요하대.","내 작품에 전부 쓴다",S(8,-2,-2,-5),"작품 크기를 줄여 나눈다",S(4,-1,3,7),"작품은 커졌지만 이든은 시작하지 못했어요.","작아도 두 작품이 함께 완성됐어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","리듬 악기를 고르는데 가장 큰 북이 하나뿐이야.","먼저 가져간다",S(6,-3,-2,4),"순서를 정해 번갈아 친다",S(4,1,3,6),"소리는 컸지만 친구들이 기다렸어요.","기다림이 있었지만 모두 북을 쳤어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 윤","음악","노래 부를 때 음이 틀릴까 걱정돼.","아주 작게 부른다",S(-6,3,4,-2),"친구 목소리를 들으며 함께 부른다",S(6,-3,4,5),"실수는 숨겼지만 노래도 잘 들리지 않았어요.","조금 틀려도 목소리가 모였어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+    2:[
+      Object.assign(E("담임 선생님","국어","받아쓰기에서 틀린 낱말을 세 번씩 고쳐 쓰라고 해.","정답만 보고 빠르게 쓴다",S(7,-2,-5,0),"소리와 글자를 나누어 읽는다",S(6,-1,3,1),"칸은 채웠지만 다음에도 헷갈릴 것 같아요.","느렸지만 틀린 까닭을 찾았어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("도서관 선생님","국어","읽고 싶은 만화책과 조금 어려운 이야기책이 함께 보여.","만화책만 빌린다",S(-4,7,6,0),"두 권을 한 권씩 빌린다",S(4,3,3,1),"마음껏 쉬었지만 새로운 글은 적게 만났어요.","즐거운 책과 도전할 책을 함께 골랐어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("친구 예준","수학","시계 읽기 활동에서 예준이 답을 속삭여줘.","그 답을 적는다",S(2,0,4,-6),"시계 바늘을 다시 본다",S(6,-1,3,1),"빨리 적었지만 혼자서는 다시 헷갈렸어요.","분침과 시침을 나누어 확인했어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("담임 선생님","수학","여러 방법으로 20을 만들어보자고 해. 하나 찾았으니 멈출까?","한 방법만 적는다",S(2,6,2,-1),"다른 방법도 찾아본다",S(6,-1,5,1),"편하게 끝냈지만 발견은 하나였어요.","조금 더 생각해 여러 식을 찾았어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("담임 선생님","사회","학교에서 지켜야 할 규칙을 모둠에서 정하고 있어.","내가 원하는 규칙만 말한다",S(5,-3,1,6),"친구 이유도 들어본다",S(4,-1,3,6),"내 생각은 분명했지만 모둠이 조용해졌어요.","시간은 걸려도 모두의 이유가 담겼어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("친구 채아","사회","전통 놀이가 낯설고 어렵게 느껴져. 익숙한 놀이만 할까?","익숙한 놀이를 고른다",S(2,6,2,-1),"방법을 배우고 한 판 해본다",S(6,-1,5,1),"편했지만 새로운 놀이는 만나지 못했어요.","서툴러도 옛 놀이의 재미를 알게 됐어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("담임 선생님","과학","씨앗 관찰 기록을 어제 깜빡했어. 오늘 모습을 어제처럼 그릴까?","비슷하게 꾸며 쓴다",S(2,0,4,-6),"빠뜨렸다고 표시하고 오늘부터 기록한다",S(3,0,1,5),"기록은 채웠지만 사실과 달라졌어요.","빈칸은 남아도 관찰은 정직해졌어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 수호","과학","자석이 붙을 물건을 내기하고 있어. 손에 든 클립만 시험할까?","클립만 확인한다",S(2,6,2,-1),"교실 물건을 더 찾아본다",S(6,-1,5,1),"예상은 맞았지만 범위가 좁았어요.","여러 재료를 비교하니 규칙이 보였어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","영어 노래의 동작을 친구들 앞에서 보여줄 사람이 필요해.","뒤에서 따라 한다",S(-5,3,4,-2),"앞에 나가 함께 한다",S(5,-3,4,5),"편했지만 동작을 이끌 기회는 놓쳤어요.","떨려도 노래와 몸짓을 연결했어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 로아","영어","영어 단어 카드의 그림을 보고 뜻을 맞히는 중이야.","모르는 카드는 빼둔다",S(-6,3,4,-2),"비슷한 그림끼리 묶어본다",S(7,-1,3,1),"게임은 쉬워졌지만 모르는 카드는 그대로였어요.","그림의 공통점을 찾으며 단어를 익혔어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","달리기 전에 준비운동 시간이 길게 느껴져.","대충 하고 시작한다",S(3,-6,5,2),"몸을 충분히 푼다",S(2,5,2,-1),"빨리 뛰었지만 몸이 뻣뻣했어요.","조금 늦어도 몸이 준비됐어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 온","체육","피구에서 온이가 공을 무서워해 뒤에만 있어.","강한 친구끼리 공격한다",S(7,-3,-2,4),"온이와 잡는 연습을 한다",S(4,1,3,7),"점수는 빨리 올랐지만 온이는 빠졌어요.","속도는 느려도 팀원이 함께했어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","종이를 자르다 선 밖으로 나갔어. 새 종이로 다시 할까?","처음부터 다시 한다",S(7,-3,-4,0),"잘린 모양을 작품에 이용한다",S(5,-1,6,2),"깔끔해졌지만 종이와 시간이 더 들었어요.","실수가 새로운 모양이 되었어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 유빈","미술","모둠 벽화에서 유빈이 고른 색이 마음에 들지 않아.","내 색으로 덮는다",S(8,-2,-2,-5),"두 색이 만나는 부분을 만든다",S(4,-1,3,7),"내 취향은 지켰지만 유빈의 자리가 사라졌어요.","다른 색이 만나 더 풍성해졌어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","리듬을 놓쳤는데 계속 연주가 이어지고 있어.","멈추고 포기한다",S(-5,3,4,-2),"다음 박자부터 다시 들어간다",S(7,-4,-3,4),"실수는 더 없었지만 곡에서 빠졌어요.","한 번 놓쳐도 다시 흐름을 찾았어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 단우","음악","단우가 만든 리듬이 네 것보다 박수가 많이 나왔어.","더 크게 쳐서 이긴다",S(7,-3,-2,4),"좋았던 부분을 물어본다",S(7,-1,3,1),"눈길은 끌었지만 리듬이 거칠어졌어요.","경쟁보다 새로운 방법을 배웠어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+    3:[
+      Object.assign(E("국어 선생님","국어","독서록 마감이 내일인데 책을 절반밖에 못 읽었어.","줄거리를 검색해 쓴다",S(2,0,4,-7),"읽은 부분과 궁금한 점을 솔직히 쓴다",S(3,0,1,6),"제출은 했지만 내 독서가 아니었어요.","완벽하지 않아도 내 생각이 남았어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("모둠 친구","국어","토론에서 네 근거가 약하다는 말을 들었어.","목소리를 크게 밀어붙인다",S(5,-3,1,8),"자료를 다시 찾아 보완한다",S(9,-2,-3,2),"주장은 강해 보였지만 설득력은 줄었어요.","시간은 들었지만 근거가 단단해졌어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("수학 선생님","수학","곱셈 문제를 빨리 풀기 위해 답만 외울까?","답을 반복해 외운다",S(8,-2,-5,0),"묶음 그림과 식을 연결한다",S(7,-1,3,1),"속도는 빨라졌지만 응용에서 막혔어요.","조금 느려도 원리가 보였어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("친구 가온","수학","모둠 수학 게임에서 가온이 계산을 자꾸 틀려.","가온 차례를 줄인다",S(8,-3,-2,4),"풀이를 함께 확인한다",S(4,-1,3,8),"팀 점수는 지켰지만 가온은 멀어졌어요.","시간은 걸려도 모두가 계산했어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("사회 선생님","사회","고장의 문제를 조사하는데 인터넷 첫 글이 답처럼 보여.","첫 자료만 사용한다",S(2,0,4,-7),"두 자료의 출처를 비교한다",S(8,-2,-3,2),"빨리 끝났지만 믿을 만한지 알기 어려웠어요.","서로 다른 자료를 보니 판단할 근거가 생겼어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("친구 민주","사회","학급 규칙을 바꾸는 투표에서 친한 친구와 의견이 달라.","친구와 같은 표를 낸다",S(1,0,-3,8),"내 이유대로 표를 낸다",S(3,0,-2,8),"관계는 편했지만 내 의견을 숨겼어요.","조금 어색해도 내 기준으로 선택했어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("과학 선생님","과학","실험 결과가 예상과 다르게 나왔어. 다시 해서 예상대로 만들까?","맞을 때까지 반복한다",S(3,-7,5,2),"다른 결과가 나온 이유를 적는다",S(3,0,1,6),"원하는 결과는 얻었지만 관찰이 흐려졌어요.","예상 밖 결과도 중요한 자료가 됐어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 현서","과학","곤충을 가까이 보고 싶어 현서가 손으로 잡자고 해.","직접 잡아본다",S(3,-8,5,2),"관찰통으로 잠깐 본다",S(2,7,2,-1),"생생했지만 곤충과 손이 위험했어요.","거리는 두어도 특징을 충분히 살폈어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","영어 역할극에서 긴 대사를 맡으면 점수를 더 받을 수 있대.","긴 대사를 맡는다",S(8,-4,-3,4),"짧은 대사를 정확히 연습한다",S(2,6,2,-1),"도전은 컸지만 다른 일정이 빡빡해졌어요.","부담은 줄고 표현을 또렷하게 익혔어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 주원","영어","주원이 영어 숙제 답을 사진으로 보내달라고 해.","사진을 보낸다",S(2,0,4,-8),"힌트가 되는 단어만 알려준다",S(4,-1,3,8),"친구는 좋아했지만 둘 다 연습이 줄었어요.","바로 답은 아니어도 함께 풀 길을 찾았어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","오래달리기 기록을 올리려고 쉬는 날에도 매일 뛸까?","매일 강하게 뛴다",S(3,-7,5,2),"쉬는 날을 넣어 계획한다",S(4,3,3,1),"기록 욕심은 채웠지만 몸이 지쳤어요.","속도는 천천히 올라가도 회복할 틈이 생겼어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 서진","체육","축구 경기에서 서진이 실수로 실점했어.","바로 탓한다",S(8,-3,-2,4),"다음 수비 위치를 함께 정한다",S(4,1,3,8),"속은 풀렸지만 팀 분위기가 무너졌어요.","실수 뒤의 다음 장면에 집중했어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","명화 따라 그리기에서 똑같이 그려야 할 것 같아.","모양을 최대한 복사한다",S(8,-3,-4,0),"화가의 특징을 살려 내 장면을 그린다",S(5,-1,7,2),"비슷해졌지만 내 해석은 적었어요.","원작을 보면서도 새로운 이야기를 만들었어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 시은","미술","시은의 아이디어가 선생님께 칭찬받았어. 네 작품에도 넣을까?","몰래 비슷하게 넣는다",S(2,0,4,-8),"시은에게 함께 발전시키자고 한다",S(4,-1,3,8),"작품은 좋아 보였지만 마음이 불편했어요.","아이디어의 주인을 존중하며 함께 바꿨어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","리코더 수행평가가 걱정돼 쉬는 시간까지 계속 연습할까?","모든 쉬는 시간에 연습한다",S(9,-3,-3,1),"하루 연습량을 나눠 정한다",S(4,3,3,1),"실력은 빨리 늘었지만 머리가 지쳤어요.","조금씩 반복하니 다른 시간도 지킬 수 있었어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 하람","음악","합주에서 네 파트가 잘 들리지 않아 더 크게 불고 싶어.","내 소리를 키운다",S(7,-3,4,5),"다른 파트를 들으며 맞춘다",S(4,1,3,8),"존재감은 커졌지만 곡이 흔들렸어요.","내 소리는 줄어도 합주가 살아났어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+    4:[
+      Object.assign(E("국어 선생님","국어","설명문 발표 자료에 어려운 말을 많이 넣으면 똑똑해 보일 것 같아.","어려운 표현을 넣는다",S(8,-3,-4,0),"친구가 이해할 말로 바꾼다",S(4,-1,3,7),"전문적으로 보였지만 듣는 친구들이 놓쳤어요.","쉽게 말하니 내용이 더 잘 전달됐어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("친구 연우","국어","연우의 주장에 반대하지만 친한 사이라 토론에서 말하기 어렵다.","아무 말 하지 않는다",S(1,0,-3,8),"생각과 사람을 나누어 반박한다",S(3,0,-2,8),"관계는 편했지만 토론은 한쪽으로 기울었어요.","의견은 달라도 예의를 지켜 말했어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("수학 선생님","수학","분수 문제를 틀렸는데 풀이 흔적이 엉켜 있어.","답만 고친다",S(8,-2,-5,0),"어디서 달라졌는지 표시한다",S(7,-1,3,1),"정답은 맞췄지만 같은 실수가 남았어요.","틀린 지점을 찾으니 다음 풀이가 쉬워졌어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("친구 재민","수학","수학 경시대회 준비반에 들어가면 주말 시간이 줄어든대.","준비반에 들어간다",S(9,-4,-3,4),"현재 공부와 취미를 유지한다",S(5,3,3,1),"도전은 늘었지만 주말이 빽빽해졌어요.","기회는 미뤘지만 생활 리듬을 지켰어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("사회 선생님","사회","지역 개발 찬반 토론에서 네 모둠은 찬성만 조사했어.","찬성 자료만 발표한다",S(5,-3,1,7),"반대 이유도 함께 소개한다",S(8,-2,-3,2),"주장은 선명했지만 다른 삶은 보이지 않았어요.","복잡해져도 여러 입장을 살폈어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("친구 세린","사회","온라인 설문 결과가 네 예상과 달라. 응답 몇 개를 빼면 맞아 보여.","불편한 응답을 뺀다",S(2,0,4,-8),"결과 그대로 해석한다",S(3,0,1,7),"발표는 깔끔했지만 자료를 왜곡했어요.","예상과 달라도 결과를 존중했어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("과학 선생님","과학","전기 회로 실험이 안 돼서 시간이 부족해. 친구 회로를 그대로 따라 할까?","그대로 복사한다",S(2,0,4,-7),"연결 순서를 하나씩 확인한다",S(7,-1,3,1),"불은 켜졌지만 원인은 모르겠어요.","느려도 끊긴 부분을 직접 찾았어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 유찬","과학","생태 조사에서 작은 벌레가 징그러워 기록에서 빼자고 해.","빼고 정리한다",S(-7,3,4,-2),"모습과 역할을 조사한다",S(7,-1,5,1),"보기는 편했지만 생태계 한 부분이 사라졌어요.","불편해도 생물의 역할을 이해했어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","영어 일기에 번역기를 쓰면 멋진 문장을 만들 수 있어.","문장 전체를 번역한다",S(2,0,4,-7),"아는 표현으로 짧게 쓴다",S(3,0,1,6),"문장은 화려했지만 내 실력과 멀었어요.","짧아도 내가 만든 문장이 되었어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 라온","영어","영어 발표에서 발음을 틀린 친구를 따라 하면 웃길 것 같아.","장난으로 따라 한다",S(1,0,-3,8),"좋았던 표현을 말해준다",S(4,-1,3,8),"친구들은 웃었지만 누군가 작아졌어요.","웃음보다 발표할 용기를 지켜줬어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","농구 평가에서 슛만 잘하면 높은 점수를 받을 것 같아.","공을 받으면 바로 슛한다",S(7,-3,-2,4),"패스와 움직임도 신경 쓴다",S(4,1,3,7),"개인 기록은 늘었지만 팀 흐름이 끊겼어요.","점수 외의 팀 플레이도 보였어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 은호","체육","은호가 넘어졌지만 경기가 계속되고 있어.","기회를 살려 공격한다",S(8,-3,-2,4),"잠시 멈추고 상태를 본다",S(2,7,2,-1),"점수는 얻었지만 마음이 불편했어요.","경기는 늦어도 안전을 먼저 살폈어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","포스터 대회에서 유행하는 디자인을 그대로 쓰면 인기 있을 것 같아.","유행 구성을 따라 한다",S(1,0,-3,7),"주제에 맞는 내 구성을 만든다",S(5,-1,7,2),"익숙해 보여 반응은 좋았지만 개성이 약했어요.","낯설어도 주제와 내 생각이 연결됐어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 아인","미술","모둠 조형물에서 네 부분만 완성도가 높아 보여.","내 부분만 더 다듬는다",S(9,-2,-2,-5),"다른 부분 연결을 돕는다",S(4,-1,3,8),"내 작품은 빛났지만 전체는 따로 놀았어요.","개인 부분은 덜 다듬어도 하나의 작품이 됐어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","창작 리듬이 다른 모둠과 비슷해 보여 바꿀 시간이 부족해.","그대로 발표한다",S(2,6,2,-1),"한 부분이라도 새로 바꾼다",S(5,-1,7,2),"안정적이지만 우리 색은 약했어요.","조금 불안해도 모둠의 소리가 생겼어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 민아","음악","합창에서 민아의 음이 계속 어긋나. 네가 대신 크게 부를까?","내 목소리로 덮는다",S(9,-2,-2,-5),"쉬는 시간에 같이 맞춰본다",S(4,-1,3,8),"당장 소리는 맞았지만 민아는 더 작아졌어요.","시간은 들었지만 둘의 음이 함께 맞았어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+    5:[
+      Object.assign(E("국어 선생님","국어","논설문에 강한 표현을 쓰면 설득력이 높아질 것 같아.","반대편을 몰아붙인다",S(5,-3,1,8),"근거와 한계를 함께 쓴다",S(9,-2,-3,2),"문장은 세졌지만 읽는 사람의 문은 닫혔어요.","강도는 낮아도 믿을 만한 글이 됐어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("친구 소율","국어","소율의 비공개 글이 토론 근거로 딱 맞아. 허락 없이 인용할까?","이름을 빼고 사용한다",S(2,0,4,-9),"허락을 구하거나 다른 자료를 찾는다",S(3,0,1,8),"자료는 얻었지만 친구의 경계를 넘었어요.","번거로워도 글의 주인을 존중했어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("수학 선생님","수학","선행 문제집을 시작하면 중학교 과정까지 갈 수 있대.","현재 오답을 두고 선행한다",S(9,-4,-3,4),"현재 약한 단원을 먼저 다진다",S(8,-1,3,1),"앞으로 갔지만 뒤의 구멍이 커졌어요.","속도는 느려도 기반이 단단해졌어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("친구 태양","수학","수학 발표에서 태양의 풀이가 더 짧아 보여 네 풀이를 숨기고 싶어.","발표를 피한다",S(-8,3,4,-2),"다른 풀이로 소개한다",S(3,0,-2,9),"비교는 피했지만 새로운 관점도 사라졌어요.","길어도 다른 생각의 가치를 보여줬어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("사회 선생님","사회","뉴스 토론에서 조회 수가 높은 영상이 네 주장과 같아.","영상만 믿고 발표한다",S(1,0,-3,8),"출처와 반대 자료를 확인한다",S(9,-2,-3,2),"준비는 빨랐지만 정보의 함정이 남았어요.","시간은 들었지만 판단이 단단해졌어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("친구 다빈","사회","반 대표 공약으로 모두가 좋아할 말을 하면 당선될 것 같아.","가능성 낮은 약속도 한다",S(9,-3,-2,4),"할 수 있는 약속만 제시한다",S(3,0,1,8),"인기는 올랐지만 지킬 일이 쌓였어요.","화려함은 덜해도 신뢰할 약속이 남았어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("과학 선생님","과학","탐구 보고서 결과가 가설과 반대야. 점수가 걱정돼.","수치를 조금 고친다",S(2,0,4,-8),"오차와 새 가설을 적는다",S(3,0,1,7),"모양은 깔끔했지만 탐구가 거짓이 됐어요.","예상은 틀려도 과학적인 설명이 남았어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 지후","과학","환경 프로젝트에서 멋진 영상 제작과 실제 실천 중 시간이 하나뿐이야.","영상 완성도에 집중한다",S(8,-3,4,5),"작은 실천과 기록을 남긴다",S(6,3,3,1),"반응은 좋았지만 생활은 그대로였어요.","화려함은 덜해도 변화가 실제로 시작됐어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","영어 인증시험 준비를 시작하면 주말 두 번이 사라져.","시험 준비를 시작한다",S(9,-4,-3,4),"회화 동아리를 선택한다",S(4,-1,3,8),"점수 목표는 생겼지만 여유가 줄었어요.","인증은 미뤄도 실제 대화가 늘었어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 리안","영어","외국인 친구와 채팅 중 번역기가 이상한 말을 만들었어.","그대로 보내고 넘긴다",S(2,0,4,-9),"쉬운 말로 다시 확인한다",S(3,0,1,8),"대화는 빨랐지만 오해가 남았어요.","느려도 뜻을 서로 확인했어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","대표 선발전을 앞두고 발목이 뻐근해. 빠지면 기회를 잃을 수 있어.","참고 출전한다",S(3,-8,5,2),"상태를 알리고 조절한다",S(2,7,2,-1),"기회는 잡았지만 부상이 커질 수 있어요.","선발은 불확실해도 몸을 지켰어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 정우","체육","반 대항전에서 약한 친구는 벤치에 두자는 의견이 많아.","승리를 위해 따른다",S(9,-3,-2,4),"모두 뛸 시간을 나눈다",S(4,1,3,9),"이길 확률은 높였지만 팀의 의미가 줄었어요.","기록은 불리해도 모두의 경기가 됐어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","디지털 그림 공모전에 AI가 만든 배경을 그대로 쓰면 시간이 절약돼.","출처 없이 사용한다",S(2,0,4,-8),"직접 수정하고 사용 여부를 밝힌다",S(3,0,1,7),"완성은 빨랐지만 누구의 작품인지 흐려졌어요.","시간은 더 들었지만 과정이 투명해졌어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 해나","미술","해나가 작품의 의미를 설명하기 싫다는데 친구들이 계속 묻고 있어.","재미로 추측해 퍼뜨린다",S(1,0,-3,9),"말하고 싶을 때까지 기다린다",S(2,8,2,-1),"이야깃거리는 생겼지만 해나의 경계를 넘었어요.","궁금함은 남아도 작품과 사람을 존중했어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","밴드 공연에서 어려운 솔로를 맡으면 주목받을 수 있어.","솔로를 맡는다",S(7,-3,4,5),"전체 연주를 안정시키는 파트를 맡는다",S(4,1,3,8),"빛나는 순간은 생겼지만 부담이 커졌어요.","주목은 적어도 곡 전체가 단단해졌어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 시온","음악","시온이 만든 멜로디를 네 영상 배경음으로 쓰고 싶어.","친구니까 그냥 쓴다",S(2,0,4,-9),"허락과 표시 방법을 정한다",S(3,0,1,8),"영상은 빨리 완성됐지만 관계에 금이 갔어요.","절차는 늘어도 서로의 창작을 지켰어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+    6:[
+      Object.assign(E("국어 선생님","국어","중학교 자기소개 글에 장점만 쓰면 더 좋아 보일 것 같아.","힘든 점은 모두 숨긴다",S(7,-3,4,5),"장점과 성장 중인 점을 함께 쓴다",S(3,0,1,7),"완벽해 보였지만 진짜 내 모습은 흐려졌어요.","조금 부족해도 변화하는 나를 담았어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("친구 지민","국어","졸업 문집에 친구의 실수를 웃긴 이야기로 쓰고 싶어.","이름만 바꿔 쓴다",S(1,0,-3,9),"친구에게 확인하거나 다른 소재를 쓴다",S(3,0,1,8),"재미는 생겼지만 누군가는 바로 알아봤어요.","웃음보다 오래 남을 관계를 지켰어요.","#ed756b","#f2a76d"),{subject:"국어",style:"korean"}),
+      Object.assign(E("수학 선생님","수학","중학교 대비 문제를 밤마다 더 풀면 불안이 줄 것 같아.","취침 시간을 줄여 푼다",S(9,-2,-3,2),"약한 유형만 정하고 잔다",S(5,3,3,1),"문제 수는 늘었지만 머리가 흐려졌어요.","양은 줄어도 다음 날 집중력을 남겼어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("친구 민석","수학","민석이 풀이 앱으로 숙제를 끝내자고 해. 시간은 크게 절약돼.","답과 풀이를 그대로 옮긴다",S(2,0,4,-9),"막힌 문제만 힌트를 확인한다",S(9,-1,3,1),"오늘은 편했지만 혼자 풀 힘은 줄었어요.","시간은 더 들었지만 내 풀이가 남았어요.","#6657d7","#4e83d7"),{subject:"수학",style:"math"}),
+      Object.assign(E("사회 선생님","사회","졸업 토론에서 인기 있는 의견을 말하면 박수를 받을 것 같아.","다수 의견에 맞춘다",S(1,0,-3,8),"자료를 바탕으로 다른 의견도 말한다",S(3,0,-2,8),"박수는 받았지만 내 판단은 숨었어요.","반응은 갈려도 근거 있는 목소리를 냈어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("친구 서아","사회","단체 채팅에서 확인되지 않은 학교 소문이 빠르게 퍼지고 있어.","친한 친구에게만 전달한다",S(1,0,-3,9),"출처를 묻고 전달을 멈춘다",S(3,0,1,8),"대화에는 끼었지만 소문도 더 멀리 갔어요.","잠시 분위기에서 빠져도 피해를 줄였어요.","#d68545","#d8aa55"),{subject:"사회",style:"social"}),
+      Object.assign(E("과학 선생님","과학","졸업 탐구 발표를 화려하게 만들 시간과 실험을 한 번 더 할 시간 중 하나뿐이야.","발표 효과를 꾸민다",S(7,-3,4,5),"실험을 다시 확인한다",S(9,-2,-3,2),"눈길은 끌었지만 근거가 약했어요.","화려함은 줄어도 결과를 믿을 수 있게 됐어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("친구 유리","과학","기후 행동 캠페인에서 강한 공포 문구가 사람을 움직일 것 같아.","무서운 장면을 강조한다",S(5,-3,1,9),"실천 방법과 근거를 함께 제시한다",S(4,-1,3,9),"관심은 끌었지만 사람들은 지쳤어요.","충격은 덜해도 무엇을 할지 보였어요.","#1d9a91","#5fbc91"),{subject:"과학",style:"science"}),
+      Object.assign(E("영어 선생님","영어","중학교 영어 반 배치시험을 위해 매일 단어 100개를 외울까?","100개씩 밀어붙인다",S(9,-2,-5,0),"복습 가능한 양으로 나눈다",S(5,3,3,1),"숫자는 채웠지만 기억과 체력이 흔들렸어요.","속도는 느려도 오래 남는 계획이 됐어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("친구 에반","영어","온라인 교류에서 네 영어 실수를 누군가 공개 채팅에 지적했어.","대화를 바로 나간다",S(-8,3,4,-2),"뜻을 확인하고 계속 대화한다",S(10,-4,-3,4),"당장은 편했지만 기회도 함께 닫혔어요.","민망해도 실수를 배움으로 바꿨어요.","#4667b6","#7f72cc"),{subject:"영어",style:"english"}),
+      Object.assign(E("체육 선생님","체육","졸업 체육대회 주장을 맡으면 시험 준비 시간이 줄어들 수 있어.","주장을 맡는다",S(5,-3,1,8),"선수로만 참여한다",S(5,3,3,1),"책임과 추억은 커졌지만 일정이 빡빡해졌어요.","부담은 줄었지만 이끌 기회는 놓쳤어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("친구 건","체육","건이가 기록을 위해 진통제를 먹고 뛰겠다고 해. 비밀로 해달래.","약속대로 숨긴다",S(1,0,-3,9),"믿을 만한 어른에게 함께 알린다",S(2,8,2,-1),"친구 편은 들었지만 위험은 커졌어요.","처음엔 서운해도 몸을 지키는 선택이 됐어요.","#eb6d62","#e9a648"),{subject:"체육",style:"pe"}),
+      Object.assign(E("미술 선생님","미술","졸업 전시 작품이 마음에 들지 않아 전날 밤 전부 다시 만들고 싶어.","밤새 새로 만든다",S(9,-3,-4,0),"현재 작품을 다듬고 쉰다",S(5,3,3,1),"완벽을 노렸지만 몸과 마음이 무거워졌어요.","아쉬움은 남아도 끝낼 기준을 세웠어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("친구 다해","미술","모둠 영상에서 다해의 그림보다 네 그림을 더 많이 넣자는 의견이 나왔어.","좋다고 받아들인다",S(9,-3,-2,4),"분량 기준을 함께 정한다",S(4,1,3,9),"내 작품은 빛났지만 모둠의 이름은 흐려졌어요.","장면은 나뉘어도 모두의 졸업 작품이 됐어요.","#cd5e9d","#8267d0"),{subject:"미술",style:"art"}),
+      Object.assign(E("음악 선생님","음악","졸업식 합주와 중학교 대비 수업 시간이 겹쳤어.","대비 수업을 선택한다",S(9,-3,-4,0),"합주에 참여한다",S(7,-3,4,5),"준비는 앞섰지만 마지막 추억을 놓쳤어요.","진도는 늦어도 함께 만든 무대가 남았어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+      Object.assign(E("친구 온유","음악","온유가 공연 직전 너무 떨려 네 뒤에 숨고 싶대.","내 연주에 집중한다",S(10,-2,-2,-5),"호흡을 맞추고 함께 입장한다",S(4,-1,3,9),"내 실수는 줄었지만 온유는 혼자 남았어요.","조금 더 떨려도 둘이 무대에 올랐어요.","#3b547e","#7b579b"),{subject:"음악",style:"music"}),
+    ],
+  };
+  Object.keys(subjectCards).forEach(g=>decks[g].push(...subjectCards[g]));
+
+  const gradeNames={1:'1학년 · 적응기',2:'2학년 · 적응기',3:'3학년 · 확장기',4:'4학년 · 확장기',5:'5학년 · 질풍노도',6:'6학년 · 질풍노도'};
+  const statNames={study:'학업',health:'건강',happy:'행복',social:'평판'};
+  const statReasons={
+    study:{low:'공부와 멀어져 학교생활에 적응하기 어려워졌어요.',high:'공부만 계속하다 마음의 배터리가 완전히 방전됐어요.'},
+    health:{low:'몸의 신호를 계속 놓쳐 병원에서 푹 쉬게 됐어요.',high:'넘치는 에너지를 조절하지 못해 매일이 과열됐어요.'},
+    happy:{low:'즐거움이 모두 사라져 아무것도 하고 싶지 않아졌어요.',high:'즉각적인 즐거움만 좇다가 일상의 약속이 무너졌어요.'},
+    social:{low:'혼자만 생각하는 선택이 쌓여 친구들이 멀어졌어요.',high:'모두에게 맞추다 내 의견이 무엇인지 잊어버렸어요.'}
+  };
+  const endingStories={
+    study:{
+      low:[
+        {kicker:'1~2학년 · 공부 균형 실패',symbol:'0',title:'2쪽이 어디였더라?',text:'수업 시간마다 옆 친구 책을 먼저 봤습니다. 선생님이 “2쪽 펴세요”라고 하자 혼자 12쪽을 펴고도 당당했습니다.',quote:'모르는 건 괜찮지만, 계속 모르는 척하면 다음 페이지가 더 어려워집니다.'},
+        {kicker:'3~4학년 · 공부 균형 실패',symbol:'0',title:'알림장 번역가를 구합니다',text:'숙제, 준비물, 시험 날짜가 한꺼번에 밀려왔습니다. 알림장은 분명 한국어인데 읽을 때마다 암호문처럼 보였습니다.',quote:'오늘 10분을 미루면 내일은 30분짜리 일이 되어 돌아옵니다.'},
+        {kicker:'5~6학년 · 공부 균형 실패',symbol:'0',title:'보충수업 단골손님',text:'중학교 준비는커녕 지난 단원부터 다시 시작하게 됐습니다. 방과 후 교실의 지정석이 생길 정도로 자주 남았습니다.',quote:'처음부터 잘할 필요는 없습니다. 다만 도움을 청할 타이밍까지 놓치지는 마세요.'}
+      ],
+      high:[
+        {kicker:'1~2학년 · 공부 과열',symbol:'100',title:'쉬는 시간 사용법을 잊었다',text:'쉬는 시간에도 문제집을 폈습니다. 친구들이 놀자고 했지만 “한 장만 더”를 외치다 종이 울렸습니다.',quote:'문제집은 내일도 있지만 오늘의 쉬는 시간은 다시 오지 않습니다.'},
+        {kicker:'3~4학년 · 공부 과열',symbol:'100',title:'문제집 탑 붕괴 사고',text:'책상 위 문제집이 너무 높아져 연필꽂이를 덮쳤습니다. 점수는 올랐지만 잠, 놀이, 친구 약속은 전부 밑에 깔렸습니다.',quote:'많이 푸는 것보다 오래 할 수 있게 푸는 편이 더 어렵고 중요합니다.'},
+        {kicker:'5~6학년 · 공부 과열',symbol:'100',title:'전교 1등, 하루는 꼴등',text:'시험지는 완벽했습니다. 그런데 졸업앨범 속 추억 칸에는 학원 시간표와 형광펜 자국밖에 남지 않았습니다.',quote:'성적은 삶의 한 칸입니다. 한 칸이 종이 전체를 차지하게 두지는 마세요.'}
+      ]
+    },
+    health:{
+      low:[
+        {kicker:'1~2학년 · 건강 균형 실패',symbol:'0',title:'감기와 한집 살기',text:'콧물, 기침, 배탈이 번갈아 놀러 왔습니다. 학교보다 소아과 대기실 장난감에 더 익숙해졌습니다.',quote:'아프기 전에 자고, 먹고, 씻는 것이 가장 짧은 병원 가는 길입니다.'},
+        {kicker:'3~4학년 · 건강 균형 실패',symbol:'0',title:'체육복이 새 옷처럼',text:'피곤하고 아픈 날이 많아 체육 시간마다 쉬었습니다. 체육복은 한 학기가 지나도록 새 옷처럼 빳빳했습니다.',quote:'몸이 보내는 신호를 무시하면 결국 몸이 모든 일정을 대신 취소합니다.'},
+        {kicker:'5~6학년 · 건강 균형 실패',symbol:'0',title:'출석부보다 진료 확인서',text:'시험과 약속을 버티다가 결국 긴 휴식이 필요해졌습니다. 책가방 대신 병원 가방을 챙기는 날이 더 많아졌습니다.',quote:'참는 것이 항상 강한 건 아닙니다. 멈출 줄 아는 것도 실력입니다.'}
+      ],
+      high:[
+        {kicker:'1~2학년 · 에너지 과열',symbol:'100',title:'교실이 전부 운동장',text:'앉아 있는 5분이 너무 길었습니다. 의자는 평균대가 되고 복도는 달리기 트랙이 됐습니다.',quote:'힘이 많을수록 멈추는 연습도 같이 필요합니다.'},
+        {kicker:'3~4학년 · 에너지 과열',symbol:'100',title:'멈춤 버튼 분실',text:'쉬는 시간 10분 동안 학교를 세 바퀴 돌고도 부족했습니다. 수업이 시작됐지만 몸은 아직 결승선을 찾고 있었습니다.',quote:'빠르게 움직이는 것과 상황에 맞게 움직이는 것은 다른 능력입니다.'},
+        {kicker:'5~6학년 · 에너지 과열',symbol:'100',title:'매일이 결승전',text:'운동도 경쟁도 끝까지 밀어붙였습니다. 이기기는 했지만 부상과 다툼이 함께 따라왔습니다.',quote:'기록을 줄이는 날이 있어야 기록을 오래 이어갈 수 있습니다.'}
+      ]
+    },
+    happy:{
+      low:[
+        {kicker:'1~2학년 · 행복 균형 실패',symbol:'0',title:'주말에도 월요일 표정',text:'해야 할 일을 모두 끝냈는데도 신나지 않았습니다. 놀이터에 가서도 다음 숙제만 생각했습니다.',quote:'즐거운 시간은 숙제를 다 한 사람에게만 주는 상품이 아닙니다.'},
+        {kicker:'3~4학년 · 행복 균형 실패',symbol:'0',title:'좋아하는 것: 없음',text:'친구가 “요즘 뭐가 제일 재밌어?”라고 물었습니다. 한참 생각했지만 대답할 것이 떠오르지 않았습니다.',quote:'바쁜 일정 안에도 내가 기다리는 시간을 하나쯤 남겨두세요.'},
+        {kicker:'5~6학년 · 행복 균형 실패',symbol:'0',title:'웃음 소리 실종 신고',text:'성적도 일정도 문제없었지만 아침마다 이불 밖으로 나오는 일이 가장 어려워졌습니다.',quote:'무기력은 게으름과 다릅니다. 혼자 버티지 말고 믿을 만한 어른에게 먼저 말하세요.'}
+      ],
+      high:[
+        {kicker:'1~2학년 · 즐거움 과열',symbol:'100',title:'놀기 국가대표, 생활 예선 탈락',text:'놀이는 매번 우승했지만 양치, 정리, 준비물 챙기기는 예선에서 탈락했습니다.',quote:'재미있는 일을 끝낼 수 있어야 다음 재미도 편하게 시작할 수 있습니다.'},
+        {kicker:'3~4학년 · 즐거움 과열',symbol:'100',title:'“한 판만 더” 하다가 아침',text:'게임 한 판이 두 판이 되고, 영상 한 편이 열 편이 됐습니다. 창밖이 밝아진 뒤에야 내일이 이미 오늘이 된 걸 알았습니다.',quote:'즐거움을 끄는 버튼도 즐기는 능력의 일부입니다.'},
+        {kicker:'5~6학년 · 즐거움 과열',symbol:'100',title:'미룬 일의 산맥',text:'당장의 재미를 고르다 보니 수행평가, 약속, 준비물이 산처럼 쌓였습니다. 이제 놀려고 해도 마음 한구석이 계속 무거웠습니다.',quote:'오늘의 재미가 내일의 나에게 빚이 되지 않는지 한 번만 확인하세요.'}
+      ]
+    },
+    social:{
+      low:[
+        {kicker:'1~2학년 · 관계 균형 실패',symbol:'0',title:'짝꿍 자리만 텅 비었다',text:'장난감도 차례도 늘 혼자 차지했습니다. 어느 날 자유놀이 시간이 됐는데 같이 놀자고 오는 친구가 없었습니다.',quote:'내 것을 지키는 것과 다른 사람 몫까지 가져가는 것은 다릅니다.'},
+        {kicker:'3~4학년 · 관계 균형 실패',symbol:'0',title:'단체 채팅방 읽음 1',text:'친구 실수를 놀리고 약속을 자주 어겼습니다. 메시지를 보내도 숫자 1이 좀처럼 사라지지 않았습니다.',quote:'관계는 큰 선물보다 작은 약속을 지킨 횟수로 오래갑니다.'},
+        {kicker:'5~6학년 · 관계 균형 실패',symbol:'0',title:'내 말이 다 맞았는데 아무도 안 왔다',text:'토론에서는 늘 이겼고 책임도 남에게 넘기지 않았습니다. 하지만 졸업식 뒤풀이 단체사진에는 초대받지 못했습니다.',quote:'맞는 말을 하는 방식까지 맞아야 사람이 곁에 남습니다.'}
+      ],
+      high:[
+        {kicker:'1~2학년 · 눈치 과열',symbol:'100',title:'싫다는 말이 사라졌다',text:'친구가 고른 놀이, 간식, 자리를 전부 따라갔습니다. 집에 돌아와서는 내가 뭘 하고 싶었는지 기억나지 않았습니다.',quote:'친구와 다르게 말해도 친구 사이가 바로 끝나지는 않습니다.'},
+        {kicker:'3~4학년 · 눈치 과열',symbol:'100',title:'부탁 보관함 폭발',text:'숙제 보여주기, 심부름, 모둠 일까지 전부 “응”이라고 했습니다. 정작 내 할 일은 책상 밑에서 밀려나고 있었습니다.',quote:'도와주는 것과 대신 살아주는 것은 다릅니다.'},
+        {kicker:'5~6학년 · 눈치 과열',symbol:'100',title:'내 일정표를 남들이 작성했다',text:'친구와 부모님의 기대를 모두 맞추다 보니 하루에 내 선택이 하나도 남지 않았습니다.',quote:'배려하면서도 “이번에는 어려워”라고 말할 수 있어야 오래 함께할 수 있습니다.'}
+      ]
+    }
+  };
+  const graduationStories={
+    balanced:{kicker:'6학년 졸업식',symbol:'졸업',title:'딱 좋은 6학년',text:'시험을 망친 날도 있었고 친구와 다툰 날도 있었습니다. 그래도 너무 기울었다 싶으면 다음 선택에서 슬쩍 방향을 바꿨습니다.',quote:'졸업앨범 한마디: “잘한 날보다 다시 맞춘 날이 더 많았다.”'},
+    allround:{kicker:'6학년 졸업식',symbol:'졸업',title:'뭐든 해보는 반장님',text:'발표, 운동, 공연, 친구 일까지 빠지는 곳이 거의 없었습니다. 바쁜 만큼 추억도 많았고, 이제는 가끔 거절하는 법도 배웠습니다.',quote:'담임 선생님의 한마디: “너는 못해서가 아니라 너무 많이 해서 걱정이었어.”'},
+    scholar:{kicker:'6학년 졸업식',symbol:'졸업',title:'교실의 해결사',text:'모르는 문제가 나오면 친구들이 먼저 네 책상으로 왔습니다. 답만 알려주기보다 같이 풀어보는 법을 익힌 것이 가장 큰 실력이 됐습니다.',quote:'졸업앨범 한마디: “정답보다 풀이를 잘 설명하는 사람.”'},
+    captain:{kicker:'6학년 졸업식',symbol:'졸업',title:'운동장 주장',text:'달리기도 잘했지만 뒤처진 친구의 속도를 맞춰주는 날이 더 많았습니다. 체육대회 마지막 날, 반 친구들이 먼저 너를 헹가래쳤습니다.',quote:'체육 선생님의 한마디: “기록보다 팀을 먼저 본 주장.”'},
+    creator:{kicker:'6학년 졸업식',symbol:'졸업',title:'축제를 만든 아이',text:'재미있는 생각이 떠오르면 혼자 웃고 끝내지 않았습니다. 그림, 음악, 놀이를 친구들과 엮어 학교 축제의 인기 코너를 만들었습니다.',quote:'졸업앨범 한마디: “심심한 날을 그냥 두지 않는 사람.”'},
+    connector:{kicker:'6학년 졸업식',symbol:'졸업',title:'우리 반 연결고리',text:'서로 어색한 친구 사이에 자연스럽게 자리를 만들고, 다툰 친구들이 다시 말할 기회를 열어주었습니다.',quote:'친구들의 한마디: “네가 있어서 우리 반이 한 반 같았어.”'},
+    comeback:{kicker:'6학년 졸업식',symbol:'졸업',title:'막판 뒤집기 성공',text:'몇 번은 정말 위험했습니다. 공부도, 몸도, 마음도 한쪽 끝까지 갔지만 그때마다 도움을 청하고 계획을 바꿨습니다.',quote:'졸업앨범 한마디: “넘어지지 않은 사람이 아니라 다시 선 사람.”'},
+    tightrope:{kicker:'6학년 졸업식',symbol:'졸업',title:'아슬아슬하게 도착',text:'졸업식 전날까지도 균형은 흔들렸습니다. 그래도 끝내 어느 하나를 완전히 놓치지 않고 졸업장까지 들고 왔습니다.',quote:'교장 선생님의 한마디: “중학교에서는 조금만 덜 아슬아슬하자.”'}
+  };
+  const palette=[['#6957d8','#8797ed'],['#2e9b77','#71c9ae'],['#df6b78','#f09b88'],['#476fae','#78a5d8'],['#b46c2f','#e5ad63'],['#71578e','#ad83c7']];
+
+  const subjects=['국어','수학','사회','과학','영어','체육','미술','음악'];
+  function blankSubjectMap(){return Object.fromEntries(subjects.map(x=>[x,0]))}
+  function freshState(sound=true,voice=true){
+    return {grade:1,turn:0,stats:{study:50,health:50,happy:50,social:50},queue:[],current:null,locked:false,sound,voice,
+      history:[],subjectSeen:blankSubjectMap(),subjectGood:blankSubjectMap(),friendCare:0,friendNames:{},sportCare:0,recoveries:0,
+      minSeen:{study:50,health:50,happy:50,social:50},maxSeen:{study:50,health:50,happy:50,social:50}};
+  }
+  let state=freshState(true,true);
+  let endingQueue=[];
+  const $=s=>document.querySelector(s);
+  const card=$('#card'), question=$('#question'), speaker=$('#speaker'), theme=$('#theme'), cardBanner=$('#cardBanner'), subjectTag=$('#subjectTag'), avatar=$('#avatar');
+  const leftGuide=$('#leftGuide'), rightGuide=$('#rightGuide'), leftBtn=$('#leftBtn'), rightBtn=$('#rightBtn');
+  let drag={active:false,startX:0,x:0};
+
+  function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+  function buildQueue(){
+    const all=decks[state.grade], subjects=shuffle(all.filter(e=>e.subject)), life=shuffle(all.filter(e=>!e.subject));
+    state.queue=shuffle([...subjects,...life.slice(0,14)]);state.turn=0
+  }
+  function startGame(){const keepSound=state.sound,keepVoice=state.voice;state=freshState(keepSound,keepVoice);endingQueue=[];initAudio();if(state.sound)startBgm();buildQueue();$('#startScreen').classList.remove('active');$('#gameScreen').classList.add('active');$('#modal').classList.remove('show');renderStats();syncAudioButtons();nextCard()}
+  const styleMap={국어:'korean',수학:'math',사회:'social',과학:'science',영어:'english',체육:'pe',미술:'art',음악:'music'};
+  function stableHash(text){let h=0;for(const ch of text)h=(h*31+ch.charCodeAt(0))>>>0;return h}
+  function inferStyle(e){return e.style||styleMap[e.subject]||'life'}
+
+  const characterProfiles={
+    homeroom:{classes:'char-homeroom hair-center outfit-shirt-tie access-glasses age-adult',skin:'#efc2a1',skinShadow:'#d49a78',hair:'#332e31',hair2:'#615158',shirt:'#f7f8fa',detail:'#52627b',glass:'#46546a',voice:{pitch:.91,rate:.94,index:0}},
+    peTeacher:{classes:'char-pe-teacher hair-short outfit-tracksuit access-cap access-sunglasses access-whistle age-adult',skin:'#c98d67',skinShadow:'#ad704f',hair:'#20242a',hair2:'#493c34',shirt:'#252c36',cloth2:'#111820',detail:'#e2a936',glass:'#1d232d',voice:{pitch:.72,rate:1.04,index:1}},
+    englishTeacher:{classes:'char-english-teacher hair-curly-long outfit-cardigan access-redglasses age-adult',skin:'#f1c5a6',skinShadow:'#d7a081',hair:'#d8a74d',hair2:'#f2cf77',shirt:'#c94d59',cloth2:'#fff7ef',detail:'#c94d59',glass:'#bd354b',voice:{pitch:1.22,rate:.92,index:2}},
+    scienceTeacher:{classes:'char-science-teacher hair-messy outfit-lab access-glasses age-adult',skin:'#e9b891',skinShadow:'#cc8c68',hair:'#414853',hair2:'#76808c',shirt:'#f6fafb',cloth2:'#48a59b',detail:'#48a59b',glass:'#516074',voice:{pitch:.86,rate:.98,index:3}},
+    koreanTeacher:{classes:'char-korean-teacher hair-side outfit-jacket access-glasses age-adult',skin:'#efbd9b',skinShadow:'#d29572',hair:'#3d302e',hair2:'#77625d',shirt:'#b98a62',cloth2:'#f2e3d2',detail:'#725345',glass:'#4d5869',voice:{pitch:.98,rate:.91,index:4}},
+    mathTeacher:{classes:'char-math-teacher hair-bob outfit-vest access-glasses age-adult',skin:'#e8b593',skinShadow:'#cc8969',hair:'#2c3443',hair2:'#65718a',shirt:'#445a78',cloth2:'#f4f5f2',detail:'#445a78',glass:'#3f4b61',voice:{pitch:1.03,rate:.9,index:5}},
+    socialTeacher:{classes:'char-social-teacher hair-side outfit-jacket age-adult',skin:'#d9a17b',skinShadow:'#ba7958',hair:'#5d4033',hair2:'#9b6c52',shirt:'#aa744f',cloth2:'#f0ddc7',detail:'#6d4d39',glass:'#4c5664',voice:{pitch:.88,rate:.96,index:6}},
+    artTeacher:{classes:'char-art-teacher hair-bun outfit-apron access-redglasses age-adult',skin:'#f0c4a4',skinShadow:'#d79d7b',hair:'#692f56',hair2:'#bd6b9d',shirt:'#f0cb55',cloth2:'#f4f0e8',detail:'#7e4775',glass:'#a83e6d',voice:{pitch:1.13,rate:.96,index:7}},
+    musicTeacher:{classes:'char-music-teacher hair-wavy outfit-music age-adult',skin:'#dba781',skinShadow:'#be7e5c',hair:'#252b3b',hair2:'#765d8c',shirt:'#65507e',cloth2:'#efe8f6',detail:'#65507e',glass:'#485268',voice:{pitch:1.05,rate:.88,index:8}},
+    healthTeacher:{classes:'char-health-teacher hair-ponytail outfit-nurse age-adult',skin:'#efbf9f',skinShadow:'#d39472',hair:'#463735',hair2:'#79625d',shirt:'#eaf5f4',cloth2:'#d5ece8',detail:'#4c9c92',glass:'#4e5b6c',voice:{pitch:1.16,rate:.94,index:9}},
+    librarian:{classes:'char-librarian hair-bun outfit-vest access-glasses age-adult',skin:'#e5b28d',skinShadow:'#c98563',hair:'#433833',hair2:'#75635c',shirt:'#6b596e',cloth2:'#f5efe8',detail:'#6b596e',glass:'#554c5d',voice:{pitch:1.02,rate:.84,index:10}},
+    lunchTeacher:{classes:'char-lunch hair-bob outfit-apron access-kitchen-cap age-adult',skin:'#e8b896',skinShadow:'#cc8d6c',hair:'#4b3734',hair2:'#80615b',shirt:'#e8c95a',cloth2:'#f4f1e9',detail:'#5d8c78',glass:'#4c5868',voice:{pitch:1.08,rate:.9,index:24}},
+    safetyGuard:{classes:'char-safety hair-short outfit-tracksuit access-cap age-adult',skin:'#c78b66',skinShadow:'#a96b4b',hair:'#2e3338',hair2:'#626b73',shirt:'#38434f',cloth2:'#202932',detail:'#e4b43c',glass:'#475466',voice:{pitch:.8,rate:.9,index:25}},
+    principal:{classes:'char-principal hair-short outfit-shirt-tie access-glasses age-adult',skin:'#d9a27e',skinShadow:'#bd7d5b',hair:'#5f6268',hair2:'#8d929a',shirt:'#edf0f3',cloth2:'#dbe1e7',detail:'#753c46',glass:'#474f5d',voice:{pitch:.76,rate:.82,index:11}},
+    mom:{classes:'char-mom hair-ponytail outfit-parent age-adult',skin:'#efbd9d',skinShadow:'#d18f6d',hair:'#4b3432',hair2:'#7b5a55',shirt:'#e7c6a5',cloth2:'#f8eee4',detail:'#8d624c',glass:'#50596a',voice:{pitch:1.16,rate:.94,index:12}},
+    dad:{classes:'char-dad hair-short outfit-parent age-adult',skin:'#dba27d',skinShadow:'#bd7957',hair:'#2d3136',hair2:'#656a70',shirt:'#b8c7d8',cloth2:'#eef2f5',detail:'#52667b',glass:'#4b5668',voice:{pitch:.82,rate:.94,index:13}},
+    athleticFriend:{classes:'char-athletic hair-streak outfit-soccer age-child',skin:'#b97852',skinShadow:'#995c3d',hair:'#20262c',hair2:'#e5b24f',shirt:'#267d65',cloth2:'#d9f2e6',detail:'#267d65',glass:'#475467',number:'10',voice:{pitch:.94,rate:1.08,index:14}},
+    artFriend:{classes:'char-art-friend hair-bob outfit-apron age-child',skin:'#ecc09f',skinShadow:'#d29472',hair:'#6a405f',hair2:'#d487b8',shirt:'#f2ce55',cloth2:'#f4f0e8',detail:'#8d4e7f',glass:'#536074',voice:{pitch:1.12,rate:1.0,index:15}},
+    musicFriend:{classes:'char-music-friend hair-wavy outfit-hoodie access-headphones age-child',skin:'#dca17d',skinShadow:'#bd7757',hair:'#2c3344',hair2:'#5f77a4',shirt:'#67778e',cloth2:'#4e5d72',detail:'#465a78',glass:'#475365',voice:{pitch:1.08,rate:.98,index:16}},
+    studyFriend:{classes:'char-study-friend hair-center outfit-vest access-glasses access-pencil age-child',skin:'#efbf9f',skinShadow:'#d29270',hair:'#3a3232',hair2:'#806967',shirt:'#445a78',cloth2:'#f4f5f2',detail:'#52657f',glass:'#48556b',voice:{pitch:1.01,rate:.88,index:17}},
+    scienceFriend:{classes:'char-science-friend hair-messy outfit-lab age-child',skin:'#dca37e',skinShadow:'#bf7a58',hair:'#333b40',hair2:'#78a29b',shirt:'#f4f8f7',cloth2:'#4aa69c',detail:'#4aa69c',glass:'#4a596b',voice:{pitch:.98,rate:.97,index:18}},
+    globalFriend:{classes:'char-global-friend hair-curly-long outfit-casual access-redglasses age-child',skin:'#d69a72',skinShadow:'#b67350',hair:'#5a3528',hair2:'#b87955',shirt:'#6c86b3',cloth2:'#e9edf5',detail:'#6c86b3',glass:'#b54152',voice:{pitch:1.1,rate:.93,index:19}},
+    friendA:{classes:'char-friend-a hair-short outfit-casual age-child',skin:'#efbd9b',skinShadow:'#d1916e',hair:'#343037',hair2:'#625a68',shirt:'#6f87ac',cloth2:'#eaf0f8',detail:'#536b91',glass:'#4e5a6a',voice:{pitch:1.04,rate:1.0,index:20}},
+    friendB:{classes:'char-friend-b hair-bob outfit-hoodie age-child',skin:'#d99f79',skinShadow:'#ba7553',hair:'#4a2f37',hair2:'#88576a',shirt:'#a4647d',cloth2:'#7b455e',detail:'#7b455e',glass:'#4a5668',voice:{pitch:1.14,rate:.97,index:21}},
+    friendC:{classes:'char-friend-c hair-undercut outfit-casual age-child',skin:'#c88a65',skinShadow:'#a96748',hair:'#222a32',hair2:'#4c6275',shirt:'#d08351',cloth2:'#f4e5da',detail:'#9b5b33',glass:'#465365',voice:{pitch:.9,rate:1.06,index:22}},
+    friendD:{classes:'char-friend-d hair-ponytail outfit-casual age-child',skin:'#f0c3a3',skinShadow:'#d39a78',hair:'#282e37',hair2:'#596474',shirt:'#4d9b86',cloth2:'#e4f4ef',detail:'#397c6b',glass:'#465365',voice:{pitch:1.18,rate:.95,index:23}}
+  };
+  function characterKeyFor(e){
+    const who=e.who||'',text=`${who} ${e.theme||''} ${e.q||''}`,sub=e.subject||'';
+    if(/체육 선생님|코치/.test(who))return 'peTeacher';
+    if(/영어 선생님/.test(who))return 'englishTeacher';
+    if(/과학 선생님/.test(who))return 'scienceTeacher';
+    if(/국어 선생님/.test(who))return 'koreanTeacher';
+    if(/수학 선생님/.test(who))return 'mathTeacher';
+    if(/사회 선생님/.test(who))return 'socialTeacher';
+    if(/미술 선생님/.test(who))return 'artTeacher';
+    if(/음악 선생님/.test(who))return 'musicTeacher';
+    if(/보건 선생님/.test(who))return 'healthTeacher';
+    if(/도서관 선생님|사서/.test(who))return 'librarian';
+    if(/급식 선생님|영양 선생님/.test(who))return 'lunchTeacher';
+    if(/학교 지킴이|안전 지킴이/.test(who))return 'safetyGuard';
+    if(/교장/.test(who))return 'principal';
+    if(/담임 선생님|선생님/.test(who))return 'homeroom';
+    if(/엄마/.test(who))return 'mom';
+    if(/아빠/.test(who))return 'dad';
+    if(/부모|가족/.test(who))return stableHash(who)%2?'mom':'dad';
+    if(sub==='체육'||/축구|운동|달리|체육|경기|그네|술래잡기/.test(text))return 'athleticFriend';
+    if(sub==='미술'||/그림|색연필|작품|미술/.test(text))return 'artFriend';
+    if(sub==='음악'||/음악|합주|공연|리듬|리코더/.test(text))return 'musicFriend';
+    if(sub==='수학'||sub==='국어'||/시험|숙제|책|발표|문제/.test(text))return 'studyFriend';
+    if(sub==='과학'||/실험|탐구|관찰/.test(text))return 'scienceFriend';
+    if(sub==='영어'||/외국|영어|교류/.test(text))return 'globalFriend';
+    return ['friendA','friendB','friendC','friendD'][stableHash(who)%4];
+  }
+  function applyCharacterProfile(e,mood){
+    const key=characterKeyFor(e),p=characterProfiles[key]||characterProfiles.friendA;
+    avatar.className=`avatar avatar-v2 ${p.classes} mood-${mood}`;
+    avatar.style.setProperty('--skin',p.skin);avatar.style.setProperty('--skin-shadow',p.skinShadow);avatar.style.setProperty('--hair',p.hair);avatar.style.setProperty('--hair2',p.hair2);avatar.style.setProperty('--shirt',p.shirt);avatar.style.setProperty('--cloth2',p.cloth2||p.shirt);avatar.style.setProperty('--detail',p.detail);avatar.style.setProperty('--glass',p.glass);
+    avatar.querySelector('.av-shirt-panel').dataset.number=p.number||'';
+    e._characterKey=key;e._voice=p.voice;
+  }
+  function setCardLook(e){
+    const style=inferStyle(e), hash=stableHash(e.who+e.theme+e.q);
+    card.className=`card frame-${hash%4}`;card.style.setProperty('--accent',e.c1||'#6957d8');card.style.setProperty('--accent2',e.c2||'#8797ed');card.style.setProperty('--paperTint',`${e.c2||'#8797ed'}12`);
+    cardBanner.className=`card-banner style-${style}`;subjectTag.textContent=e.subject||(/^([가-힣]{1,4})/.exec(e.theme)||['생활'])[0];
+    const impact=Math.max(...Object.values(e.leftFx).map(Math.abs),...Object.values(e.rightFx).map(Math.abs));
+    const mood=impact>=9?'serious':hash%4===0?'worried':hash%3===0?'cheerful':'happy';
+    applyCharacterProfile(e,mood);
+  }
+  function clearPreview(){document.querySelectorAll('.stat').forEach(el=>el.classList.remove('preview-up','preview-down','preview-flat'))}
+  function previewEffects(side){
+    clearPreview();if(!side||!state.current)return;const fx=side==='left'?state.current.leftFx:state.current.rightFx;
+    Object.entries(fx).forEach(([k,v])=>document.querySelector(`.stat[data-stat="${k}"]`).classList.add(v>0?'preview-up':v<0?'preview-down':'preview-flat'))
+  }
+  function nextCard(){
+    state.locked=false;
+    if(state.turn>=state.queue.length){return finishGrade()}
+    state.current=state.queue[state.turn];
+    const e=state.current;
+    speaker.textContent=e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
+    leftGuide.querySelector('strong').textContent=e.left;rightGuide.querySelector('strong').textContent=e.right;leftBtn.textContent=e.left;rightBtn.textContent=e.right;
+    const p=palette[(state.grade-1)%palette.length];cardBanner.style.setProperty('--c1',e.c1||p[0]);cardBanner.style.setProperty('--c2',e.c2||p[1]);
+    $('#gradeText').textContent=gradeNames[state.grade];$('#turnText').textContent=`${state.turn+1} / ${state.queue.length}`;
+    card.style.transition='none';card.style.transform='translate3d(0,0,0) rotate(0deg)';card.style.opacity='1';card.classList.remove('card-enter');void card.offsetWidth;card.classList.add('card-enter');playSfx('deal');
+    $('#noLabel').style.opacity=0;$('#yesLabel').style.opacity=0;setTimeout(()=>speakCurrentCard(),300);
+  }
+  function effectHint(fx){const vals=Object.values(fx);const up=vals.filter(v=>v>0).length,down=vals.filter(v=>v<0).length;return up>=down?'좋아질 수 있어요':'부담이 생길 수 있어요'}
+  function isConstructiveMessage(msg){
+    return !/(거짓|오해|피해|위험|무너|멀어졌|흐려졌|들켰|상처|불공평|베꼈|소문|후회|금이 갔|혼자 남|일상이 깨|약속이 깨|몸이 더 힘|부상이 커|기회를 닫|책임을 피|미뤄졌)/.test(msg);
+  }
+  function supportiveMessage(msg){
+    return /(함께|도왔|존중|지켰|기다|설명|나눴|안전|솔직|배려|확인|응원|믿|사과|대화|해결|모두|서로|도움을|기회를 열|마음을)/.test(msg) && isConstructiveMessage(msg);
+  }
+  function extractFriendName(who){
+    const m=who.match(/(?:친구|단짝|짝꿍)\s*([가-힣]{1,4})/);return m?m[1]:'';
+  }
+  function recordChoice(e,side,fx,msg,label,before){
+    const item={grade:state.grade,subject:e.subject||'',who:e.who,theme:e.theme,side,label,fx:{...fx},msg};state.history.push(item);
+    if(e.subject){state.subjectSeen[e.subject]++;if(isConstructiveMessage(msg))state.subjectGood[e.subject]++}
+    if(e.subject==='체육'&&fx.health>0&&isConstructiveMessage(msg))state.sportCare++;
+    if(/친구|단짝|짝꿍|모둠/.test(e.who+' '+e.q)&&supportiveMessage(msg)){
+      state.friendCare++;const name=extractFriendName(e.who);if(name)state.friendNames[name]=(state.friendNames[name]||0)+1;
+    }
+    Object.keys(before).forEach(k=>{if((before[k]<=15&&fx[k]>0)||(before[k]>=85&&fx[k]<0))state.recoveries++});
+  }
+  function updateSeenExtremes(){
+    Object.keys(state.stats).forEach(k=>{state.minSeen[k]=Math.min(state.minSeen[k],state.stats[k]);state.maxSeen[k]=Math.max(state.maxSeen[k],state.stats[k])});
+  }
+
+  function choose(side){
+    if(state.locked)return;state.locked=true;clearPreview();const e=state.current;const fx=side==='left'?e.leftFx:e.rightFx;const msg=side==='left'?e.leftMsg:e.rightMsg;const label=side==='left'?e.left:e.right;
+    cancelSpeech();playSfx(side==='right'?'right':'left');
+    card.style.transition='transform .36s cubic-bezier(.2,.8,.2,1), opacity .3s';card.style.transform=`translate3d(${side==='left'?-760:760}px,-20px,0) rotate(${side==='left'?-18:18}deg)`;card.style.opacity='0';
+    const before={...state.stats};recordChoice(e,side,fx,msg,label,before);
+    Object.keys(state.stats).forEach(k=>{state.stats[k]=Math.max(0,Math.min(100,state.stats[k]+fx[k]))});updateSeenExtremes();
+    renderStats(fx);showFeedback(label,msg,fx);
+    state.turn++;
+    setTimeout(()=>{const over=checkGameOver();if(!over){nextCard()}},760)
+  }
+  function renderStats(changed){
+    document.querySelectorAll('.stat').forEach(el=>{const k=el.dataset.stat,v=state.stats[k];el.querySelector('.stat-value').textContent=v;el.querySelector('.stat-fill').style.width=v+'%';el.classList.toggle('danger',v<=15||v>=85);if(changed&&changed[k]){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}})
+  }
+  function showFeedback(label,msg,fx){
+    $('#feedbackTitle').textContent=`“${label}”을 선택했어요`;
+    $('#feedbackBody').textContent=msg;
+    $('#deltaRow').innerHTML=Object.entries(fx).filter(([,v])=>v!==0).map(([k,v])=>`<span class="delta">${statNames[k]} ${v>0?'+':''}${v}</span>`).join('');
+    $('#feedback').classList.add('show');setTimeout(()=>$('#feedback').classList.remove('show'),680)
+  }
+  function checkGameOver(){
+    if(Object.values(state.stats).some(v=>v<=10||v>=90))playSfx('warning');
+    for(const [k,v] of Object.entries(state.stats)){
+      if(v<=0||v>=100){
+        const dir=v<=0?'low':'high',band=Math.min(2,Math.floor((state.grade-1)/2));
+        showDramaticEnding(endingStories[k][dir][band],`end-${k}-${dir}`,k,[]);return true;
+      }
+    }
+    return false
+  }
+  function chooseGraduationStory(){
+    const vals=Object.values(state.stats),spread=Math.max(...vals)-Math.min(...vals),avg=vals.reduce((a,b)=>a+b,0)/4;
+    const highest=Object.keys(state.stats).sort((a,b)=>state.stats[b]-state.stats[a])[0];
+    const touchedEdge=Object.keys(state.stats).some(k=>state.minSeen[k]<=10||state.maxSeen[k]>=90);
+    if(touchedEdge&&state.recoveries>=5&&spread<=35)return graduationStories.comeback;
+    if(spread<=16&&Math.min(...vals)>=34&&Math.max(...vals)<=78)return graduationStories.balanced;
+    if(avg>=70&&spread<=30)return graduationStories.allround;
+    if(highest==='study'&&state.stats.study>=68)return graduationStories.scholar;
+    if(highest==='health'&&state.stats.health>=68)return graduationStories.captain;
+    if(highest==='happy'&&state.stats.happy>=68)return graduationStories.creator;
+    if(highest==='social'&&state.stats.social>=68)return graduationStories.connector;
+    return graduationStories.tightrope;
+  }
+  function topFriendName(){
+    const entries=Object.entries(state.friendNames).sort((a,b)=>b[1]-a[1]);return entries[0]?.[0]||'지민';
+  }
+  function buildFutureCookies(){
+    const list=[];
+    const add=(score,story)=>list.push({score,story:{...story,future:true}});
+    if(state.sportCare>=7&&state.subjectGood['체육']>=7&&state.stats.health>=35){
+      add(state.sportCare+state.subjectGood['체육'],{kicker:'10년 뒤',symbol:'유니폼',title:'관중석에서 네 이름이 들렸다',text:'초등학교 때부터 몸을 함부로 쓰지 않고 꾸준히 훈련한 덕분에, 성인이 된 너는 선수 명단에 이름을 올렸습니다. 경기 시작 전에도 가장 먼저 팀원들의 상태를 살폈습니다.',quote:'중계진의 한마디: “기록도 좋지만 팀이 이 선수를 믿습니다.”'});
+    }
+    const research=state.subjectGood['수학']+state.subjectGood['과학'];
+    if(research>=15){
+      add(research,{kicker:'12년 뒤',symbol:'연구실',title:'틀린 답에서 새 실험이 시작됐다',text:'수학 풀이를 끝까지 확인하고 실험 실패를 숨기지 않았던 습관은 그대로 남았습니다. 너는 작은 연구팀에서 생활을 더 편하게 만드는 장치를 개발하고 있습니다.',quote:'연구 노트 첫 줄: “예상과 다름. 그래서 다시 해볼 것.”'});
+    }
+    const creator=state.subjectGood['미술']+state.subjectGood['음악']+state.subjectGood['국어'];
+    if(creator>=22){
+      add(creator,{kicker:'9년 뒤',symbol:'첫 작품',title:'네 이름이 표지에 실렸다',text:'그림과 음악, 이야기를 좋아하던 너는 결국 첫 작품을 세상에 내놓았습니다. 초등학교 친구들은 등장인물 몇 명이 자기와 닮았다며 단체 채팅방을 시끄럽게 만들었습니다.',quote:'작가의 말: “처음 이야기를 들어준 사람들에게.”'});
+    }
+    if(state.subjectGood['영어']>=8&&state.stats.social>=35&&state.stats.social<=88){
+      add(state.subjectGood['영어']+4,{kicker:'8년 뒤',symbol:'탑승권',title:'낯선 도시에서 먼저 말을 걸었다',text:'틀릴까 봐 입을 닫기보다 쉬운 말로 다시 확인하던 습관 덕분에, 너는 다른 나라에서 온 사람들과 함께 일하게 됐습니다.',quote:'휴대전화 메모: “문법보다 먼저, 상대가 이해했는지 확인하기.”'});
+    }
+    if(state.friendCare>=12){
+      const name=topFriendName();
+      add(state.friendCare+6,{kicker:'아주 먼 훗날',symbol:'초대장',title:`졸업앨범 옆자리, ${name}`,text:`스물여덟 살의 어느 봄, 초등학교 때부터 오래 곁을 지킨 ${name}와 결혼했습니다. 크게 특별한 한 번보다, 곤란할 때 기다려주고 약속을 지킨 작은 장면들이 두 사람 사이에 오래 남았습니다.`,quote:'청첩장 한쪽: “친구로 오래 지냈고, 앞으로도 제일 친한 편이 되기로 했습니다.”'});
+    }
+    if(state.friendCare>=10&&state.stats.social>=48&&state.stats.study>=50){
+      add(state.friendCare+state.stats.social/10,{kicker:'11년 뒤',symbol:'교실',title:'이번에는 네가 반 아이들을 기다렸다',text:'친구 사이에서 말을 이어주고 모르는 문제를 차분히 설명하던 너는 어린이들과 함께 일하는 사람이 됐습니다. 수업이 끝난 뒤에도 질문 하나를 더 들어주고 교실 불을 껐습니다.',quote:'어느 학생의 편지: “선생님은 제가 말할 때 안 급하게 기다려줘요.”'});
+    }
+    return list.sort((a,b)=>b.score-a.score).slice(0,2).map(x=>x.story);
+  }
+  function finishGrade(){
+    if(state.grade===6){
+      const story=chooseGraduationStory(),cookies=buildFutureCookies();
+      showDramaticEnding(story,'end-graduate',null,cookies);return;
+    }
+    state.grade++;playSfx('grade');startBgm();$('#gradeUpBig').textContent=state.grade+'학년';$('#gradeUpText').textContent=state.grade<=2?'생활 습관과 여덟 과목의 작은 선택이 이어집니다.':state.grade<=4?'과목 공부, 친구, 스마트폰 사이의 균형이 더 복잡해집니다.':'한 선택이 공부·건강·행복·평판을 동시에 흔들기 시작합니다.';$('#gradeUp').classList.add('show')
+  }
+  function continueGrade(){buildQueue();$('#gradeUp').classList.remove('show');startBgm();nextCard()}
+  function paintEnding(story,endingClass,brokenKey,isCookie=false){
+    const screen=$('#endingScreen');screen.className=`ending-screen show ${endingClass}${isCookie?' cookie-mode':''}`;
+    $('#endingKicker').textContent=story.kicker;$('#endingSymbol').textContent=story.symbol;$('#endingTitle').textContent=story.title;$('#endingText').textContent=story.text;$('#endingQuote').textContent=story.quote;
+    $('#endingStats').innerHTML=Object.entries(state.stats).map(([k,v])=>`<div class="ending-stat ${k===brokenKey?'broken':''}">${statNames[k]}<b>${v}</b></div>`).join('');
+    const next=$('#endingNext');next.hidden=endingQueue.length===0;next.textContent=endingQueue.length>1?'다음 미래 보기':'그 후의 이야기';
+  }
+  function showDramaticEnding(story,endingClass,brokenKey,extras=[]){
+    state.locked=true;clearPreview();cancelSpeech();stopBgm();endingQueue=[...extras];const screen=$('#endingScreen');
+    screen.setAttribute('aria-hidden','false');paintEnding(story,endingClass,brokenKey,false);
+    $('.app').classList.add('ending-active');playEndSequence(endingClass==='end-graduate');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>screen.classList.add('reveal')))
+  }
+  function showNextEnding(){
+    if(!endingQueue.length)return;const story=endingQueue.shift(),screen=$('#endingScreen');
+    screen.classList.remove('reveal');setTimeout(()=>{paintEnding(story,'end-graduate',null,true);screen.setAttribute('aria-hidden','false');requestAnimationFrame(()=>screen.classList.add('reveal'));playEndSequence(true)},220);
+  }
+  function hideEnding(){const screen=$('#endingScreen');screen.className='ending-screen';screen.setAttribute('aria-hidden','true');endingQueue=[];$('.app').classList.remove('ending-active')}
+  function showEnd(title,text){showDramaticEnding({kicker:'마지막 장면',symbol:'!',title,text,quote:'다음에는 현재 수치를 먼저 살펴보세요.'},'end-study-low',null,[])}
+  function goHome(){state.locked=true;cancelSpeech();stopBgm();hideEnding();$('#gameScreen').classList.remove('active');$('#startScreen').classList.add('active');$('#modal').classList.remove('show');$('#gradeUp').classList.remove('show')}
+  let audioCtx=null,masterGain=null,bgmGain=null,sfxGain=null,bgmTimer=null,bgmStep=0;
+  function initAudio(){
+    try{
+      if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioCtx.createGain();bgmGain=audioCtx.createGain();sfxGain=audioCtx.createGain();bgmGain.gain.value=.19;sfxGain.gain.value=.62;masterGain.gain.value=state.sound?1:0;bgmGain.connect(masterGain);sfxGain.connect(masterGain);masterGain.connect(audioCtx.destination)}
+      if(audioCtx.state==='suspended')audioCtx.resume();
+    }catch(err){}
+  }
+  function audioTone(freq,dur=.18,type='sine',vol=.05,when=0,dest=sfxGain,endFreq=null){
+    if(!audioCtx||!dest)return;const t=audioCtx.currentTime+when,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);if(endFreq)o.frequency.exponentialRampToValueAtTime(Math.max(40,endFreq),t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.03)
+  }
+  function playSfx(kind){
+    if(!state.sound)return;initAudio();
+    if(kind==='deal'){audioTone(610,.09,'sine',.025,0,sfxGain,760);audioTone(305,.12,'triangle',.018,.025,sfxGain,390)}
+    else if(kind==='right'){audioTone(430,.16,'sine',.055,0,sfxGain,690);audioTone(690,.12,'triangle',.035,.08)}
+    else if(kind==='left'){audioTone(390,.17,'sine',.052,0,sfxGain,245);audioTone(245,.13,'triangle',.03,.08)}
+    else if(kind==='grade'){[392,494,587,784].forEach((f,i)=>audioTone(f,.22,'triangle',.045,i*.1))}
+    else if(kind==='warning'){audioTone(160,.3,'sawtooth',.035,0,sfxGain,105)}
+  }
+  function scheduleBgmStep(){
+    if(!audioCtx||!state.sound)return;const roots=[[262,330,392],[294,370,440],[247,311,370],[220,277,330],[233,294,349],[196,247,294]][Math.max(0,state.grade-1)];const chord=roots;const idx=bgmStep++%8;const f=chord[idx%3]*(idx>=4?2:1);audioTone(f,.52,idx%2?'sine':'triangle',.018,0,bgmGain);if(idx%4===0)audioTone(chord[0]/2,.62,'sine',.013,0,bgmGain)
+  }
+  function startBgm(){
+    if(!state.sound)return;initAudio();stopBgm();bgmStep=0;scheduleBgmStep();bgmTimer=setInterval(scheduleBgmStep,620)
+  }
+  function stopBgm(){if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null}}
+  function playEndSequence(success){
+    if(!state.sound)return;initAudio();const notes=success?[262,330,392,523,659]:[220,196,165,131,98];notes.forEach((f,i)=>audioTone(f,.34,success?'triangle':'sawtooth',success?.055:.038,i*.15,sfxGain,success?f*1.02:f*.88))
+  }
+  function cancelSpeech(){try{window.speechSynthesis?.cancel()}catch(err){}}
+  function koreanVoices(){const all=window.speechSynthesis?.getVoices?.()||[];const ko=all.filter(v=>/^ko(-|_)/i.test(v.lang)||/korean|한국/i.test(v.name));return ko.length?ko:all}
+  function speakCurrentCard(force=false){
+    if(!state.voice||!state.current||!$('#gameScreen').classList.contains('active'))return;try{cancelSpeech();const e=state.current,p=characterProfiles[e._characterKey]||characterProfiles.friendA,vp=e._voice||p.voice||{pitch:1,rate:1,index:0};const u=new SpeechSynthesisUtterance(e.q);u.lang='ko-KR';u.pitch=vp.pitch;u.rate=vp.rate;u.volume=.92;const voices=koreanVoices();if(voices.length)u.voice=voices[vp.index%voices.length];window.speechSynthesis.speak(u)}catch(err){}
+  }
+  function syncAudioButtons(){
+    const sb=$('#soundBtn'),vb=$('#voiceBtn');sb.classList.toggle('active',state.sound);vb.classList.toggle('active',state.voice);sb.textContent=state.sound?'♫':'×';vb.textContent=state.voice?'말':'쉿';sb.setAttribute('aria-pressed',String(state.sound));vb.setAttribute('aria-pressed',String(state.voice));
+  }
+  function setDrag(x){drag.x=x;const limit=Math.min(170,window.innerWidth*.28);const clamped=Math.max(-limit,Math.min(limit,x));card.style.transform=`translate3d(${clamped}px,0,0) rotate(${clamped/18}deg)`;const p=Math.min(1,Math.abs(clamped)/110);$('#noLabel').style.opacity=clamped<0?p:0;$('#yesLabel').style.opacity=clamped>0?p:0;leftGuide.classList.toggle('active',clamped<-45);rightGuide.classList.toggle('active',clamped>45);previewEffects(clamped<-18?'left':clamped>18?'right':null)}
+  function endDrag(){if(!drag.active)return;drag.active=false;card.classList.remove('dragging');leftGuide.classList.remove('active');rightGuide.classList.remove('active');clearPreview();if(Math.abs(drag.x)>85){choose(drag.x<0?'left':'right')}else{card.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';card.style.transform='translate3d(0,0,0) rotate(0deg)';$('#noLabel').style.opacity=0;$('#yesLabel').style.opacity=0}}
+  card.addEventListener('pointerdown',e=>{if(state.locked)return;drag.active=true;drag.startX=e.clientX;drag.x=0;card.setPointerCapture(e.pointerId);card.style.transition='none';card.classList.add('dragging')});
+  card.addEventListener('pointermove',e=>{if(!drag.active)return;setDrag(e.clientX-drag.startX)});card.addEventListener('pointerup',endDrag);card.addEventListener('pointercancel',endDrag);
+  window.addEventListener('keydown',e=>{if(!$('#gameScreen').classList.contains('active')||state.locked)return;if(e.key==='ArrowLeft')choose('left');if(e.key==='ArrowRight')choose('right')});
+  $('#startBtn').onclick=startGame;leftBtn.onclick=()=>choose('left');rightBtn.onclick=()=>choose('right');$('#homeBtn').onclick=goHome;$('#modalHome').onclick=goHome;$('#retryBtn').onclick=startGame;$('#endingHome').onclick=goHome;$('#endingNext').onclick=showNextEnding;$('#endingRetry').onclick=()=>{hideEnding();startGame()};$('#nextGradeBtn').onclick=continueGrade;
+  $('#soundBtn').onclick=()=>{state.sound=!state.sound;initAudio();if(masterGain)masterGain.gain.setTargetAtTime(state.sound?1:0,audioCtx.currentTime,.03);if(state.sound)startBgm();else stopBgm();syncAudioButtons()};
+  $('#voiceBtn').onclick=()=>{state.voice=!state.voice;if(!state.voice)cancelSpeech();else speakCurrentCard(true);syncAudioButtons()};
+  speaker.onclick=()=>speakCurrentCard(true);speaker.title='등장인물의 말을 다시 듣기';speaker.setAttribute('role','button');speaker.setAttribute('tabindex','0');speaker.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();speakCurrentCard(true)}};
+  syncAudioButtons();
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelSpeech()});
+})();
+</script>
+</body>
+</html>

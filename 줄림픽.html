@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>줄림픽 Zoolympic</title>
+<style>
+:root{
+  --ink:#17324a; --muted:#62788d; --paper:#fffdf7; --cream:#f7f2e8;
+  --teal:#16b7a4; --teal-dark:#0f8177; --coral:#ff6f61; --yellow:#ffc83d;
+  --blue:#4b8df8; --purple:#8b70e8; --green:#42b96b; --red:#e64d5d;
+  --shadow:0 14px 34px rgba(31,66,91,.13); --radius:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:ui-rounded,"Pretendard","Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--cream)}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:4px solid rgba(75,141,248,.35);outline-offset:3px}
+body{overflow-x:hidden}
+.app{min-height:100vh;min-height:100dvh;position:relative;background:
+ radial-gradient(circle at 10% 8%,rgba(255,200,61,.25),transparent 26%),
+ radial-gradient(circle at 90% 20%,rgba(22,183,164,.18),transparent 28%),
+ linear-gradient(180deg,#fbf8ef 0%,#f1f5f3 100%)}
+.bg-track{position:fixed;inset:auto -10vw -19vw -10vw;height:42vw;min-height:280px;border-radius:50% 50% 0 0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.42) 0 2px,transparent 2px 44px),linear-gradient(90deg,rgba(255,111,97,.12),rgba(255,200,61,.13));transform:rotate(-2deg);pointer-events:none}
+.screen{display:none;min-height:100vh;min-height:100dvh;position:relative;z-index:1}
+.screen.active{display:flex}
+#home{align-items:center;justify-content:center;padding:28px}
+.home-card{width:min(100%,1040px);background:rgba(255,253,247,.92);border:2px solid rgba(23,50,74,.07);border-radius:38px;box-shadow:var(--shadow);overflow:hidden;display:grid;grid-template-columns:1.1fr .9fr;min-height:650px}
+.home-copy{padding:54px 54px 46px;display:flex;flex-direction:column;justify-content:center}
+.kicker{display:inline-flex;align-items:center;gap:9px;width:max-content;padding:9px 14px;border-radius:999px;background:#e6faf6;color:var(--teal-dark);font-weight:900;letter-spacing:.02em}
+.kicker .dot{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+h1{font-size:clamp(54px,8vw,94px);line-height:.89;margin:26px 0 14px;letter-spacing:-.07em}
+h1 .ko{display:block;color:var(--ink)}
+h1 .en{display:block;color:var(--teal);font-size:.58em;letter-spacing:-.04em;margin-top:12px}
+.tagline{font-size:clamp(18px,2.2vw,26px);line-height:1.5;margin:10px 0 0;color:#465f74;font-weight:750}
+.rule-strip{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0}
+.rule-chip{padding:10px 13px;border:1.5px solid rgba(23,50,74,.1);border-radius:15px;background:white;font-weight:850;font-size:14px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.btn{border:0;border-radius:18px;padding:16px 20px;cursor:pointer;font-weight:950;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;min-height:58px}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.02)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-primary{grid-column:1/-1;background:linear-gradient(135deg,var(--teal),#12a7cf);color:white;font-size:21px;box-shadow:0 10px 22px rgba(22,183,164,.25)}
+.btn-soft{background:white;border:1.5px solid rgba(23,50,74,.1)}
+.btn-danger{background:var(--coral);color:#fff}
+.hero-art{position:relative;background:linear-gradient(145deg,#d8f7ef 0%,#e8f4ff 55%,#fff4cf 100%);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero-art:before,.hero-art:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.55)}
+.hero-art:before{width:320px;height:320px;right:-90px;top:-60px}.hero-art:after{width:220px;height:220px;left:-70px;bottom:-50px}
+.hero-svg{width:min(92%,500px);position:relative;z-index:1;filter:drop-shadow(0 14px 18px rgba(26,81,91,.12))}
+.hero-stat{position:absolute;z-index:2;background:white;border-radius:18px;padding:14px 17px;box-shadow:var(--shadow);font-weight:950}
+.hero-stat.one{top:44px;left:28px;transform:rotate(-4deg)}.hero-stat.two{right:22px;bottom:42px;transform:rotate(4deg)}
+.topbar{height:78px;padding:12px clamp(14px,3vw,34px);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;background:rgba(255,253,247,.9);backdrop-filter:blur(16px);border-bottom:1px solid rgba(23,50,74,.08);position:sticky;top:0;z-index:20}
+.brand-mini{font-weight:1000;font-size:20px;letter-spacing:-.04em}.brand-mini span{color:var(--teal)}
+.icon-btn{width:48px;height:48px;border:0;border-radius:16px;background:white;box-shadow:0 6px 15px rgba(28,58,82,.08);display:inline-grid;place-items:center;cursor:pointer}
+.top-left,.top-right{display:flex;align-items:center;gap:10px}.top-right{justify-content:flex-end}
+.streak-pill{display:flex;align-items:center;gap:9px;background:#fff6d7;border:1.5px solid #ffe08a;border-radius:16px;padding:10px 14px;font-weight:1000}.streak-number{font-size:22px;color:#bd7410}
+.stage-pill{font-weight:950;color:var(--muted);font-size:14px;background:#edf3f6;border-radius:999px;padding:9px 14px}
+#game{flex-direction:column}
+.game-wrap{width:min(100%,980px);margin:0 auto;padding:24px clamp(14px,3vw,28px) 56px}
+.progress-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}.progress-shell{height:12px;border-radius:999px;background:#dfe8e8;overflow:hidden;flex:1}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--yellow));border-radius:inherit;transition:width .35s ease}.progress-text{font-weight:900;color:var(--muted);font-size:13px;white-space:nowrap}
+.quiz-card{background:var(--paper);border-radius:32px;box-shadow:var(--shadow);border:2px solid rgba(23,50,74,.07);padding:clamp(22px,4vw,42px);min-height:560px;position:relative;overflow:hidden}
+.quiz-card:before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(22,183,164,.06);right:-55px;top:-70px}
+.type-row{display:flex;justify-content:space-between;align-items:center;gap:14px;position:relative}.type-badge{display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border-radius:999px;font-weight:1000;font-size:14px}.type-badge.ox{background:#ffe8e5;color:#bd4037}.type-badge.detective{background:#e7f8f4;color:#087c70}.type-badge.habitat{background:#eaf0ff;color:#315fbc}.type-badge.classq{background:#fff3cf;color:#9a6500}.type-badge.correct{background:#eaf9ef;color:#247b42}.type-badge.incorrect{background:#f3ebff;color:#6f46b5}
+.keyboard-tip{font-size:12px;color:#8292a0;font-weight:800}
+.question-title{font-size:clamp(27px,4vw,42px);line-height:1.3;letter-spacing:-.04em;text-align:center;margin:46px auto 34px;max-width:780px;position:relative}
+.question-sub{font-size:16px;color:var(--muted);font-weight:750;text-align:center;margin:-16px auto 26px;line-height:1.55}
+.ox-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:700px;margin:24px auto 0}.ox-btn{height:190px;border:0;border-radius:28px;cursor:pointer;color:white;position:relative;overflow:hidden;box-shadow:0 12px 22px rgba(28,58,82,.12);transition:.18s ease}.ox-btn:hover{transform:translateY(-4px)}.ox-btn.o{background:linear-gradient(145deg,#28c99b,#0fae91)}.ox-btn.x{background:linear-gradient(145deg,#ff8176,#ef5968)}.ox-mark{font-size:92px;line-height:.8;font-weight:1000}.ox-label{font-size:17px;font-weight:950;margin-top:12px}
+.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:790px;margin:12px auto 0}.mc-option{min-height:92px;border:2px solid #dfe7ec;border-radius:21px;background:white;padding:18px;text-align:left;font-weight:900;font-size:19px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:.16s ease}.mc-option:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 8px 18px rgba(75,141,248,.11)}.num{flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#edf2f8;display:grid;place-items:center;font-size:14px}.mc-option.correct{border-color:var(--green);background:#ecfbf1}.mc-option.wrong{border-color:var(--red);background:#fff0f2}
+.btn-submit{background:var(--teal);color:white}.btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.feedback{display:none;margin:24px auto 0;max-width:820px;border-radius:22px;padding:20px 22px;position:relative}.feedback.show{display:block;animation:pop .24s ease-out}.feedback.good{background:#eaf9ef;border:2px solid #b7ebc8}.feedback.bad{background:#fff0f2;border:2px solid #ffc2ca}.feedback-title{font-size:21px;font-weight:1000;margin-bottom:7px}.feedback-text{font-size:15px;line-height:1.65;color:#466073;font-weight:700}.feedback-actions{display:flex;justify-content:flex-end;margin-top:16px}.feedback-actions .btn{min-height:48px;padding:12px 18px}
+.modal-screen{align-items:center;justify-content:center;padding:24px}.modal-card{width:min(100%,760px);max-height:calc(100vh - 48px);overflow:auto;background:var(--paper);border-radius:32px;box-shadow:var(--shadow);border:2px solid rgba(23,50,74,.08);padding:30px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:20px}.modal-head h2{margin:0;font-size:34px;letter-spacing:-.04em}.guide-grid{display:grid;gap:12px}.guide-item{display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:start;background:white;border:1.5px solid #e4ebee;border-radius:20px;padding:16px}.guide-no{width:46px;height:46px;border-radius:15px;background:#e6faf6;color:var(--teal-dark);display:grid;place-items:center;font-weight:1000}.guide-item h3{margin:1px 0 5px;font-size:18px}.guide-item p{margin:0;color:var(--muted);line-height:1.55;font-weight:700}
+.record-main{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}.record-box{background:white;border:1.5px solid #e2e9ec;border-radius:22px;padding:22px;text-align:center}.record-value{font-size:46px;font-weight:1000;color:var(--teal);letter-spacing:-.04em}.record-label{font-size:14px;color:var(--muted);font-weight:850}.record-note{background:#fff7d8;border-radius:18px;padding:16px;color:#725b16;font-weight:800;line-height:1.55}
+#result{align-items:center;justify-content:center;padding:24px}.result-card{width:min(100%,660px);background:var(--paper);border-radius:36px;box-shadow:var(--shadow);padding:38px;text-align:center;border:2px solid rgba(23,50,74,.07)}.medal{width:150px;height:150px;margin:0 auto 14px}.result-kicker{font-weight:950;color:var(--teal);letter-spacing:.08em;font-size:13px}.result-title{font-size:38px;margin:9px 0 6px;letter-spacing:-.05em}.result-score{font-size:78px;line-height:1;font-weight:1000;margin:17px 0 6px;color:var(--ink)}.result-score span{font-size:22px;color:var(--muted);margin-left:6px}.result-message{font-size:17px;color:var(--muted);font-weight:750;line-height:1.55}.result-stats{display:flex;justify-content:center;gap:12px;margin:24px 0}.mini-stat{background:white;border:1.5px solid #e1e8ec;border-radius:17px;padding:13px 18px;min-width:130px}.mini-stat b{display:block;font-size:23px}.mini-stat span{font-size:12px;color:var(--muted);font-weight:850}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.result-actions .btn-primary{grid-column:auto}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#17324a;color:white;padding:12px 18px;border-radius:14px;font-weight:850;opacity:0;pointer-events:none;transition:.2s;z-index:100}.toast.show{opacity:1;transform:translate(-50%,0)}
+.confetti{position:fixed;width:10px;height:16px;border-radius:3px;top:-20px;z-index:99;animation:fall 1.15s linear forwards;pointer-events:none}
+@keyframes pop{from{transform:scale(.98);opacity:.4}to{transform:scale(1);opacity:1}}@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.8}}
+@media(max-width:820px){.home-card{grid-template-columns:1fr;min-height:auto}.hero-art{min-height:310px;order:-1}.home-copy{padding:34px 26px}.hero-stat.one{top:20px}.hero-stat.two{bottom:20px}.topbar{grid-template-columns:auto 1fr auto}.brand-mini{display:none}.stage-pill{justify-self:center}.keyboard-tip{display:none}}
+@media(max-width:560px){#home{padding:12px}.home-card{border-radius:26px}.hero-art{min-height:255px}.hero-svg{width:88%}.hero-stat{font-size:12px;padding:10px 12px}.home-actions{grid-template-columns:1fr}.btn-primary{grid-column:1}.topbar{height:68px;padding:10px}.icon-btn{width:44px;height:44px}.streak-pill{padding:8px 10px}.quiz-card{border-radius:24px;padding:20px 14px;min-height:calc(100dvh - 132px)}.question-title{margin:35px auto 25px;font-size:27px}.ox-grid{gap:10px}.ox-btn{height:160px}.ox-mark{font-size:76px}.mc-grid{grid-template-columns:1fr}.mc-option{min-height:72px;font-size:17px}.modal-card{padding:20px;border-radius:24px}.record-main{grid-template-columns:1fr}.result-card{padding:28px 20px}.result-score{font-size:66px}.result-actions{grid-template-columns:1fr}.result-actions .btn-primary{grid-column:1}.result-stats{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="bg-track"></div>
+<section id="home" class="screen active">
+  <div class="home-card">
+    <div class="home-copy">
+      <div class="kicker"><span class="dot"></span> 1,000가지 동물 상식 연속 도전</div>
+      <h1><span class="ko">줄림픽</span><span class="en">Zoolympic</span></h1>
+      <p class="tagline">한 번도 틀리지 않고<br>얼마나 멀리 갈 수 있을까?</p>
+      <div class="rule-strip">
+        <span class="rule-chip">6가지 퀴즈 종목</span><span class="rule-chip">OX·탐정·서식지</span><span class="rule-chip">분류·설명 찾기</span><span class="rule-chip">1회 오답 즉시 종료</span>
+      </div>
+      <div class="home-actions">
+        <button id="startBtn" class="btn btn-primary">경기 시작</button>
+        <button id="guideBtn" class="btn btn-soft">경기 안내</button>
+        <button id="recordBtn" class="btn btn-soft">기록실</button>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-stat one">최고 기록 <span id="homeBest">0</span>연속</div>
+      <div class="hero-stat two">발견 <span id="homeSeen">0</span> / 1,000</div>
+      <svg class="hero-svg" viewBox="0 0 520 520" aria-hidden="true">
+        <path d="M76 388c83-63 286-83 377-17" fill="none" stroke="#ffffff" stroke-width="56" stroke-linecap="round"/>
+        <path d="M76 388c83-63 286-83 377-17" fill="none" stroke="#ff7b6e" stroke-width="34" stroke-linecap="round"/>
+        <path d="M102 393c88-49 258-65 329-14" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="14 16"/>
+        <circle cx="260" cy="218" r="132" fill="#fffdf7"/>
+        <path d="M162 250c9-58 48-102 100-102 61 0 101 48 101 112v58H166z" fill="#16b7a4"/>
+        <circle cx="211" cy="199" r="44" fill="#ffc83d"/><circle cx="310" cy="196" r="42" fill="#ff8c76"/>
+        <path d="M174 181c-31-20-47-54-31-68 18-16 52 12 61 49" fill="#ffc83d"/>
+        <path d="M344 178c31-25 43-59 24-70-18-11-47 19-56 55" fill="#ff8c76"/>
+        <circle cx="244" cy="227" r="8" fill="#17324a"/><circle cx="288" cy="227" r="8" fill="#17324a"/>
+        <path d="M257 247q10 14 20 0" fill="none" stroke="#17324a" stroke-width="6" stroke-linecap="round"/>
+        <path d="M266 258v14" stroke="#17324a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M266 274q-18 15-34 0M266 274q18 15 34 0" fill="none" stroke="#17324a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M206 307c13 36 23 60 11 91M316 307c-10 37-12 63 1 91" fill="none" stroke="#17324a" stroke-width="18" stroke-linecap="round"/>
+        <path d="M194 401h54M293 401h55" stroke="#17324a" stroke-width="17" stroke-linecap="round"/>
+        <path d="M151 309c-22 13-37 29-43 49M364 304c24 12 42 26 52 45" fill="none" stroke="#17324a" stroke-width="16" stroke-linecap="round"/>
+        <circle cx="104" cy="360" r="11" fill="#17324a"/><circle cx="419" cy="352" r="11" fill="#17324a"/>
+        <path d="M224 121h84l-13 49h-58z" fill="#4b8df8"/><path d="M236 121l7-34h46l9 34" fill="#fff" stroke="#4b8df8" stroke-width="10"/>
+        <circle cx="266" cy="111" r="13" fill="#ffc83d"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="game" class="screen">
+  <header class="topbar">
+    <div class="top-left"><button id="gameHomeBtn" class="icon-btn" aria-label="시작 화면으로">⌂</button><div class="brand-mini">줄림픽 <span>Zoolympic</span></div></div>
+    <div id="stagePill" class="stage-pill">1 / 1,000</div>
+    <div class="top-right"><button id="soundBtn" class="icon-btn" aria-label="소리 켜기 또는 끄기">♪</button><div class="streak-pill">연속 <span id="streakNum" class="streak-number">0</span></div></div>
+  </header>
+  <main class="game-wrap">
+    <div class="progress-row"><div class="progress-shell"><div id="progressFill" class="progress-fill"></div></div><div id="progressText" class="progress-text">0%</div></div>
+    <section id="quizCard" class="quiz-card"></section>
+  </main>
+</section>
+
+<section id="guide" class="screen modal-screen">
+  <div class="modal-card">
+    <div class="modal-head"><h2>경기 안내</h2><button class="icon-btn closeModal" aria-label="닫기">×</button></div>
+    <div class="guide-grid">
+      <div class="guide-item"><div class="guide-no">1</div><div><h3>여섯 종목이 번갈아 등장</h3><p>OX 판단, 동물 탐정, 대표 서식지, 동물 분류, 바른 설명 찾기, 틀린 설명 찾기가 차례로 반복됩니다.</p></div></div>
+      <div class="guide-item"><div class="guide-no">2</div><div><h3>한 번의 오답으로 경기 종료</h3><p>시간 제한은 없습니다. 서두르기보다 동물의 특징을 정확히 떠올려 보세요.</p></div></div>
+      <div class="guide-item"><div class="guide-no">3</div><div><h3>모든 선택형은 네 개 보기</h3><p>서식지와 분류 문제도 네 가지 보기 중 하나를 고릅니다. 키보드 숫자 1~4 또는 터치로 답할 수 있습니다.</p></div></div>
+      <div class="guide-item"><div class="guide-no">4</div><div><h3>기록은 이 기기에 저장</h3><p>최고 연속 정답과 지금까지 만난 문제 수가 자동으로 저장됩니다.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="records" class="screen modal-screen">
+  <div class="modal-card">
+    <div class="modal-head"><h2>기록실</h2><button class="icon-btn closeModal" aria-label="닫기">×</button></div>
+    <div class="record-main">
+      <div class="record-box"><div id="recordBest" class="record-value">0</div><div class="record-label">최고 연속 정답</div></div>
+      <div class="record-box"><div id="recordSeen" class="record-value">0</div><div class="record-label">발견한 문제 / 1,000</div></div>
+    </div>
+    <div class="record-note">1,000문제는 매 경기마다 새롭게 섞여 등장합니다. 한 번이라도 틀리면 경기가 끝나므로 최고 연속 기록에 도전해 보세요.</div>
+  </div>
+</section>
+
+<section id="result" class="screen">
+  <div class="result-card">
+    <div id="medalWrap" class="medal"></div>
+    <div class="result-kicker">ZOOLYMPIC RESULT</div>
+    <h2 id="resultTitle" class="result-title">경기 종료</h2>
+    <div class="result-score"><span id="resultScore">0</span><span>연속</span></div>
+    <p id="resultMessage" class="result-message"></p>
+    <div class="result-stats"><div class="mini-stat"><b id="resultBest">0</b><span>최고 기록</span></div><div class="mini-stat"><b id="resultSeen">0 / 1,000</b><span>발견한 문제</span></div></div>
+    <div class="result-actions"><button id="retryBtn" class="btn btn-primary">다시 도전</button><button id="resultHomeBtn" class="btn btn-soft">시작 화면</button></div>
+  </div>
+</section>
+<div id="toast" class="toast"></div>
+</div>
+<script>
+const ANIMALS = [{"name":"사자","cls":"포유류","habitat":"아프리카 사바나와 초원","fact1":"암컷들이 협력해 사냥하는 경우가 많다","fact2":"수컷의 갈기는 목을 보호하고 신호 역할도 한다","wrong":"고양잇과가 아니라 개과 동물이다"},{"name":"호랑이","cls":"포유류","habitat":"아시아의 숲과 습지","fact1":"대부분 혼자 생활하고 사냥한다","fact2":"줄무늬는 털뿐 아니라 피부에도 나타난다","wrong":"보통 큰 무리를 이루어 사냥한다"},{"name":"치타","cls":"포유류","habitat":"아프리카의 탁 트인 초원","fact1":"짧은 거리를 매우 빠르게 달릴 수 있다","fact2":"발톱이 완전히 들어가지 않아 달릴 때 접지력을 높인다","wrong":"고양이처럼 발톱을 언제나 완전히 집어넣을 수 있다"},{"name":"회색늑대","cls":"포유류","habitat":"북반구의 숲·초원·툰드라","fact1":"가족 중심의 무리를 이루어 협력한다","fact2":"울음소리로 멀리 떨어진 무리와 소통한다","wrong":"달을 볼 때만 울음소리를 낸다"},{"name":"붉은여우","cls":"포유류","habitat":"숲·초원·도시 주변","fact1":"뛰어난 청각으로 눈이나 흙 아래의 먹이를 찾는다","fact2":"꼬리를 균형 유지와 보온에 활용한다","wrong":"추운 계절에는 반드시 겨울잠을 잔다"},{"name":"북극곰","cls":"포유류","habitat":"북극 해빙과 해안","fact1":"두꺼운 지방층과 빽빽한 털로 추위를 견딘다","fact2":"털은 투명에 가깝고 피부는 검은색이다","wrong":"피부와 털이 모두 새하얀색이다"},{"name":"대왕판다","cls":"포유류","habitat":"중국 산악 대나무 숲","fact1":"식사의 대부분을 대나무에 의존한다","fact2":"앞발의 손목뼈가 발달한 가짜 엄지로 대나무를 잡는다","wrong":"소화기관이 소처럼 여러 개의 위로 이루어져 있다"},{"name":"아프리카코끼리","cls":"포유류","habitat":"아프리카 사바나와 숲","fact1":"현생 육상동물 가운데 몸집이 가장 크다","fact2":"코는 수만 개의 근육 다발로 이루어진 매우 섬세한 기관이다","wrong":"코 안에는 길고 단단한 뼈가 들어 있다"},{"name":"기린","cls":"포유류","habitat":"아프리카 사바나와 성긴 숲","fact1":"긴 혀로 가시가 많은 나무의 잎을 뜯어 먹는다","fact2":"목이 길어도 목뼈 수는 사람처럼 보통 7개다","wrong":"목이 긴 만큼 목뼈가 20개 이상이다"},{"name":"얼룩말","cls":"포유류","habitat":"아프리카 초원","fact1":"줄무늬 배열은 개체마다 서로 다르다","fact2":"줄무늬가 흡혈파리의 접근을 줄이는 데 도움이 될 수 있다","wrong":"모든 얼룩말의 줄무늬 모양은 완전히 같다"},{"name":"단봉낙타","cls":"포유류","habitat":"북아프리카와 서아시아의 건조 지대","fact1":"혹에 지방을 저장해 먹이가 부족할 때 활용한다","fact2":"콧구멍을 닫고 긴 속눈썹으로 모래를 막을 수 있다","wrong":"혹 속에는 마실 물이 가득 저장되어 있다"},{"name":"라마","cls":"포유류","habitat":"남아메리카 안데스 고지대","fact1":"발바닥의 부드러운 패드가 바위 지형을 걷는 데 도움을 준다","fact2":"위협을 느끼면 침을 뱉어 의사를 표현하기도 한다","wrong":"말처럼 하나로 합쳐진 단단한 발굽만 가진다"},{"name":"염소","cls":"포유류","habitat":"산지와 목초지","fact1":"수평으로 긴 동공이 넓은 시야를 확보하는 데 도움을 준다","fact2":"윗앞니 대신 단단한 치판으로 풀을 끊는다","wrong":"사람처럼 위턱에도 뾰족한 앞니가 줄지어 있다"},{"name":"아메리카들소","cls":"포유류","habitat":"북아메리카 대초원","fact1":"큰 머리와 어깨 혹이 눈을 밀어 먹이를 찾는 데 도움을 준다","fact2":"두꺼운 앞부분 털은 겨울 추위를 견디는 데 유리하다","wrong":"몸의 앞뒤 굵기가 거의 같고 어깨 혹이 없다"},{"name":"순록","cls":"포유류","habitat":"북극권 툰드라와 타이가","fact1":"암컷도 뿔이 자라는 사슴류로 잘 알려져 있다","fact2":"넓은 발굽이 눈과 습지를 걷고 땅을 파는 데 도움을 준다","wrong":"사슴류이므로 수컷에게만 뿔이 난다"},{"name":"하마","cls":"포유류","habitat":"아프리카의 강과 호수","fact1":"낮에는 물에서 체온을 조절하고 밤에 육지에서 풀을 먹는다","fact2":"피부에서 나오는 붉은빛 분비물은 자외선과 세균으로부터 보호하는 데 도움을 준다","wrong":"피부에서 실제 피를 땀처럼 흘려 몸을 식힌다"},{"name":"흰코뿔소","cls":"포유류","habitat":"아프리카 초원","fact1":"넓은 입술로 짧은 풀을 뜯어 먹는 데 알맞다","fact2":"뿔은 뼈가 아니라 케라틴 섬유가 뭉친 구조다","wrong":"코뿔소의 뿔은 두개골에서 자란 단단한 뼈다"},{"name":"캥거루","cls":"포유류","habitat":"오스트레일리아 초원과 관목지","fact1":"큰 뒷다리와 꼬리로 효율적으로 뛰어 이동한다","fact2":"새끼는 매우 미숙한 상태로 태어나 육아주머니에서 자란다","wrong":"긴 뒷다리 덕분에 뒤로 걷는 것도 매우 능숙하다"},{"name":"코알라","cls":"포유류","habitat":"오스트레일리아 유칼립투스 숲","fact1":"유칼립투스 잎을 주로 먹고 긴 시간 쉰다","fact2":"새끼를 주머니에서 기르는 유대류다","wrong":"이름처럼 곰과 같은 곰과 동물이다"},{"name":"오리너구리","cls":"포유류","habitat":"오스트레일리아 동부의 강과 하천","fact1":"포유류이지만 알을 낳는다","fact2":"부리의 전기수용기로 물속 먹이의 움직임을 감지한다","wrong":"다른 포유류처럼 새끼를 낳고 알은 낳지 않는다"},{"name":"가시두더지","cls":"포유류","habitat":"오스트레일리아와 뉴기니의 숲·초원","fact1":"오리너구리와 함께 알을 낳는 단공류다","fact2":"긴 혀로 개미와 흰개미를 핥아 먹는다","wrong":"새끼를 낳는 전형적인 태반류 포유류다"},{"name":"큰돌고래","cls":"포유류","habitat":"온대와 열대 바다","fact1":"반향정위로 주변 물체와 먹이를 파악한다","fact2":"숨을 쉬기 위해 수면 위로 올라오는 폐호흡 동물이다","wrong":"물고기처럼 아가미로만 숨을 쉰다"},{"name":"범고래","cls":"포유류","habitat":"전 세계의 바다","fact1":"무리마다 사냥법과 소리가 다른 문화적 차이가 나타난다","fact2":"분류상 돌고래과에서 가장 몸집이 큰 종이다","wrong":"수염고래류에 속하며 입 안에 수염판이 있다"},{"name":"혹등고래","cls":"포유류","habitat":"전 세계 대양","fact1":"복잡하고 긴 노래를 내는 것으로 유명하다","fact2":"이빨 대신 수염판으로 작은 먹이를 걸러 먹는다","wrong":"날카로운 이빨로 큰 물고기를 한 마리씩 사냥한다"},{"name":"과일박쥐","cls":"포유류","habitat":"열대와 아열대 숲","fact1":"꽃가루받이와 씨앗 확산에 중요한 역할을 한다","fact2":"대부분 시력이 좋고 과일과 꽃의 꿀을 찾는다","wrong":"모든 박쥐와 마찬가지로 눈이 완전히 보이지 않는다"},{"name":"세발가락나무늘보","cls":"포유류","habitat":"중남미 열대우림","fact1":"느린 대사와 움직임으로 에너지를 아낀다","fact2":"털에 조류가 자라 녹색빛을 띠기도 한다","wrong":"주로 땅 위를 빠르게 달리며 먹이를 쫓는다"},{"name":"큰개미핥기","cls":"포유류","habitat":"중남미 초원과 숲","fact1":"이빨이 없고 긴 혀로 개미와 흰개미를 먹는다","fact2":"강한 앞발톱으로 개미집을 열고 방어에도 사용한다","wrong":"단단한 어금니로 개미를 잘게 씹어 먹는다"},{"name":"비버","cls":"포유류","habitat":"북반구의 강과 호수","fact1":"나무와 진흙으로 댐을 만들어 서식 환경을 바꾼다","fact2":"납작하고 비늘 덮인 꼬리로 수영과 신호에 활용한다","wrong":"꼬리가 여우처럼 길고 풍성한 털로 덮여 있다"},{"name":"해달","cls":"포유류","habitat":"북태평양 연안","fact1":"돌을 도구로 써 조개껍데기를 깨기도 한다","fact2":"촘촘한 털에 공기를 가두어 차가운 바다에서 체온을 지킨다","wrong":"추를 삼켜 몸을 무겁게 만든 뒤 잠을 잔다"},{"name":"미어캣","cls":"포유류","habitat":"남부 아프리카 건조 지대","fact1":"여러 개체가 역할을 나누는 사회적 무리를 이룬다","fact2":"보초가 두 발로 서서 위험을 살피고 경고음을 낸다","wrong":"성체가 되면 대부분 완전히 혼자 생활한다"},{"name":"침팬지","cls":"포유류","habitat":"아프리카 열대림과 사바나","fact1":"막대기와 돌 등 여러 도구를 사용할 수 있다","fact2":"꼬리가 없는 유인원이며 복잡한 사회관계를 맺는다","wrong":"나뭇가지를 잡는 길고 강한 꼬리를 가지고 있다"},{"name":"고릴라","cls":"포유류","habitat":"중앙아프리카 숲","fact1":"주로 잎·줄기·과일을 먹는다","fact2":"가슴을 두드리는 행동은 소리로 정보를 전달하는 신호가 될 수 있다","wrong":"주식이 큰 동물의 고기인 전문 육식동물이다"},{"name":"황제펭귄","cls":"조류","habitat":"남극 해빙","fact1":"수컷이 발 위에 알을 올리고 배의 피부주름으로 품는다","fact2":"날지는 못하지만 날개가 지느러미처럼 발달해 수영을 잘한다","wrong":"암컷만 알을 품고 수컷은 번식지에 머물지 않는다"},{"name":"타조","cls":"조류","habitat":"아프리카 사바나와 반사막","fact1":"현생 새 가운데 몸집이 가장 크다","fact2":"두 발가락과 강한 다리로 빠르게 달린다","wrong":"새 가운데 가장 넓은 날개로 장거리를 날아간다"},{"name":"흰머리수리","cls":"조류","habitat":"북아메리카의 호수와 해안","fact1":"물고기를 자주 먹으며 물가에 큰 둥지를 짓는다","fact2":"어린 개체는 머리가 갈색이고 성장하면서 흰색으로 바뀐다","wrong":"태어날 때부터 머리와 꼬리가 완전히 희다"},{"name":"수리부엉이","cls":"조류","habitat":"유라시아의 산림과 바위 지대","fact1":"큰 눈과 뛰어난 청각으로 어두운 곳에서 사냥한다","fact2":"깃털 가장자리 구조가 비행 소음을 줄이는 데 도움을 준다","wrong":"눈알을 사람처럼 자유롭게 굴려 뒤를 볼 수 있다"},{"name":"송골매","cls":"조류","habitat":"절벽·해안·도시 고층 건물","fact1":"급강하할 때 매우 빠른 속도를 낼 수 있다","fact2":"공중에서 다른 새를 추격해 사냥하는 경우가 많다","wrong":"땅에서 달릴 때만 빠르고 공중에서는 느리다"},{"name":"알바트로스","cls":"조류","habitat":"남반구와 북태평양 대양","fact1":"긴 날개로 바람을 이용해 적은 에너지로 멀리 활공한다","fact2":"많은 종이 평생 짝 관계를 오래 유지한다","wrong":"짧고 둥근 날개 때문에 바다를 거의 벗어나지 못한다"},{"name":"벌새","cls":"조류","habitat":"아메리카의 숲과 정원","fact1":"날개를 매우 빠르게 움직여 제자리비행을 할 수 있다","fact2":"꽃의 꿀을 먹으며 중요한 꽃가루받이 역할을 한다","wrong":"날개 구조상 뒤로 날 수 없다"},{"name":"회색앵무","cls":"조류","habitat":"아프리카 열대림","fact1":"소리 모방뿐 아니라 일부 개체는 단어와 개념을 연결해 학습한다","fact2":"강한 굽은 부리와 두 발가락씩 마주 보는 발을 가진다","wrong":"혀가 없어서 어떤 소리도 흉내 낼 수 없다"},{"name":"큰까마귀","cls":"조류","habitat":"북반구의 다양한 환경","fact1":"문제 해결 능력이 뛰어나고 도구를 활용하기도 한다","fact2":"여러 소리를 흉내 내고 개체를 기억할 수 있다","wrong":"기억력이 매우 짧아 같은 장소를 다시 찾지 못한다"},{"name":"홍학","cls":"조류","habitat":"염호와 얕은 석호","fact1":"먹이에 든 색소 때문에 깃털이 분홍빛을 띤다","fact2":"거꾸로 향한 부리의 구조로 물속 작은 먹이를 걸러 먹는다","wrong":"태어날 때부터 먹이와 관계없이 진한 분홍색이다"},{"name":"펠리컨","cls":"조류","habitat":"호수·강·해안","fact1":"부리 아래 큰 주머니로 물고기를 잡는 데 도움을 받는다","fact2":"주머니는 먹이를 오래 저장하는 창고라기보다 포획과 물 빼기에 쓰인다","wrong":"부리주머니에 며칠치 먹이를 보관한다"},{"name":"청둥오리","cls":"조류","habitat":"북반구의 습지와 호수","fact1":"물 위에서 몸을 기울여 얕은 곳의 먹이를 찾는 수면성 오리다","fact2":"수컷과 암컷의 깃털 색이 크게 다르다","wrong":"잠수만 하며 수면 가까운 먹이는 먹지 않는다"},{"name":"혹고니","cls":"조류","habitat":"유럽과 아시아의 호수·하천","fact1":"긴 목으로 물속 식물을 뜯어 먹는다","fact2":"부부가 함께 둥지와 새끼를 지키는 경우가 많다","wrong":"다리가 길어 물속을 걸어서만 이동하고 헤엄치지 못한다"},{"name":"큰오색딱따구리","cls":"조류","habitat":"유라시아 숲","fact1":"단단한 꼬리깃과 발가락으로 나무줄기에 몸을 지탱한다","fact2":"강한 목 근육과 단단한 두개골 구조로 반복적인 쪼기에 적응해 있다","wrong":"나무를 쪼을 때마다 쉽게 뇌진탕에 걸리도록 진화했다"},{"name":"큰부리새","cls":"조류","habitat":"중남미 열대우림","fact1":"큰 부리는 체온을 내보내는 데도 도움을 준다","fact2":"부리는 커 보여도 내부가 가벼운 구조다","wrong":"거대한 부리가 속까지 단단한 뼈로 차 있어 날지 못한다"},{"name":"키위","cls":"조류","habitat":"뉴질랜드 숲과 관목지","fact1":"콧구멍이 부리 끝 가까이에 있어 냄새로 먹이를 찾는다","fact2":"날개가 매우 작고 날지 못하며 털처럼 보이는 깃털을 가진다","wrong":"새 가운데 후각이 가장 약해 눈으로만 먹이를 찾는다"},{"name":"나일악어","cls":"파충류","habitat":"아프리카의 강·호수·습지","fact1":"눈과 콧구멍이 머리 위쪽에 있어 몸을 숨긴 채 주변을 살핀다","fact2":"새끼의 울음에 반응해 어미가 둥지를 열어 주기도 한다","wrong":"알을 낳은 뒤 둥지와 새끼를 전혀 돌보지 않는다"},{"name":"미시시피악어","cls":"파충류","habitat":"미국 남동부 습지","fact1":"주둥이가 비교적 넓고 U자형으로 보인다","fact2":"추울 때 몸의 일부를 물 밖으로 내놓고 얼음 속에서도 버티는 행동이 관찰된다","wrong":"바닷물에서만 살며 민물에는 들어가지 않는다"},{"name":"푸른바다거북","cls":"파충류","habitat":"열대와 아열대 바다","fact1":"성체는 해초를 많이 먹는 초식 성향이 강하다","fact2":"암컷은 태어난 해변 부근으로 돌아와 산란하는 경향이 있다","wrong":"성체가 되면 주로 큰 물고기를 사냥한다"},{"name":"갈라파고스땅거북","cls":"파충류","habitat":"갈라파고스 제도의 건조·습윤 지대","fact1":"매우 오래 살 수 있는 장수 동물이다","fact2":"섬의 환경에 따라 등딱지 모양과 목 길이가 다르게 나타난다","wrong":"수영용 지느러미가 있어 대부분의 시간을 바다에서 보낸다"},{"name":"그린이구아나","cls":"파충류","habitat":"중남미 열대림","fact1":"주로 잎과 꽃을 먹는 초식성 도마뱀이다","fact2":"긴 꼬리를 방어에 쓰고 물속에서 헤엄치기도 한다","wrong":"성체의 주식은 작은 포유류와 새다"},{"name":"팬서카멜레온","cls":"파충류","habitat":"마다가스카르의 숲과 관목지","fact1":"두 눈을 서로 다른 방향으로 움직여 주변을 살핀다","fact2":"긴 혀를 빠르게 뻗어 곤충을 잡는다","wrong":"색을 바꾸는 유일한 목적은 배경에 완전히 숨는 것이다"},{"name":"코모도왕도마뱀","cls":"파충류","habitat":"인도네시아 일부 섬의 건조 숲과 사바나","fact1":"현생 도마뱀 가운데 가장 큰 종이다","fact2":"독성 단백질을 분비하는 침샘과 강한 이빨로 먹이를 제압한다","wrong":"먹이를 잡을 때 독이나 이빨 없이 꼬리만 사용한다"},{"name":"표범도마뱀붙이","cls":"파충류","habitat":"남아시아의 건조 지대","fact1":"눈꺼풀이 있어 눈을 감을 수 있는 도마뱀붙이다","fact2":"위험할 때 꼬리를 끊고 나중에 다시 자라게 할 수 있다","wrong":"모든 도마뱀붙이처럼 눈꺼풀이 전혀 없다"},{"name":"그물무늬비단뱀","cls":"파충류","habitat":"동남아시아 열대림과 습지","fact1":"몸으로 먹이를 감아 압박한 뒤 통째로 삼킨다","fact2":"현생 뱀 가운데 매우 긴 길이에 도달하는 종이다","wrong":"강한 독니로 독을 주입해 먹이를 마비시킨다"},{"name":"킹코브라","cls":"파충류","habitat":"남아시아와 동남아시아 숲","fact1":"다른 뱀을 주로 먹는 대형 독사다","fact2":"암컷이 낙엽으로 둥지를 만들고 지키는 행동을 보인다","wrong":"먹이의 대부분이 과일과 나뭇잎이다"},{"name":"방울뱀","cls":"파충류","habitat":"아메리카의 사막·초원·숲","fact1":"꼬리 끝의 방울을 흔들어 경고음을 낸다","fact2":"눈과 콧구멍 사이의 열감지 기관으로 온혈동물을 찾는다","wrong":"방울 소리는 입으로 내는 울음소리다"},{"name":"청개구리","cls":"양서류","habitat":"동아시아의 논·습지·숲","fact1":"발가락 끝의 흡반으로 식물과 매끈한 면을 잘 오른다","fact2":"피부와 폐를 통해 호흡하며 습한 환경이 중요하다","wrong":"피부가 완전히 방수라 건조한 곳에서도 물 없이 오래 산다"},{"name":"독화살개구리","cls":"양서류","habitat":"중남미 열대우림","fact1":"야생 개체의 피부 독성은 먹이에서 얻는 화학물질과 관련 있다","fact2":"선명한 색으로 포식자에게 위험을 경고한다","wrong":"사육해도 먹이와 상관없이 언제나 같은 강한 독을 만든다"},{"name":"아홀로틀","cls":"양서류","habitat":"멕시코 소치밀코 수계","fact1":"성체가 되어도 아가미와 유생의 특징을 유지한다","fact2":"팔다리와 일부 조직을 재생하는 능력이 뛰어나다","wrong":"성체가 되면 반드시 육지로 올라와 아가미를 잃는다"},{"name":"백상아리","cls":"어류","habitat":"온대와 아열대 연안 바다","fact1":"여러 줄의 이빨이 빠지면 뒤쪽 이빨이 앞으로 이동한다","fact2":"연골어류라 뼈 대신 연골로 된 골격을 가진다","wrong":"부레를 부풀려 물속에서 떠 있는 경골어류다"},{"name":"대왕쥐가오리","cls":"어류","habitat":"열대와 아열대 대양","fact1":"큰 몸집과 달리 플랑크톤을 걸러 먹는다","fact2":"머리 앞의 두 지느러미로 먹이를 입 쪽으로 모은다","wrong":"꼬리의 강한 독침으로 큰 물고기를 사냥한다"},{"name":"흰동가리","cls":"어류","habitat":"인도·태평양 산호초","fact1":"말미잘의 촉수 사이에서 보호받으며 산다","fact2":"무리의 우두머리 암컷이 사라지면 큰 수컷이 암컷으로 성전환할 수 있다","wrong":"말미잘의 독에 닿으면 언제나 즉시 죽는다"},{"name":"참다랑어","cls":"어류","habitat":"대서양과 인접 바다","fact1":"몸 일부의 온도를 주변 물보다 높게 유지할 수 있다","fact2":"유선형 몸과 강한 꼬리로 먼 거리를 빠르게 이동한다","wrong":"민물에서만 살며 바다에는 들어가지 않는다"},{"name":"연어","cls":"어류","habitat":"북태평양·북대서양과 연결 하천","fact1":"많은 종이 바다에서 자란 뒤 태어난 강으로 돌아와 산란한다","fact2":"후각과 지구 자기장 정보를 길찾기에 활용하는 것으로 알려져 있다","wrong":"알을 낳기 위해 강에서 바다로만 이동하고 돌아오지 않는다"},{"name":"금붕어","cls":"어류","habitat":"담수 연못과 수조","fact1":"붕어를 오랜 세월 선택 번식해 만든 관상어다","fact2":"적절한 환경에서는 생각보다 크게 자라고 오래 살 수 있다","wrong":"작은 어항 크기에 맞춰 몸이 영원히 자라지 않는다"},{"name":"해마","cls":"어류","habitat":"얕은 연안의 해초밭과 산호초","fact1":"수컷의 육아주머니에서 알이 발달하고 새끼가 나온다","fact2":"꼬리로 해초를 감아 몸을 고정한다","wrong":"암컷의 배 속에서만 알과 새끼가 자란다"},{"name":"복어","cls":"어류","habitat":"바다와 일부 담수","fact1":"위험할 때 물이나 공기를 삼켜 몸을 부풀릴 수 있다","fact2":"일부 종의 장기에는 테트로도톡신이라는 강한 독이 있다","wrong":"몸을 부풀리는 것은 새끼에게 젖을 먹이기 위한 행동이다"},{"name":"곰치","cls":"어류","habitat":"열대와 온대의 바위틈·산호초","fact1":"목 안쪽의 두 번째 턱을 앞으로 움직여 먹이를 삼키는 데 도움을 받는다","fact2":"대부분 틈에 숨어 머리만 내밀고 먹이를 기다린다","wrong":"폐로 숨 쉬기 위해 주기적으로 육지에 올라온다"},{"name":"문어","cls":"연체동물","habitat":"전 세계 바다의 암초와 해저","fact1":"세 개의 심장과 푸른빛 혈액을 가진다","fact2":"빨판으로 맛과 화학 신호를 감지할 수 있다","wrong":"척추와 단단한 뼈가 있어 몸 모양을 바꾸기 어렵다"},{"name":"갑오징어","cls":"연체동물","habitat":"연안의 모래·암초 지대","fact1":"피부의 색소세포를 조절해 빠르게 무늬를 바꾼다","fact2":"몸속의 갑오징어뼈로 부력을 조절한다","wrong":"껍데기가 몸 바깥을 단단히 감싸고 있어 색을 바꾸지 못한다"},{"name":"앵무조개","cls":"연체동물","habitat":"인도·태평양의 깊은 산호초 사면","fact1":"여러 방으로 나뉜 껍데기의 기체와 액체를 조절해 부력을 얻는다","fact2":"많은 촉수를 가지지만 문어처럼 빨판은 없다","wrong":"껍데기가 없어 바위틈을 자유롭게 통과한다"},{"name":"꽃게","cls":"갑각류","habitat":"서해와 동아시아 연안의 모래·진흙 바닥","fact1":"마지막 다리 한 쌍이 노처럼 납작해 수영에 알맞다","fact2":"성장하려면 단단한 외골격을 벗는 탈피를 해야 한다","wrong":"뼈가 몸 안에 있어 탈피하지 않고 계속 자란다"},{"name":"바닷가재","cls":"갑각류","habitat":"차가운 연안의 바위 해저","fact1":"큰 집게발 두 개의 역할과 모양이 서로 다를 수 있다","fact2":"더듬이와 화학 감각으로 주변과 먹이를 탐색한다","wrong":"곤충처럼 날개가 있어 밤에 바다 위를 날아다닌다"},{"name":"꿀벌","cls":"곤충","habitat":"꽃이 피는 다양한 육상 환경","fact1":"춤의 방향과 길이로 먹이 위치 정보를 전달한다","fact2":"일벌은 모두 암컷이며 벌집의 여러 일을 나누어 맡는다","wrong":"일벌은 모두 수컷이고 여왕벌만 암컷이다"},{"name":"개미","cls":"곤충","habitat":"거의 전 세계의 육상 환경","fact1":"페로몬 길을 남겨 동료를 먹이까지 안내한다","fact2":"여왕·일개미·수개미가 역할을 나누는 사회를 이룬다","wrong":"각 개체가 평생 완전히 혼자 살며 서로 신호를 주고받지 않는다"},{"name":"호랑나비","cls":"곤충","habitat":"동아시아의 숲·정원·들판","fact1":"애벌레와 성충의 몸과 먹이가 크게 다른 완전변태를 한다","fact2":"성충은 긴 입을 말았다 펴며 꽃의 꿀을 빤다","wrong":"알에서 나오자마자 작은 성충 모습으로 자라며 번데기가 없다"},{"name":"장수풍뎅이","cls":"곤충","habitat":"동아시아의 참나무 숲","fact1":"수컷의 큰 뿔은 경쟁 상대를 밀어내는 데 쓰인다","fact2":"애벌레는 썩은 나무와 부엽토를 먹으며 자란다","wrong":"뿔로 나무에 구멍을 뚫어 알을 낳는다"},{"name":"잠자리","cls":"곤충","habitat":"연못·하천 주변","fact1":"겹눈이 발달해 넓은 범위의 움직임을 감지한다","fact2":"유충은 물속에서 살며 다른 작은 동물을 사냥한다","wrong":"날개를 접어 등 위에 포개고만 날 수 있다"},{"name":"거미","cls":"거미강","habitat":"거의 전 세계의 육상 환경","fact1":"다리가 여덟 개이며 곤충과 다른 거미강 동물이다","fact2":"실을 사냥·이동·알 보호 등 여러 용도로 쓴다","wrong":"다리가 여섯 개이고 더듬이 한 쌍을 가진 곤충이다"},{"name":"전갈","cls":"거미강","habitat":"사막·초원·숲의 바위와 틈","fact1":"집게와 독침이 달린 꼬리로 먹이를 제압하고 방어한다","fact2":"자외선을 비추면 외골격이 형광을 띠는 경우가 많다","wrong":"날개 두 쌍으로 날아다니며 먹이를 찾는다"},{"name":"불가사리","cls":"극피동물","habitat":"전 세계 바다의 해저","fact1":"관족이라는 작은 튜브 모양 발로 이동하고 먹이를 다룬다","fact2":"팔을 잃은 뒤 재생하는 능력이 있는 종이 많다","wrong":"민물 연못에서만 살며 지느러미로 헤엄친다"}];
+const TOTAL_QUESTIONS=1000;
+const QUIZ_ORDER=['ox','detective','habitat','classq','correct','incorrect'];
+const STORAGE_KEY='zoolympic-save-v2';
+const LEGACY_STORAGE_KEY='zoolympic-save-v1';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const homeBest=$('#homeBest'), homeSeen=$('#homeSeen'), recordBest=$('#recordBest'), recordSeen=$('#recordSeen');
+const resultBest=$('#resultBest'), resultSeen=$('#resultSeen'), resultScore=$('#resultScore'), resultTitle=$('#resultTitle'), resultMessage=$('#resultMessage'), medalWrap=$('#medalWrap');
+const soundBtn=$('#soundBtn'), startBtn=$('#startBtn'), retryBtn=$('#retryBtn'), gameHomeBtn=$('#gameHomeBtn'), resultHomeBtn=$('#resultHomeBtn'), guideBtn=$('#guideBtn'), recordBtn=$('#recordBtn');
+const stagePill=$('#stagePill'), streakNum=$('#streakNum'), progressFill=$('#progressFill'), progressText=$('#progressText'), quizCard=$('#quizCard');
+let audioCtx=null;
+
+function shuffle(arr,r=Math.random){for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function seeded(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let x=t;x=Math.imul(x^x>>>15,x|1);x^=x+Math.imul(x^x>>>7,x|61);return((x^x>>>14)>>>0)/4294967296}}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function broad(a){if(a.cls==='포유류')return'포유류';if(a.cls==='조류')return'조류';if(['파충류','양서류'].includes(a.cls))return'파충·양서류';if(['어류','연체동물','갑각류','극피동물'].includes(a.cls))return'물속동물';return'육상무척추'}
+function habitatZone(h){if(/북극|남극|툰드라|해빙/.test(h))return'극지';if(/바다|대양|연안|해안|산호초|해저/.test(h))return'바다';if(/강|호수|하천|습지|논|수계|민물|석호/.test(h))return'민물';if(/사막|건조|반사막/.test(h))return'건조지';if(/사바나|초원|목초지|대초원/.test(h))return'초원';if(/산악|산지|고지대|절벽|바위/.test(h))return'산지';if(/숲|열대림|열대우림|산림|관목/.test(h))return'숲';return'기타'}
+function uniqueValues(items){return [...new Set(items)]}
+function optionSet(answer,distractors,rng){const clean=uniqueValues(distractors.filter(v=>v!==answer));return shuffle([answer,...clean.slice(0,3)],rng)}
+function animalDistractors(a,seed){const rng=seeded(seed);const near=shuffle(ANIMALS.filter(x=>x.name!==a.name&&broad(x)===broad(a)),rng);const far=shuffle(ANIMALS.filter(x=>x.name!==a.name&&broad(x)!==broad(a)),rng);return [...near,...far].slice(0,3)}
+function habitatDistractors(a,seed){const rng=seeded(seed),zone=habitatZone(a.habitat);const far=shuffle(ANIMALS.filter(x=>x.name!==a.name&&habitatZone(x.habitat)!==zone),rng).map(x=>x.habitat);const near=shuffle(ANIMALS.filter(x=>x.name!==a.name&&habitatZone(x.habitat)===zone),rng).map(x=>x.habitat);return uniqueValues([...far,...near]).slice(0,3)}
+function classDistractors(a,seed){const rng=seeded(seed);return shuffle(uniqueValues(ANIMALS.map(x=>x.cls)).filter(c=>c!==a.cls),rng).slice(0,3)}
+function otherAnimals(a,seed,count=3){return shuffle(ANIMALS.filter(x=>x.name!==a.name),seeded(seed)).slice(0,count)}
+function wrongClass(a,seed){return classDistractors(a,seed)[0]}
+
+function buildOX(){const out=[];ANIMALS.forEach((a,i)=>{
+  out.push({id:`OX${String(i*3+1).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.fact1}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
+  out.push({id:`OX${String(i*3+2).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.fact2}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
+  out.push({id:`OX${String(i*3+3).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.wrong}`,answer:false,explain:`틀린 설명입니다. 실제 특징 — ${a.name}: ${a.fact1}. ${a.fact2}.`});
+});return out}
+function buildDetective(){const out=[];ANIMALS.forEach((a,i)=>{
+  const ds1=animalDistractors(a,11000+i*31),ds2=animalDistractors(a,12000+i*31),ds3=animalDistractors(a,13000+i*31);
+  const make=(n,clue,ds,seed)=>({id:`DT${String(i*3+n).padStart(3,'0')}`,type:'detective',prompt:'어떤 동물일까요?',clue,options:optionSet(a.name,ds.map(x=>x.name),seeded(seed)),answer:a.name,explain:`${a.name}: ${a.fact1}. ${a.fact2}. 대표 서식지는 ${a.habitat}이다.`});
+  out.push(make(1,a.fact1,ds1,21000+i));
+  out.push(make(2,a.fact2,ds2,22000+i));
+  out.push(make(3,`${a.habitat}에서 주로 볼 수 있다. ${a.fact1}`,ds3,23000+i));
+});return out}
+function buildHabitat(){const out=[];ANIMALS.forEach((a,i)=>{
+  for(let v=0;v<2;v++){
+    const ds=habitatDistractors(a,31000+i*17+v);
+    out.push({id:`HB${String(i*2+v+1).padStart(3,'0')}`,type:'habitat',prompt:`${a.name}의 대표 서식지는 어디일까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.habitat,ds,seeded(32000+i*17+v)),answer:a.habitat,explain:`${a.name}은 ${a.habitat}에서 주로 볼 수 있다. ${a.fact1}.`});
+  }
+});return out}
+function buildClass(){const out=[];ANIMALS.forEach((a,i)=>{
+  for(let v=0;v<2;v++){
+    const ds=classDistractors(a,41000+i*13+v);
+    out.push({id:`CL${String(i*2+v+1).padStart(3,'0')}`,type:'classq',prompt:`${a.name}은 어느 분류에 속할까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.cls,ds,seeded(42000+i*13+v)),answer:a.cls,explain:`${a.name}은 ${a.cls}에 속한다. ${a.fact1}.`});
+  }
+});return out}
+function buildCorrect(){const out=[];ANIMALS.forEach((a,i)=>{
+  [a.fact1,a.fact2].forEach((fact,v)=>{
+    const others=otherAnimals(a,51000+i*19+v);
+    const answer=`${a.name} — ${fact}`;
+    const distractors=others.map(x=>`${x.name} — ${x.wrong}`);
+    out.push({id:`OK${String(i*2+v+1).padStart(3,'0')}`,type:'correct',prompt:'이름과 설명이 바르게 연결된 것은?',clue:'네 보기 중 사실인 연결을 하나 고르세요.',options:optionSet(answer,distractors,seeded(52000+i*19+v)),answer,explain:`바른 연결은 “${answer}”이다. ${a.fact2}.`});
+  })
+});return out}
+function buildIncorrect(){const out=[];ANIMALS.forEach((a,i)=>{
+  const others1=otherAnimals(a,61000+i*23),others2=otherAnimals(a,62000+i*23);
+  const answer1=`${a.name} — ${a.wrong}`;
+  const ds1=others1.map((x,j)=>`${x.name} — ${j%2?x.fact2:x.fact1}`);
+  out.push({id:`NO${String(i*2+1).padStart(3,'0')}`,type:'incorrect',prompt:'이름과 설명이 잘못 연결된 것은?',clue:'네 보기 중 사실이 아닌 연결을 하나 고르세요.',options:optionSet(answer1,ds1,seeded(63000+i)),answer:answer1,explain:`“${answer1}”은 틀린 연결이다. 실제로 ${a.name}은 ${a.cls}이며, ${a.fact1}.`});
+  const wc=wrongClass(a,64000+i),answer2=`${a.name} — ${wc}에 속한다`;
+  const ds2=others2.map((x,j)=>`${x.name} — ${j%2?x.fact1:x.fact2}`);
+  out.push({id:`NO${String(i*2+2).padStart(3,'0')}`,type:'incorrect',prompt:'이름과 설명이 잘못 연결된 것은?',clue:'동물의 분류까지 꼼꼼히 살펴보세요.',options:optionSet(answer2,ds2,seeded(65000+i)),answer:answer2,explain:`${a.name}은 ${wc}가 아니라 ${a.cls}에 속한다. ${a.fact1}.`});
+});return out}
+
+function requiredCounts(){const counts=Object.fromEntries(QUIZ_ORDER.map(t=>[t,0]));for(let i=0;i<TOTAL_QUESTIONS;i++)counts[QUIZ_ORDER[i%QUIZ_ORDER.length]]++;return counts}
+function buildMasterPools(){const raw={ox:buildOX(),detective:buildDetective(),habitat:buildHabitat(),classq:buildClass(),correct:buildCorrect(),incorrect:buildIncorrect()};const need=requiredCounts(),fixed={};QUIZ_ORDER.forEach((t,i)=>{fixed[t]=shuffle([...raw[t]],seeded(70000+i*997)).slice(0,need[t]);if(fixed[t].length!==need[t])throw new Error(`${t} 문제 수가 부족합니다.`)});return fixed}
+const MASTER_POOLS=buildMasterPools();
+const MASTER_IDS=new Set(QUIZ_ORDER.flatMap(t=>MASTER_POOLS[t].map(q=>q.id)));
+function createRun(){const pools={};QUIZ_ORDER.forEach(t=>pools[t]=shuffle([...MASTER_POOLS[t]]));const all=[];for(let i=0;i<TOTAL_QUESTIONS;i++){const type=QUIZ_ORDER[i%QUIZ_ORDER.length];all.push(pools[type].pop())}return all}
+
+function loadSave(){try{const current=JSON.parse(localStorage.getItem(STORAGE_KEY));if(current)return{best:Number(current.best)||0,seen:Array.isArray(current.seen)?current.seen.filter(id=>MASTER_IDS.has(id)):[],sound:current.sound!==false};const old=JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY));return{best:Number(old?.best)||0,seen:[],sound:old?.sound!==false}}catch(e){return{best:0,seen:[],sound:true}}}
+let save=loadSave();
+let state={questions:[],index:0,streak:0,locked:false,sound:true};
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(save))}catch(e){}updateHomeStats()}
+function updateHomeStats(){homeBest.textContent=save.best;homeSeen.textContent=save.seen.length;recordBest.textContent=save.best;recordSeen.textContent=save.seen.length;resultBest.textContent=save.best;resultSeen.textContent=`${save.seen.length.toLocaleString()} / ${TOTAL_QUESTIONS.toLocaleString()}`;soundBtn.textContent=save.sound?'♪':'×'}
+function showScreen(id){$$('.screen').forEach(s=>s.classList.remove('active'));$('#'+id).classList.add('active');window.scrollTo({top:0,behavior:'instant'})}
+function startGame(){state={questions:createRun(),index:0,streak:0,locked:false,sound:save.sound};showScreen('game');renderQuestion();playSound('start')}
+function markSeen(id){if(!save.seen.includes(id)){save.seen.push(id);persist()}}
+function renderQuestion(){state.locked=false;const q=state.questions[state.index];stagePill.textContent=`${(state.index+1).toLocaleString()} / ${TOTAL_QUESTIONS.toLocaleString()}`;streakNum.textContent=state.streak;progressFill.style.width=`${(state.index/TOTAL_QUESTIONS)*100}%`;progressText.textContent=`${Math.floor((state.index/TOTAL_QUESTIONS)*100)}%`;markSeen(q.id);if(q.type==='ox')renderOX(q);else renderChoice(q)}
+function badge(type){const labels={ox:'OX 판단',detective:'동물 탐정',habitat:'대표 서식지',classq:'동물 분류',correct:'바른 설명 찾기',incorrect:'틀린 설명 찾기'};return `<div class="type-badge ${type}">${labels[type]}</div>`}
+function renderOX(q){quizCard.innerHTML=`<div class="type-row">${badge('ox')}<div class="keyboard-tip">키보드 O · X</div></div><h2 class="question-title">${esc(q.statement)}</h2><p class="question-sub">이 설명이 맞으면 O, 틀리면 X를 선택하세요.</p><div class="ox-grid"><button class="ox-btn o" data-answer="true"><div class="ox-mark">O</div><div class="ox-label">맞다</div></button><button class="ox-btn x" data-answer="false"><div class="ox-mark">X</div><div class="ox-label">틀리다</div></button></div><div id="feedback" class="feedback"></div>`;$$('.ox-btn').forEach(b=>b.onclick=()=>answerSingle(b.dataset.answer==='true',q,b))}
+function renderChoice(q){quizCard.innerHTML=`<div class="type-row">${badge(q.type)}<div class="keyboard-tip">키보드 1 · 2 · 3 · 4</div></div><h2 class="question-title">${esc(q.prompt)}</h2><p class="question-sub">${esc(q.clue)}</p><div class="mc-grid">${q.options.map((o,i)=>`<button class="mc-option" data-index="${i}"><span class="num">${i+1}</span><span>${esc(o)}</span></button>`).join('')}</div><div id="feedback" class="feedback"></div>`;$$('.mc-option').forEach(b=>b.onclick=()=>answerSingle(q.options[Number(b.dataset.index)],q,b))}
+function answerSingle(value,q,button){if(state.locked)return;state.locked=true;const ok=value===q.answer;if(q.type!=='ox'){$$('.mc-option').forEach((b,i)=>{if(q.options[i]===q.answer)b.classList.add('correct')});if(!ok)button.classList.add('wrong')}showFeedback(ok,q,ok?'정확합니다!':`정답은 ${q.type==='ox'?(q.answer?'O':'X'):q.answer}입니다.`,q.explain)}
+function showFeedback(ok,q,title,text){if(ok){state.streak++;if(state.streak>save.best){save.best=state.streak;persist()}streakNum.textContent=state.streak;playSound('correct');confetti(Math.min(10+state.streak%10,18))}else playSound('wrong');const f=$('#feedback');f.className=`feedback show ${ok?'good':'bad'}`;f.innerHTML=`<div class="feedback-title">${esc(title)}</div><div class="feedback-text">${esc(text)}</div><div class="feedback-actions"><button id="feedbackNext" class="btn ${ok?'btn-submit':'btn-danger'}">${ok?(state.index===TOTAL_QUESTIONS-1?'최종 결과':'다음 문제'):'경기 결과 보기'}</button></div>`;$('#feedbackNext').onclick=()=>{if(ok&&state.index<TOTAL_QUESTIONS-1){state.index++;renderQuestion()}else endGame(ok&&state.index===TOTAL_QUESTIONS-1)}}
+function endGame(perfect=false){persist();resultScore.textContent=state.streak;resultTitle.textContent=perfect?'1,000문제 완주!':'경기 종료';const m=medalInfo(state.streak,perfect);resultMessage.textContent=m.message;medalWrap.innerHTML=medalSVG(m.color,m.label);showScreen('result');if(perfect)confetti(50)}
+function medalInfo(s,p){if(p)return{color:'#8b70e8',label:'1000',message:'1,000문제를 한 번도 틀리지 않고 완주했습니다. 줄림픽의 전설입니다!'};if(s>=500)return{color:'#8b70e8',label:'L',message:'500연속을 넘긴 전설적인 동물 상식 기록입니다.'};if(s>=250)return{color:'#4b8df8',label:'D',message:'250연속 돌파! 동물 박사급 실력입니다.'};if(s>=100)return{color:'#ffc83d',label:'G',message:'세 자릿수 연속 정답! 금메달급 기록입니다.'};if(s>=50)return{color:'#a9b7c7',label:'S',message:'은메달급 기록입니다. 다음에는 세 자릿수에 도전해 보세요.'};if(s>=20)return{color:'#c77f4f',label:'B',message:'동메달 획득! 동물 상식의 기초가 탄탄합니다.'};return{color:'#16b7a4',label:'Z',message:'새로운 사실을 하나씩 익히며 기록을 높여 보세요.'}}
+function medalSVG(color,label){const fs=String(label).length>3?24:38;return `<svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 10h28l15 56-29 8z" fill="#4b8df8"/><path d="M87 10h28l-14 64-29-8z" fill="#ff6f61"/><circle cx="80" cy="99" r="48" fill="${color}"/><circle cx="80" cy="99" r="36" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5"/><text x="80" y="111" text-anchor="middle" font-size="${fs}" font-weight="1000" fill="white">${label}</text></svg>`}
+function confirmHome(){if(state.index>0||state.streak>0){if(!confirm('현재 경기를 끝내고 시작 화면으로 돌아갈까요?'))return}showScreen('home');updateHomeStats()}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),1600)}
+function ensureAudio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}
+function tone(freq,dur=.12,type='sine',vol=.05,delay=0){if(!save.sound)return;ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0,audioCtx.currentTime+delay);g.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+delay+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+delay+dur);o.connect(g).connect(audioCtx.destination);o.start(audioCtx.currentTime+delay);o.stop(audioCtx.currentTime+delay+dur+.03)}
+function playSound(kind){if(kind==='correct'){tone(523,.13,'triangle',.05);tone(659,.16,'triangle',.05,.09);tone(784,.22,'triangle',.05,.18)}else if(kind==='wrong'){tone(220,.28,'sawtooth',.035);tone(165,.35,'sawtooth',.03,.12)}else if(kind==='start'){tone(392,.12,'triangle',.04);tone(523,.16,'triangle',.04,.1)}else tone(400,.05,'sine',.02)}
+function confetti(n){const colors=['#16b7a4','#ff6f61','#ffc83d','#4b8df8','#8b70e8'];for(let i=0;i<n;i++){const e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=colors[i%colors.length];e.style.animationDelay=(Math.random()*.22)+'s';e.style.transform=`rotate(${Math.random()*180}deg)`;document.body.appendChild(e);setTimeout(()=>e.remove(),1500)}}
+
+startBtn.onclick=startGame;retryBtn.onclick=startGame;gameHomeBtn.onclick=confirmHome;resultHomeBtn.onclick=()=>{showScreen('home');updateHomeStats()};guideBtn.onclick=()=>showScreen('guide');recordBtn.onclick=()=>{updateHomeStats();showScreen('records')};$$('.closeModal').forEach(b=>b.onclick=()=>showScreen('home'));soundBtn.onclick=()=>{save.sound=!save.sound;persist();toast(save.sound?'소리를 켰습니다.':'소리를 껐습니다.');if(save.sound)playSound('tap')};
+document.addEventListener('keydown',e=>{if(!$('#game').classList.contains('active')||state.locked)return;const q=state.questions[state.index];if(q.type==='ox'&&(e.key.toLowerCase()==='o'||e.key.toLowerCase()==='x')){const val=e.key.toLowerCase()==='o';answerSingle(val,q,$(`.ox-btn.${val?'o':'x'}`))}else if(q.type!=='ox'&&['1','2','3','4'].includes(e.key)){const b=$$('.mc-option')[Number(e.key)-1];if(b)b.click()}});
+updateHomeStats();
+</script>
+</body>
+</html>
