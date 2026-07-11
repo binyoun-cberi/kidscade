@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kidscade 나의 3D 어항</title>
+<style>
+:root{
+  --panel:rgba(9,30,50,.78);--panel2:rgba(15,45,70,.9);--line:rgba(191,230,255,.25);
+  --text:#f8fdff;--muted:#b8d7e9;--accent:#67e8f9;--good:#86efac;--warn:#fcd34d;--bad:#fca5a5;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#03111f;color:var(--text);font-family:"Pretendard","Noto Sans KR","맑은 고딕",sans-serif}
+body{touch-action:none}
+#aquarium-app{position:relative;width:100%;height:100%;background:radial-gradient(circle at 50% 2%,#2a7fa7 0,#0b4165 33%,#041d32 72%,#020c16 100%)}
+#gl-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl-canvas.dragging{cursor:grabbing}
+.water-haze{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(185,239,255,.12),transparent 32%,rgba(0,36,66,.22));mix-blend-mode:screen}
+.topbar{position:absolute;z-index:20;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
+.topbar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:10px 14px;box-shadow:0 12px 30px rgba(0,0,0,.22);backdrop-filter:blur(14px)}
+.brand-mark{width:38px;height:38px;border-radius:14px;background:linear-gradient(145deg,#67e8f9,#2563eb);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 8px 16px rgba(8,145,178,.25);position:relative}
+.brand-mark:before,.brand-mark:after{content:"";position:absolute;background:rgba(255,255,255,.9);border-radius:50%}
+.brand-mark:before{width:15px;height:7px;left:8px;top:13px;transform:rotate(-8deg)}
+.brand-mark:after{width:6px;height:6px;right:7px;top:14px}
+.brand h1{font-size:1rem;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand p{font-size:.74rem;color:var(--muted);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:8px}
+button,select{font:inherit}
+.ui-btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:14px;min-height:44px;padding:0 14px;font-weight:900;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.2);backdrop-filter:blur(14px);transition:transform .15s,background .15s,border-color .15s}
+.ui-btn:hover{transform:translateY(-2px);background:rgba(18,62,92,.94);border-color:rgba(103,232,249,.5)}.ui-btn:active{transform:translateY(0) scale(.98)}
+.ui-btn.primary{background:linear-gradient(135deg,#0ea5e9,#2563eb);border-color:rgba(255,255,255,.32)}
+.status-strip{position:absolute;z-index:18;top:max(88px,calc(env(safe-area-inset-top) + 88px));left:max(12px,env(safe-area-inset-left));display:grid;grid-template-columns:repeat(3,minmax(112px,1fr));gap:8px;max-width:430px;pointer-events:none}
+.status-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.18);backdrop-filter:blur(12px)}
+.status-label{font-size:.68rem;color:var(--muted);font-weight:800}.status-value{margin-top:3px;font-size:.98rem;font-weight:1000}.status-card.good .status-value{color:var(--good)}.status-card.warn .status-value{color:var(--warn)}.status-card.bad .status-value{color:var(--bad)}
+.side-panel{position:absolute;z-index:18;right:max(12px,env(safe-area-inset-right));top:max(88px,calc(env(safe-area-inset-top) + 88px));width:min(290px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 16px 38px rgba(0,0,0,.25);backdrop-filter:blur(16px)}
+.panel-title{font-size:.8rem;color:var(--muted);font-weight:900;margin-bottom:8px}.fish-select{width:100%;height:42px;border:1px solid var(--line);border-radius:12px;background:rgba(5,28,47,.86);color:var(--text);padding:0 10px;font-weight:900;outline:none}
+.fish-card{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}.fish-name{font-size:1.08rem;font-weight:1000}.fish-species{font-size:.75rem;color:var(--muted);margin-top:2px}.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.mini-stat{background:rgba(255,255,255,.06);border-radius:12px;padding:8px}.mini-stat span{display:block;font-size:.65rem;color:var(--muted);font-weight:800}.mini-stat b{display:block;margin-top:2px;font-size:.88rem}.fish-note{margin-top:9px;font-size:.75rem;line-height:1.45;color:#dff7ff;background:rgba(14,165,233,.12);border:1px solid rgba(103,232,249,.18);border-radius:12px;padding:9px}
+.controls{position:absolute;z-index:20;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px;padding:8px;background:rgba(4,25,42,.78);border:1px solid var(--line);border-radius:20px;box-shadow:0 16px 38px rgba(0,0,0,.28);backdrop-filter:blur(15px)}
+.action-btn{min-width:92px;min-height:50px;border:0;border-radius:14px;color:#06243a;font-weight:1000;cursor:pointer;padding:7px 12px;transition:transform .14s,filter .14s;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),0 7px 16px rgba(0,0,0,.18)}
+.action-btn:hover{transform:translateY(-2px);filter:brightness(1.05)}.action-btn:active{transform:scale(.97)}.action-btn small{display:block;font-size:.65rem;font-weight:800;opacity:.72;margin-top:2px}
+#feed-btn{background:linear-gradient(145deg,#fde68a,#f59e0b)}#water-btn{background:linear-gradient(145deg,#a5f3fc,#22d3ee)}#light-btn{background:linear-gradient(145deg,#fef9c3,#facc15)}#focus-btn{background:linear-gradient(145deg,#bbf7d0,#4ade80)}
+.hint{position:absolute;z-index:15;left:50%;transform:translateX(-50%);bottom:88px;background:rgba(2,17,31,.68);color:#d7f2ff;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 13px;font-size:.72rem;font-weight:800;pointer-events:none;backdrop-filter:blur(10px);white-space:nowrap}
+.toast-wrap{position:absolute;z-index:50;left:50%;top:24%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;pointer-events:none}.toast{background:rgba(3,20,35,.93);border:1px solid rgba(103,232,249,.35);border-radius:999px;color:white;padding:10px 16px;font-size:.82rem;font-weight:900;box-shadow:0 12px 28px rgba(0,0,0,.3);animation:toastIn .22s ease,toastOut .35s 2.25s forwards}@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.94)}}@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+.modal{position:absolute;z-index:60;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,7,14,.72);backdrop-filter:blur(8px)}.modal.hidden{display:none}.modal-card{width:min(560px,100%);max-height:86vh;overflow:auto;background:#f8fdff;color:#133047;border-radius:24px;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.35)}.modal-card h2{margin:0 0 12px;font-size:1.25rem}.modal-card p{font-size:.88rem;line-height:1.65;color:#415b70}.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.guide-item{background:#e9f8ff;border:1px solid #c3e9f8;border-radius:15px;padding:12px}.guide-item b{display:block;margin-bottom:4px}.guide-item span{font-size:.78rem;line-height:1.45;color:#486579}.modal-close{width:100%;height:46px;border:0;border-radius:14px;background:#0ea5e9;color:white;font-weight:1000;cursor:pointer}
+.no-webgl{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;background:#071b2c;color:white;z-index:100}.no-webgl.show{display:flex}
+@media(max-width:860px){.side-panel{top:auto;right:12px;bottom:90px;width:230px}.status-strip{grid-template-columns:repeat(3,1fr);right:12px;max-width:none}.brand p{display:none}.hint{display:none}}
+@media(max-width:620px){.topbar{align-items:flex-start}.brand{padding:8px 10px}.brand-mark{width:34px;height:34px}.top-actions .ui-btn:not(.primary){display:none}.status-strip{top:76px;left:8px;right:8px;gap:5px}.status-card{padding:8px}.status-label{font-size:.61rem}.status-value{font-size:.83rem}.side-panel{left:8px;right:8px;bottom:82px;width:auto;padding:9px;display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center}.side-panel .panel-title{display:none}.fish-select{height:40px}.fish-card{margin:0;padding:0 0 0 8px;border-top:0;border-left:1px solid var(--line)}.mini-grid,.fish-note{display:none}.fish-name{font-size:.92rem}.fish-species{font-size:.66rem}.controls{left:8px;right:8px;transform:none;bottom:max(8px,env(safe-area-inset-bottom));gap:5px;padding:6px}.action-btn{flex:1;min-width:0;min-height:48px;padding:5px 3px;font-size:.75rem}.action-btn small{font-size:.58rem}.guide-grid{grid-template-columns:1fr}}
+
+/* C안: 자유 배치 꾸미기 패널 */
+#decor-btn{background:linear-gradient(145deg,#d8b4fe,#8b5cf6)}
+.controls{max-width:calc(100vw - 24px)}
+.action-btn{min-width:86px}
+.decor-panel{position:absolute;z-index:32;left:50%;transform:translateX(-50%);bottom:82px;width:min(780px,calc(100vw - 24px));background:rgba(5,27,45,.92);border:1px solid rgba(191,230,255,.28);border-radius:22px;padding:12px;box-shadow:0 20px 45px rgba(0,0,0,.36);backdrop-filter:blur(18px)}
+.decor-panel.hidden{display:none}
+.decor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.decor-title{font-size:.88rem;font-weight:1000;color:#dff9ff;text-align:left}.decor-title small{display:block;margin-top:2px;color:#9fc8da;font-size:.67rem;font-weight:800}
+.decor-done{border:0;border-radius:12px;background:#22c55e;color:#052e16;min-height:38px;padding:0 14px;font-weight:1000;cursor:pointer}
+.decor-items{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.decor-chip{border:1px solid rgba(191,230,255,.22);border-radius:14px;background:rgba(255,255,255,.07);color:white;min-height:64px;padding:7px;cursor:pointer;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:7px;align-items:center;text-align:left;transition:.15s}
+.decor-chip:hover:not(:disabled){transform:translateY(-2px);background:rgba(103,232,249,.13)}.decor-chip.active{border-color:#67e8f9;background:rgba(14,165,233,.22);box-shadow:inset 0 0 0 1px rgba(103,232,249,.24)}.decor-chip:disabled{opacity:.42;cursor:not-allowed}
+.decor-chip span{grid-row:1/3;font-size:1.45rem}.decor-chip b{font-size:.78rem}.decor-chip small{font-size:.64rem;color:#a8ccdd}
+.decor-tools{display:flex;gap:7px;margin-top:9px}.decor-tool{flex:1;min-height:38px;border:1px solid rgba(191,230,255,.20);border-radius:11px;background:rgba(255,255,255,.08);color:white;font-weight:900;cursor:pointer}.decor-tool:disabled{opacity:.35;cursor:not-allowed}.decor-tool.danger{color:#fecaca}.decor-instruction{margin-top:8px;font-size:.70rem;line-height:1.4;color:#c7e7f5;text-align:center}
+.side-panel.decor-dim{opacity:.45;pointer-events:none}
+@media(max-width:760px){.controls{gap:4px}.action-btn{min-width:0;font-size:.70rem;padding:5px 2px}.decor-panel{left:8px;right:8px;transform:none;width:auto;bottom:74px;padding:9px}.decor-items{grid-template-columns:repeat(2,1fr)}.decor-chip{min-height:54px}.decor-tools{flex-wrap:wrap}.decor-tool{flex:1 1 30%}}
+@media(max-width:470px){.action-btn small{display:none}.action-btn{min-height:44px}.decor-panel{bottom:65px}.decor-head{align-items:flex-start}.decor-title{font-size:.78rem}}
+
+</style>
+</head>
+<body>
+<div id="aquarium-app">
+  <canvas id="gl-canvas" aria-label="3D 어항"></canvas>
+  <div class="water-haze"></div>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark"></div><div><h1>나의 3D 어항</h1><p>물고기의 움직임과 물 환경을 관찰해요</p></div></div>
+    <div class="top-actions"><button class="ui-btn" id="guide-btn">관찰 안내</button><button class="ui-btn primary" id="close-btn">쑥쑥랜드로</button></div>
+  </header>
+  <section class="status-strip" aria-label="어항 환경 상태">
+    <div class="status-card" id="clean-card"><div class="status-label">물 깨끗함</div><div class="status-value" id="clean-value">--</div></div>
+    <div class="status-card" id="temp-card"><div class="status-label">수온</div><div class="status-value" id="temp-value">--</div></div>
+    <div class="status-card" id="oxygen-card"><div class="status-label">산소</div><div class="status-value" id="oxygen-value">--</div></div>
+  </section>
+  <aside class="side-panel">
+    <div class="panel-title">관찰할 물고기</div>
+    <select class="fish-select" id="fish-select" aria-label="관찰할 물고기 선택"></select>
+    <div class="fish-card">
+      <div class="fish-name" id="fish-name">물고기</div><div class="fish-species" id="fish-species">어항을 헤엄치고 있어요.</div>
+      <div class="mini-grid"><div class="mini-stat"><span>포만</span><b id="fish-fullness">--</b></div><div class="mini-stat"><span>건강</span><b id="fish-health">--</b></div><div class="mini-stat"><span>긴장</span><b id="fish-stress">--</b></div><div class="mini-stat"><span>성격</span><b id="fish-personality">--</b></div></div>
+      <div class="fish-note" id="fish-note">화면을 눌러 물고기를 선택할 수 있어요.</div>
+    </div>
+  </aside>
+  <div class="hint">드래그: 둘러보기 · 휠/두 손가락: 확대 · 물고기 누르기: 관찰</div>
+  <nav class="controls" aria-label="어항 돌보기">
+    <button class="action-btn" id="feed-btn">먹이 주기<small>조금만</small></button>
+    <button class="action-btn" id="water-btn">물갈이<small>부분 환수</small></button>
+    <button class="action-btn" id="light-btn">조명 끄기<small>낮과 밤</small></button>
+    <button class="action-btn" id="decor-btn">꾸미기<small>직접 배치</small></button>
+    <button class="action-btn" id="focus-btn">따라보기<small>카메라 전환</small></button>
+  </nav>
+  <section class="decor-panel hidden" id="decor-panel" aria-label="어항 꾸미기">
+    <div class="decor-head"><div class="decor-title">내 어항 직접 꾸미기<small>가진 용품을 선택하고 바닥을 눌러 놓거나 옮겨요.</small></div><button class="decor-done" id="decor-done" type="button">완료</button></div>
+    <div class="decor-items" id="decor-items"></div>
+    <div class="decor-tools"><button class="decor-tool" id="decor-rotate" type="button">선택 장식 회전</button><button class="decor-tool danger" id="decor-remove" type="button">선택 장식 보관</button><button class="decor-tool" id="decor-reset" type="button">자동 배치로 정리</button></div>
+    <div class="decor-instruction" id="decor-instruction">가진 용품을 선택한 뒤 어항 바닥을 눌러 직접 배치해 보세요.</div>
+  </section>
+  <div class="toast-wrap" id="toast-wrap"></div>
+  <div class="modal hidden" id="guide-modal"><div class="modal-card"><h2>어항 관찰 안내</h2><p>물고기는 몸과 꼬리를 함께 휘어 헤엄치고, 벽과 장식을 미리 피하며, 종류에 따라 무리를 짓거나 바닥을 살펴요. 꾸미기에서는 Kidscade 상점에서 가진 수초와 유목, 장식을 직접 배치할 수 있어요.</p><div class="guide-grid"><div class="guide-item"><b>살아 있는 움직임</b><span>회전할 때 몸이 기울고 지느러미가 속도에 맞춰 움직여요.</span></div><div class="guide-item"><b>직접 꾸미기</b><span>용품을 고른 뒤 바닥을 누르고, 놓인 장식을 다시 눌러 이동·회전·보관해요.</span></div><div class="guide-item"><b>먹이와 물 관리</b><span>남은 먹이는 물을 더럽히고 여과기·기포기는 환경 유지에 도움을 줘요.</span></div><div class="guide-item"><b>카메라</b><span>자유 보기, 선택 물고기 따라보기, 자동 관찰을 차례로 전환할 수 있어요.</span></div></div><button class="modal-close" id="guide-close">관찰 시작</button></div></div>
+  <div class="no-webgl" id="no-webgl"><div><h2>3D 어항을 열 수 없어요</h2><p>이 기기의 WebGL 설정을 확인하거나 최신 브라우저에서 다시 열어주세요.</p></div></div>
+</div>
+<script>
+(() => {
+'use strict';
+
+const LEGACY_KEY = 'kidscade_sook_canvas_pet';
+const STORE_KEY = 'kidscade_aquarium_v1';
+const FLOOR_Y = -1.68;
+const TANK = { x: 4.25, y: 1.78, z: 1.66 };
+
+const SPECIES = {
+  guppy: {
+    label: '구피', size: .56, speed: 1.08, school: .42, depth: .05,
+    body: [.10, .72, .42], accent: [.52, 1.00, .78], fin: [.72, .38, .96],
+    shape: [1.28, .56, .44], tail: [1.12, .90], pattern: 1,
+    tip: '큰 부채꼴 꼬리를 흔들며 활발하게 어항 곳곳을 살펴봐요.'
+  },
+  neonTetra: {
+    label: '네온테트라', size: .46, speed: 1.20, school: .98, depth: .18,
+    body: [.06, .28, .55], accent: [.18, .88, 1.00], fin: [.92, .22, .32],
+    shape: [1.55, .36, .30], tail: [.54, .48], pattern: 2,
+    tip: '같은 종류 친구의 속도와 방향을 맞추며 반짝이는 무리를 이루어요.'
+  },
+  platy: {
+    label: '플래티', size: .58, speed: .94, school: .56, depth: .03,
+    body: [.96, .35, .07], accent: [1.00, .72, .18], fin: [1.00, .78, .12],
+    shape: [1.12, .72, .50], tail: [.62, .58], pattern: 3,
+    tip: '통통한 몸으로 중간 높이를 편안하게 헤엄치는 온순한 물고기예요.'
+  },
+  cory: {
+    label: '코리도라스', size: .61, speed: .74, school: .50, depth: -1.20,
+    body: [.42, .48, .54], accent: [.86, .82, .69], fin: [.63, .66, .68],
+    shape: [1.38, .46, .62], tail: [.54, .50], pattern: 4,
+    tip: '납작한 배와 수염으로 바닥을 살피며 남은 먹이를 찾아다녀요.'
+  },
+  betta: {
+    label: '베타', size: .70, speed: .70, school: .04, depth: .12,
+    body: [.78, .08, .32], accent: [1.00, .33, .70], fin: [.34, .16, .92],
+    shape: [1.38, .54, .40], tail: [1.38, 1.15], pattern: 5,
+    tip: '긴 지느러미를 천천히 펼치며 다른 물고기와 거리를 두고 움직여요.'
+  }
+};
+
+const PERSONALITY = {
+  curious: '호기심형', calm: '차분형', active: '활동형', shy: '조심형'
+};
+
+const DECOR_META = {
+  plant: { label: '수초', icon: '🌿', source: 'plants' },
+  ornament: { label: '어항 기물', icon: '🏰', source: 'ornaments' },
+  driftwood: { label: '유목', icon: '🪵', source: 'driftwood' },
+  mossball: { label: '마리모', icon: '🟢', source: 'mossballs' }
+};
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const len = v => Math.hypot(v[0], v[1], v[2]);
+const norm = v => { const l = len(v) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+function seeded(seed) {
+  const x = Math.sin(seed * 999.17) * 43758.5453;
+  return x - Math.floor(x);
+}
+function uid(prefix = 'fish') {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+function parseJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; }
+  catch (error) { return fallback; }
+}
+function legacyState() {
+  const state = parseJSON(LEGACY_KEY, {});
+  state.fishTank = state.fishTank || {};
+  state.stats = state.stats || {};
+  return state;
+}
+function newFish(species, index = 0) {
+  const seed = Math.floor(Math.random() * 999999) + index;
+  const personalities = ['curious', 'calm', 'active', 'shy'];
+  return {
+    uid: uid(), species,
+    name: `${SPECIES[species]?.label || '물고기'} ${index + 1}`,
+    age: 1,
+    fullness: 78 + Math.round(seeded(seed) * 16),
+    health: 90,
+    stress: 8,
+    growth: .82 + seeded(seed + 2) * .18,
+    personality: personalities[Math.floor(seeded(seed + 3) * personalities.length)],
+    colorSeed: seed,
+    behaviorSeed: seed + 71
+  };
+}
+
+function defaultDecorPosition(type, index, total) {
+  const presets = {
+    plant: [[-3.25, -1.05], [-2.30, .95], [-1.15, -1.18], [.15, 1.05], [1.55, -1.05], [2.72, .86], [3.42, -1.02]],
+    ornament: [[1.80, .62], [2.75, -.72], [.65, -.85], [-.55, .78]],
+    driftwood: [[-1.75, -.72], [-.65, .75], [1.20, .84], [2.45, -.25]],
+    mossball: [[-.45, 1.05], [.22, .72], [.78, 1.18], [-1.12, .58], [1.32, .62], [2.05, 1.12]]
+  };
+  const list = presets[type] || [[0, 0]];
+  const p = list[index % list.length];
+  return { x: p[0], z: p[1], rotation: seeded(index * 17 + total) * Math.PI * 2, scale: .88 + seeded(index * 23 + 4) * .28 };
+}
+
+function ownedDecorCount(type, data) {
+  const meta = DECOR_META[type];
+  return Math.max(0, Math.min(type === 'plant' ? 12 : 8, Number(data.decor[meta.source] || 0)));
+}
+
+function ensureLayout(data, forceReset = false) {
+  if (!Array.isArray(data.layout) || forceReset) data.layout = [];
+  const kept = [];
+  Object.keys(DECOR_META).forEach(type => {
+    const owned = ownedDecorCount(type, data);
+    const existing = forceReset ? [] : data.layout.filter(item => item && item.type === type).slice(0, owned);
+    for (let i = existing.length; i < owned; i++) {
+      const p = defaultDecorPosition(type, i, owned);
+      existing.push({ uid: uid('decor'), type, x: p.x, z: p.z, rotation: p.rotation, scale: p.scale, variant: Math.floor(seeded(i * 31 + type.length) * 3) });
+    }
+    kept.push(...existing);
+  });
+  data.layout = kept;
+}
+
+function loadData() {
+  const legacy = legacyState();
+  const tank = legacy.fishTank || {};
+  let data = parseJSON(STORE_KEY, null);
+  if (!data || !data.version) {
+    data = {
+      version: 2,
+      name: '나의 첫 어항',
+      water: { temperature: 25, cleanliness: 88, oxygen: 84 },
+      equipment: {}, decor: {}, fish: [], layout: [],
+      lightOn: true, lastUpdate: Date.now()
+    };
+  }
+  data.version = 2;
+  data.water = { temperature: 25, cleanliness: 88, oxygen: 84, ...data.water };
+  data.equipment = {
+    ...data.equipment,
+    filters: Number(tank.filters ?? data.equipment?.filters ?? 1),
+    heaters: Number(tank.heaters ?? data.equipment?.heaters ?? 1),
+    lights: Number(tank.lights ?? data.equipment?.lights ?? 1),
+    bubbles: Number(tank.bubbles ?? data.equipment?.bubbles ?? 0)
+  };
+  data.decor = {
+    ...data.decor,
+    plants: Number(tank.plants ?? data.decor?.plants ?? 1),
+    ornaments: Number(tank.ornaments ?? data.decor?.ornaments ?? 0),
+    shrimp: Number(tank.shrimp ?? data.decor?.shrimp ?? 0),
+    snails: Number(tank.snails ?? data.decor?.snails ?? 0),
+    gravel: Number(tank.gravel ?? data.decor?.gravel ?? 1),
+    driftwood: Number(tank.driftwood ?? data.decor?.driftwood ?? 0),
+    mossballs: Number(tank.mossballs ?? data.decor?.mossballs ?? 0)
+  };
+
+  const wanted = Array.isArray(tank.fish) && tank.fish.length
+    ? tank.fish.filter(id => SPECIES[id])
+    : ['guppy'];
+  const pool = [...(Array.isArray(data.fish) ? data.fish : [])];
+  const next = [];
+  wanted.forEach((species, index) => {
+    const found = pool.findIndex(f => f && f.species === species);
+    next.push(found >= 0 ? pool.splice(found, 1)[0] : newFish(species, index));
+  });
+  data.fish = next.length ? next : [newFish('guppy', 0)];
+
+  const elapsed = Math.min(72, Math.max(0, (Date.now() - (Number(data.lastUpdate) || Date.now())) / 3600000));
+  const fishLoad = Math.max(1, data.fish.length);
+  data.water.cleanliness = clamp(data.water.cleanliness - elapsed * (.7 + fishLoad * .12) / (1 + data.equipment.filters * .35), 0, 100);
+  data.water.oxygen = clamp(data.water.oxygen - elapsed * (.35 + fishLoad * .07) + elapsed * data.equipment.bubbles * .22, 0, 100);
+  data.fish.forEach(f => {
+    f.fullness = clamp((Number(f.fullness) || 75) - elapsed * 1.1, 0, 100);
+    f.health = clamp(Number(f.health) || 90, 0, 100);
+    f.stress = clamp(Number(f.stress) || 8, 0, 100);
+    f.growth = clamp(Number(f.growth) || 1, .55, 1.1);
+    f.name = f.name || SPECIES[f.species].label;
+    f.personality = f.personality || 'curious';
+  });
+  ensureLayout(data);
+  data.lastUpdate = Date.now();
+  return data;
+}
+
+let data = loadData();
+let selectedId = data.fish[0].uid;
+let cameraMode = 'free';
+let decorMode = false;
+let placingType = null;
+let selectedDecorUid = null;
+let pellets = [];
+let sim = [];
+let bubbles = [];
+let critters = [];
+let lastSave = 0;
+let lastUserInput = performance.now();
+
+function selectedFish() {
+  return data.fish.find(f => f.uid === selectedId) || data.fish[0];
+}
+function saveData() {
+  data.lastUpdate = Date.now();
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  syncLegacy();
+  if (window.parent !== window) window.parent.postMessage({ type: 'aquarium:update' }, '*');
+}
+function syncLegacy() {
+  const legacy = legacyState();
+  legacy.fishTank = legacy.fishTank || {};
+  legacy.fishTank.fish = data.fish.map(f => f.species);
+  legacy.selectedFish = (selectedFish() || data.fish[0]).species;
+  legacy.stats = legacy.stats || {};
+  const avg = key => data.fish.reduce((sum, f) => sum + (Number(f[key]) || 0), 0) / Math.max(1, data.fish.length);
+  legacy.stats.hunger = Math.round(avg('fullness'));
+  legacy.stats.health = Math.round(clamp((avg('health') + data.water.cleanliness + data.water.oxygen) / 3, 0, 100));
+  legacy.stats.happy = Math.round(clamp(100 - avg('stress'), 0, 100));
+  legacy.stats.energy = Math.round(clamp(55 + data.water.oxygen * .35, 0, 100));
+  legacy.lastStatTick = Date.now();
+  localStorage.setItem(LEGACY_KEY, JSON.stringify(legacy));
+}
+
+function makeSim(f, index) {
+  const r = n => seeded((f.behaviorSeed || index + 1) + n);
+  return {
+    uid: f.uid,
+    pos: [-3.2 + r(1) * 6.4, -1.15 + r(2) * 2.55, -1.22 + r(3) * 2.44],
+    vel: norm([r(4) - .5, (r(5) - .5) * .22, r(6) - .5]),
+    wander: norm([r(7) - .5, r(8) - .5, r(9) - .5]),
+    phase: r(10) * 20,
+    nextWander: 0,
+    roll: 0,
+    turn: 0,
+    screen: [-999, -999, 9]
+  };
+}
+function reconcileSim() {
+  const old = new Map(sim.map(item => [item.uid, item]));
+  sim = data.fish.map((f, index) => old.get(f.uid) || makeSim(f, index));
+}
+function rebuildCritters() {
+  critters = [];
+  const shrimpCount = Math.min(5, Math.max(0, Number(data.decor.shrimp || 0)));
+  const snailCount = Math.min(5, Math.max(0, Number(data.decor.snails || 0)));
+  for (let i = 0; i < shrimpCount; i++) critters.push({ type: 'shrimp', x: -2.8 + seeded(i + 2) * 5.6, z: -1.15 + seeded(i + 12) * 2.3, phase: seeded(i + 30) * 20 });
+  for (let i = 0; i < snailCount; i++) critters.push({ type: 'snail', x: -3.2 + seeded(i + 51) * 6.4, z: -1.25 + seeded(i + 64) * 2.5, phase: seeded(i + 70) * 20 });
+}
+reconcileSim();
+rebuildCritters();
+
+function toast(text) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = text;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 2700);
+}
+
+const canvas = document.getElementById('gl-canvas');
+const gl = canvas.getContext('webgl', {
+  alpha: true,
+  antialias: true,
+  premultipliedAlpha: false,
+  preserveDrawingBuffer: false
+});
+if (!gl) {
+  document.getElementById('no-webgl').classList.add('show');
+  return;
+}
+
+const VS = `
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+uniform mat4 uModel;
+uniform mat4 uViewProj;
+uniform mat3 uNormalMat;
+uniform float uTime;
+uniform float uDeform;
+uniform float uPhase;
+uniform float uSway;
+uniform float uSurface;
+varying vec3 vNormal;
+varying vec3 vWorld;
+varying vec3 vLocal;
+void main(){
+  vec3 p = aPosition;
+  if(uDeform > 0.001){
+    float tailWeight = 1.0 - smoothstep(-1.10, -0.10, p.x);
+    float wave = sin(p.x * 5.2 + uPhase) * uDeform * tailWeight;
+    p.z += wave;
+    p.y += cos(p.x * 4.0 + uPhase) * uDeform * 0.12 * tailWeight;
+  }
+  if(uSway > 0.001){
+    float h = clamp(p.y, 0.0, 1.4);
+    float sway = sin(uTime * 1.25 + p.y * 2.4 + uPhase) * uSway * h * h;
+    p.x += sway;
+    p.z += cos(uTime * 0.86 + p.y * 1.8 + uPhase) * uSway * h * 0.45;
+  }
+  if(uSurface > 0.001){
+    p.y += (sin(p.x * 1.8 + uTime * 1.1) + cos(p.z * 2.2 - uTime * 1.35)) * 0.026 * uSurface;
+  }
+  vec4 world = uModel * vec4(p, 1.0);
+  vWorld = world.xyz;
+  vLocal = p;
+  vNormal = normalize(uNormalMat * aNormal);
+  gl_Position = uViewProj * world;
+}`;
+
+const FS = `
+precision mediump float;
+uniform vec3 uColor;
+uniform vec3 uAccent;
+uniform vec3 uLight;
+uniform vec3 uCamera;
+uniform float uAlpha;
+uniform float uFog;
+uniform float uGloss;
+uniform float uMaterial;
+uniform float uPattern;
+uniform float uSeed;
+uniform float uTime;
+uniform float uSelected;
+uniform float uCaustic;
+varying vec3 vNormal;
+varying vec3 vWorld;
+varying vec3 vLocal;
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)) + uSeed) * 43758.5453); }
+float noise(vec2 p){
+  vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);
+}
+void main(){
+  vec3 n = normalize(vNormal);
+  vec3 l = normalize(uLight);
+  vec3 viewDir = normalize(uCamera - vWorld);
+  float diffuse = max(dot(n,l),0.0);
+  float fill = max(dot(n,normalize(vec3(-0.55,0.22,-0.45))),0.0);
+  float rim = pow(1.0-max(dot(n,viewDir),0.0),2.2);
+  vec3 halfDir = normalize(l + viewDir);
+  float spec = pow(max(dot(n,halfDir),0.0), mix(8.0,48.0,uGloss)) * uGloss;
+  vec3 base = uColor;
+
+  if(uMaterial < 1.5 && uMaterial > .5){
+    float grain = noise(vWorld.xz*3.5) * .20 + noise(vWorld.xz*12.0) * .08;
+    base *= .88 + grain;
+  } else if(uMaterial < 2.5 && uMaterial > 1.5){
+    float grain = noise(vWorld.xz*5.5 + vWorld.y) * .22;
+    base *= .78 + grain;
+  } else if(uMaterial < 3.5 && uMaterial > 2.5){
+    float rings = sin((vLocal.y*8.0 + noise(vLocal.xz*3.0)*2.0) + uSeed) * .08;
+    base *= .84 + rings + noise(vLocal.xz*7.0)*.12;
+  } else if(uMaterial < 4.5 && uMaterial > 3.5){
+    float vein = smoothstep(.80,.96,abs(sin(vLocal.y*15.0+vLocal.x*5.0)));
+    base = mix(base,uAccent,vein*.22);
+  } else if(uMaterial < 6.5 && uMaterial > 5.5){
+    float x = vLocal.x;
+    float y = vLocal.y;
+    float z = vLocal.z;
+    if(uPattern < 1.5){
+      float spots = smoothstep(.78,.94,noise(vec2(x*7.0+y*3.0,z*9.0)));
+      float tailGlow = 1.0 - smoothstep(-.95,-.15,x);
+      base = mix(base,uAccent,spots*.52 + tailGlow*.18);
+    } else if(uPattern < 2.5){
+      float blueStripe = smoothstep(.19,.08,abs(y-.09));
+      float redStripe = (1.0-smoothstep(.06,.16,abs(y+.19)))*(1.0-smoothstep(-.35,.12,x));
+      base = mix(base,uAccent,blueStripe*.92);
+      base = mix(base,vec3(.98,.08,.18),redStripe*.88);
+    } else if(uPattern < 3.5){
+      float dotPattern = smoothstep(.80,.94,noise(vec2(x*6.5+y*2.0,z*7.0)));
+      base = mix(base,uAccent,.18+dotPattern*.34);
+    } else if(uPattern < 4.5){
+      float spots = smoothstep(.66,.84,noise(vec2(x*5.0+y*2.0,z*6.0)));
+      float belly = smoothstep(.18,-.28,y);
+      base = mix(base,uAccent,belly*.33);
+      base *= 1.0-spots*.28;
+    } else {
+      float irid = .5+.5*sin(x*7.0+z*11.0+uTime*1.2);
+      float band = smoothstep(.32,.05,abs(y+.02));
+      base = mix(base,uAccent,(.18+.34*irid)*band+.14*rim);
+    }
+  }
+
+  float caustic = 0.0;
+  if(uCaustic > .001 && uMaterial < 5.5){
+    float a = sin((vWorld.x+vWorld.z)*5.2+uTime*1.45);
+    float b = sin((vWorld.x-vWorld.z)*4.1-uTime*1.18);
+    caustic = pow(max(a*b,0.0),3.0)*.20*uCaustic;
+  }
+
+  vec3 col = base*(.30 + .56*diffuse + .18*fill) + vec3(.20,.52,.70)*rim*.16 + spec*.34 + caustic;
+  if(uSelected > .5) col += vec3(.12,.44,.55)*rim*.75;
+  float fog = clamp((length(vWorld)*.025 + max(0.0,-vWorld.z)*.025)*uFog,0.0,.38);
+  col = mix(col,vec3(.025,.22,.34),fog);
+  gl_FragColor = vec4(col,uAlpha);
+}`;
+
+function compileShader(type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+  return shader;
+}
+const program = gl.createProgram();
+gl.attachShader(program, compileShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(program);
+if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+gl.useProgram(program);
+
+const loc = {
+  p: gl.getAttribLocation(program, 'aPosition'),
+  n: gl.getAttribLocation(program, 'aNormal'),
+  model: gl.getUniformLocation(program, 'uModel'),
+  vp: gl.getUniformLocation(program, 'uViewProj'),
+  normal: gl.getUniformLocation(program, 'uNormalMat'),
+  color: gl.getUniformLocation(program, 'uColor'),
+  accent: gl.getUniformLocation(program, 'uAccent'),
+  light: gl.getUniformLocation(program, 'uLight'),
+  camera: gl.getUniformLocation(program, 'uCamera'),
+  alpha: gl.getUniformLocation(program, 'uAlpha'),
+  fog: gl.getUniformLocation(program, 'uFog'),
+  gloss: gl.getUniformLocation(program, 'uGloss'),
+  material: gl.getUniformLocation(program, 'uMaterial'),
+  pattern: gl.getUniformLocation(program, 'uPattern'),
+  seed: gl.getUniformLocation(program, 'uSeed'),
+  time: gl.getUniformLocation(program, 'uTime'),
+  selected: gl.getUniformLocation(program, 'uSelected'),
+  caustic: gl.getUniformLocation(program, 'uCaustic'),
+  deform: gl.getUniformLocation(program, 'uDeform'),
+  phase: gl.getUniformLocation(program, 'uPhase'),
+  sway: gl.getUniformLocation(program, 'uSway'),
+  surface: gl.getUniformLocation(program, 'uSurface')
+};
+
+function mesh(vertices, normals, indices) {
+  const result = { count: indices.length };
+  result.v = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, result.v);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  result.n = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, result.n);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+  result.i = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, result.i);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  return result;
+}
+
+function sphere(lat = 14, lon = 24, jitterSeed = 0) {
+  const v = [], n = [], idx = [];
+  for (let y = 0; y <= lat; y++) {
+    const phi = y * Math.PI / lat;
+    for (let x = 0; x <= lon; x++) {
+      const theta = x * Math.PI * 2 / lon;
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.cos(phi);
+      const nz = Math.sin(phi) * Math.sin(theta);
+      const jitter = jitterSeed ? .84 + seeded(jitterSeed + y * 71 + x * 13) * .28 : 1;
+      v.push(nx * jitter, ny * jitter, nz * jitter);
+      n.push(nx, ny, nz);
+    }
+  }
+  for (let y = 0; y < lat; y++) for (let x = 0; x < lon; x++) {
+    const a = y * (lon + 1) + x, b = a + lon + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  return mesh(v, n, idx);
+}
+
+function fishBody(rings = 22, sides = 24) {
+  const v = [], n = [], idx = [];
+  for (let r = 0; r <= rings; r++) {
+    const u = r / rings;
+    const x = -1.18 + u * 2.18;
+    let radius = Math.pow(Math.sin(Math.PI * clamp(u, .001, .999)), .60);
+    radius *= .90 + .10 * (1 - u);
+    if (u > .86) radius *= lerp(1, .42, (u - .86) / .14);
+    if (u < .10) radius *= lerp(.40, 1, u / .10);
+    for (let s = 0; s <= sides; s++) {
+      const a = s / sides * Math.PI * 2;
+      const y = Math.cos(a) * radius;
+      const z = Math.sin(a) * radius * .80;
+      v.push(x, y, z);
+      n.push(.10 * (u < .5 ? -1 : 1), Math.cos(a), Math.sin(a) * 1.15);
+    }
+  }
+  for (let r = 0; r < rings; r++) for (let s = 0; s < sides; s++) {
+    const a = r * (sides + 1) + s, b = a + sides + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  return mesh(v, n.map((value, i, arr) => value), idx);
+}
+
+function cube() {
+  const v = [], n = [], i = [];
+  const faces = [
+    [[1,0,0],[[1,-1,-1],[1,1,-1],[1,1,1],[1,-1,1]]],
+    [[-1,0,0],[[-1,-1,1],[-1,1,1],[-1,1,-1],[-1,-1,-1]]],
+    [[0,1,0],[[-1,1,-1],[-1,1,1],[1,1,1],[1,1,-1]]],
+    [[0,-1,0],[[-1,-1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1]]],
+    [[0,0,1],[[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]]],
+    [[0,0,-1],[[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,-1]]]
+  ];
+  faces.forEach((face, k) => {
+    face[1].forEach(p => { v.push(...p); n.push(...face[0]); });
+    const o = k * 4;
+    i.push(o, o + 1, o + 2, o, o + 2, o + 3);
+  });
+  return mesh(v, n, i);
+}
+
+function cylinder(seg = 18) {
+  const v = [], n = [], idx = [];
+  for (let j = 0; j <= 1; j++) for (let k = 0; k <= seg; k++) {
+    const a = k * Math.PI * 2 / seg;
+    v.push(Math.cos(a), j * 2 - 1, Math.sin(a));
+    n.push(Math.cos(a), 0, Math.sin(a));
+  }
+  for (let k = 0; k < seg; k++) {
+    const a = k, b = k + seg + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  return mesh(v, n, idx);
+}
+
+function finMesh(segments = 14) {
+  const v = [0,0,0], n = [0,0,1], idx = [];
+  for (let i = 0; i <= segments; i++) {
+    const a = -Math.PI * .52 + (i / segments) * Math.PI * 1.04;
+    const radius = .80 + .20 * Math.sin(i / segments * Math.PI);
+    v.push(-Math.cos(a) * radius, Math.sin(a) * radius, 0);
+    n.push(0,0,1);
+  }
+  for (let i = 1; i <= segments; i++) idx.push(0, i, i + 1);
+  const offset = v.length / 3;
+  const count = offset;
+  for (let i = 0; i < count; i++) {
+    v.push(v[i * 3], v[i * 3 + 1], -.018);
+    n.push(0,0,-1);
+  }
+  for (let i = 1; i <= segments; i++) idx.push(offset, offset + i + 1, offset + i);
+  return mesh(v, n, idx);
+}
+
+function leafMesh(segments = 10) {
+  const v = [], n = [], idx = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const y = t;
+    const w = Math.sin(Math.PI * t) * (.22 + .12 * (1 - t));
+    v.push(-w, y, 0, w, y, 0);
+    n.push(0,0,1, 0,0,1);
+  }
+  for (let i = 0; i < segments; i++) {
+    const a = i * 2;
+    idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+  }
+  const base = v.length / 3;
+  const original = base;
+  for (let i = 0; i < original; i++) {
+    v.push(v[i * 3], v[i * 3 + 1], -.012);
+    n.push(0,0,-1);
+  }
+  for (let i = 0; i < segments; i++) {
+    const a = base + i * 2;
+    idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+  }
+  return mesh(v, n, idx);
+}
+
+function discMesh(seg = 28) {
+  const v = [0,0,0], n = [0,1,0], idx = [];
+  for (let i = 0; i <= seg; i++) {
+    const a = i / seg * Math.PI * 2;
+    v.push(Math.cos(a), 0, Math.sin(a));
+    n.push(0,1,0);
+  }
+  for (let i = 1; i <= seg; i++) idx.push(0, i, i + 1);
+  return mesh(v, n, idx);
+}
+
+function sandMesh(cols = 34, rows = 16) {
+  const v = [], n = [], idx = [];
+  const heights = [];
+  for (let z = 0; z <= rows; z++) {
+    heights[z] = [];
+    for (let x = 0; x <= cols; x++) {
+      const px = -1 + x / cols * 2;
+      const pz = -1 + z / rows * 2;
+      const h = Math.sin(px * 5.1 + pz * 2.4) * .035 + Math.cos(pz * 5.4 - px * 1.8) * .025 + (seeded(x * 31 + z * 17) - .5) * .025;
+      heights[z][x] = h;
+      v.push(px, h, pz);
+    }
+  }
+  for (let z = 0; z <= rows; z++) for (let x = 0; x <= cols; x++) {
+    const xl = Math.max(0, x - 1), xr = Math.min(cols, x + 1), zd = Math.max(0, z - 1), zu = Math.min(rows, z + 1);
+    const dx = heights[z][xr] - heights[z][xl];
+    const dz = heights[zu][x] - heights[zd][x];
+    const nn = norm([-dx * 3, 2, -dz * 3]);
+    n.push(...nn);
+  }
+  for (let z = 0; z < rows; z++) for (let x = 0; x < cols; x++) {
+    const a = z * (cols + 1) + x, b = a + cols + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  return mesh(v, n, idx);
+}
+
+const M = {
+  body: fishBody(), sphere: sphere(), rockA: sphere(10, 15, 11), rockB: sphere(9, 14, 29), rockC: sphere(11, 16, 47),
+  cube: cube(), cyl: cylinder(), fin: finMesh(), leaf: leafMesh(), disc: discMesh(), sand: sandMesh()
+};
+
+const m4 = {
+  id: () => new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]),
+  mul: (a,b) => {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      o[c*4+r] = a[r]*b[c*4] + a[4+r]*b[c*4+1] + a[8+r]*b[c*4+2] + a[12+r]*b[c*4+3];
+    }
+    return o;
+  },
+  t: (x,y,z) => new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]),
+  s: (x,y,z) => new Float32Array([x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1]),
+  rx: a => { const c=Math.cos(a),s=Math.sin(a); return new Float32Array([1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1]); },
+  ry: a => { const c=Math.cos(a),s=Math.sin(a); return new Float32Array([c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1]); },
+  rz: a => { const c=Math.cos(a),s=Math.sin(a); return new Float32Array([c,s,0,0, -s,c,0,0, 0,0,1,0, 0,0,0,1]); },
+  perspective: (fovy, aspect, near, far) => {
+    const f=1/Math.tan(fovy/2), nf=1/(near-far);
+    return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]);
+  },
+  lookAt: (eye,target,up) => {
+    const z=norm(sub(eye,target)), x=norm(cross(up,z)), y=cross(z,x);
+    return new Float32Array([
+      x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0,
+      -(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),
+      -(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),
+      -(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),1
+    ]);
+  },
+  transform: (m,p) => [
+    m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12]*p[3],
+    m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13]*p[3],
+    m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]*p[3],
+    m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15]*p[3]
+  ],
+  inverse: m => {
+    const inv = new Float32Array(16);
+    inv[0]=m[5]*m[10]*m[15]-m[5]*m[11]*m[14]-m[9]*m[6]*m[15]+m[9]*m[7]*m[14]+m[13]*m[6]*m[11]-m[13]*m[7]*m[10];
+    inv[4]=-m[4]*m[10]*m[15]+m[4]*m[11]*m[14]+m[8]*m[6]*m[15]-m[8]*m[7]*m[14]-m[12]*m[6]*m[11]+m[12]*m[7]*m[10];
+    inv[8]=m[4]*m[9]*m[15]-m[4]*m[11]*m[13]-m[8]*m[5]*m[15]+m[8]*m[7]*m[13]+m[12]*m[5]*m[11]-m[12]*m[7]*m[9];
+    inv[12]=-m[4]*m[9]*m[14]+m[4]*m[10]*m[13]+m[8]*m[5]*m[14]-m[8]*m[6]*m[13]-m[12]*m[5]*m[10]+m[12]*m[6]*m[9];
+    inv[1]=-m[1]*m[10]*m[15]+m[1]*m[11]*m[14]+m[9]*m[2]*m[15]-m[9]*m[3]*m[14]-m[13]*m[2]*m[11]+m[13]*m[3]*m[10];
+    inv[5]=m[0]*m[10]*m[15]-m[0]*m[11]*m[14]-m[8]*m[2]*m[15]+m[8]*m[3]*m[14]+m[12]*m[2]*m[11]-m[12]*m[3]*m[10];
+    inv[9]=-m[0]*m[9]*m[15]+m[0]*m[11]*m[13]+m[8]*m[1]*m[15]-m[8]*m[3]*m[13]-m[12]*m[1]*m[11]+m[12]*m[3]*m[9];
+    inv[13]=m[0]*m[9]*m[14]-m[0]*m[10]*m[13]-m[8]*m[1]*m[14]+m[8]*m[2]*m[13]+m[12]*m[1]*m[10]-m[12]*m[2]*m[9];
+    inv[2]=m[1]*m[6]*m[15]-m[1]*m[7]*m[14]-m[5]*m[2]*m[15]+m[5]*m[3]*m[14]+m[13]*m[2]*m[7]-m[13]*m[3]*m[6];
+    inv[6]=-m[0]*m[6]*m[15]+m[0]*m[7]*m[14]+m[4]*m[2]*m[15]-m[4]*m[3]*m[14]-m[12]*m[2]*m[7]+m[12]*m[3]*m[6];
+    inv[10]=m[0]*m[5]*m[15]-m[0]*m[7]*m[13]-m[4]*m[1]*m[15]+m[4]*m[3]*m[13]+m[12]*m[1]*m[7]-m[12]*m[3]*m[5];
+    inv[14]=-m[0]*m[5]*m[14]+m[0]*m[6]*m[13]+m[4]*m[1]*m[14]-m[4]*m[2]*m[13]-m[12]*m[1]*m[6]+m[12]*m[2]*m[5];
+    inv[3]=-m[1]*m[6]*m[11]+m[1]*m[7]*m[10]+m[5]*m[2]*m[11]-m[5]*m[3]*m[10]-m[9]*m[2]*m[7]+m[9]*m[3]*m[6];
+    inv[7]=m[0]*m[6]*m[11]-m[0]*m[7]*m[10]-m[4]*m[2]*m[11]+m[4]*m[3]*m[10]+m[8]*m[2]*m[7]-m[8]*m[3]*m[6];
+    inv[11]=-m[0]*m[5]*m[11]+m[0]*m[7]*m[9]+m[4]*m[1]*m[11]-m[4]*m[3]*m[9]-m[8]*m[1]*m[7]+m[8]*m[3]*m[5];
+    inv[15]=m[0]*m[5]*m[10]-m[0]*m[6]*m[9]-m[4]*m[1]*m[10]+m[4]*m[2]*m[9]+m[8]*m[1]*m[6]-m[8]*m[2]*m[5];
+    let det=m[0]*inv[0]+m[1]*inv[4]+m[2]*inv[8]+m[3]*inv[12];
+    if(!det) return m4.id();
+    det=1/det; for(let i=0;i<16;i++) inv[i]*=det; return inv;
+  }
+};
+
+function compose(pos=[0,0,0], rot=[0,0,0], scale=[1,1,1]) {
+  let m=m4.t(...pos);
+  m=m4.mul(m,m4.ry(rot[1]||0));
+  m=m4.mul(m,m4.rz(rot[2]||0));
+  m=m4.mul(m,m4.rx(rot[0]||0));
+  return m4.mul(m,m4.s(...scale));
+}
+function normalFromMat4(m) {
+  const a00=m[0],a01=m[4],a02=m[8],a10=m[1],a11=m[5],a12=m[9],a20=m[2],a21=m[6],a22=m[10];
+  const b01=a22*a11-a12*a21, b11=-a22*a10+a12*a20, b21=a21*a10-a11*a20;
+  let det=a00*b01+a01*b11+a02*b21; if(!det) det=1; det=1/det;
+  return new Float32Array([
+    b01*det,(-a22*a01+a02*a21)*det,(a12*a01-a02*a11)*det,
+    b11*det,(a22*a00-a02*a20)*det,(-a12*a00+a02*a10)*det,
+    b21*det,(-a21*a00+a01*a20)*det,(a11*a00-a01*a10)*det
+  ]);
+}
+
+function draw(meshObj, model, material = {}) {
+  const color=material.color||[1,1,1], accent=material.accent||color;
+  gl.bindBuffer(gl.ARRAY_BUFFER,meshObj.v); gl.enableVertexAttribArray(loc.p); gl.vertexAttribPointer(loc.p,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,meshObj.n); gl.enableVertexAttribArray(loc.n); gl.vertexAttribPointer(loc.n,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,meshObj.i);
+  gl.uniformMatrix4fv(loc.model,false,model);
+  gl.uniformMatrix3fv(loc.normal,false,normalFromMat4(model));
+  gl.uniform3f(loc.color,color[0],color[1],color[2]);
+  gl.uniform3f(loc.accent,accent[0],accent[1],accent[2]);
+  gl.uniform1f(loc.alpha,material.alpha ?? 1);
+  gl.uniform1f(loc.fog,material.fog ?? 1);
+  gl.uniform1f(loc.gloss,material.gloss ?? .25);
+  gl.uniform1f(loc.material,material.kind ?? 0);
+  gl.uniform1f(loc.pattern,material.pattern ?? 0);
+  gl.uniform1f(loc.seed,material.seed ?? 0);
+  gl.uniform1f(loc.selected,material.selected ? 1 : 0);
+  gl.uniform1f(loc.caustic,material.caustic ?? (data.lightOn ? 1 : .18));
+  gl.uniform1f(loc.deform,material.deform ?? 0);
+  gl.uniform1f(loc.phase,material.phase ?? 0);
+  gl.uniform1f(loc.sway,material.sway ?? 0);
+  gl.uniform1f(loc.surface,material.surface ?? 0);
+  gl.drawElements(gl.TRIANGLES,meshObj.count,gl.UNSIGNED_SHORT,0);
+}
+
+let camera={yaw:.16,pitch:.03,dist:10.6,target:[0,0,0]};
+let cameraEye=[0,0,10];
+let viewProj=m4.id();
+
+function resize() {
+  const dpr=Math.min(2,window.devicePixelRatio||1), w=Math.max(1,canvas.clientWidth), h=Math.max(1,canvas.clientHeight);
+  const tw=Math.floor(w*dpr), th=Math.floor(h*dpr);
+  if(canvas.width!==tw||canvas.height!==th){canvas.width=tw;canvas.height=th;}
+  gl.viewport(0,0,canvas.width,canvas.height);
+}
+function cameraMatrix(time) {
+  if(cameraMode==='follow'){
+    const s=sim.find(item=>item.uid===selectedId);
+    if(s) camera.target=camera.target.map((v,i)=>lerp(v,s.pos[i],.055));
+  } else if(cameraMode==='cinema') {
+    camera.yaw += .00038 * Math.min(34, Math.max(1, time - (camera._lastTime || time)));
+    camera.pitch=lerp(camera.pitch,.10+Math.sin(time*.00021)*.08,.02);
+    camera.target=camera.target.map((v,i)=>lerp(v,[0,-.05,0][i],.018));
+  }
+  camera._lastTime=time;
+  const cp=Math.cos(camera.pitch);
+  cameraEye=[
+    camera.target[0]+Math.sin(camera.yaw)*cp*camera.dist,
+    camera.target[1]+Math.sin(camera.pitch)*camera.dist,
+    camera.target[2]+Math.cos(camera.yaw)*cp*camera.dist
+  ];
+  viewProj=m4.mul(m4.perspective(Math.PI/4,canvas.width/canvas.height,.1,60),m4.lookAt(cameraEye,camera.target,[0,1,0]));
+  gl.uniformMatrix4fv(loc.vp,false,viewProj);
+  gl.uniform3f(loc.camera,...cameraEye);
+}
+
+function layoutObstacles() {
+  return data.layout.map(item=>[item.x,FLOOR_Y+.35,item.z,item.type==='ornament'?.75:item.type==='driftwood'?.55:.38]);
+}
+
+function simulate(dt,time) {
+  const bounds=[TANK.x,TANK.y,TANK.z];
+  const obstacles=layoutObstacles();
+  sim.forEach((s,i)=>{
+    const f=data.fish[i], cfg=SPECIES[f.species];
+    if(time>s.nextWander){
+      s.wander=norm([seeded(time*.001+i)-.5,(seeded(time*.001+i+20)-.5)*.46,seeded(time*.001+i+40)-.5]);
+      s.nextWander=time+1000+seeded(i+time)*2500;
+    }
+    let force=mul(s.wander,.20), sep=[0,0,0], coh=[0,0,0], ali=[0,0,0], same=0;
+    sim.forEach((o,j)=>{
+      if(i===j)return;
+      const d=sub(s.pos,o.pos), dist=len(d);
+      if(dist<.78)sep=add(sep,mul(norm(d),(.78-dist)*1.75));
+      if(data.fish[j].species===f.species&&dist<2.55){coh=add(coh,o.pos);ali=add(ali,o.vel);same++;}
+      if(f.species==='betta'&&dist<1.4)sep=add(sep,mul(norm(d),(1.4-dist)*.50));
+    });
+    if(same&&cfg.school>.1){
+      coh=mul(sub(mul(coh,1/same),s.pos),.13*cfg.school);
+      ali=mul(sub(mul(ali,1/same),s.vel),.17*cfg.school);
+      force=add(force,add(coh,ali));
+    }
+    force=add(force,sep);
+
+    const margin=.68;
+    for(let axis=0;axis<3;axis++){
+      if(s.pos[axis]>bounds[axis]-margin)force[axis]-=(s.pos[axis]-(bounds[axis]-margin))*3.1;
+      if(s.pos[axis]<-bounds[axis]+margin)force[axis]+=(-bounds[axis]+margin-s.pos[axis])*3.1;
+    }
+    obstacles.forEach(ob=>{
+      const diff=sub(s.pos,[ob[0],ob[1],ob[2]]), d=len(diff);
+      if(d<ob[3]+.55) force=add(force,mul(norm(diff),(ob[3]+.55-d)*1.4));
+    });
+
+    if(cfg.depth<-.5)force[1]+=(cfg.depth-s.pos[1])*.48;
+    else force[1]+=(cfg.depth+Math.sin(time*.00045+i)*.18-s.pos[1]*.08)*.10;
+
+    let closest=null, closestDistance=99;
+    pellets.forEach(p=>{
+      if(p.eaten)return;
+      const d=len(sub(p.pos,s.pos));
+      if(d<closestDistance){closestDistance=d;closest=p;}
+    });
+    if(closest&&f.fullness<96){
+      force=add(force,mul(norm(sub(closest.pos,s.pos)),1.12));
+      if(closestDistance<.32){closest.eaten=true;f.fullness=clamp(f.fullness+15,0,100);f.stress=clamp(f.stress-2.5,0,100);}
+    }
+
+    const mood=f.personality==='active'?1.12:f.personality==='calm'?.84:f.personality==='shy'?.91:1;
+    const desired=cfg.speed*mood*(f.fullness<18?.70:1)*(f.stress>70?.82:1);
+    const oldVel=[...s.vel];
+    s.vel=add(s.vel,mul(force,dt));
+    const sl=len(s.vel);
+    s.vel=mul(norm(s.vel),lerp(sl,desired,dt*.88));
+    s.pos=add(s.pos,mul(s.vel,dt));
+    const lateral=cross(oldVel,s.vel)[1];
+    s.turn=lerp(s.turn,clamp(lateral*8,-1,1),dt*4.2);
+    s.roll=lerp(s.roll,-s.turn*.22,dt*3.2);
+    s.phase+=dt*(5.2+desired*4.6);
+  });
+
+  pellets.forEach(p=>{
+    if(!p.eaten){
+      p.pos[1]-=dt*.36;
+      p.pos[0]+=Math.sin(time*.002+p.seed)*dt*.07;
+      p.pos[2]+=Math.cos(time*.0017+p.seed)*dt*.025;
+      if(p.pos[1]<FLOOR_Y+.08){
+        p.pos[1]=FLOOR_Y+.08;p.bottomTime+=dt;
+        if(p.bottomTime>8){p.eaten=true;data.water.cleanliness=clamp(data.water.cleanliness-.55,0,100);}
+      }
+    }
+  });
+  pellets=pellets.filter(p=>!p.eaten);
+
+  bubbles.forEach(b=>{
+    b.pos[1]+=dt*b.speed;
+    b.pos[0]+=Math.sin(time*.001+b.seed)*dt*.10;
+    b.pos[2]+=Math.cos(time*.0013+b.seed)*dt*.04;
+    if(b.pos[1]>1.86){
+      b.pos[1]=FLOOR_Y+.12;b.pos[0]=3.25+(seeded(time+b.seed)-.5)*.38;b.pos[2]=(seeded(time+b.seed+2)-.5)*1.45;
+    }
+  });
+
+  critters.forEach((c,index)=>{
+    if(c.type==='shrimp'){
+      c.x+=Math.sin(time*.00052+c.phase)*dt*.055;
+      c.z+=Math.cos(time*.00041+c.phase)*dt*.035;
+    }else{
+      c.x+=Math.sin(c.phase)*dt*.008;
+      c.z+=Math.cos(c.phase)*dt*.004;
+    }
+    c.x=clamp(c.x,-3.8,3.8);c.z=clamp(c.z,-1.38,1.38);
+  });
+
+  const filterPower=1+data.equipment.filters*.4;
+  data.water.cleanliness=clamp(data.water.cleanliness-dt*(.0025*data.fish.length)/filterPower,0,100);
+  data.water.oxygen=clamp(data.water.oxygen+dt*(data.equipment.bubbles*.025-data.fish.length*.002),0,100);
+  const targetTemp=data.equipment.heaters>0?25:22+Math.sin(time*.00003)*2;
+  data.water.temperature=lerp(data.water.temperature,targetTemp,dt*.015);
+  data.fish.forEach(f=>{
+    f.fullness=clamp(f.fullness-dt*.008,0,100);
+    const environment=(data.water.cleanliness+data.water.oxygen)/2;
+    if(environment<40||f.fullness<12)f.health=clamp(f.health-dt*.045,0,100);
+    else f.health=clamp(f.health+dt*.008,0,100);
+    f.stress=clamp(f.stress+dt*((environment<45?.04:-.01)+(data.fish.length>7?.015:0)),0,100);
+  });
+}
+
+function enableBlend(additive=false){gl.enable(gl.BLEND);gl.blendFunc(additive?gl.SRC_ALPHA:gl.SRC_ALPHA,additive?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);}
+function disableBlend(){gl.disable(gl.BLEND);}
+
+function drawCylinderBetween(a,b,r,color,kind=3,seed=1) {
+  const mid=mul(add(a,b),.5), delta=sub(b,a), lengthValue=len(delta);
+  const yaw=Math.atan2(delta[0],delta[2]);
+  const pitch=Math.acos(clamp(delta[1]/(lengthValue||1),-1,1));
+  draw(M.cyl,compose(mid,[pitch, yaw, 0],[r,lengthValue*.5,r]),{color,accent:color,kind,seed,gloss:.18});
+}
+
+function renderPlant(item,time) {
+  const base=[item.x,FLOOR_Y+.02,item.z];
+  const seed=item.uid.length+item.variant*19;
+  const leafCount=5+item.variant*2;
+  draw(M.rockA,compose([item.x,FLOOR_Y+.08,item.z],[0,item.rotation,0],[.24*item.scale,.10,.21*item.scale]),{color:[.30,.25,.18],kind:2,seed});
+  for(let i=0;i<leafCount;i++){
+    const angle=item.rotation+i/leafCount*Math.PI*2;
+    const height=(.72+seeded(seed+i)*.72)*item.scale;
+    const width=(.25+seeded(seed+i+7)*.18)*item.scale;
+    const model=compose([
+      base[0]+Math.cos(angle)*.06,
+      base[1],
+      base[2]+Math.sin(angle)*.06
+    ],[0,-angle+Math.PI*.5,(seeded(seed+i+12)-.5)*.20],[width,height,.9]);
+    draw(M.leaf,model,{color:i%2?[.08,.50,.26]:[.10,.64,.31],accent:[.42,.84,.45],kind:4,seed:seed+i,sway:.025+seeded(seed+i+5)*.018,phase:angle,gloss:.18});
+  }
+}
+
+function renderDriftwood(item) {
+  const s=item.scale, x=item.x, z=item.z, r=item.rotation;
+  const dir=[Math.cos(r),0,Math.sin(r)];
+  const a=[x-dir[0]*.62*s,FLOOR_Y+.18,z-dir[2]*.62*s];
+  const b=[x+dir[0]*.72*s,FLOOR_Y+.47,z+dir[2]*.72*s];
+  drawCylinderBetween(a,b,.12*s,[.31,.16,.07],3,item.variant+10);
+  const branch1=add(a,[dir[2]*.38*s,.55*s,-dir[0]*.38*s]);
+  const branch2=add(b,[-dir[2]*.32*s,.42*s,dir[0]*.32*s]);
+  drawCylinderBetween(add(a,mul(sub(b,a),.34)),branch1,.075*s,[.37,.20,.09],3,item.variant+12);
+  drawCylinderBetween(add(a,mul(sub(b,a),.69)),branch2,.065*s,[.34,.18,.08],3,item.variant+14);
+  draw(M.rockB,compose(a,[0,r,0],[.18*s,.12*s,.18*s]),{color:[.25,.13,.06],kind:3,seed:item.variant+22});
+}
+
+function renderMossball(item,time) {
+  const bob=Math.sin(time*.0011+item.rotation)*.015;
+  draw(M.rockB,compose([item.x,FLOOR_Y+.17+bob,item.z],[0,item.rotation,0],[.20*item.scale,.20*item.scale,.20*item.scale]),{color:[.035,.34,.16],accent:[.12,.55,.22],kind:4,seed:item.variant+31,gloss:.08});
+}
+
+function renderOrnament(item,time) {
+  const s=item.scale, x=item.x, z=item.z, r=item.rotation;
+  if(item.variant===0){
+    // rounded rock cave
+    for(let i=0;i<7;i++){
+      const a=Math.PI*(i/6);
+      const px=x+Math.cos(a)*.50*s, py=FLOOR_Y+.18+Math.sin(a)*.50*s, pz=z;
+      draw(i%2?M.rockA:M.rockC,compose([px,py,pz],[0,r+i*.3,0],[.32*s,.30*s,.36*s]),{color:[.35,.38,.39],kind:2,seed:i+44,gloss:.10});
+    }
+    draw(M.rockC,compose([x,FLOOR_Y+.16,z+.10],[0,r,0],[.68*s,.20*s,.48*s]),{color:[.28,.31,.32],kind:2,seed:71});
+  }else if(item.variant===1){
+    // small ruin arch
+    const stone=[.45,.39,.30];
+    for(const side of [-1,1])for(let i=0;i<4;i++)draw(M.rockA,compose([x+side*.38*s,FLOOR_Y+.18+i*.25*s,z],[0,r+i*.17,0],[.23*s,.18*s,.28*s]),{color:stone,kind:2,seed:i+side*8+70});
+    for(let i=0;i<5;i++){
+      const a=Math.PI*(i/4);
+      draw(M.rockB,compose([x+Math.cos(a)*.38*s,FLOOR_Y+.94*s+Math.sin(a)*.22*s,z],[0,r+i*.2,0],[.22*s,.18*s,.27*s]),{color:stone,kind:2,seed:i+91});
+    }
+  }else{
+    // treasure pot and rounded stones
+    draw(M.sphere,compose([x,FLOOR_Y+.25,z],[0,r,0],[.34*s,.27*s,.34*s]),{color:[.48,.21,.08],kind:2,seed:104,gloss:.18});
+    draw(M.cyl,compose([x,FLOOR_Y+.47,z],[0,r,0],[.29*s,.07*s,.29*s]),{color:[.63,.31,.10],kind:3,seed:110});
+    for(let i=0;i<5;i++)draw(M.sphere,compose([x+(seeded(i+3)-.5)*.36*s,FLOOR_Y+.58+seeded(i+9)*.06,z+(seeded(i+15)-.5)*.28*s],[0,0,0],[.055*s,.035*s,.055*s]),{color:[.96,.67,.06],kind:2,seed:i+120,gloss:.9,caustic:0});
+  }
+}
+
+function renderLayout(time) {
+  data.layout.forEach(item=>{
+    if(item.type==='plant')renderPlant(item,time);
+    else if(item.type==='driftwood')renderDriftwood(item);
+    else if(item.type==='mossball')renderMossball(item,time);
+    else renderOrnament(item,time);
+    const clip=m4.transform(viewProj,[item.x,FLOOR_Y+.45,item.z,1]);
+    if(clip[3]>0)item.screen=[(clip[0]/clip[3]*.5+.5)*canvas.clientWidth,(-clip[1]/clip[3]*.5+.5)*canvas.clientHeight,clip[2]/clip[3]];
+  });
+}
+
+function renderCritters(time) {
+  critters.forEach((c,index)=>{
+    if(c.type==='shrimp'){
+      const yaw=Math.sin(time*.0006+c.phase)*Math.PI;
+      const base=compose([c.x,FLOOR_Y+.11,c.z],[0,yaw,0],[.13,.10,.10]);
+      draw(M.body,base,{color:[.95,.36,.24],accent:[1,.68,.42],kind:6,pattern:1,seed:index+140,gloss:.32,deform:.015,phase:time*.008+c.phase});
+      for(let side of [-1,1])drawCylinderBetween([c.x+.08,FLOOR_Y+.08,c.z],[c.x+.20,FLOOR_Y+.025,c.z+side*.13],.008,[.95,.50,.35],0,index+1);
+    }else{
+      const shellX=c.x+Math.sin(time*.00004+c.phase)*.12;
+      draw(M.sphere,compose([shellX,FLOOR_Y+.13,c.z],[0,c.phase,0],[.13,.13,.08]),{color:[.54,.32,.16],accent:[.75,.50,.24],kind:2,seed:index+160,gloss:.28});
+      draw(M.sphere,compose([shellX+.13,FLOOR_Y+.075,c.z],[0,0,0],[.13,.055,.055]),{color:[.52,.66,.38],kind:4,seed:index+170,gloss:.18});
+    }
+  });
+}
+
+function renderEquipment(time) {
+  if(data.equipment.filters>0){
+    draw(M.cube,compose([3.78,-.18,1.38],[0,0,0],[.19,.72,.15]),{color:[.10,.20,.26],accent:[.18,.42,.55],kind:2,seed:180,gloss:.45});
+    draw(M.cube,compose([3.73,.42,1.25],[0,0,0],[.13,.23,.19]),{color:[.08,.40,.58],kind:2,seed:182,gloss:.55});
+    draw(M.cyl,compose([3.57,.45,1.25],[0,0,Math.PI*.5],[.045,.20,.045]),{color:[.12,.38,.50],kind:0,gloss:.35});
+  }
+  if(data.equipment.heaters>0){
+    draw(M.cyl,compose([-3.80,-.13,1.43],[0,0,0],[.055,.74,.055]),{color:[.60,.08,.07],accent:[1,.35,.15],kind:0,seed:190,gloss:.75,caustic:0});
+    draw(M.cyl,compose([-3.80,.63,1.43],[0,0,0],[.075,.05,.075]),{color:[.12,.12,.13],kind:0,gloss:.35,caustic:0});
+  }
+  if(data.equipment.lights>0){
+    draw(M.cube,compose([0,2.09,0],[0,0,0],[3.05,.055,.18]),{color:data.lightOn?[.54,.88,1]:[.08,.18,.25],accent:[.70,.95,1],kind:0,gloss:.8,caustic:0});
+  }
+}
+
+function renderBackdrop() {
+  draw(M.cube,compose([0,.12,-1.86],[0,0,0],[4.55,2.0,.055]),{color:[.018,.16,.24],accent:[.04,.28,.39],kind:2,seed:201,gloss:.08,fog:.3,caustic:.22});
+}
+
+function renderEnvironment(time) {
+  gl.enable(gl.DEPTH_TEST);gl.depthMask(true);disableBlend();
+  renderBackdrop();
+  draw(M.sand,compose([0,FLOOR_Y,0],[0,0,0],[4.48,.34,1.78]),{color:[.62,.50,.31],accent:[.82,.70,.44],kind:1,seed:12,gloss:.06,fog:.45});
+  for(let i=0;i<46;i++){
+    const x=-4.0+seeded(i+1)*8.0,z=-1.50+seeded(i+20)*3.0,s=.035+seeded(i+40)*.085;
+    draw(i%3===0?M.rockA:i%3===1?M.rockB:M.rockC,compose([x,FLOOR_Y+.07+seeded(i+5)*.035,z],[0,seeded(i+60)*6.28,0],[s*1.35,s*.72,s]),{color:i%4===0?[.48,.41,.32]:[.61,.52,.39],kind:2,seed:i+3,gloss:.07});
+  }
+  renderLayout(time);
+  renderCritters(time);
+  renderEquipment(time);
+
+  // soft fish shadows
+  enableBlend(false);gl.depthMask(false);
+  sim.forEach((s,i)=>{
+    const height=clamp((s.pos[1]-FLOOR_Y)/3.2,0,1),cfg=SPECIES[data.fish[i].species],scale=cfg.size*(1.25-height*.28);
+    draw(M.disc,compose([s.pos[0],FLOOR_Y+.014,s.pos[2]],[0,0,0],[scale*1.2,1,scale*.60]),{color:[.01,.06,.07],alpha:.18*(1-height*.55),kind:0,fog:0,gloss:0,caustic:0});
+  });
+  gl.depthMask(true);disableBlend();
+
+  // food and bubbles
+  pellets.forEach(p=>draw(M.sphere,compose(p.pos,[0,0,0],[.052,.040,.052]),{color:[.90,.51,.05],accent:[1,.82,.16],kind:2,seed:p.seed,gloss:.22}));
+  enableBlend(false);gl.depthMask(false);
+  bubbles.forEach(b=>{
+    draw(M.sphere,compose(b.pos,[0,0,0],[b.r,b.r,b.r]),{color:[.60,.92,1],accent:[1,1,1],alpha:.22,kind:0,gloss:1,fog:0,caustic:0});
+    draw(M.sphere,compose([b.pos[0]-b.r*.25,b.pos[1]+b.r*.28,b.pos[2]+b.r*.10],[0,0,0],[b.r*.20,b.r*.20,b.r*.20]),{color:[1,1,1],alpha:.72,kind:0,gloss:1,fog:0,caustic:0});
+  });
+  gl.depthMask(true);disableBlend();
+}
+
+function fishBaseMatrix(s) {
+  const v=s.vel, yaw=-Math.atan2(v[2],v[0]), pitch=Math.atan2(v[1],Math.hypot(v[0],v[2]));
+  let base=m4.t(...s.pos);
+  base=m4.mul(base,m4.ry(yaw));
+  base=m4.mul(base,m4.rz(pitch));
+  base=m4.mul(base,m4.rx(s.roll));
+  return base;
+}
+
+function drawFishFins(base,size,cfg,s,time,selected) {
+  const wag=Math.sin(s.phase)*(.24+.08*clamp(len(s.vel),0,1.4));
+  enableBlend(false);gl.depthMask(false);
+  let tail=m4.mul(base,m4.t(-size*cfg.shape[0]*.99,0,0));
+  tail=m4.mul(tail,m4.ry(wag));
+  draw(M.fin,m4.mul(tail,m4.s(size*cfg.tail[0],size*cfg.tail[1],size*.95)),{color:cfg.fin,accent:cfg.accent,alpha:cfg.pattern===5?.72:.82,kind:4,seed:s.uid.length,gloss:.32,phase:time*.004+s.phase,sway:cfg.pattern===5?.018:0,selected,caustic:.35});
+
+  // dorsal fin
+  let dorsal=m4.mul(base,m4.t(-size*.18,size*cfg.shape[1]*.56,0));
+  dorsal=m4.mul(dorsal,m4.rz(-1.53));
+  draw(M.fin,m4.mul(dorsal,m4.s(size*(cfg.pattern===5?.82:.50),size*(cfg.pattern===5?.68:.34),size*.45)),{color:cfg.fin,accent:cfg.accent,alpha:cfg.pattern===5?.62:.74,kind:4,seed:s.uid.length+4,gloss:.28,phase:s.phase,sway:.010,selected,caustic:.25});
+
+  // anal / ventral fin
+  let ventral=m4.mul(base,m4.t(-size*.20,-size*cfg.shape[1]*.49,0));
+  ventral=m4.mul(ventral,m4.rz(1.48));
+  draw(M.fin,m4.mul(ventral,m4.s(size*(cfg.pattern===5?.95:.36),size*(cfg.pattern===5?.72:.25),size*.40)),{color:cfg.fin,accent:cfg.accent,alpha:cfg.pattern===5?.58:.68,kind:4,seed:s.uid.length+8,gloss:.22,phase:s.phase+.8,sway:.012,selected,caustic:.25});
+
+  // paired pectoral fins
+  for(const side of [-1,1]){
+    let p=m4.mul(base,m4.t(size*.26,-size*.08,side*size*cfg.shape[2]*.72));
+    p=m4.mul(p,m4.rx(side*(1.12+Math.sin(s.phase*.72)*.16)));
+    p=m4.mul(p,m4.rz(.35));
+    draw(M.fin,m4.mul(p,m4.s(size*.36,size*.24,size*.32)),{color:cfg.accent,accent:cfg.fin,alpha:.48,kind:4,seed:s.uid.length+side,gloss:.20,phase:s.phase+side,sway:.008,selected,caustic:.2});
+  }
+
+  if(cfg.pattern===5){
+    for(const side of [-1,1]){
+      let flow=m4.mul(base,m4.t(-size*.30,-size*.36,side*size*.08));
+      flow=m4.mul(flow,m4.rz(.72));
+      flow=m4.mul(flow,m4.rx(side*.28));
+      draw(M.fin,m4.mul(flow,m4.s(size*.90,size*.54,size*.46)),{color:cfg.fin,accent:cfg.accent,alpha:.46,kind:4,seed:99+side,gloss:.35,phase:s.phase+side,sway:.022,selected,caustic:.22});
+    }
+  }
+  gl.depthMask(true);disableBlend();
+}
+
+function renderFish(time) {
+  sim.forEach((s,i)=>{
+    const f=data.fish[i],cfg=SPECIES[f.species],size=cfg.size*f.growth,selected=f.uid===selectedId;
+    const base=fishBaseMatrix(s);
+
+    // body with live S-curve deformation and species pattern
+    draw(M.body,m4.mul(base,m4.s(size*cfg.shape[0],size*cfg.shape[1],size*cfg.shape[2])),{
+      color:cfg.body,accent:cfg.accent,kind:6,pattern:cfg.pattern,seed:f.colorSeed||i,
+      gloss:cfg.pattern===5?.78:.55,deform:.045+.018*clamp(len(s.vel),0,1.5),phase:s.phase,selected,caustic:.66
+    });
+
+    // snout and lips
+    draw(M.sphere,m4.mul(base,compose([size*cfg.shape[0]*.91,-size*.015,0],[0,0,0],[size*.18,size*.18,size*.17])),{color:cfg.body,accent:cfg.accent,kind:6,pattern:cfg.pattern,seed:(f.colorSeed||i)+2,gloss:.52,selected,caustic:.55});
+    draw(M.sphere,m4.mul(base,compose([size*cfg.shape[0]*1.045,-size*.055,0],[0,0,0],[size*.055,size*.027,size*.075])),{color:[.28,.08,.07],kind:0,gloss:.32,selected,caustic:0});
+
+    // eyes on both sides
+    for(const side of [-1,1]){
+      const eyePos=[size*cfg.shape[0]*.67,size*cfg.shape[1]*.27,side*size*cfg.shape[2]*.72];
+      draw(M.sphere,m4.mul(base,compose(eyePos,[0,0,0],[size*.092,size*.092,size*.055])),{color:[.90,.96,.94],kind:0,gloss:1,caustic:0});
+      draw(M.sphere,m4.mul(base,compose([eyePos[0]+size*.025,eyePos[1],eyePos[2]+side*size*.037],[0,0,0],[size*.048,size*.048,size*.028])),{color:[.005,.012,.018],kind:0,gloss:.95,caustic:0});
+      draw(M.sphere,m4.mul(base,compose([eyePos[0]+size*.045,eyePos[1]+size*.025,eyePos[2]+side*size*.052],[0,0,0],[size*.014,size*.014,size*.010])),{color:[1,1,1],kind:0,gloss:1,caustic:0});
+    }
+
+    // gill plates
+    for(const side of [-1,1]){
+      let g=m4.mul(base,m4.t(size*cfg.shape[0]*.42,0,side*size*cfg.shape[2]*.77));
+      g=m4.mul(g,m4.rx(side*Math.PI*.5));
+      draw(M.fin,m4.mul(g,m4.s(size*.16,size*.12,size*.10)),{color:cfg.accent,accent:cfg.fin,alpha:.30,kind:4,seed:i+210,gloss:.35,caustic:.30});
+    }
+
+    if(f.species==='cory'){
+      for(const side of [-1,1]){
+        const root=[s.pos[0],s.pos[1],s.pos[2]];
+        // barbels are drawn in local world approximation using base transforms
+        const a=m4.transform(base,[size*cfg.shape[0]*.88,-size*.17,side*size*.20,1]);
+        const b=m4.transform(base,[size*cfg.shape[0]*1.22,-size*.38,side*size*.55,1]);
+        drawCylinderBetween(a.slice(0,3),b.slice(0,3),size*.012,[.72,.67,.54],0,230+side);
+      }
+    }
+
+    drawFishFins(base,size,cfg,s,time,selected);
+
+    const clip=m4.transform(viewProj,[s.pos[0],s.pos[1],s.pos[2],1]);
+    if(clip[3]>0)s.screen=[(clip[0]/clip[3]*.5+.5)*canvas.clientWidth,(-clip[1]/clip[3]*.5+.5)*canvas.clientHeight,clip[2]/clip[3]];
+  });
+}
+
+function renderCaustics(time) {
+  if(!data.lightOn)return;
+  enableBlend(true);gl.depthMask(false);
+  for(let i=0;i<12;i++){
+    const x=-3.7+seeded(i+301)*7.4,z=-1.45+seeded(i+331)*2.9;
+    const dx=Math.sin(time*.00032+i*1.9)*.36,dz=Math.cos(time*.00027+i*1.3)*.24;
+    const scale=.28+seeded(i+360)*.46;
+    draw(M.disc,compose([x+dx,FLOOR_Y+.025,z+dz],[0,time*.00013+i,0],[scale,1,scale*.28]),{color:[.42,.88,1],alpha:.055,kind:0,gloss:0,fog:0,caustic:0});
+  }
+  gl.depthMask(true);disableBlend();
+}
+
+function renderGlassAndSurface(time) {
+  enableBlend(false);gl.depthMask(false);
+  // water surface
+  draw(M.sand,compose([0,1.94,0],[0,0,0],[4.43,.035,1.76]),{color:data.lightOn?[.32,.78,.94]:[.05,.18,.27],accent:[.75,.96,1],alpha:data.lightOn?.13:.07,kind:8,gloss:.95,fog:0,surface:1,caustic:0});
+  // subtle glass panels
+  draw(M.cube,compose([0,.08,0],[0,0,0],[4.51,2.02,1.82]),{color:[.22,.68,.86],accent:[.75,.96,1],alpha:.030,kind:7,gloss:1,fog:0,caustic:0});
+  // bright glass edges
+  const edge=[.45,.88,1];
+  const xs=[-4.49,4.49], zs=[-1.81,1.81];
+  xs.forEach(x=>zs.forEach(z=>draw(M.cyl,compose([x,.05,z],[0,0,0],[.018,2.02,.018]),{color:edge,alpha:.30,kind:0,gloss:1,fog:0,caustic:0})));
+  for(const y of [-1.93,2.03]){
+    zs.forEach(z=>draw(M.cube,compose([0,y,z],[0,0,0],[4.50,.016,.016]),{color:edge,alpha:.22,kind:0,gloss:1,fog:0,caustic:0}));
+    xs.forEach(x=>draw(M.cube,compose([x,y,0],[0,0,0],[.016,.016,1.81]),{color:edge,alpha:.22,kind:0,gloss:1,fog:0,caustic:0}));
+  }
+  gl.depthMask(true);disableBlend();
+}
+
+function renderDecorSelection() {
+  if(!decorMode||!selectedDecorUid)return;
+  const item=data.layout.find(d=>d.uid===selectedDecorUid);if(!item)return;
+  enableBlend(true);gl.depthMask(false);
+  draw(M.disc,compose([item.x,FLOOR_Y+.035,item.z],[0,0,0],[.54,1,.54]),{color:[.25,1,.74],alpha:.25,kind:0,gloss:0,fog:0,caustic:0});
+  gl.depthMask(true);disableBlend();
+}
+
+function scoreClass(value){return value>=70?'good':value>=40?'warn':'bad';}
+function updateUI() {
+  [['clean',data.water.cleanliness,'%'],['oxygen',data.water.oxygen,'%']].forEach(([id,value,suffix])=>{
+    const card=document.getElementById(`${id}-card`);card.className=`status-card ${scoreClass(value)}`;
+    document.getElementById(`${id}-value`).textContent=`${Math.round(value)}${suffix}`;
+  });
+  const tempGood=Math.abs(data.water.temperature-25)<1.8;
+  document.getElementById('temp-card').className=`status-card ${tempGood?'good':'warn'}`;
+  document.getElementById('temp-value').textContent=`${data.water.temperature.toFixed(1)}℃`;
+
+  const f=selectedFish();if(!f)return;
+  document.getElementById('fish-name').textContent=f.name;
+  const modeLabel=cameraMode==='follow'?'따라보는 중':cameraMode==='cinema'?'자동 관찰':'자유 관찰';
+  document.getElementById('fish-species').textContent=`${SPECIES[f.species].label} · ${modeLabel}`;
+  document.getElementById('fish-fullness').textContent=`${Math.round(f.fullness)}%`;
+  document.getElementById('fish-health').textContent=`${Math.round(f.health)}%`;
+  document.getElementById('fish-stress').textContent=`${Math.round(f.stress)}%`;
+  document.getElementById('fish-personality').textContent=PERSONALITY[f.personality]||'호기심형';
+  let note=SPECIES[f.species].tip;
+  if(data.water.cleanliness<45)note='물이 흐려지고 있어요. 부분 물갈이와 여과 상태를 확인해 주세요.';
+  else if(data.water.oxygen<40)note='산소가 부족해요. 기포기와 물고기 수를 살펴보세요.';
+  else if(f.fullness<25)note='배가 고파 보여요. 먹이를 한 번만 조금 주세요.';
+  document.getElementById('fish-note').textContent=note;
+  document.getElementById('light-btn').innerHTML=`${data.lightOn?'조명 끄기':'조명 켜기'}<small>낮과 밤</small>`;
+  const cameraText=cameraMode==='free'?'따라보기':cameraMode==='follow'?'자동 관찰':'자유 보기';
+  document.getElementById('focus-btn').innerHTML=`${cameraText}<small>카메라 전환</small>`;
+  document.getElementById('decor-btn').innerHTML=`${decorMode?'꾸미기 완료':'꾸미기'}<small>${decorMode?'배치 저장':'직접 배치'}</small>`;
+}
+
+function rebuildSelect() {
+  const select=document.getElementById('fish-select');
+  select.innerHTML=data.fish.map(f=>`<option value="${f.uid}">${f.name} · ${SPECIES[f.species].label}</option>`).join('');
+  select.value=selectedId;
+  select.onchange=()=>{selectedId=select.value;cameraMode='free';updateUI();};
+}
+
+function feed() {
+  if(pellets.length>16){toast('먹이가 아직 남아 있어요. 다 먹을 때까지 기다려 주세요.');return;}
+  for(let i=0;i<9;i++)pellets.push({pos:[-.8+Math.random()*1.6,1.84,-.8+Math.random()*1.6],seed:Math.random()*99,bottomTime:0,eaten:false});
+  data.water.cleanliness=clamp(data.water.cleanliness-1.2,0,100);
+  toast('사료를 조금 주었어요. 배고픈 물고기가 냄새를 따라옵니다.');saveData();
+}
+function waterChange() {
+  data.water.cleanliness=clamp(data.water.cleanliness+28,0,100);
+  data.water.oxygen=clamp(data.water.oxygen+12,0,100);
+  data.water.temperature=lerp(data.water.temperature,25,.55);
+  data.fish.forEach(f=>{f.health=clamp(f.health+3,0,100);f.stress=clamp(f.stress-7,0,100);});
+  pellets=pellets.filter(p=>p.pos[1]>-1.3);
+  toast('물을 전부 버리지 않고 일부만 갈아주었어요.');saveData();
+}
+function toggleLight() {
+  data.lightOn=!data.lightOn;
+  toast(data.lightOn?'조명을 켰어요. 물결빛이 다시 나타납니다.':'조명을 껐어요. 물고기가 조용히 쉴 수 있어요.');
+  saveData();updateUI();
+}
+function cycleCamera() {
+  cameraMode=cameraMode==='free'?'follow':cameraMode==='follow'?'cinema':'free';
+  if(cameraMode==='free')camera.target=[0,0,0];
+  toast(cameraMode==='follow'?'선택한 물고기의 움직임을 따라가요.':cameraMode==='cinema'?'어항 전체를 천천히 자동 관찰해요.':'손으로 어항을 자유롭게 둘러봐요.');
+  updateUI();
+}
+
+function decorPlacedCount(type){return data.layout.filter(item=>item.type===type).length;}
+function renderDecorPanel() {
+  const list=document.getElementById('decor-items');list.innerHTML='';
+  Object.entries(DECOR_META).forEach(([type,meta])=>{
+    const owned=ownedDecorCount(type,data),placed=decorPlacedCount(type),available=Math.max(0,owned-placed);
+    const btn=document.createElement('button');
+    btn.className=`decor-chip ${placingType===type?'active':''}`;
+    btn.disabled=available<=0;
+    btn.innerHTML=`<span>${meta.icon}</span><b>${meta.label}</b><small>${placed}/${owned} 배치</small>`;
+    btn.onclick=()=>{placingType=type;selectedDecorUid=null;renderDecorPanel();toast(`${meta.label}을 놓을 바닥을 눌러 주세요.`);};
+    list.appendChild(btn);
+  });
+  document.getElementById('decor-remove').disabled=!selectedDecorUid;
+  document.getElementById('decor-rotate').disabled=!selectedDecorUid;
+  const instruction=document.getElementById('decor-instruction');
+  if(selectedDecorUid)instruction.textContent='선택한 장식을 다른 바닥에 눌러 옮기거나 회전·제거할 수 있어요.';
+  else if(placingType)instruction.textContent=`${DECOR_META[placingType].label}을 놓을 바닥을 눌러 주세요.`;
+  else instruction.textContent='가진 용품을 선택한 뒤 어항 바닥을 눌러 직접 배치해 보세요.';
+}
+function toggleDecorMode() {
+  decorMode=!decorMode;placingType=null;selectedDecorUid=null;
+  document.getElementById('decor-panel').classList.toggle('hidden',!decorMode);
+  document.querySelector('.side-panel').classList.toggle('decor-dim',decorMode);
+  if(decorMode){cameraMode='free';renderDecorPanel();toast('꾸미기 모드: 장식을 고르고 바닥을 눌러 배치해요.');}
+  else {saveData();toast('어항 꾸미기를 저장했어요.');}
+  updateUI();
+}
+function removeSelectedDecor() {
+  if(!selectedDecorUid)return;
+  data.layout=data.layout.filter(item=>item.uid!==selectedDecorUid);
+  selectedDecorUid=null;renderDecorPanel();saveData();toast('선택한 장식을 보관함으로 돌려놓았어요.');
+}
+function rotateSelectedDecor() {
+  const item=data.layout.find(d=>d.uid===selectedDecorUid);if(!item)return;
+  item.rotation=(item.rotation+Math.PI/4)%(Math.PI*2);saveData();toast('장식을 조금 돌렸어요.');
+}
+function resetLayout() {
+  ensureLayout(data,true);selectedDecorUid=null;placingType=null;renderDecorPanel();saveData();toast('가진 용품을 보기 좋게 다시 배치했어요.');
+}
+
+function screenToFloor(clientX,clientY) {
+  const rect=canvas.getBoundingClientRect();
+  const x=(clientX-rect.left)/rect.width*2-1;
+  const y=1-(clientY-rect.top)/rect.height*2;
+  const inv=m4.inverse(viewProj);
+  let near=m4.transform(inv,[x,y,-1,1]),far=m4.transform(inv,[x,y,1,1]);
+  near=near.map((v,i)=>i<3?v/near[3]:v);far=far.map((v,i)=>i<3?v/far[3]:v);
+  const direction=norm(sub(far.slice(0,3),near.slice(0,3)));
+  if(Math.abs(direction[1])<.0001)return null;
+  const t=(FLOOR_Y-near[1])/direction[1];if(t<0)return null;
+  const point=add(near.slice(0,3),mul(direction,t));
+  if(Math.abs(point[0])>3.95||Math.abs(point[2])>1.43)return null;
+  return point;
+}
+function handleDecorClick(clientX,clientY) {
+  let nearest=null,best=42;
+  data.layout.forEach(item=>{
+    if(!item.screen)return;
+    const d=Math.hypot(item.screen[0]-clientX,item.screen[1]-clientY);
+    if(d<best){nearest=item;best=d;}
+  });
+  if(nearest){selectedDecorUid=nearest.uid;placingType=null;renderDecorPanel();toast(`${DECOR_META[nearest.type].label}을 선택했어요.`);return true;}
+  const point=screenToFloor(clientX,clientY);if(!point){toast('어항 바닥 안쪽을 눌러 주세요.');return true;}
+  if(selectedDecorUid){
+    const item=data.layout.find(d=>d.uid===selectedDecorUid);if(item){item.x=point[0];item.z=point[2];saveData();toast('장식을 옮겼어요.');}
+    return true;
+  }
+  if(placingType){
+    if(decorPlacedCount(placingType)>=ownedDecorCount(placingType,data)){toast('가지고 있는 용품을 모두 배치했어요.');return true;}
+    data.layout.push({uid:uid('decor'),type:placingType,x:point[0],z:point[2],rotation:Math.random()*Math.PI*2,scale:.90+Math.random()*.22,variant:Math.floor(Math.random()*3)});
+    selectedDecorUid=data.layout[data.layout.length-1].uid;placingType=null;renderDecorPanel();saveData();toast('새 장식을 어항에 놓았어요.');return true;
+  }
+  toast('먼저 배치할 용품을 선택해 주세요.');return true;
+}
+
+let pointer={down:false,x:0,y:0,moved:0,id:null};
+const touches=new Map();let pinch=0;
+canvas.addEventListener('pointerdown',event=>{
+  lastUserInput=performance.now();
+  canvas.setPointerCapture(event.pointerId);touches.set(event.pointerId,[event.clientX,event.clientY]);
+  if(touches.size===1){pointer={down:true,x:event.clientX,y:event.clientY,moved:0,id:event.pointerId};canvas.classList.add('dragging');}
+  else if(touches.size===2){const a=[...touches.values()];pinch=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);}
+});
+canvas.addEventListener('pointermove',event=>{
+  if(!touches.has(event.pointerId))return;touches.set(event.pointerId,[event.clientX,event.clientY]);lastUserInput=performance.now();
+  if(touches.size===2){
+    const a=[...touches.values()],d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);
+    if(pinch)camera.dist=clamp(camera.dist-(d-pinch)*.018,6.0,15.5);pinch=d;return;
+  }
+  if(pointer.down&&pointer.id===event.pointerId){
+    const dx=event.clientX-pointer.x,dy=event.clientY-pointer.y;pointer.moved+=Math.abs(dx)+Math.abs(dy);
+    if(pointer.moved>7){camera.yaw-=dx*.006;camera.pitch=clamp(camera.pitch+dy*.0048,-.55,.60);cameraMode='free';}
+    pointer.x=event.clientX;pointer.y=event.clientY;
+  }
+});
+canvas.addEventListener('pointerup',event=>{
+  touches.delete(event.pointerId);canvas.classList.remove('dragging');
+  if(pointer.id===event.pointerId&&pointer.moved<9){
+    if(decorMode)handleDecorClick(event.clientX,event.clientY);
+    else{
+      let best=null,bestDistance=48;
+      sim.forEach(item=>{
+        const d=Math.hypot(item.screen[0]-event.clientX,item.screen[1]-event.clientY);
+        if(d<bestDistance&&item.screen[2]<1){best=item;bestDistance=d;}
+      });
+      if(best){selectedId=best.uid;document.getElementById('fish-select').value=selectedId;cameraMode='free';updateUI();toast(`${selectedFish().name}을(를) 관찰해요.`);}
+    }
+  }
+  pointer.down=false;if(touches.size<2)pinch=0;
+});
+canvas.addEventListener('pointercancel',event=>{touches.delete(event.pointerId);pointer.down=false;canvas.classList.remove('dragging');});
+canvas.addEventListener('wheel',event=>{event.preventDefault();lastUserInput=performance.now();camera.dist=clamp(camera.dist+event.deltaY*.006,6.0,15.5);cameraMode='free';},{passive:false});
+
+function closeAquarium() {
+  saveData();
+  if(window.parent!==window)window.parent.postMessage({type:'aquarium:close'},'*');
+  else if(history.length>1)history.back();
+  else window.close();
+}
+
+document.getElementById('feed-btn').onclick=feed;
+document.getElementById('water-btn').onclick=waterChange;
+document.getElementById('light-btn').onclick=toggleLight;
+document.getElementById('focus-btn').onclick=cycleCamera;
+document.getElementById('decor-btn').onclick=toggleDecorMode;
+document.getElementById('decor-done').onclick=toggleDecorMode;
+document.getElementById('decor-remove').onclick=removeSelectedDecor;
+document.getElementById('decor-rotate').onclick=rotateSelectedDecor;
+document.getElementById('decor-reset').onclick=resetLayout;
+document.getElementById('guide-btn').onclick=()=>document.getElementById('guide-modal').classList.remove('hidden');
+document.getElementById('guide-close').onclick=()=>document.getElementById('guide-modal').classList.add('hidden');
+document.getElementById('guide-modal').addEventListener('click',event=>{if(event.target.id==='guide-modal')event.currentTarget.classList.add('hidden');});
+document.getElementById('close-btn').onclick=closeAquarium;
+window.addEventListener('beforeunload',saveData);
+window.addEventListener('storage',event=>{
+  if(event.key===LEGACY_KEY){data=loadData();reconcileSim();rebuildCritters();rebuildSelect();updateUI();}
+});
+
+for(let i=0;i<Math.max(12,(data.equipment.bubbles||0)*14);i++){
+  bubbles.push({pos:[3.22+Math.random()*.38,FLOOR_Y+.10+Math.random()*3.35,-.75+Math.random()*1.5],r:.022+Math.random()*.038,speed:.28+Math.random()*.38,seed:Math.random()*99});
+}
+
+rebuildSelect();updateUI();renderDecorPanel();
+gl.uniform3f(loc.light,-.38,.88,.52);
+gl.clearColor(0,0,0,0);
+gl.disable(gl.CULL_FACE);
+
+let prev=performance.now(),uiTick=0;
+function frame(now) {
+  resize();
+  const dt=Math.min(.035,(now-prev)/1000||.016);prev=now;
+  if(cameraMode==='free'&&!decorMode&&now-lastUserInput>24000)cameraMode='cinema';
+  simulate(dt,now);cameraMatrix(now);
+  gl.uniform1f(loc.time,now*.001);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  renderEnvironment(now);
+  renderCaustics(now);
+  renderFish(now);
+  renderDecorSelection();
+  renderGlassAndSurface(now);
+  if(now-uiTick>350){updateUI();uiTick=now;}
+  if(now-lastSave>5000){saveData();lastSave=now;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>
