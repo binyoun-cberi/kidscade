@@ -204,7 +204,8 @@ function drawFallback(now){
   last=now;requestAnimationFrame(drawFallback);
 }
 function start(reason){
-  if(running||window.__aquariumReady)return;running=true;window.__aquariumReady=true;
+  if(running||window.__aquarium3DActive)return;
+  running=true;window.__aquariumFallbackActive=true;window.__aquariumReady=true;
   document.getElementById('gl-canvas').style.display='none';document.getElementById('fallback-canvas').style.display='block';document.getElementById('no-webgl').classList.remove('show');
   buildFromLegacy(baseLegacy());
   const sel=document.getElementById('fish-select');sel.onchange=()=>{selected=Number(sel.value)||0;updateUI()};
@@ -223,15 +224,19 @@ function applyInit(payload){
   const merged={...current,...incoming,fishTank:{...(current.fishTank||{}),...(incoming.fishTank||{})},stats:{...(current.stats||{}),...(incoming.stats||{})}};
   safeWrite('kidscade_sook_canvas_pet',merged);buildFromLegacy(merged);
 }
-window.__startAquariumFallback=start;window.__applyAquariumInit=applyInit;
+function stop(){
+  running=false;window.__aquariumFallbackActive=false;
+  document.getElementById('fallback-canvas').style.display='none';
+  document.getElementById('gl-canvas').style.display='block';
+}
+window.__startAquariumFallback=start;window.__stopAquariumFallback=stop;window.__applyAquariumInit=applyInit;
 window.addEventListener('message',e=>{if(e.data?.type==='aquarium:init')applyInit(e.data.payload)});
-window.addEventListener('error',()=>setTimeout(()=>{if(!window.__aquariumReady)start('error')},0));
-setTimeout(()=>{if(!window.__aquariumReady)start('timeout')},2200);
 })();
 </script>
 <script>
 (() => {
 'use strict';
+try {
 
 const LEGACY_KEY = 'kidscade_sook_canvas_pet';
 const STORE_KEY = 'kidscade_aquarium_v1';
@@ -879,8 +884,13 @@ function draw(meshObj, model, material = {}) {
   gl.drawElements(gl.TRIANGLES,meshObj.count,gl.UNSIGNED_SHORT,0);
 }
 
-let camera={yaw:.16,pitch:.03,dist:10.6,target:[0,0,0]};
+let camera={yaw:.16,pitch:.03,dist:10.6,target:[0,0,0],freeYaw:.16,freePitch:.03,freeDist:10.6};
 let cameraEye=[0,0,10];
+function angleLerp(a,b,t){
+  let d=(b-a+Math.PI)%(Math.PI*2)-Math.PI;
+  if(d<-Math.PI)d+=Math.PI*2;
+  return a+d*t;
+}
 let viewProj=m4.id();
 
 function resize() {
@@ -892,10 +902,19 @@ function resize() {
 function cameraMatrix(time) {
   if(cameraMode==='follow'){
     const s=sim.find(item=>item.uid===selectedId);
-    if(s) camera.target=camera.target.map((v,i)=>lerp(v,s.pos[i],.055));
+    if(s){
+      const d=norm(s.vel);
+      const lead=[s.pos[0]+d[0]*.38,s.pos[1]+.08+d[1]*.18,s.pos[2]+d[2]*.38];
+      camera.target=camera.target.map((v,i)=>lerp(v,lead[i],.12));
+      const behindYaw=Math.atan2(-d[0],-d[2]);
+      camera.yaw=angleLerp(camera.yaw,behindYaw,.085);
+      camera.pitch=lerp(camera.pitch,.16,.08);
+      camera.dist=lerp(camera.dist,4.25,.08);
+    }
   } else if(cameraMode==='cinema') {
     camera.yaw += .00038 * Math.min(34, Math.max(1, time - (camera._lastTime || time)));
     camera.pitch=lerp(camera.pitch,.10+Math.sin(time*.00021)*.08,.02);
+    camera.dist=lerp(camera.dist,9.8,.018);
     camera.target=camera.target.map((v,i)=>lerp(v,[0,-.05,0][i],.018));
   }
   camera._lastTime=time;
@@ -1170,12 +1189,24 @@ function renderEnvironment(time) {
 }
 
 function fishBaseMatrix(s) {
-  const v=s.vel, yaw=-Math.atan2(v[2],v[0]), pitch=Math.atan2(v[1],Math.hypot(v[0],v[2]));
-  let base=m4.t(...s.pos);
-  base=m4.mul(base,m4.ry(yaw));
-  base=m4.mul(base,m4.rz(pitch));
-  base=m4.mul(base,m4.rx(s.roll));
-  return base;
+  // 머리는 이동 방향을 향하고, 등과 배는 수면을 기준으로 위아래를 유지한다.
+  // 급회전 때 물고기가 옆으로 90도 눕는 현상을 막기 위한 월드 업 기준 자세다.
+  let forward=norm(s.vel);
+  if(len(forward)<.001)forward=[1,0,0];
+  const worldUp=[0,1,0];
+  let side=norm(cross(forward,worldUp));
+  if(len(side)<.001)side=[0,0,1];
+  let up=norm(cross(side,forward));
+  const bank=clamp(Number(s.roll)||0,-.16,.16);
+  const c=Math.cos(bank),sn=Math.sin(bank);
+  const bankedUp=add(mul(up,c),mul(side,sn));
+  const bankedSide=add(mul(side,c),mul(up,-sn));
+  return new Float32Array([
+    forward[0],forward[1],forward[2],0,
+    bankedUp[0],bankedUp[1],bankedUp[2],0,
+    bankedSide[0],bankedSide[1],bankedSide[2],0,
+    s.pos[0],s.pos[1],s.pos[2],1
+  ]);
 }
 
 function drawFishFins(base,size,cfg,s,time,selected) {
@@ -1354,9 +1385,16 @@ function toggleLight() {
   saveData();updateUI();
 }
 function cycleCamera() {
-  cameraMode=cameraMode==='free'?'follow':cameraMode==='follow'?'cinema':'free';
-  if(cameraMode==='free')camera.target=[0,0,0];
-  toast(cameraMode==='follow'?'선택한 물고기의 움직임을 따라가요.':cameraMode==='cinema'?'어항 전체를 천천히 자동 관찰해요.':'손으로 어항을 자유롭게 둘러봐요.');
+  if(cameraMode==='free'){
+    camera.freeYaw=camera.yaw;camera.freePitch=camera.pitch;camera.freeDist=camera.dist;
+    cameraMode='follow';
+  }else if(cameraMode==='follow'){
+    cameraMode='cinema';
+  }else{
+    cameraMode='free';camera.target=[0,0,0];
+    camera.yaw=camera.freeYaw;camera.pitch=camera.freePitch;camera.dist=camera.freeDist;
+  }
+  toast(cameraMode==='follow'?'선택한 물고기의 뒤를 부드럽게 따라가요.':cameraMode==='cinema'?'어항 전체를 천천히 자동 관찰해요.':'손으로 어항을 자유롭게 둘러봐요.');
   updateUI();
 }
 
@@ -1447,11 +1485,11 @@ canvas.addEventListener('pointermove',event=>{
   if(!touches.has(event.pointerId))return;touches.set(event.pointerId,[event.clientX,event.clientY]);lastUserInput=performance.now();
   if(touches.size===2){
     const a=[...touches.values()],d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);
-    if(pinch)camera.dist=clamp(camera.dist-(d-pinch)*.018,6.0,15.5);pinch=d;return;
+    if(pinch)camera.dist=clamp(camera.dist-(d-pinch)*.018,6.0,15.5);cameraMode='free';camera.freeYaw=camera.yaw;camera.freePitch=camera.pitch;camera.freeDist=camera.dist;pinch=d;return;
   }
   if(pointer.down&&pointer.id===event.pointerId){
     const dx=event.clientX-pointer.x,dy=event.clientY-pointer.y;pointer.moved+=Math.abs(dx)+Math.abs(dy);
-    if(pointer.moved>7){camera.yaw-=dx*.006;camera.pitch=clamp(camera.pitch+dy*.0048,-.55,.60);cameraMode='free';}
+    if(pointer.moved>7){camera.yaw-=dx*.006;camera.pitch=clamp(camera.pitch+dy*.0048,-.55,.60);cameraMode='free';camera.freeYaw=camera.yaw;camera.freePitch=camera.pitch;camera.freeDist=camera.dist;}
     pointer.x=event.clientX;pointer.y=event.clientY;
   }
 });
@@ -1465,13 +1503,13 @@ canvas.addEventListener('pointerup',event=>{
         const d=Math.hypot(item.screen[0]-event.clientX,item.screen[1]-event.clientY);
         if(d<bestDistance&&item.screen[2]<1){best=item;bestDistance=d;}
       });
-      if(best){selectedId=best.uid;document.getElementById('fish-select').value=selectedId;cameraMode='free';updateUI();toast(`${selectedFish().name}을(를) 관찰해요.`);}
+      if(best){selectedId=best.uid;document.getElementById('fish-select').value=selectedId;updateUI();toast(`${selectedFish().name}을(를) 관찰해요.`);}
     }
   }
   pointer.down=false;if(touches.size<2)pinch=0;
 });
 canvas.addEventListener('pointercancel',event=>{touches.delete(event.pointerId);pointer.down=false;canvas.classList.remove('dragging');});
-canvas.addEventListener('wheel',event=>{event.preventDefault();lastUserInput=performance.now();camera.dist=clamp(camera.dist+event.deltaY*.006,6.0,15.5);cameraMode='free';},{passive:false});
+canvas.addEventListener('wheel',event=>{event.preventDefault();lastUserInput=performance.now();camera.dist=clamp(camera.dist+event.deltaY*.006,6.0,15.5);cameraMode='free';camera.freeYaw=camera.yaw;camera.freePitch=camera.pitch;camera.freeDist=camera.dist;},{passive:false});
 
 function closeAquarium() {
   saveData();
@@ -1517,6 +1555,8 @@ gl.uniform3f(loc.light,-.38,.88,.52);
 gl.clearColor(0,0,0,0);
 gl.disable(gl.CULL_FACE);
 
+window.__aquarium3DActive=true;
+window.__stopAquariumFallback?.();
 window.__aquariumReady=true;
 if(window.parent!==window)window.parent.postMessage({type:'aquarium:ready'},'*');
 let prev=performance.now(),uiTick=0;
@@ -1537,6 +1577,11 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+} catch (error) {
+  console.error('[Kidscade Aquarium] 3D 초기화 실패:', error);
+  window.__aquarium3DActive=false;
+  window.__startAquariumFallback?.('3d-init-failed');
+}
 })();
 
 </script>
