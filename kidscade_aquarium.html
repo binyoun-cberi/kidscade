@@ -13,7 +13,9 @@
 html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#03111f;color:var(--text);font-family:"Pretendard","Noto Sans KR","맑은 고딕",sans-serif}
 body{touch-action:none}
 #aquarium-app{position:relative;width:100%;height:100%;background:radial-gradient(circle at 50% 2%,#2a7fa7 0,#0b4165 33%,#041d32 72%,#020c16 100%)}
-#gl-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl-canvas,#fallback-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#gl-canvas{cursor:grab}
+#fallback-canvas{display:none;cursor:pointer}
 #gl-canvas.dragging{cursor:grabbing}
 .water-haze{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(185,239,255,.12),transparent 32%,rgba(0,36,66,.22));mix-blend-mode:screen}
 .topbar{position:absolute;z-index:20;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
@@ -69,6 +71,7 @@ button,select{font:inherit}
 <body>
 <div id="aquarium-app">
   <canvas id="gl-canvas" aria-label="3D 어항"></canvas>
+  <canvas id="fallback-canvas" aria-label="어항"></canvas>
   <div class="water-haze"></div>
   <header class="topbar">
     <div class="brand"><div class="brand-mark"></div><div><h1>나의 3D 어항</h1><p>물고기의 움직임과 물 환경을 관찰해요</p></div></div>
@@ -106,6 +109,126 @@ button,select{font:inherit}
   <div class="modal hidden" id="guide-modal"><div class="modal-card"><h2>어항 관찰 안내</h2><p>물고기는 몸과 꼬리를 함께 휘어 헤엄치고, 벽과 장식을 미리 피하며, 종류에 따라 무리를 짓거나 바닥을 살펴요. 꾸미기에서는 Kidscade 상점에서 가진 수초와 유목, 장식을 직접 배치할 수 있어요.</p><div class="guide-grid"><div class="guide-item"><b>살아 있는 움직임</b><span>회전할 때 몸이 기울고 지느러미가 속도에 맞춰 움직여요.</span></div><div class="guide-item"><b>직접 꾸미기</b><span>용품을 고른 뒤 바닥을 누르고, 놓인 장식을 다시 눌러 이동·회전·보관해요.</span></div><div class="guide-item"><b>먹이와 물 관리</b><span>남은 먹이는 물을 더럽히고 여과기·기포기는 환경 유지에 도움을 줘요.</span></div><div class="guide-item"><b>카메라</b><span>자유 보기, 선택 물고기 따라보기, 자동 관찰을 차례로 전환할 수 있어요.</span></div></div><button class="modal-close" id="guide-close">관찰 시작</button></div></div>
   <div class="no-webgl" id="no-webgl"><div><h2>3D 어항을 열 수 없어요</h2><p>이 기기의 WebGL 설정을 확인하거나 최신 브라우저에서 다시 열어주세요.</p></div></div>
 </div>
+<script>
+(() => {
+'use strict';
+const FALLBACK_SPECIES = {
+  guppy:{label:'구피',body:'#28c785',accent:'#7df2bc',fin:'#b56cf0'},
+  neonTetra:{label:'네온테트라',body:'#165692',accent:'#2de5ff',fin:'#ef3450'},
+  platy:{label:'플래티',body:'#f06b26',accent:'#ffc44d',fin:'#ffd14d'},
+  cory:{label:'코리도라스',body:'#7c8793',accent:'#e0d6bd',fin:'#aeb8bf'},
+  betta:{label:'베타',body:'#c51f66',accent:'#ff68af',fin:'#6937d8'}
+};
+const safeRead=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch(e){return fallback}};
+const safeWrite=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+let running=false, state=null, fish=[], pellets=[], selected=0, lightOn=true, last=performance.now();
+function baseLegacy(){
+  const legacy=safeRead('kidscade_sook_canvas_pet',{});
+  legacy.fishTank=legacy.fishTank||{};legacy.stats=legacy.stats||{};
+  if(!Array.isArray(legacy.fishTank.fish)||!legacy.fishTank.fish.length)legacy.fishTank.fish=['guppy'];
+  return legacy;
+}
+function makeFish(species,index){
+  const a=(index+1)*1.71;
+  return {species:FALLBACK_SPECIES[species]?species:'guppy',x:.18+(index%4)*.2,y:.32+(index%3)*.16,z:(index%5)/5,vx:index%2?.065:-.055,phase:a,fullness:82,health:94,stress:8};
+}
+function buildFromLegacy(legacy){
+  state=legacy||baseLegacy();state.fishTank=state.fishTank||{};state.stats=state.stats||{};
+  const list=Array.isArray(state.fishTank.fish)&&state.fishTank.fish.length?state.fishTank.fish:['guppy'];
+  fish=list.filter(id=>FALLBACK_SPECIES[id]).map(makeFish);if(!fish.length)fish=[makeFish('guppy',0)];
+  selected=clamp(selected,0,fish.length-1);lightOn=state.fishTank.lightOn!==false;
+  updateUI();
+}
+function post(type){
+  if(window.parent!==window)window.parent.postMessage({type,payload:{legacy:state}},'*');
+}
+function updateLegacy(){
+  const avg=k=>fish.reduce((sum,f)=>sum+f[k],0)/Math.max(1,fish.length);
+  state.fishTank.fish=fish.map(f=>f.species);
+  state.selectedFish=fish[selected]?.species||'guppy';
+  state.stats.hunger=Math.round(avg('fullness'));
+  state.stats.health=Math.round(avg('health'));
+  state.stats.happy=Math.round(100-avg('stress'));
+  state.stats.energy=Math.round(clamp(55+(Number(state.fishTank.oxygen)||84)*.35,0,100));
+  state.lastStatTick=Date.now();safeWrite('kidscade_sook_canvas_pet',state);post('aquarium:update');
+}
+function updateUI(){
+  const tank=state?.fishTank||{};
+  const clean=clamp(Number(tank.cleanliness??tank.waterCleanliness??88),0,100);
+  const temp=Number(tank.temperature??25),oxygen=clamp(Number(tank.oxygen??84),0,100);
+  document.getElementById('clean-value').textContent=`${Math.round(clean)}%`;
+  document.getElementById('temp-value').textContent=`${temp.toFixed(1)}℃`;
+  document.getElementById('oxygen-value').textContent=`${Math.round(oxygen)}%`;
+  [['clean-card',clean],['oxygen-card',oxygen]].forEach(([id,v])=>{const el=document.getElementById(id);el.className=`status-card ${v>=70?'good':v>=45?'warn':'bad'}`});
+  const tc=document.getElementById('temp-card');tc.className=`status-card ${temp>=23&&temp<=27?'good':temp>=20&&temp<=29?'warn':'bad'}`;
+  const sel=document.getElementById('fish-select');
+  if(sel.options.length!==fish.length){sel.innerHTML=fish.map((f,i)=>`<option value="${i}">${FALLBACK_SPECIES[f.species].label} ${i+1}</option>`).join('');}
+  sel.value=String(selected);
+  const f=fish[selected]||fish[0],meta=FALLBACK_SPECIES[f.species];
+  document.getElementById('fish-name').textContent=`${meta.label} ${selected+1}`;
+  document.getElementById('fish-species').textContent=`${meta.label} · 어항을 천천히 헤엄치고 있어요.`;
+  document.getElementById('fish-fullness').textContent=`${Math.round(f.fullness)}%`;
+  document.getElementById('fish-health').textContent=`${Math.round(f.health)}%`;
+  document.getElementById('fish-stress').textContent=`${Math.round(f.stress)}%`;
+  document.getElementById('fish-personality').textContent=['호기심형','차분형','활동형'][selected%3];
+  document.getElementById('fish-note').textContent='물고기를 누르거나 목록에서 골라 자세히 관찰해요.';
+  document.getElementById('light-btn').innerHTML=lightOn?'조명 끄기<small>낮과 밤</small>':'조명 켜기<small>낮과 밤</small>';
+}
+function toast(text){const e=document.createElement('div');e.className='toast';e.textContent=text;document.getElementById('toast-wrap').appendChild(e);setTimeout(()=>e.remove(),2600)}
+function resize(canvas){const d=Math.min(2,devicePixelRatio||1),w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight),tw=Math.round(w*d),th=Math.round(h*d);if(canvas.width!==tw||canvas.height!==th){canvas.width=tw;canvas.height=th}return {w,h,d}}
+function fishPath(ctx,f,w,h,t,index){
+  f.x+=f.vx*(t-last)/1000;if(f.x<.10||f.x>.88){f.vx*=-1;f.x=clamp(f.x,.10,.88)}
+  f.y=clamp(f.y+Math.sin(t*.0006+f.phase)*.0007,.20,.73);
+  const depth=.72+f.z*.42,px=f.x*w,py=f.y*h,scale=Math.min(w,h)*.075*depth,dir=f.vx>=0?1:-1,m=FALLBACK_SPECIES[f.species];
+  ctx.save();ctx.translate(px,py);ctx.scale(dir*scale,scale);
+  ctx.globalAlpha=.18+.12*depth;ctx.fillStyle='#001b2b';ctx.beginPath();ctx.ellipse(0,.72,1.08,.18,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  const wag=Math.sin(t*.008+f.phase)*.19;
+  ctx.save();ctx.translate(-1.0,0);ctx.rotate(wag);ctx.fillStyle=m.fin;ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-.95,-.78,-1.02,.78,0,0);ctx.fill();ctx.restore();
+  const grad=ctx.createLinearGradient(-1,-.4,1,.4);grad.addColorStop(0,m.body);grad.addColorStop(.55,m.accent);grad.addColorStop(1,m.body);ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(0,0,1.15,.55,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=m.fin;ctx.globalAlpha=.68;ctx.beginPath();ctx.moveTo(-.12,-.35);ctx.quadraticCurveTo(.12,-.95,.42,-.38);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(.66,-.12,.16,0,Math.PI*2);ctx.fill();ctx.fillStyle='#09253a';ctx.beginPath();ctx.arc(.72,-.12,.075,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(.75,-.16,.025,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#07324a';ctx.lineWidth=.035;ctx.beginPath();ctx.arc(.92,.1,.18,-.7,.85);ctx.stroke();ctx.restore();
+  f.screen=[px,py,scale];
+}
+function drawFallback(now){
+  if(!running)return;const canvas=document.getElementById('fallback-canvas'),ctx=canvas.getContext('2d'),{w,h,d}=resize(canvas);ctx.setTransform(d,0,0,d,0,0);
+  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,lightOn?'#46b8e4':'#123f62');g.addColorStop(.55,lightOn?'#0877b2':'#082f4b');g.addColorStop(1,'#032038');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha=.18;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(w*.5,h*.08,w*.42,h*.05,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  const floorY=h*.78;ctx.fillStyle='#b69a67';ctx.beginPath();ctx.moveTo(w*.07,floorY);ctx.lineTo(w*.93,floorY);ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fill();
+  for(let i=0;i<Math.min(6,Number(state.fishTank.plants||1)+1);i++){const x=w*(.13+i*.13),base=h*.89;ctx.strokeStyle=i%2?'#27a85e':'#52d277';ctx.lineWidth=8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x,base);ctx.quadraticCurveTo(x+Math.sin(now*.001+i)*20,h*.73-i%2*18,x+Math.sin(now*.0013+i)*12,h*.60-i%3*16);ctx.stroke();}
+  for(let i=0;i<14;i++){ctx.fillStyle=i%3?'#8b7c69':'#a99377';ctx.beginPath();ctx.ellipse(w*(.12+(i*.067)% .78),h*(.82+(i%3)*.045),8+(i%4)*4,5+(i%3)*3,i,0,Math.PI*2);ctx.fill();}
+  for(let i=0;i<18;i++){const bx=w*(.78+(i%3)*.035),by=h*(.88-((now*.00008*(i+5)+i*.12)% .72));ctx.strokeStyle='rgba(220,250,255,.82)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(bx,by,3+(i%4)*1.4,0,Math.PI*2);ctx.stroke();}
+  fish.sort((a,b)=>a.z-b.z).forEach((f,i)=>fishPath(ctx,f,w,h,now,i));
+  pellets.forEach((p,i)=>{p.y+=.00010*(now-last);ctx.fillStyle='#f7c948';ctx.beginPath();ctx.arc(p.x*w,p.y*h,3,0,Math.PI*2);ctx.fill()});pellets=pellets.filter(p=>p.y<.82);
+  last=now;requestAnimationFrame(drawFallback);
+}
+function start(reason){
+  if(running||window.__aquariumReady)return;running=true;window.__aquariumReady=true;
+  document.getElementById('gl-canvas').style.display='none';document.getElementById('fallback-canvas').style.display='block';document.getElementById('no-webgl').classList.remove('show');
+  buildFromLegacy(baseLegacy());
+  const sel=document.getElementById('fish-select');sel.onchange=()=>{selected=Number(sel.value)||0;updateUI()};
+  document.getElementById('feed-btn').onclick=()=>{for(let i=0;i<8;i++)pellets.push({x:.4+Math.random()*.2,y:.12+Math.random()*.03});fish.forEach(f=>f.fullness=clamp(f.fullness+12,0,100));toast('사료를 조금 주었어요.');updateLegacy();updateUI()};
+  document.getElementById('water-btn').onclick=()=>{state.fishTank.cleanliness=clamp(Number(state.fishTank.cleanliness||88)+24,0,100);state.fishTank.oxygen=clamp(Number(state.fishTank.oxygen||84)+12,0,100);toast('물을 일부 갈아주었어요.');updateLegacy();updateUI()};
+  document.getElementById('light-btn').onclick=()=>{lightOn=!lightOn;state.fishTank.lightOn=lightOn;toast(lightOn?'조명을 켰어요.':'조명을 끄고 물고기가 쉬게 했어요.');updateLegacy();updateUI()};
+  document.getElementById('focus-btn').onclick=()=>{selected=(selected+1)%fish.length;updateUI();toast(`${FALLBACK_SPECIES[fish[selected].species].label}을 관찰해요.`)};
+  document.getElementById('decor-btn').onclick=()=>toast('어항 용품은 쑥쑥랜드 상점에서 준비하고 배치할 수 있어요.');
+  document.getElementById('close-btn').onclick=()=>{updateLegacy();post('aquarium:close')};
+  window.addEventListener('resize',()=>resize(document.getElementById('fallback-canvas')));
+  post('aquarium:ready');requestAnimationFrame(drawFallback);
+}
+function applyInit(payload){
+  if(!payload?.legacy)return;
+  const incoming=payload.legacy;const current=baseLegacy();
+  const merged={...current,...incoming,fishTank:{...(current.fishTank||{}),...(incoming.fishTank||{})},stats:{...(current.stats||{}),...(incoming.stats||{})}};
+  safeWrite('kidscade_sook_canvas_pet',merged);buildFromLegacy(merged);
+}
+window.__startAquariumFallback=start;window.__applyAquariumInit=applyInit;
+window.addEventListener('message',e=>{if(e.data?.type==='aquarium:init')applyInit(e.data.payload)});
+window.addEventListener('error',()=>setTimeout(()=>{if(!window.__aquariumReady)start('error')},0));
+setTimeout(()=>{if(!window.__aquariumReady)start('timeout')},2200);
+})();
+</script>
 <script>
 (() => {
 'use strict';
@@ -313,9 +436,9 @@ function selectedFish() {
 }
 function saveData() {
   data.lastUpdate = Date.now();
-  localStorage.setItem(STORE_KEY, JSON.stringify(data));
-  syncLegacy();
-  if (window.parent !== window) window.parent.postMessage({ type: 'aquarium:update' }, '*');
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (error) {}
+  const legacy = syncLegacy();
+  if (window.parent !== window) window.parent.postMessage({ type: 'aquarium:update', payload: { legacy, aquarium: data } }, '*');
 }
 function syncLegacy() {
   const legacy = legacyState();
@@ -329,7 +452,8 @@ function syncLegacy() {
   legacy.stats.happy = Math.round(clamp(100 - avg('stress'), 0, 100));
   legacy.stats.energy = Math.round(clamp(55 + data.water.oxygen * .35, 0, 100));
   legacy.lastStatTick = Date.now();
-  localStorage.setItem(LEGACY_KEY, JSON.stringify(legacy));
+  try { localStorage.setItem(LEGACY_KEY, JSON.stringify(legacy)); } catch (error) {}
+  return legacy;
 }
 
 function makeSim(f, index) {
@@ -376,7 +500,7 @@ const gl = canvas.getContext('webgl', {
   preserveDrawingBuffer: false
 });
 if (!gl) {
-  document.getElementById('no-webgl').classList.add('show');
+  window.__startAquariumFallback?.('webgl');
   return;
 }
 
@@ -395,27 +519,11 @@ varying vec3 vNormal;
 varying vec3 vWorld;
 varying vec3 vLocal;
 void main(){
-  vec3 p = aPosition;
-  if(uDeform > 0.001){
-    float tailWeight = 1.0 - smoothstep(-1.10, -0.10, p.x);
-    float wave = sin(p.x * 5.2 + uPhase) * uDeform * tailWeight;
-    p.z += wave;
-    p.y += cos(p.x * 4.0 + uPhase) * uDeform * 0.12 * tailWeight;
-  }
-  if(uSway > 0.001){
-    float h = clamp(p.y, 0.0, 1.4);
-    float sway = sin(uTime * 1.25 + p.y * 2.4 + uPhase) * uSway * h * h;
-    p.x += sway;
-    p.z += cos(uTime * 0.86 + p.y * 1.8 + uPhase) * uSway * h * 0.45;
-  }
-  if(uSurface > 0.001){
-    p.y += (sin(p.x * 1.8 + uTime * 1.1) + cos(p.z * 2.2 - uTime * 1.35)) * 0.026 * uSurface;
-  }
-  vec4 world = uModel * vec4(p, 1.0);
-  vWorld = world.xyz;
-  vLocal = p;
-  vNormal = normalize(uNormalMat * aNormal);
-  gl_Position = uViewProj * world;
+  vec3 p=aPosition;
+  if(uDeform>0.001){float w=1.0-smoothstep(-1.10,-0.05,p.x);p.z+=sin(p.x*5.0+uPhase)*uDeform*w;p.y+=cos(p.x*3.6+uPhase)*uDeform*.08*w;}
+  if(uSway>0.001){float h=max(p.y,0.0);p.x+=sin(uTime*1.2+p.y*2.1+uPhase)*uSway*h*h;p.z+=cos(uTime*.8+p.y*1.7+uPhase)*uSway*h*.35;}
+  if(uSurface>0.001){p.y+=(sin(p.x*1.8+uTime)+cos(p.z*2.1-uTime*1.2))*.024*uSurface;}
+  vec4 world=uModel*vec4(p,1.0);vWorld=world.xyz;vLocal=p;vNormal=normalize(uNormalMat*aNormal);gl_Position=uViewProj*world;
 }`;
 
 const FS = `
@@ -436,74 +544,22 @@ uniform float uCaustic;
 varying vec3 vNormal;
 varying vec3 vWorld;
 varying vec3 vLocal;
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)) + uSeed) * 43758.5453); }
-float noise(vec2 p){
-  vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
-  return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);
-}
 void main(){
-  vec3 n = normalize(vNormal);
-  vec3 l = normalize(uLight);
-  vec3 viewDir = normalize(uCamera - vWorld);
-  float diffuse = max(dot(n,l),0.0);
-  float fill = max(dot(n,normalize(vec3(-0.55,0.22,-0.45))),0.0);
-  float rim = pow(1.0-max(dot(n,viewDir),0.0),2.2);
-  vec3 halfDir = normalize(l + viewDir);
-  float spec = pow(max(dot(n,halfDir),0.0), mix(8.0,48.0,uGloss)) * uGloss;
-  vec3 base = uColor;
-
-  if(uMaterial < 1.5 && uMaterial > .5){
-    float grain = noise(vWorld.xz*3.5) * .20 + noise(vWorld.xz*12.0) * .08;
-    base *= .88 + grain;
-  } else if(uMaterial < 2.5 && uMaterial > 1.5){
-    float grain = noise(vWorld.xz*5.5 + vWorld.y) * .22;
-    base *= .78 + grain;
-  } else if(uMaterial < 3.5 && uMaterial > 2.5){
-    float rings = sin((vLocal.y*8.0 + noise(vLocal.xz*3.0)*2.0) + uSeed) * .08;
-    base *= .84 + rings + noise(vLocal.xz*7.0)*.12;
-  } else if(uMaterial < 4.5 && uMaterial > 3.5){
-    float vein = smoothstep(.80,.96,abs(sin(vLocal.y*15.0+vLocal.x*5.0)));
-    base = mix(base,uAccent,vein*.22);
-  } else if(uMaterial < 6.5 && uMaterial > 5.5){
-    float x = vLocal.x;
-    float y = vLocal.y;
-    float z = vLocal.z;
-    if(uPattern < 1.5){
-      float spots = smoothstep(.78,.94,noise(vec2(x*7.0+y*3.0,z*9.0)));
-      float tailGlow = 1.0 - smoothstep(-.95,-.15,x);
-      base = mix(base,uAccent,spots*.52 + tailGlow*.18);
-    } else if(uPattern < 2.5){
-      float blueStripe = smoothstep(.19,.08,abs(y-.09));
-      float redStripe = (1.0-smoothstep(.06,.16,abs(y+.19)))*(1.0-smoothstep(-.35,.12,x));
-      base = mix(base,uAccent,blueStripe*.92);
-      base = mix(base,vec3(.98,.08,.18),redStripe*.88);
-    } else if(uPattern < 3.5){
-      float dotPattern = smoothstep(.80,.94,noise(vec2(x*6.5+y*2.0,z*7.0)));
-      base = mix(base,uAccent,.18+dotPattern*.34);
-    } else if(uPattern < 4.5){
-      float spots = smoothstep(.66,.84,noise(vec2(x*5.0+y*2.0,z*6.0)));
-      float belly = smoothstep(.18,-.28,y);
-      base = mix(base,uAccent,belly*.33);
-      base *= 1.0-spots*.28;
-    } else {
-      float irid = .5+.5*sin(x*7.0+z*11.0+uTime*1.2);
-      float band = smoothstep(.32,.05,abs(y+.02));
-      base = mix(base,uAccent,(.18+.34*irid)*band+.14*rim);
-    }
-  }
-
-  float caustic = 0.0;
-  if(uCaustic > .001 && uMaterial < 5.5){
-    float a = sin((vWorld.x+vWorld.z)*5.2+uTime*1.45);
-    float b = sin((vWorld.x-vWorld.z)*4.1-uTime*1.18);
-    caustic = pow(max(a*b,0.0),3.0)*.20*uCaustic;
-  }
-
-  vec3 col = base*(.30 + .56*diffuse + .18*fill) + vec3(.20,.52,.70)*rim*.16 + spec*.34 + caustic;
-  if(uSelected > .5) col += vec3(.12,.44,.55)*rim*.75;
-  float fog = clamp((length(vWorld)*.025 + max(0.0,-vWorld.z)*.025)*uFog,0.0,.38);
-  col = mix(col,vec3(.025,.22,.34),fog);
-  gl_FragColor = vec4(col,uAlpha);
+  vec3 n=normalize(vNormal);vec3 l=normalize(uLight);vec3 viewDir=normalize(uCamera-vWorld);
+  float diff=max(dot(n,l),0.0);float rim=pow(1.0-max(dot(n,viewDir),0.0),2.0);float spec=pow(max(dot(n,normalize(l+viewDir)),0.0),16.0)*uGloss;
+  vec3 base=uColor;
+  if(uMaterial>5.5){
+    float stripe=.5+.5*sin(vLocal.x*7.0+vLocal.y*3.0+uSeed);
+    float belly=clamp(.5-vLocal.y,0.0,1.0);
+    if(uPattern>1.5&&uPattern<2.5){float blue=1.0-smoothstep(.05,.22,abs(vLocal.y-.08));float red=(1.0-smoothstep(.05,.20,abs(vLocal.y+.18)))*step(-.25,vLocal.x);base=mix(base,uAccent,blue*.85);base=mix(base,vec3(.96,.08,.18),red*.80);}
+    else if(uPattern>4.5){base=mix(base,uAccent,(.20+.22*stripe)*(1.0-smoothstep(.12,.42,abs(vLocal.y))));}
+    else {base=mix(base,uAccent,.10+.20*stripe+.18*belly);}
+  } else if(uMaterial>.5&&uMaterial<4.5){base*=.88+.10*sin(vWorld.x*5.0+vWorld.z*7.0+uSeed);}
+  float caustic=0.0;if(uCaustic>.001&&uMaterial<5.5){float w=sin((vWorld.x+vWorld.z)*5.0+uTime*1.3)*sin((vWorld.x-vWorld.z)*3.8-uTime);caustic=max(w,0.0)*.10*uCaustic;}
+  vec3 col=base*(.34+.62*diff)+uAccent*rim*.10+vec3(spec+caustic);
+  if(uSelected>.5)col+=vec3(.08,.34,.42)*rim;
+  float fog=clamp(length(vWorld)*.018*uFog,0.0,.30);col=mix(col,vec3(.025,.20,.31),fog);
+  gl_FragColor=vec4(col,uAlpha);
 }`;
 
 function compileShader(type, source) {
@@ -1441,6 +1497,16 @@ window.addEventListener('beforeunload',saveData);
 window.addEventListener('storage',event=>{
   if(event.key===LEGACY_KEY){data=loadData();reconcileSim();rebuildCritters();rebuildSelect();updateUI();}
 });
+window.addEventListener('message',event=>{
+  if(event.data?.type!=='aquarium:init')return;
+  const incoming=event.data.payload?.legacy;
+  if(incoming){
+    const current=legacyState();
+    const merged={...current,...incoming,fishTank:{...(current.fishTank||{}),...(incoming.fishTank||{})},stats:{...(current.stats||{}),...(incoming.stats||{})}};
+    try{localStorage.setItem(LEGACY_KEY,JSON.stringify(merged));}catch(error){}
+    data=loadData();selectedId=data.fish[0].uid;reconcileSim();rebuildCritters();rebuildSelect();updateUI();
+  }
+});
 
 for(let i=0;i<Math.max(12,(data.equipment.bubbles||0)*14);i++){
   bubbles.push({pos:[3.22+Math.random()*.38,FLOOR_Y+.10+Math.random()*3.35,-.75+Math.random()*1.5],r:.022+Math.random()*.038,speed:.28+Math.random()*.38,seed:Math.random()*99});
@@ -1451,6 +1517,8 @@ gl.uniform3f(loc.light,-.38,.88,.52);
 gl.clearColor(0,0,0,0);
 gl.disable(gl.CULL_FACE);
 
+window.__aquariumReady=true;
+if(window.parent!==window)window.parent.postMessage({type:'aquarium:ready'},'*');
 let prev=performance.now(),uiTick=0;
 function frame(now) {
   resize();
