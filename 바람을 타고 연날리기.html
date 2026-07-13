@@ -42,6 +42,11 @@
   #hint.show{opacity:1;transform:none}
   #gesture{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:155px;padding:10px 11px;border-radius:17px;background:rgba(255,255,255,.77);box-shadow:0 7px 24px rgba(16,55,76,.12);font-size:12px;line-height:1.48;text-align:left;backdrop-filter:blur(8px)}
   #gesture b{display:block;margin-bottom:3px}
+  #actionControls{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:112px;display:flex;gap:9px;pointer-events:auto}
+  .actionBtn{min-width:92px;border:0;border-radius:18px;padding:12px 14px;color:white;font-weight:900;font-size:14px;box-shadow:0 8px 22px rgba(16,55,76,.18);cursor:pointer;touch-action:none;transition:transform .08s,filter .08s}
+  .actionBtn:active,.actionBtn.active{transform:translateY(2px) scale(.97);filter:brightness(.94)}
+  #releaseBtn{background:linear-gradient(135deg,#48b8e5,#278bc9)}
+  #pullBtn{background:linear-gradient(135deg,#ff9a64,#ff6f54)}
   #pullFlash{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(255,255,255,0);transition:box-shadow .08s}
   #pullFlash.on{box-shadow:inset 0 0 90px 12px rgba(255,255,255,.4)}
   .screen{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:linear-gradient(rgba(65,156,202,.18),rgba(13,65,93,.22));backdrop-filter:blur(4px)}
@@ -75,7 +80,10 @@
     .chip{min-width:78px;padding:8px 10px}.chip strong{font-size:18px}
     .scorePanel .chip:nth-child(3){display:none}
     #gesture{display:none}
-    .meterDock{width:min(250px,calc(100vw - 28px))}
+    #actionControls{right:12px;bottom:16px;flex-direction:column-reverse;gap:7px}
+    .actionBtn{min-width:82px;padding:11px 12px;font-size:13px}
+    .meterDock{width:min(225px,calc(100vw - 120px))}
+    .centerHint{bottom:24%}
     .kiteGrid{gap:6px}.kiteChoice{padding:10px 5px}.kiteChoice small{font-size:11px}
     .card{padding:22px 18px;border-radius:25px}
   }
@@ -107,6 +115,10 @@
   </div>
 
   <div class="centerHint"><div id="hint">아래로 당겨 연을 올려 보세요</div></div>
+  <div id="actionControls">
+    <button id="releaseBtn" class="actionBtn" aria-label="줄 풀기">↑ 줄 풀기</button>
+    <button id="pullBtn" class="actionBtn" aria-label="줄 당기기">↓ 줄 당기기</button>
+  </div>
   <div id="gesture"><b>연줄 조작</b>아래로 당기기: 상승<br>위로 밀기: 줄 풀기<br>좌우 드래그: 방향 전환</div>
 </div>
 
@@ -118,20 +130,20 @@
     <div class="kiteGrid">
       <button class="kiteChoice selected" data-kite="balanced">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>방패연</b><small>안정적인 기본형</small>
+        <b>방패연</b><small>처음 하는 사람 추천</small>
       </button>
       <button class="kiteChoice" data-kite="speed">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>제비연</b><small>빠르고 민감함</small>
+        <b>제비연</b><small>조금 빠른 움직임</small>
       </button>
       <button class="kiteChoice" data-kite="heavy">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>용꼬리연</b><small>묵직하고 튼튼함</small>
+        <b>용꼬리연</b><small>천천히 움직이고 튼튼함</small>
       </button>
     </div>
     <div class="how">
-      <div><b>당기기와 풀기</b>계속 당기기만 하면 장력이 올라 줄이 끊어집니다.</div>
-      <div><b>돌풍 주의</b>풀과 구름이 빠르게 움직이면 줄을 조금 풀어 주세요.</div>
+      <div><b>10초 연습 비행</b>처음에는 실패하지 않으니 당기기와 풀기를 천천히 익혀 보세요.</div>
+      <div><b>돌풍 예고</b>돌풍이 오기 전에 알려 줍니다. 예고가 뜨면 줄을 조금 풀어 주세요.</div>
     </div>
     <button id="startBtn" class="primary">연 띄우기</button>
   </div>
@@ -184,17 +196,21 @@
   let tutorialTimer = 0;
   let hintTimer = 0;
   let windPhase = Math.random() * 10;
-  let gustTimer = 3;
+  let gustTimer = 14;
   let gustPower = 0;
   let gustTarget = 0;
+  let gustWarned = false;
+  let rescueUsed = false;
+  let milestoneIndex = 0;
+  const milestones = [15,30,45,60];
   let shake = 0;
   let audio = null;
   let bgmTimer = null;
 
   const kiteTypes = {
-    balanced:{lift:1.0, steer:1.0, drag:1.0, strength:1.0, mass:1.0, name:'방패연'},
-    speed:{lift:1.08, steer:1.45, drag:.88, strength:.82, mass:.82, name:'제비연'},
-    heavy:{lift:.92, steer:.72, drag:1.16, strength:1.28, mass:1.25, name:'용꼬리연'}
+    balanced:{lift:1.00, steer:1.00, drag:1.00, strength:1.00, mass:1.00, name:'방패연'},
+    speed:{lift:1.05, steer:1.15, drag:.95, strength:.95, mass:.92, name:'제비연'},
+    heavy:{lift:.98, steer:.88, drag:1.08, strength:1.12, mass:1.08, name:'용꼬리연'}
   };
 
   const world = {
@@ -203,7 +219,7 @@
     tension:0.35,
     breakStress:0,
     wind:{x:1.2,y:0,z:4.6,speed:4.8},
-    input:{pull:0,release:0,steer:0,active:false},
+    input:{pull:0,release:0,steer:0,active:false,holdPull:false,holdRelease:false},
     birds:[],
     clouds:[],
     particles:[]
@@ -266,13 +282,18 @@
     world.input.pull = 0;
     world.input.release = 0;
     world.input.steer = 0;
+    world.input.holdPull = false;
+    world.input.holdRelease = false;
     world.particles.length = 0;
     elapsed = 0;
     maxAltitude = 25;
     tutorialTimer = 0;
-    gustTimer = 3.2 + Math.random()*2.5;
+    gustTimer = 12 + Math.random()*4;
     gustPower = 0;
     gustTarget = 0;
+    gustWarned = false;
+    rescueUsed = false;
+    milestoneIndex = 0;
     windPhase = Math.random()*10;
     shake = 0;
     pointer.down = false;
@@ -286,12 +307,14 @@
     pauseScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     hud.classList.remove('hidden');
-    showHint('아래로 당겨 연을 올려 보세요', 2.8);
+    showHint('연습 비행 시작! 아래로 당겨 연을 올려 보세요', 3.2);
     startAudio();
     last = performance.now();
   }
 
   function toMenu(){
+    world.input.holdPull = false;
+    world.input.holdRelease = false;
     state = 'menu';
     hud.classList.add('hidden');
     pauseScreen.classList.add('hidden');
@@ -302,6 +325,8 @@
 
   function pauseGame(){
     if(state !== 'playing') return;
+    world.input.holdPull = false;
+    world.input.holdRelease = false;
     state = 'paused';
     pauseScreen.classList.remove('hidden');
   }
@@ -315,6 +340,8 @@
 
   function gameOver(reason){
     if(state !== 'playing') return;
+    world.input.holdPull = false;
+    world.input.holdRelease = false;
     state = 'over';
     hud.classList.add('hidden');
     gameOverScreen.classList.remove('hidden');
@@ -348,10 +375,10 @@
     $('tensionFill').style.width = tensionPct + '%';
     $('windFill').style.width = Math.min(100, world.wind.speed / 11 * 100) + '%';
 
-    let t = '느슨함';
-    if(world.tension > .32) t = '안정';
-    if(world.tension > .68) t = '팽팽함';
-    if(world.tension > .86) t = '위험';
+    let t = '당겨 주세요';
+    if(world.tension > .30) t = '좋아요';
+    if(world.tension > .72) t = '조금 풀어요';
+    if(world.tension > .92) t = '지금 풀어요!';
     $('tensionText').textContent = t;
 
     let w = '산들바람';
@@ -367,22 +394,35 @@
 
   function updateWind(dt){
     windPhase += dt * .33;
-    gustTimer -= dt;
-    if(gustTimer <= 0){
-      gustTimer = 4.5 + Math.random()*6.5;
-      gustTarget = 2.8 + Math.random()*3.8;
-      showHint('돌풍! 줄을 조금 풀어 주세요', 1.7);
-      sound('gust');
+
+    if(state === 'playing'){
+      gustTimer -= dt;
+      if(!gustWarned && gustTimer <= 1.5 && gustTimer > 0){
+        gustWarned = true;
+        showHint('🌬️ 곧 돌풍이 와요! 위로 밀어 줄을 풀 준비!', 1.5);
+        sound('warning');
+      }
+      if(gustTimer <= 0){
+        gustTimer = 8 + Math.random()*6;
+        gustWarned = false;
+        gustTarget = 1.5 + Math.random()*1.5;
+        showHint('돌풍! 위로 밀어 줄을 조금 풀어 주세요', 2.0);
+        sound('gust');
+      }
     }
-    gustPower += (gustTarget - gustPower) * Math.min(1,dt*2.6);
+
+    gustPower += (gustTarget - gustPower) * Math.min(1,dt*2.4);
     if(gustTarget > 0){
-      gustTarget -= dt * 1.45;
-      if(gustTarget < 0) gustTarget = 0;
+      gustTarget -= dt * 1.25;
+      if(gustTarget < 0){
+        gustTarget = 0;
+        if(state === 'playing') showHint('돌풍이 지나갔어요. 다시 천천히 당겨도 좋아요', 1.5);
+      }
     }
-    const base = 4.5 + Math.sin(windPhase*.83)*.7 + Math.sin(windPhase*.31)*.65;
-    world.wind.speed = clamp(base + gustPower, 3.2, 11);
-    world.wind.x = Math.sin(windPhase*.72)*1.7 + Math.sin(windPhase*1.8)*.42;
-    world.wind.y = .28 + Math.sin(windPhase*.55)*.18;
+    const base = 4.5 + Math.sin(windPhase*.83)*.65 + Math.sin(windPhase*.31)*.55;
+    world.wind.speed = clamp(base + gustPower, 3.2, 9.5);
+    world.wind.x = Math.sin(windPhase*.72)*1.25 + Math.sin(windPhase*1.8)*.32;
+    world.wind.y = .28 + Math.sin(windPhase*.55)*.16;
     world.wind.z = world.wind.speed;
   }
 
@@ -393,9 +433,11 @@
 
     updateWind(dt);
 
-    inp.pull = Math.max(0, inp.pull - dt*2.9);
-    inp.release = Math.max(0, inp.release - dt*2.7);
-    inp.steer *= Math.pow(.08, dt);
+    if(inp.holdPull) inp.pull = Math.max(inp.pull, .68);
+    else inp.pull = Math.max(0, inp.pull - dt*2.1);
+    if(inp.holdRelease) inp.release = Math.max(inp.release, .82);
+    else inp.release = Math.max(0, inp.release - dt*2.0);
+    inp.steer *= Math.pow(.18, dt);
 
     const reelDelta = inp.release * 5.5 - inp.pull * 1.2;
     world.lineLength = clamp(world.lineLength + reelDelta*dt, 30, 145);
@@ -404,28 +446,29 @@
     const stretch = Math.max(0, dist - world.lineLength);
     const radialSpeed = (k.x*k.vx + k.y*k.vy + k.z*k.vz) / Math.max(1,dist);
     let targetTension = .24 + stretch*.12 + Math.max(0,radialSpeed)*.055 + world.wind.speed*.02;
-    if(inp.pull > .05) targetTension += inp.pull*.24;
-    if(inp.release > .05) targetTension -= inp.release*.28;
-    world.tension += (clamp(targetTension,.05,1.15)-world.tension)*Math.min(1,dt*5.0);
+    if(inp.pull > .05) targetTension += inp.pull*.20;
+    if(inp.release > .05) targetTension -= inp.release*.32;
+    world.tension += (clamp(targetTension,.05,1.12)-world.tension)*Math.min(1,dt*4.5);
 
     const windRelX = world.wind.x - k.vx;
     const windRelY = world.wind.y - k.vy;
     const windRelZ = world.wind.z - k.vz;
-    const airSpeed = Math.hypot(windRelX,windRelY,windRelZ);
+    const airSpeed = Math.min(18, Math.hypot(windRelX,windRelY,windRelZ));
 
     const lineSupport = clamp(world.tension*1.2,0,1);
     const stability = clamp(1 - Math.abs(k.roll)*.42, .35, 1);
     const lift = airSpeed*airSpeed*.10 * type.lift * stability * (.55 + lineSupport*.65);
-    const pullKick = inp.pull * 6.5 / type.mass;
-    const stall = world.tension < .18 ? (0.18-world.tension)*6 : 0;
+    const pullKick = inp.pull * 7.2 / type.mass;
+    const stall = world.tension < .16 ? (0.16-world.tension)*5 : 0;
 
-    k.vy += (lift + pullKick - 4.2*type.mass - stall) * dt;
-    k.vx += (world.wind.x*.12 + inp.steer*4.8*type.steer - k.x*.004) * dt;
+    k.vy += (lift + pullKick - 4.0*type.mass - stall) * dt;
+    k.vx += (world.wind.x*.11 + inp.steer*4.2*type.steer - k.x*.012) * dt;
+    if(Math.abs(k.x) > 85) k.vx += -Math.sign(k.x) * (Math.abs(k.x)-85) * .025 * dt;
     k.vz += (world.wind.z*.025 + Math.abs(inp.steer)*.10 - (k.z-52)*.006) * dt;
 
     if(dist > world.lineLength){
       const excess = dist-world.lineLength;
-      const force = excess * (4.5 + world.tension*3.5);
+      const force = Math.min(42, excess * (4.5 + world.tension*3.5));
       k.vx -= (k.x/dist)*force*dt;
       k.vy -= (k.y/dist)*force*dt;
       k.vz -= (k.z/dist)*force*dt;
@@ -435,19 +478,37 @@
     k.vy *= Math.pow(.77,dt);
     k.vz *= Math.pow(.74,dt);
 
+    k.vx = clamp(k.vx,-32,32);
+    k.vy = clamp(k.vy,-24,24);
+    k.vz = clamp(k.vz,-28,28);
+
     k.x += k.vx*dt;
     k.y += k.vy*dt;
     k.z += k.vz*dt;
+
+    if(!Number.isFinite(k.x+k.y+k.z+k.vx+k.vy+k.vz)){
+      k.x=0;k.y=12;k.z=48;k.vx=0;k.vy=2;k.vz=0;
+      world.tension=.48;world.breakStress=0;
+      showHint('연이 크게 흔들렸지만 안전하게 다시 잡았어요',2.2);
+    }
+    k.x = clamp(k.x,-190,190);
+    k.y = clamp(k.y,-8,160);
+    k.z = clamp(k.z,3,190);
 
     k.roll += ((-inp.steer*.72*type.steer - k.vx*.035) - k.roll) * Math.min(1,dt*5.0);
     k.pitch += ((clamp(k.vy*.045,-.45,.38)) - k.pitch) * Math.min(1,dt*3.2);
     k.yaw += ((k.vx*.025) - k.yaw) * Math.min(1,dt*2.8);
 
-    if(world.tension > .88){
-      world.breakStress += (world.tension-.87)*dt*(type.strength < 1 ? 1.18 : .75/type.strength);
-      shake = Math.max(shake,(world.tension-.8)*18);
+    const practiceSafe = elapsed < 10;
+    if(!practiceSafe && world.tension > .96){
+      world.breakStress += (world.tension-.95)*dt*(type.strength < 1 ? 1.05 : .72/type.strength);
+      shake = Math.max(shake,(world.tension-.88)*13);
     } else {
-      world.breakStress = Math.max(0,world.breakStress-dt*.17*type.strength);
+      world.breakStress = Math.max(0,world.breakStress-dt*.34*type.strength);
+    }
+    if(practiceSafe){
+      world.breakStress = 0;
+      if(k.y < 8) k.vy += 5.5*dt;
     }
 
     if(inp.pull > .65){
@@ -460,11 +521,29 @@
     elapsed += dt;
     tutorialTimer += dt;
 
-    if(tutorialTimer > 4.5 && tutorialTimer < 4.5+dt) showHint('장력이 노랗게 오르면 위로 밀어 줄을 푸세요',2.5);
-    if(tutorialTimer > 11 && tutorialTimer < 11+dt) showHint('좌우로 당겨 바람의 중심을 잡아 보세요',2.2);
+    if(tutorialTimer > 4.0 && tutorialTimer < 4.0+dt) showHint('이번에는 위로 밀어 줄을 조금 풀어 보세요',2.6);
+    if(tutorialTimer > 9.5 && tutorialTimer < 9.5+dt) showHint('연습 끝! 이제 돌풍이 오기 전에 미리 알려 줄게요',2.8);
+    if(tutorialTimer > 18 && tutorialTimer < 18+dt) showHint('좌우 조작은 조금만 해도 돼요. 손을 떼면 중앙으로 돌아옵니다',2.5);
 
-    if(world.breakStress > .65 || world.tension > 1.12) gameOver('break');
-    if(k.y < 1.4 || k.z < 8 || Math.abs(k.x) > 118) gameOver('land');
+    if(milestoneIndex < milestones.length && elapsed >= milestones[milestoneIndex]){
+      const labels = ['연 띄우기 성공!', '안정 비행 성공!', '바람 전문가!', '연날리기 달인!'];
+      showHint('⭐ ' + labels[milestoneIndex], 2.2);
+      sound('success');
+      milestoneIndex++;
+    }
+
+    if(!rescueUsed && !practiceSafe && k.y < 5 && k.z >= 6){
+      rescueUsed = true;
+      k.y = Math.max(k.y, 6.5);
+      k.vy = Math.max(k.vy, 7.5);
+      world.tension = Math.min(world.tension, .58);
+      world.breakStress = Math.max(0, world.breakStress-.35);
+      showHint('🛟 자동 구조! 아래로 당겨 다시 높이 올려 보세요', 2.8);
+      sound('rescue');
+    }
+
+    if(!practiceSafe && world.breakStress > 1.10) gameOver('break');
+    if(!practiceSafe && (k.y < 1.2 || k.z < 6 || Math.abs(k.x) > 170)) gameOver('land');
 
     updateBirds(dt);
     updateParticles(dt);
@@ -478,17 +557,12 @@
   }
 
   function updateBirds(dt){
-    const k = world.kite;
+    // 새는 학생에게 보이지 않는 불이익을 주지 않도록 배경 장식으로만 움직입니다.
     for(const b of world.birds){
       b.phase += dt*b.speed;
       b.x += dt*(1.5+b.speed*.7);
       b.y += Math.sin(b.phase*2)*dt*.6;
       if(b.x > 85){ b.x=-85; b.z=50+Math.random()*150; b.y=18+Math.random()*48; }
-      const d = Math.hypot(b.x-k.x,b.y-k.y,(b.z-k.z)*.6);
-      if(d < 7){
-        k.vx += Math.sin(b.phase)*4*dt;
-        k.vy -= 1.8*dt;
-      }
     }
   }
 
@@ -832,12 +906,13 @@
     const scale=Math.max(120,Math.min(W,H)*.33);
     const v=dy/scale;
     if(v>0){
-      world.input.pull=clamp(world.input.pull+v*2.3,0,1);
+      world.input.pull=clamp(world.input.pull+Math.max(v*2.0,.10),0,1);
       if(v>.12)sound('pull');
     } else {
-      world.input.release=clamp(world.input.release-v*2.1,0,1);
+      world.input.release=clamp(world.input.release+Math.max((-v)*1.9,.10),0,1);
     }
-    world.input.steer=clamp(world.input.steer+dx/scale*2.2,-1,1);
+    const steerMove = Math.abs(dx) < Math.abs(dy)*.45 ? 0 : dx/scale*1.65;
+    world.input.steer=clamp(world.input.steer+steerMove,-1,1);
   }
 
   canvas.addEventListener('pointerdown',e=>{
@@ -866,13 +941,40 @@
 
   addEventListener('keydown',e=>{
     if(state==='playing'){
-      if(e.key==='ArrowDown'||e.key==='s'){world.input.pull=1;e.preventDefault();}
-      if(e.key==='ArrowUp'||e.key==='w'){world.input.release=1;e.preventDefault();}
+      if(e.key==='ArrowDown'||e.key==='s'){world.input.holdPull=true;e.preventDefault();}
+      if(e.key==='ArrowUp'||e.key==='w'){world.input.holdRelease=true;e.preventDefault();}
       if(e.key==='ArrowLeft'||e.key==='a'){world.input.steer=-1;e.preventDefault();}
       if(e.key==='ArrowRight'||e.key==='d'){world.input.steer=1;e.preventDefault();}
       if(e.key==='Escape')pauseGame();
     }else if(state==='paused'&&e.key==='Escape')resumeGame();
   });
+  addEventListener('keyup',e=>{
+    if(e.key==='ArrowDown'||e.key==='s') world.input.holdPull=false;
+    if(e.key==='ArrowUp'||e.key==='w') world.input.holdRelease=false;
+  });
+
+  function bindHoldButton(id, key){
+    const btn = $(id);
+    const begin = e=>{
+      if(state!=='playing') return;
+      e.preventDefault();
+      world.input[key] = true;
+      btn.classList.add('active');
+      if(key==='holdPull') sound('pull');
+      try{ btn.setPointerCapture(e.pointerId); }catch(_){}
+    };
+    const end = e=>{
+      world.input[key] = false;
+      btn.classList.remove('active');
+      if(e) e.preventDefault();
+    };
+    btn.addEventListener('pointerdown',begin);
+    btn.addEventListener('pointerup',end);
+    btn.addEventListener('pointercancel',end);
+    btn.addEventListener('lostpointercapture',end);
+  }
+  bindHoldButton('pullBtn','holdPull');
+  bindHoldButton('releaseBtn','holdRelease');
 
   document.querySelectorAll('.kiteChoice').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -894,7 +996,11 @@
   });
 
   function startAudio(){
-    if(audio) return;
+    if(audio){
+      if(audio.state==='suspended') audio.resume();
+      startBgm();
+      return;
+    }
     try{
       audio = new (window.AudioContext||window.webkitAudioContext)();
       startBgm();
@@ -921,7 +1027,10 @@
       tone(190,.07,.018,'triangle',80);
     }
     if(name==='select') tone(520,.08,.03,'sine',120);
-    if(name==='gust'){tone(130,.35,.035,'sawtooth',-55);setTimeout(()=>tone(95,.28,.025,'triangle',45),90);}
+    if(name==='warning'){tone(620,.10,.025,'sine',90);setTimeout(()=>tone(760,.12,.02,'sine',60),120);}
+    if(name==='gust'){tone(130,.35,.030,'sawtooth',-55);setTimeout(()=>tone(95,.28,.022,'triangle',45),90);}
+    if(name==='success'){tone(523,.12,.028,'sine',90);setTimeout(()=>tone(659,.13,.026,'sine',80),110);setTimeout(()=>tone(784,.18,.024,'sine',60),230);}
+    if(name==='rescue'){tone(330,.10,.03,'triangle',100);setTimeout(()=>tone(520,.22,.025,'sine',90),120);}
     if(name==='snap'){tone(360,.08,.07,'square',-240);setTimeout(()=>tone(90,.45,.05,'sawtooth',-55),80);}
     if(name==='land'){tone(180,.18,.055,'triangle',-90);setTimeout(()=>tone(120,.28,.04,'sine',-60),120);}
   }
