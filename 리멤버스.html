@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#18243a" />
+  <title>리멤버스 - 기억력 버스 게임</title>
+  <style>
+    :root {
+      --bg-top: #9ad8ff;
+      --bg-bottom: #eef8ff;
+      --panel: rgba(255, 255, 255, 0.92);
+      --ink: #18243a;
+      --muted: #67748b;
+      --line: rgba(24, 36, 58, 0.12);
+      --accent: #ff7a45;
+      --accent-dark: #e95b23;
+      --good: #22a96b;
+      --bad: #e95058;
+      --road: #45566f;
+      --road-line: #f6e27b;
+      --shadow: 0 16px 40px rgba(35, 73, 112, 0.18);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      overflow-x: hidden;
+      font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(255,255,255,.8) 0 4%, transparent 4.3%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 4px solid rgba(255, 122, 69, 0.35);
+      outline-offset: 3px;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .game-shell {
+      width: min(1180px, 100%);
+      min-height: min(860px, calc(100vh - 36px));
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.78);
+      border-radius: 30px;
+      background: rgba(255,255,255,.2);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .screen {
+      display: none;
+      min-height: inherit;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* 시작 화면 */
+    .start-screen {
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      background:
+        linear-gradient(rgba(255,255,255,.15), rgba(255,255,255,.25)),
+        repeating-linear-gradient(90deg, transparent 0 78px, rgba(255,255,255,.11) 79px 80px);
+    }
+
+    .start-card {
+      width: min(870px, 100%);
+      padding: clamp(26px, 5vw, 52px);
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 30px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .logo-bus {
+      width: 118px;
+      height: 68px;
+      position: relative;
+      margin: 0 auto 14px;
+      border: 5px solid var(--ink);
+      border-radius: 18px 18px 12px 12px;
+      background: var(--accent);
+      box-shadow: inset 0 -11px rgba(0,0,0,.08);
+      animation: logoFloat 2.4s ease-in-out infinite;
+    }
+
+    .logo-bus::before {
+      content: "";
+      position: absolute;
+      inset: 10px 12px 27px;
+      border: 3px solid var(--ink);
+      border-radius: 6px;
+      background:
+        linear-gradient(90deg, #dff5ff 0 47%, var(--ink) 48% 52%, #dff5ff 53%);
+    }
+
+    .logo-bus::after {
+      content: "REMEMBUS";
+      position: absolute;
+      left: 50%;
+      bottom: 9px;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: white;
+    }
+
+    .wheel {
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      bottom: -13px;
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      background: #8290a5;
+    }
+
+    .wheel.left { left: 16px; }
+    .wheel.right { right: 16px; }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-7px) rotate(1deg); }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 8vw, 82px);
+      line-height: .95;
+      letter-spacing: -.06em;
+    }
+
+    .subtitle {
+      margin: 16px auto 30px;
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .difficulty-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .difficulty-btn {
+      min-height: 154px;
+      position: relative;
+      padding: 22px 16px;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      border-radius: 22px;
+      background: white;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .difficulty-btn:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 28px rgba(35, 73, 112, .14);
+    }
+
+    .difficulty-btn strong {
+      display: block;
+      font-size: 23px;
+      margin-bottom: 8px;
+    }
+
+    .difficulty-btn .count {
+      display: block;
+      font-size: 40px;
+      font-weight: 950;
+      color: var(--accent-dark);
+    }
+
+    .difficulty-btn small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .start-help {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .help-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f2f6fb;
+    }
+
+    /* 게임 화면 */
+    .game-screen {
+      flex-direction: column;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12) 0 56%, rgba(152,203,123,.84) 56% 73%, transparent 73%),
+        linear-gradient(180deg, #9cddff, #edf9ff);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,.86);
+      border-bottom: 1px solid rgba(24,36,58,.1);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .topbar-left,
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .topbar-right {
+      justify-content: flex-end;
+    }
+
+    .pill {
+      min-width: 98px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: white;
+      text-align: center;
+      box-shadow: 0 6px 14px rgba(35, 73, 112, .07);
+    }
+
+    .pill .label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .pill .value {
+      display: block;
+      font-size: 23px;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-pill.danger {
+      border-color: rgba(233,80,88,.45);
+      color: var(--bad);
+      animation: timerPulse .7s ease-in-out infinite alternate;
+    }
+
+    @keyframes timerPulse {
+      to { transform: scale(1.045); box-shadow: 0 0 0 6px rgba(233,80,88,.08); }
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .phase-label {
+      padding: 9px 18px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 8px 16px rgba(24,36,58,.18);
+    }
+
+    .game-world {
+      flex: 1;
+      position: relative;
+      min-height: 640px;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      width: 130px;
+      height: 42px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      filter: blur(.1px);
+      animation: cloudMove 22s linear infinite;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: inherit;
+    }
+
+    .cloud::before {
+      width: 55px;
+      height: 55px;
+      left: 18px;
+      bottom: 8px;
+    }
+
+    .cloud::after {
+      width: 70px;
+      height: 70px;
+      right: 13px;
+      bottom: 3px;
+    }
+
+    .cloud.c1 { top: 7%; left: -140px; }
+    .cloud.c2 { top: 17%; left: -240px; transform: scale(.72); animation-delay: -11s; animation-duration: 28s; }
+
+    @keyframes cloudMove {
+      to { left: calc(100% + 160px); }
+    }
+
+    .stop-sign {
+      position: absolute;
+      left: 3.2%;
+      bottom: 27%;
+      width: 66px;
+      height: 66px;
+      display: grid;
+      place-items: center;
+      border: 5px solid white;
+      border-radius: 50%;
+      background: #2c74d6;
+      color: white;
+      font-weight: 950;
+      box-shadow: 0 0 0 4px #263750, 0 9px 18px rgba(0,0,0,.16);
+      z-index: 3;
+    }
+
+    .stop-sign::after {
+      content: "";
+      position: absolute;
+      width: 9px;
+      height: 145px;
+      top: 62px;
+      background: #687891;
+      z-index: -1;
+    }
+
+    .queue-zone {
+      width: min(390px, 42vw);
+      height: 54%;
+      position: absolute;
+      left: 50%;
+      top: 4%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 4;
+    }
+
+    .queue-line {
+      width: 10px;
+      height: 100%;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.45));
+    }
+
+    .people-stack {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 2px;
+      padding-bottom: 8px;
+    }
+
+    .person {
+      --person-color: #98a2b3;
+      width: 58px;
+      height: 77px;
+      position: relative;
+      flex: 0 0 auto;
+      transition: transform .35s ease, opacity .35s ease;
+      filter: drop-shadow(0 5px 5px rgba(31,50,75,.16));
+    }
+
+    .person .head {
+      width: 28px;
+      height: 28px;
+      position: absolute;
+      left: 15px;
+      top: 0;
+      border: 3px solid #29374c;
+      border-radius: 50%;
+      background: #ffd4b8;
+    }
+
+    .person .body {
+      width: 42px;
+      height: 36px;
+      position: absolute;
+      left: 8px;
+      top: 26px;
+      display: grid;
+      place-items: center;
+      border: 3px solid #29374c;
+      border-radius: 13px 13px 8px 8px;
+      background: var(--person-color);
+      color: white;
+      font-size: 22px;
+      font-weight: 950;
+      text-shadow: 0 2px 2px rgba(0,0,0,.18);
+    }
+
+    .person .legs::before,
+    .person .legs::after {
+      content: "";
+      width: 8px;
+      height: 19px;
+      position: absolute;
+      top: 59px;
+      border: 3px solid #29374c;
+      border-top: 0;
+      border-radius: 0 0 5px 5px;
+      background: #596985;
+    }
+
+    .person .legs::before { left: 16px; }
+    .person .legs::after { right: 16px; }
+
+    .person.front {
+      transform: scale(1.18);
+      z-index: 5;
+    }
+
+    .person.front .body {
+      box-shadow: 0 0 0 6px rgba(255,255,255,.72);
+    }
+
+    .person.exit {
+      opacity: 0;
+      transform: translateY(175px) scale(.5) rotate(10deg);
+    }
+
+    .customer-banner {
+      position: absolute;
+      left: 50%;
+      bottom: 38%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border: 1px solid rgba(24,36,58,.12);
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 12px 24px rgba(35,73,112,.14);
+      font-weight: 900;
+      z-index: 6;
+    }
+
+    .customer-symbol {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border: 3px solid #29374c;
+      border-radius: 12px;
+      color: white;
+      font-size: 24px;
+      text-shadow: 0 2px 2px rgba(0,0,0,.2);
+    }
+
+    .road {
+      height: 30%;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 32px 22px 20px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 72px, var(--road-line) 72px 120px, transparent 120px 190px) 0 49% / auto 7px no-repeat,
+        linear-gradient(180deg, #566a84, var(--road));
+      border-top: 8px solid #d5dde6;
+      z-index: 2;
+    }
+
+    .bus-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(var(--bus-count), minmax(70px, 1fr));
+      align-items: end;
+      gap: clamp(6px, 1vw, 14px);
+    }
+
+    .bus {
+      --bus-color: #97a2b3;
+      min-width: 0;
+      height: clamp(108px, 14vw, 148px);
+      position: relative;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      transition: transform .15s ease, filter .15s ease;
+    }
+
+    .bus:hover:not(:disabled) {
+      transform: translateY(-7px);
+      filter: brightness(1.04);
+    }
+
+    .bus:active:not(:disabled) {
+      transform: translateY(-2px) scale(.97);
+    }
+
+    .bus:disabled {
+      cursor: default;
+    }
+
+    .bus-body {
+      width: 100%;
+      height: calc(100% - 13px);
+      position: absolute;
+      left: 0;
+      bottom: 13px;
+      overflow: hidden;
+      border: clamp(3px, .45vw, 5px) solid #263750;
+      border-radius: 16px 16px 9px 9px;
+      background: var(--bus-color);
+      box-shadow: inset 0 -14px rgba(0,0,0,.09), 0 8px 10px rgba(12,25,45,.18);
+      transition: background .35s ease;
+    }
+
+    .bus-windows {
+      height: 43%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin: 10px 8px 5px;
+    }
+
+    .bus-window {
+      border: 3px solid #263750;
+      border-radius: 6px;
+      background: #dff6ff;
+    }
+
+    .bus-front {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .bus-number {
+      min-width: 28px;
+      padding: 3px 5px;
+      border: 2px solid #263750;
+      border-radius: 8px;
+      background: white;
+      color: #263750;
+      font-size: clamp(11px, 1.35vw, 15px);
+      font-weight: 950;
+    }
+
+    .bus-symbol {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: clamp(19px, 2vw, 25px);
+      font-weight: 950;
+      text-shadow: 0 2px 2px rgba(0,0,0,.25);
+      opacity: 1;
+      transition: opacity .22s ease;
+    }
+
+    .bus.hidden-color {
+      --bus-color: #929bab !important;
+    }
+
+    .bus.hidden-color .bus-symbol {
+      opacity: 0;
+    }
+
+    .bus-wheel {
+      width: 22%;
+      aspect-ratio: 1;
+      position: absolute;
+      bottom: 0;
+      border: 4px solid #263750;
+      border-radius: 50%;
+      background: #8996a8;
+      z-index: 2;
+    }
+
+    .bus-wheel.left { left: 13%; }
+    .bus-wheel.right { right: 13%; }
+
+    .passenger-badge {
+      min-width: 30px;
+      position: absolute;
+      right: 4px;
+      top: -11px;
+      padding: 4px 7px;
+      border: 2px solid #263750;
+      border-radius: 999px;
+      background: white;
+      color: #263750;
+      font-size: 12px;
+      font-weight: 950;
+      z-index: 4;
+    }
+
+    .bus.correct {
+      animation: correctBus .45s ease;
+    }
+
+    @keyframes correctBus {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-18px) scale(1.035); }
+    }
+
+    .bus.wrong {
+      animation: wrongBus .4s ease;
+    }
+
+    @keyframes wrongBus {
+      20%, 60% { transform: translateX(-8px); filter: saturate(.3) brightness(.85); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    .preview-overlay,
+    .count-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .preview-card {
+      min-width: min(360px, 86vw);
+      padding: 20px 26px;
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 24px;
+      background: rgba(24,36,58,.9);
+      color: white;
+      box-shadow: 0 18px 45px rgba(24,36,58,.28);
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .preview-card strong {
+      display: block;
+      font-size: clamp(22px, 4vw, 34px);
+    }
+
+    .preview-card .preview-count {
+      display: block;
+      margin-top: 4px;
+      font-size: clamp(56px, 10vw, 88px);
+      line-height: 1;
+      color: #ffe788;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .preview-card small {
+      display: block;
+      margin-top: 6px;
+      color: rgba(255,255,255,.78);
+      font-weight: 700;
+    }
+
+    .count-pop {
+      font-size: clamp(64px, 16vw, 150px);
+      color: white;
+      font-weight: 950;
+      text-shadow: 0 9px 0 rgba(24,36,58,.18);
+      animation: countPop .65s ease both;
+    }
+
+    @keyframes countPop {
+      from { opacity: 0; transform: scale(.45); }
+      55% { opacity: 1; transform: scale(1.14); }
+      to { opacity: 0; transform: scale(.88); }
+    }
+
+    .feedback {
+      position: absolute;
+      left: 50%;
+      top: 45%;
+      transform: translate(-50%, -50%);
+      z-index: 30;
+      font-size: clamp(30px, 5vw, 60px);
+      font-weight: 950;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .feedback.show {
+      animation: feedbackPop .65s ease both;
+    }
+
+    .feedback.good { color: var(--good); }
+    .feedback.bad { color: var(--bad); }
+
+    @keyframes feedbackPop {
+      0% { opacity: 0; transform: translate(-50%, -35%) scale(.55); }
+      28% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -78%) scale(.88); }
+    }
+
+    .combo-float {
+      position: absolute;
+      right: 4%;
+      top: 17%;
+      z-index: 10;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 8px 20px rgba(35,73,112,.13);
+      font-weight: 950;
+      transform: rotate(3deg);
+      transition: transform .2s ease;
+    }
+
+    .combo-float.hot {
+      color: var(--accent-dark);
+      transform: rotate(-3deg) scale(1.12);
+    }
+
+    .screen-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 19;
+    }
+
+    .screen-flash.good {
+      background: rgba(34,169,107,.18);
+      animation: flash .28s ease;
+    }
+
+    .screen-flash.bad {
+      background: rgba(233,80,88,.22);
+      animation: flash .34s ease;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 0; }
+      35% { opacity: 1; }
+    }
+
+    /* 결과 모달 */
+    .modal {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(19,31,48,.68);
+      backdrop-filter: blur(7px);
+      z-index: 100;
+    }
+
+    .modal.show {
+      display: grid;
+    }
+
+    .result-card {
+      width: min(620px, 100%);
+      padding: clamp(24px, 5vw, 42px);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 28px;
+      background: white;
+      box-shadow: 0 25px 70px rgba(0,0,0,.28);
+      text-align: center;
+      animation: modalIn .35s ease both;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(22px) scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .result-emoji {
+      font-size: 58px;
+    }
+
+    .result-card h2 {
+      margin: 6px 0 2px;
+      font-size: clamp(30px, 6vw, 48px);
+    }
+
+    .result-subtitle {
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .result-main {
+      margin: 20px 0;
+      padding: 17px;
+      border-radius: 20px;
+      background: #f5f8fc;
+    }
+
+    .result-main .big {
+      display: block;
+      font-size: clamp(48px, 9vw, 76px);
+      line-height: 1;
+      color: var(--accent-dark);
+      font-weight: 950;
+    }
+
+    .result-main small {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 18px 0 22px;
+    }
+
+    .result-stat {
+      padding: 13px 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+
+    .result-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .result-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 23px;
+    }
+
+    .new-record {
+      display: none;
+      margin: 0 auto 16px;
+      padding: 9px 15px;
+      border-radius: 999px;
+      background: #fff1b7;
+      color: #8e5a00;
+      font-weight: 950;
+      animation: recordPulse .8s ease-in-out infinite alternate;
+    }
+
+    .new-record.show { display: inline-block; }
+
+    @keyframes recordPulse {
+      to { transform: scale(1.05) rotate(-1deg); }
+    }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      min-height: 52px;
+      padding: 12px 18px;
+      border-radius: 16px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      border: 0;
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 7px 0 var(--accent-dark);
+    }
+
+    .primary-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 var(--accent-dark);
+    }
+
+    .secondary-btn {
+      border: 2px solid var(--line);
+      background: white;
+      color: var(--ink);
+    }
+
+    .sound-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    @media (max-width: 850px) {
+      .game-shell {
+        min-height: calc(100vh - 20px);
+        border-radius: 22px;
+      }
+
+      .app { padding: 10px; }
+      .start-screen { padding: 18px; }
+      .difficulty-grid { grid-template-columns: 1fr; }
+      .difficulty-btn { min-height: 106px; display: grid; grid-template-columns: 1fr auto; align-items: center; text-align: left; }
+      .difficulty-btn strong { margin: 0; }
+      .difficulty-btn .count { grid-row: span 2; }
+      .difficulty-btn small { margin-top: 2px; }
+      .topbar { grid-template-columns: 1fr 1fr; padding: 10px; }
+      .phase-label { grid-column: 1 / -1; grid-row: 2; justify-self: center; padding: 6px 14px; font-size: 13px; }
+      .pill { min-width: 78px; padding: 7px; }
+      .pill .value { font-size: 19px; }
+      .queue-zone { width: 60vw; }
+      .game-world { min-height: 670px; }
+      .road { padding-left: 8px; padding-right: 8px; }
+      .bus-grid { gap: 3px; }
+      .bus { height: clamp(90px, 17vw, 125px); }
+      .bus-windows { gap: 2px; margin: 8px 4px 4px; }
+      .bus-window { border-width: 2px; }
+      .bus-body { border-width: 3px; }
+      .bus-symbol { width: 24px; height: 24px; }
+      .bus-front { gap: 2px; }
+      .passenger-badge { top: -8px; right: 0; font-size: 10px; padding: 3px 5px; }
+      .stop-sign { display: none; }
+      .customer-banner { bottom: 35%; }
+    }
+
+    @media (max-width: 540px) {
+      .game-shell { min-height: 760px; }
+      .game-world { min-height: 680px; }
+      .topbar-left .pill:first-child { display: none; }
+      .topbar { gap: 7px; }
+      .road { height: 28%; padding-top: 25px; }
+      .queue-zone { top: 3%; height: 54%; }
+      .person { transform: scale(.88); margin-bottom: -8px; }
+      .person.front { transform: scale(1.04); }
+      .customer-banner { bottom: 32%; padding: 8px 11px; font-size: 13px; }
+      .customer-symbol { width: 34px; height: 34px; font-size: 20px; }
+      .bus { height: 92px; }
+      .bus-windows { height: 37%; margin-top: 7px; }
+      .bus-number { min-width: 20px; padding: 2px 3px; font-size: 9px; }
+      .bus-symbol { font-size: 17px; }
+      .bus-wheel { border-width: 3px; }
+      .result-stats { grid-template-columns: 1fr 1fr; }
+      .result-stat:last-child { grid-column: 1 / -1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="game-shell" aria-label="리멤버스 게임">
+      <section id="startScreen" class="screen start-screen active">
+        <div class="start-card">
+          <div class="logo-bus" aria-hidden="true">
+            <span class="wheel left"></span>
+            <span class="wheel right"></span>
+          </div>
+          <h1>리멤버스</h1>
+          <p class="subtitle">버스의 색깔과 위치를 기억하고, 손님을 빠르게 태우세요!</p>
+
+          <div class="difficulty-grid" aria-label="난이도 선택">
+            <button class="difficulty-btn" type="button" data-difficulty="easy">
+              <strong>쉬움</strong>
+              <span class="count">5</span>
+              <small>버스 5대 · 제한시간 60초</small>
+            </button>
+            <button class="difficulty-btn" type="button" data-difficulty="normal">
+              <strong>보통</strong>
+              <span class="count">7</span>
+              <small>버스 7대 · 제한시간 60초</small>
+            </button>
+            <button class="difficulty-btn" type="button" data-difficulty="hard">
+              <strong>어려움</strong>
+              <span class="count">9</span>
+              <small>버스 9대 · 제한시간 60초</small>
+            </button>
+          </div>
+
+          <div class="start-help">
+            <span class="help-chip">① 5초 동안 버스 암기</span>
+            <span class="help-chip">② 손님의 색깔·문양 확인</span>
+            <span class="help-chip">③ 알맞은 회색 버스 선택</span>
+            <span class="help-chip">키보드 1~9 지원</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="gameScreen" class="screen game-screen">
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="pill">
+              <span class="label">난이도</span>
+              <span id="difficultyText" class="value">쉬움</span>
+            </div>
+            <div class="pill">
+              <span class="label">탑승 인원</span>
+              <span id="boardedText" class="value">0명</span>
+            </div>
+          </div>
+
+          <div id="phaseLabel" class="phase-label">버스를 기억하세요!</div>
+
+          <div class="topbar-right">
+            <div id="timerPill" class="pill timer-pill">
+              <span class="label">남은 시간</span>
+              <span id="timerText" class="value">60.0</span>
+            </div>
+            <button id="soundBtn" class="icon-btn" type="button" aria-label="소리 끄기" title="소리 켜기/끄기">🔊</button>
+            <button id="homeBtn" class="icon-btn" type="button" aria-label="처음 화면으로" title="처음 화면으로">⌂</button>
+          </div>
+        </header>
+
+        <div class="game-world">
+          <div class="cloud c1" aria-hidden="true"></div>
+          <div class="cloud c2" aria-hidden="true"></div>
+          <div class="stop-sign" aria-hidden="true">BUS</div>
+
+          <section class="queue-zone" aria-label="손님 대기 줄">
+            <div class="queue-line" aria-hidden="true"></div>
+            <div id="peopleStack" class="people-stack"></div>
+          </section>
+
+          <div id="customerBanner" class="customer-banner">
+            <span>이번 손님</span>
+            <span id="customerSymbol" class="customer-symbol">★</span>
+          </div>
+
+          <div id="comboFloat" class="combo-float">COMBO × 0</div>
+          <div id="feedback" class="feedback" aria-live="polite"></div>
+          <div id="screenFlash" class="screen-flash"></div>
+
+          <section class="road" aria-label="버스 선택 영역">
+            <div id="busGrid" class="bus-grid"></div>
+          </section>
+
+          <div id="previewOverlay" class="preview-overlay" aria-live="assertive">
+            <div class="preview-card">
+              <strong>버스 위치를 기억하세요!</strong>
+              <span id="previewCount" class="preview-count">5</span>
+              <small>색깔과 문양을 함께 기억하면 더 쉬워요.</small>
+            </div>
+          </div>
+
+          <div id="countOverlay" class="count-overlay"></div>
+        </div>
+      </section>
+
+      <div id="resultModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <div class="result-card">
+          <div class="result-emoji" aria-hidden="true">🚌</div>
+          <h2 id="resultTitle">운행 종료!</h2>
+          <p id="resultSubtitle" class="result-subtitle">60초 동안 열심히 손님을 태웠어요.</p>
+
+          <div class="result-main">
+            <span id="resultBoarded" class="big">0명</span>
+            <small>탑승 성공</small>
+          </div>
+
+          <div id="newRecord" class="new-record">🏆 새로운 최고 기록!</div>
+
+          <div class="result-stats">
+            <div class="result-stat">
+              <span>정확도</span>
+              <strong id="resultAccuracy">0%</strong>
+            </div>
+            <div class="result-stat">
+              <span>최고 콤보</span>
+              <strong id="resultCombo">0</strong>
+            </div>
+            <div class="result-stat">
+              <span>최고 기록</span>
+              <strong id="resultBest">0명</strong>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button id="retryBtn" class="primary-btn" type="button">같은 난이도 다시</button>
+            <button id="menuBtn" class="secondary-btn" type="button">난이도 선택</button>
+          </div>
+
+          <p class="sound-note">오답 시 손님은 그대로 기다리며, 잠시 후 다시 선택할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const CONFIG = {
+        easy:   { label: "쉬움", busCount: 5, duration: 60 },
+        normal: { label: "보통", busCount: 7, duration: 60 },
+        hard:   { label: "어려움", busCount: 9, duration: 60 }
+      };
+
+      const TOKENS = [
+        { color: "#e64b55", name: "빨강", symbol: "★" },
+        { color: "#2f77d7", name: "파랑", symbol: "●" },
+        { color: "#f1b91f", name: "노랑", symbol: "⚡" },
+        { color: "#35a864", name: "초록", symbol: "◆" },
+        { color: "#8a55c5", name: "보라", symbol: "☾" },
+        { color: "#ee7b2f", name: "주황", symbol: "♥" },
+        { color: "#27a9b9", name: "하늘", symbol: "✿" },
+        { color: "#e65aa5", name: "분홍", symbol: "▲" },
+        { color: "#8b633f", name: "갈색", symbol: "✚" }
+      ];
+
+      const els = {
+        startScreen: document.getElementById("startScreen"),
+        gameScreen: document.getElementById("gameScreen"),
+        difficultyText: document.getElementById("difficultyText"),
+        boardedText: document.getElementById("boardedText"),
+        phaseLabel: document.getElementById("phaseLabel"),
+        timerPill: document.getElementById("timerPill"),
+        timerText: document.getElementById("timerText"),
+        soundBtn: document.getElementById("soundBtn"),
+        homeBtn: document.getElementById("homeBtn"),
+        peopleStack: document.getElementById("peopleStack"),
+        customerBanner: document.getElementById("customerBanner"),
+        customerSymbol: document.getElementById("customerSymbol"),
+        comboFloat: document.getElementById("comboFloat"),
+        feedback: document.getElementById("feedback"),
+        screenFlash: document.getElementById("screenFlash"),
+        busGrid: document.getElementById("busGrid"),
+        previewOverlay: document.getElementById("previewOverlay"),
+        previewCount: document.getElementById("previewCount"),
+        countOverlay: document.getElementById("countOverlay"),
+        resultModal: document.getElementById("resultModal"),
+        resultSubtitle: document.getElementById("resultSubtitle"),
+        resultBoarded: document.getElementById("resultBoarded"),
+        resultAccuracy: document.getElementById("resultAccuracy"),
+        resultCombo: document.getElementById("resultCombo"),
+        resultBest: document.getElementById("resultBest"),
+        newRecord: document.getElementById("newRecord"),
+        retryBtn: document.getElementById("retryBtn"),
+        menuBtn: document.getElementById("menuBtn"),
+        liveRegion: document.getElementById("liveRegion")
+      };
+
+      let state = createInitialState();
+      let audio = {
+        enabled: true,
+        context: null,
+        bgmTimer: null,
+        bgmStep: 0
+      };
+
+      function createInitialState() {
+        return {
+          difficulty: "easy",
+          config: CONFIG.easy,
+          phase: "idle",
+          buses: [],
+          currentTokenIndex: 0,
+          lastTokenIndex: -1,
+          boarded: 0,
+          attempts: 0,
+          correct: 0,
+          combo: 0,
+          maxCombo: 0,
+          remaining: 60,
+          locked: true,
+          previewTimer: null,
+          gameTimer: null,
+          lastFrame: 0,
+          runId: 0,
+          busPassengers: [],
+          queueTokens: []
+        };
+      }
+
+      function shuffle(array) {
+        const copy = [...array];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function getBestKey() {
+        return `remembus-best-${state.difficulty}`;
+      }
+
+      function getBest() {
+        try {
+          return Number(localStorage.getItem(getBestKey()) || 0);
+        } catch {
+          return 0;
+        }
+      }
+
+      function saveBest(value) {
+        try {
+          localStorage.setItem(getBestKey(), String(value));
+        } catch {
+          /* 저장 불가 환경에서는 현재 게임만 진행 */
+        }
+      }
+
+      function switchScreen(target) {
+        els.startScreen.classList.toggle("active", target === "start");
+        els.gameScreen.classList.toggle("active", target === "game");
+      }
+
+      function startGame(difficulty) {
+        stopAllTimers();
+        stopBgm();
+
+        const runId = Date.now() + Math.random();
+        state = {
+          ...createInitialState(),
+          difficulty,
+          config: CONFIG[difficulty],
+          remaining: CONFIG[difficulty].duration,
+          runId
+        };
+
+        state.buses = shuffle(TOKENS.map((_, index) => index)).slice(0, state.config.busCount);
+        state.busPassengers = Array(state.config.busCount).fill(0);
+        state.queueTokens = buildQueueTokens(8);
+
+        renderBuses();
+        renderQueue();
+        updateHud();
+        els.resultModal.classList.remove("show");
+        els.timerPill.classList.remove("danger");
+        els.previewOverlay.style.display = "grid";
+        els.customerBanner.style.visibility = "hidden";
+        els.comboFloat.textContent = "COMBO × 0";
+        els.comboFloat.classList.remove("hot");
+        els.feedback.className = "feedback";
+        els.screenFlash.className = "screen-flash";
+        els.difficultyText.textContent = state.config.label;
+        switchScreen("game");
+
+        ensureAudio();
+        playTone(440, 0.08, "sine", 0.035);
+        beginPreview(runId);
+      }
+
+      function buildQueueTokens(count) {
+        const list = [];
+        let previous = -1;
+        for (let i = 0; i < count; i++) {
+          const choices = state.buses.filter(index => index !== previous);
+          const token = choices[Math.floor(Math.random() * choices.length)];
+          list.push(token);
+          previous = token;
+        }
+        return list;
+      }
+
+      function nextToken() {
+        const choices = state.buses.filter(index => index !== state.lastTokenIndex);
+        const selected = choices[Math.floor(Math.random() * choices.length)];
+        state.lastTokenIndex = selected;
+        return selected;
+      }
+
+      function renderBuses() {
+        els.busGrid.innerHTML = "";
+        els.busGrid.style.setProperty("--bus-count", state.config.busCount);
+
+        state.buses.forEach((tokenIndex, position) => {
+          const token = TOKENS[tokenIndex];
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "bus";
+          button.dataset.position = String(position);
+          button.style.setProperty("--bus-color", token.color);
+          button.setAttribute("aria-label", `${position + 1}번 버스`);
+          button.disabled = true;
+
+          button.innerHTML = `
+            <span class="passenger-badge" aria-label="탑승 인원"><span class="passenger-count">0</span>명</span>
+            <span class="bus-body">
+              <span class="bus-windows" aria-hidden="true">
+                <span class="bus-window"></span>
+                <span class="bus-window"></span>
+                <span class="bus-window"></span>
+              </span>
+              <span class="bus-front">
+                <span class="bus-number">${position + 1}번</span>
+                <span class="bus-symbol" aria-hidden="true">${token.symbol}</span>
+              </span>
+            </span>
+            <span class="bus-wheel left" aria-hidden="true"></span>
+            <span class="bus-wheel right" aria-hidden="true"></span>
+          `;
+
+          button.addEventListener("click", () => selectBus(position));
+          els.busGrid.appendChild(button);
+        });
+      }
+
+      function renderQueue() {
+        els.peopleStack.innerHTML = "";
+        const visibleTokens = state.queueTokens.slice(0, 6);
+
+        visibleTokens.forEach((tokenIndex, index) => {
+          const token = TOKENS[tokenIndex];
+          const person = document.createElement("div");
+          person.className = `person${index === 0 ? " front" : ""}`;
+          person.style.setProperty("--person-color", index === 0 ? token.color : "#99a3b3");
+          person.setAttribute("aria-hidden", "true");
+          person.innerHTML = `
+            <span class="head"></span>
+            <span class="body">${index === 0 ? token.symbol : "?"}</span>
+            <span class="legs"></span>
+          `;
+          els.peopleStack.appendChild(person);
+        });
+
+        if (visibleTokens.length) {
+          state.currentTokenIndex = visibleTokens[0];
+          const current = TOKENS[state.currentTokenIndex];
+          els.customerSymbol.textContent = current.symbol;
+          els.customerSymbol.style.background = current.color;
+          els.customerSymbol.setAttribute("aria-label", `${current.name} ${current.symbol}`);
+        }
+      }
+
+      function advanceQueue() {
+        state.queueTokens.shift();
+        state.queueTokens.push(nextToken());
+        renderQueue();
+      }
+
+      function beginPreview(runId) {
+        state.phase = "preview";
+        state.locked = true;
+        els.phaseLabel.textContent = "버스를 기억하세요!";
+        setBusesHidden(false);
+        setBusesDisabled(true);
+
+        let count = 5;
+        els.previewCount.textContent = String(count);
+
+        state.previewTimer = setInterval(() => {
+          if (state.runId !== runId) return;
+          count -= 1;
+          els.previewCount.textContent = String(Math.max(0, count));
+          playTone(count > 0 ? 520 : 760, 0.08, "square", 0.025);
+
+          if (count <= 0) {
+            clearInterval(state.previewTimer);
+            state.previewTimer = null;
+            els.previewOverlay.style.display = "none";
+            setBusesHidden(true);
+            startReadyCountdown(runId);
+          }
+        }, 1000);
+      }
+
+      function startReadyCountdown(runId) {
+        state.phase = "ready";
+        els.phaseLabel.textContent = "곧 출발합니다!";
+        const words = ["3", "2", "1", "출발!"];
+        let index = 0;
+
+        const showNext = () => {
+          if (state.runId !== runId || index >= words.length) return;
+          els.countOverlay.innerHTML = `<div class="count-pop">${words[index]}</div>`;
+          playTone(index < 3 ? 620 + index * 90 : 900, 0.11, "sine", 0.04);
+          index += 1;
+
+          if (index < words.length) {
+            setTimeout(showNext, 700);
+          } else {
+            setTimeout(() => {
+              if (state.runId !== runId) return;
+              els.countOverlay.innerHTML = "";
+              beginPlay(runId);
+            }, 620);
+          }
+        };
+
+        showNext();
+      }
+
+      function beginPlay(runId) {
+        state.phase = "play";
+        state.locked = false;
+        state.lastFrame = performance.now();
+        els.phaseLabel.textContent = "손님을 태우세요!";
+        els.customerBanner.style.visibility = "visible";
+        setBusesDisabled(false);
+        startBgm();
+
+        const tick = (now) => {
+          if (state.runId !== runId || state.phase !== "play") return;
+
+          const delta = Math.min(0.1, (now - state.lastFrame) / 1000);
+          state.lastFrame = now;
+          state.remaining = Math.max(0, state.remaining - delta);
+          updateHud();
+
+          if (state.remaining <= 0) {
+            endGame();
+            return;
+          }
+
+          state.gameTimer = requestAnimationFrame(tick);
+        };
+
+        state.gameTimer = requestAnimationFrame(tick);
+      }
+
+      function selectBus(position) {
+        if (state.phase !== "play" || state.locked) return;
+
+        const chosenTokenIndex = state.buses[position];
+        state.attempts += 1;
+
+        if (chosenTokenIndex === state.currentTokenIndex) {
+          handleCorrect(position);
+        } else {
+          handleWrong(position);
+        }
+      }
+
+      function handleCorrect(position) {
+        state.locked = true;
+        state.correct += 1;
+        state.boarded += 1;
+        state.combo += 1;
+        state.maxCombo = Math.max(state.maxCombo, state.combo);
+        state.busPassengers[position] += 1;
+
+        const bus = els.busGrid.children[position];
+        bus.classList.remove("wrong");
+        void bus.offsetWidth;
+        bus.classList.add("correct");
+        bus.querySelector(".passenger-count").textContent = String(state.busPassengers[position]);
+
+        showFeedback(state.combo >= 5 ? `좋아요! ${state.combo}콤보` : "탑승 성공!", "good");
+        flashScreen("good");
+        playCorrectSound(state.combo);
+        updateHud();
+
+        const front = els.peopleStack.querySelector(".person.front");
+        if (front) front.classList.add("exit");
+
+        setTimeout(() => {
+          bus.classList.remove("correct");
+          advanceQueue();
+          state.locked = false;
+        }, 320);
+      }
+
+      function handleWrong(position) {
+        state.locked = true;
+        state.combo = 0;
+        const bus = els.busGrid.children[position];
+
+        bus.classList.remove("correct");
+        void bus.offsetWidth;
+        bus.classList.add("wrong");
+        showFeedback("다른 버스예요!", "bad");
+        flashScreen("bad");
+        playWrongSound();
+        updateHud();
+
+        setTimeout(() => {
+          bus.classList.remove("wrong");
+          state.locked = false;
+        }, 650);
+      }
+
+      function showFeedback(message, type) {
+        els.feedback.textContent = message;
+        els.feedback.className = `feedback ${type}`;
+        void els.feedback.offsetWidth;
+        els.feedback.classList.add("show");
+        els.liveRegion.textContent = message;
+      }
+
+      function flashScreen(type) {
+        els.screenFlash.className = `screen-flash ${type}`;
+        void els.screenFlash.offsetWidth;
+      }
+
+      function updateHud() {
+        els.boardedText.textContent = `${state.boarded}명`;
+        els.timerText.textContent = state.remaining.toFixed(1);
+        els.comboFloat.textContent = `COMBO × ${state.combo}`;
+        els.comboFloat.classList.toggle("hot", state.combo >= 5);
+        els.timerPill.classList.toggle("danger", state.remaining <= 10 && state.phase === "play");
+      }
+
+      function setBusesHidden(hidden) {
+        [...els.busGrid.children].forEach(bus => {
+          bus.classList.toggle("hidden-color", hidden);
+        });
+      }
+
+      function setBusesDisabled(disabled) {
+        [...els.busGrid.children].forEach(bus => {
+          bus.disabled = disabled;
+        });
+      }
+
+      function endGame() {
+        state.phase = "ended";
+        state.locked = true;
+        stopAllTimers();
+        stopBgm();
+        setBusesDisabled(true);
+        els.phaseLabel.textContent = "운행 종료!";
+        els.timerText.textContent = "0.0";
+
+        const accuracy = state.attempts > 0 ? Math.round((state.correct / state.attempts) * 100) : 0;
+        const previousBest = getBest();
+        const isNew = state.boarded > previousBest;
+        const best = Math.max(previousBest, state.boarded);
+
+        if (isNew) saveBest(state.boarded);
+
+        els.resultSubtitle.textContent = `${state.config.label} 난이도 · 버스 ${state.config.busCount}대`;
+        els.resultBoarded.textContent = `${state.boarded}명`;
+        els.resultAccuracy.textContent = `${accuracy}%`;
+        els.resultCombo.textContent = String(state.maxCombo);
+        els.resultBest.textContent = `${best}명`;
+        els.newRecord.classList.toggle("show", isNew);
+        els.resultModal.classList.add("show");
+
+        if (isNew) {
+          playRecordSound();
+        } else {
+          playTone(520, 0.15, "sine", 0.04);
+          setTimeout(() => playTone(390, 0.25, "sine", 0.035), 150);
+        }
+      }
+
+      function goHome() {
+        stopAllTimers();
+        stopBgm();
+        state.phase = "idle";
+        state.runId += 1;
+        els.resultModal.classList.remove("show");
+        switchScreen("start");
+      }
+
+      function stopAllTimers() {
+        if (state.previewTimer) {
+          clearInterval(state.previewTimer);
+          state.previewTimer = null;
+        }
+        if (state.gameTimer) {
+          cancelAnimationFrame(state.gameTimer);
+          state.gameTimer = null;
+        }
+      }
+
+      /* Web Audio API로 외부 파일 없이 효과음과 BGM 생성 */
+      function ensureAudio() {
+        if (!audio.enabled) return;
+        if (!audio.context) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audio.context = new AudioContextClass();
+        }
+        if (audio.context.state === "suspended") {
+          audio.context.resume().catch(() => {});
+        }
+      }
+
+      function playTone(frequency, duration, type = "sine", volume = 0.03, delay = 0) {
+        if (!audio.enabled) return;
+        ensureAudio();
+        if (!audio.context) return;
+
+        const ctx = audio.context;
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = ctx.currentTime + delay;
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.03);
+      }
+
+      function playCorrectSound(combo) {
+        const bonus = Math.min(combo, 10) * 12;
+        playTone(620 + bonus, 0.09, "sine", 0.045);
+        playTone(820 + bonus, 0.13, "sine", 0.035, 0.07);
+      }
+
+      function playWrongSound() {
+        playTone(190, 0.18, "sawtooth", 0.035);
+        playTone(145, 0.23, "square", 0.02, 0.09);
+      }
+
+      function playRecordSound() {
+        [523, 659, 784, 1047].forEach((frequency, index) => {
+          playTone(frequency, 0.3, "sine", 0.045, index * 0.13);
+        });
+      }
+
+      function startBgm() {
+        if (!audio.enabled || audio.bgmTimer) return;
+        ensureAudio();
+
+        const notes = [261.63, 329.63, 392.0, 329.63, 293.66, 349.23, 440.0, 349.23];
+        audio.bgmStep = 0;
+        audio.bgmTimer = setInterval(() => {
+          if (state.phase !== "play") return;
+          const note = notes[audio.bgmStep % notes.length];
+          playTone(note, 0.17, "triangle", 0.012);
+          if (audio.bgmStep % 2 === 0) {
+            playTone(note / 2, 0.2, "sine", 0.006);
+          }
+          audio.bgmStep += 1;
+        }, 420);
+      }
+
+      function stopBgm() {
+        if (audio.bgmTimer) {
+          clearInterval(audio.bgmTimer);
+          audio.bgmTimer = null;
+        }
+      }
+
+      function toggleSound() {
+        audio.enabled = !audio.enabled;
+        els.soundBtn.textContent = audio.enabled ? "🔊" : "🔇";
+        els.soundBtn.setAttribute("aria-label", audio.enabled ? "소리 끄기" : "소리 켜기");
+
+        if (audio.enabled) {
+          ensureAudio();
+          playTone(660, 0.09, "sine", 0.04);
+          if (state.phase === "play") startBgm();
+        } else {
+          stopBgm();
+        }
+      }
+
+      document.querySelectorAll(".difficulty-btn").forEach(button => {
+        button.addEventListener("click", () => startGame(button.dataset.difficulty));
+      });
+
+      els.retryBtn.addEventListener("click", () => startGame(state.difficulty));
+      els.menuBtn.addEventListener("click", goHome);
+      els.homeBtn.addEventListener("click", goHome);
+      els.soundBtn.addEventListener("click", toggleSound);
+
+      document.addEventListener("keydown", event => {
+        if (state.phase !== "play") return;
+
+        const number = Number(event.key);
+        if (Number.isInteger(number) && number >= 1 && number <= state.config.busCount) {
+          event.preventDefault();
+          selectBus(number - 1);
+        }
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && state.phase === "play") {
+          state.lastFrame = performance.now();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
