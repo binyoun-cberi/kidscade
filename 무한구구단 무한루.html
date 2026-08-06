@@ -2,40 +2,43 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>무한 구구단 서바이벌 : 무한루 V2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#150619" />
+  <title>무한 구구단 서바이벌 : 무한루 V3.1</title>
   <style>
     :root {
+      --vvh: 100dvh;
+      --vvoffset: 0px;
       --bg-1: #18071f;
       --bg-2: #050109;
       --paper: #f6ecd4;
-      --paper-dark: #d9c69e;
       --ink: #19110b;
-      --wood-1: #321b0c;
+      --wood-1: #38200f;
       --wood-2: #170b05;
       --red: #c62828;
-      --red-soft: #ff6464;
+      --red-soft: #ff6b78;
       --gold: #f3c969;
-      --muted: #a9a0a0;
-      --panel: rgba(0,0,0,.38);
+      --muted: #b8aeaa;
       --good: #4ade80;
       --bad: #fb7185;
       --focus: #fbbf24;
+      --panel: rgba(0, 0, 0, .42);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
     body {
       margin: 0;
-      font-family: "Gowun Batang", "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(108, 31, 136, .45), transparent 34%),
-        radial-gradient(circle at 10% 90%, rgba(148, 42, 42, .22), transparent 28%),
-        linear-gradient(145deg, var(--bg-1), var(--bg-2) 70%);
-      color: #eee;
       min-height: 100dvh;
       overflow: hidden;
+      color: #f4f0ed;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(112, 30, 135, .42), transparent 36%),
+        radial-gradient(circle at 8% 92%, rgba(151, 40, 54, .22), transparent 30%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2) 72%);
+      font-family: "Gowun Batang", "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
       user-select: none;
+      overscroll-behavior: none;
     }
 
     body::before {
@@ -43,192 +46,209 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      opacity: .16;
+      opacity: .15;
       background-image:
-        linear-gradient(115deg, transparent 0 48%, rgba(255,255,255,.18) 49% 51%, transparent 52% 100%),
+        linear-gradient(115deg, transparent 0 48%, rgba(255,255,255,.16) 49% 51%, transparent 52% 100%),
         linear-gradient(65deg, transparent 0 48%, rgba(255,255,255,.08) 49% 51%, transparent 52% 100%);
       background-size: 95px 95px;
       mask-image: radial-gradient(circle at center, #000 30%, transparent 90%);
     }
 
-    button, input {
-      font: inherit;
-    }
+    button, input { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .55; filter: grayscale(.35); }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
 
-    button {
-      cursor: pointer;
+    .hidden { display: none !important; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
       border: 0;
     }
 
-    button:disabled {
-      cursor: not-allowed;
-      opacity: .55;
-      filter: grayscale(.35);
-    }
-
     .app-shell {
-      height: 100dvh;
+      position: fixed;
+      left: 0;
+      top: var(--vvoffset);
       width: 100vw;
+      height: var(--vvh);
       display: grid;
       place-items: center;
-      padding: 14px;
-      position: relative;
+      padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+      transition: height .12s ease, top .12s ease;
     }
 
     .app {
-      width: min(480px, 100%);
-      height: min(760px, calc(100dvh - 28px));
-      min-height: 580px;
+      --scene-a: #3b210f;
+      --scene-b: #150905;
+      --scene-glow: rgba(243, 201, 105, .16);
+      width: min(500px, 100%);
+      height: min(800px, calc(var(--vvh) - 20px));
+      min-height: min(580px, calc(var(--vvh) - 20px));
+      position: relative;
+      overflow: hidden;
+      border: 4px solid #060302;
+      border-radius: 24px;
       background:
+        radial-gradient(circle at 50% 7%, var(--scene-glow), transparent 34%),
         linear-gradient(90deg, rgba(255,255,255,.04), transparent 8% 92%, rgba(255,255,255,.04)),
         repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 2px, transparent 2px 8px),
-        linear-gradient(180deg, var(--wood-1), var(--wood-2));
-      border: 4px solid #060302;
-      border-radius: 22px;
-      box-shadow:
-        0 24px 70px rgba(0,0,0,.74),
-        inset 0 0 26px rgba(0,0,0,.6);
-      overflow: hidden;
-      position: relative;
+        linear-gradient(180deg, var(--scene-a), var(--scene-b));
+      box-shadow: 0 24px 72px rgba(0,0,0,.74), inset 0 0 28px rgba(0,0,0,.58);
+      transition: background .6s ease, border-radius .2s ease, height .12s ease;
+      isolation: isolate;
+    }
+
+    .app::before {
+      content: attr(data-scene-label);
+      position: absolute;
+      right: 18px;
+      bottom: 12px;
+      z-index: -1;
+      font-size: clamp(4rem, 20vw, 7.5rem);
+      opacity: .085;
+      filter: saturate(.6);
+      transform: rotate(-8deg);
+      pointer-events: none;
     }
 
     .app::after {
       content: "";
       position: absolute;
       inset: 12px;
-      border: 1px solid rgba(255,255,255,.07);
-      border-radius: 16px;
+      z-index: 50;
       pointer-events: none;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 17px;
     }
+
+    .app[data-scene="classroom"] { --scene-a: #3a210f; --scene-b: #160a05; --scene-glow: rgba(255,210,121,.16); }
+    .app[data-scene="playground"] { --scene-a: #123c36; --scene-b: #071b18; --scene-glow: rgba(74,222,128,.18); }
+    .app[data-scene="space"] { --scene-a: #141d4a; --scene-b: #06091e; --scene-glow: rgba(129,140,248,.23); }
+    .app[data-scene="dragon"] { --scene-a: #4a1212; --scene-b: #170505; --scene-glow: rgba(251,113,133,.22); }
+    .app[data-scene="rainbow"] { --scene-a: #3b1752; --scene-b: #0e0820; --scene-glow: rgba(244,114,182,.25); }
 
     .screen {
       position: absolute;
       inset: 0;
-      padding: 22px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      opacity: 1;
-      transform: translateY(0);
-      transition: opacity .18s ease, transform .18s ease;
+      overflow: hidden;
     }
 
-    .hidden {
-      display: none !important;
+    .screen-scroll {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+
+    .card {
+      background: rgba(0,0,0,.44);
+      border: 1px solid rgba(245,198,105,.22);
+      border-radius: 17px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,.34);
+      backdrop-filter: blur(5px);
     }
 
     .title {
+      margin: 6px 0 8px;
       text-align: center;
-      line-height: 1.04;
-      margin: 4px 0 10px;
+      line-height: 1.03;
       letter-spacing: -.02em;
     }
 
     .title small {
       display: block;
-      color: #d6d0cc;
-      font-size: clamp(1.45rem, 5.5vw, 2.25rem);
+      color: #d8d1ce;
+      font-size: clamp(1.25rem, 5vw, 2.05rem);
       text-shadow: 0 5px 8px rgba(0,0,0,.8);
     }
 
     .title strong {
       display: block;
+      margin-top: 7px;
       color: #e11d48;
-      font-size: clamp(3.8rem, 15vw, 6.1rem);
+      font-size: clamp(3.7rem, 15vw, 6rem);
       letter-spacing: .12em;
       text-indent: .12em;
-      margin-top: 8px;
-      text-shadow: 0 0 10px rgba(255,0,0,.7), 0 7px 0 rgba(0,0,0,.35);
+      text-shadow: 0 0 10px rgba(255,0,0,.68), 0 7px 0 rgba(0,0,0,.34);
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-self: center;
+      padding: 5px 10px;
+      margin-bottom: 8px;
+      border-radius: 999px;
+      color: #241406;
+      background: linear-gradient(180deg, #ffe7a9, #c9912f);
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .08em;
     }
 
     .subtitle {
-      color: #ccbfb8;
+      max-width: 37ch;
+      margin: 0 auto 12px;
       text-align: center;
-      font-size: .95rem;
-      margin: 0 auto 16px;
-      line-height: 1.55;
-      max-width: 34ch;
-    }
-
-    .card {
-      background: rgba(0,0,0,.45);
-      border: 1px solid rgba(245, 198, 105, .22);
-      border-radius: 16px;
-      box-shadow: inset 0 0 20px rgba(0,0,0,.36);
+      color: #cec4bf;
+      font-size: .9rem;
+      line-height: 1.5;
     }
 
     .record-card {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 14px;
-      margin: 4px 0 14px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      padding: 10px;
+      margin: 3px 0 12px;
     }
 
     .record-item {
+      min-width: 0;
+      padding: 9px 3px;
       text-align: center;
-      background: rgba(255,255,255,.04);
       border-radius: 12px;
-      padding: 10px 5px;
+      background: rgba(255,255,255,.045);
     }
 
-    .record-item span {
-      display: block;
-      color: var(--muted);
-      font-size: .72rem;
-      margin-bottom: 3px;
-    }
+    .record-item span { display: block; margin-bottom: 3px; color: var(--muted); font-size: .64rem; }
+    .record-item strong { display: block; overflow: hidden; color: #fff7ed; font-size: 1.12rem; text-overflow: ellipsis; }
+    .record-item .red { color: var(--red-soft); }
+    .record-item .gold { color: var(--gold); }
 
-    .record-item strong {
-      color: #fff7ed;
-      font-size: 1.35rem;
-    }
-
-    .record-item .red {
-      color: var(--red-soft);
-    }
-
-    .menu-actions {
-      display: grid;
-      gap: 10px;
-      margin-top: auto;
-    }
+    .menu-actions { display: grid; gap: 9px; margin-top: auto; }
 
     .big-btn {
-      min-height: 66px;
-      border-radius: 16px;
-      padding: 14px 16px;
-      color: #f5f5f4;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.09), transparent),
-        #29211f;
-      border: 1px solid rgba(255,255,255,.14);
-      box-shadow: 0 8px 0 rgba(0,0,0,.35), 0 0 18px rgba(0,0,0,.34);
-      text-align: left;
+      min-height: 62px;
       display: flex;
-      gap: 12px;
       align-items: center;
+      gap: 11px;
+      padding: 12px 14px;
+      color: #f5f5f4;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.09), transparent), #29211f;
+      box-shadow: 0 7px 0 rgba(0,0,0,.34), 0 0 18px rgba(0,0,0,.28);
       transition: transform .12s ease, filter .12s ease, border-color .12s ease;
     }
 
     .big-btn:hover,
-    .big-btn:focus-visible {
-      transform: translateY(-2px);
-      border-color: rgba(251,191,36,.65);
-      filter: brightness(1.08);
-      outline: none;
-    }
-
-    .big-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 4px 0 rgba(0,0,0,.38);
-    }
-
-    .big-btn.danger {
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.08), transparent),
-        linear-gradient(135deg, #3b0810, #1f0508);
-      border-color: rgba(244,63,94,.36);
-    }
+    .big-btn:focus-visible { transform: translateY(-2px); border-color: rgba(251,191,36,.65); filter: brightness(1.08); outline: none; }
+    .big-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 rgba(0,0,0,.38); }
+    .big-btn.danger { background: linear-gradient(180deg, rgba(255,255,255,.08), transparent), linear-gradient(135deg, #3b0810, #1f0508); border-color: rgba(244,63,94,.36); }
+    .big-btn.album { background: linear-gradient(180deg, rgba(255,255,255,.09), transparent), linear-gradient(135deg, #31205d, #15102c); border-color: rgba(167,139,250,.36); }
 
     .btn-mark {
       flex: 0 0 38px;
@@ -239,232 +259,118 @@
       border: 1px solid rgba(243,201,105,.5);
       border-radius: 50%;
       background: rgba(0,0,0,.25);
-      font-weight: 700;
+      font-weight: 900;
     }
 
-    .btn-text {
-      flex: 1;
-      min-width: 0;
-    }
+    .btn-text { flex: 1; min-width: 0; }
+    .btn-text b { display: block; margin-bottom: 2px; font-size: 1.06rem; }
+    .btn-text small { display: block; color: #bdb4b0; font-size: .72rem; line-height: 1.35; }
 
-    .btn-text b {
-      display: block;
-      font-size: 1.16rem;
-      margin-bottom: 3px;
-    }
-
-    .btn-text small {
-      display: block;
-      color: #b9b0ad;
-      font-size: .75rem;
-      line-height: 1.35;
-    }
-
-    .mini-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
-
+    .mini-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
     .pill-btn {
       flex: 1;
-      min-width: 110px;
-      border-radius: 999px;
-      padding: 10px 12px;
-      background: rgba(0,0,0,.36);
+      min-width: 100px;
+      padding: 9px 10px;
+      color: #e7e5e4;
+      font-size: .78rem;
       border: 1px solid rgba(255,255,255,.12);
-      color: #e7e5e4;
-      font-size: .88rem;
+      border-radius: 999px;
+      background: rgba(0,0,0,.36);
     }
+    .pill-btn.active { color: #19110b; background: linear-gradient(180deg, #f7d98f, #c08d2d); font-weight: 800; }
 
-    .pill-btn.active {
-      color: #19110b;
-      background: linear-gradient(180deg, #f7d98f, #c08d2d);
-      border-color: rgba(255,255,255,.32);
-      font-weight: 700;
-    }
-
-    .back-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
+    .back-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .ghost-btn {
-      border-radius: 12px;
-      background: rgba(0,0,0,.32);
+      min-height: 40px;
+      padding: 9px 11px;
       color: #e7e5e4;
       border: 1px solid rgba(255,255,255,.13);
-      padding: 10px 12px;
-      min-height: 42px;
-    }
-
-    .screen-heading {
-      margin: 0;
-      color: #f7eee3;
-      font-size: 1.55rem;
-    }
-
-    .table-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .table-btn {
-      aspect-ratio: 1 / .86;
-      border-radius: 18px;
-      background:
-        radial-gradient(circle at 40% 20%, rgba(255,255,255,.16), transparent 35%),
-        linear-gradient(180deg, #332927, #19110f);
-      border: 1px solid rgba(255,255,255,.14);
-      color: #fff7ed;
-      font-size: 1.6rem;
-      font-weight: 700;
-      box-shadow: 0 7px 0 rgba(0,0,0,.35);
-    }
-
-    .table-btn:hover,
-    .table-btn:focus-visible {
-      outline: 2px solid rgba(251,191,36,.65);
-      outline-offset: 2px;
-    }
-
-    .settings-panel {
-      margin-top: auto;
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .settings-panel h3 {
-      margin: 0 0 2px;
-      font-size: 1.02rem;
-      color: #f7d98f;
-    }
-
-    .setting-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      color: #d6d3d1;
-      font-size: .88rem;
-    }
-
-    .segmented {
-      display: flex;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 999px;
-      padding: 3px;
-      gap: 3px;
-    }
-
-    .segmented button {
-      min-width: 44px;
-      border-radius: 999px;
-      padding: 6px 9px;
-      color: #d6d3d1;
-      background: transparent;
-      font-size: .82rem;
-    }
-
-    .segmented button.active {
-      background: #f7d98f;
-      color: #1c1209;
-      font-weight: 700;
-    }
-
-    .game-top {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .top-box {
+      border-radius: 11px;
       background: rgba(0,0,0,.32);
+    }
+    .screen-heading { margin: 0; color: #f7eee3; font-size: 1.4rem; }
+
+    .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 8px; }
+    .table-btn {
+      aspect-ratio: 1/.86;
+      color: #fff7ed;
+      font-size: 1.45rem;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 17px;
+      background: radial-gradient(circle at 40% 20%, rgba(255,255,255,.16), transparent 35%), linear-gradient(180deg, #332927, #19110f);
+      box-shadow: 0 6px 0 rgba(0,0,0,.35);
+    }
+    .table-btn:hover, .table-btn:focus-visible { outline: 2px solid rgba(251,191,36,.65); outline-offset: 2px; }
+    .table-btn strong { display: block; font-size: 1.55rem; line-height: 1.05; }
+    .table-btn small { display: block; margin-top: 6px; color: #cfc4bf; font-size: .62rem; font-weight: 700; }
+
+    .settings-panel { margin-top: 14px; padding: 13px; display: grid; gap: 10px; }
+    .settings-panel h3 { margin: 0 0 1px; color: #f7d98f; font-size: 1rem; }
+    .setting-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #ded7d3; font-size: .83rem; }
+    .setting-help { margin: -4px 0 0; color: #9f9692; font-size: .69rem; line-height: 1.35; }
+    .segmented { display: flex; gap: 3px; padding: 3px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.08); }
+    .segmented button { min-width: 42px; padding: 6px 8px; color: #d6d3d1; font-size: .76rem; border-radius: 999px; background: transparent; }
+    .segmented button.active { color: #1c1209; background: #f7d98f; font-weight: 900; }
+
+    /* 게임 HUD: 요청대로 한 줄 배치 */
+    .game-screen { padding: 12px; }
+    .game-hud {
+      display: grid;
+      grid-template-columns: 1.25fr .8fr .9fr .7fr 1fr .8fr;
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+    .hud-item {
+      min-width: 0;
+      padding: 6px 3px;
+      text-align: center;
       border: 1px solid rgba(255,255,255,.1);
-      border-radius: 13px;
-      padding: 8px 10px;
-      min-height: 54px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.34);
     }
-
-    .label {
-      display: block;
-      font-size: .68rem;
-      color: #aca4a1;
-      margin-bottom: 2px;
-      letter-spacing: .05em;
-    }
-
-    .score-value {
-      font-size: 1.42rem;
+    .hud-item span { display: block; margin-bottom: 1px; color: #aca4a1; font-size: .52rem; letter-spacing: .02em; white-space: nowrap; }
+    .hud-item strong { display: block; overflow: hidden; color: #fff7ed; font-size: .82rem; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; }
+    .hud-item.lives strong { font-size: .72rem; letter-spacing: -.12em; text-indent: -.12em; }
+    .hud-item.combo strong { color: #ff8b98; }
+    .pause-btn-small { width: 100%; height: 100%; min-height: 28px; color: #fff7ed; font-weight: 900; border-radius: 8px; background: rgba(255,255,255,.07); }
+    .pause-corner {
+      position: absolute;
+      right: 15px;
+      top: 88px;
+      z-index: 8;
+      width: 34px;
+      height: 34px;
       color: #fff7ed;
-      font-weight: 800;
-    }
-
-    .lives {
-      font-size: 1.25rem;
-      letter-spacing: .03em;
-      white-space: nowrap;
-    }
-
-    .pause-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: rgba(0,0,0,.42);
-      color: #fff7ed;
-      border: 1px solid rgba(255,255,255,.13);
-      font-weight: 700;
-    }
-
-    .timer-wrap {
-      height: 15px;
-      background: #050505;
+      font-size: .78rem;
+      font-weight: 900;
       border: 1px solid rgba(255,255,255,.16);
-      border-radius: 999px;
-      padding: 2px;
-      overflow: hidden;
-      margin-bottom: 10px;
-      box-shadow: inset 0 0 10px rgba(0,0,0,.8);
+      border-radius: 50%;
+      background: rgba(0,0,0,.48);
+      box-shadow: 0 4px 10px rgba(0,0,0,.28);
     }
 
-    .timer-bar {
-      height: 100%;
-      width: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #f59e0b, #dc2626);
-      transition: width .06s linear;
-    }
+    .timer-wrap { height: 13px; padding: 2px; margin-bottom: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: #050505; box-shadow: inset 0 0 10px rgba(0,0,0,.8); }
+    .timer-bar { height: 100%; width: 100%; border-radius: 999px; background: linear-gradient(90deg, #4ade80, #f59e0b 64%, #dc2626); transition: width .055s linear; }
+    .timer-bar.warning { background: linear-gradient(90deg, #fb7185, #ef4444); animation: pulse .36s alternate infinite; }
 
-    .timer-bar.warning {
-      background: linear-gradient(90deg, #fb7185, #ef4444);
-      animation: pulse .36s alternate infinite;
-    }
-
-    .combo-line {
-      height: 42px;
+    .status-strip {
+      min-height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      color: #ff8585;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-shadow: 0 0 12px rgba(239,68,68,.5);
+      gap: 7px;
+      margin-bottom: 6px;
+      padding: 4px 8px;
+      color: #ffd0d4;
+      font-size: .82rem;
+      font-weight: 900;
+      letter-spacing: .03em;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(239,68,68,.4);
     }
-
-    .combo-line.pop {
-      animation: pop .28s ease;
-    }
+    .status-strip.pop { animation: pop .28s ease; }
+    .power-chip { padding: 3px 7px; color: #fff3c4; font-size: .7rem; border: 1px solid rgba(243,201,105,.34); border-radius: 999px; background: rgba(0,0,0,.32); }
 
     .play-card {
       flex: 1;
@@ -472,387 +378,424 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 18px;
+      position: relative;
+      padding: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(243,201,105,.2);
       border-radius: 22px;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 30%),
-        rgba(0,0,0,.34);
-      border: 1px solid rgba(243,201,105,.18);
+      background: radial-gradient(circle at 50% 16%, rgba(255,255,255,.07), transparent 32%), rgba(0,0,0,.35);
+      transition: transform .18s ease, padding .18s ease, border-color .18s ease;
     }
+
+    .play-card.boss {
+      border: 3px solid #f9d675;
+      background: radial-gradient(circle at 50% 10%, rgba(255,216,112,.25), transparent 34%), linear-gradient(145deg, rgba(116,24,24,.92), rgba(33,6,8,.95));
+      box-shadow: 0 0 26px rgba(249,214,117,.36), inset 0 0 24px rgba(0,0,0,.46);
+      animation: bossGlow .8s ease-in-out infinite alternate;
+    }
+
+    .boss-stars { height: 22px; color: #ffe08a; text-align: center; letter-spacing: .22em; text-indent: .22em; font-size: 1rem; opacity: 0; }
+    .play-card.boss .boss-stars { opacity: 1; }
 
     .stage-chip {
       align-self: center;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 999px;
-      padding: 7px 12px;
+      max-width: 100%;
+      padding: 6px 11px;
+      margin: 4px 0 10px;
+      overflow: hidden;
       color: #f6e8d6;
-      background: rgba(0,0,0,.35);
+      font-size: .76rem;
+      white-space: nowrap;
+      text-overflow: ellipsis;
       border: 1px solid rgba(255,255,255,.12);
-      font-size: .82rem;
-      margin-bottom: 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.35);
     }
 
     .question {
-      text-align: center;
-      font-size: clamp(3.8rem, 18vw, 6.7rem);
-      line-height: 1;
+      margin: 4px 0 17px;
       color: #fff7ed;
+      font-size: clamp(3.8rem, 18vw, 6.5rem);
       font-weight: 900;
+      line-height: 1;
       letter-spacing: -.06em;
-      text-shadow: 0 0 18px rgba(255,255,255,.25), 0 8px 0 rgba(0,0,0,.26);
-      margin: 6px 0 20px;
+      text-align: center;
+      text-shadow: 0 0 18px rgba(255,255,255,.24), 0 8px 0 rgba(0,0,0,.25);
     }
 
-    .answer-row {
-      display: grid;
-      grid-template-columns: 1fr 86px;
-      gap: 9px;
-    }
-
+    .answer-wrap { position: relative; max-width: 310px; width: 100%; margin: 0 auto; }
     .answer-input {
       width: 100%;
-      min-height: 64px;
-      text-align: center;
+      min-height: 66px;
+      padding: 5px 46px 5px 12px;
+      color: var(--ink);
       font-size: 2.45rem;
       font-weight: 900;
-      color: var(--ink);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.05)),
-        var(--paper);
+      text-align: center;
+      outline: none;
       border: 4px solid #6b4a24;
       border-radius: 16px;
-      outline: none;
-      box-shadow: inset 0 0 12px rgba(0,0,0,.35);
+      background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.08)), var(--paper);
+      box-shadow: inset 0 0 12px rgba(0,0,0,.32);
     }
+    .answer-input:focus { border-color: var(--focus); box-shadow: 0 0 0 4px rgba(251,191,36,.22), inset 0 0 12px rgba(0,0,0,.22); }
+    .answer-input.correcting { color: #166534; border-color: #4ade80; }
+    .answer-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.35rem; opacity: .72; pointer-events: none; }
+    .hint-line { margin: 9px 0 0; color: #bdb5b2; font-size: .75rem; line-height: 1.35; text-align: center; }
 
-    .answer-input:focus {
-      border-color: var(--focus);
-      box-shadow: 0 0 0 4px rgba(251,191,36,.22), inset 0 0 12px rgba(0,0,0,.25);
-    }
-
-    .submit-btn {
-      border-radius: 16px;
-      background: linear-gradient(180deg, #f7d98f, #b7791f);
-      color: #1c1209;
-      font-size: 1.05rem;
-      font-weight: 900;
-      box-shadow: 0 6px 0 rgba(0,0,0,.33);
-    }
-
-    .hint-line {
-      text-align: center;
-      color: #bdb5b2;
-      font-size: .82rem;
-      margin: 12px 0 0;
-    }
-
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 7px;
-      margin-top: 12px;
-    }
-
-    .keypad button {
-      min-height: 42px;
-      border-radius: 12px;
-      background: rgba(255,255,255,.08);
-      color: #f7eee3;
-      border: 1px solid rgba(255,255,255,.12);
-      font-weight: 800;
-      font-size: 1.05rem;
-    }
-
-    .keypad .wide {
-      grid-column: span 2;
-    }
+    .keypad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; }
+    .keypad button { min-height: 40px; color: #f7eee3; font-size: 1rem; font-weight: 900; border: 1px solid rgba(255,255,255,.12); border-radius: 11px; background: rgba(255,255,255,.08); }
+    .keypad button:active { transform: scale(.96); background: rgba(255,255,255,.16); }
+    .keypad .wide { grid-column: span 2; }
 
     .review-card {
       flex: 1;
       min-height: 0;
-      border-radius: 22px;
-      background:
-        radial-gradient(circle at 50% 10%, rgba(185,28,28,.28), transparent 32%),
-        rgba(0,0,0,.72);
-      border: 1px solid rgba(248,113,113,.34);
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #f7eee3;
       text-align: center;
-      padding: 22px;
+      border: 1px solid rgba(248,113,113,.34);
+      border-radius: 22px;
+      background: radial-gradient(circle at 50% 10%, rgba(185,28,28,.28), transparent 32%), rgba(0,0,0,.72);
     }
+    .review-card.protected { border-color: rgba(96,165,250,.5); background: radial-gradient(circle at 50% 10%, rgba(37,99,235,.3), transparent 34%), rgba(0,0,0,.72); }
+    .review-card.boss-review { border-color: rgba(249,214,117,.5); background: radial-gradient(circle at 50% 10%, rgba(217,119,6,.26), transparent 34%), rgba(0,0,0,.75); }
+    .review-title { margin-bottom: 8px; color: #ff727d; font-size: 1.8rem; font-weight: 900; letter-spacing: .06em; text-shadow: 0 0 16px rgba(239,68,68,.5); }
+    .review-card.protected .review-title { color: #8cc5ff; }
+    .review-card.boss-review .review-title { color: #ffe08a; }
+    .review-question { margin: 8px 0; color: #fff7ed; font-size: 2.9rem; font-weight: 900; line-height: 1.08; }
+    .review-answer { margin-top: 5px; color: var(--gold); font-size: 1.25rem; }
+    .tip-box { margin-top: 13px; padding: 11px; color: #ded6d0; font-size: .84rem; line-height: 1.48; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: rgba(255,255,255,.06); }
+    .next-btn { width: 100%; margin-top: 14px; padding: 12px 14px; color: #fff7ed; font-weight: 900; border: 1px solid rgba(255,255,255,.18); border-radius: 13px; background: rgba(255,255,255,.1); }
 
-    .review-title {
-      color: #ff6b6b;
-      font-size: 2rem;
-      font-weight: 900;
-      letter-spacing: .08em;
-      margin-bottom: 10px;
-      text-shadow: 0 0 18px rgba(239,68,68,.55);
-    }
-
-    .review-question {
-      color: #fff7ed;
-      font-size: 3.2rem;
-      line-height: 1.05;
-      margin: 8px 0;
-      font-weight: 900;
-    }
-
-    .review-answer {
-      color: var(--gold);
-      font-size: 1.35rem;
-      line-height: 1.4;
-      margin-top: 8px;
-    }
-
-    .tip-box {
-      margin-top: 14px;
-      color: #ded6d0;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 14px;
-      padding: 12px;
-      font-size: .9rem;
-      line-height: 1.55;
-    }
-
-    .next-btn {
-      margin-top: 16px;
-      width: 100%;
-      border-radius: 14px;
-      padding: 13px 14px;
-      background: rgba(255,255,255,.1);
-      color: #fff7ed;
-      border: 1px solid rgba(255,255,255,.18);
-      font-weight: 800;
-    }
-
-    .float-points {
-      position: absolute;
-      left: 50%;
-      top: 40%;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      color: #f7d98f;
-      font-size: 2rem;
-      font-weight: 900;
-      text-shadow: 0 0 12px rgba(251,191,36,.6);
-      animation: floatUp .65s ease forwards;
-      z-index: 5;
-    }
-
-    .gameover-title {
-      font-size: clamp(3rem, 15vw, 5.4rem);
-      color: #e11d48;
-      text-align: center;
-      text-shadow: 0 0 18px rgba(255,0,0,.68);
-      letter-spacing: .15em;
-      text-indent: .15em;
-      margin: 16px 0;
-      animation: breathe 1.2s ease-in-out infinite alternate;
-    }
-
-    .result-card {
-      padding: 16px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .result-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      padding-bottom: 9px;
-      gap: 14px;
-    }
-
-    .result-line:last-child {
-      border-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .result-line span {
-      color: #bdb5b2;
-    }
-
-    .result-line strong {
-      font-size: 1.55rem;
-      color: #fff7ed;
-    }
-
-    .result-line .red {
-      color: #ff6b6b;
-    }
-
-    .result-line .gold {
-      color: var(--gold);
-    }
-
-    .pause-overlay {
+    /* 지역은 단순 색상 변경이 아니라 각기 다른 움직임과 상징을 가집니다. */
+    .scene-ambience {
       position: absolute;
       inset: 0;
-      z-index: 20;
-      background: rgba(0,0,0,.72);
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: .72;
+      transition: opacity .5s ease, filter .5s ease;
+    }
+    .screen { z-index: 3; }
+    .scene-ambience::before,
+    .scene-ambience::after {
+      position: absolute;
+      display: block;
+      white-space: pre;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,.42));
+    }
+    .scene-ambience span {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      font-size: var(--size);
+      opacity: var(--alpha);
+      animation-delay: var(--delay);
+      animation-duration: var(--speed);
+    }
+    .scene-ambience span::before { content: var(--particle); }
+    .scene-ambience span:nth-child(1) { --x:8%; --y:18%; --size:.75rem; --alpha:.28; --delay:-1.2s; --speed:5.8s; }
+    .scene-ambience span:nth-child(2) { --x:22%; --y:72%; --size:1.05rem; --alpha:.34; --delay:-3.8s; --speed:7.2s; }
+    .scene-ambience span:nth-child(3) { --x:38%; --y:28%; --size:.62rem; --alpha:.25; --delay:-2.1s; --speed:6.4s; }
+    .scene-ambience span:nth-child(4) { --x:54%; --y:80%; --size:.9rem; --alpha:.3; --delay:-4.5s; --speed:8.1s; }
+    .scene-ambience span:nth-child(5) { --x:69%; --y:20%; --size:1.15rem; --alpha:.32; --delay:-.8s; --speed:7.7s; }
+    .scene-ambience span:nth-child(6) { --x:84%; --y:61%; --size:.7rem; --alpha:.24; --delay:-5.2s; --speed:6.8s; }
+    .scene-ambience span:nth-child(7) { --x:13%; --y:45%; --size:.55rem; --alpha:.22; --delay:-2.8s; --speed:5.2s; }
+    .scene-ambience span:nth-child(8) { --x:91%; --y:32%; --size:.95rem; --alpha:.3; --delay:-1.7s; --speed:8.5s; }
+    .scene-ambience span:nth-child(9) { --x:46%; --y:10%; --size:.7rem; --alpha:.26; --delay:-6s; --speed:6.1s; }
+    .scene-ambience span:nth-child(10) { --x:77%; --y:88%; --size:.8rem; --alpha:.28; --delay:-3.1s; --speed:7.4s; }
+    .scene-ambience span:nth-child(11) { --x:31%; --y:91%; --size:.65rem; --alpha:.22; --delay:-4.2s; --speed:6.9s; }
+    .scene-ambience span:nth-child(12) { --x:60%; --y:48%; --size:1rem; --alpha:.3; --delay:-2.4s; --speed:8s; }
+
+    .app[data-scene="classroom"] .scene-ambience { --particle:"×"; }
+    .app[data-scene="classroom"] .scene-ambience span { animation: chalkFloat var(--speed) ease-in-out infinite alternate; }
+    .app[data-scene="classroom"] .scene-ambience::before { content:"1  2  3\A 4  5  6\A 7  8  9"; left:6%; bottom:7%; color:rgba(255,244,214,.08); font-size:2.1rem; line-height:1.35; transform:rotate(-6deg); }
+    .app[data-scene="classroom"] .scene-ambience::after { content:"✎"; right:8%; top:16%; color:rgba(255,222,145,.14); font-size:5.5rem; transform:rotate(18deg); }
+
+    .app[data-scene="playground"] .scene-ambience { --particle:"●"; }
+    .app[data-scene="playground"] .scene-ambience span { color:#b7ffd8; border-radius:50%; text-shadow:0 0 13px rgba(74,222,128,.7); animation:bubbleRise var(--speed) linear infinite; }
+    .app[data-scene="playground"] .scene-ambience::before { content:"☁️"; left:5%; top:8%; font-size:5rem; opacity:.2; animation:cloudDrift 11s ease-in-out infinite alternate; }
+    .app[data-scene="playground"] .scene-ambience::after { content:"🪁"; right:7%; top:12%; font-size:4.2rem; opacity:.28; animation:kiteSwing 4s ease-in-out infinite; }
+
+    .app[data-scene="space"] .scene-ambience { --particle:"✦"; }
+    .app[data-scene="space"] .scene-ambience span { color:#d9e5ff; text-shadow:0 0 10px #9ab8ff; animation:starTwinkle var(--speed) ease-in-out infinite; }
+    .app[data-scene="space"] .scene-ambience::before { content:"🪐"; left:4%; bottom:5%; font-size:7rem; opacity:.24; animation:planetFloat 7s ease-in-out infinite; }
+    .app[data-scene="space"] .scene-ambience::after { content:"☄️"; right:-12%; top:12%; font-size:4rem; opacity:.4; animation:cometPass 7s linear infinite; }
+
+    .app[data-scene="dragon"] .scene-ambience { --particle:"◆"; }
+    .app[data-scene="dragon"] .scene-ambience span { color:#ffb26b; text-shadow:0 0 12px #ff4d00; animation:emberRise var(--speed) linear infinite; }
+    .app[data-scene="dragon"] .scene-ambience::before { content:"♜"; left:4%; bottom:-5%; color:rgba(0,0,0,.33); font-size:12rem; transform:scaleX(1.5); }
+    .app[data-scene="dragon"] .scene-ambience::after { content:"🐉"; right:2%; top:6%; font-size:7.5rem; opacity:.24; animation:dragonHover 4.2s ease-in-out infinite; }
+
+    .app[data-scene="rainbow"] .scene-ambience { --particle:"✧"; }
+    .app[data-scene="rainbow"] .scene-ambience span { color:#fff; text-shadow:0 0 12px #f9a8d4,0 0 20px #93c5fd; animation:rainbowSpark var(--speed) ease-in-out infinite; }
+    .app[data-scene="rainbow"] .scene-ambience::before { content:"🌈"; left:50%; top:8%; font-size:9rem; opacity:.25; transform:translateX(-50%); animation:rainbowPulse 4s ease-in-out infinite; }
+    .app[data-scene="rainbow"] .scene-ambience::after { content:"🏰"; right:4%; bottom:-1%; font-size:7rem; opacity:.2; animation:castleGlow 3s ease-in-out infinite alternate; }
+
+    .scene-arrival-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 34;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      pointer-events: none;
+      background: radial-gradient(circle at center, var(--arrival-glow), rgba(0,0,0,.72) 58%, rgba(0,0,0,.9));
+      animation: sceneArrivalFade 1.55s ease forwards;
+    }
+    .scene-arrival-overlay::before,
+    .scene-arrival-overlay::after {
+      content:"";
+      position:absolute;
+      left:50%; top:50%;
+      width:150%; height:150%;
+      background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.25) 0 4deg, transparent 4deg 16deg);
+      transform:translate(-50%,-50%);
+      animation:sceneRays 2.2s linear infinite;
+      opacity:.36;
+    }
+    .scene-arrival-overlay::after { width:72%; height:72%; border:3px solid rgba(255,255,255,.48); border-radius:50%; background:none; animation:portalRing 1.35s ease-out forwards; }
+    .scene-arrival-content { position:relative; z-index:2; text-align:center; filter:drop-shadow(0 12px 22px rgba(0,0,0,.7)); animation:sceneHero 1.4s cubic-bezier(.16,.9,.2,1) forwards; }
+    .scene-arrival-kicker { display:inline-block; padding:5px 12px; color:#281304; font-size:.72rem; font-weight:1000; letter-spacing:.12em; border-radius:999px; background:linear-gradient(180deg,#fff3bd,#e3a72f); }
+    .scene-arrival-icon { display:block; margin:8px 0 2px; font-size:clamp(5rem,25vw,9rem); }
+    .scene-arrival-title { display:block; color:#fff7d8; font-size:clamp(2.25rem,11vw,4.25rem); font-weight:1000; line-height:1; text-shadow:0 0 18px var(--arrival-accent),0 5px 0 rgba(0,0,0,.28); }
+    .scene-arrival-sub { display:block; max-width:28ch; margin:10px auto 0; color:#fff; font-size:1rem; font-weight:900; line-height:1.45; }
+    .scene-burst-particle { position:absolute; left:50%; top:50%; z-index:1; font-size:var(--p-size); animation:sceneParticle 1.35s ease-out forwards; animation-delay:var(--p-delay); }
+
+    .celebration-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       display: grid;
       place-items: center;
       padding: 24px;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(255,255,255,.13), rgba(0,0,0,.2) 55%, transparent 72%);
+      animation: overlayIn .75s ease forwards;
     }
+    .celebration-content { text-align: center; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); animation: heroPop .75s cubic-bezier(.2,.8,.2,1); }
+    .celebration-icon { display: block; font-size: clamp(4rem, 20vw, 7rem); }
+    .celebration-title { display: block; margin-top: 4px; color: #fff5c9; font-size: clamp(2rem, 10vw, 3.8rem); font-weight: 900; line-height: 1; text-shadow: 0 0 20px rgba(251,191,36,.72); }
+    .celebration-sub { display: block; margin-top: 9px; color: #fff; font-size: 1.1rem; font-weight: 900; }
 
-    .pause-box {
-      width: min(340px, 100%);
-      padding: 18px;
+    .float-points { position: absolute; left: 50%; top: 44%; z-index: 22; pointer-events: none; transform: translate(-50%,-50%); color: #f7d98f; font-size: 1.9rem; font-weight: 900; text-shadow: 0 0 12px rgba(251,191,36,.6); animation: floatUp .7s ease forwards; }
+
+    /* 도감 */
+    .album-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 10px; }
+    .album-summary strong { color: #fff5c9; font-size: 1.2rem; }
+    .album-summary span { color: #c9bfba; font-size: .8rem; }
+    .album-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-bottom: 16px; }
+    .sticker-card {
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 9px 5px;
       text-align: center;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #2a1b18, #120806);
-      border: 1px solid rgba(255,255,255,.16);
-      box-shadow: 0 20px 50px rgba(0,0,0,.5);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 15px;
+      background: radial-gradient(circle at 50% 20%, var(--sticker-glow, rgba(255,255,255,.2)), transparent 42%), rgba(0,0,0,.38);
+      box-shadow: inset 0 0 12px rgba(0,0,0,.35);
     }
+    .sticker-card.locked { filter: grayscale(1); opacity: .38; }
+    .sticker-card .sticker-icon { font-size: 2.15rem; filter: drop-shadow(0 4px 5px rgba(0,0,0,.45)); }
+    .sticker-card b { color: #fff8e7; font-size: .72rem; line-height: 1.25; }
+    .sticker-card small { color: #cfc4bf; font-size: .58rem; line-height: 1.2; }
+    .sticker-card .rarity { padding: 2px 6px; color: #211304; font-size: .52rem; font-weight: 900; border-radius: 999px; background: #f3c969; }
 
-    .pause-box h2 {
-      margin: 0 0 12px;
-      color: #fff7ed;
-    }
+    /* 결과 화면 */
+    .result-top { text-align: center; margin: 4px 0 10px; }
+    .result-stars { color: #ffe08a; font-size: 1.25rem; letter-spacing: .22em; text-indent: .22em; }
+    .result-title { margin: 5px 0 0; color: #fff2b5; font-size: clamp(2rem, 9vw, 3.25rem); font-weight: 900; text-shadow: 0 0 20px rgba(251,191,36,.55); }
+    .result-sub { margin-top: 4px; color: #d8cdca; font-size: .84rem; }
+    .new-record { display: inline-flex; margin-top: 8px; padding: 5px 10px; color: #301506; font-size: .76rem; font-weight: 900; border-radius: 999px; background: linear-gradient(180deg,#ffe99d,#e59a27); animation: pop .7s ease infinite alternate; }
+    .result-card { display: grid; gap: 8px; padding: 14px; }
+    .result-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 7px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .result-line:last-child { padding-bottom: 0; border-bottom: 0; }
+    .result-line span { color: #bdb5b2; font-size: .84rem; }
+    .result-line strong { color: #fff7ed; font-size: 1.25rem; }
+    .result-line .red { color: #ff7b85; }
+    .result-line .gold { color: var(--gold); }
+    .award-card { display: flex; align-items: center; gap: 12px; padding: 12px; margin-top: 10px; border-color: rgba(167,139,250,.35); background: radial-gradient(circle at 15% 50%, rgba(167,139,250,.22), transparent 32%), rgba(0,0,0,.48); }
+    .award-icon { flex: 0 0 52px; height: 52px; display: grid; place-items: center; font-size: 2rem; border: 1px solid rgba(255,255,255,.16); border-radius: 15px; background: rgba(255,255,255,.08); }
+    .award-text { min-width: 0; }
+    .award-text small { display: block; color: #bdb5b2; font-size: .66rem; }
+    .award-text b { display: block; margin-top: 3px; color: #fff5d6; font-size: .96rem; }
+    .award-text span { display: block; margin-top: 2px; color: #c9bdff; font-size: .7rem; }
 
-    .pause-box p {
-      margin: 0 0 16px;
-      color: #bdb5b2;
-      line-height: 1.5;
-    }
+    .pause-overlay { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 22px; background: rgba(0,0,0,.74); }
+    .pause-box { width: min(340px,100%); padding: 18px; text-align: center; border: 1px solid rgba(255,255,255,.16); border-radius: 18px; background: linear-gradient(180deg,#2a1b18,#120806); box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+    .pause-box h2 { margin: 0 0 10px; color: #fff7ed; }
+    .pause-box p { margin: 0 0 15px; color: #bdb5b2; font-size: .85rem; line-height: 1.5; }
 
     .door-layer {
       position: fixed;
       inset: 0;
+      z-index: 100;
       display: flex;
       pointer-events: none;
-      z-index: 100;
+      visibility: hidden;
     }
-
+    .door-layer.active { visibility: visible; }
     .door {
+      position: relative;
       width: 50%;
       height: 100%;
+      border: 14px solid #170a04;
       background-color: #f8edd2;
       background-image:
-        linear-gradient(#2b160d 4px, transparent 4px),
-        linear-gradient(90deg, #2b160d 4px, transparent 4px),
-        radial-gradient(circle at center, rgba(164, 39, 39, .14), transparent 62%);
-      background-size: 58px 76px, 58px 76px, 100% 100%;
-      border: 14px solid #170a04;
-      box-shadow: inset 0 0 28px rgba(0,0,0,.46);
-      transition: transform .42s cubic-bezier(.4,0,.2,1);
+        linear-gradient(#2b160d 4px,transparent 4px),
+        linear-gradient(90deg,#2b160d 4px,transparent 4px),
+        radial-gradient(circle at center,rgba(164,39,39,.18),transparent 62%);
+      background-size: 58px 76px,58px 76px,100% 100%;
+      box-shadow: inset 0 0 34px rgba(0,0,0,.5), 0 0 35px rgba(0,0,0,.55);
+      transition: transform .56s cubic-bezier(.68,-.02,.22,1.02);
+      will-change: transform;
     }
-
-    .door.left { transform: translateX(-104%); }
-    .door.right { transform: translateX(104%); }
-    .door-layer.closed .door.left { transform: translateX(0); }
-    .door-layer.closed .door.right { transform: translateX(0); }
-
-    .flash-good {
-      animation: flashGood .28s ease;
+    .door::before { content:""; position:absolute; inset:3.5% 5%; border:5px double rgba(72,34,17,.62); box-shadow:inset 0 0 0 5px rgba(255,255,255,.12); }
+    .door::after { content:""; position:absolute; top:50%; width:26px; height:70px; border:4px solid #3b1c0c; border-radius:10px; background:linear-gradient(90deg,#b77822,#f2ca70,#8c5116); box-shadow:0 5px 12px rgba(0,0,0,.45); transform:translateY(-50%); }
+    .door.left { transform: translate3d(-104%,0,0); border-right-width:8px; }
+    .door.right { transform: translate3d(104%,0,0); border-left-width:8px; }
+    .door.left::after { right:22px; }
+    .door.right::after { left:22px; }
+    .door-layer.closed .door.left,
+    .door-layer.closed .door.right { transform: translate3d(0,0,0); }
+    .door-emblem {
+      position:absolute;
+      left:50%; top:50%;
+      z-index:3;
+      width:104px; height:104px;
+      display:grid; place-items:center;
+      color:#fff4c7;
+      font-size:3.4rem;
+      font-weight:1000;
+      border:5px double #f3c969;
+      border-radius:50%;
+      background:radial-gradient(circle,#a61b28,#4b0710 68%,#190306);
+      box-shadow:0 0 0 8px rgba(26,7,4,.92),0 0 38px rgba(243,201,105,.58);
+      opacity:0;
+      transform:translate(-50%,-50%) scale(.2) rotate(-18deg);
+      transition:opacity .22s ease .26s,transform .34s cubic-bezier(.2,.9,.2,1) .24s;
     }
+    .door-layer.closed .door-emblem { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0); }
 
-    .shake {
-      animation: shake .26s ease;
-    }
+    .flash-good { animation: flashGood .28s ease; }
+    .shake { animation: shake .26s ease; }
 
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
+    /* 모바일 키보드가 열린 경우: visualViewport 높이에 맞춰 문제 카드를 키보드 바로 위에 유지 */
+    .keyboard-open .app { height: calc(var(--vvh) - 6px); min-height: 0; border-radius: 13px; }
+    .keyboard-open .game-screen { padding: 6px 8px max(4px, env(safe-area-inset-bottom)); }
+    .keyboard-open .game-hud { margin-bottom: 3px; gap: 3px; }
+    .keyboard-open .hud-item { padding: 3px 2px; border-radius: 7px; }
+    .keyboard-open .hud-item span { font-size: .44rem; }
+    .keyboard-open .hud-item strong { font-size: .68rem; }
+    .keyboard-open .hud-item.lives strong { font-size: .58rem; }
+    .keyboard-open .timer-wrap { height: 9px; margin-bottom: 2px; }
+    .keyboard-open .status-strip { min-height: 22px; margin-bottom: 2px; padding: 1px 5px; font-size: .68rem; }
+    .keyboard-open .pause-corner { top: 51px; right: 10px; width: 27px; height: 27px; font-size: .62rem; }
+    .keyboard-open .play-card { flex: 1; min-height: 0; padding: 7px 12px 9px; transform: translateY(-1px); border-radius: 15px; }
+    .keyboard-open .boss-stars { height: 15px; font-size: .72rem; }
+    .keyboard-open .stage-chip { margin: 1px 0 4px; padding: 4px 8px; font-size: .62rem; }
+    .keyboard-open .question { margin: 1px 0 6px; font-size: clamp(2.7rem, 14vw, 4.6rem); }
+    .keyboard-open .answer-input { min-height: 52px; font-size: 1.9rem; border-width: 3px; }
+    .keyboard-open .hint-line, .keyboard-open .keypad { display: none; }
 
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-
-    @keyframes pop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.22); }
-      100% { transform: scale(1); }
-    }
-
-    @keyframes pulse {
-      from { filter: brightness(1); }
-      to { filter: brightness(1.6); }
-    }
-
-    @keyframes floatUp {
-      0% { opacity: 0; transform: translate(-50%, -15%) scale(.8); }
-      25% { opacity: 1; }
-      100% { opacity: 0; transform: translate(-50%, -160%) scale(1.1); }
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-12px); }
-      50% { transform: translateX(12px); }
-      75% { transform: translateX(-8px); }
-    }
-
-    @keyframes flashGood {
-      0%, 100% { filter: none; }
-      50% { filter: drop-shadow(0 0 18px rgba(74,222,128,.65)) brightness(1.16); }
-    }
-
-    @keyframes breathe {
-      from { transform: scale(1); }
-      to { transform: scale(1.04); }
-    }
-
-    @media (max-height: 650px) {
-      .screen { padding: 14px; }
+    @media (max-height: 680px) {
+      .screen { padding: 12px; }
       .title strong { font-size: 3.5rem; }
-      .title small { font-size: 1.3rem; }
-      .record-card { padding: 10px; margin-bottom: 8px; }
-      .big-btn { min-height: 56px; padding: 10px 12px; }
-      .question { font-size: 3.6rem; margin-bottom: 12px; }
-      .answer-input { min-height: 58px; font-size: 2rem; }
-      .keypad button { min-height: 36px; }
+      .title small { font-size: 1.22rem; }
+      .subtitle { margin-bottom: 8px; font-size: .78rem; }
+      .record-card { margin-bottom: 8px; }
+      .big-btn { min-height: 54px; padding: 9px 11px; }
+      .btn-text b { font-size: .95rem; }
+      .question { font-size: 3.55rem; margin-bottom: 10px; }
+      .answer-input { min-height: 56px; font-size: 2rem; }
+      .keypad button { min-height: 34px; }
       .hint-line { display: none; }
     }
+
+    @media (max-width: 390px) {
+      .screen { padding-left: 12px; padding-right: 12px; }
+      .record-item strong { font-size: 1rem; }
+      .game-screen { padding: 8px; }
+      .game-hud { gap: 3px; }
+      .hud-item { padding-left: 1px; padding-right: 1px; }
+      .hud-item span { font-size: .47rem; }
+      .hud-item strong { font-size: .72rem; }
+      .album-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+
+    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+    @keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.6); } }
+    @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%,-15%) scale(.8); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-160%) scale(1.1); } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-12px); } 50% { transform: translateX(12px); } 75% { transform: translateX(-8px); } }
+    @keyframes flashGood { 0%,100% { filter: none; } 50% { filter: drop-shadow(0 0 18px rgba(74,222,128,.65)) brightness(1.14); } }
+    @keyframes bossGlow { from { box-shadow: 0 0 16px rgba(249,214,117,.26), inset 0 0 24px rgba(0,0,0,.46); } to { box-shadow: 0 0 35px rgba(249,214,117,.58), inset 0 0 24px rgba(0,0,0,.46); } }
+    @keyframes overlayIn { 0% { opacity: 0; } 18%,78% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes heroPop { 0% { transform: scale(.2) rotate(-8deg); opacity: 0; } 35% { transform: scale(1.15) rotate(2deg); opacity: 1; } 60% { transform: scale(.96); } 100% { transform: scale(1); opacity: 0; } }
+    @keyframes chalkFloat { from { transform:translateY(-5px) rotate(-7deg); } to { transform:translateY(9px) rotate(7deg); } }
+    @keyframes bubbleRise { 0% { transform:translateY(42px) scale(.55); opacity:0; } 18% { opacity:var(--alpha); } 100% { transform:translateY(-130px) scale(1.35); opacity:0; } }
+    @keyframes cloudDrift { from { transform:translateX(-8px); } to { transform:translateX(36px); } }
+    @keyframes kiteSwing { 0%,100% { transform:rotate(-8deg) translateY(0); } 50% { transform:rotate(10deg) translateY(18px); } }
+    @keyframes starTwinkle { 0%,100% { opacity:.12; transform:scale(.55) rotate(0); } 50% { opacity:.75; transform:scale(1.35) rotate(45deg); } }
+    @keyframes planetFloat { 0%,100% { transform:translateY(0) rotate(-5deg); } 50% { transform:translateY(-16px) rotate(5deg); } }
+    @keyframes cometPass { 0% { transform:translate(0,-20px) rotate(-20deg); opacity:0; } 12% { opacity:.5; } 55%,100% { transform:translate(-600px,330px) rotate(-20deg); opacity:0; } }
+    @keyframes emberRise { 0% { transform:translateY(60px) scale(.45) rotate(0); opacity:0; } 15% { opacity:.7; } 100% { transform:translateY(-180px) scale(1.15) rotate(160deg); opacity:0; } }
+    @keyframes dragonHover { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(14px) rotate(4deg); } }
+    @keyframes rainbowSpark { 0%,100% { opacity:.08; transform:scale(.5) rotate(0); filter:hue-rotate(0); } 50% { opacity:.82; transform:scale(1.4) rotate(90deg); filter:hue-rotate(180deg); } }
+    @keyframes rainbowPulse { 0%,100% { transform:translateX(-50%) scale(.94); filter:saturate(.9); } 50% { transform:translateX(-50%) scale(1.08); filter:saturate(1.5) drop-shadow(0 0 20px #f9a8d4); } }
+    @keyframes castleGlow { from { filter:drop-shadow(0 0 6px rgba(255,255,255,.15)); } to { filter:drop-shadow(0 0 22px rgba(255,217,251,.58)); } }
+    @keyframes sceneArrivalFade { 0% { opacity:0; } 12%,72% { opacity:1; } 100% { opacity:0; } }
+    @keyframes sceneRays { to { transform:translate(-50%,-50%) rotate(360deg); } }
+    @keyframes portalRing { 0% { transform:translate(-50%,-50%) scale(.15); opacity:0; } 25% { opacity:.85; } 100% { transform:translate(-50%,-50%) scale(2.3); opacity:0; } }
+    @keyframes sceneHero { 0% { transform:scale(.18) translateY(80px); opacity:0; } 28% { transform:scale(1.16) translateY(0); opacity:1; } 48% { transform:scale(.96); } 78% { opacity:1; } 100% { transform:scale(1.04); opacity:0; } }
+    @keyframes sceneParticle { 0% { transform:translate(-50%,-50%) scale(.2); opacity:0; } 18% { opacity:1; } 100% { transform:translate(calc(-50% + var(--p-x)),calc(-50% + var(--p-y))) rotate(var(--p-r)) scale(1.3); opacity:0; } }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <main class="app" id="app">
+  <div class="app-shell" id="appShell">
+    <main class="app" id="app" data-scene="classroom" data-scene-label="🏫">
+      <div class="scene-ambience" id="sceneAmbience" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <section class="screen" id="menuScreen">
-        <h1 class="title">
-          <small>무한 구구단 서바이벌</small>
-          <strong>무한루</strong>
-        </h1>
-        <p class="subtitle">문제를 맞히며 끝없이 올라가는 구구단 수련장입니다. 오답은 바로 복습하고, 틀린 문제는 다시 등장합니다.</p>
+        <h1 class="title"><small>무한 구구단 서바이벌</small><strong>무한루</strong></h1>
+        <span class="version-badge">VERSION 3.1</span>
+        <p class="subtitle">처음엔 천천히, 익숙해질수록 조금씩 빨라지는 저학년 맞춤 구구단 수련장</p>
 
-        <div class="card record-card" aria-label="최고 기록">
-          <div class="record-item">
-            <span>최고 점수</span>
-            <strong id="menuHighScore">0</strong>
-          </div>
-          <div class="record-item">
-            <span>최고 콤보</span>
-            <strong class="red" id="menuBestCombo">0</strong>
-          </div>
-          <div class="record-item">
-            <span>최고 정확도</span>
-            <strong id="menuBestAccuracy">0%</strong>
-          </div>
+        <div class="card record-card" aria-label="대표 최고 기록">
+          <div class="record-item"><span>무작위 최고</span><strong id="menuRandomHighScore">0</strong></div>
+          <div class="record-item"><span>곱셈귀 최고</span><strong class="red" id="menuDemonHighScore">0</strong></div>
+          <div class="record-item"><span>최고 콤보</span><strong id="menuBestCombo">0</strong></div>
+          <div class="record-item"><span>스티커</span><strong class="gold" id="menuStickerCount">0/30</strong></div>
         </div>
 
         <div class="menu-actions">
           <button class="big-btn" data-action="openTables">
-            <span class="btn-mark">一</span>
-            <span class="btn-text"><b>원하는 단 수련</b><small>2단부터 9단까지, 필요한 단만 집중 연습</small></span>
+            <span class="btn-mark">一</span><span class="btn-text"><b>원하는 단 수련</b><small>2단부터 9단까지 한 단을 집중 연습</small></span>
           </button>
           <button class="big-btn" data-action="startRandom">
-            <span class="btn-mark">二</span>
-            <span class="btn-text"><b>무작위 수련</b><small>2~9단이 섞여 나오는 기본 서바이벌</small></span>
+            <span class="btn-mark">二</span><span class="btn-text"><b>무작위 수련</b><small>2~9단이 섞여 나오는 기본 서바이벌</small></span>
           </button>
           <button class="big-btn danger" data-action="startDemon">
-            <span class="btn-mark">三</span>
-            <span class="btn-text"><b>곱셈귀 모드</b><small>처음은 2~9단, 점수가 오르면 19단까지 확장</small></span>
+            <span class="btn-mark">三</span><span class="btn-text"><b>곱셈귀 모드</b><small>점수가 오르면 12단, 19단까지 확장</small></span>
+          </button>
+          <button class="big-btn album" data-action="openAlbum">
+            <span class="btn-mark">集</span><span class="btn-text"><b>호흡 스티커 도감</b><small>무작위·곱셈귀 수련으로 30종을 모아 보세요</small></span>
           </button>
         </div>
 
@@ -863,493 +806,625 @@
         </div>
       </section>
 
-      <section class="screen hidden" id="tableScreen">
+      <section class="screen screen-scroll hidden" id="tableScreen">
         <div class="back-row">
           <button class="ghost-btn" data-action="goMenu">← 처음으로</button>
-          <h2 class="screen-heading">단 선택</h2>
-          <span style="width:82px"></span>
+          <h2 class="screen-heading">수련 설정</h2>
+          <span style="width:74px"></span>
         </div>
-        <p class="subtitle">한 단을 고르면 같은 단 안에서 문제가 계속 바뀝니다. 틀린 문제는 잠시 뒤 다시 나옵니다.</p>
+        <p class="subtitle">한 단을 골라 시작하세요. 정답을 연속으로 맞히면 시간이 조금 줄고, 틀리면 다시 여유가 생깁니다.</p>
         <div class="table-grid" id="tableGrid"></div>
 
         <div class="card settings-panel">
-          <h3>수업용 난이도 설정</h3>
+          <h3>저학년 맞춤 설정</h3>
           <div class="setting-line">
             <span>시간 여유</span>
             <div class="segmented" id="difficultyControls">
-              <button data-difficulty="easy">여유</button>
-              <button data-difficulty="normal">보통</button>
-              <button data-difficulty="hard">도전</button>
+              <button data-difficulty="easy">여유</button><button data-difficulty="normal">보통</button><button data-difficulty="hard">도전</button>
             </div>
           </div>
+          <p class="setting-help">모든 난이도는 초반 시간이 넉넉하며, 플레이 결과에 맞춰 자동 조절됩니다.</p>
           <div class="setting-line">
-            <span>목숨</span>
-            <div class="segmented" id="lifeControls">
-              <button data-lives="3">3개</button>
-              <button data-lives="5">5개</button>
-            </div>
+            <span>시작 생명</span>
+            <div class="segmented" id="lifeControls"><button data-lives="3">3개</button><button data-lives="5">5개</button></div>
           </div>
           <div class="setting-line">
             <span>오답 복습</span>
-            <div class="segmented" id="reviewControls">
-              <button data-review="1600">짧게</button>
-              <button data-review="2400">보통</button>
-              <button data-review="3600">길게</button>
-            </div>
+            <div class="segmented" id="reviewControls"><button data-review="1800">짧게</button><button data-review="2800">보통</button><button data-review="4200">길게</button></div>
           </div>
+          <p class="setting-help">답을 완성하면 자동 제출됩니다. 확인 버튼을 누를 필요가 없습니다.</p>
         </div>
       </section>
 
-      <section class="screen hidden" id="gameScreen">
-        <div class="game-top">
-          <div class="top-box">
-            <span class="label">목숨</span>
-            <div class="lives" id="livesDisplay">🏮🏮🏮</div>
-          </div>
-          <button class="pause-btn" data-action="pause" aria-label="일시정지">Ⅱ</button>
-          <div class="top-box" style="text-align:right;">
-            <span class="label">점수</span>
-            <div class="score-value" id="scoreDisplay">0</div>
-          </div>
+      <section class="screen screen-scroll hidden" id="albumScreen">
+        <div class="back-row">
+          <button class="ghost-btn" data-action="goMenu">← 처음으로</button>
+          <h2 class="screen-heading">호흡 스티커 도감</h2>
+          <span style="width:74px"></span>
+        </div>
+        <div class="card album-summary">
+          <div><strong id="albumCount">0 / 30</strong><br><span>무작위·곱셈귀 수련 종료 때 새 스티커에 도전!</span></div>
+          <div id="albumPercent" style="font-size:1.7rem">0%</div>
+        </div>
+        <div class="album-grid" id="albumGrid"></div>
+      </section>
+
+      <section class="screen game-screen hidden" id="gameScreen">
+        <div class="game-hud" aria-label="게임 정보">
+          <div class="hud-item lives"><span>생명</span><strong id="livesDisplay">❤️❤️❤️</strong></div>
+          <div class="hud-item"><span>점수</span><strong id="scoreDisplay">0</strong></div>
+          <div class="hud-item"><span>최고</span><strong id="highScoreDisplay">0</strong></div>
+          <div class="hud-item"><span>레벨</span><strong id="levelDisplay">1</strong></div>
+          <div class="hud-item"><span>현재 단</span><strong id="tableDisplay">2~9단</strong></div>
+          <div class="hud-item combo"><span>콤보</span><strong id="comboDisplay">0</strong></div>
         </div>
 
-        <div class="timer-wrap" aria-label="남은 시간">
-          <div class="timer-bar" id="timerBar"></div>
-        </div>
-
-        <div class="combo-line" id="comboLine">수련 시작!</div>
+        <div class="timer-wrap" aria-label="남은 시간"><div class="timer-bar" id="timerBar"></div></div>
+        <div class="status-strip" id="statusStrip">수련 시작!</div>
+        <button class="pause-corner" data-action="pause" aria-label="일시정지">Ⅱ</button>
 
         <div class="play-card" id="playCard">
-          <div class="stage-chip" id="stageChip">기본 수련</div>
+          <div class="boss-stars">★★★★★</div>
+          <div class="stage-chip" id="stageChip">2~9단 무작위 · 보통</div>
           <div class="question" id="questionDisplay">2 × 2</div>
-
-          <div class="answer-row">
-            <input
-              type="number"
-              class="answer-input"
-              id="answerInput"
-              placeholder="답"
-              autocomplete="off"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              aria-label="정답 입력"
-            />
-            <button class="submit-btn" data-action="submit">제출</button>
+          <div class="answer-wrap">
+            <input type="number" class="answer-input" id="answerInput" placeholder="답" autocomplete="off" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" aria-label="정답 입력" />
+            <span class="answer-icon" aria-hidden="true">✎</span>
           </div>
-          <p class="hint-line">숫자를 쓰고 Enter 또는 제출 버튼을 누르세요. 태블릿은 아래 숫자판을 사용할 수 있습니다.</p>
-
+          <p class="hint-line">답이 완성되면 자동 제출됩니다. 키보드가 열려도 문제는 위에 고정됩니다.</p>
           <div class="keypad" id="keypad" aria-label="화면 숫자판">
-            <button data-key="1">1</button>
-            <button data-key="2">2</button>
-            <button data-key="3">3</button>
-            <button data-key="4">4</button>
-            <button data-key="5">5</button>
-            <button data-key="6">6</button>
-            <button data-key="7">7</button>
-            <button data-key="8">8</button>
-            <button data-key="9">9</button>
-            <button data-key="0">0</button>
-            <button class="wide" data-key="back">⌫</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="0">0</button><button class="wide" data-key="back">⌫</button>
           </div>
         </div>
 
         <div class="review-card hidden" id="reviewCard"></div>
       </section>
 
-      <section class="screen hidden" id="gameOverScreen">
-        <h2 class="gameover-title">수련 종료</h2>
-        <div class="card result-card">
-          <div class="result-line"><span>이번 점수</span><strong id="finalScore">0</strong></div>
-          <div class="result-line"><span>최대 콤보</span><strong class="red" id="finalCombo">0</strong></div>
-          <div class="result-line"><span>정확도</span><strong id="finalAccuracy">0%</strong></div>
-          <div class="result-line"><span>복습할 문제</span><strong class="gold" id="finalReviewCount">0개</strong></div>
-          <div class="result-line"><span>최고 기록</span><strong id="finalHighScore">0</strong></div>
+      <section class="screen screen-scroll hidden" id="gameOverScreen">
+        <div class="result-top">
+          <div class="result-stars">★★★★★</div>
+          <h2 class="result-title" id="resultTitle">계산 새싹</h2>
+          <div class="result-sub">오늘의 수련 결과</div>
+          <div class="new-record hidden" id="newRecordBadge">✨ 새 최고 기록!</div>
         </div>
 
-        <div class="menu-actions" style="margin-top:18px;">
-          <button class="big-btn" data-action="retry">
-            <span class="btn-mark">↻</span>
-            <span class="btn-text"><b>같은 모드 다시 도전</b><small>방금 선택한 조건으로 바로 재시작</small></span>
-          </button>
-          <button class="big-btn" data-action="goMenu">
-            <span class="btn-mark">門</span>
-            <span class="btn-text"><b>처음으로</b><small>모드와 설정을 다시 고르기</small></span>
-          </button>
+        <div class="card result-card">
+          <div class="result-line"><span>점수</span><strong id="finalScore">0</strong></div>
+          <div class="result-line"><span>최고 콤보</span><strong class="red" id="finalCombo">0</strong></div>
+          <div class="result-line"><span>정확도</span><strong id="finalAccuracy">0%</strong></div>
+          <div class="result-line"><span>획득 칭호</span><strong class="gold" id="finalTitle">계산 새싹</strong></div>
+          <div class="result-line"><span>현재 모드 최고</span><strong id="finalHighScore">0</strong></div>
+        </div>
+
+        <div class="card award-card" id="awardCard">
+          <div class="award-icon" id="awardIcon">🎴</div>
+          <div class="award-text"><small>이번에 얻은 스티커</small><b id="awardName">무작위·곱셈귀 수련에서 받을 수 있어요</b><span id="awardMeta">3문제 이상 풀어 보세요.</span></div>
+        </div>
+
+        <div class="menu-actions" style="margin-top:14px;">
+          <button class="big-btn" data-action="retry"><span class="btn-mark">↻</span><span class="btn-text"><b>같은 모드 다시 도전</b><small>방금 선택한 조건으로 바로 재시작</small></span></button>
+          <button class="big-btn album" id="resultAlbumButton" data-action="openAlbum"><span class="btn-mark">集</span><span class="btn-text"><b>스티커 도감 보기</b><small>새로 얻은 스티커를 확인하기</small></span></button>
+          <button class="big-btn" data-action="goMenu"><span class="btn-mark">門</span><span class="btn-text"><b>처음으로</b><small>모드와 설정을 다시 고르기</small></span></button>
         </div>
       </section>
 
       <div class="pause-overlay hidden" id="pauseOverlay">
         <div class="pause-box">
           <h2>잠시 멈춤</h2>
-          <p>시간이 멈췄습니다. 다시 시작하면 남은 시간부터 이어집니다.</p>
+          <p>시간이 멈췄습니다. 계속하기를 누르면 남은 시간부터 이어집니다.</p>
           <div class="menu-actions" style="margin-top:0;">
-            <button class="big-btn" data-action="resume">
-              <span class="btn-mark">▶</span>
-              <span class="btn-text"><b>계속하기</b><small>현재 문제 이어서 풀기</small></span>
-            </button>
-            <button class="big-btn danger" data-action="quit">
-              <span class="btn-mark">止</span>
-              <span class="btn-text"><b>그만하기</b><small>현재 점수로 결과 보기</small></span>
-            </button>
+            <button class="big-btn" data-action="resume"><span class="btn-mark">▶</span><span class="btn-text"><b>계속하기</b><small>현재 문제 이어서 풀기</small></span></button>
+            <button class="big-btn danger" data-action="quit"><span class="btn-mark">止</span><span class="btn-text"><b>그만하기</b><small>현재 점수로 결과 보기</small></span></button>
           </div>
         </div>
       </div>
+
+      <div id="effectsLayer" aria-live="polite"></div>
     </main>
   </div>
 
   <div class="door-layer" id="doorLayer" aria-hidden="true">
-    <div class="door left"></div>
-    <div class="door right"></div>
+    <div class="door left"></div><div class="door right"></div><div class="door-emblem" id="doorEmblem">無</div>
   </div>
 
   <script>
     "use strict";
 
+    /* =========================
+       설정·데이터
+    ========================= */
     const STORAGE = {
-      highScore: "muhanruV2.highScore",
-      bestCombo: "muhanruV2.bestCombo",
-      bestAccuracy: "muhanruV2.bestAccuracy",
-      settings: "muhanruV2.settings"
+      randomHighScore: "muhanruV31.randomHighScore",
+      demonHighScore: "muhanruV31.demonHighScore",
+      tableScores: "muhanruV31.tableScores",
+      bestCombo: "muhanruV3.bestCombo",
+      bestAccuracy: "muhanruV3.bestAccuracy",
+      settings: "muhanruV3.settings",
+      stickers: "muhanruV3.stickers",
+      migrated: "muhanruV31.migrated"
     };
 
-    const defaultSettings = {
-      sfx: true,
-      bgm: false,
-      difficulty: "normal",
-      lives: 3,
-      reviewMs: 2400
+    const LEGACY_STORAGE = {
+      highScore: ["muhanruV3.highScore", "muhanruV2.highScore", "guguHighScore"],
+      bestCombo: ["muhanruV3.bestCombo", "muhanruV2.bestCombo", "guguMaxCombo"],
+      bestAccuracy: ["muhanruV3.bestAccuracy", "muhanruV2.bestAccuracy"]
     };
+
+    const DEFAULT_SETTINGS = { sfx: true, bgm: false, difficulty: "normal", lives: 3, reviewMs: 2800 };
+
+    const DIFFICULTY = {
+      easy:   { name: "여유", base: 12200, min: 6500, wrongBoost: 1900, comboStep: 145 },
+      normal: { name: "보통", base: 10500, min: 5500, wrongBoost: 1650, comboStep: 165 },
+      hard:   { name: "도전", base: 9000,  min: 4500, wrongBoost: 1400, comboStep: 185 }
+    };
+
+    const TITLES = [
+      { score: 0, name: "계산 수련생" },
+      { score: 50, name: "계산 새싹" },
+      { score: 150, name: "곱셈 탐험가" },
+      { score: 400, name: "암산 달인" },
+      { score: 900, name: "계산왕" },
+      { score: 1600, name: "무한루 전설" }
+    ];
+
+    const SCENES = [
+      { score: 0, id: "classroom", name: "교실", icon: "🏫", sub: "칠판 앞에서 첫 수련을 시작해요", glow: "rgba(255,210,121,.48)", accent: "#ffd37a" },
+      { score: 180, id: "playground", name: "놀이터", icon: "🛝", sub: "바람과 비눗방울이 가득한 두 번째 지역!", glow: "rgba(74,222,128,.48)", accent: "#72f1ac" },
+      { score: 420, id: "space", name: "우주", icon: "🚀", sub: "별빛을 가르며 우주 수련장으로 출발!", glow: "rgba(129,140,248,.52)", accent: "#a5b4fc" },
+      { score: 760, id: "dragon", name: "용의 성", icon: "🐉", sub: "불꽃과 용이 기다리는 강자의 성!", glow: "rgba(251,113,133,.52)", accent: "#fb7185" },
+      { score: 1200, id: "rainbow", name: "무지개 왕국", icon: "🌈", sub: "무한루 정상, 찬란한 마지막 왕국!", glow: "rgba(244,114,182,.55)", accent: "#f9a8d4" }
+    ];
+
+    const COMBO_CELEBRATIONS = {
+      5:  { icon: "🔥", title: "5콤보", sub: "좋아!" },
+      10: { icon: "⚡", title: "10콤보", sub: "최고야!" },
+      20: { icon: "👑", title: "20콤보", sub: "계산왕!" },
+      30: { icon: "🌟", title: "30콤보", sub: "무한 연격!" }
+    };
+
+    /* 실제 작품의 호흡 이름을 바탕으로 만든 30종의 비공식 수련 스티커입니다.
+       공식 그림이나 캐릭터 이미지는 사용하지 않고 추상 문양과 이모지만 사용합니다. */
+    const STICKERS = [
+      { id:"sun-1", name:"태양의 호흡", edition:"해돋이 문양", icon:"☀️", rarity:"전설", glow:"rgba(251,191,36,.48)" },
+      { id:"sun-2", name:"태양의 호흡", edition:"황금 일륜", icon:"🌅", rarity:"전설", glow:"rgba(249,115,22,.48)" },
+      { id:"sun-3", name:"태양의 호흡", edition:"붉은 태양", icon:"🔆", rarity:"전설", glow:"rgba(239,68,68,.46)" },
+      { id:"moon-1", name:"달의 호흡", edition:"초승달 문양", icon:"🌙", rarity:"전설", glow:"rgba(167,139,250,.48)" },
+      { id:"moon-2", name:"달의 호흡", edition:"보랏빛 만월", icon:"🌕", rarity:"전설", glow:"rgba(139,92,246,.5)" },
+      { id:"moon-3", name:"달의 호흡", edition:"은빛 월광", icon:"🌌", rarity:"전설", glow:"rgba(196,181,253,.46)" },
+      { id:"water-1", name:"물의 호흡", edition:"맑은 물결", icon:"🌊", rarity:"희귀", glow:"rgba(56,189,248,.45)" },
+      { id:"water-2", name:"물의 호흡", edition:"푸른 소용돌이", icon:"💧", rarity:"희귀", glow:"rgba(14,165,233,.45)" },
+      { id:"flame-1", name:"화염의 호흡", edition:"타오르는 불꽃", icon:"🔥", rarity:"희귀", glow:"rgba(249,115,22,.48)" },
+      { id:"flame-2", name:"화염의 호흡", edition:"붉은 불씨", icon:"❤️‍🔥", rarity:"희귀", glow:"rgba(239,68,68,.5)" },
+      { id:"wind-1", name:"바람의 호흡", edition:"질풍 문양", icon:"🌪️", rarity:"희귀", glow:"rgba(74,222,128,.42)" },
+      { id:"wind-2", name:"바람의 호흡", edition:"초록 회오리", icon:"🍃", rarity:"희귀", glow:"rgba(34,197,94,.42)" },
+      { id:"stone-1", name:"바위의 호흡", edition:"거석 문양", icon:"🪨", rarity:"희귀", glow:"rgba(161,161,170,.42)" },
+      { id:"stone-2", name:"바위의 호흡", edition:"금강 수련", icon:"⛰️", rarity:"희귀", glow:"rgba(120,113,108,.46)" },
+      { id:"thunder-1", name:"번개의 호흡", edition:"황금 번개", icon:"⚡", rarity:"희귀", glow:"rgba(250,204,21,.48)" },
+      { id:"thunder-2", name:"번개의 호흡", edition:"벼락 문양", icon:"🌩️", rarity:"희귀", glow:"rgba(234,179,8,.46)" },
+      { id:"mist-1", name:"안개의 호흡", edition:"새벽 안개", icon:"🌫️", rarity:"고급", glow:"rgba(165,243,252,.38)" },
+      { id:"mist-2", name:"안개의 호흡", edition:"흐린 구름", icon:"☁️", rarity:"고급", glow:"rgba(148,163,184,.42)" },
+      { id:"love-1", name:"사랑의 호흡", edition:"분홍 리본", icon:"💗", rarity:"고급", glow:"rgba(244,114,182,.48)" },
+      { id:"love-2", name:"사랑의 호흡", edition:"두근 문양", icon:"💕", rarity:"고급", glow:"rgba(236,72,153,.45)" },
+      { id:"insect-1", name:"벌레의 호흡", edition:"나비 날개", icon:"🦋", rarity:"고급", glow:"rgba(192,132,252,.46)" },
+      { id:"insect-2", name:"벌레의 호흡", edition:"보랏빛 독", icon:"🪻", rarity:"고급", glow:"rgba(168,85,247,.44)" },
+      { id:"sound-1", name:"소리의 호흡", edition:"울림 문양", icon:"🎵", rarity:"고급", glow:"rgba(251,146,60,.44)" },
+      { id:"sound-2", name:"소리의 호흡", edition:"화려한 박자", icon:"🥁", rarity:"고급", glow:"rgba(245,158,11,.44)" },
+      { id:"beast-1", name:"짐승의 호흡", edition:"야생 발톱", icon:"🐗", rarity:"고급", glow:"rgba(100,116,139,.45)" },
+      { id:"beast-2", name:"짐승의 호흡", edition:"산짐승 문양", icon:"🐾", rarity:"고급", glow:"rgba(71,85,105,.45)" },
+      { id:"serpent-1", name:"뱀의 호흡", edition:"백사 문양", icon:"🐍", rarity:"고급", glow:"rgba(163,230,53,.4)" },
+      { id:"serpent-2", name:"뱀의 호흡", edition:"굽이치는 칼날", icon:"〰️", rarity:"고급", glow:"rgba(132,204,22,.4)" },
+      { id:"flower-1", name:"꽃의 호흡", edition:"봄꽃 문양", icon:"🌸", rarity:"고급", glow:"rgba(251,113,133,.44)" },
+      { id:"flower-2", name:"꽃의 호흡", edition:"만개한 꽃잎", icon:"🌺", rarity:"고급", glow:"rgba(244,63,94,.42)" }
+    ];
 
     const state = {
       screen: "menu",
       mode: 2,
       selectedTable: 2,
+      lastMode: { mode: 2, table: 2 },
       score: 0,
       combo: 0,
       maxCombo: 0,
       lives: 3,
+      maxLives: 3,
       correct: 0,
       attempted: 0,
       wrongCount: 0,
+      questionNumber: 0,
       currentA: 2,
       currentB: 2,
       answer: 4,
+      isBoss: false,
       endTime: 0,
-      timeLimit: 6000,
+      timeLimit: 10000,
       remainingMs: 0,
+      adaptiveMs: 2200,
+      nextTimeBonusMs: 0,
+      shield: 0,
+      doubleCharges: 0,
       reviewing: false,
       paused: false,
-      lastMode: { mode: 2, table: 2 },
+      answerLocked: false,
       recent: [],
       wrongBank: [],
       reviewTimeout: null,
-      raf: 0
+      nextTimeout: null,
+      raf: 0,
+      highScoreBefore: 0,
+      currentScene: "classroom",
+      sceneTransitioning: false,
+      stickerAward: null,
+      stickerDuplicate: false
     };
 
     let settings = loadSettings();
+    let ownedStickers = loadOwnedStickers();
     let audioCtx = null;
     let masterGain = null;
     let bgmTimer = null;
     let transitionLocked = false;
 
-    const $ = (id) => document.getElementById(id);
-
+    const $ = id => document.getElementById(id);
     const els = {
-      app: $("app"),
-      doorLayer: $("doorLayer"),
-      menuScreen: $("menuScreen"),
-      tableScreen: $("tableScreen"),
-      gameScreen: $("gameScreen"),
-      gameOverScreen: $("gameOverScreen"),
-      pauseOverlay: $("pauseOverlay"),
-      tableGrid: $("tableGrid"),
-      livesDisplay: $("livesDisplay"),
-      scoreDisplay: $("scoreDisplay"),
-      comboLine: $("comboLine"),
-      timerBar: $("timerBar"),
-      stageChip: $("stageChip"),
-      questionDisplay: $("questionDisplay"),
-      answerInput: $("answerInput"),
-      playCard: $("playCard"),
-      reviewCard: $("reviewCard"),
-      keypad: $("keypad"),
-      menuHighScore: $("menuHighScore"),
-      menuBestCombo: $("menuBestCombo"),
-      menuBestAccuracy: $("menuBestAccuracy"),
-      soundToggle: $("soundToggle"),
-      bgmToggle: $("bgmToggle")
+      appShell: $("appShell"), app: $("app"), doorLayer: $("doorLayer"), doorEmblem: $("doorEmblem"),
+      doorLeft: document.querySelector(".door.left"), doorRight: document.querySelector(".door.right"), effectsLayer: $("effectsLayer"),
+      menuScreen: $("menuScreen"), tableScreen: $("tableScreen"), albumScreen: $("albumScreen"), gameScreen: $("gameScreen"), gameOverScreen: $("gameOverScreen"),
+      pauseOverlay: $("pauseOverlay"), tableGrid: $("tableGrid"), albumGrid: $("albumGrid"), albumCount: $("albumCount"), albumPercent: $("albumPercent"),
+      livesDisplay: $("livesDisplay"), scoreDisplay: $("scoreDisplay"), highScoreDisplay: $("highScoreDisplay"), levelDisplay: $("levelDisplay"), tableDisplay: $("tableDisplay"), comboDisplay: $("comboDisplay"),
+      timerBar: $("timerBar"), statusStrip: $("statusStrip"), stageChip: $("stageChip"), questionDisplay: $("questionDisplay"), answerInput: $("answerInput"),
+      playCard: $("playCard"), reviewCard: $("reviewCard"), keypad: $("keypad"),
+      menuRandomHighScore: $("menuRandomHighScore"), menuDemonHighScore: $("menuDemonHighScore"), menuBestCombo: $("menuBestCombo"), menuStickerCount: $("menuStickerCount"),
+      soundToggle: $("soundToggle"), bgmToggle: $("bgmToggle"), newRecordBadge: $("newRecordBadge"), awardCard: $("awardCard"), resultAlbumButton: $("resultAlbumButton")
     };
 
     init();
 
     function init() {
+      migrateLegacyRecords();
       buildTableButtons();
       bindEvents();
       updateSettingControls();
       updateMenuRecords();
+      updateVisualViewport();
+      setScene(SCENES[0], false);
       showScreen("menu");
     }
 
-    function loadSettings() {
-      try {
-        return { ...defaultSettings, ...JSON.parse(localStorage.getItem(STORAGE.settings) || "{}") };
-      } catch {
-        return { ...defaultSettings };
-      }
+    /* =========================
+       저장소
+    ========================= */
+    function safeReadJson(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch { return fallback; }
     }
 
-    function saveSettings() {
-      localStorage.setItem(STORAGE.settings, JSON.stringify(settings));
-      updateSettingControls();
+    function loadSettings() { return { ...DEFAULT_SETTINGS, ...safeReadJson(STORAGE.settings, {}) }; }
+    function saveSettings() { localStorage.setItem(STORAGE.settings, JSON.stringify(settings)); updateSettingControls(); }
+
+    function loadOwnedStickers() {
+      const data = safeReadJson(STORAGE.stickers, []);
+      return Array.isArray(data) ? data.filter(id => STICKERS.some(s => s.id === id)) : [];
     }
 
-    function getRecordNumber(key, fallbackKey = null) {
-      const raw = localStorage.getItem(key);
-      if (raw !== null && !Number.isNaN(Number(raw))) return Number(raw);
-      if (fallbackKey) {
-        const fallback = localStorage.getItem(fallbackKey);
-        if (fallback !== null && !Number.isNaN(Number(fallback))) return Number(fallback);
+    function saveOwnedStickers() { localStorage.setItem(STORAGE.stickers, JSON.stringify(ownedStickers)); }
+
+    function migrateLegacyRecords() {
+      if (localStorage.getItem(STORAGE.migrated) === "1") return;
+      const oldHigh = LEGACY_STORAGE.highScore.reduce((max, key) => Math.max(max, Number(localStorage.getItem(key)) || 0), 0);
+      if (localStorage.getItem(STORAGE.randomHighScore) === null && oldHigh > 0) {
+        // 이전 버전은 모드를 구분하지 않았으므로 기록 손실 방지를 위해 무작위 대표 기록으로 이전합니다.
+        localStorage.setItem(STORAGE.randomHighScore, String(oldHigh));
       }
-      return 0;
+      const oldCombo = LEGACY_STORAGE.bestCombo.reduce((max, key) => Math.max(max, Number(localStorage.getItem(key)) || 0), 0);
+      const oldAccuracy = LEGACY_STORAGE.bestAccuracy.reduce((max, key) => Math.max(max, Number(localStorage.getItem(key)) || 0), 0);
+      if (localStorage.getItem(STORAGE.bestCombo) === null && oldCombo > 0) localStorage.setItem(STORAGE.bestCombo, String(oldCombo));
+      if (localStorage.getItem(STORAGE.bestAccuracy) === null && oldAccuracy > 0) localStorage.setItem(STORAGE.bestAccuracy, String(oldAccuracy));
+      localStorage.setItem(STORAGE.migrated, "1");
+    }
+
+    function getRecordNumber(key) {
+      const n = Number(localStorage.getItem(key));
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function getTableScores() {
+      const raw = safeReadJson(STORAGE.tableScores, {});
+      const scores = {};
+      for (let n = 2; n <= 9; n++) scores[n] = Math.max(0, Number(raw[n]) || 0);
+      return scores;
     }
 
     function getRecords() {
+      const randomHighScore = getRecordNumber(STORAGE.randomHighScore);
+      const demonHighScore = getRecordNumber(STORAGE.demonHighScore);
       return {
-        highScore: getRecordNumber(STORAGE.highScore, "guguHighScore"),
-        bestCombo: getRecordNumber(STORAGE.bestCombo, "guguMaxCombo"),
+        randomHighScore,
+        demonHighScore,
+        representativeHighScore: Math.max(randomHighScore, demonHighScore),
+        tableScores: getTableScores(),
+        bestCombo: getRecordNumber(STORAGE.bestCombo),
         bestAccuracy: getRecordNumber(STORAGE.bestAccuracy)
       };
     }
 
+    function getModeHighScore(mode = state.mode, table = state.selectedTable) {
+      const records = getRecords();
+      if (mode === 1) return records.tableScores[table] || 0;
+      if (mode === 2) return records.randomHighScore;
+      return records.demonHighScore;
+    }
+
     function saveRecords() {
       const records = getRecords();
-      if (state.score > records.highScore) localStorage.setItem(STORAGE.highScore, String(state.score));
-      if (state.maxCombo > records.bestCombo) localStorage.setItem(STORAGE.bestCombo, String(state.maxCombo));
+      if (state.mode === 1) {
+        const tableScores = { ...records.tableScores, [state.selectedTable]: Math.max(records.tableScores[state.selectedTable] || 0, state.score) };
+        localStorage.setItem(STORAGE.tableScores, JSON.stringify(tableScores));
+      } else if (state.mode === 2) {
+        localStorage.setItem(STORAGE.randomHighScore, String(Math.max(records.randomHighScore, state.score)));
+      } else {
+        localStorage.setItem(STORAGE.demonHighScore, String(Math.max(records.demonHighScore, state.score)));
+      }
+      localStorage.setItem(STORAGE.bestCombo, String(Math.max(records.bestCombo, state.maxCombo)));
+      localStorage.setItem(STORAGE.bestAccuracy, String(Math.max(records.bestAccuracy, getAccuracy())));
+    }
 
-      const acc = getAccuracy();
-      if (acc > records.bestAccuracy) localStorage.setItem(STORAGE.bestAccuracy, String(acc));
+    function resetRecords() {
+      const ok = confirm("모드별·단별 최고 기록과 스티커 도감을 모두 초기화할까요?");
+      if (!ok) return;
+      [STORAGE.randomHighScore, STORAGE.demonHighScore, STORAGE.tableScores, STORAGE.bestCombo, STORAGE.bestAccuracy, STORAGE.stickers].forEach(key => localStorage.removeItem(key));
+      ownedStickers = [];
+      updateMenuRecords();
+      buildTableButtons();
+      buildAlbum();
+      playWrongSfx();
+    }
+
+    /* =========================
+       UI 구성·이벤트
+    ========================= */
+    function buildTableButtons() {
+      const tableScores = getTableScores();
+      els.tableGrid.innerHTML = "";
+      for (let n = 2; n <= 9; n++) {
+        const btn = document.createElement("button");
+        btn.className = "table-btn";
+        btn.type = "button";
+        btn.innerHTML = `<strong>${n}단</strong><small>최고 ${tableScores[n] || 0}점</small>`;
+        btn.dataset.table = String(n);
+        btn.setAttribute("aria-label", `${n}단 수련, 최고 ${tableScores[n] || 0}점`);
+        els.tableGrid.appendChild(btn);
+      }
+    }
+
+    function buildAlbum() {
+      els.albumGrid.innerHTML = "";
+      STICKERS.forEach(sticker => {
+        const owned = ownedStickers.includes(sticker.id);
+        const card = document.createElement("div");
+        card.className = `sticker-card${owned ? "" : " locked"}`;
+        card.style.setProperty("--sticker-glow", sticker.glow);
+        card.innerHTML = `
+          <span class="sticker-icon">${owned ? sticker.icon : "❔"}</span>
+          <b>${owned ? sticker.name : "아직 잠김"}</b>
+          <small>${owned ? sticker.edition : "게임을 끝내고 획득"}</small>
+          <span class="rarity">${owned ? sticker.rarity : "LOCK"}</span>`;
+        els.albumGrid.appendChild(card);
+      });
+      const percent = Math.round((ownedStickers.length / STICKERS.length) * 100);
+      els.albumCount.textContent = `${ownedStickers.length} / ${STICKERS.length}`;
+      els.albumPercent.textContent = `${percent}%`;
+    }
+
+    function bindEvents() {
+      document.addEventListener("click", event => {
+        const actionEl = event.target.closest("[data-action]");
+        if (actionEl) { handleAction(actionEl.dataset.action); return; }
+
+        const tableEl = event.target.closest("[data-table]");
+        if (tableEl) { transitionTo(() => startGame(1, Number(tableEl.dataset.table))); return; }
+
+        const keyEl = event.target.closest("[data-key]");
+        if (keyEl) { pressKeypad(keyEl.dataset.key); return; }
+
+        const diffEl = event.target.closest("[data-difficulty]");
+        if (diffEl) { settings.difficulty = diffEl.dataset.difficulty; saveSettings(); return; }
+
+        const lifeEl = event.target.closest("[data-lives]");
+        if (lifeEl) { settings.lives = Number(lifeEl.dataset.lives); saveSettings(); return; }
+
+        const reviewEl = event.target.closest("[data-review]");
+        if (reviewEl) { settings.reviewMs = Number(reviewEl.dataset.review); saveSettings(); }
+      });
+
+      els.answerInput.addEventListener("input", handleAnswerInput);
+      els.answerInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") evaluateInput(true);
+        if (event.key === "Escape") togglePause(true);
+      });
+      els.answerInput.addEventListener("focus", () => setTimeout(updateVisualViewport, 30));
+      els.answerInput.addEventListener("blur", () => setTimeout(updateVisualViewport, 80));
+
+      document.addEventListener("keydown", event => {
+        if (state.screen === "game" && event.key === "Escape" && !state.reviewing) togglePause(!state.paused);
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && state.screen === "game" && !state.reviewing && !state.paused) togglePause(true);
+      });
+
+      window.addEventListener("resize", updateVisualViewport);
+      window.addEventListener("orientationchange", () => setTimeout(updateVisualViewport, 150));
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateVisualViewport);
+        window.visualViewport.addEventListener("scroll", updateVisualViewport);
+      }
+    }
+
+    function handleAction(action) {
+      switch (action) {
+        case "openTables": transitionTo(() => showScreen("tables")); break;
+        case "openAlbum": transitionTo(() => { buildAlbum(); showScreen("album"); }); break;
+        case "startRandom": transitionTo(() => startGame(2)); break;
+        case "startDemon": transitionTo(() => startGame(3)); break;
+        case "goMenu": transitionTo(() => showScreen("menu")); break;
+        case "toggleSound": settings.sfx = !settings.sfx; saveSettings(); if (settings.sfx) playCorrectSfx(2); break;
+        case "toggleBgm": settings.bgm = !settings.bgm; saveSettings(); if (settings.bgm && state.screen === "game") startBgm(); else stopBgm(); break;
+        case "resetRecords": resetRecords(); break;
+        case "pause": togglePause(true); break;
+        case "resume": togglePause(false); break;
+        case "quit": endGame(); break;
+        case "retry": transitionTo(() => startGame(state.lastMode.mode, state.lastMode.table)); break;
+        case "nextReview": finishReview(); break;
+      }
+    }
+
+    function updateSettingControls() {
+      document.querySelectorAll("[data-difficulty]").forEach(btn => btn.classList.toggle("active", btn.dataset.difficulty === settings.difficulty));
+      document.querySelectorAll("[data-lives]").forEach(btn => btn.classList.toggle("active", Number(btn.dataset.lives) === settings.lives));
+      document.querySelectorAll("[data-review]").forEach(btn => btn.classList.toggle("active", Number(btn.dataset.review) === settings.reviewMs));
+      updateMenuRecords();
     }
 
     function updateMenuRecords() {
       const records = getRecords();
-      els.menuHighScore.textContent = records.highScore;
+      els.menuRandomHighScore.textContent = records.randomHighScore;
+      els.menuDemonHighScore.textContent = records.demonHighScore;
       els.menuBestCombo.textContent = records.bestCombo;
-      els.menuBestAccuracy.textContent = `${records.bestAccuracy}%`;
+      els.menuStickerCount.textContent = `${ownedStickers.length}/${STICKERS.length}`;
       els.soundToggle.textContent = settings.sfx ? "효과음 켬" : "효과음 끔";
       els.soundToggle.classList.toggle("active", settings.sfx);
       els.bgmToggle.textContent = settings.bgm ? "BGM 켬" : "BGM 끔";
       els.bgmToggle.classList.toggle("active", settings.bgm);
     }
 
-    function buildTableButtons() {
-      els.tableGrid.innerHTML = "";
-      for (let n = 2; n <= 9; n++) {
-        const btn = document.createElement("button");
-        btn.className = "table-btn";
-        btn.type = "button";
-        btn.textContent = `${n}단`;
-        btn.dataset.table = String(n);
-        els.tableGrid.appendChild(btn);
-      }
+    function updateVisualViewport() {
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const keyboardOpen = state.screen === "game" && window.innerHeight - height > 140;
+      document.documentElement.style.setProperty("--vvh", `${Math.round(height)}px`);
+      document.documentElement.style.setProperty("--vvoffset", `${Math.round(offsetTop)}px`);
+      document.body.classList.toggle("keyboard-open", keyboardOpen);
     }
 
-    function bindEvents() {
-      document.addEventListener("click", (event) => {
-        const actionEl = event.target.closest("[data-action]");
-        if (actionEl) {
-          handleAction(actionEl.dataset.action);
-          return;
-        }
+    const DOOR_CLOSE_MS = 660;
+    const DOOR_OPEN_MS = 610;
 
-        const tableEl = event.target.closest("[data-table]");
-        if (tableEl) {
-          transitionTo(() => startGame(1, Number(tableEl.dataset.table)));
-          return;
-        }
-
-        const keyEl = event.target.closest("[data-key]");
-        if (keyEl) {
-          pressKeypad(keyEl.dataset.key);
-          return;
-        }
-
-        const diffEl = event.target.closest("[data-difficulty]");
-        if (diffEl) {
-          settings.difficulty = diffEl.dataset.difficulty;
-          saveSettings();
-          return;
-        }
-
-        const lifeEl = event.target.closest("[data-lives]");
-        if (lifeEl) {
-          settings.lives = Number(lifeEl.dataset.lives);
-          saveSettings();
-          return;
-        }
-
-        const reviewEl = event.target.closest("[data-review]");
-        if (reviewEl) {
-          settings.reviewMs = Number(reviewEl.dataset.review);
-          saveSettings();
-        }
-      });
-
-      els.answerInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") submitAnswer();
-        if (event.key === "Escape") togglePause(true);
-      });
-
-      els.answerInput.addEventListener("input", () => {
-        if (els.answerInput.value.length > 4) {
-          els.answerInput.value = els.answerInput.value.slice(0, 4);
-        }
-      });
-
-      document.addEventListener("keydown", (event) => {
-        if (state.screen === "game" && event.key === "Escape" && !state.reviewing) {
-          togglePause(!state.paused);
-        }
-      });
-
-      window.addEventListener("blur", () => {
-        if (state.screen === "game" && !state.reviewing && !state.paused) togglePause(true);
-      });
+    function wait(ms) {
+      return new Promise(resolve => window.setTimeout(resolve, ms));
     }
 
-    function handleAction(action) {
-      switch (action) {
-        case "openTables":
-          transitionTo(() => showScreen("tables"));
-          break;
-        case "startRandom":
-          transitionTo(() => startGame(2));
-          break;
-        case "startDemon":
-          transitionTo(() => startGame(3));
-          break;
-        case "goMenu":
-          transitionTo(() => showScreen("menu"));
-          break;
-        case "toggleSound":
-          settings.sfx = !settings.sfx;
-          saveSettings();
-          updateMenuRecords();
-          if (settings.sfx) playCorrectSfx(2);
-          break;
-        case "toggleBgm":
-          settings.bgm = !settings.bgm;
-          saveSettings();
-          updateMenuRecords();
-          if (settings.bgm && state.screen === "game") startBgm();
-          else stopBgm();
-          break;
-        case "resetRecords":
-          resetRecords();
-          break;
-        case "submit":
-          submitAnswer();
-          break;
-        case "pause":
-          togglePause(true);
-          break;
-        case "resume":
-          togglePause(false);
-          break;
-        case "quit":
-          endGame();
-          break;
-        case "retry":
-          transitionTo(() => startGame(state.lastMode.mode, state.lastMode.table));
-          break;
-        case "nextReview":
-          finishReview();
-          break;
-      }
+    function nextPaint() {
+      return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     }
 
-    function updateSettingControls() {
-      document.querySelectorAll("[data-difficulty]").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.difficulty === settings.difficulty);
-      });
-      document.querySelectorAll("[data-lives]").forEach(btn => {
-        btn.classList.toggle("active", Number(btn.dataset.lives) === settings.lives);
-      });
-      document.querySelectorAll("[data-review]").forEach(btn => {
-        btn.classList.toggle("active", Number(btn.dataset.review) === settings.reviewMs);
-      });
-      updateMenuRecords();
+    async function slideDoors(closing) {
+      const leftFrom = closing ? "translate3d(-104%,0,0)" : "translate3d(0,0,0)";
+      const leftTo = closing ? "translate3d(0,0,0)" : "translate3d(-104%,0,0)";
+      const rightFrom = closing ? "translate3d(104%,0,0)" : "translate3d(0,0,0)";
+      const rightTo = closing ? "translate3d(0,0,0)" : "translate3d(104%,0,0)";
+      const duration = closing ? DOOR_CLOSE_MS : DOOR_OPEN_MS;
+      const easing = closing
+        ? "cubic-bezier(.62,.02,.18,1)"
+        : "cubic-bezier(.55,.02,.28,1)";
+
+      els.doorLeft.getAnimations().forEach(animation => animation.cancel());
+      els.doorRight.getAnimations().forEach(animation => animation.cancel());
+      els.doorLeft.style.transform = leftFrom;
+      els.doorRight.style.transform = rightFrom;
+      await nextPaint();
+
+      const leftAnimation = els.doorLeft.animate(
+        [{ transform: leftFrom }, { transform: leftTo }],
+        { duration, easing, fill: "forwards" }
+      );
+      const rightAnimation = els.doorRight.animate(
+        [{ transform: rightFrom }, { transform: rightTo }],
+        { duration, easing, fill: "forwards" }
+      );
+
+      await Promise.allSettled([leftAnimation.finished, rightAnimation.finished]);
+      els.doorLeft.style.transform = leftTo;
+      els.doorRight.style.transform = rightTo;
+      leftAnimation.cancel();
+      rightAnimation.cancel();
     }
 
-    function resetRecords() {
-      const ok = confirm("무한루 최고 기록을 모두 지울까요?");
-      if (!ok) return;
-      Object.values(STORAGE).forEach(key => {
-        if (key !== STORAGE.settings) localStorage.removeItem(key);
-      });
-      localStorage.removeItem("guguHighScore");
-      localStorage.removeItem("guguMaxCombo");
-      updateMenuRecords();
-      playWrongSfx();
+    function runDoorTransition(callback, { emblem = "無", holdMs = 90, onComplete = null } = {}) {
+      if (transitionLocked) return false;
+      transitionLocked = true;
+      initAudio();
+
+      void (async () => {
+        try {
+          els.doorEmblem.textContent = emblem;
+          els.doorLayer.classList.remove("closed");
+          els.doorLeft.style.transform = "translate3d(-104%,0,0)";
+          els.doorRight.style.transform = "translate3d(104%,0,0)";
+          els.doorLayer.classList.add("active");
+          await nextPaint();
+
+          playDoorSfx(true);
+          els.doorLayer.classList.add("closed");
+          await slideDoors(true);
+
+          callback();
+          await wait(holdMs);
+
+          playDoorSfx(false);
+          els.doorLayer.classList.remove("closed");
+          await slideDoors(false);
+        } finally {
+          els.doorLayer.classList.remove("active", "closed");
+          els.doorLeft.style.transform = "translate3d(-104%,0,0)";
+          els.doorRight.style.transform = "translate3d(104%,0,0)";
+          transitionLocked = false;
+          if (typeof onComplete === "function") onComplete();
+        }
+      })();
+
+      return true;
     }
 
     function transitionTo(callback) {
-      if (transitionLocked) return;
-      transitionLocked = true;
-      initAudio();
-      els.doorLayer.classList.add("closed");
-      window.setTimeout(() => {
-        callback();
-        els.doorLayer.classList.remove("closed");
-        window.setTimeout(() => {
-          transitionLocked = false;
-        }, 430);
-      }, 430);
+      runDoorTransition(callback, { emblem: "無", holdMs: 80 });
     }
 
     function showScreen(name) {
       state.screen = name;
-      [els.menuScreen, els.tableScreen, els.gameScreen, els.gameOverScreen].forEach(screen => screen.classList.add("hidden"));
-
+      [els.menuScreen, els.tableScreen, els.albumScreen, els.gameScreen, els.gameOverScreen].forEach(screen => screen.classList.add("hidden"));
       clearGameTimers();
-
       if (name !== "game") stopBgm();
-
-      if (name === "menu") {
-        els.menuScreen.classList.remove("hidden");
-        updateMenuRecords();
-      } else if (name === "tables") {
-        els.tableScreen.classList.remove("hidden");
-      } else if (name === "game") {
-        els.gameScreen.classList.remove("hidden");
-      } else if (name === "gameover") {
-        els.gameOverScreen.classList.remove("hidden");
-      }
-
+      if (name === "menu") { els.menuScreen.classList.remove("hidden"); updateMenuRecords(); }
+      else if (name === "tables") { els.tableScreen.classList.remove("hidden"); buildTableButtons(); }
+      else if (name === "album") { els.albumScreen.classList.remove("hidden"); buildAlbum(); }
+      else if (name === "game") els.gameScreen.classList.remove("hidden");
+      else if (name === "gameover") els.gameOverScreen.classList.remove("hidden");
       els.pauseOverlay.classList.add("hidden");
+      document.body.classList.remove("keyboard-open");
+      updateVisualViewport();
     }
 
+    /* =========================
+       게임 흐름
+    ========================= */
     function startGame(mode, table = 2) {
-      state.mode = mode;
-      state.selectedTable = table;
-      state.lastMode = { mode, table };
-      state.score = 0;
-      state.combo = 0;
-      state.maxCombo = 0;
-      state.lives = settings.lives;
-      state.correct = 0;
-      state.attempted = 0;
-      state.wrongCount = 0;
-      state.currentA = 2;
-      state.currentB = 2;
-      state.answer = 4;
-      state.reviewing = false;
-      state.paused = false;
-      state.recent = [];
-      state.wrongBank = [];
+      const modeHighScore = getModeHighScore(mode, table);
+      Object.assign(state, {
+        mode, selectedTable: table, lastMode: { mode, table }, score: 0, combo: 0, maxCombo: 0,
+        lives: settings.lives, maxLives: settings.lives, correct: 0, attempted: 0, wrongCount: 0,
+        questionNumber: 0, currentA: 2, currentB: 2, answer: 4, isBoss: false,
+        adaptiveMs: 2200, nextTimeBonusMs: 0, shield: 0, doubleCharges: 0,
+        reviewing: false, paused: false, answerLocked: false, recent: [], wrongBank: [],
+        highScoreBefore: modeHighScore, currentScene: "classroom", sceneTransitioning: false, stickerAward: null, stickerDuplicate: false
+      });
       clearGameTimers();
-
-      els.playCard.classList.remove("hidden");
+      els.playCard.classList.remove("hidden", "boss");
       els.reviewCard.classList.add("hidden");
+      els.awardCard.classList.toggle("hidden", mode === 1);
+      els.resultAlbumButton.classList.toggle("hidden", mode === 1);
+      setScene(SCENES[0], false);
       showScreen("game");
       updateHud();
       if (settings.bgm) startBgm();
@@ -1358,396 +1433,556 @@
 
     function clearGameTimers() {
       cancelAnimationFrame(state.raf);
-      if (state.reviewTimeout) {
-        clearTimeout(state.reviewTimeout);
-        state.reviewTimeout = null;
-      }
+      if (state.reviewTimeout) { clearTimeout(state.reviewTimeout); state.reviewTimeout = null; }
+      if (state.nextTimeout) { clearTimeout(state.nextTimeout); state.nextTimeout = null; }
     }
 
     function nextQuestion() {
+      if (state.screen !== "game") return;
       state.reviewing = false;
       state.paused = false;
+      state.answerLocked = false;
+      state.questionNumber++;
+      state.isBoss = state.questionNumber % 25 === 0;
       els.pauseOverlay.classList.add("hidden");
       els.playCard.classList.remove("hidden");
-      els.reviewCard.classList.add("hidden");
+      els.reviewCard.classList.add("hidden", "protected", "boss-review");
+      els.playCard.classList.toggle("boss", state.isBoss);
+      els.answerInput.classList.remove("correcting");
       els.answerInput.value = "";
 
-      const q = makeQuestion();
+      const q = makeQuestion(state.isBoss);
       state.currentA = q.a;
       state.currentB = q.b;
       state.answer = q.a * q.b;
       state.recent.push(`${q.a}x${q.b}`);
-      if (state.recent.length > 7) state.recent.shift();
+      if (state.recent.length > 8) state.recent.shift();
 
       els.questionDisplay.textContent = `${q.a} × ${q.b}`;
-      els.stageChip.textContent = getStageLabel();
+      els.stageChip.textContent = state.isBoss ? `보너스 문제 · ${getModeLabel()}` : `${getModeLabel()} · ${DIFFICULTY[settings.difficulty].name}`;
+      setStatus(state.isBoss ? "★★★★★  보너스 문제!  맞히면 생명 +1 · 점수 +200" : getNormalStatus(), false);
 
-      state.timeLimit = calculateTimeLimit(q.a, q.b);
+      state.timeLimit = calculateTimeLimit(q.a, q.b, state.isBoss);
       state.endTime = performance.now() + state.timeLimit;
+      state.nextTimeBonusMs = 0;
 
       updateHud();
-      cancelAnimationFrame(state.raf);
       updateTimer();
-      window.setTimeout(() => els.answerInput.focus(), 60);
+      setTimeout(() => {
+        if (state.screen === "game" && !state.reviewing) {
+          try { els.answerInput.focus({ preventScroll: true }); } catch { els.answerInput.focus(); }
+        }
+      }, 70);
     }
 
-    function makeQuestion() {
-      if (state.wrongBank.length > 0 && Math.random() < 0.28) {
+    function makeQuestion(isBoss) {
+      if (!isBoss && state.wrongBank.length > 0 && Math.random() < .30) {
         const item = state.wrongBank.shift();
         return { a: item.a, b: item.b };
       }
 
-      let q = randomQuestion();
-      for (let i = 0; i < 18; i++) {
-        const key = `${q.a}x${q.b}`;
-        if (!state.recent.includes(key)) break;
-        q = randomQuestion();
+      let q = randomQuestion(isBoss);
+      for (let i = 0; i < 20; i++) {
+        if (!state.recent.includes(`${q.a}x${q.b}`)) break;
+        q = randomQuestion(isBoss);
       }
       return q;
     }
 
-    function randomQuestion() {
-      if (state.mode === 1) {
-        return { a: state.selectedTable, b: rand(1, 9) };
-      }
+    function randomQuestion(isBoss = false) {
+      if (state.mode === 1) return { a: state.selectedTable, b: isBoss ? rand(6, 12) : rand(1, 9) };
+      if (state.mode === 2) return isBoss ? { a: rand(6, 12), b: rand(6, 12) } : { a: rand(2, 9), b: rand(1, 9) };
 
-      if (state.mode === 2) {
-        return { a: rand(2, 9), b: rand(1, 9) };
-      }
-
-      // 곱셈귀 모드는 처음부터 19단을 던지지 않고 점수에 따라 확장한다.
-      if (state.score < 120) {
-        return { a: rand(2, 9), b: rand(2, 9) };
-      }
-      if (state.score < 270) {
-        return { a: rand(2, 12), b: rand(2, 12) };
-      }
-      return { a: rand(2, 19), b: rand(2, 19) };
+      const max = state.score < 150 ? 9 : state.score < 420 ? 12 : 19;
+      const bossMax = Math.min(19, max + (max < 19 ? 3 : 0));
+      return isBoss ? { a: rand(Math.max(5, bossMax - 7), bossMax), b: rand(5, Math.min(12, bossMax)) } : { a: rand(2, max), b: rand(2, max) };
     }
 
-    function rand(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function calculateTimeLimit(a, b) {
-      const difficultyMultiplier = {
-        easy: 1.28,
-        normal: 1,
-        hard: .84
-      }[settings.difficulty] || 1;
-
-      let base = 6000;
-      if (state.mode === 1) base = 6400;
-      if (state.mode === 3) base = 7600;
-
-      const complexityBonus = (a >= 10 || b >= 10) ? 1500 : 0;
-      const pressure = Math.min(2200, state.score * 5 + state.combo * 38);
-      const minTime = state.mode === 3 ? 3300 : 2700;
-
-      return Math.max(minTime, Math.round((base + complexityBonus - pressure) * difficultyMultiplier));
-    }
-
-    function getStageLabel() {
-      const difficultyName = {
-        easy: "여유",
-        normal: "보통",
-        hard: "도전"
-      }[settings.difficulty] || "보통";
-
-      if (state.mode === 1) return `${state.selectedTable}단 집중 수련 · ${difficultyName}`;
-      if (state.mode === 2) return `2~9단 무작위 수련 · ${difficultyName}`;
-      if (state.score < 120) return `곱셈귀 1층 · 2~9단 · ${difficultyName}`;
-      if (state.score < 270) return `곱셈귀 2층 · 12단까지 · ${difficultyName}`;
-      return `곱셈귀 심층 · 19단까지 · ${difficultyName}`;
+    function calculateTimeLimit(a, b, isBoss) {
+      const d = DIFFICULTY[settings.difficulty] || DIFFICULTY.normal;
+      const complexity = (a >= 10 || b >= 10 ? 1900 : 0) + (a * b >= 100 ? 700 : 0);
+      const modeBonus = state.mode === 1 ? 800 : state.mode === 3 ? 1400 : 0;
+      const openingGrace = state.questionNumber <= 3 ? 2300 : state.questionNumber <= 8 ? 900 : 0;
+      const comboPressure = state.combo < 3 ? 0 : Math.min(2700, (state.combo - 2) * d.comboStep);
+      const bossBonus = isBoss ? 4500 : 0;
+      const calculated = d.base + complexity + modeBonus + openingGrace + state.adaptiveMs + state.nextTimeBonusMs + bossBonus - comboPressure;
+      return Math.max(d.min, Math.round(calculated));
     }
 
     function updateTimer() {
       if (state.reviewing || state.paused || state.screen !== "game") return;
-
-      const now = performance.now();
-      const left = state.endTime - now;
-
+      const left = state.endTime - performance.now();
       if (left <= 0) {
         els.timerBar.style.width = "0%";
         handleWrong(true, "");
         return;
       }
-
       const percent = Math.max(0, Math.min(100, (left / state.timeLimit) * 100));
       els.timerBar.style.width = `${percent}%`;
-      els.timerBar.classList.toggle("warning", percent < 32);
-
+      els.timerBar.classList.toggle("warning", percent < 28);
       state.raf = requestAnimationFrame(updateTimer);
     }
 
-    function submitAnswer() {
-      if (state.screen !== "game" || state.reviewing || state.paused) return;
-
-      const raw = els.answerInput.value.trim();
-      if (!raw) {
-        pulseInput();
-        return;
-      }
-
-      const value = Number(raw);
-      if (!Number.isInteger(value)) {
-        pulseInput();
-        return;
-      }
-
-      if (value === state.answer) handleCorrect();
-      else handleWrong(false, raw);
+    /* =========================
+       자동 제출
+    ========================= */
+    function handleAnswerInput() {
+      const clean = els.answerInput.value.replace(/\D/g, "").slice(0, 3);
+      if (els.answerInput.value !== clean) els.answerInput.value = clean;
+      evaluateInput(false);
     }
 
-    function handleCorrect() {
-      cancelAnimationFrame(state.raf);
+    function evaluateInput(force) {
+      if (state.screen !== "game" || state.reviewing || state.paused || state.answerLocked) return;
+      const raw = els.answerInput.value.trim();
+      if (!raw) { if (force) pulseInput(); return; }
 
+      const answerText = String(state.answer);
+      if (raw === answerText) {
+        state.answerLocked = true;
+        els.answerInput.classList.add("correcting");
+        setTimeout(handleCorrect, 55);
+        return;
+      }
+
+      const definitelyComplete = raw.length >= answerText.length || force;
+      if (definitelyComplete) {
+        state.answerLocked = true;
+        setTimeout(() => handleWrong(false, raw), 55);
+      }
+    }
+
+    function pressKeypad(key) {
+      if (state.screen !== "game" || state.reviewing || state.paused || state.answerLocked) return;
+      if (key === "back") els.answerInput.value = els.answerInput.value.slice(0, -1);
+      else if (els.answerInput.value.length < 3) els.answerInput.value += key;
+      evaluateInput(false);
+      try { els.answerInput.focus({ preventScroll: true }); } catch { els.answerInput.focus(); }
+    }
+
+    /* =========================
+       정답·오답·아이템·보스
+    ========================= */
+    function handleCorrect() {
+      if (state.screen !== "game" || state.reviewing) return;
+      cancelAnimationFrame(state.raf);
       state.attempted++;
       state.correct++;
       state.combo++;
       state.maxCombo = Math.max(state.maxCombo, state.combo);
 
-      const timeLeftRatio = Math.max(0, (state.endTime - performance.now()) / state.timeLimit);
-      const timeBonus = Math.round(timeLeftRatio * 8);
-      const comboBonus = Math.min(30, state.combo * 2);
-      const gain = 10 + comboBonus + timeBonus;
-      state.score += gain;
+      const d = DIFFICULTY[settings.difficulty] || DIFFICULTY.normal;
+      state.adaptiveMs = Math.max(-1700, state.adaptiveMs - (state.combo >= 3 ? d.comboStep : 90));
 
+      const timeLeftRatio = Math.max(0, (state.endTime - performance.now()) / state.timeLimit);
+      const timeBonus = Math.round(timeLeftRatio * 10);
+      const comboBonus = Math.min(50, state.combo * 2);
+      let gain = 12 + comboBonus + timeBonus;
+
+      if (state.doubleCharges > 0) {
+        gain *= 2;
+        state.doubleCharges--;
+      }
+
+      if (state.isBoss) {
+        gain += 200;
+        state.lives = Math.min(state.maxLives + 2, state.lives + 1);
+        showCelebration("⭐", "보스 격파!", "생명 +1 · 점수 +200", 900);
+      } else {
+        const celebration = COMBO_CELEBRATIONS[state.combo];
+        if (celebration) showCelebration(celebration.icon, celebration.title, celebration.sub, 820);
+      }
+
+      state.score += gain;
       playCorrectSfx(state.combo);
       showPoints(gain);
-      els.app.classList.remove("flash-good");
-      void els.app.offsetWidth;
-      els.app.classList.add("flash-good");
+      flashApp("flash-good");
 
+      if (!state.isBoss && Math.random() < .05) grantRandomItem();
+      const sceneChanged = updateSceneByScore();
       updateHud();
-      window.setTimeout(nextQuestion, 110);
+
+      const delay = sceneChanged ? 2050 : (state.isBoss || COMBO_CELEBRATIONS[state.combo] ? 720 : 180);
+      state.nextTimeout = setTimeout(nextQuestion, delay);
     }
 
     function handleWrong(timeout, userInput) {
-      if (state.reviewing) return;
+      if (state.reviewing || state.screen !== "game") return;
       cancelAnimationFrame(state.raf);
-
+      state.answerLocked = true;
       state.reviewing = true;
       state.attempted++;
       state.wrongCount++;
       state.combo = 0;
-      state.lives--;
+
+      const d = DIFFICULTY[settings.difficulty] || DIFFICULTY.normal;
+      state.adaptiveMs = Math.min(4200, state.adaptiveMs + d.wrongBoost);
+
+      let protectedByShield = false;
+      let lifeLost = false;
+      if (state.isBoss) {
+        // 보너스 문제는 실패해도 생명이 줄지 않습니다.
+      } else if (state.shield > 0) {
+        state.shield--;
+        protectedByShield = true;
+      } else {
+        state.lives--;
+        lifeLost = true;
+      }
 
       addWrongBank(state.currentA, state.currentB);
-
       playWrongSfx();
-      els.app.classList.remove("shake");
-      void els.app.offsetWidth;
-      els.app.classList.add("shake");
-
+      flashApp("shake");
       updateHud();
-      showReview(timeout, userInput);
+      showReview({ timeout, userInput, protectedByShield, lifeLost, boss: state.isBoss });
+    }
+
+    function grantRandomItem() {
+      const item = ["shield", "life", "time", "double"][rand(0, 3)];
+      if (item === "shield") {
+        state.shield = Math.min(2, state.shield + 1);
+        showCelebration("🛡️", "보호막 획득", "다음 실수 1회를 막아 줘요", 760);
+      } else if (item === "life") {
+        state.lives = Math.min(state.maxLives + 2, state.lives + 1);
+        showCelebration("❤️", "생명 획득", "생명 +1", 760);
+      } else if (item === "time") {
+        state.nextTimeBonusMs += 3000;
+        showCelebration("⏳", "시간 아이템", "다음 문제 +3초", 760);
+      } else {
+        state.doubleCharges = Math.max(state.doubleCharges, 3);
+        showCelebration("⭐", "점수 2배", "앞으로 3문제 동안 2배", 760);
+      }
     }
 
     function addWrongBank(a, b) {
       const key = `${a}x${b}`;
-      const exists = state.wrongBank.some(item => `${item.a}x${item.b}` === key);
-      if (!exists) state.wrongBank.push({ a, b });
-      if (state.wrongBank.length > 8) state.wrongBank.shift();
+      if (!state.wrongBank.some(item => `${item.a}x${item.b}` === key)) state.wrongBank.push({ a, b });
+      if (state.wrongBank.length > 10) state.wrongBank.shift();
     }
 
-    function showReview(timeout, userInput) {
+    function showReview({ timeout, userInput, protectedByShield, boss }) {
       els.playCard.classList.add("hidden");
       els.reviewCard.classList.remove("hidden");
+      els.reviewCard.classList.toggle("protected", protectedByShield);
+      els.reviewCard.classList.toggle("boss-review", boss);
 
-      const title = timeout ? "시간 초과" : "오답 복습";
-      const userLine = timeout
-        ? "시간이 먼저 사라졌습니다."
-        : `내가 쓴 답: <s>${escapeHtml(userInput)}</s>`;
+      let title = timeout ? "시간 초과" : "오답 복습";
+      let message = timeout ? "시간이 먼저 끝났어요." : `내가 쓴 답: <s>${escapeHtml(userInput)}</s>`;
+      if (protectedByShield) { title = "보호막 성공!"; message = "보호막이 생명을 지켜 줬어요."; }
+      if (boss) { title = "보너스 문제 복습"; message = "보너스 문제는 틀려도 생명이 줄지 않아요."; }
 
+      const nextText = state.lives <= 0 && !boss ? "결과 보기" : "다음 문제";
       els.reviewCard.innerHTML = `
         <div class="review-title">${title}</div>
-        <div style="color:#bdb5b2; font-size:.96rem;">${userLine}</div>
+        <div style="color:#c8bfbb;font-size:.9rem;">${message}</div>
         <div class="review-question">${state.currentA} × ${state.currentB} = ${state.answer}</div>
         <div class="review-answer">정답은 <strong>${state.answer}</strong></div>
-        <div class="tip-box">💡 ${getTip(state.currentA, state.currentB)}</div>
-        <button class="next-btn" data-action="nextReview">${state.lives <= 0 ? "결과 보기" : "다음 문제"}</button>
-      `;
+        <div class="tip-box">💡 ${getTip(state.currentA, state.currentB)}<br><small style="color:#a9a0a0">다음 문제부터 시간이 조금 더 넉넉해집니다.</small></div>
+        <button class="next-btn" data-action="nextReview">${nextText}</button>`;
 
-      state.reviewTimeout = window.setTimeout(finishReview, settings.reviewMs);
+      state.reviewTimeout = setTimeout(finishReview, settings.reviewMs);
     }
 
     function finishReview() {
       if (!state.reviewing) return;
-      if (state.reviewTimeout) {
-        clearTimeout(state.reviewTimeout);
-        state.reviewTimeout = null;
-      }
-
+      if (state.reviewTimeout) { clearTimeout(state.reviewTimeout); state.reviewTimeout = null; }
       state.reviewing = false;
-      if (state.lives <= 0) endGame();
+      if (state.lives <= 0 && !state.isBoss) endGame();
       else nextQuestion();
     }
 
+    /* =========================
+       HUD·배경·칭호
+    ========================= */
+    function updateHud() {
+      const visibleMax = Math.max(state.maxLives, state.lives);
+      els.livesDisplay.textContent = "❤️".repeat(Math.max(0, state.lives)) + "🖤".repeat(Math.max(0, visibleMax - state.lives));
+      els.scoreDisplay.textContent = state.score;
+      els.highScoreDisplay.textContent = Math.max(getModeHighScore(), state.score);
+      els.levelDisplay.textContent = String(1 + Math.floor(state.score / 120));
+      els.tableDisplay.textContent = getCompactModeLabel();
+      els.comboDisplay.textContent = String(state.combo);
+
+      if (!state.isBoss && !state.reviewing) setStatus(getNormalStatus(), state.combo > 1);
+    }
+
+    function getNormalStatus() {
+      const powers = [];
+      if (state.shield > 0) powers.push(`<span class="power-chip">🛡 ${state.shield}</span>`);
+      if (state.doubleCharges > 0) powers.push(`<span class="power-chip">⭐ 2배 ${state.doubleCharges}</span>`);
+      const text = state.combo <= 0 ? (state.wrongCount ? "괜찮아, 다시 집중!" : "수련 시작!") : state.combo === 1 ? "좋아, 첫 콤보!" : `${state.combo}콤보 · 최고 ${state.maxCombo}`;
+      return `${text}${powers.length ? " " + powers.join(" ") : ""}`;
+    }
+
+    function setStatus(html, pop) {
+      els.statusStrip.innerHTML = html;
+      els.statusStrip.classList.remove("pop");
+      void els.statusStrip.offsetWidth;
+      if (pop) els.statusStrip.classList.add("pop");
+    }
+
+    function getModeLabel() {
+      if (state.mode === 1) return `${state.selectedTable}단 집중`;
+      if (state.mode === 2) return "2~9단 무작위";
+      if (state.score < 150) return "곱셈귀 1층 · 2~9단";
+      if (state.score < 420) return "곱셈귀 2층 · 12단까지";
+      return "곱셈귀 심층 · 19단까지";
+    }
+
+    function getCompactModeLabel() {
+      if (state.mode === 1) return `${state.selectedTable}단`;
+      if (state.mode === 2) return "2~9단";
+      return state.score < 150 ? "2~9단" : state.score < 420 ? "~12단" : "~19단";
+    }
+
+    function getTitle(score) {
+      return TITLES.reduce((title, item) => score >= item.score ? item.name : title, TITLES[0].name);
+    }
+
+    function updateSceneByScore() {
+      const scene = SCENES.reduce((current, item) => state.score >= item.score ? item : current, SCENES[0]);
+      if (scene.id === state.currentScene) return false;
+      return transitionScene(scene);
+    }
+
+    function transitionScene(scene) {
+      state.sceneTransitioning = true;
+      const started = runDoorTransition(() => {
+        setScene(scene, false);
+        setTimeout(() => showSceneArrival(scene), 100);
+      }, {
+        emblem: scene.icon,
+        holdMs: 170,
+        onComplete: () => { state.sceneTransitioning = false; }
+      });
+      if (!started) {
+        setScene(scene, false);
+        showSceneArrival(scene);
+        state.sceneTransitioning = false;
+      }
+      return true;
+    }
+
+    function setScene(scene, announce) {
+      state.currentScene = scene.id;
+      els.app.dataset.scene = scene.id;
+      els.app.dataset.sceneLabel = scene.icon;
+      if (announce) showSceneArrival(scene);
+    }
+
+    /* =========================
+       결과·스티커
+    ========================= */
     function endGame() {
+      if (state.screen !== "game") return;
       clearGameTimers();
       stopBgm();
-      saveRecords();
+      document.body.classList.remove("keyboard-open");
+      try { els.answerInput.blur(); } catch {}
 
-      const records = getRecords();
+      awardSticker();
+      saveRecords();
+      const modeHighScore = getModeHighScore();
+      const title = getTitle(state.score);
+      const isNewRecord = state.score > state.highScoreBefore;
+
+      $("resultTitle").textContent = title;
       $("finalScore").textContent = state.score;
       $("finalCombo").textContent = state.maxCombo;
       $("finalAccuracy").textContent = `${getAccuracy()}%`;
-      $("finalReviewCount").textContent = `${state.wrongBank.length}개`;
-      $("finalHighScore").textContent = records.highScore;
+      $("finalTitle").textContent = title;
+      $("finalHighScore").textContent = modeHighScore;
+      els.newRecordBadge.classList.toggle("hidden", !isNewRecord);
+      els.awardCard.classList.toggle("hidden", state.mode === 1);
+      els.resultAlbumButton.classList.toggle("hidden", state.mode === 1);
+      renderAward();
+      updateMenuRecords();
 
       transitionTo(() => showScreen("gameover"));
     }
 
-    function getAccuracy() {
-      if (state.attempted <= 0) return 0;
-      return Math.round((state.correct / state.attempted) * 100);
-    }
+    function awardSticker() {
+      state.stickerAward = null;
+      state.stickerDuplicate = false;
+      if (state.mode === 1 || state.attempted < 3) return;
 
-    function updateHud() {
-      els.scoreDisplay.textContent = state.score;
-      const alive = "🏮".repeat(Math.max(0, state.lives));
-      const dead = "🌫️".repeat(Math.max(0, settings.lives - state.lives));
-      els.livesDisplay.textContent = alive + dead;
-
-      if (state.combo <= 0) {
-        els.comboLine.textContent = state.wrongCount > 0 ? "다시 집중!" : "수련 시작!";
-      } else if (state.combo === 1) {
-        els.comboLine.textContent = "좋아, 첫 연격!";
+      const unowned = STICKERS.filter(s => !ownedStickers.includes(s.id));
+      if (unowned.length > 0) {
+        const sticker = weightedStickerPick(unowned);
+        ownedStickers.push(sticker.id);
+        state.stickerAward = sticker;
+        saveOwnedStickers();
       } else {
-        els.comboLine.textContent = `${state.combo} 연격 · 최고 ${state.maxCombo}`;
+        state.stickerAward = STICKERS[rand(0, STICKERS.length - 1)];
+        state.stickerDuplicate = true;
       }
-
-      els.comboLine.classList.remove("pop");
-      void els.comboLine.offsetWidth;
-      if (state.combo > 1) els.comboLine.classList.add("pop");
     }
 
-    function pressKeypad(key) {
-      if (state.screen !== "game" || state.reviewing || state.paused) return;
-
-      if (key === "back") {
-        els.answerInput.value = els.answerInput.value.slice(0, -1);
-      } else if (els.answerInput.value.length < 4) {
-        els.answerInput.value += key;
-      }
-      els.answerInput.focus();
+    function weightedStickerPick(pool) {
+      // 전설 스티커는 낮은 확률로 등장하되, 도감 후반에는 반드시 획득 가능
+      const weighted = [];
+      pool.forEach(sticker => {
+        const weight = sticker.rarity === "전설" ? 1 : sticker.rarity === "희귀" ? 3 : 5;
+        for (let i = 0; i < weight; i++) weighted.push(sticker);
+      });
+      return weighted[rand(0, weighted.length - 1)];
     }
 
-    function pulseInput() {
-      els.answerInput.animate(
-        [
-          { transform: "translateX(0)" },
-          { transform: "translateX(-7px)" },
-          { transform: "translateX(7px)" },
-          { transform: "translateX(0)" }
-        ],
-        { duration: 180, easing: "ease" }
-      );
-      els.answerInput.focus();
+    function renderAward() {
+      const sticker = state.stickerAward;
+      if (!sticker) {
+        $("awardIcon").textContent = "🎴";
+        $("awardName").textContent = "스티커 획득 조건 미달";
+        $("awardMeta").textContent = "무작위 또는 곱셈귀 모드에서 3문제 이상 풀어 보세요.";
+        return;
+      }
+      $("awardIcon").textContent = sticker.icon;
+      $("awardName").textContent = `${sticker.name} · ${sticker.edition}`;
+      $("awardMeta").textContent = state.stickerDuplicate ? "도감을 모두 모아 반짝이 중복 스티커를 받았어요!" : `${sticker.rarity} 스티커를 새로 획득했어요!`;
+    }
+
+    function getAccuracy() { return state.attempted > 0 ? Math.round((state.correct / state.attempted) * 100) : 0; }
+
+    /* =========================
+       연출·도움말
+    ========================= */
+    function showSceneArrival(scene) {
+      const overlay = document.createElement("div");
+      overlay.className = `scene-arrival-overlay scene-${scene.id}`;
+      overlay.style.setProperty("--arrival-glow", scene.glow);
+      overlay.style.setProperty("--arrival-accent", scene.accent);
+      const particles = Array.from({ length: 18 }, (_, i) => {
+        const angle = (Math.PI * 2 * i) / 18 + Math.random() * .22;
+        const distance = 105 + Math.random() * 170;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        const symbols = scene.id === "space" ? ["✦","✧","•"] : scene.id === "dragon" ? ["🔥","◆","✦"] : scene.id === "rainbow" ? ["✧","★","♡"] : scene.id === "playground" ? ["●","✦","○"] : ["×","+","✎"];
+        return `<span class="scene-burst-particle" style="--p-x:${x.toFixed(0)}px;--p-y:${y.toFixed(0)}px;--p-r:${Math.round(Math.random()*360)}deg;--p-size:${(.65+Math.random()*1.1).toFixed(2)}rem;--p-delay:${(Math.random()*.16).toFixed(2)}s">${symbols[i % symbols.length]}</span>`;
+      }).join("");
+      overlay.innerHTML = `${particles}<div class="scene-arrival-content"><span class="scene-arrival-kicker">새 지역 개방</span><span class="scene-arrival-icon">${scene.icon}</span><span class="scene-arrival-title">${scene.name}</span><span class="scene-arrival-sub">${scene.sub}</span></div>`;
+      els.effectsLayer.appendChild(overlay);
+      playSceneSfx(scene.id);
+      setTimeout(() => overlay.remove(), 1620);
+    }
+
+    function showCelebration(icon, title, sub, duration = 800) {
+      const overlay = document.createElement("div");
+      overlay.className = "celebration-overlay";
+      overlay.style.animationDuration = `${duration}ms`;
+      overlay.innerHTML = `<div class="celebration-content" style="animation-duration:${duration}ms"><span class="celebration-icon">${icon}</span><span class="celebration-title">${title}</span><span class="celebration-sub">${sub}</span></div>`;
+      els.effectsLayer.appendChild(overlay);
+      setTimeout(() => overlay.remove(), duration + 60);
     }
 
     function showPoints(gain) {
       const el = document.createElement("div");
       el.className = "float-points";
       el.textContent = `+${gain}`;
-      els.app.appendChild(el);
-      window.setTimeout(() => el.remove(), 700);
+      els.effectsLayer.appendChild(el);
+      setTimeout(() => el.remove(), 760);
+    }
+
+    function flashApp(className) {
+      els.app.classList.remove(className);
+      void els.app.offsetWidth;
+      els.app.classList.add(className);
+    }
+
+    function pulseInput() {
+      els.answerInput.animate([
+        { transform: "translateX(0)" }, { transform: "translateX(-7px)" }, { transform: "translateX(7px)" }, { transform: "translateX(0)" }
+      ], { duration: 180, easing: "ease" });
+      els.answerInput.focus();
     }
 
     function getTip(a, b) {
       const small = Math.min(a, b);
       const big = Math.max(a, b);
-
-      if (a === 9 || b === 9) {
-        const other = a === 9 ? b : a;
-        return `${other} × 9는 ${other} × 10에서 ${other}를 빼면 됩니다.`;
-      }
-
-      if (a === 5 || b === 5) {
-        const other = a === 5 ? b : a;
-        return `${other} × 5는 ${other} × 10의 절반으로 생각하면 빠릅니다.`;
-      }
-
-      if (a === 4 || b === 4) {
-        const other = a === 4 ? b : a;
-        return `${other} × 4는 ${other}를 두 배, 다시 두 배 하면 됩니다.`;
-      }
-
-      if (a === 8 || b === 8) {
-        const other = a === 8 ? b : a;
-        return `${other} × 8은 ${other}를 두 배씩 세 번 하면 됩니다.`;
-      }
-
-      if (a >= 10 || b >= 10) {
-        const tenSide = a >= 10 ? a : b;
-        const other = a >= 10 ? b : a;
-        return `${tenSide} × ${other}는 10 × ${other}에 ${tenSide - 10} × ${other}를 더해 보세요.`;
-      }
-
-      if (small <= 3) {
-        return `${a} × ${b}는 ${big}을 ${small}번 더하는 식으로 확인할 수 있습니다.`;
-      }
-
-      return `${a} × ${b}가 헷갈리면 ${b} × ${a}로 바꿔 떠올려도 답은 같습니다.`;
+      if (a === 9 || b === 9) { const other = a === 9 ? b : a; return `${other} × 9는 ${other} × 10에서 ${other}를 빼면 돼요.`; }
+      if (a === 5 || b === 5) { const other = a === 5 ? b : a; return `${other} × 5는 ${other} × 10의 절반으로 생각하면 빨라요.`; }
+      if (a === 4 || b === 4) { const other = a === 4 ? b : a; return `${other} × 4는 ${other}를 두 배, 다시 두 배 하면 돼요.`; }
+      if (a === 8 || b === 8) { const other = a === 8 ? b : a; return `${other} × 8은 ${other}를 두 배씩 세 번 하면 돼요.`; }
+      if (a >= 10 || b >= 10) { const tenSide = a >= 10 ? a : b; const other = a >= 10 ? b : a; return `${tenSide} × ${other}는 10 × ${other}에 ${tenSide - 10} × ${other}를 더해 보세요.`; }
+      if (small <= 3) return `${a} × ${b}는 ${big}을 ${small}번 더해서 확인할 수 있어요.`;
+      return `${a} × ${b}가 헷갈리면 ${b} × ${a}로 바꿔 떠올려도 답은 같아요.`;
     }
 
     function togglePause(shouldPause) {
       if (state.screen !== "game" || state.reviewing) return;
-
       if (shouldPause) {
         if (state.paused) return;
         state.paused = true;
         state.remainingMs = Math.max(0, state.endTime - performance.now());
         cancelAnimationFrame(state.raf);
         els.pauseOverlay.classList.remove("hidden");
+        try { els.answerInput.blur(); } catch {}
       } else {
         if (!state.paused) return;
         state.paused = false;
         state.endTime = performance.now() + state.remainingMs;
         els.pauseOverlay.classList.add("hidden");
         updateTimer();
-        window.setTimeout(() => els.answerInput.focus(), 60);
+        setTimeout(() => { try { els.answerInput.focus({ preventScroll: true }); } catch { els.answerInput.focus(); } }, 60);
       }
     }
 
     function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+      return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
     }
 
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    /* =========================
+       오디오
+    ========================= */
     function initAudio() {
       if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioCtx = new AudioContextClass();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.22;
+        masterGain.gain.value = .22;
         masterGain.connect(audioCtx.destination);
       }
-
       if (audioCtx.state === "suspended") audioCtx.resume();
     }
 
     function playTone(freq, duration, type = "sine", volume = .3, slideTo = null) {
       if (!settings.sfx || !audioCtx || !masterGain) return;
-
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
       if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, audioCtx.currentTime + duration);
+      gain.gain.setValueAtTime(.0001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + .012);
+      gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + duration);
+      osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + duration + .02);
+    }
 
-      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    function playDoorSfx(closing) {
+      if (!settings.sfx) return;
+      initAudio();
+      if (closing) {
+        playTone(150, .24, "sawtooth", .11, 82);
+        setTimeout(() => playTone(72, .18, "square", .08, 48), 160);
+      } else {
+        playTone(120, .22, "triangle", .1, 240);
+        setTimeout(() => playTone(260, .16, "sine", .08, 420), 120);
+      }
+    }
 
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration + .02);
+    function playSceneSfx(sceneId) {
+      if (!settings.sfx) return;
+      initAudio();
+      const patterns = {
+        playground: [392, 523, 659],
+        space: [220, 440, 880],
+        dragon: [110, 165, 330],
+        rainbow: [523, 659, 784]
+      };
+      const notes = patterns[sceneId] || [330, 440, 550];
+      notes.forEach((note, i) => setTimeout(() => playTone(note, .28, i === 1 ? "triangle" : "sine", .13, note * 1.12), i * 105));
     }
 
     function playCorrectSfx(combo) {
@@ -1755,47 +1990,38 @@
       if (!settings.sfx) return;
       const base = Math.min(1100, 420 + combo * 34);
       playTone(base, .12, "triangle", .28, base * 1.45);
-      window.setTimeout(() => playTone(base * 1.5, .10, "sine", .18), 55);
+      setTimeout(() => playTone(base * 1.5, .10, "sine", .18), 55);
     }
 
     function playWrongSfx() {
       initAudio();
       if (!settings.sfx) return;
       playTone(190, .42, "square", .22, 58);
-      window.setTimeout(() => playTone(92, .30, "sawtooth", .11, 45), 70);
+      setTimeout(() => playTone(92, .30, "sawtooth", .11, 45), 70);
     }
 
     function startBgm() {
       initAudio();
-      if (!settings.bgm || bgmTimer) return;
-
+      if (!settings.bgm || bgmTimer || !audioCtx || !masterGain) return;
       const notes = [220, 261.63, 293.66, 329.63, 392, 329.63, 293.66];
       let i = 0;
-      bgmTimer = window.setInterval(() => {
+      bgmTimer = setInterval(() => {
         if (!audioCtx || !masterGain || state.screen !== "game" || state.paused) return;
         if (Math.random() > .24) {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = "sawtooth";
           osc.frequency.value = notes[i % notes.length];
-          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+          gain.gain.setValueAtTime(.0001, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(.055, audioCtx.currentTime + .02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + .62);
-          osc.connect(gain);
-          gain.connect(masterGain);
-          osc.start();
-          osc.stop(audioCtx.currentTime + .66);
+          gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + .62);
+          osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + .66);
         }
         i++;
       }, 420);
     }
 
-    function stopBgm() {
-      if (bgmTimer) {
-        clearInterval(bgmTimer);
-        bgmTimer = null;
-      }
-    }
+    function stopBgm() { if (bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; } }
   </script>
 </body>
 </html>
