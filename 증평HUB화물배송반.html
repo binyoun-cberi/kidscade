@@ -2,369 +2,316 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
 <title>증평 HUB 분류왕 - 나눗셈 물류 게임</title>
 <style>
   :root{
-    --ink:#172033;
+    --ink:#152033;
     --muted:#667085;
     --paper:#ffffff;
-    --paper2:#f7f9fc;
-    --line:#d9e2ee;
-    --hub:#101827;
-    --hub2:#1b2840;
+    --line:#dce5f1;
     --blue:#2563eb;
-    --blue2:#60a5fa;
     --green:#10b981;
     --red:#ef4444;
     --amber:#f59e0b;
     --purple:#8b5cf6;
-    --cyan:#06b6d4;
-    --shadow:0 22px 70px rgba(5,12,28,.32);
-    --soft:0 14px 32px rgba(15,23,42,.14);
-    --radius:22px;
+    --shadow:0 22px 64px rgba(5,12,28,.28);
+    --soft:0 10px 26px rgba(15,23,42,.13);
+    --app-height:100dvh;
   }
 
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overscroll-behavior:none;}
   body{
     margin:0;
     overflow:hidden;
     font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
     color:var(--ink);
     background:
-      radial-gradient(circle at 15% 0%, rgba(96,165,250,.28), transparent 34%),
-      radial-gradient(circle at 90% 100%, rgba(139,92,246,.22), transparent 32%),
-      linear-gradient(145deg, #0f172a 0%, #111827 46%, #182238 100%);
+      radial-gradient(circle at 12% -8%,rgba(96,165,250,.25),transparent 34%),
+      radial-gradient(circle at 92% 110%,rgba(139,92,246,.19),transparent 34%),
+      linear-gradient(145deg,#0e1728,#111c31 48%,#17233a);
+    touch-action:manipulation;
+    user-select:none;
   }
+  button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;}
+  button:focus-visible{outline:4px solid rgba(96,165,250,.72);outline-offset:2px;}
 
-  button{font:inherit; cursor:pointer; border:0;}
   .screen{
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    padding:22px; z-index:50;
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));
+    z-index:50;
   }
   .screen.active{display:flex;}
-
   .hero,.result-card{
-    width:min(960px,94vw);
-    background:rgba(255,255,255,.96);
-    border:1px solid rgba(255,255,255,.85);
-    border-radius:32px;
-    box-shadow:var(--shadow);
-    padding:34px;
-    text-align:center;
-    position:relative;
-    overflow:hidden;
+    width:min(850px,94vw);background:rgba(255,255,255,.97);border:1px solid rgba(255,255,255,.85);
+    border-radius:30px;box-shadow:var(--shadow);padding:34px;text-align:center;position:relative;overflow:hidden;
   }
   .hero::before,.result-card::before{
-    content:""; position:absolute; inset:auto -12% -34% -12%; height:260px;
-    background:linear-gradient(90deg, rgba(37,99,235,.12), rgba(16,185,129,.12), rgba(245,158,11,.12));
-    transform:rotate(-3deg);
+    content:"";position:absolute;inset:auto -15% -42% -15%;height:260px;
+    background:linear-gradient(90deg,rgba(37,99,235,.12),rgba(16,185,129,.12),rgba(245,158,11,.12));transform:rotate(-3deg);
   }
-  .hero>* ,.result-card>*{position:relative;}
-  .brand-mark{
-    width:110px; height:110px; border-radius:30px; margin:0 auto 16px;
-    display:grid; place-items:center; font-size:56px;
-    background:linear-gradient(135deg,#1d4ed8,#06b6d4);
-    color:white; box-shadow:0 18px 35px rgba(37,99,235,.32);
-  }
-  h1{font-size:clamp(38px,7vw,70px); letter-spacing:-.06em; margin:0 0 10px; color:#111827;}
-  .subtitle{max-width:720px; margin:0 auto 24px; color:var(--muted); line-height:1.65; font-size:clamp(15px,2vw,20px);}
+  .hero>*,.result-card>*{position:relative;}
+  .brand-mark{width:94px;height:94px;border-radius:27px;margin:0 auto 15px;display:grid;place-items:center;font-size:48px;background:linear-gradient(135deg,#1d4ed8,#0891b2);color:white;box-shadow:0 18px 34px rgba(37,99,235,.28);}
+  h1{font-size:clamp(38px,7vw,66px);letter-spacing:-.06em;margin:0 0 10px;color:#111827;}
+  .subtitle{max-width:680px;margin:0 auto 22px;color:var(--muted);line-height:1.62;font-size:clamp(15px,2vw,19px);}
   .subtitle b{color:#172033;}
-  .pill-row{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:22px 0 30px;}
-  .pill{padding:9px 14px; border-radius:999px; background:#eef4ff; color:#24437d; border:1px solid #dbe8ff; font-weight:800; font-size:14px;}
-  .big-btn{
-    min-width:220px; padding:17px 28px; border-radius:18px; font-weight:900; font-size:20px;
-    color:#fff; background:linear-gradient(135deg,#2563eb,#0891b2);
-    box-shadow:0 16px 30px rgba(37,99,235,.3);
-    transition:.16s transform,.16s filter;
-  }
-  .big-btn:hover{transform:translateY(-2px); filter:saturate(1.08);}
-  .big-btn:active{transform:translateY(1px) scale(.99);}
-  .note{margin-top:14px; font-size:13px; color:#7b8798;}
+  .pill-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:18px 0 27px;}
+  .pill{padding:8px 13px;border-radius:999px;background:#eef4ff;color:#24437d;border:1px solid #dbe8ff;font-weight:850;font-size:13px;}
+  .big-btn{min-width:220px;padding:16px 27px;border-radius:17px;font-weight:950;font-size:19px;color:#fff;background:linear-gradient(135deg,#2563eb,#0891b2);box-shadow:0 15px 28px rgba(37,99,235,.28);}
+  .big-btn:active{transform:translateY(2px);}
+  .note{margin-top:13px;font-size:13px;color:#7b8798;}
 
   #game{
     display:none;
-    height:100%;
-    max-width:1440px;
-    margin:0 auto;
-    padding:14px;
-    grid-template-rows:auto 1fr;
-    gap:12px;
+    height:var(--app-height);
+    width:100%;
+    padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+    grid-template-rows:58px minmax(0,1fr);
+    gap:9px;
+    overflow:hidden;
   }
   #game.active{display:grid;}
 
   .topbar{
-    display:grid;
-    grid-template-columns:repeat(5,minmax(110px,1fr)) 250px auto;
-    gap:10px;
-    align-items:stretch;
+    width:min(1180px,100%);margin:0 auto;display:grid;
+    grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:12px;
+    padding:7px 9px 7px 13px;border-radius:18px;background:rgba(255,255,255,.96);box-shadow:var(--soft);border:1px solid rgba(255,255,255,.72);
   }
-  .stat,.timer-card,.small-action{
-    background:rgba(255,255,255,.96);
-    border:1px solid rgba(255,255,255,.78);
-    border-radius:18px;
-    box-shadow:0 10px 22px rgba(0,0,0,.13);
-    padding:11px 13px;
-  }
-  .stat small,.timer-card small{display:block; color:var(--muted); font-weight:800; font-size:12px; margin-bottom:3px;}
-  .stat b{font-size:22px; letter-spacing:-.02em;}
-  .timer-card{display:flex; flex-direction:column; justify-content:center; gap:7px;}
-  .time-line{height:14px; border-radius:999px; background:#e8eef7; overflow:hidden; box-shadow:inset 0 1px 3px rgba(15,23,42,.14);}
-  .time-fill{height:100%; width:100%; border-radius:999px; background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444); transition:width .55s linear;}
-  .small-action{font-weight:900; color:#27364f; background:#f8fbff; min-width:82px;}
-  .small-action.danger{color:#b42318;}
+  .top-brand{display:flex;align-items:center;gap:9px;font-weight:950;white-space:nowrap;}
+  .top-brand span{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:#eaf2ff;font-size:20px;}
+  .hud-stats{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;}
+  .stat{display:flex;align-items:baseline;gap:5px;padding:6px 9px;border-radius:12px;background:#f5f8fc;white-space:nowrap;}
+  .stat small{font-size:11px;color:var(--muted);font-weight:800;}
+  .stat b{font-size:16px;font-weight:950;letter-spacing:-.02em;}
+  .timer-card{min-width:190px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;}
+  .timer-card small{font-size:11px;color:var(--muted);font-weight:850;white-space:nowrap;}
+  .time-line{height:10px;border-radius:999px;background:#e8eef7;overflow:hidden;box-shadow:inset 0 1px 3px rgba(15,23,42,.12);}
+  .time-fill{height:100%;width:100%;border-radius:999px;background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444);transition:width .55s linear;}
+  #timeText{font-size:14px;font-weight:950;font-variant-numeric:tabular-nums;}
+  .top-actions{display:flex;gap:6px;}
+  .icon-action{width:40px;height:40px;border-radius:12px;background:#f3f6fb;color:#334155;font-weight:900;display:grid;place-items:center;}
+  .icon-action.danger{color:#b42318;background:#fff1f2;}
 
-  .layout{
-    display:grid;
-    grid-template-columns:minmax(650px,1fr) 390px;
-    gap:12px;
-    min-height:0;
+  .play-shell{
+    width:min(1180px,100%);margin:0 auto;min-height:0;
+    display:grid;grid-template-rows:minmax(0,1fr) auto;gap:9px;
   }
-
   .yard{
-    position:relative;
-    min-height:0;
-    border-radius:28px;
-    overflow:hidden;
+    position:relative;min-height:0;border-radius:24px;overflow:hidden;
     background:
-      linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 90px),
-      linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 90px),
-      linear-gradient(180deg,#253654,#17243c 58%,#111c31);
-    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.07);
+      linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 86px),
+      linear-gradient(0deg,rgba(255,255,255,.045) 0 1px,transparent 1px 86px),
+      linear-gradient(180deg,#2a3c5c,#1a2944 57%,#101b30);
+    box-shadow:var(--shadow),inset 0 0 0 1px rgba(255,255,255,.07);
   }
-  .yard::before{
-    content:""; position:absolute; left:0; right:0; top:41%; height:124px;
-    background:linear-gradient(180deg,#303f5c,#26354f);
-    border-top:2px solid rgba(255,255,255,.08);
-    border-bottom:2px solid rgba(0,0,0,.16);
-  }
-  .yard::after{
-    content:""; position:absolute; left:28px; right:28px; top:calc(41% + 60px); height:5px;
-    background:repeating-linear-gradient(90deg,rgba(255,255,255,.65) 0 58px, transparent 58px 104px);
-    opacity:.7;
-  }
+  .yard::before{content:"";position:absolute;left:0;right:0;top:42%;height:112px;background:linear-gradient(180deg,#354561,#283852);border-top:2px solid rgba(255,255,255,.08);border-bottom:2px solid rgba(0,0,0,.18);}
+  .yard::after{content:"";position:absolute;left:24px;right:24px;top:calc(42% + 54px);height:5px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.62) 0 54px,transparent 54px 96px);opacity:.64;}
+  .hub-sign{position:absolute;left:14px;top:14px;z-index:4;padding:7px 10px;border-radius:12px;background:rgba(15,23,42,.68);color:white;backdrop-filter:blur(8px);font-size:12px;font-weight:900;}
 
-  .hub-sign{
-    position:absolute; left:20px; top:18px; z-index:3;
-    display:flex; align-items:center; gap:10px;
-    padding:10px 14px; border-radius:16px;
-    background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
-    box-shadow:var(--soft); font-weight:1000; color:#111827;
+  .task-focus{
+    position:absolute;left:50%;top:13px;transform:translateX(-50%);z-index:10;width:min(690px,calc(100% - 210px));
+    text-align:center;background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.82);border-radius:17px;padding:10px 14px;box-shadow:var(--soft);
   }
-  .mission-banner{
-    position:absolute; left:50%; top:18px; transform:translateX(-50%); z-index:3;
-    width:min(620px,calc(100% - 340px));
-    padding:12px 18px; border-radius:18px;
-    text-align:center; font-weight:1000; line-height:1.35;
-    color:#142033; background:rgba(255,255,255,.94); box-shadow:var(--soft);
-  }
-  .mission-banner span{display:block; color:#667085; font-size:13px; font-weight:800; margin-top:3px;}
+  .problem-title{font-size:clamp(24px,3vw,34px);font-weight:1000;letter-spacing:-.045em;line-height:1.05;margin-bottom:5px;}
+  .mission-banner{font-size:14px;font-weight:900;line-height:1.35;color:#344054;}
+  .mission-banner span{display:block;color:#667085;font-size:12px;font-weight:750;margin-top:2px;}
+  .problem-sub,.chips{display:none;}
 
-  .truck{
-    position:absolute; left:7%; top:31%; z-index:4;
-    width:330px; height:150px;
-    transform:translateX(-120vw);
-  }
+  .truck{position:absolute;left:8%;top:28%;z-index:5;width:330px;height:150px;transform:translateX(-120vw);}
   .truck.enter{animation:truckEnter .65s cubic-bezier(.2,.9,.2,1.12) forwards;}
   .truck.leave{animation:truckLeave .55s ease-in forwards;}
   @keyframes truckEnter{to{transform:translateX(0)}}
-  @keyframes truckLeave{from{transform:translateX(0)} to{transform:translateX(125vw)}}
-  .trailer{
-    position:absolute; left:0; top:24px; width:222px; height:88px; border-radius:14px 5px 5px 14px;
-    background:linear-gradient(135deg,#f8fafc,#cbd5e1);
-    border:3px solid rgba(148,163,184,.8);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    box-shadow:inset -10px -10px 20px rgba(15,23,42,.08), 0 18px 24px rgba(0,0,0,.20);
-  }
-  .cargo-count{font-weight:1000; font-size:34px; letter-spacing:-.04em;}
-  .cargo-type{font-size:13px; font-weight:900; color:#52627a;}
-  .cab{
-    position:absolute; left:212px; top:45px; width:92px; height:67px; border-radius:8px 24px 11px 8px;
-    background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 18px 24px rgba(0,0,0,.18);
-  }
-  .cab::before{content:""; position:absolute; right:9px; top:8px; width:37px; height:28px; border-radius:5px 14px 5px 5px; background:#bae6fd; border:2px solid rgba(255,255,255,.55);}
-  .cab::after{content:"HUB"; position:absolute; left:11px; top:34px; color:white; font-weight:1000; font-size:15px;}
-  .wheel{position:absolute; top:101px; width:38px; height:38px; border-radius:50%; background:#0f172a; border:6px solid #475569; box-shadow:inset 0 0 0 4px #111827;}
+  @keyframes truckLeave{from{transform:translateX(0)}to{transform:translateX(125vw)}}
+  .trailer{position:absolute;left:0;top:24px;width:222px;height:88px;border-radius:14px 5px 5px 14px;background:linear-gradient(135deg,#f8fafc,#cbd5e1);border:3px solid rgba(148,163,184,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset -10px -10px 20px rgba(15,23,42,.08),0 18px 24px rgba(0,0,0,.2);}
+  .cargo-count{font-weight:1000;font-size:34px;letter-spacing:-.04em;}
+  .cargo-type{font-size:13px;font-weight:900;color:#52627a;}
+  .cab{position:absolute;left:212px;top:45px;width:92px;height:67px;border-radius:8px 24px 11px 8px;background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 18px 24px rgba(0,0,0,.18);}
+  .cab::before{content:"";position:absolute;right:9px;top:8px;width:37px;height:28px;border-radius:5px 14px 5px 5px;background:#bae6fd;border:2px solid rgba(255,255,255,.55);}
+  .cab::after{content:"HUB";position:absolute;left:11px;top:34px;color:white;font-weight:1000;font-size:15px;}
+  .wheel{position:absolute;top:101px;width:38px;height:38px;border-radius:50%;background:#0f172a;border:6px solid #475569;box-shadow:inset 0 0 0 4px #111827;}
   .wheel.w1{left:36px}.wheel.w2{left:244px}
-
-  .conveyor{
-    position:absolute; left:43%; right:4%; top:39%; height:96px; z-index:2;
-    border-radius:22px;
-    background:linear-gradient(180deg,#6b7280,#364152);
-    box-shadow:inset 0 14px 15px rgba(255,255,255,.08), inset 0 -14px 20px rgba(0,0,0,.28), 0 16px 34px rgba(0,0,0,.23);
-    overflow:hidden;
-  }
-  .conveyor::before{content:""; position:absolute; inset:15px 18px; border-radius:18px; background:repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 28px, transparent 28px 54px); animation:belt 1.2s linear infinite;}
+  .conveyor{position:absolute;left:42%;right:4%;top:38%;height:88px;z-index:2;border-radius:20px;background:linear-gradient(180deg,#6b7280,#364152);box-shadow:inset 0 13px 14px rgba(255,255,255,.08),inset 0 -13px 18px rgba(0,0,0,.28),0 16px 32px rgba(0,0,0,.23);overflow:hidden;}
+  .conveyor::before{content:"";position:absolute;inset:14px 17px;border-radius:16px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 28px,transparent 28px 54px);animation:belt 1.2s linear infinite;}
   @keyframes belt{to{transform:translateX(54px)}}
-  .conveyor-label{position:absolute; left:22px; top:50%; transform:translateY(-50%); font-weight:1000; color:rgba(255,255,255,.88); text-shadow:0 2px 4px rgba(0,0,0,.35);}
+  .conveyor-label{position:absolute;left:21px;top:50%;transform:translateY(-50%);font-weight:950;color:rgba(255,255,255,.88);text-shadow:0 2px 4px rgba(0,0,0,.35);font-size:13px;}
 
-  .dock-area{
-    position:absolute; left:24px; right:24px; bottom:24px; z-index:3;
-    display:grid; grid-template-columns:1fr minmax(148px,180px); gap:14px; align-items:end;
-  }
-  .dock-grid{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(86px,1fr)); gap:10px;
-  }
-  .dock,.storage{
-    min-height:128px; border-radius:20px;
-    border:2px solid rgba(255,255,255,.18);
-    background:rgba(255,255,255,.88);
-    box-shadow:0 18px 28px rgba(0,0,0,.2);
-    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
-    padding:10px 8px;
-    position:relative;
-    overflow:hidden;
-  }
-  .dock::before,.storage::before{content:""; position:absolute; left:10px; right:10px; top:10px; height:7px; border-radius:99px; background:#e5e7eb;}
-  .dock.good,.storage.good{animation:popGood .5s ease both; border-color:rgba(16,185,129,.8)}
-  .dock.bad,.storage.bad{animation:wobble .45s ease both; border-color:rgba(239,68,68,.8)}
-  @keyframes popGood{50%{transform:translateY(-12px)}}
-  @keyframes wobble{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-  .dock-head{width:33px;height:33px;border-radius:50%;background:#fcd34d;position:relative;margin-bottom:-3px;z-index:1;}
-  .dock-head::before{content:"";position:absolute;left:-3px;right:-3px;top:-7px;height:16px;border-radius:13px 13px 2px 2px;background:#2563eb;}
-  .dock-body{width:54px;height:44px;border-radius:14px 14px 8px 8px;background:#f8fafc;border:2px solid #d8e1ef;display:grid;place-items:center;position:relative;z-index:1;}
-  .dock-count,.storage-count{font-weight:1000;font-size:18px;color:#1d4ed8;}
-  .dock-name,.storage-name{margin-top:7px;font-size:12px;font-weight:1000;color:#344054;text-align:center;white-space:nowrap;}
-  .storage{background:linear-gradient(180deg,#faf5ff,#f3e8ff); border-color:rgba(168,85,247,.38);}
-  .storage-icon{font-size:42px; line-height:1; margin-bottom:5px; filter:drop-shadow(0 5px 3px rgba(0,0,0,.12));}
+  .dock-area{position:absolute;left:18px;right:18px;bottom:16px;z-index:4;display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:9px;align-items:end;}
+  .dock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:7px;}
+  .dock,.storage{min-height:92px;border-radius:15px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.9);box-shadow:0 12px 22px rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:7px 5px;position:relative;overflow:hidden;}
+  .dock::before,.storage::before{content:"";position:absolute;left:8px;right:8px;top:7px;height:5px;border-radius:99px;background:#e5e7eb;}
+  .dock.good,.storage.good{animation:popGood .5s ease both;border-color:rgba(16,185,129,.8)}
+  .dock.bad,.storage.bad{animation:wobble .45s ease both;border-color:rgba(239,68,68,.8)}
+  @keyframes popGood{50%{transform:translateY(-9px)}}
+  @keyframes wobble{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+  .dock-head{width:25px;height:25px;border-radius:50%;background:#fcd34d;position:relative;margin-bottom:-3px;z-index:1;}
+  .dock-head::before{content:"";position:absolute;left:-3px;right:-3px;top:-6px;height:13px;border-radius:11px 11px 2px 2px;background:#2563eb;}
+  .dock-body{width:43px;height:34px;border-radius:11px 11px 7px 7px;background:#f8fafc;border:2px solid #d8e1ef;display:grid;place-items:center;position:relative;z-index:1;}
+  .dock-count,.storage-count{font-weight:1000;font-size:16px;color:#1d4ed8;}
+  .dock-name,.storage-name{margin-top:5px;font-size:10px;font-weight:950;color:#344054;text-align:center;white-space:nowrap;}
+  .storage{background:linear-gradient(180deg,#faf5ff,#f3e8ff);border-color:rgba(168,85,247,.38);}
+  .storage-icon{font-size:31px;line-height:1;margin-bottom:3px;filter:drop-shadow(0 4px 3px rgba(0,0,0,.1));}
   .storage-count{color:#7c3aed;}
 
-  .parcel{
-    position:absolute; width:24px; height:24px; border-radius:6px;
-    background:linear-gradient(135deg,#d97706,#f59e0b);
-    border:2px solid rgba(120,53,15,.8);
-    z-index:7; pointer-events:none;
-    box-shadow:0 8px 10px rgba(0,0,0,.2);
-    animation:fly .7s cubic-bezier(.2,.7,.2,1) forwards;
-  }
-  .parcel::before{content:"";position:absolute;left:9px;top:-2px;bottom:-2px;width:3px;background:rgba(255,255,255,.35)}
-  @keyframes fly{to{transform:translate(var(--tx),var(--ty)) rotate(360deg) scale(.64);opacity:.05}}
-
   .feedback{
-    position:absolute; left:24px; top:124px; z-index:5;
-    width:min(520px,calc(100% - 48px)); min-height:86px;
-    border-radius:20px; padding:14px 16px;
-    background:rgba(255,255,255,.94); box-shadow:var(--soft);
-    border:1px solid rgba(255,255,255,.72);
-    line-height:1.45;
+    min-height:39px;display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:8px 12px;border-radius:13px;background:#f6f8fb;border:1px solid #e2e8f0;
+    color:#475467;font-size:13px;font-weight:800;line-height:1.3;
   }
-  .feedback b{font-weight:1000;}
-  .feedback.good{border-color:rgba(16,185,129,.5)}
-  .feedback.bad{border-color:rgba(239,68,68,.5)}
-  .feedback .formula{margin-top:5px; color:#475467; font-weight:800; font-size:14px;}
+  .feedback.good{background:#ecfdf3;border-color:#a7f3d0;color:#047857;}
+  .feedback.bad{background:#fff1f2;border-color:#fecdd3;color:#b42318;}
+  .feedback .formula{display:none;}
 
-  .console{
-    min-height:0;
-    display:grid;
-    grid-template-rows:auto auto 1fr;
-    gap:12px;
+  .control-deck{
+    display:grid;grid-template-columns:minmax(290px,.78fr) minmax(470px,1.22fr);gap:9px;
+    background:rgba(255,255,255,.97);border:1px solid rgba(255,255,255,.76);border-radius:22px;padding:10px;box-shadow:var(--soft);
   }
-  .card{
-    background:rgba(255,255,255,.96);
-    border:1px solid rgba(255,255,255,.78);
-    border-radius:24px;
-    box-shadow:var(--soft);
-    padding:16px;
-    overflow:hidden;
-  }
-  .label{font-size:12px; font-weight:1000; color:#667085; letter-spacing:.02em; margin-bottom:8px;}
-  .problem-title{font-size:28px; font-weight:1000; letter-spacing:-.045em; line-height:1.18; margin-bottom:10px;}
-  .problem-sub{color:#52627a; font-weight:800; line-height:1.45; font-size:14px;}
-  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
-  .chip{padding:7px 10px; border-radius:999px; background:#eff6ff; color:#1e40af; font-weight:1000; font-size:13px;}
-  .chip.purple{background:#f3e8ff;color:#6d28d9}.chip.amber{background:#fff7ed;color:#9a3412}.chip.green{background:#ecfdf3;color:#047857}
+  .answer-side{display:grid;grid-template-rows:auto 1fr;gap:8px;min-width:0;}
+  .answer-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .answer-box{border:2px solid #d9e2ee;border-radius:16px;background:#f8fbff;padding:8px 9px;min-height:72px;display:flex;flex-direction:column;justify-content:center;transition:.15s border,.15s transform,.15s background;}
+  .answer-box.active{border-color:#2563eb;background:#eef5ff;transform:translateY(-1px);box-shadow:0 9px 17px rgba(37,99,235,.12);}
+  .answer-box small{font-weight:950;color:#667085;margin-bottom:3px;font-size:12px;}
+  .answer-value{font-size:31px;font-weight:1000;line-height:1;letter-spacing:-.03em;}
+  .keypad{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(2,minmax(45px,1fr));gap:7px;}
+  .key{min-height:45px;border-radius:13px;background:#eef2f7;color:#172033;font-size:21px;font-weight:1000;box-shadow:inset 0 -3px 0 rgba(15,23,42,.07);}
+  .key:active{transform:translateY(2px);box-shadow:none;}
+  .key.utility{font-size:13px;background:#e6edf8;color:#344054;}
+  .key.next{background:#dbeafe;color:#1d4ed8;font-size:13px;}
+  .key.primary{grid-column:auto;min-height:45px;color:white;background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 10px 18px rgba(16,185,129,.2);font-size:15px;}
 
-  .input-card{padding:14px;}
-  .answer-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
-  .answer-box{
-    border:2px solid #d9e2ee; border-radius:18px; background:#f8fbff;
-    padding:13px 10px; min-height:86px; display:flex; flex-direction:column; justify-content:center;
-    transition:.15s border,.15s transform,.15s background;
-  }
-  .answer-box.active{border-color:#2563eb; background:#eef5ff; transform:translateY(-2px); box-shadow:0 12px 20px rgba(37,99,235,.12);}
-  .answer-box small{font-weight:1000;color:#667085;margin-bottom:5px;}
-  .answer-value{font-size:34px; font-weight:1000; line-height:1; letter-spacing:-.03em;}
-  .keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
-  .key{
-    min-height:54px; border-radius:16px; background:#eef2f7; color:#172033;
-    font-size:24px; font-weight:1000; box-shadow:inset 0 -3px 0 rgba(15,23,42,.07);
-  }
-  .key:active{transform:translateY(2px); box-shadow:none;}
-  .key.utility{font-size:16px; background:#e6edf8; color:#344054;}
-  .key.primary{grid-column:span 3; min-height:58px; color:white; background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 13px 22px rgba(16,185,129,.22);}
-  .key.next{background:#dbeafe;color:#1d4ed8;font-size:17px;}
-
-  .mission-list{min-height:0; display:grid; grid-template-rows:auto 1fr;}
-  .mini-missions{display:grid; gap:8px; margin-bottom:10px;}
-  .mini{
-    padding:9px 11px; border-radius:14px; background:#f6f8fb; border:1px solid #e4eaf3;
-    display:flex; justify-content:space-between; gap:8px; align-items:center; font-size:13px; font-weight:900; color:#475467;
-  }
-  .mini.done{background:#ecfdf3; color:#047857; border-color:#bbf7d0;}
-  .mini b{font-size:12px;}
-  .log{min-height:0; overflow:auto; display:flex; flex-direction:column; gap:7px; padding-right:3px;}
-  .log-item{padding:9px 10px; border-radius:14px; background:#f8fbff; border-left:4px solid #cbd5e1; font-weight:800; font-size:13px; line-height:1.35; color:#475467;}
-  .log-item.good{background:#ecfdf3; border-color:#10b981; color:#047857;}
-  .log-item.bad{background:#fff1f2; border-color:#ef4444; color:#b42318;}
-
-  .toast{
-    position:absolute; right:20px; top:86px; z-index:30;
-    padding:12px 16px; border-radius:16px; color:white; font-weight:900;
-    background:rgba(15,23,42,.92); box-shadow:var(--soft);
-    transform:translateY(-10px); opacity:0; transition:.25s ease; pointer-events:none;
-  }
-  .toast.show{opacity:1; transform:translateY(0);}
-  .float-score{
-    position:absolute; left:50%; top:34%; z-index:20;
-    transform:translate(-50%,-50%); font-size:58px; font-weight:1000;
-    color:#34d399; text-shadow:0 7px 14px rgba(0,0,0,.35);
-    animation:floatUp 1.15s ease forwards; pointer-events:none;
-  }
+  .card,.label,.mission-list{display:none;}
+  .mini-missions,.log{display:none;}
+  .toast{position:absolute;right:15px;top:14px;z-index:30;padding:10px 14px;border-radius:14px;color:white;font-weight:900;background:rgba(15,23,42,.92);box-shadow:var(--soft);transform:translateY(-8px);opacity:0;transition:.23s ease;pointer-events:none;font-size:13px;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .float-score{position:absolute;left:50%;top:36%;z-index:20;transform:translate(-50%,-50%);font-size:52px;font-weight:1000;color:#34d399;text-shadow:0 7px 14px rgba(0,0,0,.35);animation:floatUp 1.15s ease forwards;pointer-events:none;}
   .float-score.bad{color:#fb7185;}
   @keyframes floatUp{0%{opacity:0;transform:translate(-50%,-10%) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-135%) scale(1.08)}}
+  .parcel{position:absolute;width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#d97706,#f59e0b);border:2px solid rgba(120,53,15,.8);z-index:7;pointer-events:none;box-shadow:0 7px 9px rgba(0,0,0,.2);animation:fly .7s cubic-bezier(.2,.7,.2,1) forwards;}
+  .parcel::before{content:"";position:absolute;left:8px;top:-2px;bottom:-2px;width:3px;background:rgba(255,255,255,.35)}
+  @keyframes fly{to{transform:translate(var(--tx),var(--ty)) rotate(360deg) scale(.64);opacity:.05}}
 
-  .result-card{max-width:760px;}
-  .result-card h2{font-size:46px; margin:0 0 8px; letter-spacing:-.045em;}
-  .big-score{font-size:54px; color:#059669; font-weight:1000; margin:20px 0;}
-  .result-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:24px 0 28px;}
-  .result-box{border-radius:18px; background:#f2f6fb; padding:14px 10px; color:#667085; font-weight:900;}
-  .result-box b{display:block; margin-top:6px; font-size:25px; color:#172033;}
+  .result-card{max-width:720px;}
+  .result-card h2{font-size:44px;margin:0 0 8px;letter-spacing:-.045em;}
+  .big-score{font-size:52px;color:#059669;font-weight:1000;margin:18px 0;}
+  .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:22px 0 26px;}
+  .result-box{border-radius:16px;background:#f2f6fb;padding:13px 9px;color:#667085;font-weight:900;}
+  .result-box b{display:block;margin-top:5px;font-size:23px;color:#172033;}
 
-  @media(max-width:1120px){
-    body{overflow:auto;}
-    #game{height:auto; min-height:100%; overflow:visible; grid-template-rows:auto auto;}
-    .topbar{grid-template-columns:repeat(3,1fr);}
-    .layout{grid-template-columns:1fr;}
-    .yard{height:620px; min-height:620px;}
-    .mission-banner{width:min(560px,calc(100% - 40px)); top:72px;}
-    .feedback{top:136px; width:calc(100% - 48px);}
-    .console{grid-template-rows:auto auto auto;}
-    .mission-list{min-height:260px;}
-  }
-  @media(max-width:680px){
-    #game{padding:10px; gap:10px;}
-    .topbar{grid-template-columns:1fr 1fr;}
-    .timer-card{grid-column:span 2;}
-    .small-action{min-height:44px;}
-    .stat b{font-size:19px;}
-    .yard{height:610px; min-height:610px; border-radius:22px;}
-    .hub-sign{left:12px;top:12px;font-size:13px;}
-    .mission-banner{top:58px; padding:10px 12px; font-size:14px;}
-    .feedback{left:12px; right:12px; top:128px; width:auto; font-size:14px;}
-    .truck{left:4%; top:36%; transform:translateX(-120vw) scale(.78); transform-origin:left center;}
+  @media(max-width:900px){
+    #game{grid-template-rows:52px minmax(0,1fr);gap:7px;padding:6px max(7px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));}
+    .topbar{grid-template-columns:minmax(0,1fr) auto;padding:5px 6px 5px 9px;gap:7px;border-radius:15px;}
+    .top-brand{display:none;}
+    .hud-stats{justify-content:flex-start;gap:5px;overflow:hidden;}
+    .stat{padding:5px 7px;gap:3px;}
+    .stat small{font-size:9px;}
+    .stat b{font-size:13px;}
+    .stat.day,.stat.trucks,.stat.accuracy{display:none;}
+    .timer-card{min-width:134px;grid-template-columns:1fr auto;gap:5px;}
+    .timer-card small{display:none;}
+    .time-line{height:8px;}
+    #timeText{font-size:12px;}
+    .icon-action{width:34px;height:34px;border-radius:10px;}
+    .play-shell{gap:7px;}
+    .control-deck{grid-template-columns:1fr;gap:7px;padding:8px;border-radius:17px;}
+    .answer-side{grid-template-columns:1fr 1.25fr;grid-template-rows:1fr;align-items:stretch;}
+    .feedback{min-height:66px;}
+    .answer-box{min-height:66px;}
+    .keypad{grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(2,43px);gap:5px;}
+    .key{min-height:43px;border-radius:11px;font-size:19px;}
+    .key.utility,.key.next{font-size:11px;}
+    .key.primary{font-size:13px;}
+    .task-focus{width:min(620px,calc(100% - 125px));top:9px;padding:8px 10px;}
+    .problem-title{font-size:25px;}
+    .mission-banner{font-size:12px;}
+    .mission-banner span{font-size:10px;}
+    .hub-sign{left:9px;top:9px;font-size:10px;padding:6px 8px;}
+    .truck{top:29%;left:4%;transform:translateX(-120vw) scale(.8);transform-origin:left center;}
     .truck.enter{animation:truckEnterSmall .65s cubic-bezier(.2,.9,.2,1.12) forwards;}
     .truck.leave{animation:truckLeaveSmall .55s ease-in forwards;}
-    @keyframes truckEnterSmall{to{transform:translateX(0) scale(.78)}}
-    @keyframes truckLeaveSmall{from{transform:translateX(0) scale(.78)} to{transform:translateX(125vw) scale(.78)}}
-    .conveyor{left:8%; right:8%; top:46%; height:72px;}
-    .dock-area{left:10px; right:10px; bottom:12px; grid-template-columns:1fr;}
-    .dock-grid{grid-template-columns:repeat(auto-fit,minmax(74px,1fr)); gap:7px;}
-    .dock,.storage{min-height:106px; border-radius:16px; padding:8px 5px;}
-    .dock-head{width:28px;height:28px}.dock-body{width:47px;height:38px}.dock-name,.storage-name{font-size:11px}.storage-icon{font-size:32px;}
-    .answer-value{font-size:30px}.key{min-height:50px;}
+    @keyframes truckEnterSmall{to{transform:translateX(0) scale(.8)}}
+    @keyframes truckLeaveSmall{from{transform:translateX(0) scale(.8)}to{transform:translateX(125vw) scale(.8)}}
+    .conveyor{left:35%;right:3%;top:39%;height:70px;}
+    .dock-area{left:9px;right:9px;bottom:8px;grid-template-columns:minmax(0,1fr) 88px;gap:5px;}
+    .dock-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;}
+    .dock,.storage{min-height:69px;border-radius:11px;padding:5px 3px;}
+    .dock::before,.storage::before{top:5px;left:5px;right:5px;height:4px;}
+    .dock-head{width:19px;height:19px;}.dock-head::before{height:10px;top:-5px;}
+    .dock-body{width:31px;height:25px;border-radius:8px 8px 5px 5px;}
+    .dock-count,.storage-count{font-size:13px;}
+    .dock-name,.storage-name{font-size:8px;margin-top:3px;}
+    .storage-icon{font-size:24px;}
+  }
+
+  @media(min-width:600px) and (max-width:900px) and (min-height:900px){
+    .play-shell{height:min(860px,100%);align-self:center;}
+    .truck{top:35%;}
+    .conveyor{top:42%;}
+  }
+
+  @media(max-width:560px){
+    #game{grid-template-rows:48px minmax(0,1fr);}
+    .topbar{grid-template-columns:minmax(0,1fr) auto;}
+    .hud-stats{gap:4px;}
+    .stat{padding:4px 6px;}
+    .stat b{font-size:12px;}
+    .timer-card{min-width:112px;}
+    .top-actions{gap:4px;}
+    .icon-action{width:32px;height:32px;font-size:13px;}
+    .task-focus{width:calc(100% - 20px);top:7px;}
+    .problem-title{font-size:23px;}
+    .mission-banner span{display:none;}
+    .hub-sign{display:none;}
+    .yard::before{top:39%;height:90px;}
+    .yard::after{top:calc(39% + 43px);}
+    .truck{left:1%;top:24%;transform:translateX(-120vw) scale(.65);}
+    .truck.enter{animation:truckEnterPhone .65s cubic-bezier(.2,.9,.2,1.12) forwards;}
+    .truck.leave{animation:truckLeavePhone .55s ease-in forwards;}
+    @keyframes truckEnterPhone{to{transform:translateX(0) scale(.65)}}
+    @keyframes truckLeavePhone{from{transform:translateX(0) scale(.65)}to{transform:translateX(150vw) scale(.65)}}
+    .conveyor{left:27%;right:2%;top:37%;height:60px;}
+    .conveyor-label{font-size:10px;left:13px;}
+    .dock-area{grid-template-columns:minmax(0,1fr) 70px;}
+    .dock,.storage{min-height:61px;}
+    .dock-head{display:none;}
+    .dock-body{width:28px;height:25px;}
+    .dock-name{font-size:7px;}
+    .storage-icon{font-size:21px;}
+    .answer-side{grid-template-columns:1fr;gap:5px;}
+    .feedback{min-height:35px;padding:6px 8px;font-size:11px;}
+    .answer-row{gap:5px;}
+    .answer-box{min-height:55px;border-radius:12px;padding:5px 7px;}
+    .answer-box small{font-size:10px;}
+    .answer-value{font-size:26px;}
+    .keypad{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,39px);gap:4px;}
+    .key{min-height:39px;border-radius:10px;font-size:18px;}
+    .float-score{font-size:40px;}
+    .hero,.result-card{padding:25px 17px;}
     .result-grid{grid-template-columns:1fr 1fr;}
-    .hero,.result-card{padding:26px 18px;}
+  }
+
+  @media(max-height:700px) and (max-width:900px){
+    #game{grid-template-rows:44px minmax(0,1fr);}
+    .icon-action{height:30px;width:30px;}
+    .yard{border-radius:18px;}
+    .task-focus{padding:6px 9px;}
+    .problem-title{font-size:21px;margin-bottom:2px;}
+    .mission-banner{font-size:11px;}
+    .truck{top:21%;}
+    .dock,.storage{min-height:54px;}
+    .dock-name,.storage-name{display:none;}
+    .control-deck{padding:6px;}
+    .feedback{min-height:30px;}
+    .answer-box{min-height:48px;}
+    .keypad{grid-template-rows:repeat(4,34px);}
+    .key{min-height:34px;}
+  }
+
+  @media(orientation:landscape) and (max-height:600px){
+    #game{grid-template-rows:44px minmax(0,1fr);}
+    .play-shell{grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:1fr;}
+    .control-deck{grid-template-columns:1fr;align-content:center;}
+    .answer-side{grid-template-columns:1fr;}
+    .keypad{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);}
   }
 </style>
 </head>
@@ -373,37 +320,47 @@
     <div class="hero">
       <div class="brand-mark">📦</div>
       <h1>증평 HUB 분류왕</h1>
-      <p class="subtitle">
-        트럭에서 내려온 화물을 <b>각 배송 도크에 똑같이</b> 나누고,<br />
-        남은 화물은 <b>잔여 보관함</b>에 넣는 나눗셈 물류 게임입니다.
-      </p>
+      <p class="subtitle">트럭에서 내려온 화물을 <b>배송 도크에 똑같이</b> 나누고, 남은 화물은 <b>잔여 보관함</b>에 넣는 나눗셈 게임입니다.</p>
       <div class="pill-row">
-        <span class="pill">큰 숫자 키패드</span>
-        <span class="pill">잔여 보관함</span>
-        <span class="pill">분배 애니메이션</span>
+        <span class="pill">한 화면 집중형</span>
+        <span class="pill">자체 숫자패드</span>
+        <span class="pill">모바일 키보드 없음</span>
         <span class="pill">2분 타임어택</span>
       </div>
-      <button id="startBtn" class="big-btn">분류 업무 시작</button>
-      <div class="note">소리가 나지 않으면 시작 후 화면을 한 번 더 눌러주세요. M키로 음소거할 수 있습니다.</div>
+      <button id="startBtn" class="big-btn" type="button">분류 업무 시작</button>
+      <div class="note">숫자는 화면의 전용 키패드로 입력합니다. 모바일 키보드는 열리지 않습니다.</div>
     </div>
   </section>
 
-  <main id="game">
-    <section class="topbar">
-      <div class="stat"><small>근무일</small><b id="dayText">1일차</b></div>
-      <div class="stat"><small>오늘의 일당</small><b id="scoreText">0원</b></div>
-      <div class="stat"><small>연속 정확</small><b id="comboText">0 COMBO</b></div>
-      <div class="stat"><small>처리 트럭</small><b id="truckText">0대</b></div>
-      <div class="stat"><small>정확도</small><b id="accText">0%</b></div>
-      <div class="timer-card"><small>퇴근까지 남은 시간</small><div class="time-line"><div id="timeFill" class="time-fill"></div></div></div>
-      <button id="endBtn" class="small-action danger">퇴근</button>
-    </section>
+  <main id="game" aria-label="증평 HUB 분류 게임">
+    <header class="topbar">
+      <div class="top-brand"><span>📦</span>증평 HUB</div>
+      <div class="hud-stats">
+        <div class="stat day"><small>근무</small><b id="dayText">1일차</b></div>
+        <div class="stat"><small>일당</small><b id="scoreText">0원</b></div>
+        <div class="stat"><small>연속</small><b id="comboText">0 COMBO</b></div>
+        <div class="stat trucks"><small>처리</small><b id="truckText">0대</b></div>
+        <div class="stat accuracy"><small>정확도</small><b id="accText">0%</b></div>
+        <div class="timer-card"><small>퇴근까지</small><div class="time-line"><div id="timeFill" class="time-fill"></div></div><b id="timeText">2:00</b></div>
+      </div>
+      <div class="top-actions">
+        <button id="soundBtn" class="icon-action" type="button" aria-label="소리 끄기">🔊</button>
+        <button id="endBtn" class="icon-action danger" type="button" aria-label="퇴근하기" title="퇴근하기">⏹</button>
+      </div>
+    </header>
 
-    <section class="layout">
-      <section id="yard" class="yard">
-        <div class="hub-sign">🚚 증평 HUB 중앙 분류장</div>
-        <div id="missionBanner" class="mission-banner">트럭 대기 중<span>화물이 도착하면 각 도크와 잔여 보관함을 확인하세요.</span></div>
-        <div id="feedback" class="feedback">시작하면 첫 번째 트럭이 들어옵니다.</div>
+    <section class="play-shell">
+      <section id="yard" class="yard" aria-label="화물 분류장">
+        <div class="hub-sign">🚚 중앙 분류장</div>
+        <div class="task-focus">
+          <div id="problemTitle" class="problem-title">트럭 대기 중</div>
+          <div id="missionBanner" class="mission-banner">화물이 도착하면 도크 수와 화물 수를 확인하세요.<span>몫은 도크 1곳당 수량, 나머지는 보관함 수량입니다.</span></div>
+          <div id="problemSub" class="problem-sub"></div>
+          <div class="chips">
+            <span id="cargoChip" class="chip"></span><span id="levelChip" class="chip"></span><span id="hintChip" class="chip"></span>
+          </div>
+        </div>
+
         <div id="truck" class="truck">
           <div class="trailer"><div id="cargoCount" class="cargo-count">0개</div><div id="cargoType" class="cargo-type">일반 화물</div></div>
           <div class="cab"></div><div class="wheel w1"></div><div class="wheel w2"></div>
@@ -412,61 +369,34 @@
         <div class="dock-area">
           <div id="dockGrid" class="dock-grid"></div>
           <div id="storage" class="storage">
-            <div class="storage-icon">🏬</div>
-            <div class="storage-count" id="storageCount">0</div>
-            <div class="storage-name">잔여 보관함</div>
+            <div class="storage-icon">🏬</div><div class="storage-count" id="storageCount">0</div><div class="storage-name">잔여 보관함</div>
           </div>
         </div>
-        <div id="toast" class="toast"></div>
+        <div id="toast" class="toast" aria-live="polite"></div>
       </section>
 
-      <aside class="console">
-        <section class="card">
-          <div class="label">현재 작업 지시서</div>
-          <div id="problemTitle" class="problem-title">트럭 대기 중</div>
-          <div id="problemSub" class="problem-sub">화물이 들어오면 기사 도크 수와 화물 개수를 보고 몫과 나머지를 입력하세요.</div>
-          <div class="chips">
-            <span id="cargoChip" class="chip">일반 화물</span>
-            <span id="levelChip" class="chip green">기초 분류</span>
-            <span id="hintChip" class="chip purple">나머지는 보관함</span>
-          </div>
-        </section>
-
-        <section class="card input-card">
-          <div class="label">분류 수량 입력</div>
+      <section class="control-deck" aria-label="정답 입력 패널">
+        <div class="answer-side">
+          <div id="feedback" class="feedback" aria-live="polite">첫 번째 트럭이 들어오면 바로 분류를 시작하세요.</div>
           <div class="answer-row">
-            <button id="shareBox" class="answer-box active" data-field="share">
-              <small>도크 1곳당</small>
-              <span id="shareValue" class="answer-value">_</span>
+            <button id="shareBox" class="answer-box active" type="button" data-field="share">
+              <small>도크 1곳당</small><span id="shareValue" class="answer-value">_</span>
             </button>
-            <button id="remBox" class="answer-box" data-field="rem">
-              <small>잔여 보관함</small>
-              <span id="remValue" class="answer-value">_</span>
+            <button id="remBox" class="answer-box" type="button" data-field="rem">
+              <small>잔여 보관함</small><span id="remValue" class="answer-value">_</span>
             </button>
           </div>
-          <div class="keypad" id="keypad">
-            <button class="key" data-key="1">1</button><button class="key" data-key="2">2</button><button class="key" data-key="3">3</button>
-            <button class="key" data-key="4">4</button><button class="key" data-key="5">5</button><button class="key" data-key="6">6</button>
-            <button class="key" data-key="7">7</button><button class="key" data-key="8">8</button><button class="key" data-key="9">9</button>
-            <button class="key utility" data-key="clear">초기화</button><button class="key" data-key="0">0</button><button class="key utility" data-key="back">지우기</button>
-            <button class="key next" data-key="next">다음 입력</button><button class="key next" data-key="zero">잔여 0</button><button class="key utility" data-key="hint">힌트</button>
-            <button class="key primary" data-key="enter">출고하기</button>
-          </div>
-        </section>
+        </div>
+        <div class="keypad" id="keypad" aria-label="화면 숫자패드">
+          <button class="key" type="button" data-key="1">1</button><button class="key" type="button" data-key="2">2</button><button class="key" type="button" data-key="3">3</button><button class="key" type="button" data-key="4">4</button><button class="key" type="button" data-key="5">5</button>
+          <button class="key" type="button" data-key="6">6</button><button class="key" type="button" data-key="7">7</button><button class="key" type="button" data-key="8">8</button><button class="key" type="button" data-key="9">9</button><button class="key" type="button" data-key="0">0</button>
+          <button class="key utility" type="button" data-key="clear">초기화</button><button class="key utility" type="button" data-key="back">지우기</button><button class="key next" type="button" data-key="next">다음 칸</button><button class="key next" type="button" data-key="zero">잔여 0</button><button class="key utility" type="button" data-key="hint">힌트</button><button class="key primary" type="button" data-key="enter">출고하기</button>
+        </div>
+      </section>
 
-        <section class="card mission-list">
-          <div>
-            <div class="label">오늘의 보너스 미션</div>
-            <div class="mini-missions">
-              <div id="miniCombo" class="mini"><span>3연속 정확 분류</span><b>+300원</b></div>
-              <div id="miniRemainder" class="mini"><span>나머지 문제 3회 성공</span><b>+300원</b></div>
-              <div id="miniPerfect" class="mini"><span>오답 없이 5대 처리</span><b>+500원</b></div>
-            </div>
-            <div class="label">작업 기록</div>
-          </div>
-          <div id="log" class="log"></div>
-        </section>
-      </aside>
+      <section hidden aria-hidden="true">
+        <div id="miniCombo" class="mini"></div><div id="miniRemainder" class="mini"></div><div id="miniPerfect" class="mini"></div><div id="log" class="log"></div>
+      </section>
     </section>
   </main>
 
@@ -481,7 +411,7 @@
         <div class="result-box">정확도<b id="finalAcc">0%</b></div>
         <div class="result-box">등급<b id="finalRank">견습</b></div>
       </div>
-      <button id="restartBtn" class="big-btn">다음 날 출근</button>
+      <button id="restartBtn" class="big-btn" type="button">다음 날 출근</button>
     </div>
   </section>
 
@@ -517,7 +447,7 @@
   const els = {
     startScreen: $('startScreen'), resultScreen: $('resultScreen'), game: $('game'),
     startBtn: $('startBtn'), restartBtn: $('restartBtn'), endBtn: $('endBtn'),
-    dayText: $('dayText'), scoreText: $('scoreText'), comboText: $('comboText'), truckText: $('truckText'), accText: $('accText'), timeFill: $('timeFill'),
+    dayText: $('dayText'), scoreText: $('scoreText'), comboText: $('comboText'), truckText: $('truckText'), accText: $('accText'), timeFill: $('timeFill'), timeText: $('timeText'), soundBtn: $('soundBtn'),
     yard: $('yard'), truck: $('truck'), cargoCount: $('cargoCount'), cargoType: $('cargoType'), missionBanner: $('missionBanner'), feedback: $('feedback'),
     dockGrid: $('dockGrid'), storage: $('storage'), storageCount: $('storageCount'),
     problemTitle: $('problemTitle'), problemSub: $('problemSub'), cargoChip: $('cargoChip'), levelChip: $('levelChip'), hintChip: $('hintChip'),
@@ -608,6 +538,9 @@
     els.truckText.textContent = state.trucks + '대';
     els.accText.textContent = accuracy() + '%';
     els.timeFill.style.width = Math.max(0, state.timeLeft / DAY_SECONDS * 100) + '%';
+    const minute = Math.floor(Math.max(0, state.timeLeft) / 60);
+    const second = String(Math.max(0, state.timeLeft) % 60).padStart(2, '0');
+    if(els.timeText) els.timeText.textContent = `${minute}:${second}`;
   }
   function setActiveField(field){
     state.activeField = field;
@@ -766,6 +699,7 @@
     if(bonus){
       state.score += bonus;
       floatScore('보너스 +' + bonus, true);
+      toast(`보너스 미션 달성! +${bonus}원`);
       sfx('bonus');
     }
   }
@@ -928,6 +862,15 @@
   els.startBtn.addEventListener('click', () => startGame(false));
   els.restartBtn.addEventListener('click', () => startGame(true));
   els.endBtn.addEventListener('click', endDay);
+  if(els.soundBtn){
+    els.soundBtn.addEventListener('click', () => {
+      initAudio();
+      state.muted = !state.muted;
+      els.soundBtn.textContent = state.muted ? '🔇' : '🔊';
+      els.soundBtn.setAttribute('aria-label', state.muted ? '소리 켜기' : '소리 끄기');
+      toast(state.muted ? '소리를 껐습니다.' : '소리를 켰습니다.');
+    });
+  }
   els.shareBox.addEventListener('click', () => setActiveField('share'));
   els.remBox.addEventListener('click', () => setActiveField('rem'));
   els.keypad.addEventListener('click', (e) => {
@@ -939,6 +882,10 @@
   window.addEventListener('keydown', (e) => {
     if(e.key.toLowerCase() === 'm'){
       state.muted = !state.muted;
+      if(els.soundBtn){
+        els.soundBtn.textContent = state.muted ? '🔇' : '🔊';
+        els.soundBtn.setAttribute('aria-label', state.muted ? '소리 켜기' : '소리 끄기');
+      }
       toast(state.muted ? '소리를 껐습니다.' : '소리를 켰습니다.');
       return;
     }
@@ -951,6 +898,20 @@
       return;
     }
     if(/^\d$/.test(e.key)) pressKey(e.key);
+  });
+  function syncViewportHeight(){
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', `${Math.round(h)}px`);
+  }
+  syncViewportHeight();
+  window.addEventListener('resize', syncViewportHeight, { passive:true });
+  window.addEventListener('orientationchange', () => setTimeout(syncViewportHeight, 120), { passive:true });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', syncViewportHeight, { passive:true });
+    window.visualViewport.addEventListener('scroll', syncViewportHeight, { passive:true });
+  }
+  document.addEventListener('focusin', (e) => {
+    if(e.target.matches('input, textarea, select')) e.target.blur();
   });
 })();
 </script>
