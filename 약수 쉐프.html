@@ -1,0 +1,2553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content" />
+  <title>약수 셰프: 잘게잘게 팩터 키친</title>
+  <style>
+    :root {
+      --ink: #29231f;
+      --cream: #fff8e8;
+      --paper: #fffdf7;
+      --tomato: #f0544f;
+      --orange: #ff9f1c;
+      --green: #5aa469;
+      --deep-green: #2f6f45;
+      --blue: #45a6b8;
+      --board: #d89b5b;
+      --board-dark: #ad6f38;
+      --shadow: rgba(51, 35, 24, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255,255,255,.9), transparent 22%),
+        radial-gradient(circle at 85% 18%, rgba(255,237,176,.75), transparent 25%),
+        linear-gradient(135deg, #fff5d7 0%, #ffe8bb 48%, #ffd9a0 100%);
+      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .08;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0 5px, #6f4a2e 6px 7px),
+        repeating-linear-gradient(90deg, transparent 0 10px, #fff 11px 12px);
+      mix-blend-mode: multiply;
+    }
+
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      width: min(1180px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 18px 0 30px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 8px 22px var(--shadow), inset 0 -4px 0 rgba(0,0,0,.05);
+      font-size: 34px;
+      transform: rotate(-4deg);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: #765c48;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .icon-button {
+      border: 0;
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 7px 18px var(--shadow);
+      cursor: pointer;
+      font-size: 22px;
+      transition: transform .15s ease;
+    }
+    .icon-button:hover { transform: translateY(-2px); }
+    .icon-button:active { transform: translateY(1px) scale(.97); }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .hud-card {
+      background: rgba(255,255,255,.78);
+      border: 2px solid rgba(255,255,255,.82);
+      border-radius: 18px;
+      padding: 11px 14px;
+      box-shadow: 0 7px 18px var(--shadow);
+      text-align: center;
+      backdrop-filter: blur(6px);
+    }
+
+    .hud-label {
+      display: block;
+      color: #806751;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+
+    .hud-value {
+      display: block;
+      margin-top: 2px;
+      font-size: clamp(20px, 4vw, 30px);
+      font-weight: 1000;
+      line-height: 1;
+    }
+
+    .time-danger { color: var(--tomato); animation: pulse .65s infinite alternate; }
+    @keyframes pulse { to { transform: scale(1.08); } }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, .8fr);
+      gap: 14px;
+    }
+
+    .kitchen-panel,
+    .side-panel {
+      background: rgba(255,253,247,.88);
+      border: 2px solid rgba(255,255,255,.8);
+      border-radius: 28px;
+      box-shadow: 0 14px 35px var(--shadow);
+      overflow: hidden;
+    }
+
+    .kitchen-panel {
+      min-height: 610px;
+      padding: 22px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      isolation: isolate;
+    }
+
+    .kitchen-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background:
+        linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.2)),
+        repeating-linear-gradient(90deg, #f7e5c5 0 34px, #f3ddba 35px 68px);
+    }
+
+    .shelf {
+      height: 14px;
+      width: 68%;
+      border-radius: 12px;
+      background: #795337;
+      box-shadow: 0 6px 0 #523421;
+      margin: 2px auto 18px;
+      opacity: .75;
+    }
+
+    .message-row {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .message {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 5px 13px rgba(68,47,31,.12);
+      font-weight: 900;
+      color: #674c37;
+      transform-origin: center;
+    }
+
+    .message.good { color: var(--deep-green); animation: pop .28s ease; }
+    .message.bad { color: var(--tomato); animation: shake .3s ease; }
+    @keyframes pop { 50% { transform: scale(1.12) rotate(-1deg); } }
+    @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+    .board-wrap {
+      position: relative;
+      width: min(94%, 720px);
+      margin: 0 auto;
+      aspect-ratio: 16 / 8.5;
+      display: grid;
+      place-items: center;
+    }
+
+    .board {
+      position: absolute;
+      inset: 3% 1% 4%;
+      border-radius: 38px;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 45px, rgba(80,42,15,.04) 46px 90px),
+        linear-gradient(150deg, #e6ad6c, var(--board));
+      border: 7px solid #c48345;
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,.25),
+        inset 0 -18px 28px rgba(105,57,21,.16),
+        0 20px 0 var(--board-dark),
+        0 30px 35px rgba(82,52,28,.27);
+    }
+
+    .board::after {
+      content: "";
+      position: absolute;
+      right: 24px;
+      top: 24px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #bc7a3c;
+      box-shadow: inset 0 4px 8px rgba(68,35,13,.28), 0 2px 0 rgba(255,255,255,.2);
+    }
+
+    .vegetable-stage {
+      position: relative;
+      z-index: 3;
+      width: 70%;
+      height: 62%;
+      display: grid;
+      place-items: center;
+      transition: transform .25s ease;
+    }
+
+    .vegetable {
+      position: relative;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 13px 7px rgba(67,43,24,.24));
+      transform-origin: center bottom;
+      user-select: none;
+    }
+
+    .veg-emoji {
+      font-size: clamp(95px, 17vw, 175px);
+      line-height: .8;
+      transform: rotate(-5deg);
+    }
+
+    .number-badge {
+      position: absolute;
+      left: 50%;
+      top: 53%;
+      transform: translate(-50%, -50%) rotate(2deg);
+      min-width: 90px;
+      padding: 8px 14px 10px;
+      text-align: center;
+      border-radius: 20px;
+      background: rgba(255,255,255,.92);
+      border: 4px solid rgba(69,47,35,.78);
+      box-shadow: 0 6px 0 rgba(65,39,25,.26);
+      font-size: clamp(30px, 6vw, 57px);
+      font-weight: 1000;
+      letter-spacing: -.05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .vegetable.chop { animation: vegChop .22s ease; }
+    @keyframes vegChop {
+      40% { transform: scaleX(.93) scaleY(1.08) translateY(-5px); }
+      70% { transform: scaleX(1.06) scaleY(.91); }
+    }
+
+    .knife {
+      position: absolute;
+      z-index: 8;
+      top: 4%;
+      right: 11%;
+      width: 190px;
+      height: 55px;
+      transform: rotate(-25deg);
+      transform-origin: 92% 50%;
+      pointer-events: none;
+      filter: drop-shadow(0 7px 4px rgba(48,34,25,.25));
+    }
+
+    .knife-blade {
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 132px;
+      height: 45px;
+      border-radius: 8px 5px 26px 8px;
+      background: linear-gradient(180deg, #fff 0%, #cbd8dc 45%, #91a4aa 100%);
+      border: 2px solid #6d7c81;
+      clip-path: polygon(0 0, 100% 0, 91% 100%, 0 77%);
+    }
+
+    .knife-blade::after {
+      content: "";
+      position: absolute;
+      inset: 4px 14px 18px 7px;
+      border-top: 4px solid rgba(255,255,255,.85);
+      border-radius: 60%;
+    }
+
+    .knife-handle {
+      position: absolute;
+      right: 0;
+      top: 10px;
+      width: 70px;
+      height: 37px;
+      border-radius: 8px 18px 18px 8px;
+      background: linear-gradient(#4c3126, #241714);
+      border: 3px solid #1b1110;
+    }
+
+    .knife.swing { animation: knifeSwing .22s cubic-bezier(.2,.8,.3,1); }
+    @keyframes knifeSwing {
+      45% { transform: rotate(23deg) translate(-18px, 26px); }
+      100% { transform: rotate(-25deg); }
+    }
+
+    .slice-piece {
+      position: absolute;
+      z-index: 5;
+      width: 42px;
+      height: 28px;
+      border-radius: 50%;
+      border: 4px solid rgba(255,255,255,.55);
+      box-shadow: 0 7px 6px rgba(75,45,24,.2);
+      pointer-events: none;
+      animation: flyPiece .72s ease-out forwards;
+    }
+
+    @keyframes flyPiece {
+      0% { opacity: 1; transform: translate(0,0) rotate(0) scale(.5); }
+      60% { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1.2); }
+    }
+
+    .combo-burst {
+      position: absolute;
+      z-index: 12;
+      left: 50%;
+      top: 32%;
+      transform: translate(-50%,-50%);
+      font-size: clamp(27px, 6vw, 58px);
+      font-weight: 1000;
+      color: #fff;
+      -webkit-text-stroke: 6px var(--tomato);
+      paint-order: stroke fill;
+      text-shadow: 0 8px 0 rgba(130,49,31,.25);
+      pointer-events: none;
+      animation: burst .7s ease-out forwards;
+    }
+
+    @keyframes burst {
+      0% { opacity: 0; transform: translate(-50%,-30%) scale(.4) rotate(-8deg); }
+      35% { opacity: 1; transform: translate(-50%,-65%) scale(1.18) rotate(3deg); }
+      100% { opacity: 0; transform: translate(-50%,-110%) scale(.9) rotate(-2deg); }
+    }
+
+    .equation {
+      min-height: 46px;
+      margin: 11px auto 2px;
+      padding: 9px 16px;
+      max-width: 95%;
+      border-radius: 15px;
+      background: rgba(255,255,255,.75);
+      text-align: center;
+      font-size: clamp(17px, 3vw, 25px);
+      font-weight: 1000;
+      color: #674c37;
+      box-shadow: inset 0 -3px 0 rgba(100,66,42,.08);
+    }
+
+    .input-zone {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .factor-input {
+      width: 100%;
+      min-width: 0;
+      height: 64px;
+      border: 4px solid #e5b46e;
+      border-radius: 19px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      padding: 0 18px;
+      font-size: clamp(22px, 5vw, 34px);
+      font-weight: 1000;
+      text-align: center;
+      box-shadow: inset 0 4px 9px rgba(104,67,36,.08), 0 7px 14px rgba(80,52,31,.12);
+      transition: border-color .15s, transform .15s;
+    }
+
+    .factor-input:focus { border-color: var(--orange); transform: translateY(-1px); }
+    .factor-input.invalid { border-color: var(--tomato); animation: shake .3s; }
+
+    /*
+      Touch devices never focus a native input. The visible field below is a
+      plain display element, so iOS/Android cannot open a software keyboard or
+      scroll the board upward to reveal a focused form control.
+    */
+    .factor-touch-display {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      cursor: default;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .factor-touch-display.empty {
+      color: #8b8178;
+      font-size: clamp(18px, 4vw, 27px);
+      font-weight: 900;
+    }
+
+    .factor-touch-display.control-disabled {
+      filter: grayscale(.45);
+      opacity: .62;
+    }
+
+    .chop-button {
+      height: 64px;
+      border: 0;
+      border-radius: 19px;
+      padding: 0 25px;
+      background: linear-gradient(180deg, #ff765f, var(--tomato));
+      color: #fff;
+      font-size: 20px;
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #b63b37, 0 12px 18px rgba(118,43,37,.25);
+      transition: transform .1s, box-shadow .1s;
+    }
+    .chop-button:active { transform: translateY(6px); box-shadow: 0 2px 0 #b63b37; }
+    .chop-button:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; }
+
+    .input-help {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #806751;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .side-panel {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-card {
+      border-radius: 20px;
+      background: #fff;
+      border: 2px solid #f2e4d0;
+      padding: 15px;
+      box-shadow: inset 0 -4px 0 rgba(92,61,35,.04);
+    }
+
+    .panel-title {
+      margin: 0 0 9px;
+      font-size: 16px;
+      font-weight: 1000;
+      letter-spacing: -.03em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .factor-log {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      min-height: 45px;
+      align-content: flex-start;
+    }
+
+    .factor-chip {
+      display: inline-grid;
+      place-items: center;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 10px;
+      border-radius: 12px;
+      background: #fff1cf;
+      border: 2px solid #edc67b;
+      font-size: 18px;
+      font-weight: 1000;
+      animation: chipIn .25s ease;
+    }
+    .factor-chip.prime { background: #dcf4de; border-color: #8ac99a; }
+    @keyframes chipIn { from { opacity: 0; transform: scale(.5) rotate(-8deg); } }
+
+    .progress-track {
+      height: 18px;
+      border-radius: 999px;
+      background: #f1e3cd;
+      overflow: hidden;
+      box-shadow: inset 0 3px 4px rgba(86,56,33,.12);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: repeating-linear-gradient(135deg, #67ba72 0 12px, #52a961 13px 24px);
+      transition: width .25s ease;
+    }
+
+    .goal-text {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: #7a624e;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .tip {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #5e4a3b;
+      font-weight: 700;
+    }
+
+    .mini-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .secondary-button {
+      border: 0;
+      min-height: 45px;
+      border-radius: 14px;
+      cursor: pointer;
+      background: #f5e6ce;
+      color: #604b3a;
+      font-weight: 950;
+      box-shadow: 0 5px 0 #d9bea0;
+    }
+    .secondary-button:active { transform: translateY(4px); box-shadow: 0 1px 0 #d9bea0; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(50,34,25,.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay.hidden { display: none; }
+
+    .modal {
+      width: min(560px, 100%);
+      max-height: min(760px, calc(100vh - 30px));
+      overflow-y: auto;
+      border-radius: 30px;
+      background: var(--paper);
+      padding: 25px;
+      box-shadow: 0 28px 80px rgba(44,27,17,.35), inset 0 -8px 0 rgba(94,62,40,.06);
+      text-align: center;
+      border: 4px solid rgba(255,255,255,.9);
+    }
+
+    .modal .big-emoji { font-size: 70px; line-height: 1; }
+    .modal h2 { margin: 10px 0 7px; font-size: clamp(28px, 7vw, 46px); letter-spacing: -.06em; }
+    .modal p { color: #725a47; font-weight: 750; line-height: 1.55; }
+
+    .rule-box {
+      text-align: left;
+      border-radius: 18px;
+      background: #fff4d9;
+      padding: 14px 16px;
+      margin: 15px 0;
+      color: #634b37;
+      font-weight: 750;
+      line-height: 1.55;
+    }
+
+    .rule-box strong { color: var(--tomato); }
+
+    .primary-button {
+      width: 100%;
+      min-height: 62px;
+      border: 0;
+      border-radius: 19px;
+      background: linear-gradient(180deg, #69bd75, #48a65a);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #2c7e40, 0 14px 24px rgba(43,112,59,.24);
+    }
+    .primary-button:active { transform: translateY(6px); box-shadow: 0 2px 0 #2c7e40; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px;
+      margin: 15px 0;
+    }
+
+    .result-item {
+      border-radius: 16px;
+      background: #fff;
+      padding: 12px;
+      border: 2px solid #efe1ce;
+    }
+    .result-item span { display: block; color: #806751; font-size: 12px; font-weight: 900; }
+    .result-item b { font-size: 25px; }
+
+    .new-record {
+      color: var(--tomato);
+      font-size: 19px;
+      font-weight: 1000;
+      animation: pop .65s infinite alternate;
+    }
+
+    .countdown {
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      background: rgba(255,241,203,.2);
+      backdrop-filter: blur(2px);
+      font-size: min(36vw, 220px);
+      font-weight: 1000;
+      color: #fff;
+      -webkit-text-stroke: 10px var(--tomato);
+      paint-order: stroke fill;
+      animation: countPop .75s ease forwards;
+    }
+    @keyframes countPop {
+      0% { opacity: 0; transform: scale(.3) rotate(-10deg); }
+      35% { opacity: 1; transform: scale(1.12) rotate(3deg); }
+      100% { opacity: 0; transform: scale(.8); }
+    }
+
+    .floating-score {
+      position: fixed;
+      z-index: 90;
+      pointer-events: none;
+      font-weight: 1000;
+      color: var(--deep-green);
+      font-size: 24px;
+      text-shadow: 0 2px #fff;
+      animation: scoreFloat .8s ease-out forwards;
+    }
+    @keyframes scoreFloat {
+      to { opacity: 0; transform: translateY(-70px) scale(1.2); }
+    }
+
+    @media (max-width: 850px) {
+      .game-grid { grid-template-columns: 1fr; }
+      .kitchen-panel { min-height: 560px; }
+      .side-panel { display: grid; grid-template-columns: 1fr 1fr; }
+      .mini-actions { margin-top: 0; }
+    }
+
+    @media (max-width: 580px) {
+      .app { width: min(100% - 12px, 1180px); padding-top: 9px; }
+      .topbar { align-items: flex-start; }
+      .logo { width: 48px; height: 48px; font-size: 28px; border-radius: 14px; }
+      .subtitle { font-size: 11px; }
+      .hud { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .hud-card { border-radius: 14px; padding: 8px; }
+      .kitchen-panel { padding: 12px; min-height: 510px; border-radius: 22px; }
+      .board-wrap { width: 100%; aspect-ratio: 1.6 / 1; }
+      .knife { width: 135px; transform: rotate(-25deg) scale(.78); right: 2%; }
+      .knife.swing { animation-name: knifeSwingMobile; }
+      @keyframes knifeSwingMobile {
+        45% { transform: rotate(23deg) scale(.78) translate(-14px, 22px); }
+        100% { transform: rotate(-25deg) scale(.78); }
+      }
+      .input-zone { grid-template-columns: 1fr 100px; }
+      .factor-input, .chop-button { height: 58px; }
+      .chop-button { padding: 0 10px; font-size: 17px; }
+      .side-panel { grid-template-columns: 1fr; border-radius: 22px; }
+      .panel-card:nth-child(3) { display: none; }
+      .message { font-size: 13px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+
+
+    /* ===== Mobile & tablet-first interaction layer ===== */
+    html {
+      min-height: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
+
+    body {
+      min-height: 100dvh;
+      overscroll-behavior-y: contain;
+    }
+
+    .app {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+      padding-bottom: max(26px, env(safe-area-inset-bottom));
+    }
+
+    .sound-button {
+      width: auto;
+      min-width: 48px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .sound-label {
+      font-size: 13px;
+      font-weight: 950;
+      color: #674c37;
+    }
+
+    .board-wrap {
+      overflow: visible;
+      contain: layout style;
+    }
+
+    .equation {
+      position: absolute;
+      z-index: 7;
+      left: 50%;
+      bottom: 7%;
+      width: max-content;
+      max-width: 88%;
+      margin: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fx-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .knife {
+      top: -2%;
+      right: 3%;
+      width: 210px;
+      height: 64px;
+      transform: rotate(-31deg) translate3d(0, -10px, 0);
+      transform-origin: 91% 52%;
+      will-change: transform, filter;
+    }
+
+    .knife.swing {
+      animation: knifePowerSwing .42s cubic-bezier(.18,.78,.22,1);
+    }
+
+    @keyframes knifePowerSwing {
+      0%   { transform: rotate(-31deg) translate3d(0,-10px,0) scale(1); filter: drop-shadow(0 8px 4px rgba(48,34,25,.25)); }
+      22%  { transform: rotate(-43deg) translate3d(13px,-22px,0) scale(1.03); }
+      53%  { transform: rotate(31deg) translate3d(-40px,42px,0) scale(.98); filter: drop-shadow(0 2px 2px rgba(48,34,25,.35)); }
+      62%  { transform: rotate(24deg) translate3d(-35px,37px,0) scale(.99); }
+      100% { transform: rotate(-31deg) translate3d(0,-10px,0) scale(1); filter: drop-shadow(0 8px 4px rgba(48,34,25,.25)); }
+    }
+
+    .vegetable.chop { animation: vegImpact .42s cubic-bezier(.2,.8,.2,1); }
+    .vegetable.cut-hide .veg-emoji { opacity: .06; transform: rotate(-5deg) scale(.9); }
+
+    @keyframes vegImpact {
+      0%, 35% { transform: translate3d(0,0,0) scale(1); }
+      52% { transform: translate3d(-2px,7px,0) scaleX(1.13) scaleY(.78); }
+      68% { transform: translate3d(3px,-4px,0) scaleX(.94) scaleY(1.08); }
+      100% { transform: translate3d(0,0,0) scale(1); }
+    }
+
+    .board-wrap.impact .board { animation: boardImpact .32s ease-out; }
+    @keyframes boardImpact {
+      0%, 100% { transform: translate3d(0,0,0); }
+      28% { transform: translate3d(0,5px,0) scaleX(1.005); }
+      48% { transform: translate3d(-3px,-1px,0); }
+      68% { transform: translate3d(2px,0,0); }
+    }
+
+    .slash-flash {
+      position: absolute;
+      left: 26%;
+      top: 46%;
+      width: 50%;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, #fff 18%, #fff7ba 52%, #fff 80%, transparent);
+      box-shadow: 0 0 14px #fff, 0 0 28px #ffe06d;
+      transform: rotate(-13deg) scaleX(.1);
+      animation: slashFlash .25s ease-out forwards;
+    }
+
+    @keyframes slashFlash {
+      0% { opacity: 0; transform: rotate(-13deg) scaleX(.05); }
+      32% { opacity: 1; transform: rotate(-13deg) scaleX(1.05); }
+      100% { opacity: 0; transform: rotate(-13deg) scaleX(1.28); }
+    }
+
+    .impact-ring {
+      position: absolute;
+      left: 50%;
+      top: 51%;
+      width: 52px;
+      height: 52px;
+      border: 5px solid rgba(255,255,255,.94);
+      border-radius: 50%;
+      transform: translate(-50%,-50%) scale(.2);
+      animation: impactRing .38s ease-out forwards;
+    }
+
+    @keyframes impactRing {
+      to { opacity: 0; transform: translate(-50%,-50%) scale(2.8); }
+    }
+
+    .spark {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #fff8a9;
+      box-shadow: 0 0 10px #fff;
+      animation: sparkFly .46s ease-out forwards;
+    }
+
+    @keyframes sparkFly {
+      0% { opacity: 1; transform: translate(-50%,-50%) scale(.4); }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--sx)), calc(-50% + var(--sy))) scale(1.3); }
+    }
+
+    .split-veg {
+      position: absolute;
+      z-index: 11;
+      pointer-events: none;
+      line-height: .8;
+      filter: drop-shadow(0 13px 7px rgba(67,43,24,.24));
+      transform: rotate(-5deg);
+    }
+
+    .split-half {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      white-space: nowrap;
+      will-change: transform, opacity;
+    }
+
+    .split-half.left {
+      clip-path: polygon(0 0, 51% 0, 46% 100%, 0 100%);
+      animation: splitLeft .48s cubic-bezier(.18,.75,.24,1) forwards;
+    }
+
+    .split-half.right {
+      clip-path: polygon(51% 0, 100% 0, 100% 100%, 46% 100%);
+      animation: splitRight .48s cubic-bezier(.18,.75,.24,1) forwards;
+    }
+
+    @keyframes splitLeft {
+      0% { opacity: 1; transform: translate3d(0,0,0) rotate(0); }
+      100% { opacity: 0; transform: translate3d(-62px,30px,0) rotate(-22deg); }
+    }
+    @keyframes splitRight {
+      0% { opacity: 1; transform: translate3d(0,0,0) rotate(0); }
+      100% { opacity: 0; transform: translate3d(64px,28px,0) rotate(24deg); }
+    }
+
+    .slice-piece {
+      width: var(--piece-w, 42px);
+      height: var(--piece-h, 28px);
+      border-width: 3px;
+      animation-duration: .82s;
+    }
+
+    .touch-keypad {
+      display: none;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+      border-radius: 21px;
+      padding: 10px;
+      background: rgba(255,255,255,.82);
+      border: 2px solid rgba(255,255,255,.95);
+      box-shadow: 0 10px 24px rgba(80,52,31,.14);
+      backdrop-filter: blur(10px);
+    }
+
+    .touch-keypad .key {
+      min-width: 0;
+      min-height: 54px;
+      border: 0;
+      border-radius: 15px;
+      background: #fff8e8;
+      color: var(--ink);
+      box-shadow: 0 5px 0 #dfc59e, 0 7px 12px rgba(79,50,29,.11);
+      font-size: 22px;
+      font-weight: 1000;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .touch-keypad .key:active,
+    .touch-keypad .key.pressed {
+      transform: translateY(4px) scale(.985);
+      box-shadow: 0 1px 0 #dfc59e;
+    }
+
+    .touch-keypad .key-tool {
+      font-size: 15px;
+      background: #f0e5d4;
+      color: #66513f;
+    }
+
+    .touch-keypad .key-zero { grid-column: 1 / 2; }
+    .touch-keypad .key-submit {
+      grid-column: 2 / 5;
+      background: linear-gradient(180deg, #ff765f, var(--tomato));
+      color: #fff;
+      box-shadow: 0 6px 0 #b63b37, 0 9px 15px rgba(118,43,37,.22);
+      font-size: 19px;
+    }
+
+    .touch-ui .touch-keypad { display: grid; }
+    .touch-ui .input-zone { grid-template-columns: 1fr; }
+    .touch-ui .chop-button { display: none; }
+    .touch-ui #factorInput { display: none !important; }
+    .touch-ui .factor-touch-display { display: flex; }
+
+    /* CSS fallback before JavaScript detection finishes. */
+    @media (any-pointer: coarse), (pointer: coarse), (max-width: 900px) {
+      #factorInput { display: none !important; }
+      .factor-touch-display { display: flex; }
+    }
+
+    @media (hover: none) {
+      .icon-button:hover { transform: none; }
+    }
+
+    /* Tablet portrait: large board, keypad below, cards in two columns. */
+    @media (min-width: 700px) and (max-width: 1000px) and (orientation: portrait) {
+      .app { width: min(100% - 20px, 900px); padding-top: 9px; }
+      .topbar { margin-bottom: 8px; }
+      .hud { margin-bottom: 8px; }
+      .hud-card { padding: 8px 10px; }
+      .game-grid { grid-template-columns: 1fr; }
+      .kitchen-panel { min-height: 0; padding: 12px 15px 14px; justify-content: flex-start; }
+      .shelf { display: none; }
+      .message-row { min-height: 38px; }
+      .board-wrap { width: min(100%, 760px); max-height: 365px; aspect-ratio: 1.9 / 1; }
+      .vegetable-stage { width: 66%; height: 60%; transform: translateY(-5px); }
+      .veg-emoji { font-size: clamp(95px, 17vw, 138px); }
+      .number-badge { font-size: clamp(31px, 6vw, 48px); }
+      .equation { bottom: 6%; }
+      .touch-keypad { width: min(100%, 700px); grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 7px; margin: 7px auto 0; }
+      .touch-keypad .key { min-height: 47px; font-size: 19px; }
+      .touch-keypad .key-tool { font-size: 12px; }
+      .touch-keypad .key-zero, .touch-keypad .key-submit { grid-column: auto; }
+      .touch-keypad [data-key="1"] { order: 1; }
+      .touch-keypad [data-key="2"] { order: 2; }
+      .touch-keypad [data-key="3"] { order: 3; }
+      .touch-keypad [data-key="4"] { order: 4; }
+      .touch-keypad [data-key="5"] { order: 5; }
+      .touch-keypad [data-key="6"] { order: 6; }
+      .touch-keypad [data-action="backspace"] { order: 7; }
+      .touch-keypad [data-key="7"] { order: 8; }
+      .touch-keypad [data-key="8"] { order: 9; }
+      .touch-keypad [data-key="9"] { order: 10; }
+      .touch-keypad [data-key="0"] { order: 11; }
+      .touch-keypad [data-action="next"] { order: 12; }
+      .touch-keypad [data-action="clear"] { order: 13; }
+      .touch-keypad [data-action="submit"] { order: 14; }
+      .touch-keypad .key-submit { font-size: 15px; }
+      .input-zone { width: min(100%, 700px); margin: 7px auto 0; }
+      .factor-input { height: 50px; }
+      .input-help { display: none; }
+      .side-panel { display: grid; grid-template-columns: 1fr 1fr; }
+      .mini-actions { grid-column: 1 / -1; }
+    }
+
+    /* Tablet landscape: board and information rail remain side by side. */
+    @media (min-width: 850px) and (max-width: 1180px) and (orientation: landscape) {
+      .app { width: min(100% - 20px, 1180px); padding-top: 7px; padding-bottom: 8px; }
+      .topbar { margin-bottom: 7px; }
+      .logo { width: 50px; height: 50px; font-size: 29px; border-radius: 15px; }
+      h1 { font-size: 31px; }
+      .subtitle { margin-top: 3px; font-size: 12px; }
+      .hud { margin-bottom: 7px; gap: 8px; }
+      .hud-card { padding: 7px 10px; border-radius: 15px; }
+      .hud-value { font-size: 25px; }
+      .game-grid { grid-template-columns: minmax(0, 1.55fr) minmax(260px, .72fr); gap: 10px; }
+      .kitchen-panel { min-height: 0; padding: 10px 13px 11px; justify-content: flex-start; }
+      .shelf { display: none; }
+      .message-row { min-height: 35px; }
+      .message { padding: 6px 12px; font-size: 13px; }
+      .board-wrap { width: 100%; max-height: 318px; aspect-ratio: 2.05 / 1; margin-top: 2px; }
+      .vegetable-stage { width: 64%; height: 60%; transform: translateY(-5px); }
+      .veg-emoji { font-size: clamp(92px, 14vw, 136px); }
+      .number-badge { min-width: 78px; padding: 6px 11px 8px; font-size: clamp(29px, 4.5vw, 47px); }
+      .equation { bottom: 6%; font-size: clamp(16px, 2.4vw, 22px); padding: 7px 12px; }
+      .side-panel { padding: 10px; gap: 8px; }
+      .panel-card { padding: 11px; }
+      .panel-title { margin-bottom: 6px; }
+      .tip, .goal-text { font-size: 12px; line-height: 1.42; }
+      .touch-keypad { grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 6px; gap: 5px; margin-top: 6px; }
+      .touch-keypad .key { min-height: 43px; border-radius: 12px; font-size: 18px; }
+      .touch-keypad .key-tool { font-size: 11px; }
+      .touch-keypad .key-zero, .touch-keypad .key-submit { grid-column: auto; }
+      .touch-keypad [data-key="1"] { order: 1; }
+      .touch-keypad [data-key="2"] { order: 2; }
+      .touch-keypad [data-key="3"] { order: 3; }
+      .touch-keypad [data-key="4"] { order: 4; }
+      .touch-keypad [data-key="5"] { order: 5; }
+      .touch-keypad [data-key="6"] { order: 6; }
+      .touch-keypad [data-action="backspace"] { order: 7; }
+      .touch-keypad [data-key="7"] { order: 8; }
+      .touch-keypad [data-key="8"] { order: 9; }
+      .touch-keypad [data-key="9"] { order: 10; }
+      .touch-keypad [data-key="0"] { order: 11; }
+      .touch-keypad [data-action="next"] { order: 12; }
+      .touch-keypad [data-action="clear"] { order: 13; }
+      .touch-keypad [data-action="submit"] { order: 14; }
+      .touch-keypad .key-submit { font-size: 14px; }
+      .input-zone { margin-top: 7px; }
+      .factor-input { height: 48px; font-size: 25px; }
+      .input-help { display: none; }
+    }
+
+    /* Phones: keep the HUD and controls compact and thumb-friendly. */
+    @media (max-width: 699px) {
+      body { background-attachment: fixed; }
+      .app {
+        width: 100%;
+        padding-top: max(7px, env(safe-area-inset-top));
+        padding-left: max(6px, env(safe-area-inset-left));
+        padding-right: max(6px, env(safe-area-inset-right));
+        padding-bottom: max(14px, env(safe-area-inset-bottom));
+      }
+      .topbar { margin: 0 3px 7px; align-items: center; }
+      .logo { width: 43px; height: 43px; font-size: 25px; border-radius: 13px; }
+      h1 { font-size: 22px; }
+      .subtitle { max-width: 230px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .sound-button { width: 45px; height: 45px; min-width: 45px; padding: 0; }
+      .sound-label { display: none; }
+      .hud {
+        position: sticky;
+        top: max(4px, env(safe-area-inset-top));
+        z-index: 40;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 7px;
+        padding: 3px;
+        border-radius: 15px;
+        background: rgba(255,245,215,.72);
+        backdrop-filter: blur(12px);
+      }
+      .hud-card { min-width: 0; border-radius: 12px; padding: 7px 2px; box-shadow: 0 4px 12px rgba(51,35,24,.12); }
+      .hud-label { font-size: 9px; letter-spacing: 0; white-space: nowrap; }
+      .hud-value { margin-top: 2px; font-size: 19px; }
+      .game-grid { grid-template-columns: 1fr; gap: 8px; }
+      .kitchen-panel { min-height: 0; padding: 9px 9px 11px; border-radius: 21px; }
+      .shelf { display: none; }
+      .message-row { min-height: 36px; }
+      .message { max-width: 96%; padding: 6px 11px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .board-wrap { width: 100%; min-height: 225px; aspect-ratio: 1.48 / 1; margin-top: 2px; }
+      .board { inset: 4% 1.5% 6%; border-width: 5px; border-radius: 27px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.25), inset 0 -12px 20px rgba(105,57,21,.14), 0 12px 0 var(--board-dark), 0 19px 24px rgba(82,52,28,.22); }
+      .board::after { width: 25px; height: 25px; right: 16px; top: 16px; }
+      .vegetable-stage { width: 76%; height: 64%; transform: translateY(-7px); }
+      .veg-emoji { font-size: clamp(88px, 26vw, 128px); }
+      .number-badge { min-width: 70px; padding: 5px 10px 7px; border-width: 3px; border-radius: 15px; font-size: clamp(27px, 9vw, 43px); }
+      .knife { width: 145px; height: 49px; right: -1%; top: 0; transform: rotate(-31deg) translate3d(0,-5px,0) scale(.82); }
+      @keyframes knifePowerSwing {
+        0%   { transform: rotate(-31deg) translate3d(0,-5px,0) scale(.82); }
+        22%  { transform: rotate(-43deg) translate3d(10px,-15px,0) scale(.85); }
+        53%  { transform: rotate(31deg) translate3d(-31px,31px,0) scale(.8); }
+        62%  { transform: rotate(24deg) translate3d(-27px,28px,0) scale(.81); }
+        100% { transform: rotate(-31deg) translate3d(0,-5px,0) scale(.82); }
+      }
+      .knife-blade { width: 105px; height: 38px; }
+      .knife-handle { width: 57px; height: 32px; }
+      .equation { bottom: 7%; padding: 6px 10px; border-radius: 12px; font-size: clamp(15px, 5vw, 20px); }
+      .input-zone { margin-top: 9px; gap: 6px; }
+      .factor-input { height: 50px; border-width: 3px; border-radius: 15px; font-size: 25px; padding: 0 12px; }
+      .input-help { display: none; }
+      .touch-keypad {
+        position: sticky;
+        bottom: max(4px, env(safe-area-inset-bottom));
+        z-index: 35;
+        gap: 6px;
+        margin-top: 7px;
+        padding: 7px;
+        border-radius: 17px;
+      }
+      .touch-keypad .key { min-height: 48px; border-radius: 12px; font-size: 20px; }
+      .touch-keypad .key-tool { font-size: 13px; }
+      .touch-keypad .key-submit { font-size: 17px; }
+      .side-panel {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding: 2px 1px 10px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        scrollbar-width: none;
+      }
+      .side-panel::-webkit-scrollbar { display: none; }
+      .side-panel > * { flex: 0 0 84%; scroll-snap-align: center; }
+      .side-panel .panel-card:nth-child(3) { display: block; }
+      .mini-actions { align-self: stretch; min-height: 90px; padding: 10px; border-radius: 18px; background: rgba(255,253,247,.9); }
+      .modal { max-height: calc(100dvh - max(18px, env(safe-area-inset-top)) - max(18px, env(safe-area-inset-bottom))); padding: 20px 17px; border-radius: 24px; }
+      .modal .big-emoji { font-size: 58px; }
+      .rule-box { font-size: 14px; }
+    }
+
+    /* Short phone in landscape: board left, keypad right, no wasted vertical space. */
+    @media (max-width: 899px) and (orientation: landscape) and (max-height: 620px) {
+      .app { padding: max(4px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left)); }
+      .topbar { display: none; }
+      .hud { position: static; grid-template-columns: repeat(4, 1fr); margin: 0 0 5px; }
+      .hud-card { padding: 4px 3px; }
+      .hud-label { font-size: 8px; }
+      .hud-value { font-size: 17px; }
+      .game-grid { display: block; }
+      .kitchen-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(245px, 35vw);
+        grid-template-rows: auto 1fr;
+        grid-template-areas: "head input" "board keys";
+        gap: 6px 8px;
+        min-height: calc(100dvh - 60px);
+        padding: 6px 8px 8px;
+      }
+      .kitchen-head { grid-area: head; }
+      .message-row { min-height: 28px; }
+      .message { padding: 4px 9px; font-size: 11px; }
+      .board-wrap { grid-area: board; width: 100%; height: 100%; min-height: 205px; aspect-ratio: auto; }
+      .input-zone { grid-area: input; margin: 0; align-self: center; }
+      .factor-input { height: 43px; font-size: 21px; }
+      .touch-keypad {
+        grid-area: keys;
+        position: static;
+        align-self: stretch;
+        margin: 0;
+        padding: 6px;
+        gap: 5px;
+        grid-auto-rows: minmax(36px, 1fr);
+      }
+      .touch-keypad .key { min-height: 36px; font-size: 17px; }
+      .touch-keypad .key-tool { font-size: 11px; }
+      .touch-keypad .key-submit { font-size: 15px; }
+      .side-panel { display: none; }
+      .vegetable-stage { width: 69%; height: 60%; }
+      .veg-emoji { font-size: clamp(78px, 20vh, 116px); }
+      .number-badge { font-size: clamp(24px, 8vh, 38px); }
+      .equation { bottom: 6%; font-size: clamp(14px, 4vh, 19px); }
+    }
+
+
+    /* ===== Focus UI: one visual center, fewer competing cards ===== */
+    body {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.86), transparent 34%),
+        linear-gradient(145deg, #fff4d5 0%, #ffe3ad 100%);
+    }
+
+    body::before { opacity: .045; }
+
+    .app {
+      width: min(1080px, calc(100% - 24px));
+      min-height: 100dvh;
+      padding: 12px 0 max(20px, env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      min-height: 54px;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .brand { gap: 9px; }
+    .brand-copy { min-width: 0; }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      font-size: 26px;
+      box-shadow: 0 5px 14px rgba(51,35,24,.13), inset 0 -3px 0 rgba(0,0,0,.04);
+    }
+
+    h1 { font-size: clamp(25px, 4vw, 32px); }
+    .subtitle { margin-top: 3px; font-size: 12px; opacity: .82; }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-action {
+      min-width: 44px;
+      height: 42px;
+      border: 0;
+      border-radius: 13px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(255,255,255,.63);
+      color: #5f4938;
+      box-shadow: 0 4px 12px rgba(51,35,24,.10);
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .header-action span { font-style: normal; font-size: 17px; }
+    .header-action em { font-style: normal; font-size: 12px; white-space: nowrap; }
+    .header-action:active { transform: translateY(2px); }
+    .header-action:disabled { opacity: .42; cursor: default; }
+
+    .hud {
+      width: min(580px, 100%);
+      height: 62px;
+      margin: 0 auto 10px;
+      padding: 6px 12px;
+      display: grid;
+      grid-template-columns: 1.45fr 1px 1fr 1px 1fr;
+      gap: 0;
+      align-items: center;
+      border-radius: 20px;
+      background: rgba(255,255,255,.66);
+      border: 1px solid rgba(255,255,255,.9);
+      box-shadow: 0 6px 18px rgba(73,45,24,.10);
+      backdrop-filter: blur(7px);
+    }
+
+    .hud-card {
+      min-width: 0;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-template-rows: auto auto;
+      align-items: center;
+      justify-content: center;
+      column-gap: 7px;
+      text-align: left;
+    }
+
+    .hud-label {
+      grid-column: 1;
+      grid-row: 1 / 3;
+      font-size: 11px;
+      letter-spacing: 0;
+      color: #8a715d;
+    }
+
+    .hud-value {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      margin: 0;
+      font-size: clamp(22px, 4vw, 29px);
+      line-height: 1;
+    }
+
+    .hud-score {
+      grid-template-columns: auto auto;
+      grid-template-rows: 1fr 1fr;
+      column-gap: 8px;
+    }
+
+    .hud-score .hud-label { grid-row: 1; align-self: end; }
+    .hud-score .hud-value { grid-column: 2; grid-row: 1 / 3; }
+
+    .best-score {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: start;
+      color: #9a806a;
+      font-size: 9px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .best-score b { color: #765d49; }
+    .hud-divider { width: 1px; height: 32px; background: rgba(107,79,56,.16); }
+
+    .game-grid { display: block; }
+
+    .kitchen-panel {
+      min-height: 0;
+      padding: 0;
+      overflow: visible;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      display: block;
+      isolation: isolate;
+    }
+
+    .kitchen-panel::before, .shelf { display: none; }
+
+    .kitchen-head {
+      position: absolute;
+      z-index: 24;
+      top: 10px;
+      left: 50%;
+      width: min(92%, 520px);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .message-row { min-height: 36px; }
+
+    .message {
+      max-width: 100%;
+      padding: 7px 14px;
+      border: 1px solid rgba(255,255,255,.9);
+      background: rgba(255,255,255,.83);
+      box-shadow: 0 4px 14px rgba(68,47,31,.13);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      backdrop-filter: blur(6px);
+    }
+
+    .board-wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      aspect-ratio: 16 / 7.55;
+    }
+
+    .board {
+      inset: 1.5% .5% 4%;
+      border-radius: 34px;
+      border-width: 7px;
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,.22),
+        inset 0 -18px 28px rgba(105,57,21,.16),
+        0 17px 0 var(--board-dark),
+        0 24px 28px rgba(82,52,28,.22);
+    }
+
+    .vegetable-stage { width: 62%; height: 66%; }
+    .veg-emoji { font-size: clamp(105px, 18vw, 188px); }
+    .number-badge { font-size: clamp(34px, 6vw, 60px); }
+
+    .knife {
+      top: 5%;
+      right: 11%;
+      width: clamp(150px, 21vw, 205px);
+      transform: rotate(-25deg) scale(.94);
+    }
+
+    .equation {
+      position: absolute;
+      z-index: 9;
+      left: 50%;
+      bottom: 7%;
+      transform: translateX(-50%);
+      min-height: 0;
+      margin: 0;
+      padding: 7px 14px;
+      border-radius: 13px;
+      font-size: clamp(17px, 2.7vw, 24px);
+      background: rgba(255,255,255,.79);
+      box-shadow: 0 3px 10px rgba(72,46,27,.10);
+      white-space: nowrap;
+    }
+
+    .round-strip {
+      position: relative;
+      z-index: 13;
+      width: min(900px, calc(100% - 28px));
+      min-height: 66px;
+      margin: -2px auto 10px;
+      padding: 9px 13px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(190px, .75fr);
+      gap: 15px;
+      align-items: center;
+      border-radius: 17px;
+      background: rgba(255,253,247,.78);
+      border: 1px solid rgba(255,255,255,.94);
+      box-shadow: 0 6px 16px rgba(76,48,28,.11);
+      backdrop-filter: blur(7px);
+    }
+
+    .cut-summary, .optimal-summary { min-width: 0; }
+
+    .strip-heading {
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #775e49;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .strip-heading strong { color: #332820; font-size: 12px; }
+
+    .factor-log {
+      min-height: 28px;
+      flex-wrap: nowrap;
+      gap: 5px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .factor-log::-webkit-scrollbar { display: none; }
+    .factor-chip {
+      min-width: 29px;
+      height: 29px;
+      padding: 0 7px;
+      border-width: 1px;
+      border-radius: 9px;
+      font-size: 14px;
+      flex: 0 0 auto;
+    }
+
+    .empty-log { color: #9b846f; font-size: 12px; font-weight: 750; line-height: 28px; }
+
+    .progress-track { height: 10px; }
+    .learning-copy { display: none; }
+
+    .input-zone {
+      width: min(800px, 100%);
+      margin: 10px auto 0;
+      grid-template-columns: minmax(0, 1fr) 126px;
+      gap: 8px;
+    }
+
+    .factor-input, .chop-button { height: 58px; }
+    .factor-input { border-width: 3px; border-radius: 17px; font-size: clamp(22px, 4vw, 31px); }
+    .chop-button { border-radius: 17px; padding: 0 18px; font-size: 19px; box-shadow: 0 7px 0 #b63b37, 0 10px 16px rgba(118,43,37,.20); }
+    .input-help { margin-top: 1px; font-size: 11px; opacity: .82; }
+
+    .touch-keypad { width: min(800px, 100%); margin-left: auto; margin-right: auto; }
+    .side-panel { display: none !important; }
+
+    @media (max-width: 760px) {
+      .app { width: min(100% - 12px, 700px); padding-top: 7px; }
+      .topbar { min-height: 45px; margin-bottom: 5px; }
+      .logo { width: 38px; height: 38px; border-radius: 12px; font-size: 22px; }
+      h1 { font-size: 23px; }
+      .subtitle { display: none; }
+      .header-action { width: 39px; min-width: 39px; height: 38px; padding: 0; }
+      .header-action em { display: none; }
+
+      .hud {
+        width: 100%;
+        height: 54px;
+        margin-bottom: 7px;
+        padding: 5px 4px;
+        border-radius: 16px;
+      }
+      .hud-card { padding: 0 8px; column-gap: 5px; }
+      .hud-label { font-size: 9px; }
+      .hud-value { font-size: clamp(20px, 6vw, 26px); }
+      .best-score { font-size: 7px; }
+      .hud-divider { height: 27px; }
+
+      .kitchen-head { top: 6px; width: 92%; }
+      .message-row { min-height: 30px; }
+      .message { padding: 5px 10px; font-size: 11px; }
+
+      .board-wrap { aspect-ratio: 1.58 / 1; }
+      .board { inset: 1% .3% 5%; border-radius: 27px; border-width: 5px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.2), inset 0 -14px 22px rgba(105,57,21,.15), 0 12px 0 var(--board-dark), 0 18px 22px rgba(82,52,28,.20); }
+      .board::after { width: 29px; height: 29px; right: 18px; top: 18px; }
+      .vegetable-stage { width: 70%; height: 64%; }
+      .veg-emoji { font-size: clamp(88px, 27vw, 135px); }
+      .number-badge { min-width: 72px; padding: 6px 10px 8px; border-width: 3px; border-radius: 16px; font-size: clamp(29px, 9vw, 43px); }
+      .knife { top: 4%; right: 7%; width: 145px; transform: rotate(-25deg) scale(.78); transform-origin: 92% 50%; }
+      .equation { bottom: 8%; padding: 5px 11px; font-size: 16px; }
+
+      .round-strip {
+        width: calc(100% - 12px);
+        min-height: 59px;
+        margin-top: -2px;
+        margin-bottom: 7px;
+        padding: 7px 9px;
+        grid-template-columns: minmax(0, 1.5fr) minmax(105px, .7fr);
+        gap: 9px;
+        border-radius: 14px;
+      }
+      .strip-heading { margin-bottom: 3px; font-size: 9px; }
+      .strip-heading strong { font-size: 10px; }
+      .factor-log { min-height: 25px; }
+      .factor-chip { min-width: 25px; height: 25px; padding: 0 6px; font-size: 12px; border-radius: 8px; }
+      .empty-log { font-size: 10px; line-height: 25px; }
+      .progress-track { height: 8px; }
+
+      .input-zone { margin-top: 7px; grid-template-columns: minmax(0, 1fr) 103px; gap: 6px; }
+      .factor-input, .chop-button { height: 53px; }
+      .factor-input { border-radius: 15px; font-size: 24px; }
+      .chop-button { border-radius: 15px; padding: 0 10px; font-size: 17px; }
+      .input-help { display: none; }
+    }
+
+    @media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+      .app { width: min(94%, 900px); }
+      .board-wrap { aspect-ratio: 16 / 8.2; }
+      .round-strip { width: min(94%, 760px); }
+      .input-zone, .touch-keypad { width: min(94%, 760px); }
+    }
+
+    @media (orientation: landscape) and (max-height: 620px) {
+      .app { width: calc(100% - 14px); padding: 5px 0 9px; }
+      .topbar { min-height: 38px; margin-bottom: 3px; }
+      .logo { width: 34px; height: 34px; font-size: 20px; }
+      h1 { font-size: 21px; }
+      .hud { position: absolute; top: 5px; left: 50%; width: min(420px, 47vw); height: 39px; margin: 0; border-radius: 13px; }
+      .hud-value { font-size: 19px; }
+      .hud-label { font-size: 8px; }
+      .best-score { font-size: 6px; }
+      .hud-divider { height: 22px; }
+      .board-wrap { width: 60%; aspect-ratio: 16 / 8.1; }
+      .round-strip { position: absolute; left: calc(60% + 10px); top: 50px; width: calc(40% - 10px); margin: 0; grid-template-columns: 1fr; gap: 7px; }
+      .input-zone { position: absolute; left: calc(60% + 10px); top: 171px; width: calc(40% - 10px); margin: 0; grid-template-columns: 1fr 92px; }
+      .touch-keypad { position: absolute; left: calc(60% + 10px); top: 235px; width: calc(40% - 10px); margin: 0; }
+      .kitchen-panel { position: relative; min-height: calc(100vh - 50px); }
+      .message { font-size: 10px; }
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">👨‍🍳</div>
+        <div class="brand-copy">
+          <h1>약수 셰프</h1>
+          <p class="subtitle">작은 약수로 더 잘게 썰어 보세요</p>
+        </div>
+      </div>
+      <div class="top-actions" aria-label="게임 메뉴">
+        <button id="pauseButton" class="header-action" disabled aria-label="일시정지" title="일시정지"><span>⏸</span><em>정지</em></button>
+        <button id="restartButton" class="header-action" aria-label="새 게임" title="새 게임"><span>↻</span><em>새 게임</em></button>
+        <button id="soundButton" class="header-action sound-button" aria-label="소리 켜기/끄기" title="소리 켜기/끄기"><span class="sound-icon">🔊</span><em id="soundLabel" class="sound-label">소리 켜짐</em></button>
+      </div>
+    </header>
+
+    <section class="hud" aria-label="게임 정보">
+      <div class="hud-card hud-score">
+        <span class="hud-label">점수</span>
+        <strong id="score" class="hud-value">0</strong>
+        <span class="best-score">BEST <b id="highScore">0</b></span>
+      </div>
+      <div class="hud-divider" aria-hidden="true"></div>
+      <div class="hud-card">
+        <span class="hud-label">콤보</span>
+        <strong id="combo" class="hud-value">x0</strong>
+      </div>
+      <div class="hud-divider" aria-hidden="true"></div>
+      <div class="hud-card">
+        <span class="hud-label">남은 시간</span>
+        <strong id="time" class="hud-value">75</strong>
+      </div>
+    </section>
+
+    <section class="game-grid">
+      <div class="kitchen-panel">
+        <div class="kitchen-head">
+          <div class="message-row"><div id="message" class="message">도마 위 채소를 최대한 잘게 썰어 보세요!</div></div>
+        </div>
+
+        <div class="board-wrap" id="boardWrap">
+          <div class="board"></div>
+          <div id="knife" class="knife" aria-hidden="true">
+            <div class="knife-blade"></div><div class="knife-handle"></div>
+          </div>
+          <div class="vegetable-stage" id="vegetableStage">
+            <div id="vegetable" class="vegetable">
+              <div id="vegEmoji" class="veg-emoji">🥕</div>
+              <div id="numberBadge" class="number-badge">72</div>
+            </div>
+          </div>
+          <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+          <div id="equation" class="equation">72 ÷ ? = ?</div>
+        </div>
+
+        <div class="round-strip" aria-label="현재 채소 손질 상태">
+          <div class="cut-summary">
+            <div class="strip-heading"><span>이번 채소</span><strong id="cutCount">0회</strong></div>
+            <div id="factorLog" class="factor-log"><span class="empty-log">아직 자른 수가 없어요</span></div>
+          </div>
+          <div class="optimal-summary">
+            <div class="strip-heading"><span>최대로 잘게</span><strong id="optimalText">0 / 0</strong></div>
+            <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+          </div>
+        </div>
+
+        <div class="input-zone">
+          <input id="factorInput" class="factor-input" inputmode="numeric" enterkeyhint="done" virtualkeyboardpolicy="manual" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="나눌 수 입력" placeholder="나눌 수" disabled />
+          <div id="factorTouchDisplay" class="factor-input factor-touch-display empty control-disabled" role="status" aria-live="polite" aria-label="입력한 나눌 수">나눌 수</div>
+          <button id="chopButton" class="chop-button" disabled>🔪 썰기!</button>
+          <div class="input-help">띄어쓰기로 여러 수를 한꺼번에 입력할 수 있어요. 예: <b>2 2 3</b></div>
+        </div>
+
+        <div id="touchKeypad" class="touch-keypad" aria-label="터치 숫자 키패드">
+          <button type="button" class="key" data-key="1">1</button>
+          <button type="button" class="key" data-key="2">2</button>
+          <button type="button" class="key" data-key="3">3</button>
+          <button type="button" class="key key-tool" data-action="backspace" aria-label="한 글자 지우기">⌫</button>
+          <button type="button" class="key" data-key="4">4</button>
+          <button type="button" class="key" data-key="5">5</button>
+          <button type="button" class="key" data-key="6">6</button>
+          <button type="button" class="key key-tool" data-action="clear">지움</button>
+          <button type="button" class="key" data-key="7">7</button>
+          <button type="button" class="key" data-key="8">8</button>
+          <button type="button" class="key" data-key="9">9</button>
+          <button type="button" class="key key-tool" data-action="next">다음 수</button>
+          <button type="button" class="key key-zero" data-key="0">0</button>
+          <button type="button" class="key key-submit" data-action="submit">🔪 썰기!</button>
+        </div>
+
+        <div class="learning-copy" aria-hidden="true">
+          <p id="goalText" class="goal-text">소수로 나눌수록 가장 많은 칼질을 할 수 있어요.</p>
+          <p id="tipText" class="tip">2, 3, 5, 7처럼 더 쪼갤 수 없는 수를 소수라고 해요.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="startOverlay" class="overlay">
+    <div class="modal">
+      <div class="big-emoji">🥕🔪🥬</div>
+      <h2>약수 셰프</h2>
+      <p>채소 숫자를 나누어떨어지는 수로 계속 나눠서 <b>1</b>로 만드세요.</p>
+      <div class="rule-box">
+        <div>예: <strong>72 → 2 → 2 → 2 → 3 → 3</strong>은 5콤보!</div>
+        <div>72 → 8 → 9도 가능하지만 2콤보라 점수가 적어요.</div>
+        <div>작은 약수와 소수를 찾아 <strong>최대한 잘게</strong> 써는 것이 핵심이에요.</div>
+      </div>
+      <button id="startButton" class="primary-button">주방 열기!</button>
+      <p style="font-size:12px;margin-bottom:0">버튼을 누르면 BGM과 효과음이 시작됩니다.</p>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay hidden">
+    <div class="modal">
+      <div class="big-emoji">⏸️</div>
+      <h2>잠시 휴식!</h2>
+      <p>타이머와 음악이 멈췄어요.</p>
+      <button id="resumeButton" class="primary-button">계속 요리하기</button>
+    </div>
+  </div>
+
+  <div id="resultOverlay" class="overlay hidden">
+    <div class="modal">
+      <div class="big-emoji">🏆</div>
+      <h2>주방 마감!</h2>
+      <div id="recordMessage"></div>
+      <div class="result-grid">
+        <div class="result-item"><span>최종 점수</span><b id="resultScore">0</b></div>
+        <div class="result-item"><span>최고 콤보</span><b id="resultCombo">0</b></div>
+        <div class="result-item"><span>완성한 채소</span><b id="resultRounds">0</b></div>
+        <div class="result-item"><span>정확도</span><b id="resultAccuracy">0%</b></div>
+      </div>
+      <p id="resultComment"></p>
+      <button id="againButton" class="primary-button">한 판 더!</button>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    const $ = (selector) => document.querySelector(selector);
+
+    const el = {
+      score: $("#score"), highScore: $("#highScore"), combo: $("#combo"), time: $("#time"),
+      message: $("#message"), numberBadge: $("#numberBadge"), vegEmoji: $("#vegEmoji"),
+      vegetable: $("#vegetable"), vegetableStage: $("#vegetableStage"), knife: $("#knife"), boardWrap: $("#boardWrap"), fxLayer: $("#fxLayer"), equation: $("#equation"),
+      factorInput: $("#factorInput"), factorTouchDisplay: $("#factorTouchDisplay"), chopButton: $("#chopButton"), factorLog: $("#factorLog"),
+      cutCount: $("#cutCount"), progressFill: $("#progressFill"), optimalText: $("#optimalText"),
+      goalText: $("#goalText"), tipText: $("#tipText"), soundButton: $("#soundButton"), soundLabel: $("#soundLabel"), touchKeypad: $("#touchKeypad"),
+      pauseButton: $("#pauseButton"), restartButton: $("#restartButton"), startOverlay: $("#startOverlay"),
+      pauseOverlay: $("#pauseOverlay"), resultOverlay: $("#resultOverlay"), startButton: $("#startButton"),
+      resumeButton: $("#resumeButton"), againButton: $("#againButton"), resultScore: $("#resultScore"),
+      resultCombo: $("#resultCombo"), resultRounds: $("#resultRounds"), resultAccuracy: $("#resultAccuracy"),
+      recordMessage: $("#recordMessage"), resultComment: $("#resultComment")
+    };
+
+    const vegetables = [
+      { emoji: "🥕", name: "당근", color: "#f08b24" },
+      { emoji: "🥬", name: "양배추", color: "#71a95a" },
+      { emoji: "🍠", name: "고구마", color: "#9c5f73" },
+      { emoji: "🥒", name: "오이", color: "#4f9f58" },
+      { emoji: "🥔", name: "감자", color: "#c59c5b" },
+      { emoji: "🎃", name: "단호박", color: "#e78320" }
+    ];
+
+    const storage = (() => {
+      const memory = new Map();
+      const fallback = {
+        getItem: key => memory.has(key) ? memory.get(key) : null,
+        setItem: (key, value) => memory.set(key, String(value)),
+        removeItem: key => memory.delete(key)
+      };
+      try {
+        const testKey = "__factorKitchenStorageTest__";
+        window.localStorage.setItem(testKey, "1");
+        window.localStorage.removeItem(testKey);
+        return window.localStorage;
+      } catch {
+        return fallback;
+      }
+    })();
+
+    const tips = [
+      "짝수는 언제나 2로 나눌 수 있어요.",
+      "각 자리 숫자의 합이 3의 배수면, 그 수는 3으로 나누어떨어져요.",
+      "끝자리가 0이나 5면 5로 나누어떨어져요.",
+      "작은 약수부터 찾으면 더 많은 콤보를 만들기 쉬워요.",
+      "소수는 1과 자기 자신으로만 나누어지는 수예요.",
+      "같은 수로 여러 번 나눠도 괜찮아요. 72는 2로 세 번 나눌 수 있어요!"
+    ];
+
+    const state = {
+      running: false,
+      paused: false,
+      score: 0,
+      highScore: Number(storage.getItem("factorKitchenHighScore") || 0),
+      combo: 0,
+      maxCombo: 0,
+      timeLeft: 75,
+      timerId: null,
+      original: 72,
+      current: 72,
+      optimalCuts: 5,
+      cutsThisRound: 0,
+      factors: [],
+      rounds: 0,
+      attempts: 0,
+      correctAttempts: 0,
+      veg: vegetables[0],
+      muted: storage.getItem("factorKitchenMuted") === "true",
+      level: 1,
+      roundLocked: false,
+      roundTimer: null,
+      touchUI: false
+    };
+
+    class AudioKitchen {
+      constructor() {
+        this.ctx = null;
+        this.master = null;
+        this.musicGain = null;
+        this.fxGain = null;
+        this.musicTimer = null;
+        this.step = 0;
+        this.noiseBuffer = null;
+      }
+
+      init() {
+        if (this.ctx) {
+          if (this.ctx.state === "suspended") this.ctx.resume();
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.master = this.ctx.createGain();
+        this.musicGain = this.ctx.createGain();
+        this.fxGain = this.ctx.createGain();
+        this.master.gain.value = state.muted ? 0 : 0.78;
+        this.musicGain.gain.value = 0.14;
+        this.fxGain.gain.value = 1.0;
+        this.musicGain.connect(this.master);
+        this.fxGain.connect(this.master);
+        this.master.connect(this.ctx.destination);
+        this.noiseBuffer = this.makeNoiseBuffer();
+      }
+
+      ensure() {
+        if (!this.ctx) this.init();
+        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+        return Boolean(this.ctx);
+      }
+
+      makeNoiseBuffer() {
+        const length = Math.floor(this.ctx.sampleRate * 0.42);
+        const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          const envelope = Math.pow(1 - i / length, 3.2);
+          data[i] = (Math.random() * 2 - 1) * envelope;
+        }
+        return buffer;
+      }
+
+      setMuted(muted) {
+        if (!this.ctx) return;
+        this.master.gain.setTargetAtTime(muted ? 0 : 0.78, this.ctx.currentTime, 0.02);
+      }
+
+      tone(freq, start, duration, type = "square", volume = 0.1, destination = this.fxGain) {
+        if (!this.ctx || state.muted) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain);
+        gain.connect(destination);
+        osc.start(start);
+        osc.stop(start + duration + 0.02);
+      }
+
+      chop(combo = 1) {
+        if (!this.ensure() || state.muted) return;
+        const now = this.ctx.currentTime;
+        const impact = now + 0.105;
+
+        // Blade whoosh before impact.
+        const whoosh = this.ctx.createBufferSource();
+        const whooshFilter = this.ctx.createBiquadFilter();
+        const whooshGain = this.ctx.createGain();
+        whoosh.buffer = this.noiseBuffer;
+        whooshFilter.type = "highpass";
+        whooshFilter.frequency.setValueAtTime(420, now);
+        whooshFilter.frequency.exponentialRampToValueAtTime(2300, impact);
+        whooshGain.gain.setValueAtTime(0.0001, now);
+        whooshGain.gain.exponentialRampToValueAtTime(0.34, now + 0.035);
+        whooshGain.gain.exponentialRampToValueAtTime(0.0001, impact + 0.025);
+        whoosh.connect(whooshFilter);
+        whooshFilter.connect(whooshGain);
+        whooshGain.connect(this.fxGain);
+        whoosh.start(now, 0, 0.17);
+
+        // Crisp vegetable cut.
+        const cut = this.ctx.createBufferSource();
+        const cutFilter = this.ctx.createBiquadFilter();
+        const cutGain = this.ctx.createGain();
+        cut.buffer = this.noiseBuffer;
+        cutFilter.type = "bandpass";
+        cutFilter.frequency.value = 1250 + Math.min(combo, 12) * 58;
+        cutFilter.Q.value = 0.85;
+        cutGain.gain.setValueAtTime(0.62, impact);
+        cutGain.gain.exponentialRampToValueAtTime(0.0001, impact + 0.115);
+        cut.connect(cutFilter);
+        cutFilter.connect(cutGain);
+        cutGain.connect(this.fxGain);
+        cut.start(impact, 0.02, 0.15);
+
+        // Wooden board thump.
+        const thump = this.ctx.createOscillator();
+        const thumpGain = this.ctx.createGain();
+        thump.type = "sine";
+        thump.frequency.setValueAtTime(118, impact);
+        thump.frequency.exponentialRampToValueAtTime(47, impact + 0.095);
+        thumpGain.gain.setValueAtTime(0.58, impact);
+        thumpGain.gain.exponentialRampToValueAtTime(0.0001, impact + 0.12);
+        thump.connect(thumpGain);
+        thumpGain.connect(this.fxGain);
+        thump.start(impact);
+        thump.stop(impact + 0.13);
+
+        // Short blade ring and combo pitch.
+        this.tone(1320 + Math.min(combo, 10) * 38, impact + 0.012, 0.09, "triangle", 0.11);
+        this.tone(390 + Math.min(combo, 12) * 34, impact + 0.075, 0.075, "sine", 0.13);
+      }
+
+      combo(combo) {
+        if (!this.ctx || state.muted || combo < 2) return;
+        const now = this.ctx.currentTime;
+        const scale = [0, 2, 4, 7, 9, 12];
+        const notes = Math.min(4, 1 + Math.floor(combo / 3));
+        for (let i = 0; i < notes; i++) {
+          const semitone = scale[(combo + i) % scale.length] + Math.floor(combo / 6) * 2;
+          this.tone(440 * Math.pow(2, semitone / 12), now + i * 0.045, 0.12, "square", 0.065 + i * 0.01);
+        }
+      }
+
+      wrong() {
+        if (!this.ctx || state.muted) return;
+        const now = this.ctx.currentTime;
+        this.tone(150, now, 0.18, "sawtooth", 0.13);
+        this.tone(105, now + 0.09, 0.2, "sawtooth", 0.12);
+      }
+
+      complete(perfect) {
+        if (!this.ctx || state.muted) return;
+        const now = this.ctx.currentTime;
+        const melody = perfect ? [0, 4, 7, 12, 16] : [0, 3, 7, 10];
+        melody.forEach((s, i) => this.tone(330 * Math.pow(2, s / 12), now + i * 0.075, 0.18, i % 2 ? "triangle" : "square", 0.1));
+      }
+
+      startJingle() {
+        if (!this.ensure() || state.muted) return;
+        const now = this.ctx.currentTime;
+        [0, 4, 7, 12].forEach((semi, i) => {
+          this.tone(392 * Math.pow(2, semi / 12), now + i * .07, .16, i % 2 ? "triangle" : "square", .105);
+        });
+      }
+
+      startMusic() {
+        if (!this.ctx) return;
+        this.stopMusic();
+        this.step = 0;
+        const tick = () => {
+          if (!state.running || state.paused) return;
+          const tempo = Math.min(178, 126 + state.combo * 2.5);
+          const ms = 60000 / tempo / 2;
+          const bassPattern = [0, 0, 7, 0, 5, 5, 7, 10, 0, 0, 7, 12, 5, 7, 10, 7];
+          const leadPattern = [12, 16, 19, 16, 14, 17, 21, 17, 12, 16, 19, 23, 17, 21, 24, 21];
+          const now = this.ctx.currentTime;
+          const idx = this.step % 16;
+          if (!state.muted) {
+            this.tone(110 * Math.pow(2, bassPattern[idx] / 12), now, 0.11, "square", idx % 4 === 0 ? 0.08 : 0.045, this.musicGain);
+            if (idx % 2 === 0 || state.combo >= 5) {
+              this.tone(220 * Math.pow(2, leadPattern[idx] / 12), now + 0.01, 0.08, "triangle", 0.032 + Math.min(state.combo, 10) * .002, this.musicGain);
+            }
+            if (idx % 4 === 0) this.tone(62, now, 0.055, "sine", 0.11, this.musicGain);
+          }
+          this.step++;
+          this.musicTimer = setTimeout(tick, ms);
+        };
+        tick();
+      }
+
+      stopMusic() {
+        clearTimeout(this.musicTimer);
+        this.musicTimer = null;
+      }
+    }
+
+    const audio = new AudioKitchen();
+
+    function isPrime(n) {
+      if (n < 2) return false;
+      for (let i = 2; i * i <= n; i++) if (n % i === 0) return false;
+      return true;
+    }
+
+    function primeFactors(n) {
+      const result = [];
+      let x = n;
+      for (let p = 2; p * p <= x; p++) {
+        while (x % p === 0) {
+          result.push(p);
+          x /= p;
+        }
+      }
+      if (x > 1) result.push(x);
+      return result;
+    }
+
+    function chooseNumber() {
+      state.level = 1 + Math.floor(state.rounds / 3);
+      const pools = [
+        [12, 18, 20, 24, 27, 28, 30, 32, 36, 40, 42, 45, 48, 50, 54, 56, 60, 63, 64, 72],
+        [66, 70, 75, 80, 81, 84, 88, 90, 96, 98, 100, 108, 112, 120, 125, 126, 128, 135, 144, 150],
+        [156, 160, 162, 168, 175, 180, 189, 192, 196, 200, 210, 216, 225, 240, 243, 250, 252, 256, 270, 288],
+        [294, 300, 315, 320, 324, 336, 343, 350, 360, 375, 384, 392, 400, 405, 420, 432, 441, 448, 450, 480]
+      ];
+      const index = Math.min(pools.length - 1, state.level - 1);
+      const pool = pools[index];
+      let value = pool[Math.floor(Math.random() * pool.length)];
+      if (value === state.original && pool.length > 1) value = pool[(pool.indexOf(value) + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length];
+      return value;
+    }
+
+    function setMessage(text, type = "") {
+      el.message.textContent = text;
+      el.message.className = `message ${type}`;
+      clearTimeout(setMessage.timer);
+      setMessage.timer = setTimeout(() => { el.message.className = "message"; }, 420);
+    }
+
+    function updateHUD() {
+      el.score.textContent = state.score.toLocaleString();
+      el.highScore.textContent = state.highScore.toLocaleString();
+      el.combo.textContent = `x${state.combo}`;
+      el.time.textContent = state.timeLeft;
+      el.time.classList.toggle("time-danger", state.timeLeft <= 10);
+      el.cutCount.textContent = `${state.cutsThisRound}회`;
+      el.optimalText.textContent = `${state.cutsThisRound} / ${state.optimalCuts}`;
+      const pct = Math.min(100, (state.cutsThisRound / Math.max(1, state.optimalCuts)) * 100);
+      el.progressFill.style.width = `${pct}%`;
+    }
+
+    function renderRound() {
+      el.vegEmoji.textContent = state.veg.emoji;
+      el.numberBadge.textContent = state.current;
+      el.equation.textContent = `${state.current} ÷ ? = ?`;
+      el.factorLog.innerHTML = state.factors.length
+        ? state.factors.map(f => `<span class="factor-chip ${isPrime(f) ? "prime" : ""}">${f}</span>`).join("")
+        : '<span class="empty-log">아직 없음</span>';
+      el.goalText.innerHTML = `이 채소를 가장 잘게 썰면 <b>${state.optimalCuts}번</b> 자를 수 있어요. 소수 약수를 찾아보세요.`;
+      updateHUD();
+    }
+
+    function setFactorValue(value) {
+      const next = String(value ?? "");
+      el.factorInput.value = next;
+      el.factorTouchDisplay.textContent = next || "나눌 수";
+      el.factorTouchDisplay.classList.toggle("empty", !next);
+    }
+
+    function getFactorValue() {
+      return el.factorInput.value;
+    }
+
+    function markFactorInvalid() {
+      [el.factorInput, el.factorTouchDisplay].forEach(node => node.classList.add("invalid"));
+      setTimeout(() => {
+        [el.factorInput, el.factorTouchDisplay].forEach(node => node.classList.remove("invalid"));
+      }, 350);
+    }
+
+    function newRound() {
+      state.roundLocked = false;
+      state.original = chooseNumber();
+      state.current = state.original;
+      state.optimalCuts = primeFactors(state.original).length;
+      state.cutsThisRound = 0;
+      state.factors = [];
+      state.veg = vegetables[Math.floor(Math.random() * vegetables.length)];
+      el.tipText.innerHTML = tips[Math.floor(Math.random() * tips.length)];
+      setFactorValue("");
+      renderRound();
+      setMessage(`${state.veg.name} ${state.original}! 어떤 약수로 자를까요?`);
+      if (!state.touchUI) setTimeout(() => el.factorInput.focus(), 60);
+    }
+
+    function animateChop(color) {
+      el.knife.classList.remove("swing");
+      el.vegetable.classList.remove("chop", "cut-hide");
+      el.boardWrap.classList.remove("impact");
+      void el.knife.offsetWidth;
+      el.knife.classList.add("swing");
+      el.vegetable.classList.add("chop");
+
+      const impactDelay = 105;
+      setTimeout(() => {
+        el.boardWrap.classList.add("impact");
+        el.vegetable.classList.add("cut-hide");
+
+        const slash = document.createElement("div");
+        slash.className = "slash-flash";
+        el.fxLayer.appendChild(slash);
+
+        const ring = document.createElement("div");
+        ring.className = "impact-ring";
+        el.fxLayer.appendChild(ring);
+
+        const boardRect = el.boardWrap.getBoundingClientRect();
+        const emojiRect = el.vegEmoji.getBoundingClientRect();
+        const split = document.createElement("div");
+        split.className = "split-veg";
+        split.style.left = `${emojiRect.left - boardRect.left}px`;
+        split.style.top = `${emojiRect.top - boardRect.top}px`;
+        split.style.width = `${emojiRect.width}px`;
+        split.style.height = `${emojiRect.height}px`;
+        split.style.fontSize = getComputedStyle(el.vegEmoji).fontSize;
+        split.innerHTML = `<span class="split-half left">${state.veg.emoji}</span><span class="split-half right">${state.veg.emoji}</span>`;
+        el.fxLayer.appendChild(split);
+
+        for (let i = 0; i < 9; i++) {
+          const piece = document.createElement("div");
+          piece.className = "slice-piece";
+          piece.style.background = color;
+          piece.style.left = `${44 + Math.random() * 14}%`;
+          piece.style.top = `${42 + Math.random() * 13}%`;
+          piece.style.setProperty("--piece-w", `${22 + Math.random() * 28}px`);
+          piece.style.setProperty("--piece-h", `${14 + Math.random() * 18}px`);
+          piece.style.setProperty("--dx", `${(Math.random() - .5) * 260}px`);
+          piece.style.setProperty("--dy", `${-35 - Math.random() * 145}px`);
+          piece.style.setProperty("--rot", `${(Math.random() - .5) * 760}deg`);
+          el.fxLayer.appendChild(piece);
+          setTimeout(() => piece.remove(), 900);
+        }
+
+        for (let i = 0; i < 7; i++) {
+          const spark = document.createElement("div");
+          spark.className = "spark";
+          const angle = (-160 + Math.random() * 140) * Math.PI / 180;
+          const distance = 55 + Math.random() * 95;
+          spark.style.setProperty("--sx", `${Math.cos(angle) * distance}px`);
+          spark.style.setProperty("--sy", `${Math.sin(angle) * distance}px`);
+          el.fxLayer.appendChild(spark);
+          setTimeout(() => spark.remove(), 520);
+        }
+
+        setTimeout(() => {
+          slash.remove();
+          ring.remove();
+          split.remove();
+        }, 520);
+      }, impactDelay);
+
+      setTimeout(() => {
+        el.knife.classList.remove("swing");
+        el.vegetable.classList.remove("chop", "cut-hide");
+        el.boardWrap.classList.remove("impact");
+      }, 500);
+    }
+
+    function showComboBurst(text) {
+      const burst = document.createElement("div");
+      burst.className = "combo-burst";
+      burst.textContent = text;
+      el.boardWrap.appendChild(burst);
+      setTimeout(() => burst.remove(), 720);
+    }
+
+    function showFloatingScore(points) {
+      const rect = el.score.getBoundingClientRect();
+      const node = document.createElement("div");
+      node.className = "floating-score";
+      node.textContent = `+${points}`;
+      node.style.left = `${rect.left + rect.width / 2 - 20}px`;
+      node.style.top = `${rect.top + 12}px`;
+      document.body.appendChild(node);
+      setTimeout(() => node.remove(), 850);
+    }
+
+    function scoreFor(divisor) {
+      const primeBonus = isPrime(divisor) ? 65 : Math.max(0, 30 - Math.floor(Math.sqrt(divisor)) * 3);
+      const comboBonus = Math.min(450, state.combo * 28);
+      const fineCutBonus = Math.max(0, 45 - divisor * 2);
+      return 80 + primeBonus + comboBonus + fineCutBonus;
+    }
+
+    function processFactor(divisor) {
+      if (!state.running || state.paused || state.roundLocked) return false;
+      state.attempts++;
+
+      if (!Number.isInteger(divisor) || divisor <= 1) {
+        invalidCut("2 이상의 자연수를 입력하세요!");
+        return false;
+      }
+      if (divisor > state.current || state.current % divisor !== 0) {
+        invalidCut(`${state.current}은(는) ${divisor}(으)로 나누어떨어지지 않아요.`);
+        return false;
+      }
+
+      state.correctAttempts++;
+      state.combo++;
+      state.maxCombo = Math.max(state.maxCombo, state.combo);
+      state.cutsThisRound++;
+      state.factors.push(divisor);
+      const before = state.current;
+      state.current = before / divisor;
+      const points = scoreFor(divisor);
+      state.score += points;
+      if (state.score > state.highScore) {
+        state.highScore = state.score;
+        storage.setItem("factorKitchenHighScore", String(state.highScore));
+      }
+
+      audio.chop(state.combo);
+      audio.combo(state.combo);
+      if (navigator.vibrate) navigator.vibrate(state.combo >= 5 ? [18, 12, 24] : 18);
+      animateChop(state.veg.color);
+      showFloatingScore(points);
+      if (state.combo >= 2) showComboBurst(`${state.combo} COMBO!`);
+      el.numberBadge.textContent = state.current;
+      el.equation.textContent = `${before} ÷ ${divisor} = ${state.current}`;
+      renderRound();
+
+      const cutKind = isPrime(divisor) ? "소수 칼질!" : "깔끔한 칼질!";
+      setMessage(`${cutKind} ${before} ÷ ${divisor} = ${state.current}`, "good");
+
+      if (state.current === 1) finishRound();
+      return true;
+    }
+
+    function invalidCut(text) {
+      state.combo = 0;
+      state.score = Math.max(0, state.score - 35);
+      audio.wrong();
+      if (navigator.vibrate) navigator.vibrate([35, 25, 35]);
+      setMessage(`${text} 콤보가 끊겼어요!`, "bad");
+      markFactorInvalid();
+      updateHUD();
+    }
+
+    function finishRound() {
+      state.roundLocked = true;
+      state.rounds++;
+      const perfect = state.cutsThisRound === state.optimalCuts;
+      const efficiency = state.cutsThisRound / state.optimalCuts;
+      let bonus = 180;
+
+      if (perfect) {
+        bonus += 700 + state.optimalCuts * 80;
+        state.timeLeft = Math.min(99, state.timeLeft + 4);
+        showComboBurst("PERFECT CUT!");
+        setMessage(`완벽 손질! ${state.original}의 소인수분해를 모두 찾았어요. +4초`, "good");
+      } else if (efficiency >= .7) {
+        bonus += 280;
+        setMessage(`훌륭해요! 더 작은 약수로 자르면 ${state.optimalCuts}콤보까지 가능했어요.`, "good");
+      } else {
+        setMessage(`완성! 다음에는 작은 약수부터 찾아 ${state.optimalCuts}콤보에 도전해요.`);
+      }
+
+      state.score += bonus;
+      if (state.score > state.highScore) {
+        state.highScore = state.score;
+        storage.setItem("factorKitchenHighScore", String(state.highScore));
+      }
+      audio.complete(perfect);
+      updateHUD();
+      clearTimeout(state.roundTimer);
+      state.roundTimer = setTimeout(() => {
+        if (state.running) newRound();
+      }, perfect ? 1050 : 1250);
+    }
+
+    function submitInput() {
+      const raw = getFactorValue().trim();
+      if (!raw) return;
+      const values = raw.split(/[\s,，/]+/).filter(Boolean).map(Number);
+      setFactorValue("");
+
+      if (!values.length || values.some(v => !Number.isFinite(v))) {
+        invalidCut("숫자만 입력해 주세요.");
+        return;
+      }
+
+      let delay = 0;
+      values.forEach((value, index) => {
+        setTimeout(() => {
+          if (!state.running || state.paused || state.roundLocked) return;
+          const ok = processFactor(value);
+          if (!ok || state.current === 1) return;
+          if (index === values.length - 1 && !state.touchUI) el.factorInput.focus();
+        }, delay);
+        delay += 430;
+      });
+    }
+
+    function setGameControlsEnabled(enabled) {
+      el.factorInput.disabled = !enabled;
+      el.factorTouchDisplay.classList.toggle("control-disabled", !enabled);
+      el.factorTouchDisplay.setAttribute("aria-disabled", String(!enabled));
+      el.chopButton.disabled = !enabled;
+      el.touchKeypad.querySelectorAll("button").forEach(button => { button.disabled = !enabled; });
+    }
+
+    function resetState() {
+      clearInterval(state.timerId);
+      clearTimeout(state.roundTimer);
+      state.score = 0;
+      state.combo = 0;
+      state.maxCombo = 0;
+      state.timeLeft = 75;
+      state.rounds = 0;
+      state.attempts = 0;
+      state.correctAttempts = 0;
+      state.level = 1;
+      state.running = true;
+      state.paused = false;
+      state.roundLocked = false;
+      setGameControlsEnabled(true);
+      el.pauseButton.disabled = false;
+      el.pauseButton.innerHTML = "<span>⏸</span><em>정지</em>";
+      updateHUD();
+      newRound();
+    }
+
+    function countdownThenStart() {
+      audio.init();
+      audio.startJingle();
+      el.startOverlay.classList.add("hidden");
+      el.resultOverlay.classList.add("hidden");
+      resetState();
+      state.paused = true;
+      setGameControlsEnabled(false);
+      const sequence = ["3", "2", "1", "START!"];
+      let i = 0;
+      const show = () => {
+        const node = document.createElement("div");
+        node.className = "countdown";
+        node.textContent = sequence[i];
+        document.body.appendChild(node);
+        if (audio.ctx) audio.tone(330 * Math.pow(1.25, i), audio.ctx.currentTime, .16, "square", .1);
+        setTimeout(() => node.remove(), 760);
+        i++;
+        if (i < sequence.length) {
+          setTimeout(show, 760);
+        } else {
+          setTimeout(() => {
+            state.paused = false;
+            setGameControlsEnabled(true);
+            if (!state.touchUI) el.factorInput.focus();
+            startTimer();
+            audio.startMusic();
+          }, 650);
+        }
+      };
+      show();
+    }
+
+    function startTimer() {
+      clearInterval(state.timerId);
+      state.timerId = setInterval(() => {
+        if (!state.running || state.paused) return;
+        state.timeLeft--;
+        updateHUD();
+        if (state.timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function pauseGame() {
+      if (!state.running) return;
+      state.paused = true;
+      setGameControlsEnabled(false);
+      el.pauseOverlay.classList.remove("hidden");
+      audio.stopMusic();
+    }
+
+    function resumeGame() {
+      state.paused = false;
+      setGameControlsEnabled(true);
+      el.pauseOverlay.classList.add("hidden");
+      audio.startMusic();
+      if (!state.touchUI) el.factorInput.focus();
+    }
+
+    function endGame() {
+      if (!state.running) return;
+      state.running = false;
+      state.paused = false;
+      clearInterval(state.timerId);
+      clearTimeout(state.roundTimer);
+      audio.stopMusic();
+      setGameControlsEnabled(false);
+      el.pauseButton.disabled = true;
+
+      const previousHigh = Number(storage.getItem("factorKitchenHighScore") || 0);
+      const isRecord = state.score >= previousHigh && state.score > 0;
+      if (state.score > previousHigh) {
+        state.highScore = state.score;
+        storage.setItem("factorKitchenHighScore", String(state.score));
+      }
+
+      const accuracy = state.attempts ? Math.round(state.correctAttempts / state.attempts * 100) : 0;
+      el.resultScore.textContent = state.score.toLocaleString();
+      el.resultCombo.textContent = state.maxCombo;
+      el.resultRounds.textContent = state.rounds;
+      el.resultAccuracy.textContent = `${accuracy}%`;
+      el.recordMessage.innerHTML = isRecord ? '<div class="new-record">🎉 새로운 최고 점수!</div>' : "";
+      el.resultComment.textContent = accuracy >= 90
+        ? "정확한 약수 찾기 실력이 대단해요! 이제 더 작은 소수로 콤보를 늘려 보세요."
+        : accuracy >= 70
+          ? "좋은 칼질이었어요! 나누기 전에 곱셈으로 한 번 확인하면 정확도가 더 올라가요."
+          : "짝수는 2부터, 끝자리가 0·5면 5부터 확인해 보세요.";
+      el.resultOverlay.classList.remove("hidden");
+      audio.complete(true);
+      updateHUD();
+    }
+
+    function restartGame() {
+      audio.init();
+      countdownThenStart();
+    }
+
+
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
+    const anyCoarsePointer = window.matchMedia("(any-pointer: coarse)");
+
+    function configureTouchUI() {
+      state.touchUI = coarsePointer.matches
+        || anyCoarsePointer.matches
+        || navigator.maxTouchPoints > 0
+        || window.innerWidth <= 900;
+
+      document.documentElement.classList.toggle("touch-ui", state.touchUI);
+      el.factorInput.readOnly = state.touchUI;
+      el.factorInput.tabIndex = state.touchUI ? -1 : 0;
+      el.factorInput.setAttribute("aria-hidden", String(state.touchUI));
+      el.factorInput.setAttribute("inputmode", state.touchUI ? "none" : "numeric");
+      setFactorValue(getFactorValue());
+
+      if (state.touchUI && document.activeElement === el.factorInput) {
+        el.factorInput.blur();
+      }
+    }
+
+    function tapFeedback(duration = 8) {
+      if (navigator.vibrate) navigator.vibrate(duration);
+    }
+
+    function appendKey(value) {
+      if (!state.running || state.paused || state.roundLocked) return;
+      const current = getFactorValue();
+      if (current.length >= 28) return;
+      setFactorValue(current + value);
+    }
+
+    el.touchKeypad.addEventListener("pointerdown", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      button.classList.add("pressed");
+      tapFeedback();
+    });
+
+    el.touchKeypad.addEventListener("pointerup", (event) => {
+      const button = event.target.closest("button");
+      if (button) button.classList.remove("pressed");
+    });
+
+    el.touchKeypad.addEventListener("pointercancel", () => {
+      el.touchKeypad.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+    });
+
+    el.touchKeypad.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button || button.disabled) return;
+      const key = button.dataset.key;
+      const action = button.dataset.action;
+
+      if (key !== undefined) {
+        appendKey(key);
+        return;
+      }
+      if (action === "backspace") {
+        setFactorValue(getFactorValue().slice(0, -1));
+      } else if (action === "clear") {
+        setFactorValue("");
+      } else if (action === "next") {
+        const value = getFactorValue();
+        if (value && !value.endsWith(" ")) appendKey(" ");
+      } else if (action === "submit") {
+        submitInput();
+      }
+    });
+
+    function suppressTouchKeyboard(event) {
+      if (!state.touchUI) return;
+      event.preventDefault();
+      el.factorInput.blur();
+    }
+
+    el.factorInput.addEventListener("pointerdown", suppressTouchKeyboard);
+    el.factorInput.addEventListener("touchstart", suppressTouchKeyboard, { passive: false });
+    el.factorInput.addEventListener("focus", () => {
+      if (state.touchUI) el.factorInput.blur();
+    });
+
+    configureTouchUI();
+    window.addEventListener("resize", configureTouchUI, { passive: true });
+    if (coarsePointer.addEventListener) coarsePointer.addEventListener("change", configureTouchUI);
+    if (anyCoarsePointer.addEventListener) anyCoarsePointer.addEventListener("change", configureTouchUI);
+
+    el.startButton.addEventListener("click", countdownThenStart);
+    el.againButton.addEventListener("click", countdownThenStart);
+    el.restartButton.addEventListener("click", restartGame);
+    el.chopButton.addEventListener("click", submitInput);
+    el.factorInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") submitInput();
+    });
+    el.pauseButton.addEventListener("click", pauseGame);
+    el.resumeButton.addEventListener("click", resumeGame);
+    el.soundButton.addEventListener("click", () => {
+      state.muted = !state.muted;
+      storage.setItem("factorKitchenMuted", String(state.muted));
+      audio.init();
+      audio.setMuted(state.muted);
+      el.soundButton.querySelector(".sound-icon").textContent = state.muted ? "🔇" : "🔊";
+      el.soundLabel.textContent = state.muted ? "소리 꺼짐" : "소리 켜짐";
+      el.soundButton.setAttribute("aria-label", state.muted ? "소리 켜기" : "소리 끄기");
+      if (!state.muted) audio.startJingle();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && state.running && !state.paused) pauseGame();
+    });
+
+    el.highScore.textContent = state.highScore.toLocaleString();
+    el.soundButton.querySelector(".sound-icon").textContent = state.muted ? "🔇" : "🔊";
+    el.soundLabel.textContent = state.muted ? "소리 꺼짐" : "소리 켜짐";
+    renderRound();
+  </script>
+</body>
+</html>
