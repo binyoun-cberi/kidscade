@@ -2,196 +2,608 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#0b1026" />
 <title>프레디의 샌드위치 가게 - 도형 넓이</title>
 <style>
 :root{
-  --bg:#080d22;
-  --bg2:#11183a;
-  --panel:#171f46;
-  --panel2:#202a5a;
-  --line:#344176;
-  --text:#f8fafc;
-  --muted:#a9b4d8;
+  --bg:#080d20;
+  --bg2:#111939;
+  --panel:#151d3f;
+  --panel2:#1e2852;
+  --line:rgba(255,255,255,.12);
+  --text:#f8fbff;
+  --muted:#aeb9d8;
   --yellow:#ffd166;
   --orange:#ff9f1c;
-  --green:#46d783;
-  --red:#ff5d73;
+  --green:#53dc8c;
+  --red:#ff667d;
   --blue:#7bdff2;
-  --purple:#b88cff;
-  --shadow:0 18px 45px rgba(0,0,0,.35);
-  --soft:0 8px 18px rgba(0,0,0,.24);
+  --purple:#b999ff;
+  --shadow:0 18px 44px rgba(0,0,0,.34);
+  --soft:0 8px 20px rgba(0,0,0,.22);
+  --safe-bottom:max(12px,env(safe-area-inset-bottom));
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;touch-action:manipulation}
-button,select{font-family:inherit}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-tap-highlight-color:transparent}
+body{user-select:none;overscroll-behavior:none}
+button{font:inherit}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 body::before{content:"";position:fixed;inset:0;z-index:-2;background:
-  radial-gradient(circle at 15% 12%,rgba(123,223,242,.24),transparent 28%),
-  radial-gradient(circle at 85% 18%,rgba(255,209,102,.18),transparent 24%),
-  radial-gradient(circle at 50% 100%,rgba(184,140,255,.2),transparent 30%),
-  linear-gradient(160deg,#060817,#0c1436 55%,#101735)}
-body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.9;background-image:
-  radial-gradient(1.5px 1.5px at 40px 60px,rgba(255,255,255,.9),transparent),
-  radial-gradient(2px 2px at 130px 140px,rgba(123,223,242,.8),transparent),
-  radial-gradient(1.5px 1.5px at 230px 80px,rgba(255,209,102,.8),transparent),
-  radial-gradient(1px 1px at 310px 180px,rgba(255,255,255,.7),transparent);background-size:340px 240px;animation:stars 9s ease-in-out infinite alternate}
-@keyframes stars{from{opacity:.55;transform:translateY(0)}to{opacity:.95;transform:translateY(-8px)}}
-.hidden{display:none!important}.flex{display:flex!important}
-.screen{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}.blur{background:rgba(0,0,0,.68);backdrop-filter:blur(10px)}
-.card{background:linear-gradient(180deg,rgba(32,42,90,.98),rgba(19,27,63,.98));border:2px solid rgba(255,209,102,.45);border-radius:28px;box-shadow:var(--shadow)}
-.menu-card{width:min(980px,94vw);padding:34px;text-align:center}.title{margin:0;font-size:clamp(40px,7vw,76px);line-height:1.05;letter-spacing:-1px;color:var(--yellow);text-shadow:0 0 28px rgba(255,209,102,.35),0 5px 0 rgba(0,0,0,.3)}
-.subtitle{max-width:720px;margin:16px auto 26px;color:#d8def7;font-size:clamp(16px,2.2vw,21px);line-height:1.6}.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:26px auto;max-width:680px}.vault,.tips{background:rgba(5,9,26,.62);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:20px;text-align:left}.vault strong{display:block;font-size:36px;color:var(--green);margin-top:6px}.tips p{margin:7px 0;color:#cdd6ff;line-height:1.45}.btn-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}.btn{border:0;border-radius:18px;padding:15px 24px;font-weight:900;font-size:18px;cursor:pointer;box-shadow:0 8px 0 rgba(0,0,0,.26),0 14px 22px rgba(0,0,0,.18);transition:.12s transform,.12s box-shadow,.15s filter}.btn:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(0,0,0,.25),0 6px 12px rgba(0,0,0,.18)}.btn:hover{filter:brightness(1.08)}.primary{background:linear-gradient(180deg,#ffe082,#ffb703);color:#201000}.shopbtn{background:linear-gradient(180deg,#c9a8ff,#8b5cf6);color:white}.ghostbtn{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#eaf1ff;box-shadow:none}.danger{background:#81192a;color:white}.green{background:linear-gradient(180deg,#67e8a5,#22c55e);color:#06160b}.blue{background:linear-gradient(180deg,#7bdff2,#1d9bd1);color:#061018}.red{background:linear-gradient(180deg,#ff8798,#ef476f);color:white}
-#screen-game{position:absolute;inset:0;display:none;flex-direction:column;z-index:10}.topbar{height:72px;background:rgba(11,16,38,.92);border-bottom:1px solid rgba(255,255,255,.09);display:flex;justify-content:space-between;align-items:center;padding:10px 18px;box-shadow:var(--soft)}.hud-left,.hud-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.hud-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font-weight:900;color:#e8edff}.hud-value{color:var(--yellow);font-size:21px}.money{color:var(--green)}.time-danger{color:var(--red)!important;animation:pulse .7s infinite alternate}@keyframes pulse{to{transform:scale(1.08)}}
-.progress{position:absolute;left:0;right:0;top:72px;height:6px;background:rgba(255,255,255,.09);z-index:30}.progress>div{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .25s linear}
-.game-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(480px,1fr) 410px;gap:0}.workspace{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;min-width:0;overflow:hidden}.board-tools{width:min(690px,100%);display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.tool-group{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.select-wrap{display:flex;gap:8px;align-items:center;background:rgba(9,14,38,.72);border:1px solid rgba(123,223,242,.22);padding:10px 12px;border-radius:16px;color:#dfe7ff;font-weight:900}select{background:#090f2a;color:white;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 10px;font-weight:900;outline:none}#board{width:min(690px,calc(100vw - 455px));height:min(690px,calc(100vh - 210px));max-width:690px;max-height:690px;aspect-ratio:1/1;background:#101735;border:3px solid rgba(123,223,242,.5);border-radius:28px;box-shadow:0 0 40px rgba(123,223,242,.12),var(--shadow);touch-action:none;cursor:crosshair}.board-bottom{width:min(690px,100%);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:12px}.edit-actions{display:flex;gap:10px}.mini-btn{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#eef4ff;border-radius:14px;padding:12px 14px;font-weight:900;cursor:pointer}.mini-btn:active{transform:translateY(2px)}.area-card{display:flex;align-items:center;gap:10px;justify-content:center;background:rgba(5,9,26,.74);border:1px solid rgba(123,223,242,.28);border-radius:17px;padding:12px 18px;font-weight:900}.area-card span:first-child{color:var(--muted)}#area-now{font-size:25px;color:var(--blue)}
-.side{background:linear-gradient(180deg,#171f46,#101735);border-left:4px solid var(--yellow);display:flex;flex-direction:column;min-height:0;box-shadow:-10px 0 28px rgba(0,0,0,.28)}.customer{padding:18px;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.16)}.alien-wrap{text-align:center}.alien{font-size:72px;filter:drop-shadow(0 10px 8px rgba(0,0,0,.45));animation:bob 1.6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-8px)}}.order-box{position:relative;background:white;color:#111827;border-radius:20px;padding:17px 15px;font-size:20px;line-height:1.35;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.2)}.order-box:before{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:12px solid white}.order-chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#fef3c7;color:#92400e}.helper{margin-top:14px;display:grid;gap:8px}.helper-line{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;color:#d8e1ff;font-size:14px;line-height:1.35}.helper-line b{color:var(--yellow)}.hint-box{margin-top:10px;background:rgba(123,223,242,.08);border:1px dashed rgba(123,223,242,.38);border-radius:14px;padding:10px 12px;color:#dff8ff;line-height:1.38;font-weight:750}.stock-panel{padding:18px;flex:1;min-height:0;overflow:auto}.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:10px;color:var(--yellow);font-size:19px;font-weight:900}.small{font-size:13px;color:var(--muted);font-weight:700}.toppings{display:grid;grid-template-columns:1fr 1fr;gap:10px}.topping{position:relative;min-height:96px;border-radius:16px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;cursor:pointer;transition:.12s}.topping:hover{background:rgba(255,255,255,.1)}.topping.selected{border-color:var(--yellow);box-shadow:0 0 18px rgba(255,209,102,.28);transform:scale(1.03)}.topping.disabled{opacity:.38;filter:grayscale(.8);cursor:not-allowed}.topping .emoji{font-size:32px}.topping .name{font-size:13px;font-weight:900;text-align:center;line-height:1.15}.badge{position:absolute;right:-5px;top:-7px;background:#2563eb;border:2px solid #0c1436;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900}.disabled .badge{background:#ef4444}.serve-panel{padding:16px;background:rgba(0,0,0,.35);border-top:1px solid rgba(255,255,255,.08);display:grid;gap:10px}.serve-panel .btn{width:100%;font-size:22px}.feedback{min-height:58px;border-radius:15px;padding:10px 12px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.09);color:#dbe7ff;font-weight:800;line-height:1.35}.feedback.good{border-color:rgba(70,215,131,.6);background:rgba(70,215,131,.12);color:#dcffe9}.feedback.bad{border-color:rgba(255,93,115,.6);background:rgba(255,93,115,.12);color:#ffe3e7}.shake{animation:shake .35s}@keyframes shake{25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}.fly{animation:fly .55s forwards}@keyframes fly{to{transform:translateY(-75px) scale(.55);opacity:0}}.enter{animation:enter .35s cubic-bezier(.2,1.2,.2,1)}@keyframes enter{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
-.shop-screen{position:absolute;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:34px 16px;background:rgba(5,9,26,.92);backdrop-filter:blur(10px)}.shop-card{width:min(1000px,96vw);padding:24px}.shop-head{display:flex;justify-content:space-between;gap:18px;align-items:center;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:18px;margin-bottom:18px}.shop-head h2{margin:0;font-size:42px;color:var(--purple)}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.shop-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:18px}.shop-item h3{margin:0 0 6px;font-size:22px}.shop-item p{margin:0;color:var(--muted);line-height:1.35}.shop-item button{min-width:126px}.locked{opacity:.45;filter:grayscale(.8)}
-.modal{position:absolute;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);padding:20px}.modal-card{width:min(460px,94vw);padding:26px;text-align:center}.modal-card h2{margin:0 0 10px;color:var(--yellow);font-size:40px}.summary{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;margin:18px 0;text-align:left}.summary-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:20px;font-weight:900}.toast{position:fixed;z-index:200;top:92px;left:50%;transform:translate(-50%,-20px) scale(.95);opacity:0;pointer-events:none;transition:.22s;max-width:min(560px,92vw);text-align:center;border-radius:999px;padding:14px 22px;font-weight:900;font-size:18px;box-shadow:var(--shadow)}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.info{background:#2563eb}.toast.good{background:#16a34a}.toast.bad{background:#dc2626}.confetti{position:absolute;width:10px;height:10px;border-radius:3px;pointer-events:none;animation:confetti .7s ease-out forwards}@keyframes confetti{to{transform:translate(var(--x),var(--y)) rotate(420deg);opacity:0}}
-@media(max-width:960px){body{overflow:auto}.screen{position:fixed}.topbar{height:auto;min-height:70px;align-items:flex-start}.progress{top:70px}.game-body{display:flex;flex-direction:column;overflow:auto}.workspace{min-height:560px;justify-content:flex-start;padding:14px}.board-tools{flex-direction:column;align-items:stretch}.tool-group{justify-content:space-between}.select-wrap{flex:1;justify-content:center}#board{width:min(94vw,560px);height:min(94vw,560px)}.board-bottom{grid-template-columns:1fr}.edit-actions{justify-content:center}.side{border-left:0;border-top:4px solid var(--yellow);min-height:auto}.customer{padding:14px}.alien{font-size:56px}.order-box{font-size:17px}.menu-grid,.shop-grid{grid-template-columns:1fr}.menu-card{padding:24px 16px}.shop-head{flex-direction:column;text-align:center}.hud-left,.hud-right{gap:6px}.hud-pill{font-size:13px;padding:7px 9px}.hud-value{font-size:17px}}
-@media(max-width:540px){.title{font-size:40px}.btn{width:100%}.btn-row{flex-direction:column}.toppings{grid-template-columns:1fr}.topbar{padding:8px}.hud-left,.hud-right{width:100%;justify-content:space-between}.topbar{flex-direction:column}.progress{top:102px}.workspace{padding-top:28px}.tool-group{flex-direction:column}.select-wrap{width:100%}.shop-item{grid-template-columns:1fr}.shop-item button{width:100%}}
+ radial-gradient(circle at 12% 10%,rgba(123,223,242,.18),transparent 28%),
+ radial-gradient(circle at 88% 8%,rgba(255,209,102,.14),transparent 24%),
+ radial-gradient(circle at 50% 105%,rgba(185,153,255,.18),transparent 34%),
+ linear-gradient(155deg,#060817 0%,#0b1231 56%,#12183b 100%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.62;background-image:
+ radial-gradient(1.3px 1.3px at 40px 60px,rgba(255,255,255,.9),transparent),
+ radial-gradient(1.8px 1.8px at 150px 120px,rgba(123,223,242,.8),transparent),
+ radial-gradient(1.2px 1.2px at 250px 55px,rgba(255,209,102,.8),transparent);
+ background-size:320px 220px;animation:stars 10s ease-in-out infinite alternate}
+@keyframes stars{to{opacity:.9;transform:translateY(-7px)}}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:clamp(14px,3vw,28px);background:rgba(2,6,20,.67);backdrop-filter:blur(10px)}
+.card{background:linear-gradient(180deg,rgba(31,41,83,.98),rgba(17,24,57,.98));border:1px solid rgba(255,255,255,.14);border-radius:28px;box-shadow:var(--shadow)}
+.menu-card{width:min(920px,96vw);max-height:94dvh;overflow:auto;padding:clamp(24px,4vw,42px);text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(123,223,242,.1);border:1px solid rgba(123,223,242,.24);color:#dffaff;font-size:14px;font-weight:850}
+.title{margin:14px 0 8px;font-size:clamp(38px,6.6vw,70px);line-height:1.04;letter-spacing:-1.8px;color:var(--yellow);text-shadow:0 0 26px rgba(255,209,102,.25),0 5px 0 rgba(0,0,0,.24)}
+.subtitle{max-width:650px;margin:0 auto 24px;color:#d8e0f7;font-size:clamp(16px,2vw,20px);line-height:1.55}
+.menu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:650px;margin:0 auto 18px}
+.stat-box{padding:14px 10px;border-radius:18px;background:rgba(4,8,24,.46);border:1px solid rgba(255,255,255,.09)}
+.stat-label{display:block;color:var(--muted);font-size:13px;font-weight:800}
+.stat-value{display:block;margin-top:4px;font-size:24px;font-weight:950;color:var(--yellow)}
+.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:740px;margin:18px auto 25px;text-align:left}
+.howto-item{min-height:112px;padding:15px;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09)}
+.howto-num{display:grid;place-items:center;width:28px;height:28px;margin-bottom:9px;border-radius:9px;background:var(--yellow);color:#241500;font-weight:950}
+.howto-item b{display:block;margin-bottom:4px}.howto-item span{display:block;color:var(--muted);font-size:14px;line-height:1.4}
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{border:0;border-radius:17px;padding:14px 22px;font-weight:950;font-size:17px;cursor:pointer;box-shadow:0 7px 0 rgba(0,0,0,.25),0 12px 20px rgba(0,0,0,.17);transition:transform .12s,filter .12s,box-shadow .12s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.25),0 5px 10px rgba(0,0,0,.16)}
+.primary{background:linear-gradient(180deg,#ffe58f,#ffb703);color:#201200}
+.shopbtn{background:linear-gradient(180deg,#c8adff,#8b5cf6);color:white}
+.ghostbtn{background:rgba(255,255,255,.075);color:#eef3ff;border:1px solid rgba(255,255,255,.15);box-shadow:none}
+.danger{background:linear-gradient(180deg,#ff7f91,#d93450);color:white}
+.green{background:linear-gradient(180deg,#73efad,#24c96b);color:#05200f}
+.small-btn{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.075);color:#f2f6ff;border-radius:13px;padding:10px 12px;font-weight:900;cursor:pointer;white-space:nowrap}
+.small-btn:active{transform:translateY(2px)}
+.small-btn[disabled]{opacity:.38;cursor:not-allowed}
+
+#screen-game{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:linear-gradient(155deg,rgba(6,9,24,.92),rgba(13,20,50,.96))}
+.topbar{position:relative;z-index:20;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 16px;background:rgba(9,14,34,.94);border-bottom:1px solid rgba(255,255,255,.09);box-shadow:var(--soft)}
+.brand-mini{display:flex;align-items:center;gap:9px;min-width:0;font-weight:950;color:var(--yellow)}
+.brand-mini .logo{font-size:26px}.brand-mini .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hud{display:flex;align-items:center;justify-content:center;gap:8px;flex:1}
+.hud-pill{display:flex;align-items:baseline;gap:5px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:13px;font-weight:850;color:#d9e1fa;white-space:nowrap}
+.hud-pill strong{font-size:18px;color:var(--yellow)}
+.hud-pill .money{color:var(--green)}
+.top-actions{display:flex;gap:7px}
+.progress{height:5px;background:rgba(255,255,255,.075);flex:0 0 auto}
+.progress>div{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .25s linear}
+.time-danger{color:var(--red)!important;animation:pulse .65s infinite alternate}
+@keyframes pulse{to{transform:scale(1.07)}}
+
+.game-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(520px,1fr) 350px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"order action" "workspace action";gap:12px;padding:12px;overflow:hidden}
+.order-strip{grid-area:order;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 15px;border-radius:21px;background:linear-gradient(180deg,rgba(31,41,83,.93),rgba(20,29,65,.94));border:1px solid rgba(255,255,255,.12);box-shadow:var(--soft)}
+.customer-avatar{font-size:46px;filter:drop-shadow(0 8px 7px rgba(0,0,0,.3));animation:bob 1.7s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.order-copy{min-width:0}.order-kicker{color:var(--muted);font-size:12px;font-weight:850}.order-main{margin-top:3px;font-size:clamp(17px,2vw,23px);font-weight:950;line-height:1.28}.order-main .accent{color:var(--yellow)}.order-main .shape{color:var(--blue)}
+.order-reward{text-align:right;white-space:nowrap}.order-reward span{display:block;color:var(--muted);font-size:12px;font-weight:800}.order-reward strong{font-size:21px;color:var(--green)}
+.workspace{grid-area:workspace;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 8px 8px;overflow:hidden}
+.board-toolbar{width:min(680px,100%);display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.stage-info{min-width:0}.stage-title{font-size:14px;color:var(--muted);font-weight:850}.step-guide{font-size:16px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-buttons{display:flex;gap:7px}
+.board-stage{position:relative;width:min(680px,calc(100vh - 190px),calc(100vw - 410px));max-width:680px;aspect-ratio:1/1;flex:0 1 auto}
+#board{display:block;width:100%;height:100%;border:2px solid rgba(123,223,242,.5);border-radius:25px;background:#101735;box-shadow:0 0 34px rgba(123,223,242,.11),var(--shadow);touch-action:none;cursor:crosshair}
+.slice-effect{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:25px;opacity:0}
+.slice-effect::before{content:"";position:absolute;left:-25%;top:52%;width:150%;height:7px;border-radius:999px;background:linear-gradient(90deg,transparent,#fff 30%,var(--yellow) 52%,#fff 70%,transparent);box-shadow:0 0 24px #fff;transform:rotate(-10deg) translateX(-100%)}
+.slice-effect.play{opacity:1;animation:sliceFade .55s ease-out forwards}.slice-effect.play::before{animation:sliceMove .5s ease-out forwards}
+@keyframes sliceMove{to{transform:rotate(-10deg) translateX(80%)}}
+@keyframes sliceFade{70%{opacity:1}to{opacity:0}}
+.board-readout{width:min(680px,100%);display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;margin-top:8px}
+.formula-box{min-width:0;padding:10px 13px;border-radius:14px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.09);color:#e6ecff;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.area-box{display:flex;align-items:baseline;gap:7px;padding:9px 14px;border-radius:14px;background:rgba(5,10,27,.76);border:1px solid rgba(123,223,242,.3);white-space:nowrap}.area-box span{font-size:12px;color:var(--muted);font-weight:800}.area-box strong{font-size:24px;color:var(--blue)}
+
+.action-panel{grid-area:action;min-height:0;display:flex;flex-direction:column;border-radius:22px;background:linear-gradient(180deg,rgba(27,37,78,.96),rgba(15,22,52,.96));border:1px solid rgba(255,255,255,.12);box-shadow:var(--soft);overflow:hidden}
+.action-scroll{flex:1;min-height:0;overflow:auto;padding:16px}
+.panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px;font-size:17px;font-weight:950;color:var(--yellow)}
+.panel-title small{font-size:12px;color:var(--muted);font-weight:750}
+.toppings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.topping{position:relative;min-height:84px;border:2px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(255,255,255,.052);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px;cursor:pointer;transition:transform .12s,background .12s,border-color .12s}
+.topping:hover{background:rgba(255,255,255,.09)}.topping:active{transform:scale(.97)}
+.topping.selected{border-color:var(--yellow);background:rgba(255,209,102,.11);box-shadow:0 0 17px rgba(255,209,102,.2)}
+.topping.disabled{opacity:.34;filter:grayscale(.8);cursor:not-allowed}.topping .emoji{font-size:29px}.topping .name{font-size:12px;font-weight:900;text-align:center;line-height:1.15}.stock-badge{position:absolute;top:5px;right:6px;min-width:23px;padding:2px 6px;border-radius:999px;background:#225ac7;font-size:11px;font-weight:950}
+.helper-card{margin-top:13px;padding:12px 13px;border-radius:15px;background:rgba(123,223,242,.075);border:1px solid rgba(123,223,242,.2);font-size:13px;line-height:1.45;color:#def8ff}.helper-card b{color:var(--yellow)}
+.hint-card{margin-top:10px;padding:12px 13px;border-radius:15px;background:rgba(255,209,102,.08);border:1px dashed rgba(255,209,102,.34);font-size:13px;line-height:1.45;color:#fff3c5}
+.serve-wrap{padding:13px;background:rgba(3,7,20,.48);border-top:1px solid rgba(255,255,255,.09)}
+.feedback{min-height:64px;margin-bottom:9px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);font-size:14px;font-weight:800;line-height:1.4;color:#dce5ff}
+.feedback.good{background:rgba(83,220,140,.12);border-color:rgba(83,220,140,.44);color:#ddffea}.feedback.bad{background:rgba(255,102,125,.11);border-color:rgba(255,102,125,.42);color:#ffe3e8}.feedback.info{background:rgba(123,223,242,.09);border-color:rgba(123,223,242,.32)}
+.serve-btn{width:100%;font-size:21px;padding:15px}
+.attempt-note{display:flex;justify-content:space-between;gap:8px;margin-top:8px;color:var(--muted);font-size:12px;font-weight:750}
+
+.shop-screen{position:fixed;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 14px;background:rgba(4,8,25,.93);backdrop-filter:blur(10px)}
+.shop-card{width:min(960px,96vw);padding:24px}.shop-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.11)}.shop-head h2{margin:0;font-size:clamp(30px,5vw,42px);color:var(--purple)}.shop-money{text-align:right}.shop-money span{display:block;color:var(--muted);font-size:12px}.shop-money strong{font-size:29px;color:var(--green)}
+.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.shop-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:16px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}.shop-item h3{margin:0 0 5px;font-size:20px}.shop-item p{margin:0;color:var(--muted);font-size:14px;line-height:1.4}.shop-item button{min-width:120px}.locked{opacity:.42;filter:grayscale(.8)}
+.modal{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.76);backdrop-filter:blur(8px)}.modal.open{display:flex}.modal-card{width:min(470px,94vw);padding:25px;text-align:center}.modal-card h2{margin:0 0 8px;font-size:37px;color:var(--yellow)}.modal-card p{color:var(--muted);font-weight:750;line-height:1.5}.summary{margin:17px 0;padding:15px;border-radius:17px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);text-align:left}.summary-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:18px;font-weight:900}
+.toast{position:fixed;z-index:220;left:50%;top:78px;max-width:min(560px,92vw);padding:12px 20px;border-radius:999px;transform:translate(-50%,-18px) scale(.96);opacity:0;pointer-events:none;transition:.2s;box-shadow:var(--shadow);font-size:15px;font-weight:900;text-align:center}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.info{background:#2563eb}.toast.good{background:#179d52}.toast.bad{background:#d93450}
+.confetti{position:fixed;width:9px;height:9px;border-radius:3px;pointer-events:none;z-index:210;animation:confetti .72s ease-out forwards}@keyframes confetti{to{transform:translate(var(--x),var(--y)) rotate(430deg);opacity:0}}
+.shake{animation:shake .34s}@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.enter{animation:enter .35s cubic-bezier(.2,1.2,.2,1)}@keyframes enter{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+
+@media(max-width:1100px){
+ .game-layout{grid-template-columns:minmax(430px,1fr) 315px}.board-stage{width:min(650px,calc(100vh - 195px),calc(100vw - 365px))}.brand-mini .name{display:none}.hud-pill{padding:7px 8px}
+}
+@media(max-width:820px){
+ html,body{overflow:hidden}.topbar{min-height:56px;padding:7px 9px}.brand-mini{display:none}.hud{justify-content:flex-start;overflow-x:auto;scrollbar-width:none}.hud::-webkit-scrollbar{display:none}.hud-pill{flex:0 0 auto;padding:6px 8px}.hud-pill strong{font-size:16px}.top-actions .small-btn{padding:9px 10px}.top-actions .sound-label{display:none}
+ .game-layout{display:flex;flex-direction:column;gap:9px;padding:8px;overflow:auto;overscroll-behavior:contain}.order-strip{position:sticky;top:0;z-index:12;grid-template-columns:auto minmax(0,1fr);padding:10px 12px;border-radius:17px}.customer-avatar{font-size:38px}.order-reward{display:none}.order-main{font-size:17px}.workspace{overflow:visible;flex:0 0 auto;padding:0 2px}.board-toolbar{margin:0 0 7px}.stage-title{font-size:12px}.step-guide{font-size:14px}.tool-buttons .small-btn{padding:9px 10px;font-size:13px}.board-stage{width:min(94vw,620px);max-width:none}.board-readout{width:min(94vw,620px)}.action-panel{flex:0 0 auto;overflow:visible}.action-scroll{overflow:visible;padding:13px}.toppings{grid-template-columns:repeat(3,minmax(0,1fr))}.topping{min-height:72px}.serve-wrap{position:sticky;bottom:0;z-index:10;padding-bottom:var(--safe-bottom);backdrop-filter:blur(8px)}
+}
+@media(max-width:540px){
+ .menu-card{padding:22px 14px}.title{font-size:38px}.menu-stats{grid-template-columns:repeat(3,1fr)}.stat-value{font-size:19px}.howto{grid-template-columns:1fr}.howto-item{min-height:auto;display:grid;grid-template-columns:auto 1fr;column-gap:10px}.howto-num{grid-row:1/3}.btn-row{flex-direction:column}.btn-row .btn{width:100%}
+ .hud-pill:nth-child(3){display:none}.top-actions .small-btn{font-size:0}.top-actions .small-btn::first-letter{font-size:18px}.order-strip{gap:9px}.customer-avatar{font-size:34px}.order-main{font-size:15px}.board-toolbar{align-items:flex-end}.step-guide{max-width:56vw}.tool-buttons{gap:5px}.tool-buttons .small-btn{font-size:0;padding:9px}.tool-buttons .small-btn::first-letter{font-size:16px}.board-readout{grid-template-columns:1fr}.formula-box{order:2;text-align:center}.area-box{justify-content:center}.toppings{grid-template-columns:repeat(3,1fr)}.topping .name{font-size:10px}.topping .emoji{font-size:26px}.shop-grid{grid-template-columns:1fr}.shop-item{grid-template-columns:1fr}.shop-item button{width:100%}.shop-head{align-items:flex-start}.shop-money strong{font-size:24px}
+}
+@media(max-height:700px) and (min-width:821px){.topbar{min-height:56px}.game-layout{padding:8px;gap:8px}.order-strip{padding:8px 12px}.customer-avatar{font-size:38px}.board-stage{width:min(590px,calc(100vh - 150px),calc(100vw - 380px))}.board-toolbar{margin-bottom:5px}.board-readout{margin-top:5px}.topping{min-height:70px}.action-scroll{padding:12px}}
 </style>
 </head>
 <body>
-<div id="screen-menu" class="screen blur">
+<div id="screen-menu" class="screen">
   <section class="menu-card card">
+    <span class="eyebrow">📐 모눈으로 배우는 도형 넓이</span>
     <h1 class="title">🥪 프레디의 샌드위치 가게</h1>
-    <p class="subtitle">외계 손님이 원하는 <b style="color:var(--yellow)">도형 넓이</b>만큼 샌드위치를 잘라 주세요.<br>모눈 위에 꼭짓점을 찍고, 재료와 단위까지 맞히면 프레디가 돈을 벌어요!</p>
-    <div class="menu-grid">
-      <div class="vault"><span>가게 금고</span><strong><span id="menu-money">0</span> ₩</strong><p>현재 DAY <b id="menu-day">1</b> · 클레임 쿠폰 <b id="menu-shields">0</b>개</p></div>
-      <div class="tips"><p>■ 사각형은 <b>대각선 꼭짓점 2개</b></p><p>▲ 삼각형은 <b>꼭짓점 3개</b></p><p>💡 힌트는 돈을 깎지 않고, 식을 보여줘요.</p></div>
+    <p class="subtitle">손님의 주문을 읽고 모눈 위에 알맞은 넓이의 샌드위치를 완성해 보세요. 날짜가 지나면 삼각형과 더 큰 모눈이 차례로 열립니다.</p>
+    <div class="menu-stats">
+      <div class="stat-box"><span class="stat-label">현재 영업일</span><strong class="stat-value">DAY <span id="menu-day">1</span></strong></div>
+      <div class="stat-box"><span class="stat-label">가게 금고</span><strong class="stat-value"><span id="menu-money">0</span> ₩</strong></div>
+      <div class="stat-box"><span class="stat-label">최고 연속 성공</span><strong class="stat-value"><span id="menu-best">0</span>회</strong></div>
     </div>
-    <div class="btn-row"><button id="btn-start" class="btn primary">영업 시작</button><button id="btn-shop" class="btn shopbtn">🛒 재료 상점</button><button id="btn-reset" class="btn ghostbtn">초기화</button></div>
+    <div class="howto">
+      <div class="howto-item"><span class="howto-num">1</span><b>주문 읽기</b><span>도형, 넓이, 재료를 확인합니다.</span></div>
+      <div class="howto-item"><span class="howto-num">2</span><b>꼭짓점 찍기</b><span>사각형은 2개, 삼각형은 3개를 찍습니다.</span></div>
+      <div class="howto-item"><span class="howto-num">3</span><b>재료와 서빙</b><span>주문 재료를 골라 완성된 샌드위치를 냅니다.</span></div>
+    </div>
+    <div class="btn-row">
+      <button id="btn-start" class="btn primary">영업 시작</button>
+      <button id="btn-shop" class="btn shopbtn">🛒 재료 상점</button>
+      <button id="btn-reset" class="btn ghostbtn">기록 초기화</button>
+    </div>
   </section>
 </div>
 
 <div id="screen-game">
   <header class="topbar">
-    <div class="hud-left"><div class="hud-pill">DAY <span id="hud-day" class="hud-value">1</span></div><div class="hud-pill">⏱️ <span id="hud-time" class="hud-value">02:00</span></div><div class="hud-pill">연속 성공 <span id="hud-combo" class="hud-value">0</span></div></div>
-    <div class="hud-right"><div class="hud-pill">🛡️ <span id="hud-shields" class="hud-value">0</span></div><div class="hud-pill">금고 <span id="hud-money" class="hud-value money">0</span> ₩</div><button id="btn-pause" class="mini-btn">일시정지</button></div>
+    <div class="brand-mini"><span class="logo">🥪</span><span class="name">프레디의 샌드위치 가게</span></div>
+    <div class="hud">
+      <div class="hud-pill">DAY <strong id="hud-day">1</strong></div>
+      <div class="hud-pill">⏱️ <strong id="hud-time">02:00</strong></div>
+      <div class="hud-pill">연속 <strong id="hud-combo">0</strong></div>
+      <div class="hud-pill">금고 <strong id="hud-money" class="money">0</strong> ₩</div>
+    </div>
+    <div class="top-actions">
+      <button id="btn-sound" class="small-btn" aria-label="소리 켜기 또는 끄기">🔊 <span class="sound-label">소리</span></button>
+      <button id="btn-pause" class="small-btn" aria-label="일시정지">⏸️</button>
+    </div>
   </header>
   <div class="progress"><div id="timebar"></div></div>
-  <main class="game-body">
-    <section class="workspace">
-      <div class="board-tools">
-        <div class="tool-group"><label class="select-wrap">모눈 <select id="grid-size"><option value="6">6×6</option><option value="8">8×8</option><option value="10">10×10</option><option value="12" selected>12×12</option><option value="15">15×15</option></select></label><label class="select-wrap">단위 <select id="unit-select"><option value="cm²">cm²</option><option value="m²">m²</option><option value="km²">km²</option></select></label></div>
-        <div class="tool-group"><button id="btn-hint" class="mini-btn">💡 힌트</button><button id="btn-sound" class="mini-btn">🔊 소리</button></div>
+
+  <main class="game-layout">
+    <section id="order-strip" class="order-strip">
+      <div id="alien" class="customer-avatar">👽</div>
+      <div class="order-copy">
+        <div class="order-kicker">이번 주문</div>
+        <div id="order-main" class="order-main">주문을 준비하고 있어요.</div>
       </div>
-      <canvas id="board" width="720" height="720" aria-label="도형 제작 모눈판"></canvas>
-      <div class="board-bottom">
-        <div class="edit-actions"><button id="btn-undo" class="mini-btn">↩ 꼭짓점 취소</button><button id="btn-clear" class="mini-btn">🧽 지우기</button></div>
-        <div class="area-card"><span>현재 넓이</span><strong id="area-now">0 cm²</strong></div>
+      <div class="order-reward"><span>기본 보상</span><strong id="order-reward">0 ₩</strong></div>
+    </section>
+
+    <section class="workspace">
+      <div class="board-toolbar">
+        <div class="stage-info">
+          <div id="stage-title" class="stage-title">DAY 1 · 6×6 모눈</div>
+          <div id="step-guide" class="step-guide">첫 번째 꼭짓점을 찍으세요.</div>
+        </div>
+        <div class="tool-buttons">
+          <button id="btn-hint" class="small-btn">💡 힌트</button>
+          <button id="btn-undo" class="small-btn">↩ 취소</button>
+          <button id="btn-clear" class="small-btn">🧽 지우기</button>
+        </div>
+      </div>
+      <div id="board-stage" class="board-stage">
+        <canvas id="board" aria-label="도형 넓이 모눈판"></canvas>
+        <div id="slice-effect" class="slice-effect"></div>
+      </div>
+      <div class="board-readout">
+        <div id="formula-box" class="formula-box">꼭짓점을 찍으면 계산식이 나타납니다.</div>
+        <div class="area-box"><span>현재 넓이</span><strong id="area-now">0 cm²</strong></div>
       </div>
     </section>
-    <aside class="side">
-      <section class="customer">
-        <div id="alien-wrap" class="alien-wrap enter"><div id="alien" class="alien">👽</div><div id="order-box" class="order-box">주문 대기 중...</div></div>
-        <div class="helper"><div class="helper-line">■ <b>사각형</b>: 가로 × 세로. 대각선 꼭짓점 2개를 찍으면 자동으로 완성됩니다.</div><div class="helper-line">▲ <b>삼각형</b>: 밑변 × 높이 ÷ 2. 꼭짓점 3개를 찍어 주세요.</div></div>
-        <div id="hint-box" class="hint-box hidden"></div>
-      </section>
-      <section class="stock-panel"><div class="panel-title"><span>🥪 재료 선택</span><span class="small">주문 재료와 같아야 함</span></div><div id="toppings" class="toppings"></div></section>
-      <section class="serve-panel"><div id="feedback" class="feedback">주문을 보고 모눈 위에 도형을 만들어 주세요.</div><button id="btn-serve" class="btn green">🛎️ 서빙하기</button></section>
+
+    <aside class="action-panel">
+      <div class="action-scroll">
+        <div class="panel-title"><span>🥪 재료 선택</span><small>주문 재료와 같게</small></div>
+        <div id="toppings" class="toppings"></div>
+        <div id="helper-card" class="helper-card"></div>
+        <div id="hint-card" class="hint-card hidden"></div>
+      </div>
+      <div class="serve-wrap">
+        <div id="feedback" class="feedback info" aria-live="polite">주문을 보고 도형을 만들어 주세요.</div>
+        <button id="btn-serve" class="btn green serve-btn">🛎️ 서빙하기</button>
+        <div class="attempt-note"><span id="attempt-note">첫 시도는 보상 100%</span><span>오답은 고쳐서 다시 제출</span></div>
+      </div>
     </aside>
   </main>
 </div>
 
 <div id="screen-shop" class="shop-screen">
   <section class="shop-card card">
-    <div class="shop-head"><h2>🛒 우주 식자재 마트</h2><div><div class="small">보유 금액</div><div style="font-size:32px;font-weight:900;color:var(--green)"><span id="shop-money">0</span> ₩</div></div></div>
+    <div class="shop-head">
+      <h2>🛒 우주 식자재 마트</h2>
+      <div class="shop-money"><span>보유 금액</span><strong><span id="shop-money">0</span> ₩</strong></div>
+    </div>
     <div id="shop-grid" class="shop-grid"></div>
-    <div class="btn-row" style="margin-top:22px"><button id="btn-shop-back" class="btn ghostbtn">가게로 돌아가기</button></div>
+    <div class="btn-row" style="margin-top:20px"><button id="btn-shop-back" class="btn ghostbtn">가게로 돌아가기</button></div>
   </section>
 </div>
 
-<div id="modal-day" class="modal"><section class="modal-card card"><h2>영업 종료!</h2><p style="color:var(--muted);font-weight:800">오늘의 샌드위치 영업이 끝났습니다.</p><div class="summary"><div class="summary-row"><span>오늘 번 돈</span><span id="summary-earned" style="color:var(--green)">0 ₩</span></div><div class="summary-row"><span>성공 / 실패</span><span><b id="summary-ok">0</b> / <b id="summary-bad">0</b></span></div><div class="summary-row"><span>총 자산</span><span id="summary-total" style="color:var(--yellow)">0 ₩</span></div></div><div class="btn-row"><button id="btn-next-shop" class="btn shopbtn">상점 들르기</button><button id="btn-next-menu" class="btn primary">메뉴로</button></div></section></div>
-<div id="modal-reset" class="modal"><section class="modal-card card" style="border-color:rgba(255,93,115,.7)"><h2 style="color:var(--red)">초기화할까요?</h2><p style="color:var(--muted);font-weight:800;line-height:1.5">돈, DAY, 재료, 쿠폰이 모두 사라집니다.</p><div class="btn-row"><button id="btn-reset-cancel" class="btn ghostbtn">취소</button><button id="btn-reset-ok" class="btn danger">초기화</button></div></section></div>
+<div id="modal-day" class="modal">
+  <section class="modal-card card">
+    <h2>오늘 영업 끝!</h2>
+    <p>오늘 만든 샌드위치를 정리했어요.</p>
+    <div class="summary">
+      <div class="summary-row"><span>오늘 번 돈</span><span id="summary-earned" style="color:var(--green)">0 ₩</span></div>
+      <div class="summary-row"><span>완성한 주문</span><span id="summary-ok">0개</span></div>
+      <div class="summary-row"><span>고쳐 낸 횟수</span><span id="summary-corrections">0회</span></div>
+      <div class="summary-row"><span>최고 연속 성공</span><span id="summary-combo" style="color:var(--yellow)">0회</span></div>
+    </div>
+    <div class="btn-row"><button id="btn-next-shop" class="btn shopbtn">상점 들르기</button><button id="btn-next-menu" class="btn primary">메뉴로</button></div>
+  </section>
+</div>
+
+<div id="modal-pause" class="modal">
+  <section class="modal-card card">
+    <h2>잠깐 쉬는 중</h2>
+    <p>시간은 멈춰 있습니다.</p>
+    <div class="btn-row"><button id="btn-resume" class="btn primary">계속하기</button><button id="btn-finish-day" class="btn ghostbtn">오늘 영업 마치기</button></div>
+  </section>
+</div>
+
+<div id="modal-reset" class="modal">
+  <section class="modal-card card">
+    <h2 style="color:var(--red)">기록을 지울까요?</h2>
+    <p>돈, 영업일, 재료, 최고 기록이 모두 초기화됩니다.</p>
+    <div class="btn-row"><button id="btn-reset-cancel" class="btn ghostbtn">취소</button><button id="btn-reset-ok" class="btn danger">초기화</button></div>
+  </section>
+</div>
 <div id="toast" class="toast info">메시지</div>
 
 <script>
 (() => {
 'use strict';
 const DAY_SECONDS = 120;
-const BASE_REWARD = 900;
-const SAVE_KEY = 'freddySandwichAreaSave_v3';
+const BASE_REWARD = 750;
+const SAVE_KEY = 'freddySandwichAreaSave_v4';
+const LEGACY_KEY = 'freddySandwichAreaSave_v3';
+const CANVAS_SIZE = 720;
 const ALIENS = ['👽','👾','🤖','🛸','🐙','🦊','🐸','🧑‍🚀'];
-const UNITS = ['cm²','m²','km²'];
 const INGREDIENTS = {
-  jam:{id:'jam',name:'기본 딸기잼',emoji:'🍓',color:'#fb7185',price:0,pack:Infinity,minDay:1,infinite:true},
-  cheese:{id:'cheese',name:'외계 치즈',emoji:'🧀',color:'#fde047',price:1800,pack:8,minDay:1},
-  ham:{id:'ham',name:'우주 햄',emoji:'🥓',color:'#fca5a5',price:2600,pack:8,minDay:2},
-  egg:{id:'egg',name:'별빛 계란',emoji:'🍳',color:'#facc15',price:3400,pack:8,minDay:3},
-  lettuce:{id:'lettuce',name:'은하 양상추',emoji:'🥬',color:'#86efac',price:4300,pack:8,minDay:4},
-  steak:{id:'steak',name:'운석 스테이크',emoji:'🥩',color:'#92400e',price:6500,pack:8,minDay:5}
+  jam:{id:'jam',name:'딸기잼',emoji:'🍓',color:'#fb7185',price:0,pack:Infinity,minDay:1,infinite:true},
+  cheese:{id:'cheese',name:'외계 치즈',emoji:'🧀',color:'#fde047',price:1700,pack:8,minDay:1},
+  ham:{id:'ham',name:'우주 햄',emoji:'🥓',color:'#fca5a5',price:2500,pack:8,minDay:2},
+  egg:{id:'egg',name:'별빛 계란',emoji:'🍳',color:'#facc15',price:3300,pack:8,minDay:3},
+  lettuce:{id:'lettuce',name:'은하 양상추',emoji:'🥬',color:'#86efac',price:4200,pack:8,minDay:4},
+  steak:{id:'steak',name:'운석 스테이크',emoji:'🥩',color:'#b45309',price:6200,pack:8,minDay:5}
 };
-const SHIELD_PRICE = 4500;
 const $ = id => document.getElementById(id);
 const els = {
-  menu:$('screen-menu'), game:$('screen-game'), shop:$('screen-shop'), modalDay:$('modal-day'), modalReset:$('modal-reset'),
-  board:$('board'), grid:$('grid-size'), unit:$('unit-select'), area:$('area-now'), order:$('order-box'), alien:$('alien'), alienWrap:$('alien-wrap'), hint:$('hint-box'),
-  toppings:$('toppings'), feedback:$('feedback'), toast:$('toast'), timebar:$('timebar')
+  menu:$('screen-menu'), game:$('screen-game'), shop:$('screen-shop'), board:$('board'), boardStage:$('board-stage'),
+  order:$('order-main'), alien:$('alien'), reward:$('order-reward'), toppings:$('toppings'), helper:$('helper-card'), hint:$('hint-card'),
+  feedback:$('feedback'), area:$('area-now'), formula:$('formula-box'), step:$('step-guide'), stage:$('stage-title'),
+  toast:$('toast'), timebar:$('timebar'), slice:$('slice-effect'), pause:$('modal-pause'), dayModal:$('modal-day'), resetModal:$('modal-reset')
 };
 const ctx = els.board.getContext('2d');
 let audioCtx = null;
+let dpr = 1;
 let state = {
-  money:0, day:1, shields:0, inventory:{}, muted:false,
-  running:false, paused:false, time:DAY_SECONDS, timer:null, order:null, points:[], selected:'jam', earned:0, ok:0, bad:0, combo:0, bestCombo:0, lastPointer:null
+  money:0, day:1, inventory:{}, muted:false, bestCombo:0,
+  running:false, paused:false, time:DAY_SECONDS, timer:null,
+  order:null, points:[], hover:null, selected:null, attempts:0, hintUsed:false,
+  earned:0, ok:0, corrections:0, combo:0, dayBestCombo:0
 };
-function money(n){ return Math.round(n).toLocaleString('ko-KR'); }
+
+function money(n){ return Math.max(0,Math.round(n)).toLocaleString('ko-KR'); }
 function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function show(el){ el.classList.remove('hidden'); el.classList.add('flex'); }
-function hide(el){ el.classList.add('hidden'); el.classList.remove('flex'); }
-function initAudio(){ if(state.muted) return; if(!audioCtx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return; audioCtx = new AC(); } if(audioCtx.state === 'suspended') audioCtx.resume(); }
-function tone(freq,dur=.1,type='sine',gain=.04,delay=0){ if(state.muted) return; initAudio(); if(!audioCtx) return; const t=audioCtx.currentTime+delay; const osc=audioCtx.createOscillator(); const g=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t+dur+.03); }
-const sfx = { click(){tone(520,.04,'square',.025)}, point(){tone(860,.06,'sine',.045)}, success(){tone(523,.08,'triangle',.05);tone(659,.09,'triangle',.05,.08);tone(784,.16,'triangle',.055,.17)}, fail(){tone(180,.16,'sawtooth',.045);tone(130,.2,'sawtooth',.04,.12)}, coin(){tone(1200,.06,'sine',.04);tone(1600,.09,'sine',.04,.06)}, shield(){tone(400,.08,'square',.045);tone(630,.12,'square',.04,.09)} };
-function toast(msg,type='info'){ els.toast.textContent = msg; els.toast.className = 'toast '+type+' show'; clearTimeout(toast.t); toast.t=setTimeout(()=>els.toast.classList.remove('show'),1900); }
-function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,muted:state.muted})); updateMenuUI(); }
-function load(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const d=JSON.parse(raw); state.money=d.money||0; state.day=d.day||1; state.shields=d.shields||0; state.inventory=d.inventory||{}; state.muted=!!d.muted; } }catch(e){} Object.values(INGREDIENTS).forEach(i=>{ if(!i.infinite && typeof state.inventory[i.id] !== 'number') state.inventory[i.id]=0; }); updateMenuUI(); }
-function updateMenuUI(){ $('menu-money').textContent=money(state.money); $('menu-day').textContent=state.day; $('menu-shields').textContent=state.shields; $('shop-money').textContent=money(state.money); $('btn-sound').textContent=state.muted?'🔇 소리':'🔊 소리'; }
-function updateHUD(){ $('hud-day').textContent=state.day; $('hud-money').textContent=money(state.money); $('hud-shields').textContent=state.shields; $('hud-combo').textContent=state.combo; const m=String(Math.floor(state.time/60)).padStart(2,'0'); const s=String(state.time%60).padStart(2,'0'); const timeEl=$('hud-time'); timeEl.textContent=`${m}:${s}`; timeEl.classList.toggle('time-danger',state.time<=25); els.timebar.style.width = `${Math.max(0,state.time/DAY_SECONDS*100)}%`; }
-function unlockedIngredients(){ return Object.values(INGREDIENTS).filter(i=>i.minDay<=state.day); }
-function availableIngredients(){ const a=unlockedIngredients().filter(i=>i.infinite || state.inventory[i.id]>0); return a.length?a:[INGREDIENTS.jam]; }
-function factorPairs(area){ const pairs=[]; for(let w=1;w<=15;w++){ for(let h=1;h<=15;h++){ if(w*h===area) pairs.push([w,h]); } } return pairs; }
-function trianglePairs(area){ const pairs=[]; for(let b=1;b<=15;b++){ for(let h=1;h<=15;h++){ if(b*h/2===area) pairs.push([b,h]); } } return pairs; }
-function makeArea(shape){ const n=Number(els.grid.value); const pool=[]; if(shape==='rect'){ for(let w=1;w<=n;w++) for(let h=1;h<=n;h++) if(w*h>=4 && w*h<=Math.min(110,n*n) && (state.day>2 || w*h<=40)) pool.push(w*h); }
-  else{ for(let b=1;b<=n;b++) for(let h=1;h<=n;h++){ const a=b*h/2; if(Number.isInteger(a) && a>=3 && a<=Math.min(90,n*n/2) && (state.day>2 || a<=36)) pool.push(a); } }
-  return pick([...new Set(pool)]); }
-function generateOrder(){ const shape = Math.random() < Math.min(.42 + state.day*.04,.62) ? 'tri' : 'rect'; const ingredient = pick(availableIngredients()); const unit = pick(UNITS.slice(0, Math.min(UNITS.length, 1 + Math.floor((state.day+1)/2)))); const area = makeArea(shape); const reward = Math.floor((BASE_REWARD + area*18 + (unit==='m²'?200:unit==='km²'?450:0) + (ingredient.infinite?0:ingredient.price*.32) + state.day*80)/100)*100; state.order={shape,area,unit,topping:ingredient.id,reward}; const shapeName=shape==='rect'?'사각형':'삼각형'; const need=shape==='rect'?'대각선 꼭짓점 2개':'꼭짓점 3개'; els.alien.textContent=pick(ALIENS); els.order.innerHTML=`<span class="order-chip">${ingredient.emoji} ${ingredient.name}</span><br><b style="color:#0891b2">${shapeName}</b> 샌드위치<br>넓이 <b style="color:#d97706">${area} ${unit}</b> · ${need}`; els.unit.value=unit; state.selected=ingredient.id; state.points=[]; els.hint.classList.add('hidden'); els.feedback.className='feedback'; els.feedback.innerHTML='모눈 위에 주문 도형을 만들고 <b>서빙하기</b>를 누르세요.'; els.alienWrap.className='alien-wrap enter'; renderToppings(); draw(); updateArea(); }
-function renderToppings(){ els.toppings.innerHTML=''; unlockedIngredients().forEach(item=>{ const stock=item.infinite?'∞':state.inventory[item.id]; const disabled=!item.infinite && stock<=0; const btn=document.createElement('button'); btn.className='topping'+(state.selected===item.id?' selected':'')+(disabled?' disabled':''); btn.type='button'; btn.innerHTML=`<span class="badge">${stock}</span><span class="emoji">${item.emoji}</span><span class="name">${item.name}</span>`; btn.addEventListener('click',()=>{ if(disabled){ toast('재료가 부족해요. 상점에서 사야 합니다.','bad'); sfx.fail(); return; } state.selected=item.id; renderToppings(); draw(); sfx.click(); }); els.toppings.appendChild(btn); }); }
-function canvasMetrics(){ const pad=52; const size=els.board.width-pad*2; const n=Number(els.grid.value); const cell=size/n; return {pad,size,n,cell}; }
+function vibrate(ms=18){ if(navigator.vibrate) navigator.vibrate(ms); }
+function openModal(el){ el.classList.add('open'); }
+function closeModal(el){ el.classList.remove('open'); }
+function toast(msg,type='info'){ els.toast.textContent=msg; els.toast.className=`toast ${type} show`; clearTimeout(toast.t); toast.t=setTimeout(()=>els.toast.classList.remove('show'),1700); }
+
+function initAudio(){
+  if(state.muted) return;
+  if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC(); }
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function tone(freq,dur=.1,type='sine',gain=.04,delay=0){
+  if(state.muted) return; initAudio(); if(!audioCtx) return;
+  const t=audioCtx.currentTime+delay, osc=audioCtx.createOscillator(), g=audioCtx.createGain();
+  osc.type=type; osc.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(gain,t+.012); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t+dur+.03);
+}
+const sfx={
+  click(){tone(520,.045,'square',.022)}, point(){tone(850,.06,'sine',.04)},
+  success(){tone(523,.08,'triangle',.05);tone(659,.09,'triangle',.05,.08);tone(784,.16,'triangle',.055,.17)},
+  fail(){tone(190,.14,'sawtooth',.04);tone(145,.18,'sawtooth',.035,.1)},
+  coin(){tone(1150,.06,'sine',.035);tone(1550,.09,'sine',.04,.06)},
+  slice(){tone(900,.045,'sawtooth',.03);tone(1400,.06,'sine',.028,.035)}
+};
+
+function save(){
+  const data={money:state.money,day:state.day,inventory:state.inventory,muted:state.muted,bestCombo:state.bestCombo};
+  localStorage.setItem(SAVE_KEY,JSON.stringify(data)); updateMenuUI();
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_KEY);
+    if(raw){ const d=JSON.parse(raw); state.money=Math.max(0,Number(d.money)||0); state.day=Math.max(1,Number(d.day)||1); state.inventory=d.inventory||{}; state.muted=!!d.muted; state.bestCombo=Math.max(0,Number(d.bestCombo)||0); }
+  }catch(e){}
+  Object.values(INGREDIENTS).forEach(item=>{ if(!item.infinite&&typeof state.inventory[item.id]!=='number') state.inventory[item.id]=0; });
+  updateMenuUI();
+}
+function updateMenuUI(){
+  $('menu-day').textContent=state.day; $('menu-money').textContent=money(state.money); $('menu-best').textContent=state.bestCombo;
+  $('shop-money').textContent=money(state.money); $('btn-sound').innerHTML=state.muted?'🔇 <span class="sound-label">소리</span>':'🔊 <span class="sound-label">소리</span>';
+}
+function updateHUD(){
+  $('hud-day').textContent=state.day; $('hud-money').textContent=money(state.money); $('hud-combo').textContent=state.combo;
+  const m=String(Math.floor(Math.max(0,state.time)/60)).padStart(2,'0'), s=String(Math.max(0,state.time)%60).padStart(2,'0');
+  const timeEl=$('hud-time'); timeEl.textContent=`${m}:${s}`; timeEl.classList.toggle('time-danger',state.time<=20);
+  els.timebar.style.width=`${Math.max(0,state.time/DAY_SECONDS*100)}%`;
+}
+
+function levelConfig(day){
+  if(day===1) return {grid:6,shapes:['rect'],units:['cm²'],label:'사각형 기초',maxSide:5};
+  if(day===2) return {grid:8,shapes:['rect'],units:['cm²'],label:'사각형 도전',maxSide:7};
+  if(day===3) return {grid:8,shapes:['tri'],units:['cm²'],label:'직각삼각형 기초',maxSide:7};
+  if(day===4) return {grid:10,shapes:['rect','tri'],units:['cm²','m²'],label:'도형 섞어 만들기',maxSide:9};
+  return {grid:12,shapes:['rect','tri'],units:['cm²','m²','km²'],label:'우주 주문 마스터',maxSide:11};
+}
+function unlockedIngredients(){ return Object.values(INGREDIENTS).filter(item=>item.minDay<=state.day); }
+function availableIngredients(){
+  const list=unlockedIngredients().filter(item=>item.infinite||state.inventory[item.id]>0);
+  return list.length?list:[INGREDIENTS.jam];
+}
+function makeDimensions(shape,maxSide){
+  if(shape==='rect') return {w:rand(2,maxSide),h:rand(2,maxSide)};
+  let b,h; do{ b=rand(2,maxSide); h=rand(2,maxSide); }while((b*h)%2!==0);
+  return {b,h};
+}
+function generateOrder(){
+  const cfg=levelConfig(state.day), shape=pick(cfg.shapes), dims=makeDimensions(shape,cfg.maxSide), ingredient=pick(availableIngredients()), unit=pick(cfg.units);
+  const area=shape==='rect'?dims.w*dims.h:(dims.b*dims.h)/2;
+  const reward=Math.floor((BASE_REWARD+area*24+state.day*85+(ingredient.infinite?0:ingredient.price*.28))/50)*50;
+  state.order={shape,area,unit,topping:ingredient.id,reward,grid:cfg.grid,dims};
+  state.points=[]; state.hover=null; state.attempts=0; state.hintUsed=false;
+  const avail=availableIngredients(); state.selected=avail.length===1?ingredient.id:null;
+  els.alien.textContent=pick(ALIENS); els.alien.classList.remove('enter'); void els.alien.offsetWidth; els.alien.classList.add('enter');
+  const shapeName=shape==='rect'?'사각형':'직각삼각형';
+  els.order.innerHTML=`${ingredient.emoji} <span class="accent">${ingredient.name}</span>으로 <span class="shape">${shapeName}</span> · 넓이 <span class="accent">${area} ${unit}</span>`;
+  els.reward.textContent=`${money(reward)} ₩`; els.stage.textContent=`DAY ${state.day} · ${cfg.grid}×${cfg.grid} 모눈 · ${cfg.label}`;
+  els.hint.classList.add('hidden'); els.hint.textContent='';
+  setFeedback('주문을 보고 도형을 만든 뒤 재료를 골라 주세요.','info');
+  renderToppings(); updateStepUI(); draw(); updateReadout(); updateAttemptNote();
+}
+
+function renderToppings(){
+  els.toppings.innerHTML='';
+  unlockedIngredients().forEach(item=>{
+    const stock=item.infinite?'∞':state.inventory[item.id], disabled=!item.infinite&&stock<=0;
+    const btn=document.createElement('button'); btn.type='button'; btn.className=`topping${state.selected===item.id?' selected':''}${disabled?' disabled':''}`;
+    btn.innerHTML=`<span class="stock-badge">${stock}</span><span class="emoji">${item.emoji}</span><span class="name">${item.name}</span>`;
+    btn.setAttribute('aria-label',`${item.name}, 재고 ${stock}`);
+    btn.addEventListener('click',()=>{
+      if(disabled){ toast('재료가 없어요. 다음 영업 전에 상점에서 살 수 있어요.','bad'); sfx.fail(); return; }
+      state.selected=item.id; renderToppings(); draw(); sfx.click(); vibrate(12);
+    });
+    els.toppings.appendChild(btn);
+  });
+  updateHelper();
+}
+function updateHelper(){
+  if(!state.order) return;
+  if(state.order.shape==='rect') els.helper.innerHTML='<b>사각형 만들기</b><br>서로 마주 보는 꼭짓점 2개를 찍으면 가로와 세로가 자동으로 표시됩니다.';
+  else els.helper.innerHTML='<b>직각삼각형 만들기</b><br>① 직각 꼭짓점 → ② 같은 가로줄 → ③ 1번과 같은 세로줄 순서로 찍으세요.';
+}
+function updateStepUI(){
+  if(!state.order) return;
+  const n=state.points.length;
+  if(state.order.shape==='rect') els.step.textContent=n===0?'① 첫 번째 꼭짓점을 찍으세요.':n===1?'② 대각선 반대쪽 꼭짓점을 찍으세요.':'도형 완성 · 재료를 확인하고 서빙하세요.';
+  else els.step.textContent=n===0?'① 직각이 될 꼭짓점을 찍으세요.':n===1?'② 같은 가로줄에 밑변 끝점을 찍으세요.':n===2?'③ 1번과 같은 세로줄에 높이 끝점을 찍으세요.':'도형 완성 · 재료를 확인하고 서빙하세요.';
+  $('btn-undo').disabled=n===0; $('btn-clear').disabled=n===0;
+}
+function updateAttemptNote(){
+  const percent=Math.round(rewardMultiplier()*100); $('attempt-note').textContent=state.hintUsed||state.attempts?`현재 보상 ${percent}%`:'첫 시도는 보상 100%';
+}
+function rewardMultiplier(){ return Math.max(.55,1-state.attempts*.15-(state.hintUsed?.15:0)); }
+
+function setupCanvas(){
+  dpr=Math.min(window.devicePixelRatio||1,2); els.board.width=Math.round(CANVAS_SIZE*dpr); els.board.height=Math.round(CANVAS_SIZE*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0); draw();
+}
+function canvasMetrics(){
+  const pad=54, size=CANVAS_SIZE-pad*2, n=state.order?.grid||6, cell=size/n;
+  return {pad,size,n,cell};
+}
 function toCanvasPoint(p){ const m=canvasMetrics(); return {x:m.pad+p.x*m.cell,y:m.pad+p.y*m.cell}; }
-function getPoint(evt){ const rect=els.board.getBoundingClientRect(); const scaleX=els.board.width/rect.width; const scaleY=els.board.height/rect.height; const x=(evt.clientX-rect.left)*scaleX; const y=(evt.clientY-rect.top)*scaleY; const m=canvasMetrics(); const gx=Math.round((x-m.pad)/m.cell); const gy=Math.round((y-m.pad)/m.cell); if(gx<0||gy<0||gx>m.n||gy>m.n) return null; return {x:gx,y:gy}; }
-function calcArea(){ const pts=state.points; if(!state.order){ return 0; } if(state.order.shape==='rect'){ if(pts.length<2) return 0; return Math.abs((pts[1].x-pts[0].x)*(pts[1].y-pts[0].y)); } if(pts.length<3) return 0; return Math.abs(pts[0].x*pts[1].y + pts[1].x*pts[2].y + pts[2].x*pts[0].y - pts[1].x*pts[0].y - pts[2].x*pts[1].y - pts[0].x*pts[2].y)/2; }
-function formulaText(){ if(!state.order) return ''; if(state.order.shape==='rect' && state.points.length>=2){ const w=Math.abs(state.points[1].x-state.points[0].x); const h=Math.abs(state.points[1].y-state.points[0].y); return `가로 ${w} × 세로 ${h} = ${w*h}`; } if(state.order.shape==='tri' && state.points.length>=3){ const a=calcArea(); return `삼각형 넓이 = ${Number.isInteger(a)?a:a.toFixed(1)}`; } return '꼭짓점을 더 찍어 주세요.'; }
-function updateArea(){ const area=calcArea(); const nice=Number.isInteger(area)?area:area.toFixed(1); els.area.textContent=`${nice} ${els.unit.value}`; }
-function draw(){ const m=canvasMetrics(); ctx.clearRect(0,0,els.board.width,els.board.height); ctx.fillStyle='#101735'; ctx.fillRect(0,0,els.board.width,els.board.height); const grd=ctx.createLinearGradient(0,0,els.board.width,els.board.height); grd.addColorStop(0,'rgba(123,223,242,.08)'); grd.addColorStop(1,'rgba(255,209,102,.05)'); ctx.fillStyle=grd; roundRect(ctx,m.pad,m.pad,m.size,m.size,18,true,false);
-  ctx.strokeStyle='rgba(123,223,242,.18)'; ctx.lineWidth=2; for(let i=0;i<=m.n;i++){ const p=m.pad+i*m.cell; ctx.beginPath(); ctx.moveTo(p,m.pad); ctx.lineTo(p,m.pad+m.size); ctx.stroke(); ctx.beginPath(); ctx.moveTo(m.pad,p); ctx.lineTo(m.pad+m.size,p); ctx.stroke(); }
-  for(let i=0;i<=m.n;i++){ if(i%2===0||m.n<=8){ const p=m.pad+i*m.cell; ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='16px system-ui'; ctx.textAlign='center'; ctx.fillText(i,p,m.pad+m.size+28); ctx.textAlign='right'; ctx.fillText(i,m.pad-18,p+5); } }
-  drawShape(); ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='bold 22px system-ui'; ctx.textAlign='left'; ctx.fillText(`${m.n} × ${m.n} 모눈`,m.pad,33); ctx.textAlign='right'; ctx.fillText(`1칸 = 1 ${els.unit.value}`,m.pad+m.size,33); }
-function roundRect(c,x,y,w,h,r,fill,stroke){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); if(fill)c.fill(); if(stroke)c.stroke(); }
-function drawShape(){ if(state.points.length===0) return; const item=INGREDIENTS[state.selected]||INGREDIENTS.jam; const pts=state.points.map(toCanvasPoint); ctx.save(); ctx.lineWidth=7; ctx.strokeStyle=item.color; ctx.fillStyle=item.color+'66'; ctx.shadowColor=item.color; ctx.shadowBlur=18; ctx.beginPath(); if(state.order?.shape==='rect' && pts.length>=2){ const x1=pts[0].x,y1=pts[0].y,x2=pts[1].x,y2=pts[1].y; ctx.rect(x1,y1,x2-x1,y2-y1); ctx.fill(); ctx.stroke(); drawDimensionLabel(Math.abs(state.points[1].x-state.points[0].x), (x1+x2)/2, Math.min(y1,y2)-16); drawDimensionLabel(Math.abs(state.points[1].y-state.points[0].y), Math.max(x1,x2)+22, (y1+y2)/2); }
-  else { ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); if(state.order?.shape==='tri' && pts.length===3) ctx.closePath(); if(pts.length>=3) ctx.fill(); ctx.stroke(); }
-  ctx.shadowBlur=0; state.points.forEach((p,i)=>{ const cp=toCanvasPoint(p); ctx.beginPath(); ctx.fillStyle='#fff'; ctx.arc(cp.x,cp.y,12,0,Math.PI*2); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle=item.color; ctx.stroke(); ctx.fillStyle='#071026'; ctx.font='900 15px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i+1,cp.x,cp.y+1); }); ctx.restore(); }
-function drawDimensionLabel(text,x,y){ ctx.save(); ctx.shadowBlur=0; ctx.font='900 18px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; const s=String(text); const w=ctx.measureText(s).width+18; ctx.fillStyle='rgba(0,0,0,.68)'; roundRect(ctx,x-w/2,y-14,w,28,10,true,false); ctx.fillStyle='#fff'; ctx.fillText(s,x,y+1); ctx.restore(); }
-function addPoint(evt){ if(!state.running || state.paused || !state.order) return; const p=getPoint(evt); if(!p) return; const max=state.order.shape==='rect'?2:3; if(state.points.length>=max) state.points=[]; const last=state.points[state.points.length-1]; if(last && last.x===p.x && last.y===p.y) return; state.points.push(p); sfx.point(); draw(); updateArea(); }
-function clearBoard(){ state.points=[]; draw(); updateArea(); }
-function undo(){ state.points.pop(); draw(); updateArea(); sfx.click(); }
-function showHint(){ if(!state.order) return; let html=''; if(state.order.shape==='rect'){ const pairs=factorPairs(state.order.area).filter(([w,h])=>w<=Number(els.grid.value)&&h<=Number(els.grid.value)); const pair=pairs.find(([w,h])=>w!==1&&h!==1)||pairs[0]; html=pair?`힌트: <b>가로 ${pair[0]}, 세로 ${pair[1]}</b>인 사각형이면 ${pair[0]} × ${pair[1]} = ${state.order.area} ${state.order.unit}예요.`:'힌트: 모눈 크기를 키워 보면 만들 수 있어요.'; } else { const pairs=trianglePairs(state.order.area).filter(([b,h])=>b<=Number(els.grid.value)&&h<=Number(els.grid.value)); const pair=pairs.find(([b,h])=>b>1&&h>1)||pairs[0]; html=pair?`힌트: <b>밑변 ${pair[0]}, 높이 ${pair[1]}</b>인 삼각형이면 ${pair[0]} × ${pair[1]} ÷ 2 = ${state.order.area} ${state.order.unit}예요.`:'힌트: 밑변×높이가 목표 넓이의 2배가 되게 해 보세요.'; } els.hint.innerHTML=html; els.hint.classList.remove('hidden'); sfx.click(); }
-function serve(){ if(!state.running || state.paused || !state.order) return; const need=state.order.shape==='rect'?2:3; if(state.points.length<need){ fail(`꼭짓점 ${need}개가 필요해요.`); return; } const made=calcArea(); const areaOk=Math.abs(made-state.order.area)<0.001; const unitOk=els.unit.value===state.order.unit; const toppingOk=state.selected===state.order.topping; let msg=''; if(!toppingOk) msg='재료가 주문과 달라요.'; else if(!unitOk) msg=`단위가 달라요. 주문 단위는 ${state.order.unit}입니다.`; else if(made===0) msg='넓이가 0인 도형이에요.'; else if(!areaOk) msg=`넓이가 달라요. 현재 ${Number.isInteger(made)?made:made.toFixed(1)} ${els.unit.value} / 주문 ${state.order.area} ${state.order.unit}`; if(msg){ fail(msg,true); return; } success(); }
-function success(){ const reward=state.order.reward + state.combo*40; if(!INGREDIENTS[state.selected].infinite) state.inventory[state.selected]--; state.money+=reward; state.earned+=reward; state.ok++; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo); sfx.success(); setTimeout(()=>sfx.coin(),170); els.feedback.className='feedback good'; els.feedback.innerHTML=`완벽해요! <b>${formulaText()}</b><br>+${money(reward)} ₩ · 연속 성공 ${state.combo}`; els.alienWrap.className='alien-wrap fly'; confetti(); updateHUD(); renderToppings(); setTimeout(()=>{ if(state.time>0 && state.running) generateOrder(); },720); }
-function fail(msg,educate=false){ sfx.fail(); state.bad++; state.combo=0; if(state.shields>0){ state.shields--; sfx.shield(); els.feedback.className='feedback bad'; els.feedback.innerHTML=`🛡️ 클레임 쿠폰으로 패널티를 막았어요.<br>${msg}`; toast('클레임 쿠폰 사용!', 'info'); } else { const penalty=Math.floor(state.order.reward*.38/100)*100; state.money-=penalty; els.feedback.className='feedback bad'; els.feedback.innerHTML=`${msg}<br><b>-${money(penalty)} ₩</b>${educate?`<br>${formulaText()}`:''}`; toast('손님이 화났어요!', 'bad'); } els.alienWrap.className='alien-wrap shake'; updateHUD(); saveSoft(); setTimeout(()=>{ if(state.time>0 && state.running) generateOrder(); },850); }
-function saveSoft(){ localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,muted:state.muted})); }
-function confetti(){ const rect=els.board.getBoundingClientRect(); for(let i=0;i<24;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.background=pick(['#ffd166','#7bdff2','#46d783','#ff5d73','#b88cff']); c.style.left=(rect.left+rect.width*.5)+'px'; c.style.top=(rect.top+rect.height*.45)+'px'; c.style.setProperty('--x',rand(-180,180)+'px'); c.style.setProperty('--y',rand(-160,120)+'px'); document.body.appendChild(c); setTimeout(()=>c.remove(),750); } }
-function startGame(){ initAudio(); sfx.click(); hide(els.menu); hide(els.shop); hide(els.modalDay); state.running=true; state.paused=false; state.time=DAY_SECONDS; state.earned=0; state.ok=0; state.bad=0; state.combo=0; state.bestCombo=0; updateHUD(); els.game.style.display='flex'; clearInterval(state.timer); state.timer=setInterval(()=>{ if(state.paused) return; state.time--; updateHUD(); if(state.time<=0) endDay(); },1000); generateOrder(); }
-function endDay(){ if(!state.running) return; clearInterval(state.timer); state.running=false; state.day++; save(); els.game.style.display='none'; $('summary-earned').textContent=money(state.earned)+' ₩'; $('summary-ok').textContent=state.ok; $('summary-bad').textContent=state.bad; $('summary-total').textContent=money(state.money)+' ₩'; show(els.modalDay); sfx.success(); }
-function pauseToggle(){ if(!state.running) return; state.paused=!state.paused; $('btn-pause').textContent=state.paused?'계속하기':'일시정지'; els.feedback.className='feedback'; els.feedback.textContent=state.paused?'일시정지 중입니다. 계속하기를 누르면 재개됩니다.':'다시 영업을 시작합니다!'; sfx.click(); }
-function showShop(){ sfx.click(); hide(els.menu); els.game.style.display='none'; hide(els.modalDay); els.shop.classList.remove('hidden'); els.shop.style.display='flex'; renderShop(); updateMenuUI(); }
-function hideShop(){ sfx.click(); els.shop.style.display='none'; els.shop.classList.add('hidden'); show(els.menu); }
-function renderShop(){ const grid=$('shop-grid'); grid.innerHTML=''; const shield=shopCard('🛡️','클레임 쿠폰',`오답 패널티를 1회 막아줍니다.<br>보유: <b>${state.shields}</b>개`,SHIELD_PRICE,()=>buy('shield')); grid.appendChild(shield); Object.values(INGREDIENTS).forEach(item=>{ if(item.infinite) return; const locked=item.minDay>state.day; const desc=locked?`DAY ${item.minDay}부터 구매 가능`:`${item.pack}조각 묶음 · 보유 ${state.inventory[item.id]||0}조각`; const card=shopCard(item.emoji,item.name,desc,item.price,()=>buy(item.id),locked,item.color); grid.appendChild(card); }); }
-function shopCard(emoji,name,desc,price,onBuy,locked=false,color='var(--purple)'){ const div=document.createElement('div'); div.className='shop-item'+(locked?' locked':''); div.innerHTML=`<div><h3 style="color:${color}">${emoji} ${name}</h3><p>${desc}</p></div><button class="btn ${locked?'ghostbtn':'shopbtn'}" ${locked?'disabled':''}>${locked?'잠김':money(price)+' ₩'}</button>`; div.querySelector('button').addEventListener('click',onBuy); return div; }
-function buy(id){ sfx.click(); const price=id==='shield'?SHIELD_PRICE:INGREDIENTS[id].price; if(state.money<price){ toast('돈이 부족해요.', 'bad'); sfx.fail(); return; } state.money-=price; if(id==='shield') state.shields++; else state.inventory[id]+=INGREDIENTS[id].pack; sfx.coin(); toast(id==='shield'?'클레임 쿠폰 구매 완료!':`${INGREDIENTS[id].name} 구매 완료!`,'good'); save(); renderShop(); updateMenuUI(); }
-function reset(){ localStorage.removeItem(SAVE_KEY); location.reload(); }
-function bind(){ $('btn-start').addEventListener('click',startGame); $('btn-shop').addEventListener('click',showShop); $('btn-shop-back').addEventListener('click',hideShop); $('btn-reset').addEventListener('click',()=>{sfx.click();show(els.modalReset)}); $('btn-reset-cancel').addEventListener('click',()=>{sfx.click();hide(els.modalReset)}); $('btn-reset-ok').addEventListener('click',reset); $('btn-next-shop').addEventListener('click',showShop); $('btn-next-menu').addEventListener('click',()=>{hide(els.modalDay);show(els.menu)}); $('btn-pause').addEventListener('click',pauseToggle); $('btn-undo').addEventListener('click',undo); $('btn-clear').addEventListener('click',()=>{clearBoard();sfx.click()}); $('btn-hint').addEventListener('click',showHint); $('btn-sound').addEventListener('click',()=>{state.muted=!state.muted; save(); updateMenuUI(); toast(state.muted?'소리를 껐어요.':'소리를 켰어요.','info'); if(!state.muted) sfx.click();}); $('btn-serve').addEventListener('click',serve); els.board.addEventListener('pointerdown',addPoint); els.grid.addEventListener('change',()=>{clearBoard(); sfx.click();}); els.unit.addEventListener('change',()=>{draw(); updateArea(); sfx.click();}); window.addEventListener('keydown',e=>{ if(e.key==='Escape' && state.running) endDay(); if(e.key===' ' && state.running){ e.preventDefault(); serve(); } if(e.key.toLowerCase()==='h' && state.running) showHint(); }); window.addEventListener('resize',draw); }
-bind(); load(); draw(); updateArea();
+function getPoint(evt){
+  const rect=els.board.getBoundingClientRect(), x=(evt.clientX-rect.left)*(CANVAS_SIZE/rect.width), y=(evt.clientY-rect.top)*(CANVAS_SIZE/rect.height), m=canvasMetrics();
+  const gx=Math.round((x-m.pad)/m.cell), gy=Math.round((y-m.pad)/m.cell);
+  if(gx<0||gy<0||gx>m.n||gy>m.n) return null; return {x:gx,y:gy};
+}
+function samePoint(a,b){ return a&&b&&a.x===b.x&&a.y===b.y; }
+function calcMeasurements(){
+  const p=state.points;
+  if(!state.order) return {area:0};
+  if(state.order.shape==='rect'){
+    if(p.length<2) return {area:0}; const w=Math.abs(p[1].x-p[0].x),h=Math.abs(p[1].y-p[0].y); return {w,h,area:w*h};
+  }
+  if(p.length<3) return {area:0}; const b=Math.abs(p[1].x-p[0].x),h=Math.abs(p[2].y-p[0].y); return {b,h,area:b*h/2};
+}
+function formulaText(){
+  const m=calcMeasurements();
+  if(state.order?.shape==='rect'&&state.points.length>=2) return `가로 ${m.w} × 세로 ${m.h} = ${m.area}`;
+  if(state.order?.shape==='tri'&&state.points.length>=3) return `밑변 ${m.b} × 높이 ${m.h} ÷ 2 = ${m.area}`;
+  return '꼭짓점을 찍으면 계산식이 나타납니다.';
+}
+function updateReadout(){
+  const m=calcMeasurements(), unit=state.order?.unit||'cm²';
+  els.area.textContent=`${Number.isInteger(m.area)?m.area:m.area.toFixed(1)} ${unit}`; els.formula.textContent=formulaText();
+}
+function addPoint(evt){
+  if(!state.running||state.paused||!state.order) return;
+  const p=getPoint(evt); if(!p) return;
+  const max=state.order.shape==='rect'?2:3;
+  if(state.points.length>=max){ toast('도형이 이미 완성됐어요. 취소나 지우기를 눌러 고쳐 보세요.','info'); return; }
+  if(state.points.some(old=>samePoint(old,p))){ toast('다른 꼭짓점을 찍어 주세요.','info'); return; }
+  if(state.order.shape==='rect'&&state.points.length===1){
+    const first=state.points[0];
+    if(p.x===first.x||p.y===first.y){ setFeedback('가로와 세로가 모두 생기도록 대각선 방향의 꼭짓점을 찍어 주세요.','bad'); shakeBoard(); sfx.fail(); return; }
+  }
+  if(state.order.shape==='tri'){
+    const first=state.points[0];
+    if(state.points.length===1&&p.y!==first.y){ setFeedback('두 번째 점은 1번 점과 같은 가로줄에 찍어 주세요.','bad'); shakeBoard(); sfx.fail(); return; }
+    if(state.points.length===2&&p.x!==first.x){ setFeedback('세 번째 점은 1번 점과 같은 세로줄에 찍어 주세요.','bad'); shakeBoard(); sfx.fail(); return; }
+  }
+  state.points.push(p); state.hover=null; sfx.point(); vibrate(14); draw(); updateReadout(); updateStepUI();
+}
+function pointerMove(evt){ if(!state.running||state.paused||!state.order) return; const p=getPoint(evt); if(!samePoint(p,state.hover)){ state.hover=p; draw(); } }
+function pointerLeave(){ if(state.hover){ state.hover=null; draw(); } }
+function undo(){ if(!state.points.length) return; state.points.pop(); state.hover=null; sfx.click(); draw(); updateReadout(); updateStepUI(); setFeedback('마지막 꼭짓점을 취소했어요.','info'); }
+function clearBoard(){ if(!state.points.length) return; state.points=[]; state.hover=null; sfx.click(); draw(); updateReadout(); updateStepUI(); setFeedback('모눈판을 비웠어요.','info'); }
+
+function draw(){
+  ctx.clearRect(0,0,CANVAS_SIZE,CANVAS_SIZE); ctx.fillStyle='#101735'; ctx.fillRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+  const m=canvasMetrics(), grd=ctx.createLinearGradient(0,0,CANVAS_SIZE,CANVAS_SIZE); grd.addColorStop(0,'rgba(123,223,242,.08)'); grd.addColorStop(1,'rgba(255,209,102,.045)');
+  ctx.fillStyle=grd; roundedRect(ctx,m.pad,m.pad,m.size,m.size,18); ctx.fill();
+  ctx.strokeStyle='rgba(123,223,242,.18)'; ctx.lineWidth=1.6;
+  for(let i=0;i<=m.n;i++){
+    const p=m.pad+i*m.cell; ctx.beginPath(); ctx.moveTo(p,m.pad); ctx.lineTo(p,m.pad+m.size); ctx.stroke(); ctx.beginPath(); ctx.moveTo(m.pad,p); ctx.lineTo(m.pad+m.size,p); ctx.stroke();
+  }
+  ctx.font='15px system-ui'; ctx.fillStyle='rgba(255,255,255,.48)';
+  for(let i=0;i<=m.n;i++){
+    if(m.n<=8||i%2===0){ const p=m.pad+i*m.cell; ctx.textAlign='center'; ctx.fillText(i,p,m.pad+m.size+27); ctx.textAlign='right'; ctx.fillText(i,m.pad-17,p+5); }
+  }
+  drawShape(); drawHover();
+  ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='800 19px system-ui'; ctx.textAlign='left'; ctx.fillText(`${m.n} × ${m.n} 모눈`,m.pad,31); ctx.textAlign='right'; ctx.fillText(`1칸 = 1 ${state.order?.unit||'cm²'}`,m.pad+m.size,31);
+}
+function roundedRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function drawShape(){
+  if(!state.points.length) return;
+  const item=INGREDIENTS[state.selected]||{color:'#7bdff2'}, pts=state.points.map(toCanvasPoint);
+  ctx.save(); ctx.strokeStyle=item.color; ctx.fillStyle=item.color+'55'; ctx.lineWidth=7; ctx.lineJoin='round'; ctx.shadowColor=item.color; ctx.shadowBlur=16; ctx.beginPath();
+  if(state.order?.shape==='rect'&&pts.length>=2){
+    const a=pts[0],b=pts[1]; ctx.rect(a.x,a.y,b.x-a.x,b.y-a.y); ctx.fill(); ctx.stroke();
+    const m=calcMeasurements(); drawDimension(m.w,(a.x+b.x)/2,Math.min(a.y,b.y)-16); drawDimension(m.h,Math.max(a.x,b.x)+22,(a.y+b.y)/2);
+  }else{
+    ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); if(pts.length===3){ctx.closePath();ctx.fill();} ctx.stroke();
+    if(state.order?.shape==='tri'&&pts.length===3){ const m=calcMeasurements(); drawRightAngle(pts[0],pts[1],pts[2]); drawDimension(m.b,(pts[0].x+pts[1].x)/2,pts[0].y-17); drawDimension(m.h,pts[0].x+22,(pts[0].y+pts[2].y)/2); }
+  }
+  ctx.shadowBlur=0;
+  state.points.forEach((p,i)=>{ const cp=toCanvasPoint(p); ctx.beginPath(); ctx.fillStyle='#fff'; ctx.arc(cp.x,cp.y,11,0,Math.PI*2); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle=item.color; ctx.stroke(); ctx.fillStyle='#071026'; ctx.font='900 14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i+1,cp.x,cp.y+1); });
+  ctx.restore();
+}
+function drawHover(){
+  if(!state.hover||!state.order||state.points.length>=(state.order.shape==='rect'?2:3)) return;
+  const hp=toCanvasPoint(state.hover); ctx.save(); ctx.setLineDash([8,7]); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=3;
+  if(state.points.length){ const start=toCanvasPoint(state.order.shape==='tri'&&state.points.length===2?state.points[0]:state.points[state.points.length-1]); ctx.beginPath(); ctx.moveTo(start.x,start.y); ctx.lineTo(hp.x,hp.y); ctx.stroke(); }
+  ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.32)'; ctx.arc(hp.x,hp.y,10,0,Math.PI*2); ctx.fill(); ctx.restore();
+}
+function drawDimension(text,x,y){
+  ctx.save(); ctx.shadowBlur=0; ctx.font='900 17px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; const s=String(text), w=ctx.measureText(s).width+17;
+  ctx.fillStyle='rgba(0,0,0,.72)'; roundedRect(ctx,x-w/2,y-13,w,26,9); ctx.fill(); ctx.fillStyle='#fff'; ctx.fillText(s,x,y+1); ctx.restore();
+}
+function drawRightAngle(a,b,c){
+  const sx=Math.sign(b.x-a.x)||1, sy=Math.sign(c.y-a.y)||1, d=18; ctx.save(); ctx.shadowBlur=0; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(a.x+sx*d,a.y); ctx.lineTo(a.x+sx*d,a.y+sy*d); ctx.lineTo(a.x,a.y+sy*d); ctx.stroke(); ctx.restore();
+}
+
+function showHint(){
+  if(!state.order||state.hintUsed) return;
+  state.hintUsed=true; const d=state.order.dims;
+  els.hint.innerHTML=state.order.shape==='rect'?`힌트: <b>가로 ${d.w}, 세로 ${d.h}</b>로 만들면 ${d.w} × ${d.h} = ${state.order.area} ${state.order.unit}예요.`:`힌트: <b>밑변 ${d.b}, 높이 ${d.h}</b>로 만들면 ${d.b} × ${d.h} ÷ 2 = ${state.order.area} ${state.order.unit}예요.`;
+  els.hint.classList.remove('hidden'); setFeedback('힌트를 확인했어요. 같은 주문을 계속 풀어 보세요.','info'); updateAttemptNote(); sfx.click();
+}
+function setFeedback(msg,type='info'){ els.feedback.className=`feedback ${type}`; els.feedback.innerHTML=msg; }
+function shakeBoard(){ els.boardStage.classList.remove('shake'); void els.boardStage.offsetWidth; els.boardStage.classList.add('shake'); }
+function serve(){
+  if(!state.running||state.paused||!state.order) return;
+  const need=state.order.shape==='rect'?2:3;
+  if(state.points.length<need){ setFeedback(`꼭짓점이 ${need-state.points.length}개 더 필요해요. 아직 주문은 넘어가지 않습니다.`,'bad'); shakeBoard(); sfx.fail(); return; }
+  if(!state.selected){ setFeedback('샌드위치 재료를 먼저 골라 주세요.','bad'); sfx.fail(); return; }
+  const made=calcMeasurements().area, areaOk=Math.abs(made-state.order.area)<.001, toppingOk=state.selected===state.order.topping;
+  if(areaOk&&toppingOk){ success(); return; }
+  state.attempts++; state.corrections++; state.combo=0; updateHUD(); updateAttemptNote(); sfx.fail(); vibrate(35); shakeBoard();
+  const messages=[];
+  if(!areaOk) messages.push(`넓이는 현재 <b>${made} ${state.order.unit}</b>, 주문은 <b>${state.order.area} ${state.order.unit}</b>예요.`);
+  if(!toppingOk) messages.push(`재료는 <b>${INGREDIENTS[state.order.topping].emoji} ${INGREDIENTS[state.order.topping].name}</b>이어야 해요.`);
+  messages.push('고쳐서 같은 주문을 다시 서빙할 수 있어요.'); setFeedback(messages.join('<br>'),'bad');
+  if(state.attempts>=2&&!state.hintUsed) showHint();
+}
+function success(){
+  const multiplier=rewardMultiplier(), reward=Math.max(100,Math.floor((state.order.reward*multiplier+state.combo*45)/50)*50);
+  if(!INGREDIENTS[state.selected].infinite) state.inventory[state.selected]=Math.max(0,state.inventory[state.selected]-1);
+  state.money+=reward; state.earned+=reward; state.ok++; state.combo++; state.dayBestCombo=Math.max(state.dayBestCombo,state.combo); state.bestCombo=Math.max(state.bestCombo,state.combo);
+  save(); updateHUD(); renderToppings(); sfx.slice(); setTimeout(()=>sfx.success(),70); setTimeout(()=>sfx.coin(),210); vibrate([18,35,24]);
+  els.slice.classList.remove('play'); void els.slice.offsetWidth; els.slice.classList.add('play'); confetti();
+  setFeedback(`완성! <b>${formulaText()}</b><br>+${money(reward)} ₩ · 연속 성공 ${state.combo}`,'good');
+  setTimeout(()=>{ if(state.running&&state.time>0&&!state.paused) generateOrder(); },720);
+}
+function confetti(){
+  const rect=els.board.getBoundingClientRect(); for(let i=0;i<24;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.background=pick(['#ffd166','#7bdff2','#53dc8c','#ff667d','#b999ff']); c.style.left=`${rect.left+rect.width*.5}px`; c.style.top=`${rect.top+rect.height*.45}px`; c.style.setProperty('--x',`${rand(-170,170)}px`); c.style.setProperty('--y',`${rand(-150,120)}px`); document.body.appendChild(c); setTimeout(()=>c.remove(),760); }
+}
+
+function startGame(){
+  initAudio(); sfx.click(); els.menu.classList.add('hidden'); els.shop.style.display='none'; closeModal(els.dayModal); closeModal(els.pause);
+  state.running=true; state.paused=false; state.time=DAY_SECONDS; state.earned=0; state.ok=0; state.corrections=0; state.combo=0; state.dayBestCombo=0;
+  els.game.style.display='flex'; updateHUD(); generateOrder(); clearInterval(state.timer);
+  state.timer=setInterval(()=>{ if(state.paused||!state.running) return; state.time--; updateHUD(); if(state.time<=0) endDay(); },1000);
+}
+function endDay(){
+  if(!state.running) return; clearInterval(state.timer); state.running=false; state.paused=false; state.day++; save(); els.game.style.display='none'; closeModal(els.pause);
+  $('summary-earned').textContent=`${money(state.earned)} ₩`; $('summary-ok').textContent=`${state.ok}개`; $('summary-corrections').textContent=`${state.corrections}회`; $('summary-combo').textContent=`${state.dayBestCombo}회`;
+  openModal(els.dayModal); sfx.success();
+}
+function pauseGame(){ if(!state.running||state.paused) return; state.paused=true; openModal(els.pause); sfx.click(); }
+function resumeGame(){ if(!state.running) return; state.paused=false; closeModal(els.pause); sfx.click(); }
+function showShop(){
+  sfx.click(); els.menu.classList.add('hidden'); els.game.style.display='none'; closeModal(els.dayModal); els.shop.style.display='flex'; renderShop(); updateMenuUI();
+}
+function hideShop(){ sfx.click(); els.shop.style.display='none'; els.menu.classList.remove('hidden'); }
+function renderShop(){
+  const grid=$('shop-grid'); grid.innerHTML='';
+  Object.values(INGREDIENTS).forEach(item=>{
+    if(item.infinite) return; const locked=item.minDay>state.day, desc=locked?`DAY ${item.minDay}부터 구매 가능`:`${item.pack}조각 묶음 · 현재 ${state.inventory[item.id]||0}조각`;
+    const div=document.createElement('div'); div.className=`shop-item${locked?' locked':''}`;
+    div.innerHTML=`<div><h3 style="color:${item.color}">${item.emoji} ${item.name}</h3><p>${desc}<br>고급 재료 주문은 보상이 더 높아요.</p></div><button class="btn ${locked?'ghostbtn':'shopbtn'}" ${locked?'disabled':''}>${locked?'잠김':money(item.price)+' ₩'}</button>`;
+    div.querySelector('button').addEventListener('click',()=>buy(item.id)); grid.appendChild(div);
+  });
+}
+function buy(id){
+  const item=INGREDIENTS[id]; sfx.click(); if(state.money<item.price){ toast('돈이 부족해요.','bad'); sfx.fail(); return; }
+  state.money-=item.price; state.inventory[id]=(state.inventory[id]||0)+item.pack; save(); renderShop(); sfx.coin(); toast(`${item.name} ${item.pack}조각을 샀어요.`,'good');
+}
+function reset(){ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(LEGACY_KEY); location.reload(); }
+
+function bind(){
+  $('btn-start').addEventListener('click',startGame); $('btn-shop').addEventListener('click',showShop); $('btn-shop-back').addEventListener('click',hideShop);
+  $('btn-reset').addEventListener('click',()=>openModal(els.resetModal)); $('btn-reset-cancel').addEventListener('click',()=>closeModal(els.resetModal)); $('btn-reset-ok').addEventListener('click',reset);
+  $('btn-next-shop').addEventListener('click',showShop); $('btn-next-menu').addEventListener('click',()=>{closeModal(els.dayModal);els.menu.classList.remove('hidden');});
+  $('btn-pause').addEventListener('click',pauseGame); $('btn-resume').addEventListener('click',resumeGame); $('btn-finish-day').addEventListener('click',endDay);
+  $('btn-sound').addEventListener('click',()=>{ state.muted=!state.muted; save(); if(!state.muted)sfx.click(); toast(state.muted?'소리를 껐어요.':'소리를 켰어요.','info'); });
+  $('btn-hint').addEventListener('click',showHint); $('btn-undo').addEventListener('click',undo); $('btn-clear').addEventListener('click',clearBoard); $('btn-serve').addEventListener('click',serve);
+  els.board.addEventListener('pointerdown',addPoint); els.board.addEventListener('pointermove',pointerMove); els.board.addEventListener('pointerleave',pointerLeave);
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(state.paused)resumeGame(); else if(state.running)pauseGame(); } if(e.key===' '&&state.running&&!state.paused){e.preventDefault();serve();} if(e.key.toLowerCase()==='h'&&state.running&&!state.paused)showHint(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state.running&&!state.paused)pauseGame(); });
+  window.addEventListener('resize',()=>{ draw(); });
+}
+
+bind(); load(); setupCanvas(); updateReadout();
 })();
 </script>
 </body>
