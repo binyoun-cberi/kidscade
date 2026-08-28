@@ -1701,6 +1701,336 @@ body.dark-mode .site-credits {
             .hamster-modal-close { min-height: 36px; padding: 0 11px; }
         }
 
+
+
+        /* =========================================
+            👤 Kidscade 아바타 광장 · SVG 옷장
+           ========================================= */
+        .avatar-plaza {
+            max-width: 1160px;
+            margin: 22px auto 8px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .avatar-plaza-card {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 230px minmax(0, 1fr) auto;
+            gap: 24px;
+            align-items: center;
+            min-height: 220px;
+            padding: 20px 26px;
+            border-radius: 30px;
+            background:
+                radial-gradient(circle at 8% 12%, rgba(255,255,255,.96), transparent 21%),
+                radial-gradient(circle at 92% 18%, rgba(253,224,71,.24), transparent 24%),
+                linear-gradient(135deg, rgba(219,234,254,.95), rgba(240,253,244,.96) 48%, rgba(253,242,248,.96));
+            border: 2px solid rgba(139,92,246,.18);
+            box-shadow: 0 18px 38px rgba(15,23,42,.10);
+            text-align: left;
+        }
+        body.dark-mode .avatar-plaza-card {
+            background:
+                radial-gradient(circle at 10% 10%, rgba(59,130,246,.15), transparent 22%),
+                linear-gradient(135deg, rgba(30,41,59,.98), rgba(49,46,129,.48), rgba(30,41,59,.98));
+            border-color: rgba(196,181,253,.22);
+        }
+        .avatar-plaza-preview {
+            height: 182px;
+            border-radius: 25px;
+            overflow: hidden;
+            background: rgba(255,255,255,.58);
+            border: 2px solid rgba(255,255,255,.72);
+            box-shadow: inset 0 0 0 1px rgba(148,163,184,.10), 0 12px 24px rgba(15,23,42,.08);
+        }
+        body.dark-mode .avatar-plaza-preview { background: rgba(15,23,42,.34); border-color: rgba(255,255,255,.12); }
+        .avatar-plaza-preview svg { width: 100%; height: 100%; display: block; }
+        .avatar-plaza-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            border-radius: 999px;
+            background: rgba(139,92,246,.10);
+            color: #7c3aed;
+            font-size: .78rem;
+            font-weight: 1000;
+        }
+        body.dark-mode .avatar-plaza-kicker { color: #ddd6fe; background: rgba(139,92,246,.18); }
+        .avatar-plaza-title { margin: 0 0 8px; font-size: 1.65rem; line-height: 1.2; color: var(--text-color); }
+        .avatar-plaza-desc { margin: 0; max-width: 650px; color: #64748b; font-weight: 750; line-height: 1.55; word-break: keep-all; }
+        body.dark-mode .avatar-plaza-desc { color: #cbd5e1; }
+        .avatar-plaza-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+        .avatar-plaza-chip {
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.84);
+            color: #475569;
+            border: 1px solid rgba(148,163,184,.22);
+            font-size: .78rem;
+            font-weight: 900;
+        }
+        body.dark-mode .avatar-plaza-chip { background: rgba(15,23,42,.54); color: #e2e8f0; }
+        .avatar-plaza-actions { display: grid; gap: 8px; min-width: 180px; }
+        .avatar-open-btn {
+            border: 0;
+            min-height: 52px;
+            padding: 0 18px;
+            border-radius: 17px;
+            background: linear-gradient(135deg,#8b5cf6,#ec4899);
+            color: white;
+            font-weight: 1000;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(139,92,246,.24);
+            transition: transform .16s ease, box-shadow .16s ease;
+        }
+        .avatar-open-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba(139,92,246,.30); }
+        .avatar-plaza-seeds { text-align: center; font-weight: 1000; color: #15803d; font-size: .92rem; }
+        body.dark-mode .avatar-plaza-seeds { color: #86efac; }
+
+        #avatar-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 13000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(2,8,23,.84);
+            backdrop-filter: blur(9px);
+        }
+        #avatar-modal.hidden { display: none !important; }
+        .avatar-modal-content {
+            width: min(1180px, 97vw);
+            height: min(860px, 95dvh);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 28px;
+            border: 3px solid rgba(139,92,246,.40);
+            box-shadow: 0 30px 70px rgba(0,0,0,.42);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .avatar-modal-header {
+            min-height: 66px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: linear-gradient(135deg,#8b5cf6,#ec4899);
+            color: white;
+        }
+        .avatar-modal-title-wrap { text-align: left; }
+        .avatar-modal-title { font-size: 1.25rem; font-weight: 1000; }
+        .avatar-modal-sub { margin-top: 2px; font-size: .76rem; font-weight: 800; opacity: .88; }
+        .avatar-modal-head-actions { display: flex; align-items: center; gap: 10px; }
+        .avatar-modal-seeds {
+            background: rgba(15,23,42,.24);
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-weight: 1000;
+            white-space: nowrap;
+        }
+        .avatar-close-btn {
+            border: 0;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 12px;
+            background: #ef4444;
+            color: white;
+            font-weight: 1000;
+            cursor: pointer;
+        }
+        .avatar-wardrobe-layout {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 350px minmax(0,1fr);
+            gap: 0;
+        }
+        .avatar-preview-panel {
+            min-height: 0;
+            padding: 16px;
+            background: linear-gradient(180deg, rgba(139,92,246,.08), rgba(34,197,94,.05));
+            border-right: 1px solid rgba(148,163,184,.22);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+        .avatar-large-preview {
+            height: 360px;
+            flex: 0 0 auto;
+            border-radius: 25px;
+            overflow: hidden;
+            background: rgba(255,255,255,.78);
+            border: 2px solid rgba(139,92,246,.16);
+            box-shadow: 0 12px 26px rgba(15,23,42,.09);
+        }
+        body.dark-mode .avatar-large-preview { background: rgba(15,23,42,.46); }
+        .avatar-large-preview svg { width: 100%; height: 100%; display: block; }
+        .avatar-collection-box {
+            padding: 11px 12px;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid rgba(148,163,184,.22);
+            font-size: .82rem;
+            font-weight: 850;
+            line-height: 1.5;
+            color: #475569;
+        }
+        body.dark-mode .avatar-collection-box { color: #cbd5e1; background: rgba(15,23,42,.44); }
+        .avatar-set-title { font-size: .86rem; font-weight: 1000; color: #7c3aed; text-align: left; margin-top: 2px; }
+        body.dark-mode .avatar-set-title { color: #c4b5fd; }
+        .avatar-set-list { display: grid; gap: 7px; }
+        .avatar-set-btn {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 11px;
+            border: 1px solid rgba(148,163,184,.24);
+            border-radius: 15px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            text-align: left;
+            font-weight: 950;
+        }
+        .avatar-set-btn:hover { border-color: #8b5cf6; background: color-mix(in srgb, var(--card-bg) 88%, #ede9fe 12%); }
+        .avatar-set-btn small { display: block; color: #64748b; margin-top: 2px; font-weight: 800; }
+        body.dark-mode .avatar-set-btn small { color: #cbd5e1; }
+        .avatar-set-price { color: #15803d; white-space: nowrap; }
+        body.dark-mode .avatar-set-price { color: #86efac; }
+
+        .avatar-shop-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+        .avatar-tabs {
+            display: flex;
+            gap: 7px;
+            padding: 11px 12px;
+            overflow-x: auto;
+            border-bottom: 1px solid rgba(148,163,184,.20);
+            background: color-mix(in srgb, var(--card-bg) 94%, #ede9fe 6%);
+        }
+        .avatar-tab {
+            flex: 0 0 auto;
+            border: 1px solid rgba(148,163,184,.24);
+            border-radius: 999px;
+            min-height: 38px;
+            padding: 0 13px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-weight: 950;
+            cursor: pointer;
+        }
+        .avatar-tab.active { border-color: transparent; color: white; background: linear-gradient(135deg,#8b5cf6,#ec4899); }
+        .avatar-item-grid {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0,1fr));
+            gap: 10px;
+            align-content: start;
+        }
+        .avatar-item-card {
+            position: relative;
+            min-width: 0;
+            padding: 12px;
+            border-radius: 18px;
+            border: 2px solid rgba(148,163,184,.20);
+            background: color-mix(in srgb, var(--card-bg) 94%, #f8fafc 6%);
+            text-align: left;
+            box-shadow: 0 8px 18px rgba(15,23,42,.05);
+        }
+        .avatar-item-card.owned { border-color: rgba(34,197,94,.42); }
+        .avatar-item-card.equipped { border-color: #8b5cf6; box-shadow: 0 10px 22px rgba(139,92,246,.14); }
+        .avatar-item-swatch {
+            height: 82px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 9px;
+            background: linear-gradient(135deg,#f8fafc,#eef2ff);
+            font-size: 2.35rem;
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,.16);
+        }
+        body.dark-mode .avatar-item-swatch { background: linear-gradient(135deg,#1e293b,#312e81); }
+        .avatar-item-name { font-size: .91rem; font-weight: 1000; line-height: 1.25; word-break: keep-all; }
+        .avatar-item-desc { margin-top: 4px; min-height: 2.5em; color: #64748b; font-size: .72rem; line-height: 1.3; font-weight: 750; word-break: keep-all; }
+        body.dark-mode .avatar-item-desc { color: #cbd5e1; }
+        .avatar-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-top: 9px; }
+        .avatar-item-price { color: #15803d; font-size: .78rem; font-weight: 1000; white-space: nowrap; }
+        body.dark-mode .avatar-item-price { color: #86efac; }
+        .avatar-item-action {
+            border: 0;
+            min-height: 34px;
+            padding: 0 10px;
+            border-radius: 10px;
+            background: #fbbf24;
+            color: #78350f;
+            font-size: .75rem;
+            font-weight: 1000;
+            cursor: pointer;
+        }
+        .avatar-item-action.wear { background: #22c55e; color: white; }
+        .avatar-item-action.on { background: #8b5cf6; color: white; cursor: default; }
+        .avatar-item-action.free { background: #38bdf8; color: white; }
+        .avatar-item-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 7px;
+            border-radius: 999px;
+            background: rgba(15,23,42,.78);
+            color: white;
+            font-size: .65rem;
+            font-weight: 1000;
+        }
+        .avatar-aura-spin { transform-origin: 120px 126px; animation: avatarAuraSpin 8s linear infinite; }
+        .avatar-aura-pulse { transform-origin: 120px 126px; animation: avatarAuraPulse 1.7s ease-in-out infinite alternate; }
+        @keyframes avatarAuraSpin { to { transform: rotate(360deg); } }
+        @keyframes avatarAuraPulse { to { transform: scale(1.07); opacity: .72; } }
+        @media (prefers-reduced-motion: reduce) { .avatar-aura-spin, .avatar-aura-pulse { animation: none !important; } }
+
+        @media (max-width: 900px) {
+            .avatar-plaza-card { grid-template-columns: 190px minmax(0,1fr); }
+            .avatar-plaza-actions { grid-column: 1 / -1; grid-template-columns: 1fr auto; align-items: center; }
+            .avatar-wardrobe-layout { grid-template-columns: 310px minmax(0,1fr); }
+            .avatar-item-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width: 680px) {
+            .avatar-plaza { padding: 0 12px; margin-top: 14px; }
+            .avatar-plaza-card { grid-template-columns: 1fr; padding: 15px; gap: 13px; border-radius: 23px; }
+            .avatar-plaza-preview { height: 210px; }
+            .avatar-plaza-title { font-size: 1.35rem; }
+            .avatar-plaza-actions { grid-column: auto; grid-template-columns: 1fr; }
+            #avatar-modal { padding: 5px; }
+            .avatar-modal-content { width: 100%; height: 99dvh; border-radius: 18px; }
+            .avatar-modal-header { min-height: 58px; padding: 8px 10px; }
+            .avatar-modal-sub { display: none; }
+            .avatar-modal-seeds { padding: 6px 8px; font-size: .76rem; }
+            .avatar-close-btn { padding: 0 10px; }
+            .avatar-wardrobe-layout { grid-template-columns: 1fr; overflow-y: auto; }
+            .avatar-preview-panel { border-right: 0; border-bottom: 1px solid rgba(148,163,184,.20); overflow: visible; }
+            .avatar-large-preview { height: 300px; }
+            .avatar-shop-panel { min-height: 620px; }
+            .avatar-item-grid { grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; }
+        }
+        @media (max-width: 430px) {
+            .avatar-item-grid { grid-template-columns: 1fr 1fr; padding: 9px; gap: 7px; }
+            .avatar-item-card { padding: 9px; }
+            .avatar-item-swatch { height: 68px; font-size: 2rem; }
+        }
+
 </style>
 </head>
 <body>
@@ -1864,6 +2194,35 @@ body.dark-mode .site-credits {
             </div>
         </div>
 
+
+
+        <div id="avatar-modal" class="hidden" aria-label="나의 아바타 옷장">
+            <div class="avatar-modal-content">
+                <div class="avatar-modal-header">
+                    <div class="avatar-modal-title-wrap">
+                        <div class="avatar-modal-title">👤 나의 Kidscade 옷장</div>
+                        <div class="avatar-modal-sub">씨앗으로 파츠를 모으고 자유롭게 조합해 나만의 캐릭터를 만들어요.</div>
+                    </div>
+                    <div class="avatar-modal-head-actions">
+                        <div class="avatar-modal-seeds" id="avatar-modal-seeds">🌱 0 씨앗</div>
+                        <button class="avatar-close-btn" id="avatar-close-btn" type="button">닫기 ✖</button>
+                    </div>
+                </div>
+                <div class="avatar-wardrobe-layout">
+                    <aside class="avatar-preview-panel">
+                        <div class="avatar-large-preview" id="avatar-large-preview" aria-label="현재 아바타 미리보기"></div>
+                        <div class="avatar-collection-box" id="avatar-collection-box">아바타 컬렉션을 불러오는 중...</div>
+                        <div class="avatar-set-title">✨ 한 번에 입는 추천 세트</div>
+                        <div class="avatar-set-list" id="avatar-set-list"></div>
+                    </aside>
+                    <section class="avatar-shop-panel">
+                        <div class="avatar-tabs" id="avatar-tabs"></div>
+                        <div class="avatar-item-grid" id="avatar-item-grid"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
         <header>
             <div class="site-credits">
                 ✨ Since 2026. 5. 7.<br>
@@ -1890,6 +2249,26 @@ body.dark-mode .site-credits {
             <h1>🎮 Kidscade 🚀</h1>
             <div class="subtitle">놀면서 똑똑해지는 우리만의 에듀테인먼트 오락실!</div>
         </header>
+
+        <section class="avatar-plaza" id="avatar-plaza" aria-label="나의 Kidscade 캐릭터">
+            <div class="avatar-plaza-card">
+                <div class="avatar-plaza-preview" id="avatar-plaza-preview" aria-label="내 캐릭터"></div>
+                <div class="avatar-plaza-info">
+                    <div class="avatar-plaza-kicker">✨ 씨앗으로 만드는 나만의 모습</div>
+                    <h2 class="avatar-plaza-title">나의 Kidscade 캐릭터</h2>
+                    <p class="avatar-plaza-desc">게임에서 모은 씨앗으로 헤어·옷·장식·배경·오라를 모아 보세요. 산 아이템은 계속 보관되고 언제든 다시 갈아입을 수 있어요.</p>
+                    <div class="avatar-plaza-chips">
+                        <span class="avatar-plaza-chip" id="avatar-equipped-summary">기본 스타일</span>
+                        <span class="avatar-plaza-chip" id="avatar-collection-summary">컬렉션 0개</span>
+                    </div>
+                </div>
+                <div class="avatar-plaza-actions">
+                    <button class="avatar-open-btn" id="avatar-open-btn" type="button">👕 내 캐릭터 꾸미기</button>
+                    <div class="avatar-plaza-seeds" id="avatar-plaza-seeds">🌱 0 씨앗 보유</div>
+                </div>
+            </div>
+        </section>
+
 
         <section class="dashboard-section hidden" id="recent-section">
             <div class="dashboard-title">
@@ -2703,6 +3082,7 @@ body.dark-mode .site-credits {
             function updateCoinUI() {
                 coinDisplay.innerText = `🌱 ${coins.toLocaleString()} 씨앗`;
                 localStorage.setItem('kidscade_coins', coins);
+                if (typeof updateAvatarCurrency === 'function') updateAvatarCurrency();
             }
 
             function showToast(msg, isCoin = false) {
@@ -2720,6 +3100,359 @@ body.dark-mode .site-credits {
                 updateCoinUI();
                 showToast(`${reason} (+${amount.toLocaleString()} 씨앗)`, true);
             }
+
+
+            // =====================================
+            // 👤 씨앗 아바타 옷장: 기존 게임/기록과 분리된 SVG 레이어 시스템
+            // =====================================
+            const avatarDB = {
+                skin: [
+                    { id:'skin_peach', name:'복숭아빛', desc:'기본 피부색', price:0, icon:'🙂', color:'#F1C27D' },
+                    { id:'skin_warm', name:'따뜻한 베이지', desc:'무료 피부색', price:0, icon:'🙂', color:'#DDA574' },
+                    { id:'skin_tan', name:'건강한 구릿빛', desc:'무료 피부색', price:0, icon:'🙂', color:'#B97850' },
+                    { id:'skin_deep', name:'짙은 브라운', desc:'무료 피부색', price:0, icon:'🙂', color:'#7A4A32' }
+                ],
+                hair: [
+                    { id:'hair_short', name:'깔끔 숏컷', desc:'가볍고 단정한 기본 머리', price:0, icon:'✂️', color:'#3b2b24', draw:'short' },
+                    { id:'hair_bob', name:'동글 단발', desc:'얼굴을 감싸는 귀여운 단발', price:260, icon:'💇', color:'#4b2e24', draw:'bob' },
+                    { id:'hair_curl', name:'몽글 곱슬', desc:'동글동글 풍성한 곱슬머리', price:360, icon:'🌀', color:'#2f241f', draw:'curl' },
+                    { id:'hair_pony', name:'높은 포니테일', desc:'활동적인 느낌의 묶은 머리', price:440, icon:'🎀', color:'#5a3426', draw:'pony' },
+                    { id:'hair_spike', name:'번개 스파이크', desc:'게임 주인공 같은 뾰족 머리', price:520, icon:'⚡', color:'#222831', draw:'spike' },
+                    { id:'hair_buns', name:'쌍둥이 번', desc:'양쪽으로 동그랗게 묶은 머리', price:620, icon:'🎀', color:'#2f241f', draw:'buns' },
+                    { id:'hair_rainbow', name:'무지개 헤어', desc:'빛에 따라 색이 바뀌는 특별 헤어', price:1600, icon:'🌈', color:'url(#rainbowHair)', draw:'bob' }
+                ],
+                top: [
+                    { id:'top_tee', name:'민트 티셔츠', desc:'산뜻한 기본 상의', price:0, icon:'👕', color:'#5eead4', draw:'tee' },
+                    { id:'top_hoodie', name:'보라 후드티', desc:'편안한 오락실 후드', price:380, icon:'🧥', color:'#8b5cf6', draw:'hoodie' },
+                    { id:'top_soccer', name:'축구 유니폼', desc:'등번호가 들어간 스포츠 상의', price:580, icon:'⚽', color:'#2563eb', draw:'soccer' },
+                    { id:'top_uniform', name:'반듯한 셔츠', desc:'넥타이가 달린 깔끔한 셔츠', price:680, icon:'👔', color:'#f8fafc', draw:'uniform' },
+                    { id:'top_wizard', name:'별빛 마법 로브', desc:'별무늬가 반짝이는 마법사 상의', price:1500, icon:'🧙', color:'#6d28d9', draw:'wizard' },
+                    { id:'top_armor', name:'용사 갑옷', desc:'반짝이는 판금 갑옷', price:1900, icon:'🛡️', color:'#94a3b8', draw:'armor' },
+                    { id:'top_space', name:'우주복 상의', desc:'미래형 조작 패널이 달린 우주복', price:2400, icon:'🚀', color:'#f8fafc', draw:'space' }
+                ],
+                bottom: [
+                    { id:'bottom_shorts', name:'편한 반바지', desc:'기본으로 입는 반바지', price:0, icon:'🩳', color:'#475569', draw:'shorts' },
+                    { id:'bottom_jeans', name:'청바지', desc:'어디에나 잘 어울리는 청바지', price:320, icon:'👖', color:'#2563eb', draw:'pants' },
+                    { id:'bottom_skirt', name:'플리츠 스커트', desc:'주름이 들어간 캐주얼 스커트', price:420, icon:'👗', color:'#fb7185', draw:'skirt' },
+                    { id:'bottom_track', name:'트랙 팬츠', desc:'운동할 때 좋은 줄무늬 바지', price:520, icon:'🏃', color:'#1f2937', draw:'track' },
+                    { id:'bottom_wizard', name:'마법 로브 하의', desc:'긴 로브 자락이 이어지는 하의', price:900, icon:'🔮', color:'#4c1d95', draw:'robe' },
+                    { id:'bottom_armor', name:'용사 갑옷 하의', desc:'부츠까지 이어지는 갑옷 하의', price:1100, icon:'🛡️', color:'#64748b', draw:'armor' },
+                    { id:'bottom_space', name:'우주복 하의', desc:'튼튼한 우주 탐험용 하의', price:1300, icon:'🪐', color:'#e2e8f0', draw:'space' }
+                ],
+                head: [
+                    { id:'head_none', name:'장식 없음', desc:'머리 장식을 벗어요', price:0, icon:'➖', draw:'none' },
+                    { id:'head_cap', name:'게임 캡', desc:'챙이 살짝 올라간 야구모자', price:360, icon:'🧢', draw:'cap' },
+                    { id:'head_headphones', name:'네온 헤드폰', desc:'리듬 게임 느낌의 큰 헤드폰', price:680, icon:'🎧', draw:'headphones' },
+                    { id:'head_wizard', name:'마법사 모자', desc:'별 장식이 달린 뾰족 모자', price:1700, icon:'🧙', draw:'wizard' },
+                    { id:'head_crown', name:'황금 왕관', desc:'씨앗 부자의 상징 같은 왕관', price:2800, icon:'👑', draw:'crown' },
+                    { id:'head_halo', name:'빛나는 링', desc:'머리 위에 떠 있는 반짝 링', price:3200, icon:'😇', draw:'halo' },
+                    { id:'head_space', name:'우주 헬멧', desc:'투명 바이저가 달린 우주 헬멧', price:2600, icon:'🧑‍🚀', draw:'space' }
+                ],
+                face: [
+                    { id:'face_none', name:'얼굴 장식 없음', desc:'안경을 벗어요', price:0, icon:'🙂', draw:'none' },
+                    { id:'face_round', name:'동그란 안경', desc:'차분한 원형 안경', price:360, icon:'👓', draw:'round' },
+                    { id:'face_sun', name:'검은 선글라스', desc:'시크한 검은 선글라스', price:680, icon:'😎', draw:'sun' },
+                    { id:'face_star', name:'별 안경', desc:'무대에서 빛나는 별 모양 안경', price:1100, icon:'⭐', draw:'star' }
+                ],
+                hand: [
+                    { id:'hand_none', name:'손 비우기', desc:'손에 아무것도 들지 않아요', price:0, icon:'👐', draw:'none' },
+                    { id:'hand_book', name:'탐험 노트', desc:'모험 기록을 적는 작은 책', price:460, icon:'📘', draw:'book' },
+                    { id:'hand_ball', name:'축구공', desc:'언제든 경기를 시작할 수 있어요', price:580, icon:'⚽', draw:'ball' },
+                    { id:'hand_guitar', name:'미니 기타', desc:'무대 위 스타를 위한 기타', price:1200, icon:'🎸', draw:'guitar' },
+                    { id:'hand_sword', name:'빛나는 용사의 검', desc:'판타지 용사 세트의 핵심 장비', price:1900, icon:'⚔️', draw:'sword' },
+                    { id:'hand_wand', name:'별빛 지팡이', desc:'별을 그리는 마법 지팡이', price:2100, icon:'🪄', draw:'wand' }
+                ],
+                background: [
+                    { id:'bg_basic', name:'파스텔 스튜디오', desc:'기본 밝은 배경', price:0, icon:'🎨', draw:'basic' },
+                    { id:'bg_class', name:'방과 후 교실', desc:'칠판과 창문이 있는 교실', price:900, icon:'🏫', draw:'class' },
+                    { id:'bg_park', name:'햇살 공원', desc:'구름과 잔디가 있는 공원', price:1250, icon:'🌳', draw:'park' },
+                    { id:'bg_arcade', name:'네온 오락실', desc:'빛나는 게임기가 가득한 오락실', price:1900, icon:'🕹️', draw:'arcade' },
+                    { id:'bg_space', name:'별빛 우주', desc:'행성과 별이 떠 있는 우주', price:3200, icon:'🌌', draw:'space' },
+                    { id:'bg_castle', name:'구름 성', desc:'최상위 컬렉터를 위한 판타지 성', price:4800, icon:'🏰', draw:'castle' }
+                ],
+                aura: [
+                    { id:'aura_none', name:'효과 없음', desc:'주변 효과를 끕니다', price:0, icon:'➖', draw:'none' },
+                    { id:'aura_star', name:'반짝 별가루', desc:'작은 별이 주변을 천천히 돌아요', price:1300, icon:'✨', draw:'star' },
+                    { id:'aura_heart', name:'두근 하트', desc:'하트가 통통 떠오르는 효과', price:1600, icon:'💗', draw:'heart' },
+                    { id:'aura_leaf', name:'초록 바람', desc:'작은 잎이 빙글빙글 도는 효과', price:1900, icon:'🍃', draw:'leaf' },
+                    { id:'aura_fire', name:'불꽃 오라', desc:'도전자를 둘러싼 뜨거운 불꽃', price:2700, icon:'🔥', draw:'fire' },
+                    { id:'aura_rainbow', name:'무지개 오라', desc:'캐릭터 뒤에 무지개 링이 빛나요', price:4200, icon:'🌈', draw:'rainbow' },
+                    { id:'aura_lightning', name:'번개 폭풍', desc:'가장 비싼 전설급 번개 효과', price:5200, icon:'⚡', draw:'lightning' }
+                ]
+            };
+            const avatarCategoryLabels = {
+                skin:'🙂 피부', hair:'💇 머리', top:'👕 상의', bottom:'👖 하의', head:'🧢 머리장식', face:'👓 안경', hand:'🪄 손아이템', background:'🖼️ 배경', aura:'✨ 오라'
+            };
+            const avatarDefaultEquipped = {
+                skin:'skin_peach', hair:'hair_short', top:'top_tee', bottom:'bottom_shorts', head:'head_none', face:'face_none', hand:'hand_none', background:'bg_basic', aura:'aura_none'
+            };
+            const avatarSetDB = [
+                { id:'set_school', name:'방과 후 모범생', desc:'셔츠·청바지·안경·노트·교실 배경', equip:{ top:'top_uniform', bottom:'bottom_jeans', face:'face_round', hand:'hand_book', background:'bg_class' } },
+                { id:'set_soccer', name:'운동장 에이스', desc:'유니폼·트랙팬츠·캡·축구공·공원', equip:{ top:'top_soccer', bottom:'bottom_track', head:'head_cap', hand:'hand_ball', background:'bg_park' } },
+                { id:'set_wizard', name:'별빛 마법사', desc:'마법 로브·모자·지팡이·별가루', equip:{ top:'top_wizard', bottom:'bottom_wizard', head:'head_wizard', hand:'hand_wand', aura:'aura_star', background:'bg_castle' } },
+                { id:'set_space', name:'은하 탐험대장', desc:'우주복·헬멧·별빛 우주·번개 오라', equip:{ top:'top_space', bottom:'bottom_space', head:'head_space', background:'bg_space', aura:'aura_lightning' } }
+            ];
+            const avatarInventoryKey = 'kidscade_avatar_inventory';
+            const avatarEquippedKey = 'kidscade_avatar_equipped';
+            let avatarInventory = {};
+            let avatarEquipped = {};
+            let avatarActiveCategory = 'hair';
+
+            function loadAvatarData() {
+                try { avatarInventory = JSON.parse(localStorage.getItem(avatarInventoryKey) || '{}') || {}; } catch(e) { avatarInventory = {}; }
+                try { avatarEquipped = JSON.parse(localStorage.getItem(avatarEquippedKey) || '{}') || {}; } catch(e) { avatarEquipped = {}; }
+                Object.keys(avatarDB).forEach(category => {
+                    if (!Array.isArray(avatarInventory[category])) avatarInventory[category] = [];
+                    avatarDB[category].filter(item => item.price === 0).forEach(item => {
+                        if (!avatarInventory[category].includes(item.id)) avatarInventory[category].push(item.id);
+                    });
+                    const equippedId = avatarEquipped[category];
+                    const valid = avatarDB[category].some(item => item.id === equippedId);
+                    avatarEquipped[category] = valid ? equippedId : avatarDefaultEquipped[category];
+                    if (!avatarInventory[category].includes(avatarEquipped[category])) avatarInventory[category].push(avatarEquipped[category]);
+                });
+                saveAvatarData();
+            }
+            function saveAvatarData() {
+                localStorage.setItem(avatarInventoryKey, JSON.stringify(avatarInventory));
+                localStorage.setItem(avatarEquippedKey, JSON.stringify(avatarEquipped));
+            }
+            function avatarItem(category, id) { return avatarDB[category]?.find(item => item.id === id) || avatarDB[category]?.[0]; }
+            function isAvatarOwned(category, id) { return (avatarInventory[category] || []).includes(id); }
+            function getAvatarOwnedCount() { return Object.keys(avatarDB).reduce((sum, cat) => sum + (avatarInventory[cat] || []).length, 0); }
+            function getAvatarTotalCount() { return Object.values(avatarDB).reduce((sum, arr) => sum + arr.length, 0); }
+            function escSvg(value) { return String(value || '').replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m])); }
+
+            function avatarBackground(draw) {
+                if (draw === 'class') return `<rect width="240" height="260" fill="#fef3c7"/><rect y="177" width="240" height="83" fill="#d6b38a"/><rect x="18" y="28" width="92" height="72" rx="8" fill="#14532d" stroke="#f8fafc" stroke-width="5"/><path d="M31 57h54M31 75h36" stroke="#d1fae5" stroke-width="4" stroke-linecap="round"/><rect x="146" y="23" width="70" height="82" rx="6" fill="#bae6fd" stroke="#fff" stroke-width="6"/><path d="M181 25v78M148 64h66" stroke="#fff" stroke-width="4"/>`;
+                if (draw === 'park') return `<rect width="240" height="260" fill="#bae6fd"/><circle cx="197" cy="42" r="24" fill="#fde047"/><path d="M0 170Q48 135 95 166T240 158V260H0Z" fill="#86efac"/><circle cx="40" cy="151" r="28" fill="#22c55e"/><rect x="34" y="149" width="13" height="52" rx="6" fill="#92400e"/><path d="M24 56c18-20 40-4 43 11-19 8-38 9-56 2 1-6 5-10 13-13zM92 38c14-14 34-5 36 9-16 7-30 7-44 2 1-5 4-8 8-11z" fill="#fff" opacity=".88"/>`;
+                if (draw === 'arcade') return `<rect width="240" height="260" fill="#111827"/><path d="M0 195H240V260H0Z" fill="#312e81"/><path d="M0 196H240M40 196V260M80 196V260M120 196V260M160 196V260M200 196V260" stroke="#7c3aed" stroke-width="2" opacity=".7"/><rect x="18" y="52" width="50" height="91" rx="8" fill="#1f2937" stroke="#22d3ee" stroke-width="4"/><rect x="27" y="63" width="32" height="29" rx="3" fill="#0f172a"/><circle cx="35" cy="112" r="5" fill="#fb7185"/><path d="M47 112h10" stroke="#fde047" stroke-width="5" stroke-linecap="round"/><rect x="172" y="45" width="50" height="98" rx="8" fill="#1f2937" stroke="#f472b6" stroke-width="4"/><text x="197" y="85" text-anchor="middle" font-size="25">🎮</text>`;
+                if (draw === 'space') return `<rect width="240" height="260" fill="#090b2b"/><circle cx="190" cy="55" r="32" fill="#7dd3fc" opacity=".9"/><circle cx="199" cy="45" r="32" fill="#090b2b"/><circle cx="42" cy="44" r="3" fill="#fff"/><circle cx="72" cy="79" r="2" fill="#fde68a"/><circle cx="125" cy="37" r="3" fill="#fff"/><circle cx="155" cy="90" r="2" fill="#f9a8d4"/><circle cx="215" cy="115" r="3" fill="#fff"/><circle cx="31" cy="132" r="2" fill="#c4b5fd"/><path d="M0 218Q63 178 120 215T240 202V260H0Z" fill="#312e81"/><ellipse cx="63" cy="205" rx="27" ry="9" fill="#6d28d9" opacity=".75"/>`;
+                if (draw === 'castle') return `<rect width="240" height="260" fill="#dbeafe"/><path d="M0 178Q58 144 118 172T240 161V260H0Z" fill="#e0e7ff"/><path d="M40 160V82H73V54L89 70L105 54V160ZM105 160V99H139V70L154 86L169 70V160ZM169 160V89H202V63L217 78L232 63V160Z" fill="#c4b5fd" stroke="#8b5cf6" stroke-width="3"/><rect x="79" y="118" width="16" height="42" rx="8" fill="#6d28d9"/><rect x="143" y="123" width="16" height="37" rx="8" fill="#6d28d9"/><circle cx="33" cy="42" r="18" fill="#fff" opacity=".86"/>`;
+                return `<defs><linearGradient id="avatarBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dbeafe"/><stop offset=".52" stop-color="#dcfce7"/><stop offset="1" stop-color="#fce7f3"/></linearGradient></defs><rect width="240" height="260" fill="url(#avatarBg)"/><circle cx="32" cy="38" r="18" fill="#fff" opacity=".55"/><circle cx="208" cy="56" r="28" fill="#fde68a" opacity=".38"/>`;
+            }
+            function avatarAura(draw) {
+                if (draw === 'star') return `<g class="avatar-aura-spin" fill="#fbbf24"><text x="50" y="90" font-size="22">✦</text><text x="181" y="82" font-size="18">✦</text><text x="42" y="175" font-size="18">✧</text><text x="186" y="182" font-size="24">✦</text></g>`;
+                if (draw === 'heart') return `<g class="avatar-aura-pulse" fill="#ec4899"><text x="48" y="94" font-size="21">♥</text><text x="181" y="89" font-size="18">♥</text><text x="45" y="178" font-size="15">♥</text><text x="188" y="174" font-size="24">♥</text></g>`;
+                if (draw === 'leaf') return `<g class="avatar-aura-spin" fill="#22c55e"><ellipse cx="52" cy="86" rx="7" ry="13" transform="rotate(-35 52 86)"/><ellipse cx="190" cy="90" rx="7" ry="13" transform="rotate(35 190 90)"/><ellipse cx="45" cy="178" rx="6" ry="12" transform="rotate(20 45 178)"/><ellipse cx="195" cy="175" rx="6" ry="12" transform="rotate(-20 195 175)"/></g>`;
+                if (draw === 'fire') return `<g class="avatar-aura-pulse" fill="#f97316" opacity=".9"><path d="M36 205c-9-23 8-31 8-48 12 9 18 20 11 38 12-7 14-16 14-27 15 17 13 35 1 46z"/><path d="M204 205c9-23-8-31-8-48-12 9-18 20-11 38-12-7-14-16-14-27-15 17-13 35-1 46z" fill="#ef4444"/></g>`;
+                if (draw === 'rainbow') return `<path class="avatar-aura-pulse" d="M42 174a80 80 0 0 1 156 0" fill="none" stroke="url(#rainbowHair)" stroke-width="14" stroke-linecap="round" opacity=".72"/>`;
+                if (draw === 'lightning') return `<g class="avatar-aura-pulse" fill="#fde047" stroke="#fff" stroke-width="2"><path d="M42 72l20 9-12 21 17 3-28 37 8-28-17-4z"/><path d="M198 72l-20 9 12 21-17 3 28 37-8-28 17-4z"/></g>`;
+                return '';
+            }
+            function avatarHair(item) {
+                const c = item.color || '#3b2b24';
+                if (item.draw === 'bob') return `<path d="M77 91c-8-29 9-59 43-59s52 29 44 63l-8 23-14-12-44 1-15 13z" fill="${c}"/><path d="M87 67c13-23 54-26 68 0-14-10-24-7-36-13-9 8-19 12-32 13z" fill="${c}"/>`;
+                if (item.draw === 'curl') return `<g fill="${c}"><circle cx="88" cy="59" r="20"/><circle cx="108" cy="45" r="20"/><circle cx="132" cy="44" r="20"/><circle cx="153" cy="58" r="20"/><circle cx="84" cy="83" r="17"/><circle cx="158" cy="82" r="17"/></g>`;
+                if (item.draw === 'pony') return `<ellipse cx="163" cy="72" rx="23" ry="34" fill="${c}"/><path d="M80 77c4-31 24-48 42-48 28 0 43 19 45 44-18-10-31-18-43-27-12 15-25 25-44 31z" fill="${c}"/><circle cx="157" cy="47" r="8" fill="#fb7185"/>`;
+                if (item.draw === 'spike') return `<path d="M78 76l9-30 13 12 7-28 16 22 13-27 9 31 18-17 0 37c-21-20-60-22-85 0z" fill="${c}"/>`;
+                if (item.draw === 'buns') return `<circle cx="82" cy="52" r="21" fill="${c}"/><circle cx="158" cy="52" r="21" fill="${c}"/><path d="M81 79c1-32 17-51 39-51 24 0 40 20 41 51-19-14-28-19-42-30-10 12-23 22-38 30z" fill="${c}"/>`;
+                return `<path d="M80 72c4-28 19-44 40-44 27 0 42 18 43 46-16-8-29-16-42-28-10 12-22 20-41 26z" fill="${c}"/>`;
+            }
+            function avatarTop(item) {
+                const c=item.color || '#5eead4';
+                let extra='';
+                if (item.draw==='hoodie') extra=`<path d="M95 133q25-24 50 0" fill="none" stroke="#c4b5fd" stroke-width="8"/><path d="M116 132v18M124 132v18" stroke="#fff" stroke-width="2"/>`;
+                if (item.draw==='soccer') extra=`<path d="M100 139h40" stroke="#fff" stroke-width="4"/><text x="120" y="172" text-anchor="middle" fill="#fff" font-size="22" font-weight="900">10</text>`;
+                if (item.draw==='uniform') extra=`<path d="M105 132l15 18 15-18" fill="#e2e8f0"/><path d="M120 147l8 28-8 10-8-10z" fill="#ef4444"/>`;
+                if (item.draw==='wizard') extra=`<circle cx="104" cy="154" r="3" fill="#fde047"/><path d="M135 145l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#fde047"/>`;
+                if (item.draw==='armor') extra=`<path d="M95 136l25 13 25-13v51l-25 12-25-12z" fill="#cbd5e1" stroke="#475569" stroke-width="3"/><path d="M120 149v48M97 166h46" stroke="#64748b" stroke-width="3"/>`;
+                if (item.draw==='space') extra=`<rect x="101" y="148" width="38" height="28" rx="6" fill="#334155"/><circle cx="111" cy="158" r="4" fill="#22c55e"/><circle cx="122" cy="158" r="4" fill="#ef4444"/><path d="M106 168h27" stroke="#60a5fa" stroke-width="3"/>`;
+                return `<path d="M83 135q37-18 74 0l12 61H71z" fill="${c}" stroke="rgba(15,23,42,.18)" stroke-width="2"/>${extra}`;
+            }
+            function avatarBottom(item, skin) {
+                const c=item.color || '#475569';
+                if (item.draw==='skirt') return `<path d="M91 191h58l10 28H81z" fill="${c}"/><rect x="93" y="217" width="17" height="29" rx="8" fill="${skin}"/><rect x="130" y="217" width="17" height="29" rx="8" fill="${skin}"/><path d="M90 213h60" stroke="#fff" stroke-width="2" opacity=".6"/>`;
+                if (item.draw==='robe') return `<path d="M87 190h66l18 56H69z" fill="${c}"/><path d="M120 193v51" stroke="#a78bfa" stroke-width="3"/>`;
+                const extra = item.draw==='track' ? `<path d="M102 194v51M138 194v51" stroke="#f8fafc" stroke-width="3" opacity=".8"/>` : item.draw==='armor' ? `<path d="M89 214h27M124 214h27" stroke="#cbd5e1" stroke-width="5"/>` : item.draw==='space' ? `<path d="M91 226h26M123 226h26" stroke="#94a3b8" stroke-width="5"/>` : '';
+                const shortY = item.draw==='shorts' ? 222 : 244;
+                return `<path d="M86 190h68l-5 ${shortY-190}h-28l-1-23-2 23H91z" fill="${c}"/>${item.draw==='shorts'?`<rect x="94" y="221" width="18" height="25" rx="8" fill="${skin}"/><rect x="129" y="221" width="18" height="25" rx="8" fill="${skin}"/>`:''}${extra}`;
+            }
+            function avatarHead(item) {
+                if (item.draw==='cap') return `<path d="M82 50q39-28 76 0v20H82z" fill="#2563eb"/><path d="M148 63h30q-7 13-30 8z" fill="#1d4ed8"/>`;
+                if (item.draw==='headphones') return `<path d="M78 66a42 42 0 0 1 84 0" fill="none" stroke="#8b5cf6" stroke-width="9"/><rect x="72" y="65" width="16" height="35" rx="8" fill="#ec4899"/><rect x="152" y="65" width="16" height="35" rx="8" fill="#ec4899"/>`;
+                if (item.draw==='wizard') return `<path d="M90 55l30-48 31 48z" fill="#4c1d95"/><ellipse cx="120" cy="57" rx="46" ry="11" fill="#6d28d9"/><text x="118" y="39" text-anchor="middle" fill="#fde047" font-size="17">★</text>`;
+                if (item.draw==='crown') return `<path d="M88 55l7-31 18 18 9-28 10 28 18-18 5 31z" fill="#fbbf24" stroke="#d97706" stroke-width="3"/><circle cx="122" cy="28" r="5" fill="#ef4444"/>`;
+                if (item.draw==='halo') return `<ellipse cx="120" cy="28" rx="39" ry="10" fill="none" stroke="#fde047" stroke-width="7" filter="url(#glow)"/>`;
+                if (item.draw==='space') return `<circle cx="120" cy="79" r="58" fill="rgba(224,242,254,.28)" stroke="#e2e8f0" stroke-width="9"/><path d="M75 54q44-34 90 0" fill="none" stroke="#94a3b8" stroke-width="6"/>`;
+                return '';
+            }
+            function avatarFace(item) {
+                if (item.draw==='round') return `<g fill="none" stroke="#334155" stroke-width="4"><circle cx="103" cy="86" r="13"/><circle cx="137" cy="86" r="13"/><path d="M116 86h8"/></g>`;
+                if (item.draw==='sun') return `<path d="M88 76h30l-4 20H94zM122 76h30l-6 20h-20z" fill="#111827"/><path d="M116 82h9" stroke="#111827" stroke-width="4"/>`;
+                if (item.draw==='star') return `<g fill="#fde047" stroke="#f59e0b" stroke-width="2"><path d="M102 72l5 9 10 1-7 7 2 10-10-5-9 5 2-10-8-7 11-1z"/><path d="M138 72l5 9 10 1-7 7 2 10-10-5-9 5 2-10-8-7 11-1z"/></g>`;
+                return '';
+            }
+            function avatarHand(item, skin) {
+                if (item.draw==='book') return `<rect x="159" y="161" width="34" height="43" rx="4" fill="#2563eb" transform="rotate(-8 176 182)"/><path d="M176 164v38" stroke="#bfdbfe" stroke-width="3"/>`;
+                if (item.draw==='ball') return `<circle cx="183" cy="190" r="23" fill="#f8fafc" stroke="#111827" stroke-width="2"/><path d="M183 178l10 7-4 12h-12l-4-12z" fill="#111827"/><path d="M183 167v11M160 183l13 2M166 206l11-9M200 205l-11-8M204 182l-11 3" stroke="#111827" stroke-width="2"/>`;
+                if (item.draw==='guitar') return `<ellipse cx="181" cy="189" rx="20" ry="27" fill="#f97316" transform="rotate(-16 181 189)"/><circle cx="178" cy="190" r="7" fill="#7c2d12"/><path d="M187 169l21-39" stroke="#92400e" stroke-width="9" stroke-linecap="round"/><path d="M207 129l7-9" stroke="#1f2937" stroke-width="8" stroke-linecap="round"/>`;
+                if (item.draw==='sword') return `<path d="M178 192l28-66 8 4-28 66z" fill="#dbeafe" stroke="#475569" stroke-width="2"/><path d="M173 184l22 10" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"/><circle cx="180" cy="198" r="6" fill="#7c3aed"/>`;
+                if (item.draw==='wand') return `<path d="M177 194l28-52" stroke="#a78bfa" stroke-width="7" stroke-linecap="round"/><path d="M207 128l5 10 11 1-8 8 2 11-10-6-10 6 2-11-8-8 11-1z" fill="#fde047" stroke="#f59e0b" stroke-width="2"/>`;
+                return '';
+            }
+            function renderAvatarSVG(equipment = avatarEquipped) {
+                const skin = avatarItem('skin', equipment.skin);
+                const hair = avatarItem('hair', equipment.hair);
+                const top = avatarItem('top', equipment.top);
+                const bottom = avatarItem('bottom', equipment.bottom);
+                const head = avatarItem('head', equipment.head);
+                const face = avatarItem('face', equipment.face);
+                const hand = avatarItem('hand', equipment.hand);
+                const bg = avatarItem('background', equipment.background);
+                const aura = avatarItem('aura', equipment.aura);
+                const s = skin.color || '#F1C27D';
+                return `<svg viewBox="0 0 240 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="나의 Kidscade 아바타">
+                    <defs>
+                        <linearGradient id="rainbowHair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb7185"/><stop offset=".25" stop-color="#fbbf24"/><stop offset=".5" stop-color="#34d399"/><stop offset=".75" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+                        <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    </defs>
+                    ${avatarBackground(bg.draw)}
+                    ${avatarAura(aura.draw)}
+                    <ellipse cx="120" cy="244" rx="55" ry="9" fill="rgba(15,23,42,.16)"/>
+                    ${avatarBottom(bottom, s)}
+                    <path d="M82 149q-15 9-21 34" fill="none" stroke="${s}" stroke-width="16" stroke-linecap="round"/><path d="M158 149q15 9 21 34" fill="none" stroke="${s}" stroke-width="16" stroke-linecap="round"/>
+                    ${avatarTop(top)}
+                    <circle cx="120" cy="83" r="44" fill="${s}" stroke="rgba(15,23,42,.12)" stroke-width="2"/>
+                    ${avatarHair(hair)}
+                    <circle cx="104" cy="87" r="4.5" fill="#1f2937"/><circle cx="136" cy="87" r="4.5" fill="#1f2937"/><path d="M111 104q9 8 18 0" fill="none" stroke="#9f4f4f" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="93" cy="101" r="7" fill="#fb7185" opacity=".20"/><circle cx="147" cy="101" r="7" fill="#fb7185" opacity=".20"/>
+                    ${avatarFace(face)}
+                    ${avatarHead(head)}
+                    ${avatarHand(hand, s)}
+                </svg>`;
+            }
+            function getAvatarItemSwatch(category, item) {
+                if (category === 'skin') return `<span style="display:block;width:46px;height:46px;border-radius:50%;background:${item.color};box-shadow:inset 0 0 0 3px rgba(255,255,255,.65),0 4px 10px rgba(15,23,42,.12)"></span>`;
+                if (category === 'hair') return `<span style="font-size:2.1rem">${item.icon}</span><span style="display:block;width:28px;height:28px;margin-left:-8px;border-radius:50%;background:${item.color.startsWith('url')?'linear-gradient(135deg,#fb7185,#fbbf24,#34d399,#60a5fa,#a78bfa)':item.color};border:2px solid white"></span>`;
+                return `<span>${item.icon || '✨'}</span>`;
+            }
+            function updateAvatarCurrency() {
+                const text = `🌱 ${coins.toLocaleString()} 씨앗`;
+                const modalSeed = document.getElementById('avatar-modal-seeds');
+                const plazaSeed = document.getElementById('avatar-plaza-seeds');
+                if (modalSeed) modalSeed.textContent = text;
+                if (plazaSeed) plazaSeed.textContent = `${text} 보유`;
+            }
+            function renderAvatarPlaza() {
+                const preview = document.getElementById('avatar-plaza-preview');
+                if (preview) preview.innerHTML = renderAvatarSVG();
+                const owned = getAvatarOwnedCount(), total = getAvatarTotalCount();
+                const collection = document.getElementById('avatar-collection-summary');
+                if (collection) collection.textContent = `컬렉션 ${owned}/${total}`;
+                const summary = document.getElementById('avatar-equipped-summary');
+                if (summary) {
+                    const top = avatarItem('top', avatarEquipped.top)?.name || '기본 상의';
+                    const aura = avatarItem('aura', avatarEquipped.aura)?.name || '효과 없음';
+                    summary.textContent = `${top} · ${aura}`;
+                }
+                updateAvatarCurrency();
+            }
+            function renderAvatarTabs() {
+                const el = document.getElementById('avatar-tabs');
+                if (!el) return;
+                el.innerHTML = Object.keys(avatarDB).map(cat => `<button type="button" class="avatar-tab ${cat===avatarActiveCategory?'active':''}" data-avatar-tab="${cat}">${avatarCategoryLabels[cat]}</button>`).join('');
+                el.querySelectorAll('[data-avatar-tab]').forEach(btn => btn.addEventListener('click', () => {
+                    playUISound('click');
+                    avatarActiveCategory = btn.dataset.avatarTab;
+                    renderAvatarTabs(); renderAvatarItems();
+                }));
+            }
+            function renderAvatarItems() {
+                const grid = document.getElementById('avatar-item-grid');
+                if (!grid) return;
+                const category = avatarActiveCategory;
+                grid.innerHTML = avatarDB[category].map(item => {
+                    const owned = isAvatarOwned(category, item.id);
+                    const equippedNow = avatarEquipped[category] === item.id;
+                    let actionClass = equippedNow ? 'on' : owned ? 'wear' : item.price === 0 ? 'free' : '';
+                    let actionText = equippedNow ? '착용 중' : owned ? '착용' : item.price === 0 ? '무료 받기' : '구매';
+                    return `<article class="avatar-item-card ${owned?'owned':''} ${equippedNow?'equipped':''}">
+                        ${equippedNow?'<span class="avatar-item-badge">사용 중</span>':owned?'<span class="avatar-item-badge">보유</span>':''}
+                        <div class="avatar-item-swatch">${getAvatarItemSwatch(category,item)}</div>
+                        <div class="avatar-item-name">${escSvg(item.name)}</div>
+                        <div class="avatar-item-desc">${escSvg(item.desc)}</div>
+                        <div class="avatar-item-footer">
+                            <span class="avatar-item-price">${item.price===0?'무료':`🌱 ${item.price.toLocaleString()}`}</span>
+                            <button type="button" class="avatar-item-action ${actionClass}" data-avatar-item="${item.id}" ${equippedNow?'disabled':''}>${actionText}</button>
+                        </div>
+                    </article>`;
+                }).join('');
+                grid.querySelectorAll('[data-avatar-item]').forEach(btn => btn.addEventListener('click', () => handleAvatarItem(category, btn.dataset.avatarItem)));
+            }
+            function renderAvatarSets() {
+                const el = document.getElementById('avatar-set-list');
+                if (!el) return;
+                el.innerHTML = avatarSetDB.map(set => {
+                    const missing=[];
+                    Object.entries(set.equip).forEach(([cat,id]) => { if (!isAvatarOwned(cat,id)) missing.push(avatarItem(cat,id)); });
+                    const raw = missing.reduce((sum,item)=>sum+(item?.price||0),0);
+                    const price = missing.length ? Math.ceil((raw*.82)/10)*10 : 0;
+                    return `<button type="button" class="avatar-set-btn" data-avatar-set="${set.id}"><span>${set.name}<small>${set.desc}</small></span><span class="avatar-set-price">${price?`🌱 ${price.toLocaleString()}`:'세트 착용'}</span></button>`;
+                }).join('');
+                el.querySelectorAll('[data-avatar-set]').forEach(btn => btn.addEventListener('click',()=>buyOrWearAvatarSet(btn.dataset.avatarSet)));
+            }
+            function renderAvatarWardrobe() {
+                const large = document.getElementById('avatar-large-preview');
+                if (large) large.innerHTML = renderAvatarSVG();
+                const box = document.getElementById('avatar-collection-box');
+                if (box) {
+                    const owned=getAvatarOwnedCount(), total=getAvatarTotalCount();
+                    const paidOwned=Object.keys(avatarDB).reduce((sum,cat)=>sum+(avatarInventory[cat]||[]).filter(id => (avatarItem(cat,id)?.price||0)>0).length,0);
+                    box.innerHTML = `🎒 <strong>${owned}/${total}개</strong> 수집 · 구매한 특별 파츠 ${paidOwned}개<br>구매한 파츠는 사라지지 않고 언제든 다시 갈아입을 수 있어요.`;
+                }
+                renderAvatarTabs(); renderAvatarItems(); renderAvatarSets(); updateAvatarCurrency();
+            }
+            function handleAvatarItem(category, itemId) {
+                const item = avatarItem(category,itemId);
+                if (!item) return;
+                if (isAvatarOwned(category,itemId)) {
+                    avatarEquipped[category]=itemId; saveAvatarData();
+                    playUISound('click'); showToast(`${item.name} 착용 완료!`);
+                } else {
+                    if (coins < item.price) { playUISound('click'); showToast(`씨앗이 부족해요! (${item.price.toLocaleString()}개 필요)`); return; }
+                    coins -= item.price;
+                    avatarInventory[category].push(itemId);
+                    avatarEquipped[category]=itemId;
+                    saveAvatarData(); updateCoinUI(); playUISound('print');
+                    showToast(`${item.name}을(를) 얻고 바로 착용했어요!`);
+                }
+                renderAvatarWardrobe(); renderAvatarPlaza();
+            }
+            function buyOrWearAvatarSet(setId) {
+                const set=avatarSetDB.find(s=>s.id===setId); if(!set) return;
+                const missing=[];
+                Object.entries(set.equip).forEach(([cat,id])=>{ if(!isAvatarOwned(cat,id)) missing.push({cat,id,item:avatarItem(cat,id)}); });
+                const raw=missing.reduce((sum,row)=>sum+(row.item?.price||0),0);
+                const price=missing.length?Math.ceil((raw*.82)/10)*10:0;
+                if(price>coins){ playUISound('click'); showToast(`세트 구매에 씨앗이 부족해요! (${price.toLocaleString()}개 필요)`); return; }
+                if(price>0){
+                    coins-=price;
+                    missing.forEach(row=>{ if(!avatarInventory[row.cat].includes(row.id)) avatarInventory[row.cat].push(row.id); });
+                    updateCoinUI(); playUISound('print'); showToast(`${set.name} 세트를 할인 가격으로 모았어요!`);
+                } else { playUISound('click'); showToast(`${set.name} 세트로 갈아입었어요!`); }
+                Object.entries(set.equip).forEach(([cat,id])=>avatarEquipped[cat]=id);
+                saveAvatarData(); renderAvatarWardrobe(); renderAvatarPlaza();
+            }
+            function openAvatarWardrobe() {
+                playUISound('open');
+                renderAvatarWardrobe();
+                document.getElementById('avatar-modal')?.classList.remove('hidden');
+                document.body.style.overflow='hidden';
+            }
+            function closeAvatarWardrobe() {
+                playUISound('close');
+                document.getElementById('avatar-modal')?.classList.add('hidden');
+                document.body.style.overflow='';
+                renderAvatarPlaza();
+            }
+            loadAvatarData();
+            document.getElementById('avatar-open-btn')?.addEventListener('click', openAvatarWardrobe);
+            document.getElementById('avatar-close-btn')?.addEventListener('click', closeAvatarWardrobe);
+            document.getElementById('avatar-modal')?.addEventListener('click', e => { if(e.target?.id==='avatar-modal') closeAvatarWardrobe(); });
+            document.addEventListener('keydown', e => { if(e.key==='Escape' && !document.getElementById('avatar-modal')?.classList.contains('hidden')) closeAvatarWardrobe(); });
+            renderAvatarPlaza();
+
 
             // =====================================
             // 게임별 추천 에너지 시스템: 게임마다 최대 5개, 5분마다 1개 회복. 에너지가 있으면 보상 2배, 없어도 플레이 가능
