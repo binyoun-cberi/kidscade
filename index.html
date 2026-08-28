@@ -3240,14 +3240,48 @@ body.dark-mode .site-credits {
                 if (draw === 'lightning') return `<g class="avatar-aura-pulse" fill="#fde047" stroke="#fff" stroke-width="2"><path d="M42 72l20 9-12 21 17 3-28 37 8-28-17-4z"/><path d="M198 72l-20 9 12 21-17 3 28 37-8-28 17-4z"/></g>`;
                 return '';
             }
-            function avatarHair(item) {
+            // 머리카락은 얼굴 뒤쪽과 앞쪽을 분리해서 그립니다.
+            // 한 덩어리를 얼굴 위에 올리던 이전 방식은 단발/곱슬/묶은 머리가
+            // 얼굴과 눈을 뚫고 지나가는 것처럼 보일 수 있었습니다.
+            function avatarHairBack(item) {
                 const c = item.color || '#3b2b24';
-                if (item.draw === 'bob') return `<path d="M77 91c-8-29 9-59 43-59s52 29 44 63l-8 23-14-12-44 1-15 13z" fill="${c}"/><path d="M87 67c13-23 54-26 68 0-14-10-24-7-36-13-9 8-19 12-32 13z" fill="${c}"/>`;
-                if (item.draw === 'curl') return `<g fill="${c}"><circle cx="88" cy="59" r="20"/><circle cx="108" cy="45" r="20"/><circle cx="132" cy="44" r="20"/><circle cx="153" cy="58" r="20"/><circle cx="84" cy="83" r="17"/><circle cx="158" cy="82" r="17"/></g>`;
-                if (item.draw === 'pony') return `<ellipse cx="163" cy="72" rx="23" ry="34" fill="${c}"/><path d="M80 77c4-31 24-48 42-48 28 0 43 19 45 44-18-10-31-18-43-27-12 15-25 25-44 31z" fill="${c}"/><circle cx="157" cy="47" r="8" fill="#fb7185"/>`;
-                if (item.draw === 'spike') return `<path d="M78 76l9-30 13 12 7-28 16 22 13-27 9 31 18-17 0 37c-21-20-60-22-85 0z" fill="${c}"/>`;
-                if (item.draw === 'buns') return `<circle cx="82" cy="52" r="21" fill="${c}"/><circle cx="158" cy="52" r="21" fill="${c}"/><path d="M81 79c1-32 17-51 39-51 24 0 40 20 41 51-19-14-28-19-42-30-10 12-23 22-38 30z" fill="${c}"/>`;
-                return `<path d="M80 72c4-28 19-44 40-44 27 0 42 18 43 46-16-8-29-16-42-28-10 12-22 20-41 26z" fill="${c}"/>`;
+                if (item.draw === 'bob') {
+                    return `<path d="M73 89C70 52 89 25 120 25s50 27 47 64l-4 30c-5 9-13 15-24 19l-5-25h-28l-5 25c-11-4-19-11-24-20z" fill="${c}"/>`;
+                }
+                if (item.draw === 'curl') {
+                    return `<g fill="${c}"><circle cx="82" cy="62" r="20"/><circle cx="99" cy="43" r="20"/><circle cx="120" cy="37" r="21"/><circle cx="142" cy="43" r="20"/><circle cx="159" cy="62" r="20"/><circle cx="78" cy="87" r="17"/><circle cx="162" cy="87" r="17"/></g>`;
+                }
+                if (item.draw === 'pony') {
+                    return `<ellipse cx="169" cy="76" rx="24" ry="36" fill="${c}" transform="rotate(-8 169 76)"/><path d="M78 82C77 47 96 25 121 25c29 0 47 23 44 59-15-16-31-23-45-24-14 1-28 8-42 22z" fill="${c}"/>`;
+                }
+                if (item.draw === 'buns') {
+                    return `<circle cx="79" cy="51" r="22" fill="${c}"/><circle cx="161" cy="51" r="22" fill="${c}"/><path d="M78 81C78 46 95 25 120 25s42 21 42 56c-13-14-27-21-42-21s-29 7-42 21z" fill="${c}"/>`;
+                }
+                if (item.draw === 'spike') {
+                    return `<path d="M77 77l7-31 14 10 8-29 16 22 14-28 9 31 19-17-2 43c-14-15-29-21-43-21-15 0-29 7-42 20z" fill="${c}"/>`;
+                }
+                // 숏컷도 뒤쪽 볼륨을 조금 깔아 두어 머리가 머리통과 자연스럽게 붙습니다.
+                return `<path d="M79 78C79 45 96 25 120 25s42 20 43 54c-13-13-27-20-43-20-15 0-29 6-41 19z" fill="${c}"/>`;
+            }
+
+            function avatarHairFront(item) {
+                const c = item.color || '#3b2b24';
+                if (item.draw === 'curl') {
+                    return `<g fill="${c}"><circle cx="91" cy="52" r="14"/><circle cx="108" cy="44" r="15"/><circle cx="126" cy="43" r="15"/><circle cx="145" cy="51" r="14"/><circle cx="82" cy="69" r="11"/><circle cx="158" cy="69" r="11"/></g>`;
+                }
+                if (item.draw === 'spike') {
+                    return `<path d="M78 72l10-27 13 12 7-27 15 21 13-26 9 30 17-16-2 34c-13-10-26-17-39-27-11 12-24 21-43 26z" fill="${c}"/>`;
+                }
+                if (item.draw === 'pony') {
+                    return `<path d="M80 73C84 43 99 29 121 29c25 0 40 17 43 45-16-8-29-17-42-29-11 13-24 22-42 28z" fill="${c}"/><circle cx="158" cy="47" r="7" fill="#fb7185"/>`;
+                }
+                if (item.draw === 'buns') {
+                    return `<path d="M80 73C83 43 99 29 120 29c23 0 39 16 41 45-16-9-29-17-42-29-10 12-23 21-39 28z" fill="${c}"/>`;
+                }
+                if (item.draw === 'bob') {
+                    return `<path d="M80 72C84 43 99 29 120 29c24 0 40 17 43 45-16-8-29-17-42-29-11 13-24 22-41 27z" fill="${c}"/>`;
+                }
+                return `<path d="M80 71C84 43 99 29 120 29c24 0 40 17 43 45-16-8-29-17-42-29-10 12-23 21-41 26z" fill="${c}"/>`;
             }
             function avatarTop(item) {
                 const c=item.color || '#5eead4';
@@ -3302,7 +3336,7 @@ body.dark-mode .site-credits {
                 const bg = avatarItem('background', equipment.background);
                 const aura = avatarItem('aura', equipment.aura);
                 const s = skin.color || '#F1C27D';
-                return `<svg viewBox="0 0 240 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="나의 Kidscade 아바타">
+                return `<svg viewBox="0 0 240 260" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="나의 Kidscade 아바타" style="width:100%;height:100%;max-width:100%;max-height:100%;display:block">
                     <defs>
                         <linearGradient id="rainbowHair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb7185"/><stop offset=".25" stop-color="#fbbf24"/><stop offset=".5" stop-color="#34d399"/><stop offset=".75" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
                         <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -3312,9 +3346,12 @@ body.dark-mode .site-credits {
                     <ellipse cx="120" cy="244" rx="55" ry="9" fill="rgba(15,23,42,.16)"/>
                     ${avatarBottom(bottom, s)}
                     <path d="M82 149q-15 9-21 34" fill="none" stroke="${s}" stroke-width="16" stroke-linecap="round"/><path d="M158 149q15 9 21 34" fill="none" stroke="${s}" stroke-width="16" stroke-linecap="round"/>
+                    <rect x="108" y="117" width="24" height="29" rx="10" fill="${s}"/>
                     ${avatarTop(top)}
+                    ${avatarHairBack(hair)}
                     <circle cx="120" cy="83" r="44" fill="${s}" stroke="rgba(15,23,42,.12)" stroke-width="2"/>
-                    ${avatarHair(hair)}
+                    <path d="M81 82q-8 2-7 12t10 9" fill="${s}" stroke="rgba(15,23,42,.10)" stroke-width="2"/><path d="M159 82q8 2 7 12t-10 9" fill="${s}" stroke="rgba(15,23,42,.10)" stroke-width="2"/>
+                    ${avatarHairFront(hair)}
                     <circle cx="104" cy="87" r="4.5" fill="#1f2937"/><circle cx="136" cy="87" r="4.5" fill="#1f2937"/><path d="M111 104q9 8 18 0" fill="none" stroke="#9f4f4f" stroke-width="3" stroke-linecap="round"/>
                     <circle cx="93" cy="101" r="7" fill="#fb7185" opacity=".20"/><circle cx="147" cy="101" r="7" fill="#fb7185" opacity=".20"/>
                     ${avatarFace(face)}
