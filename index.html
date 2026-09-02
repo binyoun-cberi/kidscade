@@ -2962,14 +2962,34 @@ body.dark-mode .site-credits {
             // =====================================
             // 데이터 및 경제 시스템 초기화
             // =====================================
-            let favorites = JSON.parse(localStorage.getItem('kidscade_favs') || '[]');
-            let recents = JSON.parse(localStorage.getItem('kidscade_recents') || '[]');
+            function safeParseStorage(key, fallback) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (raw === null) return fallback;
+                    const parsed = JSON.parse(raw);
+                    return parsed ?? fallback;
+                } catch (error) {
+                    console.warn(`[Kidscade] 손상된 저장값 복구: ${key}`, error);
+                    try { localStorage.setItem(key, JSON.stringify(fallback)); } catch (_) {}
+                    return fallback;
+                }
+            }
+
+            let favorites = safeParseStorage('kidscade_favs', []);
+            let recents = safeParseStorage('kidscade_recents', []);
             
-            let coins = parseInt(localStorage.getItem('kidscade_coins') || '0');
-            let inventory = JSON.parse(localStorage.getItem('kidscade_inventory') || '{"emoji":["e_basic"],"title_p":["tp_basic"],"title_n":["tn_basic"],"theme":["th_basic"]}');
-            let equipped = JSON.parse(localStorage.getItem('kidscade_equipped') || '{"emoji":"e_basic","title_p":"tp_basic","title_n":"tn_basic","theme":"th_basic"}');
-            let claimedRanks = JSON.parse(localStorage.getItem('kidscade_claimed_ranks') || '{}');
-            let petItems = JSON.parse(localStorage.getItem('kidscade_pet_items') || '{}');
+            let coins = Math.max(0, parseInt(localStorage.getItem('kidscade_coins') || '0', 10) || 0);
+            let inventory = safeParseStorage('kidscade_inventory', {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic']});
+            let equipped = safeParseStorage('kidscade_equipped', {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic'});
+            let claimedRanks = safeParseStorage('kidscade_claimed_ranks', {});
+            let petItems = safeParseStorage('kidscade_pet_items', {});
+
+            if (!Array.isArray(favorites)) favorites = [];
+            if (!Array.isArray(recents)) recents = [];
+            if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) inventory = {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic']};
+            if (!equipped || typeof equipped !== 'object' || Array.isArray(equipped)) equipped = {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic'};
+            if (!claimedRanks || typeof claimedRanks !== 'object' || Array.isArray(claimedRanks)) claimedRanks = {};
+            if (!petItems || typeof petItems !== 'object' || Array.isArray(petItems)) petItems = {};
 
             if (!inventory.land) inventory.land = ['land_basic'];
             if (!inventory.card) inventory.card = ['card_basic'];
@@ -2982,7 +3002,7 @@ body.dark-mode .site-credits {
 
             const PLAY_LIMIT_MAX = 5;
             const PLAY_RECHARGE_MS = 5 * 60 * 1000;
-            let gamePlayLimits = JSON.parse(localStorage.getItem('kidscade_game_play_limits') || '{}');
+            let gamePlayLimits = safeParseStorage('kidscade_game_play_limits', {});
             let playLimitTimer = null;
             let activeGameId = null;
             let activeGameHadBonus = false;
@@ -3079,10 +3099,40 @@ body.dark-mode .site-credits {
                 "세상에서 가장 뜨거운 바다는? 열바다", "왕이 넘어지면? 킹콩", "자동차가 울면? 잉카", "얼음이 죽으면? 다이빙"
             ];
 
-            function updateCoinUI() {
+            function renderCoinUI() {
                 coinDisplay.innerText = `🌱 ${coins.toLocaleString()} 씨앗`;
-                localStorage.setItem('kidscade_coins', coins);
                 if (typeof updateAvatarCurrency === 'function') updateAvatarCurrency();
+            }
+
+            function updateCoinUI() {
+                coins = Math.max(0, Math.round(Number(coins) || 0));
+                localStorage.setItem('kidscade_coins', String(coins));
+                renderCoinUI();
+            }
+
+            function getPersistedCoins() {
+                const stored = parseInt(localStorage.getItem('kidscade_coins') || '0', 10);
+                return Number.isFinite(stored) ? Math.max(0, stored) : 0;
+            }
+
+            function changeSeeds(amount, reason = '', options = {}) {
+                const delta = Math.trunc(Number(amount) || 0);
+                if (delta === 0) return true;
+
+                // 다른 탭/iframe에서 먼저 바뀐 값이 있으면 최신 저장값을 기준으로 계산합니다.
+                const persisted = getPersistedCoins();
+                if (persisted !== coins) coins = persisted;
+
+                const next = coins + delta;
+                if (next < 0) return false;
+                coins = next;
+                updateCoinUI();
+
+                if (options.toast !== false && reason) {
+                    const sign = delta > 0 ? '+' : '';
+                    showToast(`${reason} (${sign}${delta.toLocaleString()} 씨앗)`, true);
+                }
+                return true;
             }
 
             function showToast(msg, isCoin = false) {
@@ -3096,10 +3146,19 @@ body.dark-mode .site-credits {
             }
 
             function addCoins(amount, reason) {
-                coins += amount;
-                updateCoinUI();
-                showToast(`${reason} (+${amount.toLocaleString()} 씨앗)`, true);
+                return changeSeeds(Math.abs(Math.trunc(Number(amount) || 0)), reason, { toast: true });
             }
+
+            // 같은 사이트를 여러 탭에서 열어도 화면의 씨앗/학습시간이 오래된 값으로 덮이지 않게 동기화합니다.
+            window.addEventListener('storage', (event) => {
+                if (event.key === 'kidscade_coins') {
+                    coins = Math.max(0, parseInt(event.newValue || '0', 10) || 0);
+                    renderCoinUI();
+                }
+                if (event.key === 'kidscade_playtime_sec' && typeof syncPlayTimeFromStorage === 'function') {
+                    syncPlayTimeFromStorage();
+                }
+            });
 
 
             // =====================================
@@ -3448,10 +3507,10 @@ body.dark-mode .site-credits {
                     playUISound('click'); showToast(`${item.name} 착용 완료!`);
                 } else {
                     if (coins < item.price) { playUISound('click'); showToast(`씨앗이 부족해요! (${item.price.toLocaleString()}개 필요)`); return; }
-                    coins -= item.price;
+                    if (!changeSeeds(-item.price, '', { toast: false })) return;
                     avatarInventory[category].push(itemId);
                     avatarEquipped[category]=itemId;
-                    saveAvatarData(); updateCoinUI(); playUISound('print');
+                    saveAvatarData(); playUISound('print');
                     showToast(`${item.name}을(를) 얻고 바로 착용했어요!`);
                 }
                 renderAvatarWardrobe(); renderAvatarPlaza();
@@ -3464,9 +3523,9 @@ body.dark-mode .site-credits {
                 const price=missing.length?Math.ceil((raw*.82)/10)*10:0;
                 if(price>coins){ playUISound('click'); showToast(`세트 구매에 씨앗이 부족해요! (${price.toLocaleString()}개 필요)`); return; }
                 if(price>0){
-                    coins-=price;
+                    if (!changeSeeds(-price, '', { toast: false })) return;
                     missing.forEach(row=>{ if(!avatarInventory[row.cat].includes(row.id)) avatarInventory[row.cat].push(row.id); });
-                    updateCoinUI(); playUISound('print'); showToast(`${set.name} 세트를 할인 가격으로 모았어요!`);
+                    playUISound('print'); showToast(`${set.name} 세트를 할인 가격으로 모았어요!`);
                 } else { playUISound('click'); showToast(`${set.name} 세트로 갈아입었어요!`); }
                 Object.entries(set.equip).forEach(([cat,id])=>avatarEquipped[cat]=id);
                 saveAvatarData(); renderAvatarWardrobe(); renderAvatarPlaza();
@@ -3632,7 +3691,7 @@ body.dark-mode .site-credits {
                 isSick: false, poops: 0, animalId: 0,
                 expTracks: { math: 0, korean: 0, lang: 0, trivia: 0, music: 0 }
             };
-            let pet = JSON.parse(localStorage.getItem('kidscade_pet') || '{}');
+            let pet = safeParseStorage('kidscade_pet', {});
             pet = { ...defaultPet, ...pet, expTracks: { ...defaultPet.expTracks, ...(pet.expTracks || {}) } };
 
             function clampNumber(value, min, max, fallback = 0) {
@@ -3820,7 +3879,7 @@ ${getEvolutionHintText()}
                 if (!hasStock) {
                     if (!options.allowDirectPurchase) { showToast("상점에서 쑥쑥이 용품을 먼저 구매해 주세요!"); return false; }
                     if (coins < directPrice) { showToast(`씨앗이 부족해요! (${directPrice}씨앗 필요)`); return false; }
-                    coins -= directPrice; updateCoinUI();
+                    if (!changeSeeds(-directPrice, '', { toast: false })) return false;
                 } else {
                     changePetItemCount(itemId, -1);
                 }
@@ -3969,10 +4028,9 @@ ${getEvolutionHintText()}
                 if (!inventory[category]) inventory[category] = [];
                 if (isOwnedShopItem(category, item)) { showToast('이미 가지고 있는 꾸미기예요.'); return; }
                 if (coins < item.price) { showToast(`씨앗이 부족해요! (${item.price}개 필요)`); playUISound('click'); return; }
-                coins -= item.price;
+                if (!changeSeeds(-item.price, '', { toast: false })) return;
                 inventory[category].push(item.id);
                 equipped[category] = item.id;
-                updateCoinUI();
                 localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
                 localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
                 showToast(`${item.name}을(를) 얻고 바로 적용했어요!`);
@@ -3996,24 +4054,29 @@ ${getEvolutionHintText()}
                 const today = getDailyRewardKey();
                 const claimed = localStorage.getItem('kidscade_daily_reward_claimed');
                 if (claimed === today) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
-                localStorage.setItem('kidscade_daily_reward_claimed', today);
+
+                let granted = false;
                 if (item.rewardType === 'seed') {
-                    coins += item.amount;
-                    updateCoinUI();
-                    showToast(`${item.name} 선택! 씨앗 ${item.amount}개를 받았어요.`, true);
+                    granted = changeSeeds(item.amount, '', { toast: false });
+                    if (granted) showToast(`${item.name} 선택! 씨앗 ${item.amount}개를 받았어요.`, true);
                 } else if (item.rewardType === 'exp') {
                     pet.exp += item.amount;
                     savePet();
                     showToast(`${item.name} 선택! 쑥쑥이 경험치 +${item.amount}`);
                     checkPetEvolution();
+                    granted = true;
                 } else {
-                    coins += item.amount;
-                    pet.exp += 10;
-                    updateCoinUI();
-                    savePet();
-                    showToast(`${item.name} 선택! 씨앗 ${item.amount}개와 성장 경험치를 받았어요.`, true);
-                    checkPetEvolution();
+                    granted = changeSeeds(item.amount, '', { toast: false });
+                    if (granted) {
+                        pet.exp += 10;
+                        savePet();
+                        showToast(`${item.name} 선택! 씨앗 ${item.amount}개와 성장 경험치를 받았어요.`, true);
+                        checkPetEvolution();
+                    }
                 }
+
+                // 실제 지급이 끝난 뒤에만 '오늘 수령 완료'를 기록합니다.
+                if (granted) localStorage.setItem('kidscade_daily_reward_claimed', today);
                 renderShop();
                 updatePetUI();
             }
@@ -4138,14 +4201,13 @@ ${getEvolutionHintText()}
                         mission.progress = mission.goal;
                         mission.claimed = true;
                         completedCount++;
-                        coins += mission.reward;
+                        changeSeeds(mission.reward, '', { toast: false });
                         showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개를 받았어요.`, true);
                     }
                 });
                 if (completedCount > 0) {
                     pet.exp += completedCount * 10;
                     savePet();
-                    updateCoinUI();
                     checkPetEvolution();
                 }
                 saveTodayMissionState(state);
@@ -4393,16 +4455,74 @@ ${getEvolutionHintText()}
             });
 
             // =====================================
-            // 학습(플레이) 시간 누적
+            // 학습(플레이) 시간 누적 - 초 단위 안정 저장
             // =====================================
+            const PLAYTIME_SECONDS_KEY = 'kidscade_playtime_sec';
+            const LEGACY_PLAYTIME_MIN_KEY = 'kidscade_playtime';
+            const MIN_REWARD_PLAY_SEC = 30;
             let playStartTime = 0;
-            let totalPlayTimeMin = parseInt(localStorage.getItem('kidscade_playtime') || '0');
-            
+            let playCheckpointTime = 0;
+
+            function loadPlayTimeSeconds() {
+                const savedSeconds = parseInt(localStorage.getItem(PLAYTIME_SECONDS_KEY) || '', 10);
+                const legacyMinutes = Math.max(0, parseInt(localStorage.getItem(LEGACY_PLAYTIME_MIN_KEY) || '0', 10) || 0);
+                const legacySeconds = legacyMinutes * 60;
+
+                // 새 버전/예전 버전을 번갈아 열었더라도 더 큰 누적값을 보존합니다.
+                const bestSeconds = Number.isFinite(savedSeconds) && savedSeconds >= 0
+                    ? Math.max(savedSeconds, legacySeconds)
+                    : legacySeconds;
+                localStorage.setItem(PLAYTIME_SECONDS_KEY, String(bestSeconds));
+                return bestSeconds;
+            }
+
+            let totalPlayTimeSec = loadPlayTimeSeconds();
+
+            function persistPlayTime() {
+                totalPlayTimeSec = Math.max(0, Math.floor(Number(totalPlayTimeSec) || 0));
+                localStorage.setItem(PLAYTIME_SECONDS_KEY, String(totalPlayTimeSec));
+                // 예전 게임/기능이 이 키를 읽더라도 호환되도록 분 단위 값도 함께 유지합니다.
+                localStorage.setItem(LEGACY_PLAYTIME_MIN_KEY, String(Math.floor(totalPlayTimeSec / 60)));
+            }
+
             function updatePlayTimeDisplay() {
-                const hours = Math.floor(totalPlayTimeMin / 60); const mins = totalPlayTimeMin % 60;
-                let text = `총 학습 시간: `; if (hours > 0) text += `${hours}시간 `; text += `${mins}분`;
+                const hours = Math.floor(totalPlayTimeSec / 3600);
+                const mins = Math.floor((totalPlayTimeSec % 3600) / 60);
+                const secs = totalPlayTimeSec % 60;
+                let text = '총 학습 시간: ';
+                if (hours > 0) text += `${hours}시간 `;
+                if (hours > 0 || mins > 0) text += `${mins}분 `;
+                text += `${secs}초`;
                 document.getElementById('total-playtime').innerText = text;
             }
+
+            function syncPlayTimeFromStorage() {
+                const stored = parseInt(localStorage.getItem(PLAYTIME_SECONDS_KEY) || '0', 10);
+                if (Number.isFinite(stored) && stored >= 0 && stored !== totalPlayTimeSec) {
+                    totalPlayTimeSec = stored;
+                    updatePlayTimeDisplay();
+                }
+            }
+
+            function checkpointPlayTime(now = Date.now()) {
+                if (playStartTime <= 0 || playCheckpointTime <= 0) return 0;
+                const deltaSec = Math.floor((now - playCheckpointTime) / 1000);
+                if (deltaSec <= 0) return 0;
+                totalPlayTimeSec += deltaSec;
+                playCheckpointTime += deltaSec * 1000;
+                persistPlayTime();
+                updatePlayTimeDisplay();
+                return deltaSec;
+            }
+
+            // 게임이 열린 동안 주기적으로 저장해서 브라우저/TV가 갑자기 종료돼도 손실을 줄입니다.
+            setInterval(() => checkpointPlayTime(), 5000);
+            window.addEventListener('pagehide', () => checkpointPlayTime());
+            window.addEventListener('beforeunload', () => checkpointPlayTime());
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') checkpointPlayTime();
+            });
+
             updatePlayTimeDisplay();
 
             // =====================================
@@ -4424,7 +4544,7 @@ ${getEvolutionHintText()}
                     showToast(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${formatRechargeTime(getNextRechargeMs(gameId))} 뒤 보너스 +1`);
                 }
 
-                playUISound('open'); playStartTime = Date.now(); activeGameId = gameId;
+                playUISound('open'); playStartTime = Date.now(); playCheckpointTime = playStartTime; activeGameId = gameId;
                 activeGameCategory = originCard.getAttribute('data-category') || "all";
                 trackRecent(gameId);
                 const energyState = getPlayState(gameId);
@@ -4435,29 +4555,37 @@ ${getEvolutionHintText()}
             }
 
             closeModalBtn.addEventListener('click', () => {
-                playUISound('close'); gameModal.classList.add('hidden'); gameIframe.src = ""; document.body.style.overflow = 'auto'; 
-                
+                const closedAt = Date.now();
+                playUISound('close'); gameModal.classList.add('hidden'); gameIframe.src = ""; document.body.style.overflow = 'auto';
+
                 if (playStartTime > 0) {
-                    const sessionMin = Math.floor((Date.now() - playStartTime) / 60000);
-                    const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
-                    const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
-                    const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
-                    const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
+                    const sessionSec = Math.max(0, Math.floor((closedAt - playStartTime) / 1000));
+                    checkpointPlayTime(closedAt);
 
-                    totalPlayTimeMin += sessionMin;
-                    localStorage.setItem('kidscade_playtime', totalPlayTimeMin);
-                    updatePlayTimeDisplay();
+                    // 30초 미만의 실수 클릭은 시간만 기록하고 씨앗/미션 보상은 지급하지 않습니다.
+                    if (sessionSec >= MIN_REWARD_PLAY_SEC) {
+                        const sessionMin = Math.floor(sessionSec / 60);
+                        const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
+                        const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
+                        const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
+                        const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
+                        const durationText = sessionMin > 0 ? `${sessionMin}분 ${sessionSec % 60}초` : `${sessionSec}초`;
 
-                    addCoins(rewardSeeds, activeGameHadBonus ? '추천 에너지 보너스' : (sessionMin > 0 ? `게임 도전 (${sessionMin}분)` : '짧은 도전'));
+                        addCoins(rewardSeeds, activeGameHadBonus ? `추천 에너지 보너스 · ${durationText}` : `게임 도전 · ${durationText}`);
 
-                    if (pet.level < 4 && gainedExp > 0) {
-                        pet.exp += gainedExp;
-                        if (activeGameCategory !== 'all') pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
+                        if (pet.level < 4 && gainedExp > 0) {
+                            pet.exp += gainedExp;
+                            if (activeGameCategory !== 'all') pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
+                        }
+                        savePet();
+                        updateMissionProgress(activeGameCategory, activeGameId);
+                        checkPetEvolution();
+                    } else if (sessionSec > 0) {
+                        showToast(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 30초 이상 플레이하면 인정돼요.`);
                     }
-                    savePet();
-                    updateMissionProgress(activeGameCategory, activeGameId);
-                    checkPetEvolution();
+
                     playStartTime = 0;
+                    playCheckpointTime = 0;
                     activeGameId = null;
                     activeGameHadBonus = false;
                 }
@@ -4509,9 +4637,12 @@ ${getEvolutionHintText()}
                     }
 
                     if (hasHighRank && !claimedRanks[gameId]) {
-                        claimedRanks[gameId] = true; localStorage.setItem('kidscade_claimed_ranks', JSON.stringify(claimedRanks));
                         const gameTitle = card.querySelector('.game-title').innerText;
-                        setTimeout(() => { addCoins(1000, `[${gameTitle}] 최고 등급 달성!`); }, 500);
+                        // 보상을 실제 저장한 뒤에만 수령 완료로 표시합니다.
+                        if (addCoins(1000, `[${gameTitle}] 최고 등급 달성!`)) {
+                            claimedRanks[gameId] = true;
+                            localStorage.setItem('kidscade_claimed_ranks', JSON.stringify(claimedRanks));
+                        }
                     }
 
                     if (scoreKey) {
@@ -4829,7 +4960,7 @@ ${getEvolutionHintText()}
                 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
                 function save3d(){ localStorage.setItem('kidscade_sook_canvas_pet', JSON.stringify({ type:pet3d.type, selectedFish:pet3d.selectedFish, unlockedPets:pet3d.unlockedPets, fishTank:pet3d.fishTank, hamsterRoom:pet3d.hamsterRoom, iguanaRoom:pet3d.iguanaRoom, rooms:pet3d.rooms, stats:pet3d.stats, lastStatTick:pet3d.lastStatTick||Date.now() })); }
                 function fishById(id){return FISH_DB.find(f=>f.id===id)||FISH_DB[0];}
-                function spendSeeds(amount){ if(coins<amount){showToast(`씨앗이 부족해요! (${amount}개 필요)`); return false;} coins-=amount; updateCoinUI(); return true; }
+                function spendSeeds(amount){ if(coins<amount){showToast(`씨앗이 부족해요! (${amount}개 필요)`); return false;} return changeSeeds(-amount, '', {toast:false}); }
                 function spawn(kind,count){ for(let i=0;i<count;i++){ particles.push({kind,x:stageW*(.35+Math.random()*.3),y:stageH*(.42+Math.random()*.22),vx:(Math.random()-.5)*1.6,vy:-.7-Math.random()*1.2,size:14+Math.random()*18,life:.75+Math.random()*.8,hue:Math.random()}); } }
                 function petInfo(){ return PETS[pet3d.type] || PETS.fish; }
                 function isUnlocked(type){ return pet3d.unlockedPets.includes(type); }
@@ -4894,7 +5025,7 @@ ${getEvolutionHintText()}
                     return list.map(([label,kind])=>b(label,kind,SHOP_COST[kind]||0)).join('');
                 }
                 function renderMiniShop(){ if(!miniShop) return; const b=(label,kind,cost)=>`<button class="sook-pet-shop-btn" type="button" data-buy="${kind}">${label}${cost?` <small>${cost}</small>`:''}</button>`; let html=''; const locked=Object.entries(PETS).filter(([id,info])=>!isUnlocked(id)); if(locked.length) html += locked.slice(0,3).map(([id,info])=>b(`${info.emoji} ${info.label} 데려오기`,`unlock_${id}`,info.cost)).join(''); html += petSupplyButtons(); html += b('🛒 큰 상점 열기','petShop',0); miniShop.innerHTML=html; miniShop.querySelectorAll('.sook-pet-shop-btn').forEach(btn=>btn.addEventListener('click',()=>buyThing(btn.dataset.buy))); }
-                function buyThing(kind){ if(kind==='petShop'){ currentShopTab='pet'; document.querySelectorAll('.shop-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-tab')==='pet')); document.getElementById('shop-modal').classList.remove('hidden'); renderShop(); return; } if(kind.startsWith('unlock_')){ unlockPet(kind.replace('unlock_','')); renderShop(); return; } if(kind==='cycleFish'){ const owned=pet3d.fishTank.fish; const current=owned.indexOf(pet3d.selectedFish); pet3d.selectedFish=owned[(current+1+owned.length)%owned.length]||'guppy'; showToast(`${fishById(pet3d.selectedFish).label}이(가) 대표 물고기가 되었어요.`); updatePetStatusUI(); updatePetUI(); return; } const cost=SHOP_COST[kind]||0; if(cost&&!spendSeeds(cost)) return; if(kind==='fish'){ const next=FISH_DB.find(f=>!pet3d.fishTank.fish.includes(f.id)); if(!next){ if(cost){coins+=cost;updateCoinUI();} showToast('현재 만날 수 있는 물고기를 모두 데려왔어요!'); return; } pet3d.fishTank.fish.push(next.id); pet3d.selectedFish=next.id; showToast(`${next.label}이(가) 어항에 들어왔어요!`,true); }
+                function buyThing(kind){ if(kind==='petShop'){ currentShopTab='pet'; document.querySelectorAll('.shop-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-tab')==='pet')); document.getElementById('shop-modal').classList.remove('hidden'); renderShop(); return; } if(kind.startsWith('unlock_')){ unlockPet(kind.replace('unlock_','')); renderShop(); return; } if(kind==='cycleFish'){ const owned=pet3d.fishTank.fish; const current=owned.indexOf(pet3d.selectedFish); pet3d.selectedFish=owned[(current+1+owned.length)%owned.length]||'guppy'; showToast(`${fishById(pet3d.selectedFish).label}이(가) 대표 물고기가 되었어요.`); updatePetStatusUI(); updatePetUI(); return; } const cost=SHOP_COST[kind]||0; if(cost&&!spendSeeds(cost)) return; if(kind==='fish'){ const next=FISH_DB.find(f=>!pet3d.fishTank.fish.includes(f.id)); if(!next){ if(cost) changeSeeds(cost, '', {toast:false}); showToast('현재 만날 수 있는 물고기를 모두 데려왔어요!'); return; } pet3d.fishTank.fish.push(next.id); pet3d.selectedFish=next.id; showToast(`${next.label}이(가) 어항에 들어왔어요!`,true); }
                     else if(kind==='plant'){pet3d.fishTank.plants=clamp((pet3d.fishTank.plants||0)+1,0,8); showToast('수초가 더 풍성해졌어요!',true);} else if(kind==='ornament'){pet3d.fishTank.ornaments=clamp((pet3d.fishTank.ornaments||0)+1,0,6); showToast('어항 기물이 추가되었어요!',true);} else if(kind==='shrimp'){pet3d.fishTank.shrimp=clamp((pet3d.fishTank.shrimp||0)+1,0,8); showToast('새우가 어항 바닥을 총총 걸어다녀요!',true);} else if(kind==='snail'){pet3d.fishTank.snails=clamp((pet3d.fishTank.snails||0)+1,0,8); showToast('달팽이가 유리벽을 천천히 올라가요!',true);} else if(kind==='hamsterHouse'){pet3d.hamsterRoom.houses=clamp((pet3d.hamsterRoom.houses||0)+1,1,4); showToast('햄스터 집이 더 포근해졌어요!',true);} else if(kind==='wheel'){pet3d.hamsterRoom.wheels=clamp((pet3d.hamsterRoom.wheels||0)+1,1,3); showToast('쳇바퀴가 더 튼튼해졌어요!',true);} else if(kind==='hamToy'){pet3d.hamsterRoom.toys=clamp((pet3d.hamsterRoom.toys||0)+1,0,6); showToast('햄스터 장난감이 늘었어요!',true);} else if(kind==='branch'){pet3d.iguanaRoom.branches=clamp((pet3d.iguanaRoom.branches||0)+1,1,5); showToast('나뭇가지가 더 풍성해졌어요!',true);} else if(kind==='leaf'){pet3d.iguanaRoom.leaves=clamp((pet3d.iguanaRoom.leaves||0)+1,1,8); showToast('잎사귀가 더 풍성해졌어요!',true);} else if(kind==='rock'){ if(pet3d.type==='turtle'){pet3d.rooms.turtle.rocks=clamp((pet3d.rooms.turtle.rocks||0)+1,1,5);} else {pet3d.iguanaRoom.rocks=clamp((pet3d.iguanaRoom.rocks||0)+1,1,5);} showToast('따뜻한 바위가 추가되었어요!',true);} else if(kind==='perch'){ const r=pet3d.rooms[pet3d.type]; if(pet3d.type==='parrot') r.perches=clamp((r.perches||0)+1,1,5); else r.branches=clamp((r.branches||0)+1,1,5); showToast('오를 수 있는 가지가 늘었어요!',true);} else if(kind==='cageToy'){ const r=pet3d.rooms[pet3d.type]; r.toys=clamp((r.toys||0)+1,0,8); showToast('놀이 장난감이 늘었어요!',true);} else if(kind==='scratcher'){pet3d.rooms.cat.scratchers=clamp((pet3d.rooms.cat.scratchers||0)+1,1,4); showToast('스크래처가 추가되었어요!',true);} else if(kind==='bed'){ const r=pet3d.rooms[pet3d.type]; if('beds' in r) r.beds=clamp((r.beds||0)+1,1,4); else r.shelters=clamp((r.shelters||0)+1,1,4); showToast('쉴 공간이 더 포근해졌어요!',true);} else if(kind==='yardToy'){ const r=pet3d.rooms[pet3d.type]; r.toys=clamp((r.toys||0)+1,0,8); showToast('놀잇감이 늘었어요!',true);} else if(kind==='burrow'){pet3d.rooms.rabbit.houses=clamp((pet3d.rooms.rabbit.houses||0)+1,1,5); showToast('토끼가 숨을 공간이 생겼어요!',true);} else if(kind==='pondPlant'){pet3d.rooms.turtle.plants=clamp((pet3d.rooms.turtle.plants||0)+1,1,8); showToast('ìì´ê° ì¶ê°ëìì´ì!',true);} else if(kind==='filter'){pet3d.fishTank.filters=clamp((pet3d.fishTank.filters||0)+1,0,3); showToast('ì¬ê³¼ê¸°ê° ì¶ê°ëì´ ë¬¼ ê´ë¦¬ê° ë ì¬ìì¡ì´ì!',true);} else if(kind==='heater'){pet3d.fishTank.heaters=clamp((pet3d.fishTank.heaters||0)+1,0,2); showToast('íí°ë¡ ìì¨ì ë ìì ì ì¼ë¡ ë§ì¶ ì ìì´ì!',true);} else if(kind==='light'){pet3d.fishTank.lights=clamp((pet3d.fishTank.lights||0)+1,0,3); showToast('ì´í­ ì¡°ëªì´ ë ë°ìì¡ì´ì!',true);} else if(kind==='gravel'){pet3d.fishTank.gravel=clamp((pet3d.fishTank.gravel||0)+1,0,4); showToast('ë°ë¥ì¬ê° ë íì±í´ì¡ì´ì!',true);} else if(kind==='driftwood'){pet3d.fishTank.driftwood=clamp((pet3d.fishTank.driftwood||0)+1,0,5); showToast('ì ëª© ì¥ìì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mossball'){pet3d.fishTank.mossballs=clamp((pet3d.fishTank.mossballs||0)+1,0,8); showToast('ë§ë¦¬ëª¨ê° ì´í­ì ë¤ì´ìì´ì!',true);} else if(kind==='bubble'){pet3d.fishTank.bubbles=clamp((pet3d.fishTank.bubbles||0)+1,0,4); showToast('ê¸°í¬ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='sandBath'){pet3d.hamsterRoom.sandBaths=clamp((pet3d.hamsterRoom.sandBaths||0)+1,0,3); showToast('ëª¨ëëª©ìíµì´ ìê²¼ì´ì!',true);} else if(kind==='chewStick'){ if(pet3d.type==='rabbit') pet3d.rooms.rabbit.chews=clamp((pet3d.rooms.rabbit.chews||0)+1,0,8); else pet3d.hamsterRoom.chewSticks=clamp((pet3d.hamsterRoom.chewSticks||0)+1,0,8); showToast('ì´ê°ì´ ëë¬´ê° ì¶ê°ëìì´ì!',true);} else if(kind==='waterBottle'){pet3d.hamsterRoom.bottles=clamp((pet3d.hamsterRoom.bottles||0)+1,1,3); showToast('ê¸ìê¸°ê° ì¤ë¹ëìì´ì!',true);} else if(kind==='foodBowl'){ const r=pet3d.rooms[pet3d.type]; if(pet3d.type==='hamster') pet3d.hamsterRoom.bowls=clamp((pet3d.hamsterRoom.bowls||0)+1,1,3); else if(pet3d.type==='iguana') pet3d.iguanaRoom.dishes=clamp((pet3d.iguanaRoom.dishes||0)+1,1,3); else if(pet3d.type==='dog') r.bowls=clamp((r.bowls||0)+1,1,3); else if(pet3d.type==='rabbit') r.bowls=clamp((r.bowls||0)+1,1,3); showToast('ê·¸ë¦ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='bedding'){pet3d.hamsterRoom.bedding=clamp((pet3d.hamsterRoom.bedding||0)+1,1,5); showToast('ë°ë¥ì¬ê° í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='bridge'){pet3d.hamsterRoom.bridges=clamp((pet3d.hamsterRoom.bridges||0)+1,0,5); showToast('ìì ë¤ë¦¬ê° ì¶ê°ëìì´ì!',true);} else if(kind==='tunnel'){pet3d.hamsterRoom.tunnels=clamp((pet3d.hamsterRoom.tunnels||0)+1,0,5); showToast('íì¤í° í°ëì´ ì´ì´ì¡ì´ì!',true);} else if(kind==='uvbLamp'){pet3d.iguanaRoom.uvb=clamp((pet3d.iguanaRoom.uvb||0)+1,1,3); showToast('UVB ì¡°ëªì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mist'){pet3d.iguanaRoom.misters=clamp((pet3d.iguanaRoom.misters||0)+1,0,3); showToast('ìµë ê´ë¦¬ì© ë¶ë¬´ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='vine'){pet3d.iguanaRoom.vines=clamp((pet3d.iguanaRoom.vines||0)+1,0,6); showToast('ë©êµ´ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='hide'){pet3d.iguanaRoom.hides=clamp((pet3d.iguanaRoom.hides||0)+1,0,4); showToast('ìì ì²ê° ìê²¼ì´ì!',true);} else if(kind==='swing'){pet3d.rooms.parrot.swings=clamp((pet3d.rooms.parrot.swings||0)+1,0,4); showToast('ìì¥ì ê·¸ë¤ê° ìê²¼ì´ì!',true);} else if(kind==='mirror'){pet3d.rooms.parrot.mirrors=clamp((pet3d.rooms.parrot.mirrors||0)+1,0,3); showToast('ìµë¬´ì ê±°ì¸ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='bath'){pet3d.rooms.parrot.baths=clamp((pet3d.rooms.parrot.baths||0)+1,0,3); showToast('ëª©ìíµì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='ladder'){pet3d.rooms.parrot.ladders=clamp((pet3d.rooms.parrot.ladders||0)+1,0,4); showToast('ìì¥ ì¬ë¤ë¦¬ê° ì¶ê°ëìì´ì!',true);} else if(kind==='cuttlebone'){pet3d.rooms.parrot.cuttlebones=clamp((pet3d.rooms.parrot.cuttlebones||0)+1,0,5); showToast('ë¶ë¦¬ ê´ë¦¬ì© ê°ì¤ì§ì´ë¼ê° ìê²¼ì´ì!',true);} else if(kind==='foragingBox'){ const r=pet3d.rooms[pet3d.type]; r.foraging=clamp((r.foraging||0)+1,0,5); showToast('ë¨¹ì´ë¥¼ ì°¾ë ëì´ ììê° ì¶ê°ëìì´ì!',true);} else if(kind==='catTower'){pet3d.rooms.cat.towers=clamp((pet3d.rooms.cat.towers||0)+1,0,4); showToast('ìº£íìê° ì¶ê°ëìì´ì!',true);} else if(kind==='litterBox'){ const r=pet3d.rooms[pet3d.type]; r.litter=clamp((r.litter||0)+1,0,3); showToast('íì¥ì¤ ê³µê°ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='fountain'){pet3d.rooms.cat.fountains=clamp((pet3d.rooms.cat.fountains||0)+1,0,3); showToast('ë¬¼ ì ìê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='catTunnel'){pet3d.rooms.cat.tunnels=clamp((pet3d.rooms.cat.tunnels||0)+1,0,5); showToast('ê³ ìì´ í°ëì´ ìê²¼ì´ì!',true);} else if(kind==='featherToy'){pet3d.rooms.cat.feathers=clamp((pet3d.rooms.cat.feathers||0)+1,0,5); showToast('ëì¯ë ì¥ëê°ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='leash'){pet3d.rooms.dog.leashes=clamp((pet3d.rooms.dog.leashes||0)+1,0,3); showToast('ì°ì± ëª©ì¤ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='kennel'){pet3d.rooms.dog.kennels=clamp((pet3d.rooms.dog.kennels||0)+1,0,3); showToast('ê°ìì§ ì¼ë¬ì´ ìê²¼ì´ì!',true);} else if(kind==='chewToy'){pet3d.rooms.dog.chews=clamp((pet3d.rooms.dog.chews||0)+1,0,5); showToast('ì¹ë ì¥ëê°ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='trainingCone'){pet3d.rooms.dog.cones=clamp((pet3d.rooms.dog.cones||0)+1,0,5); showToast('íë ¨ì½ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='hayRack'){ const r=pet3d.rooms[pet3d.type]; r.hayRacks=clamp((r.hayRacks||0)+1,0,4); showToast('ê±´ì´íµì´ ì¶ê°ëìì´ì!',true);} else if(kind==='mineralBlock'){pet3d.rooms.goat.minerals=clamp((pet3d.rooms.goat.minerals||0)+1,0,4); showToast('ë¯¸ë¤ë ë¸ë¡ì´ ì¤ë¹ëìì´ì!',true);} else if(kind==='platform'){pet3d.rooms.goat.platforms=clamp((pet3d.rooms.goat.platforms||0)+1,0,5); showToast('ì¼ì ë°íì´ ì¶ê°ëìì´ì!',true);} else if(kind==='brush'){pet3d.rooms.goat.brushes=clamp((pet3d.rooms.goat.brushes||0)+1,0,3); showToast('ë¹ì§ ëêµ¬ê° ì¤ë¹ëìì´ì!',true);} else if(kind==='strawBed'){pet3d.rooms.miniPig.straw=clamp((pet3d.rooms.miniPig.straw||0)+1,0,4); showToast('ì§ìë¦¬ê° ë í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='rootingMat'){pet3d.rooms.miniPig.rooting=clamp((pet3d.rooms.miniPig.rooting||0)+1,0,5); showToast('ì½ë¡ ì°¾ë íì ë§¤í¸ê° ì¶ê°ëìì´ì!',true);} else if(kind==='mudPool'){pet3d.rooms.miniPig.mud=clamp((pet3d.rooms.miniPig.mud||0)+1,0,3); showToast('ëìë¥¼ ìíë ì§íëì´ ê³µê°ì´ ìê²¼ì´ì!',true);} else if(kind==='treatPuzzle'){pet3d.rooms.miniPig.puzzles=clamp((pet3d.rooms.miniPig.puzzles||0)+1,0,5); showToast('í¼ì¦í¼ëê° ì¶ê°ëìì´ì!',true);} else if(kind==='shade'){pet3d.rooms.miniPig.shade=clamp((pet3d.rooms.miniPig.shade||0)+1,0,3); showToast('ê·¸ëë§ì´ ìê²¼ì´ì!',true);} else if(kind==='pouch'){pet3d.rooms.sugarGlider.pouches=clamp((pet3d.rooms.sugarGlider.pouches||0)+1,1,4); showToast('ì£¼ë¨¸ëì§ì´ ë í¬ê·¼í´ì¡ì´ì!',true);} else if(kind==='rope'){pet3d.rooms.sugarGlider.ropes=clamp((pet3d.rooms.sugarGlider.ropes||0)+1,0,5); showToast('íê³  ì¤ë¥¼ ë°§ì¤ì´ ìê²¼ì´ì!',true);} else if(kind==='gliderWheel'){pet3d.rooms.sugarGlider.wheels=clamp((pet3d.rooms.sugarGlider.wheels||0)+1,0,3); showToast('ê¸ë¼ì´ë ì ì© í ì´ ì¶ê°ëìì´ì!',true);} else if(kind==='nestBox'){pet3d.rooms.sugarGlider.nests=clamp((pet3d.rooms.sugarGlider.nests||0)+1,0,4); showToast('ë¥ì§ììê° ì¶ê°ëìì´ì!',true);} else if(kind==='hayMat'){pet3d.rooms.rabbit.hayMats=clamp((pet3d.rooms.rabbit.hayMats||0)+1,0,5); showToast('ê±´ì´ë§¤í¸ê° ì¶ê°ëìì´ì!',true);} else if(kind==='rabbitTunnel'){pet3d.rooms.rabbit.tunnels=clamp((pet3d.rooms.rabbit.tunnels||0)+1,0,5); showToast('í ë¼ í°ëì´ ìê²¼ì´ì!',true);} else if(kind==='turtleDock'){pet3d.rooms.turtle.docks=clamp((pet3d.rooms.turtle.docks||0)+1,1,4); showToast('ì¼ê´ì ì¡ì§ê° ëì´ì¡ì´ì!',true);} else if(kind==='turtleFilter'){pet3d.rooms.turtle.filters=clamp((pet3d.rooms.turtle.filters||0)+1,1,4); showToast('ê±°ë¶ì´ ìì¡° ì¬ê³¼ê¸°ê° ì¶ê°ëìì´ì!',true);} else if(kind==='ramp'){pet3d.rooms.turtle.ramps=clamp((pet3d.rooms.turtle.ramps||0)+1,0,4); showToast('ë¬¼ê³¼ ì¡ì§ë¥¼ ì¤ê°ë ê²½ì¬ë¡ê° ìê²¼ì´ì!',true);} else if(kind==='thermometer'){pet3d.rooms.turtle.thermometers=clamp((pet3d.rooms.turtle.thermometers||0)+1,0,3); showToast('ì¨ëê³ê° ì¤ë¹ëìì´ì!',true);} spawn('heart',10); save3d(); updatePetStatusUI(); updatePetUI(); playUISound('coin'); }
 
                 function resizeCanvas(){ const wrap=canvas.parentElement; if(!wrap) return; const rect=wrap.getBoundingClientRect(); stageW=Math.max(360,rect.width||680); stageH=Math.max(260,rect.height||330); dpr=Math.min(2,window.devicePixelRatio||1); canvas.width=Math.round(stageW*dpr); canvas.height=Math.round(stageH*dpr); canvas.style.width=`${stageW}px`; canvas.style.height=`${stageH}px`; ctx.setTransform(dpr,0,0,dpr,0,0); }
@@ -5082,11 +5213,34 @@ ${getEvolutionHintText()}
                     }
                     if (event.data.type === 'aquarium:close') closeAquariumRoom();
                 });
+                let hamsterLastReportedCoins = null;
+                let hamsterClosing = false;
+                let hamsterCloseTimer = null;
+
+                function finishHamsterFrameClose() {
+                    const frame = document.getElementById('hamster-iframe');
+                    if (hamsterCloseTimer) clearTimeout(hamsterCloseTimer);
+                    hamsterCloseTimer = null;
+                    if (frame) frame.src = 'about:blank';
+                    hamsterClosing = false;
+                    hamsterLastReportedCoins = null;
+                }
+
                 function applyHamsterPayload(payload) {
                     if (!payload || typeof payload !== 'object') return;
-                    if (Number.isFinite(Number(payload.coins))) {
-                        coins = Math.max(0, Math.round(Number(payload.coins)));
-                        updateCoinUI();
+                    if (Number.isFinite(Number(payload.coins)) && hamsterLastReportedCoins !== null) {
+                        const incomingCoins = Math.max(0, Math.round(Number(payload.coins)));
+                        const delta = incomingCoins - hamsterLastReportedCoins;
+                        const persistedCoins = getPersistedCoins();
+                        // 자식 iframe이 이미 같은 localStorage에 저장했다면 중복 차감/지급하지 않습니다.
+                        if (persistedCoins === incomingCoins) {
+                            coins = persistedCoins;
+                            renderCoinUI();
+                        } else if (delta !== 0) {
+                            // iframe의 '전체 잔액'으로 덮어쓰지 않고, 햄스터 방에서 실제로 변한 차액만 반영합니다.
+                            changeSeeds(delta, '', { toast: false });
+                        }
+                        hamsterLastReportedCoins = incomingCoins;
                     }
                     if (payload.stats && typeof payload.stats === 'object') {
                         const incoming = payload.stats;
@@ -5106,6 +5260,7 @@ ${getEvolutionHintText()}
                 function sendHamsterState() {
                     const frame = document.getElementById('hamster-iframe');
                     if (!frame?.contentWindow) return;
+                    hamsterLastReportedCoins = coins;
                     frame.contentWindow.postMessage({
                         type: 'hamster:init',
                         payload: {
@@ -5118,9 +5273,12 @@ ${getEvolutionHintText()}
                 function closeHamsterRoom() {
                     const modal = document.getElementById('hamster-modal');
                     const frame = document.getElementById('hamster-iframe');
+                    if (hamsterClosing) return;
+                    hamsterClosing = true;
                     if (frame?.contentWindow) frame.contentWindow.postMessage({ type:'hamster:request-update' }, '*');
                     if (modal) modal.classList.add('hidden');
-                    if (frame) setTimeout(() => { frame.src = 'about:blank'; }, 40);
+                    // 40ms 즉시 폐기 대신 최종 상태 메시지를 받을 시간을 줍니다.
+                    hamsterCloseTimer = setTimeout(finishHamsterFrameClose, 600);
                     document.body.style.overflow = '';
                     updatePetStatusUI();
                     updatePetUI();
@@ -5128,6 +5286,7 @@ ${getEvolutionHintText()}
                 }
                 function openHamsterRoom() {
                     if (pet3d.type !== 'hamster') return;
+                    if (hamsterClosing) finishHamsterFrameClose();
                     save3d();
                     const modal = document.getElementById('hamster-modal');
                     const frame = document.getElementById('hamster-iframe');
@@ -5141,9 +5300,14 @@ ${getEvolutionHintText()}
                 document.getElementById('btn-open-hamster')?.addEventListener('click', openHamsterRoom);
                 document.getElementById('hamster-modal-close')?.addEventListener('click', closeHamsterRoom);
                 window.addEventListener('message', event => {
+                    const frame = document.getElementById('hamster-iframe');
+                    if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
                     if (!event.data || typeof event.data !== 'object') return;
                     if (event.data.type === 'hamster:ready') sendHamsterState();
-                    if (event.data.type === 'hamster:update') applyHamsterPayload(event.data.payload);
+                    if (event.data.type === 'hamster:update') {
+                        applyHamsterPayload(event.data.payload);
+                        if (hamsterClosing) finishHamsterFrameClose();
+                    }
                     if (event.data.type === 'hamster:close') closeHamsterRoom();
                 });
 
@@ -5173,16 +5337,22 @@ ${getEvolutionHintText()}
                 localStorage.setItem('kidscade_darkmode', isDarkMode);
             });
 
+            let attendanceRewardPending = false;
             function checkAttendance() {
                 const todayStr = new Date().toLocaleDateString();
                 const lastAttendance = localStorage.getItem('kidscade_attendance');
-                if (lastAttendance !== todayStr) {
+                if (lastAttendance !== todayStr && !attendanceRewardPending) {
+                    attendanceRewardPending = true;
                     const stamp = document.getElementById('attendance-stamp'); stamp.classList.add('animate-stamp');
-                    localStorage.setItem('kidscade_attendance', todayStr); playUISound('open'); 
-                    setTimeout(() => {
-                        addCoins(30, "오늘의 출석 씨앗"); pet.affection = Math.min(100, pet.affection + 20);
-                        showToast("쑥쑥이가 오늘의 도전을 기대하고 있어요! 🌱"); savePet(); updatePetUI();
-                    }, 1500);
+                    playUISound('open');
+                    // 씨앗을 실제 저장한 뒤 출석 완료 날짜를 기록합니다.
+                    if (addCoins(30, "오늘의 출석 씨앗")) {
+                        pet.affection = Math.min(100, pet.affection + 20);
+                        savePet(); updatePetUI();
+                        localStorage.setItem('kidscade_attendance', todayStr);
+                        showToast("쑥쑥이가 오늘의 도전을 기대하고 있어요! 🌱");
+                    }
+                    attendanceRewardPending = false;
                 }
             }
             if (currentAgeGroup) checkAttendance();
