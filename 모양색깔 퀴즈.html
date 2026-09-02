@@ -1,628 +1,102 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>색깔 모양 친구들 집 찾아주기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-        
-        body {
-            font-family: 'Jua', sans-serif;
-            touch-action: none; /* 모바일에서 화면 스크롤 방지 */
-            overflow: hidden;
-            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-        }
-
-        .bounce-in {
-            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .shake {
-            animation: shake 0.4s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px) rotate(-5deg); }
-            50% { transform: translateX(10px) rotate(5deg); }
-            75% { transform: translateX(-10px) rotate(-5deg); }
-        }
-
-        .selected-item {
-            box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.8);
-            transform: scale(1.1);
-            transition: all 0.2s ease;
-        }
-
-        /* 바구니 스타일 */
-        .basket {
-            transition: all 0.2s ease;
-        }
-        .basket.hovered {
-            transform: scale(1.1);
-            filter: brightness(1.1);
-        }
-
-        .particle {
-            position: fixed;
-            pointer-events: none;
-            z-index: 50;
-            transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.8s ease-out;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>색깔 모양 친구들 집 찾아주기</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{font-family:"Arial Rounded MT Bold","Malgun Gothic",sans-serif;touch-action:none;overscroll-behavior:none;background:linear-gradient(135deg,#fdfbfb 0%,#ebedee 100%);user-select:none;-webkit-user-select:none}
+button{font:inherit;touch-action:manipulation}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#startScreen{background:rgba(255,255,255,.94)}
+#gameOverScreen{background:rgba(0,0,0,.82);color:#fff}
+h1{font-size:clamp(38px,5vw,72px);color:#ec4899;margin:0 20px 30px;line-height:1.25;text-shadow:0 3px 8px rgba(0,0,0,.12)}
+.bigBtn{border:4px solid rgba(255,255,255,.7);border-radius:999px;padding:18px 34px;font-size:clamp(28px,3vw,42px);font-weight:800;box-shadow:0 10px 25px rgba(0,0,0,.18);cursor:pointer}
+#startBtn{background:#facc15;color:#713f12} #restartBtn{background:#60a5fa;color:white}
+.tip{margin-top:22px;color:#6b7280;font-size:clamp(17px,1.6vw,24px)}
+#app{width:100%;height:100%;display:flex;flex-direction:column;padding:18px 20px 12px}
+.header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;width:min(1200px,100%);margin:0 auto;z-index:10;min-height:120px}
+.leftStats{display:flex;flex-direction:column;gap:10px}.pill{background:rgba(255,255,255,.9);border-radius:999px;padding:8px 16px;box-shadow:0 4px 12px rgba(0,0,0,.12);font-size:clamp(20px,2vw,32px);font-weight:800;white-space:nowrap}.score{border:2px solid #bfdbfe;color:#1e40af}.high{border:2px solid #ddd6fe;color:#5b21b6}.lives{border:2px solid #fecaca;font-size:clamp(26px,2.4vw,38px)}
+.centerHud{position:absolute;left:50%;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px}.banner{color:#fff;border:4px solid #fff;border-radius:24px;padding:8px 24px;box-shadow:0 5px 14px rgba(0,0,0,.14);font-size:clamp(24px,2.5vw,38px);font-weight:900;white-space:nowrap}.colorBanner{background:#f472b6}.shapeBanner{background:#818cf8}.timerTrack{width:clamp(180px,20vw,300px);height:18px;background:#e5e7eb;border:2px solid #fff;border-radius:999px;overflow:hidden;box-shadow:inset 0 2px 4px rgba(0,0,0,.15)}#timerFill{height:100%;width:100%;background:#4ade80;transition:width 1s linear,background-color .3s}
+#gameArea{position:relative;flex:1;width:min(1200px,100%);margin:0 auto;min-height:0}
+#draggableItem{position:absolute;left:50%;top:19%;transform:translateX(-50%);width:clamp(145px,14vw,210px);height:clamp(145px,14vw,210px);display:flex;align-items:center;justify-content:center;border-radius:50%;border:4px dashed #d1d5db;background:rgba(255,255,255,.72);font-size:clamp(82px,9vw,140px);filter:drop-shadow(0 10px 12px rgba(0,0,0,.18));z-index:20;cursor:grab;touch-action:none;will-change:left,top,transform}
+#draggableItem.selected{box-shadow:0 0 22px 7px rgba(255,215,0,.85);transform:translateX(-50%) scale(1.08)}
+#draggableItem.dragging{transform:none!important;cursor:grabbing}
+#basketsContainer{position:absolute;left:0;right:0;bottom:4%;display:flex;justify-content:space-around;align-items:flex-end;gap:3%;padding:0 2%;z-index:5}.basket{width:clamp(145px,18vw,240px);height:clamp(120px,15vw,190px);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;color:white;font-size:clamp(26px,3vw,46px);font-weight:900;border:5px solid rgba(0,0,0,.12);box-shadow:0 8px 18px rgba(0,0,0,.18);cursor:pointer;touch-action:manipulation;transition:transform .14s,filter .14s}.basket.hovered{transform:scale(1.1);filter:brightness(1.1)}
+.red{background:#f87171}.yellow{background:#facc15;color:#78350f}.blue{background:#60a5fa}.green{background:#4ade80;color:#14532d}.colorBasket{border-radius:18px 18px 34px 34px}.circle{background:#fdba74;border-radius:50%}.triangle{background:#c4b5fd;clip-path:polygon(50% 0%,0 100%,100% 100%);padding-top:35px}.square{background:#5eead4;border-radius:18px;color:#134e4a}
+.shake{animation:shake .42s ease-in-out}.bounce{animation:bounce .55s cubic-bezier(.68,-.55,.265,1.55)}@keyframes shake{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 12px)) rotate(-4deg)}50%{transform:translateX(calc(-50% + 12px)) rotate(4deg)}75%{transform:translateX(calc(-50% - 12px)) rotate(-4deg)}}@keyframes bounce{0%{transform:translateX(-50%) scale(0);opacity:0}60%{transform:translateX(-50%) scale(1.12);opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
+.particle{position:fixed;pointer-events:none;z-index:200;font-size:32px;transition:transform .8s cubic-bezier(.25,.46,.45,.94),opacity .8s}
+#gameOverScreen h2{font-size:clamp(46px,6vw,80px);margin:0 0 16px}#gameOverScreen p{font-size:clamp(30px,4vw,54px);color:#fde047;font-weight:900;margin:0 0 30px}
+@media (max-height:650px){.header{min-height:86px}.pill{padding:5px 12px}.banner{padding:5px 18px}.timerTrack{height:14px}#draggableItem{top:14%;width:130px;height:130px;font-size:76px}#basketsContainer{bottom:2%}.basket{height:110px}}
+</style>
 </head>
-<body class="w-screen h-screen flex flex-col items-center justify-between py-6">
-
-    <!-- Start Screen -->
-    <div id="startScreen" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-500">
-        <h1 class="text-5xl md:text-7xl text-pink-500 font-bold mb-8 text-center drop-shadow-md">
-            🎨 모양 & 색깔 🍎<br>친구들 집 찾기!
-        </h1>
-        <button id="startBtn" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-3xl px-10 py-5 rounded-full shadow-xl transform transition hover:scale-110 active:scale-95 border-4 border-yellow-200">
-            시작하기 🚀
-        </button>
-        <p class="mt-6 text-gray-500 text-lg">소리를 켜주시면 더 재미있어요!</p>
-    </div>
-
-    <!-- UI Header -->
-    <div class="w-full max-w-4xl px-4 flex justify-between items-start z-10 pt-4 relative">
-        <div class="flex flex-col gap-2 z-10">
-            <div class="bg-white/80 px-4 py-2 rounded-full shadow-md flex items-center gap-2 border-2 border-blue-200">
-                <span class="text-2xl">⭐</span>
-                <span class="text-xl md:text-2xl text-blue-800 font-bold">점수: <span id="scoreDisplay">0</span></span>
-            </div>
-            <div class="bg-white/80 px-4 py-2 rounded-full shadow-md flex items-center gap-2 border-2 border-purple-200">
-                <span class="text-2xl">👑</span>
-                <span class="text-xl md:text-2xl text-purple-800 font-bold">최고: <span id="highScoreDisplay">0</span></span>
-            </div>
-        </div>
-        
-        <!-- Center Banner & Timer -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-4 flex flex-col items-center gap-3 z-10">
-            <div id="stageBanner" class="bg-pink-400 text-white px-6 py-2 md:px-8 md:py-3 rounded-3xl shadow-lg text-2xl md:text-3xl font-bold border-4 border-white transition-colors duration-300 whitespace-nowrap">
-                스테이지 준비 중!
-            </div>
-            <!-- Timer Bar -->
-            <div class="w-40 md:w-48 h-4 bg-gray-200 rounded-full border-2 border-white shadow-inner overflow-hidden">
-                <div id="timerFill" class="h-full bg-green-400 w-full transition-all"></div>
-            </div>
-        </div>
-
-        <div class="bg-white/90 px-4 py-2 rounded-full shadow-md flex items-center justify-center border-2 border-red-200 text-2xl md:text-3xl z-10" id="livesDisplay">
-            ❤️❤️❤️
-        </div>
-    </div>
-
-    <!-- Game Over Screen -->
-    <div id="gameOverScreen" class="hidden absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
-        <h2 class="text-6xl text-white font-bold mb-4 drop-shadow-lg">게임 오버! 😢</h2>
-        <p class="text-4xl text-yellow-300 mb-8 font-bold">내 점수: <span id="finalScoreDisplay">0</span></p>
-        <button id="restartBtn" class="bg-blue-400 hover:bg-blue-500 text-white text-3xl px-10 py-5 rounded-full shadow-xl transform transition hover:scale-110 active:scale-95 border-4 border-blue-200">
-            다시 하기 🔄
-        </button>
-    </div>
-
-    <!-- Main Game Area -->
-    <div class="flex-1 w-full max-w-4xl relative flex flex-col items-center justify-center my-8">
-        <!-- Target Baskets Container -->
-        <div id="basketsContainer" class="w-full flex justify-around items-end absolute bottom-10 px-4 z-0">
-            <!-- Baskets will be generated here -->
-        </div>
-
-        <!-- Draggable Item -->
-        <div id="draggableItem" class="absolute top-1/4 text-8xl md:text-9xl cursor-grab select-none drop-shadow-2xl flex items-center justify-center bg-white/50 w-40 h-40 rounded-full border-4 border-dashed border-gray-300 z-10">
-            <!-- Item emoji here -->
-        </div>
-    </div>
-
-    <!-- Firebase & Game Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Firebase Setup ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        } catch (e) {
-            console.warn("Firebase config not found, running locally");
-        }
-
-        let app, auth, db, user;
-        let isFirebaseActive = false;
-
-        if (firebaseConfig) {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            isFirebaseActive = true;
-            initAuth();
-        }
-
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
-        }
-
-        if (isFirebaseActive) {
-            onAuthStateChanged(auth, (u) => {
-                if (u) {
-                    user = u;
-                    loadHighScore();
-                }
-            });
-        }
-
-        async function loadHighScore() {
-            if (!user || !isFirebaseActive) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'gameStats', 'main');
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists() && docSnap.data().highscore) {
-                    highScore = docSnap.data().highscore;
-                    highScoreDisplay.innerText = highScore;
-                }
-            } catch (e) {
-                console.error("Error loading highscore:", e);
-            }
-        }
-
-        async function saveHighScore(newScore) {
-            if (!user || !isFirebaseActive) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'gameStats', 'main');
-                await setDoc(docRef, { highscore: newScore }, { merge: true });
-            } catch (e) {
-                console.error("Error saving highscore:", e);
-            }
-        }
-
-        // --- Audio System (Web Audio API) ---
-        let audioCtx;
-        let isAudioInit = false;
-
-        function initAudio() {
-            if (isAudioInit) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            isAudioInit = true;
-        }
-
-        function playTone(freq, type, duration, vol=0.1) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function playSuccessSound() {
-            setTimeout(() => playTone(523.25, 'sine', 0.3), 0);    
-            setTimeout(() => playTone(659.25, 'sine', 0.3), 150);  
-            setTimeout(() => playTone(783.99, 'sine', 0.5), 300);  
-        }
-
-        function playErrorSound() {
-            playTone(200, 'square', 0.3, 0.05);
-        }
-
-        function playPopSound() {
-            playTone(800, 'sine', 0.1, 0.05);
-        }
-
-        // --- Game Data & State ---
-        const COLOR_DATA = {
-            red: { colorClass: 'bg-red-400 border-red-500', name: '빨강', items: ['🍎', '🍓', '🍒', '🍅', '🌶️', '🌹', '🎈', '❤️', '🥊', '🦞', '🐞', '🚒', '🧧', '☎️', '📮', '📌', '👠', '🎸', '🥩', '🧣'] },
-            yellow: { colorClass: 'bg-yellow-400 border-yellow-500', name: '노랑', items: ['🍌', '🌻', '🐥', '🧀', '🍋', '🌙', '⭐', '💛', '👑', '🍍', '🔔', '🌽', '🐤', '⚠️', '🚕', '🎷', ' sponges ', '🍯', '☀️', '🌕'] },
-            blue: { colorClass: 'bg-blue-400 border-blue-500', name: '파랑', items: ['🐳', '👖', '💎', '💧', '🌊', '💙', '📘', '🦋', '🫐', '🧢', '🧿', '🐬', '🧊', '🥣', '🚙', '🥏', '🪣', '🧵', '🛋️', '📘'] },
-            green: { colorClass: 'bg-green-400 border-green-500', name: '초록', items: ['🐸', '🍀', '🍏', '🌲', '🐢', '🐍', '🥒', '🥦', '🎾', '💚', '📗', '🐛', '🦖', '🧩', '🐊', '🥬', '🫑', '🌿', '🌵', '🩳'] }
-        };
-
-        const SHAPE_DATA = {
-            circle: { shapeClass: 'rounded-full bg-orange-300 border-orange-400', name: '동그라미', items: ['🍪', '⚽', '🍩', '🪙', '🏀', '⚾', '🥎', '🎱', '🔮', '🔴', '🟡', '🟢', '🔵', '💿', '🎯', '🌝', '🥯', '🥞', '🧶', '🪀'] },
-            triangle: { shapeClass: 'clip-triangle bg-purple-300 border-purple-400', name: '세모', items: ['🍕', '🍙', '📐', '🔺', '🔻', '⚠️', '🍉', '🍰', '🎄', '⛺', '🏔️', '🌋', '⛺', '⛵', '🧀', '🚩'] },
-            square: { shapeClass: 'rounded-xl bg-teal-300 border-teal-400', name: '네모', items: ['🎁', '📺', '🟪', '🟨', '🟩', '🟥', '🟦', '🟫', '🔲', '🔳', '🧃', '🖼️', '📗', '📘', '📕', '🧱', '📦', '🧽', '🧊', '🚪'] }
-        };
-
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .clip-triangle {
-                clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-                border-radius: 0;
-            }
-        `;
-        document.head.appendChild(style);
-
-        let score = 0;
-        let highScore = 0;
-        let lives = 3;
-        let timeLeft = 5;
-        let timerInterval;
-        let currentStageType = 'color'; // 'color' or 'shape'
-        let currentTargetId = '';
-        let isItemSelected = false;
-        
-        // DOM Elements
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const highScoreDisplay = document.getElementById('highScoreDisplay');
-        const livesDisplay = document.getElementById('livesDisplay');
-        const timerFill = document.getElementById('timerFill');
-        const stageBanner = document.getElementById('stageBanner');
-        const basketsContainer = document.getElementById('basketsContainer');
-        const draggableItem = document.getElementById('draggableItem');
-        const startScreen = document.getElementById('startScreen');
-        const startBtn = document.getElementById('startBtn');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const restartBtn = document.getElementById('restartBtn');
-        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
-
-        // --- Game Engine ---
-        function startGame() {
-            initAudio();
-            startScreen.classList.add('opacity-0', 'pointer-events-none');
-            gameOverScreen.classList.add('hidden');
-            score = 0;
-            lives = 3;
-            updateScoreDisplay();
-            updateLivesDisplay();
-            nextTurn();
-        }
-
-        function updateLivesDisplay() {
-            livesDisplay.innerText = '❤️'.repeat(lives) + '💔'.repeat(3 - lives);
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            timeLeft = 5;
-            
-            // UI 초기화 (애니메이션 없이 꽉 채우기)
-            timerFill.style.transition = 'none';
-            timerFill.style.width = '100%';
-            timerFill.classList.remove('bg-red-500');
-            timerFill.classList.add('bg-green-400');
-            
-            // 강제 리플로우
-            void timerFill.offsetWidth;
-            
-            // 애니메이션 적용
-            timerFill.style.transition = 'width 1s linear, background-color 0.3s ease';
-            
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerFill.style.width = `${(timeLeft / 5) * 100}%`;
-                
-                if(timeLeft <= 2) {
-                    timerFill.classList.remove('bg-green-400');
-                    timerFill.classList.add('bg-red-500');
-                }
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval); // 타임아웃 시 타이머 즉시 정지
-                    loseLife(true);
-                }
-            }, 1000);
-        }
-
-        function loseLife(isTimeout = false) {
-            clearInterval(timerInterval);
-            playErrorSound();
-            lives--;
-            updateLivesDisplay();
-            
-            if (lives <= 0) {
-                gameOver();
-                return;
-            }
-
-            // 오답 또는 타임아웃 시 피드백
-            draggableItem.classList.remove('selected-item');
-            isItemSelected = false;
-            draggableItem.classList.add('shake');
-            
-            if (!isTimeout) {
-                resetItemPosition(); // 타임아웃이 아닐 때(틀린 곳에 놨을 때)만 제자리로
-            }
-            
-            // 시간이 지났거나 틀렸을 때 새로운 문제로 넘어감
-            setTimeout(() => { 
-                draggableItem.classList.remove('shake');
-                nextTurn();
-            }, 600);
-        }
-
-        function gameOver() {
-            clearInterval(timerInterval);
-            playErrorSound();
-            finalScoreDisplay.innerText = score;
-            gameOverScreen.classList.remove('hidden');
-        }
-
-        function resetItemPosition() {
-            draggableItem.style.transition = 'all 0.3s ease';
-            draggableItem.style.left = 'calc(50% - 5rem)';
-            draggableItem.style.top = '25%';
-            draggableItem.style.opacity = '1'; 
-            draggableItem.style.transform = 'scale(1)';
-            
-            setTimeout(() => { 
-                draggableItem.style.transition = ''; 
-                draggableItem.style.zIndex = '10';
-            }, 300);
-        }
-
-        function nextTurn() {
-            currentStageType = currentStageType === 'color' ? 'shape' : 'color';
-            
-            if (currentStageType === 'color') {
-                stageBanner.innerText = '🎨 무슨 색깔일까?';
-                stageBanner.className = 'bg-pink-400 text-white px-6 py-2 md:px-8 md:py-3 rounded-3xl shadow-lg text-2xl md:text-3xl font-bold border-4 border-white transition-colors duration-300 whitespace-nowrap';
-            } else {
-                stageBanner.innerText = '🔺 무슨 모양일까?';
-                stageBanner.className = 'bg-indigo-400 text-white px-6 py-2 md:px-8 md:py-3 rounded-3xl shadow-lg text-2xl md:text-3xl font-bold border-4 border-white transition-colors duration-300 whitespace-nowrap';
-            }
-
-            const dataObj = currentStageType === 'color' ? COLOR_DATA : SHAPE_DATA;
-            const keys = Object.keys(dataObj);
-            
-            const shuffledKeys = keys.sort(() => 0.5 - Math.random()).slice(0, 3);
-            currentTargetId = shuffledKeys[Math.floor(Math.random() * 3)];
-            
-            const itemsList = dataObj[currentTargetId].items;
-            const targetEmoji = itemsList[Math.floor(Math.random() * itemsList.length)];
-
-            renderBaskets(shuffledKeys, dataObj);
-            renderItem(targetEmoji);
-        }
-
-        function renderBaskets(keys, dataObj) {
-            basketsContainer.innerHTML = '';
-            keys.forEach(key => {
-                const bData = dataObj[key];
-                const basket = document.createElement('div');
-                
-                let baseClass = `basket relative w-24 h-24 md:w-32 md:h-32 flex items-center justify-center text-2xl md:text-3xl font-bold text-white shadow-lg border-4 cursor-pointer `;
-                
-                if (currentStageType === 'color') {
-                    baseClass += `${bData.colorClass} rounded-b-3xl rounded-t-lg`;
-                } else {
-                    baseClass += `${bData.shapeClass}`;
-                    if(bData.isCustomShape) {
-                        basket.style.paddingTop = '40px';
-                    }
-                }
-
-                basket.className = baseClass;
-                basket.innerText = bData.name;
-                basket.dataset.id = key;
-
-                basket.addEventListener('click', (e) => {
-                    if (isItemSelected || isDragging) {
-                        checkMatch(key, basket);
-                    }
-                });
-
-                basketsContainer.appendChild(basket);
-            });
-        }
-
-        function renderItem(emoji) {
-            draggableItem.innerText = emoji;
-            draggableItem.classList.remove('opacity-0', 'shake', 'selected-item');
-            draggableItem.classList.add('bounce-in');
-            
-            draggableItem.style.transform = `translate(0px, 0px) scale(1)`;
-            draggableItem.style.left = 'calc(50% - 5rem)'; 
-            draggableItem.style.top = '25%';
-            draggableItem.style.opacity = '1';
-            draggableItem.style.zIndex = '10';
-            
-            isItemSelected = false;
-            
-            draggableItem.style.animation = 'none';
-            draggableItem.offsetHeight; 
-            draggableItem.style.animation = null; 
-            
-            startTimer();
-        }
-
-        // --- Interaction Logic (Drag & Click) ---
-        let isDragging = false;
-        let startX, startY;
-        let initialLeft, initialTop;
-
-        // 좌표를 직접 계산하여 바구니를 찾는 함수 (이모지가 화면을 덮어도 완벽하게 인식)
-        function getBasketUnderPointer(x, y) {
-            const baskets = document.querySelectorAll('.basket');
-            for (let basket of baskets) {
-                const rect = basket.getBoundingClientRect();
-                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-                    return basket;
-                }
-            }
-            return null;
-        }
-
-        draggableItem.addEventListener('click', () => {
-            if(!isDragging) {
-                playPopSound();
-                isItemSelected = !isItemSelected;
-                if(isItemSelected) {
-                    draggableItem.classList.add('selected-item');
-                } else {
-                    draggableItem.classList.remove('selected-item');
-                }
-            }
-        });
-
-        draggableItem.addEventListener('pointerdown', (e) => {
-            isDragging = true;
-            isItemSelected = true;
-            draggableItem.classList.add('selected-item');
-            draggableItem.classList.remove('bounce-in');
-            
-            startX = e.clientX;
-            startY = e.clientY;
-            
-            initialLeft = draggableItem.offsetLeft;
-            initialTop = draggableItem.offsetTop;
-            
-            draggableItem.style.left = initialLeft + 'px';
-            draggableItem.style.top = initialTop + 'px';
-            draggableItem.style.transform = 'none';
-            draggableItem.style.zIndex = '100'; 
-            
-            draggableItem.setPointerCapture(e.pointerId);
-        });
-
-        draggableItem.addEventListener('pointermove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            draggableItem.style.left = (initialLeft + dx) + 'px';
-            draggableItem.style.top = (initialTop + dy) + 'px';
-
-            // 수학적 좌표 검사로 바구니 확인
-            const basket = getBasketUnderPointer(e.clientX, e.clientY);
-
-            document.querySelectorAll('.basket').forEach(b => b.classList.remove('hovered'));
-            
-            if (basket) {
-                basket.classList.add('hovered');
-            }
-        });
-
-        draggableItem.addEventListener('pointerup', (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-            draggableItem.releasePointerCapture(e.pointerId);
-            
-            // 수학적 좌표 검사로 드롭한 바구니 확인
-            const basket = getBasketUnderPointer(e.clientX, e.clientY);
-
-            document.querySelectorAll('.basket').forEach(b => b.classList.remove('hovered'));
-
-            const dist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
-            
-            if (dist < 10) return; // 클릭 판정
-
-            if (basket) {
-                checkMatch(basket.dataset.id, basket);
-            } else {
-                draggableItem.classList.remove('selected-item');
-                isItemSelected = false;
-                resetItemPosition();
-            }
-        });
-
-        // --- Game Rules ---
-        function checkMatch(selectedId, basketEl) {
-            if (selectedId === currentTargetId) {
-                // 성공!
-                clearInterval(timerInterval);
-                playSuccessSound();
-                score++;
-                updateScoreDisplay();
-                
-                const rect = basketEl.getBoundingClientRect();
-                const containerRect = draggableItem.parentElement.getBoundingClientRect();
-                
-                draggableItem.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                draggableItem.style.left = (rect.left - containerRect.left + rect.width/2 - 40) + 'px';
-                draggableItem.style.top = (rect.top - containerRect.top + rect.height/2 - 40) + 'px';
-                draggableItem.style.transform = 'scale(0.2)';
-                draggableItem.style.opacity = '0';
-
-                spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2);
-
-                setTimeout(() => {
-                    nextTurn();
-                }, 800);
-
-            } else {
-                // 실패!
-                loseLife(false); 
-            }
-        }
-
-        function updateScoreDisplay() {
-            scoreDisplay.innerText = score;
-            scoreDisplay.classList.remove('bounce-in');
-            void scoreDisplay.offsetWidth;
-            scoreDisplay.classList.add('bounce-in');
-
-            if (score > highScore) {
-                highScore = score;
-                highScoreDisplay.innerText = highScore;
-                highScoreDisplay.classList.add('text-pink-600', 'font-bold');
-                saveHighScore(highScore);
-            }
-        }
-
-        // --- Visual Effects ---
-        function spawnParticles(x, y) {
-            const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#32CD32', '#FF4500'];
-            for (let i = 0; i < 15; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle text-2xl md:text-3xl';
-                particle.innerText = Math.random() > 0.5 ? '⭐' : '✨';
-                particle.style.left = x + 'px';
-                particle.style.top = y + 'px';
-                
-                document.body.appendChild(particle);
-
-                void particle.offsetWidth;
-
-                const angle = Math.random() * Math.PI * 2;
-                const velocity = 80 + Math.random() * 100;
-                const tx = Math.cos(angle) * velocity;
-                const ty = Math.sin(angle) * velocity;
-                const rot = Math.random() * 360;
-
-                particle.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(${0.5 + Math.random()})`;
-                particle.style.opacity = '0';
-
-                setTimeout(() => {
-                    particle.remove();
-                }, 800);
-            }
-        }
-
-        // --- Init Listeners ---
-        startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', startGame);
-
-        document.body.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-    </script>
-</body>
-</html>
+<body>
+<div id="startScreen" class="screen">
+  <h1>🎨 모양 & 색깔 🍎<br>친구들 집 찾기!</h1>
+  <button id="startBtn" class="bigBtn">시작하기 🚀</button>
+  <div class="tip">손가락으로 끌어 놓거나, 친구를 누른 뒤 집을 눌러도 돼요!</div>
+</div>
+<div id="gameOverScreen" class="screen hidden">
+  <h2>게임 오버! 😢</h2><p>내 점수: <span id="finalScoreDisplay">0</span></p>
+  <button id="restartBtn" class="bigBtn">다시 하기 🔄</button>
+</div>
+<div id="app">
+ <div class="header">
+  <div class="leftStats"><div class="pill score">⭐ 점수: <span id="scoreDisplay">0</span></div><div class="pill high">👑 최고: <span id="highScoreDisplay">0</span></div></div>
+  <div class="centerHud"><div id="stageBanner" class="banner colorBanner">스테이지 준비 중!</div><div class="timerTrack"><div id="timerFill"></div></div></div>
+  <div id="livesDisplay" class="pill lives">❤️❤️❤️</div>
+ </div>
+ <div id="gameArea"><div id="draggableItem"></div><div id="basketsContainer"></div></div>
+</div>
+<script>
+(function(){
+'use strict';
+const COLOR_DATA={
+ red:{cls:'red',name:'빨강',items:['🍎','🍓','🍒','🍅','🌶️','🌹','🎈','❤️','🥊','🦞','🐞','🚒','🧧','☎️','📮','📌','👠','🎸','🥩','🧣']},
+ yellow:{cls:'yellow',name:'노랑',items:['🍌','🌻','🐥','🧀','🍋','🌙','⭐','💛','👑','🍍','🔔','🌽','🐤','⚠️','🚕','🎷','🧽','🍯','☀️','🌕']},
+ blue:{cls:'blue',name:'파랑',items:['🐳','👖','💎','💧','🌊','💙','📘','🦋','🫐','🧢','🧿','🐬','🧊','🥣','🚙','🥏','🪣','🧵','🛋️','📘']},
+ green:{cls:'green',name:'초록',items:['🐸','🍀','🍏','🌲','🐢','🐍','🥒','🥦','🎾','💚','📗','🐛','🦖','🧩','🐊','🥬','🫑','🌿','🌵','🩳']}
+};
+const SHAPE_DATA={
+ circle:{cls:'circle',name:'동그라미',items:['🍪','⚽','🍩','🪙','🏀','⚾','🥎','🎱','🔮','🔴','🟡','🟢','🔵','💿','🎯','🌝','🥯','🥞','🧶','🪀']},
+ triangle:{cls:'triangle',name:'세모',items:['🍕','🍙','📐','🔺','🔻','⚠️','🍉','🍰','🎄','⛺','🏔️','🌋','⛵','🧀','🚩']},
+ square:{cls:'square',name:'네모',items:['🎁','📺','🟪','🟨','🟩','🟥','🟦','🟫','🔲','🔳','🧃','🖼️','📗','📘','📕','🧱','📦','🧽','🧊','🚪']}
+};
+const $=id=>document.getElementById(id);
+const scoreDisplay=$('scoreDisplay'),highScoreDisplay=$('highScoreDisplay'),livesDisplay=$('livesDisplay'),timerFill=$('timerFill'),stageBanner=$('stageBanner'),basketsContainer=$('basketsContainer'),item=$('draggableItem'),startScreen=$('startScreen'),startBtn=$('startBtn'),gameOverScreen=$('gameOverScreen'),restartBtn=$('restartBtn'),finalScoreDisplay=$('finalScoreDisplay'),gameArea=$('gameArea');
+let score=0,lives=3,timeLeft=5,timerInterval=null,currentStageType='shape',currentTargetId='',selected=false,dragging=false,downX=0,downY=0,itemStartLeft=0,itemStartTop=0,lastX=0,lastY=0,inputMoved=false,audioCtx=null,turnLocked=false,wasSelectedBeforeDrag=false;
+let highScore=0; try{highScore=parseInt(localStorage.getItem('shapeColorHighScore')||'0',10)||0}catch(e){} highScoreDisplay.textContent=highScore;
+function initAudio(){try{if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)()} if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume()}catch(e){audioCtx=null}}
+function tone(freq,type,duration,vol){if(!audioCtx)return;try{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(vol||.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+duration);o.start();o.stop(audioCtx.currentTime+duration)}catch(e){}}
+function successSound(){tone(523,'sine',.25,.08);setTimeout(()=>tone(659,'sine',.25,.08),130);setTimeout(()=>tone(784,'sine',.4,.08),260)}
+function errorSound(){tone(190,'square',.28,.045)} function popSound(){tone(760,'sine',.08,.04)}
+function saveHigh(){if(score>highScore){highScore=score;highScoreDisplay.textContent=highScore;try{localStorage.setItem('shapeColorHighScore',String(highScore))}catch(e){}}}
+function update(){scoreDisplay.textContent=score;livesDisplay.textContent='❤️'.repeat(Math.max(0,lives))+'💔'.repeat(Math.max(0,3-lives));saveHigh()}
+function startGame(){initAudio();startScreen.classList.add('hidden');gameOverScreen.classList.add('hidden');score=0;lives=3;turnLocked=false;update();nextTurn()}
+function startTimer(){clearInterval(timerInterval);timeLeft=5;timerFill.style.transition='none';timerFill.style.width='100%';timerFill.style.background='#4ade80';void timerFill.offsetWidth;timerFill.style.transition='width 1s linear,background-color .3s';timerInterval=setInterval(function(){timeLeft--;timerFill.style.width=(timeLeft/5*100)+'%';if(timeLeft<=2)timerFill.style.background='#ef4444';if(timeLeft<=0){clearInterval(timerInterval);loseLife(true)}},1000)}
+function gameOver(){clearInterval(timerInterval);turnLocked=true;errorSound();finalScoreDisplay.textContent=score;gameOverScreen.classList.remove('hidden')}
+function resetItem(){item.classList.remove('dragging','selected','shake');item.style.transition='all .22s ease';item.style.left='50%';item.style.top='19%';item.style.transform='translateX(-50%)';item.style.opacity='1';item.style.zIndex='20';setTimeout(()=>item.style.transition='',240);selected=false;dragging=false}
+function loseLife(timeout){if(turnLocked)return;turnLocked=true;clearInterval(timerInterval);errorSound();lives--;update();if(lives<=0){gameOver();return}item.classList.remove('selected','dragging');item.classList.add('shake');selected=false;dragging=false;setTimeout(function(){item.classList.remove('shake');nextTurn()},520)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
+function nextTurn(){turnLocked=false;currentStageType=currentStageType==='color'?'shape':'color';if(currentStageType==='color'){stageBanner.textContent='🎨 무슨 색깔일까?';stageBanner.className='banner colorBanner'}else{stageBanner.textContent='🔺 무슨 모양일까?';stageBanner.className='banner shapeBanner'}const data=currentStageType==='color'?COLOR_DATA:SHAPE_DATA;const keys=shuffle(Object.keys(data)).slice(0,3);currentTargetId=keys[Math.floor(Math.random()*keys.length)];const arr=data[currentTargetId].items;renderBaskets(keys,data);renderItem(arr[Math.floor(Math.random()*arr.length)])}
+function renderBaskets(keys,data){basketsContainer.innerHTML='';keys.forEach(function(key){const d=data[key],b=document.createElement('div');b.className='basket '+d.cls+(currentStageType==='color'?' colorBasket':'');b.textContent=d.name;b.setAttribute('data-id',key);addTap(b,function(){if(turnLocked)return;if(selected&&!dragging)checkMatch(key,b)});basketsContainer.appendChild(b)})}
+function renderItem(emoji){item.textContent=emoji;item.classList.remove('shake','selected','dragging','bounce');item.style.transition='';item.style.left='50%';item.style.top='19%';item.style.transform='translateX(-50%)';item.style.opacity='1';item.style.zIndex='20';void item.offsetWidth;item.classList.add('bounce');selected=false;dragging=false;startTimer()}
+function basketAt(x,y){const bs=basketsContainer.querySelectorAll('.basket');for(let i=0;i<bs.length;i++){const r=bs[i].getBoundingClientRect();if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return bs[i]}return null}
+function clearHover(){const bs=basketsContainer.querySelectorAll('.basket');for(let i=0;i<bs.length;i++)bs[i].classList.remove('hovered')}
+function pointFromEvent(e){if(e.touches&&e.touches.length)return{x:e.touches[0].clientX,y:e.touches[0].clientY};if(e.changedTouches&&e.changedTouches.length)return{x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};return{x:e.clientX,y:e.clientY}}
+function dragStart(e){if(turnLocked)return;initAudio();if(e.cancelable)e.preventDefault();const p=pointFromEvent(e),r=item.getBoundingClientRect(),area=gameArea.getBoundingClientRect();wasSelectedBeforeDrag=selected;dragging=true;selected=true;inputMoved=false;downX=lastX=p.x;downY=lastY=p.y;itemStartLeft=r.left-area.left;itemStartTop=r.top-area.top;item.classList.remove('bounce');item.classList.add('selected','dragging');item.style.left=itemStartLeft+'px';item.style.top=itemStartTop+'px';item.style.transform='none';item.style.zIndex='80'}
+function dragMove(e){if(!dragging)return;if(e.cancelable)e.preventDefault();const p=pointFromEvent(e),dx=p.x-downX,dy=p.y-downY;lastX=p.x;lastY=p.y;if(Math.abs(dx)+Math.abs(dy)>6)inputMoved=true;item.style.left=(itemStartLeft+dx)+'px';item.style.top=(itemStartTop+dy)+'px';clearHover();const b=basketAt(p.x,p.y);if(b)b.classList.add('hovered')}
+function dragEnd(e){if(!dragging)return;if(e.cancelable)e.preventDefault();const p=pointFromEvent(e);dragging=false;item.classList.remove('dragging');clearHover();if(!inputMoved){selected=!wasSelectedBeforeDrag;if(selected){item.classList.add('selected');popSound()}else item.classList.remove('selected');resetItemVisualOnly();return}const b=basketAt(p.x,p.y);if(b)checkMatch(b.getAttribute('data-id'),b);else resetItem()}
+function resetItemVisualOnly(){item.style.left='50%';item.style.top='19%';item.style.transform='translateX(-50%)';if(selected)item.classList.add('selected');else item.classList.remove('selected')}
+function addTap(el,fn){let touched=false;el.addEventListener('touchend',function(e){touched=true;if(e.cancelable)e.preventDefault();fn(e);setTimeout(()=>touched=false,400)},{passive:false});el.addEventListener('click',function(e){if(!touched)fn(e)})}
+function checkMatch(id,b){if(turnLocked)return;turnLocked=true;clearInterval(timerInterval);if(id===currentTargetId){successSound();score++;update();const br=b.getBoundingClientRect(),ar=gameArea.getBoundingClientRect(),ir=item.getBoundingClientRect();item.style.transition='all .38s cubic-bezier(.175,.885,.32,1.275)';item.style.left=(br.left-ar.left+br.width/2-ir.width/2)+'px';item.style.top=(br.top-ar.top+br.height/2-ir.height/2)+'px';item.style.transform='scale(.2)';item.style.opacity='0';particles(br.left+br.width/2,br.top+br.height/2);setTimeout(nextTurn,650)}else{turnLocked=false;loseLife(false)}}
+function particles(x,y){const chars=['⭐','✨'];for(let i=0;i<14;i++){const p=document.createElement('div');p.className='particle';p.textContent=chars[Math.random()<.5?0:1];p.style.left=x+'px';p.style.top=y+'px';document.body.appendChild(p);void p.offsetWidth;const a=Math.random()*Math.PI*2,v=70+Math.random()*110;p.style.transform='translate('+(Math.cos(a)*v)+'px,'+(Math.sin(a)*v)+'px) rotate('+(Math.random()*360)+'deg) scale('+(0.6+Math.random())+')';p.style.opacity='0';setTimeout(()=>p.remove(),820)}}
+addTap(startBtn,startGame);addTap(restartBtn,startGame);
+if(window.PointerEvent){item.addEventListener('pointerdown',dragStart,{passive:false});window.addEventListener('pointermove',dragMove,{passive:false});window.addEventListener('pointerup',dragEnd,{passive:false});window.addEventListener('pointercancel',dragEnd,{passive:false})}else{item.addEventListener('touchstart',dragStart,{passive:false});window.addEventListener('touchmove',dragMove,{passive:false});window.addEventListener('touchend',dragEnd,{passive:false});item.addEventListener('mousedown',dragStart);window.addEventListener('mousemove',dragMove);window.addEventListener('mouseup',dragEnd)}
+document.addEventListener('touchmove',function(e){if(e.cancelable)e.preventDefault()},{passive:false});
+})();
+</script>
+</body></html>
