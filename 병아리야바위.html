@@ -38,7 +38,7 @@
 
         #game-container {
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;
             text-align: center;
             position: relative;
             padding: 20px;
@@ -68,24 +68,30 @@
 
         #board {
             position: relative;
-            height: 250px;
+            height: clamp(330px, 55vh, 500px);
             width: 100%;
             margin: 0 auto;
         }
 
         .slot {
             position: absolute;
-            bottom: 20px;
             width: 100px;
             height: 120px;
-            margin-left: -50px; /* 중앙 정렬용 */
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
             cursor: pointer;
-            /* transform 설정은 JS에서 제어 */
+            will-change: left, top;
         }
+
+        /* 컵이 많아질수록 살짝 작게 만들어 서로 겹치지 않도록 함 */
+        #board.cups-5 .cup-emoji { font-size: 74px; }
+        #board.cups-5 .chick-emoji { font-size: 54px; }
+        #board.cups-7 .slot { width: 86px; height: 104px; }
+        #board.cups-7 .cup-emoji { font-size: 66px; }
+        #board.cups-7 .chick-emoji { font-size: 46px; }
 
         /* 컵 스타일 (🥤) */
         .cup-emoji {
@@ -174,11 +180,20 @@
         }
 
         /* 반응형 */
-        @media (max-width: 400px) {
-            .slot { width: 80px; margin-left: -40px; }
-            .cup-emoji { font-size: 70px; }
-            .chick-emoji { font-size: 50px; bottom: 5px;}
+        @media (max-width: 600px) {
+            #game-container { padding: 12px; }
+            header { margin-bottom: 18px; }
+            #board { height: clamp(330px, 58vh, 430px); }
+            .slot { width: 78px; height: 96px; }
+            .cup-emoji { font-size: 66px; }
+            .chick-emoji { font-size: 46px; bottom: 5px; }
+            #board.cups-5 .cup-emoji { font-size: 62px; }
+            #board.cups-5 .chick-emoji { font-size: 43px; }
+            #board.cups-7 .slot { width: 68px; height: 86px; }
+            #board.cups-7 .cup-emoji { font-size: 54px; }
+            #board.cups-7 .chick-emoji { font-size: 38px; }
             h1 { font-size: 2rem; }
+            .stats { gap: 14px; font-size: 1.15rem; flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -190,6 +205,7 @@
             <div class="stats" id="stats-bar">
                 <div>레벨: <span id="level-display">1</span></div>
                 <div>점수: <span id="score-display">0</span></div>
+                <div>컵: <span id="cup-count-display">3</span>개</div>
             </div>
         </header>
 
@@ -211,15 +227,38 @@
         let score = 0;
         let currentSpeed = 1200; // 초기 이동 속도 (매우 느림 - 1.2초)
         const baseSpeed = 1200;
-        let chickCupIndex = 0; // 병아리가 있는 논리적 컵 번호 (0, 1, 2)
+        let chickCupIndex = 0; // 병아리가 숨어 있는 '컵 자체'의 번호
         let canGuess = false;
         let shuffleCount = 3; // 처음엔 3번 섞기
-        
-        // 슬롯의 화면 상 X 좌표 퍼센트 (왼쪽, 가운데, 오른쪽)
-        const positions = ['20%', '50%', '80%'];
-        // 물리적 위치(0,1,2)에 논리적 컵(0,1,2)이 어떻게 배치되어 있는지 매핑
-        // index: 위치, value: 컵 번호
-        let currentSlots = [0, 1, 2]; 
+        let cupCount = 3;
+        let currentSlots = []; // index: 화면 위치, value: 그 위치에 놓인 컵 번호
+
+        // 난이도별 2차원 위치. left/top을 동시에 움직여 상하·좌우·대각선 이동을 만든다.
+        const layouts = {
+            3: [
+                { x: 20, y: 62 }, { x: 50, y: 62 }, { x: 80, y: 62 }
+            ],
+            5: [
+                { x: 50, y: 20 },
+                { x: 20, y: 50 }, { x: 50, y: 50 }, { x: 80, y: 50 },
+                { x: 50, y: 80 }
+            ],
+            7: [
+                { x: 20, y: 26 }, { x: 50, y: 26 }, { x: 80, y: 26 },
+                { x: 50, y: 50 },
+                { x: 20, y: 74 }, { x: 50, y: 74 }, { x: 80, y: 74 }
+            ]
+        };
+
+        function getCupCountForLevel(value = level) {
+            if (value >= 7) return 7;
+            if (value >= 4) return 5;
+            return 3;
+        }
+
+        function getPositions() {
+            return layouts[cupCount];
+        }
         
         const board = document.getElementById('board');
         const messageArea = document.getElementById('message-area');
@@ -228,6 +267,7 @@
         const statsBar = document.getElementById('stats-bar');
         const levelDisplay = document.getElementById('level-display');
         const scoreDisplay = document.getElementById('score-display');
+        const cupCountDisplay = document.getElementById('cup-count-display');
         
         const cups = []; // DOM 엘리먼트 배열
 
@@ -347,12 +387,24 @@
         }
 
         /** --- 게임 초기화 및 생성 --- */
-        function createCups() {
-            board.innerHTML = '';
-            cups.length = 0;
-            currentSlots = [0, 1, 2];
+        function placeCup(cupEl, positionIndex, animate = true) {
+            const pos = getPositions()[positionIndex];
+            cupEl.style.transition = animate
+                ? `left ${currentSpeed}ms ease-in-out, top ${currentSpeed}ms ease-in-out`
+                : 'none';
+            cupEl.style.left = `${pos.x}%`;
+            cupEl.style.top = `${pos.y}%`;
+        }
 
-            for (let i = 0; i < 3; i++) {
+        function createCups(newCount = getCupCountForLevel()) {
+            cupCount = newCount;
+            board.innerHTML = '';
+            board.classList.remove('cups-3', 'cups-5', 'cups-7');
+            board.classList.add(`cups-${cupCount}`);
+            cups.length = 0;
+            currentSlots = Array.from({ length: cupCount }, (_, i) => i);
+
+            for (let i = 0; i < cupCount; i++) {
                 const cupDiv = document.createElement('div');
                 cupDiv.className = 'slot';
                 cupDiv.dataset.cupId = i;
@@ -367,35 +419,33 @@
                 
                 cupDiv.appendChild(chick);
                 cupDiv.appendChild(cup);
+                placeCup(cupDiv, i, false);
                 
-                // 초기 위치 설정
-                cupDiv.style.left = positions[i];
-                // transition 속성은 섞을 때 동적으로 할당
-                cupDiv.style.transition = `left ${currentSpeed}ms ease-in-out`;
-                
-                // 클릭 이벤트
+                // 컵 번호는 이동해도 변하지 않으므로 병아리 추적에 그대로 사용 가능
                 cupDiv.addEventListener('click', () => handleGuess(i));
                 
                 board.appendChild(cupDiv);
                 cups.push(cupDiv);
             }
+            updateStats();
         }
 
         function resetBoard() {
             cups.forEach((cup, i) => {
                 cup.classList.remove('lift', 'has-chick', 'interactive');
-                // 논리적 순서대로 물리적 위치 복구
-                currentSlots[i] = i; 
-                cup.style.transition = 'none'; // 즉시 이동
-                cup.style.left = positions[i];
+                currentSlots[i] = i;
+                placeCup(cup, i, false);
                 cup.style.zIndex = 10;
             });
-            // 약간의 딜레이 후 transition 복구 (DOM 렌더링 시간 확보)
-            setTimeout(() => {
-                cups.forEach(cup => {
-                    cup.style.transition = `left ${currentSpeed}ms ease-in-out`;
+
+            // 즉시 배치한 뒤 다음 프레임부터 이동 애니메이션을 다시 활성화
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    cups.forEach(cup => {
+                        cup.style.transition = `left ${currentSpeed}ms ease-in-out, top ${currentSpeed}ms ease-in-out`;
+                    });
                 });
-            }, 50);
+            });
         }
 
         function showMessage(msg, type='text') {
@@ -406,11 +456,19 @@
         /** --- 게임 흐름 --- */
         async function startRound() {
             canGuess = false;
+
+            const neededCupCount = getCupCountForLevel();
+            if (cupCount !== neededCupCount || cups.length !== neededCupCount) {
+                createCups(neededCupCount);
+                showMessage(neededCupCount === 5 ? "난이도 상승! 컵이 5개가 되었어요!" : "최고 난이도! 컵이 7개가 되었어요!", "danger");
+                await sleep(900);
+            }
+
             resetBoard();
             showMessage("병아리가 숨어요!", "text");
             
-            // 병아리 위치 랜덤 결정
-            chickCupIndex = Math.floor(Math.random() * 3);
+            // 병아리가 숨을 '컵 자체'를 랜덤으로 결정
+            chickCupIndex = Math.floor(Math.random() * cupCount);
             cups[chickCupIndex].classList.add('has-chick');
 
             // 1. 숨는 모습 보여주기
@@ -434,48 +492,66 @@
             canGuess = true;
         }
 
-        async function shuffleCups() {
-            for (let i = 0; i < shuffleCount; i++) {
-                // 섞을 2개의 위치(slot) 선택
-                let slotA = Math.floor(Math.random() * 3);
-                let slotB;
-                do {
-                    slotB = Math.floor(Math.random() * 3);
-                } while (slotA === slotB);
+        function buildMovePairs() {
+            const pos = getPositions();
+            const pairs = [];
 
-                await swapSlots(slotA, slotB);
-                await sleep(50); // 연속 스왑 사이의 짧은 텀
+            // 너무 먼 점프만 반복되지 않도록 가까운 위치들을 우선 연결한다.
+            // 5·7컵 배치에서는 이 조합 안에 수평/수직/대각선 이동이 모두 포함된다.
+            for (let a = 0; a < pos.length; a++) {
+                for (let b = a + 1; b < pos.length; b++) {
+                    const dx = Math.abs(pos[a].x - pos[b].x);
+                    const dy = Math.abs(pos[a].y - pos[b].y);
+                    const distance = Math.hypot(dx, dy);
+                    const limit = cupCount === 3 ? 36 : (cupCount === 5 ? 46 : 40);
+                    if (distance <= limit) pairs.push([a, b]);
+                }
+            }
+            return pairs;
+        }
+
+        async function shuffleCups() {
+            const movePairs = buildMovePairs();
+            let lastPairKey = '';
+
+            for (let i = 0; i < shuffleCount; i++) {
+                let pair = movePairs[Math.floor(Math.random() * movePairs.length)];
+                let pairKey = pair.join('-');
+
+                // 같은 두 자리만 연속으로 왕복하는 장면은 피한다.
+                if (movePairs.length > 1) {
+                    let guard = 0;
+                    while (pairKey === lastPairKey && guard < 10) {
+                        pair = movePairs[Math.floor(Math.random() * movePairs.length)];
+                        pairKey = pair.join('-');
+                        guard++;
+                    }
+                }
+                lastPairKey = pairKey;
+
+                await swapSlots(pair[0], pair[1]);
+                await sleep(Math.max(35, Math.min(90, currentSpeed * 0.12)));
             }
         }
 
         function swapSlots(posA, posB) {
             return new Promise(resolve => {
-                // 현재 해당 위치에 있는 컵의 인덱스를 찾음
                 const cupIdA = currentSlots[posA];
                 const cupIdB = currentSlots[posB];
-
                 const domA = cups[cupIdA];
                 const domB = cups[cupIdB];
 
-                // 시각적으로 교차하는 느낌을 주기 위해 z-index 조절
                 domA.style.zIndex = 20;
                 domB.style.zIndex = 10;
 
-                // 이동 애니메이션 속도 업데이트
-                domA.style.transition = `left ${currentSpeed}ms ease-in-out`;
-                domB.style.transition = `left ${currentSpeed}ms ease-in-out`;
+                // left와 top을 함께 바꾸므로 수평·수직·대각선 이동이 자연스럽게 나타난다.
+                placeCup(domA, posB, true);
+                placeCup(domB, posA, true);
 
-                // 위치 맞교환
-                domA.style.left = positions[posB];
-                domB.style.left = positions[posA];
-
-                // 논리적 배열 업데이트
                 currentSlots[posA] = cupIdB;
                 currentSlots[posB] = cupIdA;
 
                 playSound('swoosh');
-
-                // 애니메이션 끝날 때까지 대기
                 setTimeout(resolve, currentSpeed);
             });
         }
@@ -495,7 +571,7 @@
                 score += 10 * level;
                 level++;
                 
-                // 난이도 상승 (속도 증가, 섞는 횟수 증가)
+                // 난이도 상승: 속도 + 섞는 횟수 + 컵 개수/이동 방향까지 단계적으로 상승
                 currentSpeed = Math.max(300, currentSpeed * 0.85); // 최소 300ms까지 빨라짐
                 if (level % 2 === 0) shuffleCount++; // 2레벨마다 섞는 횟수 1증가
 
@@ -519,6 +595,8 @@
                 score = 0;
                 currentSpeed = baseSpeed;
                 shuffleCount = 3;
+                cupCount = 3;
+                createCups(3);
                 updateStats();
                 
                 showMessage("다시 한 번 해볼까요?", "text");
@@ -530,6 +608,7 @@
         function updateStats() {
             levelDisplay.innerText = level;
             scoreDisplay.innerText = score;
+            if (cupCountDisplay) cupCountDisplay.innerText = cupCount;
         }
 
         // 유틸: 비동기 대기
@@ -543,7 +622,7 @@
             startBGM();
             overlay.style.display = 'none';
             statsBar.style.display = 'flex';
-            createCups();
+            createCups(3);
             startRound();
         });
 
