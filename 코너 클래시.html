@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#181a4a" />
+<title>PIXEL KINGDOMS : CORNER CLASH</title>
+<style>
+:root{
+  --ink:#1f2240; --paper:#fffdf7; --panel:#ffffff; --line:#dfe3ff;
+  --blue:#4f7cff; --red:#ff5d73; --green:#3dd6a1; --yellow:#ffca4b;
+  --violet:#7b5cff; --shadow:0 14px 35px rgba(39,42,95,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 15% 10%,#edf0ff 0 20%,transparent 21%),linear-gradient(135deg,#f9f7ff,#eff8ff 48%,#fff6e8);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
+button,select{font:inherit}
+button{border:0;cursor:pointer;color:inherit}
+.hidden{display:none!important}
+.screen{min-height:100vh;padding:clamp(14px,2.4vw,28px)}
+#app{min-height:100vh}
+
+/* MENU */
+.hero{max-width:1120px;margin:0 auto;padding:clamp(22px,5vw,62px) 0 18px;text-align:center}
+.logoMark{width:86px;height:86px;margin:0 auto 16px;position:relative;transform:rotate(12deg);filter:drop-shadow(0 12px 12px rgba(73,78,150,.18))}
+.logoMark i{position:absolute;width:42px;height:42px;border-radius:12px;border:5px solid #fff;box-shadow:0 5px 12px rgba(31,34,64,.14)}
+.logoMark i:nth-child(1){left:0;top:22px;background:var(--blue)}
+.logoMark i:nth-child(2){left:22px;top:0;background:var(--red)}
+.logoMark i:nth-child(3){right:0;top:22px;background:var(--green)}
+.logoMark i:nth-child(4){left:22px;bottom:0;background:var(--yellow)}
+.hero h1{font-size:clamp(38px,7vw,78px);line-height:.92;margin:0;letter-spacing:-.06em;font-weight:950;text-shadow:0 4px 0 #fff}
+.hero h1 span{display:block;font-size:.32em;letter-spacing:.12em;margin-top:12px;color:#696f99}
+.hero p{margin:20px auto 0;max-width:640px;font-weight:750;color:#696f99;font-size:clamp(15px,2vw,19px)}
+.modeGrid{max-width:980px;margin:22px auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.modeCard{background:rgba(255,255,255,.88);border:2px solid #fff;border-radius:28px;box-shadow:var(--shadow);padding:22px;text-align:left;min-height:220px;transition:.18s transform,.18s box-shadow;position:relative;overflow:hidden}
+.modeCard:hover{transform:translateY(-5px);box-shadow:0 20px 45px rgba(39,42,95,.23)}
+.modeCard .icon{font-size:48px;display:block;margin-bottom:8px}
+.modeCard h2{font-size:25px;margin:0 0 8px;letter-spacing:-.04em}
+.modeCard p{margin:0;color:#777c9f;font-weight:650;line-height:1.5}
+.modeCard .go{position:absolute;right:18px;bottom:16px;width:46px;height:46px;border-radius:16px;background:#eef0ff;font-weight:950;font-size:24px;display:grid;place-items:center}
+.menuFoot{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:26px 0}
+.softBtn,.iconBtn{background:#fff;border:2px solid #e5e7f8;border-radius:16px;padding:11px 16px;font-weight:850;box-shadow:0 7px 18px rgba(34,38,92,.08)}
+
+/* DIALOGS */
+.overlay{position:fixed;inset:0;background:rgba(23,25,59,.44);backdrop-filter:blur(7px);display:grid;place-items:center;padding:18px;z-index:50}
+.dialog{width:min(640px,100%);max-height:min(86vh,850px);overflow:auto;background:#fff;border-radius:28px;padding:24px;box-shadow:0 30px 90px rgba(17,19,50,.35);border:2px solid rgba(255,255,255,.8)}
+.dialog h2{margin:0 0 8px;font-size:30px;letter-spacing:-.04em}
+.dialog .sub{margin:0 0 20px;color:#767b9c;font-weight:650;line-height:1.45}
+.configRow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #eef0f8}
+.configRow strong{font-size:16px}
+.segment{display:flex;background:#f0f2fb;border-radius:14px;padding:4px;gap:4px}
+.segment button{padding:9px 13px;border-radius:11px;background:transparent;font-weight:850;color:#73799b}
+.segment button.on{background:#fff;color:#2f335c;box-shadow:0 4px 12px rgba(31,34,64,.11)}
+.primary{width:100%;margin-top:20px;padding:15px 20px;border-radius:18px;background:linear-gradient(135deg,#6654ff,#4e82ff);color:#fff;font-size:18px;font-weight:900;box-shadow:0 12px 26px rgba(80,92,255,.28)}
+.secondary{width:100%;margin-top:9px;padding:12px;border-radius:16px;background:#f1f3fb;font-weight:850}
+.playerSetup{display:grid;gap:9px;margin-top:12px}
+.playerLine{display:flex;align-items:center;gap:10px;background:#f7f8fe;border-radius:16px;padding:10px 12px}
+.dot{width:18px;height:18px;border-radius:6px;flex:none}
+.playerLine b{flex:1}
+.playerLine select{border:0;background:#fff;border-radius:10px;padding:7px 9px;color:#4d5277;font-weight:750;outline:none}
+.rules{line-height:1.65;color:#545a7e;font-weight:650}
+.rules b{color:#2c315c}
+.rulePic{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.rulePic div{background:#f5f6ff;border-radius:16px;padding:14px;text-align:center}
+.rulePic strong{display:block;margin-top:5px;font-size:13px}
+
+/* CHALLENGE */
+#challengeScreen{max-width:1100px;margin:0 auto}
+.screenHeader{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.screenHeader h1{margin:0;font-size:clamp(26px,5vw,44px);letter-spacing:-.05em}
+.screenHeader p{margin:3px 0;color:#747a9c;font-weight:650}
+.stageGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stageCard{background:#fff;border-radius:22px;padding:16px;box-shadow:var(--shadow);min-height:160px;text-align:left;border:2px solid transparent;position:relative}
+.stageCard.locked{filter:grayscale(.8);opacity:.52;cursor:not-allowed}
+.stageCard.cleared{border-color:#ffd36c}
+.stageNo{font-size:12px;font-weight:950;color:#8a90b1;letter-spacing:.12em}
+.stageCard h3{margin:6px 0;font-size:20px}
+.stageCard p{margin:0;color:#747a9b;font-size:13px;line-height:1.4;font-weight:650}
+.stars{position:absolute;right:14px;top:13px;font-size:18px}
+
+/* GAME */
+#gameScreen{padding:10px;min-height:100vh;display:flex;flex-direction:column}
+.gameTop{height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;max-width:1320px;width:100%;margin:0 auto}
+.topLeft,.topRight{display:flex;align-items:center;gap:8px}.topRight{justify-content:flex-end}
+.turnPill{background:#fff;border-radius:18px;padding:9px 16px;box-shadow:0 8px 20px rgba(33,36,85,.12);display:flex;align-items:center;gap:10px;font-weight:900;min-width:180px;justify-content:center}
+.turnPill .dot{width:16px;height:16px;border-radius:5px}
+.smallRound{width:42px;height:42px;border-radius:14px;background:#fff;box-shadow:0 8px 20px rgba(33,36,85,.11);font-weight:900;font-size:18px}
+.gameMain{width:min(1320px,100%);margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;flex:1;min-height:0}
+.boardWrap{min-height:0;background:rgba(255,255,255,.7);border-radius:24px;padding:10px;box-shadow:var(--shadow);display:grid;place-items:center;position:relative;overflow:hidden}
+#board{display:block;width:min(78vh,100%);aspect-ratio:1;border-radius:18px;touch-action:none;box-shadow:0 8px 28px rgba(30,35,75,.12);background:#f9faff}
+.boardBadge{position:absolute;left:18px;top:18px;background:rgba(255,255,255,.9);padding:7px 11px;border-radius:12px;font-weight:900;font-size:12px;color:#656b90;pointer-events:none}
+.side{background:#fff;border-radius:24px;padding:14px;box-shadow:var(--shadow);min-height:0;display:flex;flex-direction:column}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.stat{background:#f5f6fc;border-radius:14px;padding:9px;text-align:center}
+.stat b{display:block;font-size:20px}.stat span{font-size:11px;color:#7e84a3;font-weight:800}
+.actionBar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 10px}
+.actionBar button{border-radius:13px;padding:10px 3px;background:#eef1ff;font-weight:900;font-size:13px}
+.actionBar button:disabled{opacity:.35}
+.trayTitle{display:flex;align-items:center;justify-content:space-between;margin:3px 2px 8px}.trayTitle b{font-size:15px}.trayTitle span{font-size:12px;color:#8c91aa;font-weight:750}
+#pieceTray{overflow:auto;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-right:2px;align-content:start}
+.piece{height:83px;border-radius:15px;background:#f7f8fc;border:2px solid transparent;display:grid;place-items:center;position:relative;touch-action:none}
+.piece:hover{background:#f1f3fb}.piece.selected{border-color:#6c67ff;background:#f0efff;box-shadow:0 0 0 3px rgba(108,103,255,.1)}
+.piece.used{display:none}.piece canvas{max-width:66px;max-height:58px;pointer-events:none}
+.piece .sz{position:absolute;right:6px;bottom:4px;font-size:10px;font-weight:900;color:#a1a5ba}
+.miniPlayers{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.miniP{background:#f7f8fc;border-radius:12px;padding:7px 9px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:850}
+.miniP.active{outline:2px solid #8a8ef7}.miniP .score{margin-left:auto;font-size:13px}
+.statusLine{text-align:center;min-height:25px;font-weight:850;font-size:13px;color:#6c7293;padding:4px}
+
+/* TURN + RESULTS */
+.turnCard{text-align:center}.turnCard .bigDot{width:72px;height:72px;border-radius:24px;margin:4px auto 12px;box-shadow:inset 0 -8px 0 rgba(0,0,0,.08)}
+.turnCard h2{font-size:32px;margin:0}.turnCard p{font-weight:700;color:#777d9c}
+.rankList{display:grid;gap:8px;margin:16px 0}
+.rank{display:flex;align-items:center;gap:10px;padding:11px;background:#f6f7fc;border-radius:14px}.rank .medal{font-size:25px;width:34px}.rank .score{margin-left:auto;font-size:22px;font-weight:950}
+.resultTitle{text-align:center;font-size:36px!important}.resultCrown{text-align:center;font-size:62px;margin-bottom:6px}
+.challengeStamp{text-align:center;background:#fff4ce;color:#7c621d;border-radius:14px;padding:10px;font-weight:900;margin:8px 0}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);background:#282c55;color:#fff;border-radius:16px;padding:11px 16px;font-weight:850;box-shadow:0 10px 30px rgba(15,18,50,.28);opacity:0;pointer-events:none;transition:.18s;z-index:90;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}.toast.show{opacity:1;transform:translate(-50%,0)}
+.confetti{position:fixed;width:10px;height:16px;border-radius:3px;z-index:100;pointer-events:none;animation:fall 1.8s ease-in forwards}@keyframes fall{to{transform:translate(var(--dx),105vh) rotate(760deg);opacity:.1}}
+
+@media(max-width:900px){
+ .modeGrid{grid-template-columns:1fr}.modeCard{min-height:150px}
+ .stageGrid{grid-template-columns:repeat(2,1fr)}
+ .gameTop{height:56px}.turnPill{min-width:0;padding:8px 11px;font-size:13px}
+ .gameMain{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+ .boardWrap{padding:6px;border-radius:18px}.side{border-radius:18px;padding:10px;max-height:38vh}
+ #board{width:min(100%,58vh)}
+ #pieceTray{grid-template-columns:repeat(6,1fr);overflow-x:auto;overflow-y:hidden;display:flex;min-height:84px}
+ .piece{width:82px;min-width:82px;height:76px}.stats{display:none}.miniPlayers{display:none}.trayTitle{margin-top:0}
+ .actionBar{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:560px){
+ .screen{padding:12px}.hero{padding-top:26px}.hero h1{font-size:46px}.stageGrid{grid-template-columns:1fr 1fr;gap:9px}.stageCard{min-height:145px;padding:13px}
+ .topLeft .labelHide,.topRight .labelHide{display:none}.gameTop{grid-template-columns:auto 1fr auto}.turnPill{font-size:12px}
+ #board{width:min(100%,52vh)}.side{max-height:42vh}.actionBar button{font-size:12px;padding:9px 2px}
+ .dialog{padding:19px}.configRow{align-items:flex-start;flex-direction:column}.segment{width:100%}.segment button{flex:1}
+ .rulePic{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="menuScreen" class="screen">
+    <div class="hero">
+      <div class="logoMark"><i></i><i></i><i></i><i></i></div>
+      <h1>PIXEL KINGDOMS <span>CORNER CLASH</span></h1>
+      <p>모서리로 영토를 이어 붙여 왕국을 넓혀라. 한 기기로 함께하거나, 컴퓨터 왕국과 전략 대결!</p>
+    </div>
+    <div class="modeGrid">
+      <button class="modeCard" data-mode="solo"><span class="icon">🤖</span><h2>컴퓨터와 대전</h2><p>혼자서 1~3개의 AI 왕국과 겨뤄요. 난이도를 골라 바로 시작할 수 있어요.</p><span class="go">›</span></button>
+      <button class="modeCard" data-mode="local"><span class="icon">👥</span><h2>한 기기 대전</h2><p>2~4명이 태블릿·PC·전자칠판 하나를 두고 돌아가며 플레이해요.</p><span class="go">›</span></button>
+      <button class="modeCard" data-mode="challenge"><span class="icon">🗺️</span><h2>왕국 도전 지도</h2><p>12개의 특별한 보드에서 AI와 대결해 다음 지역을 해금해요.</p><span class="go">›</span></button>
+    </div>
+    <div class="menuFoot"><button id="ruleBtn" class="softBtn">📖 게임 방법</button><button id="soundMenuBtn" class="softBtn">🔊 소리 켜짐</button></div>
+  </section>
+
+  <section id="challengeScreen" class="screen hidden">
+    <div class="screenHeader"><button class="softBtn" id="backFromChallenge">←</button><div><h1>왕국 도전 지도</h1><p>승리하면 다음 지역이 열려요.</p></div></div>
+    <div id="stageGrid" class="stageGrid"></div>
+  </section>
+
+  <section id="gameScreen" class="hidden">
+    <header class="gameTop">
+      <div class="topLeft"><button id="homeBtn" class="smallRound">⌂</button><button id="soundGameBtn" class="smallRound">🔊</button></div>
+      <div class="turnPill"><span id="turnDot" class="dot"></span><span id="turnText">파랑 왕국 차례</span></div>
+      <div class="topRight"><span id="modeLabel" class="labelHide" style="font-weight:850;color:#757b9a;font-size:12px"></span><button id="rulesGameBtn" class="smallRound">?</button></div>
+    </header>
+    <div class="gameMain">
+      <div class="boardWrap"><canvas id="board" width="800" height="800"></canvas><div id="boardBadge" class="boardBadge">14 × 14</div></div>
+      <aside class="side">
+        <div class="stats"><div class="stat"><b id="scoreStat">0</b><span>영토</span></div><div class="stat"><b id="remainStat">18</b><span>남은 타일</span></div><div class="stat"><b id="crownStat">0</b><span>왕관 점수</span></div></div>
+        <div class="actionBar"><button id="rotateBtn">↻ 회전</button><button id="flipBtn">↔ 뒤집기</button><button id="hintBtn">✨ 힌트</button><button id="deselectBtn">✕ 선택취소</button></div>
+        <div id="statusLine" class="statusLine">타일을 선택한 뒤 보드에 놓아보세요.</div>
+        <div class="trayTitle"><b>내 왕국 타일</b><span>R 회전 · F 뒤집기</span></div>
+        <div id="pieceTray"></div>
+        <div id="miniPlayers" class="miniPlayers"></div>
+      </aside>
+    </div>
+  </section>
+
+  <div id="overlay" class="overlay hidden"></div>
+  <div id="toast" class="toast"></div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const COLORS=['#4f7cff','#ff5d73','#3dd6a1','#ffca4b'];
+const NAMES=['파랑 왕국','빨강 왕국','초록 왕국','노랑 왕국'];
+const PIECES=[
+ {id:'mono',c:[[0,0]]}, {id:'domino',c:[[0,0],[1,0]]},
+ {id:'triI',c:[[0,0],[1,0],[2,0]]}, {id:'triL',c:[[0,0],[0,1],[1,1]]},
+ {id:'tetI',c:[[0,0],[1,0],[2,0],[3,0]]}, {id:'tetO',c:[[0,0],[1,0],[0,1],[1,1]]}, {id:'tetT',c:[[0,0],[1,0],[2,0],[1,1]]}, {id:'tetL',c:[[0,0],[0,1],[0,2],[1,2]]}, {id:'tetZ',c:[[0,0],[1,0],[1,1],[2,1]]},
+ {id:'penI',c:[[0,0],[1,0],[2,0],[3,0],[4,0]]}, {id:'penL',c:[[0,0],[0,1],[0,2],[0,3],[1,3]]}, {id:'penT',c:[[0,0],[1,0],[2,0],[1,1],[1,2]]}, {id:'penU',c:[[0,0],[2,0],[0,1],[1,1],[2,1]]}, {id:'penV',c:[[0,0],[0,1],[0,2],[1,2],[2,2]]}, {id:'penW',c:[[0,0],[0,1],[1,1],[1,2],[2,2]]}, {id:'penP',c:[[0,0],[1,0],[0,1],[1,1],[0,2]]}, {id:'penZ',c:[[0,0],[1,0],[1,1],[1,2],[2,2]]}, {id:'penX',c:[[1,0],[0,1],[1,1],[2,1],[1,2]]}
+];
+const TOTAL_PIECE_CELLS=PIECES.reduce((s,p)=>s+p.c.length,0);
+const STAGES=[
+ {name:'첫 모서리',desc:'작은 보드에서 기본 규칙 익히기',size:11,pc:2,d:'easy',crowns:3,block:'none'},
+ {name:'왕관 초원',desc:'중앙 왕관을 먼저 차지해보세요',size:12,pc:2,d:'easy',crowns:7,block:'none'},
+ {name:'돌기둥 협곡',desc:'돌 장애물을 피해 영토를 연결하세요',size:13,pc:2,d:'normal',crowns:5,block:'pillars'},
+ {name:'세 왕국 회담',desc:'두 AI 사이에서 살아남기',size:15,pc:3,d:'easy',crowns:7,block:'none'},
+ {name:'십자 성벽',desc:'중앙 성벽을 돌아 진출하세요',size:15,pc:2,d:'normal',crowns:6,block:'cross'},
+ {name:'별빛 군도',desc:'흩어진 섬처럼 빈틈을 공략하세요',size:16,pc:3,d:'normal',crowns:8,block:'islands'},
+ {name:'붉은 압박',desc:'공격적인 AI가 길목을 차단합니다',size:16,pc:2,d:'hard',crowns:6,block:'none'},
+ {name:'네 왕국 난전',desc:'4개의 왕국이 한 보드에서 충돌!',size:18,pc:4,d:'normal',crowns:8,block:'none'},
+ {name:'고리 요새',desc:'요새 바깥과 안쪽을 모두 활용하세요',size:17,pc:3,d:'hard',crowns:7,block:'ring'},
+ {name:'왕관 전쟁',desc:'왕관이 많은 고득점 전장',size:18,pc:3,d:'hard',crowns:12,block:'pillars'},
+ {name:'최후의 국경',desc:'4왕국 + 장애물의 대혼전',size:19,pc:4,d:'hard',crowns:10,block:'islands'},
+ {name:'픽셀 왕좌',desc:'가장 넓은 보드의 최종 결전',size:20,pc:4,d:'hard',crowns:12,block:'cross'}
+];
+let audioOn=true, audioCtx=null, musicTimer=null;
+let state=null, selectedPiece=null, orient={r:0,f:false}, hover=null, aiTimer=null, hintCells=[], hintMove=null;
+let unlocked=Math.max(1,Number(localStorage.getItem('pk_unlocked')||1));
+const canvas=$('#board'), ctx=canvas.getContext('2d');
+
+function initAudio(){ if(!audioCtx){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx.state==='suspended') audioCtx.resume(); }
+function tone(freq=440,d=.08,type='sine',vol=.04,delay=0){ if(!audioOn)return; initAudio(); const t=audioCtx.currentTime+delay,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+d); }
+function sfx(k){ if(k==='place'){tone(310,.08,'triangle',.045);tone(510,.12,'sine',.035,.04)} else if(k==='bad'){tone(120,.15,'square',.03)} else if(k==='rotate'){tone(650,.05,'sine',.025)} else if(k==='win'){[523,659,784,1047].forEach((n,i)=>tone(n,.25,'triangle',.05,i*.09));} else if(k==='turn'){tone(460,.07,'sine',.025)} }
+function startMusic(){ stopMusic(); if(!audioOn)return; let step=0; musicTimer=setInterval(()=>{ if(!state)return; const seq=[196,247,294,247,220,277,330,277]; tone(seq[step++%seq.length],.18,'sine',.012); },620); }
+function stopMusic(){ if(musicTimer){clearInterval(musicTimer);musicTimer=null;} }
+function toggleSound(){ audioOn=!audioOn; $('#soundMenuBtn').textContent=audioOn?'🔊 소리 켜짐':'🔇 소리 꺼짐'; $('#soundGameBtn').textContent=audioOn?'🔊':'🔇'; if(audioOn){initAudio();if(state)startMusic();}else stopMusic(); }
+
+function showScreen(id){ ['menuScreen','challengeScreen','gameScreen'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id)); }
+function toast(msg){ const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600); }
+function modal(html){ const o=$('#overlay');o.innerHTML='<div class="dialog">'+html+'</div>';o.classList.remove('hidden'); }
+function closeModal(){ $('#overlay').classList.add('hidden');$('#overlay').innerHTML=''; }
+function rulesModal(){ modal(`<h2>📖 게임 방법</h2><p class="sub">같은 색의 영토는 <b>모서리로만</b> 이어집니다.</p><div class="rulePic"><div>⬛<strong>첫 타일은 내 시작 모서리를 덮기</strong></div><div>◩<strong>내 타일의 변끼리는 닿으면 안 됨</strong></div><div>◇<strong>대각선 모서리는 반드시 하나 이상 접촉</strong></div></div><div class="rules"><b>① 타일 선택</b> → 아래 타일을 누릅니다.<br><b>② 회전/뒤집기</b> → 버튼 또는 R/F키를 사용합니다.<br><b>③ 배치</b> → 보드의 원하는 칸을 누릅니다. 초록 미리보기면 배치 가능!<br><b>👑 왕관 칸</b> → 덮을 때마다 보너스 +2점.<br><b>승리</b> → 더 이상 누구도 둘 수 없을 때, <b>영토 칸 + 왕관 보너스</b>가 가장 높은 왕국이 승리합니다.<br><br>모든 타일을 다 쓰면 +15점 보너스가 있어요.</div><button class="primary" onclick="document.querySelector('#overlay').classList.add('hidden')">알겠어요</button>`); }
+
+function openConfig(mode){
+ const local=mode==='local';
+ modal(`<h2>${local?'👥 한 기기 대전':'🤖 컴퓨터와 대전'}</h2><p class="sub">${local?'사람 수를 정하고 돌아가며 플레이합니다.':'왕국 수와 AI 난이도를 골라주세요.'}</p>
+ <div class="configRow"><strong>참가 왕국</strong><div class="segment" id="pcSeg"><button data-v="2" class="on">2</button><button data-v="3">3</button><button data-v="4">4</button></div></div>
+ ${local?'':`<div class="configRow"><strong>AI 난이도</strong><div class="segment" id="diffSeg"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>`}
+ <div class="configRow"><strong>왕관 보너스</strong><div class="segment" id="crownSeg"><button data-v="on" class="on">사용</button><button data-v="off">끄기</button></div></div>
+ <button id="configStart" class="primary">게임 시작</button><button id="configCancel" class="secondary">취소</button>`);
+ let pc=2,diff='normal',crowns=true;
+ $$('#pcSeg button').forEach(b=>b.onclick=()=>{pc=+b.dataset.v; $$('#pcSeg button').forEach(x=>x.classList.toggle('on',x===b));});
+ if(!local) $$('#diffSeg button').forEach(b=>b.onclick=()=>{diff=b.dataset.v; $$('#diffSeg button').forEach(x=>x.classList.toggle('on',x===b));});
+ $$('#crownSeg button').forEach(b=>b.onclick=()=>{crowns=b.dataset.v==='on'; $$('#crownSeg button').forEach(x=>x.classList.toggle('on',x===b));});
+ $('#configCancel').onclick=closeModal;
+ $('#configStart').onclick=()=>{closeModal(); const size=pc===2?14:pc===3?17:20; const types=Array.from({length:pc},(_,i)=> local?'human':(i===0?'human':diff)); startGame({mode:local?'local':'solo',size,pc,types,crowns:crowns?(pc===2?6:pc===3?8:10):0,block:'none'});};
+}
+
+function renderStages(){
+ const grid=$('#stageGrid');grid.innerHTML='';
+ STAGES.forEach((s,i)=>{ const locked=i+1>unlocked, cleared=i+1<unlocked; const b=document.createElement('button');b.className='stageCard'+(locked?' locked':'')+(cleared?' cleared':'');b.innerHTML=`<span class="stageNo">STAGE ${String(i+1).padStart(2,'0')}</span><span class="stars">${locked?'🔒':cleared?'⭐':'⚔️'}</span><h3>${s.name}</h3><p>${s.desc}</p>`; if(!locked)b.onclick=()=>startChallenge(i);grid.appendChild(b); });
+}
+function startChallenge(i){ const s=STAGES[i]; const types=Array.from({length:s.pc},(_,k)=>k===0?'human':s.d); startGame({mode:'challenge',stage:i,size:s.size,pc:s.pc,types,crowns:s.crowns,block:s.block}); }
+
+function newPlayer(i,type){ return {id:i,name:NAMES[i],color:COLORS[i],type,pieces:new Set(PIECES.map(p=>p.id)),cells:0,crown:0,first:true,lastSize:0,passed:false}; }
+function startGame(cfg){
+ clearTimeout(aiTimer); selectedPiece=null;hover=null;orient={r:0,f:false};hintCells=[];hintMove=null;
+ const board=Array.from({length:cfg.size},()=>Array(cfg.size).fill(null));
+ state={...cfg,board,players:Array.from({length:cfg.pc},(_,i)=>newPlayer(i,cfg.types[i])),current:0,turns:0,consecutivePasses:0,crownSet:new Set(),blocked:new Set(),gameOver:false};
+ addBlockers(cfg.block); addCrowns(cfg.crowns); showScreen('gameScreen'); $('#modeLabel').textContent=cfg.mode==='challenge'?`도전 ${cfg.stage+1}`:(cfg.mode==='local'?'한 기기 대전':'VS 컴퓨터'); $('#boardBadge').textContent=`${cfg.size} × ${cfg.size}`;
+ startMusic(); renderAll(); beginTurn(true);
+}
+function key(x,y){return x+','+y}
+function addBlockers(pattern){ const n=state.size, add=(x,y)=>{if(x>=0&&y>=0&&x<n&&y<n)state.blocked.add(key(x,y));};
+ if(pattern==='pillars'){ for(let y=3;y<n-3;y+=4){add(Math.floor(n/2)-2,y);add(Math.floor(n/2)+2,y);} }
+ if(pattern==='cross'){ const m=Math.floor(n/2);for(let i=3;i<n-3;i++){ if(Math.abs(i-m)>1){add(m,i);add(i,m);} } }
+ if(pattern==='islands'){ [[.35,.35],[.65,.35],[.35,.65],[.65,.65]].forEach(([a,b])=>{const x=Math.floor(n*a),y=Math.floor(n*b);add(x,y);add(x+1,y);add(x,y+1);}); }
+ if(pattern==='ring'){ const a=Math.floor(n*.34),b=n-1-a;for(let i=a;i<=b;i++){if(i!==a+1&&i!==b-1){add(i,a);add(i,b);add(a,i);add(b,i);}} }
+ }
+function addCrowns(count){ if(!count)return; const n=state.size, used=new Set([...state.blocked]); const starts=getStarts(); starts.forEach(([x,y])=>used.add(key(x,y))); let seed=n*97+(state.stage||0)*311+count*13; const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280}; let guard=0;while(state.crownSet.size<count&&guard++<500){ const x=2+Math.floor(rnd()*(n-4)),y=2+Math.floor(rnd()*(n-4)),k=key(x,y); if(!used.has(k)){state.crownSet.add(k);used.add(k);} } }
+function getStarts(){ const n=state.size; return [[0,0],[n-1,n-1],[n-1,0],[0,n-1]].slice(0,state.pc); }
+
+function norm(cells){ let minX=Math.min(...cells.map(c=>c[0])),minY=Math.min(...cells.map(c=>c[1]));return cells.map(([x,y])=>[x-minX,y-minY]).sort((a,b)=>a[1]-b[1]||a[0]-b[0]); }
+function transform(base,r=0,f=false){ let c=base.map(([x,y])=>[f?-x:x,y]);for(let i=0;i<r;i++)c=c.map(([x,y])=>[-y,x]);return norm(c); }
+function sig(c){return c.map(x=>x.join(':')).join('|')}
+function orientations(base){ const out=[],seen=new Set();for(let f of [false,true])for(let r=0;r<4;r++){const c=transform(base,r,f),s=sig(c);if(!seen.has(s)){seen.add(s);out.push(c)}}return out; }
+function pieceById(id){return PIECES.find(p=>p.id===id)}
+function currentP(){return state.players[state.current]}
+
+function validate(player,cells,ax,ay){ const n=state.size; let diag=false; const my=player.id;
+ for(const [dx,dy] of cells){const x=ax+dx,y=ay+dy;if(x<0||y<0||x>=n||y>=n)return false;if(state.board[y][x]!==null||state.blocked.has(key(x,y)))return false;}
+ const placed=cells.map(([dx,dy])=>[ax+dx,ay+dy]);
+ if(player.first){const [sx,sy]=getStarts()[player.id];return placed.some(([x,y])=>x===sx&&y===sy);}
+ for(const [x,y] of placed){ for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+ox,ny=y+oy;if(nx>=0&&ny>=0&&nx<n&&ny<n&&state.board[ny][nx]===my)return false;} for(const [ox,oy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){const nx=x+ox,ny=y+oy;if(nx>=0&&ny>=0&&nx<n&&ny<n&&state.board[ny][nx]===my)diag=true;} }
+ return diag;
+}
+function place(player,pieceId,cells,ax,ay){ if(!validate(player,cells,ax,ay))return false; let crowns=0;for(const [dx,dy] of cells){const x=ax+dx,y=ay+dy;state.board[y][x]=player.id;if(state.crownSet.has(key(x,y)))crowns++;} player.pieces.delete(pieceId);player.cells+=cells.length;player.crown+=crowns*2;player.first=false;player.lastSize=cells.length;state.turns++;state.consecutivePasses=0; if(crowns)toast(`👑 왕관 ${crowns}개! +${crowns*2}점`);return true; }
+function score(p){ return p.cells+p.crown+(p.pieces.size===0?15:0); }
+
+function candidateTargets(player){ if(player.first)return [getStarts()[player.id]]; const n=state.size,out=[],seen=new Set(),my=player.id; for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(state.board[y][x]===my){for(const [ox,oy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){const tx=x+ox,ty=y+oy,k=key(tx,ty);if(tx<0||ty<0||tx>=n||ty>=n||seen.has(k)||state.board[ty][tx]!==null||state.blocked.has(k))continue;let ortho=false;for(const [qx,qy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=tx+qx,ny=ty+qy;if(nx>=0&&ny>=0&&nx<n&&ny<n&&state.board[ny][nx]===my){ortho=true;break;}}if(!ortho){seen.add(k);out.push([tx,ty]);}}} return out; }
+function findMoves(player,limit=Infinity,allPieces=true){ const targets=candidateTargets(player),moves=[]; const ids=[...player.pieces].sort((a,b)=>pieceById(b).c.length-pieceById(a).c.length); for(const id of ids){const p=pieceById(id);for(const o of orientations(p.c)){for(const [tx,ty] of targets){for(const [cx,cy] of o){const ax=tx-cx,ay=ty-cy;if(validate(player,o,ax,ay)){moves.push({pieceId:id,cells:o,ax,ay});if(moves.length>=limit)return moves;}}}} if(!allPieces&&moves.length)return moves;}return moves; }
+function hasMove(player){return findMoves(player,1).length>0;}
+
+function beginTurn(initial=false){ if(!state||state.gameOver)return; clearTimeout(aiTimer); selectedPiece=null;hover=null;orient={r:0,f:false};hintCells=[];hintMove=null;renderAll(); const p=currentP();
+ if(!hasMove(p)){ p.passed=true;state.consecutivePasses++;toast(`${p.name}은 놓을 곳이 없어 자동 패스!`);renderAll();if(state.consecutivePasses>=state.pc){setTimeout(endGame,900);return;}aiTimer=setTimeout(()=>advanceTurn(),900);return; }
+ p.passed=false;
+ if(p.type==='human'){ if(shouldHandoff(initial)) showHandoff(p); else {sfx('turn');setStatus('타일을 선택한 뒤 보드에 놓아보세요.');} }
+ else { setStatus('컴퓨터가 수를 계산하고 있어요…'); aiTimer=setTimeout(aiPlay,500+Math.random()*450); }
+}
+function shouldHandoff(initial){ const humans=state.players.filter(p=>p.type==='human').length; return state.mode==='local' && humans>1 && !initial; }
+function showHandoff(p){ modal(`<div class="turnCard"><div class="bigDot" style="background:${p.color}"></div><h2>${p.name} 차례!</h2><p>기기를 다음 플레이어에게 넘겨주세요.</p><button id="turnStartBtn" class="primary">내 턴 시작</button></div>`);$('#turnStartBtn').onclick=()=>{closeModal();sfx('turn');setStatus('타일을 선택한 뒤 보드에 놓아보세요.');}; }
+function advanceTurn(){ if(!state||state.gameOver)return;state.current=(state.current+1)%state.pc;beginTurn(false);}
+
+function aiPlay(){ if(!state||state.gameOver)return; const p=currentP();if(p.type==='human')return; let moves=findMoves(p, p.type==='easy'?260:1200); if(!moves.length){state.consecutivePasses++;advanceTurn();return;} let chosen;
+ if(p.type==='easy'){chosen=moves[Math.floor(Math.random()*moves.length)];}
+ else {let best=-1e9;for(const m of moves){let val=evaluateMove(p,m,p.type==='hard');val+=(Math.random()-.5)*(p.type==='normal'?8:2);if(val>best){best=val;chosen=m;}}}
+ place(p,chosen.pieceId,chosen.cells,chosen.ax,chosen.ay);sfx('place');renderAll();aiTimer=setTimeout(advanceTurn,550); }
+function evaluateMove(p,m,hard){ let crowns=0,dist=0,contact=0;const n=state.size,[sx,sy]=getStarts()[p.id];for(const [dx,dy] of m.cells){const x=m.ax+dx,y=m.ay+dy;if(state.crownSet.has(key(x,y)))crowns++;dist+=Math.abs(x-sx)+Math.abs(y-sy);if(hard){for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const nx=x+ox,ny=y+oy;if(nx>=0&&ny>=0&&nx<n&&ny<n&&state.board[ny][nx]!==null&&state.board[ny][nx]!==p.id)contact++;}}}
+ let val=m.cells.length*12+crowns*24+dist/m.cells.length*.6+contact*(hard?2.4:0); if(m.pieceId==='mono')val-=p.pieces.size>4?16:0; return val; }
+
+function selectPiece(id){ const p=currentP();if(p.type!=='human'||!p.pieces.has(id))return;selectedPiece=id;orient={r:0,f:false};hover=null;hintCells=[];hintMove=null;renderTray();drawBoard();setStatus('보드 위에서 초록색이 되는 자리를 찾아보세요.'); }
+function rotate(){if(!selectedPiece)return;sfx('rotate');orient.r=(orient.r+1)%4;drawBoard();renderTray();}
+function flip(){if(!selectedPiece)return;sfx('rotate');orient.f=!orient.f;drawBoard();renderTray();}
+function selectedCells(){return selectedPiece?transform(pieceById(selectedPiece).c,orient.r,orient.f):null;}
+function setStatus(t){ $('#statusLine').textContent=t; }
+function showHint(){ const p=currentP();if(p.type!=='human')return;const moves=findMoves(p,1);if(!moves.length)return;const m=moves[0];selectedPiece=m.pieceId; for(const f of [false,true]){for(let r=0;r<4;r++){if(sig(transform(pieceById(m.pieceId).c,r,f))===sig(m.cells)){orient={r,f};break;}}} hintMove=m;hintCells=m.cells.map(([dx,dy])=>[m.ax+dx,m.ay+dy]); hover={ax:m.ax,ay:m.ay};renderTray();drawBoard();setStatus('✨ 빛나는 위치의 아무 칸이나 누르면 배치할 수 있어요.'); }
+
+function boardPoint(e){const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*canvas.width,y=(e.clientY-r.top)/r.height*canvas.height,cell=canvas.width/state.size;return {x:Math.floor(x/cell),y:Math.floor(y/cell)};}
+canvas.addEventListener('pointermove',e=>{if(!state||!selectedPiece||currentP().type!=='human')return;const p=boardPoint(e);hover={ax:p.x,ay:p.y};drawBoard();});
+canvas.addEventListener('pointerleave',()=>{if(hover&&!hover.forced){hover=null;drawBoard();}});
+canvas.addEventListener('pointerdown',e=>{if(!state||!selectedPiece||currentP().type!=='human')return;e.preventDefault();const pnt=boardPoint(e);let cells=selectedCells(),ax=pnt.x,ay=pnt.y;if(hintMove&&hintCells.some(([x,y])=>x===pnt.x&&y===pnt.y)){cells=hintMove.cells;ax=hintMove.ax;ay=hintMove.ay;} if(place(currentP(),selectedPiece,cells,ax,ay)){sfx('place');selectedPiece=null;hover=null;hintCells=[];hintMove=null;renderAll();setTimeout(advanceTurn,280);}else{sfx('bad');setStatus('여기에는 놓을 수 없어요. 모서리 접촉과 변 접촉을 확인해보세요.');canvas.animate([{transform:'translateX(-3px)'},{transform:'translateX(3px)'},{transform:'translateX(0)'}],{duration:140});}});
+
+function renderAll(){ if(!state)return;renderTop();renderTray();renderMini();drawBoard(); }
+function renderTop(){ const p=currentP();$('#turnDot').style.background=p.color;$('#turnText').textContent=p.name+(p.type==='human'?' 차례':` · AI ${p.type==='easy'?'쉬움':p.type==='normal'?'보통':'어려움'}`);$('#scoreStat').textContent=score(p);$('#remainStat').textContent=p.pieces.size;$('#crownStat').textContent=p.crown;const enabled=p.type==='human';['rotateBtn','flipBtn','hintBtn','deselectBtn'].forEach(id=>$('#'+id).disabled=!enabled); }
+function renderMini(){ const box=$('#miniPlayers');box.innerHTML='';state.players.forEach((p,i)=>{const d=document.createElement('div');d.className='miniP'+(i===state.current?' active':'');d.innerHTML=`<span class="dot" style="background:${p.color}"></span><span>${p.name.replace(' 왕국','')}</span><span class="score">${score(p)}</span>`;box.appendChild(d);});}
+function renderTray(){ const box=$('#pieceTray');box.innerHTML='';if(!state)return;const p=currentP();PIECES.forEach(pc=>{if(!p.pieces.has(pc.id))return;const b=document.createElement('button');b.className='piece'+(pc.id===selectedPiece?' selected':'');b.dataset.id=pc.id;const c=document.createElement('canvas');c.width=90;c.height=70;drawPieceMini(c,pc.id===selectedPiece?selectedCells():pc.c,p.color);b.appendChild(c);const s=document.createElement('span');s.className='sz';s.textContent=pc.c.length+'칸';b.appendChild(s);b.onclick=()=>selectPiece(pc.id);box.appendChild(b);});}
+function drawPieceMini(cvs,cells,color){const c=cvs.getContext('2d');c.clearRect(0,0,cvs.width,cvs.height);const cc=norm(cells),w=Math.max(...cc.map(x=>x[0]))+1,h=Math.max(...cc.map(x=>x[1]))+1,sz=Math.min(15,58/Math.max(w,h)),ox=(cvs.width-w*sz)/2,oy=(cvs.height-h*sz)/2;c.fillStyle=color;for(const [x,y] of cc){roundRect(c,ox+x*sz+1,oy+y*sz+1,sz-2,sz-2,3);c.fill();}}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):(c.rect(x,y,w,h));}
+
+function drawBoard(){ if(!state)return;const dpr=Math.min(2,window.devicePixelRatio||1),css=Math.min(canvas.getBoundingClientRect().width||700,800); const target=Math.floor(css*dpr);if(canvas.width!==target||canvas.height!==target){canvas.width=canvas.height=target;} const n=state.size,sz=canvas.width/n;
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#f8f9ff';ctx.fillRect(0,0,canvas.width,canvas.height);
+ // checker + grid
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){ctx.fillStyle=(x+y)%2?'#f4f6ff':'#fafbff';ctx.fillRect(x*sz,y*sz,sz,sz);}ctx.strokeStyle='#e1e5f4';ctx.lineWidth=Math.max(1,dpr*.7);ctx.beginPath();for(let i=0;i<=n;i++){ctx.moveTo(i*sz,0);ctx.lineTo(i*sz,canvas.height);ctx.moveTo(0,i*sz);ctx.lineTo(canvas.width,i*sz);}ctx.stroke();
+ // starts
+ getStarts().forEach(([x,y],i)=>{ctx.fillStyle=hexA(COLORS[i],.18);ctx.fillRect(x*sz,y*sz,sz,sz);ctx.strokeStyle=COLORS[i];ctx.lineWidth=Math.max(2,sz*.09);ctx.strokeRect(x*sz+2,y*sz+2,sz-4,sz-4);});
+ // blockers
+ for(const k of state.blocked){const [x,y]=k.split(',').map(Number);ctx.fillStyle='#707694';roundRect(ctx,x*sz+sz*.1,y*sz+sz*.1,sz*.8,sz*.8,sz*.18);ctx.fill();ctx.fillStyle='#9096b0';ctx.beginPath();ctx.arc(x*sz+sz*.38,y*sz+sz*.34,sz*.1,0,Math.PI*2);ctx.fill();}
+ // crowns under territory
+ for(const k of state.crownSet){const [x,y]=k.split(',').map(Number);if(state.board[y][x]===null&&!state.blocked.has(k)){ctx.fillStyle='#fff0a6';ctx.fillRect(x*sz+1,y*sz+1,sz-2,sz-2);drawCrown(x,y,sz);}}
+ // territory
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=state.board[y][x];if(v===null)continue;ctx.fillStyle=COLORS[v];roundRect(ctx,x*sz+sz*.06,y*sz+sz*.06,sz*.88,sz*.88,sz*.15);ctx.fill();ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(x*sz+sz*.16,y*sz+sz*.14,sz*.55,sz*.10); if((x*7+y*11+v)%19===0&&sz>22)drawFlag(x,y,sz,v);if(state.crownSet.has(key(x,y)))drawCrown(x,y,sz,true);}
+ // hint
+ if(hintCells.length){ctx.save();ctx.shadowColor='#fff';ctx.shadowBlur=16;for(const [x,y] of hintCells){ctx.strokeStyle='#ffe66d';ctx.lineWidth=Math.max(3,sz*.11);ctx.strokeRect(x*sz+sz*.12,y*sz+sz*.12,sz*.76,sz*.76);}ctx.restore();}
+ // preview
+ if(selectedPiece&&hover){const cells=hover.forced?hover.forced.map(([x,y])=>[x-hover.ax,y-hover.ay]):selectedCells(),ok=validate(currentP(),cells,hover.ax,hover.ay);ctx.save();ctx.globalAlpha=.55;ctx.fillStyle=ok?'#35d39a':'#ff5572';for(const [dx,dy] of cells){const x=hover.ax+dx,y=hover.ay+dy;if(x>=0&&y>=0&&x<n&&y<n){roundRect(ctx,x*sz+sz*.07,y*sz+sz*.07,sz*.86,sz*.86,sz*.14);ctx.fill();}}ctx.restore();}
+ }
+function drawCrown(x,y,sz,over=false){ctx.save();ctx.translate(x*sz,y*sz);ctx.fillStyle=over?'rgba(255,246,158,.92)':'#f7b928';ctx.beginPath();ctx.moveTo(sz*.22,sz*.62);ctx.lineTo(sz*.18,sz*.34);ctx.lineTo(sz*.38,sz*.48);ctx.lineTo(sz*.5,sz*.27);ctx.lineTo(sz*.63,sz*.48);ctx.lineTo(sz*.82,sz*.34);ctx.lineTo(sz*.78,sz*.62);ctx.closePath();ctx.fill();ctx.fillRect(sz*.25,sz*.65,sz*.5,sz*.09);ctx.restore();}
+function drawFlag(x,y,sz,v){ctx.save();ctx.translate(x*sz,y*sz);ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=Math.max(1.2,sz*.05);ctx.beginPath();ctx.moveTo(sz*.28,sz*.72);ctx.lineTo(sz*.28,sz*.29);ctx.stroke();ctx.fillStyle='rgba(255,255,255,.82)';ctx.beginPath();ctx.moveTo(sz*.3,sz*.3);ctx.lineTo(sz*.67,sz*.4);ctx.lineTo(sz*.3,sz*.49);ctx.closePath();ctx.fill();ctx.restore();}
+function hexA(hex,a){const n=parseInt(hex.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;return `rgba(${r},${g},${b},${a})`}
+
+function endGame(){ if(!state||state.gameOver)return;state.gameOver=true;clearTimeout(aiTimer);stopMusic();const ranked=[...state.players].sort((a,b)=>score(b)-score(a));const winner=ranked[0],human=state.players[0];let challengeClear=false;if(state.mode==='challenge'&&winner.id===0){challengeClear=true;const next=state.stage+2;if(next>unlocked){unlocked=Math.min(STAGES.length,next);localStorage.setItem('pk_unlocked',unlocked);} }
+ if(winner.id===0)sfx('win');
+ const medals=['🥇','🥈','🥉','🏅']; const list=ranked.map((p,i)=>`<div class="rank"><span class="medal">${medals[i]}</span><span class="dot" style="background:${p.color}"></span><b>${p.name}</b><span class="score">${score(p)}</span></div>`).join('');
+ modal(`<div class="resultCrown">${winner.id===0?'👑':'🏰'}</div><h2 class="resultTitle">${winner.name} 승리!</h2><p class="sub" style="text-align:center">영토와 왕관 보너스를 합산한 최종 결과예요.</p>${challengeClear?'<div class="challengeStamp">⭐ 도전 스테이지 클리어! 다음 지역이 열렸어요.</div>':''}<div class="rankList">${list}</div><button id="againBtn" class="primary">다시 한 판</button>${state.mode==='challenge'?'<button id="stageBtn" class="secondary">도전 지도</button>':''}<button id="menuBtnResult" class="secondary">메인 메뉴</button>`);
+ $('#againBtn').onclick=()=>{const cfg={mode:state.mode,stage:state.stage,size:state.size,pc:state.pc,types:state.players.map(p=>p.type),crowns:state.crownSet.size,block:state.block};closeModal();startGame(cfg);};
+ if($('#stageBtn'))$('#stageBtn').onclick=()=>{closeModal();state=null;renderStages();showScreen('challengeScreen');};
+ $('#menuBtnResult').onclick=()=>{closeModal();state=null;showScreen('menuScreen');}; if(winner.id===0)confetti(); }
+function confetti(){for(let i=0;i<45;i++){const d=document.createElement('i');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.top='-20px';d.style.background=COLORS[i%4];d.style.setProperty('--dx',(Math.random()*240-120)+'px');d.style.animationDelay=Math.random()*.45+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}}
+
+$$('.modeCard').forEach(b=>b.onclick=()=>{initAudio();const m=b.dataset.mode;if(m==='challenge'){renderStages();showScreen('challengeScreen');}else openConfig(m);});
+$('#ruleBtn').onclick=rulesModal;$('#rulesGameBtn').onclick=rulesModal;$('#soundMenuBtn').onclick=toggleSound;$('#soundGameBtn').onclick=toggleSound;$('#backFromChallenge').onclick=()=>showScreen('menuScreen');
+$('#homeBtn').onclick=()=>modal(`<h2>메인 메뉴로 갈까요?</h2><p class="sub">현재 진행 중인 판은 저장되지 않습니다.</p><button id="homeYes" class="primary">메인 메뉴로</button><button id="homeNo" class="secondary">계속하기</button>`),
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='homeYes'){closeModal();state=null;clearTimeout(aiTimer);stopMusic();showScreen('menuScreen');}if(e.target&&e.target.id==='homeNo')closeModal();});
+$('#rotateBtn').onclick=rotate;$('#flipBtn').onclick=flip;$('#hintBtn').onclick=showHint;$('#deselectBtn').onclick=()=>{selectedPiece=null;hover=null;hintCells=[];hintMove=null;renderTray();drawBoard();setStatus('선택을 취소했어요.');};
+window.addEventListener('keydown',e=>{if(!state||state.gameOver||!$('#overlay').classList.contains('hidden'))return;if(e.key==='r'||e.key==='R')rotate();if(e.key==='f'||e.key==='F')flip();if(e.key==='h'||e.key==='H')showHint();});
+window.addEventListener('resize',()=>{if(state)drawBoard();});
+renderStages();
+})();
+</script>
+</body>
+</html>
