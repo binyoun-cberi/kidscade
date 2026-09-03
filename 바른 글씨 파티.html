@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>바른 글씨 파티</title>
+  <title>바른 글씨 파티 - 레벨업 에디션</title>
   <style>
     :root {
       --ink: #26213b;
@@ -861,6 +861,215 @@
       .canvas-wrap { min-height: 355px; aspect-ratio: 3 / 4; }
       .target-text { font-size: clamp(1.45rem, 9vw, 2.9rem); }
     }
+
+
+    /* ===== 성장 시스템 / 게임 UI ===== */
+    .player-card {
+      margin-top: 16px;
+      max-width: 620px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 3px solid var(--ink);
+      border-radius: 24px;
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 6px 0 rgba(38,33,59,.10);
+      position: relative;
+      z-index: 2;
+    }
+
+    .level-orb {
+      min-width: 66px;
+      height: 66px;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #fff3a8, #ffd84f);
+      font-size: 1.16rem;
+      font-weight: 1000;
+      line-height: 1;
+      transform: rotate(-2deg);
+    }
+
+    .player-progress { min-width: 0; display: grid; gap: 6px; }
+    .player-progress-top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; }
+    .player-title { font-size: 1.05rem; font-weight:1000; letter-spacing:-.04em; }
+    .player-xp-text { color:var(--muted); font-size:.86rem; font-weight:950; }
+    .xp-meter { height: 18px; border: 3px solid var(--ink); border-radius:999px; background:#fff; overflow:hidden; }
+    .xp-fill { height:100%; width:0%; background:linear-gradient(90deg, var(--cyan), var(--blue), var(--purple)); transition:width .45s cubic-bezier(.2,.8,.2,1); }
+    .player-stats { text-align:right; min-width:72px; }
+    .player-stats strong { display:block; font-size:1.2rem; font-weight:1000; }
+    .player-stats span { color:var(--muted); font-size:.8rem; font-weight:900; }
+
+    .settings-heading {
+      margin: 18px 0 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .settings-heading strong { font-size:1.18rem; font-weight:1000; letter-spacing:-.04em; }
+    .settings-heading span { color:var(--muted); font-size:.88rem; font-weight:900; }
+    .settings-grid { margin-top: 0; }
+
+    .mission-card { background:linear-gradient(145deg,#f6f1ff,#eefbff); }
+    .mission-row { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-top:10px; font-weight:1000; }
+    .mission-meter { margin-top:8px; height:16px; border:3px solid var(--ink); border-radius:999px; background:#fff; overflow:hidden; }
+    .mission-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--mint),var(--yellow)); transition:width .35s ease; }
+
+    .play-hud {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .hud-pill {
+      min-height:42px;
+      padding:0 13px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:3px solid var(--ink);
+      border-radius:999px;
+      background:#fff;
+      font-weight:1000;
+      box-shadow:0 4px 0 rgba(38,33,59,.10);
+      white-space:nowrap;
+    }
+    .hud-pill.combo { background:#fff0dc; }
+    .hud-pill.combo.hot { animation:comboPulse .55s ease both; }
+    @keyframes comboPulse { 50% { transform:scale(1.1) rotate(-2deg); } }
+
+    .growth-card { background:linear-gradient(145deg,#fff7d7,#fff); }
+    .growth-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .growth-mini { border:2px solid rgba(38,33,59,.82); border-radius:16px; padding:8px; background:#fff; text-align:center; }
+    .growth-mini strong { display:block; font-size:1.15rem; font-weight:1000; }
+    .growth-mini span { color:var(--muted); font-size:.76rem; font-weight:900; }
+
+    .status-card.perfect { background:linear-gradient(145deg,#fff6c8,#fff0fa); animation:statusPop .45s ease both; }
+    .status-card.great { background:linear-gradient(145deg,#eafff4,#f1fbff); animation:statusPop .35s ease both; }
+    @keyframes statusPop { 0%{transform:scale(.96)} 65%{transform:scale(1.025)} 100%{transform:scale(1)} }
+
+    .summary-grid.four { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .xp-earned { color:var(--blue-dark); }
+
+    .xp-float {
+      position:fixed;
+      left:50%; top:44%;
+      z-index:60;
+      transform:translate(-50%,0);
+      padding:10px 16px;
+      border:3px solid var(--ink);
+      border-radius:999px;
+      background:#fff6b6;
+      box-shadow:0 7px 0 rgba(38,33,59,.13);
+      font-size:1.25rem;
+      font-weight:1000;
+      pointer-events:none;
+      animation:xpRise .9s ease-out forwards;
+    }
+    @keyframes xpRise { 0%{opacity:0;transform:translate(-50%,18px) scale(.82)} 20%{opacity:1;transform:translate(-50%,0) scale(1.08)} 100%{opacity:0;transform:translate(-50%,-72px) scale(1)} }
+
+    .star-particle {
+      position:fixed;
+      z-index:58;
+      left:50%; top:48%;
+      pointer-events:none;
+      font-size:1.45rem;
+      animation:starBurst .72s ease-out forwards;
+    }
+    @keyframes starBurst {
+      from { opacity:1; transform:translate(-50%,-50%) scale(.7) rotate(0); }
+      to { opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.25) rotate(var(--rot)); }
+    }
+
+    .levelup-overlay {
+      position:fixed;
+      inset:0;
+      z-index:80;
+      display:none;
+      place-items:center;
+      padding:20px;
+      background:rgba(38,33,59,.28);
+      backdrop-filter:blur(3px);
+    }
+    .levelup-overlay.show { display:grid; }
+    .levelup-box {
+      width:min(520px,92vw);
+      text-align:center;
+      border:5px solid var(--ink);
+      border-radius:38px;
+      padding:26px 20px;
+      background:linear-gradient(145deg,#fff8c8,#fff,#f1e9ff);
+      box-shadow:0 14px 0 rgba(38,33,59,.17);
+      animation:levelPop .58s cubic-bezier(.2,.9,.25,1.25) both;
+    }
+    .levelup-icon { font-size:4.2rem; line-height:1; }
+    .levelup-box h2 { margin:8px 0 4px; font-size:clamp(2rem,6vw,3.6rem); font-weight:1000; letter-spacing:-.07em; }
+    .levelup-box p { margin:0; color:var(--muted); font-weight:950; font-size:1.05rem; }
+    @keyframes levelPop { from{opacity:0;transform:scale(.55) rotate(-5deg)} 70%{opacity:1;transform:scale(1.06) rotate(1deg)} to{transform:scale(1) rotate(0)} }
+
+    body.tv-lite .levelup-overlay { backdrop-filter:none; background:rgba(38,33,59,.22); }
+    body.tv-lite .xp-fill,
+    body.tv-lite .mission-fill { transition-duration:.12s !important; }
+    body.tv-lite .levelup-box { box-shadow:0 6px 0 rgba(38,33,59,.12); }
+
+    @media (max-width: 930px) {
+      .summary-grid.four { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width: 640px) {
+      .player-card { grid-template-columns:auto minmax(0,1fr); }
+      .player-stats { grid-column:1/-1; display:flex; justify-content:space-between; text-align:left; }
+      .growth-grid { grid-template-columns:1fr 1fr; }
+      .summary-grid.four { grid-template-columns:1fr 1fr; }
+    }
+
+
+    /* 스마트 TV / 저사양 브라우저 최적화 */
+    html, body { -webkit-user-select: none; user-select: none; }
+    textarea, input { -webkit-user-select: text; user-select: text; }
+
+    body.tv-lite::before,
+    body.tv-lite::after { animation: none !important; display: none; }
+
+    body.tv-lite .top-card,
+    body.tv-lite .panel,
+    body.tv-lite .paper-card,
+    body.tv-lite .canvas-card,
+    body.tv-lite .result-pop,
+    body.tv-lite .screen-header,
+    body.tv-lite .challenge-progress,
+    body.tv-lite .status-card,
+    body.tv-lite .big-mode,
+    body.tv-lite .setting-card,
+    body.tv-lite .challenge-card,
+    body.tv-lite .pop-btn,
+    body.tv-lite .small-action,
+    body.tv-lite .danger-action {
+      box-shadow: 0 5px 0 rgba(38, 33, 59, 0.10) !important;
+    }
+
+    body.tv-lite .meter-fill,
+    body.tv-lite .toast,
+    body.tv-lite .big-mode,
+    body.tv-lite .chip,
+    body.tv-lite .challenge-card,
+    body.tv-lite .pop-btn,
+    body.tv-lite .small-action,
+    body.tv-lite .danger-action { transition-duration: 0.06s !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -870,7 +1079,18 @@
         <div>
           <div class="kicker">또박또박 글씨 놀이</div>
           <h1>바른 글씨 파티</h1>
-          <p>연습은 마음껏, 기록은 도전에서만 차곡차곡 쌓아요.</p>
+          <p>글씨를 쓸수록 경험치가 쌓이고, 레벨과 칭호가 자라요.</p>
+          <div class="player-card" aria-label="성장 정보">
+            <div id="menuLevel" class="level-orb">Lv.1</div>
+            <div class="player-progress">
+              <div class="player-progress-top">
+                <span id="menuTitle" class="player-title">새싹 연필</span>
+                <span id="menuXpText" class="player-xp-text">0 / 120 XP</span>
+              </div>
+              <div class="xp-meter"><div id="menuXpFill" class="xp-fill"></div></div>
+            </div>
+            <div class="player-stats"><strong id="menuBestCombo">0</strong><span>최고 콤보</span></div>
+          </div>
         </div>
         <div class="today-badge">
           <div class="label">오늘 모은 별</div>
@@ -892,6 +1112,7 @@
             </button>
           </div>
 
+          <div class="settings-heading"><strong>연습 설정</strong><span>원하는 글씨 놀이를 골라요.</span></div>
           <div class="settings-grid" aria-label="설정">
             <div class="setting-card">
               <div class="setting-title">종류</div>
@@ -967,9 +1188,18 @@
               <button id="recordsOpenBtn" class="pop-btn yellow" type="button">기록 보기</button>
             </div>
           </div>
-          <div class="paper-card">
-            <h2>오늘 추천</h2>
-            <p id="todayTip">연습으로 손을 풀고 도전에 들어가면 좋아요.</p>
+          <div class="paper-card mission-card">
+            <h2>오늘의 별 미션</h2>
+            <p id="todayTip">도전에서 별 12개를 모아보세요.</p>
+            <div class="mission-row"><span>오늘 진행</span><span id="missionText">0 / 12</span></div>
+            <div class="mission-meter"><div id="missionFill" class="mission-fill"></div></div>
+          </div>
+          <div class="paper-card growth-card">
+            <h2>나의 성장</h2>
+            <div class="growth-grid">
+              <div class="growth-mini"><strong id="menuTotalWrites">0</strong><span>평가한 글씨</span></div>
+              <div class="growth-mini"><strong id="menuPerfects">0</strong><span>완벽한 글씨</span></div>
+            </div>
           </div>
         </aside>
       </div>
@@ -1010,6 +1240,10 @@
         <div class="screen-title">
           <strong id="playTitle">연습하기</strong>
           <span id="playSubtitle">현재 설정</span>
+        </div>
+        <div class="play-hud" aria-label="플레이 성장 정보">
+          <div id="playLevel" class="hud-pill">Lv.1 · 새싹 연필</div>
+          <div id="comboPill" class="hud-pill combo">🔥 콤보 0</div>
         </div>
         <div class="button-row">
           <button id="speakBtnTop" class="small-action hidden" type="button">다시 듣기</button>
@@ -1056,6 +1290,14 @@
             <button id="challengeNextBtn" class="pop-btn pink hidden" type="button">다음 문제</button>
           </div>
 
+          <div class="paper-card growth-card">
+            <h3>이번 성장</h3>
+            <div class="player-progress" style="margin-top:8px;">
+              <div class="player-progress-top"><span id="playXpText" class="player-xp-text">0 / 120 XP</span><span id="playXpGain" class="player-xp-text">다음 레벨까지</span></div>
+              <div class="xp-meter"><div id="playXpFill" class="xp-fill"></div></div>
+            </div>
+          </div>
+
           <div class="paper-card">
             <h3>한 번 더 좋아지는 방법</h3>
             <p id="hintText">가운데에서 크게 천천히 써보세요.</p>
@@ -1069,10 +1311,19 @@
         <div class="kicker" style="margin:0 auto;">도전 완료</div>
         <h2 id="finalTitle">멋지게 끝냈어요!</h2>
         <div id="finalStars" class="big-stars"></div>
-        <div class="summary-grid">
+        <div class="summary-grid four">
           <div class="summary-tile"><div id="finalStarCount" class="num">0</div><div class="label">모은 별</div></div>
           <div class="summary-tile"><div id="finalAvgScore" class="num">0</div><div class="label">평균 점수</div></div>
           <div class="summary-tile"><div id="finalSuccess" class="num">0</div><div class="label">성공 문제</div></div>
+          <div class="summary-tile"><div id="finalXpGain" class="num xp-earned">+0</div><div class="label">획득 XP</div></div>
+        </div>
+        <div class="player-card" style="margin:0 auto;width:min(560px,100%);text-align:left;">
+          <div id="resultLevel" class="level-orb">Lv.1</div>
+          <div class="player-progress">
+            <div class="player-progress-top"><span id="resultTitle" class="player-title">새싹 연필</span><span id="resultXpText" class="player-xp-text">0 / 120 XP</span></div>
+            <div class="xp-meter"><div id="resultXpFill" class="xp-fill"></div></div>
+          </div>
+          <div class="player-stats"><strong id="resultBestCombo">0</strong><span>최고 콤보</span></div>
         </div>
         <p id="finalComment" style="margin:0;color:var(--muted);font-weight:900;line-height:1.5;"></p>
         <div class="button-row" style="justify-content:center;">
@@ -1111,6 +1362,14 @@
             <h2>오늘의 도장</h2>
             <div id="recordStampStrip" class="star-strip" style="font-size:1.75rem;justify-content:flex-start;"></div>
           </div>
+          <div class="paper-card growth-card">
+            <h2>성장 기록</h2>
+            <p id="recordLevelText">Lv.1 새싹 연필</p>
+            <div class="growth-grid">
+              <div class="growth-mini"><strong id="recordTotalWrites">0</strong><span>평가한 글씨</span></div>
+              <div class="growth-mini"><strong id="recordBestComboGrowth">0</strong><span>최고 콤보</span></div>
+            </div>
+          </div>
           <div class="paper-card">
             <h2>응원 한마디</h2>
             <p id="recordCheer">도전 기록이 쌓이면 여기에 별이 가득해져요.</p>
@@ -1121,6 +1380,14 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="levelUpOverlay" class="levelup-overlay" role="dialog" aria-modal="true" aria-label="레벨 업">
+    <div class="levelup-box">
+      <div class="levelup-icon">🏆</div>
+      <div class="kicker" style="margin:0 auto;">LEVEL UP!</div>
+      <h2 id="levelUpTitle">Lv.2</h2>
+      <p id="levelUpDesc">새로운 칭호를 얻었어요!</p>
+    </div>
+  </div>
 
   <script>
     const banks = {
@@ -1205,8 +1472,10 @@
       challenge: null,
       lastChallengeKey: 'word5',
       hasAnswered: false,
+      rewardedThisItem: false,
       audioReady: false,
-      records: []
+      records: [],
+      progress: { xp: 0, totalWrites: 0, totalPerfect: 0, combo: 0, bestCombo: 0 }
     };
 
     const els = {
@@ -1218,6 +1487,15 @@
       todayStarCount: document.getElementById('todayStarCount'),
       todayStarStrip: document.getElementById('todayStarStrip'),
       todayTip: document.getElementById('todayTip'),
+      menuLevel: document.getElementById('menuLevel'),
+      menuTitle: document.getElementById('menuTitle'),
+      menuXpText: document.getElementById('menuXpText'),
+      menuXpFill: document.getElementById('menuXpFill'),
+      menuBestCombo: document.getElementById('menuBestCombo'),
+      menuTotalWrites: document.getElementById('menuTotalWrites'),
+      menuPerfects: document.getElementById('menuPerfects'),
+      missionText: document.getElementById('missionText'),
+      missionFill: document.getElementById('missionFill'),
       bankChips: document.getElementById('bankChips'),
       customInput: document.getElementById('customInput'),
       clearCustomBtn: document.getElementById('clearCustomBtn'),
@@ -1226,6 +1504,11 @@
       recordsOpenBtn: document.getElementById('recordsOpenBtn'),
       playTitle: document.getElementById('playTitle'),
       playSubtitle: document.getElementById('playSubtitle'),
+      playLevel: document.getElementById('playLevel'),
+      comboPill: document.getElementById('comboPill'),
+      playXpText: document.getElementById('playXpText'),
+      playXpFill: document.getElementById('playXpFill'),
+      playXpGain: document.getElementById('playXpGain'),
       targetLabel: document.getElementById('targetLabel'),
       targetText: document.getElementById('targetText'),
       listenCard: document.getElementById('listenCard'),
@@ -1254,6 +1537,12 @@
       finalStarCount: document.getElementById('finalStarCount'),
       finalAvgScore: document.getElementById('finalAvgScore'),
       finalSuccess: document.getElementById('finalSuccess'),
+      finalXpGain: document.getElementById('finalXpGain'),
+      resultLevel: document.getElementById('resultLevel'),
+      resultTitle: document.getElementById('resultTitle'),
+      resultXpText: document.getElementById('resultXpText'),
+      resultXpFill: document.getElementById('resultXpFill'),
+      resultBestCombo: document.getElementById('resultBestCombo'),
       finalComment: document.getElementById('finalComment'),
       retryChallengeBtn: document.getElementById('retryChallengeBtn'),
       resultRecordsBtn: document.getElementById('resultRecordsBtn'),
@@ -1263,18 +1552,40 @@
       recentRecords: document.getElementById('recentRecords'),
       recordStampStrip: document.getElementById('recordStampStrip'),
       recordCheer: document.getElementById('recordCheer'),
+      recordLevelText: document.getElementById('recordLevelText'),
+      recordTotalWrites: document.getElementById('recordTotalWrites'),
+      recordBestComboGrowth: document.getElementById('recordBestComboGrowth'),
       clearRecordsBtn: document.getElementById('clearRecordsBtn'),
-      toast: document.getElementById('toast')
+      toast: document.getElementById('toast'),
+      levelUpOverlay: document.getElementById('levelUpOverlay'),
+      levelUpTitle: document.getElementById('levelUpTitle'),
+      levelUpDesc: document.getElementById('levelUpDesc')
     };
 
-    const drawCtx = els.drawingCanvas.getContext('2d');
-    const guideCtx = els.guideCanvas.getContext('2d');
+    const drawCtx = els.drawingCanvas.getContext('2d', { alpha: true, desynchronized: true });
+    const guideCtx = els.guideCanvas.getContext('2d', { alpha: true });
     const refCanvas = document.createElement('canvas');
-    const refCtx = refCanvas.getContext('2d');
+    const refCtx = refCanvas.getContext('2d', { alpha: true });
+    const analysisUserCanvas = document.createElement('canvas');
+    const analysisRefCanvas = document.createElement('canvas');
+    const analysisUserCtx = analysisUserCanvas.getContext('2d', { willReadFrequently: true });
+    const analysisRefCtx = analysisRefCanvas.getContext('2d', { willReadFrequently: true });
+
+    const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || false;
+    const lowPowerHint = coarsePointer && Math.max(screen.width || 0, screen.height || 0) >= 1280;
+    const tvLite = lowPowerHint || /Tizen|Web0S|WebOS|SMART-TV|SmartTV|NetCast|HbbTV/i.test(navigator.userAgent || '');
+    const MAX_RENDER_DPR = tvLite ? 1 : 1.5;
+    const ANALYSIS_MAX_W = tvLite ? 360 : 480;
+    const ANALYSIS_MAX_H = tvLite ? 240 : 320;
+    if (tvLite) document.body.classList.add('tv-lite');
+
     let isDrawing = false;
     let lastPoint = null;
+    let pendingPoint = null;
+    let drawFrame = 0;
     let resizeTimer = null;
     let audioCtx = null;
+    let storageWritable = true;
 
     function showScreen(name) {
       state.screen = name;
@@ -1283,7 +1594,7 @@
       });
       if (name === 'menu') refreshMenuStats();
       if (name === 'records') renderRecords();
-      if (name === 'practice') setTimeout(resizeCanvases, 30);
+      // 실제 문제 설정 시 setCurrentItem()에서 한 번만 캔버스를 맞춘다.
     }
 
     function todayKey() {
@@ -1304,7 +1615,160 @@
     }
 
     function saveRecords() {
-      localStorage.setItem('handwritingPartyRecords', JSON.stringify(state.records.slice(0, 80)));
+      if (!storageWritable) return;
+      try {
+        localStorage.setItem('handwritingPartyRecords', JSON.stringify(state.records.slice(0, 80)));
+      } catch (e) {
+        storageWritable = false;
+        showToast('이 기기에서는 기록 저장이 제한될 수 있어요.');
+      }
+    }
+
+
+    const levelTitles = ['새싹 연필','반짝 연필','글씨 탐험가','또박또박 기사','별빛 작가','글씨 마스터','황금 펜','전설의 작가'];
+
+    function xpForLevel(level) {
+      const n = Math.max(0, level - 1);
+      return Math.round(n * 120 + (n * Math.max(0, n - 1) / 2) * 35);
+    }
+
+    function getLevelInfo(totalXp = state.progress.xp) {
+      const xp = Math.max(0, Number(totalXp) || 0);
+      let level = 1;
+      while (level < 50 && xp >= xpForLevel(level + 1)) level++;
+      const start = xpForLevel(level);
+      const next = xpForLevel(level + 1);
+      const span = Math.max(1, next - start);
+      const current = Math.max(0, xp - start);
+      const pct = Math.max(0, Math.min(100, current / span * 100));
+      const title = levelTitles[Math.min(levelTitles.length - 1, Math.floor((level - 1) / 2))];
+      return { level, title, xp, start, next, current, needed: span, pct };
+    }
+
+    function loadProgress() {
+      try {
+        const raw = JSON.parse(localStorage.getItem('handwritingPartyProgressV1') || '{}');
+        state.progress.xp = Math.max(0, Number(raw.xp) || 0);
+        state.progress.totalWrites = Math.max(0, Number(raw.totalWrites) || 0);
+        state.progress.totalPerfect = Math.max(0, Number(raw.totalPerfect) || 0);
+        state.progress.bestCombo = Math.max(0, Number(raw.bestCombo) || 0);
+        state.progress.combo = 0;
+      } catch (e) {
+        state.progress = { xp: 0, totalWrites: 0, totalPerfect: 0, combo: 0, bestCombo: 0 };
+      }
+    }
+
+    function saveProgress() {
+      if (!storageWritable) return;
+      try {
+        const { xp, totalWrites, totalPerfect, bestCombo } = state.progress;
+        localStorage.setItem('handwritingPartyProgressV1', JSON.stringify({ xp, totalWrites, totalPerfect, bestCombo }));
+      } catch (e) {
+        storageWritable = false;
+      }
+    }
+
+    function refreshProgressUI() {
+      const info = getLevelInfo();
+      const xpText = `${info.current} / ${info.needed} XP`;
+      const levelText = `Lv.${info.level}`;
+      if (els.menuLevel) els.menuLevel.textContent = levelText;
+      if (els.menuTitle) els.menuTitle.textContent = info.title;
+      if (els.menuXpText) els.menuXpText.textContent = xpText;
+      if (els.menuXpFill) els.menuXpFill.style.width = `${info.pct}%`;
+      if (els.menuBestCombo) els.menuBestCombo.textContent = state.progress.bestCombo;
+      if (els.menuTotalWrites) els.menuTotalWrites.textContent = state.progress.totalWrites;
+      if (els.menuPerfects) els.menuPerfects.textContent = state.progress.totalPerfect;
+      if (els.playLevel) els.playLevel.textContent = `${levelText} · ${info.title}`;
+      if (els.playXpText) els.playXpText.textContent = xpText;
+      if (els.playXpFill) els.playXpFill.style.width = `${info.pct}%`;
+      if (els.playXpGain) els.playXpGain.textContent = `다음 레벨까지 ${Math.max(0, info.needed - info.current)} XP`;
+      if (els.comboPill) els.comboPill.textContent = `🔥 콤보 ${state.progress.combo}`;
+      if (els.resultLevel) els.resultLevel.textContent = levelText;
+      if (els.resultTitle) els.resultTitle.textContent = info.title;
+      if (els.resultXpText) els.resultXpText.textContent = xpText;
+      if (els.resultXpFill) els.resultXpFill.style.width = `${info.pct}%`;
+      if (els.resultBestCombo) els.resultBestCombo.textContent = state.progress.bestCombo;
+      if (els.recordLevelText) els.recordLevelText.textContent = `${levelText} · ${info.title}`;
+      if (els.recordTotalWrites) els.recordTotalWrites.textContent = state.progress.totalWrites;
+      if (els.recordBestComboGrowth) els.recordBestComboGrowth.textContent = state.progress.bestCombo;
+    }
+
+    function showXpGain(amount) {
+      if (!amount) return;
+      const el = document.createElement('div');
+      el.className = 'xp-float';
+      el.textContent = `+${amount} XP`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 950);
+    }
+
+    let levelUpTimer = null;
+    function showLevelUp(info) {
+      if (!els.levelUpOverlay) return;
+      els.levelUpTitle.textContent = `Lv.${info.level}`;
+      els.levelUpDesc.textContent = `${info.title} 칭호로 성장했어요!`;
+      els.levelUpOverlay.classList.add('show');
+      clearTimeout(levelUpTimer);
+      levelUpTimer = setTimeout(() => els.levelUpOverlay.classList.remove('show'), tvLite ? 1250 : 1800);
+      playLevelUp();
+      burstStars(true);
+    }
+
+    function burstStars(big = false) {
+      const count = tvLite ? (big ? 8 : 5) : (big ? 16 : 9);
+      for (let i = 0; i < count; i++) {
+        const star = document.createElement('span');
+        star.className = 'star-particle';
+        star.textContent = i % 3 === 0 ? '✨' : '⭐';
+        const angle = (Math.PI * 2 * i / count) + Math.random() * .25;
+        const dist = (big ? 145 : 100) + Math.random() * (big ? 90 : 55);
+        star.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+        star.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+        star.style.setProperty('--rot', `${Math.round(Math.random() * 300 - 150)}deg`);
+        document.body.appendChild(star);
+        setTimeout(() => star.remove(), 780);
+      }
+    }
+
+    function awardXp(stars, score) {
+      if (state.rewardedThisItem) return 0;
+      state.rewardedThisItem = true;
+      const before = getLevelInfo();
+      const good = stars >= 2;
+      if (good) state.progress.combo += 1;
+      else state.progress.combo = 0;
+      state.progress.bestCombo = Math.max(state.progress.bestCombo, state.progress.combo);
+      state.progress.totalWrites += 1;
+      if (stars === 3) state.progress.totalPerfect += 1;
+      const comboBonus = state.progress.combo >= 3 ? Math.min(10, state.progress.combo * 2) : 0;
+      const amount = 5 + stars * 6 + (score >= 90 ? 5 : 0) + comboBonus;
+      state.progress.xp += amount;
+      saveProgress();
+      refreshProgressUI();
+      showXpGain(amount);
+      if (stars === 3) burstStars(false);
+      if (state.progress.combo >= 3) {
+        els.comboPill?.classList.remove('hot');
+        void els.comboPill?.offsetWidth;
+        els.comboPill?.classList.add('hot');
+        if (state.progress.combo === 3 || state.progress.combo % 5 === 0) showToast(`🔥 ${state.progress.combo}콤보! 경험치 보너스!`);
+      }
+      const after = getLevelInfo();
+      if (after.level > before.level) setTimeout(() => showLevelUp(after), 220);
+      return amount;
+    }
+
+    function awardChallengeBonus(challenge) {
+      const before = getLevelInfo();
+      const amount = 12 + Math.min(24, challenge.totalStars * 2);
+      state.progress.xp += amount;
+      saveProgress();
+      refreshProgressUI();
+      showXpGain(amount);
+      const after = getLevelInfo();
+      if (after.level > before.level) setTimeout(() => showLevelUp(after), 260);
+      return amount;
     }
 
     function sumTodayStars() {
@@ -1323,7 +1787,12 @@
       const today = sumTodayStars();
       els.todayStarCount.textContent = `${today}개`;
       els.todayStarStrip.textContent = today ? makeStars(today, 15) : '아직 도전 전';
-      els.todayTip.textContent = today >= 15 ? '오늘 별이 반짝반짝 많아요. 문장 도전도 좋아요.' : '연습으로 손을 풀고 도전에 들어가면 좋아요.';
+      const missionGoal = 12;
+      const missionDone = Math.min(today, missionGoal);
+      els.todayTip.textContent = today >= missionGoal ? '오늘의 별 미션 완료! 더 도전하면 성장 속도가 더 빨라져요.' : '도전에서 별 12개를 모아 오늘의 미션을 완성해보세요.';
+      if (els.missionText) els.missionText.textContent = `${missionDone} / ${missionGoal}`;
+      if (els.missionFill) els.missionFill.style.width = `${Math.min(100, today / missionGoal * 100)}%`;
+      refreshProgressUI();
     }
 
     function renderBankChips() {
@@ -1422,7 +1891,8 @@
         textSize: def.forcedTextSize || state.textSize,
         brushSize: def.forcedBrushSize || state.brushSize,
         mode: def.mode,
-        contentType: def.contentType
+        contentType: def.contentType,
+        xpStart: state.progress.xp
       };
       const mixed = def.contentType === 'mixed';
       const list = mixed ? getItems('word', { mixed: true }) : getItems(def.contentType);
@@ -1464,6 +1934,7 @@
       if (!state.items.length) state.items = getItems(state.contentType);
       state.currentText = state.items[state.itemIndex % state.items.length];
       state.hasAnswered = false;
+      state.rewardedThisItem = false;
       updateTargetArea();
       resizeCanvases();
       hideStatus();
@@ -1495,15 +1966,15 @@
       const wrap = els.canvasWrap;
       const rect = wrap.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR));
       const w = Math.round(rect.width * dpr);
       const h = Math.round(rect.height * dpr);
       [els.drawingCanvas, els.guideCanvas, refCanvas].forEach(c => {
-        c.width = w;
-        c.height = h;
-        c.style.width = `${rect.width}px`;
-        c.style.height = `${rect.height}px`;
+        if (c.width !== w) c.width = w;
+        if (c.height !== h) c.height = h;
       });
+      els.drawingCanvas.style.width = els.guideCanvas.style.width = `${rect.width}px`;
+      els.drawingCanvas.style.height = els.guideCanvas.style.height = `${rect.height}px`;
       [drawCtx, guideCtx, refCtx].forEach(ctx => ctx.setTransform(dpr, 0, 0, dpr, 0, 0));
       configureBrush();
       clearDrawing(false);
@@ -1511,7 +1982,7 @@
     }
 
     function configureBrush() {
-      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR));
       const brushBase = brushSizeSettings[activeBrushSize()].width;
       const boost = textSizeSettings[activeTextSize()].lineBoost;
       drawCtx.lineWidth = brushBase * boost;
@@ -1608,9 +2079,10 @@
     }
 
     function startDrawing(e) {
-      e.preventDefault();
+      e.preventDefault?.();
       els.drawingCanvas.setPointerCapture?.(e.pointerId);
       isDrawing = true;
+      pendingPoint = null;
       lastPoint = getPointerPos(e);
       drawCtx.beginPath();
       drawCtx.moveTo(lastPoint.x, lastPoint.y);
@@ -1618,10 +2090,11 @@
       drawCtx.stroke();
     }
 
-    function draw(e) {
-      if (!isDrawing) return;
-      e.preventDefault();
-      const point = getPointerPos(e);
+    function flushDrawPoint() {
+      drawFrame = 0;
+      if (!isDrawing || !pendingPoint) return;
+      const point = pendingPoint;
+      pendingPoint = null;
       if (!lastPoint) lastPoint = point;
       const midX = (lastPoint.x + point.x) / 2;
       const midY = (lastPoint.y + point.y) / 2;
@@ -1630,11 +2103,22 @@
       lastPoint = point;
     }
 
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault?.();
+      pendingPoint = getPointerPos(e);
+      if (!drawFrame) drawFrame = requestAnimationFrame(flushDrawPoint);
+    }
+
     function stopDrawing(e) {
       if (!isDrawing) return;
-      e.preventDefault();
+      e.preventDefault?.();
+      if (pendingPoint) flushDrawPoint();
       isDrawing = false;
+      pendingPoint = null;
       lastPoint = null;
+      if (drawFrame) cancelAnimationFrame(drawFrame);
+      drawFrame = 0;
       drawCtx.closePath();
     }
 
@@ -1664,6 +2148,7 @@
       updateTargetArea();
       showStatus({ stars, score: result.score, title, desc });
       updateHint(desc);
+      awardXp(stars, result.score);
       if (stars > 0) playStarSound(stars); else playFail();
       if (stars === 3) burstConfetti();
       if (state.playKind === 'challenge') {
@@ -1671,14 +2156,33 @@
       }
     }
 
+    function prepareAnalysisCanvases() {
+      const srcW = els.drawingCanvas.width;
+      const srcH = els.drawingCanvas.height;
+      const scale = Math.min(1, ANALYSIS_MAX_W / srcW, ANALYSIS_MAX_H / srcH);
+      const w = Math.max(1, Math.round(srcW * scale));
+      const h = Math.max(1, Math.round(srcH * scale));
+      [analysisUserCanvas, analysisRefCanvas].forEach(c => {
+        if (c.width !== w) c.width = w;
+        if (c.height !== h) c.height = h;
+      });
+      analysisUserCtx.clearRect(0, 0, w, h);
+      analysisRefCtx.clearRect(0, 0, w, h);
+      analysisUserCtx.drawImage(els.drawingCanvas, 0, 0, w, h);
+      analysisRefCtx.drawImage(refCanvas, 0, 0, w, h);
+      return { w, h, scale };
+    }
+
     function calculateScore() {
-      const w = els.drawingCanvas.width;
-      const h = els.drawingCanvas.height;
-      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
-      const userData = drawCtx.getImageData(0, 0, w, h).data;
-      const refData = refCtx.getImageData(0, 0, w, h).data;
-      const dilatedRefData = makeDilatedData(refCanvas, Math.round(12 * dpr)).data;
-      const dilatedUserData = makeDilatedData(els.drawingCanvas, Math.round(9 * dpr)).data;
+      const { w, h, scale } = prepareAnalysisCanvases();
+      const userData = analysisUserCtx.getImageData(0, 0, w, h).data;
+      const refData = analysisRefCtx.getImageData(0, 0, w, h).data;
+      const mode = activePracticeMode();
+      const forgiving = mode === 'memory' || mode === 'listen';
+      const refRadius = Math.max(3, Math.round((forgiving ? 22 : 15) * scale));
+      const userRadius = Math.max(2, Math.round((forgiving ? 17 : 11) * scale));
+      const dilatedRefData = makeDilatedData(analysisRefCanvas, refRadius).data;
+      const dilatedUserData = makeDilatedData(analysisUserCanvas, userRadius).data;
       let userPixels = 0;
       let refPixels = 0;
       let userInside = 0;
@@ -1686,26 +2190,29 @@
       let ux1 = w, uy1 = h, ux2 = 0, uy2 = 0;
       let rx1 = w, ry1 = h, rx2 = 0, ry2 = 0;
 
-      for (let i = 0; i < userData.length; i += 4) {
-        const px = (i / 4) % w;
-        const py = Math.floor((i / 4) / w);
-        const hasUser = userData[i + 3] > 18;
-        const hasRef = refData[i + 3] > 18;
-        if (hasUser) {
-          userPixels++;
-          if (dilatedRefData[i + 3] > 18) userInside++;
-          if (px < ux1) ux1 = px;
-          if (px > ux2) ux2 = px;
-          if (py < uy1) uy1 = py;
-          if (py > uy2) uy2 = py;
-        }
-        if (hasRef) {
-          refPixels++;
-          if (dilatedUserData[i + 3] > 18) refCovered++;
-          if (px < rx1) rx1 = px;
-          if (px > rx2) rx2 = px;
-          if (py < ry1) ry1 = py;
-          if (py > ry2) ry2 = py;
+      // 2픽셀 간격 샘플링: TV에서는 전체 픽셀 순회보다 훨씬 가볍고 결과 차이는 작음
+      const sampleStep = tvLite ? 2 : 1;
+      for (let py = 0; py < h; py += sampleStep) {
+        for (let px = 0; px < w; px += sampleStep) {
+          const i = (py * w + px) * 4;
+          const hasUser = userData[i + 3] > 18;
+          const hasRef = refData[i + 3] > 18;
+          if (hasUser) {
+            userPixels++;
+            if (dilatedRefData[i + 3] > 18) userInside++;
+            if (px < ux1) ux1 = px;
+            if (px > ux2) ux2 = px;
+            if (py < uy1) uy1 = py;
+            if (py > uy2) uy2 = py;
+          }
+          if (hasRef) {
+            refPixels++;
+            if (dilatedUserData[i + 3] > 18) refCovered++;
+            if (px < rx1) rx1 = px;
+            if (px > rx2) rx2 = px;
+            if (py < ry1) ry1 = py;
+            if (py > ry2) ry2 = py;
+          }
         }
       }
 
@@ -1720,11 +2227,16 @@
       const refCx = (refBox.x1 + refBox.x2) / 2;
       const refCy = (refBox.y1 + refBox.y2) / 2;
       const dist = Math.hypot(userCx - refCx, userCy - refCy);
-      const center = Math.max(0, 1 - dist / (Math.min(w, h) * 0.32));
+      const center = Math.max(0, 1 - dist / (Math.min(w, h) * (forgiving ? 0.42 : 0.34)));
       const areaRatio = (userBox.width * userBox.height) / Math.max(1, refBox.width * refBox.height);
-      const size = Math.max(0, 1 - Math.abs(Math.log(areaRatio)) / Math.log(3.1));
-      let score = Math.round((inside * 0.38 + coverage * 0.34 + center * 0.16 + size * 0.12) * 100);
-      score = Math.max(0, Math.min(100, Math.round(score * 1.08)));
+      const size = Math.max(0, 1 - Math.abs(Math.log(areaRatio)) / Math.log(forgiving ? 4.2 : 3.3));
+
+      // 따라쓰기/흐린 글씨는 모양 일치, 보고/듣고 쓰기는 배치·크기를 더 중시한다.
+      const weighted = forgiving
+        ? (inside * 0.25 + coverage * 0.22 + center * 0.29 + size * 0.24)
+        : (inside * 0.38 + coverage * 0.34 + center * 0.16 + size * 0.12);
+      let score = Math.round(weighted * 100);
+      score = Math.max(0, Math.min(100, Math.round(score * (forgiving ? 1.14 : 1.08))));
       return { score, userPixels, refPixels, inside, coverage, center, size, userBox, refBox };
     }
 
@@ -1732,14 +2244,21 @@
       const temp = document.createElement('canvas');
       temp.width = sourceCanvas.width;
       temp.height = sourceCanvas.height;
-      const t = temp.getContext('2d');
-      const step = Math.max(2, Math.floor(radius / 2));
-      for (let dx = -radius; dx <= radius; dx += step) {
-        for (let dy = -radius; dy <= radius; dy += step) {
-          if (dx * dx + dy * dy <= radius * radius) t.drawImage(sourceCanvas, dx, dy);
-        }
+      const t = temp.getContext('2d', { willReadFrequently: true });
+      // 반지름 전체를 촘촘히 복사하지 않고 8방향+중심으로 근사해 TV GPU/CPU 부담을 줄임
+      const r = Math.max(1, radius);
+      const d = Math.round(r * 0.72);
+      const offsets = [
+        [0,0], [r,0], [-r,0], [0,r], [0,-r],
+        [d,d], [d,-d], [-d,d], [-d,-d]
+      ];
+      offsets.forEach(([dx, dy]) => t.drawImage(sourceCanvas, dx, dy));
+      // 중간 반경도 한 번 보강
+      if (r >= 4) {
+        const m = Math.round(r * 0.5);
+        t.drawImage(sourceCanvas, m, 0); t.drawImage(sourceCanvas, -m, 0);
+        t.drawImage(sourceCanvas, 0, m); t.drawImage(sourceCanvas, 0, -m);
       }
-      t.drawImage(sourceCanvas, 0, 0);
       return t.getImageData(0, 0, temp.width, temp.height);
     }
 
@@ -1751,18 +2270,23 @@
     }
 
     function makeFeedback(result) {
-      if (result.score >= 82) return '가운데에 맞고 글씨 모양도 또렷해요.';
+      const mode = activePracticeMode();
+      const guided = mode === 'trace' || mode === 'soft';
+      if (result.score >= 82) return guided ? '가운데에 맞고 글씨 모양도 또렷해요.' : '칸 안에 알맞은 크기로 또박또박 썼어요.';
       const tips = [];
-      if (result.coverage < 0.45) tips.push('빠진 부분을 조금 더 채워보세요');
-      if (result.inside < 0.55) tips.push('회색 글씨 안쪽을 따라가 보세요');
+      if (guided && result.coverage < 0.45) tips.push('빠진 부분을 조금 더 채워보세요');
+      if (guided && result.inside < 0.55) tips.push('회색 글씨 가까이 따라가 보세요');
       if (result.center < 0.72) tips.push('조금 더 가운데에 써보세요');
-      if (result.size < 0.62) tips.push('글씨 크기를 가이드와 비슷하게 맞춰보세요');
+      if (result.size < 0.62) tips.push('글씨 크기를 칸에 알맞게 맞춰보세요');
       if (!tips.length) tips.push('천천히 한 번 더 쓰면 더 좋아져요');
       return tips.slice(0, 2).join('. ') + '.';
     }
 
     function showStatus({ stars, score, title, desc }) {
+      els.statusCard.classList.remove('perfect', 'great');
       els.statusCard.classList.add('active');
+      if (stars === 3) els.statusCard.classList.add('perfect');
+      else if (stars === 2) els.statusCard.classList.add('great');
       els.statusStars.textContent = stars > 0 ? '⭐'.repeat(stars) : '💫';
       els.statusTitle.textContent = title;
       els.statusScore.textContent = `${score}점`;
@@ -1817,6 +2341,7 @@
       const ch = state.challenge;
       const avg = Math.round(ch.totalScore / Math.max(1, ch.results.length));
       const maxStars = ch.count * 3;
+      const completionBonus = awardChallengeBonus(ch);
       const record = {
         id: Date.now(),
         date: todayKey(),
@@ -1827,6 +2352,8 @@
         avgScore: avg,
         successCount: ch.successCount,
         totalCount: ch.count,
+        xpGained: Math.max(0, state.progress.xp - (ch.xpStart || 0)),
+        completionBonus,
         results: ch.results
       };
       state.records.unshift(record);
@@ -1844,10 +2371,13 @@
       els.finalStarCount.textContent = `${record.totalStars}/${record.maxStars}`;
       els.finalAvgScore.textContent = `${record.avgScore}`;
       els.finalSuccess.textContent = `${record.successCount}/${record.totalCount}`;
-      els.finalComment.textContent = perfect ? '오늘 글씨가 아주 반짝반짝해요.' : record.avgScore >= 70 ? '글씨 모양이 좋아지고 있어요.' : '연습하고 다시 도전하면 별을 더 모을 수 있어요.';
+      if (els.finalXpGain) els.finalXpGain.textContent = `+${record.xpGained || 0}`;
+      els.finalComment.textContent = perfect ? '퍼펙트 도전! 별과 경험치를 가득 모았어요.' : record.avgScore >= 70 ? '좋은 흐름이에요. 콤보를 이어 레벨을 더 올려보세요.' : '연습하고 다시 도전하면 별과 경험치를 더 모을 수 있어요.';
+      refreshProgressUI();
     }
 
     function renderRecords() {
+      refreshProgressUI();
       const today = todayKey();
       const todayStars = sumTodayStars();
       const now = new Date();
@@ -1887,22 +2417,32 @@
     }
 
     function speakCurrent() {
-      ensureAudio();
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(state.currentText);
-        utter.lang = 'ko-KR';
-        utter.rate = 0.82;
-        utter.pitch = 1.05;
-        window.speechSynthesis.speak(utter);
-      } else {
-        playToneSequence([{ f: 620, d: 0.08 }, { f: 760, d: 0.1 }], 'sine', 0.05);
+      const canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+      if (canSpeak) {
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(state.currentText);
+          utter.lang = 'ko-KR';
+          utter.rate = 0.82;
+          utter.pitch = 1.05;
+          window.speechSynthesis.speak(utter);
+          return true;
+        } catch (e) {}
       }
+      showToast('이 기기에서는 글씨 읽기 음성을 지원하지 않아요.');
+      return false;
     }
 
     function ensureAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtor) return false;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtor();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
 
     function playTone(freq, start, duration, type = 'sine', gainValue = 0.07) {
@@ -1943,9 +2483,13 @@
       else playToneSequence([{ f: 440, d: 0.08 }, { f: 620, d: 0.09 }, { f: 820, d: 0.18 }], 'triangle', 0.07);
     }
 
+    function playLevelUp() {
+      playToneSequence([{ f: 520, d: .07 }, { f: 660, d: .07 }, { f: 820, d: .08 }, { f: 1040, d: .09 }, { f: 1320, d: .18 }], 'triangle', 0.075);
+    }
+
     function burstConfetti() {
       const colors = ['#ff4fb8', '#ffd84f', '#41e59a', '#5577ff', '#a86cff', '#ff9f3f'];
-      for (let i = 0; i < 22; i++) {
+      for (let i = 0; i < (tvLite ? 10 : 18); i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti-piece';
         piece.style.left = `${20 + Math.random() * 60}%`;
@@ -1975,6 +2519,7 @@
       els.practiceStartBtn.addEventListener('click', initPractice);
       els.challengeOpenBtn.addEventListener('click', openChallengeSelect);
       els.recordsOpenBtn.addEventListener('click', () => showScreen('records'));
+      els.levelUpOverlay?.addEventListener('click', () => els.levelUpOverlay.classList.remove('show'));
       els.clearCustomBtn.addEventListener('click', () => {
         els.customInput.value = '';
         showToast('직접 넣은 글씨를 비웠어요.');
@@ -1983,11 +2528,25 @@
       document.querySelectorAll('[data-challenge]').forEach(btn => {
         btn.addEventListener('click', () => initChallenge(btn.dataset.challenge));
       });
-      els.drawingCanvas.addEventListener('pointerdown', startDrawing);
-      els.drawingCanvas.addEventListener('pointermove', draw);
-      els.drawingCanvas.addEventListener('pointerup', stopDrawing);
-      els.drawingCanvas.addEventListener('pointercancel', stopDrawing);
-      els.drawingCanvas.addEventListener('pointerleave', stopDrawing);
+      if ('PointerEvent' in window) {
+        els.drawingCanvas.addEventListener('pointerdown', startDrawing, { passive: false });
+        els.drawingCanvas.addEventListener('pointermove', draw, { passive: false });
+        els.drawingCanvas.addEventListener('pointerup', stopDrawing, { passive: false });
+        els.drawingCanvas.addEventListener('pointercancel', stopDrawing, { passive: false });
+        els.drawingCanvas.addEventListener('pointerleave', stopDrawing, { passive: false });
+      } else {
+        // 구형 스마트 TV WebView 대응
+        const touchToPointer = touch => ({
+          clientX: touch.clientX, clientY: touch.clientY,
+          preventDefault() {}, pointerId: 1
+        });
+        els.drawingCanvas.addEventListener('touchstart', e => { e.preventDefault(); startDrawing(touchToPointer(e.touches[0])); }, { passive: false });
+        els.drawingCanvas.addEventListener('touchmove', e => { e.preventDefault(); draw(touchToPointer(e.touches[0])); }, { passive: false });
+        els.drawingCanvas.addEventListener('touchend', e => { e.preventDefault(); stopDrawing({ preventDefault() {} }); }, { passive: false });
+        els.drawingCanvas.addEventListener('mousedown', startDrawing);
+        window.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+      }
       els.clearBtn.addEventListener('click', () => clearDrawing(true));
       els.checkBtn.addEventListener('click', evaluateWriting);
       els.nextBtn.addEventListener('click', nextItem);
@@ -2020,8 +2579,11 @@
 
     function init() {
       loadRecords();
+      loadProgress();
       bindEvents();
+      refreshProgressUI();
       refreshMenuStats();
+      console.info(`[바른 글씨 파티] ${tvLite ? 'TV 경량 모드' : '일반 모드'} · DPR 제한 ${MAX_RENDER_DPR} · 평가 ${ANALYSIS_MAX_W}x${ANALYSIS_MAX_H} 이하`);
     }
 
     init();
