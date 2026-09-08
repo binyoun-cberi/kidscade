@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>문방구 사장님 | Kidscade</title>
+<style>
+  :root{
+    --bg:#fff8ec; --paper:#fffdf8; --ink:#283044; --muted:#6d7485; --line:#e7dcc9;
+    --yellow:#ffd65a; --orange:#ff9e4a; --green:#7acb77; --blue:#78b9ef; --pink:#f7a7c3;
+    --red:#ee6d6d; --shadow:0 10px 28px rgba(54,43,27,.12); --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;color:var(--ink);background:linear-gradient(180deg,#fff4d9 0,#fffaf0 35%,#eef9ee 100%)}
+  body{overflow-x:hidden}
+  button{font:inherit;color:inherit}
+  button:focus-visible{outline:4px solid rgba(58,126,255,.35);outline-offset:3px}
+  .app{max-width:1180px;margin:0 auto;padding:16px 16px 34px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border:2px solid rgba(255,255,255,.7);box-shadow:var(--shadow);padding:12px 16px;border-radius:22px;position:sticky;top:8px;z-index:20}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:clamp(18px,2vw,25px)}
+  .brand .logo{width:44px;height:44px;display:grid;place-items:center;background:var(--yellow);border:3px solid #3b3428;border-radius:14px;transform:rotate(-2deg);box-shadow:3px 4px 0 #3b3428;font-size:24px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .pill{display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:8px 11px;font-weight:800;white-space:nowrap}
+  .pill strong{font-variant-numeric:tabular-nums}
+  .hero{margin:16px 0;display:grid;grid-template-columns:1.3fr .7fr;gap:14px}
+  .sign,.mini-help{background:var(--paper);border:2px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .sign{position:relative;overflow:hidden;min-height:150px;background:linear-gradient(135deg,#fffaf0,#fff 65%)}
+  .sign::after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:var(--pink);opacity:.18;right:-25px;top:-38px}
+  .sign h1{margin:0;font-size:clamp(30px,5vw,54px);line-height:1.05;letter-spacing:-1px}
+  .sign p{margin:10px 0 0;color:var(--muted);font-size:clamp(15px,2vw,19px);font-weight:700;line-height:1.55}
+  .mini-help{display:flex;flex-direction:column;justify-content:center;gap:8px;background:linear-gradient(135deg,#eaf7ff,#fff)}
+  .mini-help b{font-size:17px}.mini-help span{color:var(--muted);font-weight:700;line-height:1.45}
+  .game-grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  .customer-panel,.shop-panel{background:var(--paper);border:2px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius)}
+  .customer-panel{padding:16px;position:sticky;top:92px}
+  .panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .panel-title h2{font-size:20px;margin:0}
+  .day-badge{background:#243249;color:white;font-weight:900;border-radius:12px;padding:7px 10px}
+  .customer-card{border-radius:20px;padding:15px;background:linear-gradient(180deg,#fff 0,#fff7e3 100%);border:2px dashed #e9c882;text-align:center}
+  .avatar{font-size:64px;line-height:1;margin:3px auto 8px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.08))}
+  .customer-name{font-weight:900;font-size:18px}
+  .speech{margin:10px 0;background:#fff;border:2px solid #e7d8b9;border-radius:18px;padding:12px;text-align:left;font-weight:800;line-height:1.5;min-height:82px}
+  .speech .order-line{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+  .speech .qty{color:#c6552f;white-space:nowrap}
+  .stepper{display:flex;gap:6px;margin:14px 0 4px}
+  .step-dot{flex:1;height:8px;border-radius:999px;background:#e7e5df;transition:.25s}.step-dot.on{background:var(--green)}.step-dot.done{background:#2f9d57}
+  .hint{margin-top:11px;background:#eef8ff;border-radius:14px;padding:10px 12px;color:#35516c;font-size:14px;font-weight:800;line-height:1.45;text-align:left}
+  .shop-panel{padding:16px;min-height:560px}
+  .stage-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .stage-head h2{margin:0;font-size:22px}
+  .stage-message{font-weight:900;color:#5b6170;background:#f4f2ed;padding:8px 11px;border-radius:12px}
+  .shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .item{position:relative;background:#fff;border:2px solid #e7dfd2;border-radius:18px;padding:12px;min-height:160px;text-align:center;box-shadow:0 5px 0 #e5ded2;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}
+  .item:hover{transform:translateY(-2px);box-shadow:0 7px 0 #e5ded2}.item:active{transform:translateY(3px);box-shadow:0 2px 0 #e5ded2}
+  .item.in-order{border-color:#ffbd3e}.item .emoji{font-size:48px}.item .name{font-weight:900;margin:3px 0}.price{display:inline-block;background:#fff0ae;border-radius:999px;padding:4px 8px;font-weight:900;color:#745814}.cart-count{position:absolute;right:8px;top:8px;background:#2d8754;color:#fff;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-weight:900;border:2px solid white}.cart-count:empty{display:none}
+  .counter{margin-top:15px;border-top:3px solid #eadfce;padding-top:14px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+  .basket{background:#f4fbf3;border:2px solid #cce4c7;border-radius:18px;padding:12px;min-height:84px}
+  .basket h3{margin:0 0 7px;font-size:16px}.basket-list{display:flex;gap:7px;flex-wrap:wrap}.basket-chip{border:none;background:#fff;border:1.5px solid #d9e4d6;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}.basket-chip small{color:#cc5f42;margin-left:4px}
+  .total-box{text-align:right;min-width:170px}.total-label{color:var(--muted);font-weight:800}.total{font-size:30px;font-weight:950;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+  .main-btn{width:100%;margin-top:12px;border:none;border-radius:17px;background:linear-gradient(180deg,#ffd961,#ffbd3e);border:2px solid #8b6826;box-shadow:0 5px 0 #8b6826;padding:13px 15px;font-size:19px;font-weight:950;cursor:pointer}.main-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #8b6826}.main-btn:disabled{filter:grayscale(.45);opacity:.6;cursor:not-allowed}
+  .secondary-btn{border:none;border-radius:14px;padding:10px 13px;background:#eef2f6;font-weight:900;cursor:pointer}
+  .payment-view{display:none}.payment-view.active{display:block}
+  .cash-note{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#eff9ef;border:2px solid #beddbd;border-radius:18px;padding:14px;margin:10px 0}.cash-note .money-big{font-size:34px;font-weight:950;color:#317c43}
+  .question{font-size:21px;font-weight:950;text-align:center;margin:14px 0}
+  .money-tray{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .money{border:2px solid #cfc8b9;background:#fff;border-radius:15px;padding:10px 6px;font-weight:950;cursor:pointer;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 #d8d0c1}.money:active{transform:translateY(2px);box-shadow:0 2px 0 #d8d0c1}.money .coin{font-size:26px}.money .bill{font-size:25px}.money .m-count{font-size:12px;color:#2d8754;min-height:15px}
+  .change-box{margin-top:12px;padding:13px;background:#fff7e9;border:2px solid #efdfbf;border-radius:18px}.change-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.given-change{font-size:28px;font-weight:950}.change-actions{display:flex;gap:8px}.change-actions button{border:none;border-radius:12px;padding:9px 11px;font-weight:900;cursor:pointer}.reset-btn{background:#eee}.check-btn{background:#86d389}
+  .feedback{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:60;width:min(92vw,500px);background:white;border:3px solid #303746;border-radius:26px;padding:22px;text-align:center;box-shadow:0 24px 90px rgba(0,0,0,.27);opacity:0;pointer-events:none;transition:.18s}.feedback.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}.feedback .face{font-size:64px}.feedback h3{font-size:28px;margin:4px 0}.feedback p{color:var(--muted);font-weight:800;line-height:1.5}.feedback .main-btn{max-width:310px}
+  .overlay{position:fixed;inset:0;background:rgba(31,37,48,.36);z-index:55;display:none}.overlay.show{display:block}
+  .start-screen,.end-screen{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#fff2c6,#fffdf6 58%,#dcf1de);display:grid;place-items:center;padding:20px;overflow:auto}.end-screen{display:none}.start-card,.end-card{width:min(760px,95vw);background:rgba(255,255,255,.94);border:3px solid #483d2d;border-radius:30px;padding:26px;box-shadow:10px 12px 0 rgba(72,61,45,.16);text-align:center}.start-card h1,.end-card h1{font-size:clamp(38px,7vw,68px);margin:0}.start-card p,.end-card p{font-size:18px;line-height:1.6;color:#63697a;font-weight:800}.difficulty{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.diff-btn{border:2px solid #d6c9b5;border-radius:18px;background:white;padding:15px 10px;font-weight:950;cursor:pointer}.diff-btn strong{display:block;font-size:20px;margin-bottom:4px}.diff-btn span{font-size:13px;color:#767b86}.diff-btn.selected{background:#fff0ad;border-color:#9a762d;box-shadow:0 4px 0 #9a762d}.start-btn{border:3px solid #365f3e;background:#87da8c;box-shadow:0 6px 0 #365f3e;border-radius:18px;padding:15px 28px;font-size:22px;font-weight:950;cursor:pointer}.start-btn:active{transform:translateY(3px);box-shadow:0 3px 0 #365f3e}
+  .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.result{background:#f6f5f1;border-radius:17px;padding:13px}.result b{display:block;font-size:25px}.stars{font-size:42px;letter-spacing:3px}.upgrade-note{background:#eef9ff;border-radius:17px;padding:12px;font-weight:850;color:#446079;line-height:1.5;margin-top:12px}
+  .confetti{position:fixed;top:-20px;width:10px;height:16px;border-radius:2px;z-index:200;animation:fall 1.5s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.2}}
+  @media(max-width:860px){.hero{grid-template-columns:1fr}.mini-help{display:none}.game-grid{grid-template-columns:1fr}.customer-panel{position:relative;top:auto}.customer-card{display:grid;grid-template-columns:70px 1fr;column-gap:10px;text-align:left}.avatar{grid-row:1/3;font-size:54px}.customer-name{align-self:end}.speech{grid-column:1/3}.hint{grid-column:1/3}.shelf{grid-template-columns:repeat(3,1fr)}.shop-panel{min-height:auto}}
+  @media(max-width:560px){.app{padding:9px 9px 26px}.topbar{padding:9px;border-radius:18px}.brand .logo{width:38px;height:38px}.brand span:last-child{display:none}.pill{padding:6px 8px;font-size:13px}.hero{margin:10px 0}.sign{padding:15px;min-height:auto}.game-grid{gap:10px}.customer-panel,.shop-panel{padding:11px;border-radius:18px}.shelf{grid-template-columns:repeat(2,1fr);gap:8px}.item{min-height:130px;padding:9px}.item .emoji{font-size:39px}.counter{grid-template-columns:1fr}.total-box{text-align:left}.money-tray{grid-template-columns:repeat(3,1fr)}.difficulty{grid-template-columns:1fr}.result-grid{grid-template-columns:1fr 1fr}.result:last-child{grid-column:1/3}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div class="start-screen" id="startScreen">
+  <div class="start-card">
+    <div style="font-size:72px">🏪</div>
+    <h1>문방구 사장님</h1>
+    <p>손님의 주문을 듣고 물건을 정확히 담아 주세요.<br>계산이 끝나면 <b>거스름돈도 직접</b> 건네야 해요!</p>
+    <div class="difficulty" role="group" aria-label="난이도 선택">
+      <button class="diff-btn selected" data-level="easy"><strong>🌱 쉬움</strong><span>1~2종류 · 1,000원 안쪽</span></button>
+      <button class="diff-btn" data-level="normal"><strong>⭐ 보통</strong><span>2~3종류 · 거스름돈</span></button>
+      <button class="diff-btn" data-level="challenge"><strong>🔥 도전</strong><span>수량 증가 · 큰 금액</span></button>
+    </div>
+    <button class="start-btn" id="startBtn">오늘 장사 시작!</button>
+    <p style="font-size:14px;margin-top:18px">마우스 · 터치 모두 가능 / 인터넷 연결 없이 플레이 가능</p>
+  </div>
+</div>
+
+<div class="app" aria-live="polite">
+  <header class="topbar">
+    <div class="brand"><div class="logo">✏️</div><span>문방구 사장님</span></div>
+    <div class="stats">
+      <div class="pill">👥 <strong id="roundLabel">1/5</strong></div>
+      <div class="pill">⭐ <strong id="scoreLabel">0</strong></div>
+      <div class="pill">💰 <strong id="salesLabel">0원</strong></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="sign"><h1>어서 오세요! 🛎️</h1><p>오늘도 손님 다섯 명을 친절하고 정확하게 만나 봐요.<br>물건을 잘못 담았다면 장바구니에서 다시 누르면 뺄 수 있어요.</p></div>
+    <div class="mini-help"><b>🎯 오늘의 목표</b><span>주문을 꼼꼼히 읽고, 계산한 뒤 알맞은 거스름돈을 주세요.</span></div>
+  </section>
+
+  <main class="game-grid">
+    <aside class="customer-panel">
+      <div class="panel-title"><h2>손님 주문서</h2><span class="day-badge" id="levelBadge">쉬움</span></div>
+      <div class="customer-card">
+        <div class="avatar" id="customerAvatar">🧒</div>
+        <div class="customer-name" id="customerName">민준 손님</div>
+        <div class="speech" id="orderSpeech"></div>
+        <div class="stepper" aria-hidden="true"><span class="step-dot on"></span><span class="step-dot"></span><span class="step-dot"></span></div>
+        <div class="hint" id="hintBox">① 주문을 보고 진열대에서 물건을 눌러 장바구니에 담아 주세요.</div>
+      </div>
+    </aside>
+
+    <section class="shop-panel">
+      <div id="shoppingView">
+        <div class="stage-head"><h2>🧺 물건 담기</h2><div class="stage-message">주문한 만큼만 담아요!</div></div>
+        <div class="shelf" id="shelf"></div>
+        <div class="counter">
+          <div class="basket"><h3>내 장바구니 <small style="color:#777">(누르면 1개 빼기)</small></h3><div class="basket-list" id="basketList"></div></div>
+          <div class="total-box"><div class="total-label">현재 합계</div><div class="total" id="basketTotal">0원</div></div>
+        </div>
+        <button class="main-btn" id="checkoutBtn">계산대로 가져가기</button>
+      </div>
+
+      <div class="payment-view" id="paymentView">
+        <div class="stage-head"><h2>💵 계산하기</h2><div class="stage-message" id="paymentMessage">받은 돈을 확인해요.</div></div>
+        <div class="cash-note"><div><b>물건값</b><div id="priceExplain" style="color:#657080;font-weight:800;margin-top:4px"></div></div><div class="money-big" id="priceTotal">0원</div></div>
+        <div class="cash-note"><div><b>손님이 낸 돈</b><div style="color:#657080;font-weight:800;margin-top:4px">얼마를 돌려드려야 할까요?</div></div><div class="money-big" id="paidMoney">0원</div></div>
+        <div class="question">거스름돈을 골라 주세요!</div>
+        <div class="money-tray" id="moneyTray"></div>
+        <div class="change-box">
+          <div class="change-top"><div><div style="font-weight:800;color:#7e735f">내가 드릴 돈</div><div class="given-change" id="givenChange">0원</div></div><div class="change-actions"><button class="reset-btn" id="resetChange">다시</button><button class="check-btn" id="checkChange">확인!</button></div></div>
+          <div class="basket-list" id="changeList" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="feedback" id="feedback">
+  <div class="face" id="feedbackFace">🎉</div><h3 id="feedbackTitle">정확해요!</h3><p id="feedbackText"></p><button class="main-btn" id="nextBtn">다음 손님 받기</button>
+</div>
+
+<div class="end-screen" id="endScreen">
+  <div class="end-card">
+    <div style="font-size:74px">🏆</div><h1>오늘 영업 끝!</h1><div class="stars" id="endStars">⭐⭐⭐</div>
+    <p id="endMessage">멋진 문방구 사장님이에요!</p>
+    <div class="result-grid"><div class="result">오늘 점수<b id="endScore">0점</b></div><div class="result">총매출<b id="endSales">0원</b></div><div class="result">정확도<b id="endAccuracy">0%</b></div></div>
+    <div class="upgrade-note" id="upgradeNote">💡 물건값과 받은 돈의 차이를 생각하면 거스름돈을 쉽게 구할 수 있어요.</div>
+    <button class="start-btn" id="restartBtn">한 번 더 장사하기</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const PRODUCTS = [
+    {id:'pencil',name:'연필',emoji:'✏️',price:300},
+    {id:'eraser',name:'지우개',emoji:'🧽',price:500},
+    {id:'notebook',name:'공책',emoji:'📒',price:800},
+    {id:'ruler',name:'자',emoji:'📏',price:600},
+    {id:'crayon',name:'색연필',emoji:'🖍️',price:1200},
+    {id:'sticker',name:'스티커',emoji:'🌟',price:400},
+    {id:'glue',name:'풀',emoji:'🧴',price:700},
+    {id:'scissors',name:'가위',emoji:'✂️',price:900},
+    {id:'clay',name:'찰흙',emoji:'🟣',price:1000}
+  ];
+  const CUSTOMERS = [
+    ['민준','🧒'],['서윤','👧'],['도윤','👦'],['하린','👧🏻'],['지우','🧑'],['예준','👦🏻'],['아린','👧🏽'],['하준','🧒🏻'],['수아','👧🏼']
+  ];
+  const MONEY = [5000,1000,500,100];
+  const CFG = {
+    easy:{label:'쉬움',customers:5,types:[1,2],qty:[1,2],pool:5,payMode:'simple',base:100},
+    normal:{label:'보통',customers:5,types:[2,3],qty:[1,3],pool:7,payMode:'change',base:130},
+    challenge:{label:'도전',customers:5,types:[2,4],qty:[1,4],pool:9,payMode:'changeHard',base:160}
+  };
+  let level='easy', round=0, score=0, sales=0, correctSteps=0, totalSteps=0;
+  let order={}, cart={}, currentCustomer=null, total=0, paid=0, changeSelection={};
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const won=n=>n.toLocaleString('ko-KR')+'원';
+  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const sample=(arr,n)=>[...arr].sort(()=>Math.random()-.5).slice(0,n);
+  function tone(freq=600,dur=.08,type='sine',vol=.04){try{const A=window.AudioContext||window.webkitAudioContext;const ac=tone.ac||(tone.ac=new A());const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);o.stop(ac.currentTime+dur)}catch(e){}}
+  function setSteps(n){$$('.step-dot').forEach((d,i)=>{d.classList.toggle('done',i<n);d.classList.toggle('on',i===n)})}
+  function createRound(){
+    const c=CFG[level], available=PRODUCTS.slice(0,c.pool), typeCount=rand(c.types[0],c.types[1]);
+    order={}; cart={}; changeSelection={}; total=0; paid=0;
+    sample(available,typeCount).forEach(p=>{order[p.id]=rand(c.qty[0],c.qty[1]);cart[p.id]=0});
+    total=Object.entries(order).reduce((s,[id,q])=>s+PRODUCTS.find(p=>p.id===id).price*q,0);
+    currentCustomer=CUSTOMERS[(round+rand(0,CUSTOMERS.length-1))%CUSTOMERS.length];
+    $('#customerAvatar').textContent=currentCustomer[1]; $('#customerName').textContent=currentCustomer[0]+' 손님';
+    $('#orderSpeech').innerHTML='<b>“안녕하세요! 이것 주세요.”</b><div style="height:6px"></div>'+Object.entries(order).map(([id,q])=>{const p=PRODUCTS.find(x=>x.id===id);return `<div class="order-line"><span>${p.emoji} ${p.name}</span><span class="qty">${q}개</span></div>`}).join('');
+    $('#hintBox').textContent='① 주문을 보고 진열대에서 물건을 눌러 장바구니에 담아 주세요.';
+    $('#shoppingView').style.display='block'; $('#paymentView').classList.remove('active'); setSteps(0); renderShelf(); renderCart(); updateStats();
+  }
+  function renderShelf(){
+    const c=CFG[level]; const list=PRODUCTS.slice(0,c.pool);
+    $('#shelf').innerHTML=list.map(p=>`<button class="item ${order[p.id]?'in-order':''}" data-id="${p.id}" aria-label="${p.name} ${won(p.price)} 장바구니에 담기"><span class="cart-count">${cart[p.id]||''}</span><div class="emoji">${p.emoji}</div><div class="name">${p.name}</div><span class="price">${won(p.price)}</span></button>`).join('');
+    $$('#shelf .item').forEach(btn=>btn.addEventListener('click',()=>addItem(btn.dataset.id)));
+  }
+  function addItem(id){cart[id]=(cart[id]||0)+1;tone(720,.06,'sine',.025);renderShelf();renderCart()}
+  function removeItem(id){if(cart[id]>0)cart[id]--;tone(390,.05,'sine',.02);renderShelf();renderCart()}
+  function renderCart(){
+    const entries=Object.entries(cart).filter(([,q])=>q>0); const sum=entries.reduce((s,[id,q])=>s+PRODUCTS.find(p=>p.id===id).price*q,0);
+    $('#basketList').innerHTML=entries.length?entries.map(([id,q])=>{const p=PRODUCTS.find(x=>x.id===id);return `<button class="basket-chip" data-id="${id}">${p.emoji} ${p.name} × ${q}<small>−1</small></button>`}).join(''):'<span style="color:#88908f;font-weight:800">아직 비어 있어요.</span>';
+    $('#basketTotal').textContent=won(sum); $$('#basketList .basket-chip').forEach(b=>b.addEventListener('click',()=>removeItem(b.dataset.id)));
+  }
+  function cartMatches(){
+    const ids=new Set([...Object.keys(order),...Object.keys(cart)]);for(const id of ids){if((order[id]||0)!==(cart[id]||0))return false}return true;
+  }
+  function explainMistake(){
+    const missing=[],extra=[];PRODUCTS.forEach(p=>{const need=order[p.id]||0,got=cart[p.id]||0;if(got<need)missing.push(`${p.name} ${need-got}개`);if(got>need)extra.push(`${p.name} ${got-need}개`)});
+    let t='주문서를 한 번 더 볼까요?';if(missing.length)t+=` 더 담을 것: ${missing.join(', ')}.`;if(extra.length)t+=` 빼야 할 것: ${extra.join(', ')}.`;return t;
+  }
+  function beginPayment(){
+    totalSteps++;
+    if(!cartMatches()){
+      showFeedback('🤔','조금 달라요!',explainMistake(),'다시 확인하기',false,()=>{});return;
+    }
+    correctSteps++; score+=40; setSteps(1); $('#hintBox').textContent='② 물건을 정확하게 담았어요! 이제 손님이 낸 돈에서 물건값을 빼 보세요.';
+    const c=CFG[level];
+    if(c.payMode==='simple'){
+      const opts=[total, Math.ceil((total+100)/500)*500, Math.ceil((total+100)/1000)*1000].filter(v=>v>=total);paid=opts[rand(0,opts.length-1)];
+    }else if(c.payMode==='change'){
+      const choices=[1000,2000,3000,5000];paid=choices.find(x=>x>=total+100)||Math.ceil((total+100)/5000)*5000;
+      if(Math.random()<.35 && total<=2000) paid=Math.max(paid,2000);
+    }else{
+      paid=[2000,3000,5000,10000].find(x=>x>=total+200)||Math.ceil((total+200)/5000)*5000;
+    }
+    $('#shoppingView').style.display='none'; $('#paymentView').classList.add('active');
+    $('#priceTotal').textContent=won(total);$('#paidMoney').textContent=won(paid);
+    $('#priceExplain').textContent=Object.entries(order).map(([id,q])=>{const p=PRODUCTS.find(x=>x.id===id);return `${p.name} ${q}개`}).join(' + ');
+    renderMoney();renderChange();
+  }
+  function renderMoney(){
+    $('#moneyTray').innerHTML=MONEY.map(v=>`<button class="money" data-value="${v}"><span class="${v>=1000?'bill':'coin'}">${v>=1000?'💵':'🪙'}</span><span>${won(v)}</span><span class="m-count">${changeSelection[v]?changeSelection[v]+'개':''}</span></button>`).join('');
+    $$('#moneyTray .money').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.value;changeSelection[v]=(changeSelection[v]||0)+1;tone(820,.05,'triangle',.02);renderMoney();renderChange()}));
+  }
+  function selectedChange(){return Object.entries(changeSelection).reduce((s,[v,q])=>s+(+v)*q,0)}
+  function renderChange(){
+    const sum=selectedChange();$('#givenChange').textContent=won(sum);const parts=Object.entries(changeSelection).filter(([,q])=>q>0);
+    $('#changeList').innerHTML=parts.map(([v,q])=>`<button class="basket-chip" data-value="${v}">${won(+v)} × ${q}<small>−1</small></button>`).join('')||'<span style="color:#907f67;font-weight:800">돈을 눌러 거스름돈을 만들어 보세요.</span>';
+    $$('#changeList .basket-chip').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.value;if(changeSelection[v]>0)changeSelection[v]--;renderMoney();renderChange()}));
+  }
+  function checkChange(){
+    totalSteps++;const answer=paid-total;const given=selectedChange();
+    if(given!==answer){
+      const diff=Math.abs(answer-given);const direction=given<answer?'조금 더 드려야 해요.':'너무 많이 골랐어요.';
+      showFeedback('🧮','다시 계산해 볼까요?',`받은 돈 ${won(paid)} - 물건값 ${won(total)}를 생각해 보세요. ${direction} 차이는 ${won(diff)}예요.`,'다시 계산하기',false,()=>{});return;
+    }
+    correctSteps++;const bonus=CFG[level].base;score+=bonus;sales+=total;setSteps(3);updateStats();tone(880,.1,'triangle',.04);setTimeout(()=>tone(1170,.14,'triangle',.035),90);
+    const changeText=answer===0?'딱 맞게 받았어요!':`${won(paid)} - ${won(total)} = ${won(answer)}`;
+    showFeedback('🎉','완벽한 계산!',`${changeText}\n손님이 기분 좋게 문방구를 나갔어요. +${bonus}점`,'다음 손님 받기',true,nextRound);
+  }
+  function nextRound(){round++;if(round>=CFG[level].customers){finishGame();return}createRound()}
+  function updateStats(){$('#roundLabel').textContent=`${Math.min(round+1,CFG[level].customers)}/${CFG[level].customers}`;$('#scoreLabel').textContent=score.toLocaleString();$('#salesLabel').textContent=won(sales)}
+  function showFeedback(face,title,text,button,success,action){
+    $('#feedbackFace').textContent=face;$('#feedbackTitle').textContent=title;$('#feedbackText').textContent=text;$('#nextBtn').textContent=button;$('#overlay').classList.add('show');$('#feedback').classList.add('show');
+    $('#nextBtn').onclick=()=>{$('#overlay').classList.remove('show');$('#feedback').classList.remove('show');if(action)action()}; if(success) confetti(26);
+  }
+  function finishGame(){
+    const accuracy=totalSteps?Math.round(correctSteps/totalSteps*100):100;let stars=1;if(accuracy>=70)stars=2;if(accuracy>=90)stars=3;
+    $('#endStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);$('#endScore').textContent=score.toLocaleString()+'점';$('#endSales').textContent=won(sales);$('#endAccuracy').textContent=accuracy+'%';
+    $('#endMessage').textContent=stars===3?'손님들이 “여기 계산 정말 정확해요!”라고 칭찬했어요!':stars===2?'조금만 더 연습하면 최고의 문방구 사장님이에요!':'괜찮아요. 주문서를 천천히 보고 다시 도전해 봐요!';
+    $('#upgradeNote').textContent=level==='easy'?'🌱 다음에는 ‘보통’에 도전하면 물건 종류가 늘어나고 거스름돈 계산도 더 재미있어져요.':level==='normal'?'⭐ 거스름돈은 ‘받은 돈 - 물건값’이에요. 큰 돈부터 생각하면 더 쉬워요.':'🔥 도전 모드를 끝냈어요! 여러 물건의 가격과 거스름돈을 정말 잘 다뤘어요.';
+    $('#endScreen').style.display='grid';confetti(65);
+    try{if(window.parent!==window)window.parent.postMessage({type:'kidscade-result',game:'문방구 사장님',score,cleared:true,accuracy,sales,level},'*')}catch(e){}
+  }
+  function confetti(n){const chars=['#f1b43b','#ef7474','#69b7e6','#73c978','#aa7bd5'];for(let i=0;i<n;i++){const d=document.createElement('i');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=chars[rand(0,chars.length-1)];d.style.animationDelay=(Math.random()*.45)+'s';d.style.transform=`rotate(${rand(0,360)}deg)`;document.body.appendChild(d);setTimeout(()=>d.remove(),2300)}}
+  function startGame(){round=0;score=0;sales=0;correctSteps=0;totalSteps=0;$('#startScreen').style.display='none';$('#endScreen').style.display='none';$('#levelBadge').textContent=CFG[level].label;createRound()}
+  $$('.diff-btn').forEach(b=>b.addEventListener('click',()=>{$$('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');level=b.dataset.level;tone(600,.05)}));
+  $('#startBtn').addEventListener('click',startGame);$('#restartBtn').addEventListener('click',()=>{$('#endScreen').style.display='none';$('#startScreen').style.display='grid'});$('#checkoutBtn').addEventListener('click',beginPayment);$('#checkChange').addEventListener('click',checkChange);$('#resetChange').addEventListener('click',()=>{changeSelection={};renderMoney();renderChange()});
+})();
+</script>
+</body>
+</html>
