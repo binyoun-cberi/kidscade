@@ -97,6 +97,14 @@ button{cursor:pointer}
 .toast{position:fixed;left:50%;bottom:25px;transform:translateX(-50%) translateY(15px);opacity:0;background:#20243a;color:#fff;border-radius:999px;padding:11px 17px;font-weight:850;transition:.2s;z-index:80}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:1000px){.mode-grid{grid-template-columns:repeat(3,1fr)}.practice-wrap{grid-template-columns:1fr}.side-panel{order:-1}.lesson-list{display:grid;grid-template-columns:repeat(4,1fr)}}
 @media(max-width:650px){.long-board{padding:10px;min-height:360px}.long-target-line,.long-answer-line,.long-answer-text{font-size:15px}.long-row:nth-child(n+5){display:none}.app{padding:11px}.mode-grid{grid-template-columns:1fr}.hero{padding:24px 20px}.record-card{align-items:flex-start;flex-direction:column}.live-strip{grid-template-columns:repeat(2,1fr)}.main-panel{padding:15px;min-height:auto}.lesson-list{grid-template-columns:repeat(2,1fr)}.keyboard{transform-origin:top center;transform:scale(.78);margin-left:-12%;margin-right:-12%;margin-bottom:-45px}.result-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Reading-first lilac studio, with a larger dusk-colored rain field. */
+:root{--bg:#f0eef7;--ink:#29253d;--muted:#686078;--primary:#6650af;--line:#ddd6eb;--shadow:0 8px 25px #40325408}
+[hidden]{display:none!important}button:focus-visible,input:focus-visible{outline:3px solid #a689db;outline-offset:3px}.app{max-width:1140px;padding:24px}.brand{font-size:23px}.logo{background:#6650af;box-shadow:none}.topbar{margin-bottom:28px}.hero{background:none;box-shadow:none;padding:20px 0 35px;border-radius:0}.hero::after{display:none}.hero h1{font-size:clamp(32px,5vw,58px);line-height:1.17;margin:14px 0 18px}.hero p{font-size:15px}.chapter{font-size:11px;letter-spacing:.18em;font-weight:800;color:var(--primary)}.bank-stats{display:inline-block;margin-top:20px;padding:8px 12px;background:#e5dff1;border-radius:9px;font-size:12px;color:#554372}
+.mode-grid{gap:10px}.mode-card{padding:18px;min-height:176px;border:1px solid #ddd6eb;box-shadow:none}.mode-card h3{font-size:18px}.mode-card p{font-size:12px}.mode-card[data-mode=rain]{background:#302746;color:#f1ecff;border-color:#302746}.mode-card[data-mode=rain] p{color:#c9bfdc}.mode-card[data-mode=rain] .mode-icon{background:#ffffff13}.mode-icon{background:#f2eef8}.record-card{box-shadow:none;border:1px solid var(--line)}.practice-wrap{display:flex;flex-direction:column;gap:12px}.side-panel{order:-1;padding:12px 14px;display:flex;flex-direction:row;align-items:center;gap:12px;background:transparent;box-shadow:none}.side-panel .side-title,.side-panel>.progress,.side-panel>.tip{display:none}.lesson-list{display:flex;flex-direction:row;flex-wrap:wrap;flex:1;gap:7px}.lesson{border:1px solid #ddd6eb;background:#f9f7fc;border-radius:24px;padding:9px 13px;font-size:12px}.lesson.active{background:#6650af;color:white;border-color:#6650af}.main-panel{min-height:0;padding:22px;border:1px solid var(--line);box-shadow:none}.live-strip{grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid #ece7f3;border-bottom:1px solid #ece7f3}.live{background:none;border-radius:0;padding:10px}.live strong{font-size:22px}.target-box{min-height:200px;background:#faf8fe;border-width:1px}.title{font-size:23px}.game-area{height:clamp(320px,53dvh,520px);background:linear-gradient(160deg,#332847,#1b2237);border:0}.game-area::after{content:'입력해서 글을 구해요';position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:#b9b1cf;pointer-events:none}.cloud{opacity:.07;color:#c7b2e4}.fall-item{background:#f6edff;color:#302342;border:1px solid #e1d1ee;box-shadow:0 6px 0 #0002;font-size:21px;border-radius:12px;white-space:normal;overflow:visible;word-break:keep-all;overflow-wrap:anywhere}.fall-item.sentence{font-size:18px;max-width:calc(100% - 22px);padding:12px 16px}.rain-info{color:var(--muted);font-size:12px;text-align:right;margin:0 2px 8px;min-height:18px}.rain-paused{position:absolute;inset:0;z-index:5;background:#201d35ed;color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}.rain-paused b{font-size:26px}.note{line-height:1.6}.result{border:1px solid var(--line)}.result .grade{font-size:58px}.game-entry input{min-width:0}.result-actions{margin-top:18px}.text-input{font-size:24px}.toast{max-width:calc(100vw - 30px);text-align:center;white-space:normal}
+@media(max-width:700px){.app{padding:14px}.mode-grid{grid-template-columns:repeat(2,1fr)}.mode-card[data-mode=rain]{grid-column:1/-1;min-height:130px}.mode-card{min-height:155px}.side-panel{padding:0;flex-wrap:wrap}.side-panel .btn{padding:9px;font-size:12px}.main-panel{padding:14px}.live strong{font-size:20px}.live span{font-size:10px}.badge{display:none}.target-text.small{font-size:24px}.record-card{gap:12px}.records{gap:16px}.record b{font-size:20px}.fall-item{font-size:19px}.top-actions{gap:4px}.top-actions .btn{font-size:11px;padding:9px}.brand{font-size:18px}.logo{width:35px;height:35px}.game-area{height:45dvh;min-height:310px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -105,11 +113,11 @@ button{cursor:pointer}
     <div class="brand"><div class="logo">⌨</div>타닥타닥</div>
     <div class="top-actions">
       <button class="btn ghost" id="soundBtn">🔊 소리 켬</button>
-      <button class="btn ghost" id="homeBtn" style="display:none">🏠 처음으로</button>
+      <button class="btn ghost" id="pauseRain" hidden>잠깐 쉬기</button><button class="btn ghost" id="homeBtn" style="display:none">🏠 처음으로</button>
     </div>
   </div>
 
-  <section id="home" class="screen active">
+  <section id="home" class="screen active"><div class="hero"><div class="chapter">TYPE / EXPLORE / GROW</div><h1>손끝에서 자라는<br>나의 낱말 세계.</h1><p>처음 만나는 낱말과 새로운 문장. 오늘도 정확하게, 한 글자씩.</p><div class="bank-stats">980개 낱말 · 180개 문장 · 글비 중복 출제 방지</div></div>
     <div class="mode-grid">
       <button class="mode-card" data-mode="position"><div class="mode-icon">🖐️</div><h3>자리 연습</h3><p>자음과 모음의 위치를 손에 익혀요.</p></button>
       <button class="mode-card" data-mode="word"><div class="mode-icon">🍀</div><h3>낱말 연습</h3><p>짧은 낱말을 정확하고 빠르게 입력해요.</p></button>
@@ -122,7 +130,7 @@ button{cursor:pointer}
       <div class="records">
         <div class="record"><b id="bestSpeed">0</b><span>최고 타수</span></div>
         <div class="record"><b id="bestAcc">0%</b><span>최고 정확도</span></div>
-        <div class="record"><b id="bestGame">0</b><span>게임 최고점수</span></div>
+        <div class="record"><b id="bestGame">0</b><span>단계별 글비 최고점</span></div>
       </div>
     </div>
   </section>
@@ -165,7 +173,7 @@ button{cursor:pointer}
         </section>
 
         <section id="rainArea" style="display:none">
-          <div class="game-area" id="gameArea">
+          <div class="rain-info" id="rainCombo"></div><div class="game-area" id="gameArea"><div class="rain-paused" id="rainPaused" hidden><b>잠깐 쉬는 중</b><button class="btn primary" id="resumeRain">계속하기</button></div>
             <div class="cloud" style="top:22px;left:0">☁</div>
             <div class="cloud" style="top:110px;left:-240px;animation-delay:-5s">☁</div>
           </div>
@@ -173,7 +181,7 @@ button{cursor:pointer}
             <input class="game-input" id="gameInput" type="text" autocomplete="off" spellcheck="false" placeholder="떨어지는 글을 입력하고 Enter!">
             <button class="btn primary" id="gameEnter">입력</button>
           </div>
-          <div class="note">60초 동안 진행됩니다. 시간이 지날수록 조금씩 빨라집니다.</div>
+          <div class="note">60초 도전 · 긴 글은 천천히 내려와요 · 정답 기본 50점 + 글자량 보너스 최대 150점 + 연속 보너스 최대 50점</div>
         </section>
       </main>
 
@@ -199,7 +207,7 @@ button{cursor:pointer}
       <div class="result-item"><b id="rTime">00:00</b><span>시간</span></div>
       <div class="result-item"><b id="rScore">0</b><span>점수</span></div>
     </div>
-    <div class="result-actions">
+    <p class="note" id="resultExtra"></p><div class="result-actions">
       <button class="btn ghost" id="resultHome">처음으로</button>
       <button class="btn primary" id="resultRetry">다시 도전</button>
     </div>
@@ -288,8 +296,40 @@ const DATA={
  ]
 };
 
-const RAIN_WORDS=['사과','학교','친구','바람','하늘','구름','연필','토끼','강아지','자전거','고래','기차','소풍','운동장','책상','공책','우산','나무','별빛','바다','가족','여름','겨울','마음','웃음','노래','생각','약속','햇살','달빛','풍선','로봇','과학','역사','수학','미술'];
-const RAIN_SENTENCES=['오늘도 힘차게 시작해요.','천천히 정확하게 입력해요.','친구와 함께 웃어요.','하늘에 구름이 흘러가요.','작은 연습이 실력을 만들어요.','책을 읽으면 생각이 자라요.','바람이 나뭇잎을 흔들어요.','끝까지 포기하지 않아요.','나는 오늘도 한 걸음 자라요.','정확하게 치면 속도도 빨라져요.'];
+const RAIN_WORDS=["가랑비", "가리비", "가방", "가수", "가스레인지", "가습기", "가오리", "가위", "가을", "가재", "가족", "가지", "각도기", "간장", "간호사", "갈매기", "갈매기살", "갈비", "갈비탕", "감사", "감자", "감자전", "감자조림", "감자탕", "감자튀김", "강당", "강아지", "개구리", "개나리", "개미", "개발자", "개울", "개학", "갯벌", "거미", "거북이", "거실", "거울", "거위", "걱정", "건강", "건전지", "건축가", "걸레", "검도", "겨울", "경단", "경보", "경차", "경찰관", "경찰서", "경찰차", "경험", "경호원", "계곡", "계단", "계란말이", "계란빵", "계란찜", "계량컵", "계산기", "계절", "계주", "계획", "고구마", "고등어구이", "고래", "고래상어", "고무장갑", "고사리", "고속버스", "고슴도치", "고양이", "고추", "고추장", "골프", "공기청정기", "공연장", "공원", "공유기", "공작", "공책", "공항", "과일주스", "과자", "과학관", "과학실", "과학자", "교과서", "교무실", "교실", "교탁", "구급차", "구두", "구름", "구슬", "국밥", "국수", "국자", "국화", "국화빵", "군고구마", "군만두", "군인", "궁궐", "귀걸이", "귀뚜라미", "귀마개", "규칙", "그릇", "그림", "글쓰기", "금성", "급식실", "기관사", "기린", "기쁨", "기자", "기차", "기차역", "김밥", "김치", "김치볶음밥", "김치전", "김치찌개", "까마귀", "까치", "깐풍기", "깻잎", "꽃게", "꾀꼬리", "꿀떡", "꿔바로우", "나무", "나비", "나침반", "나팔꽃", "낙타", "남극", "냄비", "냉면", "냉이", "냉장고", "너구리", "널뛰기", "노래방", "노력", "노을", "노트북", "녹두전", "놀람", "놀이공원", "놀이터", "농구", "농부", "높이뛰기", "누룽지", "눈보라", "눈송이", "느티나무", "늑대", "다락방", "다람쥐", "다리", "다리미", "다이빙", "다이어리", "단무지", "단추", "단풍나무", "달걀찜", "달래", "달력", "달리기", "달빛", "달팽이", "닭갈비", "닭강정", "닭고기", "닭꼬치", "담비", "당구", "당근", "대게", "대나무", "대답", "대추", "대통령", "대학교", "도넛", "도마", "도마뱀", "도서관", "도서실", "도시락", "도전", "도토리", "독서", "독서록", "독수리", "돈가스", "돋보기", "돌고래", "돗자리", "동굴", "동물원", "동아리", "돼지", "돼지고기", "된장", "된장찌개", "두꺼비", "두더지", "두루미", "두부", "두부조림", "뒤집개", "듀공", "드론", "들판", "등대", "등산화", "따개비", "딱따구리", "딱지", "딸기", "떡국", "떡꼬치", "떡볶이", "뗏목", "또띠아", "뜸부기", "라디오", "라면", "라벤더", "라이터", "럭비", "레고", "레몬", "레슬링", "로봇", "루지", "리듬체조", "리모컨", "마늘", "마당", "마라샹궈", "마라탕", "마라톤", "마술사", "마스크", "마요네즈", "마우스", "마을버스", "마이크", "마차", "마트", "마파두부", "만두", "만화가", "말미잘", "망고", "망원경", "매미", "머리띠", "머리핀", "머스터드", "멀리뛰기", "멀티탭", "메뚜기", "메추라기", "멜론", "면도기", "면봉", "멸치볶음", "모과", "모기", "모기장", "모니터", "모둠", "모래", "모래시계", "모자", "모터보트", "목걸이", "목도리", "목성", "목수", "목욕탕", "무궁화", "무당벌레", "무용가", "무용수", "무지개", "무화과", "문방구", "문어", "문제집", "물감", "물개", "물방개", "물범", "물병", "물티슈", "미소", "미술관", "미역", "미역국", "미용사", "미용실", "믹서기", "민들레", "믿음", "밀대", "밀물", "바게트", "바구니", "바나나", "바늘", "바다", "바다사자", "바다코끼리", "바람", "바람개비", "바위", "바지", "바지락", "박물관", "박수", "박스", "박쥐", "반딧불이", "반장", "반지", "반창고", "받아쓰기", "발레리나", "발명가", "발표", "밤하늘", "밥솥", "방법", "방송실", "방아깨비", "방학", "배구", "배낭", "배드민턴", "배려", "배영", "배우", "배추", "백설기", "백조", "백합", "백화점", "버드나무", "버섯", "버스", "버스정류장", "버터", "번개", "벚꽃", "베개", "베란다", "벨트", "변호사", "별빛", "별자리", "병아리", "병원", "보건실", "보드", "보리밥", "보리차", "보물찾기", "보쌈", "보일러", "보조배터리", "보트", "복도", "복분자", "복사기", "복숭아", "복싱", "볶음밥", "볼링", "볼펜", "봅슬레이", "봉선화", "봉투", "부모님", "부엉이", "부추", "부침개", "북극", "북두칠성", "북엇국", "불가사리", "불고기", "붕어빵", "브로콜리", "블라인드", "블록", "블루베리", "비누", "비둘기", "비빔밥", "비행기", "빗자루", "빙수", "빙하", "빨래집게", "빵집", "사격", "사과", "사랑", "사마귀", "사막", "사물함", "사서", "사슴", "사슴벌레", "사이클", "사인펜", "사자", "사진", "사진가", "사탕", "산딸기", "산책", "산호", "살구", "삼겹살", "삼계탕", "상상", "상어", "상추", "새벽", "새우튀김", "색연필", "샌드위치", "샐러드", "샘물", "생각", "생선구이", "생일", "샤프", "샴푸", "서랍장", "서리", "서점", "서핑", "석류", "선물", "선생님", "선인장", "선풍기", "설렁탕", "설탕", "성게", "성공", "성냥", "세단뛰기", "세탁기", "세탁소", "셔츠", "소고기", "소금", "소금빵", "소금쟁이", "소나기", "소나무", "소떡소떡", "소라", "소방관", "소방서", "소방차", "소시지", "소파", "소풍", "손뼉", "손수건", "손전등", "손톱깎이", "솔방울", "송편", "쇼트트랙", "수건", "수구", "수달", "수련", "수리부엉이", "수박", "수선화", "수성", "수세미", "수수께끼", "수영", "수영장", "수의사", "수정과", "수제비", "수족관", "수첩", "수프", "수학여행", "순대", "순서", "숟가락", "술래잡기", "숨바꼭질", "스노보드", "스라소니", "스마트폰", "스캐너", "스케이트", "스케치북", "스켈레톤", "스쿠터", "스쿼시", "스키", "스키장", "스탠드", "스테이크", "스테이플러", "스포츠카", "스피드스케이팅", "스피커", "슬리퍼", "슬픔", "승마", "승무원", "승합차", "시간표", "시계", "시금치", "시금치나물", "시냇물", "시장", "식당", "식물원", "식빵", "식초", "식탁", "식혜", "신발장", "실내화", "실패", "쌀국수", "쌈장", "썰매", "썰물", "쓰레기통", "쓰레받기", "씨름", "아귀찜", "아나운서", "아보카도", "아이스크림", "아이스하키", "아침", "악어", "안개", "안경", "안방", "안전", "알림장", "압정", "액자", "앵두", "앵무새", "야구", "약과", "약국", "약사", "약속", "양궁", "양꼬치", "양말", "양배추", "양보", "양파", "어묵", "어부", "언덕", "얼룩말", "에스컬레이터", "에어컨", "엘리베이터", "여객선", "여름", "여우", "여치", "여행", "역도", "연고", "연꽃", "연못", "연어구이", "연필", "연필깎이", "열기구", "열쇠", "열차", "영화감독", "영화관", "오디", "오렌지", "오리", "오므라이스", "오븐", "오소리", "오이", "오이무침", "오징어", "오토바이", "옥수수", "온도계", "온천", "옷걸이", "옷장", "와플", "왜가리", "요가", "요거트", "요구르트", "요리사", "요트", "용기", "용암", "우동", "우비", "우산", "우유", "우정", "우주", "우주복", "우주비행사", "우주선", "우체국", "우체통", "운동선수", "운동장", "운동화", "운동회", "운석", "운전기사", "웃음", "원숭이", "위생", "위성", "유도", "유모차", "유부초밥", "유성", "유자", "유치원", "육개장", "육상", "윷놀이", "은하수", "은행", "은행나무", "음악", "음악실", "응원", "의견", "의사", "의자", "이끼", "이름표", "이발사", "이불", "이슬", "이어폰", "이웃", "이유", "인사", "인절미", "인형", "일기장", "읽기", "입학", "자갈", "자동차", "자두", "자매", "자몽", "자물쇠", "자유형", "자작나무", "자전거", "작가", "작곡가", "잠수함", "잠자리", "잡곡밥", "잡채", "잣나무", "장갑", "장난감", "장마", "장미", "장수풍뎅이", "장조림", "장화", "재규어", "쟁반", "저녁", "저울", "전구", "전기밥솥", "전기주전자", "전나무", "전복", "전시회", "전자레인지", "전학생", "접시", "접영", "젓가락", "정류장", "정원", "정직", "제기차기", "제비", "제빵사", "제습기", "제육볶음", "젤리", "조정", "조종사", "족구", "족발", "족제비", "존중", "졸업", "종달새", "종이", "주걱", "주먹밥", "주방", "주사위", "주유소", "주짓수", "주차장", "준비물", "줄넘기", "줄다리기", "지갑", "지구", "지렁이", "지우개", "지진", "지퍼", "지하", "지하철", "진달래", "진흙", "질문", "짜장면", "짜파게티", "짝꿍", "짬뽕", "쪽파", "쫄면", "찌개", "찐만두", "찐빵", "찐옥수수", "찜닭", "참고서", "참기름", "참새", "창문", "채반", "책가방", "책상", "책임", "천둥", "천왕성", "철인삼종", "철쭉", "청국장", "청소기", "체리", "체육관", "체조", "초밥", "초콜릿", "추어탕", "추억", "축구", "축하", "출석부", "충전기", "취미", "치마", "치약", "치즈", "치킨", "치타", "친구", "친절", "칠면조", "칠판", "침낭", "침대", "칫솔", "카누", "카레", "카메라", "카약", "카페", "칼국수", "캐리어", "캠핑장", "캥거루", "커튼", "컬링", "컴퍼스", "컴퓨터", "케이블카", "케이크", "케첩", "코끼리", "코뿔소", "코스모스", "코알라", "코코넛", "코트", "콜리플라워", "콩나물국", "크레파스", "크루아상", "크리켓", "클라이밍", "클립", "키보드", "키위", "킥보드", "킥볼", "타조", "타코", "타코야키", "탁구", "탁자", "탕수육", "탕후루", "태권도", "태블릿", "태양", "태풍", "택시", "터널", "터미널", "텀블러", "테니스", "테이프", "텐트", "텔레비전", "토끼", "토론", "토마토", "토성", "토스터", "통역사", "투포환", "투호", "튀김", "튤립", "트럭", "티볼", "파도", "파리", "파리채", "파스", "파스타", "파인애플", "파전", "판사", "팝콘", "패딩", "팬더", "팬케이크", "팽이", "퍼즐", "펀치", "펜싱", "펠리컨", "펭귄", "편의점", "편지", "평영", "포도", "포크", "포크레인", "폭포", "표범", "푸딩", "풋살", "풍뎅이", "퓨마", "프라이팬", "프로게이머", "프린터", "플로어볼", "피겨", "피겨스케이팅", "피구", "피시방", "피아니스트", "피자", "필통", "하늘", "하루살이", "하마", "하이에나", "하키", "학교", "학급", "학급회의", "학부모", "학생", "학예회", "학원", "한옥", "할머니", "할아버지", "함박눈", "합기도", "핫도그", "항구", "해달", "해마", "해바라기", "해변", "해수욕장", "해왕성", "해장국", "해파리", "핸드볼", "햄버거", "햄스터", "햇빛", "햇살", "행복", "행성", "허들", "헤드셋", "헤드폰", "헤어드라이어", "헬리콥터", "현관", "현미경", "현미밥", "현장체험학습", "협동", "형광펜", "형제", "혜성", "호두과자", "호떡", "호랑이", "호박", "호수", "홍합", "화가", "화물선", "화분", "화산", "화성", "화장실", "황새", "후추", "휴식", "휴지", "휴지통", "희망"];
+const RAIN_SENTENCES=["아침 햇살이 창문으로 들어와요.", "우산 위로 빗방울이 떨어져요.", "참새가 나뭇가지에 앉았어요.", "고양이가 기지개를 켜요.", "강아지가 꼬리를 흔들어요.", "토끼는 긴 귀를 쫑긋 세워요.", "호수에 달빛이 비쳐요.", "풀잎 끝에 이슬이 맺혔어요.", "바람에 빨래가 흔들려요.", "눈사람에게 모자를 씌워요.", "친구에게 먼저 인사해요.", "책을 읽고 책갈피를 꽂아요.", "연필을 깎고 필통에 넣어요.", "틀린 글자를 지우개로 지워요.", "발표할 때 손을 들어요.", "친구의 말을 끝까지 들어요.", "준비물을 가방에 챙겨요.", "알림장을 꼼꼼히 확인해요.", "책상 위를 깨끗이 정리해요.", "칠판에 오늘 날짜를 적어요.", "냄비에서 국이 보글보글 끓어요.", "달걀을 그릇에 깨뜨려요.", "당근을 깨끗하게 씻어요.", "따뜻한 밥에서 김이 나요.", "식탁에 숟가락을 놓아요.", "밥을 먹기 전에 손을 씻어요.", "배가 고파서 간식을 먹어요.", "물병에 시원한 물을 담아요.", "사과를 반으로 잘라요.", "우유를 컵에 따라요.", "공을 두 손으로 받아요.", "출발선에서 신호를 기다려요.", "줄을 넘으며 숫자를 세어요.", "운동을 마치고 물을 마셔요.", "넘어진 친구를 일으켜 줘요.", "경기가 끝나면 서로 인사해요.", "바닥의 물기를 닦아요.", "차례를 지켜 미끄럼틀을 타요.", "공원에서 가볍게 산책해요.", "신발 끈을 단단히 묶어요.", "씨앗을 화분에 심어요.", "흙이 마르면 물을 줘요.", "새싹이 흙을 뚫고 나와요.", "꽃봉오리가 조금씩 벌어져요.", "벌이 꽃 사이를 날아다녀요.", "나비가 날개를 접었어요.", "낙엽이 길 위에 쌓여요.", "도토리를 주워 살펴봐요.", "솔방울이 나무 아래 떨어졌어요.", "나이테를 하나씩 세어 봐요.", "파도가 모래사장에 밀려와요.", "모래성을 높게 쌓아요.", "바위틈에서 작은 게를 찾았어요.", "조개껍데기를 귀에 대어 봐요.", "갈매기가 바다 위를 날아요.", "등대가 밤바다를 밝혀요.", "배가 천천히 항구를 떠나요.", "물고기가 지느러미를 움직여요.", "갯벌에 작은 구멍이 보여요.", "해가 수평선 아래로 내려가요.", "도서관에서는 작은 소리로 말해요.", "빌린 책은 제자리에 돌려줘요.", "새로운 단어를 사전에서 찾아요.", "궁금한 내용을 공책에 적어요.", "글의 제목을 먼저 읽어요.", "이야기의 다음 장면을 상상해요.", "주인공에게 편지를 써요.", "좋아하는 문장에 표시해요.", "다 읽은 책을 친구에게 소개해요.", "표지 그림을 자세히 살펴봐요.", "지도에서 우리 동네를 찾아요.", "나침반의 바늘이 움직여요.", "기차가 긴 터널을 지나가요.", "버스 정류장에서 줄을 서요.", "횡단보도 앞에서 잠시 멈춰요.", "초록불에도 주변을 살펴요.", "차 안에서는 안전띠를 매요.", "길을 건널 때 휴대전화를 보지 않아요.", "자전거를 탈 때 안전모를 써요.", "비 오는 날에는 천천히 걸어요.", "종이를 반으로 접어요.", "색연필로 무지개를 그려요.", "찰흙을 둥글게 빚어요.", "가위는 조심해서 사용해요.", "풀을 바르고 종이를 붙여요.", "붓을 물에 깨끗이 씻어요.", "팔레트에서 색을 섞어요.", "노래에 맞추어 손뼉을 쳐요.", "북을 두드리며 박자를 맞춰요.", "친구들과 함께 노래를 불러요.", "동전을 종류별로 나누어요.", "물건값을 더해 보아요.", "시계를 보고 시간을 말해요.", "달력에서 생일을 찾아요.", "자로 책의 길이를 재어요.", "도형의 꼭짓점을 세어요.", "세모와 네모를 찾아봐요.", "작은 블록을 차곡차곡 쌓아요.", "두 수의 크기를 비교해요.", "문제를 풀고 답을 확인해요.", "깨진 유리는 어른에게 알려요.", "모르는 사람을 따라가지 않아요.", "젖은 손으로 전기 기구를 만지지 않아요.", "뜨거운 냄비는 조심해요.", "계단에서는 뛰지 않아요.", "문을 닫을 때 손을 조심해요.", "아픈 곳이 있으면 선생님께 말해요.", "기침할 때는 옷소매로 가려요.", "사용한 휴지는 휴지통에 버려요.", "잠자리에 들기 전에 이를 닦아요.", "동생과 장난감을 나누어 써요.", "가족에게 고마운 마음을 전해요.", "잘못했을 때는 솔직하게 말해요.", "친구가 슬플 때 곁에 있어 줘요.", "도움이 필요하면 부탁해요.", "서로 다른 생각도 존중해요.", "약속한 시간에 만나요.", "고운 말을 사용해요.", "작은 일에도 감사해요.", "새로운 일에 용기를 내요.", "로봇이 천천히 앞으로 움직여요.", "건전지의 방향을 확인해요.", "자석이 철로 된 클립을 끌어당겨요.", "얼음이 녹아 물이 되었어요.", "물에 설탕을 넣고 저어요.", "그림자의 길이가 달라져요.", "돋보기로 나뭇잎을 관찰해요.", "온도계의 눈금을 읽어요.", "종이비행기를 멀리 날려요.", "실험이 끝나면 도구를 정리해요.", "밤하늘에 별이 반짝여요.", "달의 모양은 날마다 달라 보여요.", "지구는 태양 주위를 돌아요.", "우주비행사가 우주복을 입어요.", "망원경으로 달을 살펴봐요.", "별자리 그림을 따라 그려요.", "태양은 스스로 빛을 내요.", "낮에는 하늘이 밝아요.", "로켓이 하늘로 올라가요.", "우주에 대한 책을 읽어요.", "봄바람이 살랑살랑 불어요.", "여름에는 그늘에서 쉬어요.", "가을 들판이 황금빛으로 물들어요.", "겨울 아침에는 옷을 따뜻하게 입어요.", "비가 그치자 무지개가 나타났어요.", "눈길에서는 미끄러지지 않게 걸어요.", "장마철에는 우산을 챙겨요.", "소나기가 지나간 뒤 공기가 맑아졌어요.", "가을바람에 코스모스가 흔들려요.", "봄이 오면 새싹이 돋아나요.", "작은 실수는 배움의 시작이 될 수 있어요."];
+
+const safe={get(key,fallback=null){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}};
+function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function hash(s){let n=2166136261;for(const c of s){n^=c.charCodeAt(0);n=Math.imul(n,16777619)}return (n>>>0).toString(36)}
+// Persist the remaining IDs, not a freshly shuffled shortlist on each restart.
+class QuestionDeck{
+ constructor(key,items,id=x=>typeof x==='string'?x:JSON.stringify(x)){
+  this.items=items;this.id=id;this.map=new Map(items.map(x=>[id(x),x]));this.key='kidscade_language_v3_'+key+'_'+hash([...this.map.keys()].join('|'));
+  const old=safe.get(this.key,{});this.left=Array.isArray(old.left)?[...new Set(old.left)].filter(k=>this.map.has(k)):[];this.last=old.last??null;
+ }
+ next(){
+  if(!this.left.length){this.left=shuffle([...this.map.keys()]);if(this.left.length>1&&this.left[this.left.length-1]===this.last)[this.left[0],this.left[this.left.length-1]]=[this.left[this.left.length-1],this.left[0]]}
+  const key=this.left.pop();this.last=key;safe.set(this.key,{left:this.left,last:this.last});return this.map.get(key);
+ }
+}
+const sound={ctx:null,on:safe.get('kidscade_language_sound',true),volume:safe.get('kidscade_language_volume',.35),
+ init(){try{this.ctx ||=new(window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==='suspended')this.ctx.resume().catch(()=>{})}catch{}},
+ play(kind='tap',combo=0){if(!this.on||document.hidden)return;this.init();if(!this.ctx)return;
+  const notes={tap:[440],good:[523,659,784],combo:[659,784,1047,1319],bad:[294,247],win:[523,659,784,1047],tick:[620]};
+  const tones=notes[kind]||notes.tap,t=this.ctx.currentTime;
+  tones.forEach((f,i)=>{const o=this.ctx.createOscillator(),g=this.ctx.createGain(),at=t+i*.065,d=kind==='tap'||kind==='tick'?.055:.19;
+   o.type=kind==='bad'?'sine':'triangle';o.frequency.setValueAtTime(f*(kind==='good'?1+Math.min(combo,10)*.012:1),at);
+   g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(this.volume*(kind==='tick'?.035:.15),at+.009);g.gain.exponentialRampToValueAtTime(.0001,at+d);
+   o.connect(g);g.connect(this.ctx.destination);o.start(at);o.stop(at+d+.02);o.onended=()=>{o.disconnect();g.disconnect()};
+  });
+ },toggle(){this.on=!this.on;safe.set('kidscade_language_sound',this.on);this.render()},render(){if($('sound')){$('sound').textContent=this.on?'소리 켬':'소리 끔';$('sound').setAttribute('aria-pressed',String(this.on))}}};
+
+DATA.word=[{"name": "쉬운 낱말", "items": ["가방", "가수", "가위", "가을", "가재", "가족", "가지", "간장", "갈비", "감사", "감자", "강당", "개미", "개울", "개학", "갯벌", "거미", "거실", "거울", "거위", "걱정", "건강", "걸레", "검도", "겨울", "경단", "경보", "경차", "경험", "계곡", "계단", "계절", "계주", "계획", "고래", "고추", "골프", "공원", "공작", "공책", "공항", "과자", "교실", "교탁", "구두", "구름", "구슬", "국밥", "국수", "국자", "국화", "군인", "궁궐", "규칙", "그릇", "그림", "금성", "기린", "기쁨", "기자", "기차", "김밥", "김치", "까치", "깻잎", "꽃게", "꿀떡", "나무", "나비", "낙타", "남극", "냄비", "냉면", "냉이", "노력", "노을", "놀람", "농구", "농부", "늑대", "다리", "단추", "달래", "달력", "달빛", "담비", "당구", "당근", "대게", "대답", "대추", "도넛", "도마", "도전", "독서", "동굴", "돼지", "된장", "두부", "듀공", "드론", "들판", "등대", "딱지", "딸기", "떡국", "뗏목", "라면", "럭비", "레고", "레몬", "로봇", "루지", "마늘", "마당", "마차", "마트", "만두", "망고", "매미", "멜론", "면봉", "모과", "모기", "모둠", "모래", "모자", "목성", "목수", "문어", "물감", "물개", "물범", "물병", "미소", "미역", "믿음", "밀대", "밀물", "바늘", "바다", "바람", "바위", "바지", "박수", "박스", "박쥐", "반장", "반지", "발표", "밥솥", "방법", "방학", "배구", "배낭", "배려", "배영", "배우", "배추", "백조", "백합", "버섯", "버스", "버터", "번개", "벚꽃", "베개", "벨트", "별빛", "병원", "보드", "보쌈", "보트", "복도", "복싱", "볼링", "볼펜", "봉투", "부추", "북극", "블록", "비누", "빙수", "빙하", "빵집", "사격", "사과", "사랑", "사막", "사서", "사슴", "사자", "사진", "사탕", "산책", "산호", "살구", "상상", "상어", "상추", "새벽", "샘물", "생각", "생일", "샤프", "샴푸", "서리", "서점", "서핑", "석류", "선물", "설탕", "성게", "성공", "성냥", "셔츠", "소금", "소라", "소파", "소풍", "손뼉", "송편", "수건", "수구", "수달", "수련", "수박", "수성", "수영", "수첩", "수프", "순대", "순서", "스키", "슬픔", "승마", "시계", "시장", "식당", "식빵", "식초", "식탁", "식혜", "실패", "쌈장", "썰매", "썰물", "씨름", "아침", "악어", "안개", "안경", "안방", "안전", "압정", "액자", "앵두", "야구", "약과", "약국", "약사", "약속", "양궁", "양말", "양보", "양파", "어묵", "어부", "언덕", "여름", "여우", "여치", "여행", "역도", "연고", "연꽃", "연못", "연필", "열쇠", "열차", "오디", "오리", "오븐", "오이", "온천", "옷장", "와플", "요가", "요트", "용기", "용암", "우동", "우비", "우산", "우유", "우정", "우주", "운석", "웃음", "위생", "위성", "유도", "유성", "유자", "육상", "은행", "음악", "응원", "의견", "의사", "의자", "이끼", "이불", "이슬", "이웃", "이유", "인사", "인형", "읽기", "입학", "자갈", "자두", "자매", "자몽", "작가", "잡채", "장갑", "장마", "장미", "장화", "쟁반", "저녁", "저울", "전구", "전복", "접시", "접영", "정원", "정직", "제비", "젤리", "조정", "족구", "족발", "존중", "졸업", "종이", "주걱", "주방", "지갑", "지구", "지진", "지퍼", "지하", "진흙", "질문", "짝꿍", "짬뽕", "쪽파", "쫄면", "찌개", "찐빵", "찜닭", "참새", "창문", "채반", "책상", "책임", "천둥", "철쭉", "체리", "체조", "초밥", "추억", "축구", "축하", "취미", "치마", "치약", "치즈", "치킨", "치타", "친구", "친절", "칠판", "침낭", "침대", "칫솔", "카누", "카레", "카약", "카페", "커튼", "컬링", "케첩", "코트", "클립", "키위", "킥볼", "타조", "타코", "탁구", "탁자", "태양", "태풍", "택시", "터널", "텐트", "토끼", "토론", "토성", "투호", "튀김", "튤립", "트럭", "티볼", "파도", "파리", "파스", "파전", "판사", "팝콘", "패딩", "팬더", "팽이", "퍼즐", "펀치", "펜싱", "펭귄", "편지", "평영", "포도", "포크", "폭포", "표범", "푸딩", "풋살", "퓨마", "피겨", "피구", "피자", "필통", "하늘", "하마", "하키", "학교", "학급", "학생", "학원", "한옥", "항구", "해달", "해마", "해변", "햇빛", "햇살", "행복", "행성", "허들", "현관", "협동", "형제", "혜성", "호떡", "호박", "호수", "홍합", "화가", "화분", "화산", "화성", "황새", "후추", "휴식", "휴지", "희망"]}, {"name": "생활 낱말", "items": ["가랑비", "가리비", "가습기", "가오리", "각도기", "간호사", "갈매기", "갈비탕", "감자전", "감자탕", "강아지", "개구리", "개나리", "개발자", "거북이", "건전지", "건축가", "경찰관", "경찰서", "경찰차", "경호원", "계란빵", "계란찜", "계량컵", "계산기", "고구마", "고사리", "고양이", "고추장", "공연장", "공유기", "과학관", "과학실", "과학자", "교과서", "교무실", "구급차", "국화빵", "군만두", "귀걸이", "귀마개", "글쓰기", "급식실", "기관사", "기차역", "김치전", "까마귀", "깐풍기", "꾀꼬리", "나침반", "나팔꽃", "냉장고", "너구리", "널뛰기", "노래방", "노트북", "녹두전", "놀이터", "누룽지", "눈보라", "눈송이", "다락방", "다람쥐", "다리미", "다이빙", "단무지", "달걀찜", "달리기", "달팽이", "닭갈비", "닭강정", "닭고기", "닭꼬치", "대나무", "대통령", "대학교", "도마뱀", "도서관", "도서실", "도시락", "도토리", "독서록", "독수리", "돈가스", "돋보기", "돌고래", "돗자리", "동물원", "동아리", "두꺼비", "두더지", "두루미", "뒤집개", "등산화", "따개비", "떡꼬치", "떡볶이", "또띠아", "뜸부기", "라디오", "라벤더", "라이터", "레슬링", "리모컨", "마라탕", "마라톤", "마술사", "마스크", "마우스", "마이크", "만화가", "말미잘", "망원경", "머리띠", "머리핀", "멀티탭", "메뚜기", "면도기", "모기장", "모니터", "목걸이", "목도리", "목욕탕", "무궁화", "무용가", "무용수", "무지개", "무화과", "문방구", "문제집", "물방개", "물티슈", "미술관", "미역국", "미용사", "미용실", "믹서기", "민들레", "바게트", "바구니", "바나나", "바지락", "박물관", "반창고", "발명가", "밤하늘", "방송실", "백설기", "백화점", "베란다", "변호사", "별자리", "병아리", "보건실", "보리밥", "보리차", "보일러", "복분자", "복사기", "복숭아", "볶음밥", "봉선화", "부모님", "부엉이", "부침개", "북엇국", "불고기", "붕어빵", "비둘기", "비빔밥", "비행기", "빗자루", "사마귀", "사물함", "사이클", "사인펜", "사진가", "산딸기", "삼겹살", "삼계탕", "색연필", "샐러드", "서랍장", "선생님", "선인장", "선풍기", "설렁탕", "세탁기", "세탁소", "소고기", "소금빵", "소나기", "소나무", "소방관", "소방서", "소방차", "소시지", "손수건", "손전등", "솔방울", "수선화", "수세미", "수영장", "수의사", "수정과", "수제비", "수족관", "숟가락", "스캐너", "스쿠터", "스쿼시", "스키장", "스탠드", "스피커", "슬리퍼", "승무원", "승합차", "시간표", "시금치", "시냇물", "식물원", "신발장", "실내화", "쌀국수", "아귀찜", "알림장", "앵무새", "양꼬치", "양배추", "얼룩말", "에어컨", "여객선", "열기구", "영화관", "오렌지", "오소리", "오징어", "옥수수", "온도계", "옷걸이", "왜가리", "요거트", "요리사", "우주복", "우주선", "우체국", "우체통", "운동장", "운동화", "운동회", "원숭이", "유모차", "유치원", "육개장", "윷놀이", "은하수", "음악실", "이름표", "이발사", "이어폰", "인절미", "일기장", "자동차", "자물쇠", "자유형", "자전거", "작곡가", "잠수함", "잠자리", "잡곡밥", "잣나무", "장난감", "장조림", "재규어", "전나무", "전시회", "전학생", "젓가락", "정류장", "제빵사", "제습기", "조종사", "족제비", "종달새", "주먹밥", "주사위", "주유소", "주짓수", "주차장", "준비물", "줄넘기", "지렁이", "지우개", "지하철", "진달래", "짜장면", "찐만두", "참고서", "참기름", "책가방", "천왕성", "청국장", "청소기", "체육관", "초콜릿", "추어탕", "출석부", "충전기", "칠면조", "카메라", "칼국수", "캐리어", "캠핑장", "캥거루", "컴퍼스", "컴퓨터", "케이크", "코끼리", "코뿔소", "코알라", "코코넛", "크리켓", "키보드", "킥보드", "탕수육", "탕후루", "태권도", "태블릿", "터미널", "텀블러", "테니스", "테이프", "토마토", "토스터", "통역사", "투포환", "파리채", "파스타", "펠리컨", "편의점", "풍뎅이", "프린터", "피시방", "학부모", "학예회", "할머니", "함박눈", "합기도", "핫도그", "해왕성", "해장국", "해파리", "핸드볼", "햄버거", "햄스터", "헤드셋", "헤드폰", "현미경", "현미밥", "형광펜", "호랑이", "화물선", "화장실", "휴지통"]}, {"name": "긴 낱말", "items": ["가스레인지", "갈매기살", "감자조림", "감자튀김", "계란말이", "고등어구이", "고래상어", "고무장갑", "고속버스", "고슴도치", "공기청정기", "과일주스", "군고구마", "귀뚜라미", "김치볶음밥", "김치찌개", "꿔바로우", "놀이공원", "높이뛰기", "느티나무", "다이어리", "단풍나무", "돼지고기", "된장찌개", "두부조림", "딱따구리", "리듬체조", "마라샹궈", "마요네즈", "마을버스", "마파두부", "머스터드", "멀리뛰기", "메추라기", "멸치볶음", "모래시계", "모터보트", "무당벌레", "바다사자", "바다코끼리", "바람개비", "반딧불이", "받아쓰기", "발레리나", "방아깨비", "배드민턴", "버드나무", "버스정류장", "보물찾기", "보조배터리", "봅슬레이", "북두칠성", "불가사리", "브로콜리", "블라인드", "블루베리", "빨래집게", "사슴벌레", "새우튀김", "샌드위치", "생선구이", "세단뛰기", "소금쟁이", "소떡소떡", "손톱깎이", "쇼트트랙", "수리부엉이", "수수께끼", "수학여행", "술래잡기", "숨바꼭질", "스노보드", "스라소니", "스마트폰", "스케이트", "스케치북", "스켈레톤", "스테이크", "스테이플러", "스포츠카", "스피드스케이팅", "시금치나물", "쓰레기통", "쓰레받기", "아나운서", "아보카도", "아이스크림", "아이스하키", "에스컬레이터", "엘리베이터", "연어구이", "연필깎이", "영화감독", "오므라이스", "오이무침", "오토바이", "요구르트", "우주비행사", "운동선수", "운전기사", "유부초밥", "은행나무", "자작나무", "장수풍뎅이", "전기밥솥", "전기주전자", "전자레인지", "제기차기", "제육볶음", "줄다리기", "짜파게티", "찐옥수수", "철인삼종", "케이블카", "코스모스", "콜리플라워", "콩나물국", "크레파스", "크루아상", "클라이밍", "타코야키", "텔레비전", "파인애플", "팬케이크", "포크레인", "프라이팬", "프로게이머", "플로어볼", "피겨스케이팅", "피아니스트", "하루살이", "하이에나", "학급회의", "할아버지", "해바라기", "해수욕장", "헤어드라이어", "헬리콥터", "현장체험학습", "호두과자"]}];
+DATA.sentence=[{"name": "짧은 문장", "items": ["참새가 나뭇가지에 앉았어요.", "고양이가 기지개를 켜요.", "강아지가 꼬리를 흔들어요.", "호수에 달빛이 비쳐요.", "풀잎 끝에 이슬이 맺혔어요.", "바람에 빨래가 흔들려요.", "눈사람에게 모자를 씌워요.", "친구에게 먼저 인사해요.", "책을 읽고 책갈피를 꽂아요.", "연필을 깎고 필통에 넣어요.", "발표할 때 손을 들어요.", "친구의 말을 끝까지 들어요.", "준비물을 가방에 챙겨요.", "알림장을 꼼꼼히 확인해요.", "책상 위를 깨끗이 정리해요.", "칠판에 오늘 날짜를 적어요.", "달걀을 그릇에 깨뜨려요.", "당근을 깨끗하게 씻어요.", "따뜻한 밥에서 김이 나요.", "식탁에 숟가락을 놓아요.", "배가 고파서 간식을 먹어요.", "물병에 시원한 물을 담아요.", "사과를 반으로 잘라요.", "우유를 컵에 따라요.", "공을 두 손으로 받아요.", "출발선에서 신호를 기다려요.", "줄을 넘으며 숫자를 세어요.", "운동을 마치고 물을 마셔요.", "넘어진 친구를 일으켜 줘요.", "바닥의 물기를 닦아요.", "공원에서 가볍게 산책해요.", "신발 끈을 단단히 묶어요.", "씨앗을 화분에 심어요.", "흙이 마르면 물을 줘요.", "새싹이 흙을 뚫고 나와요.", "꽃봉오리가 조금씩 벌어져요.", "벌이 꽃 사이를 날아다녀요.", "나비가 날개를 접었어요.", "낙엽이 길 위에 쌓여요.", "도토리를 주워 살펴봐요.", "나이테를 하나씩 세어 봐요.", "파도가 모래사장에 밀려와요.", "모래성을 높게 쌓아요.", "갈매기가 바다 위를 날아요.", "등대가 밤바다를 밝혀요.", "배가 천천히 항구를 떠나요.", "갯벌에 작은 구멍이 보여요.", "글의 제목을 먼저 읽어요.", "주인공에게 편지를 써요.", "좋아하는 문장에 표시해요.", "나침반의 바늘이 움직여요.", "기차가 긴 터널을 지나가요.", "버스 정류장에서 줄을 서요.", "초록불에도 주변을 살펴요.", "차 안에서는 안전띠를 매요.", "종이를 반으로 접어요.", "색연필로 무지개를 그려요.", "찰흙을 둥글게 빚어요.", "가위는 조심해서 사용해요.", "풀을 바르고 종이를 붙여요.", "붓을 물에 깨끗이 씻어요.", "팔레트에서 색을 섞어요.", "노래에 맞추어 손뼉을 쳐요.", "동전을 종류별로 나누어요.", "물건값을 더해 보아요.", "시계를 보고 시간을 말해요.", "달력에서 생일을 찾아요.", "자로 책의 길이를 재어요.", "도형의 꼭짓점을 세어요.", "세모와 네모를 찾아봐요.", "두 수의 크기를 비교해요.", "문제를 풀고 답을 확인해요.", "뜨거운 냄비는 조심해요.", "계단에서는 뛰지 않아요.", "도움이 필요하면 부탁해요.", "서로 다른 생각도 존중해요.", "약속한 시간에 만나요.", "고운 말을 사용해요.", "작은 일에도 감사해요.", "새로운 일에 용기를 내요.", "건전지의 방향을 확인해요.", "얼음이 녹아 물이 되었어요.", "물에 설탕을 넣고 저어요.", "그림자의 길이가 달라져요.", "돋보기로 나뭇잎을 관찰해요.", "온도계의 눈금을 읽어요.", "종이비행기를 멀리 날려요.", "밤하늘에 별이 반짝여요.", "지구는 태양 주위를 돌아요.", "망원경으로 달을 살펴봐요.", "별자리 그림을 따라 그려요.", "태양은 스스로 빛을 내요.", "낮에는 하늘이 밝아요.", "로켓이 하늘로 올라가요.", "우주에 대한 책을 읽어요.", "봄바람이 살랑살랑 불어요.", "여름에는 그늘에서 쉬어요.", "장마철에는 우산을 챙겨요.", "봄이 오면 새싹이 돋아나요."]}, {"name": "보통 문장", "items": ["아침 햇살이 창문으로 들어와요.", "우산 위로 빗방울이 떨어져요.", "토끼는 긴 귀를 쫑긋 세워요.", "틀린 글자를 지우개로 지워요.", "냄비에서 국이 보글보글 끓어요.", "밥을 먹기 전에 손을 씻어요.", "경기가 끝나면 서로 인사해요.", "차례를 지켜 미끄럼틀을 타요.", "솔방울이 나무 아래 떨어졌어요.", "바위틈에서 작은 게를 찾았어요.", "조개껍데기를 귀에 대어 봐요.", "물고기가 지느러미를 움직여요.", "해가 수평선 아래로 내려가요.", "도서관에서는 작은 소리로 말해요.", "빌린 책은 제자리에 돌려줘요.", "새로운 단어를 사전에서 찾아요.", "궁금한 내용을 공책에 적어요.", "이야기의 다음 장면을 상상해요.", "다 읽은 책을 친구에게 소개해요.", "표지 그림을 자세히 살펴봐요.", "지도에서 우리 동네를 찾아요.", "횡단보도 앞에서 잠시 멈춰요.", "길을 건널 때 휴대전화를 보지 않아요.", "자전거를 탈 때 안전모를 써요.", "비 오는 날에는 천천히 걸어요.", "북을 두드리며 박자를 맞춰요.", "친구들과 함께 노래를 불러요.", "작은 블록을 차곡차곡 쌓아요.", "깨진 유리는 어른에게 알려요.", "모르는 사람을 따라가지 않아요.", "젖은 손으로 전기 기구를 만지지 않아요.", "문을 닫을 때 손을 조심해요.", "아픈 곳이 있으면 선생님께 말해요.", "기침할 때는 옷소매로 가려요.", "사용한 휴지는 휴지통에 버려요.", "잠자리에 들기 전에 이를 닦아요.", "동생과 장난감을 나누어 써요.", "가족에게 고마운 마음을 전해요.", "잘못했을 때는 솔직하게 말해요.", "친구가 슬플 때 곁에 있어 줘요.", "로봇이 천천히 앞으로 움직여요.", "자석이 철로 된 클립을 끌어당겨요.", "실험이 끝나면 도구를 정리해요.", "달의 모양은 날마다 달라 보여요.", "우주비행사가 우주복을 입어요.", "가을 들판이 황금빛으로 물들어요.", "겨울 아침에는 옷을 따뜻하게 입어요.", "비가 그치자 무지개가 나타났어요.", "눈길에서는 미끄러지지 않게 걸어요.", "소나기가 지나간 뒤 공기가 맑아졌어요.", "가을바람에 코스모스가 흔들려요.", "작은 실수는 배움의 시작이 될 수 있어요."]}, {"name": "도전 문장", "items": ["어려운 문제를 만나면 아는 것부터 차근차근 생각해 보세요.", "빠르게 끝내는 것보다 정확하게 하는 것이 더 중요할 때도 있어요.", "내 생각과 다른 의견에도 귀를 기울여 보세요.", "처음에는 서툴러도 꾸준히 연습하면 조금씩 나아져요.", "함께 쓰는 물건은 다음 사람을 생각하며 소중하게 사용해요.", "쓰레기를 줄이기 위해 꼭 필요한 물건만 사기로 했어요.", "친구에게 빌린 물건은 약속한 날에 깨끗하게 돌려줘요.", "책에서 알게 된 내용을 내 말로 설명해 보았어요.", "결과가 예상과 다르면 어떤 과정이 달랐는지 살펴보세요.", "오늘 아침에는 평소보다 일찍 일어나 창문을 열었어요.", "운동장에서 뛰어놀다가 목이 말라 물을 마셨어요.", "비가 오는 날에는 도서관에서 조용히 책을 읽고 싶어요.", "할머니께서 들려주신 옛이야기를 동생에게 전해 주었어요.", "시장에 가기 전에 필요한 물건을 목록으로 적었어요.", "우리는 모둠 친구들과 역할을 나누어 발표를 준비했어요.", "길가에 핀 이름 모를 꽃을 사진으로 남겨 두었어요.", "새로 전학 온 친구에게 학교의 여러 장소를 소개했어요.", "밤새 내린 눈 때문에 운동장이 하얗게 변했어요.", "버스를 타기 전에 목적지로 가는 버스인지 확인했어요.", "도서관에서 빌린 책을 다 읽고 기억에 남는 장면을 그렸어요.", "친구와 의견이 달랐지만 서로 이유를 말하며 해결했어요.", "과학 시간에 관찰한 나뭇잎의 모양을 공책에 자세히 적었어요.", "소풍을 마친 뒤 우리가 머물렀던 자리를 깨끗하게 치웠어요.", "인터넷에서 찾은 정보가 사실인지 다른 자료와 비교했어요.", "어제보다 타수가 조금 느려도 정확하게 입력했다면 잘한 거예요.", "서두르지 않고 한 글자씩 확인하며 문장을 완성해 보세요.", "처음 보는 낱말도 소리 내어 읽으면 기억하기 쉬워요.", "오늘 배운 내용을 가족에게 설명하면서 다시 떠올려 보았어요.", "모두가 즐겁게 놀 수 있도록 놀이의 규칙을 함께 정했어요."]}];
+DATA.long.push({"name": "우리 반의 작은 정원", "author": "타닥타닥 창작 연습글", "source": "자체 제작", "preserveLines": true, "embedded": "씨앗을 화분에 심어요.\n흙이 마르면 물을 줘요.\n새싹이 흙을 뚫고 나와요.\n꽃봉오리가 조금씩 벌어져요.\n벌이 꽃 사이를 날아다녀요.\n나비가 날개를 접었어요.\n낙엽이 길 위에 쌓여요.\n도토리를 주워 살펴봐요.\n솔방울이 나무 아래 떨어졌어요.\n나이테를 하나씩 세어 봐요."});
+DATA.long.push({"name": "비 오는 날의 도서관", "author": "타닥타닥 창작 연습글", "source": "자체 제작", "preserveLines": true, "embedded": "도서관에서는 작은 소리로 말해요.\n빌린 책은 제자리에 돌려줘요.\n새로운 단어를 사전에서 찾아요.\n궁금한 내용을 공책에 적어요.\n글의 제목을 먼저 읽어요.\n이야기의 다음 장면을 상상해요.\n주인공에게 편지를 써요.\n좋아하는 문장에 표시해요.\n다 읽은 책을 친구에게 소개해요.\n표지 그림을 자세히 살펴봐요."});
+DATA.long.push({"name": "새로운 도전을 시작하며", "author": "타닥타닥 창작 연습글", "source": "자체 제작", "preserveLines": true, "embedded": "작은 실수는 배움의 시작이 될 수 있어요.\n어려운 문제를 만나면 아는 것부터 차근차근 생각해 보세요.\n빠르게 끝내는 것보다 정확하게 하는 것이 더 중요할 때도 있어요.\n내 생각과 다른 의견에도 귀를 기울여 보세요.\n처음에는 서툴러도 꾸준히 연습하면 조금씩 나아져요.\n함께 쓰는 물건은 다음 사람을 생각하며 소중하게 사용해요.\n쓰레기를 줄이기 위해 꼭 필요한 물건만 사기로 했어요.\n친구에게 빌린 물건은 약속한 날에 깨끗하게 돌려줘요.\n책에서 알게 된 내용을 내 말로 설명해 보았어요.\n결과가 예상과 다르면 어떤 과정이 달랐는지 살펴보세요."});
 
 const KEYMAP={'ㅂ':'q','ㅈ':'w','ㄷ':'e','ㄱ':'r','ㅅ':'t','ㅛ':'y','ㅕ':'u','ㅑ':'i','ㅐ':'o','ㅔ':'p','ㅁ':'a','ㄴ':'s','ㅇ':'d','ㄹ':'f','ㅎ':'g','ㅗ':'h','ㅓ':'j','ㅏ':'k','ㅣ':'l','ㅋ':'z','ㅌ':'x','ㅊ':'c','ㅍ':'v','ㅠ':'b','ㅜ':'n','ㅡ':'m'};
 const keyboardRows=[
@@ -298,10 +338,11 @@ const keyboardRows=[
  [['z','ㅋ'],['x','ㅌ'],['c','ㅊ'],['v','ㅍ'],['b','ㅠ'],['n','ㅜ'],['m','ㅡ']]
 ];
 
-let mode='position',lesson=0,index=0,target='',startTime=0,endTime=0,soundOn=true,composing=false;
+let mode='position',lesson=0,index=0,target='',startTime=0,endTime=0,soundOn=safe.get('kidscade_language_sound',true),composing=false;
 let completedTyped='', currentInput='', totalErrors=0;
 let longFullText='', longLines=[], longLine=0, longCompletedText='', longLoading=false, longErrors=0, longErrorKeys=new Set(), longLastValue='';
 let timerRAF=0,audioCtx=null;
+let practiceDeck=null,rainDeck=null,rainActive=false,rainPaused=false,rainPauseAt=0,rainCombo=0,rainBestCombo=0,rainTyped='',rainWrong=0,normalErrorKeys=new Set(),practiceRun=0;
 let fallTimer=null,spawnTimer=null,falling=[],gameStart=0,gameHits=0,gameMiss=0,gameScore=0;
 
 function renderKeyboard(){
@@ -313,23 +354,15 @@ function renderKeyboard(){
  });
 }
 function showScreen(id){$$('.screen').forEach(x=>x.classList.remove('active'));$('#'+id).classList.add('active');$('#homeBtn').style.display=id==='home'?'none':'inline-block'}
-function beep(kind='ok'){
- if(!soundOn)return;
- try{
-  audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
-  const o=audioCtx.createOscillator(),g=audioCtx.createGain(),now=audioCtx.currentTime;o.connect(g);g.connect(audioCtx.destination);
-  o.frequency.setValueAtTime(kind==='bad'?210:kind==='win'?520:650,now);
-  o.frequency.exponentialRampToValueAtTime(kind==='bad'?150:kind==='win'?1050:900,now+.12);
-  g.gain.setValueAtTime(.04,now);g.gain.exponentialRampToValueAtTime(.0001,now+.2);o.start();o.stop(now+.21);
- }catch(e){}
-}
+function beep(kind='ok'){if(!soundOn)return;sound.on=true;sound.play(kind==='ok'?'good':kind==='win'?'win':kind==='bad'?'bad':kind,rainCombo)}
+
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1100)}
-function loadRecords(){$('#bestSpeed').textContent=localStorage.getItem('tadak_bestSpeed2')||0;$('#bestAcc').textContent=(localStorage.getItem('tadak_bestAcc2')||0)+'%';$('#bestGame').textContent=localStorage.getItem('tadak_bestGame2')||0}
+function loadRecords(){$('#bestSpeed').textContent=localStorage.getItem('tadak_bestSpeed2')||0;$('#bestAcc').textContent=(localStorage.getItem('tadak_bestAcc2')||0)+'%';$('#bestGame').textContent=safe.get('tadak_bestGame3_'+lesson,0)||0}
 function saveRecords(speed,acc,score=0){
- const bs=+(localStorage.getItem('tadak_bestSpeed2')||0),ba=+(localStorage.getItem('tadak_bestAcc2')||0),bg=+(localStorage.getItem('tadak_bestGame2')||0);
- if(speed>bs)localStorage.setItem('tadak_bestSpeed2',speed);if(acc>ba)localStorage.setItem('tadak_bestAcc2',acc);if(score>bg)localStorage.setItem('tadak_bestGame2',score);loadRecords()
+ const bs=+(localStorage.getItem('tadak_bestSpeed2')||0),ba=+(localStorage.getItem('tadak_bestAcc2')||0),bg=+(safe.get('tadak_bestGame3_'+lesson,0)||0);
+ if(speed>bs)localStorage.setItem('tadak_bestSpeed2',speed);if(acc>ba)localStorage.setItem('tadak_bestAcc2',acc);if(score>bg)safe.set('tadak_bestGame3_'+lesson,score);loadRecords()
 }
-function elapsedMs(){return (endTime||Date.now())-startTime}
+function elapsedMs(){return (endTime||(rainPaused?rainPauseAt:Date.now()))-startTime}
 function fmtTime(ms,decimal=true){
  ms=Math.max(0,ms);const s=ms/1000,m=Math.floor(s/60),sec=Math.floor(s%60),d=Math.floor((s%1)*10);
  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}${decimal?'.'+d:''}`
@@ -360,7 +393,7 @@ function currentTypedText(){
  return completedTyped + (completedTyped && currentInput ? '\n' : '') + currentInput;
 }
 function calcAccuracy(){
- if(mode==='rain'){const total=gameHits+gameMiss;return total?Math.round(gameHits/total*100):100}
+ if(mode==='rain'){const total=gameHits+gameMiss+rainWrong;return total?Math.round(gameHits/total*100):0}
  if(mode==='long'){
   const inp=document.querySelector('.long-answer-line.current');
   const v=inp?inp.value:'';
@@ -368,9 +401,7 @@ function calcAccuracy(){
   const attempts=base+longErrors;
   return attempts?Math.max(0,Math.round((attempts-longErrors)/attempts*100)):100;
  }
- const v=currentInput;if(!v.length)return 100;
- let good=0;for(let i=0;i<v.length;i++)if(v[i]===target[i])good++;
- return Math.max(0,Math.round(good/v.length*100));
+ const v=currentInput;let good=0;for(let i=0;i<v.length;i++)if(v[i]===target[i])good++;const correct=completedTyped.length+good;return correct+totalErrors?Math.round(correct/(correct+totalErrors)*100):100;
 }
 function calcSpeed(){
  const mins=Math.max(elapsedMs()/60000,1/120);
@@ -400,7 +431,7 @@ function updateLive(){
 }
 function buildLessons(){
  const list=$('#lessonList');list.innerHTML='';
- DATA[mode].forEach((x,i)=>{const b=document.createElement('button');b.className='lesson'+(i===lesson?' active':'');b.textContent=x.name;b.onclick=()=>startMode(mode,i);list.appendChild(b)})
+ DATA[mode].forEach((x,i)=>{const b=document.createElement('button');b.className='lesson'+(i===lesson?' active':'');b.textContent=x.name+(x.items?' · '+x.items.length:'');b.onclick=()=>startMode(mode,i);list.appendChild(b)})
 }
 function modeLabels(){
  return {
@@ -412,18 +443,20 @@ function modeLabels(){
  }[mode]
 }
 function startMode(m,l=0){
- stopGame();cancelAnimationFrame(timerRAF);mode=m;lesson=l;index=0;completedTyped='';currentInput='';totalErrors=0;endTime=0;startTime=Date.now();
+ stopGame();practiceRun++;composing=false;normalErrorKeys.clear();$('#overlay').classList.remove('show');cancelAnimationFrame(timerRAF);mode=m;lesson=l;index=0;completedTyped='';currentInput='';totalErrors=0;endTime=0;startTime=Date.now();
  showScreen('practice');buildLessons();
  const [t,d]=modeLabels();$('#title').textContent=t;$('#desc').textContent=d;$('#lessonBadge').textContent=DATA[m][l].name;
  $('#normalArea').style.display=['position','word','sentence'].includes(m)?'block':'none';
  $('#longArea').style.display=m==='long'?'block':'none';$('#rainArea').style.display=m==='rain'?'block':'none';
  $('#tipBox').textContent=m==='long'?'💡 현재 한 줄만 입력합니다. 틀린 글자는 원문에서 빨갛게 표시되고, 정확히 입력하면 자동으로 다음 줄로 넘어가요.':m==='rain'?'💡 문장 비에서는 짧은 문장부터 먼저 지우면 화면에 여유가 생겨요.':'💡 처음에는 속도보다 정확도를 높이는 것이 더 중요해요.';
+ $('#keyboard').style.display=m==='position'?'block':'none';$('#liveSpeed').nextElementSibling.textContent=m==='rain'?'현재 점수':'실시간 타수';$('#pauseRain').hidden=m!=='rain';$('#rainCombo').textContent='';loadRecords();
+ if(['position','word','sentence'].includes(m))practiceDeck=new QuestionDeck('typing_'+m+'_'+l,DATA[m][l].items);
  if(m==='long')startLong();else if(m==='rain')startRain();else nextTarget(true);
  updateLive();
 }
 function nextTarget(first=false){
  const items=DATA[mode][lesson].items;if(index>=10){finish();return}
- target=items[index%items.length];currentInput='';$('#typingInput').value='';
+ target=practiceDeck.next();normalErrorKeys.clear();currentInput='';$('#typingInput').value='';
  $('#targetText').className='target-text'+(mode==='sentence'?' small':'');$('#targetText').textContent=target;
  $('#promptText').textContent='똑같이 입력한 뒤 Enter를 누르세요.';highlightKey(target);
  setTimeout(()=>$('#typingInput').focus(),30);
@@ -433,18 +466,19 @@ function highlightKey(ch){
  if(mode!=='position')return;const e=KEYMAP[ch];if(e){const el=document.querySelector(`.key[data-key="${e}"]`);if(el)el.classList.add('active')}
 }
 function renderTargetProgress(val){
+ if(!composing)for(let i=0;i<val.length;i++){if(val[i]!==target[i]&&!normalErrorKeys.has(i)){normalErrorKeys.add(i);totalErrors++;}}
  if(mode==='position')return;
  let html='';for(let i=0;i<target.length;i++){const ch=target[i];if(i<val.length)html+=`<span class="${val[i]===ch?'ok':'wrong'}">${esc(ch)}</span>`;else html+=esc(ch)}
  $('#targetText').innerHTML=html;
 }
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function submitNormal(){
- if(composing)return;const val=$('#typingInput').value;
+ if(composing||endTime||!$('#practice').classList.contains('active'))return;const val=$('#typingInput').value;
  if(!val)return;
  if(val===target){
   completedTyped+=target;currentInput='';index++;beep('ok');nextTarget();
  }else{
-  totalErrors++;beep('bad');toast('틀린 부분이 있어요. 다시 확인해 보세요.');$('#typingInput').select()
+  renderTargetProgress(val);beep('bad');toast('틀린 부분이 있어요. 다시 확인해 보세요.');$('#typingInput').select()
  }
 }
 function normalizeWorkText(s){
@@ -609,6 +643,7 @@ async function fetchWholeWork(work){
  return cleaned;
 }
 async function startLong(){
+ const run=practiceRun;
  const work=DATA.long[lesson];
  longLoading=true;longFullText='';longLines=[];longLine=0;longCompletedText='';
  longErrors=0;longErrorKeys=new Set();longLastValue='';
@@ -619,7 +654,7 @@ async function startLong(){
  $('#longSource').textContent=`${work.author} 「${work.name}」`;
 
  try{
-   longFullText=await fetchWholeWork(work);
+   const loaded=await fetchWholeWork(work);if(run!==practiceRun||mode!=='long')return;longFullText=loaded;
    longLines=makeLongLines(work,longFullText);
    if(!longLines.length)throw new Error('연습 줄을 만들지 못했습니다.');
 
@@ -628,6 +663,7 @@ async function startLong(){
    $('#longLoading').style.display='none';
    renderLongRows();
  }catch(err){
+   if(run!==practiceRun)return;
    longLoading=false;
    $('#longLoading').style.display='grid';
    $('#longLoading').textContent='전체 작품을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시작해 주세요.';
@@ -712,7 +748,7 @@ function renderLongRows(){
        if(!composing)handleLongInput(inp);
      });
      inp.addEventListener('keydown',e=>{
-       if(e.key==='Enter'){
+       if(e.key==='Enter'&&!e.isComposing&&!composing&&!e.repeat){
          e.preventDefault();
          if(inp.value===longLines[longLine])completeLongLine();
          else focusFirstLongError(inp);
@@ -773,7 +809,7 @@ function handleLongInput(inp){
  longLastValue=value;
  if(value===target){
    inp.disabled=true;
-   setTimeout(completeLongLine,170);
+   const run=practiceRun,line=longLine;setTimeout(()=>{if(run===practiceRun&&mode==='long'&&line===longLine)completeLongLine()},170);
  }
 }
 function focusFirstLongError(inp){
@@ -798,7 +834,7 @@ function completeLongLine(){
    longCompletedText=longLines.join('\n');
    endTime=Date.now();
    cancelAnimationFrame(timerRAF);
-   const speed=calcSpeed(),acc=calcAccuracy(),score=Math.round(speed*acc/10);
+   const speed=calcSpeed(),acc=calcAccuracy(),score=Math.round(acc*8+Math.min(200,speed*.4));
    saveRecords(speed,acc);
    setTimeout(()=>showResult(speed,acc,score),180);
    return;
@@ -807,51 +843,78 @@ function completeLongLine(){
 }
 
 function finish(){
- endTime=Date.now();cancelAnimationFrame(timerRAF);const speed=calcSpeed(),acc=calcAccuracy(),score=Math.round(speed*acc/10);
+ endTime=Date.now();cancelAnimationFrame(timerRAF);const speed=calcSpeed(),acc=calcAccuracy(),score=Math.round(acc*8+Math.min(200,speed*.4));
  saveRecords(speed,acc);showResult(speed,acc,score);
 }
 function showResult(speed,acc,score){
- const time=fmtTime(elapsedMs(),false);let g='C';if(acc>=97&&speed>=250)g='S';else if(acc>=95)g='A';else if(acc>=88)g='B';
+ const time=fmtTime(elapsedMs(),false);let g='C';if(mode==='rain'&&gameHits===0)g='도전';if(acc>=97&&speed>=250)g='S';else if(acc>=95)g='A';else if(acc>=88)g='B';
+ if(mode==='rain'){g=gameHits===0?'도전':acc>=97?'S':acc>=90?'A':acc>=75?'B':'C';$('#resultExtra').textContent=`최고 연속 ${rainBestCombo} · 완성 ${gameHits} · 놓친 글 ${gameMiss} · 이 단계 최고 ${safe.get('tadak_bestGame3_'+lesson,0)}점`}else $('#resultExtra').textContent='연습 점수 = 정확도 × 8 + 속도 보너스 최대 200점';
  $('#grade').textContent=g;$('#rSpeed').textContent=speed;$('#rAcc').textContent=acc+'%';$('#rTime').textContent=time;$('#rScore').textContent=score;$('#overlay').classList.add('show');beep('win')
 }
 function startRain(){
- falling=[];gameHits=0;gameMiss=0;gameScore=0;gameStart=Date.now();$('#gameArea').querySelectorAll('.fall-item').forEach(e=>e.remove());$('#gameInput').value='';$('#gameInput').focus();
- spawnRain();spawnTimer=setInterval(spawnRain,DATA.rain[lesson].spawn);fallTimer=setInterval(tickRain,30)
-}
-function stopGame(){clearInterval(spawnTimer);clearInterval(fallTimer);spawnTimer=fallTimer=null;falling=[]}
-function spawnRain(){
- if(mode!=='rain')return;const cfg=DATA.rain[lesson],area=$('#gameArea'),pool=cfg.type==='sentence'?RAIN_SENTENCES:RAIN_WORDS,txt=pool[Math.floor(Math.random()*pool.length)];
- const el=document.createElement('div');el.className='fall-item'+(cfg.type==='sentence'?' sentence':'');el.textContent=txt;area.appendChild(el);
- const max=Math.max(10,area.clientWidth-el.offsetWidth-20);el.style.left=(10+Math.random()*max)+'px';falling.push({el,text:txt,y:-70})
-}
-function tickRain(){
- if(mode!=='rain')return;const cfg=DATA.rain[lesson],area=$('#gameArea'),elapsed=(Date.now()-gameStart)/1000,mult=1+elapsed/90;
- falling.forEach(o=>{o.y+=cfg.speed*mult*.03;o.el.style.top=o.y+'px'});
- for(let i=falling.length-1;i>=0;i--)if(falling[i].y>area.clientHeight-52){falling[i].el.remove();falling.splice(i,1);gameMiss++;gameScore=Math.max(0,gameScore-40);beep('bad')}
- if(elapsed>=60){endTime=Date.now();stopGame();cancelAnimationFrame(timerRAF);const acc=calcAccuracy();saveRecords(0,acc,gameScore);showResult(0,acc,gameScore)}
-}
-function submitRain(){
- const inp=$('#gameInput'),val=inp.value.trim();if(!val)return;
- const idx=falling.findIndex(o=>o.text===val);
- if(idx>=0){const o=falling[idx];o.el.classList.add('hit');setTimeout(()=>o.el.remove(),220);falling.splice(idx,1);gameHits++;gameScore+=DATA.rain[lesson].type==='sentence'?180:100;beep('ok')}
- else{gameMiss++;gameScore=Math.max(0,gameScore-25);beep('bad')}
- inp.value=''
+ falling=[];gameHits=0;gameMiss=0;gameScore=0;rainCombo=0;rainBestCombo=0;rainWrong=0;rainTyped='';rainPaused=false;rainActive=true;gameStart=Date.now();
+ $('#pauseRain').textContent='잠깐 쉬기';$('#rainPaused').hidden=true;
+ rainDeck=new QuestionDeck('typing_rain_'+DATA.rain[lesson].type,DATA.rain[lesson].type==='sentence'?RAIN_SENTENCES:RAIN_WORDS);
+ $('#gameArea').querySelectorAll('.fall-item').forEach(e=>e.remove());$('#gameInput').value='';$('#gameInput').disabled=false;$('#gameEnter').disabled=false;$('#gameInput').focus();
+ $('#desc').textContent=`${DATA.rain[lesson].type==='sentence'?RAIN_SENTENCES.length:RAIN_WORDS.length}개 표현 · 다 나오기 전에는 반복하지 않아요`;
+ spawnRain();spawnTimer=setInterval(spawnRain,DATA.rain[lesson].type==='sentence'?3600:DATA.rain[lesson].spawn);fallTimer=setInterval(tickRain,30);
 }
 
+function stopGame(){rainActive=false;rainPaused=false;clearInterval(spawnTimer);clearInterval(fallTimer);spawnTimer=fallTimer=null;falling=[];if($('#rainPaused'))$('#rainPaused').hidden=true}
+
+function spawnRain(){
+ if(mode!=='rain'||!rainActive||rainPaused||document.hidden)return;
+ const cfg=DATA.rain[lesson],area=$('#gameArea'),isSentence=cfg.type==='sentence',lanes=isSentence?1:Math.max(1,Math.min(3,Math.floor(area.clientWidth/190)));
+ if(falling.length>=(isSentence?3:5))return;
+ const free=Array.from({length:lanes},(_,i)=>i).filter(i=>!falling.some(o=>o.lane===i&&o.y<100));if(!free.length)return;
+ const lane=free[Math.floor(Math.random()*free.length)],txt=rainDeck.next();
+ const el=document.createElement('div');el.className='fall-item'+(isSentence?' sentence':'');el.textContent=txt;
+ el.style.maxWidth=(area.clientWidth/lanes-22)+'px';el.style.left=(lane*area.clientWidth/lanes+11)+'px';el.style.top='0px';area.appendChild(el);
+ falling.push({el,text:txt,y:0,lane,speed:cfg.speed*(isSentence?Math.max(.5,12/txt.length):Math.max(.65,3/txt.length))});
+}
+
+function tickRain(){
+ if(mode!=='rain'||!rainActive||rainPaused||document.hidden)return;
+ const area=$('#gameArea'),elapsed=(Date.now()-gameStart)/1000,mult=1+Math.min(.5,elapsed/120);
+ falling.forEach(o=>{o.y+=o.speed*mult*.03;o.el.style.top=o.y+'px'});
+ for(let i=falling.length-1;i>=0;i--)if(falling[i].y+falling[i].el.offsetHeight>area.clientHeight-12){falling[i].el.remove();falling.splice(i,1);gameMiss++;rainCombo=0;beep('bad')}
+ $('#rainCombo').textContent=`연속 ${rainCombo} · 놓친 글 ${gameMiss} · 입력 실수 ${rainWrong}`;
+ if(elapsed>=60){endTime=Date.now();rainActive=false;const acc=calcAccuracy();stopGame();cancelAnimationFrame(timerRAF);saveRecords(0,acc,gameScore);showResult(Math.round(jamoStrokeCount(rainTyped)),acc,gameScore)}
+}
+
+function submitRain(){
+ if(!rainActive||rainPaused||composing||mode!=='rain')return;
+ const inp=$('#gameInput'),val=inp.value.trim();if(!val)return;
+ const idx=falling.findIndex(o=>o.text===val);
+ if(idx>=0){const o=falling[idx];o.el.classList.add('hit');setTimeout(()=>o.el.remove(),220);falling.splice(idx,1);gameHits++;rainCombo++;rainBestCombo=Math.max(rainBestCombo,rainCombo);rainTyped+=o.text;
+  const base=50+Math.min(150,jamoStrokeCount(o.text)*3),bonus=Math.min(50,(rainCombo-1)*10);gameScore+=base+bonus;beep(rainCombo%5===0?'combo':'ok');toast(`+${base+bonus}점 · 연속 ${rainCombo}`);
+ }else{rainWrong++;rainCombo=0;beep('bad');toast('글을 다시 확인해요. 점수는 줄지 않아요.');return}
+ inp.value='';
+}
+function toggleRainPause(){
+ if(!rainActive)return;rainPaused=!rainPaused;
+ if(rainPaused){rainPauseAt=Date.now();$('#rainPaused').hidden=false}else{const dt=Date.now()-rainPauseAt;gameStart+=dt;startTime+=dt;$('#rainPaused').hidden=true;$('#gameInput').focus()}
+ $('#pauseRain').textContent=rainPaused?'계속하기':'잠깐 쉬기';$('#gameInput').disabled=rainPaused;$('#gameEnter').disabled=rainPaused;
+}
+
+
 $$('.mode-card').forEach(b=>b.onclick=()=>startMode(b.dataset.mode,0));
-$('#homeBtn').onclick=()=>{stopGame();cancelAnimationFrame(timerRAF);$('#overlay').classList.remove('show');showScreen('home')};
+$('#homeBtn').onclick=()=>{practiceRun++;stopGame();cancelAnimationFrame(timerRAF);$('#overlay').classList.remove('show');showScreen('home')};
 $('#restartBtn').onclick=()=>startMode(mode,lesson);
-$('#resultHome').onclick=()=>{$('#overlay').classList.remove('show');stopGame();cancelAnimationFrame(timerRAF);showScreen('home')};
+$('#resultHome').onclick=()=>{practiceRun++;$('#overlay').classList.remove('show');stopGame();cancelAnimationFrame(timerRAF);showScreen('home')};
 $('#resultRetry').onclick=()=>{$('#overlay').classList.remove('show');startMode(mode,lesson)};
-$('#soundBtn').onclick=()=>{soundOn=!soundOn;$('#soundBtn').textContent=soundOn?'🔊 소리 켬':'🔇 소리 끔'};
+$('#soundBtn').onclick=()=>{soundOn=!soundOn;safe.set('kidscade_language_sound',soundOn);$('#soundBtn').textContent=soundOn?'🔊 소리 켬':'🔇 소리 끔'};
 $('#typingInput').addEventListener('compositionstart',()=>composing=true);
 $('#typingInput').addEventListener('compositionend',()=>{composing=false;currentInput=$('#typingInput').value;renderTargetProgress(currentInput)});
 $('#typingInput').addEventListener('input',()=>{currentInput=$('#typingInput').value;renderTargetProgress(currentInput)});
-$('#typingInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();setTimeout(submitNormal,0)}});
-$('#gameInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submitRain()}});
+$('#typingInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&!composing&&!e.repeat){e.preventDefault();submitNormal()}});
+$('#gameInput').addEventListener('compositionstart',()=>composing=true);
+$('#gameInput').addEventListener('compositionend',()=>composing=false);
+$('#gameInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&!composing&&!e.repeat){e.preventDefault();submitRain()}});
 $('#gameEnter').onclick=submitRain;
 
-renderKeyboard();loadRecords();
+$('#pauseRain').onclick=toggleRainPause;$('#resumeRain').onclick=toggleRainPause;document.addEventListener('visibilitychange',()=>{if(document.hidden&&rainActive&&!rainPaused)toggleRainPause()});
+$('#soundBtn').textContent=soundOn?'🔊 소리 켬':'🔇 소리 끔';renderKeyboard();loadRecords();
 })();
 </script>
 </body>
