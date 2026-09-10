@@ -1,4 +1,4 @@
-name: One-time spelling frog crossroad rework
+name: One-time spelling frog crossroad polish
 
 on:
   push:
@@ -9,62 +9,47 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  polish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: codex/spelling-frog-crossroad
-      - name: Build 3D spelling crossroad
+      - name: Patch endless-play safety
         shell: bash
         run: |
           python - <<'PY'
-          import base64,gzip
           from pathlib import Path
-          raw=Path('.github/spelling_payload.b64').read_text().strip()
-          Path('/tmp/template.html').write_bytes(gzip.decompress(base64.b64decode(raw)))
+          p=Path('스펠링 프로그.html')
+          s=p.read_text()
+          old="function ensureRows(to){for(let r=rowCounter;r<=to;r++){createRow(r,laneType(r));spawnFly(r);rowCounter=r+1}}"
+          new=old+"\nfunction pruneWorld(){const cutoff=Math.max(0,maxRow-30);for(const [r,d] of [...world]){if(r<cutoff&&r!==checkpoint.row){scene.remove(d.group);world.delete(r)}}vehicles=vehicles.filter(v=>v.row>=cutoff);logs=logs.filter(v=>v.row>=cutoff);trains=trains.filter(v=>v.row>=cutoff);flies=flies.filter(v=>v.row>=cutoff)}"
+          assert s.count(old)==1
+          s=s.replace(old,new)
+          old2="if(dz>0&&frogRow>maxRow){maxRow=frogRow;score+=5;localStorage.setItem('spellingFrogHighScore',Math.max(Number(localStorage.getItem('spellingFrogHighScore')||0),maxRow*5));}setTimeout(()=>afterLand(fromRow,fromCol),205);updateUI()}"
+          new2="if(dz>0&&frogRow>maxRow){maxRow=frogRow;score+=5;localStorage.setItem('spellingFrogHighScore',Math.max(Number(localStorage.getItem('spellingFrogHighScore')||0),maxRow*5));pruneWorld();}setTimeout(()=>afterLand(fromRow,fromCol),205);updateUI()}"
+          assert s.count(old2)==1
+          s=s.replace(old2,new2)
+          old3="toast('❌ '+letter+' 말고 '+targetLetter()+'!');bounceTo(oldRow,oldCol);return"
+          new3="toast('❌ '+letter+' 말고 '+targetLetter()+'!');const oldType=world.get(oldRow)?.type;const safe=(oldType==='grass'||oldType==='letter')?{row:oldRow,col:oldCol}:checkpoint;bounceTo(safe.row,safe.col);return"
+          assert s.count(old3)==1
+          s=s.replace(old3,new3)
+          p.write_text(s)
           PY
-          node <<'NODE'
-          const fs=require('fs'),vm=require('vm');
-          const old=fs.readFileSync('스펠링 프로그.html','utf8');
-          const m=old.match(/const rawDict\s*=\s*("(?:\\.|[^"\\])*");/s);
-          if(!m) throw new Error('기존 rawDict를 찾지 못했습니다.');
-          const raw=vm.runInNewContext(m[1]);
-          let html=fs.readFileSync('/tmp/template.html','utf8');
-          if(!html.includes('/*__RAWDICT__*/')) throw new Error('템플릿 placeholder 없음');
-          html=html.replace('/*__RAWDICT__*/','const rawDict='+JSON.stringify(raw)+';');
-          fs.writeFileSync('스펠링 프로그.html',html);
-          const parse=(txt)=>{const set=new Set();txt.split('|').forEach(g=>{const p=g.indexOf(':');(p>=0?g.slice(p+1):g).split(',').forEach(x=>{const i=x.indexOf('=');if(i>0)set.add(x.slice(0,i).trim().toUpperCase())})});return set};
-          const oldSet=parse(raw),all=new Set(oldSet);
-          const ex=(html.match(/const extraRaw=`([\s\S]*?)`;/)||[])[1]||'';
-          let added=0;ex.split('\n').forEach(x=>{const i=x.indexOf('=');if(i>0){const w=x.slice(0,i).trim().toUpperCase();if(!all.has(w)){all.add(w);added++}}});
-          console.log(`기존 ${oldSet.size}개 + 신규 ${added}개 = 총 ${all.size}개 단어`);
-          let index=fs.readFileSync('index.html','utf8');
-          const from='영단어 무한 끝말잇기 생존!';
-          const to='블록 개구리로 도로·강·철길을 건너며 알파벳 체크포인트를 밟아 영단어를 완성하는 3D 영어 어드벤처!';
-          const count=index.split(from).length-1;
-          if(count!==1) throw new Error(`index 설명 치환 대상 ${count}개`);
-          fs.writeFileSync('index.html',index.replace(from,to));
-          NODE
           python - <<'PY'
           import re
           from pathlib import Path
           s=Path('스펠링 프로그.html').read_text()
-          scripts=re.findall(r'<script>([\s\S]*?)</script>',s)
-          if not scripts: raise SystemExit('inline script 없음')
-          Path('/tmp/spelling-check.js').write_text(scripts[-1])
-          assert '/*__RAWDICT__*/' not in s
-          assert 'THREE.OrthographicCamera' in s
-          assert 'spellingFrogHighScore' in s
-          assert 'data-move="0,1"' in s
-          print('HTML bytes:',len(s.encode()))
+          js=re.findall(r'<script>([\s\S]*?)</script>',s)[-1]
+          Path('/tmp/check.js').write_text(js)
+          assert 'function pruneWorld()' in s
           PY
-          node --check /tmp/spelling-check.js
-      - name: Commit rework
+          node --check /tmp/check.js
+      - name: Commit polish
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "스펠링 프로그.html" index.html
-          git commit -m "스펠링 프로그를 3D 길건너기 어드벤처로 리워크"
+          git add "스펠링 프로그.html"
+          git commit -m "스펠링 프로그 무한 맵 정리와 오답 복귀 안정화"
           git push origin HEAD:codex/spelling-frog-crossroad
