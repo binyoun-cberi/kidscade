@@ -157,8 +157,9 @@ function buildWorld(){
  roadYs.forEach(y=>roads.push({x:-WORLD,y:y-ROAD_SIDE/2,w:WORLD*2,h:ROAD_SIDE,axis:'h'}));
  roads.push({x:-ROAD_MAIN/2,y:-WORLD,w:ROAD_MAIN,h:WORLD*2,axis:'v',main:true});
  roads.push({x:-WORLD,y:-ROAD_MAIN/2,w:WORLD*2,h:ROAD_MAIN,axis:'h',main:true});
+ const halfX=x=>x===0?ROAD_MAIN/2:ROAD_SIDE/2, halfY=y=>y===0?ROAD_MAIN/2:ROAD_SIDE/2;
  for(let xi=0;xi<roadXs.length-1;xi++)for(let yi=0;yi<roadYs.length-1;yi++){
-   const left=roadXs[xi]+ROAD_SIDE/2+28,right=roadXs[xi+1]-ROAD_SIDE/2-28,top=roadYs[yi]+ROAD_SIDE/2+28,bottom=roadYs[yi+1]-ROAD_SIDE/2-28;
+   const left=roadXs[xi]+halfX(roadXs[xi])+28,right=roadXs[xi+1]-halfX(roadXs[xi+1])-28,top=roadYs[yi]+halfY(roadYs[yi])+28,bottom=roadYs[yi+1]-halfY(roadYs[yi+1])-28;
    if(right-left>120&&bottom-top>120)buildings.push({x:left,y:top,w:right-left,h:bottom-top,c:['#6c7a89','#7f8c8d','#65737e','#596b78'][Math.floor(Math.random()*4)]});
  }
  for(const x of roadXs)for(const y of roadYs)traffic.push({x,y});
@@ -275,7 +276,7 @@ function spawnAccident(){
 }
 function spawnTrafficMission(){
  let c=nearestIntersection(player.x+(Math.random()<.5?GRID:-GRID),player.y+(Math.random()<.5?GRID:-GRID));if(Math.hypot(c.x-player.x,c.y-player.y)<300)c=nearestIntersection(player.x+GRID,player.y);
- const offsets=[{x:c.x-125,y:c.y-125},{x:c.x+125,y:c.y-125},{x:c.x+125,y:c.y+125}];mission={type:'traffic',center:c,points:offsets,index:0,time:0,maxTime:60};
+ const offsets=[{x:c.x-150,y:c.y-30},{x:c.x+30,y:c.y-150},{x:c.x+150,y:c.y+30}];mission={type:'traffic',center:c,points:offsets,index:0,time:0,maxTime:60};
  ui.missionTitle.textContent='교통 정리 · 안전콘 설치';ui.missionText.textContent='노란 표시 3곳에 차를 세우고 현장 조치를 눌러 안전콘을 설치하세요.';showMessage('교차로 정리 요청입니다. 안전콘 3개를 설치하세요.','#ffd34d')
 }
 function finishMission(points,msg){solved++;addScore(points);showMessage(msg,'#63e681',3);mission=null;missionDelay=3.4;ui.missionTitle.textContent='순찰 중';ui.missionText.textContent='다음 신고를 확인하고 있습니다.';ui.missionDistance.textContent='';setProgress(false);setAction(null);AudioManager.blip(880,.16,'triangle');setTimeout(()=>AudioManager.blip(1180,.18,'triangle'),120)}
@@ -316,7 +317,6 @@ function bindHold(el,key){const on=e=>{e.preventDefault();touch[key]=true},off=e
 bindHold($('brake'),'brake');bindHold($('reverse'),'reverse');bindHold($('boost'),'boost');$('siren').addEventListener('pointerdown',e=>{e.preventDefault();toggleSiren()});
 let joyId=null,joyCx=0;const joy=$('joy'),knob=$('knob');
 function joyMove(e){const rect=joy.getBoundingClientRect(),cx=rect.left+rect.width/2;joyCx=cx;let dx=clamp(e.clientX-cx,-48,48);touch.steer=dx/48;knob.style.transform=`translate(${dx}px,0)`}
-jo yFix=0;
 joy.addEventListener('pointerdown',e=>{e.preventDefault();joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
 joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
 function joyEnd(e){if(e.pointerId!==joyId)return;joyId=null;touch.steer=0;knob.style.transform='translate(0,0)'}
@@ -335,7 +335,7 @@ function drawRoads(){
 }
 function drawBuildings(){for(const b of buildings){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(b.x+8,b.y+10,b.w,b.h);ctx.fillStyle=b.c;ctx.fillRect(b.x,b.y,b.w,b.h);ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(b.x+12,b.y+12,b.w-24,18);ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=3;ctx.strokeRect(b.x,b.y,b.w,b.h)}}
 function drawCar(c,police=false){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.angle);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(-c.h/2+4,-c.w/2+5,c.h,c.w);ctx.fillStyle='#111';ctx.fillRect(-c.h/2-2,-c.w/2-2,c.h+4,c.w+4);ctx.fillStyle=c.color;ctx.fillRect(-c.h/2,-c.w/2,c.h,c.w);ctx.fillStyle='#273746';ctx.fillRect(-8,-c.w/2+3,20,c.w-6);ctx.fillStyle='#ffe27a';ctx.fillRect(c.h/2-4,-c.w/2+3,4,6);ctx.fillRect(c.h/2-4,c.w/2-9,4,6);ctx.fillStyle='#e84a5f';ctx.fillRect(-c.h/2,-c.w/2+3,4,6);ctx.fillRect(-c.h/2,c.w/2-9,4,6);if(police){ctx.fillStyle='#fff';ctx.fillRect(-c.h/2,-c.w/2,c.h,c.w);ctx.fillStyle='#1976d2';ctx.fillRect(-9,-c.w/2,22,c.w);ctx.fillStyle='#20262c';ctx.fillRect(-8,-c.w/2+4,19,c.w-8);ctx.fillStyle=player.siren&&Math.floor(shiftTime*8)%2===0?'#ff263b':'#226cff';ctx.fillRect(-3,-c.w/2-3,6,c.w/2+3);ctx.fillStyle=player.siren&&Math.floor(shiftTime*8)%2===0?'#226cff':'#ff263b';ctx.fillRect(-3,0,6,c.w/2+3)}ctx.restore()}
-function drawMissionWorld(){if(!mission)return;const col=missionColor(mission.type);ctx.save();ctx.lineWidth=5;ctx.strokeStyle=col;ctx.fillStyle=col;if(mission.type==='pursuit'){const s=mission.suspect;ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(s.x,s.y,95,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(s.x,s.y,62,0,TAU);ctx.stroke()}else if(mission.type==='accident'){const p=mission.scene;ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(p.x,p.y,115,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(p.x,p.y,115,0,TAU);ctx.stroke();ctx.save();ctx.translate(p.x,p.y);ctx.rotate(.35);ctx.fillStyle='#444';ctx.fillRect(-26,-14,52,28);ctx.fillStyle='#9aa2aa';ctx.fillRect(-10,-11,21,22);ctx.restore()}else{for(let i=0;i<mission.points.length;i++){const p=mission.points[i];ctx.globalAlpha=i<mission.index?.25:(i===mission.index?.25:.08);ctx.beginPath();ctx.arc(p.x,p.y,54,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=i<mission.index?'#63e681':col;ctx.beginPath();ctx.arc(p.x,p.y,54,0,TAU);ctx.stroke();if(i<mission.index){ctx.fillStyle='#ff7a2a';ctx.beginPath();ctx.moveTo(p.x,p.y-14);ctx.lineTo(p.x-10,p.y+12);ctx.lineTo(p.x+10,p.y+12);ctx.closePath();ctx.fill()}}}ctx.restore()}
+function drawMissionWorld(){if(!mission)return;const col=missionColor(mission.type);ctx.save();ctx.lineWidth=5;ctx.strokeStyle=col;ctx.fillStyle=col;if(mission.type==='pursuit'){const s=mission.suspect;ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(s.x,s.y,95,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(s.x,s.y,62,0,TAU);ctx.stroke()}else if(mission.type==='accident'){const p=mission.scene;ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(p.x,p.y,115,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(p.x,p.y,115,0,TAU);ctx.stroke();ctx.save();ctx.translate(p.x,p.y);ctx.rotate(.35);ctx.fillStyle='#444';ctx.fillRect(-26,-14,52,28);ctx.fillStyle='#9aa2aa';ctx.fillRect(-10,-11,21,22);ctx.restore()}else{for(let i=0;i<mission.points.length;i++){const p=mission.points[i];ctx.globalAlpha=i<mission.index ? .25 : (i===mission.index ? .25 : .08);ctx.beginPath();ctx.arc(p.x,p.y,54,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=i<mission.index?'#63e681':col;ctx.beginPath();ctx.arc(p.x,p.y,54,0,TAU);ctx.stroke();if(i<mission.index){ctx.fillStyle='#ff7a2a';ctx.beginPath();ctx.moveTo(p.x,p.y-14);ctx.lineTo(p.x-10,p.y+12);ctx.lineTo(p.x+10,p.y+12);ctx.closePath();ctx.fill()}}}ctx.restore()}
 function drawParticles(dt){for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0){particles.splice(i,1);continue}ctx.globalAlpha=p.life/.45;ctx.fillStyle='#d7d7d7';ctx.beginPath();ctx.arc(p.x,p.y,4,0,TAU);ctx.fill();ctx.globalAlpha=1}}
 function drawDirectionArrow(){if(!mission)return;const t=missionTarget();if(!t)return;const dx=t.x-player.x,dy=t.y-player.y,a=Math.atan2(dy,dx);ctx.save();ctx.translate(player.x,player.y);ctx.rotate(a);ctx.globalAlpha=.9;ctx.fillStyle=missionColor(mission.type);ctx.beginPath();ctx.moveTo(94,0);ctx.lineTo(66,-14);ctx.lineTo(66,14);ctx.closePath();ctx.fill();ctx.restore()}
 
@@ -357,7 +357,6 @@ function resetGame(){score=0;solved=0;rankIdx=0;shiftTime=0;mission=null;mission
 function startGame(){AudioManager.init();AudioManager.resume();resetGame();state='playing';ui.start.style.display='none';ui.result.style.display='none';showMessage('첫 신고를 확인하세요.','#fff',1.8);ensureLoop()}
 function endShift(){state='result';player.setSiren(false);setAction(null);setProgress(false);ui.resultStats.innerHTML=`6분 순찰을 마쳤습니다.<br><b>${solved}건</b> 해결 · 실적 <b>${score.toFixed(1)}건</b><br>최종 계급 <b>${RANKS[rankIdx]}</b>`;ui.result.style.display='flex'}
 $('startBtn').onclick=startGame;$('restartBtn').onclick=startGame;
-ensureLoop();
 </script>
 </body>
 </html>
