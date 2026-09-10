@@ -1,790 +1,104 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>한국사 기억력 게임 (5x5 태극기 에디션)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
-        
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #e2e8f0; /* 배경을 좀 더 차분하게 */
-            touch-action: manipulation;
-            overflow: hidden; 
-        }
-
-        /* 3D Card Flip CSS */
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-        .card-inner { transition: transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1); }
-        .card.flipped .card-inner { transform: rotateY(180deg); }
-
-        /* Board Sizing - 정사각형 제한 해제, 꽉 채우기 */
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            width: 100%;
-            height: 100%;
-            gap: clamp(4px, 1.5vmin, 12px);
-        }
-
-        /* Card Text Dynamic Scaling - 텍스트 넘침 방지 및 조절 */
-        .card-content-term { 
-            font-size: clamp(0.9rem, 3.5vmin, 2.2rem); 
-            line-height: 1.2; 
-            word-break: keep-all; 
-        }
-        .card-content-desc { 
-            font-size: clamp(0.7rem, 2.2vmin, 1.1rem); 
-            line-height: 1.35; 
-            word-break: keep-all; 
-        }
-        
-        /* 스크롤은 가능하되 스크롤바는 숨김 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>한국사 솔리테어 - 시대를 쌓아라!</title>
+<style>
+:root{--bg:#efe7d4;--paper:#fffaf0;--ink:#26231f;--muted:#746d61;--line:#cbbd9d;--gold:#b8842b;--red:#b52a32;--black:#202733;--green:#2f6f4e;--blue:#315d91;--cw:clamp(45px,10.8vw,96px);--ch:calc(var(--cw)*1.42);--gap:clamp(4px,1vw,10px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;min-height:100%;font-family:Pretendard,"Noto Sans KR","Malgun Gothic",sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 0,#fff7df 0,transparent 30%),linear-gradient(145deg,#e5d8bc,#f5efe1 55%,#ded1b7);touch-action:manipulation}button{font:inherit}.hidden{display:none!important}.app{width:min(1180px,100%);margin:auto;padding:12px 10px 28px}.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#2f2a25;color:#fff;border:2px solid #171411;border-radius:18px;padding:10px 12px;box-shadow:0 8px 24px #4c3b222b;position:sticky;top:6px;z-index:50}.brand{min-width:0}.brand h1{font-size:clamp(18px,3.6vw,27px);margin:0;white-space:nowrap}.brand p{font-size:11px;color:#d9d0c2;margin:2px 0 0}.hud{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.pill,.toolbtn{border:1px solid #71675b;background:#433d36;color:white;border-radius:12px;padding:7px 9px;font-size:12px;font-weight:800}.toolbtn{cursor:pointer}.toolbtn:hover{background:#564e45}.toolbtn:disabled{opacity:.4;cursor:default}.stage{margin-top:10px;background:rgba(255,250,240,.83);border:2px solid #d6c7a8;border-radius:22px;box-shadow:0 16px 40px #5a45221f;overflow:hidden}.learnbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid #d9ccb2;background:#fff8e8}.learntext{font-size:12px;color:#665f54;line-height:1.45}.learntext b{color:#3b342d}.modebadge{white-space:nowrap;background:#f0e1bd;color:#76551c;border-radius:999px;padding:7px 10px;font-weight:900;font-size:12px}.board-scroll{overflow-x:auto;padding:10px 8px 18px;scrollbar-width:thin}.board{min-width:max-content;margin:auto}.top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:calc(var(--gap)*2);margin-bottom:15px}.deck-zone,.foundation-zone{display:flex;gap:var(--gap);align-items:flex-start}.foundation-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}.foundation-label{font-size:clamp(7px,1.4vw,10px);font-weight:900;max-width:var(--cw);text-align:center;line-height:1.15;color:#5e564b}.slot,.card{width:var(--cw);height:var(--ch);border-radius:clamp(7px,1.4vw,12px)}.slot{border:2px dashed #b7a989;background:#ffffff5c;display:grid;place-items:center;position:relative}.slot .slotmark{font-size:clamp(22px,5vw,46px);font-weight:1000;opacity:.38}.slot .tiny{position:absolute;bottom:4px;left:3px;right:3px;font-size:clamp(6px,1.2vw,9px);font-weight:900;text-align:center;color:#6a6257;line-height:1.1}.stock{cursor:pointer}.stock.empty{background:#f5eddc}.stock.empty .slotmark{font-size:clamp(16px,4vw,30px)}.tableau{display:grid;grid-template-columns:repeat(7,var(--cw));gap:var(--gap);align-items:start}.column{position:relative;min-height:calc(var(--ch)*2.2);width:var(--cw);border-radius:12px}.column.empty-target{outline:2px dashed #af9e7c;outline-offset:1px}.card{position:absolute;left:0;top:0;background:#fffdf7;border:1px solid #9d927e;box-shadow:0 3px 8px #5a452333;user-select:none;cursor:pointer;transition:transform .12s,box-shadow .12s,outline .12s;overflow:hidden}.card:hover{box-shadow:0 6px 14px #4a381f47}.card.selected{outline:3px solid #e6a91d;transform:translateY(-3px);z-index:80!important}.card.hint{animation:hintpulse .7s ease-in-out 3}.slot.hint,.column.hint{animation:hintpulse .7s ease-in-out 3}@keyframes hintpulse{50%{outline:4px solid #30a46c;outline-offset:2px}}.card.back{background:linear-gradient(135deg,#234d77,#173554);border-color:#10263d}.card.back:before{content:"☯";position:absolute;inset:5px;border:2px solid #e6d4a9;border-radius:8px;display:grid;place-items:center;color:#f6e6bd;font-size:clamp(22px,5vw,46px);background:repeating-linear-gradient(45deg,#ffffff08 0 4px,#00000008 4px 8px)}.card.red{color:var(--red)}.card.black{color:var(--black)}.corner{position:absolute;left:4px;top:3px;font-weight:1000;font-size:clamp(9px,2.2vw,16px);line-height:.9}.corner.right{left:auto;right:4px;top:auto;bottom:3px;transform:rotate(180deg)}.corner small{display:block;font-size:.72em;text-align:center;margin-top:2px}.portrait{position:absolute;inset:18% 6% 20%;border-radius:8px;background:linear-gradient(180deg,#fbf3df,#efe0bd);border:1px solid #e0cfaa;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px;text-align:center}.portrait .seal{font-size:clamp(12px,2.7vw,22px);opacity:.7}.person{font-size:clamp(8px,1.85vw,14px);font-weight:1000;word-break:keep-all;line-height:1.08;margin-top:2px}.era-mini{font-size:clamp(5px,1.05vw,8px);color:#7f7566;margin-top:2px;font-weight:800}.master .corner .ranktext{visibility:hidden}.master [data-foundation] .card .ranktext{visibility:visible}.info{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;padding:10px 12px 12px;border-top:1px solid #d9ccb2;background:#f8efd9}.info-card,.timeline-card{background:#fffdf7;border:1px solid #dccca9;border-radius:15px;padding:11px}.info-card h3,.timeline-card h3{margin:0 0 5px;font-size:14px}.info-card p,.timeline-card p{margin:0;color:#665e53;font-size:12px;line-height:1.55}.history-name{font-size:18px;font-weight:1000;margin-bottom:3px}.history-feat{color:#3f3a33!important}.timeline{display:flex;gap:4px;align-items:center;margin-top:8px}.timeline span{flex:1;height:8px;border-radius:99px;background:#ddd0b2}.timeline span.done{background:#c58c2e}.overlay{position:fixed;inset:0;background:#16120ddd;display:grid;place-items:center;padding:16px;z-index:100}.panel{width:min(760px,96vw);max-height:92vh;overflow:auto;background:#fffaf0;border:3px solid #9f7a38;border-radius:24px;padding:22px;box-shadow:0 20px 70px #0008}.panel h2{font-size:clamp(27px,6vw,44px);margin:0;text-align:center}.panel .lead{text-align:center;color:#70685d;line-height:1.55}.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.mode-card{border:2px solid #d4c39f;border-radius:17px;padding:15px;background:#fffdf7;cursor:pointer;text-align:left}.mode-card.sel{border-color:#9b6b18;background:#f9edce}.mode-card b{display:block;font-size:17px;margin-bottom:4px}.mode-card small{color:#736b60;line-height:1.5}.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:14px 0}.legend div{padding:9px;border-radius:12px;background:#f4ead2;font-size:12px;font-weight:900}.bigbtn{width:100%;border:0;border-radius:15px;padding:14px;background:#2f6f4e;color:white;font-weight:1000;font-size:17px;cursor:pointer}.rules{font-size:12px;color:#655d52;line-height:1.65;margin-top:13px}.result{text-align:center}.result .trophy{font-size:60px}.result h2{font-size:34px}.resultstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.resultstats div{background:#f4ead2;border-radius:13px;padding:10px}.resultstats b{display:block;font-size:22px}.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,20px);opacity:0;transition:.2s;background:#241f1a;color:#fff;padding:10px 15px;border-radius:999px;font-weight:800;font-size:12px;z-index:120;pointer-events:none}.toast.on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:720px){.app{padding:6px 4px 18px}.topbar{border-radius:13px;padding:7px}.brand p{display:none}.pill{padding:5px 7px}.toolbtn{padding:6px 7px}.learnbar{padding:8px}.learntext{font-size:10px}.info{grid-template-columns:1fr}.timeline-card{display:none}.stage{border-radius:15px}.board-scroll{padding-left:4px;padding-right:4px}.foundation-label{display:none}.panel{padding:16px}.legend{grid-template-columns:1fr}.mode-grid{grid-template-columns:1fr}.top-row{gap:8px}}
+</style>
 </head>
-<body class="h-screen w-screen text-gray-800 flex items-center justify-center p-2 sm:p-4">
-
-    <!-- App Container -->
-    <div id="app" class="w-full max-w-[1200px] bg-white rounded-3xl shadow-2xl overflow-hidden relative h-full flex flex-col border border-slate-200">
-        
-        <!-- Main Menu Screen -->
-        <div id="menu-screen" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 p-4 sm:p-6 overflow-y-auto">
-            <h1 class="text-4xl sm:text-6xl font-black text-indigo-900 mb-2 text-center tracking-tight">역사 짝맞추기 <span class="text-orange-500">마스터</span></h1>
-            <p class="text-slate-600 mb-8 text-center font-bold text-lg">5x5 보드! 100초 안에 최대한 많이 맞추세요!</p>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-6">
-                <button onclick="startGame('figures')" class="flex flex-col items-center p-6 bg-blue-100 hover:bg-blue-200 rounded-2xl transition shadow-sm border-2 border-blue-200 transform hover:-translate-y-1">
-                    <span class="text-5xl mb-3">👤</span>
-                    <span class="text-xl sm:text-2xl font-bold text-blue-900">인물 모드 (75명)</span>
-                </button>
-                <button onclick="startGame('events')" class="flex flex-col items-center p-6 bg-red-100 hover:bg-red-200 rounded-2xl transition shadow-sm border-2 border-red-200 transform hover:-translate-y-1">
-                    <span class="text-5xl mb-3">⚔️</span>
-                    <span class="text-xl sm:text-2xl font-bold text-red-900">사건 모드 (75건)</span>
-                </button>
-            </div>
-
-            <button onclick="openEncyclopedia()" class="mb-8 w-full max-w-2xl flex items-center justify-center gap-3 p-4 bg-emerald-100 hover:bg-emerald-200 rounded-2xl transition shadow-sm border-2 border-emerald-200">
-                <span class="text-3xl">📖</span>
-                <span class="text-xl font-bold text-emerald-900">역사도감 (수집 현황 확인)</span>
-            </button>
-
-            <!-- High Scores -->
-            <div class="bg-white p-6 rounded-xl shadow-inner w-full max-w-2xl border border-slate-200 flex flex-col sm:flex-row gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 text-center">
-                <div class="flex-1 pt-2 sm:pt-0 flex flex-col items-center justify-center">
-                    <h3 class="font-bold text-slate-500 mb-2">인물 최고 기록</h3>
-                    <div class="text-3xl font-black text-indigo-600 mb-1" id="hs-figures">0점</div>
-                    <div class="text-base font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-md" id="rank-figures">구석기</div>
-                </div>
-                <div class="flex-1 pt-6 sm:pt-0 flex flex-col items-center justify-center">
-                    <h3 class="font-bold text-slate-500 mb-2">사건 최고 기록</h3>
-                    <div class="text-3xl font-black text-indigo-600 mb-1" id="hs-events">0점</div>
-                    <div class="text-base font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-md" id="rank-events">구석기</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Encyclopedia Screen -->
-        <div id="encyclopedia-screen" class="hidden absolute inset-0 z-30 bg-slate-50 flex-col h-full w-full">
-            <header class="bg-emerald-900 text-white p-4 flex justify-between items-center shadow-md">
-                <h2 class="text-2xl font-bold flex items-center gap-2">📖 역사도감 <span class="text-base font-normal bg-emerald-700 px-3 py-1 rounded-lg" id="dex-progress">0/0</span></h2>
-                <button onclick="closeEncyclopedia()" class="bg-emerald-700 hover:bg-emerald-600 px-5 py-2 rounded-lg font-bold transition">돌아가기</button>
-            </header>
-            
-            <div class="flex gap-2 p-4 bg-white border-b shrink-0">
-                <button onclick="renderEncyclopedia('figures')" id="tab-figures" class="flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 transition">👤 인물</button>
-                <button onclick="renderEncyclopedia('events')" id="tab-events" class="flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition">⚔️ 사건</button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
-                <div id="dex-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-10">
-                    <!-- Dex items will be injected here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Game Screen -->
-        <div id="game-screen" class="hidden flex-col h-full w-full absolute inset-0 bg-slate-100">
-            <!-- Header -->
-            <header class="bg-indigo-900 text-white p-3 sm:p-4 flex justify-between items-center shadow-md z-10 shrink-0 h-[60px] sm:h-[70px]">
-                <div class="flex items-center gap-2">
-                    <div id="timer-container" class="bg-slate-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xl sm:text-2xl flex items-center gap-2 transition-colors">
-                        <span>⏳</span> <span id="timer" class="w-12 sm:w-16 text-center">준비</span>
-                    </div>
-                </div>
-                <div class="text-lg sm:text-2xl font-bold" id="current-mode-display">모드</div>
-                <div class="bg-indigo-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xl sm:text-2xl flex items-center gap-2">
-                    <span>⭐</span> <span id="score" class="w-8 sm:w-10 text-center">0</span>
-                </div>
-            </header>
-
-            <!-- Board -->
-            <main class="flex-1 p-2 sm:p-4 flex items-center justify-center relative w-full h-[calc(100%-70px)]">
-                <!-- 보드 크기를 최대화 -->
-                <div id="game-board" class="perspective-1000">
-                    <!-- Cards will be injected here -->
-                </div>
-            </main>
-        </div>
-
-        <!-- Game Over Screen -->
-        <div id="result-screen" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 p-6 backdrop-blur-sm">
-            <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
-                <h2 class="text-4xl font-black text-slate-800 mb-2">시간 종료!</h2>
-                <p class="text-slate-600 mb-4 text-lg">최종 점수</p>
-                <div class="text-8xl font-black text-indigo-600 mb-4" id="final-score">0</div>
-                <div class="text-2xl font-bold text-orange-500 mb-8 bg-orange-50 inline-block px-6 py-3 rounded-xl border border-orange-200" id="final-rank">랭크</div>
-                
-                <div id="new-record" class="hidden text-red-500 font-bold mb-6 animate-bounce text-xl">🎉 최고 기록 경신! 🎉</div>
-                
-                <button onclick="returnToMenu()" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xl transition shadow-lg">
-                    메인 메뉴로 돌아가기
-                </button>
-            </div>
-        </div>
+<body>
+<div class="app" id="gameApp">
+  <div class="topbar">
+    <div class="brand"><h1>🃏 한국사 솔리테어</h1><p>인물의 시대 순서를 맞추며 4개의 한국사 연표를 완성하세요.</p></div>
+    <div class="hud">
+      <span class="pill" id="timeHud">⏱ 00:00</span><span class="pill" id="scoreHud">⭐ 0</span>
+      <button class="toolbtn" id="undoBtn">↶ 되돌리기</button><button class="toolbtn" id="hintBtn">💡 힌트</button><button class="toolbtn" id="newBtn">새 게임</button><button class="toolbtn" id="homeBtn" title="Kidscade로 돌아가기">🏠</button>
     </div>
-
-    <script>
-        // --- 75 Figures & 75 Events DATA ---
-        const historyData = {
-            figures: [
-                { term: "환웅", desc: "홍익인간의 뜻을 품고 하늘에서 내려온 단군신화의 인물" },
-                { term: "웅녀", desc: "쑥과 마늘을 먹으며 견뎌 사람이 된 후 단군을 낳은 인물" },
-                { term: "단군왕검", desc: "고조선을 건국하고 홍익인간 이념을 널리 편 민족의 시조" },
-                { term: "주몽", desc: "활을 잘 쏘는 인물로 졸본에 고구려를 건국한 동명성왕" },
-                { term: "온조", desc: "하남 위례성에 백제를 건국한 백제의 시조" },
-                { term: "박혁거세", desc: "알에서 태어났다고 전해지며 사로국(신라)을 세운 시조" },
-                { term: "광개토대왕", desc: "영토를 크게 넓히고 신라에 침입한 왜구를 격퇴한 고구려의 왕" },
-                { term: "장수왕", desc: "평양으로 도읍을 옮기고 남진 정책을 적극 추진한 고구려의 왕" },
-                { term: "을지문덕", desc: "살수에서 수나라의 30만 대군을 수공으로 물리친 고구려의 명장" },
-                { term: "연개소문", desc: "당나라의 침입을 물리치고 막강한 권력을 행사한 고구려의 대막리지" },
-                { term: "계백", desc: "황산벌에서 5천 결사대를 이끌고 신라군에 최후까지 맞서 싸운 백제 장군" },
-                { term: "김유신", desc: "신라의 삼국통일에 큰 공을 세운 화랑 출신의 명장" },
-                { term: "원효", desc: "대중 불교를 이끌고 '나무아미타불'만 외우면 극락에 간다고 가르친 승려" },
-                { term: "대조영", desc: "고구려 유민을 이끌고 동모산에 발해를 건국한 인물" },
-                { term: "장보고", desc: "청해진을 설치하여 동아시아 해상 무역을 장악한 해상왕" },
-                { term: "견훤", desc: "완산주를 도읍으로 하여 후백제를 세운 인물" },
-                { term: "궁예", desc: "후고구려를 세웠으나 폭정으로 왕건에게 쫓겨난 인물" },
-                { term: "왕건", desc: "고려를 건국하고 후삼국을 통일한 태조" },
-                { term: "서희", desc: "거란의 1차 침입 때 외교 담판으로 강동 6주를 획득한 고려 문신" },
-                { term: "강감찬", desc: "거란의 10만 대군을 귀주에서 전멸에 가깝게 물리친 고려 명장" },
-                { term: "최무선", desc: "화통도감을 설치하고 화약을 개발하여 왜구를 물리친 고려 말의 무신" },
-                { term: "정몽주", desc: "단심가를 남기며 끝까지 고려를 지키려다 선죽교에서 죽은 충신" },
-                { term: "이성계", desc: "위화도 회군을 통해 조선을 건국한 태조" },
-                { term: "세종대왕", desc: "훈민정음을 창제하고 과학 기술을 획기적으로 발전시킨 조선 제4대 왕" },
-                { term: "장영실", desc: "자격루, 앙부일구 등 과학 기구를 제작한 조선 전기의 천재 과학자" },
-                { term: "신사임당", desc: "율곡 이이의 어머니이자 시와 그림에 능했던 조선 중기의 예술가" },
-                { term: "이황", desc: "도산서원을 세워 후학을 양성하고 주자학을 집대성한 퇴계" },
-                { term: "이순신", desc: "임진왜란 중 거북선을 이끌고 일본 수군을 연파하여 나라를 구한 성웅" },
-                { term: "광해군", desc: "임진왜란 후 복구에 힘쓰고 명과 후금 사이에서 중립 외교를 펼친 왕" },
-                { term: "정조", desc: "규장각 설치와 화성 축조 등을 통해 탕평책을 펼친 조선 후기 개혁 군주" },
-                { term: "정약용", desc: "조선 후기 실학을 집대성하고 거중기를 고안한 다산" },
-                { term: "흥선대원군", desc: "척화비를 세우고 경복궁을 중건하며 강력한 왕권 강화를 추진한 인물" },
-                { term: "전봉준", desc: "탐관오리에 맞서 동학 농민 운동을 이끈 녹두장군" },
-                { term: "안중근", desc: "하얼빈역에서 이토 히로부미를 사살하여 독립 의지를 알린 독립운동가" },
-                { term: "김구", desc: "대한민국 임시정부의 주석으로 평생을 조국 독립에 바친 인물" },
-                { term: "유관순", desc: "천안 아우내 장터에서 3.1 운동을 주도하다 순국한 독립운동가" },
-                { term: "윤봉길", desc: "상하이 훙커우 공원에서 폭탄을 던져 일제 수뇌부를 처단한 독립운동가" },
-                { term: "주시경", desc: "우리말을 체계적으로 연구하고 '한글'이라는 이름을 지은 국어학자" },
-                { term: "진흥왕", desc: "화랑도를 국가 조직으로 개편하고 한강 유역을 차지한 신라의 전성기 왕" },
-                { term: "최치원", desc: "당나라 빈공과에 합격하고 귀국해 시무 10여 조를 올린 통일신라 천재 학자" },
-                { term: "김부식", desc: "고려 인종 때 왕명으로 현존 최고(最古)의 역사서인 삼국사기를 편찬한 문신" },
-                { term: "일연", desc: "고려 충렬왕 때 단군신화가 수록된 역사서 삼국유사를 지은 승려" },
-                { term: "지눌", desc: "수선사 결사를 제창하고 정혜쌍수와 돈오점수를 주장한 고려 승려" },
-                { term: "정중부", desc: "보현원 사건을 계기로 무신정변을 일으켜 문신들을 몰아내고 정권을 잡은 무신" },
-                { term: "최충헌", desc: "교정도감을 설치하여 국정을 총괄하며 강력한 무신 정권을 확립한 인물" },
-                { term: "정도전", desc: "이성계를 도와 조선을 건국하고 한양 도성과 경복궁을 설계한 개국 공신" },
-                { term: "조광조", desc: "중종 때 현량과 실시 등 급진적인 개혁을 추진하다 기묘사화로 죽은 인물" },
-                { term: "박지원", desc: "열하일기를 지어 청의 선진 문물 수용과 수레의 사용을 주장한 실학자" },
-                { term: "김홍도", desc: "서당, 씨름 등 조선 후기 서민들의 생활상을 생동감 있게 그린 풍속화가" },
-                { term: "신윤복", desc: "단오풍정 등 남녀의 사랑과 양반들의 풍류를 섬세하게 그린 풍속화가" },
-                { term: "문무왕", desc: "나당 전쟁을 승리로 이끌고 죽어서도 동해의 용이 되어 나라를 지키겠다 한 신라 왕" },
-                { term: "최승로", desc: "성종에게 시무 28조를 올려 불교의 폐단을 지적하고 유교 정치 이념을 확립한 고려 문신" },
-                { term: "강조", desc: "고려 목종을 폐위하고 현종을 세웠으며, 거란의 2차 침입 때 맞서 싸운 무신" },
-                { term: "윤관", desc: "별무반을 이끌고 여진족을 정벌하여 동북 9성을 개척한 고려 문신" },
-                { term: "이규보", desc: "무신정권기 문인으로 고구려 동명왕의 업적을 기린 영웅 서사시 '동명왕편'을 지은 학자" },
-                { term: "김종서", desc: "세종 때 북방을 개척하여 두만강 유역에 6진을 설치하고 국경선을 확정한 무신" },
-                { term: "성삼문", desc: "세조의 왕위 찬탈에 반대하며 단종의 복위를 꾀하다 발각되어 죽음을 당한 사육신" },
-                { term: "박제가", desc: "북학의를 지어 청의 문물 수용과 소비의 중요성을 강조한 조선 후기의 실학자" },
-                { term: "홍대용", desc: "지전설과 무한 우주론을 주장하여 전통적 우주관을 비판하고 과학 사상을 전개한 실학자" },
-                { term: "최제우", desc: "서학(천주교)에 맞서 사람이 곧 하늘이라는 인내천 사상을 바탕으로 동학을 창시한 사상가" },
-                // 신규 15명 추가 (총 75명)
-                { term: "이자겸", desc: "고려 인종 때 스스로 왕이 되려 난을 일으켰으나 척준경에게 제거된 외척" },
-                { term: "최영", desc: "요동 정벌을 주장하고 홍건적과 왜구를 물리친 고려 말의 명장" },
-                { term: "이색", desc: "성리학을 고려에 도입하고 정몽주, 정도전 등을 길러낸 고려 말의 학자" },
-                { term: "정약전", desc: "유배지 흑산도에서 해양 생물 백과사전인 '자산어보'를 저술한 학자" },
-                { term: "김정희", desc: "청의 고증학을 연구하고 추사체를 창안하며 '세한도'를 그린 학자이자 예술가" },
-                { term: "김대건", desc: "조선인 최초의 가톨릭 신부로 포교 활동을 하다 새남터에서 순교한 인물" },
-                { term: "최익현", desc: "위정척사 사상을 바탕으로 항일 의병 운동을 전개하다 대마도에서 순국한 학자" },
-                { term: "신채호", desc: "'조선상고사'를 지어 민족 사관을 확립하고 의열단 선언을 집필한 독립운동가" },
-                { term: "박은식", desc: "'한국통사'를 지어 일제의 침략 과정을 폭로하고 민족혼을 강조한 역사가" },
-                { term: "이회영", desc: "전 재산을 바쳐 만주에 신흥 무관 학교를 세우고 독립군을 양성한 운동가" },
-                { term: "김원봉", desc: "일제 요인 암살 등을 목적으로 의열단을 조직하고 조선 의용대를 창설한 인물" },
-                { term: "이육사", desc: "'광야', '청포도' 등의 시를 통해 강렬한 독립의 의지를 노래한 저항 시인" },
-                { term: "윤동주", desc: "'서시', '별 헤는 밤' 등을 통해 식민지 지식인의 고뇌를 승화시킨 시인" },
-                { term: "한용운", desc: "'님의 침묵'을 지어 민족의 독립 의지를 일깨우고 3.1 운동의 민족 대표로 참여한 승려" },
-                { term: "안창호", desc: "신민회를 조직하고 대성 학교를 설립하며 평생을 독립 운동에 헌신한 도산" }
-            ],
-            events: [
-                { term: "고조선 건국", desc: "단군왕검이 아사달에 도읍을 정하고 세운 우리 민족 최초의 국가" },
-                { term: "살수대첩", desc: "을지문덕이 살수에서 수나라 대군을 수공으로 크게 물리친 전투" },
-                { term: "안시성 전투", desc: "고구려가 당나라 태종의 대군을 안시성에서 물리쳐 나라를 지킨 방어전" },
-                { term: "황산벌 전투", desc: "백제의 계백과 신라의 김유신이 맞붙은 전투로 백제가 패배함" },
-                { term: "기벌포 전투", desc: "신라가 당나라 수군을 물리치고 삼국 통일을 완성한 나당 전쟁의 전투" },
-                { term: "발해 건국", desc: "대조영이 고구려 유민을 이끌고 건국하여 훗날 '해동성국'이라 불림" },
-                { term: "고려 건국", desc: "왕건이 궁예를 몰아내고 송악을 도읍으로 세워 후삼국 통일의 기틀을 마련함" },
-                { term: "귀주대첩", desc: "강감찬 장군이 거란의 10만 대군을 귀주에서 전멸에 가깝게 물리친 전투" },
-                { term: "별무반 창설", desc: "윤관이 여진족을 토벌하기 위해 신기군, 신보군, 항마군으로 조직한 특수 부대" },
-                { term: "묘청의 서경 천도", desc: "풍수지리설을 내세워 고려의 도읍을 평양(서경)으로 옮기려 한 사건" },
-                { term: "무신정변", desc: "정중부 등 무신들이 차별에 반발하여 문신들을 몰아내고 정권을 장악한 사건" },
-                { term: "삼별초의 항쟁", desc: "몽골의 침입에 항복하지 않고 진도와 제주도로 이동하며 끝까지 항전함" },
-                { term: "위화도 회군", desc: "요동 정벌을 떠났던 이성계가 압록강에서 군대를 돌려 정권을 장악한 사건" },
-                { term: "조선 건국", desc: "이성계와 신진 사대부가 중심이 되어 한양을 도읍으로 세운 새 왕조" },
-                { term: "훈민정음 창제", desc: "세종대왕이 백성들이 쉽게 글을 읽고 쓸 수 있도록 독창적인 문자를 만듦" },
-                { term: "임진왜란", desc: "1592년 일본이 침략하여 7년간 벌어진 전쟁. 이순신과 의병들의 활약으로 승리" },
-                { term: "한산도 대첩", desc: "이순신이 학익진 전법으로 일본 수군을 크게 무찌른 임진왜란 3대 대첩 중 하나" },
-                { term: "병자호란", desc: "1636년 청나라가 침략하여 인조가 남한산성에서 항전하다 결국 삼전도에서 항복함" },
-                { term: "대동법 실시", desc: "광해군 때 특산물 대신 쌀이나 베 등으로 세금을 내게 하여 백성의 부담을 줄임" },
-                { term: "신미양요", desc: "제너럴 셔먼호 사건을 구실로 미국 군함이 강화도를 침략하여 벌어진 전투" },
-                { term: "척화비 건립", desc: "흥선대원군이 서양 세력과 교류하지 않겠다는 굳은 의지를 담아 전국에 세움" },
-                { term: "강화도 조약", desc: "운요호 사건을 계기로 조선이 일본의 강압에 의해 맺은 불평등 근대 조약" },
-                { term: "갑신정변", desc: "김옥균 등 급진 개화파가 3일 만에 실패로 끝난 근대화 개혁 운동" },
-                { term: "동학 농민 운동", desc: "반봉건 반외세를 외치며 전봉준을 중심으로 일어난 농민들의 대규모 무장 봉기" },
-                { term: "갑오개혁", desc: "신분제(노비제)를 폐지하고 근대적인 국가 체제를 갖추려 한 개혁 운동" },
-                { term: "을미사변", desc: "일제가 경복궁에 난입하여 조선의 국모인 명성황후를 시해한 야만적인 사건" },
-                { term: "아관파천", desc: "고종이 일제의 위협을 피해 러시아 공사관으로 약 1년간 거처를 옮긴 사건" },
-                { term: "독립협회 창립", desc: "서재필 등이 독립문을 세우고 만민 공동회를 열어 민권 및 자주 운동을 전개함" },
-                { term: "대한제국 선포", desc: "고종이 원구단에서 황제로 즉위하고 자주독립 국가임을 세계에 선언함" },
-                { term: "을사늑약", desc: "1905년 일제가 무력을 동원해 강제로 대한제국의 외교권을 빼앗은 조약" },
-                { term: "국채보상운동", desc: "일본에 진 빚을 갚아 국권을 회복하고자 대구에서 시작된 전국적인 모금 운동" },
-                { term: "헤이그 특사", desc: "을사늑약의 불법성을 알리기 위해 만국 평화 회의에 이준, 이상설, 이위종을 파견함" },
-                { term: "3.1 운동", desc: "1919년 일제의 식민 통치에 항거하여 전 민족이 일어난 평화적 독립 만세 운동" },
-                { term: "대한민국 임시정부", desc: "3.1 운동의 정신을 계승하여 상하이에 세워진 우리나라 최초의 민주 공화제 정부" },
-                { term: "봉오동 전투", desc: "홍범도 장군이 이끄는 독립군 연합 부대가 봉오동에서 일본군을 대파한 승리" },
-                { term: "청산리 대첩", desc: "김좌진 장군의 독립군 등이 청산리 일대에서 6일간 일본군을 크게 무찌른 최대 승전" },
-                { term: "8.15 광복", desc: "1945년 일본의 무조건 항복으로 일제의 식민 지배에서 벗어나 주권을 되찾은 날" },
-                { term: "6.25 전쟁", desc: "1950년 북한의 기습 남침으로 시작되어 한반도 전체에 큰 상처를 남긴 비극" },
-                { term: "4.19 혁명", desc: "1960년 이승만 정부의 부정 선거와 독재에 항거하여 일어난 학생과 시민의 혁명" },
-                { term: "5.18 민주화운동", desc: "1980년 신군부 세력의 집권에 맞서 광주 시민들이 민주주의를 요구하며 일어난 항쟁" },
-                { term: "6월 민주 항쟁", desc: "1987년 박종철 고문 치사 사건을 계기로 일어나 대통령 직선제 개헌을 이끌어냄" },
-                { term: "백제 건국", desc: "고구려 출신 온조가 남하하여 하남 위례성을 도읍으로 정하고 세운 나라" },
-                { term: "신라 건국", desc: "박혁거세가 경주 지역의 6촌을 통합하여 사로국이라는 이름으로 세운 나라" },
-                { term: "우산국 복속", desc: "지증왕 때 이사부가 우산국(울릉도와 독도)을 신라의 영토로 편입시킨 사건" },
-                { term: "대가야 정복", desc: "진흥왕이 가야 연맹의 마지막 국가인 대가야를 멸망시키고 영토를 크게 넓힘" },
-                { term: "팔만대장경 조판", desc: "고려 몽골 침입 때 부처의 힘으로 외적을 물리치고자 강화도에서 만든 목판" },
-                { term: "홍경래의 난", desc: "순조 때 평안도 지역에 대한 차별과 탐관오리의 착취에 반발하여 일어난 농민 봉기" },
-                { term: "임술 농민 봉기", desc: "철종 때 진주에서 시작되어 삼정의 문란에 항거하며 전국으로 확산된 농민 운동" },
-                { term: "제너럴 셔먼호 사건", desc: "평양 군민들이 통상을 요구하며 행패를 부리던 미국 상선을 대동강에서 불태운 사건" },
-                { term: "운요호 사건", desc: "일본 군함이 강화도에 불법 접근하여 포격을 가하고 무력 시위를 벌인 사건" },
-                { term: "나제 동맹", desc: "고구려 장수왕의 남진 정책에 위협을 느낀 신라와 백제가 맺은 군사 동맹" },
-                { term: "백제 멸망", desc: "660년 나당 연합군의 공격으로 계백의 결사대가 패배하고 사비성이 함락된 사건" },
-                { term: "고구려 멸망", desc: "668년 계속된 전쟁과 연개소문 사후의 내부 분열로 평양성이 나당 연합군에 함락된 사건" },
-                { term: "기인·사심관 제도", desc: "고려 태조 왕건이 지방 호족들을 견제하고 회유하기 위해 실시한 지방 통제 정책" },
-                { term: "최씨 무신정권", desc: "최충헌부터 최의까지 4대에 걸쳐 60여 년간 이어진 강력한 무신 독재 체제" },
-                { term: "계유정난", desc: "수양대군(세조)이 김종서 등을 제거하고 권력을 장악하여 단종을 몰아낸 정치적 사건" },
-                { term: "임오군란", desc: "1882년 신식 군대인 별기군에 비해 차별 대우를 받은 구식 군인들이 일으킨 반란" },
-                { term: "독립신문 창간", desc: "서재필이 귀국하여 백성들을 계몽하기 위해 순한글과 영문으로 발행한 최초의 민간 신문" },
-                { term: "관민공동회", desc: "독립협회가 주최하여 정부 관료와 시민이 함께 모여 국정 개혁안인 헌의 6조를 채택한 집회" },
-                { term: "자유시 참변", desc: "1921년 러시아 자유시로 이동한 독립군이 적색군의 무장 해제 요구에 맞서다 희생된 비극적 사건" },
-                // 신규 15개 추가 (총 75개)
-                { term: "백제 부흥 운동", desc: "백제 멸망 후 흑치상지, 복신 등이 주류성과 임존성을 거점으로 벌인 나라 되찾기 운동" },
-                { term: "고구려 부흥 운동", desc: "고구려 멸망 후 검모잠, 안승 등이 한성 일대에서 나라를 되찾기 위해 벌인 운동" },
-                { term: "노비안검법", desc: "고려 광종 때 억울하게 노비가 된 자들을 양인으로 해방시켜 호족을 견제한 정책" },
-                { term: "과거제 실시", desc: "고려 광종 때 후주 출신 쌍기의 건의를 받아들여 유학적 소양을 갖춘 관리를 선발한 제도" },
-                { term: "최승로 시무 28조", desc: "고려 성종 때 최승로가 올려 유교 중심의 국가 통치 체제를 확립하는 데 기여한 건의문" },
-                { term: "진주 대첩", desc: "임진왜란 중 김시민 장군이 진주성에서 일본군을 크게 무찌른 전투" },
-                { term: "행주 대첩", desc: "임진왜란 중 권율 장군이 행주산성에서 관군과 백성이 합심해 일본군을 무찌른 전투" },
-                { term: "병인양요", desc: "1866년 프랑스 함대가 천주교 박해를 구실로 강화도에 침입하여 문화재를 약탈한 사건" },
-                { term: "오페르트 도굴 사건", desc: "1868년 독일 상인 오페르트가 흥선대원군의 아버지 남연군의 묘를 도굴하려다 실패한 사건" },
-                { term: "독립협회 해산", desc: "고종과 보수파가 황국 협회를 동원하여 만민 공동회를 탄압하고 독립협회를 없앤 사건" },
-                { term: "간도 참변", desc: "1920년 전투에서 패배한 일제가 만주 간도 지역의 한인들을 무차별 학살한 사건" },
-                { term: "신간회 창립", desc: "1927년 비타협적 민족주의 세력과 사회주의 세력이 힘을 합쳐 만든 항일 민족 단체" },
-                { term: "조선어 학회 사건", desc: "1942년 일제가 우리말을 연구하고 사전을 편찬하려던 학자들을 치안 유지법 위반으로 구속한 사건" },
-                { term: "제주 4.3 사건", desc: "1948년 제주도에서 무력 충돌과 토벌 과정에서 수많은 무고한 도민들이 희생된 비극" },
-                { term: "새마을 운동", desc: "1970년대 근면, 자조, 협동 정신을 바탕으로 농촌 환경 개선과 소득 증대를 목표로 추진된 운동" }
-            ]
-        };
-
-        // --- RANK SYSTEM ---
-        function getRank(score) {
-            if(score < 6) return "구석기";
-            if(score < 12) return "신석기";
-            if(score < 18) return "고조선";
-            if(score < 24) return "삼국시대";
-            if(score < 30) return "남북국시대";
-            if(score < 36) return "고려시대";
-            if(score < 42) return "조선시대";
-            if(score < 50) return "대한제국";
-            if(score < 60) return "대한민국";
-            return "역사왕 👑";
-        }
-
-        // --- STATE & CONFIG ---
-        let currentMode = '';
-        let score = 0;
-        let timeRemaining = 100;
-        let timerInterval = null;
-        let previewInterval = null; // 5초 카운트다운용 인터벌 추가
-        let availablePool = [];
-        let flippedCards = [];
-        let isLocked = false;
-        let matchedPairsCount = 0;
-        let pairsPerBoard = 12; // 5x5 grid = 25 tiles. 1 center tile + 24 cards (12 pairs)
-        
-        let unlockedDex = JSON.parse(localStorage.getItem('historyMatchDex') || '[]');
-
-        // --- AUDIO ENGINE ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
-        let bgmOscillator;
-        let bgmGain;
-        let isBgmPlaying = false;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioContext();
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playSound(type) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            
-            if (type === 'match') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now);
-                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'mismatch') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            } else if (type === 'over') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.linearRampToValueAtTime(100, now + 1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 1);
-                osc.start(now);
-                osc.stop(now + 1);
-            } else if (type === 'beep') { 
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(600, now);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
-            } else if (type === 'countdown') { // 카운트다운용 크고 명확한 비프음
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(880, now); 
-                gain.gain.setValueAtTime(0.4, now); // 더 크게
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            }
-        }
-
-        function startBGM() {
-            initAudio();
-            if (isBgmPlaying) return;
-            bgmOscillator = audioCtx.createOscillator();
-            bgmGain = audioCtx.createGain();
-            bgmOscillator.type = 'triangle';
-            bgmOscillator.frequency.value = 220; 
-            bgmGain.gain.value = 0.04; 
-            bgmOscillator.connect(bgmGain);
-            bgmGain.connect(audioCtx.destination);
-            
-            const lfo = audioCtx.createOscillator();
-            lfo.type = 'sine';
-            lfo.frequency.value = 2; 
-            const lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 0.02;
-            lfo.connect(lfoGain);
-            lfoGain.connect(bgmGain.gain);
-            
-            bgmOscillator.start();
-            lfo.start();
-            isBgmPlaying = true;
-            bgmOscillator.lfo = lfo; 
-        }
-
-        function stopBGM() {
-            if (isBgmPlaying && bgmOscillator) {
-                bgmOscillator.stop();
-                if(bgmOscillator.lfo) bgmOscillator.lfo.stop();
-                bgmOscillator.disconnect();
-                isBgmPlaying = false;
-            }
-        }
-
-        // --- HIGH SCORES & DEX ---
-        function loadHighScores() {
-            const hs = JSON.parse(localStorage.getItem('historyMatchHS') || '{"figures":0, "events":0}');
-            document.getElementById('hs-figures').innerText = hs.figures + '점';
-            document.getElementById('rank-figures').innerText = getRank(hs.figures);
-            
-            document.getElementById('hs-events').innerText = hs.events + '점';
-            document.getElementById('rank-events').innerText = getRank(hs.events);
-            return hs;
-        }
-
-        function saveHighScore(mode, newScore) {
-            const hs = loadHighScores();
-            let isNewRecord = false;
-            if (newScore > hs[mode]) {
-                hs[mode] = newScore;
-                localStorage.setItem('historyMatchHS', JSON.stringify(hs));
-                isNewRecord = true;
-            }
-            return isNewRecord;
-        }
-
-        function saveToDex(term) {
-            if (!unlockedDex.includes(term)) {
-                unlockedDex.push(term);
-                localStorage.setItem('historyMatchDex', JSON.stringify(unlockedDex));
-            }
-        }
-
-        // --- ENCYCLOPEDIA UI ---
-        function openEncyclopedia() {
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('encyclopedia-screen').classList.remove('hidden');
-            document.getElementById('encyclopedia-screen').classList.add('flex');
-            renderEncyclopedia('figures'); // Default tab
-        }
-
-        function closeEncyclopedia() {
-            document.getElementById('encyclopedia-screen').classList.add('hidden');
-            document.getElementById('encyclopedia-screen').classList.remove('flex');
-            document.getElementById('menu-screen').classList.remove('hidden');
-        }
-
-        function renderEncyclopedia(mode) {
-            if (mode === 'figures') {
-                document.getElementById('tab-figures').className = "flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 shadow-sm transition";
-                document.getElementById('tab-events').className = "flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition";
-            } else {
-                document.getElementById('tab-events').className = "flex-1 py-3 text-lg font-bold rounded-lg bg-emerald-100 text-emerald-900 shadow-sm transition";
-                document.getElementById('tab-figures').className = "flex-1 py-3 text-lg font-bold rounded-lg text-slate-500 hover:bg-slate-100 transition";
-            }
-
-            const listEl = document.getElementById('dex-list');
-            listEl.innerHTML = '';
-            
-            const items = historyData[mode];
-            let unlockedCount = 0;
-
-            items.forEach(item => {
-                const isUnlocked = unlockedDex.includes(item.term);
-                if (isUnlocked) unlockedCount++;
-
-                const card = document.createElement('div');
-                card.className = `p-5 rounded-2xl border-2 flex flex-col gap-3 ${isUnlocked ? 'bg-white border-emerald-300 shadow-md' : 'bg-slate-100 border-slate-200 opacity-60'}`;
-                
-                if (isUnlocked) {
-                    card.innerHTML = `
-                        <h4 class="font-black text-2xl ${mode === 'figures' ? 'text-blue-800' : 'text-red-800'}">${item.term}</h4>
-                        <p class="text-base text-slate-700 leading-relaxed">${item.desc}</p>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <h4 class="font-black text-2xl text-slate-400 flex items-center gap-2"><span>🔒</span> ???</h4>
-                        <p class="text-base text-slate-400">게임을 플레이하며 해금하세요.</p>
-                    `;
-                }
-                listEl.appendChild(card);
-            });
-
-            document.getElementById('dex-progress').innerText = `${unlockedCount} / ${items.length}`;
-        }
-
-        // --- UTILS ---
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        // --- GAME LOGIC ---
-        function startGame(mode) {
-            initAudio();
-            currentMode = mode;
-            score = 0;
-            timeRemaining = 100;
-            matchedPairsCount = 0;
-            
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('game-screen').classList.add('flex');
-            
-            document.getElementById('score').innerText = score;
-            document.getElementById('timer').innerText = '준비';
-            document.getElementById('current-mode-display').innerText = mode === 'figures' ? '👤 인물' : '⚔️ 사건';
-            
-            const timerContainer = document.getElementById('timer-container');
-            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
-            timerContainer.classList.add('bg-slate-800', 'text-white');
-
-            availablePool = JSON.parse(JSON.stringify(historyData[mode]));
-            shuffle(availablePool);
-
-            startBGM();
-            clearInterval(timerInterval);
-            clearInterval(previewInterval);
-            generateBoard();
-        }
-
-        function generateBoard() {
-            const board = document.getElementById('game-board');
-            board.innerHTML = '';
-            flippedCards = [];
-            isLocked = true; // 암기 시간 중 터치 방지
-            matchedPairsCount = 0;
-            
-            // 새 보드가 생성될 때는 타이머를 잠시 멈춤
-            clearInterval(timerInterval);
-            clearInterval(previewInterval);
-            const timerContainer = document.getElementById('timer-container');
-            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
-            timerContainer.classList.add('bg-slate-800', 'text-white');
-            document.getElementById('timer').innerText = '기억...';
-
-            if (availablePool.length < pairsPerBoard) {
-                let refill = JSON.parse(JSON.stringify(historyData[currentMode]));
-                shuffle(refill);
-                let currentTerms = availablePool.map(i => i.term);
-                refill.forEach(item => {
-                    if(!currentTerms.includes(item.term)) availablePool.push(item);
-                });
-            }
-
-            const currentPairs = availablePool.splice(0, pairsPerBoard);
-            let cards = [];
-
-            currentPairs.forEach(item => {
-                cards.push({ id: item.term, type: 'term', text: item.term });
-                cards.push({ id: item.term, type: 'desc', text: item.desc });
-            });
-
-            shuffle(cards);
-
-            let cardIndex = 0;
-            const cardElementsForPreview = [];
-
-            for (let i = 0; i < 25; i++) {
-                // 중앙 타일 (인덱스 12) 초기에는 5 카운트다운 표시
-                if (i === 12) {
-                    const flagCell = document.createElement('div');
-                    flagCell.className = 'w-full h-full min-h-0 min-w-0 bg-white rounded-xl shadow-inner border-[3px] border-slate-200 flex items-center justify-center pointer-events-none p-2 sm:p-3 opacity-95 transition-all';
-                    flagCell.id = 'center-tile';
-                    flagCell.innerHTML = `<span id="center-countdown" class="text-6xl sm:text-8xl md:text-9xl font-black text-indigo-600 drop-shadow-md">5</span>`;
-                    board.appendChild(flagCell);
-                    continue;
-                }
-
-                const card = cards[cardIndex];
-                cardIndex++;
-
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card relative w-full h-full min-h-0 min-w-0 cursor-pointer perspective-1000 flipped';
-                cardEl.dataset.id = card.id;
-                cardEl.dataset.type = card.type;
-
-                const backColor = card.type === 'term' ? 'bg-pink-400 border-pink-300' : 'bg-blue-500 border-blue-400';
-                const backTextColor = card.type === 'term' ? 'text-pink-100' : 'text-blue-100';
-                
-                const frontColor = card.type === 'term' ? 'bg-pink-50 border-pink-300' : 'bg-blue-50 border-blue-300';
-                const textColor = card.type === 'term' ? 'text-pink-900 font-black card-content-term' : 'text-blue-900 font-bold card-content-desc';
-
-                cardEl.innerHTML = `
-                    <div class="card-inner absolute inset-0 transform-style-3d shadow-md hover:shadow-lg rounded-xl">
-                        <!-- Back -->
-                        <div class="absolute inset-0 backface-hidden ${backColor} rounded-xl border-4 flex items-center justify-center">
-                            <span class="${backTextColor} text-3xl sm:text-5xl opacity-80 font-black">?</span>
-                        </div>
-                        <!-- Front -->
-                        <div class="absolute inset-0 backface-hidden rotate-y-180 ${frontColor} border-[3px] rounded-xl flex items-center justify-center text-center overflow-hidden p-1 sm:p-2">
-                            <div class="w-full max-h-full overflow-y-auto no-scrollbar flex items-center justify-center">
-                                <span class="${textColor}">${card.text}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                cardEl.addEventListener('click', () => handleCardClick(cardEl));
-                board.appendChild(cardEl);
-                cardElementsForPreview.push(cardEl);
-            }
-
-            // 5초 암기 및 중앙 타일 카운트다운 로직
-            let pTime = 5;
-            playSound('countdown'); // 5 
-            
-            previewInterval = setInterval(() => {
-                pTime--;
-                if (pTime > 0) {
-                    const countEl = document.getElementById('center-countdown');
-                    if (countEl) {
-                        countEl.innerText = pTime;
-                        // 숫자 바뀔 때마다 살짝 크기가 커졌다 작아지는 애니메이션 
-                        countEl.classList.remove('scale-110');
-                        void countEl.offsetWidth; 
-                        countEl.classList.add('scale-110', 'transition-transform');
-                    }
-                    playSound('countdown');
-                } else {
-                    clearInterval(previewInterval);
-                    
-                    // 카운트다운 종료 시 태극기 SVG로 교체
-                    const centerTile = document.getElementById('center-tile');
-                    if (centerTile) {
-                        centerTile.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg" alt="태극기" class="w-full h-full object-contain filter drop-shadow-sm" />`;
-                    }
-                    
-                    playSound('match'); // 게임 시작 알림음 (경쾌하게)
-                    
-                    cardElementsForPreview.forEach(card => card.classList.remove('flipped'));
-                    isLocked = false;
-                    document.getElementById('timer').innerText = timeRemaining;
-
-                    // 메인 타이머 재개
-                    timerInterval = setInterval(() => {
-                        timeRemaining--;
-                        document.getElementById('timer').innerText = timeRemaining;
-                        
-                        if (timeRemaining <= 15 && timeRemaining > 0) {
-                            const tContainer = document.getElementById('timer-container');
-                            tContainer.classList.remove('bg-slate-800', 'text-white');
-                            tContainer.classList.add('bg-red-100', 'text-red-600', 'animate-pulse');
-                            playSound('beep');
-                        }
-
-                        if (timeRemaining <= 0) endGame();
-                    }, 1000);
-                }
-            }, 1000);
-        }
-
-        function handleCardClick(card) {
-            if (isLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-
-            card.classList.add('flipped');
-            flippedCards.push(card);
-
-            if (flippedCards.length === 2) {
-                isLocked = true;
-                checkMatch();
-            }
-        }
-
-        function checkMatch() {
-            const card1 = flippedCards[0];
-            const card2 = flippedCards[1];
-
-            if ((card1.dataset.id === card2.dataset.id) && (card1.dataset.type !== card2.dataset.type)) {
-                playSound('match');
-                score++;
-                document.getElementById('score').innerText = score;
-                
-                saveToDex(card1.dataset.id);
-                
-                card1.classList.add('matched');
-                card2.classList.add('matched');
-                
-                setTimeout(() => {
-                    card1.querySelector('.card-inner > div:nth-child(2)').classList.add('bg-green-100', 'border-green-500');
-                    card2.querySelector('.card-inner > div:nth-child(2)').classList.add('bg-green-100', 'border-green-500');
-                    card1.style.opacity = '0.4';
-                    card2.style.opacity = '0.4';
-                }, 150);
-
-                matchedPairsCount++;
-                resetTurn();
-
-                if (matchedPairsCount === pairsPerBoard) {
-                    setTimeout(() => generateBoard(), 600);
-                }
-            } else {
-                playSound('mismatch');
-                card1.querySelector('.card-inner > div:nth-child(2)').classList.add('border-red-500', 'bg-red-50');
-                card2.querySelector('.card-inner > div:nth-child(2)').classList.add('border-red-500', 'bg-red-50');
-
-                setTimeout(() => {
-                    card1.classList.remove('flipped');
-                    card2.classList.remove('flipped');
-                    card1.querySelector('.card-inner > div:nth-child(2)').classList.remove('border-red-500', 'bg-red-50');
-                    card2.querySelector('.card-inner > div:nth-child(2)').classList.remove('border-red-500', 'bg-red-50');
-                    resetTurn();
-                }, 750);
-            }
-        }
-
-        function resetTurn() {
-            flippedCards = [];
-            isLocked = false;
-        }
-
-        function endGame() {
-            clearInterval(timerInterval);
-            clearInterval(previewInterval);
-            stopBGM();
-            playSound('over');
-            
-            const timerContainer = document.getElementById('timer-container');
-            timerContainer.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
-            timerContainer.classList.add('bg-slate-800', 'text-white');
-
-            document.getElementById('final-score').innerText = score;
-            const rank = getRank(score);
-            document.getElementById('final-rank').innerText = rank;
-            
-            const isNewRecord = saveHighScore(currentMode, score);
-            const newRecordEl = document.getElementById('new-record');
-            if (isNewRecord) {
-                newRecordEl.classList.remove('hidden');
-            } else {
-                newRecordEl.classList.add('hidden');
-            }
-
-            document.getElementById('result-screen').classList.remove('hidden');
-        }
-
-        function returnToMenu() {
-            clearInterval(timerInterval);
-            clearInterval(previewInterval);
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('flex');
-            document.getElementById('menu-screen').classList.remove('hidden');
-            loadHighScores();
-        }
-
-        window.onload = () => {
-            loadHighScores();
-        };
-
-    </script>
+  </div>
+  <section class="stage">
+    <div class="learnbar"><div class="learntext"><b>규칙:</b> 아래 7열은 K→A 내림차순 + 빨강/검정 교차. 위 연표 칸은 같은 시대의 A→K 순서로 완성합니다.</div><div class="modebadge" id="modeBadge">학습 모드</div></div>
+    <div class="board-scroll"><div class="board" id="board">
+      <div class="top-row">
+        <div class="deck-zone"><div class="slot stock" id="stockSlot"><span class="slotmark">☯</span><span class="tiny">덱</span></div><div class="slot" id="wasteSlot"><span class="slotmark">↗</span><span class="tiny">공개 카드</span></div></div>
+        <div class="foundation-zone" id="foundationZone"></div>
+      </div>
+      <div class="tableau" id="tableau"></div>
+    </div></div>
+    <div class="info">
+      <div class="info-card"><h3>📜 선택한 인물</h3><div id="historyInfo"><p>카드를 누르면 인물과 대표 업적을 볼 수 있어요.</p></div></div>
+      <div class="timeline-card"><h3>⏳ 연표 완성도</h3><p id="progressText">0 / 52명</p><div class="timeline" id="timelineBar"></div></div>
+    </div>
+  </section>
+</div>
+<div class="overlay" id="startOverlay">
+  <div class="panel">
+    <h2>한국사 솔리테어</h2><p class="lead">카드의 숫자는 <b>그 시대 안에서의 역사 순서</b>입니다.<br>인물을 시간 순서대로 모아 4개의 한국사 연표를 완성하세요.</p>
+    <div class="legend"><div>♠ 고조선·삼국</div><div style="color:#b52a32">♥ 통일신라·발해·후삼국</div><div>♣ 고려·조선</div><div style="color:#b52a32">♦ 근대·현대</div></div>
+    <div class="mode-grid"><button class="mode-card sel" data-mode="learn"><b>📘 학습 모드</b><small>A~K 숫자를 항상 보여줍니다. 솔리테어 규칙과 한국사 인물을 함께 익히기 좋아요.</small></button><button class="mode-card" data-mode="master"><b>🏆 역사 마스터</b><small>카드의 숫자를 숨깁니다. 인물의 앞뒤 시대를 알아야 훨씬 쉽게 풀 수 있어요.</small></button></div>
+    <button class="bigbtn" id="startBtn">게임 시작</button>
+    <div class="rules"><b>선사 시대 튜토리얼:</b> 구석기 <b>뗀석기</b> → 신석기 <b>빗살무늬 토기·농경</b> → 청동기 <b>고인돌·비파형 동검</b> → 철기 <b>세형 동검</b> → 고조선. 선사 시대에는 이름이 전해지는 대표 인물이 거의 없기 때문에 본 카드 게임은 고조선부터 시작합니다.<br><b>조작:</b> 카드를 한 번 누르고 이동할 곳을 다시 누르세요. PC에서는 드래그도 가능합니다. 카드를 두 번 누르면 올릴 수 있을 때 자동으로 연표 칸에 올라갑니다.</div>
+  </div>
+</div>
+<div class="overlay hidden" id="winOverlay"><div class="panel result"><div class="trophy">🏆</div><h2>한국사 연표 완성!</h2><p>52명의 인물을 시대 순서대로 모두 정리했습니다.</p><div class="resultstats"><div><b id="winTime">00:00</b><small>완성 시간</small></div><div><b id="winScore">0</b><small>점수</small></div><div><b id="winMoves">0</b><small>이동 횟수</small></div></div><button class="bigbtn" id="againBtn">한 판 더</button></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const SUITS={
+ spades:{symbol:'♠',name:'고조선·삼국',color:'black',cards:[
+  ['단군왕검','고조선을 세웠다고 전해지는 건국 시조'],['박혁거세','사로국(신라)의 시조로 전해지는 인물'],['주몽','졸본 지역에서 고구려를 세운 동명성왕'],['온조','한강 유역에 백제를 세운 시조'],['근초고왕','백제의 전성기를 이끌고 마한 지역을 통합'],['광개토대왕','고구려의 영토를 크게 넓힌 왕'],['장수왕','평양 천도와 남진 정책으로 고구려 전성기를 이어감'],['진흥왕','한강 유역을 차지하고 신라 영토를 크게 넓힘'],['을지문덕','살수대첩에서 수나라 군대를 물리친 고구려 장군'],['연개소문','고구려 말 권력을 장악하고 당의 침입에 맞선 인물'],['계백','황산벌에서 백제군을 이끌고 싸운 장군'],['김춘추','신라와 당의 연합을 추진하고 태종 무열왕이 됨'],['김유신','신라의 삼국 통일 과정에서 활약한 장군']]},
+ hearts:{symbol:'♥',name:'통일신라·발해·후삼국',color:'red',cards:[
+  ['원효','불교를 대중에게 널리 알린 신라의 승려'],['의상','화엄종을 발전시키고 부석사를 세운 승려'],['문무왕','신라의 삼국 통일을 완성한 왕'],['대조영','고구려 유민과 말갈 세력을 이끌고 발해를 세움'],['발해 무왕','발해의 세력을 넓히고 당과 대립한 왕'],['혜초','인도와 중앙아시아를 여행하고 왕오천축국전을 남긴 승려'],['발해 문왕','당과 교류하며 발해의 제도와 문화를 발전시킨 왕'],['장보고','청해진을 설치해 해상 무역을 장악한 인물'],['발해 선왕','발해의 영토를 크게 넓혀 해동성국의 전성기를 이끎'],['최치원','당에서 유학하고 신라 사회 개혁을 주장한 학자'],['견훤','완산주를 중심으로 후백제를 세운 인물'],['궁예','후고구려를 세웠다가 왕건에게 쫓겨난 인물'],['왕건','고려를 세우고 후삼국을 통일한 태조']]},
+ clubs:{symbol:'♣',name:'고려·조선',color:'black',cards:[
+  ['광종','노비안검법을 실시하고 과거제를 도입한 고려의 왕'],['서희','거란과 외교 담판을 벌여 강동 6주를 확보'],['강감찬','귀주대첩에서 거란군을 크게 물리친 장군'],['김부식','삼국사기 편찬을 주도한 고려의 문신'],['최무선','화약 제조 기술을 익히고 왜구 격퇴에 활용'],['정몽주','고려 왕조를 지키려 했던 성리학자이자 문신'],['이성계','조선을 세운 태조'],['세종대왕','훈민정음을 창제하고 과학·문화 발전을 이끈 왕'],['신사임당','조선의 화가·문인으로 초충도 등 작품을 남김'],['이순신','임진왜란에서 조선 수군을 이끈 장군'],['영조','탕평책을 실시하고 균역법을 시행한 왕'],['정조','규장각을 설치하고 개혁 정치를 추진한 왕'],['정약용','실학을 집대성하고 목민심서 등을 남긴 학자']]},
+ diamonds:{symbol:'♦',name:'근대·현대',color:'red',cards:[
+  ['흥선대원군','왕권을 강화하고 경복궁을 중건한 조선 말 정치가'],['고종','대한제국을 선포하고 황제가 된 조선의 왕'],['김옥균','갑신정변을 일으킨 개화파 인물'],['전봉준','동학 농민 운동을 이끈 지도자'],['서재필','독립신문을 창간하고 독립협회 활동을 이끎'],['안창호','독립운동과 교육 활동에 힘쓴 독립운동가'],['안중근','하얼빈에서 이토 히로부미를 저격한 독립운동가'],['신채호','민족주의 역사학을 발전시킨 독립운동가'],['유관순','3·1 운동 당시 아우내 장터 만세 운동에 참여'],['홍범도','봉오동 전투에서 독립군을 이끈 지휘관'],['김좌진','청산리 전투에서 독립군을 이끈 지휘관'],['윤봉길','상하이 훙커우 공원에서 의거를 일으킨 독립운동가'],['김구','대한민국 임시정부에서 활동한 대표적 독립운동가']]}
+};
+const SUIT_KEYS=['spades','hearts','clubs','diamonds'];
+const RANKS=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let state,selected=null,historyStack=[],timerId=null,startTime=0,mode='learn',audioCtx=null;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function buildDeck(){const deck=[];for(const suit of SUIT_KEYS){SUITS[suit].cards.forEach((p,i)=>deck.push({id:suit+'-'+(i+1),suit,rank:i+1,name:p[0],feat:p[1],faceUp:false}));}return shuffle(deck)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function newGame(){clearInterval(timerId);const deck=buildDeck(),tableau=Array.from({length:7},()=>[]);for(let c=0;c<7;c++)for(let r=0;r<=c;r++){const card=deck.pop();card.faceUp=r===c;tableau[c].push(card)}state={stock:deck,waste:[],tableau,foundations:{spades:[],hearts:[],clubs:[],diamonds:[]},score:0,moves:0};selected=null;historyStack=[];startTime=Date.now();timerId=setInterval(updateTime,1000);$('#modeBadge').textContent=mode==='learn'?'학습 모드':'역사 마스터';$('#gameApp').classList.toggle('master',mode==='master');render();updateTime()}
+function snap(){return JSON.stringify(state)}
+function pushHistory(){historyStack.push(snap());if(historyStack.length>80)historyStack.shift()}
+function undo(){if(!historyStack.length)return toast('되돌릴 이동이 없어요.');state=JSON.parse(historyStack.pop());state.score=Math.max(0,state.score-10);selected=null;render();sfx('undo')}
+function elapsed(){return Math.max(0,Math.floor((Date.now()-startTime)/1000))}
+function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function updateTime(){$('#timeHud').textContent='⏱ '+fmt(elapsed())}
+function cardColor(card){return SUITS[card.suit].color}
+function cardEl(card,source,index,col){const el=document.createElement('div');el.className='card '+(card.faceUp?cardColor(card):'back');el.dataset.id=card.id;el.draggable=!!card.faceUp;if(card.faceUp){el.innerHTML=`<div class="corner"><span class="ranktext">${RANKS[card.rank]}</span><small>${SUITS[card.suit].symbol}</small></div><div class="portrait"><div class="seal">${SUITS[card.suit].symbol}</div><div class="person">${card.name}</div><div class="era-mini">${SUITS[card.suit].name}</div></div><div class="corner right"><span class="ranktext">${RANKS[card.rank]}</span><small>${SUITS[card.suit].symbol}</small></div>`;el.addEventListener('click',e=>{e.stopPropagation();selectOrMove(source,index,col,card.id)});el.addEventListener('dblclick',e=>{e.stopPropagation();autoFoundation(source,index,col)});el.addEventListener('dragstart',e=>{selected={source,index,col,id:card.id};e.dataTransfer.setData('text/plain',card.id);el.classList.add('selected')});}return el}
+function render(){renderTop();renderTableau();renderInfo();$('#scoreHud').textContent='⭐ '+state.score;$('#undoBtn').disabled=!historyStack.length;checkWin()}
+function renderTop(){const fz=$('#foundationZone');fz.innerHTML='';for(const suit of SUIT_KEYS){const wrap=document.createElement('div');wrap.className='foundation-wrap';const slot=document.createElement('div');slot.className='slot';slot.dataset.foundation=suit;slot.innerHTML=`<span class="slotmark" style="color:${SUITS[suit].color==='red'?'#b52a32':'#202733'}">${SUITS[suit].symbol}</span><span class="tiny">A → K</span>`;slot.addEventListener('click',()=>moveSelected({type:'foundation',suit}));slot.addEventListener('dragover',e=>e.preventDefault());slot.addEventListener('drop',e=>{e.preventDefault();moveSelected({type:'foundation',suit})});const pile=state.foundations[suit];if(pile.length){const c=pile[pile.length-1];const ce=cardEl(c,'foundation',pile.length-1,suit);ce.style.zIndex=3;slot.appendChild(ce)}wrap.append(slot,Object.assign(document.createElement('div'),{className:'foundation-label',textContent:SUITS[suit].name}));fz.appendChild(wrap)}
+ const stock=$('#stockSlot');stock.classList.toggle('empty',state.stock.length===0);stock.innerHTML=state.stock.length?'<span class="slotmark">☯</span><span class="tiny">'+state.stock.length+'장</span>':'<span class="slotmark">↻</span><span class="tiny">다시 섞기</span>';stock.onclick=drawStock;const waste=$('#wasteSlot');waste.innerHTML='<span class="slotmark">↗</span><span class="tiny">공개 카드</span>';if(state.waste.length){const c=state.waste[state.waste.length-1],ce=cardEl(c,'waste',state.waste.length-1,null);ce.style.zIndex=3;waste.appendChild(ce)}}
+function renderTableau(){const tb=$('#tableau');tb.innerHTML='';state.tableau.forEach((pile,col)=>{const c=document.createElement('div');c.className='column'+(pile.length?'':' empty-target');c.dataset.col=col;c.addEventListener('click',()=>moveSelected({type:'tableau',col}));c.addEventListener('dragover',e=>e.preventDefault());c.addEventListener('drop',e=>{e.preventDefault();moveSelected({type:'tableau',col})});let top=0;pile.forEach((card,i)=>{const el=cardEl(card,'tableau',i,col);el.style.top=top+'px';el.style.zIndex=i+1;if(selected&&selected.id===card.id)el.classList.add('selected');c.appendChild(el);if(i<pile.length-1)top+=clampOffset(card.faceUp)});const w=Math.max(45,Math.min(96,window.innerWidth*.108));c.style.height=Math.max(w*1.42*2.2,top+w*1.42)+'px';tb.appendChild(c)})}
+function clampOffset(faceUp){const w=Math.max(45,Math.min(96,window.innerWidth*.108));return faceUp?Math.max(19,Math.min(34,w*.34)):Math.max(10,Math.min(18,w*.18))}
+function showCard(card){if(!card)return;$('#historyInfo').innerHTML=`<div class="history-name" style="color:${cardColor(card)==='red'?'#b52a32':'#202733'}">${SUITS[card.suit].symbol} ${mode==='learn'?RANKS[card.rank]+' · ':''}${card.name}</div><p>${SUITS[card.suit].name}${mode==='learn'?'의 '+card.rank+'번째 카드':' · 순서 번호 비공개'}</p><p class="history-feat"><b>대표 내용:</b> ${card.feat}</p>`}
+function renderInfo(){let count=0;for(const s of SUIT_KEYS)count+=state.foundations[s].length;$('#progressText').textContent=count+' / 52명';const bar=$('#timelineBar');bar.innerHTML='';for(let i=0;i<13;i++){const x=document.createElement('span');if(count>i*4)x.className='done';bar.appendChild(x)}if(selected){const card=findCard(selected.id);showCard(card)}}
+function findCard(id){for(const c of state.stock)if(c.id===id)return c;for(const c of state.waste)if(c.id===id)return c;for(const p of state.tableau)for(const c of p)if(c.id===id)return c;for(const s of SUIT_KEYS)for(const c of state.foundations[s])if(c.id===id)return c;return null}
+function selectOrMove(source,index,col,id){const card=findCard(id);if(!card||!card.faceUp)return;showCard(card);if(selected&&selected.id!==id){if(source==='tableau')moveSelected({type:'tableau',col});else if(source==='foundation')moveSelected({type:'foundation',suit:col});else{selected={source,index,col,id};render()}return}selected=selected&&selected.id===id?null:{source,index,col,id};render()}
+function getSelectedCards(){if(!selected)return[];if(selected.source==='tableau')return state.tableau[selected.col].slice(selected.index);if(selected.source==='waste')return [state.waste[state.waste.length-1]];if(selected.source==='foundation')return [state.foundations[selected.col].at(-1)];return[]}
+function isValidSequence(cards){for(let i=0;i<cards.length-1;i++){if(cards[i].rank!==cards[i+1].rank+1||cardColor(cards[i])===cardColor(cards[i+1]))return false}return true}
+function canTableau(cards,target){if(!cards.length||!isValidSequence(cards))return false;if(!target.length)return cards[0].rank===13;const top=target.at(-1);return top.faceUp&&top.rank===cards[0].rank+1&&cardColor(top)!==cardColor(cards[0])}
+function canFoundation(card,suit){if(!card||card.suit!==suit)return false;const pile=state.foundations[suit];return card.rank===(pile.length+1)}
+function removeSelected(){let cards=[];if(selected.source==='tableau'){cards=state.tableau[selected.col].splice(selected.index);revealTop(selected.col)}else if(selected.source==='waste')cards=[state.waste.pop()];else if(selected.source==='foundation')cards=[state.foundations[selected.col].pop()];return cards}
+function revealTop(col){const pile=state.tableau[col],top=pile.at(-1);if(top&&!top.faceUp){top.faceUp=true;state.score+=20;sfx('flip')}}
+function moveSelected(target){if(!selected)return;const cards=getSelectedCards();if(!cards.length)return clearSel();if(target.type==='tableau'){if(selected.source==='tableau'&&selected.col===target.col)return clearSel();if(!canTableau(cards,state.tableau[target.col]))return toast('K부터 시작하거나, 색을 번갈아 한 단계씩 내려놓아야 해요.');pushHistory();const moved=removeSelected();state.tableau[target.col].push(...moved);state.score+=selected.source==='foundation'?0:10;state.moves++;selected=null;sfx('move');render()}else{if(cards.length!==1)return toast('연표 칸에는 카드 한 장씩 올려요.');const card=cards[0];if(!canFoundation(card,target.suit))return toast('같은 시대 카드를 A부터 순서대로 올려야 해요.');pushHistory();const moved=removeSelected()[0];state.foundations[target.suit].push(moved);state.score+=100;state.moves++;selected=null;sfx('good');render()}}
+function clearSel(){selected=null;render()}
+function autoFoundation(source,index,col){const card=source==='waste'?state.waste.at(-1):source==='tableau'?state.tableau[col][index]:source==='foundation'?state.foundations[col].at(-1):null;if(!card||!card.faceUp)return;selected={source,index,col,id:card.id};if(canFoundation(card,card.suit))moveSelected({type:'foundation',suit:card.suit});else{selected=null;toast('아직 이 인물 앞의 시대 카드가 필요해요.');render()}}
+function drawStock(){pushHistory();if(state.stock.length){const c=state.stock.pop();c.faceUp=true;state.waste.push(c);state.moves++;sfx('flip')}else if(state.waste.length){while(state.waste.length){const c=state.waste.pop();c.faceUp=false;state.stock.push(c)}state.moves++;state.score=Math.max(0,state.score-15);sfx('shuffle')}else{historyStack.pop()}selected=null;render()}
+function possibleMoves(){const m=[];const w=state.waste.at(-1);if(w){if(canFoundation(w,w.suit))m.push({card:w,target:'foundation',suit:w.suit,msg:`${w.name}을(를) ${SUITS[w.suit].name} 연표에 올릴 수 있어요.`});for(let col=0;col<7;col++)if(canTableau([w],state.tableau[col]))m.push({card:w,target:'tableau',col,msg:`${w.name}을(를) ${col+1}열로 옮길 수 있어요.`})}for(let col=0;col<7;col++){const p=state.tableau[col];for(let i=0;i<p.length;i++){const card=p[i];if(!card.faceUp)continue;const seq=p.slice(i);if(i===p.length-1&&canFoundation(card,card.suit))m.push({card,target:'foundation',suit:card.suit,msg:`${card.name}을(를) 연표 칸에 올려보세요.`});for(let t=0;t<7;t++)if(t!==col&&canTableau(seq,state.tableau[t]))m.push({card,target:'tableau',col:t,msg:`${card.name}부터 이어진 카드 묶음을 ${t+1}열로 옮길 수 있어요.`})}}return m}
+function hint(){clearHints();const moves=possibleMoves();if(!moves.length){if(state.stock.length||state.waste.length){toast('덱에서 새 카드를 뽑아보세요.');$('#stockSlot').classList.add('hint')}else toast('가능한 이동이 잘 보이지 않아요. 되돌리기를 활용해보세요.');return}const h=moves[0],el=document.querySelector(`[data-id="${h.card.id}"]`);if(el)el.classList.add('hint');if(h.target==='foundation')document.querySelector(`[data-foundation="${h.suit}"]`)?.classList.add('hint');else document.querySelector(`[data-col="${h.col}"]`)?.classList.add('hint');toast(h.msg);setTimeout(clearHints,2400)}
+function clearHints(){$$('.hint').forEach(x=>x.classList.remove('hint'))}
+function checkWin(){if(!state)return;const total=SUIT_KEYS.reduce((n,s)=>n+state.foundations[s].length,0);if(total!==52)return;clearInterval(timerId);const t=elapsed();$('#winTime').textContent=fmt(t);$('#winScore').textContent=state.score;$('#winMoves').textContent=state.moves;saveBest(t,state.score);$('#winOverlay').classList.remove('hidden');sfx('win')}
+function saveBest(t,score){try{const oldScore=+(localStorage.getItem('historyMatchHS')||0);if(score>oldScore)localStorage.setItem('historyMatchHS',String(score));const key=mode==='learn'?'historySolitaireBestLearn':'historySolitaireBestMaster';const old=JSON.parse(localStorage.getItem(key)||'null');if(!old||t<old.time)localStorage.setItem(key,JSON.stringify({time:t,score,date:Date.now()}))}catch(e){}}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('on'),2200)}
+function sfx(type){try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();const now=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);let f=type==='good'?660:type==='flip'?320:type==='undo'?180:type==='shuffle'?220:type==='win'?880:430;o.frequency.setValueAtTime(f,now);if(type==='win')o.frequency.exponentialRampToValueAtTime(1320,now+.35);else o.frequency.exponentialRampToValueAtTime(Math.max(90,f*.75),now+.12);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.055,now+.012);g.gain.exponentialRampToValueAtTime(.0001,now+(type==='win'?.5:.16));o.start(now);o.stop(now+(type==='win'?.52:.18))}catch(e){}}
+$$('.mode-card').forEach(b=>b.onclick=()=>{$$('.mode-card').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');mode=b.dataset.mode});
+$('#startBtn').onclick=()=>{$('#startOverlay').classList.add('hidden');newGame()};$('#newBtn').onclick=()=>{$('#startOverlay').classList.remove('hidden');clearInterval(timerId)};$('#homeBtn').onclick=()=>location.href='index.html';$('#undoBtn').onclick=undo;$('#hintBtn').onclick=hint;$('#againBtn').onclick=()=>{$('#winOverlay').classList.add('hidden');newGame()};window.addEventListener('resize',()=>state&&render());
+</script>
 </body>
 </html>
