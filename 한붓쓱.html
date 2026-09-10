@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>한 번에 쓱! - 한붓그리기</title>
+<title>한붓쓱 · 골목 배달</title>
 <style>
 :root{
   --ink:#303845;
@@ -216,6 +216,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
   .icon-btn{width:46px;height:46px}
   .side-tools{right:50%;bottom:max(12px,env(safe-area-inset-bottom));top:auto;transform:translateX(50%);flex-direction:row}
 }
+.route-rule{position:absolute;left:12px;right:12px;top:10px;text-align:center;font-size:12px;line-height:1.5;color:#657b7d;pointer-events:none}.hint-label{top:50px;pointer-events:none}#skipDelivery{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);z-index:9;background:#214a53;color:white;cursor:pointer}.board-shell{background:#f3f7ef}.home-card h1{font-size:clamp(30px,5vw,56px)}.tool-btn:disabled{opacity:.45;cursor:default}.toast{max-width:90%;white-space:normal;text-align:center}.stage-pill{max-width:50vw;overflow:hidden;white-space:nowrap}@media(max-width:800px){.hint-label{top:50px}.route-rule{font-size:11px}}@media(max-height:480px){.route-rule{font-size:10px;top:4px}.hint-label{top:33px;padding:5px 9px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -226,8 +227,8 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
         <i></i><i></i><i></i><i></i>
         <span></span><span></span><span></span><span></span>
       </div>
-      <h1>한 번에 쓱!</h1>
-      <p class="subtitle">모든 선을 단 한 번씩 지나가 보세요.</p>
+      <h1>한붓쓱! 골목 배달</h1>
+      <p class="subtitle">모든 골목을 한 번씩 잇고, 라이더에게 길을 알려 주세요.</p>
       <div class="main-actions">
         <button id="continueBtn" class="big-btn primary">이어하기</button>
         <button id="selectBtn" class="big-btn secondary">스테이지 선택</button>
@@ -272,7 +273,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
     </div>
     <div class="board-wrap">
       <div id="boardShell" class="board-shell">
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">같은 점은 다시 지나도 돼요 · 같은 선은 한 번만!<br>드래그하거나 점을 차례로 눌러 이어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
         <div id="hintLabel" class="hint-label"></div>
         <div class="side-tools">
           <button id="undoBtn" class="tool-btn" aria-label="한 단계 되돌리기">
@@ -307,7 +308,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
       <div class="success-ring">
         <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
       </div>
-      <h3>완성!</h3>
+      <h3>배달 완료!</h3>
       <p id="successText">모든 선을 한 번씩 지났어요.</p>
       <div class="modal-actions">
         <button id="successSelect" class="secondary">목록으로</button>
@@ -350,7 +351,7 @@ save.lastStage=Math.max(1,Math.min(TOTAL_STAGES,Number(save.lastStage)||1));
 const state={
   stageIndex:0,stage:null,nodes:[],edges:[],path:[],used:new Set(),dragging:false,
   pointer:{x:0,y:0},hintNodes:new Set(),hintEdge:null,hintUntil:0,hintTimer:null,
-  shakeUntil:0,blocked:false
+  shakeUntil:0,blocked:false,pointerId:null,generation:0,completionTimer:null,delivery:null,deliveryFrame:null,visualRadius:12
 };
 
 function edgeKey(a,b){return a<b?a+'-'+b:b+'-'+a}
@@ -375,6 +376,7 @@ function closeTransient(){
   if(!screens.game.classList.contains('active'))$('#successModal').classList.remove('show');
 }
 function showScreen(name){
+  if(name!=='game')cancelPending();
   Object.values(screens).forEach(s=>s.classList.remove('active'));
   screens[name].classList.add('active');
   state.dragging=false;
@@ -461,7 +463,7 @@ function loadStage(index){
   index=Math.max(0,Math.min(TOTAL_STAGES-1,index));
   const target=STAGES[index];
   if(!isUnlocked(target.num)){showScreen('select');announceSelect('스테이지 '+firstIncomplete()+'을 먼저 완료해 주세요.');return}
-  ensureAudio();state.stageIndex=index;state.stage=target;save.lastStage=target.num;persist();
+  cancelPending();ensureAudio();state.stageIndex=index;state.stage=target;save.lastStage=target.num;persist();
   state.path=[];state.used.clear();state.dragging=false;state.blocked=false;clearHint(false);
   $('#successModal').classList.remove('show');$('#settingsModal').classList.remove('show');updateStagePill();showScreen('game');resizeCanvas();updateProgress();draw();
 }
@@ -469,24 +471,30 @@ function updateProgress(){$('#progressBox').textContent=state.used.size+' / '+st
 
 /* 캔버스와 도형 */
 function resizeCanvas(){
+  state.dragging=false;state.pointerId=null;
   const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
   canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);
   if(state.stage)rebuildGeometry(rect.width,rect.height);updateStagePill();draw();
 }
 function rebuildGeometry(w,h){
-  const bottomTools=w<760||h<620,reserveRight=bottomTools?0:92,reserveBottom=bottomTools?78:0;
-  const areaW=Math.max(1,w-reserveRight),areaH=Math.max(1,h-reserveBottom),size=Math.max(1,Math.min(areaW,areaH));
-  const ox=(areaW-size)/2,oy=(areaH-size)/2;
-  state.nodes=state.stage.coords.map((p,i)=>({id:i,x:ox+p.x*size,y:oy+p.y*size}));
-  state.edges=state.stage.edges.map((e,i)=>({id:i,a:e[0],b:e[1],key:edgeKey(e[0],e[1])}));
+ const bottomTools=window.innerWidth<=800||window.innerHeight<=620;
+ const left=30,top=h<360?58:87,right=bottomTools?30:100,bottom=bottomTools?91:28;
+ const areaW=Math.max(1,w-left-right),areaH=Math.max(1,h-top-bottom),ps=state.stage.coords;
+ const minX=Math.min(...ps.map(p=>p.x)),maxX=Math.max(...ps.map(p=>p.x)),minY=Math.min(...ps.map(p=>p.y)),maxY=Math.max(...ps.map(p=>p.y));
+ const size=Math.min(areaW/Math.max(.01,maxX-minX),areaH/Math.max(.01,maxY-minY));
+ const ox=left+(areaW-(maxX-minX)*size)/2,oy=top+(areaH-(maxY-minY)*size)/2;
+ state.nodes=ps.map((p,i)=>({id:i,x:ox+(p.x-minX)*size,y:oy+(p.y-minY)*size}));
+ let closest=Infinity;state.nodes.forEach(n=>{n.spacing=Math.min(...state.nodes.filter(m=>m.id!==n.id).map(m=>Math.hypot(m.x-n.x,m.y-n.y)));closest=Math.min(closest,n.spacing)});
+ state.visualRadius=Math.min(18,Math.max(4,closest*.24));
+ state.edges=state.stage.edges.map((e,i)=>({id:i,a:e[0],b:e[1],key:edgeKey(e[0],e[1])}));
 }
 function nodeById(id){return state.nodes[id]}
 function currentNode(){return state.path.length?state.path[state.path.length-1]:null}
+function hitRadius(n,boost=1){return Math.min(n.spacing*.43,Math.max(16,state.visualRadius*1.5)*boost)}
 function findNode(x,y,ids=null,radiusBoost=1){
-  const rect=canvas.getBoundingClientRect(),radius=Math.max(25,Math.min(43,Math.min(rect.width,rect.height)*.052))*radiusBoost;
-  const allowed=ids?new Set(ids):null;let best=null,bd=Infinity;
-  for(const n of state.nodes){if(allowed&&!allowed.has(n.id))continue;const d=Math.hypot(n.x-x,n.y-y);if(d<radius&&d<bd){best=n;bd=d}}
-  return best;
+ let best=null,bd=Infinity;for(const n of state.nodes){const d=Math.hypot(n.x-x,n.y-y);if(d<=hitRadius(n,radiusBoost)&&d<bd){best=n;bd=d}}
+ // Never ignore a closer, but unavailable, point in favor of a farther one.
+ return best&&(!ids||ids.includes(best.id))?best:null;
 }
 function getEdge(a,b){return state.edges.find(e=>(e.a===a&&e.b===b)||(e.a===b&&e.b===a))}
 function availableFrom(id){return state.edges.filter(e=>!state.used.has(e.id)&&(e.a===id||e.b===id))}
@@ -497,12 +505,12 @@ function clearHint(redraw=true){
   $('#hintLabel').classList.remove('show');$('#undoBtn').classList.remove('attention');if(redraw)draw();
 }
 function traverse(to){
-  if(state.blocked)return;clearHint(false);const from=currentNode();
+  if(state.blocked||!Number.isInteger(to)||!nodeById(to))return;clearHint(false);const from=currentNode();
   if(from===null){state.path=[to];playMove();draw();return}
   if(from===to)return;
-  const e=getEdge(from,to);if(!e||state.used.has(e.id)){badMove();return}
+  const e=getEdge(from,to);if(!e||state.used.has(e.id)){toast(!e?'이 두 점 사이에는 골목이 없어요.':'이미 지난 골목이에요. 되돌리기 버튼을 이용해요.');badMove();return}
   state.used.add(e.id);state.path.push(to);playMove();updateProgress();draw();
-  if(state.used.size===state.edges.length){state.blocked=true;setTimeout(completeStage,330);return}
+  if(isCompletePath()){startDelivery();return}
   if(availableFrom(to).length===0){toast('막다른 길이에요. 되돌리거나 다시 시작해 보세요.');badMove();$('#undoBtn').classList.add('attention');return}
   if(save.assist&&!completionTrail(to)){toast('이 경로로는 끝까지 이어지지 않아요. 되돌려 보세요.');$('#undoBtn').classList.add('attention')}
 }
@@ -548,41 +556,78 @@ function showHint(){
 }
 
 function draw(){
-  if(!state.stage)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);
+  if(!state.stage)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);ctx.fillStyle='#f3f7ef';ctx.fillRect(0,0,rect.width,rect.height);
   const now=performance.now();let sx=0;if(now<state.shakeUntil){sx=Math.sin(now*.16)*5;requestAnimationFrame(draw)}if(now<state.hintUntil)requestAnimationFrame(draw);
   ctx.save();ctx.translate(sx,0);ctx.fillStyle='rgba(112,128,150,.075)';
   for(let y=28;y<rect.height;y+=34)for(let x=28;x<rect.width;x+=34){ctx.beginPath();ctx.arc(x,y,1.15,0,Math.PI*2);ctx.fill()}
-  const shortSide=Math.min(rect.width,rect.height),lineW=Math.max(6,Math.min(12,shortSide*.014));ctx.lineCap='round';ctx.lineJoin='round';
+  const shortSide=Math.min(rect.width,rect.height),lineW=Math.min(10,Math.max(3,state.visualRadius*.55));ctx.lineCap='round';ctx.lineJoin='round';
+  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#e2e9df';ctx.lineWidth=lineW+9;ctx.stroke()});
   state.edges.forEach(e=>{if(state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#d5dbe4';ctx.lineWidth=lineW;ctx.stroke()});
   if(state.hintEdge&&now<state.hintUntil){const a=nodeById(state.hintEdge.a),b=nodeById(state.hintEdge.b);ctx.shadowColor='rgba(79,124,255,.65)';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#4f7cff';ctx.lineWidth=lineW+5;ctx.stroke();ctx.shadowBlur=0}
   state.edges.forEach(e=>{if(!state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b),grad=ctx.createLinearGradient(a.x,a.y,b.x,b.y);grad.addColorStop(0,'#ff8a1f');grad.addColorStop(1,'#ffbd42');ctx.shadowColor='rgba(255,138,31,.28)';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=grad;ctx.lineWidth=lineW+2;ctx.stroke();ctx.shadowBlur=0});
   if(state.dragging&&currentNode()!==null){const a=nodeById(currentNode());ctx.setLineDash([9,9]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(state.pointer.x,state.pointer.y);ctx.strokeStyle='rgba(255,138,31,.32)';ctx.lineWidth=Math.max(3,lineW*.45);ctx.stroke();ctx.setLineDash([])}
-  const density=state.nodes.length>12?.82:state.nodes.length>9?.9:1,baseR=Math.max(10,Math.min(21,shortSide*.026))*density,visited=new Set(state.path);
+  const baseR=state.visualRadius,visited=new Set(state.path);
   state.nodes.forEach(n=>{const hinted=state.hintNodes.has(n.id)&&now<state.hintUntil,pulse=hinted?1+Math.sin(now*.009)*.16:1;ctx.shadowColor=hinted?'rgba(79,124,255,.48)':'rgba(34,44,62,.18)';ctx.shadowBlur=hinted?24:8;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse+5,0,Math.PI*2);ctx.fillStyle=hinted?'rgba(79,124,255,.2)':'rgba(255,255,255,.97)';ctx.fill();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse,0,Math.PI*2);ctx.fillStyle=visited.has(n.id)?'#ff8a1f':'#3b4452';ctx.fill();if(currentNode()===n.id){ctx.beginPath();ctx.arc(n.x,n.y,baseR*.42,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill()}});
-  ctx.restore();
+  drawDelivery(now);ctx.restore();
 }
 
-/* 포인터 입력: 현재 점과 실제로 연결된 점만 감지하여 오작동 방지 */
+/* Input: one active pointer; swept hit tests preserve intermediate vertices. */
+function inputAllowed(){return screens.game.classList.contains('active')&&!state.blocked&&!$('#settingsModal').classList.contains('show')&&!$('#successModal').classList.contains('show')}
 function canvasPoint(ev){const r=canvas.getBoundingClientRect();return{x:ev.clientX-r.left,y:ev.clientY-r.top}}
+function endPointer(ev){if(ev&&state.pointerId!==null&&ev.pointerId!==state.pointerId)return;state.dragging=false;state.pointerId=null;draw()}
+function processSegment(from,to){
+ const vx=to.x-from.x,vy=to.y-from.y,len2=vx*vx+vy*vy;if(len2<.01)return;
+ const hits=[];for(const n of state.nodes){if(n.id===currentNode())continue;const radius=hitRadius(n,save.assist?1.15:1),wx=from.x-n.x,wy=from.y-n.y,B=2*(wx*vx+wy*vy),D=B*B-4*len2*(wx*wx+wy*wy-radius*radius);if(D<0)continue;const enter=(-B-Math.sqrt(D))/(2*len2),exit=(-B+Math.sqrt(D))/(2*len2);if(exit>=0&&enter<=1)hits.push({n,t:Math.max(0,enter)})}
+ hits.sort((a,b)=>a.t-b.t);for(const {n} of hits){if(state.blocked)break;if(n.id===currentNode())continue;if(!canTraverse(currentNode(),n.id)){break}traverse(n.id)}
+}
 canvas.addEventListener('pointerdown',ev=>{
-  if(state.blocked)return;ensureAudio();canvas.setPointerCapture?.(ev.pointerId);const p=canvasPoint(ev);state.pointer=p;state.dragging=true;
-  const cur=currentNode(),ids=cur===null?null:[cur,...availableNeighborIds(cur)],n=findNode(p.x,p.y,ids,save.assist?1.18:1);
-  if(n){if(cur===null)traverse(n.id);else if(n.id!==cur)traverse(n.id);else draw()}
+ if(!inputAllowed()||state.pointerId!==null||ev.button>0)return;const p=canvasPoint(ev),n=findNode(p.x,p.y,null,save.assist?1.15:1);if(!n)return;
+ const cur=currentNode();if(cur!==null&&cur!==n.id&&!canTraverse(cur,n.id)){toast('현재 점에서 이어진, 아직 지나지 않은 골목을 선택해요.');badMove();return}
+ ensureAudio();state.pointerId=ev.pointerId;state.pointer=p;state.dragging=true;canvas.setPointerCapture?.(ev.pointerId);if(n.id!==cur)traverse(n.id);draw();
 });
 canvas.addEventListener('pointermove',ev=>{
-  if(!state.dragging||state.blocked)return;const p=canvasPoint(ev);state.pointer=p;const cur=currentNode();
-  if(cur!==null){const n=findNode(p.x,p.y,availableNeighborIds(cur),save.assist?1.28:1);if(n&&canTraverse(cur,n.id))traverse(n.id)}draw();
+ if(!inputAllowed()||!state.dragging||state.pointerId!==ev.pointerId)return;
+ const samples=ev.getCoalescedEvents?.()||[];for(const sample of samples.length?samples:[ev]){const p=canvasPoint(sample);processSegment(state.pointer,p);state.pointer=p;if(state.blocked)break}draw();
 });
-function endPointer(){state.dragging=false;draw()}
-canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('pointerleave',ev=>{if(ev.pointerType==='mouse')endPointer()});
+canvas.addEventListener('pointerup',ev=>{if(inputAllowed()&&state.dragging&&state.pointerId===ev.pointerId)processSegment(state.pointer,canvasPoint(ev));endPointer(ev)});
+canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);window.addEventListener('blur',()=>endPointer());
+
+function isCompletePath(){
+ if(!state.stage||!state.edges.length||state.path.length!==state.edges.length+1||state.used.size!==state.edges.length)return false;
+ const seen=new Set();for(let i=1;i<state.path.length;i++){const e=getEdge(state.path[i-1],state.path[i]);if(!e||seen.has(e.id)||!state.used.has(e.id))return false;seen.add(e.id)}return seen.size===state.edges.length;
+}
+function setToolsDisabled(v){for(const id of ['#undoBtn','#resetBtn','#hintBtn'])$(id).disabled=v}
+function cancelPending(){state.generation++;clearTimeout(state.completionTimer);state.completionTimer=null;cancelAnimationFrame(state.deliveryFrame);state.deliveryFrame=null;state.delivery=null;state.blocked=false;state.dragging=false;state.pointerId=null;$('#skipDelivery').hidden=true;setToolsDisabled(false);clearHint(false)}
+function startDelivery(){
+ if(!isCompletePath()||state.delivery)return;state.blocked=true;state.dragging=false;state.pointerId=null;setToolsDisabled(true);clearHint(false);
+ const token=state.generation;state.delivery={start:performance.now(),duration:Math.min(11000,Math.max(3500,state.edges.length*390)),path:state.path.slice(),token};
+ $('#skipDelivery').hidden=false;$('#hintLabel').textContent='내가 그린 길로 라이더가 배달 중이에요!';$('#hintLabel').classList.add('show');
+ const frame=()=>{if(!state.delivery||state.generation!==token)return;draw();if(performance.now()-state.delivery.start>=state.delivery.duration){finishDelivery();return}state.deliveryFrame=requestAnimationFrame(frame)};state.deliveryFrame=requestAnimationFrame(frame);
+}
+function finishDelivery(){if(!state.delivery||state.delivery.token!==state.generation||!isCompletePath())return;cancelAnimationFrame(state.deliveryFrame);state.delivery=null;state.deliveryFrame=null;$('#skipDelivery').hidden=true;$('#hintLabel').classList.remove('show');completeStage();draw()}
+$('#skipDelivery').onclick=finishDelivery;
+function drawDelivery(now){
+ if(!state.path.length)return;
+ const start=nodeById(state.path[0]),finish=nodeById(state.path[state.path.length-1]);
+ ctx.textAlign='center';ctx.font='bold 11px system-ui';ctx.fillStyle='#287b74';ctx.fillText('출발',start.x,start.y-state.visualRadius-12);
+ if(!state.delivery)return;
+ const points=state.delivery.path.map(nodeById),lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y)),total=lengths.reduce((a,b)=>a+b,0);let travel=Math.min(1,Math.max(0,(now-state.delivery.start)/state.delivery.duration))*total,idx=0;while(idx<lengths.length-1&&travel>lengths[idx]){travel-=lengths[idx];idx++}
+ const a=points[idx],b=points[idx+1],f=Math.min(1,travel/Math.max(.001,lengths[idx])),x=a.x+(b.x-a.x)*f,y=a.y+(b.y-a.y)*f,angle=Math.atan2(b.y-a.y,b.x-a.x),scale=Math.min(1.1,Math.max(.55,state.visualRadius/15));
+ ctx.fillStyle='#287b74';ctx.fillText(start.id===finish.id?'출발 · 도착':'도착',finish.x,finish.y-state.visualRadius-12);
+ ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(angle);ctx.shadowColor='#24434b44';ctx.shadowBlur=8;
+ ctx.fillStyle='#263c50';ctx.fillRect(-17,-9,10,5);ctx.fillRect(-17,4,10,5);ctx.fillRect(10,-8,10,5);ctx.fillRect(10,3,10,5);
+ ctx.fillStyle='#36b9aa';ctx.beginPath();ctx.roundRect(-19,-7,38,14,5);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#f4834b';ctx.fillRect(-21,-11,17,22);ctx.fillStyle='#fff1d6';ctx.fillRect(-15,-11,4,22);
+ ctx.fillStyle='#21566c';ctx.beginPath();ctx.ellipse(3,0,10,8,0,0,7);ctx.fill();ctx.fillStyle='#fff7e8';ctx.beginPath();ctx.arc(9,0,8,0,7);ctx.fill();ctx.fillStyle='#4589ac';ctx.fillRect(11,-5,5,10);ctx.restore();
+}
 
 /* 완료 */
 function completeStage(){
+  if(!state.blocked||!isCompletePath()||!screens.game.classList.contains('active'))return;
   const num=state.stage.num,wasNew=!save.completed.includes(num);if(wasNew)save.completed.push(num);save.completed.sort((a,b)=>a-b);save.lastStage=num===TOTAL_STAGES?1:num+1;persist();syncHome();playWin();burstConfetti();
   const chapterDone=num%10===0&&CHAPTERS[(num-1)/10]&&STAGES.slice(num-10,num).every(s=>save.completed.includes(s.num));
   if(num===TOTAL_STAGES&&save.completed.length===TOTAL_STAGES)$('#successText').textContent='50개 스테이지를 모두 완성했어요!';
   else if(chapterDone)$('#successText').textContent=state.stage.chapterName+' 챕터를 모두 완성했어요.';
-  else $('#successText').textContent='스테이지 '+num+'의 모든 선을 완성했어요.';
+  else $('#successText').textContent='스테이지 '+num+'에서 내가 그린 모든 골목으로 배달했어요.';
   $('#nextBtn').textContent=num===TOTAL_STAGES?'처음부터':'다음 스테이지';$('#successModal').classList.add('show');
 }
 function burstConfetti(){
@@ -595,7 +640,7 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 $('#continueBtn').onclick=()=>loadStage(continueStageNumber()-1);
 $('#selectBtn').onclick=()=>{ensureAudio();showScreen('select')};$('#selectBack').onclick=()=>showScreen('home');
 $('#gameBack').onclick=()=>{state.blocked=false;showScreen('select')};$('#undoBtn').onclick=undo;$('#resetBtn').onclick=resetStage;$('#hintBtn').onclick=showHint;
-$('#settingsBtn').onclick=()=>{$('#settingsModal').classList.add('show');syncToggles()};$('#settingsClose').onclick=()=>$('#settingsModal').classList.remove('show');
+$('#settingsBtn').onclick=()=>{if(state.delivery)return;endPointer();$('#settingsModal').classList.add('show');syncToggles()};$('#settingsClose').onclick=()=>$('#settingsModal').classList.remove('show');
 $('#settingsModal').addEventListener('pointerdown',e=>{if(e.target===$('#settingsModal'))$('#settingsModal').classList.remove('show')});
 $('#successSelect').onclick=()=>{state.blocked=false;$('#successModal').classList.remove('show');showScreen('select')};
 $('#nextBtn').onclick=()=>{const next=state.stage.num===TOTAL_STAGES?1:state.stage.num+1;loadStage(next-1)};
@@ -610,7 +655,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'){if($('#settingsModal').classList.contains('show'))$('#settingsModal').classList.remove('show');else if($('#successModal').classList.contains('show')){$('#successModal').classList.remove('show');state.blocked=false;showScreen('select')}else showScreen('select');return}
   const key=e.key.toLowerCase();if(key==='z'){e.preventDefault();undo()}else if(key==='r')resetStage();else if(key==='h')showHint();
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden)stopBgm();else if(save.bgm&&audioCtx)startBgm()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){endPointer();stopBgm();}else if(save.bgm&&audioCtx)startBgm()});
 
 /* 50개 스테이지 데이터 자동 검증 */
 function properCross(a,b,c,d){
@@ -637,3 +682,4 @@ function pointSegmentDistance(p,a,b){const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p
 </script>
 </body>
 </html>
+
