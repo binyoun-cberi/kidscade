@@ -2,1217 +2,468 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>스펠링 프로그 DX 🐸 - 영어 단어 점프 어드벤처</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>스펠링 프로그: 크로스로드</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
 <style>
-    :root {
-        --pond:#082f49;
-        --pond2:#0f766e;
-        --lime:#7dd3fc;
-        --panel:rgba(15, 23, 42, .76);
-        --stroke:rgba(255,255,255,.16);
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-        margin: 0;
-        overflow: hidden;
-        background:
-            radial-gradient(circle at 20% 12%, rgba(74,222,128,.22), transparent 30%),
-            radial-gradient(circle at 85% 8%, rgba(56,189,248,.18), transparent 28%),
-            linear-gradient(180deg, #052e2b 0%, #0f172a 60%, #020617 100%);
-        touch-action: none;
-        font-family: 'Comic Sans MS', 'Chalkboard SE', 'Noto Sans KR', sans-serif;
-        color: white;
-    }
-    #game-container {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        max-width: 620px;
-        margin: 0 auto;
-        background: linear-gradient(180deg, #064e3b 0%, #0f172a 100%);
-        box-shadow: 0 0 42px rgba(14,165,233,.25), 0 0 0 1px rgba(255,255,255,.08);
-        overflow: hidden;
-    }
-    canvas { display: block; width: 100%; height: 100%; }
-    .ui-layer { position: absolute; inset: 0; pointer-events: none; }
-    .pointer-events-auto { pointer-events: auto; }
-    .glass {
-        background: var(--panel);
-        border: 1px solid var(--stroke);
-        box-shadow: 0 10px 30px rgba(0,0,0,.23), inset 0 1px 0 rgba(255,255,255,.1);
-        backdrop-filter: blur(12px);
-    }
-    .text-glow { text-shadow: 0 0 10px rgba(134,239,172,.85), 0 0 24px rgba(56,189,248,.55); }
-    .word-done { color: #facc15; text-shadow: 0 0 12px rgba(250,204,21,.75); display:inline-block; transform: translateY(-1px); }
-    .word-active { color: #86efac; text-shadow: 0 0 16px rgba(74,222,128,.95); display:inline-block; animation: activeLetter .7s ease-in-out infinite alternate; }
-    .word-pending { color: #94a3b8; display:inline-block; }
-    .bar-fill { transform-origin:left center; transition: width .18s linear; }
-    .pop { animation: pop .28s cubic-bezier(.18,1.7,.42,1); }
-    .shake { animation: shake .28s linear; }
-    .reward-pop { animation: rewardPop .75s ease-out; }
-    .screen-flash { animation: flash .45s ease-out; }
-    .bad-flash { animation: badFlash .42s ease-out; }
-    .floaty { animation: floaty 3s ease-in-out infinite; }
-    .shimmer {
-        position: relative;
-        overflow: hidden;
-    }
-    .shimmer::after {
-        content: "";
-        position: absolute;
-        top: -60%;
-        left: -40%;
-        width: 35%;
-        height: 220%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,.38), transparent);
-        transform: rotate(25deg);
-        animation: shimmer 2.5s ease-in-out infinite;
-    }
-    .dpad button {
-        pointer-events: auto;
-        width: 58px;
-        height: 58px;
-        border-radius: 18px;
-        background: rgba(15,23,42,.74);
-        border: 1px solid rgba(255,255,255,.22);
-        box-shadow: 0 7px 0 rgba(0,0,0,.22), 0 0 20px rgba(56,189,248,.18);
-        font-size: 24px;
-        font-weight: 900;
-        transition: transform .08s, filter .08s;
-    }
-    .dpad button:active { transform: translateY(6px) scale(.97); filter: brightness(1.2); box-shadow: 0 1px 0 rgba(0,0,0,.22); }
-    @keyframes activeLetter { from { transform: scale(1); } to { transform: scale(1.16) rotate(-2deg); } }
-    @keyframes pop { 0% { transform: scale(.88); } 100% { transform: scale(1); } }
-    @keyframes rewardPop { 0% { transform: scale(.7) rotate(-4deg); opacity:0; } 25% { opacity:1; } 70% { transform: scale(1.08) rotate(2deg); } 100% { transform: scale(1); opacity:1; } }
-    @keyframes flash { from { background: rgba(250,204,21,.55); } to { background: transparent; } }
-    @keyframes badFlash { from { background: rgba(248,113,113,.52); } to { background: transparent; } }
-    @keyframes shake {
-        0%,100% { transform: translateX(0); }
-        20% { transform: translateX(-7px); }
-        40% { transform: translateX(7px); }
-        60% { transform: translateX(-4px); }
-        80% { transform: translateX(4px); }
-    }
-    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-    @keyframes shimmer { 0% { left: -60%; } 58%,100% { left: 130%; } }
-    @media (min-width: 768px) {
-        .dpad { opacity:.52; }
-        .dpad:hover { opacity:1; }
-    }
+:root{--ink:#10243a;--glass:rgba(255,255,255,.88);--line:rgba(16,36,58,.12);--green:#35b96f;--yellow:#ffd85b;--bad:#ef6461}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Pretendard,"Noto Sans KR","Malgun Gothic",system-ui,sans-serif;background:#9dd9f3;color:var(--ink);touch-action:none}button{font:inherit}#game{position:relative;width:100%;height:100%;overflow:hidden}canvas{display:block;width:100%;height:100%}.hud{position:absolute;inset:0;pointer-events:none;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;justify-content:space-between}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.wordbox,.statbox,.toast,.tip,.control{backdrop-filter:blur(11px);background:var(--glass);border:1px solid var(--line);box-shadow:0 8px 24px #23415b1d}.wordbox{border-radius:18px;padding:10px 12px;max-width:min(72vw,520px);min-width:220px}.meaning{font-size:clamp(15px,3.7vw,21px);font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.spell{font-size:clamp(20px,5.2vw,34px);font-weight:1000;letter-spacing:.14em;margin-top:3px;white-space:nowrap}.spell .done{color:#1b8e53}.spell .next{color:#ef9a21;text-decoration:underline;text-decoration-thickness:3px}.mini{font-size:10px;font-weight:800;color:#5d7183;margin-top:4px}.statbox{border-radius:16px;padding:9px 11px;text-align:right;min-width:112px;font-size:11px;font-weight:900}.statbox b{font-size:19px}.statbox .hearts{font-size:15px;letter-spacing:1px}.bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}.tip{border-radius:14px;padding:8px 11px;font-size:11px;font-weight:900;max-width:310px;opacity:.92}.dpad{pointer-events:auto;display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:5px}.dpad button{border:0;border-radius:15px;background:rgba(15,45,62,.78);color:white;font-size:21px;font-weight:1000;box-shadow:0 5px 0 rgba(0,0,0,.18);touch-action:manipulation}.dpad button:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.18)}.dpad .up{grid-column:2}.dpad .left{grid-column:1;grid-row:2}.dpad .down{grid-column:2;grid-row:2}.dpad .right{grid-column:3;grid-row:2}.toast{position:absolute;left:50%;top:22%;transform:translate(-50%,-8px);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:1000;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}.toast.on{opacity:1;transform:translate(-50%,0)}.stork{position:absolute;left:50%;top:15%;transform:translateX(-50%);font-size:13px;font-weight:1000;color:#8a2d29;background:#fff4f1;border:2px solid #f2a49d;border-radius:999px;padding:7px 12px;opacity:0;transition:.2s;pointer-events:none}.stork.on{opacity:1;animation:pulse .65s infinite alternate}@keyframes pulse{to{transform:translateX(-50%) scale(1.04)}}.overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(47,126,165,.55),rgba(6,45,55,.72));backdrop-filter:blur(7px);display:grid;place-items:center;padding:16px;z-index:20}.panel{width:min(610px,96vw);max-height:92vh;overflow:auto;border-radius:28px;background:rgba(255,255,255,.96);border:2px solid rgba(255,255,255,.75);box-shadow:0 25px 80px #0a33436b;padding:22px;text-align:center}.frogicon{font-size:68px;filter:drop-shadow(0 8px 6px #0002)}.panel h1{font-size:clamp(29px,7vw,46px);margin:1px 0 5px}.panel .lead{color:#577082;line-height:1.55;margin:0 0 14px;font-weight:700}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.features div{background:#eef8f0;border-radius:14px;padding:10px 6px;font-size:11px;font-weight:900}.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:13px 0}.mode{border:2px solid #d8e3e8;border-radius:15px;padding:11px 5px;background:white;cursor:pointer;font-weight:1000}.mode small{display:block;color:#718595;font-size:10px;margin-top:3px}.mode.sel{border-color:#36ad6b;background:#edfbf3;color:#167744}.start{width:100%;border:0;border-radius:16px;padding:14px;background:linear-gradient(#58d989,#2eb36b);color:#073c25;font-size:18px;font-weight:1000;box-shadow:0 6px 0 #18824a;cursor:pointer}.start:active{transform:translateY(4px);box-shadow:0 2px 0 #18824a}.rules{font-size:11px;line-height:1.6;color:#607482;text-align:left;margin-top:13px;background:#f5f8fa;border-radius:14px;padding:11px}.resultgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0}.resultgrid div{background:#eef5f7;border-radius:14px;padding:10px 4px}.resultgrid b{display:block;font-size:23px}.hidden{display:none!important}@media(max-width:600px){.hud{padding-left:7px;padding-right:7px}.wordbox{min-width:0;max-width:70vw;padding:8px 10px}.statbox{min-width:95px;padding:7px 8px}.dpad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px)}.features{grid-template-columns:1fr 1fr}.features div:last-child{grid-column:1/-1}.panel{padding:17px}.tip{max-width:44vw;font-size:10px;padding:7px 8px}}
 </style>
 </head>
 <body>
-<div id="game-container">
-    <canvas id="gameCanvas" width="600" height="800"></canvas>
-    <div id="flash-overlay" class="ui-layer"></div>
-
-    <div class="ui-layer flex flex-col justify-between p-3 md:p-4">
-        <div class="flex gap-3 items-start justify-between">
-            <div id="word-card" class="glass rounded-3xl p-3 min-w-[240px] max-w-[62%] transition-transform">
-                <div class="flex items-center justify-between gap-2 mb-2">
-                    <span class="text-[11px] font-black text-sky-200 tracking-wider">SPELLING QUEST</span>
-                    <span class="text-[11px] px-2 py-1 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-emerald-200">
-                        x<span id="ui-multiplier">1.0</span>
-                    </span>
-                </div>
-                <div id="ui-meaning" class="text-lg md:text-xl text-emerald-200 font-black leading-tight truncate">뜻</div>
-                <div class="flex items-end gap-2 mt-1">
-                    <div id="ui-word" class="text-3xl md:text-4xl font-black tracking-[.18em] leading-none"></div>
-                    <div id="ui-target-letter" class="text-sm font-black text-yellow-300 mb-1"></div>
-                </div>
-                <div class="mt-3 h-3 rounded-full bg-slate-950/70 border border-white/10 overflow-hidden">
-                    <div id="ui-timer-fill" class="bar-fill h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-300 to-yellow-300" style="width:100%"></div>
-                </div>
-                <div class="mt-1 text-[11px] text-slate-300 flex justify-between">
-                    <span>단어 제한시간</span><span id="ui-timer-text">0초</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-end gap-2">
-                <div class="glass rounded-2xl px-3 py-2 text-right min-w-[150px]">
-                    <div class="text-[11px] text-slate-300 font-black">SCORE</div>
-                    <div id="ui-score" class="text-2xl font-black text-yellow-300 leading-none">0</div>
-                    <div class="text-[11px] text-purple-200 mt-1">BEST <span id="ui-highscore">0</span></div>
-                </div>
-                <div class="glass rounded-full px-3 py-2 flex items-center gap-2">
-                    <span class="text-[11px] font-black text-rose-100">LIFE</span>
-                    <span id="ui-lives" class="text-xl">❤️❤️❤️</span>
-                </div>
-                <button id="btn-hint" class="pointer-events-auto glass rounded-full px-4 py-2 text-sm font-black text-cyan-200 active:scale-95 transition">
-                    힌트 <span id="ui-hints">3</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="flex justify-between items-end gap-3">
-            <div id="combo-toast" class="glass rounded-2xl px-4 py-3 opacity-0 transition-opacity max-w-[260px]">
-                <div class="text-xs text-slate-300 font-black">현재 콤보</div>
-                <div id="ui-combo" class="text-2xl font-black text-emerald-300">1 WORD</div>
-            </div>
-            <div class="dpad grid grid-cols-3 grid-rows-3 gap-2 pointer-events-none select-none">
-                <div></div><button data-move="0,-1">▲</button><div></div>
-                <button data-move="-1,0">◀</button><button data-move="0,0" id="btn-pause">Ⅱ</button><button data-move="1,0">▶</button>
-                <div></div><button data-move="0,1">▼</button><div></div>
-            </div>
-        </div>
+<div id="game">
+  <div class="hud">
+    <div class="top">
+      <div class="wordbox"><div class="meaning" id="meaning">뜻</div><div class="spell" id="spell"></div><div class="mini" id="wordMeta">다음 알파벳이 있는 체크포인트까지 길을 건너세요.</div></div>
+      <div class="statbox"><div>거리 <b id="distance">0m</b></div><div>단어 <span id="words">0</span> · 콤보 <span id="combo">0</span></div><div class="hearts" id="hearts">❤️❤️❤️</div><div>BEST <span id="best">0</span>m</div></div>
     </div>
-
-    <div id="overlay" class="ui-layer pointer-events-auto flex items-center justify-center bg-black/72 backdrop-blur-md transition-opacity duration-300">
-        <div id="overlay-card" class="glass rounded-[2rem] border-2 border-emerald-300/60 shadow-[0_0_44px_rgba(74,222,128,.35)] max-w-[92%] w-[520px] p-7 md:p-8 text-center reward-pop">
-            <div class="text-7xl mb-2 floaty">🐸</div>
-            <h1 id="overlay-title" class="text-4xl md:text-5xl font-black text-white text-glow mb-2">스펠링 프로그 DX</h1>
-            <p id="overlay-subtitle" class="text-emerald-200 font-black mb-5">단어를 완성하며 강을 건너는 영어 점프 게임</p>
-            <div id="overlay-msg" class="text-slate-100 text-sm md:text-base leading-relaxed space-y-2 mb-6">
-                <p>한국어 뜻을 보고, <b class="text-yellow-300">현재 알파벳</b>이 적힌 통나무로 점프하세요.</p>
-                <p><b class="text-emerald-300">정답 줄 보장</b>으로 막히는 상황을 줄이고, 콤보가 오를수록 강물이 빨라집니다.</p>
-                <p class="bg-sky-500/15 border border-sky-200/20 rounded-2xl p-3">새 기능: 제한시간 · 힌트 · 콤보 배율 · 움직이는 이펙트 · 더 선명한 정답 피드백</p>
-            </div>
-            <div id="difficulty-panel" class="grid grid-cols-3 gap-2 mb-5">
-                <button data-difficulty="easy" class="difficulty-btn shimmer rounded-2xl py-3 bg-emerald-500/25 border border-emerald-300/30 font-black text-emerald-100 active:scale-95">연습</button>
-                <button data-difficulty="normal" class="difficulty-btn shimmer rounded-2xl py-3 bg-sky-500/30 border-2 border-sky-200/60 font-black text-white active:scale-95">기본</button>
-                <button data-difficulty="hard" class="difficulty-btn shimmer rounded-2xl py-3 bg-rose-500/25 border border-rose-300/30 font-black text-rose-100 active:scale-95">도전</button>
-            </div>
-            <button id="btn-start" class="shimmer bg-gradient-to-b from-lime-300 to-emerald-500 hover:from-lime-200 hover:to-emerald-400 text-slate-950 font-black text-2xl py-4 px-10 rounded-full shadow-lg transform transition active:scale-95 border-b-4 border-emerald-800">
-                GAME START
-            </button>
-        </div>
+    <div class="bottom">
+      <div class="tip" id="tip">도로·강·철길을 건너고 정답 알파벳을 밟으세요. ← ↑ ↓ → / WASD / 스와이프</div>
+      <div class="dpad">
+        <button class="up" data-move="0,1">▲</button><button class="left" data-move="-1,0">◀</button><button class="down" data-move="0,-1">▼</button><button class="right" data-move="1,0">▶</button>
+      </div>
     </div>
+  </div>
+  <div class="toast" id="toast"></div><div class="stork" id="stork">🪽 황새가 다가와요! 움직이세요!</div>
+  <div class="overlay" id="startOverlay">
+    <div class="panel"><div class="frogicon">🐸</div><h1>스펠링 프로그</h1><p class="lead">블록 개구리와 길을 건너며 영어 단어를 한 글자씩 완성하세요.</p>
+      <div class="features"><div>🚗 자동차 도로</div><div>🪵 통나무 강</div><div>🚆 경고등 철길</div></div>
+      <div class="modes"><button class="mode sel" data-mode="easy">연습<small>짧은 단어 · 3❤️</small></button><button class="mode" data-mode="normal">기본<small>다양한 단어 · 2❤️</small></button><button class="mode" data-mode="hard">도전<small>긴 단어 · 1❤️</small></button></div>
+      <button class="start" id="startBtn">길 건너기 시작!</button>
+      <div class="rules"><b>게임 방법</b><br>① 한 칸씩 앞·뒤·좌·우로 점프합니다. ② 자동차와 기차를 피하고, 강에서는 움직이는 통나무 위를 밟으세요. ③ 금빛 체크포인트에서 다음 철자와 같은 알파벳 칸을 선택하세요. 틀려도 목숨은 줄지 않고 한 칸 뒤로 튕겨납니다. ④ 가만히 있으면 황새가 나타납니다. 단어를 많이 완성하고 멀리 갈수록 기록이 올라갑니다.</div>
+    </div>
+  </div>
+  <div class="overlay hidden" id="gameOver"><div class="panel"><div class="frogicon">🏁</div><h1>오늘의 탐험 끝!</h1><p class="lead" id="resultMsg">개구리가 여기까지 왔어요.</p><div class="resultgrid"><div><b id="rDistance">0m</b><span>최고 거리</span></div><div><b id="rWords">0</b><span>완성 단어</span></div><div><b id="rCombo">0</b><span>최고 콤보</span></div></div><button class="start" id="retryBtn">다시 도전</button></div></div>
 </div>
-
 <script>
-const rawDict = "A:APPLE=사과,ANIMAL=동물,ANGRY=화난,AIR=공기,ART=예술,ACTOR=배우,ANT=개미,ARM=팔,AUNT=이모,AUTUMN=가을,AGE=나이,ALBUM=앨범,ALIVE=살아있는,ALONE=혼자인,ALWAYS=항상,ANGEL=천사,ANSWER=대답,AREA=지역,AROUND=주변에,ARRIVE=도착하다|B:BEAR=곰,BIRD=새,BLUE=파란색,BOOK=책,BREAD=빵,BABY=아기,BACK=뒤,BALL=공,BAND=밴드,BANK=은행,BASE=기초,BATH=목욕,BEACH=해변,BEAUTIFUL=아름다운,BECAUSE=왜냐하면,BECOME=되다,BED=침대,BEE=벌,BEFORE=전에,BEGIN=시작하다,BEHIND=뒤에,BELL=종,BELOW=아래에,BEST=최고의,BETTER=더나은,BICYCLE=자전거,BIG=큰,BLACK=검은색,BLIND=눈먼,BLOCK=블록,BLOOD=피,BLOW=불다,BOAT=보트,BODY=몸,BONE=뼈,BOSS=상사,BOTTLE=병,BOTTOM=바닥,BOWL=그릇,BOX=상자,BOY=소년,BRAIN=뇌,BRANCH=나뭇가지,BRAVE=용감한,BREAK=부수다,BRIDGE=다리,BRIGHT=밝은,BRING=가져오다,BROTHER=형제,BROWN=갈색,BRUSH=붓,BUILD=짓다,BURN=태우다,BUS=버스,BUSY=바쁜,BUTTER=버터,BUTTON=버튼,BUY=사다|C:CAT=고양이,COLOR=색깔,CLEAN=깨끗한,CLOUD=구름,CITY=도시,CAKE=케이크,CALL=부르다,CAMERA=카메라,CAMP=캠프,CANDY=사탕,CAP=모자,CAR=차,CARD=카드,CARE=돌보다,CARRY=나르다,CASE=상자,CATCH=잡다,CENTER=중심,CHAIR=의자,CHANCE=기회,CHANGE=바꾸다,CHEAP=싼,CHECK=확인하다,CHEESE=치즈,CHICKEN=닭,CHILD=아이,CHOCOLATE=초콜릿,CHOOSE=선택하다,CIRCLE=원,CLASS=수업,CLEVER=영리한,CLIMB=오르다,CLOCK=시계,CLOSE=닫다,CLOTHES=옷,COAT=코트,COFFEE=커피,COIN=동전,COLD=추운,COMPANY=회사,COOK=요리하다,COOL=시원한,COPY=복사하다,CORNER=모서리,COST=비용,COTTON=면,COUNT=세다,COUNTRY=나라,COURSE=코스,COVER=덮다,COW=소,CRAZY=미친,CROSS=건너다,CRY=울다,CUP=컵,CUT=자르다|D:DOG=개,DESK=책상,DREAM=꿈,DRINK=마시다,DANCE=춤추다,DANGER=위험,DARK=어두운,DATE=날짜,DAUGHTER=딸,DAY=낮,DEAD=죽은,DEAR=친애하는,DEEP=깊은,DEER=사슴,DELICIOUS=맛있는,DESIGN=디자인,DIARY=일기,DIE=죽다,DIFFERENT=다른,DIFFICULT=어려운,DIRTY=더러운,DISCOVER=발견하다,DISH=접시,DOOR=문,DOWN=아래로,DRAW=그리다,DRESS=드레스,DRIVE=운전하다,DROP=떨어지다,DRY=마른,DUCK=오리,DUST=먼지|E:ELEPHANT=코끼리,EARTH=지구,EIGHT=숫자8,ENERGY=에너지,EAGLE=독수리,EAR=귀,EARLY=일찍,EAST=동쪽,EASY=쉬운,EAT=먹다,EGG=계란,EMPTY=비어있는,END=끝,ENGINE=엔진,ENJOY=즐기다,ENOUGH=충분한,ENTER=들어가다,EVENING=저녁,EVERY=모든,EXACT=정확한,EXAMPLE=예,EXCUSE=용서하다,EXERCISE=운동,EYE=눈|F:FROG=개구리,FISH=물고기,FRIEND=친구,FRUIT=과일,FACE=얼굴,FACT=사실,FALL=떨어지다,FAMILY=가족,FAMOUS=유명한,FAR=멀리,FARM=농장,FAST=빠른,FAT=뚱뚱한,FATHER=아버지,FEEL=느끼다,FEW=거의없는,FIELD=들판,FIGHT=싸우다,FILL=채우다,FILM=영화,FIND=찾다,FINE=좋은,FINGER=손가락,FINISH=끝내다,FIRE=불,FIRST=첫번째,FIX=고치다,FLAG=깃발,FLAT=평평한,FLOOR=바닥,FLOWER=꽃,FLY=날다,FOCUS=집중하다,FOOD=음식,FOOL=바보,FOOT=발,FORGET=잊다,FORK=포크,FREE=자유로운,FRESH=신선한,FRONT=앞,FULL=가득찬,FUN=재미|G:GIRL=소녀,GREEN=초록색,GREAT=위대한,GAME=게임,GARDEN=정원,GAS=가스,GATE=문,GENTLE=부드러운,GHOST=유령,GIFT=선물,GIVE=주다,GLAD=기쁜,GLASS=유리,GLOVE=장갑,GOAL=목표,GOLD=금,GOOD=좋은,GOOSE=거위,GRAND=웅장한,GRAPE=포도,GRASS=풀,GRAY=회색,GREET=인사하다,GROUND=땅,GROUP=그룹,GROW=자라다,GUESS=추측하다,GUEST=손님,GUIDE=안내하다,GUITAR=기타,GUN=총|H:HORSE=말,HOUSE=집,HEART=심장,HAPPY=행복한,HAIR=머리카락,HALF=절반,HALL=홀,HAND=손,HANDLE=손잡이,HANG=매달다,HAPPEN=일어나다,HARD=어려운,HAT=모자,HATE=싫어하다,HEAD=머리,HEALTH=건강,HEAR=듣다,HEAVY=무거운,HELLO=안녕,HELP=돕다,HERE=여기,HIDE=숨다,HIGH=높은,HILL=언덕,HIT=치다,HOBBY=취미,HOLE=구멍,HOLIDAY=휴일,HOME=집,HONEY=꿀,HOPE=희망,HORN=뿔,HOT=뜨거운,HOTEL=호텔,HOUR=시간,HUMAN=인간,HUNGRY=배고픈,HUNT=사냥하다,HURRY=서두르다,HURT=다치다|I:ICE=얼음,ISLAND=섬,IDEA=생각,IRON=철,ILL=아픈,IMAGE=이미지,IMPORTANT=중요한,INSIDE=안에,INTEREST=흥미,INVENT=발명하다,INVITE=초대하다|J:JUMP=점프하다,JUICE=주스,JOKE=농담,JELLY=젤리,JACKET=재킷,JAM=잼,JAR=항아리,JEWEL=보석,JOIN=참가하다,JOY=기쁨,JUDGE=판단하다,JUNGLE=정글|K:KING=왕,KNEE=무릎,KITE=연,KNIFE=칼,KEEP=유지하다,KEY=열쇠,KICK=차다,KID=아이,KILL=죽이다,KIND=친절한,KISS=키스하다,KITCHEN=부엌,KNOCK=두드리다,KNOW=알다|L:LION=사자,LEMON=레몬,LAKE=호수,LIGHT=빛,LADY=숙녀,LAMP=램프,LAND=땅,LARGE=큰,LAST=마지막,LATE=늦은,LAUGH=웃다,LEAD=이끌다,LEAF=나뭇잎,LEARN=배우다,LEAVE=떠나다,LEFT=왼쪽,LEG=다리,LESSON=수업,LETTER=편지,LEVEL=수준,LIBRARY=도서관,LIFE=삶,LINE=선,LIP=입술,LISTEN=듣다,LITTLE=작은,LIVE=살다,LOCK=자물쇠,LONG=긴,LOOK=보다,LOSE=잃다,LOVE=사랑,LOW=낮은,LUCK=행운,LUNCH=점심|M:MONKEY=원숭이,MUSIC=음악,MOUSE=쥐,MONEY=돈,MACHINE=기계,MAD=미친,MAGIC=마술,MAIL=우편,MAKE=만들다,MAN=남자,MAP=지도,MARK=표시,MARKET=시장,MARRY=결혼하다,MATCH=시합,MATTER=문제,MEAL=식사,MEAN=의미하다,MEAT=고기,MEDICINE=약,MEET=만나다,MEMORY=기억,MERRY=즐거운,MESSAGE=메시지,METAL=금속,MIDDLE=중간,MILK=우유,MIND=마음,MINUTE=분,MIRROR=거울,MISS=놓치다,MODEL=모델,MOMENT=순간,MONTH=달,MOON=달,MORNING=아침,MOTHER=어머니,MOUNTAIN=산,MOUTH=입,MOVE=움직이다,MUCH=많은,MUSEUM=박물관|N:NOSE=코,NIGHT=밤,NURSE=간호사,NATURE=자연,NAME=이름,NARROW=좁은,NATION=국가,NEAR=가까운,NECK=목,NEED=필요하다,NEIGHBOR=이웃,NET=그물,NEVER=결코아니다,NEW=새로운,NEWS=뉴스,NICE=좋은,NOISE=소음,NORTH=북쪽,NOTE=메모,NOW=지금,NUMBER=숫자|O:ORANGE=오렌지,OCEAN=바다,ONION=양파,OFFICE=사무실,OAK=참나무,OASIS=오아시스,OBEY=복종하다,OBJECT=물건,OBSERVE=관찰하다,OFFER=제공하다,OFTEN=종종,OIL=기름,OLD=오래된,ONLY=오직,OPEN=열다,OPINION=의견,ORDER=주문하다,OTHER=다른,OUTSIDE=바깥,OVER=넘어서,OWN=소유하다|P:PIG=돼지,PEACE=평화,PIZZA=피자,PAPER=종이,PAGE=페이지,PAINT=칠하다,PAIR=쌍,PANTS=바지,PARENT=부모,PARK=공원,PART=부분,PARTY=파티,PASS=지나가다,PAST=과거,PAY=지불하다,PEN=펜,PENCIL=연필,PEOPLE=사람들,PEPPER=후추,PERFECT=완벽한,PERSON=사람,PET=애완동물,PIANO=피아노,PICTURE=그림,PIECE=조각,PILOT=조종사,PINE=소나무,PINK=분홍색,PLACE=장소,PLAN=계획,PLANT=식물,PLAY=놀다,PLEASE=제발,POCKET=주머니,POINT=가리키다,POLICE=경찰,POOL=수영장,POOR=가난한,PORK=돼지고기,POTATO=감자,POWER=힘,PRESENT=선물,PRESS=누르다,PRETTY=예쁜,PRICE=가격,PRINCE=왕자,PRINT=인쇄하다,PROBLEM=문제,PROMISE=약속,PROUD=자랑스러운,PULL=당기다,PUMP=펌프,PUSH=밀다,PUT=놓다|Q:QUEEN=여왕,QUICK=빠른,QUIET=조용한,QUARTER=4분의1,QUESTION=질문,QUIZ=퀴즈|R:RABBIT=토끼,RIVER=강,ROSE=장미,RAIN=비,RACE=경주,RADIO=라디오,READ=읽다,READY=준비된,REAL=진짜의,REASON=이유,RECEIVE=받다,RECORD=기록,RED=빨간색,REMEMBER=기억하다,REPEAT=반복하다,REST=휴식,RETURN=돌아오다,RIBBON=리본,RICE=쌀,RICH=부유한,RIDE=타다,RIGHT=오른쪽,RING=반지,ROAD=도로,ROBOT=로봇,ROCK=바위,ROLL=구르다,ROOF=지붕,ROOM=방,ROOT=뿌리,ROPE=밧줄,ROUND=둥근,RULE=규칙,RUN=달리다,RUSH=돌진하다|S:SNAKE=뱀,SPACE=우주,SMILE=미소,STORY=이야기,SAD=슬픈,SAFE=안전한,SAIL=항해하다,SALT=소금,SAME=같은,SAND=모래,SAVE=구하다,SAY=말하다,SCHOOL=학교,SCIENCE=과학,SCORE=점수,SEA=바다,SEASON=계절,SEAT=좌석,SECRET=비밀,SEE=보다,SEED=씨앗,SELL=팔다,SEND=보내다,SENSE=감각,SERVICE=서비스,SHADOW=그림자,SHAKE=흔들다,SHAPE=모양,SHARE=나누다,SHARP=날카로운,SHEEP=양,SHEET=종이한장,SHINE=빛나다,SHIP=배,SHIRT=셔츠,SHOCK=충격,SHOE=신발,SHOOT=쏘다,SHOP=상점,SHORT=짧은,SHOULDER=어깨,SHOUT=외치다,SHOW=보여주다,SHOWER=샤워,SHUT=닫다,SICK=아픈,SIDE=쪽,SIGHT=시야,SIGN=신호,SILENT=침묵하는,SILVER=은,SIMPLE=간단한,SING=노래하다,SINGLE=단일의,SISTER=자매,SIT=앉다,SIZE=크기,SKILL=기술,SKIN=피부,SKIRT=치마,SKY=하늘,SLEEP=잠자다,SLOW=느린,SMALL=작은,SMELL=냄새,SMOKE=연기,SNACK=간식,SNOW=눈,SOAP=비누,SOCCER=축구,SOCK=양말,SOFT=부드러운,SOLDIER=군인,SOLID=단단한,SOME=어떤,SON=아들,SONG=노래,SOON=곧,SORRY=미안한,SOUND=소리,SOUP=수프,SOUTH=남쪽,SPEAK=말하다,SPEED=속도,SPELL=철자를쓰다,SPEND=소비하다,SPIDER=거미,SPOON=숟가락,SPORT=스포츠,SPRING=봄,SQUARE=정사각형,STAGE=무대,STAMP=우표,STAND=서다,STAR=별,START=시작하다,STATE=상태,STATION=역,STAY=머무르다,STEP=걸음,STICK=막대기,STONE=돌,STOP=멈추다,STORE=가게,STORM=폭풍,STREET=거리,STRIKE=치다,STRONG=강한,STUDENT=학생,STUDY=공부하다,STUPID=어리석은,SUCCESS=성공,SUGAR=설탕,SUMMER=여름,SUN=태양,SUPPER=저녁식사,SURE=확신하는,SURPRISE=놀라다,SWEET=달콤한,SWIM=수영하다,SWORD=검,SYSTEM=시스템|T:TIGER=호랑이,TREE=나무,TRAIN=기차,TIME=시간,TABLE=탁자,TAIL=꼬리,TAKE=가져가다,TALK=말하다,TALL=키큰,TASTE=맛,TAXI=택시,TEA=차,TEACH=가르치다,TEAM=팀,TEAR=눈물,TELEPHONE=전화,TELL=말하다,TEMPLE=사원,TENT=텐트,TEST=시험,THANK=감사하다,THICK=두꺼운,THIN=얇은,THING=물건,THINK=생각하다,THIRSTY=목마른,THOUGHT=생각,TICKET=표,TIE=묶다,TIGHT=단단한,TIRED=피곤한,TODAY=오늘,TOGETHER=함께,TOMORROW=내일,TONGUE=혀,TONIGHT=오늘밤,TOO=너무,TOOTH=이빨,TOP=꼭대기,TOUCH=만지다,TOUR=여행,TOWN=마을,TOY=장난감,TRACK=자취,TRADE=무역,TRAFFIC=교통,TRAVEL=여행하다,TRICK=속임수,TRIP=여행,TROUBLE=문제,TRUE=사실의,TRUST=믿다,TRY=시도하다,TURN=돌다,TWIN=쌍둥이|U:UMBRELLA=우산,UNDER=아래에,UNCLE=삼촌,UGLY=못생긴,UNIFORM=제복,UNION=결합,UNIT=단위,UNIVERSE=우주,UP=위로,USE=사용하다,USEFUL=유용한,USUAL=보통의|V:VOICE=목소리,VIDEO=비디오,VIRUS=바이러스,VALLEY=계곡,VALUE=가치,VEGETABLE=채소,VERY=매우,VICTORY=승리,VIEW=경치,VILLAGE=마을,VIOLIN=바이올린,VISIT=방문하다,VOTE=투표하다|W:WATER=물,WORLD=세계,WIND=바람,WHITE=하얀색,WAKE=깨다,WALK=걷다,WALL=벽,WANT=원하다,WAR=전쟁,WARM=따뜻한,WASH=씻다,WASTE=낭비하다,WATCH=시계,WAVE=파도,WAY=길,WEAK=약한,WEALTH=부,WEAR=입다,WEATHER=날씨,WEDDING=결혼식,WEEK=주,WEIGHT=무게,WELCOME=환영하다,WELL=잘,WEST=서쪽,WHEEL=바퀴,WHEN=언제,WHERE=어디,WHICH=어느,WHILE=동안,WHISPER=속삭이다,WHO=누구,WHY=왜,WIDE=넓은,WIFE=아내,WILD=야생의,WILL=의지,WIN=이기다,WINDOW=창문,WING=날개,WINTER=겨울,WISE=지혜로운,WISH=바라다,WITH=함께,WOMAN=여자,WOOD=나무,WORD=단어,WORK=일하다,WORM=벌레,WORRY=걱정하다,WORTH=가치있는,WRITE=쓰다,WRONG=틀린|X:XYLOPHONE=실로폰,XRAY=엑스레이|Y:YELLOW=노란색,YOUTH=젊음,YEAR=연도,YARD=마당,YEAH=네,YEAR=해,YELLOW=노란색,YES=네,YESTERDAY=어제,YET=아직,YOUNG=젊은|Z:ZEBRA=얼룩말,ZERO=숫자0,ZONE=구역,ZOO=동물원";
-
-const dictionary = {};
-rawDict.split('|').forEach(group => {
-    const parts = group.split(':');
-    const letter = parts[0];
-    const words = parts[1].split(',');
-    dictionary[letter] = words.map(item => {
-        const wParts = item.split('=');
-        return { w: wParts[0], m: wParts[1] };
-    });
-});
-
-const DIFFICULTY = {
-    easy:   { name: '연습', lives: 5, hints: 5, speed: .78, timer: 1.25, wrongGrace: 1, targetChance: .48 },
-    normal: { name: '기본', lives: 3, hints: 3, speed: 1.00, timer: 1.00, wrongGrace: 0, targetChance: .38 },
-    hard:   { name: '도전', lives: 3, hints: 1, speed: 1.22, timer: .84, wrongGrace: 0, targetChance: .32 }
-};
-let selectedDifficulty = 'normal';
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const Sound = {
-    tone(freq, type, duration, volume = .08, slideFreq = null, delay = 0) {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const start = audioCtx.currentTime + delay;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, start);
-        if (slideFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideFreq), start + duration);
-        gain.gain.setValueAtTime(volume, start);
-        gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(start);
-        osc.stop(start + duration);
-    },
-    jump() { this.tone(290, 'sine', .16, .08, 620); },
-    correct() { this.tone(620, 'triangle', .08, .08); this.tone(850, 'triangle', .14, .07, null, .08); },
-    wrong() { this.tone(170, 'sawtooth', .26, .1, 85); },
-    splash() { this.tone(120, 'square', .35, .09, 55); },
-    bonus() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 'square', .09, .055, null, i * .065)); },
-    tick() { this.tone(880, 'sine', .04, .025); },
-    over() { this.tone(220, 'sawtooth', .65, .12, 60); }
-};
-
-let bgmTimer = null;
-function startBGM() {
-    if (bgmTimer) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const seq = [0, 4, 7, 12, 7, 4, 9, 7, 5, 9, 12, 16, 12, 9, 7, 4];
-    let idx = 0;
-    let nextTime = audioCtx.currentTime + .08;
-    function schedule() {
-        const now = audioCtx.currentTime;
-        while (nextTime < now + .12) {
-            if (idx % 4 === 0) {
-                Sound.tone(72, 'square', .08, .025, 28, nextTime - now);
-            }
-            if (idx % 2 === 0) {
-                const freq = 261.63 * Math.pow(2, seq[idx % seq.length] / 12);
-                Sound.tone(freq, 'triangle', .12, .018, null, Math.max(0, nextTime - now));
-            }
-            nextTime += .18;
-            idx++;
-        }
-        bgmTimer = requestAnimationFrame(schedule);
-    }
-    schedule();
-}
-function stopBGM() {
-    if (bgmTimer) cancelAnimationFrame(bgmTimer);
-    bgmTimer = null;
-}
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
-if (!ctx.roundRect) {
-    ctx.roundRect = function (x, y, w, h, r) {
-        if (w < 2 * r) r = w / 2;
-        if (h < 2 * r) r = h / 2;
-        this.moveTo(x + r, y);
-        this.arcTo(x + w, y, x + w, y + h, r);
-        this.arcTo(x + w, y + h, x, y + h, r);
-        this.arcTo(x, y + h, x, y, r);
-        this.arcTo(x, y, x + w, y, r);
-        return this;
-    };
-}
-
-const TILE = 80;
-const COLS = 7;
-const BOARD_X = (W - COLS * TILE) / 2;
-const CHECKPOINT_GAP = 7;
-const HIGH_KEY = 'spellingFrogDXHighScore';
-
-let state = 'START';
-let stageCombo = 1;
-let score = 0;
-let highScore = Number(localStorage.getItem(HIGH_KEY) || 0);
-let lives = 3;
-let hints = 3;
-let wrongGrace = 0;
-let currentWord = '';
-let currentMeaning = '';
-let targetLetterIndex = 0;
-let wordTime = 20;
-let wordTimeMax = 20;
-let lastFrame = performance.now();
-
-let frog = {};
-let lastSafe = { row: 0, col: Math.floor(COLS / 2) };
-let rowData = {};
-let maxGeneratedRow = 5;
-let camera = { y: 0 };
-let particles = [];
-let floatingTexts = [];
-let rings = [];
-let waterOffset = 0;
-let shakePower = 0;
-let hintTarget = null;
-
-function targetChar() {
-    return currentWord[targetLetterIndex] || currentWord[0] || 'A';
-}
-
-function pickWord(startChar) {
-    const list = dictionary[startChar] || dictionary[startChar?.toUpperCase?.()] || dictionary.A;
-    let selected = list[Math.floor(Math.random() * list.length)];
-    if (currentWord && list.length > 1) {
-        let guard = 0;
-        while (selected.w === currentWord && guard++ < 12) {
-            selected = list[Math.floor(Math.random() * list.length)];
-        }
-    }
-    currentWord = selected.w;
-    currentMeaning = selected.m;
-    targetLetterIndex = 0;
-    resetWordTimer();
-}
-
-function resetWordTimer() {
-    const diff = DIFFICULTY[selectedDifficulty];
-    const base = 10 + Math.min(10, currentWord.length * 2.2);
-    const comboPenalty = Math.min(5.5, Math.floor(stageCombo / 4) * .8);
-    wordTimeMax = Math.max(7, (base - comboPenalty) * diff.timer);
-    wordTime = wordTimeMax;
-}
-
-function initGame(fullReset = true) {
-    const diff = DIFFICULTY[selectedDifficulty];
-    if (fullReset) {
-        stageCombo = 1;
-        score = 0;
-        lives = diff.lives;
-        hints = diff.hints;
-        wrongGrace = diff.wrongGrace;
-        pickWord('A');
-    }
-    rowData = {};
-    maxGeneratedRow = 5;
-    lastSafe = { row: 0, col: Math.floor(COLS / 2) };
-    resetFrogTo(lastSafe.row, lastSafe.col);
-    ensureRowsGenerated(frog.row - 22);
-    updateUI();
-    hideOverlay();
-    state = 'PLAYING';
-    showToast(`${DIFFICULTY[selectedDifficulty].name} 모드 시작!`, '#86efac');
-}
-
-function resetFrogTo(row, col) {
-    frog = {
-        row, col,
-        x: BOARD_X + col * TILE + TILE * .15,
-        y: row * TILE + TILE * .13,
-        targetX: BOARD_X + col * TILE + TILE * .15,
-        targetY: row * TILE + TILE * .13,
-        w: TILE * .72,
-        h: TILE * .72,
-        riding: null,
-        isDead: false,
-        hop: 0,
-        face: 'up',
-        invincible: .55
-    };
-    camera.y = frog.y - H * .68;
-}
-
-function isGrassRow(r) {
-    return Math.abs(r) % CHECKPOINT_GAP === 0;
-}
-
-function ensureRowsGenerated(targetRow) {
-    while (maxGeneratedRow > targetRow) {
-        const r = maxGeneratedRow;
-        rowData[r] = isGrassRow(r)
-            ? { type: 'grass', row: r, checkpoint: true, spark: Math.random() * 100 }
-            : { type: 'water', row: r, platforms: generatePlatformsForRow(r), targetFor: null };
-        maxGeneratedRow--;
-    }
-}
-
-function laneDifficulty(row) {
-    const forward = Math.max(0, Math.abs(row));
-    return 1 + Math.min(1.85, forward * .025 + stageCombo * .035);
-}
-
-function generatePlatformsForRow(r) {
-    const diff = DIFFICULTY[selectedDifficulty];
-    const dir = Math.random() > .5 ? 1 : -1;
-    const lane = laneDifficulty(r);
-    const base = (1.05 + Math.random() * 1.15) * lane * diff.speed;
-    const speed = base * dir;
-    const count = 3 + Math.floor(Math.random() * 2);
-    const wrapLength = W + TILE * 5;
-    const gap = wrapLength / count;
-    const platforms = [];
-    for (let i = 0; i < count; i++) {
-        const widthUnit = Math.random() < .18 ? 1.75 : (.92 + Math.random() * .62);
-        const w = TILE * widthUnit;
-        const x = -TILE * 2 + i * gap + Math.random() * Math.max(16, gap - w);
-        platforms.push(createPlatform(x, r * TILE, w, speed, r, wrapLength));
-    }
-    return platforms;
-}
-
-function createPlatform(x, y, w, speed, row, wrapLength) {
-    const dangerChance = Math.min(.26, .08 + Math.abs(row) * .004 + stageCombo * .005);
-    const isCroc = Math.random() < dangerChance;
-    const bonus = Math.random() < .13 ? 'fly' : null;
-    return {
-        x, y, w, h: TILE * .8,
-        baseSpeed: speed,
-        row, wrapLength,
-        kind: isCroc ? 'croc' : 'log',
-        letter: randomLetter(),
-        active: true,
-        used: false,
-        bonus,
-        blink: Math.random() * 100,
-        targetGlowUntil: 0
-    };
-}
-
-function randomLetter(except = '') {
-    const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let ch = abc[Math.floor(Math.random() * abc.length)];
-    if (except && abc.length > 1) {
-        let guard = 0;
-        while (ch === except && guard++ < 10) ch = abc[Math.floor(Math.random() * abc.length)];
-    }
-    return ch;
-}
-
-function prepareRowForTarget(row, char = targetChar()) {
-    const rowObj = rowData[row];
-    if (!rowObj || rowObj.type !== 'water') return;
-    if (rowObj.targetFor === char) return;
-
-    const activePlatforms = rowObj.platforms.filter(p => !p.used);
-    if (!activePlatforms.length) return;
-
-    for (const p of rowObj.platforms) {
-        if (Math.random() < .75) {
-            p.letter = randomLetter(char);
-            p.active = true;
-        }
-    }
-
-    const target = activePlatforms[Math.floor(Math.random() * activePlatforms.length)];
-    target.letter = char;
-    target.active = true;
-    target.kind = target.kind === 'croc' && Math.random() < .65 ? 'log' : target.kind;
-    target.w = Math.max(target.w, TILE * 1.05);
-    target.targetGlowUntil = performance.now() + 1100;
-    rowObj.targetFor = char;
-
-    if (Math.random() < DIFFICULTY[selectedDifficulty].targetChance) {
-        const second = activePlatforms.find(p => p !== target);
-        if (second) {
-            second.letter = char;
-            second.active = true;
-            second.targetGlowUntil = performance.now() + 800;
-        }
-    }
-}
-
-function refreshAheadForNewTarget() {
-    hintTarget = null;
-    const start = frog.row - 1;
-    for (let r = start; r >= start - 18; r--) {
-        ensureRowsGenerated(r);
-        if (rowData[r] && rowData[r].type === 'water') {
-            rowData[r].targetFor = null;
-            prepareRowForTarget(r, targetChar());
-        }
-    }
-}
-
-function moveFrog(dx, dy) {
-    if (state !== 'PLAYING' || frog.isDead) return;
-    if (dx === 0 && dy === 0) {
-        togglePause();
-        return;
-    }
-    const oldRow = frog.row;
-    const oldCol = frog.col;
-    const newCol = Math.max(0, Math.min(COLS - 1, frog.col + dx));
-    let lowestVisibleRow = Math.ceil((camera.y + H) / TILE);
-    let newRow = Math.min(frog.row + dy, lowestVisibleRow - 1);
-    if (newRow > lastSafe.row + 3) newRow = lastSafe.row + 3;
-
-    ensureRowsGenerated(newRow - 22);
-    if (dy < 0 && rowData[newRow]?.type === 'water') prepareRowForTarget(newRow, targetChar());
-
-    frog.col = newCol;
-    frog.row = newRow;
-    frog.face = dy < 0 ? 'up' : (dy > 0 ? 'down' : (dx < 0 ? 'left' : 'right'));
-    frog.targetX = BOARD_X + frog.col * TILE + TILE * .15;
-    frog.targetY = frog.row * TILE + TILE * .13;
-    frog.x = frog.targetX;
-    frog.y = frog.targetY;
-    frog.riding = null;
-    frog.hop = 1;
-    Sound.jump();
-    rings.push({ x: frog.x + frog.w / 2, y: frog.y + frog.h / 2, r: 8, life: 1, color: '#7dd3fc' });
-    checkLanding(oldRow, oldCol);
-}
-
-function checkLanding(oldRow, oldCol) {
-    const rowObj = rowData[frog.row];
-    if (!rowObj) return;
-    if (rowObj.type === 'grass') {
-        lastSafe = { row: frog.row, col: frog.col };
-        score += Math.max(5, Math.floor(15 * multiplier()));
-        showFloatingText('SAVE', frog.x + frog.w / 2, frog.y - 10, '#86efac');
-        updateUI(true);
-        return;
-    }
-
-    let landed = null;
-    const center = frog.x + frog.w / 2;
-    const margin = selectedDifficulty === 'easy' ? 34 : 26;
-    for (const p of rowObj.platforms) {
-        if (center > p.x - margin && center < p.x + p.w + margin) {
-            landed = p;
-            break;
-        }
-    }
-
-    if (!landed) {
-        Sound.splash();
-        createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#60a5fa', 24);
-        loseLife('물에 풍덩!', oldRow, oldCol);
-        return;
-    }
-
-    frog.riding = landed;
-    frog.x = landed.x + (landed.w - frog.w) / 2;
-    frog.targetX = frog.x;
-    frog.col = Math.max(0, Math.min(COLS - 1, Math.floor((frog.x - BOARD_X + TILE / 2) / TILE)));
-
-    if (!landed.active || landed.used) return;
-
-    if (landed.letter === targetChar()) {
-        handleCorrect(landed);
-    } else {
-        handleWrong(landed, oldRow, oldCol);
-    }
-}
-
-function multiplier() {
-    return 1 + Math.min(2.5, (stageCombo - 1) * .08);
-}
-
-function handleCorrect(platform) {
-    Sound.correct();
-    platform.used = true;
-    platform.active = false;
-    platform.letter = '✓';
-    platform.targetGlowUntil = performance.now() + 700;
-
-    const base = 80 + Math.max(0, currentWord.length - 3) * 10;
-    const gain = Math.floor(base * multiplier());
-    score += gain;
-    targetLetterIndex++;
-    wordTime = Math.min(wordTimeMax, wordTime + 1.4);
-    createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#4ade80', 28);
-    showFloatingText(`+${gain}`, frog.x + frog.w / 2, frog.y - 20, '#bbf7d0');
-    popElement('word-card');
-
-    if (platform.bonus === 'fly') {
-        platform.bonus = null;
-        const bonus = Math.floor(120 * multiplier());
-        score += bonus;
-        wordTime = Math.min(wordTimeMax, wordTime + 2.5);
-        createParticles(frog.x + frog.w / 2, frog.y + frog.h / 2, '#facc15', 22);
-        showFloatingText(`파리 보너스 +${bonus}`, frog.x + frog.w / 2, frog.y - 50, '#fde68a');
-    }
-
-    if (targetLetterIndex >= currentWord.length) {
-        handleWordSuccess();
-    } else {
-        refreshAheadForNewTarget();
-    }
-    updateUI(true);
-}
-
-function handleWrong(platform, oldRow, oldCol) {
-    Sound.wrong();
-    platform.targetGlowUntil = performance.now() + 800;
-    showFloatingText(`${platform.letter} 아니에요!`, frog.x + frog.w / 2, frog.y - 22, '#fca5a5');
-    if (wrongGrace > 0) {
-        wrongGrace--;
-        showFloatingText('보호막 사용', frog.x + frog.w / 2, frog.y - 54, '#93c5fd');
-        bounceBack(oldRow, oldCol);
-        shake(.8);
-        updateUI();
-    } else {
-        loseLife('틀린 스펠링!', oldRow, oldCol);
-    }
-}
-
-function handleWordSuccess() {
-    Sound.bonus();
-    const clearBonus = Math.floor((520 + currentWord.length * 45) * multiplier());
-    score += clearBonus;
-    stageCombo++;
-    showToast(`WORD CLEAR! +${clearBonus}`, '#facc15');
-    document.getElementById('flash-overlay').classList.remove('screen-flash');
-    void document.getElementById('flash-overlay').offsetWidth;
-    document.getElementById('flash-overlay').classList.add('screen-flash');
-
-    const nextStart = currentWord.slice(-1);
-    pickWord(nextStart);
-    refreshAheadForNewTarget();
-
-    // 단어를 완성하면 앞쪽 맵이 새 타깃에 맞춰 살아나서 끊기지 않음
-    for (const r in rowData) {
-        if (Number(r) <= frog.row && rowData[r].type === 'water') {
-            rowData[r].targetFor = null;
-            for (const p of rowData[r].platforms) {
-                p.used = false;
-                p.active = true;
-            }
-        }
-    }
-}
-
-function loseLife(msg, oldRow = lastSafe.row, oldCol = lastSafe.col) {
-    if (frog.invincible > 0 && msg !== '시간 초과!') return;
-    lives--;
-    frog.isDead = true;
-    shake(1.2);
-    document.getElementById('flash-overlay').classList.remove('bad-flash');
-    void document.getElementById('flash-overlay').offsetWidth;
-    document.getElementById('flash-overlay').classList.add('bad-flash');
-    showFloatingText(msg, frog.x + frog.w / 2, frog.y - 18, '#f87171');
-    updateUI();
-
-    if (lives <= 0) {
-        Sound.over();
-        setTimeout(gameOver, 650);
-    } else {
-        setTimeout(() => {
-            targetLetterIndex = 0;
-            resetWordTimer();
-            resetFrogTo(lastSafe.row, lastSafe.col);
-            refreshAheadForNewTarget();
-            updateUI();
-        }, 760);
-    }
-}
-
-function bounceBack(row, col) {
-    frog.row = row;
-    frog.col = col;
-    frog.x = BOARD_X + col * TILE + TILE * .15;
-    frog.y = row * TILE + TILE * .13;
-    frog.targetX = frog.x;
-    frog.targetY = frog.y;
-    frog.riding = null;
-}
-
-function useHint() {
-    if (state !== 'PLAYING') return;
-    if (hints <= 0) {
-        showToast('힌트를 모두 사용했어요', '#fca5a5');
-        return;
-    }
-    hints--;
-    const candidates = [];
-    for (let r = frog.row - 1; r >= frog.row - 9; r--) {
-        ensureRowsGenerated(r - 1);
-        if (rowData[r]?.type === 'water') {
-            prepareRowForTarget(r, targetChar());
-            for (const p of rowData[r].platforms) {
-                if (p.active && !p.used && p.letter === targetChar()) candidates.push(p);
-            }
-        }
-    }
-    hintTarget = candidates[0] || null;
-    if (hintTarget) {
-        hintTarget.targetGlowUntil = performance.now() + 3500;
-        showToast(`다음 글자 ${targetChar()} 발판을 빛나게 표시!`, '#7dd3fc');
-        Sound.tick();
-    }
-    updateUI();
-}
-
-function togglePause() {
-    if (state === 'PLAYING') {
-        state = 'PAUSED';
-        showPauseOverlay();
-    } else if (state === 'PAUSED') {
-        hideOverlay();
-        state = 'PLAYING';
-        lastFrame = performance.now();
-    }
-}
-
-function updateUI(animated = false) {
-    document.getElementById('ui-score').innerText = score;
-    document.getElementById('ui-highscore').innerText = highScore;
-    document.getElementById('ui-lives').innerText = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, DIFFICULTY[selectedDifficulty].lives - lives));
-    document.getElementById('ui-hints').innerText = hints;
-    document.getElementById('ui-combo').innerText = `${stageCombo} WORD`;
-    document.getElementById('ui-multiplier').innerText = multiplier().toFixed(1);
-    document.getElementById('ui-meaning').innerText = currentMeaning;
-    document.getElementById('ui-target-letter').innerText = targetLetterIndex < currentWord.length ? `NEXT ${targetChar()}` : '';
-    const timerPercent = Math.max(0, Math.min(100, wordTime / wordTimeMax * 100));
-    document.getElementById('ui-timer-fill').style.width = `${timerPercent}%`;
-    document.getElementById('ui-timer-text').innerText = `${Math.ceil(wordTime)}초`;
-
-    let html = '';
-    for (let i = 0; i < currentWord.length; i++) {
-        if (i < targetLetterIndex) html += `<span class="word-done">${currentWord[i]}</span> `;
-        else if (i === targetLetterIndex) html += `<span class="word-active">_</span> `;
-        else html += `<span class="word-pending">_</span> `;
-    }
-    document.getElementById('ui-word').innerHTML = html;
-    if (animated) popElement('word-card');
-
-    const toast = document.getElementById('combo-toast');
-    toast.style.opacity = stageCombo >= 2 ? '1' : '.0';
-}
-
-function popElement(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('pop');
-    void el.offsetWidth;
-    el.classList.add('pop');
-}
-
-function showToast(text, color = '#fff') {
-    const toast = document.getElementById('combo-toast');
-    toast.style.opacity = '1';
-    toast.querySelector('#ui-combo').innerText = text;
-    toast.querySelector('#ui-combo').style.color = color;
-    popElement('combo-toast');
-    setTimeout(() => {
-        if (state === 'PLAYING') {
-            toast.querySelector('#ui-combo').style.color = '';
-            toast.querySelector('#ui-combo').innerText = `${stageCombo} WORD`;
-        }
-    }, 1200);
-}
-
-function showFloatingText(txt, x, y, color) {
-    floatingTexts.push({ txt, x, y, color, life: 1, size: 28 });
-}
-
-function createParticles(x, y, color, count = 12) {
-    for (let i = 0; i < count; i++) {
-        particles.push({
-            x, y,
-            vx: (Math.random() - .5) * 10,
-            vy: (Math.random() - .5) * 10,
-            life: 1,
-            color,
-            size: 3 + Math.random() * 5
-        });
-    }
-}
-
-function shake(power = 1) {
-    shakePower = Math.max(shakePower, power);
-    const cont = document.getElementById('game-container');
-    cont.classList.remove('shake');
-    void cont.offsetWidth;
-    cont.classList.add('shake');
-}
-
-function getRankInfo(s) {
-    if (s >= 70000) return { name: '🏆 챌린저', color: 'text-blue-200' };
-    if (s >= 45000) return { name: '🔴 그랜드마스터', color: 'text-red-300' };
-    if (s >= 28000) return { name: '🟣 마스터', color: 'text-purple-300' };
-    if (s >= 17000) return { name: '💎 다이아몬드', color: 'text-cyan-200' };
-    if (s >= 10000) return { name: '💠 플래티넘', color: 'text-teal-200' };
-    if (s >= 6000) return { name: '🥇 골드', color: 'text-yellow-300' };
-    if (s >= 3000) return { name: '🥈 실버', color: 'text-slate-200' };
-    if (s >= 1000) return { name: '🥉 브론즈', color: 'text-amber-500' };
-    return { name: '🪨 아이언', color: 'text-slate-400' };
-}
-
-function gameOver() {
-    state = 'GAMEOVER';
-    stopBGM();
-    const isNew = score > highScore;
-    if (isNew) {
-        highScore = score;
-        localStorage.setItem(HIGH_KEY, String(highScore));
-    }
-    const rank = getRankInfo(score);
-    const overlay = document.getElementById('overlay');
-    const title = document.getElementById('overlay-title');
-    const subtitle = document.getElementById('overlay-subtitle');
-    const msg = document.getElementById('overlay-msg');
-    const panel = document.getElementById('difficulty-panel');
-
-    title.innerText = isNew ? 'NEW RECORD!' : 'GAME OVER';
-    title.className = `text-5xl font-black ${isNew ? 'text-yellow-300' : 'text-rose-400'} mb-2 text-glow`;
-    subtitle.innerText = '다시 도전해서 더 긴 단어 사슬을 만들어 보세요.';
-    panel.classList.remove('hidden');
-    msg.innerHTML = `
-        <div class="grid grid-cols-2 gap-3 text-left">
-            <div class="bg-slate-950/60 rounded-2xl p-4 border border-white/10">
-                <p class="text-xs text-slate-400 font-black">최종 점수</p>
-                <p class="text-3xl font-black text-yellow-300">${score}</p>
-            </div>
-            <div class="bg-slate-950/60 rounded-2xl p-4 border border-white/10">
-                <p class="text-xs text-slate-400 font-black">완성 단어</p>
-                <p class="text-3xl font-black text-emerald-300">${Math.max(0, stageCombo - 1)}</p>
-            </div>
-        </div>
-        <div class="mt-4 bg-slate-950/60 rounded-2xl p-4 border border-white/10">
-            <p class="text-xs text-slate-400 font-black">나의 티어</p>
-            <p class="text-3xl font-black ${rank.color}">${rank.name}</p>
-        </div>
-        ${isNew ? '<p class="mt-3 text-purple-200 font-black animate-pulse">🎉 최고 기록을 갱신했어요!</p>' : ''}
-    `;
-    document.getElementById('btn-start').innerText = '다시 도전하기 🔄';
-    overlay.classList.remove('opacity-0', 'pointer-events-none');
-    popElement('overlay-card');
-}
-
-function showPauseOverlay() {
-    const overlay = document.getElementById('overlay');
-    document.getElementById('overlay-title').innerText = 'PAUSE';
-    document.getElementById('overlay-title').className = 'text-5xl font-black text-sky-200 mb-2 text-glow';
-    document.getElementById('overlay-subtitle').innerText = '잠시 멈췄어요.';
-    document.getElementById('overlay-msg').innerHTML = '<p>계속하려면 아래 버튼이나 가운데 Ⅱ 버튼을 누르세요.</p>';
-    document.getElementById('difficulty-panel').classList.add('hidden');
-    document.getElementById('btn-start').innerText = '계속하기 ▶';
-    overlay.classList.remove('opacity-0', 'pointer-events-none');
-}
-
-function hideOverlay() {
-    document.getElementById('overlay').classList.add('opacity-0', 'pointer-events-none');
-}
-
-function update(dt) {
-    if (state !== 'PLAYING') return;
-    waterOffset += dt * 40;
-
-    if (wordTime > 0) {
-        wordTime -= dt;
-        if (wordTime <= 0) {
-            Sound.wrong();
-            loseLife('시간 초과!');
-        }
-    }
-
-    if (frog.invincible > 0) frog.invincible -= dt;
-
-    const targetCam = frog.y - H * .68;
-    camera.y += (targetCam - camera.y) * Math.min(1, dt * 8.5);
-
-    ensureRowsGenerated(Math.floor((camera.y - H) / TILE) - 10);
-    const startRow = Math.floor(camera.y / TILE) - 3;
-    const endRow = Math.ceil((camera.y + H) / TILE) + 3;
-    for (let r = startRow; r <= endRow; r++) {
-        const row = rowData[r];
-        if (!row || row.type === 'grass') continue;
-        for (const p of row.platforms) {
-            let speed = p.baseSpeed;
-            if (!frog.isDead && frog.riding === p) speed = p.baseSpeed;
-            p.x += speed * dt * 60;
-            p.blink += dt * 5;
-            if (p.baseSpeed > 0 && p.x > W + TILE * 2) {
-                p.x -= p.wrapLength;
-                p.letter = randomLetter(targetChar());
-                p.active = true;
-                p.used = false;
-                p.bonus = Math.random() < .13 ? 'fly' : null;
-                row.targetFor = null;
-                prepareRowForTarget(r, targetChar());
-            } else if (p.baseSpeed < 0 && p.x + p.w < -TILE * 2) {
-                p.x += p.wrapLength;
-                p.letter = randomLetter(targetChar());
-                p.active = true;
-                p.used = false;
-                p.bonus = Math.random() < .13 ? 'fly' : null;
-                row.targetFor = null;
-                prepareRowForTarget(r, targetChar());
-            }
-        }
-    }
-
-    if (!frog.isDead && frog.riding) {
-        frog.x += frog.riding.baseSpeed * dt * 60;
-        frog.targetX = frog.x;
-        if (frog.x + frog.w < -TILE || frog.x > W + TILE) {
-            loseLife('화면 밖으로 이탈!');
-        }
-    }
-
-    if (frog.hop > 0) frog.hop = Math.max(0, frog.hop - dt * 5);
-    if (shakePower > 0) shakePower = Math.max(0, shakePower - dt * 3);
-
-    updateEffects(dt);
-    updateUI();
-}
-
-function updateEffects(dt) {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx * dt * 60;
-        p.y += p.vy * dt * 60;
-        p.vy += dt * 10;
-        p.life -= dt * 1.8;
-        if (p.life <= 0) particles.splice(i, 1);
-    }
-    for (let i = rings.length - 1; i >= 0; i--) {
-        const r = rings[i];
-        r.r += dt * 90;
-        r.life -= dt * 2.2;
-        if (r.life <= 0) rings.splice(i, 1);
-    }
-    for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        const ft = floatingTexts[i];
-        ft.y -= dt * 45;
-        ft.life -= dt * 1.25;
-        if (ft.life <= 0) floatingTexts.splice(i, 1);
-    }
-}
-
-function draw() {
-    ctx.save();
-    if (shakePower > 0) {
-        ctx.translate((Math.random() - .5) * 8 * shakePower, (Math.random() - .5) * 8 * shakePower);
-    }
-    drawBackground();
-
-    ctx.save();
-    ctx.translate(0, -camera.y);
-    drawRows();
-    drawEffects();
-    drawFrog();
-    ctx.restore();
-
-    drawVignette();
-    ctx.restore();
-}
-
-function drawBackground() {
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#064e3b');
-    grad.addColorStop(.45, '#075985');
-    grad.addColorStop(1, '#0f172a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.globalAlpha = .18;
-    ctx.strokeStyle = '#7dd3fc';
-    ctx.lineWidth = 2;
-    for (let y = -20; y < H + 40; y += 36) {
-        ctx.beginPath();
-        for (let x = 0; x <= W; x += 20) {
-            const yy = y + Math.sin((x + waterOffset) * .025) * 5;
-            if (x === 0) ctx.moveTo(x, yy);
-            else ctx.lineTo(x, yy);
-        }
-        ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-}
-
-function drawRows() {
-    const startRow = Math.floor(camera.y / TILE) - 2;
-    const endRow = Math.ceil((camera.y + H) / TILE) + 2;
-    for (let r = startRow; r <= endRow; r++) {
-        ensureRowsGenerated(r - 1);
-        const row = rowData[r];
-        if (!row) continue;
-        const y = r * TILE;
-        if (row.type === 'grass') drawGrassRow(row, y);
-        else drawWaterRow(row, y);
-    }
-}
-
-function drawGrassRow(row, y) {
-    const g = ctx.createLinearGradient(0, y, 0, y + TILE);
-    g.addColorStop(0, '#15803d');
-    g.addColorStop(1, '#166534');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, y, W, TILE);
-    ctx.globalAlpha = .25;
-    ctx.fillStyle = '#bbf7d0';
-    for (let x = -20; x < W + 20; x += 35) {
-        ctx.beginPath();
-        ctx.ellipse(x + Math.sin(row.spark + x) * 8, y + 15 + (x % 3) * 15, 18, 7, Math.sin(x) * .5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '900 24px Comic Sans MS, sans-serif';
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#064e3b';
-    ctx.fillStyle = '#dcfce7';
-    const text = rText(row.row);
-    ctx.strokeText(text, W / 2, y + TILE / 2);
-    ctx.fillText(text, W / 2, y + TILE / 2);
-}
-
-function rText(row) {
-    return row === 0 ? '🌿 START / SAVE ZONE 🌿' : '🌿 CHECKPOINT 🌿';
-}
-
-function drawWaterRow(row, y) {
-    ctx.globalAlpha = .18;
-    ctx.fillStyle = row.row % 2 === 0 ? '#38bdf8' : '#22d3ee';
-    ctx.fillRect(0, y + TILE - 5, W, 4);
-    ctx.globalAlpha = 1;
-
-    for (const p of row.platforms) drawPlatform(p);
-}
-
-function drawPlatform(p) {
-    const now = performance.now();
-    const glowing = p.letter === targetChar() || p.targetGlowUntil > now || p === hintTarget;
-    const y = p.y + TILE * .1;
-    ctx.save();
-    if (glowing) {
-        ctx.shadowBlur = p === hintTarget ? 30 : 20;
-        ctx.shadowColor = p === hintTarget ? '#67e8f9' : '#86efac';
-    }
-
-    const bodyGrad = ctx.createLinearGradient(p.x, y, p.x, y + p.h);
-    if (p.kind === 'croc') {
-        bodyGrad.addColorStop(0, '#047857');
-        bodyGrad.addColorStop(1, '#064e3b');
-    } else {
-        bodyGrad.addColorStop(0, '#b45309');
-        bodyGrad.addColorStop(.45, '#78350f');
-        bodyGrad.addColorStop(1, '#451a03');
-    }
-    ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-    ctx.roundRect(p.x, y + 5, p.w, p.h * .72, 18);
-    ctx.fill();
-    ctx.lineWidth = glowing ? 5 : 3;
-    ctx.strokeStyle = glowing ? '#bbf7d0' : (p.kind === 'croc' ? '#10b981' : '#92400e');
-    ctx.stroke();
-
-    // 목재 결 또는 악어 눈
-    ctx.globalAlpha = .35;
-    ctx.strokeStyle = '#fde68a';
-    ctx.lineWidth = 2;
-    if (p.kind === 'log') {
-        for (let i = 18; i < p.w - 12; i += 28) {
-            ctx.beginPath();
-            ctx.arc(p.x + i, y + p.h * .48, 8, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-    } else {
-        ctx.fillStyle = '#fef08a';
-        ctx.beginPath(); ctx.arc(p.x + 18, y + 24, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(p.x + p.w - 18, y + 24, 5, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    if (p.bonus === 'fly' && p.active) {
-        ctx.font = '22px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🪰', p.x + p.w * .78, y + 16 + Math.sin(p.blink) * 3);
-    }
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `900 ${p.letter === '✓' ? 32 : 38}px Comic Sans MS, sans-serif`;
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = '#020617';
-    ctx.fillStyle = p.letter === '✓' ? '#86efac' : (glowing ? '#ecfccb' : '#ffffff');
-    const tx = p.x + p.w / 2;
-    const ty = y + p.h / 2 + 4;
-    ctx.strokeText(p.letter, tx, ty);
-    ctx.fillText(p.letter, tx, ty);
-
-    ctx.restore();
-}
-
-function drawFrog() {
-    if (frog.isDead) return;
-    const cx = frog.x + frog.w / 2;
-    const cy = frog.y + frog.h / 2 - Math.sin(frog.hop * Math.PI) * 18;
-    ctx.save();
-    ctx.translate(cx, cy);
-    const rot = frog.face === 'left' ? -.25 : frog.face === 'right' ? .25 : 0;
-    ctx.rotate(rot);
-    if (frog.invincible > 0 && Math.floor(performance.now() / 90) % 2 === 0) ctx.globalAlpha = .55;
-    ctx.font = `${frog.h}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowBlur = 14;
-    ctx.shadowColor = '#86efac';
-    ctx.fillText('🐸', 0, 2);
-    ctx.restore();
-}
-
-function drawEffects() {
-    for (const ring of rings) {
-        ctx.globalAlpha = Math.max(0, ring.life);
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    for (const p of particles) {
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    for (const ft of floatingTexts) {
-        ctx.globalAlpha = Math.max(0, ft.life);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `900 ${ft.size}px Comic Sans MS, sans-serif`;
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = '#020617';
-        ctx.fillStyle = ft.color;
-        ctx.strokeText(ft.txt, ft.x, ft.y);
-        ctx.fillText(ft.txt, ft.x, ft.y);
-    }
-    ctx.globalAlpha = 1;
-}
-
-function drawVignette() {
-    const grad = ctx.createRadialGradient(W / 2, H / 2, H * .15, W / 2, H / 2, H * .75);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,.34)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-}
-
-let touchStartX = 0;
-let touchStartY = 0;
-canvas.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-    e.preventDefault();
-}, { passive: false });
-canvas.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].screenX - touchStartX;
-    const dy = e.changedTouches[0].screenY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy)) {
-        if (Math.abs(dx) > 24) moveFrog(dx > 0 ? 1 : -1, 0);
-    } else {
-        if (Math.abs(dy) > 24) moveFrog(0, dy > 0 ? 1 : -1);
-    }
-    e.preventDefault();
-}, { passive: false });
-
-window.addEventListener('keydown', e => {
-    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyH','Space','Escape'].includes(e.code)) {
-        e.preventDefault();
-    }
-    if (e.code === 'ArrowUp' || e.code === 'KeyW') moveFrog(0, -1);
-    if (e.code === 'ArrowDown' || e.code === 'KeyS') moveFrog(0, 1);
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveFrog(-1, 0);
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') moveFrog(1, 0);
-    if (e.code === 'KeyH') useHint();
-    if (e.code === 'Space' || e.code === 'Escape') togglePause();
-});
-
-document.querySelectorAll('.dpad button[data-move]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const [dx, dy] = btn.dataset.move.split(',').map(Number);
-        moveFrog(dx, dy);
-    });
-});
-document.getElementById('btn-hint').addEventListener('click', useHint);
-document.getElementById('btn-start').addEventListener('click', () => {
-    if (state === 'PAUSED') {
-        hideOverlay();
-        state = 'PLAYING';
-        lastFrame = performance.now();
-        return;
-    }
-    initGame(true);
-    startBGM();
-});
-document.querySelectorAll('.difficulty-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        selectedDifficulty = btn.dataset.difficulty;
-        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('border-2','border-sky-200/60','bg-sky-500/30'));
-        btn.classList.add('border-2','border-sky-200/60','bg-sky-500/30');
-    });
-});
-
-function loop(now = performance.now()) {
-    const dt = Math.min(.05, (now - lastFrame) / 1000);
-    lastFrame = now;
-    update(dt);
-    draw();
-    requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-updateUI();
+const rawDict="A:APPLE=사과,ANIMAL=동물,ANGRY=화난,AIR=공기,ART=예술,ACTOR=배우,ANT=개미,ARM=팔,AUNT=이모,AUTUMN=가을,AGE=나이,ALBUM=앨범,ALIVE=살아있는,ALONE=혼자인,ALWAYS=항상,ANGEL=천사,ANSWER=대답,AREA=지역,AROUND=주변에,ARRIVE=도착하다|B:BEAR=곰,BIRD=새,BLUE=파란색,BOOK=책,BREAD=빵,BABY=아기,BACK=뒤,BALL=공,BAND=밴드,BANK=은행,BASE=기초,BATH=목욕,BEACH=해변,BEAUTIFUL=아름다운,BECAUSE=왜냐하면,BECOME=되다,BED=침대,BEE=벌,BEFORE=전에,BEGIN=시작하다,BEHIND=뒤에,BELL=종,BELOW=아래에,BEST=최고의,BETTER=더나은,BICYCLE=자전거,BIG=큰,BLACK=검은색,BLIND=눈먼,BLOCK=블록,BLOOD=피,BLOW=불다,BOAT=보트,BODY=몸,BONE=뼈,BOSS=상사,BOTTLE=병,BOTTOM=바닥,BOWL=그릇,BOX=상자,BOY=소년,BRAIN=뇌,BRANCH=나뭇가지,BRAVE=용감한,BREAK=부수다,BRIDGE=다리,BRIGHT=밝은,BRING=가져오다,BROTHER=형제,BROWN=갈색,BRUSH=붓,BUILD=짓다,BURN=태우다,BUS=버스,BUSY=바쁜,BUTTER=버터,BUTTON=버튼,BUY=사다|C:CAT=고양이,COLOR=색깔,CLEAN=깨끗한,CLOUD=구름,CITY=도시,CAKE=케이크,CALL=부르다,CAMERA=카메라,CAMP=캠프,CANDY=사탕,CAP=모자,CAR=차,CARD=카드,CARE=돌보다,CARRY=나르다,CASE=상자,CATCH=잡다,CENTER=중심,CHAIR=의자,CHANCE=기회,CHANGE=바꾸다,CHEAP=싼,CHECK=확인하다,CHEESE=치즈,CHICKEN=닭,CHILD=아이,CHOCOLATE=초콜릿,CHOOSE=선택하다,CIRCLE=원,CLASS=수업,CLEVER=영리한,CLIMB=오르다,CLOCK=시계,CLOSE=닫다,CLOTHES=옷,COAT=코트,COFFEE=커피,COIN=동전,COLD=추운,COMPANY=회사,COOK=요리하다,COOL=시원한,COPY=복사하다,CORNER=모서리,COST=비용,COTTON=면,COUNT=세다,COUNTRY=나라,COURSE=코스,COVER=덮다,COW=소,CRAZY=미친,CROSS=건너다,CRY=울다,CUP=컵,CUT=자르다|D:DOG=개,DESK=책상,DREAM=꿈,DRINK=마시다,DANCE=춤추다,DANGER=위험,DARK=어두운,DATE=날짜,DAUGHTER=딸,DAY=낮,DEAD=죽은,DEAR=친애하는,DEEP=깊은,DEER=사슴,DELICIOUS=맛있는,DESIGN=디자인,DIARY=일기,DIE=죽다,DIFFERENT=다른,DIFFICULT=어려운,DIRTY=더러운,DISCOVER=발견하다,DISH=접시,DOOR=문,DOWN=아래로,DRAW=그리다,DRESS=드레스,DRIVE=운전하다,DROP=떨어지다,DRY=마른,DUCK=오리,DUST=먼지|E:ELEPHANT=코끼리,EARTH=지구,EIGHT=숫자8,ENERGY=에너지,EAGLE=독수리,EAR=귀,EARLY=일찍,EAST=동쪽,EASY=쉬운,EAT=먹다,EGG=계란,EMPTY=비어있는,END=끝,ENGINE=엔진,ENJOY=즐기다,ENOUGH=충분한,ENTER=들어가다,EVENING=저녁,EVERY=모든,EXACT=정확한,EXAMPLE=예,EXCUSE=용서하다,EXERCISE=운동,EYE=눈|F:FROG=개구리,FISH=물고기,FRIEND=친구,FRUIT=과일,FACE=얼굴,FACT=사실,FALL=떨어지다,FAMILY=가족,FAMOUS=유명한,FAR=멀리,FARM=농장,FAST=빠른,FAT=뚱뚱한,FATHER=아버지,FEEL=느끼다,FEW=거의없는,FIELD=들판,FIGHT=싸우다,FILL=채우다,FILM=영화,FIND=찾다,FINE=좋은,FINGER=손가락,FINISH=끝내다,FIRE=불,FIRST=첫번째,FIX=고치다,FLAG=깃발,FLAT=평평한,FLOOR=바닥,FLOWER=꽃,FLY=날다,FOCUS=집중하다,FOOD=음식,FOOL=바보,FOOT=발,FORGET=잊다,FORK=포크,FREE=자유로운,FRESH=신선한,FRONT=앞,FULL=가득찬,FUN=재미|G:GIRL=소녀,GREEN=초록색,GREAT=위대한,GAME=게임,GARDEN=정원,GAS=가스,GATE=문,GENTLE=부드러운,GHOST=유령,GIFT=선물,GIVE=주다,GLAD=기쁜,GLASS=유리,GLOVE=장갑,GOAL=목표,GOLD=금,GOOD=좋은,GOOSE=거위,GRAND=웅장한,GRAPE=포도,GRASS=풀,GRAY=회색,GREET=인사하다,GROUND=땅,GROUP=그룹,GROW=자라다,GUESS=추측하다,GUEST=손님,GUIDE=안내하다,GUITAR=기타,GUN=총|H:HORSE=말,HOUSE=집,HEART=심장,HAPPY=행복한,HAIR=머리카락,HALF=절반,HALL=홀,HAND=손,HANDLE=손잡이,HANG=매달다,HAPPEN=일어나다,HARD=어려운,HAT=모자,HATE=싫어하다,HEAD=머리,HEALTH=건강,HEAR=듣다,HEAVY=무거운,HELLO=안녕,HELP=돕다,HERE=여기,HIDE=숨다,HIGH=높은,HILL=언덕,HIT=치다,HOBBY=취미,HOLE=구멍,HOLIDAY=휴일,HOME=집,HONEY=꿀,HOPE=희망,HORN=뿔,HOT=뜨거운,HOTEL=호텔,HOUR=시간,HUMAN=인간,HUNGRY=배고픈,HUNT=사냥하다,HURRY=서두르다,HURT=다치다|I:ICE=얼음,ISLAND=섬,IDEA=생각,IRON=철,ILL=아픈,IMAGE=이미지,IMPORTANT=중요한,INSIDE=안에,INTEREST=흥미,INVENT=발명하다,INVITE=초대하다|J:JUMP=점프하다,JUICE=주스,JOKE=농담,JELLY=젤리,JACKET=재킷,JAM=잼,JAR=항아리,JEWEL=보석,JOIN=참가하다,JOY=기쁨,JUDGE=판단하다,JUNGLE=정글|K:KING=왕,KNEE=무릎,KITE=연,KNIFE=칼,KEEP=유지하다,KEY=열쇠,KICK=차다,KID=아이,KILL=죽이다,KIND=친절한,KISS=키스하다,KITCHEN=부엌,KNOCK=두드리다,KNOW=알다|L:LION=사자,LEMON=레몬,LAKE=호수,LIGHT=빛,LADY=숙녀,LAMP=램프,LAND=땅,LARGE=큰,LAST=마지막,LATE=늦은,LAUGH=웃다,LEAD=이끌다,LEAF=나뭇잎,LEARN=배우다,LEAVE=떠나다,LEFT=왼쪽,LEG=다리,LESSON=수업,LETTER=편지,LEVEL=수준,LIBRARY=도서관,LIFE=삶,LINE=선,LIP=입술,LISTEN=듣다,LITTLE=작은,LIVE=살다,LOCK=자물쇠,LONG=긴,LOOK=보다,LOSE=잃다,LOVE=사랑,LOW=낮은,LUCK=행운,LUNCH=점심|M:MONKEY=원숭이,MUSIC=음악,MOUSE=쥐,MONEY=돈,MACHINE=기계,MAD=미친,MAGIC=마술,MAIL=우편,MAKE=만들다,MAN=남자,MAP=지도,MARK=표시,MARKET=시장,MARRY=결혼하다,MATCH=시합,MATTER=문제,MEAL=식사,MEAN=의미하다,MEAT=고기,MEDICINE=약,MEET=만나다,MEMORY=기억,MERRY=즐거운,MESSAGE=메시지,METAL=금속,MIDDLE=중간,MILK=우유,MIND=마음,MINUTE=분,MIRROR=거울,MISS=놓치다,MODEL=모델,MOMENT=순간,MONTH=달,MOON=달,MORNING=아침,MOTHER=어머니,MOUNTAIN=산,MOUTH=입,MOVE=움직이다,MUCH=많은,MUSEUM=박물관|N:NOSE=코,NIGHT=밤,NURSE=간호사,NATURE=자연,NAME=이름,NARROW=좁은,NATION=국가,NEAR=가까운,NECK=목,NEED=필요하다,NEIGHBOR=이웃,NET=그물,NEVER=결코아니다,NEW=새로운,NEWS=뉴스,NICE=좋은,NOISE=소음,NORTH=북쪽,NOTE=메모,NOW=지금,NUMBER=숫자|O:ORANGE=오렌지,OCEAN=바다,ONION=양파,OFFICE=사무실,OAK=참나무,OASIS=오아시스,OBEY=복종하다,OBJECT=물건,OBSERVE=관찰하다,OFFER=제공하다,OFTEN=종종,OIL=기름,OLD=오래된,ONLY=오직,OPEN=열다,OPINION=의견,ORDER=주문하다,OTHER=다른,OUTSIDE=바깥,OVER=넘어서,OWN=소유하다|P:PIG=돼지,PEACE=평화,PIZZA=피자,PAPER=종이,PAGE=페이지,PAINT=칠하다,PAIR=쌍,PANTS=바지,PARENT=부모,PARK=공원,PART=부분,PARTY=파티,PASS=지나가다,PAST=과거,PAY=지불하다,PEN=펜,PENCIL=연필,PEOPLE=사람들,PEPPER=후추,PERFECT=완벽한,PERSON=사람,PET=애완동물,PIANO=피아노,PICTURE=그림,PIECE=조각,PILOT=조종사,PINE=소나무,PINK=분홍색,PLACE=장소,PLAN=계획,PLANT=식물,PLAY=놀다,PLEASE=제발,POCKET=주머니,POINT=가리키다,POLICE=경찰,POOL=수영장,POOR=가난한,PORK=돼지고기,POTATO=감자,POWER=힘,PRESENT=선물,PRESS=누르다,PRETTY=예쁜,PRICE=가격,PRINCE=왕자,PRINT=인쇄하다,PROBLEM=문제,PROMISE=약속,PROUD=자랑스러운,PULL=당기다,PUMP=펌프,PUSH=밀다,PUT=놓다|Q:QUEEN=여왕,QUICK=빠른,QUIET=조용한,QUARTER=4분의1,QUESTION=질문,QUIZ=퀴즈|R:RABBIT=토끼,RIVER=강,ROSE=장미,RAIN=비,RACE=경주,RADIO=라디오,READ=읽다,READY=준비된,REAL=진짜의,REASON=이유,RECEIVE=받다,RECORD=기록,RED=빨간색,REMEMBER=기억하다,REPEAT=반복하다,REST=휴식,RETURN=돌아오다,RIBBON=리본,RICE=쌀,RICH=부유한,RIDE=타다,RIGHT=오른쪽,RING=반지,ROAD=도로,ROBOT=로봇,ROCK=바위,ROLL=구르다,ROOF=지붕,ROOM=방,ROOT=뿌리,ROPE=밧줄,ROUND=둥근,RULE=규칙,RUN=달리다,RUSH=돌진하다|S:SNAKE=뱀,SPACE=우주,SMILE=미소,STORY=이야기,SAD=슬픈,SAFE=안전한,SAIL=항해하다,SALT=소금,SAME=같은,SAND=모래,SAVE=구하다,SAY=말하다,SCHOOL=학교,SCIENCE=과학,SCORE=점수,SEA=바다,SEASON=계절,SEAT=좌석,SECRET=비밀,SEE=보다,SEED=씨앗,SELL=팔다,SEND=보내다,SENSE=감각,SERVICE=서비스,SHADOW=그림자,SHAKE=흔들다,SHAPE=모양,SHARE=나누다,SHARP=날카로운,SHEEP=양,SHEET=종이한장,SHINE=빛나다,SHIP=배,SHIRT=셔츠,SHOCK=충격,SHOE=신발,SHOOT=쏘다,SHOP=상점,SHORT=짧은,SHOULDER=어깨,SHOUT=외치다,SHOW=보여주다,SHOWER=샤워,SHUT=닫다,SICK=아픈,SIDE=쪽,SIGHT=시야,SIGN=신호,SILENT=침묵하는,SILVER=은,SIMPLE=간단한,SING=노래하다,SINGLE=단일의,SISTER=자매,SIT=앉다,SIZE=크기,SKILL=기술,SKIN=피부,SKIRT=치마,SKY=하늘,SLEEP=잠자다,SLOW=느린,SMALL=작은,SMELL=냄새,SMOKE=연기,SNACK=간식,SNOW=눈,SOAP=비누,SOCCER=축구,SOCK=양말,SOFT=부드러운,SOLDIER=군인,SOLID=단단한,SOME=어떤,SON=아들,SONG=노래,SOON=곧,SORRY=미안한,SOUND=소리,SOUP=수프,SOUTH=남쪽,SPEAK=말하다,SPEED=속도,SPELL=철자를쓰다,SPEND=소비하다,SPIDER=거미,SPOON=숟가락,SPORT=스포츠,SPRING=봄,SQUARE=정사각형,STAGE=무대,STAMP=우표,STAND=서다,STAR=별,START=시작하다,STATE=상태,STATION=역,STAY=머무르다,STEP=걸음,STICK=막대기,STONE=돌,STOP=멈추다,STORE=가게,STORM=폭풍,STREET=거리,STRIKE=치다,STRONG=강한,STUDENT=학생,STUDY=공부하다,STUPID=어리석은,SUCCESS=성공,SUGAR=설탕,SUMMER=여름,SUN=태양,SUPPER=저녁식사,SURE=확신하는,SURPRISE=놀라다,SWEET=달콤한,SWIM=수영하다,SWORD=검,SYSTEM=시스템|T:TIGER=호랑이,TREE=나무,TRAIN=기차,TIME=시간,TABLE=탁자,TAIL=꼬리,TAKE=가져가다,TALK=말하다,TALL=키큰,TASTE=맛,TAXI=택시,TEA=차,TEACH=가르치다,TEAM=팀,TEAR=눈물,TELEPHONE=전화,TELL=말하다,TEMPLE=사원,TENT=텐트,TEST=시험,THANK=감사하다,THICK=두꺼운,THIN=얇은,THING=물건,THINK=생각하다,THIRSTY=목마른,THOUGHT=생각,TICKET=표,TIE=묶다,TIGHT=단단한,TIRED=피곤한,TODAY=오늘,TOGETHER=함께,TOMORROW=내일,TONGUE=혀,TONIGHT=오늘밤,TOO=너무,TOOTH=이빨,TOP=꼭대기,TOUCH=만지다,TOUR=여행,TOWN=마을,TOY=장난감,TRACK=자취,TRADE=무역,TRAFFIC=교통,TRAVEL=여행하다,TRICK=속임수,TRIP=여행,TROUBLE=문제,TRUE=사실의,TRUST=믿다,TRY=시도하다,TURN=돌다,TWIN=쌍둥이|U:UMBRELLA=우산,UNDER=아래에,UNCLE=삼촌,UGLY=못생긴,UNIFORM=제복,UNION=결합,UNIT=단위,UNIVERSE=우주,UP=위로,USE=사용하다,USEFUL=유용한,USUAL=보통의|V:VOICE=목소리,VIDEO=비디오,VIRUS=바이러스,VALLEY=계곡,VALUE=가치,VEGETABLE=채소,VERY=매우,VICTORY=승리,VIEW=경치,VILLAGE=마을,VIOLIN=바이올린,VISIT=방문하다,VOTE=투표하다|W:WATER=물,WORLD=세계,WIND=바람,WHITE=하얀색,WAKE=깨다,WALK=걷다,WALL=벽,WANT=원하다,WAR=전쟁,WARM=따뜻한,WASH=씻다,WASTE=낭비하다,WATCH=시계,WAVE=파도,WAY=길,WEAK=약한,WEALTH=부,WEAR=입다,WEATHER=날씨,WEDDING=결혼식,WEEK=주,WEIGHT=무게,WELCOME=환영하다,WELL=잘,WEST=서쪽,WHEEL=바퀴,WHEN=언제,WHERE=어디,WHICH=어느,WHILE=동안,WHISPER=속삭이다,WHO=누구,WHY=왜,WIDE=넓은,WIFE=아내,WILD=야생의,WILL=의지,WIN=이기다,WINDOW=창문,WING=날개,WINTER=겨울,WISE=지혜로운,WISH=바라다,WITH=함께,WOMAN=여자,WOOD=나무,WORD=단어,WORK=일하다,WORM=벌레,WORRY=걱정하다,WORTH=가치있는,WRITE=쓰다,WRONG=틀린|X:XYLOPHONE=실로폰,XRAY=엑스레이|Y:YELLOW=노란색,YOUTH=젊음,YEAR=연도,YARD=마당,YEAH=네,YEAR=해,YELLOW=노란색,YES=네,YESTERDAY=어제,YET=아직,YOUNG=젊은|Z:ZEBRA=얼룩말,ZERO=숫자0,ZONE=구역,ZOO=동물원";
+const extraRaw=`ADVENTURE=모험
+ADDRESS=주소
+AFRAID=두려워하는
+AGREE=동의하다
+AIRPORT=공항
+ALARM=알람
+ALMOST=거의
+AMAZING=놀라운
+AMOUNT=양
+ANCIENT=고대의
+APPEAR=나타나다
+APRIL=4월
+ARGUE=말다툼하다
+ASLEEP=잠든
+AUGUST=8월
+AWAKE=깨어있는
+BALANCE=균형
+BALLOON=풍선
+BASKET=바구니
+BATTERY=배터리
+BEAN=콩
+BEARD=수염
+BEDROOM=침실
+BELIEVE=믿다
+BENCH=벤치
+BERRY=열매
+BIRTHDAY=생일
+BLANKET=담요
+BOARD=판
+BOIL=끓이다
+BORING=지루한
+BORROW=빌리다
+BRAVE=용감한
+BREAKFAST=아침식사
+BRIDGE=다리
+BRIGHT=밝은
+BROKEN=고장난
+BROOM=빗자루
+BROWN=갈색
+BRUSH=솔
+BUCKET=양동이
+BUTTON=단추
+CABIN=오두막
+CALENDAR=달력
+CAMERA=카메라
+CAMP=야영하다
+CANDLE=양초
+CANDY=사탕
+CAPTAIN=대장
+CARROT=당근
+CASTLE=성
+CAVE=동굴
+CEILING=천장
+CENTER=중앙
+CENTURY=세기
+CHALK=분필
+CHANCE=기회
+CHEESE=치즈
+CHEST=가슴
+CHOOSE=고르다
+CIRCLE=원
+CLASSMATE=반친구
+CLEANER=청소부
+CLIMB=오르다
+CLOUDY=흐린
+COAST=해안
+COLLECT=모으다
+COMIC=만화
+COMMON=흔한
+COMPASS=나침반
+COMPLETE=완성하다
+CORNER=모퉁이
+COTTON=목화
+COUGH=기침하다
+COUNTRY=나라
+CRAYON=크레용
+CROSS=건너다
+CROWN=왕관
+CURTAIN=커튼
+CUSTOMER=손님
+DANGER=위험
+DECEMBER=12월
+DEEP=깊은
+DELICIOUS=맛있는
+DENTIST=치과의사
+DESERT=사막
+DIARY=일기장
+DICTIONARY=사전
+DINNER=저녁식사
+DIRECTION=방향
+DOLPHIN=돌고래
+DRAGON=용
+DRAWER=서랍
+DRIVER=운전사
+EAGLE=독수리
+EARTH=지구
+ELEVATOR=엘리베이터
+EMPTY=빈
+ENGINE=엔진
+ENOUGH=충분한
+ENTRANCE=입구
+ENVELOPE=봉투
+EXAMPLE=예시
+EXCITED=신이 난
+EXIT=출구
+FACTORY=공장
+FAMOUS=유명한
+FEBRUARY=2월
+FESTIVAL=축제
+FIELD=들판
+FIREFIGHTER=소방관
+FLOOR=바닥
+FOREST=숲
+FORK=포크
+FREEZER=냉동고
+FRIDGE=냉장고
+FRONT=앞
+GARAGE=차고
+GARDEN=정원
+GLOVE=장갑
+GOLDEN=황금빛의
+GRAPE=포도
+GROUND=땅
+GROW=자라다
+GUEST=손님
+HAMMER=망치
+HEALTHY=건강한
+HEAVY=무거운
+HELMET=헬멧
+HIDE=숨다
+HIKING=하이킹
+HONEY=꿀
+HOSPITAL=병원
+HUNGRY=배고픈
+ICEBERG=빙산
+IDEA=생각
+IMPORTANT=중요한
+INSECT=곤충
+ISLAND=섬
+JANUARY=1월
+JOURNEY=여행
+JUDGE=판단하다
+JULY=7월
+JUNE=6월
+KANGAROO=캥거루
+KETTLE=주전자
+KEYBOARD=키보드
+KITCHEN=부엌
+KNEE=무릎
+LADDER=사다리
+LANTERN=등불
+LAUGH=웃다
+LEAF=잎
+LEARN=배우다
+LEMON=레몬
+LIBRARY=도서관
+LIGHTNING=번개
+LITTLE=작은
+LONELY=외로운
+LUCKY=운이 좋은
+LUNCH=점심
+MAGAZINE=잡지
+MAGIC=마법
+MARKET=시장
+MARCH=3월
+MAY=5월
+MEADOW=초원
+MEDICINE=약
+MEMORY=기억
+MESSAGE=메시지
+MIDDLE=가운데
+MIRROR=거울
+MONKEY=원숭이
+MOUNTAIN=산
+MUSEUM=박물관
+NAPKIN=냅킨
+NARROW=좁은
+NATURE=자연
+NEIGHBOR=이웃
+NERVOUS=긴장한
+NIGHT=밤
+NOODLE=국수
+NOVEMBER=11월
+OCEAN=대양
+OCTOBER=10월
+OFFICE=사무실
+ONION=양파
+ORANGE=주황색
+OUTSIDE=바깥
+PAINTER=화가
+PALACE=궁전
+PANDA=판다
+PAPER=종이
+PARENT=부모
+PARKING=주차
+PARROT=앵무새
+PASSENGER=승객
+PEACH=복숭아
+PEANUT=땅콩
+PENGUIN=펭귄
+PICNIC=소풍
+PILLOW=베개
+PLANET=행성
+PLATE=접시
+POCKET=주머니
+POLICE=경찰
+POTATO=감자
+PRESENT=선물
+PRINCESS=공주
+PUMPKIN=호박
+PURPLE=보라색
+PUZZLE=퍼즐
+QUIET=조용한
+RABBIT=토끼
+RAINBOW=무지개
+RECIPE=조리법
+RESTAURANT=식당
+RIVER=강
+ROBOT=로봇
+ROCKET=로켓
+ROPE=밧줄
+ROUND=둥근
+RULER=자
+SANDWICH=샌드위치
+SCHOOL=학교
+SCISSORS=가위
+SEASON=계절
+SEPTEMBER=9월
+SHADOW=그림자
+SHELF=선반
+SHOULDER=어깨
+SIDEWALK=보도
+SILVER=은색
+SKATE=스케이트를 타다
+SKY=하늘
+SLEEPY=졸린
+SMILE=미소짓다
+SNACK=간식
+SNOWMAN=눈사람
+SOFT=부드러운
+SPACE=우주
+SPIDER=거미
+SPOON=숟가락
+SPRING=봄
+SQUARE=정사각형
+STAIRS=계단
+STAMP=우표
+STATION=역
+STORM=폭풍
+STRAWBERRY=딸기
+STREET=거리
+STRONG=강한
+SUMMER=여름
+SUNLIGHT=햇빛
+SUPERMARKET=슈퍼마켓
+SWEATER=스웨터
+TABLET=태블릿
+TEACHER=선생님
+TELEPHONE=전화기
+TENT=텐트
+THIRSTY=목마른
+THUNDER=천둥
+TICKET=표
+TIGER=호랑이
+TOMATO=토마토
+TOOTHBRUSH=칫솔
+TOWEL=수건
+TRAFFIC=교통
+TRAIN=기차
+TRAVEL=여행하다
+TREASURE=보물
+TRIANGLE=삼각형
+TUNNEL=터널
+TURTLE=거북이
+UMBRELLA=우산
+UNIFORM=교복
+VACATION=방학
+VEGETABLE=채소
+VILLAGE=마을
+VISITOR=방문객
+VOLCANO=화산
+WALLET=지갑
+WATERMELON=수박
+WEEKEND=주말
+WHALE=고래
+WINDOW=창문
+WINTER=겨울
+WORRIED=걱정하는
+YELLOW=노란색
+YOGURT=요거트
+ZEBRA=얼룩말
+ZIPPER=지퍼
+ACROSS=가로질러
+ACTIVITY=활동
+ALREADY=이미
+ANOTHER=또다른
+ARRANGE=정리하다
+ATTENTION=주의
+BACKPACK=배낭
+BAMBOO=대나무
+BASEBALL=야구
+BASKETBALL=농구
+BEAUTY=아름다움
+BESIDE=옆에
+BLOSSOM=꽃이피다
+BOUNCE=튀다
+BUTTERFLY=나비
+CAREFUL=조심하는
+CELEBRATE=축하하다
+CHAMPION=우승자
+CHAPTER=장
+CHEERFUL=명랑한
+CHERRY=체리
+CHICKEN=닭
+CHILDREN=아이들
+CHOCOLATE=초콜릿
+CLASSROOM=교실
+CLOSET=옷장
+COCONUT=코코넛
+COMPUTER=컴퓨터
+CONCERT=연주회
+CORRECT=정확한
+CULTURE=문화
+CURIOUS=호기심많은
+DELIVER=배달하다
+DIFFERENT=다른
+DINOSAUR=공룡
+DRUM=북
+ELECTRIC=전기의
+ENERGY=에너지
+EXERCISE=운동
+EXPLAIN=설명하다
+FAVORITE=가장좋아하는
+FEATHER=깃털
+FINGER=손가락
+FLOWER=꽃
+FOOTBALL=축구
+FRIENDLY=친절한
+FUTURE=미래
+GIRAFFE=기린
+GLASSES=안경
+GRANDFATHER=할아버지
+GRANDMOTHER=할머니
+HAMBURGER=햄버거
+HISTORY=역사
+HOLIDAY=휴일
+HOMEWORK=숙제
+INTERNET=인터넷
+JACKET=재킷
+JUNGLE=밀림
+KICK=차다
+LANGUAGE=언어
+MACHINE=기계
+MATH=수학
+MORNING=아침
+MUSICIAN=음악가
+NOTEBOOK=공책
+NUMBER=숫자
+PAJAMAS=잠옷
+PENCIL=연필
+PLAYGROUND=운동장
+QUESTION=질문
+QUICKLY=빠르게
+RECYCLE=재활용하다
+REMEMBER=기억하다
+SCIENCE=과학
+SECRET=비밀
+SPECIAL=특별한
+STUDENT=학생
+SUBWAY=지하철
+SURPRISE=놀라움
+TOGETHER=함께
+WEATHER=날씨
+WELCOME=환영하다
+WONDERFUL=멋진`;
+function parseWords(){const map=new Map();const add=(w,m)=>{w=(w||'').trim().toUpperCase();m=(m||'').trim();if(/^[A-Z]{2,14}$/.test(w)&&m&&!map.has(w))map.set(w,{word:w,meaning:m});};rawDict.split('|').forEach(g=>{const p=g.indexOf(':');const body=p>=0?g.slice(p+1):g;body.split(',').forEach(x=>{const i=x.indexOf('=');if(i>0)add(x.slice(0,i),x.slice(i+1));});});extraRaw.split('\n').forEach(x=>{const i=x.indexOf('=');if(i>0)add(x.slice(0,i),x.slice(i+1));});return [...map.values()];}
+const WORDS=parseWords();
+const MODES={easy:{min:3,max:6,lives:3,vehicle:.72,log:.72,train:.8,choices:3,label:'연습'},normal:{min:4,max:9,lives:2,vehicle:1,log:1,train:1,choices:4,label:'기본'},hard:{min:6,max:14,lives:1,vehicle:1.23,log:1.18,train:1.16,choices:4,label:'도전'}};
+let mode='easy',cfg=MODES.easy,scene,camera,renderer,clock,frog,shadowDisc,world=new Map(),vehicles=[],logs=[],trains=[],flies=[],running=false,hopping=false,hopT=0,hopFrom={x:0,z:0},hopTo={x:0,z:0},frogRow=0,frogCol=4,maxRow=0,checkpoint={row:0,col:4},lives=3,score=0,wordsDone=0,combo=0,bestCombo=0,current=null,letterIndex=0,recent=[],idle=0,lastTime=0,deathLock=false,letterRows=new Set(),rowCounter=1,touchStart=null,audioCtx=null;
+const COLS=9,TILE=1.15,HALF=(COLS-1)/2,LETTER_GAP=5;
+const $=id=>document.getElementById(id), ui={meaning:$('meaning'),spell:$('spell'),distance:$('distance'),words:$('words'),combo:$('combo'),hearts:$('hearts'),best:$('best'),meta:$('wordMeta'),toast:$('toast'),stork:$('stork'),tip:$('tip')};
+function xFor(c){return(c-HALF)*TILE}function zFor(r){return-r*TILE}function rand(a,b){return a+Math.random()*(b-a)}function choice(a){return a[Math.floor(Math.random()*a.length)]}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function sound(type){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);const t=audioCtx.currentTime;const f={hop:260,good:620,bad:150,coin:880,hit:95,word:520}[type]||300;o.type=type==='hit'?'sawtooth':'sine';o.frequency.setValueAtTime(f,t);if(type==='good'||type==='coin'||type==='word')o.frequency.exponentialRampToValueAtTime(f*1.45,t+.11);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.08,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.start(t);o.stop(t+.18)}catch(e){}}
+function box(w,h,d,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));m.castShadow=true;m.receiveShadow=true;return m}
+function textSprite(text,bg='#fff6c8',fg='#162334'){const c=document.createElement('canvas');c.width=256;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=bg;ctx.roundRect(6,6,244,116,20);ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=7;ctx.stroke();ctx.fillStyle=fg;ctx.font='900 76px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,128,67);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));s.scale.set(.9,.45,1);return s}
+function init3D(){scene=new THREE.Scene();scene.background=new THREE.Color(0xa8ddf2);scene.fog=new THREE.Fog(0xa8ddf2,13,34);camera=new THREE.OrthographicCamera(-7,7,8,-5,-40,80);camera.position.set(8.8,10.5,10.5);camera.lookAt(0,0,-4);renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('game').prepend(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeaf8ff,0x587644,2.2));const sun=new THREE.DirectionalLight(0xfff5d6,2.2);sun.position.set(-8,15,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-14;sun.shadow.camera.right=14;sun.shadow.camera.top=18;sun.shadow.camera.bottom=-12;scene.add(sun);createFrog();onResize();addEventListener('resize',onResize)}
+function onResize(){if(!renderer)return;const a=innerWidth/innerHeight,span=innerWidth<650?6.4:7.6;camera.left=-span*a;camera.right=span*a;camera.top=span;camera.bottom=-span*.72;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function createFrog(){frog=new THREE.Group();const body=box(.72,.48,.68,0x4cc76b);body.position.y=.34;frog.add(body);const head=box(.78,.46,.72,0x63d97b);head.position.set(0,.7,-.08);frog.add(head);for(const sx of[-1,1]){const eye=box(.2,.2,.19,0xf6f7dc);eye.position.set(sx*.25,.98,-.3);frog.add(eye);const pupil=box(.08,.1,.04,0x17261e);pupil.position.set(sx*.25,.99,-.405);frog.add(pupil);const leg=box(.24,.18,.48,0x2e9f54);leg.position.set(sx*.38,.18,.16);frog.add(leg)}frog.position.set(xFor(4),.12,zFor(0));scene.add(frog);shadowDisc=new THREE.Mesh(new THREE.CircleGeometry(.42,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.16,depthWrite:false}));shadowDisc.rotation.x=-Math.PI/2;shadowDisc.position.set(frog.position.x,.025,frog.position.z);scene.add(shadowDisc)}
+function clearWorld(){for(const r of world.values())scene.remove(r.group);world.clear();vehicles=[];logs=[];trains=[];flies=[];letterRows.clear()}
+function makeBase(row,color,h=.12){const g=box(COLS*TILE+2.6,h,TILE,color);g.position.set(0,-h/2,zFor(row));return g}
+function createTree(group,col,row){const trunk=box(.22,.7,.22,0x80522d);trunk.position.set(xFor(col),.35,zFor(row));group.add(trunk);const crown=box(.72,.8,.72,choice([0x3f9d4d,0x4eaa55,0x318342]));crown.position.set(xFor(col),1.05,zFor(row));group.add(crown)}
+function createRow(row,type){const group=new THREE.Group();scene.add(group);const data={row,type,group,blocked:new Set(),objects:[],prepared:false};world.set(row,data);if(type==='grass'){group.add(makeBase(row,choice([0x78c86d,0x82cf72,0x6fbd67])));if(row>1){const n=Math.floor(rand(1,4));for(let i=0;i<n;i++){let c=Math.floor(rand(0,COLS));if(c===4&&row<4)continue;data.blocked.add(c);Math.random()<.72?createTree(group,c,row):(()=>{const rock=box(.55,.36,.5,0x8d9a96);rock.position.set(xFor(c),.18,zFor(row));group.add(rock)})()}}}
+if(type==='road'){group.add(makeBase(row,0x3f4850,.09));for(let c=0;c<COLS;c+=2){const mark=box(.62,.025,.055,0xe9e1ad);mark.position.set(xFor(c),.015,zFor(row));group.add(mark)}const dir=Math.random()<.5?1:-1,speed=rand(.022,.04)*cfg.vehicle*dir,count=Math.floor(rand(2,4));for(let i=0;i<count;i++){const truck=Math.random()<.25,w=truck?1.55:1.02;const car=new THREE.Group();const body=box(w,.42,.7,choice([0xf0544f,0x4d7ed6,0xffc94d,0xe6e8ea,0x884fc4]));body.position.y=.27;car.add(body);const top=box(w*.58,.28,.6,0xdcebf3);top.position.set(-.08,.61,0);car.add(top);car.position.set((i-count/2)*4+rand(-1,1),0,zFor(row));group.add(car);vehicles.push({mesh:car,row,speed,width:w,wrap:COLS*TILE+7})}}
+if(type==='river'){group.add(makeBase(row,0x46a8d8,.18));const dir=Math.random()<.5?1:-1,speed=rand(.014,.027)*cfg.log*dir,count=3;for(let i=0;i<count;i++){const w=rand(1.5,2.35);const log=box(w,.3,.72,0x9b653a);log.position.set((i-1)*4.5+rand(-.5,.5),.11,zFor(row));group.add(log);logs.push({mesh:log,row,speed,width:w,wrap:COLS*TILE+8})}}
+if(type==='rail'){group.add(makeBase(row,0x827a70,.1));for(const dz of[-.25,.25]){const rail=box(COLS*TILE+2.6,.08,.07,0x575d60);rail.position.set(0,.04,zFor(row)+dz);group.add(rail)}for(let c=0;c<COLS;c++){const tie=box(.8,.05,.48,0x71523a);tie.position.set(xFor(c),.015,zFor(row));group.add(tie)}const signal=box(.18,1.1,.18,0x4e5659);signal.position.set(xFor(-.8),.55,zFor(row));group.add(signal);const lamp=box(.28,.28,.18,0x34c759);lamp.position.set(xFor(-.8),1.12,zFor(row));group.add(lamp);data.signal=lamp;trains.push({row,group:null,mesh:null,phase:rand(0,7.5),speed:.13*cfg.train,dir:Math.random()<.5?1:-1,signal:lamp})}
+if(type==='letter'){group.add(makeBase(row,0xd9b85f,.12));const hedgeCols=[0,2,4,6,8];for(let c=0;c<COLS;c++){const tile=box(TILE*.91,.08,TILE*.88,0xf5e4a6);tile.position.set(xFor(c),.045,zFor(row));group.add(tile)}data.letterTiles=[]}
+if(row%20===0&&row>0){for(const side of[-1,1]){const house=new THREE.Group();const b=box(1.7,1.4,1.5,choice([0xf3d3a0,0xe8b8b0,0xb8d7e8]));b.position.y=.7;house.add(b);const roof=box(1.95,.35,1.7,0x8d4a42);roof.rotation.z=.1*side;roof.position.y=1.55;house.add(roof);house.position.set(side*(COLS*TILE/2+2.1),0,zFor(row));group.add(house)}}return data}
+function laneType(row){if(row<=1)return'grass';if(row%LETTER_GAP===0)return'letter';const prev=world.get(row-1)?.type;const r=Math.random();if(prev==='river'&&Math.random()<.52)return'river';if(prev==='road'&&Math.random()<.35)return'road';if(r<.38)return'road';if(r<.60)return'grass';if(r<.82)return'river';return'rail'}
+function ensureRows(to){for(let r=rowCounter;r<=to;r++){createRow(r,laneType(r));spawnFly(r);rowCounter=r+1}}
+function chooseWord(){let pool=WORDS.filter(o=>o.word.length>=cfg.min&&o.word.length<=cfg.max&&!recent.includes(o.word));if(pool.length<20){recent=[];pool=WORDS.filter(o=>o.word.length>=cfg.min&&o.word.length<=cfg.max)}current=choice(pool);recent.push(current.word);if(recent.length>32)recent.shift();letterIndex=0;refreshFutureLetters();updateUI();}
+function targetLetter(){return current?.word[letterIndex]||''}
+function refreshFutureLetters(){for(const [r,d] of world){if(d.type==='letter'&&r>frogRow){d.prepared=false;for(const s of d.letterTiles||[])d.group.remove(s);d.letterTiles=[]}}}
+function prepareLetterRow(row){const d=world.get(row);if(!d||d.type!=='letter'||d.prepared)return;d.prepared=true;const target=targetLetter();let letters=[target];const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ';while(letters.length<cfg.choices){const x=alphabet[Math.floor(Math.random()*26)];if(!letters.includes(x))letters.push(x)}letters.sort(()=>Math.random()-.5);const cols=cfg.choices===3?[2,4,6]:[1,3,5,7];d.letterTiles=[];for(let i=0;i<cols.length;i++){const pad=box(TILE*.94,.16,TILE*.94,letters[i]===target?0xe7cd72:0xe9dca8);pad.position.set(xFor(cols[i]),.11,zFor(row));pad.userData={letter:letters[i],row,col:cols[i]};d.group.add(pad);const s=textSprite(letters[i],letters[i]===target&&mode==='easy'?'#fff0a7':'#fff7df');s.position.set(xFor(cols[i]),.78,zFor(row));d.group.add(s);d.letterTiles.push(pad,s);dataBlockLetter(d,cols)} }
+function dataBlockLetter(d,cols){d.blocked=new Set();for(let c=0;c<COLS;c++)if(!cols.includes(c))d.blocked.add(c)}
+function setupGame(){cfg=MODES[mode];clearWorld();vehicles=[];logs=[];trains=[];flies=[];frogRow=0;frogCol=4;maxRow=0;checkpoint={row:0,col:4};lives=cfg.lives;score=0;wordsDone=0;combo=0;bestCombo=0;idle=0;deathLock=false;rowCounter=1;frog.position.set(xFor(4),.12,zFor(0));frog.scale.set(1,1,1);createRow(0,'grass');ensureRows(34);chooseWord();running=true;lastTime=performance.now();$('startOverlay').classList.add('hidden');$('gameOver').classList.add('hidden');updateUI();}
+function updateUI(){if(!current)return;ui.meaning.textContent='🇰🇷 '+current.meaning;let html='';for(let i=0;i<current.word.length;i++){if(i<letterIndex)html+='<span class="done">'+current.word[i]+'</span>';else if(i===letterIndex)html+='<span class="next">_</span>';else html+='_';}ui.spell.innerHTML=html;ui.distance.textContent=(maxRow*5)+'m';ui.words.textContent=wordsDone;ui.combo.textContent=combo;ui.hearts.textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,cfg.lives-lives));ui.best.textContent=localStorage.getItem('spellingFrogHighScore')||0;ui.meta.textContent=MODES[mode].label+' · 단어 '+WORDS.filter(o=>o.word.length>=cfg.min&&o.word.length<=cfg.max).length.toLocaleString()+'개 풀에서 무작위 출제';}
+let toastTimer;function toast(t){ui.toast.textContent=t;ui.toast.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>ui.toast.classList.remove('on'),950)}
+function canMoveTo(row,col){if(col<0||col>=COLS||row<0)return false;ensureRows(row+28);const d=world.get(row);if(!d)return false;if(d.type==='letter'){prepareLetterRow(row)}return !d.blocked.has(col)}
+function move(dx,dz){if(!running||hopping||deathLock)return;idle=0;ui.stork.classList.remove('on');const nr=frogRow+dz,nc=frogCol+dx;if(!canMoveTo(nr,nc)){sound('bad');toast('🌳 길이 막혔어요!');return}const fromRow=frogRow,fromCol=frogCol;hopFrom={x:frog.position.x,z:frog.position.z};hopTo={x:xFor(nc),z:zFor(nr)};frogRow=nr;frogCol=nc;hopping=true;hopT=0;sound('hop');frog.rotation.y=dx<0?Math.PI/2:dx>0?-Math.PI/2:dz<0?Math.PI:0;if(dz>0&&frogRow>maxRow){maxRow=frogRow;score+=5;localStorage.setItem('spellingFrogHighScore',Math.max(Number(localStorage.getItem('spellingFrogHighScore')||0),maxRow*5));}setTimeout(()=>afterLand(fromRow,fromCol),205);updateUI()}
+function afterLand(oldRow,oldCol){if(deathLock||!running)return;const d=world.get(frogRow);if(d?.type==='letter'){prepareLetterRow(frogRow);const cols=cfg.choices===3?[2,4,6]:[1,3,5,7];if(cols.includes(frogCol)){const idx=cols.indexOf(frogCol),pad=d.letterTiles[idx*2],letter=pad?.userData?.letter;if(letter===targetLetter()){sound('good');letterIndex++;score+=60+combo*8;checkpoint={row:frogRow,col:frogCol};toast('✅ '+letter+' 정답!');if(letterIndex>=current.word.length){completeWord()}else{refreshFutureLetters()}}else{sound('bad');combo=0;score=Math.max(0,score-10);toast('❌ '+letter+' 말고 '+targetLetter()+'!');bounceTo(oldRow,oldCol);return}}}
+if(d?.type==='river'&&!isOnLog(frogRow,frog.position.x)){loseLife('💦 물에 풍덩!');return}collectFly();updateUI()}
+function bounceTo(r,c){frogRow=r;frogCol=c;hopFrom={x:frog.position.x,z:frog.position.z};hopTo={x:xFor(c),z:zFor(r)};hopping=true;hopT=0}
+function completeWord(){sound('word');wordsDone++;combo++;bestCombo=Math.max(bestCombo,combo);score+=250+combo*35;toast('🎉 '+current.word+' = '+current.meaning);if('speechSynthesis'in window){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(current.word.toLowerCase());u.lang='en-US';u.rate=.86;speechSynthesis.speak(u)}catch(e){}}chooseWord()}
+function isOnLog(row,x){return logs.some(l=>l.row===row&&Math.abs(l.mesh.position.x-x)<l.width/2+.32)}
+function collectFly(){for(const f of flies){if(!f.taken&&f.row===frogRow&&Math.abs(f.mesh.position.x-frog.position.x)<.55){f.taken=true;f.mesh.visible=false;score+=120;sound('coin');toast('✨ 황금 파리 +120')}}}
+function loseLife(reason){if(deathLock||!running)return;deathLock=true;sound('hit');lives--;combo=0;toast(reason);frog.scale.set(1.25,.55,1.25);setTimeout(()=>{if(lives<=0){finish();return}frogRow=checkpoint.row;frogCol=checkpoint.col;frog.position.set(xFor(frogCol),.12,zFor(frogRow));frog.scale.set(1,1,1);idle=0;deathLock=false;updateUI()},700);updateUI()}
+function finish(){running=false;deathLock=false;$('rDistance').textContent=(maxRow*5)+'m';$('rWords').textContent=wordsDone;$('rCombo').textContent=bestCombo;$('resultMsg').textContent='총 '+score.toLocaleString()+'점 · '+WORDS.length.toLocaleString()+'개 단어 중 '+wordsDone+'개를 완성했어요.';$('gameOver').classList.remove('hidden')}
+function spawnFly(row){const d=world.get(row);if(!d||Math.random()>.18||d.type==='river'||d.type==='rail'||d.type==='letter')return;const c=Math.floor(rand(0,COLS));if(d.blocked.has(c))return;const mesh=new THREE.Group();const body=box(.18,.14,.18,0xffd93d);body.position.y=.5;mesh.add(body);for(const s of[-1,1]){const wing=box(.18,.04,.12,0xffffff);wing.position.set(s*.16,.58,0);mesh.add(wing)}mesh.position.set(xFor(c),0,zFor(row));d.group.add(mesh);flies.push({mesh,row,col:c,taken:false,phase:rand(0,6)})}
+function animateObjects(dt,time){for(const v of vehicles){v.mesh.position.x+=v.speed*dt*60;if(v.mesh.position.x>v.wrap/2)v.mesh.position.x=-v.wrap/2;if(v.mesh.position.x<-v.wrap/2)v.mesh.position.x=v.wrap/2;if(running&&!deathLock&&v.row===frogRow&&Math.abs(v.mesh.position.x-frog.position.x)<v.width/2+.38)loseLife('🚗 차에 부딪혔어요!')}
+for(const l of logs){l.mesh.position.x+=l.speed*dt*60;if(l.mesh.position.x>l.wrap/2)l.mesh.position.x=-l.wrap/2;if(l.mesh.position.x<-l.wrap/2)l.mesh.position.x=l.wrap/2}
+for(const t of trains){t.phase+=dt;const cycle=8.5,ph=t.phase%cycle;const warning=ph>4.5&&ph<6.3;t.signal.material.color.setHex(warning?0xff3131:0x35c759);if(ph>=6.3&&ph<7.4){if(!t.mesh){const tr=new THREE.Group();const engine=box(7.5,.9,.85,0xd44545);engine.position.y=.5;tr.add(engine);for(let i=-2;i<=2;i++){const win=box(.72,.3,.04,0xdff6ff);win.position.set(i*1.2,.66,-.445);tr.add(win)}tr.position.set(t.dir>0?-11:11,0,zFor(t.row));scene.add(tr);t.mesh=tr}t.mesh.position.x+=t.speed*t.dir*dt*60;if(running&&!deathLock&&t.row===frogRow&&Math.abs(t.mesh.position.x-frog.position.x)<4.2)loseLife('🚆 기차가 지나갔어요!')}else if(t.mesh){scene.remove(t.mesh);t.mesh=null}}
+for(const f of flies){if(!f.taken){f.mesh.position.y=.09+Math.sin(time*3+f.phase)*.08;f.mesh.rotation.y+=dt*2.4}}
+if(running&&!deathLock&&world.get(frogRow)?.type==='river'&&!hopping&&!isOnLog(frogRow,frog.position.x))loseLife('💦 통나무를 놓쳤어요!')}
+function animate(){requestAnimationFrame(animate);if(!clock)clock=new THREE.Clock();const dt=Math.min(.04,clock.getDelta()),time=performance.now()/1000;if(hopping){hopT+=dt/0.18;const t=Math.min(1,hopT),e=1-Math.pow(1-t,3);frog.position.x=THREE.MathUtils.lerp(hopFrom.x,hopTo.x,e);frog.position.z=THREE.MathUtils.lerp(hopFrom.z,hopTo.z,e);frog.position.y=.12+Math.sin(Math.PI*t)*.62;const sq=Math.sin(Math.PI*t);frog.scale.set(1-.08*sq,1+.18*sq,1-.08*sq);if(t>=1){hopping=false;frog.position.set(hopTo.x,.12,hopTo.z);frog.scale.set(1,1,1)}}shadowDisc.position.set(frog.position.x,.025,frog.position.z);shadowDisc.scale.setScalar(1-clamp((frog.position.y-.12)*.35,0,.25));animateObjects(dt,time);if(running&&!deathLock){idle+=dt;if(idle>7)ui.stork.classList.add('on');if(idle>10){ui.stork.classList.remove('on');loseLife('🪽 황새에게 들켰어요!');idle=0}}const lookZ=zFor(Math.max(3,maxRow+2));const desired=new THREE.Vector3(8.8,10.5,lookZ+10.5);camera.position.lerp(desired,.045);const look=new THREE.Vector3(0,0,lookZ-3.5);camera.lookAt(look);renderer.render(scene,camera)}
+function bind(){document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');mode=b.dataset.mode});$('startBtn').onclick=setupGame;$('retryBtn').onclick=setupGame;document.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();const [x,z]=b.dataset.move.split(',').map(Number);move(x,z)}));addEventListener('keydown',e=>{const k=e.key.toLowerCase(),m={arrowup:[0,1],w:[0,1],arrowdown:[0,-1],s:[0,-1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];if(m){e.preventDefault();move(...m)}});renderer.domElement.addEventListener('pointerdown',e=>{touchStart={x:e.clientX,y:e.clientY}});renderer.domElement.addEventListener('pointerup',e=>{if(!touchStart)return;const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;touchStart=null;if(Math.hypot(dx,dy)<26)return;if(Math.abs(dx)>Math.abs(dy))move(dx>0?1:-1,0);else move(0,dy<0?1:-1)})}
+function decorateAhead(){for(let r=2;r<34;r++)spawnFly(r)}
+init3D();bind();updateUI();animate();
 </script>
 </body>
 </html>
