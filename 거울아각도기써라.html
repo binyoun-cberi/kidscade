@@ -70,6 +70,27 @@
         .tool-btn:active { transform: scale(0.96); }
         .tool-btn.primary { background: rgba(14, 165, 233, 0.9); border-color: rgba(125, 211, 252, 0.8); color: white; }
         .tool-btn.warn { background: rgba(251, 191, 36, 0.15); color: #fde68a; border-color: rgba(251, 191, 36, 0.45); }
+        .chapter-title {
+            grid-column: 1 / -1;
+            text-align: left;
+            padding: 12px 14px;
+            margin-top: 6px;
+            border-radius: 14px;
+            background: linear-gradient(90deg, rgba(14,165,233,.18), rgba(15,23,42,.25));
+            border: 1px solid rgba(56,189,248,.24);
+            color: #bae6fd;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+        .chapter-title small { display:block; margin-top:3px; color:#94a3b8; font-size:11px; font-weight:700; }
+        .star-row { color:#fbbf24; letter-spacing:2px; font-size:15px; text-shadow:0 0 10px rgba(251,191,36,.25); }
+        .angle-display {
+            min-width: 76px; padding: 6px 10px; border-radius: 10px;
+            background: rgba(2,6,23,.62); border:1px solid rgba(56,189,248,.3);
+            color:#7dd3fc; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size:16px; font-weight:900; text-align:center;
+        }
+        #controls-panel { pointer-events:auto; }
         @media (max-width: 640px) {
             #controls-panel { bottom: 0.5rem; }
             .lesson-card { padding: 8px 10px; }
@@ -88,7 +109,7 @@
             </svg>
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 shrink-0">빛의 반사</h1>
-        <p class="text-slate-400 mb-6 text-sm shrink-0">각도·직각·예각·둔각·반사각을 배우며 로봇에게 에너지를 전달하세요!</p>
+        <p class="text-slate-400 mb-6 text-sm shrink-0">거울을 직접 돌려 레이저 경로를 설계하고, 법선·입사각·반사각을 눈으로 확인하세요!</p>
         
         <div id="stage-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 overflow-y-auto p-1 shrink h-full min-h-[200px]">
             </div>
@@ -121,38 +142,41 @@
                 <span class="text-[11px] text-slate-400 font-bold">오늘의 개념</span>
             </div>
             <div id="lesson-text" class="text-xs sm:text-sm text-slate-200 leading-relaxed text-left break-keep">
-                거울을 눌러 각도를 조절하고 빛의 반사를 관찰하세요.
+                거울을 잡아 직접 돌리고 레이저 경로를 관찰하세요. 필요할 때 각도기와 법선 표시를 사용하세요.
             </div>
         </div>
 
         <div class="relative flex-grow flex items-center justify-center min-h-[300px]">
             <canvas id="game-canvas" width="800" height="600" class="max-w-full max-h-full w-auto h-auto object-contain"></canvas>
             
-            <div id="controls-panel" class="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur p-3 sm:p-4 rounded-xl border border-slate-600 flex flex-col gap-2 w-[95%] max-w-xl shadow-2xl transition-opacity">
+            <div id="controls-panel" class="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur p-3 sm:p-4 rounded-xl border border-slate-600 flex flex-col gap-2 w-[94%] max-w-lg shadow-2xl transition-opacity">
                 <div class="flex items-center gap-2 sm:gap-3 w-full">
-                    <label id="control-label" class="text-slate-300 text-xs sm:text-sm whitespace-nowrap font-medium">거울 각도:</label>
-                    <input type="range" id="angle-slider" min="0" max="180" step="1" value="0" class="flex-grow">
-                    <input type="number" id="angle-input" min="0" max="360" step="1" class="w-14 sm:w-16 bg-slate-900 border border-slate-600 rounded p-1 text-center font-mono text-sky-400 focus:outline-none focus:border-sky-400 text-sm sm:text-base">
-                    <span class="text-slate-400 font-serif text-sm">°</span>
-                    <span id="angle-type-label" class="angle-chip text-sky-200">각도</span>
+                    <label id="control-label" class="text-slate-300 text-xs sm:text-sm whitespace-nowrap font-bold">거울선 기울기:</label>
+                    <div id="selected-angle-display" class="angle-display">--°</div>
+                    <input type="range" id="angle-slider" min="0" max="180" step="1" value="0" class="hidden">
+                    <input type="number" id="angle-input" min="0" max="360" step="1" class="hidden">
+                    <span id="angle-type-label" class="angle-chip text-sky-200">직접 드래그</span>
+                    <div class="text-[11px] text-slate-400 ml-auto hidden sm:block">거울을 잡아 직접 돌리세요</div>
                 </div>
-                <div class="grid grid-cols-4 gap-2 w-full">
+                <div class="grid grid-cols-5 gap-2 w-full">
                     <button id="btn-angle-minus" class="tool-btn">-5°</button>
                     <button id="btn-angle-plus" class="tool-btn">+5°</button>
-                    <button id="btn-stage-hint" class="tool-btn warn">힌트</button>
-                    <button id="btn-snap-solution" class="tool-btn primary">선택 정답</button>
+                    <button id="btn-snap-solution" class="tool-btn primary">각도기</button>
+                    <button id="btn-toggle-guide" class="tool-btn">법선·각</button>
+                    <button id="btn-stage-hint" class="tool-btn warn">힌트 1/3</button>
                 </div>
-                <div class="grid grid-cols-2 gap-2 w-full">
-                    <button id="btn-toggle-guide" class="tool-btn">정답선 보기</button>
-                    <div id="angle-help-text" class="text-[11px] sm:text-xs text-slate-300 bg-slate-950/40 rounded-lg px-2 py-2 text-left break-keep">거울이나 발사기를 선택하세요.</div>
-                </div>
+                <div id="angle-help-text" class="text-[11px] sm:text-xs text-slate-300 bg-slate-950/40 rounded-lg px-2 py-2 text-left break-keep">거울이나 발사기를 선택하세요. 정답 숫자는 표시하지 않습니다.</div>
             </div>
         </div>
     </div>
 
     <div id="result-screen" class="hidden max-w-md w-full bg-slate-800 p-8 rounded-2xl shadow-2xl text-center border border-slate-700 z-50">
         <h1 id="result-title" class="text-3xl font-bold mb-2 text-emerald-400">LEVEL 1 CLEAR!</h1>
-        <p class="text-slate-300 mb-8">로봇에게 에너지가 전달되었습니다.</p>
+        <p class="text-slate-300 mb-4">로봇에게 에너지가 전달되었습니다.</p>
+        <div class="bg-slate-900/80 border border-slate-700 rounded-xl p-4 mb-5">
+            <div id="result-stars" class="text-3xl tracking-[8px] text-amber-400 mb-1">★★★</div>
+            <div id="result-hint-summary" class="text-xs text-slate-400">도움 없이 해결!</div>
+        </div>
         
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-700">
@@ -2070,6 +2094,28 @@
             }
 ];
 
+        // 학습 문구 보정: "거울선의 화면상 기울기"와 "법선 기준 입사각/반사각"을 구분합니다.
+        const EDUCATION_PATCHES = {
+            3: { lesson: '거울에서 빛은 법선을 기준으로 들어오는 각도와 나가는 각도가 같습니다. 거울선의 기울기 숫자와 입사각·반사각은 서로 다른 값입니다.' },
+            4: { lesson: '거울선이 수평선과 만드는 기울기를 조절해 빛을 오른쪽 아래로 보내 보세요. 반사각은 거울선이 아니라 법선을 기준으로 잽니다.' },
+            5: { lesson: '거울선의 기울기가 90°보다 큰 둔각일 수도 있습니다. 실제 입사각과 반사각은 충돌 지점의 법선을 기준으로 확인하세요.' },
+            6: { title: '90° 방향 바꾸기', concept: '입사각=반사각', lesson: '빛의 진행 방향을 90° 바꾸는 대표적인 반사입니다. 법선을 켜서 입사각과 반사각이 각각 같아지는지 확인하세요.' },
+            7: { title: '빛을 30° 아래로 돌리기', concept: '진행 방향 변화', lesson: '빛의 진행 방향을 약 30° 아래쪽으로 바꿔 보세요. 빛이 꺾이는 각도와 거울선의 기울기는 같은 값이 아닙니다.', hints: ['목표는 현재 빛보다 오른쪽 아래에 있습니다.', '거울을 조금씩 돌리며 반사광이 목표 높이까지 내려가는지 관찰하세요.'] },
+            8: { title: '왼쪽 아래로 크게 돌리기', concept: '큰 방향 변화', lesson: '이번에는 반사광이 왼쪽 아래를 향하도록 크게 방향을 바꿉니다. 거울선 기울기와 실제 입사각·반사각을 구분해 보세요.', hints: ['목표는 거울의 왼쪽 아래에 있습니다.', '반사광이 되돌아가야 하므로 거울을 더 크게 기울여야 합니다.'] },
+            25: { title: '광전송 게이트 입문', concept: '게임 장치 · 직선', lesson: '보라색 게이트는 이 게임에서만 사용하는 가상 광전송 장치입니다. 반사 법칙과 별개이며, 들어간 빛을 다른 위치에서 같은 방향으로 내보냅니다.' },
+            26: { title: '광전송 게이트와 반사', concept: '게임 장치 · 직각', lesson: '가상 광전송 게이트로 위치를 바꾼 뒤 거울의 반사 법칙을 이용합니다. 게이트 이동과 거울 반사는 서로 다른 규칙입니다.' }
+        };
+        Object.entries(EDUCATION_PATCHES).forEach(([id, patch]) => Object.assign(LEVELS.find(l => l.id === Number(id)), patch));
+        const level27 = LEVELS.find(l => l.id === 27);
+        if (level27) level27.hints = ['첫 거울부터 마지막 거울까지 순서대로 맞춰 보세요.', '막힌다면 현재 빛이 다음 거울의 중심을 지나가는지 확인하고, 필요할 때 법선·각 표시를 사용하세요.'];
+        const level28 = LEVELS.find(l => l.id === 28);
+        if (level28) level28.hints = ['경로를 한 번에 맞추려 하지 말고 다음 거울 하나만 목표로 잡으세요.', '법선을 켜서 입사각과 반사각이 같은지 확인하며 마지막 경로를 완성하세요.'];
+        const level13 = LEVELS.find(l => l.id === 13);
+        if (level13 && level13.mirrors[0]) {
+            level13.mirrors[0].solutionAngle = 0;
+            if (level13.solutions?.mirrors) level13.solutions.mirrors['1'] = 0;
+        }
+
         // ==========================================
         // Game State & Storage
         // ==========================================
@@ -2089,7 +2135,8 @@
         let selectedEmitter = false;
         let isDragging = false;
         let isTargetHit = false;
-        let targetHitTimer = 0;
+        let targetHitTimer = 0; // 실제 시간(초) 기준
+        let lastLoopTime = 0;
 
         const screens = {
             start: document.getElementById('start-screen'),
@@ -2110,6 +2157,9 @@
         const btnStageHint = document.getElementById('btn-stage-hint');
         const btnSnapSolution = document.getElementById('btn-snap-solution');
         const btnToggleGuide = document.getElementById('btn-toggle-guide');
+        const selectedAngleDisplay = document.getElementById('selected-angle-display');
+        const resultStars = document.getElementById('result-stars');
+        const resultHintSummary = document.getElementById('result-hint-summary');
         
         const formatTime = (sec) => {
             const m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -2118,7 +2168,10 @@
         };
 
         let hintStep = 0;
-        let guideVisible = false;
+        let guideVisible = false; // 법선·입사각·반사각 표시
+        let protractorVisible = false;
+        let hintsUsed = 0;
+        let guideUsed = false;
 
         const normalizeAngle = (angle, max = 180) => {
             let value = Number(angle) || 0;
@@ -2137,6 +2190,7 @@
                 if (a < 270) return '반대 둔각';
                 return '반대 예각';
             }
+            if (a <= 2 || Math.abs(a - 180) <= 2) return '수평';
             if (Math.abs(a - 90) <= 2) return '직각';
             if (a < 90) return '예각';
             return '둔각';
@@ -2163,15 +2217,20 @@
         const updateAngleHelp = () => {
             const angle = getSelectedAngle();
             if (angle === null) {
-                angleTypeLabel.innerText = '각도';
-                angleHelpText.innerText = '거울이나 발사기를 선택하세요. 힌트 버튼을 누르면 단계별 도움을 받을 수 있습니다.';
+                angleTypeLabel.innerText = '직접 드래그';
+                selectedAngleDisplay.innerText = '--°';
+                angleHelpText.innerText = '거울이나 발사기를 선택한 뒤 직접 드래그해 돌려보세요. 각도기는 측정 도구이며 정답을 알려주지 않습니다.';
                 return;
             }
             const max = getSelectedMax();
-            angleTypeLabel.innerText = getAngleKind(angle, max);
-            const sol = getSelectedSolution();
-            const targetText = sol !== null && sol !== undefined ? `정답선 기준 ${Math.round(sol)}°` : '정답선 없음';
-            angleHelpText.innerText = `${Math.round(angle)}° · ${angleTypeLabel.innerText}입니다. ${targetText}.`;
+            selectedAngleDisplay.innerText = `${Math.round(angle)}°`;
+            if (selectedEmitter) {
+                angleTypeLabel.innerText = '발사 방향';
+                angleHelpText.innerText = `발사 방향 ${Math.round(angle)}° · ${getAngleKind(angle, 360)}. 화면 기준 0° 오른쪽, 90° 아래, 180° 왼쪽, 270° 위입니다.`;
+            } else {
+                angleTypeLabel.innerText = '거울 기울기';
+                angleHelpText.innerText = `거울선의 화면상 기울기 ${Math.round(angle)}°입니다. 이 숫자는 입사각·반사각이 아닙니다. ‘법선·각’을 켜면 레이저가 닿는 지점의 실제 각을 확인할 수 있습니다.`;
+            }
         };
 
         const selectEmitterControl = () => {
@@ -2179,7 +2238,7 @@
             selectedEmitter = true;
             selectedMirrorId = null;
             controlsPanel.classList.remove('hidden');
-            controlLabel.innerText = '발사기 각도:';
+            controlLabel.innerText = '발사 방향:';
             angleSlider.max = 360;
             angleInput.max = 360;
             angleSlider.value = normalizeAngle(levelData.emitter.angle, 360);
@@ -2193,7 +2252,7 @@
             selectedMirrorId = m.id;
             selectedEmitter = false;
             controlsPanel.classList.remove('hidden');
-            controlLabel.innerText = getLabelForType(m.type);
+            controlLabel.innerText = '거울선 기울기:';
             angleSlider.max = 180;
             angleInput.max = 180;
             angleSlider.value = normalizeAngle(m.angle, 180);
@@ -2213,18 +2272,46 @@
             return false;
         };
 
+        const getBestStars = () => JSON.parse(localStorage.getItem('laserPuzzleBestStars')) || {};
+        const setBestStars = (levelId, stars) => {
+            const data = getBestStars();
+            data[levelId] = Math.max(data[levelId] || 0, stars);
+            localStorage.setItem('laserPuzzleBestStars', JSON.stringify(data));
+        };
+        const calculateStars = () => {
+            if (guideUsed || hintsUsed >= 2) return 1;
+            if (hintsUsed === 1) return 2;
+            return 3;
+        };
+
+        const CHAPTERS = [
+            { start:1, title:'CHAPTER 1 · 빛과 첫 반사', sub:'직진, 방향, 첫 번째 거울을 실험합니다.' },
+            { start:9, title:'CHAPTER 2 · 다중 반사 연구실', sub:'여러 거울과 장애물을 연결합니다.' },
+            { start:19, title:'CHAPTER 3 · 반사 미로', sub:'예각·둔각과 복잡한 경로를 추론합니다.' },
+            { start:25, title:'CHAPTER 4 · 광전송 장치', sub:'게임 속 가상 장치와 반사를 구분해 사용합니다.' },
+            { start:27, title:'CHAPTER 5 · 마스터 도전', sub:'배운 규칙을 종합해 최종 퍼즐을 해결합니다.' }
+        ];
+
         const renderStageSelection = () => {
             const grid = document.getElementById('stage-grid');
             grid.innerHTML = '';
             const bestTimes = getBestTimes();
+            const bestStars = getBestStars();
 
             LEVELS.forEach((lvl, idx) => {
+                const chapter = CHAPTERS.find(c => c.start === lvl.id);
+                if (chapter) {
+                    const header = document.createElement('div');
+                    header.className = 'chapter-title';
+                    header.innerHTML = `${chapter.title}<small>${chapter.sub}</small>`;
+                    grid.appendChild(header);
+                }
                 const bestTimeVal = bestTimes[lvl.id];
                 const bestTimeStr = bestTimeVal ? formatTime(bestTimeVal) : '--:--';
-                
+                const stars = bestStars[lvl.id] || 0;
+                const starText = '★'.repeat(stars) + '☆'.repeat(3 - stars);
                 const btn = document.createElement('button');
                 btn.className = "p-3 sm:p-4 bg-slate-900 border border-slate-700 hover:border-sky-500 rounded-xl flex flex-col items-center justify-between transition-colors text-left w-full min-h-36 shadow-md hover:shadow-sky-500/20";
-                
                 btn.innerHTML = `
                     <div class="relative w-full flex items-center justify-between gap-1">
                         <span class="text-sky-400 font-bold text-xs sm:text-sm">LEVEL ${lvl.id}</span>
@@ -2232,7 +2319,8 @@
                     </div>
                     <div class="text-slate-100 font-extrabold text-xs sm:text-sm text-center leading-snug line-clamp-2">${lvl.title}</div>
                     <div class="concept-pill justify-center max-w-full overflow-hidden text-ellipsis">${lvl.concept || '각도'}</div>
-                    <div class="text-amber-400 font-mono text-[10px] sm:text-xs mt-auto w-full text-center bg-slate-950/50 rounded py-1">BEST ${bestTimeStr}</div>
+                    <div class="star-row">${starText}</div>
+                    <div class="text-slate-500 font-mono text-[10px] sm:text-xs w-full text-center">TIME ${bestTimeStr}</div>
                 `;
                 btn.onclick = () => {
                     soundEffects.click();
@@ -2254,7 +2342,8 @@
             currentLevelIndex = levelIndex;
             loadLevel(currentLevelIndex);
             gameState = 'playing';
-            loop();
+            lastLoopTime = 0;
+            animationFrame = requestAnimationFrame(loop);
         };
 
         const loadLevel = (index) => {
@@ -2275,8 +2364,13 @@
             targetHitTimer = 0;
             controlsPanel.classList.add('hidden');
             hintStep = 0;
+            hintsUsed = 0;
             guideVisible = false;
-            btnToggleGuide.innerText = '정답선 보기';
+            guideUsed = false;
+            protractorVisible = false;
+            btnStageHint.innerText = '힌트 1/3';
+            btnToggleGuide.innerText = '법선·각';
+            btnSnapSolution.innerText = '각도기';
             lessonConcept.innerText = `📐 ${levelData.concept || '각도'}`;
             lessonDifficulty.innerText = levelData.difficulty || '기초';
             setLessonMessage(levelData.lesson);
@@ -2310,6 +2404,10 @@
             document.getElementById('final-time').innerText = formatTime(timeElapsed);
             
             const isNewRecord = setBestTime(levelData.id, timeElapsed);
+            const stars = calculateStars();
+            setBestStars(levelData.id, stars);
+            resultStars.innerText = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+            resultHintSummary.innerText = stars === 3 ? '도움 없이 스스로 해결했습니다!' : stars === 2 ? '힌트 1회를 사용해 해결했습니다.' : '법선·각 또는 여러 힌트를 활용해 해결했습니다.';
             const bestTimes = getBestTimes();
             document.getElementById('new-best-time').innerText = formatTime(bestTimes[levelData.id]);
             
@@ -2378,20 +2476,32 @@
 
         btnStageHint.addEventListener('click', () => {
             soundEffects.click();
-            const hints = levelData.hints || [];
-            if (hints.length === 0) {
-                setLessonMessage('거울을 하나씩 선택해 레이저가 다음 장치의 중심을 지나가도록 맞춰 보세요.');
+            if (hintStep >= 3) {
+                setLessonMessage('이미 3단계 힌트를 모두 확인했습니다. 레이저가 다음 장치의 중심을 지나는지 하나씩 살펴보세요.');
                 return;
             }
-            setLessonMessage(`힌트 ${Math.min(hintStep + 1, hints.length)}: ${hints[hintStep % hints.length]}`);
+            hintsUsed++;
+            const hints = levelData.hints || [];
+            if (hintStep === 0) {
+                setLessonMessage(`힌트 1 · 경로 찾기: ${hints[0] || '목표까지 가는 큰 방향부터 생각해 보세요.'}`);
+            } else if (hintStep === 1) {
+                setLessonMessage(`힌트 2 · 다음 장치: ${hints[1] || '현재 레이저가 다음 거울의 중심을 지나도록 먼저 맞춰 보세요.'}`);
+            } else {
+                guideVisible = true;
+                guideUsed = true;
+                btnToggleGuide.innerText = '법선·각 켜짐';
+                setLessonMessage('힌트 3 · 반사 원리: 레이저가 거울에 닿는 지점의 노란 점선이 법선입니다. 표시된 입사각과 반사각이 같은지 확인하며 거울을 돌려 보세요.');
+            }
             hintStep++;
+            btnStageHint.innerText = hintStep < 3 ? `힌트 ${hintStep + 1}/3` : '힌트 완료';
         });
 
         btnToggleGuide.addEventListener('click', () => {
             soundEffects.click();
             guideVisible = !guideVisible;
-            btnToggleGuide.innerText = guideVisible ? '정답선 숨기기' : '정답선 보기';
-            setLessonMessage(guideVisible ? '노란 점선은 정답 각도입니다. 현재 거울 각도와 비교해 입사각=반사각을 확인하세요.' : levelData.lesson);
+            if (guideVisible) guideUsed = true;
+            btnToggleGuide.innerText = guideVisible ? '법선·각 켜짐' : '법선·각';
+            setLessonMessage(guideVisible ? '노란 점선은 거울의 법선입니다. 입사각과 반사각은 거울선이 아니라 법선을 기준으로 잽니다.' : levelData.lesson);
         });
 
         btnSnapSolution.addEventListener('click', () => {
@@ -2402,15 +2512,9 @@
                     if (first) selectMirrorControl(first);
                 }
             }
-            const sol = getSelectedSolution();
-            if (sol === null || sol === undefined) {
-                setLessonMessage('이 장치에는 저장된 정답 각도가 없습니다. 다른 거울을 선택해 보세요.');
-                return;
-            }
-            updateAngle(sol);
-            guideVisible = true;
-            btnToggleGuide.innerText = '정답선 숨기기';
-            setLessonMessage(`선택한 장치를 정답 각도 ${Math.round(sol)}°로 맞췄습니다. 왜 이 각도가 되는지 레이저의 들어오는 길과 나가는 길을 비교해 보세요.`);
+            protractorVisible = !protractorVisible;
+            btnSnapSolution.innerText = protractorVisible ? '각도기 켜짐' : '각도기';
+            setLessonMessage(protractorVisible ? '각도기는 선택한 장치가 화면의 수평선과 이루는 기울기를 재는 도구입니다. 입사각·반사각은 ‘법선·각’에서 따로 확인하세요.' : levelData.lesson);
         });
 
         const getMousePos = (e) => {
@@ -2538,13 +2642,16 @@
         // ==========================================
         // Rendering
         // ==========================================
-        const loop = () => {
+        const loop = (timestamp) => {
             if (gameState !== 'playing') return;
-            draw();
+            if (!lastLoopTime) lastLoopTime = timestamp;
+            const dt = Math.min(0.05, Math.max(0, (timestamp - lastLoopTime) / 1000));
+            lastLoopTime = timestamp;
+            draw(dt);
             animationFrame = requestAnimationFrame(loop);
         };
 
-        const draw = () => {
+        const draw = (dt = 0.016) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const timeAnim = performance.now() / 500; 
             
@@ -2559,14 +2666,20 @@
             ctx.strokeStyle = '#64748b';
             ctx.lineWidth = 2;
             levelData.walls.forEach(w => {
+                ctx.save();
                 ctx.fillRect(w.x, w.y, w.w, w.h);
                 ctx.strokeRect(w.x, w.y, w.w, w.h);
                 ctx.beginPath();
-                for(let i = 0; i < w.w + w.h; i += 10) {
+                ctx.rect(w.x, w.y, w.w, w.h);
+                ctx.clip();
+                ctx.beginPath();
+                for(let i = -w.h; i < w.w + w.h; i += 12) {
                     ctx.moveTo(w.x + i, w.y);
-                    ctx.lineTo(w.x, w.y + i);
+                    ctx.lineTo(w.x + i + w.h, w.y + w.h);
                 }
+                ctx.strokeStyle = 'rgba(148,163,184,.28)';
                 ctx.stroke();
+                ctx.restore();
             });
 
             // 2. Draw Target
@@ -2627,7 +2740,7 @@
 
             // 4. Draw Emitter
             const em = levelData.emitter;
-            if (selectedEmitter) {
+            if (selectedEmitter && protractorVisible) {
                 ctx.save();
                 ctx.translate(em.x, em.y);
                 ctx.beginPath();
@@ -2657,16 +2770,6 @@
                         ctx.fillText(textAngle + '°', (90 + 18) * Math.cos(rad), (90 + 18) * Math.sin(rad));
                     }
                 }
-                if (guideVisible && levelData.emitter.solutionAngle !== undefined) {
-                    ctx.rotate(levelData.emitter.solutionAngle * Math.PI / 180);
-                    ctx.setLineDash([8, 8]);
-                    ctx.strokeStyle = '#facc15';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(110, 0);
-                    ctx.stroke();
-                }
                 ctx.restore();
             }
 
@@ -2695,21 +2798,8 @@
                 const mType = m.type || 'mirror';
                 const solutionAngle = m.solutionAngle ?? levelData.solutions?.mirrors?.[m.id];
 
-                if (guideVisible && solutionAngle !== undefined && !m.fixed) {
-                    ctx.save();
-                    ctx.translate(m.x, m.y);
-                    ctx.rotate(solutionAngle * Math.PI / 180);
-                    ctx.setLineDash([8, 8]);
-                    ctx.strokeStyle = '#facc15';
-                    ctx.lineWidth = 5;
-                    ctx.beginPath();
-                    ctx.moveTo(-m.length / 2 - 10, 0);
-                    ctx.lineTo(m.length / 2 + 10, 0);
-                    ctx.stroke();
-                    ctx.restore();
-                }
 
-                if (isSelected) {
+                if (isSelected && protractorVisible) {
                     ctx.save();
                     ctx.translate(m.x, m.y);
                     ctx.beginPath();
@@ -2824,6 +2914,7 @@
             let rayAngle = em.angle * Math.PI / 180;
             let currentHitTarget = false;
             let rayPoints = [rayOrigin];
+            let reflectionHits = [];
             
             const MAX_BOUNCES = 15;
             let bounces = 0;
@@ -2908,6 +2999,15 @@
                             const dot = vx * nx + vy * ny;
                             const rx = vx - 2 * dot * nx;
                             const ry = vy - 2 * dot * ny;
+                            const facingNormalAngle = Math.atan2(ny, nx);
+                            const incidenceDeg = Math.acos(Math.max(0, Math.min(1, Math.abs(dot)))) * 180 / Math.PI;
+                            reflectionHits.push({
+                                x: closestHit.x, y: closestHit.y,
+                                normalAngle: facingNormalAngle,
+                                incomingBackAngle: Math.atan2(-vy, -vx),
+                                outgoingAngle: Math.atan2(ry, rx),
+                                incidenceDeg
+                            });
                             
                             rayAngle = Math.atan2(ry, rx);
                             rayOrigin = { x: closestHit.x, y: closestHit.y };
@@ -2981,14 +3081,52 @@
             }
             ctx.stroke();
 
+            // 법선·입사각·반사각 시각화: 정답 각도가 아니라 현재 실제 광선의 물리 관계를 보여줍니다.
+            if (guideVisible && reflectionHits.length) {
+                const drawSmallArc = (cx, cy, a1, a2, radius, color) => {
+                    let diff = a2 - a1;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, a1, a1 + diff, diff < 0);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                };
+                reflectionHits.forEach(hit => {
+                    ctx.save();
+                    ctx.setLineDash([7, 6]);
+                    ctx.strokeStyle = '#facc15';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(hit.x - Math.cos(hit.normalAngle) * 62, hit.y - Math.sin(hit.normalAngle) * 62);
+                    ctx.lineTo(hit.x + Math.cos(hit.normalAngle) * 62, hit.y + Math.sin(hit.normalAngle) * 62);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    drawSmallArc(hit.x, hit.y, hit.normalAngle, hit.incomingBackAngle, 27, '#38bdf8');
+                    drawSmallArc(hit.x, hit.y, hit.normalAngle, hit.outgoingAngle, 36, '#34d399');
+                    ctx.font = 'bold 12px Tahoma';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const deg = Math.round(hit.incidenceDeg);
+                    const label = `입사각 ${deg}° = 반사각 ${deg}°`;
+                    const w = ctx.measureText(label).width + 16;
+                    ctx.fillStyle = 'rgba(2,6,23,.86)';
+                    ctx.fillRect(hit.x - w/2, hit.y - 64, w, 22);
+                    ctx.fillStyle = '#fef3c7';
+                    ctx.fillText(label, hit.x, hit.y - 53);
+                    ctx.restore();
+                });
+            }
+
             // Handle Target Hit state
             if (currentHitTarget) {
-                targetHitTimer++;
+                targetHitTimer += dt;
                 if (!isTargetHit) {
                     isTargetHit = true;
                     soundEffects.hit();
                 }
-                if (targetHitTimer > 18) {
+                if (targetHitTimer >= 0.28) {
                     soundEffects.clearLevel();
                     levelClear();
                 }
