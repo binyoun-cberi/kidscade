@@ -795,6 +795,14 @@
     .side-panel{left:7px;right:7px;bottom:7px;}
   }
 
+
+/* Only ingredients, spice and one cooking action remain. */
+.soup-inline-card,.bottle-rack,.stove-control,.tray-arrow,.ing-desc,.intro-tips{display:none!important}.status-card{display:flex;justify-content:flex-end;gap:18px;padding:8px}.status-card>div:nth-child(n+3){display:none}.app{max-width:1200px;padding:10px;margin:auto}.topbar{grid-template-columns:minmax(0,1fr) auto;gap:8px}.order-card{padding:12px;display:block}.order-title{font-size:17px}.order-tags{gap:5px}.spice-inline-card{margin-top:8px}.spice-grid{max-width:420px}.stage{grid-template-columns:minmax(0,1fr) 270px;gap:10px}.pot-panel{min-height:440px;padding:14px}.bottle-station{padding:0}.pot-bottom-row{display:block}.action-panel .cook-row{display:flex;justify-content:center;gap:10px}.cook-row button{min-height:48px;min-width:120px}.simple-cook{position:absolute;left:15%;right:15%;bottom:88px;text-align:center;z-index:5;background:#fff8e9dd;padding:10px;border-radius:12px}.simple-cook small{font-size:12px}.simple-track{height:16px;background:linear-gradient(90deg,#f1c56a 0 54.66%,#80ce8a 54.66% 78.66%,#ed8a74 78.66%);border:2px solid #715238;border-radius:12px;margin:7px 0;overflow:hidden}.simple-track i{display:block;height:100%;width:0;border-right:5px solid #263f3b;background:#ffffff55}.tray-middle{display:block}.ingredient-grid{grid-template-columns:repeat(2,minmax(0,1fr));overflow:auto;max-height:430px}.tray-window{display:block}.is-cooking .side-panel,.is-cooking .spice-inline-card,.is-cooking #undoBtn,.is-cooking #mobileTrayBtn{display:none!important}.is-cooking .stage{grid-template-columns:1fr}.is-cooking .pot-panel{max-width:900px;width:100%;margin:auto}.pot-note{display:none}
+@media(max-width:760px){.topbar{display:block}.status-card{padding:4px;justify-content:center}.stage{grid-template-columns:1fr}.pot-panel{min-height:430px}.order-title{font-size:14px}.simple-cook{left:8%;right:8%}.side-panel{position:fixed}.ingredient-grid{max-height:48dvh}.spice-inline-card .section-title{display:none}.selection-row{min-height:40px}.app{padding:6px}.pot-wrap{margin-top:10px}}
+
+
+.pot-wrap{width:min(440px,90%);max-height:100%;margin-bottom:72px}.pot-bottom-row{position:absolute;bottom:10px;left:12px;right:12px;width:auto}.action-panel{padding:6px;background:none;border:0;box-shadow:none}
+@media(max-width:1080px){.stage{grid-template-columns:1fr}.pot-panel{height:470px;min-height:470px}.pot-wrap{width:min(370px,85%)}.topbar{display:block}}
 </style>
 </head>
 <body>
@@ -802,11 +810,11 @@
     <div class="intro-card">
       <div class="logo-pot" aria-hidden="true"><div class="pot"><div class="broth"></div></div></div>
       <h1>마라탕 한 그릇</h1>
-      <p>손님 주문을 보고 재료와 맵기를 고른 뒤, 불·물·육수·소스를 조절하며 재료마다 알맞게 익혀 한 그릇을 완성하세요.</p>
+      <p>주문에 맞는 재료와 맵기를 고르세요. 끓이기 시작한 뒤, 익힘 표시가 초록색일 때 한 그릇을 완성해요.</p>
       <div class="intro-tips">
         <div class="tip">재료 탭 → 냄비에 넣기</div>
-        <div class="tip">불·물·소스 조절</div>
-        <div class="tip">리뷰 평균 별점 올리기</div>
+        <div class="tip">초록색일 때 완성</div>
+        <div class="tip">한 손님씩 차근차근</div>
       </div>
       <div class="intro-actions">
         <button class="primary-btn" id="startBtn" style="font-size:18px;">가게 열기</button>
@@ -909,6 +917,7 @@
           <div class="serving-bowl"><span id="serveText">서빙!</span></div>
         </div>
 
+        <div class="simple-cook"><b id="simpleCookText">재료와 맵기를 골라요</b><div class="simple-track"><i id="simpleCookFill"></i></div><small>익힘 표시가 초록 구간에 오면 완성!</small></div>
         <div class="pot-bottom-row">
           <div class="stove-control" aria-label="가스레인지 불 조절">
             <div class="burner" id="burner" data-fire="0"><span class="flame"></span></div>
@@ -1279,7 +1288,7 @@
       const isRequired = required.has(ing.name);
       const isBanned = ing.tags.some(tag => bannedTags.has(tag));
       const count = selectedCounts[ing.name] || 0;
-      const pace = ing.cookTime <= 11 ? "빠른 익힘" : ing.cookTime >= 20 ? "느린 익힘" : "보통 익힘";
+      const pace = "재료 담기";
       const btn = document.createElement("button");
       btn.className = "ingredient-btn" + (isRequired ? " required" : "") + (isBanned ? " banned" : "") + (count ? " picked" : "");
       btn.innerHTML = `
@@ -1603,7 +1612,7 @@
     const raw = state.selected.filter(i => donenessStatus(i).cls === "raw").length;
     $("cookHint").textContent = state.cooking
       ? `딱 좋음 ${perfect}/${state.selected.length} · 덜 익음 ${raw}`
-      : state.selected.length < 3 ? `재료 ${Math.max(0, 3 - state.selected.length)}개 더 필요` : "불을 켜고 조리를 시작하세요";
+      : state.selected.length < 3 ? `재료 ${Math.max(0, 3 - state.selected.length)}개 더 필요` : "준비됐어요. 조리 시작을 누르세요";
     $("undoBtn").disabled = state.cooking;
     $("broth").classList.toggle("cooking", state.cooking && state.temp > 35);
     const knob = $("gasKnob");
@@ -1617,6 +1626,10 @@
     document.querySelectorAll("[data-gas-level]").forEach(btn => {
       btn.classList.toggle("selected", Number(btn.dataset.gasLevel) === state.heatLevel);
     });
+    document.body.classList.toggle('is-cooking',state.cooking);
+    const pct=state.selected.length?state.selected[0].cook/state.selected[0].cookTime*100:0;
+    $("simpleCookFill").style.width=Math.min(100,pct/1.5)+'%';
+    $("simpleCookText").textContent=state.cooking?(pct<82?'보글보글 익는 중':pct<=118?'지금 완성해요!':'너무 익고 있어요!'):'재료와 맵기를 골라요';
     renderCookList();
   }
 
@@ -1686,6 +1699,7 @@
       return;
     }
     state.cooking = true;
+    closeTray();
     if(state.heatLevel === 0) state.heatLevel = 2;
     state.lastTick = performance.now();
     state.lastRender = 0;
@@ -1711,31 +1725,11 @@
     state.raf = requestAnimationFrame(tick);
   }
 
+  // Shared doneness keeps a mixed bowl achievable with a single timing action.
   function simulateCooking(dt){
-    const target = fireInfo[state.heatLevel].target;
-    state.temp += (target - state.temp) * dt * 1.8;
-    state.temp = clamp(state.temp, 0, 100);
-    const heat = state.temp / 100;
-    const boiling = Math.max(0, (state.temp - 35) / 65);
-    const evaporation = state.heatLevel === 0 ? 0 : (0.28 + state.heatLevel * 0.18) * boiling;
-    state.water = clamp(state.water - evaporation * dt * 5.6, 0, 100);
-    if(state.water < 38 && state.temp > 55){
-      state.broth = clamp(state.broth + dt * 1.8, 0, 100);
-      state.sauce = clamp(state.sauce + dt * 1.4, 0, 100);
-    }else if(state.temp > 60){
-      state.broth = clamp(state.broth + dt * .35, 0, 100);
-      state.sauce = clamp(state.sauce + dt * .22, 0, 100);
-    }
-
-    const waterMul = state.water < 18 ? 1.32 : state.water < 32 ? 1.12 : state.water > 86 ? .72 : 1;
-    const tempMul = clamp((state.temp - 30) / 50, 0, 1.35);
-    state.selected.forEach(item => {
-      let rate = tempMul * waterMul;
-      if(item.tags.includes("veg")) rate *= 1.18;
-      if(item.tags.includes("noodle")) rate *= state.water > 42 ? 1.05 : .88;
-      if(item.tags.includes("protein")) rate *= .96;
-      item.cook = clamp(item.cook + dt * rate, 0, item.cookTime * 1.75);
-    });
+    if(document.hidden)return;
+    state.temp += (90-state.temp)*dt*1.8;
+    state.selected.forEach(item=>item.cook=Math.min(item.cookTime*1.75,item.cook+dt*item.cookTime/18));
   }
 
   function setFire(level){
@@ -1954,7 +1948,7 @@
     const variety = new Set(names).size;
     const compositionScore = (amountGood ? 3 : 1) + (variety >= 4 ? 3 : variety >= 3 ? 2 : 1);
 
-    let score = requiredScore + prefScore + bannedScore + spiceScore + cookScore + soupScore + compositionScore;
+    let score = requiredScore * 1.6 + bannedScore * 1.25 + spiceScore * 1.5 + cookScore * 1.2;
     if(missing.length) score = Math.min(score, 69);
     if(bannedHits.length) score = Math.min(score, 74);
     if(rawCount > state.selected.length / 2) score = Math.min(score, 64);
@@ -1966,24 +1960,22 @@
     const bannedLabel = bannedHits.map(tag => ({mushroom:"버섯",noodle:"면",veg:"채소",rich:"기름진 재료",light:"가벼운 재료",soft:"부드러운 재료"})[tag] || tag).join(", ");
 
     const details = [
-      {label:"필수 재료", value:`${requiredScore}/25점 · ${missing.length ? missing.join(", ") + " 빠짐" : "모두 담음"}`, good:!missing.length},
-      {label:"취향 재료", value:`${prefScore}/12점 · ${prefRatio >= .99 ? "충분해요" : "조금 더 필요"}`, good:prefRatio >= .99},
-      {label:"제외 조건", value:`${bannedScore}/12점 · ${bannedHits.length ? bannedLabel + " 들어감" : "실수 없음"}`, good:!bannedHits.length},
-      {label:"맵기 단계", value:`${spiceScore}/10점 · ${spiceDelta === 0 ? "딱 맞음" : spiceDelta + "단계 차이"}`, good:spiceDelta === 0},
-      {label:"재료 익힘", value:`${cookScore}/25점 · 딱 좋음 ${perfectCount} · 덜 익음 ${rawCount} · 과익힘 ${overCount}`, good:cookScore >= 18},
-      {label:"국물 조절", value:`${soupScore}/12점 · 물 ${Math.round(state.water)} / 육수 ${Math.round(state.broth)} / 소스 ${Math.round(state.sauce)}`, good:soupScore >= 9},
+      {label:"필수 재료", value:`${Math.round(requiredScore*1.6)}/40점 · ${missing.length ? missing.join(", ") + " 빠짐" : "모두 담음"}`, good:!missing.length},
+      {label:"제외 조건", value:`${Math.round(bannedScore*1.25)}/15점 · ${bannedHits.length ? bannedLabel + " 들어감" : "실수 없음"}`, good:!bannedHits.length},
+      {label:"맵기 단계", value:`${Math.round(spiceScore*1.5)}/15점 · ${spiceDelta === 0 ? "딱 맞음" : spiceDelta + "단계 차이"}`, good:spiceDelta === 0},
+      {label:"재료 익힘", value:`${Math.round(cookScore*1.2)}/30점 · 딱 좋음 ${perfectCount} · 덜 익음 ${rawCount} · 과익힘 ${overCount}`, good:cookScore >= 18},
       ...(order.minCount ? [{label:"푸짐함", value:minCountOk ? `${state.selected.length}개로 충분해요` : `${order.minCount}개 이상 필요`, good:minCountOk}] : []),
       {label:"받은 금액", value:won(earned), good:true}
     ];
 
     let comment = "맛있게 완성됐어요.";
-    if(score >= 92) comment = "주문, 익힘, 국물까지 빈틈없이 맞춘 최고의 한 그릇이에요.";
+    if(score >= 92) comment = "주문과 익힘을 빈틈없이 맞춘 최고의 한 그릇이에요.";
     else if(score >= 78) comment = "주문을 잘 지켰고 조리도 안정적이어서 손님이 만족했어요.";
     else if(score >= 60) comment = "기본은 괜찮지만 빠진 조건이나 익힘 상태를 다시 확인해 보세요.";
-    else comment = "필수 재료와 익힘 순서를 먼저 맞추면 점수가 크게 오릅니다.";
+    else comment = "필수 재료와 완성 타이밍을 먼저 맞추면 점수가 크게 오릅니다.";
     if(order.special === "youtuber") comment = score >= 85
       ? "촬영용 한 그릇이 성공해 좋은 리뷰가 퍼졌어요."
-      : "촬영 주문은 까다로웠어요. 필수 재료와 국물 범위를 더 정확히 맞춰야 해요.";
+      : "촬영 주문은 까다로웠어요. 필수 재료와 익힘을 더 정확히 맞춰야 해요.";
 
     return {score, stars, earned, details, comment, special:order.special};
   }
@@ -2151,14 +2143,16 @@
     $("nextBtn").addEventListener("click", nextCustomer);
     $("resetDayBtn").addEventListener("click", resetGame);
     window.addEventListener("keydown", (e) => {
+      if(e.repeat||$("intro").style.display!=="none"||$("modalBackdrop").classList.contains("show"))return;
       const tag = e.target?.tagName?.toLowerCase();
+      if(tag === "button")return;
       if(tag === "input" || tag === "textarea" || e.target?.isContentEditable) return;
       if(e.key === "Enter" && !$("modalBackdrop").classList.contains("show")){
         e.preventDefault();
         state.cooking ? finishCooking() : startCooking();
       }
       if(e.key === "Backspace"){ e.preventDefault(); undoIngredient(); }
-      if(["1","2","3","4"].includes(e.key) && state.cooking){ setFire(Number(e.key) - 1); }
+
       const n = Number(e.key);
       if(Number.isInteger(n) && n >= 0 && n <= 4 && !state.cooking){ state.spice = n; state.sauce = clamp(18 + n * 6, 18, 42); render(); }
     });
