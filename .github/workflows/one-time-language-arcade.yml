@@ -1,0 +1,29 @@
+name: One-time language arcade integration
+
+on:
+  push:
+    branches:
+      - codex/language-arcade-unify
+    paths:
+      - '.github/scripts/build-language-arcade.mjs'
+      - '.github/workflows/one-time-language-arcade.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/language-arcade-unify
+      - name: Build unified language arcade
+        run: node .github/scripts/build-language-arcade.mjs
+      - name: Commit generated integration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "외국어 스피드 퀴즈.html" "영단어 스피드 퀴즈.html" "초등 영문장 테스트(심화).html" "중국어 퀴즈.html" "고급 중국어 퀴즈.html" "일본어 스피드 퀴즈.html" index.html
+          git commit -m "외국어 퀴즈 5종을 월드 랭귀지 아케이드로 통합"
+          git push origin HEAD:codex/language-arcade-unify
