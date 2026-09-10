@@ -1,0 +1,38 @@
+name: One-time piano age tag update
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-time-piano-low.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Move piano studio card to low grade
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = 'href="작곡과 감상용 피아노 프로그램.html" class="game-card" data-category="music" data-age="high" data-id="piano_studio"'
+          new = 'href="작곡과 감상용 피아노 프로그램.html" class="game-card" data-category="music" data-age="low" data-id="piano_studio"'
+          count = s.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one piano card, found {count}')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+      - name: Commit index update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "피아노 작곡교실을 저학년으로 분류"
+          git push origin HEAD:main
