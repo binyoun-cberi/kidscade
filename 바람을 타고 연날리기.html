@@ -23,20 +23,28 @@
   .hidden{display:none!important}
   #hud{position:fixed;inset:0;pointer-events:none;padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
   .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .scorePanel{display:flex;gap:8px;flex-wrap:wrap}
+  .scorePanel{display:flex;gap:8px;flex-wrap:wrap;max-width:min(760px,calc(100vw - 80px))}
   .chip{min-width:94px;padding:9px 12px;border:1px solid rgba(255,255,255,.64);border-radius:17px;background:rgba(255,255,255,.76);box-shadow:0 7px 22px rgba(16,55,76,.12);backdrop-filter:blur(10px)}
   .chip b{display:block;font-size:11px;letter-spacing:.02em;opacity:.62;margin-bottom:2px}
   .chip strong{font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
   .iconBtn{pointer-events:auto;width:44px;height:44px;border:0;border-radius:15px;background:rgba(255,255,255,.82);box-shadow:0 7px 22px rgba(16,55,76,.14);font-size:20px;cursor:pointer}
-  .meterDock{position:absolute;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100vw - 28px));display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .meterDock{position:absolute;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(660px,calc(100vw - 28px));display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
   .meterCard{padding:10px 12px 11px;background:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.68);border-radius:17px;box-shadow:0 7px 24px rgba(16,55,76,.12);backdrop-filter:blur(9px)}
   .meterHead{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;margin-bottom:6px}
   .meterHead span:last-child{font-variant-numeric:tabular-nums}
   .track{height:10px;border-radius:999px;background:rgba(20,48,67,.1);overflow:hidden;position:relative}
-  .track::before{content:"";position:absolute;left:35%;right:24%;top:0;bottom:0;background:rgba(57,184,106,.17)}
+  .track::before{content:none}.meterCard:first-child .track::before{content:"";position:absolute;left:35%;right:24%;top:0;bottom:0;background:rgba(57,184,106,.17)}
   .fill{height:100%;width:0;border-radius:inherit;transition:width .08s linear}
   #tensionFill{background:linear-gradient(90deg,#63c67d 0%,#f5bd3f 66%,#ed5f5f 100%)}
   #windFill{background:linear-gradient(90deg,#80c9ea,#2b92d0)}
+  #lineFill{background:linear-gradient(90deg,#ffd65c,#ff8a58)}
+  #routeBadge{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);padding:9px 15px;border-radius:999px;background:rgba(8,63,143,.82);border:1px solid rgba(120,190,255,.72);color:white;font-size:13px;font-weight:900;box-shadow:0 8px 24px rgba(4,50,120,.2);backdrop-filter:blur(9px);white-space:nowrap}
+  #routeBadge.inRoute{background:rgba(8,105,191,.9);box-shadow:0 0 28px rgba(44,145,255,.45)}
+  #zoneBadge{position:absolute;right:calc(14px + env(safe-area-inset-right));top:calc(72px + env(safe-area-inset-top));padding:8px 11px;border-radius:13px;background:rgba(255,255,255,.76);font-size:12px;font-weight:900;box-shadow:0 7px 20px rgba(16,55,76,.12)}
+  .comboChip strong{color:#145fc2}
+  .scoreChip strong{color:#ff704f}
+  .rankBox{margin:10px 0 4px;text-align:center;padding:13px;border-radius:18px;background:linear-gradient(135deg,#e7f6ff,#fff4da);font-weight:950;font-size:30px;color:#1967a8}
+  .resultSub{font-size:13px;color:#61798b;text-align:center;margin-top:-8px;margin-bottom:10px}
   .centerHint{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);width:min(520px,calc(100vw - 32px));text-align:center}
   #hint{display:inline-block;padding:10px 16px;border-radius:999px;background:rgba(19,52,72,.72);color:white;font-size:14px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.16);opacity:0;transform:translateY(8px);transition:.25s}
   #hint.show{opacity:1;transform:none}
@@ -69,18 +77,20 @@
   .how div{padding:13px;border-radius:16px;background:#f4f8fa;font-size:13px;line-height:1.45}
   .how b{display:block;margin-bottom:3px;font-size:14px}
   .result{font-size:44px;font-weight:950;letter-spacing:-.05em;margin:5px 0 18px}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0 22px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0 16px}
   .stat{padding:14px 10px;border-radius:17px;background:#f1f6f9;text-align:center}
   .stat b{display:block;font-size:12px;color:#678093;margin-bottom:5px}
   .stat strong{font-size:22px;font-variant-numeric:tabular-nums}
   #pauseScreen{background:rgba(16,54,75,.25)}
   #pauseScreen .card{width:min(420px,100%);text-align:center}
   @media(max-width:700px){
+    #routeBadge{top:calc(68px + env(safe-area-inset-top));font-size:11px;padding:7px 10px}
+    #zoneBadge{display:none}
     .chip{min-width:78px;padding:8px 10px}.chip strong{font-size:18px}
-    .scorePanel .chip:nth-child(3){display:none}
+    .scorePanel .chip:nth-child(3){display:none}.scorePanel .chip:nth-child(4){display:none}
     #actionControls{width:calc(100vw - 24px);bottom:calc(12px + env(safe-area-inset-bottom));gap:8px}
     .actionBtn{flex:1;min-width:0;height:56px;padding:10px 8px;font-size:15px}
-    .meterDock{bottom:calc(78px + env(safe-area-inset-bottom));width:calc(100vw - 24px);gap:7px}
+    .meterDock{bottom:calc(78px + env(safe-area-inset-bottom));width:calc(100vw - 24px);gap:6px}
     .meterCard{padding:8px 10px 9px}
     .centerHint{bottom:31%}
     .kiteGrid{gap:6px}.kiteChoice{padding:10px 5px}.kiteChoice small{font-size:11px}
@@ -98,9 +108,14 @@
       <div class="chip"><b>비행 시간</b><strong id="timeText">00:00</strong></div>
       <div class="chip"><b>현재 고도</b><strong><span id="altText">0</span>m</strong></div>
       <div class="chip"><b>최고 고도</b><strong><span id="maxAltText">0</span>m</strong></div>
+      <div class="chip scoreChip"><b>비행 점수</b><strong id="scoreText">0</strong></div>
+      <div class="chip comboChip"><b>바람 콤보</b><strong id="comboText">×1.0</strong></div>
     </div>
     <button id="pauseBtn" class="iconBtn" aria-label="일시정지">Ⅱ</button>
   </div>
+
+  <div id="routeBadge">🌊 짙은 파란 바람길을 따라가세요</div>
+  <div id="zoneBadge">해변 바람 · 1구역</div>
 
   <div class="meterDock">
     <div class="meterCard">
@@ -110,6 +125,10 @@
     <div class="meterCard">
       <div class="meterHead"><span>바람</span><span id="windText">보통</span></div>
       <div class="track"><div id="windFill" class="fill"></div></div>
+    </div>
+    <div class="meterCard">
+      <div class="meterHead"><span>연줄</span><span id="lineText">56m</span></div>
+      <div class="track"><div id="lineFill" class="fill"></div></div>
     </div>
   </div>
 
@@ -125,24 +144,26 @@
   <div class="card">
     <div class="brand">WIND RIDER</div>
     <h1>바람을 타고</h1>
-    <p class="lead">연은 기본적으로 안정 비행을 합니다. <b>고도를 올릴 때만 당기고</b>, 장력이 높아지거나 돌풍이 오면 <b>잠깐 풀어</b> 다시 안정 구간으로 맞춰 보세요.</p>
+    <p class="lead">하늘에 흐르는 <b style="color:#125fb8">짙은 파란 바람길</b>을 찾아 연을 올려 보세요. 좌우로 길을 따라가고, 링을 통과하는 순간 장력을 초록 구간에 맞추면 콤보가 크게 올라갑니다.</p>
     <div class="kiteGrid">
       <button class="kiteChoice selected" data-kite="balanced">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>방패연</b><small>처음 하는 사람 추천</small>
+        <b>방패연</b><small>안정 구간 넓음 · 초보 추천</small>
       </button>
       <button class="kiteChoice" data-kite="speed">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>제비연</b><small>조금 빠른 움직임</small>
+        <b>제비연</b><small>빠른 조종 · 링 점수 보너스</small>
       </button>
       <button class="kiteChoice" data-kite="heavy">
         <span class="kiteThumb"><span class="diamond"></span></span>
-        <b>용꼬리연</b><small>천천히 움직이고 튼튼함</small>
+        <b>용꼬리연</b><small>강풍에 강함 · 고도 보너스</small>
       </button>
     </div>
     <div class="how">
-      <div><b>초록 구간을 유지</b>평소에는 손을 떼도 됩니다. 필요할 때만 짧게 당기거나 풀어 주세요.</div>
-      <div><b>돌풍은 미리 대응</b>예고가 뜨면 줄을 잠깐 풀고, 지나가면 다시 손을 떼세요.</div>
+      <div><b>🌊 파란 바람길</b>짙은 파란 통로 안에서는 연이 더 잘 뜨고 점수가 계속 올라갑니다.</div>
+      <div><b>⭕ 바람 링</b>좌우 조종과 고도 조절로 링을 통과하면 콤보가 이어집니다.</div>
+      <div><b>🎯 최적 장력</b>초록 장력으로 링을 통과하면 PERFECT WIND 보너스를 받습니다.</div>
+      <div><b>🌬️ 돌풍 대응</b>강한 돌풍에는 잠깐 줄을 풀고, 지나간 뒤 다시 바람길을 잡으세요.</div>
     </div>
     <button id="startBtn" class="primary">연 띄우기</button>
   </div>
@@ -162,10 +183,15 @@
   <div class="card">
     <div class="brand">FLIGHT RESULT</div>
     <div id="resultTitle" class="result">연이 내려앉았어요</div>
+    <div id="finalRank" class="rankBox">B RANK</div>
+    <div class="resultSub">바람길과 장력을 얼마나 잘 활용했는지 종합한 결과입니다.</div>
     <div class="stats">
-      <div class="stat"><b>비행 시간</b><strong id="finalTime">00:00</strong></div>
+      <div class="stat"><b>비행 점수</b><strong id="finalScore">0</strong></div>
+      <div class="stat"><b>바람 링</b><strong id="finalRings">0</strong></div>
+      <div class="stat"><b>최대 콤보</b><strong id="finalCombo">×1.0</strong></div>
+      <div class="stat"><b>PERFECT</b><strong id="finalPerfect">0</strong></div>
       <div class="stat"><b>최고 고도</b><strong><span id="finalAlt">0</span>m</strong></div>
-      <div class="stat"><b>최고 기록</b><strong id="bestTime">00:00</strong></div>
+      <div class="stat"><b>비행 시간</b><strong id="finalTime">00:00</strong></div>
     </div>
     <button id="retryBtn" class="primary">다시 도전</button>
     <button id="homeBtn" class="secondary">연 선택으로</button>
@@ -202,15 +228,24 @@
   let rescueUsed = false;
   let lowAltitudeTimer = 0;
   let milestoneIndex = 0;
-  const milestones = [15,30,45,60];
+  let score = 0;
+  let combo = 0;
+  let maxCombo = 0;
+  let ringsPassed = 0;
+  let perfectCount = 0;
+  let pathTime = 0;
+  let stableTime = 0;
+  let routeInfluence = 0;
+  let perfectCharge = 0;
+  let lastZone = 0;
   let shake = 0;
   let audio = null;
   let bgmTimer = null;
 
   const kiteTypes = {
-    balanced:{lift:1.00, steer:1.00, drag:1.00, strength:1.00, mass:1.00, name:'방패연'},
-    speed:{lift:1.05, steer:1.15, drag:.95, strength:.95, mass:.92, name:'제비연'},
-    heavy:{lift:.98, steer:.88, drag:1.08, strength:1.12, mass:1.08, name:'용꼬리연'}
+    balanced:{lift:1.00, steer:1.00, drag:1.00, strength:1.08, mass:1.00, routeScore:1.00, sweet:.18, name:'방패연'},
+    speed:{lift:1.08, steer:1.28, drag:.90, strength:.90, mass:.90, routeScore:1.22, sweet:.13, name:'제비연'},
+    heavy:{lift:1.16, steer:.82, drag:1.13, strength:1.25, mass:1.10, routeScore:.94, sweet:.16, altitudeBonus:1.18, name:'용꼬리연'}
   };
 
   const world = {
@@ -222,8 +257,60 @@
     input:{pull:0,release:0,steer:0,active:false,holdPull:false,holdRelease:false},
     birds:[],
     clouds:[],
-    particles:[]
+    particles:[],
+    route:{rings:[],spawnIndex:0,speed:7.0}
   };
+
+  function routePointFor(index, z){
+    const climb = Math.min(70, index * 2.15);
+    return {
+      x: Math.sin(index*.82) * (34 + Math.min(22,index*.45)) + Math.sin(index*.27)*10,
+      y: 27 + climb + Math.sin(index*.61)*7,
+      z,
+      r: 10.5 + Math.min(3,index*.06),
+      checked:false,
+      missed:false
+    };
+  }
+
+  function resetWindRoute(){
+    world.route.rings.length = 0;
+    world.route.spawnIndex = 0;
+    for(let i=0;i<8;i++){
+      const idx = world.route.spawnIndex++;
+      world.route.rings.push(routePointFor(idx, 62 + i*18));
+    }
+  }
+
+  function recycleRouteRing(ring){
+    const farthest = Math.max(...world.route.rings.map(r=>r.z));
+    const idx = world.route.spawnIndex++;
+    Object.assign(ring, routePointFor(idx, farthest + 18));
+  }
+
+  function getRouteInfluence(k){
+    let best = 0;
+    for(const r of world.route.rings){
+      const dz = Math.abs(r.z-k.z);
+      if(dz > 16) continue;
+      const xy = Math.hypot(r.x-k.x,r.y-k.y);
+      const lateral = clamp(1-xy/(r.r*1.75),0,1);
+      const depth = clamp(1-dz/16,0,1);
+      best = Math.max(best,lateral*depth);
+    }
+    return best;
+  }
+
+  function comboMultiplier(){ return 1 + Math.min(10,combo)*.16; }
+
+  function currentZone(){
+    const a=world.kite.y;
+    if(a<38)return {i:0,name:'해변 바람 · 1구역',mul:1};
+    if(a<58)return {i:1,name:'상승풍 · 2구역',mul:1.1};
+    if(a<78)return {i:2,name:'갈매기 하늘 · 3구역',mul:1.2};
+    if(a<96)return {i:3,name:'구름층 · 4구역',mul:1.35};
+    return {i:4,name:'황금바람 · FINAL',mul:1.55};
+  }
 
   const pointer = {
     down:false,id:null,x:0,y:0,lastX:0,lastY:0,
@@ -295,9 +382,12 @@
     rescueUsed = false;
     lowAltitudeTimer = 0;
     milestoneIndex = 0;
+    score = 0; combo = 0; maxCombo = 0; ringsPassed = 0; perfectCount = 0;
+    pathTime = 0; stableTime = 0; routeInfluence = 0; perfectCharge = 0; lastZone = 0;
     windPhase = Math.random()*10;
     shake = 0;
     pointer.down = false;
+    resetWindRoute();
     updateHUD();
   }
 
@@ -308,7 +398,7 @@
     pauseScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     hud.classList.remove('hidden');
-    showHint('연습 시작! 평소엔 손을 떼고, 필요할 때만 짧게 당겨 보세요', 3.4);
+    showHint('파란 바람길 안으로 연을 조종해 첫 링을 통과해 보세요!', 3.6);
     startAudio();
     last = performance.now();
   }
@@ -346,20 +436,26 @@
     state = 'over';
     hud.classList.add('hidden');
     gameOverScreen.classList.remove('hidden');
-    $('resultTitle').textContent = reason === 'break' ? '연줄이 끊어졌어요' : '연이 내려앉았어요';
+    $('resultTitle').textContent = reason === 'finish' ? '2분 비행 완료!' : reason === 'break' ? '연줄이 끊어졌어요' : '연이 내려앉았어요';
     $('finalTime').textContent = formatTime(elapsed);
     $('finalAlt').textContent = Math.round(maxAltitude);
-    const key = 'kite3d_best';
-    let old = 0;
+    $('finalScore').textContent = Math.round(score).toLocaleString('ko-KR');
+    $('finalRings').textContent = ringsPassed;
+    $('finalCombo').textContent = '×' + (1+maxCombo*.16).toFixed(1);
+    $('finalPerfect').textContent = perfectCount;
+    const performanceScore = score + ringsPassed*180 + perfectCount*120 + maxAltitude*12;
+    let rank='C RANK';
+    if(performanceScore>=4500) rank='B RANK';
+    if(performanceScore>=8500) rank='A RANK';
+    if(performanceScore>=14000) rank='S RANK';
+    if(performanceScore>=22000) rank='S+ RANK';
+    $('finalRank').textContent = rank;
+    const key = 'kite3d_best_score';
     try{
-      old = Number(localStorage.getItem(key) || 0);
-      if(elapsed > old) localStorage.setItem(key, String(elapsed));
-    }catch(_){
-      // 로컬 파일/보안 설정에서 저장소 접근이 막혀도 게임오버 화면은 정상 동작합니다.
-      old = 0;
-    }
-    $('bestTime').textContent = formatTime(Math.max(old, elapsed));
-    sound(reason === 'break' ? 'snap' : 'land');
+      const old = Number(localStorage.getItem(key) || 0);
+      if(score > old) localStorage.setItem(key, String(Math.round(score)));
+    }catch(_){}
+    sound(reason === 'finish' ? 'success' : reason === 'break' ? 'snap' : 'land');
     stopBgm();
   }
 
@@ -378,9 +474,17 @@
     $('timeText').textContent = formatTime(elapsed);
     $('altText').textContent = Math.max(0, Math.round(world.kite.y));
     $('maxAltText').textContent = Math.round(maxAltitude);
+    $('scoreText').textContent = Math.round(score).toLocaleString('ko-KR');
+    $('comboText').textContent = '×' + comboMultiplier().toFixed(1);
     const tensionPct = Math.min(100, world.tension * 100);
     $('tensionFill').style.width = tensionPct + '%';
     $('windFill').style.width = Math.min(100, world.wind.speed / 11 * 100) + '%';
+    $('lineFill').style.width = clamp((world.lineLength-42)/(112-42)*100,0,100) + '%';
+    $('lineText').textContent = Math.round(world.lineLength) + 'm';
+    const rb=$('routeBadge');
+    rb.classList.toggle('inRoute',routeInfluence>.42);
+    rb.textContent = routeInfluence>.42 ? '🌊 바람길 탑승! 점수 ×'+comboMultiplier().toFixed(1) : '🌊 짙은 파란 바람길을 따라가세요';
+    $('zoneBadge').textContent = currentZone().name;
 
     let t = '당겨 주세요';
     if(world.tension > .30) t = '좋아요';
@@ -434,12 +538,59 @@
     world.wind.z = world.wind.speed;
   }
 
+  function updateWindRoute(dt){
+    const k=world.kite;
+    const type=kiteTypes[selectedKite];
+    world.route.speed = 6.6 + Math.min(4.2, elapsed*.022);
+    for(const r of world.route.rings){
+      r.z -= world.route.speed*dt;
+      const crossed = !r.checked && r.z <= k.z + 1.8;
+      if(crossed){
+        r.checked=true;
+        const dist=Math.hypot(r.x-k.x,r.y-k.y);
+        if(dist <= r.r*1.15){
+          ringsPassed++;
+          combo++;
+          maxCombo=Math.max(maxCombo,combo);
+          const sweetCenter=.52;
+          const sweetHalf=type.sweet;
+          const perfect=Math.abs(world.tension-sweetCenter)<=sweetHalf;
+          const gained=Math.round((150 + combo*24) * type.routeScore * currentZone().mul * (perfect?1.45:1));
+          score+=gained;
+          if(perfect){
+            perfectCount++;
+            showHint('✨ PERFECT WIND! 링 +'+gained+'점 · 콤보 ×'+comboMultiplier().toFixed(1),1.35);
+            sound('success');
+          }else{
+            showHint('⭕ 바람 링 통과! +'+gained+'점 · 다음 링을 이어가세요',1.15);
+            sound('ring');
+          }
+        }else{
+          r.missed=true;
+          if(combo>0){
+            combo=0;
+            showHint('바람길을 놓쳤어요. 다음 파란 링에서 다시 콤보!',1.25);
+          }
+        }
+      }
+      if(r.z < 28) recycleRouteRing(r);
+    }
+    routeInfluence=getRouteInfluence(k);
+    if(routeInfluence>.25){
+      pathTime+=dt;
+      score += dt * (10 + routeInfluence*18) * comboMultiplier() * type.routeScore * currentZone().mul;
+    }
+    const sweet=Math.abs(world.tension-.52)<=type.sweet;
+    if(sweet){ stableTime+=dt; }
+  }
+
   function updatePhysics(dt){
     const k = world.kite;
     const type = kiteTypes[selectedKite];
     const inp = world.input;
 
     updateWind(dt);
+    updateWindRoute(dt);
 
     if(inp.holdPull) inp.pull = Math.max(inp.pull, .68);
     else inp.pull = Math.max(0, inp.pull - dt*2.1);
@@ -451,23 +602,25 @@
     // 장력은 조작과 돌풍에 직접 반응하고, 위치는 완만한 목표값을 따라가도록 해
     // 한 번의 작은 입력이 물리 폭주로 이어지지 않게 했습니다.
     const gustStress = clamp(gustPower / 1.8, 0, 1);
-    let targetTension = .46 + gustStress*.52 + inp.pull*.26 - inp.release*.42 + Math.abs(inp.steer)*.035;
+    let targetTension = .46 + gustStress*.52*type.drag + inp.pull*.27 - inp.release*.43 + Math.abs(inp.steer)*.035;
+    if(routeInfluence>.45) targetTension -= .035*routeInfluence;
     world.tension += (clamp(targetTension,.06,1.06)-world.tension)*Math.min(1,dt*4.8);
 
     // 줄 풀기는 여유를 만들고, 당기기는 고도를 올리는 짧은 펌핑 동작으로 사용합니다.
-    world.lineLength = clamp(world.lineLength + (inp.release*3.0 - inp.pull*.25)*dt, 48, 110);
+    world.lineLength = clamp(world.lineLength + (inp.release*4.6 - inp.pull*2.15)*dt, 44, 112);
 
-    const targetAltitude = 30 + (world.wind.speed-4.5)*1.6;
-    const controlLift = inp.pull*4.8/type.mass - inp.release*2.8;
+    const routeLift = routeInfluence * 3.7 * type.lift;
+    const targetAltitude = 30 + (world.wind.speed-4.5)*1.6 + routeLift;
+    const controlLift = inp.pull*4.9*type.lift/type.mass - inp.release*2.55/type.drag;
     const slackPenalty = world.tension < .18 ? (.18-world.tension)*10 : 0;
     const highTensionDrag = world.tension > .88 ? (world.tension-.88)*2.0 : 0;
     const verticalAccel = (targetAltitude-k.y)*.12 - k.vy*.55 + controlLift - slackPenalty - highTensionDrag;
     k.vy += verticalAccel*dt;
 
-    const targetVx = world.wind.x*.45 + inp.steer*12*type.steer - k.x*.04;
-    k.vx += (targetVx-k.vx)*Math.min(1,dt*3.0);
+    const targetVx = world.wind.x*.45 + inp.steer*12*type.steer - k.x*.035;
+    k.vx += (targetVx-k.vx)*Math.min(1,dt*(3.15/type.drag));
 
-    const targetZ = 50 + (world.lineLength-56)*.65 + (world.wind.speed-4.5)*.7;
+    const targetZ = 50 + (world.lineLength-56)*.72 + (world.wind.speed-4.5)*.7;
     k.vz += ((targetZ-k.z)*.8 - k.vz*1.4)*dt;
 
     k.vx = clamp(k.vx,-14,14);
@@ -503,25 +656,23 @@
       if(k.y < 10) k.vy += 6.0*dt;
     }
 
-    if(inp.pull > .65){
-      pullFlash.classList.add('on');
-      setTimeout(()=>pullFlash.classList.remove('on'),70);
-      emitLineSpark();
-    }
+    pullFlash.classList.toggle('on', inp.pull > .65);
+    if(inp.pull > .65) emitLineSpark();
 
     maxAltitude = Math.max(maxAltitude,k.y);
     elapsed += dt;
     tutorialTimer += dt;
 
-    if(tutorialTimer > 4.0 && tutorialTimer < 4.0+dt) showHint('장력이 높아지면 잠깐 풀고, 초록 구간에서 손을 떼세요',2.8);
-    if(tutorialTimer > 9.5 && tutorialTimer < 9.5+dt) showHint('연습 끝! 이제 돌풍 예고만 보고 짧게 대응하면 됩니다',2.8);
-    if(tutorialTimer > 18 && tutorialTimer < 18+dt) showHint('좌우 조작은 조금만 해도 돼요. 손을 떼면 중앙으로 돌아옵니다',2.5);
+    if(tutorialTimer > 4.0 && tutorialTimer < 4.0+dt) showHint('좌우 조종으로 파란 길 중심을 맞추고, 당기기로 링 높이에 접근하세요',2.8);
+    if(tutorialTimer > 9.5 && tutorialTimer < 9.5+dt) showHint('줄 풀기는 거리를 늘리고 장력을 낮춥니다. 당기면 줄을 감으며 상승합니다',2.8);
+    if(tutorialTimer > 17 && tutorialTimer < 17+dt) showHint('초록 장력으로 링을 통과하면 PERFECT WIND 보너스!',2.5);
 
-    if(milestoneIndex < milestones.length && elapsed >= milestones[milestoneIndex]){
-      const labels = ['연 띄우기 성공!', '안정 비행 성공!', '바람 전문가!', '연날리기 달인!'];
-      showHint('⭐ ' + labels[milestoneIndex], 2.2);
+    const zone=currentZone();
+    if(zone.i>lastZone){
+      lastZone=zone.i;
+      score+=zone.i*220;
+      showHint('☁️ '+zone.name+' 진입! 더 높은 점수 배율이 적용됩니다',2.2);
       sound('success');
-      milestoneIndex++;
     }
 
     if(!rescueUsed && !practiceSafe && k.y < 4.5){
@@ -540,6 +691,11 @@
 
     if(!practiceSafe && world.breakStress > 1.10) gameOver('break');
     if(!practiceSafe && lowAltitudeTimer > .85) gameOver('land');
+    if(state==='playing' && elapsed >= 120){
+      score += 1200 + ringsPassed*35;
+      gameOver('finish');
+      return;
+    }
 
     updateBirds(dt);
     updateParticles(dt);
@@ -704,6 +860,39 @@
     }
   }
 
+  function drawWindRoute(){
+    if(!world.route.rings.length)return;
+    const rings=[...world.route.rings].sort((a,b)=>b.z-a.z);
+    const pts=rings.map(r=>({r,p:project(r.x,r.y,r.z)})).filter(o=>o.p);
+    if(pts.length<2)return;
+
+    ctx.save();
+    ctx.lineCap='round';ctx.lineJoin='round';
+    // 짙은 파란색의 넓은 흐름: 멀리서도 목표 방향이 읽히도록 한다.
+    ctx.strokeStyle='rgba(9,66,157,.22)';
+    ctx.lineWidth=34;
+    ctx.beginPath();ctx.moveTo(pts[0].p.x,pts[0].p.y);
+    for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].p.x,pts[i].p.y);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(24,111,218,.28)';ctx.lineWidth=15;ctx.stroke();
+    ctx.strokeStyle='rgba(132,204,255,.46)';ctx.lineWidth=2.2;ctx.setLineDash([12,10]);ctx.stroke();ctx.setLineDash([]);
+
+    for(const {r,p} of pts){
+      const rad=clamp(r.r*p.s,14,92);
+      const near=Math.abs(r.z-world.kite.z)<9;
+      ctx.shadowBlur=near?20:9;ctx.shadowColor='rgba(20,108,235,.8)';
+      ctx.fillStyle=near?'rgba(10,78,177,.22)':'rgba(8,62,147,.12)';
+      ctx.strokeStyle=near?'rgba(74,169,255,.95)':'rgba(30,112,224,.66)';
+      ctx.lineWidth=near?4:2.4;
+      ctx.beginPath();ctx.ellipse(p.x,p.y,rad,rad*.72,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.shadowBlur=0;
+      // 진행 방향을 읽기 쉬운 화살표
+      ctx.fillStyle='rgba(190,229,255,.82)';
+      ctx.beginPath();ctx.moveTo(p.x,p.y-rad*.22);ctx.lineTo(p.x+rad*.18,p.y);ctx.lineTo(p.x,p.y+rad*.22);ctx.lineTo(p.x+rad*.05,p.y);ctx.lineTo(p.x-rad*.13,p.y);ctx.closePath();ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawWindStreaks(){
     const strength=clamp((world.wind.speed-4)/7,0,1);
     ctx.strokeStyle=`rgba(255,255,255,${.09+strength*.12})`;
@@ -859,6 +1048,7 @@
     drawSky();
     drawClouds();
     drawSeaAndBeach();
+    drawWindRoute();
     drawWindStreaks();
     drawBirds();
     drawLine();
@@ -951,6 +1141,7 @@
   addEventListener('keyup',e=>{
     if(e.key==='ArrowDown'||e.key==='s') world.input.holdPull=false;
     if(e.key==='ArrowUp'||e.key==='w') world.input.holdRelease=false;
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='ArrowRight'||e.key==='d') world.input.steer*=.25;
   });
 
   function bindHoldButton(id, key){
@@ -1029,6 +1220,7 @@
     if(name==='select') tone(520,.08,.03,'sine',120);
     if(name==='warning'){tone(620,.10,.025,'sine',90);setTimeout(()=>tone(760,.12,.02,'sine',60),120);}
     if(name==='gust'){tone(130,.35,.030,'sawtooth',-55);setTimeout(()=>tone(95,.28,.022,'triangle',45),90);}
+    if(name==='ring'){tone(690,.07,.026,'triangle',120);setTimeout(()=>tone(880,.10,.022,'sine',70),70);}
     if(name==='success'){tone(523,.12,.028,'sine',90);setTimeout(()=>tone(659,.13,.026,'sine',80),110);setTimeout(()=>tone(784,.18,.024,'sine',60),230);}
     if(name==='rescue'){tone(330,.10,.03,'triangle',100);setTimeout(()=>tone(520,.22,.025,'sine',90),120);}
     if(name==='snap'){tone(360,.08,.07,'square',-240);setTimeout(()=>tone(90,.45,.05,'sawtooth',-55),80);}
