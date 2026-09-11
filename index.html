@@ -2569,8 +2569,8 @@ body.dark-mode .site-credits {
                     <button class="close-btn" onclick="document.getElementById('shop-modal').classList.add('hidden')">닫기 ✖</button>
                 </div>
                 <div class="shop-nav">
-                    <button class="shop-tab active" data-tab="land">방 꾸미기</button>
-                    <button class="shop-tab" data-tab="pet">펫 친구</button>
+                    <button class="shop-tab active" data-tab="land">정원 꾸미기</button>
+                    <button class="shop-tab" data-tab="pet">동물과 시설</button>
                     <button class="shop-tab" data-tab="card">카드 스킨</button>
                     <button class="shop-tab" data-tab="badge">칭호 배지</button>
                     <button class="shop-tab" data-tab="reward">오늘의 보상</button>
@@ -3381,6 +3381,8 @@ body.dark-mode .site-credits {
         </main>
     </div> 
     
+    <link rel="stylesheet" href="garden.css">
+    <script src="garden.js"></script>
     <script>
         // =====================================
         // 오디오 시스템
@@ -3549,9 +3551,7 @@ body.dark-mode .site-credits {
                     { id: 'pet_turtle_ramp', name: '물가 경사로', desc: '거북이가 물과 육지를 오가기 쉽게 해줍니다.', price: 55, icon: '🌉', kind: 'ramp' }
                 ],
                 reward: [
-                    { id: 'daily_seed', name: '씨앗 한 줌', desc: '오늘의 보상으로 씨앗 40개를 바로 받습니다.', price: 0, icon: '🌱', rewardType: 'seed', amount: 40 },
-                    { id: 'daily_growth', name: '성장 물방울', desc: '쑥쑥이 성장 경험치를 25 얻습니다.', price: 0, icon: '💧', rewardType: 'exp', amount: 25 },
-                    { id: 'daily_coupon', name: '꾸미기 할인권', desc: '오늘의 기념 보상으로 씨앗 20개와 경험치 10을 받습니다.', price: 0, icon: '🎟️', rewardType: 'mixed', amount: 20 }
+                    { id: 'daily_seed', name: '씨앗 한 줌', desc: '정원 시설과 캐릭터 꾸미기에 쓸 씨앗 40개를 받습니다.', price: 0, icon: '🌱', rewardType: 'seed', amount: 40 }
                 ],
                 emoji: [{ id: 'e_basic', name: '병아리', desc: '기본 지급', price: 0, val: '🐣' }],
                 title: [{ id: 'tp_basic', type: 'title_p', name: '[접두어] 신입생', desc: '기본 지급', price: 0, val: '신입생' }, { id: 'tn_basic', type: 'title_n', name: '[명사] 게이머', desc: '기본 지급', price: 0, val: '게이머' }],
@@ -4653,6 +4653,12 @@ ${getEvolutionHintText()}
             function renderShop() {
                 const container = document.getElementById('shop-items-container');
                 container.innerHTML = '';
+                if(['land','pet'].includes(currentShopTab) && window.KidscadeGarden) {
+                    const item=document.createElement('div'); item.className='shop-item';
+                    item.innerHTML='<div class="item-icon">🌳</div><div class="item-name">정원 시설 설치</div><div class="item-desc">동물은 게임을 탐험하며 발견하고, 씨앗으로 친구들이 놀 시설을 설치해요.</div><button type="button" class="item-btn btn-buy">정원 시설 보러 가기</button>';
+                    item.querySelector('button').addEventListener('click',()=>{document.getElementById('shop-modal').classList.add('hidden');openSookFromSidebar('room');gardenController?.openBuild();});
+                    container.append(item);return;
+                }
                 const items = shopDB[currentShopTab] || [];
                 const todayClaimed = localStorage.getItem('kidscade_daily_reward_claimed') === getDailyRewardKey();
 
@@ -5169,7 +5175,8 @@ ${getEvolutionHintText()}
                         }
                         savePet();
                         updateMissionProgress(activeGameCategory, activeGameId);
-                        checkPetEvolution();
+                        gardenController?.session({game: activeGameId, category: activeGameCategory, seconds: sessionSec});
+                        // Collection discoveries now replace single-pet level-up notices.
                     } else if (sessionSec > 0) {
                         showToast(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 30초 이상 플레이하면 인정돼요.`);
                     }
@@ -5556,7 +5563,7 @@ ${getEvolutionHintText()}
                 function isUnlocked(type){ return pet3d.unlockedPets.includes(type); }
                 function unlockPet(type){ const info=PETS[type]; if(!info) return false; if(isUnlocked(type)){ selectPet(type); return true; } if(!spendSeeds(info.cost||0)) return false; pet3d.unlockedPets.push(type); pet3d.type=type; pet3d.stats={hunger:76,happy:78,energy:74,health:90}; spawn('heart',14); showToast(`${info.label}을(를) 새 쑥쑥 친구로 데려왔어요!`, true); save3d(); updatePetStatusUI(); updatePetUI(); playUISound('coin'); return true; }
                 function updateNeed(id,val){ const fill=document.getElementById(id); const text=document.getElementById(`${id}-text`); if(fill) fill.style.width=`${clamp(Math.round(val),0,100)}%`; if(text) text.textContent=`${clamp(Math.round(val),0,100)}`; }
-                function getAutoAction(nowMs){ if(pet3d.action!=='idle' && nowMs<pet3d.actionUntil) return pet3d.action; const hour=new Date().getHours(); if(pet3d.stats.health<25 || pet3d.stats.hunger<10) return 'sick'; if(pet3d.stats.energy<22 || hour>=22 || hour<6) return 'sleep'; return 'idle'; }
+                function getAutoAction(nowMs){ if(pet3d.gardenAction!==undefined) return pet3d.gardenAction; if(pet3d.action!=='idle' && nowMs<pet3d.actionUntil) return pet3d.action; const hour=new Date().getHours(); if(pet3d.stats.health<25 || pet3d.stats.hunger<10) return 'sick'; if(pet3d.stats.energy<22 || hour>=22 || hour<6) return 'sleep'; return 'idle'; }
                 function actionCaption(action=getAutoAction(performance.now())){ const info=petInfo(); return (info.captions&&info.captions[action])||info.captions.idle; }
                 function updateActionButtons(){ const labels=petInfo().actions||{}; document.querySelectorAll('.sook-pet-action-btn').forEach(btn=>{ const a=btn.dataset.sookAction; if(labels[a]) btn.textContent=labels[a]; }); }
                 function renderCareGuide(){ const box=document.getElementById('sook-care-guide'); if(!box) return; const info=petInfo(); box.innerHTML=`<div class="sook-care-card"><strong>🍽️ 먹이</strong><span>${info.food}</span></div><div class="sook-care-card"><strong>🌡️ 온도·습도</strong><span>${info.temp} · ${info.humidity}</span></div><div class="sook-care-card"><strong>🏠 사는 환경</strong><span>${info.home}</span></div><div class="sook-care-card"><strong>🐾 사는 방식</strong><span>${info.life}</span></div>`; }
@@ -5630,7 +5637,7 @@ ${getEvolutionHintText()}
                 function drawCageRoom(c,w,h,t,kind){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#fff7ed'); g.addColorStop(1,kind==='hamster'?'#fde68a':'#e0f2fe'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.strokeStyle='rgba(100,116,139,.27)'; c.lineWidth=2; for(let x=w*.12;x<w*.92;x+=w*.09){ c.beginPath(); c.moveTo(x,h*.12); c.lineTo(x,h*.78); c.stroke(); } c.fillStyle=kind==='hamster'?'#fbbf24':'#dbeafe'; c.fillRect(0,h*.75,w,h*.25); if(kind==='hamster'){ drawWheel(c,w*.22,h*.62,70,t); drawHouse(c,w*.78,h*.71,80,'#fb923c'); } else { drawPerch(c,w*.20,h*.55,w*.80,h*.50); for(let i=0;i<(pet3d.rooms[pet3d.type]?.toys||0)+1;i++) drawHangingToy(c,w*(.35+i*.14),h*.22,18,t+i); } drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); drawCareBadge(c,176,28,'💧','습도',petInfo().humidity,'#0284c7'); }
                 function drawTerrarium(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#d9f99d'); g.addColorStop(1,'#84cc16'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.strokeStyle='rgba(255,255,255,.65)'; c.lineWidth=4; roundedRect(c,w*.055,h*.10,w*.89,h*.73,28); c.stroke(); c.fillStyle='#c08457'; c.fillRect(0,h*.74,w,h*.26); for(let i=0;i<pet3d.iguanaRoom.branches;i++) drawBranch(c,w*.12,h*.66-i*16,w*.90,h*.30+i*10,t+i); for(let i=0;i<pet3d.iguanaRoom.leaves;i++) drawLeafCluster(c,w*(.10+(i*.13)% .75),h*(.58-(i%3)*.08),.65,t+i); for(let i=0;i<pet3d.iguanaRoom.rocks;i++) drawRock(c,w*(.58+i*.08),h*.79,45-i*3); drawSunSpot(c,w*.82,h*.20,38,t); drawCareBadge(c,18,28,'🌡️','낮 온도','28~32℃','#f97316'); drawCareBadge(c,176,28,'💧','습도','65~80%','#0284c7'); }
                 function drawHomeRoom(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#fef3c7'); g.addColorStop(1,'#fde68a'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='#fbbf24'; c.fillRect(0,h*.76,w,h*.24); drawWindow(c,w*.78,h*.20,90,70); if(pet3d.type==='cat') drawCatTree(c,w*.20,h*.55,t); else drawDogBed(c,w*.22,h*.72,90); drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); drawCareBadge(c,176,28,'💧','습도',petInfo().humidity,'#0284c7'); }
-                function drawYard(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#bfdbfe'); g.addColorStop(.55,'#d9f99d'); g.addColorStop(1,'#86efac'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='rgba(255,255,255,.8)'; c.beginPath(); c.ellipse(w*.28,h*.18,80,24,0,0,Math.PI*2); c.fill(); c.fillStyle='#a16207'; c.fillRect(0,h*.76,w,h*.24); c.strokeStyle='rgba(120,53,15,.45)'; c.lineWidth=5; for(let x=30;x<w;x+=70){ c.beginPath(); c.moveTo(x,h*.60); c.lineTo(x,h*.78); c.stroke(); } c.beginPath(); c.moveTo(0,h*.66); c.lineTo(w,h*.66); c.stroke(); drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); }
+                function drawYard(c,w,h,t,garden=false){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#bfdbfe'); g.addColorStop(garden?.18:.55,'#d9f99d'); g.addColorStop(1,'#86efac'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='rgba(255,255,255,.8)'; c.beginPath(); c.ellipse(w*.28,h*.18,80,24,0,0,Math.PI*2); c.fill(); c.fillStyle=garden?'#a9de8b':'#a16207'; c.fillRect(0,h*(garden?.23:.76),w,h*(garden?.77:.24)); c.strokeStyle='rgba(120,53,15,.45)'; c.lineWidth=5; for(let x=30;x<w;x+=70){ c.beginPath(); c.moveTo(x,h*(garden?.14:.60)); c.lineTo(x,h*(garden?.23:.78)); c.stroke(); } c.beginPath(); c.moveTo(0,h*(garden?.18:.66)); c.lineTo(w,h*(garden?.18:.66)); c.stroke(); if(!garden) drawCareBadge(c,18,28,'🌡️','온도',petInfo().temp,'#f97316'); }
                 function drawHutch(c,w,h,t){ drawHomeRoom(c,w,h,t); c.fillStyle='rgba(255,255,255,.25)'; c.fillRect(0,h*.70,w,h*.07); drawHouse(c,w*.18,h*.72,74,'#a16207'); }
                 function drawPaludarium(c,w,h,t){ const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#dcfce7'); g.addColorStop(.65,'#bfdbfe'); g.addColorStop(1,'#38bdf8'); c.fillStyle=g; roundedRect(c,0,0,w,h,24); c.fill(); c.fillStyle='#fde68a'; c.fillRect(0,h*.66,w*.46,h*.34); c.fillStyle='rgba(14,165,233,.38)'; c.fillRect(w*.35,h*.62,w*.65,h*.38); drawRock(c,w*.36,h*.66,76); for(let i=0;i<(pet3d.rooms.turtle.plants||1);i++) drawSeaPlant(c,w*.64+i*44,h*.82,.55,t+i); drawSunSpot(c,w*.80,h*.20,36,t); drawCareBadge(c,18,28,'🌡️','물 온도','24~28℃','#0284c7'); }
 
@@ -5906,9 +5913,64 @@ ${getEvolutionHintText()}
                 window.sookPetBuy=buyThing; window.sookPetDo=runAction; window.sookPetIsUnlocked=isUnlocked; window.sookPetSelect=selectPet;
                 const originalUpdatePetUI=updatePetUI;
                 updatePetUI=function(){ originalUpdatePetUI(); updatePetStatusUI(); };
-                resizeCanvas(); renderPicker(); renderMiniShop(); updatePetStatusUI(); requestAnimationFrame(drawFrame);
+                resizeCanvas(); renderPicker(); renderMiniShop(); updatePetStatusUI();
+                // Reuse the existing animal art in the collection garden. Do not run
+                // the superseded single-pet animation/decay loop in the background.
+                return {
+                    background(c,w,h,t) {
+                        c.save();
+                        // Extend the existing yard painter into the full garden playfield.
+                        drawYard(c,w,h,t,true); c.restore();
+                    },
+                    animal(c,id,x,y,t,action,scale,facing) {
+                        const previous=pet3d;
+                        const fishId=id==='fish'?'guppy':id;
+                        const fish=FISH_DB.find(f=>f.id===fishId);
+                        const mapped=action==='sleep'?'sleep':action==='feed'?'feed':'idle';
+                        pet3d={...previous,type:fish?'fish':id,gardenAction:mapped,action:mapped,actionUntil:Infinity,stats:{hunger:100,health:100,energy:100}};
+                        c.save();c.translate(x,y);c.scale(scale*facing,scale);
+                        try {
+                            if(fish) drawFish(c,0,-30,1,fish,t,'idle');
+                            else {
+                                const ys={hamster:.68,iguana:.59,parrot:.55,cat:.64,dog:.66,goat:.64,miniPig:.66,sugarGlider:.55,rabbit:.66,turtle:.64};
+                                c.translate(-200*.52,-200*(ys[id]||.66)-65);
+                                drawPet(c,200,200,t,0);
+                            }
+                        } finally {c.restore();pet3d=previous;}
+                    },
+                    facility(c,kind,x,y,t,active) {
+                        c.save();
+                        if(kind==='water') drawWaterFountain(c,x,y,t);
+                        if(kind==='food') drawHayRack(c,x,y);
+                        if(kind==='bed') drawDogBed(c,x,y,62);
+                        if(kind==='ball') drawBall(c,x+(active?Math.sin(t*2)*20:0),y,22,active?t:0);
+                        if(kind==='tunnel') drawTunnel(c,x,y,126,54,'#e9a63b');
+                        if(kind==='tower') {c.save();c.translate(x,y-25);c.scale(.55,.55);drawCatTowerExtra(c,0,0,t);c.restore();}
+                        if(kind==='platform') drawPlatform(c,x,y,112,25);
+                        if(kind==='wheel') drawWheel(c,x,y-12,34,active?t:0);
+                        if(kind==='pond') {
+                            c.translate(x-104,y-55);c.scale(208/700,110/420);
+                            const previous=pet3d;
+                            pet3d={...previous,fishTank:{...previous.fishTank,plants:3,ornaments:0,shrimp:0,snails:0}};
+                            try{drawAquarium(c,700,420,t);}finally{pet3d=previous;}
+                        }
+                        c.restore();
+                    }
+                };
             }
-            setupSookCanvasPets();
+            const gardenArtwork=setupSookCanvasPets();
+            const gardenController=window.KidscadeGarden?.init({
+                ...gardenArtwork,
+                avatar:()=>renderAvatarSVG(),
+                balance:()=>getPersistedCoins(),
+                spend:amount=>changeSeeds(-amount,'',{toast:false}),
+                refund:amount=>changeSeeds(amount,'',{toast:false}),
+                toast:message=>showToast(message,true),
+                games:category=>Array.from(document.querySelectorAll('#game-list .game-card')).filter(card=>!card.classList.contains('disabled')&&card.dataset.age===currentAgeGroup&&(!category||card.dataset.category===category)).map(card=>({id:card.dataset.id,title:card.querySelector('.game-title')?.textContent||'게임'})).slice(0,3),
+                play:gameId=>{const card=Array.from(document.querySelectorAll('#game-list .game-card')).find(card=>card.dataset.id===gameId);if(card){document.getElementById('pet-modal').classList.add('hidden');openGameModal({target:card,preventDefault(){}},card);}}
+            });
+            const updateLegacyPetUI=updatePetUI;
+            updatePetUI=function(){updateLegacyPetUI();gardenController?.refresh();};
 
 
 
