@@ -1,0 +1,49 @@
+from pathlib import Path
+import re
+
+p = Path('스펠링 프로그.html')
+s = p.read_text(encoding='utf-8')
+
+old = 'touchStart=null,audioCtx=null,landingFrom=null;'
+new = 'touchStart=null,audioCtx=null,bgmTimer=null,bgmStep=0,landingFrom=null;'
+assert old in s, 'state variables anchor missing'
+s = s.replace(old, new, 1)
+
+anchor = "catch(e){}}\nfunction box"
+assert anchor in s, 'sound function anchor missing'
+bgm = r'''catch(e){}}
+const BGM_MELODY=[523.25,659.25,783.99,1046.5,783.99,659.25,587.33,698.46,880,1174.66,880,698.46,659.25,783.99,987.77,1318.51,987.77,783.99,587.33,659.25,783.99,880,783.99,659.25];
+const BGM_BASS=[130.81,146.83,164.81,196.00];
+function bgmTone(freq,dur=.14,vol=.014,type='square'){try{if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type=type;o.frequency.setValueAtTime(freq,t);o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o.stop(t+dur+.02)}catch(e){}}
+function bgmBeat(){if(!running||!audioCtx)return;const f=BGM_MELODY[bgmStep%BGM_MELODY.length];bgmTone(f,.135,.012,'square');if(bgmStep%2===0)bgmTone(BGM_BASS[Math.floor(bgmStep/4)%BGM_BASS.length],.18,.009,'triangle');if(bgmStep%4===0)bgmTone(1046.5,.055,.006,'sine');bgmStep++}
+function stopBgm(){if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null}}
+function startBgm(){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();stopBgm();bgmStep=0;bgmBeat();bgmTimer=setInterval(bgmBeat,190)}catch(e){}}
+function box'''
+s = s.replace(anchor, bgm, 1)
+
+pattern = r"function textSprite\(text,bg='#fff6c8',fg='#162334'\)\{.*?return s\}"
+replacement = r'''function textSprite(text,bg='#fff6c8',fg='#10243a'){const c=document.createElement('canvas');c.width=256;c.height=256;const ctx=c.getContext('2d');ctx.fillStyle='rgba(8,28,46,.24)';ctx.beginPath();ctx.roundRect(14,18,228,228,34);ctx.fill();ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(8,8,228,228,32);ctx.fill();ctx.strokeStyle='#10243a';ctx.lineWidth=10;ctx.stroke();ctx.font='900 154px Arial Black,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=14;ctx.strokeText(text,122,126);ctx.fillStyle=fg;ctx.fillText(text,122,126);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearFilter;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(1.28,1.28,1);s.renderOrder=8;return s}'''
+s, n = re.subn(pattern, replacement, s, count=1)
+assert n == 1, 'textSprite replacement failed'
+
+old_pad = "const pad=box(TILE*.94,.16,TILE*.94,letters[i]===target?0xe7cd72:0xe9dca8);"
+new_pad = "const pad=box(TILE*1.02,.2,TILE*1.02,letters[i]===target?0xffd84d:0xf3ead4);"
+assert old_pad in s, 'letter pad anchor missing'
+s = s.replace(old_pad, new_pad, 1)
+
+old_pos = "s.position.set(xFor(cols[i]),.78,zFor(row));"
+new_pos = "s.position.set(xFor(cols[i]),1.08,zFor(row));"
+assert old_pos in s, 'letter sprite position anchor missing'
+s = s.replace(old_pos, new_pos, 1)
+
+old_setup = "running=true;lastTime=performance.now();$('startOverlay').classList.add('hidden');"
+new_setup = "running=true;lastTime=performance.now();startBgm();$('startOverlay').classList.add('hidden');"
+assert old_setup in s, 'setupGame anchor missing'
+s = s.replace(old_setup, new_setup, 1)
+
+old_finish = "function finish(){running=false;deathLock=false;"
+new_finish = "function finish(){running=false;stopBgm();deathLock=false;"
+assert old_finish in s, 'finish anchor missing'
+s = s.replace(old_finish, new_finish, 1)
+
+p.write_text(s, encoding='utf-8')
