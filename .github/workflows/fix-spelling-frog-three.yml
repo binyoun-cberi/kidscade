@@ -1,0 +1,34 @@
+name: Fix Spelling Frog Three loader
+on:
+  push:
+    branches:
+      - fix/spelling-frog-start-20260911
+    paths:
+      - .github/workflows/fix-spelling-frog-three.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/spelling-frog-start-20260911
+      - name: Fix removed Three.js UMD build
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('스펠링 프로그.html')
+          s=p.read_text(encoding='utf-8')
+          old='<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>'
+          new='<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" onerror="this.onerror=null;this.src=\'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js\'"></script>'
+          if old not in s:
+              raise SystemExit('old Three.js loader not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "스펠링 프로그.html"
+          git commit -m "스펠링 프로그 Three.js 로딩 오류 수정"
+          git push origin HEAD:fix/spelling-frog-start-20260911
