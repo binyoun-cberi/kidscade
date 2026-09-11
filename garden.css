@@ -1,0 +1,49 @@
+.garden-room > [hidden] { display:none !important; }
+#pet-modal .garden-room { padding:0; min-width:0; }
+#pet-modal .sook-coach-body { display:block; overflow:auto !important; }
+.garden-app { padding:16px; color:#17382b; background:#f3faf6; min-height:100%; box-sizing:border-box; font-size:16px; }
+.garden-app * { box-sizing:border-box; }
+.garden-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.garden-heading strong { font-size:1.35rem; display:block; }
+.garden-heading span { display:block; font-size:14px; margin-top:4px; color:#426452; }
+.garden-heading > b { background:#d9f5be; color:#285318; padding:10px 14px; border-radius:12px; }
+.garden-layout { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:14px; align-items:start; }
+.garden-view { min-width:0; position:relative; }
+#garden-canvas { width:100%; height:auto; display:block; aspect-ratio:1000/680; background:#8fdeaa; border-radius:20px; border:2px solid #548964; touch-action:none; }
+.garden-app button { font:700 14px/1.4 inherit; font-family:inherit; font-size:14px; line-height:1.4; padding:10px 12px; min-height:44px; border:1px solid #b8cebf; border-radius:10px; background:white; color:#224e36; cursor:pointer; }
+.garden-app button:hover { background:#e3f6da; }
+.garden-app button:disabled { opacity:.5; cursor:default; }
+.garden-app button[aria-pressed="true"] { background:#226646; color:#fff; border-color:#226646; }
+.garden-app button:focus-visible,#garden-canvas:focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
+.garden-view-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.garden-app [hidden] { display:none !important; }
+#garden-live { min-height:44px; padding:10px 4px 0; font-size:14px; line-height:1.5; }
+.garden-dock { border:1px solid #c2d8c9; border-radius:16px; background:white; overflow:hidden; }
+.garden-dock nav { display:grid; grid-template-columns:repeat(3,1fr); padding:6px; gap:4px; border-bottom:1px solid #dce8de; }
+.garden-dock nav button { padding:8px 3px; border:0; }
+#garden-panel { max-height:min(62dvh,650px); overflow:auto; padding:12px; scrollbar-width:thin; }
+.garden-help { font-size:14px; line-height:1.6; margin:0 0 12px; color:#53685b; }
+.garden-target { background:#e5f2e8; padding:10px; border-radius:12px; margin-bottom:14px; }
+.garden-target button { display:block; width:100%; text-align:left; margin-top:6px; }
+.garden-animal { display:grid; grid-template-columns:34px 1fr auto; align-items:center; gap:8px; border:1px solid #d6e0d9; border-radius:12px; padding:10px 8px; margin:8px 0; }
+.garden-animal.owned { border-color:#afcfb9; background:#f2fbf0; }
+.garden-animal-icon { font-size:25px; text-align:center; color:#687b6c; }
+.garden-animal strong { font-size:16px; }
+.garden-animal small,.garden-furniture small { display:block; font-size:14px; line-height:1.5; color:#567060; }
+.garden-animal button { padding:8px 6px; }
+.garden-animal progress { width:100%; height:8px; display:block; margin-top:7px; accent-color:#369351; }
+.garden-furniture { border:1px solid #cbded1; border-radius:12px; padding:12px; margin:8px 0 12px; }
+.garden-furniture p { font-size:14px; line-height:1.5; margin:7px 0; }
+.garden-furniture button { width:100%; margin-top:10px; background:#e3f6da; }
+.garden-note { font-size:14px; padding:10px; border-bottom:1px solid #deeadf; line-height:1.5; }
+.garden-app footer { margin-top:6px; font-size:14px; line-height:1.6; color:#567060; }
+.garden-preview { display:block; width:100%; height:auto; border-radius:14px; margin-bottom:12px; background:#a5e9a5; }
+.kc-pet-card .kc-pet-track { display:none; }
+body.dark-mode .garden-app { background:#142b22; color:#e3f6e8; }
+body.dark-mode .garden-dock,body.dark-mode .garden-app button { background:#213c2e; color:#e3f6e8; border-color:#476854; }
+body.dark-mode .garden-app button[aria-pressed="true"] { background:#39794e; }
+body.dark-mode .garden-animal.owned { background:#274933; }
+body.dark-mode .garden-target { background:#274933; }
+body.dark-mode .garden-help,body.dark-mode .garden-heading span,body.dark-mode .garden-app small,body.dark-mode .garden-app footer { color:#b5cfbe; }
+@media(max-width:950px){.garden-layout{grid-template-columns:minmax(0,1fr) 260px}.garden-app{padding:10px}}
+@media(max-width:720px){.garden-layout{grid-template-columns:1fr}.garden-dock{width:100%}#garden-panel{max-height:330px}.garden-heading strong{font-size:1.1rem}#pet-modal .sook-coach-body{padding:0!important}.garden-app{padding:8px}#garden-canvas{border-radius:12px}}
