@@ -19,7 +19,6 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
           marker = 'data-id="high_outbreak_korea"'
@@ -27,13 +26,8 @@ jobs:
               needle = '            <a href="역사뒤집기.html"'
               if needle not in text:
                   raise SystemExit('Could not find insertion point in index.html')
-              card = '''            <a href="outbreak_korea_v3.html" class="game-card" data-category="trivia" data-age="high" data-id="high_outbreak_korea">
-                <span class="fav-star">☆</span><div class="game-icon">🦠</div><div class="game-title">OUTBREAK KOREA</div>
-                <div class="game-desc">17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다.</div>
-            </a>
-'''
-              text = text.replace(needle, card + needle, 1)
-              path.write_text(text, encoding='utf-8')
+              card = '            <a href="outbreak_korea_v3.html" class="game-card" data-category="trivia" data-age="high" data-id="high_outbreak_korea">\n                <span class="fav-star">☆</span><div class="game-icon">🦠</div><div class="game-title">OUTBREAK KOREA</div>\n                <div class="game-desc">17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다.</div>\n            </a>\n'
+              path.write_text(text.replace(needle, card + needle, 1), encoding='utf-8')
           PY
       - name: Remove one-time workflow and commit
         run: |
