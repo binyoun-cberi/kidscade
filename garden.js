@@ -48,7 +48,7 @@ document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"
 
     addCard({
         id: 'toddler_penguin_ice_pop',
-        href: '펭귄_얼음_톡톡.html?v=plain-fix-1',
+        href: '펭귄_얼음_톡톡.html?v=rework-2',
         category: 'math',
         age: 'toddler',
         icon: '🐧',
