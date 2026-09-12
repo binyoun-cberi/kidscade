@@ -65,4 +65,14 @@ document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"
         title: '색깔 겹겹!',
         desc: '투명 그림 카드를 차례대로 겹쳐 목표 그림을 완성하며 색·모양 관찰과 순서 사고를 길러요.'
     });
+
+    addCard({
+        id: 'toddler_three_friends_set',
+        href: '셋_친구_찾기.html',
+        category: 'math',
+        age: 'toddler',
+        icon: '🔎',
+        title: '셋 친구 찾기!',
+        desc: '모양·색깔·개수를 비교해 모두 같거나 모두 다른 카드 3장을 찾으며 관찰력과 분류·논리 사고를 길러요.'
+    });
 })();
