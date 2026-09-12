@@ -16,8 +16,8 @@ jobs:
         with:
           ref: main
       - name: Add upper-grade game card
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           path = Path('index.html')
@@ -34,13 +34,13 @@ jobs:
 '''
               text = text.replace(needle, card + needle, 1)
               path.write_text(text, encoding='utf-8')
-
-          Path('.github/workflows/add-outbreak-card.yml').unlink(missing_ok=True)
-      - name: Commit Kidscade update
+          PY
+      - name: Remove one-time workflow and commit
         run: |
+          rm -f .github/workflows/add-outbreak-card.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .github/workflows/add-outbreak-card.yml
+          git add -A
           if git diff --cached --quiet; then
             echo "Nothing to commit"
             exit 0
