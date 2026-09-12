@@ -48,7 +48,7 @@ document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"
 
     addCard({
         id: 'toddler_penguin_ice_pop',
-        href: '펭귄_얼음_톡톡.html',
+        href: '펭귄_얼음_톡톡.html?v=plain-fix-1',
         category: 'math',
         age: 'toddler',
         icon: '🐧',
@@ -68,7 +68,7 @@ document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"
 
     addCard({
         id: 'toddler_three_friends_set',
-        href: '셋_친구_찾기.html',
+        href: '셋_친구_찾기.html?v=plain-fix-1',
         category: 'math',
         age: 'toddler',
         icon: '🔎',
