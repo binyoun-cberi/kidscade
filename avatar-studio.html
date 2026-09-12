@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kidscade Avatar Studio</title></head><body>
+<script src="avatar-pack-1.js"></script>
+<script src="avatar-pack-2.js"></script>
+<script src="avatar-pack-3.js"></script>
+<script src="avatar-pack-4.js"></script>
+<script src="avatar-pack-5.js"></script>
+<script>(async()=>{try{const s=window.__KIDSC_AVATAR_PACK||'';const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0));const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));const html=await new Response(stream).text();document.open();document.write(html);document.close();}catch(e){document.body.innerHTML='<p style="font-family:sans-serif;padding:24px">아바타 아틀리에를 불러오지 못했어요.</p>';console.error(e);}})();</script></body></html>
