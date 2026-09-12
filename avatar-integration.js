@@ -56,6 +56,7 @@
       #kidscade-avatar-studio-bar strong{font-size:1rem}#kidscade-avatar-studio-bar span{font-size:.76rem;opacity:.8;margin-left:8px}
       #kidscade-avatar-studio-close{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}
       #kidscade-avatar-studio-frame{display:block;max-width:1420px;width:100%;height:100%;margin:0 auto;border:0;border-radius:0 0 18px 18px;background:#f8f5fa;box-shadow:0 16px 40px rgba(0,0,0,.28)}
+      #avatar-plaza-preview > :not(#kidscade-deluxe-avatar-preview){display:none!important}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-stage{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:auto;transform-origin:50% 92%;will-change:transform;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center;will-change:transform,opacity}
@@ -64,6 +65,12 @@
       @media(prefers-reduced-motion:reduce){#kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{transition:none!important}}
     `;
     document.head.appendChild(style);
+  }
+
+  function purgeLegacyPreview(host, keep) {
+    for (const child of [...host.children]) {
+      if (child !== keep) child.remove();
+    }
   }
 
   function ensurePreviewLayer() {
@@ -87,6 +94,7 @@
         </div>`;
       host.appendChild(layer);
     }
+    purgeLegacyPreview(host, layer);
     liveImg = layer.querySelector('.kidscade-avatar-live-img');
     liveShadow = layer.querySelector('.kidscade-avatar-live-shadow');
     const empty = layer.querySelector('.kidscade-avatar-empty');
@@ -105,9 +113,7 @@
   function watchPreview() {
     const host = document.getElementById('avatar-plaza-preview');
     if (!host || previewObserver) return;
-    previewObserver = new MutationObserver(() => {
-      if (!host.querySelector('#kidscade-deluxe-avatar-preview')) queueMicrotask(ensurePreviewLayer);
-    });
+    previewObserver = new MutationObserver(() => queueMicrotask(ensurePreviewLayer));
     previewObserver.observe(host, { childList: true });
   }
 
@@ -284,7 +290,6 @@
     if (!liveRaf) liveRaf = requestAnimationFrame(liveLoop);
   }
 
-  // Capture-phase interception prevents the legacy avatar modal click handler from firing.
   document.addEventListener('click', event => {
     const button = event.target.closest?.('#avatar-open-btn');
     if (!button) return;
@@ -311,7 +316,7 @@
     if (event.key === SHOP_KEY || event.key === PREVIEW_KEY) ensurePreviewLayer();
   });
 
-  // Make the animal garden use the new studio sprite if one has been saved.
+  // Garden uses the exact saved avatar-studio appearance, while garden-life.js adds behaviour.
   if (window.KidscadeGarden?.init) {
     const gardenInit = window.KidscadeGarden.init;
     window.KidscadeGarden.init = function (bridge) {
@@ -329,7 +334,7 @@
     const legacy = document.getElementById('avatar-modal');
     if (legacy) legacy.setAttribute('aria-hidden', 'true');
     installStyles();
-    buildOverlay(); // preload the studio so the main card can render real animated sprite frames
+    buildOverlay();
     setTimeout(() => { ensurePreviewLayer(); watchPreview(); startLivePreview(); }, 0);
   });
 })();
