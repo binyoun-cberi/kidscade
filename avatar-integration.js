@@ -13,6 +13,7 @@
   let liveImg = null;
   let liveShadow = null;
   let frameLoaded = false;
+  let fallbackMode = '';
 
   const motion = {
     mode: 'idle', start: 0, end: 0, next: 0, x: 0, dir: 1,
@@ -49,8 +50,8 @@
     const style = document.createElement('style');
     style.id = 'kidscade-avatar-live-style';
     style.textContent = `
-      #kidscade-avatar-studio-overlay{position:fixed;inset:0;z-index:30000;background:rgba(18,14,28,.82);backdrop-filter:blur(9px);display:none;padding:12px;box-sizing:border-box}
-      #kidscade-avatar-studio-overlay.open{display:grid;grid-template-rows:auto minmax(0,1fr)}
+      #kidscade-avatar-studio-overlay{position:fixed;left:-10000px;top:0;width:16px;height:16px;z-index:30000;background:rgba(18,14,28,.82);backdrop-filter:blur(9px);opacity:0;pointer-events:none;overflow:hidden;padding:0;box-sizing:border-box}
+      #kidscade-avatar-studio-overlay.open{left:0;top:0;width:100vw;height:100vh;opacity:1;pointer-events:auto;overflow:visible;padding:12px;display:grid;grid-template-rows:auto minmax(0,1fr)}
       #kidscade-avatar-studio-bar{max-width:1420px;width:100%;margin:0 auto;background:#2d2640;color:white;border-radius:18px 18px 0 0;padding:10px 12px 10px 16px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.22)}
       #kidscade-avatar-studio-bar strong{font-size:1rem}#kidscade-avatar-studio-bar span{font-size:.76rem;opacity:.8;margin-left:8px}
       #kidscade-avatar-studio-close{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}
@@ -194,13 +195,32 @@
     motion.next = now + 2600 + Math.random() * 3600;
   }
 
+  function syncStudioFallbackMode(mode) {
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const next = ['idle', 'walk', 'jump', 'smile'].includes(mode) ? mode : 'idle';
+      if (next === 'jump') {
+        if (fallbackMode !== 'jump') doc.querySelector('[data-action="jump"]')?.click();
+      } else if (fallbackMode !== next) {
+        doc.querySelector(`[data-action="${next}"]`)?.click();
+      }
+      fallbackMode = next;
+    } catch (_) {}
+  }
+
   function captureLiveFrame(now) {
     if (!frameLoaded || overlay?.classList.contains('open')) return;
     if (now - motion.lastCapture < 105) return;
     motion.lastCapture = now;
     try {
       const api = frame?.contentWindow?.KidscadeAvatarShop;
-      const data = api?.renderPreviewFrame?.(prefersReducedMotion ? 'idle' : motion.mode, now / 1000);
+      const mode = prefersReducedMotion ? 'idle' : motion.mode;
+      let data = api?.renderPreviewFrame?.(mode, now / 1000) || '';
+      if (!data) {
+        syncStudioFallbackMode(mode);
+        data = api?.getPreviewDataURL?.() || '';
+      }
       if (data && data.startsWith('data:image/png')) {
         ensurePreviewLayer();
         if (liveImg) {
