@@ -2,6 +2,7 @@
 document.write('<script src="garden-core.js?v=garden-life-v1"><\/script>');
 document.write('<script src="garden-life.js?v=garden-life-v1"><\/script>');
 document.write('<script src="avatar-integration.js?v=garden-life-v1"><\/script>');
+document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"><\/script>');
 
 /* Extra game cards registered before index.html snapshots the game-card NodeList. */
 (function registerExtraKidscadeGames() {
