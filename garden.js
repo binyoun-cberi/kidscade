@@ -45,4 +45,14 @@ document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"
         title: '몽키 쏙쏙!',
         desc: '색을 뽑고 같은 색 덩굴을 톡! 떨어지는 원숭이를 세며 색깔 구별과 수 세기, 차례 기다리기를 익혀요.'
     });
+
+    addCard({
+        id: 'toddler_penguin_ice_pop',
+        href: '펭귄_얼음_톡톡.html',
+        category: 'math',
+        age: 'toddler',
+        icon: '🐧',
+        title: '펭귄 얼음 톡톡!',
+        desc: '하얀 얼음과 파란 얼음을 톡톡 깨며 색 구별, 1~3 수 세기, 공간관계와 차례 기다리기를 익혀요.'
+    });
 })();
