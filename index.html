@@ -12,41 +12,37 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
 </style>
 </head>
 <body>
-<div id="kidscade-loader"><div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">고학년 게임에 「교실전쟁 3D」를 추가하고 있어요.</div></div></div>
+<div id="kidscade-loader"><div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">고학년 게임 목록을 준비하고 있어요.</div></div></div>
 <script>
 (async()=>{
   const classroomWarCard=`
-      <article class="game-card" data-age="high" data-topic="⭐ 특수 게임" data-title="교실전쟁 3D">
-        <div class="card-top">
-          <div class="thumb" style="display:flex;align-items:center;justify-content:center;font-size:4.2rem;background:linear-gradient(135deg,#172554,#0f766e);">🎖️</div>
-          <div class="card-body">
-            <h3>교실전쟁 3D</h3>
-            <div class="badges">
-              <span class="badge high">고학년</span>
-              <span class="badge ⭐ 특수 게임">⭐ 특수 게임</span>
-            </div>
-            <p>사칙연산 관문으로 병력을 키우고 교실 방어선을 지키는 3D 무한 방어전.</p>
-            <p class="card-note">병사(1)→엘리트(10)→부사관(100)→장교(1,000)→장군(10,000)으로 승급하며 +·−·×·÷와 혼합 계산을 빠르게 판단해 보세요.</p>
-            <div class="card-actions">
-              <a class="btn primary" href="classroom_war_3d.html" target="_blank" rel="noopener" data-seed-reward="1">게임하기</a>
-            </div>
-          </div>
-        </div>
-      </article>\n`;
+<a href="classroom_war_3d.html" class="game-card" data-category="math" data-age="high" data-id="high_classroom_war_3d">
+  <span class="fav-star">☆</span>
+  <div class="game-icon">🎖️</div>
+  <div class="game-title">교실전쟁 3D</div>
+  <div class="game-desc">사칙연산 관문을 빠르게 판단해 병력을 키우고, 몰려오는 적에게서 방어선을 지키는 3D 무한 방어전!</div>
+</a>\n`;
   try{
-    const res=await fetch('index_base.html?classroom-war=1',{cache:'no-store'});
+    const res=await fetch('index_base.html?classroom-war=2',{cache:'no-store'});
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
-    const marker='<article class="game-card" data-age="high"';
+
+    // 기존 게임들과 같은 #game-list 안에 넣는다.
+    const marker='<a href="딱! 타임 LCD.html" class="game-card" data-category="math" data-age="high"';
     const pos=html.indexOf(marker);
     if(pos>=0){
       html=html.slice(0,pos)+classroomWarCard+html.slice(pos);
-    }else if(html.includes('</main>')){
-      html=html.replace('</main>',classroomWarCard+'</main>');
     }else{
-      html=html.replace('</body>',classroomWarCard+'</body>');
+      const gameListMarker='<div class="game-container" id="game-list">';
+      const listPos=html.indexOf(gameListMarker);
+      if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
+      const insertPos=listPos+gameListMarker.length;
+      html=html.slice(0,insertPos)+classroomWarCard+html.slice(insertPos);
     }
-    document.open();document.write(html);document.close();
+
+    document.open();
+    document.write(html);
+    document.close();
   }catch(err){
     console.error(err);
     document.getElementById('kidscade-loader').innerHTML='<div class="loader-card"><div class="loader-icon">⚠️</div><div class="loader-title">KIDSCADE를 불러오지 못했습니다.</div><div class="loader-note">'+err.message+'<br><a href="index_base.html">기존 화면 열기</a></div></div>';
