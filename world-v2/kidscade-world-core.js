@@ -106,11 +106,32 @@
   class Input {
     constructor(world){
       this.world=world;this.keys=new Set();this.enabled=true;
-      this.down=e=>{if(!this.enabled)return;const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','e'].includes(k))e.preventDefault();this.keys.add(k);};
-      this.up=e=>this.keys.delete(e.key.toLowerCase());
-      document.addEventListener('keydown',this.down,{passive:false});document.addEventListener('keyup',this.up);
+      this.down=e=>{
+        if(!this.enabled)return;
+        const k=String(e.key||'').toLowerCase();
+        if(['arrowup','arrowdown','arrowleft','arrowright',' ','e'].includes(k))e.preventDefault();
+        this.keys.add(k);
+      };
+      this.up=e=>this.keys.delete(String(e.key||'').toLowerCase());
+      this.blur=()=>this.reset();
+      this.visibility=()=>{if(document.hidden)this.reset();};
+      this.pagehide=()=>this.reset();
+      document.addEventListener('keydown',this.down,{passive:false});
+      document.addEventListener('keyup',this.up);
+      root.addEventListener('blur',this.blur);
+      root.addEventListener('pagehide',this.pagehide);
+      document.addEventListener('visibilitychange',this.visibility);
+    }
+    reset(){
+      this.keys.clear();
+      if(this.__mobileVirtual){
+        this.__mobileVirtual.x=0;this.__mobileVirtual.y=0;
+        this.__mobileVirtual.buttons?.clear?.();
+      }
+      if(this.world?.player){this.world.player.vx=0;this.world.player.vy=0;}
     }
     axis(){
+      if(!this.enabled)return{x:0,y:0};
       let x=0,y=0;
       if(this.keys.has('a')||this.keys.has('arrowleft'))x--;
       if(this.keys.has('d')||this.keys.has('arrowright'))x++;
@@ -119,8 +140,15 @@
       if(x&&y){const q=Math.SQRT1_2;x*=q;y*=q;}
       return{x,y};
     }
-    pressed(key){return this.keys.has(String(key).toLowerCase());}
-    destroy(){document.removeEventListener('keydown',this.down);document.removeEventListener('keyup',this.up);}
+    pressed(key){return this.enabled&&this.keys.has(String(key).toLowerCase());}
+    destroy(){
+      this.reset();
+      document.removeEventListener('keydown',this.down);
+      document.removeEventListener('keyup',this.up);
+      root.removeEventListener('blur',this.blur);
+      root.removeEventListener('pagehide',this.pagehide);
+      document.removeEventListener('visibilitychange',this.visibility);
+    }
   }
 
   class InteractionSystem {
@@ -192,11 +220,11 @@
     }
     frame=(t)=>{if(!this.running)return;const dt=Math.min(.05,Math.max(0,(t-this.last)/1000||0));this.last=t;this.update(dt);this.render();this._raf=requestAnimationFrame(this.frame);};
     start(){if(this.running)return;this.running=true;this.last=performance.now();this._raf=requestAnimationFrame(this.frame);this.events.emit('start',this);}
-    stop(){this.running=false;if(this._raf)cancelAnimationFrame(this._raf);this.events.emit('stop',this);}
+    stop(){this.running=false;if(this._raf)cancelAnimationFrame(this._raf);this.input.reset?.();this.events.emit('stop',this);}
     destroy(){this.stop();this.input.destroy();root.removeEventListener('resize',this._resize);this.entities.map.clear();if(NS.activeWorld===this)NS.activeWorld=null;if(root.__kidscadeWorldV2===this)root.__kidscadeWorldV2=null;}
   }
 
-  NS.VERSION='0.1.1';
+  NS.VERSION='0.1.2';
   NS.EventBus=EventBus;
   NS.Entity=Entity;
   NS.EntityManager=EntityManager;
