@@ -1,0 +1,49 @@
+name: Fix OUTBREAK startup syntax
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-outbreak-start.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix transport function and verify startup script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('outbreak_korea_v3.html')
+          s=p.read_text(encoding='utf-8')
+          old="""if(trr.infected>before){flashTransport(h,target,h.type);if(before===0||Math.random()<.12)addNews(`${transportMeta[h.type].label} 유입`,`${h.name}에서 ${target.name} 방향으로 감염자 ${formatPeople(seed)}이 이동했습니다.`)}}
+ }
+}
+
+function selectRegion"""
+          new="""if(trr.infected>before){flashTransport(h,target,h.type);if(before===0||Math.random()<.12)addNews(`${transportMeta[h.type].label} 유입`,`${h.name}에서 ${target.name} 방향으로 감염자 ${formatPeople(seed)}이 이동했습니다.`)}}
+}
+
+function selectRegion"""
+          if old not in s:
+              raise SystemExit('target transport brace sequence not found')
+          s=s.replace(old,new,1)
+          # Make startup robust even if selection is temporarily empty.
+          s=s.replace("state.selected=$('#startRegion').value;Object.assign(state.stats,pathogenTypes[state.type].stats);", "state.selected=$('#startRegion').value||'chungbuk';if(!state.regions[state.selected])state.selected='chungbuk';Object.assign(state.stats,pathogenTypes[state.type].stats);", 1)
+          p.write_text(s,encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          for i,src in enumerate(scripts): Path(f'/tmp/outbreak_{i}.js').write_text(src,encoding='utf-8')
+          if "$('#startRegion').appendChild(o)" not in s:
+              raise SystemExit('startRegion population code missing')
+          print('startup region population present; scripts:',len(scripts))
+          PY
+          for f in /tmp/outbreak_*.js; do echo "checking $f"; node --check "$f"; done
+      - name: Commit fix and remove temporary checks
+        run: |
+          rm -f .github/workflows/fix-outbreak-start.yml .github/workflows/check-outbreak-js.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix OUTBREAK startup and initial region selection"
+          git push origin main
