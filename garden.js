@@ -5,6 +5,7 @@ document.write('<script src="avatar-integration.js?v=garden-life-v1"><\/script>'
 document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v1"><\/script>');
 document.write('<script src="pet-art.js?v=pet-art-v1"><\/script>');
 document.write('<script src="life-world-integration.js?v=life-world-v1"><\/script>');
+document.write('<script src="life-world-mobile.js?v=life-world-mobile-v1"><\/script>');
 
 /* Extra game cards registered before index.html snapshots the game-card NodeList. */
 (function registerExtraKidscadeGames() {
