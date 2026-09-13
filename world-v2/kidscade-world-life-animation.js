@@ -137,16 +137,16 @@ function decorateRenderer(type,base){
   return function(c,e,w){base?.(c,e,w);drawFurnitureFx(type,c,e,w);};
 }
 
-function loadWorkAnimation(){
-  if(K.WorkAnimation||document.getElementById('kidscade-world-work-animation-script'))return;
+function loadScript(id,name,ready){
+  if(ready?.()||document.getElementById(id))return;
   const here=document.currentScript?.src||location.href;
   const s=document.createElement('script');
-  s.id='kidscade-world-work-animation-script';
-  s.src=new URL('kidscade-world-work-animation.js',here).href;
-  s.async=false;
-  document.head.appendChild(s);
+  s.id=id;s.src=new URL(name,here).href;s.async=false;document.head.appendChild(s);
 }
+function loadWorkAnimation(){loadScript('kidscade-world-work-animation-script','kidscade-world-work-animation.js',()=>!!K.WorkAnimation);}
+function loadCarryFishing(){loadScript('kidscade-world-carry-fishing-script','kidscade-world-carry-fishing.js',()=>!!K.CarryFishing);}
 
 K.LifeAnimation={ACTIONS,perform,cancel,active,animState,makeFrontLayer,drawFront,drawFurnitureFx,decorateRenderer};
 loadWorkAnimation();
+loadCarryFishing();
 })(window);
