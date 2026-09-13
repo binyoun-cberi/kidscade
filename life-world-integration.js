@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v2/kidscade-world-demo.html';
+  const WORLD_URL='world-v2/kidscade-world-life-demo.html';
   let overlay=null, frame=null, activated=false;
 
   function installStyles(){
@@ -103,7 +103,7 @@
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden','false');
     refreshWorld();
-    setTimeout(()=>{try{frame.contentDocument?.getElementById('world-v2')?.focus()}catch(_){}},80);
+    setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);
   }
 
   function close(){
