@@ -1,0 +1,26 @@
+name: Check OUTBREAK JavaScript
+on:
+  push:
+    paths:
+      - '.github/workflows/check-outbreak-js.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and syntax-check inline scripts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('outbreak_korea_v3.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          print('scripts',len(scripts))
+          for i,src in enumerate(scripts):
+              p=Path(f'/tmp/outbreak_{i}.js')
+              p.write_text(src,encoding='utf-8')
+              print(i, len(src))
+          PY
+          for f in /tmp/outbreak_*.js; do echo "checking $f"; node --check "$f"; done
