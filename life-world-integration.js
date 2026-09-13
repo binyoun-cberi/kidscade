@@ -1,12 +1,12 @@
-/* Kidscade Life World integration.
-   Loads life-world.html in an isolated same-origin iframe and adds an entry button to the current garden UI.
+/* Kidscade World v2 integration.
+   The old Life World v1 entry is retired: the garden button now opens World v2 directly.
    Existing garden saves are not mutated by this layer. */
 (function(root){
   'use strict';
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='life-world.html';
+  const WORLD_URL='world-v2/kidscade-world-demo.html';
   let overlay=null, frame=null, activated=false;
 
   function installStyles(){
@@ -15,36 +15,36 @@
     style.id='kidscade-life-world-style';
     style.textContent=`
       #${OVERLAY_ID}{
-        position:fixed;inset:0;z-index:29000;background:rgba(31,35,29,.66);
+        position:fixed;inset:0;z-index:29000;background:rgba(22,27,22,.72);
         backdrop-filter:blur(7px);display:none;padding:10px;
       }
       #${OVERLAY_ID}.open{display:grid;grid-template-rows:auto minmax(0,1fr)}
       #kidscade-life-world-bar{
-        width:min(1500px,100%);margin:0 auto;background:#f8f5ea;color:#4e443b;
-        border-radius:18px 18px 0 0;padding:9px 12px 9px 16px;
+        width:min(1500px,100%);margin:0 auto;background:#f4e7b9;color:#30382a;
+        border:3px solid #30382a;border-bottom:0;border-radius:10px 10px 0 0;padding:8px 12px 8px 16px;
         display:flex;align-items:center;justify-content:space-between;gap:12px;
-        box-shadow:0 12px 30px rgba(0,0,0,.18);box-sizing:border-box;
+        box-shadow:5px 6px 0 rgba(0,0,0,.22);box-sizing:border-box;
       }
       #kidscade-life-world-bar strong{font-size:1rem}
-      #kidscade-life-world-bar span{font-size:.78rem;opacity:.68;margin-left:8px}
+      #kidscade-life-world-bar span{font-size:.78rem;opacity:.72;margin-left:8px}
       #kidscade-life-world-close{
-        border:1px solid rgba(78,68,59,.25);background:#fffdf8;color:#4e443b;
-        border-radius:12px;padding:8px 13px;font-weight:900;cursor:pointer;
+        border:2px solid #5e684e;background:#fff7d1;color:#30382a;
+        border-radius:6px;padding:7px 12px;font-weight:900;cursor:pointer;
       }
       [data-open-life-world="garden-entry"]{
-        margin-left:auto;border:1px solid rgba(78,68,59,.25);background:#ecf8df;color:#35533a;
-        border-radius:12px;padding:8px 12px;font-weight:900;cursor:pointer;white-space:nowrap;
+        margin-left:auto;border:2px solid #5e684e;background:#ecf8df;color:#35533a;
+        border-radius:8px;padding:8px 12px;font-weight:900;cursor:pointer;white-space:nowrap;
       }
       #${FRAME_ID}{
-        display:block;width:min(1500px,100%);height:100%;margin:0 auto;border:0;
-        border-radius:0 0 18px 18px;background:#edf3e2;
-        box-shadow:0 18px 42px rgba(0,0,0,.24);
+        display:block;width:min(1500px,100%);height:100%;margin:0 auto;border:3px solid #30382a;
+        border-radius:0 0 10px 10px;background:#111a14;
+        box-shadow:5px 8px 0 rgba(0,0,0,.24);
       }
       @media(max-width:700px){
         #${OVERLAY_ID}{padding:0}
-        #kidscade-life-world-bar{border-radius:0}
+        #kidscade-life-world-bar{border-radius:0;border-left:0;border-right:0}
         #kidscade-life-world-bar span{display:none}
-        #${FRAME_ID}{border-radius:0}
+        #${FRAME_ID}{border-radius:0;border-left:0;border-right:0;border-bottom:0}
       }
     `;
     document.head.appendChild(style);
@@ -58,7 +58,7 @@
     btn.type='button';
     btn.dataset.openLifeWorld='garden-entry';
     btn.textContent='🌿 생활 월드';
-    btn.setAttribute('aria-label','Kidscade 생활 월드 들어가기');
+    btn.setAttribute('aria-label','Kidscade 생활 월드 v2 들어가기');
     heading.appendChild(btn);
     return true;
   }
@@ -71,10 +71,10 @@
     overlay.setAttribute('aria-hidden','true');
     overlay.innerHTML=`
       <div id="kidscade-life-world-bar">
-        <div><strong>🌿 Kidscade 생활 월드</strong><span>나의 정원 · 캐릭터 · 씨앗을 이어서 사용해요</span></div>
+        <div><strong>🌿 Kidscade 생활 월드 v2</strong><span>집 · 나의 정원 · 농장이 하나의 월드로 이어집니다</span></div>
         <button id="kidscade-life-world-close" type="button">닫기 ✕</button>
       </div>
-      <iframe id="${FRAME_ID}" title="Kidscade 생활 월드" src="about:blank"></iframe>
+      <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v2" src="about:blank"></iframe>
     `;
     document.body.appendChild(overlay);
     frame=overlay.querySelector('#'+FRAME_ID);
@@ -89,13 +89,21 @@
     frame.src=WORLD_URL;
   }
 
+  function refreshWorld(){
+    try{
+      frame.contentWindow?.postMessage({type:'kidscade-world-v2-refresh'},location.origin);
+      frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin);
+    }catch(_){}
+  }
+
   function open(){
     activate();
     overlay.dataset.prevOverflow=document.body.style.overflow||'';
     document.body.style.overflow='hidden';
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden','false');
-    try{frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin)}catch(_){}
+    refreshWorld();
+    setTimeout(()=>{try{frame.contentDocument?.getElementById('world-v2')?.focus()}catch(_){}},80);
   }
 
   function close(){
@@ -117,7 +125,7 @@
 
   window.addEventListener('message',e=>{
     if(e.source!==frame?.contentWindow)return;
-    if(e.data?.type==='kidscade-life-world-close')close();
+    if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();
   });
 
   installStyles();
@@ -126,7 +134,9 @@
     observer.observe(document.documentElement,{childList:true,subtree:true});
   }
 
-  root.KidscadeLifeWorld={open,close,ensure,getFrame:()=>frame};
+  const api={open,close,ensure,refresh:refreshWorld,getFrame:()=>frame,url:WORLD_URL,version:2};
+  root.KidscadeWorld=api;
+  root.KidscadeLifeWorld=api;
   root.openKidscadeLifeWorld=open;
   root.closeKidscadeLifeWorld=close;
 })(window);
