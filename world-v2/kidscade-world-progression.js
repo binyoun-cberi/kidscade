@@ -43,10 +43,15 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function toast(text){const el=document.getElementById('toast');if(!el)return;el.textContent=text;el.classList.add('show');clearTimeout(el.__progToast);el.__progToast=setTimeout(()=>el.classList.remove('show'),1700);}
 function actor(world){return world?.player?.__kidscadeAvatarActor||null;}
 function carry(world){return K.CarryFishing?.states?.get(world)||null;}
+function isInside(world){return world?.entities?.byTag?.('indoor').some(e=>e.active);}
 function loadSave(){return K.Storage?.load?.()||{};}
 function ensureProgress(){
   if(progressCache)return progressCache;
   const s=loadSave(),raw=s.progression||{},max=Math.max(50,Number(raw.maxEnergy)||100);
+  const kitchen=raw.kitchen&&typeof raw.kitchen==='object'?{...raw.kitchen}:{pending:null};
+  // A page close/reload can interrupt the heat timer. Never restore a stale
+  // "heating" state without a running timer; resume from the ready state.
+  if(kitchen.pending?.step==='heating')kitchen.pending={...kitchen.pending,step:'ready',temp:20};
   progressCache={
     energy:clamp(Number(raw.energy??max),0,max),maxEnergy:max,
     tools:raw.tools&&typeof raw.tools==='object'?raw.tools:{},
@@ -55,7 +60,7 @@ function ensureProgress(){
     crafted:Array.isArray(raw.crafted)?raw.crafted:[],
     food:raw.food&&typeof raw.food==='object'?raw.food:{},
     fishDex:raw.fishDex&&typeof raw.fishDex==='object'?raw.fishDex:{},
-    kitchen:raw.kitchen&&typeof raw.kitchen==='object'?raw.kitchen:{pending:null}
+    kitchen
   };
   s.progression=progressCache;K.Storage?.save?.(s);return progressCache;
 }
@@ -132,7 +137,7 @@ function installStarter(world){
   [['wood',2410,990],['wood',2490,1025],['wood',2570,985],['stone',2650,1028],['stone',2730,990],['stone',2810,1025]].forEach((v,i)=>C.spawnPickup(world,v[0],v[1],v[2],2,{id:`starter-mat-${i+1}`}));
 }
 function stationRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#6d4b32';c.fillRect(e.x+4,e.y+17,e.w-8,e.h-17);c.strokeStyle='#2f2a24';c.lineWidth=3;c.strokeRect(e.x+5.5,e.y+18.5,e.w-11,e.h-20);c.fillStyle='#b68455';c.fillRect(e.x,e.y+8,e.w,17);c.strokeRect(e.x+1.5,e.y+9.5,e.w-3,14);c.fillStyle='#a9aaa1';c.fillRect(e.centerX-20,e.y,40,8);c.fillStyle='#3a3630';c.fillRect(e.centerX-3,e.y-7,6,15);c.restore();}
-function setWorldInput(world,on){if(!world?.input)return;world.input.keys?.clear?.();world.input.enabled=on;}
+function setWorldInput(world,on){if(!world?.input)return;world.input.keys?.clear?.();world.input.clearVirtual?.();world.input.enabled=on;}
 function closeCraft(world){document.getElementById('world-v2-craft-panel')?.classList.remove('open');setWorldInput(world,true);}
 function ensureCraftPanel(world){
   let panel=document.getElementById('world-v2-craft-panel');if(panel)return panel;
@@ -152,16 +157,23 @@ function renderCraftPanel(world){
 function openCraft(world){renderCraftPanel(world);ensureCraftPanel(world).classList.add('open');setWorldInput(world,false);}
 function craft(world,key){const p=ensureProgress();syncToolDefs();const d=TOOL[key],inv=inventory(world);if(!d)return;if(!have(inv,d.req)){toast('재료가 부족해요.');renderCraftPanel(world);return;}consume(inv,d.req);p.tools[key]={dur:d.max,max:d.max,tier:d.tier,craftedAt:Date.now()};if(!p.crafted.includes(key))p.crafted.push(key);persistInventory(world);persistProgress(p);toast(`${d.name} 완성! 내구도 ${d.max}`);renderCraftPanel(world);}
 function upgradeIron(world,key){const p=ensureProgress(),u=IRON_UPGRADE[key],inv=inventory(world),t=p.tools[key];if(!u||!t){toast('돌도구를 먼저 만들어야 해요.');return;}if(!have(inv,u.req)){toast('철광석과 목재가 부족해요.');return;}consume(inv,u.req);p.tools[key]={dur:u.max,max:u.max,tier:'iron',craftedAt:Date.now()};persistInventory(world);persistProgress(p);syncToolDefs();applyWorkBalance();toast(`${u.name} 완성! 작업 속도와 수확량이 좋아졌어요.`);renderCraftPanel(world);}
-function installStation(world){if(world.entities.get('progress-craft-station'))return;world.spawn({id:'progress-craft-station',type:'crafting',x:2915,y:895,w:92,h:62,solid:true,tags:['outdoor','crafting'],render:stationRender,interactionRadius:110,interaction:{label:'제작대 사용하기',action(t,w){openCraft(w);}}});}
+function installStation(world){
+  if(world.entities.get('progress-craft-station'))return;
+  const outside=!isInside(world);
+  world.spawn({id:'progress-craft-station',type:'crafting',x:2915,y:895,w:92,h:62,solid:true,visible:outside,active:outside,tags:['outdoor','crafting'],render:stationRender,interactionRadius:110,interaction:{label:'제작대 사용하기',action(t,w){openCraft(w);}}});
+}
 
 function ironRockRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#606b6a';c.strokeStyle='#292e2c';c.lineWidth=3;c.beginPath();c.moveTo(e.x+4,e.y+e.h-3);c.lineTo(e.x+9,e.y+10);c.lineTo(e.x+27,e.y+2);c.lineTo(e.x+e.w-5,e.y+13);c.lineTo(e.x+e.w-2,e.y+e.h-4);c.closePath();c.fill();c.stroke();c.fillStyle='#bac9c5';c.fillRect(e.x+14,e.y+12,9,5);c.fillRect(e.x+31,e.y+20,8,5);c.fillStyle='#8da19e';c.fillRect(e.x+23,e.y+28,11,5);c.restore();}
 function installIronVeins(world){
-  const pos=[[3190,420],[3260,735],[3115,980]];
-  pos.forEach((p,i)=>{if(world.entities.get(`iron-vein-${i+1}`))return;const e=world.spawn({id:`iron-vein-${i+1}`,type:'rock',x:p[0],y:p[1],w:52,h:40,solid:true,tags:['outdoor','iron-vein'],data:{resource:'iron',scale:.7},render:ironRockRender});K.WorkAnimation?.bindResource?.(e,'mine',3);});
+  const pos=[[3190,420],[3260,735],[3115,980]],outside=!isInside(world);
+  pos.forEach((p,i)=>{if(world.entities.get(`iron-vein-${i+1}`))return;const e=world.spawn({id:`iron-vein-${i+1}`,type:'rock',x:p[0],y:p[1],w:52,h:40,solid:true,visible:outside,active:outside,tags:['outdoor','iron-vein'],data:{resource:'iron',scale:.7},render:ironRockRender});K.WorkAnimation?.bindResource?.(e,'mine',3);});
 }
 function spawnIronChunk(world,x,y,qty=1){
   const id=`iron-chunk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
-  world.spawn({id,type:'iron-pickup',x:x-18,y:y-14,w:36,h:28,solid:false,tags:['outdoor'],interactionRadius:90,data:{qty},render(c,e){const b=Math.sin(performance.now()/230+e.x*.01)*2;c.save();c.translate(0,b);c.fillStyle='#788684';c.strokeStyle='#2d3331';c.lineWidth=2;c.beginPath();c.moveTo(e.x+3,e.y+20);c.lineTo(e.x+8,e.y+5);c.lineTo(e.x+23,e.y+2);c.lineTo(e.x+33,e.y+14);c.lineTo(e.x+27,e.y+25);c.closePath();c.fill();c.stroke();c.fillStyle='#d1dfdb';c.fillRect(e.x+12,e.y+9,7,4);c.restore();},interaction:{label:`철광석 ${qty}개 줍기`,action(t,w){const inv=inventory(w);inv.iron=(inv.iron||0)+qty;persistInventory(w);w.entities.remove(t.id);toast(`철광석 +${qty}`);}}});
+  const carried=K.CarryFishing?.spawnPickup?.(world,'iron',x,y,qty,{id});
+  if(carried)return carried;
+  const outside=!isInside(world);
+  return world.spawn({id,type:'iron-pickup',x:x-18,y:y-14,w:36,h:28,solid:false,visible:outside,active:outside,tags:['outdoor'],interactionRadius:90,data:{qty},render(c,e){const b=Math.sin(performance.now()/230+e.x*.01)*2;c.save();c.translate(0,b);c.fillStyle='#788684';c.strokeStyle='#2d3331';c.lineWidth=2;c.beginPath();c.moveTo(e.x+3,e.y+20);c.lineTo(e.x+8,e.y+5);c.lineTo(e.x+23,e.y+2);c.lineTo(e.x+33,e.y+14);c.lineTo(e.x+27,e.y+25);c.closePath();c.fill();c.stroke();c.fillStyle='#d1dfdb';c.fillRect(e.x+12,e.y+9,7,4);c.restore();},interaction:{label:`철광석 ${qty}개 줍기`,action(t,w){const inv=inventory(w);inv.iron=(inv.iron||0)+qty;persistInventory(w);w.entities.remove(t.id);toast(`철광석 +${qty}`);}}});
 }
 function resetResource(e,kind){
   e.data.workDestroyed=false;e.data.workHp=e.data.workMaxHp||((kind==='mine')?2:3);e.data.__carryYieldSpawned=false;e.data.__destroyedAt=0;e.data.__finalBonus=false;e.data.__ironGranted=false;e.data.__usedTier='';e.solid=true;
@@ -181,7 +193,11 @@ function resourceLifecycle(world){
 function patchBed(world){const bed=world.entities.get('bed');if(!bed?.interaction?.action||bed.interaction.action.__restWrapped)return;const original=bed.interaction.action;function wrapped(t,w){const r=original(t,w);setTimeout(()=>{restoreEnergy(100);toast('푹 쉬어서 체력이 모두 회복됐어요.');},2450);return r;}wrapped.__restWrapped=true;bed.interaction.action=wrapped;}
 function animateFurniture(world,e,type,duration=460){const now=performance.now();e.data=e.data||{};e.data.lifeAnim={kind:type,start:now,end:now+duration};const a=actor(world),f=e.centerX>=world.player.centerX?1:-1;a?.setPose?.(type==='stove'||type==='counter'?'cook':'use',{duration,facing:f,rotation:f*.04,bob:.25});}
 
-function closeKitchen(world){const rt=runtime.get(world);if(rt?.heatTimer){clearInterval(rt.heatTimer);rt.heatTimer=0;const p=ensureProgress();if(p.kitchen?.pending?.step==='heating'){p.kitchen.pending.step='ready';p.kitchen.pending.temp=20;persistProgress(p);}}document.getElementById('world-v2-kitchen-panel')?.classList.remove('open');setWorldInput(world,true);}
+function closeKitchen(world){
+  const rt=runtime.get(world);if(rt?.heatTimer){clearInterval(rt.heatTimer);rt.heatTimer=0;}
+  const p=ensureProgress();if(p.kitchen?.pending?.step==='heating'){p.kitchen.pending.step='ready';p.kitchen.pending.temp=20;persistProgress(p);}
+  document.getElementById('world-v2-kitchen-panel')?.classList.remove('open');setWorldInput(world,true);
+}
 function ensureKitchenPanel(world){
   let panel=document.getElementById('world-v2-kitchen-panel');if(panel)return panel;
   panel=document.createElement('div');panel.id='world-v2-kitchen-panel';panel.className='wv2modal';panel.innerHTML='<div class="wv2card"><button class="wv2close">닫기</button><div class="wv2kitchen"></div></div>';document.getElementById('app')?.appendChild(panel);
@@ -225,11 +241,18 @@ function updateStatus(world){syncToolDefs();const p=ensureProgress(),el=document
 function extendItems(){const I=K.CarryFishing?.ITEM;if(!I)return;I.potato={name:'감자',color:CROP.potato.color,accent:CROP.potato.leaf};I.carrot={name:'당근',color:CROP.carrot.color,accent:CROP.carrot.leaf};I.tomato={name:'토마토',color:CROP.tomato.color,accent:CROP.tomato.leaf};I.iron={name:'철광석',color:'#7f8c8a',accent:'#d1dfdb'};}
 
 function install(world){
-  if(!world||world.__progressionInstalled)return false;world.__progressionInstalled=true;runtime.set(world,{regen:0,heatTimer:0,baseSpeed:world.playerSpeed});ensureProgress();ensureCraftPanel(world);ensureKitchenPanel(world);extendItems();installStation(world);installStarter(world);installIronVeins(world);patchBed(world);syncToolDefs();applyWorkBalance();
-  world.events.on('update',({dt})=>{extendItems();syncToolDefs();applyWorkBalance();patchWorkInteractions(world);patchCrops(world);patchBed(world);patchKitchenFurniture(world);resourceLifecycle(world);trackFish(world);carrySpeed(world);regen(world,dt);updateStatus(world);});updateStatus(world);return true;
+  if(!world||world.__progressionInstalled)return false;
+  world.__progressionInstalled=true;
+  runtime.set(world,{regen:0,heatTimer:0,baseSpeed:world.playerSpeed,hudClock:0});
+  ensureProgress();ensureCraftPanel(world);ensureKitchenPanel(world);extendItems();installStation(world);installStarter(world);installIronVeins(world);patchBed(world);syncToolDefs();applyWorkBalance();
+  world.events.on('update',({dt})=>{
+    const rt=runtime.get(world);extendItems();syncToolDefs();applyWorkBalance();patchWorkInteractions(world);patchCrops(world);patchBed(world);patchKitchenFurniture(world);resourceLifecycle(world);trackFish(world);carrySpeed(world);regen(world,dt);
+    rt.hudClock+=dt;if(rt.hudClock>=.2){rt.hudClock=0;updateStatus(world);}
+  });
+  updateStatus(world);return true;
 }
 function autoInstall(){let tries=0;const timer=setInterval(()=>{const w=K.activeWorld||root.__kidscadeWorldV2;if(w?.player&&K.WorkAnimation&&K.CarryFishing){clearInterval(timer);install(w);}else if(++tries>240)clearInterval(timer);},50);}
 
-K.Progression={installed:true,TOOL,IRON_UPGRADE,CROP,RECIPES,FISH,WORK_COST,install,craft,upgradeIron,openCraft,closeCraft,spendForWork,restoreEnergy,ensureProgress,openKitchen};
+K.Progression={installed:true,TOOL,IRON_UPGRADE,CROP,RECIPES,FISH,WORK_COST,install,craft,upgradeIron,openCraft,closeCraft,spendForWork,restoreEnergy,ensureProgress,openKitchen,closeKitchen};
 autoInstall();
 })(window);
