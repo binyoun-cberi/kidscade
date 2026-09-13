@@ -22,7 +22,7 @@
 const K=window.KidscadeWorldV2,BQ=K.BrowserQuestArt,D=K.BQ3Design,F=K.LifeFurniture,A=K.LifeAnimation,canvas=document.getElementById('world');
 const snap=K.Bridge.snapshot(),save=K.Storage.load(),T=48,W=4800,H=1800;
 const HOME={x:0,w:960,name:'집 앞'},GARDEN={x:960,w:1392,name:'나의 정원'},FARM={x:2352,w:1008,name:'농장'};
-const ROOM={x:3700,y:300,w:840,h:720,name:'우리 집'},yard={x:1110,y:335,w:1080,h:830,cols:12,rows:8};
+const OUTDOOR={x:0,y:0,w:3360,h:1536},ROOM={x:3700,y:300,w:840,h:720,name:'우리 집'},yard={x:1110,y:335,w:1080,h:830,cols:12,rows:8};
 const toastEl=document.getElementById('toast'),zoneEl=document.getElementById('zone'),prompt=document.getElementById('prompt'),chips=document.getElementById('chips');let tt=0,scene='outdoor';
 function toast(t){toastEl.textContent=t;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),1500);}
 function zoneOf(e){if(scene==='home')return{name:'우리 집'};const x=e.centerX;return x<960?HOME:x<2352?GARDEN:FARM;}
@@ -33,16 +33,40 @@ function drawInterior(){const x=ROOM.x,y=ROOM.y,w=ROOM.w,h=ROOM.h;g.fillStyle='#
 function rebuild(){g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;drawOutdoor();drawInterior();}
 rebuild();D.onReady(()=>{rebuild();toast('생활 월드 v2 디자인을 불러왔어요.');showChips();});
 
-const world=new K.World({canvas,width:W,height:H,playerSpeed:250,clearColor:'#181c16',camera:{zoom:1,lerp:.17},background(c){c.imageSmoothingEnabled=false;c.drawImage(bg,0,0);}});
+const world=new K.World({canvas,width:W,height:H,playerSpeed:250,clearColor:'#181c16',camera:{zoom:1,lerp:.17},background(c){
+  c.imageSmoothingEnabled=false;c.save();
+  if(scene==='home'){
+    c.fillStyle='#211e1a';c.fillRect(0,0,W,H);
+    c.drawImage(bg,ROOM.x-48,ROOM.y-48,ROOM.w+96,ROOM.h+96,ROOM.x-48,ROOM.y-48,ROOM.w+96,ROOM.h+96);
+  }else{
+    c.fillStyle='#89aa59';c.fillRect(0,0,W,H);
+    c.drawImage(bg,OUTDOOR.x,OUTDOOR.y,OUTDOOR.w,OUTDOOR.h,OUTDOOR.x,OUTDOOR.y,OUTDOOR.w,OUTDOOR.h);
+  }
+  c.restore();
+}});
 function fallbackPlayer(c,e){c.save();c.fillStyle='#2c3228';c.fillRect(e.x+5,e.y+7,31,42);c.fillStyle='#d7ad82';c.fillRect(e.x+9,e.y,23,23);c.fillStyle='#55744e';c.fillRect(e.x+7,e.y+25,27,28);c.restore();}
-const startHome=save.player?.scene==='home-interior';
-const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:startHome?ROOM.x+ROOM.w/2-20:(Number(save.player?.x)||650),y:startHome?ROOM.y+ROOM.h-110:(Number(save.player?.y)||760),w:40,h:64,render:fallbackPlayer}));
+const startHome=save.player?.scene==='home-interior',savedX=Number(save.player?.x),savedY=Number(save.player?.y);
+const startX=!startHome&&Number.isFinite(savedX)&&savedX>=20&&savedX<=3300?savedX:650;
+const startY=!startHome&&Number.isFinite(savedY)&&savedY>=20&&savedY<=1450?savedY:760;
+const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:startHome?ROOM.x+ROOM.w/2-20:startX,y:startHome?ROOM.y+ROOM.h-110:startY,w:40,h:64,render:fallbackPlayer}));
 
-function tagState(tag,on){world.entities.byTag(tag).forEach(e=>{e.visible=on;e.active=on;});}
-function setScene(next){A.cancel(world,player,true);K.WorkAnimation?.cancel?.(world);K.CarryFishing?.endFishing?.(world);scene=next;const inside=next==='home';tagState('outdoor',!inside);tagState('indoor',inside);if(inside){player.x=ROOM.x+ROOM.w/2-20;player.y=ROOM.y+ROOM.h-112;toast('우리 집에 들어왔어요.');}else{player.x=342;player.y=650;toast('집 밖으로 나왔어요.');}world.interaction.current=null;world.camera.snap();zoneEl.textContent=inside?'우리 집':'집 앞';}
+function tagState(tag,on){
+  const heldSource=K.CarryFishing?.states?.get(world)?.held?.source;
+  world.entities.byTag(tag).forEach(e=>{
+    let enabled=on;
+    if(on&&e===heldSource)enabled=false;
+    if(on&&e.type==='bug'&&e.data?.caught)enabled=false;
+    e.visible=enabled;e.active=enabled;
+  });
+}
+function savePlayerNow(){const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.scene=scene==='home'?'home-interior':'outdoor';K.Storage.save(s);}
+function setScene(next){A.cancel(world,player,true);K.WorkAnimation?.cancel?.(world);K.CarryFishing?.endFishing?.(world);scene=next;const inside=next==='home';tagState('outdoor',!inside);tagState('indoor',inside);if(inside){player.x=ROOM.x+ROOM.w/2-20;player.y=ROOM.y+ROOM.h-112;toast('우리 집에 들어왔어요.');}else{player.x=342;player.y=650;toast('집 밖으로 나왔어요.');}world.interaction.current=null;world.camera.snap();zoneEl.textContent=inside?'우리 집':'집 앞';savePlayerNow();}
 function outdoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'outdoor']});}
 function indoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'indoor'],visible:false,active:false});}
+function boundaryRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#53663f';c.fillRect(e.x,e.y,e.w,e.h);c.fillStyle='#708453';if(e.w<e.h){for(let y=e.y;y<e.y+e.h;y+=32)c.fillRect(e.x-5,y,e.w+10,8);}else{for(let x=e.x;x<e.x+e.w;x+=32)c.fillRect(x,e.y-5,8,e.h+10);}c.restore();}
 
+outdoor({id:'outdoor-boundary-right',type:'boundary',x:3340,y:0,w:20,h:1536,solid:true,depthOffset:-10000,render:boundaryRender});
+outdoor({id:'outdoor-boundary-bottom',type:'boundary',x:0,y:1516,w:3360,h:20,solid:true,depthOffset:-10000,render:boundaryRender});
 outdoor({id:'home',type:'building',x:235,y:520,w:220,h:90,solid:true,data:{scale:.92},render:D.render.cottage});
 outdoor({id:'home-door',type:'door',x:320,y:612,w:74,h:28,solid:false,interactionRadius:105,render(c,e){c.save();c.fillStyle='#64452f';c.fillRect(e.x+14,e.y,e.w-28,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+9,e.y+12,5,5);c.restore();},interaction:{label:'집에 들어가기',action(){setScene('home');}}});
 outdoor({id:'farm-hut',type:'building',x:2880,y:1180,w:120,h:65,solid:true,data:{scale:.82},render:D.render.hut});
@@ -56,7 +80,7 @@ const facilityFallback={pond:[3,2],bed:[2,1],tunnel:[2,1],platform:[2,1],shadeTr
 
 const X=ROOM.x,Y=ROOM.y,RW=ROOM.w,RH=ROOM.h;
 indoor({id:'wall-top',type:'wall',x:X,y:Y,w:RW,h:24,solid:true,render(){}});indoor({id:'wall-left',type:'wall',x:X,y:Y,w:24,h:RH,solid:true,render(){}});indoor({id:'wall-right',type:'wall',x:X+RW-24,y:Y,w:24,h:RH,solid:true,render(){}});indoor({id:'wall-bottom-l',type:'wall',x:X,y:Y+RH-24,w:RW/2-60,h:24,solid:true,render(){}});indoor({id:'wall-bottom-r',type:'wall',x:X+RW/2+60,y:Y+RH-24,w:RW/2-60,h:24,solid:true,render(){}});
-indoor({id:'exit-door',type:'door',x:X+RW/2-48,y:Y+RH-48,w:96,h:24,solid:false,interactionRadius:95,render(c,e){c.fillStyle='#5f432d';c.fillRect(e.x,e.y,e.w,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+18,e.y+9,6,6);},interaction:{label:'밖으로 나가기',action(){setScene('outdoor');}}});
+indoor({id:'exit-door',type:'door',x:X+RW/2-48,y:Y+RH-48,w:96,h:24,solid:true,interactionRadius:95,render(c,e){c.fillStyle='#5f432d';c.fillRect(e.x,e.y,e.w,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+18,e.y+9,6,6);},interaction:{label:'밖으로 나가기',action(){setScene('outdoor');}}});
 
 function addFurniture(id,type,x,y,extra={}){
   const meta=F.catalog[type],baseRender=extra.render||F.render[type];
@@ -66,10 +90,11 @@ function addFurniture(id,type,x,y,extra={}){
 }
 addFurniture('bed','bed',70,105);addFurniture('desk','desk',250,108);addFurniture('books','bookshelf',392,78);addFurniture('rug','rug',112,490);addFurniture('sofa','sofa',120,535);addFurniture('table','diningTable',330,535);addFurniture('fridge','fridge',545,95);addFurniture('sink','sink',635,135);addFurniture('counter','counter',535,290);addFurniture('stove','stove',675,282);
 
-world.events.on('interaction:focus',e=>{if(e&&world.input.enabled){prompt.textContent='E / Space · '+world.interaction.label();prompt.classList.add('show');}else prompt.classList.remove('show');});
-let saveClock=0,lastZone='';world.events.on('update',({dt})=>{if(!world.input.enabled)prompt.classList.remove('show');const z=zoneOf(player);if(z.name!==lastZone){lastZone=z.name;zoneEl.textContent=z.name;}saveClock+=dt;if(saveClock>1.5){saveClock=0;const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.scene=scene==='home'?'home-interior':'outdoor';K.Storage.save(s);}});
+function refreshPrompt(){const e=world.interaction.current;if(e&&world.input.enabled){const mobile=!!document.getElementById('wv2-mobile-controls');prompt.textContent=(mobile?'행동':'E / Space')+' · '+world.interaction.label();prompt.classList.add('show');}else prompt.classList.remove('show');}
+world.events.on('interaction:focus',refreshPrompt);
+let saveClock=0,lastZone='';world.events.on('update',({dt})=>{refreshPrompt();const z=zoneOf(player);if(z.name!==lastZone){lastZone=z.name;zoneEl.textContent=z.name;}saveClock+=dt;if(saveClock>1.5){saveClock=0;savePlayerNow();}});
 function showChips(){chips.innerHTML=`<span class="chip">현재 Deluxe 아바타</span><span class="chip">농사·채집·낚시</span><span class="chip">제작·철도구·요리</span><span class="chip">정원 시설 ${(snap.garden.placed||[]).length}</span><span class="chip">씨앗 ${snap.seeds}</span>`;}
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(A.active.has(player)){e.preventDefault();A.cancel(world,player,true);toast('행동을 멈췄어요.');return;}if(K.WorkAnimation?.active?.has(world)){e.preventDefault();K.WorkAnimation.cancel(world);toast('작업을 취소했어요.');return;}if(K.CarryFishing?.states?.get(world)?.fishing){e.preventDefault();K.CarryFishing.endFishing(world,'낚시를 그만뒀어요.');return;}try{parent.postMessage({type:'kidscade-life-world-close'},location.origin);}catch(_){}});
-showChips();if(startHome)setScene('home');else{tagState('indoor',false);tagState('outdoor',true);}canvas.focus();world.start();
+showChips();if(startHome)setScene('home');else{tagState('indoor',false);tagState('outdoor',true);savePlayerNow();}canvas.focus();world.start();
 })();
 </script></body></html>
