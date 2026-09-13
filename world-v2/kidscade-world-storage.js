@@ -26,6 +26,7 @@
       createdAt:new Date().toISOString(),
       updatedAt:new Date().toISOString(),
       player:{x:620,y:520,lastZone:'home-yard'},
+      inventory:{wood:0,stone:0,crop:0,fish:0,bug:0},
       world:{flags:{},objects:{}},
       migration:{source:'legacy-readonly',completed:false,lastPreview:null}
     };
@@ -37,6 +38,7 @@
     base.createdAt=typeof raw.createdAt==='string'?raw.createdAt:base.createdAt;
     base.updatedAt=typeof raw.updatedAt==='string'?raw.updatedAt:base.updatedAt;
     if(raw.player&&typeof raw.player==='object')base.player={...base.player,...raw.player};
+    if(raw.inventory&&typeof raw.inventory==='object')base.inventory={...base.inventory,...raw.inventory};
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
     if(raw.migration&&typeof raw.migration==='object')base.migration={...base.migration,...raw.migration};
     return base;
