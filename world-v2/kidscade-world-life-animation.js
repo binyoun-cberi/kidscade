@@ -137,5 +137,16 @@ function decorateRenderer(type,base){
   return function(c,e,w){base?.(c,e,w);drawFurnitureFx(type,c,e,w);};
 }
 
+function loadWorkAnimation(){
+  if(K.WorkAnimation||document.getElementById('kidscade-world-work-animation-script'))return;
+  const here=document.currentScript?.src||location.href;
+  const s=document.createElement('script');
+  s.id='kidscade-world-work-animation-script';
+  s.src=new URL('kidscade-world-work-animation.js',here).href;
+  s.async=false;
+  document.head.appendChild(s);
+}
+
 K.LifeAnimation={ACTIONS,perform,cancel,active,animState,makeFrontLayer,drawFront,drawFurnitureFx,decorateRenderer};
+loadWorkAnimation();
 })(window);
