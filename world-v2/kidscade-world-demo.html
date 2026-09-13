@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kidscade World v2 · BrowserQuest Terrain</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111a14;font-family:"맑은 고딕",system-ui,sans-serif;color:#253126}#app{position:fixed;inset:0}#world-v2{display:block;width:100%;height:100%;outline:none;background:#809f55;image-rendering:pixelated}.hud{position:absolute;left:14px;top:14px;z-index:3;max-width:min(500px,calc(100vw - 28px));padding:12px 14px;border:3px solid #2e3727;border-radius:7px;background:rgba(248,239,203,.95);box-shadow:5px 5px 0 rgba(31,38,27,.3);pointer-events:none}.hud b{display:block;font-size:16px}.hud .small{margin-top:4px;font-size:12px;line-height:1.45;color:#59604b}.stats{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{padding:4px 7px;border:2px solid #5e684e;border-radius:4px;background:#f8efcb;font-size:10px;font-weight:900}.zone{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:3;padding:7px 15px;border:3px solid #30382a;border-radius:5px;background:#f4e7b9;font-weight:1000;box-shadow:4px 4px 0 rgba(0,0,0,.22);pointer-events:none}.prompt{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:4;min-width:180px;text-align:center;padding:9px 14px;border:3px solid #d3c487;border-radius:5px;background:#2d3428;color:#fff7d1;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}.toast{position:absolute;left:50%;top:64px;transform:translate(-50%,-8px);z-index:5;padding:8px 13px;border:3px solid #544b32;border-radius:5px;background:#fff0ae;font-weight:900;opacity:0;transition:.16s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="world-v2" tabindex="0" aria-label="Kidscade World v2 BrowserQuest 환경 테스트"></canvas>
+  <div class="hud"><b>Kidscade World v2 · 3단계</b><div class="small">집 → 정원 → 농장은 한 월드입니다. BrowserQuest 3 타일시트에서 지형·나무·덤불·바위 후보를 자동 분석해 실제 픽셀 아트를 렌더링합니다. WASD/방향키 이동 · E/Space 상호작용.</div><div class="stats" id="stats"></div></div>
+  <div class="zone" id="zone">집 앞</div>
+  <div class="toast" id="toast"></div>
+  <div class="prompt" id="prompt"></div>
+</div>
+<script src="kidscade-world-core.js"></script>
+<script src="kidscade-world-storage.js"></script>
+<script src="kidscade-world-bridge.js"></script>
+<script src="kidscade-world-art-browserquest.js"></script>
+<script>
+(function(){
+'use strict';
+const K=window.KidscadeWorldV2,BQ=K.BrowserQuestArt,canvas=document.getElementById('world-v2');
+const snap=K.Bridge.snapshot(),save=K.Storage.load();
+const TILE=48,W=3360,H=1536;
+const HOME={x:0,y:0,w:960,h:H,name:'집 앞'},GARDEN={x:960,y:0,w:1392,h:H,name:'나의 정원'},FARM={x:2352,y:0,w:1008,h:H,name:'농장'};
+const yard={x:1080,y:360,w:1120,h:800,cols:12,rows:8};
+const fish=new Set(['fish','neonTetra','platy','cory','betta']);
+const fallbackSize={pond:[3,2],bed:[2,1],tunnel:[2,1],platform:[2,1],shadeTree:[2,2],bench:[2,1],picnic:[2,2],hammock:[2,1]};
+const kindName={pond:'연못',water:'물 쉼터',food:'먹이 자리',bed:'잠자리',ball:'공놀이',tunnel:'터널',tower:'오르기 나무',platform:'통나무 발판',wheel:'쳇바퀴',flower:'꽃밭',shadeTree:'그늘 나무',bench:'벤치',picnic:'피크닉',hammock:'해먹'};
+const animalName={hamster:'햄스터',iguana:'이구아나',fish:'구피',dog:'강아지',rabbit:'토끼',parrot:'앵무새',turtle:'거북이',cat:'고양이',goat:'염소',miniPig:'미니돼지',sugarGlider:'슈가글라이더',neonTetra:'네온테트라',platy:'플래티',cory:'코리도라스',betta:'베타'};
+const toastEl=document.getElementById('toast');let toastTimer=0;
+function toast(text){toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1500);}
+function currentZone(p){const x=p.centerX;return x<HOME.w?HOME:x<GARDEN.x+GARDEN.w?GARDEN:FARM;}
+function fallbackTile(c,kind,x,y,size=TILE){const color={grass:'#89aa59',path:'#bea86f',soil:'#765436',water:'#5c9fb5',stone:'#8b8c83'}[kind]||'#89aa59';c.fillStyle=color;c.fillRect(x,y,size,size);}
+function tileFill(c,kind,x,y,w,h){
+  c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+  const x0=Math.floor(x/TILE)*TILE,y0=Math.floor(y/TILE)*TILE;
+  for(let yy=y0;yy<y+h;yy+=TILE)for(let xx=x0;xx<x+w;xx+=TILE){if(!BQ.drawAutoTile(c,kind,xx,yy,TILE))fallbackTile(c,kind,xx,yy);}
+  c.restore();
+}
+
+const ground=document.createElement('canvas');ground.width=W;ground.height=H;const gc=ground.getContext('2d');
+function rebuildGround(){
+  gc.imageSmoothingEnabled=false;gc.clearRect(0,0,W,H);
+  tileFill(gc,'grass',0,0,W,H);
+  tileFill(gc,'path',0,690,W,150);tileFill(gc,'path',680,340,180,510);tileFill(gc,'path',2210,340,180,510);
+  tileFill(gc,'grass',yard.x,yard.y,yard.w,yard.h);
+  gc.strokeStyle='#504f34';gc.lineWidth=6;gc.strokeRect(yard.x,yard.y,yard.w,yard.h);
+  for(let r=0;r<3;r++)for(let col=0;col<3;col++){
+    const x=2500+col*245,y=255+r*285;tileFill(gc,'soil',x,y,190,205);
+    gc.strokeStyle='rgba(48,37,25,.45)';gc.lineWidth=3;gc.strokeRect(x,y,190,205);
+  }
+  tileFill(gc,'water',70,1180,530,230);
+  gc.fillStyle='rgba(29,38,24,.78)';gc.font='900 24px monospace';gc.fillText('HOME',80,125);gc.fillText('MY GARDEN',1080,125);gc.fillText('FARM',2480,125);
+}
+rebuildGround();
+BQ.onPaletteReady(p=>{rebuildGround();toast(`BQ3 지형 분석 완료 · grass ${p.tiles.grass} / path ${p.tiles.path}`);});
+
+const world=new K.World({
+  canvas,width:W,height:H,playerSpeed:260,clearColor:'#809f55',camera:{zoom:1,lerp:.16},
+  background(c){c.imageSmoothingEnabled=false;c.drawImage(ground,0,0);},
+  overlay(c,w){c.save();c.fillStyle='rgba(21,27,18,.72)';c.font='900 11px monospace';c.textAlign='right';c.fillText(`${Math.round(w.player.x)}, ${Math.round(w.player.y)}`,w.viewportWidth-12,w.viewportHeight-12);c.restore();}
+});
+
+function fallbackPlayer(c,e){
+  c.save();c.imageSmoothingEnabled=false;c.fillStyle='#262b22';c.fillRect(e.x+4,e.y+8,32,42);c.fillStyle='#d4a47b';c.fillRect(e.x+8,e.y,24,24);c.fillStyle='#5f7951';c.fillRect(e.x+7,e.y+24,26,28);c.fillStyle='#20241e';c.fillRect(e.x+10,e.y+52,8,12);c.fillRect(e.x+24,e.y+52,8,12);c.restore();
+}
+const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:Number(save.player.x)||620,y:Number(save.player.y)||760,w:40,h:64,render:fallbackPlayer}));
+if(player.x>W-100||player.y>H-100){player.x=620;player.y=760;}
+
+function pixelHouse(c,e){
+  c.save();c.imageSmoothingEnabled=false;
+  const stone=BQ.palette().tiles?.stone;
+  for(let y=e.y+70;y<e.y+e.h;y+=TILE)for(let x=e.x;x<e.x+e.w;x+=TILE){if(!BQ.drawTile(c,stone,x,y,TILE))fallbackTile(c,'stone',x,y);}
+  c.fillStyle='#4b3429';for(let i=-48;i<e.w+96;i+=48)c.fillRect(e.x+i,e.y+38+(i%96?0:12),62,48);
+  c.fillStyle='#613c29';c.fillRect(e.centerX-34,e.y+e.h-82,68,82);c.fillStyle='#7ea5a3';c.fillRect(e.x+55,e.y+120,54,46);c.fillRect(e.x+e.w-109,e.y+120,54,46);c.restore();
+}
+world.spawn({id:'home-house',type:'building',x:180,y:270,w:430,h:330,solid:true,render:pixelHouse,interaction:{label:'집 살펴보기',action(){toast('집 외벽은 임시 BQ3 재질입니다. 실내 타일은 다음 단계에서 구성합니다.');}}});
+
+function renderTree(c,e){
+  const reg=BQ.palette().regions?.tree;if(reg){const sw=reg.w*TILE,sh=reg.h*TILE,scale=e.data.scale||1;const dw=sw*scale,dh=sh*scale;if(BQ.drawAutoRegion(c,'tree',e.centerX-dw/2,e.y+e.h-dh,scale))return;}
+  c.fillStyle='#5d4932';c.fillRect(e.centerX-8,e.y-38,16,70);c.fillStyle='#56834b';c.fillRect(e.centerX-38,e.y-90,76,62);
+}
+function renderRock(c,e){
+  const reg=BQ.palette().regions?.rock;if(reg){const sw=reg.w*TILE,sh=reg.h*TILE,scale=e.data.scale||1;const dw=sw*scale,dh=sh*scale;if(BQ.drawAutoRegion(c,'rock',e.centerX-dw/2,e.y+e.h-dh,scale))return;}
+  c.fillStyle='#888983';c.fillRect(e.x-5,e.y-15,e.w+10,e.h+15);
+}
+function renderBush(c,e){
+  const reg=BQ.palette().regions?.bush;if(reg){const sw=reg.w*TILE,sh=reg.h*TILE,scale=e.data.scale||1;const dw=sw*scale,dh=sh*scale;if(BQ.drawAutoRegion(c,'bush',e.centerX-dw/2,e.y+e.h-dh,scale))return;}
+  c.fillStyle='#648b4f';c.fillRect(e.x-8,e.y-22,e.w+16,e.h+22);
+}
+const treeSpots=[[70,210],[720,170],[90,980],[720,1090],[1010,160],[2160,150],[1020,1210],[2140,1240],[2400,150],[3230,160],[2400,1180],[3230,1170]];
+treeSpots.forEach((p,i)=>world.spawn({id:'bq-tree-'+i,type:'tree',x:p[0],y:p[1],w:54,h:38,solid:true,data:{scale:i%3===0?.9:1},render:renderTree,interaction:{label:'나무 살펴보기',action(){toast('BrowserQuest 3 타일시트에서 찾은 나무 후보');}}}));
+[[620,1180],[870,1240],[2370,1030],[3140,1040],[2280,240],[3270,440]].forEach((p,i)=>world.spawn({id:'bq-rock-'+i,type:'rock',x:p[0],y:p[1],w:48,h:30,solid:true,data:{scale:.8},render:renderRock}));
+[[830,180],[970,980],[2190,1000],[2430,930],[3170,900],[1510,180]].forEach((p,i)=>world.spawn({id:'bq-bush-'+i,type:'bush',x:p[0],y:p[1],w:42,h:28,solid:false,data:{scale:.75},render:renderBush}));
+
+world.spawn({id:'bq-chest',type:'object',x:700,y:610,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.chest(c,e.x,e.y,1))fallbackTile(c,'soil',e.x,e.y);},interaction:{label:'상자 열어보기',action(){toast('BrowserQuest 3 실제 chest.png');}}});
+world.spawn({id:'bq-wood',type:'object',x:2470,y:1030,w:48,h:48,solid:false,render(c,e){if(!BQ.sprite.wood(c,e.x,e.y,1))fallbackTile(c,'soil',e.x,e.y);},interaction:{label:'목재 살펴보기',action(){toast('BrowserQuest 3 실제 wood.png');}}});
+world.spawn({id:'bq-villager',type:'npc',x:2660,y:680,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.villager(c,e.x,e.y,1))fallbackTile(c,'path',e.x,e.y);},interaction:{label:'농장 주민과 이야기',action(){toast('NPC 대화 시스템 연결 예정');}}});
+
+function fenceRender(c,e){
+  c.save();c.imageSmoothingEnabled=false;c.fillStyle='#604a31';c.fillRect(e.x+6,e.y,e.w-12,e.h);for(let y=e.y+10;y<e.y+e.h;y+=48){if(!BQ.sprite.wood(c,e.x-12,y-16,.72)){c.fillStyle='#98724b';c.fillRect(e.x-8,y,e.w+16,10);}}c.restore();
+}
+[[940,180,20,420],[940,980,20,380],[2332,160,20,430],[2332,970,20,390]].forEach((q,i)=>world.spawn({id:'fence-'+i,type:'fence',x:q[0],y:q[1],w:q[2],h:q[3],solid:true,render:fenceRender}));
+
+function facilityRender(c,e){
+  const kind=e.data.kind;
+  if(kind==='shadeTree'||kind==='tower'){renderTree(c,e);return;}
+  if(kind==='pond'||kind==='water'){tileFill(c,'water',e.x,e.y,e.w,e.h);c.strokeStyle='#334b3d';c.lineWidth=3;c.strokeRect(e.x,e.y,e.w,e.h);return;}
+  if(kind==='platform'||kind==='bench'||kind==='tunnel'||kind==='hammock'){
+    c.save();c.beginPath();c.rect(e.x,e.y,e.w,e.h);c.clip();for(let y=e.y;y<e.y+e.h;y+=40)for(let x=e.x;x<e.x+e.w;x+=40){if(!BQ.sprite.wood(c,x,y,.75)){c.fillStyle='#795536';c.fillRect(x,y,40,40);}}c.restore();return;
+  }
+  if(kind==='flower'){renderBush(c,e);return;}
+  const pal={food:'#c8994e',bed:'#8d759e',ball:'#c75f46',wheel:'#a77a39',picnic:'#b96e67'};
+  c.save();c.imageSmoothingEnabled=false;c.fillStyle=pal[kind]||'#8f7b52';c.fillRect(e.x,e.y,e.w,e.h);c.strokeStyle='#31372b';c.lineWidth=3;c.strokeRect(e.x,e.y,e.w,e.h);c.restore();
+}
+const placed=snap.garden.placed||[];
+placed.forEach((p,i)=>{
+  const f=snap.garden.facilities?.[p.kind]||{},wh=fallbackSize[p.kind]||[f.w||1,f.h||1],cw=yard.w/yard.cols,ch=yard.h/yard.rows;
+  const w=Math.max(30,wh[0]*cw-12),h=Math.max(26,wh[1]*ch-12),x=yard.x+p.x*cw+6,y=yard.y+p.y*ch+6,water=p.kind==='pond'||p.kind==='water';
+  world.spawn({id:`garden-${p.id||i}`,type:'garden-facility',x,y,w,h,solid:!water,data:{kind:p.kind,scale:.85},render:facilityRender,interaction:{label:`${kindName[p.kind]||p.kind} 살펴보기`,action(){toast(`${kindName[p.kind]||p.kind}: 기존 정원 저장값에서 불러옴`);}}});
+});
+
+function spawnAnimal(id,index){
+  if(fish.has(id))return;const minX=yard.x+30,maxX=yard.x+yard.w-70,minY=yard.y+40,maxY=yard.y+yard.h-70;
+  world.spawn(new K.Entity({id:`pet-${id}`,type:'animal',x:minX+(index*91)%(maxX-minX),y:minY+(index*67)%(maxY-minY),w:38,h:30,data:{name:animalName[id]||id,targetX:null,targetY:null,wait:Math.random()*1.5},render(c,a){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#342f27';c.fillRect(a.x+4,a.y+10,30,18);c.fillStyle='#d1a76f';c.fillRect(a.x,a.y+5,30,20);c.fillRect(a.x+24,a.y,14,14);c.fillStyle='#211f1b';c.fillRect(a.x+31,a.y+4,3,3);c.font='900 10px monospace';c.textAlign='center';c.fillText(a.data.name,a.centerX,a.y-6);c.restore();},update(a,dt,w){
+    a.data.wait-=dt;if(a.data.wait<=0||a.data.targetX==null||Math.hypot(a.data.targetX-a.x,a.data.targetY-a.y)<10){a.data.targetX=minX+Math.random()*(maxX-minX);a.data.targetY=minY+Math.random()*(maxY-minY);a.data.wait=1.4+Math.random()*3;}
+    const dx=a.data.targetX-a.x,dy=a.data.targetY-a.y,d=Math.hypot(dx,dy);if(d>8&&a.data.wait>0)w.collision.move(a,dx/d*36*dt,dy/d*36*dt);
+  },interaction:{label:`${animalName[id]||id} 인사하기`,action(){toast(`${animalName[id]||id}가 반가워해요.`);}}}));
+}
+(snap.garden.owned||[]).forEach(spawnAnimal);
+
+const prompt=document.getElementById('prompt'),zoneEl=document.getElementById('zone'),stats=document.getElementById('stats');
+world.events.on('interaction:focus',e=>{if(e){prompt.textContent=`E / Space · ${world.interaction.label()}`;prompt.classList.add('show');}else prompt.classList.remove('show');});
+let lastZone='',saveClock=0,artClock=0;
+world.events.on('update',({dt})=>{
+  const z=currentZone(player);if(z.name!==lastZone){lastZone=z.name;zoneEl.textContent=z.name;toast(`${z.name} 지역`);}
+  saveClock+=dt;artClock+=dt;
+  if(saveClock>=1.5){saveClock=0;const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.lastZone=lastZone;s.migration.lastPreview=K.Storage.previewMigration();K.Storage.save(s);}
+  if(artClock>=.5){artClock=0;const states=BQ.status(),ready=states.filter(x=>x.status==='ready').length,p=BQ.palette();const ids=p.status==='ready'?`G${p.tiles.grass} P${p.tiles.path} S${p.tiles.soil}`:p.status;stats.innerHTML=`<span class="chip">엔진 ${K.VERSION}</span><span class="chip">씨앗 ${snap.seeds}</span><span class="chip">동물 ${(snap.garden.owned||[]).length}</span><span class="chip">시설 ${placed.length}</span><span class="chip">BQ3 ${ready}/${states.length}</span><span class="chip">${ids}</span>`;}
+});
+canvas.focus();world.start();
+})();
+</script>
+</body>
+</html>

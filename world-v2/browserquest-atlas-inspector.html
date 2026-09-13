@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kidscade World v2 · BrowserQuest Atlas Inspector</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#171b16;color:#f7edc8;font-family:system-ui,"맑은 고딕",sans-serif}header{position:sticky;top:0;z-index:5;padding:12px 16px;background:#252d22;border-bottom:3px solid #a8915d}h1{margin:0 0 6px;font-size:18px}.small{font-size:12px;color:#c9c7ae}.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{padding:4px 7px;border:2px solid #776b4a;background:#363e30;font-size:11px;font-weight:800}#atlas{display:grid;gap:6px;padding:14px;align-items:start}.tile{position:relative;width:64px;height:79px;border:2px solid #3f4939;background:#20261e;cursor:pointer}.tile canvas{display:block;width:60px;height:60px;image-rendering:pixelated}.id{height:15px;line-height:15px;text-align:center;font:800 10px monospace;color:#ddd5ad}.tile.pick{outline:3px solid #ffdf68;outline-offset:1px}.tile:hover{border-color:#e5c86c}.hint{position:fixed;right:12px;bottom:12px;z-index:6;max-width:360px;padding:9px 12px;border:2px solid #7e7049;background:#2b3227;color:#fff4c4;font-size:12px;box-shadow:4px 4px 0 #0007}
+</style>
+</head>
+<body>
+<header><h1>BrowserQuest 3x tilesheet 검사기</h1><div class="small">각 48×48 타일의 ID를 표시합니다. 노란 테두리는 World v2 자동 선택 타일입니다. 타일을 누르면 ID가 클립보드에 복사됩니다.</div><div class="chips" id="chips"><span class="chip">로딩 중…</span></div></header>
+<main id="atlas"></main><div class="hint" id="hint">타일을 클릭하면 ID 복사</div>
+<script src="kidscade-world-art-browserquest.js"></script>
+<script>
+(function(){
+'use strict';
+const BQ=window.KidscadeWorldV2.BrowserQuestArt,atlas=document.getElementById('atlas'),chips=document.getElementById('chips'),hint=document.getElementById('hint');
+function wait(){const img=BQ.image('tilesheet.png');if(!img){requestAnimationFrame(wait);return;}BQ.onPaletteReady(()=>render(img));if(BQ.palette().status==='ready')render(img);}
+function render(img){
+  const p=BQ.palette(),cols=Math.floor(img.width/48),rows=Math.floor(img.height/48),selected=new Map();
+  Object.entries(p.tiles||{}).forEach(([k,v])=>{if(Number.isFinite(v))selected.set(v,k);});
+  atlas.innerHTML='';atlas.style.gridTemplateColumns=`repeat(${Math.min(cols,Math.max(4,Math.floor(innerWidth/70)))},64px)`;
+  const frag=document.createDocumentFragment();
+  for(let id=0;id<cols*rows;id++){
+    const cell=document.createElement('div');cell.className='tile'+(selected.has(id)?' pick':'');cell.title=selected.has(id)?`${id} · ${selected.get(id)}`:`tile ${id}`;
+    const cv=document.createElement('canvas');cv.width=48;cv.height=48;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;BQ.drawTile(c,id,0,0,48);
+    const label=document.createElement('div');label.className='id';label.textContent=selected.has(id)?`${id} ${selected.get(id)}`:String(id);
+    cell.append(cv,label);cell.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(id));hint.textContent=`타일 ID ${id} 복사됨${selected.has(id)?` · ${selected.get(id)}`:''}`;}catch(_){hint.textContent=`타일 ID: ${id}`;}});frag.appendChild(cell);
+  }
+  atlas.appendChild(frag);
+  const reg=p.regions||{};chips.innerHTML=`<span class="chip">${cols}×${rows} tiles</span>`+Object.entries(p.tiles||{}).map(([k,v])=>`<span class="chip">${k}: ${v}</span>`).join('')+Object.entries(reg).map(([k,v])=>`<span class="chip">${k}: ${v?`${v.col},${v.row} ${v.w}×${v.h}`:'없음'}</span>`).join('');
+}
+addEventListener('resize',()=>{const img=BQ.image('tilesheet.png');if(img&&BQ.palette().status==='ready')render(img);});wait();
+})();
+</script>
+</body>
+</html>

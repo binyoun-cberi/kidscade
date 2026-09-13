@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kidscade World v2 · BQ3 Design v1</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#141b13;font-family:"맑은 고딕",system-ui,sans-serif;color:#292d23}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;outline:0;image-rendering:pixelated}.hud{position:absolute;left:14px;top:14px;z-index:4;width:min(480px,calc(100vw - 28px));padding:11px 13px;background:rgba(244,232,190,.95);border:3px solid #34372b;border-radius:5px;box-shadow:5px 5px 0 rgba(0,0,0,.24);pointer-events:none}.hud b{font-size:16px}.small{margin-top:4px;font-size:11px;line-height:1.45;color:#5c604f}.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.chip{padding:3px 6px;border:2px solid #686950;background:#f8efca;font:900 10px monospace}.zone{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:4;padding:6px 13px;background:#f0dfaa;border:3px solid #34372b;box-shadow:4px 4px 0 rgba(0,0,0,.2);font-weight:900;pointer-events:none}.prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:5;padding:8px 13px;background:#2b3026;color:#fff1bf;border:3px solid #d0bb78;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}.toast{position:absolute;left:50%;top:64px;transform:translate(-50%,-8px);z-index:6;padding:7px 12px;background:#ffeaa4;border:3px solid #51472f;font-weight:900;opacity:0;transition:.15s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="world" tabindex="0"></canvas>
+<div class="hud"><b>Kidscade World v2 · 디자인 확정안 v1</b><div class="small">BrowserQuest 3의 20×98 아틀라스에서 사용할 구역을 고정한 버전입니다. 자동으로 전체 시트를 뒤지지 않습니다. 집·나무·바위·덤불도 같은 고정 프로필을 사용합니다.</div><div class="chips" id="chips"></div></div>
+<div class="zone" id="zone">집 앞</div><div class="toast" id="toast"></div><div class="prompt" id="prompt"></div>
+</div>
+<script src="kidscade-world-core.js"></script>
+<script src="kidscade-world-storage.js"></script>
+<script src="kidscade-world-bridge.js"></script>
+<script src="kidscade-world-art-browserquest.js"></script>
+<script src="kidscade-world-design-bq3.js"></script>
+<script>
+(function(){
+'use strict';
+const K=window.KidscadeWorldV2,BQ=K.BrowserQuestArt,D=K.BQ3Design,canvas=document.getElementById('world');
+const snap=K.Bridge.snapshot(),save=K.Storage.load(),T=48,W=3360,H=1536;
+const HOME={x:0,w:960,name:'집 앞'},GARDEN={x:960,w:1392,name:'나의 정원'},FARM={x:2352,w:1008,name:'농장'};
+const yard={x:1110,y:335,w:1080,h:830,cols:12,rows:8};
+const toastEl=document.getElementById('toast');let tt=0;
+function toast(t){toastEl.textContent=t;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),1450);}
+function zoneOf(e){const x=e.centerX;return x<960?HOME:x<2352?GARDEN:FARM;}
+
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;const g=bg.getContext('2d');
+function rebuild(){
+  g.imageSmoothingEnabled=false;g.clearRect(0,0,W,H);D.fill(g,'grass',0,0,W,H);
+  D.fill(g,'path',0,690,W,144);D.fill(g,'path',670,410,180,424);D.fill(g,'path',2200,410,190,424);
+  D.fill(g,'grass',yard.x,yard.y,yard.w,yard.h);
+  g.strokeStyle='#4d5039';g.lineWidth=6;g.strokeRect(yard.x,yard.y,yard.w,yard.h);
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){const x=2505+c*245,y=270+r*285;D.fill(g,'soil',x,y,190,205);g.strokeStyle='rgba(45,33,22,.5)';g.lineWidth=3;g.strokeRect(x,y,190,205);}
+  D.fill(g,'water',60,1190,540,220);
+  g.fillStyle='rgba(37,42,30,.72)';g.font='900 22px monospace';g.fillText('HOME',72,120);g.fillText('MY GARDEN',1070,120);g.fillText('FARM',2460,120);
+}
+rebuild();D.onReady(s=>{rebuild();toast('BQ3-Kidscade v1 디자인 프로필 적용');showChips();});
+
+const world=new K.World({canvas,width:W,height:H,playerSpeed:255,clearColor:'#819f56',camera:{zoom:1,lerp:.16},background(c){c.imageSmoothingEnabled=false;c.drawImage(bg,0,0);}});
+function playerDraw(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(0,0,0,.2)';c.fillRect(e.x+5,e.y+58,31,7);c.fillStyle='#2c3228';c.fillRect(e.x+5,e.y+7,31,42);c.fillStyle='#d7ad82';c.fillRect(e.x+9,e.y,23,23);c.fillStyle='#55744e';c.fillRect(e.x+7,e.y+25,27,28);c.fillStyle='#252820';c.fillRect(e.x+10,e.y+53,8,11);c.fillRect(e.x+24,e.y+53,8,11);c.restore();}
+const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:Number(save.player.x)||650,y:Number(save.player.y)||760,w:40,h:64,render:playerDraw}));
+if(player.x<0||player.x>W-100||player.y<0||player.y>H-100){player.x=650;player.y=760;}
+
+function spawnScenery(){
+  world.spawn({id:'home',type:'building',x:235,y:520,w:220,h:90,solid:true,data:{scale:.92},render:D.render.cottage,interaction:{label:'집 살펴보기',action(){toast('집은 BQ3 고정 cottage 영역을 사용합니다.');}}});
+  world.spawn({id:'farm-hut',type:'building',x:2880,y:1180,w:120,h:65,solid:true,data:{scale:.82},render:D.render.hut,interaction:{label:'농장 창고 살펴보기',action(){toast('작은 건물도 같은 고정 아틀라스 프로필입니다.');}}});
+  const trees=[[75,250,.8],[760,240,.85],[90,1010,.85],[770,1100,.85],[1015,195,.82],[2180,190,.82],[1020,1240,.82],[2180,1240,.82],[2410,190,.82],[3260,200,.82],[2420,1190,.82],[3260,1180,.82]];
+  trees.forEach((p,i)=>world.spawn({id:'tree'+i,type:'tree',x:p[0],y:p[1],w:48,h:34,solid:true,data:{scale:p[2]},render:D.render.tree,interaction:{label:'나무 살펴보기',action(){toast('BQ3-Kidscade v1 나무');}}}));
+  [[610,1195],[860,1245],[2380,1040],[3130,1040],[2290,250],[3270,470]].forEach((p,i)=>world.spawn({id:'rock'+i,type:'rock',x:p[0],y:p[1],w:46,h:28,solid:true,data:{scale:.65},render:D.render.rock}));
+  [[830,245],[1000,990],[2160,990],[2440,940],[3150,930],[1540,205]].forEach((p,i)=>world.spawn({id:'bush'+i,type:'bush',x:p[0],y:p[1],w:40,h:25,solid:false,data:{scale:.6},render:D.render.bush}));
+}
+spawnScenery();
+
+function fence(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#5e472f';c.fillRect(e.x+7,e.y,e.w-14,e.h);for(let y=e.y+12;y<e.y+e.h;y+=45){if(!BQ.sprite.wood(c,e.x-10,y-15,.62)){c.fillStyle='#98714a';c.fillRect(e.x-9,y,e.w+18,9);}}c.restore();}
+[[940,180,20,420],[940,985,20,370],[2332,180,20,410],[2332,980,20,380]].forEach((q,i)=>world.spawn({id:'fence'+i,type:'fence',x:q[0],y:q[1],w:q[2],h:q[3],solid:true,render:fence}));
+
+world.spawn({id:'chest',type:'object',x:700,y:620,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.chest(c,e.x,e.y,1)){D.fill(c,'soil',e.x,e.y,48,48);}},interaction:{label:'상자 열기',action(){toast('BrowserQuest chest.png 원본');}}});
+world.spawn({id:'farmer',type:'npc',x:2670,y:690,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.villager(c,e.x,e.y,1)){c.fillStyle='#d1b375';c.fillRect(e.x,e.y,48,48);}},interaction:{label:'농부와 이야기',action(){toast('NPC 스프라이트도 BQ3 계열로 통일');}}});
+
+const names={pond:'연못',water:'물 쉼터',food:'먹이 자리',bed:'잠자리',ball:'공놀이',tunnel:'터널',tower:'오르기 나무',platform:'통나무 발판',wheel:'쳇바퀴',flower:'꽃밭',shadeTree:'그늘 나무',bench:'벤치',picnic:'피크닉',hammock:'해먹'};
+const fallback={pond:[3,2],bed:[2,1],tunnel:[2,1],platform:[2,1],shadeTree:[2,2],bench:[2,1],picnic:[2,2],hammock:[2,1]};
+(snap.garden.placed||[]).forEach((p,i)=>{
+  const meta=snap.garden.facilities?.[p.kind]||{},sz=fallback[p.kind]||[meta.w||1,meta.h||1],cw=yard.w/yard.cols,ch=yard.h/yard.rows;
+  const x=yard.x+p.x*cw+6,y=yard.y+p.y*ch+6,w=Math.max(30,sz[0]*cw-12),h=Math.max(25,sz[1]*ch-12),kind=p.kind;
+  world.spawn({id:'garden-'+(p.id||i),type:'garden-facility',x,y,w,h,solid:!['pond','water','flower'].includes(kind),data:{kind,scale:.62},render(c,e){
+    if(kind==='shadeTree'||kind==='tower'){D.render.tree(c,e);return;}
+    if(kind==='pond'||kind==='water'){D.fill(c,'water',e.x,e.y,e.w,e.h);return;}
+    if(['bench','platform','tunnel','hammock'].includes(kind)&&BQ.sprite.wood(c,e.x,e.y,.85))return;
+    c.save();c.imageSmoothingEnabled=false;c.fillStyle='#6d573d';c.fillRect(e.x,e.y,e.w,e.h);c.strokeStyle='#302e25';c.lineWidth=3;c.strokeRect(e.x,e.y,e.w,e.h);c.fillStyle='#fff0bd';c.font='900 10px monospace';c.textAlign='center';c.fillText(names[kind]||kind,e.centerX,e.centerY+4);c.restore();
+  },interaction:{label:(names[kind]||kind)+' 살펴보기',action(){toast((names[kind]||kind)+' · 기존 정원 저장값');}}});
+});
+
+const animalNames={hamster:'햄스터',iguana:'이구아나',dog:'강아지',rabbit:'토끼',parrot:'앵무새',turtle:'거북이',cat:'고양이',goat:'염소',miniPig:'미니돼지',sugarGlider:'슈가글라이더'};
+const fish=new Set(['fish','neonTetra','platy','cory','betta']);
+(snap.garden.owned||[]).filter(id=>!fish.has(id)).forEach((id,i)=>{
+  const minX=yard.x+35,maxX=yard.x+yard.w-70,minY=yard.y+45,maxY=yard.y+yard.h-70;
+  world.spawn(new K.Entity({id:'pet-'+id,type:'animal',x:minX+(i*83)%(maxX-minX),y:minY+(i*61)%(maxY-minY),w:36,h:28,data:{name:animalNames[id]||id,tx:null,ty:null,t:0},render(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#322d25';c.fillRect(e.x+4,e.y+11,29,16);c.fillStyle='#cfa36d';c.fillRect(e.x,e.y+6,28,18);c.fillRect(e.x+23,e.y+1,13,13);c.fillStyle='#1e1d19';c.fillRect(e.x+30,e.y+5,3,3);c.fillStyle='#2b3026';c.font='900 9px monospace';c.textAlign='center';c.fillText(e.data.name,e.centerX,e.y-6);c.restore();},update(e,dt,w){e.data.t-=dt;if(e.data.t<=0||e.data.tx==null||Math.hypot(e.data.tx-e.x,e.data.ty-e.y)<8){e.data.tx=minX+Math.random()*(maxX-minX);e.data.ty=minY+Math.random()*(maxY-minY);e.data.t=1.5+Math.random()*3;}const dx=e.data.tx-e.x,dy=e.data.ty-e.y,d=Math.hypot(dx,dy);if(d>7)w.collision.move(e,dx/d*34*dt,dy/d*34*dt);},interaction:{label:(animalNames[id]||id)+' 인사하기',action(){toast((animalNames[id]||id)+'가 반가워해요.');}}}));
+});
+
+const prompt=document.getElementById('prompt'),zoneEl=document.getElementById('zone'),chips=document.getElementById('chips');
+world.events.on('interaction:focus',e=>{if(e){prompt.textContent='E / Space · '+world.interaction.label();prompt.classList.add('show');}else prompt.classList.remove('show');});
+function showChips(){const s=D.state(),t=s.tiles||{};chips.innerHTML=`<span class="chip">${D.PROFILE.id}</span><span class="chip">atlas 20×98</span><span class="chip">grass ${t.grass??'-'}</span><span class="chip">path ${t.path??'-'}</span><span class="chip">soil ${t.soil??'-'}</span><span class="chip">water ${t.water??'-'}</span><span class="chip">동물 ${(snap.garden.owned||[]).length}</span>`;}
+showChips();let last='',saveClock=0,chipClock=0;
+world.events.on('update',({dt})=>{const z=zoneOf(player);if(z.name!==last){last=z.name;zoneEl.textContent=z.name;toast(z.name);}saveClock+=dt;chipClock+=dt;if(saveClock>1.5){saveClock=0;const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.lastZone='design-v1-'+last;K.Storage.save(s);}if(chipClock>.7){chipClock=0;showChips();}});
+canvas.focus();world.start();
+})();
+</script>
+</body>
+</html>
