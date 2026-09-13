@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v2/kidscade-world-life-demo.html';
+  const WORLD_URL='world-v2/kidscade-world.html';
   let overlay=null, frame=null, activated=false;
 
   function installStyles(){
