@@ -97,7 +97,28 @@
       if(fallback)fallback(ctx,e);
     };
   }
-  const renderTree=renderObject('tree',(c,e)=>{c.fillStyle='#60472f';c.fillRect(e.centerX-7,e.y-55,14,82);c.fillStyle='#5d8c4c';c.fillRect(e.centerX-48,e.y-105,96,72);});
+
+  // The selected BrowserQuest tree crop is foliage-heavy and on some atlas/
+  // scaling combinations its lower trunk becomes visually transparent. Draw a
+  // small Kidscade trunk underneath the atlas crop so every tree has a clear
+  // ground connection while keeping the BQ canopy untouched.
+  function treeTrunkUnderlay(c,e){
+    const scale=Math.max(.45,Number(e.data?.scale)||1),foot=e.y+e.h;
+    const h=Math.round(72*scale),w=Math.max(11,Math.round(18*scale));
+    c.save();c.imageSmoothingEnabled=false;
+    c.fillStyle='#4b3324';c.fillRect(Math.round(e.centerX-w/2-2),Math.round(foot-h+2),w+4,h-2);
+    c.fillStyle='#715036';c.fillRect(Math.round(e.centerX-w/2),Math.round(foot-h),w,h);
+    c.fillStyle='#8c6845';c.fillRect(Math.round(e.centerX-w/2+3),Math.round(foot-h+5),Math.max(3,Math.round(w*.25)),Math.max(10,h-12));
+    c.fillStyle='#4b3324';c.fillRect(Math.round(e.centerX-w/2-7),Math.round(foot-6),Math.round(w*.65),6);c.fillRect(Math.round(e.centerX+1),Math.round(foot-5),Math.round(w*.65),5);
+    c.restore();
+  }
+  function renderTree(c,e){
+    const reg=PROFILE.regions.tree,scale=e.data?.scale||1;
+    treeTrunkUnderlay(c,e);
+    if(reg){const sw=reg.w*TILE,sh=reg.h*TILE,dw=sw*scale,dh=sh*scale;if(drawRegion(c,'tree',e.centerX-dw/2,e.y+e.h-dh,scale))return;}
+    c.fillStyle='#5d8c4c';c.fillRect(e.centerX-48,e.y-105,96,72);
+  }
+
   const renderBush=renderObject('bush',(c,e)=>{c.fillStyle='#648b4f';c.fillRect(e.x-12,e.y-28,e.w+24,e.h+28);});
   const renderRock=renderObject('rock',(c,e)=>{c.fillStyle='#898a84';c.fillRect(e.x-10,e.y-24,e.w+20,e.h+24);});
   const renderCottage=renderObject('cottage',(c,e)=>{c.fillStyle='#d1b36f';c.fillRect(e.x-55,e.y-190,e.w+110,e.h+190);c.fillStyle='#5c3a2b';c.fillRect(e.x-75,e.y-250,e.w+150,90);});
