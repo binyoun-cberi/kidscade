@@ -133,20 +133,14 @@ function drawFurnitureFx(type,c,e){
   c.restore();
 }
 
-function decorateRenderer(type,base){
-  return function(c,e,w){base?.(c,e,w);drawFurnitureFx(type,c,e,w);};
-}
-
-function loadScript(id,name,ready){
-  if(ready?.()||document.getElementById(id))return;
-  const here=document.currentScript?.src||location.href;
-  const s=document.createElement('script');
-  s.id=id;s.src=new URL(name,here).href;s.async=false;document.head.appendChild(s);
-}
+function decorateRenderer(type,base){return function(c,e,w){base?.(c,e,w);drawFurnitureFx(type,c,e,w);};}
+function loadScript(id,name,ready){if(ready?.()||document.getElementById(id))return;const here=document.currentScript?.src||location.href,s=document.createElement('script');s.id=id;s.src=new URL(name,here).href;s.async=false;document.head.appendChild(s);}
 function loadWorkAnimation(){loadScript('kidscade-world-work-animation-script','kidscade-world-work-animation.js',()=>!!K.WorkAnimation);}
 function loadCarryFishing(){loadScript('kidscade-world-carry-fishing-script','kidscade-world-carry-fishing.js',()=>!!K.CarryFishing);}
+function loadProgression(){loadScript('kidscade-world-progression-script','kidscade-world-progression.js',()=>!!K.Progression);}
 
 K.LifeAnimation={ACTIONS,perform,cancel,active,animState,makeFrontLayer,drawFront,drawFurnitureFx,decorateRenderer};
 loadWorkAnimation();
 loadCarryFishing();
+loadProgression();
 })(window);
