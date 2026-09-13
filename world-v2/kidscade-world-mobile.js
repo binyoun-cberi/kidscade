@@ -36,7 +36,7 @@ proto.pressed=function(key){
 };
 proto.destroy=function(){this.clearVirtual?.();return originalDestroy.call(this);};
 
-function touchDevice(){return matchMedia?.('(pointer:coarse)')?.matches||navigator.maxTouchPoints>0||'ontouchstart' in root;}
+function touchDevice(){return root.matchMedia?.('(pointer:coarse)')?.matches||navigator.maxTouchPoints>0||'ontouchstart' in root;}
 function addStyle(){
   if(document.getElementById('kidscade-world-mobile-style'))return;
   const s=document.createElement('style');s.id='kidscade-world-mobile-style';s.textContent=`
@@ -65,6 +65,8 @@ function addStyle(){
 }
 
 function cancelCurrent(world){
+  const modal=document.querySelector('.wv2modal.open');
+  if(modal){modal.querySelector('.wv2close')?.click();return true;}
   const p=world?.player;
   if(K.LifeAnimation?.active?.has(p)){K.LifeAnimation.cancel(world,p,true);return true;}
   if(K.WorkAnimation?.active?.has(world)){K.WorkAnimation.cancel(world);return true;}
@@ -86,12 +88,15 @@ function install(world){
   joy.addEventListener('pointermove',moveJoy);joy.addEventListener('pointerup',e=>{if(e.pointerId===joyPointer)resetJoy();e.preventDefault();});joy.addEventListener('pointercancel',resetJoy);
   function fishing(){return K.CarryFishing?.states?.get(world)?.fishing;}
   function keyToWindow(key){try{root.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));}catch(_){}}
-  action.addEventListener('pointerdown',e=>{action.classList.add('pressed');if(fishing())keyToWindow('e');else if(world.input.enabled)world.input.setVirtualButton('e',true);e.preventDefault();});
-  const releaseAction=e=>{action.classList.remove('pressed');world.input.setVirtualButton('e',false);e?.preventDefault?.();};action.addEventListener('pointerup',releaseAction);action.addEventListener('pointercancel',releaseAction);action.addEventListener('pointerleave',releaseAction);
-  drop.addEventListener('pointerdown',e=>{if(world.input.enabled)K.CarryFishing?.dropHeld?.(world);drop.classList.add('pressed');e.preventDefault();});drop.addEventListener('pointerup',e=>{drop.classList.remove('pressed');e.preventDefault();});drop.addEventListener('pointercancel',()=>drop.classList.remove('pressed'));
-  cancel.addEventListener('pointerdown',e=>{cancelCurrent(world);cancel.classList.add('pressed');world.input.clearVirtual?.();resetJoy();e.preventDefault();});cancel.addEventListener('pointerup',e=>{cancel.classList.remove('pressed');e.preventDefault();});cancel.addEventListener('pointercancel',()=>cancel.classList.remove('pressed'));
-  world.events.on('update',()=>{const fish=!!fishing(),locked=!world.input.enabled&&!fish;wrap.classList.toggle('locked',locked);action.textContent=fish?'당기기':(world.interaction?.current?'행동':'행동');drop.style.opacity=K.CarryFishing?.states?.get(world)?.held?'1':'.48';if(!world.input.enabled&&!fish&&joyPointer!==null)resetJoy();});
-  root.addEventListener('blur',resetJoy);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetJoy();});
+  action.addEventListener('pointerdown',e=>{action.setPointerCapture?.(e.pointerId);action.classList.add('pressed');if(fishing())keyToWindow('e');else if(world.input.enabled)world.input.setVirtualButton('e',true);e.preventDefault();});
+  const releaseAction=e=>{action.classList.remove('pressed');world.input.setVirtualButton('e',false);e?.preventDefault?.();};action.addEventListener('pointerup',releaseAction);action.addEventListener('pointercancel',releaseAction);action.addEventListener('lostpointercapture',releaseAction);
+  drop.addEventListener('pointerdown',e=>{drop.setPointerCapture?.(e.pointerId);if(world.input.enabled)K.CarryFishing?.dropHeld?.(world);drop.classList.add('pressed');e.preventDefault();});drop.addEventListener('pointerup',e=>{drop.classList.remove('pressed');e.preventDefault();});drop.addEventListener('pointercancel',()=>drop.classList.remove('pressed'));
+  cancel.addEventListener('pointerdown',e=>{cancel.setPointerCapture?.(e.pointerId);cancelCurrent(world);cancel.classList.add('pressed');world.input.clearVirtual?.();resetJoy();e.preventDefault();});cancel.addEventListener('pointerup',e=>{cancel.classList.remove('pressed');e.preventDefault();});cancel.addEventListener('pointercancel',()=>cancel.classList.remove('pressed'));
+  world.events.on('update',()=>{
+    const fish=!!fishing(),locked=!world.input.enabled&&!fish;wrap.classList.toggle('locked',locked);action.textContent=fish?'당기기':'행동';drop.style.opacity=K.CarryFishing?.states?.get(world)?.held?'1':'.48';
+    if(locked){world.input.setVirtualButton('e',false);action.classList.remove('pressed');if(joyPointer!==null)resetJoy();}
+  });
+  root.addEventListener('blur',()=>{world.input.clearVirtual?.();action.classList.remove('pressed');resetJoy();});document.addEventListener('visibilitychange',()=>{if(document.hidden){world.input.clearVirtual?.();action.classList.remove('pressed');resetJoy();}});
   return true;
 }
 function autoInstall(){let tries=0;const timer=setInterval(()=>{const w=K.activeWorld||root.__kidscadeWorldV2;if(w?.player){clearInterval(timer);install(w);}else if(++tries>240)clearInterval(timer);},50);}
