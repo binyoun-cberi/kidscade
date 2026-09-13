@@ -1,0 +1,32 @@
+name: Fix OUTBREAK tree scrolling
+
+on:
+  push:
+    paths:
+      - 'tools/fix_outbreak_tree_scroll.py'
+      - '.github/workflows/fix-outbreak-tree-scroll.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch tree scrolling and syntax check
+        run: |
+          python3 tools/fix_outbreak_tree_scroll.py
+          for f in /tmp/outbreak_tree_*.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
+      - name: Commit verified tree fix
+        run: |
+          rm -f tools/fix_outbreak_tree_scroll.py
+          rm -f .github/workflows/fix-outbreak-tree-scroll.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix OUTBREAK evolution tree navigation"
+          git push origin main
