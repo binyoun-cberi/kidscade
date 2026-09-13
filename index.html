@@ -16,14 +16,14 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
 <script>
 (async()=>{
   const classroomWarCard=`
-<a href="classroom_war_3d.html?v=2" class="game-card" data-category="math" data-age="high" data-id="high_classroom_war_3d">
+<a href="classroom_war_3d.html?v=3" class="game-card" data-category="math" data-age="high" data-id="high_classroom_war_3d">
   <span class="fav-star">☆</span>
   <div class="game-icon">🎖️</div>
   <div class="game-title">교실전쟁 3D</div>
   <div class="game-desc">사칙연산 관문을 빠르게 판단해 병력을 키우고, 몰려오는 적에게서 방어선을 지키는 3D 무한 방어전!</div>
 </a>\n`;
   try{
-    const res=await fetch('index_base.html?classroom-war=3',{cache:'no-store'});
+    const res=await fetch('index_base.html?classroom-war=4',{cache:'no-store'});
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
