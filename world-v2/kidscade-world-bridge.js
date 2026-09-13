@@ -179,12 +179,14 @@
       if(data&&data.startsWith('data:image')){this.setSource(data);return true;}
       return false;
     }
-    handAnchor(front=true){
+    handAnchor(front=true,options={}){
       const p=this.currentPose();
       const x=p?.renderX??this.entity.centerX;
       const y=p?.renderY??(this.entity.y+this.entity.h+2);
       const side=(front?1:-1)*this.facing;
-      return {x:x+side*19,y:y-50};
+      const reach=Number(options.reach)||19;
+      const lift=Number(options.lift)||50;
+      return {x:x+side*reach,y:y-lift,facing:this.facing};
     }
     render(ctx,e){
       const now=performance.now();
@@ -199,7 +201,6 @@
         return;
       }
 
-      const speed=Math.hypot(e.vx||0,e.vy||0);
       const walkPhase=now/82;
       let bob=moving?Math.sin(walkPhase)*2.8:Math.sin(now/820)*0.55;
       let squash=1,stretch=1,lean=0,lift=0,rotation=0,offsetX=0,offsetY=0,targetH=112;
@@ -242,22 +243,21 @@
         ctx.globalAlpha=.19-shadowLift*.06;
         ctx.fillStyle='#171d16';
         ctx.beginPath();
-        ctx.ellipse(feetX,feetY+2,24*(1-shadowLift*.22),7*(1-shadowLift*.15),0,0,Math.PI*2);
+        ctx.ellipse(feetX+offsetX,feetY+2,24*(1-shadowLift*.22),7*(1-shadowLift*.15),0,0,Math.PI*2);
         ctx.fill();
         ctx.restore();
       }
 
       ctx.save();
       ctx.translate(feetX+offsetX,feetY+bob+lift+offsetY);
-      ctx.rotate(rotation*this.facing);
       ctx.scale(this.facing*stretch,squash);
+      ctx.rotate(rotation+lean*this.facing);
       ctx.imageSmoothingEnabled=true;
       ctx.drawImage(this.img,-targetW/2,-targetH*.91,targetW,targetH);
       ctx.restore();
     }
   }
   AvatarActor.instances=new Set();
-  AvatarActor.POSES=POSE_PRESETS;
 
   function installAvatarActorHook(){
     const World=NS.World;
