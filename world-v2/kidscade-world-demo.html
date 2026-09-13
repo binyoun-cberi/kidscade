@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kidscade World v2 Engine Test</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182219;font-family:"맑은 고딕",system-ui,sans-serif;color:#253126}#app{position:fixed;inset:0}#world-v2{display:block;width:100%;height:100%;outline:none;background:#dcefd2}.hud{position:absolute;left:14px;top:14px;z-index:3;max-width:min(420px,calc(100vw - 28px));padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.92);box-shadow:0 8px 28px rgba(0,0,0,.16);pointer-events:none}.hud b{display:block;font-size:16px}.hud .small{margin-top:4px;font-size:12px;line-height:1.45;color:#607064}.hud .stats{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.chip{padding:4px 8px;border-radius:999px;background:#eef5e9;font-size:11px;font-weight:800}.prompt{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:4;min-width:180px;text-align:center;padding:9px 14px;border-radius:999px;background:rgba(31,39,32,.9);color:#fff;font-weight:900;opacity:0;transition:.15s;pointer-events:none}.prompt.show{opacity:1}.toast{position:absolute;left:50%;top:90px;transform:translate(-50%,-8px);z-index:5;padding:8px 13px;border-radius:999px;background:#fff7ce;border:1px solid #d4ba55;font-weight:900;opacity:0;transition:.18s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="world-v2" tabindex="0" aria-label="Kidscade World v2 엔진 테스트"></canvas>
+  <div class="hud"><b>Kidscade World v2 · 엔진 MVP</b><div class="small">디자인 이식 전 테스트입니다. WASD/방향키로 이동하고 E 또는 Space로 가까운 물체와 상호작용합니다.</div><div class="stats" id="stats"></div></div>
+  <div class="toast" id="toast"></div>
+  <div class="prompt" id="prompt"></div>
+</div>
+<script src="kidscade-world-core.js"></script>
+<script src="kidscade-world-storage.js"></script>
+<script src="kidscade-world-bridge.js"></script>
+<script>
+(function(){
+  'use strict';
+  const K=window.KidscadeWorldV2,canvas=document.getElementById('world-v2');
+  const snap=K.Bridge.snapshot(),save=K.Storage.load();
+  const yard={x:520,y:400,w:980,h:650,cols:12,rows:8};
+  const fish=new Set(['fish','neonTetra','platy','cory','betta']);
+  const fallbackSize={pond:[3,2],bed:[2,1],tunnel:[2,1],platform:[2,1],shadeTree:[2,2],bench:[2,1],picnic:[2,2],hammock:[2,1]};
+  const kindName={pond:'연못',water:'물 쉼터',food:'먹이 자리',bed:'잠자리',ball:'공놀이',tunnel:'터널',tower:'오르기 나무',platform:'통나무 발판',wheel:'쳇바퀴',flower:'꽃밭',shadeTree:'그늘 나무',bench:'벤치',picnic:'피크닉',hammock:'해먹'};
+  const animalName={hamster:'햄스터',iguana:'이구아나',fish:'구피',dog:'강아지',rabbit:'토끼',parrot:'앵무새',turtle:'거북이',cat:'고양이',goat:'염소',miniPig:'미니돼지',sugarGlider:'슈가글라이더',neonTetra:'네온테트라',platy:'플래티',cory:'코리도라스',betta:'베타'};
+  const toastEl=document.getElementById('toast');let toastTimer=0;
+  function toast(text){toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1500);}
+  function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);}
+
+  const world=new K.World({
+    canvas,width:2200,height:1500,playerSpeed:245,clearColor:'#dbeed2',camera:{zoom:1,lerp:.17},
+    background(c){
+      c.fillStyle='#dbeed2';c.fillRect(0,0,2200,1500);
+      c.fillStyle='#cfe4c5';c.fillRect(0,700,2200,800);
+      c.fillStyle='#eadbb8';c.fillRect(0,620,2200,105);
+      c.fillStyle='#b9d9a9';rr(c,yard.x,yard.y,yard.w,yard.h,28);c.fill();
+      c.save();c.globalAlpha=.12;c.strokeStyle='#426340';c.lineWidth=1;
+      const cw=yard.w/yard.cols,ch=yard.h/yard.rows;
+      for(let x=0;x<=yard.cols;x++){c.beginPath();c.moveTo(yard.x+x*cw,yard.y);c.lineTo(yard.x+x*cw,yard.y+yard.h);c.stroke();}
+      for(let y=0;y<=yard.rows;y++){c.beginPath();c.moveTo(yard.x,yard.y+y*ch);c.lineTo(yard.x+yard.w,yard.y+y*ch);c.stroke();}
+      c.restore();
+      c.fillStyle='#506b4c';c.font='900 23px sans-serif';c.fillText('WORLD v2 테스트 마당',yard.x+18,yard.y-18);
+    },
+    overlay(c,w){
+      c.save();c.fillStyle='rgba(20,28,21,.65)';c.font='800 12px sans-serif';c.textAlign='right';c.fillText(`x ${Math.round(w.player.x)} · y ${Math.round(w.player.y)}`,w.viewportWidth-14,w.viewportHeight-14);c.restore();
+    }
+  });
+
+  function playerRender(c,e){
+    c.save();c.fillStyle='rgba(0,0,0,.16)';c.beginPath();c.ellipse(e.centerX,e.y+e.h+4,18,6,0,0,Math.PI*2);c.fill();
+    c.fillStyle='#547fa9';rr(c,e.x+5,e.y+22,e.w-10,e.h-22,10);c.fill();
+    c.fillStyle='#f0c59b';c.beginPath();c.arc(e.centerX,e.y+17,15,0,Math.PI*2);c.fill();
+    c.strokeStyle='#33453a';c.lineWidth=2;c.stroke();c.fillStyle='#33453a';c.beginPath();c.arc(e.centerX-5,e.y+16,1.6,0,7);c.arc(e.centerX+5,e.y+16,1.6,0,7);c.fill();c.restore();
+  }
+  const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:Number(save.player.x)||620,y:Number(save.player.y)||520,w:34,h:50,render:playerRender}));
+
+  world.spawn({id:'test-house',type:'building',x:210,y:220,w:260,h:205,solid:true,render(c,e){c.fillStyle='#d7b27c';rr(c,e.x,e.y,e.w,e.h,14);c.fill();c.fillStyle='#a7684a';c.fillRect(e.x+95,e.y+115,70,90);c.fillStyle='#6e5848';c.beginPath();c.moveTo(e.x-18,e.y+35);c.lineTo(e.x+e.w/2,e.y-55);c.lineTo(e.x+e.w+18,e.y+35);c.closePath();c.fill();},interaction:{label:'집 살펴보기',action(){toast('집 엔티티 상호작용 정상');}}});
+  world.spawn({id:'test-sign',type:'object',x:470,y:585,w:36,h:64,solid:true,render(c,e){c.fillStyle='#805d3f';c.fillRect(e.x+15,e.y+24,6,40);c.fillStyle='#f6e2a9';c.fillRect(e.x-18,e.y,e.w+36,30);c.strokeStyle='#775f43';c.strokeRect(e.x-18,e.y,e.w+36,30);},interaction:{label:'표지판 읽기',action(){toast('기존 정원 데이터를 실제 월드 엔티티로 변환하는 중!');}}});
+
+  const placed=snap.garden.placed||[];
+  placed.forEach((p,i)=>{
+    const f=snap.garden.facilities?.[p.kind]||{};const wh=fallbackSize[p.kind]||[f.w||1,f.h||1];const cw=yard.w/yard.cols,ch=yard.h/yard.rows;
+    const w=Math.max(28,wh[0]*cw-10),h=Math.max(24,wh[1]*ch-10),x=yard.x+p.x*cw+5,y=yard.y+p.y*ch+5;
+    const water=p.kind==='pond';
+    world.spawn({id:`garden-${p.id||i}`,type:'garden-facility',x,y,w,h,solid:!water,data:{kind:p.kind},render(c,e){
+      const palette={pond:'#7bc5d4',water:'#8bd4dd',food:'#d6b96a',bed:'#c8b6df',ball:'#e99179',tunnel:'#9a8067',tower:'#638f55',platform:'#a67c52',wheel:'#d9a85e',flower:'#d88ca8',shadeTree:'#5f9658',bench:'#a87b50',picnic:'#e9aaa0',hammock:'#deb864'};
+      c.fillStyle=palette[e.data.kind]||'#c2b38c';rr(c,e.x,e.y,e.w,e.h,12);c.fill();c.strokeStyle='rgba(41,53,42,.35)';c.stroke();c.fillStyle='#2f4133';c.font='800 12px sans-serif';c.textAlign='center';c.fillText(kindName[e.data.kind]||e.data.kind,e.centerX,e.centerY+4);
+    },interaction:{label:`${kindName[p.kind]||p.kind} 살펴보기`,action(){toast(`${kindName[p.kind]||p.kind}: 정원 저장값에서 불러옴`);}}});
+  });
+
+  function spawnAnimal(id,index){
+    if(fish.has(id))return;const minX=yard.x+30,maxX=yard.x+yard.w-60,minY=yard.y+40,maxY=yard.y+yard.h-70;
+    const e=new K.Entity({id:`pet-${id}`,type:'animal',x:minX+(index*91)%(maxX-minX),y:minY+(index*67)%(maxY-minY),w:34,h:28,data:{name:animalName[id]||id,targetX:null,targetY:null,wait:Math.random()*1.5},render(c,a){c.save();c.fillStyle='rgba(0,0,0,.13)';c.beginPath();c.ellipse(a.centerX,a.y+a.h+3,16,5,0,0,7);c.fill();c.fillStyle='#f2d39f';c.beginPath();c.ellipse(a.centerX,a.centerY,17,13,0,0,7);c.fill();c.strokeStyle='#4b443a';c.lineWidth=2;c.stroke();c.fillStyle='#3b3933';c.beginPath();c.arc(a.centerX+6,a.centerY-2,1.5,0,7);c.fill();c.font='700 10px sans-serif';c.textAlign='center';c.fillText(a.data.name,a.centerX,a.y-7);c.restore();},update(a,dt,w){
+      a.data.wait-=dt;if(a.data.wait<=0||a.data.targetX==null||Math.hypot(a.data.targetX-a.x,a.data.targetY-a.y)<10){a.data.targetX=minX+Math.random()*(maxX-minX);a.data.targetY=minY+Math.random()*(maxY-minY);a.data.wait=1.5+Math.random()*3;}
+      const dx=a.data.targetX-a.x,dy=a.data.targetY-a.y,d=Math.hypot(dx,dy);if(d>8&&a.data.wait>0){const speed=32;w.collision.move(a,dx/d*speed*dt,dy/d*speed*dt);}
+    },interaction:{label:`${animalName[id]||id} 인사하기`,action(){toast(`${animalName[id]||id}가 반가워해요.`);}}});
+    world.spawn(e);
+  }
+  (snap.garden.owned||[]).forEach(spawnAnimal);
+
+  const stats=document.getElementById('stats');
+  stats.innerHTML=`<span class="chip">엔진 ${K.VERSION}</span><span class="chip">씨앗 ${snap.seeds}</span><span class="chip">동물 ${(snap.garden.owned||[]).length}</span><span class="chip">시설 ${placed.length}</span><span class="chip">기존 저장 수정 안 함</span>`;
+  const prompt=document.getElementById('prompt');world.events.on('interaction:focus',e=>{if(e){prompt.textContent=`E / Space · ${world.interaction.label()}`;prompt.classList.add('show');}else prompt.classList.remove('show');});
+
+  let saveClock=0;world.events.on('update',({dt})=>{saveClock+=dt;if(saveClock<1.5)return;saveClock=0;const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.lastZone='engine-demo';s.migration.lastPreview=K.Storage.previewMigration();K.Storage.save(s);});
+  canvas.focus();world.start();
+})();
+</script>
+</body>
+</html>
