@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kidscade 생활 월드 v2</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151b14;font-family:"맑은 고딕",system-ui,sans-serif;color:#292d23}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;outline:0;image-rendering:pixelated}.hud{position:absolute;left:14px;top:14px;z-index:4;width:min(510px,calc(100vw - 28px));padding:11px 13px;background:rgba(244,232,190,.95);border:3px solid #34372b;border-radius:5px;box-shadow:5px 5px 0 rgba(0,0,0,.24);pointer-events:none}.hud b{font-size:16px}.small{margin-top:4px;font-size:11px;line-height:1.45;color:#5c604f}.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.chip{padding:3px 6px;border:2px solid #686950;background:#f8efca;font:900 10px monospace}.zone{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:4;padding:6px 13px;background:#f0dfaa;border:3px solid #34372b;box-shadow:4px 4px 0 rgba(0,0,0,.2);font-weight:900;pointer-events:none}.prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:5;padding:8px 13px;background:#2b3026;color:#fff1bf;border:3px solid #d0bb78;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}.toast{position:absolute;left:50%;top:64px;transform:translate(-50%,-8px);z-index:6;padding:7px 12px;background:#ffeaa4;border:3px solid #51472f;font-weight:900;opacity:0;transition:.15s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body><div id="app"><canvas id="world" tabindex="0" aria-label="Kidscade 생활 월드 v2"></canvas><div class="hud"><b>Kidscade 생활 월드 v2 · 애니메이션 단계</b><div class="small">현재 Kidscade Deluxe 아바타를 그대로 사용합니다. 집 안에서 소파·침대·냉장고·싱크대·책장 등에 E/Space로 상호작용해 보세요. WASD/방향키 이동.</div><div class="chips" id="chips"></div></div><div class="zone" id="zone">집 앞</div><div class="toast" id="toast"></div><div class="prompt" id="prompt"></div></div>
+<script src="kidscade-world-core.js"></script>
+<script src="kidscade-world-storage.js"></script>
+<script src="kidscade-world-bridge.js"></script>
+<script src="kidscade-world-art-browserquest.js"></script>
+<script src="kidscade-world-design-bq3.js"></script>
+<script src="kidscade-world-furniture-bq.js"></script>
+<script src="kidscade-world-life-animation.js"></script>
+<script>
+(function(){
+'use strict';
+const K=window.KidscadeWorldV2,BQ=K.BrowserQuestArt,D=K.BQ3Design,F=K.LifeFurniture,A=K.LifeAnimation,canvas=document.getElementById('world');
+const snap=K.Bridge.snapshot(),save=K.Storage.load(),T=48,W=4800,H=1800;
+const HOME={x:0,w:960,name:'집 앞'},GARDEN={x:960,w:1392,name:'나의 정원'},FARM={x:2352,w:1008,name:'농장'};
+const ROOM={x:3700,y:300,w:840,h:720,name:'우리 집'},yard={x:1110,y:335,w:1080,h:830,cols:12,rows:8};
+const toastEl=document.getElementById('toast'),zoneEl=document.getElementById('zone'),prompt=document.getElementById('prompt'),chips=document.getElementById('chips');let tt=0,scene='outdoor';
+function toast(t){toastEl.textContent=t;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),1500);}
+function zoneOf(e){if(scene==='home')return{name:'우리 집'};const x=e.centerX;return x<960?HOME:x<2352?GARDEN:FARM;}
+
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;const g=bg.getContext('2d');
+function drawOutdoor(){D.fill(g,'grass',0,0,3360,1536);D.fill(g,'path',0,690,3360,144);D.fill(g,'path',670,410,180,424);D.fill(g,'path',2200,410,190,424);D.fill(g,'grass',yard.x,yard.y,yard.w,yard.h);g.strokeStyle='#4d5039';g.lineWidth=6;g.strokeRect(yard.x,yard.y,yard.w,yard.h);for(let r=0;r<3;r++)for(let c=0;c<3;c++){const x=2505+c*245,y=270+r*285;D.fill(g,'soil',x,y,190,205);g.strokeStyle='rgba(45,33,22,.5)';g.lineWidth=3;g.strokeRect(x,y,190,205);}D.fill(g,'water',60,1190,540,220);}
+function drawInterior(){const x=ROOM.x,y=ROOM.y,w=ROOM.w,h=ROOM.h;g.fillStyle='#211e1a';g.fillRect(x-48,y-48,w+96,h+96);g.fillStyle='#c9b27d';g.fillRect(x,y,w,h);for(let yy=y;yy<y+h;yy+=T)for(let xx=x;xx<x+w;xx+=T){g.fillStyle=((Math.floor(xx/T)+Math.floor(yy/T))&1)?'#c9b27d':'#d1bb86';g.fillRect(xx,yy,T,T);}g.fillStyle='#694f37';g.fillRect(x,y,w,24);g.fillRect(x,y+h-24,w,24);g.fillRect(x,y,24,h);g.fillRect(x+w-24,y,24,h);g.fillStyle='#806245';for(let xx=x+48;xx<x+w-48;xx+=96)g.fillRect(xx,y+24,48,9);g.fillStyle='#78604a';g.fillRect(x+24,y+410,w-48,6);g.fillStyle='#a08a61';g.fillRect(x+490,y+24,6,386);g.fillStyle='#6b8e8a';g.fillRect(x+91,y+24,102,45);g.fillStyle='#b9d4cb';g.fillRect(x+100,y+31,84,31);g.strokeStyle='#3d4c46';g.lineWidth=3;g.strokeRect(x+91,y+24,102,45);}
+function rebuild(){g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;drawOutdoor();drawInterior();}
+rebuild();D.onReady(()=>{rebuild();toast('생활 월드 v2 디자인을 불러왔어요.');showChips();});
+
+const world=new K.World({canvas,width:W,height:H,playerSpeed:250,clearColor:'#181c16',camera:{zoom:1,lerp:.17},background(c){c.imageSmoothingEnabled=false;c.drawImage(bg,0,0);}});
+function fallbackPlayer(c,e){c.save();c.fillStyle='#2c3228';c.fillRect(e.x+5,e.y+7,31,42);c.fillStyle='#d7ad82';c.fillRect(e.x+9,e.y,23,23);c.fillStyle='#55744e';c.fillRect(e.x+7,e.y+25,27,28);c.restore();}
+const startHome=save.player?.scene==='home-interior';
+const player=world.setPlayer(new K.Entity({id:'player',type:'player',x:startHome?ROOM.x+ROOM.w/2-20:(Number(save.player?.x)||650),y:startHome?ROOM.y+ROOM.h-110:(Number(save.player?.y)||760),w:40,h:64,render:fallbackPlayer}));
+
+function tagState(tag,on){world.entities.byTag(tag).forEach(e=>{e.visible=on;e.active=on;});}
+function setScene(next){A.cancel(world,player,true);scene=next;const inside=next==='home';tagState('outdoor',!inside);tagState('indoor',inside);if(inside){player.x=ROOM.x+ROOM.w/2-20;player.y=ROOM.y+ROOM.h-112;toast('우리 집에 들어왔어요.');}else{player.x=342;player.y=650;toast('집 밖으로 나왔어요.');}world.interaction.current=null;world.camera.snap();zoneEl.textContent=inside?'우리 집':'집 앞';}
+function outdoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'outdoor']});}
+function indoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'indoor'],visible:false,active:false});}
+
+outdoor({id:'home',type:'building',x:235,y:520,w:220,h:90,solid:true,data:{scale:.92},render:D.render.cottage});
+outdoor({id:'home-door',type:'door',x:320,y:612,w:74,h:28,solid:false,interactionRadius:105,render(c,e){c.save();c.fillStyle='#64452f';c.fillRect(e.x+14,e.y,e.w-28,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+9,e.y+12,5,5);c.restore();},interaction:{label:'집에 들어가기',action(){setScene('home');}}});
+outdoor({id:'farm-hut',type:'building',x:2880,y:1180,w:120,h:65,solid:true,data:{scale:.82},render:D.render.hut});
+[[75,250,.8],[760,240,.85],[90,1010,.85],[770,1100,.85],[1015,195,.82],[2180,190,.82],[1020,1240,.82],[2180,1240,.82],[2410,190,.82],[3260,200,.82],[2420,1190,.82],[3260,1180,.82]].forEach((p,i)=>outdoor({id:'tree'+i,type:'tree',x:p[0],y:p[1],w:48,h:34,solid:true,data:{scale:p[2]},render:D.render.tree}));
+[[610,1195],[860,1245],[2380,1040],[3130,1040]].forEach((p,i)=>outdoor({id:'rock'+i,type:'rock',x:p[0],y:p[1],w:46,h:28,solid:true,data:{scale:.65},render:D.render.rock}));
+outdoor({id:'farmer',type:'npc',x:2670,y:690,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.villager(c,e.x,e.y,1)){c.fillStyle='#d1b375';c.fillRect(e.x,e.y,48,48);}},interaction:{label:'농부와 이야기',action(){toast('농사 행동 애니메이션은 다음 단계에서 연결됩니다.');}}});
+
+const facilityNames={pond:'연못',water:'물 쉼터',food:'먹이 자리',bed:'잠자리',ball:'공놀이',tunnel:'터널',tower:'오르기 나무',platform:'통나무 발판',wheel:'쳇바퀴',flower:'꽃밭',shadeTree:'그늘 나무',bench:'벤치',picnic:'피크닉',hammock:'해먹'};
+const facilityFallback={pond:[3,2],bed:[2,1],tunnel:[2,1],platform:[2,1],shadeTree:[2,2],bench:[2,1],picnic:[2,2],hammock:[2,1]};
+(snap.garden.placed||[]).forEach((p,i)=>{const meta=snap.garden.facilities?.[p.kind]||{},sz=facilityFallback[p.kind]||[meta.w||1,meta.h||1],cw=yard.w/yard.cols,ch=yard.h/yard.rows,x=yard.x+p.x*cw+6,y=yard.y+p.y*ch+6,w=Math.max(30,sz[0]*cw-12),h=Math.max(25,sz[1]*ch-12),kind=p.kind;outdoor({id:'garden-'+(p.id||i),type:'garden-facility',x,y,w,h,solid:!['pond','water','flower'].includes(kind),data:{kind,scale:.62},render(c,e){if(kind==='shadeTree'||kind==='tower'){D.render.tree(c,e);return;}if(kind==='pond'||kind==='water'){D.fill(c,'water',e.x,e.y,e.w,e.h);return;}if(['bench','platform','tunnel','hammock'].includes(kind)&&BQ.sprite.wood(c,e.x,e.y,.85))return;c.fillStyle='#6d573d';c.fillRect(e.x,e.y,e.w,e.h);},interaction:{label:(facilityNames[kind]||kind)+' 살펴보기',action(){toast((facilityNames[kind]||kind)+' · 나의 정원에서 가져왔어요.');}}});});
+
+const X=ROOM.x,Y=ROOM.y,RW=ROOM.w,RH=ROOM.h;
+indoor({id:'wall-top',type:'wall',x:X,y:Y,w:RW,h:24,solid:true,render(){}});indoor({id:'wall-left',type:'wall',x:X,y:Y,w:24,h:RH,solid:true,render(){}});indoor({id:'wall-right',type:'wall',x:X+RW-24,y:Y,w:24,h:RH,solid:true,render(){}});indoor({id:'wall-bottom-l',type:'wall',x:X,y:Y+RH-24,w:RW/2-60,h:24,solid:true,render(){}});indoor({id:'wall-bottom-r',type:'wall',x:X+RW/2+60,y:Y+RH-24,w:RW/2-60,h:24,solid:true,render(){}});
+indoor({id:'exit-door',type:'door',x:X+RW/2-48,y:Y+RH-48,w:96,h:24,solid:false,interactionRadius:95,render(c,e){c.fillStyle='#5f432d';c.fillRect(e.x,e.y,e.w,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+18,e.y+9,6,6);},interaction:{label:'밖으로 나가기',action(){setScene('outdoor');}}});
+
+function addFurniture(id,type,x,y,extra={}){
+  const meta=F.catalog[type],baseRender=extra.render||F.render[type];
+  const base=indoor(F.make(type,{id,x:X+x,y:Y+y,...extra,render:A.decorateRenderer(type,baseRender),interaction:{label:meta.action,action(e){if(!A.perform(world,player,e,type,{toast}))toast(meta.label);}}}));
+  const front=A.makeFrontLayer(type,base,{id:id+'-front'});if(front)indoor(front);
+  return base;
+}
+addFurniture('bed','bed',70,105);addFurniture('desk','desk',250,108);addFurniture('books','bookshelf',392,78);addFurniture('rug','rug',112,490);addFurniture('sofa','sofa',120,535);addFurniture('table','diningTable',330,535);addFurniture('fridge','fridge',545,95);addFurniture('sink','sink',635,135);addFurniture('counter','counter',535,290);addFurniture('stove','stove',675,282);
+
+world.events.on('interaction:focus',e=>{if(e&&world.input.enabled){prompt.textContent='E / Space · '+world.interaction.label();prompt.classList.add('show');}else prompt.classList.remove('show');});
+let saveClock=0,lastZone='';world.events.on('update',({dt})=>{if(!world.input.enabled)prompt.classList.remove('show');const z=zoneOf(player);if(z.name!==lastZone){lastZone=z.name;zoneEl.textContent=z.name;}saveClock+=dt;if(saveClock>1.5){saveClock=0;const s=K.Storage.load();s.player.x=Math.round(player.x);s.player.y=Math.round(player.y);s.player.scene=scene==='home'?'home-interior':'outdoor';K.Storage.save(s);}});
+function showChips(){chips.innerHTML=`<span class="chip">현재 Deluxe 아바타</span><span class="chip">생활 포즈 ${Object.keys(A.ACTIONS).length}종</span><span class="chip">가구 ${Object.keys(F.catalog).length}종</span><span class="chip">정원 시설 ${(snap.garden.placed||[]).length}</span><span class="chip">씨앗 ${snap.seeds}</span>`;}
+addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(A.active.has(player)){e.preventDefault();A.cancel(world,player,true);toast('행동을 멈췄어요.');return;}try{parent.postMessage({type:'kidscade-life-world-close'},location.origin);}catch(_){}});
+showChips();if(startHome)setScene('home');else{tagState('indoor',false);tagState('outdoor',true);}canvas.focus();world.start();
+})();
+</script></body></html>
