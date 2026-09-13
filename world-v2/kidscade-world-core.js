@@ -172,6 +172,9 @@
       root.addEventListener('resize',this._resize);
       this.canvas.addEventListener('pointerdown',()=>this.canvas.focus?.());
       this.resize();
+      NS.activeWorld=this;
+      root.__kidscadeWorldV2=this;
+      this.events.emit('world:active',this);
     }
     resize(){
       const r=this.canvas.getBoundingClientRect();this.viewportWidth=Math.max(1,r.width||this.canvas.clientWidth||800);this.viewportHeight=Math.max(1,r.height||this.canvas.clientHeight||600);this.dpr=Math.min(2,root.devicePixelRatio||1);
@@ -190,10 +193,10 @@
     frame=(t)=>{if(!this.running)return;const dt=Math.min(.05,Math.max(0,(t-this.last)/1000||0));this.last=t;this.update(dt);this.render();this._raf=requestAnimationFrame(this.frame);};
     start(){if(this.running)return;this.running=true;this.last=performance.now();this._raf=requestAnimationFrame(this.frame);this.events.emit('start',this);}
     stop(){this.running=false;if(this._raf)cancelAnimationFrame(this._raf);this.events.emit('stop',this);}
-    destroy(){this.stop();this.input.destroy();root.removeEventListener('resize',this._resize);this.entities.map.clear();}
+    destroy(){this.stop();this.input.destroy();root.removeEventListener('resize',this._resize);this.entities.map.clear();if(NS.activeWorld===this)NS.activeWorld=null;if(root.__kidscadeWorldV2===this)root.__kidscadeWorldV2=null;}
   }
 
-  NS.VERSION='0.1.0';
+  NS.VERSION='0.1.1';
   NS.EventBus=EventBus;
   NS.Entity=Entity;
   NS.EntityManager=EntityManager;
