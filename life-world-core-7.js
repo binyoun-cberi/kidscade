@@ -62,6 +62,15 @@ function animateFishingCanvas(){
 function fishTap(){if(!fishGame||fishGame.done)return;fishGame.done=true;if(fishGame.raf)cancelAnimationFrame(fishGame.raf);if(fishGame.ready){addItem('물고기',1);sfx('fish');toast('물고기를 잡았어요!');const m=$('#fishMsg');if(m)m.textContent='잡았다! 물고기 +1';}else{const m=$('#fishMsg');if(m)m.textContent='너무 일찍 당겼어요!';toast('아직 물고기가 물지 않았어요.');}}
 function openFishWatching(){if(!spendEnergy(3))return;const fish=['피라미','붕어','메기','쏘가리'];const f=fish[Math.floor(Math.random()*fish.length)];state.fishDex[f]=true;saveState();openModal(`${topRow('🔍 탐어')}<div style="text-align:center;font-size:80px">🐟</div><h2 style="text-align:center">${f} 발견!</h2><p style="text-align:center">물속 움직임을 관찰해 도감에 기록했어요. 잡지 않아도 발견만으로 등록됩니다.</p><div class="card"><b>물고기 도감</b><div class="slotRow">${fish.map(n=>`<span class="slot">${state.fishDex[n]?'🐟 '+n:'❔ ???'}</span>`).join('')}</div></div>`);}
 
+/* Correct crop wallet price after core-5 declaration. */
+function plantCrop(i,c,cost=10){
+  cost=Math.max(0,Math.trunc(Number(cost)||10));
+  if(walletBalance()<cost)return toast('씨앗이 부족해요.');
+  if(!walletChange(-cost,`${c} 씨앗 구매`))return toast('씨앗이 부족해요.');
+  state.farm.plots[i]={crop:c,stage:0,water:0,fertilized:false,pest:false};
+  saveState();closeModal();toast(`${c}을(를) 심었어요.`);
+}
+
 applyWorldSize(scene,false);
 setZoom(sceneZooms[scene]||1,true);
 snapCameraToPlayer();
