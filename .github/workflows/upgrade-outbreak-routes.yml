@@ -1,0 +1,27 @@
+name: Upgrade OUTBREAK transmission and regions
+
+on:
+  push:
+    paths:
+      - 'tools/upgrade_outbreak_routes.py'
+      - '.github/workflows/upgrade-outbreak-routes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply OUTBREAK v3.2 patch
+        run: python3 tools/upgrade_outbreak_routes.py
+      - name: Commit upgrade
+        run: |
+          rm -f tools/upgrade_outbreak_routes.py
+          rm -f .github/workflows/upgrade-outbreak-routes.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add transmission routes Ulleungdo and mobile tree controls"
+          git push origin main
