@@ -22,6 +22,6 @@ const render={bed,sofa,desk,diningTable,fridge,sink,counter,stove,bookshelf,rug}
 const catalog={
  bed:{label:'침대',w:96,h:66,solid:true,action:'잠깐 쉬기'},sofa:{label:'소파',w:108,h:60,solid:true,action:'소파에 앉기'},desk:{label:'책상',w:96,h:58,solid:true,action:'책상 살펴보기'},diningTable:{label:'식탁',w:108,h:58,solid:true,action:'식탁 살펴보기'},fridge:{label:'냉장고',w:57,h:99,solid:true,action:'냉장고 열기'},sink:{label:'싱크대',w:81,h:60,solid:true,action:'싱크대 사용하기'},counter:{label:'조리대',w:96,h:60,solid:true,action:'조리대 살펴보기'},stove:{label:'가스레인지',w:60,h:72,solid:true,action:'조리대 사용하기'},bookshelf:{label:'책장',w:66,h:105,solid:true,action:'책장 살펴보기'},rug:{label:'러그',w:132,h:78,solid:false,action:'러그 살펴보기'}
 };
-function make(type,options={}){const m=catalog[type];if(!m)throw new Error('Unknown furniture '+type);return {type:'furniture',w:m.w,h:m.h,solid:m.solid,render:render[type],data:{furniture:type,label:m.label,...options.data},...options};}
+function make(type,options={}){const m=catalog[type];if(!m)throw new Error('Unknown furniture '+type);const extraData=options.data||{};return {...options,type:options.type||'furniture',w:options.w||m.w,h:options.h||m.h,solid:options.solid??m.solid,render:options.render||render[type],data:{furniture:type,label:m.label,...extraData}};}
 K.LifeFurniture={UNIT:U,PAL,catalog,render,make};
 })(window);
