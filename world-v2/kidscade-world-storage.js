@@ -26,13 +26,16 @@
       createdAt:new Date().toISOString(),
       updatedAt:new Date().toISOString(),
       player:{x:620,y:520,lastZone:'home-yard'},
-      inventory:{wood:0,stone:0,crop:0,fish:0,bug:0,potato:0,carrot:0,tomato:0},
+      inventory:{wood:0,stone:0,iron:0,crop:0,fish:0,bug:0,potato:0,carrot:0,tomato:0},
       progression:{
         energy:100,maxEnergy:100,
         tools:{},
         seeds:{potato:2,carrot:2,tomato:2},
         crops:{},
-        crafted:[]
+        crafted:[],
+        food:{},
+        fishDex:{},
+        kitchen:{pending:null}
       },
       world:{flags:{},objects:{}},
       migration:{source:'legacy-readonly',completed:false,lastPreview:null}
@@ -53,7 +56,10 @@
         tools:{...base.progression.tools,...(p.tools||{})},
         seeds:{...base.progression.seeds,...(p.seeds||{})},
         crops:{...base.progression.crops,...(p.crops||{})},
-        crafted:Array.isArray(p.crafted)?[...p.crafted]:[]
+        crafted:Array.isArray(p.crafted)?[...p.crafted]:[],
+        food:{...base.progression.food,...(p.food||{})},
+        fishDex:{...base.progression.fishDex,...(p.fishDex||{})},
+        kitchen:{...base.progression.kitchen,...(p.kitchen||{})}
       };
     }
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
