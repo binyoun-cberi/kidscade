@@ -1,0 +1,27 @@
+name: Convert OUTBREAK to people model
+
+on:
+  push:
+    paths:
+      - 'tools/convert_outbreak_to_people_model.py'
+      - '.github/workflows/convert-outbreak-people-model.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert simulation to integer people
+        run: python3 tools/convert_outbreak_to_people_model.py
+      - name: Commit conversion and clean helpers
+        run: |
+          rm -f tools/convert_outbreak_to_people_model.py
+          rm -f .github/workflows/convert-outbreak-people-model.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Convert OUTBREAK simulation to integer people counts"
+          git push origin main
