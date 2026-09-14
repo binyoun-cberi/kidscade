@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const BASE_URL = 'index_base.html?refactor=20260914-4';
+  const BASE_URL = 'index_base.html?refactor=20260914-5';
   const CATALOG_URL = 'data/games.json?v=3';
-  const RUNTIME_VERSION = '20260914-refactor-4';
+  const RUNTIME_VERSION = '20260914-refactor-5';
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -111,6 +111,7 @@
       ['ui-clarity-overhaul.js', '20260914-1'],
       ['ui-topbar-compact.js', '20260914-1'],
       ['seed-house-entry.js', '20260914-2'],
+      ['game-registry.js', RUNTIME_VERSION],
       ['game-cover-placeholders.js', RUNTIME_VERSION],
       ['dashboard-recent.js', RUNTIME_VERSION]
     ].map(([src, v]) => '<scr' + 'ipt src="' + src + '?v=' + v + '"></scr' + 'ipt>').join('');
