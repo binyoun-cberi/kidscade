@@ -3,11 +3,11 @@
 
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
   const COVER_BY_ID = Object.freeze({
-    high_classroom_war_3d: 'assets/game-covers/classroom-war-3d.avif',
-    music_neon_rift: 'assets/game-covers/neon-rift.avif',
-    high_melody_workshop: 'assets/game-covers/melody-workshop.avif',
-    high_byeokrando_voyage: 'assets/game-covers/byeokrando-voyage.avif',
-    hanja_survivors_8: 'assets/game-covers/hanja-guardian-8.avif'
+    high_classroom_war_3d: '교실전쟁3D.png',
+    music_neon_rift: '네온 리프트.png',
+    high_melody_workshop: '멜로디 공방.png',
+    high_byeokrando_voyage: '벽란도 상행기.png',
+    hanja_survivors_8: '한자수호전.png'
   });
   const STYLE_ID = 'kidscade-game-cover-styles';
 
