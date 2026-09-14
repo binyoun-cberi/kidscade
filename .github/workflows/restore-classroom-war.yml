@@ -20,15 +20,21 @@ jobs:
           fetch-depth: 0
 
       - name: Restore original Classroom War HTML
+        id: restore
+        continue-on-error: true
         run: node scripts/restore-classroom-war.cjs
 
-      - name: Show restored file summary
-        run: |
-          wc -c classroom_war_3d.html
-          grep -n "방어 시작" classroom_war_3d.html | head -1
-          tail -c 80 classroom_war_3d.html
+      - name: Upload recovered source for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: classroom-war-recovered-source
+          path: recovery/classroom_war_3d.recovered.html
+          if-no-files-found: error
+          retention-days: 7
 
-      - name: Commit plain HTML if changed
+      - name: Commit validated plain HTML if changed
+        if: steps.restore.outcome == 'success'
         run: |
           if git diff --quiet -- classroom_war_3d.html; then
             echo "No change to commit"
@@ -39,3 +45,7 @@ jobs:
           git add classroom_war_3d.html
           git commit -m "Restore Classroom War as plain HTML"
           git push
+
+      - name: Fail when recovery validation fails
+        if: steps.restore.outcome != 'success'
+        run: exit 1
