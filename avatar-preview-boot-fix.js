@@ -76,7 +76,8 @@
     }
 
     const src = frame.getAttribute('src') || FALLBACK_SRC;
-    if (src === 'about:blank') {
+    frame.dataset.kidscadeDeferred = '1';
+    if (src === 'about:blank' || src.startsWith('about:blank#')) {
       deferred = true;
       return;
     }
@@ -95,6 +96,7 @@
     const src = frame.dataset.kidscadeDeferredSrc || FALLBACK_SRC;
     activated = true;
     deferred = false;
+    delete frame.dataset.kidscadeDeferred;
     delete frame.dataset.kidscadeDeferredSrc;
 
     if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
