@@ -232,6 +232,130 @@
             }`;
     html = replaceBetween(html, petScoreStart, petScoreEnd, petScoreReplacement);
 
+    const launcherStart = '            function openGameModal(e, cardElement) {';
+    const launcherEnd = '\n\n            // =====================================\n            // 배지 동기화 및 랭크 보상';
+    const launcherReplacement = `            const gameLauncherBridge = {
+                getGame: (id) => window.KidscadeGames?.get?.(id) || null,
+                getCard: (id) => window.KidscadeGames?.getCard?.(id) || document.querySelector(\`#game-list .game-card[data-id="${'${'}CSS.escape(String(id || ''))}"]\`),
+                playSound: (sound) => playUISound(sound),
+                alert: (message) => window.alert(message),
+                consumePlayTicket: (id) => consumePlayTicket(id),
+                getNextRechargeMs: (id) => getNextRechargeMs(id),
+                formatRechargeTime: (ms) => formatRechargeTime(ms),
+                showToast: (message) => showToast(message),
+                now: () => Date.now(),
+                getPlayState: (id) => getPlayState(id),
+                playLimitMax: PLAY_LIMIT_MAX,
+                minRewardPlaySec: MIN_REWARD_PLAY_SEC,
+                startSession: (session) => {
+                    playStartTime = session.startedAt;
+                    playCheckpointTime = session.startedAt;
+                    activeGameId = session.id;
+                    activeGameCategory = session.category || 'all';
+                    activeGameHadBonus = Boolean(session.hadBonus);
+                },
+                getSession: () => ({
+                    id: activeGameId,
+                    category: activeGameCategory,
+                    startedAt: playStartTime,
+                    hadBonus: activeGameHadBonus
+                }),
+                remember: (id) => {
+                    if (window.KidscadeDashboard?.remember?.(id)) return true;
+                    trackRecent(id);
+                    return true;
+                },
+                openModal: ({ href, titleText }) => {
+                    document.getElementById('modal-title-text').innerText = titleText;
+                    gameIframe.src = href;
+                    gameModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                },
+                closeModal: () => {
+                    gameModal.classList.add('hidden');
+                    gameIframe.src = '';
+                    document.body.style.overflow = 'auto';
+                },
+                checkpointPlayTime: (at) => checkpointPlayTime(at),
+                addCoins: (amount, reason) => addCoins(amount, reason),
+                addPetExp: (amount, category) => {
+                    if (pet.level < 4 && amount > 0) {
+                        pet.exp += amount;
+                        if (category !== 'all') pet.expTracks[category] = (pet.expTracks[category] || 0) + amount;
+                    }
+                },
+                savePet: () => savePet(),
+                updateMission: (category, id) => updateMissionProgress(category, id),
+                recordGardenSession: (payload) => gardenController?.session(payload),
+                resetSession: () => {
+                    playStartTime = 0;
+                    playCheckpointTime = 0;
+                    activeGameId = null;
+                    activeGameCategory = 'all';
+                    activeGameHadBonus = false;
+                },
+                syncBadges: () => syncBadgesAndProfile()
+            };
+
+            function openGameModal(e, cardElement) {
+                const delegated = window.KidscadeGameLauncher?.open?.(e, cardElement, gameLauncherBridge);
+                if (delegated?.handled) return;
+
+                // 런타임 모듈이 로드되지 않았을 때만 사용하는 안전한 fallback.
+                if (e.target.classList.contains('fav-star') || e.target.classList.contains('cert-btn')) return;
+                e.preventDefault();
+                const gameId = cardElement.getAttribute('data-id');
+                const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}gameId}"]\`) || cardElement;
+                if (originCard.classList.contains('disabled')) { playUISound('click'); alert("열심히 준비 중인 게임입니다! 조금만 기다려주세요 😊"); return; }
+                activeGameHadBonus = consumePlayTicket(gameId);
+                if (!activeGameHadBonus) showToast(\`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${'${'}formatRechargeTime(getNextRechargeMs(gameId))} 뒤 보너스 +1\`);
+                playUISound('open'); playStartTime = Date.now(); playCheckpointTime = playStartTime; activeGameId = gameId;
+                activeGameCategory = originCard.getAttribute('data-category') || 'all';
+                trackRecent(gameId);
+                const energyState = getPlayState(gameId);
+                const bonusText = activeGameHadBonus ? \`추천 에너지 보너스 적용 · 남은 보너스 ${'${'}energyState.plays}/${'${'}PLAY_LIMIT_MAX}\` : '기본 보상 진행';
+                document.getElementById('modal-title-text').innerText = \`진행 중: ${'${'}originCard.querySelector('.game-title').innerText} · ${'${'}bonusText}\`;
+                gameIframe.src = originCard.getAttribute('href');
+                gameModal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            }
+
+            closeModalBtn.addEventListener('click', () => {
+                const delegated = window.KidscadeGameLauncher?.close?.(gameLauncherBridge);
+                if (delegated?.handled) return;
+
+                // 런타임 모듈이 로드되지 않았을 때만 사용하는 안전한 fallback.
+                const closedAt = Date.now();
+                playUISound('close'); gameModal.classList.add('hidden'); gameIframe.src = ''; document.body.style.overflow = 'auto';
+                if (playStartTime > 0) {
+                    const sessionSec = Math.max(0, Math.floor((closedAt - playStartTime) / 1000));
+                    checkpointPlayTime(closedAt);
+                    if (sessionSec >= MIN_REWARD_PLAY_SEC) {
+                        const sessionMin = Math.floor(sessionSec / 60);
+                        const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
+                        const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
+                        const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
+                        const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
+                        const durationText = sessionMin > 0 ? \`${'${'}sessionMin}분 ${'${'}sessionSec % 60}초\` : \`${'${'}sessionSec}초\`;
+                        addCoins(rewardSeeds, activeGameHadBonus ? \`추천 에너지 보너스 · ${'${'}durationText}\` : \`게임 도전 · ${'${'}durationText}\`);
+                        if (pet.level < 4 && gainedExp > 0) {
+                            pet.exp += gainedExp;
+                            if (activeGameCategory !== 'all') pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
+                        }
+                        savePet();
+                        updateMissionProgress(activeGameCategory, activeGameId);
+                        gardenController?.session({game: activeGameId, category: activeGameCategory, seconds: sessionSec});
+                    } else if (sessionSec > 0) {
+                        showToast(\`학습시간 ${'${'}sessionSec}초는 저장했어요. 씨앗과 미션은 30초 이상 플레이하면 인정돼요.\`);
+                    }
+                    playStartTime = 0;
+                    playCheckpointTime = 0;
+                    activeGameId = null;
+                    activeGameHadBonus = false;
+                }
+                syncBadgesAndProfile();
+            });`;
+    html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
+
     return html;
   }
 
@@ -269,7 +393,8 @@
       'game-filter.js',
       'game-cover-placeholders.js',
       'dashboard-recent.js',
-      'game-recommendations.js'
+      'game-recommendations.js',
+      'game-launcher.js'
     ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     return html.replace('</body>', scripts + '</body>');
   }
