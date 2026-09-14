@@ -25,12 +25,15 @@ jobs:
             game-filter.js \
             game-cover-placeholders.js \
             dashboard-recent.js \
+            game-recommendations.js \
             score-display-normalizer.js \
             ui-clarity-overhaul.js \
             ui-topbar-compact.js \
             seed-house-entry.js; do
             node --check "$file"
           done
+      - name: Run recommendation regression tests
+        run: node --test tests/recommendations.test.cjs
       - name: Run garden regression tests
         run: node --test tests/garden.test.cjs
       - name: Run main architecture tests
