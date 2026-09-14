@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/restore-classroom-war.yml'
       - 'scripts/restore-classroom-war.cjs'
+      - 'scripts/classroom-war-repair-tail.txt'
   workflow_dispatch:
 
 permissions:
@@ -19,22 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore original Classroom War HTML
+      - name: Restore and validate Classroom War HTML
         id: restore
-        continue-on-error: true
         run: node scripts/restore-classroom-war.cjs
 
-      - name: Upload recovered source for diagnosis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: classroom-war-recovered-source
-          path: recovery/classroom_war_3d.recovered.html
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Commit validated plain HTML if changed
-        if: steps.restore.outcome == 'success'
         run: |
           if git diff --quiet -- classroom_war_3d.html; then
             echo "No change to commit"
@@ -43,9 +33,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add classroom_war_3d.html
-          git commit -m "Restore Classroom War as plain HTML"
+          git commit -m "Restore Classroom War as validated plain HTML"
           git push
-
-      - name: Fail when recovery validation fails
-        if: steps.restore.outcome != 'success'
-        run: exit 1
