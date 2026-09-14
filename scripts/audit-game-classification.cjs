@@ -44,19 +44,20 @@ for (const [title, list] of titleDupes) {
   for (const game of list) console.log(`  - ${game.id} | ${game.age} | ${game.href}`);
 }
 
-console.log('\n=== PREFIX / AGE MISMATCHES ===');
-let mismatchCount = 0;
+console.log('\n=== LEGACY ID PREFIX DIFFERENCES (INFORMATIONAL) ===');
+let differenceCount = 0;
 for (const game of games) {
   const prefix = String(game.id || '').split('_')[0];
   if (['low', 'high', 'job', 'tod'].includes(prefix)) {
-    const expected = prefix === 'tod' ? 'toddler' : prefix;
-    if (game.age !== expected) {
-      mismatchCount++;
-      console.log(`${game.id} | age=${game.age} | prefix suggests ${expected} | ${game.title}`);
+    const legacyAge = prefix === 'tod' ? 'toddler' : prefix;
+    if (game.age !== legacyAge) {
+      differenceCount++;
+      console.log(`${game.id} | current age=${game.age} | legacy prefix=${legacyAge} | ${game.title}`);
     }
   }
 }
-if (!mismatchCount) console.log('none');
+if (!differenceCount) console.log('none');
+console.log('ID prefixes are permanent compatibility keys; data/games.json age is authoritative.');
 
 console.log('\n=== ALL GAMES (AGE | ID | TITLE) ===');
 for (const game of games) console.log(`${game.age}\t${game.id}\t${game.title}`);
