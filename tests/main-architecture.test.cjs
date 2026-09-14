@@ -15,7 +15,7 @@ function localTarget(value) {
 }
 
 test('catalog has one source of truth and unique valid game ids', () => {
-  assert.equal(catalog.schemaVersion, 5);
+  assert.equal(catalog.schemaVersion, 6);
   assert.ok(Array.isArray(catalog.games));
   assert.equal(Object.hasOwn(catalog, 'coverById'), false);
 
@@ -28,6 +28,11 @@ test('catalog has one source of truth and unique valid game ids', () => {
     ids.add(game.id);
     assert.ok(validAges.has(game.age), `invalid age for ${game.id}: ${game.age}`);
     assert.ok(validCategories.has(game.category), `invalid category for ${game.id}: ${game.category}`);
+    if (game.iconHtml) {
+      assert.match(game.iconHtml.trim(), /^<svg\b/i, `iconHtml must be SVG for ${game.id}`);
+      assert.match(game.iconHtml.trim(), /<\/svg>$/i, `iconHtml must close SVG for ${game.id}`);
+      assert.doesNotMatch(game.iconHtml, /<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:/i);
+    }
   }
 });
 
@@ -50,12 +55,41 @@ test('all legacy game cards are represented in the static catalog', () => {
   }
 });
 
+test('catalog migration preserves safe custom SVG card icons', () => {
+  const fixture = `
+    <div class="game-container" id="game-list">
+      <a href="fixture.html" class="game-card" data-category="math" data-age="low" data-id="fixture_svg">
+        <span class="fav-star">☆</span>
+        <div class="game-icon"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"></circle></svg></div>
+        <div class="game-title">SVG 카드</div>
+        <div class="game-desc">아이콘 보존 검사</div>
+      </a>
+    </div>
+    <script>void 0;</script>`;
+  const [game] = migration.extractLegacyGames(fixture);
+  assert.equal(game.id, 'fixture_svg');
+  assert.match(game.iconHtml, /^<svg\b/);
+  assert.equal(migration.extractSvgIcon('<svg onload="alert(1)"></svg>'), '');
+});
+
 test('catalog migration is idempotent and keeps JSON-only games before legacy order', () => {
   const html = read('index_base.html');
   const legacy = migration.extractLegacyGames(html);
   const once = migration.mergeCatalog(catalog, legacy);
   const twice = migration.mergeCatalog(once, legacy);
   assert.deepEqual(twice, once);
+});
+
+test('bootstrap replaces legacy game cards with catalog-rendered cards before page execution', () => {
+  const source = read('main-bootstrap.js');
+  assert.match(source, /function\s+replaceGameCardsFromCatalog\s*\(/);
+  assert.match(source, /remainingMarkup\s*=\s*scope\.replace\(cardPattern,\s*''\)/);
+  assert.match(source, /getManagedGames\(catalog\)\.map\(renderManagedCard\)/);
+  assert.match(source, /replaceGameCardsFromCatalog\(html,\s*catalog\)/);
+  assert.match(source, /function\s+renderIcon\s*\(/);
+  assert.match(source, /game\.iconHtml/);
+  assert.doesNotMatch(source, /function\s+enrichExistingCards\s*\(/);
+  assert.doesNotMatch(source, /escapeRegExp/);
 });
 
 test('runtime registry treats the catalog as the only game data source', () => {

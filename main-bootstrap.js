@@ -24,8 +24,6 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
 
-  const escapeRegExp = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
   function getManagedGames(catalog) {
     return Array.isArray(catalog?.games) ? catalog.games : [];
   }
@@ -36,9 +34,21 @@
     getManagedGames(catalog).forEach(game => {
       if (!game?.id || !game?.title || !game?.href) throw new Error('게임 목록에 필수 정보가 빠진 항목이 있습니다.');
       if (seen.has(game.id)) throw new Error(`중복 게임 ID가 있습니다: ${game.id}`);
+      if (game.iconHtml && !isSafeSvgIcon(game.iconHtml)) throw new Error(`허용되지 않는 카드 아이콘 마크업입니다: ${game.id}`);
       seen.add(game.id);
     });
     return catalog;
+  }
+
+  function isSafeSvgIcon(value) {
+    const icon = String(value || '').trim();
+    if (!/^<svg\b/i.test(icon) || !/<\/svg>\s*$/i.test(icon)) return false;
+    return !/<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:/i.test(icon);
+  }
+
+  function renderIcon(game) {
+    if (game.iconHtml && isSafeSvgIcon(game.iconHtml)) return String(game.iconHtml).trim();
+    return escapeHtml(game.icon || '🎮');
   }
 
   function renderManagedCard(game) {
@@ -49,48 +59,27 @@
     const rankKey = game.rankKey ? ` data-rankkey="${escapeHtml(game.rankKey)}"` : '';
     const scoreUnit = game.scoreUnit ? ` data-scoreunit="${escapeHtml(game.scoreUnit)}"` : '';
     const isTime = game.isTime ? ' data-istime="true"' : '';
-    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${cover}${scoreKey}${rankKey}${scoreUnit}${isTime}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${escapeHtml(game.icon || '🎮')}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
+    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${cover}${scoreKey}${rankKey}${scoreUnit}${isTime}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${renderIcon(game)}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
   }
 
-  function enrichExistingCards(html, catalog) {
-    getManagedGames(catalog).forEach(game => {
-      if (!game?.id) return;
-      const id = escapeRegExp(game.id);
-      const openingTagPattern = new RegExp(`(<a\\b(?=[^>]*\\bdata-id=["']${id}["'])[^>]*)(>)`, 'i');
-      const match = html.match(openingTagPattern);
-      if (!match) return;
-
-      let opening = match[1];
-      const additions = [];
-      if (game.cover && !/\bdata-cover\s*=/.test(opening)) additions.push(`data-cover="${escapeHtml(game.cover)}"`);
-      if (game.scoreKey && !/\bdata-scorekey\s*=/.test(opening)) additions.push(`data-scorekey="${escapeHtml(game.scoreKey)}"`);
-      if (game.rankKey && !/\bdata-rankkey\s*=/.test(opening)) additions.push(`data-rankkey="${escapeHtml(game.rankKey)}"`);
-      if (game.scoreUnit && !/\bdata-scoreunit\s*=/.test(opening)) additions.push(`data-scoreunit="${escapeHtml(game.scoreUnit)}"`);
-      if (game.isTime && !/\bdata-istime\s*=/.test(opening)) additions.push('data-istime="true"');
-      if (!additions.length) return;
-
-      opening += ' ' + additions.join(' ');
-      html = html.replace(openingTagPattern, opening + '$2');
-    });
-    return html;
-  }
-
-  function injectCatalogCards(html, catalog) {
+  function replaceGameCardsFromCatalog(html, catalog) {
     const marker = '<div class="game-container" id="game-list">';
     const markerPos = html.indexOf(marker);
     if (markerPos < 0) throw new Error('게임 목록 영역을 찾지 못했습니다.');
 
-    html = enrichExistingCards(html, catalog);
+    const contentStart = markerPos + marker.length;
+    const scriptIndex = html.indexOf('<script', contentStart);
+    const contentEnd = scriptIndex > contentStart ? scriptIndex : html.length;
+    const scope = html.slice(contentStart, contentEnd);
+    const cardPattern = /<a\b(?=[^>]*\bclass\s*=\s*["'][^"']*\bgame-card\b[^"']*["'])(?=[^>]*\bdata-id\s*=\s*["'][^"']+["'])[^>]*>[\s\S]*?<\/a>/gi;
+    const legacyCards = scope.match(cardPattern) || [];
+    const remainingMarkup = scope.replace(cardPattern, '');
+    const cards = getManagedGames(catalog).map(renderManagedCard).join('');
 
-    const cards = getManagedGames(catalog)
-      .filter(game => game && game.id && !new RegExp(`\\bdata-id=["']${escapeRegExp(game.id)}["']`).test(html))
-      .map(renderManagedCard)
-      .join('');
+    if (!cards) throw new Error('게임 카탈로그가 비어 있습니다.');
+    if (!legacyCards.length) console.warn('[Kidscade] 레거시 카드가 없는 템플릿을 사용 중입니다. 카탈로그 카드만 렌더링합니다.');
 
-    if (!cards) return html;
-    const freshMarkerPos = html.indexOf(marker);
-    const insertPos = freshMarkerPos + marker.length;
-    return html.slice(0, insertPos) + cards + html.slice(insertPos);
+    return html.slice(0, contentStart) + cards + remainingMarkup + html.slice(contentEnd);
   }
 
   function replaceBetween(html, startMarker, endMarker, replacement) {
@@ -263,7 +252,7 @@
 
       const catalog = validateCatalog(await catalogRes.json());
       let html = await baseRes.text();
-      html = injectCatalogCards(html, catalog);
+      html = replaceGameCardsFromCatalog(html, catalog);
       html = applyCompatibilityFixes(html);
       html = injectBootPayload(html, catalog);
       html = injectRuntimeScripts(html);
