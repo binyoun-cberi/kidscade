@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "managedCards": [
+  "schemaVersion": 2,
+  "games": [
     {
       "id": "low_math_number_tower",
       "title": "숫자 타워",
