@@ -1,0 +1,41 @@
+name: Restore Classroom War Plain HTML
+
+on:
+  push:
+    paths:
+      - '.github/workflows/restore-classroom-war.yml'
+      - 'scripts/restore-classroom-war.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore original Classroom War HTML
+        run: node scripts/restore-classroom-war.cjs
+
+      - name: Show restored file summary
+        run: |
+          wc -c classroom_war_3d.html
+          grep -n "방어 시작" classroom_war_3d.html | head -1
+          tail -c 80 classroom_war_3d.html
+
+      - name: Commit plain HTML if changed
+        run: |
+          if git diff --quiet -- classroom_war_3d.html; then
+            echo "No change to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add classroom_war_3d.html
+          git commit -m "Restore Classroom War as plain HTML"
+          git push
