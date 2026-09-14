@@ -1,9 +1,24 @@
 (() => {
   'use strict';
 
-  const BASE_URL = 'index_base.html?refactor=20260914-6';
-  const CATALOG_URL = 'data/games.json?v=3';
-  const RUNTIME_VERSION = '20260914-refactor-6';
+  const BOOTSTRAP_SCRIPT = document.currentScript;
+
+  function getRuntimeVersion() {
+    try {
+      const url = new URL(BOOTSTRAP_SCRIPT?.src || location.href, document.baseURI);
+      return url.searchParams.get('v') || 'dev';
+    } catch (_) {
+      return 'dev';
+    }
+  }
+
+  const RUNTIME_VERSION = getRuntimeVersion();
+  const withVersion = path => {
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}v=${encodeURIComponent(RUNTIME_VERSION)}`;
+  };
+  const BASE_URL = withVersion('index_base.html');
+  const CATALOG_URL = withVersion('data/games.json');
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -189,8 +204,8 @@
 
   function applyCompatibilityFixes(html) {
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
-    const gardenScriptV2 = '<scr' + 'ipt src="garden.js?v=avatar-preview-fix-v2"></scr' + 'ipt>';
-    html = html.replace(gardenScript, gardenScriptV2);
+    const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';
+    html = html.replace(gardenScript, versionedGarden);
     html = html.replace('href="스펠링 프로그.html"', 'href="스펠링 프로그-fixed.html?v=20260914-1"');
     html = refactorLegacyControllers(html);
     return html;
@@ -213,15 +228,15 @@
 
   function injectRuntimeScripts(html) {
     const scripts = [
-      ['score-display-normalizer.js', '20260914-1'],
-      ['ui-clarity-overhaul.js', '20260914-1'],
-      ['ui-topbar-compact.js', '20260914-1'],
-      ['seed-house-entry.js', '20260914-2'],
-      ['game-registry.js', RUNTIME_VERSION],
-      ['game-filter.js', RUNTIME_VERSION],
-      ['game-cover-placeholders.js', RUNTIME_VERSION],
-      ['dashboard-recent.js', RUNTIME_VERSION]
-    ].map(([src, v]) => '<scr' + 'ipt src="' + src + '?v=' + v + '"></scr' + 'ipt>').join('');
+      'score-display-normalizer.js',
+      'ui-clarity-overhaul.js',
+      'ui-topbar-compact.js',
+      'seed-house-entry.js',
+      'game-registry.js',
+      'game-filter.js',
+      'game-cover-placeholders.js',
+      'dashboard-recent.js'
+    ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     return html.replace('</body>', scripts + '</body>');
   }
 
