@@ -263,15 +263,15 @@
     if (!list || list.dataset.favoriteActionsBound === '1') return;
     list.dataset.favoriteActionsBound = '1';
 
+    // 캡처 단계에서 별 클릭을 먼저 가로채야 카드 자체의 기존 click 핸들러가 게임을 열지 않는다.
     list.addEventListener('click', event => {
       const star = event.target.closest('.fav-star');
       if (!star || !list.contains(star)) return;
       event.preventDefault();
       event.stopPropagation();
-      window.playUISound?.('click');
       const id = star.closest('.game-card')?.dataset?.id;
       if (id) toggleFavorite(id);
-    });
+    }, true);
 
     list.addEventListener('keydown', event => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -281,7 +281,7 @@
       event.stopPropagation();
       const id = star.closest('.game-card')?.dataset?.id;
       if (id) toggleFavorite(id);
-    });
+    }, true);
   }
 
   function addStyles() {
