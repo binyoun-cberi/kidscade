@@ -16,5 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run Node tests
-        run: node --test tests/*.test.cjs
+      - name: Run garden regression tests
+        run: node --test tests/garden.test.cjs
+      - name: Run main architecture tests
+        run: node --test tests/main-architecture.test.cjs
