@@ -2,6 +2,13 @@
   'use strict';
 
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
+  const COVER_BY_ID = Object.freeze({
+    high_classroom_war_3d: 'assets/game-covers/classroom-war-3d.avif',
+    music_neon_rift: 'assets/game-covers/neon-rift.avif',
+    high_melody_workshop: 'assets/game-covers/melody-workshop.avif',
+    high_byeokrando_voyage: 'assets/game-covers/byeokrando-voyage.avif',
+    hanja_survivors_8: 'assets/game-covers/hanja-guardian-8.avif'
+  });
   const STYLE_ID = 'kidscade-game-cover-styles';
 
   function installStyles() {
@@ -97,7 +104,9 @@
   }
 
   function resolveCover(card) {
-    return (card.dataset.cover || '').trim() || DEFAULT_GAME_COVER;
+    const explicitCover = (card.dataset.cover || '').trim();
+    if (explicitCover) return explicitCover;
+    return COVER_BY_ID[card.dataset.id] || DEFAULT_GAME_COVER;
   }
 
   function applyCover(card) {
@@ -189,6 +198,7 @@
 
   window.KidscadeGameCovers = {
     defaultCover: DEFAULT_GAME_COVER,
+    covers: COVER_BY_ID,
     refresh: applyAll,
     apply: applyCover
   };
