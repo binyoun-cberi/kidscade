@@ -1,131 +1,124 @@
 (() => {
   'use strict';
 
-  const META_KEY = 'kidscade_recent_meta_v4';
-  const MIGRATION_KEY = 'kidscade_recent_migration_v4';
+  const FAVORITES_KEY = 'kidscade_favs';
   const RECENTS_KEY = 'kidscade_recents';
-  let syncQueued = false;
+  const MAX_RECENTS = 4;
 
-  function readMeta() {
+  function readArray(key) {
     try {
-      const value = JSON.parse(localStorage.getItem(META_KEY) || '{}');
-      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      const value = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(value) ? value.filter(Boolean) : [];
     } catch (_) {
-      return {};
+      return [];
     }
   }
 
-  function writeMeta(meta) {
-    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (_) {}
+  function writeArray(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
   }
 
-  function migrateOnce() {
-    try {
-      if (localStorage.getItem(MIGRATION_KEY) === '1') return;
-      localStorage.setItem(MIGRATION_KEY, '1');
-      localStorage.setItem(RECENTS_KEY, '[]');
-      localStorage.setItem(META_KEY, '{}');
-    } catch (_) {}
+  function currentAge() {
+    return document.body.dataset.kidscadeAge || localStorage.getItem('kidscade_age') || '';
   }
 
-  function rememberPlayedCard(card) {
-    if (!card || card.classList.contains('disabled')) return;
-    const id = card.dataset.id;
-    if (!id) return;
-
-    const meta = readMeta();
-    meta[id] = Date.now();
-    const trimmed = Object.entries(meta)
-      .filter(([, timestamp]) => Number.isFinite(Number(timestamp)))
-      .sort((a, b) => Number(b[1]) - Number(a[1]))
-      .slice(0, 12);
-    writeMeta(Object.fromEntries(trimmed));
+  function getGame(id) {
+    if (window.KidscadeGames?.get) return window.KidscadeGames.get(id);
+    const card = document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(String(id || ''))}"]`);
+    if (!card) return null;
+    return {
+      id,
+      title: card.querySelector('.game-title')?.textContent?.trim() || '게임',
+      href: card.getAttribute('href') || '#',
+      age: card.dataset.age || 'all',
+      category: card.dataset.category || 'all',
+      icon: card.querySelector(':scope > .game-icon')?.textContent?.trim() || '🎮',
+      cover: card.dataset.cover || '',
+      disabled: card.classList.contains('disabled')
+    };
   }
 
   function findOriginCard(id) {
-    if (!id) return null;
-    return document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(id)}"]`);
+    return window.KidscadeGames?.getCard?.(id) ||
+      document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(String(id || ''))}"]`);
   }
 
-  function createMiniCard(origin) {
+  function launch(id, fallbackHref) {
+    const origin = findOriginCard(id);
+    if (origin) {
+      origin.click();
+      return;
+    }
+    if (fallbackHref && fallbackHref !== '#') window.location.href = fallbackHref;
+  }
+
+  function createMiniCard(game) {
     const mini = document.createElement('a');
     mini.className = 'game-card mini-card kc-dashboard-card';
-    mini.href = origin.getAttribute('href') || '#';
-
-    ['id', 'age', 'category', 'cover'].forEach(key => {
-      const value = origin.dataset[key];
-      if (value) mini.dataset[key] = value;
-    });
+    mini.href = game.href || '#';
+    mini.dataset.id = game.id;
+    mini.dataset.age = game.age || 'all';
+    mini.dataset.category = game.category || 'all';
+    if (game.cover) mini.dataset.cover = game.cover;
 
     const icon = document.createElement('div');
     icon.className = 'game-icon';
-    icon.textContent = origin.querySelector(':scope > .game-icon')?.textContent?.trim() || '🎮';
+    icon.textContent = game.icon || '🎮';
 
     const title = document.createElement('div');
     title.className = 'game-title';
-    title.textContent = origin.querySelector('.game-title')?.textContent?.trim() || '게임';
+    title.textContent = game.title || '게임';
 
     mini.append(icon, title);
     mini.setAttribute('aria-label', `${title.textContent} 다시 열기`);
     mini.addEventListener('click', event => {
       event.preventDefault();
-      const currentOrigin = findOriginCard(mini.dataset.id);
-      if (currentOrigin) currentOrigin.click();
-      else if (mini.href && mini.href !== '#') window.location.href = mini.href;
+      launch(game.id, game.href);
     });
 
     window.KidscadeGameCovers?.apply?.(mini);
     return mini;
   }
 
-  function replaceLegacyMiniCards(list) {
-    if (!list) return;
-    Array.from(list.children).forEach(card => {
-      if (!(card instanceof HTMLElement)) return;
-      if (card.classList.contains('kc-dashboard-card')) return;
-      const origin = findOriginCard(card.dataset?.id);
-      if (!origin) {
-        card.remove();
-        return;
-      }
-      card.replaceWith(createMiniCard(origin));
-    });
-  }
-
-  function sanitizeRecents() {
-    const list = document.getElementById('recent-list');
-    if (!list) return;
-    const allowed = new Set(Object.keys(readMeta()));
-
-    Array.from(list.children).forEach(card => {
-      const id = card.dataset?.id;
-      if (!id || !allowed.has(id)) card.remove();
-    });
-    replaceLegacyMiniCards(list);
-
-    try {
-      const stored = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
-      const clean = Array.isArray(stored) ? stored.filter(id => allowed.has(id)).slice(0, 4) : [];
-      localStorage.setItem(RECENTS_KEY, JSON.stringify(clean));
-    } catch (_) {
-      try { localStorage.setItem(RECENTS_KEY, '[]'); } catch (_) {}
+  function sanitizeIds(ids, age, limit = Infinity) {
+    const seen = new Set();
+    const valid = [];
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      const game = getGame(id);
+      if (!game || game.disabled) continue;
+      seen.add(id);
+      if (!age || game.age === age) valid.push(id);
+      if (valid.length >= limit) break;
     }
+    return valid;
   }
 
-  function normalizeFavorites() {
-    replaceLegacyMiniCards(document.getElementById('favorite-list'));
+  function renderList(list, ids) {
+    if (!list) return 0;
+    list.replaceChildren();
+    ids.forEach(id => {
+      const game = getGame(id);
+      if (game) list.appendChild(createMiniCard(game));
+    });
+    return list.children.length;
   }
 
-  function normalizeQuickHub() {
-    syncQueued = false;
-    sanitizeRecents();
-    normalizeFavorites();
+  function syncFavoriteStars(favoriteIds) {
+    const favorites = new Set(favoriteIds);
+    document.querySelectorAll('#game-list > .game-card').forEach(card => {
+      const star = card.querySelector(':scope > .fav-star');
+      if (!star) return;
+      const active = favorites.has(card.dataset.id);
+      star.textContent = active ? '★' : '☆';
+      star.classList.toggle('active', active);
+    });
+  }
 
+  function normalizeQuickHub(recentCount, favoriteCount) {
     const zone = document.querySelector('.kc-quick-zone');
     if (!zone) return;
 
-    const recentCount = document.getElementById('recent-list')?.children.length || 0;
-    const favoriteCount = document.getElementById('favorite-list')?.children.length || 0;
     const recentTab = zone.querySelector('[data-quick-tab="recent"]');
     const favoriteTab = zone.querySelector('[data-quick-tab="favorite"]');
     const time = zone.querySelector('.kc-quick-hub-time');
@@ -141,23 +134,47 @@
       favoriteTab.disabled = favoriteCount === 0;
     }
     if (time) time.hidden = true;
-
     zone.classList.toggle('kc-quick-empty', recentCount + favoriteCount === 0);
   }
 
-  function queueSync() {
-    if (syncQueued) return;
-    syncQueued = true;
-    requestAnimationFrame(normalizeQuickHub);
+  function render(options = {}) {
+    const age = options.age || currentAge();
+    const allFavorites = sanitizeIds(readArray(FAVORITES_KEY), '', Infinity);
+    const allRecents = sanitizeIds(readArray(RECENTS_KEY), '', MAX_RECENTS);
+
+    // 저장값 자체도 중복/삭제 게임을 제거해 둔다.
+    writeArray(FAVORITES_KEY, allFavorites);
+    writeArray(RECENTS_KEY, allRecents);
+
+    const favoritesForAge = sanitizeIds(allFavorites, age, Infinity);
+    const recentsForAge = sanitizeIds(allRecents, age, MAX_RECENTS);
+
+    const favoriteCount = renderList(document.getElementById('favorite-list'), favoritesForAge);
+    const recentCount = renderList(document.getElementById('recent-list'), recentsForAge);
+
+    const favoriteSection = document.getElementById('favorite-section');
+    const recentSection = document.getElementById('recent-section');
+    if (favoriteSection) favoriteSection.classList.toggle('hidden', favoriteCount === 0);
+    if (recentSection) recentSection.classList.toggle('hidden', recentCount === 0);
+
+    syncFavoriteStars(allFavorites);
+    normalizeQuickHub(recentCount, favoriteCount);
+
+    // ui-clarity-overhaul의 기존 quick hub 동기화가 같은 tick에 실행되어도
+    // 최종 표시는 이 모듈의 단순한 라벨을 사용한다.
+    setTimeout(() => normalizeQuickHub(recentCount, favoriteCount), 0);
+    return true;
   }
 
-  function observeDashboards() {
-    ['recent-list', 'favorite-list'].forEach(id => {
-      const target = document.getElementById(id);
-      if (!target || target.dataset.dashboardObserver === '1') return;
-      target.dataset.dashboardObserver = '1';
-      new MutationObserver(queueSync).observe(target, { childList: true });
-    });
+  function remember(id) {
+    if (!id) return false;
+    const game = getGame(id);
+    if (!game || game.disabled) return false;
+    const recents = readArray(RECENTS_KEY).filter(item => item !== id);
+    recents.unshift(id);
+    writeArray(RECENTS_KEY, recents.slice(0, MAX_RECENTS));
+    render();
+    return true;
   }
 
   function addStyles() {
@@ -169,42 +186,23 @@
       .kc-quick-hub-time { display:none !important; }
       .kc-quick-tabs [hidden] { display:none !important; }
       .dashboard-container { align-items:stretch; }
-      .dashboard-container .kc-dashboard-card {
-        text-decoration:none;
-        cursor:pointer;
-      }
+      .dashboard-container .kc-dashboard-card { text-decoration:none; cursor:pointer; }
     `;
     document.head.appendChild(style);
   }
 
-  function bindPlayTracking() {
-    document.addEventListener('click', event => {
-      const card = event.target.closest?.('#game-list > .game-card');
-      if (!card) return;
-      if (event.target.closest('.fav-star,.cert-btn')) return;
-      rememberPlayedCard(card);
-      queueSync();
-    });
-  }
-
   function boot() {
-    migrateOnce();
     addStyles();
-    bindPlayTracking();
-    observeDashboards();
-    queueSync();
-
-    window.addEventListener('pageshow', queueSync);
-    document.addEventListener('kidscade:catalog-ready', queueSync);
+    render();
+    window.addEventListener('pageshow', () => render());
+    window.addEventListener('storage', event => {
+      if ([FAVORITES_KEY, RECENTS_KEY].includes(event.key)) render();
+    });
+    document.addEventListener('kidscade:registry-ready', () => render());
+    document.querySelector('.kc-quick-zone')?.addEventListener('click', () => setTimeout(() => render(), 0));
   }
 
-  window.KidscadeDashboard = {
-    refresh: queueSync,
-    remember: card => {
-      rememberPlayedCard(card);
-      queueSync();
-    }
-  };
+  window.KidscadeDashboard = { render, refresh: render, remember };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
