@@ -27,7 +27,7 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
-    // Build the tag in pieces so the loader source never contains a closing-script sequence.
+    // Build script tags in pieces so the loader source never contains a closing-script sequence.
     const gardenScript='<scr'+'ipt src="garden.js"></scr'+'ipt>';
     const gardenScriptV2='<scr'+'ipt src="garden.js?v=avatar-preview-fix-v2"></scr'+'ipt>';
     html=html.replace(gardenScript,gardenScriptV2);
@@ -43,6 +43,9 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
       const insertPos=listPos+gameListMarker.length;
       html=html.slice(0,insertPos)+classroomWarCard+html.slice(insertPos);
     }
+
+    const scoreNormalizerScript='<scr'+'ipt src="score-display-normalizer.js?v=20260914-1"></scr'+'ipt>';
+    html=html.replace('</body>',scoreNormalizerScript+'</body>');
 
     document.open();
     document.write(html);
