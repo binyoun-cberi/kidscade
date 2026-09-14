@@ -11,7 +11,7 @@
    - `index_base.html`에 남아 있는 레거시 게임 카드 마크업은 실행 전에 제거하고, 현재 화면의 게임 카드를 `data/games.json`에서 전부 다시 렌더링한다.
    - 레거시 카드에서 쓰던 SVG 아이콘은 카탈로그의 `iconHtml`로 보존하며 안전한 SVG만 렌더링한다.
    - 같은 카탈로그 객체를 `window.KidscadeCatalog`로 런타임에 전달한다.
-   - 레거시 `applyFilters`, `renderDashboards`, `trackRecent`는 런타임 모듈이 준비되면 새 모듈에 위임한다.
+   - 레거시 `applyFilters`, `renderDashboards`, `trackRecent`, 추천 점수 계산은 런타임 모듈이 준비되면 새 모듈에 위임한다.
    - 레거시 카드별 즐겨찾기 click 핸들러는 제거하고 `dashboard-recent.js`의 이벤트 위임으로 넘긴다.
 3. `data/games.json`
    - 게임 정보와 게임 카드 표시 정보의 중앙 원본이다.
@@ -31,9 +31,16 @@
 7. `dashboard-recent.js`
    - `kidscade_favs`, `kidscade_recents`와 `KidscadeGames`로 최근 플레이/즐겨찾기를 렌더링한다.
    - 즐겨찾기 추가/해제와 별 상태를 전담하며 `KidscadeDashboard.toggleFavorite()`, `favorites()`, `isFavorite()` API를 제공한다.
+   - 최근 플레이도 `KidscadeDashboard.remember()`, `recents()`, `isRecent()` API로 한 곳에서 관리한다.
+   - 즐겨찾기/최근 플레이 변경 시 각각 `kidscade:favorites-changed`, `kidscade:recents-changed` 이벤트를 보낸다.
    - 별 클릭은 `#game-list`에서 캡처 단계 이벤트 위임으로 처리해 카드의 게임 실행 click과 충돌하지 않는다.
    - 메인 카드를 복제하지 않고 미니 카드를 별도로 만든다.
    - Quick Hub의 탭, 빈 상태, 표시 여부를 단독으로 관리한다.
+8. `game-recommendations.js`
+   - 쑥쑥이 추천 점수 계산을 전담한다.
+   - 게임 정보는 `KidscadeGames`에서 받고 즐겨찾기/최근 플레이는 `KidscadeDashboard` 상태 API를 사용한다.
+   - 카테고리 선호, 대표 학습 성향, 즐겨찾기, 최근 플레이 여부, 기록형 게임 여부, 설명 길이, 플레이 이력을 점수로 합산한다.
+   - 카드 DOM을 직접 읽지 않으며 Node에서도 같은 점수 함수를 테스트할 수 있다.
 
 ## 게임 카탈로그 이관 도구
 
@@ -77,18 +84,20 @@ node scripts/migrate-game-catalog.cjs --write
 - 현재 95개 게임을 중앙 카탈로그에 등록했다.
 - `game-registry.js`가 DOM에서 게임 데이터를 역추출하던 구조를 제거했다.
 - 개별 `.fav-star`에 직접 listener를 붙이던 레거시 경로를 제거하고 즐겨찾기 상태 변경을 `dashboard-recent.js`로 모았다.
+- 최근 플레이 상태 조회/변경도 `dashboard-recent.js`의 공통 API로 모았다.
 - 메인 화면의 게임 카드 자체도 더 이상 `index_base.html`의 레거시 카드 데이터를 사용하지 않고 카탈로그에서 생성한다.
+- 쑥쑥이 추천 점수 계산이 카드 DOM과 레거시 `favorites`/`recents` 배열을 직접 읽던 정상 런타임 경로를 제거하고 `game-recommendations.js` + 공통 상태 API로 전환했다.
 
 ## 아직 남은 레거시 영역
 
-`index_base.html`에는 이관 검증과 안전한 롤백을 위해 기존 게임 카드 마크업이 물리적으로 남아 있지만, 정상 진입 경로에서는 bootstrap이 이를 제거한 뒤 카탈로그 카드로 대체한다. 프로필, 상점, 게임 실행 모달, 플레이 시간, 씨앗, 펫 기능과 일부 추천/세션 로직은 아직 큰 인라인 스크립트에 남아 있다.
+`index_base.html`에는 이관 검증과 안전한 롤백을 위해 기존 게임 카드 마크업이 물리적으로 남아 있지만, 정상 진입 경로에서는 bootstrap이 이를 제거한 뒤 카탈로그 카드로 대체한다. 프로필, 상점, 게임 실행 모달, 플레이 시간, 씨앗, 펫 UI와 게임 실행/세션/보상 로직은 아직 큰 인라인 스크립트에 남아 있다.
 
 다음 순서는 다음과 같다.
 
-1. 추천 로직에 남아 있는 레거시 `favorites`/`recents` 배열 읽기를 공통 상태 API로 바꾼다.
-2. 게임 실행 iframe, 세션 시간 측정, 최근 플레이, 보상 처리를 `game-launcher.js` 계열로 분리한다.
-3. 프로필·상점·씨앗·플레이 시간·펫을 순차적으로 모듈화한다.
-4. 위 모듈화가 충분히 진행되면 `index_base.html`의 레거시 카드 마크업을 실제 파일에서도 삭제한다.
+1. 게임 실행 iframe, 세션 시작·종료 시간 측정, 최근 플레이 반영, 에너지/씨앗 보상 처리를 `game-launcher.js` 계열로 분리한다.
+2. 프로필·씨앗 지갑·플레이 시간 상태를 공통 상태 모듈로 분리한다.
+3. 상점과 펫 기능을 각 도메인 모듈로 분리한다.
+4. 위 모듈화가 충분히 진행되면 `index_base.html`의 레거시 카드 마크업과 fallback 컨트롤러를 실제 파일에서도 삭제한다.
 5. 마지막에 `index_base.html`을 작은 레이아웃 템플릿으로 축소하거나 제거한다.
 
 ## 금지할 패턴
@@ -99,6 +108,7 @@ node scripts/migrate-game-catalog.cjs --write
 - 최근 플레이 카드를 메인 카드 전체 DOM 복사본으로 관리하지 않는다.
 - 이미지 경로를 여러 파일에 중복해서 하드코딩하지 않는다.
 - 런타임 게임 정보의 원본으로 카드 DOM을 사용하지 않는다.
-- 즐겨찾기 상태를 개별 카드 이벤트 핸들러가 직접 관리하지 않는다.
+- 즐겨찾기/최근 플레이 상태를 개별 카드 이벤트 핸들러가 직접 관리하지 않는다.
+- 추천 점수 계산에서 카드 DOM을 데이터 원본으로 사용하지 않는다.
 - 메인 게임 카드 마크업을 `index_base.html`에 새로 추가하지 않는다.
 - 새로운 기능은 `KidscadeGames`와 공통 상태 API를 통해 게임 정보를 읽는다.
