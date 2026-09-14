@@ -19,20 +19,6 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     <div class="loader-note">게임 목록을 준비하고 있어요.</div>
   </div>
 </div>
-<script>
-(() => {
-  const nativeFetch = window.fetch.bind(window);
-  const freshCatalog = 'data/games.json?v=20260915-gate-cover-4';
-  window.fetch = (input, init) => {
-    if (typeof input === 'string' && /^data\/games\.json(?:\?|$)/.test(input)) {
-      input = freshCatalog;
-    } else if (input instanceof Request && /data\/games\.json(?:\?|$)/.test(input.url)) {
-      input = new Request(freshCatalog, input);
-    }
-    return nativeFetch(input, init);
-  };
-})();
-</script>
-<script src="main-bootstrap.js?v=20260915-gate-cover-4"></script>
+<script src="main-bootstrap.js?v=20260915-stability-1"></script>
 </body>
 </html>

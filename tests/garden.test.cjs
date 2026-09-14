@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const g = require('../garden.js');
+const g = require('../garden-core.js');
 
 test('legacy ownership and furniture migrate once, including collected fish', () => {
   const legacy={unlockedPets:['fish','dog','cat','unknown'],fishTank:{fish:['guppy','betta']},hamsterRoom:{wheels:2,toys:3},rooms:{cat:{towers:1}}};
