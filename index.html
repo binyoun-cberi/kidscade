@@ -15,106 +15,73 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
 <div id="kidscade-loader"><div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">게임 목록을 준비하고 있어요.</div></div></div>
 <script>
 (async()=>{
-  const numberTowerCard=`
-<a href="숫자 타워.html?v=1" class="game-card" data-category="math" data-age="low" data-id="low_math_number_tower">
-  <span class="fav-star">☆</span>
-  <div class="game-icon">🏰</div>
-  <div class="game-title">숫자 타워</div>
-  <div class="game-desc">탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!</div>
-</a>\n`;
+  const BASE_URL='index_base.html?refactor=20260914-1';
+  const CATALOG_URL='data/games.json?v=1';
 
-  const classroomWarCard=`
-<a href="classroom_war_3d.html?v=11" class="game-card" data-category="math" data-age="high" data-id="high_classroom_war_3d">
-  <span class="fav-star">☆</span>
-  <div class="game-icon">🎖️</div>
-  <div class="game-title">교실전쟁 3D</div>
-  <div class="game-desc">사칙연산 관문으로 병력을 키우고, 진짜 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!</div>
-</a>\n`;
+  const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
 
-  const byeokrandoCard=`
-<a href="byeokrando_voyage_release_candidate.html?v=1" class="game-card" data-category="trivia" data-age="high" data-id="high_byeokrando_voyage">
-  <span class="fav-star">☆</span>
-  <div class="game-icon">⛵</div>
-  <div class="game-title">벽란도 상행기</div>
-  <div class="game-desc">고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하며 해상 무역을 경험하는 역사·경제 항해 시뮬레이션!</div>
-</a>\n`;
+  function renderManagedCard(game){
+    const cover=game.cover?` data-cover="${escapeHtml(game.cover)}"`:'';
+    return `\n<a href="${escapeHtml(game.href)}" class="game-card" data-category="${escapeHtml(game.category)}" data-age="${escapeHtml(game.age)}" data-id="${escapeHtml(game.id)}"${cover}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${escapeHtml(game.icon||'🎮')}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description||'')}</div>\n</a>\n`;
+  }
 
-  const historyRoyaleCard=`
-<a href="history_royale_battlefield_visual_rework_v9_setup_fixed.html" class="game-card" data-category="trivia" data-age="high" data-id="high_history_royale">
-  <span class="fav-star">☆</span>
-  <div class="game-icon">⚔️</div>
-  <div class="game-title">역사 로얄</div>
-  <div class="game-desc">고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하세요. 역사 속 특징을 살린 실시간 전략 카드 배틀!</div>
-</a>\n`;
+  function injectCatalogCards(html,catalog){
+    const marker='<div class="game-container" id="game-list">';
+    const markerPos=html.indexOf(marker);
+    if(markerPos<0) throw new Error('게임 목록 영역을 찾지 못했습니다.');
 
-  try{
-    const res=await fetch('index_base.html?classroom-war=11&number-tower=1&byeokrando=1&history-royale=1',{cache:'no-store'});
-    if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
-    let html=await res.text();
+    const cards=(catalog.managedCards||[])
+      .filter(game=>game&&game.id&&!html.includes(`data-id="${game.id}"`))
+      .map(renderManagedCard)
+      .join('');
 
-    // Build script tags in pieces so the loader source never contains a closing-script sequence.
+    if(!cards) return html;
+    const insertPos=markerPos+marker.length;
+    return html.slice(0,insertPos)+cards+html.slice(insertPos);
+  }
+
+  function applyCompatibilityFixes(html){
     const gardenScript='<scr'+'ipt src="garden.js"></scr'+'ipt>';
     const gardenScriptV2='<scr'+'ipt src="garden.js?v=avatar-preview-fix-v2"></scr'+'ipt>';
     html=html.replace(gardenScript,gardenScriptV2);
-
-    // Spelling Frog: use the fixed wrapper so river logs carry the frog while riding.
     html=html.replace('href="스펠링 프로그.html"','href="스펠링 프로그-fixed.html?v=20260914-1"');
+    return html;
+  }
 
-    const lowMarker='<a href="곱셈 강아지 러너.html"';
-    const lowPos=html.indexOf(lowMarker);
-    if(lowPos>=0){
-      html=html.slice(0,lowPos)+numberTowerCard+html.slice(lowPos);
-    }else{
-      const gameListMarker='<div class="game-container" id="game-list">';
-      const listPos=html.indexOf(gameListMarker);
-      if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
-      const insertPos=listPos+gameListMarker.length;
-      html=html.slice(0,insertPos)+numberTowerCard+html.slice(insertPos);
-    }
+  function injectRefactorScripts(html){
+    const scripts=[
+      ['score-display-normalizer.js','20260914-1'],
+      ['ui-clarity-overhaul.js','20260914-1'],
+      ['ui-topbar-compact.js','20260914-1'],
+      ['seed-house-entry.js','20260914-2'],
+      ['game-cover-placeholders.js','20260914-refactor-1'],
+      ['dashboard-recent.js','20260914-refactor-1']
+    ].map(([src,v])=>'<scr'+'ipt src="'+src+'?v='+v+'"></scr'+'ipt>').join('');
+    return html.replace('</body>',scripts+'</body>');
+  }
 
-    const highMarker='<a href="딱! 타임 LCD.html" class="game-card" data-category="math" data-age="high"';
-    const highPos=html.indexOf(highMarker);
-    if(highPos>=0){
-      html=html.slice(0,highPos)+classroomWarCard+html.slice(highPos);
-    }else{
-      const gameListMarker='<div class="game-container" id="game-list">';
-      const listPos=html.indexOf(gameListMarker);
-      if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
-      const insertPos=listPos+gameListMarker.length;
-      html=html.slice(0,insertPos)+classroomWarCard+html.slice(insertPos);
-    }
+  try{
+    const [baseRes,catalogRes]=await Promise.all([
+      fetch(BASE_URL,{cache:'no-store'}),
+      fetch(CATALOG_URL,{cache:'no-store'})
+    ]);
+    if(!baseRes.ok) throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
+    if(!catalogRes.ok) throw new Error('게임 목록 데이터를 불러오지 못했습니다.');
 
-    const triviaSectionMarker='<!-- 초딩 생존기 게임 카드 -->';
-    let triviaSectionPos=html.indexOf(triviaSectionMarker);
-    if(triviaSectionPos>=0){
-      html=html.slice(0,triviaSectionPos)+byeokrandoCard+historyRoyaleCard+html.slice(triviaSectionPos);
-    }else{
-      const triviaMarker='<a href="outbreak_korea_v3.html" class="game-card" data-category="trivia" data-age="high"';
-      const triviaPos=html.indexOf(triviaMarker);
-      if(triviaPos>=0){
-        html=html.slice(0,triviaPos)+byeokrandoCard+historyRoyaleCard+html.slice(triviaPos);
-      }else{
-        const gameListMarker='<div class="game-container" id="game-list">';
-        const listPos=html.indexOf(gameListMarker);
-        if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
-        const insertPos=listPos+gameListMarker.length;
-        html=html.slice(0,insertPos)+byeokrandoCard+historyRoyaleCard+html.slice(insertPos);
-      }
-    }
-
-    const scoreNormalizerScript='<scr'+'ipt src="score-display-normalizer.js?v=20260914-1"></scr'+'ipt>';
-    const clarityOverhaulScript='<scr'+'ipt src="ui-clarity-overhaul.js?v=20260914-1"></scr'+'ipt>';
-    const compactTopbarScript='<scr'+'ipt src="ui-topbar-compact.js?v=20260914-1"></scr'+'ipt>';
-    const seedHouseEntryScript='<scr'+'ipt src="seed-house-entry.js?v=20260914-2"></scr'+'ipt>';
-    const gameCoverScript='<scr'+'ipt src="game-cover-placeholders.js?v=20260914-covers-3"></scr'+'ipt>';
-    html=html.replace('</body>',scoreNormalizerScript+clarityOverhaulScript+compactTopbarScript+seedHouseEntryScript+gameCoverScript+'</body>');
+    const catalog=await catalogRes.json();
+    let html=await baseRes.text();
+    html=injectCatalogCards(html,catalog);
+    html=applyCompatibilityFixes(html);
+    html=injectRefactorScripts(html);
 
     document.open();
     document.write(html);
     document.close();
   }catch(err){
     console.error(err);
-    document.getElementById('kidscade-loader').innerHTML='<div class="loader-card"><div class="loader-icon">⚠️</div><div class="loader-title">KIDSCADE를 불러오지 못했습니다.</div><div class="loader-note">'+err.message+'<br><a href="index_base.html">기존 화면 열기</a></div></div>';
+    document.getElementById('kidscade-loader').innerHTML='<div class="loader-card"><div class="loader-icon">⚠️</div><div class="loader-title">KIDSCADE를 불러오지 못했습니다.</div><div class="loader-note">'+escapeHtml(err.message)+'<br><a href="index_base.html">기존 화면 열기</a></div></div>';
   }
 })();
 </script>
