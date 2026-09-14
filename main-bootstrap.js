@@ -170,7 +170,7 @@
     html = replaceBetween(html, dashboardStart, dashboardEnd, dashboardReplacement);
 
     const recentStart = '            function trackRecent(id) {';
-    const recentEnd = '\n\n            // 즐겨찾기 클릭은 dashboard-recent.js가 이벤트 위임으로 전담합니다.';
+    const recentEnd = '\n\n            document.querySelectorAll(\'.fav-star\').forEach(star => {';
     const recentReplacement = `            function trackRecent(id) {
                 const card = document.querySelector(\`.game-card[data-id="${'${'}id}"]\`);
                 if(card && card.classList.contains('disabled')) return;
@@ -183,6 +183,15 @@
                 localStorage.setItem('kidscade_recents', JSON.stringify(recents)); renderDashboards();
             }`;
     html = replaceBetween(html, recentStart, recentEnd, recentReplacement);
+
+    const favoriteStart = "            document.querySelectorAll('.fav-star').forEach(star => {";
+    const favoriteEnd = '\n\n            gameCards.forEach(card => {';
+    const favoriteReplacement = `            // 즐겨찾기 클릭은 dashboard-recent.js가 이벤트 위임으로 전담합니다.
+            // 추천 로직에 남아 있는 레거시 배열은 중앙 상태 변경 이벤트로만 동기화합니다.
+            document.addEventListener('kidscade:favorites-changed', () => {
+                favorites = safeParseStorage('kidscade_favs', []);
+            });`;
+    html = replaceBetween(html, favoriteStart, favoriteEnd, favoriteReplacement);
 
     return html;
   }
