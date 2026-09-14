@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>숫자 타워 - KIDSCADE</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;background:#07132d;color:#fff}
+button{font:inherit}
+#game{height:100vh;overflow:hidden;position:relative;background:linear-gradient(#071643 0%,#173d76 54%,#93b2c2 100%)}
+#top{height:78px;position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:linear-gradient(rgba(4,10,29,.94),rgba(4,10,29,.25))}
+.box{background:rgba(6,15,40,.82);border:1px solid rgba(255,255,255,.15);border-radius:17px;padding:8px 13px;box-shadow:0 8px 22px rgba(0,0,0,.2)}
+#title{font-size:19px;font-weight:1000}.small{font-size:12px;opacity:.72}
+#powerHud{font-size:25px;font-weight:1000;color:#fff2a3}
+#top button{border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 12px;cursor:pointer}
+#top button:hover{background:rgba(255,255,255,.15)}
+#guide{position:absolute;top:89px;left:50%;z-index:35;transform:translateX(-50%);white-space:nowrap;background:rgba(4,12,34,.82);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 13px;font-size:12px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
+#guide b{color:#ffe46a}
+#viewport{position:absolute;top:78px;left:0;right:0;bottom:0;overflow:hidden}
+#world{position:absolute;left:0;bottom:0;height:100%;width:6100px;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+#ground{position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(#496d48,#183e2c);border-top:4px solid rgba(220,238,172,.23)}
+#mountains{position:absolute;left:0;right:0;bottom:66px;height:180px;opacity:.23;background:linear-gradient(145deg,transparent 0 7%,#113658 7% 17%,transparent 17% 23%,#173c60 23% 37%,transparent 37% 43%,#12385c 43% 57%,transparent 57% 64%,#15395b 64% 78%,transparent 78%)}
+.star{position:absolute;color:#dbe6a8;opacity:.7;z-index:1}.cloud{position:absolute;width:150px;height:38px;border-radius:50px;background:rgba(218,235,255,.16);z-index:1}.cloud:before,.cloud:after{content:"";position:absolute;border-radius:50%;background:inherit}.cloud:before{width:62px;height:62px;left:18px;top:-26px}.cloud:after{width:75px;height:75px;right:12px;top:-36px}
+.zoneLabel{position:absolute;bottom:77px;font-weight:1000;font-size:14px;color:#d7e9ff;opacity:.9}
+.zoneShade{position:absolute;bottom:70px;height:560px;border-left:1px dashed rgba(255,255,255,.13);border-right:1px dashed rgba(255,255,255,.13);background:linear-gradient(90deg,rgba(255,255,255,.015),rgba(255,255,255,.045),rgba(255,255,255,.015));pointer-events:none}
+.tower{position:absolute;bottom:70px;width:160px;display:flex;flex-direction:column-reverse}
+.room{height:106px;position:relative;border:7px solid #707b93;border-top-width:8px;background:linear-gradient(#2d6fa1,#214f78);display:flex;align-items:center;justify-content:center;overflow:visible;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18),0 7px 20px rgba(0,0,0,.16);transition:.18s}
+.room:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 29px,rgba(255,255,255,.05) 29px 31px),repeating-linear-gradient(0deg,transparent 0 25px,rgba(255,255,255,.05) 25px 27px);pointer-events:none}
+.room.enemy{background:linear-gradient(#ad6797,#7d486e)}
+.room.minus{background:linear-gradient(#a0545f,#6c3740)}
+.room.plus{background:linear-gradient(#398f7f,#28695f)}
+.room.boss{background:linear-gradient(#754099,#4d2b69);border-color:#9c75b3}
+.room.done{filter:grayscale(.75) brightness(.46);opacity:.43;pointer-events:none}
+.room.hiddenFloor{filter:brightness(.53);opacity:.62;pointer-events:none}
+.room.exposed{cursor:pointer;outline:4px solid rgba(255,226,92,.88);outline-offset:3px}
+.room.exposed:hover{filter:brightness(1.12);transform:translateY(-2px)}
+.room.danger.exposed{outline-color:#ff776d;box-shadow:0 0 23px rgba(255,88,74,.4)}
+.room .torch{position:absolute;left:6px;top:6px;font-size:16px;z-index:5}
+.val{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-weight:1000;font-size:21px;text-shadow:0 3px 6px rgba(0,0,0,.5);z-index:7}
+.cap{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:800;opacity:.82;z-index:7}
+.risk{position:absolute;right:-7px;top:-11px;z-index:11;background:#ff5d59;border:2px solid #fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:1000;display:none}
+.room.danger.exposed .risk{display:block}
+.gate{position:absolute;bottom:70px;width:185px}
+.gateArch{height:210px;border:15px solid #5d6580;border-bottom:0;border-radius:92px 92px 0 0;background:linear-gradient(#623d80,#3e2a59);position:relative;box-shadow:inset 0 0 0 3px rgba(255,255,255,.15),0 8px 24px rgba(0,0,0,.25)}
+.gateArch.exposed{cursor:pointer;outline:5px solid #ffe36a;outline-offset:5px;animation:glow 1s infinite}
+.gateArch.danger{outline-color:#ff6f67}
+.gateNum{position:absolute;top:13px;left:0;right:0;text-align:center;font-size:24px;font-weight:1000;text-shadow:0 3px 6px #000}
+.gateCap{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;opacity:.85}
+.gateSprite{position:absolute;left:50%;bottom:33px;transform:translateX(-50%) scale(1.08)}
+.sprite{position:relative;width:52px;height:68px;transform-origin:50% 100%;filter:drop-shadow(0 5px 4px rgba(0,0,0,.28));z-index:6}
+.sprite .head{position:absolute;left:14px;top:5px;width:24px;height:23px;background:#efbf89;border:2px solid #17263e;border-radius:46%;z-index:5}
+.sprite .hair{position:absolute;left:12px;top:2px;width:29px;height:11px;background:#35271e;border:2px solid #17263e;border-radius:15px 15px 7px 7px;z-index:6}
+.sprite .body{position:absolute;left:11px;top:27px;width:31px;height:27px;background:#4b99d0;border:2px solid #183251;border-radius:7px;z-index:4}
+.sprite .arm{position:absolute;top:30px;width:9px;height:23px;background:#efbf89;border:2px solid #183251;border-radius:6px;z-index:3;transform-origin:50% 4px}
+.sprite .arm.l{left:5px;transform:rotate(10deg)}.sprite .arm.r{right:4px;transform:rotate(-18deg)}
+.sprite .leg{position:absolute;top:51px;width:10px;height:17px;background:#243f65;border:2px solid #183251;border-radius:3px}
+.sprite .leg.l{left:13px}.sprite .leg.r{right:11px}
+.sprite .sword{position:absolute;right:-7px;top:22px;width:5px;height:35px;border-radius:3px;background:linear-gradient(90deg,#d5e0e7,#fff,#8fa0ac);border:1px solid #28394b;transform:rotate(-18deg);transform-origin:50% 90%;z-index:8}
+.sprite .sword:before{content:"";position:absolute;left:-5px;bottom:3px;width:15px;height:4px;border-radius:2px;background:#d5a43b;border:1px solid #26364c}
+.sprite.goblin .head,.sprite.goblin .arm{background:#74b566;border-color:#18351d}.sprite.goblin .hair{background:#274829;border-color:#18351d;height:8px}.sprite.goblin .body{background:#8c5938;border-color:#3a251b}.sprite.goblin .leg{background:#58402e;border-color:#32261e}.sprite.goblin .sword{display:none}
+.sprite.goblin:before,.sprite.goblin:after{content:"";position:absolute;top:9px;width:13px;height:9px;background:#74b566;border:2px solid #18351d;z-index:4}.sprite.goblin:before{left:4px;clip-path:polygon(100% 0,0 50%,100% 100%)}.sprite.goblin:after{right:2px;clip-path:polygon(0 0,100% 50%,0 100%)}
+.sprite.boss{width:68px;height:82px}.sprite.boss .head{left:19px;top:7px;width:30px;height:28px;background:#9e68d0;border-color:#32164e}.sprite.boss .hair{left:17px;top:3px;width:34px;background:#47205f;border-color:#32164e}.sprite.boss .body{left:14px;top:34px;width:40px;height:34px;background:#713c96;border-color:#32164e}.sprite.boss .arm{top:38px;height:28px;background:#9e68d0;border-color:#32164e}.sprite.boss .leg{top:65px;background:#44245f;border-color:#32164e}.sprite.boss .leg.l{left:17px}.sprite.boss .leg.r{right:15px}.sprite.boss .sword{display:none}
+.horn{position:absolute;top:-5px;width:17px;height:18px;background:#ead8a3;border:2px solid #39283f;clip-path:polygon(50% 0,100% 100%,0 80%);z-index:7}.horn.h1{left:7px;transform:rotate(-20deg)}.horn.h2{right:5px;transform:rotate(20deg)}
+#hero{position:absolute;z-index:25;left:75px;bottom:78px;display:flex;flex-direction:column;align-items:center;transition:left .62s cubic-bezier(.2,.8,.2,1),bottom .62s cubic-bezier(.2,.8,.2,1)}
+#heroBubble{min-width:60px;background:#fff;color:#24375c;border:4px solid #253a62;border-radius:999px;text-align:center;padding:2px 8px;font-size:23px;font-weight:1000;box-shadow:0 5px 14px rgba(0,0,0,.28)}
+#hero.run .sprite{animation:runbob .23s infinite alternate}
+.battle{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:space-between;padding:10px 16px 4px;background:rgba(2,6,18,.18)}
+.battle .fighter{display:flex;flex-direction:column;align-items:center}.battle .tag{background:#fff;color:#26375c;border:3px solid #253a62;border-radius:999px;min-width:46px;text-align:center;font-weight:1000;padding:1px 6px;margin-bottom:-2px;z-index:10}
+.battle.attack .heroF{animation:lunge .46s ease}.battle.attack .heroF .sword{animation:slash .4s ease}.battle.attack .enemyF{animation:hit .4s .15s ease}
+.battle.counter .enemyF{animation:enemyLunge .42s ease}.battle.counter .heroF{animation:heroHit .36s .12s ease}
+.battle.dead .enemyF{animation:fall .58s forwards}
+.fx{position:absolute;right:25%;top:28%;font-size:34px;font-weight:1000;color:#fff1a2;text-shadow:0 0 10px #ff5c3f,0 4px 8px #000;opacity:0}.fx.pop{animation:pop .4s ease}
+.slashfx{position:absolute;right:20%;top:20%;width:55px;height:55px;border-top:7px solid #fff8b5;border-right:7px solid #fff8b5;border-radius:50%;opacity:0}.slashfx.go{animation:slashArc .35s ease}
+.shake{animation:shake .35s ease}
+#modal,#end{position:fixed;inset:0;z-index:100;background:rgba(2,6,20,.73);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:18px}
+#modal.open,#end.open{display:flex}
+.panel{width:min(500px,95vw);background:linear-gradient(#18305d,#0c1b3a);border:2px solid rgba(255,255,255,.17);border-radius:25px;padding:24px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.panel h2{margin:0 0 5px}#equation{font-size:43px;font-weight:1000;margin:17px 0}
+#answers{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.ans{border:0;border-radius:16px;padding:16px 8px;background:linear-gradient(#fff5bd,#ffd45c);color:#263759;font-size:27px;font-weight:1000;box-shadow:0 6px 0 #b78d26;cursor:pointer}.ans:hover{transform:translateY(-2px)}.ans.wrong{background:#ff9999;box-shadow:0 6px 0 #a94a4a;animation:shake .3s}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px}.actions button{border:0;border-radius:15px;padding:12px 18px;font-weight:900;cursor:pointer}.main{background:#ffdc67;color:#24365a}.subbtn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.16)!important}
+#toast{position:fixed;z-index:110;left:50%;top:18%;transform:translate(-50%,-50%) scale(.85);opacity:0;background:rgba(5,13,35,.93);border:2px solid rgba(255,255,255,.18);border-radius:19px;padding:11px 18px;font-weight:1000;font-size:21px;pointer-events:none;transition:.2s;box-shadow:0 15px 40px rgba(0,0,0,.35)}#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#loseReason{font-size:18px;line-height:1.55}
+@keyframes glow{50%{box-shadow:0 0 0 7px rgba(255,226,95,.17),0 0 28px rgba(255,226,95,.5)}}
+@keyframes runbob{to{transform:translateY(-4px)}}@keyframes lunge{0%,100%{transform:none}48%{transform:translateX(40px) translateY(-5px)}}@keyframes slash{0%{transform:rotate(-25deg)}50%{transform:rotate(85deg)}100%{transform:rotate(-18deg)}}@keyframes hit{40%{transform:translateX(11px) rotate(7deg);filter:brightness(1.8)}}@keyframes enemyLunge{50%{transform:translateX(-28px)}}@keyframes heroHit{45%{transform:translateX(-10px) rotate(-7deg);filter:brightness(1.8)}}@keyframes fall{to{opacity:0;transform:translateY(25px) rotate(38deg) scale(.7)}}@keyframes pop{45%{opacity:1;transform:scale(1.35)}100%{opacity:0}}@keyframes slashArc{30%{opacity:1}100%{opacity:0;transform:rotate(60deg) scale(1.3)}}@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@media(max-width:700px){#guide{font-size:10px}.tower{width:145px}.room{height:100px}}
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="star" style="left:8%;top:15%;font-size:22px">★</div><div class="star" style="left:29%;top:10%;font-size:16px">★</div><div class="star" style="left:64%;top:18%;font-size:23px">★</div>
+  <div class="cloud" style="left:10%;top:28%"></div><div class="cloud" style="left:55%;top:22%;width:190px"></div>
+  <header id="top">
+    <div style="display:flex;gap:9px;align-items:center">
+      <div class="box"><div id="title">숫자 타워</div><div class="small" id="stageText">스테이지 1 · 선택해서 강해지기</div></div>
+      <div class="box">내 숫자 <span id="powerHud">10</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="restart">↻ 다시하기</button><button id="next">다음 스테이지 ▶</button>
+    </div>
+  </header>
+  <div id="guide"><b>노란 테두리</b>는 지금 갈 수 있는 층. 너무 강한 적을 고르거나 계산을 틀리면 바로 패배!</div>
+  <div id="viewport"><div id="world"><div id="mountains"></div><div id="ground"></div>
+    <div id="hero"><div id="heroBubble">10</div><div class="sprite"><div class="hair"></div><div class="head"></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="leg l"></div><div class="leg r"></div><div class="sword"></div></div></div>
+  </div></div>
+</div>
+<div id="modal"><div class="panel"><h2 id="modalTitle">계산!</h2><div class="small" id="modalSub">틀리면 패배합니다.</div><div id="equation">10 + 6 = ?</div><div id="answers"></div></div></div>
+<div id="end"><div class="panel"><div id="endEmoji" style="font-size:58px">💥</div><h2 id="endTitle">패배!</h2><div id="loseReason"></div><div class="actions"><button class="subbtn" id="retry">다시하기</button><button class="main" id="continue">다음 스테이지</button></div></div></div>
+<div id="toast"></div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const world=$("#world"), viewport=$("#viewport"), hero=$("#hero"), powerHud=$("#powerHud"), heroBubble=$("#heroBubble"), modal=$("#modal"), end=$("#end"), toast=$("#toast");
+const stages=[
+ {
+  name:"스테이지 1 · 20 이하 덧셈·뺄셈",
+  start:10,
+  zones:[
+   {gate:28,towers:[
+    [{type:"enemy",n:6},{type:"plus",n:4},{type:"enemy",n:19}],
+    [{type:"enemy",n:9},{type:"minus",n:7},{type:"enemy",n:18},{type:"plus",n:5}],
+    [{type:"plus",n:3},{type:"enemy",n:14}]
+   ]},
+   {gate:54,towers:[
+    [{type:"enemy",n:17},{type:"minus",n:12},{type:"enemy",n:35}],
+    [{type:"plus",n:8},{type:"enemy",n:29},{type:"plus",n:6},{type:"enemy",n:43},{type:"minus",n:9}],
+    [{type:"enemy",n:22},{type:"plus",n:5}]
+   ]},
+   {gate:92,boss:true,towers:[
+    [{type:"enemy",n:41},{type:"plus",n:9},{type:"enemy",n:73}],
+    [{type:"minus",n:15},{type:"enemy",n:58},{type:"plus",n:12},{type:"enemy",n:80}],
+    [{type:"enemy",n:47},{type:"plus",n:7}]
+   ]}
+  ]
+ },
+ {
+  name:"스테이지 2 · 뺄셈 함정 주의",
+  start:12,
+  zones:[
+   {gate:35,towers:[
+    [{type:"enemy",n:8},{type:"minus",n:11},{type:"enemy",n:20}],
+    [{type:"plus",n:6},{type:"enemy",n:16},{type:"minus",n:9},{type:"enemy",n:26}],
+    [{type:"enemy",n:10},{type:"plus",n:5},{type:"enemy",n:24},{type:"plus",n:4},{type:"minus",n:7}]
+   ]},
+   {gate:68,towers:[
+    [{type:"enemy",n:31},{type:"plus",n:7}],
+    [{type:"minus",n:18},{type:"enemy",n:38},{type:"plus",n:9},{type:"enemy",n:55}],
+    [{type:"enemy",n:29},{type:"plus",n:12},{type:"minus",n:10}]
+   ]},
+   {gate:110,boss:true,towers:[
+    [{type:"enemy",n:52},{type:"minus",n:21},{type:"enemy",n:81}],
+    [{type:"plus",n:11},{type:"enemy",n:66},{type:"plus",n:8},{type:"enemy",n:95}],
+    [{type:"enemy",n:48},{type:"plus",n:14}]
+   ]}
+  ]
+ }
+];
+let si=0, power=0, zoneIndex=0, state=[], busy=false, currentQuiz=null;
+const towerEls=[], gateEls=[];
+function sprite(kind){
+ const cls=kind==="enemy"?"goblin":kind==="boss"?"boss":"";
+ const horns=kind==="boss"?'<div class="horn h1"></div><div class="horn h2"></div>':'';
+ return `<div class="sprite ${cls}">${horns}<div class="hair"></div><div class="head"></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="leg l"></div><div class="leg r"></div><div class="sword"></div></div>`;
+}
+function roomInfo(r){
+ if(r.type==="enemy") return {v:r.n,cap:"몬스터 · 승리하면 +"+r.n,body:sprite("enemy")};
+ if(r.type==="plus") return {v:"+"+r.n,cap:"보물방",body:'<div style="font-size:43px;z-index:6">💎</div>'};
+ return {v:"−"+r.n,cap:"함정방",body:'<div style="font-size:43px;z-index:6">🕳️</div>'};
+}
+function init(){
+ [...world.querySelectorAll(".tower,.gate,.zoneShade,.zoneLabel")].forEach(e=>e.remove());
+ const s=stages[si]; power=s.start; zoneIndex=0;busy=false;state=[];towerEls.length=0;gateEls.length=0;
+ $("#stageText").textContent=s.name;
+ let x=330;
+ s.zones.forEach((z,zi)=>{
+  const zoneStart=x-65;
+  const shade=document.createElement("div");shade.className="zoneShade";shade.style.left=zoneStart+"px";shade.style.width="930px";world.appendChild(shade);
+  const lab=document.createElement("div");lab.className="zoneLabel";lab.style.left=(zoneStart+10)+"px";lab.textContent=`구역 ${zi+1}`;world.appendChild(lab);
+  state[zi]=z.towers.map(t=>({cleared:t.map(()=>false)}));
+  z.towers.forEach((tower,ti)=>{
+   const t=document.createElement("div");t.className="tower";t.style.left=x+"px";t.dataset.zi=zi;t.dataset.ti=ti;
+   tower.forEach((r,ri)=>{
+    const d=roomInfo(r),el=document.createElement("div");el.className="room "+r.type;el.dataset.zi=zi;el.dataset.ti=ti;el.dataset.ri=ri;
+    el.innerHTML=`<span class="torch">🔥</span><div class="val">${d.v}</div>${d.body}<div class="cap">${d.cap}</div><div class="risk">위험!</div>`;
+    el.onclick=()=>chooseRoom(el,zi,ti,ri,r);t.appendChild(el);
+   });
+   world.appendChild(t);towerEls.push(t);x+=205;
+  });
+  const g=document.createElement("div");g.className="gate";g.style.left=(x+25)+"px";g.dataset.zi=zi;
+  g.innerHTML=`<div class="gateArch"><div class="gateNum">${z.gate}</div><div class="gateSprite">${sprite(z.boss?"boss":"enemy")}</div><div class="gateCap">${z.boss?"최종 보스":"구역 보스 · 승리하면 다음 구역"}</div></div>`;
+  g.querySelector(".gateArch").onclick=()=>chooseGate(g,zi,z);world.appendChild(g);gateEls.push(g);x+=305;
+ });
+ hero.style.left="90px";hero.style.bottom="78px";world.style.transform="translateX(0px)";end.classList.remove("open");modal.classList.remove("open");hero.style.opacity="1";
+ update();
+ show("어느 탑부터 공략할지 골라보세요!");
+}
+function floorExposed(zi,ti,ri){
+ if(zi!==zoneIndex) return false;
+ if(state[zi][ti].cleared[ri]) return false;
+ for(let i=0;i<ri;i++) if(!state[zi][ti].cleared[i]) return false;
+ return true;
+}
+function dangerous(r){
+ if(r.type==="enemy") return power<r.n;
+ if(r.type==="minus") return power-r.n<0;
+ return false;
+}
+function update(){
+ powerHud.textContent=power;heroBubble.textContent=power;
+ const s=stages[si];
+ towerEls.forEach(t=>{
+  const zi=+t.dataset.zi,ti=+t.dataset.ti;
+  [...t.children].forEach((el,ri)=>{
+   el.classList.remove("exposed","danger","hiddenFloor","done");
+   if(state[zi][ti].cleared[ri]) el.classList.add("done");
+   else if(floorExposed(zi,ti,ri)){el.classList.add("exposed"); if(dangerous(s.zones[zi].towers[ti][ri])) el.classList.add("danger");}
+   else el.classList.add("hiddenFloor");
+  });
+ });
+ gateEls.forEach(g=>{
+  const zi=+g.dataset.zi,arch=g.querySelector(".gateArch"),z=s.zones[zi];
+  arch.classList.remove("exposed","danger");
+  if(zi===zoneIndex){arch.classList.add("exposed");if(power<z.gate)arch.classList.add("danger");}
+ });
+}
+function chooseRoom(el,zi,ti,ri,r){
+ if(busy||!el.classList.contains("exposed"))return;
+ busy=true;moveHero(el,()=>enterRoom(el,zi,ti,ri,r));
+}
+function chooseGate(g,zi,z){
+ const arch=g.querySelector(".gateArch");if(busy||!arch.classList.contains("exposed"))return;
+ busy=true;moveHero(g,()=>fightGate(g,zi,z));
+}
+function moveHero(el,cb){
+ hero.classList.add("run");
+ const er=el.getBoundingClientRect(),wr=world.getBoundingClientRect();
+ const x=er.left-wr.left+er.width/2-26;
+ let bottom=80;
+ if(el.classList.contains("room")) bottom=70+(+el.dataset.ri)*106+12;
+ hero.style.left=x+"px";hero.style.bottom=bottom+"px";camera(x);
+ setTimeout(()=>{hero.classList.remove("run");cb();},630);
+}
+function camera(x){
+ const vw=viewport.clientWidth,max=Math.max(0,world.scrollWidth-vw),want=Math.min(max,Math.max(0,x-vw*.35));
+ world.style.transform=`translateX(${-want}px)`;
+}
+async function enterRoom(el,zi,ti,ri,r){
+ if(r.type==="enemy"){
+  if(power<r.n){await loseBattle(el,r.n,`내 숫자 ${power}보다 몬스터 ${r.n}이 더 큽니다.<br>탑의 순서를 잘 골라야 해요.`);return;}
+  await winBattle(el,r.n,false);
+  ask(`${power} + ${r.n} = ?`,power+r.n,()=>{
+    power+=r.n;state[zi][ti].cleared[ri]=true;finishAction(el,`${power-r.n} + ${r.n} = ${power}`);
+  },`몬스터를 이겼지만 덧셈을 잘못했습니다.`);
+ }else{
+  const isPlus=r.type==="plus",correct=isPlus?power+r.n:power-r.n;
+  if(correct<0){lose(`함정 −${r.n}을 선택해 숫자가 0보다 작아졌습니다.<br>다른 층을 먼저 공략해야 했어요.`);return;}
+  ask(`${power} ${isPlus?"+":"−"} ${r.n} = ?`,correct,()=>{
+    const old=power;power=correct;state[zi][ti].cleared[ri]=true;finishAction(el,`${old} ${isPlus?"+":"−"} ${r.n} = ${power}`);
+  },`${isPlus?"덧셈":"뺄셈"}을 잘못해서 함정에 빠졌습니다.`);
+ }
+}
+async function fightGate(g,zi,z){
+ if(power<z.gate){await loseBattle(g,z.gate,`내 숫자 ${power}로는 ${z.boss?"보스":"구역 보스"} ${z.gate}을 이길 수 없습니다.<br>탑에서 더 강해져야 했어요.`);return;}
+ await winBattle(g,z.gate,z.boss);
+ if(z.boss){ask(`${power} + ${z.gate} = ?`,power+z.gate,()=>{power+=z.gate;update();win();},`마지막 덧셈을 틀려 보스에게 역전당했습니다.`);}
+ else{
+  ask(`${power} + ${z.gate} = ?`,power+z.gate,()=>{
+    const old=power;power+=z.gate;zoneIndex++;busy=false;update();show(`${old} + ${z.gate} = ${power} · 다음 구역!`);
+    const nextGate=gateEls[zoneIndex-1];camera(parseFloat(nextGate.style.left)+240);
+  },`보스 전투 뒤 덧셈을 잘못해 패배했습니다.`);
+ }
+}
+function ask(eq,correct,onCorrect,wrongReason){
+ currentQuiz={correct,onCorrect,wrongReason};$("#equation").textContent=eq;$("#modalTitle").textContent="계산해서 살아남기!";$("#modalSub").textContent="한 번 틀리면 바로 패배합니다.";
+ const vals=new Set([correct]),offs=[-1,1,-2,2,-3,3,4,-4,5,-5];
+ while(vals.size<3) vals.add(Math.max(0,correct+offs[Math.floor(Math.random()*offs.length)]));
+ const a=$("#answers");a.innerHTML="";
+ [...vals].sort(()=>Math.random()-.5).forEach(v=>{const b=document.createElement("button");b.className="ans";b.textContent=v;b.onclick=()=>{if(v!==correct){b.classList.add("wrong");setTimeout(()=>{modal.classList.remove("open");lose(wrongReason);},250);}else{modal.classList.remove("open");onCorrect();}};a.appendChild(b);});
+ modal.classList.add("open");
+}
+async function winBattle(container,num,boss){
+ const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(boss?"boss":"enemy")}</div><div class="slashfx"></div><div class="fx"></div>`;
+ const target=container.classList.contains("gate")?container.querySelector(".gateArch"):container;target.appendChild(ov);hero.style.opacity="0";
+ await wait(220);ov.classList.add("counter");await wait(420);ov.classList.remove("counter");ov.classList.add("attack");ov.querySelector(".slashfx").classList.add("go");const fx=ov.querySelector(".fx");fx.textContent=boss?"쾅!":"퍽!";fx.classList.add("pop");await wait(500);
+ if(boss){ov.classList.remove("attack");ov.querySelector(".slashfx").classList.remove("go");fx.classList.remove("pop");await wait(70);void ov.offsetWidth;ov.classList.add("attack");ov.querySelector(".slashfx").classList.add("go");fx.textContent="필살!";fx.classList.add("pop");await wait(500);}
+ ov.classList.add("dead");await wait(470);ov.remove();hero.style.opacity="1";
+}
+async function loseBattle(container,num,reason){
+ const target=container.classList.contains("gate")?container.querySelector(".gateArch"):container;
+ const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(container.classList.contains("gate")?"boss":"enemy")}</div><div class="fx"></div>`;
+ target.appendChild(ov);hero.style.opacity="0";await wait(220);ov.classList.add("counter");const fx=ov.querySelector(".fx");fx.textContent="패배!";fx.classList.add("pop");await wait(580);ov.remove();hero.style.opacity="1";lose(reason);
+}
+function finishAction(el,msg){el.querySelector(".battle")?.remove();busy=false;update();show(msg);}
+function lose(reason){busy=true;$("#endEmoji").textContent="💥";$("#endTitle").textContent="패배!";$("#loseReason").innerHTML=reason;$("#continue").style.display="none";end.classList.add("open");}
+function win(){busy=true;$("#endEmoji").textContent="🏆";$("#endTitle").textContent="스테이지 클리어!";$("#loseReason").innerHTML=`최종 숫자 <b style="font-size:28px">${power}</b><br>탑의 순서와 계산을 모두 성공했습니다.`;$("#continue").style.display="inline-block";end.classList.add("open");}
+function show(msg){toast.textContent=msg;toast.classList.add("show");clearTimeout(show.t);show.t=setTimeout(()=>toast.classList.remove("show"),1100)}
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+$("#restart").onclick=()=>init();$("#retry").onclick=()=>init();$("#next").onclick=()=>{si=(si+1)%stages.length;init()};$("#continue").onclick=()=>{si=(si+1)%stages.length;init()};
+init();
+})();
+</script>
+</body>
+</html>
