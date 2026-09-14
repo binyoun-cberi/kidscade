@@ -40,6 +40,9 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     const gardenScriptV2='<scr'+'ipt src="garden.js?v=avatar-preview-fix-v2"></scr'+'ipt>';
     html=html.replace(gardenScript,gardenScriptV2);
 
+    // Spelling Frog: use the fixed wrapper so river logs carry the frog while riding.
+    html=html.replace('href="스펠링 프로그.html"','href="스펠링 프로그-fixed.html?v=20260914-1"');
+
     const lowMarker='<a href="곱셈 강아지 러너.html"';
     const lowPos=html.indexOf(lowMarker);
     if(lowPos>=0){
