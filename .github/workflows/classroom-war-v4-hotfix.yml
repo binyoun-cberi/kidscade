@@ -1,0 +1,30 @@
+name: Classroom War v4 Hotfix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/classroom-war-v4-hotfix.yml'
+      - 'scripts/classroom-war-v4-hotfix.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch homework bomb visual
+        run: node scripts/classroom-war-v4-hotfix.cjs
+      - name: Commit hotfix
+        run: |
+          if git diff --quiet -- classroom_war_3d.html; then
+            echo "No change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add classroom_war_3d.html
+          git commit -m "Polish Classroom War homework bomb rolling"
+          git push
