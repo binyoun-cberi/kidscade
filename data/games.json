@@ -8,6 +8,7 @@
       "category": "math",
       "age": "low",
       "icon": "🏰",
+      "cover": "assets/gate-image/숫자 타워.png",
       "description": "탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!"
     },
     {
@@ -17,7 +18,7 @@
       "category": "math",
       "age": "high",
       "icon": "🎖️",
-      "cover": "교실전쟁3D.png",
+      "cover": "assets/gate-image/교실전쟁3D.png",
       "description": "사칙연산 관문으로 병력을 키우고, 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!"
     },
     {
@@ -27,7 +28,7 @@
       "category": "music",
       "age": "high",
       "icon": "🏍️",
-      "cover": "네온 리프트.png",
+      "cover": "assets/gate-image/네온 리프트.png",
       "description": "박자에 맞춰 달리는 1인칭 리듬 러너! 신나는 비트 속에서 차선을 바꾸고 점프하며 24개의 스테이지를 돌파해 보세요."
     },
     {
@@ -37,7 +38,7 @@
       "category": "music",
       "age": "high",
       "icon": "🎼",
-      "cover": "멜로디 공방.png",
+      "cover": "assets/gate-image/멜로디 공방.png",
       "description": "음표와 쉼표를 악보에 직접 배치하고 완성한 곡을 들어보세요. 제목과 가사까지 작성할 수 있는 작곡 공방입니다."
     },
     {
@@ -47,7 +48,7 @@
       "category": "trivia",
       "age": "high",
       "icon": "⛵",
-      "cover": "벽란도 상행기.png",
+      "cover": "assets/gate-image/벽란도 상행기.png",
       "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!"
     },
     {
@@ -57,7 +58,7 @@
       "category": "lang",
       "age": "high",
       "icon": "🛡️",
-      "cover": "한자수호전.png",
+      "cover": "assets/gate-image/한자수호전.png",
       "scoreKey": "hanja_survivors_best",
       "description": "올바른 획순으로 8급 한자를 적어 다가오는 원령들을 물리치는 디펜스 게임!"
     },
@@ -68,8 +69,28 @@
       "category": "trivia",
       "age": "high",
       "icon": "⚔️",
+      "cover": "assets/gate-image/역사 로얄.png",
       "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
     }
   ],
-  "coverById": {}
+  "coverById": {
+    "low_math_number_tower": "assets/gate-image/숫자 타워.png",
+    "high_classroom_war_3d": "assets/gate-image/교실전쟁3D.png",
+    "music_neon_rift": "assets/gate-image/네온 리프트.png",
+    "high_melody_workshop": "assets/gate-image/멜로디 공방.png",
+    "high_byeokrando_voyage": "assets/gate-image/벽란도 상행기.png",
+    "hanja_survivors_8": "assets/gate-image/한자수호전.png",
+    "high_history_royale": "assets/gate-image/역사 로얄.png",
+    "high_outbreak_korea": "assets/gate-image/OUTBREAK KOREA.png",
+    "tod_antarctic_exploration": "assets/gate-image/남극 탐험 대작전.png",
+    "high_rhythm_dash": "assets/gate-image/리듬 대시.png",
+    "tod_shape_color": "assets/gate-image/모양 색깔 친구들 집 찾기.png",
+    "tod_chick_shell": "assets/gate-image/병아리는 어디에.png",
+    "trivia_blockraft": "assets/gate-image/블록래프트.png",
+    "school_tower": "assets/gate-image/수식의 첨탑.png",
+    "spelling_frog": "assets/gate-image/스펠링 프로그.png",
+    "alien_pizza": "assets/gate-image/외계인 피자 가게.png",
+    "patience_tower": "assets/gate-image/인내의 탑.png",
+    "low_one_stroke": "assets/gate-image/한붓쓱.png"
+  }
 }
