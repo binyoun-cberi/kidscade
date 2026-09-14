@@ -2,22 +2,26 @@
   'use strict';
 
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
-  const CATALOG_URL = 'data/games.json?v=1';
+  const FALLBACK_CATALOG_URL = 'data/games.json?v=2';
   const STYLE_ID = 'kidscade-game-cover-styles';
-  let catalogPromise = null;
+  let fallbackCatalogPromise = null;
 
-  function loadCatalog() {
-    if (catalogPromise) return catalogPromise;
-    catalogPromise = fetch(CATALOG_URL, { cache: 'no-store' })
-      .then(res => {
-        if (!res.ok) throw new Error(`game catalog ${res.status}`);
-        return res.json();
-      })
-      .catch(err => {
-        console.warn('[Kidscade] game catalog load failed:', err);
-        return { managedCards: [], coverById: {} };
-      });
-    return catalogPromise;
+  function getCatalog() {
+    if (window.KidscadeCatalog && typeof window.KidscadeCatalog === 'object') {
+      return Promise.resolve(window.KidscadeCatalog);
+    }
+    if (!fallbackCatalogPromise) {
+      fallbackCatalogPromise = fetch(FALLBACK_CATALOG_URL, { cache: 'no-store' })
+        .then(res => {
+          if (!res.ok) throw new Error(`game catalog ${res.status}`);
+          return res.json();
+        })
+        .catch(err => {
+          console.warn('[Kidscade] game catalog fallback load failed:', err);
+          return { games: [], managedCards: [], coverById: {} };
+        });
+    }
+    return fallbackCatalogPromise;
   }
 
   function installStyles() {
@@ -195,32 +199,30 @@
     scope.querySelectorAll?.('.game-card').forEach(card => applyCover(card, catalog));
   }
 
-  function observeContainers(catalog) {
-    ['game-list', 'recent-list', 'favorite-list'].forEach(id => {
-      const target = document.getElementById(id);
-      if (!target || target.dataset.coverObserver === '1') return;
-      target.dataset.coverObserver = '1';
-      const observer = new MutationObserver(mutations => {
-        mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
-          if (node instanceof HTMLElement) applyAll(node, catalog);
-        }));
-      });
-      observer.observe(target, { childList: true, subtree: true });
+  function observeGameList(catalog) {
+    const target = document.getElementById('game-list');
+    if (!target || target.dataset.coverObserver === '1') return;
+    target.dataset.coverObserver = '1';
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
+        if (node instanceof HTMLElement) applyAll(node, catalog);
+      }));
     });
+    observer.observe(target, { childList: true, subtree: true });
   }
 
   async function boot() {
     installStyles();
-    const catalog = await loadCatalog();
+    const catalog = await getCatalog();
     applyAll(document, catalog);
-    observeContainers(catalog);
+    observeGameList(catalog);
     document.dispatchEvent(new CustomEvent('kidscade:catalog-ready', { detail: catalog }));
   }
 
   window.KidscadeGameCovers = {
-    refresh: async (root = document) => applyAll(root, await loadCatalog()),
-    apply: async card => applyCover(card, await loadCatalog()),
-    catalog: loadCatalog,
+    refresh: async (root = document) => applyAll(root, await getCatalog()),
+    apply: async card => applyCover(card, await getCatalog()),
+    catalog: getCatalog,
     defaultCover: DEFAULT_GAME_COVER
   };
 
