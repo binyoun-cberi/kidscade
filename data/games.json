@@ -71,6 +71,121 @@
       "icon": "⚔️",
       "cover": "assets/gate-image/역사 로얄.png",
       "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
+    },
+    {
+      "id": "high_outbreak_korea",
+      "title": "OUTBREAK KOREA",
+      "href": "outbreak_korea_v3.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🦠",
+      "cover": "assets/gate-image/OUTBREAK KOREA.png",
+      "description": "17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다."
+    },
+    {
+      "id": "tod_antarctic_exploration",
+      "title": "남극 탐험 대작전",
+      "href": "남극탐험.html",
+      "category": "trivia",
+      "age": "toddler",
+      "icon": "🐧",
+      "cover": "assets/gate-image/남극 탐험 대작전.png",
+      "scoreKey": "antarctic_highscore",
+      "description": "크레바스와 물개를 점프해 넘고 물고기를 모으며 남극 기지까지 달려가는 원근감 레이싱 액션 게임!"
+    },
+    {
+      "id": "high_rhythm_dash",
+      "title": "리듬 대시",
+      "href": "리듬 대시.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🎧",
+      "cover": "assets/gate-image/리듬 대시.png",
+      "description": "비트에 맞춰 점프하고 중력 반전과 템포 변화, 포탈을 돌파하는 리듬 액션 게임!"
+    },
+    {
+      "id": "tod_shape_color",
+      "title": "모양 색깔 친구들 집 찾기",
+      "href": "모양색깔 퀴즈.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🍎",
+      "cover": "assets/gate-image/모양 색깔 친구들 집 찾기.png",
+      "description": "드래그와 터치로 알맞은 색상과 형태의 바구니에 매칭하는 감각 개발 퀴즈!"
+    },
+    {
+      "id": "tod_chick_shell",
+      "title": "병아리는 어디에?",
+      "href": "병아리야바위.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🐣",
+      "cover": "assets/gate-image/병아리는 어디에.png",
+      "description": "컵 속에 숨은 병아리를 기억하고 요리조리 섞이는 컵을 끝까지 지켜본 뒤 찾아내는 관찰력 게임!"
+    },
+    {
+      "id": "trivia_blockraft",
+      "title": "블록래프트",
+      "href": "블록래프트.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⛵",
+      "cover": "assets/gate-image/블록래프트.png",
+      "description": "작은 뗏목에서 시작해 바다의 자원을 모으고 낚시·제작·건축으로 생존하며 배를 확장하는 해양 생존 게임!"
+    },
+    {
+      "id": "school_tower",
+      "title": "수식의 첨탑",
+      "href": "학교의 탑.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧙",
+      "cover": "assets/gate-image/수식의 첨탑.png",
+      "scoreKey": "arithmeticSpireBest_v1",
+      "description": "숫자와 연산 카드를 조합해 적과 싸우고 유물을 모으며 15층의 탑을 오르는 판타지 카드 모험!"
+    },
+    {
+      "id": "spelling_frog",
+      "title": "스펠링 프로그",
+      "href": "스펠링 프로그-fixed.html?v=20260914-1",
+      "category": "lang",
+      "age": "high",
+      "icon": "🐸",
+      "cover": "assets/gate-image/스펠링 프로그.png",
+      "scoreKey": "spellingFrogHighScore",
+      "description": "블록 개구리로 도로·강·철길을 건너며 알파벳 체크포인트를 밟아 영단어를 완성하는 3D 영어 어드벤처!"
+    },
+    {
+      "id": "alien_pizza",
+      "title": "외계인 피자 가게",
+      "href": "피자시키신분수.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🍕",
+      "cover": "assets/gate-image/외계인 피자 가게.png",
+      "description": "분수를 계산해 외계인 손님의 주문에 맞는 피자를 완성하는 수학 요리 게임!"
+    },
+    {
+      "id": "patience_tower",
+      "title": "인내의 탑",
+      "href": "인내의 탑.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🗼",
+      "cover": "assets/gate-image/인내의 탑.png",
+      "scoreKey": "patienceTowerBestM",
+      "scoreUnit": "m",
+      "description": "떨어져도 끝나지 않는 점핑 등반 탑에서 몇 m까지 올라갈 수 있는지 도전하는 인내 게임!"
+    },
+    {
+      "id": "low_one_stroke",
+      "title": "한붓쓱",
+      "href": "한붓쓱.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🛵",
+      "cover": "assets/gate-image/한붓쓱.png",
+      "description": "한 번 그은 길로 모든 연결선을 지나면 라이더가 내가 만든 경로를 따라 배달하는 한붓그리기 퍼즐!"
     }
   ],
   "coverById": {
