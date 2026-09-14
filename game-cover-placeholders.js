@@ -2,26 +2,19 @@
   'use strict';
 
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
-  const FALLBACK_CATALOG_URL = 'data/games.json?v=2';
   const STYLE_ID = 'kidscade-game-cover-styles';
-  let fallbackCatalogPromise = null;
 
   function getCatalog() {
-    if (window.KidscadeCatalog && typeof window.KidscadeCatalog === 'object') {
-      return Promise.resolve(window.KidscadeCatalog);
-    }
-    if (!fallbackCatalogPromise) {
-      fallbackCatalogPromise = fetch(FALLBACK_CATALOG_URL, { cache: 'no-store' })
-        .then(res => {
-          if (!res.ok) throw new Error(`game catalog ${res.status}`);
-          return res.json();
-        })
-        .catch(err => {
-          console.warn('[Kidscade] game catalog fallback load failed:', err);
-          return { games: [], managedCards: [], coverById: {} };
-        });
-    }
-    return fallbackCatalogPromise;
+    return window.KidscadeCatalog && typeof window.KidscadeCatalog === 'object'
+      ? window.KidscadeCatalog
+      : { games: [] };
+  }
+
+  function getCatalogGame(id, catalog = getCatalog()) {
+    if (!id) return null;
+    return Array.isArray(catalog?.games)
+      ? catalog.games.find(game => game?.id === id) || null
+      : null;
   }
 
   function installStyles() {
@@ -135,10 +128,16 @@
     return card.querySelector(':scope > .game-icon')?.textContent?.trim() || '';
   }
 
-  function getCoverSource(card, catalog) {
+  function getCoverSource(card, catalog = getCatalog()) {
     const explicit = (card.dataset.cover || '').trim();
     if (explicit) return explicit;
-    return catalog?.coverById?.[card.dataset.id] || DEFAULT_GAME_COVER;
+
+    const id = card.dataset.id || '';
+    const registryCover = window.KidscadeGames?.get?.(id)?.cover;
+    if (registryCover) return registryCover;
+
+    const catalogCover = getCatalogGame(id, catalog)?.cover;
+    return catalogCover || DEFAULT_GAME_COVER;
   }
 
   function createCoverShell(card) {
@@ -186,20 +185,19 @@
     img.src = src;
   }
 
-  function applyCover(card, catalog) {
+  function applyCover(card, catalog = getCatalog()) {
     if (!(card instanceof HTMLElement) || !card.classList.contains('game-card')) return;
     const shell = card.querySelector(':scope > .game-cover-shell') || createCoverShell(card);
     setImageSource(shell.querySelector('.game-cover-image'), getCoverSource(card, catalog), getTitle(card));
     card.classList.add('kc-has-cover');
   }
 
-  function applyAll(root, catalog) {
-    const scope = root || document;
-    if (scope instanceof HTMLElement && scope.classList.contains('game-card')) applyCover(scope, catalog);
-    scope.querySelectorAll?.('.game-card').forEach(card => applyCover(card, catalog));
+  function applyAll(root = document, catalog = getCatalog()) {
+    if (root instanceof HTMLElement && root.classList.contains('game-card')) applyCover(root, catalog);
+    root.querySelectorAll?.('.game-card').forEach(card => applyCover(card, catalog));
   }
 
-  function observeGameList(catalog) {
+  function observeGameList(catalog = getCatalog()) {
     const target = document.getElementById('game-list');
     if (!target || target.dataset.coverObserver === '1') return;
     target.dataset.coverObserver = '1';
@@ -211,20 +209,20 @@
     observer.observe(target, { childList: true, subtree: true });
   }
 
-  async function boot() {
+  function boot() {
     installStyles();
-    const catalog = await getCatalog();
+    const catalog = getCatalog();
     applyAll(document, catalog);
     observeGameList(catalog);
     document.dispatchEvent(new CustomEvent('kidscade:catalog-ready', { detail: catalog }));
   }
 
-  window.KidscadeGameCovers = {
-    refresh: async (root = document) => applyAll(root, await getCatalog()),
-    apply: async card => applyCover(card, await getCatalog()),
+  window.KidscadeGameCovers = Object.freeze({
+    refresh(root = document) { applyAll(root, getCatalog()); },
+    apply(card) { applyCover(card, getCatalog()); },
     catalog: getCatalog,
     defaultCover: DEFAULT_GAME_COVER
-  };
+  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
