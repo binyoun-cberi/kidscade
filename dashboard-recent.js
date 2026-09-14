@@ -45,6 +45,12 @@
     if (fallbackHref && fallbackHref !== '#') window.location.href = fallbackHref;
   }
 
+  function isSafeSvgIcon(value) {
+    const icon = String(value || '').trim();
+    if (!/^<svg\b/i.test(icon) || !/<\/svg>\s*$/i.test(icon)) return false;
+    return !/<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:/i.test(icon);
+  }
+
   function createMiniCard(game) {
     const mini = document.createElement('a');
     mini.className = 'game-card mini-card kc-dashboard-card';
@@ -56,7 +62,8 @@
 
     const icon = document.createElement('div');
     icon.className = 'game-icon';
-    icon.textContent = game.icon || '🎮';
+    if (game.iconHtml && isSafeSvgIcon(game.iconHtml)) icon.innerHTML = game.iconHtml;
+    else icon.textContent = game.icon || '🎮';
 
     const title = document.createElement('div');
     title.className = 'game-title';
@@ -91,12 +98,26 @@
     return sanitizeIds(readArray(FAVORITES_KEY), '', Infinity);
   }
 
+  function recentIds() {
+    return sanitizeIds(readArray(RECENTS_KEY), '', MAX_RECENTS);
+  }
+
   function isFavorite(id) {
     return favoriteIds().includes(String(id || ''));
   }
 
+  function isRecent(id) {
+    return recentIds().includes(String(id || ''));
+  }
+
   function emitFavoritesChanged(ids) {
     document.dispatchEvent(new CustomEvent('kidscade:favorites-changed', {
+      detail: { ids: [...ids] }
+    }));
+  }
+
+  function emitRecentsChanged(ids) {
+    document.dispatchEvent(new CustomEvent('kidscade:recents-changed', {
       detail: { ids: [...ids] }
     }));
   }
@@ -225,7 +246,7 @@
     ensureQuickHub();
     const age = options.age || currentAge();
     const allFavorites = favoriteIds();
-    const allRecents = sanitizeIds(readArray(RECENTS_KEY), '', MAX_RECENTS);
+    const allRecents = recentIds();
 
     writeArray(FAVORITES_KEY, allFavorites);
     writeArray(RECENTS_KEY, allRecents);
@@ -253,8 +274,10 @@
     if (!game || game.disabled) return false;
     const recents = readArray(RECENTS_KEY).filter(item => item !== id);
     recents.unshift(id);
-    writeArray(RECENTS_KEY, recents.slice(0, MAX_RECENTS));
+    const next = sanitizeIds(recents, '', MAX_RECENTS);
+    writeArray(RECENTS_KEY, next);
     render();
+    emitRecentsChanged(next);
     return true;
   }
 
@@ -375,7 +398,9 @@
     refresh: render,
     remember,
     favorites: favoriteIds,
+    recents: recentIds,
     isFavorite,
+    isRecent,
     toggleFavorite
   });
 
