@@ -27,6 +27,9 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
+    // Force clients to load the avatar preview race-condition fix instead of a cached loader.
+    html=html.replace('<script src="garden.js"></script>','<script src="garden.js?v=avatar-preview-fix-v2"></script>');
+
     const marker='<a href="딱! 타임 LCD.html" class="game-card" data-category="math" data-age="high"';
     const pos=html.indexOf(marker);
     if(pos>=0){
