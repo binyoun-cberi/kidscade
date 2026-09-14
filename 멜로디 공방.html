@@ -2,891 +2,191 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>멜로디 공방</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f5f2ff">
+<title>멜로디 공방 MUSIC STUDIO</title>
 <style>
-  :root{
-    --ink:#2d2942;
-    --muted:#7d7893;
-    --paper:#fffdf8;
-    --cream:#f7f1e8;
-    --panel:#ffffff;
-    --violet:#6557c8;
-    --violet-deep:#46379f;
-    --coral:#ff7f6d;
-    --mint:#60c6ad;
-    --yellow:#f4c85a;
-    --sky:#79b9e8;
-    --danger:#d95768;
-    --line:#ddd6cd;
-    --shadow:0 24px 70px rgba(59,46,104,.14);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:linear-gradient(135deg,#f9f4eb 0%,#f3efff 48%,#edf8f5 100%);color:var(--ink);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
-  button,input{font:inherit}
-  button{touch-action:manipulation}
-  .app{min-height:100vh;padding:22px}
-  .studio{width:min(1720px,100%);min-height:calc(100vh - 44px);margin:0 auto;border:1px solid rgba(93,77,161,.12);border-radius:32px;background:rgba(255,255,255,.86);box-shadow:var(--shadow);backdrop-filter:blur(18px);overflow:hidden;display:flex;flex-direction:column}
-  .topbar{height:86px;padding:0 24px 0 28px;display:flex;align-items:center;gap:18px;border-bottom:1px solid rgba(88,72,153,.12);background:rgba(255,255,255,.92)}
-  .brand{display:flex;align-items:center;gap:14px;min-width:240px}
-  .brand-mark{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,var(--violet),#897bdd);display:grid;place-items:center;color:#fff;font-family:"Segoe UI Symbol","Noto Music",serif;font-size:28px;box-shadow:0 10px 24px rgba(101,87,200,.28);transform:rotate(-3deg)}
-  .brand-copy strong{display:block;font-size:22px;letter-spacing:-.04em}
-  .brand-copy span{display:block;margin-top:2px;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.03em}
-  .top-chips{display:flex;align-items:center;gap:8px;flex:1;overflow-x:auto;scrollbar-width:none}
-  .top-chips::-webkit-scrollbar{display:none}
-  .chip{height:36px;padding:0 13px;border-radius:999px;background:#f3f0fb;color:#655f7b;display:inline-flex;align-items:center;white-space:nowrap;font-size:13px;font-weight:900}
-  .chip.accent{background:#fff1d8;color:#8c691a}
-  .top-actions{display:flex;align-items:center;gap:9px}
-  .header-btn{height:42px;padding:0 15px;border:0;border-radius:13px;background:#f2eff8;color:#5d5674;font-size:14px;font-weight:900;cursor:pointer;transition:.18s ease}
-  .header-btn:hover{transform:translateY(-2px);background:#ebe6f8}
-  .workspace{display:grid;grid-template-columns:300px minmax(0,1fr);flex:1;min-height:0}
-  .toolbox{padding:22px 18px 24px;border-right:1px solid rgba(88,72,153,.12);background:linear-gradient(180deg,#faf8ff 0%,#fffaf4 100%);overflow-y:auto}
-  .toolbox-title{margin:0 6px 14px;font-size:14px;font-weight:1000;color:#817a96;letter-spacing:.02em}
-  .tool-card{padding:15px;border-radius:22px;background:#fff;border:1px solid rgba(89,72,155,.10);box-shadow:0 10px 30px rgba(64,50,112,.07)}
-  .tool-card + .tool-card{margin-top:14px}
-  .tool-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
-  .tool-card-head strong{font-size:15px}
-  .tool-card-head span{font-size:11px;color:var(--muted);font-weight:800}
-  .tool-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .music-tool{height:68px;border:1px solid transparent;border-radius:16px;background:#f5f2fb;color:#39344d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:.16s ease;position:relative}
-  .music-tool .symbol{font-family:"Segoe UI Symbol","Noto Music","Arial Unicode MS",serif;font-size:29px;line-height:1}
-  .music-tool .tool-name{font-size:10px;font-weight:900;color:#77718c}
-  .music-tool:hover{transform:translateY(-2px);background:#eee9fb}
-  .music-tool.active{background:linear-gradient(150deg,var(--violet),#8174dc);color:#fff;border-color:rgba(255,255,255,.35);box-shadow:0 9px 20px rgba(101,87,200,.26)}
-  .music-tool.active .tool-name{color:#fff}
-  .rest-grid .music-tool{background:#eff8f5}
-  .rest-grid .music-tool:hover{background:#e4f3ee}
-  .rest-grid .music-tool.active{background:linear-gradient(145deg,#3eb497,var(--mint));box-shadow:0 9px 20px rgba(67,178,151,.24)}
-  .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .mode-btn{height:48px;border:0;border-radius:14px;background:#fff0ee;color:#a24f45;font-size:13px;font-weight:1000;cursor:pointer;transition:.16s ease}
-  .mode-btn:hover{transform:translateY(-2px);background:#ffe6e2}
-  .mode-btn.active{background:var(--coral);color:#fff;box-shadow:0 9px 20px rgba(255,127,109,.24)}
-  .mode-btn.danger{background:#f7eff1;color:#a34857}
-  .tip-card{margin-top:14px;padding:15px 16px;border-radius:20px;background:#312d46;color:#fff;box-shadow:0 12px 24px rgba(49,45,70,.18)}
-  .tip-card strong{display:block;font-size:13px;margin-bottom:5px}
-  .tip-card p{margin:0;color:#d8d2e6;font-size:11px;line-height:1.6;font-weight:700}
-  .main-stage{min-width:0;padding:24px;overflow:auto;background:radial-gradient(circle at 20% 0%,rgba(244,200,90,.09),transparent 34%),linear-gradient(180deg,#fbfaf8 0%,#f6f3ef 100%)}
-  .composer-card{max-width:1360px;margin:0 auto;background:var(--paper);border:1px solid rgba(96,81,55,.13);border-radius:28px;box-shadow:0 20px 46px rgba(72,59,40,.10);overflow:hidden;position:relative}
-  .composer-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:repeating-linear-gradient(to bottom,var(--coral) 0 36px,var(--yellow) 36px 72px,var(--mint) 72px 108px,var(--violet) 108px 144px)}
-  .paper-head{padding:28px 36px 22px 46px;display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:24px;align-items:end;border-bottom:1px dashed #ddd4c8}
-  .title-wrap label{display:block;margin:0 0 7px 4px;color:#8d867a;font-size:11px;font-weight:1000;letter-spacing:.08em}
-  .title-input,.name-input,.lyric-input,.tempo-input{border:0;outline:none;color:var(--ink);transition:.15s ease}
-  .title-input{width:100%;height:58px;padding:0 4px;background:transparent;border-bottom:3px solid #ded5c8;font-size:30px;font-weight:1000;letter-spacing:-.05em}
-  .title-input:focus{border-bottom-color:var(--violet)}
-  .credits{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
-  .credit-pair{display:grid;grid-template-columns:58px 148px;align-items:center;gap:8px}
-  .credit-pair span{font-size:12px;font-weight:1000;color:#827b70;text-align:right}
-  .name-input{height:44px;padding:0 12px;border-radius:12px;background:#f4efe7;font-size:15px;font-weight:900;text-align:center}
-  .name-input:focus,.lyric-input:focus,.tempo-input:focus{background:#fff;box-shadow:0 0 0 3px rgba(101,87,200,.16)}
-  .score-area{padding:18px 28px 0 40px}
-  .score-badge-row{display:flex;align-items:center;justify-content:space-between;margin:0 6px 6px;color:#948b7e;font-size:11px;font-weight:900}
-  .score-badge-row .guide{display:flex;gap:7px}
-  .mini-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--coral);box-shadow:14px 0 0 var(--yellow),28px 0 0 var(--mint)}
-  .score-wrap{position:relative;background:#fff;border:1px solid #e6ded3;border-radius:20px;overflow:hidden;box-shadow:inset 0 0 0 6px #fff,0 9px 24px rgba(71,57,35,.06)}
-  #score{display:block;width:100%;height:auto;min-height:390px;user-select:none;-webkit-user-select:none;touch-action:none}
-  .staff-hit{cursor:crosshair}
-  .score-item{cursor:pointer;transition:opacity .12s ease,filter .12s ease}
-  .score-item:hover{filter:drop-shadow(0 0 5px rgba(101,87,200,.45))}
-  .score-item.playing>*{stroke:var(--coral)!important;fill:var(--coral)!important}
-  .score-item.playing text{fill:var(--coral)!important}
-  .score-item.erase-target:hover{opacity:.35}
-  .measure-fill{font-size:15px;font-weight:900;fill:#a49a8d}
-  .lyrics{padding:16px 34px 24px 146px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .lyric-input{height:52px;min-width:0;padding:0 12px;border-radius:13px;background:#f6f1e9;border:1px solid #ece2d5;text-align:center;font-size:14px;font-weight:900}
-  .control-deck{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;padding:18px 34px 22px 46px;background:#342f49;color:#fff}
-  .tiny-actions{display:flex;gap:8px}
-  .tiny-btn{height:42px;padding:0 14px;border:1px solid rgba(255,255,255,.14);border-radius:13px;background:rgba(255,255,255,.08);color:#fff;font-size:13px;font-weight:900;cursor:pointer}
-  .tiny-btn:disabled{opacity:.35;cursor:default}
-  .transport{display:flex;align-items:center;gap:10px}
-  .transport-label{margin-right:4px;color:#d8d3e6;font-size:12px;font-weight:900}
-  .round-btn{width:48px;height:48px;border:0;border-radius:16px;background:var(--coral);color:#fff;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 9px 20px rgba(255,127,109,.24)}
-  .round-btn.stop{background:rgba(255,255,255,.12);box-shadow:none;font-size:14px}
-  .tempo-wrap{display:flex;align-items:center;gap:7px;margin-left:8px;color:#ddd8e7;font-size:12px;font-weight:900}
-  .tempo-input{width:66px;height:38px;padding:0 7px;border-radius:11px;background:#fff;color:#342f49;text-align:center;font-size:14px;font-weight:1000}
-  .actions{justify-self:end;display:flex;align-items:center;gap:9px}
-  .save-wrap{position:relative}
-  .save-btn{height:46px;padding:0 18px;border:0;border-radius:14px;background:var(--yellow);color:#4c3a12;font-size:14px;font-weight:1000;cursor:pointer;box-shadow:0 10px 20px rgba(244,200,90,.20)}
-  .save-menu{position:absolute;right:0;bottom:56px;min-width:156px;padding:7px;border:1px solid #ddd5e7;border-radius:15px;background:#fff;box-shadow:0 16px 34px rgba(31,24,55,.22);display:none;z-index:5}
-  .save-menu.open{display:block}
-  .save-menu button{width:100%;height:42px;border:0;border-radius:10px;background:#fff;color:#40394f;text-align:left;padding:0 12px;font-weight:900;cursor:pointer}
-  .save-menu button:hover{background:#f2eff9}
-  .kbd-hint{max-width:1360px;margin:12px auto 0;color:#8f8799;text-align:center;font-size:11px;font-weight:800}
-  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);padding:13px 18px;border-radius:14px;background:#2e2940;color:#fff;font-weight:900;opacity:0;pointer-events:none;transition:.22s ease;z-index:20;box-shadow:0 12px 30px rgba(0,0,0,.18)}
-  .toast.show{opacity:1;transform:translate(-50%,0)}
-  .toast.warn{background:var(--danger)}
-  @media (max-width:1180px){
-    .workspace{grid-template-columns:250px minmax(0,1fr)}
-    .toolbox{padding:18px 13px}
-    .music-tool{height:62px}
-    .paper-head{grid-template-columns:1fr}
-    .credits{justify-content:flex-start}
-  }
-  @media (max-width:900px){
-    .app{padding:0}
-    .studio{min-height:100vh;border-radius:0;border:0}
-    .topbar{height:auto;padding:13px 14px;flex-wrap:wrap}
-    .brand{min-width:0;flex:1}
-    .brand-copy span{display:none}
-    .top-chips{order:3;width:100%}
-    .workspace{display:block}
-    .toolbox{border-right:0;border-bottom:1px solid rgba(88,72,153,.12);overflow-x:auto;overflow-y:hidden;display:flex;gap:12px;padding:14px}
-    .toolbox-title,.tip-card{display:none}
-    .tool-card{min-width:310px;margin:0!important;padding:12px}
-    .main-stage{padding:14px 10px 20px}
-    .paper-head{padding:22px 22px 18px 30px}
-    .score-area{padding:14px 12px 0 24px}
-    .lyrics{padding-left:100px;padding-right:18px}
-    .control-deck{grid-template-columns:1fr;justify-items:center;padding:16px 20px}
-    .tiny-actions,.actions{justify-self:center}
-  }
-  @media (max-width:640px){
-    .brand-copy strong{font-size:18px}
-    .brand-mark{width:42px;height:42px}
-    .header-btn{padding:0 10px}
-    .top-chips{display:none}
-    .tool-card{min-width:292px}
-    .composer-card{border-radius:20px}
-    .title-input{font-size:24px}
-    .credit-pair{grid-template-columns:46px 125px}
-    .score-wrap{overflow-x:auto}
-    #score{width:980px;max-width:none}
-    .lyrics{padding-left:66px;grid-template-columns:repeat(2,1fr)}
-    .kbd-hint{display:none}
-  }
+:root{
+  --bg:#f4f1fb;--panel:#ffffff;--ink:#28233c;--muted:#736d86;--line:#e6e0f0;
+  --violet:#6657d9;--violet2:#8d7cf0;--coral:#ff7c70;--mint:#4fc4a5;--yellow:#f4c64f;
+  --blue:#61a8ee;--shadow:0 18px 50px rgba(58,43,107,.14);--soft:0 8px 24px rgba(58,43,107,.09);
+}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;background:radial-gradient(circle at 16% 0,#fff8dc 0,transparent 28%),radial-gradient(circle at 86% 8%,#e8e2ff 0,transparent 30%),var(--bg);color:var(--ink)}
+button,input,select{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
+.app{width:min(1500px,100%);margin:auto;padding:14px 14px 34px}.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:11px 14px;margin-bottom:11px;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);border:1px solid rgba(113,95,185,.13);border-radius:20px;box-shadow:var(--soft)}
+.brand{display:flex;align-items:center;gap:11px;min-width:230px}.brandMark{width:45px;height:45px;border-radius:15px;background:linear-gradient(145deg,var(--violet),#a078e7);display:grid;place-items:center;color:#fff;font-size:24px;font-weight:1000;box-shadow:0 9px 22px #6657d944}.brand strong{display:block;font-size:19px;letter-spacing:-.04em}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:11px;font-weight:800}.tabs{display:flex;gap:6px;flex:1;justify-content:center}.tab{border:0;border-radius:12px;background:#f1eef8;color:#746e88;padding:9px 14px;font-weight:1000}.tab.active{background:var(--violet);color:#fff;box-shadow:0 7px 16px #6657d92a}.topActions{display:flex;gap:7px}.iconBtn,.primaryBtn,.softBtn{border:0;border-radius:12px;min-height:40px;padding:8px 12px;font-weight:1000}.iconBtn,.softBtn{background:#f3f0f8;color:#554f69}.primaryBtn{background:var(--violet);color:#fff}.saveBtn{background:var(--yellow);color:#5c4512}
+.view{display:none}.view.active{display:block}.studioGrid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:11px}.panel{background:rgba(255,255,255,.94);border:1px solid rgba(97,78,167,.11);border-radius:20px;box-shadow:var(--soft)}
+.sidebar{padding:13px;align-self:start;position:sticky;top:82px;max-height:calc(100vh - 98px);overflow:auto}.sideTitle{display:flex;align-items:center;justify-content:space-between;margin:2px 3px 10px}.sideTitle strong{font-size:15px}.sideTitle small{font-size:10px;color:var(--muted);font-weight:900}.controlGroup{padding:12px;border-radius:16px;background:#faf8fe;border:1px solid #eee9f5;margin-top:9px}.controlGroup>label,.groupLabel{display:block;font-size:11px;color:var(--muted);font-weight:1000;margin-bottom:6px}.select,.range{width:100%}.select{height:40px;border:1px solid #ddd6eb;border-radius:11px;background:#fff;color:var(--ink);padding:0 10px;font-weight:900}.range{accent-color:var(--violet)}.tempoRow{display:grid;grid-template-columns:1fr 58px;gap:8px;align-items:center}.tempoNum{height:38px;border:1px solid #ddd6eb;border-radius:10px;text-align:center;font-weight:1000;color:var(--ink);background:#fff}.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.seg.three{grid-template-columns:repeat(3,1fr)}.seg button{border:1px solid #e2dceb;border-radius:10px;background:#fff;color:#625b75;padding:8px 5px;font-size:11px;font-weight:1000}.seg button.active{background:#ece8ff;border-color:#a89bf2;color:#4f42b8}.toggleRow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:900}.switch{width:44px;height:25px;border:0;border-radius:999px;background:#d9d3e4;padding:3px;transition:.15s}.switch::before{content:"";display:block;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 2px 6px #0002;transition:.15s}.switch.on{background:var(--mint)}.switch.on::before{transform:translateX(19px)}.styleGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.styleBtn{border:1px solid #e4ddec;border-radius:11px;background:#fff;padding:9px 5px;font-size:11px;font-weight:1000;color:#625b75}.styleBtn.active{background:#fff4d5;border-color:#e9c758;color:#75540b}.templateBtn{width:100%;border:0;border-radius:11px;background:#fff;padding:9px 10px;margin-top:5px;text-align:left;color:#514a64;font-weight:900;box-shadow:inset 0 0 0 1px #e8e2f0}.templateBtn span{display:block;color:#8a8498;font-size:10px;font-weight:800;margin-top:2px}.danger{background:#fff0f1!important;color:#ad4f59!important}
+.mainComposer{overflow:hidden}.composerHead{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #ece7f2}.songTitle{flex:1;min-width:0;border:0;background:transparent;font-size:22px;font-weight:1000;color:var(--ink);letter-spacing:-.04em}.songTitle::placeholder{color:#a19aaa}.badge{border-radius:999px;padding:6px 9px;background:#f3effa;color:#6b6381;font-size:10px;font-weight:1000;white-space:nowrap}.musicCanvas{padding:12px 12px 8px;overflow:auto}.gridWrap{min-width:900px;border:1px solid #e1dae9;border-radius:16px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 4px #fff}.beatHeader{display:grid;grid-template-columns:74px repeat(32,1fr);background:#f7f4fb;border-bottom:1px solid #e8e2ef}.corner{height:31px;display:grid;place-items:center;color:#877f96;font-size:9px;font-weight:1000}.beatCell{height:31px;display:grid;place-items:center;border-left:1px solid #ece7f1;font-size:9px;color:#9891a5;font-weight:900}.beatCell.measureStart{border-left:3px solid #c2b8d2;color:#5d5570}.pitchRow{display:grid;grid-template-columns:74px repeat(32,1fr);min-height:30px}.pitchLabel{position:sticky;left:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:4px;background:#f6f3fa;border-right:1px solid #e5deed;border-bottom:1px solid #eee9f3;font-size:11px;font-weight:1000}.pitchLabel span{width:9px;height:9px;border-radius:50%;background:var(--pc)}.cell{position:relative;border:0;border-left:1px solid #eee9f2;border-bottom:1px solid #eee9f2;background:#fff;min-width:24px;padding:0;touch-action:none}.cell:nth-child(9),.cell:nth-child(17),.cell:nth-child(25),.cell:nth-child(33){border-left:3px solid #c2b8d2}.cell.beatShade{background:#fcfbfe}.cell.on{background:var(--pc)}.cell.on::after{content:"";position:absolute;inset:5px;border-radius:7px;background:#fff5;box-shadow:inset 0 0 0 1px #ffffff75}.cell.playing{box-shadow:inset 0 0 0 3px #f5c344;z-index:2}.cell.preview{filter:brightness(.92)}.stepPlayhead{position:absolute;pointer-events:none;background:#f4c64f55;z-index:2}.gridHint{display:flex;justify-content:space-between;gap:8px;padding:8px 4px 0;color:#817a90;font-size:10px;font-weight:800}.transport{display:flex;align-items:center;gap:8px;padding:11px 13px;border-top:1px solid #ece7f2;background:#faf8fd}.playBig{width:49px;height:43px;border:0;border-radius:13px;background:var(--violet);color:#fff;font-size:18px;font-weight:1000;box-shadow:0 8px 17px #6657d92c}.stopBig{width:43px;height:43px;border:0;border-radius:13px;background:#e9e5ef;color:#625b73;font-weight:1000}.progress{height:9px;flex:1;background:#e9e5ef;border-radius:999px;overflow:hidden}.progressFill{height:100%;width:0;background:linear-gradient(90deg,var(--violet),#9c8cf1);border-radius:inherit}.transportInfo{min-width:128px;text-align:right;color:#70697f;font-size:10px;font-weight:900}.mixer{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:0 13px 13px}.track{padding:9px;border-radius:13px;background:#f8f6fb;border:1px solid #ece7f2}.trackHead{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:1000}.track small{color:#8e879b}.track input{width:100%;accent-color:var(--violet)}
+.insightBar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.insight{padding:12px 13px}.insight b{display:block;font-size:16px}.insight span{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:800}.coach{grid-column:span 2;background:linear-gradient(135deg,#352f50,#51486f);color:#fff}.coach span{color:#dcd5ef}.coach b{font-size:14px}
+.scorePage{padding:16px}.scoreToolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.scoreToolbar h2{margin:0 auto 0 0;font-size:19px}.scorePaper{overflow:auto;padding:20px;background:#fffef9;border:1px solid #e7dfd3;border-radius:17px;box-shadow:var(--soft)}#scoreSvg{display:block;min-width:1000px;width:100%;height:auto}.scoreNote{cursor:pointer}.scoreNote:hover{filter:drop-shadow(0 0 4px #6657d988)}.scoreExplain{margin-top:10px;padding:12px 14px;border-radius:14px;background:#f4f0fb;color:#665f78;font-size:12px;font-weight:800;line-height:1.55}
+.practiceGrid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:11px}.lessonPanel{padding:15px}.lessonPanel h2{margin:0 0 4px;font-size:20px}.lessonPanel p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.5}.lesson{width:100%;border:1px solid #e4deed;border-radius:13px;background:#fff;padding:11px;text-align:left;margin-top:7px}.lesson.active{border-color:#9c8bf0;background:#f3f0ff}.lesson strong{display:block}.lesson span{font-size:10px;color:#817a90;font-weight:800}.practiceStage{padding:16px;min-height:540px;display:flex;flex-direction:column}.practiceTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.practiceTop h2{margin:0;font-size:22px}.practiceTop p{margin:3px 0 0;color:var(--muted);font-size:12px}.mission{margin:18px auto 14px;text-align:center}.missionLabel{font-size:11px;color:#81798d;font-weight:1000}.missionNotes{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:8px}.missionNote{min-width:38px;padding:8px 9px;border-radius:11px;background:#ede9f5;color:#6e667e;font-size:13px;font-weight:1000}.missionNote.done{background:#dff6ed;color:#218266}.missionNote.now{background:var(--violet);color:#fff;transform:translateY(-2px);box-shadow:0 6px 14px #6657d933}.feedback{height:28px;text-align:center;font-size:13px;font-weight:1000;color:#5c5570}.pianoWrap{position:relative;max-width:1000px;width:100%;height:245px;margin:auto auto 12px;background:#342f43;border-radius:18px;padding:0 9px 10px;box-shadow:0 16px 30px #312b4528;overflow:hidden;touch-action:none}.whiteKeys{height:100%;display:grid;grid-template-columns:repeat(15,1fr)}.pKey.white{position:relative;border:1px solid #ccd1dc;border-bottom:7px solid #d3d6de;border-radius:0 0 8px 8px;background:linear-gradient(#fff,#f7f7f8);display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px;font-size:11px;font-weight:1000;color:#6b6c76;user-select:none}.pKey.white.active{background:#e7e2ff;transform:translateY(4px);border-bottom-width:3px}.blackLayer{position:absolute;left:9px;right:9px;top:0;height:61%;pointer-events:none}.pKey.black{position:absolute;top:0;width:4.3%;height:100%;border:0;border-bottom:5px solid #11131a;border-radius:0 0 6px 6px;background:linear-gradient(#262a33,#12151b);color:#aaa;z-index:5;pointer-events:auto;user-select:none}.pKey.black.active{background:#5c537d;transform:translateY(3px);border-bottom-width:2px}.pKey span{pointer-events:none}.freeHint{text-align:center;color:#817a90;font-size:10px;font-weight:800}
+.modal{position:fixed;inset:0;z-index:80;background:#201b31aa;backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px}.modal.open{display:flex}.modalCard{width:min(720px,96vw);max-height:82vh;overflow:auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 30px 70px #0003}.modalHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.modalHead h2{margin:0;font-size:20px}.songList{display:grid;gap:7px;margin-top:12px}.savedSong{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;padding:10px;border:1px solid #e7e1ef;border-radius:13px}.savedSong strong{display:block}.savedSong span{display:block;color:#8a8398;font-size:10px;margin-top:2px}.miniBtn{border:0;border-radius:9px;background:#eeeaf5;color:#5f5870;padding:7px 9px;font-size:11px;font-weight:1000}.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,16px);z-index:100;background:#28223b;color:#fff;padding:10px 15px;border-radius:999px;font-size:12px;font-weight:1000;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:1050px){.studioGrid{grid-template-columns:220px 1fr}.brand small{display:none}.brand{min-width:190px}.practiceGrid{grid-template-columns:260px 1fr}}
+@media(max-width:780px){.app{padding:7px}.topbar{position:relative;flex-wrap:wrap;border-radius:15px}.brand{flex:1}.topActions .softBtn{display:none}.tabs{order:3;width:100%}.tab{flex:1;padding:8px 6px}.studioGrid,.practiceGrid{display:block}.sidebar{position:relative;top:auto;max-height:none;display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;overflow:visible}.sideTitle{grid-column:1/-1}.controlGroup{margin:0}.controlGroup.templates{grid-column:1/-1}.styleGrid{grid-template-columns:repeat(4,1fr)}.mixer{grid-template-columns:repeat(2,1fr)}.insightBar{grid-template-columns:1fr 1fr}.coach{grid-column:span 2}.lessonPanel{margin-bottom:8px}.lessonList{display:flex;overflow-x:auto;gap:6px}.lesson{min-width:185px;margin:0}.practiceStage{min-height:450px}.pianoWrap{height:200px}.brandMark{width:40px;height:40px}}
+@media(max-width:480px){.brand strong{font-size:16px}.topActions .iconBtn{padding:7px 9px}.songTitle{font-size:18px}.badge:nth-of-type(2){display:none}.sidebar{grid-template-columns:1fr}.sideTitle,.controlGroup.templates{grid-column:auto}.styleGrid{grid-template-columns:1fr 1fr}.mixer{grid-template-columns:1fr 1fr}.gridHint span:last-child{display:none}.insightBar{grid-template-columns:1fr 1fr}.pianoWrap{height:175px;padding-left:4px;padding-right:4px}.blackLayer{left:4px;right:4px}.pKey.white{font-size:9px;padding-bottom:8px}.practiceTop{display:block}.practiceTop .primaryBtn{margin-top:8px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="app">
-  <main class="studio">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark">♫</div>
-        <div class="brand-copy">
-          <strong>멜로디 공방</strong>
-          <span>나만의 노래를 직접 만들어 보세요</span>
+  <header class="topbar">
+    <div class="brand"><div class="brandMark">♫</div><div><strong>멜로디 공방 <span style="color:#7768dd">MUSIC STUDIO</span></strong><small>찍고 · 듣고 · 악보로 보고 · 직접 연주해요</small></div></div>
+    <nav class="tabs" aria-label="음악 스튜디오 메뉴">
+      <button class="tab active" data-view="compose">🎨 만들기</button>
+      <button class="tab" data-view="score">🎼 악보 보기</button>
+      <button class="tab" data-view="practice">🎹 연주하기</button>
+    </nav>
+    <div class="topActions"><button class="softBtn" id="libraryBtn">내 곡</button><button class="iconBtn saveBtn" id="saveSongBtn">💾 저장</button></div>
+  </header>
+
+  <section class="view active" id="composeView">
+    <div class="studioGrid">
+      <aside class="panel sidebar">
+        <div class="sideTitle"><strong>작곡 도구</strong><small>한 칸 = 8분음표</small></div>
+        <div class="controlGroup">
+          <label for="instrument">멜로디 악기</label>
+          <select id="instrument" class="select"><option value="piano">피아노</option><option value="marimba">마림바</option><option value="pluck">뮤직박스</option><option value="synth">신스</option></select>
         </div>
-      </div>
-      <div class="top-chips" aria-label="악보 정보">
-        <span class="chip accent">4/4 박자</span>
-        <span class="chip">높은음자리표</span>
-        <span class="chip">4마디</span>
-        <span class="chip">자동 저장</span>
-      </div>
-      <div class="top-actions">
-        <button class="header-btn" id="undoBtn">↶ 되돌리기</button>
-        <button class="header-btn" id="redoBtn">↷ 다시하기</button>
-      </div>
-    </header>
-
-    <div class="workspace">
-      <aside class="toolbox" aria-label="작곡 도구">
-        <p class="toolbox-title">작곡 도구</p>
-
-        <section class="tool-card" id="noteTools">
-          <div class="tool-card-head"><strong>음표</strong><span>길이를 선택하세요</span></div>
-          <div class="tool-grid">
-            <button class="music-tool" data-kind="note" data-key="sixteenth" title="16분음표"><span class="symbol">𝅘𝅥𝅯</span><span class="tool-name">16분</span></button>
-            <button class="music-tool" data-kind="note" data-key="eighth" title="8분음표"><span class="symbol">♪</span><span class="tool-name">8분</span></button>
-            <button class="music-tool" data-kind="note" data-key="dottedEighth" title="점8분음표"><span class="symbol">♪·</span><span class="tool-name">점8분</span></button>
-            <button class="music-tool active" data-kind="note" data-key="quarter" title="4분음표"><span class="symbol">♩</span><span class="tool-name">4분</span></button>
-            <button class="music-tool" data-kind="note" data-key="dottedQuarter" title="점4분음표"><span class="symbol">♩·</span><span class="tool-name">점4분</span></button>
-            <button class="music-tool" data-kind="note" data-key="half" title="2분음표"><span class="symbol">𝅗𝅥</span><span class="tool-name">2분</span></button>
-            <button class="music-tool" data-kind="note" data-key="dottedHalf" title="점2분음표"><span class="symbol">𝅗𝅥·</span><span class="tool-name">점2분</span></button>
-            <button class="music-tool" data-kind="note" data-key="whole" title="온음표"><span class="symbol">𝅝</span><span class="tool-name">온음표</span></button>
-          </div>
-        </section>
-
-        <section class="tool-card" id="restTools">
-          <div class="tool-card-head"><strong>쉼표</strong><span>쉬는 길이를 선택하세요</span></div>
-          <div class="tool-grid rest-grid">
-            <button class="music-tool" data-kind="rest" data-key="sixteenth" title="16분쉼표"><span class="symbol">𝄿</span><span class="tool-name">16분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="eighth" title="8분쉼표"><span class="symbol">𝄾</span><span class="tool-name">8분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="dottedEighth" title="점8분쉼표"><span class="symbol">𝄾·</span><span class="tool-name">점8분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="quarter" title="4분쉼표"><span class="symbol">𝄽</span><span class="tool-name">4분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="dottedQuarter" title="점4분쉼표"><span class="symbol">𝄽·</span><span class="tool-name">점4분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="half" title="2분쉼표"><span class="symbol">𝄼</span><span class="tool-name">2분</span></button>
-            <button class="music-tool" data-kind="rest" data-key="whole" title="온쉼표"><span class="symbol">𝄻</span><span class="tool-name">온쉼표</span></button>
-          </div>
-        </section>
-
-        <section class="tool-card">
-          <div class="tool-card-head"><strong>편집</strong><span>음표를 정리해요</span></div>
-          <div class="edit-grid">
-            <button class="mode-btn" id="eraseOne">하나 지우기</button>
-            <button class="mode-btn danger" id="eraseAll">전체 비우기</button>
-          </div>
-        </section>
-
-        <div class="tip-card">
-          <strong>작곡하는 방법</strong>
-          <p>음표를 고른 뒤 오선의 원하는 높이를 누르세요. 한 마디에는 4박까지 넣을 수 있어요.</p>
+        <div class="controlGroup">
+          <label>빠르기 <b id="tempoLabel">100 BPM</b></label>
+          <div class="tempoRow"><input id="tempo" class="range" type="range" min="60" max="170" value="100"><input id="tempoNum" class="tempoNum" type="number" min="60" max="170" value="100"></div>
+        </div>
+        <div class="controlGroup">
+          <span class="groupLabel">입력 방식</span>
+          <div class="seg"><button class="active" data-poly="mono">멜로디</button><button data-poly="poly">화음</button></div>
+          <div style="height:7px"></div>
+          <div class="toggleRow"><span>메트로놈</span><button class="switch" id="metroToggle" aria-label="메트로놈"></button></div>
+          <div class="toggleRow" style="margin-top:8px"><span>반복 재생</span><button class="switch on" id="loopToggle" aria-label="반복 재생"></button></div>
+        </div>
+        <div class="controlGroup">
+          <span class="groupLabel">자동 반주</span>
+          <div class="styleGrid" id="styleGrid"><button class="styleBtn active" data-style="none">없음</button><button class="styleBtn" data-style="pop">팝</button><button class="styleBtn" data-style="march">행진</button><button class="styleBtn" data-style="ballad">잔잔</button></div>
+        </div>
+        <div class="controlGroup templates">
+          <span class="groupLabel">시작하기 어렵다면</span>
+          <button class="templateBtn" data-template="twinkle">⭐ 작은별 첫 구절<span>익숙한 멜로디를 블록으로 확인</span></button>
+          <button class="templateBtn" data-template="updown">🌈 올라갔다 내려오기<span>도레미파솔라시도 연습</span></button>
+          <button class="templateBtn" data-template="groove">🥁 리듬 있는 짧은 곡<span>쉼과 반복을 느껴보기</span></button>
+          <button class="templateBtn danger" id="clearBtn">전체 비우기<span>현재 작곡 내용을 지워요</span></button>
         </div>
       </aside>
 
-      <section class="main-stage">
-        <div class="composer-card">
-          <div class="paper-head">
-            <div class="title-wrap">
-              <label for="titleInput">SONG TITLE</label>
-              <input id="titleInput" class="title-input" maxlength="28" placeholder="곡 제목을 적어 주세요" aria-label="곡 제목">
-            </div>
-            <div class="credits">
-              <label class="credit-pair"><span>작사</span><input id="lyricistInput" class="name-input" maxlength="12" placeholder="이름" aria-label="작사자 이름"></label>
-              <label class="credit-pair"><span>작곡</span><input id="composerInput" class="name-input" maxlength="12" placeholder="이름" aria-label="작곡자 이름"></label>
-            </div>
+      <main>
+        <section class="panel mainComposer">
+          <div class="composerHead"><input class="songTitle" id="songTitle" maxlength="28" value="나의 첫 번째 곡" aria-label="곡 제목"><span class="badge" id="noteCountBadge">0개 음</span><span class="badge">C장조 · 4/4</span></div>
+          <div class="musicCanvas">
+            <div class="gridWrap" id="gridWrap"><div id="beatHeader" class="beatHeader"></div><div id="noteGrid"></div></div>
+            <div class="gridHint"><span>클릭하거나 드래그해서 음을 그려 보세요. 같은 세로줄에 여러 음을 찍으면 화음이 됩니다.</span><span>마디 구분선은 굵게 표시돼요.</span></div>
           </div>
-
-          <div class="score-area">
-            <div class="score-badge-row">
-              <span class="mini-dot" aria-hidden="true"></span>
-              <div class="guide"><span>오선을 눌러 음표 넣기</span><span>·</span><span>음표를 다시 눌러 선택</span></div>
-            </div>
-            <div class="score-wrap">
-              <svg id="score" viewBox="0 0 1600 420" role="img" aria-label="4마디 오선 악보"></svg>
-            </div>
+          <div class="transport"><button class="playBig" id="playBtn" aria-label="재생">▶</button><button class="stopBig" id="stopBtn" aria-label="정지">■</button><div class="progress"><div class="progressFill" id="progressFill"></div></div><div class="transportInfo" id="transportInfo">1마디 · 준비</div></div>
+          <div class="mixer">
+            <div class="track"><div class="trackHead"><span>🎹 멜로디</span><small id="melodyVolText">90%</small></div><input id="melodyVol" type="range" min="0" max="100" value="90"></div>
+            <div class="track"><div class="trackHead"><span>🎸 화음</span><small id="chordVolText">52%</small></div><input id="chordVol" type="range" min="0" max="100" value="52"></div>
+            <div class="track"><div class="trackHead"><span>🎻 베이스</span><small id="bassVolText">45%</small></div><input id="bassVol" type="range" min="0" max="100" value="45"></div>
+            <div class="track"><div class="trackHead"><span>🥁 드럼</span><small id="drumVolText">50%</small></div><input id="drumVol" type="range" min="0" max="100" value="50"></div>
           </div>
-
-          <div class="lyrics" aria-label="마디별 노랫말">
-            <input class="lyric-input" data-lyric="0" maxlength="24" placeholder="1마디 노랫말">
-            <input class="lyric-input" data-lyric="1" maxlength="24" placeholder="2마디 노랫말">
-            <input class="lyric-input" data-lyric="2" maxlength="24" placeholder="3마디 노랫말">
-            <input class="lyric-input" data-lyric="3" maxlength="24" placeholder="4마디 노랫말">
-          </div>
-
-          <div class="control-deck">
-            <div class="tiny-actions" aria-hidden="true"></div>
-            <div class="transport">
-              <span class="transport-label">미리 듣기</span>
-              <button class="round-btn" id="playBtn" aria-label="재생">▶</button>
-              <button class="round-btn stop" id="stopBtn" aria-label="정지">■</button>
-              <label class="tempo-wrap">BPM <input id="tempoInput" class="tempo-input" type="number" min="50" max="180" step="1" value="100" aria-label="빠르기 BPM"></label>
-            </div>
-            <div class="actions">
-              <div class="save-wrap">
-                <button class="save-btn" id="saveBtn">악보 내보내기</button>
-                <div class="save-menu" id="saveMenu">
-                  <button data-save="png">PNG 이미지로 저장</button>
-                  <button data-save="svg">SVG 악보로 저장</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="kbd-hint">숫자 1~5 음표 길이 · Space 재생 · Delete 마지막 음표 지우기 · Ctrl+Z 되돌리기</div>
-      </section>
+        </section>
+        <section class="insightBar">
+          <div class="panel insight"><b id="rangeInsight">-</b><span>사용한 음역</span></div>
+          <div class="panel insight"><b id="repeatInsight">0%</b><span>반복되는 무늬</span></div>
+          <div class="panel insight coach"><b id="coachTitle">첫 음을 찍어 볼까요?</b><span id="coachText">블록을 누르면 즉시 소리가 나고, 악보 보기에서 실제 음표로 확인할 수 있어요.</span></div>
+        </section>
+      </main>
     </div>
-  </main>
+  </section>
+
+  <section class="view" id="scoreView">
+    <div class="panel scorePage">
+      <div class="scoreToolbar"><h2>내 곡을 실제 악보로 보기</h2><span class="badge">블록과 자동 연결</span><button class="primaryBtn" id="scorePlayBtn">▶ 악보 재생</button></div>
+      <div class="scorePaper"><svg id="scoreSvg" viewBox="0 0 1200 520" role="img" aria-label="작곡한 멜로디의 오선 악보"></svg></div>
+      <div class="scoreExplain" id="scoreExplain">색 블록에서 만든 음이 같은 순서로 악보에 나타납니다. 빈 칸은 쉼표처럼 쉬고, 같은 음을 연속으로 찍으면 더 길게 들립니다.</div>
+    </div>
+  </section>
+
+  <section class="view" id="practiceView">
+    <div class="practiceGrid">
+      <aside class="panel lessonPanel"><h2>귀와 손으로 익히기</h2><p>악보를 읽기 전에 먼저 듣고 눌러 보세요. 맞힌 음은 바로 표시됩니다.</p><div class="lessonList" id="lessonList"></div></aside>
+      <main class="panel practiceStage">
+        <div class="practiceTop"><div><h2 id="practiceTitle">도·레·미 올라가기</h2><p id="practiceDesc">한 음씩 차례로 눌러 보세요.</p></div><button class="primaryBtn" id="listenLessonBtn">👂 먼저 듣기</button></div>
+        <div class="mission"><div class="missionLabel">따라 연주</div><div class="missionNotes" id="missionNotes"></div></div>
+        <div class="feedback" id="feedback">첫 음을 눌러 시작하세요.</div>
+        <div class="pianoWrap" id="pianoWrap"><div class="whiteKeys" id="whiteKeys"></div><div class="blackLayer" id="blackLayer"></div></div>
+        <div class="freeHint">컴퓨터 키보드: A S D F G H J K · 검은 건반 W E T Y U</div>
+      </main>
+    </div>
+  </section>
 </div>
+
+<div class="modal" id="libraryModal" aria-hidden="true"><div class="modalCard"><div class="modalHead"><h2>내가 저장한 곡</h2><button class="iconBtn" id="closeLibrary">닫기</button></div><div class="songList" id="songList"></div></div></div>
 <div class="toast" id="toast"></div>
+
 <script>
-(() => {
-  'use strict';
-
-  const score = document.getElementById('score');
-  const titleInput = document.getElementById('titleInput');
-  const lyricistInput = document.getElementById('lyricistInput');
-  const composerInput = document.getElementById('composerInput');
-  const tempoInput = document.getElementById('tempoInput');
-  const eraseOneBtn = document.getElementById('eraseOne');
-  const eraseAllBtn = document.getElementById('eraseAll');
-  const undoBtn = document.getElementById('undoBtn');
-  const redoBtn = document.getElementById('redoBtn');
-  const playBtn = document.getElementById('playBtn');
-  const stopBtn = document.getElementById('stopBtn');
-  const saveBtn = document.getElementById('saveBtn');
-  const saveMenu = document.getElementById('saveMenu');
-  const toast = document.getElementById('toast');
-  const lyricInputs = [...document.querySelectorAll('[data-lyric]')];
-
-  const DURATIONS = {
-    sixteenth: { beats: 0.25, flags: 2, name: '16분' },
-    eighth: { beats: 0.5, flags: 1, name: '8분' },
-    dottedEighth: { beats: 0.75, flags: 1, dotted: true, name: '점8분' },
-    quarter: { beats: 1, flags: 0, name: '4분' },
-    dottedQuarter: { beats: 1.5, flags: 0, dotted: true, name: '점4분' },
-    half: { beats: 2, flags: 0, hollow: true, name: '2분' },
-    dottedHalf: { beats: 3, flags: 0, hollow: true, dotted: true, name: '점2분' },
-    whole: { beats: 4, flags: 0, hollow: true, whole: true, name: '온' }
-  };
-
-  const PITCHES = [
-    {name:'도', midi:60}, {name:'레', midi:62}, {name:'미', midi:64},
-    {name:'파', midi:65}, {name:'솔', midi:67}, {name:'라', midi:69},
-    {name:'시', midi:71}, {name:'도', midi:72}, {name:'레', midi:74},
-    {name:'미', midi:76}, {name:'파', midi:77}, {name:'솔', midi:79},
-    {name:'라', midi:81}
-  ];
-
-  const MEASURE_START = 170;
-  const MEASURE_WIDTH = 345;
-  const STAFF_TOP = 170;
-  const STAFF_BOTTOM = 250;
-  const PITCH_BOTTOM_Y = 266;
-  const PITCH_STEP = 10;
-  const STORAGE_KEY = 'score-playground-v1';
-
-  const defaultState = () => ({
-    selected: {kind:'note', key:'quarter'},
-    eraseMode: false,
-    measures: [[],[],[],[]],
-    title: '', lyricist: '', composer: '',
-    lyrics: ['', '', '', ''],
-    tempo: 100,
-    playingId: null
-  });
-
-  let state = defaultState();
-  let undoStack = [];
-  let redoStack = [];
-  let playbackToken = 0;
-  let audioCtx = null;
-  let toastTimer = null;
-
-  function uid(){
-    return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-  }
-
-  function escapeHtml(value){
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
-  }
-
-  function snapshot(){
-    return JSON.stringify({
-      selected: state.selected,
-      eraseMode: state.eraseMode,
-      measures: state.measures,
-      title: state.title,
-      lyricist: state.lyricist,
-      composer: state.composer,
-      lyrics: state.lyrics,
-      tempo: state.tempo
-    });
-  }
-
-  function restore(json){
-    try{
-      const parsed = JSON.parse(json);
-      const next = defaultState();
-      next.selected = parsed.selected && DURATIONS[parsed.selected.key] ? parsed.selected : next.selected;
-      next.eraseMode = Boolean(parsed.eraseMode);
-      next.measures = Array.isArray(parsed.measures) && parsed.measures.length === 4 ? parsed.measures : next.measures;
-      next.title = String(parsed.title || '');
-      next.lyricist = String(parsed.lyricist || '');
-      next.composer = String(parsed.composer || '');
-      next.lyrics = Array.isArray(parsed.lyrics) ? parsed.lyrics.slice(0,4).map(v => String(v || '')) : next.lyrics;
-      while(next.lyrics.length < 4) next.lyrics.push('');
-      next.tempo = Math.max(50, Math.min(180, Number(parsed.tempo) || 100));
-      state = next;
-      syncInputs();
-      renderAll();
-    }catch(error){
-      console.warn(error);
-    }
-  }
-
-  function pushUndo(){
-    undoStack.push(snapshot());
-    if(undoStack.length > 60) undoStack.shift();
-    redoStack = [];
-    updateHistoryButtons();
-  }
-
-  function saveLocal(){
-    localStorage.setItem(STORAGE_KEY, snapshot());
-  }
-
-  function loadLocal(){
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if(saved) restore(saved);
-    else syncInputs();
-  }
-
-  function syncInputs(){
-    titleInput.value = state.title;
-    lyricistInput.value = state.lyricist;
-    composerInput.value = state.composer;
-    tempoInput.value = state.tempo;
-    lyricInputs.forEach((input, index) => input.value = state.lyrics[index] || '');
-  }
-
-  function showToast(message, warn=false){
-    toast.textContent = message;
-    toast.className = 'toast show' + (warn ? ' warn' : '');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.className = 'toast', 1700);
-  }
-
-  function updateHistoryButtons(){
-    undoBtn.disabled = undoStack.length === 0;
-    redoBtn.disabled = redoStack.length === 0;
-  }
-
-  function setSelection(kind, key){
-    if(!DURATIONS[key]) return;
-    state.selected = {kind, key};
-    state.eraseMode = false;
-    eraseOneBtn.classList.remove('active');
-    renderToolbar();
-    saveLocal();
-    clickSound(660, .045);
-  }
-
-  function renderToolbar(){
-    document.querySelectorAll('[data-kind][data-key]').forEach(button => {
-      button.classList.toggle('active', button.dataset.kind === state.selected.kind && button.dataset.key === state.selected.key && !state.eraseMode);
-    });
-    eraseOneBtn.classList.toggle('active', state.eraseMode);
-  }
-
-  function beatsUsed(measure){
-    return measure.reduce((sum, item) => sum + (DURATIONS[item.key]?.beats || 0), 0);
-  }
-
-  function itemX(measureIndex, beatStart, beats){
-    const start = MEASURE_START + measureIndex * MEASURE_WIDTH;
-    const usable = MEASURE_WIDTH - 58;
-    const centerBeat = beatStart + Math.min(beats, 1.2) * .42;
-    return start + 28 + (centerBeat / 4) * usable;
-  }
-
-  function pitchY(pitchIndex){
-    return PITCH_BOTTOM_Y - pitchIndex * PITCH_STEP;
-  }
-
-  function staffMarkup(includeGuides=true){
-    let html = `
-      <rect x="0" y="0" width="1600" height="420" fill="#fff"/>
-      <g class="staff-hit">
-    `;
-    for(let i=0;i<5;i++){
-      const y = STAFF_TOP + i*20;
-      html += `<line x1="28" y1="${y}" x2="1565" y2="${y}" stroke="#202020" stroke-width="1.4"/>`;
-    }
-    for(let i=0;i<4;i++){
-      const x = MEASURE_START + (i+1)*MEASURE_WIDTH;
-      html += `<line x1="${x}" y1="${STAFF_TOP}" x2="${x}" y2="${STAFF_BOTTOM}" stroke="#202020" stroke-width="1.8"/>`;
-    }
-    html += `<line x1="1556" y1="${STAFF_TOP}" x2="1556" y2="${STAFF_BOTTOM}" stroke="#202020" stroke-width="3"/>
-             <line x1="1565" y1="${STAFF_TOP}" x2="1565" y2="${STAFF_BOTTOM}" stroke="#202020" stroke-width="7"/>`;
-
-    html += `<text x="48" y="257" font-family="Segoe UI Symbol,Noto Music,serif" font-size="112" fill="#000">𝄞</text>
-             <text x="132" y="205" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="700">4</text>
-             <text x="132" y="245" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="700">4</text>`;
-
-    state.measures.forEach((measure, measureIndex) => {
-      let beatCursor = 0;
-      measure.forEach(item => {
-        const info = DURATIONS[item.key] || DURATIONS.quarter;
-        const x = itemX(measureIndex, beatCursor, info.beats);
-        const y = item.kind === 'rest' ? 210 : pitchY(item.pitch);
-        html += item.kind === 'rest' ? restMarkup(item, x, y, info) : noteMarkup(item, x, y, info);
-        beatCursor += info.beats;
-      });
-      if(includeGuides){
-        const used = beatsUsed(measure);
-        const label = used === 0 ? '' : `${used}/4박`;
-        html += `<text class="measure-fill" x="${MEASURE_START + measureIndex*MEASURE_WIDTH + MEASURE_WIDTH/2}" y="315" text-anchor="middle">${label}</text>`;
-      }
-    });
-
-    html += `</g>`;
-    return html;
-  }
-
-  function ledgerLines(x, pitch){
-    let lines = '';
-    if(pitch <= 0){
-      lines += `<line x1="${x-20}" y1="270" x2="${x+20}" y2="270" stroke="#111" stroke-width="1.5"/>`;
-    }
-    if(pitch >= 12){
-      lines += `<line x1="${x-20}" y1="150" x2="${x+20}" y2="150" stroke="#111" stroke-width="1.5"/>`;
-    }
-    return lines;
-  }
-
-  function noteMarkup(item, x, y, info){
-    const playingClass = state.playingId === item.id ? ' playing' : '';
-    const eraseClass = state.eraseMode ? ' erase-target' : '';
-    const fill = info.hollow ? '#fff' : '#111';
-    const stroke = '#111';
-    let body = ledgerLines(x, item.pitch);
-    body += `<ellipse cx="${x}" cy="${y}" rx="13" ry="9" transform="rotate(-18 ${x} ${y})" fill="${fill}" stroke="${stroke}" stroke-width="2.7"/>`;
-    if(!info.whole){
-      const stemUp = item.pitch < 7;
-      const stemX = stemUp ? x+11 : x-11;
-      const stemTop = stemUp ? y-58 : y+58;
-      body += `<line x1="${stemX}" y1="${y}" x2="${stemX}" y2="${stemTop}" stroke="#111" stroke-width="3" stroke-linecap="round"/>`;
-      if(info.flags > 0){
-        if(stemUp){
-          body += `<path d="M ${stemX} ${stemTop} q 24 8 18 30 q -3 10 -13 15 q 8 -12 0 -25" fill="#111"/>`;
-          if(info.flags > 1) body += `<path d="M ${stemX} ${stemTop+15} q 20 7 15 25 q -3 8 -11 12 q 7 -10 0 -21" fill="#111"/>`;
-        }else{
-          body += `<path d="M ${stemX} ${stemTop} q -24 -8 -18 -30 q 3 -10 13 -15 q -8 12 0 25" fill="#111"/>`;
-          if(info.flags > 1) body += `<path d="M ${stemX} ${stemTop-15} q -20 -7 -15 -25 q 3 -8 11 -12 q -7 10 0 21" fill="#111"/>`;
-        }
-      }
-    }
-    if(info.dotted){
-      body += `<circle cx="${x+23}" cy="${y-2}" r="3.4" fill="#111"/>`;
-    }
-    return `<g class="score-item${playingClass}${eraseClass}" data-item-id="${item.id}" aria-label="${PITCHES[item.pitch]?.name || ''} ${info.name}음표">${body}</g>`;
-  }
-
-  function restMarkup(item, x, y, info){
-    const playingClass = state.playingId === item.id ? ' playing' : '';
-    const eraseClass = state.eraseMode ? ' erase-target' : '';
-    const symbolMap = {whole:'𝄻',half:'𝄼',quarter:'𝄽',eighth:'𝄾',dottedEighth:'𝄾',sixteenth:'𝄿',dottedQuarter:'𝄽',dottedHalf:'𝄼'};
-    const symbol = symbolMap[item.key] || '𝄽';
-    const dot = info.dotted ? `<circle cx="${x+24}" cy="${y+2}" r="3.4" fill="#111"/>` : '';
-    return `<g class="score-item${playingClass}${eraseClass}" data-item-id="${item.id}" aria-label="${info.name}쉼표">
-      <text x="${x}" y="${y+17}" text-anchor="middle" font-family="Segoe UI Symbol,Noto Music,Arial Unicode MS,serif" font-size="45" fill="#111">${symbol}</text>${dot}
-    </g>`;
-  }
-
-  function renderScore(){
-    score.innerHTML = staffMarkup(true);
-  }
-
-  function renderAll(){
-    renderToolbar();
-    renderScore();
-    updateHistoryButtons();
-  }
-
-  function svgPoint(event){
-    const rect = score.getBoundingClientRect();
-    return {
-      x: (event.clientX - rect.left) * 1600 / rect.width,
-      y: (event.clientY - rect.top) * 420 / rect.height
-    };
-  }
-
-  function addItem(measureIndex, pitch){
-    const duration = DURATIONS[state.selected.key];
-    if(!duration) return;
-    const used = beatsUsed(state.measures[measureIndex]);
-    if(used + duration.beats > 4.0001){
-      showToast('이 마디에는 더 넣을 수 없어요.', true);
-      errorSound();
-      return;
-    }
-    pushUndo();
-    state.measures[measureIndex].push({
-      id: uid(),
-      kind: state.selected.kind,
-      key: state.selected.key,
-      pitch: Math.max(0, Math.min(12, pitch))
-    });
-    renderScore();
-    saveLocal();
-    clickSound(state.selected.kind === 'note' ? 740 : 420, .05);
-  }
-
-  function removeItem(id){
-    for(let i=0;i<state.measures.length;i++){
-      const index = state.measures[i].findIndex(item => item.id === id);
-      if(index >= 0){
-        pushUndo();
-        state.measures[i].splice(index,1);
-        renderScore();
-        saveLocal();
-        clickSound(280,.05);
-        return;
-      }
-    }
-  }
-
-  function removeLast(){
-    for(let i=state.measures.length-1;i>=0;i--){
-      if(state.measures[i].length){
-        pushUndo();
-        state.measures[i].pop();
-        renderScore();
-        saveLocal();
-        clickSound(280,.05);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function clearAll(){
-    if(!state.measures.some(m => m.length)){
-      showToast('지울 음표가 없어요.');
-      return;
-    }
-    pushUndo();
-    state.measures = [[],[],[],[]];
-    stopPlayback();
-    renderScore();
-    saveLocal();
-    showToast('악보를 모두 지웠어요.');
-  }
-
-  function undo(){
-    if(!undoStack.length) return;
-    redoStack.push(snapshot());
-    restore(undoStack.pop());
-    saveLocal();
-    updateHistoryButtons();
-  }
-
-  function redo(){
-    if(!redoStack.length) return;
-    undoStack.push(snapshot());
-    restore(redoStack.pop());
-    saveLocal();
-    updateHistoryButtons();
-  }
-
-  function ensureAudio(){
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    return audioCtx;
-  }
-
-  function clickSound(freq=620, duration=.04){
-    try{
-      const ctx = ensureAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.045, ctx.currentTime+.006);
-      gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime+duration);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime+duration+.02);
-    }catch(_){ }
-  }
-
-  function errorSound(){
-    clickSound(190,.09);
-    setTimeout(() => clickSound(150,.09),75);
-  }
-
-  function midiToFreq(midi){
-    return 440 * Math.pow(2,(midi-69)/12);
-  }
-
-  function playTone(midi, seconds){
-    const ctx = ensureAudio();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(midiToFreq(midi),ctx.currentTime);
-    gain.gain.setValueAtTime(.0001,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.12,ctx.currentTime+.02);
-    gain.gain.setValueAtTime(.12,Math.max(ctx.currentTime+.03,ctx.currentTime+seconds*.72));
-    gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+seconds*.94);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime+seconds);
-  }
-
-  function sleep(ms){ return new Promise(resolve => setTimeout(resolve,ms)); }
-
-  async function playScore(){
-    stopPlayback();
-    if(!state.measures.some(m => m.length)){
-      showToast('먼저 음표를 넣어 주세요.', true);
-      return;
-    }
-    const token = ++playbackToken;
-    playBtn.textContent = '❚❚';
-    const beatMs = 60000 / Math.max(50,Math.min(180,Number(state.tempo)||100));
-    for(let measureIndex=0; measureIndex<4; measureIndex++){
-      let used = 0;
-      for(const item of state.measures[measureIndex]){
-        if(token !== playbackToken) return;
-        const info = DURATIONS[item.key] || DURATIONS.quarter;
-        const durationMs = info.beats * beatMs;
-        state.playingId = item.id;
-        renderScore();
-        if(item.kind === 'note') playTone(PITCHES[item.pitch]?.midi || 60, Math.max(.07,durationMs/1000*.9));
-        await sleep(durationMs);
-        used += info.beats;
-      }
-      if(token !== playbackToken) return;
-      const remain = Math.max(0,4-used);
-      if(remain) await sleep(remain*beatMs);
-    }
-    if(token === playbackToken){
-      state.playingId = null;
-      playBtn.textContent = '▶';
-      renderScore();
-    }
-  }
-
-  function stopPlayback(){
-    playbackToken++;
-    state.playingId = null;
-    playBtn.textContent = '▶';
-    renderScore();
-  }
-
-  function buildExportSvg(){
-    const title = escapeHtml(state.title || '나의 악보');
-    const lyricist = escapeHtml(state.lyricist);
-    const composer = escapeHtml(state.composer);
-    const exportStaff = staffMarkup(false).replace('<rect x="0" y="0" width="1600" height="420" fill="#fff"/>','');
-    const lyricSvg = state.lyrics.map((text,index) => {
-      const x = MEASURE_START + index*MEASURE_WIDTH + MEASURE_WIDTH/2;
-      return `<text x="${x}" y="555" text-anchor="middle" font-family="Noto Sans KR,Malgun Gothic,sans-serif" font-size="24" font-weight="700" fill="#5d6672">${escapeHtml(text)}</text>`;
-    }).join('');
-    return `<?xml version="1.0" encoding="UTF-8"?>
-      <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="650" viewBox="0 0 1600 650">
-        <rect width="1600" height="650" fill="white"/>
-        <text x="800" y="74" text-anchor="middle" font-family="Noto Sans KR,Malgun Gothic,sans-serif" font-size="42" font-weight="800" fill="#263246">${title}</text>
-        <text x="1500" y="116" text-anchor="end" font-family="Noto Sans KR,Malgun Gothic,sans-serif" font-size="22" font-weight="700" fill="#333">${lyricist ? lyricist+' 작사' : ''}</text>
-        <text x="1500" y="148" text-anchor="end" font-family="Noto Sans KR,Malgun Gothic,sans-serif" font-size="22" font-weight="700" fill="#333">${composer ? composer+' 작곡' : ''}</text>
-        <g transform="translate(0,100)">${exportStaff}</g>
-        ${lyricSvg}
-      </svg>`;
-  }
-
-  function downloadBlob(blob, filename){
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url),1000);
-  }
-
-  function safeFilename(){
-    return (state.title || '나의_악보').trim().replace(/[\\/:*?"<>|]+/g,'_').slice(0,40) || '나의_악보';
-  }
-
-  function saveSvg(){
-    const svgText = buildExportSvg();
-    downloadBlob(new Blob([svgText],{type:'image/svg+xml;charset=utf-8'}), safeFilename()+'.svg');
-    showToast('SVG 악보를 저장했어요.');
-  }
-
-  function savePng(){
-    const svgText = buildExportSvg();
-    const blob = new Blob([svgText],{type:'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1600; canvas.height = 650;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(image,0,0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(png => {
-        if(png){
-          downloadBlob(png,safeFilename()+'.png');
-          showToast('PNG 악보를 저장했어요.');
-        }else{
-          showToast('이미지 저장에 실패했어요.',true);
-        }
-      },'image/png');
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      showToast('이미지 저장에 실패했어요.',true);
-    };
-    image.src = url;
-  }
-
-  document.querySelectorAll('[data-kind][data-key]').forEach(button => {
-    button.addEventListener('click',() => setSelection(button.dataset.kind,button.dataset.key));
-  });
-
-  score.addEventListener('pointerdown',event => {
-    const item = event.target.closest('.score-item');
-    if(state.eraseMode && item){
-      event.preventDefault();
-      removeItem(item.dataset.itemId);
-      return;
-    }
-    const point = svgPoint(event);
-    if(point.x < MEASURE_START || point.x > MEASURE_START + MEASURE_WIDTH*4 || point.y < 140 || point.y > 285) return;
-    const measureIndex = Math.max(0,Math.min(3,Math.floor((point.x-MEASURE_START)/MEASURE_WIDTH)));
-    const pitch = Math.round((PITCH_BOTTOM_Y-point.y)/PITCH_STEP);
-    addItem(measureIndex,pitch);
-  });
-
-  eraseOneBtn.addEventListener('click',() => {
-    state.eraseMode = !state.eraseMode;
-    renderToolbar();
-    saveLocal();
-    clickSound(360,.05);
-    showToast(state.eraseMode ? '지울 음표를 눌러 주세요.' : '지우기 모드를 끝냈어요.');
-  });
-
-  eraseAllBtn.addEventListener('click',() => {
-    if(confirm('악보의 모든 음표와 쉼표를 지울까요?')) clearAll();
-  });
-
-  undoBtn.addEventListener('click',undo);
-  redoBtn.addEventListener('click',redo);
-  playBtn.addEventListener('click',() => state.playingId ? stopPlayback() : playScore());
-  stopBtn.addEventListener('click',stopPlayback);
-
-  const bindText = (element, key) => {
-    element.addEventListener('input',() => {
-      state[key] = element.value;
-      saveLocal();
-    });
-  };
-  bindText(titleInput,'title');
-  bindText(lyricistInput,'lyricist');
-  bindText(composerInput,'composer');
-
-  lyricInputs.forEach((input,index) => {
-    input.addEventListener('input',() => {
-      state.lyrics[index] = input.value;
-      saveLocal();
-    });
-  });
-
-  tempoInput.addEventListener('change',() => {
-    state.tempo = Math.max(50,Math.min(180,Number(tempoInput.value)||100));
-    tempoInput.value = state.tempo;
-    saveLocal();
-  });
-
-  saveBtn.addEventListener('click',event => {
-    event.stopPropagation();
-    saveMenu.classList.toggle('open');
-  });
-  saveMenu.addEventListener('click',event => {
-    const type = event.target.dataset.save;
-    if(!type) return;
-    saveMenu.classList.remove('open');
-    type === 'svg' ? saveSvg() : savePng();
-  });
-  document.addEventListener('click',() => saveMenu.classList.remove('open'));
-
-  window.addEventListener('keydown',event => {
-    const tag = document.activeElement?.tagName;
-    const typing = tag === 'INPUT' || tag === 'TEXTAREA';
-    if((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z'){
-      event.preventDefault(); event.shiftKey ? redo() : undo(); return;
-    }
-    if((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y'){
-      event.preventDefault(); redo(); return;
-    }
-    if(typing) return;
-    const numberMap = {'1':'sixteenth','2':'eighth','3':'quarter','4':'half','5':'whole'};
-    if(numberMap[event.key]) setSelection('note',numberMap[event.key]);
-    if(event.code === 'Space'){
-      event.preventDefault(); state.playingId ? stopPlayback() : playScore();
-    }
-    if(event.key === 'Backspace' || event.key === 'Delete'){
-      event.preventDefault(); removeLast();
-    }
-    if(event.key.toLowerCase() === 'r') setSelection('rest',state.selected.key);
-    if(event.key.toLowerCase() === 'n') setSelection('note',state.selected.key);
-    if(event.key === 'Escape' && state.eraseMode){
-      state.eraseMode = false; renderToolbar();
-    }
-  });
-
-  loadLocal();
-  renderAll();
+(()=>{'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const STORAGE='kidscade_music_studio_v2', OLD_STORAGE='score-playground-v1';
+const STEPS=32, SUBDIV=8;
+const PITCHES=[
+ {n:'C6',ko:'높은 도',m:84,c:'#ff8479'},{n:'B5',ko:'시',m:83,c:'#ff9b70'},{n:'A5',ko:'라',m:81,c:'#f5bb55'},{n:'G5',ko:'솔',m:79,c:'#9ac65b'},{n:'F5',ko:'파',m:77,c:'#58c7a5'},{n:'E5',ko:'미',m:76,c:'#55bdd8'},{n:'D5',ko:'레',m:74,c:'#639eea'},{n:'C5',ko:'도',m:72,c:'#817fe8'},
+ {n:'B4',ko:'시',m:71,c:'#9a77df'},{n:'A4',ko:'라',m:69,c:'#b474d4'},{n:'G4',ko:'솔',m:67,c:'#cf78c3'},{n:'F4',ko:'파',m:65,c:'#df78a7'},{n:'E4',ko:'미',m:64,c:'#e77e8f'},{n:'D4',ko:'레',m:62,c:'#eb897d'},{n:'C4',ko:'낮은 도',m:60,c:'#e89a72'}
+];
+const NOTE_BY_MIDI=Object.fromEntries(PITCHES.map((p,i)=>[p.m,{...p,i}]));
+const state={title:'나의 첫 번째 곡',instrument:'piano',tempo:100,poly:'mono',metro:false,loop:true,style:'none',vols:{melody:.9,chord:.52,bass:.45,drum:.5},notes:Array.from({length:STEPS},()=>[]),saved:[]};
+let audioCtx=null,master=null,playing=false,playStep=0,nextNoteTime=0,scheduler=null,visualTimer=null,drawMode=null,lessonIndex=0,lessonPos=0;
+const LESSONS=[{title:'도·레·미 올라가기',desc:'한 음씩 차례로 눌러 보세요.',notes:[60,62,64,65,67,69,71,72]},{title:'작은별 첫 구절',desc:'익숙한 멜로디를 손으로 찾아봐요.',notes:[60,60,67,67,69,69,67]},{title:'도미솔 화음의 재료',desc:'화음에 자주 쓰이는 세 음을 기억해요.',notes:[60,64,67,64,60]},{title:'높고 낮게 움직이기',desc:'음의 높낮이 변화를 귀로 느껴 보세요.',notes:[67,72,69,65,60]}];
+const TEMPLATES={twinkle:[60,60,67,67,69,69,67,null,65,65,64,64,62,62,60],updown:[60,62,64,65,67,69,71,72,71,69,67,65,64,62,60],groove:[60,null,64,67,null,67,64,null,62,62,null,65,69,null,67,60]};
+const PROG=[{root:48,ch:[60,64,67]},{root:45,ch:[57,60,64]},{root:41,ch:[53,57,60]},{root:43,ch:[55,59,62]}];
+const KEYMAP={a:60,s:62,d:64,f:65,g:67,h:69,j:71,k:72,w:61,e:63,t:66,y:68,u:70};
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function midiFreq(m){return 440*Math.pow(2,(m-69)/12)}
+function ensureAudio(){if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();master=audioCtx.createGain();master.gain.value=.86;master.connect(audioCtx.destination)}if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}
+function tone(midi,when,dur=.28,vol=.15,type=state.instrument){if(vol<=0)return;ensureAudio();const f=midiFreq(midi),out=audioCtx.createGain();out.connect(master);out.gain.setValueAtTime(.0001,when);out.gain.exponentialRampToValueAtTime(Math.max(.001,vol),when+.012);out.gain.exponentialRampToValueAtTime(.0001,when+dur);if(type==='piano'){[1,2,3].forEach((h,idx)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=idx===0?'triangle':'sine';o.frequency.value=f*h;g.gain.value=[.72,.18,.08][idx];o.connect(g);g.connect(out);o.start(when);o.stop(when+dur+.03)})}else if(type==='marimba'){[1,2.01,3.9].forEach((h,idx)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f*h;g.gain.setValueAtTime([1,.32,.12][idx],when);g.gain.exponentialRampToValueAtTime(.0001,when+dur*(idx?0.55:1));o.connect(g);g.connect(out);o.start(when);o.stop(when+dur)})}else if(type==='pluck'){const o=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter();o.type='triangle';o.frequency.value=f;filter.type='lowpass';filter.frequency.setValueAtTime(2600,when);filter.frequency.exponentialRampToValueAtTime(500,when+dur);o.connect(filter);filter.connect(out);o.start(when);o.stop(when+dur)}else{const o=audioCtx.createOscillator(),o2=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o2.type='square';o.frequency.value=f;o2.frequency.value=f*.5;g.gain.value=.28;o2.connect(g);g.connect(out);o.connect(out);o.start(when);o2.start(when);o.stop(when+dur);o2.stop(when+dur)}}
+function clickAt(when,accent=false,vol=.08){if(vol<=0)return;ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='square';o.frequency.value=accent?1500:1050;g.gain.setValueAtTime(vol,when);g.gain.exponentialRampToValueAtTime(.0001,when+.045);o.connect(g);g.connect(master);o.start(when);o.stop(when+.05)}
+function noiseHit(when,kind='hat',vol=.08){if(vol<=0)return;ensureAudio();const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.13),audioCtx.sampleRate),d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const src=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),g=audioCtx.createGain();src.buffer=buffer;filter.type=kind==='kick'?'lowpass':'highpass';filter.frequency.value=kind==='kick'?180:kind==='snare'?950:4500;g.gain.setValueAtTime(vol,when);g.gain.exponentialRampToValueAtTime(.0001,when+(kind==='hat'?.055:.12));src.connect(filter);filter.connect(g);g.connect(master);src.start(when);src.stop(when+.14);if(kind==='kick'){const o=audioCtx.createOscillator(),og=audioCtx.createGain();o.frequency.setValueAtTime(115,when);o.frequency.exponentialRampToValueAtTime(48,when+.12);og.gain.setValueAtTime(vol*1.7,when);og.gain.exponentialRampToValueAtTime(.0001,when+.13);o.connect(og);og.connect(master);o.start(when);o.stop(when+.14)}}
+function renderHeader(){const h=$('#beatHeader');h.innerHTML='<div class="corner">음 높이</div>'+Array.from({length:STEPS},(_,i)=>`<div class="beatCell ${i%8===0?'measureStart':''}">${i%8===0?(Math.floor(i/8)+1)+'마디':(i%2===0?Math.floor((i%8)/2)+1:'&')}</div>`).join('')}
+function renderGrid(){const grid=$('#noteGrid');grid.innerHTML='';PITCHES.forEach((p,row)=>{const r=document.createElement('div');r.className='pitchRow';r.innerHTML=`<div class="pitchLabel" style="--pc:${p.c}"><span></span>${p.ko}</div>`;for(let s=0;s<STEPS;s++){const b=document.createElement('button');b.className='cell '+(s%2?'beatShade':'');b.style.setProperty('--pc',p.c);b.dataset.row=row;b.dataset.step=s;b.setAttribute('aria-label',`${p.ko} ${s+1}번째 칸`);if(state.notes[s].includes(p.m))b.classList.add('on');r.appendChild(b)}grid.appendChild(r)});updateMetrics()}
+function syncGridCells(){document.querySelectorAll('.cell[data-row][data-step]').forEach(c=>{const row=+c.dataset.row,step=+c.dataset.step;c.classList.toggle('on',state.notes[step].includes(PITCHES[row].m))})}
+function noteOn(row,step,force){const m=PITCHES[row].m,arr=state.notes[step],has=arr.includes(m),will=force==null?!has:force;if(state.poly==='mono'&&will)state.notes[step]=[m];else if(will&&!has)arr.push(m);else if(!will&&has)state.notes[step]=arr.filter(x=>x!==m);state.notes[step].sort((a,b)=>a-b);audition(m);persist();syncGridCells();updateMetrics();if($('#scoreView').classList.contains('active'))renderScore()}
+function audition(m){ensureAudio();tone(m,audioCtx.currentTime,.35,.17,state.instrument)}
+function setupGridInput(){const wrap=$('#gridWrap');wrap.addEventListener('pointerdown',e=>{const c=e.target.closest('.cell');if(!c)return;e.preventDefault();drawMode=!c.classList.contains('on');c.setPointerCapture?.(e.pointerId);noteOn(+c.dataset.row,+c.dataset.step,drawMode)});wrap.addEventListener('pointerover',e=>{if(drawMode==null||!(e.buttons&1))return;const c=e.target.closest('.cell');if(!c)return;const row=+c.dataset.row,step=+c.dataset.step,m=PITCHES[row].m,has=state.notes[step].includes(m);if(has!==drawMode)noteOn(row,step,drawMode)});window.addEventListener('pointerup',()=>drawMode=null)}
+function stepSeconds(){return 60/state.tempo/2}
+function scheduleStep(step,when){const dur=stepSeconds()*.88;state.notes[step].forEach(m=>tone(m,when,dur,state.vols.melody*.18,state.instrument));if(state.metro&&step%2===0)clickAt(when,step%8===0,.055);if(state.style!=='none')scheduleBacking(step,when)}
+function scheduleBacking(step,when){const measure=Math.floor(step/8)%4,within=step%8,ch=PROG[measure],style=state.style;if(style==='pop'){if(within===0||within===4){ch.ch.forEach(m=>tone(m,when,stepSeconds()*3.7,state.vols.chord*.045,'synth'));tone(ch.root,when,stepSeconds()*1.6,state.vols.bass*.13,'pluck')}if(within===0||within===4)noiseHit(when,'kick',state.vols.drum*.12);if(within===2||within===6)noiseHit(when,'snare',state.vols.drum*.10);if(within%2===0)noiseHit(when,'hat',state.vols.drum*.045)}else if(style==='march'){if(within%2===0){tone(ch.root+(within===4?7:0),when,stepSeconds()*1.5,state.vols.bass*.12,'pluck');noiseHit(when,within%4===0?'kick':'snare',state.vols.drum*.11)}if(within===0||within===4)ch.ch.forEach(m=>tone(m,when,stepSeconds()*1.7,state.vols.chord*.04,'piano'))}else if(style==='ballad'){if(within===0){ch.ch.forEach((m,i)=>tone(m,when+i*.035,stepSeconds()*6.8,state.vols.chord*.04,'piano'));tone(ch.root,when,stepSeconds()*3.6,state.vols.bass*.1,'marimba')}if(within===4)tone(ch.root+7,when,stepSeconds()*3.3,state.vols.bass*.075,'marimba');if(within===0||within===4)noiseHit(when,'hat',state.vols.drum*.025)}}
+function startPlayback(){ensureAudio();if(playing)return;playing=true;playStep=0;nextNoteTime=audioCtx.currentTime+.08;$('#playBtn').textContent='❚❚';$('#scorePlayBtn').textContent='❚❚ 재생 중';scheduler=setInterval(schedulerTick,25);visualTimer=setInterval(updateVisual,30)}
+function stopPlayback(reset=true){playing=false;clearInterval(scheduler);clearInterval(visualTimer);scheduler=visualTimer=null;$('#playBtn').textContent='▶';$('#scorePlayBtn').textContent='▶ 악보 재생';if(reset){playStep=0;$('#progressFill').style.width='0%';$$('.cell.playing').forEach(c=>c.classList.remove('playing'));$$('.scoreNote.playing').forEach(n=>n.classList.remove('playing'));$('#transportInfo').textContent='1마디 · 준비'}}
+function schedulerTick(){if(!playing)return;const horizon=audioCtx.currentTime+.12;while(nextNoteTime<horizon){scheduleStep(playStep,nextNoteTime);const s=playStep;setTimeout(()=>highlightStep(s),Math.max(0,(nextNoteTime-audioCtx.currentTime)*1000));nextNoteTime+=stepSeconds();playStep++;if(playStep>=STEPS){if(state.loop)playStep=0;else{setTimeout(()=>stopPlayback(),Math.max(0,(nextNoteTime-audioCtx.currentTime)*1000));break}}}}
+function updateVisual(){if(!playing)return;const p=(playStep/STEPS)*100;$('#progressFill').style.width=p+'%'}
+function highlightStep(s){if(!playing)return;$$('.cell.playing').forEach(c=>c.classList.remove('playing'));$$(`.cell[data-step="${s}"]`).forEach(c=>c.classList.add('playing'));$$('.scoreNote.playing').forEach(n=>n.classList.remove('playing'));$$(`.scoreNote[data-step="${s}"]`).forEach(n=>n.classList.add('playing'));$('#progressFill').style.width=((s+1)/STEPS*100)+'%';$('#transportInfo').textContent=`${Math.floor(s/8)+1}마디 · ${Math.floor((s%8)/2)+1}박`}
+function renderScore(){const svg=$('#scoreSvg'),left=92,right=1140,top=160,lineGap=20,measureW=(right-left)/4;let out=`<rect width="1200" height="520" fill="#fffef9"/><text x="70" y="62" font-size="30" font-weight="900" fill="#302a3c">${esc(state.title||'제목 없는 곡')}</text><text x="70" y="90" font-size="13" font-weight="800" fill="#8e8797">C장조 · 4/4 · ${state.tempo} BPM · ${instName(state.instrument)}</text>`;for(let l=0;l<5;l++)out+=`<line x1="${left}" y1="${top+l*lineGap}" x2="${right}" y2="${top+l*lineGap}" stroke="#27232c" stroke-width="1.4"/>`;for(let m=0;m<=4;m++){const x=left+m*measureW;out+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${top+80}" stroke="#27232c" stroke-width="${m===4?4:1.5}"/>`};out+=`<text x="25" y="238" font-size="102" font-family="serif" fill="#17151b">𝄞</text><text x="72" y="188" font-size="31" font-family="serif" font-weight="700">4</text><text x="72" y="226" font-size="31" font-family="serif" font-weight="700">4</text>`;for(let s=0;s<STEPS;s++){const arr=state.notes[s],measure=Math.floor(s/8),within=s%8,x=left+measure*measureW+18+(within+.5)*(measureW-36)/8;if(arr.length===0){if(s%2===0)out+=`<text x="${x}" y="214" text-anchor="middle" font-size="19" fill="#c5bec9">·</text>`;continue}arr.forEach((m,j)=>{const y=staffY(m),stemUp=m<71;out+=`<g class="scoreNote" data-step="${s}" data-midi="${m}"><ellipse cx="${x+j*5}" cy="${y}" rx="8" ry="5.4" transform="rotate(-18 ${x+j*5} ${y})" fill="#342e3f"/><line x1="${x+(stemUp?7:-7)+j*5}" y1="${y}" x2="${x+(stemUp?7:-7)+j*5}" y2="${y+(stemUp?-34:34)}" stroke="#342e3f" stroke-width="2.3"/><path d="M ${x+7+j*5} ${y-34} q 14 8 5 23" fill="none" stroke="#342e3f" stroke-width="2.1"/></g>`;ledger(m,x+j*5).forEach(yL=>out+=`<line x1="${x-12+j*5}" y1="${yL}" x2="${x+12+j*5}" y2="${yL}" stroke="#342e3f" stroke-width="1.3"/>`)})}out+=`<text x="70" y="350" font-size="15" font-weight="900" fill="#6657d9">블록 작곡 → 실제 악보 연결</text><text x="70" y="378" font-size="13" font-weight="700" fill="#7f7789">각 블록은 8분음표 한 칸으로 표시됩니다. 빈 칸은 쉬는 시간이고, 여러 음을 같은 세로줄에 놓으면 화음으로 겹쳐 표시됩니다.</text>`;svg.innerHTML=out;svg.querySelectorAll('.scoreNote').forEach(g=>g.addEventListener('click',()=>audition(+g.dataset.midi)))}
+function staffY(m){const diatonic=[60,62,64,65,67,69,71,72,74,76,77,79,81,83,84],idx=diatonic.indexOf(m);return 260-idx*10}
+function ledger(m,x){const ys=[];if(m===60)ys.push(260);if(m>=81)ys.push(150);if(m>=84)ys.push(140);return ys}
+function esc(v){return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
+function instName(v){return {piano:'피아노',marimba:'마림바',pluck:'뮤직박스',synth:'신스'}[v]||v}
+function updateMetrics(){const all=state.notes.flat(),count=all.length;$('#noteCountBadge').textContent=count+'개 음';if(!count){$('#rangeInsight').textContent='-';$('#repeatInsight').textContent='0%';$('#coachTitle').textContent='첫 음을 찍어 볼까요?';$('#coachText').textContent='블록을 누르면 즉시 소리가 나고, 악보 보기에서 실제 음표로 확인할 수 있어요.';return}const min=Math.min(...all),max=Math.max(...all),minP=NOTE_BY_MIDI[min],maxP=NOTE_BY_MIDI[max];$('#rangeInsight').textContent=(minP?.ko||min)+' ~ '+(maxP?.ko||max);let same=0,pairs=0;for(let i=0;i<STEPS-8;i++){pairs++;if(JSON.stringify(state.notes[i])===JSON.stringify(state.notes[i+8])&&state.notes[i].length)same++}$('#repeatInsight').textContent=Math.round(same/Math.max(1,pairs)*100)+'%';const active=state.notes.filter(a=>a.length).length;if(active<5){$('#coachTitle').textContent='조금 더 이어 볼까요?';$('#coachText').textContent='같은 음을 반복해도 좋고, 한 칸씩 올라가며 움직임을 만들어도 좋아요.'}else if(new Set(all).size<=3){$('#coachTitle').textContent='반복이 또렷한 곡이에요';$('#coachText').textContent='이제 한두 음만 새롭게 넣으면 반복과 변화가 함께 들려요.'}else if(active>22){$('#coachTitle').textContent='멜로디가 꽉 찼어요';$('#coachText').textContent='몇 칸을 비워 쉼을 만들면 중요한 음이 더 잘 들릴 수 있어요.'}else{$('#coachTitle').textContent='좋은 흐름이 생겼어요';$('#coachText').textContent='악보 보기로 바꿔 높낮이 모양을 확인하거나 자동 반주를 붙여 보세요.'}}
+function persist(){const copy={title:state.title,instrument:state.instrument,tempo:state.tempo,poly:state.poly,metro:state.metro,loop:state.loop,style:state.style,vols:state.vols,notes:state.notes,saved:state.saved};localStorage.setItem(STORAGE,JSON.stringify(copy))}
+function load(){try{const raw=localStorage.getItem(STORAGE);if(raw){const s=JSON.parse(raw);Object.assign(state,s);if(!Array.isArray(state.notes)||state.notes.length!==STEPS)state.notes=Array.from({length:STEPS},()=>[]);if(!Array.isArray(state.saved))state.saved=[];return}migrateOld()}catch(e){console.warn(e)}}
+function migrateOld(){try{const raw=localStorage.getItem(OLD_STORAGE);if(!raw)return;const old=JSON.parse(raw);if(old.title)state.title=old.title;if(old.tempo)state.tempo=clamp(+old.tempo,60,170);if(Array.isArray(old.measures)){old.measures.slice(0,4).forEach((measure,mi)=>{let beat=0;measure.forEach(item=>{const beats={sixteenth:.25,eighth:.5,dottedEighth:.75,quarter:1,dottedQuarter:1.5,half:2,dottedHalf:3,whole:4}[item.key]||1;if(item.kind!=='rest'&&Number.isFinite(item.pitch)){const idx=Math.round(beat*2),step=mi*8+idx,midi=60+([0,2,4,5,7,9,11,12,14,16,17,19,21][item.pitch]||0);if(step<STEPS&&NOTE_BY_MIDI[midi])state.notes[step]=[midi]}beat+=beats})});persist();toastMsg('기존 멜로디 공방의 곡을 새 스튜디오로 가져왔어요.')}}catch(e){console.warn(e)}}
+function saveSong(){state.title=$('#songTitle').value||'제목 없는 곡';const item={id:Date.now(),date:new Date().toLocaleDateString('ko-KR'),title:state.title,instrument:state.instrument,tempo:state.tempo,style:state.style,notes:JSON.parse(JSON.stringify(state.notes))};state.saved=[item,...state.saved.filter(x=>x.title!==item.title)].slice(0,10);persist();renderLibrary();toastMsg('내 곡에 저장했어요!')}
+function loadSong(id){const s=state.saved.find(x=>x.id===id);if(!s)return;state.title=s.title;state.instrument=s.instrument||'piano';state.tempo=s.tempo||100;state.style=s.style||'none';state.notes=JSON.parse(JSON.stringify(s.notes));syncControls();renderGrid();renderScore();persist();closeLibrary();toastMsg('곡을 불러왔어요.')}
+function deleteSong(id){state.saved=state.saved.filter(x=>x.id!==id);persist();renderLibrary()}
+function renderLibrary(){const box=$('#songList');if(!state.saved.length){box.innerHTML='<div style="padding:30px;text-align:center;color:#8b8498;font-weight:900">아직 저장한 곡이 없어요.<br><small>작곡한 뒤 위의 저장 버튼을 눌러 보세요.</small></div>';return}box.innerHTML=state.saved.map(s=>`<div class="savedSong"><div><strong>${esc(s.title)}</strong><span>${s.date} · ${s.tempo} BPM · ${instName(s.instrument)}</span></div><button class="miniBtn" data-load="${s.id}">불러오기</button><button class="miniBtn danger" data-del="${s.id}">삭제</button></div>`).join('');box.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>loadSong(+b.dataset.load));box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>deleteSong(+b.dataset.del))}
+function openLibrary(){renderLibrary();$('#libraryModal').classList.add('open');$('#libraryModal').setAttribute('aria-hidden','false')}
+function closeLibrary(){$('#libraryModal').classList.remove('open');$('#libraryModal').setAttribute('aria-hidden','true')}
+function toastMsg(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600)}
+function applyTemplate(name){stopPlayback();state.notes=Array.from({length:STEPS},()=>[]);const seq=TEMPLATES[name]||[];let step=0;seq.forEach(v=>{if(step>=STEPS)return;if(v!=null)state.notes[step]=[v];step+=2});renderGrid();renderScore();persist();toastMsg('예시 멜로디를 불러왔어요. 마음대로 바꿔 보세요!')}
+function clearAll(){if(!confirm('현재 멜로디를 모두 지울까요?'))return;stopPlayback();state.notes=Array.from({length:STEPS},()=>[]);renderGrid();renderScore();persist();toastMsg('빈 악보가 되었어요.')}
+function syncControls(){$('#songTitle').value=state.title;$('#instrument').value=state.instrument;$('#tempo').value=$('#tempoNum').value=state.tempo;$('#tempoLabel').textContent=state.tempo+' BPM';$$('[data-poly]').forEach(b=>b.classList.toggle('active',b.dataset.poly===state.poly));$('#metroToggle').classList.toggle('on',state.metro);$('#loopToggle').classList.toggle('on',state.loop);$$('.styleBtn').forEach(b=>b.classList.toggle('active',b.dataset.style===state.style));['melody','chord','bass','drum'].forEach(k=>{const v=Math.round((state.vols[k]??.5)*100);$('#'+k+'Vol').value=v;$('#'+k+'VolText').textContent=v+'%'})}
+function renderLessons(){const box=$('#lessonList');box.innerHTML=LESSONS.map((l,i)=>`<button class="lesson ${i===lessonIndex?'active':''}" data-lesson="${i}"><strong>${l.title}</strong><span>${l.desc}</span></button>`).join('');box.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>selectLesson(+b.dataset.lesson));renderMission()}
+function selectLesson(i){lessonIndex=i;lessonPos=0;renderLessons();$('#feedback').textContent='첫 음을 눌러 시작하세요.'}
+function renderMission(){const l=LESSONS[lessonIndex];$('#practiceTitle').textContent=l.title;$('#practiceDesc').textContent=l.desc;$('#missionNotes').innerHTML=l.notes.map((m,i)=>`<span class="missionNote ${i<lessonPos?'done':i===lessonPos?'now':''}">${noteKo(m)}</span>`).join('')}
+function noteKo(m){const map={60:'도',61:'도♯',62:'레',63:'레♯',64:'미',65:'파',66:'파♯',67:'솔',68:'솔♯',69:'라',70:'라♯',71:'시',72:'높은 도',73:'도♯',74:'레',75:'레♯',76:'미',77:'파',78:'파♯',79:'솔',80:'솔♯',81:'라',82:'라♯',83:'시',84:'높은 도'};return map[m]||m}
+function practiceHit(m){tone(m,audioCtx.currentTime,.42,.18,'piano');const l=LESSONS[lessonIndex],target=l.notes[lessonPos];if(m===target){lessonPos++;$('#feedback').textContent=lessonPos>=l.notes.length?'완성! 멜로디를 정확히 연주했어요.':'좋아요! 다음 음으로.';if(lessonPos>=l.notes.length)setTimeout(()=>{lessonPos=0;renderMission()},1200)}else $('#feedback').textContent=`지금은 ${noteKo(target)} 음을 찾아보세요.`;renderMission()}
+function listenLesson(){ensureAudio();const l=LESSONS[lessonIndex],start=audioCtx.currentTime+.08;l.notes.forEach((m,i)=>{tone(m,start+i*.38,.32,.15,'piano');setTimeout(()=>flashKey(m),80+i*380)})}
+function flashKey(m){const b=document.querySelector(`[data-piano-midi="${m}"]`);if(!b)return;b.classList.add('active');setTimeout(()=>b.classList.remove('active'),180)}
+function renderPiano(){const whites=[60,62,64,65,67,69,71,72,74,76,77,79,81,83,84],black=[{m:61,pos:.055},{m:63,pos:.122},{m:66,pos:.255},{m:68,pos:.322},{m:70,pos:.389},{m:73,pos:.522},{m:75,pos:.589},{m:78,pos:.722},{m:80,pos:.789},{m:82,pos:.856}];$('#whiteKeys').innerHTML=whites.map(m=>`<button class="pKey white" data-piano-midi="${m}"><span>${noteKo(m)}</span></button>`).join('');$('#blackLayer').innerHTML=black.map(x=>`<button class="pKey black" style="left:${x.pos*100}%" data-piano-midi="${x.m}" aria-label="${noteKo(x.m)}"></button>`).join('');document.querySelectorAll('[data-piano-midi]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();ensureAudio();b.classList.add('active');practiceHit(+b.dataset.pianoMidi)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>b.classList.remove('active')))})}
+function bind(){$$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.toggle('active',x===b));$$('.view').forEach(v=>v.classList.toggle('active',v.id===b.dataset.view+'View'));if(b.dataset.view==='score')renderScore()});$('#instrument').onchange=e=>{state.instrument=e.target.value;persist()};$('#songTitle').oninput=e=>{state.title=e.target.value;persist();renderScore()};const setTempo=v=>{state.tempo=clamp(+v||100,60,170);$('#tempo').value=$('#tempoNum').value=state.tempo;$('#tempoLabel').textContent=state.tempo+' BPM';persist();renderScore()};$('#tempo').oninput=e=>setTempo(e.target.value);$('#tempoNum').onchange=e=>setTempo(e.target.value);$$('[data-poly]').forEach(b=>b.onclick=()=>{state.poly=b.dataset.poly;$$('[data-poly]').forEach(x=>x.classList.toggle('active',x===b));persist()});$('#metroToggle').onclick=()=>{state.metro=!state.metro;$('#metroToggle').classList.toggle('on',state.metro);persist()};$('#loopToggle').onclick=()=>{state.loop=!state.loop;$('#loopToggle').classList.toggle('on',state.loop);persist()};$$('.styleBtn').forEach(b=>b.onclick=()=>{state.style=b.dataset.style;$$('.styleBtn').forEach(x=>x.classList.toggle('active',x===b));persist();if(state.style!=='none')toastMsg('자동 반주가 켜졌어요. 재생해 보세요!')});$$('[data-template]').forEach(b=>b.onclick=()=>applyTemplate(b.dataset.template));$('#clearBtn').onclick=clearAll;$('#playBtn').onclick=()=>playing?stopPlayback():startPlayback();$('#scorePlayBtn').onclick=()=>playing?stopPlayback():startPlayback();$('#stopBtn').onclick=()=>stopPlayback();['melody','chord','bass','drum'].forEach(k=>$('#'+k+'Vol').oninput=e=>{state.vols[k]=+e.target.value/100;$('#'+k+'VolText').textContent=e.target.value+'%';persist()});$('#saveSongBtn').onclick=saveSong;$('#libraryBtn').onclick=openLibrary;$('#closeLibrary').onclick=closeLibrary;$('#libraryModal').onclick=e=>{if(e.target.id==='libraryModal')closeLibrary()};$('#listenLessonBtn').onclick=listenLesson;window.addEventListener('keydown',e=>{if(e.target.matches('input,select'))return;const practiceActive=$('#practiceView').classList.contains('active'),m=KEYMAP[e.key.toLowerCase()];if(practiceActive&&m!=null){e.preventDefault();ensureAudio();flashKey(m);practiceHit(m)}if(e.code==='Space'&&!practiceActive){e.preventDefault();playing?stopPlayback():startPlayback()}})}
+function init(){load();renderHeader();syncControls();renderGrid();renderScore();setupGridInput();renderPiano();renderLessons();bind();updateMetrics()}
+init();
 })();
 </script>
 </body>
