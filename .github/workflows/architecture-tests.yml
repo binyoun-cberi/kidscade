@@ -33,6 +33,8 @@ jobs:
             seed-house-entry.js; do
             node --check "$file"
           done
+      - name: Run game classification tests
+        run: node --test tests/game-classification.test.cjs
       - name: Run launcher regression tests
         run: node --test tests/game-launcher.test.cjs
       - name: Run recommendation regression tests
