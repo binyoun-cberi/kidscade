@@ -27,8 +27,7 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
-    // Avoid writing a literal closing script tag inside this loader script.
-    // A literal </script> here would terminate this script at HTML parse time.
+    // Build the tag in pieces so the loader source never contains a closing-script sequence.
     const gardenScript='<scr'+'ipt src="garden.js"></scr'+'ipt>';
     const gardenScriptV2='<scr'+'ipt src="garden.js?v=avatar-preview-fix-v2"></scr'+'ipt>';
     html=html.replace(gardenScript,gardenScriptV2);
