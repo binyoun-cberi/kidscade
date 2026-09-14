@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const META_KEY = 'kidscade_recent_meta_v3';
-  const MIGRATION_KEY = 'kidscade_recent_migration_v3';
+  const META_KEY = 'kidscade_recent_meta_v4';
+  const MIGRATION_KEY = 'kidscade_recent_migration_v4';
   const RECENTS_KEY = 'kidscade_recents';
   let syncQueued = false;
 
@@ -36,37 +36,90 @@
     const meta = readMeta();
     meta[id] = Date.now();
     const trimmed = Object.entries(meta)
+      .filter(([, timestamp]) => Number.isFinite(Number(timestamp)))
       .sort((a, b) => Number(b[1]) - Number(a[1]))
       .slice(0, 12);
     writeMeta(Object.fromEntries(trimmed));
   }
 
-  function compactMiniCard(card) {
-    if (!(card instanceof HTMLElement) || !card.classList.contains('mini-card')) return;
-    card.querySelectorAll('.game-desc,.fav-star,.badge-container,.cert-btn,.play-limit-badge,.kc-card-meta').forEach(el => el.remove());
-    card.setAttribute('aria-label', `${card.querySelector('.game-title')?.textContent?.trim() || '게임'} 다시 열기`);
-    window.KidscadeGameCovers?.apply?.(card);
+  function findOriginCard(id) {
+    if (!id) return null;
+    return document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(id)}"]`);
+  }
+
+  function createMiniCard(origin) {
+    const mini = document.createElement('a');
+    mini.className = 'game-card mini-card kc-dashboard-card';
+    mini.href = origin.getAttribute('href') || '#';
+
+    ['id', 'age', 'category', 'cover'].forEach(key => {
+      const value = origin.dataset[key];
+      if (value) mini.dataset[key] = value;
+    });
+
+    const icon = document.createElement('div');
+    icon.className = 'game-icon';
+    icon.textContent = origin.querySelector(':scope > .game-icon')?.textContent?.trim() || '🎮';
+
+    const title = document.createElement('div');
+    title.className = 'game-title';
+    title.textContent = origin.querySelector('.game-title')?.textContent?.trim() || '게임';
+
+    mini.append(icon, title);
+    mini.setAttribute('aria-label', `${title.textContent} 다시 열기`);
+    mini.addEventListener('click', event => {
+      event.preventDefault();
+      const currentOrigin = findOriginCard(mini.dataset.id);
+      if (currentOrigin) currentOrigin.click();
+      else if (mini.href && mini.href !== '#') window.location.href = mini.href;
+    });
+
+    window.KidscadeGameCovers?.apply?.(mini);
+    return mini;
+  }
+
+  function replaceLegacyMiniCards(list) {
+    if (!list) return;
+    Array.from(list.children).forEach(card => {
+      if (!(card instanceof HTMLElement)) return;
+      if (card.classList.contains('kc-dashboard-card')) return;
+      const origin = findOriginCard(card.dataset?.id);
+      if (!origin) {
+        card.remove();
+        return;
+      }
+      card.replaceWith(createMiniCard(origin));
+    });
   }
 
   function sanitizeRecents() {
     const list = document.getElementById('recent-list');
     if (!list) return;
     const allowed = new Set(Object.keys(readMeta()));
+
     Array.from(list.children).forEach(card => {
       const id = card.dataset?.id;
       if (!id || !allowed.has(id)) card.remove();
-      else compactMiniCard(card);
     });
+    replaceLegacyMiniCards(list);
+
+    try {
+      const stored = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+      const clean = Array.isArray(stored) ? stored.filter(id => allowed.has(id)).slice(0, 4) : [];
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(clean));
+    } catch (_) {
+      try { localStorage.setItem(RECENTS_KEY, '[]'); } catch (_) {}
+    }
   }
 
-  function compactFavorites() {
-    document.querySelectorAll('#favorite-list > .mini-card').forEach(compactMiniCard);
+  function normalizeFavorites() {
+    replaceLegacyMiniCards(document.getElementById('favorite-list'));
   }
 
   function normalizeQuickHub() {
     syncQueued = false;
     sanitizeRecents();
-    compactFavorites();
+    normalizeFavorites();
 
     const zone = document.querySelector('.kc-quick-zone');
     if (!zone) return;
@@ -103,7 +156,7 @@
       const target = document.getElementById(id);
       if (!target || target.dataset.dashboardObserver === '1') return;
       target.dataset.dashboardObserver = '1';
-      new MutationObserver(queueSync).observe(target, { childList: true, subtree: true });
+      new MutationObserver(queueSync).observe(target, { childList: true });
     });
   }
 
@@ -116,6 +169,10 @@
       .kc-quick-hub-time { display:none !important; }
       .kc-quick-tabs [hidden] { display:none !important; }
       .dashboard-container { align-items:stretch; }
+      .dashboard-container .kc-dashboard-card {
+        text-decoration:none;
+        cursor:pointer;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -140,6 +197,14 @@
     window.addEventListener('pageshow', queueSync);
     document.addEventListener('kidscade:catalog-ready', queueSync);
   }
+
+  window.KidscadeDashboard = {
+    refresh: queueSync,
+    remember: card => {
+      rememberPlayedCard(card);
+      queueSync();
+    }
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
