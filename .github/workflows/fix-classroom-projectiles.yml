@@ -1,0 +1,40 @@
+name: Clean classroom projectile fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-classroom-projectiles.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  clean-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore original formatting and apply projectile fix
+        shell: bash
+        run: |
+          git show bd795837b1278711a63ea895f981800263c57554:classroom_war_3d.html > classroom_war_3d.html
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('classroom_war_3d.html')
+          s = p.read_text(encoding='utf-8')
+          old1 = 'const visible=Math.min(3,list.length),damage=(RANK_POWER[i]*list.length)/visible,spec=PROJECTILE_SPECS[i];'
+          new1 = 'const visible=list.length,damage=(RANK_POWER[i]*list.length)/visible,spec=PROJECTILE_SPECS[i];'
+          old2 = 'const source=list[(k*2)%list.length];'
+          new2 = 'const source=list[k];'
+          assert s.count(old1) == 1, s.count(old1)
+          assert s.count(old2) == 1, s.count(old2)
+          s = s.replace(old1, new1).replace(old2, new2)
+          p.write_text(s, encoding='utf-8')
+          PY
+          rm .github/workflows/fix-classroom-projectiles.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add classroom_war_3d.html .github/workflows/fix-classroom-projectiles.yml
+          git commit -m 'Cleanly fix classroom projectile count'
+          git push origin HEAD:main
