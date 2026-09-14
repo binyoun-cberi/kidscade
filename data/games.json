@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "games": [
     {
       "id": "low_math_number_tower",
@@ -187,25 +187,5 @@
       "cover": "assets/gate-image/한붓쓱.png",
       "description": "한 번 그은 길로 모든 연결선을 지나면 라이더가 내가 만든 경로를 따라 배달하는 한붓그리기 퍼즐!"
     }
-  ],
-  "coverById": {
-    "low_math_number_tower": "assets/gate-image/숫자 타워.png",
-    "high_classroom_war_3d": "assets/gate-image/교실전쟁3D.png",
-    "music_neon_rift": "assets/gate-image/네온 리프트.png",
-    "high_melody_workshop": "assets/gate-image/멜로디 공방.png",
-    "high_byeokrando_voyage": "assets/gate-image/벽란도 상행기.png",
-    "hanja_survivors_8": "assets/gate-image/한자수호전.png",
-    "high_history_royale": "assets/gate-image/역사 로얄.png",
-    "high_outbreak_korea": "assets/gate-image/OUTBREAK KOREA.png",
-    "tod_antarctic_exploration": "assets/gate-image/남극 탐험 대작전.png",
-    "high_rhythm_dash": "assets/gate-image/리듬 대시.png",
-    "tod_shape_color": "assets/gate-image/모양 색깔 친구들 집 찾기.png",
-    "tod_chick_shell": "assets/gate-image/병아리는 어디에.png",
-    "trivia_blockraft": "assets/gate-image/블록래프트.png",
-    "school_tower": "assets/gate-image/수식의 첨탑.png",
-    "spelling_frog": "assets/gate-image/스펠링 프로그.png",
-    "alien_pizza": "assets/gate-image/외계인 피자 가게.png",
-    "patience_tower": "assets/gate-image/인내의 탑.png",
-    "low_one_stroke": "assets/gate-image/한붓쓱.png"
-  }
+  ]
 }
