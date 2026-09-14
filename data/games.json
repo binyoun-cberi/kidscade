@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "games": [
     {
       "id": "low_math_number_tower",
@@ -21,6 +21,26 @@
       "description": "사칙연산 관문으로 병력을 키우고, 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!"
     },
     {
+      "id": "music_neon_rift",
+      "title": "NEON RIFT (네온 리프트)",
+      "href": "네온 리프트.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🏍️",
+      "cover": "네온 리프트.png",
+      "description": "박자에 맞춰 달리는 1인칭 리듬 러너! 신나는 비트 속에서 차선을 바꾸고 점프하며 24개의 스테이지를 돌파해 보세요."
+    },
+    {
+      "id": "high_melody_workshop",
+      "title": "멜로디 공방",
+      "href": "멜로디 공방.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🎼",
+      "cover": "멜로디 공방.png",
+      "description": "음표와 쉼표를 악보에 직접 배치하고 완성한 곡을 들어보세요. 제목과 가사까지 작성할 수 있는 작곡 공방입니다."
+    },
+    {
       "id": "high_byeokrando_voyage",
       "title": "벽란도 상행기",
       "href": "byeokrando_voyage_release_candidate.html?v=1",
@@ -29,6 +49,17 @@
       "icon": "⛵",
       "cover": "벽란도 상행기.png",
       "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!"
+    },
+    {
+      "id": "hanja_survivors_8",
+      "title": "한자 수호전: 8급",
+      "href": "8.html",
+      "category": "lang",
+      "age": "high",
+      "icon": "🛡️",
+      "cover": "한자수호전.png",
+      "scoreKey": "hanja_survivors_best",
+      "description": "올바른 획순으로 8급 한자를 적어 다가오는 원령들을 물리치는 디펜스 게임!"
     },
     {
       "id": "high_history_royale",
@@ -40,11 +71,5 @@
       "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
     }
   ],
-  "coverById": {
-    "high_classroom_war_3d": "교실전쟁3D.png",
-    "music_neon_rift": "네온 리프트.png",
-    "high_melody_workshop": "멜로디 공방.png",
-    "high_byeokrando_voyage": "벽란도 상행기.png",
-    "hanja_survivors_8": "한자수호전.png"
-  }
+  "coverById": {}
 }
