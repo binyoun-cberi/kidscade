@@ -13,8 +13,7 @@
         text-align: left;
         cursor: pointer;
         border-color: rgba(245,158,11,.24) !important;
-        background:
-          linear-gradient(180deg, rgba(255,251,235,.96), rgba(255,255,255,.98));
+        background: linear-gradient(180deg, rgba(255,251,235,.96), rgba(255,255,255,.98));
         transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
       }
       .kc-seed-house-card:hover {
@@ -118,8 +117,8 @@
       if (el.closest('.kc-seed-house-card')) return;
       const text = (el.textContent || '').trim();
       if (/생활\s*월드|Kidscade\s*World/i.test(text) || el.dataset.openLifeWorld === 'garden-entry') {
-        el.textContent = '🌱 씨앗하우스';
-        el.setAttribute('aria-label', '씨앗하우스 들어가기');
+        if (text !== '🌱 씨앗하우스') el.textContent = '🌱 씨앗하우스';
+        if (el.getAttribute('aria-label') !== '씨앗하우스 들어가기') el.setAttribute('aria-label', '씨앗하우스 들어가기');
       }
     });
   }
@@ -129,8 +128,10 @@
     if (!nav) return false;
     const btn = nav.querySelector('[data-mobile-nav="shop"], [data-mobile-nav="seedhouse"]');
     if (!btn) return false;
+    if (btn.dataset.seedHouseReady === 'true') return true;
     btn.dataset.mobileNav = 'seedhouse';
     btn.dataset.openLifeWorld = 'mobile-nav';
+    btn.dataset.seedHouseReady = 'true';
     btn.innerHTML = '<span class="kc-mobile-nav-icon">🌱</span>씨앗하우스';
     btn.setAttribute('aria-label', '씨앗하우스');
     return true;
@@ -141,11 +142,15 @@
     if (bar) {
       const strong = bar.querySelector('strong');
       const sub = bar.querySelector('span');
-      if (strong) strong.textContent = '🌱 씨앗하우스';
-      if (sub) sub.textContent = '집 · 나의 정원 · 농장이 하나로 이어지는 공간';
+      if (strong && strong.textContent !== '🌱 씨앗하우스') strong.textContent = '🌱 씨앗하우스';
+      if (sub && sub.textContent !== '집 · 나의 정원 · 농장이 하나로 이어지는 공간') sub.textContent = '집 · 나의 정원 · 농장이 하나로 이어지는 공간';
     }
     const frame = document.getElementById('kidscade-life-world-frame');
-    if (frame) frame.title = 'Kidscade 씨앗하우스';
+    if (frame && frame.title !== 'Kidscade 씨앗하우스') frame.title = 'Kidscade 씨앗하우스';
+  }
+
+  function replaceWorldName(text) {
+    return String(text || '').replace(/Kidscade\s*생활\s*월드\s*v2/gi, 'Kidscade 씨앗하우스').replace(/생활\s*월드\s*v2/gi, '씨앗하우스').replace(/생활\s*월드/gi, '씨앗하우스');
   }
 
   function renameInsideFrame() {
@@ -154,21 +159,17 @@
     try {
       const doc = frame.contentDocument;
       if (!doc) return;
-      doc.title = 'Kidscade 씨앗하우스';
+      if (doc.title !== 'Kidscade 씨앗하우스') doc.title = 'Kidscade 씨앗하우스';
       const canvas = doc.getElementById('world');
-      if (canvas) canvas.setAttribute('aria-label', 'Kidscade 씨앗하우스');
+      if (canvas?.getAttribute('aria-label') !== 'Kidscade 씨앗하우스') canvas?.setAttribute('aria-label', 'Kidscade 씨앗하우스');
       const hudTitle = doc.querySelector('.hud b');
-      if (hudTitle) hudTitle.textContent = '🌱 씨앗하우스';
+      if (hudTitle && hudTitle.textContent !== '🌱 씨앗하우스') hudTitle.textContent = '🌱 씨앗하우스';
       const toast = doc.getElementById('toast');
-      if (toast && /생활\s*월드/.test(toast.textContent || '')) {
-        toast.textContent = (toast.textContent || '').replace(/생활\s*월드\s*v2/gi, '씨앗하우스').replace(/생활\s*월드/gi, '씨앗하우스');
-      }
+      if (toast && /생활\s*월드/.test(toast.textContent || '')) toast.textContent = replaceWorldName(toast.textContent);
       if (toast && !toast.dataset.seedHouseObserver) {
         toast.dataset.seedHouseObserver = 'true';
         new MutationObserver(() => {
-          if (/생활\s*월드/.test(toast.textContent || '')) {
-            toast.textContent = (toast.textContent || '').replace(/생활\s*월드\s*v2/gi, '씨앗하우스').replace(/생활\s*월드/gi, '씨앗하우스');
-          }
+          if (/생활\s*월드/.test(toast.textContent || '')) toast.textContent = replaceWorldName(toast.textContent);
         }).observe(toast, { childList: true, characterData: true, subtree: true });
       }
     } catch (_) {}
@@ -182,12 +183,18 @@
     renameInsideFrame();
   }
 
+  let scheduled = false;
   function sync() {
-    installDesktopEntry();
-    renameExistingEntrances();
-    convertMobileNav();
-    renameOverlay();
-    attachFrameWatcher();
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      installDesktopEntry();
+      renameExistingEntrances();
+      convertMobileNav();
+      renameOverlay();
+      attachFrameWatcher();
+    });
   }
 
   function init() {
@@ -197,9 +204,6 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })();
