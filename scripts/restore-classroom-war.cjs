@@ -15,7 +15,7 @@ function inflateIgnoringFooter(buffer){
   return zlib.inflateRawSync(buffer.subarray(offset,limit));
 }
 function validate(html){
-  const required=['<!doctype html>','3D 교실 방어 시작','function createClassroom','function createGeneralStudent','function spawnEnemy','function spawnGate','ui.startBtn.onclick=resetGame','</html>'];
+  const required=['<!doctype html>','3D 교실 방어 시작','function createClassroom','function createGeneralStudent','const band=box(.62,.07,.50,0xf59e0b,.25,.18);','function spawnEnemy','function spawnGate','ui.startBtn.onclick=resetGame','</html>'];
   for(const token of required)if(!html.includes(token))throw new Error(`missing required token: ${token}`);
   if(html.includes('\uFFFD'))throw new Error('replacement character remains in repaired HTML');
   const scripts=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)];let checked=0;
@@ -30,9 +30,11 @@ const damaged=raw.toString('utf8');
 const lines=damaged.split(/\r?\n/);
 if(lines.length<453)throw new Error(`damaged source too short: ${lines.length} lines`);
 const prefix=lines.slice(0,453).join('\n')+'\n';
-if(!prefix.endsWith('  const band=box(.62,.07,.50,0xf59e0b,.25,.18);\n'))throw new Error('intact prefix boundary does not match expected source');
+const expectedBoundary='  const cap=box(.68,.20,.48,0x0f172a,.30,.20);cap.position.set(0,1.65,.02);g.add(cap);\n';
+if(!prefix.endsWith(expectedBoundary))throw new Error('intact prefix boundary does not match expected general cap source');
+const repairedBoundary='  const band=box(.62,.07,.50,0xf59e0b,.25,.18);\n';
 const tail=fs.readFileSync(path.join(ROOT,'scripts','classroom-war-repair-tail.txt'),'utf8');
-const html=prefix+tail;
+const html=prefix+repairedBoundary+tail;
 const checked=validate(html);
 fs.writeFileSync(path.join(ROOT,'classroom_war_3d.html'),html,'utf8');
 console.log(JSON.stringify({output:'classroom_war_3d.html',bytes:Buffer.byteLength(html),prefixLines:453,inlineScriptsValidated:checked,gzipRuntimeDependency:false},null,2));
