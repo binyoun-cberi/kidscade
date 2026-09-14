@@ -12,9 +12,17 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
 </style>
 </head>
 <body>
-<div id="kidscade-loader"><div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">고학년 게임 목록을 준비하고 있어요.</div></div></div>
+<div id="kidscade-loader"><div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">게임 목록을 준비하고 있어요.</div></div></div>
 <script>
 (async()=>{
+  const numberTowerCard=`
+<a href="숫자 타워.html?v=1" class="game-card" data-category="math" data-age="low" data-id="low_math_number_tower">
+  <span class="fav-star">☆</span>
+  <div class="game-icon">🏰</div>
+  <div class="game-title">숫자 타워</div>
+  <div class="game-desc">탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!</div>
+</a>\n`;
+
   const classroomWarCard=`
 <a href="classroom_war_3d.html?v=11" class="game-card" data-category="math" data-age="high" data-id="high_classroom_war_3d">
   <span class="fav-star">☆</span>
@@ -23,7 +31,7 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
   <div class="game-desc">사칙연산 관문으로 병력을 키우고, 진짜 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!</div>
 </a>\n`;
   try{
-    const res=await fetch('index_base.html?classroom-war=11',{cache:'no-store'});
+    const res=await fetch('index_base.html?classroom-war=11&number-tower=1',{cache:'no-store'});
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
@@ -32,10 +40,22 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     const gardenScriptV2='<scr'+'ipt src="garden.js?v=avatar-preview-fix-v2"></scr'+'ipt>';
     html=html.replace(gardenScript,gardenScriptV2);
 
-    const marker='<a href="딱! 타임 LCD.html" class="game-card" data-category="math" data-age="high"';
-    const pos=html.indexOf(marker);
-    if(pos>=0){
-      html=html.slice(0,pos)+classroomWarCard+html.slice(pos);
+    const lowMarker='<a href="곱셈 강아지 러너.html"';
+    const lowPos=html.indexOf(lowMarker);
+    if(lowPos>=0){
+      html=html.slice(0,lowPos)+numberTowerCard+html.slice(lowPos);
+    }else{
+      const gameListMarker='<div class="game-container" id="game-list">';
+      const listPos=html.indexOf(gameListMarker);
+      if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
+      const insertPos=listPos+gameListMarker.length;
+      html=html.slice(0,insertPos)+numberTowerCard+html.slice(insertPos);
+    }
+
+    const highMarker='<a href="딱! 타임 LCD.html" class="game-card" data-category="math" data-age="high"';
+    const highPos=html.indexOf(highMarker);
+    if(highPos>=0){
+      html=html.slice(0,highPos)+classroomWarCard+html.slice(highPos);
     }else{
       const gameListMarker='<div class="game-container" id="game-list">';
       const listPos=html.indexOf(gameListMarker);
