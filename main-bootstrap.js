@@ -186,12 +186,51 @@
 
     const favoriteStart = "            document.querySelectorAll('.fav-star').forEach(star => {";
     const favoriteEnd = '\n\n            gameCards.forEach(card => {';
-    const favoriteReplacement = `            // 즐겨찾기 클릭은 dashboard-recent.js가 이벤트 위임으로 전담합니다.
-            // 추천 로직에 남아 있는 레거시 배열은 중앙 상태 변경 이벤트로만 동기화합니다.
+    const favoriteReplacement = `            // 즐겨찾기/최근 플레이의 쓰기는 dashboard-recent.js가 전담합니다.
+            // 남아 있는 초기 로딩 fallback 배열만 중앙 상태 변경 이벤트로 동기화합니다.
             document.addEventListener('kidscade:favorites-changed', () => {
                 favorites = safeParseStorage('kidscade_favs', []);
+            });
+            document.addEventListener('kidscade:recents-changed', () => {
+                recents = safeParseStorage('kidscade_recents', []);
             });`;
     html = replaceBetween(html, favoriteStart, favoriteEnd, favoriteReplacement);
+
+    const petScoreStart = '            function scoreCardForPetTalk(card) {';
+    const petScoreEnd = '\n\n            function showPetRecommendations() {';
+    const petScoreReplacement = `            function scoreCardForPetTalk(card) {
+                const answers = petTalkState.answers || {};
+                const gameId = card.getAttribute('data-id');
+                const game = window.KidscadeGames?.get?.(gameId);
+                const delegated = window.KidscadeRecommendations?.scoreCurrent?.(game, {
+                    answers,
+                    dominantCategory: getDominantPetCategory(),
+                    playState: getPlayState(gameId, false)
+                });
+                if (Number.isFinite(delegated)) return delegated;
+
+                // 런타임 모듈이 준비되지 않은 경우에만 사용하는 안전한 fallback.
+                const category = card.getAttribute('data-category');
+                let score = 0;
+                if (answers.category && answers.category !== 'any' && category === answers.category) score += 12;
+                if (answers.category === 'any') {
+                    const dominant = getDominantPetCategory();
+                    if (dominant.value > 0 && category === dominant.key) score += 6;
+                }
+                if (answers.style === 'favorite' && favorites.includes(gameId)) score += 10;
+                if (answers.style === 'fresh' && !recents.includes(gameId)) score += 5;
+                if (answers.style === 'fresh' && recents.includes(gameId)) score -= 4;
+                if (answers.style === 'challenge' && (card.getAttribute('data-scorekey') || card.getAttribute('data-rankkey'))) score += 4;
+                if (answers.style === 'short') {
+                    const descLen = (card.querySelector('.game-desc')?.innerText || '').length;
+                    if (descLen < 60) score += 2;
+                }
+                const state = getPlayState(gameId, false);
+                if (state.plays <= 0) score -= 20;
+                score += Math.random() * 2;
+                return score;
+            }`;
+    html = replaceBetween(html, petScoreStart, petScoreEnd, petScoreReplacement);
 
     return html;
   }
@@ -229,7 +268,8 @@
       'game-registry.js',
       'game-filter.js',
       'game-cover-placeholders.js',
-      'dashboard-recent.js'
+      'dashboard-recent.js',
+      'game-recommendations.js'
     ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     return html.replace('</body>', scripts + '</body>');
   }

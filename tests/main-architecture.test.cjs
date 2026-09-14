@@ -124,7 +124,7 @@ test('cover renderer reuses the boot catalog and never refetches or reads coverB
   assert.match(source, /window\.KidscadeGames/);
 });
 
-test('dashboard exclusively owns quick-hub state while clarity only watches game cards', () => {
+test('dashboard exclusively owns quick-hub and favorite/recent state APIs', () => {
   const clarity = read('ui-clarity-overhaul.js');
   const dashboard = read('dashboard-recent.js');
 
@@ -132,6 +132,12 @@ test('dashboard exclusively owns quick-hub state while clarity only watches game
   assert.doesNotMatch(clarity, /observe\(document\.body/);
   assert.match(dashboard, /function ensureQuickHub/);
   assert.match(dashboard, /function syncQuickHub/);
+  assert.match(dashboard, /function\s+favoriteIds\s*\(/);
+  assert.match(dashboard, /function\s+recentIds\s*\(/);
+  assert.match(dashboard, /kidscade:favorites-changed/);
+  assert.match(dashboard, /kidscade:recents-changed/);
+  assert.match(dashboard, /favorites:\s*favoriteIds/);
+  assert.match(dashboard, /recents:\s*recentIds/);
   assert.match(dashboard, /kidscade:dashboard-rendered/);
 });
 
@@ -141,9 +147,22 @@ test('dashboard owns favorite mutation and bootstrap removes legacy per-star lis
 
   assert.match(dashboard, /function\s+toggleFavorite\s*\(/);
   assert.match(dashboard, /function\s+bindFavoriteActions\s*\(/);
-  assert.match(dashboard, /kidscade:favorites-changed/);
   assert.match(dashboard, /addEventListener\('click',[\s\S]*?true\)/);
   assert.match(bootstrap, /favoriteStart/);
   assert.match(bootstrap, /kidscade:favorites-changed/);
-  assert.match(bootstrap, /즐겨찾기 클릭은 dashboard-recent\.js가 이벤트 위임으로 전담/);
+  assert.match(bootstrap, /kidscade:recents-changed/);
+  assert.match(bootstrap, /즐겨찾기\/최근 플레이의 쓰기는 dashboard-recent\.js가 전담/);
+});
+
+test('pet recommendation scoring is catalog/state driven instead of card-DOM driven', () => {
+  const recommendation = read('game-recommendations.js');
+  const bootstrap = read('main-bootstrap.js');
+
+  assert.match(recommendation, /function\s+scoreGame\s*\(/);
+  assert.match(recommendation, /function\s+scoreCurrent\s*\(/);
+  assert.match(recommendation, /KidscadeDashboard/);
+  assert.doesNotMatch(recommendation, /querySelector|getAttribute|\.game-card/);
+  assert.match(bootstrap, /KidscadeRecommendations\?\.scoreCurrent/);
+  assert.match(bootstrap, /KidscadeGames\?\.get/);
+  assert.match(bootstrap, /game-recommendations\.js/);
 });
