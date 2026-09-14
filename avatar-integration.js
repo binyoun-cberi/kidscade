@@ -41,8 +41,17 @@
     }
   }
 
+  function isPreviewData(data) {
+    return typeof data === 'string' && data.startsWith('data:image/png');
+  }
+
   function storedPreview() {
-    try { return localStorage.getItem(PREVIEW_KEY) || ''; } catch (_) { return ''; }
+    try {
+      const data = localStorage.getItem(PREVIEW_KEY) || '';
+      return isPreviewData(data) ? data : '';
+    } catch (_) {
+      return '';
+    }
   }
 
   function installStyles() {
@@ -73,6 +82,16 @@
     }
   }
 
+  function hideBrokenPreview(layer) {
+    if (liveImg) {
+      liveImg.style.display = 'none';
+      liveImg.style.transform = 'translateX(-50%)';
+    }
+    if (liveShadow) liveShadow.style.display = 'none';
+    const empty = layer?.querySelector('.kidscade-avatar-empty');
+    if (empty) empty.style.display = 'grid';
+  }
+
   function ensurePreviewLayer() {
     const host = document.getElementById('avatar-plaza-preview');
     if (!host) return;
@@ -89,7 +108,7 @@
       layer.innerHTML = `
         <div class="kidscade-avatar-live-stage">
           <div class="kidscade-avatar-live-shadow"></div>
-          <img class="kidscade-avatar-live-img" alt="내 Kidscade 캐릭터">
+          <img class="kidscade-avatar-live-img" alt="" draggable="false">
           <div class="kidscade-avatar-empty">👤 캐릭터를 꾸며보세요</div>
         </div>`;
       host.appendChild(layer);
@@ -99,10 +118,24 @@
     liveShadow = layer.querySelector('.kidscade-avatar-live-shadow');
     const empty = layer.querySelector('.kidscade-avatar-empty');
     const data = storedPreview();
-    if (data && liveImg && !liveImg.src) liveImg.src = data;
-    if (liveImg) liveImg.style.display = data || frameLoaded ? 'block' : 'none';
-    if (liveShadow) liveShadow.style.display = data || frameLoaded ? 'block' : 'none';
-    if (empty) empty.style.display = data || frameLoaded ? 'none' : 'grid';
+
+    if (liveImg && liveImg.dataset.kidscadeErrorGuard !== '1') {
+      liveImg.dataset.kidscadeErrorGuard = '1';
+      liveImg.addEventListener('error', () => {
+        try {
+          const current = liveImg?.getAttribute('src') || '';
+          if (current && current === localStorage.getItem(PREVIEW_KEY)) localStorage.removeItem(PREVIEW_KEY);
+        } catch (_) {}
+        liveImg?.removeAttribute('src');
+        hideBrokenPreview(layer);
+      });
+    }
+
+    if (data && liveImg && !liveImg.getAttribute('src')) liveImg.src = data;
+    const hasImage = !!liveImg?.getAttribute('src');
+    if (liveImg) liveImg.style.display = hasImage ? 'block' : 'none';
+    if (liveShadow) liveShadow.style.display = hasImage ? 'block' : 'none';
+    if (empty) empty.style.display = hasImage ? 'none' : 'grid';
 
     const summary = document.getElementById('avatar-collection-summary');
     if (summary) summary.textContent = ownedSummary();
@@ -121,10 +154,14 @@
     try {
       const api = frame?.contentWindow?.KidscadeAvatarShop;
       const data = api?.getPreviewDataURL?.();
-      if (data && data.startsWith('data:image/png')) {
+      if (isPreviewData(data)) {
         localStorage.setItem(PREVIEW_KEY, data);
         ensurePreviewLayer();
-        if (liveImg) liveImg.src = data;
+        if (liveImg) {
+          liveImg.src = data;
+          liveImg.style.display = 'block';
+        }
+        if (liveShadow) liveShadow.style.display = 'block';
         return data;
       }
     } catch (_) {}
@@ -138,6 +175,34 @@
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = overlay.dataset.prevOverflow || '';
     motion.next = performance.now() + 900;
+  }
+
+  function syncFrameReady(attempt = 0) {
+    if (!frame) return;
+    const src = frame.getAttribute('src') || '';
+    const deferred = frame.dataset.kidscadeDeferred === '1';
+    if (deferred || !src || src === 'about:blank' || src.startsWith('about:blank#')) {
+      frameLoaded = false;
+      ensurePreviewLayer();
+      return;
+    }
+
+    let api = null;
+    try { api = frame.contentWindow?.KidscadeAvatarShop || null; } catch (_) {}
+    if (!api) {
+      frameLoaded = false;
+      if (attempt < 8) setTimeout(() => syncFrameReady(attempt + 1), 60);
+      else ensurePreviewLayer();
+      return;
+    }
+
+    frameLoaded = true;
+    try { api.setSeeds?.(readCoins()); } catch (_) {}
+    setTimeout(() => {
+      snapshotFromStudio();
+      ensurePreviewLayer();
+      startLivePreview();
+    }, 100);
   }
 
   function buildOverlay() {
@@ -156,15 +221,7 @@
     frame = overlay.querySelector('#kidscade-avatar-studio-frame');
     overlay.querySelector('#kidscade-avatar-studio-close').addEventListener('click', closeStudio);
     overlay.addEventListener('pointerdown', e => { if (e.target === overlay) closeStudio(); });
-    frame.addEventListener('load', () => {
-      frameLoaded = true;
-      try { frame.contentWindow.KidscadeAvatarShop?.setSeeds?.(readCoins()); } catch (_) {}
-      setTimeout(() => {
-        snapshotFromStudio();
-        ensurePreviewLayer();
-        startLivePreview();
-      }, 100);
-    });
+    frame.addEventListener('load', () => syncFrameReady(0));
   }
 
   function openStudio() {
@@ -221,13 +278,17 @@
     motion.lastCapture = now;
     try {
       const api = frame?.contentWindow?.KidscadeAvatarShop;
+      if (!api) {
+        frameLoaded = false;
+        return;
+      }
       const mode = prefersReducedMotion ? 'idle' : motion.mode;
-      let data = api?.renderPreviewFrame?.(mode, now / 1000) || '';
+      let data = api.renderPreviewFrame?.(mode, now / 1000) || '';
       if (!data) {
         syncStudioFallbackMode(mode);
-        data = api?.getPreviewDataURL?.() || '';
+        data = api.getPreviewDataURL?.() || '';
       }
-      if (data && data.startsWith('data:image/png')) {
+      if (isPreviewData(data)) {
         ensurePreviewLayer();
         if (liveImg) {
           liveImg.src = data;
@@ -242,7 +303,7 @@
 
   function updateLiveMotion(now) {
     ensurePreviewLayer();
-    if (!liveImg) return;
+    if (!liveImg || !liveImg.getAttribute('src') || liveImg.style.display === 'none') return;
     if (!motion.last) motion.last = now;
     const dt = Math.min(0.06, (now - motion.last) / 1000);
     motion.last = now;
