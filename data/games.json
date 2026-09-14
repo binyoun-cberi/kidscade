@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "games": [
     {
       "id": "low_math_number_tower",
@@ -22,26 +22,6 @@
       "description": "사칙연산 관문으로 병력을 키우고, 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!"
     },
     {
-      "id": "music_neon_rift",
-      "title": "NEON RIFT (네온 리프트)",
-      "href": "네온 리프트.html",
-      "category": "music",
-      "age": "high",
-      "icon": "🏍️",
-      "cover": "assets/gate-image/네온 리프트.png",
-      "description": "박자에 맞춰 달리는 1인칭 리듬 러너! 신나는 비트 속에서 차선을 바꾸고 점프하며 24개의 스테이지를 돌파해 보세요."
-    },
-    {
-      "id": "high_melody_workshop",
-      "title": "멜로디 공방",
-      "href": "멜로디 공방.html",
-      "category": "music",
-      "age": "high",
-      "icon": "🎼",
-      "cover": "assets/gate-image/멜로디 공방.png",
-      "description": "음표와 쉼표를 악보에 직접 배치하고 완성한 곡을 들어보세요. 제목과 가사까지 작성할 수 있는 작곡 공방입니다."
-    },
-    {
       "id": "high_byeokrando_voyage",
       "title": "벽란도 상행기",
       "href": "byeokrando_voyage_release_candidate.html?v=1",
@@ -50,17 +30,6 @@
       "icon": "⛵",
       "cover": "assets/gate-image/벽란도 상행기.png",
       "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!"
-    },
-    {
-      "id": "hanja_survivors_8",
-      "title": "한자 수호전: 8급",
-      "href": "8.html",
-      "category": "lang",
-      "age": "high",
-      "icon": "🛡️",
-      "cover": "assets/gate-image/한자수호전.png",
-      "scoreKey": "hanja_survivors_best",
-      "description": "올바른 획순으로 8급 한자를 적어 다가오는 원령들을 물리치는 디펜스 게임!"
     },
     {
       "id": "high_history_royale",
@@ -73,109 +42,58 @@
       "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
     },
     {
-      "id": "high_outbreak_korea",
-      "title": "OUTBREAK KOREA",
-      "href": "outbreak_korea_v3.html",
+      "id": "job_nail_artist",
+      "title": "네일 아티스트 타이쿤",
+      "href": "nail_artist_tycoon.html",
       "category": "trivia",
-      "age": "high",
-      "icon": "🦠",
-      "cover": "assets/gate-image/OUTBREAK KOREA.png",
-      "description": "17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다."
+      "age": "job",
+      "icon": "💅",
+      "description": "나만의 네일샵을 운영하세요! 손님의 주문에 맞춰 예쁜 네일아트를 완성하고 최고의 네일샵으로 만들어보세요."
     },
     {
-      "id": "tod_antarctic_exploration",
-      "title": "남극 탐험 대작전",
-      "href": "남극탐험.html",
+      "id": "job_police_car",
+      "title": "경찰차 시뮬레이터",
+      "href": "경찰차 시뮬레이터.html",
       "category": "trivia",
-      "age": "toddler",
-      "icon": "🐧",
-      "cover": "assets/gate-image/남극 탐험 대작전.png",
-      "scoreKey": "antarctic_highscore",
-      "description": "크레바스와 물개를 점프해 넘고 물고기를 모으며 남극 기지까지 달려가는 원근감 레이싱 액션 게임!"
+      "age": "job",
+      "icon": "🚓",
+      "description": "GTA 2D 스타일의 경찰차 시뮬레이터! 도시를 순찰하며 범죄자를 추격하고 검거하는 멋진 경찰관이 되어보세요."
     },
     {
-      "id": "high_rhythm_dash",
-      "title": "리듬 대시",
-      "href": "리듬 대시.html",
-      "category": "music",
-      "age": "high",
-      "icon": "🎧",
-      "cover": "assets/gate-image/리듬 대시.png",
-      "description": "비트에 맞춰 점프하고 중력 반전과 템포 변화, 포탈을 돌파하는 리듬 액션 게임!"
-    },
-    {
-      "id": "tod_shape_color",
-      "title": "모양 색깔 친구들 집 찾기",
-      "href": "모양색깔 퀴즈.html",
-      "category": "math",
-      "age": "toddler",
-      "icon": "🍎",
-      "cover": "assets/gate-image/모양 색깔 친구들 집 찾기.png",
-      "description": "드래그와 터치로 알맞은 색상과 형태의 바구니에 매칭하는 감각 개발 퀴즈!"
-    },
-    {
-      "id": "tod_chick_shell",
-      "title": "병아리는 어디에?",
-      "href": "병아리야바위.html",
-      "category": "math",
-      "age": "toddler",
-      "icon": "🐣",
-      "cover": "assets/gate-image/병아리는 어디에.png",
-      "description": "컵 속에 숨은 병아리를 기억하고 요리조리 섞이는 컵을 끝까지 지켜본 뒤 찾아내는 관찰력 게임!"
-    },
-    {
-      "id": "trivia_blockraft",
-      "title": "블록래프트",
-      "href": "블록래프트.html",
+      "id": "job_takoyaki_simulator",
+      "title": "빙글빙글 타코야키집",
+      "href": "타코야키 시뮬레이터.html",
       "category": "trivia",
-      "age": "high",
-      "icon": "⛵",
-      "cover": "assets/gate-image/블록래프트.png",
-      "description": "작은 뗏목에서 시작해 바다의 자원을 모으고 낚시·제작·건축으로 생존하며 배를 확장하는 해양 생존 게임!"
+      "age": "job",
+      "icon": "🐙",
+      "description": "3D로 즐기는 실감 나는 타코야키 만들기! 기름칠부터 반죽 부으기, 속재료 넣기, 타이밍에 맞춰 동글동글하게 굴리기까지 마스터하여 노점의 장인이 되어보세요."
     },
     {
-      "id": "school_tower",
-      "title": "수식의 첨탑",
-      "href": "학교의 탑.html",
+      "id": "job_scuba_diver",
+      "title": "심해 다이버 시뮬레이터",
+      "href": "scuba_diver_simulator.html",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🤿",
+      "description": "깊고 푸른 바닷속으로 잠수하여 신비로운 해양 생물들을 관찰하고 진귀한 보물을 수집해 보세요! 산소가 다 떨어지기 전에 배로 돌아와야 합니다."
+    },
+    {
+      "id": "math_timing_lcd",
+      "title": "딱! 타임 LCD",
+      "href": "딱! 타임 LCD.html",
       "category": "math",
       "age": "high",
-      "icon": "🧙",
-      "cover": "assets/gate-image/수식의 첨탑.png",
-      "scoreKey": "arithmeticSpireBest_v1",
-      "description": "숫자와 연산 카드를 조합해 적과 싸우고 유물을 모으며 15층의 탑을 오르는 판타지 카드 모험!"
+      "icon": "⏱️",
+      "description": "0.01초의 한계에 도전하는 초정밀 디지털 스톱워치 게임! 1·2·3초 신호음 이후 오직 나만의 시간 감각으로 정확히 10.00초(또는 목표 시간)에 딱 멈추며 콤보와 8단계 사다리 도전을 마스터해 보세요."
     },
     {
-      "id": "spelling_frog",
-      "title": "스펠링 프로그",
-      "href": "스펠링 프로그-fixed.html?v=20260914-1",
-      "category": "lang",
-      "age": "high",
-      "icon": "🐸",
-      "cover": "assets/gate-image/스펠링 프로그.png",
-      "scoreKey": "spellingFrogHighScore",
-      "description": "블록 개구리로 도로·강·철길을 건너며 알파벳 체크포인트를 밟아 영단어를 완성하는 3D 영어 어드벤처!"
-    },
-    {
-      "id": "alien_pizza",
-      "title": "외계인 피자 가게",
-      "href": "피자시키신분수.html",
-      "category": "math",
-      "age": "high",
-      "icon": "🍕",
-      "cover": "assets/gate-image/외계인 피자 가게.png",
-      "description": "분수를 계산해 외계인 손님의 주문에 맞는 피자를 완성하는 수학 요리 게임!"
-    },
-    {
-      "id": "patience_tower",
-      "title": "인내의 탑",
-      "href": "인내의 탑.html",
-      "category": "math",
-      "age": "high",
-      "icon": "🗼",
-      "cover": "assets/gate-image/인내의 탑.png",
-      "scoreKey": "patienceTowerBestM",
-      "scoreUnit": "m",
-      "description": "떨어져도 끝나지 않는 점핑 등반 탑에서 몇 m까지 올라갈 수 있는지 도전하는 인내 게임!"
+      "id": "job_steak_master",
+      "title": "그릴 마스터 3D DX",
+      "href": "steak_master_3d.html",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🥩",
+      "description": "최고의 셰프가 되어보세요! 손님의 까다로운 주문에 맞춰 고기 내부 온도와 양면 시어링 균형을 정밀하게 조절하여 완벽한 스테이크를 굽는 요리 시뮬레이터입니다."
     },
     {
       "id": "low_one_stroke",
@@ -184,8 +102,832 @@
       "category": "math",
       "age": "low",
       "icon": "🛵",
-      "cover": "assets/gate-image/한붓쓱.png",
-      "description": "한 번 그은 길로 모든 연결선을 지나면 라이더가 내가 만든 경로를 따라 배달하는 한붓그리기 퍼즐!"
+      "description": "한 번 그은 길로 모든 연결선을 지나면 라이더가 내가 만든 경로를 따라 배달하는 한붓그리기 퍼즐!",
+      "cover": "assets/gate-image/한붓쓱.png"
+    },
+    {
+      "id": "low_math_dog_runner",
+      "title": "멍멍 곱셈 러너",
+      "href": "곱셈 강아지 러너.html",
+      "category": "math",
+      "age": "low",
+      "icon": "×",
+      "description": "구구단 문제의 정답 차선으로 달리세요. 장애물을 뛰어넘고 코인을 모으며 최고 거리와 콤보에 도전해요."
+    },
+    {
+      "id": "music_neon_rift",
+      "title": "NEON RIFT (네온 리프트)",
+      "href": "네온 리프트.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🏍️",
+      "description": "박자에 맞춰 달리는 1인칭 리듬 러너! 신나는 비트 속에서 차선을 바꾸고 점프하며 24개의 스테이지를 돌파해 보세요.",
+      "cover": "assets/gate-image/네온 리프트.png"
+    },
+    {
+      "id": "math_remembus",
+      "title": "리멤버스 (기억력 버스)",
+      "href": "리멤버스.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🚌",
+      "description": "순간 기억력을 풀가동하세요! 5초 동안 버스들의 색깔과 문양 위치를 완벽하게 외운 뒤, 정해진 시간 안에 정류장의 손님들을 알맞은 버스에 태우며 집중력을 기르는 순간 기억력 게임입니다."
+    },
+    {
+      "id": "low_sand_art_studio",
+      "title": "모래 그림 공방",
+      "href": "모래뿌리기아트.html",
+      "category": "music",
+      "age": "low",
+      "icon": "🎮",
+      "description": "화면 위에서 떨어지는 모래를 쌓아 산맥과 파도, 색의 층을 만들어 보세요. 나만의 모래 작품을 자유롭게 완성해요."
+    },
+    {
+      "id": "high_melody_workshop",
+      "title": "멜로디 공방",
+      "href": "멜로디 공방.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🎼",
+      "description": "음표와 쉼표를 악보에 직접 배치하고 완성한 곡을 들어보세요. 제목과 가사까지 작성할 수 있는 작곡 공방입니다.",
+      "cover": "assets/gate-image/멜로디 공방.png"
+    },
+    {
+      "id": "high_top_king",
+      "title": "팽이왕: 불꽃 회전",
+      "href": "팽이치기 왕.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🎮",
+      "description": "빛나는 방향에서 팽이를 정확히 쳐 회전력과 균형을 유지하세요. 점점 좁아지는 경기장에서 오래 버티는 3D 기록 게임입니다."
+    },
+    {
+      "id": "high_kite_wind_rider",
+      "title": "바람을 타고",
+      "href": "바람을 타고 연날리기.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🎮",
+      "description": "바람을 읽으며 연줄을 당기고 풀어 주세요. 줄이 끊어지거나 연이 내려앉기 전까지 최고 고도와 비행 기록에 도전해요.",
+      "scoreKey": "kite3d_best",
+      "isTime": true
+    },
+    {
+      "id": "job_bogle_bunsik",
+      "title": "보글보글 분식집",
+      "href": "보글보글 분식집.html",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🥘",
+      "description": "신나는 분식집 요리 타이쿤! 주문에 맞춰 냄비와 웍을 번갈아 보며 맛있는 라면, 계란후라이, 떡볶이를 완성하고 최고의 요리사가 되어보세요."
+    },
+    {
+      "id": "trivia_school_survival",
+      "title": "초딩 생존기",
+      "href": "초딩 생존기.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🎒",
+      "description": "1학년부터 6학년까지 무사히 졸업하라! 학교생활 속 수많은 선택지 앞에서 학업, 건강, 행복, 평판의 완벽한 균형을 유지하며 나만의 성장 스토리를 만들어가는 라이프 시뮬레이션 게임입니다."
+    },
+    {
+      "id": "trivia_zoolympic",
+      "title": "줄림픽 Zoolympic",
+      "href": "줄림픽.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🦁",
+      "description": "1,000가지 동물 상식 연속 정답 도전! 단 한 번의 오답으로 경기가 종료되는 짜릿한 룰 속에서 OX 퀴즈, 서식지 찾기, 동물 탐정 등 다양한 문제를 풀며 나만의 최고 연승 기록을 경신해 보세요."
+    },
+    {
+      "id": "math_icecream_division",
+      "title": "아이스크림 나눗셈 가게",
+      "href": "아이스크림 나눗셈 가게.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🍦",
+      "description": "아이스크림을 손님들에게 공평하게 나누어 서빙하세요! 기본 나눗셈부터 나머지가 있는 연산까지 재미있는 게임을 통해 자연스럽게 마스터할 수 있습니다."
+    },
+    {
+      "id": "sim_mosquito",
+      "title": "한 입만 더 (모기 시뮬레이터)",
+      "href": "한 입만 더.html",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🦟",
+      "description": "배고픈 모기가 되어 인간의 피를 몰래 빠는 생존 시뮬레이터. 무시무시한 손바닥 공격을 피해 목표 혈액량 100%를 채워보세요.",
+      "scoreKey": "mosquitoHighScore",
+      "scoreUnit": "%"
+    },
+    {
+      "id": "kor_handwriting_party",
+      "title": "바른 글씨 파티",
+      "href": "바른 글씨 파티.html",
+      "category": "korean",
+      "age": "low",
+      "icon": "✍️",
+      "description": "또박또박 예쁜 글씨 쓰기 도전! 다양한 낱말과 문장을 따라 쓰고, 들리는 소리를 받아 적으며 바른 글씨 습관을 기르고 실시간 점수 평가를 통해 한글 실력을 쑥쑥 키워보세요."
+    },
+    {
+      "id": "tod_shape_color",
+      "title": "모양 색깔 친구들 집 찾기",
+      "href": "모양색깔 퀴즈.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🍎",
+      "description": "드래그와 터치로 알맞은 색상과 형태의 바구니에 매칭하는 감각 개발 퀴즈!",
+      "cover": "assets/gate-image/모양 색깔 친구들 집 찾기.png"
+    },
+    {
+      "id": "kor_sentence_train",
+      "title": "문장열차",
+      "href": "문장열차.html",
+      "category": "korean",
+      "age": "low",
+      "icon": "🚂",
+      "description": "어절(단어 덩어리)을 바른 순서로 객차에 태워 문장 열차를 출발시키세요! '노력해봐역'부터 '엄청나역'까지 칭찬 역을 지나가며 문장 구조를 자연스럽게 익힐 수 있습니다."
+    },
+    {
+      "id": "trivia_blockraft",
+      "title": "블록래프트",
+      "href": "블록래프트.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⛵",
+      "description": "작은 뗏목에서 시작해 바다의 자원을 모으고 낚시·제작·건축으로 생존하며 배를 확장하는 해양 생존 게임!",
+      "cover": "assets/gate-image/블록래프트.png"
+    },
+    {
+      "id": "trivia_drift_survival",
+      "title": "표류생존기",
+      "href": "표류생존기.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🧭",
+      "description": "1학년부터 6학년까지 매 순간 닥쳐오는 학교생활의 문제들! 학업, 건강, 행복, 평판 네 가지 파라미터의 아슬아슬한 균형을 잡으며 무사히 졸업에 도전해 보세요."
+    },
+    {
+      "id": "math_stationery_boss",
+      "title": "문방구 사장님",
+      "href": "문방구 사장님.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🏪",
+      "description": "손님의 주문을 꼼꼼히 확인하고 장바구니에 담은 뒤, 받은 돈에서 물건값을 빼서 정확한 거스름돈을 돌려주는 덧셈·뺄셈 생활 수학 게임입니다."
+    },
+    {
+      "id": "tod_hidden_emoji",
+      "title": "신나는 이모지 숨은그림찾기",
+      "href": "숨은 이모지 찾기.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🔍",
+      "description": "요리조리 배경 속에 숨어있는 귀여운 이모지 친구들을 찾아보세요! 화면을 요리조리 보며 관찰력과 집중력을 기르는 재미있는 놀이!"
+    },
+    {
+      "id": "tod_heaven_stairs",
+      "title": "천국의 계단 콩콩!",
+      "href": "천국의 계단.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "☁️",
+      "description": "귀여운 꼬마 유령이 되어 구름 위 계단을 폴짝폴짝 올라가요! 방향을 헷갈리지 않고 높이높이 오르며 방향 감각과 순발력을 기르는 두뇌 게임!",
+      "scoreKey": "heavenStairsHighScore"
+    },
+    {
+      "id": "chosung_bomb",
+      "title": "시한폭탄 초성퀴즈",
+      "href": "초딩퀴즈.html",
+      "category": "korean",
+      "age": "low",
+      "icon": "💣",
+      "description": "째깍째깍! 폭탄이 터지기 전에 주제에 맞는 단어를 입력하는 스릴 만점 초성 게임!",
+      "scoreKey": "casual_max_score"
+    },
+    {
+      "id": "low_order_pang",
+      "title": "순서대로 팡팡!",
+      "href": "순서팡.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🎈",
+      "description": "1부터 차례대로 번호가 매겨진 풍선을 터뜨리며 집중력과 연산 기초를 다져요!"
+    },
+    {
+      "id": "infinite_gugudan",
+      "title": "무한 구구단: 무한루",
+      "href": "무한구구단 무한루.html",
+      "category": "math",
+      "age": "low",
+      "icon": "👹",
+      "description": "한계에 도전하라! 쏟아지는 구구단과 곱셈귀들을 물리치는 짜릿한 서바이벌!",
+      "scoreKey": "guguHighScore"
+    },
+    {
+      "id": "low_big_puzzle_time",
+      "title": "빅 퍼즐 타임",
+      "href": "빅 퍼즐 타임.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🧩",
+      "description": "4×4, 5×5, 6×6 숫자 퍼즐에 도전해 보세요! 빈 칸을 이용해 숫자를 순서대로 맞추며 집중력과 논리력을 기르는 슬라이딩 퍼즐 게임입니다."
+    },
+    {
+      "id": "hero_english",
+      "title": "나의 영어 아카데미아",
+      "href": "나의영어아카데미아.html",
+      "category": "lang",
+      "age": "low",
+      "icon": "🦸‍♂️",
+      "description": "알파벳부터 영단어 타격까지! 빌런을 물리치며 최고의 영어 히어로로 성장하자!"
+    },
+    {
+      "id": "tod_chick_shell",
+      "title": "병아리는 어디에?",
+      "href": "병아리야바위.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🐣",
+      "description": "컵 속에 숨은 병아리를 기억하고 요리조리 섞이는 컵을 끝까지 지켜본 뒤 찾아내는 관찰력 게임!",
+      "cover": "assets/gate-image/병아리는 어디에.png"
+    },
+    {
+      "id": "tod_symbol_duel",
+      "title": "딱 하나! 그림 대결",
+      "href": "딱 하나! 그림 대결.html",
+      "category": "trivia",
+      "age": "toddler",
+      "icon": "👀",
+      "description": "두 원형 카드에 공통으로 있는 딱 하나의 그림을 CPU보다 먼저 찾아요! 쉬움 10초·보통 5초·어려움 3초의 관찰력 대결.",
+      "scoreKey": "symbolDuelBestStreak"
+    },
+    {
+      "id": "tod_antarctic_exploration",
+      "title": "남극 탐험 대작전",
+      "href": "남극탐험.html",
+      "category": "trivia",
+      "age": "toddler",
+      "icon": "🐧",
+      "description": "크레바스와 물개를 점프해 넘고 물고기를 모으며 남극 기지까지 달려가는 원근감 레이싱 액션 게임!",
+      "scoreKey": "antarctic_highscore",
+      "cover": "assets/gate-image/남극 탐험 대작전.png"
+    },
+    {
+      "id": "tod_emoji_minesweeper",
+      "title": "귀여운 이모지 지뢰찾기",
+      "href": "지뢰찾기.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🐾",
+      "description": "귀여운 칸 속에 숨어있는 지뢰를 피해 숫자를 찾아라! 안전하게 땅을 파헤치며 논리적 추리력과 수리력을 키우는 지능 개발 보드 게임!",
+      "scoreKey": "minesweeperHighScore"
+    },
+    {
+      "id": "low_nyam_universe",
+      "title": "냠냠 우주 여행",
+      "href": "growth-game.html",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🪐",
+      "description": "작은 물건을 냠냠 먹으며 우주까지 자라요! 나보다 작은 친구도 먹고, 정원과 마을을 지나 행성까지 탐험하는 3D 성장 모험!"
+    },
+    {
+      "id": "low_juice_maker",
+      "title": "과일 농장 주스 메이커",
+      "href": "하늘에서 주스가 내린다면.html",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🍹",
+      "description": "장애물과 폭탄을 피해 지정된 임무 과일을 바구니에 담아 신선한 주스를 완성하세요!"
+    },
+    {
+      "id": "triangle_compare",
+      "title": "삼각형 넓이 비교기",
+      "href": "삼각형 비교하기.html",
+      "category": "math",
+      "age": "high",
+      "icon": "📐",
+      "description": "모눈종이 위에 자유롭게 꼭짓점을 찍어 삼각형을 만들고, 어떤 삼각형의 넓이가 가장 큰지 직접 비교해 보세요!"
+    },
+    {
+      "id": "lab_water_sort",
+      "title": "연구소 물 정렬 퍼즐",
+      "href": "실험실 정리 게임.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧪",
+      "description": "색깔별로 시약을 깔끔하게 분류하라! 논리력과 문제 해결력을 기르는 두뇌 트레이닝.",
+      "scoreKey": "labWaterSortProgress"
+    },
+    {
+      "id": "low_rubiks_cube",
+      "title": "3D 루빅스 큐브",
+      "href": "큐브 맞추기.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🧊",
+      "description": "요리조리 돌리며 두뇌 회전! 3차원 입체 공간에서 큐브를 맞추며 공간지각력과 인내심을 쑥쑥 기르는 집중력 퍼즐 게임!",
+      "scoreKey": "bestTime3x3",
+      "isTime": true
+    },
+    {
+      "id": "high_3d_block_painter",
+      "title": "3D 블록 색칠 놀이",
+      "href": "3D 블록 색칠 놀이.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🧱",
+      "description": "나만의 3D 블록 세상을 조립하고 예쁜 색깔로 칠해보세요! 입체 공간에서 공간지각력과 창의력을 마음껏 뽐내는 3D 픽셀 아트!"
+    },
+    {
+      "id": "job_maratang_simulator",
+      "title": "마라탕 한 그릇",
+      "href": "먹지마라.html",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🍲",
+      "description": "나만의 특제 마라탕 가게 오픈! 손님의 주문에 맞춰 신선한 재료를 담고, 불 세기와 얼얼한 마라 소스 농도를 정밀하게 조절하여 손님을 감탄시킬 완벽한 한 그릇을 완성해 보세요."
+    },
+    {
+      "id": "high_little_sculptor",
+      "title": "꼬마 조각가 스튜디오",
+      "href": "꼬마 조각가 스튜디오.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🗿",
+      "description": "화면을 드래그해서 찰흙, 대리석, 나무 등 다양한 재료를 깎고 빚어보세요! 내 손끝에서 탄생하는 세상에 하나뿐인 나만의 멋진 3D 조각품!"
+    },
+    {
+      "id": "geo_exorcist",
+      "title": "도형퇴마왕",
+      "href": "도형퇴마왕.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🔯",
+      "description": "도형의 성질과 포함 관계를 파악하라! 악귀를 묶어 봉인하는 퇴마 액션 퍼즐.",
+      "scoreKey": "geomatch_max_combo"
+    },
+    {
+      "id": "math_base10_blocks",
+      "title": "우리 동네 마트 계산대",
+      "href": "10개가 모이면! 수 막대 계산실.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🧾",
+      "description": "2D 픽셀 마트에서 상품을 직접 스캔하고 받은 돈을 확인한 뒤, 현금 서랍에서 알맞은 지폐와 동전을 꺼내 거스름돈을 계산해요."
+    },
+    {
+      "id": "high_outbreak_korea",
+      "title": "OUTBREAK KOREA",
+      "href": "outbreak_korea_v3.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🦠",
+      "description": "17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다.",
+      "cover": "assets/gate-image/OUTBREAK KOREA.png"
+    },
+    {
+      "id": "high_history_match",
+      "title": "한국사 솔리테어",
+      "href": "역사뒤집기.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🃏",
+      "description": "52명의 역사 인물을 시대 카드로! 빨강·검정을 번갈아 쌓고 네 시대의 한국사 연표를 완성하세요.",
+      "scoreKey": "historyMatchHS",
+      "rankKey": "historyMatchHS"
+    },
+    {
+      "id": "alien_pizza",
+      "title": "외계인 피자 가게",
+      "href": "피자시키신분수.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🍕",
+      "description": "분수를 계산해 외계인 손님의 주문에 맞는 피자를 완성하는 수학 요리 게임!",
+      "cover": "assets/gate-image/외계인 피자 가게.png"
+    },
+    {
+      "id": "magic_scale",
+      "title": "신비한 양팔저울",
+      "href": "신비의양팔저울.html",
+      "category": "math",
+      "age": "high",
+      "icon": "⚖️",
+      "description": "과일과 생활 물건을 접시에 직접 올리며 g 단위와 무게 비교를 익혀요.",
+      "scoreKey": "mathMobileHighScore"
+    },
+    {
+      "id": "hanja_survivors_8",
+      "title": "한자 수호전: 8급",
+      "href": "8.html",
+      "category": "lang",
+      "age": "high",
+      "icon": "🛡️",
+      "description": "올바른 획순으로 8급 한자를 적어 다가오는 원령들을 물리치는 디펜스 게임!",
+      "scoreKey": "hanja_survivors_best",
+      "cover": "assets/gate-image/한자수호전.png"
+    },
+    {
+      "id": "high_rhythm_dash",
+      "title": "리듬 대시",
+      "href": "리듬 대시.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🎧",
+      "description": "비트에 맞춰 점프하고 중력 반전과 템포 변화, 포탈을 돌파하는 리듬 액션 게임!",
+      "cover": "assets/gate-image/리듬 대시.png"
+    },
+    {
+      "id": "korea_puzzle",
+      "title": "K-퍼즐 지도 맞추기",
+      "href": "내가바로김정호.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🗺️",
+      "description": "우리나라 구석구석, 흩어진 지역 퍼즐을 맞춰 지도를 완성하세요!"
+    },
+    {
+      "id": "laser_angle",
+      "title": "거울아 각도기 써라",
+      "href": "거울아각도기써라.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🪞",
+      "description": "거울 각도를 조절하여 레이저를 목표에 명중시켜요!"
+    },
+    {
+      "id": "kor_typing_tadak",
+      "title": "타닥타닥 한글 타자연습",
+      "href": "타닥타닥.html",
+      "category": "korean",
+      "age": "low",
+      "icon": "⌨️",
+      "description": "자음·모음 자리 연습부터 신나는 글비 게임까지! 낱말과 짧은 문장을 타닥타닥 재미있게 치며 바른 타자 습관과 한글 실력을 쑥쑥 키워보세요.",
+      "scoreKey": "tadak_bestSpeed2"
+    },
+    {
+      "id": "math_quiz",
+      "title": "사칙연산 퀴즈",
+      "href": "수학 사칙연산 스피드 퀴즈.html",
+      "category": "math",
+      "age": "high",
+      "icon": "➕",
+      "description": "초등 혼합계산, 누구보다 빠르게!",
+      "scoreKey": "mathSpeedQuizBestScore",
+      "rankKey": "mathSpeedQuizRank"
+    },
+    {
+      "id": "fraction_quiz",
+      "title": "약분과 통분 퀴즈",
+      "href": "약분과 통분 스피드 퀴즈.html",
+      "category": "math",
+      "age": "high",
+      "icon": "➗",
+      "description": "분수 계산의 핵심을 마스터해요.",
+      "scoreKey": "fractionSpeedQuizBestScore",
+      "rankKey": "fractionSpeedQuizRank"
+    },
+    {
+      "id": "snake_math",
+      "title": "혼합 계산 스네이크",
+      "href": "혼합 계산 스네이크.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🐍",
+      "description": "스네이크와 사칙연산의 만남!",
+      "scoreKey": "snakeMathScore",
+      "rankKey": "snakeMathRank"
+    },
+    {
+      "id": "threes",
+      "title": "1+2=3 퍼즐",
+      "href": "Threes.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🔢",
+      "description": "숫자를 합쳐서 더 큰 숫자를!",
+      "scoreKey": "threesScore",
+      "rankKey": "threesRank"
+    },
+    {
+      "id": "math_tower_defense",
+      "title": "약수 타워 디펜스",
+      "href": "약수 타워 디펜스.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🛡️",
+      "description": "배수, 약수, 소수 로직을 가진 방어탑을 배치해 바이러스로부터 중앙 CPU를 지켜내세요!",
+      "scoreKey": "neonTowerBest"
+    },
+    {
+      "id": "high_gugudan_stairs",
+      "title": "구구단 천국의 계단",
+      "href": "천국의 구구단.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧮",
+      "description": "구구단 정답을 맞히면 꼬마 유령이 계단을 폴짝! 떨어지지 않게 방향을 전환하며 구구단 연산 속도와 순발력을 동시에 훈련하는 스릴 만점 게임!",
+      "scoreKey": "multiplicationHeavenStairsHighScore"
+    },
+    {
+      "id": "joseon_janggu",
+      "title": "신명나는 쿵덕장구!",
+      "href": "쿵덕장구.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🥁",
+      "description": "우리 가락에 맞춰 장구를 쳐보세요! 덩 기덕 쿵 더러러러~ 신나는 국악 리듬 게임.",
+      "scoreKey": "jangguScore",
+      "rankKey": "jangguRank"
+    },
+    {
+      "id": "alien_sandwich",
+      "title": "우주 샌드위치 가게",
+      "href": "프레디의 샌드위치 가게.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🥪",
+      "description": "자의 cm 눈금을 보고 재료를 직접 자른 뒤 샌드위치에 올리며 길이와 넓이를 익혀요!"
+    },
+    {
+      "id": "trash_runner",
+      "title": "달려라! 분리수거 트럭",
+      "href": "달려라 분리수거 트럭.html",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🚛",
+      "description": "길가에 나타나는 쓰레기를 줍고 알맞은 쓰레기통에 쏙! 순발력과 분리수거 상식을 동시에 기르는 러닝 게임입니다.",
+      "scoreKey": "trash_runner_high_score"
+    },
+    {
+      "id": "korea_marble",
+      "title": "K-트래블 마블",
+      "href": "K트래블.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "✈️",
+      "description": "주사위를 굴려 전국을 여행하세요! 각 지역의 랜드마크를 세우며 경제 개념과 지리를 익힙니다."
+    },
+    {
+      "id": "code_breaker",
+      "title": "코드 브레이커",
+      "href": "코드 브레이커.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🕵️",
+      "description": "상대방의 숨겨진 타일 숫자를 논리적으로 추론하여 맞춰보세요. 최고의 두뇌 대결!"
+    },
+    {
+      "id": "world_boardgames",
+      "title": "월드 보드게임 컬렉션",
+      "href": "체스바둑장기.html",
+      "category": "math",
+      "age": "high",
+      "icon": "♟️",
+      "description": "바둑, 체스, 장기! 전 세계의 대표적인 전략 보드게임을 하나의 앱에서 즐겨보세요."
+    },
+    {
+      "id": "alkkagi_janggi",
+      "title": "장기 알까기 대전",
+      "href": "알까기.html",
+      "category": "trivia",
+      "age": "low",
+      "icon": "💥",
+      "description": "리얼한 물리엔진! 장기알들을 당겨서 상대방의 기물들을 장외로 날려버리세요."
+    },
+    {
+      "id": "burger_master",
+      "title": "버거 마스터: 스피드 타이쿤",
+      "href": "버거 마스터.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🍔",
+      "description": "빠른 판단력과 순발력! 주문에 맞게 버거를 조립하고 매일매일 재료를 관리하여 가게를 운영하세요."
+    },
+    {
+      "id": "word_snake",
+      "title": "영어뱀: 지식 포식자",
+      "href": "영어뱀.html",
+      "category": "lang",
+      "age": "high",
+      "icon": "🐍",
+      "description": "스펠링 순서대로 알파벳을 먹어 뱀을 키우고 다른 뱀들과 경쟁하는 영단어 서바이벌!",
+      "scoreKey": "wordSnakeHighScore"
+    },
+    {
+      "id": "sudoku",
+      "title": "나른한 스도쿠",
+      "href": "스도쿠.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧩",
+      "description": "머리가 좋아지는 숫자 퍼즐 게임!",
+      "scoreKey": "simpleSudokuBest",
+      "isTime": true
+    },
+    {
+      "id": "swipe_fraction",
+      "title": "분수 소수 대결!",
+      "href": "스와이프 분수와 소수 퀴즈.html",
+      "category": "math",
+      "age": "high",
+      "icon": "⚖️",
+      "description": "누가 더 클까요? 스와이프로 휙휙!",
+      "scoreKey": "swipeFractionScore",
+      "rankKey": "swipeFractionRank"
+    },
+    {
+      "id": "polygon_area",
+      "title": "(사-1)각형 넓이",
+      "href": "사빼기일각형넓이구하기.html",
+      "category": "math",
+      "age": "high",
+      "icon": "📐",
+      "description": "다각형을 자르고 붙여 넓이를 구해요!"
+    },
+    {
+      "id": "patience_tower",
+      "title": "인내의 탑",
+      "href": "인내의 탑.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🗼",
+      "description": "떨어져도 끝나지 않는 점핑 등반 탑에서 몇 m까지 올라갈 수 있는지 도전하는 인내 게임!",
+      "scoreKey": "patienceTowerBestM",
+      "scoreUnit": "m",
+      "cover": "assets/gate-image/인내의 탑.png"
+    },
+    {
+      "id": "math_corner_clash",
+      "title": "PIXEL KINGDOMS (코너 클래시)",
+      "href": "코너 클래시.html",
+      "category": "math",
+      "age": "high",
+      "icon": "👑",
+      "description": "나의 영토는 모서리로만 이어집니다! 타일을 회전하고 뒤집으며 상대방의 길목을 차단하고 영토를 넓히는 전략 보드게임. 친구들과 함께하거나 AI 왕국과 지능 대결을 펼쳐보세요."
+    },
+    {
+      "id": "cube3d",
+      "title": "3D 전개도 마스터",
+      "href": "정육면체 전개도 접기 3D 웹 프로그램.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧊",
+      "description": "쌓기나무를 요리조리 돌려봐요!"
+    },
+    {
+      "id": "world_flag_master",
+      "title": "세계 국기 마스터",
+      "href": "세계 국기 마스터.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "국기와 수도를 맞추며 세계 지리 박사가 되어보세요!",
+      "scoreKey": "flagQuizHighScore"
+    },
+    {
+      "id": "jineung_bird",
+      "title": "지능=새",
+      "href": "지능=새.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🐦",
+      "description": "계산과 컨트롤을 동시에! 조건에 맞는 숫자를 만들어 파이프를 통과해요.",
+      "scoreKey": "jineungBirdBest_normal",
+      "isTime": true
+    },
+    {
+      "id": "triangle_situation",
+      "title": "삼각한 상황",
+      "href": "삼각한 상황.html",
+      "category": "math",
+      "age": "high",
+      "icon": "✏️",
+      "description": "몬스터를 피해 넓이가 같은 삼각형을!"
+    },
+    {
+      "id": "korean_vocab",
+      "title": "초등 어휘력 퀴즈",
+      "href": "어휘력 스피드퀴즈 초등학교 버젼.html",
+      "category": "korean",
+      "age": "high",
+      "icon": "📖",
+      "description": "국어 실력 바탕이 되는 단어 퀴즈!",
+      "scoreKey": "speedQuizBestScore",
+      "rankKey": "speedQuizRank"
+    },
+    {
+      "id": "swipe_spelling",
+      "title": "마춤뻡 뀌주",
+      "href": "마춤뻡 뀌주.html",
+      "category": "korean",
+      "age": "high",
+      "icon": "👆",
+      "description": "헷갈리는 맞춤법, 스와이프로 맞춰보세요!",
+      "scoreKey": "swipeSpellingScore",
+      "rankKey": "swipeSpellingRank"
+    },
+    {
+      "id": "language_arcade",
+      "title": "월드 랭귀지 아케이드",
+      "href": "외국어 스피드 퀴즈.html",
+      "category": "lang",
+      "age": "high",
+      "icon": "🌏",
+      "description": "영단어·영문장·기초/고급 중국어·일본어 퀴즈를 한 곳에서 골라 즐겨요. 기존 문제 데이터를 그대로 모은 외국어 스피드 퀴즈 컬렉션!",
+      "scoreKey": "languageArcadeBest"
+    },
+    {
+      "id": "math_rune_forest",
+      "title": "넘버 시그널 (룬의 숲)",
+      "href": "룬의 숲.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🔮",
+      "description": "서바이버즈 방식의 신나는 약수·배수 수학 액션! 회전하는 2·3·5·7 약수 룬과 배수 무기를 전략적으로 교체하며 다가오는 골렘과 슬라임의 숫자를 '1'로 나누어 물리치고 숲의 저주를 풀어보세요."
+    },
+    {
+      "id": "spelling_frog",
+      "title": "스펠링 프로그",
+      "href": "스펠링 프로그-fixed.html?v=20260914-1",
+      "category": "lang",
+      "age": "high",
+      "icon": "🐸",
+      "description": "블록 개구리로 도로·강·철길을 건너며 알파벳 체크포인트를 밟아 영단어를 완성하는 3D 영어 어드벤처!",
+      "scoreKey": "spellingFrogHighScore",
+      "cover": "assets/gate-image/스펠링 프로그.png"
+    },
+    {
+      "id": "tod_puzzle_time",
+      "title": "똑똑 숫자 퍼즐 타임",
+      "href": "퍼즐 타임.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🧩",
+      "description": "알록달록한 숫자 타일들을 1부터 순서대로 예쁘게 정렬해 보아요! 빈칸을 활용해 요리조리 퍼즐을 움직이며 지각 능력과 집중력을 기르는 게임!",
+      "scoreKey": "puzzleBestTime",
+      "isTime": true
+    },
+    {
+      "id": "hanja_test",
+      "title": "한자 급수 테스트",
+      "href": "한자 급수 랭크 테스트(5~8급).html",
+      "category": "lang",
+      "age": "high",
+      "icon": "🀄",
+      "description": "5급부터 8급까지 나의 한자 실력은?",
+      "scoreKey": "hanjaScore",
+      "rankKey": "hanjaRank"
+    },
+    {
+      "id": "piano_studio",
+      "title": "피아노 작곡 교실",
+      "href": "작곡과 감상용 피아노 프로그램.html",
+      "category": "music",
+      "age": "low",
+      "icon": "🎹",
+      "description": "나만의 곡을 만들고 신나게 연주해요!",
+      "scoreKey": "pianoHighScore"
+    },
+    {
+      "id": "school_tower",
+      "title": "수식의 첨탑",
+      "href": "학교의 탑.html",
+      "category": "math",
+      "age": "high",
+      "icon": "🧙",
+      "description": "숫자와 연산 카드를 조합해 적과 싸우고 유물을 모으며 15층의 탑을 오르는 판타지 카드 모험!",
+      "scoreKey": "arithmeticSpireBest_v1",
+      "cover": "assets/gate-image/수식의 첨탑.png"
+    },
+    {
+      "id": "pixel_editor",
+      "title": "픽셀 그림판",
+      "href": "픽셀에디터.html",
+      "category": "music",
+      "age": "high",
+      "icon": "🎨",
+      "description": "나만의 귀여운 픽셀 아트를 그리고 저장해봐요!"
+    },
+    {
+      "id": "tod_emoji_pang",
+      "title": "말랑말랑 이모지 팡팡",
+      "href": "이모지 뿌셔뿌셔.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "✨",
+      "description": "귀여운 과일과 동물 친구들이 쏙쏙! 똑같은 이모지 모양을 4개 이상 모아서 팡팡 터뜨리며 색깔과 형태 인지 능력을 길러보세요!",
+      "scoreKey": "emojiPangBestScore"
+    },
+    {
+      "id": "tod_puzzle_bobble",
+      "title": "알록달록 퍼즐 버블",
+      "href": "퍼즐 마블.html",
+      "category": "math",
+      "age": "toddler",
+      "icon": "🔮",
+      "description": "동글동글 예쁜 색깔 방울들을 하늘로 슝슝 발사! 똑같은 색의 방울을 3개 이상 맞춰 터뜨리며 각도와 조준하는 재미를 배우는 공간 놀이!"
     }
   ]
 }
