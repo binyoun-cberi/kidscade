@@ -1,0 +1,10 @@
+const fs=require('fs');
+const p='classroom_war_3d.html';
+let s=fs.readFileSync(p,'utf8');
+const old='g.items.forEach(it=>{const wob=Math.sin(state.t*1.7+g.phase)*.44*it.dir;it.mesh.position.x=it.baseX+wob;it.mesh.position.z=g.z;});';
+const neu='g.items.forEach(it=>{it.mesh.position.x=it.baseX;it.mesh.position.z=g.z;});';
+if(!s.includes(old)) throw new Error('moving gate code not found');
+s=s.replace(old,neu);
+s=s.replace('showToast(good?"강화 관문! +와 × 중 선택":"위험 관문! -와 ÷ 중 선택",1.25);','showToast(good?"강화 관문! 좌·중·우 위치를 골라 통과하세요":"위험 관문! 좌·중·우 위치를 골라 통과하세요",1.25);');
+fs.writeFileSync(p,s);
+console.log('Classroom War gates fixed in place');
