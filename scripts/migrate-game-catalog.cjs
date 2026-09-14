@@ -33,6 +33,13 @@ function readClassBody(body, className) {
   return body.match(pattern)?.[2] || '';
 }
 
+function extractSvgIcon(value) {
+  const icon = String(value || '').trim();
+  if (!/^<svg\b/i.test(icon) || !/<\/svg>\s*$/i.test(icon)) return '';
+  if (/<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:/i.test(icon)) return '';
+  return icon;
+}
+
 function extractLegacyGames(html) {
   const source = String(html || '');
   const marker = '<div class="game-container" id="game-list">';
@@ -60,6 +67,7 @@ function extractLegacyGames(html) {
     const title = cleanText(readClassBody(body, 'game-title'));
     const description = cleanText(readClassBody(body, 'game-desc'));
     const iconText = cleanText(iconBody);
+    const iconHtml = extractSvgIcon(iconBody);
 
     const game = {
       id,
@@ -70,6 +78,7 @@ function extractLegacyGames(html) {
       icon: iconText || '🎮',
       description
     };
+    if (iconHtml) game.iconHtml = iconHtml;
 
     const scoreKey = readAttr(openingTag, 'data-scorekey');
     const rankKey = readAttr(openingTag, 'data-rankkey');
@@ -101,7 +110,7 @@ function mergeCatalog(catalog, legacyGames) {
   });
 
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     games: [...catalogOnly, ...migratedLegacy]
   };
 }
@@ -131,4 +140,4 @@ if (require.main === module) {
   if (print) console.log(result.text);
 }
 
-module.exports = { cleanText, extractLegacyGames, mergeCatalog, migrate };
+module.exports = { cleanText, extractSvgIcon, extractLegacyGames, mergeCatalog, migrate };
