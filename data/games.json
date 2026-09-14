@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "managedCards": [
+    {
+      "id": "low_math_number_tower",
+      "title": "숫자 타워",
+      "href": "숫자 타워.html?v=1",
+      "category": "math",
+      "age": "low",
+      "icon": "🏰",
+      "description": "탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!"
+    },
+    {
+      "id": "high_classroom_war_3d",
+      "title": "교실전쟁 3D",
+      "href": "classroom_war_3d.html?v=11",
+      "category": "math",
+      "age": "high",
+      "icon": "🎖️",
+      "cover": "교실전쟁3D.png",
+      "description": "사칙연산 관문으로 병력을 키우고, 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!"
+    },
+    {
+      "id": "high_byeokrando_voyage",
+      "title": "벽란도 상행기",
+      "href": "byeokrando_voyage_release_candidate.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⛵",
+      "cover": "벽란도 상행기.png",
+      "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!"
+    },
+    {
+      "id": "high_history_royale",
+      "title": "역사 로얄",
+      "href": "history_royale_battlefield_visual_rework_v9_setup_fixed.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⚔️",
+      "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
+    }
+  ],
+  "coverById": {
+    "high_classroom_war_3d": "교실전쟁3D.png",
+    "music_neon_rift": "네온 리프트.png",
+    "high_melody_workshop": "멜로디 공방.png",
+    "high_byeokrando_voyage": "벽란도 상행기.png",
+    "hanja_survivors_8": "한자수호전.png"
+  }
+}
