@@ -166,3 +166,19 @@ test('pet recommendation scoring is catalog/state driven instead of card-DOM dri
   assert.match(bootstrap, /KidscadeGames\?\.get/);
   assert.match(bootstrap, /game-recommendations\.js/);
 });
+
+test('game launcher owns modal session lifecycle and reward calculation', () => {
+  const launcher = read('game-launcher.js');
+  const bootstrap = read('main-bootstrap.js');
+
+  assert.match(launcher, /function\s+calculateReward\s*\(/);
+  assert.match(launcher, /function\s+open\s*\(/);
+  assert.match(launcher, /function\s+close\s*\(/);
+  assert.match(launcher, /bridge\.remember/);
+  assert.match(launcher, /bridge\.checkpointPlayTime/);
+  assert.match(launcher, /bridge\.recordGardenSession/);
+  assert.match(bootstrap, /const\s+gameLauncherBridge\s*=/);
+  assert.match(bootstrap, /KidscadeGameLauncher\?\.open/);
+  assert.match(bootstrap, /KidscadeGameLauncher\?\.close/);
+  assert.match(bootstrap, /game-launcher\.js/);
+});
