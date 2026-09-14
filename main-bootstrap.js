@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const BASE_URL = 'index_base.html?refactor=20260914-5';
+  const BASE_URL = 'index_base.html?refactor=20260914-6';
   const CATALOG_URL = 'data/games.json?v=3';
-  const RUNTIME_VERSION = '20260914-refactor-5';
+  const RUNTIME_VERSION = '20260914-refactor-6';
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -82,11 +82,117 @@
     return html.slice(0, insertPos) + cards + html.slice(insertPos);
   }
 
+  function replaceBetween(html, startMarker, endMarker, replacement) {
+    const start = html.indexOf(startMarker);
+    if (start < 0) return html;
+    const end = html.indexOf(endMarker, start + startMarker.length);
+    if (end < 0) return html;
+    return html.slice(0, start) + replacement + html.slice(end);
+  }
+
+  function refactorLegacyControllers(html) {
+    const filterStart = '            function applyFilters() {';
+    const filterEnd = '\n\n            function setAgeGroup(ageKey) {';
+    const filterReplacement = `            function applyFilters() {
+                const delegated = window.KidscadeFilter?.apply?.({
+                    age: currentAgeGroup,
+                    category: currentCategory,
+                    keyword: searchKeyword,
+                    ageNames,
+                    categoryNames
+                });
+                if (delegated) {
+                    renderDashboards();
+                    updatePlayLimitUI();
+                    return;
+                }
+
+                // 안전한 초기 로딩용 레거시 fallback. 런타임 모듈 로드 후에는 위임 경로만 사용합니다.
+                let visibleCount = 0;
+                let ageTotalCount = 0;
+                const keyword = searchKeyword.trim().toLowerCase();
+                gameCards.forEach(card => {
+                    const matchAge = card.getAttribute('data-age') === currentAgeGroup;
+                    const matchCat = currentCategory === 'all' || card.getAttribute('data-category') === currentCategory;
+                    const searchText = \`${'${'}card.querySelector('.game-title')?.innerText || ''} ${'${'}card.querySelector('.game-desc')?.innerText || ''} ${'${'}categoryNames[card.getAttribute('data-category')] || ''}\`.toLowerCase();
+                    const matchSearch = !keyword || searchText.includes(keyword);
+                    if (matchAge) ageTotalCount++;
+                    if (matchAge && matchCat && matchSearch) { card.classList.remove('hidden'); visibleCount++; }
+                    else { card.classList.add('hidden'); }
+                });
+                if (visibleCount === 0) emptyMessage.classList.remove('hidden');
+                else emptyMessage.classList.add('hidden');
+                if (visibleGameCount) {
+                    const ageLabel = ageNames[currentAgeGroup] || '선택한 모드';
+                    visibleGameCount.textContent = \`${'${'}ageLabel} 게임 ${'${'}visibleCount}/${'${'}ageTotalCount}개 표시\`;
+                }
+                renderDashboards();
+                updatePlayLimitUI();
+            }`;
+    html = replaceBetween(html, filterStart, filterEnd, filterReplacement);
+
+    const dashboardStart = '            function renderDashboards() {';
+    const dashboardEnd = '\n\n            function trackRecent(id) {';
+    const dashboardReplacement = `            function renderDashboards() {
+                if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
+                    updatePlayLimitUI();
+                    return;
+                }
+
+                // 초기 로딩 fallback. dashboard-recent.js가 준비되면 더 이상 cloneNode를 사용하지 않습니다.
+                const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
+                favList.innerHTML = ''; let favCount = 0;
+                favorites.forEach(id => {
+                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
+                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
+                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
+                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
+                        favList.appendChild(clone);
+                        originCard.querySelector('.fav-star').innerText = '★'; originCard.querySelector('.fav-star').classList.add('active');
+                        favCount++;
+                    }
+                });
+                if (favCount > 0) favSection.classList.remove('hidden'); else favSection.classList.add('hidden');
+
+                const recentList = document.getElementById('recent-list'); const recentSection = document.getElementById('recent-section');
+                recentList.innerHTML = ''; let recentCount = 0;
+                recents.forEach(id => {
+                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
+                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
+                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
+                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
+                        recentList.appendChild(clone); recentCount++;
+                    }
+                });
+                if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
+                updatePlayLimitUI();
+            }`;
+    html = replaceBetween(html, dashboardStart, dashboardEnd, dashboardReplacement);
+
+    const recentStart = '            function trackRecent(id) {';
+    const recentEnd = '\n\n            document.querySelectorAll(\'.fav-star\').forEach(star => {';
+    const recentReplacement = `            function trackRecent(id) {
+                const card = document.querySelector(\`.game-card[data-id="${'${'}id}"]\`);
+                if(card && card.classList.contains('disabled')) return;
+                if (window.KidscadeDashboard?.remember?.(id)) {
+                    recents = safeParseStorage('kidscade_recents', []);
+                    return;
+                }
+                recents = recents.filter(rId => rId !== id); recents.unshift(id);
+                if (recents.length > 4) recents.pop();
+                localStorage.setItem('kidscade_recents', JSON.stringify(recents)); renderDashboards();
+            }`;
+    html = replaceBetween(html, recentStart, recentEnd, recentReplacement);
+
+    return html;
+  }
+
   function applyCompatibilityFixes(html) {
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
     const gardenScriptV2 = '<scr' + 'ipt src="garden.js?v=avatar-preview-fix-v2"></scr' + 'ipt>';
     html = html.replace(gardenScript, gardenScriptV2);
     html = html.replace('href="스펠링 프로그.html"', 'href="스펠링 프로그-fixed.html?v=20260914-1"');
+    html = refactorLegacyControllers(html);
     return html;
   }
 
@@ -112,6 +218,7 @@
       ['ui-topbar-compact.js', '20260914-1'],
       ['seed-house-entry.js', '20260914-2'],
       ['game-registry.js', RUNTIME_VERSION],
+      ['game-filter.js', RUNTIME_VERSION],
       ['game-cover-placeholders.js', RUNTIME_VERSION],
       ['dashboard-recent.js', RUNTIME_VERSION]
     ].map(([src, v]) => '<scr' + 'ipt src="' + src + '?v=' + v + '"></scr' + 'ipt>').join('');
