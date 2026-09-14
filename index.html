@@ -38,8 +38,17 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
   <div class="game-title">벽란도 상행기</div>
   <div class="game-desc">고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하며 해상 무역을 경험하는 역사·경제 항해 시뮬레이션!</div>
 </a>\n`;
+
+  const historyRoyaleCard=`
+<a href="history_royale_battlefield_visual_rework_v9_setup_fixed.html" class="game-card" data-category="trivia" data-age="high" data-id="high_history_royale">
+  <span class="fav-star">☆</span>
+  <div class="game-icon">⚔️</div>
+  <div class="game-title">역사 로얄</div>
+  <div class="game-desc">고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하세요. 역사 속 특징을 살린 실시간 전략 카드 배틀!</div>
+</a>\n`;
+
   try{
-    const res=await fetch('index_base.html?classroom-war=11&number-tower=1&byeokrando=1',{cache:'no-store'});
+    const res=await fetch('index_base.html?classroom-war=11&number-tower=1&byeokrando=1&history-royale=1',{cache:'no-store'});
     if(!res.ok)throw new Error('기존 KIDSCADE 화면을 불러오지 못했습니다.');
     let html=await res.text();
 
@@ -75,21 +84,21 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
       html=html.slice(0,insertPos)+classroomWarCard+html.slice(insertPos);
     }
 
-    const byeokrandoMarker='<!-- 초딩 생존기 게임 카드 -->';
-    const byeokrandoPos=html.indexOf(byeokrandoMarker);
-    if(byeokrandoPos>=0){
-      html=html.slice(0,byeokrandoPos)+byeokrandoCard+html.slice(byeokrandoPos);
+    const triviaSectionMarker='<!-- 초딩 생존기 게임 카드 -->';
+    let triviaSectionPos=html.indexOf(triviaSectionMarker);
+    if(triviaSectionPos>=0){
+      html=html.slice(0,triviaSectionPos)+byeokrandoCard+historyRoyaleCard+html.slice(triviaSectionPos);
     }else{
       const triviaMarker='<a href="outbreak_korea_v3.html" class="game-card" data-category="trivia" data-age="high"';
       const triviaPos=html.indexOf(triviaMarker);
       if(triviaPos>=0){
-        html=html.slice(0,triviaPos)+byeokrandoCard+html.slice(triviaPos);
+        html=html.slice(0,triviaPos)+byeokrandoCard+historyRoyaleCard+html.slice(triviaPos);
       }else{
         const gameListMarker='<div class="game-container" id="game-list">';
         const listPos=html.indexOf(gameListMarker);
         if(listPos<0)throw new Error('게임 목록 영역을 찾지 못했습니다.');
         const insertPos=listPos+gameListMarker.length;
-        html=html.slice(0,insertPos)+byeokrandoCard+html.slice(insertPos);
+        html=html.slice(0,insertPos)+byeokrandoCard+historyRoyaleCard+html.slice(insertPos);
       }
     }
 
@@ -97,7 +106,7 @@ html,body{margin:0;min-height:100%;background:#e0f2fe;font-family:'Comic Sans MS
     const clarityOverhaulScript='<scr'+'ipt src="ui-clarity-overhaul.js?v=20260914-1"></scr'+'ipt>';
     const compactTopbarScript='<scr'+'ipt src="ui-topbar-compact.js?v=20260914-1"></scr'+'ipt>';
     const seedHouseEntryScript='<scr'+'ipt src="seed-house-entry.js?v=20260914-2"></scr'+'ipt>';
-    const gameCoverScript='<scr'+'ipt src="game-cover-placeholders.js?v=20260914-covers-1"></scr'+'ipt>';
+    const gameCoverScript='<scr'+'ipt src="game-cover-placeholders.js?v=20260914-covers-2"></scr'+'ipt>';
     html=html.replace('</body>',scoreNormalizerScript+clarityOverhaulScript+compactTopbarScript+seedHouseEntryScript+gameCoverScript+'</body>');
 
     document.open();
