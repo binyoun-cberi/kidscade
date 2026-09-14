@@ -58,6 +58,15 @@ test('catalog migration is idempotent and keeps JSON-only games before legacy or
   assert.deepEqual(twice, once);
 });
 
+test('runtime registry treats the catalog as the only game data source', () => {
+  const source = read('game-registry.js');
+  assert.match(source, /window\.KidscadeCatalog/);
+  assert.doesNotMatch(source, /function\s+readCard\s*\(/);
+  assert.doesNotMatch(source, /querySelectorAll\(['"]#game-list\s*>\s*\.game-card/);
+  assert.doesNotMatch(source, /legacy-dom|catalog\+legacy|managedCards/);
+  assert.match(source, /source:\s*['"]catalog['"]/);
+});
+
 test('index delegates cache versioning to bootstrap without monkeypatching fetch', () => {
   const index = read('index.html');
   assert.doesNotMatch(index, /window\.fetch\s*=/);
