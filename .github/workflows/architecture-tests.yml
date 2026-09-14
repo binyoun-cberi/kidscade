@@ -16,6 +16,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check main runtime JavaScript syntax
+        shell: bash
+        run: |
+          for file in \
+            main-bootstrap.js \
+            game-registry.js \
+            game-filter.js \
+            game-cover-placeholders.js \
+            dashboard-recent.js \
+            score-display-normalizer.js \
+            ui-clarity-overhaul.js \
+            ui-topbar-compact.js \
+            seed-house-entry.js; do
+            node --check "$file"
+          done
       - name: Run garden regression tests
         run: node --test tests/garden.test.cjs
       - name: Run main architecture tests
