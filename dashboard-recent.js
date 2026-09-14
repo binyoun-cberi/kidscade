@@ -24,19 +24,11 @@
   }
 
   function getGame(id) {
-    if (window.KidscadeGames?.get) return window.KidscadeGames.get(id);
-    const card = document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(String(id || ''))}"]`);
-    if (!card) return null;
-    return {
-      id,
-      title: card.querySelector('.game-title')?.textContent?.trim() || '게임',
-      href: card.getAttribute('href') || '#',
-      age: card.dataset.age || 'all',
-      category: card.dataset.category || 'all',
-      icon: card.querySelector(':scope > .game-icon')?.textContent?.trim() || '🎮',
-      cover: card.dataset.cover || '',
-      disabled: card.classList.contains('disabled')
-    };
+    const gameId = String(id || '');
+    if (!gameId) return null;
+    if (window.KidscadeGames?.get) return window.KidscadeGames.get(gameId);
+    const raw = window.KidscadeCatalog?.games?.find?.(game => String(game?.id || '') === gameId);
+    return raw ? { ...raw } : null;
   }
 
   function findOriginCard(id) {
@@ -95,6 +87,36 @@
     return valid;
   }
 
+  function favoriteIds() {
+    return sanitizeIds(readArray(FAVORITES_KEY), '', Infinity);
+  }
+
+  function isFavorite(id) {
+    return favoriteIds().includes(String(id || ''));
+  }
+
+  function emitFavoritesChanged(ids) {
+    document.dispatchEvent(new CustomEvent('kidscade:favorites-changed', {
+      detail: { ids: [...ids] }
+    }));
+  }
+
+  function toggleFavorite(id) {
+    const gameId = String(id || '');
+    const game = getGame(gameId);
+    if (!game || game.disabled) return false;
+
+    const favorites = favoriteIds();
+    const index = favorites.indexOf(gameId);
+    if (index >= 0) favorites.splice(index, 1);
+    else favorites.push(gameId);
+
+    writeArray(FAVORITES_KEY, favorites);
+    render();
+    emitFavoritesChanged(favorites);
+    return index < 0;
+  }
+
   function renderList(list, ids) {
     if (!list) return 0;
     list.replaceChildren();
@@ -105,14 +127,17 @@
     return list.children.length;
   }
 
-  function syncFavoriteStars(favoriteIds) {
-    const favorites = new Set(favoriteIds);
+  function syncFavoriteStars(favoriteIdsToRender) {
+    const favorites = new Set(favoriteIdsToRender);
     document.querySelectorAll('#game-list > .game-card').forEach(card => {
       const star = card.querySelector(':scope > .fav-star');
       if (!star) return;
       const active = favorites.has(card.dataset.id);
       star.textContent = active ? '★' : '☆';
       star.classList.toggle('active', active);
+      star.setAttribute('aria-label', active ? '즐겨찾기 해제' : '즐겨찾기 추가');
+      star.setAttribute('role', 'button');
+      star.setAttribute('tabindex', '0');
     });
   }
 
@@ -199,7 +224,7 @@
   function render(options = {}) {
     ensureQuickHub();
     const age = options.age || currentAge();
-    const allFavorites = sanitizeIds(readArray(FAVORITES_KEY), '', Infinity);
+    const allFavorites = favoriteIds();
     const allRecents = sanitizeIds(readArray(RECENTS_KEY), '', MAX_RECENTS);
 
     writeArray(FAVORITES_KEY, allFavorites);
@@ -231,6 +256,32 @@
     writeArray(RECENTS_KEY, recents.slice(0, MAX_RECENTS));
     render();
     return true;
+  }
+
+  function bindFavoriteActions() {
+    const list = document.getElementById('game-list');
+    if (!list || list.dataset.favoriteActionsBound === '1') return;
+    list.dataset.favoriteActionsBound = '1';
+
+    list.addEventListener('click', event => {
+      const star = event.target.closest('.fav-star');
+      if (!star || !list.contains(star)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.playUISound?.('click');
+      const id = star.closest('.game-card')?.dataset?.id;
+      if (id) toggleFavorite(id);
+    });
+
+    list.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const star = event.target.closest('.fav-star');
+      if (!star || !list.contains(star)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const id = star.closest('.game-card')?.dataset?.id;
+      if (id) toggleFavorite(id);
+    });
   }
 
   function addStyles() {
@@ -310,6 +361,7 @@
   function boot() {
     addStyles();
     ensureQuickHub();
+    bindFavoriteActions();
     render();
     window.addEventListener('pageshow', () => render());
     window.addEventListener('storage', event => {
@@ -318,7 +370,14 @@
     document.addEventListener('kidscade:registry-ready', () => render());
   }
 
-  window.KidscadeDashboard = Object.freeze({ render, refresh: render, remember });
+  window.KidscadeDashboard = Object.freeze({
+    render,
+    refresh: render,
+    remember,
+    favorites: favoriteIds,
+    isFavorite,
+    toggleFavorite
+  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
