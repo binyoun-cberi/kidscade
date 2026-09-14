@@ -1,13 +1,15 @@
 (() => {
   'use strict';
 
-  const BASE_URL = 'index_base.html?refactor=20260914-3';
-  const CATALOG_URL = 'data/games.json?v=2';
-  const RUNTIME_VERSION = '20260914-refactor-3';
+  const BASE_URL = 'index_base.html?refactor=20260914-4';
+  const CATALOG_URL = 'data/games.json?v=3';
+  const RUNTIME_VERSION = '20260914-refactor-4';
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
+
+  const escapeRegExp = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   function getManagedGames(catalog) {
     return Array.isArray(catalog?.games)
@@ -32,7 +34,34 @@
     const cover = game.cover ? ` data-cover="${escapeHtml(game.cover)}"` : '';
     const disabled = game.disabled ? ' disabled' : '';
     const ariaDisabled = game.disabled ? ' aria-disabled="true"' : '';
-    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${cover}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${escapeHtml(game.icon || '🎮')}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
+    const scoreKey = game.scoreKey ? ` data-scorekey="${escapeHtml(game.scoreKey)}"` : '';
+    const rankKey = game.rankKey ? ` data-rankkey="${escapeHtml(game.rankKey)}"` : '';
+    const scoreUnit = game.scoreUnit ? ` data-scoreunit="${escapeHtml(game.scoreUnit)}"` : '';
+    const isTime = game.isTime ? ' data-istime="true"' : '';
+    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${cover}${scoreKey}${rankKey}${scoreUnit}${isTime}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${escapeHtml(game.icon || '🎮')}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
+  }
+
+  function enrichExistingCards(html, catalog) {
+    getManagedGames(catalog).forEach(game => {
+      if (!game?.id) return;
+      const id = escapeRegExp(game.id);
+      const openingTagPattern = new RegExp(`(<a\\b(?=[^>]*\\bdata-id=["']${id}["'])[^>]*)(>)`, 'i');
+      const match = html.match(openingTagPattern);
+      if (!match) return;
+
+      let opening = match[1];
+      const additions = [];
+      if (game.cover && !/\bdata-cover\s*=/.test(opening)) additions.push(`data-cover="${escapeHtml(game.cover)}"`);
+      if (game.scoreKey && !/\bdata-scorekey\s*=/.test(opening)) additions.push(`data-scorekey="${escapeHtml(game.scoreKey)}"`);
+      if (game.rankKey && !/\bdata-rankkey\s*=/.test(opening)) additions.push(`data-rankkey="${escapeHtml(game.rankKey)}"`);
+      if (game.scoreUnit && !/\bdata-scoreunit\s*=/.test(opening)) additions.push(`data-scoreunit="${escapeHtml(game.scoreUnit)}"`);
+      if (game.isTime && !/\bdata-istime\s*=/.test(opening)) additions.push('data-istime="true"');
+      if (!additions.length) return;
+
+      opening += ' ' + additions.join(' ');
+      html = html.replace(openingTagPattern, opening + '$2');
+    });
+    return html;
   }
 
   function injectCatalogCards(html, catalog) {
@@ -40,13 +69,16 @@
     const markerPos = html.indexOf(marker);
     if (markerPos < 0) throw new Error('게임 목록 영역을 찾지 못했습니다.');
 
+    html = enrichExistingCards(html, catalog);
+
     const cards = getManagedGames(catalog)
-      .filter(game => game && game.id && !html.includes(`data-id="${game.id}"`))
+      .filter(game => game && game.id && !new RegExp(`\\bdata-id=["']${escapeRegExp(game.id)}["']`).test(html))
       .map(renderManagedCard)
       .join('');
 
     if (!cards) return html;
-    const insertPos = markerPos + marker.length;
+    const freshMarkerPos = html.indexOf(marker);
+    const insertPos = freshMarkerPos + marker.length;
     return html.slice(0, insertPos) + cards + html.slice(insertPos);
   }
 
