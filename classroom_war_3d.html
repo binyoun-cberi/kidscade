@@ -594,7 +594,7 @@ function explodeHomework(o){
 }
 function textbookImpact(o){if(!o||o.dead)return;const dmg=Math.min(9,3+Math.floor(state.period/2));state.baseHp=Math.max(0,state.baseHp-dmg);showBanner("📚 교과서 벽 충돌!",`방어선 ${dmg} 피해`,1.5);o.dead=true;removeObject(actorRoot,o.group,true);state.camShake=.32;updateHud();if(state.baseHp<=0)gameOver();}
 function updateObstacles(dt){
-  for(const o of obstacles){if(o.dead)continue;if(o.type==="textbook"){o.z+=o.speed*dt;o.group.position.z=o.z;if(o.z>=8.0)textbookImpact(o);}else if(o.type==="homework"){if(!o.rolling){o.timer-=dt;if(o.timer<=0){o.timer=0;o.rolling=true;showBanner("💣 숙제 폭탄 굴러온다!","방어선에 닿기 전에 마지막으로 부술 수 있습니다.",1.6);}}else{o.z+=o.speed*dt;o.group.rotation.x-=dt*5.5;o.group.position.z=o.z;if(o.z>=7.55)explodeHomework(o);}updateObstacleLabel(o);}}
+  for(const o of obstacles){if(o.dead)continue;if(o.type==="textbook"){o.z+=o.speed*dt;o.group.position.z=o.z;if(o.z>=8.0)textbookImpact(o);}else if(o.type==="homework"){if(!o.rolling){o.timer-=dt;if(o.timer<=0){o.timer=0;o.rolling=true;showBanner("💣 숙제 폭탄 굴러온다!","방어선에 닿기 전에 마지막으로 부술 수 있습니다.",1.6);}}else{o.z+=o.speed*dt;for(const child of o.group.children){if(child!==o.labelSprite)child.rotation.x-=dt*5.5;}o.group.position.z=o.z;if(o.z>=7.55)explodeHomework(o);}if(!o.dead)updateObstacleLabel(o);}}
   obstacles=obstacles.filter(o=>!o.dead);
 }
 function spawnHazard(){if(state.period<2)return;const wallChance=state.period<3?.78:.52;if(Math.random()<wallChance)spawnTextbookWall();else spawnHomeworkBomb();}
