@@ -11,6 +11,7 @@
    - 아직 `index_base.html`에 남아 있는 카드에는 카탈로그 메타데이터를 보강하고, JSON에만 있는 게임은 카드로 생성한다.
    - 같은 카탈로그 객체를 `window.KidscadeCatalog`로 런타임에 전달한다.
    - 레거시 `applyFilters`, `renderDashboards`, `trackRecent`는 런타임 모듈이 준비되면 새 모듈에 위임한다.
+   - 레거시 카드별 즐겨찾기 click 핸들러는 제거하고 `dashboard-recent.js`의 이벤트 위임으로 넘긴다.
 3. `data/games.json`
    - 게임 정보의 중앙 원본이다.
    - 현재 게임 95개를 모두 포함한다. 이 중 91개는 기존 `index_base.html` 카드에서 이관했고 4개는 JSON 전용으로 먼저 추가된 게임이다.
@@ -28,6 +29,8 @@
    - `games.json`을 별도로 다시 fetch하지 않는다.
 7. `dashboard-recent.js`
    - `kidscade_favs`, `kidscade_recents`와 `KidscadeGames`로 최근 플레이/즐겨찾기를 렌더링한다.
+   - 즐겨찾기 추가/해제와 별 상태를 전담하며 `KidscadeDashboard.toggleFavorite()`, `favorites()`, `isFavorite()` API를 제공한다.
+   - 별 클릭은 `#game-list`에서 캡처 단계 이벤트 위임으로 처리해 카드의 게임 실행 click과 충돌하지 않는다.
    - 메인 카드를 복제하지 않고 미니 카드를 별도로 만든다.
    - Quick Hub의 탭, 빈 상태, 표시 여부를 단독으로 관리한다.
 
@@ -70,6 +73,7 @@ node scripts/migrate-game-catalog.cjs --write
 - 같은 UI를 여러 MutationObserver가 동시에 보정하던 경로를 줄였다.
 - 기존 91개 카드의 메타데이터를 포함해 현재 95개 게임을 중앙 카탈로그에 등록했다.
 - `game-registry.js`가 DOM에서 게임 데이터를 역추출하던 구조를 제거했다.
+- 개별 `.fav-star`에 직접 listener를 붙이던 레거시 경로를 제거하고 즐겨찾기 상태 변경을 `dashboard-recent.js`로 모았다.
 
 ## 아직 남은 레거시 영역
 
@@ -78,7 +82,7 @@ node scripts/migrate-game-catalog.cjs --write
 다음 순서는 다음과 같다.
 
 1. 메인 게임 카드 렌더링을 `data/games.json` 기준으로 완전히 전환하고 bootstrap에서 레거시 카드 마크업 의존을 끊는다.
-2. 즐겨찾기 별 클릭 처리를 상태 모듈로 옮겨 레거시 `favorites` 배열과 이벤트 바인딩을 제거한다.
+2. 추천 로직에 남아 있는 레거시 `favorites`/`recents` 배열 읽기를 공통 상태 API로 바꾼다.
 3. 게임 실행 iframe, 세션 시간 측정, 최근 플레이, 보상 처리를 `game-launcher.js` 계열로 분리한다.
 4. 프로필·상점·씨앗·플레이 시간·펫을 순차적으로 모듈화한다.
 5. 마지막에 `index_base.html`을 작은 레이아웃 템플릿으로 축소하거나 제거한다.
@@ -91,4 +95,5 @@ node scripts/migrate-game-catalog.cjs --write
 - 최근 플레이 카드를 메인 카드 전체 DOM 복사본으로 관리하지 않는다.
 - 이미지 경로를 여러 파일에 중복해서 하드코딩하지 않는다.
 - 런타임 게임 정보의 원본으로 카드 DOM을 사용하지 않는다.
+- 즐겨찾기 상태를 개별 카드 이벤트 핸들러가 직접 관리하지 않는다.
 - 새로운 기능은 `KidscadeGames`와 공통 상태 API를 통해 게임 정보를 읽는다.
