@@ -100,3 +100,16 @@ test('dashboard exclusively owns quick-hub state while clarity only watches game
   assert.match(dashboard, /function syncQuickHub/);
   assert.match(dashboard, /kidscade:dashboard-rendered/);
 });
+
+test('dashboard owns favorite mutation and bootstrap removes legacy per-star listeners', () => {
+  const dashboard = read('dashboard-recent.js');
+  const bootstrap = read('main-bootstrap.js');
+
+  assert.match(dashboard, /function\s+toggleFavorite\s*\(/);
+  assert.match(dashboard, /function\s+bindFavoriteActions\s*\(/);
+  assert.match(dashboard, /kidscade:favorites-changed/);
+  assert.match(dashboard, /addEventListener\('click',[\s\S]*?true\)/);
+  assert.match(bootstrap, /favoriteStart/);
+  assert.match(bootstrap, /kidscade:favorites-changed/);
+  assert.match(bootstrap, /즐겨찾기 클릭은 dashboard-recent\.js가 이벤트 위임으로 전담/);
+});
