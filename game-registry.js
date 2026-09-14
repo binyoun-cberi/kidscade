@@ -7,36 +7,7 @@
 
   function catalogGames() {
     const catalog = window.KidscadeCatalog || {};
-    return Array.isArray(catalog.games)
-      ? catalog.games
-      : Array.isArray(catalog.managedCards)
-        ? catalog.managedCards
-        : [];
-  }
-
-  function readCard(card) {
-    const id = card?.dataset?.id;
-    if (!id) return null;
-
-    const iconNode = card.querySelector(':scope > .game-icon');
-    const icon = iconNode && !iconNode.querySelector('svg') ? cleanText(iconNode.textContent) : '';
-
-    return {
-      id,
-      title: cleanText(card.querySelector('.game-title')?.textContent),
-      href: card.getAttribute('href') || '',
-      category: card.dataset.category || 'all',
-      age: card.dataset.age || 'all',
-      icon,
-      cover: card.dataset.cover || '',
-      description: cleanText(card.querySelector('.game-desc')?.textContent),
-      scoreKey: card.dataset.scorekey || '',
-      rankKey: card.dataset.rankkey || '',
-      scoreUnit: card.dataset.scoreunit || '',
-      isTime: card.dataset.istime === 'true',
-      disabled: card.classList.contains('disabled'),
-      source: 'legacy-dom'
-    };
+    return Array.isArray(catalog.games) ? catalog.games : [];
   }
 
   function normalizeCatalogGame(game) {
@@ -59,29 +30,17 @@
     };
   }
 
-  function mergeGame(base, override) {
-    if (!base) return override;
-    if (!override) return base;
-    const merged = { ...base };
-    Object.entries(override).forEach(([key, value]) => {
-      if (value !== '' && value !== undefined && value !== null) merged[key] = value;
-    });
-    merged.source = override.source === 'catalog' ? 'catalog+legacy' : (base.source || override.source);
-    return merged;
-  }
-
   function rebuild() {
     const next = new Map();
-
-    document.querySelectorAll('#game-list > .game-card').forEach(card => {
-      const game = readCard(card);
-      if (game) next.set(game.id, game);
-    });
 
     catalogGames().forEach(raw => {
       const game = normalizeCatalogGame(raw);
       if (!game) return;
-      next.set(game.id, mergeGame(next.get(game.id), game));
+      if (next.has(game.id)) {
+        console.error(`[Kidscade] duplicate catalog game id: ${game.id}`);
+        return;
+      }
+      next.set(game.id, game);
     });
 
     registry = next;
@@ -109,19 +68,20 @@
     });
   }
 
+  // DOM은 이제 데이터 원본이 아니라 렌더링된 카드 뷰를 찾는 용도로만 사용한다.
   function getCard(id) {
     const safeId = String(id || '');
     if (!safeId) return null;
     return document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(safeId)}"]`);
   }
 
-  window.KidscadeGames = {
+  window.KidscadeGames = Object.freeze({
     all,
     get,
     query,
     getCard,
     refresh: rebuild
-  };
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', rebuild, { once: true });
