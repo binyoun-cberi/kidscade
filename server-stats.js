@@ -26,7 +26,8 @@
   function makeClientId() {
     if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
     const bytes = new Uint8Array(16);
-    globalThis.crypto?.getRandomValues?.(bytes);
+    if (globalThis.crypto?.getRandomValues) crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -192,8 +193,9 @@
 
   function waitForApp() {
     let attempts = 0;
-    const tick = () => {
-      if (boot()) return;
+    const tick = async () => {
+      const started = await boot();
+      if (started) return;
       attempts += 1;
       if (attempts < 120) setTimeout(tick, 250);
     };
