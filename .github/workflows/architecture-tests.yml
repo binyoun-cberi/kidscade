@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           for file in \
+            kidscade-storage.js \
             main-bootstrap.js \
             game-registry.js \
             game-filter.js \
@@ -33,6 +34,8 @@ jobs:
             seed-house-entry.js; do
             node --check "$file"
           done
+      - name: Run storage compatibility tests
+        run: node --test tests/storage.test.cjs
       - name: Run game classification tests
         run: node --test tests/game-classification.test.cjs
       - name: Run launcher regression tests
@@ -43,3 +46,5 @@ jobs:
         run: node --test tests/garden.test.cjs
       - name: Run main architecture tests
         run: node --test tests/main-architecture.test.cjs
+      - name: Generate pre-deployment path report
+        run: node scripts/deployment-audit.cjs
