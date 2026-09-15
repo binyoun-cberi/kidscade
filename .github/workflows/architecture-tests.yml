@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           for file in \
+            kidscade-storage.js \
             main-bootstrap.js \
             game-registry.js \
             game-filter.js \
@@ -30,16 +31,27 @@ jobs:
             score-display-normalizer.js \
             ui-clarity-overhaul.js \
             ui-topbar-compact.js \
-            seed-house-entry.js; do
+            seed-house-entry.js \
+            scripts/secret-audit.cjs; do
             node --check "$file"
           done
+      - name: Reject tracked credentials and secret env files
+        run: node scripts/secret-audit.cjs
+      - name: Run storage compatibility tests
+        run: node --test tests/storage.test.cjs
+      - name: Enforce localStorage namespace policy
+        run: node scripts/storage-audit.cjs --strict
       - name: Run game classification tests
         run: node --test tests/game-classification.test.cjs
       - name: Run launcher regression tests
         run: node --test tests/game-launcher.test.cjs
+      - name: Run critical release smoke tests
+        run: node --test tests/release-smoke.test.cjs
       - name: Run recommendation regression tests
         run: node --test tests/recommendations.test.cjs
       - name: Run garden regression tests
         run: node --test tests/garden.test.cjs
       - name: Run main architecture tests
         run: node --test tests/main-architecture.test.cjs
+      - name: Enforce deployment-safe paths
+        run: node scripts/deployment-audit.cjs --strict
