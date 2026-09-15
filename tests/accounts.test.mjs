@@ -74,6 +74,16 @@ test('account feature is wired into deployment without exposing server code as s
   assert.match(migration, /CREATE TABLE IF NOT EXISTS student_sessions/);
 });
 
+test('account login modal keeps its overlay styling after lobby bootstrap replacement', () => {
+  const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const runtime = fs.readFileSync(path.join(ROOT, 'account-ui-runtime.js'), 'utf8');
+  assert.match(index, /account-ui-runtime\.js/);
+  assert.match(runtime, /#kc-account-modal\{position:fixed!important/);
+  assert.match(runtime, /place-items:end center!important/);
+  assert.match(runtime, /safe-area-inset-bottom/);
+  assert.match(runtime, /kc-profile-identity/);
+});
+
 test('nickname sanitizer removes markup delimiters and caps length', () => {
   assert.equal(sanitizeNickname('  번개토끼  '), '번개토끼');
   assert.ok(sanitizeNickname('12345678901234567890').length <= 12);
