@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const STRICT = process.argv.includes('--strict');
+const ROOT_HTML_BASELINE = 114;
 const TEXT_EXTENSIONS = new Set(['.html', '.htm', '.js', '.cjs', '.mjs', '.css', '.json', '.md']);
 const RUNTIME_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs', '.css']);
 const SKIP_DIRS = new Set(['.git', 'node_modules']);
@@ -164,8 +165,10 @@ function collect() {
     }
   }
 
-  if (rootHtml.length > 40) {
-    warnings.push(`루트 HTML 파일이 ${rootHtml.length}개입니다. 게임 폴더 이동은 링크 호환성 계층을 만든 뒤 단계적으로 진행하세요.`);
+  if (rootHtml.length > ROOT_HTML_BASELINE) {
+    errors.push(`루트 HTML 파일이 기준선 ${ROOT_HTML_BASELINE}개를 넘어 ${rootHtml.length}개가 되었습니다. 새 게임은 games/<game-id>/index.html 구조를 사용하세요.`);
+  } else if (rootHtml.length > 40) {
+    warnings.push(`루트 HTML 파일이 ${rootHtml.length}개입니다. 현재 기준선을 넘기지 말고 기존 게임은 단계적으로 games/ 아래로 이동하세요.`);
   }
 
   return {
@@ -173,6 +176,7 @@ function collect() {
     warnings: [...new Set(warnings)],
     externals: [...externals.entries()].sort((a, b) => b[1] - a[1]),
     rootHtmlCount: rootHtml.length,
+    rootHtmlBaseline: ROOT_HTML_BASELINE,
     textFileCount: textFiles.length,
     runtimeFileCount: runtimeFiles.length
   };
@@ -182,7 +186,7 @@ function printReport(report) {
   console.log('Kidscade deployment audit');
   console.log(`- text files inventoried: ${report.textFileCount}`);
   console.log(`- deployable runtime files checked: ${report.runtimeFileCount}`);
-  console.log(`- root HTML files: ${report.rootHtmlCount}`);
+  console.log(`- root HTML files: ${report.rootHtmlCount}/${report.rootHtmlBaseline} baseline`);
   console.log(`- external HTTP(S) dependencies: ${report.externals.length}`);
 
   if (report.externals.length) {
