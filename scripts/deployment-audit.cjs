@@ -10,8 +10,15 @@ const TEXT_EXTENSIONS = new Set(['.html', '.htm', '.js', '.cjs', '.mjs', '.css',
 const RUNTIME_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs', '.css']);
 const SKIP_DIRS = new Set(['.git', 'node_modules']);
 const NON_RUNTIME_TOP_DIRS = new Set(['docs', 'tests', 'scripts', '.github']);
+const TAG_RE = /<([a-z][^<>]*?)>/gi;
 const LOCAL_ATTR_RE = /\b(?:src|href)\s*=\s*["']([^"']+)["']/gi;
 const CSS_URL_RE = /url\(\s*["']?([^"')]+)["']?\s*\)/gi;
+const JS_STATIC_REF_RES = [
+  /\bfetch\(\s*["']([^"']+)["']/gi,
+  /\bimportScripts\(\s*["']([^"']+)["']/gi,
+  /\bnew\s+Audio\(\s*["']([^"']+)["']/gi,
+  /\.src\s*=\s*["']([^"']+)["']/gi
+];
 const WINDOWS_ABS_RE = /(?:^|["'\s=(])(?:[a-zA-Z]:\\|[a-zA-Z]:\/)/;
 const FILE_URL_RE = /file:\/\//i;
 const LOCALHOST_RE = /https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?/i;
@@ -55,7 +62,12 @@ function isDynamic(value) {
 
 function isIgnorable(value) {
   const v = String(value || '').trim();
-  return !v || v === '#' || v.startsWith('data:') || v.startsWith('blob:') || v.startsWith('javascript:') || v.startsWith('mailto:') || v.startsWith('tel:') || isDynamic(v);
+  const lower = v.toLowerCase();
+  return !v ||
+    v === '#' || v.startsWith('#') || lower.startsWith('%23') ||
+    lower.startsWith('data:') || lower.startsWith('blob:') ||
+    lower.startsWith('javascript:') || lower.startsWith('mailto:') || lower.startsWith('tel:') ||
+    isDynamic(v);
 }
 
 function resolveLocalTarget(fromFile, raw) {
@@ -86,6 +98,43 @@ function inspectReference(file, raw, errors, externals) {
   if (!fs.existsSync(target)) errors.push(`${name}: 존재하지 않는 로컬 경로 ${value}`);
 }
 
+function staticHtmlMarkup(source) {
+  return source.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, '$1</script>');
+}
+
+function inspectHtml(file, source, errors, externals) {
+  const markup = staticHtmlMarkup(source);
+  TAG_RE.lastIndex = 0;
+  let tag;
+  while ((tag = TAG_RE.exec(markup))) {
+    LOCAL_ATTR_RE.lastIndex = 0;
+    let attr;
+    while ((attr = LOCAL_ATTR_RE.exec(tag[0]))) inspectReference(file, attr[1], errors, externals);
+  }
+
+  const styleBlockRe = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
+  let style;
+  while ((style = styleBlockRe.exec(source))) {
+    CSS_URL_RE.lastIndex = 0;
+    let match;
+    while ((match = CSS_URL_RE.exec(style[1]))) inspectReference(file, match[1], errors, externals);
+  }
+}
+
+function inspectCss(file, source, errors, externals) {
+  CSS_URL_RE.lastIndex = 0;
+  let match;
+  while ((match = CSS_URL_RE.exec(source))) inspectReference(file, match[1], errors, externals);
+}
+
+function inspectJsStaticRefs(file, source, errors, externals) {
+  for (const pattern of JS_STATIC_REF_RES) {
+    pattern.lastIndex = 0;
+    let match;
+    while ((match = pattern.exec(source))) inspectReference(file, match[1], errors, externals);
+  }
+}
+
 function collect() {
   const errors = [];
   const warnings = [];
@@ -98,19 +147,20 @@ function collect() {
   for (const file of runtimeFiles) {
     const source = fs.readFileSync(file, 'utf8');
     const name = rel(file);
+    const ext = path.extname(file).toLowerCase();
 
     if (FILE_URL_RE.test(source)) errors.push(`${name}: file:// 로컬 경로 사용`);
     if (WINDOWS_ABS_RE.test(source)) errors.push(`${name}: Windows 절대 경로 사용`);
     if (LOCALHOST_RE.test(source)) errors.push(`${name}: localhost 주소 사용`);
     if (VERCEL_RE.test(source)) warnings.push(`${name}: Vercel 전용 /_vercel/ 경로가 남아 있습니다. Cloudflare 전환 때 제거하세요.`);
 
-    LOCAL_ATTR_RE.lastIndex = 0;
-    let match;
-    while ((match = LOCAL_ATTR_RE.exec(source))) inspectReference(file, match[1], errors, externals);
-
-    if (path.extname(file).toLowerCase() === '.css' || /<style\b/i.test(source)) {
-      CSS_URL_RE.lastIndex = 0;
-      while ((match = CSS_URL_RE.exec(source))) inspectReference(file, match[1], errors, externals);
+    if (ext === '.html' || ext === '.htm') {
+      inspectHtml(file, source, errors, externals);
+      inspectJsStaticRefs(file, source, errors, externals);
+    } else if (ext === '.css') {
+      inspectCss(file, source, errors, externals);
+    } else if (ext === '.js' || ext === '.mjs') {
+      inspectJsStaticRefs(file, source, errors, externals);
     }
   }
 
@@ -119,8 +169,8 @@ function collect() {
   }
 
   return {
-    errors,
-    warnings,
+    errors: [...new Set(errors)],
+    warnings: [...new Set(warnings)],
     externals: [...externals.entries()].sort((a, b) => b[1] - a[1]),
     rootHtmlCount: rootHtml.length,
     textFileCount: textFiles.length,
@@ -156,4 +206,11 @@ function printReport(report) {
 const report = collect();
 printReport(report);
 
-module.exports = { collect, stripQueryHash, resolveLocalTarget, isRuntimeFile, isDynamic };
+module.exports = {
+  collect,
+  stripQueryHash,
+  resolveLocalTarget,
+  isRuntimeFile,
+  isDynamic,
+  staticHtmlMarkup
+};
