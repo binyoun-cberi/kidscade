@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kidscade 교사 관리</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{color-scheme:light;font-family:"맑은 고딕",system-ui,sans-serif;background:#f6f7fb;color:#1f2937}*{box-sizing:border-box}body{margin:0}.wrap{width:min(1100px,calc(100% - 24px));margin:24px auto 60px}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}.top h1{margin:0;font-size:1.6rem}.top a{color:#6d4fd7;text-decoration:none;font-weight:800}.card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:18px;box-shadow:0 10px 28px rgba(15,23,42,.06);margin-bottom:14px}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 180px auto;gap:9px;align-items:end}label{display:grid;gap:6px;font-size:.78rem;font-weight:900}input{min-height:44px;border:1px solid #dbe1ea;border-radius:12px;padding:0 12px;font:inherit}button{min-height:44px;border:0;border-radius:12px;padding:0 14px;background:#7c5cff;color:#fff;font-weight:1000;cursor:pointer}button.secondary{background:#eef2f7;color:#475569}.muted{color:#64748b;font-size:.76rem;line-height:1.5}.status{min-height:20px;margin-top:8px;font-size:.76rem;font-weight:900}.error{color:#dc2626}.success{color:#15803d}.class-block{border-top:1px solid #eef2f7;padding-top:14px;margin-top:14px}.class-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.class-head h3{margin:0;font-size:1rem}.student-table{width:100%;border-collapse:collapse;margin-top:9px;font-size:.76rem}.student-table th,.student-table td{padding:9px 7px;border-bottom:1px solid #eef2f7;text-align:left}.student-table th{color:#64748b;font-size:.68rem}.student-table button{min-height:32px;padding:0 9px;font-size:.68rem}.credentials{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:12px}.credential{border:1px dashed #c4b5fd;border-radius:14px;padding:11px;background:#faf8ff;break-inside:avoid}.credential b{display:block;font-size:.9rem}.credential span{display:block;margin-top:4px;color:#7c3aed;font-weight:1000}.printbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}@media(max-width:720px){.grid{grid-template-columns:1fr}.student-table{display:block;overflow:auto}.top{align-items:flex-start}}@media print{body{background:#fff}.wrap{width:100%;margin:0}.top,.teacher-auth,.class-create,.class-list,.printbar{display:none!important}.card{box-shadow:none;border:0;padding:0}.credentials{grid-template-columns:repeat(3,1fr)}.credential{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><div><h1>🎓 Kidscade 교사 관리</h1><div class="muted">학생 계정을 일괄 발급하고 PIN을 초기화합니다.</div></div><a href="/">← Kidscade</a></div>
+
+  <section class="card teacher-auth" id="teacher-auth">
+    <h2 style="margin-top:0">교사 관리 코드</h2>
+    <div class="grid" style="grid-template-columns:1fr auto">
+      <label>Cloudflare에 등록한 관리 코드<input id="admin-key" type="password" autocomplete="current-password" placeholder="관리 코드 입력"></label>
+      <button id="admin-login" type="button">관리 시작</button>
+    </div>
+    <div class="status" id="auth-status"></div>
+  </section>
+
+  <section class="card class-create hidden" id="class-create">
+    <h2 style="margin-top:0">새 학급 계정 만들기</h2>
+    <div class="grid">
+      <label>학급 이름<input id="class-name" maxlength="40" placeholder="예: 5학년 4반"></label>
+      <label>학생 수<input id="student-count" type="number" min="1" max="40" value="21"></label>
+      <button id="create-class" type="button">일괄 발급</button>
+    </div>
+    <div class="muted" style="margin-top:9px">학생 이메일이나 실명은 필요하지 않습니다. ID와 6자리 PIN만 자동 생성됩니다.</div>
+    <div class="status" id="create-status"></div>
+  </section>
+
+  <section class="card hidden" id="credential-card">
+    <h2 style="margin-top:0">방금 발급한 로그인 카드</h2>
+    <div class="muted">PIN은 생성 직후에만 표시됩니다. 잊어버리면 아래 학생 목록에서 새 PIN을 발급하세요.</div>
+    <div class="credentials" id="credentials"></div>
+    <div class="printbar"><button id="print-credentials" type="button">🖨️ 로그인 카드 인쇄</button><button class="secondary" id="copy-credentials" type="button">📋 목록 복사</button></div>
+  </section>
+
+  <section class="card class-list hidden" id="class-list">
+    <div class="class-head"><div><h2 style="margin:0">학급과 학생</h2><div class="muted">닉네임, 마지막 로그인, 클라우드 저장 여부를 확인할 수 있어요.</div></div><button class="secondary" id="refresh-list" type="button">새로고침</button></div>
+    <div id="classes"></div>
+  </section>
+</main>
+<script src="/teacher-accounts.js?v=20260915-account-1"></script>
+</body>
+</html>
