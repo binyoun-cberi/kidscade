@@ -84,6 +84,9 @@ function inspectReference(file, raw, errors, externals) {
   const value = String(raw || '').trim();
   if (isIgnorable(value)) return;
   if (value.startsWith('/_vercel/')) return;
+  // Cloudflare Worker handles /api/* before Static Assets. These are runtime
+  // endpoints, not files that should exist in the repository or dist output.
+  if (value === '/api' || value.startsWith('/api/')) return;
   if (isExternal(value)) {
     if (/^https?:/i.test(value)) externals.set(value, (externals.get(value) || 0) + 1);
     return;
