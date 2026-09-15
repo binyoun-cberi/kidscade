@@ -7,5 +7,13 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kidscade-stats",
+      "database_id": "3c0aa71d-5a3a-417b-a0f8-afc8d9022544",
+      "migrations_dir": "migrations"
+    }
+  ]
 }
