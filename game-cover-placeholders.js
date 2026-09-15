@@ -3,6 +3,7 @@
 
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
   const STYLE_ID = 'kidscade-game-cover-styles';
+  let layoutRefreshQueued = false;
 
   function getCatalog() {
     return window.KidscadeCatalog && typeof window.KidscadeCatalog === 'object'
@@ -15,6 +16,18 @@
     return Array.isArray(catalog?.games)
       ? catalog.games.find(game => game?.id === id) || null
       : null;
+  }
+
+  function stabilizeLayout(reason = 'runtime') {
+    if (layoutRefreshQueued) return;
+    layoutRefreshQueued = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      layoutRefreshQueued = false;
+      const list = document.getElementById('game-list');
+      if (list) void list.offsetWidth;
+      try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+      document.dispatchEvent(new CustomEvent('kidscade:layout-stabilized', { detail: { reason } }));
+    }));
   }
 
   function installStyles() {
@@ -174,6 +187,7 @@
     img.dataset.fallbackApplied = '';
     img.style.display = '';
     img.alt = `${title} 대문 이미지`;
+    img.onload = () => stabilizeLayout('cover-loaded');
     img.onerror = () => {
       if (!img.dataset.fallbackApplied && img.getAttribute('src') !== DEFAULT_GAME_COVER) {
         img.dataset.fallbackApplied = '1';
@@ -181,6 +195,7 @@
         return;
       }
       img.style.display = 'none';
+      stabilizeLayout('cover-failed');
     };
     img.src = src;
   }
@@ -202,11 +217,32 @@
     if (!target || target.dataset.coverObserver === '1') return;
     target.dataset.coverObserver = '1';
     const observer = new MutationObserver(mutations => {
+      let added = false;
       mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
-        if (node instanceof HTMLElement) applyAll(node, catalog);
+        if (node instanceof HTMLElement) {
+          applyAll(node, catalog);
+          added = true;
+        }
       }));
+      if (added) stabilizeLayout('game-list-mutated');
     });
     observer.observe(target, { childList: true, subtree: true });
+  }
+
+  function observeVisibilityTransitions() {
+    const watched = [
+      document.getElementById('main-app'),
+      document.getElementById('shop-modal'),
+      document.getElementById('game-modal'),
+      document.getElementById('age-selection-screen')
+    ].filter(Boolean);
+
+    watched.forEach(element => {
+      if (element.dataset.kcLayoutObserver === '1') return;
+      element.dataset.kcLayoutObserver = '1';
+      const observer = new MutationObserver(() => stabilizeLayout(`state:${element.id}`));
+      observer.observe(element, { attributes: true, attributeFilter: ['class', 'style'] });
+    });
   }
 
   function boot() {
@@ -214,12 +250,30 @@
     const catalog = getCatalog();
     applyAll(document, catalog);
     observeGameList(catalog);
+    observeVisibilityTransitions();
+    stabilizeLayout('boot');
+
+    if (document.fonts?.ready?.then) {
+      document.fonts.ready.then(() => stabilizeLayout('fonts-ready')).catch(() => {});
+    }
+    window.addEventListener('pageshow', () => stabilizeLayout('pageshow'));
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) stabilizeLayout('visible');
+    });
+
     document.dispatchEvent(new CustomEvent('kidscade:catalog-ready', { detail: catalog }));
   }
 
   window.KidscadeGameCovers = Object.freeze({
-    refresh(root = document) { applyAll(root, getCatalog()); },
-    apply(card) { applyCover(card, getCatalog()); },
+    refresh(root = document) {
+      applyAll(root, getCatalog());
+      stabilizeLayout('manual-refresh');
+    },
+    apply(card) {
+      applyCover(card, getCatalog());
+      stabilizeLayout('manual-apply');
+    },
+    stabilize: stabilizeLayout,
     catalog: getCatalog,
     defaultCover: DEFAULT_GAME_COVER
   });
