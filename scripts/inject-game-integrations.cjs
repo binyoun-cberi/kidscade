@@ -19,9 +19,14 @@ function injectScripts(relativeHtml, scripts) {
   return true;
 }
 
-const changed = injectScripts('classroom_war_3d.html', [
+const classroomChanged = injectScripts('classroom_war_3d.html', [
   '/classroom-war-records.js?v=20260916-1',
   '/classroom-war-records-observer.js?v=20260916-1'
 ]);
 
-console.log(`[game-integrations] Classroom War records ${changed ? 'injected' : 'already present'}.`);
+const timingChanged = injectScripts('딱! 타임 LCD.html', [
+  'timing-exact10-records.js?v=20260916-1'
+]);
+
+console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'injected' : 'already present'}.`);
+console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);

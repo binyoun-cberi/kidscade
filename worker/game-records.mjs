@@ -9,6 +9,10 @@ const SESSION_COOKIE = 'kc_session';
 const CLASSROOM_WAR_GAME_ID = 'high_classroom_war_3d';
 const CLASSROOM_WAR_METRIC = 'score';
 const CLASSROOM_WAR_MODE = 'v4';
+const TIMING_GAME_ID = 'math_timing_lcd';
+const TIMING_EXACT_METRIC = 'exact_10_hits';
+const TIMING_EXACT_MODE = 'classic_v1';
+const TIMING_EXACT_COOLDOWN_MS = 8000;
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -107,12 +111,27 @@ function normalizeClassroomWarDetails(raw = {}) {
   };
 }
 
+export function normalizeExact10Details(raw = {}) {
+  const targetHundredths = integer(raw.targetHundredths, 0, 9999);
+  const elapsedHundredths = integer(raw.elapsedHundredths, 0, 9999);
+  if (targetHundredths !== 1000 || elapsedHundredths !== 1000) return null;
+  return { targetHundredths, elapsedHundredths };
+}
+
 function definitionFor(gameId, metric, mode) {
   if (gameId === CLASSROOM_WAR_GAME_ID && metric === CLASSROOM_WAR_METRIC && mode === CLASSROOM_WAR_MODE) {
     return {
       normalizeDetails: normalizeClassroomWarDetails,
       computeValue: computeClassroomWarScore,
-      higherIsBetter: true
+      strategy: 'best'
+    };
+  }
+  if (gameId === TIMING_GAME_ID && metric === TIMING_EXACT_METRIC && mode === TIMING_EXACT_MODE) {
+    return {
+      normalizeDetails: normalizeExact10Details,
+      computeValue: () => 1,
+      strategy: 'sum',
+      cooldownMs: TIMING_EXACT_COOLDOWN_MS
     };
   }
   return null;
@@ -175,25 +194,38 @@ async function submitRecord(request, env) {
   }
 
   const existing = await env.DB.prepare(`
-    SELECT value FROM game_records
+    SELECT value, updated_at FROM game_records
     WHERE student_id = ? AND game_id = ? AND metric = ? AND mode = ?
   `).bind(auth.row.student_id, gameId, metric, mode).first();
 
   const previousBest = existing ? Math.max(0, Number(existing.value || 0)) : null;
-  const improved = previousBest === null || submittedValue > previousBest;
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
 
-  if (improved) {
+  if (definition.strategy === 'sum') {
+    const previousUpdatedAt = existing?.updated_at ? new Date(existing.updated_at).getTime() : 0;
+    if (previousUpdatedAt && Number.isFinite(previousUpdatedAt) && nowDate.getTime() - previousUpdatedAt < Number(definition.cooldownMs || 0)) {
+      return json({
+        ok: true,
+        accepted: false,
+        duplicate: true,
+        improved: false,
+        previousBest,
+        best: previousBest ?? 0,
+        details,
+        achievedAt: existing?.updated_at || now
+      });
+    }
+
     await env.DB.prepare(`
       INSERT INTO game_records (
         student_id, game_id, metric, mode, value, details_json, achieved_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(student_id, game_id, metric, mode) DO UPDATE SET
-        value = excluded.value,
+        value = game_records.value + excluded.value,
         details_json = excluded.details_json,
         achieved_at = excluded.achieved_at,
         updated_at = excluded.updated_at
-      WHERE excluded.value > game_records.value
     `).bind(
       auth.row.student_id,
       gameId,
@@ -204,6 +236,30 @@ async function submitRecord(request, env) {
       now,
       now
     ).run();
+  } else {
+    const improved = previousBest === null || submittedValue > previousBest;
+    if (improved) {
+      await env.DB.prepare(`
+        INSERT INTO game_records (
+          student_id, game_id, metric, mode, value, details_json, achieved_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(student_id, game_id, metric, mode) DO UPDATE SET
+          value = excluded.value,
+          details_json = excluded.details_json,
+          achieved_at = excluded.achieved_at,
+          updated_at = excluded.updated_at
+        WHERE excluded.value > game_records.value
+      `).bind(
+        auth.row.student_id,
+        gameId,
+        metric,
+        mode,
+        submittedValue,
+        JSON.stringify(details),
+        now,
+        now
+      ).run();
+    }
   }
 
   const saved = await env.DB.prepare(`
@@ -212,11 +268,14 @@ async function submitRecord(request, env) {
     WHERE student_id = ? AND game_id = ? AND metric = ? AND mode = ?
   `).bind(auth.row.student_id, gameId, metric, mode).first();
 
+  const savedValue = Math.max(0, Number(saved?.value || submittedValue));
+  const improved = definition.strategy === 'sum' ? true : previousBest === null || submittedValue > previousBest;
   return json({
     ok: true,
+    accepted: true,
     improved,
     previousBest,
-    best: Math.max(0, Number(saved?.value || submittedValue)),
+    best: savedValue,
     details: parseDetails(saved?.details_json || JSON.stringify(details)),
     achievedAt: saved?.achieved_at || now
   });
