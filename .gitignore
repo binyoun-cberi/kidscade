@@ -7,8 +7,9 @@
 .dev.vars.*
 !.dev.vars.example
 
-# Cloudflare local state
+# Cloudflare local state / generated output
 .wrangler/
+dist/
 
 # Local dependencies / tooling
 node_modules/
