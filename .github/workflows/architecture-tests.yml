@@ -45,6 +45,8 @@ jobs:
         run: node scripts/secret-audit.cjs
       - name: Build Cloudflare static artifact
         run: node scripts/build-cloudflare.cjs
+      - name: Run game cover and favicon tests
+        run: node --test tests/game-cover-overrides.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
