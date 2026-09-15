@@ -24,10 +24,14 @@ jobs:
           for file in \
             kidscade-storage.js \
             profile-history.js \
+            account-client.js \
+            teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
             server-stats.js \
             worker/index.mjs \
+            worker/accounts.mjs \
+            worker/main.mjs \
             game-registry.js \
             game-filter.js \
             game-cover-placeholders.js \
@@ -58,6 +62,8 @@ jobs:
         run: node --test tests/ui-information-architecture.test.cjs
       - name: Run UI visual polish tests
         run: node --test tests/ui-visual-polish.test.cjs
+      - name: Run student account security and sync tests
+        run: node --test tests/accounts.test.mjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
