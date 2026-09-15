@@ -4,6 +4,7 @@
   const DEFAULT_GAME_COVER = 'kidscade placeholder.png';
   const STYLE_ID = 'kidscade-game-cover-styles';
   let layoutRefreshQueued = false;
+  let coverObserver = null;
 
   function getCatalog() {
     return window.KidscadeCatalog && typeof window.KidscadeCatalog === 'object'
@@ -51,8 +52,9 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
-        transition: transform .22s ease;
+        transition: transform .22s ease, opacity .18s ease;
       }
+      .game-card.kc-has-cover .game-cover-image:not([src]) { opacity: 0; }
       .game-card.kc-has-cover:hover .game-cover-image { transform: scale(1.035); }
       .game-card.kc-has-cover .game-cover-emoji {
         position: absolute;
@@ -159,8 +161,11 @@
 
     const img = document.createElement('img');
     img.className = 'game-cover-image';
-    img.loading = 'lazy';
+    // IntersectionObserver below decides when the request actually starts.
+    // Eager loading here avoids stacking native lazy-load heuristics on top.
+    img.loading = 'eager';
     img.decoding = 'async';
+    img.fetchPriority = 'low';
     shell.appendChild(img);
 
     const emoji = getEmoji(card);
@@ -182,22 +187,59 @@
     return shell;
   }
 
+  function loadImageNow(img, src) {
+    if (!img || !src) return;
+    delete img.dataset.kcPendingSrc;
+    img.src = src;
+  }
+
+  function ensureCoverObserver() {
+    if (coverObserver || !('IntersectionObserver' in window)) return coverObserver;
+    coverObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        coverObserver.unobserve(img);
+        const src = img.dataset.kcPendingSrc;
+        if (!src) return;
+        if (entry.boundingClientRect.top < window.innerHeight) img.fetchPriority = 'high';
+        loadImageNow(img, src);
+      });
+    }, { rootMargin: '320px 0px', threshold: 0.01 });
+    return coverObserver;
+  }
+
   function setImageSource(img, src, title) {
-    if (!img || img.getAttribute('src') === src) return;
+    if (!img || !src) return;
+    if (img.dataset.kcRequestedSrc === src && (img.getAttribute('src') === src || img.dataset.kcPendingSrc === src)) return;
+
+    coverObserver?.unobserve(img);
+    img.dataset.kcRequestedSrc = src;
     img.dataset.fallbackApplied = '';
     img.style.display = '';
     img.alt = `${title} 대문 이미지`;
+    img.fetchPriority = 'low';
     img.onload = () => stabilizeLayout('cover-loaded');
     img.onerror = () => {
       if (!img.dataset.fallbackApplied && img.getAttribute('src') !== DEFAULT_GAME_COVER) {
         img.dataset.fallbackApplied = '1';
-        img.src = DEFAULT_GAME_COVER;
+        img.fetchPriority = 'low';
+        loadImageNow(img, DEFAULT_GAME_COVER);
         return;
       }
       img.style.display = 'none';
       stabilizeLayout('cover-failed');
     };
-    img.src = src;
+
+    const observer = ensureCoverObserver();
+    if (observer && src !== DEFAULT_GAME_COVER) {
+      img.removeAttribute('src');
+      img.dataset.kcPendingSrc = src;
+      observer.observe(img);
+      return;
+    }
+
+    loadImageNow(img, src);
   }
 
   function applyCover(card, catalog = getCatalog()) {
@@ -247,6 +289,7 @@
 
   function boot() {
     installStyles();
+    ensureCoverObserver();
     const catalog = getCatalog();
     applyAll(document, catalog);
     observeGameList(catalog);
