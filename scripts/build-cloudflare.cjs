@@ -66,6 +66,22 @@ function sanitizeCloudflareArtifact() {
   }
 }
 
+function injectTimingExact10Client() {
+  const gameRel = '딱! 타임 LCD.html';
+  const clientRel = 'timing-exact10-records.js';
+  assertExists(gameRel);
+  assertExists(clientRel);
+  const gamePath = path.join(OUT, gameRel);
+  let html = fs.readFileSync(gamePath, 'utf8');
+  const marker = 'timing-exact10-records.js';
+  if (!html.includes(marker)) {
+    const tag = '<script src="timing-exact10-records.js?v=20260916-1"></script>';
+    if (!html.includes('</body>')) throw new Error('Timing game is missing </body> for ranking client injection.');
+    html = html.replace('</body>', `${tag}\n</body>`);
+    fs.writeFileSync(gamePath, html, 'utf8');
+  }
+}
+
 function shortHash(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex').slice(0, 12);
 }
@@ -198,6 +214,7 @@ async function main() {
   assertExists('index_base.html');
   assertExists('data/games.json');
   sanitizeCloudflareArtifact();
+  injectTimingExact10Client();
 
   const catalogPath = path.join(OUT, 'data/games.json');
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
@@ -240,6 +257,7 @@ async function main() {
   if (faviconStats) {
     console.log(`- favicon: ${formatKiB(faviconStats.sourceBytes)} -> ${formatKiB(faviconStats.optimizedBytes)} (${faviconStats.output})`);
   }
+  console.log('- timing exact 10.00 ranking client injected: yes');
   console.log('- immutable cover/favicon caching with source-hash URLs: enabled');
   console.log('- Worker/D1 source excluded from public dist: yes');
   console.log('- Vercel-only runtime path stripped: yes');
