@@ -47,6 +47,8 @@ jobs:
         run: node scripts/build-cloudflare.cjs
       - name: Run game cover and favicon tests
         run: node --test tests/game-cover-overrides.test.cjs
+      - name: Run game card description tests
+        run: node --test tests/game-description-overrides.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
