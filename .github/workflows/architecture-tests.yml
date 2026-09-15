@@ -27,6 +27,8 @@ jobs:
             account-client.js \
             account-session-safety.js \
             account-ui-runtime.js \
+            seed-ranking.js \
+            seed-balance-sync.js \
             teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
@@ -34,6 +36,7 @@ jobs:
             worker/index.mjs \
             worker/accounts.mjs \
             worker/teacher-admin.mjs \
+            worker/seed-rankings.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -69,6 +72,8 @@ jobs:
         run: node --test tests/accounts.test.mjs
       - name: Run teacher account management tests
         run: node --test tests/teacher-management.test.mjs
+      - name: Run seed ranking tests
+        run: node --test tests/seed-rankings.test.mjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
