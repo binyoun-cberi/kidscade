@@ -155,6 +155,7 @@
               category: session.category,
               seconds: reward.sessionSec
             });
+            window.KidscadeProfileHistory?.renderBrowserUI?.();
           } catch (profileError) {
             console.warn('[KidscadeGameLauncher] local profile history write failed:', profileError);
           }
