@@ -6,6 +6,8 @@ const path = require('node:path');
 const storageApi = require('../kidscade-storage.js');
 
 const ROOT = path.resolve(__dirname, '..');
+const STRICT = process.argv.includes('--strict');
+const LEGACY_DIRECT_KEY_BASELINE = 54;
 const RUNTIME_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'docs', 'tests', 'scripts', '.github']);
 const KIDSCade_LITERAL_RE = /["'](kidscade_[A-Za-z0-9_.:-]+)["']/g;
@@ -45,16 +47,29 @@ function collect() {
     while ((match = LOCAL_STORAGE_LITERAL_RE.exec(source))) addUsage(directLocalStorageKeys, match[1], file);
   }
 
-  const registered = new Set(Object.values(storageApi.keys));
-  const unknownKidscadeKeys = [...kidscadeKeys.keys()].filter(key => !registered.has(key)).sort();
-  const registeredInUse = [...registered].filter(key => kidscadeKeys.has(key)).sort();
-  const registeredNotSeenLiterally = [...registered].filter(key => !kidscadeKeys.has(key)).sort();
-  const nonKidscadeDirectKeys = [...directLocalStorageKeys.keys()].filter(key => !key.startsWith('kidscade_')).sort();
+  const registeredExact = new Set([
+    ...Object.values(storageApi.keys || {}),
+    ...Object.values(storageApi.gameKeys || {})
+  ]);
+  const registeredPrefixes = new Set(Object.values(storageApi.prefixes || {}));
+  const unknownKidscadeKeys = [...kidscadeKeys.keys()]
+    .filter(key => !storageApi.isRegisteredPhysicalKey(key))
+    .sort();
+  const registeredInUse = [...kidscadeKeys.keys()]
+    .filter(key => storageApi.isRegisteredPhysicalKey(key))
+    .sort();
+  const registeredNotSeenLiterally = [...registeredExact]
+    .filter(key => !kidscadeKeys.has(key))
+    .sort();
+  const nonKidscadeDirectKeys = [...directLocalStorageKeys.keys()]
+    .filter(key => !key.startsWith('kidscade_'))
+    .sort();
 
   return {
     kidscadeKeys,
     directLocalStorageKeys,
-    registered,
+    registeredExact,
+    registeredPrefixes,
     unknownKidscadeKeys,
     registeredInUse,
     registeredNotSeenLiterally,
@@ -73,17 +88,36 @@ function printUsage(title, keys, usage) {
 
 const report = collect();
 console.log('Kidscade storage audit');
-console.log(`- registered shared keys: ${report.registered.size}`);
+console.log(`- registered exact keys: ${report.registeredExact.size}`);
+console.log(`- registered dynamic prefixes: ${report.registeredPrefixes.size}`);
 console.log(`- kidscade_* literals found: ${report.kidscadeKeys.size}`);
-console.log(`- registered keys currently in use: ${report.registeredInUse.length}`);
-console.log(`- unregistered kidscade_* literals: ${report.unknownKidscadeKeys.length}`);
-console.log(`- non-kidscade direct localStorage keys: ${report.nonKidscadeDirectKeys.length}`);
+console.log(`- classified kidscade_* literals: ${report.registeredInUse.length}`);
+console.log(`- unclassified kidscade_* literals: ${report.unknownKidscadeKeys.length}`);
+console.log(`- legacy non-kidscade direct localStorage keys: ${report.nonKidscadeDirectKeys.length}/${LEGACY_DIRECT_KEY_BASELINE} baseline`);
 
-printUsage('Unregistered kidscade_* keys (review for shared registry or game-specific ownership)', report.unknownKidscadeKeys, report.kidscadeKeys);
-printUsage('Non-kidscade direct localStorage keys (normally game-specific)', report.nonKidscadeDirectKeys, report.directLocalStorageKeys);
+printUsage('Unclassified kidscade_* keys (must be registered before merge)', report.unknownKidscadeKeys, report.kidscadeKeys);
+printUsage('Legacy direct localStorage keys (preserved for compatibility; migrate gradually)', report.nonKidscadeDirectKeys, report.directLocalStorageKeys);
 
-if (!report.unknownKidscadeKeys.length) {
-  console.log('\nAll literal kidscade_* keys are represented in the shared registry.');
+const failures = [];
+if (report.unknownKidscadeKeys.length) {
+  failures.push(`${report.unknownKidscadeKeys.length}개의 kidscade_* 키가 저장 레지스트리에 분류되지 않았습니다.`);
+}
+if (report.nonKidscadeDirectKeys.length > LEGACY_DIRECT_KEY_BASELINE) {
+  failures.push(`비표준 localStorage 키가 기준선 ${LEGACY_DIRECT_KEY_BASELINE}개에서 ${report.nonKidscadeDirectKeys.length}개로 증가했습니다. 새 저장값은 KidscadeStorage 또는 kidscade_ 네임스페이스를 사용하세요.`);
 }
 
-module.exports = { collect };
+if (!report.unknownKidscadeKeys.length) {
+  console.log('\nAll literal kidscade_* keys are classified in the shared storage registry.');
+}
+if (report.nonKidscadeDirectKeys.length <= LEGACY_DIRECT_KEY_BASELINE) {
+  console.log('Legacy direct-key count is at or below the migration baseline; no new key sprawl detected.');
+}
+
+if (failures.length) {
+  console.error('\nStorage policy issues:');
+  failures.forEach(item => console.error(`  ERROR ${item}`));
+  if (STRICT) process.exitCode = 1;
+  else console.error('Report-only mode: use --strict to enforce the policy.');
+}
+
+module.exports = { collect, LEGACY_DIRECT_KEY_BASELINE };
