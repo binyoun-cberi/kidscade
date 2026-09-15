@@ -58,12 +58,68 @@
       .kc-server-card-stats { margin-top:7px; font-size:.72rem; line-height:1.2; color:#64748b; font-weight:700; white-space:nowrap; }
       body.dark-mode .kc-server-card-stats { color:#cbd5e1; }
       .dashboard-container .kc-server-card-stats { display:none !important; }
+
+      #kc-popular-hub { margin:0 0 18px; }
+      .kc-popular-head { display:flex; align-items:end; justify-content:space-between; gap:12px; margin:0 2px 9px; }
+      .kc-popular-title { margin:0; font-size:1.02rem; font-weight:950; color:#1e293b; }
+      .kc-popular-note { font-size:.72rem; font-weight:700; color:#94a3b8; }
+      body.dark-mode .kc-popular-title { color:#f8fafc; }
+      .kc-popular-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+      .kc-popular-panel { min-width:0; padding:12px; border:1px solid rgba(148,163,184,.22); border-radius:18px; background:rgba(255,255,255,.82); box-shadow:0 8px 22px rgba(15,23,42,.055); }
+      body.dark-mode .kc-popular-panel { background:rgba(30,41,59,.82); border-color:rgba(148,163,184,.18); }
+      .kc-popular-panel-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px; font-size:.84rem; font-weight:950; color:#334155; }
+      body.dark-mode .kc-popular-panel-title { color:#e2e8f0; }
+      .kc-popular-list { display:grid; gap:6px; }
+      .kc-popular-item { width:100%; min-width:0; display:grid; grid-template-columns:30px 64px minmax(0,1fr) auto; align-items:center; gap:9px; padding:6px; border:0; border-radius:12px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; transition:background .16s ease, transform .16s ease; }
+      .kc-popular-item:hover { background:rgba(124,58,237,.07); transform:translateY(-1px); }
+      .kc-popular-item:focus-visible { outline:3px solid rgba(124,58,237,.22); outline-offset:1px; }
+      body.dark-mode .kc-popular-item:hover { background:rgba(167,139,250,.10); }
+      .kc-popular-rank { width:30px; height:30px; display:grid; place-items:center; border-radius:10px; background:#f1f5f9; color:#475569; font-size:.73rem; font-weight:950; }
+      .kc-popular-rank[data-rank="1"] { background:#fff4c7; color:#9a6700; }
+      .kc-popular-rank[data-rank="2"] { background:#eef2f6; color:#64748b; }
+      .kc-popular-rank[data-rank="3"] { background:#fbe8dc; color:#a45124; }
+      body.dark-mode .kc-popular-rank { background:#334155; color:#cbd5e1; }
+      .kc-popular-thumb { width:64px; height:40px; display:block; object-fit:cover; border-radius:9px; background:#e2e8f0; }
+      .kc-popular-copy { min-width:0; }
+      .kc-popular-game-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; font-weight:900; color:#1e293b; }
+      body.dark-mode .kc-popular-game-title { color:#f8fafc; }
+      .kc-popular-game-sub { margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.65rem; font-weight:700; color:#94a3b8; }
+      .kc-popular-count { white-space:nowrap; font-size:.73rem; font-weight:950; color:#f97316; }
+      .kc-popular-empty { padding:14px 8px; text-align:center; font-size:.73rem; font-weight:750; color:#94a3b8; }
+      @media (max-width:780px) {
+        .kc-popular-grid { grid-template-columns:1fr; }
+        .kc-popular-item { grid-template-columns:28px 58px minmax(0,1fr) auto; gap:7px; }
+        .kc-popular-thumb { width:58px; height:37px; }
+        .kc-popular-note { display:none; }
+      }
     `;
     document.head.appendChild(style);
   }
 
   function formatCount(value) {
     return new Intl.NumberFormat('ko-KR').format(Math.max(0, Number(value || 0)));
+  }
+
+  function getCatalogGame(id) {
+    const gameId = String(id || '');
+    if (!gameId) return null;
+    return window.KidscadeGames?.get?.(gameId) ||
+      window.KidscadeCatalog?.games?.find?.(game => String(game?.id || '') === gameId) || null;
+  }
+
+  function findOriginCard(id) {
+    const gameId = String(id || '');
+    const escaped = globalThis.CSS?.escape ? CSS.escape(gameId) : gameId.replace(/["\\]/g, '\\$&');
+    return window.KidscadeGames?.getCard?.(gameId) || document.querySelector(`#game-list .game-card[data-id="${escaped}"]`);
+  }
+
+  function launchGame(gameId, fallbackHref) {
+    const origin = findOriginCard(gameId);
+    if (origin) {
+      origin.click();
+      return;
+    }
+    if (fallbackHref && fallbackHref !== '#') window.location.href = fallbackHref;
   }
 
   function ensureSiteStats() {
@@ -76,6 +132,41 @@
     element.setAttribute('aria-live', 'polite');
     list.parentNode.insertBefore(element, list);
     return element;
+  }
+
+  function ensurePopularHub() {
+    let hub = document.getElementById('kc-popular-hub');
+    if (!hub) {
+      hub = document.createElement('section');
+      hub.id = 'kc-popular-hub';
+      hub.innerHTML = `
+        <div class="kc-popular-head">
+          <h2 class="kc-popular-title">🔥 인기 게임</h2>
+          <span class="kc-popular-note">30초 이상 플레이한 기록을 기준으로 집계해요.</span>
+        </div>
+        <div class="kc-popular-grid">
+          <section class="kc-popular-panel" aria-labelledby="kc-weekly-popular-title">
+            <h3 class="kc-popular-panel-title" id="kc-weekly-popular-title"><span>이번 주 인기 TOP 5</span><span>7일 랭킹</span></h3>
+            <div class="kc-popular-list" data-popular-list="weekly"></div>
+          </section>
+          <section class="kc-popular-panel" aria-labelledby="kc-alltime-popular-title">
+            <h3 class="kc-popular-panel-title" id="kc-alltime-popular-title"><span>누적 인기 TOP 5</span><span>전체 랭킹</span></h3>
+            <div class="kc-popular-list" data-popular-list="allTime"></div>
+          </section>
+        </div>
+      `;
+    }
+
+    const quickZone = document.querySelector('.kc-quick-zone');
+    if (quickZone?.parentNode) {
+      if (quickZone.nextElementSibling !== hub) quickZone.insertAdjacentElement('afterend', hub);
+      return hub;
+    }
+
+    const list = document.getElementById('game-list');
+    const siteStats = document.getElementById('kc-live-stats');
+    if (list?.parentNode && !hub.isConnected) list.parentNode.insertBefore(hub, siteStats || list);
+    return hub;
   }
 
   function renderSiteStats(stats) {
@@ -101,10 +192,113 @@
     });
   }
 
+  function availableGameStats(stats) {
+    const filtered = {};
+    for (const [gameId, value] of Object.entries(stats?.games || {})) {
+      const game = getCatalogGame(gameId);
+      if (!game || game.disabled) continue;
+      filtered[gameId] = value;
+    }
+    return filtered;
+  }
+
+  function fallbackRankGames(games, metric, limit = 5) {
+    const allTime = metric === 'allTime';
+    return Object.entries(games || {})
+      .map(([gameId, value]) => ({ gameId, weeklyPlays: Number(value?.weeklyPlays || 0), totalPlays: Number(value?.totalPlays || 0) }))
+      .filter(entry => (allTime ? entry.totalPlays : entry.weeklyPlays) > 0)
+      .sort((a, b) => {
+        const first = (allTime ? b.totalPlays - a.totalPlays : b.weeklyPlays - a.weeklyPlays);
+        if (first) return first;
+        return allTime ? b.weeklyPlays - a.weeklyPlays : b.totalPlays - a.totalPlays;
+      })
+      .slice(0, limit)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }
+
+  function buildPopularLists(games) {
+    return window.KidscadeStatsRankings?.buildPopularLists?.(games, 5) || {
+      weekly: fallbackRankGames(games, 'weekly', 5),
+      allTime: fallbackRankGames(games, 'allTime', 5)
+    };
+  }
+
+  function createPopularItem(entry, metric) {
+    const game = getCatalogGame(entry.gameId);
+    if (!game) return null;
+
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'kc-popular-item';
+    const plays = metric === 'allTime' ? entry.totalPlays : entry.weeklyPlays;
+    item.setAttribute('aria-label', `${entry.rank}위 ${game.title}, ${formatCount(plays)}회 플레이, 게임 열기`);
+
+    const rank = document.createElement('span');
+    rank.className = 'kc-popular-rank';
+    rank.dataset.rank = String(entry.rank);
+    rank.textContent = entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : String(entry.rank);
+
+    const thumb = document.createElement('img');
+    thumb.className = 'kc-popular-thumb';
+    thumb.alt = '';
+    thumb.loading = 'lazy';
+    thumb.decoding = 'async';
+    thumb.src = game.cover || 'kidscade placeholder.png';
+    thumb.onerror = () => {
+      if (!thumb.dataset.fallback) {
+        thumb.dataset.fallback = '1';
+        thumb.src = 'kidscade placeholder.png';
+      }
+    };
+
+    const copy = document.createElement('span');
+    copy.className = 'kc-popular-copy';
+    const title = document.createElement('span');
+    title.className = 'kc-popular-game-title';
+    title.textContent = game.title || '게임';
+    const sub = document.createElement('span');
+    sub.className = 'kc-popular-game-sub';
+    sub.textContent = metric === 'allTime' ? `이번 주 ${formatCount(entry.weeklyPlays)}회` : `누적 ${formatCount(entry.totalPlays)}회`;
+    copy.append(title, sub);
+
+    const count = document.createElement('span');
+    count.className = 'kc-popular-count';
+    count.textContent = `${formatCount(plays)}회`;
+
+    item.append(rank, thumb, copy, count);
+    item.addEventListener('click', () => launchGame(entry.gameId, game.href));
+    return item;
+  }
+
+  function renderPopularList(list, entries, metric) {
+    if (!list) return;
+    list.replaceChildren();
+    if (!entries.length) {
+      const empty = document.createElement('div');
+      empty.className = 'kc-popular-empty';
+      empty.textContent = metric === 'allTime' ? '아직 누적 플레이 기록을 모으는 중이에요.' : '이번 주 플레이 기록을 모으는 중이에요.';
+      list.appendChild(empty);
+      return;
+    }
+    entries.forEach(entry => {
+      const item = createPopularItem(entry, metric);
+      if (item) list.appendChild(item);
+    });
+  }
+
+  function renderPopularRankings(stats) {
+    const hub = ensurePopularHub();
+    if (!hub) return;
+    const rankings = buildPopularLists(availableGameStats(stats));
+    renderPopularList(hub.querySelector('[data-popular-list="weekly"]'), rankings.weekly, 'weekly');
+    renderPopularList(hub.querySelector('[data-popular-list="allTime"]'), rankings.allTime, 'allTime');
+  }
+
   function render(stats) {
     if (!stats?.ok) return;
     currentStats = stats;
     renderSiteStats(stats);
+    renderPopularRankings(stats);
     renderGameStats(stats);
   }
 
@@ -174,6 +368,7 @@
         base.weekKey = result.weekKey || base.weekKey;
         currentStats = base;
         saveCache(base);
+        renderPopularRankings(base);
         renderGameStats(base);
       }
       return result;
@@ -188,6 +383,9 @@
     if (cached) render(cached.data);
     await recordWeeklyVisit();
     await loadStats(false);
+    document.addEventListener('kidscade:dashboard-rendered', () => {
+      if (currentStats?.ok) renderPopularRankings(currentStats);
+    });
     return true;
   }
 
