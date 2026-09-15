@@ -31,9 +31,12 @@ jobs:
             score-display-normalizer.js \
             ui-clarity-overhaul.js \
             ui-topbar-compact.js \
-            seed-house-entry.js; do
+            seed-house-entry.js \
+            scripts/secret-audit.cjs; do
             node --check "$file"
           done
+      - name: Reject tracked credentials and secret env files
+        run: node scripts/secret-audit.cjs
       - name: Run storage compatibility tests
         run: node --test tests/storage.test.cjs
       - name: Enforce localStorage namespace policy
