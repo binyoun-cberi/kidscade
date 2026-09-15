@@ -33,6 +33,7 @@ jobs:
             server-stats.js \
             worker/index.mjs \
             worker/accounts.mjs \
+            worker/teacher-admin.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -66,6 +67,8 @@ jobs:
         run: node --test tests/ui-visual-polish.test.cjs
       - name: Run student account security and sync tests
         run: node --test tests/accounts.test.mjs
+      - name: Run teacher account management tests
+        run: node --test tests/teacher-management.test.mjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
