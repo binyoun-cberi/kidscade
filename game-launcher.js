@@ -149,6 +149,15 @@
         });
         if (typeof window !== 'undefined') {
           window.KidscadeServerStats?.recordPlay?.(session.id, reward.sessionSec);
+          try {
+            window.KidscadeProfileHistory?.recordSession?.({
+              id: session.id,
+              category: session.category,
+              seconds: reward.sessionSec
+            });
+          } catch (profileError) {
+            console.warn('[KidscadeGameLauncher] local profile history write failed:', profileError);
+          }
         }
       } else if (sessionSec > 0) {
         bridge.showToast?.(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 ${Math.max(0, Math.floor(finiteNumber(bridge.minRewardPlaySec, DEFAULT_MIN_REWARD_SECONDS)))}초 이상 플레이하면 인정돼요.`);
