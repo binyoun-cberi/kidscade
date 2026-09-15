@@ -36,6 +36,8 @@ jobs:
           done
       - name: Run storage compatibility tests
         run: node --test tests/storage.test.cjs
+      - name: Inventory localStorage keys
+        run: node scripts/storage-audit.cjs
       - name: Run game classification tests
         run: node --test tests/game-classification.test.cjs
       - name: Run launcher regression tests
