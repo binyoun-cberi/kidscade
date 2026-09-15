@@ -93,7 +93,6 @@
     const title = String(game?.title || originCard?.querySelector?.('.game-title')?.textContent || '게임');
     const startedAt = finiteNumber(bridge.now?.(), Date.now());
 
-    // Only consume the optional bonus after the game is known to be launchable.
     const hadBonus = Boolean(bridge.consumePlayTicket?.(gameId));
     if (!hadBonus) {
       const recharge = bridge.getNextRechargeMs?.(gameId);
@@ -148,6 +147,9 @@
           category: session.category,
           seconds: reward.sessionSec
         });
+        if (typeof window !== 'undefined') {
+          window.KidscadeServerStats?.recordPlay?.(session.id, reward.sessionSec);
+        }
       } else if (sessionSec > 0) {
         bridge.showToast?.(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 ${Math.max(0, Math.floor(finiteNumber(bridge.minRewardPlaySec, DEFAULT_MIN_REWARD_SECONDS)))}초 이상 플레이하면 인정돼요.`);
       }
@@ -158,8 +160,6 @@
       bridge.showToast?.('게임은 닫혔지만 기록 정리 중 문제가 생겼어요. 다음 실행은 정상적으로 시작할 수 있습니다.');
       return { handled: true, sessionSec, reward, error };
     } finally {
-      // Never leave a stale session behind. A stale session can make the next
-      // game close award the wrong game or keep the modal lifecycle half-open.
       bridge.resetSession?.();
       bridge.syncBadges?.();
       bridge.afterClose?.({ session, sessionSec, reward });

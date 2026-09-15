@@ -29,6 +29,15 @@ test('storage registry keeps current save keys compatible', () => {
   assert.equal(storage.prefixes.languageV3, 'kidscade_language_v3_');
 });
 
+test('anonymous server-stat keys stay inside the registered namespace', () => {
+  const storage = loadStorage();
+  assert.equal(storage.keys.anonymousClientId, 'kidscade_anon_client_id');
+  assert.equal(storage.keys.statsVisitWeek, 'kidscade_stats_visit_week');
+  assert.equal(storage.keys.serverStatsCache, 'kidscade_stats_cache_v1');
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_anon_client_id'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_stats_cache_v1'), true);
+});
+
 test('storage initializes a schema version without erasing existing values', () => {
   const storage = loadStorage();
   assert.equal(localStorage.getItem('kidscade_save_version'), '1');

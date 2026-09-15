@@ -32,7 +32,10 @@
     lifeLegacy: 'kidscade_life_v1',
     lifeWorldLegacy: 'kidscade_life_world',
     lifeWorldV1: 'kidscade_life_world_v1',
-    worldV2: 'kidscade_world_v2'
+    worldV2: 'kidscade_world_v2',
+    anonymousClientId: 'kidscade_anon_client_id',
+    statsVisitWeek: 'kidscade_stats_visit_week',
+    serverStatsCache: 'kidscade_stats_cache_v1'
   });
 
   // Existing namespaced saves owned by one game. They are catalogued separately
