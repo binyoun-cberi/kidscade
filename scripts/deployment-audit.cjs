@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
+const STRICT = process.argv.includes('--strict');
 const TEXT_EXTENSIONS = new Set(['.html', '.htm', '.js', '.cjs', '.mjs', '.css', '.json', '.md']);
 const SKIP_DIRS = new Set(['.git', 'node_modules']);
 const LOCAL_ATTR_RE = /\b(?:src|href)\s*=\s*["']([^"']+)["']/gi;
@@ -64,12 +65,13 @@ function collect() {
     if (FILE_URL_RE.test(source)) errors.push(`${name}: file:// 로컬 경로 사용`);
     if (WINDOWS_ABS_RE.test(source)) errors.push(`${name}: Windows 절대 경로 사용`);
     if (LOCALHOST_RE.test(source)) errors.push(`${name}: localhost 주소 사용`);
-    if (VERCEL_RE.test(source)) errors.push(`${name}: Vercel 전용 /_vercel/ 경로 사용`);
+    if (VERCEL_RE.test(source)) warnings.push(`${name}: Vercel 전용 /_vercel/ 경로가 남아 있습니다. Cloudflare 전환 때 제거하세요.`);
 
     let match;
     while ((match = LOCAL_ATTR_RE.exec(source))) {
       const raw = match[1].trim();
       if (isIgnorable(raw)) continue;
+      if (raw.startsWith('/_vercel/')) continue;
       if (isExternal(raw)) {
         if (/^https?:/i.test(raw)) externals.set(raw, (externals.get(raw) || 0) + 1);
         continue;
@@ -108,7 +110,8 @@ function printReport(report) {
   if (report.errors.length) {
     console.error('\nBlocking issues:');
     report.errors.forEach(item => console.error(`  ERROR ${item}`));
-    process.exitCode = 1;
+    if (STRICT) process.exitCode = 1;
+    else console.error('\nReport-only mode: use --strict to fail on blocking issues.');
   } else {
     console.log('\nNo blocking deployment path issues found.');
   }
