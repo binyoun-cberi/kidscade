@@ -38,7 +38,7 @@ Cloudflare Worker의 Secrets에 아래 두 값을 등록합니다.
 배포 후 다음 주소로 접속합니다.
 
 ```text
-https://<Kidscade-domain>/teacher.html
+https://<Kidscade-domain>/teacher/
 ```
 
 교사 관리 코드(`KIDSCADE_ADMIN_KEY`)를 입력하면 다음을 할 수 있습니다.
