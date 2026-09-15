@@ -51,15 +51,27 @@ function normalizeHref(href) {
   try { return decodeURIComponent(clean); } catch { return clean; }
 }
 
+function sanitizeCloudflareArtifact() {
+  const basePath = path.join(OUT, 'index_base.html');
+  let html = fs.readFileSync(basePath, 'utf8');
+  html = html.replace(/\s*<script\b[^>]*src=["']\/_vercel\/insights\/script\.js["'][^>]*><\/script>/gi, '');
+  fs.writeFileSync(basePath, html, 'utf8');
+  if (html.includes('/_vercel/')) {
+    throw new Error('Cloudflare artifact still contains a Vercel-only /_vercel/ runtime path.');
+  }
+}
+
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 
-const sourceFiles = trackedFiles().filter(shouldPublish);
+const tracked = trackedFiles();
+const sourceFiles = tracked.filter(shouldPublish);
 sourceFiles.forEach(copyTrackedFile);
 
 assertExists('index.html');
 assertExists('index_base.html');
 assertExists('data/games.json');
+sanitizeCloudflareArtifact();
 
 const catalog = JSON.parse(fs.readFileSync(path.join(OUT, 'data/games.json'), 'utf8'));
 const enabledGames = Array.isArray(catalog.games) ? catalog.games.filter(game => !game.disabled) : [];
@@ -75,7 +87,7 @@ for (const forbidden of ['.github', 'docs', 'scripts', 'tests']) {
   }
 }
 
-const secretNames = trackedFiles().filter(rel => /(^|\/)(?:\.env(?:\..*)?|\.dev\.vars(?:\..*)?)$/i.test(rel));
+const secretNames = tracked.filter(rel => /(^|\/)(?:\.env(?:\..*)?|\.dev\.vars(?:\..*)?)$/i.test(rel));
 if (secretNames.length) {
   throw new Error(`Secret environment files are tracked and must not be deployed: ${secretNames.join(', ')}`);
 }
@@ -83,4 +95,5 @@ if (secretNames.length) {
 console.log('Kidscade Cloudflare build complete');
 console.log(`- published tracked files: ${sourceFiles.length}`);
 console.log(`- enabled game entry files verified: ${enabledGames.length}`);
+console.log('- Vercel-only runtime path stripped: yes');
 console.log(`- output: ${path.relative(ROOT, OUT)}/`);
