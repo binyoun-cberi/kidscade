@@ -38,6 +38,7 @@ jobs:
             ui-clarity-overhaul.js \
             ui-topbar-compact.js \
             ui-information-architecture.js \
+            ui-visual-polish.js \
             seed-house-entry.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs; do
@@ -55,6 +56,8 @@ jobs:
         run: node --test tests/profile-history.test.cjs
       - name: Run UI information architecture tests
         run: node --test tests/ui-information-architecture.test.cjs
+      - name: Run UI visual polish tests
+        run: node --test tests/ui-visual-polish.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
