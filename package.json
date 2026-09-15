@@ -2,8 +2,8 @@
   "name": "kidscade",
   "private": true,
   "scripts": {
-    "build": "node scripts/build-cloudflare.cjs",
-    "build:cloudflare": "node scripts/build-cloudflare.cjs",
+    "build": "node scripts/build-cloudflare.cjs && node scripts/inject-game-integrations.cjs",
+    "build:cloudflare": "node scripts/build-cloudflare.cjs && node scripts/inject-game-integrations.cjs",
     "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
     "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy"
   },
