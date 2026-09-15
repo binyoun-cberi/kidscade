@@ -57,6 +57,8 @@
 
   function shouldIgnoreEvent(event) {
     const target = event?.target;
+    if (!target) return false;
+    if (target.closest) return Boolean(target.closest('.fav-star, .cert-btn'));
     return Boolean(target?.classList?.contains?.('fav-star') || target?.classList?.contains?.('cert-btn'));
   }
 
@@ -69,13 +71,29 @@
 
     const game = bridge.getGame?.(gameId) || null;
     const originCard = bridge.getCard?.(gameId) || cardElement;
-    const disabled = Boolean(game?.disabled || originCard?.classList?.contains?.('disabled'));
+    const disabled = Boolean(
+      game?.disabled ||
+      originCard?.classList?.contains?.('disabled') ||
+      originCard?.getAttribute?.('aria-disabled') === 'true'
+    );
     if (disabled) {
       bridge.playSound?.('click');
       bridge.alert?.('열심히 준비 중인 게임입니다! 조금만 기다려주세요 😊');
       return { handled: true, opened: false, reason: 'disabled' };
     }
 
+    const href = String(game?.href || originCard?.getAttribute?.('href') || '').trim();
+    if (!href || href === '#') {
+      bridge.playSound?.('click');
+      bridge.alert?.('게임 파일을 찾지 못했습니다. 관리자에게 알려주세요.');
+      return { handled: true, opened: false, reason: 'missing-href' };
+    }
+
+    const category = String(game?.category || getCardValue(originCard, 'category', 'data-category') || 'all');
+    const title = String(game?.title || originCard?.querySelector?.('.game-title')?.textContent || '게임');
+    const startedAt = finiteNumber(bridge.now?.(), Date.now());
+
+    // Only consume the optional bonus after the game is known to be launchable.
     const hadBonus = Boolean(bridge.consumePlayTicket?.(gameId));
     if (!hadBonus) {
       const recharge = bridge.getNextRechargeMs?.(gameId);
@@ -83,10 +101,6 @@
       bridge.showToast?.(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${rechargeText || '잠시'} 뒤 보너스 +1`);
     }
 
-    const startedAt = finiteNumber(bridge.now?.(), Date.now());
-    const category = String(game?.category || getCardValue(originCard, 'category', 'data-category') || 'all');
-    const title = String(game?.title || originCard?.querySelector?.('.game-title')?.textContent || '게임');
-    const href = String(game?.href || originCard?.getAttribute?.('href') || '');
     const energyState = bridge.getPlayState?.(gameId) || { plays: 0 };
     const playLimitMax = finiteNumber(bridge.playLimitMax, 0);
     const bonusText = hadBonus
@@ -98,6 +112,7 @@
     bridge.startSession?.(session);
     bridge.remember?.(gameId);
     bridge.openModal?.({ ...session, bonusText, titleText: `진행 중: ${title} · ${bonusText}` });
+    bridge.afterOpen?.(session);
 
     return { handled: true, opened: true, session };
   }
@@ -105,39 +120,50 @@
   function close(bridge = {}) {
     const closedAt = finiteNumber(bridge.now?.(), Date.now());
     const session = bridge.getSession?.() || null;
+    let sessionSec = 0;
+    let reward = null;
 
     bridge.playSound?.('close');
     bridge.closeModal?.();
 
-    if (!session || finiteNumber(session.startedAt) <= 0) {
+    try {
+      if (!session || finiteNumber(session.startedAt) <= 0) {
+        return { handled: true, sessionSec: 0, reward: null };
+      }
+
+      sessionSec = Math.max(0, Math.floor((closedAt - finiteNumber(session.startedAt)) / 1000));
+      bridge.checkpointPlayTime?.(closedAt);
+
+      reward = calculateReward(sessionSec, Boolean(session.hadBonus), bridge.minRewardPlaySec);
+      if (reward.eligible) {
+        const reason = session.hadBonus
+          ? `추천 에너지 보너스 · ${reward.durationText}`
+          : `게임 도전 · ${reward.durationText}`;
+        bridge.addCoins?.(reward.rewardSeeds, reason);
+        bridge.addPetExp?.(reward.gainedExp, session.category);
+        bridge.savePet?.();
+        bridge.updateMission?.(session.category, session.id);
+        bridge.recordGardenSession?.({
+          game: session.id,
+          category: session.category,
+          seconds: reward.sessionSec
+        });
+      } else if (sessionSec > 0) {
+        bridge.showToast?.(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 ${Math.max(0, Math.floor(finiteNumber(bridge.minRewardPlaySec, DEFAULT_MIN_REWARD_SECONDS)))}초 이상 플레이하면 인정돼요.`);
+      }
+
+      return { handled: true, sessionSec, reward };
+    } catch (error) {
+      console.error('[KidscadeGameLauncher] close lifecycle failed:', error);
+      bridge.showToast?.('게임은 닫혔지만 기록 정리 중 문제가 생겼어요. 다음 실행은 정상적으로 시작할 수 있습니다.');
+      return { handled: true, sessionSec, reward, error };
+    } finally {
+      // Never leave a stale session behind. A stale session can make the next
+      // game close award the wrong game or keep the modal lifecycle half-open.
+      bridge.resetSession?.();
       bridge.syncBadges?.();
-      return { handled: true, sessionSec: 0, reward: null };
+      bridge.afterClose?.({ session, sessionSec, reward });
     }
-
-    const sessionSec = Math.max(0, Math.floor((closedAt - finiteNumber(session.startedAt)) / 1000));
-    bridge.checkpointPlayTime?.(closedAt);
-
-    const reward = calculateReward(sessionSec, Boolean(session.hadBonus), bridge.minRewardPlaySec);
-    if (reward.eligible) {
-      const reason = session.hadBonus
-        ? `추천 에너지 보너스 · ${reward.durationText}`
-        : `게임 도전 · ${reward.durationText}`;
-      bridge.addCoins?.(reward.rewardSeeds, reason);
-      bridge.addPetExp?.(reward.gainedExp, session.category);
-      bridge.savePet?.();
-      bridge.updateMission?.(session.category, session.id);
-      bridge.recordGardenSession?.({
-        game: session.id,
-        category: session.category,
-        seconds: reward.sessionSec
-      });
-    } else if (sessionSec > 0) {
-      bridge.showToast?.(`학습시간 ${sessionSec}초는 저장했어요. 씨앗과 미션은 ${Math.max(0, Math.floor(finiteNumber(bridge.minRewardPlaySec, DEFAULT_MIN_REWARD_SECONDS)))}초 이상 플레이하면 인정돼요.`);
-    }
-
-    bridge.resetSession?.();
-    bridge.syncBadges?.();
-    return { handled: true, sessionSec, reward };
   }
 
   return Object.freeze({
