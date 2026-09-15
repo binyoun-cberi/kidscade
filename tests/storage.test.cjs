@@ -23,6 +23,10 @@ test('storage registry keeps current save keys compatible', () => {
   assert.equal(storage.keys.recents, 'kidscade_recents');
   assert.equal(storage.keys.avatarInventory, 'kidscade_avatar_inventory');
   assert.equal(storage.keys.playtimeSeconds, 'kidscade_playtime_sec');
+  assert.equal(storage.keys.gardenState, 'kidscade_garden_v1');
+  assert.equal(storage.gameKeys.aquariumSave, 'kidscade_aquarium_v1');
+  assert.equal(storage.gameKeys.byeokrandoSave, 'kidscade_byeokrando_v1');
+  assert.equal(storage.prefixes.languageV3, 'kidscade_language_v3_');
 });
 
 test('storage initializes a schema version without erasing existing values', () => {
@@ -41,6 +45,15 @@ test('typed helpers round-trip JSON and booleans', () => {
 
   storage.setRaw('darkMode', 'true');
   assert.equal(storage.getBool('darkMode'), true);
+});
+
+test('registered physical keys include shared, game and dynamic namespaces', () => {
+  const storage = loadStorage();
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_coins'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_aquarium_v1'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_en'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_unknown_new_key'), false);
 });
 
 test('unknown unprefixed keys are rejected to prevent accidental key sprawl', () => {
