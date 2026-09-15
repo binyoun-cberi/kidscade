@@ -25,6 +25,7 @@ jobs:
             kidscade-storage.js \
             profile-history.js \
             account-client.js \
+            account-session-safety.js \
             teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
