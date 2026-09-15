@@ -53,7 +53,7 @@ test('management API is routed before the general account API', () => {
     '/api/teacher/overview', '/api/teacher/add-students', '/api/teacher/student-status',
     '/api/teacher/student-logout', '/api/teacher/class-logout', '/api/teacher/reset-progress',
     '/api/teacher/student', '/api/teacher/class-delete'
-  ]) assert.match(admin, new RegExp(route.replaceAll('/', '\\/')));
+  ]) assert.ok(admin.includes(route), `missing route ${route}`);
 });
 
 test('teacher UI exposes lifecycle management and guarded destructive actions', () => {
@@ -67,5 +67,6 @@ test('teacher UI exposes lifecycle management and guarded destructive actions', 
   assert.match(client, /reset-progress/);
   assert.match(client, /delete-student/);
   assert.match(client, /delete-class/);
-  assert.match(client, /prompt\(`\$\{loginId\}/);
+  assert.match(client, /confirmLoginId/);
+  assert.match(client, /confirmName/);
 });
