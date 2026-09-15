@@ -29,6 +29,8 @@ jobs:
             account-ui-runtime.js \
             seed-ranking.js \
             seed-balance-sync.js \
+            classroom-war-records.js \
+            classroom-war-records-observer.js \
             teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
@@ -37,6 +39,7 @@ jobs:
             worker/accounts.mjs \
             worker/teacher-admin.mjs \
             worker/seed-rankings.mjs \
+            worker/game-records.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -51,13 +54,14 @@ jobs:
             ui-visual-polish.js \
             seed-house-entry.js \
             scripts/secret-audit.cjs \
-            scripts/build-cloudflare.cjs; do
+            scripts/build-cloudflare.cjs \
+            scripts/inject-game-integrations.cjs; do
             node --check "$file"
           done
       - name: Reject tracked credentials and secret env files
         run: node scripts/secret-audit.cjs
       - name: Build Cloudflare static artifact
-        run: node scripts/build-cloudflare.cjs
+        run: npm run build
       - name: Run game cover and favicon tests
         run: node --test tests/game-cover-overrides.test.cjs
       - name: Run game card description tests
@@ -74,6 +78,8 @@ jobs:
         run: node --test tests/teacher-management.test.mjs
       - name: Run seed ranking tests
         run: node --test tests/seed-rankings.test.mjs
+      - name: Run game record tests
+        run: node --test tests/game-records.test.mjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
