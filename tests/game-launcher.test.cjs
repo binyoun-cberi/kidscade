@@ -9,12 +9,12 @@ function makeClassList(values = []) {
   };
 }
 
-function makeCard({ id = 'demo', category = 'math', title = '데모 게임', href = 'demo.html', disabled = false } = {}) {
+function makeCard({ id = 'demo', category = 'math', title = '데모 게임', href = 'demo.html', disabled = false, ariaDisabled = false } = {}) {
   return {
     dataset: { id, category },
     classList: makeClassList(disabled ? ['disabled'] : []),
     getAttribute(name) {
-      return ({ 'data-id': id, 'data-category': category, href })[name] || '';
+      return ({ 'data-id': id, 'data-category': category, href, 'aria-disabled': ariaDisabled ? 'true' : '' })[name] || '';
     },
     querySelector(selector) {
       if (selector === '.game-title') return { textContent: title };
@@ -85,6 +85,25 @@ test('open creates a catalog-driven session, remembers the game and opens the if
   assert.deepEqual(sounds, ['open']);
 });
 
+test('nested favorite or certificate controls never launch the game card', () => {
+  const card = makeCard();
+  let consumed = false;
+  let prevented = false;
+  const result = launcher.open({
+    target: {
+      closest(selector) { return selector.includes('.fav-star') ? { className: 'fav-star' } : null; }
+    },
+    preventDefault() { prevented = true; }
+  }, card, {
+    consumePlayTicket: () => { consumed = true; return true; }
+  });
+
+  assert.equal(result.handled, false);
+  assert.equal(result.reason, 'card-action');
+  assert.equal(prevented, false);
+  assert.equal(consumed, false);
+});
+
 test('open blocks disabled games without consuming energy', () => {
   const card = makeCard({ disabled: true });
   let consumed = false;
@@ -99,6 +118,24 @@ test('open blocks disabled games without consuming energy', () => {
   assert.equal(result.reason, 'disabled');
   assert.equal(consumed, false);
   assert.match(alertText, /준비 중/);
+});
+
+test('open blocks aria-disabled cards and missing hrefs before consuming energy', () => {
+  let consumed = 0;
+  const ariaCard = makeCard({ ariaDisabled: true });
+  const disabledResult = launcher.open({ target: { classList: makeClassList() }, preventDefault() {} }, ariaCard, {
+    getCard: () => ariaCard,
+    consumePlayTicket: () => { consumed++; return true; }
+  });
+  assert.equal(disabledResult.reason, 'disabled');
+
+  const missingHref = makeCard({ href: '' });
+  const missingResult = launcher.open({ target: { classList: makeClassList() }, preventDefault() {} }, missingHref, {
+    getCard: () => missingHref,
+    consumePlayTicket: () => { consumed++; return true; }
+  });
+  assert.equal(missingResult.reason, 'missing-href');
+  assert.equal(consumed, 0);
 });
 
 test('close records reward, pet experience, mission and garden session in one lifecycle', () => {
@@ -149,4 +186,24 @@ test('short close saves time but does not grant reward', () => {
   assert.equal(calls.includes('coins'), false);
   assert.equal(calls.includes('exp'), false);
   assert.ok(calls.some(value => typeof value === 'string' && value.includes('20초')));
+});
+
+test('close always clears stale session state even when reward persistence throws', () => {
+  const calls = [];
+  const result = launcher.close({
+    now: () => 61000,
+    minRewardPlaySec: 30,
+    getSession: () => ({ id: 'demo', category: 'math', startedAt: 1000, hadBonus: false }),
+    closeModal: () => calls.push('modal-close'),
+    checkpointPlayTime: () => calls.push('checkpoint'),
+    addCoins: () => { throw new Error('storage failed'); },
+    showToast: () => calls.push('toast'),
+    resetSession: () => calls.push('reset'),
+    syncBadges: () => calls.push('badges'),
+    afterClose: () => calls.push('after-close')
+  });
+
+  assert.equal(result.handled, true);
+  assert.ok(result.error instanceof Error);
+  assert.deepEqual(calls.slice(-3), ['reset', 'badges', 'after-close']);
 });
