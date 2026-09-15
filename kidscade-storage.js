@@ -2,6 +2,9 @@
   'use strict';
 
   const SAVE_SCHEMA_VERSION = 1;
+
+  // Site-wide and shared subsystem state. Physical key names stay unchanged so
+  // existing students keep their current local saves during the migration.
   const KEYS = Object.freeze({
     saveVersion: 'kidscade_save_version',
     seeds: 'kidscade_coins',
@@ -22,7 +25,27 @@
     legacyPlaytimeMinutes: 'kidscade_playtime',
     avatarInventory: 'kidscade_avatar_inventory',
     avatarEquipped: 'kidscade_avatar_equipped',
-    petCanvas: 'kidscade_sook_canvas_pet'
+    petCanvas: 'kidscade_sook_canvas_pet',
+    gardenState: 'kidscade_garden_v1',
+    languageSound: 'kidscade_language_sound',
+    languageVolume: 'kidscade_language_volume',
+    lifeLegacy: 'kidscade_life_v1',
+    lifeWorldLegacy: 'kidscade_life_world',
+    lifeWorldV1: 'kidscade_life_world_v1',
+    worldV2: 'kidscade_world_v2'
+  });
+
+  // Existing namespaced saves owned by one game. They are catalogued separately
+  // from shared state so a future D1 sync can choose whether to upload them.
+  const GAME_KEYS = Object.freeze({
+    aquariumSave: 'kidscade_aquarium_v1',
+    byeokrandoSave: 'kidscade_byeokrando_v1',
+    musicStudioSave: 'kidscade_music_studio_v2'
+  });
+
+  // Dynamic namespaces are prefixes, not concrete localStorage records.
+  const PREFIXES = Object.freeze({
+    languageV3: 'kidscade_language_v3_'
   });
 
   function getStorage() {
@@ -39,9 +62,16 @@
 
   function resolveKey(nameOrKey) {
     if (Object.prototype.hasOwnProperty.call(KEYS, nameOrKey)) return KEYS[nameOrKey];
+    if (Object.prototype.hasOwnProperty.call(GAME_KEYS, nameOrKey)) return GAME_KEYS[nameOrKey];
     const value = String(nameOrKey || '');
     if (value.startsWith('kidscade_')) return value;
     throw new Error(`Unknown Kidscade storage key: ${value}`);
+  }
+
+  function isRegisteredPhysicalKey(key) {
+    const value = String(key || '');
+    if (Object.values(KEYS).includes(value) || Object.values(GAME_KEYS).includes(value)) return true;
+    return Object.values(PREFIXES).some(prefix => value.startsWith(prefix));
   }
 
   function getRaw(nameOrKey, fallback = null) {
@@ -112,7 +142,10 @@
   const api = Object.freeze({
     schemaVersion: SAVE_SCHEMA_VERSION,
     keys: KEYS,
+    gameKeys: GAME_KEYS,
+    prefixes: PREFIXES,
     resolveKey,
+    isRegisteredPhysicalKey,
     getRaw,
     setRaw,
     remove,
