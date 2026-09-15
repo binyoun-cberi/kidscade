@@ -24,6 +24,7 @@ jobs:
           for file in \
             kidscade-storage.js \
             main-bootstrap.js \
+            stats-rankings.js \
             server-stats.js \
             worker/index.mjs \
             game-registry.js \
@@ -46,6 +47,8 @@ jobs:
         run: node scripts/build-cloudflare.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
+      - name: Run popular game ranking tests
+        run: node --test tests/stats-rankings.test.cjs
       - name: Run storage compatibility tests
         run: node --test tests/storage.test.cjs
       - name: Enforce localStorage namespace policy
