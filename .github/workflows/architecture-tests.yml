@@ -32,6 +32,7 @@ jobs:
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
+            rhythm-dash-v11.js \
             teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
@@ -82,6 +83,8 @@ jobs:
         run: node --test tests/seed-rankings.test.mjs
       - name: Run game record tests
         run: node --test tests/game-records.test.mjs
+      - name: Run Rhythm Dash v11 tests
+        run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
