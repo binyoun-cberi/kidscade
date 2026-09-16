@@ -22,7 +22,7 @@
     'box-shadow:0 12px 28px rgba(59,130,246,.28)'
   ].join(';');
   button.addEventListener('click', () => {
-    window.location.href = '/인내의 탑 대전.html';
+    window.location.href = '/games/patience-tower-duel/';
   });
 
   const note = document.createElement('div');
