@@ -1,0 +1,29 @@
+{
+  "math_timing_lcd": {
+    "ages": ["low", "high"]
+  },
+  "job_nail_artist": {
+    "category": "job"
+  },
+  "job_police_car": {
+    "category": "job"
+  },
+  "job_takoyaki_simulator": {
+    "category": "job"
+  },
+  "job_scuba_diver": {
+    "category": "job"
+  },
+  "job_steak_master": {
+    "category": "job"
+  },
+  "job_bogle_bunsik": {
+    "category": "job"
+  },
+  "job_maratang_simulator": {
+    "category": "job"
+  },
+  "burger_master": {
+    "category": "job"
+  }
+}
