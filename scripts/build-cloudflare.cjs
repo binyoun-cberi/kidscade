@@ -9,6 +9,7 @@ const OUT = path.join(ROOT, 'dist');
 const COVER_OVERRIDES_PATH = path.join(ROOT, 'data', 'game-cover-overrides.json');
 const DESCRIPTION_OVERRIDES_PATH = path.join(ROOT, 'data', 'game-description-overrides.json');
 const FAVICON_SOURCE = path.join(ROOT, 'assets', 'gate-image', 'favicon.png');
+const REMOVED_GAME_IDS = new Set(['math_remembus']);
 
 const EXCLUDED_TOP = new Set(['.github', 'docs', 'scripts', 'tests', 'worker', 'migrations', 'node_modules', 'dist']);
 const EXCLUDED_FILES = new Set([
@@ -89,6 +90,13 @@ function shortHash(filePath) {
 function gameMap(catalog) {
   const games = Array.isArray(catalog.games) ? catalog.games : [];
   return new Map(games.map(game => [String(game.id || ''), game]));
+}
+
+function removeRetiredGames(catalog) {
+  if (!Array.isArray(catalog?.games)) return 0;
+  const before = catalog.games.length;
+  catalog.games = catalog.games.filter(game => !REMOVED_GAME_IDS.has(String(game?.id || '')));
+  return before - catalog.games.length;
 }
 
 function applyDescriptionOverrides(catalog) {
@@ -218,6 +226,7 @@ async function main() {
 
   const catalogPath = path.join(OUT, 'data/games.json');
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  const removedGameCount = removeRetiredGames(catalog);
   const descriptionOverrideCount = applyDescriptionOverrides(catalog);
   const coverOverrideCount = applyCoverOverrides(catalog);
   const coverStats = await optimizeCatalogCovers(catalog);
@@ -247,6 +256,7 @@ async function main() {
 
   console.log('Kidscade Cloudflare build complete');
   console.log(`- published tracked files: ${sourceFiles.length}`);
+  console.log(`- retired catalog games removed: ${removedGameCount}`);
   console.log(`- enabled game entry files verified: ${enabledGames.length}`);
   console.log(`- description overrides applied: ${descriptionOverrideCount}`);
   console.log(`- cover overrides applied: ${coverOverrideCount}`);

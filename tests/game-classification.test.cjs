@@ -14,6 +14,7 @@ const deployedCatalog = fs.existsSync(distCatalogPath)
   : { games: [] };
 const deployedGames = Array.isArray(deployedCatalog.games) ? deployedCatalog.games : [];
 const deployedById = new Map(deployedGames.map(game => [game.id, game]));
+const retiredGameIds = new Set(['math_remembus']);
 
 const reviewedAges = {
   math_timing_lcd: 'low',
@@ -88,7 +89,9 @@ test('legacy id prefixes do not define the current age classification', () => {
 });
 
 test('deployed catalog uses only supported age and category values', () => {
-  assert.equal(deployedGames.length, games.length, 'deployed catalog should keep every source game');
+  const activeSourceGames = games.filter(game => !retiredGameIds.has(game.id));
+  assert.equal(deployedGames.length, activeSourceGames.length, 'deployed catalog should keep every active source game');
+  retiredGameIds.forEach(id => assert.equal(deployedById.has(id), false, `retired game must not be deployed: ${id}`));
   for (const game of deployedGames) {
     assert.ok(allowedAges.has(game.age), `unsupported age: ${game.id} -> ${game.age}`);
     assert.ok(allowedCategories.has(game.category), `unsupported category: ${game.id} -> ${game.category}`);
