@@ -9,6 +9,7 @@
       category: 'math',
       age: 'high',
       icon: '⚫',
+      cover: 'assets/gate-image/오목 아레나.png',
       description: '친구와 같은 화면에서 1:1 대국하거나 3단계 AI와 겨루는 오목 게임! 강한 착수 타격감과 승리선·파티클·효과음으로 다섯 돌을 먼저 연결해 보세요.'
     }
   ];
