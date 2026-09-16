@@ -10,14 +10,29 @@
     return Array.isArray(catalog.games) ? catalog.games : [];
   }
 
+  function normalizeAges(game) {
+    const primary = String(game?.age || 'all');
+    const raw = Array.isArray(game?.ages) ? game.ages : [primary];
+    const ages = [...new Set(raw.map(value => String(value || '').trim()).filter(Boolean))];
+    if (!ages.includes(primary)) ages.unshift(primary);
+    return ages.length ? ages : ['all'];
+  }
+
+  function supportsAge(game, age) {
+    if (!age || age === 'all') return true;
+    return Array.isArray(game?.ages) ? game.ages.includes(age) : game?.age === age;
+  }
+
   function normalizeCatalogGame(game) {
     if (!game?.id) return null;
+    const ages = normalizeAges(game);
     return {
       id: String(game.id),
       title: cleanText(game.title),
       href: String(game.href || ''),
       category: String(game.category || 'all'),
-      age: String(game.age || 'all'),
+      age: String(game.age || ages[0] || 'all'),
+      ages,
       icon: String(game.icon || ''),
       cover: String(game.cover || ''),
       description: cleanText(game.description),
@@ -51,17 +66,17 @@
   }
 
   function all() {
-    return Array.from(registry.values()).map(game => ({ ...game }));
+    return Array.from(registry.values()).map(game => ({ ...game, ages: [...game.ages] }));
   }
 
   function get(id) {
     const game = registry.get(String(id || ''));
-    return game ? { ...game } : null;
+    return game ? { ...game, ages: [...game.ages] } : null;
   }
 
   function query({ age, category, playableOnly = false } = {}) {
     return all().filter(game => {
-      if (age && age !== 'all' && game.age !== age) return false;
+      if (!supportsAge(game, age)) return false;
       if (category && category !== 'all' && game.category !== category) return false;
       if (playableOnly && game.disabled) return false;
       return true;
@@ -80,6 +95,7 @@
     get,
     query,
     getCard,
+    supportsAge,
     refresh: rebuild
   });
 
