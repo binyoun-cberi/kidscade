@@ -26,6 +26,7 @@
     return Array.from(document.querySelectorAll('#game-list > .game-card')).map(card => ({
       id: card.dataset.id || '',
       age: card.dataset.age || 'all',
+      ages: (card.dataset.ages || card.dataset.age || 'all').split(',').map(value => value.trim()).filter(Boolean),
       category: card.dataset.category || 'all',
       title: card.querySelector('.game-title')?.textContent || '',
       description: card.querySelector('.game-desc')?.textContent || ''
@@ -35,6 +36,13 @@
   function getCard(id) {
     return window.KidscadeGames?.getCard?.(id) ||
       document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(String(id || ''))}"]`);
+  }
+
+  function matchesAge(game, age) {
+    if (!age || age === 'all') return true;
+    if (window.KidscadeGames?.supportsAge) return window.KidscadeGames.supportsAge(game, age);
+    if (Array.isArray(game?.ages)) return game.ages.includes(age);
+    return game?.age === age;
   }
 
   function apply(input = {}) {
@@ -55,7 +63,7 @@
       const card = getCard(game.id);
       if (!card) return;
 
-      const matchAge = !state.age || game.age === state.age;
+      const matchAge = matchesAge(game, state.age);
       const matchCategory = state.category === 'all' || game.category === state.category;
       const categoryLabel = state.categoryNames?.[game.category] || DEFAULT_CATEGORY_NAMES[game.category] || '';
       const searchText = clean(`${game.title || ''} ${game.description || ''} ${categoryLabel}`);
@@ -86,7 +94,7 @@
     return apply(getStateFromDom());
   }
 
-  window.KidscadeFilter = { apply, refresh, state: getStateFromDom };
+  window.KidscadeFilter = { apply, refresh, state: getStateFromDom, matchesAge };
 
   function boot() {
     refresh();
