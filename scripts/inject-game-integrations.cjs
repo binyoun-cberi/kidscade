@@ -32,6 +32,11 @@ const rhythmDashChanged = injectScripts('리듬 대시.html', [
   '/rhythm-dash-v11.js?v=20260916-1'
 ]);
 
+const patienceTowerChanged = injectScripts('인내의 탑.html', [
+  '/patience-tower-duel-entry.js?v=20260916-1'
+]);
+
 console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Rhythm Dash v11 ${rhythmDashChanged ? 'injected' : 'already present'}.`);
+console.log(`[game-integrations] Patience Tower duel entry ${patienceTowerChanged ? 'injected' : 'already present'}.`);
