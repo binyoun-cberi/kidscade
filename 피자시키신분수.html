@@ -3,593 +3,222 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>외계인 피자 가게 DX - UI 정리본</title>
+<title>외계인 피자 가게 DX 2.0</title>
 <style>
-
 :root{
-  --bg:#0b1020;
-  --bg2:#111833;
-  --panel:#18213f;
-  --panel2:#202b4f;
-  --card:#243058;
-  --ink:#f8fafc;
-  --muted:#aeb8df;
-  --line:rgba(255,255,255,.13);
-  --line2:rgba(255,255,255,.2);
-  --yellow:#ffd166;
-  --green:#3ee28c;
-  --red:#ff6575;
-  --blue:#66aaff;
-  --purple:#b884ff;
-  --orange:#ffb454;
-  --shadow:0 16px 34px rgba(0,0,0,.28);
+  --bg:#07101f; --panel:#121b34; --panel2:#182443; --card:#202e52; --line:rgba(255,255,255,.12);
+  --ink:#f8fafc; --muted:#aeb8d6; --yellow:#ffd166; --green:#46e58f; --red:#ff6575; --blue:#67a8ff;
+  --purple:#b987ff; --orange:#ff9f43; --shadow:0 18px 44px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-body::before{content:"";position:fixed;inset:0;z-index:-2;background:
-  radial-gradient(circle at 15% 15%,rgba(102,170,255,.2),transparent 28%),
-  radial-gradient(circle at 80% 76%,rgba(184,132,255,.18),transparent 30%),
-  linear-gradient(180deg,#080b18 0%,#111833 52%,#0b1020 100%)}
-body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.42;pointer-events:none;background-image:
-  radial-gradient(2px 2px at 20px 30px,#fff,transparent),
-  radial-gradient(2px 2px at 95px 80px,#93c5fd,transparent),
-  radial-gradient(1px 1px at 150px 150px,#fde68a,transparent),
-  radial-gradient(1px 1px at 180px 45px,#fff,transparent);
-  background-size:220px 220px;animation:stars 6s ease-in-out infinite alternate}
-@keyframes stars{from{opacity:.3;transform:translateY(0)}to{opacity:.65;transform:translateY(-5px)}}
-button,select{font:inherit}button{border:0;cursor:pointer;color:inherit}.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
-.glass{background:rgba(18,26,52,.9);backdrop-filter:blur(12px);border:1px solid var(--line);box-shadow:var(--shadow)}
-.btn{border-radius:14px;padding:13px 18px;font-weight:900;box-shadow:0 7px 0 rgba(0,0,0,.22),0 13px 22px rgba(0,0,0,.22);transition:.12s transform,.12s filter}.btn:hover{filter:brightness(1.07)}.btn:active{transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.25)}.btn.big{font-size:22px;padding:18px 28px}.btn.yellow{background:linear-gradient(180deg,#ffd166,#f59e0b);color:#111827}.btn.purple{background:linear-gradient(180deg,#b884ff,#7c3aed)}.btn.green{background:linear-gradient(180deg,#4ade80,#16a34a);color:#06130b}.btn.red{background:linear-gradient(180deg,#fb7185,#dc2626)}.btn.blue{background:linear-gradient(180deg,#60a5fa,#2563eb)}.btn.gray{background:#374151}.btn.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line);box-shadow:none}
-.menu{align-items:center;justify-content:center;padding:24px}.menu-card{width:min(920px,94vw);border-radius:28px;padding:34px;text-align:center}.title{font-size:clamp(36px,6vw,68px);line-height:1.05;margin:0 0 12px;text-shadow:0 0 18px rgba(255,209,102,.38)}.subtitle{margin:0 auto 24px;color:#d8def5;font-size:clamp(16px,2vw,20px);line-height:1.65;max-width:740px}.menu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px auto 28px;max-width:720px}.statbox{background:rgba(255,255,255,.065);border:1px solid var(--line);border-radius:18px;padding:15px}.statbox small{display:block;color:var(--muted);font-weight:900}.statbox b{display:block;font-size:28px;margin-top:4px;color:var(--yellow)}.row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}.note{color:var(--muted);font-size:14px;margin-top:16px}
-#screen-game{flex-direction:column;min-width:0}.topbar{height:68px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:10px 16px;background:rgba(8,11,24,.88);border-bottom:1px solid var(--line);z-index:5}.brand{display:flex;align-items:center;gap:10px;font-weight:1000;white-space:nowrap}.brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#ffd166,#f97316);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 18px rgba(245,158,11,.25)}.brand-title{font-size:19px}.hud-strip{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;flex-wrap:wrap}.chip{background:rgba(255,255,255,.075);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-weight:900;white-space:nowrap}.chip b{color:var(--yellow)}.top-actions{display:flex;align-items:center;gap:8px}.time-wrap{width:150px;max-width:22vw}.time-text{font-weight:1000;text-align:center;margin-bottom:4px;color:#fff}.timebar{height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}.timefill{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .25s linear}.mini{border-radius:12px;padding:9px 11px;font-size:14px;font-weight:900;background:rgba(255,255,255,.08);border:1px solid var(--line);white-space:nowrap}.mini:hover{filter:brightness(1.16)}
-.game-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(270px,310px) minmax(430px,1fr) minmax(280px,320px);grid-template-rows:1fr;gap:12px;padding:12px;max-width:1500px;width:100%;margin:0 auto}.panel{border-radius:22px;background:rgba(24,33,63,.94);border:1px solid var(--line);box-shadow:var(--shadow);min-height:0;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}.panel-title{font-size:18px;font-weight:1000;color:var(--yellow);letter-spacing:-.02em}.panel-body{padding:14px;min-height:0}.flow-badge{font-size:12px;color:#111827;background:var(--yellow);border-radius:999px;padding:4px 8px;font-weight:1000}.customer{display:flex;flex-direction:column}.customer .panel-body{display:flex;flex-direction:column;gap:12px;overflow:auto}.alien-box{text-align:center;background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:20px;padding:12px}.alien{font-size:66px;line-height:1;filter:drop-shadow(0 10px 10px rgba(0,0,0,.34));animation:float 2.4s ease-in-out infinite}@keyframes float{50%{transform:translateY(-8px)}}.bubble{position:relative;background:white;color:#111827;border-radius:16px;padding:13px;margin-top:11px;font-size:19px;line-height:1.35;font-weight:1000;word-break:keep-all}.bubble::before{content:"";position:absolute;top:-9px;left:50%;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid white}.order-list{display:flex;flex-direction:column;gap:8px}.order-line{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:10px}.order-line .need{font-weight:1000;color:white;text-align:right}.tag{display:inline-block;margin-left:4px;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid var(--line);color:#dbeafe;font-size:12px}.helper{font-size:14px;line-height:1.55;color:#d8ddfa;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:15px;padding:11px}.helper b{color:var(--yellow)}
-.kitchen{display:grid;grid-template-rows:auto 1fr auto}.kitchen-top{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))}.cut-panel{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.cut-label{font-size:14px;color:var(--muted);font-weight:1000}.cut-panel button.cut-btn{width:36px;height:36px;border-radius:12px;background:#374151;font-size:22px;font-weight:1000}.cut-num{min-width:42px;text-align:center;color:var(--yellow);font-size:28px;font-weight:1000}.tool-buttons{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.pizza-table{min-height:0;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.13));padding:16px;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;overflow:auto}.pizza-card{position:relative;text-align:center}.pizza-label{font-size:13px;color:#dbeafe;margin-top:5px;font-weight:900}.pizza-svg{width:200px;height:200px;filter:drop-shadow(0 16px 16px rgba(0,0,0,.32));transition:.15s transform}.pizza-svg:hover{transform:scale(1.025)}.slice{cursor:pointer;stroke:rgba(255,255,255,.9);stroke-width:2;transition:.12s filter,.12s stroke-width}.slice:hover{filter:brightness(1.18);stroke-width:4}.serve-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 14px;border-top:1px solid var(--line);background:rgba(8,11,24,.42)}.serve-row .btn{box-shadow:none}.serve-row .btn.green{font-size:22px}.side{display:grid;grid-template-rows:minmax(0,1.1fr) minmax(190px,.9fr)}.side-section{min-height:0;display:flex;flex-direction:column}.side-section+.side-section{border-top:1px solid var(--line)}.inventory{padding:14px;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}.topping{position:relative;min-height:88px;border-radius:16px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.055);padding:9px;text-align:center;transition:.12s transform,.12s border-color}.topping:hover{transform:translateY(-2px)}.topping.selected{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,209,102,.18);background:rgba(255,209,102,.12)}.topping.disabled{opacity:.44;filter:grayscale(.55)}.topping .swatch{width:36px;height:36px;border-radius:999px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:21px;border:2px solid rgba(255,255,255,.35)}.topping .name{font-size:13px;font-weight:900;color:#f8fafc}.stock{position:absolute;top:-8px;right:-8px;background:var(--red);color:white;border-radius:999px;min-width:28px;padding:3px 7px;font-size:12px;font-weight:1000;border:2px solid #1b2140}.requested{position:absolute;top:-8px;left:-8px;background:var(--yellow);color:#111827;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:1000;border:2px solid #1b2140}.progress-list{padding:14px;display:flex;flex-direction:column;gap:9px;overflow:auto}.progress-row{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:10px}.progress-head{display:flex;justify-content:space-between;gap:8px;font-weight:900;font-size:14px}.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:7px}.bar span{display:block;height:100%;width:0;background:var(--green);transition:.2s}.bar.over span{background:var(--red)}.bar.missing span{background:var(--yellow)}
-.shop{align-items:flex-start;justify-content:center;padding:24px;overflow:auto}.shop-inner{width:min(980px,96vw);margin:0 auto}.shop-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.shop-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(27,33,64,.92);border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow)}.shop-icon{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:31px;background:rgba(255,255,255,.08);border:1px solid var(--line)}.shop-card h3{margin:0 0 4px;font-size:20px}.shop-card p{margin:0;color:var(--muted);font-size:14px}.locked{opacity:.45;filter:grayscale(.6)}
-.fraction{display:inline-flex;flex-direction:column;vertical-align:middle;align-items:center;margin:0 3px;color:var(--yellow);font-weight:1000;line-height:1}.fraction span:first-child{border-bottom:2px solid currentColor;padding:0 3px}.fraction span:last-child{padding:0 3px}.toast{position:fixed;left:50%;top:82px;transform:translate(-50%,-15px) scale(.96);opacity:0;pointer-events:none;z-index:250;max-width:min(780px,92vw);background:#111827;color:white;border:1px solid var(--line2);border-radius:999px;padding:13px 22px;font-weight:1000;text-align:center;box-shadow:var(--shadow);transition:.22s}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.success{background:#065f46}.toast.error{background:#991b1b}.toast.info{background:#1d4ed8}.shake{animation:shake .42s ease-in-out}.happy{animation:happy .55s ease-out}@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}@keyframes happy{50%{transform:translateY(-10px) scale(1.03)}}.modal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:200;padding:20px}.modal.active{display:flex}.modal-card{width:min(460px,92vw);background:var(--panel);border:2px solid var(--yellow);border-radius:24px;padding:24px;text-align:center;box-shadow:var(--shadow);animation:pop .18s ease-out}.modal-card h2{margin:0 0 10px;font-size:34px;color:var(--yellow)}@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}.summary{background:rgba(0,0,0,.24);border:1px solid var(--line);border-radius:18px;padding:14px;margin:18px 0}.summary p{display:flex;justify-content:space-between;margin:9px 0;font-size:18px}
-@media(max-width:1180px){body{overflow:auto}.screen{min-height:100dvh;position:absolute}.topbar{height:auto;grid-template-columns:1fr;align-items:start}.brand{justify-content:center}.hud-strip{justify-content:center}.top-actions{justify-content:center;flex-wrap:wrap}.time-wrap{width:220px;max-width:100%}.game-layout{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow:auto}.panel{overflow:visible}.customer .panel-body{overflow:visible}.side{grid-template-rows:auto auto}.pizza-table{min-height:330px}.inventory{grid-template-columns:repeat(4,1fr)}.shop-grid{grid-template-columns:1fr}}
-@media(max-width:700px){.menu-card{padding:24px 18px}.menu-stats{grid-template-columns:1fr}.title{font-size:40px}.subtitle{font-size:16px}.game-layout{padding:9px;gap:9px}.panel{border-radius:18px}.panel-head,.kitchen-top,.serve-row{padding:11px}.kitchen-top{grid-template-columns:1fr}.tool-buttons{justify-content:stretch}.tool-buttons .mini{flex:1 1 42%}.serve-row{grid-template-columns:1fr}.inventory{grid-template-columns:repeat(2,1fr)}.pizza-svg{width:162px;height:162px}.bubble{font-size:17px}.order-line{grid-template-columns:1fr}.order-line .need{text-align:left}.shop-head{flex-direction:column;align-items:flex-start}.btn.big{width:100%}.top-actions .mini{flex:1}.time-wrap{width:100%}}
+body{background:
+  radial-gradient(circle at 16% 12%,rgba(103,168,255,.14),transparent 24%),
+  radial-gradient(circle at 82% 78%,rgba(185,135,255,.13),transparent 28%),
+  linear-gradient(180deg,#050a15,#0b1325 55%,#07101f)}
+button{font:inherit;border:0;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
+.btn{border-radius:14px;padding:12px 17px;font-weight:1000;box-shadow:0 6px 0 rgba(0,0,0,.22);transition:.12s transform,.12s filter}.btn:hover{filter:brightness(1.07)}.btn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.btn.yellow{background:linear-gradient(180deg,#ffd86d,#f59e0b);color:#111827}.btn.green{background:linear-gradient(180deg,#4ade80,#16a34a);color:#07140b}.btn.red{background:linear-gradient(180deg,#fb7185,#dc2626)}.btn.blue{background:linear-gradient(180deg,#60a5fa,#2563eb)}.btn.purple{background:linear-gradient(180deg,#c084fc,#7c3aed)}.btn.gray{background:#35415b}.btn.ghost{background:rgba(255,255,255,.07);border:1px solid var(--line);box-shadow:none}
+.glass{background:rgba(16,24,47,.9);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+.menu{align-items:center;justify-content:center;padding:24px}.menu-card{width:min(880px,94vw);border-radius:28px;padding:34px;text-align:center}.logo{font-size:clamp(42px,6vw,76px);margin:0;text-shadow:0 0 22px rgba(255,209,102,.33)}.subtitle{color:#d5dcf6;font-size:18px;line-height:1.65;margin:10px auto 26px;max-width:700px}.menu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:700px;margin:0 auto 25px}.stat{padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.055)}.stat small{display:block;color:var(--muted);font-weight:900}.stat b{display:block;color:var(--yellow);font-size:28px;margin-top:5px}.row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}.note{font-size:13px;color:var(--muted);margin-top:16px;line-height:1.55}
 
+#screen-game{flex-direction:column;min-width:0}.topbar{height:64px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);background:rgba(5,10,21,.9);z-index:20}.brand{display:flex;align-items:center;gap:10px;font-weight:1000;white-space:nowrap}.brand-mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#ffd166,#f97316);display:grid;place-items:center;font-size:24px;box-shadow:0 6px 18px rgba(245,158,11,.22)}.brand-title{font-size:18px}.hud{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}.chip{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:900;font-size:14px;white-space:nowrap}.chip b{color:var(--yellow)}.top-actions{display:flex;align-items:center;gap:7px}.mini{padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:13px;font-weight:900}.timebox{width:142px}.time{font-weight:1000;text-align:center;margin-bottom:4px}.timebar{height:8px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.11)}.timefill{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .2s linear}
+
+.game-shell{flex:1;min-height:0;display:grid;grid-template-columns:260px minmax(520px,1fr) 245px;gap:10px;padding:10px;max-width:1600px;width:100%;margin:0 auto}.panel{min-height:0;border-radius:22px;background:rgba(18,27,52,.94);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))}.panel-title{font-weight:1000;color:var(--yellow);font-size:17px}.badge{font-size:11px;font-weight:1000;color:#111827;background:var(--yellow);border-radius:999px;padding:4px 8px}
+
+.order-panel{display:flex;flex-direction:column}.order-body{padding:12px;display:flex;flex-direction:column;gap:10px;overflow:auto}.alien-card{border:1px solid var(--line);border-radius:18px;padding:11px;background:rgba(255,255,255,.05);text-align:center}.alien-face{font-size:64px;line-height:1;animation:float 2.2s ease-in-out infinite;filter:drop-shadow(0 8px 10px rgba(0,0,0,.35))}@keyframes float{50%{transform:translateY(-6px)}}.alien-name{font-weight:1000;color:#dbeafe;margin-top:5px}.bubble{margin-top:8px;background:white;color:#111827;border-radius:15px;padding:11px 10px;font-weight:1000;line-height:1.35;position:relative}.bubble::before{content:"";position:absolute;top:-8px;left:50%;margin-left:-8px;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #fff}.order-grid{display:flex;flex-direction:column;gap:7px}.order-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.05)}.order-emoji{font-size:20px}.order-name{font-weight:1000;font-size:13px}.fraction{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1;color:var(--yellow);font-weight:1000;min-width:28px}.fraction span:first-child{border-bottom:2px solid currentColor;padding:0 4px 2px}.fraction span:last-child{padding:2px 4px 0}.fraction-visual{width:58px;height:58px;border-radius:50%;position:relative;background:conic-gradient(var(--fill) 0 var(--p),rgba(255,255,255,.13) var(--p) 360deg);border:4px solid #f6c56b;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}.tip-card{font-size:13px;line-height:1.45;color:#dce4ff;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:13px;padding:10px}.tip-card b{color:var(--yellow)}
+
+.kitchen{display:grid;grid-template-rows:auto 1fr auto;position:relative}.kitchen-top{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.toolset{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.tool-pill{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:1000;font-size:13px}.tool-pill.active{background:rgba(255,209,102,.14);border-color:rgba(255,209,102,.7);color:var(--yellow)}.active-pizza-label{font-size:13px;color:#d8e3ff;font-weight:900}.board{position:relative;min-height:0;overflow:auto;padding:18px;display:flex;align-items:center;justify-content:center;background:
+  radial-gradient(circle at 50% 45%,rgba(255,209,102,.06),transparent 26%),
+  linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.12))}.pizza-stage{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap;min-height:100%}.pizza-wrap{position:relative;width:clamp(280px,31vw,390px);height:clamp(280px,31vw,390px);display:grid;place-items:center}.pizza-svg{width:100%;height:100%;filter:drop-shadow(0 20px 20px rgba(0,0,0,.32));touch-action:none}.slice-hit{cursor:pointer;transition:.1s filter}.slice-hit:hover{filter:brightness(1.07)}.slice-outline{pointer-events:none;stroke:rgba(255,255,255,.9);stroke-width:2}.pizza-selected-ring{position:absolute;inset:4%;border:3px solid transparent;border-radius:50%;pointer-events:none}.pizza-wrap.active .pizza-selected-ring{border-color:var(--yellow);box-shadow:0 0 0 6px rgba(255,209,102,.1),0 0 28px rgba(255,209,102,.16)}.pizza-caption{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:1000;background:rgba(6,12,26,.82);border:1px solid var(--line);padding:6px 10px;border-radius:999px;white-space:nowrap}.cut-guide{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;transition:.15s opacity}.cut-mode .cut-guide{opacity:1}.cut-guide::before{content:"중앙에서 바깥으로 드래그 → 등분 선택";position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:1000;color:#fff;background:rgba(7,16,31,.78);padding:6px 9px;border-radius:999px;white-space:nowrap}.cut-ray{position:absolute;left:50%;top:50%;width:47%;height:3px;transform-origin:left center;background:linear-gradient(90deg,#fff,var(--yellow));border-radius:999px;box-shadow:0 0 12px rgba(255,209,102,.75);opacity:0;pointer-events:none}.cut-ray.show{opacity:1}.den-label{position:absolute;font-size:11px;font-weight:1000;color:#101827;background:var(--yellow);padding:4px 7px;border-radius:999px;pointer-events:none;transform:translate(-50%,-50%);opacity:0}.cut-mode .den-label{opacity:.92}.drag-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:12px;color:#dbeafe;font-weight:900;background:rgba(7,16,31,.72);border:1px solid var(--line);border-radius:999px;padding:6px 10px;pointer-events:none}.topping-dot{pointer-events:none;font-size:18px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}.slice-base{fill:#f7c865}.slice-fill{opacity:.38}
+
+.progress-strip{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:90%;z-index:4;pointer-events:none}.progress-chip{padding:7px 10px;border-radius:999px;background:rgba(6,12,26,.82);border:1px solid var(--line);font-size:12px;font-weight:1000;box-shadow:0 8px 18px rgba(0,0,0,.16)}.progress-chip.ok{border-color:rgba(70,229,143,.7);color:#9ff5c2}.progress-chip.over{border-color:rgba(255,101,117,.65);color:#ffb4bd}.progress-chip.missing{border-color:rgba(255,209,102,.65);color:#ffe09b}
+
+.bottom-bar{padding:10px 12px;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;background:rgba(5,10,21,.46)}.fraction-status{font-size:13px;color:#d9e4ff;min-width:0}.fraction-status b{color:var(--yellow)}.serve-btn{min-width:190px;font-size:20px}
+
+.topping-panel{display:flex;flex-direction:column}.topping-list{padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow:auto;align-content:start}.topping{position:relative;min-height:84px;border-radius:15px;border:2px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);padding:8px;text-align:center;transition:.12s transform,.12s border-color}.topping:hover{transform:translateY(-2px)}.topping.selected{border-color:var(--yellow);background:rgba(255,209,102,.12);box-shadow:0 0 0 3px rgba(255,209,102,.12)}.topping.disabled{opacity:.4;filter:grayscale(.6)}.topping .ico{font-size:27px;line-height:1}.topping .nm{font-size:12px;font-weight:1000;margin-top:5px}.stock{position:absolute;top:-7px;right:-7px;border-radius:999px;min-width:25px;padding:3px 6px;background:var(--red);border:2px solid #16213d;font-size:11px;font-weight:1000}.req{position:absolute;top:-7px;left:-7px;border-radius:999px;padding:3px 6px;background:var(--yellow);color:#111827;border:2px solid #16213d;font-size:10px;font-weight:1000}.side-help{padding:10px;border-top:1px solid var(--line);font-size:12px;line-height:1.5;color:#cdd7f3}.side-help b{color:var(--yellow)}
+
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(3,7,18,.72);backdrop-filter:blur(8px);padding:20px}.modal.active{display:flex}.modal-card{width:min(620px,94vw);border-radius:24px;padding:24px;text-align:center}.modal-card h2{margin:0 0 8px;font-size:34px}.modal-card p{color:#d5def7;line-height:1.55}.oven{margin:20px auto 10px;max-width:500px;border-radius:22px;padding:18px;background:linear-gradient(180deg,#35130a,#130907);border:2px solid #ffb454;box-shadow:inset 0 0 35px rgba(255,120,40,.18),0 0 25px rgba(255,120,40,.12)}.oven-window{height:150px;border-radius:16px;background:radial-gradient(circle at 50% 70%,#ff9f43 0 12%,#7c2d12 35%,#1f0a08 72%);position:relative;overflow:hidden}.oven-pizza{position:absolute;left:50%;bottom:15px;transform:translateX(-50%);font-size:76px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}.timing-track{position:relative;height:28px;background:#111827;border-radius:999px;margin-top:14px;overflow:hidden;border:1px solid rgba(255,255,255,.18)}.perfect-zone{position:absolute;left:42%;width:16%;top:0;bottom:0;background:rgba(70,229,143,.55);border-left:2px solid #9ff5c2;border-right:2px solid #9ff5c2}.good-zone{position:absolute;left:29%;width:42%;top:0;bottom:0;background:rgba(255,209,102,.16)}.timing-marker{position:absolute;top:2px;bottom:2px;width:6px;border-radius:999px;background:white;box-shadow:0 0 12px #fff;left:0}.result-stars{font-size:34px;letter-spacing:3px}.result-lines{display:grid;grid-template-columns:1fr auto;gap:8px 16px;text-align:left;margin:18px auto;max-width:430px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:14px}.result-lines b{text-align:right;color:var(--yellow)}
+.toast{position:fixed;left:50%;top:76px;transform:translate(-50%,-14px) scale(.96);opacity:0;pointer-events:none;z-index:250;max-width:min(760px,92vw);border-radius:999px;padding:12px 20px;font-weight:1000;text-align:center;background:#1d4ed8;box-shadow:var(--shadow);transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}.toast.success{background:#047857}.toast.error{background:#991b1b}.toast.info{background:#1d4ed8}.shake{animation:shake .35s ease-in-out}.happy{animation:happy .5s ease-out}@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}@keyframes happy{50%{transform:translateY(-8px) scale(1.04)}}
+
+.shop{align-items:flex-start;justify-content:center;padding:24px;overflow:auto}.shop-inner{width:min(980px,96vw)}.shop-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:15px}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.shop-card{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:18px;background:rgba(18,27,52,.92);padding:14px}.shop-card.locked{opacity:.45;filter:grayscale(.6)}.shop-icon{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:30px;background:rgba(255,255,255,.07);border:1px solid var(--line)}.shop-card h3{margin:0 0 4px}.shop-card p{margin:0;color:var(--muted);font-size:13px}
+
+@media(max-width:1080px){.game-shell{grid-template-columns:220px minmax(420px,1fr) 205px}.brand-title{display:none}.chip{font-size:12px}.pizza-wrap{width:310px;height:310px}}
+@media(max-width:820px){html,body{overflow:auto}.screen{position:relative;min-height:100vh}.topbar{height:auto;grid-template-columns:1fr auto;padding:8px;position:sticky;top:0}.hud{grid-column:1/-1;order:3}.timebox{width:110px}.game-shell{display:flex;flex-direction:column;overflow:visible}.order-panel,.topping-panel{max-height:none}.kitchen{min-height:650px}.panel{overflow:visible}.order-body,.topping-list{overflow:visible}.pizza-wrap{width:min(82vw,360px);height:min(82vw,360px)}.bottom-bar{grid-template-columns:1fr;}.serve-btn{width:100%}.shop-grid{grid-template-columns:1fr}.menu-stats{grid-template-columns:1fr 1fr 1fr}.top-actions .mini:nth-child(-n+2){display:none}}
 </style>
 </head>
 <body>
-
 <section id="screen-menu" class="screen menu active">
   <div class="menu-card glass">
-    <h1 class="title">🍕 외계인 피자 가게 DX</h1>
-    <p class="subtitle">손님의 <b style="color:var(--yellow)">분수 주문</b>을 보고 피자를 나눈 뒤, 필요한 만큼 토핑을 올려 서빙하세요.<br>이번 UI는 주문·제작·토핑·현재량이 한 화면 흐름으로 보이도록 다시 정리했습니다.</p>
+    <h1 class="logo">🍕 외계인 피자 가게 DX 2.0</h1>
+    <p class="subtitle">피자를 직접 자르고 토핑을 끌어 칠하며 분수를 완성하세요. 같은 양을 다른 등분으로 만들면 <b style="color:var(--yellow)">동치분수 보너스</b>도 받을 수 있어요.</p>
     <div class="menu-stats">
-      <div class="statbox"><small>보유 금액</small><b><span id="menu-money">0</span>원</b></div>
-      <div class="statbox"><small>현재 영업일</small><b>DAY <span id="menu-day">1</span></b></div>
-      <div class="statbox"><small>최고 콤보</small><b><span id="menu-best">0</span></b></div>
+      <div class="stat"><small>보유 크레딧</small><b id="menu-money">0원</b></div>
+      <div class="stat"><small>현재 DAY</small><b id="menu-day">1</b></div>
+      <div class="stat"><small>최고 콤보</small><b id="menu-best">0</b></div>
     </div>
-    <div class="row">
-      <button class="btn big yellow" onclick="startGame()">영업 시작</button>
-      <button class="btn big purple" onclick="showShop()">🛒 재료 상점</button>
-    </div>
-    <div class="row" style="margin-top:14px"><button class="btn ghost" onclick="openResetModal()">데이터 초기화</button></div>
-    <p class="note">저장 데이터는 이 기기의 브라우저에만 저장됩니다. 단일 HTML 파일로 실행됩니다.</p>
+    <div class="row"><button class="btn yellow" id="btn-start">🚀 영업 시작</button><button class="btn purple" id="btn-shop">🛒 우주상점</button><button class="btn ghost" id="btn-reset">기록 초기화</button></div>
+    <div class="note">기존 외계인 피자 가게의 돈·DAY·재고·최고 콤보 저장 데이터를 그대로 사용합니다.</div>
   </div>
 </section>
 
 <section id="screen-shop" class="screen shop">
   <div class="shop-inner">
-    <div class="shop-head">
-      <div>
-        <h1 class="title" style="font-size:42px;margin:0">🛒 우주 식자재 상점</h1>
-        <p style="color:var(--muted);margin:6px 0 0">재료 1조각은 피자 한 조각에 올라갑니다. 비싼 재료 주문은 보상도 커집니다.</p>
-      </div>
-      <div class="statbox" style="min-width:210px"><small>보유 금액</small><b><span id="shop-money">0</span>원</b></div>
-    </div>
+    <div class="shop-head"><div><h1 style="margin:0">🛒 우주상점</h1><div style="color:var(--muted);margin-top:4px">재료는 피자 조각 하나를 채울 때 1개씩 사용됩니다.</div></div><div class="row"><div class="chip">💰 <b id="shop-money">0원</b></div><button class="btn ghost" id="btn-shop-back">← 돌아가기</button></div></div>
     <div id="shop-grid" class="shop-grid"></div>
-    <div class="row" style="margin:22px 0 40px"><button class="btn gray" onclick="hideShop()">가게로 돌아가기</button></div>
   </div>
 </section>
 
 <section id="screen-game" class="screen">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">🍕</div><div><div class="brand-title">외계인 피자 가게 DX</div><div style="font-size:12px;color:var(--muted);font-weight:800">분수 주문 제작</div></div></div>
-    <div class="hud-strip">
-      <div class="chip">DAY <b id="hud-day">1</b></div>
-      <div class="chip">💰 <b id="hud-money">0</b>원</div>
-      <div class="chip">🛡️ <b id="hud-shields">0</b></div>
-      <div class="chip">🔥 콤보 <b id="hud-combo">0</b></div>
-    </div>
-    <div class="top-actions">
-      <button class="mini" onclick="togglePause()" id="pause-btn">⏸️ 일시정지</button>
-      <button class="mini" onclick="toggleSound()" id="sound-btn">🔊 소리</button>
-      <div class="time-wrap">
-        <div class="time-text" id="hud-time">02:00</div>
-        <div class="timebar"><div class="timefill" id="time-fill"></div></div>
-      </div>
-    </div>
+    <div class="brand"><div class="brand-mark">🍕</div><div><div class="brand-title">외계인 피자 가게 DX 2.0</div><div style="font-size:10px;color:var(--muted)">분수 쿠킹 챌린지</div></div></div>
+    <div class="hud"><div class="chip">DAY <b id="hud-day">1</b></div><div class="chip">💰 <b id="hud-money">0원</b></div><div class="chip">🛡️ <b id="hud-shields">0</b></div><div class="chip">🔥 콤보 <b id="hud-combo">0</b></div></div>
+    <div class="top-actions"><button id="pause-btn" class="mini">⏸ 일시정지</button><button id="sound-btn" class="mini">🔊 소리</button><div class="timebox"><div id="hud-time" class="time">02:00</div><div class="timebar"><div id="time-fill" class="timefill"></div></div></div></div>
   </header>
-
-  <main class="game-layout">
-    <aside class="panel customer">
-      <div class="panel-head"><div class="panel-title">1. 주문 확인</div><span class="flow-badge">읽기</span></div>
-      <div class="panel-body">
-        <div class="alien-box" id="alien-box">
-          <div class="alien" id="alien-emoji">👽</div>
-          <div class="bubble" id="order-text">주문 대기 중...</div>
-        </div>
-        <div>
-          <div class="panel-title" style="font-size:16px;margin-bottom:8px">📋 주문 분석</div>
-          <div id="order-list" class="order-list"></div>
-        </div>
-        <div class="helper" id="order-helper">피자를 주문 분모와 같은 등분으로 자르면 훨씬 쉽습니다.</div>
+  <main class="game-shell">
+    <aside class="panel order-panel">
+      <div class="panel-head"><div class="panel-title">1. 주문 읽기</div><span class="badge">분수</span></div>
+      <div class="order-body">
+        <div id="alien-card" class="alien-card"><div id="alien-face" class="alien-face">👽</div><div id="alien-name" class="alien-name">글루피</div><div id="order-bubble" class="bubble">주문을 준비 중...</div></div>
+        <div id="order-grid" class="order-grid"></div>
+        <div id="order-tip" class="tip-card">주문 분수를 보고 피자를 직접 만들어 보세요.</div>
       </div>
     </aside>
 
     <section class="panel kitchen">
       <div class="kitchen-top">
-        <div class="cut-panel">
-          <span class="cut-label">2. 피자 자르기</span>
-          <button class="cut-btn" onclick="changeSlices(-1)">−</button>
-          <span class="cut-num" id="slice-count">8</span>
-          <button class="cut-btn" onclick="changeSlices(1)">+</button>
-          <button class="mini" onclick="setCutsToOrder()">주문 등분으로 맞추기</button>
-        </div>
-        <div class="tool-buttons">
-          <button class="mini" onclick="addPizza()">+ 피자</button>
-          <button class="mini" onclick="undoLast()">↩ 되돌리기</button>
-          <button class="mini" onclick="clearBoard()">🧽 비우기</button>
-          <button class="mini" onclick="showHint()">💡 힌트</button>
-        </div>
+        <div class="toolset"><button id="tool-cut" class="tool-pill active">🔪 피자 커터</button><button id="tool-top" class="tool-pill">🧀 토핑 칠하기</button><button id="btn-add-pizza" class="tool-pill">＋ 피자</button><button id="btn-undo" class="tool-pill">↶ 되돌리기</button><button id="btn-clear" class="tool-pill">🧽 비우기</button><button id="btn-hint" class="tool-pill">💡 힌트</button></div>
+        <div id="active-pizza-label" class="active-pizza-label">피자 1 선택됨</div>
       </div>
-      <div class="pizza-table" id="pizzas-container"></div>
-      <div class="serve-row">
-        <button class="btn green" onclick="submitOrder()">🛎️ 4. 서빙하기</button>
-        <button class="btn red" onclick="endDay(true)">영업 마감</button>
+      <div id="board" class="board cut-mode">
+        <div id="progress-strip" class="progress-strip"></div>
+        <div id="pizza-stage" class="pizza-stage"></div>
+      </div>
+      <div class="bottom-bar">
+        <div class="row" style="justify-content:flex-start"><button id="btn-den-prev" class="tool-pill">−</button><div class="tool-pill">현재 <b id="slice-count" style="color:var(--yellow)">2</b>등분</div><button id="btn-den-next" class="tool-pill">＋</button></div>
+        <div id="fraction-status" class="fraction-status">피자를 잘라 주문과 같은 양을 만들어 보세요.</div>
+        <button id="btn-serve" class="btn green serve-btn">🔥 굽고 서빙하기</button>
       </div>
     </section>
 
-    <aside class="panel side">
-      <section class="side-section">
-        <div class="panel-head"><div class="panel-title">3. 토핑 선택</div><span class="flow-badge">클릭</span></div>
-        <div id="topping-selector" class="inventory"></div>
-      </section>
-      <section class="side-section">
-        <div class="panel-head"><div class="panel-title">현재 제작량</div><span class="flow-badge">비교</span></div>
-        <div id="progress-list" class="progress-list"></div>
-      </section>
+    <aside class="panel topping-panel">
+      <div class="panel-head"><div class="panel-title">2. 토핑 바구니</div><span class="badge">끌어서 칠하기</span></div>
+      <div id="topping-list" class="topping-list"></div>
+      <div class="side-help"><b>토핑 모드</b>에서 피자 조각을 누르거나 드래그하면 연속으로 칠할 수 있어요.<br><br><b>커터 모드</b>에서는 피자 중앙에서 가장자리로 드래그해 원하는 등분을 선택하세요. ± 버튼은 보조 조작입니다.</div>
     </aside>
   </main>
 </section>
 
-<div id="modal-day-end" class="modal">
-  <div class="modal-card">
-    <h2 id="day-end-title">영업 종료!</h2>
-    <p id="day-end-sub" style="color:var(--muted);font-size:18px">오늘 하루 수고했습니다.</p>
-    <div class="summary">
-      <p><span>오늘 번 돈</span><b id="summary-earned" style="color:var(--green)">0원</b></p>
-      <p><span>총 자산</span><b id="summary-total" style="color:var(--yellow)">0원</b></p>
-      <p><span>최고 콤보</span><b id="summary-combo" style="color:var(--purple)">0</b></p>
-    </div>
-    <button class="btn yellow" style="width:100%" onclick="closeDayEnd()">상점 들르기</button>
+<div id="modal-oven" class="modal">
+  <div class="modal-card glass">
+    <h2>🔥 레이저 오븐</h2><p>하얀 막대가 초록 구간에 왔을 때 눌러 주세요. 분수 정답과는 별개인 <b style="color:var(--yellow)">조리 보너스</b>입니다.</p>
+    <div class="oven"><div class="oven-window"><div class="oven-pizza">🍕</div></div><div class="timing-track"><div class="good-zone"></div><div class="perfect-zone"></div><div id="timing-marker" class="timing-marker"></div></div></div>
+    <button id="btn-bake-stop" class="btn yellow" style="min-width:220px">지금 꺼내기!</button>
   </div>
 </div>
 
-<div id="modal-reset" class="modal">
-  <div class="modal-card" style="border-color:var(--red)">
-    <h2 style="color:var(--red)">데이터 초기화</h2>
-    <p style="color:var(--muted);line-height:1.6">돈, Day, 재고, 최고 콤보가 모두 사라집니다.<br>처음부터 다시 시작할까요?</p>
-    <div class="row" style="margin-top:18px"><button class="btn gray" onclick="closeResetModal()">취소</button><button class="btn red" onclick="confirmReset()">초기화</button></div>
+<div id="modal-result" class="modal">
+  <div class="modal-card glass">
+    <div id="result-face" style="font-size:72px">🤩</div><h2 id="result-title">완벽한 피자!</h2><div id="result-stars" class="result-stars">★★★★★</div>
+    <div id="result-lines" class="result-lines"></div><div id="result-comment" style="font-weight:1000;color:#dce5ff"></div>
   </div>
 </div>
 
-<div id="toast" class="toast">Message</div>
+<div id="modal-day" class="modal"><div class="modal-card glass"><h2>🌙 영업 종료</h2><p>오늘도 우주 손님들이 배부르게 돌아갔어요.</p><div id="day-summary" class="result-lines"></div><button id="btn-day-close" class="btn yellow">상점으로 가기</button></div></div>
+<div id="toast" class="toast">메시지</div>
 
 <script>
 (() => {
 'use strict';
-
-const SAVE_KEY = 'alienPizzaDXSave';
-const DAY_DURATION = 120;
-const BASE_REWARD = 2800;
-const SHIELD_PRICE = 4500;
-const MAX_PIZZAS = 4;
-const ALIENS = ['👽','👾','🤖','🛸','🐙','👻','🪐'];
-const DEN_BY_DAY = [2,3,4,6,8,10,12];
-
-const INGREDIENTS = {
-  empty: {id:'empty', name:'도우 지우개', color:'#f6c56b', price:0, packSize:0, minDay:1, emoji:'🧽'},
-  pepperoni: {id:'pepperoni', name:'페퍼로니', color:'#ef4444', price:1800, packSize:24, minDay:1, emoji:'🔴'},
-  mushroom: {id:'mushroom', name:'달버섯', color:'#8b5e34', price:2600, packSize:24, minDay:2, emoji:'🍄'},
-  cheese: {id:'cheese', name:'별빛치즈', color:'#fde047', price:3000, packSize:24, minDay:2, emoji:'🧀'},
-  onion: {id:'onion', name:'은하양파', color:'#e5e7eb', price:3600, packSize:24, minDay:3, emoji:'🧅'},
-  bacon: {id:'bacon', name:'운석베이컨', color:'#be123c', price:4600, packSize:24, minDay:3, emoji:'🥓'},
-  corn: {id:'corn', name:'노란옥수수', color:'#facc15', price:4300, packSize:24, minDay:4, emoji:'🌽'},
-  olive: {id:'olive', name:'블랙올리브', color:'#111827', price:6200, packSize:24, minDay:4, emoji:'🫒'},
-  shrimp: {id:'shrimp', name:'우주새우', color:'#fb7185', price:7600, packSize:24, minDay:5, emoji:'🍤'},
-  pineapple: {id:'pineapple', name:'토성파인애플', color:'#f59e0b', price:9200, packSize:24, minDay:6, emoji:'🍍'}
+const SAVE_KEY='alienPizzaDXSave', DAY_DURATION=120, BASE_REWARD=2800, SHIELD_PRICE=4500, MAX_PIZZAS=4;
+const DENOMS=[2,3,4,6,8,10,12];
+const ING={
+ empty:{name:'도우 지우개',color:'#f7c865',price:0,pack:0,min:1,emoji:'🧽'},
+ pepperoni:{name:'페퍼로니',color:'#ef4444',price:1800,pack:24,min:1,emoji:'🔴'},
+ mushroom:{name:'달버섯',color:'#8b5e34',price:2600,pack:24,min:2,emoji:'🍄'},
+ cheese:{name:'별빛치즈',color:'#fde047',price:3000,pack:24,min:2,emoji:'🧀'},
+ onion:{name:'은하양파',color:'#e5e7eb',price:3600,pack:24,min:3,emoji:'🧅'},
+ bacon:{name:'운석베이컨',color:'#be123c',price:4600,pack:24,min:3,emoji:'🥓'},
+ corn:{name:'노란옥수수',color:'#facc15',price:4300,pack:24,min:4,emoji:'🌽'},
+ olive:{name:'블랙올리브',color:'#111827',price:6200,pack:24,min:4,emoji:'🫒'},
+ shrimp:{name:'우주새우',color:'#fb7185',price:7600,pack:24,min:5,emoji:'🍤'},
+ pineapple:{name:'토성파인애플',color:'#f59e0b',price:9200,pack:24,min:6,emoji:'🍍'}
 };
-
-const state = {
-  money:0, day:1, shields:0, inventory:{}, bestCombo:0,
-  timeRemaining:DAY_DURATION, timer:null, paused:false, soundOn:true,
-  currentOrder:[], orderDen:8, orderReward:0, dayEarned:0, combo:0,
-  pizzas:[], selectedTopping:'pepperoni', sliceSetting:8, history:[], locked:false
-};
-
-const $ = id => document.getElementById(id);
-const screenMenu = $('screen-menu'), screenShop = $('screen-shop'), screenGame = $('screen-game');
-let audioCtx = null;
-
-function initAudio(){
-  if(!state.soundOn) return;
-  if(!audioCtx){
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if(!Ctx) return;
-    audioCtx = new Ctx();
-  }
-  if(audioCtx.state === 'suspended') audioCtx.resume();
-}
-function tone(freq,type='sine',dur=.12,gain=.06,delay=0){
-  if(!state.soundOn) return;
-  initAudio();
-  if(!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  osc.type = type; osc.frequency.value = freq;
-  const t = audioCtx.currentTime + delay;
-  g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(gain,t+.012);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  osc.connect(g); g.connect(audioCtx.destination);
-  osc.start(t); osc.stop(t+dur+.03);
-}
-const sfx = {
-  click(){tone(580,'square',.045,.035)},
-  slice(){tone(820,'triangle',.06,.04);tone(520,'sine',.08,.02,.035)},
-  success(){tone(523,'sine',.1,.05);tone(659,'sine',.1,.05,.09);tone(784,'sine',.18,.06,.18)},
-  fail(){tone(210,'sawtooth',.14,.05);tone(140,'sawtooth',.2,.05,.11)},
-  coin(){tone(1180,'sine',.07,.05);tone(1580,'sine',.13,.04,.05)},
-  shield(){tone(360,'square',.08,.04);tone(540,'square',.16,.04,.08)}
-};
-
+const ALIENS=[
+ {face:'👽',name:'글루피',line:'같은 양이면 다른 등분도 좋아!',bonus:'equiv'},
+ {face:'👾',name:'크록스',line:'토핑이 정확해야 만족한다!',bonus:'clean'},
+ {face:'🤖',name:'Z-42',line:'오차 0. 분수 계산을 검증합니다.',bonus:'exact'},
+ {face:'🛸',name:'루나',line:'예쁘게 나누면 더 맛있어!',bonus:'equiv'},
+ {face:'🐙',name:'옥토',line:'여러 토핑도 문제없지?',bonus:'combo'},
+ {face:'👻',name:'몽실',line:'조리 타이밍까지 완벽하게!',bonus:'bake'}
+];
+const state={money:0,day:1,shields:0,inventory:{},bestCombo:0,time:DAY_DURATION,timer:null,paused:false,sound:true,order:[],orderDen:2,reward:0,earned:0,combo:0,pizzas:[],activePizza:0,selected:'pepperoni',tool:'cut',history:[],locked:false,alien:ALIENS[0],dragPaint:false,bake:null};
+const $=id=>document.getElementById(id); let audioCtx=null;
 function gcd(a,b){a=Math.abs(a);b=Math.abs(b);return b?gcd(b,a%b):(a||1)}
-function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}
-function reduce(num,den){if(num===0) return {num:0,den:1}; const g=gcd(num,den); return {num:num/g, den:den/g}}
-function addFrac(a,b){return reduce(a.num*b.den + b.num*a.den, a.den*b.den)}
-function cmpFrac(a,b){return a.num*b.den - b.num*a.den}
-function fracValue(f){return f.num/f.den}
-function fracText(num, den){
-  const f = reduce(num,den);
-  if(f.num===0) return '0';
-  if(f.den===1) return `${f.num}판`;
-  if(f.num>f.den){
-    const w = Math.floor(f.num/f.den), r = f.num%f.den;
-    if(r===0) return `${w}판`;
-    return `${w}과 ${r}/${f.den}`;
-  }
-  return `${f.num}/${f.den}`;
-}
-function fracHTML(num, den){
-  const f = reduce(num,den);
-  if(f.num===0) return '0';
-  if(f.den===1) return `${f.num}판`;
-  if(f.num>f.den){
-    const w = Math.floor(f.num/f.den), r = f.num%f.den;
-    if(r===0) return `${w}판`;
-    return `<span>${w}과 </span><span class="fraction"><span>${r}</span><span>${f.den}</span></span>`;
-  }
-  return `<span class="fraction"><span>${f.num}</span><span>${f.den}</span></span>`;
-}
-function money(n){return Math.floor(n).toLocaleString('ko-KR')}
-function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min}
-function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
-function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
-function deepCopy(v){return JSON.parse(JSON.stringify(v))}
-
-function showOnly(screen){[screenMenu,screenShop,screenGame].forEach(s=>s.classList.remove('active'));screen.classList.add('active')}
-function toast(msg,type='info'){
-  const el=$('toast'); el.innerHTML=msg; el.className='toast '+type+' show';
-  clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),1900);
-}
-function updateMenuUI(){
-  $('menu-money').textContent=money(state.money); $('menu-day').textContent=state.day; $('menu-best').textContent=state.bestCombo;
-  $('shop-money').textContent=money(state.money);
-}
-function updateHUD(){
-  $('hud-day').textContent=state.day; $('hud-money').textContent=money(state.money); $('hud-shields').textContent=state.shields; $('hud-combo').textContent=state.combo;
-  const m=String(Math.floor(state.timeRemaining/60)).padStart(2,'0'), s=String(state.timeRemaining%60).padStart(2,'0');
-  $('hud-time').textContent=`${m}:${s}`; $('time-fill').style.width=(state.timeRemaining/DAY_DURATION*100)+'%';
-}
-function saveData(){
-  localStorage.setItem(SAVE_KEY, JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,bestCombo:state.bestCombo}));
-  updateMenuUI();
-}
-function loadData(){
-  try{
-    const raw=localStorage.getItem(SAVE_KEY); if(raw){const d=JSON.parse(raw); state.money=d.money||0; state.day=d.day||1; state.shields=d.shields||0; state.inventory=d.inventory||{}; state.bestCombo=d.bestCombo||0;}
-  }catch(e){}
-  Object.keys(INGREDIENTS).forEach(k=>{if(k!=='empty' && state.inventory[k]===undefined) state.inventory[k]=0});
-  if((state.inventory.pepperoni||0)<16 && state.day===1){state.inventory.pepperoni=48;}
-  checkRescue(); updateMenuUI();
-}
-function checkRescue(){
-  const total=Object.keys(INGREDIENTS).filter(k=>k!=='empty').reduce((sum,k)=>sum+(state.inventory[k]||0),0);
-  if(state.money<1800 && total<6){state.money+=2500;state.inventory.pepperoni=(state.inventory.pepperoni||0)+24;saveData();setTimeout(()=>toast('🚨 재료 부족 구조 지원: 2,500원과 페퍼로니 24조각 지급','info'),300)}
-}
-
-function getUnlockedToppings(includeEmpty=false){
-  return Object.keys(INGREDIENTS).filter(k=>(includeEmpty||k!=='empty') && INGREDIENTS[k].minDay<=state.day);
-}
-function firstAvailableTopping(){
-  const t=getUnlockedToppings().find(k=>(state.inventory[k]||0)>0); return t||'pepperoni';
-}
-
-function pushHistory(){
-  state.history.push({pizzas:deepCopy(state.pizzas), inventory:deepCopy(state.inventory), sliceSetting:state.sliceSetting, selectedTopping:state.selectedTopping});
-  if(state.history.length>25) state.history.shift();
-}
-function undoLast(){
-  const h=state.history.pop();
-  if(!h){toast('되돌릴 작업이 없습니다.','info');return}
-  Object.assign(state.inventory,h.inventory); state.pizzas=h.pizzas; state.sliceSetting=h.sliceSetting; state.selectedTopping=h.selectedTopping;
-  $('slice-count').textContent=state.sliceSetting;
-  sfx.click(); renderAllBoard(); toast('이전 상태로 되돌렸습니다.','info');
-}
-function refundBoard(){
-  state.pizzas.forEach(p=>p.toppings.forEach(t=>{if(t!=='empty') state.inventory[t]=(state.inventory[t]||0)+1}));
-}
-function clearBoard(){
-  if(!state.pizzas.length) return;
-  pushHistory(); refundBoard();
-  state.pizzas.forEach(p=>{p.toppings=Array(p.slices).fill('empty')});
-  sfx.click(); renderAllBoard(); toast('올려둔 재료를 재고로 돌렸습니다.','info');
-}
-
-function resetPizzasForOrder(){
-  state.history=[]; state.pizzas=[]; state.sliceSetting=state.orderDen; $('slice-count').textContent=state.sliceSetting; addPizza(false);
-}
-function addPizza(record=true){
-  if(state.pizzas.length>=MAX_PIZZAS){toast('피자는 최대 4판까지만 놓을 수 있습니다.','error');sfx.fail();return}
-  if(record) pushHistory();
-  state.pizzas.push({slices:state.sliceSetting,toppings:Array(state.sliceSetting).fill('empty')});
-  sfx.click(); renderAllBoard();
-}
-function changeSlices(delta){
-  const next=Math.max(2,Math.min(12,state.sliceSetting+delta));
-  if(next===state.sliceSetting) return;
-  pushHistory(); refundBoard(); state.sliceSetting=next; $('slice-count').textContent=next;
-  state.pizzas.forEach(p=>{p.slices=next;p.toppings=Array(next).fill('empty')});
-  sfx.slice(); renderAllBoard();
-}
-function setCutsToOrder(){
-  if(state.sliceSetting===state.orderDen){toast('이미 주문 분모와 같은 등분입니다.','info');return}
-  pushHistory(); refundBoard(); state.sliceSetting=state.orderDen; $('slice-count').textContent=state.sliceSetting;
-  state.pizzas.forEach(p=>{p.slices=state.sliceSetting;p.toppings=Array(state.sliceSetting).fill('empty')});
-  sfx.slice(); renderAllBoard(); toast(`${state.orderDen}등분으로 맞췄습니다.`,'success');
-}
-
-function generateOrder(){
-  let available=getUnlockedToppings().filter(k=>(state.inventory[k]||0)>0);
-  if(!available.length){state.inventory.pepperoni=(state.inventory.pepperoni||0)+12; available=['pepperoni']; toast('긴급 페퍼로니 12조각이 지급되었습니다.','info')}
-  const denChoices=DEN_BY_DAY.filter(d=>d<=Math.min(12,4+state.day*2));
-  let order=null;
-  for(let attempt=0; attempt<80; attempt++){
-    const den=pick(denChoices);
-    const maxByStock=Math.min(den*MAX_PIZZAS, available.reduce((s,k)=>s+(state.inventory[k]||0),0));
-    if(maxByStock<1) continue;
-    const canImproper=state.day>=2 && maxByStock>den;
-    let totalSlices;
-    if(!canImproper || Math.random()<.62){ totalSlices=rand(1,Math.min(den-1,maxByStock)); }
-    else { totalSlices=rand(den+1,Math.min(maxByStock,den*Math.min(MAX_PIZZAS,2+Math.floor(state.day/3)))); }
-    if(totalSlices<1) totalSlices=1;
-    const maxKinds=Math.min(available.length,totalSlices,state.day>=4?3:(state.day>=2?2:1));
-    const kinds=rand(1,maxKinds);
-    const chosen=shuffle(available).slice(0,kinds).filter(k=>(state.inventory[k]||0)>0);
-    const counts={}; chosen.forEach(k=>counts[k]=0);
-    let remaining=totalSlices;
-    shuffle(chosen).forEach(k=>{ if(remaining>0 && counts[k] < (state.inventory[k]||0)){counts[k]++; remaining--;}});
-    while(remaining>0){
-      const choices=chosen.filter(k=>counts[k] < (state.inventory[k]||0));
-      if(!choices.length) break;
-      counts[pick(choices)]++; remaining--;
-    }
-    if(remaining===0){ order={den, entries:Object.keys(counts).filter(k=>counts[k]>0).map(k=>({topping:k,num:counts[k],den}))}; break; }
-  }
-  if(!order){order={den:8, entries:[{topping:'pepperoni',num:1,den:8}]}; state.inventory.pepperoni=(state.inventory.pepperoni||0)+8}
-  state.orderDen=order.den;
-  state.currentOrder=order.entries;
-  const slices=order.entries.reduce((s,o)=>s+o.num,0);
-  let reward=BASE_REWARD + slices*650 + state.day*220;
-  order.entries.forEach(o=>{reward += Math.round((INGREDIENTS[o.topping].price||0) * (o.num/o.den) * 1.45)});
-  state.orderReward=Math.max(1000,Math.floor(reward/100)*100);
-}
-function renderOrder(){
-  const alien=pick(ALIENS); $('alien-emoji').textContent=alien;
-  const parts=state.currentOrder.map(o=>`<b style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].name}</b> ${fracHTML(o.num,o.den)}`);
-  const totalPieces=state.currentOrder.reduce((s,o)=>s+o.num,0);
-  $('order-text').innerHTML=`${alien} 배고파!<br>${parts.join('<br>')} 올린 피자 부탁해!`;
-  $('order-list').innerHTML=state.currentOrder.map(o=>`
-    <div class="order-line">
-      <span><b style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].emoji} ${INGREDIENTS[o.topping].name}</b></span>
-      <span class="need">${fracHTML(o.num,o.den)} <span class="tag">${o.den}등분 ${o.num}조각</span></span>
-    </div>`).join('');
-  $('order-helper').innerHTML=`이번 주문의 기준은 <b>${state.orderDen}등분</b>입니다. 피자 한 판을 ${state.orderDen}조각으로 자르면, 필요한 총 토핑은 <b>${totalPieces}조각</b>입니다.<br>다른 등분으로 만들어도 같은 분수면 정답이지만, 처음에는 <b>주문 등분으로 맞추기</b> 버튼을 쓰는 편이 쉽습니다.`;
-}
-function nextCustomer(){
-  state.locked=false; generateOrder(); state.selectedTopping=state.currentOrder[0]?.topping || firstAvailableTopping(); renderOrder(); resetPizzasForOrder(); renderToppingSelector(); renderProgress();
-  $('alien-box').classList.remove('shake','happy'); void $('alien-box').offsetWidth;
-}
-
-function countRequested(topping){return state.currentOrder.find(o=>o.topping===topping)}
-function renderToppingSelector(){
-  const wrap=$('topping-selector');
-  wrap.innerHTML=getUnlockedToppings(true).map(k=>{
-    const item=INGREDIENTS[k], stock=k==='empty'?'∞':(state.inventory[k]||0), req=countRequested(k), selected=state.selectedTopping===k, disabled=k!=='empty' && stock<=0;
-    return `<button class="topping ${selected?'selected':''} ${disabled?'disabled':''}" onclick="selectTopping('${k}')">
-      ${req?'<span class="requested">주문</span>':''}${k==='empty'?'':`<span class="stock">${stock}</span>`}
-      <div class="swatch" style="background:${item.color};color:${k==='olive'?'white':'#111827'}">${item.emoji||''}</div>
-      <div class="name">${item.name}</div>
-    </button>`;
-  }).join('');
-}
-function selectTopping(id){
-  if(id!=='empty' && (state.inventory[id]||0)<=0){toast('재료가 부족합니다. 상점에서 충전하세요.','error');sfx.fail();return}
-  state.selectedTopping=id; sfx.click(); renderToppingSelector();
-}
-
-function handleSliceClick(pizzaIndex,sliceIndex){
-  if(state.locked || state.paused) return;
-  const p=state.pizzas[pizzaIndex]; if(!p) return;
-  const old=p.toppings[sliceIndex]; const next=state.selectedTopping;
-  if(old===next) return;
-  if(next!=='empty' && (state.inventory[next]||0)<=0){toast('재료가 부족합니다.','error');sfx.fail();return}
-  pushHistory();
-  if(old!=='empty') state.inventory[old]=(state.inventory[old]||0)+1;
-  if(next!=='empty') state.inventory[next]--;
-  p.toppings[sliceIndex]=next;
-  sfx.slice(); renderAllBoard();
-}
-
-function createSvgPizza(pizzaIndex,p){
-  const size=200, c=100, r=82, crust=90, slices=p.slices, aStep=360/slices;
-  let svg=`<div class="pizza-card"><svg class="pizza-svg" viewBox="0 0 ${size} ${size}" aria-label="피자 ${pizzaIndex+1}">`;
-  svg+=`<circle cx="${c}" cy="${c}" r="${crust}" fill="#b45309"/><circle cx="${c}" cy="${c}" r="${r}" fill="#fbbf24"/>`;
-  for(let i=0;i<slices;i++){
-    const a1=(i*aStep-90)*Math.PI/180, a2=((i+1)*aStep-90)*Math.PI/180;
-    const x1=c+r*Math.cos(a1), y1=c+r*Math.sin(a1), x2=c+r*Math.cos(a2), y2=c+r*Math.sin(a2);
-    const large=aStep>180?1:0, id=p.toppings[i], item=INGREDIENTS[id];
-    const d=`M ${c} ${c} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
-    svg+=`<path class="slice" d="${d}" fill="${item.color}" onclick="handleSliceClick(${pizzaIndex},${i})"></path>`;
-    if(id!=='empty'){
-      const mid=(a1+a2)/2; const jitter=((pizzaIndex+1)*(i+3))%7-3;
-      const tx=c+(r*.62)*Math.cos(mid)+(jitter*.8), ty=c+(r*.62)*Math.sin(mid)-jitter;
-      svg+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="${slices>8?15:19}" text-anchor="middle" dominant-baseline="central" pointer-events="none">${item.emoji}</text>`;
-    }
-  }
-  svg+=`<circle cx="${c}" cy="${c}" r="7" fill="rgba(255,255,255,.9)"/></svg><div class="pizza-label">피자 ${pizzaIndex+1} · ${slices}등분</div></div>`;
-  return svg;
-}
-function renderPizzas(){ $('pizzas-container').innerHTML=state.pizzas.map((p,i)=>createSvgPizza(i,p)).join('') }
-function computePlayerTotals(){
-  const totals={};
-  state.pizzas.forEach(p=>p.toppings.forEach(t=>{
-    if(t==='empty') return;
-    totals[t]=addFrac(totals[t]||{num:0,den:1},{num:1,den:p.slices});
-  }));
-  return totals;
-}
-function renderProgress(){
-  const totals=computePlayerTotals();
-  const rows=[];
-  state.currentOrder.forEach(o=>{
-    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den); const cmp=cmpFrac(made,req);
-    const pct=Math.min(100,Math.round(fracValue(made)/fracValue(req)*100));
-    rows.push(`<div class="progress-row">
-      <div class="progress-head"><span style="color:${INGREDIENTS[o.topping].color}">${INGREDIENTS[o.topping].emoji} ${INGREDIENTS[o.topping].name}</span><span>${fracText(made.num,made.den)} / ${fracText(req.num,req.den)}</span></div>
-      <div class="bar ${cmp>0?'over':(cmp<0?'missing':'')}"><span style="width:${pct}%"></span></div>
-    </div>`);
-  });
-  Object.keys(totals).forEach(t=>{ if(!state.currentOrder.find(o=>o.topping===t)){ rows.push(`<div class="progress-row" style="border-color:rgba(255,93,108,.55)"><div class="progress-head"><span style="color:${INGREDIENTS[t].color}">${INGREDIENTS[t].emoji} ${INGREDIENTS[t].name}</span><span>주문 외 ${fracText(totals[t].num,totals[t].den)}</span></div><div class="bar over"><span style="width:100%"></span></div></div>`) }});
-  if(!rows.length) rows.push(`<div class="helper">아직 토핑이 없습니다. 주문 재료를 선택하고 피자 조각을 눌러보세요.</div>`);
-  $('progress-list').innerHTML=rows.join('');
-}
-function renderAllBoard(){renderPizzas();renderToppingSelector();renderProgress();updateHUD();}
-
-function mismatchText(){
-  const totals=computePlayerTotals();
-  for(const o of state.currentOrder){
-    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den); const cmp=cmpFrac(made,req);
-    if(cmp!==0){
-      const diff=cmp<0?'부족해요':'많아요';
-      return `${INGREDIENTS[o.topping].name}: 주문 ${fracText(req.num,req.den)}, 현재 ${fracText(made.num,made.den)}라서 ${diff}.`;
-    }
-  }
-  for(const t in totals){ if(!state.currentOrder.find(o=>o.topping===t)) return `${INGREDIENTS[t].name}은 주문하지 않았어요.`; }
-  return '';
-}
-function submitOrder(){
-  if(state.locked || state.paused || !state.currentOrder.length) return;
-  const err=mismatchText();
-  state.locked=true;
-  const box=$('alien-box'); box.classList.remove('shake','happy'); void box.offsetWidth;
-  if(!err){
-    const bonus=state.combo*180;
-    const earned=state.orderReward+bonus;
-    state.money+=earned; state.dayEarned+=earned; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo,state.bestCombo);
-    sfx.success(); sfx.coin(); toast(`완벽한 피자! +${money(earned)}원${bonus?` · 콤보 보너스 ${money(bonus)}원`:''}`,'success'); box.classList.add('happy');
-  }else{
-    state.combo=0;
-    if(state.shields>0){ state.shields--; sfx.shield(); toast(`방어권 사용! ${err}`,'info'); }
-    else { const penalty=Math.floor(state.orderReward*.45/100)*100; state.money=Math.max(0,state.money-penalty); sfx.fail(); toast(`클레임 발생 -${money(penalty)}원 · ${err}`,'error'); }
-    box.classList.add('shake');
-  }
-  saveData(); updateHUD();
-  setTimeout(()=>{ if(state.timeRemaining>0) nextCustomer(); },850);
-}
-function showHint(){
-  const totals=computePlayerTotals();
-  for(const o of state.currentOrder){
-    const made=totals[o.topping]||{num:0,den:1}; const req=reduce(o.num,o.den);
-    if(cmpFrac(made,req)<0){
-      const remain=reduce(req.num*made.den - made.num*req.den, req.den*made.den);
-      state.selectedTopping=o.topping; renderToppingSelector();
-      toast(`힌트: ${INGREDIENTS[o.topping].name}이 ${fracText(remain.num,remain.den)} 더 필요해요. ${state.orderDen}등분 기준으로 생각해보세요.`,'info');
-      return;
-    }
-  }
-  const extra=Object.keys(totals).find(t=>!state.currentOrder.find(o=>o.topping===t));
-  if(extra){state.selectedTopping='empty';renderToppingSelector();toast(`${INGREDIENTS[extra].name}은 주문 외 재료예요. 지우개로 빼보세요.`,'info');return}
-  toast('현재 제작량은 주문과 딱 맞습니다. 서빙해도 됩니다!','success');
-}
-
-function startGame(){
-  initAudio(); sfx.click(); clearInterval(state.timer);
-  state.timeRemaining=DAY_DURATION; state.dayEarned=0; state.combo=0; state.paused=false; state.locked=false;
-  $('pause-btn').textContent='⏸️ 일시정지'; showOnly(screenGame); updateHUD(); nextCustomer();
-  state.timer=setInterval(()=>{ if(state.paused) return; state.timeRemaining--; updateHUD(); if(state.timeRemaining<=0) endDay(false); },1000);
-}
-function endDay(early=false){
-  if(screenGame.classList.contains('active')){ refundBoard(); }
-  clearInterval(state.timer); state.timer=null; state.paused=false; state.locked=true; state.day++; saveData();
-  $('day-end-title').textContent=early?'영업 조기 마감':'영업 종료!';
-  $('day-end-sub').textContent=early?'재료를 정리하고 오늘 장사를 마쳤습니다.':'오늘 하루 수고했습니다.';
-  $('summary-earned').textContent=money(state.dayEarned)+'원'; $('summary-total').textContent=money(state.money)+'원'; $('summary-combo').textContent=state.bestCombo;
-  $('modal-day-end').classList.add('active'); sfx.success();
-}
-function closeDayEnd(){ $('modal-day-end').classList.remove('active'); checkRescue(); showShop(); }
-function togglePause(){ state.paused=!state.paused; $('pause-btn').textContent=state.paused?'▶ 계속하기':'⏸️ 일시정지'; toast(state.paused?'잠시 멈췄습니다.':'다시 영업합니다.', 'info'); }
-function toggleSound(){ state.soundOn=!state.soundOn; $('sound-btn').textContent=state.soundOn?'🔊 소리':'🔇 무음'; if(state.soundOn) sfx.click(); }
-
-function showShop(){ sfx.click(); clearInterval(state.timer); state.timer=null; showOnly(screenShop); updateMenuUI(); renderShop(); }
-function hideShop(){ sfx.click(); showOnly(screenMenu); updateMenuUI(); }
-function renderShop(){
-  const grid=$('shop-grid');
-  const cards=[];
-  cards.push(`<div class="shop-card"><div style="display:flex;align-items:center;gap:12px"><div class="shop-icon">🛡️</div><div><h3 style="color:var(--blue)">클레임 방어권</h3><p>오답 패널티를 1회 막습니다. 보유 ${state.shields}개</p></div></div><button class="btn blue" onclick="buyItem('shield')">${money(SHIELD_PRICE)}원</button></div>`);
-  Object.keys(INGREDIENTS).forEach(k=>{
-    const item=INGREDIENTS[k]; if(k==='empty') return;
-    const locked=item.minDay>state.day;
-    cards.push(`<div class="shop-card ${locked?'locked':''}">
-      <div style="display:flex;align-items:center;gap:12px"><div class="shop-icon" style="color:${item.color}">${item.emoji}</div><div><h3 style="color:${item.color}">${item.name}</h3><p>${locked?`DAY ${item.minDay}에 해금`: `보유 ${state.inventory[k]||0}조각 · ${item.packSize}조각 묶음`}</p></div></div>
-      ${locked?`<button class="btn gray" disabled>잠김</button>`:`<button class="btn purple" onclick="buyItem('${k}')">${money(item.price)}원</button>`}
-    </div>`);
-  });
-  grid.innerHTML=cards.join('');
-}
-function buyItem(id){
-  const price=id==='shield'?SHIELD_PRICE:INGREDIENTS[id].price;
-  if(state.money<price){sfx.fail();toast('돈이 부족합니다.','error');return}
-  state.money-=price;
-  if(id==='shield'){state.shields++;toast('방어권을 구매했습니다.','success')}
-  else{state.inventory[id]=(state.inventory[id]||0)+INGREDIENTS[id].packSize;toast(`${INGREDIENTS[id].name} ${INGREDIENTS[id].packSize}조각 충전!`,'success')}
-  sfx.coin(); saveData(); renderShop(); renderToppingSelector();
-}
-function openResetModal(){sfx.click();$('modal-reset').classList.add('active')}
-function closeResetModal(){sfx.click();$('modal-reset').classList.remove('active')}
-function confirmReset(){localStorage.removeItem(SAVE_KEY);location.reload()}
-
-window.startGame=startGame; window.showShop=showShop; window.hideShop=hideShop; window.buyItem=buyItem;
-window.openResetModal=openResetModal; window.closeResetModal=closeResetModal; window.confirmReset=confirmReset;
-window.changeSlices=changeSlices; window.setCutsToOrder=setCutsToOrder; window.addPizza=addPizza; window.undoLast=undoLast; window.clearBoard=clearBoard;
-window.selectTopping=selectTopping; window.handleSliceClick=handleSliceClick; window.submitOrder=submitOrder; window.showHint=showHint; window.endDay=endDay;
-window.closeDayEnd=closeDayEnd; window.togglePause=togglePause; window.toggleSound=toggleSound;
-
-loadData(); renderShop(); renderToppingSelector(); updateHUD();
+function reduce(n,d){if(!n)return{num:0,den:1};const g=gcd(n,d);return{num:n/g,den:d/g}}
+function add(a,b){return reduce(a.num*b.den+b.num*a.den,a.den*b.den)}
+function cmp(a,b){return a.num*b.den-b.num*a.den}
+function value(f){return f.num/f.den}
+function money(n){return Math.floor(n).toLocaleString('ko-KR')+'원'}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function deep(v){return JSON.parse(JSON.stringify(v))}
+function fracHTML(n,d){const f=reduce(n,d);if(f.den===1)return `${f.num}`;return `<span class="fraction"><span>${f.num}</span><span>${f.den}</span></span>`}
+function fracText(n,d){const f=reduce(n,d);if(!f.num)return'0';if(f.den===1)return `${f.num}판`;if(f.num>f.den){const w=Math.floor(f.num/f.den),r=f.num%f.den;return r?`${w}과 ${r}/${f.den}`:`${w}판`}return `${f.num}/${f.den}`}
+function tone(freq,type='sine',dur=.08,gain=.04,delay=0){if(!state.sound)return;try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+delay;o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+dur+.02)}catch(e){}}
+const sfx={click:()=>tone(580,'square',.04,.025),slice:()=>{tone(820,'triangle',.06,.035);tone(510,'sine',.07,.02,.035)},paint:()=>tone(690,'triangle',.045,.025),ok:()=>{tone(523,'sine',.08,.04);tone(659,'sine',.08,.04,.07);tone(784,'sine',.13,.05,.14)},bad:()=>{tone(180,'sawtooth',.12,.04);tone(130,'sawtooth',.16,.04,.09)},coin:()=>{tone(1170,'sine',.07,.04);tone(1560,'sine',.1,.03,.05)}};
+function toast(msg,type='info'){const e=$('toast');e.innerHTML=msg;e.className=`toast ${type} show`;clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),1800)}
+function show(screen){['screen-menu','screen-shop','screen-game'].forEach(id=>$(id).classList.remove('active'));$(screen).classList.add('active')}
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify({money:state.money,day:state.day,shields:state.shields,inventory:state.inventory,bestCombo:state.bestCombo}));updateMenu()}
+function load(){try{const raw=localStorage.getItem(SAVE_KEY);if(raw){const d=JSON.parse(raw);state.money=d.money||0;state.day=d.day||1;state.shields=d.shields||0;state.inventory=d.inventory||{};state.bestCombo=d.bestCombo||0}}catch(e){}Object.keys(ING).forEach(k=>{if(k!=='empty'&&state.inventory[k]===undefined)state.inventory[k]=0});if((state.inventory.pepperoni||0)<16&&state.day===1)state.inventory.pepperoni=48;rescue();updateMenu()}
+function rescue(){const total=Object.keys(ING).filter(k=>k!=='empty').reduce((s,k)=>s+(state.inventory[k]||0),0);if(state.money<1800&&total<6){state.money+=2500;state.inventory.pepperoni=(state.inventory.pepperoni||0)+24;save();setTimeout(()=>toast('🚨 구조 지원: 2,500원 + 페퍼로니 24개','info'),200)}}
+function updateMenu(){$('menu-money').textContent=money(state.money);$('menu-day').textContent=state.day;$('menu-best').textContent=state.bestCombo;$('shop-money').textContent=money(state.money)}
+function updateHUD(){$('hud-day').textContent=state.day;$('hud-money').textContent=money(state.money);$('hud-shields').textContent=state.shields;$('hud-combo').textContent=state.combo;const m=String(Math.floor(state.time/60)).padStart(2,'0'),s=String(state.time%60).padStart(2,'0');$('hud-time').textContent=`${m}:${s}`;$('time-fill').style.width=`${state.time/DAY_DURATION*100}%`}
+function unlocked(empty=false){return Object.keys(ING).filter(k=>(empty||k!=='empty')&&ING[k].min<=state.day)}
+function available(){return unlocked().filter(k=>(state.inventory[k]||0)>0)}
+function firstAvailable(){return available()[0]||'pepperoni'}
+function pushHistory(){state.history.push({pizzas:deep(state.pizzas),inventory:deep(state.inventory),activePizza:state.activePizza,selected:state.selected});if(state.history.length>30)state.history.shift()}
+function undo(){const h=state.history.pop();if(!h)return toast('되돌릴 작업이 없어요.','info');state.pizzas=h.pizzas;state.inventory=h.inventory;state.activePizza=Math.min(h.activePizza,state.pizzas.length-1);state.selected=h.selected;sfx.click();renderAll()}
+function refundPizza(p){p.toppings.forEach(t=>{if(t!=='empty')state.inventory[t]=(state.inventory[t]||0)+1})}
+function clearBoard(){pushHistory();state.pizzas.forEach(p=>{refundPizza(p);p.toppings=Array(p.slices).fill('empty')});sfx.click();renderAll()}
+function addPizza(record=true){if(state.pizzas.length>=MAX_PIZZAS)return toast('피자는 최대 4판까지 만들 수 있어요.','error');if(record)pushHistory();state.pizzas.push({slices:state.orderDen,toppings:Array(state.orderDen).fill('empty')});state.activePizza=state.pizzas.length-1;sfx.click();renderAll()}
+function setSlices(target){const p=state.pizzas[state.activePizza];if(!p)return;target=DENOMS.reduce((best,n)=>Math.abs(n-target)<Math.abs(best-target)?n:best,DENOMS[0]);if(p.slices===target)return;pushHistory();refundPizza(p);p.slices=target;p.toppings=Array(target).fill('empty');sfx.slice();renderAll();toast(`피자 ${state.activePizza+1}을 ${target}등분했어요.`,'success')}
+function stepSlices(dir){const p=state.pizzas[state.activePizza];if(!p)return;let idx=DENOMS.indexOf(p.slices);if(idx<0)idx=0;idx=Math.max(0,Math.min(DENOMS.length-1,idx+dir));setSlices(DENOMS[idx])}
+function generateOrder(){let av=available();if(!av.length){state.inventory.pepperoni=(state.inventory.pepperoni||0)+12;av=['pepperoni']}const dens=DENOMS.filter(d=>d<=Math.min(12,4+state.day*2));let den=pick(dens),maxKinds=state.day>=4?3:(state.day>=2?2:1),kinds=Math.min(rand(1,maxKinds),av.length);let chosen=shuffle(av).slice(0,kinds),counts={},capacity=Math.min(den*(state.day>=3?2:1),chosen.reduce((s,k)=>s+(state.inventory[k]||0),0));let total=state.day>=2&&Math.random()<.28&&capacity>den?rand(den+1,capacity):rand(1,Math.max(1,Math.min(den-1,capacity)));chosen.forEach(k=>counts[k]=0);let remain=total;shuffle(chosen).forEach(k=>{if(remain&&state.inventory[k]>0){counts[k]++;remain--}});while(remain>0){const c=chosen.filter(k=>counts[k]<(state.inventory[k]||0));if(!c.length)break;counts[pick(c)]++;remain--}if(remain){den=2;counts={pepperoni:1};state.inventory.pepperoni=(state.inventory.pepperoni||0)+2}state.orderDen=den;state.order=Object.keys(counts).filter(k=>counts[k]).map(k=>({topping:k,num:counts[k],den}));const pieces=state.order.reduce((s,o)=>s+o.num,0);state.reward=Math.floor((BASE_REWARD+pieces*650+state.day*220)/100)*100;state.alien=pick(ALIENS)}
+function nextCustomer(){state.locked=false;generateOrder();state.selected=state.order[0]?.topping||firstAvailable();state.pizzas=[];state.activePizza=0;state.history=[];addPizza(false);renderOrder();renderAll();const c=$('alien-card');c.classList.remove('shake','happy')}
+function renderOrder(){const a=state.alien;$('alien-face').textContent=a.face;$('alien-name').textContent=a.name;$('order-bubble').innerHTML=`${a.line}<br><b style="color:#ef4444">주문:</b> ${state.order.map(o=>`${ING[o.topping].name} ${fracText(o.num,o.den)}`).join(' + ')}`;$('order-grid').innerHTML=state.order.map(o=>{const deg=Math.min(360,360*o.num/o.den);return `<div class="order-item"><div class="fraction-visual" style="--fill:${ING[o.topping].color};--p:${deg}deg"></div><div><div class="order-name" style="color:${ING[o.topping].color}">${ING[o.topping].emoji} ${ING[o.topping].name}</div><div style="font-size:11px;color:var(--muted)">${o.den}등분 중 ${o.num}조각</div></div><div>${fracHTML(o.num,o.den)}</div></div>`}).join('');$('order-tip').innerHTML=state.day<3?`<b>${state.orderDen}등분</b>으로 시작하면 가장 쉬워요. 같은 양이라면 4등분의 2조각처럼 <b>동치분수</b>도 정답입니다.`:`피자마다 등분을 다르게 해도 총량이 같으면 정답입니다. 동치분수를 만들면 보너스가 붙어요.`}
+function renderToppings(){$('topping-list').innerHTML=unlocked(true).map(k=>{const it=ING[k],stock=k==='empty'?'∞':state.inventory[k]||0,req=state.order.find(o=>o.topping===k),dis=k!=='empty'&&stock<=0;return `<button class="topping ${state.selected===k?'selected':''} ${dis?'disabled':''}" data-top="${k}" ${dis?'disabled':''}>${req?'<span class="req">주문</span>':''}${k==='empty'?'':`<span class="stock">${stock}</span>`}<div class="ico">${it.emoji}</div><div class="nm">${it.name}</div></button>`}).join('');document.querySelectorAll('[data-top]').forEach(b=>b.addEventListener('click',()=>{state.selected=b.dataset.top;state.tool='topping';sfx.click();renderTools();renderToppings()}))}
+function sectorPath(cx,cy,r,i,n){const a1=(i/n*360-90)*Math.PI/180,a2=((i+1)/n*360-90)*Math.PI/180,x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2),large=360/n>180?1:0;return `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`}
+function pizzaSVG(p,pi){const n=p.slices,c=160,r=126;let s=`<svg class="pizza-svg" viewBox="0 0 320 320" data-pizza="${pi}"><defs><radialGradient id="dough${pi}"><stop offset="0" stop-color="#ffd980"/><stop offset=".78" stop-color="#f7c865"/><stop offset="1" stop-color="#d97706"/></radialGradient></defs><circle cx="160" cy="160" r="139" fill="#a94d08"/><circle cx="160" cy="160" r="130" fill="url(#dough${pi})"/>`;for(let i=0;i<n;i++){const id=p.toppings[i],it=ING[id],d=sectorPath(c,c,r,i,n);s+=`<path class="slice-hit" data-p="${pi}" data-s="${i}" d="${d}" fill="#f7c865"></path>`;if(id!=='empty')s+=`<path class="slice-fill" d="${d}" fill="${it.color}"></path>`;s+=`<path class="slice-outline" d="${d}" fill="none"></path>`;if(id!=='empty'){const mid=((i+.5)/n*360-90)*Math.PI/180,rr=86,tx=c+rr*Math.cos(mid),ty=c+rr*Math.sin(mid);s+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="topping-dot" text-anchor="middle" dominant-baseline="central">${it.emoji}</text>`}}s+=`<circle cx="160" cy="160" r="8" fill="#fff" opacity=".92"/></svg>`;return s}
+function renderPizzas(){$('pizza-stage').innerHTML=state.pizzas.map((p,i)=>`<div class="pizza-wrap ${i===state.activePizza?'active':''}" data-wrap="${i}">${pizzaSVG(p,i)}<div class="pizza-selected-ring"></div><div class="cut-guide"></div><div class="cut-ray"></div>${DENOMS.map((d,idx)=>{const a=(-90+idx*(360/DENOMS.length))*Math.PI/180,x=50+42*Math.cos(a),y=50+42*Math.sin(a);return `<span class="den-label" style="left:${x}%;top:${y}%">${d}</span>`}).join('')}<div class="drag-hint">${state.tool==='cut'?'🔪 드래그해서 등분':'🧀 누르거나 드래그해서 토핑'}</div><div class="pizza-caption">피자 ${i+1} · ${p.slices}등분</div></div>`).join('');bindPizzaEvents();const p=state.pizzas[state.activePizza];$('slice-count').textContent=p?p.slices:'-';$('active-pizza-label').textContent=`피자 ${state.activePizza+1} 선택됨`}
+function totals(){const out={};state.pizzas.forEach(p=>p.toppings.forEach(t=>{if(t==='empty')return;out[t]=add(out[t]||{num:0,den:1},{num:1,den:p.slices})}));return out}
+function renderProgress(){const t=totals(),chips=[];state.order.forEach(o=>{const made=t[o.topping]||{num:0,den:1},req=reduce(o.num,o.den),c=cmp(made,req),cls=c===0?'ok':(c>0?'over':'missing');chips.push(`<div class="progress-chip ${cls}">${ING[o.topping].emoji} ${fracText(made.num,made.den)} / ${fracText(req.num,req.den)}</div>`)});Object.keys(t).filter(k=>!state.order.find(o=>o.topping===k)).forEach(k=>chips.push(`<div class="progress-chip over">⚠ ${ING[k].emoji} 주문 외 ${fracText(t[k].num,t[k].den)}</div>`));$('progress-strip').innerHTML=chips.join('');const exact=isExact();$('fraction-status').innerHTML=exact?`✅ 주문과 <b>같은 양</b>이에요. 구워도 됩니다!`:`피자를 만들면서 위의 제작량을 주문 분수와 맞춰 보세요.`}
+function isExact(){const t=totals();for(const o of state.order){if(cmp(t[o.topping]||{num:0,den:1},reduce(o.num,o.den))!==0)return false}for(const k in t)if(!state.order.find(o=>o.topping===k))return false;return true}
+function equivalenceBonus(){let bonus=false;for(const o of state.order){const used=state.pizzas.some(p=>p.toppings.some(x=>x===o.topping)&&p.slices!==o.den);if(used)bonus=true}return bonus}
+function paint(pi,si){if(state.locked||state.paused||state.tool!=='topping')return;const p=state.pizzas[pi];if(!p)return;const old=p.toppings[si],next=state.selected;if(old===next)return;if(next!=='empty'&&(state.inventory[next]||0)<=0){toast('재료가 부족해요.','error');return}pushHistory();if(old!=='empty')state.inventory[old]=(state.inventory[old]||0)+1;if(next!=='empty')state.inventory[next]--;p.toppings[si]=next;sfx.paint();renderAll()}
+function bindPizzaEvents(){document.querySelectorAll('.pizza-wrap').forEach(w=>{const pi=+w.dataset.wrap;w.addEventListener('pointerdown',e=>{state.activePizza=pi;renderPizzas();if(state.tool!=='cut')return;const svg=w.querySelector('svg'),rect=svg.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2,dx=e.clientX-cx,dy=e.clientY-cy;if(Math.hypot(dx,dy)<28){w.dataset.cutting='1';w.setPointerCapture?.(e.pointerId);updateCutPreview(w,e,cx,cy)}});w.addEventListener('pointermove',e=>{if(w.dataset.cutting==='1'){const svg=w.querySelector('svg'),r=svg.getBoundingClientRect();updateCutPreview(w,e,r.left+r.width/2,r.top+r.height/2)}});w.addEventListener('pointerup',e=>{if(w.dataset.cutting==='1'){delete w.dataset.cutting;const ray=w.querySelector('.cut-ray');ray.classList.remove('show');const svg=w.querySelector('svg'),r=svg.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,dist=Math.hypot(dx,dy);if(dist>55){const ang=(Math.atan2(dy,dx)*180/Math.PI+450)%360,idx=Math.round(ang/(360/DENOMS.length))%DENOMS.length;setSlices(DENOMS[idx])}}})});document.querySelectorAll('.slice-hit').forEach(el=>{el.addEventListener('pointerdown',e=>{if(state.tool!=='topping')return;state.dragPaint=true;paint(+el.dataset.p,+el.dataset.s);e.preventDefault()});el.addEventListener('pointerenter',()=>{if(state.dragPaint&&state.tool==='topping')paint(+el.dataset.p,+el.dataset.s)});el.addEventListener('pointerup',()=>state.dragPaint=false)});window.onpointerup=()=>state.dragPaint=false}
+function updateCutPreview(w,e,cx,cy){const dx=e.clientX-cx,dy=e.clientY-cy,ang=Math.atan2(dy,dx)*180/Math.PI,ray=w.querySelector('.cut-ray');ray.style.transform=`rotate(${ang}deg)`;ray.classList.add('show')}
+function renderTools(){$('tool-cut').classList.toggle('active',state.tool==='cut');$('tool-top').classList.toggle('active',state.tool==='topping');$('board').classList.toggle('cut-mode',state.tool==='cut')}
+function renderAll(){renderPizzas();renderToppings();renderProgress();renderTools();updateHUD()}
+function mismatch(){const t=totals();for(const o of state.order){const m=t[o.topping]||{num:0,den:1},r=reduce(o.num,o.den),c=cmp(m,r);if(c!==0)return `${ING[o.topping].name}이 ${c<0?'부족':'너무 많'}아요. 주문 ${fracText(r.num,r.den)}, 현재 ${fracText(m.num,m.den)}`;}for(const k in t)if(!state.order.find(o=>o.topping===k))return `${ING[k].name}은 주문하지 않았어요.`;return''}
+function showHint(){const t=totals();for(const o of state.order){const m=t[o.topping]||{num:0,den:1},r=reduce(o.num,o.den);if(cmp(m,r)<0){state.selected=o.topping;state.tool='topping';renderAll();return toast(`💡 ${ING[o.topping].name}을 더 올려야 해요. 주문은 ${fracText(r.num,r.den)}입니다.`,'info')}}const extra=Object.keys(t).find(k=>!state.order.find(o=>o.topping===k));if(extra){state.selected='empty';state.tool='topping';renderAll();return toast(`💡 ${ING[extra].name}은 주문 외 재료예요. 지우개로 빼보세요.`,'info')}toast('💡 분수는 딱 맞아요. 이제 구워서 서빙해도 됩니다!','success')}
+function startBake(){if(state.locked||state.paused)return;if(!isExact()){toast(mismatch(),'error');$('alien-card').classList.add('shake');setTimeout(()=>$('alien-card').classList.remove('shake'),350);return}state.locked=true;state.bake={start:performance.now(),raf:0,score:0,stopped:false};$('modal-oven').classList.add('active');animateBake()}
+function animateBake(){if(!state.bake||state.bake.stopped)return;const t=(performance.now()-state.bake.start)/1200,pos=(Math.sin(t*Math.PI*2-Math.PI/2)+1)/2;$('timing-marker').style.left=`calc(${(pos*100).toFixed(2)}% - 3px)`;state.bake.pos=pos;state.bake.raf=requestAnimationFrame(animateBake)}
+function stopBake(){if(!state.bake||state.bake.stopped)return;state.bake.stopped=true;cancelAnimationFrame(state.bake.raf);const p=state.bake.pos??0,dist=Math.abs(p-.5);state.bake.score=dist<=.08?2:(dist<=.21?1:0);setTimeout(finishOrder,260)}
+function finishOrder(){cancelAnimationFrame(state.bake?.raf||0);$('modal-oven').classList.remove('active');const equiv=equivalenceBonus(),bake=state.bake?.score||0,bonusCombo=state.combo*180,bonusEquiv=equiv?700:0,bonusBake=bake===2?500:(bake===1?200:0),earned=state.reward+bonusCombo+bonusEquiv+bonusBake;state.money+=earned;state.earned+=earned;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);save();sfx.ok();sfx.coin();const stars=Math.min(5,3+(equiv?1:0)+(bake===2?1:0)),starText='★'.repeat(stars)+'☆'.repeat(5-stars);$('result-face').textContent=bake===0?'😋':'🤩';$('result-title').textContent=equiv?'동치분수까지 완벽!':'주문 정확!';$('result-stars').textContent=starText;$('result-lines').innerHTML=`<span>분수 정확도</span><b>100%</b><span>동치분수 보너스</span><b>${equiv?'+700원':'-'}</b><span>오븐 타이밍</span><b>${bake===2?'PERFECT +500원':bake===1?'GOOD +200원':'OK'}</b><span>콤보 보너스</span><b>${bonusCombo?`+${money(bonusCombo)}`:'-'}</b><span>이번 주문</span><b>+${money(earned)}</b>`;$('result-comment').textContent=`${state.alien.name}: ${pick(['지구 피자 최고야!','이 분수, 아주 맛있다!','다음 주문도 맡길게!','완벽하게 나눴군!'])}`;$('modal-result').classList.add('active');$('alien-card').classList.add('happy');updateHUD();setTimeout(()=>{$('modal-result').classList.remove('active');if(state.time>0)nextCustomer()},1100)}
+function startGame(){clearInterval(state.timer);state.time=DAY_DURATION;state.earned=0;state.combo=0;state.paused=false;state.locked=false;show('screen-game');nextCustomer();updateHUD();state.timer=setInterval(()=>{if(state.paused)return;state.time--;updateHUD();if(state.time<=0)endDay()},1000)}
+function endDay(){clearInterval(state.timer);state.timer=null;state.locked=true;state.pizzas.forEach(refundPizza);state.day++;save();$('day-summary').innerHTML=`<span>오늘 번 돈</span><b>${money(state.earned)}</b><span>보유 크레딧</span><b>${money(state.money)}</b><span>최고 콤보</span><b>${state.bestCombo}</b><span>다음 DAY</span><b>${state.day}</b>`;$('modal-day').classList.add('active');sfx.ok()}
+function renderShop(){const arr=[`<div class="shop-card"><div style="display:flex;align-items:center;gap:12px"><div class="shop-icon">🛡️</div><div><h3 style="color:var(--blue)">클레임 방어권</h3><p>보유 ${state.shields}개 · 추후 특수 주문 패널티 방어용</p></div></div><button class="btn blue" data-buy="shield">${money(SHIELD_PRICE)}</button></div>`];Object.keys(ING).forEach(k=>{if(k==='empty')return;const it=ING[k],lock=it.min>state.day;arr.push(`<div class="shop-card ${lock?'locked':''}"><div style="display:flex;align-items:center;gap:12px"><div class="shop-icon">${it.emoji}</div><div><h3 style="color:${it.color}">${it.name}</h3><p>${lock?`DAY ${it.min}에 해금`:`보유 ${state.inventory[k]||0}개 · ${it.pack}개 묶음`}</p></div></div><button class="btn ${lock?'gray':'purple'}" data-buy="${k}" ${lock?'disabled':''}>${lock?'잠김':money(it.price)}</button></div>`)});$('shop-grid').innerHTML=arr.join('');document.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>buy(b.dataset.buy)))}
+function buy(id){const price=id==='shield'?SHIELD_PRICE:ING[id].price;if(state.money<price)return toast('돈이 부족해요.','error');state.money-=price;if(id==='shield')state.shields++;else state.inventory[id]=(state.inventory[id]||0)+ING[id].pack;sfx.coin();save();renderShop();toast('구매 완료!','success')}
+function togglePause(){state.paused=!state.paused;$('pause-btn').textContent=state.paused?'▶ 계속하기':'⏸ 일시정지';toast(state.paused?'잠시 멈췄어요.':'영업 재개!','info')}
+function toggleSound(){state.sound=!state.sound;$('sound-btn').textContent=state.sound?'🔊 소리':'🔇 무음';if(state.sound)sfx.click()}
+$('btn-start').addEventListener('click',startGame);$('btn-shop').addEventListener('click',()=>{show('screen-shop');renderShop();updateMenu()});$('btn-shop-back').addEventListener('click',()=>show('screen-menu'));$('btn-reset').addEventListener('click',()=>{if(confirm('외계인 피자 가게의 저장 기록을 모두 초기화할까요?')){localStorage.removeItem(SAVE_KEY);location.reload()}});
+$('tool-cut').addEventListener('click',()=>{state.tool='cut';renderTools();renderPizzas()});$('tool-top').addEventListener('click',()=>{state.tool='topping';renderTools();renderPizzas()});$('btn-add-pizza').addEventListener('click',()=>addPizza());$('btn-undo').addEventListener('click',undo);$('btn-clear').addEventListener('click',clearBoard);$('btn-hint').addEventListener('click',showHint);$('btn-den-prev').addEventListener('click',()=>stepSlices(-1));$('btn-den-next').addEventListener('click',()=>stepSlices(1));$('btn-serve').addEventListener('click',startBake);$('btn-bake-stop').addEventListener('click',stopBake);$('pause-btn').addEventListener('click',togglePause);$('sound-btn').addEventListener('click',toggleSound);$('btn-day-close').addEventListener('click',()=>{$('modal-day').classList.remove('active');rescue();show('screen-shop');renderShop();updateMenu()});
+window.addEventListener('keydown',e=>{if($('modal-oven').classList.contains('active')&&(e.code==='Space'||e.code==='Enter')){e.preventDefault();stopBake()}});
+load();renderShop();updateHUD();
 })();
 </script>
 </body>
