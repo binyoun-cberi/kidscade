@@ -127,15 +127,6 @@
       "cover": "assets/gate-image/네온 리프트.png"
     },
     {
-      "id": "math_remembus",
-      "title": "리멤버스 (기억력 버스)",
-      "href": "리멤버스.html",
-      "category": "math",
-      "age": "low",
-      "icon": "🚌",
-      "description": "순간 기억력을 풀가동하세요! 5초 동안 버스들의 색깔과 문양 위치를 완벽하게 외운 뒤, 정해진 시간 안에 정류장의 손님들을 알맞은 버스에 태우며 집중력을 기르는 순간 기억력 게임입니다."
-    },
-    {
       "id": "low_sand_art_studio",
       "title": "모래 그림 공방",
       "href": "모래뿌리기아트.html",
