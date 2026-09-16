@@ -27,6 +27,7 @@ jobs:
             account-client.js \
             account-session-safety.js \
             account-ui-runtime.js \
+            account-profile-gate.js \
             seed-ranking.js \
             seed-balance-sync.js \
             classroom-war-records.js \

@@ -5,7 +5,7 @@
     {
       id: 'high_omok_arena',
       title: '오목 아레나',
-      href: '오목 아레나.html?v=20260916-1',
+      href: 'games/omok-arena/index.html?v=20260916-2',
       category: 'math',
       age: 'high',
       icon: '⚫',
