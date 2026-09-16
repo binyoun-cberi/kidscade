@@ -106,6 +106,7 @@
     requestAnimationFrame(() => {
       syncQueued = false;
       addStyles();
+      bindNavigation();
       ensureGate();
       applyMode();
     });
@@ -117,7 +118,7 @@
   }
 
   function bindNavigation() {
-    if (document.documentElement.dataset.kcAccountProfileGateBound === '1') return;
+    if (!document.documentElement || document.documentElement.dataset.kcAccountProfileGateBound === '1') return;
     document.documentElement.dataset.kcAccountProfileGateBound = '1';
     document.addEventListener('click', event => {
       const button = event.target.closest?.('.kc-mobile-nav-btn');
