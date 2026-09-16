@@ -182,3 +182,44 @@ test('game launcher owns modal session lifecycle and reward calculation', () => 
   assert.match(bootstrap, /KidscadeGameLauncher\?\.close/);
   assert.match(bootstrap, /game-launcher\.js/);
 });
+
+test('composed page has exactly one card per catalog entry, including injected legacy games', async () => {
+  const vm = require('node:vm');
+  let output = '';
+  const window = {};
+  const context = vm.createContext({ window, URL, console, location: { href: 'https://example.test/' },
+    document: { currentScript: { src: 'https://example.test/main-bootstrap.js?v=test' }, baseURI: 'https://example.test/',
+      open() {}, write(html) { output += html; }, close() {} },
+    fetch: async url => ({ ok: true, json: async () => catalog, text: async () => read('index_base.html').replace('<div class="game-container" id="game-list">', '<div class="game-container" id="game-list"><a class="game-card" href="unknown.html">Unmanaged</a>') })
+  });
+  vm.runInContext(read('main-bootstrap.js'), context);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(output.includes('window.KidscadeCatalog='));
+  assert.equal((output.match(/<a\b[^>]*class="game-card/g) || []).length, catalog.games.length);
+  assert.ok(!output.includes('href="unknown.html"'));
+  // garden.js runs after composition; it must only load garden modules, never add cards.
+  vm.runInContext(read('garden.js'), vm.createContext({ document: { write() {} } }));
+  assert.doesNotMatch(read('catalog-extra.js'), /window\.fetch\s*=/);
+});
+
+test('migrated games obey every age, subject and search combination', () => {
+  const vm = require('node:vm');
+  const expected = { high_star_hoppers: 'high', toddler_monkey_vines: 'toddler', toddler_penguin_ice_pop: 'toddler', toddler_color_stack: 'toddler', toddler_three_friends_set: 'low' };
+  const cards = new Map(catalog.games.map(game => [game.id, { hidden: false, classList: { toggle(name, hidden) { cards.get(game.id).hidden = hidden; } } }]));
+  const document = { readyState: 'loading', body: { dataset: {} }, addEventListener() {}, dispatchEvent() {}, getElementById() { return null; },
+    querySelector(selector) { const match = selector.match(/data-id="([^"]+)"/); return match ? cards.get(match[1]) : null; } };
+  const window = { KidscadeCatalog: catalog };
+  const context = vm.createContext({window, document, console, CSS: {escape: value => value}, CustomEvent: class {}, localStorage: {getItem() {return null;}}});
+  vm.runInContext(read('game-registry.js'), context); window.KidscadeGames.refresh();
+  vm.runInContext(read('game-filter.js'), context);
+  for (const age of ['toddler', 'low', 'high', 'job']) {
+    for (const category of ['all', 'math', 'korean', 'lang', 'trivia', 'music', 'job']) {
+      for (const keyword of ['', '존재하지않는검색어']) {
+        window.KidscadeFilter.apply({age, category, keyword});
+        for (const [id, target] of Object.entries(expected)) {
+          assert.equal(!cards.get(id).hidden, age === target && ['all', 'math'].includes(category) && !keyword, `${id}/${age}/${category}/${keyword}`);
+        }
+      }
+    }
+  }
+});

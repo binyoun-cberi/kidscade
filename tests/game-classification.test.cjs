@@ -17,6 +17,12 @@ const deployedById = new Map(deployedGames.map(game => [game.id, game]));
 
 const reviewedAges = {
   math_timing_lcd: 'low',
+  high_star_hoppers: 'high',
+  toddler_monkey_vines: 'toddler',
+  toddler_penguin_ice_pop: 'toddler',
+  toddler_color_stack: 'toddler',
+  toddler_three_friends_set: 'low',
+  high_omok_arena: 'high',
   sim_mosquito: 'high',
   low_big_puzzle_time: 'high',
   tod_emoji_minesweeper: 'high',
@@ -56,10 +62,10 @@ test('catalog age distribution matches the reviewed inventory', () => {
   }, {});
 
   assert.deepEqual(counts, {
-    low: 26,
-    high: 52,
+    low: 27,
+    high: 54,
     job: 8,
-    toddler: 8
+    toddler: 11
   });
 });
 

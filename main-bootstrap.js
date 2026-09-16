@@ -71,7 +71,7 @@
     const scriptIndex = html.indexOf('<script', contentStart);
     const contentEnd = scriptIndex > contentStart ? scriptIndex : html.length;
     const scope = html.slice(contentStart, contentEnd);
-    const cardPattern = /<a\b(?=[^>]*\bclass\s*=\s*["'][^"']*\bgame-card\b[^"']*["'])(?=[^>]*\bdata-id\s*=\s*["'][^"']+["'])[^>]*>[\s\S]*?<\/a>/gi;
+    const cardPattern = /<a\b(?=[^>]*\bclass\s*=\s*["'][^"']*\bgame-card\b[^"']*["'])[^>]*>[\s\S]*?<\/a>/gi;
     const legacyCards = scope.match(cardPattern) || [];
     const remainingMarkup = scope.replace(cardPattern, '');
     const cards = getManagedGames(catalog).map(renderManagedCard).join('');
@@ -416,6 +416,7 @@
       if (!catalogRes.ok) throw new Error('게임 목록 데이터를 불러오지 못했습니다.');
 
       const catalog = validateCatalog(await catalogRes.json());
+      await window.KidscadeCatalogCovers?.apply(catalog);
       let html = await baseRes.text();
       html = replaceGameCardsFromCatalog(html, catalog);
       html = applyCompatibilityFixes(html);
