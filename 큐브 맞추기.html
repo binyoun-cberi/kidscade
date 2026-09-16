@@ -2,595 +2,78 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>큐브 마스터 DX - 3D 루빅스 큐브</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>3D 루빅스 큐브 | Kidscade</title>
 <style>
-  :root{
-    --bg:#070912;
-    --panel:rgba(16,24,42,.84);
-    --panel-strong:rgba(10,15,28,.94);
-    --line:rgba(255,255,255,.12);
-    --text:#eef5ff;
-    --muted:#9fb0c8;
-    --blue:#38bdf8;
-    --green:#34d399;
-    --yellow:#facc15;
-    --red:#fb7185;
-    --orange:#fb923c;
-    --purple:#a78bfa;
-    --shadow:0 18px 50px rgba(0,0,0,.42);
-  }
-  *{box-sizing:border-box}
-  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;touch-action:none;user-select:none}
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;opacity:.85;
-    background:
-      radial-gradient(circle at 15% 18%, rgba(56,189,248,.24), transparent 28%),
-      radial-gradient(circle at 82% 16%, rgba(167,139,250,.18), transparent 30%),
-      radial-gradient(circle at 50% 84%, rgba(52,211,153,.16), transparent 26%),
-      linear-gradient(180deg,#080b18,#05060b 64%,#030409);
-  }
-  body::after{
-    content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
-    background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 80px 120px,#8ddcff,transparent),radial-gradient(1.5px 1.5px at 160px 70px,#ffe98a,transparent),radial-gradient(1px 1px at 210px 180px,#fff,transparent);
-    background-size:260px 220px;animation:stars 8s linear infinite;
-  }
-  @keyframes stars{from{transform:translateY(0)}to{transform:translateY(18px)}}
-  #canvas-container{position:fixed;inset:0;z-index:1}
-  .ui{position:fixed;inset:0;z-index:5;pointer-events:none;padding:18px;display:grid;grid-template-columns:330px 1fr 300px;grid-template-rows:auto 1fr auto;gap:14px}
-  .card{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
-  .brand{grid-column:1;grid-row:1;padding:18px}
-  .brand h1{margin:0;font-size:24px;letter-spacing:-.04em;display:flex;align-items:center;gap:8px}
-  .brand p{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
-  .status{grid-column:2;grid-row:1;justify-self:center;display:flex;align-items:stretch;gap:10px;padding:10px;max-width:720px;width:min(720px,100%)}
-  .stat{min-width:110px;flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px 12px;text-align:center}
-  .stat small{display:block;color:var(--muted);font-weight:700;font-size:12px;margin-bottom:4px}.stat b{font-size:23px;font-variant-numeric:tabular-nums}.stat .best{color:var(--green)}.stat .timer{color:var(--yellow)}
-  .top-actions{grid-column:3;grid-row:1;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-self:start}
-  button{font-family:inherit;border:none;cursor:pointer;color:var(--text);font-weight:800;transition:transform .12s ease,filter .12s ease,background .12s ease,border-color .12s ease;touch-action:manipulation}
-  button:active{transform:translateY(2px) scale(.99)}
-  .btn{border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);box-shadow:0 5px 16px rgba(0,0,0,.18);font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px}
-  .btn:hover{filter:brightness(1.12)}.btn.primary{background:linear-gradient(135deg,#2563eb,#0ea5e9);border-color:rgba(125,211,252,.5)}.btn.green{background:linear-gradient(135deg,#059669,#34d399);color:#04130e}.btn.yellow{background:linear-gradient(135deg,#f59e0b,#facc15);color:#160d00}.btn.red{background:linear-gradient(135deg,#be123c,#fb7185)}.btn.ghost{background:rgba(255,255,255,.06)}
-  .mode-card{grid-column:1;grid-row:2;align-self:start;padding:16px}
-  .section-title{margin:0 0 10px;font-size:14px;color:#dbeafe;display:flex;align-items:center;justify-content:space-between;gap:8px}.section-title span{color:var(--muted);font-size:12px;font-weight:700}
-  .mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.mode-row .selected{outline:3px solid rgba(56,189,248,.36);background:rgba(56,189,248,.18)}
-  .guide{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;color:var(--muted);font-size:13px;line-height:1.55}.guide b{color:#fff}.guide kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:1px 6px;color:#fff;font-weight:800}
-  .history{margin-top:12px;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:16px;padding:12px;max-height:160px;overflow:auto;font-size:13px;color:var(--muted);line-height:1.55}.history strong{color:#fff}.history::-webkit-scrollbar{width:6px}.history::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
-  .turn-panel{grid-column:3;grid-row:2;align-self:start;padding:14px}.faces{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.face{border-radius:18px;padding:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06)}.face-head{font-size:13px;font-weight:900;display:flex;align-items:center;gap:7px;margin-bottom:7px}.swatch{width:16px;height:16px;border-radius:5px;border:2px solid rgba(255,255,255,.6);box-shadow:0 1px 8px rgba(0,0,0,.25)}.mini-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mini{height:38px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);font-size:16px}.mini:hover{background:rgba(255,255,255,.14)}
-  .bottom-bar{grid-column:1 / span 3;grid-row:3;justify-self:center;width:min(820px,100%);padding:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}.message{font-weight:800;color:#e5edff;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}.kbd-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kbd{font-size:12px;color:var(--muted);background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:999px;padding:6px 9px}
-  .center-badge{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;pointer-events:none;text-align:center}.toast{display:inline-block;background:rgba(7,11,22,.82);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:13px 20px;font-weight:900;box-shadow:var(--shadow);opacity:0;transform:translateY(12px) scale(.95);transition:.25s}.toast.show{opacity:1;transform:translateY(0) scale(1)}
-  .modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}.modal.show{display:flex}.modal-card{width:min(520px,96vw);background:linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));border:1px solid rgba(255,255,255,.18);border-radius:28px;padding:28px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.6)}.modal-card h2{margin:0 0 8px;font-size:36px;letter-spacing:-.04em}.modal-card p{margin:0 0 20px;color:var(--muted);line-height:1.55}.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.result-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px}.result-box small{display:block;color:var(--muted);font-weight:800;margin-bottom:5px}.result-box b{font-size:22px;color:#fff;font-variant-numeric:tabular-nums}
-  .loading{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#070912;color:#dbeafe;text-align:center;padding:24px}.loading.hidden{display:none}.loading-card{max-width:520px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:var(--shadow)}.spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,.18);border-top-color:#38bdf8;margin:0 auto 18px;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-  @media (max-width:980px){
-    .ui{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;padding:10px;gap:8px}.brand{grid-column:1;grid-row:1;padding:12px}.brand h1{font-size:20px}.brand p{display:none}.status{grid-column:1;grid-row:2;max-width:none;padding:7px;gap:6px}.stat{min-width:0;padding:8px 6px}.stat small{font-size:10px}.stat b{font-size:18px}.top-actions{grid-column:1;grid-row:4;grid-template-columns:repeat(4,1fr);padding:8px;align-self:end}.btn{font-size:12px;padding:8px 6px;min-height:38px}.mode-card{grid-column:1;grid-row:3;align-self:start;width:min(360px,100%);padding:10px}.guide,.history{display:none}.turn-panel{grid-column:1;grid-row:4;align-self:end;margin-bottom:62px;padding:10px}.faces{grid-template-columns:repeat(3,1fr);gap:6px}.face{padding:6px;border-radius:14px}.face-head{font-size:11px;margin-bottom:5px}.swatch{width:12px;height:12px}.mini{height:34px;font-size:14px}.bottom-bar{display:none}.result-grid{grid-template-columns:1fr}.modal-card h2{font-size:30px}}
-  @media (max-width:560px){.mode-card{display:none}.top-actions{grid-template-columns:repeat(2,1fr)}.turn-panel{margin-bottom:100px}.faces{grid-template-columns:repeat(2,1fr)}}
+:root{--ink:#1b1d22;--muted:#6e737d;--paper:#f2f0ea;--glass:rgba(250,249,245,.88);--line:rgba(25,28,35,.14);--accent:#2e63ff;--good:#18895b;--warn:#b76b00;--bad:#c43a3a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,"Noto Sans KR",system-ui,sans-serif;background:#d9d6cf;color:var(--ink);user-select:none}button{font:inherit}
+body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 38%,#f7f4eb 0 8%,#e9e5db 38%,#c9c4ba 100%);z-index:-2}
+body:after{content:"";position:fixed;left:8%;right:8%;bottom:-15%;height:45%;border-radius:50%;background:rgba(80,70,55,.18);filter:blur(42px);z-index:-1}
+#stage{position:fixed;inset:0}.hud{position:fixed;inset:0;z-index:4;pointer-events:none;padding:18px;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr auto;gap:12px}.panel{pointer-events:auto;background:var(--glass);border:1px solid rgba(255,255,255,.8);box-shadow:0 10px 30px rgba(47,43,36,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.brand{grid-column:1;grid-row:1;border-radius:18px;padding:11px 14px;display:flex;align-items:center;gap:10px}.cube-mark{width:35px;height:35px;border-radius:9px;background:conic-gradient(#f5d23a 0 25%,#e4463d 0 50%,#3977e8 0 75%,#25a564 0);border:4px solid #1c1d20;box-shadow:inset 0 0 0 2px #fff}.brand strong{font-size:15px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.stats{grid-column:2;grid-row:1;justify-self:center;border-radius:18px;padding:7px;display:flex;gap:4px}.stat{min-width:86px;padding:7px 10px;border-radius:12px;text-align:center}.stat+.stat{border-left:1px solid var(--line)}.stat span{display:block;color:var(--muted);font-size:10px;font-weight:800}.stat b{font-size:18px;font-variant-numeric:tabular-nums}.stat .best{color:var(--good)}
+.size-switch{grid-column:3;grid-row:1;border-radius:18px;padding:6px;display:flex;gap:5px}.seg,.icon-btn,.face-btn{border:0;cursor:pointer}.seg{min-width:58px;border-radius:12px;padding:9px 11px;background:transparent;color:var(--muted);font-weight:900}.seg.active{background:#1c1e23;color:#fff}.seg:active,.icon-btn:active,.face-btn:active{transform:translateY(1px)}
+.quick{grid-column:3;grid-row:2;align-self:center;border-radius:20px;padding:9px;width:178px}.quick-head{display:flex;align-items:center;justify-content:space-between;padding:3px 5px 8px;font-size:12px;font-weight:900}.quick-head span{color:var(--muted);font-size:10px}.face-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.face-btn{height:42px;border-radius:12px;background:#fff;border:1px solid var(--line);color:#24262b;font-weight:900;display:flex;align-items:center;justify-content:center;gap:5px}.face-btn i{width:10px;height:10px;border-radius:3px;display:block;box-shadow:inset 0 0 0 1px #0002}.face-btn small{font-size:11px;color:#81858d}.face-btn:hover{background:#f6f5f1}
+.dock{grid-column:1/4;grid-row:3;justify-self:center;border-radius:22px;padding:7px;display:flex;gap:5px;align-items:center}.icon-btn{min-height:46px;border-radius:15px;padding:0 14px;background:transparent;color:#383b42;font-weight:900}.icon-btn.primary{background:#1d1f24;color:#fff}.icon-btn:hover{background:rgba(0,0,0,.06)}.icon-btn.primary:hover{background:#000}.dock-sep{width:1px;height:28px;background:var(--line);margin:0 2px}.status{grid-column:1/4;grid-row:3;align-self:end;justify-self:center;margin-bottom:63px;pointer-events:none;background:rgba(28,30,35,.78);color:#fff;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:850;opacity:0;transform:translateY(8px);transition:.2s}.status.show{opacity:1;transform:none}
+.drag-tip{position:fixed;left:50%;top:50%;transform:translate(-50%,150px);z-index:3;color:#5f625f;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.08);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;pointer-events:none;backdrop-filter:blur(8px);transition:.3s opacity}.drag-tip.hide{opacity:0}
+.modal{position:fixed;inset:0;background:rgba(25,24,21,.48);display:none;place-items:center;z-index:20;padding:18px;backdrop-filter:blur(6px)}.modal.show{display:grid}.modal-card{width:min(520px,94vw);background:#f8f6f0;border-radius:26px;padding:25px;box-shadow:0 30px 80px #0004}.modal-card h2{margin:0 0 8px;font-size:30px}.modal-card p{color:#63676f;line-height:1.65}.help-steps{display:grid;gap:9px;margin:18px 0}.help-step{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:center}.help-step b{width:36px;height:36px;border-radius:50%;background:#202227;color:white;display:grid;place-items:center}.help-step span{font-size:14px;line-height:1.45}.result{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.result div{background:#ebe8e0;border-radius:16px;padding:12px;text-align:center}.result small{display:block;color:var(--muted);font-weight:800}.result strong{font-size:22px}.modal-actions{display:flex;gap:8px;justify-content:flex-end}.modal-actions button{border:0;border-radius:13px;padding:11px 15px;font-weight:900;cursor:pointer}.close{background:#e6e3dc}.again{background:#1e2025;color:#fff}
+.loading{position:fixed;inset:0;background:#e9e5dc;z-index:30;display:grid;place-items:center}.loading.hide{display:none}.loader{text-align:center;font-weight:900}.spinner{width:38px;height:38px;border-radius:50%;border:4px solid #b7b3ab;border-top-color:#22252a;margin:0 auto 12px;animation:spin .75s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:860px){.hud{padding:10px;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr auto}.brand{display:none}.stats{grid-column:1;grid-row:1;justify-self:stretch}.stat{min-width:0;flex:1;padding:6px}.size-switch{grid-column:2;grid-row:1}.quick{grid-column:1/3;grid-row:2;justify-self:center;width:min(500px,100%);padding:6px}.quick-head{display:none}.face-grid{grid-template-columns:repeat(6,1fr)}.face-btn{height:36px}.face-btn small{display:none}.dock{grid-column:1/3;grid-row:4;width:min(520px,100%);justify-content:center}.icon-btn{padding:0 10px;font-size:12px}.status{grid-column:1/3;grid-row:4;margin-bottom:59px}.drag-tip{transform:translate(-50%,130px)}}
+@media(max-width:520px){.stats .stat:nth-child(4){display:none}.stat b{font-size:15px}.seg{min-width:46px;padding:8px}.quick{background:rgba(250,249,245,.74)}.face-grid{gap:3px}.face-btn{font-size:12px}.dock{gap:1px;padding:5px}.icon-btn{padding:0 8px;min-height:42px}.icon-btn span{display:none}.drag-tip{font-size:11px;transform:translate(-50%,118px)}}
 </style>
-<script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
-</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div id="loading" class="loading"><div class="loading-card"><div class="spinner"></div><h2>큐브 엔진 불러오는 중</h2><p>3D 렌더링을 위해 Three.js를 사용합니다. 인터넷이 차단된 환경이라면 이 화면에서 멈출 수 있습니다.</p></div></div>
-<div id="canvas-container"></div>
-
-<div class="ui">
-  <section class="card brand">
-    <h1>🧊 큐브 마스터 DX</h1>
-    <p>조작을 단순화하고, 이동 기록·되돌리기·정확한 완성 판정을 추가한 3D 루빅스 큐브입니다.</p>
-  </section>
-
-  <section class="card status">
-    <div class="stat"><small>큐브</small><b id="stat-size">3×3×3</b></div>
-    <div class="stat"><small>시간</small><b id="timer" class="timer">00:00.00</b></div>
-    <div class="stat"><small>이동</small><b id="move-count">0</b></div>
-    <div class="stat"><small>최고 기록</small><b id="best-time" class="best">--:--.--</b></div>
-  </section>
-
-  <section class="card top-actions">
-    <button class="btn primary" id="btn-scramble">🔀 섞기</button>
-    <button class="btn ghost" id="btn-undo">↩ 되돌리기</button>
-    <button class="btn ghost" id="btn-camera">🎯 시점</button>
-    <button class="btn ghost" id="btn-sound">🔊 소리</button>
-  </section>
-
-  <section class="card mode-card">
-    <h3 class="section-title">난이도 선택 <span>기록은 크기별 저장</span></h3>
-    <div class="mode-row">
-      <button class="btn" id="btn-2">2×2</button>
-      <button class="btn selected" id="btn-3">3×3</button>
-    </div>
-    <div class="mode-row">
-      <button class="btn red" id="btn-reset">초기화</button>
-      <button class="btn yellow" id="btn-help">도움말</button>
-    </div>
-    <div class="guide">
-      <b>조작</b><br>
-      마우스/손가락 드래그: 시점 회전<br>
-      휠/핀치: 확대·축소<br>
-      <kbd>U</kbd><kbd>D</kbd><kbd>L</kbd><kbd>R</kbd><kbd>F</kbd><kbd>B</kbd>: 면 회전<br>
-      <kbd>Shift</kbd> + 키: 반대 방향 회전
-    </div>
-    <div class="history" id="history"><strong>이동 기록</strong><br>아직 이동이 없습니다.</div>
-  </section>
-
-  <section class="card turn-panel">
-    <h3 class="section-title">면 회전 <span>↻ / ↺</span></h3>
-    <div class="faces" id="faces"></div>
-  </section>
-
-  <section class="card bottom-bar">
-    <div id="message" class="message">섞기를 누른 뒤 첫 회전부터 시간이 측정됩니다.</div>
-    <div class="kbd-row"><span class="kbd">드래그: 시점</span><span class="kbd">버튼: 면 회전</span><span class="kbd">되돌리기 가능</span></div>
-  </section>
+<div id="stage"></div>
+<div class="loading" id="loading"><div class="loader"><div class="spinner"></div>큐브를 준비하는 중</div></div>
+<div class="hud">
+  <div class="brand panel"><div class="cube-mark"></div><div><strong>3D 루빅스 큐브</strong><small>잡고 밀어서 직접 돌려보세요</small></div></div>
+  <div class="stats panel"><div class="stat"><span>시간</span><b id="time">00:00.00</b></div><div class="stat"><span>회전</span><b id="moves">0</b></div><div class="stat"><span>크기</span><b id="sizeLabel">3×3</b></div><div class="stat"><span>최고</span><b class="best" id="best">--:--.--</b></div></div>
+  <div class="size-switch panel"><button class="seg" id="size2">2×2</button><button class="seg active" id="size3">3×3</button></div>
+  <aside class="quick panel"><div class="quick-head">빠른 회전 <span>Shift + 키 = 반대</span></div><div class="face-grid" id="faceGrid"></div></aside>
+  <div class="dock panel"><button class="icon-btn primary" id="scramble">⤨ <span>섞기</span></button><div class="dock-sep"></div><button class="icon-btn" id="undo">↶ <span>되돌리기</span></button><button class="icon-btn" id="reset">↺ <span>초기화</span></button><button class="icon-btn" id="camera">◎ <span>시점</span></button><button class="icon-btn" id="sound">♪ <span>소리</span></button><button class="icon-btn" id="help">? <span>도움말</span></button></div>
+  <div class="status" id="status"></div>
 </div>
-
-<div class="center-badge"><div id="toast" class="toast"></div></div>
-
-<div id="win-modal" class="modal">
-  <div class="modal-card">
-    <h2>🎉 완성!</h2>
-    <p>큐브의 모든 면이 한 색으로 정리되었습니다.</p>
-    <div class="result-grid">
-      <div class="result-box"><small>기록</small><b id="result-time">00:00.00</b></div>
-      <div class="result-box"><small>이동 수</small><b id="result-moves">0</b></div>
-      <div class="result-box"><small>큐브</small><b id="result-size">3×3</b></div>
-    </div>
-    <button class="btn green" id="btn-close-win" style="width:100%;font-size:18px;padding:15px">계속 연습하기</button>
-  </div>
-</div>
-
-<div id="help-modal" class="modal">
-  <div class="modal-card" style="text-align:left">
-    <h2 style="text-align:center">조작 도움말</h2>
-    <p>색이 붙은 6개의 면 버튼을 누르면 해당 면만 90도 회전합니다. ↻는 시계 방향, ↺는 반시계 방향입니다.</p>
-    <p>3×3에서 처음 배우는 학생이라면 마우스 드래그보다 오른쪽 면 회전 버튼을 먼저 쓰는 것이 훨씬 안정적입니다. 이동 기록이 남으므로 실수하면 되돌리기를 눌러 바로 복구할 수 있습니다.</p>
-    <button class="btn primary" id="btn-close-help" style="width:100%;font-size:18px;padding:15px">확인</button>
-  </div>
-</div>
-
+<div class="drag-tip" id="dragTip">큐브 조각을 누른 채 밀면 그 줄이 돌아갑니다 · 빈 공간 드래그는 시점 회전</div>
+<div class="modal" id="helpModal"><div class="modal-card"><h2>큐브를 직접 돌려보세요</h2><p>버튼을 찾기보다 큐브 자체를 만지는 방식으로 바꿨습니다.</p><div class="help-steps"><div class="help-step"><b>1</b><span><strong>큐브 조각을 누르고 드래그</strong>하면 그 조각이 속한 줄이 90° 회전합니다.</span></div><div class="help-step"><b>2</b><span><strong>빈 공간을 드래그</strong>하면 큐브를 둘러보고, 휠 또는 두 손가락으로 확대·축소합니다.</span></div><div class="help-step"><b>3</b><span>키보드 <strong>U D L R F B</strong>로도 면을 돌릴 수 있습니다.</span></div></div><div class="modal-actions"><button class="close" data-close="helpModal">닫기</button></div></div></div>
+<div class="modal" id="winModal"><div class="modal-card"><h2>완성!</h2><p>모든 면의 색을 맞췄습니다.</p><div class="result"><div><small>시간</small><strong id="rTime">-</strong></div><div><small>회전</small><strong id="rMoves">0</strong></div><div><small>큐브</small><strong id="rSize">3×3</strong></div></div><div class="modal-actions"><button class="close" data-close="winModal">계속 보기</button><button class="again" id="again">다시 섞기</button></div></div></div>
 <script type="module">
-let THREE;
-let OrbitControls;
-
-const container = document.getElementById('canvas-container');
-const loading = document.getElementById('loading');
-const $ = (id)=>document.getElementById(id);
-
-let scene, camera, renderer, controls, cubeRoot;
-let cubies = [];
-let currentSize = 3;
-let isAnimating = false;
-let queue = [];
-let moveHistory = [];
-let moveCount = 0;
-let readyToSolve = false;
-let soundOn = true;
-let audioCtx = null;
-let timerId = null;
-let startMs = 0;
-let elapsedMs = 0;
-let timerRunning = false;
-
-const COLORS = {
-  R:0xe3342f, L:0xf97316, U:0xf8fafc, D:0xfacc15, F:0x22c55e, B:0x2563eb, CORE:0x111827
-};
-const COLOR_NAMES = {R:'오른쪽',L:'왼쪽',U:'윗면',D:'아랫면',F:'앞면',B:'뒷면'};
-let FACE_DATA = [];
-function setupFaceData(){
-  FACE_DATA = [
-    {key:'R', axis:'x', dir:1, index:0, normal:new THREE.Vector3(1,0,0)},
-    {key:'L', axis:'x', dir:-1, index:1, normal:new THREE.Vector3(-1,0,0)},
-    {key:'U', axis:'y', dir:1, index:2, normal:new THREE.Vector3(0,1,0)},
-    {key:'D', axis:'y', dir:-1, index:3, normal:new THREE.Vector3(0,-1,0)},
-    {key:'F', axis:'z', dir:1, index:4, normal:new THREE.Vector3(0,0,1)},
-    {key:'B', axis:'z', dir:-1, index:5, normal:new THREE.Vector3(0,0,-1)}
-  ];
-}
-const FACE_CONTROLS = [
-  {key:'U', label:'윗면 U', axis:'y', color:'#f8fafc', text:'#0f172a', cw:-1},
-  {key:'D', label:'아랫면 D', axis:'y', color:'#facc15', text:'#1c1200', cw:1},
-  {key:'F', label:'앞면 F', axis:'z', color:'#22c55e', text:'#02130a', cw:-1},
-  {key:'B', label:'뒷면 B', axis:'z', color:'#2563eb', text:'#ffffff', cw:1},
-  {key:'L', label:'왼쪽 L', axis:'x', color:'#f97316', text:'#ffffff', cw:1},
-  {key:'R', label:'오른쪽 R', axis:'x', color:'#e3342f', text:'#ffffff', cw:-1}
-];
-const keyToFace = Object.fromEntries(FACE_CONTROLS.map(f=>[f.key.toLowerCase(), f]));
-
-function init(){
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, .1, 100);
-  camera.position.set(4.8,4.4,7.2);
-  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  container.appendChild(renderer.domElement);
-
-  const amb = new THREE.HemisphereLight(0xffffff,0x334155,1.15);
-  scene.add(amb);
-  const key = new THREE.DirectionalLight(0xffffff,2.15);
-  key.position.set(5,8,6);
-  scene.add(key);
-  const rim = new THREE.DirectionalLight(0x60a5fa,.9);
-  rim.position.set(-6,3,-7);
-  scene.add(rim);
-
-  cubeRoot = new THREE.Group();
-  scene.add(cubeRoot);
-
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enablePan = false;
-  controls.enableDamping = true;
-  controls.dampingFactor = .08;
-  controls.minDistance = 3.6;
-  controls.maxDistance = 12;
-
-  buildFaceButtons();
-  bindUI();
-  buildCube(3);
-  animate();
-  loading.classList.add('hidden');
-  toast('3D 큐브 준비 완료');
-}
-
-function makeMat(hex){return new THREE.MeshStandardMaterial({color:hex, roughness:.52, metalness:.04});}
-function makeMaterials(x,y,z,max){
-  return FACE_DATA.map(face => {
-    const visible = Math.abs(({x,y,z})[face.axis] - face.dir*max) < .001;
-    return makeMat(visible ? COLORS[face.key] : COLORS.CORE);
-  });
-}
-
-function buildCube(size){
-  stopTimer(false);
-  currentSize = size;
-  readyToSolve = false;
-  queue = [];
-  isAnimating = false;
-  moveHistory = [];
-  moveCount = 0;
-  elapsedMs = 0;
-  updateTimerDisplay(0);
-  $('win-modal').classList.remove('show');
-  $('help-modal').classList.remove('show');
-  updateStats();
-  updateHistory();
-  setModeButtons();
-  $('stat-size').textContent = `${size}×${size}×${size}`;
-
-  while(cubeRoot.children.length){
-    const child = cubeRoot.children[0];
-    cubeRoot.remove(child);
-    child.geometry?.dispose();
-    if(Array.isArray(child.material)) child.material.forEach(m=>m.dispose());
-  }
-  cubies = [];
-  const offset = (size-1)/2;
-  const geo = new THREE.BoxGeometry(.94,.94,.94);
-  const edgesGeo = new THREE.EdgesGeometry(geo);
-  for(let xi=0; xi<size; xi++) for(let yi=0; yi<size; yi++) for(let zi=0; zi<size; zi++){
-    const x = xi-offset, y = yi-offset, z = zi-offset;
-    const mesh = new THREE.Mesh(geo.clone(), makeMaterials(x,y,z,offset));
-    mesh.position.set(x,y,z);
-    const line = new THREE.LineSegments(edgesGeo.clone(), new THREE.LineBasicMaterial({color:0x020617, transparent:true, opacity:.76}));
-    mesh.add(line);
-    mesh.userData.home = new THREE.Vector3(x,y,z);
-    cubeRoot.add(mesh);
-    cubies.push(mesh);
-  }
-  resetCamera();
-  updateBestTime();
-  message('섞기를 누른 뒤 첫 회전부터 시간이 측정됩니다.');
-}
-
-function buildFaceButtons(){
-  const faces = $('faces');
-  faces.innerHTML = '';
-  FACE_CONTROLS.forEach(face=>{
-    const box = document.createElement('div');
-    box.className = 'face';
-    box.innerHTML = `<div class="face-head" style="color:${face.text === '#ffffff' ? '#fff' : '#dbeafe'}"><span class="swatch" style="background:${face.color}"></span>${face.label}</div><div class="mini-row"><button class="mini" data-key="${face.key}" data-dir="cw">↻</button><button class="mini" data-key="${face.key}" data-dir="ccw">↺</button></div>`;
-    faces.appendChild(box);
-  });
-  faces.querySelectorAll('button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const face = FACE_CONTROLS.find(f=>f.key===btn.dataset.key);
-      const sign = btn.dataset.dir === 'cw' ? 1 : -1;
-      userMove(face, sign);
-    });
-  });
-}
-
-function bindUI(){
-  $('btn-2').addEventListener('click',()=>{beep('click'); buildCube(2);});
-  $('btn-3').addEventListener('click',()=>{beep('click'); buildCube(3);});
-  $('btn-reset').addEventListener('click',()=>{beep('click'); buildCube(currentSize);});
-  $('btn-scramble').addEventListener('click',scramble);
-  $('btn-undo').addEventListener('click',undoMove);
-  $('btn-camera').addEventListener('click',()=>{beep('click'); resetCamera(); toast('시점 초기화');});
-  $('btn-sound').addEventListener('click',()=>{soundOn=!soundOn; $('btn-sound').textContent = soundOn?'🔊 소리':'🔇 무음'; beep('click');});
-  $('btn-help').addEventListener('click',()=>{$('help-modal').classList.add('show'); beep('click');});
-  $('btn-close-help').addEventListener('click',()=>{$('help-modal').classList.remove('show'); beep('click');});
-  $('btn-close-win').addEventListener('click',()=>{$('win-modal').classList.remove('show'); beep('click');});
-  window.addEventListener('resize',onResize);
-  window.addEventListener('keydown',onKey);
-}
-
-function setModeButtons(){
-  $('btn-2').classList.toggle('selected', currentSize===2);
-  $('btn-3').classList.toggle('selected', currentSize===3);
-}
-
-function resetCamera(){
-  const d = currentSize === 2 ? 6.2 : 7.2;
-  camera.position.set(d*.68,d*.62,d);
-  controls.target.set(0,0,0);
-  controls.update();
-}
-
-function faceValue(face){return face.axis === 'x' ? (face.key==='R'?1:-1)*(currentSize-1)/2 : face.axis === 'y' ? (face.key==='U'?1:-1)*(currentSize-1)/2 : (face.key==='F'?1:-1)*(currentSize-1)/2;}
-function userMove(face, sign){
-  if(isAnimating) return;
-  const angle = face.cw * sign * Math.PI/2;
-  const label = face.key + (sign===1 ? '' : "'");
-  queueMove({type:'layer', axis:face.axis, value:faceValue(face), angle, duration:260, record:true, label});
-}
-
-function scramble(){
-  if(isAnimating) return;
-  beep('click');
-  stopTimer(false);
-  queue = [];
-  moveHistory = [];
-  moveCount = 0;
-  readyToSolve = false;
-  elapsedMs = 0;
-  updateTimerDisplay(0);
-  updateStats();
-  updateHistory();
-  const moves = currentSize === 2 ? 14 : 24;
-  let lastKey = '';
-  for(let i=0;i<moves;i++){
-    let face;
-    do{ face = FACE_CONTROLS[Math.floor(Math.random()*FACE_CONTROLS.length)]; } while(face.key === lastKey);
-    lastKey = face.key;
-    const sign = Math.random()<.5 ? 1 : -1;
-    queueMove({type:'layer', axis:face.axis, value:faceValue(face), angle:face.cw*sign*Math.PI/2, duration:55, record:false, label:face.key+(sign===1?'':"'")}, false);
-  }
-  queue.push({type:'callback', fn:()=>{readyToSolve=true; message('섞기 완료! 첫 회전부터 시간이 측정됩니다.'); toast('준비 완료');}});
-  processQueue();
-}
-
-function queueMove(move, autoProcess=true){
-  queue.push(move);
-  if(autoProcess) processQueue();
-}
-function processQueue(){
-  if(isAnimating || queue.length===0) return;
-  const item = queue.shift();
-  if(item.type === 'callback'){
-    item.fn?.();
-    processQueue();
-    return;
-  }
-  isAnimating = true;
-  rotateLayer(item);
-}
-
-function rotateLayer(move){
-  if(move.record && readyToSolve && !timerRunning) startTimer();
-  beep(move.record?'move':'soft');
-  const pivot = new THREE.Group();
-  // 피벗은 scene이 아니라 cubeRoot 안에 둡니다. 그래야 시점/큐브 회전과 상관없이
-  // 면 회전축이 항상 큐브의 실제 x/y/z 축과 일치합니다.
-  cubeRoot.add(pivot);
-  const active = cubies.filter(c => Math.abs(c.position[move.axis] - move.value) < .08);
-  active.forEach(c=>pivot.attach(c));
-  const start = performance.now();
-  function step(now){
-    const t = Math.min(1,(now-start)/move.duration);
-    const ease = t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
-    pivot.rotation[move.axis] = move.angle * ease;
-    if(t<1){requestAnimationFrame(step);return;}
-    pivot.rotation[move.axis] = move.angle;
-    pivot.updateMatrixWorld();
-    active.forEach(c=>cubeRoot.attach(c));
-    cubeRoot.remove(pivot);
-    snapAll();
-    if(move.record){
-      moveHistory.push({axis:move.axis,value:move.value,angle:move.angle,label:move.label});
-      moveCount++;
-      updateStats();
-      updateHistory();
-    }
-    isAnimating = false;
-    if(queue.length===0 && move.record) checkSolved();
-    processQueue();
-  }
-  requestAnimationFrame(step);
-}
-
-function undoMove(){
-  if(isAnimating || moveHistory.length===0) { toast('되돌릴 이동이 없습니다'); return; }
-  const last = moveHistory.pop();
-  moveCount = Math.max(0, moveCount-1);
-  updateStats();
-  updateHistory();
-  beep('click');
-  queueMove({type:'layer', axis:last.axis, value:last.value, angle:-last.angle, duration:220, record:false, label:'undo'});
-  message(`되돌림: ${last.label}`);
-}
-
-function snapAll(){
-  cubies.forEach(c=>{
-    c.position.x = Math.round(c.position.x*2)/2;
-    c.position.y = Math.round(c.position.y*2)/2;
-    c.position.z = Math.round(c.position.z*2)/2;
-    const m = new THREE.Matrix4().makeRotationFromQuaternion(c.quaternion);
-    const e = m.elements;
-    for(let i=0;i<16;i++) e[i] = Math.round(e[i]);
-    c.quaternion.setFromRotationMatrix(m);
-  });
-}
-
-function roundedNormal(v){
-  return new THREE.Vector3(Math.round(v.x), Math.round(v.y), Math.round(v.z));
-}
-function visibleColor(cubie, axis, dir){
-  for(const face of FACE_DATA){
-    const n = face.normal.clone().applyQuaternion(cubie.quaternion);
-    const r = roundedNormal(n);
-    if(r[axis] === dir && Math.abs(r.x)+Math.abs(r.y)+Math.abs(r.z)===1){
-      return cubie.material[face.index].color.getHex();
-    }
-  }
-  return COLORS.CORE;
-}
-function checkSolved(){
-  if(!readyToSolve && !timerRunning) return;
-  const max = (currentSize-1)/2;
-  for(const axis of ['x','y','z']){
-    for(const dir of [1,-1]){
-      const layer = cubies.filter(c=>Math.abs(c.position[axis] - dir*max)<.08);
-      let first = null;
-      for(const c of layer){
-        const color = visibleColor(c, axis, dir);
-        if(color === COLORS.CORE) return;
-        if(first === null) first = color;
-        else if(first !== color) return;
-      }
-    }
-  }
-  const final = stopTimer(true);
-  readyToSolve = false;
-  showWin(final);
-}
-
-function startTimer(){
-  timerRunning = true;
-  startMs = Date.now();
-  clearInterval(timerId);
-  timerId = setInterval(()=>{
-    elapsedMs = Date.now() - startMs;
-    updateTimerDisplay(elapsedMs);
-  }, 23);
-}
-function stopTimer(save){
-  if(timerRunning){
-    elapsedMs = Date.now() - startMs;
-    clearInterval(timerId);
-  }
-  timerRunning = false;
-  if(save) saveBest(elapsedMs);
-  return elapsedMs;
-}
-function fmt(ms){
-  const m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000), cs = Math.floor((ms%1000)/10);
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
-}
-function updateTimerDisplay(ms){$('timer').textContent = fmt(ms);}
-function bestKey(){return `cubeMasterDX_best_${currentSize}`;}
-function saveBest(ms){
-  const old = Number(localStorage.getItem(bestKey()) || 0);
-  if(!old || ms < old) localStorage.setItem(bestKey(), String(ms));
-  updateBestTime();
-}
-function updateBestTime(){
-  const best = Number(localStorage.getItem(bestKey()) || 0);
-  $('best-time').textContent = best ? fmt(best) : '--:--.--';
-}
-function updateStats(){
-  $('move-count').textContent = moveCount;
-  $('result-moves').textContent = moveCount;
-}
-function updateHistory(){
-  const h = $('history');
-  if(moveHistory.length===0){h.innerHTML = '<strong>이동 기록</strong><br>아직 이동이 없습니다.'; return;}
-  const labels = moveHistory.slice(-36).map(m=>`<span>${m.label}</span>`).join(' · ');
-  h.innerHTML = `<strong>이동 기록</strong><br>${labels}`;
-  h.scrollTop = h.scrollHeight;
-}
-function showWin(ms){
-  beep('win');
-  $('result-time').textContent = fmt(ms);
-  $('result-moves').textContent = moveCount;
-  $('result-size').textContent = `${currentSize}×${currentSize}`;
-  $('win-modal').classList.add('show');
-  message(`완성! 기록 ${fmt(ms)}, ${moveCount}수`);
-}
-
-function message(text){$('message').textContent = text;}
-let toastTimer = null;
-function toast(text){
-  const t = $('toast');
-  t.textContent = text;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 1400);
-}
-
-function getAudio(){
-  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if(audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
-}
-function tone(freq,dur=.08,type='sine',gain=.05,delay=0){
-  if(!soundOn) return;
-  const ctx = getAudio();
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  g.gain.setValueAtTime(.0001,ctx.currentTime+delay);
-  g.gain.exponentialRampToValueAtTime(gain,ctx.currentTime+delay+.01);
-  g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+delay+dur);
-  osc.connect(g); g.connect(ctx.destination);
-  osc.start(ctx.currentTime+delay); osc.stop(ctx.currentTime+delay+dur+.04);
-}
-function beep(kind){
-  if(!soundOn) return;
-  if(kind==='click') tone(520,.05,'square',.035);
-  else if(kind==='move') { tone(240,.08,'triangle',.04); tone(360,.06,'sine',.025,.035); }
-  else if(kind==='soft') tone(160,.04,'sine',.015);
-  else if(kind==='win'){ tone(523,.11,'triangle',.06); tone(659,.11,'triangle',.06,.1); tone(784,.18,'triangle',.07,.2); }
-}
-
-function onKey(e){
-  const face = keyToFace[e.key.toLowerCase()];
-  if(!face) return;
-  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
-  e.preventDefault();
-  userMove(face, e.shiftKey ? -1 : 1);
-}
-function onResize(){
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-}
-function animate(){
-  requestAnimationFrame(animate);
-  controls.update();
-  // cubeRoot 자체를 매 프레임 돌리면 논리 회전축과 화면 회전축이 어긋날 수 있습니다.
-  // 시점 회전은 OrbitControls만 담당합니다.
-  renderer.render(scene,camera);
-}
-
-async function boot(){
-  try{
-    // 정적 import를 쓰면 CDN 로딩 실패 시 아래 catch까지 오지 못하고 로딩 화면에서 멈출 수 있습니다.
-    // 동적 import로 바꿔 실패 메시지가 확실히 표시되도록 했습니다.
-    THREE = await import('three');
-    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
-    setupFaceData();
-    init();
-  }
-  catch(err){
-    console.error(err);
-    loading.classList.remove('hidden');
-    loading.innerHTML = `<div class="loading-card"><h2>3D 엔진을 불러오지 못했습니다</h2><p>Three.js CDN 접속이 막혔거나 WebGL을 사용할 수 없는 환경입니다. 인터넷 연결, 학교망 차단 여부, 브라우저 WebGL 설정을 확인해주세요.</p><p style="color:#9fb0c8;font-size:13px">GitHub Pages처럼 인터넷 접속이 가능한 환경에서는 정상 실행됩니다.</p></div>`;
-  }
-}
-boot();
+const $=id=>document.getElementById(id);let THREE,OrbitControls,RoundedBoxGeometry;
+const FACE=[{key:'U',label:'위',axis:'y',side:1,color:'#f4f1e7'},{key:'D',label:'아래',axis:'y',side:-1,color:'#f5d43d'},{key:'L',label:'왼쪽',axis:'x',side:-1,color:'#ef9131'},{key:'R',label:'오른쪽',axis:'x',side:1,color:'#de3d36'},{key:'F',label:'앞',axis:'z',side:1,color:'#28a75f'},{key:'B',label:'뒤',axis:'z',side:-1,color:'#3174e2'}];
+const COLORS={U:0xf1f0e9,D:0xf4d52f,L:0xf08b28,R:0xdb3b34,F:0x22a45d,B:0x2f70df};
+let renderer,scene,camera,controls,cubeRoot,cubies=[],size=3,queue=[],animating=false,history=[],moves=0,ready=false,timerOn=false,startAt=0,elapsed=0,timerId=0,soundOn=true,audio=null,raycaster,pointer,drag=null,tipSeen=false,tempN;
+function fmt(ms){const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000),cs=Math.floor(ms%1000/10);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`}
+function bestKey(){return `cubeMasterDX_best_${size}`}
+function readBest(){const v=Number(localStorage.getItem(bestKey())||0);$('best').textContent=v?fmt(v):'--:--.--'}
+function updateHud(){$('moves').textContent=moves;$('sizeLabel').textContent=`${size}×${size}`;$('size2').classList.toggle('active',size===2);$('size3').classList.toggle('active',size===3);readBest()}
+function toast(s){const e=$('status');e.textContent=s;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1300)}
+function tone(f,d=.055,type='triangle',gain=.035,delay=0){if(!soundOn)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+delay;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(audio.destination);o.start(t);o.stop(t+d+.02)}catch{}}
+function sfx(k){if(k==='move'){tone(178,.06,'triangle',.035);tone(260,.045,'sine',.02,.025)}else if(k==='click')tone(420,.04,'sine',.025);else if(k==='win')[523,659,784,1047].forEach((n,i)=>tone(n,.14,'triangle',.045,i*.09))}
+const stickerMaps={};
+function stickerTexture(hex){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#00000020';x.beginPath();x.roundRect(7,9,114,114,19);x.fill();x.fillStyle='#'+hex.toString(16).padStart(6,'0');x.beginPath();x.roundRect(6,6,114,114,18);x.fill();x.fillStyle='rgba(255,255,255,.22)';x.beginPath();x.roundRect(13,12,96,22,10);x.fill();const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t}
+function makeSticker(normal,color){const geo=new THREE.PlaneGeometry(.78,.78);const mat=new THREE.MeshStandardMaterial({map:stickerMaps[color]??=(stickerTexture(color)),transparent:true,roughness:.42,metalness:.02,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2});const m=new THREE.Mesh(geo,mat),p=.477;if(normal.x){m.position.x=normal.x*p;m.rotation.y=normal.x>0?Math.PI/2:-Math.PI/2}else if(normal.y){m.position.y=normal.y*p;m.rotation.x=normal.y>0?-Math.PI/2:Math.PI/2}else{m.position.z=normal.z*p;m.rotation.y=normal.z>0?0:Math.PI}m.castShadow=true;return m}
+function disposeObject(o){o.traverse(n=>{n.geometry?.dispose?.();if(n.material){(Array.isArray(n.material)?n.material:[n.material]).forEach(m=>m.dispose?.())}})}
+function buildCube(n){stopTimer(false);queue=[];history=[];moves=0;ready=false;elapsed=0;$('time').textContent='00:00.00';size=n;if(cubeRoot){scene.remove(cubeRoot);disposeObject(cubeRoot)}cubeRoot=new THREE.Group();scene.add(cubeRoot);cubies=[];const off=(n-1)/2,spacing=1.02;for(let xi=0;xi<n;xi++)for(let yi=0;yi<n;yi++)for(let zi=0;zi<n;zi++){const x=xi-off,y=yi-off,z=zi-off,g=new RoundedBoxGeometry(.94,.94,.94,4,.095),mat=new THREE.MeshPhysicalMaterial({color:0x17181b,roughness:.32,metalness:.06,clearcoat:.45,clearcoatRoughness:.35}),c=new THREE.Mesh(g,mat);c.position.set(x*spacing,y*spacing,z*spacing);c.castShadow=c.receiveShadow=true;c.userData.stickers=[];const add=(nx,ny,nz,col)=>{const normal=new THREE.Vector3(nx,ny,nz),s=makeSticker(normal,col);c.add(s);c.userData.stickers.push({normal,color:col})};if(yi===n-1)add(0,1,0,COLORS.U);if(yi===0)add(0,-1,0,COLORS.D);if(xi===0)add(-1,0,0,COLORS.L);if(xi===n-1)add(1,0,0,COLORS.R);if(zi===n-1)add(0,0,1,COLORS.F);if(zi===0)add(0,0,-1,COLORS.B);cubeRoot.add(c);cubies.push(c)}updateHud();resetCamera();toast(`${n}×${n} 큐브 준비 완료`)}
+function resetCamera(){const d=size===2?5.4:6.5;camera.position.set(d*.78,d*.62,d);controls.target.set(0,0,0);controls.update()}
+function layerValue(axis,side){return side*(size-1)/2*1.02}
+function moveFace(f,dir=1){enqueue({axis:f.axis,value:layerValue(f.axis,f.side),angle:(f.side>0?-1:1)*dir*Math.PI/2,label:f.key+(dir<0?"'":'')})}
+function enqueue(m,record=true,duration=235){queue.push({...m,record,duration});runQueue()}
+function runQueue(){if(animating||!queue.length)return;const m=queue.shift();if(m.callback){ready=true;toast('준비 완료 · 큐브를 잡고 돌려보세요');runQueue();return}rotate(m)}
+function rotate(m){if(m.record&&ready&&!timerOn)startTimer();animating=true;if(m.record)sfx('move');const pivot=new THREE.Group();cubeRoot.add(pivot);const active=cubies.filter(c=>Math.abs(c.position[m.axis]-m.value)<.12);active.forEach(c=>pivot.attach(c));const st=performance.now();function tick(now){const t=Math.min(1,(now-st)/m.duration),e=1-Math.pow(1-t,4);pivot.rotation[m.axis]=m.angle*e;if(t<1){requestAnimationFrame(tick);return}pivot.rotation[m.axis]=m.angle;pivot.updateMatrixWorld();active.forEach(c=>cubeRoot.attach(c));cubeRoot.remove(pivot);snapAll();if(m.record){history.push({...m});moves++;updateHud()}animating=false;if(!queue.length&&m.record)checkSolved();runQueue()}requestAnimationFrame(tick)}
+function snapAll(){const step=1.02;cubies.forEach(c=>{c.position.set(Math.round(c.position.x/step)*step,Math.round(c.position.y/step)*step,Math.round(c.position.z/step)*step);const mat=new THREE.Matrix4().makeRotationFromQuaternion(c.quaternion),e=mat.elements;for(let i=0;i<16;i++)e[i]=Math.round(e[i]);c.quaternion.setFromRotationMatrix(mat)})}
+function visibleColor(c,axis,dir){for(const s of c.userData.stickers){tempN.copy(s.normal).applyQuaternion(c.quaternion);tempN.set(Math.round(tempN.x),Math.round(tempN.y),Math.round(tempN.z));if(tempN[axis]===dir)return s.color}return null}
+function checkSolved(){const max=(size-1)/2*1.02;for(const axis of ['x','y','z'])for(const dir of [1,-1]){const arr=cubies.filter(c=>Math.abs(c.position[axis]-dir*max)<.12);let col=null;for(const c of arr){const v=visibleColor(c,axis,dir);if(v==null)continue;if(col==null)col=v;else if(col!==v)return}}const ms=stopTimer(true);ready=false;sfx('win');$('rTime').textContent=fmt(ms);$('rMoves').textContent=moves;$('rSize').textContent=`${size}×${size}`;$('winModal').classList.add('show')}
+function scramble(){if(animating)return;stopTimer(false);history=[];moves=0;elapsed=0;$('time').textContent='00:00.00';ready=false;updateHud();const count=size===2?15:25;let last='';for(let i=0;i<count;i++){let f;do{f=FACE[Math.floor(Math.random()*FACE.length)]}while(f.key===last);last=f.key;queue.push({axis:f.axis,value:layerValue(f.axis,f.side),angle:(f.side>0?-1:1)*(Math.random()<.5?1:-1)*Math.PI/2,label:'',record:false,duration:50})}queue.push({callback:true});runQueue();toast('섞는 중…')}
+function undo(){if(animating||!history.length){toast('되돌릴 회전이 없습니다');return}const m=history.pop();moves=Math.max(0,moves-1);updateHud();enqueue({axis:m.axis,value:m.value,angle:-m.angle,label:'undo'},false,200)}
+function startTimer(){timerOn=true;startAt=performance.now()-elapsed;clearInterval(timerId);timerId=setInterval(()=>{elapsed=performance.now()-startAt;$('time').textContent=fmt(elapsed)},31)}
+function stopTimer(save){if(timerOn)elapsed=performance.now()-startAt;clearInterval(timerId);timerOn=false;if(save&&elapsed){const old=Number(localStorage.getItem(bestKey())||0);if(!old||elapsed<old)localStorage.setItem(bestKey(),String(Math.round(elapsed)));readBest()}return elapsed}
+function faceControls(){const g=$('faceGrid');g.innerHTML='';FACE.forEach(f=>{const b=document.createElement('button');b.className='face-btn';b.innerHTML=`<i style="background:${f.color}"></i>${f.key}<small>${f.label}</small>`;b.addEventListener('click',()=>moveFace(f,1));b.addEventListener('contextmenu',e=>{e.preventDefault();moveFace(f,-1)});g.appendChild(b)})}
+function pick(e){const r=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(cubies,false)[0]||null}
+function pointerDown(e){if(animating)return;const hit=pick(e);if(!hit){controls.enabled=true;drag=null;return}e.preventDefault();controls.enabled=false;renderer.domElement.setPointerCapture?.(e.pointerId);const worldNormal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),inv=new THREE.Quaternion();cubeRoot.getWorldQuaternion(inv).invert();worldNormal.applyQuaternion(inv).set(Math.round(worldNormal.x),Math.round(worldNormal.y),Math.round(worldNormal.z));drag={id:e.pointerId,x:e.clientX,y:e.clientY,cubie:hit.object,normal:worldNormal}}
+function pointerUp(e){if(!drag||drag.id!==e.pointerId){controls.enabled=true;return}const qd=drag;drag=null;controls.enabled=true;const dx=e.clientX-qd.x,dy=e.clientY-qd.y;if(Math.hypot(dx,dy)<18)return;const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0).normalize(),up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1).normalize(),dragWorld=right.multiplyScalar(dx).add(up.multiplyScalar(-dy)).normalize(),q=new THREE.Quaternion();cubeRoot.getWorldQuaternion(q).invert();dragWorld.applyQuaternion(q);const axisVec=new THREE.Vector3().crossVectors(qd.normal,dragWorld),vals=[Math.abs(axisVec.x),Math.abs(axisVec.y),Math.abs(axisVec.z)],ai=vals.indexOf(Math.max(...vals)),axis=['x','y','z'][ai];if(vals[ai]<.2)return;const sign=Math.sign(axisVec[axis])||1,value=Math.round(qd.cubie.position[axis]/1.02)*1.02;enqueue({axis,value,angle:sign*Math.PI/2,label:`drag ${axis}`});if(!tipSeen){tipSeen=true;$('dragTip').classList.add('hide')}}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))}
+async function boot(){try{THREE=await import('three');({OrbitControls}=await import('three/addons/controls/OrbitControls.js'));({RoundedBoxGeometry}=await import('three/addons/geometries/RoundedBoxGeometry.js'));pointer=new THREE.Vector2();tempN=new THREE.Vector3();scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(35,innerWidth/innerHeight,.1,100);renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;$('stage').appendChild(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.enablePan=false;controls.minDistance=4;controls.maxDistance=10;raycaster=new THREE.Raycaster();scene.add(new THREE.HemisphereLight(0xffffff,0x776d5d,2));const key=new THREE.DirectionalLight(0xffffff,3.1);key.position.set(5,8,7);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=6;key.shadow.camera.bottom=-6;scene.add(key);const rim=new THREE.DirectionalLight(0x9fc5ff,1.1);rim.position.set(-6,3,-4);scene.add(rim);const floor=new THREE.Mesh(new THREE.PlaneGeometry(22,22),new THREE.ShadowMaterial({color:0x554d42,opacity:.19}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.05;floor.receiveShadow=true;scene.add(floor);const matCanvas=document.createElement('canvas');matCanvas.width=matCanvas.height=512;const mc=matCanvas.getContext('2d');mc.fillStyle='#8f918d';mc.beginPath();mc.roundRect(28,28,456,456,62);mc.fill();mc.strokeStyle='#ffffff55';mc.lineWidth=5;mc.stroke();const matTex=new THREE.CanvasTexture(matCanvas);matTex.colorSpace=THREE.SRGBColorSpace;const pad=new THREE.Mesh(new THREE.PlaneGeometry(5.4,5.4),new THREE.MeshStandardMaterial({map:matTex,roughness:.92}));pad.rotation.x=-Math.PI/2;pad.position.y=-1.72;pad.receiveShadow=true;scene.add(pad);faceControls();buildCube(3);renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);renderer.domElement.addEventListener('pointercancel',pointerUp);renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());addEventListener('resize',resize);(function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera)})();$('loading').classList.add('hide')}catch(err){console.error(err);$('loading').innerHTML='<div class="loader">3D 엔진을 불러오지 못했습니다.<br><small>인터넷 연결 또는 학교망의 CDN 차단 여부를 확인해 주세요.</small></div>'}}
+$('scramble').addEventListener('click',()=>{sfx('click');scramble()});$('undo').addEventListener('click',()=>{sfx('click');undo()});$('reset').addEventListener('click',()=>{sfx('click');buildCube(size)});$('camera').addEventListener('click',()=>{sfx('click');resetCamera();toast('시점을 원래 위치로 돌렸습니다')});$('sound').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.firstChild.textContent=soundOn?'♪ ':'× ';if(soundOn)sfx('click');toast(soundOn?'소리 켜짐':'소리 꺼짐')});$('help').addEventListener('click',()=>$('helpModal').classList.add('show'));$('size2').addEventListener('click',()=>buildCube(2));$('size3').addEventListener('click',()=>buildCube(3));$('again').addEventListener('click',()=>{$('winModal').classList.remove('show');scramble()});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).classList.remove('show')));addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;const f=FACE.find(x=>x.key===e.key.toUpperCase());if(f){e.preventDefault();moveFace(f,e.shiftKey?-1:1)}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}});boot();
 </script>
 </body>
 </html>
