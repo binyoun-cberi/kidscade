@@ -1,0 +1,27 @@
+{
+  "library": "Kidscade Asset Library v2",
+  "version": "2.0.0",
+  "license": "CC0 source packs; see assets/game/licenses/",
+  "counts": {
+    "v1_3d_assets": 246,
+    "cube_pets_glb": 24,
+    "platformer_glb": 198,
+    "animal_png": 60,
+    "fish_png": 126,
+    "boardgame_runtime": 535,
+    "puzzle_png": 219,
+    "sports_png": 187,
+    "planets_png": 10,
+    "total_runtime_assets": 1605
+  },
+  "decisions": {
+    "KayKit Platformer": "Selected high-value runner/platformer pieces; converted from external GLTF/BIN/PNG into standalone GLB files.",
+    "Cube Pets": "All 24 GLB animal characters retained.",
+    "Animal Pack Remastered": "Normal Round and Square PNG variants retained; outline/no-detail duplicates removed.",
+    "Fish Pack": "Default individual PNG assets retained; Double/vector/spritesheet duplicates removed.",
+    "Boardgame Pack": "Individual PNG cards/chips/dice/pieces plus OGG board-game sounds retained.",
+    "Puzzle Pack II": "Back tiles, balls, coins, paddles, pipes and particles retained; large repeated colored tile grids removed.",
+    "Sports Pack": "Equipment, elements, special objects and character color sets retained.",
+    "Planets": "10 finished planet PNGs retained; compositing source parts removed."
+  }
+}

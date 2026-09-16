@@ -1,0 +1,96 @@
+{
+  "우리 동네 마트 계산대": [
+    "shops/market/cash-register.glb",
+    "shops/market/shopping-cart.glb",
+    "shops/market/shopping-basket.glb",
+    "shops/market/display-fruit.glb",
+    "shops/market/display-bread.glb",
+    "shops/market/freezer.glb",
+    "shops/market/freezers-standing.glb",
+    "shops/market/shelf-bags.glb",
+    "shops/market/shelf-boxes.glb",
+    "shops/market/shelf-end.glb",
+    "shops/market/character-employee.glb",
+    "food/apple.glb",
+    "food/banana.glb",
+    "food/bread.glb",
+    "food/carton.glb",
+    "food/can.glb",
+    "food/soda-bottle.glb",
+    "food/soda-can.glb",
+    "food/chocolate.glb"
+  ],
+  "우주 샌드위치 가게": [
+    "food/cutting-board.glb",
+    "food/cooking-knife.glb",
+    "food/bread.glb",
+    "food/cheese-cut.glb",
+    "food/tomato-slice.glb",
+    "food/cabbage.glb",
+    "food/bacon.glb",
+    "food/egg-cooked.glb",
+    "food/sandwich.glb",
+    "food/sub.glb",
+    "food/plate.glb"
+  ],
+  "아이스크림 나눗셈 가게": [
+    "food/ice-cream-cup.glb",
+    "food/ice-cream-cne.glb",
+    "food/ice-cream.glb",
+    "food/ice-cream-scoop-chocolate.glb",
+    "food/ice-cream-scoop-mint.glb",
+    "food/sundae.glb",
+    "food/whipped-cream.glb",
+    "food/strawberry.glb",
+    "food/cherries.glb",
+    "food/cup.glb"
+  ],
+  "멍멍 곱셈 러너": [
+    "characters/pets/animal-dog.glb",
+    "platformer/platforms/platform_6x2x1_green.glb",
+    "platformer/platforms/platform_4x4x1_green.glb",
+    "platformer/platforms/platform_slope_4x4x4_green.glb",
+    "platformer/gates/arch_blue.glb",
+    "platformer/gates/arch_green.glb",
+    "platformer/gates/arch_red.glb",
+    "platformer/gates/arch_yellow.glb",
+    "platformer/obstacles/barrier_2x1x1_red.glb",
+    "platformer/obstacles/cone_yellow.glb",
+    "platformer/mechanics/spring_pad_blue.glb",
+    "platformer/pickups/star_yellow.glb",
+    "platformer/pickups/heart_red.glb",
+    "platformer/signs/signage_finish.glb"
+  ],
+  "코드 브레이커": [
+    "2d/boardgame/chips/chipBlackWhite.png",
+    "2d/boardgame/chips/chipWhite.png",
+    "2d/boardgame/chips/chipBlue.png",
+    "2d/boardgame/dice/dieWhite1.png",
+    "audio/boardgame/chipsCollide1.ogg",
+    "audio/boardgame/cardPlace1.ogg"
+  ],
+  "표류생존기 / 낚시 게임": [
+    "2d/fish/fish_blue.png",
+    "2d/fish/fish_green.png",
+    "2d/fish/fish_orange.png",
+    "2d/fish/rock_a.png",
+    "2d/fish/seaweed_green_a.png",
+    "2d/fish/bubble_a.png"
+  ],
+  "동물/생태 학습 게임": [
+    "2d/animals/round/dog.png",
+    "2d/animals/round/cat.png",
+    "2d/animals/round/cow.png",
+    "2d/animals/round/frog.png",
+    "2d/animals/round/elephant.png",
+    "characters/pets/animal-dog.glb",
+    "characters/pets/animal-cat.glb",
+    "characters/pets/animal-elephant.glb"
+  ],
+  "우주 게임": [
+    "space/planets/planet00.png",
+    "space/planets/planet01.png",
+    "space/planets/planet02.png",
+    "space/planets/planet03.png"
+  ]
+}
