@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>인내의 탑 1:1 · 3분 높이 대전</title>
+<style>
+:root{--bg:#07101f;--panel:rgba(8,18,38,.92);--line:rgba(255,255,255,.14);--ink:#f7fbff;--muted:#9fb0cc;--me:#67e8f9;--opp:#fb7185;--gold:#fde68a;--good:#86efac}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}button,input{font:inherit}button{cursor:pointer}
+#stage{position:fixed;inset:0;background:radial-gradient(circle at 50% 12%,#254575 0%,#10182d 40%,#070b14 100%)}
+#gameFrame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#10182d}
+#gameFrame.active{display:block}
+.overlay{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,rgba(4,9,20,.60),rgba(3,6,13,.88));backdrop-filter:blur(10px)}
+.overlay.hidden{display:none}.card{width:min(720px,95vw);border:1px solid var(--line);border-radius:28px;background:var(--panel);box-shadow:0 30px 90px rgba(0,0,0,.42);padding:28px;text-align:center}.title{font-size:clamp(34px,6vw,62px);font-weight:1000;letter-spacing:-.06em;margin:0}.sub{color:var(--muted);line-height:1.6;margin:10px auto 20px;max-width:590px}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.btn{border:1px solid var(--line);border-radius:16px;padding:13px 18px;font-weight:1000;color:white;background:#263655;box-shadow:0 10px 25px rgba(0,0,0,.22)}.btn.primary{background:linear-gradient(135deg,#06b6d4,#6366f1);border:0}.btn.ready{background:linear-gradient(135deg,#22c55e,#10b981);border:0;color:#052014}.btn.danger{background:rgba(244,63,94,.16);color:#fecdd3}.btn:disabled{opacity:.45;cursor:not-allowed}.joinRow{display:flex;gap:8px;justify-content:center;margin-top:12px}.joinRow input{width:190px;text-transform:uppercase;text-align:center;letter-spacing:.16em;font-size:24px;font-weight:1000;background:#0a1428;color:white;border:1px solid var(--line);border-radius:15px;padding:10px 12px;outline:none}.roomCode{font-size:38px;font-weight:1000;letter-spacing:.18em;color:var(--gold);margin:6px 0}.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin:20px 0}.playerBox{border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.05)}.playerBox.me{box-shadow:inset 0 0 0 1px rgba(103,232,249,.25)}.playerBox.opp{box-shadow:inset 0 0 0 1px rgba(251,113,133,.20)}.pName{font-weight:1000;font-size:20px}.pState{font-size:13px;color:var(--muted);margin-top:5px}.vs{font-weight:1000;color:var(--gold);font-size:20px}.rule{font-size:13px;color:#cbd5e1;line-height:1.55;background:rgba(255,255,255,.05);border-radius:14px;padding:12px;margin-top:16px}
+#duelHud{position:absolute;z-index:25;left:50%;top:10px;transform:translateX(-50%);width:min(760px,calc(100vw - 150px));pointer-events:none;display:none}.hudShell{border:1px solid rgba(255,255,255,.18);border-radius:18px;background:rgba(3,9,21,.68);backdrop-filter:blur(12px);padding:9px 12px;box-shadow:0 16px 40px rgba(0,0,0,.25)}.hudTop{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}.scoreSide{font-weight:1000;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.scoreSide.me{color:var(--me);text-align:left}.scoreSide.opp{color:var(--opp);text-align:right}.timer{font-size:26px;font-weight:1000;color:white;font-variant-numeric:tabular-nums}.raceBar{position:relative;height:10px;margin-top:7px;border-radius:999px;background:rgba(255,255,255,.10);overflow:visible}.raceDot{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 12px currentColor;transition:left .35s ease}.raceDot.me{background:var(--me);color:var(--me)}.raceDot.opp{background:var(--opp);color:var(--opp)}
+#countdown{position:absolute;inset:0;z-index:32;display:none;align-items:center;justify-content:center;pointer-events:none;background:rgba(2,6,15,.22)}#countdown.show{display:flex}.countText{font-size:clamp(72px,18vw,190px);font-weight:1000;color:white;text-shadow:0 10px 50px #000,0 0 45px rgba(103,232,249,.55);animation:pulse .75s ease-out infinite}@keyframes pulse{0%{transform:scale(.82);opacity:.55}35%{transform:scale(1.05);opacity:1}100%{transform:scale(1);opacity:.85}}
+#statusToast{position:absolute;left:50%;bottom:18px;z-index:35;transform:translateX(-50%);padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(4,9,20,.72);backdrop-filter:blur(10px);font-size:13px;color:#dbeafe;display:none}.resultGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.resultBox{border-radius:18px;padding:14px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.resultHeight{font-size:34px;font-weight:1000;margin-top:5px}.resultMeta{font-size:13px;color:var(--muted);margin-top:5px}
+@media(max-width:720px){#duelHud{width:calc(100vw - 14px);top:6px}.hudShell{padding:7px 9px}.scoreSide{font-size:13px}.timer{font-size:20px}.card{padding:21px 16px}.versus{gap:7px}.pName{font-size:16px}.roomCode{font-size:31px}.resultGrid{grid-template-columns:1fr}.joinRow{flex-direction:column;align-items:center}.joinRow input{width:220px}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <iframe id="gameFrame" title="인내의 탑 대전 플레이"></iframe>
+
+  <div id="duelHud">
+    <div class="hudShell">
+      <div class="hudTop">
+        <div class="scoreSide me"><span id="meName">나</span> · <span id="meHeight">0m</span></div>
+        <div class="timer" id="matchTimer">03:00</div>
+        <div class="scoreSide opp"><span id="oppHeight">0m</span> · <span id="oppName">상대</span></div>
+      </div>
+      <div class="raceBar"><span class="raceDot me" id="meDot" style="left:2%"></span><span class="raceDot opp" id="oppDot" style="left:2%"></span></div>
+    </div>
+  </div>
+
+  <div id="countdown"><div class="countText" id="countText">3</div></div>
+  <div id="statusToast"></div>
+
+  <div class="overlay" id="loginOverlay">
+    <div class="card">
+      <h1 class="title">🗼 인내의 탑 1:1</h1>
+      <p class="sub">같은 맵에서 동시에 출발해 3분 뒤 <b style="color:#fde68a">그 순간 더 높은 곳에 있는 사람</b>이 승리합니다. 마지막에 욕심내다 추락하면 역전될 수 있어요.</p>
+      <div id="accountState" class="sub">계정 확인 중…</div>
+      <div class="actions" id="homeActions" style="display:none"><button class="btn" onclick="location.href='/'">Kidscade로 돌아가기</button></div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="lobbyOverlay">
+    <div class="card">
+      <h1 class="title">⚔️ 3분 높이 대전</h1>
+      <p class="sub">방 코드를 친구에게 알려주거나 친구의 코드를 입력하세요. 대전은 로그인 계정끼리만 가능합니다.</p>
+      <div id="lobbyChooser">
+        <div class="actions"><button class="btn primary" id="createBtn">새 방 만들기</button></div>
+        <div class="joinRow"><input id="roomCodeInput" maxlength="6" placeholder="방 코드" autocomplete="off" /><button class="btn" id="joinBtn">참가</button></div>
+        <div class="rule">공격이나 방해 기능은 없습니다. 두 사람은 같은 시드의 탑을 오르며, <b>최고 기록이 아니라 타이머가 0이 된 순간의 현재 높이</b>를 비교합니다.</div>
+        <div class="actions" style="margin-top:12px"><button class="btn danger" onclick="location.href='/인내의 탑.html'">혼자 하기</button></div>
+      </div>
+      <div id="roomLobby" style="display:none">
+        <div style="color:var(--muted);font-size:13px">방 코드</div><div class="roomCode" id="roomCodeText">------</div>
+        <div class="actions"><button class="btn" id="copyBtn">코드 복사</button></div>
+        <div class="versus">
+          <div class="playerBox me"><div class="pName" id="lobbyMe">나</div><div class="pState" id="lobbyMeState">준비 전</div></div>
+          <div class="vs">VS</div>
+          <div class="playerBox opp"><div class="pName" id="lobbyOpp">상대 기다리는 중</div><div class="pState" id="lobbyOppState">미입장</div></div>
+        </div>
+        <div class="actions"><button class="btn ready" id="readyBtn">준비 완료</button><button class="btn danger" id="leaveBtn">방 나가기</button></div>
+        <div class="rule">둘 다 준비하면 서버가 같은 맵 시드를 확정하고 잠시 후 동시에 시작합니다. 대전 중 일시정지와 재시작은 사용할 수 없습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="resultOverlay">
+    <div class="card">
+      <h1 class="title" id="resultTitle">경기 종료!</h1>
+      <p class="sub" id="resultSub">3분 높이 대전 결과</p>
+      <div class="resultGrid">
+        <div class="resultBox"><div id="resultMeName">나</div><div class="resultHeight" style="color:var(--me)" id="resultMeHeight">0m</div><div class="resultMeta" id="resultMeBest">최고 0m</div></div>
+        <div class="resultBox"><div id="resultOppName">상대</div><div class="resultHeight" style="color:var(--opp)" id="resultOppHeight">0m</div><div class="resultMeta" id="resultOppBest">최고 0m</div></div>
+      </div>
+      <div class="actions"><button class="btn primary" id="againBtn">새 대전</button><button class="btn" onclick="location.href='/인내의 탑.html'">혼자 하기</button><button class="btn" onclick="location.href='/'">Kidscade</button></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const frame = $('gameFrame');
+  const loginOverlay = $('loginOverlay');
+  const lobbyOverlay = $('lobbyOverlay');
+  const resultOverlay = $('resultOverlay');
+  const countdown = $('countdown');
+  const duelHud = $('duelHud');
+  let room = null;
+  let pollTimer = null;
+  let serverOffsetMs = 0;
+  let frameReady = false;
+  let gameStarted = false;
+  let gameFrozen = false;
+  let finalSent = false;
+  let localBest = 0;
+  let preparingSeed = null;
+  let leavingIntentionally = false;
+
+  const errorText = {
+    not_authenticated:'Kidscade 로그인이 필요합니다. 메인 화면에서 학생 계정으로 로그인한 뒤 다시 들어오세요.',
+    session_expired:'로그인이 만료되었습니다. Kidscade에서 다시 로그인해 주세요.',
+    room_not_found:'방을 찾을 수 없습니다. 코드를 다시 확인해 주세요.',
+    room_full:'이미 두 명이 참가한 방입니다.',
+    room_already_started:'이미 시작된 방입니다.',
+    invalid_room_code:'방 코드는 영문/숫자 6자리입니다.',
+    multiplayer_database_not_ready:'멀티플레이 데이터베이스 준비가 아직 끝나지 않았습니다.',
+    multiplayer_internal_error:'멀티플레이 서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.'
+  };
+
+  async function api(path, body = {}) {
+    const response = await fetch(path, {method:'POST', credentials:'same-origin', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok || data.ok === false) {
+      const error = new Error(errorText[data.error] || data.error || `요청 실패 (${response.status})`);
+      error.code = data.error || 'request_failed';
+      throw error;
+    }
+    return data;
+  }
+
+  function showToast(text, ms=1700) {
+    const el = $('statusToast'); el.textContent = text; el.style.display='block';
+    clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.style.display='none',ms);
+  }
+
+  async function checkAccount() {
+    try {
+      const response = await fetch('/api/account/me', {credentials:'same-origin', cache:'no-store'});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error('login');
+      $('accountState').innerHTML = `<b style="color:#86efac">${escapeHtml(data.account?.nickname || '학생')}</b> 계정으로 참가합니다.`;
+      setTimeout(()=>{ loginOverlay.classList.add('hidden'); lobbyOverlay.classList.remove('hidden'); },350);
+    } catch (_) {
+      $('accountState').textContent = errorText.not_authenticated;
+      $('homeActions').style.display='flex';
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  async function createRoom() {
+    try {
+      $('createBtn').disabled=true;
+      const data = await api('/api/multiplayer/rooms',{gameId:'patience_tower_duel'});
+      setRoom(data.room); startPolling();
+    } catch (error) { alert(error.message); }
+    finally { $('createBtn').disabled=false; }
+  }
+
+  async function joinRoom() {
+    try {
+      const code = $('roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+      if (code.length !== 6) throw new Error(errorText.invalid_room_code);
+      $('joinBtn').disabled=true;
+      const data = await api('/api/multiplayer/join',{code});
+      setRoom(data.room); startPolling();
+    } catch (error) { alert(error.message); }
+    finally { $('joinBtn').disabled=false; }
+  }
+
+  function setRoom(next) {
+    room = next;
+    if (next?.serverNow) serverOffsetMs = new Date(next.serverNow).getTime() - Date.now();
+    $('lobbyChooser').style.display='none'; $('roomLobby').style.display='block';
+    $('roomCodeText').textContent=next.code;
+    renderRoom(next);
+  }
+
+  function renderRoom(next) {
+    if (!next) return;
+    const me=next.self, opp=next.opponent;
+    $('lobbyMe').textContent=me?.nickname || '나';
+    $('lobbyMeState').textContent=me?.ready?'준비 완료':'준비 전';
+    $('lobbyOpp').textContent=opp?.nickname || '상대 기다리는 중';
+    $('lobbyOppState').textContent=!opp?'미입장':(opp.ready?'준비 완료':(opp.online?'입장 · 준비 전':'연결 확인 중'));
+    $('readyBtn').textContent=me?.ready?'준비 취소':'준비 완료';
+    $('readyBtn').disabled=!opp || next.status!=='waiting';
+    $('meName').textContent=me?.nickname||'나'; $('oppName').textContent=opp?.nickname||'상대';
+    $('oppHeight').textContent=`${opp?.currentHeight||0}m`;
+    if (next.status==='playing') handlePlaying(next);
+    if (next.status==='finished') showResult(next);
+  }
+
+  async function toggleReady() {
+    if (!room) return;
+    try {
+      const data=await api('/api/multiplayer/ready',{roomId:room.id,ready:!room.self?.ready});
+      setRoom(data.room);
+    } catch(error){showToast(error.message,2600)}
+  }
+
+  function startPolling() {
+    clearInterval(pollTimer);
+    pollTimer=setInterval(syncTick,900);
+    syncTick();
+  }
+
+  function nowServer() { return Date.now()+serverOffsetMs; }
+
+  function readCurrentHeight() {
+    if (!frameReady || !gameStarted) return 0;
+    try {
+      const text=frame.contentDocument?.getElementById('heightNow')?.textContent||'0';
+      const value=Math.max(0,Math.min(2000,parseInt(text,10)||0));
+      localBest=Math.max(localBest,value); return value;
+    } catch(_){return 0}
+  }
+
+  async function syncTick(forceFinished=false) {
+    if (!room) return;
+    const current=readCurrentHeight();
+    const endMs=room.endAt?new Date(room.endAt).getTime():Infinity;
+    const finished=forceFinished || (room.status==='playing' && nowServer()>=endMs);
+    if (finished) freezeGame();
+    try {
+      const data=await api('/api/multiplayer/sync',{roomId:room.id,currentHeight:current,bestHeight:localBest,finished});
+      room=data.room;
+      if (room.serverNow) serverOffsetMs=new Date(room.serverNow).getTime()-Date.now();
+      renderRoom(room);
+    } catch(error){
+      if (error.code==='not_authenticated'||error.code==='session_expired'){clearInterval(pollTimer);alert(error.message);location.href='/';}
+    }
+  }
+
+  async function prepareGame(seed) {
+    if (preparingSeed===seed || frameReady) return;
+    preparingSeed=seed;
+    try {
+      let html=await fetch('/인내의 탑.html',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('게임 파일을 불러오지 못했습니다.');return r.text()});
+      html=html.replace(/<script src=["']\/patience-tower-duel-entry\.js[^"']*["']><\/script>\s*/gi,'');
+      html=html.replaceAll('generateUntil(-7600);','generateUntil(-30000);');
+      html=html.replace('  resetWorld(); draw();','  draw();');
+      const seedScript=`<script>(()=>{let a=${Number(seed)||1}>>>0;Math.random=()=>{a=(a+0x6D2B79F5)|0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};window.addEventListener('keydown',e=>{if(e.code==='KeyP'||e.code==='KeyR'||e.code==='Enter'){e.preventDefault();e.stopImmediatePropagation();}},true);})();<\/script><style>#pauseBtn,#restartBtn,.options{display:none!important}#menu{pointer-events:none!important}</style>`;
+      html=html.replace('<head>','<head>'+seedScript);
+      frame.onload=()=>{frameReady=true;};
+      frame.srcdoc=html; frame.classList.add('active');
+    } catch(error){showToast(error.message,3500)}
+  }
+
+  function startEmbeddedGame() {
+    if (gameStarted || !frameReady) return;
+    try {
+      const doc=frame.contentDocument;
+      const practice=doc.getElementById('practiceChk'), easy=doc.getElementById('easyChk');
+      if(practice)practice.checked=false;if(easy)easy.checked=false;
+      doc.getElementById('startBtn')?.click();
+      gameStarted=true; gameFrozen=false; finalSent=false; localBest=0;
+      countdown.classList.remove('show'); duelHud.style.display='block';
+    } catch(_){showToast('게임 시작 준비가 늦어지고 있습니다.',2200)}
+  }
+
+  function freezeGame() {
+    if (gameFrozen || !gameStarted) return;
+    gameFrozen=true;
+    try { frame.contentDocument?.getElementById('pauseBtn')?.click(); } catch(_){}
+    if (!finalSent) { finalSent=true; setTimeout(()=>syncTick(true),0); }
+  }
+
+  function handlePlaying(next) {
+    lobbyOverlay.classList.add('hidden');
+    duelHud.style.display='block';
+    prepareGame(next.seed);
+    const startMs=new Date(next.startAt).getTime(), endMs=new Date(next.endAt).getTime(), now=nowServer();
+    const untilStart=startMs-now, left=Math.max(0,endMs-now);
+    if (untilStart>0) {
+      countdown.classList.add('show');
+      $('countText').textContent=untilStart>3200?'READY':String(Math.max(1,Math.ceil(untilStart/1000)));
+    } else {
+      if(frameReady) startEmbeddedGame(); else countdown.classList.add('show');
+      if(!frameReady)$('countText').textContent='LOADING';
+    }
+    const sec=Math.max(0,Math.ceil(left/1000)); $('matchTimer').textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+    const current=readCurrentHeight(); $('meHeight').textContent=`${current}m`; $('oppHeight').textContent=`${next.opponent?.currentHeight||0}m`;
+    updateRaceDots(current,next.opponent?.currentHeight||0);
+    if (left<=0) freezeGame();
+  }
+
+  function updateRaceDots(me,opp) {
+    const scale=Math.max(30,me,opp,localBest,room?.opponent?.bestHeight||0)+12;
+    $('meDot').style.left=`${Math.max(2,Math.min(98,me/scale*96+2))}%`;
+    $('oppDot').style.left=`${Math.max(2,Math.min(98,opp/scale*96+2))}%`;
+  }
+
+  function showResult(next) {
+    clearInterval(pollTimer); freezeGame(); countdown.classList.remove('show'); duelHud.style.display='none'; resultOverlay.classList.remove('hidden'); lobbyOverlay.classList.add('hidden');
+    const outcome=next.result?.outcome||'draw';
+    $('resultTitle').textContent=outcome==='win'?'🏆 승리!':outcome==='lose'?'😵 패배!':'🤝 무승부!';
+    $('resultSub').textContent='타이머가 끝난 순간의 높이로 결정되었습니다.';
+    $('resultMeName').textContent=next.self?.nickname||'나'; $('resultOppName').textContent=next.opponent?.nickname||'상대';
+    $('resultMeHeight').textContent=`${next.self?.currentHeight||0}m`; $('resultOppHeight').textContent=`${next.opponent?.currentHeight||0}m`;
+    $('resultMeBest').textContent=`경기 중 최고 ${next.self?.bestHeight||0}m`; $('resultOppBest').textContent=`경기 중 최고 ${next.opponent?.bestHeight||0}m`;
+  }
+
+  async function leaveRoom() {
+    if (!room) return resetLobby(); leavingIntentionally=true;
+    try{await api('/api/multiplayer/leave',{roomId:room.id})}catch(_){}
+    resetLobby(); leavingIntentionally=false;
+  }
+
+  function resetLobby() {
+    clearInterval(pollTimer); room=null; frameReady=false;gameStarted=false;gameFrozen=false;finalSent=false;localBest=0;preparingSeed=null;
+    frame.classList.remove('active');frame.removeAttribute('srcdoc');resultOverlay.classList.add('hidden');countdown.classList.remove('show');duelHud.style.display='none';
+    $('roomLobby').style.display='none';$('lobbyChooser').style.display='block';$('roomCodeInput').value='';lobbyOverlay.classList.remove('hidden');
+  }
+
+  $('createBtn').addEventListener('click',createRoom); $('joinBtn').addEventListener('click',joinRoom); $('readyBtn').addEventListener('click',toggleReady); $('leaveBtn').addEventListener('click',leaveRoom); $('againBtn').addEventListener('click',resetLobby);
+  $('roomCodeInput').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)});
+  $('roomCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom()});
+  $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room?.code||'');showToast('방 코드를 복사했습니다.')}catch(_){showToast(`방 코드: ${room?.code||''}`,2500)}});
+  window.addEventListener('beforeunload',()=>{if(!room||room.status==='finished'||leavingIntentionally)return;try{navigator.sendBeacon('/api/multiplayer/leave',new Blob([JSON.stringify({roomId:room.id})],{type:'application/json'}))}catch(_){}});
+
+  checkAccount();
+})();
+</script>
+</body>
+</html>
