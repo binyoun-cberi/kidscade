@@ -33,7 +33,7 @@ test('winner uses current height only and allows a draw', () => {
 });
 
 test('Patience Tower duel client keeps the three-minute current-height rule and deterministic map transform', () => {
-  const html = fs.readFileSync(path.join(root, '인내의 탑 대전.html'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'games/patience-tower-duel/index.html'), 'utf8');
   assert.match(html, /3분 뒤/);
   assert.match(html, /최고 기록이 아니라 타이머가 0이 된 순간의 현재 높이/);
   assert.match(html, /generateUntil\(-30000\)/);
@@ -55,4 +55,6 @@ test('single-player build integration exposes the duel entry', () => {
   assert.match(injector, /인내의 탑\.html/);
   assert.match(injector, /patience-tower-duel-entry\.js/);
   assert.match(entry, /1:1 · 3분 높이 대전/);
+  assert.match(entry, /\/games\/patience-tower-duel\//);
+  assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
 });
