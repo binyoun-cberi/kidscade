@@ -26,6 +26,7 @@ test('storage registry keeps current save keys compatible', () => {
   assert.equal(storage.keys.gardenState, 'kidscade_garden_v1');
   assert.equal(storage.gameKeys.aquariumSave, 'kidscade_aquarium_v1');
   assert.equal(storage.gameKeys.byeokrandoSave, 'kidscade_byeokrando_v1');
+  assert.equal(storage.gameKeys.omokArenaSave, 'kidscade_omok_arena_v1');
   assert.equal(storage.prefixes.languageV3, 'kidscade_language_v3_');
 });
 
@@ -64,6 +65,7 @@ test('registered physical keys include shared, game and dynamic namespaces', () 
   const storage = loadStorage();
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_coins'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_aquarium_v1'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_omok_arena_v1'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_en'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_unknown_new_key'), false);
