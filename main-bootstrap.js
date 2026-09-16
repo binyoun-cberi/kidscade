@@ -71,7 +71,7 @@
     const scriptIndex = html.indexOf('<script', contentStart);
     const contentEnd = scriptIndex > contentStart ? scriptIndex : html.length;
     const scope = html.slice(contentStart, contentEnd);
-    const cardPattern = /<a\b(?=[^>]*\bclass\s*=\s*["'][^"']*\bgame-card\b[^"']*["'])(?=[^>]*\bdata-id\s*=\s*["'][^"']+["'])[^>]*>[\s\S]*?<\/a>/gi;
+    const cardPattern = /<a\b(?=[^>]*\bclass\s*=\s*["'][^"']*\bgame-card\b[^"']*["'])[^>]*>[\s\S]*?<\/a>/gi;
     const legacyCards = scope.match(cardPattern) || [];
     const remainingMarkup = scope.replace(cardPattern, '');
     const cards = getManagedGames(catalog).map(renderManagedCard).join('');
@@ -84,9 +84,9 @@
 
   function replaceBetween(html, startMarker, endMarker, replacement) {
     const start = html.indexOf(startMarker);
-    if (start < 0) return html;
+    if (start < 0) throw new Error('필수 화면 연결 지점을 찾지 못했습니다: ' + startMarker.trim());
     const end = html.indexOf(endMarker, start + startMarker.length);
-    if (end < 0) return html;
+    if (end < 0) throw new Error('필수 화면 연결 끝을 찾지 못했습니다: ' + endMarker.trim());
     return html.slice(0, start) + replacement + html.slice(end);
   }
 
@@ -235,6 +235,7 @@
     const launcherStart = '            function openGameModal(e, cardElement) {';
     const launcherEnd = '\n\n            // =====================================\n            // 배지 동기화 및 랭크 보상';
     const launcherReplacement = `            const gameLauncherBridge = {
+                canLaunch: (event) => window.KidscadeAgeNavigation?.canLaunch(event) === true,
                 getGame: (id) => window.KidscadeGames?.get?.(id) || null,
                 getCard: (id) => window.KidscadeGames?.getCard?.(id) || document.querySelector(\`#game-list .game-card[data-id="${'${'}CSS.escape(String(id || ''))}"]\`),
                 playSound: (sound) => playUISound(sound),
@@ -297,62 +298,20 @@
                 syncBadges: () => syncBadgesAndProfile()
             };
 
-            function openGameModal(e, cardElement) {
-                const delegated = window.KidscadeGameLauncher?.open?.(e, cardElement, gameLauncherBridge);
-                if (delegated?.handled) return;
+            window.KidscadePlay = Object.freeze({
+                open(id, event) {
+                    const card = gameLauncherBridge.getCard(id);
+                    if (!card) return { handled: true, opened: false, reason: 'missing-card' };
+                    return window.KidscadeGameLauncher.open(event, card, gameLauncherBridge);
+                }
+            });
 
-                // 런타임 모듈이 로드되지 않았을 때만 사용하는 안전한 fallback.
-                if (e.target.classList.contains('fav-star') || e.target.classList.contains('cert-btn')) return;
-                e.preventDefault();
-                const gameId = cardElement.getAttribute('data-id');
-                const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}gameId}"]\`) || cardElement;
-                if (originCard.classList.contains('disabled')) { playUISound('click'); alert("열심히 준비 중인 게임입니다! 조금만 기다려주세요 😊"); return; }
-                activeGameHadBonus = consumePlayTicket(gameId);
-                if (!activeGameHadBonus) showToast(\`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${'${'}formatRechargeTime(getNextRechargeMs(gameId))} 뒤 보너스 +1\`);
-                playUISound('open'); playStartTime = Date.now(); playCheckpointTime = playStartTime; activeGameId = gameId;
-                activeGameCategory = originCard.getAttribute('data-category') || 'all';
-                trackRecent(gameId);
-                const energyState = getPlayState(gameId);
-                const bonusText = activeGameHadBonus ? \`추천 에너지 보너스 적용 · 남은 보너스 ${'${'}energyState.plays}/${'${'}PLAY_LIMIT_MAX}\` : '기본 보상 진행';
-                document.getElementById('modal-title-text').innerText = \`진행 중: ${'${'}originCard.querySelector('.game-title').innerText} · ${'${'}bonusText}\`;
-                gameIframe.src = originCard.getAttribute('href');
-                gameModal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            function openGameModal(e, cardElement) {
+                return window.KidscadeGameLauncher.open(e, cardElement, gameLauncherBridge);
             }
 
             closeModalBtn.addEventListener('click', () => {
-                const delegated = window.KidscadeGameLauncher?.close?.(gameLauncherBridge);
-                if (delegated?.handled) return;
-
-                // 런타임 모듈이 로드되지 않았을 때만 사용하는 안전한 fallback.
-                const closedAt = Date.now();
-                playUISound('close'); gameModal.classList.add('hidden'); gameIframe.src = ''; document.body.style.overflow = 'auto';
-                if (playStartTime > 0) {
-                    const sessionSec = Math.max(0, Math.floor((closedAt - playStartTime) / 1000));
-                    checkpointPlayTime(closedAt);
-                    if (sessionSec >= MIN_REWARD_PLAY_SEC) {
-                        const sessionMin = Math.floor(sessionSec / 60);
-                        const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
-                        const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
-                        const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
-                        const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
-                        const durationText = sessionMin > 0 ? \`${'${'}sessionMin}분 ${'${'}sessionSec % 60}초\` : \`${'${'}sessionSec}초\`;
-                        addCoins(rewardSeeds, activeGameHadBonus ? \`추천 에너지 보너스 · ${'${'}durationText}\` : \`게임 도전 · ${'${'}durationText}\`);
-                        if (pet.level < 4 && gainedExp > 0) {
-                            pet.exp += gainedExp;
-                            if (activeGameCategory !== 'all') pet.expTracks[activeGameCategory] = (pet.expTracks[activeGameCategory] || 0) + gainedExp;
-                        }
-                        savePet();
-                        updateMissionProgress(activeGameCategory, activeGameId);
-                        gardenController?.session({game: activeGameId, category: activeGameCategory, seconds: sessionSec});
-                    } else if (sessionSec > 0) {
-                        showToast(\`학습시간 ${'${'}sessionSec}초는 저장했어요. 씨앗과 미션은 30초 이상 플레이하면 인정돼요.\`);
-                    }
-                    playStartTime = 0;
-                    playCheckpointTime = 0;
-                    activeGameId = null;
-                    activeGameHadBonus = false;
-                }
-                syncBadgesAndProfile();
+                window.KidscadeGameLauncher.close(gameLauncherBridge);
             });`;
     html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
 
@@ -360,6 +319,7 @@
   }
 
   function applyCompatibilityFixes(html) {
+    html = html.replace('src="age-navigation.js"', 'src="' + withVersion('age-navigation.js') + '"');
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
     const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';
     html = html.replace(gardenScript, versionedGarden);
@@ -416,6 +376,7 @@
       if (!catalogRes.ok) throw new Error('게임 목록 데이터를 불러오지 못했습니다.');
 
       const catalog = validateCatalog(await catalogRes.json());
+      await window.KidscadeCatalogCovers?.apply(catalog);
       let html = await baseRes.text();
       html = replaceGameCardsFromCatalog(html, catalog);
       html = applyCompatibilityFixes(html);

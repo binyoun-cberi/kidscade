@@ -36,6 +36,7 @@ jobs:
             rhythm-dash-v11.js \
             patience-tower-duel-entry.js \
             teacher-accounts.js \
+            age-navigation.js \
             main-bootstrap.js \
             stats-rankings.js \
             server-stats.js \
@@ -102,6 +103,8 @@ jobs:
         run: node scripts/storage-audit.cjs --strict
       - name: Run game classification tests
         run: node --test tests/game-classification.test.cjs
+      - name: Run age navigation regression tests
+        run: node --test tests/age-navigation.test.cjs
       - name: Run launcher regression tests
         run: node --test tests/game-launcher.test.cjs
       - name: Run critical release smoke tests

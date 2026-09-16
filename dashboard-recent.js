@@ -31,18 +31,10 @@
     return raw ? { ...raw } : null;
   }
 
-  function findOriginCard(id) {
-    return window.KidscadeGames?.getCard?.(id) ||
-      document.querySelector(`#game-list > .game-card[data-id="${CSS.escape(String(id || ''))}"]`);
-  }
 
-  function launch(id, fallbackHref) {
-    const origin = findOriginCard(id);
-    if (origin) {
-      origin.click();
-      return;
-    }
-    if (fallbackHref && fallbackHref !== '#') window.location.href = fallbackHref;
+
+  function launch(id) {
+    return window.KidscadePlay?.open(id);
   }
 
   function isSafeSvgIcon(value) {
@@ -73,7 +65,7 @@
     mini.setAttribute('aria-label', `${title.textContent} 다시 열기`);
     mini.addEventListener('click', event => {
       event.preventDefault();
-      launch(game.id, game.href);
+      launch(game.id);
     });
 
     window.KidscadeGameCovers?.apply?.(mini);
