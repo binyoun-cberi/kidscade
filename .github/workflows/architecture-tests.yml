@@ -33,6 +33,7 @@ jobs:
             classroom-war-records-observer.js \
             timing-exact10-records.js \
             rhythm-dash-v11.js \
+            patience-tower-duel-entry.js \
             teacher-accounts.js \
             main-bootstrap.js \
             stats-rankings.js \
@@ -42,6 +43,7 @@ jobs:
             worker/teacher-admin.mjs \
             worker/seed-rankings.mjs \
             worker/game-records.mjs \
+            worker/multiplayer.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -83,6 +85,8 @@ jobs:
         run: node --test tests/seed-rankings.test.mjs
       - name: Run game record tests
         run: node --test tests/game-records.test.mjs
+      - name: Run multiplayer room and Patience Tower duel tests
+        run: node --test tests/multiplayer.test.mjs
       - name: Run Rhythm Dash v11 tests
         run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run Alien Pizza DX2 tests
