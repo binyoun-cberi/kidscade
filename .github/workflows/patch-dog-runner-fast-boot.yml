@@ -1,0 +1,53 @@
+name: Patch dog runner fast boot
+
+on:
+  push:
+    branches:
+      - fix/dog-runner-fast-boot
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/dog-runner-fast-boot
+          fetch-depth: 0
+      - name: Patch lazy boot and cache version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('곱셈 강아지 러너.html')
+          text = path.read_text(encoding='utf-8')
+          old = """async function boot(){const needed=[ASSET.dog,...ASSET.gates,ASSET.barrier,ASSET.cone,ASSET.star];let n=0;await Promise.all(needed.map(async url=>{try{await loadAsset(url)}catch(e){console.warn('asset load failed',url,e)}finally{n++;ui.loadingText.textContent=`3D 에셋 준비 중… ${Math.round(n/needed.length*100)}%`}}));await createDog();updateHud();ui.question.textContent='준비되면 출발!';ui.loading.classList.add('hide');setTimeout(()=>ui.loading.remove(),350)}
+          boot().catch(err=>{console.error(err);ui.loadingText.textContent='3D 에셋을 불러오지 못했어요. 새로고침해 주세요.'});"""
+          new = """function warmAssets(){const optional=[...ASSET.gates,ASSET.barrier,ASSET.cone,ASSET.star];const run=()=>Promise.allSettled(optional.map(url=>loadAsset(url))).then(results=>{results.forEach((r,i)=>{if(r.status==='rejected')console.warn('background asset load failed',optional[i],r.reason)})});if('requestIdleCallback'in window)requestIdleCallback(()=>run(),{timeout:1200});else setTimeout(run,80)}
+          async function boot(){ui.loadingText.textContent='강아지를 불러오는 중…';await loadAsset(ASSET.dog);await createDog();updateHud();ui.question.textContent='준비되면 출발!';ui.loading.classList.add('hide');setTimeout(()=>ui.loading.remove(),280);warmAssets()}
+          boot().catch(err=>{console.error(err);ui.loadingText.textContent='강아지 에셋을 불러오지 못했어요. 새로고침해 주세요.'});"""
+          if old not in text:
+              raise SystemExit('target boot block not found')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+
+          catalog = Path('data/games.json')
+          c = catalog.read_text(encoding='utf-8')
+          old_href = '"href": "곱셈 강아지 러너.html",'
+          new_href = '"href": "곱셈 강아지 러너.html?v=2",'
+          if old_href in c:
+              c = c.replace(old_href, new_href, 1)
+              catalog.write_text(c, encoding='utf-8')
+          elif new_href not in c:
+              raise SystemExit('dog runner catalog href not found')
+          PY
+      - name: Remove one-time workflow
+        run: rm .github/workflows/patch-dog-runner-fast-boot.yml
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: speed up dog runner initial loading"
+          git push origin HEAD:fix/dog-runner-fast-boot
