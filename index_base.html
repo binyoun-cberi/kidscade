@@ -97,6 +97,7 @@
         .age-cards-container { display: flex; gap: 20px;
         flex-wrap: wrap; justify-content: center; max-width: 1200px; padding: 0 20px; }
         .age-btn-card {
+            font: inherit; text-align: center; touch-action: manipulation;
             background-color: var(--card-bg);
             border: 6px solid var(--card-border); border-radius: 30px;
             width: 250px; padding: 30px 20px; cursor: pointer;
@@ -105,6 +106,8 @@
         }
         .age-btn-card:hover { transform: translateY(-15px) scale(1.05);
         box-shadow: 0 20px 30px rgba(0,0,0,0.2); border-color: #ff6b81; }
+        .age-btn-card > span { display: block; }
+        .age-btn-card:focus-visible { outline: 4px solid #7c3aed; outline-offset: 4px; }
         .age-icon { font-size: 5em;
         margin-bottom: 15px; }
         .age-name { font-size: 1.8em; font-weight: bold; margin-bottom: 10px; color: #ff6b81;
@@ -511,7 +514,7 @@
             box-shadow: 0 6px 14px rgba(34, 197, 94, 0.25);
         }
         .age-btn-card[data-target-age="toddler"]::after {
-            content: "잠금 해제";
+            content: "바로 입장";
             background: linear-gradient(135deg, #f59e0b, #fb7185);
         }
         header {
@@ -2518,28 +2521,28 @@ body.dark-mode .site-credits {
         <h1 class="age-screen-title">환영합니다! 🎉</h1>
         <p class="age-screen-subtitle">맞춤형 오락실을 위해 나이를 알려주세요!</p>
         <div class="age-cards-container">
-            <div class="age-btn-card" data-target-age="toddler">
-                <div class="age-icon">🐥</div>
-                <div class="age-name">유아 (3~6세)</div>
-                <div class="age-desc">비밀번호 없이 바로 입장! 놀면서 배우는 즐거운 세상</div>
-            </div>
-            <div class="age-btn-card" data-target-age="low">
-                <div class="age-icon">🎒</div>
-                <div class="age-name">초등 저학년</div>
-                <div class="age-desc">1~3학년을 위한 기초 탄탄 미니게임 모음</div>
-            </div>
-            <div class="age-btn-card" data-target-age="high">
-                <div class="age-icon">🚀</div>
-                <div class="age-name">초등 고학년</div>
-                <div class="age-desc">4~6학년 대상! 도전과 성장이 있는 심화 게임</div>
-            </div>
+            <button type="button" class="age-btn-card" data-target-age="toddler">
+                <span class="age-icon">🐥</span>
+                <span class="age-name">유아 (3~6세)</span>
+                <span class="age-desc">비밀번호 없이 바로 입장! 놀면서 배우는 즐거운 세상</span>
+            </button>
+            <button type="button" class="age-btn-card" data-target-age="low">
+                <span class="age-icon">🎒</span>
+                <span class="age-name">초등 저학년</span>
+                <span class="age-desc">1~3학년을 위한 기초 탄탄 미니게임 모음</span>
+            </button>
+            <button type="button" class="age-btn-card" data-target-age="high">
+                <span class="age-icon">🚀</span>
+                <span class="age-name">초등 고학년</span>
+                <span class="age-desc">4~6학년 대상! 도전과 성장이 있는 심화 게임</span>
+            </button>
         
             <!-- 새로 추가된 직업체험 카드 -->
-            <div class="age-btn-card" data-target-age="job">
-                <div class="age-icon">🧑‍🔬</div>
-                <div class="age-name">직업체험</div>
-                <div class="age-desc">다양한 직업을 체험하며 나의 꿈을 키워보세요!</div>
-            </div>
+            <button type="button" class="age-btn-card" data-target-age="job">
+                <span class="age-icon">🧑‍🔬</span>
+                <span class="age-name">직업체험</span>
+                <span class="age-desc">다양한 직업을 체험하며 나의 꿈을 키워보세요!</span>
+            </button>
         </div>
     </div>
 
@@ -3383,6 +3386,7 @@ body.dark-mode .site-credits {
     </div> 
     
     <link rel="stylesheet" href="garden.css">
+    <script src="age-navigation.js"></script>
     <script src="garden.js"></script>
     <script>
         // =====================================
@@ -4710,13 +4714,13 @@ ${getEvolutionHintText()}
             // =====================================
             // 메인 UI 필터링 및 로직
             // =====================================
-            let currentAgeGroup = localStorage.getItem('kidscade_age');
+            let currentAgeGroup = ''; // Initialized by KidscadeAgeNavigation after validation.
             let currentCategory = 'all';
             let searchKeyword = '';
             const gameCards = document.querySelectorAll('#game-list .game-card');
             const emptyMessage = document.getElementById('empty-message');
             // ★ 직업체험이 추가된 ageNames
-            const ageNames = { 'toddler': '🐥 유아', 'low': '🎒 초등 저학년', 'high': '🚀 초등 고학년', 'job': '🧑‍🔬 직업체험' };
+            const ageNames = window.KidscadeAgeNavigation.names;
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술' };
 
             function getTodayKey() {
@@ -4984,46 +4988,17 @@ ${getEvolutionHintText()}
             }
 
             function setAgeGroup(ageKey) {
-                currentAgeGroup = ageKey;
-                localStorage.setItem('kidscade_age', ageKey);
-                document.getElementById('age-selection-screen').style.opacity = '0';
-                document.getElementById('age-selection-screen').style.visibility = 'hidden';
-                setTimeout(() => {
-                    document.getElementById('age-selection-screen').style.display = 'none';
-                    document.getElementById('main-app').style.display = 'block';
-                }, 500);
-                document.getElementById('current-age-label').innerText = ageNames[ageKey];
-                document.body.dataset.kidscadeAge = ageKey;
-                const heroAgeLabel = document.getElementById('kc-age-hero-label');
-                if (heroAgeLabel) heroAgeLabel.textContent = `${ageNames[ageKey]} 오락실`;
-                applyFilters(); applyEquipped(); updateCoinUI(); updatePetUI();
-                return true;
+                return window.KidscadeAgeNavigation.select(ageKey);
             }
 
-            if (currentAgeGroup) {
-                document.getElementById('age-selection-screen').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
-                document.getElementById('current-age-label').innerText = ageNames[currentAgeGroup];
-                document.body.dataset.kidscadeAge = currentAgeGroup;
-                const heroAgeLabel = document.getElementById('kc-age-hero-label');
-                if (heroAgeLabel) heroAgeLabel.textContent = `${ageNames[currentAgeGroup]} 오락실`;
-                applyFilters(); applyEquipped(); updateCoinUI(); updatePetUI();
-            } else {
-                document.getElementById('main-app').style.display = 'none';
-            }
-
-            document.querySelectorAll('.age-btn-card').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    playUISound('open');
-                    if (setAgeGroup(this.getAttribute('data-target-age'))) checkAttendance();
-                });
-            });
-
-            document.getElementById('btn-change-age').addEventListener('click', () => {
-                playUISound('click'); document.getElementById('main-app').style.display = 'none';
-                const ageScreen = document.getElementById('age-selection-screen');
-                ageScreen.style.display = 'flex';
-                setTimeout(() => { ageScreen.style.visibility = 'visible'; ageScreen.style.opacity = '1'; }, 10);
+            window.KidscadeAgeNavigation.init({
+                onAgeChange(age) {
+                    currentAgeGroup = age;
+                    applyFilters(); applyEquipped(); updateCoinUI(); updatePetUI();
+                },
+                onSelect() { playUISound('open'); },
+                onEntered() { checkAttendance(); },
+                onChangeRequested() { playUISound('click'); }
             });
 
             const gameSearchInput = document.getElementById('game-search-input');
@@ -5130,6 +5105,10 @@ ${getEvolutionHintText()}
             const closeModalBtn = document.getElementById('close-modal-btn');
 
             function openGameModal(e, cardElement) {
+                if (!window.KidscadeAgeNavigation.canLaunch(e) || activeGameId) {
+                    e?.preventDefault?.();
+                    return;
+                }
                 if (e.target.classList.contains('fav-star') || e.target.classList.contains('cert-btn')) return;
                 e.preventDefault();
                 const gameId = cardElement.getAttribute('data-id');

@@ -107,19 +107,10 @@
       window.KidscadeCatalog?.games?.find?.(game => String(game?.id || '') === gameId) || null;
   }
 
-  function findOriginCard(id) {
-    const gameId = String(id || '');
-    const escaped = globalThis.CSS?.escape ? CSS.escape(gameId) : gameId.replace(/["\\]/g, '\\$&');
-    return window.KidscadeGames?.getCard?.(gameId) || document.querySelector(`#game-list .game-card[data-id="${escaped}"]`);
-  }
 
-  function launchGame(gameId, fallbackHref) {
-    const origin = findOriginCard(gameId);
-    if (origin) {
-      origin.click();
-      return;
-    }
-    if (fallbackHref && fallbackHref !== '#') window.location.href = fallbackHref;
+
+  function launchGame(gameId) {
+    return window.KidscadePlay?.open(gameId);
   }
 
   function ensureSiteStats() {
@@ -266,7 +257,7 @@
     count.textContent = `${formatCount(plays)}회`;
 
     item.append(rank, thumb, copy, count);
-    item.addEventListener('click', () => launchGame(entry.gameId, game.href));
+    item.addEventListener('click', () => launchGame(entry.gameId));
     return item;
   }
 

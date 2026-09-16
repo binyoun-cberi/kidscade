@@ -66,6 +66,13 @@
     if (shouldIgnoreEvent(event)) return { handled: false, opened: false, reason: 'card-action' };
     event?.preventDefault?.();
 
+    if (bridge.canLaunch && !bridge.canLaunch(event)) {
+      return { handled: true, opened: false, reason: 'navigation-not-ready' };
+    }
+    if (bridge.getSession?.()?.id) {
+      return { handled: true, opened: false, reason: 'session-active' };
+    }
+
     const gameId = String(getCardValue(cardElement, 'id', 'data-id') || '');
     if (!gameId) return { handled: true, opened: false, reason: 'missing-id' };
 

@@ -178,8 +178,8 @@ test('game launcher owns modal session lifecycle and reward calculation', () => 
   assert.match(launcher, /bridge\.checkpointPlayTime/);
   assert.match(launcher, /bridge\.recordGardenSession/);
   assert.match(bootstrap, /const\s+gameLauncherBridge\s*=/);
-  assert.match(bootstrap, /KidscadeGameLauncher\?\.open/);
-  assert.match(bootstrap, /KidscadeGameLauncher\?\.close/);
+  assert.match(bootstrap, /KidscadeGameLauncher\.open/);
+  assert.match(bootstrap, /KidscadeGameLauncher\.close/);
   assert.match(bootstrap, /game-launcher\.js/);
 });
 
@@ -195,6 +195,9 @@ test('composed page has exactly one card per catalog entry, including injected l
   vm.runInContext(read('main-bootstrap.js'), context);
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(output.includes('window.KidscadeCatalog='));
+  for (const match of output.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+    if (match[1].trim()) assert.doesNotThrow(() => new vm.Script(match[1]));
+  }
   assert.equal((output.match(/<a\b[^>]*class="game-card/g) || []).length, catalog.games.length);
   assert.ok(!output.includes('href="unknown.html"'));
   // garden.js runs after composition; it must only load garden modules, never add cards.

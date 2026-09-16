@@ -281,8 +281,7 @@
   }
 
   function openGame(id) {
-    const card = document.querySelector(`#game-list .game-card[data-id="${CSS.escape(String(id))}"]`);
-    if (card && !card.classList.contains('disabled')) card.click();
+    return window.KidscadePlay?.open(id);
   }
 
   function installStyles() {
