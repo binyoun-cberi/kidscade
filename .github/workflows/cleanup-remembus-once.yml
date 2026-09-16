@@ -1,0 +1,39 @@
+name: One-time Remembus legacy cleanup
+
+on:
+  push:
+    branches:
+      - cleanup/remove-remembus-catalog
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/remove-remembus-catalog
+      - name: Remove retired Remembus legacy card
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index_base.html')
+          text = path.read_text(encoding='utf-8')
+          pattern = r'\n[ \t]*<a class="game-card"[^>]*\n[ \t]*data-id="math_remembus"[\s\S]*?</a>\n'
+          updated, count = re.subn(pattern, '\n', text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one Remembus legacy card, found {count}')
+          path.write_text(updated, encoding='utf-8')
+          PY
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_base.html
+          git commit -m "Remove legacy Remembus card"
+          git push origin HEAD:cleanup/remove-remembus-catalog
