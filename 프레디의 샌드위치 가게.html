@@ -1,41 +1,262 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>우주 샌드위치 가게</title>
+<!-- SPACE_SANDWICH_V2 -->
 <style>
-:root{--ink:#2f241d;--cream:#fff4d8;--wood:#bd7a43;--wood2:#8f542f;--mint:#9fe0bd;--red:#e8685b;--gold:#ffd66b;--space:#171c35}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,'Malgun Gothic',sans-serif;color:var(--ink);background:radial-gradient(circle at 18% 10%,#52649a 0 1px,transparent 2px),radial-gradient(circle at 75% 18%,#fff 0 1px,transparent 2px),linear-gradient(#171c35,#252c4d);background-size:80px 80px,110px 110px,auto;overflow-x:hidden}button{font:inherit;cursor:pointer}#app{max-width:1080px;margin:auto;padding:14px 16px 30px}.top{display:flex;align-items:center;justify-content:space-between;color:#fff;gap:12px}.top h1{font-size:clamp(20px,4vw,32px);margin:0}.stats{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#ffffff16;border:1px solid #ffffff2d;border-radius:999px;padding:7px 11px;font-weight:800}.order{margin:12px 0;background:var(--cream);border:4px solid #493426;border-radius:18px;padding:12px 16px;box-shadow:0 8px 0 #10152b}.order-head{display:flex;align-items:center;gap:12px}.alien{font-size:42px}.speech{flex:1}.speech b{font-size:18px}.speech p{margin:4px 0 0;line-height:1.5}.steps{display:flex;gap:7px;margin-top:9px}.step{flex:1;text-align:center;padding:7px;border-radius:10px;background:#eadbb9;font-size:12px;font-weight:800}.step.on{background:#ffda72;box-shadow:inset 0 -3px #dca93b}.counter{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;align-items:stretch}.board-wrap{position:relative;padding:22px 22px 18px;border-radius:24px;background:#62402d;box-shadow:0 14px 0 #11172b}.board{position:relative;min-height:430px;border-radius:25px;background:linear-gradient(90deg,#c98a52 0 2%,#b8733f 2% 5%,#c98a52 5% 12%,#b97743 12% 14%,#c98a52 14% 100%);box-shadow:inset 0 0 0 7px #e4a86e,inset 0 0 30px #6b3a1d55;overflow:hidden}.board:before{content:"";position:absolute;inset:17px;border:2px solid #7b482a55;border-radius:17px;pointer-events:none}.board-title{position:absolute;left:28px;top:24px;font-weight:900;color:#5f351f;letter-spacing:.4px}.work{position:absolute;left:7%;right:7%;top:78px;height:235px}.ingredient{position:absolute;left:4%;right:4%;top:55px;height:92px;border-radius:18px;box-shadow:0 8px 13px #5b321d55,inset 0 0 0 3px #ffffff45;overflow:visible;touch-action:none}.ingredient.cheese{background:linear-gradient(#ffd85a,#eab43b)}.ingredient.cucumber{background:linear-gradient(#83cb72,#49a663)}.ingredient.ham{background:linear-gradient(#f5a8a1,#df7e84)}.ingredient.tomato{background:linear-gradient(#f17a64,#d94f45)}.ingredient.egg{background:linear-gradient(#fff4ca,#ecd89a)}.cut-line{position:absolute;top:0;bottom:0;width:4px;background:#fff9;box-shadow:0 0 0 1px #70462a;z-index:3}.cut-line:after{content:"";position:absolute;top:-7px;left:-5px;width:12px;height:7px;background:#fff9}.knife{position:absolute;top:5px;width:11px;height:168px;background:linear-gradient(90deg,#aab2b9,#f4fbff 48%,#91999f);border-radius:3px 3px 10px 10px;box-shadow:4px 5px 8px #0005;transform:translateX(-50%) rotate(1deg);z-index:6;pointer-events:none;transition:left .08s}.knife:before{content:"";position:absolute;width:24px;height:58px;background:#3e2c22;border-radius:8px;left:-7px;top:-48px;box-shadow:inset -4px 0 #21150f}.knife.chop{animation:chop .18s ease}.ruler{position:absolute;left:4%;right:4%;top:164px;height:52px;background:linear-gradient(#f6d66c,#e8bb45);border:2px solid #755022;border-radius:5px;display:flex;align-items:flex-end;touch-action:none;cursor:crosshair;box-shadow:0 4px 6px #4d2f1d55}.tick{position:relative;flex:1;height:15px;border-left:1px solid #5a401f}.tick.big{height:26px;border-left-width:2px}.tick span{position:absolute;bottom:27px;left:-8px;width:16px;text-align:center;font-size:10px;font-weight:900}.ruler-tip{position:absolute;left:0;right:0;top:221px;text-align:center;color:#5e3823;font-weight:800;font-size:12px}.pieces{position:absolute;left:4%;right:4%;top:54px;height:95px;display:flex;gap:5px;pointer-events:none}.piece{height:92px;flex:1;border-radius:12px;box-shadow:0 5px 7px #40261955,inset 0 0 0 2px #fff6;animation:separate .3s ease}.piece.cheese{background:#f3c84d}.piece.cucumber{background:#64b96d}.piece.ham{background:#e98e92}.piece.tomato{background:#e45e50}.piece.egg{background:#f4e3a9}@keyframes chop{50%{transform:translateX(-50%) translateY(32px) rotate(-3deg)}}@keyframes separate{from{transform:scale(.93)}to{transform:scale(1)}}.actionbar{position:absolute;left:7%;right:7%;bottom:27px;display:flex;gap:9px;justify-content:center}.big{border:0;border-radius:14px;padding:12px 17px;font-weight:900;background:#fff0c8;color:#3d2b20;box-shadow:0 5px 0 #74462c}.big.primary{background:#ffe076}.big:active{transform:translateY(3px);box-shadow:0 2px 0 #74462c}.big:disabled{opacity:.4;cursor:default}.assembly{background:#f3ead9;border:4px solid #2d2430;border-radius:22px;padding:14px;display:flex;flex-direction:column;min-height:470px}.assembly h2{margin:0 0 8px;font-size:18px}.plate{flex:1;min-height:250px;border-radius:50%;background:radial-gradient(circle,#fff 0 56%,#d5e0e5 57% 66%,#aabac0 67% 69%,transparent 70%);position:relative;display:flex;flex-direction:column-reverse;justify-content:center;align-items:center;padding:35px 28px}.layer{width:155px;height:24px;border-radius:40% 40% 30% 30%;box-shadow:0 3px 4px #0003;animation:drop .3s cubic-bezier(.2,.9,.25,1.2)}.layer.bread{height:38px;background:#dca65a;border:5px solid #b97837}.layer.cheese{background:#f2ca43}.layer.cucumber{background:#5bb665}.layer.ham{background:#e9868e}.layer.tomato{background:#e45b4d}.layer.egg{background:#f3dfa0}@keyframes drop{from{transform:translateY(-100px) rotate(8deg);opacity:.3}to{transform:none;opacity:1}}.tray{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.food{border:2px solid #88745c;background:#fffaf0;border-radius:11px;padding:8px 4px;font-size:12px;font-weight:850}.food:disabled{opacity:.35}.hint{margin:9px 0 0;background:#fff8e7;border-radius:10px;padding:9px;font-size:12px;line-height:1.45}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1e263e;color:white;padding:12px 18px;border-radius:999px;font-weight:900;transition:.2s;z-index:20;text-align:center}.toast.on{opacity:1;transform:translateX(-50%)}.overlay{position:fixed;inset:0;background:#10152be8;display:grid;place-items:center;padding:20px;z-index:30}.overlay.hide{display:none}.modal{max-width:520px;background:#fff3d4;border:5px solid #463227;border-radius:24px;padding:25px;text-align:center}.modal h2{font-size:32px;margin:0 0 12px}.modal p{line-height:1.65}.modal .big{width:100%;margin-top:10px}@media(max-width:760px){#app{padding:9px}.top{align-items:flex-start}.counter{grid-template-columns:1fr}.board{min-height:390px}.board-wrap{padding:13px}.assembly{min-height:330px}.plate{min-height:190px}.order{padding:10px}.alien{font-size:34px}.steps{gap:3px}.step{font-size:10px;padding:6px 2px}.work{left:4%;right:4%}}
+:root{
+  --ink:#17213d;--space:#0b1230;--panel:rgba(16,25,60,.91);--cream:#fff8e8;
+  --mint:#69d8bc;--pink:#ff7d9f;--yellow:#ffd766;--cyan:#71d9ff;--danger:#ff6d7a;
+  --shadow:0 14px 38px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;background:#070b20;color:var(--ink)}
+button,a{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}
+#app{position:fixed;inset:0;background:#080d28;isolation:isolate}
+#spaceBg{position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 20%,rgba(89,113,255,.24),transparent 26%),
+  radial-gradient(circle at 78% 16%,rgba(255,83,163,.17),transparent 23%),
+  linear-gradient(#071028,#0c1435 58%,#172143);overflow:hidden}
+#stars{position:absolute;inset:0;opacity:.8;background-image:
+  radial-gradient(#fff 0 1px,transparent 1.5px),
+  radial-gradient(#a6dfff 0 1px,transparent 1.5px),
+  radial-gradient(#fff4a9 0 1px,transparent 1.5px);
+  background-size:74px 74px,109px 109px,151px 151px;
+  background-position:0 0,20px 31px,74px 18px;animation:drift 24s linear infinite}
+@keyframes drift{to{background-position:74px 0,129px 31px,225px 18px}}
+#planet{position:absolute;right:-5vw;top:4vh;width:min(40vw,520px);filter:drop-shadow(0 22px 40px #0008);opacity:.95;user-select:none;pointer-events:none}
+#scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#home{position:absolute;z-index:12;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.94);display:grid;place-items:center;text-decoration:none;color:#17213d;font-size:22px;font-weight:950;box-shadow:var(--shadow)}
+#hud{position:absolute;z-index:8;left:65px;right:12px;top:max(10px,env(safe-area-inset-top));display:grid;grid-template-columns:minmax(260px,660px) auto;gap:10px;align-items:start;pointer-events:none}
+#orderCard{background:rgba(255,248,232,.96);border:3px solid white;border-radius:22px;padding:11px 16px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+#customerLine{display:flex;gap:10px;align-items:center}.customerBadge{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:linear-gradient(145deg,#88f0c7,#58a9ff);position:relative;box-shadow:inset 0 -6px 0 #0001}
+.customerBadge:before,.customerBadge:after{content:"";position:absolute;top:16px;width:8px;height:10px;border-radius:50%;background:#142043}.customerBadge:before{left:10px}.customerBadge:after{right:10px}
+.customerBadge i{position:absolute;left:13px;right:13px;bottom:9px;height:5px;border-bottom:3px solid #142043;border-radius:0 0 50% 50%}
+#orderLabel{font-size:10px;font-weight:950;letter-spacing:.14em;color:#7e6797}
+#orderTitle{font-size:clamp(17px,2.3vw,26px);font-weight:950;letter-spacing:-.04em;line-height:1.18}
+#orderDetail{font-size:12px;font-weight:800;color:#6a7184;margin-top:2px}
+#stats{display:flex;gap:6px;justify-content:flex-end}.stat{min-width:72px;background:rgba(11,18,48,.88);color:white;border:2px solid #ffffff45;border-radius:15px;padding:8px 10px;text-align:center;box-shadow:var(--shadow)}
+.stat small{display:block;opacity:.68;font-size:9px;font-weight:900;letter-spacing:.08em}.stat strong{font-size:17px}
+#workPanel{position:absolute;z-index:9;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(940px,calc(100% - 18px));background:rgba(255,248,232,.97);border:3px solid white;border-radius:25px;padding:12px;box-shadow:0 20px 55px #0006;backdrop-filter:blur(9px)}
+#stepRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px}.step{border-radius:10px;padding:6px 4px;text-align:center;background:#ece8dd;color:#7b7c82;font-size:10px;font-weight:950}.step.on{background:#d7f8ef;color:#1d6655;box-shadow:inset 0 -3px 0 #66c9b2}
+#mainControls{display:grid;grid-template-columns:1.2fr 1.8fr 1fr;gap:10px;align-items:stretch}
+.controlBox{background:#f1eee6;border-radius:17px;padding:9px;min-width:0}
+.boxTitle{font-size:10px;font-weight:950;letter-spacing:.08em;color:#72737d;margin:0 0 6px}
+#ingredients{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.ing{border:2px solid transparent;border-radius:12px;background:white;padding:7px 4px;font-size:11px;font-weight:950;color:#30394c;min-height:46px}.ing.active{border-color:#3f8efc;background:#e8f2ff;box-shadow:0 0 0 2px #fff,0 0 0 4px #3f8efc}.ing.done{opacity:.45}
+#rulerWrap{position:relative;height:69px;padding-top:5px}
+#ruler{position:relative;height:44px;border:2px solid #8a6420;border-radius:7px;background:linear-gradient(#ffe881,#eec14e);box-shadow:inset 0 -5px 0 #d2a03b;touch-action:none;cursor:pointer;overflow:visible}
+#ticks{position:absolute;inset:0}.tick{position:absolute;bottom:0;width:1px;height:14px;background:#624b26}.tick.big{height:23px;width:2px}.tick span{position:absolute;bottom:23px;transform:translateX(-50%);font-size:9px;font-weight:950;color:#544224}
+#marker{position:absolute;top:-8px;bottom:-5px;width:4px;background:#ff536c;border-radius:4px;box-shadow:0 0 0 2px white,0 2px 5px #0005;transform:translateX(-2px);pointer-events:none}#marker:before{content:"";position:absolute;left:-6px;top:-7px;border-left:8px solid transparent;border-right:8px solid transparent;border-top:9px solid #ff536c}
+#measureText{text-align:center;font-size:11px;font-weight:900;color:#59606e;margin-top:4px}.cm{font-size:17px;color:#e84f69}
+.actionGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:100%}.btn{border:0;border-radius:13px;padding:9px 7px;font-weight:950;color:#263148;background:#e8e9e9;box-shadow:inset 0 -4px 0 #00000010;min-height:43px}.btn:active{transform:translateY(2px)}.btn.cut{background:var(--yellow)}.btn.serve{background:var(--mint);grid-column:1/-1;font-size:15px}.btn:disabled{opacity:.38;cursor:default;transform:none}
+#recipe{display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:none;margin-top:8px}.chip{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#fff;border:2px solid #ddd9ce;font-size:10px;font-weight:900}.chip.now{border-color:#ff7d9f;background:#ffe9ef;color:#a63b59}.chip.ok{background:#dcf6ec;border-color:#7bd3ba;color:#286859}
+#toast{position:absolute;z-index:20;left:50%;top:46%;transform:translate(-50%,-50%) scale(.94);max-width:86vw;background:#182348eF;color:white;border:3px solid #ffffff88;border-radius:19px;padding:13px 19px;font-size:clamp(15px,2.6vw,22px);font-weight:950;text-align:center;box-shadow:0 18px 55px #0008;opacity:0;pointer-events:none;transition:.18s}.show{opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}.good{background:#237d67ef!important}.bad{background:#a83d59ef!important}
+#overlay{position:absolute;z-index:30;inset:0;background:rgba(5,10,31,.78);display:grid;place-items:center;padding:18px;backdrop-filter:blur(7px)}
+.modal{width:min(660px,95vw);background:#fff8e8;border:4px solid white;border-radius:30px;padding:clamp(22px,5vw,40px);text-align:center;box-shadow:0 30px 80px #0008}.tag{display:inline-block;background:#17213d;color:#91f3d6;border-radius:999px;padding:6px 11px;font-size:10px;font-weight:950;letter-spacing:.13em}.modal h1{margin:11px 0 7px;font-size:clamp(32px,7vw,58px);line-height:.98;letter-spacing:-.06em}.modal p{max-width:545px;margin:10px auto;color:#5d6575;line-height:1.55;font-weight:750}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:17px 0}.how div{background:#efede6;border-radius:15px;padding:11px 7px;font-size:12px;font-weight:900}.how b{display:block;color:#e55b7c;font-size:21px}.open{border:0;border-radius:16px;background:#69d8bc;color:#17362f;padding:13px 24px;min-width:190px;font-size:18px;font-weight:950;box-shadow:inset 0 -5px 0 #00000017}.open:disabled{opacity:.5}.load{margin-top:9px;font-size:11px;color:#8b8e98;font-weight:800}
+#finishScore{font-size:clamp(36px,8vw,64px);font-weight:950;color:#e65e7e;margin:8px}.finishBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.finishBtns a{text-decoration:none}
+.spark{position:absolute;z-index:18;width:9px;height:14px;border-radius:2px;pointer-events:none;animation:spark 1.5s ease-in forwards}@keyframes spark{to{transform:translate(var(--x),105vh) rotate(600deg);opacity:.15}}
+@media(max-width:760px){
+ #planet{width:60vw;right:-18vw;top:11vh}#hud{left:57px;right:6px;top:7px;display:block}#home{left:7px;top:7px;width:40px;height:40px}
+ #orderCard{padding:8px 9px;border-radius:16px}.customerBadge{width:37px;height:37px;flex-basis:37px}.customerBadge:before,.customerBadge:after{top:12px}.customerBadge:before{left:8px}.customerBadge:after{right:8px}.customerBadge i{bottom:6px}
+ #orderTitle{font-size:15px}#orderDetail{font-size:10px}#stats{position:absolute;right:0;top:65px}.stat{min-width:57px;padding:5px 6px}.stat small{font-size:7px}.stat strong{font-size:12px}
+ #workPanel{bottom:5px;padding:8px;border-radius:19px}#stepRow{margin-bottom:6px}.step{font-size:8px;padding:4px 2px}#mainControls{grid-template-columns:1fr;gap:5px}
+ .controlBox{padding:6px;border-radius:12px}.boxTitle{display:none}#ingredients{grid-template-columns:repeat(5,1fr)}.ing{min-height:35px;padding:5px 2px;font-size:9px}
+ #rulerWrap{height:57px}#ruler{height:37px}.tick.big{height:19px}.tick span{bottom:19px;font-size:8px}#measureText{font-size:9px}.cm{font-size:14px}
+ .actionGrid{grid-template-columns:repeat(3,1fr)}.btn{min-height:37px;padding:6px;font-size:10px}.btn.serve{grid-column:auto;font-size:11px}#recipe{display:none}
+ .modal{border-radius:22px}.how{grid-template-columns:1fr}.how div{padding:7px}.how b{display:inline;font-size:14px;margin-right:5px}
+}
 </style>
 </head>
 <body>
-<div id="app"><div class="top"><h1>🥪 우주 샌드위치 가게</h1><div class="stats"><span class="pill">주문 <b id="round">1</b>/6</span><span class="pill">⭐ <b id="score">0</b></span><span class="pill">최고 <b id="best">0</b></span></div></div>
-<section class="order"><div class="order-head"><div class="alien" id="alien">👽</div><div class="speech"><b id="orderTitle"></b><p id="orderText"></p></div></div><div class="steps"><div class="step on" id="s1">① 재료 놓기</div><div class="step" id="s2">② 자로 재기</div><div class="step" id="s3">③ 칼로 자르기</div><div class="step" id="s4">④ 샌드위치에 올리기</div></div></section>
-<div class="counter"><div class="board-wrap"><div class="board"><div class="board-title">오늘의 도마 · 눈금은 1 cm</div><div class="work"><div id="ingredient" class="ingredient cheese"></div><div id="pieces" class="pieces"></div><div id="knife" class="knife"></div><div id="ruler" class="ruler"></div><div class="ruler-tip" id="measure">자를 눌러 칼 위치를 정하세요.</div></div><div class="actionbar"><button class="big" id="reset">재료 다시 놓기</button><button class="big primary" id="cut">🔪 이 눈금에서 자르기</button></div></div></div>
-<aside class="assembly"><h2>🍽️ 조립 접시</h2><div id="plate" class="plate"><div class="layer bread"></div></div><div class="tray" id="tray"></div><div class="hint" id="hint"></div><button class="big primary" id="serve" disabled>손님에게 완성품 내기 🚀</button></aside></div></div>
-<div id="toast" class="toast"></div><div id="start" class="overlay"><div class="modal"><h2>도마에서 직접 만들어요</h2><p>재료를 도마에 놓고, <b>노란 자의 cm 눈금</b>을 눌러 칼을 옮기세요. 주문대로 잘랐다면 잘린 조각을 하나씩 샌드위치에 올리면 됩니다.<br><br>계산문제처럼 칸을 고르는 게임이 아니라, 진짜 샌드위치 가게처럼 <b>재기 → 자르기 → 올리기</b>를 반복합니다.</p><button class="big primary" id="go">가게 열기</button></div></div>
+<div id="app">
+ <div id="spaceBg"><div id="stars"></div><img id="planet" src="assets/game/space/planets/planet03.png" alt=""></div>
+ <canvas id="scene" aria-label="우주 샌드위치 조리대"></canvas>
+ <a id="home" href="index.html" title="메인으로">←</a>
+ <div id="hud">
+   <div id="orderCard"><div id="customerLine"><div class="customerBadge"><i></i></div><div><div id="orderLabel">ORBITAL ORDER</div><div id="orderTitle">주문을 수신 중…</div><div id="orderDetail"></div></div></div><div id="recipe"></div></div>
+   <div id="stats"><div class="stat"><small>주문</small><strong id="round">1/8</strong></div><div class="stat"><small>크레딧</small><strong id="score">0</strong></div><div class="stat"><small>콤보</small><strong id="combo">0</strong></div></div>
+ </div>
+ <div id="toast"></div>
+ <section id="workPanel">
+   <div id="stepRow"><div class="step on" id="step1">1 재료 고르기</div><div class="step" id="step2">2 자로 재기</div><div class="step" id="step3">3 정확히 자르기</div><div class="step" id="step4">4 쌓아 서빙</div></div>
+   <div id="mainControls">
+     <div class="controlBox"><div class="boxTitle">재료 선반</div><div id="ingredients"></div></div>
+     <div class="controlBox"><div class="boxTitle">우주 표준 자 · 눈금 1칸 = 1 cm</div><div id="rulerWrap"><div id="ruler"><div id="ticks"></div><div id="marker"></div></div><div id="measureText">자를 눌러 길이를 정하세요 · <b class="cm" id="cm">1 cm</b></div></div></div>
+     <div class="controlBox"><div class="boxTitle">조리</div><div class="actionGrid"><button class="btn" id="minus">− 1cm</button><button class="btn" id="plus">+ 1cm</button><button class="btn cut" id="cut">🔪 자르기</button><button class="btn serve" id="serve" disabled>🚀 서빙하기</button></div></div>
+   </div>
+ </section>
+ <div id="overlay">
+   <div class="modal" id="start">
+     <span class="tag">KIDSCADE ORBITAL DELI</span>
+     <h1>우주 샌드위치<br>가게</h1>
+     <p>외계 손님의 주문서를 보고 <b>실제 재료를 골라 자로 cm를 재고, 칼로 잘라 샌드위치를 쌓아요.</b> 답을 고르는 문제가 아니라 조리 자체가 길이 학습이에요.</p>
+     <div class="how"><div><b>1</b>주문 재료 확인</div><div><b>2</b>자의 눈금으로 측정</div><div><b>3</b>정확히 잘라 조립</div></div>
+     <button class="open" id="open" disabled>도킹 게이트 열기</button><div class="load" id="load">3D 우주 주방을 준비하고 있어요…</div>
+   </div>
+   <div class="modal hidden" id="finish"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 우주 장사 완료!</h1><p id="finishText"></p><div id="finishScore"></div><div class="finishBtns"><button class="open" id="again">다시 장사하기</button><a class="open" href="index.html">메인으로</a></div></div>
+ </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (()=>{'use strict';
-const $=id=>document.getElementById(id),BEST='spaceSandwichBest';
-const orders=[
-{name:'치즈를 3등분',food:'cheese',emoji:'🧀',label:'치즈',length:12,width:4,piece:4,count:3,alien:'👽'},
-{name:'오이를 4등분',food:'cucumber',emoji:'🥒',label:'오이',length:12,width:3,piece:3,count:4,alien:'👾'},
-{name:'햄을 2등분',food:'ham',emoji:'🥩',label:'햄',length:10,width:5,piece:5,count:2,alien:'🤖'},
-{name:'토마토를 3등분',food:'tomato',emoji:'🍅',label:'토마토',length:9,width:4,piece:3,count:3,alien:'🛸'},
-{name:'달걀지단을 4등분',food:'egg',emoji:'🍳',label:'달걀지단',length:16,width:3,piece:4,count:4,alien:'👽'},
-{name:'치즈를 5등분',food:'cheese',emoji:'🧀',label:'치즈',length:15,width:4,piece:3,count:5,alien:'👾'}];
-let idx=0,score=0,selected=0,cuts=[],ready=false,stacked=0,audio=null;
-function tone(f=440,d=.08){try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.value=f;o.type='triangle';g.gain.setValueAtTime(.07,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d)}catch(e){}}
-function toast(t){let e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1000)}
-function order(){return orders[idx]}
-function setSteps(n){for(let i=1;i<=4;i++)$('s'+i).classList.toggle('on',i===n)}
-function buildRuler(){let o=order(),r=$('ruler');r.innerHTML='';for(let i=0;i<=o.length;i++){let t=document.createElement('div');t.className='tick '+(i%5===0||i===o.length?'big':'');if(i%2===0||i===o.length)t.innerHTML='<span>'+i+'</span>';t.dataset.cm=i;r.append(t)}}
-function load(){let o=order();selected=0;cuts=[];ready=false;stacked=0;$('round').textContent=idx+1;$('score').textContent=score;$('best').textContent=localStorage.getItem(BEST)||0;$('alien').textContent=o.alien;$('orderTitle').textContent=o.emoji+' '+o.name;$('orderText').innerHTML=`${o.label} <b>${o.length}cm × ${o.width}cm</b>를 <b>${o.piece}cm씩 ${o.count}조각</b>으로 잘라 올려 주세요. 한 조각 넓이는 <b>${o.piece*o.width}㎠</b>예요.`;let ing=$('ingredient');ing.innerHTML='';ing.className='ingredient '+o.food;ing.style.display='block';$('pieces').innerHTML='';$('knife').style.left='0%';$('measure').textContent='자를 눌러 칼 위치를 정하세요.';$('cut').disabled=false;$('serve').disabled=true;$('plate').innerHTML='<div class="layer bread"></div>';$('tray').innerHTML='';$('hint').innerHTML=`목표 절단선: <b>${Array.from({length:o.count-1},(_,i)=>(i+1)*o.piece).join('cm · ')}cm</b><br>자를 누르면 가장 가까운 1cm 눈금에 칼이 딱 붙어요.`;buildRuler();setSteps(1);setTimeout(()=>setSteps(2),350)}
-function chooseAt(clientX){let r=$('ruler').getBoundingClientRect(),o=order();selected=Math.max(0,Math.min(o.length,Math.round((clientX-r.left)/r.width*o.length)));$('knife').style.left=(selected/o.length*100)+'%';$('measure').innerHTML=`칼 위치 <b>${selected} cm</b> · ${selected===0||selected===o.length?'끝에서는 자를 수 없어요.':'여기서 자를까요?'}`;setSteps(3);tone(380,.04)}
-$('ruler').addEventListener('pointerdown',e=>{e.preventDefault();chooseAt(e.clientX)});$('ruler').addEventListener('pointermove',e=>{if(e.buttons)chooseAt(e.clientX)});
-function drawPieces(){let o=order(),p=$('pieces');p.innerHTML='';for(let i=0;i<o.count;i++){let e=document.createElement('div');e.className='piece '+o.food;p.append(e)}$('ingredient').style.display='none'}
-$('cut').onclick=()=>{let o=order(),targets=Array.from({length:o.count-1},(_,i)=>(i+1)*o.piece);if(selected<=0||selected>=o.length){toast('자의 안쪽 눈금을 골라 주세요.');tone(150);return}if(cuts.includes(selected)){toast('이미 자른 곳이에요.');return}let next=targets[cuts.length];$('knife').classList.remove('chop');void $('knife').offsetWidth;$('knife').classList.add('chop');tone(170,.05);setTimeout(()=>tone(90,.05),60);if(selected!==next){score=Math.max(0,score-10);$('score').textContent=score;toast(`앗! 다음 절단선은 ${next}cm예요.`);return}cuts.push(selected);score+=20;$('score').textContent=score;let line=document.createElement('i');line.className='cut-line';line.style.left=(selected/o.length*100)+'%';$('ingredient').append(line);toast(`${selected}cm에서 정확히 잘랐어요!`);if(cuts.length===targets.length){ready=true;setTimeout(()=>{drawPieces();makeTray();setSteps(4);$('cut').disabled=true;$('measure').textContent=`${o.piece}cm짜리 ${o.count}조각 완성! 접시에 올려 보세요.`},250)}};
-function makeTray(){let o=order(),tray=$('tray');tray.innerHTML='';for(let i=0;i<o.count;i++){let b=document.createElement('button');b.className='food';b.innerHTML=`${o.emoji} ${o.piece}cm 조각<br><small>${o.piece*o.width}㎠</small>`;b.onclick=()=>stack(b);tray.append(b)}}
-function stack(btn){if(btn.disabled)return;let o=order();btn.disabled=true;let l=document.createElement('div');l.className='layer '+o.food;$('plate').append(l);stacked++;score+=15;$('score').textContent=score;tone(620+stacked*35,.07);if(stacked===o.count){let top=document.createElement('div');top.className='layer bread';$('plate').append(top);$('serve').disabled=false;$('hint').innerHTML=`완성! ${o.count}조각 × ${o.piece*o.width}㎠ = <b>${o.length*o.width}㎠</b>. 전체 넓이도 그대로예요.`;toast('샌드위치 완성!')}}
-$('reset').onclick=()=>{score=Math.max(0,score-5);load();toast('새 재료를 꺼냈어요.')};$('serve').onclick=()=>{if(stacked!==order().count)return;score+=100;tone(880,.18);idx++;if(idx>=orders.length){let best=Math.max(score,Number(localStorage.getItem(BEST)||0));localStorage.setItem(BEST,best);$('start').classList.remove('hide');$('start').querySelector('.modal').innerHTML=`<h2>🚀 오늘 장사 끝!</h2><p>6명의 손님에게 샌드위치를 완성했어요.<br><b>${score}점</b> · 최고 기록 ${best}점</p><button class="big primary" id="again">다시 만들기</button>`;$('again').onclick=()=>{idx=0;score=0;$('start').classList.add('hide');load()};return}load()};$('go').onclick=()=>{$('start').classList.add('hide');load();tone(660,.1)};load();
+const A='assets/game/';
+const MODEL={
+ board:A+'food/cutting-board.glb',
+ knife:A+'food/cooking-knife-chopping.glb',
+ bread:A+'food/bread.glb',
+ cheese:A+'food/cheese-cut.glb',
+ ham:A+'food/whole-ham.glb',
+ tomato:A+'food/tomato-slice.glb',
+ cabbage:A+'food/cabbage.glb',
+ onion:A+'food/onion-half.glb',
+ sandwich:A+'food/sandwich.glb',
+ register:A+'shops/market/cash-register.glb'
+};
+const ITEMS={
+ cheese:{label:'치즈',model:'cheese',color:0xf2ca42},
+ ham:{label:'햄',model:'ham',color:0xe98b91},
+ tomato:{label:'토마토',model:'tomato',color:0xe75d50},
+ cabbage:{label:'양상추',model:'cabbage',color:0x69b967},
+ onion:{label:'양파',model:'onion',color:0xd9c7e7}
+};
+const ORDERS=[
+ {planet:1,title:'초록 행성 정찰대',recipe:[['cheese',4]]},
+ {planet:2,title:'화성 화물선 조종사',recipe:[['ham',5],['cheese',3]]},
+ {planet:4,title:'링 월드 연구원',recipe:[['tomato',3],['cheese',4],['cabbage',5]]},
+ {planet:5,title:'은하 우편 기사',recipe:[['ham',6],['onion',2],['tomato',4]]},
+ {planet:6,title:'목성 관광 가족',recipe:[['cabbage',4],['cheese',5],['ham',4],['tomato',3]]},
+ {planet:7,title:'소행성 광부',recipe:[['onion',3],['ham',7],['cheese',2]]},
+ {planet:8,title:'토성 기지 대장',recipe:[['tomato',5],['cabbage',6],['ham',5],['cheese',4]]},
+ {planet:9,title:'은하 평의회 특급 주문',recipe:[['cheese',6],['ham',6],['tomato',4],['onion',3],['cabbage',5]]}
+];
+const $=id=>document.getElementById(id), canvas=$('scene'), loader=new THREE.GLTFLoader();
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,.1,60);camera.position.set(0,5.2,8.4);camera.lookAt(0,1.05,.2);
+scene.add(new THREE.HemisphereLight(0xcfe8ff,0x523646,1.25));
+const key=new THREE.DirectionalLight(0xfff0d9,1.45);key.position.set(-4,8,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-8;key.shadow.camera.right=8;key.shadow.camera.top=8;key.shadow.camera.bottom=-5;scene.add(key);
+const rim=new THREE.PointLight(0x6fc7ff,1.2,18);rim.position.set(5,4,-2);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,16),new THREE.MeshStandardMaterial({color:0x252d46,roughness:.84,metalness:.12}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const back=new THREE.Mesh(new THREE.BoxGeometry(12,4.1,.35),new THREE.MeshStandardMaterial({color:0x303954,roughness:.72,metalness:.18}));back.position.set(0,2.05,-3.2);back.receiveShadow=true;scene.add(back);
+for(let x=-4.8;x<=4.8;x+=1.6){let p=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.4,.06),new THREE.MeshStandardMaterial({color:0x15223e,emissive:0x13264d,emissiveIntensity:.55}));p.position.set(x,2.6,-2.99);scene.add(p)}
+const counter=new THREE.Mesh(new THREE.BoxGeometry(9.4,.78,4.25),new THREE.MeshStandardMaterial({color:0x667086,roughness:.55,metalness:.28}));counter.position.y=.39;counter.castShadow=true;counter.receiveShadow=true;scene.add(counter);
+const counterTop=new THREE.Mesh(new THREE.BoxGeometry(9.7,.13,4.45),new THREE.MeshStandardMaterial({color:0xc7d1d9,roughness:.35,metalness:.44}));counterTop.position.y=.84;counterTop.castShadow=true;scene.add(counterTop);
+const neon=new THREE.Mesh(new THREE.BoxGeometry(5.1,.07,.13),new THREE.MeshStandardMaterial({color:0x67e3c5,emissive:0x67e3c5,emissiveIntensity:1.8}));neon.position.set(0,4.35,-2.9);scene.add(neon);
+
+let proto={},objects={board:null,knife:null,register:null}, stackGroup=new THREE.Group(), previewGroup=new THREE.Group();
+scene.add(stackGroup,previewGroup);
+let idx=0, score=0, combo=0, recipePos=0, selected='cheese', measure=1, mistakes=0, locked=true, knifeBusy=false, audio=null;
+
+function cloneMat(root){root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material=o.material.clone()}});return root}
+function normalized(root,size=1){const g=new THREE.Group(),r=cloneMat(root.clone(true));g.add(r);const box=new THREE.Box3().setFromObject(r),s=new THREE.Vector3();box.getSize(s);const m=Math.max(s.x,s.y,s.z)||1;g.scale.setScalar(size/m);box.setFromObject(g);const c=new THREE.Vector3();box.getCenter(c);g.position.sub(c);return g}
+function fallback(key){
+ const color=(ITEMS[key]&&ITEMS[key].color)||0xbac4d2;let geo;
+ if(key==='knife')geo=new THREE.BoxGeometry(.12,.12,1.6);
+ else if(key==='board')geo=new THREE.BoxGeometry(4.3,.16,2.2);
+ else if(key==='register')geo=new THREE.BoxGeometry(1,.7,.8);
+ else geo=new THREE.BoxGeometry(1.7,.18,1.05);
+ return new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:.6,metalness:key==='knife'?.6:.05}));
+}
+function loadOne(key,path){return new Promise(res=>loader.load(path,g=>res([key,g.scene]),undefined,()=>res([key,fallback(key)])))}
+async function loadAssets(){
+ const pairs=await Promise.all(Object.entries(MODEL).map(([k,p])=>loadOne(k,p)));
+ pairs.forEach(([k,v])=>proto[k]=v);
+ setupScene();locked=false;$('open').disabled=false;$('load').textContent='준비 완료 · 주문을 받으세요!';
+}
+function setupScene(){
+ const board=normalized(proto.board,4.5);board.position.set(0,.98,.35);board.scale.z*=1.25;scene.add(board);objects.board=board;
+ const knife=normalized(proto.knife,1.55);knife.position.set(2.75,1.25,.35);knife.rotation.set(0,0,-.48);scene.add(knife);objects.knife=knife;
+ const register=normalized(proto.register,1.2);register.position.set(-3.45,1.25,-.55);register.rotation.y=.22;scene.add(register);objects.register=register;
+ makeBread();
+}
+function makeBread(){
+ if(!proto.bread)return;
+ const b=normalized(proto.bread,1.75);b.position.set(0,1.12,.7);b.scale.set(1.55,.35,1);stackGroup.add(b);
+}
+function fitIngredient(key,len,preview=false){
+ const src=proto[ITEMS[key].model]||fallback(key),g=normalized(src,1.2);
+ g.scale.set(.45+len*.16,.23,.72);g.rotation.y=0;return g
+}
+function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
+function current(){return ORDERS[idx]}function target(){return current().recipe[recipePos]}
+function itemLabel(k){return ITEMS[k].label}
+function updateSteps(n){for(let i=1;i<=4;i++)$('step'+i).classList.toggle('on',i===n)}
+function buildIngredients(){
+ $('ingredients').innerHTML='';
+ Object.keys(ITEMS).forEach(k=>{const b=document.createElement('button');b.className='ing'+(selected===k?' active':'');b.textContent=ITEMS[k].label;b.onclick=()=>{if(locked||knifeBusy)return;selected=k;updateSteps(2);buildIngredients();showPreview();tone(420,.035)};$('ingredients').append(b)});
+}
+function buildRuler(){
+ const t=$('ticks');t.innerHTML='';
+ for(let i=0;i<=8;i++){const d=document.createElement('i');d.className='tick'+(i%2===0?' big':'');d.style.left=(i/8*100)+'%';if(i>0){const s=document.createElement('span');s.textContent=i;d.append(s)}t.append(d)}
+ updateMarker();
+}
+function updateMarker(){measure=Math.max(1,Math.min(8,measure));$('marker').style.left=(measure/8*100)+'%';$('cm').textContent=measure+' cm';showPreview()}
+function showPreview(){
+ clearGroup(previewGroup);if(!proto[ITEMS[selected].model])return;
+ const g=fitIngredient(selected,measure,true);g.position.set(0,1.55,.2);previewGroup.add(g)
+}
+function recipeHTML(){
+ $('recipe').innerHTML=current().recipe.map(([k,n],i)=>`<span class="chip ${i<recipePos?'ok':i===recipePos?'now':''}">${i<recipePos?'✓ ':''}${itemLabel(k)} ${n}cm</span>`).join('')
+}
+function loadOrder(){
+ locked=false;knifeBusy=false;recipePos=0;measure=1;mistakes=0;selected=current().recipe[0][0];clearGroup(stackGroup);makeBread();buildIngredients();updateMarker();recipeHTML();
+ $('round').textContent=(idx+1)+'/'+ORDERS.length;$('score').textContent=score;$('combo').textContent=combo;
+ $('orderTitle').textContent=current().title+'의 샌드위치';
+ $('orderDetail').textContent='주문: '+current().recipe.map(([k,n])=>`${itemLabel(k)} ${n}cm`).join(' → ');
+ $('planet').src=`assets/game/space/planets/planet0${current().planet}.png`;
+ $('serve').disabled=true;updateSteps(1);setTimeout(()=>updateSteps(2),450);
+}
+function rulerPick(e){
+ if(locked||knifeBusy)return;const r=$('ruler').getBoundingClientRect(),x=Math.max(0,Math.min(r.width,e.clientX-r.left));measure=Math.max(1,Math.min(8,Math.round(x/r.width*8)));updateMarker();tone(500+measure*28,.025)
+}
+function tone(f=500,d=.06,type='triangle'){
+ try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.connect(g).connect(audio.destination);o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.055,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d)}catch(e){}
+}
+function toast(txt,kind=''){const e=$('toast');e.textContent=txt;e.className=kind==='good'?'show good':kind==='bad'?'show bad':'show';clearTimeout(e._t);e._t=setTimeout(()=>e.className='',1050)}
+function cut(){
+ if(locked||knifeBusy)return;const [wantKey,wantCm]=target();knifeBusy=true;updateSteps(3);
+ const k=objects.knife,startY=k?k.position.y:0;if(k){let n=0;const timer=setInterval(()=>{n++;k.position.y=startY-(n<4?n:.0)*.12;if(n>=6){clearInterval(timer);k.position.y=startY}},45)}
+ tone(230,.07,'sawtooth');setTimeout(()=>tone(120,.05,'square'),70);
+ setTimeout(()=>{
+   knifeBusy=false;
+   if(selected!==wantKey){mistakes++;combo=0;$('combo').textContent=0;toast(`지금 주문은 ${itemLabel(wantKey)}예요!`,'bad');updateSteps(1);return}
+   if(measure!==wantCm){mistakes++;combo=0;$('combo').textContent=0;toast(`주문은 ${wantCm}cm! 자의 ${wantCm} 눈금을 찾아보세요.`,'bad');updateSteps(2);return}
+   addLayer(wantKey,wantCm);recipePos++;score+=Math.max(20,55-mistakes*8);$('score').textContent=score;toast(`정확히 ${wantCm}cm! 조립 완료`,'good');tone(720,.07);setTimeout(()=>tone(930,.08),70);
+   recipeHTML();
+   if(recipePos>=current().recipe.length){finishSandwich()}else{selected=target()[0];measure=1;buildIngredients();updateMarker();updateSteps(2)}
+ },300)
+}
+function addLayer(key,len){
+ clearGroup(previewGroup);const g=fitIngredient(key,len);g.position.set(0,1.26+recipePos*.18,.67);g.rotation.y=(recipePos%2?.05:-.04);stackGroup.add(g)
+}
+function finishSandwich(){
+ updateSteps(4);if(proto.bread){const top=normalized(proto.bread,1.75);top.position.set(0,1.33+recipePos*.18,.67);top.scale.set(1.55,.35,1);top.rotation.z=.02;stackGroup.add(top)}
+ $('serve').disabled=false;locked=false;toast('샌드위치 완성! 손님에게 서빙하세요.','good')
+}
+function serve(){
+ if($('serve').disabled||locked)return;locked=true;$('serve').disabled=true;
+ combo++;const bonus=combo*25+Math.max(0,60-mistakes*15);score+=bonus;$('score').textContent=score;$('combo').textContent=combo;updateSteps(4);
+ toast(`PERFECT DELIVERY! +${bonus} 크레딧`,'good');spark();[660,790,990,1180].forEach((f,i)=>setTimeout(()=>tone(f,.08),i*70));
+ stackGroup.rotation.y=0;let t=0;const anim=setInterval(()=>{t+=.08;stackGroup.rotation.y+=.12;stackGroup.position.y=Math.sin(t)*.08;if(t>2){clearInterval(anim);stackGroup.rotation.y=0;stackGroup.position.y=0}},35);
+ setTimeout(()=>{idx++;if(idx>=ORDERS.length)finishGame();else loadOrder()},1250)
+}
+function spark(){for(let i=0;i<28;i++){const s=document.createElement('i');s.className='spark';s.style.left=(15+Math.random()*70)+'%';s.style.top='-18px';s.style.background=['#69d8bc','#ff7d9f','#ffd766','#71d9ff'][i%4];s.style.setProperty('--x',(-160+Math.random()*320)+'px');$('app').append(s);setTimeout(()=>s.remove(),1700)}}
+function finishGame(){
+ $('finish').classList.remove('hidden');$('start').classList.add('hidden');$('finishText').textContent=`8명의 우주 손님 주문을 모두 정확한 길이로 만들었어요. 최고 콤보와 낭비 없는 측정이 크레딧을 높여 줍니다.`;$('finishScore').textContent=score+' CR';$('overlay').style.display='grid';spark()
+}
+function resetGame(){idx=0;score=0;combo=0;$('finish').classList.add('hidden');$('start').classList.add('hidden');$('overlay').style.display='none';loadOrder()}
+$('ruler').addEventListener('pointerdown',rulerPick);$('minus').onclick=()=>{if(!locked&&!knifeBusy){measure--;updateMarker();tone(380,.03)}};$('plus').onclick=()=>{if(!locked&&!knifeBusy){measure++;updateMarker();tone(520,.03)}};$('cut').onclick=cut;$('serve').onclick=serve;
+$('open').onclick=()=>{$('overlay').style.display='none';resetGame();tone(650,.07);setTimeout(()=>tone(900,.08),70)};$('again').onclick=resetGame;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(w<760){camera.position.set(0,5.6,9.5);camera.lookAt(0,1.25,.1)}else{camera.position.set(0,5.2,8.4);camera.lookAt(0,1.05,.2)}}addEventListener('resize',resize);resize();
+const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const t=clock.getElapsedTime();if(objects.register)objects.register.rotation.y=.18+Math.sin(t*.6)*.015;if(previewGroup.children[0])previewGroup.children[0].position.y=1.55+Math.sin(t*2)*.025;renderer.render(scene,camera)}loop();
+buildRuler();buildIngredients();loadAssets();
 })();
-</script></body></html>
+</script>
+</body>
+</html>
