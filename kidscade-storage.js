@@ -46,7 +46,8 @@
     aquariumSave: 'kidscade_aquarium_v1',
     byeokrandoSave: 'kidscade_byeokrando_v1',
     musicStudioSave: 'kidscade_music_studio_v2',
-    timingExact10Local: 'kidscade_timing_exact10_local_v1'
+    timingExact10Local: 'kidscade_timing_exact10_local_v1',
+    omokArenaSave: 'kidscade_omok_arena_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
