@@ -9,11 +9,11 @@ const gameDir = path.join(root, 'games', 'job_bogle_bunsik');
 const htmlPath = path.join(gameDir, '보글보글 분식집.html');
 const cssPath = path.join(gameDir, 'bogle-bunsik-dx.css');
 const jsPath = path.join(gameDir, 'bogle-bunsik-dx.js');
-const aliasPath = path.join(root, '보글보글 분식집.html');
+const rootEntryPath = path.join(root, '보글보글 분식집.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 const js = fs.readFileSync(jsPath, 'utf8');
-const alias = fs.readFileSync(aliasPath, 'utf8');
+const rootEntry = fs.readFileSync(rootEntryPath, 'utf8');
 
 const expectedModels = [
   'pot-stew.glb',
@@ -77,14 +77,19 @@ test('Bogle Bunsik DX uses valid shared audio catalog keys', () => {
   for (const key of used) assert.ok(catalog.sounds[key], `missing shared audio key used by Bogle Bunsik DX: ${key}`);
 });
 
-test('legacy root path is a thin redirect to canonical Bogle Bunsik DX', () => {
-  assert.match(alias, /location\.replace\(target/);
-  assert.match(alias, /games\/job_bogle_bunsik\/%EB%B3%B4%EA%B8%80%EB%B3%B4%EA%B8%80%20%EB%B6%84%EC%8B%9D%EC%A7%91\.html\?v=1/);
-  assert.doesNotMatch(alias, /id="ramenControls"/);
-  assert.ok(alias.length < 1800, 'legacy alias should stay a small compatibility redirect');
+test('legacy root catalog entry is a playable DX shell with a game-folder base URL', () => {
+  assert.ok(rootEntry.length > 1000, 'root catalog entry must remain a real playable shell');
+  assert.match(rootEntry, /<base href="games\/job_bogle_bunsik\/"\s*\/>/);
+  assert.match(rootEntry, /id="ramenControls"/);
+  assert.match(rootEntry, /id="tteokControls"/);
+  assert.match(rootEntry, /id="sideControls"/);
+  assert.match(rootEntry, /src="bogle-bunsik-dx\.js\?v=1"/);
+  assert.match(rootEntry, /href="bogle-bunsik-dx\.css\?v=1"/);
+  assert.doesNotMatch(rootEntry, /location\.replace/);
+  assert.doesNotMatch(rootEntry, /http-equiv="refresh"/i);
 });
 
-test('Bogle Bunsik DX build points catalog to canonical v1 and keeps shared audio injection', () => {
+test('Bogle Bunsik DX build points deployed catalog to canonical v1 and keeps shared audio injection', () => {
   const distCatalogPath = path.join(root, 'dist', 'data', 'games.json');
   assert.ok(fs.existsSync(distCatalogPath), 'dist must exist before Bogle Bunsik DX test');
   const catalog = JSON.parse(fs.readFileSync(distCatalogPath, 'utf8'));
@@ -92,15 +97,17 @@ test('Bogle Bunsik DX build points catalog to canonical v1 and keeps shared audi
   assert.ok(game, 'built Bogle Bunsik catalog entry missing');
   assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=1');
 
-  const builtAlias = path.join(root, 'dist', '보글보글 분식집.html');
+  const builtRoot = path.join(root, 'dist', '보글보글 분식집.html');
   const builtDir = path.join(root, 'dist', 'games', 'job_bogle_bunsik');
   const builtHtml = path.join(builtDir, '보글보글 분식집.html');
-  assert.ok(fs.existsSync(builtAlias));
+  assert.ok(fs.existsSync(builtRoot));
   assert.ok(fs.existsSync(builtHtml));
   assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.css')));
   assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.js')));
   const built = fs.readFileSync(builtHtml, 'utf8');
   assert.match(built, /audio-manager\.js\?v=20260917-1/);
+  const builtRootHtml = fs.readFileSync(builtRoot, 'utf8');
+  assert.match(builtRootHtml, /<base href="games\/job_bogle_bunsik\/"\s*\/>/);
 });
 
 test('Bogle Bunsik DX build step is wired into package scripts', () => {
