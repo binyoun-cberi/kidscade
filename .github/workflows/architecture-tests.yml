@@ -115,6 +115,8 @@ jobs:
         run: node --test tests/alien-pizza-dx2.test.cjs
       - name: Run Maratang DX tests
         run: node --test tests/maratang-dx.test.cjs
+      - name: Run Bogle Bunsik DX tests
+        run: node --test tests/bogle-bunsik-dx.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
