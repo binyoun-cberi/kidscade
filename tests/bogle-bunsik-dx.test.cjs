@@ -77,14 +77,16 @@ test('Bogle Bunsik DX uses valid shared audio catalog keys', () => {
   for (const key of used) assert.ok(catalog.sounds[key], `missing shared audio key used by Bogle Bunsik DX: ${key}`);
 });
 
-test('legacy root catalog entry is a playable DX shell with a game-folder base URL', () => {
+test('legacy root catalog entry stays playable with explicit deploy-safe paths', () => {
   assert.ok(rootEntry.length > 1000, 'root catalog entry must remain a real playable shell');
-  assert.match(rootEntry, /<base href="games\/job_bogle_bunsik\/"\s*\/>/);
+  assert.match(rootEntry, /href="games\/job_bogle_bunsik\/bogle-bunsik-dx\.css\?v=1"/);
+  assert.match(rootEntry, /src="games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1"/);
+  assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
+  assert.match(rootEntry, /src="audio-manager\.js\?v=20260917-1"/);
   assert.match(rootEntry, /id="ramenControls"/);
   assert.match(rootEntry, /id="tteokControls"/);
   assert.match(rootEntry, /id="sideControls"/);
-  assert.match(rootEntry, /src="bogle-bunsik-dx\.js\?v=1"/);
-  assert.match(rootEntry, /href="bogle-bunsik-dx\.css\?v=1"/);
+  assert.doesNotMatch(rootEntry, /<base\s/i);
   assert.doesNotMatch(rootEntry, /location\.replace/);
   assert.doesNotMatch(rootEntry, /http-equiv="refresh"/i);
 });
@@ -107,7 +109,9 @@ test('Bogle Bunsik DX build points deployed catalog to canonical v1 and keeps sh
   const built = fs.readFileSync(builtHtml, 'utf8');
   assert.match(built, /audio-manager\.js\?v=20260917-1/);
   const builtRootHtml = fs.readFileSync(builtRoot, 'utf8');
-  assert.match(builtRootHtml, /<base href="games\/job_bogle_bunsik\/"\s*\/>/);
+  assert.match(builtRootHtml, /href="games\/job_bogle_bunsik\/bogle-bunsik-dx\.css\?v=1"/);
+  assert.match(builtRootHtml, /src="games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1"/);
+  assert.match(builtRootHtml, /src="audio-manager\.js\?v=20260917-1"/);
 });
 
 test('Bogle Bunsik DX build step is wired into package scripts', () => {
