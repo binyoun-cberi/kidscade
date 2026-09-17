@@ -12,7 +12,7 @@ const jsPath = path.join(gameDir, 'bogle-bunsik-dx.js');
 const rootEntryPath = path.join(root, '보글보글 분식집.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
-const js = fs.readFileSync(jsPath, 'utf8');
+const js = fs.readFileSync(jsPath, 'utf8');\nconst mobileCssPath = path.join(gameDir, 'bogle-bunsik-mobile-v2.css');\nconst mobileCss = fs.readFileSync(mobileCssPath, 'utf8');
 const rootEntry = fs.readFileSync(rootEntryPath, 'utf8');
 
 const expectedModels = [
@@ -34,7 +34,7 @@ test('Bogle Bunsik DX is split into canonical HTML, CSS and module JS', () => {
   assert.match(html, /id="tteokControls"/);
   assert.match(html, /id="sideControls"/);
   assert.ok(css.length > 6000, 'expected dedicated Bogle Bunsik DX stylesheet');
-  assert.ok(js.length > 12000, 'expected dedicated Bogle Bunsik DX game module');
+  assert.ok(js.length > 12000, 'expected dedicated Bogle Bunsik DX game module');\n  assert.ok(mobileCss.length > 3000, 'expected dedicated Bogle Bunsik mobile UI override');
 });
 
 test('Bogle Bunsik DX browser module parses as JavaScript', () => {
@@ -98,14 +98,14 @@ test('Bogle Bunsik DX build points deployed catalog to canonical v1 and keeps sh
   const catalog = JSON.parse(fs.readFileSync(distCatalogPath, 'utf8'));
   const game = (catalog.games || []).find(item => item && item.id === 'job_bogle_bunsik');
   assert.ok(game, 'built Bogle Bunsik catalog entry missing');
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=1');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=2');
 
   const builtRoot = path.join(root, 'dist', '보글보글 분식집.html');
   const builtDir = path.join(root, 'dist', 'games', 'job_bogle_bunsik');
   const builtHtml = path.join(builtDir, '보글보글 분식집.html');
   assert.ok(fs.existsSync(builtRoot));
   assert.ok(fs.existsSync(builtHtml));
-  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.css')));
+  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.css')));\n  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-mobile-v2.css')));
   assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.js')));
   const built = fs.readFileSync(builtHtml, 'utf8');
   assert.match(built, /audio-manager\.js\?v=20260917-1/);
