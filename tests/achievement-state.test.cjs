@@ -5,7 +5,8 @@ const achievements = require('../achievement-state.js');
 
 test('history rank thresholds remain compatible', () => {
   assert.equal(achievements.getCustomHistoryRank(0), '구석기');
-  assert.equal(achievements.getCustomHistoryRank(42), '조선시대');
+  assert.equal(achievements.getCustomHistoryRank(41), '조선시대');
+  assert.equal(achievements.getCustomHistoryRank(42), '대한제국');
   assert.equal(achievements.getCustomHistoryRank(50), '대한민국');
   assert.equal(achievements.getCustomHistoryRank(60), '역사왕 👑');
 });
@@ -13,7 +14,7 @@ test('history rank thresholds remain compatible', () => {
 test('history composite score uses figures/events maximum', () => {
   assert.equal(achievements.getHistoryMaxScore('{"figures":17,"events":31}'), 31);
   assert.equal(achievements.normalizeScoreValue('high_history_match', '{"figures":12,"events":8}'), 12);
-  assert.equal(achievements.normalizeRankValue('high_history_match', '{"figures":42,"events":11}'), '조선시대');
+  assert.equal(achievements.normalizeRankValue('high_history_match', '{"figures":42,"events":11}'), '대한제국');
 });
 
 test('high ranks and normal ranks are classified consistently', () => {
