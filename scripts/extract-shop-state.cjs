@@ -143,22 +143,24 @@ const helperNew = `            function syncShopStateMirrors(state) {
 requireText(html, helperOld, 'legacy shop purchase/equip block');
 html = html.replace(helperOld, helperNew);
 
+requireText(html, "const badge = shopDB.badge.find(item => item.id === equipped.badge) || shopDB.badge[0];", 'badge equipped lookup');
 html = html.replace(
   "const badge = shopDB.badge.find(item => item.id === equipped.badge) || shopDB.badge[0];",
   "const badge = shopDB.badge.find(item => item.id === getEquippedShopId('badge')) || shopDB.badge[0];"
 );
+requireText(html, "const cardSkin = shopDB.card.find(item => item.id === equipped.card);", 'card equipped lookup');
 html = html.replace(
   "const cardSkin = shopDB.card.find(item => item.id === equipped.card);",
   "const cardSkin = shopDB.card.find(item => item.id === getEquippedShopId('card'));"
 );
-html = html.replace(
-  "const landSkin = shopDB.land.find(item => item.id === equipped.land);",
-  "const landSkin = shopDB.land.find(item => item.id === getEquippedShopId('land'));"
-);
-html = html.replace(
-  "                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));\n",
-  ''
-);
+const applyTailOld = `                const landSkin = shopDB.land.find(item => item.id === equipped.land);
+                if (landSkin && landSkin.className) document.body.classList.add(landSkin.className);
+
+                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));`;
+const applyTailNew = `                const landSkin = shopDB.land.find(item => item.id === getEquippedShopId('land'));
+                if (landSkin && landSkin.className) document.body.classList.add(landSkin.className);`;
+requireText(html, applyTailOld, 'applyEquipped land lookup and legacy write');
+html = html.replace(applyTailOld, applyTailNew);
 
 const avatarMarker = `            // =====================================
             // 👤 씨앗 아바타 옷장: 기존 게임/기록과 분리된 SVG 레이어 시스템`;
