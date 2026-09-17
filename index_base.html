@@ -7,6 +7,7 @@
     <script src="/_vercel/insights/script.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="playtime-state.js"></script>
+    <script src="seed-wallet.js"></script>
     <link rel="stylesheet" href="main-shell.css">
 
 </head>
@@ -1036,7 +1037,7 @@
             let favorites = safeParseStorage('kidscade_favs', []);
             let recents = safeParseStorage('kidscade_recents', []);
             
-            let coins = Math.max(0, parseInt(localStorage.getItem('kidscade_coins') || '0', 10) || 0);
+            let coins = window.KidscadeSeedWallet?.get?.() ?? Math.max(0, parseInt(localStorage.getItem('kidscade_coins') || '0', 10) || 0);
             let inventory = safeParseStorage('kidscade_inventory', {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic']});
             let equipped = safeParseStorage('kidscade_equipped', {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic'});
             let claimedRanks = safeParseStorage('kidscade_claimed_ranks', {});
@@ -1155,34 +1156,46 @@
                 "세상에서 가장 뜨거운 바다는? 열바다", "왕이 넘어지면? 킹콩", "자동차가 울면? 잉카", "얼음이 죽으면? 다이빙"
             ];
 
+            function readSeedBalance() {
+                if (window.KidscadeSeedWallet?.get) return window.KidscadeSeedWallet.get();
+                const stored = parseInt(localStorage.getItem('kidscade_coins') || '0', 10);
+                return Number.isFinite(stored) ? Math.max(0, stored) : 0;
+            }
+
             function renderCoinUI() {
                 coinDisplay.innerText = `🌱 ${coins.toLocaleString()} 씨앗`;
                 if (typeof updateAvatarCurrency === 'function') updateAvatarCurrency();
             }
 
             function updateCoinUI() {
-                coins = Math.max(0, Math.round(Number(coins) || 0));
-                localStorage.setItem('kidscade_coins', String(coins));
+                coins = readSeedBalance();
                 renderCoinUI();
+                return coins;
             }
 
             function getPersistedCoins() {
-                const stored = parseInt(localStorage.getItem('kidscade_coins') || '0', 10);
-                return Number.isFinite(stored) ? Math.max(0, stored) : 0;
+                return readSeedBalance();
             }
 
             function changeSeeds(amount, reason = '', options = {}) {
                 const delta = Math.trunc(Number(amount) || 0);
                 if (delta === 0) return true;
 
-                // 다른 탭/iframe에서 먼저 바뀐 값이 있으면 최신 저장값을 기준으로 계산합니다.
-                const persisted = getPersistedCoins();
-                if (persisted !== coins) coins = persisted;
-
-                const next = coins + delta;
-                if (next < 0) return false;
-                coins = next;
-                updateCoinUI();
+                const wallet = window.KidscadeSeedWallet;
+                if (wallet?.change) {
+                    const result = wallet.change(delta, { reason, source: 'index-base' });
+                    coins = Math.max(0, Math.round(Number(result.balance) || 0));
+                    renderCoinUI();
+                    if (!result.ok) return false;
+                } else {
+                    // seed-wallet.js가 누락된 직접 실행에서도 기존 저장값을 잃지 않는 최소 fallback.
+                    const persisted = getPersistedCoins();
+                    const next = persisted + delta;
+                    if (next < 0) return false;
+                    coins = next;
+                    localStorage.setItem('kidscade_coins', String(coins));
+                    renderCoinUI();
+                }
 
                 if (options.toast !== false && reason) {
                     const sign = delta > 0 ? '+' : '';
@@ -1205,13 +1218,23 @@
                 return changeSeeds(Math.abs(Math.trunc(Number(amount) || 0)), reason, { toast: true });
             }
 
-            // 같은 사이트를 여러 탭에서 열어도 화면의 씨앗/학습시간이 오래된 값으로 덮이지 않게 동기화합니다.
-            window.addEventListener('storage', (event) => {
-                if (event.key === 'kidscade_coins') {
-                    coins = Math.max(0, parseInt(event.newValue || '0', 10) || 0);
+            // 지갑이 모든 저장/동기화를 전담하고 index_base는 레거시 coins 미러만 유지합니다.
+            if (window.KidscadeSeedWallet?.subscribe) {
+                window.KidscadeSeedWallet.subscribe(detail => {
+                    const next = Math.max(0, Math.round(Number(detail?.balance) || 0));
+                    if (next === coins) return;
+                    coins = next;
                     renderCoinUI();
-                }
-            });
+                }, { immediate: false });
+            } else {
+                // 직접 index_base.html을 여는 비정상/복구 경로의 호환 fallback.
+                window.addEventListener('storage', (event) => {
+                    if (event.key === 'kidscade_coins') {
+                        coins = Math.max(0, parseInt(event.newValue || '0', 10) || 0);
+                        renderCoinUI();
+                    }
+                });
+            }
 
 
             // =====================================
