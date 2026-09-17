@@ -76,7 +76,7 @@ test('duel entry works in launcher iframe and is absent only inside active duel'
       createElement:()=>({style:{},append(...children){this.children=children;},addEventListener(type,fn){this[type]=fn;}})};
     vm.runInNewContext(code,{window,document});
     assert.equal(Boolean(inserted),!embedded);
-    if(inserted){inserted.children[0].click();assert.equal(window.location.href,'/games/patience-tower-duel/');}
+    if(inserted){inserted.children[0].click();assert.equal(window.location.href,'/games/patience-tower-duel/?v=20260918-1');}
   }
 });
 test('source and built tower include exactly one entry script', () => {
