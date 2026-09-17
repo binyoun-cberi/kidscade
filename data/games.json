@@ -669,11 +669,11 @@
     {
       "id": "code_breaker",
       "title": "코드 브레이커",
-      "href": "코드 브레이커.html",
+      "href": "코드 브레이커.html?v=2",
       "category": "math",
       "age": "high",
       "icon": "🕵️",
-      "description": "상대방의 숨겨진 타일 숫자를 논리적으로 추론하여 맞춰보세요. 최고의 두뇌 대결!"
+      "description": "0~11의 검정·흰색 암호 타일을 정렬 규칙과 공개 정보로 추리해 상대의 숨은 숫자를 먼저 모두 밝혀내는 논리 보드게임!"
     },
     {
       "id": "world_boardgames",

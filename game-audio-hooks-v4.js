@@ -269,6 +269,7 @@
   }
 
   function setupCodeBreaker() {
+    if (window.__codeBreakerDxOwnAudio) return;
     soundAllowed = () => {
       const button = document.querySelector('button[onclick="toggleAudio()"]');
       const text = button?.textContent || '';
