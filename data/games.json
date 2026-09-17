@@ -439,11 +439,11 @@
     {
       "id": "job_maratang_simulator",
       "title": "마라탕 한 그릇",
-      "href": "games/job_maratang_simulator/마라탕 한 그릇.html",
+      "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=5",
       "category": "trivia",
       "age": "job",
       "icon": "🍲",
-      "description": "나만의 특제 마라탕 가게 오픈! 손님의 주문에 맞춰 신선한 재료를 담고, 불 세기와 얼얼한 마라 소스 농도를 정밀하게 조절하여 손님을 감탄시킬 완벽한 한 그릇을 완성해 보세요."
+      "description": "주문서를 보고 3D 셀프바의 실제 재료를 직접 끌어 그릇에 담고, 무게·가격·맵기를 맞춰 한 그릇을 완성하는 마라탕 가게 체험!"
     },
     {
       "id": "high_little_sculptor",
