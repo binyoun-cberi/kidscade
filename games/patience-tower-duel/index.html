@@ -186,6 +186,7 @@
     $('readyBtn').disabled=!opp || next.status!=='waiting';
     $('meName').textContent=me?.nickname||'나'; $('oppName').textContent=opp?.nickname||'상대';
     $('oppHeight').textContent=`${opp?.currentHeight||0}m`;
+    pushOpponentPose(opp);
     if (next.status==='playing') handlePlaying(next);
     if (next.status==='finished') showResult(next);
   }
@@ -200,7 +201,7 @@
 
   function startPolling() {
     clearInterval(pollTimer);
-    pollTimer=setInterval(syncTick,900);
+    pollTimer=setInterval(syncTick,400);
     syncTick();
   }
 
@@ -215,17 +216,37 @@
     } catch(_){return 0}
   }
 
+  function readCurrentPose() {
+    if (!frameReady || !gameStarted) return null;
+    try {
+      const pose=frame.contentWindow?.__patienceTowerRework?.getPose?.();
+      return pose && Number.isFinite(Number(pose.x)) && Number.isFinite(Number(pose.y)) ? pose : null;
+    } catch(_){ return null }
+  }
+
+  function pushOpponentPose(opponent) {
+    if (!frameReady) return;
+    try {
+      const api=frame.contentWindow?.__patienceTowerRework;
+      if (!api?.setOpponentPose) return;
+      if (!opponent?.pose) { api.setOpponentPose(null); return; }
+      api.setOpponentPose({...opponent.pose,nickname:opponent.nickname||'상대'});
+    } catch(_){}
+  }
+
   async function syncTick(forceFinished=false) {
     if (!room) return;
     const current=readCurrentHeight();
+    const pose=readCurrentPose();
     const endMs=room.endAt?new Date(room.endAt).getTime():Infinity;
     const finished=forceFinished || (room.status==='playing' && nowServer()>=endMs);
     if (finished) freezeGame();
     try {
-      const data=await api('/api/multiplayer/sync',{roomId:room.id,currentHeight:current,bestHeight:localBest,finished});
+      const data=await api('/api/multiplayer/sync',{roomId:room.id,currentHeight:current,bestHeight:localBest,pose,finished});
       room=data.room;
       if (room.serverNow) serverOffsetMs=new Date(room.serverNow).getTime()-Date.now();
       renderRoom(room);
+      pushOpponentPose(room.opponent);
     } catch(error){
       if (error.code==='not_authenticated'||error.code==='session_expired'){clearInterval(pollTimer);alert(error.message);location.href='/';}
     }
@@ -254,6 +275,7 @@
       if(practice)practice.checked=false;if(easy)easy.checked=false;
       doc.getElementById('startBtn')?.click();
       gameStarted=true; gameFrozen=false; finalSent=false; localBest=0;
+      pushOpponentPose(room?.opponent);
       countdown.classList.remove('show'); duelHud.style.display='block';
     } catch(_){showToast('게임 시작 준비가 늦어지고 있습니다.',2200)}
   }

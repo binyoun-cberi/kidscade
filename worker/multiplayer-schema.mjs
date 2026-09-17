@@ -27,6 +27,7 @@ const MULTIPLAYER_SCHEMA_STATEMENTS = Object.freeze([
     ready INTEGER NOT NULL DEFAULT 0,
     current_value INTEGER NOT NULL DEFAULT 0,
     best_value INTEGER NOT NULL DEFAULT 0,
+    state_json TEXT,
     finished_at TEXT,
     last_seen_at TEXT NOT NULL,
     joined_at TEXT NOT NULL,

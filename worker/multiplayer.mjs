@@ -12,6 +12,7 @@ const ROOM_TTL_MS = 30 * 60 * 1000;
 const RESULT_GRACE_MS = 2500;
 const ONLINE_WINDOW_MS = 6000;
 const MAX_HEIGHT_M = 2000;
+const ALLOWED_DUEL_SKINS = new Set(['green','blue','pink','yellow','beige']);
 
 const GAME_DEFINITIONS = Object.freeze({
   patience_tower_duel: Object.freeze({
@@ -96,6 +97,23 @@ export function clampHeight(value) {
   return Math.max(0, Math.min(MAX_HEIGHT_M, number));
 }
 
+export function sanitizePose(value) {
+  const pose = value && typeof value === 'object' ? value : {};
+  const finite = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
+  const x = Math.max(0, Math.min(900, finite(pose.x, 92)));
+  const y = Math.max(-100000, Math.min(500, finite(pose.y, -22)));
+  const vx = Math.max(-1200, Math.min(1200, finite(pose.vx, 0)));
+  const vy = Math.max(-1600, Math.min(1600, finite(pose.vy, 0)));
+  const face = finite(pose.face, 1) < 0 ? -1 : 1;
+  const skin = ALLOWED_DUEL_SKINS.has(String(pose.skin || '')) ? String(pose.skin) : 'blue';
+  return { x, y, vx, vy, face, skin, onGround: Boolean(pose.onGround) };
+}
+
+function parseStoredPose(value) {
+  if (!value) return null;
+  try { return sanitizePose(JSON.parse(String(value))); } catch (_) { return null; }
+}
+
 export function resolveWinner(players = []) {
   if (!Array.isArray(players) || players.length < 2) return null;
   const ordered = [...players]
@@ -148,7 +166,7 @@ async function fetchRoom(env, roomId) {
   `).bind(roomId).first();
   if (!room) return null;
   const playerRows = await env.DB.prepare(`
-    SELECT room_id, student_id, slot, nickname, ready, current_value, best_value,
+    SELECT room_id, student_id, slot, nickname, ready, current_value, best_value, state_json,
            finished_at, last_seen_at, joined_at
     FROM multiplayer_room_players
     WHERE room_id = ?
@@ -166,6 +184,7 @@ function serializePlayer(player, serverNow) {
     ready: Boolean(player.ready),
     currentHeight: clampHeight(player.current_value),
     bestHeight: clampHeight(player.best_value),
+    pose: parseStoredPose(player.state_json),
     finished: Boolean(player.finished_at),
     online: Boolean(lastSeenMs && serverNow - lastSeenMs <= ONLINE_WINDOW_MS)
   };
@@ -205,7 +224,7 @@ function serializeRoom(bundle, selfId, serverNow = Date.now()) {
 
 async function ensureParticipant(env, roomId, studentId) {
   return env.DB.prepare(`
-    SELECT room_id, student_id, slot, nickname, ready, current_value, best_value,
+    SELECT room_id, student_id, slot, nickname, ready, current_value, best_value, state_json,
            finished_at, last_seen_at, joined_at
     FROM multiplayer_room_players
     WHERE room_id = ? AND student_id = ?
@@ -372,16 +391,18 @@ async function syncRoom(request, env) {
   if (canReportHeight && withinFinalGrace) {
     const current = clampHeight(body?.currentHeight);
     const best = Math.max(current, clampHeight(body?.bestHeight));
+    const poseJson = body?.pose ? JSON.stringify(sanitizePose(body.pose)) : null;
     const markFinished = Boolean(body?.finished) && Number.isFinite(endMs) && now >= endMs - 1250;
     await env.DB.prepare(`
       UPDATE multiplayer_room_players
       SET current_value = ?,
           best_value = CASE WHEN best_value > ? THEN best_value ELSE ? END,
+          state_json = COALESCE(?, state_json),
           finished_at = CASE WHEN ? = 1 THEN COALESCE(finished_at, ?) ELSE finished_at END,
           last_seen_at = ?
       WHERE room_id = ? AND student_id = ?
     `).bind(
-      current, best, best, markFinished ? 1 : 0, nowIso(now), nowIso(now), roomId, auth.row.student_id
+      current, best, best, poseJson, markFinished ? 1 : 0, nowIso(now), nowIso(now), roomId, auth.row.student_id
     ).run();
   } else {
     await env.DB.prepare(`
