@@ -6,9 +6,25 @@
   const title = document.title || '';
   const path = (() => { try { return decodeURIComponent(location.pathname); } catch (_) { return location.pathname || ''; } })();
   const audio = () => window.KidscadeAudio;
-  const play = (key, options = {}) => audio()?.play?.(key, options)?.catch?.(() => {});
-  const playAny = (keys, options = {}) => audio()?.playAny?.(keys, options)?.catch?.(() => {});
+  let soundAllowed = () => true;
+  const play = (key, options = {}) => {
+    if (!soundAllowed()) return;
+    return audio()?.play?.(key, options)?.catch?.(() => {});
+  };
+  const playAny = (keys, options = {}) => {
+    if (!soundAllowed()) return;
+    return audio()?.playAny?.(keys, options)?.catch?.(() => {});
+  };
   const preload = keys => audio()?.preload?.(keys)?.catch?.(() => {});
+
+  function readJson(key, fallback = {}) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || 'null');
+      return value && typeof value === 'object' ? value : fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   function waitFor(selector, callback, timeout = 7000) {
     const started = performance.now();
@@ -28,6 +44,7 @@
   }
 
   function setupPatienceTower() {
+    soundAllowed = () => !(document.getElementById('muteBtn')?.textContent || '').includes('🔇');
     preload(['movement.jump', 'combat.impact_heavy', 'combat.hurt_grunt', 'combat.hurt_voice', 'collect.coin_pickup']);
     waitFor('#pt3Game', () => {
       const menu = document.getElementById('menu');
@@ -60,6 +77,7 @@
   }
 
   function setupDogRunner() {
+    soundAllowed = () => readJson('mathDogRunnerSave_v2', {}).sfx !== false;
     preload(['movement.jump', 'success.cheer_yay', 'success.victory_fanfare', 'failure.fail_sting', 'combat.impact_heavy']);
     waitFor('#message', message => {
       let lastToken = '';
@@ -97,6 +115,7 @@
   }
 
   function setupSpaceSandwich() {
+    soundAllowed = () => readJson('spaceSandwichV4', {}).sound !== false;
     preload(['combat.projectile_whoosh', 'success.cheer_yay', 'success.cheer_woohoo', 'failure.fail_sting', 'shop.register_open']);
     waitFor('#toast', toast => {
       let last = '';
