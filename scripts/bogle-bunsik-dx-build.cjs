@@ -4,7 +4,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const catalogPath = path.join(root, 'dist', 'data', 'games.json');
 const gamePath = 'games/job_bogle_bunsik/보글보글 분식집.html';
-const versionedHref = `${gamePath}?v=1`;
+const versionedHref = `${gamePath}?v=2`;
 
 if (!fs.existsSync(catalogPath)) throw new Error('Missing built game catalog: data/games.json');
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
