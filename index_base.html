@@ -6,6 +6,7 @@
     <title>Kidscade - 신나는 학습 오락실!</title>
     <script src="/_vercel/insights/script.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="playtime-state.js"></script>
     <link rel="stylesheet" href="main-shell.css">
 
 </head>
@@ -1209,9 +1210,6 @@
                 if (event.key === 'kidscade_coins') {
                     coins = Math.max(0, parseInt(event.newValue || '0', 10) || 0);
                     renderCoinUI();
-                }
-                if (event.key === 'kidscade_playtime_sec' && typeof syncPlayTimeFromStorage === 'function') {
-                    syncPlayTimeFromStorage();
                 }
             });
 
@@ -2612,63 +2610,30 @@ ${getEvolutionHintText()}
             });
 
             // =====================================
-            // 학습(플레이) 시간 누적 - 초 단위 안정 저장
+            // 학습(플레이) 시간 세션 체크포인트
+            // 누적 저장/표시는 playtime-state.js가 전담합니다.
             // =====================================
-            const PLAYTIME_SECONDS_KEY = 'kidscade_playtime_sec';
-            const LEGACY_PLAYTIME_MIN_KEY = 'kidscade_playtime';
             const MIN_REWARD_PLAY_SEC = 30;
             let playStartTime = 0;
             let playCheckpointTime = 0;
-
-            function loadPlayTimeSeconds() {
-                const savedSeconds = parseInt(localStorage.getItem(PLAYTIME_SECONDS_KEY) || '', 10);
-                const legacyMinutes = Math.max(0, parseInt(localStorage.getItem(LEGACY_PLAYTIME_MIN_KEY) || '0', 10) || 0);
-                const legacySeconds = legacyMinutes * 60;
-
-                // 새 버전/예전 버전을 번갈아 열었더라도 더 큰 누적값을 보존합니다.
-                const bestSeconds = Number.isFinite(savedSeconds) && savedSeconds >= 0
-                    ? Math.max(savedSeconds, legacySeconds)
-                    : legacySeconds;
-                localStorage.setItem(PLAYTIME_SECONDS_KEY, String(bestSeconds));
-                return bestSeconds;
-            }
-
-            let totalPlayTimeSec = loadPlayTimeSeconds();
-
-            function persistPlayTime() {
-                totalPlayTimeSec = Math.max(0, Math.floor(Number(totalPlayTimeSec) || 0));
-                localStorage.setItem(PLAYTIME_SECONDS_KEY, String(totalPlayTimeSec));
-                // 예전 게임/기능이 이 키를 읽더라도 호환되도록 분 단위 값도 함께 유지합니다.
-                localStorage.setItem(LEGACY_PLAYTIME_MIN_KEY, String(Math.floor(totalPlayTimeSec / 60)));
-            }
-
-            function updatePlayTimeDisplay() {
-                const hours = Math.floor(totalPlayTimeSec / 3600);
-                const mins = Math.floor((totalPlayTimeSec % 3600) / 60);
-                const secs = totalPlayTimeSec % 60;
-                let text = '총 학습 시간: ';
-                if (hours > 0) text += `${hours}시간 `;
-                if (hours > 0 || mins > 0) text += `${mins}분 `;
-                text += `${secs}초`;
-                document.getElementById('total-playtime').innerText = text;
-            }
-
-            function syncPlayTimeFromStorage() {
-                const stored = parseInt(localStorage.getItem(PLAYTIME_SECONDS_KEY) || '0', 10);
-                if (Number.isFinite(stored) && stored >= 0 && stored !== totalPlayTimeSec) {
-                    totalPlayTimeSec = stored;
-                    updatePlayTimeDisplay();
-                }
-            }
 
             function checkpointPlayTime(now = Date.now()) {
                 if (playStartTime <= 0 || playCheckpointTime <= 0) return 0;
                 const deltaSec = Math.floor((now - playCheckpointTime) / 1000);
                 if (deltaSec <= 0) return 0;
-                totalPlayTimeSec += deltaSec;
                 playCheckpointTime += deltaSec * 1000;
-                persistPlayTime();
-                updatePlayTimeDisplay();
+
+                if (window.KidscadePlaytime?.addSeconds) {
+                    window.KidscadePlaytime.addSeconds(deltaSec);
+                } else {
+                    // 외부 모듈 로드 실패 시에도 학습시간 자체는 잃지 않는 최소 fallback입니다.
+                    const key = 'kidscade_playtime_sec';
+                    const legacyKey = 'kidscade_playtime';
+                    const current = Math.max(0, parseInt(localStorage.getItem(key) || '0', 10) || 0);
+                    const next = current + deltaSec;
+                    localStorage.setItem(key, String(next));
+                    localStorage.setItem(legacyKey, String(Math.floor(next / 60)));
+                }
                 return deltaSec;
             }
 

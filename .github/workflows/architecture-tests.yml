@@ -30,6 +30,7 @@ jobs:
             account-profile-gate.js \
             seed-ranking.js \
             seed-balance-sync.js \
+            playtime-state.js \
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
@@ -75,6 +76,8 @@ jobs:
         run: node --test tests/game-description-overrides.test.cjs
       - name: Run temporary profile and play history tests
         run: node --test tests/profile-history.test.cjs
+      - name: Run playtime state tests
+        run: node --test tests/playtime-state.test.cjs tests/index-base-playtime.test.cjs
       - name: Run UI information architecture tests
         run: node --test tests/ui-information-architecture.test.cjs
       - name: Run UI visual polish tests

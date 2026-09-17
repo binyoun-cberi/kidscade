@@ -2,16 +2,25 @@
 
 `index_base.html`은 아직 Kidscade의 레이아웃, 레거시 카드 마크업, 상점·펫·미션·프로필 관련 인라인 로직이 함께 남아 있는 전환기 파일입니다.
 
-## 1단계 — CSS 분리
+## 완료된 단계
 
-- 거대한 인라인 `<style>` 블록을 `main-shell.css`로 이동합니다.
-- `index_base.html`은 화면 골격과 인라인 레거시 동작만 남깁니다.
+### 1단계 — CSS 분리
+
+- 거대한 인라인 `<style>` 블록을 `main-shell.css`로 이동했습니다.
+- `index_base.html`은 화면 골격과 아직 분리하지 않은 레거시 동작 위주로 남겼습니다.
 - `main-bootstrap.js`가 런타임 버전을 CSS URL에도 붙여 캐시 불일치를 막습니다.
 - `tests/index-base-shell.test.cjs`로 링크, 핵심 셀렉터, 캐시 버전 연결을 검증합니다.
 
+### 2단계 — 플레이시간 상태 분리
+
+- 초 단위 누적시간, 예전 분 단위 저장 키 호환, 화면 표시, 다중 탭 동기화를 `playtime-state.js`로 이동했습니다.
+- `index_base.html`에는 현재 게임 세션의 체크포인트 계산만 남기고 실제 누적 저장은 공통 모듈에 위임합니다.
+- 기존 `kidscade_playtime_sec`, `kidscade_playtime` 키를 그대로 사용해 이전 저장값을 보존합니다.
+- `tests/playtime-state.test.cjs`, `tests/index-base-playtime.test.cjs`를 정식 CI에 포함했습니다.
+
 ## 다음 단계
 
-1. 씨앗·플레이시간 공통 상태를 별도 모듈로 분리합니다.
+1. 씨앗 지갑의 읽기·쓰기·다중 탭 동기화를 공통 상태 모듈로 분리합니다.
 2. 프로필·랭크·배지와 미션 상태를 분리합니다.
 3. 상점과 쑥쑥랜드/펫 로직을 각 도메인 모듈로 분리합니다.
 4. bootstrap 문자열 치환에 의존하는 레거시 컨트롤러를 제거합니다.
