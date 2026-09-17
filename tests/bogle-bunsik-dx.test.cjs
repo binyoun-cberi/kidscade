@@ -47,6 +47,7 @@ test('Bogle Bunsik DX browser module parses as JavaScript', () => {
 
 test('Bogle Bunsik DX uses local Three.js and tracked food assets only', () => {
   assert.match(html, /\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
+  assert.match(js, /new URL\('\.\.\/\.\.\/assets\/game\/food\/',import\.meta\.url\)\.href/);
   assert.doesNotMatch(html + css + js, /https?:\/\//i, 'Bogle Bunsik DX must not depend on external CDNs');
   assert.match(js, /class BunsikScene/);
   for (const model of expectedModels) {
