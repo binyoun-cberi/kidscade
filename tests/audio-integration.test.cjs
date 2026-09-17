@@ -12,6 +12,19 @@ const stripHref = href => {
   try { return decodeURIComponent(plain); } catch (_) { return plain; }
 };
 
+const ENHANCED_TITLES = [
+  '인내의 탑',
+  '멍멍 곱셈 러너',
+  '우주 샌드위치 가게',
+  '아이스크림 나눗셈 가게',
+  '교실전쟁 3D',
+  '숫자 타워',
+  '스펠링 프로그',
+  '블록래프트',
+  'OUTBREAK KOREA',
+  '한자 수호전: 8급'
+];
+
 test('audio catalog points only to tracked audio files', () => {
   const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
   assert.equal(catalog.basePath, 'assets/audio/');
@@ -46,14 +59,15 @@ test('main page loads the shared audio manager before bootstrap', () => {
   assert.ok(bootstrapAt > audioAt, 'audio manager must load before main bootstrap');
 });
 
-test('Cloudflare build injector adds the audio manager to all catalog games and hooks to the first enhanced set', () => {
+test('Cloudflare build injector adds the audio manager to all catalog games and hooks to enhanced games', () => {
   const source = read('scripts/inject-game-integrations.cjs');
   assert.match(source, /injectAudioRuntimeIntoCatalogGames/);
   assert.match(source, /injectDocumentStartScript/);
   assert.match(source, /injectDocumentEndScript/);
   assert.match(source, /AUDIO_MANAGER_SRC/);
   assert.match(source, /AUDIO_HOOKS_SRC/);
-  for (const title of ['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']) {
+  assert.match(source, /game-audio-hooks\.js\?v=20260917-2/);
+  for (const title of ENHANCED_TITLES) {
     assert.ok(source.includes(title), `enhanced audio title missing: ${title}`);
   }
 });
@@ -76,28 +90,53 @@ test('built enabled games all contain the shared audio manager', () => {
   assert.ok(checked >= 90, `expected broad catalog coverage, checked only ${checked}`);
 });
 
-test('built first enhanced game set contains the real-sound hook runtime', () => {
+test('built enhanced games contain the real-sound hook runtime', () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'data', 'games.json'), 'utf8'));
-  for (const title of ['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']) {
+  for (const title of ENHANCED_TITLES) {
     const game = (catalog.games || []).find(item => item && item.title === title && !item.disabled);
     assert.ok(game, `enhanced game missing from built catalog: ${title}`);
     const relative = stripHref(game.href);
     const html = fs.readFileSync(path.join(root, 'dist', relative), 'utf8');
-    assert.match(html, /game-audio-hooks\.js\?v=20260917-1/, `audio hooks missing from ${title}`);
+    assert.match(html, /game-audio-hooks\.js\?v=20260917-2/, `audio hooks missing from ${title}`);
   }
 });
 
-test('first audio hook set covers jump, hit, success, fail, pickup and shop feedback', () => {
+test('audio hook set covers movement, combat, success, fail, pickup and shop feedback', () => {
   const hooks = read('game-audio-hooks.js');
   for (const key of [
     'movement.jump',
+    'combat.projectile_whoosh',
     'combat.impact_heavy',
+    'combat.hurt_grunt',
+    'combat.hurt_voice',
     'collect.coin_pickup',
     'collect.coin_drop',
     'success.cheer_yay',
     'success.cheer_woohoo',
     'success.victory_fanfare',
     'failure.fail_sting',
-    'shop.register_open'
-  ]) assert.ok(hooks.includes(key), `${key} is not wired into the first game set`);
+    'shop.register_open',
+    'shop.purchase'
+  ]) assert.ok(hooks.includes(key), `${key} is not wired into the game set`);
+});
+
+test('second audio pass keeps game-specific event hooks instead of a generic click blanket', () => {
+  const hooks = read('game-audio-hooks.js');
+  for (const fn of [
+    'setupClassroomWar',
+    'setupNumberTower',
+    'setupSpellingFrog',
+    'setupBlockraft',
+    'setupOutbreakKorea',
+    'setupHanjaSurvivors'
+  ]) assert.match(hooks, new RegExp(`function ${fn}\\(`), `${fn} is missing`);
+
+  for (const marker of [
+    '#baseHpText',
+    '.room.exposed,.gateArch.exposed,.ans',
+    '황금 파리',
+    '.toast-area',
+    '대한민국 회복',
+    '#canvas-wrapper'
+  ]) assert.ok(hooks.includes(marker), `game-specific audio marker missing: ${marker}`);
 });

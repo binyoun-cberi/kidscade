@@ -4,8 +4,19 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
 const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
-const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-1';
-const AUDIO_HOOK_TITLES = new Set(['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']);
+const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-2';
+const AUDIO_HOOK_TITLES = new Set([
+  '인내의 탑',
+  '멍멍 곱셈 러너',
+  '우주 샌드위치 가게',
+  '아이스크림 나눗셈 가게',
+  '교실전쟁 3D',
+  '숫자 타워',
+  '스펠링 프로그',
+  '블록래프트',
+  'OUTBREAK KOREA',
+  '한자 수호전: 8급'
+]);
 
 function injectScripts(relativeHtml, scripts) {
   const file = path.join(dist, relativeHtml);
