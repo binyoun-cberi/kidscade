@@ -69,7 +69,8 @@ jobs:
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
             scripts/apply-game-classification-overrides.cjs \
-            scripts/inject-game-integrations.cjs; do
+            scripts/inject-game-integrations.cjs \
+            scripts/maratang-dx-build.cjs; do
             node --check "$file"
           done
       - name: Reject tracked credentials and secret env files
@@ -112,6 +113,8 @@ jobs:
         run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run Alien Pizza DX2 tests
         run: node --test tests/alien-pizza-dx2.test.cjs
+      - name: Run Maratang DX tests
+        run: node --test tests/maratang-dx.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
