@@ -1,0 +1,2744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- 모바일 더블 탭 확대 방지 및 모바일 웹앱 최적화 뷰포트 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>한자 수호전: 8급 한자 디펜스</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Hanzi Writer Library -->
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <!-- Phosphor Icons for UI Buttons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            /* 모바일 바운스 스크롤 방지 */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', 'Noto Sans KR', serif;
+        }
+
+        /* 터치 시 불필요한 스크롤 및 줌인 방지 */
+        canvas, #hanja-target, button, .canvas-container {
+            touch-action: none;
+        }
+
+        /* 한자 캔버스 가이드라인 (동양풍 격자선) */
+        .canvas-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            background-color: #1e293b; /* Slate 800 */
+            border-radius: 16px;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .canvas-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(to right, transparent 49.5%, rgba(59, 130, 246, 0.15) 49.5%, rgba(59, 130, 246, 0.15) 50.5%, transparent 50.5%),
+                linear-gradient(to bottom, transparent 49.5%, rgba(59, 130, 246, 0.15) 49.5%, rgba(59, 130, 246, 0.15) 50.5%, transparent 50.5%);
+            pointer-events: none;
+            border-radius: 16px;
+            z-index: 0;
+        }
+
+        #hanja-target {
+            position: relative;
+            z-index: 10;
+        }
+
+        #hanja-target svg {
+            border-radius: 16px;
+        }
+
+        /* 스킬 캐스팅 순간 임팩트 애니메이션 */
+        @keyframes castFlash {
+            0% { box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+            100% { box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+        }
+        .cast-active {
+            animation: castFlash 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[100] p-4 text-center">
+        <h1 class="text-4xl md:text-6xl font-black text-blue-400 title-font mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">
+            <i class="ph-fill ph-shield-checkered text-blue-500"></i> 漢字 守護戰
+        </h1>
+        <p class="text-slate-300 text-sm md:text-lg mb-8 max-w-md">올바른 획순으로 한자를 써서 다가오는 원령들을 물리치세요!</p>
+        <button id="btn-start-game" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.5)] transform hover:scale-105">
+            게임 시작
+        </button>
+    </div>
+
+    <!-- Header / HUD Top -->
+    <header class="bg-slate-900 border-b border-slate-800 py-2 px-4 md:px-6 flex justify-between items-center z-10 shrink-0">
+        <h1 class="text-base md:text-2xl font-black text-blue-400 title-font flex items-center gap-1.5">
+            <i class="ph-fill ph-shield-checkered text-blue-500"></i>
+            漢字 守護戰 <span class="text-[9px] font-semibold text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded ml-1">v2.0 로컬 에디션</span>
+        </h1>
+        <div class="flex items-center gap-3">
+            <div class="text-[11px] bg-slate-950 px-2 py-1 rounded border border-slate-800 text-yellow-300 font-bold hidden sm:block">
+                🏆 최고 기록: <span id="top-score-text">0 원령</span>
+            </div>
+            <button id="btn-sound" class="text-slate-400 hover:text-white transition-colors text-xl p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
+                <i id="sound-icon" class="ph ph-speaker-high"></i>
+            </button>
+            <div id="game-timer" class="text-base md:text-lg font-bold font-mono text-yellow-400">00:00</div>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Responsive Split Layout) -->
+    <main class="flex-grow flex flex-col lg:flex-row items-center justify-center p-2.5 md:p-4 gap-4 max-w-7xl mx-auto w-full overflow-y-auto lg:overflow-hidden">
+        
+        <!-- Left: Game Screen -->
+        <div class="relative flex flex-col items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 w-full lg:w-[540px] xl:w-[600px] shadow-2xl shrink-0">
+            <!-- HUD Stats -->
+            <div class="w-full flex justify-between text-[11px] font-bold mb-2 px-1 text-slate-300">
+                <div class="flex items-center gap-1"><i class="ph-fill ph-heart text-red-500"></i> 체력: <span id="hud-hp" class="text-red-400">100/100</span></div>
+                <div class="flex items-center gap-1"><i class="ph-fill ph-skull text-slate-400"></i> 소탕: <span id="hud-kills" class="text-slate-200">0</span></div>
+                <div class="flex items-center gap-1"><i class="ph-fill ph-sparkles text-blue-400"></i> 레벨: <span id="hud-level" class="text-blue-300">1</span></div>
+            </div>
+
+            <!-- XP Bar -->
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mb-2 border border-slate-700">
+                <div id="xp-bar-fill" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full w-[0%] transition-all duration-150"></div>
+            </div>
+
+            <!-- Gameplay Canvas Container -->
+            <div class="relative overflow-hidden rounded-xl border border-slate-850 w-full aspect-square max-w-[500px]">
+                <canvas id="game-canvas" width="600" height="600" class="w-full h-full bg-slate-900 block"></canvas>
+                
+                <!-- Touch drag dynamic zone indicator -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-[10px] text-slate-400 text-center px-4">
+                    [PC: WASD] / [모바일: 화면 왼쪽을 밀어 조이스틱 이동]
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Hanja Writing Panel -->
+        <div class="bg-slate-900 border border-slate-800 p-4 md:p-6 rounded-2xl shadow-xl w-full max-w-md flex flex-col items-center shrink-0">
+            
+            <!-- Target Spell Header -->
+            <div class="w-full text-center border-b border-slate-800 pb-3 mb-3">
+                <span class="text-[10px] uppercase tracking-wider text-blue-400 font-bold">주문 캐스팅 (대기 중)</span>
+                <div class="flex items-center justify-center gap-3 mt-1">
+                    <h2 id="target-char" class="text-4xl md:text-5xl font-black text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]">一</h2>
+                    <div class="text-left">
+                        <p id="target-meaning" class="text-base md:text-lg font-bold text-slate-200">한 일</p>
+                        <p id="spell-name" class="text-[11px] text-emerald-400 font-semibold">일선 가르기 (Slash)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Area -->
+            <div id="canvas-wrapper" class="canvas-container mb-3 flex items-center justify-center">
+                <div id="hanja-target"></div>
+            </div>
+
+            <!-- Spell Description Box -->
+            <div class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl mb-3 text-[11px] text-slate-400 text-center min-h-[48px] flex items-center justify-center leading-relaxed">
+                <span id="spell-desc">가로지르는 칼날기를 발사해 전방의 적들을 한 번에 베어 넘깁니다.</span>
+            </div>
+
+            <!-- Helper Tools (Optimized larger touch targets) -->
+            <div class="grid grid-cols-2 gap-3 w-full mb-3">
+                <button id="btn-hint" class="flex items-center justify-center gap-1.5 py-3 px-3 bg-blue-900/40 hover:bg-blue-900/70 active:bg-blue-900/80 border border-blue-800 text-blue-300 text-xs font-bold rounded-xl transition-colors min-h-[44px]">
+                    <i class="ph ph-eye text-lg"></i> 획순 힌트
+                </button>
+                <button id="btn-clear" class="flex items-center justify-center gap-1.5 py-3 px-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-750 text-slate-300 text-xs font-bold rounded-xl transition-colors min-h-[44px]">
+                    <i class="ph ph-arrow-counter-clockwise text-lg"></i> 다시 쓰기
+                </button>
+            </div>
+
+            <!-- Unlocked Spells List -->
+            <div class="w-full">
+                <h3 class="text-[10px] font-bold text-slate-500 mb-1.5 uppercase flex items-center gap-1">
+                    <i class="ph ph-scroll"></i> 해금된 한자 마법첩
+                </h3>
+                <div id="unlocked-list" class="flex flex-wrap gap-1.5 max-h-[110px] lg:max-h-[140px] overflow-y-auto pr-1">
+                    <!-- Dynamic badges go here -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Overlay: Level Up Selection (Pause Game) -->
+    <div id="level-up-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border-2 border-blue-500 p-5 rounded-2xl w-full max-w-md shadow-[0_0_30px_rgba(59,130,246,0.5)] max-h-[90%] overflow-y-auto">
+            <h2 class="text-xl md:text-2xl font-black text-center text-blue-400 title-font mb-1">⚡ LEVEL UP! ⚡</h2>
+            <p class="text-[11px] text-center text-slate-400 mb-4">마법첩 덱 구성 및 기본 능력을 강화하여 생존하세요.</p>
+            <div id="upgrade-options" class="flex flex-col gap-2.5">
+                <!-- Upgrade options injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay: Game Over / Victory Screen -->
+    <div id="end-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-slate-900 border-2 border-amber-500 p-6 rounded-2xl w-full max-w-md text-center shadow-[0_0_40px_rgba(245,158,11,0.4)] my-auto">
+            <div id="end-icon" class="mb-3 text-5xl text-amber-500 flex justify-center">
+                <i class="ph ph-skull"></i>
+            </div>
+            <h2 id="end-title" class="text-2xl md:text-3xl font-black text-slate-100 mb-1 title-font">게임 오버</h2>
+            <p id="end-reason" class="text-xs text-slate-400 mb-4">영혼들의 습격으로 쓰러졌습니다.</p>
+            
+            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl mb-4 grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                    <span class="text-slate-500 block">생존 시간</span>
+                    <strong id="end-time" class="text-yellow-400 text-base md:text-lg">00:00</strong>
+                </div>
+                <div>
+                    <span class="text-slate-500 block">정벌한 원령</span>
+                    <strong id="end-kills" class="text-red-400 text-base md:text-lg">0</strong>
+                </div>
+            </div>
+
+            <!-- New High Score Input UI (Local) -->
+            <div id="high-score-form" class="bg-blue-950/40 border border-blue-800/60 p-4 rounded-xl mb-4 hidden flex-col items-center gap-2">
+                <span class="text-sm text-yellow-300 font-bold flex items-center gap-1">
+                    <i class="ph-fill ph-star"></i> 새로운 최고 기록 달성!
+                </span>
+            </div>
+
+            <!-- Local High Score Display -->
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl mb-5 text-center">
+                <h3 class="text-xs font-bold text-slate-400 mb-1 uppercase">내 최고 기록</h3>
+                <div class="text-lg text-yellow-400 font-black" id="local-best-display">0 원령</div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-950/50 min-h-[44px]">
+                영혼 정화 재도전
+            </button>
+        </div>
+    </div>
+
+    <!-- Local Storage & Audio System -->
+    <script>
+        // --- Local Storage High Score System ---
+        window.myHighScore = parseInt(localStorage.getItem('hanja_survivors_best')) || 0;
+        
+        function updateHighScoreUI() {
+            const el = document.getElementById('top-score-text');
+            const displayEl = document.getElementById('local-best-display');
+            if (el) el.textContent = `${window.myHighScore} 원령`;
+            if (displayEl) displayEl.textContent = `${window.myHighScore} 원령`;
+        }
+        updateHighScoreUI();
+
+        window.saveHighScoreToDB = function(score) {
+            if (score > window.myHighScore) {
+                window.myHighScore = score;
+                localStorage.setItem('hanja_survivors_best', score);
+                updateHighScoreUI();
+                return true;
+            }
+            return false;
+        };
+
+        // --- Web Audio API (BGM & SFX) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        const btnSound = document.getElementById('btn-sound');
+        const soundIcon = document.getElementById('sound-icon');
+
+        btnSound.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundIcon.className = soundEnabled ? 'ph ph-speaker-high' : 'ph ph-speaker-slash text-red-500';
+            if(!soundEnabled) stopBGM();
+            else if(isRunning && !isPaused && document.getElementById('start-screen').classList.contains('hidden')) startBGM();
+        });
+
+        // BGM Engine
+        let bgmInterval;
+        const bgmSequence = [
+            {f: 220.00, d: 0.15}, {f: 261.63, d: 0.15}, {f: 329.63, d: 0.15}, {f: 440.00, d: 0.15},
+            {f: 329.63, d: 0.15}, {f: 261.63, d: 0.15}, {f: 196.00, d: 0.15}, {f: 261.63, d: 0.15}
+        ];
+        let bgmStep = 0;
+
+        function startBGM() {
+            clearInterval(bgmInterval);
+            if (!soundEnabled) return;
+            bgmInterval = setInterval(() => {
+                if (!soundEnabled || audioCtx.state === 'suspended' || isPaused || !isRunning) return;
+                const note = bgmSequence[bgmStep];
+                const now = audioCtx.currentTime;
+                
+                // Arp
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(note.f, now);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + note.d);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + note.d);
+
+                // Bass
+                if(bgmStep % 4 === 0) {
+                    const bass = audioCtx.createOscillator();
+                    const bGain = audioCtx.createGain();
+                    bass.type = 'sawtooth';
+                    bass.frequency.setValueAtTime(note.f / 2, now);
+                    bGain.gain.setValueAtTime(0.05, now);
+                    bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    bass.connect(bGain);
+                    bGain.connect(audioCtx.destination);
+                    bass.start(now);
+                    bass.stop(now + 0.3);
+                }
+                
+                bgmStep = (bgmStep + 1) % bgmSequence.length;
+            }, 180);
+        }
+
+        function stopBGM() {
+            clearInterval(bgmInterval);
+        }
+
+        window.playSynthSound = function(type) {
+            if (!soundEnabled || audioCtx.state === 'suspended') return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'fire') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                } else if (type === 'water') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.linearRampToValueAtTime(350, now + 0.5);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now); osc.stop(now + 0.5);
+                } else if (type === 'slash') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'earth') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(80, now);
+                    osc.frequency.linearRampToValueAtTime(30, now + 0.6);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now); osc.stop(now + 0.6);
+                } else if (type === 'crystal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'levelup') {
+                    [0, 0.1, 0.2].forEach((delay, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.type = 'sine';
+                        const freqs = [523.25, 659.25, 783.99]; 
+                        o.frequency.setValueAtTime(freqs[idx], now + delay);
+                        g.gain.setValueAtTime(0.1, now + delay);
+                        g.gain.linearRampToValueAtTime(0.01, now + delay + 0.3);
+                        o.start(now + delay); o.stop(now + delay + 0.3);
+                    });
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                }
+            } catch (e) {
+                console.error("Audio error: ", e);
+            }
+        };
+    </script>
+
+    <!-- Game Logic -->
+    <script>
+        // ----------------------------------------------------
+        // 데이터 정의 (8급 한자 마법 DB - 총 35개 마법 탑재 및 가사 정밀 설계)
+        // ----------------------------------------------------
+        const hanjaDB = {
+            '一': { char: '一', meaning: '한 일', minLvl: 1, spell: '일선 가르기', desc: '가로지르는 칼날기 베기 투사체로 정면을 날카롭게 절개합니다.' },
+            '二': { char: '二', meaning: '두 이', minLvl: 1, spell: '이중 검격', desc: '주인공의 전방과 후방 양방향에 동시에 거대한 궤적의 쾌속 참격을 선사합니다.' },
+            '三': { char: '三', meaning: '석 삼', minLvl: 1, spell: '삼도 전격', desc: '세 방면으로 사방으로 교차 폭주하는 전기 구체를 발사합니다.' },
+            '四': { char: '四', meaning: '넉 사', minLvl: 1, spell: '사방 수리검', desc: '동서남북 4방향으로 회전해 관통하는 그림자 수리검을 뿌립니다.' },
+            '五': { char: '五', meaning: '다섯 오', minLvl: 2, spell: '오망 연폭', desc: '오각형 지점에 위력적인 지열 기둥 대연쇄 폭발을 소환합니다.' },
+            '六': { char: '六', meaning: '여섯 육', minLvl: 3, spell: '육각 빙결진', desc: '6갈래의 고속 고드름 충격파를 방출하여 얼음 가시밭길을 만듭니다.' },
+            '七': { char: '七', meaning: '일곱 칠', minLvl: 4, spell: '칠성 뇌전', desc: '근방에 위협적인 번개 7개를 신속 무작위 집중 내리꽂습니다.' },
+            '八': { char: '八', meaning: '여덟 팔', minLvl: 5, spell: '팔진 파동', desc: '8방향 사방위로 뿜어지는 강력한 전방위 검강 파동을 시전합니다.' },
+            '九': { char: '九', meaning: '아홉 구', minLvl: 6, spell: '구미 여우불', desc: '시야 내 원령들을 무조건 추격하는 여우불 탄환 9개를 동시 엽사합니다.' },
+            '十': { char: '十', meaning: '열 십', minLvl: 7, spell: '십자 성광', desc: '거대한 십자가 형태의 빛 기둥을 뿜어내며 충돌체들을 정화합니다.' },
+            '川': { char: '川', meaning: '내 천', minLvl: 8, spell: '삼도 급류', desc: '전방 3갈래 방향으로 모든 것을 격퇴하여 미는 거친 물길을 발사합니다.' },
+            '人': { char: '人', meaning: '사람 인', minLvl: 2, spell: '그림자 분신', desc: '전투를 서포트하는 핑크색 자전 구체 분신을 보조 소환합니다.' },
+            '木': { char: '木', meaning: '나무 목', minLvl: 3, spell: '보호 가시 나무', desc: '스스로의 궤도에 빙글빙글 회전하며 원령을 타격하는 목판을 생성합니다.' },
+            '土': { char: '土', meaning: '흙 토', minLvl: 4, spell: '대지 격동', desc: '광범위 격동 지진파를 터뜨려 화면 전체 몹들에게 광역 기절을 부여합니다.' },
+            '水': { char: '水', meaning: '물 수', minLvl: 5, spell: '심연 대해일', desc: '정면에 길고 막강한 충격적 파도로 몹들을 한꺼번에 쓸어밀어냅니다.' },
+            '火': { char: '火', meaning: '불 화', minLvl: 6, spell: '지옥염화 폭발', desc: '대형 유도 화염탄을 쏘아 치명적인 스플래시 대폭발을 자아냅니다.' },
+            '金': { char: '金', meaning: '쇠 금', minLvl: 7, spell: '천공의 금도', desc: '하늘에서 예리한 황금 대검들을 무차별 낙하해 짓이겨 파괴합니다.' },
+            '山': { char: '山', meaning: '뫼 산', minLvl: 8, spell: '낙석 수호', desc: '거대한 낙석 더미를 표적 지상 중심에 낙하해 단숨에 분쇄시킵니다.' },
+            '日': { char: '日', meaning: '날 일', minLvl: 9, spell: '태양의 심판', desc: '관통 타격을 주는 거대한 초열 태양 레이저를 시전하여 관통 공격합니다.' },
+            '月': { char: '月', meaning: '달 월', minLvl: 10, spell: '삭월 참풍', desc: '플레이어 몸 중심에서 확장 유도 소용돌이 바람 참격을 날립니다.' },
+            '大': { char: '大', meaning: '큰 대', minLvl: 2, spell: '거대 성역', desc: '발밑에 닿는 적들을 강하게 밀어내고 둔화시키는 파란 수호 오라를 소환합니다.' },
+            '小': { char: '小', meaning: '작을 소', minLvl: 2, spell: '은신 침강사', desc: '몸집이 극도로 작아져 4초간 완전 무적이 되며 고속 마법 가시를 난사합니다.' },
+            '中': { char: '中', meaning: '가운데 중', minLvl: 3, spell: '인력 블랙홀', desc: '원령들을 중심 지점으로 맹렬히 집속 흡입하는 암흑 공간을 소환합니다.' },
+            '門': { char: '門', meaning: '문 문', minLvl: 4, spell: '철갑 기병 소환', desc: '소환된 고대 차원문에서 일렬로 돌격하는 유령 기병대들을 출진시킵니다.' },
+            '車': { char: '車', meaning: '폭주 전차', minLvl: 5, spell: '폭주 전차', desc: '바라보는 방향으로 거대 화염차를 전속 질주시켜 전방을 완전히 박살 냅니다.' },
+            '王': { char: '王', meaning: '임금 왕', minLvl: 3, spell: '패왕의 파동', desc: '패기 넘치는 금빛 파동 충격파를 소환해 사방의 몹들을 분쇄하고 크게 튕겨냅니다.' },
+            '天': { char: '天', meaning: '하늘 천', minLvl: 4, spell: '천상의 징벌', desc: '하늘에서 15번의 신비로운 정화 광선 폭격을 사방으로 연속 개시합니다.' },
+            '手': { char: '手', meaning: '손 수', minLvl: 2, spell: '거인의 손', desc: '지정 지점에 거대한 붉은 원령 손뼈를 투하시켜 전역을 납작하게 짓누릅니다.' },
+            '足': { char: '足', meaning: '발 족', minLvl: 2, spell: '풍신각', desc: '초록빛 부채꼴 형태로 일제 발차기 3단 칼날 기류를 쏘아 관통 타격을 입힙니다.' },
+            '心': { char: '心', meaning: '마음 심', minLvl: 3, spell: '정화의 고동', desc: '심박 펄스를 3회 사방으로 방출하고 타격 성공할 때마다 플레이어 체력을 정밀 복원합니다.' },
+            '風': { char: '風', meaning: '바람 풍', minLvl: 2, spell: '폭풍의 눈', desc: '사방으로 강하게 요동치는 충격파를 발생시켜 모든 몹들을 화면 가장자리로 넉백시킵니다.' },
+            '生': { char: '生', meaning: '살 생', minLvl: 3, spell: '생명의 낙원', desc: '발밑에 6초간 영구적인 푸른 풀밭 영역을 소환하며, 영역 안에서 서 있으면 0.5초당 체력이 +3 회복됩니다.' },
+            '力': { char: '力', meaning: '힘 력', minLvl: 4, spell: '신력의 투지', desc: '5초간 투지 버프를 걸어 이동 속도를 극도로 높이고 몸싸움 충돌 피해로 적을 갈아 마십니다.' },
+            '石': { char: '石', meaning: '돌 석', minLvl: 3, spell: '강석의 방벽', desc: '궤도를 회전하는 3개의 단단한 바위 실드를 생성하며, 부딪히는 모든 원령을 짓이겨 연타합니다.' },
+            '光': { char: '光', meaning: '빛 광', minLvl: 4, spell: '천사의 섬광', desc: '화면을 온통 메우는 신성 섬광을 터뜨려 광폭 피해를 준 뒤 모든 원령을 4초간 완전히 마비시킵니다.' }
+        };
+
+        // ----------------------------------------------------
+        // 게임 상태 엔진 핵심 변수
+        // ----------------------------------------------------
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let isRunning = true;
+        let isPaused = false;
+        let score = 0;
+        let gameTime = 0; // seconds
+        let timerInterval = null;
+
+        // Player State (초등학교 5학년 난이도 최적화)
+        const player = {
+            x: 300,
+            y: 300,
+            radius: 16,
+            speed: 3.7, // 속도를 조금 높여 쾌적한 피하기 지원
+            hp: 100,
+            maxHp: 100,
+            level: 1,
+            xp: 0,
+            xpNeeded: 100, // 더 빠르게 첫 카드들을 뽑을 수 있도록 100으로 시작
+            power: 1.0,  
+            sizeMult: 1.0, 
+            stealthTimer: 0, 
+            forceTimer: 0,  
+            forcePower: 0
+        };
+
+        // World Camera
+        const camera = {
+            x: 0,
+            y: 0
+        };
+
+        // Game Entities
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+        let consumables = []; 
+        let orbitalLogs = []; 
+        let orbitalStones = []; 
+        let allies = [];      
+
+        // Input Management
+        const keys = {};
+        let joystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickCurrent = { x: 0, y: 0 };
+        const joystickThreshold = 10;
+
+        // Hanja App States
+        let unlockedChars = ['一', '二', '三'];
+        let spellStats = { '一': { lvl: 1 }, '二': { lvl: 1 }, '三': { lvl: 1 } }; 
+        let currentHanjaKey = '一';
+        let writerInstance = null;
+
+        // ----------------------------------------------------
+        // Input Listener Setup (모바일 완벽 방지)
+        // ----------------------------------------------------
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function getCanvasTouchPos(e, touchIndex = 0) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[touchIndex].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[touchIndex].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getCanvasTouchPos(e);
+            joystickStart = pos;
+            joystickCurrent = { ...pos };
+            joystickActive = true;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!joystickActive) return;
+            joystickCurrent = getCanvasTouchPos(e);
+        });
+
+        window.addEventListener('mouseup', () => {
+            joystickActive = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                const pos = getCanvasTouchPos(e);
+                joystickStart = pos;
+                joystickCurrent = { ...pos };
+                joystickActive = true;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (joystickActive && e.touches.length > 0) {
+                joystickCurrent = getCanvasTouchPos(e);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            joystickActive = false;
+        });
+
+        // ----------------------------------------------------
+        // Entity Spawning & Physics
+        // ----------------------------------------------------
+        function spawnEnemy() {
+            if (!isRunning || isPaused) return;
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 400; 
+            const enemyX = player.x + Math.cos(angle) * distance;
+            const enemyY = player.y + Math.sin(angle) * distance;
+
+            const spawnRand = Math.random();
+            let type = 'ghost';
+            
+            // 초등생 맞춤형 체력 성장 곡선 완화 (Ghost HP: 12+Lvl*5, 원래는 15+Lvl*8)
+            let hp = 12 + player.level * 5; 
+            let speed = 1.1 + Math.random() * 0.3 + (gameTime * 0.0006); 
+            let color = 'rgba(147, 197, 253, 0.7)'; 
+            let size = 12;
+
+            if (gameTime > 60 && spawnRand > 0.75) {
+                type = 'zombie';
+                hp = 35 + player.level * 10; // (원래는 50 + Lvl*15)
+                speed = 0.75 + (gameTime * 0.0005);
+                color = 'rgba(110, 231, 183, 0.8)'; 
+                size = 15;
+            } else if (gameTime > 120 && spawnRand > 0.88) {
+                type = 'goblin';
+                hp = 12 + player.level * 3; // (원래는 15 + Lvl*4)
+                speed = 2.4 + (gameTime * 0.001); 
+                color = 'rgba(248, 113, 113, 0.8)'; 
+                size = 10;
+            }
+
+            enemies.push({
+                x: enemyX,
+                y: enemyY,
+                hp: hp,
+                maxHp: hp,
+                speed: speed,
+                color: color,
+                size: size,
+                type: type,
+                stunTimer: 0
+            });
+        }
+
+        // ----------------------------------------------------
+        // Web Audio / Visual Particle Spawners
+        // ----------------------------------------------------
+        function spawnExplosion(x, y, color, count = 15, sizeMax = 5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 4;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color,
+                    size: Math.random() * sizeMax + 2,
+                    alpha: 1.0,
+                    decay: 0.02 + Math.random() * 0.03
+                });
+            }
+        }
+
+        function triggerScreenShake(amt) {
+            screenShake = amt;
+        }
+        let screenShake = 0;
+
+        let damageTexts = [];
+        function spawnDamageText(x, y, text, color = '#ffffff') {
+            damageTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                alpha: 1.0,
+                vy: -1.0
+            });
+        }
+
+        // ----------------------------------------------------
+        // 마법 캐스팅 로직 (한자 인식 정답 시 시전)
+        // ----------------------------------------------------
+        function castHanjaSpell() {
+            const char = currentHanjaKey;
+            
+            const sLvl = spellStats[char]?.lvl || 1;
+            const spellPower = player.power * (1 + (sLvl - 1) * 0.4);
+
+            document.getElementById('canvas-wrapper').classList.add('cast-active');
+            setTimeout(() => {
+                document.getElementById('canvas-wrapper').classList.remove('cast-active');
+            }, 500);
+
+            if (typeof playSynthSound === 'function') {
+                playSynthSound('slash');
+            }
+
+            // 1. 一 (한 일)
+            if (char === '一') {
+                const angle = Math.random() * Math.PI * 2;
+                projectiles.push({
+                    type: 'slash',
+                    x: player.x,
+                    y: player.y,
+                    angle: angle,
+                    width: 140 * player.sizeMult,
+                    height: 25,
+                    duration: 15,
+                    damage: 45 * spellPower,
+                    color: '#60a5fa',
+                    hitEnemies: new Set(),
+                    followPlayer: true
+                });
+                triggerScreenShake(8);
+            }
+            // 2. 二 (두 이)
+            else if (char === '二') {
+                const baseAngle = Math.random() * Math.PI;
+                [baseAngle, baseAngle + Math.PI].forEach(ang => {
+                    projectiles.push({
+                        type: 'slash',
+                        x: player.x,
+                        y: player.y,
+                        angle: ang,
+                        width: 160 * player.sizeMult,
+                        height: 25,
+                        duration: 15,
+                        damage: 50 * spellPower,
+                        color: '#34d399',
+                        hitEnemies: new Set(),
+                        followPlayer: true
+                    });
+                });
+                triggerScreenShake(10);
+            }
+            // 3. 三 (석 삼)
+            else if (char === '三') {
+                const baseAngle = Math.random() * Math.PI * 2;
+                for (let i = 0; i < 3; i++) {
+                    const ang = baseAngle + (i * Math.PI * 2) / 3;
+                    projectiles.push({
+                        type: 'projectile',
+                        x: player.x,
+                        y: player.y,
+                        vx: Math.cos(ang) * 6,
+                        vy: Math.sin(ang) * 6,
+                        radius: 8 * player.sizeMult,
+                        damage: 30 * spellPower,
+                        color: '#fbbf24',
+                        trailColor: '#fef08a',
+                        duration: 60
+                    });
+                }
+                if (typeof playSynthSound === 'function') playSynthSound('crystal');
+            }
+            // 4. 四 (넉 사)
+            else if (char === '四') {
+                if (typeof playSynthSound === 'function') playSynthSound('slash');
+                const baseAngle = Math.random() * Math.PI / 2;
+                for (let i = 0; i < 4; i++) {
+                    const ang = baseAngle + (i * Math.PI) / 2;
+                    projectiles.push({
+                        type: 'crescent',
+                        x: player.x,
+                        y: player.y,
+                        angle: ang,
+                        vx: Math.cos(ang) * 5.5,
+                        vy: Math.sin(ang) * 5.5,
+                        size: 25 * player.sizeMult,
+                        damage: 40 * spellPower,
+                        color: '#f87171',
+                        duration: 70
+                    });
+                }
+            }
+            // 5. 五 (다섯 오)
+            else if (char === '五') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                triggerScreenShake(15);
+                for (let i = 0; i < 5; i++) {
+                    const ang = (i * Math.PI * 2) / 5 - Math.PI / 2;
+                    const dist = 90 * player.sizeMult;
+                    projectiles.push({
+                        type: 'meteor',
+                        x: player.x + Math.cos(ang) * dist,
+                        y: player.y + Math.sin(ang) * dist - 300,
+                        targetY: player.y + Math.sin(ang) * dist,
+                        radius: 25 * player.sizeMult,
+                        damage: 75 * spellPower,
+                        duration: 120,
+                        color: '#fb923c'
+                    });
+                }
+            }
+            // 6. 六 (여섯 육)
+            else if (char === '六') {
+                if (typeof playSynthSound === 'function') playSynthSound('crystal');
+                for (let i = 0; i < 6; i++) {
+                    const ang = (i * Math.PI * 2) / 6;
+                    projectiles.push({
+                        type: 'earthquake',
+                        x: player.x + Math.cos(ang)*40,
+                        y: player.y + Math.sin(ang)*40,
+                        radius: 0,
+                        maxRadius: 100 * player.sizeMult,
+                        damage: 40 * spellPower,
+                        color: '#7dd3fc',
+                        duration: 25
+                    });
+                }
+            }
+            // 7. 七 (일곱 칠)
+            else if (char === '七') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(18);
+                for (let i = 0; i < 7; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        let targetX = player.x + (Math.random()-0.5)*300;
+                        let targetY = player.y + (Math.random()-0.5)*300;
+                        if (enemies.length > 0) {
+                            const target = enemies[Math.floor(Math.random() * enemies.length)];
+                            targetX = target.x; targetY = target.y;
+                        }
+                        projectiles.push({
+                            type: 'gold_sword',
+                            x: targetX,
+                            y: targetY - 300,
+                            targetY: targetY,
+                            width: 15,
+                            height: 100 * player.sizeMult,
+                            damage: 100 * spellPower,
+                            duration: 120,
+                            colorOverride: '#fef08a'
+                        });
+                    }, i * 100);
+                }
+            }
+            // 8. 八 (여덟 팔)
+            else if (char === '八') {
+                if (typeof playSynthSound === 'function') playSynthSound('slash');
+                for (let i = 0; i < 8; i++) {
+                    const ang = (i * Math.PI * 2) / 8;
+                    projectiles.push({
+                        type: 'slash',
+                        x: player.x + Math.cos(ang)*30,
+                        y: player.y + Math.sin(ang)*30,
+                        angle: ang,
+                        width: 80 * player.sizeMult,
+                        height: 20,
+                        duration: 12,
+                        damage: 45 * spellPower,
+                        color: '#d8b4fe',
+                        hitEnemies: new Set(),
+                        followPlayer: true
+                    });
+                }
+            }
+            // 9. 九 (아홉 구)
+            else if (char === '九') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                for (let i = 0; i < 9; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        const ang = (i * Math.PI * 2) / 9;
+                        projectiles.push({
+                            type: 'projectile',
+                            x: player.x,
+                            y: player.y,
+                            vx: Math.cos(ang) * 4.5,
+                            vy: Math.sin(ang) * 4.5,
+                            radius: 10 * player.sizeMult,
+                            damage: 50 * spellPower,
+                            color: '#fb7185',
+                            trailColor: '#fda4af',
+                            duration: 120
+                        });
+                    }, i * 50);
+                }
+            }
+            // 10. 十 (열 십)
+            else if (char === '十') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                triggerScreenShake(20);
+                const angles = [0, Math.PI/2, Math.PI, Math.PI*1.5];
+                angles.forEach(ang => {
+                    projectiles.push({
+                        type: 'solar_beam',
+                        x: player.x,
+                        y: player.y,
+                        angle: ang,
+                        length: 500,
+                        width: 40 * player.sizeMult,
+                        damage: 20 * spellPower,
+                        duration: 60,
+                        followPlayer: true
+                    });
+                });
+            }
+            // 11. 川 (내 천)
+            else if (char === '川') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                [-0.3, 0, 0.3].forEach(offset => {
+                    projectiles.push({
+                        type: 'tsunami',
+                        x: player.x,
+                        y: player.y,
+                        vx: Math.cos(angle + offset) * 5.5,
+                        vy: Math.sin(angle + offset) * 5.5,
+                        width: 90 * player.sizeMult,
+                        height: 30,
+                        damage: 12 * spellPower,
+                        color: 'rgba(56, 189, 248, 0.8)',
+                        duration: 90
+                    });
+                });
+            }
+            // 人 (사람 인)
+            else if (char === '人') {
+                allies.push({
+                    x: player.x + (Math.random() - 0.5) * 50,
+                    y: player.y + (Math.random() - 0.5) * 50,
+                    life: 900,
+                    fireCooldown: 0,
+                    power: spellPower 
+                });
+                spawnExplosion(player.x, player.y, '#f472b6', 20, 6);
+                if (typeof playSynthSound === 'function') playSynthSound('crystal');
+            }
+            // 木 (나무 목)
+            else if (char === '木') {
+                orbitalLogs = [];
+                for (let i = 0; i < 4; i++) {
+                    orbitalLogs.push({
+                        angle: (i * Math.PI) / 2,
+                        distance: 65 * player.sizeMult,
+                        damage: 20 * spellPower,
+                        size: 10
+                    });
+                }
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                spawnExplosion(player.x, player.y, '#4ade80', 10, 4);
+            }
+            // 土 (흙 토)
+            else if (char === '土') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(20);
+                projectiles.push({
+                    type: 'earthquake',
+                    x: player.x,
+                    y: player.y,
+                    radius: 0,
+                    maxRadius: 280 * player.sizeMult,
+                    damage: 30 * spellPower,
+                    color: '#b45309',
+                    duration: 35
+                });
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x - player.x, e.y - player.y);
+                    if (d < 280 * player.sizeMult) {
+                        e.stunTimer = 180;
+                        spawnDamageText(e.x, e.y - 15, "기절!", "#fb923c");
+                    }
+                });
+            }
+            // 水 (물 수)
+            else if (char === '水') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                projectiles.push({
+                    type: 'tsunami',
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(angle) * 4.8,
+                    vy: Math.sin(angle) * 4.8,
+                    width: 140 * player.sizeMult,
+                    height: 50,
+                    damage: 15 * spellPower,
+                    color: 'rgba(56, 189, 248, 0.8)',
+                    duration: 100
+                });
+            }
+            // 火 (불 화)
+            else if (char === '火') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                let target = null;
+                if (enemies.length > 0) {
+                    let minDist = Infinity;
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - player.x, e.y - player.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            target = e;
+                        }
+                    });
+                }
+                const targetX = target ? target.x : player.x + 100;
+                const targetY = target ? target.y : player.y;
+                const ang = Math.atan2(targetY - player.y, targetX - player.x);
+
+                projectiles.push({
+                    type: 'fireball',
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(ang) * 5.5,
+                    vy: Math.sin(ang) * 5.5,
+                    radius: 12 * player.sizeMult,
+                    damage: 100 * spellPower,
+                    color: '#f97316',
+                    duration: 90
+                });
+            }
+            // 金 (쇠 금)
+            else if (char === '金') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(15);
+                for (let i = 0; i < 7; i++) {
+                    const delay = i * 6;
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * 150;
+                        const fx = player.x + Math.cos(angle) * dist;
+                        const fy = player.y + Math.sin(angle) * dist;
+                        projectiles.push({
+                            type: 'gold_sword',
+                            x: fx,
+                            y: fy - 300,
+                            targetY: fy,
+                            width: 10,
+                            height: 60 * player.sizeMult,
+                            damage: 110 * spellPower,
+                            duration: 120
+                        });
+                    }, delay * 16.6);
+                }
+            }
+            // 山 (뫼 산)
+            else if (char === '山') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(25);
+                const targetX = player.x + (Math.random() - 0.5) * 100;
+                const targetY = player.y + (Math.random() - 0.5) * 100;
+                
+                projectiles.push({
+                    type: 'meteor',
+                    x: targetX,
+                    y: targetY - 350,
+                    targetY: targetY,
+                    radius: 35 * player.sizeMult,
+                    damage: 200 * spellPower,
+                    duration: 120,
+                    color: '#475569'
+                });
+            }
+            // 日 (날 일)
+            else if (char === '日') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                const angle = Math.random() * Math.PI * 2;
+                projectiles.push({
+                    type: 'solar_beam',
+                    x: player.x,
+                    y: player.y,
+                    angle: angle,
+                    length: 400,
+                    width: 35 * player.sizeMult,
+                    damage: 22 * spellPower,
+                    duration: 90,
+                    followPlayer: true
+                });
+            }
+            // 月 (달 월)
+            else if (char === '月') {
+                if (typeof playSynthSound === 'function') playSynthSound('slash');
+                for (let i = 0; i < 8; i++) {
+                    const ang = (i * Math.PI) / 4;
+                    projectiles.push({
+                        type: 'crescent',
+                        x: player.x,
+                        y: player.y,
+                        angle: ang,
+                        vx: Math.cos(ang) * 4,
+                        vy: Math.sin(ang) * 4,
+                        size: 20 * player.sizeMult,
+                        damage: 60 * spellPower,
+                        color: '#60a5fa',
+                        duration: 80,
+                        hitEnemies: new Set()
+                    });
+                }
+            }
+            // 大 (큰 대)
+            else if (char === '大') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                projectiles.push({
+                    type: 'sanctuary',
+                    x: player.x,
+                    y: player.y,
+                    radius: 140 * player.sizeMult,
+                    damage: 20 * spellPower,
+                    duration: 240,
+                });
+            }
+            // 小 (작을 소)
+            else if (char === '小') {
+                if (typeof playSynthSound === 'function') playSynthSound('crystal');
+                player.stealthTimer = 240;
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        const ang = Math.random() * Math.PI * 2;
+                        projectiles.push({
+                            type: 'projectile',
+                            x: player.x,
+                            y: player.y,
+                            vx: Math.cos(ang) * 7.5,
+                            vy: Math.sin(ang) * 7.5,
+                            radius: 3 * player.sizeMult,
+                            damage: 25 * spellPower,
+                            color: '#e2e8f0',
+                            trailColor: '#cbd5e1',
+                            duration: 50
+                        });
+                        if (typeof playSynthSound === 'function') playSynthSound('slash');
+                    }, i * 150);
+                }
+            }
+            // 中 (가운데 중)
+            else if (char === '中') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                const bx = player.x + Math.cos(angle) * 110;
+                const by = player.y + Math.sin(angle) * 110;
+                projectiles.push({
+                    type: 'blackhole',
+                    x: bx,
+                    y: by,
+                    radius: 120 * player.sizeMult,
+                    damage: 12 * spellPower,
+                    duration: 180,
+                });
+            }
+            // 門 (문 문)
+            else if (char === '門') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                const px = player.x - Math.cos(angle) * 60;
+                const py = player.y - Math.sin(angle) * 60;
+                
+                projectiles.push({
+                    type: 'portal',
+                    x: px,
+                    y: py,
+                    angle: angle,
+                    duration: 120,
+                });
+                
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        projectiles.push({
+                            type: 'soldier',
+                            x: px,
+                            y: py,
+                            vx: Math.cos(angle) * 6.5,
+                            vy: Math.sin(angle) * 6.5,
+                            angle: angle,
+                            radius: 20 * player.sizeMult,
+                            damage: 90 * spellPower,
+                            duration: 100,
+                            hitEnemies: new Set()
+                        });
+                        if (typeof playSynthSound === 'function') playSynthSound('slash');
+                    }, i * 220);
+                }
+            }
+            // 車 (수레 차)
+            else if (char === '車') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                projectiles.push({
+                    type: 'chariot',
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(angle) * 7.5,
+                    vy: Math.sin(angle) * 7.5,
+                    angle: angle,
+                    radius: 28 * player.sizeMult,
+                    damage: 130 * spellPower,
+                    duration: 90,
+                    hitEnemies: new Set()
+                });
+            }
+            // 王 (임금 왕)
+            else if (char === '王') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(20);
+                projectiles.push({
+                    type: 'earthquake',
+                    x: player.x,
+                    y: player.y,
+                    radius: 0,
+                    maxRadius: 350 * player.sizeMult,
+                    damage: 80 * spellPower,
+                    color: '#fcd34d',
+                    duration: 45
+                });
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x - player.x, e.y - player.y);
+                    if (d < 350 * player.sizeMult) {
+                        const ang = Math.atan2(e.y - player.y, e.x - player.x);
+                        e.x += Math.cos(ang) * 50;
+                        e.y += Math.sin(ang) * 50;
+                    }
+                });
+            }
+            // 天 (하늘 천)
+            else if (char === '天') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                triggerScreenShake(15);
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        const targetX = player.x + (Math.random() - 0.5) * 400;
+                        const targetY = player.y + (Math.random() - 0.5) * 400;
+                        projectiles.push({
+                            type: 'solar_beam',
+                            x: targetX,
+                            y: targetY - 200,
+                            angle: Math.PI / 2, 
+                            length: 400,
+                            width: 30 * player.sizeMult,
+                            damage: 45 * spellPower,
+                            duration: 25
+                        });
+                        if (typeof playSynthSound === 'function') playSynthSound('slash');
+                    }, i * 200);
+                }
+            }
+            // 手 (손 수)
+            else if (char === '手') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                triggerScreenShake(25);
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                const bx = player.x + Math.cos(angle) * 150;
+                const by = player.y + Math.sin(angle) * 150;
+                
+                projectiles.push({
+                    type: 'meteor',
+                    x: bx,
+                    y: by - 400,
+                    targetY: by,
+                    radius: 50 * player.sizeMult,
+                    damage: 170 * spellPower,
+                    duration: 120,
+                    color: '#fca5a5'
+                });
+            }
+            // 足 (발 족)
+            else if (char === '足') {
+                if (typeof playSynthSound === 'function') playSynthSound('slash');
+                const angle = joystickActive ? Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x) : Math.random() * Math.PI * 2;
+                
+                [-0.4, 0, 0.4].forEach((offset, idx) => {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        projectiles.push({
+                            type: 'crescent',
+                            x: player.x,
+                            y: player.y,
+                            angle: angle + offset,
+                            vx: Math.cos(angle + offset) * 8,
+                            vy: Math.sin(angle + offset) * 8,
+                            size: 40 * player.sizeMult,
+                            damage: 75 * spellPower,
+                            color: '#34d399',
+                            duration: 60,
+                            hitEnemies: new Set()
+                        });
+                        if (typeof playSynthSound === 'function') playSynthSound('slash');
+                    }, idx * 100);
+                });
+            }
+            // 心 (마음 심)
+            else if (char === '心') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        if (!isRunning || isPaused) return;
+                        projectiles.push({
+                            type: 'earthquake',
+                            x: player.x,
+                            y: player.y,
+                            radius: 0,
+                            maxRadius: 200 * player.sizeMult,
+                            damage: 30 * spellPower,
+                            color: '#f43f5e',
+                            duration: 20
+                        });
+                        const healAmt = player.maxHp * 0.02;
+                        player.hp = Math.min(player.maxHp, player.hp + healAmt);
+                        document.getElementById('hud-hp').textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
+                        spawnDamageText(player.x, player.y - 20, "+HP", "#10b981");
+                    }, i * 350);
+                }
+            }
+            // [신규] 風 (바람 풍)
+            else if (char === '風') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                projectiles.push({
+                    type: 'wind_storm',
+                    x: player.x,
+                    y: player.y,
+                    radius: 0,
+                    maxRadius: 320 * player.sizeMult,
+                    damage: 40 * spellPower,
+                    color: '#a5f3fc',
+                    duration: 35
+                });
+                triggerScreenShake(12);
+            }
+            // [신규] 生 (살 생)
+            else if (char === '生') {
+                if (typeof playSynthSound === 'function') playSynthSound('water');
+                projectiles.push({
+                    type: 'life_zone',
+                    x: player.x,
+                    y: player.y,
+                    radius: 160 * player.sizeMult,
+                    damage: 8 * spellPower,
+                    duration: 360 // 6초간 활성화
+                });
+            }
+            // [신규] 力 (힘 력)
+            else if (char === '力') {
+                if (typeof playSynthSound === 'function') playSynthSound('fire');
+                player.forceTimer = 300; // 5초
+                player.forcePower = 110 * spellPower;
+                spawnExplosion(player.x, player.y, '#f97316', 20, 6);
+            }
+            // [신규] 石 (돌 석)
+            else if (char === '石') {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                orbitalStones = [];
+                for(let i = 0; i < 3; i++) {
+                    orbitalStones.push({
+                        angle: (i * Math.PI * 2) / 3,
+                        distance: 70 * player.sizeMult,
+                        damage: 45 * spellPower,
+                        size: 15,
+                        hitsRemaining: 5
+                    });
+                }
+            }
+            // [신규] 光 (빛 광)
+            else if (char === '光') {
+                if (typeof playSynthSound === 'function') playSynthSound('crystal');
+                triggerScreenShake(20);
+                projectiles.push({
+                    type: 'solar_flare',
+                    x: player.x,
+                    y: player.y,
+                    duration: 30, // 0.5초 극대 섬광
+                    damage: 130 * spellPower
+                });
+                enemies.forEach(e => {
+                    e.stunTimer = 240; // 4초간 완전히 묶임 (실명)
+                    spawnDamageText(e.x, e.y - 15, "실명!", "#fde047");
+                });
+            }
+
+            // 시전 후 다음 한자 불러오기
+            nextHanjaTarget();
+        }
+
+        // ----------------------------------------------------
+        // Hanzi Writer UI 리로드 및 변경
+        // ----------------------------------------------------
+        function nextHanjaTarget() {
+            const randKey = unlockedChars[Math.floor(Math.random() * unlockedChars.length)];
+            currentHanjaKey = randKey;
+            
+            const spec = hanjaDB[currentHanjaKey];
+            document.getElementById('target-char').textContent = spec.char;
+            document.getElementById('target-meaning').textContent = spec.meaning;
+            document.getElementById('spell-name').textContent = spec.spell;
+            document.getElementById('spell-desc').textContent = spec.desc;
+
+            initHanjaWriter(spec.char);
+        }
+
+        function initHanjaWriter(character) {
+            document.getElementById('hanja-target').innerHTML = '';
+            
+            writerInstance = HanziWriter.create('hanja-target', character, {
+                width: 250,
+                height: 250,
+                padding: 15,
+                showOutline: true,
+                strokeAnimationSpeed: 2.0,
+                delayBetweenStrokes: 100,
+                strokeColor: '#38bdf8', 
+                radicalColor: '#0284c7',
+                highlightColor: '#ef4444', 
+                outlineColor: '#334155', 
+                drawingColor: '#fbbf24', 
+                drawingWidth: 14,
+                showCharacter: false,
+            });
+
+            writerInstance.quiz({
+                onMistake: function() {
+                    if (typeof playSynthSound === 'function') playSynthSound('hit');
+                },
+                onComplete: function() {
+                    castHanjaSpell();
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // UI & Level Up & Game State Management (봉인 및 스탯 기능 강화)
+        // ----------------------------------------------------
+        function renderUnlockedBadges() {
+            const listDiv = document.getElementById('unlocked-list');
+            listDiv.innerHTML = '';
+            Object.keys(hanjaDB).forEach(key => {
+                const spec = hanjaDB[key];
+                const isUnlocked = unlockedChars.includes(key);
+                const sLvl = spellStats[key]?.lvl || 1;
+                const badge = document.createElement('span');
+                badge.className = `text-[11px] px-2 py-1 rounded-md border font-semibold flex items-center gap-1 ${
+                    isUnlocked 
+                    ? 'bg-blue-900/30 text-blue-300 border-blue-800 shadow-[0_0_8px_rgba(59,130,246,0.2)]' 
+                    : 'bg-slate-950 text-slate-600 border-slate-900 opacity-40'
+                }`;
+                badge.innerHTML = `<span class="font-bold text-sm">${spec.char}</span> <span class="text-[9px] opacity-80">${spec.meaning.split(' ')[0]}</span>
+                                   ${isUnlocked ? `<span class="bg-blue-600 text-white text-[8px] px-1 rounded">Lv.${sLvl}</span>` : ''}`;
+                listDiv.appendChild(badge);
+            });
+        }
+
+        function triggerLevelUp() {
+            if (typeof playSynthSound === 'function') playSynthSound('levelup');
+            isPaused = true;
+
+            const modal = document.getElementById('level-up-modal');
+            const optionsDiv = document.getElementById('upgrade-options');
+            optionsDiv.innerHTML = '';
+
+            const generatedOptions = [];
+
+            // 1. [카드 추가] 한자 해금
+            const lockedChars = Object.keys(hanjaDB).filter(char => !unlockedChars.includes(char));
+            if (lockedChars.length > 0) {
+                const char = lockedChars[Math.floor(Math.random() * lockedChars.length)];
+                const spec = hanjaDB[char];
+                generatedOptions.push({
+                    category: '카드 추가',
+                    title: `[${spec.char}] ${spec.meaning}`,
+                    desc: `${spec.spell} 마법 서적을 덱에 신규 등록합니다.`,
+                    icon: 'ph-fill ph-scroll',
+                    color: 'text-emerald-400',
+                    border: 'border-emerald-500/30 hover:border-emerald-500',
+                    val: () => {
+                        unlockedChars.push(char);
+                        spellStats[char] = { lvl: 1 };
+                        renderUnlockedBadges();
+                    }
+                });
+            }
+
+            // 2. [카드 강화] 한자 레벨업
+            if (unlockedChars.length > 0) {
+                const char = unlockedChars[Math.floor(Math.random() * unlockedChars.length)];
+                const spec = hanjaDB[char];
+                const nextLvl = (spellStats[char]?.lvl || 1) + 1;
+                generatedOptions.push({
+                    category: '카드 강화',
+                    title: `[${spec.char}] 마법 강화 Lv.${nextLvl}`,
+                    desc: `${spec.spell}의 피해량이 대폭(+40%) 증가합니다.`,
+                    icon: 'ph-fill ph-sparkle',
+                    color: 'text-amber-400',
+                    border: 'border-amber-500/30 hover:border-amber-500',
+                    val: () => {
+                        if(!spellStats[char]) spellStats[char] = {lvl: 1};
+                        spellStats[char].lvl = nextLvl;
+                        renderUnlockedBadges();
+                    }
+                });
+            }
+
+            // 3. [카드 제거] 한자 봉인
+            if (unlockedChars.length > 2) {
+                const char = unlockedChars[Math.floor(Math.random() * unlockedChars.length)];
+                const spec = hanjaDB[char];
+                generatedOptions.push({
+                    category: '카드 제거',
+                    title: `[${spec.char}] 봉인`,
+                    desc: `마법첩에서 이 한자를 제거하여 덱을 완전히 압축합니다.`,
+                    icon: 'ph-fill ph-prohibit',
+                    color: 'text-red-400',
+                    border: 'border-red-500/30 hover:border-red-500',
+                    val: () => {
+                        unlockedChars = unlockedChars.filter(c => c !== char);
+                        renderUnlockedBadges();
+                        if (currentHanjaKey === char) nextHanjaTarget();
+                    }
+                });
+            }
+
+            // 4. [본인 강화] 기본 스탯 
+            const buffOptions = [
+                { title: '마력 증폭', desc: '모든 마법 공격력 +20%', icon: 'ph-fill ph-sword', val: () => player.power += 0.2 },
+                { title: '영역 확장', desc: '스펠 범위 반경 +15%', icon: 'ph-fill ph-arrows-out', val: () => player.sizeMult += 0.15 },
+                { title: '경공술', desc: '이동 속도 +10%', icon: 'ph-fill ph-lightning', val: () => player.speed += 0.35 },
+                { title: '생명력 강화', desc: '최대 체력 +20 및 완전 치유', icon: 'ph-fill ph-heart-straight', val: () => { player.maxHp += 20; player.hp = player.maxHp; } }
+            ];
+            const buff = buffOptions[Math.floor(Math.random() * buffOptions.length)];
+            generatedOptions.push({
+                category: '본인 강화',
+                title: buff.title,
+                desc: buff.desc,
+                icon: buff.icon,
+                color: 'text-blue-400',
+                border: 'border-blue-500/30 hover:border-blue-500',
+                val: buff.val
+            });
+
+            while (generatedOptions.length < 4) {
+                const extraBuff = buffOptions[Math.floor(Math.random() * buffOptions.length)];
+                generatedOptions.push({
+                    category: '본인 강화',
+                    title: extraBuff.title,
+                    desc: extraBuff.desc,
+                    icon: extraBuff.icon,
+                    color: 'text-blue-400',
+                    border: 'border-blue-500/30 hover:border-blue-500',
+                    val: extraBuff.val
+                });
+            }
+
+            const shuffled = generatedOptions.sort(() => 0.5 - Math.random()).slice(0, 4);
+
+            shuffled.forEach(upg => {
+                const btn = document.createElement('button');
+                btn.className = `relative flex items-center gap-3 w-full p-3.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-750 border ${upg.border} rounded-xl text-left transition-all overflow-hidden group min-h-[50px]`;
+                btn.innerHTML = `
+                    <div class="absolute -right-4 -top-4 opacity-10 text-6xl group-hover:scale-110 transition-transform ${upg.color}">
+                        <i class="${upg.icon}"></i>
+                    </div>
+                    <div class="p-2 bg-slate-950 border border-slate-800 ${upg.color} rounded-lg text-lg z-10">
+                        <i class="${upg.icon}"></i>
+                    </div>
+                    <div class="z-10 relative">
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 ${upg.color} font-bold tracking-wider mb-0.5 inline-block">${upg.category}</span>
+                        <h4 class="font-bold text-slate-100 text-xs md:text-sm leading-tight">${upg.title}</h4>
+                        <p class="text-[10px] md:text-xs text-slate-400 mt-0.5">${upg.desc}</p>
+                    </div>
+                `;
+                btn.onclick = () => {
+                    upg.val();
+                    modal.classList.add('hidden');
+                    isPaused = false;
+                    document.getElementById('hud-hp').textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
+                    document.getElementById('hud-level').textContent = player.level;
+                };
+                optionsDiv.appendChild(btn);
+            });
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // ----------------------------------------------------
+        // 엔티티 업데이트 루프
+        // ----------------------------------------------------
+        function updateGame() {
+            if (!isRunning || isPaused) return;
+
+            // 1. 플레이어 이동 로직
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+
+            if (joystickActive) {
+                const jdx = joystickCurrent.x - joystickStart.x;
+                const jdy = joystickCurrent.y - joystickStart.y;
+                const dist = Math.hypot(jdx, jdy);
+                if (dist > joystickThreshold) {
+                    dx = jdx / dist;
+                    dy = jdy / dist;
+                }
+            }
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.hypot(dx, dy);
+                const actualSpeed = player.speed * (player.forceTimer > 0 ? 1.4 : 1.0);
+                player.x += (dx / len) * actualSpeed;
+                player.y += (dy / len) * actualSpeed;
+            }
+
+            // 은신 및 축소 타이머 업데이트 (小 마법 관련)
+            if (player.stealthTimer > 0) {
+                player.stealthTimer--;
+                player.radius = 8;
+            } else {
+                player.radius = 16;
+            }
+
+            // '力' 투지 타이머 및 물리 충돌 공격 루프
+            if (player.forceTimer > 0) {
+                player.forceTimer--;
+                
+                if (Math.random() < 0.3) {
+                    particles.push({
+                        x: player.x + (Math.random() - 0.5) * 15,
+                        y: player.y + (Math.random() - 0.5) * 15,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        color: '#f97316',
+                        size: Math.random() * 5 + 2,
+                        alpha: 1.0,
+                        decay: 0.05
+                    });
+                }
+
+                enemies.forEach(e => {
+                    const dist = Math.hypot(e.x - player.x, e.y - player.y);
+                    if (dist < player.radius + e.size) {
+                        if (!e.forceHitCooldown || e.forceHitCooldown <= 0) {
+                            e.hp -= player.forcePower;
+                            e.forceHitCooldown = 15; 
+                            
+                            const ang = Math.atan2(e.y - player.y, e.x - player.x);
+                            e.x += Math.cos(ang) * 40;
+                            e.y += Math.sin(ang) * 40;
+                            
+                            spawnDamageText(e.x, e.y, Math.ceil(player.forcePower), '#f97316');
+                            spawnExplosion(e.x, e.y, '#f97316', 5, 3);
+                        }
+                    }
+                });
+            }
+
+            camera.x += (player.x - canvas.width / 2 - camera.x) * 0.1;
+            camera.y += (player.y - canvas.height / 2 - camera.y) * 0.1;
+
+            // 2. 가시 나무 실드 궤도 업데이트 (木)
+            orbitalLogs.forEach(log => {
+                log.angle += 0.04;
+                const lx = player.x + Math.cos(log.angle) * log.distance;
+                const ly = player.y + Math.sin(log.angle) * log.distance;
+
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x - lx, e.y - ly);
+                    if (d < e.size + log.size) {
+                        e.hp -= log.damage * 0.15;
+                        if (Math.random() < 0.1) {
+                            spawnExplosion(e.x, e.y, '#4ade80', 1, 2);
+                            spawnDamageText(e.x, e.y, Math.ceil(log.damage * 0.15), '#4ade80');
+                        }
+                    }
+                });
+            });
+
+            // 3. 강석의 방벽 회전 업데이트 (石)
+            orbitalStones.forEach(stone => {
+                stone.angle += 0.05;
+                const sx = player.x + Math.cos(stone.angle) * stone.distance;
+                const sy = player.y + Math.sin(stone.angle) * stone.distance;
+
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x - sx, e.y - sy);
+                    if (d < e.size + stone.size) {
+                        if (!e.stoneCooldown || e.stoneCooldown <= 0) {
+                            e.hp -= stone.damage;
+                            e.stoneCooldown = 12; 
+                            stone.hitsRemaining--;
+
+                            const ang = Math.atan2(e.y - sy, e.x - sx);
+                            e.x += Math.cos(ang) * 15;
+                            e.y += Math.sin(ang) * 15;
+
+                            spawnExplosion(e.x, e.y, '#a8a29e', 3, 2);
+                            spawnDamageText(e.x, e.y, Math.ceil(stone.damage), '#a8a29e');
+                        }
+                    }
+                });
+            });
+            const brokenStones = orbitalStones.filter(s => s.hitsRemaining <= 0);
+            brokenStones.forEach(s => {
+                if (typeof playSynthSound === 'function') playSynthSound('earth');
+                const sx = player.x + Math.cos(s.angle) * s.distance;
+                const sy = player.y + Math.sin(s.angle) * s.distance;
+                spawnExplosion(sx, sy, '#78716c', 15, 6);
+                
+                for (let i = 0; i < 8; i++) {
+                    const ang = (i * Math.PI) / 4;
+                    projectiles.push({
+                        type: 'projectile',
+                        x: sx,
+                        y: sy,
+                        vx: Math.cos(ang) * 7,
+                        vy: Math.sin(ang) * 7,
+                        radius: 5,
+                        damage: s.damage * 1.5,
+                        color: '#78716c',
+                        trailColor: '#a8a29e',
+                        duration: 40
+                    });
+                }
+            });
+            orbitalStones = orbitalStones.filter(s => s.hitsRemaining > 0);
+
+            // 4. 그림자 분신 업데이트 (人)
+            allies.forEach((al, idx) => {
+                al.life--;
+                const angle = (Date.now() / 1000) + idx * Math.PI;
+                al.x = player.x + Math.cos(angle) * 45;
+                al.y = player.y + Math.sin(angle) * 45;
+
+                al.fireCooldown--;
+                if (al.fireCooldown <= 0 && enemies.length > 0) {
+                    let closest = enemies[0];
+                    let minDist = Infinity;
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - al.x, e.y - al.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            closest = e;
+                        }
+                    });
+
+                    if (minDist < 300) {
+                        const fang = Math.atan2(closest.y - al.y, closest.x - al.x);
+                        projectiles.push({
+                            type: 'projectile',
+                            x: al.x,
+                            y: al.y,
+                            vx: Math.cos(fang) * 6,
+                            vy: Math.sin(fang) * 6,
+                            radius: 5,
+                            damage: 15 * al.power,
+                            color: '#f472b6',
+                            trailColor: '#fbcfe8',
+                            duration: 50
+                        });
+                        al.fireCooldown = 35; 
+                    }
+                }
+            });
+            allies = allies.filter(al => al.life > 0);
+
+            // 5. 투사체(Projectiles) 물리 시뮬레이션
+            projectiles.forEach((proj, idx) => {
+                proj.duration--;
+
+                if (proj.followPlayer) {
+                    proj.x = player.x;
+                    proj.y = player.y;
+                }
+
+                if (proj.type === 'projectile') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - proj.x, e.y - proj.y) < e.size + proj.radius) {
+                            e.hp -= proj.damage;
+                            spawnDamageText(e.x, e.y, Math.ceil(proj.damage), proj.color);
+                            spawnExplosion(proj.x, proj.y, proj.color, 5, 2);
+                            proj.duration = 0;
+                        }
+                    });
+                }
+                else if (proj.type === 'slash') {
+                    if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                    enemies.forEach(e => {
+                        if (proj.hitEnemies.has(e)) return;
+                        const dist = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (dist < proj.width / 2 + e.size) {
+                            let angleToEnemy = Math.atan2(e.y - proj.y, e.x - proj.x);
+                            let angleDiff = angleToEnemy - proj.angle;
+                            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                            
+                            if (Math.abs(angleDiff) < Math.PI / 2.5) { 
+                                e.hp -= proj.damage;
+                                proj.hitEnemies.add(e);
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), proj.color);
+                                spawnExplosion(e.x, e.y, proj.color, 4, 2);
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'crescent') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                    proj.angle += 0.2;
+
+                    if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                    enemies.forEach(e => {
+                        if (proj.hitEnemies.has(e)) return;
+                        if (Math.hypot(e.x - proj.x, e.y - proj.y) < e.size + proj.size / 2) {
+                            e.hp -= proj.damage;
+                            proj.hitEnemies.add(e);
+                            spawnDamageText(e.x, e.y, Math.ceil(proj.damage), proj.color);
+                            spawnExplosion(proj.x, proj.y, proj.color, 3, 2);
+                            if (proj.hitEnemies.size >= 3) proj.duration = 0;
+                        }
+                    });
+                }
+                else if (proj.type === 'tsunami') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < proj.width / 2) {
+                            if (!e.tsunamiCooldowns) e.tsunamiCooldowns = {};
+                            const tsuId = idx;
+                            if (!e.tsunamiCooldowns[tsuId] || e.tsunamiCooldowns[tsuId] <= 0) {
+                                e.hp -= proj.damage;
+                                e.tsunamiCooldowns[tsuId] = 15;
+                                e.x += proj.vx * 1.5;
+                                e.y += proj.vy * 1.5;
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#38bdf8');
+                                spawnExplosion(e.x, e.y, '#38bdf8', 2, 1.5);
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'fireball') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - proj.x, e.y - proj.y) < e.size + proj.radius) {
+                            proj.duration = 0;
+                            triggerScreenShake(12);
+                            spawnExplosion(proj.x, proj.y, '#f97316', 30, 8);
+                            if (typeof playSynthSound === 'function') playSynthSound('fire');
+                            
+                            enemies.forEach(sub => {
+                                const sd = Math.hypot(sub.x - proj.x, sub.y - proj.y);
+                                if (sd < 120 * player.sizeMult) {
+                                    sub.hp -= proj.damage;
+                                    spawnDamageText(sub.x, sub.y, Math.ceil(proj.damage), '#f97316');
+                                }
+                            });
+                        }
+                    });
+                }
+                else if (proj.type === 'gold_sword' || proj.type === 'meteor') {
+                    if (proj.y < proj.targetY) {
+                        proj.y += 15;
+                    } else {
+                        proj.duration = 0;
+                        const range = proj.type === 'meteor' ? 140 : 60;
+                        const expColor = proj.color || (proj.type === 'meteor' ? '#64748b' : '#fbbf24');
+                        
+                        spawnExplosion(proj.x, proj.targetY, expColor, proj.type === 'meteor' ? 25 : 10, 6);
+                        
+                        enemies.forEach(e => {
+                            const d = Math.hypot(e.x - proj.x, e.y - proj.targetY);
+                            if (d < range * player.sizeMult) {
+                                e.hp -= proj.damage;
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), expColor);
+                            }
+                        });
+                    }
+                }
+                else if (proj.type === 'solar_beam') {
+                    enemies.forEach(e => {
+                        const angleCos = Math.cos(proj.angle);
+                        const angleSin = Math.sin(proj.angle);
+                        const rx = e.x - proj.x;
+                        const ry = e.y - proj.y;
+                        const projection = rx * angleCos + ry * angleSin;
+                        
+                        if (projection > 0 && projection < proj.length) {
+                            const closeX = proj.x + projection * angleCos;
+                            const closeY = proj.y + projection * angleSin;
+                            const dist = Math.hypot(e.x - closeX, e.y - closeY);
+                            
+                            if (dist < e.size + proj.width / 2) {
+                                if (!e.beamCooldowns) e.beamCooldowns = {};
+                                const beamId = idx;
+                                if (!e.beamCooldowns[beamId] || e.beamCooldowns[beamId] <= 0) {
+                                    e.hp -= proj.damage;
+                                    e.beamCooldowns[beamId] = 12;
+                                    spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#f59e0b');
+                                    spawnExplosion(e.x, e.y, '#f59e0b', 2, 1);
+                                }
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'earthquake') {
+                    proj.radius += (proj.maxRadius - proj.radius) * 0.1;
+                    if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                    enemies.forEach(e => {
+                        if (proj.hitEnemies.has(e)) return;
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (Math.abs(d - proj.radius) < 30) {
+                            e.hp -= proj.damage;
+                            proj.hitEnemies.add(e);
+                            spawnDamageText(e.x, e.y, Math.ceil(proj.damage), proj.color);
+                        }
+                    });
+                }
+                else if (proj.type === 'sanctuary') {
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < proj.radius) {
+                            if (!e.sanctuaryCooldowns) e.sanctuaryCooldowns = {};
+                            const sancId = idx;
+                            if (!e.sanctuaryCooldowns[sancId] || e.sanctuaryCooldowns[sancId] <= 0) {
+                                e.hp -= proj.damage;
+                                e.sanctuaryCooldowns[sancId] = 20;
+                                const ang = Math.atan2(e.y - proj.y, e.x - proj.x);
+                                e.x += Math.cos(ang) * 6;
+                                e.y += Math.sin(ang) * 6;
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#60a5fa');
+                                spawnExplosion(e.x, e.y, '#60a5fa', 1, 1.5);
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'blackhole') {
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < proj.radius) {
+                            const ang = Math.atan2(proj.y - e.y, proj.x - e.x);
+                            const pullForce = (1 - d / proj.radius) * 4.8;
+                            e.x += Math.cos(ang) * pullForce;
+                            e.y += Math.sin(ang) * pullForce;
+
+                            if (!e.blackholeCooldowns) e.blackholeCooldowns = {};
+                            const bhId = idx;
+                            if (!e.blackholeCooldowns[bhId] || e.blackholeCooldowns[bhId] <= 0) {
+                                e.hp -= proj.damage;
+                                e.blackholeCooldowns[bhId] = 15;
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#c084fc');
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'soldier') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < e.size + proj.radius) {
+                            if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                            if (!proj.hitEnemies.has(e)) {
+                                e.hp -= proj.damage;
+                                proj.hitEnemies.add(e);
+                                e.x += proj.vx * 1.8;
+                                e.y += proj.vy * 1.8;
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#fbbf24');
+                                spawnExplosion(proj.x, proj.y, '#fbbf24', 5, 2);
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'chariot') {
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < e.size + proj.radius) {
+                            if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                            if (!proj.hitEnemies.has(e)) {
+                                e.hp -= proj.damage;
+                                proj.hitEnemies.add(e);
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#f97316');
+                                spawnExplosion(proj.x, proj.y, '#f97316', 7, 3);
+                            }
+                        }
+                    });
+                    if (Math.random() < 0.5) {
+                        particles.push({
+                            x: proj.x + (Math.random() - 0.5) * 20,
+                            y: proj.y + (Math.random() - 0.5) * 20,
+                            vx: -proj.vx * 0.2,
+                            vy: -proj.vy * 0.2,
+                            color: '#ea580c',
+                            size: Math.random() * 6 + 2,
+                            alpha: 1.0,
+                            decay: 0.04
+                        });
+                    }
+                }
+                else if (proj.type === 'wind_storm') {
+                    proj.radius += (proj.maxRadius - proj.radius) * 0.12;
+                    if (!proj.hitEnemies) proj.hitEnemies = new Set();
+                    enemies.forEach(e => {
+                        if (proj.hitEnemies.has(e)) return;
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < proj.radius) {
+                            e.hp -= proj.damage;
+                            proj.hitEnemies.add(e);
+                            
+                            const ang = Math.atan2(e.y - proj.y, e.x - proj.x);
+                            e.x += Math.cos(ang) * 90;
+                            e.y += Math.sin(ang) * 90;
+                            
+                            spawnDamageText(e.x, e.y, Math.ceil(proj.damage), proj.color);
+                            spawnExplosion(e.x, e.y, proj.color, 8, 4);
+                        }
+                    });
+                }
+                else if (proj.type === 'life_zone') {
+                    const distToPlayer = Math.hypot(player.x - proj.x, player.y - proj.y);
+                    if (distToPlayer < proj.radius) {
+                        if (proj.duration % 30 === 0) {
+                            player.hp = Math.min(player.maxHp, player.hp + 3);
+                            document.getElementById('hud-hp').textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
+                            spawnDamageText(player.x, player.y - 20, "+3 HP", "#22c55e");
+                            spawnExplosion(player.x, player.y, '#22c55e', 8, 3);
+                        }
+                    }
+
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - proj.x, e.y - proj.y);
+                        if (d < proj.radius) {
+                            e.speed = (1.2 + Math.random() * 0.4) * 0.5;
+                            
+                            if (!e.lifeZoneCooldowns) e.lifeZoneCooldowns = {};
+                            const lzId = idx;
+                            if (!e.lifeZoneCooldowns[lzId] || e.lifeZoneCooldowns[lzId] <= 0) {
+                                e.hp -= proj.damage;
+                                e.lifeZoneCooldowns[lzId] = 20; 
+                                spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#22c55e');
+                            }
+                        }
+                    });
+                }
+                else if (proj.type === 'solar_flare') {
+                    if (proj.duration === 29) {
+                        enemies.forEach(e => {
+                            e.hp -= proj.damage;
+                            spawnDamageText(e.x, e.y, Math.ceil(proj.damage), '#fde047');
+                            spawnExplosion(e.x, e.y, '#fde047', 6, 3);
+                        });
+                    }
+                }
+            });
+            projectiles = projectiles.filter(p => p.duration > 0);
+
+            // 5. 몬스터(Enemies) 제어
+            enemies.forEach(e => {
+                if (e.stunTimer > 0) {
+                    e.stunTimer--;
+                    return;
+                }
+
+                e.speed = e.type === 'zombie' ? 0.75 : (e.type === 'goblin' ? 2.4 : 1.25); // 기본 속도 소폭 완화
+
+                if (e.beamCooldowns) for (let id in e.beamCooldowns) if (e.beamCooldowns[id] > 0) e.beamCooldowns[id]--;
+                if (e.tsunamiCooldowns) for (let id in e.tsunamiCooldowns) if (e.tsunamiCooldowns[id] > 0) e.tsunamiCooldowns[id]--;
+                if (e.sanctuaryCooldowns) for (let id in e.sanctuaryCooldowns) if (e.sanctuaryCooldowns[id] > 0) e.sanctuaryCooldowns[id]--;
+                if (e.blackholeCooldowns) for (let id in e.blackholeCooldowns) if (e.blackholeCooldowns[id] > 0) e.blackholeCooldowns[id]--;
+                if (e.lifeZoneCooldowns) for (let id in e.lifeZoneCooldowns) if (e.lifeZoneCooldowns[id] > 0) e.lifeZoneCooldowns[id]--;
+                if (e.forceHitCooldown) if (e.forceHitCooldown > 0) e.forceHitCooldown--;
+                if (e.stoneCooldown) if (e.stoneCooldown > 0) e.stoneCooldown--;
+
+                const ang = Math.atan2(player.y - e.y, player.x - e.x);
+                e.x += Math.cos(ang) * e.speed;
+                e.y += Math.sin(ang) * e.speed;
+
+                const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+                if (distToPlayer < player.radius + e.size) {
+                    if (player.stealthTimer <= 0) {
+                        player.hp -= 0.32; // 초당 누적 데미지를 기존 0.35에서 0.32로 완화하여 한 대 버팀
+                        document.getElementById('hud-hp').textContent = `${Math.ceil(Math.max(0, player.hp))}/${player.maxHp}`;
+                        
+                        if (Math.random() < 0.08 && typeof playSynthSound === 'function') playSynthSound('hit');
+                        if (player.hp <= 0) endTheGame(false);
+                    }
+                }
+            });
+
+            // 몬스터 사망 시 구슬 드롭 로직
+            const survivingEnemies = [];
+            enemies.forEach(e => {
+                if (e.hp <= 0) {
+                    // 초등학생 난이도용 패치: 체력구슬(HP) 드롭 확률을 10% -> 15%로 상향
+                    if (Math.random() < 0.15) {
+                        consumables.push({
+                            type: 'hp',
+                            x: e.x,
+                            y: e.y,
+                            color: '#ef4444' 
+                        });
+                    } else {
+                        consumables.push({
+                            type: 'xp',
+                            x: e.x,
+                            y: e.y,
+                            xp: e.type === 'zombie' ? 25 : (e.type === 'goblin' ? 15 : 10),
+                            color: e.type === 'zombie' ? '#10b981' : '#3b82f6'
+                        });
+                    }
+                    score++;
+                    document.getElementById('hud-kills').textContent = score;
+                } else {
+                    survivingEnemies.push(e);
+                }
+            });
+            enemies = survivingEnemies;
+
+            // 6. 소모품(Consumables - XP/HP) 자석 흡수 및 상호작용
+            consumables.forEach(gem => {
+                const dist = Math.hypot(player.x - gem.x, player.y - gem.y);
+                if (dist < 90) {
+                    const ang = Math.atan2(player.y - gem.y, player.x - gem.x);
+                    gem.x += Math.cos(ang) * 6;
+                    gem.y += Math.sin(ang) * 6;
+                }
+
+                if (dist < player.radius + 8) {
+                    gem.absorbed = true;
+                    
+                    if (gem.type === 'hp') {
+                        // 초등생 패치: 체력 구슬 회복량을 1% -> 고정 10 HP (최대체력의 10%)로 크게 상향하여 생존이 쉬워짐
+                        const healAmount = 10;
+                        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                        document.getElementById('hud-hp').textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
+                        spawnDamageText(player.x, player.y - 20, "+10 HP", "#22c55e");
+                        if (typeof playSynthSound === 'function') playSynthSound('water');
+                    } else {
+                        player.xp += gem.xp;
+                        if (typeof playSynthSound === 'function') playSynthSound('crystal');
+
+                        if (player.xp >= player.xpNeeded) {
+                            player.xp -= player.xpNeeded;
+                            player.level++;
+                            // 레벨 성장 곡선 완화 (기존 1.65배 -> 1.4배)하여 쾌속 레벨업의 재미를 부여
+                            player.xpNeeded = Math.floor(player.xpNeeded * 1.4) + 80;
+                            triggerLevelUp();
+                        }
+
+                        const percent = Math.min(100, (player.xp / player.xpNeeded) * 100);
+                        document.getElementById('xp-bar-fill').style.width = `${percent}%`;
+                    }
+                }
+            });
+            consumables = consumables.filter(g => !g.absorbed);
+
+            // 7. 파티클 처리
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+            });
+            particles = particles.filter(p => p.alpha > 0);
+
+            // 데미지 텍스트
+            damageTexts.forEach(dt => {
+                dt.y += dt.vy;
+                dt.alpha -= 0.02;
+            });
+            damageTexts = damageTexts.filter(dt => dt.alpha > 0);
+        }
+
+        // ----------------------------------------------------
+        // 그래픽 렌더링 루프
+        // ----------------------------------------------------
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            if (screenShake > 0.1) {
+                const dx = (Math.random() - 0.5) * screenShake;
+                const dy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(dx, dy);
+                screenShake *= 0.9;
+            }
+
+            ctx.translate(-camera.x, -camera.y);
+
+            // 바닥 그리드
+            const gridSize = 60;
+            const startX = Math.floor(camera.x / gridSize) * gridSize - gridSize;
+            const startY = Math.floor(camera.y / gridSize) * gridSize - gridSize;
+            const endX = startX + canvas.width + gridSize * 2;
+            const endY = startY + canvas.height + gridSize * 2;
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for (let x = startX; x < endX; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, endY);
+                ctx.stroke();
+            }
+            for (let y = startY; y < endY; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
+                ctx.stroke();
+            }
+
+            // 구슬 렌더링 (경험치 vs 체력 구별)
+            consumables.forEach(gem => {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = gem.color;
+                ctx.fillStyle = gem.color;
+                
+                if (gem.type === 'hp') {
+                    // 체력 구슬: 초등학생들이 잘 볼 수 있도록 하트 혹은 십자가 형태로 큼직하고 빨갛게 빛남
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.arc(gem.x - 2, gem.y, 4, 0, Math.PI * 2);
+                    ctx.arc(gem.x + 2, gem.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(gem.x - 6, gem.y);
+                    ctx.lineTo(gem.x + 6, gem.y);
+                    ctx.lineTo(gem.x, gem.y + 7);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(gem.x, gem.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            // 몬스터 그리기
+            enemies.forEach(e => {
+                ctx.save();
+                ctx.fillStyle = e.color;
+                
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(e.x, e.y + e.size, e.size * 0.8, e.size * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = e.color;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.size, 0, Math.PI, true);
+                ctx.lineTo(e.x + e.size, e.y + e.size);
+                const tailY = e.y + e.size + (Math.sin(Date.now() / 100 + e.x) * 3);
+                ctx.lineTo(e.x, tailY);
+                ctx.lineTo(e.x - e.size, e.y + e.size);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(e.x - e.size * 0.4, e.y - 2, 2, 0, Math.PI * 2);
+                ctx.arc(e.x + e.size * 0.4, e.y - 2, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (e.stunTimer > 0) {
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    const ringY = e.y - e.size - 3;
+                    ctx.ellipse(e.x, ringY, e.size * 0.6, e.size * 0.2, Math.PI/12, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+
+                if (e.hp < e.maxHp) {
+                    const barW = e.size * 1.5;
+                    const barH = 3;
+                    const pct = Math.max(0, e.hp / e.maxHp);
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(e.x - barW/2, e.y - e.size - 10, barW, barH);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(e.x - barW/2, e.y - e.size - 10, barW * pct, barH);
+                }
+                ctx.restore();
+            });
+
+            // 그림자 수호 영혼(人)
+            allies.forEach(al => {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#f472b6';
+                ctx.fillStyle = 'rgba(244, 114, 182, 0.55)';
+                ctx.beginPath();
+                ctx.arc(al.x, al.y, 11, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 플레이어 그리기
+            ctx.save();
+            
+            if (player.stealthTimer > 0) {
+                ctx.globalAlpha = 0.4;
+            }
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(player.x, player.y + player.radius, player.radius * 0.8, player.radius * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const auraGrad = ctx.createRadialGradient(player.x, player.y, 5, player.x, player.y, player.radius * 1.8);
+            auraGrad.addColorStop(0, player.forceTimer > 0 ? 'rgba(249, 115, 22, 0.4)' : 'rgba(59, 130, 246, 0.25)');
+            auraGrad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+            ctx.fillStyle = auraGrad;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = player.forceTimer > 0 ? '#ea580c' : '#3b82f6';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.arc(player.x - 4, player.y - 1, 3, 0, Math.PI * 2);
+            ctx.arc(player.x + 4, player.y - 1, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#1e3a8a';
+            ctx.beginPath();
+            ctx.moveTo(player.x - player.radius - 2, player.y - 5);
+            ctx.lineTo(player.x, player.y - player.radius - (player.stealthTimer > 0 ? 8 : 16));
+            ctx.lineTo(player.x + player.radius + 2, player.y - 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(player.x - player.radius, player.y - 5);
+            ctx.lineTo(player.x + player.radius, player.y - 5);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // 나무 실드 배리어(木)
+            orbitalLogs.forEach(log => {
+                const lx = player.x + Math.cos(log.angle) * log.distance;
+                const ly = player.y + Math.sin(log.angle) * log.distance;
+
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.rotate(log.angle + Math.PI/2);
+                ctx.fillStyle = '#854d0e';
+                ctx.strokeStyle = '#4ade80';
+                ctx.lineWidth = 1.5;
+                ctx.fillRect(-6, -14, 12, 28);
+                ctx.strokeRect(-6, -14, 12, 28);
+                ctx.restore();
+            });
+
+            // 돌 실드 배리어(石)
+            orbitalStones.forEach(stone => {
+                const sx = player.x + Math.cos(stone.angle) * stone.distance;
+                const sy = player.y + Math.sin(stone.angle) * stone.distance;
+
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.fillStyle = '#78716c';
+                ctx.strokeStyle = '#d6d3d1';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, stone.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // 스펠 투사체 그래픽
+            projectiles.forEach(p => {
+                ctx.save();
+
+                if (p.type === 'projectile') {
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = p.color;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (p.type === 'slash') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.height;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.width / 2, -Math.PI / 5, Math.PI / 5);
+                    ctx.stroke();
+                }
+                else if (p.type === 'tsunami') {
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#0284c7';
+                    ctx.fillRect(p.x - p.width / 2, p.y - p.height / 2, p.width, p.height);
+                }
+                else if (p.type === 'fireball') {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = p.color;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (p.type === 'gold_sword') {
+                    ctx.translate(p.x, p.y);
+                    ctx.strokeStyle = p.colorOverride || '#f59e0b';
+                    ctx.lineWidth = p.width;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, p.height);
+                    ctx.stroke();
+                    ctx.lineWidth = p.width * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, p.height * 0.2);
+                    ctx.lineTo(10, p.height * 0.2);
+                    ctx.stroke();
+                }
+                else if (p.type === 'meteor') {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#dc2626';
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius * 0.6, 0, Math.PI, true);
+                    ctx.stroke();
+                }
+                else if (p.type === 'solar_beam') {
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = '#f59e0b';
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.lineWidth = p.width;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    const bx = p.x + Math.cos(p.angle) * p.length;
+                    const by = p.y + Math.sin(p.angle) * p.length;
+                    ctx.lineTo(bx, by);
+                    ctx.stroke();
+                }
+                else if (p.type === 'earthquake') {
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = 4;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                else if (p.type === 'crescent') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = p.color;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size / 2, 0, Math.PI, true);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                else if (p.type === 'sanctuary') {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#60a5fa';
+                    ctx.strokeStyle = 'rgba(96, 165, 250, 0.3)';
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(96, 165, 250, 0.05)';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (p.type === 'blackhole') {
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = '#8b5cf6';
+                    const grad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, p.radius);
+                    grad.addColorStop(0, '#7c3aed');
+                    grad.addColorStop(0.3, '#4c1d95');
+                    grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#020617';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius * 0.15, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (p.type === 'portal') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#eab308';
+                    ctx.strokeStyle = '#eab308';
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -35);
+                    ctx.lineTo(0, 35);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+                    ctx.fillRect(-10, -30, 20, 60);
+                }
+                else if (p.type === 'soldier') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#eab308';
+                    ctx.fillStyle = 'rgba(234, 179, 8, 0.75)';
+                    ctx.beginPath();
+                    ctx.moveTo(15, 0);
+                    ctx.lineTo(-10, -15);
+                    ctx.lineTo(-10, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                else if (p.type === 'chariot') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#f97316';
+                    ctx.fillStyle = '#ea580c';
+                    ctx.strokeStyle = '#f97316';
+                    ctx.lineWidth = 3;
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 4; i++) {
+                        const r = (i * Math.PI) / 2;
+                        ctx.moveTo(Math.cos(r) * p.radius, Math.sin(r) * p.radius);
+                        ctx.lineTo(-Math.cos(r) * p.radius, -Math.sin(r) * p.radius);
+                    }
+                    ctx.stroke();
+                }
+                else if (p.type === 'wind_storm') {
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = 5;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                else if (p.type === 'life_zone') {
+                    ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.05)';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (p.type === 'solar_flare') {
+                    ctx.save();
+                    ctx.globalAlpha = p.duration / 30; 
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
+                    ctx.restore();
+                }
+
+                ctx.restore();
+            });
+
+            // 이펙트 파티클
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 데미지 텍스트
+            damageTexts.forEach(dt => {
+                ctx.save();
+                ctx.globalAlpha = dt.alpha;
+                ctx.fillStyle = dt.color;
+                ctx.font = 'bold 12px "Noto Sans KR"';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = '#000000';
+                ctx.fillText(dt.text, dt.x, dt.y);
+                ctx.restore();
+            });
+
+            // 조이스틱 가이드
+            if (joystickActive) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(joystickStart.x + camera.x, joystickStart.y + camera.y, 45, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+                ctx.beginPath();
+                ctx.arc(joystickCurrent.x + camera.x, joystickCurrent.y + camera.y, 16, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ----------------------------------------------------
+        // 게임 타이머 루프
+        // ----------------------------------------------------
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isRunning || isPaused) return;
+                gameTime++;
+                const min = String(Math.floor(gameTime / 60)).padStart(2, '0');
+                const sec = String(gameTime % 60).padStart(2, '0');
+                document.getElementById('game-timer').textContent = `${min}:${sec}`;
+
+                const spawnCount = 1 + Math.floor(gameTime / 24); // 초등생 난이도에 맞추어 스폰 속도 감소(기존 22)
+                for (let i = 0; i < spawnCount; i++) {
+                    setTimeout(spawnEnemy, Math.random() * 1000);
+                }
+            }, 1000);
+        }
+
+        // ----------------------------------------------------
+        // 게임 오버 혹은 게임 승리 완료 화면 분기
+        // ----------------------------------------------------
+        function endTheGame(victory = false) {
+            isRunning = false;
+            clearInterval(timerInterval);
+
+            const modal = document.getElementById('end-modal');
+            const title = document.getElementById('end-title');
+            const reason = document.getElementById('end-reason');
+            const endIcon = document.getElementById('end-icon');
+            
+            document.getElementById('end-time').textContent = document.getElementById('game-timer').textContent;
+            document.getElementById('end-kills').textContent = score;
+
+            if (victory) {
+                endIcon.innerHTML = `<i class="ph-fill ph-trophy text-yellow-500"></i>`;
+                title.textContent = "최종 대승리!";
+                reason.textContent = "8급 한자 마법의 모든 영혼 정화를 마스터하셨습니다!";
+            } else {
+                endIcon.innerHTML = `<i class="ph-fill ph-skull text-red-500"></i>`;
+                title.textContent = "주인공 사망";
+                reason.textContent = "원령들의 집단 습격을 견디지 못하고 쓰러졌습니다.";
+            }
+
+            // Local High Score Check
+            const hsForm = document.getElementById('high-score-form');
+            if (window.saveHighScoreToDB && window.saveHighScoreToDB(score)) {
+                hsForm.classList.remove('hidden');
+                hsForm.classList.add('flex');
+            } else {
+                hsForm.classList.add('hidden');
+            }
+
+            stopBGM();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // ----------------------------------------------------
+        // 게임 시스템 재실행 / 초기 리셋 루프
+        // ----------------------------------------------------
+        function restartGame() {
+            document.getElementById('end-modal').classList.add('hidden');
+            
+            score = 0;
+            gameTime = 0;
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            consumables = [];
+            orbitalLogs = [];
+            orbitalStones = [];
+            allies = [];
+            
+            unlockedChars = ['一', '二', '三'];
+            spellStats = { '一': { lvl: 1 }, '二': { lvl: 1 }, '三': { lvl: 1 } };
+
+            player.x = 300;
+            player.y = 300;
+            player.hp = 100;
+            player.maxHp = 100;
+            player.level = 1;
+            player.xp = 0;
+            player.xpNeeded = 100; // 빠른 초반 마법 확보
+            player.power = 1.0;
+            player.sizeMult = 1.0;
+            player.stealthTimer = 0;
+            player.forceTimer = 0;
+            player.forcePower = 0;
+
+            camera.x = 0;
+            camera.y = 0;
+
+            document.getElementById('hud-hp').textContent = "100/100";
+            document.getElementById('hud-kills').textContent = "0";
+            document.getElementById('hud-level').textContent = "1";
+            document.getElementById('xp-bar-fill').style.width = "0%";
+            document.getElementById('game-timer').textContent = "00:00";
+
+            isRunning = true;
+            isPaused = false;
+
+            renderUnlockedBadges();
+            nextHanjaTarget();
+            startTimer();
+            startBGM();
+
+            for (let i = 0; i < 5; i++) {
+                spawnEnemy();
+            }
+        }
+
+        // ----------------------------------------------------
+        // 수동 리셋 및 힌트 보기 핸들러 연결
+        // ----------------------------------------------------
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (writerInstance) {
+                writerInstance.quiz();
+            }
+        });
+
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            if (writerInstance) {
+                writerInstance.animateCharacter();
+            }
+        });
+
+        // ----------------------------------------------------
+        // 메인 프레임 루프 (60FPS 브라우저 동기화)
+        // ----------------------------------------------------
+        function gameLoop() {
+            updateGame();
+            drawGame();
+            if (isRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            restartGame();
+            gameLoop();
+        });
+
+        window.onload = function() {
+            // Draw initial static frame, wait for start button
+            isRunning = false; // Prevent logic updates before start
+            if(window.myHighScore !== undefined) updateHighScoreUI();
+            drawGame();
+        };
+
+    </script>
+</body>
+</html>

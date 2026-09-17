@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>천국의 계단 (Stairs to Heaven)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: 'Inter', sans-serif; }
+        #gameCanvas { display: block; width: 100%; height: 100%; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+        
+        /* Gauge Bar */
+        .gauge-container { width: 60%; height: 20px; background: rgba(0,0,0,0.3); border-radius: 10px; margin: 20px auto; overflow: hidden; border: 2px solid white; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .gauge-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); transition: width 0.1s linear, background-color 0.3s; }
+        .gauge-warning { background: linear-gradient(90deg, #ff0844 0%, #ffb199 100%); }
+
+        /* Life System */
+        .life-panel {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            margin: 8px auto 10px;
+            background: rgba(255, 255, 255, 0.22);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.55);
+            border-radius: 999px;
+            font-weight: 900;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+            backdrop-filter: blur(8px);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        .life-panel .life-timer {
+            font-size: 0.85em;
+            color: #fef3c7;
+            font-weight: 800;
+        }
+        .life-warning {
+            background: rgba(239, 68, 68, 0.36);
+            border-color: rgba(254, 202, 202, 0.9);
+        }
+        .life-empty {
+            background: rgba(127, 29, 29, 0.58);
+            border-color: rgba(254, 202, 202, 0.95);
+        }
+        .life-help {
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.45;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        .life-button-disabled {
+            opacity: 0.5 !important;
+            filter: grayscale(0.8);
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+
+        /* Buttons */
+        .control-btn {
+            background: linear-gradient(to bottom, #ffffff, #e2e8f0);
+            border: 4px solid #cbd5e1;
+            border-bottom-width: 8px;
+            border-radius: 20px;
+            color: #475569;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 0px white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+        .control-btn:active {
+            border-bottom-width: 4px;
+            transform: translateY(4px);
+            background: linear-gradient(to bottom, #f8fafc, #cbd5e1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for rendering game -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="uiLayer" class="ui-layer flex flex-col justify-between">
+        
+        <!-- Top Info: Score & Gauge -->
+        <div id="topHUD" class="w-full text-center hidden pt-4">
+            <div id="modeBadge" class="text-sm font-bold drop-shadow-md mb-1"></div>
+            <div id="lifeHudPanel" class="life-panel">
+                <span>❤️ 목숨</span>
+                <span id="lifeHud">10/10</span>
+                <span id="lifeTimerHud" class="life-timer"></span>
+            </div>
+            <div class="text-white text-5xl font-black drop-shadow-lg tracking-wider" id="scoreDisplay">0</div>
+            <div class="gauge-container">
+                <div id="gaugeFill" class="gauge-fill"></div>
+            </div>
+            <div class="text-white text-sm font-bold opacity-80 drop-shadow-md">최고 점수: <span id="highScoreHud">0</span></div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm interactive z-50 transition-opacity duration-300">
+            <h1 class="text-6xl font-black text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] mb-4 text-center leading-tight">천국의<br>계단</h1>
+            <p class="text-white/90 font-medium mb-8 text-center px-4">
+                오르기: 현재 방향으로 이동<br>
+                방향전환: 반대로 돌아서 이동<br>
+                <span class="text-sm opacity-75">(키보드: 좌우 방향키 또는 Z, X)</span>
+            </p>
+            <div id="loadingMsg" class="text-white font-bold animate-pulse mb-4">서버 연결 중...</div>
+            <div id="startLifePanel" class="life-panel">
+                <span>❤️ 목숨</span>
+                <span id="startLifeCount">10/10</span>
+                <span id="startLifeTimer" class="life-timer"></span>
+            </div>
+            <div id="lifeHelpText" class="life-help">죽으면 목숨이 1개 줄고, 5분마다 1개씩 다시 차요.</div>
+            <div id="startButtons" class="hidden flex gap-4">
+                <button id="startEasyBtn" class="px-5 py-3 bg-green-500 text-white rounded-3xl text-lg font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform border-4 border-green-300 flex flex-col items-center">
+                    쉬움 모드
+                    <span class="text-xs font-normal opacity-90 mt-1">기록 안됨</span>
+                </button>
+                <button id="startHardBtn" class="px-5 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-3xl text-lg font-bold shadow-[0_0_20px_rgba(250,204,21,0.5)] hover:scale-105 active:scale-95 transition-transform border-4 border-yellow-200 flex flex-col items-center">
+                    어려움 모드
+                    <span class="text-xs font-normal opacity-90 mt-1">기록 도전!</span>
+                </button>
+            </div>
+            <div class="mt-6 text-yellow-100 font-bold drop-shadow-md text-lg">내 최고 점수: <span id="startHighScore">0</span></div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-red-900/60 backdrop-blur-md interactive z-50 hidden">
+            <h2 class="text-5xl font-black text-white drop-shadow-lg mb-2 text-center">게임 오버!</h2>
+            <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-lg border border-white/20 mb-8 w-64 text-center shadow-2xl">
+                <p class="text-white/80 text-lg mb-1">최종 점수</p>
+                <p id="finalScore" class="text-6xl font-black text-yellow-300 drop-shadow-md mb-4">0</p>
+                <div class="h-px w-full bg-white/20 mb-4"></div>
+                <p id="finalHighScoreTitle" class="text-white/80 text-sm mb-1">최고 점수</p>
+                <p id="finalHighScore" class="text-2xl font-bold text-white">0</p>
+                <div class="h-px w-full bg-white/20 my-4"></div>
+                <p class="text-white/80 text-sm mb-1">남은 목숨</p>
+                <p id="gameOverLives" class="text-2xl font-black text-rose-100">10/10</p>
+                <p id="gameOverLifeTimer" class="text-sm font-bold text-yellow-100 mt-1"></p>
+            </div>
+            <div class="flex gap-4">
+                <button id="homeBtn" class="px-6 py-3 bg-slate-700 text-white rounded-full text-lg font-bold shadow-xl hover:scale-105 active:scale-95 transition-transform">
+                    처음으로
+                </button>
+                <button id="restartBtn" class="px-8 py-3 bg-white text-slate-800 rounded-full text-xl font-bold shadow-xl hover:scale-105 active:scale-95 transition-transform">
+                    다시 하기
+                </button>
+            </div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="controls" class="w-full flex justify-between px-4 pb-8 h-48 gap-6 hidden interactive z-50">
+            <button id="btnTurn" class="control-btn flex-1 flex flex-col items-center justify-center active:bg-slate-200 rounded-3xl">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v3.5"/></svg>
+                <span class="text-xl font-black text-slate-700">방향전환</span>
+            </button>
+            <button id="btnClimb" class="control-btn flex-1 flex flex-col items-center justify-center active:bg-slate-200 rounded-3xl">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <span class="text-xl font-black text-slate-700">오르기</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let globalHighScore = 0;
+        const LOCAL_STORAGE_KEY = 'heavenStairsHighScore';
+
+        const LIFE_STORAGE_KEY = 'heavenStairsLifeState';
+        const LIFE_MAX = 10;
+        const LIFE_RECHARGE_MS = 5 * 60 * 1000;
+        let lifeState = { lives: LIFE_MAX, lastRefill: Date.now() };
+        let lifeTimerInterval = null;
+
+        function saveLifeState() {
+            try {
+                localStorage.setItem(LIFE_STORAGE_KEY, JSON.stringify(lifeState));
+            } catch (e) {
+                console.warn("목숨 정보를 저장할 수 없습니다.", e);
+            }
+        }
+
+        function loadLifeState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(LIFE_STORAGE_KEY) || '{}');
+                if (saved && typeof saved === 'object') {
+                    lifeState.lives = Number.isFinite(Number(saved.lives)) ? Number(saved.lives) : LIFE_MAX;
+                    lifeState.lastRefill = Number.isFinite(Number(saved.lastRefill)) ? Number(saved.lastRefill) : Date.now();
+                }
+            } catch (e) {
+                lifeState = { lives: LIFE_MAX, lastRefill: Date.now() };
+            }
+            refillLives();
+        }
+
+        function refillLives() {
+            const now = Date.now();
+            lifeState.lives = Math.max(0, Math.min(LIFE_MAX, Math.floor(lifeState.lives)));
+            lifeState.lastRefill = Number.isFinite(Number(lifeState.lastRefill)) ? Number(lifeState.lastRefill) : now;
+
+            if (lifeState.lives >= LIFE_MAX) {
+                lifeState.lives = LIFE_MAX;
+                lifeState.lastRefill = now;
+                saveLifeState();
+                return;
+            }
+
+            const elapsed = Math.max(0, now - lifeState.lastRefill);
+            const recovered = Math.floor(elapsed / LIFE_RECHARGE_MS);
+            if (recovered > 0) {
+                lifeState.lives = Math.min(LIFE_MAX, lifeState.lives + recovered);
+                lifeState.lastRefill += recovered * LIFE_RECHARGE_MS;
+                if (lifeState.lives >= LIFE_MAX) {
+                    lifeState.lastRefill = now;
+                }
+                saveLifeState();
+            }
+        }
+
+        function getNextLifeMs() {
+            refillLives();
+            if (lifeState.lives >= LIFE_MAX) return 0;
+            return Math.max(0, LIFE_RECHARGE_MS - (Date.now() - lifeState.lastRefill));
+        }
+
+        function formatLifeTime(ms) {
+            const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+            const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        function consumeLife() {
+            refillLives();
+            if (lifeState.lives <= 0) return false;
+            const wasFull = lifeState.lives >= LIFE_MAX;
+            lifeState.lives -= 1;
+            if (wasFull) lifeState.lastRefill = Date.now();
+            saveLifeState();
+            updateLifeUI();
+            return true;
+        }
+
+        function hasLifeToStart() {
+            refillLives();
+            return lifeState.lives > 0;
+        }
+
+        function setButtonLifeState(button, disabled) {
+            if (!button) return;
+            button.disabled = disabled;
+            button.classList.toggle('life-button-disabled', disabled);
+            if (disabled) button.setAttribute('aria-disabled', 'true');
+            else button.removeAttribute('aria-disabled');
+        }
+
+        function updateLifeUI() {
+            refillLives();
+            const countText = `${lifeState.lives}/${LIFE_MAX}`;
+            const nextMs = getNextLifeMs();
+            const timerText = lifeState.lives >= LIFE_MAX ? '가득 참' : `${formatLifeTime(nextMs)} 후 +1`;
+            const noLifeText = lifeState.lives <= 0 ? `목숨이 없어요. ${formatLifeTime(nextMs)} 뒤에 다시 도전!` : '죽으면 목숨이 1개 줄고, 5분마다 1개씩 다시 차요.';
+
+            [
+                ['lifeHud', countText],
+                ['startLifeCount', countText],
+                ['gameOverLives', countText]
+            ].forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = value;
+            });
+
+            [
+                ['lifeTimerHud', timerText],
+                ['startLifeTimer', timerText],
+                ['gameOverLifeTimer', timerText]
+            ].forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = value;
+            });
+
+            const help = document.getElementById('lifeHelpText');
+            if (help) help.innerText = noLifeText;
+
+            ['lifeHudPanel', 'startLifePanel'].forEach(id => {
+                const panel = document.getElementById(id);
+                if (!panel) return;
+                panel.classList.toggle('life-warning', lifeState.lives > 0 && lifeState.lives <= 2);
+                panel.classList.toggle('life-empty', lifeState.lives <= 0);
+            });
+
+            const noLives = lifeState.lives <= 0;
+            setButtonLifeState(document.getElementById('startEasyBtn'), noLives);
+            setButtonLifeState(document.getElementById('startHardBtn'), noLives);
+            setButtonLifeState(document.getElementById('restartBtn'), noLives);
+        }
+
+        function startLifeTimer() {
+            if (lifeTimerInterval) clearInterval(lifeTimerInterval);
+            updateLifeUI();
+            lifeTimerInterval = setInterval(updateLifeUI, 1000);
+        }
+
+        function loadHighScore() {
+            try {
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (saved) {
+                    globalHighScore = parseInt(saved, 10) || 0;
+                }
+            } catch (e) {
+                console.warn("로컬 스토리지를 사용할 수 없습니다.", e);
+            }
+            document.getElementById('startHighScore').innerText = globalHighScore;
+            document.getElementById('highScoreHud').innerText = globalHighScore;
+        }
+
+        function saveHighScore(newScore) {
+            if (newScore > globalHighScore) {
+                globalHighScore = newScore;
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, globalHighScore);
+                } catch (e) {
+                    console.warn("로컬 스토리지를 저장할 수 없습니다.", e);
+                }
+                document.getElementById('startHighScore').innerText = globalHighScore;
+                document.getElementById('highScoreHud').innerText = globalHighScore;
+            }
+        }
+
+        // 초기 설정: 로딩 메시지 숨기고 시작 버튼 표시 및 최고점수 불러오기
+        document.getElementById('loadingMsg').classList.add('hidden');
+        document.getElementById('startButtons').classList.remove('hidden');
+        loadLifeState();
+        startLifeTimer();
+        loadHighScore();
+
+        let currentDifficulty = 'HARD';
+        let bgm, sfxStep, sfxTurn, sfxFail, sfxCombo;
+        let audioInitialized = false;
+
+        async function initAudio() {
+            if (audioInitialized) return;
+            await Tone.start();
+            
+            const reverb = new Tone.Reverb(2.5).toDestination();
+            reverb.wet.value = 0.3;
+
+            bgm = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1 }
+            }).connect(reverb);
+            bgm.volume.value = -12;
+
+            sfxStep = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            sfxStep.volume.value = -8;
+
+            sfxTurn = new Tone.MembraneSynth({
+                pitchDecay: 0.01,
+                octaves: 1,
+                oscillator: { type: "square" },
+                envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+            }).toDestination();
+            sfxTurn.volume.value = -10;
+
+            sfxFail = new Tone.FMSynth({
+                modulationIndex: 10,
+                oscillator: { type: "sawtooth" },
+                envelope: { attack: 0.1, decay: 0.5, sustain: 0.1, release: 1 }
+            }).toDestination();
+            sfxFail.volume.value = -5;
+
+            audioInitialized = true;
+        }
+
+        let bgmPattern;
+        const notes = ["C5", "E5", "G5", "B5", "C6", "A5", "F5", "D5"];
+        let noteIdx = 0;
+
+        function startBGM() {
+            if (!audioInitialized) return;
+            Tone.Transport.start();
+            bgmPattern = new Tone.Loop((time) => {
+                if(gameState === 'PLAYING') {
+                    bgm.triggerAttackRelease(notes[noteIdx % notes.length], "8n", time);
+                    noteIdx++;
+                }
+            }, "8n").start(0);
+        }
+
+        function stopBGM() {
+            if (bgmPattern) {
+                bgmPattern.stop();
+                bgmPattern.dispose(); // 오디오 노드 정리 (메모리 릭 방지)
+                bgmPattern = null;
+                Tone.Transport.stop();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioInitialized) return;
+            if (type === 'step') sfxStep.triggerAttackRelease("C6", "16n");
+            if (type === 'turn') sfxTurn.triggerAttackRelease("G4", "32n");
+            if (type === 'fail') sfxFail.triggerAttackRelease("C3", "2n");
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let cw, ch;
+        
+        const TILE_W = 120;
+        const TILE_H = 60;
+        
+        let lastTime = 0;
+        let animationId;
+        let gameState = 'START';
+
+        function resize() {
+            cw = canvas.width = window.innerWidth;
+            ch = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let stairs = [];
+        let player = {};
+        let camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
+        let gauge = 100;
+        let maxGauge = 100;
+        let score = 0;
+        let combo = 0;
+        let lastActionTime = 0;
+        
+        let clouds = Array.from({length: 10}, () => ({
+            x: Math.random() * cw,
+            y: Math.random() * ch,
+            radius: 30 + Math.random() * 50,
+            speed: 0.1 + Math.random() * 0.3
+        }));
+
+        function resetGame() {
+            score = 0;
+            combo = 0;
+            gauge = maxGauge;
+            stairs = [];
+            
+            player = {
+                index: 0,
+                dir: 1, 
+                visualX: 0,
+                visualY: 0,
+                gridX: 0,
+                gridY: 0,
+                hopY: 0,
+                isFalling: false,
+                fallVelocity: 0
+            };
+
+            let cx = 0, cy = 0;
+            stairs.push({ x: cx, y: cy, dir: 1, type: 'start' });
+            for(let i=1; i<20; i++) {
+                let nextDir = (i < 4) ? 1 : (Math.random() > 0.5 ? 1 : -1);
+                cx += nextDir;
+                cy += 1;
+                stairs.push({ x: cx, y: cy, dir: nextDir });
+            }
+
+            camera.targetX = 0;
+            camera.targetY = ch * 0.2;
+            camera.x = camera.targetX;
+            camera.y = camera.targetY;
+
+            document.getElementById('scoreDisplay').innerText = "0";
+            updateGaugeUI();
+            
+            gameState = 'PLAYING';
+            if(audioInitialized) {
+                stopBGM();
+                startBGM();
+            }
+        }
+
+        function generateMoreStairs() {
+            let lastStair = stairs[stairs.length - 1];
+            let cx = lastStair.x;
+            let cy = lastStair.y;
+            for(let i=0; i<10; i++) {
+                let nextDir = Math.random() > 0.5 ? 1 : -1;
+                cx += nextDir;
+                cy += 1;
+                stairs.push({ x: cx, y: cy, dir: nextDir });
+            }
+        }
+
+        function handleInput(action) {
+            if (gameState !== 'PLAYING') return;
+
+            let nextStair = stairs[player.index + 1];
+            let targetDir = player.dir;
+
+            if (action === 'TURN') {
+                targetDir *= -1;
+                playSound('turn');
+            } else {
+                playSound('step');
+            }
+
+            player.dir = targetDir;
+            let stairDir = nextStair.x > stairs[player.index].x ? 1 : -1;
+
+            if (stairDir === player.dir) {
+                player.index++;
+                player.gridX = nextStair.x;
+                player.gridY = nextStair.y;
+                player.hopY = -20;
+
+                score++;
+                document.getElementById('scoreDisplay').innerText = score;
+                
+                let now = performance.now();
+                if (now - lastActionTime < 500) combo++;
+                else combo = 0;
+                lastActionTime = now;
+
+                let restore = Math.max(5, 15 - (score * 0.05));
+                gauge = Math.min(maxGauge, gauge + restore);
+
+                // 계단 생성
+                if (stairs.length - player.index < 15) {
+                    generateMoreStairs();
+                }
+
+                // [최적화 1] 메모리 누수 방지: 지나온 계단이 쌓이면 오래된 계단 삭제
+                if (player.index > 30) {
+                    const removeCount = 15;
+                    stairs.splice(0, removeCount);
+                    player.index -= removeCount; // index도 삭제한 만큼 당겨줌
+                }
+
+            } else {
+                player.gridX += player.dir;
+                player.gridY += 1;
+                triggerGameOver();
+            }
+        }
+
+        function triggerGameOver() {
+            if (gameState === 'GAMEOVER') return;
+            gameState = 'GAMEOVER';
+            consumeLife();
+            player.isFalling = true;
+            playSound('fail');
+            stopBGM();
+            
+            if (currentDifficulty === 'HARD') {
+                saveHighScore(score);
+                document.getElementById('finalHighScoreTitle').innerText = "최고 점수";
+            } else {
+                document.getElementById('finalHighScoreTitle').innerText = "최고 점수 (저장 안됨)";
+            }
+
+            setTimeout(() => {
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+                document.getElementById('topHUD').classList.add('hidden');
+                document.getElementById('controls').classList.add('hidden');
+                document.getElementById('finalScore').innerText = score;
+                document.getElementById('finalHighScore').innerText = globalHighScore;
+                updateLifeUI();
+            }, 1000);
+        }
+
+        function updateGaugeUI() {
+            const fill = document.getElementById('gaugeFill');
+            const pct = (gauge / maxGauge) * 100;
+            fill.style.width = `${pct}%`;
+            
+            if (pct < 20) {
+                fill.classList.add('gauge-warning');
+            } else {
+                fill.classList.remove('gauge-warning');
+            }
+        }
+
+        function toIso(gridX, gridY) {
+            let isoX = gridX * (TILE_W / 2);
+            let isoY = -gridY * (TILE_H / 2); 
+            return { x: isoX, y: isoY };
+        }
+
+        function drawBlock(x, y, isBase=false, opacity=1) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.globalAlpha = opacity;
+
+            // Top
+            ctx.beginPath();
+            ctx.moveTo(0, -TILE_H/2);
+            ctx.lineTo(TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(-TILE_W/2, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Left
+            ctx.beginPath();
+            ctx.moveTo(-TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(0, TILE_H);
+            ctx.lineTo(-TILE_W/2, TILE_H/2);
+            ctx.closePath();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fill();
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            // Right
+            ctx.beginPath();
+            ctx.moveTo(TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(0, TILE_H);
+            ctx.lineTo(TILE_W/2, TILE_H/2);
+            ctx.closePath();
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fill();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawGhost(x, y, hopY, dir) {
+            ctx.save();
+            ctx.translate(x, y + hopY);
+            
+            const hover = Math.sin(performance.now() * 0.005) * 5;
+            ctx.translate(0, hover - 20);
+
+            // Halo
+            ctx.beginPath();
+            ctx.ellipse(0, -35, 15, 5, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // [최적화 2] 무거운 shadowBlur 대신 가짜 광원(Glow) 효과용 투명 원 그리기
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(0, -5, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(-15, 10);
+            ctx.bezierCurveTo(-15, -30, 15, -30, 15, 10);
+            ctx.lineTo(15, 20);
+            ctx.bezierCurveTo(10, 25, 5, 15, 0, 20);
+            ctx.bezierCurveTo(-5, 25, -10, 15, -15, 20);
+            ctx.closePath();
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#1e293b';
+            let eyeOffsetX = dir * 5;
+            
+            ctx.beginPath();
+            ctx.arc(eyeOffsetX - 5, -5, 3, 0, Math.PI * 2);
+            ctx.arc(eyeOffsetX + 5, -5, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Blushes
+            ctx.fillStyle = 'rgba(244, 114, 182, 0.5)';
+            ctx.beginPath();
+            ctx.arc(eyeOffsetX - 10, 0, 3, 0, Math.PI*2);
+            ctx.arc(eyeOffsetX + 10, 0, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function update(dt) {
+            if (gameState === 'PLAYING') {
+                let drainRate = currentDifficulty === 'HARD' ? 5 + (score * 0.4) : 2 + (score * 0.15); 
+                gauge -= drainRate * (dt / 1000);
+                
+                if (gauge <= 0) {
+                    gauge = 0;
+                    triggerGameOver();
+                }
+                updateGaugeUI();
+            }
+
+            let targetIso = toIso(player.gridX, player.gridY);
+            player.visualX += (targetIso.x - player.visualX) * 0.3;
+            player.visualY += (targetIso.y - player.visualY) * 0.3;
+            player.hopY += (0 - player.hopY) * 0.2;
+
+            if (player.isFalling) {
+                player.fallVelocity += 900 * (dt / 1000);
+                player.visualY += player.fallVelocity * (dt / 1000);
+            }
+
+            camera.targetX = -player.visualX + cw/2;
+            camera.targetY = -player.visualY + ch * 0.6;
+            camera.x += (camera.targetX - camera.x) * 0.1;
+            camera.y += (camera.targetY - camera.y) * 0.1;
+
+            clouds.forEach(c => {
+                c.x -= c.speed;
+                if (c.x < -c.radius) c.x = cw + c.radius;
+            });
+        }
+
+        function draw() {
+            let gradient = ctx.createLinearGradient(0, 0, 0, ch);
+            let progress = Math.min(1, score / 200);
+            let r1 = 135 - progress*50, g1 = 206 - progress*50, b1 = 235 + progress*20;
+            let r2 = 224 - progress*100, g2 = 246 - progress*100, b2 = 255;
+            
+            gradient.addColorStop(0, `rgb(${r1}, ${g1}, ${b1})`);
+            gradient.addColorStop(1, `rgb(${r2}, ${g2}, ${b2})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, cw, ch);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            clouds.forEach(c => {
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2);
+                ctx.arc(c.x + c.radius*0.8, c.y - c.radius*0.3, c.radius*0.8, 0, Math.PI*2);
+                ctx.arc(c.x + c.radius*1.5, c.y, c.radius*0.9, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(camera.x, camera.y);
+
+            const renderStart = Math.max(0, player.index - 5);
+            const renderEnd = Math.min(stairs.length, player.index + 20);
+
+            for(let i = renderStart; i < renderEnd; i++) {
+                let s = stairs[i];
+                let iso = toIso(s.x, s.y);
+                
+                let distFromPlayer = i - player.index;
+                let opacity = distFromPlayer > 15 ? 1 - (distFromPlayer - 15)/5 : 1;
+                if (opacity <= 0) continue;
+
+                if (s.type === 'start') {
+                   drawBlock(iso.x, iso.y + TILE_H, true, opacity);
+                   drawBlock(iso.x, iso.y + TILE_H*2, true, opacity);
+                }
+
+                drawBlock(iso.x, iso.y, false, opacity);
+            }
+
+            drawGhost(player.visualX, player.visualY, player.hopY, player.dir);
+            ctx.restore();
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            update(dt);
+            draw();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        async function startGameUI(difficulty) {
+            updateLifeUI();
+            if (!hasLifeToStart()) {
+                const nextMs = getNextLifeMs();
+                alert(`❤️ 목숨이 없어요! ${formatLifeTime(nextMs)} 뒤에 1개가 다시 찹니다.`);
+                return;
+            }
+            currentDifficulty = difficulty;
+            await initAudio();
+            
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('topHUD').classList.remove('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            
+            const badge = document.getElementById('modeBadge');
+            badge.innerText = difficulty === 'EASY' ? '쉬움 모드' : '어려움 모드';
+            badge.className = difficulty === 'EASY' ? 'text-green-300 text-sm font-bold drop-shadow-md mb-1' : 'text-red-300 text-sm font-bold drop-shadow-md mb-1';
+            
+            resetGame();
+            if(!animationId) requestAnimationFrame(gameLoop);
+        }
+
+        document.getElementById('startEasyBtn').addEventListener('click', () => startGameUI('EASY'));
+        document.getElementById('startHardBtn').addEventListener('click', () => startGameUI('HARD'));
+
+        document.getElementById('homeBtn').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('topHUD').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            updateLifeUI();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            updateLifeUI();
+            if (!hasLifeToStart()) {
+                const nextMs = getNextLifeMs();
+                alert(`❤️ 목숨이 없어요! ${formatLifeTime(nextMs)} 뒤에 1개가 다시 찹니다.`);
+                return;
+            }
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('topHUD').classList.remove('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            resetGame();
+        });
+
+        document.getElementById('btnTurn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('TURN'); });
+        document.getElementById('btnClimb').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('CLIMB'); });
+        
+        document.getElementById('btnTurn').addEventListener('mousedown', (e) => { handleInput('TURN'); });
+        document.getElementById('btnClimb').addEventListener('mousedown', (e) => { handleInput('CLIMB'); });
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.key === 'ArrowLeft' || e.key === 'z' || e.key === 'Z') {
+                handleInput('TURN');
+            } else if (e.key === 'ArrowRight' || e.key === 'x' || e.key === 'X' || e.key === ' ') {
+                handleInput('CLIMB');
+            }
+        });
+
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0,0,cw,ch);
+
+    </script>
+</body>
+</html>

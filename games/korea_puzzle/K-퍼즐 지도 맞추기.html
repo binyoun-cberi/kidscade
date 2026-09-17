@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>업그레이드 지역 퍼즐 맞추기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0fdfa;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #game-board {
+            width: 100%;
+            height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        /* 퍼즐 조각 스타일 */
+        .piece path {
+            transition: fill 0.2s, stroke-width 0.2s;
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
+            cursor: grab;
+        }
+        
+        .piece path:active {
+            cursor: grabbing;
+        }
+
+        .piece:hover path {
+            stroke-width: 2px;
+            filter: drop-shadow(4px 6px 6px rgba(0,0,0,0.4));
+        }
+
+        .piece.placed path {
+            filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.8));
+            stroke-width: 1.5px;
+            stroke: #ffffff;
+            cursor: default;
+        }
+
+        /* 타겟 맵 (내부 선 숨기기 위해 fill과 stroke 색상을 동일하게 처리) */
+        .target-map path {
+            fill: #e5e7eb; /* 연한 회색 바탕 */
+            stroke: #e5e7eb;
+            stroke-width: 1px;
+            stroke-linejoin: round;
+        }
+
+        .region-label {
+            font-size: 11px;
+            font-weight: 900;
+            fill: #111827;
+            pointer-events: none;
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0px 2px 4px rgba(255,255,255,0.8);
+        }
+        
+        @media (max-width: 768px) {
+            .region-label { font-size: 9px; }
+        }
+
+        /* 로딩 애니메이션 */
+        .loader {
+            border: 4px solid #ccfbf1;
+            border-top: 4px solid #0d9488;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 시작화면 배경 패턴 */
+        .bg-pattern {
+            background-color: #f0fdfa;
+            background-image: radial-gradient(#14b8a6 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+
+        /* 셀렉트 박스 스크롤바 디자인 */
+        select optgroup {
+            font-weight: 900;
+            color: #0f766e;
+            background: #f0fdfa;
+        }
+        select option {
+            font-weight: 700;
+            color: #374151;
+            background: #ffffff;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen select-none">
+
+    <!-- 브금(BGM) -->
+    <audio id="bgm" loop>
+        <source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/A_Shining_Peace.ogg" type="audio/ogg">
+    </audio>
+
+    <!-- 시작 화면 -->
+    <div id="start-screen" class="fixed inset-0 z-50 bg-pattern flex flex-col justify-center items-center transition-opacity duration-500 overflow-y-auto py-8">
+        <div class="bg-white p-6 md:p-10 rounded-3xl shadow-2xl text-center max-w-md w-11/12 border-4 border-teal-500 my-auto">
+            <h1 class="text-4xl md:text-5xl font-black text-teal-600 mb-2">🗺️ K-퍼즐</h1>
+            <p class="text-gray-500 mb-6 font-bold">우리나라 구석구석, 지도를 완성하세요!</p>
+            
+            <div class="mb-6 text-left">
+                <label for="map-select-start" class="block text-sm font-bold text-teal-800 mb-2">어느 지역을 맞출까요?</label>
+                <select id="map-select-start" class="w-full bg-teal-50 border-2 border-teal-300 text-teal-900 rounded-xl focus:ring-teal-500 focus:border-teal-500 block p-3 font-bold text-base cursor-pointer shadow-sm">
+                    <optgroup label="🌏 전국">
+                        <option value="korea">🇰🇷 대한민국 전도 (17개 시/도)</option>
+                    </optgroup>
+                    <optgroup label="🏙️ 특별시 및 광역시 (구 단위)">
+                        <option value="seoul">서울특별시</option>
+                        <option value="busan" selected>부산광역시</option>
+                        <option value="daegu">대구광역시</option>
+                        <option value="incheon">인천광역시</option>
+                        <option value="gwangju">광주광역시</option>
+                        <option value="daejeon">대전광역시</option>
+                        <option value="ulsan">울산광역시</option>
+                    </optgroup>
+                    <optgroup label="🏞️ 도 단위 (시/군 단위)">
+                        <option value="gyeonggi">경기도</option>
+                        <option value="gangwon">강원특별자치도</option>
+                        <option value="chungbuk">충청북도</option>
+                        <option value="chungnam">충청남도</option>
+                        <option value="jeonbuk">전북특별자치도</option>
+                        <option value="jeonnam">전라남도</option>
+                        <option value="gyeongbuk">경상북도</option>
+                        <option value="gyeongnam">경상남도</option>
+                        <option value="jeju">제주특별자치도 (2개 시)</option>
+                    </optgroup>
+                    <optgroup label="🔍 상세 지역 (읍/면/동 단위)">
+                        <option value="sejong">세종특별자치시 상세</option>
+                        <option value="jeju_sub">제주특별자치도 상세</option>
+                        <option value="jeungpyeong">충북 증평군 상세</option>
+                    </optgroup>
+                </select>
+                <p class="text-xs text-teal-600 mt-2 font-semibold">* 상세 지역은 데이터가 많아 로딩이 길 수 있습니다.</p>
+            </div>
+
+            <button id="btn-start-game" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-black py-4 px-4 rounded-xl shadow-[0_4px_0_rgb(13,148,136)] active:shadow-[0_0px_0_rgb(13,148,136)] active:translate-y-1 transition-all text-xl">
+                🚀 퍼즐 시작하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 인게임 상단 헤더 -->
+    <header class="h-[80px] bg-white shadow-sm flex justify-between items-center px-4 md:px-8 z-10 shrink-0">
+        <div class="flex items-center gap-2 md:gap-3">
+            <button id="btn-home" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 md:px-4 md:py-2 rounded-xl font-bold transition flex items-center gap-1">
+                🏠 <span class="hidden md:inline">메뉴</span>
+            </button>
+            <h1 class="text-lg md:text-2xl font-black text-teal-600 truncate max-w-[120px] md:max-w-none" id="current-map-title">전국</h1>
+        </div>
+        
+        <div class="flex items-center gap-2 md:gap-4 bg-teal-50 px-3 md:px-5 py-2 rounded-2xl border border-teal-100 shadow-inner">
+            <div class="text-xs md:text-base font-bold text-gray-700 flex flex-col md:flex-row items-center md:gap-2">
+                <span class="text-gray-500 hidden md:inline">진행</span>
+                <span id="progress-text" class="text-teal-600 text-base md:text-xl">0/0</span>
+            </div>
+            <div class="w-px h-6 bg-teal-200 mx-1 md:mx-0"></div>
+            <div class="text-xs md:text-base font-bold text-gray-700 flex flex-col md:flex-row items-center md:gap-2">
+                <span class="text-gray-500 hidden md:inline">시간</span>
+                <span id="timer" class="text-rose-500 font-mono text-base md:text-xl">00:00</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-bgm" class="bg-teal-100 hover:bg-teal-200 text-teal-800 p-2 rounded-xl font-bold transition text-lg" title="배경음악">
+                🔊
+            </button>
+            <button id="btn-shuffle" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-3 py-2 rounded-xl font-bold transition hidden md:flex items-center gap-1 shadow-sm" title="다시 섞기">
+                🔄 섞기
+            </button>
+        </div>
+    </header>
+
+    <!-- 게임 화면 -->
+    <main id="game-board" class="flex-1 w-full relative bg-gradient-to-b from-teal-50/50 to-white">
+        <svg id="map-svg" class="w-full h-full"></svg>
+        
+        <!-- 로딩 오버레이 -->
+        <div id="loading-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm hidden flex-col justify-center items-center z-20">
+            <div id="loader-spinner" class="loader mb-4"></div>
+            <p class="text-2xl font-black text-teal-700 mb-2" id="loading-text">지도를 그리는 중...</p>
+            <p class="text-base font-bold text-teal-500 animate-pulse" id="loading-subtext">조각을 정성껏 오려내고 있습니다 ✂️</p>
+        </div>
+    </main>
+
+    <!-- 클리어 모달 -->
+    <div id="success-modal" class="fixed inset-0 bg-black/50 hidden flex justify-center items-center z-50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[2rem] p-8 max-w-sm w-11/12 text-center shadow-2xl transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="text-7xl mb-6 animate-bounce">🎊</div>
+            <h2 class="text-3xl font-black text-teal-600 mb-2" id="success-title">완벽합니다!</h2>
+            <p class="text-gray-600 mb-6 font-bold text-lg">모든 조각을 제자리에 맞췄어요.</p>
+            
+            <div class="bg-teal-50 border-2 border-teal-100 rounded-2xl p-5 mb-8">
+                <p class="text-sm font-bold text-teal-800 mb-1">최종 클리어 시간</p>
+                <p id="final-time" class="text-5xl font-mono font-black text-rose-500 drop-shadow-sm">00:00</p>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <button id="btn-play-again" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-4 px-4 rounded-xl transition active:scale-95 text-lg shadow-[0_4px_0_rgb(13,148,136)] active:shadow-[0_0px_0_rgb(13,148,136)] active:translate-y-1">
+                    ↻ 같은 지역 다시 하기
+                </button>
+                <button id="btn-to-main" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl transition active:scale-95 text-lg border-2 border-gray-200">
+                    ≡ 다른 지역 선택하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 통계청(2013) GeoJSON 데이터 소스 ---
+        const DATA_URLS = {
+            provinces: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_geo_simple.json",
+            municipalities: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_municipalities_geo_simple.json",
+            submunicipalities: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_submunicipalities_geo_simple.json"
+        };
+
+        // 통계청(2013) 기준 지역 코드 매핑 (중복 제거 및 정확도 향상)
+        const REGION_CODES = {
+            'seoul': ['11'], 
+            'busan': ['21'], 
+            'daegu': ['22'], 
+            'incheon': ['23'], 
+            'gwangju': ['24'], 
+            'daejeon': ['25'], 
+            'ulsan': ['26'], 
+            'sejong': ['29'], 
+            'gyeonggi': ['31'], 
+            'gangwon': ['32'], 
+            'chungbuk': ['33'], 
+            'chungnam': ['34'], 
+            'jeonbuk': ['35'], 
+            'jeonnam': ['36'], 
+            'gyeongbuk': ['37'], 
+            'gyeongnam': ['38'], 
+            'jeju': ['39'],
+            'jeju_sub': ['39'],
+            'jeungpyeong': ['33760', '33390'] // 증평군 과거 코드 병행
+        };
+
+        // 코드로 못 찾을 시 2차 검색(Fallback)을 위한 다중 키워드 배열
+        const REGION_KEYWORDS = {
+            'seoul': ['서울'], 'busan': ['부산'], 'daegu': ['대구'], 'incheon': ['인천'], 'gwangju': ['광주'],
+            'daejeon': ['대전'], 'ulsan': ['울산'], 'sejong': ['세종'], 'gyeonggi': ['경기'], 'gangwon': ['강원'],
+            'chungbuk': ['충북', '충청북'], 'chungnam': ['충남', '충청남'], 
+            'jeonbuk': ['전북', '전라북'], 'jeonnam': ['전남', '전라남'],
+            'gyeongbuk': ['경북', '경상북'], 'gyeongnam': ['경남', '경상남'], 
+            'jeju': ['제주'], 'jeju_sub': ['제주'], 'jeungpyeong': ['증평']
+        };
+
+        // 읍면동 단위까지 불러와야 하는 세부 지역
+        const DETAILED_REGIONS = ['jeungpyeong', 'sejong', 'jeju_sub'];
+
+        let cachedData = {};
+        let currentMapData = null;
+        let totalPieces = 0, placedPieces = 0;
+        let startTime = null, timerInterval = null, gameActive = false;
+        let bgmPlaying = false;
+
+        // DOM 
+        const svg = d3.select("#map-svg");
+        const progressText = document.getElementById("progress-text");
+        const timerText = document.getElementById("timer");
+        const loadingOverlay = document.getElementById("loading-overlay");
+        const startScreen = document.getElementById("start-screen");
+        const successModal = document.getElementById("success-modal");
+        const modalContent = document.getElementById("modal-content");
+        const bgmAudio = document.getElementById("bgm");
+
+        // 부드럽고 다채로운 색상 팔레트
+        const colors = [
+            "#FF9AA2", "#FFB7B2", "#FFDAC1", "#E2F0CB", "#B5EAD7", "#C7CEEA",
+            "#F1CBFF", "#D4F0F0", "#8FCACA", "#CCE2CB", "#B6CFB6", "#97C1A9",
+            "#FCB9AA", "#FFDBCC", "#ECEAE4", "#A2E1DB", "#55CBCD", "#C4FAF8",
+            "#FDFD96", "#FFD1DC", "#FFB347", "#B39EB5", "#FF6961", "#77DD77"
+        ];
+        const colorScale = d3.scaleOrdinal(colors);
+
+        // --- 오디오 제어 ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let sfxCtx;
+        
+        function initAudio() {
+            if(!sfxCtx) sfxCtx = new AudioContext();
+            if (sfxCtx.state === 'suspended') sfxCtx.resume();
+        }
+
+        // 성공 효과음 (맑은 띵 소리)
+        function playDingSound() {
+            if(!sfxCtx) return;
+            const osc = sfxCtx.createOscillator();
+            const gain = sfxCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1000, sfxCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(2000, sfxCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.4, sfxCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, sfxCtx.currentTime + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(sfxCtx.destination);
+            osc.start();
+            osc.stop(sfxCtx.currentTime + 0.3);
+        }
+
+        // 클리어 팡파레 효과음
+        function playClearSound() {
+            if(!sfxCtx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, i) => {
+                const osc = sfxCtx.createOscillator();
+                const gain = sfxCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, sfxCtx.currentTime + i * 0.1);
+                gain.gain.linearRampToValueAtTime(0.3, sfxCtx.currentTime + i * 0.1 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, sfxCtx.currentTime + i * 0.1 + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(sfxCtx.destination);
+                osc.start(sfxCtx.currentTime + i * 0.1);
+                osc.stop(sfxCtx.currentTime + i * 0.1 + 0.6);
+            });
+        }
+
+        document.getElementById("btn-bgm").addEventListener("click", () => {
+            if(bgmPlaying) {
+                bgmAudio.pause();
+                document.getElementById("btn-bgm").innerText = "🔇";
+                document.getElementById("btn-bgm").classList.replace('bg-teal-100', 'bg-gray-100');
+            } else {
+                bgmAudio.play().catch(e => console.log("BGM Play failed", e));
+                document.getElementById("btn-bgm").innerText = "🔊";
+                document.getElementById("btn-bgm").classList.replace('bg-gray-100', 'bg-teal-100');
+            }
+            bgmPlaying = !bgmPlaying;
+        });
+
+        // --- 데이터 로딩 및 필터링 ---
+        async function loadAndStartGame(mode) {
+            initAudio(); 
+            startScreen.classList.add("opacity-0", "pointer-events-none");
+            loadingOverlay.classList.remove("hidden");
+            loadingOverlay.style.display = "flex";
+            svg.selectAll("*").remove();
+
+            const selectEl = document.getElementById("map-select-start");
+            let titleText = selectEl.options[selectEl.selectedIndex].text;
+            titleText = titleText.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').split('(')[0].trim();
+            document.getElementById("current-map-title").innerText = titleText;
+
+            try {
+                let sourceUrl = DATA_URLS.municipalities;
+                if(mode === 'korea') {
+                    sourceUrl = DATA_URLS.provinces;
+                } else if(DETAILED_REGIONS.includes(mode)) {
+                    sourceUrl = DATA_URLS.submunicipalities;
+                }
+
+                let geoJson;
+                if (cachedData[sourceUrl]) {
+                    geoJson = cachedData[sourceUrl];
+                } else {
+                    const response = await fetch(sourceUrl);
+                    if (!response.ok) throw new Error("데이터 다운로드 실패");
+                    geoJson = await response.json();
+                    cachedData[sourceUrl] = geoJson;
+                }
+
+                let filteredFeatures = geoJson.features;
+                
+                if (mode !== 'korea') {
+                    const prefixes = REGION_CODES[mode];
+                    
+                    // 1차 검색: 지역 코드로 필터링
+                    filteredFeatures = geoJson.features.filter(f => {
+                        const p = f.properties || f.attributes || {};
+                        let codeVal = p.code || p.CODE || p.SIG_CD || p.sig_cd || p.EMD_CD || p.emd_cd || p.adm_cd || p.ADM_CD || p.CTPRVN_CD || f.id;
+                        
+                        if (!codeVal) {
+                            for (let key in p) {
+                                if (key.toLowerCase().includes('cd') || key.toLowerCase().includes('code')) {
+                                    codeVal = p[key];
+                                    break;
+                                }
+                            }
+                        }
+
+                        const codeStr = String(codeVal || "");
+                    return prefixes.some(prefix => codeStr.startsWith(prefix));
+                });
+
+                // 2차 검색(Fallback): 1차 검색에서 0개가 나왔다면 다중 키워드로 이름 검색
+                if (filteredFeatures.length === 0) {
+                    const keywords = REGION_KEYWORDS[mode];
+                    if(keywords && keywords.length > 0) {
+                        filteredFeatures = geoJson.features.filter(f => {
+                            const p = f.properties || f.attributes || {};
+                            const nameStr = String(p.name || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || p.name_ko || "");
+                            return keywords.some(kw => nameStr.includes(kw));
+                        });
+                    }
+                }
+            }
+
+            d3.shuffle(filteredFeatures);
+                currentMapData = { ...geoJson, features: filteredFeatures };
+                totalPieces = filteredFeatures.length;
+
+                // 2차 검색 후에도 0개라면 에러 던지기
+                if(totalPieces === 0) throw new Error("해당 지역 데이터가 없습니다.");
+
+                loadingOverlay.classList.add("hidden");
+                loadingOverlay.style.display = "none";
+                
+                if(!bgmPlaying && document.getElementById("btn-bgm").innerText === "🔊") {
+                    bgmAudio.play().then(() => bgmPlaying=true).catch(e=>console.log(e));
+                }
+
+                renderGame();
+
+            } catch (error) {
+                console.error(error);
+                
+                // 에러 상황을 유저에게 친절하게 보여주는 UI 전환
+                const spinner = document.getElementById("loader-spinner");
+                const loadingText = document.getElementById("loading-text");
+                const subtext = document.getElementById("loading-subtext");
+                
+                if(spinner) spinner.style.display = 'none';
+                loadingText.innerHTML = `<span class="text-rose-500">데이터를 불러오지 못했습니다 🥲</span>`;
+                
+                subtext.classList.remove('animate-pulse', 'text-teal-500');
+                subtext.classList.add('text-gray-600');
+                subtext.innerText = error.message === "해당 지역 데이터가 없습니다." 
+                    ? "선택하신 지역의 데이터가 현재 지도 버전에 포함되어 있지 않습니다." 
+                    : "일시적인 네트워크 오류가 발생했습니다.";
+
+                // 메뉴로 돌아가기 버튼 동적 추가
+                let backBtn = document.getElementById("btn-loading-back");
+                if(!backBtn) {
+                    backBtn = document.createElement("button");
+                    backBtn.id = "btn-loading-back";
+                    backBtn.className = "mt-6 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition active:scale-95";
+                    backBtn.innerText = "메뉴로 돌아가기";
+                    backBtn.onclick = () => {
+                        loadingOverlay.style.display = "none";
+                        startScreen.classList.remove("opacity-0", "pointer-events-none");
+                        
+                        // 다음 로딩을 위해 UI 초기화
+                        if(spinner) spinner.style.display = 'block';
+                        loadingText.innerHTML = "지도를 그리는 중...";
+                        loadingText.classList.remove("text-rose-500");
+                        subtext.classList.add('animate-pulse', 'text-teal-500');
+                        subtext.classList.remove('text-gray-600');
+                        subtext.innerText = "조각을 정성껏 오려내고 있습니다 ✂️";
+                        backBtn.remove();
+                    };
+                    loadingOverlay.appendChild(backBtn);
+                }
+            }
+        }
+
+        // --- 퍼즐 렌더링 로직 ---
+        function renderGame() {
+            placedPieces = 0;
+            updateProgress();
+            resetTimer();
+            startTimer();
+            gameActive = true;
+            svg.selectAll("*").remove();
+
+            const svgNode = svg.node();
+            const width = svgNode.clientWidth;
+            const height = svgNode.clientHeight;
+
+            const padding = width < 768 ? 40 : 120; 
+            
+            const projection = d3.geoMercator()
+                .fitExtent([[padding, padding], [width - padding, height - padding]], currentMapData);
+            
+            const path = d3.geoPath().projection(projection);
+
+            const targetGroup = svg.append("g").attr("class", "target-map");
+            targetGroup.selectAll("path")
+                .data(currentMapData.features)
+                .enter().append("path")
+                .attr("d", path)
+                .attr("id", (d, i) => "target-" + i);
+
+            const piecesGroup = svg.append("g").attr("class", "pieces");
+            
+            const drag = d3.drag()
+                .on("start", function(event, d) {
+                    if (d.placed || !gameActive) return;
+                    d3.select(this).raise();
+                    d3.select(this).select("path").attr("stroke", "#374151").attr("stroke-width", "2.5px");
+                })
+                .on("drag", function(event, d) {
+                    if (d.placed || !gameActive) return;
+                    d.currentX += event.dx;
+                    d.currentY += event.dy;
+                    d3.select(this).attr("transform", `translate(${d.currentX}, ${d.currentY})`);
+                })
+                .on("end", function(event, d) {
+                    if (d.placed || !gameActive) return;
+                    d3.select(this).select("path").attr("stroke", "#ffffff").attr("stroke-width", "1px");
+
+                    const distance = Math.sqrt(d.currentX * d.currentX + d.currentY * d.currentY);
+                    
+                    let snapThreshold = width < 768 ? 40 : 30;
+                    if(totalPieces > 50) snapThreshold += 15; 
+
+                    if (distance < snapThreshold) {
+                        d.placed = true;
+                        d.currentX = 0;
+                        d.currentY = 0;
+                        
+                        d3.select(this)
+                            .transition().duration(300).ease(d3.easeBackOut.overshoot(1.5))
+                            .attr("transform", "translate(0,0)")
+                            .attr("class", "piece placed");
+
+                        playDingSound();
+                        placedPieces++;
+                        updateProgress();
+                        checkWin();
+                    }
+                });
+
+            const piece = piecesGroup.selectAll(".piece")
+                .data(currentMapData.features)
+                .enter().append("g")
+                .attr("class", "piece")
+                .each(function(d) {
+                    const spawn = getOuterSpawnCoordinates(width, height);
+                    d.currentX = spawn.x;
+                    d.currentY = spawn.y;
+                    d.placed = false;
+                    d3.select(this).attr("transform", `translate(${d.currentX}, ${d.currentY})`);
+                })
+                .call(drag);
+
+            piece.append("path")
+                .attr("d", path)
+                .attr("fill", (d, i) => colorScale(i % colors.length))
+                .attr("stroke", "#ffffff")
+                .attr("stroke-width", "1px")
+                .attr("stroke-linejoin", "round");
+
+            piece.append("text")
+                .attr("class", "region-label")
+                .attr("transform", function(d) {
+                    const centroid = path.centroid(d);
+                    if(isNaN(centroid[0])) return "translate(0,0)";
+                    return `translate(${centroid[0]}, ${centroid[1]})`;
+                })
+                .attr("text-anchor", "middle")
+                .attr("dy", ".35em")
+                .text(d => {
+                    const p = d.properties || {};
+                    return p.name || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || "";
+                }); 
+        }
+
+        function getOuterSpawnCoordinates(width, height) {
+            const angle = Math.random() * Math.PI * 2;
+            const rx = width * 0.35 + (Math.random() * width * 0.15);
+            const ry = height * 0.35 + (Math.random() * height * 0.15);
+            
+            return {
+                x: Math.cos(angle) * rx,
+                y: Math.sin(angle) * ry
+            };
+        }
+
+        function updateProgress() { 
+            progressText.innerText = `${placedPieces}/${totalPieces}`; 
+        }
+
+        function checkWin() {
+            if (placedPieces === totalPieces && totalPieces > 0) {
+                gameActive = false;
+                clearInterval(timerInterval);
+                document.getElementById("final-time").innerText = timerText.innerText;
+                playClearSound();
+                
+                successModal.classList.remove("hidden");
+                setTimeout(() => {
+                    successModal.classList.remove("opacity-0");
+                    modalContent.classList.remove("scale-95");
+                }, 50);
+            }
+        }
+
+        // --- 타이머 ---
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const s = String(elapsed % 60).padStart(2, '0');
+                timerText.innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerText.innerText = "00:00";
+        }
+
+        // --- 이벤트 리스너 ---
+        document.getElementById("btn-start-game").addEventListener("click", () => {
+            const mode = document.getElementById("map-select-start").value;
+            loadAndStartGame(mode);
+        });
+
+        document.getElementById("btn-home").addEventListener("click", () => {
+            if(placedPieces > 0 && placedPieces < totalPieces) {
+                if(!confirm("진행 중인 퍼즐이 있습니다. 메뉴로 돌아가시겠습니까?")) return;
+            }
+            clearInterval(timerInterval);
+            svg.selectAll("*").remove();
+            startScreen.classList.remove("opacity-0", "pointer-events-none");
+        });
+
+        document.getElementById("btn-shuffle").addEventListener("click", () => {
+            const width = svg.node().clientWidth;
+            const height = svg.node().clientHeight;
+            svg.selectAll(".piece:not(.placed)").each(function(d) {
+                const spawn = getOuterSpawnCoordinates(width, height);
+                d.currentX = spawn.x;
+                d.currentY = spawn.y;
+                d3.select(this)
+                  .transition().duration(600).ease(d3.easeCubicOut)
+                  .attr("transform", `translate(${d.currentX}, ${d.currentY})`);
+            });
+        });
+
+        // 모달 버튼
+        document.getElementById("btn-play-again").addEventListener("click", () => {
+            successModal.classList.add("opacity-0");
+            modalContent.classList.add("scale-95");
+            setTimeout(() => { successModal.classList.add("hidden"); }, 300);
+            const mode = document.getElementById("map-select-start").value;
+            loadAndStartGame(mode);
+        });
+
+        document.getElementById("btn-to-main").addEventListener("click", () => {
+            successModal.classList.add("opacity-0");
+            modalContent.classList.add("scale-95");
+            setTimeout(() => { 
+                successModal.classList.add("hidden"); 
+                svg.selectAll("*").remove();
+                startScreen.classList.remove("opacity-0", "pointer-events-none");
+            }, 300);
+        });
+
+    </script>
+</body>
+</html>

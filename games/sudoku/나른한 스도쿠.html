@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심플 스도쿠</title>
+    <!-- 폭죽 이펙트 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* 기본 리셋 및 폰트 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px 10px;
+        }
+
+        /* 상단 UI */
+        .header {
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .title { font-size: 24px; font-weight: bold; color: #6f42c1; }
+        
+        .bgm-btn {
+            background: #e9ecef;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        .bgm-btn.on { background: #6f42c1; color: white; }
+
+        /* 정보 패널 */
+        .info-panel {
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .info-box { flex: 1; }
+        .info-label { font-size: 11px; color: #868e96; display: block; margin-bottom: 4px; }
+        .info-value { font-size: 16px; font-weight: bold; }
+        .time-val { color: #212529; }
+        .best-val { color: #2b8a3e; }
+        .hint-val { color: #f59f00; }
+
+        /* 완벽한 비율의 3x3 중첩 그리드 보드 */
+        .board-container {
+            width: 360px;
+            height: 360px;
+            background: #343a40;
+            border: 3px solid #343a40;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px; /* 3x3 블록 사이의 굵은 선 역할 */
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .block {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1px; /* 개별 셀 사이의 얇은 선 역할 */
+            background: #dee2e6;
+        }
+
+        .cell {
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            cursor: pointer;
+            user-select: none;
+            color: #495057;
+            transition: background-color 0.1s;
+        }
+
+        /* 셀 상태 스타일 */
+        .cell.fixed { font-weight: bold; color: #212529; }
+        .cell.input { font-weight: bold; color: #339af0; }
+        
+        /* 하이라이트 효과 */
+        .cell.related { background-color: #f1f3f5; } /* 같은 행,열,블록 */
+        .cell.highlight { background-color: #e3fafc; font-weight: bold; color: #0b7285;} /* 동일한 숫자 */
+        .cell.selected { background-color: #d0ebff !important; font-weight: bold; } /* 선택된 칸 */
+        .cell.error { color: #fa5252; background-color: #ffe3e3 !important; } /* 오류 칸 */
+
+        .cell.hint-anim { animation: hintPop 1s ease; }
+        @keyframes hintPop {
+            0% { transform: scale(1); background-color: #fff3bf; }
+            50% { transform: scale(1.1); background-color: #fcc419; color: white; }
+            100% { transform: scale(1); }
+        }
+
+        /* 컨트롤 버튼 (숫자패드) */
+        .controls {
+            width: 100%;
+            max-width: 360px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .n-btn {
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            height: 48px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #ced4da;
+            transition: opacity 0.2s, transform 0.1s;
+            color: #495057;
+        }
+        .n-btn:active { transform: translateY(2px); box-shadow: none; }
+        .n-btn.completed { opacity: 0.3; background-color: #f8f9fa; cursor: default; }
+        .erase-btn { color: #fa5252; font-size: 16px; }
+
+        /* 힌트 버튼 */
+        .hint-btn {
+            width: 100%;
+            max-width: 360px;
+            background: #fff3bf;
+            border: 1px solid #fcc419;
+            color: #d9480f;
+            height: 48px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #fcc419;
+        }
+        .hint-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+        .hint-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: translateY(2px); }
+
+        /* 결과 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            width: 90%;
+            max-width: 300px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .modal-title { font-size: 24px; margin-bottom: 10px; }
+        .rank-text { font-size: 28px; font-weight: bold; margin: 15px 0; color: #6f42c1; }
+        .restart-btn {
+            width: 100%;
+            padding: 12px;
+            background: #6f42c1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* 모바일 대응 스케일링 */
+        @media (max-width: 380px) {
+            .board-container { width: 320px; height: 320px; }
+            .cell { font-size: 18px; }
+            .header, .info-panel, .controls, .hint-btn { max-width: 320px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="title">나른한 스도쿠</div>
+        <button class="bgm-btn" id="bgmBtn" onclick="toggleBGM()">🎵 BGM OFF</button>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel">
+        <div class="info-box">
+            <span class="info-label">진행 시간</span>
+            <span class="info-value time-val" id="timeDisplay">00:00</span>
+        </div>
+        <div class="info-box" style="border-left: 1px solid #eee; border-right: 1px solid #eee;">
+            <span class="info-label">최고 기록</span>
+            <span class="info-value best-val" id="bestDisplay">--:--</span>
+        </div>
+        <div class="info-box">
+            <span class="info-label">남은 힌트</span>
+            <span class="info-value hint-val" id="hintDisplay">3</span>
+        </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container" id="board"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="n-btn" id="btn-1" onclick="inputNum(1)">1</button>
+        <button class="n-btn" id="btn-2" onclick="inputNum(2)">2</button>
+        <button class="n-btn" id="btn-3" onclick="inputNum(3)">3</button>
+        <button class="n-btn" id="btn-4" onclick="inputNum(4)">4</button>
+        <button class="n-btn" id="btn-5" onclick="inputNum(5)">5</button>
+        <button class="n-btn" id="btn-6" onclick="inputNum(6)">6</button>
+        <button class="n-btn" id="btn-7" onclick="inputNum(7)">7</button>
+        <button class="n-btn" id="btn-8" onclick="inputNum(8)">8</button>
+        <button class="n-btn" id="btn-9" onclick="inputNum(9)">9</button>
+        <button class="n-btn erase-btn" onclick="inputNum(0)">지우기</button>
+    </div>
+    
+    <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 힌트 사용하기</button>
+
+    <!-- Modal -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-title">성공! 🎉</div>
+            <div style="color:#868e96">소요 시간: <span id="resultTime" style="font-weight:bold; color:#212529;"></span></div>
+            <div class="rank-text" id="resultRank">랭크</div>
+            <button class="restart-btn" onclick="startNewGame()">새 게임 시작</button>
+        </div>
+    </div>
+
+    <script>
+        // 변수 초기화
+        let solvedGrid = [];
+        let playerGrid = [];
+        let initialGrid = [];
+        let selected = null;
+        let timer = 0;
+        let interval = null;
+        let hintsLeft = 3;
+        let isPlaying = false;
+        let isLoading = false;
+        let bestTime = localStorage.getItem('simpleSudokuBest');
+
+        // DOM 요소
+        const boardEl = document.getElementById('board');
+        const timeEl = document.getElementById('timeDisplay');
+        const bestEl = document.getElementById('bestDisplay');
+        const hintEl = document.getElementById('hintDisplay');
+        const hintBtn = document.getElementById('hintBtn');
+        const modal = document.getElementById('resultModal');
+
+        window.onload = () => {
+            if (bestTime) bestEl.innerText = formatTime(bestTime);
+            document.addEventListener('keydown', handleKeys);
+            startNewGame();
+        };
+
+        // --- 스도쿠 생성 및 검증 핵심 로직 ---
+        function createEmptyGrid() {
+            return Array.from({length: 9}, () => Array(9).fill(0));
+        }
+
+        // Fisher-Yates 셔플 알고리즘 (균등한 랜덤 분배)
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function checkValid(grid, r, c, num) {
+            for (let i = 0; i < 9; i++) {
+                if (grid[r][i] === num || grid[i][c] === num) return false;
+            }
+            let br = Math.floor(r / 3) * 3;
+            let bc = Math.floor(c / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (grid[br + i][bc + j] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        // 완성된 스도쿠 보드를 생성하는 백트래킹 솔버
+        function solve(grid) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (grid[r][c] === 0) {
+                        let nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                        for (let n of nums) {
+                            if (checkValid(grid, r, c, n)) {
+                                grid[r][c] = n;
+                                if (solve(grid)) return true;
+                                grid[r][c] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // 해답이 유일한지(1개인지) 카운트하는 솔버 (유일해 보장용 알고리즘)
+        function countSolutions(g, limit = 2) {
+            let count = 0;
+            function solveRec(r, c) {
+                if (r === 9) {
+                    count++;
+                    return;
+                }
+                let nextC = (c + 1) % 9;
+                let nextR = r + (c === 8 ? 1 : 0);
+                
+                if (g[r][c] !== 0) {
+                    solveRec(nextR, nextC);
+                    return;
+                }
+                
+                for (let num = 1; num <= 9; num++) {
+                    if (checkValid(g, r, c, num)) {
+                        g[r][c] = num;
+                        solveRec(nextR, nextC);
+                        g[r][c] = 0;
+                        if (count >= limit) return;
+                    }
+                }
+            }
+            solveRec(0, 0);
+            return count;
+        }
+
+        // --- 게임 라이프사이클 ---
+        function startNewGame() {
+            if (isLoading) return;
+            isLoading = true;
+
+            clearInterval(interval);
+            timer = 0;
+            hintsLeft = 3;
+            isPlaying = false;
+            selected = null;
+            
+            timeEl.innerText = "00:00";
+            hintEl.innerText = hintsLeft;
+            hintBtn.disabled = false;
+            modal.style.display = "none";
+            boardEl.innerHTML = '<div style="color:#adb5bd; margin-top:160px; grid-column: 1/4; font-weight:bold;">새로운 퍼즐 생성 중...</div>';
+            
+            // UI 렌더링 후 연산 진행을 위해 setTimeout 사용
+            setTimeout(() => {
+                let grid = createEmptyGrid();
+                solve(grid);
+                solvedGrid = JSON.parse(JSON.stringify(grid));
+
+                // 81개의 위치를 랜덤하게 섞음
+                let positions = [];
+                for(let i=0; i<81; i++) positions.push(i);
+                shuffle(positions);
+
+                let removedCount = 0;
+                let targetBlanks = 43; // 난이도 밸런스 조정 (쉬움~보통 수준)
+
+                // 해답 유일성을 보장하며 빈칸(hole) 뚫기
+                for(let i=0; i<81; i++) {
+                    let pos = positions[i];
+                    let r = Math.floor(pos / 9);
+                    let c = pos % 9;
+                    
+                    let backup = grid[r][c];
+                    grid[r][c] = 0;
+                    
+                    let copy = JSON.parse(JSON.stringify(grid));
+                    if (countSolutions(copy, 2) === 1) {
+                        removedCount++;
+                        if (removedCount >= targetBlanks) break;
+                    } else {
+                        grid[r][c] = backup; // 유일해가 아니면 복구
+                    }
+                }
+                
+                playerGrid = JSON.parse(JSON.stringify(grid));
+                initialGrid = JSON.parse(JSON.stringify(grid));
+
+                drawBoard();
+                updateNumberPad();
+                isLoading = false;
+            }, 50);
+        }
+
+        // 그리드 렌더링 (3x3 중첩 CSS Grid 반영)
+        function drawBoard() {
+            boardEl.innerHTML = '';
+            for (let b = 0; b < 9; b++) {
+                let block = document.createElement('div');
+                block.className = 'block';
+                let br = Math.floor(b / 3) * 3;
+                let bc = (b % 3) * 3;
+                
+                for (let i = 0; i < 9; i++) {
+                    let r = br + Math.floor(i / 3);
+                    let c = bc + (i % 3);
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${r}-${c}`;
+                    
+                    let val = playerGrid[r][c];
+                    if (val !== 0) {
+                        cell.innerText = val;
+                        if (initialGrid[r][c] !== 0) cell.classList.add('fixed');
+                        else cell.classList.add('input');
+                    }
+                    cell.onclick = () => selectCell(r, c);
+                    block.appendChild(cell);
+                }
+                boardEl.appendChild(block);
+            }
+            checkErrors();
+        }
+
+        // 셀 선택 및 관계된 셀 하이라이트
+        function selectCell(r, c) {
+            if (isLoading) return;
+            if (!isPlaying) startTimer();
+            selected = {r, c};
+            
+            // 기존 효과 지우기
+            document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected', 'highlight', 'related'));
+            
+            document.getElementById(`cell-${r}-${c}`).classList.add('selected');
+
+            let val = playerGrid[r][c];
+            
+            // 가로, 세로, 3x3 박스 및 동일 숫자 하이라이트
+            for(let i = 0; i < 9; i++) {
+                for(let j = 0; j < 9; j++) {
+                    let isRelated = (i === r) || (j === c) || (Math.floor(i/3) === Math.floor(r/3) && Math.floor(j/3) === Math.floor(c/3));
+                    if (isRelated && (i !== r || j !== c)) {
+                        document.getElementById(`cell-${i}-${j}`).classList.add('related');
+                    }
+                    if (val !== 0 && playerGrid[i][j] === val && (i !== r || j !== c)) {
+                        document.getElementById(`cell-${i}-${j}`).classList.add('highlight');
+                    }
+                }
+            }
+        }
+
+        // 숫자 입력
+        function inputNum(num) {
+            if (!selected || isLoading) return;
+            if (!isPlaying) startTimer();
+            
+            let {r, c} = selected;
+            if (initialGrid[r][c] !== 0) return; // 기본 고정 숫자는 수정 불가
+
+            playerGrid[r][c] = num;
+            let cell = document.getElementById(`cell-${r}-${c}`);
+            cell.innerText = num === 0 ? '' : num;
+            
+            if (num !== 0) cell.classList.add('input');
+            else cell.classList.remove('input');
+
+            let hasError = checkErrors();
+            selectCell(r, c); // 하이라이트 갱신
+            if (!hasError) checkWin(); // 에러가 없을 때만 승리 체크
+        }
+
+        // 보드의 모든 에러(충돌) 검사 및 넘버패드 상태 업데이트
+        function checkErrors() {
+            document.querySelectorAll('.cell').forEach(el => el.classList.remove('error'));
+            let hasError = false;
+            
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    let val = playerGrid[r][c];
+                    if (val === 0) continue;
+                    
+                    let isError = false;
+                    for (let i = 0; i < 9; i++) {
+                        if (i !== c && playerGrid[r][i] === val) isError = true;
+                        if (i !== r && playerGrid[i][c] === val) isError = true;
+                    }
+                    let br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 3; j++) {
+                            if ((br+i !== r || bc+j !== c) && playerGrid[br+i][bc+j] === val) isError = true;
+                        }
+                    }
+                    if (isError) {
+                        document.getElementById(`cell-${r}-${c}`).classList.add('error');
+                        hasError = true;
+                    }
+                }
+            }
+            updateNumberPad();
+            return hasError;
+        }
+
+        // 넘버패드 진행상황 표시 (특정 숫자가 9개 다 채워졌는지 확인)
+        function updateNumberPad() {
+            let counts = Array(10).fill(0);
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    if (playerGrid[r][c] !== 0 && !document.getElementById(`cell-${r}-${c}`).classList.contains('error')) {
+                        counts[playerGrid[r][c]]++;
+                    }
+                }
+            }
+            for(let i=1; i<=9; i++) {
+                let btn = document.getElementById(`btn-${i}`);
+                if(btn) {
+                    if(counts[i] >= 9) btn.classList.add('completed');
+                    else btn.classList.remove('completed');
+                }
+            }
+        }
+
+        // 힌트 시스템 (유일해가 보장되므로 안심하고 사용 가능)
+        function useHint() {
+            if (hintsLeft <= 0 || isLoading) return;
+            if (!isPlaying) startTimer();
+            
+            let tr = -1, tc = -1;
+            
+            // 우선순위 1: 현재 선택된 셀이 틀렸거나 비어있는 경우
+            if (selected) {
+                let {r, c} = selected;
+                if (initialGrid[r][c] === 0 && playerGrid[r][c] !== solvedGrid[r][c]) {
+                    tr = r; tc = c;
+                }
+            }
+
+            // 우선순위 2: 그 외 랜덤하게 틀렸거나 비어있는 셀 하나 찾기
+            if (tr === -1) {
+                let emptyCells = [];
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        if (initialGrid[r][c] === 0 && playerGrid[r][c] !== solvedGrid[r][c]) {
+                            emptyCells.push({r, c});
+                        }
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    let rand = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    tr = rand.r; tc = rand.c;
+                }
+            }
+
+            if (tr !== -1) {
+                hintsLeft--;
+                hintEl.innerText = hintsLeft;
+                if (hintsLeft === 0) hintBtn.disabled = true;
+
+                selectCell(tr, tc);
+                inputNum(solvedGrid[tr][tc]);
+                
+                // 힌트로 채워진 칸 애니메이션 효과
+                let cell = document.getElementById(`cell-${tr}-${tc}`);
+                cell.classList.add('hint-anim');
+                setTimeout(() => cell.classList.remove('hint-anim'), 1000);
+            }
+        }
+
+        // 키보드 이벤트
+        function handleKeys(e) {
+            if (!selected || isLoading || (!isPlaying && timer > 0)) return;
+            if (e.key >= '1' && e.key <= '9') inputNum(parseInt(e.key));
+            if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') inputNum(0);
+            
+            let {r, c} = selected;
+            if (e.key === 'ArrowUp' && r > 0) selectCell(r - 1, c);
+            if (e.key === 'ArrowDown' && r < 8) selectCell(r + 1, c);
+            if (e.key === 'ArrowLeft' && c > 0) selectCell(r, c - 1);
+            if (e.key === 'ArrowRight' && c < 8) selectCell(r, c + 1);
+        }
+
+        function startTimer() {
+            if (isPlaying) return;
+            isPlaying = true;
+            interval = setInterval(() => {
+                timer++;
+                timeEl.innerText = formatTime(timer);
+            }, 1000);
+        }
+
+        function formatTime(sec) {
+            let m = Math.floor(sec / 60).toString().padStart(2, '0');
+            let s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // 랭크 계산
+        function getRankInfo(sec) {
+            if(sec < 180) return {name: "챌린저", color: "#e03131"};
+            if(sec < 300) return {name: "그랜드마스터", color: "#c2255c"};
+            if(sec < 480) return {name: "마스터", color: "#9c36b5"};
+            if(sec < 720) return {name: "다이아몬드", color: "#1c7ed6"};
+            if(sec < 900) return {name: "플래티넘", color: "#0ca678"};
+            if(sec < 1200) return {name: "골드", color: "#f59f00"};
+            if(sec < 1500) return {name: "실버", color: "#adb5bd"};
+            if(sec < 1800) return {name: "브론즈", color: "#d9480f"};
+            return {name: "아이언", color: "#495057"};
+        }
+
+        function checkWin() {
+            for (let r=0; r<9; r++) {
+                for (let c=0; c<9; c++) {
+                    if (playerGrid[r][c] === 0) return;
+                }
+            }
+
+            clearInterval(interval);
+            isPlaying = false;
+
+            if (!bestTime || timer < bestTime) {
+                bestTime = timer;
+                localStorage.setItem('simpleSudokuBest', bestTime);
+                bestEl.innerText = formatTime(bestTime);
+            }
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+            document.getElementById('resultTime').innerText = formatTime(timer);
+            let rank = getRankInfo(timer);
+            let rankEl = document.getElementById('resultRank');
+            rankEl.innerText = rank.name;
+            rankEl.style.color = rank.color;
+            modal.style.display = "flex";
+        }
+
+        // --- 나른한 BGM (Web Audio API) ---
+        let audioCtx, masterGain;
+        let isBgmOn = false;
+        const notes = [130.81, 146.83, 164.81, 196.00, 220.00]; 
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.1; 
+            
+            let filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 500; 
+            
+            masterGain.connect(filter);
+            filter.connect(audioCtx.destination);
+        }
+
+        function playDrone() {
+            if(!isBgmOn) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+
+            osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
+            osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            let now = audioCtx.currentTime;
+            let attack = 2 + Math.random() * 3;
+            let release = 3 + Math.random() * 4;
+            
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.05, now + attack);
+            gain.gain.linearRampToValueAtTime(0, now + attack + release);
+
+            osc.start(now);
+            osc.stop(now + attack + release);
+
+            setTimeout(playDrone, (attack + Math.random() * 2) * 1000);
+        }
+
+        function toggleBGM() {
+            if(!audioCtx) initAudio();
+            
+            let btn = document.getElementById('bgmBtn');
+            isBgmOn = !isBgmOn;
+            
+            if(isBgmOn) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                playDrone(); playDrone();
+                btn.innerText = '🎵 BGM ON';
+                btn.classList.add('on');
+            } else {
+                btn.innerText = '🎵 BGM OFF';
+                btn.classList.remove('on');
+            }
+        }
+    </script>
+</body>
+</html>

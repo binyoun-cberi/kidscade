@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>순서대로 팡팡! 숫자 풍선 터뜨리기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* 하늘색 배경 */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        /* 구름 애니메이션용 CSS */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.8;
+            animation: float linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+        @keyframes float {
+            from { transform: translateX(100vw); }
+            to { transform: translateX(-200px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 배경 구름 요소들 -->
+    <div class="ui-layer" id="backgroundLayer" style="z-index: 0;"></div>
+
+    <!-- 게임 캔버스 -->
+    <canvas id="gameCanvas" style="z-index: 1; position: absolute;"></canvas>
+
+    <!-- 인게임 UI -->
+    <div id="gameUI" class="ui-layer hidden" style="z-index: 2; padding: 20px;">
+        <div class="flex justify-between items-start">
+            <div class="bg-white/80 rounded-2xl p-3 shadow-lg border-4 border-blue-400 text-center">
+                <p class="text-blue-600 text-lg md:text-xl">다음 숫자</p>
+                <p id="targetNumberUI" class="text-4xl md:text-5xl text-blue-800 font-bold">1</p>
+            </div>
+            
+            <div class="text-center">
+                <div class="bg-white/80 rounded-2xl px-6 py-2 shadow-lg border-4 border-yellow-400 mb-2">
+                    <p class="text-yellow-600 text-lg">스테이지 <span id="stageUI">1</span></p>
+                    <p id="timerUI" class="text-3xl text-red-500 font-bold">30.0</p>
+                </div>
+            </div>
+
+            <div class="bg-white/80 rounded-2xl p-3 shadow-lg border-4 border-pink-400 text-center">
+                <p class="text-pink-600 text-lg md:text-xl">남은 기회</p>
+                <p id="livesUI" class="text-2xl md:text-3xl text-red-500">❤️❤️❤️</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 메뉴 화면 -->
+    <div id="menuScreen" class="ui-layer pointer-events-auto bg-white/40 backdrop-blur-sm justify-center items-center" style="z-index: 10;">
+        <div class="bg-white rounded-3xl p-8 shadow-2xl border-8 border-blue-300 text-center max-w-md w-[90%]">
+            <h1 class="text-4xl md:text-5xl text-blue-600 mb-2 drop-shadow-md">순서대로 팡팡!</h1>
+            <h2 class="text-2xl md:text-3xl text-pink-500 mb-4">숫자 풍선 터뜨리기</h2>
+            
+            <div class="bg-yellow-100 rounded-full px-6 py-2 inline-block mb-6 border-2 border-yellow-400 shadow-sm">
+                <p class="text-yellow-700 text-xl font-bold">🏆 최고 기록: <span id="highestStageMenuUI">0</span> 스테이지 클리어</p>
+            </div>
+            
+            <div class="mb-6">
+                <label for="stageSelect" class="block text-gray-600 text-lg mb-2">시작할 스테이지 선택</label>
+                <select id="stageSelect" class="w-full p-3 text-xl rounded-xl border-4 border-yellow-300 bg-yellow-50 text-center outline-none focus:border-yellow-500">
+                    <option value="1">스테이지 1 (1~5)</option>
+                </select>
+            </div>
+            
+            <button id="startBtn" class="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white text-3xl rounded-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+                게임 시작!
+            </button>
+            <p class="mt-4 text-gray-500 text-sm break-keep">숫자를 1부터 순서대로 터치하세요!<br>기회는 3번, 시간은 30초!</p>
+        </div>
+    </div>
+
+    <!-- 카운트다운 화면 -->
+    <div id="countdownScreen" class="ui-layer hidden justify-center items-center pointer-events-none" style="z-index: 20;">
+        <div id="countdownText" class="text-[150px] md:text-[200px] text-white font-bold drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transition-transform scale-150">
+            3
+        </div>
+    </div>
+
+    <!-- 결과(게임오버) 화면 -->
+    <div id="resultScreen" class="ui-layer hidden pointer-events-auto bg-black/60 backdrop-blur-sm justify-center items-center" style="z-index: 30;">
+        <div class="bg-white rounded-3xl p-8 shadow-2xl border-8 border-red-400 text-center max-w-md w-[90%]">
+            <h2 id="resultTitle" class="text-5xl text-red-500 mb-4">앗, 실패!</h2>
+            <p id="resultDesc" class="text-2xl text-gray-700 mb-8">풍선을 잘못 눌렀어요!</p>
+            
+            <div class="flex gap-4 justify-center">
+                <button id="retryBtn" class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white text-2xl rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">다시하기</button>
+                <button id="menuBtn" class="flex-1 py-3 bg-gray-500 hover:bg-gray-600 text-white text-2xl rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">메뉴로</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 배경 구름 생성 ---
+        const bgLayer = document.getElementById('backgroundLayer');
+        for(let i=0; i<6; i++) {
+            let cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            let w = 100 + Math.random() * 100;
+            let h = 40 + Math.random() * 20;
+            cloud.style.width = w + 'px';
+            cloud.style.height = h + 'px';
+            cloud.style.top = (Math.random() * 60) + '%';
+            cloud.style.animationDuration = (20 + Math.random() * 30) + 's';
+            cloud.style.animationDelay = '-' + (Math.random() * 30) + 's';
+            
+            cloud.style.setProperty('--bW', (w*0.5)+'px');
+            cloud.style.setProperty('--bH', (w*0.5)+'px');
+            cloud.style.setProperty('--aW', (w*0.4)+'px');
+            cloud.style.setProperty('--aH', (w*0.4)+'px');
+            
+            // Injecting internal styles for pseudoelements via a style tag would be cleaner, but simple CSS works too.
+            cloud.innerHTML = `<style>
+                .cloud:nth-child(${i+1})::before { width: ${w*0.5}px; height: ${w*0.5}px; top: -${w*0.2}px; left: ${w*0.1}px; }
+                .cloud:nth-child(${i+1})::after { width: ${w*0.4}px; height: ${w*0.4}px; top: -${w*0.1}px; right: ${w*0.1}px; }
+            </style>`;
+            bgLayer.appendChild(cloud);
+        }
+
+        // --- 오디오 시스템 (Web Audio API) ---
+        const AudioSys = (function() {
+            let ctx = null;
+            let bgmOsc = null;
+            let bgmGain = null;
+            let bgmInterval = null;
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // 도미솔도솔미
+            let noteIdx = 0;
+
+            function init() {
+                if (!ctx) {
+                    ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (ctx.state === 'suspended') ctx.resume();
+            }
+
+            function playTone(freq, type, duration, vol) {
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            }
+
+            function playPop() {
+                init();
+                // 팡! 소리 (높은 주파수에서 빠르게 떨어짐)
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            }
+
+            function playBoing() {
+                init();
+                // 띠용~ 소리 (낮은 주파수에서 올라감)
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            }
+
+            function playBeep(isHigh = false) {
+                init();
+                playTone(isHigh ? 800 : 400, 'sine', 0.2, 0.3);
+            }
+
+            function startBGM() {
+                init();
+                stopBGM();
+                
+                bgmGain = ctx.createGain();
+                bgmGain.gain.value = 0.05; // 배경음악은 조용하게
+                bgmGain.connect(ctx.destination);
+                
+                bgmInterval = setInterval(() => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = notes[noteIdx];
+                    
+                    const env = ctx.createGain();
+                    env.gain.setValueAtTime(0.05, ctx.currentTime);
+                    env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    
+                    osc.connect(env);
+                    env.connect(ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                    
+                    noteIdx = (noteIdx + 1) % notes.length;
+                }, 400); // 0.4초 간격
+            }
+
+            function stopBGM() {
+                if (bgmInterval) clearInterval(bgmInterval);
+            }
+
+            return { init, playPop, playBoing, playBeep, startBGM, stopBGM };
+        })();
+
+        // --- 게임 시스템 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 게임 변수
+        let gameState = 'menu'; // menu, countdown, playing, gameover
+        let currentStage = 1;
+        let highestStageCleared = parseInt(localStorage.getItem('highestStage') || '0');
+        let maxBalloons = 5;
+        let targetNumber = 1;
+        let wrongClicks = 0;
+        const maxWrongClicks = 3;
+        let timeLeft = 30.0;
+        let lastTime = 0;
+        let countdownValue = 3;
+        let countdownTimer = 0;
+
+        let balloons = [];
+        let particles = [];
+        let floatTexts = [];
+
+        const balloonColors = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#FF9F1C', '#FF99C8', '#00F5D4'];
+
+        function getUnlockedStages() {
+            return Math.max(1, highestStageCleared + 1);
+        }
+
+        function updateStageSelectUI() {
+            const select = document.getElementById('stageSelect');
+            select.innerHTML = '';
+            let maxUnlocked = getUnlockedStages();
+            for(let i=1; i<=maxUnlocked; i++) {
+                let opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `스테이지 ${i} (1~${i+4})`;
+                if(i === maxUnlocked) opt.selected = true;
+                select.appendChild(opt);
+            }
+            updateHighestScoreUI();
+        }
+
+        function updateHighestScoreUI() {
+            const menuEl = document.getElementById('highestStageMenuUI');
+            if(menuEl) menuEl.textContent = highestStageCleared;
+        }
+
+        // --- 객체 클래스 ---
+        class Balloon {
+            constructor(number) {
+                this.number = number;
+                this.radiusX = (width < 600) ? 35 : 45;
+                this.radiusY = (width < 600) ? 45 : 55;
+                // 하단에서 랜덤한 위치에 스폰 (가로로 너무 겹치지 않게 조절)
+                this.x = this.radiusX * 2 + Math.random() * (width - this.radiusX * 4);
+                this.y = height + this.radiusY * 2 + Math.random() * 200; 
+                this.baseSpeed = 0.5 + Math.random() * 1.5 + (currentStage * 0.1); // 스테이지 높을수록 살짝 빠름
+                this.speedY = this.baseSpeed;
+                this.offsetX = Math.random() * 1000;
+                this.wobbleSpeed = 0.002 + Math.random() * 0.002;
+                this.color = balloonColors[(number - 1) % balloonColors.length];
+                this.isPopped = false;
+                this.scale = 1;
+                this.wobbleAmp = 20 + Math.random() * 30;
+            }
+
+            update(dt) {
+                if(this.isPopped) return;
+                
+                // 위로 상승
+                this.y -= this.speedY * (dt / 16);
+                
+                // 좌우 흔들림
+                this.offsetX += dt * this.wobbleSpeed;
+                this.currentX = this.x + Math.sin(this.offsetX) * this.wobbleAmp;
+
+                // 화면 밖으로 나가면 아래로 다시 보냄 (풍선이 도망가서 진행 못하는 것 방지)
+                if (this.y < -this.radiusY * 2) {
+                    this.y = height + this.radiusY * 2;
+                    this.x = this.radiusX * 2 + Math.random() * (width - this.radiusX * 4);
+                }
+            }
+
+            draw(ctx) {
+                if(this.isPopped) return;
+                let cx = this.currentX;
+                let cy = this.y;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(this.scale, this.scale);
+
+                // 풍선 매듭
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(0, this.radiusY);
+                ctx.lineTo(-8, this.radiusY + 12);
+                ctx.lineTo(8, this.radiusY + 12);
+                ctx.fill();
+
+                // 풍선 몸통
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.radiusX, this.radiusY, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 하이라이트 효과
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(-this.radiusX * 0.3, -this.radiusY * 0.4, this.radiusX * 0.2, this.radiusY * 0.3, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 숫자 텍스트
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `bold ${this.radiusX}px Jua`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // 텍스트 테두리
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(this.number, 0, 5);
+                ctx.fillText(this.number, 0, 5);
+
+                ctx.restore();
+            }
+
+            isClicked(mx, my) {
+                if(this.isPopped) return false;
+                // 타원 형태 대략적인 충돌 판정 (원형으로 간소화)
+                let dx = mx - this.currentX;
+                let dy = my - this.y;
+                return (dx * dx) / (this.radiusX * this.radiusX) + (dy * dy) / (this.radiusY * this.radiusY) <= 1.2;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.life = 1.0;
+                this.color = color;
+                this.size = Math.random() * 6 + 4;
+            }
+            update(dt) {
+                this.x += this.vx * (dt/16);
+                this.y += this.vy * (dt/16);
+                this.life -= 0.02 * (dt/16);
+            }
+            draw(ctx) {
+                if(this.life <= 0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class FloatText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 1.0;
+                this.vy = -2;
+            }
+            update(dt) {
+                this.y += this.vy * (dt/16);
+                this.life -= 0.015 * (dt/16);
+            }
+            draw(ctx) {
+                if(this.life <= 0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 30px Jua';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // --- 초기화 및 제어 ---
+        function initStage(stage) {
+            currentStage = stage;
+            maxBalloons = stage + 4; // 스테이지 1 -> 5개, 스테이지 2 -> 6개
+            targetNumber = 1;
+            wrongClicks = 0;
+            timeLeft = 30.0;
+            balloons = [];
+            particles = [];
+            floatTexts = [];
+            
+            // UI 업데이트
+            document.getElementById('stageUI').textContent = currentStage;
+            updateGameUI();
+
+            // 풍선 생성
+            for(let i=1; i<=maxBalloons; i++) {
+                balloons.push(new Balloon(i));
+            }
+            // Z-index 효과를 위해 섞기(번호순으로 렌더링되지 않게)
+            balloons.sort(() => Math.random() - 0.5);
+
+            startCountdown();
+        }
+
+        function updateGameUI() {
+            document.getElementById('targetNumberUI').textContent = targetNumber <= maxBalloons ? targetNumber : "완료!";
+            document.getElementById('timerUI').textContent = Math.max(0, timeLeft).toFixed(1);
+            
+            let livesStr = "";
+            for(let i=0; i<3; i++) {
+                livesStr += (i < 3 - wrongClicks) ? "❤️" : "🖤";
+            }
+            document.getElementById('livesUI').textContent = livesStr;
+        }
+
+        function createPopEffect(x, y, color) {
+            for(let i=0; i<15; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+            floatTexts.push(new FloatText(x, y, "팡!", "#ffeb3b"));
+        }
+
+        function createWrongEffect(x, y) {
+            floatTexts.push(new FloatText(x, y, "띠용~", "#ff5252"));
+        }
+
+        function startCountdown() {
+            gameState = 'countdown';
+            countdownValue = 3;
+            countdownTimer = 0;
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('gameUI').classList.remove('hidden');
+            
+            const cdScreen = document.getElementById('countdownScreen');
+            const cdText = document.getElementById('countdownText');
+            cdScreen.classList.remove('hidden');
+            cdScreen.style.display = '';
+            
+            updateCountdownUI();
+            AudioSys.playBeep(false);
+        }
+
+        function updateCountdownUI() {
+            const cdText = document.getElementById('countdownText');
+            if(countdownValue > 0) {
+                cdText.textContent = countdownValue;
+                cdText.style.color = 'white';
+            } else {
+                cdText.textContent = "시작!";
+                cdText.style.color = '#ffeb3b';
+            }
+            // 팝 애니메이션
+            cdText.style.transform = 'scale(0.5)';
+            setTimeout(() => { cdText.style.transform = 'scale(1)'; }, 50);
+        }
+
+        function handleInput(e) {
+            if (gameState !== 'playing') return;
+            
+            let mx, my;
+            if(e.type === 'touchstart') {
+                mx = e.touches[0].clientX;
+                my = e.touches[0].clientY;
+            } else {
+                mx = e.clientX;
+                my = e.clientY;
+            }
+
+            // 가장 위에 그려진(배열의 마지막) 풍선부터 체크
+            let hit = false;
+            for(let i = balloons.length - 1; i >= 0; i--) {
+                let b = balloons[i];
+                if(b.isClicked(mx, my)) {
+                    hit = true;
+                    if(b.number === targetNumber) {
+                        // 정답 처리
+                        b.isPopped = true;
+                        createPopEffect(b.currentX, b.y, b.color);
+                        AudioSys.playPop();
+                        targetNumber++;
+                        updateGameUI();
+                        
+                        // 스테이지 클리어 체크
+                        if(targetNumber > maxBalloons) {
+                            stageClear();
+                        }
+                    } else {
+                        // 오답 처리
+                        createWrongEffect(mx, my);
+                        AudioSys.playBoing();
+                        wrongClicks++;
+                        
+                        // 시각적 피드백(흔들림)
+                        b.wobbleAmp = 50; 
+                        setTimeout(() => b.wobbleAmp = 20, 300);
+
+                        updateGameUI();
+                        
+                        if(wrongClicks >= maxWrongClicks) {
+                            gameOver("기회를 모두 썼어요!");
+                        }
+                    }
+                    break; // 하나의 터치로 한 풍선만 처리
+                }
+            }
+        }
+
+        function stageClear() {
+            gameState = 'stageclear';
+            
+            // 최고 기록 갱신
+            if(currentStage > highestStageCleared) {
+                highestStageCleared = currentStage;
+                localStorage.setItem('highestStage', highestStageCleared.toString());
+            }
+            updateStageSelectUI();
+
+            // 약간의 딜레이 후 다음 스테이지 카운트다운 시작
+            setTimeout(() => {
+                initStage(currentStage + 1);
+            }, 1000);
+        }
+
+        function gameOver(reason) {
+            gameState = 'gameover';
+            AudioSys.stopBGM();
+            AudioSys.playBoing();
+            
+            document.getElementById('resultTitle').textContent = "앗, 실패!";
+            document.getElementById('resultDesc').textContent = reason;
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('resultScreen').style.display = '';
+        }
+
+        // --- 메인 루프 ---
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 상태 업데이트
+            if (gameState === 'countdown') {
+                countdownTimer += dt;
+                if(countdownTimer >= 1000) {
+                    countdownTimer = 0;
+                    countdownValue--;
+                    if(countdownValue > 0) {
+                        AudioSys.playBeep(false);
+                        updateCountdownUI();
+                    } else if (countdownValue === 0) {
+                        AudioSys.playBeep(true);
+                        updateCountdownUI();
+                    } else {
+                        // 카운트다운 종료, 게임 시작
+                        document.getElementById('countdownScreen').classList.add('hidden');
+                        document.getElementById('countdownScreen').style.display = 'none';
+                        gameState = 'playing';
+                        AudioSys.startBGM();
+                    }
+                }
+            } else if (gameState === 'playing') {
+                timeLeft -= dt / 1000;
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    gameOver("시간이 다 됐어요!");
+                }
+                document.getElementById('timerUI').textContent = Math.max(0, timeLeft).toFixed(1);
+            }
+
+            // 그리기 영역
+            // 풍선 업데이트 & 그리기
+            for(let b of balloons) {
+                // 게임 중이거나 카운트다운 중일 때도 풍선은 그리기만 하고 움직이지 않게 하려면 
+                // b.update(dt) 호출 조건 변경. 여기서는 계속 천천히 움직이게 둠.
+                if(gameState === 'playing' || gameState === 'countdown') {
+                    // 카운트다운때는 아주 천천히
+                    b.update(gameState === 'countdown' ? dt * 0.2 : dt); 
+                }
+                b.draw(ctx);
+            }
+
+            // 파티클 & 텍스트
+            for(let i = particles.length-1; i >= 0; i--) {
+                particles[i].update(dt);
+                particles[i].draw(ctx);
+                if(particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            for(let i = floatTexts.length-1; i >= 0; i--) {
+                floatTexts[i].update(dt);
+                floatTexts[i].draw(ctx);
+                if(floatTexts[i].life <= 0) floatTexts.splice(i, 1);
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- 이벤트 리스너 등록 ---
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // 스크롤 방지
+            handleInput(e);
+        }, {passive: false});
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            AudioSys.init();
+            let selectedStage = parseInt(document.getElementById('stageSelect').value) || 1;
+            initStage(selectedStage);
+        });
+
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            initStage(currentStage);
+        });
+
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            gameState = 'menu';
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('gameUI').classList.add('hidden');
+            document.getElementById('menuScreen').classList.remove('hidden');
+            updateStageSelectUI();
+        });
+
+        // 초기 설정
+        updateStageSelectUI();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

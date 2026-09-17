@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>장기 알까기 대전 - 마스터 에디션</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        :root {
+            --board-wood: #d4a373;
+            --board-dark: #8b5a2b;
+            --cho-blue: #0369a1;
+            --han-red: #be123c;
+            --piece-wood: #fcd34d;
+        }
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #1e293b;
+            background-image: radial-gradient(circle at center, #334155 0%, #0f172a 100%);
+            color: #f8fafc;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 메인 메뉴 오버레이 */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px); z-index: 50; display: flex;
+            justify-content: center; align-items: center; transition: opacity 0.3s;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid #38bdf8; border-radius: 24px; padding: 30px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(56,189,248,0.2);
+            width: 90%; max-width: 420px;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 버튼 디자인 */
+        .btn {
+            width: 100%; padding: 14px; border-radius: 16px; font-size: 20px;
+            font-family: 'Jua', sans-serif; cursor: pointer; transition: all 0.2s;
+            margin-bottom: 12px; border: none; font-weight: bold;
+        }
+        .btn-primary { background: linear-gradient(to bottom, #38bdf8, #0ea5e9); color: white; box-shadow: 0 6px 0 #0284c7; }
+        .btn-primary:active { transform: translateY(6px); box-shadow: none; }
+        
+        .btn-secondary { background: linear-gradient(to bottom, #f43f5e, #e11d48); color: white; box-shadow: 0 6px 0 #be123c; }
+        .btn-secondary:active { transform: translateY(6px); box-shadow: none; }
+
+        /* 세그먼트 컨트롤 (난이도) */
+        .segment-ctrl { display: flex; background: #0f172a; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .segment-btn {
+            flex: 1; padding: 8px; text-align: center; color: #64748b; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; font-size: 16px;
+        }
+        .segment-btn.active { background: #38bdf8; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+        /* 게임 영역 */
+        #game-ui { display: none; flex-direction: column; height: 100%; }
+        
+        #hud {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 20px; background: rgba(15, 23, 42, 0.8);
+            border-bottom: 2px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .player-info {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px 15px; border-radius: 16px; border: 2px solid transparent;
+            transition: 0.3s; opacity: 0.5; filter: grayscale(1);
+        }
+        .player-info.active {
+            opacity: 1; filter: grayscale(0); transform: scale(1.1);
+        }
+        .p1.active { background: rgba(3, 105, 161, 0.2); border-color: var(--cho-blue); box-shadow: 0 0 15px rgba(3,105,161,0.5); }
+        .p2.active { background: rgba(190, 18, 60, 0.2); border-color: var(--han-red); box-shadow: 0 0 15px rgba(190,18,60,0.5); }
+
+        /* 장기알 아이콘 */
+        .stone-icon { 
+            width: 32px; height: 32px; 
+            margin-bottom: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background-color: var(--piece-wood);
+            border: 2px solid #b45309;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; font-weight: bold;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+        }
+        .stone-icon.p1 { color: var(--cho-blue); }
+        .stone-icon.p2 { color: var(--han-red); }
+
+        .score { font-size: 22px; font-weight: bold; }
+
+        /* 캔버스 래퍼 */
+        #canvas-wrapper {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            padding: 10px; overflow: hidden; position: relative;
+        }
+
+        canvas {
+            background-color: var(--board-wood);
+            border: 8px solid var(--board-dark);
+            border-radius: 8px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.3);
+            max-width: 100%; max-height: 100%; object-fit: contain;
+        }
+
+        #turn-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            font-size: 48px; font-weight: bold; text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            opacity: 0; pointer-events: none; z-index: 20; color: #fff;
+        }
+
+        .show-msg { animation: msgPop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes msgPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        /* 효과음 버튼 */
+        .btn-sound {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 50%;
+            cursor: pointer; font-size: 24px; border: 1px solid rgba(255,255,255,0.2);
+            z-index: 100; transition: 0.2s;
+        }
+        .btn-sound:active { transform: scale(0.9); }
+        
+        .info-box {
+            background: rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;
+            margin-bottom: 20px; text-align: left; font-size: 14px; color: #cbd5e1;
+            font-family: sans-serif; border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BGM 토글 -->
+    <button class="btn-sound" id="btn-sound" onclick="toggleSound()">🔊</button>
+
+    <!-- 시작 메뉴 -->
+    <div id="start-menu" class="modal-overlay">
+        <div class="modal-content">
+            <h1 class="text-5xl text-amber-400 mb-2 drop-shadow-md">장기 알까기</h1>
+            <p class="text-slate-300 mb-4 font-sans text-sm">마스터 에디션</p>
+
+            <div class="info-box">
+                <strong class="text-white block mb-1">👑 기물별 특성 분석</strong>
+                • <b class="text-amber-300">궁(楚/漢)</b>: 거대하고 무거움. 묵직한 파워.<br>
+                • <b class="text-amber-300">차(車)</b>: 매우 빠른 스피드와 강한 돌파력.<br>
+                • <b class="text-amber-300">포/마/상</b>: 밸런스형 표준 기물.<br>
+                • <b class="text-amber-300">사/졸(兵)</b>: 가볍고 잘 날아가 당구 치기 좋음.
+            </div>
+
+            <div class="text-left mb-1 text-sm text-slate-400 font-bold ml-1">상대방 선택</div>
+            <div class="segment-ctrl" id="mode-ctrl">
+                <div class="segment-btn active" onclick="setMode('cpu')">VS 컴퓨터</div>
+                <div class="segment-btn" onclick="setMode('pvp')">2인 플레이</div>
+            </div>
+
+            <div id="diff-wrapper">
+                <div class="text-left mb-1 text-sm text-slate-400 font-bold ml-1">CPU 난이도</div>
+                <div class="segment-ctrl" id="diff-ctrl">
+                    <div class="segment-btn" onclick="setDiff('easy')">쉬움</div>
+                    <div class="segment-btn active" onclick="setDiff('normal')">보통</div>
+                    <div class="segment-btn" onclick="setDiff('hard')">어려움 (AI)</div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary mt-2" onclick="startGame()">게임 시작</button>
+        </div>
+    </div>
+
+    <!-- 게임 오버 메뉴 -->
+    <div id="game-over-menu" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h1 class="text-5xl mb-4 drop-shadow-md" id="result-title">승리!</h1>
+            <p class="text-xl text-slate-300 mb-8" id="result-desc">초나라의 승리입니다.</p>
+            <button class="btn btn-primary" onclick="backToMenu()">메인 메뉴로</button>
+            <button class="btn btn-secondary" onclick="startGame()">다시 하기</button>
+        </div>
+    </div>
+
+    <!-- 인게임 UI -->
+    <div id="game-ui">
+        <!-- 상단 상태창 -->
+        <div id="hud">
+            <div class="player-info p1" id="p1-info">
+                <div class="stone-icon p1">楚</div>
+                <div class="text-sm font-sans mb-1" id="p1-name">플레이어 (초)</div>
+                <div class="score" id="p1-score">16</div>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-lg text-amber-300">남은 기물</div>
+                <div class="text-xs text-slate-400 font-sans mt-1">드래그하여 알까기!</div>
+            </div>
+
+            <div class="player-info p2" id="p2-info">
+                <div class="stone-icon p2">漢</div>
+                <div class="text-sm font-sans mb-1" id="p2-name">컴퓨터 (한)</div>
+                <div class="score" id="p2-score">16</div>
+            </div>
+        </div>
+
+        <!-- 캔버스 영역 -->
+        <div id="canvas-wrapper">
+            <div id="turn-msg">초나라 차례!</div>
+            <!-- 장기판 비율에 맞춘 캔버스 (9x10 격자) -->
+            <canvas id="gameCanvas" width="600" height="680"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const AudioSys = (() => {
+            let ctx = null;
+            let isMuted = false;
+            let lastClackTime = 0; // 다중 충돌 소리 겹침 방지용
+
+            const init = () => { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); };
+            const resume = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); };
+
+            const playTone = (type, freq, dur, vol, slide=0) => {
+                if (isMuted) return;
+                init(); resume();
+                try {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                    if (slide) osc.frequency.exponentialRampToValueAtTime(slide, ctx.currentTime + dur);
+                    gain.gain.setValueAtTime(vol, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(); osc.stop(ctx.currentTime + dur);
+                } catch(e) {}
+            };
+
+            const playNoise = (dur, vol) => {
+                if (isMuted) return;
+                init(); resume();
+                try {
+                    const bufferSize = ctx.sampleRate * dur;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'lowpass'; filter.frequency.value = 800;
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(vol, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+                    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+                    noise.start();
+                } catch(e) {}
+            };
+
+            return {
+                init,
+                toggle: () => { isMuted = !isMuted; return isMuted; },
+                clack: (intensity) => {
+                    const now = performance.now();
+                    if (now - lastClackTime < 50) return; // 너무 짧은 간격의 소리 무시
+                    lastClackTime = now;
+                    
+                    const vol = Math.min(0.3, intensity * 0.015);
+                    // 무거운 나무가 부딪히는 둔탁한 소리
+                    playTone('square', 300 + Math.random()*100, 0.08, vol);
+                    playTone('sine', 150, 0.1, vol);
+                },
+                fall: () => {
+                    playTone('sawtooth', 200, 0.6, 0.1, 30); 
+                    playNoise(0.5, 0.2);
+                },
+                shoot: () => playTone('sine', 400, 0.1, 0.05, 800), 
+                win: () => {
+                    playTone('triangle', 523.25, 0.2, 0.1);
+                    setTimeout(()=>playTone('triangle', 659.25, 0.2, 0.1), 200);
+                    setTimeout(()=>playTone('triangle', 783.99, 0.4, 0.1), 400);
+                }
+            };
+        })();
+
+        function toggleSound() {
+            const muted = AudioSys.toggle();
+            document.getElementById('btn-sound').textContent = muted ? '🔇' : '🔊';
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 게임 상수 (장기판 및 기물 기준)
+        const W = 600, H = 680;
+        const MARGIN_X = 40, MARGIN_Y = 47.5;
+        const CELL_X = 65, CELL_Y = 65; 
+        
+        // --- 물리 엔진 핵심 패치 ---
+        const FRICTION = 0.95;    // 마찰력 (1에 가까울수록 잘 미끄러짐)
+        const RESTITUTION = 0.5;  // 반발계수 (통통 튀는 정도 완화)
+        const MAX_POWER = 24;     // 속도 상한
+        const POWER_MULT = 0.12;  // 드래그 거리 대비 속도 배율
+
+        let state = {
+            mode: 'cpu', // 'cpu' or 'pvp'
+            difficulty: 'normal',
+            phase: 'MENU', // MENU, TURN, SIMULATING, GAMEOVER
+            currentPlayer: 1, // 1: 초(P1), 2: 한(P2)
+            pieces: [],
+            particles: [],
+            drag: null, 
+            shake: 0
+        };
+
+        const els = {
+            p1Info: document.getElementById('p1-info'),
+            p2Info: document.getElementById('p2-info'),
+            p1Score: document.getElementById('p1-score'),
+            p2Score: document.getElementById('p2-score'),
+            p2Name: document.getElementById('p2-name'),
+            msg: document.getElementById('turn-msg')
+        };
+
+        function setMode(mode) {
+            state.mode = mode;
+            document.querySelectorAll('#mode-ctrl .segment-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('diff-wrapper').style.display = mode === 'cpu' ? 'block' : 'none';
+            AudioSys.init();
+        }
+
+        function setDiff(diff) {
+            state.difficulty = diff;
+            document.querySelectorAll('#diff-ctrl .segment-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            AudioSys.init();
+        }
+
+        function getGridPos(gx, gy) {
+            return { x: MARGIN_X + (gx - 1) * CELL_X, y: MARGIN_Y + (gy - 1) * CELL_Y };
+        }
+
+        function addPiece(gx, gy, type, player) {
+            let r = 18, m = 0.8, pm = 1.0, text = '';
+            
+            // 기물별 특성 스탯 (반지름, 질량, 스피드 배율)
+            if (type === 'K') { r = 28; m = 2.5; pm = 0.7; text = player===1 ? '楚' : '漢'; }
+            else if (type === 'C') { r = 24; m = 1.3; pm = 1.3; text = '車'; }
+            else if (type === 'P') { r = 22; m = 1.2; pm = 1.1; text = '包'; }
+            else if (type === 'M') { r = 20; m = 1.0; pm = 1.0; text = '馬'; }
+            else if (type === 'S') { r = 20; m = 1.0; pm = 1.0; text = '象'; }
+            else if (type === 'A') { r = 18; m = 0.8; pm = 0.9; text = '士'; }
+            else if (type === 'J') { r = 18; m = 0.6; pm = 0.9; text = player===1 ? '卒' : '兵'; }
+
+            const pos = getGridPos(gx, gy);
+            state.pieces.push({
+                x: pos.x, y: pos.y, vx: 0, vy: 0,
+                radius: r, mass: m, powMult: pm, player: player, text: text,
+                falling: 0
+            });
+        }
+
+        function initBoard() {
+            state.pieces = [];
+            state.particles = [];
+            
+            // P1 (초 진영 - 하단)
+            addPiece(1, 10, 'C', 1); addPiece(9, 10, 'C', 1); // 차
+            addPiece(2, 10, 'M', 1); addPiece(8, 10, 'M', 1); // 마
+            addPiece(3, 10, 'S', 1); addPiece(7, 10, 'S', 1); // 상
+            addPiece(4, 10, 'A', 1); addPiece(6, 10, 'A', 1); // 사
+            addPiece(5, 9, 'K', 1);                           // 궁(초)
+            addPiece(2, 8, 'P', 1); addPiece(8, 8, 'P', 1);   // 포
+            addPiece(1, 7, 'J', 1); addPiece(3, 7, 'J', 1);   // 졸
+            addPiece(5, 7, 'J', 1); addPiece(7, 7, 'J', 1); addPiece(9, 7, 'J', 1);
+
+            // P2 (한 진영 - 상단)
+            addPiece(1, 1, 'C', 2); addPiece(9, 1, 'C', 2); // 차
+            addPiece(2, 1, 'M', 2); addPiece(8, 1, 'M', 2); // 마
+            addPiece(3, 1, 'S', 2); addPiece(7, 1, 'S', 2); // 상
+            addPiece(4, 1, 'A', 2); addPiece(6, 1, 'A', 2); // 사
+            addPiece(5, 2, 'K', 2);                         // 궁(한)
+            addPiece(2, 3, 'P', 2); addPiece(8, 3, 'P', 2); // 포
+            addPiece(1, 4, 'J', 2); addPiece(3, 4, 'J', 2); // 병
+            addPiece(5, 4, 'J', 2); addPiece(7, 4, 'J', 2); addPiece(9, 4, 'J', 2);
+        }
+
+        function startGame() {
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('game-over-menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            
+            els.p2Name.textContent = state.mode === 'cpu' ? `컴퓨터 (${state.difficulty})` : '플레이어 2 (한)';
+            
+            initBoard();
+            state.currentPlayer = 1;
+            setPhase('TURN');
+            
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function backToMenu() {
+            document.getElementById('game-over-menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('start-menu').style.display = 'flex';
+        }
+
+        function setPhase(newPhase) {
+            state.phase = newPhase;
+            
+            if (newPhase === 'TURN') {
+                if (state.currentPlayer === 1) {
+                    els.p1Info.classList.add('active');
+                    els.p2Info.classList.remove('active');
+                    showTurnMsg("초나라 차례!");
+                } else {
+                    els.p1Info.classList.remove('active');
+                    els.p2Info.classList.add('active');
+                    showTurnMsg(state.mode === 'cpu' ? "컴퓨터 차례!" : "한나라 차례!");
+                    
+                    if (state.mode === 'cpu') {
+                        // CPU의 턴: 대기 후 발사
+                        setTimeout(doCPUAction, 1200);
+                    }
+                }
+            }
+            updateScoreUI();
+        }
+
+        function showTurnMsg(msg) {
+            els.msg.textContent = msg;
+            els.msg.style.color = state.currentPlayer === 1 ? '#38bdf8' : '#fb7185';
+            els.msg.classList.remove('show-msg');
+            void els.msg.offsetWidth; // reflow
+            els.msg.classList.add('show-msg');
+        }
+
+        function updateScoreUI() {
+            const p1Count = state.pieces.filter(p => p.player === 1 && p.falling === 0).length;
+            const p2Count = state.pieces.filter(p => p.player === 2 && p.falling === 0).length;
+            els.p1Score.textContent = p1Count;
+            els.p2Score.textContent = p2Count;
+
+            if (state.phase !== 'GAMEOVER' && state.phase !== 'MENU') {
+                if (p1Count === 0 || p2Count === 0) {
+                    endGame(p2Count === 0 ? 1 : 2);
+                }
+            }
+        }
+
+        function endGame(winner) {
+            state.phase = 'GAMEOVER';
+            AudioSys.win();
+            const resMenu = document.getElementById('game-over-menu');
+            document.getElementById('result-title').textContent = winner === 1 ? "초나라 승리!" : "한나라 승리!";
+            document.getElementById('result-title').style.color = winner === 1 ? "#38bdf8" : "#f43f5e";
+            document.getElementById('result-desc').textContent = winner === 1 ? "상대의 모든 기물을 떨어뜨렸습니다." : "당신의 모든 기물이 떨어졌습니다.";
+            resMenu.style.display = 'flex';
+        }
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('pointerdown', e => {
+            if (state.phase !== 'TURN') return;
+            if (state.mode === 'cpu' && state.currentPlayer === 2) return; 
+
+            const pos = getPointerPos(e);
+
+            for (let i = 0; i < state.pieces.length; i++) {
+                const p = state.pieces[i];
+                if (p.falling > 0) continue;
+                if (p.player === state.currentPlayer) {
+                    const dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+                    if (dist <= p.radius * 1.5) { 
+                        state.drag = { startX: p.x, startY: p.y, curX: pos.x, curY: pos.y, pieceIdx: i };
+                        AudioSys.init();
+                        break;
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('pointermove', e => {
+            if (state.drag) {
+                const pos = getPointerPos(e);
+                state.drag.curX = pos.x;
+                state.drag.curY = pos.y;
+            }
+        });
+
+        window.addEventListener('pointerup', e => {
+            if (state.drag) {
+                const p = state.pieces[state.drag.pieceIdx];
+                let dx = state.drag.startX - state.drag.curX;
+                let dy = state.drag.startY - state.drag.curY;
+                
+                let dragDist = Math.hypot(dx, dy); 
+                if (dragDist > 10) { 
+                    // 속도 부여 (최대치 제한 및 개별 기물 스피드 배율 적용)
+                    let speed = Math.min(MAX_POWER, dragDist * POWER_MULT);
+                    let angle = Math.atan2(dy, dx);
+
+                    p.vx = Math.cos(angle) * speed * p.powMult;
+                    p.vy = Math.sin(angle) * speed * p.powMult;
+                    
+                    AudioSys.shoot();
+                    setPhase('SIMULATING');
+                }
+                state.drag = null;
+            }
+        });
+
+        function doCPUAction() {
+            if (state.phase !== 'TURN' || state.currentPlayer !== 2) return;
+
+            const myPieces = state.pieces.filter(p => p.player === 2 && p.falling === 0);
+            const enemyPieces = state.pieces.filter(p => p.player === 1 && p.falling === 0);
+
+            if (myPieces.length === 0 || enemyPieces.length === 0) return;
+
+            let bestShooter = null;
+            let bestTarget = null;
+            let maxScore = -Infinity;
+
+            myPieces.forEach(m => {
+                enemyPieces.forEach(e => {
+                    let score = 0;
+                    const dx = e.x - m.x;
+                    const dy = e.y - m.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (state.difficulty === 'hard') {
+                        const targetDistToEdge = Math.min(e.x, e.y, W - e.x, H - e.y);
+                        
+                        // 기본 거리 점수 (가까울수록 높음)
+                        score += (1000 / (dist + 1)); 
+                        
+                        // 타겟이 외곽에 있으면 우선순위 대폭 상승 (낙사 유도)
+                        score += (200 - targetDistToEdge) * 1.5; 
+                        
+                        // 질량 확인 (내가 상대방보다 질량이 너무 작으면 밀어내기 힘드므로 기피)
+                        if (m.mass >= e.mass * 0.7) {
+                            score += e.mass * 50; 
+                        }
+
+                        // 장애물 충돌 예측 (가는 길에 아군이나 다른 기물이 있는지)
+                        let isBlocked = false;
+                        const allOthers = state.pieces.filter(p => p !== m && p !== e && p.falling === 0);
+                        for(let obs of allOthers) {
+                            const l2 = dist * dist;
+                            if (l2 === 0) continue;
+                            const t = Math.max(0, Math.min(1, ((obs.x - m.x) * dx + (obs.y - m.y) * dy) / l2));
+                            const projX = m.x + t * dx;
+                            const projY = m.y + t * dy;
+                            if (Math.hypot(obs.x - projX, obs.y - projY) < (m.radius + obs.radius) * 0.9) {
+                                isBlocked = true;
+                                break;
+                            }
+                        }
+                        
+                        // 막혀있을 경우 점수를 크게 깎아 다른 타겟을 찾도록 유도
+                        if (isBlocked) score -= 3000;
+
+                    } else if (state.difficulty === 'normal') {
+                        // 보통: 단순히 거리가 가까운 적 공격
+                        score = -dist;
+                    } else {
+                        // 쉬움: 랜덤
+                        score = Math.random();
+                    }
+
+                    if (score > maxScore) {
+                        maxScore = score; bestShooter = m; bestTarget = e;
+                    }
+                });
+            });
+
+            // Fallback
+            if (!bestShooter || !bestTarget) {
+                bestShooter = myPieces[0]; bestTarget = enemyPieces[0];
+            }
+
+            let dx = bestTarget.x - bestShooter.x;
+            let dy = bestTarget.y - bestShooter.y;
+            let dist = Math.hypot(dx, dy);
+            
+            // 난이도별 조준 오차
+            let errorAngle = 0;
+            if (state.difficulty === 'easy') errorAngle = (Math.random() - 0.5) * 0.4;
+            if (state.difficulty === 'normal') errorAngle = (Math.random() - 0.5) * 0.15;
+            if (state.difficulty === 'hard') errorAngle = (Math.random() - 0.5) * 0.02;
+
+            const baseAngle = Math.atan2(dy, dx);
+            const finalAngle = baseAngle + errorAngle;
+
+            // CPU 파워 계산 (질량비례)
+            let targetSpeed = dist * 0.05 + 5;
+            if (state.difficulty === 'hard') {
+                const massRatio = bestTarget.mass / bestShooter.mass;
+                targetSpeed = dist * 0.05 + 8 + (massRatio * 3);
+            }
+            let speed = Math.min(MAX_POWER, targetSpeed);
+
+            bestShooter.vx = Math.cos(finalAngle) * speed * bestShooter.powMult;
+            bestShooter.vy = Math.sin(finalAngle) * speed * bestShooter.powMult;
+
+            AudioSys.shoot();
+            setPhase('SIMULATING');
+        }
+
+        function updatePhysics() {
+            let isMoving = false;
+
+            // 1. 위치 업데이트 및 마찰
+            state.pieces.forEach(p => {
+                // 떨어지는 애니메이션이 진행 중일 때도 게임은 '움직이는 상태'로 간주하여 턴을 넘기지 않음
+                if (p.falling > 0 && p.falling < 1) {
+                    isMoving = true;
+                    return; 
+                }
+                if (p.falling >= 1) return; // 이미 완전 사라짐
+
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= FRICTION;
+                p.vy *= FRICTION;
+
+                if (Math.abs(p.vx) < 0.1) p.vx = 0;
+                if (Math.abs(p.vy) < 0.1) p.vy = 0;
+
+                if (p.vx !== 0 || p.vy !== 0) isMoving = true;
+            });
+
+            // 2. 질량 기반의 탄성 충돌
+            for (let i = 0; i < state.pieces.length; i++) {
+                for (let j = i + 1; j < state.pieces.length; j++) {
+                    const p1 = state.pieces[i];
+                    const p2 = state.pieces[j];
+                    if (p1.falling > 0 || p2.falling > 0) continue;
+
+                    let dx = p2.x - p1.x;
+                    let dy = p2.y - p1.y;
+                    let dist = Math.hypot(dx, dy);
+                    const minDist = p1.radius + p2.radius;
+
+                    if (dist < minDist) {
+                        // 겹침이 발생했는데 좌표가 완벽히 동일한 경우 방어 코드 (오류 방지)
+                        if (dist === 0) { 
+                            dx = Math.random() - 0.5; 
+                            dy = Math.random() - 0.5; 
+                            dist = Math.hypot(dx, dy); 
+                        }
+
+                        // A. 겹침 해결 (질량비에 따라 밀어내기)
+                        const overlap = minDist - dist;
+                        const nx = dx / dist; 
+                        const ny = dy / dist;
+                        
+                        const totalMass = p1.mass + p2.mass;
+                        const ratio1 = p2.mass / totalMass;
+                        const ratio2 = p1.mass / totalMass;
+
+                        p1.x -= nx * overlap * ratio1;
+                        p1.y -= ny * overlap * ratio1;
+                        p2.x += nx * overlap * ratio2;
+                        p2.y += ny * overlap * ratio2;
+
+                        // B. 운동량 교환
+                        const rvx = p2.vx - p1.vx;
+                        const rvy = p2.vy - p1.vy;
+                        const velAlongNormal = rvx * nx + rvy * ny;
+
+                        if (velAlongNormal > 0) continue;
+
+                        const invMass1 = 1 / p1.mass;
+                        const invMass2 = 1 / p2.mass;
+                        const j_impulse = -(1 + RESTITUTION) * velAlongNormal / (invMass1 + invMass2);
+                        
+                        p1.vx -= j_impulse * invMass1 * nx;
+                        p1.vy -= j_impulse * invMass1 * ny;
+                        p2.vx += j_impulse * invMass2 * nx;
+                        p2.vy += j_impulse * invMass2 * ny;
+
+                        // 강한 충돌 시 효과음 및 진동
+                        AudioSys.clack(j_impulse);
+                        if (j_impulse > 8) state.shake = j_impulse * 0.8; 
+                        
+                        // 파티클 생성
+                        for(let k=0; k<3; k++) {
+                            state.particles.push({
+                                x: p1.x + nx * p1.radius, y: p1.y + ny * p1.radius,
+                                vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5,
+                                life: 1.0, color: '#fcd34d'
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 3. 장외 판정 (낙사)
+            const margin = 10;
+            state.pieces.forEach(p => {
+                if (p.falling === 0) {
+                    if (p.x < -margin || p.x > W + margin || p.y < -margin || p.y > H + margin) {
+                        p.falling = 0.01; // 떨어지기 시작
+                        AudioSys.fall();
+                        updateScoreUI();
+                        for(let k=0; k<15; k++) {
+                            state.particles.push({
+                                x: p.x, y: p.y,
+                                vx: (Math.random()-0.5)*4 + p.vx*0.2, vy: (Math.random()-0.5)*4 + p.vy*0.2,
+                                life: 1.0, color: '#94a3b8'
+                            });
+                        }
+                    }
+                }
+            });
+
+            return isMoving;
+        }
+
+        let lastTime = 0;
+        function gameLoop(time) {
+            if (state.phase === 'MENU') return;
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            ctx.clearRect(0, 0, W, H);
+
+            ctx.save();
+            if (state.shake > 0) {
+                const dx = (Math.random() - 0.5) * state.shake;
+                const dy = (Math.random() - 0.5) * state.shake;
+                ctx.translate(dx, dy);
+                state.shake *= 0.8;
+                if (state.shake < 0.5) state.shake = 0;
+            }
+
+            // 장기판 격자 그리기
+            ctx.strokeStyle = '#8b5a2b';
+            ctx.lineWidth = 2;
+            for(let i=0; i<9; i++) {
+                ctx.beginPath();
+                ctx.moveTo(MARGIN_X + i*CELL_X, MARGIN_Y);
+                ctx.lineTo(MARGIN_X + i*CELL_X, MARGIN_Y + 9*CELL_Y);
+                ctx.stroke();
+            }
+            for(let i=0; i<10; i++) {
+                ctx.beginPath();
+                ctx.moveTo(MARGIN_X, MARGIN_Y + i*CELL_Y);
+                ctx.lineTo(MARGIN_X + 8*CELL_X, MARGIN_Y + i*CELL_Y);
+                ctx.stroke();
+            }
+            // 궁성 (P2 - 한)
+            ctx.beginPath();
+            ctx.moveTo(MARGIN_X + 3*CELL_X, MARGIN_Y);
+            ctx.lineTo(MARGIN_X + 5*CELL_X, MARGIN_Y + 2*CELL_Y);
+            ctx.moveTo(MARGIN_X + 5*CELL_X, MARGIN_Y);
+            ctx.lineTo(MARGIN_X + 3*CELL_X, MARGIN_Y + 2*CELL_Y);
+            ctx.stroke();
+            // 궁성 (P1 - 초)
+            ctx.beginPath();
+            ctx.moveTo(MARGIN_X + 3*CELL_X, MARGIN_Y + 7*CELL_Y);
+            ctx.lineTo(MARGIN_X + 5*CELL_X, MARGIN_Y + 9*CELL_Y);
+            ctx.moveTo(MARGIN_X + 5*CELL_X, MARGIN_Y + 7*CELL_Y);
+            ctx.lineTo(MARGIN_X + 3*CELL_X, MARGIN_Y + 9*CELL_Y);
+            ctx.stroke();
+
+            // 물리 업데이트
+            let isMoving = false;
+            if (state.phase === 'SIMULATING') {
+                isMoving = updatePhysics();
+            }
+
+            // 장기알(기물) 그리기
+            for (let i = state.pieces.length - 1; i >= 0; i--) {
+                const p = state.pieces[i];
+                ctx.save();
+                ctx.translate(p.x, p.y);
+
+                if (p.falling > 0) {
+                    p.falling += dt * 3;
+                    const scale = Math.max(0, 1 - p.falling);
+                    ctx.scale(scale, scale);
+                    ctx.globalAlpha = scale;
+                    p.x += p.vx; p.y += p.vy;
+                    
+                    if (scale === 0) {
+                        state.pieces.splice(i, 1); 
+                        ctx.restore();
+                        continue;
+                    }
+                }
+
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowOffsetY = 4;
+
+                // 팔각 장기알 형태 그리기
+                ctx.beginPath();
+                for(let j=0; j<8; j++) {
+                    const angle = j * Math.PI / 4 + Math.PI / 8;
+                    const px = Math.cos(angle) * p.radius;
+                    const py = Math.sin(angle) * p.radius;
+                    if(j===0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#fcd34d'; // Wood color
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#b45309';
+                ctx.stroke();
+
+                // 기물 텍스트
+                ctx.fillStyle = p.player === 1 ? '#0369a1' : '#be123c';
+                ctx.font = `bold ${p.radius * 0.85}px "Jua"`; // 크기에 맞게 폰트 조절
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(p.text, 0, 2);
+
+                ctx.restore();
+            }
+
+            // 슬링샷(드래그) UI 그리기
+            if (state.drag) {
+                const p = state.pieces[state.drag.pieceIdx];
+                const dx = state.drag.startX - state.drag.curX;
+                const dy = state.drag.startY - state.drag.curY;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist > 10) {
+                    const powerRatio = Math.min(1, (dist * POWER_MULT) / MAX_POWER);
+                    const r = Math.min(255, powerRatio * 2 * 255);
+                    const g = Math.min(255, (1 - powerRatio) * 2 * 255);
+                    ctx.strokeStyle = `rgb(${r},${g},0)`;
+                    ctx.lineWidth = 6;
+                    ctx.lineCap = 'round';
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    
+                    const limitDist = Math.min(dist, MAX_POWER / POWER_MULT);
+                    const angle = Math.atan2(dy, dx);
+                    const targetX = p.x + Math.cos(angle) * limitDist * 1.5;
+                    const targetY = p.y + Math.sin(angle) * limitDist * 1.5;
+                    
+                    ctx.setLineDash([10, 10]);
+                    ctx.lineTo(targetX, targetY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(state.drag.curX, state.drag.curY);
+                    ctx.stroke();
+                }
+            }
+
+            // 파티클
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const p = state.particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= dt * 2;
+                if (p.life <= 0) {
+                    state.particles.splice(i, 1);
+                    continue;
+                }
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // 턴 전환 체크 (떨어지는 애니메이션이 다 끝난 후에 전환됨)
+            if (state.phase === 'SIMULATING' && !isMoving) {
+                updateScoreUI();
+                if (state.phase !== 'GAMEOVER') {
+                    state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+                    setPhase('TURN');
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+    </script>
+</body>
+</html>

@@ -14,7 +14,7 @@
     {
       "id": "high_classroom_war_3d",
       "title": "교실전쟁 3D",
-      "href": "classroom_war_3d.html?v=11",
+      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=11",
       "category": "math",
       "age": "high",
       "icon": "🎖️",
@@ -24,7 +24,7 @@
     {
       "id": "high_byeokrando_voyage",
       "title": "벽란도 상행기",
-      "href": "byeokrando_voyage_release_candidate.html?v=1",
+      "href": "games/high_byeokrando_voyage/벽란도 상행기.html?v=1",
       "category": "trivia",
       "age": "high",
       "icon": "⛵",
@@ -34,7 +34,7 @@
     {
       "id": "high_history_royale",
       "title": "역사 로얄",
-      "href": "history_royale_battlefield_visual_rework_v9_setup_fixed.html",
+      "href": "games/high_history_royale/역사 로얄.html",
       "category": "trivia",
       "age": "high",
       "icon": "⚔️",
@@ -44,7 +44,7 @@
     {
       "id": "job_nail_artist",
       "title": "네일 아티스트 타이쿤",
-      "href": "nail_artist_tycoon.html",
+      "href": "games/job_nail_artist/네일 아티스트 타이쿤.html",
       "category": "trivia",
       "age": "job",
       "icon": "💅",
@@ -62,7 +62,7 @@
     {
       "id": "job_takoyaki_simulator",
       "title": "빙글빙글 타코야키집",
-      "href": "타코야키 시뮬레이터.html",
+      "href": "games/job_takoyaki_simulator/빙글빙글 타코야키집.html",
       "category": "trivia",
       "age": "job",
       "icon": "🐙",
@@ -71,7 +71,7 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "scuba_diver_simulator.html",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
@@ -89,7 +89,7 @@
     {
       "id": "job_steak_master",
       "title": "그릴 마스터 3D DX",
-      "href": "steak_master_3d.html",
+      "href": "games/job_steak_master/그릴 마스터 3D DX.html",
       "category": "trivia",
       "age": "job",
       "icon": "🥩",
@@ -109,7 +109,7 @@
     {
       "id": "low_math_dog_runner",
       "title": "멍멍 곱셈 러너",
-      "href": "곱셈 강아지 러너.html?v=3",
+      "href": "games/low_math_dog_runner/멍멍 곱셈 러너.html?v=3",
       "category": "math",
       "age": "low",
       "icon": "×",
@@ -119,7 +119,7 @@
     {
       "id": "music_neon_rift",
       "title": "NEON RIFT (네온 리프트)",
-      "href": "네온 리프트.html",
+      "href": "games/music_neon_rift/NEON RIFT (네온 리프트).html",
       "category": "music",
       "age": "high",
       "icon": "🏍️",
@@ -129,7 +129,7 @@
     {
       "id": "low_sand_art_studio",
       "title": "모래 그림 공방",
-      "href": "모래뿌리기아트.html",
+      "href": "games/low_sand_art_studio/모래 그림 공방.html",
       "category": "music",
       "age": "low",
       "icon": "🎮",
@@ -150,7 +150,7 @@
     {
       "id": "high_top_king",
       "title": "팽이왕: 불꽃 회전",
-      "href": "팽이치기 왕.html",
+      "href": "games/high_top_king/팽이왕： 불꽃 회전.html",
       "category": "trivia",
       "age": "high",
       "icon": "🎮",
@@ -160,7 +160,7 @@
     {
       "id": "high_kite_wind_rider",
       "title": "바람을 타고",
-      "href": "바람을 타고 연날리기.html",
+      "href": "games/high_kite_wind_rider/바람을 타고.html",
       "category": "trivia",
       "age": "high",
       "icon": "🎮",
@@ -190,7 +190,7 @@
     {
       "id": "trivia_zoolympic",
       "title": "줄림픽 Zoolympic",
-      "href": "줄림픽.html",
+      "href": "games/trivia_zoolympic/줄림픽 Zoolympic.html",
       "category": "trivia",
       "age": "high",
       "icon": "🦁",
@@ -208,7 +208,7 @@
     {
       "id": "sim_mosquito",
       "title": "한 입만 더 (모기 시뮬레이터)",
-      "href": "한 입만 더.html",
+      "href": "games/sim_mosquito/한 입만 더 (모기 시뮬레이터).html",
       "category": "trivia",
       "age": "high",
       "icon": "🦟",
@@ -228,7 +228,7 @@
     {
       "id": "tod_shape_color",
       "title": "모양 색깔 친구들 집 찾기",
-      "href": "모양색깔 퀴즈.html",
+      "href": "games/tod_shape_color/모양 색깔 친구들 집 찾기.html",
       "category": "math",
       "age": "toddler",
       "icon": "🍎",
@@ -275,7 +275,7 @@
     {
       "id": "tod_hidden_emoji",
       "title": "신나는 이모지 숨은그림찾기",
-      "href": "숨은 이모지 찾기.html",
+      "href": "games/tod_hidden_emoji/신나는 이모지 숨은그림찾기.html",
       "category": "math",
       "age": "toddler",
       "icon": "🔍",
@@ -284,7 +284,7 @@
     {
       "id": "tod_heaven_stairs",
       "title": "천국의 계단 콩콩!",
-      "href": "천국의 계단.html",
+      "href": "games/tod_heaven_stairs/천국의 계단 콩콩!.html",
       "category": "math",
       "age": "toddler",
       "icon": "☁️",
@@ -294,7 +294,7 @@
     {
       "id": "chosung_bomb",
       "title": "시한폭탄 초성퀴즈",
-      "href": "초딩퀴즈.html",
+      "href": "games/chosung_bomb/시한폭탄 초성퀴즈.html",
       "category": "korean",
       "age": "low",
       "icon": "💣",
@@ -304,7 +304,7 @@
     {
       "id": "low_order_pang",
       "title": "순서대로 팡팡!",
-      "href": "순서팡.html",
+      "href": "games/low_order_pang/순서대로 팡팡!.html",
       "category": "math",
       "age": "low",
       "icon": "🎈",
@@ -313,7 +313,7 @@
     {
       "id": "infinite_gugudan",
       "title": "무한 구구단: 무한루",
-      "href": "무한구구단 무한루.html",
+      "href": "games/infinite_gugudan/무한 구구단： 무한루.html",
       "category": "math",
       "age": "low",
       "icon": "👹",
@@ -332,7 +332,7 @@
     {
       "id": "hero_english",
       "title": "나의 영어 아카데미아",
-      "href": "나의영어아카데미아.html",
+      "href": "games/hero_english/나의 영어 아카데미아.html",
       "category": "lang",
       "age": "low",
       "icon": "🦸‍♂️",
@@ -341,7 +341,7 @@
     {
       "id": "tod_chick_shell",
       "title": "병아리는 어디에?",
-      "href": "병아리야바위.html",
+      "href": "games/tod_chick_shell/병아리는 어디에？.html",
       "category": "math",
       "age": "toddler",
       "icon": "🐣",
@@ -361,7 +361,7 @@
     {
       "id": "tod_antarctic_exploration",
       "title": "남극 탐험 대작전",
-      "href": "남극탐험.html",
+      "href": "games/tod_antarctic_exploration/남극 탐험 대작전.html",
       "category": "trivia",
       "age": "toddler",
       "icon": "🐧",
@@ -372,7 +372,7 @@
     {
       "id": "tod_emoji_minesweeper",
       "title": "귀여운 이모지 지뢰찾기",
-      "href": "지뢰찾기.html",
+      "href": "games/tod_emoji_minesweeper/귀여운 이모지 지뢰찾기.html",
       "category": "math",
       "age": "high",
       "icon": "🐾",
@@ -382,7 +382,7 @@
     {
       "id": "low_nyam_universe",
       "title": "냠냠 우주 여행",
-      "href": "growth-game.html",
+      "href": "games/low_nyam_universe/냠냠 우주 여행.html",
       "category": "trivia",
       "age": "low",
       "icon": "🪐",
@@ -391,7 +391,7 @@
     {
       "id": "low_juice_maker",
       "title": "과일 농장 주스 메이커",
-      "href": "하늘에서 주스가 내린다면.html",
+      "href": "games/low_juice_maker/과일 농장 주스 메이커.html",
       "category": "trivia",
       "age": "low",
       "icon": "🍹",
@@ -400,7 +400,7 @@
     {
       "id": "triangle_compare",
       "title": "삼각형 넓이 비교기",
-      "href": "삼각형 비교하기.html",
+      "href": "games/triangle_compare/삼각형 넓이 비교기.html",
       "category": "math",
       "age": "high",
       "icon": "📐",
@@ -409,7 +409,7 @@
     {
       "id": "lab_water_sort",
       "title": "연구소 물 정렬 퍼즐",
-      "href": "실험실 정리 게임.html",
+      "href": "games/lab_water_sort/연구소 물 정렬 퍼즐.html",
       "category": "math",
       "age": "high",
       "icon": "🧪",
@@ -419,7 +419,7 @@
     {
       "id": "low_rubiks_cube",
       "title": "3D 루빅스 큐브",
-      "href": "큐브 맞추기.html",
+      "href": "games/low_rubiks_cube/3D 루빅스 큐브.html",
       "category": "math",
       "age": "high",
       "icon": "🧊",
@@ -439,7 +439,7 @@
     {
       "id": "job_maratang_simulator",
       "title": "마라탕 한 그릇",
-      "href": "먹지마라.html",
+      "href": "games/job_maratang_simulator/마라탕 한 그릇.html",
       "category": "trivia",
       "age": "job",
       "icon": "🍲",
@@ -467,7 +467,7 @@
     {
       "id": "math_base10_blocks",
       "title": "우리 동네 마트 계산대",
-      "href": "10개가 모이면! 수 막대 계산실.html?v=2",
+      "href": "games/math_base10_blocks/우리 동네 마트 계산대.html?v=2",
       "category": "math",
       "age": "low",
       "icon": "🧾",
@@ -476,7 +476,7 @@
     {
       "id": "high_outbreak_korea",
       "title": "OUTBREAK KOREA",
-      "href": "outbreak_korea_v3.html",
+      "href": "games/high_outbreak_korea/OUTBREAK KOREA.html",
       "category": "trivia",
       "age": "high",
       "icon": "🦠",
@@ -486,7 +486,7 @@
     {
       "id": "high_history_match",
       "title": "한국사 솔리테어",
-      "href": "역사뒤집기.html",
+      "href": "games/high_history_match/한국사 솔리테어.html",
       "category": "trivia",
       "age": "high",
       "icon": "🃏",
@@ -497,7 +497,7 @@
     {
       "id": "alien_pizza",
       "title": "외계인 피자 가게",
-      "href": "피자시키신분수.html",
+      "href": "games/alien_pizza/외계인 피자 가게.html",
       "category": "math",
       "age": "high",
       "icon": "🍕",
@@ -507,7 +507,7 @@
     {
       "id": "magic_scale",
       "title": "신비한 양팔저울",
-      "href": "신비의양팔저울.html",
+      "href": "games/magic_scale/신비한 양팔저울.html",
       "category": "math",
       "age": "low",
       "icon": "⚖️",
@@ -517,7 +517,7 @@
     {
       "id": "hanja_survivors_8",
       "title": "한자 수호전: 8급",
-      "href": "8.html",
+      "href": "games/hanja_survivors_8/한자 수호전： 8급.html",
       "category": "lang",
       "age": "low",
       "icon": "🛡️",
@@ -538,7 +538,7 @@
     {
       "id": "korea_puzzle",
       "title": "K-퍼즐 지도 맞추기",
-      "href": "내가바로김정호.html",
+      "href": "games/korea_puzzle/K-퍼즐 지도 맞추기.html",
       "category": "trivia",
       "age": "high",
       "icon": "🗺️",
@@ -547,7 +547,7 @@
     {
       "id": "laser_angle",
       "title": "거울아 각도기 써라",
-      "href": "거울아각도기써라.html",
+      "href": "games/laser_angle/거울아 각도기 써라.html",
       "category": "math",
       "age": "high",
       "icon": "🪞",
@@ -556,7 +556,7 @@
     {
       "id": "kor_typing_tadak",
       "title": "타닥타닥 한글 타자연습",
-      "href": "타닥타닥.html",
+      "href": "games/kor_typing_tadak/타닥타닥 한글 타자연습.html",
       "category": "korean",
       "age": "low",
       "icon": "⌨️",
@@ -566,7 +566,7 @@
     {
       "id": "math_quiz",
       "title": "사칙연산 퀴즈",
-      "href": "수학 사칙연산 스피드 퀴즈.html",
+      "href": "games/math_quiz/사칙연산 퀴즈.html",
       "category": "math",
       "age": "high",
       "icon": "➕",
@@ -577,7 +577,7 @@
     {
       "id": "fraction_quiz",
       "title": "약분과 통분 퀴즈",
-      "href": "약분과 통분 스피드 퀴즈.html",
+      "href": "games/fraction_quiz/약분과 통분 퀴즈.html",
       "category": "math",
       "age": "high",
       "icon": "➗",
@@ -599,7 +599,7 @@
     {
       "id": "threes",
       "title": "1+2=3 퍼즐",
-      "href": "Threes.html",
+      "href": "games/threes/1+2=3 퍼즐.html",
       "category": "math",
       "age": "high",
       "icon": "🔢",
@@ -620,7 +620,7 @@
     {
       "id": "high_gugudan_stairs",
       "title": "구구단 천국의 계단",
-      "href": "천국의 구구단.html",
+      "href": "games/high_gugudan_stairs/구구단 천국의 계단.html",
       "category": "math",
       "age": "low",
       "icon": "🧮",
@@ -630,7 +630,7 @@
     {
       "id": "joseon_janggu",
       "title": "신명나는 쿵덕장구!",
-      "href": "쿵덕장구.html",
+      "href": "games/joseon_janggu/신명나는 쿵덕장구!.html",
       "category": "music",
       "age": "low",
       "icon": "🥁",
@@ -641,7 +641,7 @@
     {
       "id": "alien_sandwich",
       "title": "우주 샌드위치 가게",
-      "href": "프레디의 샌드위치 가게.html?v=3",
+      "href": "games/alien_sandwich/우주 샌드위치 가게.html?v=3",
       "category": "math",
       "age": "high",
       "icon": "🥪",
@@ -650,7 +650,7 @@
     {
       "id": "trash_runner",
       "title": "달려라! 분리수거 트럭",
-      "href": "달려라 분리수거 트럭.html",
+      "href": "games/trash_runner/달려라! 분리수거 트럭.html",
       "category": "trivia",
       "age": "low",
       "icon": "🚛",
@@ -660,7 +660,7 @@
     {
       "id": "korea_marble",
       "title": "K-트래블 마블",
-      "href": "K트래블.html",
+      "href": "games/korea_marble/K-트래블 마블.html",
       "category": "trivia",
       "age": "high",
       "icon": "✈️",
@@ -678,7 +678,7 @@
     {
       "id": "world_boardgames",
       "title": "월드 보드게임 컬렉션",
-      "href": "체스바둑장기.html",
+      "href": "games/world_boardgames/월드 보드게임 컬렉션.html",
       "category": "math",
       "age": "high",
       "icon": "♟️",
@@ -687,7 +687,7 @@
     {
       "id": "alkkagi_janggi",
       "title": "장기 알까기 대전",
-      "href": "알까기.html",
+      "href": "games/alkkagi_janggi/장기 알까기 대전.html",
       "category": "trivia",
       "age": "low",
       "icon": "💥",
@@ -696,7 +696,7 @@
     {
       "id": "burger_master",
       "title": "버거 마스터: 스피드 타이쿤",
-      "href": "버거 마스터.html",
+      "href": "games/burger_master/버거 마스터： 스피드 타이쿤.html",
       "category": "trivia",
       "age": "job",
       "icon": "🍔",
@@ -705,7 +705,7 @@
     {
       "id": "word_snake",
       "title": "영어뱀: 지식 포식자",
-      "href": "영어뱀.html",
+      "href": "games/word_snake/영어뱀： 지식 포식자.html",
       "category": "lang",
       "age": "high",
       "icon": "🐍",
@@ -715,7 +715,7 @@
     {
       "id": "sudoku",
       "title": "나른한 스도쿠",
-      "href": "스도쿠.html",
+      "href": "games/sudoku/나른한 스도쿠.html",
       "category": "math",
       "age": "high",
       "icon": "🧩",
@@ -726,7 +726,7 @@
     {
       "id": "swipe_fraction",
       "title": "분수 소수 대결!",
-      "href": "스와이프 분수와 소수 퀴즈.html",
+      "href": "games/swipe_fraction/분수 소수 대결!.html",
       "category": "math",
       "age": "high",
       "icon": "⚖️",
@@ -737,7 +737,7 @@
     {
       "id": "polygon_area",
       "title": "(사-1)각형 넓이",
-      "href": "사빼기일각형넓이구하기.html",
+      "href": "games/polygon_area/(사-1)각형 넓이.html",
       "category": "math",
       "age": "high",
       "icon": "📐",
@@ -758,7 +758,7 @@
     {
       "id": "math_corner_clash",
       "title": "PIXEL KINGDOMS (코너 클래시)",
-      "href": "코너 클래시.html",
+      "href": "games/math_corner_clash/PIXEL KINGDOMS (코너 클래시).html",
       "category": "math",
       "age": "high",
       "icon": "👑",
@@ -767,7 +767,7 @@
     {
       "id": "cube3d",
       "title": "3D 전개도 마스터",
-      "href": "정육면체 전개도 접기 3D 웹 프로그램.html",
+      "href": "games/cube3d/3D 전개도 마스터.html",
       "category": "math",
       "age": "high",
       "icon": "🧊",
@@ -806,7 +806,7 @@
     {
       "id": "korean_vocab",
       "title": "초등 어휘력 퀴즈",
-      "href": "어휘력 스피드퀴즈 초등학교 버젼.html",
+      "href": "games/korean_vocab/초등 어휘력 퀴즈.html",
       "category": "korean",
       "age": "high",
       "icon": "📖",
@@ -828,7 +828,7 @@
     {
       "id": "language_arcade",
       "title": "월드 랭귀지 아케이드",
-      "href": "외국어 스피드 퀴즈.html",
+      "href": "games/language_arcade/월드 랭귀지 아케이드.html",
       "category": "lang",
       "age": "high",
       "icon": "🌏",
@@ -838,7 +838,7 @@
     {
       "id": "math_rune_forest",
       "title": "넘버 시그널 (룬의 숲)",
-      "href": "룬의 숲.html",
+      "href": "games/math_rune_forest/넘버 시그널 (룬의 숲).html",
       "category": "math",
       "age": "high",
       "icon": "🔮",
@@ -847,7 +847,7 @@
     {
       "id": "spelling_frog",
       "title": "스펠링 프로그",
-      "href": "스펠링 프로그-fixed.html?v=20260914-1",
+      "href": "games/spelling_frog/스펠링 프로그.html?v=20260914-1",
       "category": "lang",
       "age": "high",
       "icon": "🐸",
@@ -858,7 +858,7 @@
     {
       "id": "tod_puzzle_time",
       "title": "똑똑 숫자 퍼즐 타임",
-      "href": "퍼즐 타임.html",
+      "href": "games/tod_puzzle_time/똑똑 숫자 퍼즐 타임.html",
       "category": "math",
       "age": "low",
       "icon": "🧩",
@@ -869,7 +869,7 @@
     {
       "id": "hanja_test",
       "title": "한자 급수 테스트",
-      "href": "한자 급수 랭크 테스트(5~8급).html",
+      "href": "games/hanja_test/한자 급수 테스트.html",
       "category": "lang",
       "age": "high",
       "icon": "🀄",
@@ -880,7 +880,7 @@
     {
       "id": "piano_studio",
       "title": "피아노 작곡 교실",
-      "href": "작곡과 감상용 피아노 프로그램.html",
+      "href": "games/piano_studio/피아노 작곡 교실.html",
       "category": "music",
       "age": "low",
       "icon": "🎹",
@@ -890,7 +890,7 @@
     {
       "id": "school_tower",
       "title": "수식의 첨탑",
-      "href": "학교의 탑.html",
+      "href": "games/school_tower/수식의 첨탑.html",
       "category": "math",
       "age": "high",
       "icon": "🧙",
@@ -901,7 +901,7 @@
     {
       "id": "pixel_editor",
       "title": "픽셀 그림판",
-      "href": "픽셀에디터.html",
+      "href": "games/pixel_editor/픽셀 그림판.html",
       "category": "music",
       "age": "high",
       "icon": "🎨",
@@ -910,7 +910,7 @@
     {
       "id": "tod_emoji_pang",
       "title": "말랑말랑 이모지 팡팡",
-      "href": "이모지 뿌셔뿌셔.html",
+      "href": "games/tod_emoji_pang/말랑말랑 이모지 팡팡.html",
       "category": "math",
       "age": "toddler",
       "icon": "✨",
@@ -920,7 +920,7 @@
     {
       "id": "tod_puzzle_bobble",
       "title": "알록달록 퍼즐 버블",
-      "href": "퍼즐 마블.html",
+      "href": "games/tod_puzzle_bobble/알록달록 퍼즐 버블.html",
       "category": "math",
       "age": "toddler",
       "icon": "🔮",
@@ -929,7 +929,7 @@
     {
       "id": "high_omok_arena",
       "title": "오목 아레나",
-      "href": "games/omok-arena/index.html?v=20260916-2",
+      "href": "games/omok-arena/오목 아레나.html?v=20260916-2",
       "category": "math",
       "age": "high",
       "icon": "⚫",
@@ -947,7 +947,7 @@
     },
     {
       "id": "toddler_monkey_vines",
-      "href": "유아_덤블링몽키즈.html",
+      "href": "games/toddler_monkey_vines/몽키 쏙쏙!.html",
       "category": "math",
       "age": "toddler",
       "icon": "🐒",
@@ -956,7 +956,7 @@
     },
     {
       "id": "toddler_penguin_ice_pop",
-      "href": "펭귄_얼음_톡톡.html?v=rework-2",
+      "href": "games/toddler_penguin_ice_pop/펭귄 얼음 톡톡!.html?v=rework-2",
       "category": "math",
       "age": "toddler",
       "icon": "🐧",
@@ -965,7 +965,7 @@
     },
     {
       "id": "toddler_color_stack",
-      "href": "색깔_겹겹_컬러코드.html",
+      "href": "games/toddler_color_stack/색깔 겹겹!.html",
       "category": "math",
       "age": "toddler",
       "icon": "🧩",
@@ -974,7 +974,7 @@
     },
     {
       "id": "toddler_three_friends_set",
-      "href": "셋_친구_찾기.html?v=plain-fix-1",
+      "href": "games/toddler_three_friends_set/셋 친구 찾기!.html?v=plain-fix-1",
       "category": "math",
       "age": "low",
       "icon": "🔎",

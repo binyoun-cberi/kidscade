@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>직업 타이쿤: 네일 아티스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #fce7f3;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        /* 손가락 및 네일 CSS */
+        .finger {
+            background-color: #fcd5ce;
+            border-radius: 40px 40px 10px 10px;
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .nail-bed {
+            width: 70%;
+            height: 45%;
+            background-color: #f8edeb;
+            border-radius: 20px 20px 15px 15px;
+            margin-top: 10px;
+            position: relative;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .cuticle {
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background-color: #e8b4a6;
+            border-radius: 50%;
+            transition: opacity 0.2s;
+        }
+
+        .finish-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        .finish-gel .finish-layer {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 100%);
+        }
+        .finish-glitter .finish-layer {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.8) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+            background-size: 8px 8px, 6px 6px;
+            background-position: 0 0, 4px 4px;
+            opacity: 0.6;
+        }
+        .sticker-layer {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            pointer-events: none;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tool-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 4px solid #f472b6;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { animation: pop 0.2s ease-out; }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-content { animation: slideUp 0.3s ease-out forwards; }
+        
+        .hide { display: none !important; }
+        
+        /* 스크롤바 숨기기 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center overflow-hidden bg-gray-100">
+
+    <div id="game-container" class="w-full h-full max-w-md bg-white shadow-2xl relative flex flex-col overflow-hidden">
+        
+        <!-- 상단 헤더 -->
+        <header class="bg-pink-400 text-white p-3 flex justify-between items-center rounded-b-2xl shadow-md z-10">
+            <div class="flex items-center gap-2">
+                <span class="text-3xl drop-shadow-sm">💅</span>
+                <div class="ml-1">
+                    <div class="text-xs opacity-90 font-bold" id="day-display">Day 1 (0/3명)</div>
+                    <div class="text-lg font-bold" id="money-display">💰 0</div>
+                </div>
+            </div>
+            <div class="flex flex-col items-end">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="text-xs opacity-80">평판</div>
+                    <button onclick="resetGame()" class="text-[10px] bg-red-400 px-2 py-0.5 rounded shadow">초기화</button>
+                </div>
+                <div class="text-sm tracking-widest" id="rep-display">⭐⭐⭐</div>
+            </div>
+        </header>
+
+        <!-- 메인 화면 -->
+        <main class="flex-1 flex flex-col items-center justify-between py-4 relative">
+            <div id="order-board" class="bg-pink-50 rounded-xl p-3 w-11/12 text-center shadow-inner border-2 border-pink-200">
+                <div class="flex justify-between items-center mb-1 px-1">
+                    <h3 class="text-pink-600 text-sm font-bold">손님의 주문</h3>
+                    <span id="difficulty-badge" class="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full">Lv.1</span>
+                </div>
+                <p id="order-text" class="text-sm text-gray-800 mb-2 leading-tight">손님을 기다리는 중...</p>
+                <div id="target-pattern" class="flex justify-center gap-2 mb-2 h-10"></div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
+                    <div id="timer-bar" class="bg-pink-500 h-2.5 rounded-full w-full transition-all duration-100"></div>
+                </div>
+            </div>
+
+            <div class="w-full px-4 h-64 flex justify-between items-end gap-1 mb-2">
+                <div id="hand-container" class="w-full h-full flex justify-between items-end gap-2"></div>
+            </div>
+
+            <div class="w-11/12 bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col overflow-hidden mb-2">
+                <div class="flex bg-gray-50 border-b">
+                    <button onclick="switchTab('tools')" id="tab-btn-tools" class="flex-1 py-2 text-sm font-bold text-pink-600 border-b-2 border-pink-500 transition-colors">도구</button>
+                    <button onclick="switchTab('colors')" id="tab-btn-colors" class="flex-1 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-colors">색상</button>
+                    <button onclick="switchTab('finishes')" id="tab-btn-finishes" class="flex-1 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-colors">마감</button>
+                    <button onclick="switchTab('stickers')" id="tab-btn-stickers" class="flex-1 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-colors">파츠</button>
+                </div>
+                <div id="palette-content" class="p-3 flex justify-center gap-3 items-center min-h-[4.5rem] bg-white"></div>
+            </div>
+        </main>
+
+        <!-- 시작 화면 (오디오 권한 및 시작) -->
+        <div id="start-screen" class="absolute inset-0 bg-pink-300 flex flex-col items-center justify-center z-[100]">
+            <h1 class="text-5xl mb-4">💅</h1>
+            <h1 class="text-4xl font-bold text-white mb-2 drop-shadow-md">네일 타이쿤</h1>
+            <p class="text-pink-100 mb-8">나만의 네일샵을 운영해보세요!</p>
+            <button onclick="initGame()" class="bg-white text-pink-500 font-bold text-xl px-8 py-4 rounded-full shadow-xl hover:scale-105 transition-transform animate-bounce">
+                샵 오픈하기
+            </button>
+        </div>
+
+        <!-- 튜토리얼 모달 -->
+        <div id="tutorial-modal" class="absolute inset-0 bg-black bg-opacity-60 items-center justify-center z-[80] hide flex px-4">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl modal-content">
+                <div class="text-4xl mb-2">👩‍🏫</div>
+                <h2 class="text-xl font-bold text-pink-600 mb-3" id="tutorial-title">환영합니다!</h2>
+                <p class="text-gray-700 mb-6 leading-relaxed" id="tutorial-text">
+                    네일샵 오픈을 축하합니다!<br>첫 번째 손님을 받기 전에 게임 방법을 알려드릴게요.
+                </p>
+                <button onclick="nextTutorial()" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl shadow">다음 (1/3)</button>
+            </div>
+        </div>
+
+        <!-- 고객 완료 리뷰 모달 -->
+        <div id="review-modal" class="absolute inset-0 bg-black bg-opacity-50 items-center justify-center z-50 flex-col px-4 hide">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl modal-content">
+                <div id="review-emoji" class="text-6xl mb-4">👋</div>
+                <h2 id="review-title" class="text-2xl text-gray-800 mb-2">결과</h2>
+                <div id="review-stars" class="text-2xl text-yellow-400 mb-3">⭐⭐⭐⭐⭐</div>
+                <p id="review-text" class="text-gray-600 mb-6 p-4 bg-gray-50 rounded-lg border">...</p>
+                <div class="flex justify-between items-center mb-6 px-4">
+                    <span class="text-gray-500">수익</span>
+                    <span id="review-earn" class="text-xl text-green-500 font-bold">+$0</span>
+                </div>
+                <button id="next-btn" onclick="startNextCustomerOrDay()" class="w-full bg-pink-500 text-white text-xl py-3 rounded-xl shadow-lg font-bold">
+                    다음 손님 받기
+                </button>
+            </div>
+        </div>
+
+        <!-- 하루/월간 마감 모달 -->
+        <div id="end-day-modal" class="absolute inset-0 bg-black bg-opacity-70 items-center justify-center z-[60] flex-col px-4 hide">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl modal-content border-4 border-pink-400">
+                <div class="text-5xl mb-4" id="end-day-emoji">🌙</div>
+                <h2 class="text-2xl text-gray-800 font-bold mb-4" id="end-day-title">Day 1 마감</h2>
+                
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 text-left text-gray-700">
+                    <div class="flex justify-between mb-2">
+                        <span>오늘 받은 손님:</span>
+                        <span id="end-day-customers" class="font-bold text-blue-500">0명</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>오늘 수입:</span>
+                        <span id="end-day-income" class="font-bold text-green-500">+$0</span>
+                    </div>
+                    <div id="rent-section" class="flex justify-between border-t pt-2 hide text-red-500">
+                        <span>월세 및 관리비 (7일차):</span>
+                        <span id="end-day-rent" class="font-bold">-$200</span>
+                    </div>
+                </div>
+                
+                <button onclick="openPhoneApp()" class="w-full bg-pink-500 hover:bg-pink-600 text-white text-lg py-3 rounded-xl shadow-lg font-bold mb-3 relative flex justify-center items-center gap-2 transition-colors">
+                    📱 리뷰 관리 앱 열기
+                    <span id="review-noti" class="w-3 h-3 bg-red-500 rounded-full hide border border-white"></span>
+                </button>
+
+                <button onclick="startNextDay()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl py-3 rounded-xl shadow-lg font-bold transition-colors">
+                    다음 날 시작하기
+                </button>
+            </div>
+        </div>
+
+        <!-- 리뷰 앱 (스마트폰) 모달 -->
+        <div id="phone-modal" class="absolute inset-0 bg-black bg-opacity-60 items-center justify-center z-[70] hide flex">
+            <div class="bg-white w-11/12 h-[85%] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border-8 border-gray-800 modal-content relative">
+                <!-- 아이폰 노치 스타일 -->
+                <div class="absolute top-0 inset-x-0 h-6 bg-gray-800 rounded-b-3xl w-1/2 mx-auto z-10"></div>
+                
+                <div class="bg-pink-500 text-white p-4 pt-8 text-center font-bold text-lg shadow-md">
+                    NailBook 리뷰 관리 💅
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col gap-3" id="review-list">
+                    <!-- 리뷰 아이템이 동적으로 들어옵니다 -->
+                </div>
+                
+                <div class="p-4 bg-white border-t flex justify-center">
+                    <button onclick="closePhoneApp()" class="w-16 h-2 bg-gray-300 rounded-full hover:bg-gray-400"></button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Web Audio API (사운드 엔진) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        
+        function playTone(freq, type, duration, vol=0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sfx = {
+            pop: () => playTone(600, 'sine', 0.1, 0.2),
+            success: () => { playTone(800, 'sine', 0.1, 0.1); setTimeout(()=>playTone(1200, 'sine', 0.2, 0.1), 100); },
+            fail: () => { playTone(300, 'sawtooth', 0.2, 0.1); setTimeout(()=>playTone(200, 'sawtooth', 0.3, 0.1), 150); },
+            cash: () => playTone(1000, 'square', 0.1, 0.05),
+            click: () => playTone(400, 'triangle', 0.05, 0.1),
+            bgmTick: () => { 
+                // 가벼운 시계 째깍거리는 소리 (타이머 압박용)
+                if(timeLeft > 0 && timeLeft < maxTime * 0.3) playTone(800, 'square', 0.05, 0.02); 
+            }
+        };
+
+        // --- 게임 상태 변수 ---
+        let money = 0;
+        let reputation = 3; 
+        let day = 1;
+        let customersToday = 0;
+        let dailyIncome = 0;
+        let reviewsData = []; // {id, text, stars, isGood, day}
+        
+        let dayTimeMax = 800; // 하루 영업 시간 (80초)
+        let dayTimeLeft = 800;
+        
+        let currentToolCategory = null; 
+        let currentToolValue = null;
+        let targetPattern = []; 
+        let timerInterval;
+        let timeLeft = 0;
+        let maxTime = 150;
+        
+        let tutorialStep = 1;
+        let isTutorialFinished = false;
+
+        // 아이템 데이터베이스
+        const colors = {
+            '#ef4444': { name: '레드', value: '#ef4444' },
+            '#3b82f6': { name: '블루', value: '#3b82f6' },
+            '#eab308': { name: '옐로', value: '#eab308' },
+            '#ec4899': { name: '핑크', value: '#ec4899' },
+            '#a855f7': { name: '퍼플', value: '#a855f7' }
+        };
+        const finishes = {
+            'none': { name: '폴리쉬', emoji: '💅' },
+            'gel': { name: '젤네일', emoji: '💧' },
+            'glitter': { name: '글리터', emoji: '✨' }
+        };
+        const stickers = {
+            'none': { name: '제거', emoji: '🚫' },
+            '⭐': { name: '별', emoji: '⭐' },
+            '❤️': { name: '하트', emoji: '❤️' },
+            '🎀': { name: '리본', emoji: '🎀' },
+            '🦋': { name: '나비', emoji: '🦋' }
+        };
+
+        const colorKeys = Object.keys(colors);
+        const finishKeys = Object.keys(finishes);
+        const stickerKeys = Object.keys(stickers).filter(k => k !== 'none');
+
+        // --- DOM 요소 ---
+        const el = {
+            hand: document.getElementById('hand-container'),
+            timer: document.getElementById('timer-bar'),
+            order: document.getElementById('order-text'),
+            target: document.getElementById('target-pattern'),
+            palette: document.getElementById('palette-content'),
+            money: document.getElementById('money-display'),
+            rep: document.getElementById('rep-display'),
+            day: document.getElementById('day-display'),
+            start: document.getElementById('start-screen'),
+            tutorial: document.getElementById('tutorial-modal'),
+            review: document.getElementById('review-modal'),
+            endDay: document.getElementById('end-day-modal'),
+            phone: document.getElementById('phone-modal'),
+            noti: document.getElementById('review-noti')
+        };
+
+        // --- 초기화 및 흐름 제어 ---
+        function initGame() {
+            audioCtx = new AudioContext();
+            audioCtx.resume();
+            sfx.success();
+            
+            el.start.classList.add('hide');
+            loadGameData();
+            updateTopBar();
+            
+            if (!isTutorialFinished) {
+                showTutorial();
+            } else {
+                startNextCustomerOrDay();
+            }
+        }
+
+        function resetGame() {
+            if(confirm("모든 데이터를 지우고 처음부터 다시 시작하시겠습니까?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function saveGameData() {
+            const data = { money, reputation, day, reviewsData, isTutorialFinished, dayTimeLeft, customersToday, dailyIncome };
+            localStorage.setItem('nailTycoonSave', JSON.stringify(data));
+        }
+
+        function loadGameData() {
+            const save = localStorage.getItem('nailTycoonSave');
+            if (save) {
+                const data = JSON.parse(save);
+                money = data.money;
+                reputation = data.reputation;
+                day = data.day;
+                reviewsData = data.reviewsData || [];
+                isTutorialFinished = data.isTutorialFinished;
+                dayTimeLeft = data.dayTimeLeft !== undefined ? data.dayTimeLeft : dayTimeMax;
+                customersToday = data.customersToday || 0;
+                dailyIncome = data.dailyIncome || 0;
+            }
+        }
+
+        function updateDayTimeDisplay() {
+            let secs = Math.max(0, Math.ceil(dayTimeLeft / 10));
+            let m = Math.floor(secs / 60);
+            let s = secs % 60;
+            el.day.innerText = `Day ${day} (⏳ ${m}:${s.toString().padStart(2, '0')})`;
+        }
+
+        function updateTopBar() {
+            el.money.innerText = `💰 ${money}`;
+            
+            // 평판(1~5) 시각화
+            let repStr = "";
+            let repScore = Math.floor(reputation);
+            for(let i=0; i<5; i++) repStr += (i < repScore) ? "⭐" : "✰";
+            el.rep.innerText = repStr;
+            
+            updateDayTimeDisplay();
+            
+            // 안 읽은 나쁜 리뷰 표시 (간단히)
+            const hasBadReview = reviewsData.some(r => !r.isGood);
+            if(hasBadReview) el.noti.classList.remove('hide');
+            else el.noti.classList.add('hide');
+        }
+
+        // --- 튜토리얼 시스템 ---
+        function showTutorial() {
+            el.tutorial.classList.remove('hide');
+            el.tutorial.classList.add('flex');
+            updateTutorialUI();
+        }
+
+        function nextTutorial() {
+            sfx.click();
+            tutorialStep++;
+            if (tutorialStep > 3) {
+                el.tutorial.classList.add('hide');
+                el.tutorial.classList.remove('flex');
+                isTutorialFinished = true;
+                saveGameData();
+                startNextCustomerOrDay();
+            } else {
+                updateTutorialUI();
+            }
+        }
+
+        function updateTutorialUI() {
+            const title = document.getElementById('tutorial-title');
+            const text = document.getElementById('tutorial-text');
+            const btn = el.tutorial.querySelector('button');
+            
+            btn.innerText = `다음 (${tutorialStep}/3)`;
+            
+            if (tutorialStep === 1) {
+                title.innerText = "환영합니다!";
+                text.innerHTML = "네일샵 오픈을 축하합니다!<br>첫 번째 손님을 받기 전에<br>게임 방법을 알려드릴게요.";
+            } else if (tutorialStep === 2) {
+                title.innerText = "주문 확인하기";
+                text.innerHTML = "손님이 오면 <b>주문서</b>와 <b>도안</b>이 나타납니다.<br><br>하단의 <b>[도구]</b> 탭에서 <b>가위(니퍼)</b>를 골라<br>손톱 밑의 큐티클을 모두 제거하세요!";
+            } else if (tutorialStep === 3) {
+                title.innerText = "빠르고 정확하게!";
+                text.innerHTML = "주문에 맞게 <b>색상, 마감, 파츠</b>를 바르고<br>제한 시간 내에 5개 손가락을 완벽하게 꾸미면<br>높은 <b>수익</b>과 <b>평판</b>을 얻습니다.<br><br>시작해볼까요?";
+                btn.innerText = "첫 손님 받기!";
+            }
+        }
+
+        // --- 날짜 시스템 ---
+        function startNextDay() {
+            sfx.click();
+            el.endDay.classList.add('hide');
+            el.endDay.classList.remove('flex');
+            day++;
+            customersToday = 0;
+            dailyIncome = 0;
+            dayTimeLeft = dayTimeMax;
+            saveGameData();
+            updateTopBar();
+            startNextCustomerOrDay();
+        }
+
+        function endDay() {
+            clearInterval(timerInterval);
+            sfx.cash();
+            
+            el.endDay.classList.remove('hide');
+            el.endDay.classList.add('flex');
+            
+            document.getElementById('end-day-title').innerText = `Day ${day} 마감`;
+            document.getElementById('end-day-customers').innerText = `${customersToday}명`;
+            document.getElementById('end-day-income').innerText = `+$${dailyIncome}`;
+            
+            const rentSection = document.getElementById('rent-section');
+            const rentCost = 150 + (day * 10); // 갈수록 월세 증가
+            
+            // 7일(1주)마다 월세 납부
+            if (day % 7 === 0) {
+                rentSection.classList.remove('hide');
+                document.getElementById('end-day-rent').innerText = `-$${rentCost}`;
+                money -= rentCost;
+                if(money < 0) {
+                    document.getElementById('end-day-title').innerText = "파산 위기! 😱";
+                    document.getElementById('end-day-title').className = "text-2xl text-red-600 font-bold mb-4";
+                }
+            } else {
+                rentSection.classList.add('hide');
+            }
+            
+            updateTopBar();
+            saveGameData();
+        }
+
+        // --- 리뷰(스마트폰) 시스템 ---
+        function openPhoneApp() {
+            sfx.click();
+            el.phone.classList.remove('hide');
+            renderReviews();
+        }
+        
+        function closePhoneApp() {
+            sfx.click();
+            el.phone.classList.add('hide');
+        }
+
+        function renderReviews() {
+            const list = document.getElementById('review-list');
+            list.innerHTML = '';
+            
+            if (reviewsData.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-400 mt-10">아직 리뷰가 없습니다.</div>`;
+                return;
+            }
+
+            // 최신순 정렬
+            const sorted = [...reviewsData].reverse();
+
+            sorted.forEach(rev => {
+                const isGood = rev.isGood;
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl shadow-sm border ${isGood ? 'bg-white border-green-100' : 'bg-red-50 border-red-200'}`;
+                
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="text-xs text-gray-500">Day ${rev.day} 손님</div>
+                        <div class="text-yellow-400 text-sm">
+                            ${"⭐".repeat(rev.stars)}${"✰".repeat(5-rev.stars)}
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-800 font-medium">"${rev.text}"</p>
+                    ${!isGood ? `
+                        <div class="mt-2 text-right">
+                            <button onclick="deleteReview(${rev.id})" class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow transition-colors">
+                                악플 삭제 (비용: $200)
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function deleteReview(id) {
+            if (money < 200) {
+                alert("비용이 부족합니다! ($200 필요)");
+                return;
+            }
+            sfx.cash();
+            money -= 200;
+            if(reputation < 5) reputation += 0.5; // 명성 회복
+            
+            reviewsData = reviewsData.filter(r => r.id !== id);
+            saveGameData();
+            updateTopBar();
+            renderReviews();
+        }
+
+        // --- 탭 및 도구 시스템 ---
+        function switchTab(tabName) {
+            sfx.click();
+            ['tools', 'colors', 'finishes', 'stickers'].forEach(tab => {
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                if(tab === tabName) {
+                    btn.classList.add('text-pink-600', 'border-pink-500');
+                    btn.classList.remove('text-gray-400', 'border-transparent');
+                } else {
+                    btn.classList.remove('text-pink-600', 'border-pink-500');
+                    btn.classList.add('text-gray-400', 'border-transparent');
+                }
+            });
+
+            el.palette.innerHTML = '';
+            if (tabName === 'tools') {
+                el.palette.innerHTML = `
+                    <button onclick="selectTool('tool', 'nipper')" id="btn-nipper" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl">✂️</button>
+                    <button onclick="selectTool('tool', 'remover')" id="btn-remover" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl">🧽</button>
+                `;
+            } else if (tabName === 'colors') {
+                colorKeys.forEach(hex => {
+                    el.palette.innerHTML += `<button onclick="selectTool('color', '${hex}')" id="btn-${hex.replace('#','')}" class="tool-btn w-12 h-12 rounded-full shadow border-2 border-white" style="background-color: ${hex}"></button>`;
+                });
+            } else if (tabName === 'finishes') {
+                ['none', 'gel', 'glitter'].forEach(key => {
+                    el.palette.innerHTML += `
+                        <button onclick="selectTool('finish', '${key}')" id="btn-${key}" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex flex-col items-center justify-center">
+                            <span class="text-xl">${finishes[key].emoji}</span>
+                            <span class="text-[10px] text-gray-500 mt-0.5">${finishes[key].name}</span>
+                        </button>
+                    `;
+                });
+            } else if (tabName === 'stickers') {
+                ['none', ...stickerKeys].forEach(key => {
+                    el.palette.innerHTML += `<button onclick="selectTool('sticker', '${key}')" id="btn-sticker-${key === 'none' ? 'none' : key}" class="tool-btn w-12 h-12 bg-white rounded-full shadow border-2 border-gray-100 flex items-center justify-center text-2xl">${stickers[key].emoji}</button>`;
+                });
+            }
+            highlightSelectedTool();
+        }
+
+        function selectTool(category, value) {
+            sfx.click();
+            currentToolCategory = category;
+            currentToolValue = value;
+            highlightSelectedTool();
+        }
+
+        function highlightSelectedTool() {
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            if (!currentToolCategory || !currentToolValue) return;
+
+            let btnId = '';
+            if (currentToolCategory === 'tool') btnId = `btn-${currentToolValue}`;
+            else if (currentToolCategory === 'color') btnId = `btn-${currentToolValue.replace('#','')}`;
+            else if (currentToolCategory === 'finish') btnId = `btn-${currentToolValue}`;
+            else if (currentToolCategory === 'sticker') btnId = `btn-sticker-${currentToolValue === 'none' ? 'none' : currentToolValue}`;
+
+            const activeBtn = document.getElementById(btnId);
+            if(activeBtn) activeBtn.classList.add('active');
+        }
+
+        function createHand() {
+            el.hand.innerHTML = '';
+            const heights = ['70%', '90%', '100%', '85%', '65%']; 
+            const widths = ['22%', '18%', '18%', '18%', '16%'];
+
+            for (let i = 0; i < 5; i++) {
+                const finger = document.createElement('div');
+                finger.className = 'finger';
+                finger.style.height = heights[i];
+                finger.style.width = widths[i];
+
+                const nail = document.createElement('div');
+                nail.className = 'nail-bed';
+                nail.dataset.index = i;
+                nail.dataset.color = 'none';
+                nail.dataset.finish = 'none';
+                nail.dataset.sticker = 'none';
+                nail.dataset.cuticle = 'true';
+                
+                const finishLayer = document.createElement('div');
+                finishLayer.className = 'finish-layer';
+                const stickerLayer = document.createElement('div');
+                stickerLayer.className = 'sticker-layer';
+                const cuticle = document.createElement('div');
+                cuticle.className = 'cuticle';
+                cuticle.id = `cuticle-${i}`;
+
+                nail.addEventListener('mousedown', () => interactWithNail(nail, cuticle, stickerLayer));
+                nail.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); 
+                    interactWithNail(nail, cuticle, stickerLayer);
+                });
+
+                nail.appendChild(finishLayer);
+                nail.appendChild(stickerLayer);
+                nail.appendChild(cuticle);
+                finger.appendChild(nail);
+                el.hand.appendChild(finger);
+            }
+        }
+
+        function interactWithNail(nail, cuticle, stickerLayer) {
+            if (!currentToolCategory || !currentToolValue) return;
+
+            sfx.pop();
+            nail.classList.remove('animate-pop');
+            void nail.offsetWidth; 
+            nail.classList.add('animate-pop');
+
+            if (currentToolCategory === 'tool') {
+                if (currentToolValue === 'nipper') {
+                    if (nail.dataset.cuticle === 'true') {
+                        nail.dataset.cuticle = 'false';
+                        cuticle.style.opacity = '0';
+                    }
+                } else if (currentToolValue === 'remover') {
+                    nail.dataset.color = 'none';
+                    nail.style.backgroundColor = '#f8edeb';
+                    nail.dataset.finish = 'none';
+                    nail.className = 'nail-bed animate-pop'; 
+                    nail.dataset.sticker = 'none';
+                    stickerLayer.innerText = '';
+                }
+            } else if (currentToolCategory === 'color') {
+                nail.dataset.color = currentToolValue;
+                nail.style.backgroundColor = currentToolValue;
+            } else if (currentToolCategory === 'finish') {
+                nail.dataset.finish = currentToolValue;
+                nail.className = `nail-bed animate-pop finish-${currentToolValue}`; 
+            } else if (currentToolCategory === 'sticker') {
+                nail.dataset.sticker = currentToolValue;
+                stickerLayer.innerText = currentToolValue === 'none' ? '' : currentToolValue;
+            }
+            checkWinCondition();
+        }
+
+        function renderTargetPattern(pattern) {
+            el.target.innerHTML = '';
+            pattern.forEach(p => {
+                const targetNail = document.createElement('div');
+                targetNail.className = `w-7 h-9 rounded-t-[10px] rounded-b-[4px] border border-gray-300 relative overflow-hidden finish-${p.finish} shadow-sm`;
+                targetNail.style.backgroundColor = p.color === 'none' ? '#f8edeb' : p.color;
+                
+                const finishLyr = document.createElement('div');
+                finishLyr.className = 'finish-layer';
+                const stickerLyr = document.createElement('div');
+                stickerLyr.className = 'absolute inset-0 flex items-center justify-center text-sm drop-shadow-md';
+                stickerLyr.innerText = p.sticker === 'none' ? '' : p.sticker;
+
+                targetNail.appendChild(finishLyr);
+                targetNail.appendChild(stickerLyr);
+                el.target.appendChild(targetNail);
+            });
+        }
+
+        function startNextCustomerOrDay() {
+            if (dayTimeLeft <= 0) {
+                endDay();
+                return;
+            }
+            
+            sfx.click();
+            el.review.classList.add('hide');
+            el.review.classList.remove('flex');
+            createHand();
+            updateTopBar();
+            
+            // 난이도 설정
+            let level = 1;
+            if (reputation >= 3 || day > 2) level = 2;
+            if (reputation >= 4.5 || day > 5) level = 3;
+            
+            document.getElementById('difficulty-badge').innerText = `Lv.${level}`;
+
+            targetPattern = [];
+            const isMultiColor = level >= 2 ? Math.random() > 0.5 : false;
+            const useSpecificFinish = level >= 2 ? Math.random() > 0.4 : false;
+            const useStickers = level >= 3 ? Math.random() > 0.6 : false;
+
+            const baseColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+            const baseFinish = useSpecificFinish ? finishKeys[Math.floor(Math.random() * finishKeys.length)] : 'none';
+
+            let orderDesc = "깔끔한 <b>큐티클 정리</b> 필수!<br/>";
+            if(isMultiColor) orderDesc += "손가락마다 <b>다양한 색상</b>으로 꾸며주세요.";
+            else orderDesc += `<b>${colors[baseColor].name}</b> 색상으로 칠해주세요.`;
+
+            if(useSpecificFinish && baseFinish !== 'none') orderDesc += ` <br/><span class="text-blue-500">(${finishes[baseFinish].name} 추가)</span>`;
+            if(useStickers) orderDesc += "<br/><span class='text-xs text-pink-500'>* 도안대로 파츠도 올려주세요!</span>";
+
+            el.order.innerHTML = orderDesc;
+
+            for(let i=0; i<5; i++) {
+                targetPattern.push({
+                    color: isMultiColor ? colorKeys[Math.floor(Math.random() * colorKeys.length)] : baseColor,
+                    finish: baseFinish, 
+                    sticker: useStickers ? (Math.random() > 0.4 ? stickerKeys[Math.floor(Math.random() * stickerKeys.length)] : 'none') : 'none'
+                });
+            }
+
+            renderTargetPattern(targetPattern);
+            
+            currentToolCategory = null;
+            currentToolValue = null;
+            switchTab('tools');
+
+            // 타이머
+            maxTime = 150 + ((level - 1) * 50); 
+            timeLeft = maxTime;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                dayTimeLeft -= 1;
+                el.timer.style.width = `${(timeLeft / maxTime) * 100}%`;
+                
+                if(timeLeft < maxTime * 0.3) {
+                    el.timer.style.backgroundColor = '#ef4444'; 
+                } else {
+                    el.timer.style.backgroundColor = '#ec4899'; 
+                }
+
+                updateDayTimeDisplay();
+
+                if (timeLeft % 10 === 0) sfx.bgmTick();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    finishCustomer(false); 
+                }
+            }, 100); 
+        }
+
+        function checkWinCondition() {
+            const nails = document.querySelectorAll('.nail-bed');
+            let isPerfect = true;
+
+            nails.forEach((nail, index) => {
+                const target = targetPattern[index];
+                if (
+                    nail.dataset.cuticle === 'true' || 
+                    nail.dataset.color !== target.color ||
+                    nail.dataset.finish !== target.finish ||
+                    nail.dataset.sticker !== target.sticker
+                ) {
+                    isPerfect = false;
+                }
+            });
+
+            if (isPerfect) {
+                clearInterval(timerInterval);
+                setTimeout(() => finishCustomer(true), 300); 
+            }
+        }
+
+        function finishCustomer(isSuccess) {
+            customersToday++;
+            el.review.classList.remove('hide');
+            el.review.classList.add('flex');
+            
+            const titleEl = document.getElementById('review-title');
+            const starsEl = document.getElementById('review-stars');
+            const textEl = document.getElementById('review-text');
+            const earnEl = document.getElementById('review-earn');
+            const emojiEl = document.getElementById('review-emoji');
+            const nextBtn = document.getElementById('next-btn');
+
+            let earnedMoney = 0;
+            let reviewText = "";
+            let givenStars = 0;
+
+            if (isSuccess) {
+                sfx.success();
+                const levelBonus = parseInt(document.getElementById('difficulty-badge').innerText.replace('Lv.', '')) * 20;
+                earnedMoney = 50 + levelBonus + Math.floor(timeLeft / 2);
+                dailyIncome += earnedMoney;
+                money += earnedMoney;
+                if(reputation < 5) reputation += 0.5;
+                givenStars = 5;
+
+                emojiEl.innerText = '😍';
+                titleEl.innerText = "대만족!";
+                titleEl.className = "text-2xl text-pink-600 font-bold mb-2";
+                
+                const goodReviews = [
+                    "요청한 도안이랑 완전 똑같아요! 금손이시네요.",
+                    "단골 예약입니다. 너무 예뻐요!",
+                    "파츠도 안 떨어지게 잘 붙여주셨어요.",
+                    "손놀림이 엄청 빠르시네요! 완벽합니다."
+                ];
+                reviewText = goodReviews[Math.floor(Math.random() * goodReviews.length)];
+                earnEl.className = "text-2xl text-green-500 font-bold";
+            } else {
+                sfx.fail();
+                earnedMoney = 10; 
+                dailyIncome += earnedMoney;
+                money += earnedMoney;
+                if(reputation > 1) reputation -= 1;
+                givenStars = Math.max(1, Math.floor(reputation));
+
+                emojiEl.innerText = '😠';
+                titleEl.innerText = "실망이에요...";
+                titleEl.className = "text-2xl text-gray-800 font-bold mb-2";
+                
+                const badReviews = [
+                    "시간이 너무 오래 걸리고 엉망이네요.",
+                    "제가 보여드린 도안이랑 전혀 다르잖아요!",
+                    "큐티클 정리도 안 해주시고 최악입니다.",
+                    "돈이 아깝네요. 다신 안 와요."
+                ];
+                reviewText = badReviews[Math.floor(Math.random() * badReviews.length)];
+                earnEl.className = "text-2xl text-red-500 font-bold";
+            }
+
+            starsEl.innerText = "⭐".repeat(givenStars) + "✰".repeat(5 - givenStars);
+            textEl.innerText = `"${reviewText}"`;
+            earnEl.innerText = `+$${earnedMoney}`;
+            
+            // 리뷰 데이터 저장
+            reviewsData.push({
+                id: Date.now(),
+                text: reviewText,
+                stars: givenStars,
+                isGood: isSuccess,
+                day: day
+            });
+            
+            // 보유 리뷰가 너무 많으면 오래된 것 삭제
+            if(reviewsData.length > 20) reviewsData.shift();
+            
+            if(dayTimeLeft <= 0) {
+                nextBtn.innerText = "하루 마감하기";
+                nextBtn.className = "w-full bg-indigo-500 text-white text-xl py-3 rounded-xl shadow-lg font-bold";
+            } else {
+                nextBtn.innerText = "다음 손님 받기";
+                nextBtn.className = "w-full bg-pink-500 text-white text-xl py-3 rounded-xl shadow-lg font-bold";
+            }
+
+            saveGameData();
+            updateTopBar();
+        }
+
+    </script>
+</body>
+</html>

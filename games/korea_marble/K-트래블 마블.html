@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>대한민국 마블 - 전국 여행 리마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky-top: #bae6fd;
+            --sky-bottom: #e0f2fe;
+            --board-bg: rgba(255, 255, 255, 0.85);
+            --cell-bg: #ffffff;
+            --center-bg: rgba(255, 255, 255, 0.9);
+            --anim-speed: 1; 
+        }
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 10%),
+                radial-gradient(circle at 80% 60%, rgba(255,255,255,0.4) 0%, transparent 10%),
+                radial-gradient(circle at 50% 10%, rgba(255,255,255,0.3) 0%, transparent 15%);
+            background-size: cover;
+            background-attachment: fixed;
+            color: #334155;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .animate-pop { animation: popIn calc(0.4s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(30deg) scale(1.2); }
+            50% { transform: rotate(-30deg) scale(0.9); }
+            75% { transform: rotate(15deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .rolling { animation: diceRoll calc(0.4s * var(--anim-speed)) ease-in-out infinite; }
+
+        @keyframes tokenJump {
+            0% { margin-top: 0; transform: translate(-50%, -50%) scale(1); }
+            50% { margin-top: -20px; transform: translate(-50%, -50%) scale(1.1); }
+            100% { margin-top: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        .token-jump { animation: tokenJump calc(0.3s * var(--anim-speed)) ease-out; }
+
+        @keyframes buildPop {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.5); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bldg-anim { animation: buildPop calc(0.5s * var(--anim-speed)) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes floatTextUp {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; }
+            80% { transform: translate(-50%, -150%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -200%) scale(0.8); opacity: 0; }
+        }
+        .floating-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 24px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 -1px 2px white, 2px 0 2px white, -2px 0 2px white;
+            z-index: 200;
+            pointer-events: none;
+            animation: floatTextUp calc(1.2s * var(--anim-speed)) ease-out forwards;
+        }
+
+        .money-gain { color: #10b981 !important; transform: scale(1.15); transition: all calc(0.3s * var(--anim-speed)); }
+        .money-loss { color: #ef4444 !important; transform: scale(1.15); transition: all calc(0.3s * var(--anim-speed)); }
+
+        /* Board 9x9 Grid */
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            gap: 2px;
+            width: 98vmin;
+            max-width: 900px;
+            height: 98vmin;
+            max-height: 900px;
+            background: var(--board-bg);
+            padding: 6px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15), inset 0 0 0 3px rgba(255,255,255,0.5);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (min-width: 768px) {
+            .board-container { gap: 4px; padding: 8px; }
+        }
+
+        .cell {
+            background: var(--cell-bg);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 2px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 0 rgba(0,0,0,0.05);
+            transition: transform calc(0.1s * var(--anim-speed)), border calc(0.3s * var(--anim-speed)), box-shadow calc(0.3s * var(--anim-speed));
+            font-size: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+            overflow: hidden; 
+        }
+
+        @media (min-width: 768px) {
+            .cell { font-size: 11px; padding: 4px; border-radius: 8px; }
+        }
+
+        .cell-header {
+            width: 100%; height: 35%; min-height: 14px; border-radius: 4px;
+            margin-bottom: 2px; display: flex; justify-content: center; align-items: center;
+            font-size: 1.2em; transition: background-color 0.3s;
+        }
+
+        .cell-title { font-weight: bold; line-height: 1.1; margin-top: 1px; color: #1e293b; }
+        .cell-build-name { color: #0ea5e9; font-size: 0.8em; font-weight: bold; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .cell-price { color: #64748b; font-size: 0.8em; margin-top: auto; transition: color 0.3s; font-weight: bold; }
+        
+        .cell-owner-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; transition: background-color 0.3s;
+        }
+
+        .buildings { display: flex; gap: 2px; margin-top: 1px; height: 12px; align-items: flex-end; }
+        .bldg { width: 8px; height: 8px; border-radius: 2px; transform-origin: bottom center; box-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+        .bldg.lv1 { background-color: #94a3b8; } 
+        .bldg.lv2 { background-color: #38bdf8; height: 12px; } 
+        .bldg.lv3 { background-color: #fbbf24; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); width: 12px; height: 14px; border-radius: 0; } 
+        .bldg.tour { font-size: 10px; width: auto; height: 12px; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+
+        @media (min-width: 768px) {
+            .buildings { height: 14px; }
+            .bldg { width: 10px; height: 10px; }
+            .bldg.lv2 { height: 14px; }
+            .bldg.lv3 { width: 14px; height: 16px; }
+            .bldg.tour { font-size: 12px; height: 14px; }
+            .cell-owner-bar { height: 5px; }
+        }
+
+        .player-token {
+            position: absolute; z-index: 50;
+            transition: left calc(0.3s * var(--anim-speed)) ease-in-out, top calc(0.3s * var(--anim-speed)) ease-in-out;
+            display: flex; justify-content: center; align-items: center; font-size: 20px; 
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.4));
+        }
+        @media (min-width: 768px) { .player-token { font-size: 28px; } }
+
+        .center-area {
+            grid-column: 2 / 9;
+            grid-row: 2 / 9;
+            background: var(--center-bg);
+            border-radius: 16px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 10px; position: relative;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
+            border: 3px dashed #93c5fd;
+            margin: 4px;
+        }
+
+        .player-panel {
+            background: white; border-radius: 12px; padding: 4px 6px;
+            display: flex; align-items: center; gap: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 3px solid transparent;
+            transition: all 0.3s; opacity: 0.7; filter: grayscale(0.3);
+        }
+        @media (min-width: 768px) { .player-panel { padding: 6px 10px; gap: 8px; } }
+        .player-panel.active { opacity: 1; filter: grayscale(0); transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        
+        .p-emoji { font-size: 16px; width: 20px; text-align: center; }
+        @media (min-width: 768px) { .p-emoji { font-size: 20px; width: 24px; } }
+        .p-info { display: flex; flex-direction: column; flex: 1; }
+        .p-name { font-weight: bold; font-size: 10px; color: #475569; }
+        .p-money { color: #0f172a; font-weight: 900; font-size: 12px; display: inline-block; transition: color 0.3s;}
+        @media (min-width: 768px) { .p-name { font-size: 11px; } .p-money { font-size: 14px; } }
+
+        .controls-wrapper { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; gap: 10px; }
+        @media (min-width: 768px) { .controls-wrapper { bottom: 15px; } }
+
+        .btn {
+            padding: 10px 20px; border-radius: 25px; font-weight: 900; font-size: 14px;
+            cursor: pointer; transition: all 0.1s; border: none; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            color: white; letter-spacing: 1px;
+        }
+        @media (min-width: 768px) { .btn { padding: 12px 24px; font-size: 18px; box-shadow: 0 5px 0 rgba(0,0,0,0.2); } }
+        .btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.2); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 0 4px 0 rgba(0,0,0,0.2); filter: grayscale(1); }
+        
+        .btn-roll { background: #0ea5e9; box-shadow: 0 4px 0 #0284c7; }
+        .btn-buy { background: #10b981; box-shadow: 0 4px 0 #047857; }
+        .btn-pass { background: #94a3b8; box-shadow: 0 4px 0 #475569; }
+
+        #dice-display { font-size: 3rem; line-height: 1; text-shadow: 0 6px 10px rgba(0,0,0,0.2); margin-bottom: 5px; display: flex; gap: 8px; }
+        @media (min-width: 768px) { #dice-display { font-size: 4rem; margin-bottom: 10px; gap: 10px; } }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+        }
+        
+        /* 보드 엿보기를 위한 컨테이너 래퍼 적용 */
+        .modal-wrapper {
+            position: relative; max-width: 400px; width: 90%; 
+        }
+        .modal-content {
+            background: white; padding: 25px 20px; border-radius: 24px; text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25); border: 4px solid white;
+            transition: opacity 0.2s ease;
+        }
+        /* 엿보기 활성화 시 */
+        .peeking .modal-content { opacity: 0.15; pointer-events: none; }
+
+        .peek-btn {
+            position: absolute; top: -45px; right: 0; z-index: 101;
+            background: white; color: #0284c7; border: 2px solid #bae6fd;
+            padding: 8px 14px; border-radius: 20px; font-weight: 900; font-size: 13px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            user-select: none; -webkit-user-select: none;
+        }
+
+        .toggle-btn {
+            flex: 1; padding: 8px 0; border-radius: 10px; font-weight: bold; border: 2px solid #bae6fd;
+            background: white; color: #0284c7; transition: all 0.2s; cursor: pointer;
+        }
+        .toggle-btn.active { background: #0ea5e9; color: white; border-color: #0ea5e9; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen w-screen relative">
+
+    <div id="start-screen" class="modal-overlay">
+        <div class="modal-content animate-pop space-y-4">
+            <div class="text-5xl mb-1">✈️</div>
+            <h1 class="text-3xl text-sky-500 font-black mb-1 tracking-tight">K-트래블 32칸 리마스터</h1>
+            <p class="text-slate-500 mb-3 font-medium text-xs">전국 8도 명소와 특산물을 독점하세요!</p>
+            
+            <div class="space-y-3 text-left bg-sky-50 p-4 rounded-xl border border-sky-100 text-sm">
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">총 참가 인원</label>
+                    <div class="flex gap-2 justify-center" id="total-players-group">
+                        <button class="toggle-btn" data-val="2">2명</button>
+                        <button class="toggle-btn" data-val="3">3명</button>
+                        <button class="toggle-btn active" data-val="4">4명</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">사람 플레이어 수 (나머지 CPU)</label>
+                    <div class="flex gap-2 justify-center" id="human-players-group">
+                        <button class="toggle-btn active" data-val="1">1명</button>
+                        <button class="toggle-btn" data-val="2">2명</button>
+                        <button class="toggle-btn" data-val="3">3명</button>
+                        <button class="toggle-btn" data-val="4">4명</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">CPU 실력 / 속도</label>
+                    <div class="flex gap-2 justify-center">
+                        <select id="cpu-diff-select" class="flex-1 p-2 rounded-lg border border-sky-200 text-sky-700 font-bold outline-none">
+                            <option value="easy">초보 (랜덤)</option>
+                            <option value="normal" selected>보통 (적절한 선택)</option>
+                            <option value="hard">고수 (공격적 인수)</option>
+                        </select>
+                        <select id="speed-select" class="flex-1 p-2 rounded-lg border border-sky-200 text-sky-700 font-bold outline-none">
+                            <option value="normal" selected>거북이 🐢</option>
+                            <option value="fast">토끼 🐇</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-start-game" class="w-full bg-sky-500 hover:bg-sky-600 text-white text-xl py-3 rounded-xl font-black shadow-[0_5px_0_#0284c7] active:translate-y-1 active:shadow-none transition-all mt-1">
+                전국 여행 출발!
+            </button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden flex-col items-center justify-center w-full h-full relative p-1">
+        <div class="board-container" id="board">
+            
+            <div class="center-area">
+                <div id="festival-display" class="hidden relative bg-pink-100 text-pink-700 font-black px-4 md:px-6 py-1 md:py-2 rounded-full shadow-md border-2 border-pink-300 animate-bounce z-10 text-xs md:text-base mb-2 md:mb-4 w-full text-center truncate">
+                    🎇 <span id="festival-text">축제 준비 중</span> 🎇
+                </div>
+
+                <div id="dice-display">
+                    <span id="die1">🎲</span>
+                    <span id="die2">🎲</span>
+                </div>
+                
+                <div id="turn-indicator" class="text-sm md:text-lg font-black text-sky-500 mb-1 px-4 md:px-5 py-1.5 md:py-2 bg-sky-50 rounded-full border-2 border-sky-200 transition-colors flex items-center gap-2 shadow-sm">
+                    <span id="turn-emoji">🐶</span> <span id="turn-name">플레이어 턴</span>
+                </div>
+
+                <div id="action-msg" class="text-center h-10 md:h-12 text-slate-600 font-bold break-keep px-2 flex items-center justify-center text-xs sm:text-base">
+                    주사위를 굴려주세요!
+                </div>
+
+                <div class="grid grid-cols-2 gap-1 md:gap-2 w-full mt-1 md:mt-2 max-w-[320px]" id="player-panels">
+                    </div>
+
+                <div class="controls-wrapper">
+                    <button id="btn-roll" class="btn btn-roll px-6 md:px-8 py-2 md:py-2 text-sm md:text-base">주사위 굴리기</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="action-modal" class="absolute inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 backdrop-blur-sm">
+            <div class="modal-wrapper" id="action-wrapper">
+                <button class="peek-btn">👀 보드 엿보기</button>
+                <div class="modal-content animate-pop">
+                    <div class="text-4xl mb-2" id="action-emoji">🏢</div>
+                    <h3 id="action-title" class="text-2xl font-black mb-1 text-slate-800">지역명</h3>
+                    <p id="action-build-name" class="text-sky-600 font-bold mb-3 text-lg">-</p>
+                    <p id="action-desc" class="text-slate-600 mb-6 font-medium text-base">구매하시겠습니까?</p>
+                    
+                    <div class="flex gap-3 justify-center">
+                        <button id="btn-cancel" class="btn btn-pass flex-1 text-base py-3">통과</button>
+                        <button id="btn-confirm" class="btn btn-buy flex-1 text-base py-3">결정</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chance-modal" class="absolute inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 backdrop-blur-sm">
+            <div class="modal-wrapper">
+                <div class="modal-content bg-amber-50 border-amber-300 animate-pop p-8">
+                    <div class="text-6xl mb-3 animate-bounce">🎫</div>
+                    <h3 id="chance-title" class="text-2xl font-black mb-4 text-amber-600">K-여행 찬스!</h3>
+                    <p id="chance-desc" class="text-base text-slate-800 mb-8 font-bold break-keep">카드를 뽑는 중...</p>
+                    <button id="btn-chance-ok" class="btn bg-amber-500 shadow-[0_5px_0_#d97706] w-full text-lg hover:bg-amber-400 py-3">확인</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="travel-modal" class="absolute inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 backdrop-blur-sm">
+            <div class="modal-wrapper" id="travel-wrapper">
+                <button class="peek-btn">👀 보드 엿보기</button>
+                <div class="modal-content animate-pop max-h-[85vh] flex flex-col">
+                    <div class="text-5xl mb-2" id="travel-emoji">🚂</div>
+                    <h3 id="travel-title" class="text-2xl font-black mb-1 text-slate-800">어디로 갈까요?</h3>
+                    <p id="travel-desc" class="text-slate-600 mb-3 font-medium text-xs">선택한 곳으로 즉시 이동합니다.</p>
+                    <div id="travel-options" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 mb-2 p-1">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="festival-modal" class="absolute inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 backdrop-blur-sm">
+            <div class="modal-wrapper" id="festival-wrapper">
+                <button class="peek-btn">👀 보드 엿보기</button>
+                <div class="modal-content animate-pop border-pink-200 max-h-[85vh] flex flex-col">
+                    <div class="text-5xl mb-2" id="festival-modal-emoji">🎆</div>
+                    <h3 id="festival-modal-title" class="text-2xl font-black mb-1 text-slate-800">축제 개최지 선택</h3>
+                    <p class="text-slate-600 mb-3 font-medium text-xs">축제를 열 도시를 선택하세요. (해당 지역 통행료 2배)</p>
+                    <div id="festival-options" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 mb-2 p-1">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameover-screen" class="hidden modal-overlay z-[200]">
+            <div class="modal-content animate-pop">
+                <div class="text-6xl mb-3" id="go-icon">🏆</div>
+                <h2 class="text-3xl font-black mb-2 text-slate-800" id="go-title">게임 종료!</h2>
+                <p class="text-lg text-slate-500 mb-5 font-bold" id="go-desc">최후의 승자입니다.</p>
+                
+                <div id="ranking-list" class="space-y-2 mb-6 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    </div>
+
+                <button id="btn-restart" class="w-full bg-sky-500 hover:bg-sky-600 text-white text-lg py-3 rounded-xl font-black shadow-[0_5px_0_#0284c7]">
+                    다시 여행하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    class AudioEngine {
+        constructor() { this.ctx = null; this.isBgmPlaying = false; }
+        init() {
+            if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        playTone(freq, type, duration, vol=0.1, slideFreq=null) {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + duration);
+        }
+        playWalk() { this.init(); this.playTone(350, 'triangle', 0.08, 0.05, 300); }
+        playRoll() {
+            this.init(); let delay = 0;
+            for(let i=0; i<4; i++) {
+                setTimeout(() => this.playTone(400 + Math.random()*200, 'square', 0.05, 0.02), delay);
+                delay += (80 * (state.speedMode === 'fast' ? 0.4 : 1));
+            }
+            setTimeout(() => this.playTone(800, 'sine', 0.1, 0.05), delay);
+        }
+        playBuild() {
+            this.init(); this.playTone(400, 'square', 0.1, 0.05);
+            setTimeout(() => this.playTone(500, 'square', 0.1, 0.05), 100);
+            setTimeout(() => this.playTone(700, 'triangle', 0.2, 0.05), 200);
+        }
+        playMoney(isGain) {
+            this.init();
+            if(isGain) { this.playTone(600, 'sine', 0.1, 0.05); setTimeout(() => this.playTone(800, 'sine', 0.2, 0.05), 100); }
+            else { this.playTone(300, 'sawtooth', 0.1, 0.05); setTimeout(() => this.playTone(200, 'sawtooth', 0.2, 0.05), 100); }
+        }
+        playChance() { this.init(); this.playTone(500, 'sine', 0.1, 0.05, 1000); }
+        playBGM() {
+            this.init(); if (this.isBgmPlaying) return; this.isBgmPlaying = true;
+            const notes = [261.63, 329.63, 392.00, 523.25]; let step = 0;
+            this.bgmInterval = setInterval(() => {
+                if (this.ctx.state !== 'running') return;
+                let freq = notes[step % notes.length];
+                this.playTone(freq, 'sine', 0.1, 0.015);
+                if(step % 8 === 0) this.playTone(130.81, 'triangle', 0.2, 0.02);
+                step++;
+            }, 300);
+        }
+        stopBGM() { this.isBgmPlaying = false; clearInterval(this.bgmInterval); }
+    }
+    const audio = new AudioEngine();
+
+    // 서귀포 -> 독도 변경 및 데이터 셋업
+    const BOARD_DATA = [
+        { id: 0, name: "출발", type: "start", color: "#f43f5e", emoji: "🏁" },
+        { id: 1, name: "판교", type: "city", province: "수도권", color: "#f1f5f9", price: 10, emoji: "💻", buildNames: ["IT회사", "테크노밸리", "알파돔시티"], tags: [], festName: "IT 페스티벌" },
+        { id: 2, name: "수원", type: "city", province: "수도권", color: "#f1f5f9", price: 12, emoji: "🏰", buildNames: ["왕갈비집", "행궁동", "수원화성"], tags: ["ktx"], festName: "화성문화제" },
+        { id: 3, name: "K-찬스", type: "chance", color: "#fde047", emoji: "🎫" },
+        { id: 4, name: "인천", type: "city", province: "수도권", color: "#f1f5f9", price: 15, emoji: "🛩️", buildNames: ["차이나타운", "월미도", "인천국제공항"], tags: ["airport", "port"], festName: "펜타포트 락 페스티벌" },
+        { id: 5, name: "춘천", type: "city", province: "강원", color: "#e0f2fe", price: 14, emoji: "🛶", buildNames: ["닭갈비집", "소양강댐", "남이섬"], tags: ["ktx"], festName: "마임축제" },
+        { id: 6, name: "평창", type: "tour", color: "#bae6fd", price: 20, emoji: "🐑", buildNames: ["양떼목장"], tags: ["ktx"], festName: "송어축제" },
+        { id: 7, name: "강릉", type: "city", province: "강원", color: "#e0f2fe", price: 16, emoji: "🌅", buildNames: ["초당순두부", "안목해변", "오죽헌"], tags: ["ktx"], festName: "단오제" },
+        
+        { id: 8, name: "무인도", type: "island", color: "#94a3b8", emoji: "🏝️" },
+        
+        { id: 9, name: "속초", type: "city", province: "강원", color: "#e0f2fe", price: 18, emoji: "🦑", buildNames: ["오징어순대", "아바이마을", "설악산"], tags: ["port"], festName: "오징어축제" },
+        { id: 10, name: "K-찬스", type: "chance", color: "#fde047", emoji: "🎫" },
+        { id: 11, name: "천안", type: "city", province: "충청", color: "#fce7f3", price: 16, emoji: "🌰", buildNames: ["호두과자점", "아우내장터", "독립기념관"], tags: ["ktx"], festName: "흥타령 춤축제" },
+        { id: 12, name: "청주", type: "city", province: "충청", color: "#fce7f3", price: 18, emoji: "✈️", buildNames: ["삼겹살거리", "수암골", "청남대"], tags: ["airport"], festName: "직지문화제" },
+        { id: 13, name: "대전", type: "city", province: "충청", color: "#fce7f3", price: 20, emoji: "🥖", buildNames: ["성심당", "엑스포공원", "한빛탑"], tags: ["ktx"], festName: "대전 빵축제" },
+        { id: 14, name: "보령", type: "tour", color: "#bae6fd", price: 20, emoji: "🏖️", buildNames: ["머드체험관", "대천해수욕장"], tags: ["port"], festName: "머드축제" },
+        { id: 15, name: "군산", type: "tour", color: "#bae6fd", price: 20, emoji: "🕰️", buildNames: ["이성당", "근대문화유산거리"], tags: ["port"], festName: "시간여행 축제" },
+        
+        { id: 16, name: "지역축제", type: "festival", color: "#fbcfe8", emoji: "🎆" },
+        
+        { id: 17, name: "전주", type: "city", province: "전라", color: "#f3e8ff", price: 22, emoji: "🛖", buildNames: ["비빔밥집", "객리단길", "한옥마을"], tags: ["ktx"], festName: "비빔밥축제" },
+        { id: 18, name: "광주", type: "city", province: "전라", color: "#f3e8ff", price: 24, emoji: "🍉", buildNames: ["송정떡갈비", "충장로", "국립아시아문화전당"], tags: ["ktx", "airport"], festName: "추억의 충장축제" },
+        { id: 19, name: "K-찬스", type: "chance", color: "#fde047", emoji: "🎫" },
+        { id: 20, name: "여수", type: "city", province: "전라", color: "#f3e8ff", price: 26, emoji: "🌉", buildNames: ["간장게장집", "낭만포차", "오동도"], tags: ["ktx", "airport", "port"], festName: "거북선축제" },
+        { id: 21, name: "포항", type: "city", province: "경상", color: "#e0e7ff", price: 28, emoji: "🦀", buildNames: ["과메기덕장", "구룡포", "호미곶"], tags: ["ktx", "port"], festName: "국제불빛축제" },
+        { id: 22, name: "경주", type: "tour", color: "#bae6fd", price: 30, emoji: "🛕", buildNames: ["황리단길", "불국사"], tags: ["ktx"], festName: "신라문화제" },
+        { id: 23, name: "울산", type: "city", province: "경상", color: "#e0e7ff", price: 30, emoji: "🐋", buildNames: ["고래고기집", "간절곶", "태화강국가정원"], tags: ["ktx", "airport"], festName: "고래축제" },
+        
+        { id: 24, name: "교통센터", type: "travel", color: "#a7f3d0", emoji: "🚂" },
+        
+        { id: 25, name: "대구", type: "city", province: "경상", color: "#e0e7ff", price: 32, emoji: "🍎", buildNames: ["막창집", "동성로", "이월드"], tags: ["ktx", "airport"], festName: "치맥페스티벌" },
+        { id: 26, name: "K-찬스", type: "chance", color: "#fde047", emoji: "🎫" },
+        { id: 27, name: "부산", type: "city", province: "경상", color: "#e0e7ff", price: 35, emoji: "🌊", buildNames: ["부산어묵집", "해운대", "광안대교"], tags: ["ktx", "airport", "port"], festName: "국제영화제" },
+        { id: 28, name: "안동", type: "tour", color: "#bae6fd", price: 30, emoji: "🎭", buildNames: ["찜닭거리", "하회마을"], tags: ["ktx"], festName: "국제탈춤페스티벌" },
+        { id: 29, name: "독도", type: "tour", color: "#bae6fd", price: 35, emoji: "🇰🇷", buildNames: ["독도수비대", "독도이사부길"], tags: ["port"], festName: "독도의 날 축제" }, // 독도 업데이트
+        { id: 30, name: "제주", type: "city", province: "제주", color: "#ccfbf1", price: 40, emoji: "🍊", buildNames: ["흑돼지집", "협재해변", "성산일출봉"], tags: ["airport", "port"], festName: "들불축제" },
+        { id: 31, name: "서울", type: "city", province: "수도권", color: "#fecaca", price: 50, emoji: "🗼", buildNames: ["광장시장", "명동거리", "N서울타워"], tags: ["ktx", "airport"], festName: "여의도 불꽃축제" }
+    ];
+
+    const POS_MAP = [];
+    for(let c=9; c>=2; c--) POS_MAP.push({r:9, c:c});
+    for(let r=9; r>=2; r--) POS_MAP.push({r:r, c:1});
+    for(let c=1; c<=8; c++) POS_MAP.push({r:1, c:c});
+    for(let r=1; r<=8; r++) POS_MAP.push({r:r, c:9});
+
+    const CHANCE_CARDS = [
+        { title: "로또 3등 당첨!", desc: "운이 좋군요! 자금 100만을 획득합니다.", action: "money", val: 100 },
+        { title: "국세청 세무조사", desc: "탈세 의혹으로 벌금 50만을 납부합니다.", action: "money", val: -50 },
+        { title: "제주 감귤 대박", desc: "특산물 판매 수익금 50만을 획득합니다.", action: "money", val: 50 },
+        { title: "지갑 분실", desc: "여행 중 소매치기를 당해 30만을 잃습니다.", action: "money", val: -30 },
+        { title: "폭우 발생", desc: "기상 악화로 무인도로 휩쓸려 갑니다.", action: "move", val: 8 },
+        { title: "해외 출장", desc: "즉시 인천국제공항(인천)으로 이동합니다.", action: "move", val: 4 },
+        { title: "KTX 파업", desc: "교통 마비로 무인도로 갇혀 휴식합니다.", action: "move", val: 8 },
+        { title: "국고 지원", desc: "출발지를 지나쳐 월급 30만을 받습니다.", action: "move", val: 0 },
+        { title: "하이패스 발급", desc: "다음 상대방 땅 도착 시 통행료를 1회 면제받습니다.", action: "highPass", val: 1 },
+        { title: "오작동 톨게이트", desc: "시스템 오류로 하이패스 이용권을 2개 얻습니다.", action: "highPass", val: 2 },
+        { title: "깜짝 리모델링", desc: "소유한 도시 중 한 곳이 무료로 1단계 자동 건설됩니다.", action: "freeUpgrade", val: 1 },
+        { title: "관광 특별구역 지정", desc: "관광청의 파격적인 지원을 받아 자금 80만을 획득합니다.", action: "money", val: 80 }
+    ];
+
+    const EMOJIS = ["🐶", "🐱", "🐰", "🐻"];
+    const COLORS = ["#38bdf8", "#fb7185", "#10b981", "#a855f7"];
+
+    const TRANS_INFO = [
+        { name: "KTX", emoji: "🚂", tag: "ktx", color: "#a7f3d0" },
+        { name: "공항", emoji: "✈️", tag: "airport", color: "#e9d5ff" },
+        { name: "항구", emoji: "🚢", tag: "port", color: "#bae6fd" }
+    ];
+
+    let state = {
+        players: [], turn: 0, board: [], cpuDifficulty: 'normal', speedMode: 'normal',
+        isAnimating: false, round: 1, festivalCell: null, festivalName: "",
+        doubleCount: 0, currentTransportIdx: 0,
+        actionPending: false // 연타(이중 클릭) 방지 플래그
+    };
+
+    const els = {
+        board: document.getElementById('board'),
+        playerPanels: document.getElementById('player-panels'),
+        turnIndicator: document.getElementById('turn-indicator'),
+        turnEmoji: document.getElementById('turn-emoji'),
+        turnName: document.getElementById('turn-name'),
+        actionMsg: document.getElementById('action-msg'),
+        die1: document.getElementById('die1'),
+        die2: document.getElementById('die2'),
+        btnRoll: document.getElementById('btn-roll'),
+        
+        actionModal: document.getElementById('action-modal'),
+        actEmoji: document.getElementById('action-emoji'),
+        actTitle: document.getElementById('action-title'),
+        actBuildName: document.getElementById('action-build-name'),
+        actDesc: document.getElementById('action-desc'),
+        btnConfirm: document.getElementById('btn-confirm'),
+        btnCancel: document.getElementById('btn-cancel'),
+
+        chanceModal: document.getElementById('chance-modal'),
+        chanceTitle: document.getElementById('chance-title'),
+        chanceDesc: document.getElementById('chance-desc'),
+        btnChanceOk: document.getElementById('btn-chance-ok'),
+
+        travelModal: document.getElementById('travel-modal'),
+        travelEmoji: document.getElementById('travel-emoji'),
+        travelTitle: document.getElementById('travel-title'),
+        travelOptions: document.getElementById('travel-options'),
+
+        festivalModal: document.getElementById('festival-modal'),
+        festivalModalEmoji: document.getElementById('festival-modal-emoji'),
+        festivalModalTitle: document.getElementById('festival-modal-title'),
+        festivalOptions: document.getElementById('festival-options'),
+
+        goScreen: document.getElementById('gameover-screen'),
+        goTitle: document.getElementById('go-title'),
+        goDesc: document.getElementById('go-desc'),
+        rankList: document.getElementById('ranking-list'),
+        goIcon: document.getElementById('go-icon'),
+
+        festDisplay: document.getElementById('festival-display'),
+        festText: document.getElementById('festival-text')
+    };
+
+    // --- 보드 엿보기(Peek) 로직 ---
+    function setupPeekButtons() {
+        const attachPeekEvents = (btnSelector, wrapperId) => {
+            const btns = document.querySelectorAll(btnSelector);
+            const wrapper = document.getElementById(wrapperId);
+            if(!wrapper) return;
+            btns.forEach(btn => {
+                const peekOn = (e) => { e.preventDefault(); wrapper.classList.add('peeking'); };
+                const peekOff = (e) => { e.preventDefault(); wrapper.classList.remove('peeking'); };
+                btn.addEventListener('mousedown', peekOn);
+                btn.addEventListener('touchstart', peekOn, {passive: false});
+                btn.addEventListener('mouseup', peekOff);
+                btn.addEventListener('mouseleave', peekOff);
+                btn.addEventListener('touchend', peekOff);
+            });
+        };
+        attachPeekEvents('#action-wrapper .peek-btn', 'action-wrapper');
+        attachPeekEvents('#travel-wrapper .peek-btn', 'travel-wrapper');
+        attachPeekEvents('#festival-wrapper .peek-btn', 'festival-wrapper');
+    }
+    setupPeekButtons();
+    // ----------------------------
+
+    function getDelay(ms) { return ms * (state.speedMode === 'fast' ? 0.35 : 1.0); }
+
+    function initGame(totalPlayers, humanPlayers, diff, speed) {
+        state.cpuDifficulty = diff;
+        state.speedMode = speed;
+        document.documentElement.style.setProperty('--anim-speed', speed === 'fast' ? 0.35 : 1.0);
+        
+        state.turn = 0; state.round = 1; state.isAnimating = false;
+        state.doubleCount = 0; state.currentTransportIdx = 0;
+        state.actionPending = false;
+        
+        const startMoney = 300; 
+        state.players = [];
+        let cpuCount = 1;
+        for(let i=0; i<totalPlayers; i++) {
+            const isCpu = i >= humanPlayers;
+            state.players.push({
+                id: i, 
+                name: isCpu ? `CPU ${cpuCount++}` : `플레이어 ${i+1}`, 
+                color: COLORS[i], emoji: EMOJIS[i],
+                isCpu: isCpu, money: startMoney, pos: 0, jailTurns: 0, highPass: 0, bankrupt: false
+            });
+        }
+
+        state.board = BOARD_DATA.map((data, i) => ({ ...data, idx: i, owner: null, level: 0 }));
+        state.festivalCell = null;
+        els.festDisplay.classList.add('hidden');
+
+        renderBoard();
+        initPlayerTokens(); 
+        renderPlayerPanels();
+        updateTransportUI();
+        updateTurnUI();
+        
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('game-screen').classList.add('flex');
+        
+        setTimeout(() => updateTokenPositions(null), 100);
+        window.addEventListener('resize', () => updateTokenPositions(null));
+
+        audio.playBGM();
+        els.actionMsg.textContent = "주사위를 굴려주세요!";
+    }
+
+    function renderBoard() {
+        document.querySelectorAll('.cell-rendered').forEach(e => e.remove());
+
+        state.board.forEach((cellData, i) => {
+            const pos = POS_MAP[i];
+            const cell = document.createElement('div');
+            cell.className = 'cell cell-rendered';
+            cell.style.gridRow = pos.r; cell.style.gridColumn = pos.c;
+            cell.id = `cell-${i}`;
+
+            const header = document.createElement('div');
+            header.className = 'cell-header';
+            header.style.backgroundColor = cellData.color;
+            
+            if (['start', 'chance', 'island', 'travel', 'festival'].includes(cellData.type)) {
+                 header.style.height = '100%'; header.style.flexDirection = 'column';
+                 header.style.fontWeight = '900'; header.style.color = '#1e293b';
+                 header.innerHTML = `<span class="text-xl md:text-2xl mb-0.5 md:mb-1">${cellData.emoji}</span><span>${cellData.name}</span>`;
+                 cell.style.padding = '0';
+                 cell.appendChild(header);
+            } else {
+                header.innerHTML = `<span class="text-sm md:text-base">${cellData.emoji}</span>`;
+                const title = document.createElement('div');
+                title.className = 'cell-title'; title.textContent = cellData.name;
+                
+                const buildName = document.createElement('div');
+                buildName.className = 'cell-build-name'; buildName.id = `buildname-${i}`;
+                buildName.textContent = cellData.type === 'tour' ? cellData.buildNames[0] : "빈 땅";
+
+                const price = document.createElement('div');
+                price.className = 'cell-price'; price.id = `price-${i}`; price.textContent = `${cellData.price}만`;
+
+                const bldg = document.createElement('div');
+                bldg.className = 'buildings'; bldg.id = `bldg-${i}`;
+
+                const ownerBar = document.createElement('div');
+                ownerBar.className = 'cell-owner-bar'; ownerBar.id = `owner-${i}`;
+
+                cell.appendChild(header); cell.appendChild(title); cell.appendChild(buildName);
+                cell.appendChild(bldg); cell.appendChild(price); cell.appendChild(ownerBar);
+            }
+            els.board.appendChild(cell);
+        });
+        updateBoardVisuals();
+    }
+
+    function getProvinceMonopolyOwners() {
+        const provinceCounts = { "수도권": 4, "강원": 3, "충청": 3, "전라": 3, "경상": 4, "제주": 1 };
+        const playerCityCounts = {};
+        state.players.forEach(p => {
+            playerCityCounts[p.id] = { "수도권": 0, "강원": 0, "충청": 0, "전라": 0, "경상": 0, "제주": 0 };
+        });
+
+        state.board.forEach(c => {
+            if (c.type === 'city' && c.province && c.owner !== null) {
+                playerCityCounts[c.owner][c.province]++;
+            }
+        });
+
+        const monopolyMap = {};
+        for (const [pId, counts] of Object.entries(playerCityCounts)) {
+            for (const [prov, count] of Object.entries(counts)) {
+                if (count === provinceCounts[prov]) monopolyMap[prov] = parseInt(pId);
+            }
+        }
+        return monopolyMap;
+    }
+
+    function getToll(cellIdx) {
+        const cell = state.board[cellIdx];
+        if (cell.owner === null) return 0;
+        let baseToll = 0;
+        if (cell.type === 'tour') baseToll = cell.price * 2; 
+        else {
+            if (cell.level === 0) return 0;
+            baseToll = cell.price * (cell.level * 1.5);
+            if (cell.level === 3) baseToll = cell.price * 5; 
+        }
+        if (state.festivalCell === cellIdx) baseToll *= 2; 
+        const monopolyOwners = getProvinceMonopolyOwners();
+        if (cell.province && monopolyOwners[cell.province] === cell.owner) baseToll *= 2; 
+        return Math.floor(baseToll);
+    }
+
+    function updateBoardVisuals() {
+        const monopolyOwners = getProvinceMonopolyOwners();
+
+        state.board.forEach((cell, i) => {
+            if(cell.type === 'city' || cell.type === 'tour') {
+                const ob = document.getElementById(`owner-${i}`);
+                if(ob) ob.style.backgroundColor = cell.owner !== null ? state.players[cell.owner].color : 'transparent';
+                
+                const bg = document.getElementById(`bldg-${i}`);
+                const bn = document.getElementById(`buildname-${i}`);
+                
+                if(cell.owner !== null && cell.level > 0 && bn) {
+                    bn.textContent = cell.buildNames[cell.level - 1];
+                    bn.style.color = state.players[cell.owner].color;
+                } else if (cell.owner === null && bn) {
+                    bn.textContent = cell.type === 'tour' ? cell.buildNames[0] : "빈 땅";
+                    bn.style.color = '#94a3b8';
+                }
+
+                if(bg) {
+                    bg.innerHTML = ''; 
+                    if (cell.type === 'tour' && cell.owner !== null) {
+                        const b = document.createElement('div');
+                        b.className = `bldg tour bldg-anim text-xs flex justify-center items-center`;
+                        b.textContent = '🚩'; b.style.backgroundColor = 'transparent'; b.style.boxShadow = 'none';
+                        bg.appendChild(b);
+                    } else if (cell.type === 'city' && cell.level > 0) {
+                        const b = document.createElement('div');
+                        b.className = `bldg lv${cell.level} bldg-anim`; 
+                        bg.appendChild(b);
+                    }
+                }
+
+                const pEl = document.getElementById(`price-${i}`);
+                let isMonopoly = cell.province && monopolyOwners[cell.province] === cell.owner;
+                
+                if(pEl) {
+                    if(cell.owner !== null) {
+                        pEl.textContent = `통행료 ${getToll(i)}만`;
+                        pEl.style.color = isMonopoly ? '#ef4444' : state.players[cell.owner].color;
+                        if(isMonopoly) pEl.innerHTML = `<span class="text-[8px] md:text-[9px] bg-red-500 text-white rounded px-1">[독점]</span> ${getToll(i)}만`;
+                    } else {
+                        pEl.textContent = `${cell.price}만`;
+                        pEl.style.color = '#64748b'; pEl.style.fontWeight = 'bold';
+                    }
+                }
+                
+                const cellEl = document.getElementById(`cell-${i}`);
+                if(state.festivalCell === i) {
+                    cellEl.style.boxShadow = '0 0 12px 4px rgba(236, 72, 153, 0.6)';
+                    cellEl.style.border = '2px solid #ec4899';
+                    const h = cellEl.querySelector('.cell-header span:first-child');
+                    if(h && !h.innerHTML.includes('🎇')) h.innerHTML = '🎇 ' + h.innerHTML + ' 🎇';
+                } else {
+                    if(isMonopoly) {
+                        cellEl.style.boxShadow = `0 0 10px 3px ${state.players[cell.owner].color}90`;
+                        cellEl.style.border = `2px solid ${state.players[cell.owner].color}`;
+                    } else {
+                        cellEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 0 rgba(0,0,0,0.05)';
+                        cellEl.style.border = '2px solid transparent';
+                    }
+                    const h = cellEl.querySelector('.cell-header span:first-child');
+                    if(h && h.innerHTML.includes('🎇')) h.innerHTML = h.innerHTML.replace(/🎇/g, '').trim();
+                }
+            }
+        });
+    }
+
+    function updateTransportUI() {
+        const t = TRANS_INFO[state.currentTransportIdx];
+        state.board[24].name = t.name;
+        state.board[24].emoji = t.emoji;
+        const cellEl = document.getElementById('cell-24');
+        if(cellEl) {
+            const header = cellEl.querySelector('.cell-header');
+            if(header) {
+                header.style.backgroundColor = t.color;
+                header.innerHTML = `<span class="text-2xl md:text-3xl mb-1">${t.emoji}</span><span>${t.name}</span>`;
+            }
+        }
+    }
+
+    function initPlayerTokens() {
+        document.querySelectorAll('.player-token').forEach(e => e.remove());
+        state.players.forEach(p => {
+            const token = document.createElement('div');
+            token.className = 'player-token'; token.id = `token-${p.id}`; token.innerHTML = p.emoji;
+            els.board.appendChild(token);
+        });
+    }
+
+    function updateTokenPositions(movingPlayerId) {
+        const posGroups = {};
+        state.players.forEach(p => {
+            if(!p.bankrupt) {
+                if(!posGroups[p.pos]) posGroups[p.pos] = [];
+                posGroups[p.pos].push(p);
+            } else {
+                const token = document.getElementById(`token-${p.id}`);
+                if(token) token.style.display = 'none';
+            }
+        });
+
+        for(let pos in posGroups) {
+            const playersAtPos = posGroups[pos];
+            const cellEl = document.getElementById(`cell-${pos}`);
+            if(!cellEl) continue;
+
+            const centerX = cellEl.offsetLeft + cellEl.offsetWidth / 2;
+            const centerY = cellEl.offsetTop + cellEl.offsetHeight / 2;
+
+            playersAtPos.forEach((p, idx) => {
+                const token = document.getElementById(`token-${p.id}`);
+                if(!token) return;
+                
+                const angle = (idx / playersAtPos.length) * Math.PI * 2;
+                const radius = playersAtPos.length > 1 ? (window.innerWidth < 768 ? 8 : 12) : 0;
+                const offsetX = Math.cos(angle) * radius;
+                const offsetY = Math.sin(angle) * radius;
+                
+                token.style.left = `${centerX + offsetX}px`;
+                token.style.top = `${centerY + offsetY}px`;
+                token.style.transform = `translate(-50%, -50%)`;
+
+                if (p.id === movingPlayerId) {
+                    token.classList.remove('token-jump'); void token.offsetWidth; token.classList.add('token-jump');
+                }
+            });
+        }
+    }
+
+    function showFloatText(text, cellIdx, color) {
+        const cell = document.getElementById(`cell-${cellIdx}`);
+        if(!cell) return;
+        const el = document.createElement('div');
+        el.className = 'floating-text'; el.textContent = text; el.style.color = color;
+        el.style.left = `${cell.offsetLeft + cell.offsetWidth / 2}px`;
+        el.style.top = `${cell.offsetTop}px`;
+        els.board.appendChild(el);
+        setTimeout(() => el.remove(), getDelay(1200));
+    }
+
+    function renderPlayerPanels() {
+        els.playerPanels.innerHTML = '';
+        state.players.forEach(p => {
+            const div = document.createElement('div');
+            div.className = `player-panel ${p.bankrupt ? 'opacity-30 grayscale' : ''}`;
+            div.id = `panel-${p.id}`; div.style.borderLeftColor = p.color;
+            if(p.id === state.turn) { div.style.borderWidth = '3px'; } 
+            else { div.style.borderWidth = '0 0 0 3px'; }
+            
+            div.innerHTML = `
+                <div class="p-emoji">${p.emoji}</div>
+                <div class="p-info">
+                    <span class="p-name">${p.name} ${p.bankrupt ? '(파산)' : ''} ${p.highPass > 0 ? '<span class="text-[9px] bg-blue-500 text-white rounded px-1 py-0.5 ml-1">하이패스</span>' : ''}</span>
+                    <span class="p-money" id="money-${p.id}">${p.money}만</span>
+                </div>
+            `;
+            els.playerPanels.appendChild(div);
+        });
+        const activePanel = document.getElementById(`panel-${state.turn}`);
+        if(activePanel) activePanel.classList.add('active');
+    }
+
+    function updateMoneyUI(playerId, isGain) {
+        const moneyEl = document.getElementById(`money-${playerId}`);
+        const player = state.players[playerId];
+        if(!moneyEl || !player) return;
+
+        moneyEl.textContent = `${player.money}만`;
+        moneyEl.classList.remove('money-gain', 'money-loss'); void moneyEl.offsetWidth; 
+        moneyEl.classList.add(isGain ? 'money-gain' : 'money-loss');
+        setTimeout(() => moneyEl.classList.remove('money-gain', 'money-loss'), getDelay(300));
+    }
+
+    function updateTurnUI() {
+        const cp = state.players[state.turn];
+        document.querySelectorAll('.player-panel').forEach(el => {
+            el.classList.remove('active'); el.style.borderWidth = '0 0 0 3px';
+        });
+        const panel = document.getElementById(`panel-${state.turn}`);
+        if(panel) { panel.classList.add('active'); panel.style.borderWidth = '3px'; }
+
+        els.turnEmoji.textContent = cp.emoji;
+        els.turnName.textContent = `${cp.name}의 턴 ${state.doubleCount > 0 ? '(더블!)' : ''}`;
+        els.turnIndicator.style.color = cp.color; els.turnIndicator.style.borderColor = cp.color;
+
+        if (cp.isCpu) {
+            els.btnRoll.disabled = true; els.btnRoll.textContent = "판단 중...";
+            if(!state.isAnimating && !cp.bankrupt) setTimeout(rollDice, getDelay(1000)); 
+        } else {
+            els.btnRoll.disabled = false; els.btnRoll.textContent = "주사위 굴리기";
+        }
+    }
+
+    function rollDice() {
+        if(state.isAnimating) return;
+        const cp = state.players[state.turn];
+        if(cp.bankrupt) { nextTurn(); return; }
+
+        state.isAnimating = true; els.btnRoll.disabled = true;
+        audio.playRoll();
+        els.die1.classList.add('rolling'); els.die2.classList.add('rolling');
+        
+        let rolls = 0;
+        const rollInt = setInterval(() => {
+            const d1 = Math.floor(Math.random() * 6) + 1; const d2 = Math.floor(Math.random() * 6) + 1;
+            els.die1.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][d1-1];
+            els.die2.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][d2-1];
+            rolls++;
+            
+            if(rolls > 10) {
+                clearInterval(rollInt);
+                els.die1.classList.remove('rolling'); els.die2.classList.remove('rolling');
+                
+                const finalDie1 = Math.floor(Math.random() * 6) + 1; const finalDie2 = Math.floor(Math.random() * 6) + 1;
+                els.die1.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][finalDie1-1];
+                els.die2.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][finalDie2-1];
+                
+                const sum = finalDie1 + finalDie2; const isDouble = finalDie1 === finalDie2;
+
+                if(cp.jailTurns > 0) {
+                    if(isDouble) {
+                        cp.jailTurns = 0; state.doubleCount = 0; 
+                        els.actionMsg.textContent = `더블! 탈출 성공! ${sum}칸 이동합니다.`;
+                        setTimeout(() => movePlayerStepByStep(cp, sum), getDelay(1000));
+                    } else {
+                        cp.jailTurns--;
+                        els.actionMsg.textContent = `탈출 실패... 남은 휴식: ${cp.jailTurns}턴`;
+                        audio.playMoney(false); state.doubleCount = 0;
+                        setTimeout(nextTurn, getDelay(1500));
+                    }
+                    return;
+                }
+
+                if(isDouble) {
+                    state.doubleCount++;
+                    if(state.doubleCount >= 3) {
+                        els.actionMsg.textContent = "3연속 더블! 무인도로 표류합니다.";
+                        state.doubleCount = 0; cp.pos = 8; cp.jailTurns = 3;
+                        updateTokenPositions(cp.id); audio.playMoney(false);
+                        setTimeout(nextTurn, getDelay(1500));
+                        return;
+                    }
+                    els.actionMsg.textContent = `더블! ${sum}칸 이동 후 한 번 더!`;
+                } else {
+                    state.doubleCount = 0; els.actionMsg.textContent = `${sum}칸 이동합니다.`;
+                }
+                
+                setTimeout(() => movePlayerStepByStep(cp, sum), getDelay(500));
+            }
+        }, getDelay(50));
+    }
+
+    function movePlayerStepByStep(player, steps) {
+        let currentStep = 0;
+        const moveInt = setInterval(() => {
+            currentStep++; player.pos = (player.pos + 1) % 32;
+            audio.playWalk(); updateTokenPositions(player.id);
+            
+            if(player.pos === 0) {
+                player.money += 30; audio.playMoney(true);
+                showFloatText("+30만 (월급)", 0, "#10b981"); updateMoneyUI(player.id, true);
+            }
+            if(currentStep >= steps) {
+                clearInterval(moveInt);
+                setTimeout(() => handleCellAction(player, player.pos), getDelay(300));
+            }
+        }, getDelay(200)); 
+    }
+
+    function handleCellAction(player, cellIdx) {
+        const cell = state.board[cellIdx];
+        
+        const cellEl = document.getElementById(`cell-${cellIdx}`);
+        cellEl.style.transform = 'scale(1.1)'; cellEl.style.zIndex = '100';
+        setTimeout(() => { cellEl.style.transform = 'scale(1)'; cellEl.style.zIndex = 'auto'; }, getDelay(500));
+        
+        state.actionPending = false; // 플래그 초기화
+
+        if (cell.type === 'start') {
+            els.actionMsg.textContent = "출발지 도착! 휴식을 취합니다.";
+            setTimeout(nextTurn, getDelay(1200));
+            
+        } else if (cell.type === 'island') {
+            els.actionMsg.textContent = "무인도 표류! 더블이 나와야 탈출합니다.";
+            player.jailTurns = 3; state.doubleCount = 0; audio.playMoney(false);
+            setTimeout(nextTurn, getDelay(1500));
+
+        } else if (cell.type === 'festival') {
+            els.actionMsg.textContent = "축제 개최 권한 획득!";
+            audio.playMoney(true);
+            const owned = state.board.filter(c => c.owner === player.id && (c.type === 'city' || c.type === 'tour'));
+            
+            if(owned.length > 0) {
+                if (player.isCpu) {
+                    owned.sort((a,b) => getToll(b.idx) - getToll(a.idx)); 
+                    executeFestival(player, owned[0].idx);
+                } else {
+                    els.actionMsg.textContent = "축제를 개최할 도시를 선택하세요.";
+                    showFestivalModal(player, owned);
+                }
+            } else {
+                els.actionMsg.textContent = "소유한 땅이 없어 축제를 열지 못했습니다.";
+                setTimeout(nextTurn, getDelay(2000));
+            }
+
+        } else if (cell.type === 'travel') {
+            const t = TRANS_INFO[state.currentTransportIdx];
+            audio.playChance();
+            const available = state.board.filter(c => (c.type === 'city' || c.type === 'tour') && c.tags && c.tags.includes(t.tag));
+
+            if(available.length === 0) {
+                els.actionMsg.textContent = `갈 수 있는 ${t.name}가 없습니다.`;
+                setTimeout(nextTurn, getDelay(1200));
+                return;
+            }
+
+            if (player.isCpu) {
+                els.actionMsg.textContent = `[${t.name}] 탑승! 목적지를 고르는 중...`;
+                setTimeout(() => {
+                    const target = available[Math.floor(Math.random() * available.length)].idx;
+                    executeTravel(player, target);
+                }, getDelay(1500));
+            } else {
+                els.actionMsg.textContent = `[${t.name}] 탑승! 목적지를 선택하세요.`;
+                showTravelModal(player, t, available);
+            }
+
+        } else if (cell.type === 'chance') {
+            drawChanceCard(player);
+            
+        } else if (cell.type === 'city' || cell.type === 'tour') {
+            if (cell.owner === null) promptBuy(player, cellIdx);
+            else if (cell.owner === player.id) {
+                if (cell.type === 'city' && cell.level < 3) promptUpgrade(player, cellIdx);
+                else {
+                    els.actionMsg.textContent = cell.type === 'tour' ? "내 소유의 특수 관광지입니다." : "이미 랜드마크가 건설되어 있습니다.";
+                    setTimeout(nextTurn, getDelay(1200));
+                }
+            } else payToll(player, cellIdx);
+        }
+    }
+
+    function showTravelModal(player, transport, availableCells) {
+        els.travelEmoji.textContent = transport.emoji;
+        els.travelTitle.textContent = `${transport.name} 탑승`;
+        els.travelOptions.innerHTML = '';
+        
+        availableCells.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'p-2 md:p-3 bg-slate-50 border-2 border-slate-200 rounded-xl hover:border-sky-400 hover:bg-sky-50 transition-all font-bold text-slate-700 text-xs md:text-sm flex flex-col items-center gap-1 active:scale-95';
+            btn.innerHTML = `<span class="text-xl md:text-2xl">${c.emoji}</span><span class="break-keep">${c.name}</span>`;
+            btn.onclick = () => {
+                if (state.actionPending) return;
+                state.actionPending = true;
+                els.travelModal.classList.add('hidden');
+                executeTravel(player, c.idx);
+            };
+            els.travelOptions.appendChild(btn);
+        });
+        els.travelModal.classList.remove('hidden');
+    }
+
+    function showFestivalModal(player, ownedCells) {
+        els.festivalOptions.innerHTML = '';
+        
+        ownedCells.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'p-2 md:p-3 bg-pink-50 border-2 border-pink-200 rounded-xl hover:border-pink-400 hover:bg-pink-100 transition-all font-bold text-pink-700 text-xs md:text-sm flex flex-col items-center gap-1 active:scale-95';
+            btn.innerHTML = `<span class="text-xl md:text-2xl">${c.emoji}</span><span class="break-keep">${c.name}</span><span class="text-[10px] md:text-[11px] text-pink-500 bg-pink-100 px-1 rounded break-keep mt-1">${c.festName}</span>`;
+            btn.onclick = () => {
+                if(state.actionPending) return;
+                state.actionPending = true;
+                els.festivalModal.classList.add('hidden');
+                executeFestival(player, c.idx);
+            };
+            els.festivalOptions.appendChild(btn);
+        });
+        
+        els.festivalModal.classList.remove('hidden');
+    }
+
+    function executeFestival(player, targetIdx) {
+        const cell = state.board[targetIdx];
+        state.festivalCell = targetIdx;
+        state.festivalName = cell.festName; 
+        
+        els.festDisplay.classList.remove('hidden');
+        els.festText.textContent = `[${cell.name}] ${state.festivalName} 개최!`;
+        els.actionMsg.textContent = `${cell.name}에 [${state.festivalName}] 개최! 통행료 2배!`;
+        
+        updateBoardVisuals();
+        setTimeout(nextTurn, getDelay(2000));
+    }
+
+    function executeTravel(player, targetIdx) {
+        state.doubleCount = 0; 
+        player.pos = targetIdx;
+        updateTokenPositions(player.id);
+        state.currentTransportIdx = (state.currentTransportIdx + 1) % 3;
+        updateTransportUI();
+        setTimeout(() => handleCellAction(player, targetIdx), getDelay(600));
+    }
+
+    function promptBuy(player, cellIdx) {
+        const cell = state.board[cellIdx];
+        const cost = cell.price;
+
+        if (player.money < cost) {
+            els.actionMsg.textContent = `자금이 부족하여 구매 불가.`;
+            setTimeout(nextTurn, getDelay(1200)); return;
+        }
+
+        if (player.isCpu) {
+            let willBuy = true;
+            if (state.cpuDifficulty === 'easy' && Math.random() > 0.5) willBuy = false;
+            if (willBuy) executeBuy(player, cellIdx, cost);
+            else { els.actionMsg.textContent = `${player.name} 구매 패스.`; setTimeout(nextTurn, getDelay(1200)); }
+        } else {
+            els.actEmoji.textContent = cell.emoji; els.actTitle.textContent = cell.name;
+            els.actBuildName.textContent = cell.buildNames[0];
+            const typeStr = cell.type === 'tour' ? '특수 관광지' : '빈 땅';
+            els.actDesc.innerHTML = `${typeStr}입니다.<br><b class="text-green-600 text-2xl">${cost}만</b> 원에 구매하시겠습니까?`;
+            els.btnConfirm.textContent = "구매하기"; els.actionModal.classList.remove('hidden');
+
+            els.btnConfirm.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); executeBuy(player, cellIdx, cost); 
+            };
+            els.btnCancel.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); els.actionMsg.textContent = "구매를 포기했습니다."; setTimeout(nextTurn, getDelay(800)); 
+            };
+        }
+    }
+
+    function executeBuy(player, cellIdx, cost) {
+        player.money -= cost;
+        state.board[cellIdx].owner = player.id;
+        if(state.board[cellIdx].type === 'city') state.board[cellIdx].level = 1;
+        else state.board[cellIdx].level = 1; 
+        
+        audio.playBuild(); updateMoneyUI(player.id, false); updateBoardVisuals(); 
+        els.actionMsg.textContent = `${player.name}: ${state.board[cellIdx].name} [${state.board[cellIdx].buildNames[0]}] 구매!`;
+        setTimeout(nextTurn, getDelay(1500));
+    }
+
+    function promptUpgrade(player, cellIdx) {
+        const cell = state.board[cellIdx];
+        const cost = cell.price * cell.level; 
+        const nextLvName = cell.buildNames[cell.level];
+        const isLandmark = cell.level === 2; // 3단계(index 2)로 넘어가는 중이면 랜드마크
+
+        if (player.money < cost) {
+            els.actionMsg.textContent = `자금 부족으로 건설 불가.`;
+            setTimeout(nextTurn, getDelay(1200)); return;
+        }
+
+        if (player.isCpu) {
+            let willUp = true;
+            if (state.cpuDifficulty === 'easy' && Math.random() > 0.3) willUp = false;
+            if (state.cpuDifficulty === 'normal' && player.money - cost < 50) willUp = false; 
+            if (willUp) executeUpgrade(player, cellIdx, cost);
+            else { els.actionMsg.textContent = `${player.name} 건설 패스.`; setTimeout(nextTurn, getDelay(1200)); }
+        } else {
+            els.actEmoji.textContent = cell.emoji; els.actTitle.textContent = cell.name;
+            els.actBuildName.textContent = nextLvName;
+            els.actDesc.innerHTML = `내 땅입니다.<br><b class="text-green-600 text-2xl">${cost}만</b> 원에 <b>[${nextLvName}${isLandmark ? ' (랜드마크)' : ''}]</b>(으)로 올릴까요?`;
+            els.btnConfirm.textContent = "건설하기"; els.actionModal.classList.remove('hidden');
+
+            els.btnConfirm.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); executeUpgrade(player, cellIdx, cost); 
+            };
+            els.btnCancel.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); setTimeout(nextTurn, getDelay(500)); 
+            };
+        }
+    }
+
+    function executeUpgrade(player, cellIdx, cost) {
+        player.money -= cost; state.board[cellIdx].level++;
+        audio.playBuild(); updateMoneyUI(player.id, false); updateBoardVisuals();
+        const lvName = state.board[cellIdx].buildNames[state.board[cellIdx].level - 1];
+        els.actionMsg.textContent = `${player.name}: ${state.board[cellIdx].name} [${lvName}] 건설 완료!`;
+        setTimeout(nextTurn, getDelay(1500));
+    }
+
+    function payToll(player, cellIdx) {
+        const cell = state.board[cellIdx]; const owner = state.players[cell.owner]; const toll = getToll(cellIdx);
+
+        if (player.highPass > 0) {
+            player.highPass--; els.actionMsg.textContent = `하이패스 슝~ 통행료 ${toll}만 원 면제!`;
+            audio.playChance(); showFloatText("면제!", cellIdx, "#3b82f6"); renderPlayerPanels(); 
+            if (cell.type === 'city' && cell.level < 3) setTimeout(() => promptTakeover(player, cellIdx), getDelay(1500));
+            else setTimeout(nextTurn, getDelay(1500));
+            return;
+        }
+
+        const isMonopoly = cell.province && getProvinceMonopolyOwners()[cell.province] === cell.owner;
+        els.actionMsg.textContent = `${owner.name}의 땅! 통행료 ${toll}만 지불.${isMonopoly?'(독점2배) ':''}`;
+        audio.playMoney(false); showFloatText(`-${toll}만`, cellIdx, "#ef4444");
+
+        player.money -= toll; owner.money += toll;
+        updateMoneyUI(player.id, false); updateMoneyUI(owner.id, true);
+
+        if (player.money < 0) setTimeout(() => handleBankrupt(player), getDelay(1000));
+        else {
+            if (cell.type === 'city' && cell.level < 3) setTimeout(() => promptTakeover(player, cellIdx), getDelay(1500));
+            else setTimeout(nextTurn, getDelay(1500));
+        }
+    }
+
+    function promptTakeover(player, cellIdx) {
+        const cell = state.board[cellIdx];
+        if(cell.type === 'tour') { setTimeout(nextTurn, getDelay(500)); return; }
+        const cost = cell.price * cell.level * 2; 
+
+        if (player.money < cost) { setTimeout(nextTurn, getDelay(500)); return; }
+
+        if (player.isCpu) {
+            let willTake = false;
+            if (state.cpuDifficulty === 'hard' && player.money > cost + 50) willTake = true;
+            if (state.cpuDifficulty === 'normal' && player.money > cost + 100 && Math.random() > 0.5) willTake = true;
+            if (willTake) executeTakeover(player, cellIdx, cost); else nextTurn();
+        } else {
+            els.actEmoji.textContent = "⚔️"; els.actTitle.textContent = cell.name + " 인수";
+            els.actBuildName.textContent = cell.buildNames[cell.level - 1];
+            els.actDesc.innerHTML = `상대의 땅입니다.<br><b class="text-green-600 text-2xl">${cost}만</b> 원에 강제 인수하시겠습니까?`;
+            els.btnConfirm.textContent = "인수하기"; els.actionModal.classList.remove('hidden');
+
+            els.btnConfirm.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); executeTakeover(player, cellIdx, cost); 
+            };
+            els.btnCancel.onclick = () => { 
+                if(els.actionModal.classList.contains('hidden')) return;
+                els.actionModal.classList.add('hidden'); nextTurn(); 
+            };
+        }
+    }
+
+    function executeTakeover(player, cellIdx, cost) {
+        const oldOwner = state.players[state.board[cellIdx].owner];
+        player.money -= cost; oldOwner.money += cost; 
+        state.board[cellIdx].owner = player.id;
+        
+        audio.playBuild(); updateMoneyUI(player.id, false); updateMoneyUI(oldOwner.id, true); updateBoardVisuals();
+        els.actionMsg.textContent = `${player.name}: ${state.board[cellIdx].name} 강제 인수 성공!`;
+        setTimeout(nextTurn, getDelay(1500));
+    }
+
+    function drawChanceCard(player) {
+        audio.playChance();
+        const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+        
+        // 누구의 찬스인지 명확하게 표시
+        els.chanceTitle.textContent = `[${player.name}] 님의 찬스!`;
+        els.chanceDesc.innerHTML = `<span class="font-black text-xl md:text-2xl block mb-3">${card.title}</span><span class="text-slate-600 text-sm md:text-base">${card.desc}</span>`;
+        els.chanceModal.classList.remove('hidden');
+
+        if (player.isCpu) {
+            setTimeout(() => { els.chanceModal.classList.add('hidden'); executeChance(player, card); }, getDelay(2000));
+        } else {
+            els.btnChanceOk.onclick = () => { 
+                if(els.chanceModal.classList.contains('hidden')) return;
+                els.chanceModal.classList.add('hidden'); executeChance(player, card); 
+            };
+        }
+    }
+
+    function executeChance(player, card) {
+        if (card.action === 'money') {
+            player.money += card.val; audio.playMoney(card.val > 0); updateMoneyUI(player.id, card.val > 0);
+            showFloatText(card.val > 0 ? `+${card.val}만` : `${card.val}만`, player.pos, card.val > 0 ? "#10b981" : "#ef4444");
+            if (player.money < 0) setTimeout(() => handleBankrupt(player), getDelay(1000));
+            else setTimeout(nextTurn, getDelay(1000));
+            
+        } else if (card.action === 'move') {
+            state.doubleCount = 0; player.pos = card.val; updateTokenPositions(player.id);
+            if(card.val === 8) player.jailTurns = 3;
+            setTimeout(() => handleCellAction(player, player.pos), getDelay(500));
+            
+        } else if (card.action === 'jail') {
+            player.jailTurns = card.val; setTimeout(nextTurn, getDelay(1000));
+
+        } else if (card.action === 'highPass') {
+            player.highPass += card.val; els.actionMsg.textContent = `${player.name} 하이패스 획득!`;
+            renderPlayerPanels(); setTimeout(nextTurn, getDelay(1500));
+            
+        } else if (card.action === 'freeUpgrade') {
+            const owned = state.board.filter(c => c.owner === player.id && c.type === 'city' && c.level < 3);
+            if (owned.length > 0) {
+                const target = owned[Math.floor(Math.random() * owned.length)];
+                state.board[target.idx].level++; audio.playBuild(); updateBoardVisuals();
+                showFloatText("무료 건설!", target.idx, "#3b82f6");
+                els.actionMsg.textContent = `${target.name} [${state.board[target.idx].buildNames[state.board[target.idx].level-1]}] 건설 완료!`;
+            } else {
+                els.actionMsg.textContent = "업그레이드할 도시가 없습니다.";
+            }
+            setTimeout(nextTurn, getDelay(2000));
+        }
+    }
+
+    function handleBankrupt(player) {
+        audio.playMoney(false); player.bankrupt = true; state.doubleCount = 0;
+        els.actionMsg.textContent = `💥 ${player.name} 파산!`;
+        state.board.forEach(c => { if(c.owner === player.id) { c.owner = null; c.level = 0; } });
+        updateBoardVisuals(); updateTokenPositions(null); renderPlayerPanels(); 
+
+        const alive = state.players.filter(p => !p.bankrupt);
+        if (alive.length === 1) setTimeout(() => triggerGameOver(alive[0]), getDelay(1500));
+        else setTimeout(nextTurn, getDelay(1500));
+    }
+
+    function nextTurn() {
+        const cp = state.players[state.turn];
+        if(state.doubleCount > 0 && !cp.bankrupt && cp.jailTurns === 0) {
+            state.isAnimating = false; els.actionMsg.textContent = "더블! 한 번 더 굴리세요!";
+            updateTurnUI(); return; 
+        }
+
+        state.isAnimating = false; state.doubleCount = 0;
+        let next = (state.turn + 1) % state.players.length;
+        if(next === 0) state.round++;
+        
+        let safeCount = 0;
+        while(state.players[next].bankrupt && safeCount < 10) { next = (next + 1) % state.players.length; safeCount++; }
+        
+        state.turn = next; els.actionMsg.textContent = "주사위를 굴려주세요!"; updateTurnUI();
+    }
+
+    function triggerGameOver(winner) {
+        audio.stopBGM();
+        audio.playTone(523.25, 'sine', 0.2, 0.1);
+        setTimeout(()=>audio.playTone(659.25, 'sine', 0.2, 0.1), 200);
+        setTimeout(()=>audio.playTone(783.99, 'sine', 0.4, 0.1), 400);
+
+        els.goIcon.textContent = winner.emoji;
+        els.goTitle.textContent = winner.isCpu ? "CPU 우승..." : "우승!!!";
+        els.goTitle.className = winner.isCpu ? "text-3xl font-black mb-2 text-rose-500" : "text-3xl font-black mb-2 text-sky-500";
+        els.goDesc.textContent = `${winner.name}이(가) 전국을 제패했습니다!`;
+
+        const standings = state.players.map(p => {
+            let assets = p.money;
+            if(!p.bankrupt) {
+                state.board.forEach(c => { 
+                    if(c.owner === p.id) { assets += c.price; if(c.type === 'city') assets += c.price * c.level; } 
+                });
+            }
+            return { ...p, assets: p.bankrupt ? -1 : assets };
+        }).sort((a,b) => b.assets - a.assets);
+
+        els.rankList.innerHTML = standings.map((p, i) => `
+            <div class="flex justify-between items-center p-2 border-b border-slate-200 ${p.bankrupt ? 'opacity-40' : ''}">
+                <span class="font-bold text-sm md:text-base">${i+1}위: ${p.emoji} ${p.name}</span>
+                <span class="text-sky-600 font-black text-base md:text-lg">${p.bankrupt ? '파산' : p.assets + '만'}</span>
+            </div>
+        `).join('');
+
+        els.goScreen.classList.remove('hidden');
+    }
+
+    let selTotalPlayers = 4;
+    let selHumanPlayers = 1;
+
+    function updateHumanButtons() {
+        document.querySelectorAll('#human-players-group .toggle-btn').forEach(btn => {
+            const val = parseInt(btn.dataset.val);
+            if(val > selTotalPlayers) { btn.style.display = 'none'; } 
+            else { btn.style.display = 'block'; }
+        });
+        if(selHumanPlayers > selTotalPlayers) {
+            selHumanPlayers = selTotalPlayers;
+            document.querySelectorAll('#human-players-group .toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(parseInt(btn.dataset.val) === selHumanPlayers) btn.classList.add('active');
+            });
+        }
+    }
+
+    function setupButtons(selector, callback) {
+        document.querySelectorAll(selector).forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                callback(e.target);
+            });
+        });
+    }
+
+    setupButtons('#total-players-group .toggle-btn', (t) => { selTotalPlayers = parseInt(t.dataset.val); updateHumanButtons(); });
+    setupButtons('#human-players-group .toggle-btn', (t) => selHumanPlayers = parseInt(t.dataset.val));
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        const diff = document.getElementById('cpu-diff-select').value;
+        const speed = document.getElementById('speed-select').value;
+        initGame(selTotalPlayers, selHumanPlayers, diff, speed);
+    });
+
+    els.btnRoll.addEventListener('click', rollDice);
+
+    document.getElementById('btn-restart').addEventListener('click', () => {
+        els.goScreen.classList.add('hidden');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('flex');
+        document.getElementById('start-screen').classList.remove('hidden');
+    });
+
+</script>
+</body>
+</html>

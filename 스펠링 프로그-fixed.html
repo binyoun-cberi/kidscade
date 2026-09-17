@@ -1,32 +1,5 @@
 <!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>스펠링 프로그</title>
-<style>
-html,body{margin:0;width:100%;height:100%;display:grid;place-items:center;background:#9dd9f3;font-family:Pretendard,"Noto Sans KR","Malgun Gothic",sans-serif;color:#10243a}
-#loading{font-weight:900;background:rgba(255,255,255,.9);padding:16px 22px;border-radius:18px;box-shadow:0 10px 30px rgba(20,55,75,.15)}
-</style>
-</head>
-<body>
-<div id="loading">🐸 스펠링 프로그 불러오는 중...</div>
-<script>
-(async()=>{
-  try{
-    const res=await fetch('스펠링 프로그.html?v=20260914-log-base',{cache:'no-store'});
-    if(!res.ok)throw new Error('게임 파일을 불러오지 못했습니다.');
-    let html=await res.text();
-    const fix='<scr'+'ipt src="spelling-frog-log-fix.js?v=20260914-1"></scr'+'ipt>';
-    html=html.replace('</body>',fix+'</body>');
-    document.open();
-    document.write(html);
-    document.close();
-  }catch(error){
-    console.error(error);
-    document.getElementById('loading').textContent='⚠️ 스펠링 프로그를 불러오지 못했습니다.';
-  }
-})();
-</script>
-</body>
-</html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>게임으로 이동</title>
+<script>location.replace("games/spelling_frog/%EC%8A%A4%ED%8E%A0%EB%A7%81%20%ED%94%84%EB%A1%9C%EA%B7%B8.html"+location.search+location.hash);</script>
+</head><body><p><a href="games/spelling_frog/%EC%8A%A4%ED%8E%A0%EB%A7%81%20%ED%94%84%EB%A1%9C%EA%B7%B8.html">게임 열기</a></p></body></html>
