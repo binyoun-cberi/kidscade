@@ -159,9 +159,9 @@ class SelfBarScene {
     INGREDIENTS.forEach((ing,i)=>{
       const [x,z]=positions[i];
       const tray=new THREE.Mesh(new THREE.BoxGeometry(1.42,.22,1.05),new THREE.MeshStandardMaterial({color:0x71503a,roughness:.75,metalness:.05}));
-      tray.position.set(x,-.02,z);tray.receiveShadow=true;this.shelfGroup.add(tray);
+      tray.position.set(x,-.02,z);tray.receiveShadow=true;tray.userData.ingredientId=ing.id;this.shelfGroup.add(tray);
       const inner=new THREE.Mesh(new THREE.BoxGeometry(1.23,.12,.88),new THREE.MeshStandardMaterial({color:0xe5d1b8,roughness:.9}));
-      inner.position.set(x,.13,z);this.shelfGroup.add(inner);
+      inner.position.set(x,.13,z);inner.userData.ingredientId=ing.id;this.shelfGroup.add(inner);
       const anchor=new THREE.Object3D();anchor.position.set(x,.85,z+.1);this.shelfGroup.add(anchor);this.labelAnchors.set(ing.id,anchor);
       this.loadIngredientDisplay(ing,x,z);
     });
@@ -192,10 +192,10 @@ class SelfBarScene {
   markIngredient(obj,id){obj.userData.ingredientId=id;obj.traverse(n=>{n.userData.ingredientId=id})}
   async makeBowl(){
     this.bowlRoot=new THREE.Group();this.bowlRoot.position.copy(this.bowlCenter);this.scene.add(this.bowlRoot);
-    const bowl=await this.cloneModel('bowl.glb',2.35);bowl.rotation.x=.04;this.bowlRoot.add(bowl);
+    this.bowlContents=new THREE.Group();this.bowlContents.position.y=.25;this.bowlRoot.add(this.bowlContents);
     const hit=new THREE.Mesh(new THREE.CylinderGeometry(1.08,1.08,.22,32),new THREE.MeshBasicMaterial({transparent:true,opacity:.001,depthWrite:false}));
     hit.position.y=.22;hit.userData.bowlHit=true;this.bowlRoot.add(hit);this.bowlHit=hit;
-    this.bowlContents=new THREE.Group();this.bowlContents.position.y=.25;this.bowlRoot.add(this.bowlContents);
+    const bowl=await this.cloneModel('bowl.glb',2.35);bowl.rotation.x=.04;this.bowlRoot.add(bowl);
   }
   async makePot(){
     this.potRoot=new THREE.Group();this.potRoot.position.set(0,.15,1.6);this.potRoot.visible=false;this.scene.add(this.potRoot);
@@ -402,6 +402,7 @@ function serve(){
   sfx(great?'success.cheer_yay':okay?'shop.purchase':'failure.fail_sting',{volume:.3,cooldownMs:500});
 }
 function next(){
+  if(state.completed){location.reload();return}
   els.resultOverlay.classList.remove('show');
   if(state.served>=TOTAL_CUSTOMERS)return finishDay();
   beginCustomer();
@@ -413,7 +414,6 @@ function finishDay(){
   els.resultScore.textContent=state.score;
   els.resultText.textContent=`손님 ${TOTAL_CUSTOMERS}명의 주문을 모두 마쳤어요.`;
   els.nextBtn.textContent='다시 영업하기';
-  els.nextBtn.onclick=()=>location.reload();
   els.resultOverlay.classList.add('show');
   sfx('success.victory_fanfare',{volume:.42,cooldownMs:1200});
 }
