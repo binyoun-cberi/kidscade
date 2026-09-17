@@ -50,11 +50,17 @@
     try { return root?.localStorage || null; } catch (_) { return null; }
   }
 
+  function sharedStorage() {
+    return root?.KidscadeStorage || null;
+  }
+
   function loadSettings() {
     try {
-      const raw = storage()?.getItem(SETTINGS_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      return { muted: Boolean(parsed.muted), volume: clamp(parsed.volume ?? 0.82) };
+      const shared = sharedStorage();
+      const parsed = shared?.getJson
+        ? shared.getJson('audioSettings', {})
+        : JSON.parse(storage()?.getItem(SETTINGS_KEY) || '{}');
+      return { muted: Boolean(parsed?.muted), volume: clamp(parsed?.volume ?? 0.82) };
     } catch (_) {
       return { muted: false, volume: 0.82 };
     }
@@ -63,15 +69,19 @@
   let settings = loadSettings();
 
   function saveSettings() {
-    try { storage()?.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+    try {
+      const shared = sharedStorage();
+      if (shared?.setJson) shared.setJson('audioSettings', settings);
+      else storage()?.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (_) {}
   }
 
   function scriptBaseUrl() {
-    if (!root?.document) return 'http://localhost/';
+    if (!root?.document) return 'file:///';
     const own = root.document.currentScript?.src ||
       Array.from(root.document.scripts || []).find(script => /(?:^|\/)audio-manager\.js(?:\?|$)/.test(script.src || ''))?.src ||
-      root.location?.href || '/';
-    try { return new URL('.', own).href; } catch (_) { return root.location?.origin ? `${root.location.origin}/` : '/'; }
+      root.location?.href || 'file:///';
+    try { return new URL('.', own).href; } catch (_) { return root.location?.href || 'file:///'; }
   }
 
   function catalogUrl() {
