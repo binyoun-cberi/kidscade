@@ -50,10 +50,10 @@ test('Bunsik Kitchen movement and interaction are player-driven', () => {
   assert.match(js, /WASD|KeyW/);
   assert.match(js, /function interact\(\)/);
   assert.match(js, /kitchen\.nearest\(\)/);
-  assert.match(js, /type:'source'/);
-  assert.match(js, /type:'station'/);
-  assert.match(js, /type:'serve'/);
-  assert.match(js, /type:'trash'/);
+  assert.match(js, /,'source',/);
+  assert.match(js, /,'station',/);
+  assert.match(js, /,'serve',/);
+  assert.match(js, /,'trash',/);
   assert.match(js, /one|한 번에 하나만/);
   assert.match(js, /state\.joy\.x/);
   assert.match(css, /\.mobile-controls/);
@@ -93,6 +93,7 @@ test('Bunsik Kitchen uses valid shared audio keys', () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(root,'assets','audio','audio-catalog.json'),'utf8'));
   const keys = [...js.matchAll(/sfx\(\s*['"]([a-z0-9_.-]+)['"]/g)].map(m=>m[1]);
   assert.ok(keys.length >= 5);
+  assert.match(js, /window\.__bunsikKitchenOwnAudio=true/);
   for (const key of keys) assert.ok(catalog.sounds[key], 'missing audio key: '+key);
 });
 
