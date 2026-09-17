@@ -5,6 +5,7 @@
   let audio = null;
   let musicTimer = null;
   let musicStep = 0;
+  let startCuePlayed = false;
 
   const soundEnabled = () => {
     try {
@@ -18,63 +19,110 @@
   const ensureAudio = () => {
     try {
       audio ??= new (window.AudioContext || window.webkitAudioContext)();
-      if (audio.state === 'suspended') audio.resume();
       return audio;
-    } catch {
+    } catch (err) {
+      console.warn('[dog-runner-audio] AudioContext unavailable', err);
       return null;
     }
   };
 
-  const playNote = (freq, type, gain, duration, when) => {
+  // iOS/WKWebView는 사용자 제스처 안에서 AudioContext를 실제로 깨워야 한다.
+  const unlockAudio = () => {
     const ctx = ensureAudio();
-    if (!ctx || !soundEnabled()) return;
-    const t = when ?? ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const amp = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    amp.gain.setValueAtTime(0.0001, t);
-    amp.gain.exponentialRampToValueAtTime(gain, t + 0.008);
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc.connect(amp).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + duration + 0.03);
+    if (!ctx) return false;
+    try {
+      const osc = ctx.createOscillator();
+      const amp = ctx.createGain();
+      amp.gain.value = 0.00001;
+      osc.frequency.value = 220;
+      osc.connect(amp).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.015);
+      const resumed = ctx.resume?.();
+      if (resumed?.catch) resumed.catch(() => {});
+      return true;
+    } catch (err) {
+      console.warn('[dog-runner-audio] unlock failed', err);
+      return false;
+    }
+  };
+
+  const playNote = (freq, type = 'triangle', gain = 0.03, duration = 0.12, when) => {
+    if (!soundEnabled()) return;
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    if (ctx.state !== 'running') {
+      const resumed = ctx.resume?.();
+      if (resumed?.catch) resumed.catch(() => {});
+    }
+    try {
+      const t = when ?? ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const amp = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      amp.gain.setValueAtTime(0.0001, t);
+      amp.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+      amp.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      osc.connect(amp).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + duration + 0.03);
+    } catch (err) {
+      console.warn('[dog-runner-audio] note failed', err);
+    }
+  };
+
+  const startCue = () => {
+    if (!soundEnabled()) return;
+    const ctx = ensureAudio();
+    if (!ctx || ctx.state !== 'running') return;
+    const t = ctx.currentTime + 0.01;
+    playNote(523.25, 'triangle', 0.035, 0.10, t);
+    playNote(659.25, 'triangle', 0.035, 0.10, t + 0.09);
+    playNote(783.99, 'triangle', 0.04, 0.16, t + 0.18);
   };
 
   const musicPulse = () => {
     if (!isRunning() || !soundEnabled()) return;
     const ctx = ensureAudio();
-    if (!ctx) return;
+    if (!ctx || ctx.state !== 'running') return;
     const lead = [659.25, 783.99, 880, 783.99, 698.46, 783.99, 987.77, 880];
     const bass = [164.81, 164.81, 196, 196, 174.61, 174.61, 220, 196];
     const step = musicStep++ % lead.length;
     const t = ctx.currentTime;
-    playNote(lead[step], 'square', 0.010, 0.10, t);
-    if (step % 2 === 0) playNote(bass[step], 'triangle', 0.016, 0.15, t);
+    playNote(lead[step], 'square', 0.020, 0.105, t);
+    if (step % 2 === 0) playNote(bass[step], 'triangle', 0.028, 0.16, t);
     if (step % 4 === 0) {
-      const osc = ctx.createOscillator();
-      const amp = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(115, t);
-      osc.frequency.exponentialRampToValueAtTime(52, t + 0.09);
-      amp.gain.setValueAtTime(0.026, t);
-      amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      osc.connect(amp).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.12);
+      try {
+        const osc = ctx.createOscillator();
+        const amp = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(125, t);
+        osc.frequency.exponentialRampToValueAtTime(48, t + 0.095);
+        amp.gain.setValueAtTime(0.045, t);
+        amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.115);
+        osc.connect(amp).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      } catch {}
     }
   };
 
   const startMusic = () => {
     if (musicTimer || !soundEnabled() || !isRunning()) return;
+    const ctx = ensureAudio();
+    if (!ctx || ctx.state !== 'running') return;
     musicStep = 0;
+    if (!startCuePlayed) {
+      startCuePlayed = true;
+      startCue();
+    }
     musicPulse();
-    musicTimer = setInterval(musicPulse, 190);
+    musicTimer = setInterval(musicPulse, 180);
   };
 
   const stopMusic = () => {
-    if (!musicTimer) return;
-    clearInterval(musicTimer);
+    if (musicTimer) clearInterval(musicTimer);
     musicTimer = null;
   };
 
@@ -120,24 +168,27 @@
     setTimeout(() => canvas.classList.remove('dogRunnerShake'), 280);
   };
 
-  const impactSound = (bad) => {
+  const impactSound = bad => {
+    if (!soundEnabled()) return;
     const ctx = ensureAudio();
-    if (!ctx || !soundEnabled()) return;
+    if (!ctx || ctx.state !== 'running') return;
     const t = ctx.currentTime;
     if (bad) {
-      const osc = ctx.createOscillator();
-      const amp = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(64, t + 0.12);
-      amp.gain.setValueAtTime(0.035, t);
-      amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
-      osc.connect(amp).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.16);
+      try {
+        const osc = ctx.createOscillator();
+        const amp = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(165, t);
+        osc.frequency.exponentialRampToValueAtTime(58, t + 0.13);
+        amp.gain.setValueAtTime(0.06, t);
+        amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        osc.connect(amp).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.17);
+      } catch {}
     } else {
-      playNote(784, 'triangle', 0.022, 0.10, t);
-      playNote(1046.5, 'triangle', 0.020, 0.14, t + 0.07);
+      playNote(784, 'triangle', 0.04, 0.10, t);
+      playNote(1046.5, 'triangle', 0.038, 0.15, t + 0.07);
     }
   };
 
@@ -154,11 +205,14 @@
 
   const syncMusic = () => {
     if (isRunning() && soundEnabled()) startMusic();
-    else stopMusic();
+    else {
+      stopMusic();
+      if (!isRunning()) startCuePlayed = false;
+    }
   };
 
   [menu, pause, result].filter(Boolean).forEach(el => {
-    new MutationObserver(syncMusic).observe(el, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(() => setTimeout(syncMusic, 30)).observe(el, { attributes: true, attributeFilter: ['class'] });
   });
 
   if (message) {
@@ -185,12 +239,45 @@
     }).observe(message, { attributes: true, childList: true, characterData: true, subtree: true });
   }
 
-  document.addEventListener('pointerdown', () => {
-    ensureAudio();
-    setTimeout(syncMusic, 0);
-  }, { passive: true });
+  // 가장 빠른 사용자 제스처에서 오디오를 깨운다. iPhone Safari/웹뷰 대응.
+  const gestureUnlock = () => {
+    unlockAudio();
+    setTimeout(syncMusic, 60);
+  };
+  window.addEventListener('pointerdown', gestureUnlock, { capture: true, passive: true });
+  window.addEventListener('touchstart', gestureUnlock, { capture: true, passive: true });
+  window.addEventListener('mousedown', gestureUnlock, { capture: true, passive: true });
+  window.addEventListener('keydown', gestureUnlock, { capture: true });
+
+  document.querySelectorAll('.modeBtn').forEach(btn => btn.addEventListener('click', () => {
+    unlockAudio();
+    setTimeout(syncMusic, 90);
+  }));
+
+  document.getElementById('jumpBtn')?.addEventListener('click', () => {
+    unlockAudio();
+    const ctx = ensureAudio();
+    if (ctx?.state === 'running' && soundEnabled()) {
+      const t = ctx.currentTime;
+      playNote(392, 'triangle', 0.035, 0.08, t);
+      playNote(587.33, 'triangle', 0.028, 0.10, t + 0.05);
+    }
+  });
 
   const soundBtn = document.getElementById('soundBtn');
-  soundBtn?.addEventListener('click', () => setTimeout(syncMusic, 40));
+  soundBtn?.addEventListener('click', () => {
+    unlockAudio();
+    setTimeout(() => {
+      if (soundEnabled()) {
+        playNote(880, 'triangle', 0.04, 0.12);
+        syncMusic();
+      } else stopMusic();
+    }, 80);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopMusic();
+    else if (audio?.state === 'running') syncMusic();
+  });
   window.addEventListener('pagehide', stopMusic);
 })();
