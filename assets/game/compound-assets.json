@@ -1,0 +1,167 @@
+{
+  "version": "3.0.0",
+  "groups": [
+    {
+      "id": "assets::game::atlases::platformer-art::extended::aliens",
+      "source_pack": "kenney-platformer-art-deluxe",
+      "files": [
+        "assets/game/atlases/platformer-art/extended/aliens/aliens.png",
+        "assets/game/atlases/platformer-art/extended/aliens/aliens.xml"
+      ],
+      "usage": "spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::platformer-art::extended::enemies",
+      "source_pack": "kenney-platformer-art-deluxe",
+      "files": [
+        "assets/game/atlases/platformer-art/extended/enemies/enemies.png",
+        "assets/game/atlases/platformer-art/extended/enemies/enemies.xml"
+      ],
+      "usage": "spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::vehicles::pixel::complete",
+      "source_pack": "kenney-pixel-vehicle-pack",
+      "files": [
+        "assets/game/atlases/vehicles/pixel/spritesheet-complete.png",
+        "assets/game/atlases/vehicles/pixel/spritesheet-complete.xml"
+      ],
+      "usage": "complete vehicle spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::urban::rpg",
+      "source_pack": "kenney-rpg-urban-pack",
+      "files": [
+        "assets/game/atlases/urban/rpg/tilemap-packed.png",
+        "assets/game/atlases/urban/rpg/tilemap.txt"
+      ],
+      "usage": "packed tilemap + tile dimensions/spacing metadata; keep together"
+    },
+    {
+      "id": "assets::game::atlases::pirate::ships",
+      "source_pack": "kenney-pirate-pack",
+      "files": [
+        "assets/game/atlases/pirate/ships/ships-miscellaneous-sheet-2.png",
+        "assets/game/atlases/pirate/ships/ships-miscellaneous-sheet-2.xml"
+      ],
+      "usage": "ship spritesheet + XML; keep together"
+    },
+    {
+      "id": "assets::game::atlases::pirate::tiles",
+      "source_pack": "kenney-pirate-pack",
+      "files": [
+        "assets/game/atlases/pirate/tiles/tiles-sheet-2.png",
+        "assets/game/atlases/pirate/tiles/tilesheets.txt"
+      ],
+      "usage": "tile sheet + source layout notes; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::blue",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/blue/blue-spritesheet.png",
+        "assets/game/atlases/letters/blue/blue-spritesheet.xml"
+      ],
+      "usage": "Blue letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::box",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/box/box-spritesheet.png",
+        "assets/game/atlases/letters/box/box-spritesheet.xml"
+      ],
+      "usage": "Box letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::brown",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/brown/brown-spritesheet.png",
+        "assets/game/atlases/letters/brown/brown-spritesheet.xml"
+      ],
+      "usage": "Brown letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::marble",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/marble/marble-spritesheet.png",
+        "assets/game/atlases/letters/marble/marble-spritesheet.xml"
+      ],
+      "usage": "Marble letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::metal",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/metal/metal-spritesheet.png",
+        "assets/game/atlases/letters/metal/metal-spritesheet.xml"
+      ],
+      "usage": "Metal letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::solid",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/solid/solid-spritesheet.png",
+        "assets/game/atlases/letters/solid/solid-spritesheet.xml"
+      ],
+      "usage": "Solid letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::wood",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/wood/wood-spritesheet.png",
+        "assets/game/atlases/letters/wood/wood-spritesheet.xml"
+      ],
+      "usage": "Wood letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::letters::yellow",
+      "source_pack": "kenney-letter-tiles",
+      "files": [
+        "assets/game/atlases/letters/yellow/yellow-spritesheet.png",
+        "assets/game/atlases/letters/yellow/yellow-spritesheet.xml"
+      ],
+      "usage": "Yellow letter spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::tower-defense::isometric::landscape",
+      "source_pack": "kenney-tower-defense-isometric",
+      "files": [
+        "assets/game/atlases/tower-defense/isometric/landscape/landscape-sheet.png",
+        "assets/game/atlases/tower-defense/isometric/landscape/landscape-sheet.xml"
+      ],
+      "usage": "landscape spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::tower-defense::isometric::towers-brown",
+      "source_pack": "kenney-tower-defense-isometric",
+      "files": [
+        "assets/game/atlases/tower-defense/isometric/towers-brown/towers-brown-sheet.png",
+        "assets/game/atlases/tower-defense/isometric/towers-brown/towers-brown-sheet.xml"
+      ],
+      "usage": "towers-brown spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::tower-defense::isometric::towers-grey",
+      "source_pack": "kenney-tower-defense-isometric",
+      "files": [
+        "assets/game/atlases/tower-defense/isometric/towers-grey/towers-grey-sheet.png",
+        "assets/game/atlases/tower-defense/isometric/towers-grey/towers-grey-sheet.xml"
+      ],
+      "usage": "towers-grey spritesheet + XML frame map; keep together"
+    },
+    {
+      "id": "assets::game::atlases::tower-defense::isometric::towers-red",
+      "source_pack": "kenney-tower-defense-isometric",
+      "files": [
+        "assets/game/atlases/tower-defense/isometric/towers-red/towers-red-sheet.png",
+        "assets/game/atlases/tower-defense/isometric/towers-red/towers-red-sheet.xml"
+      ],
+      "usage": "towers-red spritesheet + XML frame map; keep together"
+    }
+  ]
+}

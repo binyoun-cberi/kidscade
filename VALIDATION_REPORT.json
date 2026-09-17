@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "total_files_in_bundle": 4353,
+  "new_catalog_entries": 2718,
+  "compound_groups": 18,
+  "case_collision_groups": 0,
+  "catalog_by_source": {
+    "kenney-platformer-art-deluxe": 950,
+    "kenney-flag-pack": 232,
+    "kenney-pixel-vehicle-pack": 77,
+    "kenney-rpg-urban-pack": 488,
+    "kenney-pirate-pack": 202,
+    "kenney-tower-defense-top-down": 300,
+    "kenney-letter-tiles": 232,
+    "kenney-tower-defense-isometric": 237
+  },
+  "catalog_by_type": {
+    "png": 2700,
+    "xml": 16,
+    "txt": 2
+  }
+}

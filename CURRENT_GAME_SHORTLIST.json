@@ -92,5 +92,34 @@
     "space/planets/planet01.png",
     "space/planets/planet02.png",
     "space/planets/planet03.png"
+  ],
+  "스펠링 프로그 / 영어 철자 게임": [
+    "2d/letters/blue/letter-a.png",
+    "2d/letters/yellow/letter-b.png",
+    "2d/letters/wood/letter-c.png"
+  ],
+  "세계 여행 / 국기 게임": [
+    "2d/flags/kr.png",
+    "2d/flags/jp.png",
+    "2d/flags/us.png",
+    "2d/flags/gb.png"
+  ],
+  "도시 / 교통 게임": [
+    "2d/vehicles/pixel/cars/bus-school.png",
+    "2d/vehicles/pixel/cars/police.png",
+    "2d/vehicles/pixel/cars/firetruck.png"
+  ],
+  "벽란도 상행기 / 해상 게임": [
+    "2d/pirate/ships/ship-1.png",
+    "2d/pirate/ship-parts/cannon.png",
+    "2d/pirate/effects/explosion1.png"
+  ],
+  "타워 디펜스 게임": [
+    "2d/tower-defense/top-down/tower-defense-tile001.png",
+    "2d/tower-defense/isometric/towers-red/tower-defense-1.png"
+  ],
+  "2D 플랫포머 게임": [
+    "2d/platformer-art/base/player/p1-front.png",
+    "2d/platformer-art/base/items/star.png"
   ]
 }

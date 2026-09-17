@@ -1,0 +1,81 @@
+{
+  "new_entries": 2718,
+  "duplicate_hash_groups": 10,
+  "groups": [
+    {
+      "sha256": "150c96edfb040b62476f9cd8ed45b33d1c56901d5e7680a716199b0a59e1333f",
+      "paths": [
+        "assets/game/2d/platformer-art/extended/enemies/fish-green-hit.png",
+        "assets/game/2d/platformer-art/extended/enemies/fish-pink-hit.png"
+      ]
+    },
+    {
+      "sha256": "fdaba910ee2e727fd920a8647b4060c1934e76d056447278b40a4c8bb5bfb5b8",
+      "paths": [
+        "assets/game/2d/platformer-art/extended/enemies/slime-blue-hit.png",
+        "assets/game/2d/platformer-art/extended/enemies/slime-green-hit.png",
+        "assets/game/2d/platformer-art/extended/enemies/slime-hit.png"
+      ]
+    },
+    {
+      "sha256": "8ebe507d34db483b56c02490d72d8709a9ff3f83ccbc280587991497023b991f",
+      "paths": [
+        "assets/game/2d/platformer-art/extended/enemies/snake-lava-hit.png",
+        "assets/game/2d/platformer-art/extended/enemies/snake-slime-hit.png"
+      ]
+    },
+    {
+      "sha256": "afb9a2c1dacd2919361e653eeea524705f7afb6c17b5286c6ad7764a603d8303",
+      "paths": [
+        "assets/game/2d/platformer-art/extended/enemies/snake-hit.png",
+        "assets/game/2d/platformer-art/extended/enemies/worm-hit.png"
+      ]
+    },
+    {
+      "sha256": "46396045b1b528769b51662ed725ab3206af8fbb4a9e31bbcfb442ff03dea54b",
+      "paths": [
+        "assets/game/2d/platformer-art/base/tiles/grass-center.png",
+        "assets/game/2d/platformer-art/base/tiles/sand-center.png"
+      ]
+    },
+    {
+      "sha256": "db2c95f6cf4570c4d1f7578a2c87594d2dcd6f7591059a06ddeb876eba63cb01",
+      "paths": [
+        "assets/game/2d/platformer-art/base/tiles/grass-center-rounded.png",
+        "assets/game/2d/platformer-art/base/tiles/sand-center-rounded.png"
+      ]
+    },
+    {
+      "sha256": "cae3c3008ed8d6dd410594ca80bfe2fe4ad093132a00f05bf699a135d643fd5e",
+      "paths": [
+        "assets/game/2d/flags/bv.png",
+        "assets/game/2d/flags/no.png",
+        "assets/game/2d/flags/sj.png"
+      ]
+    },
+    {
+      "sha256": "415891f23f754d3cddc46b0bf3cdc2691d4a10852619751b06331607e59b1a39",
+      "paths": [
+        "assets/game/2d/flags/id.png",
+        "assets/game/2d/flags/mc.png"
+      ]
+    },
+    {
+      "sha256": "3ea30b72718a3df09fff7e49f6325b9164353064a72d1c8c52a6c4fc43e88e5a",
+      "paths": [
+        "assets/game/atlases/letters/blue/blue-spritesheet.xml",
+        "assets/game/atlases/letters/brown/brown-spritesheet.xml",
+        "assets/game/atlases/letters/metal/metal-spritesheet.xml",
+        "assets/game/atlases/letters/yellow/yellow-spritesheet.xml"
+      ]
+    },
+    {
+      "sha256": "9e7a1b276b0f8016cac1e0862463020b41d1cfd4056e2c0497927e82badb02ff",
+      "paths": [
+        "assets/game/atlases/letters/box/box-spritesheet.xml",
+        "assets/game/atlases/letters/solid/solid-spritesheet.xml",
+        "assets/game/atlases/letters/wood/wood-spritesheet.xml"
+      ]
+    }
+  ]
+}
