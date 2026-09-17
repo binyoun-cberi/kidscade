@@ -33,9 +33,17 @@ if (html.includes(sectionTitle)) {
 const oldStorageSync = `                if (event.key === 'kidscade_playtime_sec' && typeof syncPlayTimeFromStorage === 'function') {\n                    syncPlayTimeFromStorage();\n                }\n`;
 html = html.replace(oldStorageSync, '');
 
+// 플레이시간 표시 함수는 외부 모듈로 이동했으므로 이전 전역 호출이 남으면
+// DOMContentLoaded 초기화가 ReferenceError로 중단되고 게임 카드가 기본 링크로 이동합니다.
+html = html.replace(
+  '\n            updatePlayTimeDisplay();\n',
+  '\n            window.KidscadePlaytime?.render?.();\n'
+);
+
 if (/function\s+(?:loadPlayTimeSeconds|persistPlayTime|updatePlayTimeDisplay|syncPlayTimeFromStorage)\s*\(/.test(html)) {
   fail('이전 플레이시간 저장 함수가 index_base.html에 남아 있습니다.');
 }
+if (/\bupdatePlayTimeDisplay\s*\(/.test(html)) fail('이전 updatePlayTimeDisplay 호출이 index_base.html에 남아 있습니다.');
 if (/\blet\s+totalPlayTimeSec\b/.test(html)) fail('totalPlayTimeSec 레거시 상태가 남아 있습니다.');
 
 fs.writeFileSync(indexPath, html);
