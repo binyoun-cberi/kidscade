@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const FOOD='../../assets/game/food/';
+const FOOD=new URL('../../assets/game/food/',import.meta.url).href;
 const SHIFT_SECONDS=90;
 const MAX_QUEUE=5;
 const $=s=>document.querySelector(s);
