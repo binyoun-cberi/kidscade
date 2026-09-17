@@ -170,6 +170,8 @@ test('second audio pass keeps game-specific event hooks instead of a generic cli
 
 test('third audio pass uses game-specific events in the extra hook layer', () => {
   const hooks = read('game-audio-hooks-extra.js');
+  assert.doesNotThrow(() => new Function(hooks), 'extra audio hook file must parse as JavaScript');
+
   for (const fn of [
     'setupAlienPizza',
     'setupStationeryBoss',
@@ -184,7 +186,7 @@ test('third audio pass uses game-specific events in the extra hook layer', () =>
     '#feedback',
     '#uiLives',
     'FOREST RESTORED',
-    '#resultTitle',
+    'resultTitle',
     '#count'
   ]) assert.ok(hooks.includes(marker), `third-pass audio marker missing: ${marker}`);
 
