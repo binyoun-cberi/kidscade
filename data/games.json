@@ -172,11 +172,11 @@
     {
       "id": "job_bogle_bunsik",
       "title": "보글보글 분식집",
-      "href": "보글보글 분식집.html",
+      "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=3",
       "category": "trivia",
       "age": "job",
       "icon": "🥘",
-      "description": "신나는 분식집 요리 타이쿤! 주문에 맞춰 냄비와 웍을 번갈아 보며 맛있는 라면, 계란후라이, 떡볶이를 완성하고 최고의 요리사가 되어보세요."
+      "description": "3D 분식집 주방을 직접 뛰어다니며 냉장고·재료 선반에서 재료를 가져오고, 라면·떡볶이·사이드 조리대를 동시에 관리해 완성 음식을 서빙하는 액션 타이쿤!"
     },
     {
       "id": "trivia_school_survival",

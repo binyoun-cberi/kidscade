@@ -71,7 +71,7 @@ jobs:
             scripts/apply-game-classification-overrides.cjs \
             scripts/inject-game-integrations.cjs \
             scripts/maratang-selfbar-build.cjs \
-            scripts/bogle-bunsik-dx-build.cjs; do
+            scripts/bunsik-kitchen-build.cjs; do
             node --check "$file"
           done
       - name: Reject tracked credentials and secret env files
@@ -116,8 +116,8 @@ jobs:
         run: node --test tests/alien-pizza-dx2.test.cjs
       - name: Run Maratang Selfbar tests
         run: node --test tests/maratang-selfbar.test.cjs
-      - name: Run Bogle Bunsik DX tests
-        run: node --test tests/bogle-bunsik-dx.test.cjs
+      - name: Run Bunsik Kitchen tests
+        run: node --test tests/bunsik-kitchen.test.cjs
       - name: Run Code Breaker DX tests
         run: node --test tests/code-breaker-dx.test.cjs
       - name: Run server stats Worker tests
