@@ -5,6 +5,12 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const stripHref = href => {
+  const value = String(href || '').trim();
+  if (!value || /^(?:https?:|data:|javascript:|#)/i.test(value)) return '';
+  const plain = value.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+  try { return decodeURIComponent(plain); } catch (_) { return plain; }
+};
 
 test('audio catalog points only to tracked audio files', () => {
   const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
@@ -43,10 +49,41 @@ test('main page loads the shared audio manager before bootstrap', () => {
 test('Cloudflare build injector adds the audio manager to all catalog games and hooks to the first enhanced set', () => {
   const source = read('scripts/inject-game-integrations.cjs');
   assert.match(source, /injectAudioRuntimeIntoCatalogGames/);
+  assert.match(source, /injectDocumentStartScript/);
+  assert.match(source, /injectDocumentEndScript/);
   assert.match(source, /AUDIO_MANAGER_SRC/);
   assert.match(source, /AUDIO_HOOKS_SRC/);
   for (const title of ['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']) {
     assert.ok(source.includes(title), `enhanced audio title missing: ${title}`);
+  }
+});
+
+test('built enabled games all contain the shared audio manager', () => {
+  const dist = path.join(root, 'dist');
+  assert.ok(fs.existsSync(dist), 'dist must exist before audio integration tests');
+  const catalog = JSON.parse(fs.readFileSync(path.join(dist, 'data', 'games.json'), 'utf8'));
+  let checked = 0;
+  for (const game of catalog.games || []) {
+    if (!game || game.disabled) continue;
+    const relative = stripHref(game.href);
+    if (!relative || !/\.html?$/i.test(relative)) continue;
+    const file = path.join(dist, relative);
+    assert.ok(fs.existsSync(file), `built game entry is missing: ${relative}`);
+    const html = fs.readFileSync(file, 'utf8');
+    assert.match(html, /audio-manager\.js\?v=20260917-1/, `audio manager missing from ${game.id}: ${relative}`);
+    checked += 1;
+  }
+  assert.ok(checked >= 90, `expected broad catalog coverage, checked only ${checked}`);
+});
+
+test('built first enhanced game set contains the real-sound hook runtime', () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'data', 'games.json'), 'utf8'));
+  for (const title of ['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']) {
+    const game = (catalog.games || []).find(item => item && item.title === title && !item.disabled);
+    assert.ok(game, `enhanced game missing from built catalog: ${title}`);
+    const relative = stripHref(game.href);
+    const html = fs.readFileSync(path.join(root, 'dist', relative), 'utf8');
+    assert.match(html, /game-audio-hooks\.js\?v=20260917-1/, `audio hooks missing from ${title}`);
   }
 });
 
