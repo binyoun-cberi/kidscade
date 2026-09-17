@@ -29,6 +29,42 @@ function stripHrefSuffix(href) {
   try { return decodeURIComponent(plain); } catch (_) { return plain; }
 }
 
+function injectDocumentStartScript(html, tag, relativeHtml) {
+  if (/<\/head\s*>/i.test(html)) {
+    return html.replace(/<\/head\s*>/i, `${tag}\n</head>`);
+  }
+
+  const bodyMatch = html.match(/<body\b[^>]*>/i);
+  if (bodyMatch) {
+    return html.replace(bodyMatch[0], `${bodyMatch[0]}\n${tag}`);
+  }
+
+  // A few older single-file games omit explicit <head>/<body> tags. Browsers
+  // still parse them correctly, so put the shared runtime immediately after
+  // <html> and let the HTML parser infer the document sections.
+  const htmlMatch = html.match(/<html\b[^>]*>/i);
+  if (htmlMatch) {
+    return html.replace(htmlMatch[0], `${htmlMatch[0]}\n${tag}`);
+  }
+
+  const doctypeMatch = html.match(/^\s*<!doctype\b[^>]*>/i);
+  if (doctypeMatch) {
+    return html.replace(doctypeMatch[0], `${doctypeMatch[0]}\n${tag}`);
+  }
+
+  throw new Error(`Cannot inject audio manager: ${relativeHtml} has no document anchor`);
+}
+
+function injectDocumentEndScript(html, tag) {
+  if (/<\/body\s*>/i.test(html)) {
+    return html.replace(/<\/body\s*>/i, `${tag}\n</body>`);
+  }
+  if (/<\/html\s*>/i.test(html)) {
+    return html.replace(/<\/html\s*>/i, `${tag}\n</html>`);
+  }
+  return `${html}\n${tag}\n`;
+}
+
 function injectAudioRuntimeIntoCatalogGames() {
   const catalogPath = path.join(dist, 'data', 'games.json');
   if (!fs.existsSync(catalogPath)) throw new Error('Missing built game catalog: data/games.json');
@@ -53,17 +89,14 @@ function injectAudioRuntimeIntoCatalogGames() {
 
     if (!/audio-manager\.js(?:\?|\")/.test(html)) {
       const tag = `<script src="${AUDIO_MANAGER_SRC}"></script>`;
-      if (html.includes('</head>')) html = html.replace('</head>', `${tag}\n</head>`);
-      else if (html.includes('<body')) html = html.replace(/<body([^>]*)>/i, `<body$1>\n${tag}`);
-      else throw new Error(`Cannot inject audio manager: ${relativeHtml} has no head/body anchor`);
+      html = injectDocumentStartScript(html, tag, relativeHtml);
       managerInjected += 1;
       changed = true;
     }
 
     const needsHooks = games.some(game => AUDIO_HOOK_TITLES.has(String(game.title || '').trim()));
     if (needsHooks && !/game-audio-hooks\.js(?:\?|\")/.test(html)) {
-      if (!html.includes('</body>')) throw new Error(`Cannot inject audio hooks: ${relativeHtml} has no </body>`);
-      html = html.replace('</body>', `<script src="${AUDIO_HOOKS_SRC}"></script>\n</body>`);
+      html = injectDocumentEndScript(html, `<script src="${AUDIO_HOOKS_SRC}"></script>`);
       hooksInjected += 1;
       changed = true;
     }
