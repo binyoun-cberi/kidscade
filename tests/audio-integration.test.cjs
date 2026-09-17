@@ -25,6 +25,17 @@ const ENHANCED_TITLES = [
   '한자 수호전: 8급'
 ];
 
+const EXTRA_ENHANCED_TITLES = [
+  '외계인 피자 가게',
+  '문방구 사장님',
+  '약수 타워 디펜스',
+  '넘버 시그널 (룬의 숲)',
+  '역사 로얄',
+  '오목 아레나'
+];
+
+const allHookSource = () => `${read('game-audio-hooks.js')}\n${read('game-audio-hooks-extra.js')}`;
+
 test('audio catalog points only to tracked audio files', () => {
   const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
   assert.equal(catalog.basePath, 'assets/audio/');
@@ -40,7 +51,7 @@ test('audio catalog points only to tracked audio files', () => {
 });
 
 test('all semantic keys used by game audio hooks exist in the catalog', () => {
-  const hooks = read('game-audio-hooks.js');
+  const hooks = allHookSource();
   const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
   const used = new Set();
   for (const match of hooks.matchAll(/(?:play|preload)\(\s*['"]([a-z0-9_.-]+)['"]/g)) used.add(match[1]);
@@ -59,16 +70,21 @@ test('main page loads the shared audio manager before bootstrap', () => {
   assert.ok(bootstrapAt > audioAt, 'audio manager must load before main bootstrap');
 });
 
-test('Cloudflare build injector adds the audio manager to all catalog games and hooks to enhanced games', () => {
+test('Cloudflare build injector adds the audio manager and both game hook tiers', () => {
   const source = read('scripts/inject-game-integrations.cjs');
   assert.match(source, /injectAudioRuntimeIntoCatalogGames/);
   assert.match(source, /injectDocumentStartScript/);
   assert.match(source, /injectDocumentEndScript/);
   assert.match(source, /AUDIO_MANAGER_SRC/);
   assert.match(source, /AUDIO_HOOKS_SRC/);
+  assert.match(source, /AUDIO_EXTRA_HOOKS_SRC/);
   assert.match(source, /game-audio-hooks\.js\?v=20260917-2/);
+  assert.match(source, /game-audio-hooks-extra\.js\?v=20260917-1/);
   for (const title of ENHANCED_TITLES) {
     assert.ok(source.includes(title), `enhanced audio title missing: ${title}`);
+  }
+  for (const title of EXTRA_ENHANCED_TITLES) {
+    assert.ok(source.includes(title), `extra enhanced audio title missing: ${title}`);
   }
 });
 
@@ -90,7 +106,7 @@ test('built enabled games all contain the shared audio manager', () => {
   assert.ok(checked >= 90, `expected broad catalog coverage, checked only ${checked}`);
 });
 
-test('built enhanced games contain the real-sound hook runtime', () => {
+test('built first and second pass games contain the primary real-sound hook runtime', () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'data', 'games.json'), 'utf8'));
   for (const title of ENHANCED_TITLES) {
     const game = (catalog.games || []).find(item => item && item.title === title && !item.disabled);
@@ -101,8 +117,19 @@ test('built enhanced games contain the real-sound hook runtime', () => {
   }
 });
 
+test('built third pass games contain the extra real-sound hook runtime', () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'data', 'games.json'), 'utf8'));
+  for (const title of EXTRA_ENHANCED_TITLES) {
+    const game = (catalog.games || []).find(item => item && item.title === title && !item.disabled);
+    assert.ok(game, `extra enhanced game missing from built catalog: ${title}`);
+    const relative = stripHref(game.href);
+    const html = fs.readFileSync(path.join(root, 'dist', relative), 'utf8');
+    assert.match(html, /game-audio-hooks-extra\.js\?v=20260917-1/, `extra audio hooks missing from ${title}`);
+  }
+});
+
 test('audio hook set covers movement, combat, success, fail, pickup and shop feedback', () => {
-  const hooks = read('game-audio-hooks.js');
+  const hooks = allHookSource();
   for (const key of [
     'movement.jump',
     'combat.projectile_whoosh',
@@ -139,4 +166,29 @@ test('second audio pass keeps game-specific event hooks instead of a generic cli
     '대한민국 회복',
     '#canvas-wrapper'
   ]) assert.ok(hooks.includes(marker), `game-specific audio marker missing: ${marker}`);
+});
+
+test('third audio pass uses game-specific events in the extra hook layer', () => {
+  const hooks = read('game-audio-hooks-extra.js');
+  for (const fn of [
+    'setupAlienPizza',
+    'setupStationeryBoss',
+    'setupTowerDefense',
+    'setupRuneForest',
+    'setupHistoryRoyale',
+    'setupOmokArena'
+  ]) assert.match(hooks, new RegExp(`function ${fn}\\(`), `${fn} is missing`);
+
+  for (const marker of [
+    '#modal-result',
+    '#feedback',
+    '#uiLives',
+    'FOREST RESTORED',
+    '#resultTitle',
+    '#count'
+  ]) assert.ok(hooks.includes(marker), `third-pass audio marker missing: ${marker}`);
+
+  assert.match(hooks, /__kidscadeAudioExtraHooksV1/);
+  assert.doesNotMatch(hooks, /document\.addEventListener\(['"]click['"][\s\S]*play\(['"]shop\.purchase/,
+    'third pass should not blanket every click with a purchase sound');
 });
