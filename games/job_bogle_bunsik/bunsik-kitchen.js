@@ -5,6 +5,7 @@ const FOOD=new URL('../../assets/game/food/',import.meta.url).href;
 const PEOPLE=new URL('../../assets/game/characters/people/',import.meta.url).href;
 const SHIFT_SECONDS=120, MAX_ORDERS=4;
 const $=s=>document.querySelector(s);
+const hashText=s=>{let h=2166136261;for(const ch of String(s||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
 const els={canvas:$('#gameCanvas'),orders:$('#orderStrip'),labels:$('#stationLabels'),time:$('#time'),score:$('#score'),served:$('#served'),held:$('#heldText'),prompt:$('#prompt'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),toast:$('#toast'),action:$('#actionBtn'),sound:$('#soundBtn')};
 
 const ITEMS={
@@ -55,14 +56,33 @@ function scoreDish(dish,order){
 
 class Kitchen3D{
  constructor(canvas){
-  this.canvas=canvas;this.renderer=new THREE.WebGLRenderer({canvas,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.shadowMap.enabled=true;
-  this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xe9cfaa);this.camera=new THREE.PerspectiveCamera(40,1,.1,80);this.loader=new GLTFLoader();this.cache=new Map();
-  this.player=new THREE.Group();this.scene.add(this.player);this.player.position.set(0,0,2.2);this.playerRadius=.42;this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(0,1.25,.46);this.player.add(this.carryAnchor);
-  this.interactables=[];this.labelAnchors=[];this.colliders=[];this.stationGroups={};this.time=0;this.makeLights();this.makeRoom();this.makeWorld();this.loadPlayer();this.resize();addEventListener('resize',()=>this.resize(),{passive:true});
+  this.canvas=canvas;this.renderer=new THREE.WebGLRenderer({canvas,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.08;
+  this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xd8c09c);this.scene.fog=new THREE.Fog(0xd8c09c,19,31);this.camera=new THREE.PerspectiveCamera(42,1,.1,80);this.loader=new GLTFLoader();this.cache=new Map();
+  this.player=new THREE.Group();this.scene.add(this.player);this.player.position.set(0,0,2.0);this.playerRadius=.42;this.playerVisual=new THREE.Group();this.player.add(this.playerVisual);this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(0,1.32,.5);this.player.add(this.carryAnchor);
+  this.playerMixer=null;this.playerClips=[];this.playerAction=null;this.playerMoving=false;this.hasWalkClip=false;
+  this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.38,.52,32),new THREE.MeshBasicMaterial({color:0xfff0a8,transparent:true,opacity:.92,depthWrite:false}));this.playerRing.rotation.x=-Math.PI/2;this.playerRing.position.y=.018;this.scene.add(this.playerRing);
+  this.focusRing=new THREE.Mesh(new THREE.RingGeometry(.52,.69,36),new THREE.MeshBasicMaterial({color:0x7fe8ff,transparent:true,opacity:.86,depthWrite:false}));this.focusRing.rotation.x=-Math.PI/2;this.focusRing.position.y=.025;this.focusRing.visible=false;this.scene.add(this.focusRing);
+  this.interactables=[];this.labelAnchors=[];this.colliders=[];this.stationGroups={};this.stationLights={};this.time=0;this.makeLights();this.makeRoom();this.makeWorld();this.loadPlayer();this.resize();addEventListener('resize',()=>this.resize(),{passive:true});
  }
- makeLights(){this.scene.add(new THREE.HemisphereLight(0xfff3dd,0x745039,2.4));const d=new THREE.DirectionalLight(0xffffff,3.1);d.position.set(-5,9,7);d.castShadow=true;d.shadow.mapSize.set(1024,1024);this.scene.add(d)}
- box(w,h,d,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.82}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;this.scene.add(m);return m}
- makeRoom(){this.box(15.8,.3,11.2,0xc79d70,0,-.15,0);this.box(15.8,2.9,.22,0xf1e4ce,0,1.3,-5.5);this.box(.22,2.9,11.2,0xe6d3ba,-7.8,1.3,0);this.box(.22,2.9,11.2,0xe6d3ba,7.8,1.3,0)}
+ makeLights(){
+  this.scene.add(new THREE.HemisphereLight(0xfff0d8,0x5e4436,2.15));
+  const d=new THREE.DirectionalLight(0xfff7e7,3.35);d.position.set(-5,9,7);d.castShadow=true;d.shadow.mapSize.set(2048,2048);d.shadow.camera.left=-9;d.shadow.camera.right=9;d.shadow.camera.top=7;d.shadow.camera.bottom=-7;this.scene.add(d);
+  const warm=new THREE.PointLight(0xffc46b,12,10,2);warm.position.set(0,4.2,-3.5);this.scene.add(warm);
+  const prep=new THREE.PointLight(0xa9ddff,9,8,2);prep.position.set(-5.6,3,0);this.scene.add(prep);
+ }
+ box(w,h,d,color,x,y,z,rough=.78){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;this.scene.add(m);return m}
+ makeRoom(){
+  this.box(15.8,.28,11.2,0xb97f55,0,-.16,0);
+  const grid=new THREE.GridHelper(15.4,22,0x8e6248,0xd9b78f);grid.position.y=.006;grid.scale.z=.72;grid.material.transparent=true;grid.material.opacity=.38;this.scene.add(grid);
+  this.box(15.8,3.05,.22,0xf5ead7,0,1.38,-5.5);this.box(.22,3.05,11.2,0xe8d7bf,-7.8,1.38,0);this.box(.22,3.05,11.2,0xe8d7bf,7.8,1.38,0);
+  this.box(15.2,.72,.08,0x315b5c,0,.55,-5.34,.62);
+  this.box(5.1,1.15,.09,0x26343a,0,1.92,-5.22,.7);
+  this.box(4.65,.06,.09,0xf0d275,0,2.26,-5.14,.4);
+  for(const x of [-5.2,0,5.2]){const lamp=new THREE.PointLight(0xffd38a,6,6,2);lamp.position.set(x,3.15,-.8);this.scene.add(lamp);const shade=new THREE.Mesh(new THREE.CylinderGeometry(.18,.34,.24,16),new THREE.MeshStandardMaterial({color:0x343a3c,roughness:.55}));shade.position.set(x,2.95,-.8);this.scene.add(shade)}
+  this.box(2.4,.035,7.8,0x875b42,0,.012,.25,.9);
+  this.box(1.75,.04,7.5,0xd3b37b,-4.95,.015,.25,.9);
+  this.box(1.75,.04,7.5,0xd98663,4.95,.015,.25,.9);
+ }
  addCollider(x,z,w,d){this.colliders.push({x,z,w,d})}
  async model(file,size){let src=this.cache.get(file);if(!src){const g=await this.loader.loadAsync(FOOD+file);src=g.scene;this.cache.set(file,src)}const o=src.clone(true);const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3();b.getSize(s);o.scale.setScalar(size/(Math.max(s.x,s.y,s.z)||1));const b2=new THREE.Box3().setFromObject(o),c=new THREE.Vector3();b2.getCenter(c);o.position.sub(c);o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});return o}
  procItem(id,size=.5){
@@ -77,49 +97,70 @@ class Kitchen3D{
   const a=new THREE.Object3D();a.position.set(x,.7,z);this.scene.add(a);const it={id,type,name,x,z,anchor:a,...extra};this.interactables.push(it);this.labelAnchors.push(it);return it
  }
  makeWorld(){
-  // ingredient wall: each tray is independently reachable
   const sources=[
-   ['noodle','면',-6.65,-3.8],['ricecake','떡',-6.65,-2.85],['fishcake','어묵',-6.65,-1.9],
-   ['egg','계란',-6.65,-.65],['cheese','치즈',-6.65,.3],['green','대파',-6.65,1.25],
-   ['corndog','핫도그',-6.65,2.45],['kimbap','김밥',-6.65,3.4],['dumpling','만두',-6.65,4.35]
+   ['noodle','면',-6.45,-3.8],['ricecake','떡',-6.45,-2.85],['fishcake','어묵',-6.45,-1.9],
+   ['egg','계란',-6.45,-.65],['cheese','치즈',-6.45,.3],['green','대파',-6.45,1.25],
+   ['corndog','핫도그',-6.45,2.45],['kimbap','김밥',-6.45,3.4],['dumpling','만두',-6.45,4.35]
   ];
-  sources.forEach(([id,name,x,z])=>{this.box(1.35,.75,.75,0x7b5940,x,.22,z);this.addInteract('src-'+id,'source',name,x+.75,z,{item:id});this.itemObject(id,.48).then(o=>{o.position.set(x,.82,z);this.scene.add(o)})});
-  this.addCollider(-6.65,.25,1.45,9.7);
-
-  // fridge visual
-  this.box(1.15,2.15,1.0,0xdde8e8,-7.0,1.0,.3);
+  this.box(1.65,.18,9.65,0x2f3437,-6.45,.63,.25,.48);
+  sources.forEach(([id,name,x,z],i)=>{
+    const base=i<3?0x80573f:i<6?0x52716b:0x8c6246;
+    this.box(1.42,.66,.78,base,x,.24,z);this.box(1.46,.07,.82,0xe8d0a8,x,.61,z,.6);
+    this.addInteract('src-'+id,'source',name,x+.82,z,{item:id});
+    this.itemObject(id,.5).then(o=>{o.position.set(x,.88,z);o.rotation.y=(i%3-1)*.18;this.scene.add(o)});
+  });
+  this.addCollider(-6.45,.25,1.62,9.75);
+  this.box(1.34,2.18,1.08,0xd7e5e3,-6.55,1.04,.35,.45);this.box(.78,.04,.035,0x51666a,-6.09,1.12,.91,.35);this.box(.08,.5,.05,0x697a7c,-6.0,1.05,.93,.3);
 
   const defs=[
-   ['ramen','라면 냄비',5.8,-2.75,'pot-stew.glb',0xc96e50],
-   ['tteok','떡볶이 팬',5.8,0,'frying-pan.glb',0xb74d43],
-   ['side','사이드 조리대',5.8,2.75,'plate-deep.glb',0xd3a85e]
+   ['ramen','라면 냄비',5.6,-2.75,'pot-stew.glb',0xe06c50,0xffb26f],
+   ['tteok','떡볶이 팬',5.6,0,'frying-pan.glb',0xd74e43,0xff7d6c],
+   ['side','사이드 조리대',5.6,2.75,'plate-deep.glb',0xe0aa4e,0xffdf84]
   ];
-  defs.forEach(([type,name,x,z,file,color])=>{
-   this.box(2.0,.9,1.5,color,x,.3,z);this.addCollider(x,z,2.05,1.55);this.addInteract('station-'+type,'station',name,x-1.25,z,{station:type});
-   const g=new THREE.Group();g.position.set(x,.95,z);this.scene.add(g);this.stationGroups[type]=g;this.model(file,1.05).then(o=>g.add(o));
+  defs.forEach(([type,name,x,z,file,color,lightColor])=>{
+   this.box(2.22,.82,1.64,0x3b4142,x,.31,z,.58);this.box(2.16,.22,1.58,color,x,.78,z,.62);this.box(2.0,.06,1.42,0xf4dfbd,x,.93,z,.5);
+   this.addCollider(x,z,2.25,1.65);this.addInteract('station-'+type,'station',name,x-1.37,z,{station:type});
+   const g=new THREE.Group();g.position.set(x,1.15,z);this.scene.add(g);this.stationGroups[type]=g;this.model(file,1.08).then(o=>g.add(o));
+   const lamp=new THREE.PointLight(lightColor,5.2,4.3,2);lamp.position.set(x,2.2,z);this.scene.add(lamp);this.stationLights[type]=lamp;
   });
-  // serving counter and bin
-  this.box(3.3,.9,1.0,0x5d8b68,0,.3,-4.85);this.addCollider(0,-4.85,3.35,1.05);this.addInteract('serve','serve','서빙대',0,-4.05);
-  this.box(1.0,.8,1.0,0x5c6764,6.4,.25,4.35);this.addCollider(6.4,4.35,1.05,1.05);this.addInteract('trash','trash','쓰레기통',5.75,4.35);
+
+  this.box(3.8,.84,1.12,0x365f57,0,.3,-4.72,.58);this.box(3.86,.12,1.18,0xe7c78e,0,.78,-4.72,.55);this.addCollider(0,-4.72,3.9,1.2);this.addInteract('serve','serve','서빙대',0,-3.95);
+  for(const x of [-1.15,0,1.15])this.box(.72,.05,.62,0xf8eee0,x,.87,-4.62,.45);
+  this.box(1.05,.82,1.05,0x4f5e59,6.35,.27,4.18,.72);this.box(1.08,.09,1.08,0x2e3734,6.35,.72,4.18,.5);this.addCollider(6.35,4.18,1.1,1.1);this.addInteract('trash','trash','쓰레기통',5.68,4.18);
  }
  async loadPlayer(){
-  try{const g=await this.loader.loadAsync(PEOPLE+'character-female-a.glb');const o=g.scene;const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3();b.getSize(s);o.scale.setScalar(1.65/(s.y||1));const b2=new THREE.Box3().setFromObject(o),c=new THREE.Vector3();b2.getCenter(c);o.position.set(-c.x,-b2.min.y,-c.z);o.traverse(n=>{if(n.isMesh)n.castShadow=true});this.player.add(o)}catch(_){this.boxPlayer()}
+  try{
+   const g=await this.loader.loadAsync(PEOPLE+'character-female-a.glb'),o=g.scene;
+   const palette=[0xc94f45,0x263844,0xf0c9a7,0xf6ead8,0x6f8f7a];
+   o.traverse((n,i)=>{if(!n.isMesh)return;const mats=Array.isArray(n.material)?n.material:[n.material];const recolored=mats.map((m,j)=>{const q=m.clone();if(q.color)q.color.setHex(palette[hashText((n.name||'worker')+i+'-'+j)%palette.length]);if('roughness'in q)q.roughness=Math.max(.48,q.roughness??.65);n.castShadow=true;n.receiveShadow=true;return q});n.material=Array.isArray(n.material)?recolored:recolored[0]});
+   const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3();b.getSize(s);o.scale.setScalar(1.78/(s.y||1));const b2=new THREE.Box3().setFromObject(o),center=new THREE.Vector3();b2.getCenter(center);o.position.set(-center.x,-b2.min.y,-center.z);
+   this.playerVisual.add(o);this.playerClips=g.animations||[];this.playerMixer=this.playerClips.length?new THREE.AnimationMixer(o):null;this.hasWalkClip=this.playerClips.some(clip=>/walk|run/i.test(clip.name));this.playPlayerAnim('idle');
+  }catch(err){console.warn('[bunsik] player asset fallback',err);this.boxPlayer()}
  }
- boxPlayer(){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.85,10),new THREE.MeshStandardMaterial({color:0xf0a267}));body.position.y=.65;const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),new THREE.MeshStandardMaterial({color:0xf4c7a1}));head.position.y=1.25;g.add(body,head);this.player.add(g)}
+ playPlayerAnim(kind){
+  if(!this.playerMixer||!this.playerClips.length)return false;
+  const pattern=kind==='walk'?/walk|run/i:/idle|stand/i;
+  const clip=this.playerClips.find(x=>pattern.test(x.name))||(kind==='idle'?this.playerClips[0]:null);
+  if(!clip)return false;if(this.playerAction?.getClip()===clip)return true;
+  this.playerAction?.fadeOut(.1);const action=this.playerMixer.clipAction(clip);action.reset().enabled=true;action.setEffectiveWeight(1);action.fadeIn(.1);action.setLoop(THREE.LoopRepeat,Infinity);action.play();this.playerAction=action;return true
+ }
+ setPlayerMoving(moving){if(this.playerMoving===moving)return;this.playerMoving=moving;this.playPlayerAnim(moving?'walk':'idle')}
+ boxPlayer(){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.85,10),new THREE.MeshStandardMaterial({color:0xc94f45}));body.position.y=.65;const apron=new THREE.Mesh(new THREE.BoxGeometry(.48,.52,.12),new THREE.MeshStandardMaterial({color:0xf5ead8}));apron.position.set(0,.67,.29);const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),new THREE.MeshStandardMaterial({color:0xf0c9a7}));head.position.y=1.25;g.add(body,apron,head);this.playerVisual.add(g)}
  setCarry(v){while(this.carryAnchor.children.length)this.carryAnchor.remove(this.carryAnchor.children[0]);if(!v)return;const id=v.kind==='dish'?(v.type==='ramen'?'noodle':v.type==='tteok'?'ricecake':v.items[0]):v.id;this.itemObject(id,.38).then(o=>{o.rotation.x=-.25;this.carryAnchor.add(o)})}
- canMove(x,z){if(x<-7.15||x>7.15||z<-5.0||z>5.0)return false;return !this.colliders.some(r=>Math.abs(x-r.x)<r.w/2+this.playerRadius&&Math.abs(z-r.z)<r.d/2+this.playerRadius)}
- move(dx,dz,dt){const len=Math.hypot(dx,dz);if(len<.05)return false;dx/=len;dz/=len;const speed=3.45, nx=this.player.position.x+dx*speed*dt,nz=this.player.position.z+dz*speed*dt;if(this.canMove(nx,this.player.position.z))this.player.position.x=nx;if(this.canMove(this.player.position.x,nz))this.player.position.z=nz;this.player.rotation.y=Math.atan2(dx,dz);return true}
+ canMove(x,z){if(x<-7.0||x>7.0||z<-4.95||z>4.95)return false;return !this.colliders.some(r=>Math.abs(x-r.x)<r.w/2+this.playerRadius&&Math.abs(z-r.z)<r.d/2+this.playerRadius)}
+ move(dx,dz,dt){const len=Math.hypot(dx,dz);if(len<.05){this.setPlayerMoving(false);return false}this.setPlayerMoving(true);dx/=len;dz/=len;const speed=3.55,nx=this.player.position.x+dx*speed*dt,nz=this.player.position.z+dz*speed*dt;if(this.canMove(nx,this.player.position.z))this.player.position.x=nx;if(this.canMove(this.player.position.x,nz))this.player.position.z=nz;this.player.rotation.y=Math.atan2(dx,dz);return true}
  nearest(){let best=null,dist=1.55;for(const it of this.interactables){const d=Math.hypot(this.player.position.x-it.x,this.player.position.z-it.z);if(d<dist){dist=d;best=it}}return best}
- setStationLook(type,phase,ratio=0){const g=this.stationGroups[type];if(!g)return;g.rotation.y+=phase==='cooking'?.01:0;g.scale.setScalar(phase==='ready'?1.05:1);g.position.y=phase==='burnt'?.08*Math.sin(this.time*8):0}
+ setStationLook(type,phase,ratio=0){const g=this.stationGroups[type];if(!g)return;g.rotation.y+=phase==='cooking'?.01:0;g.scale.setScalar(phase==='ready'?1.08:1);g.position.y=phase==='burnt'?.08*Math.sin(this.time*8):0;const lamp=this.stationLights[type];if(lamp){lamp.intensity=phase==='ready'?11:phase==='burnt'?8:phase==='cooking'?7:4.8;lamp.color.setHex(phase==='burnt'?0xff3c38:phase==='ready'?0x7dff9c:0xffc06a)}}
  worldToScreen(obj){const r=this.canvas.getBoundingClientRect(),p=new THREE.Vector3();obj.getWorldPosition(p);p.project(this.camera);return{x:(p.x+1)*.5*r.width,y:(-p.y+1)*.5*r.height,visible:p.z<1}}
- resize(){const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.fov=w<650?56:42;this.camera.position.set(0,w<650?14.5:12.8,w<650?13.5:11.5);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix()}
- render(){this.time+=.016;for(const [k,s] of Object.entries(stations))this.setStationLook(k,s.phase,s.progress);this.renderer.render(this.scene,this.camera)}
+ setFocus(it){if(!it){this.focusRing.visible=false;return}this.focusRing.visible=true;this.focusRing.position.set(it.x,.03,it.z);this.focusRing.material.color.setHex(it.type==='station'?0xffd166:it.type==='serve'?0x7dff9c:0x7fe8ff)}
+ resize(){const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.fov=w<650?56:44;this.camera.position.set(0,w<650?13.0:10.9,w<650?12.1:10.4);this.camera.lookAt(0,.3,-.15);this.camera.updateProjectionMatrix()}
+ render(dt=.016){this.time+=dt;this.playerMixer?.update(dt);if(!this.playerMixer||!this.hasWalkClip){this.playerVisual.position.y=this.playerMoving?Math.abs(Math.sin(this.time*10))*.055:Math.sin(this.time*2.2)*.008;this.playerVisual.rotation.z=this.playerMoving?Math.sin(this.time*10)*.025:0}else{this.playerVisual.position.y=0;this.playerVisual.rotation.z=0}this.playerRing.position.x=this.player.position.x;this.playerRing.position.z=this.player.position.z;this.playerRing.material.opacity=.72+.2*Math.sin(this.time*5);for(const [k,s] of Object.entries(stations))this.setStationLook(k,s.phase,s.progress);this.renderer.render(this.scene,this.camera)}
 }
 
 const kitchen=new Kitchen3D(els.canvas);
-function createLabels(){els.labels.innerHTML='';kitchen.labelAnchors.forEach(it=>{const d=document.createElement('div');d.className='world-label';d.dataset.id=it.id;d.textContent=it.name;els.labels.appendChild(d)})}
+function createLabels(){els.labels.innerHTML='';kitchen.labelAnchors.forEach(it=>{const d=document.createElement('div');d.className='world-label '+it.type;d.dataset.id=it.id;d.textContent=it.name;els.labels.appendChild(d)})}
 setTimeout(createLabels,0);
-function updateLabels(){kitchen.labelAnchors.forEach(it=>{const d=els.labels.querySelector(`[data-id="${it.id}"]`);if(!d)return;const p=kitchen.worldToScreen(it.anchor);d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.opacity=p.visible?'1':'0';if(it.type==='station'){const s=stations[it.station];d.classList.toggle('hot',s.phase==='ready'||s.phase==='burnt');d.textContent=STATION_META[it.station].name+(s.phase==='cooking'?' · 조리중':s.phase==='ready'?' · 완성!':s.phase==='burnt'?' · 탔어요':'')}})}
+function updateLabels(focus=null){kitchen.labelAnchors.forEach(it=>{const d=els.labels.querySelector(`[data-id="${it.id}"]`);if(!d)return;const p=kitchen.worldToScreen(it.anchor);d.style.left=p.x+'px';d.style.top=p.y+'px';d.style.opacity=p.visible?'1':'0';d.classList.toggle('near',focus?.id===it.id);if(it.type==='station'){const s=stations[it.station];d.classList.toggle('hot',s.phase==='ready'||s.phase==='burnt');d.textContent=STATION_META[it.station].name+(s.phase==='cooking'?` · ${Math.round(s.progress*100)}%`:s.phase==='ready'?' · 완성!':s.phase==='burnt'?' · 탔어요':'')}})}
 
 function promptFor(it){
  if(!it)return'주방을 돌아다니며 주문을 처리하세요';
@@ -174,7 +215,7 @@ function updateStations(dt){
 function updateOrders(dt){let changed=false;for(const o of state.orders){o.patience-=dt*1.25;if(o.patience<=0){o.patience=0;const station=Object.values(stations).find(s=>s.orderId===o.id);if(station){station.orderId=null;station.items=[];station.phase='idle';station.progress=0}changed=true;sfx('failure.fail_sting',{volume:.14,cooldownMs:350})}}if(changed){state.orders=state.orders.filter(o=>o.patience>0);renderOrders()}}
 function endShift(){state.running=false;cancelAnimationFrame(state.raf);const title=state.score>=750?'분식집 에이스':state.score>=500?'바쁜 주방 해결사':'다음 영업은 더 빨라질 거예요';els.endTitle.textContent=title;els.endText.textContent=`총 ${state.served}개 주문을 서빙하고 ${state.score}점을 얻었어요.`;$('#endOverlay').classList.add('show');sfx('success.victory_fanfare',{volume:.38,cooldownMs:1000})}
 function loop(ts){if(!state.running)return;const dt=Math.min(.05,(ts-state.last)/1000||0);state.last=ts;state.time-=dt;state.spawn+=dt;state.uiClock+=dt;if(state.spawn>12&&state.orders.length<MAX_ORDERS){state.spawn=0;spawnOrder()}updateOrders(dt);updateStations(dt);if(state.uiClock>=.18){state.uiClock=0;renderOrders()}
- const dx=(state.keys.KeyD?1:0)-(state.keys.KeyA?1:0)+state.joy.x,dz=(state.keys.KeyS?1:0)-(state.keys.KeyW?1:0)+state.joy.y;kitchen.move(dx,dz,dt);kitchen.render();updateLabels();els.prompt.textContent=promptFor(kitchen.nearest());els.action.textContent=kitchen.nearest()?'행동':'…';updateHud();if(state.time<=0)return endShift();state.raf=requestAnimationFrame(loop)}
+ const dx=(state.keys.KeyD?1:0)-(state.keys.KeyA?1:0)+state.joy.x,dz=(state.keys.KeyS?1:0)-(state.keys.KeyW?1:0)+state.joy.y;kitchen.move(dx,dz,dt);const focus=kitchen.nearest();kitchen.setFocus(focus);kitchen.render(dt);updateLabels(focus);els.prompt.textContent=promptFor(focus);els.action.textContent=focus?'행동':'…';updateHud();if(state.time<=0)return endShift();state.raf=requestAnimationFrame(loop)}
 function startGame(){state.running=true;state.time=SHIFT_SECONDS;state.score=0;state.served=0;state.orders=[];state.spawn=0;state.uiClock=0;state.last=performance.now();setHeld(null);Object.keys(stations).forEach(resetStation);els.start.classList.remove('show');spawnOrder();spawnOrder();updateHud();state.raf=requestAnimationFrame(loop)}
 
 addEventListener('keydown',e=>{state.keys[e.code]=true;if(e.code==='KeyE'){e.preventDefault();interact()}});

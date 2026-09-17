@@ -40,7 +40,7 @@ const els = {
   spiceOptions: $('#spiceOptions'), cookDock: $('#cookDock'), cookFill: $('#cookFill'), cookText: $('#cookText'),
   serveBtn: $('#serveBtn'), startOverlay: $('#startOverlay'), resultOverlay: $('#resultOverlay'),
   resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'),
-  resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn')
+  resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn')
 };
 
 const state = {
@@ -429,8 +429,18 @@ function startGame(){
 }
 
 makeLabels();
-const scene = new SelfBarScene(els.canvas);
-els.startBtn.addEventListener('click',startGame);
+let scene;
+try {
+  scene = new SelfBarScene(els.canvas);
+} catch (error) {
+  console.error('[maratang-selfbar] 3D scene init failed', error);
+  els.startBtn.textContent='3D 준비 실패 · 새로고침';
+  els.startBtn.disabled=true;
+}
+els.startBtn.addEventListener('click',()=>{
+  if(!scene)return;
+  startGame();
+});
 $('#undoBtn').addEventListener('click',undo);
 $('#clearBtn').addEventListener('click',clearBowl);
 $('#checkoutBtn').addEventListener('click',checkout);
