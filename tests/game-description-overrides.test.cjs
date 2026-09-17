@@ -26,13 +26,13 @@ test('corrected descriptions match the current game implementations', () => {
   assert.doesNotMatch(overrides.trivia_drift_survival, /학업|평판|졸업/);
   assert.match(overrides.trivia_drift_survival, /무인도/);
 
-  const kite = fs.readFileSync(path.join(ROOT, '바람을 타고 연날리기.html'), 'utf8');
+  const kite = fs.readFileSync(path.join(ROOT, '바람을 타고.html'), 'utf8');
   assert.match(kite, /조작은 딱 두 개/);
   assert.match(kite, /45초/);
   assert.match(kite, /황금 돌풍/);
   assert.doesNotMatch(overrides.high_kite_wind_rider, /줄이 끊|게임 오버/);
 
-  const blocks = fs.readFileSync(path.join(ROOT, '정육면체 전개도 접기 3D 웹 프로그램.html'), 'utf8');
+  const blocks = fs.readFileSync(path.join(ROOT, '3D 전개도 마스터.html'), 'utf8');
   assert.match(blocks, /쌓기나무 3x3x3 관찰기/);
   assert.match(blocks, /위에서 본 모양/);
   assert.match(blocks, /앞에서 본 모양/);

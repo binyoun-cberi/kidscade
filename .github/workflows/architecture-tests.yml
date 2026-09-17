@@ -108,7 +108,7 @@ jobs:
       - name: Run launcher regression tests
         run: node --test tests/game-launcher.test.cjs
       - name: Run critical release smoke tests
-        run: node --test tests/release-smoke.test.cjs
+        run: node --test tests/release-smoke.test.cjs tests/game-filenames.test.cjs
       - name: Run recommendation regression tests
         run: node --test tests/recommendations.test.cjs
       - name: Run garden regression tests

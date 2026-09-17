@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연구소 물 정렬 퍼즐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            /* 실험실 눈금/타일 패턴 배경 */
+            background-color: #f0f4f8; /* 배경색 약간 더 밝게 */
+            background-image: 
+                linear-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+            background-size: 40px 40px; /* 패턴 크기 조정 */
+            overflow: hidden; /* 전체 스크롤 방지 */
+        }
+
+        .title-font {
+            font-family: 'Jua', sans-serif;
+        }
+
+        /* 실험실용 시험관(비커) 스타일 */
+        .glass-beaker {
+            background: rgba(255, 255, 255, 0.7); /* 투명도 조절 */
+            border: 3px solid #cbd5e1; /* 테두리 색상/두께 변경 */
+            border-top: none;
+            border-radius: 0 0 30px 30px; /* 둥글기 조정 */
+            box-shadow: 
+                inset 0 -5px 20px rgba(255, 255, 255, 0.4), /* 내부 광택 */
+                0 10px 25px -5px rgba(0, 0, 0, 0.15); /* 외부 그림자 */
+            backdrop-filter: blur(10px);
+            position: relative;
+            display: flex;
+            flex-direction: column-reverse;
+            cursor: pointer;
+            /* transform-origin을 상단으로 변경하여 기울어질 때 더 자연스럽게 */
+            transform-origin: center 10%; 
+            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        /* 시험관 입구 (rim) 추가 */
+        .glass-beaker::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            height: 8px;
+            border: 3px solid #cbd5e1;
+            border-radius: 5px 5px 0 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 25;
+        }
+
+        /* 시험관 눈금 표시 (스타일 변경) */
+        .beaker-marks {
+            position: absolute;
+            left: 5px;
+            top: 10%;
+            bottom: 10%;
+            width: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .beaker-mark {
+            width: 100%;
+            height: 2px;
+            background-color: #94a3b8;
+        }
+
+        /* 유리관 빛 반사 */
+        .glass-beaker::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10%;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.1) 100%);
+            z-index: 21;
+            pointer-events: none;
+            border-radius: 0 0 30px 30px;
+        }
+
+        /* 선택된 비커 액션 */
+        .glass-beaker.selected {
+            transform: translateY(-30px) scale(1.05); /* 약간 커지며 올라감 */
+            border-color: #0ea5e9; /* Sky blue */
+            box-shadow: 
+                inset 0 -5px 20px rgba(14, 165, 233, 0.2),
+                0 25px 35px -5px rgba(14, 165, 233, 0.4);
+            z-index: 30;
+        }
+        .glass-beaker.selected::before {
+            border-color: #0ea5e9;
+        }
+
+        /* 물/액체 층 */
+        .water-layer {
+            width: 100%;
+            transition: height 0.3s ease-in-out;
+            position: relative;
+            /* 액체 상단 표면 장력 효과 */
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 연구원 배경 이미지 스타일 */
+        .scientist-bg {
+            position: absolute;
+            bottom: 0;
+            width: auto;
+            height: 70vh; /* 높이 설정 */
+            max-height: 800px;
+            aspect-ratio: 2/3; /* 대략적인 비율 */
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            opacity: 0.15; /* 투명도 조절 */
+            mix-blend-mode: multiply; /* 배경과 자연스럽게 섞이도록 */
+            filter: grayscale(30%); /* 채도 약간 낮춤 */
+        }
+        
+        /* 무료 이미지 소스 (Unsplash) */
+        .bg1 { background-image: url('https://images.unsplash.com/photo-1581093588401-fbb62a02f138?q=80&w=600&auto=format&fit=crop'); }
+        .bg2 { background-image: url('https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=600&auto=format&fit=crop'); }
+        .bg3 { background-image: url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=600&auto=format&fit=crop'); }
+
+        /* 물줄기(Stream) 스타일 */
+        .water-stream {
+            position: fixed;
+            width: 12px; /* 시작 너비 (두껍게) */
+            height: 0;
+            background-color: currentColor; /* JS에서 색상 지정 */
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 45;
+            transform-origin: top center;
+            opacity: 0.9;
+        }
+
+        .water-stream.flowing {
+            /* 높이는 JS에서 계산하여 설정 */
+            width: 6px; /* 떨어지면서 가늘어짐 */
+            transition: height 0.2s cubic-bezier(0.45, 0, 0.55, 1), width 0.2s linear;
+        }
+
+        .water-stream.stopping {
+            height: 0 !important;
+            top: var(--end-top) !important; /* 끝점으로 이동하며 사라짐 */
+            transition: height 0.25s ease-in, top 0.25s ease-in;
+        }
+
+        /* 물튀김 파티클 */
+        .splash-particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: currentColor;
+            pointer-events: none;
+            z-index: 46;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col overflow-hidden relative">
+
+    <!-- 연구원 배경 이미지 (애니메이션 제거 및 고정 배치) -->
+    <div class="absolute inset-0 pointer-events-none z-0 overflow-hidden flex justify-between items-end px-10">
+        <div class="scientist-bg bg1 relative opacity-10" style="width: 30%;"></div>
+        <div class="scientist-bg bg3 relative opacity-[0.08] mb-10" style="height: 60vh; width: 30%;"></div>
+        <div class="scientist-bg bg2 relative opacity-10" style="height: 65vh; width: 30%;"></div>
+    </div>
+
+    <!-- 시작 화면 (클립보드 컨셉) -->
+    <div id="startScreen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-md">
+        <div class="bg-white/90 p-12 rounded-[2rem] shadow-2xl border-2 border-slate-200 flex flex-col items-center relative w-[90%] max-w-md backdrop-blur-sm">
+            <!-- 클립보드 클립 모양 -->
+            <div class="absolute -top-5 w-36 h-10 bg-gradient-to-b from-slate-300 to-slate-400 rounded-full shadow-md border border-slate-400"></div>
+            
+            <h1 class="title-font text-5xl text-slate-700 mb-8 mt-6 text-center leading-tight">
+                <span class="text-teal-500 drop-shadow-sm">🧪</span> 연구소<br>물 정렬 퍼즐
+            </h1>
+            <button onclick="startGame()" class="px-8 py-4 bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-500 hover:to-teal-700 text-white rounded-2xl text-xl font-bold shadow-lg shadow-teal-500/30 transition-all transform hover:scale-105 active:scale-95 w-full mb-4">
+                실험 시작 ▶
+            </button>
+            <p class="text-slate-500 text-sm font-medium flex items-center gap-2">
+                <span>🔊</span> 소리를 켜면 더 실감 납니다
+            </p>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="gameScreen" class="hidden flex-1 flex flex-col w-full h-full p-4 fade-in z-10">
+        <!-- 헤더 (실험 패널) -->
+        <div class="flex flex-col sm:flex-row justify-between items-center w-full max-w-5xl mx-auto mb-6 bg-white/80 p-4 rounded-2xl shadow-md border border-slate-200 backdrop-blur-md gap-4">
+            <div class="text-2xl font-bold text-slate-700 flex items-center gap-2">
+                <span class="text-3xl filter drop-shadow-sm">🔬</span> 실험 <span id="stageDisplay" class="text-teal-600 text-3xl ml-2 font-extrabold">1</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="showStageSelect()" class="p-3 bg-white hover:bg-slate-50 rounded-xl transition-colors shadow-sm text-xl border border-slate-100" title="실험 기록(스테이지 선택)">
+                    📋
+                </button>
+                <button onclick="toggleSound()" id="soundBtn" class="p-3 bg-white hover:bg-slate-50 rounded-xl transition-colors shadow-sm text-xl border border-slate-100" title="소리 켜기/끄기">
+                    🔊
+                </button>
+                <button onclick="restartStage()" class="px-5 py-2 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 active:scale-95">
+                    다시하기 ↺
+                </button>
+            </div>
+        </div>
+
+        <!-- 비커(시험관) 컨테이너 -->
+        <div id="beakersContainer" class="flex-1 w-full max-w-5xl mx-auto flex flex-wrap justify-center items-center gap-6 sm:gap-10 lg:gap-14 overflow-y-auto pb-10 content-center px-4">
+            <!-- 자바스크립트로 렌더링 -->
+        </div>
+    </div>
+
+    <!-- 스테이지 클리어 모달 -->
+    <div id="winScreen" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md fade-in">
+        <div class="bg-white/95 p-12 rounded-[2.5rem] shadow-2xl text-center border-t-8 border-teal-400 relative overflow-hidden">
+            <!-- 배경 장식 -->
+            <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMiIgZmlsbD0iI2UyZThlZiIgb3BhY2l0eT0iMC40Ii8+PC9zdmc+')] opacity-50 z-0"></div>
+            
+            <div class="relative z-10">
+                <div class="text-7xl mb-4 filter drop-shadow-md">🎉</div>
+                <h2 class="title-font text-6xl font-bold text-slate-800 mb-4">실험 성공!</h2>
+                <p class="text-slate-600 mb-10 font-bold text-lg">새로운 시험관과 시약이 준비되었습니다.</p>
+                <button onclick="nextStage()" class="px-12 py-5 bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-500 hover:to-teal-700 text-white rounded-2xl text-2xl font-bold shadow-xl shadow-teal-500/30 transition-all transform hover:scale-105 active:scale-95">
+                    다음 실험 진행 ➡
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스테이지 선택 모달 -->
+    <div id="stageSelectScreen" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/70 backdrop-blur-md fade-in">
+        <div class="bg-white/95 p-8 rounded-[2rem] shadow-2xl max-w-3xl w-[90%] max-h-[80vh] flex flex-col border-2 border-slate-200">
+            <h2 class="title-font text-3xl font-bold text-slate-800 mb-6 border-b-2 border-slate-100 pb-4 text-center">📂 실험 기록 보관소</h2>
+            <div id="stageGrid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-4 overflow-y-auto p-4 content-start flex-1 custom-scrollbar">
+                <!-- 자바스크립트로 버튼 생성 -->
+            </div>
+            <button onclick="hideStageSelect()" class="mt-6 px-8 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-colors self-center active:scale-95">
+                닫기 ✖
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 게임 상태 관리
+        // ==========================================
+        let stage = 1;
+        let maxUnlockedStage = 1;
+        
+        try {
+            maxUnlockedStage = parseInt(localStorage.getItem('labWaterSortProgress')) || 1;
+        } catch (e) {
+            console.warn("로컬 스토리지를 사용할 수 없는 환경입니다.");
+        }
+
+        const maxCapacity = 4;
+        let beakers = []; 
+        let selectedBeakerIndex = null;
+        let isAnimating = false; // 애니메이션 진행 중 조작 방지
+        
+        // 연구실 테마에 맞는 맑고 뚜렷한 화학 시약 색상 팔레트 (채도/명도 조정)
+        const PREDEFINED_COLORS = [
+            '#ff595e', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93',
+            '#f15bb5', '#00bbf9', '#00f5d4', '#fee440', '#9b5de5',
+            '#fb8500', '#219ebc', '#023047', '#ffb703', '#e63946',
+            '#a8dadc', '#457b9d', '#1d3557', '#e76f51', '#2a9d8f'
+        ];
+        
+        // ==========================================
+        // 오디오 시스템 (Web Audio API)
+        // ==========================================
+        let audioCtx;
+        let soundEnabled = true;
+        let isBgmPlaying = false;
+        let pourSource = null; // 붓는 소리 제어용
+        
+        // 맑은 연구실 느낌의 펜타토닉 BGM
+        const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+        const bgmPattern = [0, 2, 4, 2, 3, 1, 0, 1, 2, 4, 5, 4, 2, 1, 0, -1];
+        let noteIndex = 0;
+        let nextNoteTime = 0;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!isBgmPlaying) {
+                isBgmPlaying = true;
+                nextNoteTime = audioCtx.currentTime + 0.1;
+                scheduleBGM();
+            }
+        }
+
+        function scheduleBGM() {
+            if (!isBgmPlaying || !soundEnabled) {
+                if(soundEnabled) setTimeout(scheduleBGM, 100);
+                return;
+            }
+            while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                playBGMNote(noteIndex, nextNoteTime);
+                nextNoteTime += 0.3; // 템포 약간 느리게
+                noteIndex = (noteIndex + 1) % bgmPattern.length;
+            }
+            setTimeout(scheduleBGM, 50);
+        }
+
+        function playBGMNote(index, time) {
+            const note = bgmPattern[index];
+            if (note === -1) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = pentatonic[note] * 2; // 한 옥타브 올려서 더 맑게
+            
+            gain.gain.setValueAtTime(0.01, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + 0.3);
+        }
+
+        function playSFX(type) {
+            if (!soundEnabled || !audioCtx) return;
+            
+            if (type === 'pour_start') {
+                if (pourSource) pourSource.stop(); // 기존 소리 중단
+                const now = audioCtx.currentTime;
+
+                // 귀엽고 맑은 보글보글(쪼르륵) 소리 생성
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now); // 기본 음정
+
+                // LFO(저주파 발진기)를 사용하여 물이 보글거리는 떨림 효과 구현
+                const lfo = audioCtx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 12; // 떨림 속도 (보글보글)
+                
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 150; // 음정 변화폭
+                
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.1); // 부드럽게 시작
+
+                osc.start(now);
+                lfo.start(now);
+
+                pourSource = { stop: () => {
+                    const stopTime = audioCtx.currentTime;
+                    gain.gain.linearRampToValueAtTime(0, stopTime + 0.15); // 부드럽게 종료
+                    setTimeout(() => { 
+                        osc.stop(); 
+                        lfo.stop();
+                        gain.disconnect(); 
+                    }, 200);
+                }};
+            } else if (type === 'pour_end') {
+                if (pourSource) {
+                    pourSource.stop();
+                    pourSource = null;
+                }
+            }
+             else {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const now = audioCtx.currentTime;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'select') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'error') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'win') {
+                    osc.type = 'triangle';
+                    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C Major 7 arpeggio
+                    notes.forEach((freq, i) => {
+                        osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    });
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').innerText = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled && !isBgmPlaying) {
+                isBgmPlaying = true;
+                nextNoteTime = audioCtx.currentTime + 0.1;
+                scheduleBGM();
+            } else if (!soundEnabled) {
+                isBgmPlaying = false;
+            }
+        }
+
+        // ==========================================
+        // 게임 핵심 로직
+        // ==========================================
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            initAudio();
+            stage = maxUnlockedStage;
+            initStage();
+        }
+
+        function initStage() {
+            document.getElementById('stageDisplay').innerText = stage;
+            selectedBeakerIndex = null;
+            isAnimating = false;
+            
+            const numColors = stage + 1; 
+            const numEmpty = 2;          
+            const totalBeakers = numColors + numEmpty;
+
+            const colors = [];
+            for (let i = 0; i < numColors; i++) {
+                colors.push(PREDEFINED_COLORS[i % PREDEFINED_COLORS.length]);
+            }
+
+            beakers = [];
+            for (let i = 0; i < totalBeakers; i++) {
+                let beaker = [];
+                if (i < numColors) {
+                    for (let j = 0; j < maxCapacity; j++) beaker.push(colors[i]);
+                }
+                beakers.push(beaker);
+            }
+
+            // 문제 섞기 (뒤로 붓기 방식)
+            const scrambleMoves = stage * 25 + 50; 
+            for (let i = 0; i < scrambleMoves; i++) {
+                let srcIdx = Math.floor(Math.random() * beakers.length);
+                let destIdx = Math.floor(Math.random() * beakers.length);
+
+                if (srcIdx !== destIdx && beakers[srcIdx].length > 0 && beakers[destIdx].length < maxCapacity) {
+                    beakers[destIdx].push(beakers[srcIdx].pop());
+                } else {
+                    i--;
+                }
+            }
+
+            render();
+        }
+
+        async function handleBeakerClick(index) {
+            if (isAnimating) return;
+
+            if (selectedBeakerIndex === null) {
+                if (beakers[index].length > 0) {
+                    selectedBeakerIndex = index;
+                    playSFX('select');
+                    render();
+                }
+            } else {
+                if (selectedBeakerIndex === index) {
+                    selectedBeakerIndex = null;
+                    playSFX('select');
+                    render();
+                } else {
+                    if (canPour(selectedBeakerIndex, index)) {
+                        await executePourAnimation(selectedBeakerIndex, index);
+                    } else {
+                        selectedBeakerIndex = null;
+                        playSFX('error');
+                        render();
+                    }
+                }
+            }
+        }
+
+        function canPour(src, dest) {
+            if (beakers[src].length === 0) return false;
+            if (beakers[dest].length === maxCapacity) return false;
+            if (beakers[dest].length === 0) return true;
+            
+            const srcColor = beakers[src][beakers[src].length - 1];
+            const destColor = beakers[dest][beakers[dest].length - 1];
+            return srcColor === destColor;
+        }
+
+        // ==========================================
+        // 물 붓는 애니메이션 시스템 (대폭 개선됨)
+        // ==========================================
+        async function executePourAnimation(srcIdx, destIdx) {
+            isAnimating = true;
+
+            const srcArray = beakers[srcIdx];
+            const destArray = beakers[destIdx];
+            const color = srcArray[srcArray.length - 1];
+            
+            let pourCount = 0;
+            for (let i = srcArray.length - 1; i >= 0; i--) {
+                if (srcArray[i] === color) pourCount++;
+                else break;
+            }
+            const spaceInDest = maxCapacity - destArray.length;
+            const actualPour = Math.min(pourCount, spaceInDest);
+
+            const container = document.getElementById('beakersContainer');
+            const srcEl = container.children[srcIdx];
+            const destEl = container.children[destIdx];
+
+            // 1. 비커 이동 및 회전 계산
+            const srcRect = srcEl.getBoundingClientRect();
+            const destRect = destEl.getBoundingClientRect();
+            const isLeftToRight = srcRect.left < destRect.left;
+            const rotateAngle = isLeftToRight ? 80 : -80; // 각도를 더 크게 (현실감 UP)
+
+            // 대상 비커의 입구 근처로 이동할 위치 계산 (정교하게 조정)
+            // 비커가 기울어졌을 때 입구(rim)가 대상 비커의 중앙 상단에 오도록
+            const pourOffsetX = isLeftToRight ? destRect.width * 0.7 : -destRect.width * 0.7;
+            const pourOffsetY = -destRect.height * 0.5;
+
+            const dx = destRect.left + destRect.width / 2 - (srcRect.left + srcRect.width / 2) - pourOffsetX;
+            const dy = destRect.top - srcRect.top + pourOffsetY;
+
+            srcEl.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 부드러운 이동
+            srcEl.style.zIndex = '50';
+            srcEl.classList.remove('selected');
+            // 회전 중심축을 고려하여 이동
+            srcEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotateAngle}deg)`;
+
+            await new Promise(r => setTimeout(r, 500)); // 이동 완료 대기
+
+            playSFX('pour_start');
+
+            // 2. 물줄기(Stream) 생성 및 애니메이션
+            // 기울어진 비커의 입구(lip) 위치를 계산 (근사치)
+            const beakerHeight = srcRect.height;
+            const beakerWidth = srcRect.width;
+            const rad = rotateAngle * Math.PI / 180;
+            
+            // 회전 중심(transform-origin: center 10%) 기준 입구의 상대 좌표 계산
+            const originY = beakerHeight * 0.1;
+            const lipRelY_top = -originY; // 입구 상단
+            const lipRelX_side = (isLeftToRight ? -1 : 1) * beakerWidth / 2; // 입구 측면
+
+            // 회전 변환 적용
+            const rotatedLipX = lipRelX_side * Math.cos(rad) - lipRelY_top * Math.sin(rad);
+            const rotatedLipY = lipRelX_side * Math.sin(rad) + lipRelY_top * Math.cos(rad);
+
+            // 실제 화면상의 입구 좌표 (비커 중심 + 이동량 + 회전된 입구 상대좌표)
+            const centerX = srcRect.left + srcRect.width / 2 + dx;
+            const centerY = srcRect.top + originY + dy;
+            const lipX = centerX + rotatedLipX;
+            const lipY = centerY + rotatedLipY;
+            
+            // 대상 비커의 수면 좌표 계산
+            const destLayers = Array.from(destEl.querySelectorAll('.water-layer'));
+            let topDestLayer = destLayers.length > 0 ? destLayers[destLayers.length - 1] : null;
+            let destSurfaceY = destRect.bottom - 4; // 초기 수면은 바닥 (테두리 고려)
+
+            if (topDestLayer) {
+                destSurfaceY = topDestLayer.getBoundingClientRect().top + 2; // 기존 수면 상단
+            } else {
+                 // 새 레이어 생성
+                topDestLayer = document.createElement('div');
+                topDestLayer.className = 'water-layer';
+                topDestLayer.style.backgroundColor = color;
+                topDestLayer.style.height = '0%';
+                // 새 레이어는 기존 레이어들 위에 추가되어야 함 (flex-direction: column-reverse 이므로 appendChild)
+                destEl.appendChild(topDestLayer);
+            }
+
+            const stream = document.createElement('div');
+            stream.className = 'water-stream';
+            stream.style.color = color; // background-color는 currentColor로 사용
+            // 물줄기 시작점을 입구 중앙으로
+            stream.style.left = `${lipX}px`;
+            stream.style.top = `${lipY}px`;
+            
+            // 물줄기가 떨어지는 최종 높이
+            const dropHeight = destSurfaceY - lipY;
+            stream.style.setProperty('--drop-height', `${dropHeight}px`);
+            
+            document.body.appendChild(stream);
+
+            // 물줄기 흐름 시작 (약간의 지연 후)
+            requestAnimationFrame(() => {
+                 stream.classList.add('flowing');
+            });
+
+            // 3. 수면 변화 애니메이션 (물줄기가 닿는 시점부터)
+            const srcLayers = Array.from(srcEl.querySelectorAll('.water-layer'));
+            const topSrcLayer = srcLayers[srcLayers.length - 1];
+            
+            const srcH = parseFloat(topSrcLayer.style.height);
+            const destH = parseFloat(topDestLayer.style.height) || 0;
+            const pourH = (actualPour / maxCapacity) * 100;
+            
+            // 붓는 시간 계산 (양에 비례하되 최소/최대 시간 설정)
+            const pourDuration = Math.max(600, Math.min(1200, actualPour * 300));
+
+            // 물줄기가 수면에 닿을 때까지 대기 (약 150ms)
+            await new Promise(r => setTimeout(r, 150));
+            
+            // 물튀김 효과 시작
+            const splashInterval = setInterval(() => {
+                // 수면이 차오름에 따라 튀는 위치도 올라가야 함
+                const currentDestSurfaceY = topDestLayer.getBoundingClientRect().top;
+                createSplash(lipX, currentDestSurfaceY + 5, color);
+            }, 40); // 튀는 빈도 증가
+
+            // 수면 변화 시작
+            topSrcLayer.style.transition = `height ${pourDuration}ms linear`;
+            topDestLayer.style.transition = `height ${pourDuration}ms linear`;
+            topSrcLayer.style.height = `${srcH - pourH}%`;
+            topDestLayer.style.height = `${destH + pourH}%`;
+
+            // 붓기 완료 대기
+            await new Promise(r => setTimeout(r, pourDuration));
+
+            clearInterval(splashInterval); // 물튀김 정지
+            playSFX('pour_end');
+
+            // 4. 물줄기 끊기 애니메이션
+            const endTop = destRect.bottom - (destH + pourH) / 100 * destRect.height; // 최종 수면 높이
+            stream.style.setProperty('--end-top', `${endTop}px`);
+            stream.classList.remove('flowing');
+            stream.classList.add('stopping');
+            
+            await new Promise(r => setTimeout(r, 250)); // 끊기는 애니메이션 시간
+            stream.remove();
+
+            // 5. 비커 제자리로 복귀
+            srcEl.style.transition = 'transform 0.6s cubic-bezier(0.3, 0, 0.2, 1)'; // 돌아올 때는 약간 다르게
+            srcEl.style.transform = `translate(0px, 0px) rotate(0deg)`;
+            
+            await new Promise(r => setTimeout(r, 600));
+            srcEl.style.zIndex = '10';
+            
+            // 수면 transition 복구 (다음 애니메이션을 위해)
+            if(topSrcLayer) topSrcLayer.style.transition = '';
+            if(topDestLayer) topDestLayer.style.transition = '';
+
+            // 6. 논리적 상태 업데이트 및 렌더링
+            for (let i = 0; i < actualPour; i++) {
+                beakers[destIdx].push(beakers[srcIdx].pop());
+            }
+
+            selectedBeakerIndex = null;
+            isAnimating = false;
+            render();
+
+            if (checkWin()) {
+                setTimeout(handleWin, 300);
+            }
+        }
+
+        // 물튀김(Splash) 효과 함수
+        function createSplash(x, y, color) {
+            const splash = document.createElement('div');
+            splash.className = 'splash-particle';
+            splash.style.backgroundColor = color;
+            
+            // 랜덤한 방향과 크기로 튀기
+            const size = Math.random() * 4 + 2;
+            splash.style.width = `${size}px`;
+            splash.style.height = `${size}px`;
+            splash.style.left = `${x}px`;
+            splash.style.top = `${y}px`;
+            
+            const angle = Math.random() * Math.PI; // 위쪽 반원 방향
+            const velocity = Math.random() * 60 + 20;
+            const tx = Math.cos(angle) * velocity;
+            const ty = -Math.sin(angle) * velocity; // 위로
+
+            document.body.appendChild(splash);
+
+            splash.animate([
+                { transform: `translate(-50%, -50%) scale(1)`, opacity: 0.8 },
+                { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+            ], {
+                duration: Math.random() * 300 + 200,
+                easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)'
+            }).onfinish = () => splash.remove();
+        }
+
+        // ==========================================
+        // 승리 검사 및 렌더링
+        // ==========================================
+        function checkWin() {
+            for (let beaker of beakers) {
+                if (beaker.length > 0 && beaker.length < maxCapacity) return false;
+                if (beaker.length === maxCapacity) {
+                    const firstColor = beaker[0];
+                    if (!beaker.every(c => c === firstColor)) return false;
+                }
+            }
+            return true;
+        }
+
+        function handleWin() {
+            playSFX('win');
+            shootBubbles();
+            
+            if (stage >= maxUnlockedStage) {
+                maxUnlockedStage = stage + 1;
+                try { localStorage.setItem('labWaterSortProgress', maxUnlockedStage); } catch (e) {}
+            }
+            document.getElementById('winScreen').classList.remove('hidden');
+        }
+
+        function nextStage() {
+            stage++;
+            document.getElementById('winScreen').classList.add('hidden');
+            initStage();
+        }
+
+        function restartStage() {
+            if(isAnimating) return;
+            initStage();
+            playSFX('select');
+        }
+
+        function getGroupedLayers(beakerArr) {
+            if (beakerArr.length === 0) return [];
+            const groups = [];
+            let currentColor = beakerArr[0];
+            let count = 1;
+            for (let i = 1; i < beakerArr.length; i++) {
+                if (beakerArr[i] === currentColor) {
+                    count++;
+                } else {
+                    groups.push({ color: currentColor, height: (count / maxCapacity) * 100 });
+                    currentColor = beakerArr[i];
+                    count = 1;
+                }
+            }
+            groups.push({ color: currentColor, height: (count / maxCapacity) * 100 });
+            return groups;
+        }
+
+        function render() {
+            const container = document.getElementById('beakersContainer');
+            container.innerHTML = '';
+
+            // 스테이지에 따라 비커 크기 조절 (조금 더 크게)
+            let widthClass = stage > 7 ? 'w-14 sm:w-16' : 'w-16 sm:w-20';
+            let heightClass = stage > 7 ? 'h-40 sm:h-48' : 'h-52 sm:h-64';
+
+            beakers.forEach((beaker, index) => {
+                const beakerDiv = document.createElement('div');
+                beakerDiv.className = `glass-beaker ${widthClass} ${heightClass}`;
+                
+                if (selectedBeakerIndex === index && !isAnimating) {
+                    beakerDiv.classList.add('selected');
+                }
+
+                // 눈금 표시 추가
+                const marksDiv = document.createElement('div');
+                marksDiv.className = 'beaker-marks';
+                for(let i=0; i<maxCapacity-1; i++) {
+                    const mark = document.createElement('div');
+                    mark.className = 'beaker-mark';
+                    marksDiv.appendChild(mark);
+                }
+                beakerDiv.appendChild(marksDiv);
+
+                const layerGroups = getGroupedLayers(beaker);
+                layerGroups.forEach((group) => {
+                    const waterDiv = document.createElement('div');
+                    waterDiv.className = 'water-layer';
+                    waterDiv.style.backgroundColor = group.color;
+                    waterDiv.style.height = `${group.height}%`;
+                    beakerDiv.appendChild(waterDiv);
+                });
+
+                beakerDiv.onclick = () => handleBeakerClick(index);
+                container.appendChild(beakerDiv);
+            });
+        }
+
+        function shootBubbles() {
+            for(let i=0; i<50; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'absolute rounded-full border border-teal-200 bg-teal-100/30 z-[60] backdrop-blur-sm';
+                
+                const size = 8 + Math.random() * 24;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = '50%';
+                bubble.style.top = '60%';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 150 + Math.random() * 300;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity - 400; 
+
+                bubble.style.transform = `translate(-50%, -50%)`;
+                bubble.animate([
+                    { transform: `translate(-50%, -50%) scale(0.3)`, opacity: 0.8 },
+                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1.2)`, opacity: 0 }
+                ], {
+                    duration: 1200 + Math.random() * 1500,
+                    easing: 'cubic-bezier(.1,.8,.3,1)'
+                });
+
+                document.body.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 2800);
+            }
+        }
+
+        // ==========================================
+        // 스테이지 선택 모달
+        // ==========================================
+        function showStageSelect() {
+            if(isAnimating) return;
+            const grid = document.getElementById('stageGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= maxUnlockedStage; i++) {
+                const btn = document.createElement('button');
+                const isCurrent = (i === stage);
+                btn.className = `aspect-square rounded-2xl font-bold text-2xl flex items-center justify-center transition-all duration-200 shadow-sm border ${
+                    isCurrent 
+                    ? 'bg-teal-500 text-white border-teal-400 scale-105 shadow-teal-500/40' 
+                    : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 hover:scale-105'
+                }`;
+                btn.innerText = i;
+                btn.onclick = () => {
+                    playSFX('select');
+                    stage = i;
+                    hideStageSelect();
+                    initStage();
+                };
+                grid.appendChild(btn);
+            }
+            document.getElementById('stageSelectScreen').classList.remove('hidden');
+        }
+
+        function hideStageSelect() {
+            document.getElementById('stageSelectScreen').classList.add('hidden');
+        }
+        
+        // 커스텀 스크롤바 스타일 (Tailwind plugin 필요 없이 CSS로 구현)
+        const style = document.createElement('style');
+        style.textContent = `
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>구구단 천국의 계단</title>
+    <!-- 외부 CDN 없이 실행되도록 구성했습니다. -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #87CEEB;
+            touch-action: none;
+            font-family: 'Inter', 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        #gameCanvas { display: block; width: 100%; height: 100%; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+
+        .gauge-container {
+            width: min(620px, 62vw);
+            height: 20px;
+            background: rgba(0,0,0,0.28);
+            border-radius: 999px;
+            margin: 12px auto 6px;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(255,255,255,0.45);
+        }
+        .gauge-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #34d399 0%, #bef264 100%);
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+        .gauge-warning { background: linear-gradient(90deg, #ff0844 0%, #ffb199 100%); }
+
+        .glass-card {
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .control-btn {
+            background: linear-gradient(to bottom, #ffffff, #e2e8f0);
+            border: 4px solid #cbd5e1;
+            border-bottom-width: 8px;
+            border-radius: 26px;
+            color: #475569;
+            font-weight: 900;
+            text-shadow: 1px 1px 0px white;
+            box-shadow: 0 14px 22px -8px rgba(15, 23, 42, 0.35);
+            transition: transform 0.08s, border-bottom-width 0.08s, background 0.08s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+        .control-btn:active {
+            border-bottom-width: 4px;
+            transform: translateY(4px);
+            background: linear-gradient(to bottom, #f8fafc, #cbd5e1);
+        }
+
+        .math-panel {
+            flex: 1.25;
+            min-width: 0;
+            border-radius: 28px;
+            padding: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240,249,255,0.94));
+            border: 4px solid rgba(186, 230, 253, 0.95);
+            box-shadow: 0 18px 28px -12px rgba(15, 23, 42, 0.42);
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 8px;
+        }
+        .problem-card {
+            border-radius: 20px;
+            padding: 8px 10px;
+            background: linear-gradient(135deg, #dbeafe, #fef9c3);
+            border: 2px solid white;
+            text-align: center;
+        }
+        .problem-title {
+            font-size: 0.82rem;
+            font-weight: 900;
+            color: #475569;
+            letter-spacing: -0.02em;
+        }
+        .problem-text {
+            font-size: clamp(1.6rem, 4.3vw, 3rem);
+            line-height: 1.05;
+            font-weight: 1000;
+            color: #0f172a;
+            letter-spacing: -0.05em;
+        }
+        .answer-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .answer-display {
+            min-height: 46px;
+            border-radius: 18px;
+            background: white;
+            border: 3px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 1000;
+            font-size: clamp(1.4rem, 3.8vw, 2.4rem);
+            color: #0f172a;
+            box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+        .answer-placeholder { color: #94a3b8; }
+        .feedback-text {
+            border-radius: 999px;
+            padding: 0 10px;
+            min-width: 84px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 1000;
+            color: white;
+            background: #64748b;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        .feedback-ok { background: #10b981; }
+        .feedback-bad { background: #ef4444; }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+            min-height: 0;
+        }
+        .num-key {
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #ffffff, #e0f2fe);
+            color: #0f172a;
+            font-weight: 1000;
+            font-size: clamp(1.05rem, 3vw, 1.65rem);
+            box-shadow: inset 0 -4px 0 rgba(14, 165, 233, 0.22), 0 5px 10px rgba(15, 23, 42, 0.10);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .num-key:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(14, 165, 233, 0.22); }
+        .key-clear { background: linear-gradient(180deg, #fff7ed, #fed7aa); color: #9a3412; box-shadow: inset 0 -4px 0 rgba(249,115,22,0.22), 0 5px 10px rgba(15,23,42,0.10); }
+        .key-clear-all { background: linear-gradient(180deg, #fee2e2, #fecaca); color: #991b1b; box-shadow: inset 0 -4px 0 rgba(239,68,68,0.22), 0 5px 10px rgba(15,23,42,0.10); }
+
+        .shake { animation: shake 0.25s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        .toast {
+            position: absolute;
+            left: 50%;
+            top: 28%;
+            transform: translate(-50%, -50%);
+            padding: 12px 18px;
+            border-radius: 999px;
+            font-weight: 1000;
+            font-size: 1.15rem;
+            color: white;
+            background: rgba(15, 23, 42, 0.76);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s, transform 0.18s;
+            z-index: 60;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -70%);
+        }
+
+        @media (max-width: 700px) {
+            #controls {
+                height: 250px;
+                gap: 10px;
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-bottom: 14px;
+            }
+            #btnTurn { flex: 0.74; border-radius: 22px; }
+            #btnTurn svg { width: 42px; height: 42px; }
+            #btnTurn span { font-size: 1rem; }
+            .math-panel { flex: 1.38; padding: 9px; border-radius: 22px; gap: 6px; }
+            .problem-card { padding: 6px; border-radius: 16px; }
+            .problem-title { font-size: 0.72rem; }
+            .answer-display, .feedback-text { min-height: 38px; height: 38px; }
+            .feedback-text { min-width: 66px; font-size: 0.75rem; }
+            .numpad { gap: 5px; }
+            .num-key { border-radius: 12px; }
+            .gauge-container { width: 74vw; height: 16px; margin-top: 8px; }
+        }
+
+        @media (max-height: 640px) {
+            #topHUD { padding-top: 6px !important; }
+            #scoreDisplay { font-size: 2.6rem !important; }
+            #controls { height: 215px; padding-bottom: 8px; }
+            .problem-text { font-size: 1.8rem; }
+            .answer-display, .feedback-text { min-height: 36px; height: 36px; }
+        }
+
+
+
+
+
+
+        /* Tailwind 없이도 시작/종료 화면이 깨지지 않도록 하는 독립 스타일 */
+        #startScreen .glass-card {
+            width: min(92vw, 430px);
+            padding: 30px 28px;
+            border-radius: 32px;
+            text-align: center;
+        }
+        #startScreen h1 {
+            margin: 0 0 16px;
+            font-size: clamp(2.7rem, 8vw, 4rem);
+            line-height: 1.05;
+            font-weight: 1000;
+            color: white;
+            text-shadow: 0 5px 8px rgba(0,0,0,0.35);
+        }
+        #startScreen p {
+            margin: 0 0 22px;
+            color: rgba(255,255,255,0.96);
+            font-weight: 800;
+            line-height: 1.65;
+        }
+        #startScreen p span { font-size: 0.9rem; opacity: 0.82; }
+        #startScreen .inline-flex {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.22);
+            color: white;
+            font-weight: 1000;
+            border: 1px solid rgba(255,255,255,0.35);
+            margin-bottom: 14px;
+        }
+        #loadingMsg { color: white; font-weight: 900; margin-bottom: 14px; }
+        #startButtons:not(.hidden) { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        #startEasyBtn, #startHardBtn {
+            padding: 12px 18px;
+            min-width: 132px;
+            color: white;
+            font-size: 1.04rem;
+            box-shadow: 0 14px 26px rgba(15,23,42,0.20);
+            transition: transform 0.08s;
+        }
+        #startEasyBtn:active, #startHardBtn:active, #homeBtn:active, #restartBtn:active { transform: scale(0.96); }
+        #startEasyBtn { background: #22c55e; border: 4px solid #86efac !important; }
+        #startHardBtn { background: linear-gradient(90deg, #facc15, #ca8a04); border: 4px solid #fef08a !important; }
+        #startEasyBtn span, #startHardBtn span { display: block; font-size: 0.72rem; opacity: 0.92; margin-top: 4px; font-weight: 700; }
+        #startHighScore { color: #fef08a; }
+        #gameOverScreen h2 {
+            margin: 0 0 16px;
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            color: white;
+            font-weight: 1000;
+            text-shadow: 0 5px 10px rgba(0,0,0,0.35);
+        }
+        #gameOverScreen .bg-white\/10 {
+            width: 280px;
+            margin-bottom: 24px;
+            padding: 24px;
+            border-radius: 28px;
+            text-align: center;
+            background: rgba(255,255,255,0.13);
+            border: 1px solid rgba(255,255,255,0.24);
+            box-shadow: 0 20px 45px rgba(15,23,42,0.25);
+        }
+        #finalScore {
+            margin: 4px 0 14px;
+            font-size: 4rem;
+            line-height: 1;
+            color: #fde047;
+            font-weight: 1000;
+        }
+        #finalHighScore { color: white; font-size: 1.6rem; font-weight: 900; }
+        #finalHighScoreTitle { color: rgba(255,255,255,0.84); font-weight: 800; }
+        #homeBtn, #restartBtn {
+            padding: 12px 22px;
+            box-shadow: 0 14px 28px rgba(15,23,42,0.24);
+        }
+        #homeBtn { background: #334155; color: white; }
+        #restartBtn { background: white; color: #1e293b; font-size: 1.15rem; }
+
+        /* CDN 차단 대비: 화면 표시에 꼭 필요한 최소 유틸리티 */
+        .hidden { display: none !important; }
+        .absolute { position: absolute; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .items-end { align-items: flex-end; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-start { justify-content: flex-start; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .text-center { text-align: center; }
+        .z-50 { z-index: 50; }
+        .interactive { pointer-events: auto; }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        #startScreen.hidden, #gameOverScreen.hidden, #topHUD.hidden, #controls.hidden { display: none !important; }
+        #startScreen { background: rgba(0,0,0,0.40); padding: 20px; }
+        #gameOverScreen { background: rgba(127, 29, 29, 0.62); padding: 20px; }
+        #startEasyBtn, #startHardBtn, #homeBtn, #restartBtn {
+            border: 0;
+            cursor: pointer;
+            font-weight: 900;
+            border-radius: 999px;
+        }
+
+        /* ===== UI 정리 버전: 하단 도크 + 가로형 키패드 ===== */
+        #topHUD:not(.hidden) {
+            position: absolute;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            width: min(340px, calc(100vw - 24px));
+            padding: 10px 12px 12px;
+            border-radius: 22px;
+            background: rgba(15, 23, 42, 0.20);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-align: left;
+            pointer-events: none;
+        }
+        #topHUD #modeBadge { margin: 0 0 2px 2px; }
+        #topHUD .flex { justify-content: flex-start; gap: 8px; }
+        #scoreDisplay { font-size: clamp(2.15rem, 4vw, 3rem) !important; line-height: 1; }
+        #topHUD .gauge-container {
+            width: 100%;
+            height: 14px;
+            margin: 8px 0 5px;
+            border-width: 2px;
+        }
+        #topHUD .text-sm { font-size: 0.78rem; }
+
+        #controls:not(.hidden) {
+            position: absolute;
+            left: 50%;
+            bottom: max(10px, env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            width: min(1180px, calc(100vw - 24px));
+            height: clamp(168px, 22vh, 204px);
+            padding: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+            gap: 12px;
+            z-index: 50;
+        }
+
+        #btnTurn {
+            flex: none !important;
+            width: 100%;
+            min-width: 0;
+            border-radius: 24px !important;
+        }
+        #btnTurn svg {
+            width: clamp(38px, 5vw, 52px);
+            height: clamp(38px, 5vw, 52px);
+            margin-bottom: 4px;
+        }
+        #btnTurn span:first-of-type { font-size: clamp(1rem, 2vw, 1.25rem) !important; }
+
+        .math-panel {
+            height: 100%;
+            min-width: 0;
+            padding: 10px;
+            border-radius: 24px;
+            display: grid;
+            grid-template-columns: minmax(220px, 0.85fr) minmax(330px, 1.15fr);
+            grid-template-rows: auto 1fr;
+            align-items: stretch;
+            gap: 8px 10px;
+        }
+        .problem-card {
+            grid-column: 1;
+            grid-row: 1;
+            min-height: 0;
+            padding: 7px 8px;
+            border-radius: 17px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .problem-title { font-size: clamp(0.72rem, 1.4vw, 0.86rem); }
+        .problem-text { font-size: clamp(2rem, 4.8vw, 3.25rem); }
+        .answer-row {
+            grid-column: 1;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr auto;
+            gap: 7px;
+            align-items: stretch;
+        }
+        .answer-display {
+            min-height: 0;
+            height: auto;
+            border-radius: 17px;
+            font-size: clamp(1.7rem, 4vw, 2.8rem);
+        }
+        .feedback-text {
+            width: 100%;
+            min-width: 0;
+            height: 34px;
+            border-radius: 15px;
+            font-size: 0.82rem;
+        }
+        .numpad {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+            height: 100%;
+            min-height: 0;
+        }
+        .num-key {
+            min-height: 0;
+            border-radius: 15px;
+            font-size: clamp(1.05rem, 2.6vw, 1.65rem);
+            line-height: 1;
+        }
+        .key-clear-all { grid-row: auto; }
+
+        @media (max-width: 760px) {
+            #topHUD:not(.hidden) {
+                width: min(300px, calc(100vw - 20px));
+                padding: 8px 10px 10px;
+                border-radius: 18px;
+            }
+            #controls:not(.hidden) {
+                width: calc(100vw - 16px);
+                height: min(44vh, 330px);
+                grid-template-columns: minmax(104px, 0.62fr) minmax(0, 1.38fr);
+                gap: 8px;
+                bottom: max(8px, env(safe-area-inset-bottom));
+            }
+            .math-panel {
+                padding: 8px;
+                border-radius: 20px;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+                gap: 6px;
+            }
+            .problem-card { grid-column: 1; grid-row: 1; padding: 5px 6px; }
+            .problem-text { font-size: clamp(1.75rem, 8vw, 2.5rem); }
+            .answer-row {
+                grid-column: 1;
+                grid-row: 2;
+                grid-template-columns: 1fr 58px;
+                grid-template-rows: 1fr;
+            }
+            .answer-display { min-height: 38px; }
+            .feedback-text { width: auto; height: auto; min-height: 38px; font-size: 0.7rem; }
+            .numpad { grid-column: 1; grid-row: 3; gap: 5px; }
+            .num-key { border-radius: 12px; font-size: clamp(1rem, 5vw, 1.35rem); }
+            #btnTurn svg { width: 38px; height: 38px; }
+            #btnTurn span:first-of-type { font-size: 0.95rem !important; }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            #topHUD:not(.hidden) {
+                width: 290px;
+                padding: 7px 9px 9px;
+            }
+            #scoreDisplay { font-size: 2rem !important; }
+            #topHUD .gauge-container { height: 12px; margin: 6px 0 4px; }
+            #controls:not(.hidden) {
+                height: 158px;
+                width: min(1080px, calc(100vw - 18px));
+                grid-template-columns: 190px minmax(0, 1fr);
+                gap: 8px;
+                bottom: 8px;
+            }
+            .math-panel {
+                padding: 8px;
+                grid-template-columns: minmax(190px, 0.72fr) minmax(310px, 1.28fr);
+                gap: 6px 8px;
+            }
+            .problem-card { padding: 5px; }
+            .problem-title { font-size: 0.68rem; }
+            .problem-text { font-size: 2rem; }
+            .feedback-text { height: 28px; font-size: 0.72rem; }
+            .num-key { border-radius: 12px; font-size: 1.1rem; }
+            #btnTurn svg { width: 36px; height: 36px; }
+        }
+
+
+        /* 0키 잘림 방지 최종 보정: 낮은 가로 화면에서도 4번째 줄까지 보이게 함 */
+        #controls:not(.hidden),
+        #mathPanel,
+        #numpad {
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .num-key {
+            box-sizing: border-box;
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (orientation: landscape) and (max-height: 900px) {
+            #controls:not(.hidden) {
+                height: clamp(132px, 20vh, 168px);
+                bottom: max(14px, env(safe-area-inset-bottom));
+                grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+                gap: 8px;
+            }
+            #btnTurn {
+                border-width: 3px !important;
+                border-bottom-width: 6px !important;
+                border-radius: 20px !important;
+            }
+            #btnTurn svg {
+                width: 34px !important;
+                height: 34px !important;
+                margin-bottom: 3px;
+            }
+            #btnTurn span:first-of-type {
+                font-size: 0.98rem !important;
+            }
+            #btnTurn span:last-of-type {
+                font-size: 0.72rem !important;
+                margin-top: 0 !important;
+            }
+            .math-panel {
+                padding: 7px;
+                gap: 6px 8px;
+                grid-template-columns: minmax(185px, 0.68fr) minmax(285px, 1.32fr);
+                grid-template-rows: minmax(0, 1fr) minmax(0, 0.86fr);
+            }
+            .problem-card {
+                padding: 4px 6px;
+                border-radius: 14px;
+            }
+            .problem-title {
+                font-size: 0.68rem;
+                line-height: 1.05;
+            }
+            .problem-text {
+                font-size: clamp(1.65rem, 4.8vh, 2.25rem);
+                line-height: 1;
+            }
+            .answer-row {
+                gap: 5px;
+                min-height: 0;
+            }
+            .answer-display {
+                min-height: 0;
+                height: auto;
+                font-size: clamp(1.35rem, 4.2vh, 2rem);
+                border-radius: 14px;
+            }
+            .feedback-text {
+                height: 24px;
+                min-height: 0;
+                padding: 0 6px;
+                font-size: 0.66rem;
+                border-radius: 12px;
+            }
+            .numpad {
+                gap: 5px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                grid-template-rows: repeat(4, minmax(0, 1fr));
+            }
+            .num-key {
+                border-radius: 10px;
+                font-size: clamp(0.98rem, 3.8vh, 1.28rem);
+                box-shadow: inset 0 -3px 0 rgba(14, 165, 233, 0.18), 0 3px 8px rgba(15, 23, 42, 0.08);
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 700px) {
+            #controls:not(.hidden) {
+                height: clamp(118px, 19vh, 144px);
+                bottom: max(18px, env(safe-area-inset-bottom));
+                grid-template-columns: 176px minmax(0, 1fr);
+            }
+            .math-panel {
+                padding: 6px;
+                gap: 5px 7px;
+                grid-template-columns: minmax(170px, 0.62fr) minmax(270px, 1.38fr);
+            }
+            .problem-title { font-size: 0.62rem; }
+            .problem-text { font-size: clamp(1.45rem, 4.8vh, 1.95rem); }
+            .feedback-text { height: 20px; font-size: 0.58rem; }
+            .numpad { gap: 4px; }
+            .num-key { font-size: clamp(0.9rem, 3.7vh, 1.12rem); border-radius: 9px; }
+        }
+
+        @media (orientation: portrait) and (max-width: 760px) {
+            #controls:not(.hidden) {
+                bottom: max(18px, env(safe-area-inset-bottom));
+            }
+            .num-key { padding: 0; }
+        }
+
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="uiLayer" class="ui-layer flex flex-col justify-between">
+        <div id="topHUD" class="w-full text-center hidden pt-4">
+            <div id="modeBadge" class="text-sm font-bold drop-shadow-md mb-1"></div>
+            <div class="flex items-end justify-center gap-3">
+                <div class="text-white text-5xl font-black drop-shadow-lg tracking-wider" id="scoreDisplay">0</div>
+                <div class="text-white/90 font-black drop-shadow-md pb-2">계단</div>
+            </div>
+            <div class="gauge-container">
+                <div id="gaugeFill" class="gauge-fill"></div>
+            </div>
+            <div class="text-white text-sm font-bold opacity-90 drop-shadow-md">최고 점수: <span id="highScoreHud">0</span></div>
+        </div>
+
+        <div id="toast" class="toast">정답!</div>
+
+        <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm interactive z-50 transition-opacity duration-300 px-5">
+            <div class="glass-card rounded-[2rem] px-7 py-8 max-w-md w-full text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 text-white font-black mb-4 border border-white/30">구구단 훈련 게임</div>
+                <h1 class="text-5xl sm:text-6xl font-black text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] mb-4 text-center leading-tight">구구단<br>천국의 계단</h1>
+                <p class="text-white/95 font-bold mb-6 text-center leading-relaxed">
+                    왼쪽 버튼으로 방향을 바꾸고,<br>
+                    오른쪽 키패드에 구구단 정답을 입력하세요.<br>
+                    <span class="text-sm opacity-80">확인 버튼 없이 자동 채점되고, 정답이면 한 칸 올라갑니다.</span>
+                </p>
+                <div id="loadingMsg" class="text-white font-bold animate-pulse mb-4">준비 중...</div>
+                <div id="startButtons" class="hidden flex gap-3 justify-center">
+                    <button id="startEasyBtn" class="px-5 py-3 bg-green-500 text-white rounded-3xl text-lg font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform border-4 border-green-300 flex flex-col items-center">
+                        쉬움 모드
+                        <span class="text-xs font-normal opacity-90 mt-1">2~5단 · 기록 안됨</span>
+                    </button>
+                    <button id="startHardBtn" class="px-5 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-3xl text-lg font-bold shadow-[0_0_20px_rgba(250,204,21,0.5)] hover:scale-105 active:scale-95 transition-transform border-4 border-yellow-200 flex flex-col items-center">
+                        어려움 모드
+                        <span class="text-xs font-normal opacity-90 mt-1">2~9단 · 기록 도전</span>
+                    </button>
+                </div>
+                <div class="mt-5 text-yellow-100 font-bold drop-shadow-md text-lg">내 최고 점수: <span id="startHighScore">0</span></div>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-red-900/60 backdrop-blur-md interactive z-50 hidden px-5">
+            <h2 class="text-5xl font-black text-white drop-shadow-lg mb-2 text-center">게임 오버!</h2>
+            <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-lg border border-white/20 mb-8 w-72 text-center shadow-2xl">
+                <p class="text-white/80 text-lg mb-1">최종 점수</p>
+                <p id="finalScore" class="text-6xl font-black text-yellow-300 drop-shadow-md mb-4">0</p>
+                <div class="h-px w-full bg-white/20 mb-4"></div>
+                <p id="finalHighScoreTitle" class="text-white/80 text-sm mb-1">최고 점수</p>
+                <p id="finalHighScore" class="text-2xl font-bold text-white">0</p>
+            </div>
+            <div class="flex gap-4">
+                <button id="homeBtn" class="px-6 py-3 bg-slate-700 text-white rounded-full text-lg font-bold shadow-xl hover:scale-105 active:scale-95 transition-transform">처음으로</button>
+                <button id="restartBtn" class="px-8 py-3 bg-white text-slate-800 rounded-full text-xl font-bold shadow-xl hover:scale-105 active:scale-95 transition-transform">다시 하기</button>
+            </div>
+        </div>
+
+        <div id="controls" class="w-full flex justify-between px-4 pb-8 h-56 gap-5 hidden interactive z-50">
+            <button id="btnTurn" class="control-btn flex-1 flex flex-col items-center justify-center active:bg-slate-200 rounded-3xl" aria-label="방향전환">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v3.5"/></svg>
+                <span class="text-xl font-black text-slate-700">방향전환</span>
+                <span class="text-xs font-black text-slate-400 mt-1">Z / ←</span>
+            </button>
+
+            <div id="mathPanel" class="math-panel">
+                <div class="problem-card">
+                    <div class="problem-title">정답을 맞히면 올라가요</div>
+                    <div id="problemText" class="problem-text">3 × 4</div>
+                </div>
+                <div class="answer-row">
+                    <div id="answerDisplay" class="answer-display answer-placeholder">답 입력</div>
+                    <div id="feedbackText" class="feedback-text">자동채점</div>
+                </div>
+                <div class="numpad" id="numpad">
+                    <button class="num-key" data-key="1">1</button>
+                    <button class="num-key" data-key="2">2</button>
+                    <button class="num-key" data-key="3">3</button>
+                    <button class="num-key" data-key="4">4</button>
+                    <button class="num-key" data-key="5">5</button>
+                    <button class="num-key" data-key="6">6</button>
+                    <button class="num-key" data-key="7">7</button>
+                    <button class="num-key" data-key="8">8</button>
+                    <button class="num-key" data-key="9">9</button>
+                    <button class="num-key key-clear" data-action="backspace">←</button>
+                    <button class="num-key" data-key="0">0</button>
+                    <button class="num-key key-clear-all" data-action="clear">C</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalHighScore = 0;
+        const LOCAL_STORAGE_KEY = 'multiplicationHeavenStairsHighScore';
+
+        function loadHighScore() {
+            try {
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (saved) globalHighScore = parseInt(saved, 10) || 0;
+            } catch (e) {
+                console.warn('로컬 스토리지를 사용할 수 없습니다.', e);
+            }
+            document.getElementById('startHighScore').innerText = globalHighScore;
+            document.getElementById('highScoreHud').innerText = globalHighScore;
+        }
+
+        function saveHighScore(newScore) {
+            if (newScore > globalHighScore) {
+                globalHighScore = newScore;
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, globalHighScore);
+                } catch (e) {
+                    console.warn('로컬 스토리지를 저장할 수 없습니다.', e);
+                }
+                document.getElementById('startHighScore').innerText = globalHighScore;
+                document.getElementById('highScoreHud').innerText = globalHighScore;
+            }
+        }
+
+        document.getElementById('loadingMsg').classList.add('hidden');
+        document.getElementById('startButtons').classList.remove('hidden');
+        loadHighScore();
+
+        let currentDifficulty = 'HARD';
+        let audioCtx = null;
+        let bgmTimer = null;
+        let audioInitialized = false;
+
+        async function initAudio() {
+            if (audioInitialized && audioCtx) {
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                return true;
+            }
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) {
+                    console.warn('이 브라우저는 Web Audio를 지원하지 않습니다. 소리 없이 게임을 시작합니다.');
+                    return false;
+                }
+                audioCtx = new AudioContextClass();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                audioInitialized = true;
+                return true;
+            } catch (e) {
+                console.warn('오디오 초기화에 실패했습니다. 소리 없이 게임을 시작합니다.', e);
+                audioInitialized = false;
+                return false;
+            }
+        }
+
+        function playTone(freq, duration=0.12, type='sine', volume=0.08, delay=0) {
+            if (!audioInitialized || !audioCtx) return;
+            const now = audioCtx.currentTime + delay;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.03);
+            osc.onended = () => {
+                osc.disconnect();
+                gain.disconnect();
+            };
+        }
+
+        const bgmNotes = [523.25, 659.25, 783.99, 987.77, 1046.5, 880, 698.46, 587.33];
+        let noteIdx = 0;
+
+        function startBGM() {
+            if (!audioInitialized || bgmTimer) return;
+            bgmTimer = setInterval(() => {
+                if (gameState === 'PLAYING') {
+                    playTone(bgmNotes[noteIdx % bgmNotes.length], 0.10, 'sine', 0.025);
+                    noteIdx++;
+                }
+            }, 240);
+        }
+
+        function stopBGM() {
+            if (bgmTimer) {
+                clearInterval(bgmTimer);
+                bgmTimer = null;
+            }
+        }
+
+        function playSound(type) {
+            if (!audioInitialized) return;
+            if (type === 'step') playTone(1046.5, 0.07, 'triangle', 0.07);
+            if (type === 'turn') playTone(392, 0.06, 'square', 0.045);
+            if (type === 'fail') {
+                playTone(196, 0.35, 'sawtooth', 0.08);
+                playTone(130.81, 0.42, 'sawtooth', 0.055, 0.06);
+            }
+            if (type === 'correct') {
+                playTone(523.25, 0.08, 'sine', 0.055);
+                playTone(659.25, 0.08, 'sine', 0.055, 0.045);
+                playTone(783.99, 0.1, 'sine', 0.06, 0.09);
+            }
+            if (type === 'wrong') playTone(146.83, 0.15, 'square', 0.05);
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let cw, ch;
+
+        const TILE_W = 120;
+        const TILE_H = 60;
+
+        let lastTime = 0;
+        let animationId;
+        let gameState = 'START';
+        let controlsHeightCached = 0;
+
+        function resize() {
+            cw = canvas.width = window.innerWidth;
+            ch = canvas.height = window.innerHeight;
+            updateControlsHeight();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let stairs = [];
+        let player = {};
+        let camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
+        let gauge = 100;
+        let maxGauge = 100;
+        let score = 0;
+        let combo = 0;
+        let lastActionTime = 0;
+
+        let currentProblem = { a: 2, b: 2, answer: 4 };
+        let answerInput = '';
+        let feedbackTimer = null;
+        let toastTimer = null;
+        let gameOverTimer = null;
+        let isStarting = false;
+
+        const clouds = Array.from({length: 10}, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            radius: 30 + Math.random() * 50,
+            speed: 0.1 + Math.random() * 0.3
+        }));
+
+        function updateControlsHeight() {
+            const el = document.getElementById('controls');
+            controlsHeightCached = el && !el.classList.contains('hidden') ? el.getBoundingClientRect().height : 0;
+        }
+
+        function clearUiTimers() {
+            if (feedbackTimer) { clearTimeout(feedbackTimer); feedbackTimer = null; }
+            if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+            if (gameOverTimer) { clearTimeout(gameOverTimer); gameOverTimer = null; }
+            document.getElementById('toast').classList.remove('show');
+            document.getElementById('answerDisplay').classList.remove('shake');
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateProblem() {
+            const maxDan = currentDifficulty === 'EASY' ? 5 : 9;
+            const a = randomInt(2, maxDan);
+            const b = currentDifficulty === 'EASY' ? randomInt(1, 9) : randomInt(2, 9);
+            currentProblem = { a, b, answer: a * b };
+            answerInput = '';
+            document.getElementById('problemText').innerText = `${a} × ${b}`;
+            renderAnswer();
+            setFeedback('자동채점', 'neutral');
+        }
+
+        function renderAnswer() {
+            const display = document.getElementById('answerDisplay');
+            if (answerInput.length === 0) {
+                display.innerText = '답 입력';
+                display.classList.add('answer-placeholder');
+            } else {
+                display.innerText = answerInput;
+                display.classList.remove('answer-placeholder');
+            }
+        }
+
+        function setFeedback(text, type) {
+            const el = document.getElementById('feedbackText');
+            el.classList.remove('feedback-ok', 'feedback-bad');
+            if (type === 'ok') el.classList.add('feedback-ok');
+            if (type === 'bad') el.classList.add('feedback-bad');
+            el.innerText = text;
+            if (feedbackTimer) clearTimeout(feedbackTimer);
+            if (type !== 'neutral') {
+                feedbackTimer = setTimeout(() => {
+                    if (gameState === 'PLAYING') setFeedback('자동채점', 'neutral');
+                }, 600);
+            }
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.innerText = text;
+            toast.classList.add('show');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 650);
+        }
+
+        function addDigit(digit) {
+            if (gameState !== 'PLAYING') return;
+            const correctText = String(currentProblem.answer);
+            if (answerInput.length >= correctText.length) return;
+            if (answerInput === '0') answerInput = digit;
+            else answerInput += digit;
+            renderAnswer();
+            autoCheckAnswer();
+        }
+
+        function backspaceAnswer() {
+            if (gameState !== 'PLAYING') return;
+            answerInput = answerInput.slice(0, -1);
+            renderAnswer();
+            setFeedback('자동채점', 'neutral');
+        }
+
+        function clearAnswer() {
+            if (gameState !== 'PLAYING') return;
+            answerInput = '';
+            renderAnswer();
+            setFeedback('자동채점', 'neutral');
+        }
+
+        function autoCheckAnswer() {
+            const correctText = String(currentProblem.answer);
+            if (!answerInput) return;
+
+            if (answerInput === correctText) {
+                handleCorrectAnswer();
+                return;
+            }
+
+            // 정답의 앞자리와도 맞지 않거나, 정답 자릿수만큼 입력했는데 다르면 즉시 오답 처리
+            if (!correctText.startsWith(answerInput) || answerInput.length >= correctText.length) {
+                wrongAnswerPenalty();
+            }
+        }
+
+        function wrongAnswerPenalty() {
+            playSound('wrong');
+            combo = 0;
+            const penalty = currentDifficulty === 'EASY' ? 12 : 25;
+            gauge = Math.max(0, gauge - penalty);
+            updateGaugeUI();
+            setFeedback('오답', 'bad');
+            showToast(`아쉬워요! -${penalty}`);
+
+            const display = document.getElementById('answerDisplay');
+            display.classList.remove('shake');
+            void display.offsetWidth;
+            display.classList.add('shake');
+
+            answerInput = '';
+            renderAnswer();
+
+            if (gauge <= 0) triggerGameOver();
+        }
+
+        function handleCorrectAnswer() {
+            playSound('correct');
+            setFeedback('정답', 'ok');
+            showToast('정답! 올라갑니다');
+            answerInput = '';
+            handleInput('CLIMB');
+            if (gameState === 'PLAYING') generateProblem();
+        }
+
+        function resetGame() {
+            clearUiTimers();
+            score = 0;
+            combo = 0;
+            gauge = maxGauge;
+            stairs = [];
+
+            player = {
+                index: 0,
+                dir: 1,
+                visualX: 0,
+                visualY: 0,
+                gridX: 0,
+                gridY: 0,
+                hopY: 0,
+                isFalling: false,
+                fallVelocity: 0
+            };
+
+            let cx = 0, cy = 0;
+            stairs.push({ x: cx, y: cy, dir: 1, type: 'start' });
+            for (let i = 1; i < 20; i++) {
+                const nextDir = (i < 4) ? 1 : (Math.random() > 0.5 ? 1 : -1);
+                cx += nextDir;
+                cy += 1;
+                stairs.push({ x: cx, y: cy, dir: nextDir });
+            }
+
+            camera.targetX = 0;
+            camera.targetY = ch * 0.2;
+            camera.x = camera.targetX;
+            camera.y = camera.targetY;
+
+            document.getElementById('scoreDisplay').innerText = '0';
+            updateGaugeUI();
+            generateProblem();
+
+            gameState = 'PLAYING';
+            if (audioInitialized) {
+                stopBGM();
+                startBGM();
+            }
+        }
+
+        function generateMoreStairs() {
+            const lastStair = stairs[stairs.length - 1];
+            let cx = lastStair.x;
+            let cy = lastStair.y;
+            for (let i = 0; i < 10; i++) {
+                const nextDir = Math.random() > 0.5 ? 1 : -1;
+                cx += nextDir;
+                cy += 1;
+                stairs.push({ x: cx, y: cy, dir: nextDir });
+            }
+        }
+
+        function handleInput(action) {
+            if (gameState !== 'PLAYING') return;
+
+            const nextStair = stairs[player.index + 1];
+            let targetDir = player.dir;
+
+            if (action === 'TURN') {
+                targetDir *= -1;
+                playSound('turn');
+            } else {
+                playSound('step');
+            }
+
+            player.dir = targetDir;
+            const stairDir = nextStair.x > stairs[player.index].x ? 1 : -1;
+
+            if (stairDir === player.dir) {
+                player.index++;
+                player.gridX = nextStair.x;
+                player.gridY = nextStair.y;
+                player.hopY = -20;
+
+                score++;
+                document.getElementById('scoreDisplay').innerText = score;
+
+                const now = performance.now();
+                if (now - lastActionTime < 1800) combo++;
+                else combo = 0;
+                lastActionTime = now;
+
+                const restore = Math.max(4, 12 - (score * 0.04));
+                gauge = Math.min(maxGauge, gauge + restore);
+
+                if (stairs.length - player.index < 15) generateMoreStairs();
+
+                if (player.index > 30) {
+                    const removeCount = 15;
+                    stairs.splice(0, removeCount);
+                    player.index -= removeCount;
+                }
+            } else {
+                player.gridX += player.dir;
+                player.gridY += 1;
+                triggerGameOver();
+            }
+        }
+
+        function triggerGameOver() {
+            if (gameState === 'GAMEOVER') return;
+            gameState = 'GAMEOVER';
+            player.isFalling = true;
+            playSound('fail');
+            stopBGM();
+
+            if (currentDifficulty === 'HARD') {
+                saveHighScore(score);
+                document.getElementById('finalHighScoreTitle').innerText = '최고 점수';
+            } else {
+                document.getElementById('finalHighScoreTitle').innerText = '최고 점수 (저장 안됨)';
+            }
+
+            if (gameOverTimer) clearTimeout(gameOverTimer);
+            gameOverTimer = setTimeout(() => {
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+                document.getElementById('topHUD').classList.add('hidden');
+                document.getElementById('controls').classList.add('hidden');
+                updateControlsHeight();
+                document.getElementById('finalScore').innerText = score;
+                document.getElementById('finalHighScore').innerText = globalHighScore;
+                stopGameLoop();
+            }, 900);
+        }
+
+        function updateGaugeUI() {
+            const fill = document.getElementById('gaugeFill');
+            const pct = (gauge / maxGauge) * 100;
+            fill.style.width = `${pct}%`;
+            if (pct < 20) fill.classList.add('gauge-warning');
+            else fill.classList.remove('gauge-warning');
+        }
+
+        function toIso(gridX, gridY) {
+            const isoX = gridX * (TILE_W / 2);
+            const isoY = -gridY * (TILE_H / 2);
+            return { x: isoX, y: isoY };
+        }
+
+        function drawBlock(x, y, isBase=false, opacity=1) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.globalAlpha = opacity;
+
+            ctx.beginPath();
+            ctx.moveTo(0, -TILE_H/2);
+            ctx.lineTo(TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(-TILE_W/2, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(-TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(0, TILE_H);
+            ctx.lineTo(-TILE_W/2, TILE_H/2);
+            ctx.closePath();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fill();
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(TILE_W/2, 0);
+            ctx.lineTo(0, TILE_H/2);
+            ctx.lineTo(0, TILE_H);
+            ctx.lineTo(TILE_W/2, TILE_H/2);
+            ctx.closePath();
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fill();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawGhost(x, y, hopY, dir) {
+            ctx.save();
+            ctx.translate(x, y + hopY);
+
+            const hover = Math.sin(performance.now() * 0.005) * 5;
+            ctx.translate(0, hover - 20);
+
+            ctx.beginPath();
+            ctx.ellipse(0, -35, 15, 5, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(0, -5, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(-15, 10);
+            ctx.bezierCurveTo(-15, -30, 15, -30, 15, 10);
+            ctx.lineTo(15, 20);
+            ctx.bezierCurveTo(10, 25, 5, 15, 0, 20);
+            ctx.bezierCurveTo(-5, 25, -10, 15, -15, 20);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fill();
+
+            ctx.fillStyle = '#1e293b';
+            const eyeOffsetX = dir * 5;
+            ctx.beginPath();
+            ctx.arc(eyeOffsetX - 5, -5, 3, 0, Math.PI * 2);
+            ctx.arc(eyeOffsetX + 5, -5, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(244, 114, 182, 0.5)';
+            ctx.beginPath();
+            ctx.arc(eyeOffsetX - 10, 0, 3, 0, Math.PI*2);
+            ctx.arc(eyeOffsetX + 10, 0, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function update(dt) {
+            if (gameState === 'PLAYING') {
+                const drainRate = currentDifficulty === 'HARD' ? 4 + (score * 0.32) : 1.8 + (score * 0.12);
+                gauge -= drainRate * (dt / 1000);
+
+                if (gauge <= 0) {
+                    gauge = 0;
+                    triggerGameOver();
+                }
+                updateGaugeUI();
+            }
+
+            const targetIso = toIso(player.gridX || 0, player.gridY || 0);
+            player.visualX += (targetIso.x - (player.visualX || 0)) * 0.3;
+            player.visualY += (targetIso.y - (player.visualY || 0)) * 0.3;
+            player.hopY += (0 - (player.hopY || 0)) * 0.2;
+
+            if (player.isFalling) {
+                player.fallVelocity += 900 * (dt / 1000);
+                player.visualY += player.fallVelocity * (dt / 1000);
+            }
+
+            const safePlayerY = Math.max(150, Math.min(ch * 0.58, ch - controlsHeightCached - 110));
+            camera.targetX = -player.visualX + cw/2;
+            camera.targetY = -player.visualY + safePlayerY;
+            camera.x += (camera.targetX - camera.x) * 0.1;
+            camera.y += (camera.targetY - camera.y) * 0.1;
+
+            clouds.forEach(c => {
+                c.x -= c.speed;
+                if (c.x < -c.radius * 2) c.x = cw + c.radius;
+            });
+        }
+
+        function draw() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, ch);
+            const progress = Math.min(1, score / 200);
+            const r1 = 135 - progress*50, g1 = 206 - progress*50, b1 = 235 + progress*20;
+            const r2 = 224 - progress*100, g2 = 246 - progress*100, b2 = 255;
+
+            gradient.addColorStop(0, `rgb(${r1}, ${g1}, ${b1})`);
+            gradient.addColorStop(1, `rgb(${r2}, ${g2}, ${b2})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, cw, ch);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+            clouds.forEach(c => {
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2);
+                ctx.arc(c.x + c.radius*0.8, c.y - c.radius*0.3, c.radius*0.8, 0, Math.PI*2);
+                ctx.arc(c.x + c.radius*1.5, c.y, c.radius*0.9, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(camera.x, camera.y);
+
+            const renderStart = Math.max(0, player.index - 5);
+            const renderEnd = Math.min(stairs.length, player.index + 20);
+
+            for (let i = renderStart; i < renderEnd; i++) {
+                const s = stairs[i];
+                const iso = toIso(s.x, s.y);
+                const distFromPlayer = i - player.index;
+                const opacity = distFromPlayer > 15 ? 1 - (distFromPlayer - 15)/5 : 1;
+                if (opacity <= 0) continue;
+
+                if (s.type === 'start') {
+                    drawBlock(iso.x, iso.y + TILE_H, true, opacity);
+                    drawBlock(iso.x, iso.y + TILE_H*2, true, opacity);
+                }
+                drawBlock(iso.x, iso.y, false, opacity);
+            }
+
+            drawGhost(player.visualX || 0, player.visualY || 0, player.hopY || 0, player.dir || 1);
+            ctx.restore();
+        }
+
+        function startGameLoop() {
+            if (animationId) return;
+            lastTime = 0;
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopGameLoop() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            lastTime = 0;
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            update(dt);
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        async function startGameUI(difficulty) {
+            if (isStarting) return;
+            isStarting = true;
+            try {
+                currentDifficulty = difficulty;
+                await initAudio();
+
+                document.getElementById('startScreen').classList.add('hidden');
+                document.getElementById('topHUD').classList.remove('hidden');
+                document.getElementById('controls').classList.remove('hidden');
+                updateControlsHeight();
+
+                const badge = document.getElementById('modeBadge');
+                badge.innerText = difficulty === 'EASY' ? '쉬움 모드 · 2~5단' : '어려움 모드 · 2~9단';
+                badge.className = difficulty === 'EASY'
+                    ? 'text-green-200 text-sm font-black drop-shadow-md mb-1'
+                    : 'text-red-200 text-sm font-black drop-shadow-md mb-1';
+
+                resetGame();
+                startGameLoop();
+            } finally {
+                isStarting = false;
+            }
+        }
+
+        document.getElementById('startEasyBtn').addEventListener('click', () => startGameUI('EASY'));
+        document.getElementById('startHardBtn').addEventListener('click', () => startGameUI('HARD'));
+
+        document.getElementById('homeBtn').addEventListener('click', () => {
+            clearUiTimers();
+            stopBGM();
+            stopGameLoop();
+            gameState = 'START';
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('topHUD').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            updateControlsHeight();
+            document.getElementById('startScreen').classList.remove('hidden');
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            clearUiTimers();
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('topHUD').classList.remove('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            updateControlsHeight();
+            resetGame();
+            startGameLoop();
+        });
+
+        function bindPress(element, handler) {
+            if (window.PointerEvent) {
+                element.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handler(e);
+                });
+            } else {
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handler(e);
+                });
+                element.addEventListener('mousedown', (e) => handler(e));
+            }
+        }
+
+        function handleNumpadPress(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            if (btn.dataset.key) addDigit(btn.dataset.key);
+            if (btn.dataset.action === 'backspace') backspaceAnswer();
+            if (btn.dataset.action === 'clear') clearAnswer();
+        }
+
+        bindPress(document.getElementById('btnTurn'), () => handleInput('TURN'));
+        bindPress(document.getElementById('numpad'), handleNumpadPress);
+        document.getElementById('answerDisplay').addEventListener('animationend', () => {
+            document.getElementById('answerDisplay').classList.remove('shake');
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.key === 'ArrowLeft' || e.key === 'z' || e.key === 'Z') {
+                e.preventDefault();
+                handleInput('TURN');
+                return;
+            }
+            if (/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                addDigit(e.key);
+                return;
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                backspaceAnswer();
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                clearAnswer();
+            }
+        });
+
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0,0,cw,ch);
+    </script>
+</body>
+</html>

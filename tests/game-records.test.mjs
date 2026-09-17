@@ -44,7 +44,7 @@ test('game record migration and game integrations are included in the Cloudflare
   const migration = fs.readFileSync(path.join(root, 'migrations/0004_game_records.sql'), 'utf8');
   assert.match(migration, /CREATE TABLE IF NOT EXISTS game_records/);
 
-  const builtClassroomWar = fs.readFileSync(path.join(root, 'dist/classroom_war_3d.html'), 'utf8');
+  const builtClassroomWar = fs.readFileSync(path.join(root, 'dist/교실전쟁 3D.html'), 'utf8');
   assert.match(builtClassroomWar, /classroom-war-records\.js\?v=20260916-1/);
   assert.match(builtClassroomWar, /classroom-war-records-observer\.js\?v=20260916-1/);
   assert.ok(fs.existsSync(path.join(root, 'dist/classroom-war-records.js')));

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>우주 샌드위치 가게</title>
+<!-- SPACE_SANDWICH_V3 -->
+<style>
+:root{
+  --ink:#17213d;--space:#0b1230;--panel:rgba(16,25,60,.91);--cream:#fff8e8;
+  --mint:#69d8bc;--pink:#ff7d9f;--yellow:#ffd766;--cyan:#71d9ff;--danger:#ff6d7a;
+  --shadow:0 14px 38px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;background:#070b20;color:var(--ink)}
+button,a{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}
+#app{position:fixed;inset:0;background:#080d28;isolation:isolate}
+#spaceBg{position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 20%,rgba(89,113,255,.24),transparent 26%),
+  radial-gradient(circle at 78% 16%,rgba(255,83,163,.17),transparent 23%),
+  linear-gradient(#071028,#0c1435 58%,#172143);overflow:hidden}
+#stars{position:absolute;inset:0;opacity:.8;background-image:
+  radial-gradient(#fff 0 1px,transparent 1.5px),
+  radial-gradient(#a6dfff 0 1px,transparent 1.5px),
+  radial-gradient(#fff4a9 0 1px,transparent 1.5px);
+  background-size:74px 74px,109px 109px,151px 151px;
+  background-position:0 0,20px 31px,74px 18px;animation:drift 24s linear infinite}
+@keyframes drift{to{background-position:74px 0,129px 31px,225px 18px}}
+#planet{position:absolute;right:-5vw;top:4vh;width:min(40vw,520px);filter:drop-shadow(0 22px 40px #0008);opacity:.95;user-select:none;pointer-events:none}
+#scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#home{position:absolute;z-index:12;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.94);display:grid;place-items:center;text-decoration:none;color:#17213d;font-size:22px;font-weight:950;box-shadow:var(--shadow)}
+#hud{position:absolute;z-index:8;left:65px;right:12px;top:max(10px,env(safe-area-inset-top));display:grid;grid-template-columns:minmax(260px,660px) auto;gap:10px;align-items:start;pointer-events:none}
+#orderCard{background:rgba(255,248,232,.96);border:3px solid white;border-radius:22px;padding:11px 16px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+#customerLine{display:flex;gap:10px;align-items:center}.customerBadge{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:linear-gradient(145deg,#88f0c7,#58a9ff);position:relative;box-shadow:inset 0 -6px 0 #0001}
+.customerBadge:before,.customerBadge:after{content:"";position:absolute;top:16px;width:8px;height:10px;border-radius:50%;background:#142043}.customerBadge:before{left:10px}.customerBadge:after{right:10px}
+.customerBadge i{position:absolute;left:13px;right:13px;bottom:9px;height:5px;border-bottom:3px solid #142043;border-radius:0 0 50% 50%}
+#orderLabel{font-size:10px;font-weight:950;letter-spacing:.14em;color:#7e6797}
+#orderTitle{font-size:clamp(17px,2.3vw,26px);font-weight:950;letter-spacing:-.04em;line-height:1.18}
+#orderDetail{font-size:12px;font-weight:800;color:#6a7184;margin-top:2px}
+#stats{display:flex;gap:6px;justify-content:flex-end}.stat{min-width:72px;background:rgba(11,18,48,.88);color:white;border:2px solid #ffffff45;border-radius:15px;padding:8px 10px;text-align:center;box-shadow:var(--shadow)}
+.stat small{display:block;opacity:.68;font-size:9px;font-weight:900;letter-spacing:.08em}.stat strong{font-size:17px}
+#workPanel{position:absolute;z-index:9;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(940px,calc(100% - 18px));background:rgba(255,248,232,.97);border:3px solid white;border-radius:25px;padding:12px;box-shadow:0 20px 55px #0006;backdrop-filter:blur(9px)}
+#stepRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px}.step{border-radius:10px;padding:6px 4px;text-align:center;background:#ece8dd;color:#7b7c82;font-size:10px;font-weight:950}.step.on{background:#d7f8ef;color:#1d6655;box-shadow:inset 0 -3px 0 #66c9b2}
+#mainControls{display:grid;grid-template-columns:1.2fr 1.8fr 1fr;gap:10px;align-items:stretch}
+.controlBox{background:#f1eee6;border-radius:17px;padding:9px;min-width:0}
+.boxTitle{font-size:10px;font-weight:950;letter-spacing:.08em;color:#72737d;margin:0 0 6px}
+#ingredients{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.ing{border:2px solid transparent;border-radius:12px;background:white;padding:7px 4px;font-size:11px;font-weight:950;color:#30394c;min-height:46px}.ing.active{border-color:#3f8efc;background:#e8f2ff;box-shadow:0 0 0 2px #fff,0 0 0 4px #3f8efc}.ing.done{opacity:.45}
+#rulerWrap{position:relative;height:69px;padding-top:5px}
+#ruler{position:relative;height:44px;border:2px solid #8a6420;border-radius:7px;background:linear-gradient(#ffe881,#eec14e);box-shadow:inset 0 -5px 0 #d2a03b;touch-action:none;cursor:pointer;overflow:visible}
+#ticks{position:absolute;inset:0}.tick{position:absolute;bottom:0;width:1px;height:14px;background:#624b26}.tick.big{height:23px;width:2px}.tick span{position:absolute;bottom:23px;transform:translateX(-50%);font-size:9px;font-weight:950;color:#544224}
+#marker{position:absolute;top:-8px;bottom:-5px;width:4px;background:#ff536c;border-radius:4px;box-shadow:0 0 0 2px white,0 2px 5px #0005;transform:translateX(-2px);pointer-events:none}#marker:before{content:"";position:absolute;left:-6px;top:-7px;border-left:8px solid transparent;border-right:8px solid transparent;border-top:9px solid #ff536c}
+#measureText{text-align:center;font-size:11px;font-weight:900;color:#59606e;margin-top:4px}.cm{font-size:17px;color:#e84f69}
+.actionGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:100%}.btn{border:0;border-radius:13px;padding:9px 7px;font-weight:950;color:#263148;background:#e8e9e9;box-shadow:inset 0 -4px 0 #00000010;min-height:43px}.btn:active{transform:translateY(2px)}.btn.cut{background:var(--yellow)}.btn.serve{background:var(--mint);grid-column:1/-1;font-size:15px}.btn:disabled{opacity:.38;cursor:default;transform:none}
+#recipe{display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:none;margin-top:8px}.chip{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#fff;border:2px solid #ddd9ce;font-size:10px;font-weight:900}.chip.now{border-color:#ff7d9f;background:#ffe9ef;color:#a63b59}.chip.ok{background:#dcf6ec;border-color:#7bd3ba;color:#286859}
+#toast{position:absolute;z-index:20;left:50%;top:46%;transform:translate(-50%,-50%) scale(.94);max-width:86vw;background:#182348eF;color:white;border:3px solid #ffffff88;border-radius:19px;padding:13px 19px;font-size:clamp(15px,2.6vw,22px);font-weight:950;text-align:center;box-shadow:0 18px 55px #0008;opacity:0;pointer-events:none;transition:.18s}.show{opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}.good{background:#237d67ef!important}.bad{background:#a83d59ef!important}
+#overlay{position:absolute;z-index:30;inset:0;background:rgba(5,10,31,.78);display:grid;place-items:center;padding:18px;backdrop-filter:blur(7px)}
+.modal{width:min(660px,95vw);background:#fff8e8;border:4px solid white;border-radius:30px;padding:clamp(22px,5vw,40px);text-align:center;box-shadow:0 30px 80px #0008}.tag{display:inline-block;background:#17213d;color:#91f3d6;border-radius:999px;padding:6px 11px;font-size:10px;font-weight:950;letter-spacing:.13em}.modal h1{margin:11px 0 7px;font-size:clamp(32px,7vw,58px);line-height:.98;letter-spacing:-.06em}.modal p{max-width:545px;margin:10px auto;color:#5d6575;line-height:1.55;font-weight:750}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:17px 0}.how div{background:#efede6;border-radius:15px;padding:11px 7px;font-size:12px;font-weight:900}.how b{display:block;color:#e55b7c;font-size:21px}.open{border:0;border-radius:16px;background:#69d8bc;color:#17362f;padding:13px 24px;min-width:190px;font-size:18px;font-weight:950;box-shadow:inset 0 -5px 0 #00000017}.open:disabled{opacity:.5}.load{margin-top:9px;font-size:11px;color:#8b8e98;font-weight:800}
+#finishScore{font-size:clamp(36px,8vw,64px);font-weight:950;color:#e65e7e;margin:8px}.finishBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.finishBtns a{text-decoration:none}
+.spark{position:absolute;z-index:18;width:9px;height:14px;border-radius:2px;pointer-events:none;animation:spark 1.5s ease-in forwards}@keyframes spark{to{transform:translate(var(--x),105vh) rotate(600deg);opacity:.15}}
+@media(max-width:760px){
+ #planet{width:60vw;right:-18vw;top:11vh}#hud{left:57px;right:6px;top:7px;display:block}#home{left:7px;top:7px;width:40px;height:40px}
+ #orderCard{padding:8px 9px;border-radius:16px}.customerBadge{width:37px;height:37px;flex-basis:37px}.customerBadge:before,.customerBadge:after{top:12px}.customerBadge:before{left:8px}.customerBadge:after{right:8px}.customerBadge i{bottom:6px}
+ #orderTitle{font-size:15px}#orderDetail{font-size:10px}#stats{position:absolute;right:0;top:65px}.stat{min-width:57px;padding:5px 6px}.stat small{font-size:7px}.stat strong{font-size:12px}
+ #workPanel{bottom:5px;padding:8px;border-radius:19px}#stepRow{margin-bottom:6px}.step{font-size:8px;padding:4px 2px}#mainControls{grid-template-columns:1fr;gap:5px}
+ .controlBox{padding:6px;border-radius:12px}.boxTitle{display:none}#ingredients{grid-template-columns:repeat(5,1fr)}.ing{min-height:35px;padding:5px 2px;font-size:9px}
+ #rulerWrap{height:57px}#ruler{height:37px}.tick.big{height:19px}.tick span{bottom:19px;font-size:8px}#measureText{font-size:9px}.cm{font-size:14px}
+ .actionGrid{grid-template-columns:repeat(3,1fr)}.btn{min-height:37px;padding:6px;font-size:10px}.btn.serve{grid-column:auto;font-size:11px}#recipe{display:none}
+ .modal{border-radius:22px}.how{grid-template-columns:1fr}.how div{padding:7px}.how b{display:inline;font-size:14px;margin-right:5px}
+}
+
+#workPanel{background:#152b40f5;border:1px solid #587388;color:#e8f1f5}#orderCard{background:#13273bed;border:1px solid #647c8d;color:#f1f5f4}#orderDetail{color:#b4cad7}#orderLabel{color:#8ddfc6}.controlBox{background:#203a50}.boxTitle{color:#b7ccda}.ing{background:#304b61;color:#ecf3f5;padding:3px 2px}.ing img{display:block;width:100%;height:44px;object-fit:contain}.ing.active{background:#456b79;border-color:#9bedcf;box-shadow:0 0 0 1px #9bedcf}.step{background:#294255;color:#b8cbd6}#measureText{color:#d9e6ee}.cm{color:#ffb1bd}.chip{background:#263d52;border-color:#435e75;color:#d9e8ef}.chip.now{background:#594150;border-color:#ed96b1;color:#fff0f4}#planet{right:3vw;top:7vh;width:min(32vw,410px)}
+@media(max-width:760px){.ing img{height:26px}#workPanel{padding:6px}.ing{min-height:48px}#recipe{display:flex}#orderTitle{font-size:14px}#orderDetail{font-size:10px}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="spaceBg"><div id="stars"></div><img id="planet" src="assets/game/space/planets/planet03.png" alt=""></div>
+ <canvas id="scene" aria-label="우주 샌드위치 조리대"></canvas>
+ <a id="home" href="index.html" title="메인으로">←</a>
+ <div id="hud">
+   <div id="orderCard"><div id="customerLine"><div class="customerBadge"><i></i></div><div><div id="orderLabel">ORBITAL ORDER</div><div id="orderTitle">주문을 수신 중…</div><div id="orderDetail"></div></div></div><div id="recipe"></div></div>
+   <div id="stats"><div class="stat"><small>주문</small><strong id="round">1/8</strong></div><div class="stat"><small>크레딧</small><strong id="score">0</strong></div><div class="stat"><small>콤보</small><strong id="combo">0</strong></div></div>
+ </div>
+ <div id="toast"></div>
+ <section id="workPanel">
+   <div id="stepRow"><div class="step on" id="step1">1 재료 고르기</div><div class="step" id="step2">2 자로 재기</div><div class="step" id="step3">3 정확히 자르기</div><div class="step" id="step4">4 쌓아 서빙</div></div>
+   <div id="mainControls">
+     <div class="controlBox"><div class="boxTitle">재료 선반</div><div id="ingredients"></div></div>
+     <div class="controlBox"><div class="boxTitle">우주 표준 자 · 눈금 1칸 = 1 cm</div><div id="rulerWrap"><div id="ruler"><div id="ticks"></div><div id="marker"></div></div><div id="measureText">자를 눌러 길이를 정하세요 · <b class="cm" id="cm">1 cm</b></div></div></div>
+     <div class="controlBox"><div class="boxTitle">조리</div><div class="actionGrid"><button class="btn" id="minus">− 1cm</button><button class="btn" id="plus">+ 1cm</button><button class="btn cut" id="cut">🔪 자르기</button><button class="btn serve" id="serve" disabled>🚀 서빙하기</button></div></div>
+   </div>
+ </section>
+ <div id="overlay">
+   <div class="modal" id="start">
+     <span class="tag">KIDSCADE ORBITAL DELI</span>
+     <h1>우주 샌드위치<br>가게</h1>
+     <p>외계 손님의 주문서를 보고 <b>실제 재료를 골라 자로 cm를 재고, 칼로 잘라 샌드위치를 쌓아요.</b> 답을 고르는 문제가 아니라 조리 자체가 길이 학습이에요.</p>
+     <div class="how"><div><b>1</b>주문 재료 확인</div><div><b>2</b>자의 눈금으로 측정</div><div><b>3</b>정확히 잘라 조립</div></div>
+     <button class="open" id="open" disabled>도킹 게이트 열기</button><div class="load" id="load">3D 우주 주방을 준비하고 있어요…</div>
+   </div>
+   <div class="modal hidden" id="finish"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 우주 장사 완료!</h1><p id="finishText"></p><div id="finishScore"></div><div class="finishBtns"><button class="open" id="again">다시 장사하기</button><a class="open" href="index.html">메인으로</a></div></div>
+ </div>
+</div>
+<script type="importmap">{"imports":{"three":"./assets/vendor/three-r160/three.module.js","three/addons/":"./assets/vendor/three-r160/addons/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+(()=>{'use strict';
+const A='assets/game/';
+const MODEL={
+ board:A+'food/cutting-board.glb',
+ knife:A+'food/cooking-knife-chopping.glb',
+ bread:A+'food/bread.glb',
+ cheese:A+'food/cheese-cut.glb',
+ ham:A+'food/whole-ham.glb',
+ tomato:A+'food/tomato-slice.glb',
+ cabbage:A+'food/cabbage.glb',
+ onion:A+'food/onion-half.glb',
+ sandwich:A+'food/sandwich.glb',
+ register:A+'shops/market/cash-register.glb',plate:A+'food/plate.glb',tomatoWhole:A+'food/tomato.glb',bottle:A+'food/bottle-ketchup.glb'
+};
+const ITEMS={
+ cheese:{label:'치즈',model:'cheese',color:0xf2ca42},
+ ham:{label:'햄',model:'ham',color:0xe98b91},
+ tomato:{label:'토마토',model:'tomato',color:0xe75d50},
+ cabbage:{label:'양상추',model:'cabbage',color:0x69b967},
+ onion:{label:'양파',model:'onion',color:0xd9c7e7}
+};
+const ORDERS=[
+ {planet:1,title:'초록 행성 정찰대',recipe:[['cheese',4]]},
+ {planet:2,title:'화성 화물선 조종사',recipe:[['ham',5],['cheese',3]]},
+ {planet:4,title:'링 월드 연구원',recipe:[['tomato',3],['cheese',4],['cabbage',5]]},
+ {planet:5,title:'은하 우편 기사',recipe:[['ham',6],['onion',2],['tomato',4]]},
+ {planet:6,title:'목성 관광 가족',recipe:[['cabbage',4],['cheese',5],['ham',4],['tomato',3]]},
+ {planet:7,title:'소행성 광부',recipe:[['onion',3],['ham',7],['cheese',2]]},
+ {planet:8,title:'토성 기지 대장',recipe:[['tomato',5],['cabbage',6],['ham',5],['cheese',4]]},
+ {planet:9,title:'은하 평의회 특급 주문',recipe:[['cheese',6],['ham',6],['tomato',4],['onion',3],['cabbage',5]]}
+];
+const $=id=>document.getElementById(id), canvas=$('scene'), loader=new GLTFLoader();
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,.1,60);camera.position.set(0,5.2,8.4);camera.lookAt(0,1.05,.2);
+scene.add(new THREE.HemisphereLight(0xe8f0ff,0x30475e,1.8));
+const key=new THREE.DirectionalLight(0xffebcd,2.7);key.position.set(-4,8,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-8;key.shadow.camera.right=8;key.shadow.camera.top=8;key.shadow.camera.bottom=-5;key.shadow.normalBias=.025;key.shadow.bias=-.0003;scene.add(key);
+const rim=new THREE.PointLight(0x6fc7ff,9,18);rim.position.set(5,4,-2);scene.add(rim);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,16),new THREE.MeshStandardMaterial({color:0x252d46,roughness:.84,metalness:.12}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const back=new THREE.Mesh(new THREE.BoxGeometry(12,1.1,.35),new THREE.MeshStandardMaterial({color:0x303954,roughness:.72,metalness:.18}));back.position.set(0,.55,-3.2);back.receiveShadow=true;scene.add(back);
+for(let x=-4.8;x<=4.8;x+=1.6){let p=new THREE.Mesh(new THREE.BoxGeometry(.035,4.2,.12),new THREE.MeshStandardMaterial({color:0x42536e,emissive:0x13264d,emissiveIntensity:.25}));p.position.set(x,3.15,-3.0);scene.add(p)}
+const counter=new THREE.Mesh(new THREE.BoxGeometry(9.4,.78,4.25),new THREE.MeshStandardMaterial({color:0x25374a,roughness:.8,metalness:.15}));counter.position.y=.39;counter.castShadow=true;counter.receiveShadow=true;scene.add(counter);
+const counterTop=new THREE.Mesh(new THREE.BoxGeometry(9.7,.13,4.45),new THREE.MeshStandardMaterial({color:0x395467,roughness:.8,metalness:.12}));counterTop.position.y=.84;counterTop.castShadow=true;counterTop.receiveShadow=true;scene.add(counterTop);
+const neon=new THREE.Mesh(new THREE.BoxGeometry(5.1,.07,.13),new THREE.MeshStandardMaterial({color:0x67e3c5,emissive:0x67e3c5,emissiveIntensity:.65}));neon.position.set(0,4.35,-2.9);scene.add(neon);
+
+let proto={},objects={board:null,knife:null,register:null}, stackGroup=new THREE.Group(), previewGroup=new THREE.Group();
+scene.add(stackGroup,previewGroup);
+let idx=0, score=0, combo=0, recipePos=0, selected='cheese', measure=1, mistakes=0, locked=true, knifeBusy=false, audio=null;
+
+function cloneMat(root){root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}});return root}
+function normalized(root,size=1){
+ const wrap=new THREE.Group(),r=cloneMat(root.clone(true));wrap.add(r);let box=new THREE.Box3().setFromObject(r),sz=box.getSize(new THREE.Vector3());r.scale.multiplyScalar(size/Math.max(sz.x,sz.y,sz.z,.001));box.setFromObject(r);const c=box.getCenter(new THREE.Vector3());r.position.x-=c.x;r.position.z-=c.z;r.position.y-=box.min.y;return wrap
+}
+function dimensions(root,w,h,d){const g=normalized(root,1),b=new THREE.Box3().setFromObject(g),sz=b.getSize(new THREE.Vector3());g.scale.set(w/sz.x,h/sz.y,d/sz.z);return g}
+async function loadOne(key,path){const g=await loader.loadAsync(path);return [key,g.scene]}
+async function loadAssets(){
+ const pairs=await Promise.all(Object.entries(MODEL).map(([k,p])=>loadOne(k,p)));
+ pairs.forEach(([k,v])=>proto[k]=v);
+ setupScene();locked=false;$('open').disabled=false;$('load').textContent='준비 완료 · 주문을 받으세요!';
+}
+const PREP_X=-1.45, PREP_Z=.28, UNIT=.43, PREP_Y=1.12, PLATE_X=2.35;
+let rulerMesh,cutMarker;const thumbnails={};
+function surfaceLabel(text,w=2,h=.3,bg='#1c3049',fg='#a9f3dc'){
+ const c=document.createElement('canvas');c.width=768;c.height=112;const x=c.getContext('2d');x.fillStyle=bg;x.fillRect(0,0,768,112);x.fillStyle=fg;x.font='800 48px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,384,56);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t}));
+}
+function setupScene(){
+ const board=dimensions(proto.board,2.55,.16,4.25);board.rotation.y=Math.PI/2;board.position.set(PREP_X,.92,PREP_Z);scene.add(board);objects.board=board;
+ const knife=normalized(proto.knife,1.55);knife.rotation.x=Math.PI/2;knife.rotation.z=Math.PI/2;knife.position.set(PREP_X-1.72+measure*UNIT,1.72,PREP_Z);scene.add(knife);objects.knife=knife;
+ const register=normalized(proto.register,.95);register.position.set(-3.95,.92,-1.7);register.rotation.y=.35;scene.add(register);objects.register=register;
+ const plate=dimensions(proto.plate,2.45,.13,2.15);plate.position.set(PLATE_X,.92,.7);scene.add(plate);
+ for(const [key,x] of [['bottle',3.9],['tomatoWhole',1.5],['cabbage',.5],['ham',-1]]){const g=normalized(proto[key],key==='bottle'?.85:.65);g.position.set(x,.92,-1.65);scene.add(g)}
+ const label=surfaceLabel('ORBITAL DELI  /  신선한 한 입',5.4,.56);label.position.set(0,3.65,-3.0);scene.add(label);
+ const prepLabel=surfaceLabel('01  재고 자르기',3.6,.28);prepLabel.rotation.x=-Math.PI/2;prepLabel.position.set(PREP_X,1.1,-.73);scene.add(prepLabel);
+ const plateLabel=surfaceLabel('02  나의 샌드위치',2.4,.3);plateLabel.rotation.x=-Math.PI/2;plateLabel.position.set(PLATE_X,.94,1.85);scene.add(plateLabel);
+ const c=document.createElement('canvas');c.width=1024;c.height=128;const x=c.getContext('2d');x.fillStyle='#edc56e';x.fillRect(0,0,1024,128);x.fillStyle='#4e351b';x.font='bold 38px system-ui';x.textAlign='center';for(let i=0;i<=8;i++){const px=20+i*123;x.fillRect(px,65,3,63);x.fillText(i,px,47)}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;rulerMesh=new THREE.Mesh(new THREE.PlaneGeometry(UNIT*8+.14,.46),new THREE.MeshBasicMaterial({map:t}));rulerMesh.rotation.x=-Math.PI/2;rulerMesh.position.set(PREP_X,1.1,1.2);scene.add(rulerMesh);
+ cutMarker=new THREE.Mesh(new THREE.BoxGeometry(.028,.014,1.42),new THREE.MeshBasicMaterial({color:0xf35d81}));cutMarker.position.set(PREP_X-1.72+UNIT,1.42,PREP_Z);scene.add(cutMarker);
+ makeThumbnails();makeBread();
+}
+function makeThumbnails(){
+ const r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setSize(112,80);r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(38,112/80,.1,20);cam.position.set(1.4,1.4,2.3);cam.lookAt(0,.35,0);sc.add(new THREE.HemisphereLight(0xffffff,0x5c4933,2.4));const l=new THREE.DirectionalLight(0xfff4df,2);l.position.set(2,4,3);sc.add(l);
+ for(const k of Object.keys(ITEMS)){const m=normalized(proto[ITEMS[k].model],1.2);sc.add(m);r.render(sc,cam);thumbnails[k]=r.domElement.toDataURL();sc.remove(m)}r.dispose();r.forceContextLoss();buildIngredients();
+}
+function makeBread(){if(!proto.bread)return;const b=dimensions(proto.bread,1.85,.17,1.55);b.position.set(PLATE_X,1.06,.7);stackGroup.add(b)}
+function fitIngredient(key,len,preview=false){
+ const src=proto[ITEMS[key].model],g=dimensions(src,preview?8*UNIT:len*UNIT,key==='ham'?.22:key==='cabbage'?.2:.13,preview?.83:1.24);return g
+}
+function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
+function current(){return ORDERS[idx]}function target(){return current().recipe[recipePos]}
+function itemLabel(k){return ITEMS[k].label}
+function updateSteps(n){for(let i=1;i<=4;i++)$('step'+i).classList.toggle('on',i===n)}
+function buildIngredients(){
+ $('ingredients').innerHTML='';
+ Object.keys(ITEMS).forEach(k=>{const b=document.createElement('button');b.className='ing'+(selected===k?' active':'');if(thumbnails[k]){const img=document.createElement('img');img.src=thumbnails[k];img.alt='';b.append(img)}const title=document.createElement('span');title.textContent=ITEMS[k].label;b.append(title);b.setAttribute('aria-label',ITEMS[k].label);b.setAttribute('aria-pressed',String(selected===k));b.onclick=()=>{if(locked||knifeBusy)return;selected=k;updateSteps(2);buildIngredients();showPreview();tone(420,.035)};$('ingredients').append(b)});
+}
+function buildRuler(){
+ const t=$('ticks');t.innerHTML='';
+ for(let i=0;i<=8;i++){const d=document.createElement('i');d.className='tick'+(i%2===0?' big':'');d.style.left=(i/8*100)+'%';if(i>0){const s=document.createElement('span');s.textContent=i;d.append(s)}t.append(d)}
+ updateMarker();
+}
+function updateMarker(){measure=Math.max(1,Math.min(8,measure));$('marker').style.left=(measure/8*100)+'%';$('cm').textContent=measure+' cm';showPreview()}
+function showPreview(){
+ clearGroup(previewGroup);if(!proto[ITEMS[selected].model]||!objects.board)return;
+ const ready=recipePos>=current().recipe.length;if(ready){cutMarker.visible=false;return}
+ const g=fitIngredient(selected,measure,true);g.position.set(PREP_X,PREP_Y,PREP_Z);previewGroup.add(g);
+ const x=PREP_X-4*UNIT+measure*UNIT;cutMarker.visible=true;cutMarker.position.x=x;objects.knife.position.x=x;
+}
+function recipeHTML(){
+ $('recipe').innerHTML=current().recipe.map(([k,n],i)=>`<span class="chip ${i<recipePos?'ok':i===recipePos?'now':''}">${i<recipePos?'✓ ':''}${itemLabel(k)} ${n}cm</span>`).join('')
+}
+function loadOrder(){
+ locked=false;knifeBusy=false;$('cut').disabled=false;recipePos=0;measure=1;mistakes=0;selected=current().recipe[0][0];clearGroup(stackGroup);makeBread();buildIngredients();updateMarker();recipeHTML();
+ $('round').textContent=(idx+1)+'/'+ORDERS.length;$('score').textContent=score;$('combo').textContent=combo;
+ $('orderTitle').textContent=current().title+'의 샌드위치';
+ $('orderDetail').textContent='주문: '+current().recipe.map(([k,n])=>`${itemLabel(k)} ${n}cm`).join(' → ');
+ $('planet').src=`assets/game/space/planets/planet0${current().planet}.png`;
+ $('serve').disabled=true;updateSteps(1);setTimeout(()=>updateSteps(2),450);
+}
+function rulerPick(e){
+ if(locked||knifeBusy)return;const r=$('ruler').getBoundingClientRect(),x=Math.max(0,Math.min(r.width,e.clientX-r.left));measure=Math.max(1,Math.min(8,Math.round(x/r.width*8)));updateMarker();tone(500+measure*28,.025)
+}
+function tone(f=500,d=.06,type='triangle'){
+ try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.connect(g).connect(audio.destination);o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.055,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d)}catch(e){}
+}
+function toast(txt,kind=''){const e=$('toast');e.textContent=txt;e.className=kind==='good'?'show good':kind==='bad'?'show bad':'show';clearTimeout(e._t);e._t=setTimeout(()=>e.className='',1050)}
+function cut(){
+ if(locked||knifeBusy||recipePos>=current().recipe.length)return;const [wantKey,wantCm]=target();knifeBusy=true;updateSteps(3);
+ const k=objects.knife,startY=k?k.position.y:0;if(k){let n=0;const timer=setInterval(()=>{n++;k.position.y=startY-(n<4?n:.0)*.12;if(n>=6){clearInterval(timer);k.position.y=startY}},45)}
+ tone(230,.07,'sawtooth');setTimeout(()=>tone(120,.05,'square'),70);
+ setTimeout(()=>{
+   knifeBusy=false;
+   if(selected!==wantKey){mistakes++;combo=0;$('combo').textContent=0;toast(`지금 주문은 ${itemLabel(wantKey)}예요!`,'bad');updateSteps(1);return}
+   if(measure!==wantCm){mistakes++;combo=0;$('combo').textContent=0;toast(`주문은 ${wantCm}cm! 자의 ${wantCm} 눈금을 찾아보세요.`,'bad');updateSteps(2);return}
+   addLayer(wantKey,wantCm);recipePos++;score+=Math.max(20,55-mistakes*8);$('score').textContent=score;toast(`정확히 ${wantCm}cm! 조립 완료`,'good');tone(720,.07);setTimeout(()=>tone(930,.08),70);
+   recipeHTML();
+   if(recipePos>=current().recipe.length){finishSandwich()}else{selected=target()[0];measure=1;buildIngredients();updateMarker();updateSteps(2)}
+ },300)
+}
+function addLayer(key,len){
+ clearGroup(previewGroup);const g=fitIngredient(key,len);g.position.set(PLATE_X,1.23+recipePos*.22,.7);g.rotation.y=(recipePos%2?.05:-.04);stackGroup.add(g)
+}
+function finishSandwich(){
+ updateSteps(4);$('cut').disabled=true;cutMarker.visible=false;if(proto.bread){const top=dimensions(proto.bread,1.85,.17,1.55);top.position.set(PLATE_X,1.24+recipePos*.22,.7);top.rotation.z=.02;stackGroup.add(top)}
+ $('serve').disabled=false;locked=false;toast('샌드위치 완성! 손님에게 서빙하세요.','good')
+}
+function serve(){
+ if($('serve').disabled||locked)return;locked=true;$('serve').disabled=true;
+ combo++;const bonus=combo*25+Math.max(0,60-mistakes*15);score+=bonus;$('score').textContent=score;$('combo').textContent=combo;updateSteps(4);
+ toast(`PERFECT DELIVERY! +${bonus} 크레딧`,'good');spark();[660,790,990,1180].forEach((f,i)=>setTimeout(()=>tone(f,.08),i*70));
+ stackGroup.rotation.y=0;let t=0;const anim=setInterval(()=>{t+=.08;stackGroup.position.z-=.016;stackGroup.position.y=Math.sin(t)*.08;if(t>2){clearInterval(anim);stackGroup.rotation.y=0;stackGroup.position.y=0;stackGroup.position.z=0}},35);
+ setTimeout(()=>{idx++;if(idx>=ORDERS.length)finishGame();else loadOrder()},1250)
+}
+function spark(){for(let i=0;i<28;i++){const s=document.createElement('i');s.className='spark';s.style.left=(15+Math.random()*70)+'%';s.style.top='-18px';s.style.background=['#69d8bc','#ff7d9f','#ffd766','#71d9ff'][i%4];s.style.setProperty('--x',(-160+Math.random()*320)+'px');$('app').append(s);setTimeout(()=>s.remove(),1700)}}
+function finishGame(){
+ $('finish').classList.remove('hidden');$('start').classList.add('hidden');$('finishText').textContent=`8명의 우주 손님 주문을 모두 정확한 길이로 만들었어요. 최고 콤보와 낭비 없는 측정이 크레딧을 높여 줍니다.`;$('finishScore').textContent=score+' CR';$('overlay').style.display='grid';spark()
+}
+function resetGame(){idx=0;score=0;combo=0;$('finish').classList.add('hidden');$('start').classList.add('hidden');$('overlay').style.display='none';loadOrder()}
+$('ruler').addEventListener('pointerdown',rulerPick);$('minus').onclick=()=>{if(!locked&&!knifeBusy){measure--;updateMarker();tone(380,.03)}};$('plus').onclick=()=>{if(!locked&&!knifeBusy){measure++;updateMarker();tone(520,.03)}};$('cut').onclick=cut;$('serve').onclick=serve;
+$('open').onclick=()=>{$('overlay').style.display='none';resetGame();tone(650,.07);setTimeout(()=>tone(900,.08),70)};$('again').onclick=resetGame;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;const d=Math.max(1,1.5/(w/h));camera.position.set(0,1.3+6.5*d,8.8*d);camera.lookAt(0,1.3,0);camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const t=clock.getElapsedTime();if(objects.register)objects.register.rotation.y=.18+Math.sin(t*.6)*.015;renderer.render(scene,camera)}loop();
+buildRuler();buildIngredients();loadAssets().catch(err=>{console.error(err);$('load').textContent='주방 재료를 불러오지 못했어요. 다시 시도해 주세요.';$('open').textContent='다시 불러오기';$('open').disabled=false;$('open').onclick=()=>location.reload()});
+})();
+</script>
+</body>
+</html>

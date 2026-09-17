@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>모래 그림 공방</title>
+<style>
+  :root{
+    --ink:#273036;
+    --muted:#6f7b82;
+    --panel:rgba(255,255,255,.88);
+    --line:rgba(34,44,51,.11);
+    --shadow:0 16px 48px rgba(34,44,51,.18);
+    --accent:#ff7058;
+    --accent2:#ffc857;
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#dfe5e8;color:var(--ink);
+    font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  button,input{font:inherit}
+  button{border:0;color:inherit}
+  button:focus-visible,input:focus-visible{outline:4px solid rgba(255,112,88,.28);outline-offset:2px}
+  #app{position:relative;width:100%;height:100%;isolation:isolate}
+  #stage{
+    position:absolute;inset:0;width:100%;height:100%;display:block;
+    touch-action:none;cursor:crosshair;background:#e7ebed;
+  }
+  .topbar{
+    position:absolute;z-index:10;left:18px;right:18px;top:max(14px,env(safe-area-inset-top));
+    display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;
+  }
+  .brand,.top-actions,.dock,.palette-panel,.brush-popover,.help-card{pointer-events:auto}
+  .brand{
+    display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:18px;
+    background:var(--panel);backdrop-filter:blur(16px);box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.7)
+  }
+  .brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#ffb45b,#ff6e62 45%,#8e6cff);
+    position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+  .brand-mark:before,.brand-mark:after{content:"";position:absolute;left:8px;right:8px;border-radius:50%}
+  .brand-mark:before{height:13px;bottom:8px;background:#fff3d8;clip-path:polygon(0 100%,15% 55%,31% 75%,50% 12%,70% 70%,84% 40%,100% 100%)}
+  .brand-mark:after{width:7px;height:7px;left:9px;top:8px;background:#fff6bd;box-shadow:12px 4px 0 rgba(255,255,255,.72)}
+  .brand-text{line-height:1.05}
+  .brand-text strong{display:block;font-size:16px;letter-spacing:-.4px}
+  .brand-text span{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
+  .top-actions{display:flex;gap:8px;padding:7px;background:var(--panel);backdrop-filter:blur(16px);
+    box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.7);border-radius:18px}
+  .icon-btn,.tool-btn,.primary-btn,.chip,.palette-item{
+    cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .16s ease,background .16s ease,box-shadow .16s ease,opacity .16s ease
+  }
+  .icon-btn:hover,.tool-btn:hover,.chip:hover,.palette-item:hover{transform:translateY(-2px)}
+  .icon-btn:active,.tool-btn:active,.primary-btn:active,.chip:active,.palette-item:active{transform:translateY(0) scale(.97)}
+  .icon-btn{width:43px;height:43px;border-radius:13px;background:transparent;display:grid;place-items:center}
+  .icon-btn:hover{background:rgba(39,48,54,.07)}
+  .icon-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn.active{background:#273036;color:white}
+  .dock{
+    position:absolute;z-index:12;left:50%;bottom:max(18px,env(safe-area-inset-bottom));
+    transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:8px;
+    background:var(--panel);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.76);
+    border-radius:22px;box-shadow:0 18px 60px rgba(34,44,51,.24)
+  }
+  .tool-btn{height:52px;min-width:58px;border-radius:16px;background:transparent;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;padding:4px 10px}
+  .tool-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .tool-btn span{font-size:10px;font-weight:800;white-space:nowrap}
+  .tool-btn.active{color:white;background:linear-gradient(145deg,#ff7862,#ff9e58);box-shadow:0 9px 18px rgba(255,112,88,.28)}
+  .tool-sep{width:1px;height:34px;background:var(--line);margin:0 2px}
+  .color-orb{width:26px;height:26px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 1px rgba(39,48,54,.18),0 4px 10px rgba(39,48,54,.2);
+    background:linear-gradient(135deg,#ffdc61,#ff6b72,#775bff)}
+  .palette-panel{
+    position:absolute;z-index:11;left:18px;top:95px;width:min(330px,calc(100vw - 36px));padding:14px;
+    background:var(--panel);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.76);
+    border-radius:22px;box-shadow:var(--shadow);transform-origin:top left;transition:.2s ease
+  }
+  .palette-panel.hidden{opacity:0;transform:translateY(-10px) scale(.97);pointer-events:none}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .panel-head strong{font-size:15px}
+  .panel-head small{font-size:11px;color:var(--muted)}
+  .mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .chip{height:38px;border-radius:12px;background:#edf1f2;font-size:12px;font-weight:900}
+  .chip.active{background:#273036;color:#fff}
+  .palette-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .palette-item{height:48px;border-radius:14px;background:var(--swatch);position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .palette-item.active:after{content:"";position:absolute;inset:5px;border:3px solid white;border-radius:10px;box-shadow:0 0 0 2px rgba(39,48,54,.35)}
+  .custom-row{display:flex;align-items:center;gap:9px;margin-top:12px}
+  .custom-color{position:relative;flex:1;height:42px;border-radius:13px;background:#edf1f2;display:flex;align-items:center;gap:9px;padding:0 10px;font-size:12px;font-weight:800}
+  #colorPicker{width:28px;height:28px;padding:0;border:0;background:transparent;border-radius:50%;overflow:hidden}
+  #colorPicker::-webkit-color-swatch-wrapper{padding:0}
+  #colorPicker::-webkit-color-swatch{border:0;border-radius:50%}
+  .random-btn{height:42px;border-radius:13px;background:#fff2d8;padding:0 13px;font-size:12px;font-weight:900;cursor:pointer}
+  .brush-popover{
+    position:absolute;z-index:11;left:50%;bottom:92px;transform:translateX(-50%);
+    width:min(310px,calc(100vw - 36px));padding:14px 15px;background:var(--panel);backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.76);border-radius:19px;box-shadow:var(--shadow);transition:.2s ease
+  }
+  .brush-popover.hidden{opacity:0;transform:translate(-50%,10px) scale(.97);pointer-events:none}
+  .range-row{display:grid;grid-template-columns:72px 1fr 34px;align-items:center;gap:10px}
+  .range-row + .range-row{margin-top:11px}
+  .range-row label{font-size:12px;font-weight:900}
+  .range-row output{font-size:11px;color:var(--muted);text-align:right}
+  input[type=range]{appearance:none;width:100%;height:6px;border-radius:999px;background:#dbe1e4}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#273036;border:4px solid white;box-shadow:0 2px 8px rgba(39,48,54,.28)}
+  .status-pill{
+    position:absolute;z-index:8;right:18px;bottom:92px;background:rgba(39,48,54,.82);color:white;
+    border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;backdrop-filter:blur(12px);
+    opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none
+  }
+  .status-pill.show{opacity:1;transform:none}
+  .start-screen{
+    position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:24px;
+    background:
+      radial-gradient(circle at 20% 20%,rgba(255,222,114,.74),transparent 31%),
+      radial-gradient(circle at 78% 28%,rgba(119,210,255,.58),transparent 34%),
+      radial-gradient(circle at 74% 78%,rgba(231,130,255,.42),transparent 35%),
+      linear-gradient(150deg,#f8fbfc,#e9eef1);
+    transition:opacity .35s ease,visibility .35s ease
+  }
+  .start-screen.hidden{opacity:0;visibility:hidden}
+  .hero{width:min(780px,100%);display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center}
+  .hero-copy{padding:12px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;border-radius:999px;background:white;padding:8px 12px;
+    box-shadow:0 10px 30px rgba(39,48,54,.1);font-size:12px;font-weight:900}
+  .eyebrow i{width:8px;height:8px;border-radius:50%;background:#ff7058;box-shadow:13px 0 #ffca55,26px 0 #6ad7c2;margin-right:24px}
+  h1{margin:22px 0 14px;font-size:clamp(42px,7vw,78px);line-height:.95;letter-spacing:-4px}
+  h1 em{font-style:normal;background:linear-gradient(120deg,#ff6f5f,#ffb75f 42%,#7068ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:16px;line-height:1.75;color:#5f6b72;margin:0 0 24px;max-width:520px;word-break:keep-all}
+  .primary-btn{height:58px;border-radius:17px;padding:0 27px;background:#273036;color:white;font-size:16px;font-weight:900;
+    box-shadow:0 13px 28px rgba(39,48,54,.22);cursor:pointer}
+  .hero-art{aspect-ratio:1/1;border-radius:36px;background:white;box-shadow:0 30px 80px rgba(39,48,54,.18);position:relative;overflow:hidden}
+  .sand-demo{position:absolute;inset:0;background:linear-gradient(#f7fafb 0 42%,transparent 42%)}
+  .demo-layer{position:absolute;left:-8%;right:-8%;bottom:0;height:58%;clip-path:polygon(0 100%,0 69%,9% 48%,17% 57%,28% 30%,37% 51%,48% 18%,58% 45%,70% 27%,82% 52%,92% 35%,100% 61%,100% 100%)}
+  .demo-layer:nth-child(1){background:#ffcc62;height:61%;bottom:-1%}
+  .demo-layer:nth-child(2){background:#ff7e67;height:49%;bottom:-1%;transform:translateY(1%)}
+  .demo-layer:nth-child(3){background:#75d5bb;height:37%;bottom:-1%}
+  .demo-layer:nth-child(4){background:#7372d8;height:25%;bottom:-1%}
+  .demo-grain{position:absolute;width:8px;height:8px;border-radius:50%;background:#ff7e67;top:16%;left:55%;box-shadow:
+    20px 22px #ffcc62,-24px 37px #75d5bb,12px 58px #7372d8,-15px 84px #ff7e67,31px 106px #ffcc62;
+    animation:fall 2.6s linear infinite}
+  @keyframes fall{to{transform:translateY(150px);opacity:.1}}
+  .help-overlay{position:absolute;z-index:25;inset:0;display:grid;place-items:center;background:rgba(30,37,41,.38);backdrop-filter:blur(7px);transition:.2s}
+  .help-overlay.hidden{opacity:0;visibility:hidden}
+  .help-card{width:min(460px,calc(100vw - 32px));padding:22px;background:white;border-radius:24px;box-shadow:0 30px 80px rgba(20,27,31,.25)}
+  .help-card h2{font-size:23px;margin:0 0 15px}
+  .help-list{display:grid;gap:10px}
+  .help-item{display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center;padding:10px;border-radius:15px;background:#f3f6f7}
+  .help-icon{width:42px;height:42px;border-radius:13px;background:white;display:grid;place-items:center}
+  .help-icon svg{width:22px;height:22px;stroke:#273036;fill:none;stroke-width:2}
+  .help-item strong{font-size:13px}
+  .help-item p{font-size:11px;color:var(--muted);margin:3px 0 0;line-height:1.45}
+  .close-help{width:100%;height:48px;margin-top:15px;border-radius:14px;background:#273036;color:white;font-weight:900;cursor:pointer}
+  .confirm{
+    position:absolute;z-index:40;inset:0;display:grid;place-items:center;background:rgba(30,37,41,.38);backdrop-filter:blur(7px);transition:.2s
+  }
+  .confirm.hidden{opacity:0;visibility:hidden}
+  .confirm-box{width:min(360px,calc(100vw - 34px));padding:22px;background:white;border-radius:22px;text-align:center;box-shadow:0 28px 70px rgba(20,27,31,.24)}
+  .confirm-box h3{margin:0 0 8px;font-size:20px}
+  .confirm-box p{margin:0;color:var(--muted);font-size:13px}
+  .confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+  .confirm-actions button{height:46px;border-radius:13px;font-weight:900;cursor:pointer;background:#edf1f2}
+  .confirm-actions .danger{background:#ff715d;color:#fff}
+  @media (max-width:700px){
+    .brand-text span{display:none}
+    .brand{padding-right:11px}
+    .hero{grid-template-columns:1fr}
+    .hero-art{display:none}
+    h1{letter-spacing:-3px}
+    .topbar{left:10px;right:10px}
+    .palette-panel{left:10px;top:83px;width:calc(100vw - 20px)}
+    .dock{bottom:max(9px,env(safe-area-inset-bottom));width:calc(100vw - 20px);justify-content:space-between}
+    .tool-btn{min-width:0;flex:1;padding:4px 3px}
+    .tool-sep{display:none}
+    .status-pill{right:10px;bottom:82px}
+    .brush-popover{bottom:79px}
+  }
+  @media (max-height:650px){
+    .brand-text span{display:none}
+    .dock{bottom:8px}
+    .palette-panel{top:78px;max-height:calc(100vh - 165px);overflow:auto}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="stage" aria-label="모래 그림 그리기 화면"></canvas>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text"><strong>모래 그림 공방</strong><span>누르고 움직이면 모래가 쌓여요</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="undoBtn" aria-label="되돌리기" title="되돌리기">
+        <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a6 6 0 1 1 0 12"/></svg>
+      </button>
+      <button class="icon-btn" id="pauseBtn" aria-label="모래 움직임 멈추기" title="일시 정지">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+      </button>
+      <button class="icon-btn active" id="soundBtn" aria-label="소리 끄기" title="소리">
+        <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+      </button>
+      <button class="icon-btn" id="helpBtn" aria-label="사용법" title="사용법">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 0 1 4.5 1.2c0 1.8-2.3 2-2.3 3.7"/><path d="M12 17h.01"/></svg>
+      </button>
+      <button class="icon-btn" id="homeBtn" aria-label="시작 화면" title="시작 화면">
+        <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <section class="palette-panel hidden" id="palettePanel" aria-label="색상 선택">
+    <div class="panel-head"><strong>모래 색상</strong><small>색을 골라 보세요</small></div>
+    <div class="mode-row">
+      <button class="chip" id="solidMode">한 가지 색</button>
+      <button class="chip active" id="gradientMode">여러 색 흐름</button>
+    </div>
+    <div class="palette-grid" id="paletteGrid"></div>
+    <div class="custom-row">
+      <label class="custom-color"><input type="color" id="colorPicker" value="#ff7058"><span>직접 색 고르기</span></label>
+      <button class="random-btn" id="randomPalette">랜덤 색상</button>
+    </div>
+  </section>
+
+  <section class="brush-popover hidden" id="brushPopover" aria-label="붓 설정">
+    <div class="range-row"><label for="brushSize">붓 크기</label><input id="brushSize" type="range" min="1" max="18" value="7"><output id="brushSizeOut">7</output></div>
+    <div class="range-row"><label for="sandAmount">모래 양</label><input id="sandAmount" type="range" min="1" max="12" value="7"><output id="sandAmountOut">7</output></div>
+  </section>
+
+  <nav class="dock" aria-label="그리기 도구">
+    <button class="tool-btn active" id="drawTool">
+      <svg viewBox="0 0 24 24"><path d="M4 20c3.6 0 3.8-3.5 3.8-5.2 0-1.3 1-2.3 2.3-2.3 2 0 3.9 1.7 3.9 3.8C14 19 11.7 20 9.4 20z"/><path d="m12 13 6.4-8.2a1.8 1.8 0 0 1 2.6 2.5L14 15"/></svg>
+      <span>모래 붓</span>
+    </button>
+    <button class="tool-btn" id="colorTool">
+      <div class="color-orb" id="colorOrb"></div><span>색상</span>
+    </button>
+    <button class="tool-btn" id="brushTool">
+      <svg viewBox="0 0 24 24"><path d="M5 4v16M3 8h4M3 16h4"/><path d="M11 7h10M11 12h7M11 17h9"/></svg>
+      <span>붓 설정</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="eraserTool">
+      <svg viewBox="0 0 24 24"><path d="m7 20-4-4L14 5a2.5 2.5 0 0 1 3.5 0L20 7.5a2.5 2.5 0 0 1 0 3.5l-9 9z"/><path d="m12 7 5 5M7 20h13"/></svg>
+      <span>지우개</span>
+    </button>
+    <button class="tool-btn" id="saveBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>
+      <span>저장</span>
+    </button>
+    <button class="tool-btn" id="clearBtn">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/></svg>
+      <span>새 그림</span>
+    </button>
+  </nav>
+
+  <div class="status-pill" id="statusPill">저장했어요</div>
+
+  <div class="start-screen" id="startScreen">
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><i></i>디지털 모래 창작 놀이터</div>
+        <h1>모래로 그리는<br><em>색의 풍경</em></h1>
+        <p>화면을 누르고 천천히 움직여 보세요. 알갱이가 아래로 흐르며 산맥, 파도, 지층 같은 무늬가 자연스럽게 만들어집니다.</p>
+        <button class="primary-btn" id="startBtn">그림 만들기</button>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="sand-demo">
+          <div class="demo-layer"></div><div class="demo-layer"></div><div class="demo-layer"></div><div class="demo-layer"></div>
+          <div class="demo-grain"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="help-overlay hidden" id="helpOverlay">
+    <div class="help-card">
+      <h2>이렇게 만들어 보세요</h2>
+      <div class="help-list">
+        <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24"><path d="M8 12V7a2 2 0 0 1 4 0v4"/><path d="M12 10V6a2 2 0 0 1 4 0v6"/><path d="M16 11V8a2 2 0 0 1 4 0v7c0 4-3 7-7 7h-1c-3 0-5-1-7-4l-2-3a2 2 0 0 1 3-2l2 2z"/></svg></div><div><strong>누르고 드래그하기</strong><p>손가락이나 마우스를 움직인 길을 따라 모래가 떨어집니다.</p></div></div>
+        <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16"/><path d="M4 12h16"/></svg></div><div><strong>색을 천천히 바꾸기</strong><p>여러 색 흐름을 선택하면 지층처럼 색이 자연스럽게 이어집니다.</p></div></div>
+        <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24"><path d="M4 20 9 9l4 6 3-4 4 9z"/></svg></div><div><strong>높낮이 만들기</strong><p>같은 자리에 오래 부으면 높은 산이, 좌우로 빠르게 움직이면 파도가 됩니다.</p></div></div>
+      </div>
+      <button class="close-help" id="closeHelp">알겠어요</button>
+    </div>
+  </div>
+
+  <div class="confirm hidden" id="clearConfirm">
+    <div class="confirm-box">
+      <h3>새 그림을 시작할까요?</h3>
+      <p>현재 그림은 사라집니다. 먼저 저장해도 좋아요.</p>
+      <div class="confirm-actions"><button id="cancelClear">계속 그리기</button><button class="danger" id="confirmClear">새 그림</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d", {alpha:false, desynchronized:true});
+  const off = document.createElement("canvas");
+  const offCtx = off.getContext("2d", {alpha:true});
+
+  const palettes = [
+    {name:"노을", colors:["#ffd56a","#ff9b67","#ff6575","#8d6be8"]},
+    {name:"바다", colors:["#d5fbf5","#70dec8","#40a9d8","#3155b7","#172d75"]},
+    {name:"숲", colors:["#e9f4a8","#a7d56f","#4eaa6f","#24726f","#183f4f"]},
+    {name:"사탕", colors:["#ff8fc7","#d68bff","#7e8cff","#61d9e8","#fff080"]},
+    {name:"사막", colors:["#fff0b8","#eec878","#d99655","#9c5c48","#5f3e42"]},
+    {name:"보석", colors:["#54f0d1","#17a9be","#5149ca","#ae43c7","#ff5d9e"]},
+    {name:"오로라", colors:["#b9ffea","#5df3cc","#4dbbd9","#8077ef","#e073db"]},
+    {name:"봄꽃", colors:["#fff4b7","#ffd08d","#ff9f9f","#e89adf","#8db7ff"]}
+  ];
+
+  let cssW = 0, cssH = 0, dpr = 1, cell = 4, gw = 0, gh = 0;
+  let grid = new Uint32Array(0);
+  let imageData = null;
+  let paused = false;
+  let erasing = false;
+  let drawing = false;
+  let pointerX = 0, pointerY = 0, lastPX = 0, lastPY = 0;
+  let brushSize = 7, sandAmount = 7;
+  let mode = "gradient";
+  let paletteIndex = 0;
+  let currentPalette = palettes[0].colors.slice();
+  let solidColor = "#ff7058";
+  let colorPhase = 0;
+  let frame = 0;
+  let undoStack = [];
+  let resizeTimer = 0;
+  let soundOn = true;
+  let audioCtx = null, noiseSource = null, noiseGain = null, filter = null;
+
+  const paletteGrid = document.getElementById("paletteGrid");
+  const palettePanel = document.getElementById("palettePanel");
+  const brushPopover = document.getElementById("brushPopover");
+  const colorOrb = document.getElementById("colorOrb");
+  const statusPill = document.getElementById("statusPill");
+
+  function hexToRgb(hex){
+    const n = parseInt(hex.replace("#",""),16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function hslToHex(h,s,l){
+    s/=100; l/=100;
+    const c=(1-Math.abs(2*l-1))*s;
+    const x=c*(1-Math.abs((h/60)%2-1));
+    const m=l-c/2;
+    let r=0,g=0,b=0;
+    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
+    else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+    return "#"+[r,g,b].map(v=>Math.round((v+m)*255).toString(16).padStart(2,"0")).join("");
+  }
+  function pack(rgb){ return (255<<24) | (rgb[2]<<16) | (rgb[1]<<8) | rgb[0]; }
+  function unpack(v){ return [v&255,(v>>8)&255,(v>>16)&255]; }
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function colorAtPhase(){
+    if(mode==="solid") return pack(hexToRgb(solidColor));
+    const cs = currentPalette;
+    const span = cs.length - 1;
+    const p = ((colorPhase % 1) + 1) % 1 * span;
+    const i = Math.min(span-1, Math.floor(p));
+    const t = p-i;
+    const a = hexToRgb(cs[i]), b = hexToRgb(cs[i+1]);
+    colorPhase += 0.00042 + sandAmount * 0.000055;
+    return pack([Math.round(lerp(a[0],b[0],t)),Math.round(lerp(a[1],b[1],t)),Math.round(lerp(a[2],b[2],t))]);
+  }
+
+  function buildPaletteButtons(){
+    paletteGrid.innerHTML = "";
+    palettes.forEach((p,i)=>{
+      const btn = document.createElement("button");
+      btn.className = "palette-item" + (i===paletteIndex ? " active":"");
+      btn.title = p.name;
+      btn.setAttribute("aria-label", p.name + " 색상");
+      btn.style.setProperty("--swatch", `linear-gradient(135deg,${p.colors.join(",")})`);
+      btn.addEventListener("click",()=>{
+        paletteIndex=i; currentPalette=p.colors.slice(); mode="gradient";
+        updateModeUI(); buildPaletteButtons(); updateOrb(); clickTone(430);
+      });
+      paletteGrid.appendChild(btn);
+    });
+  }
+
+  function updateModeUI(){
+    document.getElementById("solidMode").classList.toggle("active",mode==="solid");
+    document.getElementById("gradientMode").classList.toggle("active",mode==="gradient");
+  }
+  function updateOrb(){
+    colorOrb.style.background = mode==="solid" ? solidColor : `linear-gradient(135deg,${currentPalette.join(",")})`;
+  }
+
+  function chooseCellSize(){
+    const px = innerWidth * innerHeight;
+    if(px > 2500000) return 5;
+    if(px < 650000) return 3;
+    return 4;
+  }
+
+  function resize(){
+    const oldGrid = grid, oldW = gw, oldH = gh;
+    cssW = innerWidth; cssH = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.floor(cssW*dpr);
+    canvas.height = Math.floor(cssH*dpr);
+    canvas.style.width = cssW+"px";
+    canvas.style.height = cssH+"px";
+    cell = chooseCellSize();
+    gw = Math.max(1,Math.floor(cssW/cell));
+    gh = Math.max(1,Math.floor(cssH/cell));
+    off.width = gw; off.height = gh;
+    imageData = offCtx.createImageData(gw,gh);
+    grid = new Uint32Array(gw*gh);
+
+    if(oldGrid.length){
+      const sx = oldW/gw, sy = oldH/gh;
+      for(let y=0;y<gh;y++){
+        const oy = Math.min(oldH-1,Math.floor(y*sy));
+        for(let x=0;x<gw;x++){
+          const ox = Math.min(oldW-1,Math.floor(x*sx));
+          grid[y*gw+x]=oldGrid[oy*oldW+ox];
+        }
+      }
+    }
+    ctx.imageSmoothingEnabled = false;
+  }
+
+  function canMove(idx){ return grid[idx]===0; }
+  function swap(a,b){ grid[b]=grid[a]; grid[a]=0; }
+
+  function simulate(){
+    if(paused) return;
+    const leftFirst = (frame++ & 1)===0;
+    for(let y=gh-2;y>=0;y--){
+      const start = leftFirst ? 0 : gw-1;
+      const end = leftFirst ? gw : -1;
+      const step = leftFirst ? 1 : -1;
+      for(let x=start;x!==end;x+=step){
+        const i=y*gw+x;
+        if(grid[i]===0) continue;
+        const below=i+gw;
+        if(canMove(below)){ swap(i,below); continue; }
+        const canL=x>0 && canMove(below-1);
+        const canR=x<gw-1 && canMove(below+1);
+        if(canL && canR){
+          if(Math.random()<.5) swap(i,below-1); else swap(i,below+1);
+        }else if(canL) swap(i,below-1);
+        else if(canR) swap(i,below+1);
+      }
+    }
+  }
+
+  function injectPoint(px,py){
+    const gx=Math.floor(px/cell), gy=Math.floor(py/cell);
+    const radius = brushSize;
+    const count = erasing ? Math.ceil(radius*radius*0.8) : 2 + sandAmount*2;
+    for(let n=0;n<count;n++){
+      const ang=Math.random()*Math.PI*2;
+      const rr=Math.sqrt(Math.random())*radius;
+      const x=Math.round(gx+Math.cos(ang)*rr);
+      const y=Math.round(gy+Math.sin(ang)*rr*0.42);
+      if(x<0||x>=gw||y<0||y>=gh) continue;
+      const idx=y*gw+x;
+      if(erasing){
+        grid[idx]=0;
+        if(radius>5 && y+1<gh && Math.random()<.35) grid[idx+gw]=0;
+      } else if(grid[idx]===0){
+        grid[idx]=colorAtPhase();
+      }
+    }
+  }
+
+  function drawInput(){
+    if(!drawing) return;
+    const dx=pointerX-lastPX, dy=pointerY-lastPY;
+    const dist=Math.hypot(dx,dy);
+    const step=Math.max(2,cell*1.1);
+    const points=Math.max(1,Math.ceil(dist/step));
+    for(let i=1;i<=points;i++) injectPoint(lastPX+dx*i/points,lastPY+dy*i/points);
+    lastPX=pointerX; lastPY=pointerY;
+  }
+
+  function render(){
+    const data=imageData.data;
+    for(let i=0,j=0;i<grid.length;i++,j+=4){
+      const v=grid[i];
+      if(v===0){
+        data[j]=231; data[j+1]=235; data[j+2]=237; data[j+3]=255;
+      } else {
+        data[j]=v&255; data[j+1]=(v>>8)&255; data[j+2]=(v>>16)&255; data[j+3]=255;
+      }
+    }
+    offCtx.putImageData(imageData,0,0);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle="#e7ebed";
+    ctx.fillRect(0,0,cssW,cssH);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(off,0,0,gw,gh,0,0,cssW,cssH);
+
+    if(!drawing && !erasing) return;
+    ctx.beginPath();
+    ctx.arc(pointerX,pointerY,brushSize*cell,0,Math.PI*2);
+    ctx.strokeStyle=erasing?"rgba(39,48,54,.48)":"rgba(255,255,255,.74)";
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+
+  function loop(){
+    drawInput();
+    simulate();
+    simulate();
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  function pointerPos(e){
+    const r=canvas.getBoundingClientRect();
+    return {x:(e.clientX-r.left),y:(e.clientY-r.top)};
+  }
+  function pushUndo(){
+    undoStack.push(grid.slice());
+    if(undoStack.length>8) undoStack.shift();
+  }
+  function onDown(e){
+    if(!document.getElementById("startScreen").classList.contains("hidden")) return;
+    if(!palettePanel.classList.contains("hidden")) palettePanel.classList.add("hidden");
+    if(!brushPopover.classList.contains("hidden")) brushPopover.classList.add("hidden");
+    e.preventDefault();
+    canvas.setPointerCapture?.(e.pointerId);
+    const p=pointerPos(e);
+    pointerX=lastPX=p.x; pointerY=lastPY=p.y;
+    pushUndo();
+    drawing=true;
+    injectPoint(pointerX,pointerY);
+    startSandSound();
+  }
+  function onMove(e){
+    const p=pointerPos(e); pointerX=p.x; pointerY=p.y;
+  }
+  function onUp(e){
+    drawing=false; stopSandSound();
+    try{canvas.releasePointerCapture?.(e.pointerId)}catch(_){}
+  }
+
+  canvas.addEventListener("pointerdown",onDown);
+  canvas.addEventListener("pointermove",onMove);
+  canvas.addEventListener("pointerup",onUp);
+  canvas.addEventListener("pointercancel",onUp);
+  canvas.addEventListener("contextmenu",e=>e.preventDefault());
+
+  function closePanels(except){
+    if(except!=="palette") palettePanel.classList.add("hidden");
+    if(except!=="brush") brushPopover.classList.add("hidden");
+  }
+  function selectTool(name){
+    document.getElementById("drawTool").classList.toggle("active",name==="draw");
+    document.getElementById("eraserTool").classList.toggle("active",name==="erase");
+    erasing=name==="erase";
+  }
+
+  document.getElementById("drawTool").addEventListener("click",()=>{selectTool("draw");closePanels();clickTone(440)});
+  document.getElementById("eraserTool").addEventListener("click",()=>{selectTool("erase");closePanels();clickTone(330)});
+  document.getElementById("colorTool").addEventListener("click",()=>{
+    const was=palettePanel.classList.contains("hidden");
+    closePanels("palette"); palettePanel.classList.toggle("hidden",!was);
+    clickTone(520);
+  });
+  document.getElementById("brushTool").addEventListener("click",()=>{
+    const was=brushPopover.classList.contains("hidden");
+    closePanels("brush"); brushPopover.classList.toggle("hidden",!was);
+    clickTone(490);
+  });
+
+  document.getElementById("solidMode").addEventListener("click",()=>{mode="solid";updateModeUI();updateOrb();clickTone(390)});
+  document.getElementById("gradientMode").addEventListener("click",()=>{mode="gradient";updateModeUI();updateOrb();clickTone(470)});
+  document.getElementById("colorPicker").addEventListener("input",e=>{
+    solidColor=e.target.value; mode="solid"; updateModeUI(); updateOrb();
+  });
+  document.getElementById("randomPalette").addEventListener("click",()=>{
+    const count=4+Math.floor(Math.random()*3);
+    const base=Math.random()*360;
+    currentPalette=[];
+    for(let i=0;i<count;i++){
+      const h=(base+i*(32+Math.random()*42))%360;
+      const s=68+Math.random()*22, l=54+Math.random()*18;
+      currentPalette.push(hslToHex(h,s,l));
+    }
+    paletteIndex=-1; mode="gradient"; buildPaletteButtons(); updateModeUI(); updateOrb(); clickTone(610);
+  });
+
+  function bindRange(id,out,callback){
+    const el=document.getElementById(id), o=document.getElementById(out);
+    el.addEventListener("input",()=>{o.value=el.value;callback(+el.value)});
+  }
+  bindRange("brushSize","brushSizeOut",v=>brushSize=v);
+  bindRange("sandAmount","sandAmountOut",v=>sandAmount=v);
+
+  document.getElementById("undoBtn").addEventListener("click",()=>{
+    if(!undoStack.length){showStatus("되돌릴 그림이 없어요");return}
+    grid=undoStack.pop(); clickTone(360); showStatus("한 단계 되돌렸어요");
+  });
+  document.getElementById("pauseBtn").addEventListener("click",e=>{
+    paused=!paused;e.currentTarget.classList.toggle("active",paused);
+    e.currentTarget.innerHTML=paused
+      ? '<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>';
+    showStatus(paused?"모래 움직임을 멈췄어요":"모래가 다시 움직여요");clickTone(paused?300:520);
+  });
+  document.getElementById("soundBtn").addEventListener("click",e=>{
+    soundOn=!soundOn;e.currentTarget.classList.toggle("active",soundOn);
+    e.currentTarget.setAttribute("aria-label",soundOn?"소리 끄기":"소리 켜기");
+    if(!soundOn) stopSandSound();
+    else clickTone(520);
+  });
+
+  document.getElementById("clearBtn").addEventListener("click",()=>document.getElementById("clearConfirm").classList.remove("hidden"));
+  document.getElementById("cancelClear").addEventListener("click",()=>document.getElementById("clearConfirm").classList.add("hidden"));
+  document.getElementById("confirmClear").addEventListener("click",()=>{
+    grid.fill(0); undoStack=[]; colorPhase=0;
+    document.getElementById("clearConfirm").classList.add("hidden");clickTone(280);showStatus("새 그림을 시작했어요");
+  });
+
+  document.getElementById("saveBtn").addEventListener("click",()=>{
+    const exportCanvas=document.createElement("canvas");
+    exportCanvas.width=Math.max(1200,cssW*2); exportCanvas.height=Math.round(exportCanvas.width*cssH/cssW);
+    const ec=exportCanvas.getContext("2d");
+    ec.fillStyle="#e7ebed";ec.fillRect(0,0,exportCanvas.width,exportCanvas.height);
+    ec.imageSmoothingEnabled=false;ec.drawImage(off,0,0,exportCanvas.width,exportCanvas.height);
+    const a=document.createElement("a");
+    const now=new Date();
+    a.download=`모래그림_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}.png`;
+    a.href=exportCanvas.toDataURL("image/png");a.click();
+    clickTone(660);showStatus("그림을 저장했어요");
+  });
+
+  const helpOverlay=document.getElementById("helpOverlay");
+  document.getElementById("helpBtn").addEventListener("click",()=>helpOverlay.classList.remove("hidden"));
+  document.getElementById("closeHelp").addEventListener("click",()=>helpOverlay.classList.add("hidden"));
+  helpOverlay.addEventListener("pointerdown",e=>{if(e.target===helpOverlay) helpOverlay.classList.add("hidden")});
+
+  const startScreen=document.getElementById("startScreen");
+  document.getElementById("startBtn").addEventListener("click",()=>{
+    startScreen.classList.add("hidden"); ensureAudio(); clickTone(560);
+    setTimeout(()=>helpOverlay.classList.remove("hidden"),350);
+  });
+  document.getElementById("homeBtn").addEventListener("click",()=>{
+    closePanels(); startScreen.classList.remove("hidden"); clickTone(360);
+  });
+
+  function showStatus(text){
+    statusPill.textContent=text; statusPill.classList.add("show");
+    clearTimeout(showStatus.t); showStatus.t=setTimeout(()=>statusPill.classList.remove("show"),1500);
+  }
+
+  function ensureAudio(){
+    if(audioCtx) return;
+    try{
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+      const arr=buffer.getChannelData(0);
+      for(let i=0;i<arr.length;i++) arr[i]=(Math.random()*2-1)*.65;
+      noiseSource=audioCtx.createBufferSource(); noiseSource.buffer=buffer; noiseSource.loop=true;
+      filter=audioCtx.createBiquadFilter(); filter.type="bandpass"; filter.frequency.value=1800; filter.Q.value=.55;
+      noiseGain=audioCtx.createGain(); noiseGain.gain.value=0;
+      noiseSource.connect(filter).connect(noiseGain).connect(audioCtx.destination); noiseSource.start();
+    }catch(_){ soundOn=false; }
+  }
+  function startSandSound(){
+    if(!soundOn) return; ensureAudio();
+    if(!audioCtx||!noiseGain) return;
+    audioCtx.resume?.();
+    filter.frequency.setTargetAtTime(1000+sandAmount*155,audioCtx.currentTime,.05);
+    noiseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    noiseGain.gain.setTargetAtTime(.018+.002*sandAmount,audioCtx.currentTime,.04);
+  }
+  function stopSandSound(){
+    if(!audioCtx||!noiseGain) return;
+    noiseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    noiseGain.gain.setTargetAtTime(0,audioCtx.currentTime,.05);
+  }
+  function clickTone(freq){
+    if(!soundOn) return; ensureAudio();
+    if(!audioCtx) return;
+    const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+    osc.type="sine";osc.frequency.value=freq;
+    gain.gain.setValueAtTime(.0001,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.055,audioCtx.currentTime+.012);
+    gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.11);
+    osc.connect(gain).connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+.12);
+  }
+
+  window.addEventListener("resize",()=>{
+    clearTimeout(resizeTimer);resizeTimer=setTimeout(resize,140);
+  });
+
+  buildPaletteButtons(); updateOrb(); resize(); loop();
+})();
+</script>
+</body>
+</html>

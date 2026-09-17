@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각형 넓이 비교기</title>
+    <!-- Tailwind CSS (스타일링 용도) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* 스크롤 방지 */
+            touch-action: none; /* 모바일에서 드래그 시 화면 스크롤 방지 */
+        }
+        
+        /* 모눈종이 배경 패턴 설정 */
+        .grid-bg {
+            background-color: #f8fafc;
+            /* 30px 단위의 격자 무늬 */
+            background-size: 30px 30px;
+            background-image:
+                linear-gradient(to right, #cbd5e1 1px, transparent 1px),
+                linear-gradient(to bottom, #cbd5e1 1px, transparent 1px);
+            background-position: center top;
+        }
+
+        #svg-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 삼각형 기본 스타일 */
+        .triangle-shape {
+            cursor: grab;
+            stroke-width: 2;
+            stroke-linejoin: round;
+            transition: stroke-width 0.2s;
+        }
+        
+        .triangle-shape:hover {
+            stroke-width: 4; /* 마우스 올렸을 때 테두리 강조 */
+        }
+
+        .triangle-shape:active {
+            cursor: grabbing;
+        }
+        
+        /* 텍스트 드래그 선택 방지 */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-slate-50">
+
+    <!-- 상단 컨트롤 패널 -->
+    <header class="bg-white shadow-md z-10 relative px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h1 class="text-xl font-bold text-slate-800 no-select">📐 삼각형 넓이 비교기</h1>
+        
+        <div class="flex gap-2">
+            <button id="btn-draw" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow transition-colors">
+                + 새 삼각형 그리기
+            </button>
+            <button id="btn-compare" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow transition-colors">
+                🏆 누가 더 큰지 비교
+            </button>
+            <button id="btn-clear" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
+                초기화
+            </button>
+        </div>
+    </header>
+
+    <!-- 상태 및 결과 메시지 알림바 -->
+    <div class="bg-blue-100 border-b-2 border-blue-300 px-4 py-4 text-center text-blue-900 font-bold text-xl md:text-2xl min-h-[4rem] flex items-center justify-center relative z-10 no-select shadow-sm transition-all duration-300" id="message-bar">
+        모눈종이 위를 자유롭게 클릭하여 삼각형을 만들어보세요.
+    </div>
+
+    <!-- 모눈종이 작업 영역 -->
+    <main class="flex-grow relative grid-bg" id="workspace">
+        <svg id="svg-canvas"></svg>
+    </main>
+
+    <script>
+        const GRID_SIZE = 30; // 모눈종이 한 칸의 픽셀 크기
+        const svg = document.getElementById('svg-canvas');
+        const workspace = document.getElementById('workspace');
+        const messageBar = document.getElementById('message-bar');
+        
+        const btnDraw = document.getElementById('btn-draw');
+        const btnCompare = document.getElementById('btn-compare');
+        const btnClear = document.getElementById('btn-clear');
+
+        // 상태 변수
+        let triangles = [];
+        let mode = 'idle'; // 'idle' (기본 대기/드래그 가능 상태) 또는 'draw' (그리기 상태)
+        let currentDrawingPoints = [];
+        let nextColorIndex = 0;
+        let currentMousePos = null;
+
+        // 드래그 관련 상태
+        let isDragging = false;
+        let draggedTriangleId = null;
+        let dragStartMousePos = { x: 0, y: 0 };
+        let draggedTriangleInitialPoints = [];
+
+        // 삼각형 색상 프리셋 (이름, 채우기 색상, 테두리 색상)
+        const PRESET_COLORS = [
+            { name: '빨간색', fill: 'rgba(239, 68, 68, 0.6)', border: '#b91c1c' },
+            { name: '파란색', fill: 'rgba(59, 130, 246, 0.6)', border: '#1d4ed8' },
+            { name: '노란색', fill: 'rgba(234, 179, 8, 0.6)', border: '#a16207' },
+            { name: '초록색', fill: 'rgba(34, 197, 94, 0.6)', border: '#15803d' },
+            { name: '보라색', fill: 'rgba(168, 85, 247, 0.6)', border: '#7e22ce' },
+            { name: '주황색', fill: 'rgba(249, 115, 22, 0.6)', border: '#c2410c' }
+        ];
+
+        // 메시지 표시 함수
+        function showMessage(htmlText) {
+            messageBar.innerHTML = htmlText;
+        }
+
+        // 터치 및 마우스 이벤트에서 캔버스 기준 상대 좌표 구하기
+        function getPos(e) {
+            const rect = svg.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // 가장 가까운 모눈 교차점(그리드)으로 좌표 맞추기 (스냅)
+        function snapToGrid(pos) {
+            return {
+                x: Math.round(pos.x / GRID_SIZE) * GRID_SIZE,
+                y: Math.round(pos.y / GRID_SIZE) * GRID_SIZE
+            };
+        }
+
+        // 세 점으로 이루어진 삼각형의 넓이 계산 (신발끈 공식)
+        function calculateArea(p) {
+            const area = Math.abs((p[0].x * (p[1].y - p[2].y) + p[1].x * (p[2].y - p[0].y) + p[2].x * (p[0].y - p[1].y)) / 2);
+            // 실제 픽셀 넓이가 아니라 '모눈 칸' 기준 넓이로 반환
+            return area / (GRID_SIZE * GRID_SIZE); 
+        }
+
+        // 화면 다시 그리기 (SVG 갱신)
+        function render() {
+            let svgContent = '';
+
+            // 1. 완성된 삼각형들 그리기
+            triangles.forEach(t => {
+                const pointsStr = t.points.map(p => `${p.x},${p.y}`).join(' ');
+                svgContent += `<polygon data-id="${t.id}" points="${pointsStr}" fill="${t.color.fill}" stroke="${t.color.border}" class="triangle-shape" />`;
+            });
+
+            // 2. 그리기 모드일 때 임시 점과 선 표시
+            if (mode === 'draw' && currentDrawingPoints.length > 0) {
+                // 찍힌 점들
+                currentDrawingPoints.forEach(p => {
+                    svgContent += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#334155" />`;
+                });
+
+                // 점 사이의 선
+                if (currentDrawingPoints.length === 2) {
+                    svgContent += `<line x1="${currentDrawingPoints[0].x}" y1="${currentDrawingPoints[0].y}" x2="${currentDrawingPoints[1].x}" y2="${currentDrawingPoints[1].y}" stroke="#64748b" stroke-width="2" stroke-dasharray="6,4" />`;
+                }
+
+                // 마지막 점 ~ 현재 마우스 커서 위치까지의 가이드라인
+                if (currentMousePos) {
+                    const lastPt = currentDrawingPoints[currentDrawingPoints.length - 1];
+                    const snapPos = snapToGrid(currentMousePos);
+                    svgContent += `<line x1="${lastPt.x}" y1="${lastPt.y}" x2="${snapPos.x}" y2="${snapPos.y}" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />`;
+                    // 마우스 커서 위치 (스냅된 위치)에 가이드 원 표시
+                    svgContent += `<circle cx="${snapPos.x}" cy="${snapPos.y}" r="4" fill="none" stroke="#ef4444" stroke-width="2" />`;
+                }
+            }
+
+            svg.innerHTML = svgContent;
+        }
+
+        // 새 삼각형 그리기 버튼 클릭
+        btnDraw.addEventListener('click', () => {
+            mode = 'draw';
+            currentDrawingPoints = [];
+            showMessage("모눈종이 위를 클릭하여 첫 번째 꼭짓점을 찍으세요. (총 3번)");
+            render();
+        });
+
+        // 초기화 버튼 클릭
+        btnClear.addEventListener('click', () => {
+            triangles = [];
+            mode = 'idle';
+            currentDrawingPoints = [];
+            nextColorIndex = 0;
+            showMessage("모든 삼각형이 지워졌습니다. 새로 시작해보세요.");
+            render();
+        });
+
+        // 넓이 비교 버튼 클릭
+        btnCompare.addEventListener('click', () => {
+            if (triangles.length < 2) {
+                showMessage("크기를 비교하려면 <b>2개 이상</b>의 삼각형이 필요합니다.");
+                return;
+            }
+
+            // 넓이를 계산하고 내림차순(큰 순서)으로 정렬
+            const sortedTriangles = [...triangles].map(t => {
+                return { ...t, area: calculateArea(t.points) };
+            }).sort((a, b) => b.area - a.area);
+
+            const maxArea = sortedTriangles[0].area;
+            
+            // 소수점 오차를 고려하여 가장 큰 삼각형(들) 찾기
+            const biggestTriangles = sortedTriangles.filter(t => Math.abs(t.area - maxArea) < 0.01);
+
+            let msg = "🎉 ";
+            if (biggestTriangles.length === 1) {
+                const biggest = biggestTriangles[0];
+                msg += `가장 큰 삼각형은 <span style="color:${biggest.color.border}; font-weight:900; font-size:1.3em; text-shadow: 1px 1px 2px rgba(0,0,0,0.15); margin: 0 4px;">${biggest.color.name}</span> 입니다!`;
+            } else {
+                // 크기가 같은 1등이 여러 명일 때
+                const names = biggestTriangles.map(t => `<span style="color:${t.color.border}; font-weight:900; font-size:1.3em; text-shadow: 1px 1px 2px rgba(0,0,0,0.15); margin: 0 4px;">${t.color.name}</span>`).join('와(과) ');
+                msg += `${names}의 크기가 똑같이 가장 큽니다!`;
+            }
+            
+            // 맨 앞에 있는 1등 삼각형을 맨 위로(DOM 마지막으로) 올려서 잘 보이게 함
+            const topTriangle = triangles.find(t => t.id === biggestTriangles[0].id);
+            triangles = triangles.filter(t => t.id !== topTriangle.id);
+            triangles.push(topTriangle);
+
+            showMessage(msg);
+            render();
+        });
+
+        // 캔버스(SVG) 마우스/터치 다운 (클릭 및 드래그 시작)
+        const handleStart = (e) => {
+            const rawPos = getPos(e);
+            currentMousePos = rawPos;
+
+            // 1. 그리기 모드
+            if (mode === 'draw') {
+                const snappedPos = snapToGrid(rawPos);
+                
+                // 중복 좌표 클릭 방지
+                if (currentDrawingPoints.length > 0) {
+                    const last = currentDrawingPoints[currentDrawingPoints.length - 1];
+                    if (last.x === snappedPos.x && last.y === snappedPos.y) return;
+                }
+
+                currentDrawingPoints.push(snappedPos);
+
+                if (currentDrawingPoints.length === 3) {
+                    // 일직선 상에 있는지 확인 (넓이가 0인지 확인)
+                    if (calculateArea(currentDrawingPoints) === 0) {
+                        showMessage("⚠️ 세 점이 일직선에 있어 삼각형이 되지 않습니다. 다시 그려주세요.");
+                        currentDrawingPoints = [];
+                    } else {
+                        // 삼각형 완성
+                        triangles.push({
+                            id: Date.now(),
+                            points: [...currentDrawingPoints],
+                            color: PRESET_COLORS[nextColorIndex % PRESET_COLORS.length]
+                        });
+                        nextColorIndex++;
+                        mode = 'idle'; // 드래그 모드로 전환
+                        currentDrawingPoints = [];
+                        showMessage("삼각형 완성! 마우스로 드래그해서 겹쳐보세요.");
+                    }
+                } else {
+                    showMessage(`<b>${currentDrawingPoints.length + 1}번째</b> 꼭짓점을 모눈에 맞춰 클릭하세요.`);
+                }
+                render();
+            } 
+            // 2. 드래그 모드 (idle 상태일 때 기존 다각형 선택)
+            else if (mode === 'idle' && e.target.tagName === 'polygon') {
+                isDragging = true;
+                draggedTriangleId = parseInt(e.target.getAttribute('data-id'));
+                dragStartMousePos = rawPos;
+
+                // 드래그 중인 삼각형을 배열의 맨 끝으로 보내 화면의 맨 위에 그려지도록 함
+                const tIndex = triangles.findIndex(t => t.id === draggedTriangleId);
+                const triangle = triangles[tIndex];
+                triangles.splice(tIndex, 1);
+                triangles.push(triangle);
+
+                // 초기 꼭짓점 상태 복사
+                draggedTriangleInitialPoints = triangle.points.map(p => ({...p}));
+            }
+        };
+
+        // 캔버스 마우스/터치 이동 (드래그 중 및 가이드라인)
+        const handleMove = (e) => {
+            currentMousePos = getPos(e);
+
+            if (mode === 'draw' && currentDrawingPoints.length > 0) {
+                render(); // 가이드라인 업데이트
+            } 
+            else if (isDragging && draggedTriangleId) {
+                // 이동 거리를 계산하고 격자(GRID_SIZE) 단위로 맞춤(Snap)
+                const dx = currentMousePos.x - dragStartMousePos.x;
+                const dy = currentMousePos.y - dragStartMousePos.y;
+                
+                const snappedDx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+                const snappedDy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
+
+                const triangle = triangles.find(t => t.id === draggedTriangleId);
+                if (triangle) {
+                    triangle.points = draggedTriangleInitialPoints.map(p => ({
+                        x: p.x + snappedDx,
+                        y: p.y + snappedDy
+                    }));
+                    render();
+                }
+            }
+        };
+
+        // 캔버스 마우스/터치 업 (드래그 종료)
+        const handleEnd = () => {
+            if (isDragging) {
+                isDragging = false;
+                draggedTriangleId = null;
+            }
+        };
+
+        // 이벤트 리스너 등록
+        svg.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove); // 부드러운 드래그를 위해 window에 등록
+        window.addEventListener('mouseup', handleEnd);
+
+        // 모바일 터치 지원
+        svg.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, { passive: false });
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+
+        // 초기 화면 렌더링
+        render();
+
+    </script>
+</body>
+</html>
