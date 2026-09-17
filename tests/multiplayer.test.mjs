@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalizeRoomCode, isValidRoomCode, clampHeight, resolveWinner } from '../worker/multiplayer.mjs';
+import { ensureMultiplayerSchema, MULTIPLAYER_SCHEMA_SQL } from '../worker/multiplayer-schema.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -57,4 +58,35 @@ test('single-player build integration exposes the duel entry', () => {
   assert.match(entry, /1:1 · 3분 높이 대전/);
   assert.match(entry, /\/games\/patience-tower-duel\//);
   assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
+});
+
+test('multiplayer database bootstrap recreates the missing D1 tables once per binding', async () => {
+  let calls = 0;
+  const env = {
+    DB: {
+      async exec(sql) {
+        calls += 1;
+        assert.equal(sql, MULTIPLAYER_SCHEMA_SQL);
+        assert.match(sql, /CREATE TABLE IF NOT EXISTS multiplayer_rooms/);
+        assert.match(sql, /CREATE TABLE IF NOT EXISTS multiplayer_room_players/);
+      }
+    }
+  };
+  await ensureMultiplayerSchema(env);
+  await ensureMultiplayerSchema(env);
+  assert.equal(calls, 1);
+});
+
+test('Cloudflare deploy script applies D1 migrations before deploying the Worker', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts['db:migrate:remote'], 'wrangler d1 migrations apply kidscade-stats --remote');
+  assert.match(pkg.scripts['deploy:cloudflare'], /db:migrate:remote/);
+  assert.ok(pkg.scripts['deploy:cloudflare'].indexOf('db:migrate:remote') < pkg.scripts['deploy:cloudflare'].indexOf('wrangler deploy'));
+});
+
+test('main Worker performs multiplayer schema preflight and exposes a health endpoint', () => {
+  const main = fs.readFileSync(path.join(root, 'worker/main.mjs'), 'utf8');
+  assert.match(main, /ensureMultiplayerSchema/);
+  assert.match(main, /\/api\/multiplayer\/health/);
+  assert.match(main, /multiplayer_database_not_ready/);
 });

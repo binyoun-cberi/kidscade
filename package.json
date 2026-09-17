@@ -5,7 +5,8 @@
     "build": "node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs",
     "build:cloudflare": "node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs",
     "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
-    "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy"
+    "db:migrate:remote": "wrangler d1 migrations apply kidscade-stats --remote",
+    "deploy:cloudflare": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy"
   },
   "devDependencies": {
     "sharp": "0.35.4",
