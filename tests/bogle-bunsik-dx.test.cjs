@@ -8,10 +8,12 @@ const root = path.resolve(__dirname, '..');
 const gameDir = path.join(root, 'games', 'job_bogle_bunsik');
 const htmlPath = path.join(gameDir, '보글보글 분식집.html');
 const cssPath = path.join(gameDir, 'bogle-bunsik-dx.css');
+const mobileCssPath = path.join(gameDir, 'bogle-bunsik-mobile-v2.css');
 const jsPath = path.join(gameDir, 'bogle-bunsik-dx.js');
 const rootEntryPath = path.join(root, '보글보글 분식집.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
+const mobileCss = fs.readFileSync(mobileCssPath, 'utf8');
 const js = fs.readFileSync(jsPath, 'utf8');
 const rootEntry = fs.readFileSync(rootEntryPath, 'utf8');
 
@@ -26,14 +28,16 @@ const expectedModels = [
   'chopstick.glb'
 ];
 
-test('Bogle Bunsik DX is split into canonical HTML, CSS and module JS', () => {
+test('Bogle Bunsik DX keeps canonical gameplay files and adds mobile UI v2', () => {
   assert.match(html, /<title>보글보글 분식집 DX<\/title>/);
   assert.match(html, /bogle-bunsik-dx\.css\?v=1/);
+  assert.match(html, /bogle-bunsik-mobile-v2\.css\?v=2/);
   assert.match(html, /bogle-bunsik-dx\.js\?v=1/);
   assert.match(html, /id="ramenControls"/);
   assert.match(html, /id="tteokControls"/);
   assert.match(html, /id="sideControls"/);
   assert.ok(css.length > 6000, 'expected dedicated Bogle Bunsik DX stylesheet');
+  assert.ok(mobileCss.length > 3000, 'expected dedicated Bogle Bunsik mobile UI override');
   assert.ok(js.length > 12000, 'expected dedicated Bogle Bunsik DX game module');
 });
 
@@ -48,7 +52,7 @@ test('Bogle Bunsik DX browser module parses as JavaScript', () => {
 test('Bogle Bunsik DX uses local Three.js and tracked food assets only', () => {
   assert.match(html, /\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
   assert.match(js, /new URL\('\.\.\/\.\.\/assets\/game\/food\/',import\.meta\.url\)\.href/);
-  assert.doesNotMatch(html + css + js, /https?:\/\//i, 'Bogle Bunsik DX must not depend on external CDNs');
+  assert.doesNotMatch(html + css + mobileCss + js, /https?:\/\//i, 'Bogle Bunsik DX must not depend on external CDNs');
   assert.match(js, /class BunsikScene/);
   for (const model of expectedModels) {
     assert.ok(fs.existsSync(path.join(root, 'assets', 'game', 'food', model)), `missing Bogle Bunsik model: ${model}`);
@@ -68,7 +72,18 @@ test('Bogle Bunsik DX keeps three concurrent station state machines and timing p
   assert.match(js, /SHIFT_SECONDS=90/);
   assert.match(js, /state\.combo/);
   assert.match(js, /state\.uiClock>=\.25/);
-  assert.match(css, /@media\(max-width:760px\)/);
+});
+
+test('Bogle Bunsik mobile UI v2 prioritizes queue, urgency and compact kitchen controls', () => {
+  assert.match(mobileCss, /@media\s*\(max-width:\s*760px\)/);
+  assert.match(mobileCss, /grid-template-areas:[\s\S]*"queue"[\s\S]*"focus"[\s\S]*"kitchen"/);
+  assert.match(mobileCss, /\.queueList[\s\S]*flex-direction:\s*row/);
+  assert.match(mobileCss, /\.queueCard[\s\S]*flex:\s*0\s+0\s+205px/);
+  assert.match(mobileCss, /\.sceneWrap[\s\S]*height:\s*225px/);
+  assert.match(mobileCss, /\.stationGrid[\s\S]*scroll-snap-type:\s*x\s+mandatory/);
+  assert.match(mobileCss, /\.stationCard[\s\S]*flex:\s*0\s+0\s+calc\(88%\s*-\s*4px\)/);
+  assert.match(mobileCss, /env\(safe-area-inset-bottom\)/);
+  assert.match(mobileCss, /\.modalBack[\s\S]*align-items:\s*flex-end/);
 });
 
 test('Bogle Bunsik DX uses valid shared audio catalog keys', () => {
@@ -81,6 +96,7 @@ test('Bogle Bunsik DX uses valid shared audio catalog keys', () => {
 test('legacy root catalog entry stays playable with explicit deploy-safe paths', () => {
   assert.ok(rootEntry.length > 1000, 'root catalog entry must remain a real playable shell');
   assert.match(rootEntry, /href="games\/job_bogle_bunsik\/bogle-bunsik-dx\.css\?v=1"/);
+  assert.match(rootEntry, /href="games\/job_bogle_bunsik\/bogle-bunsik-mobile-v2\.css\?v=2"/);
   assert.match(rootEntry, /src="games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1"/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
   assert.match(rootEntry, /src="audio-manager\.js\?v=20260917-1"/);
@@ -92,13 +108,13 @@ test('legacy root catalog entry stays playable with explicit deploy-safe paths',
   assert.doesNotMatch(rootEntry, /http-equiv="refresh"/i);
 });
 
-test('Bogle Bunsik DX build points deployed catalog to canonical v1 and keeps shared audio injection', () => {
+test('Bogle Bunsik DX build points deployed catalog to canonical v2 and keeps shared audio injection', () => {
   const distCatalogPath = path.join(root, 'dist', 'data', 'games.json');
   assert.ok(fs.existsSync(distCatalogPath), 'dist must exist before Bogle Bunsik DX test');
   const catalog = JSON.parse(fs.readFileSync(distCatalogPath, 'utf8'));
   const game = (catalog.games || []).find(item => item && item.id === 'job_bogle_bunsik');
   assert.ok(game, 'built Bogle Bunsik catalog entry missing');
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=1');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=2');
 
   const builtRoot = path.join(root, 'dist', '보글보글 분식집.html');
   const builtDir = path.join(root, 'dist', 'games', 'job_bogle_bunsik');
@@ -106,11 +122,16 @@ test('Bogle Bunsik DX build points deployed catalog to canonical v1 and keeps sh
   assert.ok(fs.existsSync(builtRoot));
   assert.ok(fs.existsSync(builtHtml));
   assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.css')));
+  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-mobile-v2.css')));
   assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.js')));
+
   const built = fs.readFileSync(builtHtml, 'utf8');
   assert.match(built, /audio-manager\.js\?v=20260917-1/);
+  assert.match(built, /bogle-bunsik-mobile-v2\.css\?v=2/);
+
   const builtRootHtml = fs.readFileSync(builtRoot, 'utf8');
   assert.match(builtRootHtml, /href="games\/job_bogle_bunsik\/bogle-bunsik-dx\.css\?v=1"/);
+  assert.match(builtRootHtml, /href="games\/job_bogle_bunsik\/bogle-bunsik-mobile-v2\.css\?v=2"/);
   assert.match(builtRootHtml, /src="games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1"/);
   assert.match(builtRootHtml, /src="audio-manager\.js\?v=20260917-1"/);
 });
