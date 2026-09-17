@@ -44,11 +44,20 @@
 - `index_base.html`은 랭크·점수 배지와 상장 버튼을 그리는 UI 역할만 유지합니다.
 - `tests/achievement-state.test.cjs`, `tests/index-base-achievement.test.cjs`를 정식 CI에 포함했습니다.
 
+### 6단계 — 상점 보유·장착 상태 분리
+
+- `kidscade_inventory`와 `kidscade_equipped`의 정규화·저장·보유 판정·장착 변경을 `shop-state.js`로 이동했습니다.
+- 과거 `emoji/title_p/title_n/theme` 기본 항목과 현재 `land/card/badge` 기본 항목을 모두 보존합니다.
+- 구매와 장착은 공통 상태 API를 거치며, `index_base.html`의 `inventory/equipped` 변수는 기존 화면 코드 호환용 미러로만 남겼습니다.
+- 프로필 칭호 배지, 게임 카드 스킨, 쑥쑥랜드 배경도 공통 장착 상태를 읽습니다.
+- 다른 탭의 `storage` 변경과 `KidscadeStorage`의 같은 탭 변경 이벤트를 감지해 화면 미러를 동기화합니다.
+- `tests/shop-state.test.cjs`, `tests/index-base-shop-state.test.cjs`를 정식 CI에 포함했습니다.
+
 ## 다음 단계
 
-1. 상점 `inventory/equipped` 상태를 공통 모듈로 분리하고 프로필 칭호 배지도 그 상태를 사용하게 합니다.
-2. 쑥쑥랜드/펫 저장과 돌봄 로직을 별도 도메인 모듈로 분리합니다.
-3. 아바타 옷장 상태와 구매 로직을 별도 모듈로 분리합니다.
+1. 쑥쑥랜드/펫 저장과 돌봄 로직을 별도 도메인 모듈로 분리합니다.
+2. 아바타 옷장 상태와 구매 로직을 별도 모듈로 분리합니다.
+3. 플레이 제한 상태를 별도 모듈로 옮겨 `index_base.html`의 게임 세션 외 상태를 더 줄입니다.
 4. bootstrap 문자열 치환에 의존하는 레거시 컨트롤러를 제거합니다.
 5. 마지막에 레거시 게임 카드 마크업을 `index_base.html`에서 물리적으로 삭제합니다.
 
