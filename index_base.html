@@ -10,6 +10,7 @@
     <script src="seed-wallet.js"></script>
     <script src="daily-progress.js"></script>
     <script src="achievement-state.js"></script>
+    <script src="shop-state.js"></script>
     <link rel="stylesheet" href="main-shell.css">
 
 </head>
@@ -1040,24 +1041,34 @@
             let recents = safeParseStorage('kidscade_recents', []);
             
             let coins = window.KidscadeSeedWallet?.get?.() ?? Math.max(0, parseInt(localStorage.getItem('kidscade_coins') || '0', 10) || 0);
-            let inventory = safeParseStorage('kidscade_inventory', {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic']});
-            let equipped = safeParseStorage('kidscade_equipped', {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic'});
+            const initialShopState = window.KidscadeShopState?.load?.() || {
+                inventory: safeParseStorage('kidscade_inventory', {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic'], land:['land_basic'], card:['card_basic'], badge:['badge_basic']}),
+                equipped: safeParseStorage('kidscade_equipped', {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic', land:'land_basic', card:'card_basic', badge:'badge_basic'})
+            };
+            let inventory = initialShopState.inventory;
+            let equipped = initialShopState.equipped;
             let petItems = safeParseStorage('kidscade_pet_items', {});
 
             if (!Array.isArray(favorites)) favorites = [];
             if (!Array.isArray(recents)) recents = [];
-            if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) inventory = {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic']};
-            if (!equipped || typeof equipped !== 'object' || Array.isArray(equipped)) equipped = {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic'};
+            if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) inventory = {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic'], land:['land_basic'], card:['card_basic'], badge:['badge_basic']};
+            if (!equipped || typeof equipped !== 'object' || Array.isArray(equipped)) equipped = {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic', land:'land_basic', card:'card_basic', badge:'badge_basic'};
             if (!petItems || typeof petItems !== 'object' || Array.isArray(petItems)) petItems = {};
 
-            if (!inventory.land) inventory.land = ['land_basic'];
-            if (!inventory.card) inventory.card = ['card_basic'];
-            if (!inventory.badge) inventory.badge = ['badge_basic'];
-            if (!equipped.land) equipped.land = 'land_basic';
-            if (!equipped.card) equipped.card = 'card_basic';
-            if (!equipped.badge) equipped.badge = 'badge_basic';
-            localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
-            localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+            if (window.KidscadeShopState?.ensureDefaults) {
+                const normalizedShopState = window.KidscadeShopState.ensureDefaults();
+                inventory = normalizedShopState.inventory;
+                equipped = normalizedShopState.equipped;
+            } else {
+                if (!inventory.land) inventory.land = ['land_basic'];
+                if (!inventory.card) inventory.card = ['card_basic'];
+                if (!inventory.badge) inventory.badge = ['badge_basic'];
+                if (!equipped.land) equipped.land = 'land_basic';
+                if (!equipped.card) equipped.card = 'card_basic';
+                if (!equipped.badge) equipped.badge = 'badge_basic';
+                localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
+                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+            }
 
             const PLAY_LIMIT_MAX = 5;
             const PLAY_RECHARGE_MS = 5 * 60 * 1000;
@@ -1236,6 +1247,15 @@
                 });
             }
 
+
+            if (window.KidscadeShopState?.subscribe) {
+                window.KidscadeShopState.subscribe(detail => {
+                    syncShopStateMirrors(detail);
+                    applyEquipped();
+                    const shopModal = document.getElementById('shop-modal');
+                    if (shopModal && !shopModal.classList.contains('hidden')) renderShop();
+                }, { immediate: false });
+            }
 
             // =====================================
             // 👤 씨앗 아바타 옷장: 기존 게임/기록과 분리된 SVG 레이어 시스템
@@ -1789,7 +1809,7 @@
             }
 
             function applyEquipped() {
-                const badge = shopDB.badge.find(item => item.id === equipped.badge) || shopDB.badge[0];
+                const badge = shopDB.badge.find(item => item.id === getEquippedShopId('badge')) || shopDB.badge[0];
                 if (badge) {
                     document.getElementById('profile-emoji').innerText = badge.icon || '🐣';
                     document.getElementById('profile-prefix').innerText = badge.prefix || '신입생';
@@ -1800,12 +1820,10 @@
                 shopDB.card.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
                 shopDB.land.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
 
-                const cardSkin = shopDB.card.find(item => item.id === equipped.card);
+                const cardSkin = shopDB.card.find(item => item.id === getEquippedShopId('card'));
                 if (cardSkin && cardSkin.className) document.body.classList.add(cardSkin.className);
-                const landSkin = shopDB.land.find(item => item.id === equipped.land);
+                const landSkin = shopDB.land.find(item => item.id === getEquippedShopId('land'));
                 if (landSkin && landSkin.className) document.body.classList.add(landSkin.className);
-
-                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
                 renderShop();
                 updatePetUI();
             }
@@ -2195,24 +2213,37 @@ ${getEvolutionHintText()}
                 renderShop();
             });
 
+            function syncShopStateMirrors(state) {
+                if (!state) return;
+                if (state.inventory) inventory = state.inventory;
+                if (state.equipped) equipped = state.equipped;
+            }
+
             function isOwnedShopItem(category, item) {
+                if (window.KidscadeShopState?.owns) return window.KidscadeShopState.owns(category, item.id);
                 return (inventory[category] || []).includes(item.id);
             }
 
             function getEquippedShopId(category) {
+                if (window.KidscadeShopState?.getEquipped) return window.KidscadeShopState.getEquipped(category);
                 return equipped[category];
             }
 
             function buyItem(category, item) {
                 if (category === 'reward') { claimDailyReward(item); return; }
-                if (!inventory[category]) inventory[category] = [];
                 if (isOwnedShopItem(category, item)) { showToast('이미 가지고 있는 꾸미기예요.'); return; }
                 if (coins < item.price) { showToast(`씨앗이 부족해요! (${item.price}개 필요)`); playUISound('click'); return; }
                 if (!changeSeeds(-item.price, '', { toast: false })) return;
-                inventory[category].push(item.id);
-                equipped[category] = item.id;
-                localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
-                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+
+                if (window.KidscadeShopState?.grant) {
+                    syncShopStateMirrors(window.KidscadeShopState.grant(category, item.id, { equip: true, source: 'purchase' }));
+                } else {
+                    if (!inventory[category]) inventory[category] = [];
+                    inventory[category].push(item.id);
+                    equipped[category] = item.id;
+                    localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
+                    localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+                }
                 showToast(`${item.name}을(를) 얻고 바로 적용했어요!`);
                 playUISound('print');
                 applyEquipped();
@@ -2220,8 +2251,14 @@ ${getEvolutionHintText()}
 
             function equipItem(category, item) {
                 playUISound('click');
-                equipped[category] = item.id;
-                localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+                if (window.KidscadeShopState?.equip) {
+                    const result = window.KidscadeShopState.equip(category, item.id, { source: 'equip' });
+                    if (!result.ok) return;
+                    syncShopStateMirrors(result);
+                } else {
+                    equipped[category] = item.id;
+                    localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
+                }
                 showToast(`${item.name} 적용 완료!`);
                 applyEquipped();
             }
