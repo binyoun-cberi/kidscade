@@ -50,13 +50,26 @@ test('Patience Tower duel client keeps the three-minute current-height rule and 
   assert.doesNotThrow(() => new Function(script));
 });
 
-test('single-player build integration exposes the duel entry', () => {
+test('single-player build integration exposes the duel entry and the 2D asset rework', () => {
   const injector = fs.readFileSync(path.join(root, 'scripts/inject-game-integrations.cjs'), 'utf8');
   const entry = fs.readFileSync(path.join(root, 'patience-tower-duel-entry.js'), 'utf8');
+  const rework = fs.readFileSync(path.join(root, 'patience-tower-rework.js'), 'utf8');
   assert.match(injector, /인내의 탑\.html/);
+  assert.match(injector, /patience-tower-rework\.js/);
   assert.match(injector, /patience-tower-duel-entry\.js/);
+  assert.ok(injector.indexOf('patience-tower-rework.js') < injector.indexOf('patience-tower-duel-entry.js'));
+  assert.match(injector, /인내의 탑\.html\?v=3/);
   assert.match(entry, /1:1 · 3분 높이 대전/);
   assert.match(entry, /\/games\/patience-tower-duel\//);
+  assert.match(rework, /\/assets\/game\/2d\/platformer-art/);
+  assert.match(rework, /extended\/aliens\/alien-/);
+  assert.match(rework, /extended\/enemies\/frog\.png/);
+  assert.match(rework, /extended\/enemies\/bee\.png/);
+  assert.match(rework, /extended\/enemies\/ghost-normal\.png/);
+  assert.match(rework, /extended\/enemies\/spinner\.png/);
+  assert.match(rework, /patienceTowerBestM/);
+  assert.match(rework, /__patienceDuelEmbedded/);
+  assert.doesNotThrow(() => new Function(rework));
   assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
 });
 
