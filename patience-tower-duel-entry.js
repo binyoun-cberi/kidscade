@@ -23,7 +23,7 @@
     'box-shadow:0 12px 28px rgba(59,130,246,.28)'
   ].join(';');
   button.addEventListener('click', () => {
-    window.location.href = '/games/patience-tower-duel/';
+    window.location.href = '/games/patience-tower-duel/?v=20260918-1';
   });
 
   const note = document.createElement('div');
