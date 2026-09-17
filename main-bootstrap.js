@@ -324,6 +324,7 @@
     html = html.replace('src="seed-wallet.js"', 'src="' + withVersion('seed-wallet.js') + '"');
     html = html.replace('src="daily-progress.js"', 'src="' + withVersion('daily-progress.js') + '"');
     html = html.replace('src="achievement-state.js"', 'src="' + withVersion('achievement-state.js') + '"');
+    html = html.replace('src="shop-state.js"', 'src="' + withVersion('shop-state.js') + '"');
     html = html.replace('src="age-navigation.js"', 'src="' + withVersion('age-navigation.js') + '"');
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
     const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';

@@ -34,6 +34,7 @@ jobs:
             seed-wallet.js \
             daily-progress.js \
             achievement-state.js \
+            shop-state.js \
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
@@ -87,6 +88,8 @@ jobs:
         run: node --test tests/daily-progress.test.cjs tests/index-base-daily-progress.test.cjs
       - name: Run achievement state tests
         run: node --test tests/achievement-state.test.cjs tests/index-base-achievement.test.cjs
+      - name: Run shop state tests
+        run: node --test tests/shop-state.test.cjs tests/index-base-shop-state.test.cjs
       - name: Run UI information architecture tests
         run: node --test tests/ui-information-architecture.test.cjs
       - name: Run UI visual polish tests
