@@ -4,117 +4,84 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>마라탕 한 그릇 DX</title>
-<style>
-:root{--ink:#3c241d;--sub:#755246;--cream:#fff8f2;--line:#efc9b8;--red:#d84a39;--orange:#ff8b60;--green:#55ad66;--shadow:0 14px 35px rgba(78,35,24,.14)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:linear-gradient(180deg,#fff1e8,#ffdccc);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);user-select:none}button{font:inherit;color:inherit;border:0;cursor:pointer}.hidden{display:none!important}.app{height:100%;display:flex;flex-direction:column}.top{height:74px;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid #efd6cb;z-index:5}.logo{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(145deg,#ff9d72,#cf3e36);font-size:26px;box-shadow:var(--shadow)}.brand h1{margin:0;font-size:22px;letter-spacing:-.04em}.brand p{margin:2px 0 0;font-size:11px;color:var(--sub);font-weight:800}.spacer{flex:1}.pill{padding:7px 11px;border-radius:999px;background:#fff;border:2px solid #efd6cb;font-size:12px;font-weight:900;white-space:nowrap}.btn{padding:11px 14px;border-radius:15px;background:linear-gradient(#fff,#f6e8e1);border:2px solid #e7c5b7;box-shadow:0 4px 0 rgba(111,67,52,.1);font-weight:900}.btn.primary{background:linear-gradient(#ff9c75,#db493c);border-color:#b73931;color:#fff}.btn.small{padding:8px 10px;font-size:12px}.screen{flex:1;min-height:0;display:none}.screen.active{display:block}.panel{background:rgba(255,250,246,.97);border:3px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
-#start{padding:18px;display:grid;place-items:center}.startGrid{width:min(100%,1080px);display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.hero{padding:22px}.hero h2{margin:0;font-size:42px;line-height:1.08;letter-spacing:-.05em}.hero h2 span{color:var(--red)}.hero p{color:var(--sub);font-weight:750;line-height:1.6}.steps{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:16px 0}.step{background:#fff;border:2px solid #f0ddd5;border-radius:16px;padding:11px;font-size:12px;line-height:1.45}.step b{display:block;font-size:14px;margin-bottom:3px}.startActions{display:flex;gap:10px;flex-wrap:wrap}.preview{padding:14px;display:flex;flex-direction:column;gap:10px}.preview3d{height:330px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#fff3eb,#ffdccc);border:2px solid #f0d8ce;position:relative}.preview3d canvas{width:100%;height:100%;display:block}.badge{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.9);border:2px solid #eccbbb;border-radius:999px;padding:7px 10px;font-weight:900;font-size:11px;z-index:2}.previewText{background:#fff;border:2px solid #f0ddd5;border-radius:16px;padding:11px;font-size:12px;font-weight:750;color:var(--sub);line-height:1.5}
-#game{padding:10px;display:grid;grid-template-columns:1.02fr .98fr;grid-template-rows:auto 1fr auto;gap:10px;grid-template-areas:"orders cook" "ingredients cook" "summary cook";overflow:hidden}.orders{grid-area:orders;padding:11px}.ingredients{grid-area:ingredients;padding:11px;min-height:0;display:flex;flex-direction:column}.summary{grid-area:summary;padding:10px;display:flex;gap:7px;flex-wrap:wrap}.cook{grid-area:cook;padding:11px;display:flex;flex-direction:column;min-height:0}.head{display:flex;align-items:end;justify-content:space-between;gap:8px;margin-bottom:8px}.head h3{margin:0;font-size:18px;letter-spacing:-.03em}.head small{font-size:10px;color:var(--sub);font-weight:800}.orderGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.order{position:relative;text-align:left;background:#fff;border:2px solid #efd8ce;border-radius:14px;padding:9px;min-height:111px;transition:.13s}.order.active{border-color:#ff8c63;box-shadow:0 0 0 4px rgba(255,126,82,.16);transform:translateY(-1px)}.order.done{opacity:.48}.order b{color:var(--red);font-size:13px}.order .desc{font-size:10.5px;color:var(--sub);font-weight:750;line-height:1.32;margin-top:3px}.wait{position:absolute;top:7px;right:7px;font-size:9px;font-weight:900;background:#fff2e6;border:1px solid #efd0bb;border-radius:999px;padding:3px 6px}.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.chip{font-size:9px;font-weight:900;padding:3px 5px;border-radius:999px;background:#fff4ed;border:1px solid #efd8cb}.chip.good{background:#eff9ef;border-color:#cbe5cd;color:#347842}.chip.bad{background:#fff0ef;border-color:#f0c8c5;color:#a63a34}.basket{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;overflow:auto;min-height:0;padding:1px}.ing{min-height:93px;background:#fff;border:2px solid #efddd5;border-radius:15px;padding:7px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.12s}.ing:hover,.ing.has{border-color:#ff956c;transform:translateY(-1px)}.ing .emoji{font-size:26px}.ing .name{font-size:11px;font-weight:900}.ing .meta{font-size:9px;color:var(--sub);font-weight:800}.count{margin-top:auto;font-size:9px;font-weight:900;padding:2px 5px;border-radius:999px;background:#fff3ec}.cookControls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#fff;border:2px solid #efddd5;border-radius:15px;padding:9px}.spiceRow{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.spice{padding:7px 8px;border-radius:11px;background:#fff4ef;border:2px solid #efd6ca;font-weight:900;font-size:10px}.spice.active{background:linear-gradient(#ff956f,#dc4a3a);border-color:#bd3f33;color:#fff}.cookBtns{display:grid;grid-template-columns:1fr 1fr;gap:5px}.progress{height:16px;margin-top:7px;background:#493028;border:2px solid #34211b;border-radius:999px;overflow:hidden}.progress>div{height:100%;width:0;background:linear-gradient(90deg,#66b86c,#f1d26c,#df5a3c)}.stage{position:relative;flex:1;min-height:320px;margin-top:8px;border-radius:18px;overflow:hidden;border:2px solid #edd5ca;background:linear-gradient(180deg,#fff2e9,#ffd7c3)}#three{width:100%;height:100%;display:block;touch-action:none}.dropHint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(255,255,255,.9);border:2px solid #e8c8b9;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900;pointer-events:none}.hint{font-size:10px;font-weight:900;color:var(--sub);padding-top:6px}.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);opacity:0;pointer-events:none;z-index:50;color:#fff;font-weight:900;padding:11px 14px;border-radius:14px;box-shadow:var(--shadow);transition:.2s}.toast.show{opacity:1;top:24px}.toast.good{background:#4fa95d}.toast.bad{background:#d64c3d}.toast.info{background:#4f90d8}.modalBack{position:fixed;inset:0;background:rgba(42,24,18,.42);backdrop-filter:blur(4px);z-index:60;display:none;align-items:center;justify-content:center;padding:18px}.modalBack.show{display:flex}.modal{width:min(760px,94vw);padding:17px}.modalTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.resultGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.resultBox{background:#fff;border:2px solid #efdcd4;border-radius:15px;padding:12px}.scoreBig{font-size:38px;font-weight:1000;color:var(--red);line-height:1}.resultBox ul{margin:7px 0 0;padding-left:18px;color:var(--sub);font-size:11px;font-weight:750;line-height:1.5}@media(max-width:1000px){html,body{overflow:auto}.app{height:auto;min-height:100%}.startGrid{grid-template-columns:1fr}#game{grid-template-columns:1fr;grid-template-areas:"orders" "ingredients" "cook" "summary";overflow:visible}.stage{height:420px}.basket{grid-template-columns:repeat(3,1fr)}}@media(max-width:620px){.top{height:auto;flex-wrap:wrap}.brand p{display:none}.orderGrid,.cookControls,.steps,.resultGrid{grid-template-columns:1fr}.basket{grid-template-columns:repeat(2,1fr)}.hero h2{font-size:31px}}
-</style>
+<link rel="stylesheet" href="maratang-dx.css?v=3" />
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="logo">🍲</div><div class="brand"><h1>마라탕 한 그릇 DX</h1><p>재료 선택 · 예산 · 맵기 · 조리 타이밍을 한 번에!</p></div><div class="spacer"></div>
-    <div class="pill">점수 <span id="score">0</span></div><div class="pill">손님 <span id="served">0</span>/6</div><button class="btn small" id="help">도움말</button>
+    <div class="logo">🍲</div>
+    <div class="brand"><h1>마라탕 한 그릇 DX</h1><p>손님 주문 · 재료 선택 · 예산 · 맵기 · 조리 타이밍</p></div>
+    <div class="spacer"></div>
+    <div class="pill">점수 <span id="score">0</span></div>
+    <div class="pill">손님 <span id="served">0</span>/6</div>
+    <button class="btn small" id="help">도움말</button>
   </header>
+
   <section class="screen active" id="start">
     <div class="startGrid">
       <div class="panel hero">
         <h2>내가 고른 재료로<br><span>진짜 마라탕 가게</span>를 운영해요.</h2>
         <p>손님 주문을 읽고 재료를 직접 담고, 맵기와 예산을 맞춰 끓여 주세요. 같은 재료를 여러 번 요구하는 손님도 있고, 넣지 말아 달라는 재료도 있어요.</p>
-        <div class="steps"><div class="step"><b>1. 주문 고르기</b>필수 재료·빼기 재료·맵기·예산 확인</div><div class="step"><b>2. 재료 담기</b>클릭하거나 3D 냄비로 드래그</div><div class="step"><b>3. 보글보글 조리</b>맵기를 고르고 조리 게이지 완료</div><div class="step"><b>4. 손님 평가</b>정확도·예산·양·대기시간으로 점수</div></div>
+        <div class="steps">
+          <div class="step"><b>1. 손님 주문 확인</b>필수 재료·빼기 재료·맵기·예산 확인</div>
+          <div class="step"><b>2. 재료 직접 담기</b>클릭하거나 3D 냄비로 드래그</div>
+          <div class="step"><b>3. 보글보글 조리</b>맵기를 고르고 조리 게이지 완료</div>
+          <div class="step"><b>4. 손님 반응 확인</b>정확도·예산·양·대기시간으로 점수</div>
+        </div>
         <div class="startActions"><button class="btn primary" id="startBtn">영업 시작</button><button class="btn" id="sampleBtn">예시 주문</button></div>
       </div>
-      <div class="panel preview"><div class="preview3d"><div class="badge">실제 Kidscade 3D 음식 에셋 사용</div><canvas id="previewCanvas"></canvas></div><div class="previewText">냄비와 양배추·버섯·소시지·고기 모델은 <b>assets/game/food</b>의 실제 GLB를 불러옵니다. 두부·분모자·숙주·면은 가벼운 3D 메시로 보완합니다.</div></div>
+      <div class="panel preview">
+        <div class="preview3d"><div class="badge">Kidscade 실제 GLB 음식 에셋</div><canvas id="previewCanvas"></canvas></div>
+        <div class="previewText">냄비·양배추·버섯·소시지·고기뿐 아니라 조리 스푼과 젓가락도 실제 저장소 에셋을 사용합니다. 전용 모델이 없는 재료만 가벼운 3D 메시로 보완합니다.</div>
+      </div>
     </div>
   </section>
+
   <section class="screen" id="game">
-    <div class="panel orders"><div class="head"><h3>손님 주문</h3><small>먼저 만들 주문을 선택</small></div><div class="orderGrid" id="orderGrid"></div></div>
-    <div class="panel ingredients"><div class="head"><h3>재료 진열대</h3><small>클릭 또는 냄비로 드래그</small></div><div class="basket" id="ingredientGrid"></div></div>
-    <div class="panel summary"><div class="pill">주문 <span id="orderName">없음</span></div><div class="pill">가격 ₩<span id="cost">0</span></div><div class="pill">무게 <span id="weight">0</span>g</div><div class="pill">맵기 <span id="spiceText">미선택</span></div><div class="pill">재료 <span id="itemCount">0</span>개</div></div>
+    <div class="panel orders">
+      <div class="head"><h3>손님 대기열</h3><small>기다림이 길어지기 전에 주문을 완성하세요</small></div>
+      <div class="orderGrid" id="orderGrid"></div>
+    </div>
+
+    <div class="panel ingredients">
+      <div class="head"><h3>재료 진열대</h3><small>클릭 또는 냄비로 드래그 · 최대 12번</small></div>
+      <div class="basket" id="ingredientGrid"></div>
+    </div>
+
+    <div class="panel summary">
+      <div class="pill">주문 <span id="orderName">없음</span></div>
+      <div class="pill">가격 ₩<span id="cost">0</span></div>
+      <div class="pill">무게 <span id="weight">0</span>g</div>
+      <div class="pill">맵기 <span id="spiceText">미선택</span></div>
+      <div class="pill">재료 <span id="itemCount">0</span>개</div>
+    </div>
+
     <div class="panel cook">
-      <div class="head"><h3>3D 조리대</h3><small>냄비 안 재료가 실제로 바뀝니다</small></div>
-      <div class="cookControls">
-        <div class="box"><b style="font-size:12px">맵기</b><div class="spiceRow" id="spiceRow"></div><div class="progress"><div id="cookFill"></div></div></div>
-        <div class="box"><div class="cookBtns"><button class="btn small primary" id="cookBtn">끓이기</button><button class="btn small" id="serveBtn">서빙</button><button class="btn small" id="undoBtn">마지막 재료 빼기</button><button class="btn small" id="clearBtn">그릇 비우기</button></div><div class="hint" id="hint">주문을 선택하고 재료를 담아 주세요.</div></div>
+      <div class="head"><h3>3D 조리대</h3><small>손님과 냄비가 주문 진행에 맞춰 반응합니다</small></div>
+      <div class="focus">
+        <div class="face" id="customerFace">🍲</div>
+        <div><div class="focusName" id="focusName">주문을 선택해 주세요</div><div class="focusText" id="focusText">왼쪽 주문 카드 중 하나를 골라 주세요.</div><div class="focusNeed" id="focusNeed"></div></div>
+        <div class="patience"><div class="patienceLabel"><span>기다림</span><span id="patienceValue">-</span></div><div class="patienceBar"><div id="patienceFill"></div></div></div>
       </div>
-      <div class="stage" id="stage"><canvas id="three"></canvas><div class="dropHint">재료 카드를 여기로 끌어다 놓아도 됩니다</div></div>
+
+      <div class="cookControls">
+        <div class="box"><b style="font-size:12px">맵기 선택</b><div class="spiceRow" id="spiceRow"></div><div class="progress"><div id="cookFill"></div></div></div>
+        <div class="box"><div class="cookBtns desktopCookBtns"><button class="btn small primary" id="cookBtn">끓이기</button><button class="btn small" id="serveBtn">서빙</button><button class="btn small" id="undoBtn">마지막 재료 빼기</button><button class="btn small" id="clearBtn">그릇 비우기</button></div><div class="hint" id="hint">주문을 선택하고 재료를 담아 주세요.</div></div>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="three"></canvas>
+        <div class="comboBanner" id="combo">정확하게 만들면 콤보!</div>
+        <div class="dropHint">재료 카드를 이 냄비로 끌어다 놓아도 됩니다</div>
+      </div>
     </div>
   </section>
 </div>
-<div class="toast" id="toast"></div><div class="modalBack" id="modalBack"><div class="panel modal" id="modal"></div></div>
-<script type="module">
-import * as THREE from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
-const FOOD='../../assets/game/food/';
-const ingredients=[
- {id:'cabbage',name:'양배추',emoji:'🥬',price:900,weight:60,model:'cabbage.glb'},
- {id:'bokchoy',name:'청경채',emoji:'🥗',price:1100,weight:55,model:'leek.glb'},
- {id:'bean',name:'숙주',emoji:'🌱',price:700,weight:50,proc:'sprout'},
- {id:'mushroom',name:'버섯',emoji:'🍄',price:1200,weight:45,model:'mushroom.glb'},
- {id:'tofu',name:'두부',emoji:'⬜',price:1000,weight:65,proc:'tofu'},
- {id:'sausage',name:'소시지',emoji:'🌭',price:1600,weight:50,model:'sausage.glb'},
- {id:'meat',name:'소고기',emoji:'🥩',price:2200,weight:55,model:'meat-raw.glb'},
- {id:'ricecake',name:'분모자',emoji:'🍥',price:1700,weight:70,proc:'ricecake'},
- {id:'noodle',name:'옥수수면',emoji:'🍜',price:1500,weight:60,proc:'noodle'},
- {id:'fishcake',name:'유부',emoji:'🟨',price:1300,weight:40,proc:'fishcake'}
-];
-const spiceMeta=['0단계 순한맛','1단계 보통맛','2단계 얼큰맛','3단계 화끈맛'];
-const orderPool=[
- {name:'매운맛 도전자',must:['meat','mushroom','ricecake'],avoid:['tofu'],spice:3,budget:7000,desc:'고기·버섯·분모자를 넣고 아주 맵게!'},
- {name:'채소 듬뿍 손님',must:['cabbage','bokchoy','bean'],avoid:['sausage'],spice:1,budget:5000,desc:'채소 위주로 가볍고 순하게 먹고 싶어요.'},
- {name:'분모자 러버',must:['ricecake','sausage'],avoid:['bean'],spice:2,budget:6500,desc:'쫀득한 분모자와 소시지는 꼭 필요해요.'},
- {name:'두부 마니아',must:['tofu','mushroom'],avoid:['meat'],spice:1,budget:5200,desc:'두부와 버섯이 주인공인 한 그릇!'},
- {name:'얼큰한 직장인',must:['meat','noodle'],avoid:['bokchoy'],spice:2,budget:7200,desc:'고기와 면이 들어간 얼큰한 조합으로.'},
- {name:'첫 마라탕 입문자',must:['sausage','tofu'],avoid:['mushroom'],spice:0,budget:5000,desc:'맵지 않고 친숙한 재료로 부탁해요.'},
- {name:'버섯 애호가',must:['mushroom','mushroom','cabbage'],avoid:['fishcake'],spice:2,budget:6000,desc:'버섯은 두 번! 양배추도 넣어 주세요.'},
- {name:'든든한 학생',must:['meat','sausage','noodle'],avoid:['bean'],spice:2,budget:8500,desc:'고기·소시지·면으로 든든하게 먹고 싶어요.'}
-];
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const state={score:0,served:0,total:6,orders:[],selected:null,bowl:[],spice:null,cooking:false,cooked:false,progress:0,cookTimer:null,waitTimer:null};
-const getIng=id=>ingredients.find(x=>x.id===id), count=(list,id)=>list.filter(x=>x===id).length;
-const cost=()=>state.bowl.reduce((s,id)=>s+getIng(id).price,0), weight=()=>state.bowl.reduce((s,id)=>s+getIng(id).weight,0);
-function sfx(key,options={}){try{window.KidscadeAudio?.play?.(key,options)}catch(_){}}
-function toast(text,type='info'){const t=$('#toast');t.textContent=text;t.className=`toast ${type} show`;setTimeout(()=>t.className=`toast ${type}`,1700)}
-function openModal(html){$('#modal').innerHTML=html;$('#modalBack').classList.add('show')} function closeModal(){$('#modalBack').classList.remove('show')}
-$('#modalBack').addEventListener('click',e=>{if(e.target.id==='modalBack')closeModal()});
-function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
-function summarize(ids){const c={};ids.forEach(id=>c[id]=(c[id]||0)+1);return Object.entries(c).map(([id,n])=>`${getIng(id).name}${n>1?'x'+n:''}`).join(', ')}
-function makeOrders(){state.orders=shuffle(orderPool).slice(0,state.total).map((o,i)=>({...o,id:'o'+i,done:false,wait:100}))}
-function renderOrders(){const root=$('#orderGrid');root.innerHTML='';state.orders.forEach(o=>{const b=document.createElement('button');b.className=`order ${state.selected===o.id?'active':''} ${o.done?'done':''}`;b.disabled=o.done;b.innerHTML=`<b>${o.name}</b><span class="wait">대기 ${Math.round(o.wait)}%</span><div class="desc">${o.desc}</div><div class="chips"><span class="chip good">필수 ${summarize(o.must)}</span><span class="chip bad">빼기 ${summarize(o.avoid)||'없음'}</span><span class="chip">${spiceMeta[o.spice]}</span><span class="chip">₩${o.budget.toLocaleString()}</span></div>`;b.onclick=()=>selectOrder(o.id);root.appendChild(b)})}
-function renderIngredients(){const root=$('#ingredientGrid');root.innerHTML='';ingredients.forEach(i=>{const n=count(state.bowl,i.id),b=document.createElement('button');b.className=`ing ${n?'has':''}`;b.draggable=true;b.dataset.id=i.id;b.innerHTML=`<div class="emoji">${i.emoji}</div><div class="name">${i.name}</div><div class="meta">₩${i.price.toLocaleString()} · ${i.weight}g</div><div class="count">담은 수 ${n}</div>`;b.onclick=()=>addIngredient(i.id);b.ondragstart=e=>e.dataTransfer.setData('text/plain',i.id);root.appendChild(b)})}
-function renderSpice(){const root=$('#spiceRow');root.innerHTML='';spiceMeta.forEach((x,i)=>{const b=document.createElement('button');b.className=`spice ${state.spice===i?'active':''}`;b.textContent=x;b.onclick=()=>{state.spice=i;renderSpice();updateSummary();three.setSpice(i)};root.appendChild(b)})}
-function updateSummary(){const o=state.orders.find(x=>x.id===state.selected);$('#score').textContent=state.score;$('#served').textContent=state.served;$('#orderName').textContent=o?.name||'없음';$('#cost').textContent=cost().toLocaleString();$('#weight').textContent=weight();$('#spiceText').textContent=state.spice===null?'미선택':spiceMeta[state.spice];$('#itemCount').textContent=state.bowl.length;$('#hint').textContent=!o?'주문을 선택해 주세요.':!state.bowl.length?'필수 재료를 확인하고 담아 주세요.':state.spice===null?'맵기를 선택해 주세요.':!state.cooked?'끓이기를 시작해 주세요.':'완성! 서빙할 수 있어요.'}
-function selectOrder(id){state.selected=id;state.bowl=[];state.spice=null;resetCook();renderOrders();renderIngredients();renderSpice();updateSummary();three.setIngredients([]);three.setSpice(1)}
-function addIngredient(id){if(!state.selected)return toast('먼저 주문을 선택해 주세요.','bad');if(state.cooking)return toast('끓이는 중에는 재료를 바꿀 수 없어요.','bad');state.bowl.push(id);sfx('collect.coin_pickup',{volume:.22,rate:1.08,rateJitter:.03,cooldownMs:55});renderIngredients();updateSummary();three.setIngredients(state.bowl)}
-function undoIngredient(){if(state.cooking||!state.bowl.length)return;state.bowl.pop();renderIngredients();updateSummary();three.setIngredients(state.bowl)}
-function resetCook(){if(state.cookTimer)clearInterval(state.cookTimer);state.cookTimer=null;state.cooking=false;state.cooked=false;state.progress=0;$('#cookFill').style.width='0%';three.setCooking(false)}
-function startCook(){if(!state.selected)return toast('주문을 먼저 골라 주세요.','bad');if(!state.bowl.length)return toast('재료를 담아 주세요.','bad');if(state.spice===null)return toast('맵기를 골라 주세요.','bad');if(state.cooking||state.cooked)return;state.cooking=true;three.setCooking(true);state.cookTimer=setInterval(()=>{state.progress+=4;$('#cookFill').style.width=state.progress+'%';if(state.progress>=100){clearInterval(state.cookTimer);state.cookTimer=null;state.cooking=false;state.cooked=true;three.setCooking(false);sfx('success.cheer_yay',{volume:.45});toast('보글보글 완성! 이제 서빙하세요.','good');updateSummary()}},90);updateSummary()}
-function evaluate(o){let score=100,bonus=0,detail=[];const bc={},rc={};state.bowl.forEach(id=>bc[id]=(bc[id]||0)+1);o.must.forEach(id=>rc[id]=(rc[id]||0)+1);for(const [id,n] of Object.entries(rc)){const got=bc[id]||0;if(got>=n){bonus+=8;detail.push(`${getIng(id).name} 충족 +8`)}else{const p=(n-got)*12;score-=p;detail.push(`${getIng(id).name} 부족 -${p}`)}}for(const id of o.avoid){if(bc[id]){score-=14;detail.push(`빼 달라는 ${getIng(id).name} 포함 -14`)}}const over=cost()-o.budget;if(over<=0){bonus+=12;detail.push('예산 안에서 완성 +12')}else{const p=Math.min(24,Math.ceil(over/500)*4);score-=p;detail.push(`예산 초과 -${p}`)}const diff=Math.abs((state.spice??0)-o.spice);if(diff===0){bonus+=14;detail.push('맵기 완벽 +14')}else if(diff===1){bonus+=4;detail.push('맵기 거의 맞음 +4')}else{score-=diff*8;detail.push(`맵기 차이 -${diff*8}`)}const w=weight();if(w>=150&&w<=340){bonus+=6;detail.push('적당한 양 +6')}else{score-=8;detail.push('양이 너무 적거나 많음 -8')}const waitBonus=Math.round(o.wait/10);bonus+=waitBonus;detail.push(`대기시간 보너스 +${waitBonus}`);score=Math.max(0,Math.min(150,score+bonus));const rank=score>=125?'S':score>=105?'A':score>=85?'B':score>=65?'C':'D';return{score,rank,detail}}
-function serve(){const o=state.orders.find(x=>x.id===state.selected);if(!o)return toast('주문을 선택해 주세요.','bad');if(!state.cooked)return toast('아직 조리가 끝나지 않았어요.','bad');const r=evaluate(o);state.score+=r.score;state.served++;o.done=true;if(r.score>=85){sfx('shop.purchase',{volume:.45});setTimeout(()=>sfx('success.cheer_yay',{volume:.38}),130)}else{sfx('failure.fail_sting',{volume:.45})}openModal(`<div class="modalTop"><div><h2 style="margin:0">${o.name} 서빙 결과</h2><div class="pill" style="display:inline-block;margin-top:7px">등급 ${r.rank}</div></div><button class="btn small" id="resultClose">다음 손님</button></div><div class="resultGrid"><div class="resultBox"><div>획득 점수</div><div class="scoreBig">${r.score}</div><div style="font-size:11px;color:var(--sub);font-weight:800;margin-top:6px">₩${cost().toLocaleString()} · ${weight()}g</div></div><div class="resultBox"><b>세부 평가</b><ul>${r.detail.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`);$('#resultClose').onclick=()=>{closeModal();afterServe()};updateSummary()}
-function afterServe(){if(state.served>=state.total)return endDay();const next=state.orders.find(x=>!x.done);state.selected=next?.id||null;state.bowl=[];state.spice=null;resetCook();renderOrders();renderIngredients();renderSpice();updateSummary();three.setIngredients([]);three.setSpice(1)}
-function endDay(){const title=state.score>=720?'전설의 마라 장인':state.score>=600?'인기 맛집 사장님':state.score>=480?'든든한 신입 사장님':'수련 중인 조리사';sfx('success.victory_fanfare',{volume:.55});openModal(`<div class="modalTop"><div><h2 style="margin:0">오늘 영업 종료!</h2><div class="pill" style="display:inline-block;margin-top:7px">${title}</div></div><button class="btn small primary" id="again">다시 영업</button></div><div class="resultGrid"><div class="resultBox"><div>최종 점수</div><div class="scoreBig">${state.score}</div></div><div class="resultBox"><div>완료 손님</div><div class="scoreBig">${state.served}/${state.total}</div></div></div>`);$('#again').onclick=()=>{closeModal();startGame()}}
-function startGame(){state.score=0;state.served=0;state.selected=null;state.bowl=[];state.spice=null;resetCook();makeOrders();$('#start').classList.remove('active');$('#game').classList.add('active');selectOrder(state.orders[0].id);sfx('shop.register_open',{volume:.35});toast('영업 시작! 첫 손님이 기다리고 있어요.','good');if(state.waitTimer)clearInterval(state.waitTimer);state.waitTimer=setInterval(()=>{state.orders.forEach(o=>{if(!o.done)o.wait=Math.max(20,o.wait-(o.id===state.selected?.id?0:1))});renderOrders()},1600)}
-function help(){openModal(`<div class="modalTop"><div><h2 style="margin:0">게임 방법</h2><p style="margin:5px 0;color:var(--sub);font-weight:800">주문 → 재료 → 맵기 → 끓이기 → 서빙</p></div><button class="btn small" id="helpClose">닫기</button></div><div class="resultGrid"><div class="resultBox"><b>재료 고르기</b><ul><li>재료 카드를 클릭하거나 3D 냄비로 드래그합니다.</li><li>같은 재료를 두 번 이상 담을 수도 있습니다.</li></ul></div><div class="resultBox"><b>점수 기준</b><ul><li>필수 재료·금지 재료·예산·맵기·양·대기시간을 모두 봅니다.</li></ul></div></div>`);$('#helpClose').onclick=closeModal}
-$('#startBtn').onclick=startGame;$('#sampleBtn').onclick=()=>toast('예: 고기·버섯·분모자 / 3단계 / 두부 빼기','info');$('#help').onclick=help;$('#cookBtn').onclick=startCook;$('#serveBtn').onclick=serve;$('#undoBtn').onclick=undoIngredient;$('#clearBtn').onclick=()=>{if(state.cooking)return;state.bowl=[];state.spice=null;resetCook();renderIngredients();renderSpice();updateSummary();three.setIngredients([])};
-const stage=$('#stage');stage.ondragover=e=>e.preventDefault();stage.ondrop=e=>{e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(getIng(id))addIngredient(id)};
-
-class MaratangScene{
- constructor(canvas,preview=false){this.canvas=canvas;this.preview=preview;this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(38,1,.1,100);this.camera.position.set(0,6.2,8.4);this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.shadowMap.enabled=true;this.loader=new GLTFLoader();this.cache=new Map();this.foodGroup=new THREE.Group();this.scene.add(this.foodGroup);this.clock=new THREE.Clock();this.spice=1;this.cooking=false;this.steam=[];this.makeWorld();this.resize();new ResizeObserver(()=>this.resize()).observe(canvas.parentElement);this.animate()}
- makeWorld(){this.scene.add(new THREE.HemisphereLight(0xfff5e8,0x5a3c31,2.1));const d=new THREE.DirectionalLight(0xffffff,2.4);d.position.set(5,8,6);d.castShadow=true;this.scene.add(d);const table=new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.8,.45,48),new THREE.MeshStandardMaterial({color:0x9b5a36,roughness:.72}));table.position.y=-.45;table.receiveShadow=true;this.scene.add(table);this.broth=new THREE.Mesh(new THREE.CylinderGeometry(2.14,2.14,.16,64),new THREE.MeshStandardMaterial({color:0xe66b42,roughness:.35,metalness:.05}));this.broth.position.y=.82;this.scene.add(this.broth);this.loadModel('pot.glb').then(obj=>{this.normalize(obj,5.2);obj.position.y=-.1;obj.traverse(x=>{if(x.isMesh){x.castShadow=true;x.receiveShadow=true}});this.scene.add(obj)}).catch(()=>this.makeFallbackPot());for(let i=0;i<12;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.08,8,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.42}));m.position.set((Math.random()-.5)*2.1,.9+Math.random()*.3,(Math.random()-.5)*2);m.userData.base=m.position.clone();this.steam.push(m);this.scene.add(m)}this.camera.lookAt(0,.7,0)}
- makeFallbackPot(){const body=new THREE.Mesh(new THREE.CylinderGeometry(2.55,2.2,1.7,48,1,true),new THREE.MeshStandardMaterial({color:0x5c6670,metalness:.62,roughness:.3,side:THREE.DoubleSide}));body.position.y=.05;this.scene.add(body);const rim=new THREE.Mesh(new THREE.TorusGeometry(2.55,.13,12,64),new THREE.MeshStandardMaterial({color:0xaeb7bf,metalness:.8,roughness:.2}));rim.rotation.x=Math.PI/2;rim.position.y=.87;this.scene.add(rim)}
- async loadModel(name){if(this.cache.has(name))return this.cache.get(name).clone(true);const p=new Promise((res,rej)=>this.loader.load(FOOD+name,g=>res(g.scene),undefined,rej));const obj=await p;this.cache.set(name,obj);return obj.clone(true)}
- normalize(obj,target=.75){const box=new THREE.Box3().setFromObject(obj),size=new THREE.Vector3();box.getSize(size);const max=Math.max(size.x,size.y,size.z)||1;obj.scale.setScalar(target/max);box.setFromObject(obj);const c=new THREE.Vector3();box.getCenter(c);obj.position.sub(c.multiplyScalar(obj.scale.x))}
- proc(type){const g=new THREE.Group(),mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.7});if(type==='tofu'){for(let i=0;i<2;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.55,.34,.55),mat(0xf8e2b9));m.position.x=(i-.5)*.4;g.add(m)}}else if(type==='fishcake'){for(let i=0;i<2;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.65,.12,.45),mat(0xf0bf5d));m.rotation.y=i*.7;g.add(m)}}else if(type==='ricecake'){for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.7,5,8),mat(0xf7e2cf));m.rotation.z=Math.PI/2;m.rotation.y=i*.55;m.position.set((i-1)*.22,0,(i%2)*.18);g.add(m)}}else if(type==='noodle'){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.TorusGeometry(.32+i*.045,.045,6,22,Math.PI*1.5),mat(0xf2c24d));m.rotation.x=Math.PI/2;m.rotation.z=i*.55;m.position.y=i*.05;g.add(m)}}else{for(let i=0;i<5;i++){const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.55,6),mat(0xf3eee1));stem.rotation.z=(i-2)*.18;stem.position.x=(i-2)*.1;const leaf=new THREE.Mesh(new THREE.SphereGeometry(.1,8,6),mat(0xbadf79));leaf.scale.set(1.4,.5,1);leaf.position.set(stem.position.x,.3,0);g.add(stem,leaf)}}g.traverse(x=>{if(x.isMesh)x.castShadow=true});return g}
- setSpice(level){this.spice=level;const colors=[0xf3bd7c,0xee9459,0xe76a3e,0xcf3d2f];this.broth.material.color.setHex(colors[level??1])}
- setCooking(v){this.cooking=v}
- async setIngredients(ids){while(this.foodGroup.children.length)this.foodGroup.remove(this.foodGroup.children[0]);const shown=ids.slice(-10);for(let i=0;i<shown.length;i++){const ing=getIng(shown[i]);let obj;try{obj=ing.model?await this.loadModel(ing.model):this.proc(ing.proc);if(ing.model)this.normalize(obj,.82)}catch(_){obj=this.proc(ing.proc||'tofu')}const a=i/shown.length*Math.PI*2+(i%2)*.35,r=.45+(.34*(i%3));obj.position.set(Math.cos(a)*r,1.0+(i%2)*.08,Math.sin(a)*r);obj.rotation.y=a+Math.PI/2;obj.userData.baseY=obj.position.y;this.foodGroup.add(obj)}}
- resize(){const p=this.canvas.parentElement,w=Math.max(1,p.clientWidth),h=Math.max(1,p.clientHeight);this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix()}
- animate(){requestAnimationFrame(()=>this.animate());const t=this.clock.getElapsedTime();this.foodGroup.children.forEach((o,i)=>{o.position.y=(o.userData.baseY||1)+Math.sin(t*2+i)*.035;o.rotation.y+=.002});this.steam.forEach((s,i)=>{const speed=this.cooking?.9:.35;s.position.y=.95+((t*speed+i*.37)%2.2);s.material.opacity=this.cooking?.Math.max(0,.5-(s.position.y-1)*.2):.08;s.position.x=s.userData.base.x+Math.sin(t+i)*.08});this.broth.rotation.y=t*.12;this.renderer.render(this.scene,this.camera)}}
-}
-const three=new MaratangScene($('#three'));const preview=new MaratangScene($('#previewCanvas'),true);preview.setSpice(3);preview.setIngredients(['cabbage','mushroom','sausage','meat','ricecake']);
-renderIngredients();renderSpice();updateSummary();
-</script>
+<div class="cookActionsMobile"><button class="btn primary" id="cookBtnMobile">끓이기</button><button class="btn" id="serveBtnMobile">서빙하기</button></div>
+<div class="toast" id="toast"></div>
+<div class="modalBack" id="modalBack"><div class="panel modal" id="modal"></div></div>
+<script type="module" src="maratang-dx.js?v=3"></script>
 </body>
 </html>
