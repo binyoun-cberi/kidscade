@@ -5,7 +5,6 @@ const root = path.resolve(__dirname, '..');
 const indexPath = path.join(root, 'index_base.html');
 const cssPath = path.join(root, 'main-shell.css');
 const bootstrapPath = path.join(root, 'main-bootstrap.js');
-const workflowPath = path.join(root, '.github/workflows/architecture-tests.yml');
 
 function fail(message) {
   throw new Error(`[extract-index-base-shell] ${message}`);
@@ -38,16 +37,6 @@ if (!bootstrap.includes(cssVersionLine)) {
   if (!bootstrap.includes(anchor)) fail('main-bootstrap.js의 applyCompatibilityFixes를 찾지 못했습니다.');
   bootstrap = bootstrap.replace(anchor, anchor + cssVersionLine + '\n');
   fs.writeFileSync(bootstrapPath, bootstrap);
-}
-
-let workflow = fs.readFileSync(workflowPath, 'utf8');
-const testStep = `      - name: Run index base shell extraction tests\n        run: node --test tests/index-base-shell.test.cjs\n`;
-if (!workflow.includes('tests/index-base-shell.test.cjs')) {
-  const anchor = `      - name: Run UI information architecture tests\n`;
-  const pos = workflow.indexOf(anchor);
-  if (pos < 0) fail('architecture-tests.yml의 테스트 삽입 위치를 찾지 못했습니다.');
-  workflow = workflow.slice(0, pos) + testStep + workflow.slice(pos);
-  fs.writeFileSync(workflowPath, workflow);
 }
 
 console.log(`index_base.html: ${fs.statSync(indexPath).size} bytes`);
