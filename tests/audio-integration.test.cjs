@@ -194,3 +194,5 @@ test('third audio pass uses game-specific events in the extra hook layer', () =>
   assert.doesNotMatch(hooks, /document\.addEventListener\(['"]click['"][\s\S]*play\(['"]shop\.purchase/,
     'third pass should not blanket every click with a purchase sound');
 });
+
+require('./audio-v4-integration.test.cjs');
