@@ -180,12 +180,12 @@ const rhythmDashChanged = injectScripts('리듬 대시.html', [
 ]);
 
 const patienceTowerChanged = injectScripts('인내의 탑.html', [
-  '/patience-tower-rework.js?v=20260918-2',
+  '/patience-tower-rework.js?v=20260918-3',
   '/patience-tower-duel-entry.js?v=20260918-1'
 ]);
 const patienceTowerHrefChanged = bumpGameHref(
   'patience_tower',
-  '인내의 탑.html?v=5'
+  '인내의 탑.html?v=6'
 );
 
 const dogRunnerGateChanged = fixDogRunnerGateOrientation();
@@ -207,7 +207,7 @@ console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'inj
 console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Rhythm Dash v11 ${rhythmDashChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Patience Tower rework + duel entry ${patienceTowerChanged ? 'injected' : 'already present'}.`);
-console.log(`[game-integrations] Patience Tower href ${patienceTowerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
+console.log(`[game-integrations] Patience Tower href ${patienceTowerHrefChanged ? 'bumped to v6' : 'already v6'}.`);
 console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotated forward' : 'already forward'}.`);
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
