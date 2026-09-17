@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalizeRoomCode, isValidRoomCode, clampHeight, resolveWinner } from '../worker/multiplayer.mjs';
-import { ensureMultiplayerSchema, MULTIPLAYER_SCHEMA_SQL } from '../worker/multiplayer-schema.mjs';
+import { ensureMultiplayerSchema, MULTIPLAYER_SCHEMA_STATEMENTS } from '../worker/multiplayer-schema.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -60,21 +60,59 @@ test('single-player build integration exposes the duel entry', () => {
   assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
 });
 
-test('multiplayer database bootstrap recreates the missing D1 tables once per binding', async () => {
-  let calls = 0;
+test('multiplayer database bootstrap uses prepared batch only when the D1 tables are missing', async () => {
+  let batchCalls = 0;
+  const prepared = [];
   const env = {
     DB: {
-      async exec(sql) {
-        calls += 1;
-        assert.equal(sql, MULTIPLAYER_SCHEMA_SQL);
-        assert.match(sql, /CREATE TABLE IF NOT EXISTS multiplayer_rooms/);
-        assert.match(sql, /CREATE TABLE IF NOT EXISTS multiplayer_room_players/);
+      prepare(sql) {
+        if (/sqlite_master/.test(sql)) {
+          return {
+            async all() {
+              return { results: [] };
+            }
+          };
+        }
+        const statement = { sql };
+        prepared.push(statement);
+        return statement;
+      },
+      async batch(statements) {
+        batchCalls += 1;
+        assert.equal(statements.length, MULTIPLAYER_SCHEMA_STATEMENTS.length);
+        assert.deepEqual(statements, prepared);
       }
     }
   };
   await ensureMultiplayerSchema(env);
   await ensureMultiplayerSchema(env);
-  assert.equal(calls, 1);
+  assert.equal(batchCalls, 1);
+  assert.match(prepared[0].sql, /CREATE TABLE IF NOT EXISTS multiplayer_rooms/);
+  assert.match(prepared[3].sql, /CREATE TABLE IF NOT EXISTS multiplayer_room_players/);
+});
+
+test('multiplayer database bootstrap does not rewrite an already prepared database', async () => {
+  let batchCalls = 0;
+  const env = {
+    DB: {
+      prepare(sql) {
+        assert.match(sql, /sqlite_master/);
+        return {
+          async all() {
+            return { results: [
+              { name: 'multiplayer_rooms' },
+              { name: 'multiplayer_room_players' }
+            ] };
+          }
+        };
+      },
+      async batch() {
+        batchCalls += 1;
+      }
+    }
+  };
+  await ensureMultiplayerSchema(env);
+  assert.equal(batchCalls, 0);
 });
 
 test('Cloudflare deploy script applies D1 migrations before deploying the Worker', () => {
