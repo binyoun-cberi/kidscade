@@ -44,7 +44,7 @@ function bumpDogRunnerHref() {
     ? catalog.games.find(item => item && item.id === 'low_math_dog_runner')
     : null;
   if (!game) throw new Error('Dog runner catalog entry was not found.');
-  const nextHref = 'games/low_math_dog_runner/멍멍 곱셈 러너.html?v=4';
+  const nextHref = 'games/low_math_dog_runner/멍멍 곱셈 러너.html?v=5';
   const changed = game.href !== nextHref;
   game.href = nextHref;
   fs.writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
@@ -70,7 +70,7 @@ const patienceTowerChanged = injectScripts('인내의 탑.html', [
 
 const dogRunnerGateChanged = fixDogRunnerGateOrientation();
 const dogRunnerFxChanged = injectScripts('games/low_math_dog_runner/멍멍 곱셈 러너.html', [
-  '/dog-runner-polish.js?v=20260917-1'
+  '/dog-runner-polish.js?v=20260917-2'
 ]);
 const dogRunnerHrefChanged = bumpDogRunnerHref();
 
@@ -80,4 +80,4 @@ console.log(`[game-integrations] Rhythm Dash v11 ${rhythmDashChanged ? 'injected
 console.log(`[game-integrations] Patience Tower duel entry ${patienceTowerChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotated forward' : 'already forward'}.`);
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
-console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v4' : 'already v4'}.`);
+console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
