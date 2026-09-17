@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normalizeRoomCode, isValidRoomCode, clampHeight, resolveWinner } from '../worker/multiplayer.mjs';
+import { normalizeRoomCode, isValidRoomCode, clampHeight, sanitizePose, resolveWinner } from '../worker/multiplayer.mjs';
 import { ensureMultiplayerSchema, MULTIPLAYER_SCHEMA_STATEMENTS } from '../worker/multiplayer-schema.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -20,6 +20,13 @@ test('height reports are integer bounded', () => {
   assert.equal(clampHeight(42.9), 42);
   assert.equal(clampHeight(99999), 2000);
   assert.equal(clampHeight('bad'), 0);
+});
+
+test('duel pose is bounded before it is shared with the opponent', () => {
+  assert.deepEqual(sanitizePose({x:920,y:-1234.5,vx:5000,vy:-3000,face:-2,skin:'pink',onGround:true}), {
+    x:900,y:-1234.5,vx:1200,vy:-1600,face:-1,skin:'pink',onGround:true
+  });
+  assert.equal(sanitizePose({skin:'unknown'}).skin,'blue');
 });
 
 test('winner uses current height only and allows a draw', () => {
@@ -41,6 +48,10 @@ test('Patience Tower duel client keeps the three-minute current-height rule and 
   assert.match(html, /patience_tower_duel/);
   assert.match(html, /Math\.random=/);
   assert.match(html, /KeyP.*KeyR/s);
+  assert.match(html, /setInterval\(syncTick,400\)/);
+  assert.match(html, /readCurrentPose/);
+  assert.match(html, /pose,finished/);
+  assert.match(html, /setOpponentPose/);
 
   const marker = '\n<script>\n(() => {';
   const start = html.indexOf(marker);
@@ -58,7 +69,7 @@ test('single-player build integration exposes the duel entry and the 2D asset re
   assert.match(injector, /patience-tower-rework\.js/);
   assert.match(injector, /patience-tower-duel-entry\.js/);
   assert.ok(injector.indexOf('patience-tower-rework.js') < injector.indexOf('patience-tower-duel-entry.js'));
-  assert.match(injector, /인내의 탑\.html\?v=3/);
+  assert.match(injector, /인내의 탑\.html\?v=4/);
   assert.match(entry, /1:1 · 3분 높이 대전/);
   assert.match(entry, /\/games\/patience-tower-duel\//);
   assert.match(rework, /\/assets\/game\/2d\/platformer-art/);
@@ -69,6 +80,14 @@ test('single-player build integration exposes the duel entry and the 2D asset re
   assert.match(rework, /extended\/enemies\/spinner\.png/);
   assert.match(rework, /patienceTowerBestM/);
   assert.match(rework, /__patienceDuelEmbedded/);
+  assert.match(rework, /setOpponentPose/);
+  assert.match(rework, /getDuelPose/);
+  assert.match(rework, /drawDuelOpponent/);
+  assert.match(rework, /verticalGrace=state\.easy\?12:8/);
+  assert.match(rework, /horizontalGrace=state\.easy\?7:4/);
+  assert.match(rework, /hit\(me,q,pw,ph,24,13\)/);
+  assert.ok(fs.existsSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql')));
+  assert.match(fs.readFileSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql'),'utf8'), /ADD COLUMN state_json TEXT/);
   assert.doesNotThrow(() => new Function(rework));
   assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
 });
