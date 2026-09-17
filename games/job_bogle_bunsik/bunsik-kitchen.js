@@ -22,7 +22,7 @@ const STATION_META={
  tteok:{name:'떡볶이 팬',duration:7.0,grace:5.0,accept:['ricecake','fishcake','egg','cheese']},
  side:{name:'사이드 조리대',duration:4.5,grace:4.5,accept:['corndog','kimbap','dumpling']}
 };
-const state={running:false,time:SHIFT_SECONDS,score:0,served:0,sound:true,held:null,orders:[],nextId:1,spawn:0,last:0,keys:{},joy:{x:0,y:0},raf:0};
+const state={running:false,time:SHIFT_SECONDS,score:0,served:0,sound:true,held:null,orders:[],nextId:1,spawn:0,uiClock:0,last:0,keys:{},joy:{x:0,y:0},raf:0};
 const stations={
  ramen:{type:'ramen',orderId:null,items:[],phase:'idle',progress:0,readyTime:0},
  tteok:{type:'tteok',orderId:null,items:[],phase:'idle',progress:0,readyTime:0},
@@ -170,11 +170,11 @@ function updateStations(dt){
   else if(s.phase==='ready'){s.readyTime+=dt;if(s.readyTime>=meta.grace){s.phase='burnt';sfx('failure.fail_sting',{volume:.18,cooldownMs:400});toast(meta.name+' 음식이 탔어요')}}
  }
 }
-function updateOrders(dt){let changed=false;for(const o of state.orders){o.patience-=dt*1.25;if(o.patience<=0){o.patience=0;const station=Object.values(stations).find(s=>s.orderId===o.id);if(station){station.orderId=null;station.items=[];station.phase='idle';station.progress=0}changed=true;sfx('failure.fail_sting',{volume:.14,cooldownMs:350})}}if(changed)state.orders=state.orders.filter(o=>o.patience>0);renderOrders()}
+function updateOrders(dt){let changed=false;for(const o of state.orders){o.patience-=dt*1.25;if(o.patience<=0){o.patience=0;const station=Object.values(stations).find(s=>s.orderId===o.id);if(station){station.orderId=null;station.items=[];station.phase='idle';station.progress=0}changed=true;sfx('failure.fail_sting',{volume:.14,cooldownMs:350})}}if(changed){state.orders=state.orders.filter(o=>o.patience>0);renderOrders()}}
 function endShift(){state.running=false;cancelAnimationFrame(state.raf);const title=state.score>=750?'분식집 에이스':state.score>=500?'바쁜 주방 해결사':'다음 영업은 더 빨라질 거예요';els.endTitle.textContent=title;els.endText.textContent=`총 ${state.served}개 주문을 서빙하고 ${state.score}점을 얻었어요.`;$('#endOverlay').classList.add('show');sfx('success.victory_fanfare',{volume:.38,cooldownMs:1000})}
-function loop(ts){if(!state.running)return;const dt=Math.min(.05,(ts-state.last)/1000||0);state.last=ts;state.time-=dt;state.spawn+=dt;if(state.spawn>12&&state.orders.length<MAX_ORDERS){state.spawn=0;spawnOrder()}updateOrders(dt);updateStations(dt);
+function loop(ts){if(!state.running)return;const dt=Math.min(.05,(ts-state.last)/1000||0);state.last=ts;state.time-=dt;state.spawn+=dt;state.uiClock+=dt;if(state.spawn>12&&state.orders.length<MAX_ORDERS){state.spawn=0;spawnOrder()}updateOrders(dt);updateStations(dt);if(state.uiClock>=.18){state.uiClock=0;renderOrders()}
  const dx=(state.keys.KeyD?1:0)-(state.keys.KeyA?1:0)+state.joy.x,dz=(state.keys.KeyS?1:0)-(state.keys.KeyW?1:0)+state.joy.y;kitchen.move(dx,dz,dt);kitchen.render();updateLabels();els.prompt.textContent=promptFor(kitchen.nearest());els.action.textContent=kitchen.nearest()?'행동':'…';updateHud();if(state.time<=0)return endShift();state.raf=requestAnimationFrame(loop)}
-function startGame(){state.running=true;state.time=SHIFT_SECONDS;state.score=0;state.served=0;state.orders=[];state.spawn=0;state.last=performance.now();setHeld(null);Object.keys(stations).forEach(resetStation);els.start.classList.remove('show');spawnOrder();spawnOrder();updateHud();state.raf=requestAnimationFrame(loop)}
+function startGame(){state.running=true;state.time=SHIFT_SECONDS;state.score=0;state.served=0;state.orders=[];state.spawn=0;state.uiClock=0;state.last=performance.now();setHeld(null);Object.keys(stations).forEach(resetStation);els.start.classList.remove('show');spawnOrder();spawnOrder();updateHud();state.raf=requestAnimationFrame(loop)}
 
 addEventListener('keydown',e=>{state.keys[e.code]=true;if(e.code==='KeyE'){e.preventDefault();interact()}});
 addEventListener('keyup',e=>{state.keys[e.code]=false});
