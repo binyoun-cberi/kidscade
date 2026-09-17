@@ -17,8 +17,8 @@ const foodModels = [
 
 test('Maratang Selfbar is a fresh split implementation with minimal UI', () => {
   assert.match(html, /<title>마라탕 한 그릇<\/title>/);
-  assert.match(html, /maratang-selfbar\.css\?v=5/);
-  assert.match(html, /maratang-selfbar\.js\?v=5/);
+  assert.match(html, /maratang-selfbar\.css\?v=6/);
+  assert.match(html, /maratang-selfbar\.js\?v=6/);
   assert.doesNotMatch(html, /maratang-dx|maratang-ui-v4/i);
   assert.match(html, /id="orderTicket"/);
   assert.match(html, /id="weight"/);
@@ -26,6 +26,12 @@ test('Maratang Selfbar is a fresh split implementation with minimal UI', () => {
   assert.match(html, /id="checkoutBtn"/);
   assert.ok(css.length > 5000);
   assert.ok(js.length > 12000);
+});
+
+test('Maratang start button is wired before play can begin', () => {
+  assert.match(js, /startBtn: \$\('#startBtn'\)/);
+  assert.match(js, /els\.startBtn\.addEventListener\('click'/);
+  assert.match(js, /if\(!scene\)return/);
 });
 
 test('Maratang Selfbar browser module parses', () => {
@@ -87,13 +93,13 @@ test('Maratang Selfbar uses valid shared audio keys', () => {
 test('Maratang Selfbar build output is v5 and contains only new runtime files', () => {
   const distCatalog = JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game = distCatalog.games.find(g=>g.id==='job_maratang_simulator');
-  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=5');
+  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=6');
 
   const builtDir=path.join(root,'dist','games','job_maratang_simulator');
   const built=fs.readFileSync(path.join(builtDir,'마라탕 한 그릇.html'),'utf8');
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
-  assert.match(built,/maratang-selfbar\.css\?v=5/);
-  assert.match(built,/maratang-selfbar\.js\?v=5/);
+  assert.match(built,/maratang-selfbar\.css\?v=6/);
+  assert.match(built,/maratang-selfbar\.js\?v=6/);
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.js')));
   assert.ok(!fs.existsSync(path.join(builtDir,'maratang-dx.js')));
