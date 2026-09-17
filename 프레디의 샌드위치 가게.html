@@ -157,7 +157,7 @@ let proto={},objects={board:null,knife:null,register:null}, stackGroup=new THREE
 scene.add(stackGroup,previewGroup);
 let idx=0, score=0, combo=0, recipePos=0, selected='cheese', measure=1, mistakes=0, locked=true, knifeBusy=false, audio=null;
 
-function cloneMat(root){root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material=o.material.clone()}});return root}
+function cloneMat(root){root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}});return root}
 function normalized(root,size=1){
  const wrap=new THREE.Group(),r=cloneMat(root.clone(true));wrap.add(r);let box=new THREE.Box3().setFromObject(r),sz=box.getSize(new THREE.Vector3());r.scale.multiplyScalar(size/Math.max(sz.x,sz.y,sz.z,.001));box.setFromObject(r);const c=box.getCenter(new THREE.Vector3());r.position.x-=c.x;r.position.z-=c.z;r.position.y-=box.min.y;return wrap
 }
