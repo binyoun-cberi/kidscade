@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const gameDir = path.join(root, 'games', 'job_maratang_simulator');
@@ -42,6 +43,14 @@ test('Maratang DX v3 is split into maintainable HTML, CSS and module JS', () => 
   assert.match(html, /id="cookBtnMobile"/);
   assert.ok(css.length > 5000, 'expected dedicated Maratang v3 stylesheet');
   assert.ok(js.length > 10000, 'expected dedicated Maratang v3 game module');
+});
+
+test('Maratang DX v3 browser module parses as JavaScript', () => {
+  const result = spawnSync(process.execPath, ['--input-type=module', '--check'], {
+    input: js,
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout || 'module syntax check failed');
 });
 
 test('Maratang DX v3 uses local Three.js and tracked 3D food/customer assets', () => {
