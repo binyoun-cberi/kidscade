@@ -36,10 +36,18 @@
 - 씨앗 지급, 펫 경험치, 토스트와 같은 UI/보상 효과는 `index_base.html`에 남겨 상태와 화면 책임을 분리했습니다.
 - `tests/daily-progress.test.cjs`, `tests/index-base-daily-progress.test.cjs`를 정식 CI에 포함했습니다.
 
+### 5단계 — 게임 성취·랭크 상태 분리
+
+- 게임별 랭크 해석, 최고점 표시용 값 변환, 최고등급 판정을 `achievement-state.js`로 이동했습니다.
+- 역사 맞추기의 인물/사건 복합 저장값을 기존과 동일한 랭크·점수로 해석합니다.
+- 최고등급 1,000씨앗 보상 수령 여부는 기존 `kidscade_claimed_ranks` 키를 유지하면서 매 판정 시 최신 저장값을 다시 읽습니다.
+- `index_base.html`은 랭크·점수 배지와 상장 버튼을 그리는 UI 역할만 유지합니다.
+- `tests/achievement-state.test.cjs`, `tests/index-base-achievement.test.cjs`를 정식 CI에 포함했습니다.
+
 ## 다음 단계
 
-1. 프로필·랭크·배지 상태를 공통 모듈로 분리합니다.
-2. 상점과 쑥쑥랜드/펫 로직을 각 도메인 모듈로 분리하면서 레거시 `coins` 미러 직접 참조를 제거합니다.
+1. 상점 `inventory/equipped` 상태를 공통 모듈로 분리하고 프로필 칭호 배지도 그 상태를 사용하게 합니다.
+2. 쑥쑥랜드/펫 저장과 돌봄 로직을 별도 도메인 모듈로 분리합니다.
 3. 아바타 옷장 상태와 구매 로직을 별도 모듈로 분리합니다.
 4. bootstrap 문자열 치환에 의존하는 레거시 컨트롤러를 제거합니다.
 5. 마지막에 레거시 게임 카드 마크업을 `index_base.html`에서 물리적으로 삭제합니다.
