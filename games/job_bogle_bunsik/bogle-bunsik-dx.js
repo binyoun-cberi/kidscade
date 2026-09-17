@@ -27,7 +27,7 @@ const orderTemplates=[
   {type:'side',name:'만두',face:'🥟',target:['dumpling'],desc:'노릇한 만두 한 접시 주세요.'}
 ];
 
-const state={running:false,time:SHIFT_SECONDS,score:0,served:0,combo:0,bestCombo:0,missed:0,queue:[],nextId:1,spawnClock:0,lastTs:0,raf:0};
+const state={running:false,time:SHIFT_SECONDS,score:0,served:0,combo:0,bestCombo:0,missed:0,queue:[],nextId:1,spawnClock:0,uiClock:0,lastTs:0,raf:0};
 const stations={
   ramen:{type:'ramen',order:null,chosen:new Set(),phase:'idle',progress:0,readyClock:0},
   tteok:{type:'tteok',order:null,chosen:new Set(),phase:'idle',progress:0,readyClock:0},
@@ -133,7 +133,7 @@ function renderStats(){
 
 function updateGame(dt){
   if(!state.running)return;
-  state.time=Math.max(0,state.time-dt);state.spawnClock+=dt;
+  state.time=Math.max(0,state.time-dt);state.spawnClock+=dt;state.uiClock+=dt;
   if(state.spawnClock>=4.5){state.spawnClock=0;if(state.queue.length<MAX_QUEUE){state.queue.push(createOrder());renderQueue();sfx('collect.coin_drop',{volume:.1,rate:1.35,cooldownMs:120})}}
   for(let i=state.queue.length-1;i>=0;i--){const o=state.queue[i];o.patience-=dt*1.15;if(o.patience<=0){state.queue.splice(i,1);failOrder(o,'queue');renderQueue()}}
   for(const [type,st] of Object.entries(stations)){
@@ -147,6 +147,7 @@ function updateGame(dt){
       st.readyClock+=dt;if(st.readyClock>=stationMeta[type].grace){st.phase='burnt';sfx('failure.fail_sting',{volume:.18,cooldownMs:240});sceneToast(`${stationMeta[type].label}이 너무 오래 조리됐어요!`);kitchenScene.setStation(type,st)}renderStation(type)
     }
   }
+  if(state.uiClock>=.25){state.uiClock=0;renderQueue();for(const [type,st] of Object.entries(stations)){if(st.order&&st.phase==='prep')renderStation(type)}}
   renderStats();
   if(state.time<=0)endShift();
 }
@@ -154,7 +155,7 @@ function updateGame(dt){
 function loop(ts){const dt=Math.min(.08,(ts-state.lastTs)/1000||0);state.lastTs=ts;updateGame(dt);state.raf=requestAnimationFrame(loop)}
 
 function resetGame(){
-  state.time=SHIFT_SECONDS;state.score=0;state.served=0;state.combo=0;state.bestCombo=0;state.missed=0;state.queue=[];state.nextId=1;state.spawnClock=0;$('#history').innerHTML='';
+  state.time=SHIFT_SECONDS;state.score=0;state.served=0;state.combo=0;state.bestCombo=0;state.missed=0;state.queue=[];state.nextId=1;state.spawnClock=0;state.uiClock=0;$('#history').innerHTML='';
   Object.keys(stations).forEach(clearStation);fillQueue(4);renderQueue();renderAllStations();renderStats();kitchenScene.reset();
 }
 function startGame(){resetGame();state.running=true;$('#startScreen').classList.remove('active');$('#gameScreen').classList.add('active');sfx('shop.register_open',{volume:.32});toast('영업 시작! 주문을 조리대에 배정하세요.','good');state.lastTs=performance.now()}
@@ -184,7 +185,6 @@ class BunsikScene{
   proc(item){const g=new THREE.Group();if(item==='noodle'){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.TorusGeometry(.48+i*.05,.045,6,24,Math.PI*1.65),this.material(0xf3ca55));m.rotation.x=Math.PI/2;m.rotation.z=i*.65;m.position.y=i*.045;g.add(m)}}else if(item==='ricecake'){for(let i=0;i<7;i++){const m=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.48,4,8),this.material(0xf4ded0));m.rotation.z=Math.PI/2;m.rotation.y=i*.62;m.position.set((i%3-1)*.28,.05,Math.floor(i/3)*.24-.22);g.add(m)}}else if(item==='fishcake'){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.45,.08,.34),this.material(0xe6ad54));m.rotation.y=i*.55;m.position.set((i%2-.5)*.35,.05,(Math.floor(i/2)-.5)*.32);g.add(m)}}else if(item==='cheese'){const m=new THREE.Mesh(new THREE.BoxGeometry(.92,.06,.75),this.material(0xf1cc4f));m.rotation.y=.2;g.add(m)}else if(item==='kimbap'){for(let i=0;i<6;i++){const m=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.15,18),this.material(0x1f2d27));m.rotation.x=Math.PI/2;m.position.set((i%3-1)*.4,.12,(Math.floor(i/3)-.5)*.38);const core=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.155,14),this.material(0xf2d05b));core.rotation.x=Math.PI/2;core.position.copy(m.position);g.add(m,core)}}else if(item==='dumpling'){for(let i=0;i<5;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.22,14,9,0,Math.PI*2,0,Math.PI*.58),this.material(0xf1d1a2));m.scale.z=.72;m.position.set((i%3-1)*.38,.08,(Math.floor(i/3)-.4)*.4);g.add(m)}}return g}
   async objectFor(item){try{if(item==='egg'){const o=await this.load('egg-cooked.glb');this.normalize(o,.7);return o}if(item==='green'){const o=await this.load('leek.glb');this.normalize(o,.65);return o}if(item==='corndog'){const o=await this.load('corn-dog.glb');this.normalize(o,1.15);return o}}catch(_){}return this.proc(item)}
   async setStation(type,st){const token=++this.tokens[type];this.clearGroup(type);this.phaseLights[type].intensity=st.phase==='burnt'?2.6:st.phase==='ready'?1.7:st.phase==='cooking'?1.1:0;const items=[...st.chosen];for(let i=0;i<items.length;i++){const obj=await this.objectFor(items[i]);if(token!==this.tokens[type])return;const a=(i/items.length)*Math.PI*2+(i*.33),r=type==='side'?.48:.55;obj.position.set(Math.cos(a)*r,.72+(i%2)*.08,Math.sin(a)*r);obj.rotation.y=a;obj.userData.baseY=obj.position.y;this.stationGroups[type].add(obj)}if(st.phase==='burnt')this.stationGroups[type].traverse(n=>{if(n.isMesh&&n.material?.color)n.material.color.multiplyScalar(.48)})}
-  }
   celebrate(type,good){const light=this.phaseLights[type];light.color.setHex(good?0x80ff8d:0xff5c45);light.intensity=3;setTimeout(()=>{light.intensity=0},400)}
   reset(){for(const type of Object.keys(this.stationGroups)){this.tokens[type]++;this.clearGroup(type);this.phaseLights[type].intensity=0}}
   resize(){const p=this.canvas.parentElement,w=Math.max(1,p.clientWidth),h=Math.max(1,p.clientHeight);this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix()}
