@@ -6,14 +6,14 @@ const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const gameDir = path.join(root, 'games', 'job_bogle_bunsik');
-const folderHtmlPath = path.join(gameDir, '보글보글 분식집.html');
-const rootHtmlPath = path.join(root, '보글보글 분식집.html');
+const htmlPath = path.join(gameDir, '보글보글 분식집.html');
 const cssPath = path.join(gameDir, 'bogle-bunsik-dx.css');
 const jsPath = path.join(gameDir, 'bogle-bunsik-dx.js');
-const folderHtml = fs.readFileSync(folderHtmlPath, 'utf8');
-const rootHtml = fs.readFileSync(rootHtmlPath, 'utf8');
+const aliasPath = path.join(root, '보글보글 분식집.html');
+const html = fs.readFileSync(htmlPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 const js = fs.readFileSync(jsPath, 'utf8');
+const alias = fs.readFileSync(aliasPath, 'utf8');
 
 const expectedModels = [
   'pot-stew.glb',
@@ -26,17 +26,13 @@ const expectedModels = [
   'chopstick.glb'
 ];
 
-test('Bogle Bunsik DX is split into entry HTML, shared CSS and module JS', () => {
-  for (const html of [rootHtml, folderHtml]) {
-    assert.match(html, /<title>보글보글 분식집 DX<\/title>/);
-    assert.match(html, /id="ramenControls"/);
-    assert.match(html, /id="tteokControls"/);
-    assert.match(html, /id="sideControls"/);
-  }
-  assert.match(rootHtml, /games\/job_bogle_bunsik\/bogle-bunsik-dx\.css\?v=1/);
-  assert.match(rootHtml, /games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1/);
-  assert.match(folderHtml, /bogle-bunsik-dx\.css\?v=1/);
-  assert.match(folderHtml, /bogle-bunsik-dx\.js\?v=1/);
+test('Bogle Bunsik DX is split into canonical HTML, CSS and module JS', () => {
+  assert.match(html, /<title>보글보글 분식집 DX<\/title>/);
+  assert.match(html, /bogle-bunsik-dx\.css\?v=1/);
+  assert.match(html, /bogle-bunsik-dx\.js\?v=1/);
+  assert.match(html, /id="ramenControls"/);
+  assert.match(html, /id="tteokControls"/);
+  assert.match(html, /id="sideControls"/);
   assert.ok(css.length > 6000, 'expected dedicated Bogle Bunsik DX stylesheet');
   assert.ok(js.length > 12000, 'expected dedicated Bogle Bunsik DX game module');
 });
@@ -50,9 +46,8 @@ test('Bogle Bunsik DX browser module parses as JavaScript', () => {
 });
 
 test('Bogle Bunsik DX uses local Three.js and tracked food assets only', () => {
-  assert.match(folderHtml, /\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(rootHtml, /assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.doesNotMatch(rootHtml + folderHtml + css + js, /https?:\/\//i, 'Bogle Bunsik DX must not depend on external CDNs');
+  assert.match(html, /\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
+  assert.doesNotMatch(html + css + js, /https?:\/\//i, 'Bogle Bunsik DX must not depend on external CDNs');
   assert.match(js, /class BunsikScene/);
   for (const model of expectedModels) {
     assert.ok(fs.existsSync(path.join(root, 'assets', 'game', 'food', model)), `missing Bogle Bunsik model: ${model}`);
@@ -82,25 +77,35 @@ test('Bogle Bunsik DX uses valid shared audio catalog keys', () => {
   for (const key of used) assert.ok(catalog.sounds[key], `missing shared audio key used by Bogle Bunsik DX: ${key}`);
 });
 
-test('catalog root entry is a real game shell and build publishes DX resources', () => {
-  assert.ok(rootHtml.length > 1000, 'catalog entry must not be a redirect-only shell');
-  assert.doesNotMatch(rootHtml, /location\.replace/);
+test('legacy root path is a thin redirect to canonical Bogle Bunsik DX', () => {
+  assert.match(alias, /location\.replace\(target/);
+  assert.match(alias, /games\/job_bogle_bunsik\/%EB%B3%B4%EA%B8%80%EB%B3%B4%EA%B8%80%20%EB%B6%84%EC%8B%9D%EC%A7%91\.html\?v=1/);
+  assert.doesNotMatch(alias, /id="ramenControls"/);
+  assert.ok(alias.length < 1800, 'legacy alias should stay a small compatibility redirect');
+});
 
-  const sourceCatalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
-  const sourceGame = (sourceCatalog.games || []).find(item => item && item.id === 'job_bogle_bunsik');
-  assert.ok(sourceGame, 'source Bogle Bunsik catalog entry missing');
-  assert.equal(sourceGame.href, '보글보글 분식집.html');
-
+test('Bogle Bunsik DX build points catalog to canonical v1 and keeps shared audio injection', () => {
   const distCatalogPath = path.join(root, 'dist', 'data', 'games.json');
   assert.ok(fs.existsSync(distCatalogPath), 'dist must exist before Bogle Bunsik DX test');
   const catalog = JSON.parse(fs.readFileSync(distCatalogPath, 'utf8'));
   const game = (catalog.games || []).find(item => item && item.id === 'job_bogle_bunsik');
   assert.ok(game, 'built Bogle Bunsik catalog entry missing');
-  assert.equal(game.href, '보글보글 분식집.html');
-  assert.ok(fs.existsSync(path.join(root, 'dist', '보글보글 분식집.html')));
-  assert.ok(fs.existsSync(path.join(root, 'dist', 'games', 'job_bogle_bunsik', 'bogle-bunsik-dx.css')));
-  assert.ok(fs.existsSync(path.join(root, 'dist', 'games', 'job_bogle_bunsik', 'bogle-bunsik-dx.js')));
-  const built = fs.readFileSync(path.join(root, 'dist', '보글보글 분식집.html'), 'utf8');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=1');
+
+  const builtAlias = path.join(root, 'dist', '보글보글 분식집.html');
+  const builtDir = path.join(root, 'dist', 'games', 'job_bogle_bunsik');
+  const builtHtml = path.join(builtDir, '보글보글 분식집.html');
+  assert.ok(fs.existsSync(builtAlias));
+  assert.ok(fs.existsSync(builtHtml));
+  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.css')));
+  assert.ok(fs.existsSync(path.join(builtDir, 'bogle-bunsik-dx.js')));
+  const built = fs.readFileSync(builtHtml, 'utf8');
   assert.match(built, /audio-manager\.js\?v=20260917-1/);
-  assert.match(built, /games\/job_bogle_bunsik\/bogle-bunsik-dx\.js\?v=1/);
+});
+
+test('Bogle Bunsik DX build step is wired into package scripts', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.match(pkg.scripts.build, /bogle-bunsik-dx-build\.cjs/);
+  assert.match(pkg.scripts['build:cloudflare'], /bogle-bunsik-dx-build\.cjs/);
+  assert.ok(fs.existsSync(path.join(root, 'scripts', 'bogle-bunsik-dx-build.cjs')));
 });
