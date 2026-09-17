@@ -5,6 +5,7 @@ const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
 const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
 const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-2';
+const AUDIO_EXTRA_HOOKS_SRC = '/game-audio-hooks-extra.js?v=20260917-1';
 const AUDIO_HOOK_TITLES = new Set([
   '인내의 탑',
   '멍멍 곱셈 러너',
@@ -16,6 +17,14 @@ const AUDIO_HOOK_TITLES = new Set([
   '블록래프트',
   'OUTBREAK KOREA',
   '한자 수호전: 8급'
+]);
+const AUDIO_EXTRA_HOOK_TITLES = new Set([
+  '외계인 피자 가게',
+  '문방구 사장님',
+  '약수 타워 디펜스',
+  '넘버 시그널 (룬의 숲)',
+  '역사 로얄',
+  '오목 아레나'
 ]);
 
 function injectScripts(relativeHtml, scripts) {
@@ -92,6 +101,7 @@ function injectAudioRuntimeIntoCatalogGames() {
 
   let managerInjected = 0;
   let hooksInjected = 0;
+  let extraHooksInjected = 0;
   for (const [relativeHtml, games] of targets) {
     const file = path.join(dist, relativeHtml);
     if (!fs.existsSync(file)) throw new Error(`Catalog audio target does not exist: ${relativeHtml}`);
@@ -112,10 +122,17 @@ function injectAudioRuntimeIntoCatalogGames() {
       changed = true;
     }
 
+    const needsExtraHooks = games.some(game => AUDIO_EXTRA_HOOK_TITLES.has(String(game.title || '').trim()));
+    if (needsExtraHooks && !/game-audio-hooks-extra\.js(?:\?|\")/.test(html)) {
+      html = injectDocumentEndScript(html, `<script src="${AUDIO_EXTRA_HOOKS_SRC}"></script>`);
+      extraHooksInjected += 1;
+      changed = true;
+    }
+
     if (changed) fs.writeFileSync(file, html, 'utf8');
   }
 
-  return { games: targets.size, managerInjected, hooksInjected };
+  return { games: targets.size, managerInjected, hooksInjected, extraHooksInjected };
 }
 
 function fixDogRunnerGateOrientation() {
@@ -195,4 +212,4 @@ console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotat
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
 console.log(`[game-integrations] Space sandwich href ${spaceSandwichHrefChanged ? 'bumped to v4' : 'already v4'}.`);
-console.log(`[game-integrations] Audio manager checked ${audioRuntime.games} catalog games; injected ${audioRuntime.managerInjected}, enhanced hooks ${audioRuntime.hooksInjected}.`);
+console.log(`[game-integrations] Audio manager checked ${audioRuntime.games} catalog games; injected ${audioRuntime.managerInjected}, enhanced hooks ${audioRuntime.hooksInjected}, extra hooks ${audioRuntime.extraHooksInjected}.`);
