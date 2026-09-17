@@ -274,12 +274,13 @@
     },
     {
       "id": "tod_hidden_emoji",
-      "title": "신나는 이모지 숨은그림찾기",
-      "href": "games/tod_hidden_emoji/신나는 이모지 숨은그림찾기.html",
+      "title": "동물 얼굴 숨은그림찾기",
+      "href": "games/tod_hidden_emoji/신나는 이모지 숨은그림찾기.html?v=2",
       "category": "math",
       "age": "toddler",
-      "icon": "🔍",
-      "description": "요리조리 배경 속에 숨어있는 귀여운 이모지 친구들을 찾아보세요! 화면을 요리조리 보며 관찰력과 집중력을 기르는 재미있는 놀이!"
+      "icon": "◎",
+      "description": "둥근 동물 얼굴 그림을 자세히 살펴보고 놀이판 속에 숨어 있는 같은 동물을 찾아보세요. 단계가 올라갈수록 크기와 투명도가 조금씩 달라져 관찰력과 집중력을 기를 수 있어요.",
+      "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\"><circle cx=\"38\" cy=\"41\" r=\"20\" fill=\"#eef8ed\" stroke=\"#65a876\" stroke-width=\"4\"/><circle cx=\"23\" cy=\"24\" r=\"8\" fill=\"#65a876\"/><circle cx=\"38\" cy=\"19\" r=\"8\" fill=\"#65a876\"/><circle cx=\"53\" cy=\"24\" r=\"8\" fill=\"#65a876\"/><ellipse cx=\"38\" cy=\"44\" rx=\"17\" ry=\"14\" fill=\"#65a876\"/></svg>"
     },
     {
       "id": "tod_heaven_stairs",
