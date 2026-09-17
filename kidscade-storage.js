@@ -23,6 +23,7 @@
     attendance: 'kidscade_attendance',
     playtimeSeconds: 'kidscade_playtime_sec',
     legacyPlaytimeMinutes: 'kidscade_playtime',
+    audioSettings: 'kidscade_audio_settings_v1',
     avatarInventory: 'kidscade_avatar_inventory',
     avatarEquipped: 'kidscade_avatar_equipped',
     petCanvas: 'kidscade_sook_canvas_pet',

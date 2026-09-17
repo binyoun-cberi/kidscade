@@ -23,6 +23,8 @@ jobs:
         run: |
           for file in \
             kidscade-storage.js \
+            audio-manager.js \
+            game-audio-hooks.js \
             profile-history.js \
             account-client.js \
             account-session-safety.js \
@@ -74,6 +76,8 @@ jobs:
         run: node scripts/secret-audit.cjs
       - name: Build Cloudflare static artifact
         run: npm run build
+      - name: Run audio manager and integration tests
+        run: node --test tests/audio-manager.test.cjs tests/audio-integration.test.cjs
       - name: Run game cover and favicon tests
         run: node --test tests/game-cover-overrides.test.cjs
       - name: Run game card description tests

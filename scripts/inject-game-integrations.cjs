@@ -3,6 +3,9 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
+const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
+const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-1';
+const AUDIO_HOOK_TITLES = new Set(['인내의 탑', '멍멍 곱셈 러너', '우주 샌드위치 가게', '아이스크림 나눗셈 가게']);
 
 function injectScripts(relativeHtml, scripts) {
   const file = path.join(dist, relativeHtml);
@@ -17,6 +20,91 @@ function injectScripts(relativeHtml, scripts) {
   html = html.replace('</body>', `${tags}\n</body>`);
   fs.writeFileSync(file, html);
   return true;
+}
+
+function stripHrefSuffix(href) {
+  const value = String(href || '').trim();
+  if (!value || /^(?:https?:|data:|javascript:|#)/i.test(value)) return '';
+  const plain = value.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+  try { return decodeURIComponent(plain); } catch (_) { return plain; }
+}
+
+function injectDocumentStartScript(html, tag, relativeHtml) {
+  if (/<\/head\s*>/i.test(html)) {
+    return html.replace(/<\/head\s*>/i, `${tag}\n</head>`);
+  }
+
+  const bodyMatch = html.match(/<body\b[^>]*>/i);
+  if (bodyMatch) {
+    return html.replace(bodyMatch[0], `${bodyMatch[0]}\n${tag}`);
+  }
+
+  // A few older single-file games omit explicit <head>/<body> tags. Browsers
+  // still parse them correctly, so put the shared runtime immediately after
+  // <html> and let the HTML parser infer the document sections.
+  const htmlMatch = html.match(/<html\b[^>]*>/i);
+  if (htmlMatch) {
+    return html.replace(htmlMatch[0], `${htmlMatch[0]}\n${tag}`);
+  }
+
+  const doctypeMatch = html.match(/^\s*<!doctype\b[^>]*>/i);
+  if (doctypeMatch) {
+    return html.replace(doctypeMatch[0], `${doctypeMatch[0]}\n${tag}`);
+  }
+
+  throw new Error(`Cannot inject audio manager: ${relativeHtml} has no document anchor`);
+}
+
+function injectDocumentEndScript(html, tag) {
+  if (/<\/body\s*>/i.test(html)) {
+    return html.replace(/<\/body\s*>/i, `${tag}\n</body>`);
+  }
+  if (/<\/html\s*>/i.test(html)) {
+    return html.replace(/<\/html\s*>/i, `${tag}\n</html>`);
+  }
+  return `${html}\n${tag}\n`;
+}
+
+function injectAudioRuntimeIntoCatalogGames() {
+  const catalogPath = path.join(dist, 'data', 'games.json');
+  if (!fs.existsSync(catalogPath)) throw new Error('Missing built game catalog: data/games.json');
+  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  const targets = new Map();
+
+  for (const game of Array.isArray(catalog.games) ? catalog.games : []) {
+    if (!game || game.disabled) continue;
+    const relativeHtml = stripHrefSuffix(game.href);
+    if (!relativeHtml || !/\.html?$/i.test(relativeHtml)) continue;
+    if (!targets.has(relativeHtml)) targets.set(relativeHtml, []);
+    targets.get(relativeHtml).push(game);
+  }
+
+  let managerInjected = 0;
+  let hooksInjected = 0;
+  for (const [relativeHtml, games] of targets) {
+    const file = path.join(dist, relativeHtml);
+    if (!fs.existsSync(file)) throw new Error(`Catalog audio target does not exist: ${relativeHtml}`);
+    let html = fs.readFileSync(file, 'utf8');
+    let changed = false;
+
+    if (!/audio-manager\.js(?:\?|\")/.test(html)) {
+      const tag = `<script src="${AUDIO_MANAGER_SRC}"></script>`;
+      html = injectDocumentStartScript(html, tag, relativeHtml);
+      managerInjected += 1;
+      changed = true;
+    }
+
+    const needsHooks = games.some(game => AUDIO_HOOK_TITLES.has(String(game.title || '').trim()));
+    if (needsHooks && !/game-audio-hooks\.js(?:\?|\")/.test(html)) {
+      html = injectDocumentEndScript(html, `<script src="${AUDIO_HOOKS_SRC}"></script>`);
+      hooksInjected += 1;
+      changed = true;
+    }
+
+    if (changed) fs.writeFileSync(file, html, 'utf8');
+  }
+
+  return { games: targets.size, managerInjected, hooksInjected };
 }
 
 function fixDogRunnerGateOrientation() {
@@ -85,6 +173,8 @@ const spaceSandwichHrefChanged = bumpGameHref(
   'games/alien_sandwich/우주 샌드위치 가게.html?v=4'
 );
 
+const audioRuntime = injectAudioRuntimeIntoCatalogGames();
+
 console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Rhythm Dash v11 ${rhythmDashChanged ? 'injected' : 'already present'}.`);
@@ -94,3 +184,4 @@ console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotat
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
 console.log(`[game-integrations] Space sandwich href ${spaceSandwichHrefChanged ? 'bumped to v4' : 'already v4'}.`);
+console.log(`[game-integrations] Audio manager checked ${audioRuntime.games} catalog games; injected ${audioRuntime.managerInjected}, enhanced hooks ${audioRuntime.hooksInjected}.`);
