@@ -36,15 +36,14 @@ function fixDogRunnerGateOrientation() {
   throw new Error('Dog runner gate orientation marker was not found.');
 }
 
-function bumpDogRunnerHref() {
+function bumpGameHref(gameId, nextHref) {
   const catalogPath = path.join(dist, 'data', 'games.json');
   if (!fs.existsSync(catalogPath)) throw new Error('Missing built game catalog: data/games.json');
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
   const game = Array.isArray(catalog.games)
-    ? catalog.games.find(item => item && item.id === 'low_math_dog_runner')
+    ? catalog.games.find(item => item && item.id === gameId)
     : null;
-  if (!game) throw new Error('Dog runner catalog entry was not found.');
-  const nextHref = 'games/low_math_dog_runner/멍멍 곱셈 러너.html?v=5';
+  if (!game) throw new Error(`Game catalog entry was not found: ${gameId}`);
   const changed = game.href !== nextHref;
   game.href = nextHref;
   fs.writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
@@ -72,7 +71,14 @@ const dogRunnerGateChanged = fixDogRunnerGateOrientation();
 const dogRunnerFxChanged = injectScripts('games/low_math_dog_runner/멍멍 곱셈 러너.html', [
   '/dog-runner-polish.js?v=20260917-2'
 ]);
-const dogRunnerHrefChanged = bumpDogRunnerHref();
+const dogRunnerHrefChanged = bumpGameHref(
+  'low_math_dog_runner',
+  'games/low_math_dog_runner/멍멍 곱셈 러너.html?v=5'
+);
+const spaceSandwichHrefChanged = bumpGameHref(
+  'alien_sandwich',
+  'games/alien_sandwich/우주 샌드위치 가게.html?v=4'
+);
 
 console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);
@@ -81,3 +87,4 @@ console.log(`[game-integrations] Patience Tower duel entry ${patienceTowerChange
 console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotated forward' : 'already forward'}.`);
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
+console.log(`[game-integrations] Space sandwich href ${spaceSandwichHrefChanged ? 'bumped to v4' : 'already v4'}.`);
