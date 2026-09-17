@@ -32,6 +32,7 @@ jobs:
             seed-balance-sync.js \
             playtime-state.js \
             seed-wallet.js \
+            daily-progress.js \
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
@@ -81,6 +82,8 @@ jobs:
         run: node --test tests/playtime-state.test.cjs tests/index-base-playtime.test.cjs
       - name: Run seed wallet tests
         run: node --test tests/seed-wallet.test.cjs tests/index-base-seed-wallet.test.cjs
+      - name: Run daily progress tests
+        run: node --test tests/daily-progress.test.cjs tests/index-base-daily-progress.test.cjs
       - name: Run UI information architecture tests
         run: node --test tests/ui-information-architecture.test.cjs
       - name: Run UI visual polish tests

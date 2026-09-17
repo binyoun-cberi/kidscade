@@ -1,6 +1,6 @@
 # index_base.html 정리 계획
 
-`index_base.html`은 아직 Kidscade의 레이아웃, 레거시 카드 마크업, 상점·펫·미션·프로필 관련 인라인 로직이 함께 남아 있는 전환기 파일입니다.
+`index_base.html`은 아직 Kidscade의 레이아웃, 레거시 카드 마크업, 상점·펫·프로필 관련 인라인 로직이 함께 남아 있는 전환기 파일입니다.
 
 ## 완료된 단계
 
@@ -27,9 +27,18 @@
 - 상점·아바타·펫이 참조하는 `coins`는 현재 단계에서 읽기 미러로 유지하고, 이후 각 도메인 분리 과정에서 제거합니다.
 - `tests/seed-wallet.test.cjs`, `tests/index-base-seed-wallet.test.cjs`를 정식 CI에 포함했습니다.
 
+### 4단계 — 출석·오늘의 미션·일일 보상 상태 분리
+
+- 오늘 날짜 키, 미션 생성·저장·진행도·완료 판정을 `daily-progress.js`로 이동했습니다.
+- 일일 보상 수령 여부와 출석 완료 날짜도 공통 모듈에서 판정·저장합니다.
+- 기존 `kidscade_daily_missions`, `kidscade_daily_reward_claimed`, `kidscade_attendance` 키는 그대로 유지합니다.
+- 과거 브라우저 기본 로케일 형식으로 저장된 출석 날짜도 오늘 출석으로 인정해 중복 보상을 막습니다.
+- 씨앗 지급, 펫 경험치, 토스트와 같은 UI/보상 효과는 `index_base.html`에 남겨 상태와 화면 책임을 분리했습니다.
+- `tests/daily-progress.test.cjs`, `tests/index-base-daily-progress.test.cjs`를 정식 CI에 포함했습니다.
+
 ## 다음 단계
 
-1. 프로필·랭크·배지와 미션 상태를 공통 모듈로 분리합니다.
+1. 프로필·랭크·배지 상태를 공통 모듈로 분리합니다.
 2. 상점과 쑥쑥랜드/펫 로직을 각 도메인 모듈로 분리하면서 레거시 `coins` 미러 직접 참조를 제거합니다.
 3. 아바타 옷장 상태와 구매 로직을 별도 모듈로 분리합니다.
 4. bootstrap 문자열 치환에 의존하는 레거시 컨트롤러를 제거합니다.
