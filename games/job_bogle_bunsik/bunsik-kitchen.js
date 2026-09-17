@@ -28,6 +28,7 @@ const stations={
  tteok:{type:'tteok',orderId:null,items:[],phase:'idle',progress:0,readyTime:0},
  side:{type:'side',orderId:null,items:[],phase:'idle',progress:0,readyTime:0}
 };
+window.__bunsikKitchenOwnAudio=true;
 function sfx(key,opt={}){if(!state.sound)return;try{window.KidscadeAudio?.play?.(key,opt)}catch(_){}}
 function toast(t){els.toast.textContent=t;els.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>els.toast.classList.remove('show'),1100)}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
@@ -104,7 +105,7 @@ class Kitchen3D{
  async loadPlayer(){
   try{const g=await this.loader.loadAsync(PEOPLE+'character-female-a.glb');const o=g.scene;const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3();b.getSize(s);o.scale.setScalar(1.65/(s.y||1));const b2=new THREE.Box3().setFromObject(o),c=new THREE.Vector3();b2.getCenter(c);o.position.set(-c.x,-b2.min.y,-c.z);o.traverse(n=>{if(n.isMesh)n.castShadow=true});this.player.add(o)}catch(_){this.boxPlayer()}
  }
- boxPlayer(){const m=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.8,4,8),new THREE.MeshStandardMaterial({color:0xf0a267}));m.position.y=.7;this.player.add(m)}
+ boxPlayer(){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.85,10),new THREE.MeshStandardMaterial({color:0xf0a267}));body.position.y=.65;const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),new THREE.MeshStandardMaterial({color:0xf4c7a1}));head.position.y=1.25;g.add(body,head);this.player.add(g)}
  setCarry(v){while(this.carryAnchor.children.length)this.carryAnchor.remove(this.carryAnchor.children[0]);if(!v)return;const id=v.kind==='dish'?(v.type==='ramen'?'noodle':v.type==='tteok'?'ricecake':v.items[0]):v.id;this.itemObject(id,.38).then(o=>{o.rotation.x=-.25;this.carryAnchor.add(o)})}
  canMove(x,z){if(x<-7.15||x>7.15||z<-5.0||z>5.0)return false;return !this.colliders.some(r=>Math.abs(x-r.x)<r.w/2+this.playerRadius&&Math.abs(z-r.z)<r.d/2+this.playerRadius)}
  move(dx,dz,dt){const len=Math.hypot(dx,dz);if(len<.05)return false;dx/=len;dz/=len;const speed=3.45, nx=this.player.position.x+dx*speed*dt,nz=this.player.position.z+dz*speed*dt;if(this.canMove(nx,this.player.position.z))this.player.position.x=nx;if(this.canMove(this.player.position.x,nz))this.player.position.z=nz;this.player.rotation.y=Math.atan2(dx,dz);return true}
