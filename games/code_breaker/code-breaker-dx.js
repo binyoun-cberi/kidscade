@@ -348,7 +348,7 @@ function finishGame(won) {
   els.endDeck.textContent=deck.length;
   els.endExposed.textContent=playerHand.filter(t=>t.revealed).length;
   openModal(els.gameoverModal);
-  audio(won?'success.victory_fanfare':'failure.fail_sting',{volume:won?.42:.34,cooldownMs:1000});
+  audio(won?'success.victory_fanfare':'failure.fail_sting',{volume:won ? .42 : .34,cooldownMs:1000});
 }
 
 function dealInitial() {
