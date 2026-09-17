@@ -77,11 +77,11 @@
   }
 
   function scriptBaseUrl() {
-    if (!root?.document) return 'file:///';
+    if (!root?.document) return '/';
     const own = root.document.currentScript?.src ||
       Array.from(root.document.scripts || []).find(script => /(?:^|\/)audio-manager\.js(?:\?|$)/.test(script.src || ''))?.src ||
-      root.location?.href || 'file:///';
-    try { return new URL('.', own).href; } catch (_) { return root.location?.href || 'file:///'; }
+      root.location?.href || '/';
+    try { return new URL('.', own).href; } catch (_) { return root.location?.href || '/'; }
   }
 
   function catalogUrl() {
