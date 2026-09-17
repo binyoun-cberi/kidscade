@@ -319,6 +319,7 @@
   }
 
   function applyCompatibilityFixes(html) {
+    html = html.replace('href="main-shell.css"', 'href="' + withVersion('main-shell.css') + '"');
     html = html.replace('src="age-navigation.js"', 'src="' + withVersion('age-navigation.js') + '"');
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
     const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';
