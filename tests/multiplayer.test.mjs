@@ -69,7 +69,7 @@ test('single-player build integration exposes the duel entry and the 2D asset re
   assert.match(injector, /patience-tower-rework\.js/);
   assert.match(injector, /patience-tower-duel-entry\.js/);
   assert.ok(injector.indexOf('patience-tower-rework.js') < injector.indexOf('patience-tower-duel-entry.js'));
-  assert.match(injector, /인내의 탑\.html\?v=5/);
+  assert.match(injector, /인내의 탑\.html\?v=6/);
   assert.match(entry, /1:1 · 3분 높이 대전/);
   assert.match(entry, /\/games\/patience-tower-duel\//);
   assert.match(rework, /\/assets\/game\/2d\/platformer-art/);
@@ -92,6 +92,14 @@ test('single-player build integration exposes the duel entry and the 2D asset re
   assert.match(rework, /spring:-760/);
   assert.match(rework, /launch:-605/);
   assert.match(rework, /gravity:1480/);
+  assert.match(rework, /groundAccel:3950/);
+  assert.match(rework, /airAccel:2450/);
+  assert.match(rework, /maxSpeed:326/);
+  assert.match(rework, /maxSpeed:345/);
+  assert.match(rework, /groundFriction:\.80/);
+  assert.match(rework, /iceFriction:\.985/);
+  assert.match(rework, /airFriction:\.992/);
+  assert.match(rework, /hero\.trail\.length>14/);
   assert.ok(fs.existsSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql')));
   assert.match(fs.readFileSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql'),'utf8'), /ADD COLUMN state_json TEXT/);
   assert.doesNotThrow(() => new Function(rework));
