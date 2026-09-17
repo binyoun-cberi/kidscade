@@ -1,0 +1,39 @@
+name: Refactor shop state once
+
+on:
+  push:
+    branches: [refactor/index-base-shop-state]
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extract shop state
+        run: node scripts/extract-shop-state.cjs
+      - name: Verify shop state refactor
+        run: |
+          node --check shop-state.js
+          node --check main-bootstrap.js
+          node --test tests/shop-state.test.cjs tests/index-base-shop-state.test.cjs tests/seed-wallet.test.cjs tests/achievement-state.test.cjs tests/game-launcher.test.cjs tests/main-architecture.test.cjs tests/release-smoke.test.cjs tests/storage.test.cjs
+          git diff --check
+      - name: Commit generated refactor
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_base.html main-bootstrap.js
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git commit -m "index_base 상점 상태를 공통 모듈로 분리"
+          git push
