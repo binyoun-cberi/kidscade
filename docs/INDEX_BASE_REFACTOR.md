@@ -18,11 +18,20 @@
 - 기존 `kidscade_playtime_sec`, `kidscade_playtime` 키를 그대로 사용해 이전 저장값을 보존합니다.
 - `tests/playtime-state.test.cjs`, `tests/index-base-playtime.test.cjs`를 정식 CI에 포함했습니다.
 
+### 3단계 — 씨앗 지갑 분리
+
+- 씨앗 잔액 읽기·쓰기·증감·잔액 부족 검사를 `seed-wallet.js`로 이동했습니다.
+- `kidscade_coins` 물리 키는 그대로 유지해 기존 학생의 저장값과 생활월드/정원 호환을 보존합니다.
+- 다른 탭/iframe의 `storage` 변경과 `KidscadeStorage`의 같은 탭 변경 이벤트를 지갑이 중앙에서 동기화합니다.
+- `index_base.html`의 `changeSeeds()`/`addCoins()`는 기존 호출부를 깨지 않도록 공통 지갑을 호출하는 호환 래퍼로 남겼습니다.
+- 상점·아바타·펫이 참조하는 `coins`는 현재 단계에서 읽기 미러로 유지하고, 이후 각 도메인 분리 과정에서 제거합니다.
+- `tests/seed-wallet.test.cjs`, `tests/index-base-seed-wallet.test.cjs`를 정식 CI에 포함했습니다.
+
 ## 다음 단계
 
-1. 씨앗 지갑의 읽기·쓰기·다중 탭 동기화를 공통 상태 모듈로 분리합니다.
-2. 프로필·랭크·배지와 미션 상태를 분리합니다.
-3. 상점과 쑥쑥랜드/펫 로직을 각 도메인 모듈로 분리합니다.
+1. 프로필·랭크·배지와 미션 상태를 공통 모듈로 분리합니다.
+2. 상점과 쑥쑥랜드/펫 로직을 각 도메인 모듈로 분리하면서 레거시 `coins` 미러 직접 참조를 제거합니다.
+3. 아바타 옷장 상태와 구매 로직을 별도 모듈로 분리합니다.
 4. bootstrap 문자열 치환에 의존하는 레거시 컨트롤러를 제거합니다.
 5. 마지막에 레거시 게임 카드 마크업을 `index_base.html`에서 물리적으로 삭제합니다.
 
