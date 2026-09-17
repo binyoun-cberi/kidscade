@@ -1,0 +1,38 @@
+name: Refactor index_base shell once
+
+on:
+  push:
+    branches: [refactor/index-base-shell]
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extract large inline stylesheet
+        run: node scripts/extract-index-base-shell.cjs
+      - name: Verify extracted shell
+        run: |
+          node --check main-bootstrap.js
+          node --test tests/index-base-shell.test.cjs tests/main-architecture.test.cjs tests/release-smoke.test.cjs
+          git diff --check
+      - name: Commit generated refactor
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_base.html main-shell.css main-bootstrap.js .github/workflows/architecture-tests.yml
+          git commit -m "index_base 메인 CSS를 외부 셸로 분리"
+          git push
