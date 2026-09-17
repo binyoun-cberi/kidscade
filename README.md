@@ -1,51 +1,34 @@
-# Kidscade Asset Library v3
+# Kidscade Audio Library v1
 
-기존 v2를 그대로 보존하면서, 이번 업로드의 Kenney 2D 팩들을 **경로 충돌과 의존성 꼬임 없이** 추가한 런타임 에셋 라이브러리입니다.
+업로드된 SOUND PACK 16개 MP3를 Kidscade 공용 효과음 라이브러리 형태로 정리한 패키지입니다.
 
-## 이번 버전의 가장 중요한 규칙
+## 폴더
 
-1. **기존 v2 경로는 하나도 바꾸지 않았습니다.** 이미 연결된 게임을 깨지 않기 위한 원칙입니다.
-2. 새 파일은 모두 URL에 안전한 **소문자 kebab-case** 경로로 정리했습니다.
-3. 개별 PNG는 `assets/game/2d/` 아래에, 스프라이트시트/타일맵 같은 묶음은 `assets/game/atlases/` 아래에 분리했습니다.
-4. XML/TXT가 필요한 atlas는 `assets/game/compound-assets.json`에 **의존성 그룹**으로 선언했습니다. 이 그룹은 파일 하나만 떼어 옮기면 안 됩니다.
-5. 모든 원본 ZIP 내부 경로와 새 런타임 경로는 `assets/game/import-map.json`에서 1:1로 추적할 수 있습니다.
-6. 전체 신규 파일은 `assets/game/asset-catalog.json`에 크기, 이미지 해상도, SHA-256, 원본 팩/원본 경로까지 기록했습니다.
-7. `kenney_platformer-art-extended-enemies`는 Deluxe 안의 동일 섹션과 **바이트 단위로 중복**되어, 라이선스와 출처만 보존하고 런타임 파일은 두 번 넣지 않았습니다.
+- `assets/audio/sfx/combat` — 피격, 강타, 투사체, 발사
+- `assets/audio/sfx/shop` — 상점/구매
+- `assets/audio/sfx/success` — 성공, 승리, 환호
+- `assets/audio/sfx/failure` — 실패, 실망
+- `assets/audio/sfx/collect` — 코인/씨앗 획득
+- `assets/audio/sfx/movement` — 점프/이동
+- `assets/audio/audio-catalog.json` — 코드에서 사용할 의미 기반 키와 파일 경로
+- `assets/audio/audio-manifest.csv` — 원본명 ↔ 새 경로, 길이, 샘플레이트, 용도 대응표
+- `assets/audio/SOURCES.md` — 출처 메모
 
-## 신규 런타임 루트
+## 권장 호출 방식
 
-- `assets/game/2d/platformer-art/` — Platformer Art Deluxe 개별 PNG
-- `assets/game/2d/flags/` — 128px 국기 PNG
-- `assets/game/2d/vehicles/pixel/` — 픽셀 자동차/캐릭터/소품
-- `assets/game/2d/urban/rpg/` — 16px 도시 RPG 타일
-- `assets/game/2d/pirate/` — 해적/선박/타일/이펙트 (Retina 선택)
-- `assets/game/2d/tower-defense/top-down/` — 탑다운 TD (Retina 선택)
-- `assets/game/2d/letters/` — 8종 재질 글자 타일
-- `assets/game/2d/tower-defense/isometric/` — 아이소메트릭 TD
-- `assets/game/atlases/` — 스프라이트시트 + XML/TXT 등 복합 에셋
+게임 HTML에 개별 파일 경로를 흩뿌리기보다는 이후 공용 `audio-manager.js`를 만들고 다음처럼 호출하는 구조를 권장합니다.
 
-## 복합 에셋 사용 규칙
-
-예를 들어 차량 스프라이트시트는 PNG 하나가 완성품이 아닙니다.
-
-```text
-assets/game/atlases/vehicles/pixel/spritesheet-complete.png
-assets/game/atlases/vehicles/pixel/spritesheet-complete.xml
+```js
+KidscadeAudio.play('movement.jump');
+KidscadeAudio.play('collect.coin_pickup');
+KidscadeAudio.play('success.victory_fanfare');
+KidscadeAudio.play('failure.fail_sting');
 ```
 
-둘을 함께 배포해야 합니다. 정확한 그룹 목록은 `assets/game/compound-assets.json`을 기준으로 합니다.
+`audio-catalog.json`의 각 값은 배열이므로 같은 용도의 소리를 추가하면 랜덤 선택도 쉽게 지원할 수 있습니다.
 
-## 신규 메타데이터
+## 품질 메모
 
-- `assets/game/asset-catalog.json` — 실제 런타임 에셋 카탈로그
-- `assets/game/import-map.json` — 원본 ZIP 경로 → 새 경로
-- `assets/game/compound-assets.json` — 같이 움직여야 하는 파일 묶음
-- `SOURCE_PACKS.json` — 팩별 라이선스/선별 정책
-- `DUPLICATE_CONTENT_REPORT.json` — 신규 라이브러리 내부 동일 바이트 파일 검사 결과
+`missile-launch-01.mp3`는 원본이 8 kHz mono라 다른 파일보다 음질이 낮습니다. 레트로/무전/저해상도 효과로는 쓸 수 있지만, 핵심 전투 게임의 대표 발사음으로는 추후 더 좋은 파일로 교체하는 편이 좋습니다.
 
-## 수량
-
-이번 v3에서 새로 인덱싱한 런타임 파일: **2718개**  
-복합 에셋 그룹: **18개**
-
-원본 라이선스는 모두 `assets/game/licenses/`에 보존했습니다.
+원본 MP3의 오디오 데이터는 수정하지 않았고 파일명과 폴더 구조만 정리했습니다.

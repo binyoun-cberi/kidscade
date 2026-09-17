@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "basePath": "assets/audio/",
+  "notes": "경로는 Kidscade 저장소 루트 기준. 같은 키에 여러 파일을 추가하면 Audio Manager에서 랜덤 재생 가능.",
+  "sounds": {
+    "combat.hurt_grunt": [
+      "sfx/combat/hurt-grunt-01.mp3"
+    ],
+    "combat.missile_launch": [
+      "sfx/combat/missile-launch-01.mp3"
+    ],
+    "combat.projectile_whoosh": [
+      "sfx/combat/projectile-whoosh-01.mp3"
+    ],
+    "combat.impact_heavy": [
+      "sfx/combat/impact-heavy-01.mp3"
+    ],
+    "shop.register_open": [
+      "sfx/shop/register-open-01.mp3"
+    ],
+    "shop.purchase": [
+      "sfx/shop/purchase-kaching-01.mp3"
+    ],
+    "success.victory_fanfare": [
+      "sfx/success/victory-fanfare-01.mp3"
+    ],
+    "collect.coin_drop": [
+      "sfx/collect/coin-drop-01.mp3"
+    ],
+    "collect.coin_pickup": [
+      "sfx/collect/coin-pickup-01.mp3"
+    ],
+    "movement.jump": [
+      "sfx/movement/jump-cartoon-01.mp3"
+    ],
+    "failure.fail_sting": [
+      "sfx/failure/fail-sting-01.mp3"
+    ],
+    "failure.disappointed_dog": [
+      "sfx/failure/disappointed-dog-01.mp3"
+    ],
+    "failure.disappointed_voice": [
+      "sfx/failure/disappointed-voice-01.mp3"
+    ],
+    "success.cheer_woohoo": [
+      "sfx/success/cheer-woohoo-01.mp3"
+    ],
+    "success.cheer_yay": [
+      "sfx/success/cheer-yay-01.mp3"
+    ],
+    "combat.hurt_voice": [
+      "sfx/combat/hurt-voice-01.mp3"
+    ]
+  }
+}
