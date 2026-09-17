@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, '외계인 피자 가게.html'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'games/alien_pizza/외계인 피자 가게.html'), 'utf8');
 
 function inlineScript(source) {
   const matches = [...source.matchAll(/<script>([\s\S]*?)<\/script>/g)];

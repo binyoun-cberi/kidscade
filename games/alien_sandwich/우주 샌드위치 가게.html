@@ -75,9 +75,9 @@ button,a{font:inherit}button{cursor:pointer}
 </head>
 <body>
 <div id="app">
- <div id="spaceBg"><div id="stars"></div><img id="planet" src="assets/game/space/planets/planet03.png" alt=""></div>
+ <div id="spaceBg"><div id="stars"></div><img id="planet" src="../../assets/game/space/planets/planet03.png" alt=""></div>
  <canvas id="scene" aria-label="우주 샌드위치 조리대"></canvas>
- <a id="home" href="index.html" title="메인으로">←</a>
+ <a id="home" href="../../index.html" title="메인으로">←</a>
  <div id="hud">
    <div id="orderCard"><div id="customerLine"><div class="customerBadge"><i></i></div><div><div id="orderLabel">ORBITAL ORDER</div><div id="orderTitle">주문을 수신 중…</div><div id="orderDetail"></div></div></div><div id="recipe"></div></div>
    <div id="stats"><div class="stat"><small>주문</small><strong id="round">1/8</strong></div><div class="stat"><small>크레딧</small><strong id="score">0</strong></div><div class="stat"><small>콤보</small><strong id="combo">0</strong></div></div>
@@ -99,15 +99,15 @@ button,a{font:inherit}button{cursor:pointer}
      <div class="how"><div><b>1</b>주문 재료 확인</div><div><b>2</b>자의 눈금으로 측정</div><div><b>3</b>정확히 잘라 조립</div></div>
      <button class="open" id="open" disabled>도킹 게이트 열기</button><div class="load" id="load">3D 우주 주방을 준비하고 있어요…</div>
    </div>
-   <div class="modal hidden" id="finish"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 우주 장사 완료!</h1><p id="finishText"></p><div id="finishScore"></div><div class="finishBtns"><button class="open" id="again">다시 장사하기</button><a class="open" href="index.html">메인으로</a></div></div>
+   <div class="modal hidden" id="finish"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 우주 장사 완료!</h1><p id="finishText"></p><div id="finishScore"></div><div class="finishBtns"><button class="open" id="again">다시 장사하기</button><a class="open" href="../../index.html">메인으로</a></div></div>
  </div>
 </div>
-<script type="importmap">{"imports":{"three":"./assets/vendor/three-r160/three.module.js","three/addons/":"./assets/vendor/three-r160/addons/"}}</script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script type="module">
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 (()=>{'use strict';
-const A='assets/game/';
+const A='../../assets/game/';
 const MODEL={
  board:A+'food/cutting-board.glb',
  knife:A+'food/cooking-knife-chopping.glb',
@@ -222,7 +222,7 @@ function loadOrder(){
  $('round').textContent=(idx+1)+'/'+ORDERS.length;$('score').textContent=score;$('combo').textContent=combo;
  $('orderTitle').textContent=current().title+'의 샌드위치';
  $('orderDetail').textContent='주문: '+current().recipe.map(([k,n])=>`${itemLabel(k)} ${n}cm`).join(' → ');
- $('planet').src=`assets/game/space/planets/planet0${current().planet}.png`;
+ $('planet').src=`../../assets/game/space/planets/planet0${current().planet}.png`;
  $('serve').disabled=true;updateSteps(1);setTimeout(()=>updateSteps(2),450);
 }
 function rulerPick(e){

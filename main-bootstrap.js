@@ -323,7 +323,7 @@
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
     const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';
     html = html.replace(gardenScript, versionedGarden);
-    html = html.replace('href="스펠링 프로그.html"', 'href="스펠링 프로그.html?v=20260914-1"');
+    html = html.replace('href="games/spelling_frog/스펠링 프로그.html"', 'href="games/spelling_frog/스펠링 프로그.html?v=20260914-1"');
     html = refactorLegacyControllers(html);
     return html;
   }

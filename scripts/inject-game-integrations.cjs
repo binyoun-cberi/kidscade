@@ -20,7 +20,7 @@ function injectScripts(relativeHtml, scripts) {
 }
 
 function fixDogRunnerGateOrientation() {
-  const relativeHtml = '멍멍 곱셈 러너.html';
+  const relativeHtml = 'games/low_math_dog_runner/멍멍 곱셈 러너.html';
   const file = path.join(dist, relativeHtml);
   if (!fs.existsSync(file)) throw new Error(`Missing built game file: ${relativeHtml}`);
   let html = fs.readFileSync(file, 'utf8');
@@ -44,14 +44,14 @@ function bumpDogRunnerHref() {
     ? catalog.games.find(item => item && item.id === 'low_math_dog_runner')
     : null;
   if (!game) throw new Error('Dog runner catalog entry was not found.');
-  const nextHref = '멍멍 곱셈 러너.html?v=4';
+  const nextHref = 'games/low_math_dog_runner/멍멍 곱셈 러너.html?v=4';
   const changed = game.href !== nextHref;
   game.href = nextHref;
   fs.writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
   return changed;
 }
 
-const classroomChanged = injectScripts('교실전쟁 3D.html', [
+const classroomChanged = injectScripts('games/high_classroom_war_3d/교실전쟁 3D.html', [
   '/classroom-war-records.js?v=20260916-1',
   '/classroom-war-records-observer.js?v=20260916-1'
 ]);
@@ -69,7 +69,7 @@ const patienceTowerChanged = injectScripts('인내의 탑.html', [
 ]);
 
 const dogRunnerGateChanged = fixDogRunnerGateOrientation();
-const dogRunnerFxChanged = injectScripts('멍멍 곱셈 러너.html', [
+const dogRunnerFxChanged = injectScripts('games/low_math_dog_runner/멍멍 곱셈 러너.html', [
   '/dog-runner-polish.js?v=20260917-1'
 ]);
 const dogRunnerHrefChanged = bumpDogRunnerHref();

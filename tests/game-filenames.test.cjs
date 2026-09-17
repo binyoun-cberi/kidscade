@@ -8,6 +8,27 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/games.json')));
 const aliases = JSON.parse(fs.readFileSync(path.join(root, 'data/game-path-aliases.json')));
 const reserved = { ':': '：', '?': '？', '/': '／', '\\': '＼', '*': '＊', '"': '＂', '<': '＜', '>': '＞', '|': '｜' };
 
+test('renamed games live below games without increasing the root HTML baseline', () => {
+  const rootHtml = fs.readdirSync(root).filter(file => /\.html?$/i.test(file));
+  assert.ok(rootHtml.length <= 114);
+  for (const target of Object.values(aliases)) assert.ok(target.startsWith('games/'), target);
+});
+
+test('moved game assets resolve under both a domain root and a repository subpath', () => {
+  for (const target of new Set(Object.values(aliases))) {
+    const html = fs.readFileSync(path.join(root, target), 'utf8');
+    for (const match of html.matchAll(/["'`]((?:\.\.\/){2}(?:assets\/[^"'`\s]+|[^/"'`\s]+\.js(?:\?[^"'`\s]*)?))/g)) {
+      if (match[1].includes('${')) continue;
+      for (const prefix of ['/', '/kidscade/']) {
+        const url = new URL(match[1], 'https://example.com' + prefix + target);
+        assert.ok(url.pathname.startsWith(prefix));
+        const local = decodeURIComponent(url.pathname.slice(prefix.length));
+        assert.ok(fs.existsSync(path.join(root, local)), `${target}: ${match[1]}`);
+      }
+    }
+  }
+});
+
 test('all game entry filenames match card titles and remain unique', () => {
   const seen = new Set();
   for (const game of catalog.games) {

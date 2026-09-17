@@ -40,4 +40,4 @@ The first connected leaderboard is `교실전쟁 3D`.
 - only a student's personal best is retained for the leaderboard
 - guest/local play still keeps the game's existing local best score, but does not enter the class leaderboard
 
-The Cloudflare build injects the record client into the built `교실전쟁 3D.html` so the large legacy game source remains untouched.
+The Cloudflare build injects the record client into the built `games/high_classroom_war_3d/교실전쟁 3D.html` so the large legacy game source remains untouched.

@@ -37,7 +37,7 @@ test('every enabled catalog game points to a non-empty local entry file', () => 
 
 test('Spelling Frog release entry keeps the moving-log progression fix wired in', () => {
   const game = gameById('spelling_frog');
-  assert.match(game.href, /^스펠링 프로그\.html(?:\?|$)/);
+  assert.match(game.href, /^games\/spelling_frog\/스펠링 프로그\.html(?:\?|$)/);
 
   const wrapper = read(game.href);
   assert.doesNotMatch(wrapper, /document\.write/);
@@ -51,7 +51,7 @@ test('Spelling Frog release entry keeps the moving-log progression fix wired in'
 
 test('History Royale release entry retains selectable faction, hero, deck and start controls', () => {
   const game = gameById('high_history_royale');
-  assert.match(game.href, /역사 로얄\.html/);
+  assert.match(game.href, /games\/high_history_royale\/역사 로얄\.html/);
 
   const html = read(game.href);
   assert.match(html, /selectedFaction\s*=\s*id/);
@@ -63,7 +63,7 @@ test('History Royale release entry retains selectable faction, hero, deck and st
 });
 
 test('critical catalog entries stay on the reviewed release files', () => {
-  assert.match(gameById('high_classroom_war_3d').href, /^교실전쟁 3D\.html/);
-  assert.match(gameById('spelling_frog').href, /^스펠링 프로그\.html/);
-  assert.match(gameById('high_history_royale').href, /역사 로얄\.html$/);
+  assert.match(gameById('high_classroom_war_3d').href, /^games\/high_classroom_war_3d\/교실전쟁 3D\.html/);
+  assert.match(gameById('spelling_frog').href, /^games\/spelling_frog\/스펠링 프로그\.html/);
+  assert.match(gameById('high_history_royale').href, /games\/high_history_royale\/역사 로얄\.html$/);
 });

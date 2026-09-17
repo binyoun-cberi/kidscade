@@ -18,7 +18,7 @@
 @media(max-width:820px){.topHud{grid-template-columns:1fr auto;left:8px;right:8px}.brand{display:none}.question{grid-column:1;min-height:52px}.rightHud{grid-column:2}.progressWrap{top:73px;width:65vw}.combo{top:85px}.hint{display:none}.modeGrid{grid-template-columns:1fr}.menu{max-height:92vh;overflow:auto}.controls{bottom:max(8px,env(safe-area-inset-bottom))}}
 @media(max-width:520px){.question{padding:7px 9px}.question strong{font-size:25px}.stats .stat:nth-child(2){display:none}.stat{min-width:48px}.controlBtn{width:56px;height:49px}.controlBtn.jump{width:76px}.resultGrid{grid-template-columns:repeat(2,1fr)}}
 </style>
-<script type="importmap">{"imports":{"three":"./assets/vendor/three-r160/three.module.js","three/addons/":"./assets/vendor/three-r160/addons/"}}</script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <canvas id="scene"></canvas><div class="vignette"></div>
@@ -42,7 +42,7 @@ const SAVE_KEY='mathDogRunnerSave_v2';
 const DEFAULT_SAVE={coins:0,bestDistance:0,totalAnswers:0,bestCombo:0,sfx:true,bestScore:0};
 let save;try{save={...DEFAULT_SAVE,...JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')}}catch{save={...DEFAULT_SAVE}}
 const MODES={easy:{rounds:10,min:2,max:5,speed:8.0,speedGain:.20},normal:{rounds:12,min:2,max:9,speed:9.4,speedGain:.25},rush:{rounds:15,min:2,max:9,speed:11.0,speedGain:.32}};
-const ASSET={dog:'assets/game/characters/pets/animal-dog.glb',gates:['assets/game/platformer/gates/arch_blue.glb','assets/game/platformer/gates/arch_green.glb','assets/game/platformer/gates/arch_red.glb','assets/game/platformer/gates/arch_yellow.glb'],barrier:'assets/game/platformer/obstacles/barrier_2x1x1_red.glb',cone:'assets/game/platformer/obstacles/cone_yellow.glb',star:'assets/game/platformer/pickups/star_yellow.glb'};
+const ASSET={dog:'../../assets/game/characters/pets/animal-dog.glb',gates:['../../assets/game/platformer/gates/arch_blue.glb','../../assets/game/platformer/gates/arch_green.glb','../../assets/game/platformer/gates/arch_red.glb','../../assets/game/platformer/gates/arch_yellow.glb'],barrier:'../../assets/game/platformer/obstacles/barrier_2x1x1_red.glb',cone:'../../assets/game/platformer/obstacles/cone_yellow.glb',star:'../../assets/game/platformer/pickups/star_yellow.glb'};
 const LANES=[-2.45,0,2.45];
 const ui={loading:$('loading'),loadingText:$('loadingText'),question:$('question'),hearts:$('hearts'),score:$('score'),coins:$('coins'),progress:$('progressFill'),combo:$('combo'),message:$('message'),menu:$('menuOverlay'),pause:$('pauseOverlay'),result:$('resultOverlay'),pauseBtn:$('pauseBtn'),saveLine:$('saveLine'),sound:$('soundBtn'),rCorrect:$('rCorrect'),rCombo:$('rCombo'),rDistance:$('rDistance'),rCoins:$('rCoins'),resultTitle:$('resultTitle'),resultText:$('resultText')};
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch{}updateSaveLine()}
