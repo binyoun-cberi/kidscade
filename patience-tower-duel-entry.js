@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  if (window.top !== window.self) return;
+  // Hide only inside an active duel, not inside the Kidscade game launcher.
+  if (window.__patienceDuelEmbedded) return;
   const menuCard = document.querySelector('#menu .card');
   if (!menuCard || document.getElementById('patienceDuelEntry')) return;
 

@@ -248,7 +248,7 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
       <div id="resourceGrid" class="resource-grid"></div>
       <div class="consume-actions">
         <button id="drinkBtn" class="action-card"><span>💧</span><div><b>깨끗한 물 마시기</b><small id="drinkStock">0병</small></div></button>
-        <button id="eatBtn" class="action-card"><span>🍽️</span><div><b>식사하기</b><small id="foodStock">생선 0 · 채소 0</small></div></button>
+        <button id="eatBtn" class="action-card"><span>🍽️</span><div><b>식사하기</b><small id="foodStock">날생선 0 · 구운 생선 0 · 채소 0</small></div></button>
       </div>
     </aside>
 
@@ -1195,6 +1195,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   }
 
   function craftAvailable(recipe) {
+    if (!recipe) return false;
     if (recipe.once && state.tools[recipe.once]) return false;
     if (recipe.needs && countStructures(recipe.needs) === 0) return false;
     if (recipe.duringShark && shark.phase !== 'attack') return false;
@@ -1203,10 +1204,12 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   }
 
   function craftStatus(recipe) {
+    if (!recipe) return '제작법을 찾을 수 없어요.';
     if (recipe.once && state.tools[recipe.once]) return '이미 만들었어요.';
     if (recipe.needs && countStructures(recipe.needs) === 0) return '먼저 ' + buildRecipes.find((r) => r.id === recipe.needs).name + '가 필요해요.';
     if (recipe.duringShark && shark.phase !== 'attack') return '상어가 공격할 때 사용할 수 있어요.';
     if (recipe.id === 'cook' && state.production.cook > 0) return '익는 중 · ' + Math.ceil(state.production.cook) + '초';
+    if (!canAfford(recipe.cost)) return '재료 부족 · ' + Object.entries(recipe.cost).filter(([id, amount]) => state.inventory[id] < amount).map(([id, amount]) => resourceInfo[id].name + ' ' + (amount - state.inventory[id]) + '개 더 필요').join(' · ');
     return recipe.desc;
   }
 
@@ -1259,9 +1262,10 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     }
     ui.levelValue.textContent = buildLevel === 0 ? '1층' : '2층';
     ui.drinkStock.textContent = (state.inventory.water || 0) + '병 · 최대 ' + maxStoredWater() + '병';
-    ui.foodStock.textContent = '생선 ' + (state.inventory.cookedFish || 0) + ' · 채소 ' + (state.inventory.vegetable || 0);
+    ui.foodStock.textContent = '날생선 ' + state.inventory.fish + ' · 구운 생선 ' + state.inventory.cookedFish + ' · 채소 ' + state.inventory.vegetable;
+    ui.eatBtn.querySelector('b').textContent = state.production.cook > 0 ? '생선 굽는 중 · ' + Math.ceil(state.production.cook) + '초' : state.hunger >= 99 ? '배가 불러요' : state.inventory.cookedFish + state.inventory.vegetable > 0 ? '식사하기' : state.inventory.fish > 0 ? '생선 굽기 안내' : '낚시하러 가기';
     ui.drinkBtn.disabled = state.inventory.water < 1 || state.thirst >= 99;
-    ui.eatBtn.disabled = (state.inventory.cookedFish + state.inventory.vegetable) < 1 || state.hunger >= 99;
+    ui.eatBtn.disabled = state.hunger >= 99;
     document.querySelectorAll('[data-tool="spear"]').forEach((node) => node.classList.toggle('locked', !state.tools.spear));
     renderMission();
     if (force || activePanel === 'inventory') renderResources();
@@ -1456,10 +1460,29 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     audio.good();
     toast('깨끗한 물을 마셨어요.', 'good');
     renderUI(true);
+    saveGame();
   }
 
   function eatMeal() {
     if (state.hunger >= 99) return;
+    if (state.inventory.cookedFish + state.inventory.vegetable < 1) {
+      if (state.production.cook > 0) {
+        toast('생선을 굽고 있어요. ' + Math.ceil(state.production.cook) + '초 뒤에 먹을 수 있어요.');
+      } else if (state.inventory.fish > 0) {
+        if (!countStructures('grill')) {
+          selectedBuild = 'grill';
+          openPanel('build');
+          toast('간이 화로를 빈 바닥에 설치하세요. 나무 3개와 고철 1개가 필요해요.');
+        } else {
+          openPanel('craft');
+          toast('제작 메뉴의 생선 굽기를 누르세요. 날생선 1개와 나무 1개가 필요해요.');
+        }
+      } else {
+        selectTool('rod');
+        toast('낚싯대는 처음부터 쓸 수 있어요. 바다를 보고 클릭하거나 E를 눌러 던지세요.');
+      }
+      return;
+    }
     if (state.inventory.cookedFish > 0) {
       state.inventory.cookedFish -= 1;
       state.hunger = Math.min(100,state.hunger + 38);
@@ -1475,6 +1498,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     audio.good();
     checkMissions();
     renderUI(true);
+    saveGame();
   }
 
   function handPosition() {
@@ -2215,14 +2239,19 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       }
     }
 
+    updateCooking(dt);
+  }
+
+  function updateCooking(dt) {
     if (state.production.cook > 0) {
       state.production.cook -= dt;
       if (state.production.cook <= 0) {
         state.production.cook = 0;
         state.inventory.cookedFish += 1;
         audio.good();
-        toast('생선이 맛있게 익었어요!', 'good');
+        toast('생선이 맛있게 익었어요! 배낭에서 식사하기를 누르세요.', 'good');
         renderUI(true);
+        saveGame();
       }
     }
   }
@@ -2380,7 +2409,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       const cell = aimedCell();
       if (cell) text = (cell.material === 'reinforced' ? '보강 바닥' : '나무 바닥') + ' 내구도 ' + Math.ceil(cell.hp) + '/' + cell.maxHp + (cell.hp < cell.maxHp ? ' · 클릭하여 수리' : '');
     } else if (!matchMedia('(pointer: coarse)').matches && document.pointerLockElement !== canvas) {
-      text = '화면을 한 번 클릭하면 마우스 시점이 활성화돼요.';
+      text = '화면 클릭: 마우스 시점 · E: 도구 사용 (낚시 포함)';
     } else if (selectedTool === 'hook' && hook.phase === 'idle' && findAimedResource()) {
       const target = findAimedResource();
       ui.aim.classList.add('target');
@@ -2645,7 +2674,8 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (typeof event.key === 'string') keys[event.key.toLowerCase()] = true;
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(event.code)) event.preventDefault();
     if (!running) return;
-    if (event.code === 'Digit1') selectTool('hook');
+    if (event.code === 'KeyE' && !event.repeat) useSelectedTool();
+    else if (event.code === 'Digit1') selectTool('hook');
     else if (event.code === 'Digit2') selectTool('rod');
     else if (event.code === 'Digit3') selectTool('hammer');
     else if (event.code === 'Digit4') selectTool('spear');
@@ -2821,6 +2851,11 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (running && !modalOpen && !activePanel) {
       updateGame(dt,elapsed);
     } else {
+      if (running && !modalOpen && activePanel) {
+        updateCooking(dt);
+        uiTimer += dt;
+        if (uiTimer >= .16) { uiTimer = 0; renderUI(false); }
+      }
       updateEnvironment(0,elapsed);
       updateStructureAnimation(0,elapsed);
     }
