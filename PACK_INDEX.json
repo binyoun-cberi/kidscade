@@ -1,6 +1,6 @@
 {
-  "library": "Kidscade Asset Library v2",
-  "version": "2.0.0",
+  "library": "Kidscade Asset Library v3",
+  "version": "3.0.0",
   "license": "CC0 source packs; see assets/game/licenses/",
   "counts": {
     "v1_3d_assets": 246,
@@ -23,5 +23,80 @@
     "Puzzle Pack II": "Back tiles, balls, coins, paddles, pipes and particles retained; large repeated colored tile grids removed.",
     "Sports Pack": "Equipment, elements, special objects and character color sets retained.",
     "Planets": "10 finished planet PNGs retained; compositing source parts removed."
-  }
+  },
+  "new_runtime_entries_v3": 2718,
+  "compound_groups_v3": 18,
+  "source_packs_v3": {
+    "kenney-platformer-art-deluxe": {
+      "uploaded_archive": "kenney_platformer-art-deluxe(1).zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-platformer-art-deluxe.txt",
+      "source_file_count": 1021,
+      "runtime_policy": "Imported individual PNG assets; preview/vector/SWF/full redundant sheets omitted. Extended-enemies content imported here once."
+    },
+    "kenney-platformer-art-extended-enemies": {
+      "uploaded_archive": "kenney_platformer-art-extended-enemies(1).zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-platformer-art-extended-enemies.txt",
+      "source_file_count": 186,
+      "runtime_policy": "No duplicate runtime copy. Verified as byte-identical subset of Platformer Art Deluxe extended-enemies section; license/provenance retained only."
+    },
+    "kenney-flag-pack": {
+      "uploaded_archive": "kenney_flag-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-flag-pack.txt",
+      "source_file_count": 700,
+      "runtime_policy": "Kept Large (2×) 128px PNG flags only; Default and SVG duplicate representations omitted."
+    },
+    "kenney-pixel-vehicle-pack": {
+      "uploaded_archive": "kenney_pixel-vehicle-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-pixel-vehicle-pack.txt",
+      "source_file_count": 87,
+      "runtime_policy": "Individual Cars/Characters/Props retained; one complete spritesheet+XML pair retained as optional atlas."
+    },
+    "kenney-rpg-urban-pack": {
+      "uploaded_archive": "kenney_rpg-urban-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-rpg-urban-pack.txt",
+      "source_file_count": 495,
+      "runtime_policy": "All 16px individual tiles retained; packed tilemap + TXT metadata retained as a compound atlas."
+    },
+    "kenney-pirate-pack": {
+      "uploaded_archive": "kenney_pirate-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-pirate-pack.txt",
+      "source_file_count": 411,
+      "runtime_policy": "Retina PNG set retained; Default/vector/SWF duplicates omitted. High-res ship atlas+XML and tile sheet+TXT retained as compound groups."
+    },
+    "kenney-tower-defense-top-down": {
+      "uploaded_archive": "kenney_tower-defense-top-down.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-tower-defense-top-down.txt",
+      "source_file_count": 606,
+      "runtime_policy": "Retina 128px PNG set retained; Default/vector/SWF duplicates omitted. High-res tilesheet retained."
+    },
+    "kenney-letter-tiles": {
+      "uploaded_archive": "kenney_letter-tiles.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-letter-tiles.txt",
+      "source_file_count": 240,
+      "runtime_policy": "All individual letter tiles retained; each color spritesheet kept only with its matching XML frame map."
+    },
+    "kenney-tower-defense-isometric": {
+      "uploaded_archive": "kenney_tower-defense.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-tower-defense-isometric.txt",
+      "source_file_count": 242,
+      "runtime_policy": "All individual PNG assets retained; spritesheets retained only with their matching XML frame maps."
+    }
+  },
+  "v3_safety_rules": [
+    "Existing v2 paths are unchanged for backwards compatibility.",
+    "New filenames/directories are normalized to URL-safe lowercase kebab-case.",
+    "Each imported file is traceable through assets/game/import-map.json.",
+    "Spritesheet/atlas metadata dependencies are declared in assets/game/compound-assets.json and must move together.",
+    "Platformer extended-enemies standalone ZIP was not duplicated because its runtime content is already byte-identical inside Platformer Art Deluxe.",
+    "Default/Retina or Default/Large duplicate representations were reduced to one selected runtime resolution where appropriate."
+  ]
 }

@@ -1,8 +1,8 @@
-// Kidscade Asset Library v2
-// Cleaned runtime bundle. Source licenses are preserved under assets/game/licenses/.
+// Kidscade Asset Library v3
+// Runtime paths are validated. Compound atlases must be kept with their metadata companions.
 export const KIDSCADE_ASSETS = {
-  "version": "2.0.0",
-  "license_summary": "All source packs included in Kidscade Asset Library v2 are CC0 according to the License.txt files bundled with the uploaded packs.",
+  "version": "3.0.0",
+  "license_summary": "All source packs in Kidscade Asset Library v3 are CC0 according to their bundled License.txt files; exact copies are stored under assets/game/licenses/.",
   "animations": [
     "static",
     "idle",
@@ -346,6 +346,69 @@ export const KIDSCADE_ASSETS = {
       "license": "CC0",
       "runtime": "PNG",
       "included": 10
+    },
+    "kenney-platformer-art-deluxe": {
+      "uploaded_archive": "kenney_platformer-art-deluxe(1).zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-platformer-art-deluxe.txt",
+      "source_file_count": 1021,
+      "runtime_policy": "Imported individual PNG assets; preview/vector/SWF/full redundant sheets omitted. Extended-enemies content imported here once."
+    },
+    "kenney-platformer-art-extended-enemies": {
+      "uploaded_archive": "kenney_platformer-art-extended-enemies(1).zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-platformer-art-extended-enemies.txt",
+      "source_file_count": 186,
+      "runtime_policy": "No duplicate runtime copy. Verified as byte-identical subset of Platformer Art Deluxe extended-enemies section; license/provenance retained only."
+    },
+    "kenney-flag-pack": {
+      "uploaded_archive": "kenney_flag-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-flag-pack.txt",
+      "source_file_count": 700,
+      "runtime_policy": "Kept Large (2×) 128px PNG flags only; Default and SVG duplicate representations omitted."
+    },
+    "kenney-pixel-vehicle-pack": {
+      "uploaded_archive": "kenney_pixel-vehicle-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-pixel-vehicle-pack.txt",
+      "source_file_count": 87,
+      "runtime_policy": "Individual Cars/Characters/Props retained; one complete spritesheet+XML pair retained as optional atlas."
+    },
+    "kenney-rpg-urban-pack": {
+      "uploaded_archive": "kenney_rpg-urban-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-rpg-urban-pack.txt",
+      "source_file_count": 495,
+      "runtime_policy": "All 16px individual tiles retained; packed tilemap + TXT metadata retained as a compound atlas."
+    },
+    "kenney-pirate-pack": {
+      "uploaded_archive": "kenney_pirate-pack.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-pirate-pack.txt",
+      "source_file_count": 411,
+      "runtime_policy": "Retina PNG set retained; Default/vector/SWF duplicates omitted. High-res ship atlas+XML and tile sheet+TXT retained as compound groups."
+    },
+    "kenney-tower-defense-top-down": {
+      "uploaded_archive": "kenney_tower-defense-top-down.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-tower-defense-top-down.txt",
+      "source_file_count": 606,
+      "runtime_policy": "Retina 128px PNG set retained; Default/vector/SWF duplicates omitted. High-res tilesheet retained."
+    },
+    "kenney-letter-tiles": {
+      "uploaded_archive": "kenney_letter-tiles.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-letter-tiles.txt",
+      "source_file_count": 240,
+      "runtime_policy": "All individual letter tiles retained; each color spritesheet kept only with its matching XML frame map."
+    },
+    "kenney-tower-defense-isometric": {
+      "uploaded_archive": "kenney_tower-defense.zip",
+      "license": "CC0",
+      "license_file": "assets/game/licenses/kenney-tower-defense-isometric.txt",
+      "source_file_count": 242,
+      "runtime_policy": "All individual PNG assets retained; spritesheets retained only with their matching XML frame maps."
     }
   },
   "aliases": {
@@ -378,7 +441,11 @@ export const KIDSCADE_ASSETS = {
     "runner_spring": "assets/game/platformer/mechanics/spring_pad_blue.glb",
     "runner_barrier": "assets/game/platformer/obstacles/barrier_2x1x1_red.glb",
     "runner_platform": "assets/game/platformer/platforms/platform_6x2x1_green.glb",
-    "space_planet_00": "assets/game/space/planets/planet00.png"
+    "space_planet_00": "assets/game/space/planets/planet00.png",
+    "flag_korea": "assets/game/2d/flags/kr.png",
+    "letter_blue_a": "assets/game/2d/letters/blue/letter-a.png",
+    "vehicle_school_bus": "assets/game/2d/vehicles/pixel/cars/bus-school.png",
+    "pirate_cannon": "assets/game/2d/pirate/ship-parts/cannon.png"
   },
   "cube_pet_animations": [
     "dance",
@@ -1797,7 +1864,15 @@ export const KIDSCADE_ASSETS = {
         "characterWhite (8)": "assets/game/2d/sports/characters/white/characterWhite (8).png",
         "characterWhite (9)": "assets/game/2d/sports/characters/white/characterWhite (9).png"
       }
-    }
+    },
+    "platformer_art": "assets/game/2d/platformer-art/",
+    "flags": "assets/game/2d/flags/",
+    "vehicles_pixel": "assets/game/2d/vehicles/pixel/",
+    "urban_rpg": "assets/game/2d/urban/rpg/",
+    "pirate": "assets/game/2d/pirate/",
+    "tower_defense_top_down": "assets/game/2d/tower-defense/top-down/",
+    "letter_tiles": "assets/game/2d/letters/",
+    "tower_defense_isometric": "assets/game/2d/tower-defense/isometric/"
   },
   "space": {
     "planets": {
@@ -1812,5 +1887,12 @@ export const KIDSCADE_ASSETS = {
       "planet08": "assets/game/space/planets/planet08.png",
       "planet09": "assets/game/space/planets/planet09.png"
     }
+  },
+  "catalog_file": "assets/game/asset-catalog.json",
+  "import_map_file": "assets/game/import-map.json",
+  "compound_assets_file": "assets/game/compound-assets.json",
+  "atlases": {
+    "root": "assets/game/atlases/",
+    "rule": "Any asset listed in compound-assets.json must be moved/deployed as a complete group."
   }
 };
