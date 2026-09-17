@@ -18,8 +18,8 @@ const foodModels = [
 
 test('Bunsik Kitchen is a fresh walkaround implementation', () => {
   assert.match(html, /<title>보글보글 분식집<\/title>/);
-  assert.match(html, /bunsik-kitchen\.css\?v=3/);
-  assert.match(html, /bunsik-kitchen\.js\?v=3/);
+  assert.match(html, /bunsik-kitchen\.css\?v=4/);
+  assert.match(html, /bunsik-kitchen\.js\?v=4/);
   assert.doesNotMatch(html, /bogle-bunsik-dx|bogle-bunsik-mobile/i);
   assert.match(html, /id="gameCanvas"/);
   assert.match(html, /id="joystick"/);
@@ -44,6 +44,17 @@ test('Bunsik Kitchen uses local Three.js, player GLB and food assets', () => {
     assert.ok(fs.existsSync(path.join(root,'assets','game','food',model)), 'missing model: '+model);
     assert.ok(js.includes(model), 'game does not reference '+model);
   }
+});
+
+test('Bunsik Kitchen player has visible materials and movement animation support', () => {
+  assert.match(js, /new THREE\.AnimationMixer/);
+  assert.match(js, /walk\|run/);
+  assert.match(js, /idle\|stand/);
+  assert.match(js, /setPlayerMoving/);
+  assert.match(js, /playerVisual\.position\.y/);
+  assert.match(js, /palette=\[0xc94f45/);
+  assert.match(js, /playerRing/);
+  assert.match(js, /focusRing/);
 });
 
 test('Bunsik Kitchen movement and interaction are player-driven', () => {
@@ -71,6 +82,16 @@ test('Bunsik Kitchen has independent ramen, tteok and side cooking loops', () =>
   assert.match(js, /scoreDish/);
 });
 
+test('Bunsik Kitchen kitchen design has stronger zones and station lighting', () => {
+  assert.match(js, /GridHelper/);
+  assert.match(js, /stationLights/);
+  assert.match(js, /PointLight/);
+  assert.match(js, /0x315b5c/);
+  assert.match(js, /setFocus/);
+  assert.match(css, /\.world-label\.near/);
+  assert.match(css, /\.world-label\.station/);
+});
+
 test('Bunsik Kitchen keeps UI minimal and world-first', () => {
   assert.match(html, /id="orderStrip"/);
   assert.match(html, /id="heldBadge"/);
@@ -82,8 +103,8 @@ test('Bunsik Kitchen keeps UI minimal and world-first', () => {
 });
 
 test('Bunsik Kitchen root compatibility shell points to the same new game', () => {
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=3/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=3/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=4/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=4/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
   assert.doesNotMatch(rootEntry, /bogle-bunsik-dx|bogle-bunsik-mobile/i);
   assert.doesNotMatch(rootEntry, /location\.replace|http-equiv="refresh"/i);
@@ -100,11 +121,11 @@ test('Bunsik Kitchen uses valid shared audio keys', () => {
 test('Bunsik Kitchen build output is v3 and old runtime is gone', () => {
   const distCatalog=JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game=distCatalog.games.find(g=>g.id==='job_bogle_bunsik');
-  assert.equal(game.href,'games/job_bogle_bunsik/보글보글 분식집.html?v=3');
+  assert.equal(game.href,'games/job_bogle_bunsik/보글보글 분식집.html?v=4');
   const builtDir=path.join(root,'dist','games','job_bogle_bunsik');
   const built=fs.readFileSync(path.join(builtDir,'보글보글 분식집.html'),'utf8');
-  assert.match(built,/bunsik-kitchen\.css\?v=3/);
-  assert.match(built,/bunsik-kitchen\.js\?v=3/);
+  assert.match(built,/bunsik-kitchen\.css\?v=4/);
+  assert.match(built,/bunsik-kitchen\.js\?v=4/);
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
   assert.ok(fs.existsSync(path.join(builtDir,'bunsik-kitchen.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'bunsik-kitchen.js')));
