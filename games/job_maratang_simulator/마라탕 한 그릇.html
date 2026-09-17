@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>마라탕 한 그릇 DX</title>
 <link rel="stylesheet" href="maratang-dx.css?v=3" />
+<link rel="stylesheet" href="maratang-ui-v4.css?v=1" />
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script>try{if(window.self!==window.top)document.documentElement.classList.add('embedded')}catch(_){document.documentElement.classList.add('embedded')}</script>
 </head>
 <body>
 <div class="app">
@@ -22,58 +24,58 @@
     <div class="startGrid">
       <div class="panel hero">
         <h2>내가 고른 재료로<br><span>진짜 마라탕 가게</span>를 운영해요.</h2>
-        <p>손님 주문을 읽고 재료를 직접 담고, 맵기와 예산을 맞춰 끓여 주세요. 같은 재료를 여러 번 요구하는 손님도 있고, 넣지 말아 달라는 재료도 있어요.</p>
+        <p>주문을 확인하고 재료·맵기·예산을 맞춰 한 그릇씩 완성하세요.</p>
         <div class="steps">
-          <div class="step"><b>1. 손님 주문 확인</b>필수 재료·빼기 재료·맵기·예산 확인</div>
-          <div class="step"><b>2. 재료 직접 담기</b>클릭하거나 3D 냄비로 드래그</div>
-          <div class="step"><b>3. 보글보글 조리</b>맵기를 고르고 조리 게이지 완료</div>
-          <div class="step"><b>4. 손님 반응 확인</b>정확도·예산·양·대기시간으로 점수</div>
+          <div class="step"><b>1. 주문 확인</b>필수·빼기 재료와 예산 확인</div>
+          <div class="step"><b>2. 재료 담기</b>클릭하거나 냄비로 드래그</div>
+          <div class="step"><b>3. 조리하기</b>맵기를 고르고 보글보글</div>
+          <div class="step"><b>4. 서빙하기</b>정확도와 대기시간으로 점수</div>
         </div>
         <div class="startActions"><button class="btn primary" id="startBtn">영업 시작</button><button class="btn" id="sampleBtn">예시 주문</button></div>
       </div>
       <div class="panel preview">
-        <div class="preview3d"><div class="badge">Kidscade 실제 GLB 음식 에셋</div><canvas id="previewCanvas"></canvas></div>
-        <div class="previewText">냄비·양배추·버섯·소시지·고기뿐 아니라 조리 스푼과 젓가락도 실제 저장소 에셋을 사용합니다. 전용 모델이 없는 재료만 가벼운 3D 메시로 보완합니다.</div>
+        <div class="preview3d"><div class="badge">3D 마라탕 조리대</div><canvas id="previewCanvas"></canvas></div>
+        <div class="previewText">실제 Kidscade 음식·조리도구 GLB 에셋을 사용한 3D 조리대입니다.</div>
       </div>
     </div>
   </section>
 
   <section class="screen" id="game">
     <div class="panel orders">
-      <div class="head"><h3>손님 대기열</h3><small>기다림이 길어지기 전에 주문을 완성하세요</small></div>
+      <div class="head"><h3>대기 주문</h3><small>옆으로 밀어 다른 손님 확인</small></div>
       <div class="orderGrid" id="orderGrid"></div>
     </div>
 
     <div class="panel ingredients">
-      <div class="head"><h3>재료 진열대</h3><small>클릭 또는 냄비로 드래그 · 최대 12번</small></div>
+      <div class="head"><h3>재료</h3><small>클릭 또는 냄비로 드래그 · 최대 12번</small></div>
       <div class="basket" id="ingredientGrid"></div>
     </div>
 
     <div class="panel summary">
       <div class="pill">주문 <span id="orderName">없음</span></div>
-      <div class="pill">가격 ₩<span id="cost">0</span></div>
-      <div class="pill">무게 <span id="weight">0</span>g</div>
-      <div class="pill">맵기 <span id="spiceText">미선택</span></div>
-      <div class="pill">재료 <span id="itemCount">0</span>개</div>
+      <div class="pill">₩<span id="cost">0</span></div>
+      <div class="pill"><span id="weight">0</span>g</div>
+      <div class="pill"><span id="spiceText">맵기 미선택</span></div>
+      <div class="pill">재료 <span id="itemCount">0</span></div>
     </div>
 
     <div class="panel cook">
-      <div class="head"><h3>3D 조리대</h3><small>손님과 냄비가 주문 진행에 맞춰 반응합니다</small></div>
+      <div class="head"><h3>조리대</h3><small>현재 주문과 냄비만 보고 빠르게 조리하세요</small></div>
       <div class="focus">
         <div class="face" id="customerFace">🍲</div>
-        <div><div class="focusName" id="focusName">주문을 선택해 주세요</div><div class="focusText" id="focusText">왼쪽 주문 카드 중 하나를 골라 주세요.</div><div class="focusNeed" id="focusNeed"></div></div>
+        <div><div class="focusName" id="focusName">주문을 선택해 주세요</div><div class="focusText" id="focusText">대기 주문 중 하나를 고르면 바로 조리할 수 있어요.</div><div class="focusNeed" id="focusNeed"></div></div>
         <div class="patience"><div class="patienceLabel"><span>기다림</span><span id="patienceValue">-</span></div><div class="patienceBar"><div id="patienceFill"></div></div></div>
       </div>
 
       <div class="cookControls">
-        <div class="box"><b style="font-size:12px">맵기 선택</b><div class="spiceRow" id="spiceRow"></div><div class="progress"><div id="cookFill"></div></div></div>
+        <div class="box"><b style="font-size:12px">맵기</b><div class="spiceRow" id="spiceRow"></div><div class="progress"><div id="cookFill"></div></div></div>
         <div class="box"><div class="cookBtns desktopCookBtns"><button class="btn small primary" id="cookBtn">끓이기</button><button class="btn small" id="serveBtn">서빙</button><button class="btn small" id="undoBtn">마지막 재료 빼기</button><button class="btn small" id="clearBtn">그릇 비우기</button></div><div class="hint" id="hint">주문을 선택하고 재료를 담아 주세요.</div></div>
       </div>
 
       <div class="stage" id="stage">
         <canvas id="three"></canvas>
         <div class="comboBanner" id="combo">정확하게 만들면 콤보!</div>
-        <div class="dropHint">재료 카드를 이 냄비로 끌어다 놓아도 됩니다</div>
+        <div class="dropHint">재료 카드를 냄비로 끌어다 놓아도 됩니다</div>
       </div>
     </div>
   </section>
