@@ -8,6 +8,7 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="playtime-state.js"></script>
     <script src="seed-wallet.js"></script>
+    <script src="daily-progress.js"></script>
     <link rel="stylesheet" href="main-shell.css">
 
 </head>
@@ -2232,8 +2233,8 @@ ${getEvolutionHintText()}
 
             function claimDailyReward(item) {
                 const today = getDailyRewardKey();
-                const claimed = localStorage.getItem('kidscade_daily_reward_claimed');
-                if (claimed === today) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
+                const claimed = window.KidscadeDaily?.isDailyRewardClaimed?.() ?? (localStorage.getItem('kidscade_daily_reward_claimed') === today);
+                if (claimed) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
 
                 let granted = false;
                 if (item.rewardType === 'seed') {
@@ -2256,7 +2257,10 @@ ${getEvolutionHintText()}
                 }
 
                 // 실제 지급이 끝난 뒤에만 '오늘 수령 완료'를 기록합니다.
-                if (granted) localStorage.setItem('kidscade_daily_reward_claimed', today);
+                if (granted) {
+                    if (window.KidscadeDaily?.markDailyRewardClaimed) window.KidscadeDaily.markDailyRewardClaimed();
+                    else localStorage.setItem('kidscade_daily_reward_claimed', today);
+                }
                 renderShop();
                 updatePetUI();
             }
@@ -2271,7 +2275,7 @@ ${getEvolutionHintText()}
                     container.append(item);return;
                 }
                 const items = shopDB[currentShopTab] || [];
-                const todayClaimed = localStorage.getItem('kidscade_daily_reward_claimed') === getDailyRewardKey();
+                const todayClaimed = window.KidscadeDaily?.isDailyRewardClaimed?.() ?? (localStorage.getItem('kidscade_daily_reward_claimed') === getDailyRewardKey());
 
                 items.forEach(item => {
                     const el = document.createElement('div');
@@ -2330,13 +2334,13 @@ ${getEvolutionHintText()}
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술' };
 
             function getTodayKey() {
-                return new Date().toLocaleDateString('ko-KR');
+                return window.KidscadeDaily?.getTodayKey?.() || new Date().toLocaleDateString('ko-KR');
             }
 
             function buildTodayMissionState() {
+                if (window.KidscadeDaily?.buildMissionState) return window.KidscadeDaily.buildMissionState(categoryNames);
                 const categories = ['math', 'korean', 'lang', 'trivia', 'music'];
-                const today = new Date();
-                const category = categories[today.getDate() % categories.length];
+                const category = categories[new Date().getDate() % categories.length];
                 return {
                     date: getTodayKey(),
                     missions: [
@@ -2348,6 +2352,7 @@ ${getEvolutionHintText()}
             }
 
             function getTodayMissionState() {
+                if (window.KidscadeDaily?.getMissionState) return window.KidscadeDaily.getMissionState(categoryNames);
                 let state;
                 try { state = JSON.parse(localStorage.getItem('kidscade_daily_missions') || 'null'); } catch(e) { state = null; }
                 if (!state || state.date !== getTodayKey() || !Array.isArray(state.missions)) {
@@ -2358,7 +2363,9 @@ ${getEvolutionHintText()}
             }
 
             function saveTodayMissionState(state) {
+                if (window.KidscadeDaily?.saveMissionState) return window.KidscadeDaily.saveMissionState(state);
                 localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
+                return true;
             }
 
             function renderDailyMissions() {
@@ -2386,27 +2393,32 @@ ${getEvolutionHintText()}
             }
 
             function updateMissionProgress(category, gameId) {
-                const state = getTodayMissionState();
-                let completedCount = 0;
-                state.missions.forEach(mission => {
-                    if (mission.claimed) return;
-                    if (mission.type === 'any') mission.progress += 1;
-                    if (mission.type === 'count') mission.progress += 1;
-                    if (mission.type === 'category' && mission.category === category) mission.progress += 1;
-                    if (mission.progress >= mission.goal) {
-                        mission.progress = mission.goal;
-                        mission.claimed = true;
-                        completedCount++;
-                        changeSeeds(mission.reward, '', { toast: false });
-                        showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개를 받았어요.`, true);
-                    }
+                let completed = [];
+                if (window.KidscadeDaily?.advanceMissions) {
+                    completed = window.KidscadeDaily.advanceMissions(category, categoryNames).completed || [];
+                } else {
+                    const state = getTodayMissionState();
+                    state.missions.forEach(mission => {
+                        if (mission.claimed) return;
+                        if (mission.type === 'any' || mission.type === 'count') mission.progress += 1;
+                        if (mission.type === 'category' && mission.category === category) mission.progress += 1;
+                        if (mission.progress >= mission.goal) {
+                            mission.progress = mission.goal;
+                            mission.claimed = true;
+                            completed.push({ ...mission });
+                        }
+                    });
+                    saveTodayMissionState(state);
+                }
+                completed.forEach(mission => {
+                    changeSeeds(mission.reward, '', { toast: false });
+                    showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개를 받았어요.`, true);
                 });
-                if (completedCount > 0) {
-                    pet.exp += completedCount * 10;
+                if (completed.length > 0) {
+                    pet.exp += completed.length * 10;
                     savePet();
                     checkPetEvolution();
                 }
-                saveTodayMissionState(state);
                 renderDailyMissions();
             }
 
@@ -3544,9 +3556,9 @@ ${getEvolutionHintText()}
 
             let attendanceRewardPending = false;
             function checkAttendance() {
-                const todayStr = new Date().toLocaleDateString();
-                const lastAttendance = localStorage.getItem('kidscade_attendance');
-                if (lastAttendance !== todayStr && !attendanceRewardPending) {
+                const todayStr = getDailyRewardKey();
+                const attendanceClaimed = window.KidscadeDaily?.isAttendanceClaimed?.() ?? (localStorage.getItem('kidscade_attendance') === todayStr);
+                if (!attendanceClaimed && !attendanceRewardPending) {
                     attendanceRewardPending = true;
                     const stamp = document.getElementById('attendance-stamp'); stamp.classList.add('animate-stamp');
                     playUISound('open');
@@ -3554,7 +3566,8 @@ ${getEvolutionHintText()}
                     if (addCoins(30, "오늘의 출석 씨앗")) {
                         pet.affection = Math.min(100, pet.affection + 20);
                         savePet(); updatePetUI();
-                        localStorage.setItem('kidscade_attendance', todayStr);
+                        if (window.KidscadeDaily?.markAttendanceClaimed) window.KidscadeDaily.markAttendanceClaimed();
+                        else localStorage.setItem('kidscade_attendance', todayStr);
                         showToast("쑥쑥이가 오늘의 도전을 기대하고 있어요! 🌱");
                     }
                     attendanceRewardPending = false;
