@@ -113,15 +113,15 @@ html = replaceBetween(
   html,
   '            function addCoins(amount, reason) {',
   '            // =====================================\n            // 👤 씨앗 아바타 옷장',
-  `${walletSync}\n\n            // =====================================\n            // 👤 씨앗 아바타 옷장`,
+  `${walletSync}\n\n`,
   'seed wallet synchronization'
 );
 
 fs.writeFileSync(INDEX, html, 'utf8');
 
 let bootstrap = fs.readFileSync(BOOTSTRAP, 'utf8');
-const versionNeedle = "    html = html.replace('src=\\\"playtime-state.js\\\"', 'src=\\\"' + withVersion('playtime-state.js') + '\\\"');";
-const seedVersionLine = "    html = html.replace('src=\\\"seed-wallet.js\\\"', 'src=\\\"' + withVersion('seed-wallet.js') + '\\\"');";
+const versionNeedle = `    html = html.replace('src="playtime-state.js"', 'src="' + withVersion('playtime-state.js') + '"');`;
+const seedVersionLine = `    html = html.replace('src="seed-wallet.js"', 'src="' + withVersion('seed-wallet.js') + '"');`;
 if (!bootstrap.includes(seedVersionLine)) {
   if (!bootstrap.includes(versionNeedle)) throw new Error('bootstrap playtime version line not found');
   bootstrap = bootstrap.replace(versionNeedle, `${versionNeedle}\n${seedVersionLine}`);
