@@ -10,9 +10,11 @@ test('index_base delegates persistent playtime state to playtime-state.js', () =
   const html = read('index_base.html');
   assert.match(html, /<script src="playtime-state\.js"><\/script>/);
   assert.match(html, /window\.KidscadePlaytime\?\.addSeconds/);
+  assert.match(html, /window\.KidscadePlaytime\?\.render\?\.\(\)/);
   assert.doesNotMatch(html, /function\s+loadPlayTimeSeconds\s*\(/);
   assert.doesNotMatch(html, /function\s+persistPlayTime\s*\(/);
   assert.doesNotMatch(html, /function\s+updatePlayTimeDisplay\s*\(/);
+  assert.doesNotMatch(html, /\bupdatePlayTimeDisplay\s*\(/);
   assert.doesNotMatch(html, /function\s+syncPlayTimeFromStorage\s*\(/);
   assert.doesNotMatch(html, /\blet\s+totalPlayTimeSec\b/);
 });
