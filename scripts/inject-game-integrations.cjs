@@ -19,6 +19,38 @@ function injectScripts(relativeHtml, scripts) {
   return true;
 }
 
+function fixDogRunnerGateOrientation() {
+  const relativeHtml = '곱셈 강아지 러너.html';
+  const file = path.join(dist, relativeHtml);
+  if (!fs.existsSync(file)) throw new Error(`Missing built game file: ${relativeHtml}`);
+  let html = fs.readFileSync(file, 'utf8');
+  const sideways = 'g.rotation.y=Math.PI/2;';
+  const forward = 'g.rotation.y=0;';
+
+  if (html.includes(sideways)) {
+    html = html.replace(sideways, forward);
+    fs.writeFileSync(file, html, 'utf8');
+    return true;
+  }
+  if (html.includes(forward)) return false;
+  throw new Error('Dog runner gate orientation marker was not found.');
+}
+
+function bumpDogRunnerHref() {
+  const catalogPath = path.join(dist, 'data', 'games.json');
+  if (!fs.existsSync(catalogPath)) throw new Error('Missing built game catalog: data/games.json');
+  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  const game = Array.isArray(catalog.games)
+    ? catalog.games.find(item => item && item.id === 'low_math_dog_runner')
+    : null;
+  if (!game) throw new Error('Dog runner catalog entry was not found.');
+  const nextHref = '곱셈 강아지 러너.html?v=4';
+  const changed = game.href !== nextHref;
+  game.href = nextHref;
+  fs.writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
+  return changed;
+}
+
 const classroomChanged = injectScripts('classroom_war_3d.html', [
   '/classroom-war-records.js?v=20260916-1',
   '/classroom-war-records-observer.js?v=20260916-1'
@@ -36,7 +68,16 @@ const patienceTowerChanged = injectScripts('인내의 탑.html', [
   '/patience-tower-duel-entry.js?v=20260917-1'
 ]);
 
+const dogRunnerGateChanged = fixDogRunnerGateOrientation();
+const dogRunnerFxChanged = injectScripts('곱셈 강아지 러너.html', [
+  '/dog-runner-polish.js?v=20260917-1'
+]);
+const dogRunnerHrefChanged = bumpDogRunnerHref();
+
 console.log(`[game-integrations] Classroom War records ${classroomChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Timing exact 10 records ${timingChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Rhythm Dash v11 ${rhythmDashChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Patience Tower duel entry ${patienceTowerChanged ? 'injected' : 'already present'}.`);
+console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotated forward' : 'already forward'}.`);
+console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
+console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v4' : 'already v4'}.`);
