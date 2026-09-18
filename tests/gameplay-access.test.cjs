@@ -73,7 +73,7 @@ test('facility cooking pauses under help and collapse overlays', () => {
 });
 test('water must be collected from a purifier instead of appearing in inventory automatically', () => {
   const c=raftContext();
-  loadFunctions(['interactFacility'],c);
+  loadFunctions(['facilityName','interactFacility'],c);
   const purifier={id:2,type:'purifier',x:0,z:0,level:0,storedWater:1,waterTimer:27};
   c.state.structures=[purifier]; c.state.inventory.water=0; c.state.counts.waterCollected=0;
   c.interactFacility(purifier);
