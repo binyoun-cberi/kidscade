@@ -1,0 +1,79 @@
+{
+  "version": "v3-addon",
+  "created": "2026-09-18",
+  "packs": [
+    {
+      "pack": "kenney-platformer-characters",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney Vleugels / Kenney.nl",
+      "runtime_files": 162,
+      "deduplicated_sources": 3,
+      "bytes": 671522
+    },
+    {
+      "pack": "kenney-top-down-shooter",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney Vleugels / Kenney.nl",
+      "runtime_files": 583,
+      "deduplicated_sources": 0,
+      "bytes": 811766
+    },
+    {
+      "pack": "kenney-game-icons",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney Vleugels / Kenney.nl",
+      "runtime_files": 427,
+      "deduplicated_sources": 1,
+      "bytes": 3697082
+    },
+    {
+      "pack": "kenney-particle-pack",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney Vleugels / Kenney.nl",
+      "runtime_files": 96,
+      "deduplicated_sources": 0,
+      "bytes": 5362919
+    },
+    {
+      "pack": "kenney-generic-items",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney Vleugels / Kenney.nl",
+      "runtime_files": 325,
+      "deduplicated_sources": 5,
+      "bytes": 1008369
+    },
+    {
+      "pack": "kenney-splat-pack",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "creator": "Kenney / Kenney.nl",
+      "runtime_files": 72,
+      "deduplicated_sources": 0,
+      "bytes": 246166
+    },
+    {
+      "pack": "underwater-diving-art",
+      "license": "CC-BY-3.0",
+      "attribution_required": true,
+      "creator": "Luis Zuno (@ansimuz)",
+      "runtime_files": 20,
+      "deduplicated_sources": 0,
+      "bytes": 228773
+    },
+    {
+      "pack": "user-seafloor-tiles",
+      "license": "UNSPECIFIED-USER-PROVIDED",
+      "attribution_required": null,
+      "creator": "Unknown / user-provided",
+      "runtime_files": 2,
+      "deduplicated_sources": 0,
+      "bytes": 8074
+    }
+  ],
+  "case_collision_fixes": []
+}

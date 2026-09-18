@@ -1,0 +1,6 @@
+Kidscade Asset Library v3 ADDON
+Runtime files: 1687
+Exact duplicates removed: 9
+Runtime bytes: 12034671
+Case-insensitive path collision fixes: 0
+Excluded/non-runtime source files: 277

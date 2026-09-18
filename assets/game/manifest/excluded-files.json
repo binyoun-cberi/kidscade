@@ -1,0 +1,1387 @@
+[
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::PNG/Adventurer/adventurer_tilesheet.png",
+    "reason": "duplicate-sheet-atomic-poses-kept"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::PNG/Female/female_tilesheet.png",
+    "reason": "duplicate-sheet-atomic-poses-kept"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::PNG/Player/player_tilesheet.png",
+    "reason": "duplicate-sheet-atomic-poses-kept"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::PNG/Soldier/soldier_tilesheet.png",
+    "reason": "duplicate-sheet-atomic-poses-kept"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::PNG/Zombie/zombie_tilesheet.png",
+    "reason": "duplicate-sheet-atomic-poses-kept"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Preview.png",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Preview_KenneyNL.png",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Vector/adventurer_vector.svg",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Vector/female_vector.svg",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Vector/player_vector.svg",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Vector/soldier_vector.svg",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-platformer-characters",
+    "source": "kenney-platformer-characters.zip::Vector/zombie_vector.svg",
+    "reason": "source-preview-or-vector-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Hitman 1/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Man Blue/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Survivor 1/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Woman Green/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::PNG/Zombie 1/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Preview.png",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Sample.png",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Spritesheet/Thumbs.db",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Spritesheet/spritesheet_tiles.png",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Tilesheet/Thumbs.db",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Tilesheet/tilesheet_complete.png",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Tilesheet/tilesheet_complete_2X.png",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Vector/vector_characters.svg",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Vector/vector_characters.swf",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Vector/vector_tiles.svg",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-top-down-shooter",
+    "source": "kenney-top-down-shooter.zip::Vector/vector_tiles.swf",
+    "reason": "preview-vector-swf-or-duplicate-sheet-excluded"
+  },
+  {
+    "source_pack": "kenney-game-icons",
+    "source": "kenney-game-icons.zip::Vector/vector_blackIcons.ai",
+    "reason": "preview-vector-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-game-icons",
+    "source": "kenney-game-icons.zip::Vector/vector_blackIcons.svg",
+    "reason": "preview-vector-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-game-icons",
+    "source": "kenney-game-icons.zip::Vector/vector_whiteIcons.ai",
+    "reason": "preview-vector-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-game-icons",
+    "source": "kenney-game-icons.zip::Vector/vector_whiteIcons.svg",
+    "reason": "preview-vector-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-game-icons",
+    "source": "kenney-game-icons.zip::preview.png",
+    "reason": "preview-vector-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/flame_05_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/flame_06_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/muzzle_01_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/muzzle_02_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/muzzle_03_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/muzzle_04_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/muzzle_05_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/spark_05_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/spark_06_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_01_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_02_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_03_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_04_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_05_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_06_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/Rotated/trace_07_rotated.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/circle_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/circle_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/circle_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/circle_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/circle_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/dirt_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/dirt_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/dirt_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/fire_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/fire_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flame_06.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/flare_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/light_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/light_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/light_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/magic_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/magic_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/magic_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/magic_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/magic_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/muzzle_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/muzzle_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/muzzle_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/muzzle_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/muzzle_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/scorch_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/scorch_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/scorch_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/scratch_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/slash_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/slash_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/slash_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/slash_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_06.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_07.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_08.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_09.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/smoke_10.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_06.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/spark_07.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_06.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_07.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_08.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/star_09.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/symbol_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/symbol_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_05.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_06.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/trace_07.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/twirl_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/twirl_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/twirl_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/window_01.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/window_02.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/window_03.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::PNG (Black background)/window_04.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::Preview.png",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-particle-pack",
+    "source": "kenney-particle-pack.zip::Unity samples/particlePack_samples.unitypackage",
+    "reason": "black-background-unity-sample-or-source-file-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::PNG/Colored/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::PNG/White/Thumbs.db",
+    "reason": "os-metadata"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Preview.png",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Preview_KenneyNL.png",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Vector/genericItems_vector_colored.svg",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Vector/genericItems_vector_colored.swf",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Vector/genericItems_vector_white.svg",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-generic-items",
+    "source": "kenney-generic-items.zip::Vector/genericItems_vector_white.swf",
+    "reason": "preview-vector-swf-or-source-format-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Preview.png",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/overview.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat00.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat01.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat02.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat03.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat04.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat05.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat06.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat07.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat08.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat09.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat10.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat11.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat12.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat13.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat14.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat15.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat16.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat17.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat18.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat19.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat20.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat21.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat22.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat23.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat24.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat25.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat26.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat27.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat28.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat29.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat30.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat31.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat32.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat33.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat34.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Vector/splat35.svg",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Visit Kenney.url",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "kenney-splat-pack",
+    "source": "kenney-splat-pack.zip::Visit Patreon.url",
+    "reason": "vector-preview-or-link-file-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/FX/bubbles.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/FX/enemy-death.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/FX/explosion-big.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/FX/explosion-small.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/FX/explosion.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/enemies/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/enemies/fish-big.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/enemies/fish-dart.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/enemies/fish.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/player/player-fast.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/player/player-hurt.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/player/player-idle.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/player/player-rush.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/GIF/player/player-swiming.gif",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PNG/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PNG/enemies/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/fish-big.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/fish-dart.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/fish.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/mine-big.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/mine-small.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/Enemies/mine.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/FX/bubbles.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/FX/enemy-death.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/FX/explosion-big.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/FX/explosion-small.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/FX/explosion.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/MISC/instructions.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/MISC/start-screen.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/environment/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/environment/underwater-environment.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/player-fast.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/player-hurt.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/player-idle.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/player-rush.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/PSD/player/player-swiming.psd",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/LICENSE.TXT",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/README.TXT",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/index.html",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/.name",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/Underwater Diving.iml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/codeStyleSettings.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/encodings.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/misc.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/modules.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/scopes/scope_settings.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/vcs.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/.idea/workspace.xml",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/bubbles.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/enemy-death.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/explosion.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/fish-big.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/fish-dart.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/fish.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/levelexit.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/mine-big.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/mine-small.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/mine.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/player.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/entities/void.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/levels/level0.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/levels/level1.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/levels/level2.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/main.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/screens/instructionsscreen.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/game/screens/startscreen.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/plugins/camera.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/lib/plugins/parallax.js",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/.DS_Store",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/04b03.font.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/background.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/bubbles.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/enemy-death.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/explosion-big.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/explosion-small.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/explosion.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/fish-big.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/fish-dart.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/fish.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/mine-big.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/mine-small.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/mine.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/entities/player.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/instructions.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/midground.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/props.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/start-screen-bg.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/start-screen-fg.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/start-screen-gradient.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  },
+  {
+    "source_pack": "underwater-diving-art",
+    "source": "underwater-diving-files.zip::underwater-diving-files/code/media/tiles.png",
+    "reason": "code-gif-duplicate-or-editor-source-excluded"
+  }
+]
