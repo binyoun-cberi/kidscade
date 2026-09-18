@@ -214,7 +214,7 @@ function syncPedestrians3D(time){
   g.rotation.y=Math.PI/2-a;g.rotation.z=Math.sin(time*7+p.phase)*.012
  }
 }
-function markerColor3(){return mission?.type==='pursuit'?0xff5364:mission?.type==='traffic'?0xffd85e:0x50a9ff}
+function markerColor3(){return mission?.type==='pursuit'?0xff5364:mission?.type==='traffic'?0xffd85e:mission?.type==='crosswalk'?0x63d997:0x50a9ff}
 function bangSprite3(color=0xffd75e){const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');x.fillStyle='#152232';x.beginPath();x.arc(64,64,45,0,TAU);x.fill();x.strokeStyle='#ffffff';x.lineWidth=7;x.stroke();x.fillStyle='#ffd75e';x.font='900 74px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('!',64,67);const tex=new T3.CanvasTexture(c);tex.colorSpace=T3.SRGBColorSpace;const s=new T3.Sprite(new T3.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(.72,.72,.72);s.renderOrder=20;return s}
 function addProp3(key,x,y,target=1,rot=0,tint=null){const o=clone3(key,target,tint);if(!o)return null;o.position.set(x*SCALE3,.06,y*SCALE3);o.rotation.y=rot;mission3.add(o);return o}
 function rebuildMissionProps3(){
@@ -225,6 +225,13 @@ function rebuildMissionProps3(){
  if(mission.type==='accident'){const t=mission.scene;for(let i=-1;i<=1;i++)addProp3('cone',t.x+58,t.y+i*36,.52);addProp3('barrier',t.x-58,t.y,.8,Math.PI/2);const wreck=clone3('sedan',1.12,0x777b7e);if(wreck){wreck.position.set(t.x*SCALE3,.08,t.y*SCALE3);wreck.rotation.y=.45;mission3.add(wreck)}}
  else if(mission.type==='traffic'){for(let i=0;i<mission.index;i++){const p=mission.points[i];addProp3('cone',p.x,p.y,.56)}}
  else if(mission.type==='obstacle'){const t=mission.scene;addProp3('barrier',t.x,t.y,.86,Math.PI/2);addProp3('cone',t.x+38,t.y+30,.56)}
+ else if(mission.type==='crosswalk'){
+   const t=mission.point;
+   for(let i=-2;i<=2;i++){const stripe=box3(.18,.018,1.25,0xf1efe4,.95);stripe.position.set((t.x*SCALE3)+i*.34,.07,t.y*SCALE3);mission3.add(stripe)}
+   for(const [key,dx,dz,rot] of [['pedC',-42,-36,0],['pedA',38,38,Math.PI],['pedD',-68,34,Math.PI]]){
+     const person=clone3(key,.7);if(person){person.position.set((t.x+dx)*SCALE3,.07,(t.y+dz)*SCALE3);person.rotation.y=rot;mission3.add(person)}
+   }
+ }
  missionKey3=mission.type+':'+(mission.index||0)
 }
 function syncMission3D(time){
@@ -393,10 +400,10 @@ function updateYield(){if(!player.siren)return;for(const c of cars){if(c.suspect
 function collisions(){for(const c of cars){const dx=c.x-player.x,dy=c.y-player.y,d=Math.hypot(dx,dy);if(d>0&&d<34){const nx=dx/d,ny=dy/d,over=34-d;player.x-=nx*over*.5;player.y-=ny*over*.5;c.x+=nx*over*.5;c.y+=ny*over*.5;const impact=Math.abs(player.speed-c.speed);player.speed*=.73;c.speed*=.73;if(impact>100){player.health=clamp(player.health-(impact-90)*.025,0,100);sfx('combat.impact_heavy',{volume:.16,cooldownMs:120});sparkBurst3(clamp((impact-90)/180,.25,1))}}}}
 function missionTarget(){if(!mission)return null;if(mission.type==='pursuit')return mission.suspect;if(mission.type==='accident'||mission.type==='obstacle')return mission.scene;if(mission.type==='traffic')return mission.points[Math.min(mission.index,2)];return mission.point}
 function spawnMission(){
- const roll=Math.random();let type=missionIssued===0?'pursuit':roll<.46?'pursuit':roll<.68?'accident':roll<.82?'traffic':'obstacle';
- if(type===lastMissionType&&type!=='pursuit')type=Math.random()<.58?'pursuit':(type==='accident'?'obstacle':'accident');
+ const roll=Math.random();let type=missionIssued===0?'pursuit':roll<.43?'pursuit':roll<.63?'accident':roll<.76?'crosswalk':roll<.88?'traffic':'obstacle';
+ if(type===lastMissionType&&type!=='pursuit')type=Math.random()<.52?'pursuit':(type==='accident'?'crosswalk':'accident');
  missionIssued++;lastMissionType=type;
- if(type==='pursuit')spawnPursuit();else if(type==='accident')spawnAccident();else if(type==='traffic')spawnTrafficMission();else spawnObstacle()
+ if(type==='pursuit')spawnPursuit();else if(type==='accident')spawnAccident();else if(type==='crosswalk')spawnCrosswalkMission();else if(type==='traffic')spawnTrafficMission();else spawnObstacle()
 }
 function spawnPursuit(){
  const p=trafficSpawnNear(player,480,920),s=new TrafficCar(p.x,p.y,p.a,A.suspect),variants=[
@@ -409,6 +416,12 @@ function spawnPursuit(){
  setMission(v[0],v[1],v[2]);radio('용의 차량 위치 전송. 추격 중 민간 차량과 보행자를 주의하세요.','#ff8290')
 }
 function spawnAccident(){const p=roadPoint(player,380,760);mission={type:'accident',scene:p,time:0,max:55};missionKey3='';setMission('교통 사고','현장 안전 확보','사고 현장에 정차한 뒤 2차 사고를 막고 현장 조치를 완료하세요.');radio('접촉 사고 신고. 2차 사고 예방이 우선입니다.')}
+function spawnCrosswalkMission(){
+ const guess=nearestIntersection(player.x+(Math.random()<.5?GRID:-GRID),player.y+(Math.random()<.5?GRID:-GRID)),p={x:guess.x,y:guess.y};
+ mission={type:'crosswalk',point:p,time:0,max:55,progress:0,active:false};missionKey3='';
+ setMission('생활 안전','횡단보도 보행자 보호','현장에 정차한 뒤 통행 보호를 시작하고, 주변 차량이 속도를 줄이도록 경광 사이렌을 켜세요.');
+ radio('보행자 통행 보호 요청. 횡단보도 주변 차량에 주의하세요.','#8ef0ac')
+}
 function spawnTrafficMission(){const c=nearestIntersection(player.x+(Math.random()<.5?GRID:-GRID),player.y+(Math.random()<.5?GRID:-GRID)),pts=[{x:c.x-150,y:c.y-30},{x:c.x+30,y:c.y-150},{x:c.x+150,y:c.y+30}];mission={type:'traffic',points:pts,index:0,time:0,max:62};missionKey3='';setMission('교통 정리','안전콘 설치','노란 표시 3곳에 정차해 안전콘을 설치하세요.');radio('교차로 혼잡 신고. 안전 구역을 만들어 주세요.','#ffe18b')}
 function spawnObstacle(){const p=roadPoint(player,350,720);mission={type:'obstacle',scene:p,time:0,max:50};missionKey3='';setMission('도로 위험','낙하물 정리','도로 장애물 주변에 정차한 뒤 안전하게 치우세요.');radio('차로에 장애물이 있다는 신고입니다.','#ffd17a')}
 function finish(points,msg){score+=points;solved++;mission=null;missionKey3='';missionDelay=2.6;setMission('순찰','다음 신고 대기 중','주변을 순찰하며 무전을 기다리세요.');ui.meta.textContent='';setAction();setProgress();radio(msg,'#8ef0ac');sfx('success.cheer_yay',{volume:.2,cooldownMs:500})}
@@ -435,6 +448,17 @@ function updateMission(dt){
   }
  }
  else if(mission.type==='accident'){const parked=d<118&&Math.abs(player.speed)<8;setProgress(d<150?(parked?100:55):null,'#4aa8ff');if(d<135)setAction(parked?'현장 안전 확보 (Enter)':'완전히 정차하세요',parked?()=>finish(1,'사고 현장 수습 완료'):null);else setAction()}
+ else if(mission.type==='crosswalk'){
+   const parked=d<125&&Math.abs(player.speed)<8;
+   if(!mission.active){
+     setProgress(d<155?(parked?20:8):null,'#63d997');
+     if(d<135)setAction(parked?'보행자 통행 보호 시작 (Enter)':'횡단보도 옆에 완전히 정차하세요',parked?()=>{mission.active=true;setAction();radio('통행 보호 시작. 사이렌을 켜 접근 차량을 감속시키세요.','#8ef0ac')}:null);else setAction()
+   }else{
+     const safe=parked&&player.siren;if(safe)mission.progress+=dt;else mission.progress=Math.max(0,mission.progress-dt*.45);
+     setProgress(mission.progress/3.2*100,'#63d997');ui.meta.textContent+=' · 통행 보호 '+Math.round(clamp(mission.progress/3.2*100,0,100))+'%';
+     setAction(safe?'보행자 통행 중':'정차 + 사이렌 유지');if(mission.progress>=3.2)finish(1.3,'보행자들이 안전하게 횡단했습니다.')
+   }
+ }
  else if(mission.type==='traffic'){const p=mission.points[mission.index],dd=dist(player,p),parked=dd<82&&Math.abs(player.speed)<8;if(dd<90)setAction(parked?'안전콘 설치 '+(mission.index+1)+'/3':'이 지점에 정차하세요',parked?()=>{mission.index++;missionKey3='';sfx('collect.coin_drop',{volume:.15,cooldownMs:100});if(mission.index>=3)finish(1.2,'교차로 안전 확보 완료')}:null);else setAction()}
  else if(mission.type==='obstacle'){const parked=d<105&&Math.abs(player.speed)<8;if(d<120)setAction(parked?'장애물 치우기':'차량을 정차하세요',parked?()=>finish(1,'도로 장애물 제거 완료'):null);else setAction()}
 }
