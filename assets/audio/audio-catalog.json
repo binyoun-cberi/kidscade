@@ -50,6 +50,9 @@
     ],
     "combat.hurt_voice": [
       "sfx/combat/hurt-voice-01.mp3"
+    ],
+    "music.math_tower_defense": [
+      "incoming/newmusical/sergequadrado-cool-hip-hop-loop-275527.mp3"
     ]
   }
 }
