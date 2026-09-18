@@ -81,11 +81,12 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=4",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=5",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "무료 수중 스프라이트로 리워크된 오픈워터 직업 체험! 산호초·침수 유적·기뢰 난파선·심해를 자유 잠수하며 생물을 촬영하고 유물을 회수해 장비를 업그레이드하세요."
+      "description": "2D 픽셀 잠수 탐사로 완전 리워크! 산호초·해초 숲·침수 유적·난파선·암흑 심해를 자유롭게 헤엄치며 생물을 촬영하고 표본·유물을 회수해 장비와 도감을 성장시키는 다이버 직업 체험 게임.",
+      "scoreKey": "deep_diver_2d_v5"
     },
     {
       "id": "math_timing_lcd",
