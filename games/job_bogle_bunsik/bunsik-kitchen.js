@@ -43,7 +43,7 @@ function newPot(i){
 const state={
  running:false,time:SHIFT_SECONDS,revenue:0,served:0,perfect:0,missed:0,sound:true,
  orders:[],nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,
- tutorial:{active:true,step:0},discardArmedUntil:0,trayDiscardArmedUntil:0,
+ tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i))
 };
 
@@ -203,6 +203,7 @@ class RamenKitchen3D{
  setSelectedPot(index){
   if(index==null){state.selectedPot=null;this.potVisuals.forEach(v=>v.selectRing.visible=false);renderPotStrip();renderSelectedHelp();updateActionButtons();return}
   if(state.tutorial.active&&state.tutorial.step===0&&index!==0){toast('첫 그릇은 1번 냄비로 같이 만들어 봐요');return}
+  if(state.selectedPot!==index){state.discardArmedUntil=0;state.discardArmedPot=null;els.discard.classList.remove('armed')}
   state.selectedPot=index;
   if(state.tutorial.active&&state.tutorial.step===0&&index===0)state.tutorial.step=1;
   this.potVisuals.forEach((v,i)=>v.selectRing.visible=i===index);
@@ -438,10 +439,10 @@ function requestDiscard(){
  if(state.tutorial.active){toast('첫 라면은 같이 완성해 본 뒤 비우기를 사용할 수 있어요');return}
  const p=state.pots[state.selectedPot];if(potEmpty(p)){toast('이미 빈 냄비예요');return}
  const now=performance.now();
- if(now>state.discardArmedUntil){
-  state.discardArmedUntil=now+2400;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 정말 비우기';toast('실수 방지 · 한 번 더 눌러야 냄비를 비워요',1800);return
+ if(now>state.discardArmedUntil||state.discardArmedPot!==state.selectedPot){
+  state.discardArmedUntil=now+2400;state.discardArmedPot=state.selectedPot;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 정말 비우기';toast('실수 방지 · 같은 냄비를 한 번 더 확인해야 비워요',1800);return
  }
- const index=state.selectedPot;state.discardArmedUntil=0;resetPot(index);renderDiscardButton();sfx('collect.coin_drop',{volume:.1,rate:.72,cooldownMs:100});toast('냄비 '+(index+1)+'을 비웠어요')
+ const index=state.selectedPot;state.discardArmedUntil=0;state.discardArmedPot=null;resetPot(index);renderDiscardButton();sfx('collect.coin_drop',{volume:.1,rate:.72,cooldownMs:100});toast('냄비 '+(index+1)+'을 비웠어요')
 }
 function updatePots(dt){
  state.pots.forEach(p=>{
@@ -554,7 +555,7 @@ function loop(ts){
 }
 function resetGameState(){
  state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;
- state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.trayDiscardArmedUntil=0;
+ state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
  kitchen.setSelectedPot(null);renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud()
