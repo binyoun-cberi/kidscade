@@ -444,7 +444,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   // Existing Kidscade CC0 library assets used as an optional visual layer.
   // Gameplay never depends on these loading successfully: procedural meshes remain the fallback.
   const blockraftAssetPaths = {
-    deck:'assets/game/platformer/platforms/floor_wood_1x1.glb',
+    deck:'assets/game/3d/interiors/modular-sushi-restaurant-kit/wood-floor.glb',
     reinforced:'assets/game/3d/buildings/kenney-building-kit/plating-detailed.glb',
     wall:'assets/game/3d/interiors/modular-sushi-restaurant-kit/red-wood-wall.glb',
     pillar:'assets/game/3d/buildings/kenney-building-kit/column.glb',
@@ -535,6 +535,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       if (opts.rotX) root.rotation.x = opts.rotX;
       if (opts.rotY) root.rotation.y = opts.rotY;
       if (opts.rotZ) root.rotation.z = opts.rotZ;
+      if (Number.isFinite(opts.scaleY)) root.scale.y *= opts.scaleY;
       root.userData.assetKey = key;
       group.add(root);
       if (opts.onMount) opts.onMount(root);
@@ -823,15 +824,15 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     const group = new THREE.Group();
     group.position.set(data.x * CELL, 0, data.z * CELL);
     const reinforced = data.material === 'reinforced';
-    const base = addBox(group, CELL * 0.96, 0.34, CELL * 0.96, reinforced ? 0x75858c : 0xb87939, 0, 0.31, 0);
+    const base = addBox(group, CELL * 0.96, 0.14, CELL * 0.96, reinforced ? 0x75858c : 0xb87939, 0, 0.42, 0);
     base.userData.cellKey = keyFor(data.x, data.z);
     for (let n = -1; n <= 1; n += 1) {
-      const seam = addBox(group, CELL * 0.9, 0.025, 0.035, reinforced ? 0xa7b5ba : 0x75451f, 0, 0.493, n * 0.62);
+      const seam = addBox(group, CELL * 0.9, 0.018, 0.03, reinforced ? 0xa7b5ba : 0x75451f, 0, 0.497, n * 0.62);
       seam.castShadow = false;
     }
     if (reinforced) {
       [[-.8, -.8], [.8, -.8], [-.8, .8], [.8, .8]].forEach((p) => {
-        addBox(group, .1, .05, .1, 0xd2dde0, p[0], .51, p[1], { metalness: .7 });
+        addBox(group, .09, .035, .09, 0xd2dde0, p[0], .505, p[1], { metalness: .7 });
       });
     }
     const edges = new THREE.LineSegments(
@@ -845,7 +846,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     cellMeshes.set(keyFor(data.x, data.z), group);
     floorRayTargets.push(base);
     updateCellVisual(data);
-    mountBlockraftAsset(group,reinforced ? 'reinforced' : 'deck',CELL * .9,{ y:.49 }).then((asset) => {
+    mountBlockraftAsset(group,reinforced ? 'reinforced' : 'deck',CELL * .9,{ y:.405, scaleY:reinforced ? .34 : .42 }).then((asset) => {
       if (!asset) return;
       group.userData.asset = asset;
       group.children.forEach((child) => {
@@ -1698,8 +1699,8 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     buildGhost.renderOrder = 20;
     scene.add(buildGhost);
     const preview = {
-      floor:{key:'deck',size:CELL*.9,y:.05},
-      reinforce:{key:'reinforced',size:CELL*.9,y:.05},
+      floor:{key:'deck',size:CELL*.9,y:.05,scaleY:.42},
+      reinforce:{key:'reinforced',size:CELL*.9,y:.05,scaleY:.34},
       wall:{key:'wall',size:2.02,y:-.62},
       pillar:{key:'pillar',size:2.05,y:-.62},
       stairs:{key:'stairs',size:2.08,y:-.62},
@@ -1709,7 +1710,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       workbench:{key:'workbench',size:1.72,y:-.62},
       waveBreaker:{key:'waveBreaker',size:1.95,y:-.62}
     }[recipe.id];
-    if (preview) mountBlockraftAsset(buildGhost,preview.key,preview.size,{y:preview.y});
+    if (preview) mountBlockraftAsset(buildGhost,preview.key,preview.size,{y:preview.y,scaleY:preview.scaleY});
     return buildGhost;
   }
 
