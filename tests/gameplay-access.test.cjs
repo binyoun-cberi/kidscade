@@ -87,6 +87,44 @@ test('source and built tower include exactly one entry script', () => {
 });
 test('all modified inline game scripts parse', () => {
   for(const rel of ['블록래프트.html','인내의 탑.html','games/patience-tower-duel/index.html']) {
-    for(const match of fs.readFileSync(path.join(root,rel),'utf8').matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(match[1],{filename:rel});
+    for(const match of fs.readFileSync(path.join(root,rel),'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      if (/type=["']importmap["']/i.test(match[1])) continue;
+      if (match[2].trim()) new vm.Script(match[2],{filename:rel});
+    }
   }
+});
+test('Blockraft connects the existing CC0 3D library without making gameplay depend on it', () => {
+  for(const rel of [
+    'assets/game/platformer/platforms/floor_wood_1x1.glb',
+    'assets/game/3d/buildings/kenney-building-kit/wall.glb',
+    'assets/game/3d/buildings/kenney-building-kit/column.glb',
+    'assets/game/3d/buildings/kenney-building-kit/stairs-open.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/wood-floor.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/red-wood-wall.glb',
+    'assets/game/3d/city/poly-pizza-city-pack/box.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/table.glb',
+    'assets/game/food/barrel.glb',
+    'assets/game/food/soda-bottle.glb',
+    'assets/game/3d/nature/kenney-nature-kit/tree-palm.glb'
+  ]) assert.ok(fs.existsSync(path.join(root,rel)), 'missing Blockraft asset '+rel);
+  assert.match(raft,/type="importmap"/);
+  assert.match(raft,/function loadBlockraftAsset/);
+  assert.match(raft,/function enhanceStructureVisual/);
+  assert.match(raft,/GLTF loader unavailable; using procedural fallbacks/);
+  assert.match(raft,/floor_wood_1x1\.glb/);
+  assert.match(raft,/red-wood-wall\.glb/);
+  assert.match(raft,/stairs-open\.glb/);
+  assert.match(raft,/tree-palm\.glb/);
+  assert.match(raft,/soda-bottle\.glb/);
+});
+test('Blockraft advertised utility buildings have working simulation effects', () => {
+  assert.match(raft,/maxStoredWater[\s\S]*countStructures\('storage'\)/);
+  assert.match(raft,/maxEnergy[\s\S]*countStructures\('battery'\)/);
+  assert.match(raft,/centerStructureAt\(cell\.x,cell\.z,0\)\?\.type === 'wall'/);
+  assert.match(raft,/countStructures\('waveBreaker'\)/);
+  assert.match(raft,/countStructures\('anchor'\).*\.82/);
+  assert.match(raft,/anchorDamping/);
+  assert.match(raft,/countStructures\('lightningRod'\)/);
+  assert.match(raft,/countStructures\('sail'\) \* \.08/);
+  assert.match(raft,/state\.structures\.filter\(\(s\) => s\.type === 'net'\)/);
 });
