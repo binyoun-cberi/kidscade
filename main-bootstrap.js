@@ -320,6 +320,7 @@
 
   function applyCompatibilityFixes(html) {
     html = html.replace('href="main-shell.css"', 'href="' + withVersion('main-shell.css') + '"');
+    html = html.replace('src="touch-interaction-guard.js"', 'src="' + withVersion('touch-interaction-guard.js') + '"');
     html = html.replace('src="playtime-state.js"', 'src="' + withVersion('playtime-state.js') + '"');
     html = html.replace('src="seed-wallet.js"', 'src="' + withVersion('seed-wallet.js') + '"');
     html = html.replace('src="daily-progress.js"', 'src="' + withVersion('daily-progress.js') + '"');
