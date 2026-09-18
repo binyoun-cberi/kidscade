@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>약수 타워 디펜스 3D</title>
-<link rel="stylesheet" href="tower-defense.css?v=3">
+<link rel="stylesheet" href="tower-defense.css?v=4">
 </head>
 <body>
 <canvas id="world" aria-label="약수 타워 디펜스 3D 전장"></canvas>
@@ -27,10 +27,10 @@
 <section id="waveCard">
   <div><small>이번 웨이브</small><b id="enemyPreview">2 · 3 · 4</b><span id="enemyCount">6마리</span></div>
   <p id="waveMission">÷2로 짝수를 줄이고, -1로 마지막 1을 마무리하세요.</p>
-  <button id="startWaveBtn" type="button">웨이브 시작</button>
+  <button id="startWaveBtn" type="button">▶ WAVE 1 시작</button>
 </section>
 
-<div id="buildHint">타워를 고른 뒤 빈 칸을 터치하세요.</div>
+<div id="buildHint">① 포탑 선택 → ② 빛나는 설치 칸 터치 → ③ 웨이브 시작</div>
 <div id="toast"></div>
 <div id="calcFeed"></div>
 
@@ -77,6 +77,6 @@
 </section>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="tower-defense-loader.js?v=3"></script>
+<script type="module" src="tower-defense-loader.js?v=4"></script>
 </body>
 </html>
