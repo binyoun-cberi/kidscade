@@ -22,7 +22,7 @@ let player=null,cars=[],mission=null,state='menu',last=performance.now(),score=0
 const camera={x:0,y:0,zoom:1},view={w:innerWidth,h:innerHeight,dpr:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
 const coarse=matchMedia('(hover:none),(pointer:coarse)').matches;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;canvas.width=Math.round(view.w*dpr);canvas.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);resize3D()}
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;canvas.width=Math.round(view.w*dpr);canvas.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);window.__police3dResize?.()}
 function framingZoom(){const aspect=view.w/Math.max(1,view.h);if(coarse&&aspect<.72)return .70;if(aspect<1)return .82;return 1}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
 function sfx(k,o={}){try{window.KidscadeAudio?.play?.(k,o)}catch(_){}}
@@ -80,6 +80,7 @@ function init3D(){
  }catch(e){console.error('[Police3D] init failed',e);return false}
 }
 function resize3D(){if(!threeReady3||!renderer3||!cam3)return;cam3.aspect=innerWidth/Math.max(1,innerHeight);cam3.updateProjectionMatrix();renderer3.setSize(innerWidth,innerHeight,false);renderer3.setPixelRatio(Math.min(devicePixelRatio||1,1.65))}
+window.__police3dResize=resize3D;
 function prepare3D(){
  if(prepare3Promise)return prepare3Promise;
  prepare3Promise=(async()=>{if(!init3D())return false;await Promise.all(Object.entries(MODEL3).map(([k,u])=>load3(k,u)));rebuildCity3D();clearCarNodes3();return true})();
@@ -285,7 +286,7 @@ function update(dt){
 function render(){const t=performance.now()/1000;if(threeReady3){render3D(t)}else{ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore()}if(player)drawMinimap()}
 function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;update(dt);render();requestAnimationFrame(loop)}
 function resetInputs(){for(const k of Object.keys(keys))keys[k]=false;touch.steer=0;touch.brake=false;touch.reverse=false;touch.boost=false;if(typeof knob!=='undefined'&&knob)knob.style.transform='translate(0,0)'}
-async function startGame(){const btn=state==='end'?$('#restartBtn'):$('#startBtn'),label=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='3D 도시 준비 중…'}await prepare3D();driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=1.1;missionKey3='';buildWorld();rebuildCity3D();clearCarNodes3();player=new Player();spawnTraffic();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');if(btn){btn.disabled=false;btn.textContent=label||'순찰 시작'}if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
+function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=1.1;missionKey3='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3()}player=new Player();spawnTraffic();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
 function endGame(){state='end';player.siren=false;driveAudio.update(0,false,shiftTime);setAction();setProgress();ui.endTitle.textContent=solved>=7?'베테랑 순찰팀':solved>=4?'안정적인 순찰 완료':'오늘의 순찰 완료';ui.endText.textContent='6분 동안 '+solved+'건을 해결하고 실적 '+score.toFixed(1)+'점을 기록했어요.';ui.end.classList.add('show')}
 addEventListener('keydown',e=>{if(state!=='playing')return;const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=true;if(k==='s'||k==='arrowdown')keys.s=true;if(k==='a'||k==='arrowleft')keys.a=true;if(k==='d'||k==='arrowright')keys.d=true;if(k==='r')keys.r=true;if(k===' '&&!e.repeat){e.preventDefault();toggleSiren()}if(k==='enter'&&!e.repeat&&ui.action.onclick)ui.action.onclick();if(k==='t'&&!e.repeat)recover()});
 addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=false;if(k==='s'||k==='arrowdown')keys.s=false;if(k==='a'||k==='arrowleft')keys.a=false;if(k==='d'||k==='arrowright')keys.d=false;if(k==='r')keys.r=false});
@@ -298,4 +299,4 @@ function joyEnd(e){if(e.pointerId!==joyId)return;joyId=null;touch.steer=0;knob.s
 joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);joy.addEventListener('lostpointercapture',joyEnd);
 addEventListener('blur',resetInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs()});addEventListener('pointerup',()=>{touch.brake=false;touch.reverse=false;touch.boost=false});addEventListener('pointercancel',()=>{touch.brake=false;touch.reverse=false;touch.boost=false});
 $('#startBtn').addEventListener('click',startGame);$('#restartBtn').addEventListener('click',startGame);
-buildWorld();render();prepare3D().then(()=>{rebuildCity3D();render()});
+buildWorld();render();prepare3D().then(ok=>{if(ok){rebuildCity3D();resize3D();render()}}).catch(err=>console.warn('[Police3D] background preload failed',err));
