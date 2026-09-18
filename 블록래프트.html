@@ -354,8 +354,8 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
         <div class="roadmap">
           <div><b>1 · 회수</b><span>갈고리로 나무·잎·플라스틱·고철을 모아요.</span></div>
           <div><b>2 · 확장</b><span>바닥을 넓혀 시설을 놓을 공간을 만들어요.</span></div>
-          <div><b>3 · 식수</b><span>태양열 정수기를 세우면 물이 자동 생산돼요.</span></div>
-          <div><b>4 · 식량</b><span>낚시 → 화로 설치 → 제작에서 굽기 → 배낭에서 먹기.</span></div>
+          <div><b>3 · 식수</b><span>태양열 정수기가 물을 만들면 가까이 가서 E/사용으로 직접 받아요.</span></div>
+          <div><b>4 · 식량</b><span>낚시 → 화로 앞 E/사용으로 굽기 → 익으면 다시 받아서 먹기.</span></div>
           <div><b>5 · 연구</b><span>연구 작업대를 세우면 전력·방재 시설이 열려요.</span></div>
           <div><b>6 · 전력</b><span>태양광·풍력으로 생산하고 배터리에 저장해요.</span></div>
           <div><b>7 · 방어</b><span>금속 보강·작살을 준비하면 상어와 폭풍에 대응해요.</span></div>
@@ -367,7 +367,7 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
           <article><span>🎣</span><h3>낚시 · 2</h3><p>바다를 보고 던진 뒤 입질 때 클릭. 물고기 반대 방향으로 버티고, 지치면 클릭/Space로 감아요. 잡은 생선은 바로 먹는 게 아니라 화로에서 익혀야 합니다.</p></article>
           <article><span>🔨</span><h3>수리망치 · 3</h3><p>손상된 바닥을 가운데 조준해 사용합니다. 나무 바닥은 나무판자, 금속 보강 바닥은 고철을 1개 소비해 수리해요.</p></article>
           <article><span>⌁</span><h3>작살 · 4</h3><p>제작 메뉴에서 먼저 만들어야 합니다. 상어가 공격 단계로 가까이 들어왔을 때만 효과가 있어요.</p></article>
-          <article><span>🔧</span><h3>제작 · 6</h3><p>로프, 작살, 생선 굽기, 상어 미끼를 담당합니다. 생선 굽기는 ‘간이 화로’가 먼저 설치되어 있어야 해요.</p></article>
+          <article><span>🔧</span><h3>제작 · 6</h3><p>로프, 작살, 상어 미끼를 담당합니다. 생선은 제작 메뉴가 아니라 ‘간이 화로’ 앞에서 직접 올리고 받아요.</p></article>
           <article><span>▦</span><h3>건축 · 7</h3><p>초록색 미리보기 위치에 설치합니다. R은 방향 회전. 2층은 기둥·벽·계단으로 지지한 뒤 2층 바닥을 놓으세요.</p></article>
           <article><span>⚡</span><h3>전력 시스템</h3><p>연구 작업대 → 태양광/풍력 → 배터리 순으로 확장하면 안정적입니다. 전기 담수화기는 저장 전력을 소비해 빠르게 물을 만들어요.</p></article>
           <article><span>🌊</span><h3>방재 시스템</h3><p>닻은 폭풍 흔들림, 파도막이는 파도 피해, 피뢰침은 번개 피해를 줄입니다. 위험은 튜토리얼 방어 준비 뒤부터 시작돼요.</p></article>
@@ -590,7 +590,6 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   const craftRecipes = [
     { id: 'rope', name: '로프 묶기', icon: '◎', desc: '야자잎을 꼬아 튼튼한 로프를 만들어요.', cost: { leaf: 2 } },
     { id: 'spear', name: '상어 퇴치 작살', icon: '⌁', desc: '가까이 온 상어를 물러나게 해요.', cost: { wood: 3, rope: 1, scrap: 1 }, once: 'spear' },
-    { id: 'cook', name: '생선 굽기', icon: '♨', desc: '화로에서 8초 동안 익혀요.', cost: { fish: 1, wood: 1 }, needs: 'grill' },
     { id: 'bait', name: '상어 미끼 던지기', icon: '◉', desc: '공격 중인 상어를 다른 곳으로 유인해요.', cost: { fish: 1, leaf: 2 }, duringShark: true }
   ];
 
@@ -604,9 +603,9 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   const missions = [
     { title:'바다의 선물', text:'갈고리로 떠내려오는 재료를 3개 건져 보세요.', action:'갈고리 들기', goal:3, value:(s)=>s.counts.collected },
     { title:'발 디딜 곳', text:'건축 메뉴에서 나무 바닥을 한 칸 넓혀 보세요.', action:'바닥 건축', goal:1, value:(s)=>s.counts.builtFloor },
-    { title:'깨끗한 물', text:'태양열 정수기를 설치하세요. 설치 뒤에는 물이 자동으로 만들어집니다.', action:'정수기 건축', goal:1, value:()=>countStructures('purifier') },
+    { title:'깨끗한 물', text:'태양열 정수기를 설치하고 물이 준비되면 가까이 가서 E/사용으로 한 병 받아 보세요.', action:'정수기 안내', goal:1, value:(s)=>s.counts.waterCollected },
     { title:'바다에서 식량 찾기', text:'낚싯대로 물고기를 한 번 잡아 보세요.', action:'낚싯대 들기', goal:1, value:(s)=>s.counts.caughtFish },
-    { title:'오늘의 식사', text:'간이 화로를 설치하고 제작에서 생선을 구운 뒤 배낭에서 한 번 먹어 보세요.', action:'식사 준비', goal:1, value:(s)=>s.counts.ateMeal },
+    { title:'오늘의 식사', text:'간이 화로 앞에서 E/사용으로 생선을 올리고, 익으면 다시 받아 배낭에서 한 번 먹어 보세요.', action:'식사 준비', goal:1, value:(s)=>s.counts.ateMeal },
     { title:'기술의 시작', text:'연구 작업대를 설치해 전력·방재 시설 제작법을 열어 보세요.', action:'작업대 건축', goal:1, value:()=>countStructures('workbench') },
     { title:'바람과 햇빛', text:'태양광 또는 풍력 발전기를 세워 실제로 전기를 생산해 보세요.', action:'발전기 건축', goal:1, value:(s)=>((countStructures('solar')+countStructures('wind')>0)&&s.counts.energyGenerated>=1?1:0) },
     { title:'위험 대비', text:'상어 퇴치 작살을 만들고 바닥 한 칸을 금속으로 보강하세요.', action:'방어 준비', goal:1, value:(s)=>(s.tools.spear&&s.cells.some((cell)=>cell.material==='reinforced')?1:0) },
@@ -630,7 +629,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       structures: [],
       health: 100, hunger: 88, thirst: 84,
       energy: 0, day: 1, clock: 0.27,
-      mission: 0, counts: { collected: 0, builtFloor: 0, caughtFish: 0, ateMeal: 0, repaired: 0, energyGenerated: 0 },
+      mission: 0, counts: { collected: 0, builtFloor: 0, caughtFish: 0, ateMeal: 0, repaired: 0, energyGenerated: 0, waterCollected: 0 },
       lessons: {}, player: { x: 0, z: 0, yaw: 0, pitch: -0.08, level: 0 },
       production: { water: 18, crop: 52, cook: 0 },
       serial: 1
@@ -985,6 +984,16 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     }
 
     group.userData.item = item;
+    if (item.type === 'grill' || item.type === 'purifier' || item.type === 'electricPurifier') {
+      const indicator = new THREE.Mesh(
+        new THREE.SphereGeometry(.11,10,7),
+        mat(0x82949a,{ emissive:0x82949a, emissiveIntensity:.45, roughness:.28 })
+      );
+      indicator.position.set(.62,item.type === 'electricPurifier' ? y + 1.35 : y + 1.12,.58);
+      indicator.userData.facilityStatus = true;
+      group.add(indicator);
+      group.userData.facilityIndicator = indicator;
+    }
     group.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = renderer.shadowMap.enabled;
@@ -994,6 +1003,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     raftGroup.add(group);
     structureMeshes.set(structureKey(item), group);
     enhanceStructureVisual(item,group,y);
+    updateFacilityVisual(item);
   }
 
   function enhanceStructureVisual(item,group,y) {
@@ -1354,7 +1364,11 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       clean.structures = Array.isArray(saved.structures) ? saved.structures.slice(0,500).map((s) => ({
         id: safeNumber(s.id,1,1,99999), type: String(s.type || 'wall'),
         x: Math.round(safeNumber(s.x,0,-30,30)), z: Math.round(safeNumber(s.z,0,-30,30)),
-        rot: Math.round(safeNumber(s.rot,0,0,3)), level: Math.round(safeNumber(s.level,0,0,1))
+        rot: Math.round(safeNumber(s.rot,0,0,3)), level: Math.round(safeNumber(s.level,0,0,1)),
+        storedWater: Math.floor(safeNumber(s.storedWater,0,0,3)),
+        waterTimer: safeNumber(s.waterTimer,18,0,60),
+        cookRemaining: safeNumber(s.cookRemaining,0,0,20),
+        cookReady: !!s.cookReady
       })).filter((s) => buildRecipes.some((r) => r.id === s.type)) : [];
       clean.health = safeNumber(saved.health,100,1,100);
       clean.hunger = safeNumber(saved.hunger,88,0,100);
@@ -1372,6 +1386,15 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       clean.player.pitch = safeNumber(clean.player.pitch,-.08,-1.2,1.2);
       clean.player.level = Math.round(safeNumber(clean.player.level,0,0,1));
       clean.production = Object.assign(clean.production, saved.production || {});
+      const oldCook = safeNumber(saved.production && saved.production.cook,0,0,20);
+      const grill = clean.structures.find((item) => item.type === 'grill');
+      const savedHadFacilityCook = Array.isArray(saved.structures) && saved.structures.some((item) => Object.prototype.hasOwnProperty.call(item,'cookRemaining') || Object.prototype.hasOwnProperty.call(item,'cookReady'));
+      if (grill && oldCook > 0 && !savedHadFacilityCook) grill.cookRemaining = oldCook;
+      const firstWaterMachine = clean.structures.find((item) => item.type === 'purifier' || item.type === 'electricPurifier');
+      const savedHadFacilityWater = Array.isArray(saved.structures) && saved.structures.some((item) => Object.prototype.hasOwnProperty.call(item,'waterTimer') || Object.prototype.hasOwnProperty.call(item,'storedWater'));
+      if (firstWaterMachine && !savedHadFacilityWater) firstWaterMachine.waterTimer = safeNumber(saved.production && saved.production.water,18,0,60);
+      clean.production.cook = 0;
+      clean.production.water = 18;
       clean.serial = Math.round(safeNumber(saved.serial,1,1,999999));
       Object.keys(clean.inventory).forEach((id) => { clean.inventory[id] = Math.max(0, Math.floor(safeNumber(clean.inventory[id],0,0,9999))); });
       return clean;
@@ -1443,7 +1466,6 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   }
 
   function recommendedCraftForMission() {
-    if (state.mission === 4 && countStructures('grill') && state.inventory.fish > 0 && state.inventory.cookedFish < 1) return 'cook';
     if (state.mission === 7 && !state.tools.spear) return 'spear';
     return null;
   }
@@ -1471,7 +1493,6 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (recipe.once && state.tools[recipe.once]) return false;
     if (recipe.needs && countStructures(recipe.needs) === 0) return false;
     if (recipe.duringShark && shark.phase !== 'attack') return false;
-    if (recipe.id === 'cook' && state.production.cook > 0) return false;
     return canAfford(recipe.cost);
   }
 
@@ -1480,7 +1501,6 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (recipe.once && state.tools[recipe.once]) return '이미 만들었어요.';
     if (recipe.needs && countStructures(recipe.needs) === 0) return '먼저 ' + buildRecipes.find((r) => r.id === recipe.needs).name + '가 필요해요.';
     if (recipe.duringShark && shark.phase !== 'attack') return '상어가 공격할 때 사용할 수 있어요.';
-    if (recipe.id === 'cook' && state.production.cook > 0) return '익는 중 · ' + Math.ceil(state.production.cook) + '초';
     if (!canAfford(recipe.cost)) return '재료 부족 · ' + Object.entries(recipe.cost).filter(([id, amount]) => state.inventory[id] < amount).map(([id, amount]) => resourceInfo[id].name + ' ' + (amount - state.inventory[id]) + '개 더 필요').join(' · ');
     return recipe.desc;
   }
@@ -1526,9 +1546,14 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       ensurePanel('build');
       toast(stage === 8 ? '현재 9칸에서 바닥을 4칸 더 지어 13칸을 만드세요.' : '초록색 미리보기가 뗏목 가장자리에 오도록 클릭하세요.');
     } else if (stage === 2) {
-      selectedBuild = 'purifier';
-      ensurePanel('build');
-      toast('태양열 정수기는 설치만 하면 낮 동안 자동으로 물을 만듭니다.');
+      if (!countStructures('purifier')) {
+        selectedBuild = 'purifier';
+        ensurePanel('build');
+        toast('태양열 정수기를 설치하세요. 물이 차면 가까이 가서 E/사용으로 직접 받아야 해요.');
+      } else {
+        closePanels();
+        toast('정수기 가까이 가세요. 물이 준비되면 E/사용으로 한 병 받을 수 있어요.', 'good', 3600);
+      }
     } else if (stage === 3) {
       selectTool('rod');
       toast('바다를 보고 클릭/E로 낚싯대를 던지세요. 입질이 오면 다시 클릭!');
@@ -1542,10 +1567,11 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       } else if (!countStructures('grill')) {
         selectedBuild = 'grill';
         ensurePanel('build');
-        toast('간이 화로를 설치한 뒤 제작 메뉴에서 생선을 구울 수 있어요.');
+        toast('간이 화로를 설치하세요. 그 다음 화로 가까이에서 E/사용으로 생선을 올릴 수 있어요.');
       } else {
-        ensurePanel('craft');
-        toast(state.production.cook > 0 ? '생선이 익는 중입니다. 완성되면 배낭에서 먹으세요.' : '추천 표시된 ‘생선 굽기’를 누르세요.');
+        closePanels();
+        const grill = state.structures.find((item) => item.type === 'grill');
+        toast(grill && grill.cookReady ? '화로에 구운 생선이 준비됐어요. 가까이 가서 E/사용으로 받으세요.' : grill && grill.cookRemaining > 0 ? '화로에서 생선이 익는 중이에요. 익으면 다시 E/사용으로 받으세요.' : '간이 화로 가까이 가서 E/사용으로 날생선 1개와 나무 1개를 올리세요.', '', 3800);
       }
     } else if (stage === 5) {
       selectedBuild = 'workbench';
@@ -1608,7 +1634,9 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     ui.levelValue.textContent = buildLevel === 0 ? '1층' : '2층';
     ui.drinkStock.textContent = (state.inventory.water || 0) + '병 · 최대 ' + maxStoredWater() + '병';
     ui.foodStock.textContent = '날생선 ' + state.inventory.fish + ' · 구운 생선 ' + state.inventory.cookedFish + ' · 채소 ' + state.inventory.vegetable;
-    ui.eatBtn.querySelector('b').textContent = state.production.cook > 0 ? '생선 굽는 중 · ' + Math.ceil(state.production.cook) + '초' : state.hunger >= 99 ? '배가 불러요' : state.inventory.cookedFish + state.inventory.vegetable > 0 ? '식사하기' : state.inventory.fish > 0 ? '생선 굽기 안내' : '낚시하러 가기';
+    const grillReady = state.structures.some((item) => item.type === 'grill' && item.cookReady);
+    const grillCooking = state.structures.find((item) => item.type === 'grill' && item.cookRemaining > 0);
+    ui.eatBtn.querySelector('b').textContent = grillReady ? '화로에서 음식 받기' : grillCooking ? '화로에서 굽는 중 · ' + Math.ceil(grillCooking.cookRemaining) + '초' : state.hunger >= 99 ? '배가 불러요' : state.inventory.cookedFish + state.inventory.vegetable > 0 ? '식사하기' : state.inventory.fish > 0 ? '화로로 가져가기' : '낚시하러 가기';
     ui.drinkBtn.disabled = state.inventory.water < 1 || state.thirst >= 99;
     ui.eatBtn.disabled = state.hunger >= 99;
     document.querySelectorAll('[data-tool="spear"]').forEach((node) => node.classList.toggle('locked', !state.tools.spear));
@@ -1825,7 +1853,8 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     } else {
       const item = {
         id: state.serial++, type: recipe.id, x:x, z:z,
-        rot: buildRotation, level: recipe.kind === 'upper' ? 1 : buildLevel
+        rot: buildRotation, level: recipe.kind === 'upper' ? 1 : buildLevel,
+        storedWater: 0, waterTimer: 18, cookRemaining: 0, cookReady: false
       };
       state.structures.push(item);
       makeStructureVisual(item);
@@ -1861,9 +1890,6 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
       state.tools.spear = true;
       toast('작살 완성! 4번으로 선택할 수 있어요.', 'good');
       audio.good();
-    } else if (id === 'cook') {
-      state.production.cook = 8;
-      toast('화로에 생선을 올렸어요. 잠시 기다리세요.', 'good');
     } else if (id === 'bait') {
       repelShark(true);
       toast('상어가 미끼를 따라 멀어집니다.', 'good');
@@ -1887,16 +1913,19 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   function eatMeal() {
     if (state.hunger >= 99) return;
     if (state.inventory.cookedFish + state.inventory.vegetable < 1) {
-      if (state.production.cook > 0) {
-        toast('생선을 굽고 있어요. ' + Math.ceil(state.production.cook) + '초 뒤에 먹을 수 있어요.');
+      const grill = state.structures.find((item) => item.type === 'grill');
+      if (grill && grill.cookReady) {
+        toast('구운 생선이 화로에 있어요. 화로 가까이 가서 E/사용으로 먼저 받아 주세요.');
+      } else if (grill && grill.cookRemaining > 0) {
+        toast('화로에서 생선을 굽고 있어요. ' + Math.ceil(grill.cookRemaining) + '초 정도 남았어요.');
       } else if (state.inventory.fish > 0) {
         if (!countStructures('grill')) {
           selectedBuild = 'grill';
           openPanel('build');
           toast('간이 화로를 빈 바닥에 설치하세요. 나무 3개와 고철 1개가 필요해요.');
         } else {
-          openPanel('craft');
-          toast('제작 메뉴의 생선 굽기를 누르세요. 날생선 1개와 나무 1개가 필요해요.');
+          closePanels();
+          toast('간이 화로 가까이 가서 E/사용을 누르세요. 날생선 1개와 나무 1개를 화로에 올립니다.');
         }
       } else {
         selectTool('rod');
@@ -2370,8 +2399,124 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     }
   }
 
+  function interactiveFacilityNearPlayer(maxDistance) {
+    const types = new Set(['grill','purifier','electricPurifier']);
+    let best = null;
+    let bestDistance = maxDistance || 2.35;
+    state.structures.forEach((item) => {
+      if (!types.has(item.type) || (item.level || 0) !== (state.player.level || 0)) return;
+      const distance = Math.hypot(item.x * CELL - state.player.x,item.z * CELL - state.player.z);
+      if (distance < bestDistance) { best = item; bestDistance = distance; }
+    });
+    return best;
+  }
+
+  function facilityName(item) {
+    if (!item) return '시설';
+    if (item.type === 'grill') return '간이 화로';
+    if (item.type === 'purifier') return '태양열 정수기';
+    if (item.type === 'electricPurifier') return '전기 담수화기';
+    return '시설';
+  }
+
+  function facilityHint(item) {
+    if (!item) return '';
+    if (item.type === 'grill') {
+      if (item.cookReady) return '간이 화로 · E/사용: 구운 생선 받기';
+      if (item.cookRemaining > 0) return '간이 화로 · 굽는 중 ' + Math.ceil(item.cookRemaining) + '초';
+      if (state.inventory.fish < 1) return '간이 화로 · 날생선이 필요해요';
+      if (state.inventory.wood < 1) return '간이 화로 · 나무 1개가 필요해요';
+      return '간이 화로 · E/사용: 생선 올리기';
+    }
+    const stored = Math.floor(item.storedWater || 0);
+    if (stored > 0) return facilityName(item) + ' · 물 ' + stored + '병 준비 · E/사용: 물 받기';
+    if (item.type === 'electricPurifier' && state.energy <= .05) return '전기 담수화기 · 전력 부족';
+    return facilityName(item) + ' · 물을 만드는 중';
+  }
+
+  function updateFacilityVisual(item) {
+    if (!item) return;
+    const group = structureMeshes.get(structureKey(item));
+    const indicator = group && group.userData.facilityIndicator;
+    if (!indicator) return;
+    let color = 0x82949a;
+    if (item.type === 'grill') {
+      if (item.cookReady) color = 0x56e39f;
+      else if (item.cookRemaining > 0) color = 0xffa43a;
+    } else {
+      if ((item.storedWater || 0) > 0) color = 0x59e6e2;
+      else if (item.type === 'electricPurifier' && state.energy <= .05) color = 0x81919a;
+      else color = 0x4db7ff;
+    }
+    indicator.material.color.setHex(color);
+    if (indicator.material.emissive) {
+      indicator.material.emissive.setHex(color);
+      indicator.material.emissiveIntensity = .55;
+    }
+  }
+
+  function interactFacility(item) {
+    if (!item) return false;
+    if (item.type === 'grill') {
+      if (item.cookReady) {
+        item.cookReady = false;
+        state.inventory.cookedFish += 1;
+        audio.good();
+        toast('화로에서 구운 생선 1개를 받았어요.', 'good');
+      } else if (item.cookRemaining > 0) {
+        toast('생선이 익는 중이에요. ' + Math.ceil(item.cookRemaining) + '초 정도 남았어요.');
+        return true;
+      } else if (state.inventory.fish < 1) {
+        toast('구울 날생선이 없어요. 먼저 낚시해 보세요.', 'bad');
+        return true;
+      } else if (state.inventory.wood < 1) {
+        toast('불을 피울 나무 1개가 필요해요.', 'bad');
+        return true;
+      } else {
+        state.inventory.fish -= 1;
+        state.inventory.wood -= 1;
+        item.cookRemaining = 8;
+        item.cookReady = false;
+        audio.place();
+        toast('화로에 생선을 올렸어요. 8초 뒤 다시 와서 받아 가세요.', 'good');
+      }
+      updateFacilityVisual(item);
+      renderUI(true);
+      checkMissions();
+      saveGame();
+      return true;
+    }
+    if (item.type === 'purifier' || item.type === 'electricPurifier') {
+      const stored = Math.floor(item.storedWater || 0);
+      if (stored <= 0) {
+        if (item.type === 'electricPurifier' && state.energy <= .05) toast('전력이 부족해서 담수화기가 멈춰 있어요.', 'bad');
+        else toast(facilityName(item) + '에서 아직 물을 만드는 중이에요.');
+        return true;
+      }
+      if (state.inventory.water >= maxStoredWater()) {
+        toast('배낭의 물 저장 공간이 가득 찼어요. 물을 마시거나 저장 상자를 늘려 주세요.', 'bad');
+        return true;
+      }
+      item.storedWater = Math.max(0,stored - 1);
+      state.inventory.water += 1;
+      state.counts.waterCollected = (state.counts.waterCollected || 0) + 1;
+      audio.collect();
+      toast(facilityName(item) + '에서 깨끗한 물 1병을 받았어요.', 'good');
+      updateFacilityVisual(item);
+      renderUI(true);
+      checkMissions();
+      saveGame();
+      return true;
+    }
+    return false;
+  }
+
   function useSelectedTool() {
     if (!running || activePanel || !ui.helpScreen.classList.contains('hidden') || !ui.collapseScreen.classList.contains('hidden')) return;
+    if (fishing.phase === 'idle' && hook.phase === 'idle') {
+      const facility = interactiveFacilityNearPlayer();
+      if (facility && interactFacility(facility)) return;
+    }
     if (selectedTool === 'hook') useHook();
     else if (selectedTool === 'rod') useRod();
     else if (selectedTool === 'hammer') useHammer();
@@ -2635,24 +2780,32 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     state.energy = Math.min(maxEnergy(),state.energy + generation * dt);
     if (generation > 0) state.counts.energyGenerated += generation * dt;
 
-    const purifiers = countStructures('purifier');
-    const electric = countStructures('electricPurifier');
-    if (purifiers || electric) {
-      let speed = purifiers * (.3 + daylight * .7);
-      if (electric && state.energy > .2) {
-        const usable = Math.min(electric,state.energy / Math.max(.001,dt * .24));
-        state.energy = Math.max(0,state.energy - usable * dt * .24);
-        speed += usable * 2.2;
+    const waterMachines = state.structures.filter((item) => item.type === 'purifier' || item.type === 'electricPurifier');
+    waterMachines.forEach((item) => {
+      if (!Number.isFinite(item.waterTimer)) item.waterTimer = 18;
+      if (!Number.isFinite(item.storedWater)) item.storedWater = 0;
+      const capacity = item.type === 'electricPurifier' ? 3 : 2;
+      if (item.storedWater >= capacity) { updateFacilityVisual(item); return; }
+      let speed = 0;
+      if (item.type === 'purifier') {
+        speed = daylight > .18 ? .3 + daylight * .7 : 0;
+      } else if (state.energy > .02) {
+        const energyNeeded = dt * .24;
+        const used = Math.min(state.energy,energyNeeded);
+        state.energy -= used;
+        speed = 2.2 * (used / Math.max(.0001,energyNeeded));
       }
-      if (state.inventory.water < maxStoredWater()) state.production.water -= dt * speed;
-      if (state.production.water <= 0) {
-        state.inventory.water += 1;
-        state.production.water = 27;
+      if (speed > 0) item.waterTimer -= dt * speed;
+      if (item.waterTimer <= 0) {
+        item.storedWater = Math.min(capacity,item.storedWater + 1);
+        item.waterTimer = 27;
         audio.collect();
-        toast('정수된 물 1병이 준비됐어요.', 'good');
+        toast(facilityName(item) + '에 깨끗한 물이 준비됐어요. 가까이 가서 E/사용으로 받아 가세요.', 'good', 3200);
         renderUI(true);
+        saveGame();
       }
-    }
+      updateFacilityVisual(item);
+    });
 
     const planters = countStructures('planter');
     if (planters && state.inventory.water > 0) {
@@ -2672,16 +2825,21 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   }
 
   function updateCooking(dt) {
-    if (state.production.cook > 0) {
-      state.production.cook -= dt;
-      if (state.production.cook <= 0) {
-        state.production.cook = 0;
-        state.inventory.cookedFish += 1;
-        audio.good();
-        toast('생선이 맛있게 익었어요! 배낭에서 식사하기를 누르세요.', 'good');
-        renderUI(true);
-        saveGame();
+    let completed = 0;
+    state.structures.forEach((item) => {
+      if (item.type !== 'grill' || item.cookReady || !(item.cookRemaining > 0)) return;
+      item.cookRemaining = Math.max(0,item.cookRemaining - dt);
+      if (item.cookRemaining <= 0) {
+        item.cookReady = true;
+        completed += 1;
+        updateFacilityVisual(item);
       }
+    });
+    if (completed) {
+      audio.good();
+      toast('화로에서 생선이 다 익었어요! 가까이 가서 E/사용으로 받아 가세요.', 'good', 3400);
+      renderUI(true);
+      saveGame();
     }
   }
 
@@ -2834,7 +2992,11 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     else if (fishing.phase === 'fight') text = fishing.fishDir < 0 ? '물고기는 왼쪽 · D나 마우스를 오른쪽으로!' : '물고기는 오른쪽 · A나 마우스를 왼쪽으로!';
     else if (fishing.phase === 'rest') text = '물고기가 지쳤어요 · 클릭 또는 Space로 줄 감기!';
     else if (shark.phase === 'attack' && state.tools.spear) text = '상어 접근 중 · 작살을 들고 가까이서 클릭';
-    else if (selectedTool === 'hammer') {
+    else if (interactiveFacilityNearPlayer()) {
+      const facility = interactiveFacilityNearPlayer();
+      ui.aim.classList.add('target');
+      text = facilityHint(facility);
+    } else if (selectedTool === 'hammer') {
       const cell = aimedCell();
       if (cell) text = (cell.material === 'reinforced' ? '보강 바닥' : '나무 바닥') + ' 내구도 ' + Math.ceil(cell.hp) + '/' + cell.maxHp + (cell.hp < cell.maxHp ? ' · 클릭하여 수리' : '');
     } else if (!matchMedia('(pointer: coarse)').matches && document.pointerLockElement !== canvas) {
@@ -2915,6 +3077,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
         if (child.userData.fire && child.material && child.material.emissiveIntensity !== undefined) child.material.emissiveIntensity = .55 + Math.sin(elapsed * 11) * .18;
         if (child.userData.plant) child.rotation.z = Math.sin(elapsed * 1.8 + child.position.x) * .035;
       });
+      if (group.userData.item) updateFacilityVisual(group.userData.item);
     });
   }
 
