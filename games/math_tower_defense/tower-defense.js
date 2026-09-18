@@ -1,9 +1,9 @@
-/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v5 */
+/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v6 */
 (function(){
 'use strict';
 
-const THREE=window.THREE,GLTFLoader=window.GLTFLoader,OrbitControls=window.OrbitControls;
-if(!THREE||!GLTFLoader||!OrbitControls) throw new Error('Three.js runtime is not ready');
+const THREE=window.THREE,GLTFLoader=window.GLTFLoader;
+if(!THREE||!GLTFLoader) throw new Error('Three.js runtime is not ready');
 
 const $=id=>document.getElementById(id);
 const canvas=$('world'),assetStatus=$('assetStatus');
@@ -58,11 +58,12 @@ const MODELS={
   flower:modelUrl('nature/kenney-nature-kit/flower-yellow-a.glb')
 };
 
-let scene,camera,controls,renderer,loader,clock,battlefield,decorGroup,skyGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup,core;
+let scene,camera,renderer,loader,clock,battlefield,decorGroup,skyGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup,core;
 let hoverTile,rangeRing,raycaster,mouse,groundPlane;
 const modelCache=new Map(),towerNodes=new Map(),enemyNodes=new Map(),enemyMixers=new Map(),decorCells=new Map(),tileMeshes=new Map();
 let started=false,assetsLoading=false,audioCtx=null,soundOn=true,toastTimer=0,selectedTower=null,selectedBuilt=null,hoverCell=null,impactShake=0;
-let pointerStart=null,pointerDragged=false;
+let pointerStart=null,pointerDragged=false,cameraYaw=.69,cameraPitch=.59,cameraDistance=21.5,pinchStart=null;
+const activePointers=new Map();
 
 const state={
   wave:1,money:520,lives:20,maxLives:20,kills:0,best:parseInt(localStorage.getItem('numTD_best')||'1',10),
@@ -124,34 +125,38 @@ function initThree(){
   scene.add(skyGroup,battlefield,decorGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup);
 
   loader=new GLTFLoader();clock=new THREE.Clock();raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-  controls=new OrbitControls(camera,canvas);
-  controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;
-  controls.rotateSpeed=.62;controls.zoomSpeed=.82;controls.minDistance=9.5;controls.maxDistance=27;
-  controls.minPolarAngle=.5;controls.maxPolarAngle=1.22;
-  controls.target.set(0,.42,0);
-  controls.mouseButtons.LEFT=THREE.MOUSE.ROTATE;controls.mouseButtons.MIDDLE=THREE.MOUSE.DOLLY;controls.mouseButtons.RIGHT=THREE.MOUSE.ROTATE;
-  controls.touches.ONE=THREE.TOUCH.ROTATE;controls.touches.TWO=THREE.TOUCH.DOLLY_ROTATE;
-
   buildBoard();resize();setCameraHome();
   addEventListener('resize',resize);
   canvas.addEventListener('pointermove',onPointerMove);
-  canvas.addEventListener('pointerleave',()=>{pointerStart=null;pointerDragged=false;hoverCell=null;syncSelection()});
+  canvas.addEventListener('pointerleave',()=>{if(!activePointers.size){pointerStart=null;pointerDragged=false;hoverCell=null;syncSelection()}});
   canvas.addEventListener('pointerdown',onPointerDown);
   canvas.addEventListener('pointerup',onPointerUp);
-  canvas.addEventListener('pointercancel',()=>{pointerStart=null;pointerDragged=false});
-  controls.addEventListener('start',()=>{document.body.classList.add('camera-used');hoverCell=null;syncSelection()});
+  canvas.addEventListener('pointercancel',onPointerCancel);
+  canvas.addEventListener('wheel',onWheel,{passive:false});
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
   loadAssets();
   requestAnimationFrame(loop);
 }
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function resize(){
   renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));camera.aspect=innerWidth/Math.max(1,innerHeight);
   const portrait=innerHeight>innerWidth*1.15;camera.fov=portrait?48:40;camera.updateProjectionMatrix();
+  cameraDistance=clamp(cameraDistance,portrait?13:10,portrait?29:27);updateCameraTransform();
+}
+function updateCameraTransform(){
+  const cp=Math.cos(cameraPitch),sp=Math.sin(cameraPitch),sy=Math.sin(cameraYaw),cy=Math.cos(cameraYaw);
+  camera.position.set(sy*cp*cameraDistance,.42+sp*cameraDistance,cy*cp*cameraDistance);
+  camera.lookAt(0,.42,0);
 }
 function setCameraHome(){
   const portrait=innerHeight>innerWidth*1.15;
-  camera.position.set(portrait?10.2:11.8,portrait?16.8:12.6,portrait?18.0:14.2);
-  controls.target.set(0,.42,0);controls.update();
+  cameraYaw=portrait?.52:.69;cameraPitch=portrait?.67:.59;cameraDistance=portrait?25.5:21.5;
+  updateCameraTransform();
+}
+function pointerDistance(){
+  const pts=[...activePointers.values()];if(pts.length<2)return 0;
+  return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)
 }
 
 function buildBoard(){
@@ -308,23 +313,48 @@ function pointerCell(ev){
 function validCell(p){return p&&p.x>=0&&p.y>=0&&p.x<GRID_W&&p.y<GRID_H}
 function onPointerDown(e){
   if(!started||state.gameOver)return;initAudio();
-  pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()};pointerDragged=false
+  canvas.setPointerCapture?.(e.pointerId);
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activePointers.size===1){
+    pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now(),yaw:cameraYaw,pitch:cameraPitch};pointerDragged=false
+  }else{
+    pointerDragged=true;pinchStart={distance:Math.max(1,pointerDistance()),cameraDistance};hoverCell=null;syncSelection()
+  }
 }
 function onPointerMove(e){
   if(!started)return;
+  if(activePointers.has(e.pointerId))activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activePointers.size>=2){
+    if(!pinchStart)pinchStart={distance:Math.max(1,pointerDistance()),cameraDistance};
+    const d=Math.max(1,pointerDistance());cameraDistance=clamp(pinchStart.cameraDistance*(pinchStart.distance/d),10,29);
+    pointerDragged=true;document.body.classList.add('camera-used');hoverCell=null;updateCameraTransform();syncSelection();return
+  }
   if(pointerStart&&pointerStart.id===e.pointerId){
-    if(Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>7){pointerDragged=true;hoverCell=null;syncSelection();return}
+    const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
+    if(Math.hypot(dx,dy)>7){
+      pointerDragged=true;cameraYaw=pointerStart.yaw-dx*.007;cameraPitch=clamp(pointerStart.pitch-dy*.005,.42,1.18);
+      document.body.classList.add('camera-used');hoverCell=null;updateCameraTransform();syncSelection();return
+    }
   }
   if(e.pointerType!=='mouse'||pointerDragged)return;
   const p=pointerCell(e);hoverCell=validCell(p)?p:null;syncSelection()
 }
+function finishPointer(e){
+  activePointers.delete(e.pointerId);canvas.releasePointerCapture?.(e.pointerId);
+  if(activePointers.size<2)pinchStart=null
+}
 function onPointerUp(e){
-  if(!started||state.gameOver){pointerStart=null;pointerDragged=false;return}
+  if(!started||state.gameOver){finishPointer(e);pointerStart=null;pointerDragged=false;return}
   const tap=pointerStart&&pointerStart.id===e.pointerId&&!pointerDragged&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)<=7&&performance.now()-pointerStart.time<650;
-  pointerStart=null;pointerDragged=false;if(!tap)return;
+  finishPointer(e);pointerStart=null;pointerDragged=false;if(!tap)return;
   const p=pointerCell(e);if(!validCell(p))return;const t=towerAt(p.x,p.y);
   if(t){selectedBuilt=t;selectedTower=null;syncDeck();syncSelectedPanel();syncSelection();return}
   if(selectedTower)placeTower(selectedTower,p.x,p.y);else{selectedBuilt=null;syncSelectedPanel();syncSelection()}
+}
+function onPointerCancel(e){finishPointer(e);pointerStart=null;pointerDragged=false;pinchStart=null}
+function onWheel(e){
+  if(!started||state.gameOver)return;e.preventDefault();cameraDistance=clamp(cameraDistance+e.deltaY*.012,10,29);
+  document.body.classList.add('camera-used');updateCameraTransform()
 }
 
 
@@ -409,7 +439,7 @@ function syncSelection(){
   const t=selectedBuilt||(selectedTower&&hoverCell?{...TOWERS[selectedTower],x:hoverCell.x,y:hoverCell.y}:null);if(t){rangeRing.visible=true;rangeRing.position.copy(cellWorld(t.x,t.y,.06));const r=t.range*CELL;rangeRing.scale.set(r,r,r);rangeRing.material.color.set(t.color||TOWERS[t.id]?.color||'#fff')}else rangeRing.visible=false
 }
 function loop(){
-  requestAnimationFrame(loop);const dt=Math.min(.05,clock.getDelta()),time=performance.now()/1000;update(dt);sync3D(dt,time);controls?.update();
+  requestAnimationFrame(loop);const dt=Math.min(.05,clock.getDelta()),time=performance.now()/1000;update(dt);sync3D(dt,time);
   const bx=camera.position.x,by=camera.position.y,bz=camera.position.z;
   if(impactShake>0){const n=impactShake*.11;camera.position.x+= (Math.random()-.5)*n;camera.position.y+=(Math.random()-.5)*n;camera.position.z+=(Math.random()-.5)*n}
   renderer.render(scene,camera);
@@ -451,5 +481,5 @@ $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textC
 $('startGameBtn').addEventListener('click',()=>{initAudio();started=true;$('startScreen').classList.remove('show');syncHUD();syncDeck();toast('타워를 골라 빈 칸에 설치하세요.')});
 $('restartBtn').addEventListener('click',()=>{$('gameOverScreen').classList.remove('show');started=true;resetGame()});
 
-initThree();syncHUD();syncDeck();syncSelectedPanel();
+try{initThree();syncHUD();syncDeck();syncSelectedPanel()}catch(err){console.error('[MathTD] boot failed',err);assetStatus.textContent='3D 전장 초기화 오류';assetStatus.style.opacity='1';$('startGameBtn').disabled=true;$('startGameBtn').textContent='3D 전장 오류'}
 })();
