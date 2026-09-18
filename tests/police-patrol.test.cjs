@@ -119,11 +119,13 @@ test('Police Patrol has third-person camera, siren lighting and 3D collision fee
 test('Police Patrol retains varied job missions in 3D',()=>{
   assert.match(js,/spawnPursuit/);
   assert.match(js,/spawnAccident/);
+  assert.match(js,/spawnCrosswalkMission/);
   assert.match(js,/spawnTrafficMission/);
   assert.match(js,/spawnObstacle/);
   assert.match(js,/rebuildMissionProps3/);
   assert.match(js,/수배 차량 추격/);
   assert.match(js,/현장 안전 확보/);
+  assert.match(js,/횡단보도 보행자 보호/);
   assert.match(js,/안전콘 설치/);
   assert.match(js,/낙하물 정리/);
 });
