@@ -94,6 +94,13 @@
     "space/planets/planet03.png"
   ],
   "스펠링 프로그 / 영어 철자 게임": [
+    "2d/animals/round/frog.png",
+    "2d/racing/kenney-racing-pack/cars/car_red_1.png",
+    "2d/racing/kenney-racing-pack/cars/car_blue_3.png",
+    "2d/racing/kenney-racing-pack/tiles/asphalt-road/road_asphalt01.png",
+    "2d/racing/kenney-racing-pack/tiles/grass/land_grass01.png",
+    "2d/platformer-art/base/tiles/liquid-water-top-mid.png",
+    "2d/platformer-art/base/tiles/bridge-logs.png",
     "2d/letters/blue/letter-a.png",
     "2d/letters/yellow/letter-b.png",
     "2d/letters/wood/letter-c.png"
