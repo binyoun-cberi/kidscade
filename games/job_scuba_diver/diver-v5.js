@@ -78,11 +78,98 @@ function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.di
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
 function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999));return{kind:'fish',key,x,y,baseX:x,baseY:y,vx:(rr()>.5?1:-1)*rnd(18,45),vy:rnd(-8,8),phase:rnd(0,Math.PI*2),scale:d===SPECIES.giant?1.25:rnd(.8,1.08),alive:true,photo:null,marked:0}}
+
+function rectSolid(x,y,w,h,zone='reef',edge='sand'){return{shape:'rect',x,y,w,h,zone,edge}}
+function circleSolid(x,y,r,zone='reef',edge='dirt'){return{shape:'circle',x,y,r,zone,edge}}
+function buildTerrain(){
+  // The gaps between these shelves form a continuous route from the surface to the abyss.
+  return[
+    // Coral garden: broad shelves with two generous passages.
+    rectSolid(0,300,760,90,'reef','sand'),
+    rectSolid(910,330,720,80,'reef','sand'),
+    rectSolid(2740,305,620,90,'reef','sand'),
+    rectSolid(3520,340,680,90,'reef','sand'),
+    circleSolid(820,340,95,'reef','sand'),circleSolid(3410,365,105,'reef','sand'),
+
+    // Kelp forest: staggered walls create an S-shaped swim route.
+    rectSolid(0,510,650,145,'kelp','dirt'),
+    rectSolid(760,610,720,125,'kelp','dirt'),
+    rectSolid(2740,500,680,135,'kelp','dirt'),
+    rectSolid(3520,625,680,130,'kelp','dirt'),
+    circleSolid(690,570,78,'kelp'),circleSolid(3425,590,88,'kelp'),
+
+    // Sunken ruins: broken stone platforms frame open courtyards.
+    rectSolid(0,805,710,135,'ruins','dirt'),
+    rectSolid(820,985,650,115,'ruins','dirt'),
+    rectSolid(2760,820,650,135,'ruins','dirt'),
+    rectSolid(3520,990,680,115,'ruins','dirt'),
+    circleSolid(1500,770,70,'ruins'),circleSolid(2685,1030,72,'ruins'),
+
+    // Wreck field: tight rock shelves, but the wreck/recorder pocket stays open.
+    rectSolid(0,1180,720,155,'wreck','dirt'),
+    rectSolid(850,1370,760,120,'wreck','dirt'),
+    rectSolid(3400,1180,800,150,'wreck','dirt'),
+    rectSolid(3130,1400,1070,110,'wreck','dirt'),
+    circleSolid(1720,1240,95,'wreck'),circleSolid(3260,1300,88,'wreck'),
+
+    // Abyss: two cliff faces narrow the route into a dramatic central trench.
+    rectSolid(0,1520,1120,380,'abyss','dirt'),
+    rectSolid(3520,1510,680,390,'abyss','dirt'),
+    rectSolid(1180,1765,610,135,'abyss','dirt'),
+    rectSolid(2780,1775,650,125,'abyss','dirt'),
+    circleSolid(1870,1815,95,'abyss'),circleSolid(2700,1810,100,'abyss')
+  ];
+}
+function buildForeground(seed){
+  const r=seedRand(seed+4411),items=[];
+  for(let i=0;i<34;i++){
+    const y=rnd(250,WORLD.h-30),deep=y>1200,kelp=y<850;
+    items.push({
+      x:rnd(-120,WORLD.w+120),y,
+      type:kelp?(r()>.5?'seaweedA':'seaweedB'):(deep?(r()>.5?'rockA':'rockB'):'grassA'),
+      scale:rnd(1.4,2.7),alpha:rnd(.16,.34),parallax:rnd(1.035,1.09),flip:r()>.5
+    });
+  }
+  return items;
+}
+function pointInSolid(x,y,s,pad=0){
+  if(s.shape==='circle')return Math.hypot(x-s.x,y-s.y)<s.r+pad;
+  return x>s.x-pad&&x<s.x+s.w+pad&&y>s.y-pad&&y<s.y+s.h+pad;
+}
+function resolvePlayerTerrain(p,r=23){
+  let hit=false;
+  for(const s of world.terrain){
+    if(s.shape==='circle'){
+      const dx=p.x-s.x,dy=p.y-s.y,d=Math.hypot(dx,dy),min=s.r+r;
+      if(d<min){
+        const nx=d>0?dx/d:1,ny=d>0?dy/d:0,over=min-d;
+        p.x+=nx*over;p.y+=ny*over;hit=true;
+        const vn=p.vx*nx+p.vy*ny;if(vn<0){p.vx-=vn*nx*1.25;p.vy-=vn*ny*1.25}
+      }
+    }else{
+      const nx=clamp(p.x,s.x,s.x+s.w),ny=clamp(p.y,s.y,s.y+s.h),dx=p.x-nx,dy=p.y-ny,d=Math.hypot(dx,dy);
+      if(d<r){
+        if(d>0){
+          const ux=dx/d,uy=dy/d,over=r-d;p.x+=ux*over;p.y+=uy*over;
+          const vn=p.vx*ux+p.vy*uy;if(vn<0){p.vx-=vn*ux*1.25;p.vy-=vn*uy*1.25}
+        }else{
+          const dl=Math.abs(p.x-s.x),dr=Math.abs(s.x+s.w-p.x),dt=Math.abs(p.y-s.y),db=Math.abs(s.y+s.h-p.y),m=Math.min(dl,dr,dt,db);
+          if(m===dl){p.x=s.x-r;p.vx=Math.min(0,p.vx)}
+          else if(m===dr){p.x=s.x+s.w+r;p.vx=Math.max(0,p.vx)}
+          else if(m===dt){p.y=s.y-r;p.vy=Math.min(0,p.vy)}
+          else{p.y=s.y+s.h+r;p.vy=Math.max(0,p.vy)}
+        }
+        hit=true;
+      }
+    }
+  }
+  return hit;
+}
 function buildWorld(contract){
  const st=stats(),r=seedRand(contract.unlock*9127+57);
  world={
    contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,oxygen:st.oxygen,hp:100,dashCd:0,inv:0},
-   fish:[],decor:[],props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
+   fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
    bag:[],bagWeight:0,income:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',complete:false,returned:false,
    mission:{photos:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null}
  };
@@ -108,7 +195,7 @@ function buildWorld(contract){
  for(let i=0;i<30;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- resetInputs();setTool('camera');showZone(zoneForY(world.player.y).name);showHint('카메라로 생물을 기록하고 산소가 떨어지기 전에 수면으로 돌아오세요.',2600);
+ resetInputs();setTool('camera');showZone(zoneForY(world.player.y).name);showHint('절벽과 동굴 통로를 따라 내려가며 생물을 기록하고, 산소가 떨어지기 전에 수면으로 돌아오세요.',3000);
 }
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
@@ -124,6 +211,37 @@ function renderBackground(){
  if(world.player.y>1450){ctx.fillStyle='rgba(0,6,16,'+clamp((world.player.y-1450)/600,0,.62)+')';ctx.fillRect(0,0,view.w,view.h)}
 }
 function drawSurface(){const y=screenPos(0,WORLD.surface).y;if(y>-60&&y<view.h+60){ctx.fillStyle='rgba(211,251,255,.18)';ctx.fillRect(0,y-8,view.w,16);ctx.strokeStyle='rgba(220,255,255,.7)';ctx.lineWidth=3;ctx.beginPath();for(let x=0;x<=view.w;x+=18){const yy=y+Math.sin(world.time*2+x*.035)*3;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}}
+function solidPalette(zone){return zone==='reef'?['#6b8778','#365d58']:zone==='kelp'?['#426b5f','#254b48']:zone==='ruins'?['#52696b','#2b454b']:zone==='wreck'?['#3d5259','#203841']:['#26394a','#132536']}
+function drawTerrain(){
+  for(const s of world.terrain){
+    const p=screenPos(s.x,s.y),pal=solidPalette(s.zone);
+    ctx.save();ctx.globalAlpha=.98;
+    if(s.shape==='rect'){
+      if(p.x>view.w+180||p.x+s.w<-180||p.y>view.h+180||p.y+s.h<-180){ctx.restore();continue}
+      const g=ctx.createLinearGradient(0,p.y,0,p.y+s.h);g.addColorStop(0,pal[0]);g.addColorStop(1,pal[1]);ctx.fillStyle=g;
+      ctx.beginPath();ctx.roundRect(p.x,p.y,s.w,s.h,24);ctx.fill();
+      const tile=imgs[s.edge==='sand'?'sand':'dirt'];
+      if(tile&&tile.complete){
+        const tw=36,th=26;ctx.globalAlpha=.78;
+        for(let x=p.x+8;x<p.x+s.w-8;x+=tw)ctx.drawImage(tile,x,p.y-8,tw,th);
+      }
+      ctx.globalAlpha=.35;ctx.fillStyle='#061a22';ctx.fillRect(p.x+8,p.y+s.h-18,Math.max(0,s.w-16),12);
+    }else{
+      if(p.x+s.r<-120||p.x-s.r>view.w+120||p.y+s.r<-120||p.y-s.r>view.h+120){ctx.restore();continue}
+      const g=ctx.createRadialGradient(p.x-s.r*.25,p.y-s.r*.3,8,p.x,p.y,s.r);g.addColorStop(0,pal[0]);g.addColorStop(1,pal[1]);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,s.r,0,Math.PI*2);ctx.fill();
+      const rock=imgs[s.r>90?'rockB':'rockA'];if(rock&&rock.complete){ctx.globalAlpha=.38;ctx.drawImage(rock,p.x-s.r*.5,p.y-s.r*.45,s.r,s.r)}
+    }
+    ctx.restore();
+  }
+}
+function drawForeground(){
+  for(const d of world.foreground){
+    const px=d.x-world.camera.x*d.parallax+view.w/2,py=d.y-world.camera.y*d.parallax+view.h/2;
+    if(px<-150||px>view.w+150||py<-170||py>view.h+170)continue;
+    const im=imgs[d.type],size=(d.type.startsWith('seaweed')?90:72)*d.scale;
+    drawImg(im,px,py,size,size,d.flip,Math.sin(world.time*.45+d.x*.01)*.025,d.alpha);
+  }
+}
 function drawDecor(){
  for(const d of world.decor){const p=screenPos(d.x,d.y);if(p.x<-80||p.x>view.w+80||p.y<-80||p.y>view.h+80)continue;const im=imgs[d.type],size=d.type.startsWith('seaweed')?55*d.scale:46*d.scale;drawImg(im,p.x,p.y,size,size,d.flip,0,.7)}
 }
@@ -143,7 +261,7 @@ function drawFish(f){
 }
 function drawMine(m){if(m.dead)return;const p=screenPos(m.x,m.y);if(p.x<-70||p.x>view.w+70||p.y<-70||p.y>view.h+70)return;const im=imgs[m.size==='B'?'mineB':m.size==='S'?'mineS':'mine'],s=m.size==='B'?60:m.size==='S'?38:50;drawImg(im,p.x,p.y,s,s,false,0,.9);if(world.sonar>0||m.fuse>0){ctx.strokeStyle=m.fuse>0?'#ff7465':'#6df4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,s*.7+Math.sin(world.time*8)*4,0,Math.PI*2);ctx.stroke()}}
 function drawShots(){for(const s of world.shots){const p=screenPos(s.x,s.y);ctx.strokeStyle='#d8eef3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-s.vx*.045,p.y-s.vy*.045);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.fillStyle='#f7f1d2';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill()}}
-function drawEffects(){for(const e of world.effects){const p=screenPos(e.x,e.y);if(e.type==='boom'){const im=e.big?imgs.explosionB:imgs.explosion,frames=10,fh=im.naturalHeight||82,fw=Math.floor((im.naturalWidth||660)/frames),fr=Math.min(frames-1,Math.floor(e.t/.075));ctx.save();ctx.globalAlpha=clamp(1-e.t/.8,0,1);ctx.imageSmoothingEnabled=false;if(im.complete)ctx.drawImage(im,fr*fw,0,fw,fh,p.x-45,p.y-45,90,90);ctx.restore()}else{ctx.fillStyle='rgba(125,238,249,'+clamp(1-e.t/.6,0,1)+')';ctx.beginPath();ctx.arc(p.x,p.y,10+e.t*30,0,Math.PI*2);ctx.strokeStyle='#7eeef7';ctx.stroke()}}}
+function drawEffects(){for(const e of world.effects){const p=screenPos(e.x,e.y);if(e.type==='boom'){const im=e.big?imgs.explosionB:imgs.explosion,frames=10,fh=im.naturalHeight||82,fw=Math.floor((im.naturalWidth||660)/frames),fr=Math.min(frames-1,Math.floor(e.t/.075));ctx.save();ctx.globalAlpha=clamp(1-e.t/.8,0,1);ctx.imageSmoothingEnabled=false;if(im.complete)ctx.drawImage(im,fr*fw,0,fw,fh,p.x-45,p.y-45,90,90);ctx.restore()}else if(e.type==='spark'){ctx.save();ctx.globalAlpha=clamp(1-e.t/.35,0,1);ctx.strokeStyle='#d9f7ff';ctx.lineWidth=2;for(let i=0;i<5;i++){const a=i/5*Math.PI*2+e.t*3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(a)*(8+e.t*22),p.y+Math.sin(a)*(8+e.t*22));ctx.stroke()}ctx.restore()}else{ctx.fillStyle='rgba(125,238,249,'+clamp(1-e.t/.6,0,1)+')';ctx.beginPath();ctx.arc(p.x,p.y,10+e.t*30,0,Math.PI*2);ctx.strokeStyle='#7eeef7';ctx.stroke()}}}
 function playerAnim(){const p=world.player,speed=Math.hypot(p.vx,p.vy);if(p.inv>0)return{img:imgs.playerHurt};if(touch.dash||keys.shift)return{img:imgs.playerRush};if(speed<18)return{img:imgs.playerIdle};if(speed>world.st.speed*.78)return{img:imgs.playerFast};return{img:imgs.playerSwim}}
 function drawPlayer(){
  const p=screenPos(world.player.x,world.player.y),a=playerAnim(),im=a.img;if(!im||!im.complete)return;const frames=Math.max(1,Math.round(im.naturalWidth/im.naturalHeight)),f=sheetFrame(im,frames,world.time);const size=64;ctx.save();ctx.translate(p.x,p.y);ctx.scale(world.player.face<0?-1:1,1);if(world.player.inv>0)ctx.globalAlpha=.55+.35*Math.sin(world.time*25);ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,0,f.sw,f.sh,-size/2,-size/2,size,size);ctx.restore();
@@ -153,7 +271,7 @@ function drawBubbles(){
  ctx.save();for(const b of world.bubbles){const p=screenPos(b.x,b.y);if(p.x<0||p.x>view.w||p.y<0||p.y>view.h)continue;ctx.strokeStyle='rgba(213,250,255,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,b.s,0,Math.PI*2);ctx.stroke()}ctx.restore()
 }
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawShots();drawEffects();drawBubbles();drawPlayer();updateHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawTerrain();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();updateHud();updatePhotoLabel()
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
@@ -227,11 +345,11 @@ function update(dt){
  let ix=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0)+touch.x,iy=(keys.w||keys.arrowup?-1:0)+(keys.s||keys.arrowdown?1:0)+touch.y;let len=Math.hypot(ix,iy);if(len>1){ix/=len;iy/=len}
  const dashing=(keys.shift||touch.dash)&&p.dashCd<=0&&len>.1,spd=st.speed*(dashing?1.75:1);if(dashing)p.dashCd=.65;
  const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
- p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
+ p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
  p.oxygen-=dt*(dashing?1.55:1);const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
  const zn=zoneForY(p.y).name;if(zn!==world.lastZone){world.lastZone=zn;showZone(zn)}
- for(const f of world.fish){if(!f.alive)continue;const sp=SPECIES[f.key];f.marked=Math.max(0,f.marked-dt);let fear=Math.hypot(f.x-p.x,f.y-p.y)<105&&!sp.protected?1:0;f.x+=f.vx*dt*(fear?1.9:1);f.y+=Math.sin(world.time*.9+f.phase)*5*dt;if(f.x<60||f.x>WORLD.w-60)f.vx*=-1;if(Math.abs(f.y-f.baseY)>65)f.y=lerp(f.y,f.baseY,.05);if(f.key==='giant'&&Math.hypot(f.x-p.x,f.y-p.y)<115&&p.inv<=0){p.hp-=14*st.armor;p.inv=1.2;showHint('대형 심해 생물과 거리를 확보하세요!',900)}}
- for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
+ for(const f of world.fish){if(!f.alive)continue;const sp=SPECIES[f.key];f.marked=Math.max(0,f.marked-dt);let fear=Math.hypot(f.x-p.x,f.y-p.y)<105&&!sp.protected?1:0;f.x+=f.vx*dt*(fear?1.9:1);f.y+=Math.sin(world.time*.9+f.phase)*5*dt;if(f.x<60||f.x>WORLD.w-60)f.vx*=-1;if(world.terrain.some(s=>pointInSolid(f.x,f.y,s,8))){f.x-=f.vx*dt*2.2;f.vx*=-1;f.y=lerp(f.y,f.baseY,.16)}if(Math.abs(f.y-f.baseY)>65)f.y=lerp(f.y,f.baseY,.05);if(f.key==='giant'&&Math.hypot(f.x-p.x,f.y-p.y)<115&&p.inv<=0){p.hp-=14*st.armor;p.inv=1.2;showHint('대형 심해 생물과 거리를 확보하세요!',900)}}
+ for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
  for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<92&&m.fuse<=0){m.fuse=1.25;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
  for(const b of world.bubbles){b.y-=b.speed*dt;if(b.y<70){b.y=WORLD.h-20;b.x=rnd(0,WORLD.w)}}
