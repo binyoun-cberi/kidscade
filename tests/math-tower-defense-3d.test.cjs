@@ -6,25 +6,29 @@ const {spawnSync}=require('node:child_process');
 
 const root=path.resolve(__dirname,'..');
 const dir=path.join(root,'games','math_tower_defense');
-const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+const canonicalName='약수 타워 디펜스.html';
+const html=fs.readFileSync(path.join(dir,canonicalName),'utf8');
 const css=fs.readFileSync(path.join(dir,'tower-defense.css'),'utf8');
 const loader=fs.readFileSync(path.join(dir,'tower-defense-loader.js'),'utf8');
 const runtime=fs.readFileSync(path.join(dir,'tower-defense.js'),'utf8');
-const legacy=fs.readFileSync(path.join(root,'약수 타워 디펜스.html'),'utf8');
+const rootAlias=fs.readFileSync(path.join(root,'약수 타워 디펜스.html'),'utf8');
+const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
-test('Divisor Tower Defense is a clean standalone 3D entry',()=>{
+test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=1/);
+  assert.match(html,/tower-defense-loader\.js\?v=2/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
-  assert.match(legacy,/games\/math_tower_defense\/index\.html\?v=1/);
+  assert.ok(html.length>1000);
+  assert.match(rootAlias,/games\/math_tower_defense\/%EC%95%BD%EC%88%98/);
+  assert.match(nestedAlias,/%EC%95%BD%EC%88%98%20%ED%83%80%EC%9B%8C/);
 });
 
-test('loader uses the same proven Three.js bootstrap pattern as Police Patrol',()=>{
+test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=1/);
+  assert.match(loader,/tower-defense\.js\?v=2/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -43,7 +47,7 @@ test('math rules and original wave progression survive the rebuild',()=>{
   assert.match(runtime,/\{nums:\[17,19,23,29\],count:12/);
 });
 
-test('3D runtime uses sci-fi turrets and monster bundle assets',()=>{
+test('3D runtime uses sci-fi turrets and monster assets',()=>{
   for(const rel of [
     'assets/game/3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
     'assets/game/3d/weapons/scifi-turrets/rail-gun-turret.glb',
@@ -58,7 +62,7 @@ test('3D runtime uses sci-fi turrets and monster bundle assets',()=>{
   assert.match(runtime,/mushroom-king\.glb/);
 });
 
-test('3D placement and learning feedback are first class, not a 2D bridge',()=>{
+test('3D placement and learning feedback are first class',()=>{
   assert.match(runtime,/Raycaster/);
   assert.match(runtime,/pointerCell/);
   assert.match(runtime,/placeTower/);
@@ -74,15 +78,23 @@ test('mobile UI reserves most of the screen for the battlefield',()=>{
   assert.match(css,/#waveCard/);
 });
 
-test('catalog and Cloudflare build point directly to the new standalone game',()=>{
+test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
-  assert.equal(catalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/index.html?v=1');
+  const game=catalog.games.find(g=>g.id==='math_tower_defense');
+  assert.equal(game.title,'약수 타워 디펜스');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=2');
   const dist=path.join(root,'dist');
-  assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','index.html')));
+  assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/index.html?v=1');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=2');
+});
+
+test('legacy URLs are registered aliases to the canonical game',()=>{
+  const aliases=JSON.parse(fs.readFileSync(path.join(root,'data','game-path-aliases.json'),'utf8'));
+  assert.equal(aliases['약수 타워 디펜스.html'],'games/math_tower_defense/약수 타워 디펜스.html');
+  assert.equal(aliases['games/math_tower_defense/index.html'],'games/math_tower_defense/약수 타워 디펜스.html');
 });
 
 test('required CC-BY credit stays visible',()=>{
