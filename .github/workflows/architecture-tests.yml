@@ -122,6 +122,8 @@ jobs:
         run: node --test tests/code-breaker-dx.test.cjs
       - name: Run Police Patrol rework tests
         run: node --test tests/police-patrol.test.cjs
+      - name: Run Spelling Frog asset rework tests
+        run: node --test tests/spelling-frog-assets.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests

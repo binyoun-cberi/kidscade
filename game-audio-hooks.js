@@ -285,6 +285,7 @@
   }
 
   function setupSpellingFrog() {
+    if (window.__spellingFrogOwnAudio) return;
     preload(['movement.jump', 'collect.coin_pickup', 'success.cheer_yay', 'success.cheer_woohoo', 'failure.fail_sting', 'combat.impact_heavy', 'combat.hurt_voice']);
 
     const jump = () => {
