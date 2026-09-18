@@ -18,7 +18,7 @@ Object.values(A).flat().forEach(load);
 const img=s=>images.get(s)?.ok?images.get(s).im:null;
 const TAU=Math.PI*2,WORLD=2300,ROAD_MAIN=280,ROAD_SIDE=190,GRID=720,SHIFT=360;
 const roadXs=[-1440,-720,0,720,1440],roadYs=[-1440,-720,0,720,1440],roads=[],blocks=[],decor=[];
-let player=null,cars=[],mission=null,state='menu',last=performance.now(),score=0,solved=0,shiftTime=0,missionDelay=1.2,radioTimer=0,raf=false;
+let player=null,cars=[],pedestrians=[],mission=null,state='menu',last=performance.now(),score=0,solved=0,shiftTime=0,missionDelay=1.2,radioTimer=0,raf=false,missionIssued=0,lastMissionType='';
 const camera={x:0,y:0,zoom:1},view={w:innerWidth,h:innerHeight,dpr:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
 const coarse=matchMedia('(hover:none),(pointer:coarse)').matches;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -52,11 +52,16 @@ const MODEL3={
  cone:modelUrl3('city/kenney-city-kit-roads/construction-cone.glb'),
  barrier:modelUrl3('city/kenney-city-kit-roads/construction-barrier.glb'),
  bigBuilding:modelUrl3('city/poly-pizza-city-pack/big-building.glb'),
- dumpster:modelUrl3('city/poly-pizza-city-pack/dumpster.glb')
+ dumpster:modelUrl3('city/poly-pizza-city-pack/dumpster.glb'),
+ pedA:modelUrl3('characters/people/character-male-a.glb'),
+ pedB:modelUrl3('characters/people/character-male-b.glb'),
+ pedC:modelUrl3('characters/people/character-female-b.glb'),
+ pedD:modelUrl3('characters/people/character-female-c.glb')
 };
 const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
-let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,mission3=null,models3=new Map(),carNodes3=new Map(),prepare3Promise=null,threeReady3=false;
+let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,people3=null,mission3=null,models3=new Map(),carNodes3=new Map(),pedNodes3=new Map(),prepare3Promise=null,threeReady3=false;
 let missionKey3='',missionMarker3=null,missionArrow3=null,missionBang3=null,lastRender3=performance.now(),cameraShake3=0,spark3=[],lastHealth3=100;
+let buildingMeshes3=[],fadedMeshes3=new Set();const occlusionRay3=T3?new T3.Raycaster():null;
 const v3=(x,y,h=0)=>new T3.Vector3(x*SCALE3,h,y*SCALE3);
 function box3(w,h,d,color,rough=.82){const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),new T3.MeshStandardMaterial({color,roughness:rough,metalness:.02}));m.castShadow=true;m.receiveShadow=true;return m}
 function clear3(g){if(!g)return;while(g.children.length)g.remove(g.children[g.children.length-1])}
@@ -77,7 +82,7 @@ function init3D(){
    scene3.add(new T3.HemisphereLight(0xeaf8ff,0x476448,2.25));
    const sun=new T3.DirectionalLight(0xfff1cf,3.2);sun.position.set(-18,28,14);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-28;sun.shadow.camera.right=28;sun.shadow.camera.top=28;sun.shadow.camera.bottom=-28;scene3.add(sun);
    const fill=new T3.DirectionalLight(0x91c9ff,.72);fill.position.set(14,10,-18);scene3.add(fill);
-   world3=new T3.Group();cars3=new T3.Group();mission3=new T3.Group();scene3.add(world3,cars3,mission3);
+   world3=new T3.Group();cars3=new T3.Group();people3=new T3.Group();mission3=new T3.Group();scene3.add(world3,cars3,people3,mission3);
    loader3=new GLTF3();threeReady3=true;document.body.classList.add('three-ready');resize3D();return true;
  }catch(e){console.error('[Police3D] init failed',e);return false}
 }
@@ -93,12 +98,36 @@ function addWindowStrip3(group,w,d,h){
  const fw=new T3.Mesh(new T3.BoxGeometry(Math.max(.9,w*.62),Math.max(.35,h*.38),.035),glassMat);fw.position.set(0,h*.57,d/2+.02);group.add(fw);
  const sw=new T3.Mesh(new T3.BoxGeometry(.035,Math.max(.35,h*.38),Math.max(.9,d*.54)),glassMat.clone());sw.position.set(w/2+.02,h*.57,0);group.add(sw);
 }
+function registerBuildingOccluder3(root){
+ if(!root)return;root.traverse(n=>{if(!n.isMesh||!n.material)return;n.userData.occluder=true;buildingMeshes3.push(n)})
+}
+function restoreOccluders3(){
+ for(const m of fadedMeshes3){
+  const list=Array.isArray(m.material)?m.material:[m.material];
+  for(const mat of list){if(mat.userData.__occOpacity!=null){mat.opacity=mat.userData.__occOpacity;mat.transparent=mat.userData.__occTransparent;mat.depthWrite=mat.userData.__occDepthWrite}}
+ }
+ fadedMeshes3.clear()
+}
+function fadeOccluder3(mesh){
+ const list=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+ for(const mat of list){
+  if(mat.userData.__occOpacity==null){mat.userData.__occOpacity=mat.opacity;mat.userData.__occTransparent=mat.transparent;mat.userData.__occDepthWrite=mat.depthWrite}
+  mat.transparent=true;mat.opacity=Math.min(.18,mat.userData.__occOpacity);mat.depthWrite=false
+ }
+ fadedMeshes3.add(mesh)
+}
+function updateCameraOcclusion3(target){
+ restoreOccluders3();if(!occlusionRay3||!cam3||!target||!buildingMeshes3.length)return;
+ const dir=target.clone().sub(cam3.position),distance=dir.length();if(distance<.1)return;dir.normalize();occlusionRay3.set(cam3.position,dir);occlusionRay3.far=Math.max(.1,distance-.45);
+ const hits=occlusionRay3.intersectObjects(buildingMeshes3,false);
+ for(const h of hits.slice(0,10))fadeOccluder3(h.object)
+}
 function addParkingLines3(group,b){
  const x0=b.x*SCALE3,z0=b.y*SCALE3,w=b.w*SCALE3,d=b.h*SCALE3;
  for(let i=-2;i<=2;i++){const line=box3(.035,.012,d*.72,0xece9d8,.95);line.position.set(x0+w/2+i*w*.12,.055,z0+d/2);group.add(line)}
 }
 function rebuildCity3D(){
- if(!threeReady3||!world3)return;clear3(world3);
+ if(!threeReady3||!world3)return;restoreOccluders3();buildingMeshes3=[];clear3(world3);
  const ground=box3(WORLD*2*SCALE3+.8,.12,WORLD*2*SCALE3+.8,0x78b96d,.98);ground.position.y=-.08;world3.add(ground);
  for(const r of roads){
    const w=r.w*SCALE3,d=r.h*SCALE3,road=box3(w,.07,d,0x4c5358,.96);road.position.set((r.x+r.w/2)*SCALE3,.01,(r.y+r.h/2)*SCALE3);world3.add(road);
@@ -120,10 +149,10 @@ function rebuildCity3D(){
    }else{
      const landmark=models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
      if(landmark){
-       const city=clone3('bigBuilding',Math.min(w,d)*.92);if(city){city.position.set(x,.02,z);city.rotation.y=b.shade%2?Math.PI/2:0;world3.add(city)}
+       const city=clone3('bigBuilding',Math.min(w,d)*.92);if(city){city.position.set(x,.02,z);city.rotation.y=b.shade%2?Math.PI/2:0;registerBuildingOccluder3(city);world3.add(city)}
      }else{
        const h=2.7+b.shade*.55+((Math.abs(Math.floor(b.x+b.y))%3)*.32),g=new T3.Group(),body=box3(w,h,d,buildingColors[b.shade%buildingColors.length],.78);body.position.y=h/2;g.add(body);
-       const roof=box3(w*.9,.18,d*.9,0x48555b,.9);roof.position.y=h+.09;g.add(roof);addWindowStrip3(g,w,d,h);g.position.set(x,0,z);world3.add(g);
+       const roof=box3(w*.9,.18,d*.9,0x48555b,.9);roof.position.y=h+.09;g.add(roof);addWindowStrip3(g,w,d,h);g.position.set(x,0,z);registerBuildingOccluder3(g);world3.add(g);
      }
      if(models3.has('dumpster')&&((Math.abs(Math.round(b.x/GRID))+b.shade)%2===0)){const dump=clone3('dumpster',.55);if(dump){dump.position.set(x+w*.43,.07,z+d*.43);dump.rotation.y=b.shade%2?Math.PI/2:0;world3.add(dump)}}
    }
