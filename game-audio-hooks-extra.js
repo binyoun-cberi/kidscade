@@ -128,7 +128,7 @@
   }
 
   function setupTowerDefense() {
-    soundAllowed = () => !(document.getElementById('btnSound')?.textContent || '').includes('🔇');
+    soundAllowed = () => !((document.getElementById('btnSound')?.textContent || document.getElementById('soundBtn')?.textContent || '').includes('🔇'));
     preload([
       'combat.impact_heavy',
       'combat.hurt_grunt',
@@ -136,7 +136,7 @@
       'failure.fail_sting'
     ]);
 
-    waitFor('#uiKills', kills => {
+    waitFor('#uiKills,#killValue', kills => {
       let previous = parseFirstNumber(kills.textContent, 0);
       observe(kills, () => {
         const next = parseFirstNumber(kills.textContent, previous);
@@ -145,7 +145,7 @@
       }, { childList: true, characterData: true, subtree: true });
     });
 
-    waitFor('#uiLives', lives => {
+    waitFor('#uiLives,#coreValue', lives => {
       let previous = parseFirstNumber(lives.textContent, 20);
       observe(lives, () => {
         const next = parseFirstNumber(lives.textContent, previous);
@@ -157,7 +157,7 @@
       }, { childList: true, characterData: true, subtree: true });
     });
 
-    waitFor('#uiWave', wave => {
+    waitFor('#uiWave,#waveValue', wave => {
       let previous = parseFirstNumber(wave.textContent, 1);
       observe(wave, () => {
         const next = parseFirstNumber(wave.textContent, previous);
