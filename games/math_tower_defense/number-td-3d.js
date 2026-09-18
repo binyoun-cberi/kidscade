@@ -1,12 +1,12 @@
+// Number TD 3D v2 - nonblocking mobile-safe loader
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {clone as cloneSkinned} from 'three/addons/utils/SkeletonUtils.js';
 
 const api=window.__numTD3D;
 const canvas=document.getElementById('gameCanvas3d');
 const box=canvas?.closest('.canvas-box');
 const loading=document.getElementById('td3dLoading');
-if(!api||!canvas||!box) throw new Error('Number TD 3D bridge missing');
+if(!api||!canvas||!box){const el=document.getElementById('td3dLoading');if(el)el.textContent='3D 연결 오류 · 2D 모드로 플레이할 수 있어요.';throw new Error('Number TD 3D bridge missing')}
 
 const UNIT=1.05;
 const MODEL_ROOT=new URL('../../assets/game/3d/',import.meta.url);
@@ -56,10 +56,10 @@ function normalize(obj,target=1){
   obj.position.x-=c.x;obj.position.z-=c.z;obj.position.y-=b.min.y;
   return obj;
 }
-function load(key,url){return new Promise(resolve=>loader.load(url,g=>{cache.set(key,g);resolve(g)},undefined,e=>{console.warn('[NumberTD3D] fallback',key,e);resolve(null)}))}
+function load(key,url,timeoutMs=7000){return new Promise(resolve=>{let done=false;const finish=v=>{if(done)return;done=true;resolve(v)};const timer=setTimeout(()=>{console.warn('[NumberTD3D] asset timeout',key,url);finish(null)},timeoutMs);loader.load(url,g=>{clearTimeout(timer);cache.set(key,g);finish(g)},undefined,e=>{clearTimeout(timer);console.warn('[NumberTD3D] fallback',key,e);finish(null)})})}
 function cloneModel(key,target=1,skinned=false){
   const g=cache.get(key);if(!g)return null;
-  const obj=prep(skinned?cloneSkinned(g.scene):g.scene.clone(true));
+  const obj=prep(g.scene.clone(true));
   return normalize(obj,target);
 }
 function meshBox(w,h,d,color,rough=.86){
@@ -199,9 +199,15 @@ async function init(){
   const rim=new THREE.DirectionalLight(0x7c3aed,1.1);rim.position.set(9,5,-9);scene.add(rim);
   boardGroup=new THREE.Group();towerGroup=new THREE.Group();enemyGroup=new THREE.Group();fxGroup=new THREE.Group();uiGroup=new THREE.Group();scene.add(boardGroup,towerGroup,enemyGroup,fxGroup,uiGroup);
   buildBoard();resize();addEventListener('resize',resize);
-  await Promise.all(Object.entries(MODELS).map(([k,u])=>load(k,u)));
-  ready=true;box.classList.add('td3d-ready');loading?.classList.add('done');
-  requestAnimationFrame(loop)
+  ready=true;box.classList.add('td3d-ready');
+  if(loading)loading.textContent='3D 모델 불러오는 중…';
+  requestAnimationFrame(loop);
+  const results=await Promise.allSettled(Object.entries(MODELS).map(([k,u])=>load(k,u)));
+  // Recreate any fallback actors now that real models are available.
+  for(const [t,n] of [...towerNodes]){towerGroup.remove(n);towerNodes.delete(t)}
+  for(const [e,n] of [...enemyNodes])removeEnemy(e,n);
+  loading?.classList.add('done');
+  console.info('[NumberTD3D] assets ready',results.length,cache.size)
 }
 function loop(){
   requestAnimationFrame(loop);const dt=Math.min(.05,clock.getDelta()),time=performance.now()/1000;
