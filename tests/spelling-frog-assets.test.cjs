@@ -11,10 +11,10 @@ const runtime=fs.readFileSync(path.join(dir,'spelling-frog-runtime.js'),'utf8');
 const loader=fs.readFileSync(path.join(dir,'spelling-frog-loader.js'),'utf8');
 
 test('Spelling Frog uses local Three.js and split runtime files',()=>{
-  assert.match(html,/spelling-frog-loader\.js\?v=20260918-4/);
+  assert.match(html,/spelling-frog-loader\.js\?v=20260918-5/);
   assert.match(html,/\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
   assert.match(loader,/from 'three'/);
-  assert.match(loader,/spelling-frog-runtime\.js\?v=20260918-4/);
+  assert.match(loader,/spelling-frog-runtime\.js\?v=20260918-5/);
   assert.match(loader,/spelling-frog-log-fix\.js\?v=20260914-1/);
   assert.doesNotMatch(html+runtime+loader,/cdn\.jsdelivr|cdnjs\.cloudflare|https?:\/\//i);
   assert.match(html,/audio-manager\.js\?v=20260917-1/);
@@ -58,6 +58,22 @@ test('Spelling Frog uses shared CC0 3D road, vehicle, nature and train assets',(
   assert.match(runtime,/function addRailSurface/);
 });
 
+
+test('Spelling Frog preloads visible letters and preserves answer routes',()=>{
+  assert.match(runtime,/function prepareUpcomingLetterRow/);
+  assert.match(runtime,/prepareUpcomingLetterRow\(\)/);
+  assert.match(runtime,/function choiceCols/);
+  assert.match(runtime,/reserved=new Set\(choiceCols\(\)\)/);
+});
+
+test('Spelling Frog advances its animation mixer and repairs missing Kenney colormap visuals',()=>{
+  assert.match(runtime,/frogMixer\)frogMixer\.update\(dt\)/);
+  assert.doesNotMatch(runtime,/rotation\.x=-Math\.PI\/2;if\(frogMixer\)/);
+  assert.match(runtime,/function styleModel/);
+  assert.match(runtime,/MODEL_COLORS/);
+  assert.match(runtime,/addVehicleGlass/);
+});
+
 test('Spelling Frog owns its event audio without duplicate shared hooks',()=>{
   assert.match(html,/__spellingFrogOwnAudio=true/);
   assert.match(runtime,/movement\.jump/);
@@ -80,10 +96,10 @@ test('Spelling Frog keeps moving-log rider fix wired in',()=>{
 test('Spelling Frog catalog points to asset rework version',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='spelling_frog');
-  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260918-4');
+  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260918-5');
   assert.match(game.description,/개구리.*차량.*알파벳/);
   const bootstrap=fs.readFileSync(path.join(root,'main-bootstrap.js'),'utf8');
-  assert.match(bootstrap,/스펠링 프로그\.html\?v=20260918-4/);
+  assert.match(bootstrap,/스펠링 프로그\.html\?v=20260918-5/);
 });
 
 test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
@@ -92,7 +108,7 @@ test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-runtime.js')));
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-loader.js')));
   const builtHtml=fs.readFileSync(path.join(built,'스펠링 프로그.html'),'utf8');
-  assert.match(builtHtml,/spelling-frog-loader\.js\?v=20260918-4/);
+  assert.match(builtHtml,/spelling-frog-loader\.js\?v=20260918-5/);
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','characters','quaternius','frog.glb')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','letters','blue','letter-a.png')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','racing','kenney-racing-pack','cars','car_red_1.png')));
