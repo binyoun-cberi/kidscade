@@ -61,3 +61,8 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
   .panel{max-height:96dvh}.hero{margin-bottom:4px}.heroSprite{width:54px;height:54px;background-size:auto 54px}h1{font-size:36px}.sub{margin:4px 0 8px}.grid{margin:8px 0}.card{padding:9px}
   #stick{width:92px;height:92px}#knob{left:30px;top:30px;width:32px;height:32px}#mActions{grid-template-columns:56px 56px}.mBtn{height:48px}
 }
+
+/* v6 biome identity */
+#zoneToast{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;min-width:260px;padding:9px 16px;border-radius:13px;background:rgba(1,18,28,.72);border:1px solid rgba(162,235,247,.2);backdrop-filter:blur(5px)}
+#zoneToast b{display:block;font:1000 clamp(21px,3.3vw,34px)/1 Impact,"Arial Black",system-ui;letter-spacing:.07em;color:#f3feff;text-shadow:0 3px 0 #07566a,0 0 18px rgba(76,230,248,.45)}
+#zoneToast small{display:block;margin-top:5px;font-size:10px;font-weight:900;letter-spacing:.03em;color:#bcecf2;text-shadow:0 2px 5px #001}
