@@ -16,7 +16,7 @@ const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
 test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=2/);
+  assert.match(html,/tower-defense-loader\.js\?v=3/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
   assert.ok(html.length>1000);
@@ -28,7 +28,7 @@ test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=2/);
+  assert.match(loader,/tower-defense\.js\?v=3/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -82,19 +82,29 @@ test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
   assert.equal(game.title,'약수 타워 디펜스');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=2');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=3');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=2');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=3');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
   const aliases=JSON.parse(fs.readFileSync(path.join(root,'data','game-path-aliases.json'),'utf8'));
   assert.equal(aliases['약수 타워 디펜스.html'],'games/math_tower_defense/약수 타워 디펜스.html');
   assert.equal(aliases['games/math_tower_defense/index.html'],'games/math_tower_defense/약수 타워 디펜스.html');
+});
+
+
+test('v3 battlefield improves combat readability and feedback',()=>{
+  assert.match(runtime,/function calcSprite/);
+  assert.match(runtime,/function hitBurst/);
+  assert.match(runtime,/CylinderGeometry\(thick/);
+  assert.match(runtime,/labelLane/);
+  assert.match(runtime,/impactShake/);
+  assert.match(runtime,/ring2/);
 });
 
 test('required CC-BY credit stays visible',()=>{
