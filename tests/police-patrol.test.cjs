@@ -15,11 +15,11 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\.js\?v=8/);
+  assert.match(html,/police-patrol-loader\.js\?v=9/);
   assert.match(html,/police-patrol\.css\?v=7/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\.js\?v=8/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=8/);
+  assert.match(loader,/police-patrol\.js\?v=9/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=9/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
 });
 
@@ -32,7 +32,7 @@ test('Police Patrol startup does not touch 3D lexical state before initializatio
 });
 
 
-test('Police Patrol v8 fades buildings that block the chase camera',()=>{
+test('Police Patrol v9 fades buildings that block the chase camera',()=>{
   assert.match(js,/function registerBuildingOccluder3/);
   assert.match(js,/function updateCameraOcclusion3/);
   assert.match(js,/function restoreOccluders3/);
@@ -40,7 +40,14 @@ test('Police Patrol v8 fades buildings that block the chase camera',()=>{
   assert.match(js,/mat\.opacity=Math\.min\(\.16/);
 });
 
-test('Police Patrol v8 adds moving pedestrians using existing people assets',()=>{
+test('Police Patrol v9 clones skinned pedestrians safely',()=>{
+  const loader=fs.readFileSync(path.join(gameDir,'police-patrol-loader.js'),'utf8');
+  assert.match(loader,/SkeletonUtils/);
+  assert.match(loader,/window\.SkeletonUtils=SkeletonUtils/);
+  assert.match(js,/window\.SkeletonUtils\?\.clone/);
+});
+
+test('Police Patrol v9 adds moving pedestrians using existing people assets',()=>{
   for(const rel of [
     'assets/game/characters/people/character-male-a.glb',
     'assets/game/characters/people/character-male-b.glb',
@@ -55,7 +62,7 @@ test('Police Patrol v8 adds moving pedestrians using existing people assets',()=
   assert.match(js,/spawnPedestrians\(\)/);
 });
 
-test('Police Patrol v8 repairs lane following and guarantees an early pursuit',()=>{
+test('Police Patrol v9 repairs lane following and guarantees an early pursuit',()=>{
   assert.match(js,/function laneOffsetForAngle/);
   assert.match(js,/function trafficDesiredSpeed/);
   assert.match(js,/function separateTrafficCars/);
@@ -65,14 +72,14 @@ test('Police Patrol v8 repairs lane following and guarantees an early pursuit',(
   assert.doesNotMatch(js,/Math\.sin\(this\.a\)>0\?30:-30/);
 });
 
-test('Police Patrol v8 uses a lower chase camera and human-scale mission distance',()=>{
+test('Police Patrol v9 uses a lower chase camera and human-scale mission distance',()=>{
   assert.match(js,/height=portrait\?5\.15:4\.55/);
   assert.match(js,/Math\.round\(d\*\.12\)/);
   assert.match(js,/bangSprite3/);
   assert.match(js,/missionArrow3\.visible=raw>180/);
 });
 
-test('Police Patrol v8 adds CC0 city landmark props and compact portrait UI',()=>{
+test('Police Patrol v9 adds CC0 city landmark props and compact portrait UI',()=>{
   assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','big-building.glb')));
   assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','dumpster.glb')));
   assert.match(js,/big-building\.glb/);
@@ -153,13 +160,13 @@ test('Police Patrol only uses valid shared static audio keys',()=>{
   for(const key of keys)assert.ok(audio.sounds[key],'missing audio key '+key);
 });
 
-test('catalog and Cloudflare build point to Police Patrol v8',()=>{
+test('catalog and Cloudflare build point to Police Patrol v9',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=8');
+  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=9');
   const distCatalog=JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const builtGame=distCatalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=8');
+  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=9');
   assert.ok(fs.existsSync(path.join(root,'dist','games','job_police_car','police-patrol-loader.js')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','vehicles','kenney-car-kit','police.glb')));
 });
