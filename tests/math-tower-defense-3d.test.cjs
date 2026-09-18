@@ -108,7 +108,23 @@ test('v3 battlefield improves combat readability and feedback',()=>{
 });
 
 
-test('v5 uses a cohesive eco-city battlefield with orbit camera controls',()=>{\n  assert.match(runtime,/rebuildBoardDecor/);\n  assert.match(runtime,/rebuildSkyWorld/);\n  assert.match(runtime,/tree-default\\.glb/);\n  assert.match(runtime,/plant-bush\\.glb/);\n  assert.match(runtime,/makeParkBench/);\n  assert.match(runtime,/new OrbitControls/);\n  assert.match(runtime,/function onPointerUp/);\n  assert.match(runtime,/scene\\.background=new THREE\\.Color\\(0xcfeeff\\)/);\n  assert.doesNotMatch(runtime,/addFloatingIsland/);\n  assert.match(runtime,/enemyMixers/);\n  assert.match(runtime,/SkeletonUtils/);\n  assert.match(runtime,/applyBuildMode/);\n  assert.match(css,/body\\.build-mode #buildHint/);\n  assert.match(css,/#cameraHint/);\n  assert.match(html,/id=\"cameraResetBtn\"/);\n});
+test('v5 uses a cohesive eco-city battlefield with orbit camera controls',()=>{
+  assert.match(runtime,/rebuildBoardDecor/);
+  assert.match(runtime,/rebuildSkyWorld/);
+  assert.match(runtime,/tree-default\.glb/);
+  assert.match(runtime,/plant-bush\.glb/);
+  assert.match(runtime,/makeParkBench/);
+  assert.match(runtime,/new OrbitControls/);
+  assert.match(runtime,/function onPointerUp/);
+  assert.match(runtime,/scene\.background=new THREE\.Color\(0xcfeeff\)/);
+  assert.doesNotMatch(runtime,/addFloatingIsland/);
+  assert.match(runtime,/enemyMixers/);
+  assert.match(runtime,/SkeletonUtils/);
+  assert.match(runtime,/applyBuildMode/);
+  assert.match(css,/body\.build-mode #buildHint/);
+  assert.match(css,/#cameraHint/);
+  assert.match(html,/id="cameraResetBtn"/);
+});
 
 test('required CC-BY credit stays visible',()=>{
   assert.match(html,/Turrets: Zsky/);
