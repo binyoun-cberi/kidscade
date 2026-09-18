@@ -216,7 +216,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
   .icon-btn{width:46px;height:46px}
   .side-tools{right:50%;bottom:max(12px,env(safe-area-inset-bottom));top:auto;transform:translateX(50%);flex-direction:row}
 }
-.route-rule{position:absolute;left:12px;right:12px;top:10px;text-align:center;font-size:12px;line-height:1.5;color:#657b7d;pointer-events:none}.hint-label{top:50px;pointer-events:none}#skipDelivery{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);z-index:9;background:#214a53;color:white;cursor:pointer}.board-shell{background:#f3f7ef}.home-card h1{font-size:clamp(30px,5vw,56px)}.tool-btn:disabled{opacity:.45;cursor:default}.toast{max-width:90%;white-space:normal;text-align:center}.stage-pill{max-width:50vw;overflow:hidden;white-space:nowrap}@media(max-width:800px){.hint-label{top:50px}.route-rule{font-size:11px}}@media(max-height:480px){.route-rule{font-size:10px;top:4px}.hint-label{top:33px;padding:5px 9px;font-size:12px}}
+.route-rule{position:absolute;left:12px;right:12px;top:10px;text-align:center;font-size:12px;line-height:1.5;color:#657b7d;pointer-events:none}.hint-label{top:50px;pointer-events:none}#skipDelivery{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);z-index:9;background:#214a53;color:white;cursor:pointer}.board-shell{background:#edf2ee}.home-card h1{font-size:clamp(30px,5vw,56px)}.tool-btn:disabled{opacity:.45;cursor:default}.toast{max-width:90%;white-space:normal;text-align:center}.stage-pill{max-width:50vw;overflow:hidden;white-space:nowrap}@media(max-width:800px){.hint-label{top:50px}.route-rule{font-size:11px}}@media(max-height:480px){.route-rule{font-size:10px;top:4px}.hint-label{top:33px;padding:5px 9px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -273,7 +273,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
     </div>
     <div class="board-wrap">
       <div id="boardShell" class="board-shell">
-        <canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">같은 점은 다시 지나도 돼요 · 같은 선은 한 번만!<br>드래그하거나 점을 차례로 눌러 이어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
+        <canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">모든 골목을 한 번씩 배달해요 · 같은 점은 다시 지나도 돼요!<br>드래그하거나 점을 차례로 눌러 길을 이어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
         <div id="hintLabel" class="hint-label"></div>
         <div class="side-tools">
           <button id="undoBtn" class="tool-btn" aria-label="한 단계 되돌리기">
@@ -327,6 +327,31 @@ const screens = {home:$('#home'), select:$('#select'), game:$('#game')};
 const canvas = $('#gameCanvas');
 const ctx = canvas.getContext('2d');
 const TOTAL_STAGES = 50;
+
+const CITY_THEME = {
+  1:{name:'주택가',ground:'#eaf2e6',block:'#dfe8dc',building:['#e7c49c','#d6a87b','#bfcbd8'],roof:['#b86654','#8c6b62','#657a86']},
+  2:{name:'상점가',ground:'#edf0e6',block:'#e5e1d4',building:['#efc181','#d5a1a8','#9cc8c8'],roof:['#c85f4a','#547d89','#9e754d']},
+  3:{name:'공원길',ground:'#e5f1df',block:'#d8e8d1',building:['#d8c6a9','#adc8b6','#d6b4a4'],roof:['#8b6f5d','#62806e','#9b6656']},
+  4:{name:'도심',ground:'#e7ebef',block:'#d9dfe5',building:['#aab8c5','#c9b09c','#9fb7ba'],roof:['#596d7b','#7c635c','#4f6b72']},
+  5:{name:'야간 중심가',ground:'#172932',block:'#203741',building:['#324b58','#3d465c','#514554'],roof:['#182d38','#25323d','#332e3d']}
+};
+const CITY_ASSET_PATHS={
+  treeLarge:'assets/game/2d/racing/kenney-racing-pack/objects/tree_large.png',
+  treeSmall:'assets/game/2d/racing/kenney-racing-pack/objects/tree_small.png',
+  light:'assets/game/2d/racing/kenney-racing-pack/objects/light_yellow.png',
+  tentBlue:'assets/game/2d/racing/kenney-racing-pack/objects/tent_blue.png',
+  tentRed:'assets/game/2d/racing/kenney-racing-pack/objects/tent_red.png',
+  carBlue:'assets/game/2d/racing/kenney-racing-pack/cars/car_blue_small_4.png',
+  carRed:'assets/game/2d/racing/kenney-racing-pack/cars/car_red_small_4.png',
+  carYellow:'assets/game/2d/racing/kenney-racing-pack/cars/car_yellow_small_4.png',
+  scooter:'assets/game/2d/vehicles/pixel/cars/scooter.png'
+};
+const cityAssets={};
+Object.entries(CITY_ASSET_PATHS).forEach(([key,src])=>{
+  const im=new Image();cityAssets[key]=im;
+  im.onload=()=>{if(state?.stage)draw()};
+  im.src=src;
+});
 const CHAPTERS = [
   {num:1,name:'첫걸음',from:1,to:10},
   {num:2,name:'갈림길',from:11,to:20},
@@ -351,7 +376,8 @@ save.lastStage=Math.max(1,Math.min(TOTAL_STAGES,Number(save.lastStage)||1));
 const state={
   stageIndex:0,stage:null,nodes:[],edges:[],path:[],used:new Set(),dragging:false,
   pointer:{x:0,y:0},hintNodes:new Set(),hintEdge:null,hintUntil:0,hintTimer:null,
-  shakeUntil:0,blocked:false,pointerId:null,generation:0,completionTimer:null,delivery:null,deliveryFrame:null,visualRadius:12
+  shakeUntil:0,blocked:false,pointerId:null,generation:0,completionTimer:null,delivery:null,deliveryFrame:null,visualRadius:12,
+  cityDecor:[],cityTheme:1
 };
 
 function edgeKey(a,b){return a<b?a+'-'+b:b+'-'+a}
@@ -457,7 +483,8 @@ function renderStageGrid(){
 }
 function updateStagePill(){
   if(!state.stage)return;
-  $('#stagePill').textContent=window.innerWidth<560?(state.stage.num+'단계'):('STAGE '+state.stage.num+' · '+state.stage.chapterName);
+  const theme=CITY_THEME[state.stage.chapter]||CITY_THEME[1];
+  $('#stagePill').textContent=window.innerWidth<560?(state.stage.num+'단계 · '+theme.name):('STAGE '+state.stage.num+' · '+state.stage.chapterName+' · '+theme.name);
 }
 function loadStage(index){
   index=Math.max(0,Math.min(TOTAL_STAGES-1,index));
@@ -487,6 +514,7 @@ function rebuildGeometry(w,h){
  let closest=Infinity;state.nodes.forEach(n=>{n.spacing=Math.min(...state.nodes.filter(m=>m.id!==n.id).map(m=>Math.hypot(m.x-n.x,m.y-n.y)));closest=Math.min(closest,n.spacing)});
  state.visualRadius=Math.min(18,Math.max(4,closest*.24));
  state.edges=state.stage.edges.map((e,i)=>({id:i,a:e[0],b:e[1],key:edgeKey(e[0],e[1])}));
+ buildCityDecor(w,h);
 }
 function nodeById(id){return state.nodes[id]}
 function currentNode(){return state.path.length?state.path[state.path.length-1]:null}
@@ -555,19 +583,141 @@ function showHint(){
   state.hintTimer=setTimeout(()=>clearHint(),2700);draw();
 }
 
+
+function seededRandom(seed){
+  let x=(seed|0)||123456789;
+  return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000};
+}
+function distanceToRoad(p){
+  let best=Infinity;
+  for(const e of state.edges){
+    const a=nodeById(e.a),b=nodeById(e.b),hit=pointSegmentDistance(p,a,b);
+    best=Math.min(best,hit.distance);
+  }
+  return best;
+}
+function decorSafe(x,y,r,w,h){
+  const bottomTools=window.innerWidth<=800||window.innerHeight<=620;
+  const rightLimit=w-(bottomTools?16:104),bottomLimit=h-(bottomTools?88:18);
+  if(x-r<12||x+r>rightLimit||y-r<72||y+r>bottomLimit)return false;
+  if(state.nodes.some(n=>Math.hypot(n.x-x,n.y-y)<r+state.visualRadius*2.3))return false;
+  if(distanceToRoad({x,y})<r+state.visualRadius*2.1)return false;
+  return true;
+}
+function buildCityDecor(w,h){
+  if(!state.stage){state.cityDecor=[];return}
+  state.cityTheme=state.stage.chapter||1;
+  const rng=seededRandom(state.stage.num*9187+state.cityTheme*331);
+  const theme=state.cityTheme,items=[],small=w<650||h<430;
+  const target=small?(theme===3?7:6):(theme===3?16:13);
+  const step=small?62:76,top=88;
+  const candidates=[];
+  for(let y=top;y<h-70;y+=step){
+    for(let x=30;x<w-38;x+=step){
+      candidates.push({x:x+(rng()-.5)*32,y:y+(rng()-.5)*30,roll:rng()});
+    }
+  }
+  candidates.sort((a,b)=>a.roll-b.roll);
+  for(const c of candidates){
+    if(items.length>=target)break;
+    const roll=rng();
+    let kind='building',r=small?24:31;
+    if(theme===3){
+      kind=roll<.63?'tree':roll<.78?'light':roll<.9?'car':'building';
+      r=kind==='building'?(small?23:29):kind==='tree'?(small?17:22):14;
+    }else{
+      kind=roll<.52?'building':roll<.7?'tree':roll<.81?'shop':roll<.92?'car':'light';
+      r=kind==='building'?(small?25:34):kind==='shop'?(small?21:27):kind==='tree'?(small?16:21):14;
+    }
+    if(!decorSafe(c.x,c.y,r,w,h))continue;
+    const palette=CITY_THEME[theme],color=palette.building[Math.floor(rng()*palette.building.length)],roof=palette.roof[Math.floor(rng()*palette.roof.length)];
+    items.push({kind,x:c.x,y:c.y,r,scale:.8+rng()*.45,color,roof,variant:Math.floor(rng()*5),flip:rng()>.5,phase:rng()*Math.PI*2});
+  }
+  state.cityDecor=items;
+}
+function drawAsset(im,x,y,w,h,rot=0,alpha=.82,flip=false){
+  if(!im||!im.complete||!im.naturalWidth)return false;
+  ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+  ctx.scale(flip?-1:1,1);ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore();return true;
+}
+function drawBuilding(o,theme,now){
+  const night=state.cityTheme===5,s=o.scale,w=o.r*1.62,h=o.r*1.28;
+  ctx.save();ctx.translate(o.x,o.y);ctx.globalAlpha=night?.82:.72;
+  ctx.fillStyle='rgba(31,48,54,.13)';ctx.beginPath();ctx.ellipse(4,h*.43,w*.6,h*.24,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,Math.max(5,w*.1));ctx.fill();
+  ctx.fillStyle=o.roof;
+  if(o.variant%2===0){ctx.beginPath();ctx.moveTo(-w*.58,-h*.32);ctx.lineTo(0,-h*.72);ctx.lineTo(w*.58,-h*.32);ctx.closePath();ctx.fill()}
+  else ctx.fillRect(-w*.54,-h*.58,w*1.08,h*.2);
+  const lit=night||state.used.size>state.edges.length*.68;
+  const cols=o.variant%3===0?3:2,rows=2,ww=w*.13,wh=h*.15;
+  for(let yy=0;yy<rows;yy++)for(let xx=0;xx<cols;xx++){
+    const px=(xx-(cols-1)/2)*w*.25,py=-h*.12+yy*h*.27;
+    ctx.fillStyle=lit?'#ffe38a':'rgba(220,239,241,.72)';ctx.fillRect(px-ww/2,py-wh/2,ww,wh);
+    if(lit){ctx.fillStyle='rgba(255,225,122,.12)';ctx.fillRect(px-ww*.8,py-wh*.8,ww*1.6,wh*1.6)}
+  }
+  ctx.fillStyle=night?'#18272f':'#6e6257';ctx.fillRect(-w*.08,h*.16,w*.16,h*.34);
+  if(o.variant===3){
+    ctx.fillStyle='#fff4d8';ctx.fillRect(-w*.33,h*.04,w*.66,h*.13);
+    ctx.fillStyle='#4a6d73';ctx.font='800 '+Math.max(7,w*.1)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('SHOP',0,h*.105);
+  }
+  ctx.restore();
+}
+function drawCityBackdrop(rect,now){
+  const th=CITY_THEME[state.cityTheme]||CITY_THEME[1],night=state.cityTheme===5;
+  ctx.fillStyle=th.ground;ctx.fillRect(0,0,rect.width,rect.height);
+  // Soft city-block pattern, deliberately below gameplay contrast.
+  ctx.save();ctx.globalAlpha=night?.17:.18;ctx.fillStyle=th.block;
+  const cell=88;for(let y=78;y<rect.height;y+=cell)for(let x=12;x<rect.width;x+=cell){ctx.beginPath();ctx.roundRect(x,y,cell-12,cell-12,12);ctx.fill()}
+  ctx.restore();
+  if(night){
+    const g=ctx.createRadialGradient(rect.width*.48,rect.height*.45,20,rect.width*.48,rect.height*.45,Math.max(rect.width,rect.height)*.75);
+    g.addColorStop(0,'rgba(29,67,78,.16)');g.addColorStop(1,'rgba(2,10,16,.22)');ctx.fillStyle=g;ctx.fillRect(0,0,rect.width,rect.height);
+  }
+}
+function drawCityDecor(now){
+  const night=state.cityTheme===5;
+  for(const o of state.cityDecor){
+    if(o.kind==='building'){drawBuilding(o,CITY_THEME[state.cityTheme],now);continue}
+    if(o.kind==='tree'){
+      const im=o.variant%2?cityAssets.treeLarge:cityAssets.treeSmall,size=o.r*2.05;
+      if(!drawAsset(im,o.x,o.y,size,size,0,night?.55:.72,o.flip)){
+        ctx.fillStyle=night?'#315c4e':'#66a86d';ctx.beginPath();ctx.arc(o.x,o.y,o.r*.65,0,Math.PI*2);ctx.fill();
+      }
+      continue;
+    }
+    if(o.kind==='shop'){
+      const im=o.variant%2?cityAssets.tentBlue:cityAssets.tentRed,size=o.r*2;
+      if(!drawAsset(im,o.x,o.y,size,size,0,night?.62:.78,o.flip))drawBuilding({...o,variant:3},CITY_THEME[state.cityTheme],now);
+      continue;
+    }
+    if(o.kind==='car'){
+      const cars=[cityAssets.carBlue,cityAssets.carRed,cityAssets.carYellow],im=cars[o.variant%cars.length];
+      drawAsset(im,o.x,o.y,o.r*2.05,o.r*.95,(o.variant%2)*Math.PI/2,night?.5:.62,o.flip);
+      continue;
+    }
+    if(o.kind==='light'){
+      const pulse=night?1+Math.sin(now*.004+o.phase)*.08:1;
+      if(night){ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#ffe683';ctx.beginPath();ctx.arc(o.x,o.y,o.r*1.25*pulse,0,Math.PI*2);ctx.fill();ctx.restore()}
+      drawAsset(cityAssets.light,o.x,o.y,o.r*1.35,o.r*1.35,0,night?.95:.58,false);
+    }
+  }
+}
+
 function draw(){
-  if(!state.stage)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);ctx.fillStyle='#f3f7ef';ctx.fillRect(0,0,rect.width,rect.height);
-  const now=performance.now();let sx=0;if(now<state.shakeUntil){sx=Math.sin(now*.16)*5;requestAnimationFrame(draw)}if(now<state.hintUntil)requestAnimationFrame(draw);
-  ctx.save();ctx.translate(sx,0);ctx.fillStyle='rgba(112,128,150,.075)';
-  for(let y=28;y<rect.height;y+=34)for(let x=28;x<rect.width;x+=34){ctx.beginPath();ctx.arc(x,y,1.15,0,Math.PI*2);ctx.fill()}
-  const shortSide=Math.min(rect.width,rect.height),lineW=Math.min(10,Math.max(3,state.visualRadius*.55));ctx.lineCap='round';ctx.lineJoin='round';
-  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#e2e9df';ctx.lineWidth=lineW+9;ctx.stroke()});
-  state.edges.forEach(e=>{if(state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#d5dbe4';ctx.lineWidth=lineW;ctx.stroke()});
+  if(!state.stage)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);
+  const now=performance.now();drawCityBackdrop(rect,now);let sx=0;if(now<state.shakeUntil){sx=Math.sin(now*.16)*5;requestAnimationFrame(draw)}if(now<state.hintUntil)requestAnimationFrame(draw);
+  ctx.save();ctx.translate(sx,0);drawCityDecor(now);
+  const night=state.cityTheme===5,lineW=Math.min(10,Math.max(3,state.visualRadius*.55));ctx.lineCap='round';ctx.lineJoin='round';
+  // Every graph edge is now a real-looking alley: curb first, asphalt second.
+  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#344b56':'#d7dbd4';ctx.lineWidth=lineW+12;ctx.stroke()});
+  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#65727b':'#7d8790';ctx.lineWidth=lineW+3;ctx.stroke()});
+  ctx.save();ctx.setLineDash([Math.max(3,lineW*.7),Math.max(5,lineW*1.15)]);ctx.globalAlpha=night?.34:.24;ctx.lineWidth=Math.max(1,lineW*.15);ctx.strokeStyle='#fff';
+  state.edges.forEach(e=>{if(state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()});ctx.restore();
   if(state.hintEdge&&now<state.hintUntil){const a=nodeById(state.hintEdge.a),b=nodeById(state.hintEdge.b);ctx.shadowColor='rgba(79,124,255,.65)';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#4f7cff';ctx.lineWidth=lineW+5;ctx.stroke();ctx.shadowBlur=0}
   state.edges.forEach(e=>{if(!state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b),grad=ctx.createLinearGradient(a.x,a.y,b.x,b.y);grad.addColorStop(0,'#ff8a1f');grad.addColorStop(1,'#ffbd42');ctx.shadowColor='rgba(255,138,31,.28)';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=grad;ctx.lineWidth=lineW+2;ctx.stroke();ctx.shadowBlur=0});
   if(state.dragging&&currentNode()!==null){const a=nodeById(currentNode());ctx.setLineDash([9,9]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(state.pointer.x,state.pointer.y);ctx.strokeStyle='rgba(255,138,31,.32)';ctx.lineWidth=Math.max(3,lineW*.45);ctx.stroke();ctx.setLineDash([])}
   const baseR=state.visualRadius,visited=new Set(state.path);
-  state.nodes.forEach(n=>{const hinted=state.hintNodes.has(n.id)&&now<state.hintUntil,pulse=hinted?1+Math.sin(now*.009)*.16:1;ctx.shadowColor=hinted?'rgba(79,124,255,.48)':'rgba(34,44,62,.18)';ctx.shadowBlur=hinted?24:8;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse+5,0,Math.PI*2);ctx.fillStyle=hinted?'rgba(79,124,255,.2)':'rgba(255,255,255,.97)';ctx.fill();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse,0,Math.PI*2);ctx.fillStyle=visited.has(n.id)?'#ff8a1f':'#3b4452';ctx.fill();if(currentNode()===n.id){ctx.beginPath();ctx.arc(n.x,n.y,baseR*.42,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill()}});
+  state.nodes.forEach(n=>{const hinted=state.hintNodes.has(n.id)&&now<state.hintUntil,pulse=hinted?1+Math.sin(now*.009)*.16:1;ctx.shadowColor=hinted?'rgba(79,124,255,.48)':'rgba(34,44,62,.18)';ctx.shadowBlur=hinted?24:8;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse+5,0,Math.PI*2);ctx.fillStyle=hinted?'rgba(79,124,255,.2)':'rgba(255,255,255,.97)';ctx.fill();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(n.x,n.y,baseR*pulse,0,Math.PI*2);ctx.fillStyle=visited.has(n.id)?'#ff8a1f':(night?'#d6e4e8':'#3b4452');ctx.fill();if(currentNode()===n.id){ctx.beginPath();ctx.arc(n.x,n.y,baseR*.42,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill()}});
   drawDelivery(now);ctx.restore();
 }
 
@@ -614,10 +764,17 @@ function drawDelivery(now){
  const points=state.delivery.path.map(nodeById),lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y)),total=lengths.reduce((a,b)=>a+b,0);let travel=Math.min(1,Math.max(0,(now-state.delivery.start)/state.delivery.duration))*total,idx=0;while(idx<lengths.length-1&&travel>lengths[idx]){travel-=lengths[idx];idx++}
  const a=points[idx],b=points[idx+1],f=Math.min(1,travel/Math.max(.001,lengths[idx])),x=a.x+(b.x-a.x)*f,y=a.y+(b.y-a.y)*f,angle=Math.atan2(b.y-a.y,b.x-a.x),scale=Math.min(1.1,Math.max(.55,state.visualRadius/15));
  ctx.fillStyle='#287b74';ctx.fillText(start.id===finish.id?'출발 · 도착':'도착',finish.x,finish.y-state.visualRadius-12);
- ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(angle);ctx.shadowColor='#24434b44';ctx.shadowBlur=8;
- ctx.fillStyle='#263c50';ctx.fillRect(-17,-9,10,5);ctx.fillRect(-17,4,10,5);ctx.fillRect(10,-8,10,5);ctx.fillRect(10,3,10,5);
- ctx.fillStyle='#36b9aa';ctx.beginPath();ctx.roundRect(-19,-7,38,14,5);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#f4834b';ctx.fillRect(-21,-11,17,22);ctx.fillStyle='#fff1d6';ctx.fillRect(-15,-11,4,22);
- ctx.fillStyle='#21566c';ctx.beginPath();ctx.ellipse(3,0,10,8,0,0,7);ctx.fill();ctx.fillStyle='#fff7e8';ctx.beginPath();ctx.arc(9,0,8,0,7);ctx.fill();ctx.fillStyle='#4589ac';ctx.fillRect(11,-5,5,10);ctx.restore();
+ ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.shadowColor='#24434b55';ctx.shadowBlur=8;
+ if(cityAssets.scooter&&cityAssets.scooter.complete&&cityAssets.scooter.naturalWidth){
+   ctx.imageSmoothingEnabled=false;const sw=cityAssets.scooter.naturalWidth*2.45*scale,sh=cityAssets.scooter.naturalHeight*2.45*scale;
+   ctx.drawImage(cityAssets.scooter,-sw/2,-sh/2,sw,sh);ctx.shadowBlur=0;
+   ctx.fillStyle='rgba(255,138,31,.28)';ctx.beginPath();ctx.arc(-sw*.42,0,4*scale,0,Math.PI*2);ctx.fill();
+ }else{
+   ctx.scale(scale,scale);ctx.fillStyle='#263c50';ctx.fillRect(-17,-9,10,5);ctx.fillRect(-17,4,10,5);ctx.fillRect(10,-8,10,5);ctx.fillRect(10,3,10,5);
+   ctx.fillStyle='#36b9aa';ctx.beginPath();ctx.roundRect(-19,-7,38,14,5);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#f4834b';ctx.fillRect(-21,-11,17,22);ctx.fillStyle='#fff1d6';ctx.fillRect(-15,-11,4,22);
+   ctx.fillStyle='#21566c';ctx.beginPath();ctx.ellipse(3,0,10,8,0,0,7);ctx.fill();ctx.fillStyle='#fff7e8';ctx.beginPath();ctx.arc(9,0,8,0,7);ctx.fill();ctx.fillStyle='#4589ac';ctx.fillRect(11,-5,5,10);
+ }
+ ctx.restore();
 }
 
 /* 완료 */
