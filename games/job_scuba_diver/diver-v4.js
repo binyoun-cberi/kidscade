@@ -277,9 +277,9 @@ C.addEventListener('mousedown',e=>{if(state!=='game'||e.button!==0)return;if(poi
 document.addEventListener('pointerlockchange',()=>pointerLocked=document.pointerLockElement===C);
 document.addEventListener('mousemove',e=>{if(pointerLocked&&state==='game'){world.p.yaw+=e.movementX*.0024;world.p.pitch=clamp(world.p.pitch-e.movementY*.002,-1.12,1.12)}});
 
-function openHelp(){if(state!=='game')return;if(document.exitPointerLock)document.exitPointerLock();$('helpScreen').classList.remove('hidden')}
+function openHelp(){if(state!=='game')return;state='paused';if(document.exitPointerLock)document.exitPointerLock();$('helpScreen').classList.remove('hidden')}
 $('helpBtn').onclick=openHelp;
-$('closeHelp').onclick=()=>{$('helpScreen').classList.add('hidden');setTimeout(()=>{if(C.requestPointerLock)C.requestPointerLock()},50)};
+$('closeHelp').onclick=()=>{$('helpScreen').classList.add('hidden');state='game';setTimeout(()=>{if(C.requestPointerLock)C.requestPointerLock()},50)};
 $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.08)};
 
 const startPanel=document.querySelector('#startScreen .panel');
