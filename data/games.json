@@ -858,11 +858,11 @@
     {
       "id": "spelling_frog",
       "title": "스펠링 프로그",
-      "href": "games/spelling_frog/스펠링 프로그.html?v=20260918-2",
+      "href": "games/spelling_frog/스펠링 프로그.html?v=20260918-3",
       "category": "lang",
       "age": "high",
       "icon": "🐸",
-      "description": "실제 개구리·차량·알파벳 에셋과 점프·충돌·정답 효과음으로 도로·강·철길을 건너며 영어 단어를 한 글자씩 완성하는 2.5D 영어 어드벤처!",
+      "description": "귀여운 개구리와 선명한 차량·알파벳 에셋으로 도로·강·철길을 건너며 영어 단어를 한 글자씩 완성하는 2.5D 영어 어드벤처!",
       "scoreKey": "spellingFrogHighScore",
       "cover": "assets/gate-image/스펠링 프로그.png"
     },
