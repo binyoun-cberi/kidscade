@@ -108,11 +108,11 @@
     {
       "id": "low_one_stroke",
       "title": "한붓쓱",
-      "href": "한붓쓱.html",
+      "href": "한붓쓱.html?v=2",
       "category": "math",
       "age": "low",
       "icon": "🛵",
-      "description": "한 번 그은 길로 모든 연결선을 지나면 라이더가 내가 만든 경로를 따라 배달하는 한붓그리기 퍼즐!",
+      "description": "도시 골목을 한 번씩 이어 배송 경로를 완성하면 실제 스쿠터가 내가 만든 길을 따라 달리는 50스테이지 한붓그리기 퍼즐!",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M15 55L30 19L52 29L62 57L36 62L15 55Z\"\n                  fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"7\"\n                  stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n            <circle cx=\"15\" cy=\"55\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"30\" cy=\"19\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"52\" cy=\"29\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"62\" cy=\"57\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"36\" cy=\"62\" r=\"7\" fill=\"#303845\"/>\n        </svg>",
       "cover": "assets/gate-image/한붓쓱.png"
     },
