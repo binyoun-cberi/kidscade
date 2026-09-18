@@ -2412,3 +2412,146 @@ body.dark-mode .site-credits {
 
 /* 2026-09 OUTBREAK/mobile game viewport polish */
 @media(max-width:780px){#game-modal .modal-header{height:44px!important;min-height:44px!important;padding:0 8px!important;flex:0 0 44px!important}#game-modal .modal-title-text{font-size:.72em!important;max-width:46vw!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#game-modal .close-btn{font-size:.72em!important;padding:6px 9px!important;border-radius:7px!important;white-space:nowrap}#game-modal #game-iframe{min-height:0!important}}
+
+
+/* ===== KIDSCADE mobile age selector v2 ===== */
+@media (max-width: 768px) {
+  #age-selection-screen {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding:
+      max(18px, env(safe-area-inset-top))
+      14px
+      max(22px, env(safe-area-inset-bottom));
+  }
+
+  .age-screen-title {
+    margin: 6px 0 2px;
+    font-size: clamp(1.65rem, 7vw, 2rem);
+    line-height: 1.15;
+  }
+
+  .age-screen-subtitle {
+    margin: 4px 0 16px;
+    padding: 0 8px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    color: #64748b;
+  }
+
+  .age-cards-container {
+    width: min(100%, 430px);
+    max-width: 430px;
+    padding: 0;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
+
+  .age-btn-card {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    min-height: 154px;
+    margin: 0;
+    padding: 17px 9px 13px;
+    border-width: 3px;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .age-btn-card:hover {
+    transform: none;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
+  }
+
+  .age-btn-card:active {
+    transform: scale(0.975);
+    border-color: #ff6b81;
+  }
+
+  .age-btn-card::after {
+    display: none;
+  }
+
+  .age-icon {
+    margin: 0 0 7px;
+    font-size: clamp(2.25rem, 11vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .age-name {
+    margin: 0 0 6px;
+    font-size: clamp(1.02rem, 4.7vw, 1.2rem);
+    line-height: 1.2;
+    word-break: keep-all;
+  }
+
+  .age-desc {
+    margin: 0;
+    min-height: 2.65em;
+    font-size: clamp(0.72rem, 3.15vw, 0.82rem);
+    line-height: 1.35;
+    color: #64748b;
+    word-break: keep-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 340px) {
+  .age-cards-container {
+    grid-template-columns: 1fr;
+    width: min(100%, 280px);
+  }
+  .age-btn-card {
+    min-height: 112px;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "icon name"
+      "icon desc";
+    text-align: left;
+    padding: 13px 14px;
+  }
+  .age-icon { grid-area: icon; margin: 0; align-self: center; }
+  .age-name { grid-area: name; align-self: end; }
+  .age-desc { grid-area: desc; align-self: start; min-height: 0; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  #age-selection-screen {
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .age-screen-title { font-size: 1.45rem; }
+  .age-screen-subtitle { margin-bottom: 9px; font-size: .8rem; }
+  .age-cards-container {
+    width: min(100%, 760px);
+    max-width: 760px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .age-btn-card {
+    min-height: 118px;
+    padding: 10px 7px;
+  }
+  .age-icon { font-size: 2rem; margin-bottom: 5px; }
+  .age-name { font-size: .95rem; }
+  .age-desc { font-size: .68rem; }
+}
