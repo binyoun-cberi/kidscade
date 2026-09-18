@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>경찰차 시뮬레이터</title>
+<link rel="stylesheet" href="police-patrol.css?v=2">
+<script src="../../audio-manager.js?v=20260917-1"></script>
+</head>
+<body>
+<canvas id="game" aria-label="경찰차 순찰 게임"></canvas>
+<div id="ui">
+  <div id="topbar"><div class="brand">KIDSCADE POLICE</div><div class="chips"><span>남은 시간 <b id="shift">06:00</b></span><span>해결 <b id="solved">0</b></span><span>실적 <b id="score">0.0</b></span></div></div>
+  <section id="missionCard" class="panel"><small id="missionKind">순찰</small><h2 id="missionTitle">신고 대기 중</h2><p id="missionText">동네를 순찰하며 무전을 기다리세요.</p><div id="missionMeta"></div></section>
+  <section id="carCard" class="panel"><div><span>속도</span><b><i id="speed">0</i> km/h</b></div><div><span>내구도</span><b id="health">100%</b></div><div><span>사이렌</span><b id="sirenText">OFF</b></div></section>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="radio"></div>
+  <div id="progress"><i></i></div>
+  <button id="actionBtn" type="button">현장 조치</button>
+  <div id="mobile"><div id="joy"><div id="knob"></div></div><button id="brakeBtn">브레이크</button><button id="reverseBtn">후진</button><button id="sirenBtn">사이렌</button><button id="boostBtn">가속</button></div>
+</div>
+<div id="start" class="overlay show"><div class="card"><div class="badge">동네 순찰 근무</div><h1>경찰차 시뮬레이터</h1><p>신고를 받고 직접 출동하세요. 수배 차량을 추격하고, 사고 현장을 안전하게 만들고, 교차로의 위험 요소를 정리합니다.</p><div class="guide"><b>W / ↑</b> 가속 <b>S / ↓</b> 브레이크 <b>A D</b> 조향 <b>R</b> 후진 <b>Space</b> 사이렌 <b>Enter</b> 현장 조치</div><button id="startBtn" class="primary">순찰 시작</button></div></div>
+<div id="end" class="overlay"><div class="card"><div class="badge">근무 종료</div><h1 id="endTitle">오늘 순찰 완료</h1><p id="endText"></p><button id="restartBtn" class="primary">다시 순찰</button></div></div>
+<script src="police-patrol.js?v=2"></script>
+</body>
+</html>
