@@ -6,7 +6,7 @@ function loadClassic(src){
   });
 }
 try{
-  await loadClassic('./spelling-frog-runtime.js?v=20260918-2');
+  await loadClassic('./spelling-frog-runtime.js?v=20260918-3');
   await loadClassic('../../spelling-frog-log-fix.js?v=20260914-1');
 }catch(error){
   console.error('[Spelling Frog] local runtime failed',error);
