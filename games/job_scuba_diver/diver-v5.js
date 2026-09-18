@@ -9,11 +9,11 @@ const P='../../assets/game/2d/pirate/';
 const SAVE='deep_diver_2d_v5',OLD='deep_diver_openwater_v4';
 const WORLD={w:4200,h:1900,surface:60,scaleDepth:4};
 const ZONES=[
- {id:'reef',name:'산호 정원',y0:60,y1:360,bg0:'#45b8c8',bg1:'#0d718d'},
- {id:'kelp',name:'해초 숲',y0:360,y1:720,bg0:'#157d89',bg1:'#07536f'},
- {id:'ruins',name:'침수 유적',y0:720,y1:1100,bg0:'#0b5c72',bg1:'#053e5c'},
- {id:'wreck',name:'난파선 지대',y0:1100,y1:1480,bg0:'#073c58',bg1:'#032b49'},
- {id:'abyss',name:'암흑 심해',y0:1480,y1:1900,bg0:'#06243e',bg1:'#020b1a'}
+ {id:'reef',name:'산호 정원',tag:'햇빛과 산호 군락',y0:60,y1:360,bg0:'#58c9d0',bg1:'#087792',accent:'#ffd36a'},
+ {id:'kelp',name:'해초 숲',tag:'거대한 해초와 흐르는 조류',y0:360,y1:720,bg0:'#198b79',bg1:'#07545c',accent:'#6bd88a'},
+ {id:'ruins',name:'침수 유적',tag:'석조 기둥과 가라앉은 회랑',y0:720,y1:1100,bg0:'#315f70',bg1:'#17394f',accent:'#c5b78d'},
+ {id:'wreck',name:'난파선 지대',tag:'녹슨 잔해와 기뢰 수역',y0:1100,y1:1480,bg0:'#244b5a',bg1:'#102b3e',accent:'#db8b62'},
+ {id:'abyss',name:'암흑 심해',tag:'빛이 사라진 열수 분출대',y0:1480,y1:1900,bg0:'#111c35',bg1:'#030713',accent:'#79e9ff'}
 ];
 const CONTRACTS=[
  {id:'reef',title:'01 · 산호초 생태 조사',desc:'청색어·주황어·빠른 암초어를 촬영하고 안전하게 귀환하세요.',reward:900,unlock:0,target:'reef'},
@@ -38,7 +38,13 @@ const ASSETS={
  bg:U+'environment/background.png',mid:U+'environment/midground.png',props:U+'environment/props.png',tiles:U+'environment/tiles.png',
  bubbles:U+'fx/bubbles.png',explosion:U+'fx/explosion.png',explosionB:U+'fx/explosion-big.png',
  blue:F+'fish_blue.png',orange:F+'fish_orange.png',green:F+'fish_green.png',grey:F+'fish_grey.png',greyLong:F+'fish_grey_long_a.png',red:F+'fish_red.png',pink:F+'fish_pink.png',brown:F+'fish_brown.png',
- rockA:F+'rock_a.png',rockB:F+'rock_b.png',seaweedA:F+'seaweed_green_a.png',seaweedB:F+'seaweed_pink_a.png',grassA:F+'seaweed_grass_a.png',sand:F+'terrain_sand_top_a.png',dirt:F+'terrain_dirt_top_a.png',
+ rockA:F+'rock_a.png',rockB:F+'rock_b.png',
+ bgRockA:F+'background_rock_a.png',bgRockB:F+'background_rock_b.png',
+ bgSeaA:F+'background_seaweed_a.png',bgSeaC:F+'background_seaweed_c.png',bgSeaF:F+'background_seaweed_f.png',
+ seaweedA:F+'seaweed_green_a.png',seaweedGreenB:F+'seaweed_green_b.png',seaweedGreenC:F+'seaweed_green_c.png',
+ seaweedB:F+'seaweed_pink_a.png',seaweedPinkB:F+'seaweed_pink_b.png',seaweedPinkC:F+'seaweed_pink_c.png',
+ seaweedOrangeA:F+'seaweed_orange_a.png',seaweedOrangeB:F+'seaweed_orange_b.png',
+ grassA:F+'seaweed_grass_a.png',grassB:F+'seaweed_grass_b.png',sand:F+'terrain_sand_top_a.png',dirt:F+'terrain_dirt_top_a.png',
  wreck:P+'ships/ship-8.png',wood1:P+'ship-parts/wood-1.png',wood2:P+'ship-parts/wood-2.png'
 };
 const imgs={}; let ready=false,loaded=0;
@@ -73,7 +79,7 @@ function load(){
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
 function showHint(t,ms=1500){const el=$('hint');el.textContent=t;el.classList.add('show');clearTimeout(showHint.t);showHint.t=setTimeout(()=>el.classList.remove('show'),ms)}
-function showZone(name){const el=$('zoneToast');el.textContent=name;el.classList.add('show');clearTimeout(showZone.t);showZone.t=setTimeout(()=>el.classList.remove('show'),1200)}
+function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zone):zone,el=$('zoneToast');el.innerHTML=z?'<b>'+z.name+'</b><small>'+z.tag+'</small>':String(zone||'');el.classList.add('show');clearTimeout(showZone.t);showZone.t=setTimeout(()=>el.classList.remove('show'),1700)}
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
@@ -120,15 +126,25 @@ function buildTerrain(){
     circleSolid(1870,1815,95,'abyss'),circleSolid(2700,1810,100,'abyss')
   ];
 }
+function zonePlantPool(id,foreground=false){
+  if(id==='reef')return foreground?['seaweedOrangeA','seaweedPinkB','seaweedGreenB']:['seaweedOrangeA','seaweedB','seaweedGreenB','grassA'];
+  if(id==='kelp')return foreground?['bgSeaA','bgSeaC','seaweedGreenC']:['seaweedA','seaweedGreenB','seaweedGreenC','grassB'];
+  if(id==='ruins')return foreground?['bgRockA','bgRockB','grassA']:['rockA','rockB','grassA'];
+  if(id==='wreck')return foreground?['bgRockB','rockA','rockB']:['rockA','rockB','grassB'];
+  return foreground?['bgRockA','bgRockB']:['rockA','rockB'];
+}
 function buildForeground(seed){
   const r=seedRand(seed+4411),items=[];
-  for(let i=0;i<34;i++){
-    const y=rnd(250,WORLD.h-30),deep=y>1200,kelp=y<850;
-    items.push({
-      x:rnd(-120,WORLD.w+120),y,
-      type:kelp?(r()>.5?'seaweedA':'seaweedB'):(deep?(r()>.5?'rockA':'rockB'):'grassA'),
-      scale:rnd(1.4,2.7),alpha:rnd(.16,.34),parallax:rnd(1.035,1.09),flip:r()>.5
-    });
+  for(const z of ZONES){
+    const pool=zonePlantPool(z.id,true),count=z.id==='kelp'?18:z.id==='reef'?13:9;
+    for(let i=0;i<count;i++){
+      items.push({
+        x:rnd(-120,WORLD.w+120),y:rnd(z.y0+35,z.y1-20),
+        type:pool[Math.floor(r()*pool.length)],
+        scale:z.id==='kelp'?rnd(2.1,4.0):rnd(1.4,2.8),alpha:z.id==='abyss'?rnd(.10,.20):rnd(.15,.32),
+        parallax:rnd(1.035,1.09),flip:r()>.5,zone:z.id
+      });
+    }
   }
   return items;
 }
@@ -187,9 +203,12 @@ function buildWorld(contract){
  world.fish.push(makeFish('dart',WORLD.w*.63,430,8103));
  world.fish.push(makeFish('long',WORLD.w*.40,600,8104));
  world.fish.push(makeFish('giant',WORLD.w*.73,1605,9921));
- for(let i=0;i<105;i++){
-   const y=rnd(250,WORLD.h-60),x=rnd(80,WORLD.w-80),type=y<700?(r()>.5?'seaweedA':'seaweedB'):y<1200?(r()>.55?'rockA':'grassA'):(r()>.5?'rockA':'rockB');
-   world.decor.push({x,y,type,scale:rnd(.65,1.25),flip:r()>.5});
+ for(const z of ZONES){
+   const pool=zonePlantPool(z.id,false),count=z.id==='reef'?34:z.id==='kelp'?42:z.id==='ruins'?20:z.id==='wreck'?16:10;
+   for(let i=0;i<count;i++){
+     const y=rnd(z.y0+24,z.y1-28),x=rnd(80,WORLD.w-80),type=pool[Math.floor(r()*pool.length)];
+     world.decor.push({x,y,type,scale:z.id==='kelp'?rnd(.9,1.7):rnd(.65,1.3),flip:r()>.5,zone:z.id});
+   }
  }
  world.props.push({id:'statue',x:WORLD.w*.38,y:830,type:'statue',done:false},{id:'arch',x:WORLD.w*.61,y:945,type:'arch',done:false});
  world.pickups.push({id:'relic',name:'고대 표식판',x:WORLD.w*.55,y:1010,value:650,taken:false,weight:2});
@@ -198,7 +217,7 @@ function buildWorld(contract){
  for(let i=0;i<30;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- resetInputs();setTool('camera');showZone(zoneForY(world.player.y).name);showHint('절벽과 동굴 통로를 따라 내려가며 생물을 기록하고, 산소가 떨어지기 전에 수면으로 돌아오세요.',3000);
+ resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('지역마다 지형·시야·생물이 달라집니다. 아래로 내려갈수록 빛이 줄어드니 산소와 귀환 경로를 확인하세요.',3400);
 }
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
