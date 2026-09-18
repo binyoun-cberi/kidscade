@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=5">
+<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=6">
 <script type="importmap">{"imports":{"three":"assets/vendor/three-r160/three.module.js","three/addons/":"assets/vendor/three-r160/addons/"}}</script>
 <script src="audio-manager.js?v=20260917-1"></script>
 </head>
@@ -31,9 +31,14 @@
 
     <div id="potStrip" class="pot-strip" aria-label="냄비 상태"></div>
 
+    <div id="tutorialBanner" class="tutorial-banner">
+      <small>첫 라면 안내</small>
+      <b id="tutorialText">① 먼저 1번 냄비를 눌러 주세요</b>
+    </div>
+
     <div class="selected-help">
-      <small>선택</small>
-      <b id="selectedAction">냄비를 눌러 상태를 확인하세요</b>
+      <small>다음 행동</small>
+      <b id="selectedAction">먼저 냄비 하나를 눌러 선택하세요</b>
     </div>
 
     <button id="trayBtn" class="tray-btn empty" type="button">
@@ -50,8 +55,9 @@
       <button data-action="green" type="button"><span>🌿</span><b>대파</b><small>토핑</small></button>
       <button data-action="cheese" type="button"><span>🧀</span><b>치즈</b><small>토핑</small></button>
       <button data-action="plate" class="plate" type="button"><span>🥣</span><b>담기</b><small>타이밍!</small></button>
-      <button data-action="discard" class="discard" type="button"><span>↺</span><b>비우기</b><small>새 냄비</small></button>
     </div>
+
+    <button id="discardBtn" class="discard-btn" type="button"><span>🗑</span><b>선택 냄비 비우기</b></button>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
@@ -68,7 +74,7 @@
       <div><b>치즈 계란 라면</b><span>물 → 면 + 스프 → 계란 + 치즈</span></div>
     </div>
     <div class="tips">
-      <span>① 아래 재료 선택</span><span>② 냄비 터치</span><span>③ 면이 적당히 익었을 때 담기</span><span>④ 쟁반 → 같은 주문 터치</span>
+      <span>① 냄비 먼저 선택</span><span>② 재료 버튼을 눌러 바로 넣기</span><span>③ “지금 담기!”가 뜨면 담기</span><span>④ 완성 후 같은 주문 터치</span>
     </div>
     <button id="startBtn" class="primary" type="button">영업 시작</button>
     <small class="credit">Kitchen: Isa Lousberg · CC BY / Quaternius · CC0</small>
@@ -89,6 +95,6 @@
   </div>
 </div>
 
-<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=5"></script>
+<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=6"></script>
 </body>
 </html>
