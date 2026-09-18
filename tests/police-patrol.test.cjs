@@ -15,11 +15,11 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\.js\?v=5/);
-  assert.match(html,/police-patrol\.css\?v=5/);
+  assert.match(html,/police-patrol-loader\.js\?v=6/);
+  assert.match(html,/police-patrol\.css\?v=6/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\.js\?v=5/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=5/);
+  assert.match(loader,/police-patrol\.js\?v=6/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=6/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
 });
 
@@ -29,6 +29,23 @@ test('Police Patrol startup does not touch 3D lexical state before initializatio
   assert.match(js,/window\.__police3dResize=resize3D/);
   assert.doesNotMatch(js,/ctx\.setTransform\([^;]+;resize3D\(\)/);
   assert.match(js,/function startGame\(\)\{driveAudio\.init\(\)/);
+});
+
+
+test('Police Patrol v6 uses a lower chase camera and human-scale mission distance',()=>{
+  assert.match(js,/height=portrait\?5\.15:4\.55/);
+  assert.match(js,/Math\.round\(d\*\.12\)/);
+  assert.match(js,/bangSprite3/);
+  assert.match(js,/missionArrow3\.visible=raw>180/);
+});
+
+test('Police Patrol v6 adds CC0 city landmark props and compact portrait UI',()=>{
+  assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','big-building.glb')));
+  assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','dumpster.glb')));
+  assert.match(js,/big-building\.glb/);
+  assert.match(js,/dumpster\.glb/);
+  assert.match(css,/mobile driving polish v6/);
+  assert.match(css,/#minimap\{top:116px/);
 });
 
 test('Police Patrol browser runtime parses',()=>{
@@ -104,10 +121,10 @@ test('Police Patrol only uses valid shared static audio keys',()=>{
 test('catalog and Cloudflare build point to Police Patrol v4',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=5');
+  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=6');
   const distCatalog=JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const builtGame=distCatalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=5');
+  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=6');
   assert.ok(fs.existsSync(path.join(root,'dist','games','job_police_car','police-patrol-loader.js')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','vehicles','kenney-car-kit','police.glb')));
 });
