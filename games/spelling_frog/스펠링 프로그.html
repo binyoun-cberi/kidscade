@@ -25,7 +25,7 @@
   </div>
   <div class="toast" id="toast"></div><div class="stork" id="stork">🪽 황새가 다가와요! 움직이세요!</div>
   <div class="overlay" id="startOverlay">
-    <div class="panel"><div class="frogicon"><img src="../../assets/game/2d/animals/round/frog.png" alt=""></div><h1>스펠링 프로그</h1><p class="lead">동글 개구리와 길을 건너며 영어 단어를 한 글자씩 완성하세요.</p>
+    <div class="panel"><div class="frogicon"><img src="../../assets/game/2d/animals/round/frog.png" alt=""></div><h1>스펠링 프로그</h1><p class="lead">3D 개구리와 작은 마을을 건너며 영어 단어를 한 글자씩 완성하세요.</p>
       <div class="features"><div>🚗 자동차 도로</div><div>🪵 통나무 강</div><div>🚆 경고등 철길</div></div>
       <div class="modes"><button class="mode sel" data-mode="easy">연습<small>짧은 단어 · 3❤️</small></button><button class="mode" data-mode="normal">기본<small>다양한 단어 · 2❤️</small></button><button class="mode" data-mode="hard">도전<small>긴 단어 · 1❤️</small></button></div>
       <button class="start" id="startBtn">길 건너기 시작!</button>
@@ -37,6 +37,7 @@
 <script>window.__spellingFrogOwnAudio=true;</script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <!-- spelling-frog-log-fix.js is loaded after the local runtime by spelling-frog-loader.js -->
-<script type="module" src="spelling-frog-loader.js?v=20260918-3"></script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="spelling-frog-loader.js?v=20260918-4"></script>
 </body>
 </html>
