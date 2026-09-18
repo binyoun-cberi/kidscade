@@ -137,6 +137,29 @@ test('Blockraft connects the existing CC0 3D library without making gameplay dep
   assert.match(raft,/tree-palm\.glb/);
   assert.match(raft,/soda-bottle\.glb/);
 });
+test('Blockraft build menu is collapsible and categorized for small screens', () => {
+  assert.match(raft,/id="buildCollapseBtn"/);
+  assert.match(raft,/id="buildCompactSummary"/);
+  assert.match(raft,/id="buildCategories"/);
+  assert.match(raft,/data-build-category="structure"/);
+  assert.match(raft,/data-build-category="survival"/);
+  assert.match(raft,/data-build-category="navigation"/);
+  assert.match(raft,/data-build-category="tech"/);
+  assert.match(raft,/function buildCategoryForRecipe/);
+  assert.match(raft,/function setBuildPanelCollapsed/);
+  assert.match(raft,/function toggleBuildPanelCollapsed/);
+  assert.match(raft,/\.build-panel\.collapsed/);
+  assert.match(raft,/height:min\(50vh,440px\)/);
+  assert.match(raft,/목록 펼치기/);
+});
+
+test('Blockraft keeps a hammer-style repeat-placement flow on mobile', () => {
+  assert.match(raft,/function enterMobileBuildPlacement/);
+  assert.match(raft,/body\.classList\.add\('mobile-building'\)/);
+  assert.match(raft,/선택한 부품을 연속 배치할 수 있어요/);
+  assert.match(raft,/updateBuildGhost\(lastBuildPoint\.x,lastBuildPoint\.y\)/);
+});
+
 test('Blockraft advertised utility buildings have working simulation effects', () => {
   assert.match(raft,/maxStoredWater[\s\S]*countStructures\('storage'\)/);
   assert.match(raft,/maxEnergy[\s\S]*countStructures\('battery'\)/);
