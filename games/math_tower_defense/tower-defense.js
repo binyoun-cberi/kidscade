@@ -1,4 +1,4 @@
-/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v7 */
+/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v8 */
 (function(){
 'use strict';
 
@@ -35,6 +35,7 @@ const RECOMMENDED=[{id:'DIV2',x:6,y:4},{id:'SUB1',x:13,y:7},{id:'SUB1',x:3,y:6}]
 const runtimeBase=(()=>{try{return new URL('.',document.currentScript?.src||location.href)}catch(_){return new URL('.',location.href)}})();
 const MODEL_ROOT=new URL('../../assets/game/3d/',runtimeBase);
 const modelUrl=p=>new URL(p,MODEL_ROOT).href;
+const BGM_URL=new URL('../../assets/audio/incoming/newmusical/sergequadrado-cool-hip-hop-loop-275527.mp3',runtimeBase).href;
 const MODELS={
   sub:modelUrl('weapons/scifi-turrets/gatelng-gun-turret.glb'),
   div2:modelUrl('weapons/scifi-turrets/rail-gun-turret.glb'),
@@ -61,7 +62,7 @@ const MODELS={
 let scene,camera,renderer,loader,clock,battlefield,decorGroup,skyGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup,core;
 let hoverTile,rangeRing,raycaster,mouse,groundPlane;
 const modelCache=new Map(),towerNodes=new Map(),enemyNodes=new Map(),enemyMixers=new Map(),decorCells=new Map(),tileMeshes=new Map();
-let started=false,assetsLoading=false,audioCtx=null,soundOn=true,toastTimer=0,selectedTower=null,selectedBuilt=null,hoverCell=null,impactShake=0;
+let started=false,assetsLoading=false,audioCtx=null,bgm=null,soundOn=true,toastTimer=0,selectedTower=null,selectedBuilt=null,hoverCell=null,impactShake=0;
 let pointerStart=null,pointerDragged=false,cameraYaw=.69,cameraPitch=.59,cameraDistance=21.5,pinchStart=null;
 const activePointers=new Map();
 
@@ -81,6 +82,20 @@ function colorHex(css){return parseInt(css.slice(1),16)}
 function initAudio(){if(audioCtx)return audioCtx;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;try{audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}catch(_){audioCtx=null;return null}}
 function tone(freq,dur=.06,type='sine',gain=.025){if(!soundOn)return;const ctx=initAudio();if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,ctx.currentTime);g.gain.exponentialRampToValueAtTime(gain,ctx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+dur);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+dur+.02)}
 const sfx={click:()=>tone(430,.05,'square'),build:()=>tone(650,.08,'triangle',.035),shoot:()=>tone(880,.035,'square',.016),hit:()=>tone(210,.08,'sawtooth',.025),clear:()=>{tone(523,.12,'triangle',.04);setTimeout(()=>tone(784,.14,'triangle',.04),90)}};
+function ensureBgm(){
+  if(bgm)return bgm;
+  try{
+    bgm=new Audio(BGM_URL);bgm.loop=true;bgm.preload='auto';bgm.volume=.14;
+    bgm.addEventListener('error',()=>console.warn('[MathTD] BGM load failed',BGM_URL));
+  }catch(_){bgm=null}
+  return bgm
+}
+function syncBgm(){
+  const music=ensureBgm();if(!music)return;
+  const shouldPlay=started&&soundOn&&!state.paused&&!state.gameOver&&!document.hidden;
+  if(shouldPlay){const p=music.play();if(p?.catch)p.catch(()=>{})}
+  else music.pause()
+}
 
 function box(w,h,d,color,rough=.85){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:rough,metalness:.04}));m.castShadow=true;m.receiveShadow=true;return m}
 function ring(radius,color,opacity=.35){const m=new THREE.Mesh(new THREE.RingGeometry(Math.max(.02,radius-.045),radius,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;return m}
@@ -407,7 +422,7 @@ function loseCore(e){
   const dmg=Math.max(1,Math.ceil(e.hp/4));state.lives-=dmg;const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);state.enemies=state.enemies.filter(x=>x!==e);core.userData.orb.scale.setScalar(1.3);setTimeout(()=>core.userData.orb.scale.setScalar(1),150);sfx.hit();if(state.lives<=0)gameOver();syncHUD()
 }
 function gameOver(){
-  state.gameOver=true;state.waveActive=false;state.paused=true;const result='도달 웨이브 '+state.wave+' · 처치 '+state.kills+'마리';$('resultText').textContent=result;$('gameOverScreen').classList.add('show')
+  state.gameOver=true;state.waveActive=false;state.paused=true;syncBgm();const result='도달 웨이브 '+state.wave+' · 처치 '+state.kills+'마리';$('resultText').textContent=result;$('gameOverScreen').classList.add('show')
 }
 
 function update(dt){
@@ -474,18 +489,19 @@ function resetGame(){
   for(const n of towerNodes.values())towerGroup.remove(n);for(const n of enemyNodes.values())enemyGroup.remove(n);for(const m of enemyMixers.values())m.stopAllAction();towerNodes.clear();enemyNodes.clear();enemyMixers.clear();
   for(const child of [...fxGroup.children]){fxGroup.remove(child);child.geometry?.dispose();child.material?.dispose()}
   for(const child of [...ui3dGroup.children]){if(child===hoverTile||child===rangeRing)continue;ui3dGroup.remove(child);child.material?.map?.dispose();child.material?.dispose()}
-  state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.beams=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();$('speedBtn').textContent='1배속';$('pauseBtn').textContent='⏸'
+  state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.beams=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();$('speedBtn').textContent='1배속';$('pauseBtn').textContent='⏸';syncBgm()
 }
 
 document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>btn.addEventListener('click',()=>{initAudio();const d=TOWERS[btn.dataset.tower];if(state.wave<d.unlock)return;selectedTower=selectedTower===d.id?null:d.id;selectedBuilt=null;sfx.click();syncDeck();syncSelectedPanel();syncSelection()}));
 $('autoBtn').addEventListener('click',autoBuild);$('startWaveBtn').addEventListener('click',startWave);
 $('upgradeBtn').addEventListener('click',upgradeTower);$('sellBtn').addEventListener('click',sellTower);$('closeSelectedBtn').addEventListener('click',()=>{selectedBuilt=null;syncSelectedPanel();syncSelection()});
-$('pauseBtn').addEventListener('click',()=>{state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶':'⏸'});
+$('pauseBtn').addEventListener('click',()=>{state.paused=!state.paused;$('pauseBtn').textContent=state.paused?'▶':'⏸';syncBgm()});
 $('speedBtn').addEventListener('click',()=>{state.speed=state.speed===1?2:state.speed===2?4:1;$('speedBtn').textContent=state.speed+'배속'});
 $('cameraResetBtn')?.addEventListener('click',()=>{setCameraHome();toast('기본 시점으로 돌아왔어요.')});
-$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊':'🔇'});
-$('startGameBtn').addEventListener('click',()=>{initAudio();started=true;$('startScreen').classList.remove('show');syncHUD();syncDeck();toast('타워를 골라 빈 칸에 설치하세요.')});
+$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊':'🔇';syncBgm()});
+$('startGameBtn').addEventListener('click',()=>{initAudio();started=true;$('startScreen').classList.remove('show');syncHUD();syncDeck();syncBgm();toast('타워를 골라 빈 칸에 설치하세요.')});
 $('restartBtn').addEventListener('click',()=>{$('gameOverScreen').classList.remove('show');started=true;resetGame()});
+document.addEventListener('visibilitychange',syncBgm);
 
 try{initThree();syncHUD();syncDeck();syncSelectedPanel();document.body.dataset.gameReady='1'}catch(err){console.error('[MathTD] boot failed',err);assetStatus.textContent='3D 전장 초기화 오류';assetStatus.style.opacity='1';$('startGameBtn').disabled=true;$('startGameBtn').textContent='3D 전장 오류'}
 })();
