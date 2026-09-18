@@ -10,20 +10,20 @@ const html=fs.readFileSync(path.join(dir,'심해 다이버 시뮬레이터.html'
 const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v5.js'),'utf8');
 
-test('Deep Diver v5 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=5\.1/);
-  assert.match(html,/diver-v5\.js\?v=5\.1/);
+test('Deep Diver v6 uses the 2D runtime',()=>{
+  assert.match(html,/deep-diver-2d\.css\?v=6/);
+  assert.match(html,/diver-v5\.js\?v=6/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
 });
 
-test('Deep Diver v5 browser runtime parses',()=>{
+test('Deep Diver v6 browser runtime parses',()=>{
   const result=spawnSync(process.execPath,['--check',path.join(dir,'diver-v5.js')],{encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
 });
 
-test('Deep Diver v5 has core career systems',()=>{
+test('Deep Diver v6 has core career systems',()=>{
   for(const token of ['산호초 생태 조사','해초 숲 표본 조사','침수 유적 기록','난파선 기록 장치','심해 생물 조사']){
     assert.ok(js.includes(token),token);
   }
@@ -35,7 +35,7 @@ test('Deep Diver v5 has core career systems',()=>{
   assert.match(js,/function missionComplete/);
 });
 
-test('Deep Diver v5 uses tracked underwater, fish and pirate assets',()=>{
+test('Deep Diver v6 uses tracked underwater, fish and pirate assets',()=>{
   const required=[
     'assets/game/2d/underwater/underwater-diving/player/player-swiming.png',
     'assets/game/2d/underwater/underwater-diving/enemies/fish-big.png',
@@ -51,7 +51,7 @@ test('Deep Diver v5 uses tracked underwater, fish and pirate assets',()=>{
   assert.match(js,/2d\/pirate/);
 });
 
-test('Deep Diver v5 supports desktop and touch controls',()=>{
+test('Deep Diver v6 supports desktop and touch controls',()=>{
   assert.match(js,/keys\.arrowleft/);
   assert.match(js,/touch\.x/);
   assert.match(html,/id="stick"/);
@@ -60,21 +60,36 @@ test('Deep Diver v5 supports desktop and touch controls',()=>{
   assert.match(css,/100dvh/);
 });
 
-test('Deep Diver v5 guarantees mission-critical fish',()=>{
+test('Deep Diver v6 guarantees mission-critical fish',()=>{
   for(const k of ['blue','orange','dart','long','giant']){
     assert.match(js,new RegExp("makeFish\\('"+k+"'"));
   }
 });
 
-test('catalog points to Deep Diver v5',()=>{
+test('catalog points to Deep Diver v6',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=5.1');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=6');
   assert.equal(game.scoreKey,'deep_diver_2d_v5');
 });
 
 
-test('Deep Diver v5.1 has terrain collision and foreground depth',()=>{
+test('Deep Diver v6 gives every depth band a distinct biome identity',()=>{
+  assert.match(js,/tag:'햇빛과 산호 군락'/);
+  assert.match(js,/tag:'거대한 해초와 흐르는 조류'/);
+  assert.match(js,/tag:'석조 기둥과 가라앉은 회랑'/);
+  assert.match(js,/tag:'녹슨 잔해와 기뢰 수역'/);
+  assert.match(js,/tag:'빛이 사라진 열수 분출대'/);
+  assert.match(js,/function zonePlantPool/);
+  assert.match(js,/function drawZoneLandmarks/);
+  assert.match(js,/seaweedOrangeA/);
+  assert.match(js,/bgSeaA/);
+  assert.match(js,/const vents=/);
+  assert.match(css,/#zoneToast b/);
+  assert.match(css,/#zoneToast small/);
+});
+
+test('Deep Diver v6 has terrain collision and foreground depth',()=>{
   assert.match(js,/function buildTerrain/);
   assert.match(js,/function resolvePlayerTerrain/);
   assert.match(js,/function drawTerrain/);
