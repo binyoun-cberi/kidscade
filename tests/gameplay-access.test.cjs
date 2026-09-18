@@ -109,7 +109,7 @@ test('all modified inline game scripts parse', () => {
 });
 test('Blockraft connects the existing CC0 3D library without making gameplay depend on it', () => {
   for(const rel of [
-    'assets/game/platformer/platforms/floor_wood_1x1.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/wood-floor.glb',
     'assets/game/3d/buildings/kenney-building-kit/wall.glb',
     'assets/game/3d/buildings/kenney-building-kit/column.glb',
     'assets/game/3d/buildings/kenney-building-kit/stairs-open.glb',
@@ -130,7 +130,8 @@ test('Blockraft connects the existing CC0 3D library without making gameplay dep
   assert.doesNotMatch(raft,/id: 'cook', name: '생선 굽기'/);
 
   assert.match(raft,/GLTF loader unavailable; using procedural fallbacks/);
-  assert.match(raft,/floor_wood_1x1\.glb/);
+  assert.match(raft,/modular-sushi-restaurant-kit\/wood-floor\.glb/);
+  assert.match(raft,/scaleY:reinforced \? \.34 : \.42/);
   assert.match(raft,/red-wood-wall\.glb/);
   assert.match(raft,/stairs-open\.glb/);
   assert.match(raft,/tree-palm\.glb/);
