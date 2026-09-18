@@ -53,11 +53,11 @@
     {
       "id": "job_police_car",
       "title": "경찰차 시뮬레이터",
-      "href": "경찰차 시뮬레이터.html",
+      "href": "games/job_police_car/경찰차 시뮬레이터.html?v=2",
       "category": "trivia",
       "age": "job",
       "icon": "🚓",
-      "description": "GTA 2D 스타일의 경찰차 시뮬레이터! 도시를 순찰하며 범죄자를 추격하고 검거하는 멋진 경찰관이 되어보세요."
+      "description": "Kenney 탑다운 차량으로 동네를 직접 순찰하며 수배차 추격, 사고 현장 안전 확보, 교통 정리와 도로 위험 신고를 해결하는 경찰 직업 시뮬레이터!"
     },
     {
       "id": "job_takoyaki_simulator",
