@@ -118,3 +118,13 @@
 - Pixabay 자산 ID 추정: `14591`
 - 권장 용도: 피격·함정·낙하 데미지 반응
 - 품질 메모: 보통 샘플레이트 — 짧은 효과음 용도에는 무난
+
+
+## `sergequadrado-cool-hip-hop-loop-275527.mp3`
+- 제목: Cool Hip-Hop Loop
+- 출처: Pixabay
+- 제작자: SergeQuadrado
+- Pixabay 자산 ID: `275527`
+- 라이선스: Pixabay Content License
+- 용도: 약수 타워 디펜스 3D 배경음악
+- 원본 페이지: https://pixabay.com/sound-effects/cool-hip-hop-loop-275527/
