@@ -75,7 +75,8 @@ test('Bunsik Kitchen v6 makes order and doneness targets visually legible', () =
 
 test('Ramen gameplay has water, ingredient order, doneness and burning', () => {
   assert.match(js, /function addToPot/);
-  assert.match(js, /p\.mistakes\+\+/);
+  assert.match(js, /function canUseAction/);
+  assert.match(js, /p\.water>=1\.5/);
   assert.match(js, /function updatePots/);
   assert.match(js, /p\.noodleTime\+=dt/);
   assert.match(js, /p\.noodleTime>16\.5/);
