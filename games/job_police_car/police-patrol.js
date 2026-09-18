@@ -274,6 +274,10 @@ function trafficSpawnPoint(){
  const center=roadXs[Math.floor(Math.random()*roadXs.length)],a=dir>0?Math.PI/2:-Math.PI/2;
  return{x:center+laneOffsetForAngle(a),y:rnd(-WORLD+120,WORLD-120),a}
 }
+function trafficSpawnNear(origin,min=420,max=900){
+ for(let i=0;i<90;i++){const p=trafficSpawnPoint(),d=Math.hypot(p.x-origin.x,p.y-origin.y);if(d>=min&&d<=max)return p}
+ return trafficSpawnPoint()
+}
 function trafficDesiredSpeed(car,desired){
  let best=1e9;
  for(const other of cars){
@@ -380,11 +384,25 @@ function spawnTraffic(n=18){
 function updateYield(){if(!player.siren)return;for(const c of cars){if(c.suspect)continue;const d=dist(player,c);if(d<330){c.yield=Math.max(c.yield,1.2);c.yieldSide=((c.x+c.y)%2>0?1:-1)}}}
 function collisions(){for(const c of cars){const dx=c.x-player.x,dy=c.y-player.y,d=Math.hypot(dx,dy);if(d>0&&d<34){const nx=dx/d,ny=dy/d,over=34-d;player.x-=nx*over*.5;player.y-=ny*over*.5;c.x+=nx*over*.5;c.y+=ny*over*.5;const impact=Math.abs(player.speed-c.speed);player.speed*=.73;c.speed*=.73;if(impact>100){player.health=clamp(player.health-(impact-90)*.025,0,100);sfx('combat.impact_heavy',{volume:.16,cooldownMs:120});sparkBurst3(clamp((impact-90)/180,.25,1))}}}}
 function missionTarget(){if(!mission)return null;if(mission.type==='pursuit')return mission.suspect;if(mission.type==='accident'||mission.type==='obstacle')return mission.scene;if(mission.type==='traffic')return mission.points[Math.min(mission.index,2)];return mission.point}
-function spawnMission(){const r=Math.random();if(r<.34)spawnPursuit();else if(r<.60)spawnAccident();else if(r<.80)spawnTrafficMission();else spawnObstacle()}
-function spawnPursuit(){const p=roadPoint(player,470,850),a=Math.random()<.5?0:Math.PI/2,s=new TrafficCar(p.x,p.y,a,A.suspect);s.suspect=true;s.target=165;cars.push(s);mission={type:'pursuit',suspect:s,time:0,max:58,progress:0};missionKey3='';setMission('긴급 신고','수배 차량 추격','사이렌을 켜고 접근한 뒤 용의 차량 앞을 막아 정차시키세요.');radio('수배 차량 발견. 가까운 순찰차 출동 바랍니다.','#ff8290')}
-function spawnAccident(){const p=roadPoint(player,380,760);mission={type:'accident',scene:p,time:0,max:52};missionKey3='';setMission('교통 사고','현장 안전 확보','파란 안전 구역 안에 완전히 정차한 뒤 현장 조치를 하세요.');radio('접촉 사고 신고. 2차 사고 예방이 우선입니다.')}
+function spawnMission(){
+ const roll=Math.random();let type=missionIssued===0?'pursuit':roll<.46?'pursuit':roll<.68?'accident':roll<.82?'traffic':'obstacle';
+ if(type===lastMissionType&&type!=='pursuit')type=Math.random()<.58?'pursuit':(type==='accident'?'obstacle':'accident');
+ missionIssued++;lastMissionType=type;
+ if(type==='pursuit')spawnPursuit();else if(type==='accident')spawnAccident();else if(type==='traffic')spawnTrafficMission();else spawnObstacle()
+}
+function spawnPursuit(){
+ const p=trafficSpawnNear(player,480,920),s=new TrafficCar(p.x,p.y,p.a,A.suspect),variants=[
+  ['긴급 신고','수배 차량 추격','수배 차량을 발견했습니다. 사이렌을 켜고 가까운 거리에서 정차 명령을 유지하세요.'],
+  ['뺑소니 신고','도주 차량 추격','사고 현장을 이탈한 차량입니다. 무리한 충돌 대신 사이렌으로 압박해 안전하게 정차시키세요.'],
+  ['난폭 운전','위험 차량 추격','난폭 운전 차량이 도주 중입니다. 차량을 시야에 두고 정차 명령 게이지를 채우세요.']
+ ],v=variants[Math.floor(Math.random()*variants.length)];
+ s.suspect=true;s.target=165;s.fleeSpeed=205+Math.random()*22;s.commandStop=false;cars.push(s);
+ mission={type:'pursuit',suspect:s,time:0,max:72,progress:0,phase:'locate',variant:v[1]};missionKey3='';
+ setMission(v[0],v[1],v[2]);radio('용의 차량 위치 전송. 추격 중 민간 차량과 보행자를 주의하세요.','#ff8290')
+}
+function spawnAccident(){const p=roadPoint(player,380,760);mission={type:'accident',scene:p,time:0,max:55};missionKey3='';setMission('교통 사고','현장 안전 확보','사고 현장에 정차한 뒤 2차 사고를 막고 현장 조치를 완료하세요.');radio('접촉 사고 신고. 2차 사고 예방이 우선입니다.')}
 function spawnTrafficMission(){const c=nearestIntersection(player.x+(Math.random()<.5?GRID:-GRID),player.y+(Math.random()<.5?GRID:-GRID)),pts=[{x:c.x-150,y:c.y-30},{x:c.x+30,y:c.y-150},{x:c.x+150,y:c.y+30}];mission={type:'traffic',points:pts,index:0,time:0,max:62};missionKey3='';setMission('교통 정리','안전콘 설치','노란 표시 3곳에 정차해 안전콘을 설치하세요.');radio('교차로 혼잡 신고. 안전 구역을 만들어 주세요.','#ffe18b')}
-function spawnObstacle(){const p=roadPoint(player,350,720);mission={type:'obstacle',scene:p,time:0,max:48};missionKey3='';setMission('도로 위험','낙하물 정리','현장에 정차한 뒤 도로 장애물을 안전하게 치우세요.');radio('차로에 장애물이 있다는 신고입니다.','#ffd17a')}
+function spawnObstacle(){const p=roadPoint(player,350,720);mission={type:'obstacle',scene:p,time:0,max:50};missionKey3='';setMission('도로 위험','낙하물 정리','도로 장애물 주변에 정차한 뒤 안전하게 치우세요.');radio('차로에 장애물이 있다는 신고입니다.','#ffd17a')}
 function finish(points,msg){score+=points;solved++;mission=null;missionKey3='';missionDelay=2.6;setMission('순찰','다음 신고 대기 중','주변을 순찰하며 무전을 기다리세요.');ui.meta.textContent='';setAction();setProgress();radio(msg,'#8ef0ac');sfx('success.cheer_yay',{volume:.2,cooldownMs:500})}
 function fail(msg){if(mission?.suspect){const i=cars.indexOf(mission.suspect);if(i>=0)cars.splice(i,1)}mission=null;missionKey3='';missionDelay=2.2;setMission('순찰','신고 재배정','다음 신고를 확인하고 있습니다.');ui.meta.textContent='';setAction();setProgress();radio(msg,'#ff9aa4')}
 function setProgress(pct=null,color='#ff5a67'){if(pct==null){ui.progress.style.display='none';return}ui.progress.style.display='block';ui.progressBar.style.width=clamp(pct,0,100)+'%';ui.progressBar.style.background=color}
@@ -393,7 +411,21 @@ function updateMission(dt){
  if(!mission){missionDelay-=dt;if(missionDelay<=0)spawnMission();return}
  mission.time+=dt;if(mission.time>mission.max)return fail('처리 시간이 지나 다음 신고로 넘어갑니다.');
  const t=missionTarget(),d=t?dist(player,t):0;ui.meta.textContent='목표 '+Math.max(1,Math.round(d*.12))+'m · '+Math.ceil(mission.max-mission.time)+'초';
- if(mission.type==='pursuit'){const s=mission.suspect;if(d<360&&player.siren)s.fleeing=true;const rx=player.x-s.x,ry=player.y-s.y,front=rx*Math.cos(s.a)+ry*Math.sin(s.a),lat=Math.abs(-rx*Math.sin(s.a)+ry*Math.cos(s.a)),block=player.siren&&front>18&&front<145&&lat<90&&Math.abs(player.speed)<78&&d<175;if(block){mission.progress+=dt;s.speed=Math.max(0,s.speed-260*dt);setProgress(mission.progress/1.35*100)}else{mission.progress=Math.max(0,mission.progress-dt);setProgress(d<220?mission.progress/1.35*100:null)}if(mission.progress>=1.35||s.speed<8&&d<130&&player.siren){s.stopped=true;const i=cars.indexOf(s);if(i>=0)cars.splice(i,1);finish(1.5,'수배 차량 검거 완료')}}
+ if(mission.type==='pursuit'){
+  const s=mission.suspect;
+  if(d<420&&player.siren){s.fleeing=true;mission.phase='chase'}
+  if(!s.fleeing){setProgress(d<500?12:null);ui.meta.textContent+=' · 사이렌으로 추격 시작';}
+  else{
+   const close=player.siren&&d<205,veryClose=player.siren&&d<125;
+   if(close)mission.progress+=dt*(veryClose?1.35:1);else mission.progress=Math.max(0,mission.progress-dt*.42);
+   const pct=clamp(mission.progress/4.2*100,0,100);setProgress(pct,'#ff5a67');ui.meta.textContent+=' · 정차 명령 '+Math.round(pct)+'%';
+   if(mission.progress>=3.35)s.commandStop=true;
+   if(s.commandStop)s.speed=Math.max(0,s.speed-190*dt);
+   if(mission.progress>=4.2&&s.speed<22&&d<190){
+    s.stopped=true;const i=cars.indexOf(s);if(i>=0)cars.splice(i,1);finish(1.8,'도주 차량을 안전하게 정차시켰습니다.')
+   }
+  }
+ }
  else if(mission.type==='accident'){const parked=d<118&&Math.abs(player.speed)<8;setProgress(d<150?(parked?100:55):null,'#4aa8ff');if(d<135)setAction(parked?'현장 안전 확보 (Enter)':'완전히 정차하세요',parked?()=>finish(1,'사고 현장 수습 완료'):null);else setAction()}
  else if(mission.type==='traffic'){const p=mission.points[mission.index],dd=dist(player,p),parked=dd<82&&Math.abs(player.speed)<8;if(dd<90)setAction(parked?'안전콘 설치 '+(mission.index+1)+'/3':'이 지점에 정차하세요',parked?()=>{mission.index++;missionKey3='';sfx('collect.coin_drop',{volume:.15,cooldownMs:100});if(mission.index>=3)finish(1.2,'교차로 안전 확보 완료')}:null);else setAction()}
  else if(mission.type==='obstacle'){const parked=d<105&&Math.abs(player.speed)<8;if(d<120)setAction(parked?'장애물 치우기':'차량을 정차하세요',parked?()=>finish(1,'도로 장애물 제거 완료'):null);else setAction()}
@@ -425,7 +457,7 @@ function drawArrow(){if(!mission)return;const t=missionTarget();if(!t)return;con
 function drawMinimap(){const w=mm.width,h=mm.height,range=1550,sc=w*.46/range;mctx.clearRect(0,0,w,h);mctx.save();mctx.translate(w/2,h/2);mctx.scale(sc,sc);mctx.translate(-player.x,-player.y);mctx.fillStyle='#355b36';mctx.fillRect(-WORLD,-WORLD,WORLD*2,WORLD*2);mctx.fillStyle='#656b70';for(const r of roads)mctx.fillRect(r.x,r.y,r.w,r.h);if(mission){const t=missionTarget();if(t){mctx.strokeStyle='#ffda5b';mctx.lineWidth=20;mctx.globalAlpha=.55;mctx.beginPath();mctx.moveTo(player.x,player.y);mctx.lineTo(t.x,player.y);mctx.lineTo(t.x,t.y);mctx.stroke();mctx.globalAlpha=1;mctx.fillStyle='#ffda5b';mctx.beginPath();mctx.arc(t.x,t.y,30,0,TAU);mctx.fill()}}mctx.fillStyle='#49a8ff';mctx.beginPath();mctx.arc(player.x,player.y,27,0,TAU);mctx.fill();mctx.restore()}
 function update(dt){
  if(state!=='playing')return;shiftTime+=dt;if(shiftTime>=SHIFT){endGame();return}
- player.update(dt);for(const c of cars)c.update(dt);updateYield();collisions();updateMission(dt);driveAudio.update(player.speed,player.siren,shiftTime);
+ player.update(dt);for(const c of cars)c.update(dt);separateTrafficCars();updatePedestrians(dt);updateYield();collisions();updateMission(dt);driveAudio.update(player.speed,player.siren,shiftTime);
  camera.x=lerp(camera.x,player.x,1-Math.pow(.002,dt));camera.y=lerp(camera.y,player.y,1-Math.pow(.002,dt));const frame=framingZoom(),targetZoom=frame*clamp(1.03-Math.abs(player.speed)/1350,.84,1.02);camera.zoom=lerp(camera.zoom,targetZoom,1-Math.pow(.03,dt));
  if(radioTimer>0&&(radioTimer-=dt)<=0)ui.radio.classList.remove('show');
  if(player.health<=0){const p=nearRoad(player.x,player.y);player.x=p.x;player.y=p.y;player.speed=0;player.health=65;radio('차량이 견인되어 65% 상태로 복귀했습니다.','#ffb074')}
@@ -435,7 +467,7 @@ function update(dt){
 function render(){const t=performance.now()/1000;if(threeReady3){render3D(t)}else{ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore()}if(player)drawMinimap()}
 function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;update(dt);render();requestAnimationFrame(loop)}
 function resetInputs(){for(const k of Object.keys(keys))keys[k]=false;touch.steer=0;touch.brake=false;touch.reverse=false;touch.boost=false;if(typeof knob!=='undefined'&&knob)knob.style.transform='translate(0,0)'}
-function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=1.1;missionKey3='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3()}player=new Player();spawnTraffic();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
+function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=.8;missionKey3='';missionIssued=0;lastMissionType='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3();clearPedNodes3()}player=new Player();spawnTraffic();spawnPedestrians();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
 function endGame(){state='end';player.siren=false;driveAudio.update(0,false,shiftTime);setAction();setProgress();ui.endTitle.textContent=solved>=7?'베테랑 순찰팀':solved>=4?'안정적인 순찰 완료':'오늘의 순찰 완료';ui.endText.textContent='6분 동안 '+solved+'건을 해결하고 실적 '+score.toFixed(1)+'점을 기록했어요.';ui.end.classList.add('show')}
 addEventListener('keydown',e=>{if(state!=='playing')return;const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=true;if(k==='s'||k==='arrowdown')keys.s=true;if(k==='a'||k==='arrowleft')keys.a=true;if(k==='d'||k==='arrowright')keys.d=true;if(k==='r')keys.r=true;if(k===' '&&!e.repeat){e.preventDefault();toggleSiren()}if(k==='enter'&&!e.repeat&&ui.action.onclick)ui.action.onclick();if(k==='t'&&!e.repeat)recover()});
 addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=false;if(k==='s'||k==='arrowdown')keys.s=false;if(k==='a'||k==='arrowleft')keys.a=false;if(k==='d'||k==='arrowright')keys.d=false;if(k==='r')keys.r=false});
