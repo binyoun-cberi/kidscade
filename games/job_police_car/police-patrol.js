@@ -99,7 +99,9 @@ function addWindowStrip3(group,w,d,h){
  const sw=new T3.Mesh(new T3.BoxGeometry(.035,Math.max(.35,h*.38),Math.max(.9,d*.54)),glassMat.clone());sw.position.set(w/2+.02,h*.57,0);group.add(sw);
 }
 function registerBuildingOccluder3(root){
- if(!root)return;root.traverse(n=>{if(!n.isMesh||!n.material)return;n.userData.occluder=true;buildingMeshes3.push(n)})
+ if(!root)return;const meshes=[];
+ root.traverse(n=>{if(!n.isMesh||!n.material)return;n.userData.occluder=true;n.userData.occluderRoot=root;buildingMeshes3.push(n);meshes.push(n)});
+ root.userData.occluderMeshes=meshes
 }
 function restoreOccluders3(){
  for(const m of fadedMeshes3){
@@ -108,13 +110,18 @@ function restoreOccluders3(){
  }
  fadedMeshes3.clear()
 }
-function fadeOccluder3(mesh){
+function fadeOccluderMesh3(mesh){
  const list=Array.isArray(mesh.material)?mesh.material:[mesh.material];
  for(const mat of list){
   if(mat.userData.__occOpacity==null){mat.userData.__occOpacity=mat.opacity;mat.userData.__occTransparent=mat.transparent;mat.userData.__occDepthWrite=mat.depthWrite}
-  mat.transparent=true;mat.opacity=Math.min(.18,mat.userData.__occOpacity);mat.depthWrite=false
+  mat.transparent=true;mat.opacity=Math.min(.16,mat.userData.__occOpacity);mat.depthWrite=false
  }
  fadedMeshes3.add(mesh)
+}
+function fadeOccluder3(mesh){
+ const root=mesh?.userData?.occluderRoot,list=root?.userData?.occluderMeshes;
+ if(Array.isArray(list)&&list.length){for(const m of list)fadeOccluderMesh3(m)}
+ else if(mesh)fadeOccluderMesh3(mesh)
 }
 function updateCameraOcclusion3(target){
  restoreOccluders3();if(!occlusionRay3||!cam3||!target||!buildingMeshes3.length)return;
