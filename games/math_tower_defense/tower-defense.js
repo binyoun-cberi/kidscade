@@ -1,4 +1,4 @@
-/* Kidscade Divisor Tower Defense 3D - clean rebuild v1 */
+/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v5 */
 (function(){
 'use strict';
 
@@ -55,16 +55,14 @@ const MODELS={
   pine:modelUrl('nature/kenney-nature-kit/tree-pine-round-a.glb'),
   bush:modelUrl('nature/kenney-nature-kit/plant-bush.glb'),
   grass:modelUrl('nature/kenney-nature-kit/grass.glb'),
-  flower:modelUrl('nature/kenney-nature-kit/flower-yellow-a.glb'),
-  rockA:modelUrl('nature/kenney-nature-kit/rock-large-a.glb'),
-  rockB:modelUrl('nature/kenney-nature-kit/rock-large-b.glb')
+  flower:modelUrl('nature/kenney-nature-kit/flower-yellow-a.glb')
 };
 
 let scene,camera,controls,renderer,loader,clock,battlefield,decorGroup,skyGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup,core;
 let hoverTile,rangeRing,raycaster,mouse,groundPlane;
 const modelCache=new Map(),towerNodes=new Map(),enemyNodes=new Map(),enemyMixers=new Map(),decorCells=new Map(),tileMeshes=new Map();
 let started=false,assetsLoading=false,audioCtx=null,soundOn=true,toastTimer=0,selectedTower=null,selectedBuilt=null,hoverCell=null,impactShake=0;
-let pointerStart=null,pointerDragged=false,cameraHomeSet=false;
+let pointerStart=null,pointerDragged=false;
 
 const state={
   wave:1,money:520,lives:20,maxLives:20,kills:0,best:parseInt(localStorage.getItem('numTD_best')||'1',10),
@@ -153,7 +151,7 @@ function resize(){
 function setCameraHome(){
   const portrait=innerHeight>innerWidth*1.15;
   camera.position.set(portrait?10.2:11.8,portrait?16.8:12.6,portrait?18.0:14.2);
-  controls.target.set(0,.42,0);controls.update();cameraHomeSet=true;
+  controls.target.set(0,.42,0);controls.update();
 }
 
 function buildBoard(){
@@ -183,7 +181,7 @@ function buildBoard(){
   const end=PATH[PATH.length-1];core=new THREE.Group();
   const base=new THREE.Mesh(new THREE.CylinderGeometry(.58,.72,.3,10),new THREE.MeshStandardMaterial({color:0xe1e8df,roughness:.6,metalness:.08}));base.position.y=.15;core.add(base);
   for(let i=0;i<3;i++){const arm=box(.1,.74,.1,0x55746f,.52);arm.position.set(Math.cos(i*Math.PI*2/3)*.42,.52,Math.sin(i*Math.PI*2/3)*.42);arm.rotation.z=Math.sin(i*Math.PI*2/3)*.16;core.add(arm)}
-  const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.26,2),new THREE.MeshStandardMaterial({color:0x2dd4bf,emissive:0x0f9b8e,emissiveIntensity=.95,roughness:.18,metalness:.04}));orb.position.y=.7;core.add(orb);
+  const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.26,2),new THREE.MeshStandardMaterial({color:0x2dd4bf,emissive:0x0f9b8e,emissiveIntensity:.95,roughness:.18,metalness:.04}));orb.position.y=.7;core.add(orb);
   const cr=new THREE.Mesh(new THREE.TorusGeometry(.51,.032,10,40),new THREE.MeshBasicMaterial({color:0x5eead4,transparent:true,opacity:.7}));cr.rotation.x=Math.PI/2;cr.position.y=.64;core.add(cr);
   const cr2=new THREE.Mesh(new THREE.TorusGeometry(.37,.024,8,32),new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.54}));cr2.rotation.z=Math.PI/2;cr2.position.y=.7;core.add(cr2);
   core.userData={orb,ring:cr,ring2:cr2};core.position.copy(cellWorld(end.x,end.y,0));battlefield.add(core);
@@ -193,13 +191,12 @@ function buildBoard(){
 }
 
 
-function seededCell(x,y){let n=(x*92837111+y*689287499+1376312589)>>>0;n^=n<<13;n^=n>>>17;n^=n<<5;return (n>>>0)/4294967295}
 function clear3DGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1])}
 function setDecorBuilt(x,y,built){const cell=decorCells.get(x+','+y);if(!cell)return;cell.userData.built=built;const active=document.body.classList.contains('build-mode');if(cell.userData.prop)cell.userData.prop.visible=!built&&!active}
 function applyBuildMode(active){
   document.body.classList.toggle('build-mode',active);
   for(const [key,cell] of decorCells){const [x,y]=key.split(',').map(Number),built=Boolean(towerAt(x,y));cell.userData.built=built;if(cell.userData.prop)cell.userData.prop.visible=!built&&!active}
-  for(const [key,tile] of tileMeshes){const [x,y]=key.split(',').map(Number);if(isPath(x,y))continue;const built=Boolean(towerAt(x,y));tile.material.emissive?.setHex(active?(built?0x102a44:0x06394a):0x000000);tile.material.emissiveIntensity=active?(built?.18:.5):0}
+  for(const [key,tile] of tileMeshes){const [x,y]=key.split(',').map(Number);if(isPath(x,y))continue;const built=Boolean(towerAt(x,y));tile.material.emissive?.setHex(active?(built?0x4b8063:0x2d9a63):0x000000);tile.material.emissiveIntensity=active?(built?.1:.34):0}
 }
 function makeDecorProp(key,target,x,y,rotation=0){
   const o=cloneModel(key,target);if(!o)return null;o.position.set(x,0,y);o.rotation.y=rotation;return o
@@ -297,7 +294,7 @@ function refreshEnemyLabel(e,node){
   const label=textSprite(e.hp,isPrime(e.hp)?'소수':'',enemyColor(e.hp),.72);label.position.set(e.labelSide*.06,1.08+e.labelLane*.09,0);node.add(label);node.userData.label=label;node.userData.hp=e.hp;node.userData.halo.material.color.setHex(colorHex(enemyColor(e.hp)))
 }
 function makeTowerNode(t){
-  const root=new THREE.Group(),def=TOWERS[t.id],base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.52,.2,10),new THREE.MeshStandardMaterial({color:0x14283d,roughness:.45,metalness:.25}));base.position.y=.11;root.add(base);
+  const root=new THREE.Group(),def=TOWERS[t.id],base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.52,.2,10),new THREE.MeshStandardMaterial({color:0xd9e4de,roughness:.62,metalness:.08}));base.position.y=.11;root.add(base);
   const rr=ring(.48,colorHex(def.color),.6);rr.position.y=.21;root.add(rr);
   const model=cloneModel(def.model,1.18);if(model){model.position.y=.21;root.add(model);root.userData.model=model}else{const f=box(.46,.58,.46,colorHex(def.color),.4);f.position.y=.51;root.add(f)}
   const label=opSprite(def.short,def.color);label.position.y=1.18;root.add(label);towerGroup.add(root);towerNodes.set(t,root);return root
