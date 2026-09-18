@@ -443,13 +443,17 @@ function styleModel(obj,key){
    const originals=Array.isArray(n.material)?n.material:[n.material];
    const styled=originals.map(src=>{
      const m=src.clone();
-     m.map=null;m.emissiveMap=null;m.normalMap=null;m.roughnessMap=null;m.metalnessMap=null;
+     const textureReady=Boolean(m.map?.image&&(m.map.image.width||m.map.image.videoWidth||m.map.image.complete));
      const name=(n.name||'').toLowerCase(),isWheel=name.includes('wheel');
-     let color=base;
-     if(isWheel)color=0x242c31;
-     if(key==='rail')color=name.includes('rail')?0x59636a:0x6a513f;
-     if(key==='trafficLight')color=0x304048;
-     m.color.setHex(color);m.metalness=isWheel||key==='rail'?.08:.02;m.roughness=isWheel?.82:key==='road'?.94:.68;m.needsUpdate=true;
+     if(!textureReady){
+       m.map=null;m.emissiveMap=null;m.normalMap=null;m.roughnessMap=null;m.metalnessMap=null;
+       let color=base;
+       if(isWheel)color=0x242c31;
+       if(key==='rail')color=name.includes('rail')?0x59636a:0x6a513f;
+       if(key==='trafficLight')color=0x304048;
+       m.color.setHex(color);m.metalness=isWheel||key==='rail'?.08:.02;m.roughness=isWheel?.82:key==='road'?.94:.68;
+     }
+     m.needsUpdate=true;
      return m;
    });
    n.material=Array.isArray(n.material)?styled:styled[0];
