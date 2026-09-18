@@ -221,9 +221,8 @@ function sync3D(dt,time){
   for(const t of state.towers){let n=towerNodes.get(t)||makeTowerNode(t);n.position.copy(cellWorld(t.x,t.y,.07));n.scale.setScalar(1+t.level*.055);const beam=state.beams.find(b=>b.a.distanceTo(cellWorld(t.x,t.y,.7))<.1);if(beam){const d=beam.b.clone().sub(n.position);if(d.lengthSq()>.01)n.rotation.y=Math.atan2(d.x,d.z)}}
   const liveE=new Set(state.enemies);for(const [e,n] of [...enemyNodes])if(!liveE.has(e)){enemyGroup.remove(n);enemyNodes.delete(e)}
   for(const e of state.enemies){let n=enemyNodes.get(e)||makeEnemyNode(e);n.position.copy(e.pos);refreshEnemyLabel(e,n);const next=PATH[Math.min(e.seg+1,PATH.length-1)],tp=cellWorld(next.x,next.y,0),d=tp.clone().sub(e.pos);if(d.lengthSq()>.01)n.rotation.y=Math.atan2(d.x,d.z);n.position.y=.08+Math.sin(time*4+e.seg)*.035;if(e.flash>0)n.scale.setScalar(1.12);else n.scale.lerp(new THREE.Vector3(1,1,1),.25)}
-  while(fxGroup.children.length>state.particles.length)fxGroup.remove(fxGroup.children[fxGroup.children.length-1]);
-  for(const b of state.beams){const geom=new THREE.BufferGeometry().setFromPoints([b.a,b.b]),line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:b.color,transparent:true,opacity:Math.min(1,b.life/.12)}));fxGroup.add(line)}
-  // transient lines are removed next frame; particle meshes are re-added if needed
+  for(const child of [...fxGroup.children])if(child.userData?.beam){fxGroup.remove(child);child.geometry?.dispose();child.material?.dispose()}
+  for(const b of state.beams){const geom=new THREE.BufferGeometry().setFromPoints([b.a,b.b]),line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:b.color,transparent:true,opacity:Math.min(1,b.life/.12)}));line.userData.beam=true;fxGroup.add(line)}
   for(const p of state.particles)if(p.mesh.parent!==fxGroup)fxGroup.add(p.mesh);
   for(const t of state.texts){if(!t.sprite){t.sprite=textSprite(t.text,'',t.color,.62);ui3dGroup.add(t.sprite)}t.sprite.position.copy(t.pos);t.sprite.material.opacity=Math.min(1,t.life*2)}
   for(const child of [...ui3dGroup.children]){if(child===hoverTile||child===rangeRing)continue;const found=state.texts.some(t=>t.sprite===child);if(!found){ui3dGroup.remove(child);child.material?.map?.dispose();child.material?.dispose()}}
@@ -237,8 +236,6 @@ function syncSelection(){
 }
 function loop(){
   requestAnimationFrame(loop);const dt=Math.min(.05,clock.getDelta()),time=performance.now()/1000;update(dt);sync3D(dt,time);
-  // remove one-frame beam lines while retaining particles
-  for(const child of [...fxGroup.children])if(child.type==='Line')fxGroup.remove(child);
   renderer.render(scene,camera)
 }
 
