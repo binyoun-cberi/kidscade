@@ -10,7 +10,7 @@ const mod=fs.readFileSync(path.join(root,'games','math_tower_defense','number-td
 test('Divisor Tower Defense exposes a 3D battlefield while preserving the math runtime',()=>{
   assert.match(html,/id="gameCanvas3d"/);
   assert.match(html,/window\.__numTD3D/);
-  assert.match(html,/number-td-3d\.js\?v=1/);
+  assert.match(html,/number-td-3d\.js\?v=2/);
   assert.match(html,/÷2/);
   assert.match(html,/÷3/);
   assert.match(html,/÷5/);
@@ -21,7 +21,7 @@ test('Divisor Tower Defense exposes a 3D battlefield while preserving the math r
 test('3D battlefield uses local Three.js, sci-fi turrets and animated monster assets',()=>{
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
   assert.match(mod,/GLTFLoader/);
-  assert.match(mod,/SkeletonUtils/);
+  assert.match(mod,/GLTFLoader/);
   for(const rel of [
     'assets/game/3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
     'assets/game/3d/weapons/scifi-turrets/rail-gun-turret.glb',
@@ -32,6 +32,15 @@ test('3D battlefield uses local Three.js, sci-fi turrets and animated monster as
     'assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',
     'assets/game/3d/characters/monsters/ultimate-monsters-bundle/orc-enemy.glb'
   ]) assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
+});
+
+
+test('3D board appears before optional GLB assets finish loading',()=>{
+  assert.match(mod,/ready=true;box\.classList\.add\('td3d-ready'\)/);
+  assert.match(mod,/requestAnimationFrame\(loop\)/);
+  assert.match(mod,/Promise\.allSettled/);
+  assert.match(mod,/asset timeout/);
+  assert.doesNotMatch(mod,/SkeletonUtils/);
 });
 
 test('3D battle keeps numbers and equations visible for learning',()=>{
