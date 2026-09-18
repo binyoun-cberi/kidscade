@@ -38,6 +38,7 @@ function setMission(kind,title,text){ui.kind.textContent=kind;ui.title.textConte
 const T3=window.THREE||null,GLTF3=window.GLTFLoader||null,SCALE3=.012;
 const scriptBase3=(()=>{try{return new URL('.',document.currentScript?.src||location.href)}catch(_){return new URL('.',location.href)}})();
 const modelUrl3=p=>new URL('../../assets/game/3d/'+p,scriptBase3).href;
+const gameAssetUrl3=p=>new URL('../../assets/game/'+p,scriptBase3).href;
 const MODEL3={
  police:modelUrl3('vehicles/kenney-car-kit/police.glb'),
  sedan:modelUrl3('vehicles/kenney-car-kit/sedan.glb'),
@@ -53,10 +54,10 @@ const MODEL3={
  barrier:modelUrl3('city/kenney-city-kit-roads/construction-barrier.glb'),
  bigBuilding:modelUrl3('city/poly-pizza-city-pack/big-building.glb'),
  dumpster:modelUrl3('city/poly-pizza-city-pack/dumpster.glb'),
- pedA:modelUrl3('characters/people/character-male-a.glb'),
- pedB:modelUrl3('characters/people/character-male-b.glb'),
- pedC:modelUrl3('characters/people/character-female-b.glb'),
- pedD:modelUrl3('characters/people/character-female-c.glb')
+ pedA:gameAssetUrl3('characters/people/character-male-a.glb'),
+ pedB:gameAssetUrl3('characters/people/character-male-b.glb'),
+ pedC:gameAssetUrl3('characters/people/character-female-b.glb'),
+ pedD:gameAssetUrl3('characters/people/character-female-c.glb')
 };
 const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
 let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,people3=null,mission3=null,models3=new Map(),carNodes3=new Map(),pedNodes3=new Map(),prepare3Promise=null,threeReady3=false;
