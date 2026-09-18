@@ -32,6 +32,7 @@ const CUSTOMER_MODELS=['character-female-b.glb','character-male-a.glb','characte
 const els={
  canvas:$('#gameCanvas'),orders:$('#orderStrip'),pots:$('#potStrip'),revenue:$('#revenue'),goal:$('#goal'),time:$('#time'),served:$('#served'),
  selected:$('#selectedAction'),trayBtn:$('#trayBtn'),trayText:$('#trayText'),trayQuality:$('#trayQuality'),dock:$('#actionDock'),
+ tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
  endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn')
 };
@@ -41,7 +42,8 @@ function newPot(i){
 }
 const state={
  running:false,time:SHIFT_SECONDS,revenue:0,served:0,perfect:0,missed:0,sound:true,
- orders:[],nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,action:'water',selectedPot:0,tray:null,
+ orders:[],nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,
+ tutorial:{active:true,step:0},discardArmedUntil:0,trayDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i))
 };
 
@@ -199,9 +201,12 @@ class RamenKitchen3D{
   v.noodleGroup.visible=false;while(v.foodGroup.children.length)v.foodGroup.remove(v.foodGroup.children[0])
  }
  setSelectedPot(index){
+  if(index==null){state.selectedPot=null;this.potVisuals.forEach(v=>v.selectRing.visible=false);renderPotStrip();renderSelectedHelp();updateActionButtons();return}
+  if(state.tutorial.active&&state.tutorial.step===0&&index!==0){toast('첫 그릇은 1번 냄비로 같이 만들어 봐요');return}
   state.selectedPot=index;
+  if(state.tutorial.active&&state.tutorial.step===0&&index===0)state.tutorial.step=1;
   this.potVisuals.forEach((v,i)=>v.selectRing.visible=i===index);
-  renderPotStrip();renderSelectedHelp()
+  renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons()
  }
  pointerUp(e){
   if(!state.running)return;
@@ -209,14 +214,12 @@ class RamenKitchen3D{
   this.raycaster.setFromCamera(this.pointer,this.camera);
   const hit=this.raycaster.intersectObjects(this.pickables,false)[0];
   if(!hit)return;
-  const index=hit.object.userData.potIndex;
-  this.setSelectedPot(index);
-  if(state.action)applyAction(index,state.action);
+  this.setSelectedPot(hit.object.userData.potIndex);
  }
  resize(){
   const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;
-  this.renderer.setSize(w,h,false);this.camera.aspect=w/Math.max(1,h);this.camera.fov=w<650?53:w<900?47:42;
-  this.camera.position.set(0,w<650?12.8:11.1,w<650?13.1:11.2);this.camera.lookAt(0,.75,.2);this.camera.updateProjectionMatrix()
+  this.renderer.setSize(w,h,false);this.camera.aspect=w/Math.max(1,h);this.camera.fov=w<650?50:w<900?43:38;
+  this.camera.position.set(0,w<650?10.7:8.7,w<650?10.9:8.9);this.camera.lookAt(0,1.0,.45);this.camera.updateProjectionMatrix()
  }
  update(dt){
   this.clock+=dt;
@@ -236,7 +239,13 @@ class RamenKitchen3D{
    }
    const hot=p.water>.05||p.ingredients.length;v.burner.material.emissiveIntensity=hot?(p.burnt?.95:.42):.06;v.flame.intensity=hot?(p.burnt?4.8:2.2):0;
    if(p.burnt)v.flame.color.setHex(0xff2f1d);else v.flame.color.setHex(0xff6a2b);
-   v.selectRing.material.opacity=i===state.selectedPot?.95:.18;
+   const selected=i===state.selectedPot,tutorialTarget=state.tutorial.active&&state.tutorial.step===0&&i===0;
+   const ideal=hasIngredient(p,'noodle')&&p.noodleTime>=8.2&&p.noodleTime<=11.5&&!p.burnt;
+   const danger=p.burnt||p.noodleTime>14.2;
+   v.selectRing.visible=selected||tutorialTarget;
+   v.selectRing.material.color.setHex(danger?0xff594f:ideal?0x68df7a:0xffe27b);
+   v.selectRing.material.opacity=(selected||tutorialTarget)?(.8+.16*Math.sin(this.clock*5)):.12;
+   v.selectRing.scale.setScalar(tutorialTarget?1+.055*Math.sin(this.clock*5):ideal&&selected?1+.035*Math.sin(this.clock*7):1);
   });
   this.renderer.render(this.scene,this.camera)
  }
