@@ -1,4 +1,4 @@
-/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v6 */
+/* Kidscade Divisor Tower Defense 3D - eco-city rebuild v7 */
 (function(){
 'use strict';
 
@@ -65,8 +65,9 @@ let started=false,assetsLoading=false,audioCtx=null,soundOn=true,toastTimer=0,se
 let pointerStart=null,pointerDragged=false,cameraYaw=.69,cameraPitch=.59,cameraDistance=21.5,pinchStart=null;
 const activePointers=new Map();
 
+function readBest(){try{return Math.max(1,parseInt(localStorage.getItem('numTD_best')||'1',10)||1)}catch(_){return 1}}
 const state={
-  wave:1,money:520,lives:20,maxLives:20,kills:0,best:parseInt(localStorage.getItem('numTD_best')||'1',10),
+  wave:1,money:520,lives:20,maxLives:20,kills:0,best:readBest(),
   towers:[],enemies:[],spawnQueue:[],spawnTimer:0,waveActive:false,paused:false,speed:1,
   beams:[],texts:[],particles:[],gameOver:false,autoUsed:false
 };
@@ -77,12 +78,17 @@ function cellWorld(x,y,h=0){return new THREE.Vector3((x-(GRID_W-1)/2)*CELL,h,(y-
 function isPath(x,y){return PATH_SET.has(x+','+y)}
 function towerAt(x,y){return state.towers.find(t=>t.x===x&&t.y===y)}
 function colorHex(css){return parseInt(css.slice(1),16)}
-function initAudio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}
-function tone(freq,dur=.06,type='sine',gain=.025){if(!soundOn)return;initAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(gain,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur+.02)}
+function initAudio(){if(audioCtx)return audioCtx;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;try{audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}catch(_){audioCtx=null;return null}}
+function tone(freq,dur=.06,type='sine',gain=.025){if(!soundOn)return;const ctx=initAudio();if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,ctx.currentTime);g.gain.exponentialRampToValueAtTime(gain,ctx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+dur);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+dur+.02)}
 const sfx={click:()=>tone(430,.05,'square'),build:()=>tone(650,.08,'triangle',.035),shoot:()=>tone(880,.035,'square',.016),hit:()=>tone(210,.08,'sawtooth',.025),clear:()=>{tone(523,.12,'triangle',.04);setTimeout(()=>tone(784,.14,'triangle',.04),90)}};
 
 function box(w,h,d,color,rough=.85){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:rough,metalness:.04}));m.castShadow=true;m.receiveShadow=true;return m}
 function ring(radius,color,opacity=.35){const m=new THREE.Mesh(new THREE.RingGeometry(Math.max(.02,radius-.045),radius,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;return m}
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  if(typeof ctx.roundRect==='function'){ctx.roundRect(x,y,w,h,r);return}
+  const rr=Math.min(r,w/2,h/2);ctx.moveTo(x+rr,y);ctx.lineTo(x+w-rr,y);ctx.quadraticCurveTo(x+w,y,x+w,y+rr);ctx.lineTo(x+w,y+h-rr);ctx.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);ctx.lineTo(x+rr,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-rr);ctx.lineTo(x,y+rr);ctx.quadraticCurveTo(x,y,x+rr,y)
+}
 function normalize(obj,target=1){obj.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(obj),s=b.getSize(new THREE.Vector3()),base=Math.max(s.x,s.y,s.z)||1;obj.scale.multiplyScalar(target/base);obj.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(obj);const c=b.getCenter(new THREE.Vector3());obj.position.x-=c.x;obj.position.z-=c.z;obj.position.y-=b.min.y;return obj}
 function prep(obj){obj.traverse(n=>{if(!n.isMesh)return;n.castShadow=true;n.receiveShadow=true;if(n.material){const a=Array.isArray(n.material)?n.material:[n.material];const b=a.map(src=>{const m=src.clone();m.roughness=Math.max(.42,m.roughness??.7);m.metalness=Math.min(.28,m.metalness??0);m.needsUpdate=true;return m});n.material=Array.isArray(n.material)?b:b[0]}});return obj}
 function cloneModel(key,target=1){const g=modelCache.get(key);if(!g)return null;const src=window.SkeletonUtils?.clone?window.SkeletonUtils.clone(g.scene):g.scene.clone(true);return normalize(prep(src),target)}
@@ -90,7 +96,7 @@ function loadModel(key,url,timeout=8000){return new Promise(resolve=>{let done=f
 
 function textSprite(text,sub='',color='#ffffff',scale=1){
   const c=document.createElement('canvas');c.width=192;c.height=96;const x=c.getContext('2d');
-  x.fillStyle='rgba(3,9,20,.88)';x.beginPath();x.roundRect(8,8,176,80,18);x.fill();x.strokeStyle=color;x.lineWidth=4;x.stroke();
+  x.fillStyle='rgba(3,9,20,.88)';roundRectPath(x,8,8,176,80,18);x.fill();x.strokeStyle=color;x.lineWidth=4;x.stroke();
   x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.font='900 42px system-ui';x.fillText(String(text),96,43);
   if(sub){x.fillStyle=color;x.font='900 15px system-ui';x.fillText(sub,96,72)}
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
@@ -98,7 +104,7 @@ function textSprite(text,sub='',color='#ffffff',scale=1){
 }
 function calcSprite(text,color){
   const c=document.createElement('canvas');c.width=256;c.height=80;const x=c.getContext('2d');
-  x.fillStyle='rgba(2,8,18,.86)';x.beginPath();x.roundRect(8,8,240,64,18);x.fill();x.strokeStyle=color;x.lineWidth=4;x.stroke();
+  x.fillStyle='rgba(2,8,18,.86)';roundRectPath(x,8,8,240,64,18);x.fill();x.strokeStyle=color;x.lineWidth=4;x.stroke();
   x.fillStyle='#fff';x.font='900 30px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,41);
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(1.05,.33,1);s.renderOrder=45;return s
@@ -340,7 +346,7 @@ function onPointerMove(e){
   const p=pointerCell(e);hoverCell=validCell(p)?p:null;syncSelection()
 }
 function finishPointer(e){
-  activePointers.delete(e.pointerId);canvas.releasePointerCapture?.(e.pointerId);
+  activePointers.delete(e.pointerId);try{if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId)}catch(_){}
   if(activePointers.size<2)pinchStart=null
 }
 function onPointerUp(e){
@@ -395,7 +401,7 @@ function startWave(){
   if(state.waveActive||state.gameOver)return;const cfg=waveConfig();state.waveActive=true;state.spawnQueue=[];for(let i=0;i<cfg.count;i++)state.spawnQueue.push(cfg.nums[i%cfg.nums.length]);state.spawnTimer=.35;sfx.click();$('startWaveBtn').disabled=true;syncHUD()
 }
 function waveClear(){
-  state.waveActive=false;const bonus=120+state.wave*35;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;localStorage.setItem('numTD_best',String(state.best))}sfx.clear();toast('방어 성공! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
+  state.waveActive=false;const bonus=120+state.wave*35;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('방어 성공! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
 }
 function loseCore(e){
   const dmg=Math.max(1,Math.ceil(e.hp/4));state.lives-=dmg;const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);state.enemies=state.enemies.filter(x=>x!==e);core.userData.orb.scale.setScalar(1.3);setTimeout(()=>core.userData.orb.scale.setScalar(1),150);sfx.hit();if(state.lives<=0)gameOver();syncHUD()
@@ -481,5 +487,5 @@ $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textC
 $('startGameBtn').addEventListener('click',()=>{initAudio();started=true;$('startScreen').classList.remove('show');syncHUD();syncDeck();toast('타워를 골라 빈 칸에 설치하세요.')});
 $('restartBtn').addEventListener('click',()=>{$('gameOverScreen').classList.remove('show');started=true;resetGame()});
 
-try{initThree();syncHUD();syncDeck();syncSelectedPanel()}catch(err){console.error('[MathTD] boot failed',err);assetStatus.textContent='3D 전장 초기화 오류';assetStatus.style.opacity='1';$('startGameBtn').disabled=true;$('startGameBtn').textContent='3D 전장 오류'}
+try{initThree();syncHUD();syncDeck();syncSelectedPanel();document.body.dataset.gameReady='1'}catch(err){console.error('[MathTD] boot failed',err);assetStatus.textContent='3D 전장 초기화 오류';assetStatus.style.opacity='1';$('startGameBtn').disabled=true;$('startGameBtn').textContent='3D 전장 오류'}
 })();
