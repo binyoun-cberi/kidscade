@@ -1,0 +1,52 @@
+[
+  {
+    "pack": "kenney-racing-pack",
+    "source_zip": "kenney_racing-pack(1).zip",
+    "license": "CC0",
+    "destination": "assets/game/2d/racing/kenney-racing-pack/",
+    "included": {
+      "png": 423,
+      "spritesheet": 8,
+      "vector_svg": 3,
+      "license": 1
+    },
+    "notes": "Preview/Sample/URL/SWF files intentionally omitted."
+  },
+  {
+    "pack": "kenney-modular-characters",
+    "source_zip": "kenney_modular-characters.zip",
+    "license": "CC0",
+    "destination": "assets/game/2d/characters/kenney-modular-characters/",
+    "included": {
+      "png": 428,
+      "spritesheet": 12,
+      "vector_svg": 6,
+      "license": 1
+    },
+    "notes": "Preview/sample/instruction/SWF files intentionally omitted; PNG, spritesheet and SVG assets kept."
+  },
+  {
+    "pack": "kenney-tower-defense-isometric",
+    "source_zip": "kenney_tower-defense(1).zip",
+    "license": "CC0",
+    "destination": "assets/game/2d/tower-defense/isometric/",
+    "included": {
+      "new_png": 0
+    },
+    "duplicate_check": {
+      "uploaded_png": 229,
+      "exact_matches_already_in_library": 229
+    },
+    "notes": "All uploaded PNG assets were exact duplicates of the existing isometric tower-defense library, so no second copy was added."
+  },
+  {
+    "pack": "newmusical",
+    "source_zip": "newmusical.zip",
+    "license": "UNVERIFIED",
+    "destination": "assets/audio/incoming/newmusical/",
+    "included": {
+      "mp3": 12
+    },
+    "notes": "Kept outside the active audio catalog because the ZIP contained no license/source documentation."
+  }
+]
