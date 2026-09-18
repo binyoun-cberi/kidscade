@@ -11,9 +11,9 @@ const runtime=fs.readFileSync(path.join(dir,'spelling-frog-runtime.js'),'utf8');
 const loader=fs.readFileSync(path.join(dir,'spelling-frog-loader.js'),'utf8');
 
 test('Spelling Frog uses local Three.js and split runtime files',()=>{
-  assert.match(html,/spelling-frog-loader\.js\?v=20260918-3/);
+  assert.match(html,/spelling-frog-loader\\.js\\?v=20260918-4/);
   assert.match(loader,/\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(loader,/spelling-frog-runtime\.js\?v=20260918-3/);
+  assert.match(loader,/spelling-frog-runtime\\.js\\?v=20260918-4/);
   assert.match(loader,/spelling-frog-log-fix\.js\?v=20260914-1/);
   assert.doesNotMatch(html+runtime+loader,/cdn\.jsdelivr|cdnjs\.cloudflare|https?:\/\//i);
   assert.match(html,/audio-manager\.js\?v=20260917-1/);
@@ -26,40 +26,35 @@ test('Spelling Frog runtime and loader parse',()=>{
   assert.equal(loaderCheck.status,0,loaderCheck.stderr||loaderCheck.stdout);
 });
 
-test('Spelling Frog uses cute round frog plus retained state sprite assets',()=>{
-  assert.ok(fs.existsSync(path.join(root,'assets','game','2d','animals','round','frog.png')));
-  assert.match(runtime,/animals\/round\/frog\.png/);
-  for(const name of ['frog-leap.png','frog-hit.png','frog-dead.png']){
-    const p=path.join(root,'assets','game','2d','platformer-art','extended','enemies',name);
-    assert.ok(fs.existsSync(p),'missing '+name);
-    assert.ok(runtime.includes(name),'runtime missing '+name);
-  }
-  assert.match(runtime,/function setFrogState/);
+test('Spelling Frog uses animated 3D frog and GLTF loader',()=>{
+  assert.ok(fs.existsSync(path.join(root,'assets','game','3d','characters','quaternius','frog.glb')));
+  assert.match(html,/type="importmap"/);
+  assert.match(loader,/GLTFLoader/);
+  assert.match(runtime,/characters\/quaternius\/frog\.glb/);
+  assert.match(runtime,/function prime3DAssets/);
+  assert.match(runtime,/AnimationMixer/);
   assert.match(runtime,/setFrogState\('leap'\)/);
   assert.match(runtime,/setFrogState\('hit'\)/);
   assert.match(runtime,/setFrogState\('dead'\)/);
 });
 
-test('Spelling Frog uses local vehicle, road, river, log, tree and letter assets',()=>{
+test('Spelling Frog uses shared CC0 3D road, vehicle, nature and train assets',()=>{
   const required=[
-    ['racing/kenney-racing-pack/cars/car_red_1.png','car_red_1.png'],
-    ['racing/kenney-racing-pack/cars/car_blue_3.png','car_blue_3.png'],
-    ['racing/kenney-racing-pack/tiles/asphalt-road/road_asphalt01.png','road_asphalt01.png'],
-    ['racing/kenney-racing-pack/tiles/grass/land_grass01.png','land_grass01.png'],
-    ['racing/kenney-racing-pack/objects/tree_large.png','tree_large.png'],
-    ['platformer-art/base/tiles/liquid-water-top-mid.png','liquid-water-top-mid.png'],
-    ['platformer-art/base/tiles/bridge-logs.png','bridge-logs.png'],
-    ['letters/blue/letter-a.png','letterRoot'],
-    ['letters/yellow/letter-z.png','letterRoot']
+    ['3d/city/kenney-city-kit-roads/road-straight.glb','road-straight.glb'],
+    ['3d/vehicles/kenney-car-kit/sedan.glb','carSedan'],
+    ['3d/vehicles/kenney-car-kit/suv.glb','carSuv'],
+    ['3d/nature/kenney-nature-kit/tree-default.glb','treeDefault'],
+    ['3d/nature/kenney-nature-kit/log-large.glb','logLarge'],
+    ['3d/rail/kenney-train-kit/railroad-rail-straight.glb','railroad-rail-straight.glb'],
+    ['3d/rail/kenney-train-kit/train-locomotive-a.glb','trainLoco']
   ];
   for(const [rel,needle] of required){
-    assert.ok(fs.existsSync(path.join(root,'assets','game','2d',rel)),'missing '+rel);
+    assert.ok(fs.existsSync(path.join(root,'assets','game',rel)),'missing '+rel);
     assert.ok(runtime.includes(needle),'runtime does not reference '+needle);
   }
-  assert.match(runtime,/function letterAsset/);
-  assert.match(runtime,/VIS\.carRoot/);
-  assert.match(runtime,/VIS\.water/);
-  assert.match(runtime,/VIS\.logs/);
+  assert.match(runtime,/function cloneModel/);
+  assert.match(runtime,/function createVehicleModel/);
+  assert.match(runtime,/function addRailSurface/);
 });
 
 test('Spelling Frog owns its event audio without duplicate shared hooks',()=>{
@@ -84,10 +79,10 @@ test('Spelling Frog keeps moving-log rider fix wired in',()=>{
 test('Spelling Frog catalog points to asset rework version',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='spelling_frog');
-  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260918-3');
+  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260918-4');
   assert.match(game.description,/개구리.*차량.*알파벳/);
   const bootstrap=fs.readFileSync(path.join(root,'main-bootstrap.js'),'utf8');
-  assert.match(bootstrap,/스펠링 프로그\.html\?v=20260918-3/);
+  assert.match(bootstrap,/스펠링 프로그\\.html\\?v=20260918-4/);
 });
 
 test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
@@ -96,8 +91,8 @@ test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-runtime.js')));
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-loader.js')));
   const builtHtml=fs.readFileSync(path.join(built,'스펠링 프로그.html'),'utf8');
-  assert.match(builtHtml,/spelling-frog-loader\.js\?v=20260918-3/);
-  assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','platformer-art','extended','enemies','frog-leap.png')));
+  assert.match(builtHtml,/spelling-frog-loader\\.js\\?v=20260918-4/);
+  assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','characters','quaternius','frog.glb')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','letters','blue','letter-a.png')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','racing','kenney-racing-pack','cars','car_red_1.png')));
 });
