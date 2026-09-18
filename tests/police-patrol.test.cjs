@@ -37,7 +37,7 @@ test('Police Patrol v7 fades buildings that block the chase camera',()=>{
   assert.match(js,/function updateCameraOcclusion3/);
   assert.match(js,/function restoreOccluders3/);
   assert.match(js,/updateCameraOcclusion3\(target\)/);
-  assert.match(js,/mat\.opacity=Math\.min\(\.18/);
+  assert.match(js,/mat\.opacity=Math\.min\(\.16/);
 });
 
 test('Police Patrol v7 adds moving pedestrians using existing people assets',()=>{
