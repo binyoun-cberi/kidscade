@@ -91,6 +91,11 @@ function buildWorld(contract){
    const key=fishKeys[Math.floor(r()*fishKeys.length)],sp=SPECIES[key],dep=rnd(sp.depth[0],Math.min(445,sp.depth[1])),y=WORLD.surface+dep*WORLD.scaleDepth,x=rnd(130,WORLD.w-130);
    world.fish.push(makeFish(key,x,y,i*31+contract.unlock*700));
  }
+ // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
+ world.fish.push(makeFish('blue',WORLD.w*.46,180,8101));
+ world.fish.push(makeFish('orange',WORLD.w*.56,230,8102));
+ world.fish.push(makeFish('dart',WORLD.w*.63,430,8103));
+ world.fish.push(makeFish('long',WORLD.w*.40,600,8104));
  world.fish.push(makeFish('giant',WORLD.w*.73,1605,9921));
  for(let i=0;i<105;i++){
    const y=rnd(250,WORLD.h-60),x=rnd(80,WORLD.w-80),type=y<700?(r()>.5?'seaweedA':'seaweedB'):y<1200?(r()>.55?'rockA':'grassA'):(r()>.5?'rockA':'rockB');
