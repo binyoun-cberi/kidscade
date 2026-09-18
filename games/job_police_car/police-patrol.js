@@ -261,6 +261,70 @@ function buildingHit(x,y,r=15){if(Math.abs(x)>WORLD-r||Math.abs(y)>WORLD-r)retur
 function nearRoad(x,y){let best={x,y,d:1e9};for(const rx of roadXs){const d=Math.abs(x-rx);if(d<best.d)best={x:rx,y:clamp(y,-WORLD+70,WORLD-70),d}}for(const ry of roadYs){const d=Math.abs(y-ry);if(d<best.d)best={x:clamp(x,-WORLD+70,WORLD-70),y:ry,d}}return best}
 function nearestIntersection(x,y){let out={x:0,y:0,d:1e9};for(const rx of roadXs)for(const ry of roadYs){const d=Math.hypot(x-rx,y-ry);if(d<out.d)out={x:rx,y:ry,d}}return out}
 function roadPoint(origin,min=400,max=950){for(let i=0;i<80;i++){const vertical=Math.random()<.5,p=vertical?{x:roadXs[Math.floor(Math.random()*roadXs.length)]+(Math.random()<.5?-34:34),y:origin.y+(Math.random()*2-1)*max}:{x:origin.x+(Math.random()*2-1)*max,y:roadYs[Math.floor(Math.random()*roadYs.length)]+(Math.random()<.5?-34:34)};p.x=clamp(p.x,-WORLD+100,WORLD-100);p.y=clamp(p.y,-WORLD+100,WORLD-100);const d=Math.hypot(p.x-origin.x,p.y-origin.y);if(d>=min&&d<=max&&onRoad(p.x,p.y,10))return p}return{x:origin.x+500,y:origin.y}}
+function laneOffsetForAngle(a){
+ const horiz=Math.abs(Math.cos(a))>.7;
+ return horiz?(Math.cos(a)>=0?34:-34):(Math.sin(a)>=0?-34:34)
+}
+function trafficSpawnPoint(){
+ const horizontal=Math.random()<.5,dir=Math.random()<.5?-1:1;
+ if(horizontal){
+  const center=roadYs[Math.floor(Math.random()*roadYs.length)],a=dir>0?0:Math.PI;
+  return{x:rnd(-WORLD+120,WORLD-120),y:center+laneOffsetForAngle(a),a}
+ }
+ const center=roadXs[Math.floor(Math.random()*roadXs.length)],a=dir>0?Math.PI/2:-Math.PI/2;
+ return{x:center+laneOffsetForAngle(a),y:rnd(-WORLD+120,WORLD-120),a}
+}
+function trafficDesiredSpeed(car,desired){
+ let best=1e9;
+ for(const other of cars){
+  if(other===car||other.stopped)continue;
+  const dx=other.x-car.x,dy=other.y-car.y,front=dx*Math.cos(car.a)+dy*Math.sin(car.a),lat=Math.abs(-dx*Math.sin(car.a)+dy*Math.cos(car.a));
+  if(front>0&&front<best&&lat<42)best=front
+ }
+ if(best<48)return Math.min(desired,0);
+ if(best<90)return Math.min(desired,(best-45)*1.7);
+ if(best<145)return Math.min(desired,75+(best-90)*.75);
+ return desired
+}
+function snapTrafficToLane(car,inter=null){
+ const horiz=Math.abs(Math.cos(car.a))>.7;
+ if(horiz){
+  const ry=inter?inter.y:roadYs.reduce((a,b)=>Math.abs(b-car.y)<Math.abs(a-car.y)?b:a,roadYs[0]);
+  car.y=ry+laneOffsetForAngle(car.a)
+ }else{
+  const rx=inter?inter.x:roadXs.reduce((a,b)=>Math.abs(b-car.x)<Math.abs(a-car.x)?b:a,roadXs[0]);
+  car.x=rx+laneOffsetForAngle(car.a)
+ }
+}
+function spawnPedestrians(n=24){
+ pedestrians=[];
+ for(let i=0;i<n;i++){
+  const axis=Math.random()<.5?'h':'v',dir=Math.random()<.5?-1:1,side=Math.random()<.5?-1:1;
+  if(axis==='h'){
+   const road=roadYs[Math.floor(Math.random()*roadYs.length)],width=road===0?ROAD_MAIN:ROAD_SIDE;
+   pedestrians.push({axis,dir,side,x:rnd(-WORLD+90,WORLD-90),y:road+side*(width/2+48),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
+  }else{
+   const road=roadXs[Math.floor(Math.random()*roadXs.length)],width=road===0?ROAD_MAIN:ROAD_SIDE;
+   pedestrians.push({axis,dir,side,x:road+side*(width/2+48),y:rnd(-WORLD+90,WORLD-90),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
+  }
+ }
+ clearPedNodes3()
+}
+function updatePedestrians(dt){
+ for(const p of pedestrians){
+  const near=player&&dist(player,p)<105&&Math.abs(player.speed)>55;
+  if(near)p.wait=Math.max(p.wait,.7);
+  if(p.wait>0){p.wait-=dt;continue}
+  if(p.axis==='h')p.x+=p.dir*p.speed*dt;else p.y+=p.dir*p.speed*dt;
+  if(p.x<-WORLD+70||p.x>WORLD-70||p.y<-WORLD+70||p.y>WORLD-70)p.dir*=-1
+ }
+}
+function separateTrafficCars(){
+ for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){
+  const a=cars[i],b=cars[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=31;
+  if(d>0&&d<min){const nx=dx/d,ny=dy/d,over=(min-d)*.5;a.x-=nx*over;a.y-=ny*over;b.x+=nx*over;b.y+=ny*over;a.speed*=.82;b.speed*=.82}
+ }
+}
 class Car{
  constructor(x,y,a=0,sprite=A.cars[0]){this.x=x;this.y=y;this.a=a;this.speed=0;this.sprite=sprite;this.radius=17;this.health=100;this.target=145+Math.random()*28;this.turnCd=0;this.stopped=false;this.suspect=false;this.fleeing=false;this.yield=0}
  move(dt){const nx=this.x+Math.cos(this.a)*this.speed*dt,ny=this.y+Math.sin(this.a)*this.speed*dt;if(buildingHit(nx,ny,this.radius)){const impact=Math.abs(this.speed);this.speed*=-.12;if(this===player&&impact>70){this.health=clamp(this.health-(impact-60)*.04,0,100);sfx('combat.impact_heavy',{volume:.18,cooldownMs:150});sparkBurst3(clamp((impact-60)/170,.25,1))}}else{this.x=nx;this.y=ny}}
@@ -279,17 +343,40 @@ class Player extends Car{
  }
 }
 class TrafficCar extends Car{
- update(dt){if(this.stopped){this.speed=Math.max(0,this.speed-300*dt);return}this.turnCd=Math.max(0,this.turnCd-dt);let desired=this.suspect&&this.fleeing?185:this.target;
-  if(this.yield>0){this.yield-=dt;desired=65;const side=this.yieldSide||1,isH=Math.abs(Math.cos(this.a))>.7;if(isH)this.y=lerp(this.y,nearestIntersection(this.x,this.y).y+side*58,dt*1.7);else this.x=lerp(this.x,nearestIntersection(this.x,this.y).x+side*58,dt*1.7)}
-  if(this.speed<desired)this.speed+=105*dt;else this.speed-=135*dt;
+ update(dt){
+  if(this.stopped){this.speed=Math.max(0,this.speed-300*dt);return}
+  this.turnCd=Math.max(0,this.turnCd-dt);
+  let desired=this.suspect&&this.fleeing?(this.commandStop?0:(this.fleeSpeed||195)):this.target;
+  if(this.yield>0){
+   this.yield-=dt;desired=Math.min(desired,55);
+   const side=this.yieldSide||1,isH=Math.abs(Math.cos(this.a))>.7,inter=nearestIntersection(this.x,this.y);
+   if(isH)this.y=lerp(this.y,inter.y+side*((inter.y===0?ROAD_MAIN:ROAD_SIDE)/2+38),dt*1.1);
+   else this.x=lerp(this.x,inter.x+side*((inter.x===0?ROAD_MAIN:ROAD_SIDE)/2+38),dt*1.1)
+  }
+  if(!this.suspect)desired=trafficDesiredSpeed(this,desired);
+  if(this.speed<desired)this.speed=Math.min(desired,this.speed+105*dt);else this.speed=Math.max(desired,this.speed-150*dt);
   const inter=nearestIntersection(this.x,this.y);
-  if(inter.d<42&&this.turnCd<=0&&this.yield<=0){let turn=Math.random()<.58?0:(Math.random()<.5?-1:1);if(this.suspect&&this.fleeing)turn=[-1,0,1][Math.floor(Math.random()*3)];this.a+=turn*Math.PI/2;this.x=inter.x+Math.cos(this.a)*55;this.y=inter.y+Math.sin(this.a)*55;this.turnCd=1.4}
-  if(Math.abs(Math.cos(this.a))>.7){const ry=roadYs.reduce((a,b)=>Math.abs(b-this.y)<Math.abs(a-this.y)?b:a,roadYs[0]);this.y=lerp(this.y,ry+(Math.sin(this.a)>0?30:-30),dt*2)}
-  else{const rx=roadXs.reduce((a,b)=>Math.abs(b-this.x)<Math.abs(a-this.x)?b:a,roadXs[0]);this.x=lerp(this.x,rx+(Math.cos(this.a)>0?-30:30),dt*2)}
+  if(inter.d<38&&this.turnCd<=0&&this.yield<=0){
+   let turn=Math.random()<.64?0:(Math.random()<.5?-1:1);
+   if(this.suspect&&this.fleeing)turn=Math.random()<.48?0:(Math.random()<.5?-1:1);
+   this.a+=turn*Math.PI/2;
+   const horiz=Math.abs(Math.cos(this.a))>.7;
+   if(horiz){this.x=inter.x+Math.cos(this.a)*62;this.y=inter.y+laneOffsetForAngle(this.a)}
+   else{this.x=inter.x+laneOffsetForAngle(this.a);this.y=inter.y+Math.sin(this.a)*62}
+   this.turnCd=1.25
+  }
+  if(Math.abs(Math.cos(this.a))>.7){
+   const ry=roadYs.reduce((a,b)=>Math.abs(b-this.y)<Math.abs(a-this.y)?b:a,roadYs[0]),lane=ry+laneOffsetForAngle(this.a);this.y=lerp(this.y,lane,clamp(dt*2.4,0,1))
+  }else{
+   const rx=roadXs.reduce((a,b)=>Math.abs(b-this.x)<Math.abs(a-this.x)?b:a,roadXs[0]),lane=rx+laneOffsetForAngle(this.a);this.x=lerp(this.x,lane,clamp(dt*2.4,0,1))
+  }
   this.move(dt)
  }
 }
-function spawnTraffic(n=16){cars=[];for(let i=0;i<n;i++){const p=roadPoint({x:0,y:0},500,2100),horizontal=Math.random()<.5,a=horizontal?(Math.random()<.5?0:Math.PI):(Math.random()<.5?Math.PI/2:-Math.PI/2);cars.push(new TrafficCar(p.x,p.y,a,A.cars[i%A.cars.length]))}}
+function spawnTraffic(n=18){
+ cars=[];
+ for(let i=0;i<n;i++){const p=trafficSpawnPoint(),c=new TrafficCar(p.x,p.y,p.a,A.cars[i%A.cars.length]);c.target=118+Math.random()*34;cars.push(c)}
+}
 function updateYield(){if(!player.siren)return;for(const c of cars){if(c.suspect)continue;const d=dist(player,c);if(d<330){c.yield=Math.max(c.yield,1.2);c.yieldSide=((c.x+c.y)%2>0?1:-1)}}}
 function collisions(){for(const c of cars){const dx=c.x-player.x,dy=c.y-player.y,d=Math.hypot(dx,dy);if(d>0&&d<34){const nx=dx/d,ny=dy/d,over=34-d;player.x-=nx*over*.5;player.y-=ny*over*.5;c.x+=nx*over*.5;c.y+=ny*over*.5;const impact=Math.abs(player.speed-c.speed);player.speed*=.73;c.speed*=.73;if(impact>100){player.health=clamp(player.health-(impact-90)*.025,0,100);sfx('combat.impact_heavy',{volume:.16,cooldownMs:120});sparkBurst3(clamp((impact-90)/180,.25,1))}}}}
 function missionTarget(){if(!mission)return null;if(mission.type==='pursuit')return mission.suspect;if(mission.type==='accident'||mission.type==='obstacle')return mission.scene;if(mission.type==='traffic')return mission.points[Math.min(mission.index,2)];return mission.point}
