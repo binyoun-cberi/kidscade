@@ -24,6 +24,7 @@ jobs:
           for file in \
             kidscade-storage.js \
             audio-manager.js \
+            touch-interaction-guard.js \
             game-audio-hooks.js \
             profile-history.js \
             account-client.js \
@@ -80,6 +81,8 @@ jobs:
         run: npm run build
       - name: Run audio manager and integration tests
         run: node --test tests/audio-manager.test.cjs tests/audio-integration.test.cjs
+      - name: Run touch interaction guard tests
+        run: node --test tests/touch-interaction-guard.test.cjs
       - name: Run game cover and favicon tests
         run: node --test tests/game-cover-overrides.test.cjs
       - name: Run game card description tests
