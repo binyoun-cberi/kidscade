@@ -16,7 +16,7 @@ const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
 test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=7/);
+  assert.match(html,/tower-defense-loader\.js\?v=8/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
   assert.ok(html.length>1000);
@@ -28,7 +28,7 @@ test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=7/);
+  assert.match(loader,/tower-defense\.js\?v=8/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -82,13 +82,13 @@ test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
   assert.equal(game.title,'약수 타워 디펜스');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=7');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=8');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=7');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=8');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
@@ -108,7 +108,7 @@ test('v3 battlefield improves combat readability and feedback',()=>{
 });
 
 
-test('v7 uses a cohesive eco-city battlefield with dependency-free camera controls',()=>{
+test('v8 uses a cohesive eco-city battlefield with dependency-free camera controls and BGM',()=>{
   assert.match(runtime,/rebuildBoardDecor/);
   assert.match(runtime,/rebuildSkyWorld/);
   assert.match(runtime,/tree-default\.glb/);
@@ -130,6 +130,11 @@ test('v7 uses a cohesive eco-city battlefield with dependency-free camera contro
   assert.match(css,/body\.build-mode #buildHint/);
   assert.match(css,/#cameraHint/);
   assert.match(html,/id="cameraResetBtn"/);
+  assert.match(runtime,/sergequadrado-cool-hip-hop-loop-275527\.mp3/);
+  assert.match(runtime,/function syncBgm/);
+  assert.match(runtime,/bgm\.loop=true/);
+  assert.match(runtime,/bgm\.volume=\.14/);
+  assert.match(runtime,/visibilitychange/);
 });
 
 test('required CC-BY credit stays visible',()=>{
