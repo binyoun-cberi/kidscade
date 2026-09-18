@@ -67,7 +67,7 @@ test('Orders are revenue-driven instead of score-driven', () => {
   assert.match(js, /function makeOrder/);
   assert.match(js, /function spawnOrder/);
   assert.match(js, /function updateOrders/);
-  assert.match(js, /order\.patience/);
+  assert.match(js, /o\.patience/);
   assert.match(js, /money\(earned\)/);
 });
 
