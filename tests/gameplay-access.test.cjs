@@ -17,55 +17,69 @@ function loadFunctions(names, context) {
   return context;
 }
 function raftContext() {
-  const ctx = { audio: {good: noop, collect: noop}, toast: noop, renderUI: noop, saveGame: noop,
-    checkMissions: noop, lessonOnce: noop, countStructures: () => 1,
+  const ctx = { audio: {good: noop, collect: noop, place: noop}, toast: noop, renderUI: noop, saveGame: noop,
+    checkMissions: noop, lessonOnce: noop, updateFacilityVisual: noop, maxStoredWater: () => 6,
+    countStructures: () => 1, closePanels: () => ctx.activePanel = null,
     openPanel: name => ctx.activePanel = name, selectTool: id => ctx.selectedTool = id };
   loadFunctions(['freshState', 'craftAvailable', 'executeCraft', 'updateCooking', 'eatMeal', 'drinkWater'], ctx);
   ctx.state = ctx.freshState();
-  ctx.craftRecipes = [{id:'cook', cost:{fish:1,wood:1},needs:'grill'}];
+  ctx.craftRecipes = [];
   ctx.canAfford = cost => Object.entries(cost).every(([k,v]) => ctx.state.inventory[k] >= v);
   ctx.payCost = cost => Object.entries(cost).forEach(([k,v]) => ctx.state.inventory[k] -= v);
   ctx.craftStatus = () => 'unavailable';
   ctx.shark = {phase:'idle'};
   return ctx;
 }
-test('caught fish can be cooked in an open crafting panel, eaten, and saved once', () => {
+test('caught fish is cooked and collected by interacting with a grill', () => {
   const c = raftContext(); let saved = null;
   c.saveGame = () => saved = structuredClone(c.state);
   c.fishing = {species:{name:'test fish',quantity:2}};
   c.finishFishing = () => c.fishing.phase = 'idle';
-  loadFunctions(['landFish'], c);
+  loadFunctions(['landFish','interactFacility','updateCooking'], c);
   c.landFish(); assert.equal(c.state.inventory.fish,2);
   c.state.inventory.wood = 2;
-  c.executeCraft('cook'); c.executeCraft('cook');
-  assert.equal(c.state.inventory.fish,1); // repeated click cannot pay twice
+  const grill={id:1,type:'grill',x:0,z:0,level:0,cookRemaining:0,cookReady:false};
+  c.state.structures=[grill];
+  c.interactFacility(grill);
+  assert.equal(c.state.inventory.fish,1);
   assert.equal(c.state.inventory.wood,1);
-  Object.assign(c, {running:true,activePanel:'craft',uiTimer:0,lastFrame:0,requestAnimationFrame:noop,
-    ui:{helpScreen:{classList:{contains:()=>true}},collapseScreen:{classList:{contains:()=>true}}},
-    updateEnvironment:noop,updateStructureAnimation:noop,updateCamera:noop,updateAimHint:noop,
-    renderer:{render:noop},scene:{},camera:{},updateGame:()=>assert.fail('world advanced in panel')});
-  loadFunctions(['animate'],c);
-  for(let frame=1;frame<=170;frame++) c.animate(frame*50);
+  assert.equal(grill.cookRemaining,8);
+  assert.equal(c.state.inventory.cookedFish,0);
+  c.updateCooking(8.1);
+  assert.equal(grill.cookReady,true);
+  assert.equal(c.state.inventory.cookedFish,0);
+  c.interactFacility(grill);
+  assert.equal(grill.cookReady,false);
   assert.equal(c.state.inventory.cookedFish,1);
-  assert.equal(c.state.hunger,88); // no hunger/storm progression while browsing
   c.state.hunger=40; c.eatMeal();
   assert.equal(c.state.hunger,78); assert.equal(c.state.counts.ateMeal,1);
   assert.equal(saved.inventory.cookedFish,0); assert.equal(saved.counts.ateMeal,1);
 });
-test('food action guides players to rod, grill, and recipe without consuming raw fish', () => {
+test('food action guides players to rod, grill, and direct facility interaction without consuming raw fish', () => {
   const c=raftContext(); c.eatMeal(); assert.equal(c.selectedTool,'rod');
   c.state.inventory.fish=1; c.countStructures=()=>0; c.eatMeal();
   assert.equal(c.activePanel,'build'); assert.equal(c.selectedBuild,'grill');
-  c.countStructures=()=>1; c.eatMeal(); assert.equal(c.activePanel,'craft');
+  c.countStructures=()=>1; c.state.structures=[{id:1,type:'grill',x:0,z:0,level:0,cookRemaining:0,cookReady:false}];
+  c.eatMeal(); assert.equal(c.activePanel,null);
   assert.equal(c.state.inventory.fish,1);
 });
-test('cooking pauses under help and collapse overlays', () => {
-  const c=raftContext(); c.state.production.cook=8;
+test('facility cooking pauses under help and collapse overlays', () => {
+  const c=raftContext(); const grill={id:1,type:'grill',x:0,z:0,level:0,cookRemaining:8,cookReady:false}; c.state.structures=[grill];
   Object.assign(c,{running:true,activePanel:'craft',lastFrame:0,requestAnimationFrame:noop,
     ui:{helpScreen:{classList:{contains:()=>false}},collapseScreen:{classList:{contains:()=>true}}},
     updateEnvironment:noop,updateStructureAnimation:noop,updateCamera:noop,updateAimHint:noop,
     renderer:{render:noop},scene:{},camera:{}});
-  loadFunctions(['animate'],c); c.animate(50); assert.equal(c.state.production.cook,8);
+  loadFunctions(['animate'],c); c.animate(50); assert.equal(grill.cookRemaining,8);
+});
+test('water must be collected from a purifier instead of appearing in inventory automatically', () => {
+  const c=raftContext();
+  loadFunctions(['interactFacility'],c);
+  const purifier={id:2,type:'purifier',x:0,z:0,level:0,storedWater:1,waterTimer:27};
+  c.state.structures=[purifier]; c.state.inventory.water=0; c.state.counts.waterCollected=0;
+  c.interactFacility(purifier);
+  assert.equal(purifier.storedWater,0);
+  assert.equal(c.state.inventory.water,1);
+  assert.equal(c.state.counts.waterCollected,1);
 });
 test('duel entry works in launcher iframe and is absent only inside active duel', () => {
   const code=fs.readFileSync(path.join(root,'patience-tower-duel-entry.js'),'utf8');
@@ -110,6 +124,11 @@ test('Blockraft connects the existing CC0 3D library without making gameplay dep
   assert.match(raft,/type="importmap"/);
   assert.match(raft,/function loadBlockraftAsset/);
   assert.match(raft,/function enhanceStructureVisual/);
+  assert.match(raft,/function interactiveFacilityNearPlayer/);
+  assert.match(raft,/function interactFacility/);
+  assert.match(raft,/function facilityHint/);
+  assert.doesNotMatch(raft,/id: 'cook', name: '생선 굽기'/);
+
   assert.match(raft,/GLTF loader unavailable; using procedural fallbacks/);
   assert.match(raft,/floor_wood_1x1\.glb/);
   assert.match(raft,/red-wood-wall\.glb/);
