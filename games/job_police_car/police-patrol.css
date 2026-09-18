@@ -94,3 +94,25 @@ body.three-ready #game{opacity:0;pointer-events:none}
 #ui{z-index:5}
 .primary:disabled{opacity:.65;cursor:wait;box-shadow:none}
 @media(hover:none),(pointer:coarse){body.three-ready #game3d{height:100dvh}}
+
+
+/* mobile driving polish v6 */
+@media (hover:none) and (orientation:portrait),(pointer:coarse) and (orientation:portrait){
+  #missionCard{top:48px;left:7px;right:7px;width:auto;min-height:0;padding:7px 9px 8px;border-radius:12px;text-align:left}
+  #missionCard small{font-size:7px}
+  #missionCard h2{font-size:12.5px;line-height:1.1;margin:1px 0 2px}
+  #missionCard p{font-size:7.5px;line-height:1.2;max-width:calc(100% - 103px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #missionMeta{font-size:7.5px;margin-top:3px}
+  #carCard{top:53px;right:10px;width:96px;padding:6px 7px;border-radius:11px}
+  #carCard div{font-size:7px;margin:1px 0}
+  #carCard b{font-size:7.5px}
+  #minimap{top:116px;left:8px;width:82px;height:82px;border-width:2px;border-radius:12px}
+  #radio{top:116px;right:8px;max-width:calc(100vw - 106px);padding:6px 8px;font-size:8px}
+  #actionBtn{padding:8px 13px;font-size:10px;border-width:1.5px;box-shadow:0 4px 0 #9d7c24}
+  #joy{width:98px;height:98px}
+  #knob{left:30px;top:30px;width:38px;height:38px}
+  #boostBtn{width:68px;height:68px}
+  #sirenBtn{width:60px;height:60px}
+  #brakeBtn{width:61px;height:61px}
+  #reverseBtn{width:57px;height:57px}
+}
