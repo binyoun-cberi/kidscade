@@ -42,6 +42,15 @@
       "description": "고구려·백제·신라의 세력과 장수를 선택하고 유닛·건물·전술 카드로 덱을 구성해 전장을 지휘하는 실시간 전략 카드 배틀!"
     },
     {
+      "id": "high_quarantine_17",
+      "title": "격리구역 17",
+      "href": "games/high_quarantine_17/격리구역 17.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "☣️",
+      "description": "매주 바뀌는 검역 규칙을 읽고 시민의 신분·체온·UV 반응·혈액검사를 확인해 통과·재검사·격리를 판정하는 관찰·논리 추론 게임!"
+    },
+    {
       "id": "job_nail_artist",
       "title": "네일 아티스트 타이쿤",
       "href": "games/job_nail_artist/네일 아티스트 타이쿤.html",
