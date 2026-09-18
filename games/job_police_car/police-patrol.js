@@ -306,10 +306,10 @@ function spawnPedestrians(n=24){
   const axis=Math.random()<.5?'h':'v',dir=Math.random()<.5?-1:1,side=Math.random()<.5?-1:1;
   if(axis==='h'){
    const road=roadYs[Math.floor(Math.random()*roadYs.length)],width=road===0?ROAD_MAIN:ROAD_SIDE;
-   pedestrians.push({axis,dir,side,x:rnd(-WORLD+90,WORLD-90),y:road+side*(width/2+48),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
+   pedestrians.push({axis,dir,side,x:rnd(-WORLD+90,WORLD-90),y:road+side*(width/2+18),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
   }else{
    const road=roadXs[Math.floor(Math.random()*roadXs.length)],width=road===0?ROAD_MAIN:ROAD_SIDE;
-   pedestrians.push({axis,dir,side,x:road+side*(width/2+48),y:rnd(-WORLD+90,WORLD-90),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
+   pedestrians.push({axis,dir,side,x:road+side*(width/2+18),y:rnd(-WORLD+90,WORLD-90),speed:rnd(20,34),variant:i%4,phase:rnd(0,TAU),wait:0})
   }
  }
  clearPedNodes3()
@@ -354,8 +354,8 @@ class TrafficCar extends Car{
   if(this.yield>0){
    this.yield-=dt;desired=Math.min(desired,55);
    const side=this.yieldSide||1,isH=Math.abs(Math.cos(this.a))>.7,inter=nearestIntersection(this.x,this.y);
-   if(isH)this.y=lerp(this.y,inter.y+side*((inter.y===0?ROAD_MAIN:ROAD_SIDE)/2+38),dt*1.1);
-   else this.x=lerp(this.x,inter.x+side*((inter.x===0?ROAD_MAIN:ROAD_SIDE)/2+38),dt*1.1)
+   if(isH)this.y=lerp(this.y,inter.y+side*70,dt*1.1);
+   else this.x=lerp(this.x,inter.x+side*70,dt*1.1)
   }
   if(!this.suspect)desired=trafficDesiredSpeed(this,desired);
   if(this.speed<desired)this.speed=Math.min(desired,this.speed+105*dt);else this.speed=Math.max(desired,this.speed-150*dt);
