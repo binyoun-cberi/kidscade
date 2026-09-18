@@ -3,6 +3,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
+const TOUCH_GUARD_SRC = '/touch-interaction-guard.js?v=20260919-1';
 const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
 const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-2';
 const AUDIO_EXTRA_HOOKS_SRC = '/game-audio-hooks-extra.js?v=20260917-1';
@@ -99,6 +100,7 @@ function injectAudioRuntimeIntoCatalogGames() {
     targets.get(relativeHtml).push(game);
   }
 
+  let touchGuardInjected = 0;
   let managerInjected = 0;
   let hooksInjected = 0;
   let extraHooksInjected = 0;
@@ -107,6 +109,13 @@ function injectAudioRuntimeIntoCatalogGames() {
     if (!fs.existsSync(file)) throw new Error(`Catalog audio target does not exist: ${relativeHtml}`);
     let html = fs.readFileSync(file, 'utf8');
     let changed = false;
+
+    if (!/touch-interaction-guard\.js(?:\?|\")/.test(html)) {
+      const tag = `<script src="${TOUCH_GUARD_SRC}"></script>`;
+      html = injectDocumentStartScript(html, tag, relativeHtml);
+      touchGuardInjected += 1;
+      changed = true;
+    }
 
     if (!/audio-manager\.js(?:\?|\")/.test(html)) {
       const tag = `<script src="${AUDIO_MANAGER_SRC}"></script>`;
@@ -132,7 +141,7 @@ function injectAudioRuntimeIntoCatalogGames() {
     if (changed) fs.writeFileSync(file, html, 'utf8');
   }
 
-  return { games: targets.size, managerInjected, hooksInjected, extraHooksInjected };
+  return { games: targets.size, touchGuardInjected, managerInjected, hooksInjected, extraHooksInjected };
 }
 
 function fixDogRunnerGateOrientation() {
@@ -212,4 +221,5 @@ console.log(`[game-integrations] Dog runner gate ${dogRunnerGateChanged ? 'rotat
 console.log(`[game-integrations] Dog runner polish ${dogRunnerFxChanged ? 'injected' : 'already present'}.`);
 console.log(`[game-integrations] Dog runner href ${dogRunnerHrefChanged ? 'bumped to v5' : 'already v5'}.`);
 console.log(`[game-integrations] Space sandwich href ${spaceSandwichHrefChanged ? 'bumped to v4' : 'already v4'}.`);
+console.log(`[game-integrations] Touch long-press guard checked ${audioRuntime.games} catalog games; injected ${audioRuntime.touchGuardInjected}.`);
 console.log(`[game-integrations] Audio manager checked ${audioRuntime.games} catalog games; injected ${audioRuntime.managerInjected}, enhanced hooks ${audioRuntime.hooksInjected}, extra hooks ${audioRuntime.extraHooksInjected}.`);
