@@ -445,6 +445,12 @@ function drawWorld(){
  ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.setLineDash([22,20]);for(const x of roadXs){ctx.beginPath();ctx.moveTo(x-55,-WORLD);ctx.lineTo(x-55,WORLD);ctx.stroke();ctx.beginPath();ctx.moveTo(x+55,-WORLD);ctx.lineTo(x+55,WORLD);ctx.stroke()}for(const y of roadYs){ctx.beginPath();ctx.moveTo(-WORLD,y-55);ctx.lineTo(WORLD,y-55);ctx.stroke();ctx.beginPath();ctx.moveTo(-WORLD,y+55);ctx.lineTo(WORLD,y+55);ctx.stroke()}ctx.setLineDash([]);
  for(const d of decor)drawSprite(d.small?A.treeSmall:A.tree,d.x,d.y,d.small?42:58,d.small?42:58,-Math.PI/2)
 }
+function drawPedestrians2D(){
+ for(const p of pedestrians){
+  ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle=['#4b75a8','#b65e65','#4e8f68','#a7864f'][p.variant%4];ctx.beginPath();ctx.arc(0,0,7,0,TAU);ctx.fill();
+  ctx.fillStyle='#d7aa86';ctx.beginPath();ctx.arc(0,-8,4,0,TAU);ctx.fill();ctx.restore()
+ }
+}
 function drawCar(c,police=false){const ok=drawSprite(c.sprite,c.x,c.y,police?46:42,police?82:76,c.a);if(!ok){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.a);ctx.fillStyle=police?'#3d8deb':'#ddd';ctx.fillRect(-36,-17,72,34);ctx.restore()}if(police){drawSprite(A.lights,c.x,c.y,18,34,c.a);if(player.siren){ctx.save();ctx.globalAlpha=.25+.15*Math.sin(shiftTime*12);ctx.fillStyle=Math.sin(shiftTime*12)>0?'#ff3348':'#3387ff';ctx.beginPath();ctx.arc(c.x,c.y,46,0,TAU);ctx.fill();ctx.restore()}}}
 function drawMission(){
  if(!mission)return;const t=missionTarget();if(!t)return;const col=mission.type==='pursuit'?'#ff586a':mission.type==='traffic'?'#ffd85e':'#53aaff';
@@ -464,7 +470,7 @@ function update(dt){
  ui.speed.textContent=Math.round(Math.abs(player.speed)*.44);ui.health.textContent=Math.round(player.health)+'%';ui.health.style.color=player.health<35?'#ff6879':'#eef5ff';ui.solved.textContent=solved;ui.score.textContent=score.toFixed(1);
  const remain=Math.max(0,SHIFT-shiftTime),m=Math.floor(remain/60),s=Math.floor(remain%60);ui.shift.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')
 }
-function render(){const t=performance.now()/1000;if(threeReady3){render3D(t)}else{ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore()}if(player)drawMinimap()}
+function render(){const t=performance.now()/1000;if(threeReady3){render3D(t)}else{ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawPedestrians2D();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore()}if(player)drawMinimap()}
 function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;update(dt);render();requestAnimationFrame(loop)}
 function resetInputs(){for(const k of Object.keys(keys))keys[k]=false;touch.steer=0;touch.brake=false;touch.reverse=false;touch.boost=false;if(typeof knob!=='undefined'&&knob)knob.style.transform='translate(0,0)'}
 function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=.8;missionKey3='';missionIssued=0;lastMissionType='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3();clearPedNodes3()}player=new Player();spawnTraffic();spawnPedestrians();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
