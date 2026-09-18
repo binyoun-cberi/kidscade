@@ -15,12 +15,20 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\.js\?v=4/);
-  assert.match(html,/police-patrol\.css\?v=4/);
+  assert.match(html,/police-patrol-loader\.js\?v=5/);
+  assert.match(html,/police-patrol\.css\?v=5/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\.js\?v=4/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=4/);
+  assert.match(loader,/police-patrol\.js\?v=5/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=5/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
+});
+
+
+test('Police Patrol startup does not touch 3D lexical state before initialization',()=>{
+  assert.match(js,/window\.__police3dResize\?\.\(\)/);
+  assert.match(js,/window\.__police3dResize=resize3D/);
+  assert.doesNotMatch(js,/ctx\.setTransform\([^;]+;resize3D\(\)/);
+  assert.match(js,/function startGame\(\)\{driveAudio\.init\(\)/);
 });
 
 test('Police Patrol browser runtime parses',()=>{
@@ -96,10 +104,10 @@ test('Police Patrol only uses valid shared static audio keys',()=>{
 test('catalog and Cloudflare build point to Police Patrol v4',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=4');
+  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=5');
   const distCatalog=JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const builtGame=distCatalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=4');
+  assert.equal(builtGame.href,'games/job_police_car/경찰차 시뮬레이터.html?v=5');
   assert.ok(fs.existsSync(path.join(root,'dist','games','job_police_car','police-patrol-loader.js')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','vehicles','kenney-car-kit','police.glb')));
 });
