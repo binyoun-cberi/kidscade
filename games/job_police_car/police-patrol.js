@@ -186,6 +186,26 @@ function syncCars3D(time){
    if(c===player&&g.userData.siren){const s=g.userData.siren,on=Boolean(player.siren),phase=Math.sin(time*12)>0;s.red.material.emissive=new T3.Color(0xff263d);s.blue.material.emissive=new T3.Color(0x225fff);s.red.material.emissiveIntensity=on&&phase?2.8:.08;s.blue.material.emissiveIntensity=on&&!phase?2.8:.08;s.rl.intensity=on&&phase?2.5:0;s.bl.intensity=on&&!phase?2.5:0;s.redGlow.material.opacity=on&&phase?.22:0;s.blueGlow.material.opacity=on&&!phase?.22:0}
  }
 }
+function clearPedNodes3(){for(const g of pedNodes3.values())people3?.remove(g);pedNodes3.clear()}
+function makePedNode3(p){
+ const keys=['pedA','pedB','pedC','pedD'],key=keys[p.variant%keys.length],group=new T3.Group(),model=clone3(key,.72);
+ if(model){model.position.y=.02;group.add(model)}else{
+   const body=box3(.18,.52,.16,[0x4b75a8,0xb65e65,0x4e8f68,0xa7864f][p.variant%4],.82);body.position.y=.37;group.add(body);
+   const head=new T3.Mesh(new T3.SphereGeometry(.11,10,8),new T3.MeshStandardMaterial({color:0xd3a37f,roughness:.8}));head.position.y=.76;group.add(head)
+ }
+ people3.add(group);pedNodes3.set(p,group);return group
+}
+function syncPedestrians3D(time){
+ if(!threeReady3||!people3)return;
+ const live=new Set(pedestrians);
+ for(const [p,g] of [...pedNodes3])if(!live.has(p)){people3.remove(g);pedNodes3.delete(p)}
+ for(const p of pedestrians){
+  let g=pedNodes3.get(p);if(!g)g=makePedNode3(p);
+  g.position.set(p.x*SCALE3,.07+Math.sin(time*7+p.phase)*.018,p.y*SCALE3);
+  const a=p.axis==='h'?(p.dir>0?0:Math.PI):(p.dir>0?Math.PI/2:-Math.PI/2);
+  g.rotation.y=Math.PI/2-a;g.rotation.z=Math.sin(time*7+p.phase)*.012
+ }
+}
 function markerColor3(){return mission?.type==='pursuit'?0xff5364:mission?.type==='traffic'?0xffd85e:0x50a9ff}
 function bangSprite3(color=0xffd75e){const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');x.fillStyle='#152232';x.beginPath();x.arc(64,64,45,0,TAU);x.fill();x.strokeStyle='#ffffff';x.lineWidth=7;x.stroke();x.fillStyle='#ffd75e';x.font='900 74px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('!',64,67);const tex=new T3.CanvasTexture(c);tex.colorSpace=T3.SRGBColorSpace;const s=new T3.Sprite(new T3.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(.72,.72,.72);s.renderOrder=20;return s}
 function addProp3(key,x,y,target=1,rot=0,tint=null){const o=clone3(key,target,tint);if(!o)return null;o.position.set(x*SCALE3,.06,y*SCALE3);o.rotation.y=rot;mission3.add(o);return o}
@@ -211,12 +231,12 @@ function sparkBurst3(power=.6){
 }
 function updateFX3(dt){for(let i=spark3.length-1;i>=0;i--){const p=spark3[i];p.life-=dt;p.v.y-=6*dt;p.m.position.addScaledVector(p.v,dt);p.m.scale.multiplyScalar(.965);if(p.life<=0){scene3.remove(p.m);spark3.splice(i,1)}}cameraShake3=Math.max(0,cameraShake3-dt*2.2)}
 function render3D(time){
- if(!threeReady3||!renderer3||!cam3)return;const now=performance.now(),dt=Math.min(.05,(now-lastRender3)/1000||.016);lastRender3=now;syncCars3D(time);syncMission3D(time);updateFX3(dt);
+ if(!threeReady3||!renderer3||!cam3)return;const now=performance.now(),dt=Math.min(.05,(now-lastRender3)/1000||.016);lastRender3=now;syncCars3D(time);syncPedestrians3D(time);syncMission3D(time);updateFX3(dt);
  if(player){
    const pos=v3(player.x,player.y,.26),fwd=new T3.Vector3(Math.cos(player.a),0,Math.sin(player.a)),portrait=coarse&&innerHeight>innerWidth,pull=Math.min(2.0,Math.abs(player.speed)*.0055);
    const distBack=(portrait?7.0:7.6)+pull,height=portrait?5.15:4.55,target=pos.clone().addScaledVector(fwd,portrait?3.15:3.5);target.y=.48;let desired=pos.clone().addScaledVector(fwd,-distBack);desired.y=height;
    if(cameraShake3>0){const s=cameraShake3*.22;desired.x+=(Math.random()-.5)*s;desired.y+=(Math.random()-.5)*s;desired.z+=(Math.random()-.5)*s}
-   cam3.position.lerp(desired,1-Math.pow(.0008,dt));cam3.lookAt(target);
+   cam3.position.lerp(desired,1-Math.pow(.0008,dt));cam3.lookAt(target);updateCameraOcclusion3(target);
    if(player.health<lastHealth3-.3)sparkBurst3(clamp((lastHealth3-player.health)/10,.25,1));lastHealth3=player.health;
  }
  renderer3.render(scene3,cam3)
