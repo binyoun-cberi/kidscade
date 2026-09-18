@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>약수 타워 디펜스 3D</title>
-<link rel="stylesheet" href="tower-defense.css?v=4">
+<link rel="stylesheet" href="tower-defense.css?v=5">
 </head>
 <body>
 <canvas id="world" aria-label="약수 타워 디펜스 3D 전장"></canvas>
@@ -18,7 +18,7 @@
     <span class="desktopOnly"><small>처치</small><b id="killValue">0</b></span>
   </div>
   <div class="topActions">
-    <button id="soundBtn" class="iconBtn" type="button" aria-label="소리">🔊</button>
+    <button id="cameraResetBtn" class="iconBtn" type="button" aria-label="카메라 초기화">↻</button>\n    <button id="soundBtn" class="iconBtn" type="button" aria-label="소리">🔊</button>
     <button id="pauseBtn" class="iconBtn" type="button" aria-label="일시정지">⏸</button>
     <button id="speedBtn" class="speedBtn" type="button">1배속</button>
   </div>
@@ -30,7 +30,7 @@
   <button id="startWaveBtn" type="button">▶ WAVE 1 시작</button>
 </section>
 
-<div id="buildHint">① 포탑 선택 → ② 빛나는 설치 칸 터치 → ③ 웨이브 시작</div>
+<div id="buildHint">① 포탑 선택 → ② 빛나는 설치 칸 터치 → ③ 웨이브 시작</div>\n<div id="cameraHint">드래그: 시점 회전 · 휠/두 손가락: 확대 · ↻ 기본 시점</div>
 <div id="toast"></div>
 <div id="calcFeed"></div>
 
@@ -51,7 +51,7 @@
 </nav>
 
 <div id="assetStatus">3D 엔진 준비 중…</div>
-<div id="credit">Turrets: Zsky · CC BY / Monsters: Quaternius · CC0</div>
+<div id="credit">Turrets: Zsky · CC BY / Monsters: Quaternius · CC0 / Environment: Kenney · CC0</div>
 
 <section id="startScreen" class="overlay show">
   <div class="modalCard">
@@ -77,6 +77,6 @@
 </section>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="tower-defense-loader.js?v=4"></script>
+<script type="module" src="tower-defense-loader.js?v=5"></script>
 </body>
 </html>
