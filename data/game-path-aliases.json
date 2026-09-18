@@ -71,5 +71,7 @@
   "펭귄_얼음_톡톡.html": "games/toddler_penguin_ice_pop/펭귄 얼음 톡톡!.html",
   "색깔_겹겹_컬러코드.html": "games/toddler_color_stack/색깔 겹겹!.html",
   "셋_친구_찾기.html": "games/toddler_three_friends_set/셋 친구 찾기!.html",
-  "수 막대 계산실.html": "games/math_base10_blocks/우리 동네 마트 계산대.html"
+  "수 막대 계산실.html": "games/math_base10_blocks/우리 동네 마트 계산대.html",
+  "약수 타워 디펜스.html": "games/math_tower_defense/약수 타워 디펜스.html",
+  "games/math_tower_defense/index.html": "games/math_tower_defense/약수 타워 디펜스.html"
 }
