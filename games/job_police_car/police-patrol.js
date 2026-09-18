@@ -95,7 +95,7 @@ function updateMission(dt){
  else if(mission.type==='traffic'){const p=mission.points[mission.index],dd=dist(player,p),parked=dd<82&&Math.abs(player.speed)<8;if(dd<90)setAction(parked?'안전콘 설치 '+(mission.index+1)+'/3':'이 지점에 정차하세요',parked?()=>{mission.index++;sfx('collect.coin_drop',{volume:.15,cooldownMs:100});if(mission.index>=3)finish(1.2,'교차로 안전 확보 완료')}:null);else setAction()}
  else if(mission.type==='obstacle'){const parked=d<105&&Math.abs(player.speed)<8;if(d<120)setAction(parked?'장애물 치우기':'차량을 정차하세요',parked?()=>finish(1,'도로 장애물 제거 완료'):null);else setAction()}
 }
-function toggleSiren(){if(state!=='playing')return;player.siren=!player.siren;ui.siren.textContent=player.siren?'ON':'OFF';ui.siren.style.color=player.siren?'#6bb6ff':'#eef5ff';sfx(player.siren?'ui.click':'ui.back',{volume:.14,cooldownMs:100})}
+function toggleSiren(){if(state!=='playing')return;player.siren=!player.siren;ui.siren.textContent=player.siren?'ON':'OFF';ui.siren.style.color=player.siren?'#6bb6ff':'#eef5ff';sfx(player.siren?'collect.coin_pickup':'collect.coin_drop',{volume:.14,cooldownMs:100})}
 function recover(){if(!player||state!=='playing'||player.cooldown>0)return;const p=nearRoad(player.x,player.y);player.x=p.x;player.y=p.y;player.speed=0;player.cooldown=4;radio('가까운 도로로 복귀했습니다.')}
 function drawSprite(src,x,y,w,h,a=0,alpha=1){const im=img(src);if(!im)return false;ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore();return true}
 let grassPattern=null,roadPattern=null;
