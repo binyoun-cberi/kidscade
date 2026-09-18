@@ -19,11 +19,12 @@ const img=s=>images.get(s)?.ok?images.get(s).im:null;
 const TAU=Math.PI*2,WORLD=2300,ROAD_MAIN=280,ROAD_SIDE=190,GRID=720,SHIFT=360;
 const roadXs=[-1440,-720,0,720,1440],roadYs=[-1440,-720,0,720,1440],roads=[],blocks=[],decor=[];
 let player=null,cars=[],mission=null,state='menu',last=performance.now(),score=0,solved=0,shiftTime=0,missionDelay=1.2,radioTimer=0,raf=false;
-const camera={x:0,y:0,zoom:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
+const camera={x:0,y:0,zoom:1},view={w:innerWidth,h:innerHeight,dpr:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
 const coarse=matchMedia('(hover:none),(pointer:coarse)').matches;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-function resize(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
-addEventListener('resize',resize);resize();
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;canvas.width=Math.round(view.w*dpr);canvas.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+function framingZoom(){const aspect=view.w/Math.max(1,view.h);if(coarse&&aspect<.72)return .70;if(aspect<1)return .82;return 1}
+addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
 function sfx(k,o={}){try{window.KidscadeAudio?.play?.(k,o)}catch(_){}}
 const driveAudio={
  ctx:null,master:null,engine:null,engineGain:null,siren:null,sirenGain:null,
@@ -56,7 +57,7 @@ class Car{
 }
 class Player extends Car{
  constructor(){super(32,360,-Math.PI/2,A.police);this.siren=false;this.cooldown=0}
- update(dt){this.cooldown=Math.max(0,this.cooldown-dt);let throttle=0,brake=false,rev=false;if(coarse){throttle=touch.boost?1:.38;brake=touch.brake;rev=touch.reverse;if(brake||rev)throttle=0}else{throttle=keys.w?1:0;brake=keys.s;rev=keys.r}
+ update(dt){this.cooldown=Math.max(0,this.cooldown-dt);let throttle=0,brake=false,rev=false;if(coarse){throttle=touch.boost?1:0;brake=touch.brake;rev=touch.reverse;if(brake||rev)throttle=0}else{throttle=keys.w?1:0;brake=keys.s;rev=keys.r}
   if(throttle){if(this.speed<0)this.speed=Math.min(0,this.speed+380*dt);else this.speed+=285*throttle*dt}
   if(brake)this.speed=this.speed>0?Math.max(0,this.speed-470*dt):Math.min(0,this.speed+470*dt);
   if(rev&&!brake)this.speed=this.speed>0?Math.max(0,this.speed-480*dt):this.speed-200*dt;
@@ -128,24 +129,26 @@ function drawMinimap(){const w=mm.width,h=mm.height,range=1550,sc=w*.46/range;mc
 function update(dt){
  if(state!=='playing')return;shiftTime+=dt;if(shiftTime>=SHIFT){endGame();return}
  player.update(dt);for(const c of cars)c.update(dt);updateYield();collisions();updateMission(dt);driveAudio.update(player.speed,player.siren,shiftTime);
- camera.x=lerp(camera.x,player.x,1-Math.pow(.002,dt));camera.y=lerp(camera.y,player.y,1-Math.pow(.002,dt));camera.zoom=lerp(camera.zoom,clamp(1.03-Math.abs(player.speed)/1350,.84,1.02),1-Math.pow(.03,dt));
+ camera.x=lerp(camera.x,player.x,1-Math.pow(.002,dt));camera.y=lerp(camera.y,player.y,1-Math.pow(.002,dt));const frame=framingZoom(),targetZoom=frame*clamp(1.03-Math.abs(player.speed)/1350,.84,1.02);camera.zoom=lerp(camera.zoom,targetZoom,1-Math.pow(.03,dt));
  if(radioTimer>0&&(radioTimer-=dt)<=0)ui.radio.classList.remove('show');
  if(player.health<=0){const p=nearRoad(player.x,player.y);player.x=p.x;player.y=p.y;player.speed=0;player.health=65;radio('차량이 견인되어 65% 상태로 복귀했습니다.','#ffb074')}
  ui.speed.textContent=Math.round(Math.abs(player.speed)*.44);ui.health.textContent=Math.round(player.health)+'%';ui.health.style.color=player.health<35?'#ff6879':'#eef5ff';ui.solved.textContent=solved;ui.score.textContent=score.toFixed(1);
  const remain=Math.max(0,SHIFT-shiftTime),m=Math.floor(remain/60),s=Math.floor(remain%60);ui.shift.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')
 }
-function render(){ctx.clearRect(0,0,innerWidth,innerHeight);ctx.save();ctx.translate(innerWidth/2,innerHeight/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore();if(player)drawMinimap()}
+function render(){ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore();if(player)drawMinimap()}
 function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;update(dt);render();requestAnimationFrame(loop)}
-function startGame(){driveAudio.init();score=0;solved=0;shiftTime=0;mission=null;missionDelay=1.1;buildWorld();player=new Player();spawnTraffic();camera.x=player.x;camera.y=player.y;camera.zoom=1;state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
+function resetInputs(){for(const k of Object.keys(keys))keys[k]=false;touch.steer=0;touch.brake=false;touch.reverse=false;touch.boost=false;if(typeof knob!=='undefined'&&knob)knob.style.transform='translate(0,0)'}
+function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=1.1;buildWorld();player=new Player();spawnTraffic();camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
 function endGame(){state='end';player.siren=false;driveAudio.update(0,false,shiftTime);setAction();setProgress();ui.endTitle.textContent=solved>=7?'베테랑 순찰팀':solved>=4?'안정적인 순찰 완료':'오늘의 순찰 완료';ui.endText.textContent='6분 동안 '+solved+'건을 해결하고 실적 '+score.toFixed(1)+'점을 기록했어요.';ui.end.classList.add('show')}
 addEventListener('keydown',e=>{if(state!=='playing')return;const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=true;if(k==='s'||k==='arrowdown')keys.s=true;if(k==='a'||k==='arrowleft')keys.a=true;if(k==='d'||k==='arrowright')keys.d=true;if(k==='r')keys.r=true;if(k===' '&&!e.repeat){e.preventDefault();toggleSiren()}if(k==='enter'&&!e.repeat&&ui.action.onclick)ui.action.onclick();if(k==='t'&&!e.repeat)recover()});
 addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=false;if(k==='s'||k==='arrowdown')keys.s=false;if(k==='a'||k==='arrowleft')keys.a=false;if(k==='d'||k==='arrowright')keys.d=false;if(k==='r')keys.r=false});
-function hold(el,key){const on=e=>{e.preventDefault();touch[key]=true},off=e=>{e.preventDefault();touch[key]=false};el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);el.addEventListener('pointercancel',off)}
+function hold(el,key){const on=e=>{e.preventDefault();el.setPointerCapture?.(e.pointerId);touch[key]=true},off=e=>{e.preventDefault();touch[key]=false};el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);el.addEventListener('pointercancel',off);el.addEventListener('lostpointercapture',off)}
 hold($('#brakeBtn'),'brake');hold($('#reverseBtn'),'reverse');hold($('#boostBtn'),'boost');$('#sirenBtn').addEventListener('pointerdown',e=>{e.preventDefault();toggleSiren()});
 let joyId=null;const joy=$('#joy'),knob=$('#knob');
 function joyMove(e){const r=joy.getBoundingClientRect(),dx=clamp(e.clientX-(r.left+r.width/2),-36,36);touch.steer=dx/36;knob.style.transform='translate('+dx+'px,0)'}
 joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture?.(e.pointerId);joyMove(e)});joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
 function joyEnd(e){if(e.pointerId!==joyId)return;joyId=null;touch.steer=0;knob.style.transform='translate(0,0)'}
-joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);joy.addEventListener('lostpointercapture',joyEnd);
+addEventListener('blur',resetInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs()});addEventListener('pointerup',()=>{touch.brake=false;touch.reverse=false;touch.boost=false});addEventListener('pointercancel',()=>{touch.brake=false;touch.reverse=false;touch.boost=false});
 $('#startBtn').addEventListener('click',startGame);$('#restartBtn').addEventListener('click',startGame);
 buildWorld();render();
