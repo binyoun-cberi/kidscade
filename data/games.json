@@ -621,11 +621,11 @@
     {
       "id": "math_tower_defense",
       "title": "약수 타워 디펜스",
-      "href": "games/math_tower_defense/약수 타워 디펜스.html?v=2",
+      "href": "games/math_tower_defense/약수 타워 디펜스.html?v=3",
       "category": "math",
       "age": "high",
       "icon": "🛡️",
-      "description": "실제 3D SF 포탑을 배치해 숫자 몬스터에게 ÷2·÷3·÷5·+1·-1 연산을 적용하고, 전투 중 계산식으로 약수와 배수를 익히는 전략 타워디펜스!",
+      "description": "가까워진 3D 전장에서 실제 SF 포탑을 배치해 숫자 몬스터에게 ÷2·÷3·÷5·+1·-1 연산을 적용하고, 강한 타격 효과와 실시간 계산식으로 약수·배수를 익히는 전략 타워디펜스!",
       "scoreKey": "neonTowerBest"
     },
     {
