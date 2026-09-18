@@ -96,7 +96,7 @@ body.three-ready #game{opacity:0;pointer-events:none}
 @media(hover:none),(pointer:coarse){body.three-ready #game3d{height:100dvh}}
 
 
-/* mobile driving polish v6 */
+/* mobile driving polish v7 */
 @media (hover:none) and (orientation:portrait),(pointer:coarse) and (orientation:portrait){
   #missionCard{top:48px;left:7px;right:7px;width:auto;min-height:0;padding:7px 9px 8px;border-radius:12px;text-align:left}
   #missionCard small{font-size:7px}
