@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v5.js'),'utf8');
 
 test('Deep Diver v5 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=5/);
-  assert.match(html,/diver-v5\.js\?v=5/);
+  assert.match(html,/deep-diver-2d\\.css\\?v=5\\.1/);
+  assert.match(html,/diver-v5\\.js\\?v=5\\.1/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -69,6 +69,18 @@ test('Deep Diver v5 guarantees mission-critical fish',()=>{
 test('catalog points to Deep Diver v5',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=5');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=5.1');
   assert.equal(game.scoreKey,'deep_diver_2d_v5');
+});
+
+
+test('Deep Diver v5.1 has terrain collision and foreground depth',()=>{
+  assert.match(js,/function buildTerrain/);
+  assert.match(js,/function resolvePlayerTerrain/);
+  assert.match(js,/function drawTerrain/);
+  assert.match(js,/function drawForeground/);
+  assert.match(js,/world\.terrain\.some/);
+  assert.match(js,/drawTerrain\(\).*drawDecor\(\)/s);
+  assert.match(js,/drawPlayer\(\).*drawForeground\(\)/s);
+  for(const zone of ['reef','kelp','ruins','wreck','abyss'])assert.ok(js.includes(",'"+zone+"'"),zone);
 });
