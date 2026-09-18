@@ -621,11 +621,11 @@
     {
       "id": "math_tower_defense",
       "title": "약수 타워 디펜스",
-      "href": "약수 타워 디펜스.html",
+      "href": "약수 타워 디펜스.html?v=3d-1",
       "category": "math",
       "age": "high",
       "icon": "🛡️",
-      "description": "배수, 약수, 소수 로직을 가진 방어탑을 배치해 바이러스로부터 중앙 CPU를 지켜내세요!",
+      "description": "실제 3D SF 포탑을 배치해 숫자를 품은 몬스터에게 ÷2·÷3·÷5·+1·-1 연산을 적용하고, 실시간 계산식을 보며 코어를 지키는 약수·배수 타워디펜스!",
       "scoreKey": "neonTowerBest"
     },
     {
