@@ -4,62 +4,91 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=4">
+<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=5">
 <script type="importmap">{"imports":{"three":"assets/vendor/three-r160/three.module.js","three/addons/":"assets/vendor/three-r160/addons/"}}</script>
 <script src="audio-manager.js?v=20260917-1"></script>
 </head>
 <body>
 <div class="app">
   <header class="hud">
-    <div class="shop-name">보글보글 분식집</div>
+    <div class="brand">
+      <b>보글보글 분식집</b>
+      <small>라면 영업 1일차</small>
+    </div>
     <div class="hud-stats">
+      <span>매출 <b id="revenue">0원</b></span>
+      <span>목표 <b id="goal">6,500원</b></span>
       <span>시간 <b id="time">120</b></span>
-      <span>점수 <b id="score">0</b></span>
-      <span>서빙 <b id="served">0</b></span>
-      <button id="soundBtn" type="button">SOUND ON</button>
+      <span class="served-stat">서빙 <b id="served">0</b></span>
+      <button id="soundBtn" type="button" aria-label="소리 켜기/끄기">♪</button>
     </div>
   </header>
 
   <main class="game-wrap">
-    <canvas id="gameCanvas" aria-label="3D 분식집 주방"></canvas>
+    <canvas id="gameCanvas" aria-label="3D 라면 조리대"></canvas>
 
-    <div id="orderStrip" class="order-strip" aria-label="현재 주문"></div>
-    <div id="stationLabels" class="world-labels" aria-hidden="true"></div>
+    <section id="orderStrip" class="order-strip" aria-label="손님 주문"></section>
 
-    <div id="heldBadge" class="held-badge">
-      <small>들고 있음</small><b id="heldText">빈손</b>
+    <div id="potStrip" class="pot-strip" aria-label="냄비 상태"></div>
+
+    <div class="selected-help">
+      <small>선택</small>
+      <b id="selectedAction">냄비를 눌러 상태를 확인하세요</b>
     </div>
 
-    <div id="prompt" class="prompt">WASD로 움직이세요</div>
+    <button id="trayBtn" class="tray-btn empty" type="button">
+      <small>서빙 쟁반</small>
+      <b id="trayText">비어 있음</b>
+      <span id="trayQuality"></span>
+    </button>
 
-    <div class="mobile-controls">
-      <div id="joystick" class="joystick" aria-label="이동 조이스틱">
-        <div class="stick-base"></div><div id="stickKnob" class="stick-knob"></div>
-      </div>
-      <button id="actionBtn" class="action-btn" type="button">행동</button>
+    <div id="actionDock" class="action-dock" aria-label="조리 도구">
+      <button data-action="water" type="button"><span>💧</span><b>물</b><small>1컵</small></button>
+      <button data-action="noodle" type="button"><span>🍜</span><b>면</b><small>주재료</small></button>
+      <button data-action="soup" type="button"><span>🟥</span><b>스프</b><small>국물</small></button>
+      <button data-action="egg" type="button"><span>🥚</span><b>계란</b><small>토핑</small></button>
+      <button data-action="green" type="button"><span>🌿</span><b>대파</b><small>토핑</small></button>
+      <button data-action="cheese" type="button"><span>🧀</span><b>치즈</b><small>토핑</small></button>
+      <button data-action="plate" class="plate" type="button"><span>🥣</span><b>담기</b><small>타이밍!</small></button>
+      <button data-action="discard" class="discard" type="button"><span>↺</span><b>비우기</b><small>새 냄비</small></button>
     </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
 </div>
 
 <div id="startOverlay" class="overlay show">
   <div class="start-card">
+    <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>주방을 직접 뛰어다니며 재료를 가져오고, 요리하고, 완성된 음식을 서빙하세요.</p>
-    <div class="controls-note"><b>PC</b> WASD 이동 · E 행동 <span></span><b>모바일</b> 조이스틱 · 행동</div>
-    <button id="startBtn" class="primary big" type="button">영업 시작</button>
+    <p>냄비 네 개를 동시에 관리해 주문에 맞는 라면을 만들고 오늘의 목표 매출을 채워 보세요.</p>
+    <div class="recipe-board">
+      <div><b>계란 라면</b><span>물 → 면 + 스프 → 계란</span></div>
+      <div><b>파 라면</b><span>물 → 면 + 스프 → 대파</span></div>
+      <div><b>치즈 계란 라면</b><span>물 → 면 + 스프 → 계란 + 치즈</span></div>
+    </div>
+    <div class="tips">
+      <span>① 아래 재료 선택</span><span>② 냄비 터치</span><span>③ 면이 적당히 익었을 때 담기</span><span>④ 쟁반 → 같은 주문 터치</span>
+    </div>
+    <button id="startBtn" class="primary" type="button">영업 시작</button>
+    <small class="credit">Kitchen: Isa Lousberg · CC BY / Quaternius · CC0</small>
   </div>
 </div>
 
 <div id="endOverlay" class="overlay">
-  <div class="start-card">
-    <small>오늘 영업 끝</small>
-    <h1 id="endTitle">수고했어요</h1>
+  <div class="start-card result-card">
+    <div class="eyebrow">오늘 영업 끝</div>
+    <h1 id="endTitle">수고했어요!</h1>
     <p id="endText"></p>
-    <button id="restartBtn" class="primary big" type="button">다시 영업하기</button>
+    <div class="result-grid">
+      <div><small>매출</small><b id="endRevenue">0원</b></div>
+      <div><small>서빙</small><b id="endServed">0</b></div>
+      <div><small>최고 품질</small><b id="endPerfect">0</b></div>
+    </div>
+    <button id="restartBtn" class="primary" type="button">다시 영업하기</button>
   </div>
 </div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=4"></script>
+<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=5"></script>
 </body>
 </html>
