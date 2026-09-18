@@ -132,7 +132,7 @@ test('Police siren still makes civilian traffic yield',()=>{
   assert.match(js,/function updateYield/);
   assert.match(js,/if\(!player\.siren\)return/);
   assert.match(js,/c\.yield=Math\.max\(c\.yield,1\.2\)/);
-  assert.match(js,/desired=65/);
+  assert.match(js,/desired=Math\.min\(desired,55\)/);
 });
 
 test('Mobile Police Patrol does not accelerate unless the boost button is held',()=>{
