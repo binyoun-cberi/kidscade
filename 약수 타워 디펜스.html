@@ -95,13 +95,25 @@
   @media(max-width:620px){
     .screen{padding:14px}.start-card{padding:24px 18px}.big-btn{width:100%}.topbar{padding:8px;gap:8px}.brand h1{font-size:16px}.brand small{font-size:10px}.brand-icon{width:42px;height:42px}.top-actions{gap:5px}.small-btn{padding:9px 10px;min-width:38px}.stats{gap:6px}.stat{padding:7px 8px}.stat label{font-size:9px}.stat b{font-size:15px}.layout{padding:8px;gap:8px}.guide-card{align-items:flex-start}.guide-text{font-size:12.5px}.side-scroll{padding:9px}.shop-grid{grid-template-columns:1fr}.tower-desc{display:none}.tower-btn{min-height:52px}.log{max-height:72px}
   }
+
+  /* 3D battlefield v1 */
+  .canvas-box{isolation:isolate}
+  #gameCanvas3d{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:2;transition:opacity .22s;background:#020713}
+  #gameCanvas{position:relative;z-index:1;transition:opacity .18s}
+  .canvas-box.td3d-ready #gameCanvas3d{opacity:1;pointer-events:auto}
+  .canvas-box.td3d-ready #gameCanvas{opacity:0;pointer-events:none}
+  .td3d-loading{position:absolute;left:12px;bottom:12px;z-index:4;padding:7px 10px;border-radius:999px;background:rgba(3,9,18,.86);border:1px solid rgba(56,189,248,.35);font-size:10px;font-weight:900;color:#bae6fd;pointer-events:none}
+  .td3d-loading.done{display:none}
+  .asset-credit{margin-top:7px;text-align:center;font-size:9px;line-height:1.35;color:#71869f}
+  @media(max-width:620px){.td3d-loading{left:8px;bottom:8px;font-size:9px}.canvas-box{border-radius:15px}}
 </style>
+<script type="importmap">{"imports":{"three":"assets/vendor/three-r160/three.module.js","three/addons/":"assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
   <section id="startScreen" class="screen">
     <div class="start-card">
-      <h1 class="start-title">🧮 숫자몬스터 <span>연산 디펜스</span> DX</h1>
-      <p class="start-sub">숫자 괴물이 코어로 몰려옵니다. <b>÷2, ÷3, +1, -1</b> 타워를 길 옆에 세워 숫자를 0으로 만들어요. 처음부터 긴 설명을 읽지 않아도, 추천 배치와 실시간 계산식이 도와줍니다.</p>
+      <h1 class="start-title">🛡️ 약수 <span>타워 디펜스 3D</span></h1>
+      <p class="start-sub">숫자를 품은 3D 몬스터가 코어로 몰려옵니다. <b>÷2, ÷3, ÷5, +1, -1</b> 포탑을 배치해 숫자를 0으로 만드세요. 타격할 때마다 계산식이 바로 보여 약수·배수 전략을 눈으로 익힐 수 있습니다.</p>
       <div class="feature-grid">
         <div class="feature"><b>1분 안에 이해</b><p>초반 웨이브를 짧게 만들고, 첫 판에는 추천 배치를 눌러 바로 성공 경험을 줍니다.</p></div>
         <div class="feature"><b>수학이 눈에 보임</b><p>타워가 공격할 때마다 <b>8 ÷ 2 = 4</b>처럼 계산식이 화면에 뜹니다.</p></div>
@@ -116,7 +128,7 @@
 
   <main id="game" class="hidden">
     <header class="topbar">
-      <div class="brand"><div class="brand-icon">🧠</div><div><h1>숫자몬스터 연산 디펜스</h1><small>추천 배치 → 웨이브 시작 → 계산 확인</small></div></div>
+      <div class="brand"><div class="brand-icon">🧠</div><div><h1>약수 타워 디펜스 3D</h1><small>추천 배치 → 웨이브 시작 → 계산 확인</small></div></div>
       <div class="stats">
         <div class="stat"><label>스테이지</label><b id="uiWave">1</b></div>
         <div class="stat"><label>자원</label><b id="uiMoney">0</b></div>
@@ -140,6 +152,8 @@
         </div>
         <div class="canvas-box">
           <canvas id="gameCanvas" width="640" height="440"></canvas>
+          <canvas id="gameCanvas3d" aria-label="3D 약수 타워 디펜스 전장"></canvas>
+          <div id="td3dLoading" class="td3d-loading">3D 전장 준비 중…</div>
           <div id="canvasToast" class="canvas-toast">메시지</div>
         </div>
       </section>
@@ -172,7 +186,7 @@
         </div>
         <div class="bottom-action">
           <button id="btnWave" class="start-wave">④ 웨이브 시작</button>
-          <button id="btnAuto" class="auto-btn">✨ 첫 판 추천 배치</button>
+          <button id="btnAuto" class="auto-btn">✨ 첫 판 추천 배치</button><div class="asset-credit">3D Turrets: Zsky · Creative Commons Attribution / Monsters: Quaternius · CC0</div>
         </div>
       </aside>
     </div>
@@ -400,15 +414,18 @@
   function roundRect(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); if(fill)ctx.fill(); if(stroke)ctx.stroke(); }
 
   function canvasPos(e){ const rect=canvas.getBoundingClientRect(); return {x:Math.floor((e.clientX-rect.left)/rect.width*CW/CELL), y:Math.floor((e.clientY-rect.top)/rect.height*CH/CELL)}; }
+  function interactCell(x,y){ initAudio(); if(x<0||y<0||x>=GW||y>=GH)return; const t=towerAt(x,y); if(t){ state.selectedBuilt=t; state.selectedTower=null; sfx.click(); renderAll(); } else if(state.selectedTower){ placeTower(x,y); } else { state.selectedBuilt=null; renderSelected(); }}
   canvas.addEventListener('pointermove',e=>{state.hover=canvasPos(e);});
   canvas.addEventListener('pointerleave',()=>{state.hover=null;});
-  canvas.addEventListener('pointerdown',e=>{ initAudio(); const p=canvasPos(e); if(p.x<0||p.y<0||p.x>=GW||p.y>=GH)return; const t=towerAt(p.x,p.y); if(t){ state.selectedBuilt=t; state.selectedTower=null; sfx.click(); renderAll(); } else if(state.selectedTower){ placeTower(p.x,p.y); } else { state.selectedBuilt=null; renderSelected(); }});
+  canvas.addEventListener('pointerdown',e=>{ const p=canvasPos(e); interactCell(p.x,p.y); });
 
   function loop(now){ const dt=Math.min(.05,(now-state.last)/1000||0); state.last=now; update(dt); draw(); if(!state.gameOver||!$('game').classList.contains('hidden')) requestAnimationFrame(loop); }
   function renderAll(){ renderHUD(); renderShop(); renderSelected(); draw(); }
   function openModal(title,text,showResult){ $('modalTitle').innerHTML=title; $('modalText').innerHTML=text; $('resultGrid').classList.toggle('hidden',!showResult); $('modal').classList.remove('hidden'); }
   function closeModal(){ $('modal').classList.add('hidden'); }
   function restart(){ location.reload(); }
+
+  window.__numTD3D={state,TOWERS,PATH,GW,GH,CELL,CW,CH,isPrime,isPathCell,towerAt,canHit,eColor,interactCell,setHover:(x,y)=>{state.hover=(x==null||y==null)?null:{x,y}},renderAll};
 
   $('btnStart').onclick=startGame; $('btnHow').onclick=showHow; $('modalOk').onclick=closeModal; $('btnWave').onclick=startWave; $('btnAuto').onclick=autoBuild;
   $('btnSound').onclick=()=>{ initAudio(); soundOn=!soundOn; renderHUD(); };
@@ -420,5 +437,6 @@
   renderAll();
 })();
 </script>
+<script type="module" src="games/math_tower_defense/number-td-3d.js?v=1"></script>
 </body>
 </html>
