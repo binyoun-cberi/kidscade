@@ -858,11 +858,11 @@
     {
       "id": "spelling_frog",
       "title": "스펠링 프로그",
-      "href": "games/spelling_frog/스펠링 프로그.html?v=20260918-5",
+      "href": "games/spelling_frog/스펠링 프로그.html?v=20260918-6",
       "category": "lang",
       "age": "high",
       "icon": "🐸",
-      "description": "애니메이션 3D 개구리와 색이 살아난 차량·기차·자연 에셋으로 길을 건너고, 미리 보이는 알파벳 체크포인트까지 안전한 경로를 계획해 영어 단어를 완성하는 3D 영어 어드벤처!",
+      "description": "애니메이션 3D 개구리로 확장된 마을을 건너며 차량·완주형 기차·통나무·황새를 피하고, 미리 보이는 알파벳 체크포인트를 찾아 영어 단어를 완성하는 3D 영어 어드벤처!",
       "scoreKey": "spellingFrogHighScore",
       "cover": "assets/gate-image/스펠링 프로그.png"
     },
