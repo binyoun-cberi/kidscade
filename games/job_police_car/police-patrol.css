@@ -85,3 +85,12 @@ button{font:inherit}#game{position:fixed;inset:0;display:block;width:100vw;heigh
   #sirenBtn{width:52px;height:52px;bottom:max(77px,calc(env(safe-area-inset-bottom) + 67px))}
   #boostBtn{width:58px;height:58px;right:86px;bottom:max(77px,calc(env(safe-area-inset-bottom) + 67px))}
 }
+
+
+/* 3D renderer v4 */
+#game3d{position:fixed;inset:0;width:100vw;height:100dvh;display:block;opacity:0;pointer-events:none;transition:opacity .18s;background:#86c8e4}
+body.three-ready #game3d{opacity:1}
+body.three-ready #game{opacity:0;pointer-events:none}
+#ui{z-index:5}
+.primary:disabled{opacity:.65;cursor:wait;box-shadow:none}
+@media(hover:none),(pointer:coarse){body.three-ready #game3d{height:100dvh}}
