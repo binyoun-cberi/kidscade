@@ -50,7 +50,8 @@ test('Police Patrol v7 adds moving pedestrians using existing people assets',()=
   assert.match(js,/function spawnPedestrians/);
   assert.match(js,/function updatePedestrians/);
   assert.match(js,/function syncPedestrians3D/);
-  assert.match(js,/character-male-a\.glb/);
+  assert.match(js,/gameAssetUrl3\('characters\/people\/character-male-a\.glb'\)/);
+  assert.match(js,/gameAssetUrl3\('characters\/people\/character-female-c\.glb'\)/);
   assert.match(js,/spawnPedestrians\(\)/);
 });
 
