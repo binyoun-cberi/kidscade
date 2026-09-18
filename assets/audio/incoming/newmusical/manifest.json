@@ -61,7 +61,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "sergequadrado",
-    "license_status": "UNVERIFIED"
+    "license_status": "VERIFIED",
+    "source": "Pixabay",
+    "source_url": "https://pixabay.com/sound-effects/cool-hip-hop-loop-275527/",
+    "license": "Pixabay Content License",
+    "verified_for_use": "Kidscade math_tower_defense"
   },
   {
     "file": "idoberg-creepy-halloween-bells-loop-408748.mp3",
