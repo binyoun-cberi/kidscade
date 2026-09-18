@@ -553,27 +553,40 @@ function loop(ts){
  if(state.running)state.raf=requestAnimationFrame(loop)
 }
 function resetGameState(){
- state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.selectedPot=0;state.action='water';
+ state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;
+ state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.trayDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
- kitchen.setSelectedPot(0);renderTray();renderPotStrip();renderSelectedHelp();updateHud();selectAction('water')
+ kitchen.setSelectedPot(null);renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud()
 }
 function startGame(){
- resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');spawnOrder();spawnOrder();toast('물 2컵부터 시작해 보세요!',1600);state.raf=requestAnimationFrame(loop)
+ resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');
+ spawnOrder('egg');renderTutorial();updateActionButtons();toast('첫 그릇은 같이 해볼게요 · 1번 냄비를 눌러 주세요',2200);state.raf=requestAnimationFrame(loop)
 }
 
-els.dock.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;selectAction(b.dataset.action)});
-els.trayBtn.addEventListener('click',()=>{if(!state.tray){toast('완성한 라면을 먼저 담아 주세요');return}state.tray=null;renderTray();renderOrders();sfx('collect.coin_drop',{volume:.1,rate:.75,cooldownMs:100});toast('쟁반의 음식을 버렸어요')});
+els.dock.addEventListener('click',e=>{
+ const b=e.target.closest('[data-action]');if(!b||b.disabled)return;handleAction(b.dataset.action)
+});
+els.discard.addEventListener('click',requestDiscard);
+els.trayBtn.addEventListener('click',()=>{
+ if(!state.tray){toast('완성한 라면을 “담기”로 쟁반에 올리면 여기에 보여요');return}
+ const now=performance.now();
+ if(now>state.trayDiscardArmedUntil){
+  state.trayDiscardArmedUntil=now+2400;toast('서빙하려면 위의 같은 주문을 누르세요 · 쟁반을 버리려면 이 버튼을 한 번 더 누르세요',2200);return
+ }
+ state.trayDiscardArmedUntil=0;state.tray=null;renderTray();renderOrders();renderSelectedHelp();updateActionButtons();sfx('collect.coin_drop',{volume:.1,rate:.75,cooldownMs:100});toast('쟁반을 비웠어요')
+});
 $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
 
 addEventListener('keydown',e=>{
  if(!state.running)return;
- const actionKeys={Digit1:'water',Digit2:'noodle',Digit3:'soup',Digit4:'egg',Digit5:'green',Digit6:'cheese',Digit7:'plate',Digit8:'discard'};
- if(actionKeys[e.code]){e.preventDefault();selectAction(actionKeys[e.code]);return}
+ const actionKeys={Digit1:'water',Digit2:'noodle',Digit3:'soup',Digit4:'egg',Digit5:'green',Digit6:'cheese',Digit7:'plate'};
+ if(actionKeys[e.code]){e.preventDefault();handleAction(actionKeys[e.code]);return}
+ if(e.code==='Digit8'){e.preventDefault();requestDiscard();return}
  const potKeys={KeyQ:0,KeyW:1,KeyE:2,KeyR:3};
- if(Object.prototype.hasOwnProperty.call(potKeys,e.code)){e.preventDefault();const i=potKeys[e.code];kitchen.setSelectedPot(i);if(state.action)applyAction(i,state.action)}
+ if(Object.prototype.hasOwnProperty.call(potKeys,e.code)){e.preventDefault();kitchen.setSelectedPot(potKeys[e.code])}
 });
 
-updateHud();renderTray();renderPotStrip();renderSelectedHelp();selectAction('water');kitchen.update(0);
+updateHud();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
