@@ -5,7 +5,7 @@ window.THREE=THREE;
 window.GLTFLoader=GLTFLoader;
 
 const runtime=document.createElement('script');
-runtime.src=new URL('./police-patrol.js?v=7',import.meta.url).href;
+runtime.src=new URL('./police-patrol.js?v=8',import.meta.url).href;
 runtime.async=false;
 runtime.onerror=()=>console.error('[Police Patrol] runtime load failed');
 document.body.appendChild(runtime);
