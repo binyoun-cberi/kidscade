@@ -1,40 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>심해 다이버 시뮬레이터</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#001923;color:#eafcff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none;touch-action:none}canvas{display:block;width:100vw;height:100vh}.overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 15%,rgba(34,211,238,.18),rgba(0,12,20,.94) 58%,#000b11)}.overlay.hidden{display:none}.panel{width:min(900px,94vw);max-height:92vh;overflow:auto;background:rgba(2,22,31,.94);border:1px solid rgba(137,231,247,.38);border-radius:22px;padding:24px;box-shadow:0 24px 90px #000, inset 0 0 45px rgba(56,189,248,.05)}h1{font-family:Impact,"Arial Black",sans-serif;letter-spacing:.035em;font-size:clamp(40px,7vw,72px);line-height:.9;margin:0;color:#e8fcff;text-shadow:0 4px 0 #0a5969,0 0 28px rgba(77,231,255,.6)}h2{font-size:30px;margin:0 0 12px;color:#dffaff}.sub{font-weight:900;color:#76dce8;letter-spacing:.08em;margin:10px 0 18px}.mission{background:linear-gradient(90deg,rgba(250,204,21,.16),rgba(14,165,233,.08));border-left:4px solid #ffd45f;padding:12px 14px;border-radius:10px;color:#ffe9a6;line-height:1.5}.helpgrid,.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin:14px 0}.helpgrid div,.card{background:rgba(8,42,54,.72);border:1px solid rgba(112,209,225,.18);border-radius:12px;padding:11px 13px}.helpgrid b,.card b{color:#ffd86c}.btn{border:1px solid #78ddeb;border-radius:10px;padding:12px 18px;background:linear-gradient(#1597b1,#087088);box-shadow:0 5px 0 #034657;color:#fff;font-weight:900;font-size:16px;cursor:pointer;margin:6px 8px 6px 0}.btn.gold{background:linear-gradient(#f5c753,#b87911);border-color:#ffe6a1;color:#13202a;box-shadow:0 5px 0 #6d4506}.btn.dark{background:linear-gradient(#385762,#22363e);border-color:#6b8992;box-shadow:0 5px 0 #101d22}.btn:active{transform:translateY(3px);box-shadow:none}.topbtn{position:fixed;z-index:30;top:12px;border:1px solid rgba(149,228,242,.35);background:rgba(1,20,28,.7);color:#e8fcff;border-radius:999px;padding:8px 12px;font-weight:900;backdrop-filter:blur(5px)}#helpBtn{left:12px}#soundBtn{right:12px}.hint{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:22;max-width:min(760px,86vw);padding:9px 14px;border:1px solid rgba(114,217,235,.28);background:rgba(0,17,25,.72);border-radius:9px;color:#e7fbff;font-weight:800;font-size:13px;text-align:center;opacity:0;transition:.2s}.hint.show{opacity:1}.cross{position:fixed;z-index:12;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:rgba(223,251,255,.82);box-shadow:0 0 6px #4bdaf0}.cross:before{width:16px;height:1px;left:2px;top:9px}.cross:after{height:16px;width:1px;left:9px;top:2px}.mobile{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}.playing .mobile{display:block}.stick{position:absolute;left:18px;bottom:112px;width:132px;height:132px;border-radius:50%;background:rgba(1,35,46,.38);border:2px solid rgba(177,235,244,.28);pointer-events:auto}.knob{position:absolute;width:50px;height:50px;left:41px;top:41px;border-radius:50%;background:rgba(195,243,248,.82);box-shadow:0 0 16px #45cde0}.mBtns{position:absolute;right:16px;bottom:105px;display:grid;grid-template-columns:72px 72px;gap:8px;pointer-events:auto}.mBtn{height:60px;border-radius:14px;border:2px solid rgba(186,237,246,.35);background:rgba(5,105,132,.72);color:white;font-weight:900}.mBtn.action{grid-column:1/3;height:70px;background:rgba(193,126,18,.78)}#lookPad{position:absolute;right:0;top:0;width:56%;height:72%;pointer-events:auto}.vertBtns{position:absolute;right:176px;bottom:112px;display:grid;gap:8px;pointer-events:auto}.vertBtns .mBtn{width:66px;height:55px}.statusPanel{position:fixed;z-index:13;left:0;right:0;bottom:0;height:92px;background:linear-gradient(180deg,rgba(0,15,21,.80),rgba(0,8,12,.97));border-top:2px solid rgba(97,203,220,.28);display:none;grid-template-columns:180px 160px 120px 1fr 230px;gap:12px;padding:11px 16px;align-items:center}.playing .statusPanel{display:grid}.stat{font-size:12px;font-weight:900;color:#aeeaf3}.bar{height:10px;margin-top:5px;background:#102d35;border:1px solid #477b86;border-radius:99px;overflow:hidden}.fill{height:100%}.o2{background:#41d6ef}.hp{background:#56d68c}.toolName{font-family:Impact,"Arial Black",sans-serif;letter-spacing:.05em;font-size:22px;color:#f1fcff}.missionSmall{font-size:12px;color:#ffe18a;font-weight:800;line-height:1.35}.money{font-size:13px;font-weight:900;color:#bbf7d0}.toolView{position:fixed;z-index:11;right:4%;bottom:82px;width:240px;height:190px;pointer-events:none;filter:drop-shadow(0 16px 16px rgba(0,0,0,.45))}.toolView canvas{width:100%;height:100%}@media(hover:hover) and (pointer:fine){.mobile{display:none!important}}@media(max-width:760px){.statusPanel{height:98px;grid-template-columns:1fr 1fr 90px;padding:8px 10px}.statusPanel .missionCell{display:none}.statusPanel .moneyCell{display:none}.toolView{width:150px;height:120px;bottom:92px}.panel{padding:16px}.helpgrid{grid-template-columns:1fr}.btn{width:100%;margin-right:0}}
-</style>
+<link rel="stylesheet" href="./deep-diver-2d.css?v=5">
 </head>
 <body>
-<canvas id="game"></canvas>
-<div class="cross" id="cross"></div>
-<button class="topbtn" id="helpBtn">? 조작</button>
-<button class="topbtn" id="soundBtn">SOUND OFF</button>
-<div class="hint" id="hint"></div>
-<div class="statusPanel" id="hud">
-  <div class="stat">O₂ <span id="o2Text">100%</span><div class="bar"><div id="o2Fill" class="fill o2" style="width:100%"></div></div></div>
-  <div class="stat">HP <span id="hpText">100</span><div class="bar"><div id="hpFill" class="fill hp" style="width:100%"></div></div></div>
-  <div class="stat"><span id="depthText">60m</span><br><span id="zoneText" style="color:#ffd96a">산호초</span></div>
-  <div class="missionCell"><div id="toolName" class="toolName">[1] CAMERA</div><div id="missionText" class="missionSmall"></div></div>
-  <div class="moneyCell"><div id="bagText" class="money">BAG 0/6 · 0원</div><div id="sonarText" class="stat" style="margin-top:8px">SONAR READY</div></div>
+<canvas id="game" aria-label="2D 심해 잠수 탐사 게임"></canvas>
+
+<div id="hud">
+  <div id="topHud">
+    <div class="hudBox" id="vitals">
+      <div class="row"><span>O₂</span><b id="o2Text">100%</b></div><div class="bar"><div class="fill o2" id="o2Fill" style="width:100%"></div></div>
+      <div class="row"><span>HP</span><b id="hpText">100</b></div><div class="bar"><div class="fill hp" id="hpFill" style="width:100%"></div></div>
+      <div class="row"><span id="depthText">0m</span><b id="zoneText">산호 정원</b></div>
+    </div>
+    <div class="hudBox" id="missionHud"><div class="missionTitle" id="missionName">생태 조사</div><div class="missionText" id="missionText"></div></div>
+    <div class="hudBox" id="rightHud"><div>가방 <b id="bagText">0 / 8kg</b></div><div>수익 <b id="moneyText">0원</b></div><div id="sonarText">SONAR READY</div></div>
+  </div>
+  <div id="toolBar">
+    <button class="toolBtn active" data-tool="camera">1 · 카메라</button>
+    <button class="toolBtn" data-tool="harpoon">2 · 작살</button>
+    <button class="toolBtn" data-tool="sonar">3 · 소나</button>
+    <button class="toolBtn" id="interactMain">E · 회수</button>
+    <button class="toolBtn" id="actionMain">X · 사용</button>
+  </div>
 </div>
-<div class="toolView"><canvas id="toolCanvas" width="300" height="220"></canvas></div>
-<div class="mobile" id="mobileUI">
-  <div class="stick" id="moveStick"><div class="knob" id="moveKnob"></div></div><div id="lookPad"></div>
-  <div class="vertBtns"><button class="mBtn" id="upBtn">▲ 상승</button><button class="mBtn" id="downBtn">▼ 하강</button></div>
-  <div class="mBtns"><button class="mBtn" id="toolBtn">장비</button><button class="mBtn" id="sonarBtn">소나</button><button class="mBtn action" id="actionBtn">사용 / 조사</button></div>
+
+<div id="photoFrame"><div class="photoLabel" id="photoLabel"></div></div>
+<div id="sonarPulse"></div>
+<div id="zoneToast"></div>
+<div id="hint"></div>
+
+<div id="mobile">
+  <div id="stick"><div id="knob"></div></div>
+  <div id="mActions">
+    <button class="mBtn" data-tool="camera">카메라</button>
+    <button class="mBtn" data-tool="harpoon">작살</button>
+    <button class="mBtn" data-tool="sonar">소나</button>
+    <button class="mBtn gold" id="actionMain">사용</button>
+    <button class="mBtn" id="interactMain">회수</button>
+    <button class="mBtn green" id="dashMain">대시</button>
+  </div>
 </div>
-<div class="overlay" id="startScreen"><div class="panel">
-  <h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 · 오픈워터 리워크</div>
-  <p>벽으로 둘러싸인 미로가 아니라, <b>밝은 산호초에서 시작해 실제로 위·아래를 헤엄치며 동굴과 난파선을 찾는</b> 탐사 게임입니다.</p>
-  <div class="mission"><b>첫 탐사 목표</b><br>흰동가리·블루탱·해마를 카메라로 기록 → 암초 동굴 통과 → 난파선 격벽을 절단 → 선실 램프 회수 → 출발 부표로 직접 귀환</div>
-  <div class="helpgrid"><div><b>WASD</b><br>앞뒤·좌우 헤엄치기</div><div><b>마우스</b><br>좌우·위아래 시선</div><div><b>Space / Shift</b><br>상승 / 하강</div><div><b>1~4</b><br>카메라·그물·소나·절단기</div><div><b>좌클릭 / X</b><br>현재 장비 사용</div><div><b>E</b><br>조사·회수</div><div><b>H</b><br>언제든 조작 도움말</div><div><b>F</b><br>손전등 켜기/끄기</div></div>
-  <button class="btn gold" id="startBtn">잠수 시작</button><button class="btn dark" id="continueBtn">이어하기</button>
-</div></div>
-<div class="overlay hidden" id="helpScreen"><div class="panel"><h2>조작 도움말</h2><div class="helpgrid"><div><b>W / S</b><br>전진 / 후진</div><div><b>A / D</b><br>좌우 이동</div><div><b>마우스</b><br>시선 이동</div><div><b>Space / Shift</b><br>상승 / 하강</div><div><b>1 카메라</b><br>생물·유적 촬영</div><div><b>2 소나</b><br>목표·기뢰 탐지</div><div><b>3 절단기</b><br>난파선 격벽 절단</div><div><b>4 그물</b><br>허용된 소형 표본 포획</div><div><b>좌클릭 / X</b><br>현재 장비 사용</div><div><b>E</b><br>유물·기록장치 회수</div><div><b>F</b><br>손전등</div><div><b>H</b><br>도움말 열기</div></div><div class="mission"><b>탐사 팁</b><br>심해로 내려가기 전에 산소와 안전 수심을 확인하세요. 소나는 기뢰와 목표 위치를 드러내며, 보호 관찰 대상은 그물로 포획할 수 없습니다.</div><button class="btn" id="closeHelp">게임으로 돌아가기</button></div></div>
-<div class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">탐사 보고서</h2><div id="resultBody"></div><button class="btn gold" id="nextBtn">다음 잠수</button><button class="btn dark" id="homeBtn">시작 화면</button></div></div>
-<script src="./diver-v4.js?v=4"></script>
-</body></html>
+
+<button class="btn dark" id="soundBtn" style="position:fixed;z-index:61;right:max(10px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));padding:7px 10px;margin:0;font-size:10px">SOUND OFF</button>
+
+<section class="overlay" id="startScreen">
+  <div class="panel">
+    <div class="hero">
+      <div class="heroSprite" style="background-image:url('../../assets/game/2d/underwater/underwater-diving/player/player-swiming.png')"></div>
+      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v5</div></div>
+    </div>
+    <div class="notice"><b>1인칭 오픈워터에서 2D 픽셀 탐사 게임으로 완전 리워크.</b><br>위·아래·좌·우로 자유롭게 잠수하며 생물을 촬영하고, 표본과 유물을 회수하고, 산소가 떨어지기 전에 수면으로 돌아오세요.</div>
+    <div class="grid">
+      <div class="card"><h3>생태 조사</h3><p>다양한 물고기를 카메라로 촬영해 도감을 채웁니다. 보호종은 포획할 수 없습니다.</p></div>
+      <div class="card"><h3>탐사와 회수</h3><p>해초 숲, 침수 유적, 난파선, 암흑 심해를 차례로 해금합니다.</p></div>
+      <div class="card"><h3>장비 성장</h3><p>산소통·핀·가방·카메라·작살·소나·잠수복을 강화해 더 깊이 내려갑니다.</p></div>
+    </div>
+    <div class="notice"><b>조작</b> · WASD/방향키 이동 · Shift 대시 · 1 카메라 · 2 작살 · 3 소나 · X/Space 장비 사용 · E 조사/회수</div>
+    <div class="toolbar"><button class="btn gold" id="startBtn">새 잠수 경력 시작</button><button class="btn dark" id="continueBtn">이어하기</button></div>
+    <div id="credit">Underwater Diving artwork © Luis Zuno (@ansimuz), CC BY 3.0 · 추가 물고기/수중 소품 및 기타 사용 자산은 Kidscade 공용 무료 에셋 라이브러리의 라이선스 기록을 따릅니다.</div>
+  </div>
+</section>
+
+<section class="overlay hidden" id="contractScreen"><div class="panel"><h2>잠수 계약 게시판</h2><div id="contractBody"></div></div></section>
+<section class="overlay hidden" id="shopScreen"><div class="panel"><h2>잠수 장비실</h2><div id="shopBody"></div></div></section>
+<section class="overlay hidden" id="codexScreen"><div class="panel"><h2>해양 생물 도감</h2><div id="codexBody"></div></div></section>
+<section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar"><button class="btn gold" id="nextBtn">계약 게시판</button><button class="btn dark" id="homeBtn">시작 화면</button></div></div></section>
+
+<script src="./diver-v5.js?v=5"></script>
+</body>
+</html>
