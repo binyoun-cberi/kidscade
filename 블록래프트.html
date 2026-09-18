@@ -147,6 +147,8 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
 .resource > span img { width:31px;height:31px;object-fit:contain;image-rendering:pixelated; }
 .recipe-icon {width:44px;height:44px;display:grid;place-items:center;border-radius:11px;background:rgba(255,255,255,.09);font-size:1.35rem}.recipe b{display:block;font-size:.9rem}.recipe p{margin:3px 0 0;color:var(--muted);font-size:.72rem;line-height:1.35}.cost{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:3px;max-width:94px}.cost i{font-style:normal;font-size:.66rem;border-radius:6px;padding:4px 5px;background:rgba(0,0,0,.22)}
 .build-tools { display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px; }.build-tools button{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:9px;border-radius:10px;cursor:pointer;font-size:.76rem}.build-tools b{color:var(--aqua)}
+.mobile-build-hud{display:none}
+.mobile-build-hud button{font:inherit}
 
 .modal-screen { position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 45%,rgba(15,93,116,.4),rgba(2,14,23,.93));transition:opacity .3s; }
 .modal-screen.hidden { opacity:0;pointer-events:none; }
@@ -185,7 +187,31 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
   .quick-actions{left:8px;bottom:99px}.quick-actions::before{display:none}.quick-actions button{width:53px;min-height:43px;grid-template-columns:1fr;text-align:center}.quick-actions b{font-size:.62rem}.quick-actions button>span{font-size:1rem}.quick-actions kbd{display:none}
   .hotbar{bottom:max(10px,env(safe-area-inset-bottom));gap:3px;padding:5px}.slot{width:min(21vw,68px);height:56px}.slot b{font-size:.58rem}.slot kbd{display:none}.tool-icon{font-size:1.05rem}
   .fishing-game{bottom:82px;width:calc(100vw - 16px);padding:10px;border-radius:15px}.fishing-head strong{font-size:.85rem}.fish-rarity{font-size:.6rem}.fishing-callout{grid-template-columns:42px 34px 1fr;margin:7px 0 6px;padding:6px 8px}.fish-portrait{width:40px;height:32px}.fish-direction{width:34px;height:32px;font-size:1.3rem}.fishing-callout b{font-size:.72rem}.fishing-callout small{font-size:.6rem}.fish-lane{height:48px;margin-bottom:7px}.fish-target{top:25px;height:15px}.rod-marker{top:25px}.fishing-meters{gap:7px}
-  .panel{top:68px;bottom:8px;padding:15px}.build-panel{right:6px}.inventory-panel,.craft-panel{left:6px}
+  .panel{top:68px;bottom:8px;padding:15px}.inventory-panel,.craft-panel{left:6px}
+  .build-panel{top:auto;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));width:auto;height:min(58vh,520px);padding:13px;border-radius:22px 22px 16px 16px;transform:translateY(0)}
+  .build-panel[aria-hidden="true"]{transform:translateY(calc(100% + 24px))}
+  .build-panel .panel-head h2{font-size:1.22rem;margin-bottom:9px}
+  .build-panel .recipe-list{gap:7px}
+  .build-panel .recipe{min-height:60px;padding:7px;grid-template-columns:40px 1fr auto}
+  .build-panel .recipe-icon{width:40px;height:40px}
+  .build-panel .recipe p{font-size:.67rem}
+  .build-panel .cost{max-width:78px}
+  .mobile-build-hud{position:fixed;z-index:66;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));display:none;padding:10px;border-radius:18px;background:rgba(3,24,35,.94);border:1px solid rgba(179,233,244,.25);box-shadow:0 18px 44px rgba(0,0,0,.38);backdrop-filter:blur(12px)}
+  body.mobile-building .mobile-build-hud{display:block}
+  body.mobile-building .mission,body.mobile-building .weather,body.mobile-building .quick-actions,body.mobile-building .hotbar,body.mobile-building .mobile-controls{display:none!important}
+  body.mobile-building #aim{display:none!important}
+  .mobile-build-summary{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+  .mobile-build-summary small,.mobile-build-summary b{display:block}
+  .mobile-build-summary small{color:#78e9dc;font-size:.66rem;font-weight:850}
+  .mobile-build-summary b{font-size:.92rem;margin-top:2px}
+  .mobile-build-valid{font-size:.68rem;font-weight:850;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.07);color:#cbdde3}
+  .mobile-build-valid.good{color:#9ff5df;background:rgba(73,223,208,.13)}
+  .mobile-build-valid.bad{color:#ffc1bb;background:rgba(255,109,98,.14)}
+  .mobile-build-buttons{display:grid;grid-template-columns:1.35fr repeat(4,.72fr);gap:6px}
+  .mobile-build-buttons button{min-height:46px;border:1px solid rgba(255,255,255,.15);border-radius:12px;color:#edfaff;background:rgba(255,255,255,.07);font-size:.7rem;font-weight:850}
+  .mobile-build-buttons .place{background:linear-gradient(135deg,#63eedc,#a9ef82);color:#062c30;border:0;font-size:.84rem}
+  .mobile-build-buttons .place:disabled{filter:grayscale(.75);opacity:.45}
+  .mobile-build-tip{text-align:center;color:#9dbbc5;font-size:.62rem;margin-top:7px}
   .start-card,.help-card,.collapse-card{padding:24px 18px;border-radius:22px}.start-mark{width:72px;height:72px}.start-copy{font-size:.9rem}.help-grid{grid-template-columns:1fr}.roadmap{grid-template-columns:repeat(2,1fr)}.key-guide{gap:8px}.guide-btn{min-width:58px;padding:0 8px;font-size:.68rem}
 }
 
@@ -279,6 +305,21 @@ kbd { font: 700 .65rem/1 system-ui; padding: 3px 5px; border-radius: 5px; color:
       <div class="build-tools"><button id="rotateBtn">↻ 방향 돌리기 <kbd>R</kbd></button><button id="levelBtn">높이 <b id="levelValue">1층</b></button></div>
       <div id="buildList" class="recipe-list build-list"></div>
     </aside>
+
+    <section id="mobileBuildHud" class="mobile-build-hud" aria-hidden="true">
+      <div class="mobile-build-summary">
+        <div><small>배치 중 · 화면을 탭해 위치 선택</small><b id="mobileBuildName">나무 바닥</b></div>
+        <span id="mobileBuildValid" class="mobile-build-valid">위치 선택</span>
+      </div>
+      <div class="mobile-build-buttons">
+        <button id="mobilePlaceBuild" class="place">✓ 설치</button>
+        <button id="mobileRotateBuild">↻ 회전</button>
+        <button id="mobileLevelBuild">1층</button>
+        <button id="mobileBuildListBtn">목록</button>
+        <button id="mobileBuildClose">종료</button>
+      </div>
+      <div class="mobile-build-tip">원하는 칸을 탭 → 초록색이면 설치 · 빨간색이면 다른 칸을 탭하세요.</div>
+    </section>
 
     <nav class="quick-actions glass" aria-label="게임 메뉴">
       <button id="inventoryBtn" title="배낭 · 숫자 5"><span>🎒</span><b>배낭</b><kbd>5</kbd></button>
@@ -381,7 +422,10 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     rodMarker: $('#rodMarker'), fishStaminaBar: $('#fishStaminaBar'), fishStaminaText: $('#fishStaminaText'),
     fishTensionBar: $('#fishTensionBar'), fishTensionText: $('#fishTensionText'), fishRounds: $('#fishRounds'),
     startScreen: $('#startScreen'), helpScreen: $('#helpScreen'),
-    collapseScreen: $('#collapseScreen'), continueBtn: $('#continueBtn')
+    collapseScreen: $('#collapseScreen'), continueBtn: $('#continueBtn'),
+    mobileBuildHud: $('#mobileBuildHud'), mobileBuildName: $('#mobileBuildName'),
+    mobileBuildValid: $('#mobileBuildValid'), mobilePlaceBuild: $('#mobilePlaceBuild'),
+    mobileLevelBuild: $('#mobileLevelBuild')
   };
 
   if (!window.THREE) {
@@ -1491,6 +1535,51 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     return false;
   }
 
+  function isMobileBuildUi() {
+    return matchMedia('(pointer: coarse)').matches || innerWidth <= 760;
+  }
+
+  function refreshMobileBuildHud() {
+    if (!ui.mobileBuildHud) return;
+    const recipe = getRecipe(selectedBuild);
+    if (ui.mobileBuildName) ui.mobileBuildName.textContent = recipe ? recipe.name + ' · ' + costLabel(recipe.cost) : '건축';
+    if (ui.mobileLevelBuild) ui.mobileLevelBuild.textContent = buildLevel === 0 ? '1층' : '2층';
+    const valid = !!(buildTarget && buildTarget.valid);
+    if (ui.mobileBuildValid) {
+      ui.mobileBuildValid.textContent = !buildTarget ? '위치 선택' : valid ? '설치 가능' : '설치 불가';
+      ui.mobileBuildValid.className = 'mobile-build-valid ' + (!buildTarget ? '' : valid ? 'good' : 'bad');
+    }
+    if (ui.mobilePlaceBuild) ui.mobilePlaceBuild.disabled = !valid;
+  }
+
+  function enterMobileBuildPlacement() {
+    if (!isMobileBuildUi() || activePanel !== 'build') return;
+    const panel = $('#buildPanel');
+    panel.setAttribute('aria-hidden','true');
+    document.body.classList.add('mobile-building');
+    if (ui.mobileBuildHud) ui.mobileBuildHud.setAttribute('aria-hidden','false');
+    const x = innerWidth * .5;
+    const y = Math.max(150,innerHeight * .48);
+    setTimeout(() => {
+      updateBuildGhost(x,y);
+      refreshMobileBuildHud();
+      toast('배치 모드 · 원하는 칸을 탭한 뒤 아래 ‘설치’를 누르세요.', '', 2600);
+    },30);
+  }
+
+  function showMobileBuildList() {
+    if (activePanel !== 'build') return;
+    document.body.classList.remove('mobile-building');
+    if (ui.mobileBuildHud) ui.mobileBuildHud.setAttribute('aria-hidden','true');
+    $('#buildPanel').setAttribute('aria-hidden','false');
+    renderUI(true);
+  }
+
+  function exitMobileBuildPlacement() {
+    document.body.classList.remove('mobile-building');
+    if (ui.mobileBuildHud) ui.mobileBuildHud.setAttribute('aria-hidden','true');
+  }
+
   function updateBuildGhost(clientX, clientY) {
     if (activePanel !== 'build') return;
     lastBuildPoint.x = clientX;
@@ -1516,6 +1605,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     buildGhost.rotation.y = buildRotation * Math.PI / 2;
     buildGhost.material.color.setHex(valid ? 0x54ead5 : 0xff655b);
     buildTarget = { x: x, z: z, valid: valid };
+    refreshMobileBuildHud();
   }
 
   function selectBuild(id) {
@@ -1526,6 +1616,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     makeBuildGhost(recipe);
     updateBuildGhost(lastBuildPoint.x,lastBuildPoint.y);
     renderUI(true);
+    if (isMobileBuildUi()) enterMobileBuildPlacement();
   }
 
   function placeBuild() {
@@ -2670,6 +2761,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   }
 
   function closePanels() {
+    exitMobileBuildPlacement();
     ['inventory','craft','build'].forEach((name) => {
       const panel = $('#' + name + 'Panel');
       const button = $('#' + name + 'Btn');
@@ -2700,6 +2792,7 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (button) button.classList.add('active');
     if (document.pointerLockElement) document.exitPointerLock();
     if (name === 'build') {
+      exitMobileBuildPlacement();
       ui.aim.style.display = 'none';
       makeBuildGhost(getRecipe(selectedBuild));
       setTimeout(() => updateBuildGhost(lastBuildPoint.x,lastBuildPoint.y),0);
@@ -2803,11 +2896,29 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (buildGhost) buildGhost.rotation.y = buildRotation * Math.PI / 2;
     audio.tone(260,.08,'triangle',.015,330);
   });
-  $('#levelBtn').addEventListener('click',() => {
+  function toggleBuildLevel() {
     buildLevel = buildLevel === 0 ? 1 : 0;
     renderUI(true);
     updateBuildGhost(lastBuildPoint.x,lastBuildPoint.y);
+    refreshMobileBuildHud();
+  }
+  $('#levelBtn').addEventListener('click',toggleBuildLevel);
+  $('#mobileLevelBuild').addEventListener('click',toggleBuildLevel);
+  $('#mobileRotateBuild').addEventListener('click',() => {
+    buildRotation = (buildRotation + 1) % 4;
+    if (buildGhost) buildGhost.rotation.y = buildRotation * Math.PI / 2;
+    audio.tone(260,.08,'triangle',.015,330);
   });
+  $('#mobilePlaceBuild').addEventListener('click',() => {
+    if (!buildTarget || !buildTarget.valid) {
+      toast('초록색 칸을 먼저 선택해 주세요.', 'bad');
+      return;
+    }
+    placeBuild();
+    refreshMobileBuildHud();
+  });
+  $('#mobileBuildListBtn').addEventListener('click',showMobileBuildList);
+  $('#mobileBuildClose').addEventListener('click',closePanels);
 
   ui.drinkBtn.addEventListener('click',drinkWater);
   ui.eatBtn.addEventListener('click',eatMeal);
@@ -2892,7 +3003,11 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
     if (!running) return;
     if (activePanel === 'build') {
       updateBuildGhost(event.clientX,event.clientY);
-      placeBuild();
+      if (!isMobileBuildUi() || !document.body.classList.contains('mobile-building')) placeBuild();
+      else {
+        audio.tone(buildTarget && buildTarget.valid ? 420 : 120,.06,'triangle',.018);
+        refreshMobileBuildHud();
+      }
       return;
     }
     if (activePanel) return;
@@ -2989,7 +3104,10 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
   joystick.addEventListener('pointerup',releaseJoystick);
   joystick.addEventListener('pointercancel',releaseJoystick);
   $('#mobileAction').addEventListener('click',useSelectedTool);
-  $('#mobileBuild').addEventListener('click',() => openPanel('build'));
+  $('#mobileBuild').addEventListener('click',() => {
+    if (activePanel === 'build' && document.body.classList.contains('mobile-building')) showMobileBuildList();
+    else openPanel('build');
+  });
 
   window.addEventListener('resize',() => {
     camera.aspect = innerWidth / innerHeight;
