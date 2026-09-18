@@ -1,0 +1,13 @@
+Frog — Quaternius
+
+Source model ID: 37wofOCOzG
+Source page: https://poly.pizza/m/37wofOCOzG
+Creator: Quaternius
+License shown by source: Public Domain (CC0)
+License reference: https://creativecommons.org/publicdomain/zero/1.0/
+
+This file was supplied by the user as:
+Frog by Quaternius - 37wofOCOzG.glb
+
+At packaging time the Poly Pizza source page identified this model as Public Domain (CC0).
+Attribution is not required by CC0, but keeping the creator/source metadata is recommended for provenance.

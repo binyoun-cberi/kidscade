@@ -1,0 +1,26 @@
+{
+  "스펠링 프로그": [
+    "assets/game/3d/characters/quaternius/frog.glb",
+    "assets/game/3d/nature/kenney-nature-kit/",
+    "assets/game/3d/vehicles/kenney-car-kit/",
+    "assets/game/3d/city/kenney-city-kit-roads/",
+    "assets/game/3d/rail/kenney-train-kit/"
+  ],
+  "요리/가게 게임": [
+    "assets/game/3d/food/ultimate-food-pack/",
+    "assets/game/3d/interiors/charming-kitchen-set/",
+    "assets/game/3d/interiors/modular-sushi-restaurant-kit/"
+  ],
+  "몬스터/액션/서바이벌 게임": [
+    "assets/game/3d/characters/monsters/ultimate-monsters-bundle/"
+  ],
+  "타워디펜스/SF 게임": [
+    "assets/game/3d/weapons/scifi-turrets/"
+  ],
+  "도시/직업/생활 게임": [
+    "assets/game/3d/city/poly-pizza-city-pack/",
+    "assets/game/3d/buildings/kenney-building-kit/",
+    "assets/game/3d/city/kenney-city-kit-roads/",
+    "assets/game/3d/vehicles/kenney-car-kit/"
+  ]
+}

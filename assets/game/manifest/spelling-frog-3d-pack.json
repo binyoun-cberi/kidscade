@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "name": "Kidscade Spelling Frog 3D Asset Pack",
+  "runtime_format": "GLB",
+  "license_policy": "CC0-only",
+  "packs": [
+    {
+      "pack": "kenney-nature-kit",
+      "files": 329,
+      "bytes": 3034380,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/nature/kenney-nature-kit"
+    },
+    {
+      "pack": "kenney-train-kit",
+      "files": 103,
+      "bytes": 6963280,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/rail/kenney-train-kit"
+    },
+    {
+      "pack": "kenney-car-kit",
+      "files": 50,
+      "bytes": 5629048,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/vehicles/kenney-car-kit"
+    },
+    {
+      "pack": "kenney-city-kit-roads",
+      "files": 95,
+      "bytes": 1569712,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/city/kenney-city-kit-roads"
+    },
+    {
+      "pack": "kenney-building-kit",
+      "files": 79,
+      "bytes": 866180,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/buildings/kenney-building-kit"
+    },
+    {
+      "pack": "quaternius-frog-poly-pizza",
+      "files": 1,
+      "bytes": 379892,
+      "license": "CC0-1.0",
+      "runtime_root": "assets/game/3d/characters/quaternius"
+    }
+  ],
+  "spelling_frog_starter_picks": {
+    "frog": "assets/game/3d/characters/quaternius/frog.glb",
+    "roads": [
+      "assets/game/3d/city/kenney-city-kit-roads/road-straight.glb",
+      "assets/game/3d/city/kenney-city-kit-roads/road-crossing.glb",
+      "assets/game/3d/city/kenney-city-kit-roads/traffic-light.glb",
+      "assets/game/3d/city/kenney-city-kit-roads/road-sign-warning.glb"
+    ],
+    "cars": [
+      "assets/game/3d/vehicles/kenney-car-kit/sedan.glb",
+      "assets/game/3d/vehicles/kenney-car-kit/hatchback-sports.glb",
+      "assets/game/3d/vehicles/kenney-car-kit/suv.glb",
+      "assets/game/3d/vehicles/kenney-car-kit/taxi.glb",
+      "assets/game/3d/vehicles/kenney-car-kit/truck.glb"
+    ],
+    "rail": [
+      "assets/game/3d/rail/kenney-train-kit/railroad-straight.glb",
+      "assets/game/3d/rail/kenney-train-kit/train-diesel-a.glb",
+      "assets/game/3d/rail/kenney-train-kit/train-carriage-box.glb"
+    ],
+    "nature": [
+      "assets/game/3d/nature/kenney-nature-kit/ground-grass.glb",
+      "assets/game/3d/nature/kenney-nature-kit/tree-default.glb",
+      "assets/game/3d/nature/kenney-nature-kit/tree-detailed.glb",
+      "assets/game/3d/nature/kenney-nature-kit/plant-bush.glb",
+      "assets/game/3d/nature/kenney-nature-kit/log.glb",
+      "assets/game/3d/nature/kenney-nature-kit/log-large.glb",
+      "assets/game/3d/nature/kenney-nature-kit/rock-large-a.glb",
+      "assets/game/3d/nature/kenney-nature-kit/flower-yellow-a.glb"
+    ],
+    "background_building_parts": [
+      "assets/game/3d/buildings/kenney-building-kit/floor.glb",
+      "assets/game/3d/buildings/kenney-building-kit/wall.glb",
+      "assets/game/3d/buildings/kenney-building-kit/wall-window-square.glb",
+      "assets/game/3d/buildings/kenney-building-kit/door-rotate-square-a.glb",
+      "assets/game/3d/buildings/kenney-building-kit/roof-flat-square.glb"
+    ]
+  },
+  "total_files": 657,
+  "total_bytes": 18442492,
+  "notes": [
+    "Only GLB runtime models are included from Kenney archives; FBX, OBJ, DAE, STL, previews and duplicate source formats are intentionally omitted.",
+    "Filenames are normalized to lowercase kebab-case.",
+    "Original archive path to runtime path mapping is stored in spelling-frog-3d-source-map.json."
+  ]
+}

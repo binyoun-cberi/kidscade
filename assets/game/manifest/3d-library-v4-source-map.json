@@ -1,0 +1,1832 @@
+{
+  "schemaVersion": 1,
+  "source_archives": [
+    "Ultimate Food Pack-glb.zip",
+    "Scifi Turrets-glb.zip",
+    "Modular Sushi Restaurant Kit-glb.zip",
+    "Charming Kitchen set.undefined-glb.zip",
+    "City Pack.undefined-glb.zip",
+    "Ultimate Monsters Bundle-glb.zip",
+    "Kidscade_Spelling_Frog_3D_Assets_CC0(1).zip"
+  ],
+  "files": [
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Apple Green.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/apple-green.glb",
+      "sha256": "2cebdcc6879dbe37849de87b40a54f2bbc79dedc7b0e87d9548d3422ed25878a"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Avocado.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/avocado.glb",
+      "sha256": "5927bf5279fccd40906dde57100d12f24dafe3bec864e9d762f4de474eec7421"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Bacon.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/bacon.glb",
+      "sha256": "cb3b6d020454292819d84645bd2131012e0402651864dfc2aad0a456e9cb8a2e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Banana.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/banana.glb",
+      "sha256": "21591aec9d58be6e10ba587b8638f8c832a1c1bc4dea30d54d2332ffb4a4162c"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Bottle-Pc8dM9Ja4V.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/bottle-pc8d-m9-ja4-v.glb",
+      "sha256": "d77d36ae493681ca923f90c4dfa520ee93a219fbc8569f21c96516ab47c8b7e0"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Bottle.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/bottle.glb",
+      "sha256": "7245e26241cac72d63aa6ad9efb02b32c1d13ff2dd8648401ab14494b5d181f6"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Bread Slice.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/bread-slice.glb",
+      "sha256": "63dfa6804c55da034a10039b539610639ac621147af1cb189f1950732a310943"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Bread.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/bread.glb",
+      "sha256": "f8b2f48646f5f4b53f16c40e18a7746679736f7036d4b5f8bf674c2f7485fb66"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Broccoli.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/broccoli.glb",
+      "sha256": "451514b0a714674db5c28e7b923bf2660f0bd11aaba2fc19dd5945220aea782c"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Burger.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/burger.glb",
+      "sha256": "e3bb26fddf44d337da0bad919905a6b52b39b0ada8af3d6a094fc54a29a0e634"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Carrot.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/carrot.glb",
+      "sha256": "35a93d9d035df040d52c6d880d11ccacd8fea08ca2e725e056f71b12e196405d"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Cheeseburger.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/cheeseburger.glb",
+      "sha256": "e85e29f9ca072568171e33f284e04ab9440a64cd06e97f8d68511daa74cc4ce7"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Chicken Leg.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/chicken-leg.glb",
+      "sha256": "999b3f327d9a370512076b6ec629f4bec1166888b7d3df583f03558110e7535e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Chocolate Bar.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/chocolate-bar.glb",
+      "sha256": "d34c9ac94fdce13ca2cb99110eb4a47451db8f1b9d12b32ea89d12f6c0686ff2"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Chopsticks.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/chopsticks.glb",
+      "sha256": "df8733da8f859bff68357920dfca345749e7d81009400dbd7428b55bed86e20f"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Cooking Pot-lMEdEOMg9L.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/cooking-pot-l-med-eomg9-l.glb",
+      "sha256": "d1b117fbb1f80f758bc5a3b64ab4c9bbb25448ef287a13013eefec3776fb74c5"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Cooking Pot.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/cooking-pot.glb",
+      "sha256": "3836f63ea0a1135d1dbb6f8a942af6a1bc27912c21d5112c1820e88c64779995"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Corndog.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/corndog.glb",
+      "sha256": "d0f31a34a012772bf5cdc0b8804a4ebacbad0dee1c4d0da3c2959742379c9baf"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Croissant.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/croissant.glb",
+      "sha256": "8c21c64c74783ee6db804a4ae05b23a179800ed432ca194e9563852f8dd880a8"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Cupcake.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/cupcake.glb",
+      "sha256": "469a3d9948bd592dc0d53ebc15bc5cc53a2f097593f23a5f403a2ef693dbad07"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Donut.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/donut.glb",
+      "sha256": "cb8d0edad3f280cf4157d5b7253b6ac6355a5cf86ca8c018bd5ac9c722719728"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Double Cheeseburger.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/double-cheeseburger.glb",
+      "sha256": "46500d8f55a2120719c7ea6bf7e822a93c7e5e0b2884e54f8ea4347599942d11"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Egg Fried.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/egg-fried.glb",
+      "sha256": "6eafcf7b79e0ed698dd51f77a98abf9231a3fe9553658dc20e428cac64a83413"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Egg.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/egg.glb",
+      "sha256": "e5b5b9e98efb77a1e32267e08ce3c6d7608563ad71bc28f5a17b13b9628a7c44"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Eggplant.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/eggplant.glb",
+      "sha256": "ea841bdd7b4ca76831015138852df4f046c9b38de21447a99416078ddc0f8f92"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Fries.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/fries.glb",
+      "sha256": "e8c6c402c7df6cc79eda90bd6dfab652eaf006aadb284b8509bc6bccd72bbd78"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Frying Pan.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/frying-pan.glb",
+      "sha256": "94370dead85a92764d476f3c165b1878a2a7deb6ca2c37959efc64a1c15f2a4e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Hotdog.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/hotdog.glb",
+      "sha256": "fc7d0152dfc685283819562029d0800b667e7ddc3b830268f379b7e90371fb07"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Ice Cream.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/ice-cream.glb",
+      "sha256": "cb5ccf1ab919f24133770af561bebfc7112cfd053be1da8e83a555e1ff468b7d"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Ketchup Bottle.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/ketchup-bottle.glb",
+      "sha256": "89b551c090be4a47056e52654f8cec2007b4d3d0bc47f0d1d030e0bf66d4172e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Lettuce.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/lettuce.glb",
+      "sha256": "02708cb7bd5a88700824ce2646693d078dd50dac7cbbdb7590d262616be3b94e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Mushroom Sliced.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/mushroom-sliced.glb",
+      "sha256": "3e465aed35de6d9615ba124d83dddcb2c3447bf319d9353a2a49ebbbad4870dd"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Pancakes Stack.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/pancakes-stack.glb",
+      "sha256": "790f594ceaa2bb38085ffacb64c32a87041c727cdfe69013438323a5cb0f4cad"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Pepper Green.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/pepper-green.glb",
+      "sha256": "65967854336cfe7a3d24cb9988b5d1c8ef5f5fde6a7262770bf64b2dcc42c6e0"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Pizza Slice.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/pizza-slice.glb",
+      "sha256": "9ced453f1b284414df8804beed642d9af4cf289669a1f7cc75a8c667a4470a90"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Pizza.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/pizza.glb",
+      "sha256": "95fa4d26089fd708ddd550c58267b74f17387f0358071f7ed764a3c98de2d97e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Plate Square.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/plate-square.glb",
+      "sha256": "277dd1da0970f54823a99c14b4e972339e889562d8cdb221884f9970ac2bb876"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Popsicle Chocolate.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/popsicle-chocolate.glb",
+      "sha256": "2d433fe92d888842efebda1de636f27c692a06af0e8c62fb503fe7fb753b34d4"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Popsicle.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/popsicle.glb",
+      "sha256": "4db4730a3fa17abe904ee5d0057a59d2f4197e8b6c52bdaf0e5dead135b801b4"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Pumpkin.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/pumpkin.glb",
+      "sha256": "af4ae31ba704f8b05b69bec18726468feaf527a221e929bbfdf11d6b4c26bd0b"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Soda.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/soda.glb",
+      "sha256": "ec994a7a4bf924d225f5f50d28dfabe22dea05f1717bcf731dfc77a2bd1d8c29"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Spoon.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/spoon.glb",
+      "sha256": "083c09f6d86f7aa0d82254e347e158838ab2b272aca509275546d5477e172776"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Steak.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/steak.glb",
+      "sha256": "822fdf954e9652373b54bca593a2c68e09adcfcc44892d5f0ab470fd728a704e"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Sushi Nigiri.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/sushi-nigiri.glb",
+      "sha256": "f8997d8d21760085479c28ac3608f4429b370982088aec5297b4e0959797be06"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Sushi.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/sushi.glb",
+      "sha256": "6801971eadf9bb213f1addc8f887d4766cd6410cb43b002ebe4a0d2170d64a14"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Tentacle.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/tentacle.glb",
+      "sha256": "be0ae4ab269a41435e7a21d804709b807be47917ab98d21f7bfbd1e4a706f05c"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Tomato Slice.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/tomato-slice.glb",
+      "sha256": "b8aa19f83c7d28176cbe3214add20debd39b2bed9d2aebe28cda2678b353653a"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Tomato.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/tomato.glb",
+      "sha256": "194b8f3c1870fa84a7023769ad7556532dc51af82f5b563df5a69ce37f2a8a6f"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Turnip.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/turnip.glb",
+      "sha256": "b89ad31623a4fd883c5779f8b974a760eac17ca90d4732a13461a669705908f9"
+    },
+    {
+      "source_archive": "Ultimate Food Pack-glb.zip",
+      "source_file": "Waffle.glb",
+      "runtime_path": "assets/game/3d/food/ultimate-food-pack/waffle.glb",
+      "sha256": "99252d433b2311e3ec698e08d3f3b016af58a1b78809c4d70223090c5a9b3fca"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Emp Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/emp-turret.glb",
+      "sha256": "653eaaf027eb220b25095c2fcd7d7e804b52c1f257b6afaf1446090c0be03c6b"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Flamethrower Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/flamethrower-turret.glb",
+      "sha256": "68251ecc1b6e3c8f6153f1eff723546b304cea0abc2894685ce8d127df6933f7"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Gatelng Gun Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/gatelng-gun-turret.glb",
+      "sha256": "8bdeda61bde0e3a43a0aea9f8994046aa2023d246f108c31675e0269b3aa55d9"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Gun Cannon Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/gun-cannon-turret.glb",
+      "sha256": "af4bccfea466c9c2c426bfcf41cbad953af20c2a7af840ae318e2f468a9b1c82"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Hive Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/hive-turret.glb",
+      "sha256": "ae1646619efa79336083704c7949912612b8e2cd6e496107f01519b7c8761e92"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Lighting Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/lighting-turret.glb",
+      "sha256": "97a28c7aaeb819459e5b929d64fcd4293c6ad1d8ca1755fe422eb83d0d83467d"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Missile Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/missile-turret.glb",
+      "sha256": "98f200d23cbb88aa2ea36f122af8b8008eee825ee4aac8fbc1ad5268f2d764b2"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Plasma Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/plasma-turret.glb",
+      "sha256": "51f5c4b3872bc7762d4897b0bbe1d61dba9be71cd0266447039bbf360c86cc7a"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Rail Gun Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/rail-gun-turret.glb",
+      "sha256": "b31f595ff18e5bd4300bf3e2f3cc44b806a89ece0171196efb5360e331a8d51c"
+    },
+    {
+      "source_archive": "Scifi Turrets-glb.zip",
+      "source_file": "Shield Turret.glb",
+      "runtime_path": "assets/game/3d/weapons/scifi-turrets/shield-turret.glb",
+      "sha256": "30e149d793e7f7b52918efd9e32de66d9afc6f623b59869bbdc6614881fbb28b"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Arch.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/arch.glb",
+      "sha256": "6f8baeff8d9b77011bde5821ce5c1592bd2f032b406fa51e403f029d79f62e57"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Avocado.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/avocado.glb",
+      "sha256": "be91c6eef6514cf900e320d777b9b386f0a4a2b92c9d618abd7b5cc958cb0b65"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Bench.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/bench.glb",
+      "sha256": "746c726d642ff279788d9950a7667a15d9963a25a541ca1ff9f2324e76907f91"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Bottle.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/bottle.glb",
+      "sha256": "802bbb4132d0bbc657ac1ecaf65280af737a4c41ff1c78eca2f8a6fbb226374e"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Bottles.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/bottles.glb",
+      "sha256": "dbdc5c0c1fd4f086298f0b05aeca8366df13ddefd63a4afcd0a39fe4c02d211f"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Bowl.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/bowl.glb",
+      "sha256": "52006a9c9e055fbb10c616fa281d32ae1c961881cfe93fefa3e539a249d80d3c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Cabinet Doors.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/cabinet-doors.glb",
+      "sha256": "22b792fc2d1b42cacdce32923da89fd11e90418eeff4a89f8f74cfc3bb62cb76"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Cabinet Shelves-u3A1t5DIMd.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/cabinet-shelves-u3-a1t5-dimd.glb",
+      "sha256": "e03eddcdee60eaddbedb6184329fd80e05e11ae65a75ed86d9e3467b0b15feba"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Cabinet Shelves.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/cabinet-shelves.glb",
+      "sha256": "42960369ee27297b1aed103693754803e790d667dd935f380c04d380afa3387a"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Can Fridge.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/can-fridge.glb",
+      "sha256": "c9d47ab923d03274f9bbcbbf2868753300d2606e6d27b9df5348690f11530b80"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Chair.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/chair.glb",
+      "sha256": "11b3e35e2244fce054f24824d9e9b8a427d56077e0e492c6e9743f11cf28f080"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Chopping board.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/chopping-board.glb",
+      "sha256": "9b8a0378864c3a98297add2aea7d48ef21dc0fcd37a85eb40b6abad88d405330"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Chukaman Steamer.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/chukaman-steamer.glb",
+      "sha256": "dca83bec8a3a283018c1425d84bfdb6f23a76a669991b155c3b5a6512608b8ea"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Chukaman.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/chukaman.glb",
+      "sha256": "ee2cd32e87e22b6ab29d61c15ab258c8619a9ae8ce87196709c644cf576371dd"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Corner.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-corner.glb",
+      "sha256": "557db93dc100521ff65fb72701ca6c1ec6dfd030ce8c676b8e6248a032007dc0"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Door.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-door.glb",
+      "sha256": "dca07172e554bd3c8aa796d61b98ba6a965a23ceaa7367a628d87e4d99072a9d"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Doors.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-doors.glb",
+      "sha256": "172802cc39af2b70b83bdbe4c9c989f9adbc40af613033cc7e337572701ef2b9"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Drawers.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-drawers.glb",
+      "sha256": "e823a65a12fa38cc23ca3cdabfcc8b2129753d97ef884617d9ca54c74e6aee53"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter End.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-end.glb",
+      "sha256": "04a86a7223690108dc2d181b800c286f7932cb47d7a6552cace63890d30dbafa"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Sink.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-sink.glb",
+      "sha256": "8229359f399f8e988c2d7c86b6b88c0e67dfad6affac9d044fa25c8e115ad2e1"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Straight-uwfs2Gbd5I.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-straight-uwfs2-gbd5-i.glb",
+      "sha256": "c416d400dcb1b6ca25fbe9232339d03deb3b34bdc81bf930fa8f32a2e045b6a3"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Counter Straight.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/counter-straight.glb",
+      "sha256": "e0201e0aad0c0c83bd3ecbe41074b6105374654aa98a023dd8cbc1e1d9405a43"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Crabsticks.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/crabsticks.glb",
+      "sha256": "5948fac68e50d22b785b752666f38e50a83eadb7485499fb0dd86270a122146d"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Cucumber.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/cucumber.glb",
+      "sha256": "2cfacaeb2497c8c3bfa4244544f3c744fc8ba60f46dc8ccdd22c59664e8cbf23"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dango.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dango.glb",
+      "sha256": "b40ea80a634a92460adde33f56cafae4f27a3c27637e092eb439aacd133fe991"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Eel.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-eel.glb",
+      "sha256": "fb0efbab9f881e28b80c6c4ffe505970a73190ea8a8db982194a83286778b321"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Fish.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-fish.glb",
+      "sha256": "d5a59b54d6ede68265369303d68cca4bb518ae4ba674b1741f7693ab2f1682bd"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Flounder.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-flounder.glb",
+      "sha256": "a2f69cafb6b5758a26629d6808c6b443af76a96a31bc22b013e29aa3ff2248cd"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Mackerel.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-mackerel.glb",
+      "sha256": "f855b1eb04c98114e28940d6b178d0aac4303c06da29de7a01b73e74bf64a74a"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Octopus.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-octopus.glb",
+      "sha256": "80af4007cb4c82dfa96f3b287b8789566a8fbf7f0a59e94da0be43d4bdc1abb0"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Salmon.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-salmon.glb",
+      "sha256": "91ab511a379106f6540e1a954d54c31e9abf05b4722ca1b491c3c0102d061667"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Dead Tuna.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/dead-tuna.glb",
+      "sha256": "ebf5cfc15392be7c9af504e1df741399ac538b2e16481d9c12f95ca58fcc0fa5"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Doorway.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/doorway.glb",
+      "sha256": "f664fdf69f3fb97ef00022bcec3e146b62f541a90442b0fa93363d8f1e39579a"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Ebi Nigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/ebi-nigiri.glb",
+      "sha256": "c22542bd9fa8ad2c478266174952122e5b2e1f7491f2b84f2fbb247975a8c72c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Ebi.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/ebi.glb",
+      "sha256": "e8c50670a67b6193415dd249763db073b011cbd65677e58a9516355bab2a1fca"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Fish Fillet.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/fish-fillet.glb",
+      "sha256": "bbc4f6eb59d6276de59785a91e5f3d7bbae7a5a08d7bc7f48282befafce5c083"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Fridge.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/fridge.glb",
+      "sha256": "f43f0541d87fd62118b08bb7ada13509ad04b807d76529daa44aa251e86f34a8"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Gyoza.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/gyoza.glb",
+      "sha256": "88d567938a8e5e2c19b973d8c075867e7926215cd27a8fc99d771808adfed125"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Japanese Door.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/japanese-door.glb",
+      "sha256": "e828c4bab8838b5d7eef983d19a6528ea8d31e60d018a19c9af3bcd7b404cbee"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Kitchen Flooring.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/kitchen-flooring.glb",
+      "sha256": "e6eb1dacd4d3b2c95bbe4c71804f15244ff0c323c40aa464e806eeeb95edbe1c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Kitchen Knives.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/kitchen-knives.glb",
+      "sha256": "ec28a269d26cc4b6592b68a01eb6c1b55a8bba4e5bddb70064f95476710a564c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Kitchen.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/kitchen.glb",
+      "sha256": "29e3be572abc5f829e217757c14ceadb43353574f6a008c7894c5b3d561b957e"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Large Pot Filled.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/large-pot-filled.glb",
+      "sha256": "cc6d4be060fa69c3afa35f8b88521c93d5c4719af888db1aaec6858067bb9dc3"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Maguro Nigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/maguro-nigiri.glb",
+      "sha256": "97f12d4e8fc193488a437919224fb98a8056120edf73e2d93155e71c1223afc5"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Normal Wall.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/normal-wall.glb",
+      "sha256": "6e3ab17f90e4323749c649cb8a405a44432f75d3eb51219b67027c53c2590efc"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Octopus Nigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/octopus-nigiri.glb",
+      "sha256": "13ba3ed7512939cd800d93e1117d4e44c099cff7adad8f018453ba308d01d948"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Onigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/onigiri.glb",
+      "sha256": "0d8430657f9e7720c33e104445b0168eab9a760a31f4a76f49ff1a013171f9ff"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Oven.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/oven.glb",
+      "sha256": "cdf4226ef7b0fa5f309807e112d6f40cccdc62cc7bb762dc8ab7d11e78bca8d6"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Pan.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/pan.glb",
+      "sha256": "e5eb5b9f66669f362caff5d4dd9eaeae606ee754d409be3d4782d9f817846415"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Panda.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/panda.glb",
+      "sha256": "09c6f59cabf681ebcedca595645291eed2162c6e47d50b02d410fed5ddedc7ad"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Plate.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/plate.glb",
+      "sha256": "c1333ee34e76d616ad6b800d9e8e22e6a3307fce79de2fc5159e836aa70902e6"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Pot Filled.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/pot-filled.glb",
+      "sha256": "7d69b481f863f6d3bd124dbe5545c5e1519c113c17d174e6e014b7141c09d20d"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rabbit Blond.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rabbit-blond.glb",
+      "sha256": "284276ad175695639a8df651a5dd7ee7951fdf2d4ee3d49a2e5fc50df9f37975"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rabbit Cyan Hair.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rabbit-cyan-hair.glb",
+      "sha256": "591f86cd923522609877fb54fe2c85fa93eeaeda92c0cf6d7b7e15bcf48bd67e"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rabbit Grey.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rabbit-grey.glb",
+      "sha256": "ad5ac592ac3a37565751fe69b2f74883ccc02b7ff6d0faa313ffc4ae6090a0e4"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rabbit With pigtails.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rabbit-with-pigtails.glb",
+      "sha256": "6c4a73caef3bba99bacfa91ce27f7deda0965287799cd91846905a8d83334297"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rabbit.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rabbit.glb",
+      "sha256": "f97a7c07b367e829a0d5ca6a2609f353fbac5ddcd8bbd073b4b03a1f9de663de"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Ramen.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/ramen.glb",
+      "sha256": "844bef68ca80d4409ccc04a587dce60239cb00dccfb23ca14875e5d85d71c494"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Red Wood Wall.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/red-wood-wall.glb",
+      "sha256": "75a7509ccde3ac02d71d15aad083106928ebfeed77406e8812cb2f3dca77efd7"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Rice Ball.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/rice-ball.glb",
+      "sha256": "91e892b0d3552cda111a9f3ec14b041ae79c22314546f238e9b1c365e669c1b2"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Salmon Nigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/salmon-nigiri.glb",
+      "sha256": "0e621dabb0ede33f844adb5ae7d4aa7623ee1c4ed48d49738b8abc6c520b559c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Salmon Roll.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/salmon-roll.glb",
+      "sha256": "bc067d2299a28e8c7f4a4c173d888b7a4b721752eb641f72782b416494662b19"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Salmon.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/salmon.glb",
+      "sha256": "41fff37530f424b461c12291308ea7805065a834b3e0ea81945b50f194216c08"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sea Urchin Open.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sea-urchin-open.glb",
+      "sha256": "3985387a246d52e9dd96cfb495e0395f3b768ba49763f1381f5cca68b7d9ab7b"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sea Urchin Roll.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sea-urchin-roll.glb",
+      "sha256": "9fe0a617cb69544e8e560f774b87227d9a2cb61bfd260ebd8e6432dfa8e0de3b"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sea Urchin.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sea-urchin.glb",
+      "sha256": "28f34c51a05cce667a9f170a380f601bb7b0919b385403c2f23ec5d3c414c04e"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Shimesaba.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/shimesaba.glb",
+      "sha256": "a9cf7aeebc0b8efee9bdef25dc2194c6ddb915d40d8ff391b8fef0f5ce797d24"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Shoji Interior.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/shoji-interior.glb",
+      "sha256": "af0551db579704284cc18ca7164da662475c83558dab52171d55ac26727a84ab"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Shoji Wall.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/shoji-wall.glb",
+      "sha256": "2fc664b34e3d207b2cc8dec41652e8d4f1d771e430c899494ba14118259315fc"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sliced Cucumber.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sliced-cucumber.glb",
+      "sha256": "36a080a78698ce9324cc9760720e062953f03079125d4e0f1e52fe56e625521c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sofa.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sofa.glb",
+      "sha256": "66f6439b5a3e19de6501dc4e501b62dd1cd9c9b96e80900cff39ab7b05758a68"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Squid.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/squid.glb",
+      "sha256": "911ea29b7058fdfdc958ad686c7280bb200ef04144f5940cc407bb65da9421be"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Stool.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/stool.glb",
+      "sha256": "d79a2ebb4cf45a3a621624215f720c0211ae82603fa4094df521815155b3ca25"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sushi Roll.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sushi-roll.glb",
+      "sha256": "71a777848db8601f4fb3a7717e610b0ee1261dba6793b4a2caf8a67b41cae4c4"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Sushi Truck.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/sushi-truck.glb",
+      "sha256": "dde09b72a30012b1d818d7ff5b441b6bd4b7bd37aef1317e06526b24004c558c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Table.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/table.glb",
+      "sha256": "07117a7698b025a5bde102e7e0f4b3429b1b84ce7257906b9f4f5828e0ecac77"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Tamago Nigiri.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/tamago-nigiri.glb",
+      "sha256": "379ee1f0c5771cbdd275aad4f1aaa4b1b32036d824fbd62c003c2cc55918d87d"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Tentacle.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/tentacle.glb",
+      "sha256": "bd63f1402a6afd65256fa811ee48e74a72e3abd4fa35ca84a61cfe980af619a9"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Tile Floor.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/tile-floor.glb",
+      "sha256": "f05cf9232919b060e47376a2057a28934f311d832dcf72110f168f9f2a84f96a"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Torii Gate.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/torii-gate.glb",
+      "sha256": "710064cd2375fd614dfe3d48e8461d15b2872cdd884c815036e1d9b39b58e616"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Udon.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/udon.glb",
+      "sha256": "0fb9b96933dc1313de8209188c31581017eaba0c40395500cf463fe0fd90efb1"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Wall with Shelves.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/wall-with-shelves.glb",
+      "sha256": "e4ce5b7ba1b106300d184a802319947fbb9338dfbee20bdd89da6b84e5cb6fb8"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Wasabi.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/wasabi.glb",
+      "sha256": "b591a0b741c865988e7c06de11bd54fd87062140c2451d3945fd193735e65441"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Wood Floor Broken.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/wood-floor-broken.glb",
+      "sha256": "d66f5f5502572d915b08bfb795599b1e4fa9f94712453b1417d0f9df3e76ada2"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Wood Floor.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/wood-floor.glb",
+      "sha256": "09969afdf0dbca357adb21aefb73eeb0a5de75decda12b53a8a1319fb080bc8c"
+    },
+    {
+      "source_archive": "Modular Sushi Restaurant Kit-glb.zip",
+      "source_file": "Wooden Board.glb",
+      "runtime_path": "assets/game/3d/interiors/modular-sushi-restaurant-kit/wooden-board.glb",
+      "sha256": "a00f82b9b3f26228fd616a742532a2b79387848d5c759f918809dfbf4d444d59"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Blue Mug.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/blue-mug.glb",
+      "sha256": "14a117df70f488da0bac560c4661ed2a52f50701ce38745c1914aaaf0d1769b6"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen A-RmXOsLpzXc.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-a-rm-xos-lpz-xc.glb",
+      "sha256": "5d3426ee8f3dfb591bd43a9ef9b0af72db3720b9ea682e7e4df90fea80476820"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen A-qlI5D097uW.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-a-ql-i5-d097u-w.glb",
+      "sha256": "3bba7a13b11a92aa7895abd3b207b191486754a47c265f077ab5bedae5a86c5c"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen A.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-a.glb",
+      "sha256": "8e441627571ef6bf058ccf6dd1f75d6abb348908b50d356fcd362751365fb6ce"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen B-EKO6vOLQZd.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-b-eko6v-olqzd.glb",
+      "sha256": "d33b0859e8187fe61b555e1845e2527869d339494b9331c1d2b603ef2f2d8f1c"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen B-RYYfoJovT9.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-b-ryyfo-jov-t9.glb",
+      "sha256": "d019d3a19fed55606bdcc21ebbb764bdd31631a632d3e874d09be9f0c856e4c2"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Container Kitchen B.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/container-kitchen-b.glb",
+      "sha256": "8abb4591b765e640be9f48709ea758907538505d395d5a117f34e82d2daadecd"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Corner.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-corner.glb",
+      "sha256": "4b7f57758b9b70f4caf2ddef1e7935d9257c2314eea354ae0dd6fcbf154d4ccb"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Counter O.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-counter-o.glb",
+      "sha256": "4375357f8e165200d8c72a63af4d7f276330ce4b30b435233fd42dcedfed6777"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Single.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-single.glb",
+      "sha256": "aab759d4fde28f0594fc72dde58e134b562f5ad631e9e0c2169e64f5aa60ffd5"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Sink.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-sink.glb",
+      "sha256": "2f0d69eccc745ee0a3f4f74598df53db4b9caaf2c274b98362aaf831d776ba95"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Straight-LXwzLcN9XM.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-straight-lxwz-lc-n9-xm.glb",
+      "sha256": "b3d08d0974a87dff308abbc0b4a8aa9540d10a76236b3e91e4f960f3ea703b76"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Straight-ipDw2lbUn2.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-straight-ip-dw2lb-un2.glb",
+      "sha256": "ec121f4602703e96c2ced35e75683ebeecbf8c805d03ea0332d3e8d708c7f070"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Countertop Straight.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/countertop-straight.glb",
+      "sha256": "5bb5562d1d88b155fe561f6e1f4128c6bdeaac522b2a8431bb32d00505df4bf7"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Cutting Board.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/cutting-board.glb",
+      "sha256": "326a786974d7245d12daf406d43764171625687735f7f7d1d3417f610efbfba2"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Dishrack Plates.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/dishrack-plates.glb",
+      "sha256": "9ebdb747412bdb943198aa641d04480e3435a17845e11ff0399767218ad0e473"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Dishrack.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/dishrack.glb",
+      "sha256": "d5dae4026b0db85db2532bdfc25ad6961839533ad12caf984b403050e322fe44"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Extractor Hood.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/extractor-hood.glb",
+      "sha256": "c851d2e1bf513b1ae8e24a57710d8fe9d554cc825c9d3be96a18555e357b404f"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Floor Tiles Kitchen.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/floor-tiles-kitchen.glb",
+      "sha256": "c80978696a1cced3a5a390ee1b82f88bdcba2a362a95ece6c08ebd16da4a473b"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Fridge.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/fridge.glb",
+      "sha256": "e5ebda7af437586c021aac80e56c678f30c711e321d69dfc3fceca1d64ad9c2e"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Kettle.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/kettle.glb",
+      "sha256": "6f788fca130359557b410bdd5c1a807d64b5cb64311edc8c449c7c5806b9a4be"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Kitchen Blinds.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/kitchen-blinds.glb",
+      "sha256": "cae32759a3c4c4f5a988f052add58c1d592a4bf3eca73c883ceb0661d165ad6a"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Kitchen Knife.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/kitchen-knife.glb",
+      "sha256": "12f0c1a1c00fc5da8524402849eeea2a03b53d68c52d6a48660b6cd513d025cc"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Lid.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/lid.glb",
+      "sha256": "c13488682f293615c535ce4a69d9a3679b932aef9aa9f052732d8b416f5dc5fb"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Mug Yellow.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/mug-yellow.glb",
+      "sha256": "a1d4685273c4d3d215fc2b1a91f7c49c3ab29526e04502d2ab86448ac83126cf"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Oven Glove.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/oven-glove.glb",
+      "sha256": "18f62e863a70e837c10037339c77a4567a558df2feba07d8fea3811546417daf"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Pan.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/pan.glb",
+      "sha256": "2d246f64baa60f7aa6d2cc9ab20878d7e24b19c16ff7e824e9024925c9429bb8"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Papertowel Holder.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/papertowel-holder.glb",
+      "sha256": "646304225f4c7f5179697752cad8d72cf0705bcd49c60716bf3482c45b3b5bd6"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Plate.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/plate.glb",
+      "sha256": "c832d0bb1acebdfedb16f4b8ad3bdb2fbd4db9e381ac4030813eee6df8f96055"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Pot.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/pot.glb",
+      "sha256": "7ccc3aabbaadbe38e95d0e90d7ad7e4b8aa0080ef3346f1fd4e57d2368c75f53"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Red Mug.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/red-mug.glb",
+      "sha256": "820fe49e7c8e1a0169de174820013b8b738fc00f7542d8cc4e2163fde2ee226b"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Spatula.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/spatula.glb",
+      "sha256": "8699b91aa8ae200a51b916c937a09c2bbddcd4ab953dd016b8abab6925fdd736"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Spoon.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/spoon.glb",
+      "sha256": "6a51c34128d351dc75c01c582dc373eb9d9528c425d9bc255239f42749ab674f"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Stove.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/stove.glb",
+      "sha256": "88a2a5998fcecddc0dda4382770b3174a99281bfe9fe772187df656e7b6bd54d"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Toaster.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/toaster.glb",
+      "sha256": "98e9d515dd0125d1fa2aea7de928ac1b4780769adf03f32373f6a279eabf2a27"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Utensils Cup.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/utensils-cup.glb",
+      "sha256": "48f760415bfb6f78feeb0c8cad6dad797afd11d6fe1949968dc3e96a20ce8729"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Cabinet Corner.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-cabinet-corner.glb",
+      "sha256": "ebf3333572d3bbc4af106fda2784e37e97fe7e1f6ba1ad4dabc13dbf370eacaa"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Cabinet Single-TPEJeA6HQM.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-cabinet-single-tpeje-a6-hqm.glb",
+      "sha256": "9478cd5084fceb31a15fe80022c6d7ceee316eb09ccb13c354f59a319a27fc01"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Cabinet Single.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-cabinet-single.glb",
+      "sha256": "d6c0790c0cf182f74b3308d6fe7dbf6f45ee3d4513d0ef94b36fb3eb2b2e3508"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Cabinet Straight.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-cabinet-straight.glb",
+      "sha256": "2defe80b2cb50019c0cc2cedf7faf0bf48ccd0423ebd2421af7f4f3d3c9d6638"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Knife Rack.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-knife-rack.glb",
+      "sha256": "f29aa0b7a6db74fd47de9daa5d48d66cdb99a63858409aff2cd5cf771faa6dc1"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Papertowel.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-papertowel.glb",
+      "sha256": "7a619bb191da1719e12be961ddad6cd663309d1223b8f17cee19d8cfb020acf9"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Plain Kitchen-Sgh2HG9ERM.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-plain-kitchen-sgh2-hg9-erm.glb",
+      "sha256": "ae7a471cfca7980834d583e03ae8dadf99fadba32e8fd0888173d84fc0b7a9b9"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Plain Kitchen-o2tecBL394.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-plain-kitchen-o2tec-bl394.glb",
+      "sha256": "a013651bf10324b4ced44479581935094699136eabf9b0e39de96be748b240ec"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Plain Kitchen-reQyVpOQW3.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-plain-kitchen-re-qy-vp-oqw3.glb",
+      "sha256": "4379b9dead6d803dd1b2bbce05af6d3e9ceda1682e994fd8555c20475d68a207"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Plain Kitchen.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-plain-kitchen.glb",
+      "sha256": "c2c80c2878f0a0ccad9f4474059678435c20cdd52a66552a16bfdb933be8cedc"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Shelf Kitchen H.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-shelf-kitchen-h.glb",
+      "sha256": "a67c27a0d4c198d775220de77becccead5d056f6936257e0fba8e77f2183e9c2"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Shelf Kitchen-j8D5pqHUKm.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-shelf-kitchen-j8-d5pq-hukm.glb",
+      "sha256": "bd2619084b63fdac7442fb0c406cfe6ed82e7604bf91be78948b9a474d543453"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Shelf Kitchen-l0Or3HvwJR.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-shelf-kitchen-l0-or3-hvw-jr.glb",
+      "sha256": "a0c679e6a855579376ad905a3279c2d0a37cb0d0da8f2e98e5dfc5aa31c93961"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Shelf Kitchen.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-shelf-kitchen.glb",
+      "sha256": "9ea2291bf6e4459b8d551230d241812f08eeb3314e3e4caff3de6fa34cb3e1df"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Tiles Kitchen W.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-tiles-kitchen-w.glb",
+      "sha256": "51af25df81b2d491c1ec14b9497ab6c24e7a0a17c9e8138e33da69dd725de8d5"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Tiles Kitchen-kmZKEPYWVf.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-tiles-kitchen-km-zkepywvf.glb",
+      "sha256": "86be9f1c6d6161d097d0efdff13fc3f94956f9987e5661e923dc3ed0989c69bd"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Tiles Kitchen-uYl2trxmns.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-tiles-kitchen-u-yl2trxmns.glb",
+      "sha256": "85af39163fd3c19ef1992bf3f487a09d80744a39d089e64999b5ba1683359216"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Tiles Kitchen-ypup5Vp53J.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-tiles-kitchen-ypup5-vp53-j.glb",
+      "sha256": "f8f71ba802dbb9ffc3f44bc4a8fcecd723ad25463f7e3bcd9ff103a5fb3dc79d"
+    },
+    {
+      "source_archive": "Charming Kitchen set.undefined-glb.zip",
+      "source_file": "Wall Tiles Kitchen.glb",
+      "runtime_path": "assets/game/3d/interiors/charming-kitchen-set/wall-tiles-kitchen.glb",
+      "sha256": "920d9f2d507f0ece45e47d84394e860d2d741574b4fbd04cb86acbe16b19b6f6"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "ATM.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/atm.glb",
+      "sha256": "c2a9de7147a36d1d1625aa099759f6da324ca6d002a2f5ba0949cea01c4719e4"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Adventurer.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/adventurer.glb",
+      "sha256": "4a8639cd8eee9d8a150464edc25eb0536ced464790704a64e40c8620d99f66db"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Air conditioner.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/air-conditioner.glb",
+      "sha256": "3c3f83c02a593b771d8ddbcbaaa2f43085cf297217192b87b5ee3073318bb5b1"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Animated Woman-nIItLV9nxS.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/animated-woman-n-iit-lv9nx-s.glb",
+      "sha256": "a6522fe53d15de21130a957d1bf2b8a9a58d4e4e9a12af646645b667a9bb2d17"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Animated Woman-qJ2gsTUBHL.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/animated-woman-q-j2gs-tubhl.glb",
+      "sha256": "a2212729826b718e59e698211ed3951c22459b48733b1ee6a24fac0abf74dca8"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Animated Woman.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/animated-woman.glb",
+      "sha256": "97a4e8c5e93b5c4f68b25e5240f308aa81ff4ae487b750e62f13e02c338d73e8"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Bench.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/bench.glb",
+      "sha256": "99d354d2b6edba326f772fcc65b4c9ad77184883431d83e3b0c4aa2e55745c24"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Bicycle.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/bicycle.glb",
+      "sha256": "197063f35b41c2c571666792ac7154d45a11d7c96c7f2aa9030e91c5037dc23e"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Big Building.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/big-building.glb",
+      "sha256": "d3b2454f1adb22db87345cb3d5e903593b76b55640f288de1fecf327086b1549"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Billboard.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/billboard.glb",
+      "sha256": "dece50ba1ae265df28d55aacff220b00e24aee681e6bf7ef58e1cbc5ef220804"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Box.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/box.glb",
+      "sha256": "4b6f7b2d17997f75192c706b28e2f894b6dff691bced17963470d2b2ceddbff9"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Brown Building.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/brown-building.glb",
+      "sha256": "983bd8d5b61908cce244d73480e07aeafc9ed5aa13e25a6d136b48fb516dc6a1"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Building Green.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/building-green.glb",
+      "sha256": "7a823bc7f106e52fa36526910d7bcbd5beb456b35f29f2b302e5b1b3e33e016a"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Building Red Corner.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/building-red-corner.glb",
+      "sha256": "aec6e49c3ec3ed7261be791805d027bf362293642b6a12d0193cea3d4a22b9b4"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Building Red.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/building-red.glb",
+      "sha256": "0c6734d818b89af863f581960a35356b31b8ff726c2f30541427bebaefbbcd8b"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Bus Stop.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/bus-stop.glb",
+      "sha256": "8c45977779f6bbd241109840298b489b9fcbb10beed65b8e5e034dcbc4768201"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Bus stop sign.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/bus-stop-sign.glb",
+      "sha256": "40727083e35b17e6516a8e7397e7e2870a72b81854d85ae2820401b336febc63"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Bus.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/bus.glb",
+      "sha256": "594f1e515bd1882467f50bbc3588df5009338e2ec8bbc31eee36c85774207a76"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Car-unqqkULtRU.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/car-unqqk-ult-ru.glb",
+      "sha256": "e5f5fa41c4434383b20287725c0e9d757cbd0f059eedc342ec265d32a195fe39"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Car.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/car.glb",
+      "sha256": "bf00f2f0386a25aa310abc0424d22586e46a59ee6c737e6b375c97c9f01bd462"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Cone.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/cone.glb",
+      "sha256": "efc165ae30ad49f4175373975ac4d5d0ec5a281cbd87db8781fd0d1f8b3fddfb"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Debris Papers.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/debris-papers.glb",
+      "sha256": "a91e8a6cbb0341c32dce875a6c6ea1c6d9d0bed80c15e394f39f5d9c1b582c3d"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Dumpster.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/dumpster.glb",
+      "sha256": "028d71f23ffae44192c45b729603c6b5b92c1f4d77e60a237972ca92f96eecd7"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Fence End.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/fence-end.glb",
+      "sha256": "014ab7b9d87c2d98828852e6af0e537640e9c81b732c5f34c2544eb1a9e81ebf"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Fence Piece.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/fence-piece.glb",
+      "sha256": "ed02131d71b4e83d80f67178de476074d17bee4595c53ca84c6ea8cba125afa0"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Fence.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/fence.glb",
+      "sha256": "26fe262d96f4482351390df040fe8c0c7fd37e3fc33e08524bbc2acb0aacf096"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Fire Exit.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/fire-exit.glb",
+      "sha256": "db8a645caa6aa4b6bf1198b1e66622d5f231bad97a5da400158184b8f6fdc241"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Fire hydrant.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/fire-hydrant.glb",
+      "sha256": "4e4cf07aef98fbad1edeb3bfe0de8e309f216ff3d8147155fa1442a7447a5fe6"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Floor Hole.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/floor-hole.glb",
+      "sha256": "084a783436d8935d761fd301d5e8ad1093c993fa3b95ec73b984bb4bd95804f7"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Flower Pot-Kgt363WkKd.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/flower-pot-kgt363-wk-kd.glb",
+      "sha256": "eaceb6b254efe758829450d90657b6d7cc6db658548c761fd88291cd460396a6"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Flower Pot.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/flower-pot.glb",
+      "sha256": "87eca384af4af3d18dfebd5fe8bf0f6cab91c79d19ccb17ab64ce9dced5db308"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Gb Blank.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/gb-blank.glb",
+      "sha256": "e73ee6146070613c85e19d14378704a8d87e5f5c8d09ddc636066d8d07e724ba"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Greenhouse.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/greenhouse.glb",
+      "sha256": "311dd65a182f3d6d0f39afb2d827131f4e0b95dcb01be2319ac79a487079d9a2"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Mailbox.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/mailbox.glb",
+      "sha256": "c7cc21716a92087bee9c12dae8667bbc3208832ab8d9715cf6ba79ad0e777413"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Man.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/man.glb",
+      "sha256": "dad8fa3ca2bc7760892f9ff47f544941179e50acb2aa772cf9f035154a37fc58"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Manhole Cover.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/manhole-cover.glb",
+      "sha256": "42dacf2105b01499dcf05be846d15bbd79369389447347e5748327d6b16fdc99"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Motorcycle.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/motorcycle.glb",
+      "sha256": "a20a32a457e76cec52eb6c65919f3be8dbbe02d9b4a8ec5e789f11a07a4f39fc"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Pickup Truck.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/pickup-truck.glb",
+      "sha256": "9d6b2e33af0d37bf42b2e7af850949f4efd0ddbb9a88077812d152d8b4c1c3eb"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Pizza Corner.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/pizza-corner.glb",
+      "sha256": "dbe28d57a7981f752be2834aae6eb341af5d6c046410f62afec38a77e532aa73"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Planter & Bushes.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/planter-and-bushes.glb",
+      "sha256": "07430fef272800cd70ef3f5be00e09cbd1bfc1cf93d8fcbd0b5e9e1bbea124f6"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Police Car.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/police-car.glb",
+      "sha256": "2ad6705f58bae2acf806eddb28acd9fc2ff6dc65a726575be5c180631b3132d0"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Power Box.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/power-box.glb",
+      "sha256": "ec3b3b40ffed1d36462aa8b5bb79bf6c58bd75dc55b05173017f024657f9b84f"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "RB Blank.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/rb-blank.glb",
+      "sha256": "af71f89ca768cc1c2043166f2eda118954583551f5412e02e16e9745b0494e3d"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Road Bits.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/road-bits.glb",
+      "sha256": "eb37bbfa8da41fab0ecaa67f1d796c406141ba648f6c0272b4eddfaaffb7de9d"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Rock band poster.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/rock-band-poster.glb",
+      "sha256": "caf4e578468a3530f36c7a8a2d28fbc8fbe05f09b1a06fd02e1a57e88587be49"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Roof Exit.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/roof-exit.glb",
+      "sha256": "511866f60941549a361e3ac90d79a0e8356656a30483f0d07dcba41d0469b9f3"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "SUV.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/suv.glb",
+      "sha256": "1a9ce2bba813dca5005abab09715b01b8b5f4a9c48d7260463afdfeb876aa8b6"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Sports Car-Gzj704DXdr.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/sports-car-gzj704-dxdr.glb",
+      "sha256": "e802a66e1f73d3e35b5d2462656b6e8d30a8e36d229e1776b082a82f955b94d2"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Sports Car.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/sports-car.glb",
+      "sha256": "bbb1c718d2aaf5f4344e9fb2cd66d8332a998a515b09ddd4dfa14698d787124e"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Stop sign.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/stop-sign.glb",
+      "sha256": "c1717a9fff896de589c3ab99979c521eb5b708b0eab2e705ab522a92a7c746d4"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Traffic Light.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/traffic-light.glb",
+      "sha256": "948cae85241d59b35bde0e585e6da6894055da791efa37a06cd75eac82786079"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Trash Can.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/trash-can.glb",
+      "sha256": "845e2cdb8275a521f49c8b65a8006d5e906f32dc12b100ab7cf7a6620bc730f9"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Tree.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/tree.glb",
+      "sha256": "c2fb03e8dd4686082222e3faf0fc248bfd0e333289138133579ba6dc7e7d1cbd"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Van.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/van.glb",
+      "sha256": "21e57a7be6afbea279ed9acd91e2e0bb0ea0543100778386363eec9ccf9f6f5d"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Washing Line.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/washing-line.glb",
+      "sha256": "b9d72d4dd31ef5bac45d9619aef2f6d3f636f34df7828da5d28ec01ab62bb9f4"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "Yellow Post-it.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/yellow-post-it.glb",
+      "sha256": "42a85ed9c75c5d572dc0aa5e588142eecebdbfcc1fda4f15a529afcc46a47dbd"
+    },
+    {
+      "source_archive": "City Pack.undefined-glb.zip",
+      "source_file": "trah bag grey.glb",
+      "runtime_path": "assets/game/3d/city/poly-pizza-city-pack/trah-bag-grey.glb",
+      "sha256": "52e18d9b314c7a2d6abfd0e9fdb4d7afc0a62abaeff79150f190e6e06b421ebc"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Alien-RRliSQBP7r.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/alien-rrli-sqbp7r.glb",
+      "sha256": "746d9caf75897297dfd76678c55dc3dfe84e5b9e6ce816276db300cea11c27bb"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Alien.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/alien.glb",
+      "sha256": "9eb262825e32ce95207243890a980ff4722e6fd6c443ef62aac520e3bc996310"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Alpaking Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/alpaking-evolved.glb",
+      "sha256": "d96b4ffd4cce49cc031d26931639953ebdfa28d0f9713577e69261c0e7f1ba39"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Alpaking.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/alpaking.glb",
+      "sha256": "f1a7a128256db5fede6018a715d4a92d8e2841bbddb3a49e390ce8da3f647ca7"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Armabee Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/armabee-evolved.glb",
+      "sha256": "61a48cfba610e46abba0c98f5371d331f60ed087a55a335580cbf27ba4b3d190"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Armabee.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/armabee.glb",
+      "sha256": "9a47899a2320aa42d5f550598a981c26517c6e27723980f5d2080a557eb88dc2"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Birb.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/birb.glb",
+      "sha256": "63719ca3ebae056716b7e5380d4294b3a3dcc39f6a4f54dc3e5d1af962c3ca1f"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Blue Demon.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/blue-demon.glb",
+      "sha256": "6a8e743deba6f43f0f9b1e702016b04ddba1d3bf73b7101d2c86d64ae526f87c"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Bunny.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/bunny.glb",
+      "sha256": "4a71eb8a80a573560fd93b39cd3c547c978d54ddd288b63000667df757dd50a2"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Cactoro-IGn9lhdama.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/cactoro-ign9lhdama.glb",
+      "sha256": "8a332118f7c688c23e3d5d7d6058e9bbf961c8fe4d1ecdf3f4b3d12dbe91dc84"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Cactoro.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/cactoro.glb",
+      "sha256": "2291a31287306ab430ad4c001dff5fbedba5c79854ad19ddc1c64d5fffc506ab"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Cat.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/cat.glb",
+      "sha256": "aa098d43c1006110d5a4fa3a6e6d4c843c8d8d90ffccc48f5bf32e3aadf7a3a9"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Chicken.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/chicken.glb",
+      "sha256": "3390f6f6944210ed9f612bd0010165d1c443c6186638f9fc4380574bd9e5fce1"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Demon-LnfIziKv4o.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/demon-lnf-izi-kv4o.glb",
+      "sha256": "7da854e1d43428b89b1afca0feca3f323b869b1d8ed7df74d17354260b607262"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Demon.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/demon.glb",
+      "sha256": "9b235359e2e28a8000a92de055ab9c8a9ed123da279461d452357dbbc30de117"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Dino.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/dino.glb",
+      "sha256": "19b9a3841ebfd7595da9cd595b74e231da29730fe8030a2d17a021bc26b563ef"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Dragon Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/dragon-evolved.glb",
+      "sha256": "f660d8f48be4ea3f39639f6206a0181127e7fe7503cb4bad8d07d27d80528f3a"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Dragon.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/dragon.glb",
+      "sha256": "d8a12f3f819e86518f5a44984db611ffaaa800895da33928d66519e629615705"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Fish-ypEYhCImAB.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/fish-yp-eyh-cim-ab.glb",
+      "sha256": "a04abb34053ec7b7080ca8e32ad6e8775e7b4d4b03e2cd2ef27a01e87c82fcca"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Fish.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/fish.glb",
+      "sha256": "1fdc84f17ce6f69e5812989788dec6f14860e48e281afbdb6a9b26cf0540d569"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Frog.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/frog.glb",
+      "sha256": "e649e23848548c74f22a22071ebcd5ddcf78254a9f4ce94417078a7431482309"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Ghost Skull.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb",
+      "sha256": "d1e2268fe9621583ff879d6e6e3ace80b0a6a2373ec0139a8139c88fe6e4d942"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Ghost.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost.glb",
+      "sha256": "4ed7656e2155d47b7d5fe08f31a7e764d79255f477d90040e4472552d7d5ac68"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Glub Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/glub-evolved.glb",
+      "sha256": "cc85f0fe7fa65b9fcbe35fddfc38f28ba564b20533a520b42f2bbb339903a878"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Glub.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/glub.glb",
+      "sha256": "afa0ae7178b047cd3c210fd864aebc8b64e5608a951efc4f073bf538cb04929c"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Goleling Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/goleling-evolved.glb",
+      "sha256": "d397a35eeacbf64cd068d626fa82e8099dc2ae2155df051224c4b575a04f034d"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Goleling.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/goleling.glb",
+      "sha256": "fe6b5a04aef77aa9b38afee216802823b543d2409674bc86bd8bd152cb8cebce"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Green Blob.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/green-blob.glb",
+      "sha256": "31c46edd6306e4ab21bec4608b41003baa74f430f27d357b90c9b6401d88a584"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Green Spiky Blob.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/green-spiky-blob.glb",
+      "sha256": "ad5e8b1cdf8c0d328b4b44537d3da8fa98119a9a99fb6163e2f325dbb8bbecc1"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Hywirl.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/hywirl.glb",
+      "sha256": "90b8f9f252999e71c1bd4bfa76bb219c577a1ecfb10294ca0eb41f903a60d8bd"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Monkroose.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/monkroose.glb",
+      "sha256": "f09adddaba213130b844807cd3cc7cd951abb155fbb08400798152d34acbd3d8"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Mushnub Evolved.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/mushnub-evolved.glb",
+      "sha256": "fe364b07af250c48073c319c0b4460239ca39daab37269a4e23217be46a3331c"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Mushnub.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/mushnub.glb",
+      "sha256": "04614a9d0db2a00d17cd85f4ef9c54e19cd3692530c0724b46809aa928e161e9"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Mushroom King.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/mushroom-king.glb",
+      "sha256": "45bbb9d659697d0127be159af0a58fae3fe8eef430adacaf994efcf0769b2e09"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Ninja-xGYmeDpfTu.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/ninja-x-gyme-dpf-tu.glb",
+      "sha256": "f9d38ed5156252a675b40a16c8a01795c16b78b464edbde1ab9fc46951ae420e"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Ninja.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/ninja.glb",
+      "sha256": "327c9ead9999cd25dbcda757c6c16be0cb1baee9bad224b99c917b4a9a00d15a"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Orc Enemy.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/orc-enemy.glb",
+      "sha256": "7cd4898ef9f64c65bc6f84b718e723550a42709f40e0b38487f976bfc47e893b"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Orc.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/orc.glb",
+      "sha256": "fb5d9da18e16fd3bd6f066692576845d411acf19536d46c7598f5d701b6db19f"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Pigeon.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/pigeon.glb",
+      "sha256": "df8ae4e405a14d7b7d9f9354039b39be0dfe0ac5b53d373b5b660af33deaf96c"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Pink Blob.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/pink-blob.glb",
+      "sha256": "34bb111a7931bb957f992e127d71fac321aaeea1bdcc7da56fa5aba55c83d783"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Squidle.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/squidle.glb",
+      "sha256": "a7c3492fbac79102c550f27306d0b07f5ab8b472f2ace9a78756a293c22d02c2"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Tribal.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/tribal.glb",
+      "sha256": "f42e476a67d5c3ffdfdd5dbcb29e9b9b6aaf235d118640f8fb4f2a40c4907951"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Wizard.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/wizard.glb",
+      "sha256": "fb577146c7624e001222f0efaed6fb553b2fadff181f1a8d2585c3940a5d1a25"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Yeti-ceRHrn8HHE.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/yeti-ce-rhrn8-hhe.glb",
+      "sha256": "789fcdd3d32a1bf6ceaa0e30f9ac5d8d2c52d15fa0181d4d1d980a1b2a2ac869"
+    },
+    {
+      "source_archive": "Ultimate Monsters Bundle-glb.zip",
+      "source_file": "Yeti.glb",
+      "runtime_path": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/yeti.glb",
+      "sha256": "20aaa4fc5fc3b9fe30b6109f88061f2d6f49e03b26a51ebee08f50bd1c26caaf"
+    }
+  ]
+}

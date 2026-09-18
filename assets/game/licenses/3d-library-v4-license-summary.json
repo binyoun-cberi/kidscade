@@ -1,0 +1,75 @@
+{
+  "generated_for": "Kidscade 3D Asset Library v4 add-on",
+  "packs": {
+    "ultimate-food-pack": {
+      "title": "Ultimate Food Pack",
+      "author": "Quaternius",
+      "source": "https://poly.pizza/bundle/Ultimate-Food-Pack-h3WC1gyRb4",
+      "credits_source": null,
+      "declared_license": "CC0-1.0",
+      "license_note": "Poly Pizza bundle page identifies the pack as Public Domain (CC0).",
+      "model_count": 50,
+      "runtime_root": "assets/game/3d/food/ultimate-food-pack/"
+    },
+    "scifi-turrets": {
+      "title": "Scifi Turrets",
+      "author": "Zsky",
+      "source": "https://poly.pizza/bundle/Scifi-Turrets-zFn6sCt0U0",
+      "credits_source": null,
+      "declared_license": "CC-BY",
+      "license_note": "Poly Pizza bundle page identifies all 10 turret models as Creative Commons Attribution.",
+      "model_count": 10,
+      "runtime_root": "assets/game/3d/weapons/scifi-turrets/"
+    },
+    "modular-sushi-restaurant-kit": {
+      "title": "Modular Sushi Restaurant Kit",
+      "author": "Quaternius",
+      "source": "https://poly.pizza/bundle/Modular-Sushi-Restaurant-Kit-LJZrZsNPM7",
+      "credits_source": null,
+      "declared_license": "CC0-1.0",
+      "license_note": "Poly Pizza identifies the bundle as Public Domain (CC0).",
+      "model_count": 86,
+      "runtime_root": "assets/game/3d/interiors/modular-sushi-restaurant-kit/"
+    },
+    "charming-kitchen-set": {
+      "title": "Charming Kitchen set",
+      "author": "Isa Lousberg",
+      "source": "https://poly.pizza/bundle/Charming-Kitchen-set-DsYQKb1K4M",
+      "credits_source": null,
+      "declared_license": "MIXED",
+      "license_note": "Poly Pizza marks this bundle as mixed CC0 / Creative Commons Attribution. Per-model status is recorded below.",
+      "model_count": 55,
+      "runtime_root": "assets/game/3d/interiors/charming-kitchen-set/"
+    },
+    "poly-pizza-city-pack": {
+      "title": "City Pack",
+      "author": "Multiple authors (Poly Pizza bundle by J-Toastie)",
+      "source": "https://poly.pizza/bundle/City-Pack-kJqRAIGsw0",
+      "credits_source": "https://poly.pizza/l/kJqRAIGsw0/credits",
+      "declared_license": "MIXED",
+      "license_note": "Mixed CC0 and CC-BY 3.0. Per-model author/license is recorded in the catalog.",
+      "model_count": 57,
+      "runtime_root": "assets/game/3d/city/poly-pizza-city-pack/"
+    },
+    "ultimate-monsters-bundle": {
+      "title": "Ultimate Monsters Bundle",
+      "author": "Quaternius",
+      "source": "https://poly.pizza/bundle/Ultimate-Monsters-Bundle-5oyGWAmOB6",
+      "credits_source": null,
+      "declared_license": "CC0-1.0",
+      "license_note": "Poly Pizza lists Ultimate Monsters Bundle by Quaternius as CC0.",
+      "model_count": 45,
+      "runtime_root": "assets/game/3d/characters/monsters/ultimate-monsters-bundle/"
+    }
+  },
+  "counts": {
+    "cc0": 881,
+    "cc_by": 79,
+    "review": 0
+  },
+  "notes": [
+    "Source ZIPs did not embed license/readme files for the six newly supplied Poly Pizza bundles.",
+    "License labels in this manifest were matched against the referenced Poly Pizza/author bundle pages.",
+    "Keep ATTRIBUTION_REQUIRED_3D_V4.md when distributing games that use CC-BY files."
+  ]
+}
