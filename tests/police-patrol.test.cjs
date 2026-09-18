@@ -150,7 +150,7 @@ test('Police Patrol only uses valid shared static audio keys',()=>{
   for(const key of keys)assert.ok(audio.sounds[key],'missing audio key '+key);
 });
 
-test('catalog and Cloudflare build point to Police Patrol v4',()=>{
+test('catalog and Cloudflare build point to Police Patrol v7',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_police_car');
   assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=7');
