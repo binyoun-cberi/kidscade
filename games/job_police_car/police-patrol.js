@@ -50,11 +50,13 @@ const MODEL3={
  pine:modelUrl3('nature/kenney-nature-kit/tree-pine-round-a.glb'),
  trafficLight:modelUrl3('city/kenney-city-kit-roads/traffic-light.glb'),
  cone:modelUrl3('city/kenney-city-kit-roads/construction-cone.glb'),
- barrier:modelUrl3('city/kenney-city-kit-roads/construction-barrier.glb')
+ barrier:modelUrl3('city/kenney-city-kit-roads/construction-barrier.glb'),
+ bigBuilding:modelUrl3('city/poly-pizza-city-pack/big-building.glb'),
+ dumpster:modelUrl3('city/poly-pizza-city-pack/dumpster.glb')
 };
 const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
 let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,mission3=null,models3=new Map(),carNodes3=new Map(),prepare3Promise=null,threeReady3=false;
-let missionKey3='',missionMarker3=null,missionArrow3=null,lastRender3=performance.now(),cameraShake3=0,spark3=[],lastHealth3=100;
+let missionKey3='',missionMarker3=null,missionArrow3=null,missionBang3=null,lastRender3=performance.now(),cameraShake3=0,spark3=[],lastHealth3=100;
 const v3=(x,y,h=0)=>new T3.Vector3(x*SCALE3,h,y*SCALE3);
 function box3(w,h,d,color,rough=.82){const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),new T3.MeshStandardMaterial({color,roughness:rough,metalness:.02}));m.castShadow=true;m.receiveShadow=true;return m}
 function clear3(g){if(!g)return;while(g.children.length)g.remove(g.children[g.children.length-1])}
@@ -67,7 +69,7 @@ function init3D(){
  try{
    const c=document.getElementById('game3d');if(!c)return false;
    scene3=new T3.Scene();scene3.background=new T3.Color(0x86c8e4);scene3.fog=new T3.Fog(0x86c8e4,30,66);
-   cam3=new T3.PerspectiveCamera(52,innerWidth/Math.max(1,innerHeight),.08,120);
+   cam3=new T3.PerspectiveCamera(49,innerWidth/Math.max(1,innerHeight),.08,120);
    renderer3=new T3.WebGLRenderer({canvas:c,antialias:true,powerPreference:'high-performance'});
    renderer3.setPixelRatio(Math.min(devicePixelRatio||1,1.65));renderer3.setSize(innerWidth,innerHeight,false);
    renderer3.shadowMap.enabled=true;renderer3.shadowMap.type=T3.PCFSoftShadowMap;renderer3.outputColorSpace=T3.SRGBColorSpace;
@@ -116,8 +118,14 @@ function rebuildCity3D(){
    }else if(b.type==='parking'){
      const lot=box3(w,.08,d,0x777e80,.94);lot.position.set(x,.03,z);world3.add(lot);addParkingLines3(world3,b);
    }else{
-     const h=2.7+b.shade*.55+((Math.abs(Math.floor(b.x+b.y))%3)*.32),g=new T3.Group(),body=box3(w,h,d,buildingColors[b.shade%buildingColors.length],.78);body.position.y=h/2;g.add(body);
-     const roof=box3(w*.9,.18,d*.9,0x48555b,.9);roof.position.y=h+.09;g.add(roof);addWindowStrip3(g,w,d,h);g.position.set(x,0,z);world3.add(g);
+     const landmark=models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
+     if(landmark){
+       const city=clone3('bigBuilding',Math.min(w,d)*.92);if(city){city.position.set(x,.02,z);city.rotation.y=b.shade%2?Math.PI/2:0;world3.add(city)}
+     }else{
+       const h=2.7+b.shade*.55+((Math.abs(Math.floor(b.x+b.y))%3)*.32),g=new T3.Group(),body=box3(w,h,d,buildingColors[b.shade%buildingColors.length],.78);body.position.y=h/2;g.add(body);
+       const roof=box3(w*.9,.18,d*.9,0x48555b,.9);roof.position.y=h+.09;g.add(roof);addWindowStrip3(g,w,d,h);g.position.set(x,0,z);world3.add(g);
+     }
+     if(models3.has('dumpster')&&((Math.abs(Math.round(b.x/GRID))+b.shade)%2===0)){const dump=clone3('dumpster',.55);if(dump){dump.position.set(x+w*.43,.07,z+d*.43);dump.rotation.y=b.shade%2?Math.PI/2:0;world3.add(dump)}}
    }
  }
  const treeKeys=['tree','oak','pine'];
@@ -127,13 +135,15 @@ function rebuildCity3D(){
 function hash3(s=''){let h=2166136261;for(let i=0;i<s.length;i++)h=(h^s.charCodeAt(i))*16777619;return Math.abs(h|0)}
 function clearCarNodes3(){for(const g of carNodes3.values())cars3?.remove(g);carNodes3.clear()}
 function makeCarNode3(c,isPolice=false){
- const key=isPolice?'police':c.suspect?'hatch':['sedan','suv','hatch','taxi','truck'][hash3(c.sprite)%5],group=new T3.Group(),tint=c.suspect?0xe33f4f:null,model=clone3(key,isPolice?1.28:1.18,tint);
+ const key=isPolice?'police':c.suspect?'hatch':['sedan','suv','hatch','taxi','truck'][hash3(c.sprite)%5],group=new T3.Group(),tint=c.suspect?0xe33f4f:null,model=clone3(key,isPolice?1.42:1.16,tint);
  if(model){model.position.y=.04;group.add(model)}else{const body=box3(1.08,.42,.56,isPolice?0xeaf2f8:c.suspect?0xe33f4f:MODEL_COLOR3[key]||0x5c8ad8,.62);body.position.y=.28;group.add(body)}
  if(isPolice){
    const stripe=box3(.9,.06,.58,0x2f67ad,.5);stripe.position.y=.28;group.add(stripe);
    const base=box3(.46,.055,.18,0x202a31,.42);base.position.y=.64;group.add(base);
    const red=box3(.2,.08,.16,0xff3348,.2),blue=box3(.2,.08,.16,0x3185ff,.2);red.position.set(-.12,.7,0);blue.position.set(.12,.7,0);group.add(red,blue);
-   const rl=new T3.PointLight(0xff243b,0,4),bl=new T3.PointLight(0x2d7fff,0,4);rl.position.set(-.12,.72,0);bl.position.set(.12,.72,0);group.add(rl,bl);group.userData.siren={red,blue,rl,bl};
+   const rl=new T3.PointLight(0xff243b,0,5),bl=new T3.PointLight(0x2d7fff,0,5);rl.position.set(-.12,.72,0);bl.position.set(.12,.72,0);
+   const glowGeo=new T3.CircleGeometry(.82,24),redGlow=new T3.Mesh(glowGeo,new T3.MeshBasicMaterial({color:0xff2941,transparent:true,opacity:0,depthWrite:false,blending:T3.AdditiveBlending})),blueGlow=new T3.Mesh(glowGeo,new T3.MeshBasicMaterial({color:0x2f75ff,transparent:true,opacity:0,depthWrite:false,blending:T3.AdditiveBlending}));
+   redGlow.rotation.x=blueGlow.rotation.x=-Math.PI/2;redGlow.position.set(-.35,.015,0);blueGlow.position.set(.35,.016,0);group.add(redGlow,blueGlow,rl,bl);group.userData.siren={red,blue,rl,bl,redGlow,blueGlow};
  }
  if(c.suspect){const halo=new T3.Mesh(new T3.TorusGeometry(.82,.055,8,28),new T3.MeshBasicMaterial({color:0xff5364,transparent:true,opacity:.72}));halo.rotation.x=Math.PI/2;halo.position.y=.05;group.add(halo);group.userData.halo=halo}
  cars3.add(group);carNodes3.set(c,group);return group
@@ -144,15 +154,17 @@ function syncCars3D(time){
  for(const [c,g] of [...carNodes3])if(!live.has(c)){cars3.remove(g);carNodes3.delete(c)}
  const all=[...cars,player];for(const c of all){let g=carNodes3.get(c);if(!g)g=makeCarNode3(c,c===player);g.position.set(c.x*SCALE3,.08,c.y*SCALE3);g.rotation.y=Math.PI/2-c.a;
    if(g.userData.halo){const p=1+Math.sin(time*6)*.08;g.userData.halo.scale.setScalar(p)}
-   if(c===player&&g.userData.siren){const s=g.userData.siren,on=Boolean(player.siren),phase=Math.sin(time*12)>0;s.red.material.emissive=new T3.Color(0xff263d);s.blue.material.emissive=new T3.Color(0x225fff);s.red.material.emissiveIntensity=on&&phase?2.6:.08;s.blue.material.emissiveIntensity=on&&!phase?2.6:.08;s.rl.intensity=on&&phase?2.1:0;s.bl.intensity=on&&!phase?2.1:0}
+   if(c===player&&g.userData.siren){const s=g.userData.siren,on=Boolean(player.siren),phase=Math.sin(time*12)>0;s.red.material.emissive=new T3.Color(0xff263d);s.blue.material.emissive=new T3.Color(0x225fff);s.red.material.emissiveIntensity=on&&phase?2.8:.08;s.blue.material.emissiveIntensity=on&&!phase?2.8:.08;s.rl.intensity=on&&phase?2.5:0;s.bl.intensity=on&&!phase?2.5:0;s.redGlow.material.opacity=on&&phase?.22:0;s.blueGlow.material.opacity=on&&!phase?.22:0}
  }
 }
 function markerColor3(){return mission?.type==='pursuit'?0xff5364:mission?.type==='traffic'?0xffd85e:0x50a9ff}
+function bangSprite3(color=0xffd75e){const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');x.fillStyle='#152232';x.beginPath();x.arc(64,64,45,0,TAU);x.fill();x.strokeStyle='#ffffff';x.lineWidth=7;x.stroke();x.fillStyle='#ffd75e';x.font='900 74px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('!',64,67);const tex=new T3.CanvasTexture(c);tex.colorSpace=T3.SRGBColorSpace;const s=new T3.Sprite(new T3.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(.72,.72,.72);s.renderOrder=20;return s}
 function addProp3(key,x,y,target=1,rot=0,tint=null){const o=clone3(key,target,tint);if(!o)return null;o.position.set(x*SCALE3,.06,y*SCALE3);o.rotation.y=rot;mission3.add(o);return o}
 function rebuildMissionProps3(){
- if(!threeReady3||!mission3)return;clear3(mission3);missionMarker3=null;missionArrow3=null;if(!mission){missionKey3='';return}
- const col=markerColor3(),mat=new T3.MeshBasicMaterial({color:col,transparent:true,opacity:.85}),ring=new T3.Mesh(new T3.TorusGeometry(mission.type==='pursuit'?.85:1.08,.07,8,38),mat);ring.rotation.x=Math.PI/2;ring.position.y=.08;mission3.add(ring);missionMarker3=ring;
- const arrow=new T3.ArrowHelper(new T3.Vector3(1,0,0),new T3.Vector3(),2.2,0xffd75e,.55,.34);mission3.add(arrow);missionArrow3=arrow;
+ if(!threeReady3||!mission3)return;clear3(mission3);missionMarker3=null;missionArrow3=null;missionBang3=null;if(!mission){missionKey3='';return}
+ const col=markerColor3(),mat=new T3.MeshBasicMaterial({color:col,transparent:true,opacity:.78}),ring=new T3.Mesh(new T3.TorusGeometry(mission.type==='pursuit'?.6:.72,.045,8,34),mat);ring.rotation.x=Math.PI/2;ring.position.y=.075;mission3.add(ring);missionMarker3=ring;
+ const bang=bangSprite3(col);mission3.add(bang);missionBang3=bang;
+ const arrow=new T3.ArrowHelper(new T3.Vector3(1,0,0),new T3.Vector3(),1.45,0xffd75e,.34,.21);mission3.add(arrow);missionArrow3=arrow;
  if(mission.type==='accident'){const t=mission.scene;for(let i=-1;i<=1;i++)addProp3('cone',t.x+58,t.y+i*36,.52);addProp3('barrier',t.x-58,t.y,.8,Math.PI/2);const wreck=clone3('sedan',1.12,0x777b7e);if(wreck){wreck.position.set(t.x*SCALE3,.08,t.y*SCALE3);wreck.rotation.y=.45;mission3.add(wreck)}}
  else if(mission.type==='traffic'){for(let i=0;i<mission.index;i++){const p=mission.points[i];addProp3('cone',p.x,p.y,.56)}}
  else if(mission.type==='obstacle'){const t=mission.scene;addProp3('barrier',t.x,t.y,.86,Math.PI/2);addProp3('cone',t.x+38,t.y+30,.56)}
@@ -160,8 +172,9 @@ function rebuildMissionProps3(){
 }
 function syncMission3D(time){
  if(!threeReady3)return;const key=mission?mission.type+':'+(mission.index||0):'';if(key!==missionKey3)rebuildMissionProps3();if(!mission)return;const t=missionTarget();if(!t)return;
- if(missionMarker3){missionMarker3.position.x=t.x*SCALE3;missionMarker3.position.z=t.y*SCALE3;const p=1+Math.sin(time*4.4)*.09;missionMarker3.scale.setScalar(p)}
- if(missionArrow3&&player){const origin=v3(player.x,player.y,.34),target=v3(t.x,t.y,.34),dir=target.clone().sub(origin);dir.y=0;if(dir.lengthSq()>.001){dir.normalize();missionArrow3.position.copy(origin);missionArrow3.setDirection(dir);missionArrow3.setLength(2.3,.55,.34)}}
+ if(missionMarker3){missionMarker3.position.x=t.x*SCALE3;missionMarker3.position.z=t.y*SCALE3;const p=1+Math.sin(time*4.4)*.06;missionMarker3.scale.setScalar(p)}
+ if(missionBang3){missionBang3.position.set(t.x*SCALE3,1.08+Math.sin(time*3.3)*.08,t.y*SCALE3)}
+ if(missionArrow3&&player){const raw=dist(player,t);missionArrow3.visible=raw>180;const origin=v3(player.x,player.y,.32),target=v3(t.x,t.y,.32),dir=target.clone().sub(origin);dir.y=0;if(dir.lengthSq()>.001){dir.normalize();missionArrow3.position.copy(origin);missionArrow3.setDirection(dir);missionArrow3.setLength(1.5,.34,.21)}}
 }
 function sparkBurst3(power=.6){
  if(!threeReady3||!player)return;cameraShake3=Math.max(cameraShake3,.35+power*.65);const pos=v3(player.x,player.y,.42);
@@ -171,8 +184,8 @@ function updateFX3(dt){for(let i=spark3.length-1;i>=0;i--){const p=spark3[i];p.l
 function render3D(time){
  if(!threeReady3||!renderer3||!cam3)return;const now=performance.now(),dt=Math.min(.05,(now-lastRender3)/1000||.016);lastRender3=now;syncCars3D(time);syncMission3D(time);updateFX3(dt);
  if(player){
-   const pos=v3(player.x,player.y,.2),fwd=new T3.Vector3(Math.cos(player.a),0,Math.sin(player.a)),portrait=coarse&&innerHeight>innerWidth,pull=Math.min(2.4,Math.abs(player.speed)*.006);
-   const distBack=(portrait?6.8:7.9)+pull,height=portrait?7.4:6.0,target=pos.clone().addScaledVector(fwd,portrait?2.1:2.8);let desired=pos.clone().addScaledVector(fwd,-distBack);desired.y=height;
+   const pos=v3(player.x,player.y,.26),fwd=new T3.Vector3(Math.cos(player.a),0,Math.sin(player.a)),portrait=coarse&&innerHeight>innerWidth,pull=Math.min(2.0,Math.abs(player.speed)*.0055);
+   const distBack=(portrait?7.0:7.6)+pull,height=portrait?5.15:4.55,target=pos.clone().addScaledVector(fwd,portrait?3.15:3.5);target.y=.48;let desired=pos.clone().addScaledVector(fwd,-distBack);desired.y=height;
    if(cameraShake3>0){const s=cameraShake3*.22;desired.x+=(Math.random()-.5)*s;desired.y+=(Math.random()-.5)*s;desired.z+=(Math.random()-.5)*s}
    cam3.position.lerp(desired,1-Math.pow(.0008,dt));cam3.lookAt(target);
    if(player.health<lastHealth3-.3)sparkBurst3(clamp((lastHealth3-player.health)/10,.25,1));lastHealth3=player.health;
@@ -243,7 +256,7 @@ function setAction(label,fn){if(!label){ui.action.style.display='none';ui.action
 function updateMission(dt){
  if(!mission){missionDelay-=dt;if(missionDelay<=0)spawnMission();return}
  mission.time+=dt;if(mission.time>mission.max)return fail('처리 시간이 지나 다음 신고로 넘어갑니다.');
- const t=missionTarget(),d=t?dist(player,t):0;ui.meta.textContent='목표 '+Math.round(d)+'m · '+Math.ceil(mission.max-mission.time)+'초';
+ const t=missionTarget(),d=t?dist(player,t):0;ui.meta.textContent='목표 '+Math.max(1,Math.round(d*.12))+'m · '+Math.ceil(mission.max-mission.time)+'초';
  if(mission.type==='pursuit'){const s=mission.suspect;if(d<360&&player.siren)s.fleeing=true;const rx=player.x-s.x,ry=player.y-s.y,front=rx*Math.cos(s.a)+ry*Math.sin(s.a),lat=Math.abs(-rx*Math.sin(s.a)+ry*Math.cos(s.a)),block=player.siren&&front>18&&front<145&&lat<90&&Math.abs(player.speed)<78&&d<175;if(block){mission.progress+=dt;s.speed=Math.max(0,s.speed-260*dt);setProgress(mission.progress/1.35*100)}else{mission.progress=Math.max(0,mission.progress-dt);setProgress(d<220?mission.progress/1.35*100:null)}if(mission.progress>=1.35||s.speed<8&&d<130&&player.siren){s.stopped=true;const i=cars.indexOf(s);if(i>=0)cars.splice(i,1);finish(1.5,'수배 차량 검거 완료')}}
  else if(mission.type==='accident'){const parked=d<118&&Math.abs(player.speed)<8;setProgress(d<150?(parked?100:55):null,'#4aa8ff');if(d<135)setAction(parked?'현장 안전 확보 (Enter)':'완전히 정차하세요',parked?()=>finish(1,'사고 현장 수습 완료'):null);else setAction()}
  else if(mission.type==='traffic'){const p=mission.points[mission.index],dd=dist(player,p),parked=dd<82&&Math.abs(player.speed)<8;if(dd<90)setAction(parked?'안전콘 설치 '+(mission.index+1)+'/3':'이 지점에 정차하세요',parked?()=>{mission.index++;missionKey3='';sfx('collect.coin_drop',{volume:.15,cooldownMs:100});if(mission.index>=3)finish(1.2,'교차로 안전 확보 완료')}:null);else setAction()}
