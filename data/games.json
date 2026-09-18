@@ -49,7 +49,8 @@
       "age": "high",
       "icon": "☣️",
       "description": "매주 달라지는 검역 지침을 읽고 체온·UV·혈액·호흡·소지품·통행증을 대조해 8주 동안 감염자를 판별하는 관찰·논리 추론 시뮬레이션!",
-      "scoreKey": "quarantine17BestV2"
+      "scoreKey": "quarantine17BestV2",
+      "cover": "assets/gate-image/격리구역 17.png"
     },
     {
       "id": "job_nail_artist",
@@ -397,7 +398,8 @@
       "category": "trivia",
       "age": "low",
       "icon": "🪐",
-      "description": "작은 물건을 냠냠 먹으며 우주까지 자라요! 나보다 작은 친구도 먹고, 정원과 마을을 지나 행성까지 탐험하는 3D 성장 모험!"
+      "description": "작은 물건을 냠냠 먹으며 우주까지 자라요! 나보다 작은 친구도 먹고, 정원과 마을을 지나 행성까지 탐험하는 3D 성장 모험!",
+      "cover": "assets/gate-image/냠냠 우주 여행.png"
     },
     {
       "id": "low_juice_maker",
@@ -463,7 +465,8 @@
       "category": "music",
       "age": "high",
       "icon": "🗿",
-      "description": "화면을 드래그해서 찰흙, 대리석, 나무 등 다양한 재료를 깎고 빚어보세요! 내 손끝에서 탄생하는 세상에 하나뿐인 나만의 멋진 3D 조각품!"
+      "description": "화면을 드래그해서 찰흙, 대리석, 나무 등 다양한 재료를 깎고 빚어보세요! 내 손끝에서 탄생하는 세상에 하나뿐인 나만의 멋진 3D 조각품!",
+      "cover": "assets/gate-image/꼬마 조각가 스튜디오.png"
     },
     {
       "id": "geo_exorcist",
@@ -553,7 +556,8 @@
       "category": "trivia",
       "age": "high",
       "icon": "🗺️",
-      "description": "우리나라 구석구석, 흩어진 지역 퍼즐을 맞춰 지도를 완성하세요!"
+      "description": "우리나라 구석구석, 흩어진 지역 퍼즐을 맞춰 지도를 완성하세요!",
+      "cover": "assets/gate-image/K-퍼즐 지도 맞추기.png"
     },
     {
       "id": "laser_angle",
@@ -616,7 +620,8 @@
       "icon": "🔢",
       "description": "숫자를 합쳐서 더 큰 숫자를!",
       "scoreKey": "threesScore",
-      "rankKey": "threesRank"
+      "rankKey": "threesRank",
+      "cover": "assets/gate-image/1+2=3 퍼즐.png"
     },
     {
       "id": "math_tower_defense",
@@ -834,7 +839,8 @@
       "icon": "👆",
       "description": "헷갈리는 맞춤법, 스와이프로 맞춰보세요!",
       "scoreKey": "swipeSpellingScore",
-      "rankKey": "swipeSpellingRank"
+      "rankKey": "swipeSpellingRank",
+      "cover": "assets/gate-image/마춤뻡 뀌주.png"
     },
     {
       "id": "language_arcade",
@@ -844,7 +850,8 @@
       "age": "high",
       "icon": "🌏",
       "description": "영단어·영문장·기초/고급 중국어·일본어 퀴즈를 한 곳에서 골라 즐겨요. 기존 문제 데이터를 그대로 모은 외국어 스피드 퀴즈 컬렉션!",
-      "scoreKey": "languageArcadeBest"
+      "scoreKey": "languageArcadeBest",
+      "cover": "assets/gate-image/월드 랭귀지 아케이드.png"
     },
     {
       "id": "math_rune_forest",
@@ -954,7 +961,8 @@
       "age": "high",
       "icon": "🌟",
       "title": "별빛 개척단",
-      "description": "연속 점프로 별 조각을 반대편 성운까지! AI 대전과 2~6인 로컬 대전을 즐기는 전략 보드게임."
+      "description": "연속 점프로 별 조각을 반대편 성운까지! AI 대전과 2~6인 로컬 대전을 즐기는 전략 보드게임.",
+      "cover": "assets/gate-image/별빛 개척단.png"
     },
     {
       "id": "toddler_monkey_vines",
@@ -963,7 +971,8 @@
       "age": "toddler",
       "icon": "🐒",
       "title": "몽키 쏙쏙!",
-      "description": "색을 뽑고 같은 색 덩굴을 톡! 떨어지는 원숭이를 세며 색깔 구별과 수 세기, 차례 기다리기를 익혀요."
+      "description": "색을 뽑고 같은 색 덩굴을 톡! 떨어지는 원숭이를 세며 색깔 구별과 수 세기, 차례 기다리기를 익혀요.",
+      "cover": "assets/gate-image/몽키 쏙쏙!.png"
     },
     {
       "id": "toddler_penguin_ice_pop",
@@ -972,7 +981,8 @@
       "age": "toddler",
       "icon": "🐧",
       "title": "펭귄 얼음 톡톡!",
-      "description": "하얀 얼음과 파란 얼음을 톡톡 깨며 색 구별, 1~3 수 세기, 공간관계와 차례 기다리기를 익혀요."
+      "description": "하얀 얼음과 파란 얼음을 톡톡 깨며 색 구별, 1~3 수 세기, 공간관계와 차례 기다리기를 익혀요.",
+      "cover": "assets/gate-image/펭귄 얼음 톡톡!.png"
     },
     {
       "id": "toddler_color_stack",
@@ -981,7 +991,8 @@
       "age": "toddler",
       "icon": "🧩",
       "title": "색깔 겹겹!",
-      "description": "투명 그림 카드를 차례대로 겹쳐 목표 그림을 완성하며 색·모양 관찰과 순서 사고를 길러요."
+      "description": "투명 그림 카드를 차례대로 겹쳐 목표 그림을 완성하며 색·모양 관찰과 순서 사고를 길러요.",
+      "cover": "assets/gate-image/색깔 겹겹!.png"
     },
     {
       "id": "toddler_three_friends_set",
@@ -990,7 +1001,8 @@
       "age": "low",
       "icon": "🔎",
       "title": "셋 친구 찾기!",
-      "description": "모양·색깔·개수를 비교해 모두 같거나 모두 다른 카드 3장을 찾으며 관찰력과 분류·논리 사고를 길러요."
+      "description": "모양·색깔·개수를 비교해 모두 같거나 모두 다른 카드 3장을 찾으며 관찰력과 분류·논리 사고를 길러요.",
+      "cover": "assets/gate-image/셋 친구 찾기!.png"
     }
   ]
 }
