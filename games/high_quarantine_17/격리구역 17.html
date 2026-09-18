@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>격리구역 17</title>
+<style>
+  :root{
+    --bg:#121417; --panel:#1b1f24; --panel2:#242a31; --line:#3a424d;
+    --paper:#d9d2b9; --ink:#1e2226; --muted:#9aa5b1;
+    --good:#57b96e; --bad:#d85d5d; --warn:#d5a94c; --cyan:#78cbd8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#0c0e10;color:#e9edf0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;min-height:100%}
+  button{font:inherit}
+  body{background:radial-gradient(circle at 50% -20%,#27303a 0,#13171b 38%,#0c0e10 75%)}
+  #game{max-width:1280px;margin:0 auto;padding:18px}
+  .topbar{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;background:#171b20;border:1px solid #333b45;padding:10px 14px;box-shadow:0 8px 24px #0007}
+  .brand{font-weight:900;letter-spacing:.08em}.brand small{font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:0}
+  .week-badge{font-weight:900;color:#111;background:#d9c36b;padding:5px 12px;border-radius:3px;box-shadow:inset 0 -3px #0002}
+  .meters{display:flex;gap:14px;justify-content:flex-end;font-size:13px;color:#c9d0d6;flex-wrap:wrap}.meter strong{color:#fff}
+  .layout{display:grid;grid-template-columns:210px minmax(390px,1fr) 300px;gap:12px;margin-top:12px;min-height:640px}
+  .panel{background:#181c21;border:1px solid #343c46;box-shadow:0 10px 24px #0005;min-width:0}
+  .panel-title{padding:10px 12px;background:#232930;border-bottom:1px solid #3a424d;font-weight:850;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center}
+  .queue{padding:12px}.queue-person{height:82px;background:#101317;border:1px solid #2c343d;margin-bottom:9px;display:flex;align-items:center;gap:10px;padding:8px;overflow:hidden;position:relative}
+  .queue-person img{height:78px;image-rendering:auto;filter:grayscale(.65) brightness(.6)}.queue-person .qname{font-size:12px;color:#8b949e}.queue-person::after{content:"";position:absolute;inset:auto 0 0;height:3px;background:#414b56}
+  .notice-small{font-size:12px;color:#7f8a95;line-height:1.5;padding:8px 2px}
+  .booth{position:relative;overflow:hidden;background:linear-gradient(#333c45 0 18%,#4b555f 18% 19%,#293038 19% 65%,#15191d 65%);min-height:640px}
+  .window{position:absolute;left:7%;right:7%;top:6%;height:45%;background:linear-gradient(#9aa4aa22,#0d1116dd),repeating-linear-gradient(90deg,transparent 0 65px,#aeb9c511 65px 67px);border:10px solid #46515b;box-shadow:inset 0 0 0 2px #111,inset 0 -80px 120px #0007}
+  .window::before{content:"검역선 너머 대기 구역";position:absolute;top:9px;left:12px;color:#9aa6ae;font-size:11px;letter-spacing:.08em}
+  .hazard{position:absolute;left:0;right:0;top:17.2%;height:12px;background:repeating-linear-gradient(135deg,#d6b84d 0 13px,#1a1d20 13px 26px);opacity:.75}
+  .citizen-wrap{position:absolute;top:100px;left:50%;transform:translateX(-50%);width:280px;height:370px;display:flex;align-items:flex-end;justify-content:center;transition:filter .2s}
+  .citizen{position:relative;width:190px;height:320px;display:flex;align-items:flex-end;justify-content:center;animation:idle 2.2s ease-in-out infinite}
+  .citizen .body{height:286px;max-width:180px;object-fit:contain;transform-origin:50% 100%;filter:drop-shadow(0 13px 10px #0009)}
+  .citizen.coughing .body{animation:cough .85s ease-in-out infinite}
+  .eye{position:absolute;width:7px;height:4px;background:#b32424;border-radius:50%;top:92px;opacity:0;box-shadow:0 0 5px #ff4e4e}.eye.e1{left:83px}.eye.e2{left:100px}.red-eyes .eye{opacity:.95}
+  .cough-fx{position:absolute;top:108px;right:5px;width:82px;opacity:0;filter:sepia(1) saturate(.4) brightness(1.6);animation:puff 1.15s ease-out infinite}.coughing .cough-fx{opacity:.5}
+  .uv-spot{position:absolute;width:86px;opacity:0;filter:sepia(1) saturate(8) hue-rotate(125deg) drop-shadow(0 0 10px #61f1ff);mix-blend-mode:screen;pointer-events:none}.uv-spot.s1{left:35px;top:142px;transform:rotate(-17deg) scale(.5)}.uv-spot.s2{right:35px;top:170px;transform:rotate(28deg) scale(.32)}
+  .booth.uvmode{background:linear-gradient(#15202b 0 18%,#24343e 18% 19%,#0a131c 19% 65%,#070c10 65%)}.booth.uvmode .window{background:linear-gradient(#243d6222,#060a11ed)}.booth.uvmode .citizen-wrap{filter:brightness(.72) saturate(.9) hue-rotate(4deg)}.booth.uvmode .uv-positive .uv-spot{opacity:.88}
+  .speech{position:absolute;top:70px;right:16px;max-width:180px;background:#e4dfcc;color:#1f2327;padding:10px 12px;border-radius:3px;font-size:13px;line-height:1.45;box-shadow:0 5px 14px #0006;transform:rotate(1deg)}
+  .speech::after{content:"";position:absolute;left:10px;bottom:-9px;border:9px solid transparent;border-top-color:#e4dfcc;border-left:0}
+  .desk{position:absolute;left:0;right:0;bottom:0;height:185px;background:linear-gradient(#4b3d2f,#2b241e 12%,#181512);border-top:7px solid #63513d;box-shadow:0 -8px 18px #0007;padding:18px 16px 12px}
+  .tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.tool{position:relative;height:78px;border:1px solid #5a5248;background:#24211d;color:#e8e0d4;cursor:pointer;display:flex;align-items:center;gap:9px;padding:8px;text-align:left;transition:.14s}.tool:hover:not(:disabled){transform:translateY(-2px);background:#302b25}.tool:active:not(:disabled){transform:translateY(1px)}.tool:disabled{opacity:.3;cursor:not-allowed}.tool img{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 3px 2px #0008)}.tool b{display:block;font-size:13px}.tool small{font-size:10px;color:#a8a097;display:block;margin-top:2px}.tool.done{outline:2px solid #658993;background:#233036}.kit-count{position:absolute;right:5px;top:4px;background:#a84242;color:#fff;font-weight:800;font-size:10px;padding:2px 5px;border-radius:8px}
+  .test-strip{margin-top:9px;height:35px;display:flex;align-items:center;gap:7px;overflow-x:auto}.result-chip{font-size:11px;background:#11161b;border:1px solid #35404b;padding:6px 8px;white-space:nowrap}.result-chip strong{color:#e7e9ea}
+  .rulebook{height:100%;display:flex;flex-direction:column}.paper{margin:12px;background:var(--paper);color:var(--ink);padding:16px 14px;box-shadow:4px 5px 0 #0004;transform:rotate(-.3deg);min-height:325px;position:relative}.paper::before{content:"검역 지침 / REV." attr(data-rev);display:block;border-bottom:2px solid #363636;padding-bottom:7px;margin-bottom:11px;font-size:11px;font-weight:900;letter-spacing:.1em}.paper h2{font-size:20px;margin:0 0 10px}.rules{margin:0;padding-left:20px}.rules li{font-size:13px;line-height:1.55;margin-bottom:9px}.rules li.new{font-weight:850;background:#bb9d3340}.memo{margin-top:13px;padding:9px;border:1px dashed #665d4f;font-size:11px;line-height:1.5;color:#504a41}.decision{padding:10px 12px 13px;margin-top:auto}.decision h3{font-size:12px;color:#aeb7c1;margin:0 0 7px;letter-spacing:.08em}.decision-grid{display:grid;grid-template-columns:1fr;gap:7px}.decide{height:48px;border:0;color:#fff;font-weight:900;cursor:pointer;letter-spacing:.03em;box-shadow:inset 0 -4px #0003}.decide.pass{background:#3f8d55}.decide.retest{background:#a87c2f}.decide.quarantine{background:#a94343}.decide:hover{filter:brightness(1.12)}
+  .id-card{position:absolute;z-index:8;left:20px;top:78px;width:270px;background:#e4dfcf;color:#1b2025;border:8px solid #b7b09d;padding:11px;box-shadow:8px 10px 24px #000a;transform:rotate(-2deg);display:none}.id-card.open{display:block;animation:paperIn .18s ease-out}.id-head{display:flex;gap:10px;border-bottom:1px solid #776f61;padding-bottom:7px;margin-bottom:7px}.id-photo{width:58px;height:62px;background:#b6c2c3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}.id-photo img{height:60px}.id-card dl{display:grid;grid-template-columns:64px 1fr;gap:5px;margin:0;font-size:12px}.id-card dt{font-weight:800;color:#5c554a}.id-card dd{margin:0}.id-zone{margin-top:9px;text-align:center;font-weight:950;border:2px solid #4f4a42;padding:5px;letter-spacing:.08em}
+  .status-msg{position:absolute;left:50%;top:53%;transform:translate(-50%,-50%);z-index:12;background:#0a0d10e8;border:1px solid #65707c;padding:12px 17px;font-weight:800;box-shadow:0 8px 30px #0009;opacity:0;pointer-events:none;transition:.15s;max-width:70%;text-align:center}.status-msg.show{opacity:1}.stamp{position:absolute;z-index:20;left:50%;top:47%;transform:translate(-50%,-50%) rotate(-8deg) scale(2);border:7px double currentColor;padding:10px 18px;font-size:28px;font-weight:1000;letter-spacing:.08em;opacity:0;pointer-events:none}.stamp.show{animation:stamp .55s cubic-bezier(.1,.8,.2,1)}.stamp.pass{color:#73d287}.stamp.retest{color:#f0bd56}.stamp.quarantine{color:#ef7070}
+  .modal{position:fixed;inset:0;background:#050709dc;display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.modal.show{display:flex}.modal-card{width:min(780px,100%);max-height:90vh;overflow:auto;background:#1a1f24;border:1px solid #505a65;box-shadow:0 25px 80px #000;padding:22px}.modal-card h1,.modal-card h2{margin-top:0}.modal-card p{color:#bac3ca;line-height:1.65}.briefing{display:grid;grid-template-columns:96px 1fr;gap:17px;align-items:start}.briefing img{width:82px;height:82px;object-fit:contain;background:#252b31;padding:10px;border:1px solid #3b444e}.brief-rules{background:#dcd5be;color:#1e2428;padding:13px 16px;margin:14px 0}.brief-rules li{margin:7px 0;line-height:1.45}.primary{border:0;background:#d2b450;color:#171717;font-weight:950;padding:12px 18px;cursor:pointer;box-shadow:inset 0 -4px #0002}.primary:hover{filter:brightness(1.08)}
+  .report{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}.report th,.report td{border-bottom:1px solid #363e46;padding:8px 7px;text-align:left}.report th{color:#9ea9b3}.ok{color:#75d289;font-weight:800}.no{color:#ef7777;font-weight:800}.summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.sum{background:#11151a;border:1px solid #353e47;padding:12px}.sum b{display:block;font-size:22px}.sum small{color:#8f99a3}
+  .kbd{font-family:ui-monospace,monospace;background:#0f1317;border:1px solid #444d56;border-bottom-width:3px;padding:1px 5px;border-radius:3px;font-size:10px;color:#cfd5da}
+  .footer-note{text-align:center;color:#6f7983;font-size:10px;margin-top:10px}
+  @keyframes idle{50%{transform:translateY(-3px)}}
+  @keyframes cough{0%,100%{transform:rotate(0)}30%{transform:rotate(2.2deg) translateX(2px)}50%{transform:rotate(-2deg) translateX(-3px)}}
+  @keyframes puff{0%{transform:translate(0,0) scale(.35);opacity:0}30%{opacity:.55}100%{transform:translate(42px,-16px) scale(1.25);opacity:0}}
+  @keyframes stamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(2.2)}28%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(.94)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(1.03)}}
+  @keyframes paperIn{from{opacity:0;transform:translateY(12px) rotate(-5deg)}to{opacity:1;transform:rotate(-2deg)}}
+  @media(max-width:980px){.layout{grid-template-columns:160px 1fr}.rules-panel{grid-column:1/-1}.rulebook{display:grid;grid-template-columns:1fr 260px}.paper{min-height:0}.booth{min-height:650px}.decision{margin-top:0}.topbar{grid-template-columns:1fr auto}.meters{grid-column:1/-1;justify-content:flex-start}}
+  @media(max-width:680px){#game{padding:8px}.layout{display:block}.queue-panel{display:none}.booth{min-height:630px;margin-bottom:8px}.rules-panel{margin-top:8px}.rulebook{display:block}.tools{grid-template-columns:repeat(2,1fr)}.desk{height:220px}.citizen-wrap{top:85px}.speech{top:40px}.topbar{display:flex;flex-wrap:wrap}.meters{width:100%}.summary-cards{grid-template-columns:1fr}.briefing{grid-template-columns:1fr}.briefing img{display:none}}
+</style>
+</head>
+<body>
+<div id="game">
+  <header class="topbar">
+    <div class="brand">QUARANTINE 17 <small>검역 판정소</small></div>
+    <div class="week-badge" id="weekBadge">1주차</div>
+    <div class="meters">
+      <div class="meter">시민 신뢰 <strong id="trust">82</strong></div>
+      <div class="meter">도시 감염률 <strong id="infection">9%</strong></div>
+      <div class="meter">점수 <strong id="score">0</strong></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel queue-panel">
+      <div class="panel-title"><span>대기열</span><small id="caseCounter">1 / 6</small></div>
+      <div class="queue" id="queue"></div>
+    </aside>
+
+    <section class="panel booth" id="booth">
+      <div class="window"></div><div class="hazard"></div>
+      <div class="citizen-wrap">
+        <div class="citizen" id="citizen">
+          <img class="body" id="citizenImg" alt="검사 대상 시민" />
+          <span class="eye e1"></span><span class="eye e2"></span>
+          <img class="cough-fx" src="../../assets/game/effects/particles/kenney-particle-pack/smoke-03.png" alt="" />
+          <img class="uv-spot s1" src="../../assets/game/effects/splats/kenney-splat-pack/256px/splat13.png" alt="" />
+          <img class="uv-spot s2" src="../../assets/game/effects/splats/kenney-splat-pack/256px/splat13.png" alt="" />
+        </div>
+      </div>
+      <div class="speech" id="speech">…</div>
+
+      <section class="id-card" id="idCard" aria-label="신분증">
+        <div class="id-head"><div class="id-photo"><img id="idPhoto" alt="신분증 사진" /></div><div><b>제17구역 통행증</b><br><small id="permit">#000000</small></div></div>
+        <dl><dt>성명</dt><dd id="idName"></dd><dt>나이</dt><dd id="idAge"></dd><dt>거주지</dt><dd id="idDistrict"></dd><dt>직업</dt><dd id="idJob"></dd></dl>
+        <div class="id-zone" id="idZone"></div>
+      </section>
+
+      <div class="status-msg" id="statusMsg" aria-live="polite"></div>
+      <div class="stamp" id="stamp">통과</div>
+
+      <div class="desk">
+        <div class="tools">
+          <button class="tool" id="toolId" type="button"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-151.png" alt=""><span><b>신분증</b><small>정보 확인 · I</small></span></button>
+          <button class="tool" id="toolTemp" type="button"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-094.png" alt=""><span><b>체온계</b><small>체온 측정 · T</small></span></button>
+          <button class="tool" id="toolUv" type="button"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-091.png" alt=""><span><b>UV 검사</b><small>형광 반응 · U</small></span></button>
+          <button class="tool" id="toolBlood" type="button"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-093.png" alt=""><span><b>혈액 검사</b><small>항원 반응 · B</small></span><span class="kit-count" id="kitCount">0</span></button>
+        </div>
+        <div class="test-strip" id="testStrip"><span class="result-chip">검사 결과가 여기에 기록됩니다.</span></div>
+      </div>
+    </section>
+
+    <aside class="panel rules-panel">
+      <div class="panel-title"><span>금주의 검역 지침</span><small><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span></small></div>
+      <div class="rulebook">
+        <div class="paper" id="paper" data-rev="01"><h2 id="ruleTitle">초기 감염 기준</h2><ol class="rules" id="rules"></ol><div class="memo" id="memo"></div></div>
+        <div class="decision"><h3>최종 판정</h3><div class="decision-grid">
+          <button type="button" class="decide pass" data-action="pass">1 · 통과</button>
+          <button type="button" class="decide retest" data-action="retest">2 · 추가검사</button>
+          <button type="button" class="decide quarantine" data-action="quarantine">3 · 격리</button>
+        </div></div>
+      </div>
+    </aside>
+  </main>
+  <div class="footer-note">프로토타입 v1 · Kenney CC0 무료 에셋 기반 · 데이터 저장/서버 연결 없음</div>
+</div>
+
+<div class="modal show" id="introModal">
+  <div class="modal-card">
+    <div class="briefing"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-102.png" alt="의료 가방"><div>
+      <h1>격리구역 17 : 검역 판정소</h1>
+      <p>도시 외곽 제17검역소에 배치되었습니다. 시민의 증상을 확인하고, 매주 바뀌는 규정을 적용해 <b>통과 / 추가검사 / 격리</b> 중 하나를 판정하세요.</p>
+      <p>초기에는 단순하지만 2주차부터 새로운 검사법이 추가됩니다. 감염자를 놓치면 도시 감염률이 오르고, 정상인을 과잉 격리하면 시민 신뢰가 떨어집니다.</p>
+      <div class="brief-rules"><b>조작</b><br>도구 클릭 또는 <b>I/T/U/B</b> · 판정은 <b>1/2/3</b><br>신분증과 검사 결과를 지침서와 대조하세요.</div>
+      <button class="primary" id="startBtn" type="button">근무 시작</button>
+    </div></div>
+  </div>
+</div>
+
+<div class="modal" id="briefModal"><div class="modal-card" id="briefContent"></div></div>
+<div class="modal" id="reportModal"><div class="modal-card" id="reportContent"></div></div>
+
+<script>
+(()=>{
+'use strict';
+const A='../../assets/game/characters/people/kenney-platformer-characters/';
+const sprites={
+ player:A+'player/poses/player-stand.png', female:A+'female/poses/female-stand.png',
+ adventurer:A+'adventurer/poses/adventurer-stand.png', soldier:A+'soldier/poses/soldier-stand.png',
+ zombie:A+'zombie/poses/zombie-stand.png'
+};
+const weeks=[
+ {week:1,title:'초기 감염 기준',rev:'01',newTool:'체온계',bloodKits:0,
+  rules:['체온이 38.0℃ 이상이면서 기침 증상이 있으면 즉시 격리한다.','발열 또는 기침 중 하나만 확인될 경우 통과시킨다.','육안 판단만으로 격리하지 않는다.'],
+  memo:'감염 초기 보고: 복합 증상(고열 + 지속 기침)이 가장 신뢰할 수 있는 판별 기준이다.',
+  citizens:[
+   c('김도윤',31,'A-2','정비사','player',36.7,false,false,false,'아침부터 줄이 길군요.','pass','복합 증상이 없습니다.'),
+   c('박유진',27,'C-1','서점원','female',38.6,true,false,false,'콜록… 어젯밤부터 몸이 으슬으슬해요.','quarantine','38℃ 이상 + 기침이 함께 확인되었습니다.',true),
+   c('오현수',44,'B-4','배관공','adventurer',38.4,false,false,false,'열은 좀 나는 것 같은데 기침은 안 합니다.','pass','발열만 있고 기침은 없습니다.'),
+   c('서하린',22,'A-5','학생','female',37.2,true,false,false,'콜록… 먼지 많은 창고에서 일했어요.','pass','기침만 있고 고열은 없습니다.'),
+   c('장민재',36,'C-3','운송기사','soldier',39.1,true,false,false,'콜록! 빨리 끝내 주시죠.','quarantine','고열과 기침이 동시에 확인되었습니다.',true),
+   c('윤서아',52,'B-1','조리사','adventurer',36.9,false,false,false,'검사 끝나면 바로 출근해야 해요.','pass','감염 기준에 해당하지 않습니다.') ]},
+ {week:2,title:'형광성 피부 반응',rev:'02',newTool:'UV 검사기',bloodKits:0,
+  rules:['기존의 고열 + 기침 복합 기준은 유지한다.','UV 조사에서 청록색 형광 반점이 확인되면 체온과 무관하게 격리한다.','일반 피부 얼룩은 UV에서 빛나지 않는다.'],
+  memo:'신규 변이 B형은 피부 아래에 형광성 병변을 만든다. 육안으로는 거의 보이지 않는다.',
+  citizens:[
+   c('이주원',29,'A-4','우편원','player',36.6,false,false,false,'별일 없습니다. 통과할 수 있죠?','pass','고열·기침·UV 반응이 모두 없습니다.'),
+   c('한예린',34,'B-2','교사','female',36.8,false,true,false,'피부가 조금 간지럽긴 해요.','quarantine','UV에서 감염성 형광 반점이 확인되었습니다.',true),
+   c('강태오',41,'C-5','용접공','adventurer',38.5,false,false,false,'작업장 열기 때문에 그런가 봅니다.','pass','고열만 있으며 UV 반응과 기침이 없습니다.'),
+   c('최은비',25,'A-1','디자이너','female',37.0,true,false,false,'콜록… 감기약은 먹었습니다.','pass','기침만 있고 다른 감염 기준은 없습니다.'),
+   c('문지후',38,'C-2','경비원','soldier',38.8,true,false,false,'콜록! 검사 빨리 해주세요.','quarantine','고열 + 기침 복합 기준에 해당합니다.',true),
+   c('정하나',46,'B-6','화훼사','adventurer',37.3,true,true,false,'꽃가루 때문인지 자꾸 기침이…','quarantine','UV 형광 반점이 확인되어 즉시 격리 대상입니다.',true),
+   c('배시우',33,'A-7','회계사','player',36.5,false,false,false,'오늘 중요한 회의가 있습니다.','pass','모든 감염 기준이 음성입니다.') ]},
+ {week:3,title:'무증상 변이와 특별구역',rev:'03',newTool:'혈액 검사',bloodKits:4,
+  rules:['고열 + 기침이 함께 있으면 이전과 같이 즉시 격리한다.','D-7 거주자는 증상과 무관하게 혈액 검사가 의무다. 양성이면 격리, 음성이면 통과한다.','D-7 이외 시민에게 UV 형광 반점만 확인되면 즉시 격리하지 말고 추가검사로 보낸다.'],
+  memo:'K형 변이는 무증상 사례가 보고되었다. 혈액 키트는 부족하다. D-7 의무 대상에게 우선 사용하라.',
+  citizens:[
+   c('남지안',26,'D-7','연구보조','female',36.6,false,false,true,'전 아무 증상도 없는데요.','quarantine','D-7 의무 혈액검사에서 양성입니다.',true),
+   c('고민준',48,'B-5','목수','adventurer',36.9,false,true,false,'팔에 뭔가 난 것 같긴 합니다.','retest','D-7 외 시민의 단독 UV 반응은 추가검사 대상입니다.'),
+   c('신유나',39,'C-4','간호조무사','female',39.0,true,false,false,'콜록… 몸이 많이 뜨겁네요.','quarantine','고열 + 기침 복합 기준에 해당합니다.',true),
+   c('류정우',30,'D-7','택배기사','player',36.8,false,false,false,'D-7이라고 다 감염자는 아니잖아요.','pass','D-7 의무 혈액검사 음성입니다.'),
+   c('임소민',21,'A-3','학생','female',38.2,false,false,false,'열은 있지만 다른 건 괜찮아요.','pass','고열만으로는 격리 기준이 아닙니다.'),
+   c('황도현',55,'D-7','시설관리','soldier',37.1,true,false,true,'콜록… 그냥 목이 칼칼한 겁니다.','quarantine','D-7 혈액검사 양성입니다.',true),
+   c('조아라',43,'B-3','약사','adventurer',36.7,false,true,false,'피부 얼룩이 신경 쓰이네요.','retest','단독 UV 반응은 추가검사 대상입니다.'),
+   c('차시온',35,'D-7','공무원','player',36.5,false,false,false,'규정대로 검사해 주세요.','pass','D-7 혈액검사 음성입니다.') ]}
+];
+function c(name,age,district,job,sprite,temp,cough,uv,blood,dialogue,correct,reason,infected=false){
+ return {name,age,district,job,sprite,temp,cough,uv,blood,dialogue,correct,reason,infected,permit:'#'+String(Math.floor(100000+Math.random()*899999)),redEyes: infected && temp>=38.5};
+}
+let state={weekIndex:0,caseIndex:0,trust:82,infection:9,score:0,bloodKits:0,records:[],tests:{},locked:false,started:false};
+const $=id=>document.getElementById(id);
+const booth=$('booth'), citizen=$('citizen'), img=$('citizenImg'), speech=$('speech');
+const buttons={id:$('toolId'),temp:$('toolTemp'),uv:$('toolUv'),blood:$('toolBlood')};
+function currentWeek(){return weeks[state.weekIndex]} function current(){return currentWeek().citizens[state.caseIndex]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function tone(freq=440,dur=.06,type='square',gain=.035){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return; window.__ac=window.__ac||new AC(); const ac=window.__ac,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.value=gain;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.stop(ac.currentTime+dur)}catch(e){}}
+function clickSound(){tone(540,.035,'square',.025)} function errorSound(){tone(150,.12,'sawtooth',.035)}
+function showMsg(text,ms=1200){const m=$('statusMsg');m.textContent=text;m.classList.add('show');clearTimeout(showMsg.t);showMsg.t=setTimeout(()=>m.classList.remove('show'),ms)}
+function renderHeader(){ $('weekBadge').textContent=(state.weekIndex+1)+'주차'; $('trust').textContent=state.trust; $('infection').textContent=state.infection+'%'; $('score').textContent=state.score; $('caseCounter').textContent=(state.caseIndex+1)+' / '+currentWeek().citizens.length; }
+function renderRules(){const w=currentWeek();$('ruleTitle').textContent=w.title;$('paper').dataset.rev=w.rev;$('rules').innerHTML=w.rules.map((r,i)=>'<li'+(i===w.rules.length-1&&state.weekIndex>0?' class="new"':'')+'>'+r+'</li>').join('');$('memo').textContent=w.memo;}
+function renderQueue(){const list=currentWeek().citizens.slice(state.caseIndex+1,state.caseIndex+4);$('queue').innerHTML=list.length?list.map((p,i)=>`<div class="queue-person"><img src="${sprites[p.sprite]}" alt=""><div><b>대기 ${i+1}</b><div class="qname">신원 확인 전</div></div></div>`).join('')+'<div class="notice-small">앞의 시민부터 차례로 판정합니다. 대기자의 증상은 미리 확인할 수 없습니다.</div>':'<div class="notice-small">마지막 검사 대상입니다.</div>';}
+function setToolAvailability(){const wi=state.weekIndex;buttons.id.disabled=false;buttons.temp.disabled=false;buttons.uv.disabled=wi<1;buttons.blood.disabled=wi<2;$('kitCount').textContent=state.bloodKits;}
+function resetTests(){state.tests={id:false,temp:false,uv:false,blood:false};Object.values(buttons).forEach(b=>b.classList.remove('done'));$('idCard').classList.remove('open');booth.classList.remove('uvmode');$('testStrip').innerHTML='<span class="result-chip">검사 결과가 여기에 기록됩니다.</span>';}
+function addChip(label,value,cls=''){const strip=$('testStrip'); if(strip.children.length===1&&strip.textContent.includes('검사 결과')) strip.innerHTML=''; const s=document.createElement('span');s.className='result-chip '+cls;s.innerHTML='<strong>'+label+'</strong> '+value;strip.appendChild(s);}
+function loadCase(){state.locked=false;resetTests();const p=current();img.src=sprites[p.sprite];$('idPhoto').src=sprites[p.sprite];speech.textContent=p.dialogue;citizen.classList.toggle('coughing',p.cough);citizen.classList.toggle('uv-positive',p.uv);citizen.classList.toggle('red-eyes',p.redEyes);img.style.filter=`drop-shadow(0 13px 10px #0009) hue-rotate(${(state.caseIndex%4-1.5)*5}deg)`;
+ $('idName').textContent=p.name;$('idAge').textContent=p.age+'세';$('idDistrict').textContent=p.district+' 구역';$('idJob').textContent=p.job;$('permit').textContent=p.permit;$('idZone').textContent=p.district==='D-7'?'특별관리구역 D-7':'일반 통행 구역 '+p.district;renderHeader();renderQueue();setToolAvailability();}
+function inspectId(){if(state.locked)return;clickSound();state.tests.id=true;buttons.id.classList.add('done');$('idCard').classList.toggle('open');addChip('신원',current().district+' / '+current().name);}
+function inspectTemp(){if(state.locked)return;clickSound();if(state.tests.temp){showMsg('체온은 이미 측정했습니다.');return}state.tests.temp=true;buttons.temp.classList.add('done');const v=current().temp.toFixed(1)+'℃';addChip('체온',v);showMsg('체온 '+v,900);}
+function inspectUv(){if(state.locked||state.weekIndex<1)return;clickSound();state.tests.uv=true;buttons.uv.classList.add('done');booth.classList.toggle('uvmode'); if(booth.classList.contains('uvmode')){addChip('UV',current().uv?'형광 반응 있음':'반응 없음');showMsg(current().uv?'청록색 형광 반응 발견':'형광 반응 없음',1000)}}
+function inspectBlood(){if(state.locked||state.weekIndex<2)return;clickSound();if(state.tests.blood){showMsg('혈액 검사는 이미 완료했습니다.');return}if(state.bloodKits<=0){errorSound();showMsg('혈액 검사 키트가 없습니다.',1500);return}state.tests.blood=true;state.bloodKits--;buttons.blood.classList.add('done');setToolAvailability();showMsg('검사 중…',650);setTimeout(()=>{addChip('혈액',current().blood?'양성 (+)':'음성 (−)');showMsg(current().blood?'항원 양성':'항원 음성',1100);tone(current().blood?210:700,.09,'square',.03)},650)}
+function validateDecision(action){const p=current();if(state.weekIndex===2&&p.district==='D-7'&&!state.tests.blood){return 'D-7 거주자는 혈액검사가 의무입니다.'}return null;}
+function decide(action){if(state.locked)return;const err=validateDecision(action);if(err){errorSound();showMsg(err,1800);return}state.locked=true;$('idCard').classList.remove('open');booth.classList.remove('uvmode');const p=current(), ok=action===p.correct;const rec={...p,chosen:action,ok,tests:{...state.tests}};state.records.push(rec);
+ if(ok){state.score+=100;state.trust=clamp(state.trust+1,0,100);if(p.infected&&action==='quarantine')state.infection=clamp(state.infection-1,0,99);tone(520,.05,'square',.025)}else{state.score=Math.max(0,state.score-35);if(action==='pass'&&p.infected){state.infection=clamp(state.infection+4,0,99);state.trust=clamp(state.trust-2,0,100)}else if(action==='quarantine'&&p.correct!=='quarantine'){state.trust=clamp(state.trust-7,0,100)}else{state.trust=clamp(state.trust-3,0,100);state.infection=clamp(state.infection+1,0,99)}errorSound()}
+ renderHeader();stamp(action);setTimeout(nextCase,650);}
+function stamp(action){const s=$('stamp');const labels={pass:'통 과',retest:'추가검사',quarantine:'격 리'};s.textContent=labels[action];s.className='stamp '+action;void s.offsetWidth;s.classList.add('show');tone(action==='quarantine'?115:action==='retest'?220:360,.09,'square',.04)}
+function nextCase(){if(state.caseIndex+1<currentWeek().citizens.length){state.caseIndex++;loadCase()}else{showReport()}}
+function actionK(a){return {pass:'통과',retest:'추가검사',quarantine:'격리'}[a]}
+function showReport(){const rows=state.records.map(r=>`<tr><td>${r.name}</td><td>${actionK(r.chosen)}</td><td>${actionK(r.correct)}</td><td class="${r.ok?'ok':'no'}">${r.ok?'정확':'오판'}</td><td>${r.reason}</td></tr>`).join('');const okCount=state.records.filter(r=>r.ok).length;const total=state.records.length;$('reportContent').innerHTML=`<h2>${state.weekIndex+1}주차 검역 보고서</h2><div class="summary-cards"><div class="sum"><b>${okCount}/${total}</b><small>정확 판정</small></div><div class="sum"><b>${state.trust}</b><small>시민 신뢰</small></div><div class="sum"><b>${state.infection}%</b><small>도시 감염률</small></div></div><table class="report"><thead><tr><th>시민</th><th>내 판정</th><th>정답</th><th>결과</th><th>근거</th></tr></thead><tbody>${rows}</tbody></table>${state.weekIndex<weeks.length-1?'<button class="primary" id="continueBtn" type="button">다음 주로</button>':finalText()}`;$('reportModal').classList.add('show');const b=$('continueBtn');if(b)b.addEventListener('click',()=>{clickSound();$('reportModal').classList.remove('show');state.weekIndex++;state.caseIndex=0;state.records=[];state.bloodKits=currentWeek().bloodKits;renderRules();showBriefing();});}
+function finalText(){let verdict='검역소는 간신히 통제선을 유지했습니다.';if(state.infection<=9&&state.trust>=70)verdict='정확한 판정 덕분에 검역소와 도시 모두 안정적으로 유지되었습니다.';else if(state.infection>=20)verdict='놓친 감염자가 누적되어 도시 안쪽의 감염이 빠르게 확산되고 있습니다.';else if(state.trust<55)verdict='과잉 격리 논란으로 시민들의 검역소 신뢰가 크게 흔들리고 있습니다.';return `<div class="brief-rules"><b>3주 프로토타입 종료</b><br>${verdict}<br><br>최종 점수 ${state.score} · 신뢰 ${state.trust} · 감염률 ${state.infection}%</div><button class="primary" id="restartBtn" type="button">처음부터 다시</button>`;}
+function showBriefing(){const w=currentWeek();$('briefContent').innerHTML=`<div class="briefing"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-033.png" alt="규정집"><div><h2>${w.week}주차 새 지침</h2><p><b>${w.newTool}</b>${w.week===1?' 사용을 시작합니다.':'가 추가되었습니다.'} 규정이 누적되어 복잡해집니다.</p><div class="brief-rules"><ol>${w.rules.map(r=>'<li>'+r+'</li>').join('')}</ol></div>${w.week===3?'<p>이번 주 혈액 키트는 <b>4개</b>뿐입니다. D-7 의무검사 대상 수와 정확히 같습니다.</p>':''}<button class="primary" id="briefStart" type="button">검역 개시</button></div></div>`;$('briefModal').classList.add('show');$('briefStart').addEventListener('click',()=>{clickSound();$('briefModal').classList.remove('show');loadCase()});}
+function restart(){state={weekIndex:0,caseIndex:0,trust:82,infection:9,score:0,bloodKits:0,records:[],tests:{},locked:false,started:true};$('reportModal').classList.remove('show');renderRules();showBriefing();}
+$('startBtn').addEventListener('click',()=>{clickSound();$('introModal').classList.remove('show');state.started=true;state.bloodKits=currentWeek().bloodKits;renderRules();showBriefing();});
+buttons.id.addEventListener('click',inspectId);buttons.temp.addEventListener('click',inspectTemp);buttons.uv.addEventListener('click',inspectUv);buttons.blood.addEventListener('click',inspectBlood);
+document.querySelectorAll('.decide').forEach(b=>b.addEventListener('click',()=>decide(b.dataset.action)));
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='restartBtn')restart()});
+document.addEventListener('keydown',e=>{if(!state.started||document.querySelector('.modal.show'))return;if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;const k=e.key.toLowerCase();if(k==='i')inspectId();else if(k==='t')inspectTemp();else if(k==='u')inspectUv();else if(k==='b')inspectBlood();else if(k==='1')decide('pass');else if(k==='2')decide('retest');else if(k==='3')decide('quarantine');});
+renderRules();renderHeader();setToolAvailability();
+})();
+</script>
+</body>
+</html>
