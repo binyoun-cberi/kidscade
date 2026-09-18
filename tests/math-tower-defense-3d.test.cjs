@@ -16,7 +16,7 @@ const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
 test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=3/);
+  assert.match(html,/tower-defense-loader\.js\?v=4/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
   assert.ok(html.length>1000);
@@ -28,7 +28,7 @@ test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=3/);
+  assert.match(loader,/tower-defense\.js\?v=4/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -82,13 +82,13 @@ test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
   assert.equal(game.title,'약수 타워 디펜스');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=3');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=4');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=3');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=4');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
@@ -105,6 +105,18 @@ test('v3 battlefield improves combat readability and feedback',()=>{
   assert.match(runtime,/labelLane/);
   assert.match(runtime,/impactShake/);
   assert.match(runtime,/ring2/);
+});
+
+
+test('v4 uses urban skyblock decoration, animated monster cloning and build mode',()=>{
+  assert.match(runtime,/rebuildBoardDecor/);
+  assert.match(runtime,/rebuildSkyWorld/);
+  assert.match(runtime,/big-building\.glb/);
+  assert.match(runtime,/rock-large-a\.glb/);
+  assert.match(runtime,/enemyMixers/);
+  assert.match(runtime,/SkeletonUtils/);
+  assert.match(runtime,/applyBuildMode/);
+  assert.match(css,/body\.build-mode #buildHint/);
 });
 
 test('required CC-BY credit stays visible',()=>{
