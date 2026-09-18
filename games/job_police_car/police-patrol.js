@@ -118,6 +118,7 @@ function fadeOccluder3(mesh){
 }
 function updateCameraOcclusion3(target){
  restoreOccluders3();if(!occlusionRay3||!cam3||!target||!buildingMeshes3.length)return;
+ scene3?.updateMatrixWorld(true);
  const dir=target.clone().sub(cam3.position),distance=dir.length();if(distance<.1)return;dir.normalize();occlusionRay3.set(cam3.position,dir);occlusionRay3.far=Math.max(.1,distance-.45);
  const hits=occlusionRay3.intersectObjects(buildingMeshes3,false);
  for(const h of hits.slice(0,10))fadeOccluder3(h.object)
