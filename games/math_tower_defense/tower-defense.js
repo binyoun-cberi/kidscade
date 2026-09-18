@@ -193,9 +193,6 @@ function buildBoard(){
 }
 
 
-function seededCell
-
-
 function seededCell(x,y){let n=(x*92837111+y*689287499+1376312589)>>>0;n^=n<<13;n^=n>>>17;n^=n<<5;return (n>>>0)/4294967295}
 function clear3DGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1])}
 function setDecorBuilt(x,y,built){const cell=decorCells.get(x+','+y);if(!cell)return;cell.userData.built=built;const active=document.body.classList.contains('build-mode');if(cell.userData.prop)cell.userData.prop.visible=!built&&!active}
