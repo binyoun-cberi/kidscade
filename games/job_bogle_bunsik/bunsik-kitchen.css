@@ -20,8 +20,8 @@ button{font:inherit;color:inherit}
 .order-card b{display:block;font-size:11px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.order-card p{margin:3px 0 5px;color:#745d4e;font-size:8.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-bar{height:6px;border-radius:99px;background:#eadfce;overflow:hidden}.order-bar span{display:block;height:100%;background:linear-gradient(90deg,#72aa6a,#dcb44a,#d85347);transform-origin:left}
 
-.pot-strip{position:absolute;left:50%;top:105px;transform:translateX(-50%);z-index:12;display:flex;gap:8px;pointer-events:none}
-.pot-chip{min-width:106px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.54);background:rgba(45,37,31,.82);color:#fff8ed;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:.12s}
+.pot-strip{position:absolute;left:50%;top:105px;transform:translateX(-50%);z-index:18;display:flex;gap:8px;pointer-events:auto}
+.pot-chip{min-width:106px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.54);background:rgba(45,37,31,.86);color:#fff8ed;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:.12s;cursor:pointer}
 .pot-chip.active{transform:translateY(-2px);box-shadow:0 0 0 3px rgba(255,224,116,.48),0 5px 15px rgba(0,0,0,.25)}.pot-chip b{display:block;font-size:9px}.pot-chip small{display:block;margin-top:2px;font-size:7px;color:#f3dec8}.pot-chip .mini{height:4px;margin-top:4px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}.pot-chip .mini i{display:block;height:100%;background:#f0c754}
 
 .selected-help{position:absolute;left:12px;bottom:113px;z-index:16;min-width:180px;max-width:34vw;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid #dcc5aa;box-shadow:var(--shadow)}
@@ -30,7 +30,7 @@ button{font:inherit;color:inherit}
 .tray-btn{position:absolute;right:12px;bottom:113px;z-index:17;min-width:170px;max-width:31vw;padding:8px 11px;border:2px solid #78a86c;border-radius:11px;background:rgba(244,253,238,.97);text-align:left;box-shadow:var(--shadow);cursor:pointer}
 .tray-btn.empty{border-color:#d8c4a9;background:rgba(255,250,241,.92);opacity:.85}.tray-btn small{display:block;font-size:7px;font-weight:900;color:#7d6a59}.tray-btn b{display:block;margin-top:1px;font-size:10px}.tray-btn span{display:block;margin-top:2px;font-size:8px;font-weight:900;color:#5e8d55}
 
-.action-dock{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:19;display:grid;grid-template-columns:repeat(8,minmax(62px,82px));gap:6px;padding:7px;border:1px solid rgba(105,70,43,.22);border-radius:15px;background:rgba(48,35,27,.82);backdrop-filter:blur(7px);box-shadow:0 8px 24px rgba(0,0,0,.24)}
+.action-dock{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:19;display:grid;grid-template-columns:repeat(7,minmax(66px,86px));gap:6px;padding:7px;border:1px solid rgba(105,70,43,.22);border-radius:15px;background:rgba(48,35,27,.82);backdrop-filter:blur(7px);box-shadow:0 8px 24px rgba(0,0,0,.24)}
 .action-dock button{height:78px;border:1px solid rgba(255,255,255,.25);border-radius:10px;background:linear-gradient(#fffaf1,#eadbc8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;box-shadow:0 3px 0 rgba(75,47,27,.25)}
 .action-dock button span{font-size:20px}.action-dock button b{font-size:9px}.action-dock button small{font-size:6.5px;color:#806b5a;font-weight:800}.action-dock button.active{outline:3px solid #62dcff;background:#effcff;transform:translateY(-3px)}
 .action-dock button.plate{background:linear-gradient(#e9fae5,#c8e8bf)}.action-dock button.discard{background:linear-gradient(#f4ece5,#dac8bb)}
@@ -55,4 +55,54 @@ button{font:inherit;color:inherit}
  .hud-stats span:nth-child(2){display:none}.order-card{flex-basis:137px}.pot-strip{top:80px}.pot-chip{min-width:67px}.pot-chip small{max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .action-dock{grid-template-columns:repeat(4,1fr);bottom:5px}.action-dock button{height:49px;flex-direction:row;gap:3px}.action-dock button span{font-size:14px}.action-dock button small{display:none}
  .selected-help,.tray-btn{bottom:111px}.recipe-board{grid-template-columns:1fr}.recipe-board div{padding:7px}
+}
+
+
+/* v6: pot-first interaction and guided first bowl */
+.tutorial-banner{
+  position:absolute;left:50%;top:157px;transform:translateX(-50%);
+  z-index:24;min-width:330px;max-width:min(640px,78vw);
+  padding:9px 15px;border:2px solid #efc84e;border-radius:12px;
+  background:rgba(255,250,222,.97);box-shadow:0 8px 22px rgba(66,43,19,.2);
+  text-align:center;pointer-events:none;transition:.16s
+}
+.tutorial-banner.hidden{opacity:0;transform:translate(-50%,-6px);pointer-events:none}
+.tutorial-banner small{display:block;font-size:7px;font-weight:1000;color:#9b6c22;letter-spacing:.04em}
+.tutorial-banner b{display:block;margin-top:2px;font-size:11px;line-height:1.25;color:#493521}
+.pot-chip.active{border-color:#ffe275;background:rgba(57,46,35,.96);box-shadow:0 0 0 3px rgba(255,226,117,.55),0 6px 17px rgba(0,0,0,.26)}
+.pot-chip.perfect{border-color:#75dc83}.pot-chip.perfect b{color:#caffcf}
+.pot-chip.danger{border-color:#ff7669}.pot-chip.danger b{color:#ffd0cb}
+.pot-chip.tutorial-target{animation:tutorialPulse 1s ease-in-out infinite}
+.order-card.tutorial-target{animation:tutorialPulse 1s ease-in-out infinite;border-color:#efc84e}
+.order-icons{font-size:15px!important;letter-spacing:2px!important;line-height:1!important;color:#3e3028!important}
+.action-dock button:disabled{opacity:.28;filter:grayscale(.55);cursor:not-allowed;transform:none!important;outline:0!important}
+.action-dock button.recommended{outline:3px solid #56c7f3;background:linear-gradient(#f2fdff,#d7f4ff);animation:softPulse 1.05s ease-in-out infinite}
+.action-dock button.ready-now{
+  outline:4px solid #63c96b;background:linear-gradient(#efffe9,#bfe9b8);
+  box-shadow:0 0 0 4px rgba(99,201,107,.18),0 4px 0 rgba(75,47,27,.22);
+  animation:readyPulse .72s ease-in-out infinite
+}
+.action-dock button.ready-now b::after{content:" · 지금!";color:#2c7b34}
+.discard-btn{
+  position:absolute;left:12px;bottom:76px;z-index:18;
+  border:1px solid #cbb8a5;border-radius:9px;background:rgba(255,248,239,.92);
+  padding:6px 9px;color:#756356;display:flex;align-items:center;gap:5px;
+  font-size:8px;font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(50,31,19,.13)
+}
+.discard-btn.armed{border-color:#e25b4f;background:#fff0ed;color:#a62f27;animation:softPulse .65s ease-in-out infinite}
+.discard-btn:disabled{opacity:.35;cursor:not-allowed}
+.tray-btn.match-ready{animation:softPulse 1s ease-in-out infinite;border-color:#62b76b}
+body.tutorial-mode .pot-chip:not(.tutorial-target):not(.active){opacity:.48}
+body.tutorial-mode .order-card:not(.tutorial-target){opacity:.6}
+@keyframes tutorialPulse{50%{transform:translateY(-3px) scale(1.035);box-shadow:0 0 0 5px rgba(239,200,78,.25),0 8px 20px rgba(56,35,17,.22)}}
+@keyframes softPulse{50%{transform:translateY(-2px) scale(1.025)}}
+@keyframes readyPulse{50%{transform:translateY(-4px) scale(1.055);filter:saturate(1.18)}}
+
+@media(max-width:820px){
+ .tutorial-banner{top:130px;min-width:250px;max-width:82vw;padding:7px 10px}.tutorial-banner b{font-size:9px}
+ .discard-btn{left:7px;bottom:61px;font-size:7px;padding:5px 7px}
+}
+@media(max-width:560px){
+ .tutorial-banner{top:122px;max-width:92vw}
+ .discard-btn{bottom:111px;left:50%;transform:translateX(-50%);white-space:nowrap}
 }
