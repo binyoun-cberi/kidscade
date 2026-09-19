@@ -66,14 +66,15 @@ function setScene(next){A.cancel(world,player,true);K.WorkAnimation?.cancel?.(wo
 function outdoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'outdoor']});}
 function indoor(o){return world.spawn({...o,tags:[...(o.tags||[]),'indoor'],visible:false,active:false});}
 function boundaryRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#53663f';c.fillRect(e.x,e.y,e.w,e.h);c.fillStyle='#708453';if(e.w<e.h){for(let y=e.y;y<e.y+e.h;y+=32)c.fillRect(e.x-5,y,e.w+10,8);}else{for(let x=e.x;x<e.x+e.w;x+=32)c.fillRect(x,e.y-5,8,e.h+10);}c.restore();}
+function modelRender(key,fallback){return function(ctx,e,w){const sprites=K.ModelSprites;if(sprites?.draw)sprites.draw(key,ctx,e,(c2,e2)=>fallback?.(c2,e2,w));else fallback?.(ctx,e,w);};}
 
 outdoor({id:'outdoor-boundary-right',type:'boundary',x:3340,y:0,w:20,h:1536,solid:true,depthOffset:-10000,render:boundaryRender});
 outdoor({id:'outdoor-boundary-bottom',type:'boundary',x:0,y:1516,w:3360,h:20,solid:true,depthOffset:-10000,render:boundaryRender});
 outdoor({id:'home',type:'building',x:235,y:520,w:220,h:90,solid:true,data:{scale:.92},render:D.render.cottage});
 outdoor({id:'home-door',type:'door',x:320,y:612,w:74,h:28,solid:false,interactionRadius:105,render(c,e){c.save();c.fillStyle='#64452f';c.fillRect(e.x+14,e.y,e.w-28,e.h);c.fillStyle='#d2ae67';c.fillRect(e.centerX+9,e.y+12,5,5);c.restore();},interaction:{label:'집에 들어가기',action(){setScene('home');}}});
 outdoor({id:'farm-hut',type:'building',x:2880,y:1180,w:120,h:65,solid:true,data:{scale:.82},render:D.render.hut});
-[[75,250,.8],[760,240,.85],[90,1010,.85],[770,1100,.85],[1015,195,.82],[2180,190,.82],[1020,1240,.82],[2180,1240,.82],[2410,190,.82],[3260,200,.82],[2420,1190,.82],[3260,1180,.82]].forEach((p,i)=>outdoor({id:'tree'+i,type:'tree',x:p[0],y:p[1],w:48,h:34,solid:true,data:{scale:p[2]},render:D.render.tree}));
-[[610,1195],[860,1245],[2380,1040],[3130,1040]].forEach((p,i)=>outdoor({id:'rock'+i,type:'rock',x:p[0],y:p[1],w:46,h:28,solid:true,data:{scale:.65},render:D.render.rock}));
+[[75,250,.8],[760,240,.85],[90,1010,.85],[770,1100,.85],[1015,195,.82],[2180,190,.82],[1020,1240,.82],[2180,1240,.82],[2410,190,.82],[3260,200,.82],[2420,1190,.82],[3260,1180,.82]].forEach((p,i)=>outdoor({id:'tree'+i,type:'tree',x:p[0],y:p[1],w:48,h:34,solid:true,data:{scale:p[2],modelKey:i%3===0?'outdoorTreeTall':'outdoorTree'},render:modelRender(i%3===0?'outdoorTreeTall':'outdoorTree',D.render.tree)}));
+[[610,1195],[860,1245],[2380,1040],[3130,1040]].forEach((p,i)=>{const key=['outdoorRockA','outdoorRockB','outdoorRockC'][i%3];outdoor({id:'rock'+i,type:'rock',x:p[0],y:p[1],w:46,h:28,solid:true,data:{scale:.65,modelKey:key},render:modelRender(key,D.render.rock)});});
 outdoor({id:'farmer',type:'npc',x:2670,y:690,w:48,h:48,solid:true,render(c,e){if(!BQ.sprite.villager(c,e.x,e.y,1)){c.fillStyle='#d1b375';c.fillRect(e.x,e.y,48,48);}},interaction:{label:'농부와 이야기',action(){toast('농장에서는 작물을 키우고 도구를 만들 수 있어요.');}}});
 
 const facilityNames={pond:'연못',water:'물 쉼터',food:'먹이 자리',bed:'잠자리',ball:'공놀이',tunnel:'터널',tower:'오르기 나무',platform:'통나무 발판',wheel:'쳇바퀴',flower:'꽃밭',shadeTree:'그늘 나무',bench:'벤치',picnic:'피크닉',hammock:'해먹'};
@@ -100,7 +101,7 @@ addFurniture('bed','bed',70,105);addFurniture('desk','desk',250,108);addFurnitur
 function refreshPrompt(){const e=world.interaction.current;if(e&&world.input.enabled){const mobile=!!document.getElementById('wv2-mobile-controls');prompt.textContent=(mobile?'행동':'E / Space')+' · '+world.interaction.label();prompt.classList.add('show');}else prompt.classList.remove('show');}
 world.events.on('interaction:focus',refreshPrompt);
 let saveClock=0,lastZone='';world.events.on('update',({dt})=>{refreshPrompt();const z=zoneOf(player);if(z.name!==lastZone){lastZone=z.name;zoneEl.textContent=z.name;}saveClock+=dt;if(saveClock>1.5){saveClock=0;savePlayerNow();}});
-function showChips(){chips.innerHTML=`<span class="chip">현재 Deluxe 아바타</span><span class="chip">Kenney 생활 가구</span><span class="chip">농사·채집·낚시</span><span class="chip">제작·철도구·요리</span><span class="chip">정원 시설 ${(snap.garden.placed||[]).length}</span><span class="chip">씨앗 ${snap.seeds}</span>`;}
+function showChips(){chips.innerHTML=`<span class="chip">현재 Deluxe 아바타</span><span class="chip">Kenney 생활 가구·야외 자원</span><span class="chip">농사·채집·낚시</span><span class="chip">제작·철도구·요리</span><span class="chip">정원 시설 ${(snap.garden.placed||[]).length}</span><span class="chip">씨앗 ${snap.seeds}</span>`;}
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(A.active.has(player)){e.preventDefault();A.cancel(world,player,true);toast('행동을 멈췄어요.');return;}if(K.WorkAnimation?.active?.has(world)){e.preventDefault();K.WorkAnimation.cancel(world);toast('작업을 취소했어요.');return;}if(K.CarryFishing?.states?.get(world)?.fishing){e.preventDefault();K.CarryFishing.endFishing(world,'낚시를 그만뒀어요.');return;}try{parent.postMessage({type:'kidscade-life-world-close'},location.origin);}catch(_){}});
 showChips();if(startHome)setScene('home');else{tagState('indoor',false);tagState('outdoor',true);savePlayerNow();}canvas.focus();world.start();
 })();
