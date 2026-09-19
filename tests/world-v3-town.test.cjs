@@ -8,12 +8,13 @@ const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),'utf8');
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
+const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
 const storage=fs.readFileSync(path.join(root,'world-v2','kidscade-world-storage.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf8');
 const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,economy]){
+  for(const src0 of [runtime,city,economy,furnishing]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -115,9 +116,10 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=4/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=4/);
-  assert.match(html,/kidscade-world-v3\.js\?v=7/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=7/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=5/);
+  assert.match(runtime,/kidscade-world-furnishing\.js\?v=1/);
+  assert.match(html,/kidscade-world-v3\.js\?v=8/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=8/);
 });
 
 
@@ -132,4 +134,27 @@ test('starter resources provide six hand pickups per material and one-time guida
   assert.match(runtime,/초보자 보급: 목재 \+5 · 돌 \+5/);
   assert.match(runtime,/돌도끼[\s\S]*wood:3,stone:2/);
   assert.match(runtime,/돌곡괭이[\s\S]*wood:2,stone:3/);
+});
+
+
+test('World v3 furnishing supports persistent craft buy place rotate move and store loops',()=>{
+  assert.match(storage,/housing:\{version:1,owned:\{\},placed:\[\],starterGiftClaimed:false,nextId:1\}/);
+  assert.match(runtime,/createFurnishingSystem/);
+  assert.match(runtime,/가구 창고 · 집 꾸미기/);
+  assert.match(runtime,/canPlaceFurniture/);
+  assert.match(furnishing,/FURNITURE_CATALOG/);
+  assert.match(furnishing,/data-furnish-rotate/);
+  assert.match(furnishing,/data-furnish-confirm/);
+  assert.match(furnishing,/data-furnish-cancel/);
+  assert.match(furnishing,/data-furn-move/);
+  assert.match(furnishing,/data-furn-store/);
+  assert.match(furnishing,/starterGiftClaimed/);
+  for(const file of ['chair.glb','side-table.glb','potted-plant.glb','bookcase-open-low.glb','table-coffee.glb','lounge-chair.glb','rug-round.glb','lamp-round-floor.glb','bear.glb','television-modern.glb']){
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing furniture '+file);
+    assert.ok(furnishing.includes(file),'catalog missing '+file);
+  }
+  assert.match(economy,/type:'furniture'/);
+  assert.match(economy,/둥근 러그/);
+  assert.match(economy,/플로어 램프/);
+  assert.match(economy,/모던 TV/);
 });
