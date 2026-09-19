@@ -146,6 +146,7 @@ window.__threeReady = (async () => {
     });
   }
 })();
+</script>
 <script>
 window.__threeReady.then(() => {
 (() => {
@@ -302,7 +303,8 @@ function rankAssetCharacter(tier){
     ["male-d","female-d"],["male-e","female-e"]
   ][tier]||["male-a","female-a"];
   const colors=[0x38bdf8,0x0ea5e9,0x22c55e,0x8b5cf6,0xf59e0b];
-  return cloneClassroomCharacter(pick(keys),{height:1.42+tier*.08,facing:Math.PI,ring:colors[tier]||0x38bdf8});
+  const available=keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
+  return cloneClassroomCharacter(pick(available),{height:1.42+tier*.08,facing:Math.PI,ring:colors[tier]||0x38bdf8});
 }
 function enemyAssetCharacter(type){
   const cfg={
@@ -312,7 +314,8 @@ function enemyAssetCharacter(type){
     elite:{keys:["male-d","female-d"],height:1.76,ring:0xe879f9},
     boss:{keys:["male-c","female-c"],height:2.45,ring:0xf59e0b}
   }[type]||{keys:["male-f","female-f"],height:1.48,ring:0xef4444};
-  return cloneClassroomCharacter(pick(cfg.keys),{height:cfg.height,facing:0,ring:cfg.ring});
+  const available=cfg.keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
+  return cloneClassroomCharacter(pick(available),{height:cfg.height,facing:0,ring:cfg.ring});
 }
 function textTexture(lines,{bg="rgba(6,15,28,.92)",fg="#ffffff",accent="#38bdf8",w=512,h=240}={}){
   const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");
