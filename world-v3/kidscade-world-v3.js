@@ -271,7 +271,7 @@ panel.addEventListener('click',e=>{
   }
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
-  const pet=e.target.closest('[data-pet]');if(pet){prog().survival.companion=pet.dataset.pet;persist();toast((PET_NAMES[pet.dataset.pet]||pet.dataset.pet)+'와 함께 다녀요!');petPanel();updateStatus();return;}
+  const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
 });
 
 
@@ -678,90 +678,107 @@ function clockText(minutes){
 }
 function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||h>=20;}
 const petActors=[];
-function gardenOwned(){
+const wildPetActors=[];
+const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
+const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
+const WILD_PETS={
+  cat:{x:-10.8,z:5.2},
+  bunny:{x:6.0,z:5.6},
+  pig:{x:9.1,z:5.8},
+  cow:{x:12.3,z:2.3},
+  chick:{x:4.7,z:4.0},
+  fox:{x:-24.5,z:3.2},
+  deer:{x:-25.8,z:11.2},
+  parrot:{x:-22.2,z:-4.0},
+  beaver:{x:2.2,z:-18.0}
+};
+function petState(){return prog().cubePets}
+function migrateLegacyCubePets(){
+  const p=prog(),state=p.cubePets;if(state.migratedLegacy)return state;
+  const mapped=new Set(state.owned||[]);
+  const mapId=id=>({dog:'dog',cat:'cat',rabbit:'bunny',parrot:'parrot',miniPig:'pig'})[id]||'';
   try{
-    const snap=Bridge?.snapshot?.();
-    const ids=Array.isArray(snap?.garden?.owned)?snap.garden.owned:[];
-    return [...new Set(ids)];
-  }catch(_){return []}
-}
-function makeMesh(geo,color){
-  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:.82}));m.castShadow=true;m.receiveShadow=true;return m;
-}
-function makeProceduralPet(id){
-  const g=new THREE.Group();
-  const add=(m,x,y,z,sx=1,sy=1,sz=1)=>{m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m};
-  if(id==='hamster'){
-    add(makeMesh(new THREE.SphereGeometry(.42,16,12),0xd99a45),0,.42,0,1.05,.92,1);
-    add(makeMesh(new THREE.SphereGeometry(.12,12,8),0xf3c678),-.25,.78,0);add(makeMesh(new THREE.SphereGeometry(.12,12,8),0xf3c678),.25,.78,0);
-  }else if(id==='iguana'){
-    add(makeMesh(new THREE.SphereGeometry(.34,16,10),0x72a94e),0,.34,0,1.45,.55,.72);
-    add(makeMesh(new THREE.ConeGeometry(.13,.9,10),0x5f8f42),-.72,.28,0,1,1,1);g.children.at(-1).rotation.z=Math.PI/2;
-  }else if(id==='turtle'){
-    add(makeMesh(new THREE.SphereGeometry(.4,16,12),0x5b8f55),0,.32,0,1.15,.5,1);
-    add(makeMesh(new THREE.SphereGeometry(.17,12,8),0x7aaa61),.48,.34,0);
-  }else if(id==='goat'){
-    add(makeMesh(new THREE.BoxGeometry(.75,.45,.38),0xe9e7df),0,.5,0);
-    add(makeMesh(new THREE.BoxGeometry(.33,.36,.32),0xf5f0df),.48,.67,0);
-    for(const z of [-.13,.13]){add(makeMesh(new THREE.CylinderGeometry(.035,.045,.48,7),0x5d5044),-.23,.2,z);add(makeMesh(new THREE.CylinderGeometry(.035,.045,.48,7),0x5d5044),.25,.2,z);}
-    for(const z of [-.11,.11]){const horn=add(makeMesh(new THREE.ConeGeometry(.045,.28,7),0xb7a37d),.53,.98,z);horn.rotation.z=-.25;}
-  }else if(id==='sugarGlider'){
-    add(makeMesh(new THREE.SphereGeometry(.3,14,10),0x858891),0,.45,0,1.2,.72,.75);
-    add(makeMesh(new THREE.SphereGeometry(.21,14,10),0x9b9da5),.28,.69,0);
-    const wing=makeMesh(new THREE.BoxGeometry(.72,.035,.48),0x6f727c);wing.material.transparent=true;wing.material.opacity=.72;add(wing,-.08,.45,0);
-  }else{
-    add(makeMesh(new THREE.SphereGeometry(.34,14,10),0x9a8f78),0,.36,0);
-  }
-  return g;
-}
-async function makePetObject(id){
-  const url=PET_MODELS[id];
-  if(!url)return makeProceduralPet(id);
+    const raw=JSON.parse(localStorage.getItem('kidscade_garden_v1')||'null');
+    for(const id of Array.isArray(raw?.owned)?raw.owned:[]){const next=mapId(id);if(next)mapped.add(next)}
+  }catch(_){}
   try{
-    const base=await loadGLB(url),o=prepModel(base.clone(true));
+    const raw=JSON.parse(localStorage.getItem('kidscade_sook_canvas_pet')||'null');
+    for(const id of Array.isArray(raw?.unlockedPets)?raw.unlockedPets:[]){const next=mapId(id);if(next)mapped.add(next)}
+  }catch(_){}
+  const oldCompanion={rabbit:'bunny',miniPig:'pig'}[p.survival?.companion]||p.survival?.companion;
+  if(CUBE_PETS[oldCompanion])state.companion=oldCompanion;
+  mapped.add('dog');
+  state.owned=[...mapped].filter(id=>CUBE_PETS[id]);
+  state.met=[...new Set([...(state.met||[]),...state.owned])];
+  if(!CUBE_PETS[state.companion]||!state.owned.includes(state.companion))state.companion='dog';
+  state.migratedLegacy=true;
+  if(p.survival&&Object.hasOwn(p.survival,'companion'))delete p.survival.companion;
+  persist();return state;
+}
+async function makeCubePetObject(id){
+  const def=CUBE_PETS[id];if(!def)return null;
+  try{
+    const base=await loadGLB(def.model),o=prepModel(base.clone(true));
     o.updateMatrixWorld(true);
     const box3=new THREE.Box3().setFromObject(o),size=box3.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
-    o.scale.multiplyScalar(1.0/max);o.updateMatrixWorld(true);
+    o.scale.multiplyScalar((PET_SCALE[id]||.8)/max);o.updateMatrixWorld(true);
     const b=new THREE.Box3().setFromObject(o);o.position.y-=b.min.y;
     return o;
-  }catch(_){return makeProceduralPet(id)}
+  }catch(err){console.warn('[World v3] Cube Pet failed',id,err);return null}
+}
+function petReqText(id){
+  const req=CUBE_PETS[id]?.req||{},parts=Object.entries(req).map(([k,v])=>itemName(k)+' '+v);
+  return parts.length?parts.join(' · '):'첫 친구';
+}
+function canTame(id){
+  const req=CUBE_PETS[id]?.req||{},i=inv();return Object.entries(req).every(([k,v])=>(i[k]||0)>=v);
+}
+function payTame(id){
+  const req=CUBE_PETS[id]?.req||{},i=inv();Object.entries(req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+}
+async function ensureOwnedPetActor(id){
+  if(petActors.some(a=>a.id===id))return;
+  const object=await makeCubePetObject(id);if(!object)return;
+  const owned=petState().owned,slot=PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
+  object.position.set(slot[0],.04,slot[1]);petLayer.add(object);
+  petActors.push({id,object,homeX:slot[0],homeZ:slot[1],phase:petActors.length*.83});
+}
+async function tamePet(id){
+  const state=petState(),def=CUBE_PETS[id];if(!def)return;
+  if(state.owned.includes(id)){toast(def.name+'은(는) 이미 우리 친구예요.');return;}
+  if(!canTame(id)){toast(def.name+'에게 다가가려면 '+petReqText(id)+'이(가) 필요해요.');return;}
+  payTame(id);state.owned.push(id);if(!state.met.includes(id))state.met.push(id);
+  persist();await ensureOwnedPetActor(id);
+  const wild=wildPetActors.find(a=>a.id===id);if(wild)wild.object.visible=false;
+  setAvatarAction('smile',900);toast(def.name+'과(와) 친구가 되었어요!');
+  updateStatus();
 }
 function petPanel(){
-  const owned=gardenOwned().filter(id=>!FISH_IDS.has(id));
-  const selected=prog().survival.companion;
-  const cards=owned.length?owned.map(id=>`<div class="item"><b>${PET_NAMES[id]||id}</b><div>${id===selected?'현재 동행 중':'펫 마당 친구'}</div><small>${PET_PERKS[id]||'함께 탐험해요.'}</small><br><button data-pet="${id}" ${id===selected?'disabled':''}>함께 다니기</button></div>`).join(''):'<div class="item">육상 펫을 아직 만나지 못했어요.</div>';
-  openPanel(`<h2>펫 친구</h2><div class="grid">${cards}</div><p style="font-size:12px">Kidscade 정원에서 해금한 친구들이 그대로 연결됩니다.</p>`);
+  const state=petState(),selected=state.companion;
+  const cards=state.owned.map(id=>{
+    const def=CUBE_PETS[id];return `<div class="item"><b>${def.name}</b><div>${id===selected?'현재 동행 중':def.region+'에서 만난 친구'}</div><small>${def.perk}</small><br><button data-pet="${id}" ${id===selected?'disabled':''}>함께 다니기</button></div>`;
+  }).join('');
+  const undiscovered=Object.keys(CUBE_PETS).filter(id=>!state.owned.includes(id)).length;
+  openPanel(`<h2>Cube Pets</h2><div class="grid">${cards}</div><p style="font-size:12px">정원은 없습니다. 월드를 탐험하다 야생 Cube Pet을 만나 필요한 먹이나 자원을 주면 친구가 됩니다. 아직 만나지 못한 친구 ${undiscovered}종.</p>`);
 }
 async function buildPets(){
-  const ownedAll=gardenOwned(),owned=ownedAll.filter(id=>!FISH_IDS.has(id));
-  const p=prog();
-  if(!owned.includes(p.survival.companion))p.survival.companion=owned[0]||'';
-  persist();
-
-  // Small pet yard beside the house.
+  const state=migrateLegacyCubePets();
   for(const [x,z,rot] of [[-15.8,-7.2,0],[-13.6,-7.2,0],[-11.4,-7.2,0],[-15.9,-4.9,Math.PI/2],[-11.3,-4.9,Math.PI/2]]){
     await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.85,d:.32,rot});
   }
-  interact('outdoor',-13.6,-4.7,1.8,'펫 친구 정하기',petPanel);
+  interact('outdoor',-13.6,-4.65,1.8,'Cube Pets 친구 보기',petPanel);
+  for(const id of state.owned)await ensureOwnedPetActor(id);
 
-  const slots=[[-15,-6.1],[-13.6,-6.2],[-12.2,-6.0],[-15,-5.2],[-13.6,-5.25],[-12.2,-5.15],[-14.4,-4.5],[-12.8,-4.5]];
-  for(let n=0;n<owned.length;n++){
-    const id=owned[n],object=await makePetObject(id),slot=slots[n%slots.length];
-    object.position.set(slot[0],.05,slot[1]);object.scale.multiplyScalar((id==='goat'||id==='miniPig') ? .95 : .8);
-    petLayer.add(object);petActors.push({id,object,homeX:slot[0],homeZ:slot[1],phase:n*.83});
-  }
-
-  // Collected fish live in the home pond instead of following the player.
-  const fishOwned=ownedAll.filter(id=>FISH_IDS.has(id)).slice(0,5);
-  for(let n=0;n<fishOwned.length;n++){
-    try{
-      const base=await loadGLB('../assets/game/characters/pets/animal-fish.glb'),fish=prepModel(base.clone(true));
-      fish.scale.setScalar(.35);fish.position.set(-12.4+(n-2)*.45,.18,6.4+(n%2)*.45);fish.userData.fishIndex=n;outdoor.add(fish);
-    }catch(_){}
+  for(const [id,pos] of Object.entries(WILD_PETS)){
+    const object=await makeCubePetObject(id);if(!object)continue;
+    object.position.set(pos.x,.04,pos.z);petLayer.add(object);
+    const actor={id,object,x:pos.x,z:pos.z,phase:wildPetActors.length*.91};wildPetActors.push(actor);
+    object.visible=!state.owned.includes(id);
+    interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
 }
 function updatePets(now,dt){
-  const selected=prog().survival.companion;
+  const selected=companionId(),state=petState();
   for(const a of petActors){
     const companion=a.id===selected;
     a.object.visible=companion||mode==='outdoor';
@@ -780,8 +797,13 @@ function updatePets(now,dt){
     }
     a.object.position.y=.04+Math.abs(Math.sin(now/210+a.phase))*(companion?.055:.025);
   }
-  // Pond fish drift around their pond.
-  outdoor.children.forEach(o=>{if(o.userData?.fishIndex!=null){const q=o.userData.fishIndex,t=now/1600+q;o.position.x=-12.4+Math.cos(t)*1.5;o.position.z=6.5+Math.sin(t*.85+q)*.85;o.rotation.y=-t;}});
+  for(const a of wildPetActors){
+    a.object.visible=mode==='outdoor'&&!state.owned.includes(a.id);
+    if(!a.object.visible)continue;
+    a.object.position.x=a.x+Math.sin(now/2100+a.phase)*.38;
+    a.object.position.z=a.z+Math.cos(now/2600+a.phase)*.30;
+    a.object.position.y=.04+Math.abs(Math.sin(now/260+a.phase))*.025;
+  }
 }
 
 function updateStatus(){
@@ -791,7 +813,7 @@ function updateStatus(){
   const axe=p.tools.axe?.dur>0?`${p.tools.axe.tier==='iron'?'철도끼':'돌도끼'} ${p.tools.axe.dur}`:'도끼 없음';
   const pick=p.tools.pick?.dur>0?`${p.tools.pick.tier==='iron'?'철곡괭이':'돌곡괭이'} ${p.tools.pick.dur}`:'곡괭이 없음';
   const phase=isNightTime(s.time)?'밤':'낮';
-  const pet=s.companion?(PET_NAMES[s.companion]||s.companion):'없음';
+  const petId=companionId(),pet=petId?(CUBE_PETS[petId]?.name||petId):'없음';
   statusEl.innerHTML=`<b>Day ${s.day} · ${clockText(s.time)} · ${phase}</b><br>
     체력 ${Math.round(p.energy||0)}/${p.maxEnergy||100}<div class="energy"><i style="width:${pct}%"></i></div>
     허기 ${Math.round(hunger)}/100<div class="energy"><i style="width:${hunger}%"></i></div>
