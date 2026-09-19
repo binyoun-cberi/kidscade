@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=2';
-import {createTownEconomy} from './kidscade-world-economy.js?v=2';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=3';
+import {createTownEconomy} from './kidscade-world-economy.js?v=3';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -196,6 +196,7 @@ function prog(){
     companion:CUBE_PETS[rawPets.companion]?rawPets.companion:(CUBE_PETS[legacyCompanion]?legacyCompanion:''),
     migratedLegacy:!!rawPets.migratedLegacy
   };
+  p.starterKitClaimed=!!p.starterKitClaimed;
   return p;
 }
 const itemName=k=>({
@@ -387,6 +388,26 @@ const player={
   z:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3z))?Number(save.player.v3z):1.7,
   speed:5.1
 };
+const TRAVEL_POINTS={
+  home:{x:-8.8,z:-1.55,name:'집 앞'},
+  forest:{x:-19.0,z:.7,name:'깊은 숲 입구'},
+  quarry:{x:18.5,z:.7,name:'돌산 입구'},
+  camp:{x:0,z:14.0,name:'남쪽 야영지'},
+  city:{x:0,z:23.6,name:'씨앗마을 중심가'}
+};
+function travelTo(id){
+  const d=TRAVEL_POINTS[id];if(!d)return;
+  if(mode!=='outdoor'){mode='outdoor';outdoor.visible=true;indoor.visible=false;}
+  player.x=d.x;player.z=d.z;near=null;closePanel();setAvatarAction('smile',450);
+  toast('씨앗버스 도착 · '+d.name);
+}
+function claimStarterKit(){
+  const p=prog(),i=inv();
+  if(p.starterKitClaimed){toast('초보자 보급 상자는 이미 받았어요. 주변 나뭇가지와 작은 돌도 맨손으로 주울 수 있어요.');return;}
+  p.starterKitClaimed=true;i.wood=(i.wood||0)+5;i.stone=(i.stone||0)+5;
+  persist();setAvatarAction('smile',700);updateStatus();
+  toast('초보자 보급: 목재 +5 · 돌 +5! 이제 돌도끼와 돌곡괭이를 만들 수 있어요.');
+}
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
@@ -559,7 +580,8 @@ async function buildOutdoor(){
     addModel(outdoor,ASSET.house,{x:-8.8,z:-5.6,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
     addModel(outdoor,ASSET.farmHouse,{x:10.8,z:-6.0,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
     addModel(outdoor,ASSET.workbench,{x:13.6,z:5.5,w:2.0,h:1.5,d:1.3,rot:-.35,name:'workbench3d'}),
-    addModel(outdoor,ASSET.chest,{x:11.8,z:5.7,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
+    addModel(outdoor,ASSET.chest,{x:11.8,z:5.7,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'}),
+    addModel(outdoor,ASSET.chest,{x:-4.3,z:-1.4,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
   ]);
   addColliderFor('outdoor',-8.8,-5.6,5.8,4.4);
   addColliderFor('outdoor',10.8,-6.0,4.0,3.3);
@@ -568,6 +590,7 @@ async function buildOutdoor(){
   interact('outdoor',-8.8,-2.45,1.8,'집에 들어가기',()=>setMode('indoor'));
   interact('outdoor',13.6,4.65,1.45,'제작대 사용하기',workbenchPanel);
   interact('outdoor',11.8,4.9,1.35,'보관 상자 보기',inventoryPanel);
+  interact('outdoor',-4.3,-1.4,1.3,'초보자 보급 상자 열기',claimStarterKit);
   interact('outdoor',-10.8,6.1,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
 
   // Starter loop: hand-pickable branches and pebbles prevent tool/resource deadlocks.
@@ -667,10 +690,15 @@ async function buildOutdoor(){
     actions:{
       shop:(kind,name)=>townEconomy?.shop(kind,name),
       jobs:()=>townEconomy?.jobs(),
+      delivery:()=>townEconomy?.delivery(),
       talk:(id,name)=>townEconomy?.talk(id,name),
       arcade:()=>townEconomy?.arcade(),
+      library:()=>townEconomy?.library(),
+      clinic:()=>townEconomy?.clinic(),
+      transport:()=>townEconomy?.transport(),
       bench:()=>townEconomy?.bench()
-    }
+    },
+    getGameTime:()=>prog().survival.time
   });
 }
 
@@ -951,7 +979,7 @@ function tick(now){
   renderer.render(scene,camera);
 }
 async function init(){
-  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName});
+  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo});
   townEconomy.ensureState(prog());
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
