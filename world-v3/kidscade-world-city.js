@@ -51,17 +51,17 @@ const NPC_MODELS={
   clerk:CITY_ASSET.employee
 };
 
-function makeLabel(text){
+function makeLabel(text,{width=2.2,height=.52,font=38}={}){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,512,128);
   ctx.fillStyle='rgba(255,249,218,.94)';ctx.strokeStyle='#4b5841';ctx.lineWidth=8;
   const x=12,y=16,w=488,h=96,r=26;
   ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle='#2d3a2d';ctx.font='700 42px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,65);
+  ctx.fillStyle='#2d3a2d';ctx.font='700 '+font+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,65);
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
-  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false});
-  const sp=new THREE.Sprite(mat);sp.scale.set(3.2,.8,1);sp.renderOrder=20;return sp;
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true});
+  const sp=new THREE.Sprite(mat);sp.scale.set(width,height,1);sp.renderOrder=20;return sp;
 }
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
@@ -72,11 +72,11 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   const scale=1.68/Math.max(.01,size.y);
   object.scale.multiplyScalar(scale);object.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(object);
-  object.position.set(x,-b.min.y,z);
+  const groundY=-b.min.y;object.position.set(x,groundY,z);
   ctx.parent.add(object);
-  const tag=label?makeLabel(name):null;
-  if(tag){tag.position.set(x,2.05,z);ctx.parent.add(tag)}
-  return {id,name,object,label:tag,interaction:null,homeX:x,homeZ:z,r:radius,role,phase:(id.length*1.37)%6.2};
+  const tag=label?makeLabel(name,{width:1.45,height:.36,font:34}):null;
+  if(tag){tag.position.set(x,groundY+2.02,z);tag.visible=false;ctx.parent.add(tag)}
+  return {id,name,object,label:tag,interaction:null,homeX:x,homeZ:z,groundY,r:radius,role,phase:(id.length*1.37)%6.2};
 }
 
 function overlaps(a,b,pad=.08){
@@ -93,8 +93,8 @@ function validateMapLayout(objects){
 }
 
 export async function buildKidscadeCity(ctx){
-  const {parent,addModel,box,plane,interact,collider,loadGLB,prepModel,actions,getGameTime}=ctx;
-  const layout=[];const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
+  const {parent,addModel,box,plane,interact,collider,loadGLB,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
+  const layout=[],buildingLabels=[];const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
 
   // One continuous town floor, then clearly separated road, sidewalks/plaza, and building lots.
   plane(parent,0,30,52,20,0xb6b09c,.012);
@@ -126,7 +126,7 @@ export async function buildKidscadeCity(ctx){
   for(const [id,url,x,z,w,d,name,labelDz] of buildings){
     await addModel(parent,url,{x,z,w,h:5.0,d,rot:Math.PI,name:'city-'+id});
     collider('outdoor',x,z,w*.82,d*.70);track('building-'+id,'building',x,z,w*.82,d*.70);
-    const label=makeLabel(name);label.position.set(x,3.75,z+labelDz);parent.add(label);
+    const label=makeLabel(name,{width:2.25,height:.52,font:35});label.position.set(x,3.72,z+labelDz);label.userData.anchor={x,z:z+labelDz};label.visible=false;parent.add(label);buildingLabels.push(label);
   }
 
   // Market props are grouped into one readable outdoor storefront, not scattered on the road.
@@ -200,15 +200,17 @@ export async function buildKidscadeCity(ctx){
 
   validateMapLayout(layout);
 
+  // Until obstacle-aware pathfinding exists, residents stay on safe town-side role anchors.
+  // This prevents long straight-line walks through buildings, trees, the river and the player home.
   const eveningSlots={
-    doyun:{x:-1.3,z:32.6},yuna:{x:1.3,z:32.45},hyunwoo:{x:-2.8,z:33.15},
-    woojin:{x:2.8,z:33.15},seoyeon:{x:0,z:33.25}
+    doyun:{x:-1.6,z:32.55},yuna:{x:1.6,z:32.45},hyunwoo:{x:-3.2,z:33.35},
+    woojin:{x:3.2,z:33.30},seoyeon:{x:0,z:33.45}
   };
   const dayRoleTargets={
-    yuna:{x:11.8,z:8.0,r:.55},        // farm edge
-    woojin:{x:-19.6,z:4.0,r:.55},      // forest entrance
-    seoyeon:{x:-13.6,z:-4.35,r:.5},   // Cube Pets yard
-    hyunwoo:{x:-4.8,z:33.75,r:.75}    // mailbox/delivery side of plaza
+    yuna:{x:-15.4,z:32.0,r:.38},      // produce / farm information corner
+    woojin:{x:-8.0,z:32.15,r:.42},    // west plaza / forest information corner
+    seoyeon:{x:8.0,z:32.15,r:.42},    // east plaza / Cube Pets information corner
+    hyunwoo:{x:-5.7,z:34.1,r:.38}     // mailbox / delivery corner
   };
 
   return {
@@ -217,6 +219,8 @@ export async function buildKidscadeCity(ctx){
     update(now,dt){
       const minutes=typeof getGameTime==='function'?getGameTime():720;
       const hour=minutes/60,evening=hour>=18&&hour<23,daytime=hour>=7&&hour<18;
+      const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
+      for(const label of buildingLabels){const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<10.5;}
       for(const n of npcs){
         let hx=n.homeX,hz=n.homeZ,r=n.r;
         if(daytime&&dayRoleTargets[n.id]){const q=dayRoleTargets[n.id];hx=q.x;hz=q.z;r=q.r;}
@@ -227,8 +231,9 @@ export async function buildKidscadeCity(ctx){
         n.object.position.x+=dx*Math.min(1,dt*.72);
         n.object.position.z+=dz*Math.min(1,dt*.72);
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
-        n.object.position.y=Math.abs(Math.sin(now/420+n.phase))*.018;
-        if(n.label)n.label.position.set(n.object.position.x,2.05,n.object.position.z);
+        const walking=Math.abs(dx)+Math.abs(dz)>.025;
+        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.025:0);
+        if(n.label){n.label.position.set(n.object.position.x,n.groundY+2.02,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.2;}
         if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
     }
