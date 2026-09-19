@@ -5,51 +5,66 @@ const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'한붓쓱.html'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'one-stroke-city-3d.js'),'utf8');
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
 
-test('One Stroke uses asset-driven delivery landmarks',()=>{
-  for(const token of [
-    'function buildCityLandmarks',
-    'function drawCityLandmarks',
-    'function drawParcelBadge',
-    "schoolBus:'assets/game/2d/vehicles/pixel/cars/bus-school.png'",
-    "coneDown:'assets/game/2d/racing/kenney-racing-pack/objects/cone_down.png'",
-    "scooter:'assets/game/2d/vehicles/pixel/cars/scooter.png'"
-  ]) assert.ok(html.includes(token), 'missing '+token);
-});
-
-test('One Stroke keeps city assets committed in the repository',()=>{
-  for(const rel of [
-    'assets/game/2d/vehicles/pixel/cars/bus-school.png',
-    'assets/game/2d/vehicles/pixel/cars/scooter.png',
-    'assets/game/2d/racing/kenney-racing-pack/objects/cone_down.png',
-    'assets/game/2d/racing/kenney-racing-pack/objects/cone_straight.png',
-    'assets/game/2d/racing/kenney-racing-pack/objects/tree_large.png',
-    'assets/game/2d/racing/kenney-racing-pack/objects/tent_blue.png'
-  ]) assert.ok(fs.existsSync(path.join(root,rel)), 'missing '+rel);
-});
-
-test('One Stroke delivery city UI keeps route gameplay intact',()=>{
+test('One Stroke keeps the original route puzzle logic intact',()=>{
   assert.match(html,/function completionTrail/);
   assert.match(html,/function startDelivery/);
   assert.match(html,/function drawDelivery/);
-  assert.match(html,/택배 허브에서 출발해 모든 배달 도로를 한 번씩 지나 보세요/);
-  assert.match(html,/currentNode\(\)!==null&&!state\.delivery/);
+  assert.match(html,/function processSegment/);
+  assert.match(html,/function isCompletePath/);
 });
 
-test('One Stroke catalog points to city rework',()=>{
-  const game=catalog.games.find(g=>g.id==='low_one_stroke');
-  assert.ok(game);
-  assert.equal(game.href,'한붓쓱.html?v=4');
+test('One Stroke layers a real Three.js city under the interactive route canvas',()=>{
+  assert.match(html,/id="city3d"/);
+  assert.match(html,/type="importmap"/);
+  assert.match(html,/one-stroke-city-3d\.js\?v=2/);
+  assert.match(html,/publishCity3D/);
+  assert.match(html,/one-stroke-city-layout/);
+  assert.match(html,/__oneStroke3DReady/);
 });
 
-test('One Stroke renders a dense top-down 2.5D city without empty dead zones',()=>{
+test('One Stroke 3D renderer uses committed Kenney buildings, nature, vehicles and props',()=>{
+  const required=[
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-a.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-b.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-c.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-d.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-e.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-f.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-g.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-h.glb',
+    'assets/game/3d/city/kenney-city-kit-suburban/building-type-i.glb',
+    'assets/game/3d/nature/kenney-nature-kit/tree-default.glb',
+    'assets/game/3d/nature/kenney-nature-kit/tree-oak.glb',
+    'assets/game/3d/nature/kenney-nature-kit/tree-pine-round-a.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/sedan.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/suv.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/taxi.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/light-square.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/construction-cone.glb'
+  ];
+  for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
+  for(const token of ['building-type-a.glb','building-type-i.glb','tree-oak.glb','sedan.glb','taxi.glb','light-square.glb']){
+    assert.ok(runtime.includes(token),'runtime missing '+token);
+  }
+});
+
+test('One Stroke keeps dense city placement while swapping fake drawings for 3D assets',()=>{
   assert.match(html,/target=small\?30:58/);
-  assert.match(html,/function shadeColor/);
   assert.match(html,/o\.kind==='building'/);
   assert.match(html,/o\.kind==='parking'/);
   assert.match(html,/o\.kind==='plaza'/);
   assert.match(html,/o\.kind==='treeCluster'/);
-  assert.match(html,/tiny rear-right shadow gives the whole map a 2\.5D board-game tilt/);
-  assert.match(html,/미니어처 탑다운 도시/);
+  assert.match(runtime,/function addLandmark/);
+  assert.match(runtime,/function addDecor/);
+  assert.match(runtime,/function screenToGround/);
+  assert.match(runtime,/OrthographicCamera/);
+});
+
+test('One Stroke catalog points to the real 3D city rework',()=>{
+  const game=catalog.games.find(g=>g.id==='low_one_stroke');
+  assert.ok(game);
+  assert.equal(game.href,'한붓쓱.html?v=5');
 });
