@@ -40,6 +40,74 @@ const THEME=[
   {ground:0x20343b,lot:0x2b4148}
 ];
 
+const ROOF={
+  home:[0xb9684d,0xc98253,0x915d4a,0x7b7450,0xa85f48],
+  shop:[0x4e7f88,0x486c86,0x9b6150,0x59656f,0x3f7377],
+  cafe:[0xa66858,0x6b7c89,0x507b73,0x8f684d],
+  school:[0x536d85,0x6f8294,0x475e73,0x7f7566],
+  apartment:[0x5f6872,0x727d87,0x4d5863,0x68747e],
+  hub:[0x4f72a8,0x4c7a68,0x666d78,0x8f654d],
+  civic:[0x596f7d,0x73858d,0x5d646b,0x736c62]
+};
+function roofRole(role){
+  if(role==='shop')return'shop';
+  if(role==='cafe')return'cafe';
+  if(role==='school')return'school';
+  if(role==='apartment')return'apartment';
+  if(role==='hub')return'hub';
+  if(role==='park')return'civic';
+  return'home';
+}
+function roofColor(role,variant=0,stage=1){
+  const arr=ROOF[role]||ROOF.home;
+  return arr[(variant+stage*2)%arr.length];
+}
+function tintMaterial(mat,color,strength=.82){
+  const m=mat.clone();
+  if(m.color)m.color.lerp(new THREE.Color(color),strength);
+  m.needsUpdate=true;
+  return m;
+}
+function tintRoof(obj,color){
+  if(!obj||color==null)return obj;
+  obj.updateMatrixWorld(true);
+  const rootBox=new THREE.Box3().setFromObject(obj),size=rootBox.getSize(new THREE.Vector3());
+  const threshold=rootBox.min.y+size.y*.56;
+  const meshes=[];
+  obj.traverse(o=>{if(o.isMesh&&o.material)meshes.push(o)});
+  let matched=false;
+  for(const mesh of meshes){
+    const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    const names=(mesh.name+' '+mats.map(m=>m.name||'').join(' ')).toLowerCase();
+    if(/roof|top|awning|canopy|shingle|tile/.test(names)){
+      const next=mats.map(m=>tintMaterial(m,color,.88));
+      mesh.material=Array.isArray(mesh.material)?next:next[0];
+      matched=true;
+    }
+  }
+  if(matched)return obj;
+
+  // Kenney GLBs do not all expose semantic material names.
+  // In those models, tint only meshes that live mostly in the upper half.
+  let upper=0;
+  for(const mesh of meshes){
+    const b=new THREE.Box3().setFromObject(mesh),center=b.getCenter(new THREE.Vector3());
+    if(center.y>=threshold){
+      const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+      const next=mats.map(m=>tintMaterial(m,color,.76));
+      mesh.material=Array.isArray(mesh.material)?next:next[0];
+      upper++;
+    }
+  }
+  // Last-resort fallback for a one-mesh building: keep original shading and use a mild tint.
+  if(!upper&&meshes.length===1){
+    const mesh=meshes[0],mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    const next=mats.map(m=>tintMaterial(m,color,.34));
+    mesh.material=Array.isArray(mesh.material)?next:next[0];
+  }
+  return obj;
+}
+
 const scene=new THREE.Scene();
 const camera=new THREE.OrthographicCamera(-10,10,10,-10,.1,300);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -106,8 +174,11 @@ function addLot(x,z,r,theme,variant=0){
   const mat=new THREE.MeshStandardMaterial({color:colors[variant%colors.length],roughness:.96});
   const lot=new THREE.Mesh(geom,mat);lot.position.set(x,-.055,z);lot.receiveShadow=true;groundGroup.add(lot);
 }
-function addObject(key,x,z,{size=3,height=null,rot=0,y=.01}={}){
-  const obj=clone(key);if(!obj)return null;normalize(obj,{footprint:size,height});obj.position.set(x,y,z);obj.rotation.y=rot;cityGroup.add(obj);return obj;
+function addObject(key,x,z,{size=3,height=null,rot=0,y=.01,roof=null}={}){
+  const obj=clone(key);if(!obj)return null;
+  normalize(obj,{footprint:size,height});
+  if(roof!=null&&key.startsWith('building'))tintRoof(obj,roof);
+  obj.position.set(x,y,z);obj.rotation.y=rot;cityGroup.add(obj);return obj;
 }
 function addTreeCluster(x,z,r,variant){
   const keys=['tree','oak','pine'];const k1=keys[variant%3],k2=keys[(variant+1)%3],k3=keys[(variant+2)%3];
@@ -138,7 +209,8 @@ function addLandmark(l,w,h,theme){
   addLot(p.x,p.z,r*1.42,theme,l.variant);
   const key=landmarkKey(l.role,l.variant);
   const size=r*(l.role==='apartment'?3.55:(l.role==='school'||l.role==='hub'?3.25:3.05));
-  addObject(key,p.x,p.z,{size,rot:(l.variant%4)*Math.PI/2});
+  const roof=roofColor(roofRole(l.role),l.variant,currentLayout?.stageNum||1);
+  addObject(key,p.x,p.z,{size,rot:(l.variant%4)*Math.PI/2,roof});
   if(l.role==='hub'){
     addObject('taxi',p.x+r*.86,p.z+r*.58,{size:r*.92,rot:Math.PI/2});
     addObject('lamp',p.x-r*.92,p.z+r*.56,{size:r*.46});
@@ -160,7 +232,10 @@ function addDecor(o,w,h,theme){
     const lotScale=o.district?1.36:1.24;
     addLot(p.x,p.z,r*lotScale,theme,o.variant);
     const scale=o.district?3.0:2.82;
-    addObject(decorBuildingKey(o.variant),p.x,p.z,{size:r*scale,rot:o.rot||0});
+    const roles=o.edgeId!=null?['home','home','shop','cafe','home','apartment']:['home','apartment','home','civic'];
+    const role=roles[(o.variant+(o.district?2:0))%roles.length];
+    const roof=roofColor(role,o.variant,currentLayout?.stageNum||1);
+    addObject(decorBuildingKey(o.variant),p.x,p.z,{size:r*scale,rot:o.rot||0,roof});
     // Road-facing blocks get a small side prop so they read as occupied streets.
     if(o.edgeId!=null){
       const side=o.roadSide||1;
