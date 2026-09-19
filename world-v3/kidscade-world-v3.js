@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=7';
-import {createTownEconomy} from './kidscade-world-economy.js?v=7';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=8';
+import {createTownEconomy} from './kidscade-world-economy.js?v=8';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
+import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -15,6 +16,13 @@ const zoneEl=document.getElementById('zone');
 const statusEl=document.getElementById('status');
 const panel=document.getElementById('panel');
 const panelBody=document.getElementById('panelBody');
+const audioToggle=document.getElementById('audioToggle');
+const worldAudio=createWorldAudio();
+function syncAudioButton(){if(audioToggle)audioToggle.textContent=worldAudio.label()}
+audioToggle?.addEventListener('click',()=>{worldAudio.toggle();syncAudioButton()});
+addEventListener('pointerdown',()=>worldAudio.unlock(),{once:true});
+addEventListener('keydown',()=>worldAudio.unlock(),{once:true});
+syncAudioButton();
 
 const ROOT='../assets/game/3d/';
 const P={
@@ -177,7 +185,7 @@ function prog(){
   p.energy=Number(p.energy??100);
   p.maxEnergy=Number(p.maxEnergy??100);
   p.tools=p.tools||{};
-  p.seeds={potato:2,carrot:2,tomato:2,...(p.seeds||{})};
+  p.seeds={potato:2,carrot:2,tomato:2,strawberry:1,corn:1,pumpkin:1,...(p.seeds||{})};
   p.crops=p.crops||{};
   p.food=p.food||{};
   p.fishDex=p.fishDex||{};
@@ -196,7 +204,8 @@ function prog(){
     owned:Array.isArray(rawPets.owned)?rawPets.owned.filter(id=>CUBE_PETS[id]):[],
     met:Array.isArray(rawPets.met)?rawPets.met.filter(id=>CUBE_PETS[id]):[],
     companion:CUBE_PETS[rawPets.companion]?rawPets.companion:(CUBE_PETS[legacyCompanion]?legacyCompanion:''),
-    migratedLegacy:!!rawPets.migratedLegacy
+    migratedLegacy:!!rawPets.migratedLegacy,
+    products:rawPets.products&&typeof rawPets.products==='object'?rawPets.products:{}
   };
   p.starterKitClaimed=!!p.starterKitClaimed;
   p.starterHintSeen=!!p.starterHintSeen;
@@ -215,6 +224,7 @@ function prog(){
 }
 const itemName=k=>({
   wood:'목재',stone:'돌',iron:'철광석',potato:'감자',carrot:'당근',tomato:'토마토',
+  strawberry:'딸기',corn:'옥수수',pumpkin:'호박',milk:'우유',egg:'달걀',truffle:'트러플',
   fish:'물고기',bug:'곤충',mushroom:'버섯'
 })[k]||k;
 
@@ -268,7 +278,7 @@ function cookFood(key){
   const r=RECIPES[key],i=inv(),p=prog();if(!r)return;
   if(!Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v)){toast('요리 재료가 부족해요.');return;}
   Object.entries(r.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-  p.food[key]=(p.food[key]||0)+1;persist();setAvatarAction('smile',750);toast(r.name+' 완성!');updateStatus();
+  p.food[key]=(p.food[key]||0)+1;persist();setAvatarAction('smile',750);worldAudio.sfx('success',.09);toast(r.name+' 완성!');updateStatus();
 }
 function eatFood(key){
   const p=prog(),f=FOOD_DEF[key];if(!f||(p.food[key]||0)<=0)return;
@@ -290,11 +300,13 @@ panel.addEventListener('click',e=>{
     const def=defs[key];if(!def)return;
     if(!Object.entries(def.req).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
     Object.entries(def.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-    p.tools[def.slot]={dur:def.max,max:def.max,tier:def.tier,craftedAt:Date.now()};persist();setAvatarAction('smile',750);toast(def.name+' 완성!');workbenchPanel();updateStatus();return;
+    p.tools[def.slot]={dur:def.max,max:def.max,tier:def.tier,craftedAt:Date.now()};persist();setAvatarAction('smile',750);worldAudio.sfx('success',.10);toast(def.name+' 완성!');workbenchPanel();updateStatus();return;
   }
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
   const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
+  const plant=e.target.closest('[data-plant]');if(plant){const [id,type]=plant.dataset.plant.split(':');plantCrop(id,type);return;}
+  if(e.target.closest('[data-ranch-collect]')){collectRanchProducts();return;}
   if(furnishingSystem?.handlePanelClick?.(e))return;
   if(townEconomy?.handlePanelClick?.(e))return;
 });
@@ -422,7 +434,6 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 });
 document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
-document.getElementById('stable').onclick=()=>location.href='../world-v2/kidscade-world.html?v=8';
 
 const LAYOUT_VERSION=3;
 let mode='outdoor';
@@ -485,8 +496,8 @@ function updateZone(){
   else if(z<-12)zoneEl.textContent='북쪽 강가 · 다리';
   else if(z>12)zoneEl.textContent='남쪽 야영지 · 모닥불';
   else if(x<-8.5&&z>3.0)zoneEl.textContent='연못 · 낚시터';
-  else if(x>10.5&&z>3.2)zoneEl.textContent='작업장 · 제작 구역';
-  else if(x>4.2&&z>2.7)zoneEl.textContent='농장 · 작물 구역';
+  else if(x>12.2&&z>5.2)zoneEl.textContent='작업장 · 제작 구역';
+  else if(x>3.0&&x<12.2&&z>2.7&&z<8.6)zoneEl.textContent='농장 · 자유 재배 구역';
   else if(x<-5.5&&z<-.8)zoneEl.textContent='집 앞 · 마당';
   else zoneEl.textContent='마을길 · 안전 지역';
 }
@@ -501,7 +512,7 @@ function spendTool(kind,item){
   if(!t||t.dur<=0){toast((item==='axe'?'도끼':'곡괭이')+'가 필요해요. 제작대에서 만들어 보세요.');return false}
   if(p.energy<=4){toast('체력이 부족해요. 집 침대에서 쉬어 보세요.');return false}
   const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
-  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();
+  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();worldAudio.sfx('impact',.12);
   toast((kind==='wood'?'목재':'돌')+' +'+gain);return true;
 }
 function canPlaceFurniture(x,z,w,d,ignore=null){
@@ -520,7 +531,7 @@ function sleep(){
 function fish(){
   const p=prog();if(p.energy<3){toast('체력이 부족해요.');return}
   p.energy=Math.max(0,p.energy-3);toast('낚시 중…');
-  setTimeout(()=>{const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus;i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+gain;persist();setAvatarAction('smile',900);updateStatus();toast('물고기를 잡았어요! +'+gain);},850);
+  setTimeout(()=>{const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus;i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+gain;persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);toast('물고기를 잡았어요! +'+gain);},850);
 }
 function mineIron(){
   const p=prog(),t=p.tools.pick;
@@ -528,40 +539,64 @@ function mineIron(){
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
   const gain=t.tier==='iron'?2:1,cost=t.tier==='iron'?4:6;
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
-  persist();setAvatarAction('smile',480);updateStatus();toast('철광석 +'+gain);return true;
+  persist();setAvatarAction('smile',480);updateStatus();worldAudio.sfx('impact',.14);toast('철광석 +'+gain);return true;
 }
-function cropState(id,type){
-  const p=prog();let s=p.crops[id];if(!s||typeof s!=='object')s=p.crops[id]={type,phase:'empty',plantedAt:0,readyAt:0};s.type=type;
-  if(s.phase==='growing'&&Date.now()>=s.readyAt)s.phase='ripe';return s;
+const CROP_DEF={
+  potato:{name:'감자',color:0xc69b5b,growMs:35000},
+  carrot:{name:'당근',color:0xe67e3a,growMs:33000},
+  tomato:{name:'토마토',color:0xc95142,growMs:38000},
+  strawberry:{name:'딸기',color:0xe64949,growMs:36000},
+  corn:{name:'옥수수',color:0xf0cb55,growMs:42000},
+  pumpkin:{name:'호박',color:0xe98932,growMs:47000}
+};
+function cropState(id){
+  const p=prog();let state=p.crops[id];
+  if(!state||typeof state!=='object')state=p.crops[id]={type:'',phase:'empty',plantedAt:0,readyAt:0};
+  if(state.phase==='growing'&&Date.now()>=state.readyAt)state.phase='ripe';
+  if(!CROP_DEF[state.type]&&state.phase!=='empty'){state.type='';state.phase='empty';state.readyAt=0;}
+  return state;
 }
-function cropAction(id,type,name){
-  const p=prog(),s=cropState(id,type),i=inv();
-  if(s.phase==='empty'){
-    if((p.seeds[type]||0)<=0){toast(name+' 씨앗이 없어요.');return}
-    p.seeds[type]--;s.phase='planted';s.plantedAt=Date.now();persist();toast(name+' 씨앗을 심었어요. 다시 행동해서 물을 주세요.');
-  }else if(s.phase==='planted'){
-    s.phase='growing';s.readyAt=Date.now()+35000;persist();toast(name+'에 물을 줬어요.');
-  }else if(s.phase==='growing'){
-    const sec=Math.max(1,Math.ceil((s.readyAt-Date.now())/1000));toast(name+' 성장 중 · '+sec+'초');
+function cropChoicePanel(id){
+  const p=prog();
+  const cards=Object.entries(CROP_DEF).map(([type,d])=>'<div class="item"><b>'+d.name+'</b><div>씨앗 '+(p.seeds[type]||0)+'개</div><button data-plant="'+id+':'+type+'" '+((p.seeds[type]||0)>0?'':'disabled')+'>심기</button></div>').join('');
+  openPanel('<h2>무엇을 심을까요?</h2><div class="grid">'+cards+'</div><p style="font-size:12px">빈 밭은 작물을 자유롭게 바꿔 심을 수 있어요.</p>');
+}
+function plantCrop(id,type){
+  const def=CROP_DEF[type],p=prog(),state=cropState(id);if(!def||state.phase!=='empty')return;
+  if((p.seeds[type]||0)<=0){toast(def.name+' 씨앗이 없어요.');return;}
+  p.seeds[type]--;state.type=type;state.phase='planted';state.plantedAt=Date.now();state.readyAt=0;
+  persist();closePanel();worldAudio.sfx('pickup',.11);toast(def.name+' 씨앗을 심었어요. 이제 물을 주세요.');updateCropVisuals();
+}
+function cropAction(id){
+  const p=prog(),state=cropState(id),i=inv();
+  if(state.phase==='empty'){cropChoicePanel(id);return;}
+  const def=CROP_DEF[state.type];
+  if(state.phase==='planted'){
+    state.phase='growing';state.readyAt=Date.now()+def.growMs;persist();worldAudio.sfx('pickup',.09);toast(def.name+'에 물을 줬어요.');
+  }else if(state.phase==='growing'){
+    const sec=Math.max(1,Math.ceil((state.readyAt-Date.now())/1000));toast(def.name+' 성장 중 · '+sec+'초');
   }else{
-    const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+seedGain;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
+    const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;
+    i[state.type]=(i[state.type]||0)+gain;p.seeds[state.type]=(p.seeds[state.type]||0)+seedGain;
+    state.type='';state.phase='empty';state.readyAt=0;state.plantedAt=0;persist();worldAudio.sfx('pickup',.20);toast(def.name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
 }
-
 const cropVisual=[];
-function makePlant(color){
+function makePlant(){
   const g=new THREE.Group();
   const stem=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.65,8),new THREE.MeshStandardMaterial({color:0x5d9b4e}));
   stem.position.y=.33;g.add(stem);
   for(const sx of [-.18,.18]){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshStandardMaterial({color:0x70ac55}));leaf.scale.set(1.3,.45,.7);leaf.position.set(sx,.48,0);g.add(leaf)}
-  const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),new THREE.MeshStandardMaterial({color}));fruit.position.y=.70;g.add(fruit);
+  const material=new THREE.MeshStandardMaterial({color:0xffffff});
+  const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),material);fruit.position.y=.70;g.add(fruit);g.userData.fruitMaterial=material;
   return g;
 }
 function updateCropVisuals(){
   cropVisual.forEach(v=>{
-    const s=cropState(v.id,v.type);
-    const scale=s.phase==='empty'?0:s.phase==='planted'?.3:s.phase==='growing'?.55:1;
+    const state=cropState(v.id),def=CROP_DEF[state.type];
+    const scale=state.phase==='empty'?0:state.phase==='planted'?.3:state.phase==='growing'?.58:1;
+    if(def)v.object.userData.fruitMaterial?.color.setHex(def.color);
     v.object.scale.setScalar(scale);
   });
 }
@@ -588,7 +623,7 @@ async function addGroundPickup(id,kind,x,z){
     if(!actor.ready)return;
     const nextAt=Date.now()+GROUND_PICKUP_RESPAWN_MS;
     prog().groundPickups[id]=nextAt;
-    const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();
+    const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();worldAudio.sfx('pickup',.14);
     toast((kind==='wood'?'나뭇가지':'작은 돌')+' +1 · 도구 없이 주웠어요.');
     scheduleGroundPickup(actor,GROUND_PICKUP_RESPAWN_MS);
   });
@@ -615,7 +650,7 @@ async function buildOutdoor(){
   box(outdoor,-8.8,-2.2,2.1,6.0,.10,0xd8c79c,.03);
   box(outdoor,10.8,-2.5,2.1,5.5,.10,0xd8c79c,.03);
   box(outdoor,-10.8,4.0,1.8,5.8,.10,0xd8c79c,.03);
-  box(outdoor,12.8,5.3,4.8,3.6,.10,0xbda873,.025);
+  box(outdoor,14.6,7.2,4.8,3.6,.10,0xbda873,.025);
   box(outdoor,-20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
   box(outdoor,20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
   box(outdoor,0,11.8,1.8,10.5,.09,0xc6b88e,.03);
@@ -649,23 +684,23 @@ async function buildOutdoor(){
   // River is blocked except at the wooden bridge.
   collider('outdoor',-10,-15.9,16,5.0);
   collider('outdoor',10,-15.9,16,5.0);
-  await addModel(outdoor,ASSET.bridge,{x:0,z:-15.9,w:4.2,h:.9,d:5.4,rot:0,name:'northBridge'});
+  await addModel(outdoor,ASSET.bridge,{x:0,z:-15.9,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
 
   // Home lot, farm house/barn, workshop.
   await Promise.all([
     addModel(outdoor,ASSET.house,{x:-8.8,z:-5.6,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
     addModel(outdoor,ASSET.farmHouse,{x:10.8,z:-6.0,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
-    addModel(outdoor,ASSET.workbench,{x:13.6,z:5.5,w:2.0,h:1.5,d:1.3,rot:-.35,name:'workbench3d'}),
-    addModel(outdoor,ASSET.chest,{x:11.8,z:5.7,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'}),
+    addModel(outdoor,ASSET.workbench,{x:15.2,z:7.35,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
+    addModel(outdoor,ASSET.chest,{x:13.55,z:7.55,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'}),
     addModel(outdoor,ASSET.chest,{x:-4.3,z:-1.4,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
   ]);
   addColliderFor('outdoor',-8.8,-5.6,5.8,4.4);
   addColliderFor('outdoor',10.8,-6.0,4.0,3.3);
-  addColliderFor('outdoor',13.6,5.5,1.6,1.0);
-  addColliderFor('outdoor',11.8,5.7,1.0,.8);
+  addColliderFor('outdoor',15.2,7.35,1.6,1.0);
+  addColliderFor('outdoor',13.55,7.55,1.0,.8);
   interact('outdoor',-8.8,-2.45,1.8,'집에 들어가기',()=>setMode('indoor'));
-  interact('outdoor',13.6,4.65,1.45,'제작대 사용하기',workbenchPanel);
-  interact('outdoor',11.8,4.9,1.35,'보관 상자 보기',inventoryPanel);
+  interact('outdoor',15.2,6.45,1.45,'제작대 사용하기',workbenchPanel);
+  interact('outdoor',13.55,6.75,1.35,'보관 상자 보기',inventoryPanel);
   interact('outdoor',-4.3,-1.4,1.3,'초보자 보급 상자 열기',claimStarterKit);
   await addModel(outdoor,ASSET.signpost,{x:-2.5,z:1.1,w:.72,h:1.55,d:.72,rot:.15,name:'starter-guide-sign'});
   interact('outdoor',-2.5,1.1,1.15,'초보자 안내 읽기',()=>{
@@ -689,27 +724,26 @@ async function buildOutdoor(){
     addGroundPickup('starter-stone-6','stone',-9.2,9.0)
   ]);
 
-  // Farm plots: one compact farm block, off the road.
-  const types=[['potato','감자',0xc69b5b],['carrot','당근',0xe67e3a],['tomato','토마토',0xc95142]];
-  types.forEach((v,i)=>{
-    const x=5.8+i*2.8,z=4.55;
+  // Six reusable plots: every empty plot can grow any unlocked crop.
+  const plotPos=[[4.8,4.25],[7.4,4.25],[10.0,4.25],[4.8,7.0],[7.4,7.0],[10.0,7.0]];
+  plotPos.forEach(([x,z],i)=>{
     box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
     for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
-    const plant=makePlant(v[2]);plant.position.set(x,.24,z);outdoor.add(plant);
-    const id='work-crop-'+(i+1);cropVisual.push({id,type:v[0],object:plant});
-    interact('outdoor',x,z,1.45,v[1]+' 밭 돌보기',()=>{setAvatarAction('smile',650);cropAction(id,v[0],v[1]);});
+    const plant=makePlant();plant.position.set(x,.24,z);outdoor.add(plant);
+    const id='work-crop-'+(i+1);cropVisual.push({id,object:plant});
+    interact('outdoor',x,z,1.35,'밭 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
   });
   updateCropVisuals();
 
-  // A light fence line visually separates farm from the walking path.
-  for(const [x,z,rot] of [[5.0,2.95,0],[7.5,2.95,0],[10.0,2.95,0],[12.5,2.95,0],[4.5,5.3,Math.PI/2],[13.4,5.3,Math.PI/2]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.3,h:1.0,d:.35,rot});
+  // Farm fence separates the six plots from the village path while leaving an entrance.
+  for(const [x,z,rot] of [[4.3,2.75,0],[6.7,2.75,0],[9.1,2.75,0],[11.5,2.75,0],[3.25,4.9,Math.PI/2],[3.25,7.15,Math.PI/2],[11.55,4.9,Math.PI/2],[11.55,7.15,Math.PI/2]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.2,h:.95,d:.33,rot});
   }
 
   // Trees form a readable perimeter/woodland rather than random clutter.
   const treePos=[
     [-17,-9],[-14,-9],[-4,-9],[1,-9],[5,-9],[16,-9],
-    [-18,-4],[-18,1],[-18,8],[-7,10],[-2,10],[2,10],[17,9],[17,3],[17,-3],
+    [-18,-4],[-18,1],[-18,8],[-7,10],[-2,10],[2,10],[17,3],[17,-3],
     [-14,1.5],[-4,6.8]
   ];
   const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
@@ -750,10 +784,10 @@ async function buildOutdoor(){
   }
 
   // Southern camp: a safe outdoor cooking/rest point for long trips.
-  await addModel(outdoor,ASSET.campfire,{x:0,z:17.0,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
-  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(0,1.4,17);fireLight.userData.campfire=true;outdoor.add(fireLight);
-  interact('outdoor',0,17.0,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
-  interact('outdoor',1.8,17.0,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+  await addModel(outdoor,ASSET.campfire,{x:-3.2,z:16.7,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
+  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(-3.2,1.4,16.7);fireLight.userData.campfire=true;outdoor.add(fireLight);
+  interact('outdoor',-3.2,16.7,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
+  interact('outdoor',-1.4,16.7,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
 
   // Home flower bed and pond-side flowers.
   for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
@@ -823,6 +857,8 @@ function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||
 const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
+const RANCH_SLOTS={bunny:[4.5,-6.9],pig:[6.25,-6.9],cow:[6.7,-5.15],chick:[4.55,-5.1]};
+const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const CITY_LIMITS={x1:-26,x2:26,z1:20,z2:40};
 function isCityArea(x,z){return x>=CITY_LIMITS.x1&&x<=CITY_LIMITS.x2&&z>=CITY_LIMITS.z1&&z<=CITY_LIMITS.z2;}
@@ -890,9 +926,28 @@ function payTame(id){
 async function ensureOwnedPetActor(id){
   if(petActors.some(a=>a.id===id))return;
   const object=await makeCubePetObject(id);if(!object)return;
-  const owned=petState().owned,slot=PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
+  const owned=petState().owned,slot=RANCH_SLOTS[id]||PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
   const groundY=Number(object.userData.groundY)||0;object.position.set(slot[0],groundY+.015,slot[1]);petLayer.add(object);
   petActors.push({id,object,homeX:slot[0],homeZ:slot[1],groundY,phase:petActors.length*.83,targetX:slot[0],targetZ:slot[1],nextDecision:0,moving:false,speed:.28+Math.random()*.12});
+}
+function ranchPanel(){
+  const p=prog(),state=petState(),day=p.survival.day;
+  const rows=Object.entries(RANCH_PRODUCTS).map(([id,d])=>{
+    const owned=state.owned.includes(id),last=Number(state.products[id]??-999),ready=owned&&(day-last>=d.cooldown);
+    return '<div class="item"><b>'+CUBE_PETS[id].name+' · '+d.name+'</b><div>'+(owned?(ready?'수확 가능':'다음 생산까지 기다리는 중'):'아직 목장에 없음')+'</div></div>';
+  }).join('');
+  const can=Object.entries(RANCH_PRODUCTS).some(([id,d])=>state.owned.includes(id)&&(day-Number(state.products[id]??-999)>=d.cooldown));
+  openPanel('<h2>목장 생산물</h2><div class="grid">'+rows+'</div><button data-ranch-collect="1" '+(can?'':'disabled')+'>오늘 생산물 모으기</button><p style="font-size:12px">소는 우유, 병아리는 달걀, 돼지는 이틀마다 트러플을 가져다줘요.</p>');
+}
+function collectRanchProducts(){
+  const p=prog(),state=petState(),day=p.survival.day,i=inv();const got=[];
+  for(const [id,d] of Object.entries(RANCH_PRODUCTS)){
+    if(!state.owned.includes(id))continue;
+    const last=Number(state.products[id]??-999);if(day-last<d.cooldown)continue;
+    i[d.key]=(i[d.key]||0)+d.qty;state.products[id]=day;got.push(d.name+' +'+d.qty);
+  }
+  if(!got.length){toast('오늘 모을 생산물이 아직 없어요.');ranchPanel();return;}
+  persist();worldAudio.sfx('pickup',.20);toast(got.join(' · '));updateStatus();ranchPanel();
 }
 async function tamePet(id){
   const state=petState(),def=CUBE_PETS[id];if(!def)return;
@@ -901,7 +956,7 @@ async function tamePet(id){
   payTame(id);state.owned.push(id);if(!state.met.includes(id))state.met.push(id);
   persist();await ensureOwnedPetActor(id);
   const wild=wildPetActors.find(a=>a.id===id);if(wild)wild.object.visible=false;
-  setAvatarAction('smile',900);toast(def.name+'과(와) 친구가 되었어요!');
+  setAvatarAction('smile',900);worldAudio.sfx('success',.13);toast(def.name+'과(와) 친구가 되었어요!');
   updateStatus();
 }
 function petPanel(){
@@ -922,10 +977,13 @@ async function buildPets(){
   await addModel(outdoor,ASSET.signpost,{x:-16.6,z:-4.35,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
   interact('outdoor',-16.6,-4.35,1.35,'Cube Pets 마당 보기',petPanel);
 
-  // Farm animals are grouped in a small pasture instead of standing on crop plots.
-  for(const [x,z,rot] of [[4.2,-7.65,0],[6.4,-7.65,0],[3.35,-6.0,Math.PI/2],[7.7,-6.0,Math.PI/2],[4.15,-4.35,0]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.8,d:.30,rot});
+  // The farm-side ranch is the permanent home for owned bunny/pig/cow/chick.
+  for(const [x,z,rot] of [[4.25,-8.0,0],[6.55,-8.0,0],[3.15,-6.0,Math.PI/2],[8.0,-6.0,Math.PI/2],[4.15,-4.0,0],[7.15,-4.0,0]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.15,h:.82,d:.30,rot});
   }
+  await addModel(outdoor,ASSET.chest,{x:8.35,z:-3.55,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
+  await addModel(outdoor,ASSET.signpost,{x:6.65,z:-3.55,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
+  interact('outdoor',7.15,-3.65,1.55,'목장 생산물 확인하기',ranchPanel);
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
@@ -1015,7 +1073,7 @@ function updateSurvival(dt,moving){
   townEconomy?.tick?.(dt);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
-    const nearFire=Math.hypot(player.x,player.z-17)<4.2;
+    const nearFire=Math.hypot(player.x+3.2,player.z-16.7)<4.2;
     const nightMul=pet==='cat' ? .68 : 1;
     if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
@@ -1117,7 +1175,7 @@ async function init(){
       }
     }
   });
-  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo});
+  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)});
   townEconomy.ensureState(prog());
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
@@ -1130,6 +1188,6 @@ async function init(){
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);
 }
-init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 2D 안정판 버튼으로 돌아갈 수 있어요.'});
+init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
 window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},setMode};
