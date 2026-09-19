@@ -25,7 +25,7 @@
 .panel{position:absolute;inset:0;z-index:30;background:rgba(20,28,21,.55);display:none;place-items:center;padding:18px}.panel.open{display:grid}
 .card{width:min(560px,100%);max-height:78vh;overflow:auto;background:#fff8dc;border:3px solid #49573f;border-radius:16px;padding:14px 15px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .card h2{margin:0 0 10px}.card button{border:2px solid #65735a;background:#eef3d7;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}.card .close{float:right}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.item{border:1px solid #a69d72;background:#fffdf1;border-radius:9px;padding:8px}
-.loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:#dcebd2;color:#32412f;font-weight:900;transition:.35s}.loading.hide{opacity:0;pointer-events:none}
+.loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:#dcebd2;color:#32412f;font-weight:900;transition:.35s}.loading.hide{opacity:0;pointer-events:none}.avatar-runtime{position:fixed;left:-10000px;top:-10000px;width:2px;height:2px;border:0;opacity:0;pointer-events:none}
 @media(max-width:760px){.hud{top:8px;left:8px;width:min(390px,calc(100vw - 16px));padding:8px 10px}.hud p{display:none}.status{top:8px;right:8px;width:160px;font-size:10px}.zone{top:94px}.actions{display:none}.mobile{display:block}.prompt{bottom:112px;max-width:70vw;text-align:center}}
 </style>
 <script type="importmap">{"imports":{"three":"../assets/vendor/three-r160/three.module.js","three/addons/":"../assets/vendor/three-r160/addons/"}}</script>
@@ -49,9 +49,10 @@
   </div>
   <div class="panel" id="panel"><div class="card"><button class="close" id="panelClose" type="button">닫기</button><div id="panelBody"></div></div></div>
   <div class="loading" id="loading">3D 씨앗하우스를 준비하고 있어요…</div>
+  <iframe id="avatarRuntime" class="avatar-runtime" src="../avatar-studio.html" tabindex="-1" aria-hidden="true"></iframe>
 </div>
 <script src="../world-v2/kidscade-world-storage.js"></script>
 <script src="../world-v2/kidscade-world-bridge.js"></script>
-<script type="module" src="kidscade-world-v3.js?v=1"></script>
+<script type="module" src="kidscade-world-v3.js?v=2"></script>
 </body>
 </html>
