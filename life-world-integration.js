@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v3/kidscade-world.html?v=5';
+  const WORLD_URL='world-v3/kidscade-world.html?v=6';
   let overlay=null, frame=null, activated=false;
   const CUBE_PET_NAMES={dog:'강아지',cat:'고양이',bunny:'토끼',pig:'돼지',cow:'소',chick:'병아리',fox:'여우',deer:'사슴',parrot:'앵무새',beaver:'비버'};
   const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
@@ -62,7 +62,7 @@
 
   function ensure(){
     if(overlay)return;installStyles();overlay=document.createElement('div');overlay.id=OVERLAY_ID;overlay.setAttribute('aria-hidden','true');overlay.innerHTML=`
-      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활·생존 월드 v3</strong><span>2D Deluxe 아바타와 펫이 3D 집 · 숲 · 돌산 · 강가 · 농장을 탐험합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
+      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활·생존 월드 v3</strong><span>집 · 농장 · 숲 · 돌산 · 강가 · 씨앗마을에서 Cube Pets와 생활합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
       <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v3" src="about:blank"></iframe>`;
     document.body.appendChild(overlay);frame=overlay.querySelector('#'+FRAME_ID);overlay.querySelector('#kidscade-life-world-close').addEventListener('click',close);overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
   }
