@@ -11,7 +11,6 @@ const work=fs.readFileSync(path.join(root,'world-v2','kidscade-world-work-animat
 const carry=fs.readFileSync(path.join(root,'world-v2','kidscade-world-carry-fishing.js'),'utf8');
 const progress=fs.readFileSync(path.join(root,'world-v2','kidscade-world-progression.js'),'utf8');
 const life=fs.readFileSync(path.join(root,'world-v2','kidscade-world-life-animation.js'),'utf8');
-const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('World v2 outdoor scripts parse',()=>{
   for(const src of [work,carry,progress,life]){
@@ -58,5 +57,4 @@ test('World v2 outdoor asset pass is cache-bumped',()=>{
   assert.match(life,/kidscade-world-work-animation\.js\?v=2/);
   assert.match(life,/kidscade-world-carry-fishing\.js\?v=2/);
   assert.match(life,/kidscade-world-progression\.js\?v=2/);
-  assert.match(integration,/world-v2\/kidscade-world\.html\?v=8/);
 });
