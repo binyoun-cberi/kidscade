@@ -295,9 +295,9 @@ test('Cube Pets are separated into owned yard companions and habitat-based wild 
   assert.match(runtime,/pet-yard-sign/);
   assert.match(runtime,/Cube Pets 마당 보기/);
   assert.match(runtime,/Farm animals are grouped in a small pasture/);
-  assert.match(runtime,/if\(isCityArea\(nx,nz\)\)/);
-  assert.match(runtime,/a\.interaction\.x=nx/);
-  assert.match(runtime,/a\.interaction\.z=nz/);
+  assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
+  assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
+  assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
   assert.match(runtime,/const LAYOUT_VERSION=3/);
   assert.match(runtime,/if\(z>20\)zoneEl\.textContent='씨앗마을 중심가/);
 });
@@ -318,7 +318,7 @@ test('wild and yard animals have roaming decisions pauses and directional facing
   assert.match(runtime,/Math\.random\(\)<\.32/);
   assert.match(runtime,/a\.object\.rotation\.y=Math\.atan2\(dx,dz\)/);
   assert.match(runtime,/a\.moving=false/);
-  assert.match(runtime,/a\.speed=\.22\+Math\.random\(\)\*\.18/);
+  assert.match(runtime,/speed:\.22\+Math\.random\(\)\*\.18/);
 });
 
 test('movement input cannot remain stuck across focus loss panels travel or city entry',()=>{
