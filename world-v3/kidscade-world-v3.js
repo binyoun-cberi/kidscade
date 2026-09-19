@@ -54,30 +54,29 @@ const ASSET={
   signpost:P.survival+'signpost.glb',
   petDog:'../assets/game/characters/pets/animal-dog.glb',
   petCat:'../assets/game/characters/pets/animal-cat.glb',
-  petRabbit:'../assets/game/characters/pets/animal-bunny.glb',
+  petBunny:'../assets/game/characters/pets/animal-bunny.glb',
   petParrot:'../assets/game/characters/pets/animal-parrot.glb',
-  petPig:'../assets/game/characters/pets/animal-pig.glb'
+  petPig:'../assets/game/characters/pets/animal-pig.glb',
+  petFox:'../assets/game/characters/pets/animal-fox.glb',
+  petDeer:'../assets/game/characters/pets/animal-deer.glb',
+  petCow:'../assets/game/characters/pets/animal-cow.glb',
+  petChick:'../assets/game/characters/pets/animal-chick.glb',
+  petBeaver:'../assets/game/characters/pets/animal-beaver.glb',
+  petFish:'../assets/game/characters/pets/animal-fish.glb'
 };
-const PET_NAMES={
-  hamster:'햄스터',iguana:'이구아나',dog:'강아지',rabbit:'토끼',parrot:'앵무새',
-  turtle:'거북이',cat:'고양이',goat:'염소',miniPig:'미니돼지',sugarGlider:'슈가글라이더',
-  fish:'구피',neonTetra:'네온테트라',platy:'플래티',cory:'코리도라스',betta:'베타'
+const CUBE_PETS={
+  dog:{name:'강아지',model:ASSET.petDog,perk:'이동 속도 +8%',region:'첫 친구',req:{}},
+  cat:{name:'고양이',model:ASSET.petCat,perk:'밤 야외 피로 감소',region:'연못 근처',req:{fish:1}},
+  bunny:{name:'토끼',model:ASSET.petBunny,perk:'작물 수확량 +1',region:'농장',req:{carrot:2}},
+  pig:{name:'돼지',model:ASSET.petPig,perk:'음식 포만감 +15%',region:'농장',req:{potato:2}},
+  cow:{name:'소',model:ASSET.petCow,perk:'허기가 조금 천천히 감소',region:'농장',req:{carrot:2,tomato:1}},
+  chick:{name:'병아리',model:ASSET.petChick,perk:'수확할 때 씨앗을 하나 더 발견',region:'농장',req:{tomato:1}},
+  fox:{name:'여우',model:ASSET.petFox,perk:'버섯 채집량 +1',region:'깊은 숲',req:{fish:1,mushroom:1}},
+  deer:{name:'사슴',model:ASSET.petDeer,perk:'허기 감소 속도 -7%',region:'깊은 숲',req:{carrot:2,tomato:1}},
+  parrot:{name:'앵무새',model:ASSET.petParrot,perk:'낚시 추가 획득 확률',region:'깊은 숲',req:{tomato:2}},
+  beaver:{name:'비버',model:ASSET.petBeaver,perk:'벌목 목재 +1',region:'북쪽 강가',req:{wood:2,carrot:1}}
 };
-const PET_MODELS={dog:ASSET.petDog,cat:ASSET.petCat,rabbit:ASSET.petRabbit,parrot:ASSET.petParrot,miniPig:ASSET.petPig};
-const FISH_IDS=new Set(['fish','neonTetra','platy','cory','betta']);
-const PET_PERKS={
-  hamster:'허기가 조금 천천히 줄어요.',
-  iguana:'밤의 피로 소모가 줄어요.',
-  dog:'걷는 속도가 조금 빨라져요.',
-  rabbit:'작물을 하나 더 수확해요.',
-  parrot:'낚시할 때 가끔 한 마리를 더 찾아줘요.',
-  turtle:'허기와 밤 피로가 모두 조금 줄어요.',
-  cat:'밤의 피로 소모를 크게 줄여줘요.',
-  goat:'채광할 때 체력 소모가 조금 줄어요.',
-  miniPig:'음식의 포만감 효과가 조금 커져요.',
-  sugarGlider:'밤에 이동 속도가 빨라져요.'
-};
-function companionId(){return prog().survival.companion||'';}
+function companionId(){return prog().cubePets?.companion||'';}
 
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
 renderer.autoClear=true;
@@ -184,8 +183,15 @@ function prog(){
     maxHunger:100,
     time:Number.isFinite(Number(old.time))?((Number(old.time)%1440)+1440)%1440:480,
     day:Math.max(1,Math.floor(Number(old.day)||1)),
-    companion:typeof old.companion==='string'?old.companion:'',
     lastTick:Number(old.lastTick)||Date.now()
+  };
+  const rawPets=p.cubePets&&typeof p.cubePets==='object'?p.cubePets:{};
+  p.cubePets={
+    version:1,
+    owned:Array.isArray(rawPets.owned)?rawPets.owned.filter(id=>CUBE_PETS[id]):[],
+    met:Array.isArray(rawPets.met)?rawPets.met.filter(id=>CUBE_PETS[id]):[],
+    companion:CUBE_PETS[rawPets.companion]?rawPets.companion:'',
+    migratedLegacy:!!rawPets.migratedLegacy
   };
   return p;
 }
@@ -243,7 +249,7 @@ function cookFood(key){
 }
 function eatFood(key){
   const p=prog(),f=FOOD_DEF[key];if(!f||(p.food[key]||0)<=0)return;
-  p.food[key]--;const foodMul=companionId()==='miniPig'?1.15:1;
+  p.food[key]--;const foodMul=companionId()==='pig'?1.15:1;
   p.survival.hunger=Math.min(p.survival.maxHunger,p.survival.hunger+f.hunger*foodMul);
   p.energy=Math.min(p.maxEnergy,p.energy+f.energy);persist();setAvatarAction('smile',700);toast(f.name+'을(를) 먹었어요.');updateStatus();inventoryPanel();
 }
@@ -412,7 +418,7 @@ function spendTool(kind,item){
   const p=prog(),t=p.tools[item];
   if(!t||t.dur<=0){toast((item==='axe'?'도끼':'곡괭이')+'가 필요해요. 제작대에서 만들어 보세요.');return false}
   if(p.energy<=4){toast('체력이 부족해요. 집 침대에서 쉬어 보세요.');return false}
-  const iron=t.tier==='iron',gain=iron?2:1,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
+  const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();
   toast((kind==='wood'?'목재':'돌')+' +'+gain);return true;
 }
@@ -432,7 +438,7 @@ function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
-  const gain=t.tier==='iron'?2:1,cost=(t.tier==='iron'?4:6)*(companionId()==='goat' ? .82 : 1);
+  const gain=t.tier==='iron'?2:1,cost=t.tier==='iron'?4:6;
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
   persist();setAvatarAction('smile',480);updateStatus();toast('철광석 +'+gain);return true;
 }
@@ -450,7 +456,7 @@ function cropAction(id,type,name){
   }else if(s.phase==='growing'){
     const sec=Math.max(1,Math.ceil((s.readyAt-Date.now())/1000));toast(name+' 성장 중 · '+sec+'초');
   }else{
-    const gain=companionId()==='rabbit'?3:2;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+1;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
+    const gain=companionId()==='bunny'?3:2,seedGain=companionId()==='chick'?2:1;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+seedGain;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
 }
@@ -589,7 +595,7 @@ async function buildOutdoor(){
   }
   for(const [x,z] of [[-25,4],[-22,6.5],[-27,12],[-23,-5]]){
     await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
-    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv();i.mushroom=(i.mushroom||0)+1;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +1');updateStatus();});
+    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=companionId()==='fox'?2:1;i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
   }
   await addModel(outdoor,ASSET.logStack,{x:-24,z:14.8,w:2.4,h:1.1,d:1.2,rot:.2});
 
@@ -800,12 +806,12 @@ function updateSurvival(dt,moving){
   s.time+=dt*3;
   if(s.time>=1440){s.time-=1440;s.day+=1;toast('새로운 하루가 시작됐어요. Day '+s.day);}
   const night=isNightTime(s.time);
-  const pet=companionId(),hungerMul=pet==='hamster' ? .90 : pet==='turtle' ? .93 : 1;
+  const pet=companionId(),hungerMul=pet==='deer' ? .93 : pet==='cow' ? .96 : 1;
   s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055)*hungerMul);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
     const nearFire=Math.hypot(player.x,player.z-17)<4.2;
-    const nightMul=pet==='cat' ? .68 : pet==='iguana' ? .78 : pet==='turtle' ? .90 : 1;
+    const nightMul=pet==='cat' ? .68 : 1;
     if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
   const hour=s.time/60;
@@ -838,7 +844,7 @@ function tick(now){
   const moving=!!(dx||dz);
   if(moving){
     const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;
-    const pet=companionId(),speedMul=pet==='dog'?1.08:(pet==='sugarGlider'&&isNightTime(prog().survival.time)?1.12:1);
+    const pet=companionId(),speedMul=pet==='dog'?1.08:1;
     const nx=player.x+dx*player.speed*speedMul*dt,nz=player.z+dz*player.speed*speedMul*dt;
     if(!isBlocked(nx,player.z))player.x=nx;
     if(!isBlocked(player.x,nz))player.z=nz;
