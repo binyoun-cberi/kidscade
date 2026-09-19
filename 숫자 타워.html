@@ -300,7 +300,7 @@ async function enterRoom(el,zi,ti,ri,r){
  }
 }
 async function fightGate(g,zi,z){
- if(power<z.gate){await loseBattle(g,z.gate,`내 숫자 ${power}로는 ${z.boss?"보스":"구역 보스"} ${z.gate}을 이길 수 없습니다.<br>탑에서 더 강해져야 했어요.`);return;}
+ if(power<z.gate){await loseBattle(g,z.gate,`내 숫자 ${power}로는 ${z.boss?"보스":"구역 보스"} ${z.gate}을 이길 수 없습니다.<br>탑에서 더 강해져야 했어요.`,z.boss);return;}
  await winBattle(g,z.gate,z.boss);
  if(z.boss){ask(`${power} + ${z.gate} = ?`,power+z.gate,()=>{power+=z.gate;update();win();},`마지막 덧셈을 틀려 보스에게 역전당했습니다.`);}
  else{
@@ -325,9 +325,9 @@ async function winBattle(container,num,boss){
  if(boss){ov.classList.remove("attack");ov.querySelector(".slashfx").classList.remove("go");fx.classList.remove("pop");await wait(70);void ov.offsetWidth;ov.classList.add("attack");ov.querySelector(".slashfx").classList.add("go");fx.textContent="필살!";fx.classList.add("pop");await wait(500);}
  ov.classList.add("dead");await wait(470);ov.remove();hero.style.opacity="1";
 }
-async function loseBattle(container,num,reason){
+async function loseBattle(container,num,reason,boss=false){
  const target=container.classList.contains("gate")?container.querySelector(".gateArch"):container;
- const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(container.classList.contains("gate")?"boss":"enemy",num)}</div><div class="fx"></div>`;
+ const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(boss?"boss":"enemy",num)}</div><div class="fx"></div>`;
  target.appendChild(ov);hero.style.opacity="0";await wait(220);ov.classList.add("counter");const fx=ov.querySelector(".fx");fx.textContent="패배!";fx.classList.add("pop");await wait(580);ov.remove();hero.style.opacity="1";lose(reason);
 }
 function finishAction(el,msg){el.querySelector(".battle")?.remove();busy=false;update();show(msg);}
