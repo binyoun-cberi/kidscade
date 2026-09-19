@@ -882,6 +882,7 @@ function updateSurvival(dt,moving){
   const night=isNightTime(s.time);
   const pet=companionId(),hungerMul=pet==='deer' ? .93 : pet==='cow' ? .96 : 1;
   s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055)*hungerMul);
+  townEconomy?.tick?.(dt);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
     const nearFire=Math.hypot(player.x,player.z-17)<4.2;
@@ -906,6 +907,7 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 
+let townEconomy=null,cityRuntime=null;
 let last=performance.now(),saveClock=0;
 function tick(now){
   requestAnimationFrame(tick);
@@ -932,6 +934,7 @@ function tick(now){
   updateAvatarFrame(now,moving);
   applyAvatarMotion(now,moving);
   updatePets(now,dt);
+  cityRuntime?.update?.(now,dt);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
   const target=new THREE.Vector3(player.x,0,player.z);
@@ -946,6 +949,8 @@ function tick(now){
   renderer.render(scene,camera);
 }
 async function init(){
+  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName});
+  townEconomy.ensureState(prog());
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await buildPets();
