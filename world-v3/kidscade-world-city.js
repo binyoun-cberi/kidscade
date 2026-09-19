@@ -56,9 +56,9 @@ async function addNpc(ctx,id,name,x,z,homeRadius=.55){
   const b=new THREE.Box3().setFromObject(object);
   object.position.set(x,-b.min.y,z);
   ctx.parent.add(object);
-  const label=makeLabel(name);label.position.set(0,2.15,0);object.add(label);
+  const label=makeLabel(name);label.position.set(x,2.05,z);ctx.parent.add(label);
   ctx.collider('outdoor',x,z,.55,.55);
-  return {id,name,object,homeX:x,homeZ:z,r:homeRadius,phase:Math.random()*6.2};
+  return {id,name,object,label,homeX:x,homeZ:z,r:homeRadius,phase:Math.random()*6.2};
 }
 
 export async function buildKidscadeCity(ctx){
@@ -143,6 +143,7 @@ export async function buildKidscadeCity(ctx){
         n.object.position.z+=dz*Math.min(1,dt*.7);
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
         n.object.position.y=Math.abs(Math.sin(now/420+n.phase))*.018;
+        n.label.position.set(n.object.position.x,2.05,n.object.position.z);
       }
     }
   };
