@@ -136,7 +136,10 @@ function installStarter(world){
   const C=K.CarryFishing;if(!C?.spawnPickup)return;
   [['wood',2410,990],['wood',2490,1025],['wood',2570,985],['stone',2650,1028],['stone',2730,990],['stone',2810,1025]].forEach((v,i)=>C.spawnPickup(world,v[0],v[1],v[2],2,{id:`starter-mat-${i+1}`}));
 }
-function stationRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#6d4b32';c.fillRect(e.x+4,e.y+17,e.w-8,e.h-17);c.strokeStyle='#2f2a24';c.lineWidth=3;c.strokeRect(e.x+5.5,e.y+18.5,e.w-11,e.h-20);c.fillStyle='#b68455';c.fillRect(e.x,e.y+8,e.w,17);c.strokeRect(e.x+1.5,e.y+9.5,e.w-3,14);c.fillStyle='#a9aaa1';c.fillRect(e.centerX-20,e.y,40,8);c.fillStyle='#3a3630';c.fillRect(e.centerX-3,e.y-7,6,15);c.restore();}
+function stationRender(c,e){
+  const fallback=(ctx,en)=>{ctx.save();ctx.imageSmoothingEnabled=false;ctx.fillStyle='#6d4b32';ctx.fillRect(en.x+4,en.y+17,en.w-8,en.h-17);ctx.strokeStyle='#2f2a24';ctx.lineWidth=3;ctx.strokeRect(en.x+5.5,en.y+18.5,en.w-11,en.h-20);ctx.fillStyle='#b68455';ctx.fillRect(en.x,en.y+8,en.w,17);ctx.strokeRect(en.x+1.5,en.y+9.5,en.w-3,14);ctx.fillStyle='#a9aaa1';ctx.fillRect(en.centerX-20,en.y,40,8);ctx.fillStyle='#3a3630';ctx.fillRect(en.centerX-3,en.y-7,6,15);ctx.restore();};
+  if(K.ModelSprites?.draw)K.ModelSprites.draw('workbench',c,e,fallback);else fallback(c,e);
+}
 function setWorldInput(world,on){if(!world?.input)return;world.input.keys?.clear?.();world.input.clearVirtual?.();world.input.enabled=on;}
 function closeCraft(world){document.getElementById('world-v2-craft-panel')?.classList.remove('open');setWorldInput(world,true);}
 function ensureCraftPanel(world){
