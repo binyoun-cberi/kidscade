@@ -46,7 +46,7 @@ Kidscade의 기존 `assets/game/` 라이브러리에 **덮어쓰기/병합**하�
 - City Pack: CC0 + CC-BY 3.0 혼합
 
 CC-BY 모델을 실제 게임에서 사용할 때 필요한 크레딧은
-`assets/game/licenses/ATTRIBUTION_REQUIRED_3D_V4.md`에 정리했습니다.
+`assets/game/licenses/ATTRIBUTION_REQUIRED_3D_V4.md`에 정리했습니다. 사이트 전체 중앙 크레딧은 `CREDITS.md` / `credits.html`에서 관리합니다.
 
 ## 개발용 인덱스
 
