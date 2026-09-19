@@ -77,8 +77,9 @@ const ZONE_RULES={
  kelp:{oxygen:1.06,current:32,visibility:.88,danger:'조류'},
  ruins:{oxygen:1.13,current:12,visibility:.82,danger:'시야 저하'},
  wreck:{oxygen:1.22,current:18,visibility:.75,danger:'기뢰·포식어'},
- abyss:{oxygen:1.38,current:10,visibility:.56,danger:'고압·포식자'}
+ abyss:{oxygen:1.38,current:10,visibility:.56,danger:'고압·열수·포식자'}
 };
+const VENTS=[[1320,1810,1],[2280,1840,1.25],[3220,1800,.9]];
 
 let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null;
 const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0};
@@ -361,8 +362,7 @@ function drawZoneLandmarks(){
  ctx.save();for(const [x,y,h] of ruins){const p=screenPos(x,y);if(!onScreen(p,220))continue;ctx.fillStyle='rgba(44,57,59,.80)';ctx.fillRect(p.x-17,p.y-h,34,h);ctx.fillStyle='rgba(116,118,105,.72)';ctx.fillRect(p.x-29,p.y-h-10,58,13);ctx.fillRect(p.x-25,p.y-8,50,10);ctx.strokeStyle='rgba(156,151,123,.42)';ctx.lineWidth=3;ctx.strokeRect(p.x-17,p.y-h,34,h)}ctx.restore();
  const debris=[[760,1270,'wood1',.9,-.25],[1030,1410,'wood2',1.1,.34],[2460,1240,'wood1',.8,.42],[2890,1430,'wood2',1.0,-.31]];
  for(const [x,y,t,sc,rot] of debris){const p=screenPos(x,y);if(onScreen(p))drawImg(imgs[t],p.x,p.y,55*sc,38*sc,false,rot,.72,'brightness(.62) saturate(.65)')}
- const vents=[[1320,1810,1],[2280,1840,1.25],[3220,1800,.9]];
- ctx.save();for(let vi=0;vi<vents.length;vi++){const [x,y,sc]=vents[vi],p=screenPos(x,y);if(!onScreen(p,260))continue;ctx.fillStyle='#182132';ctx.beginPath();ctx.moveTo(p.x-34*sc,p.y);ctx.lineTo(p.x-12*sc,p.y-95*sc);ctx.lineTo(p.x+14*sc,p.y-88*sc);ctx.lineTo(p.x+38*sc,p.y);ctx.closePath();ctx.fill();for(let k=0;k<6;k++){const yy=p.y-105*sc-((world.time*22+k*31+vi*17)%150)*sc,xx=p.x+Math.sin(world.time*1.2+k)*12*sc;ctx.fillStyle=k%2?'rgba(120,105,255,.25)':'rgba(86,231,255,.34)';ctx.beginPath();ctx.arc(xx,yy,3+(k%3),0,Math.PI*2);ctx.fill()}}ctx.restore()
+ ctx.save();for(let vi=0;vi<VENTS.length;vi++){const [x,y,sc]=VENTS[vi],p=screenPos(x,y);if(!onScreen(p,260))continue;ctx.fillStyle='#182132';ctx.beginPath();ctx.moveTo(p.x-34*sc,p.y);ctx.lineTo(p.x-12*sc,p.y-95*sc);ctx.lineTo(p.x+14*sc,p.y-88*sc);ctx.lineTo(p.x+38*sc,p.y);ctx.closePath();ctx.fill();for(let k=0;k<6;k++){const yy=p.y-105*sc-((world.time*22+k*31+vi*17)%150)*sc,xx=p.x+Math.sin(world.time*1.2+k)*12*sc;ctx.fillStyle=k%2?'rgba(120,105,255,.25)':'rgba(86,231,255,.34)';ctx.beginPath();ctx.arc(xx,yy,3+(k%3),0,Math.PI*2);ctx.fill()}}ctx.restore()
 }
 function drawForeground(){
   for(const d of world.foreground){
@@ -394,7 +394,7 @@ function drawMine(m){if(m.dead)return;const p=screenPos(m.x,m.y);if(p.x<-70||p.x
 function sonarGuideTargets(){
  if(!world)return[];const p=world.player,out=[];
  if(missionComplete())out.push({x:p.x,y:WORLD.surface,label:'수면 귀환',kind:'return'});
- for(const f of world.fish)if(f.alive&&SPECIES[f.key].rare)out.push({x:f.x,y:f.y,label:SPECIES[f.key].name,kind:'life'});
+ for(const f of world.fish)if(f.alive&&SPECIES[f.key].rare){const sp=SPECIES[f.key],hostile=['territorial','ambush','predator'].includes(sp.behavior);out.push({x:f.x,y:f.y,label:sp.name,kind:hostile?'danger':'life'})}
  for(const q of world.pickups)if(!q.taken)out.push({x:q.x,y:q.y,label:q.name,kind:'objective'});
  for(const o of world.props)if(!o.done)out.push({x:o.x,y:o.y,label:o.id==='statue'?'침수 석상':'석조 아치',kind:'objective'});
  for(const m of world.mines)if(!m.dead)out.push({x:m.x,y:m.y,label:'기뢰',kind:'danger'});
@@ -466,7 +466,7 @@ function missionComplete(){
 }
 function updateHud(){
  const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y);
- $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';$('zoneText').textContent=zoneForY(p.y).name;
+ $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y);$('zoneText').textContent=z.name+' · '+(ZONE_RULES[z.id]?.danger||'');
  $('missionName').textContent=world.contract.title;$('missionText').textContent=missionText();$('bagText').textContent=world.bagWeight.toFixed(1)+' / '+world.st.bag+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY'
 }
 function setTool(name){
@@ -568,7 +568,16 @@ function applyZoneEnvironment(dt,p){
  if(z.id==='wreck'){
    for(const m of world.mines)if(!m.dead&&Math.hypot(m.x-p.x,m.y-p.y)<150)world.envPulse=Math.max(world.envPulse,.75);
  }
- if(z.id==='abyss')world.envPulse=Math.max(world.envPulse,.32+Math.sin(world.time*2)*.08);
+ if(z.id==='abyss'){
+   world.envPulse=Math.max(world.envPulse,.32+Math.sin(world.time*2)*.08);
+   for(const [vx,vy,sc] of VENTS){
+     const d=Math.hypot(vx-p.x,vy-p.y),burst=(Math.sin(world.time*2.4+vx*.01)+1)*.5;
+     if(d<105*sc&&burst>.72&&p.inv<=0){
+       const dmg=Math.round(7*ZONE_RULES.abyss.oxygen);p.hp-=dmg;p.inv=.8;p.vy-=95;world.envPulse=1;
+       showHint('열수 분출! -'+dmg+' HP',700);beep(120,.10,'sawtooth');break
+     }
+   }
+ }
 }
 function resetInputs(){Object.keys(keys).forEach(k=>keys[k]=false);touch.x=touch.y=0;touch.dash=false;const k=$('knob');if(k)k.style.transform='translate(0,0)'}
 function update(dt){
@@ -579,7 +588,7 @@ function update(dt){
  const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
  p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
  const zone=zoneForY(p.y),rule=ZONE_RULES[zone.id]||ZONE_RULES.reef;
- p.oxygen-=dt*(dashing?1.55:1)*rule.oxygen;applyZoneEnvironment(dt,p);
+ p.oxygen-=dt*(dashing?2.05:1)*rule.oxygen;applyZoneEnvironment(dt,p);
  const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
