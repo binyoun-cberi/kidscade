@@ -531,11 +531,11 @@
     {
       "id": "hanja_survivors_8",
       "title": "한자 수호전: 8급",
-      "href": "games/hanja_survivors_8/한자 수호전： 8급.html?v=5",
+      "href": "games/hanja_survivors_8/한자 수호전： 8급.html?v=6",
       "category": "lang",
       "age": "low",
       "icon": "🛡️",
-      "description": "책을 열면 시간이 멈추고, 책을 덮으면 전투가 다시 흐르는 가운데 이동하면서 반투명 두루마리에 8급 한자 50자를 써서 싸우는 실시간 숙련 액션 서바이벌!",
+      "description": "화면 전체를 쓰는 판타지 전장에서 느린 몬스터 군세를 피하며 이동과 필기를 동시에 하고, 마법책으로 시간을 멈춰 8급 50자 주문을 고르는 숙련 액션 서바이벌!",
       "scoreKey": "hanja_survivors_best",
       "cover": "assets/gate-image/한자수호전.png"
     },
