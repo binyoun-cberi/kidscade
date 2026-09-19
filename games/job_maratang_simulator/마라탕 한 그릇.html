@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>마라탕 한 그릇</title>
-<link rel="stylesheet" href="maratang-selfbar.css?v=8">
+<link rel="stylesheet" href="maratang-selfbar.css?v=9">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div class="app">
   <header class="topbar">
     <div class="shop-name">마라탕 한 그릇</div>
+    <div class="event-chip" id="eventBanner"><b>평범한 하루</b><span>기본 영업</span></div>
     <div class="top-stats">
       <span>DAY <b id="day">1</b></span>
       <span>현금 <b id="cash">₩12,000</b></span>
@@ -24,12 +25,15 @@
   <main class="playfield" id="playfield">
     <canvas id="scene" aria-label="마라탕 셀프바"></canvas>
 
-    <div class="event-banner" id="eventBanner" hidden></div>
-
     <section class="order-ticket" id="orderTicket">
-      <small>주문서</small>
+      <div class="order-head"><small>주문서</small><span id="customerTag">손님</span></div>
       <h2 id="orderTitle">주문을 준비 중이에요</h2>
       <p id="orderText"></p>
+      <div class="order-grid">
+        <div><small>필수</small><b id="orderNeeds">-</b></div>
+        <div><small>제외</small><b id="orderAvoid">-</b></div>
+        <div class="order-meta" id="orderMeta">무게 · 맵기 · 예산</div>
+      </div>
       <div class="patience"><span id="patienceFill"></span></div>
     </section>
 
@@ -39,8 +43,9 @@
     </section>
 
     <div id="ingredientLabels" class="ingredient-labels" aria-hidden="true"></div>
+    <div class="next-unlock" id="nextUnlock" hidden></div>
 
-    <div id="dragTip" class="drag-tip">재료를 잡아 그릇에 넣으세요</div>
+    <div id="dragTip" class="drag-tip">찬장에서 재료를 잡아 그릇에 넣으세요</div>
 
     <div class="shopping-actions" id="shoppingActions">
       <button id="undoBtn" type="button">하나 빼기</button>
@@ -104,6 +109,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="maratang-selfbar.js?v=8"></script>
+<script type="module" src="maratang-selfbar.js?v=9"></script>
 </body>
 </html>
