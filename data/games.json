@@ -452,11 +452,11 @@
     {
       "id": "job_maratang_simulator",
       "title": "마라탕 한 그릇",
-      "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=6",
+      "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=7",
       "category": "trivia",
       "age": "job",
       "icon": "🍲",
-      "description": "주문서를 보고 3D 셀프바의 실제 재료를 직접 끌어 그릇에 담고, 무게·가격·맵기를 맞춰 한 그릇을 완성하는 마라탕 가게 체험!"
+      "description": "5일 동안 마라탕집을 운영하며 주문·무게·맵기를 맞추고, 재고와 현금·평판을 관리해 번 돈으로 냉장고·화력·서비스·홍보를 성장시키는 3D 타이쿤!"
     },
     {
       "id": "high_little_sculptor",
