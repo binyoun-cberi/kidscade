@@ -117,11 +117,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=8/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=8/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=14/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=14/);
+  assert.match(html,/kidscade-world-v3\.js\?v=15/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=15/);
 });
 
 
@@ -376,7 +376,7 @@ test('workshop camp and bridge are separated from farm and travel paths',()=>{
   assert.match(runtime,/workbench,\{x:15\.2,z:7\.35/);
   assert.match(runtime,/chest,\{x:13\.55,z:7\.55/);
   assert.match(runtime,/campfire,\{x:-3\.2,z:16\.7/);
-  assert.match(runtime,/northBridge[\s\S]*rot:Math\.PI\/2/);
+  assert.match(runtime,/ASSET\.bridge,\{x:0,z:-15\.9,w:4\.2,h:\.9,d:5\.4,rot:Math\.PI\/2,name:'northBridge'\}/);
   assert.doesNotMatch(runtime,/campfire,\{x:0,z:17\.0/);
 });
 
