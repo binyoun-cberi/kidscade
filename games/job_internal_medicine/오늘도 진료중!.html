@@ -445,6 +445,7 @@ function diseasePool(){
 function buildQueue(){
   var q=[];
   var returns=(state.pendingReturns||[]).splice(0,2);
+  state.totalReturns=(state.totalReturns||0)+returns.length;
   returns.forEach(function(r){q.push(makePatient(r.patient.disease,r))});
   var pool=diseasePool();
   while(q.length<PATIENTS_PER_DAY){
@@ -687,7 +688,6 @@ function openReview(){
   var avg=state.today.reduce(function(a,b){return a+b.score},0)/Math.max(1,state.today.length);
   var good=state.today.filter(function(x){return x.success}).length;
   var returns=state.today.filter(function(x){return x.needsReturn}).length;
-  state.totalReturns=(state.totalReturns||0)+returns;
   e('reviewDay').textContent=state.day;
   e('reviewSummary').innerHTML=
     '<div class="summary-box">평균 판단<strong>'+Math.round(avg)+'</strong></div>'+
