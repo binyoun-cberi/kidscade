@@ -93,6 +93,7 @@ const ORDERS = [
 const $ = s => document.querySelector(s);
 const els = {
   canvas: $('#scene'), labels: $('#ingredientLabels'), orderTitle: $('#orderTitle'), orderText: $('#orderText'),
+  customerTag:$('#customerTag'), orderNeeds:$('#orderNeeds'), orderAvoid:$('#orderAvoid'), orderMeta:$('#orderMeta'), nextUnlock:$('#nextUnlock'),
   patienceFill: $('#patienceFill'), weight: $('#weight'), cost: $('#cost'), served: $('#served'), day:$('#day'), cash:$('#cash'),
   reputation:$('#reputation'), dayTarget:$('#dayTarget'), queue:$('#queue'),
   dragTip: $('#dragTip'), shoppingActions: $('#shoppingActions'), spiceDock: $('#spiceDock'),
@@ -183,9 +184,10 @@ function updateStockUI(){
     const label=els.labels.querySelector(`[data-id="${ing.id}"]`);
     const left=state.stock[ing.id]??0,unlocked=isIngredientUnlocked(ing.id);
     if(label){
-      label.textContent=unlocked?ing.name+' · '+left:`DAY ${ing.unlockDay} · ${ing.name}`;
-      label.classList.toggle('out',unlocked&&left<=0);
-      label.classList.toggle('locked',!unlocked);
+      label.hidden=!unlocked;
+      label.textContent=ing.name+' · '+left;
+      label.classList.toggle('out',left<=0);
+      label.classList.remove('locked');
     }
   }
   scene?.refreshStockVisuals?.();
@@ -201,8 +203,12 @@ function updateReadout() {
   els.queue.textContent=state.queue;
   if(els.eventBanner){
     const e=state.event||DAILY_EVENTS[0];
-    els.eventBanner.hidden=false;
     els.eventBanner.innerHTML=`<b>${e.title}</b><span>${e.desc}</span>`;
+  }
+  if(els.nextUnlock){
+    const next=INGREDIENTS.find(ing=>ing.unlockDay>state.day);
+    els.nextUnlock.hidden=!next;
+    if(next)els.nextUnlock.textContent=`다음 입고 · DAY ${next.unlockDay} ${next.name}`;
   }
   updateStockUI();
 }
@@ -219,8 +225,12 @@ function setPhase(phase) {
 function setOrder(order) {
   state.order=order;
   const type=order.customerType||CUSTOMER_TYPES[0];
-  els.orderTitle.textContent=type.label+' · '+order.title;
-  els.orderText.textContent=order.text+` · ${type.desc} · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
+  els.customerTag.textContent=type.label;
+  els.orderTitle.textContent=order.title;
+  els.orderText.textContent=type.desc;
+  els.orderNeeds.textContent=Object.entries(order.must).map(([id,n])=>ingredientById(id).name+(n>1?` ×${n}`:'')).join(' · ');
+  els.orderAvoid.textContent=order.avoid.length?order.avoid.map(id=>ingredientById(id).name).join(' · '):'없음';
+  els.orderMeta.textContent=`${order.minWeight}~${order.maxWeight}g · 맵기 ${order.spice}단계 · ≤ ₩${order.budget.toLocaleString()}`;
   state.patience=100;state.customerSettled=false;
   els.patienceFill.style.transform='scaleX(1)';
 }
@@ -258,9 +268,11 @@ class SelfBarScene {
     this.dragObject=null;
     this.dragId=null;
     this.dragStart=null;
-    this.bowlCenter=new THREE.Vector3(0,.45,2.65);
+    this.bowlCenter=new THREE.Vector3(-.85,.45,2.15);
     this.labelAnchors=new Map();
     this.displayItems=new Map();
+    this.shelfBuildToken=0;
+    this.mobileLayout=(canvas.clientWidth||innerWidth)<620;
     this.bowlItems=[];
     this.mode='idle';
     this.time=0;
@@ -282,33 +294,69 @@ class SelfBarScene {
     const warm=new THREE.PointLight(0xffb76b,16,18,2);warm.position.set(5,5,-2);this.scene.add(warm);
   }
   makeCounter(){
-    const counter=new THREE.Mesh(new THREE.BoxGeometry(10, .45, 7.2),new THREE.MeshStandardMaterial({color:0xb98358,roughness:.78}));
-    counter.position.set(0,-.35,.35);counter.receiveShadow=true;this.scene.add(counter);
-    const back=new THREE.Mesh(new THREE.BoxGeometry(10,3.3,.22),new THREE.MeshStandardMaterial({color:0xede0ce,roughness:.9}));
-    back.position.set(0,1.25,-3.15);this.scene.add(back);
+    const wood=new THREE.MeshStandardMaterial({color:0xb87b50,roughness:.78});
+    const dark=new THREE.MeshStandardMaterial({color:0x744a31,roughness:.82});
+    const work=new THREE.Mesh(new THREE.BoxGeometry(7.4,.42,2.45),wood);
+    work.position.set(0,-.28,1.65);work.receiveShadow=true;this.scene.add(work);
+    const front=new THREE.Mesh(new THREE.BoxGeometry(7.4,1.15,.18),dark);
+    front.position.set(0,-.72,2.82);this.scene.add(front);
+    const cookBase=new THREE.Mesh(new THREE.BoxGeometry(2.35,.22,1.72),new THREE.MeshStandardMaterial({color:0x4d4b47,roughness:.65,metalness:.15}));
+    cookBase.position.set(2.25,.03,1.55);this.scene.add(cookBase);
+    const cookInset=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.08,28),new THREE.MeshStandardMaterial({color:0x242524,roughness:.5,metalness:.28}));
+    cookInset.position.set(2.25,.18,1.55);this.scene.add(cookInset);
   }
   makeShelf(){
     this.shelfGroup=new THREE.Group();this.scene.add(this.shelfGroup);
-    const cols=5,xs=[-3.2,-1.6,0,1.6,3.2],zs=[-2.05,-.72,.61];
-    INGREDIENTS.forEach((ing,i)=>{
-      const x=xs[i%cols],z=zs[Math.floor(i/cols)];
-      const tray=new THREE.Mesh(new THREE.BoxGeometry(1.42,.22,1.05),new THREE.MeshStandardMaterial({color:0x71503a,roughness:.75,metalness:.05}));
-      tray.position.set(x,-.02,z);tray.receiveShadow=true;tray.userData.ingredientId=ing.id;this.shelfGroup.add(tray);
-      const inner=new THREE.Mesh(new THREE.BoxGeometry(1.23,.12,.88),new THREE.MeshStandardMaterial({color:0xe5d1b8,roughness:.9}));
-      inner.position.set(x,.13,z);inner.userData.ingredientId=ing.id;this.shelfGroup.add(inner);
-      const anchor=new THREE.Object3D();anchor.position.set(x,.85,z+.1);this.shelfGroup.add(anchor);this.labelAnchors.set(ing.id,anchor);
-      this.loadIngredientDisplay(ing,x,z);
+    this.rebuildShelf();
+  }
+  rebuildShelf(){
+    const token=++this.shelfBuildToken;
+    this.shelfGroup.clear();this.labelAnchors.clear();this.displayItems.clear();
+    const items=activeIngredients(),mobile=this.mobileLayout;
+    const cols=mobile?3:5,rows=Math.max(1,Math.ceil(items.length/cols));
+    const colGap=mobile?1.72:1.55,rowGap=mobile ? .92 : 1.08;
+    const maxCols=Math.min(cols,Math.max(1,items.length));
+    const cabinetW=(maxCols-1)*colGap+1.72;
+    const baseY=.52,z=mobile?-2.35:-2.45;
+    const cabinetH=(rows-1)*rowGap+1.62;
+    const wood=new THREE.MeshStandardMaterial({color:0x8b5d3c,roughness:.82});
+    const shelfMat=new THREE.MeshStandardMaterial({color:0xc08a5d,roughness:.8});
+    const backMat=new THREE.MeshStandardMaterial({color:0xe5c7a7,roughness:.95});
+    const back=new THREE.Mesh(new THREE.BoxGeometry(cabinetW+.32,cabinetH,.16),backMat);
+    back.position.set(0,baseY+(cabinetH-1.0)/2,z-.52);back.receiveShadow=true;this.shelfGroup.add(back);
+    const sideH=cabinetH+.12;
+    for(const x of [-cabinetW/2-.12,cabinetW/2+.12]){
+      const side=new THREE.Mesh(new THREE.BoxGeometry(.22,sideH,.9),wood);
+      side.position.set(x,baseY+(sideH-1.0)/2,z-.12);side.castShadow=true;this.shelfGroup.add(side);
+    }
+    for(let r=0;r<rows;r++){
+      const y=baseY+r*rowGap-.22;
+      const shelf=new THREE.Mesh(new THREE.BoxGeometry(cabinetW+.3,.16,1.0),shelfMat);
+      shelf.position.set(0,y,z);shelf.castShadow=true;shelf.receiveShadow=true;this.shelfGroup.add(shelf);
+    }
+    const top=new THREE.Mesh(new THREE.BoxGeometry(cabinetW+.46,.2,1.02),wood);
+    top.position.set(0,baseY+(rows-1)*rowGap+.7,z-.02);top.castShadow=true;this.shelfGroup.add(top);
+    items.forEach((ing,i)=>{
+      const row=Math.floor(i/cols),rowCount=Math.min(cols,items.length-row*cols),col=i%cols;
+      const x=(col-(rowCount-1)/2)*colGap,y=baseY+row*rowGap;
+      const tray=new THREE.Mesh(new THREE.BoxGeometry(1.26,.12,.76),new THREE.MeshStandardMaterial({color:0x6c4731,roughness:.78}));
+      tray.position.set(x,y-.08,z+.06);tray.userData.ingredientId=ing.id;tray.receiveShadow=true;this.shelfGroup.add(tray);
+      const inner=new THREE.Mesh(new THREE.BoxGeometry(1.08,.06,.62),new THREE.MeshStandardMaterial({color:0xf0d8b8,roughness:.92}));
+      inner.position.set(x,y+.01,z+.06);inner.userData.ingredientId=ing.id;this.shelfGroup.add(inner);
+      const anchor=new THREE.Object3D();anchor.position.set(x,y+.57,z+.12);this.shelfGroup.add(anchor);this.labelAnchors.set(ing.id,anchor);
+      this.loadIngredientDisplay(ing,x,y,z,token);
     });
   }
-  async loadIngredientDisplay(ing,x,z){
-    const obj=await this.cloneModel(ing.model,ing.size);
-    obj.position.set(x,.34,z);obj.rotation.y=(Math.random()-.5)*.5;
+  async loadIngredientDisplay(ing,x,y,z,token=this.shelfBuildToken){
+    const obj=await this.cloneModel(ing.model,ing.size*(this.mobileLayout?1.05:1));
+    if(token!==this.shelfBuildToken)return;
+    obj.position.set(x,y+.24,z+.06);obj.rotation.y=(Math.random()-.5)*.45;
     this.markIngredient(obj,ing.id);
     this.displayItems.set(ing.id,obj);obj.visible=(state.stock[ing.id]??0)>0;
     this.shelfGroup.add(obj);
   }
   refreshStockVisuals(){
-    for(const [id,obj] of this.displayItems)obj.visible=isIngredientUnlocked(id)&&(state.stock[id]??0)>0;
+    for(const [id,obj] of this.displayItems)obj.visible=(state.stock[id]??0)>0;
   }
   async cloneModel(file,size=.7){
     let source=this.cache.get(file);
@@ -336,7 +384,7 @@ class SelfBarScene {
     const bowl=await this.cloneModel('bowl.glb',2.35);bowl.rotation.x=.04;this.bowlRoot.add(bowl);
   }
   async makePot(){
-    this.potRoot=new THREE.Group();this.potRoot.position.set(0,.15,1.6);this.potRoot.visible=false;this.scene.add(this.potRoot);
+    this.potRoot=new THREE.Group();this.potRoot.position.set(2.25,.2,1.55);this.potRoot.visible=false;this.scene.add(this.potRoot);
     const pot=await this.cloneModel('pot-stew.glb',2.8);this.potRoot.add(pot);
     this.steam=[];
     const mat=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.28,roughness:1});
@@ -422,7 +470,7 @@ class SelfBarScene {
   }
   setMode(mode){
     this.mode=mode;
-    if(this.shelfGroup)this.shelfGroup.visible=mode==='shopping'||mode==='spice';
+    if(this.shelfGroup)this.shelfGroup.visible=mode!=='idle';
     if(this.bowlRoot)this.bowlRoot.visible=mode==='shopping'||mode==='spice';
     if(this.potRoot)this.potRoot.visible=mode==='cooking'||mode==='ready';
   }
@@ -433,14 +481,34 @@ class SelfBarScene {
       const p=new THREE.Vector3();anchor.getWorldPosition(p);p.project(this.camera);
       el.style.left=((p.x+1)*.5*rect.width)+'px';
       el.style.top=((-p.y+1)*.5*rect.height)+'px';
-      el.style.opacity=(p.z<1&&state.phase==='shopping')?'1':'0';
+      el.style.opacity=(p.z<1&&state.phase==='shopping'&&isIngredientUnlocked(id))?'1':'0';
     }
   }
   resize(){
     const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;
-    this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
-    if(w<620){this.camera.position.set(0,8.2,10.8);this.camera.fov=44}else{this.camera.position.set(0,7.3,9.8);this.camera.fov=38}
-    this.camera.updateProjectionMatrix();this.camera.lookAt(0,.35,0);
+    this.renderer.setSize(w,h,false);this.camera.aspect=w/h;
+    const mobile=w<620;
+    if(this.mobileLayout!==mobile){
+      this.mobileLayout=mobile;
+      if(this.shelfGroup)this.rebuildShelf();
+    }
+    const cols=mobile?3:5,rows=Math.ceil(activeIngredients().length/cols);
+    if(mobile){
+      const extra=Math.max(0,rows-3);
+      this.camera.position.set(0,5.7+extra*.52,10.4+extra*.35);
+      this.camera.fov=46;
+      this.bowlCenter.set(-.78,.45,2.15);
+      if(this.bowlRoot)this.bowlRoot.position.copy(this.bowlCenter);
+      if(this.potRoot)this.potRoot.position.set(2.15,.2,1.55);
+      this.camera.lookAt(0,1.3+extra*.42,-.45);
+    }else{
+      this.camera.position.set(0,6.35,9.7);this.camera.fov=39;
+      this.bowlCenter.set(-1.15,.45,2.15);
+      if(this.bowlRoot)this.bowlRoot.position.copy(this.bowlCenter);
+      if(this.potRoot)this.potRoot.position.set(2.35,.2,1.55);
+      this.camera.lookAt(0,1.15,-.3);
+    }
+    this.camera.updateProjectionMatrix();
   }
   animate(){
     requestAnimationFrame(()=>this.animate());
@@ -653,8 +721,9 @@ function startNextDay(){
   els.manageOverlay.classList.remove('show');state.day++;state.dayServed=0;state.dayRevenue=0;state.dayCogs=0;state.dayWaste=0;state.dayWalkouts=0;
   state.event=state.nextEvent||chooseDailyEvent(state.day);state.nextEvent=null;
   const unlocked=unlockIngredientsForDay(state.day);
+  if(unlocked.length){scene.rebuildShelf();scene.resize()}
   state.dayTarget=customersForDay();state._orderDeck=makeOrderDeck();updateReadout();
-  if(unlocked.length)toast('신규 재료 해금 · '+unlocked.map(x=>x.name).join(', '));
+  if(unlocked.length)toast('찬장 확장 · 신규 재료 '+unlocked.map(x=>x.name).join(', '));
   beginCustomer();
 }
 function beginCustomer(){

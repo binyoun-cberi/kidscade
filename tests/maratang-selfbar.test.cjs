@@ -18,8 +18,8 @@ const foodModels = [
 
 test('Maratang v8 keeps the 3D selfbar and adds tycoon UI', () => {
   assert.match(html, /<title>마라탕 한 그릇<\/title>/);
-  assert.match(html, /maratang-selfbar\.css\?v=8/);
-  assert.match(html, /maratang-selfbar\.js\?v=8/);
+  assert.match(html, /maratang-selfbar\.css\?v=9/);
+  assert.match(html, /maratang-selfbar\.js\?v=9/);
   assert.doesNotMatch(html, /maratang-dx|maratang-ui-v4/i);
   assert.match(html, /id="orderTicket"/);
   assert.match(html, /id="weight"/);
@@ -100,16 +100,16 @@ test('Maratang Selfbar uses valid shared audio keys', () => {
   for (const key of keys) assert.ok(catalog.sounds[key], 'missing shared audio key: '+key);
 });
 
-test('Maratang Selfbar build output is v7 and contains only new runtime files', () => {
+test('Maratang Selfbar build output is v9 and contains only new runtime files', () => {
   const distCatalog = JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game = distCatalog.games.find(g=>g.id==='job_maratang_simulator');
-  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=8');
+  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=9');
 
   const builtDir=path.join(root,'dist','games','job_maratang_simulator');
   const built=fs.readFileSync(path.join(builtDir,'마라탕 한 그릇.html'),'utf8');
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
-  assert.match(built,/maratang-selfbar\.css\?v=8/);
-  assert.match(built,/maratang-selfbar\.js\?v=8/);
+  assert.match(built,/maratang-selfbar\.css\?v=9/);
+  assert.match(built,/maratang-selfbar\.js\?v=9/);
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.js')));
   assert.ok(!fs.existsSync(path.join(builtDir,'maratang-dx.js')));
@@ -179,10 +179,47 @@ test('Maratang v8 adds customer archetypes and meaningful daily events',()=>{
   assert.match(html,/id="tomorrowEvent"/);
 });
 
-test('Maratang v8 only offers orders and restocking for unlocked ingredients',()=>{
+test('Maratang v9 only offers orders, labels and restocking for unlocked ingredients',()=>{
   assert.match(js,/orderAvailable/);
   assert.match(js,/activeIngredients/);
   assert.match(js,/isIngredientUnlocked/);
-  assert.match(js,/DAY \$\{ing\.unlockDay\}/);
+  assert.match(js,/label\.hidden=!unlocked/);
   assert.match(js,/activeIngredients\(\)\.map/);
+  assert.match(js,/다음 입고 · DAY/);
+});
+
+
+test('Maratang v9 uses an adaptive multi-tier cabinet instead of a 15-slot flat counter',()=>{
+  assert.match(js,/rebuildShelf\(\)/);
+  assert.match(js,/const cols=mobile\?3:5/);
+  assert.match(js,/activeIngredients\(\)/);
+  assert.match(js,/cabinetH/);
+  assert.match(js,/rowGap/);
+  assert.match(js,/label\.hidden=!unlocked/);
+  assert.doesNotMatch(js,/xs=\[-3\.2,-1\.6,0,1\.6,3\.2\],zs=/);
+});
+
+test('Maratang v9 separates cabinet, work bowl and cooking station',()=>{
+  assert.match(js,/new THREE\.BoxGeometry\(7\.4,\.42,2\.45\)/);
+  assert.match(js,/cookBase/);
+  assert.match(js,/this\.bowlCenter=new THREE\.Vector3\(-\.85,\.45,2\.15\)/);
+  assert.match(js,/this\.potRoot\.position\.set\(2\.25,\.2,1\.55\)/);
+  assert.match(js,/this\.shelfGroup\.visible=mode!==\'idle\'/);
+});
+
+test('Maratang v9 has a mobile phase visibility guard and structured order UI',()=>{
+  assert.match(css,/\[hidden\]\{display:none!important\}/);
+  assert.match(html,/id="customerTag"/);
+  assert.match(html,/id="orderNeeds"/);
+  assert.match(html,/id="orderAvoid"/);
+  assert.match(html,/id="orderMeta"/);
+  assert.match(js,/els\.orderNeeds\.textContent/);
+  assert.match(js,/els\.orderMeta\.textContent/);
+});
+
+test('Maratang v9 moves the daily event out of the mobile action stack',()=>{
+  assert.match(html,/class="event-chip" id="eventBanner"/);
+  assert.doesNotMatch(css,/\.event-banner/);
+  assert.match(css,/\.event-chip/);
+  assert.match(html,/id="nextUnlock"/);
 });
