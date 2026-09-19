@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=4';
-import {createTownEconomy} from './kidscade-world-economy.js?v=6';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=3';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=5';
+import {createTownEconomy} from './kidscade-world-economy.js?v=7';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -80,6 +80,7 @@ const CUBE_PETS={
   beaver:{name:'비버',model:ASSET.petBeaver,perk:'벌목 목재 +1',region:'북쪽 강가',req:{wood:2,carrot:1}}
 };
 function companionId(){return prog().cubePets?.companion||'';}
+function townPerks(){return prog().town?.perks||{};}
 
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
 renderer.autoClear=true;
@@ -416,7 +417,8 @@ const TRAVEL_POINTS={
   forest:{x:-19.0,z:.7,name:'깊은 숲 입구'},
   quarry:{x:18.5,z:.7,name:'돌산 입구'},
   camp:{x:0,z:14.0,name:'남쪽 야영지'},
-  city:{x:0,z:23.6,name:'씨앗마을 중심가'}
+  city:{x:0,z:23.6,name:'씨앗마을 중심가'},
+  river:{x:0,z:-15.0,name:'북쪽 강가'}
 };
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
@@ -522,7 +524,7 @@ function cropAction(id,type,name){
   }else if(s.phase==='growing'){
     const sec=Math.max(1,Math.ceil((s.readyAt-Date.now())/1000));toast(name+' 성장 중 · '+sec+'초');
   }else{
-    const gain=companionId()==='bunny'?3:2,seedGain=companionId()==='chick'?2:1;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+seedGain;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
+    const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+seedGain;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
 }
@@ -714,7 +716,7 @@ async function buildOutdoor(){
   }
   for(const [x,z] of [[-25,4],[-22,6.5],[-27,12],[-23,-5]]){
     await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
-    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=companionId()==='fox'?2:1;i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
+    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
   }
   await addModel(outdoor,ASSET.logStack,{x:-24,z:14.8,w:2.4,h:1.1,d:1.2,rot:.2});
 
@@ -751,6 +753,7 @@ async function buildOutdoor(){
     loadGLB,
     prepModel,
     actions:{
+      resident:id=>townEconomy?.resident(id),
       shop:(kind,name)=>townEconomy?.shop(kind,name),
       jobs:()=>townEconomy?.jobs(),
       delivery:()=>townEconomy?.delivery(),
@@ -843,15 +846,23 @@ async function makeCubePetObject(id){
     return o;
   }catch(err){console.warn('[World v3] Cube Pet failed',id,err);return null}
 }
+function effectivePetReq(id){
+  const req={...(CUBE_PETS[id]?.req||{})};
+  if(Number(townPerks().petFriendBonus)>0){
+    const first=Object.keys(req).find(k=>req[k]>0);
+    if(first)req[first]=Math.max(0,req[first]-1);
+  }
+  return req;
+}
 function petReqText(id){
-  const req=CUBE_PETS[id]?.req||{},parts=Object.entries(req).map(([k,v])=>itemName(k)+' '+v);
+  const req=effectivePetReq(id),parts=Object.entries(req).filter(([,v])=>v>0).map(([k,v])=>itemName(k)+' '+v);
   return parts.length?parts.join(' · '):'첫 친구';
 }
 function canTame(id){
-  const req=CUBE_PETS[id]?.req||{},i=inv();return Object.entries(req).every(([k,v])=>(i[k]||0)>=v);
+  const req=effectivePetReq(id),i=inv();return Object.entries(req).every(([k,v])=>(i[k]||0)>=v);
 }
 function payTame(id){
-  const req=CUBE_PETS[id]?.req||{},i=inv();Object.entries(req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  const req=effectivePetReq(id),i=inv();Object.entries(req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
 }
 async function ensureOwnedPetActor(id){
   if(petActors.some(a=>a.id===id))return;
@@ -1033,14 +1044,19 @@ async function init(){
       if(key==='tallBookcase'){setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');return;}
       if(key==='diningTable'){toast('내가 원하는 곳에 놓은 식탁이에요. 식사 공간을 자유롭게 꾸며보세요.');return;}
       if(key==='classicDesk'){toast('책상에 앉아 오늘 할 일을 정리했어요.');return;}
-      if(key==='television'){
-        const p=prog(),t=townEconomy?.ensureState?.(p)||p.town;
+      if(key==='television'||key==='taehoRetroTv'){
+        const p=prog(),t=townEconomy?.ensureState?.(p)||p.town,funGain=key==='taehoRetroTv'?20:15,timeGain=key==='taehoRetroTv'?15:20;
         if(t){
-          t.fun=Math.min(100,(t.fun||0)+15);
-          const nextTime=p.survival.time+20;if(nextTime>=1440)p.survival.day+=1;p.survival.time=nextTime%1440;
+          t.fun=Math.min(100,(t.fun||0)+funGain);
+          const nextTime=p.survival.time+timeGain;if(nextTime>=1440)p.survival.day+=1;p.survival.time=nextTime%1440;
           p.survival.hunger=Math.max(0,p.survival.hunger-2);persist();updateStatus();
         }
-        setAvatarAction('smile',900);toast('TV를 보며 쉬었어요. 재미 +15');return;
+        setAvatarAction('smile',900);toast((key==='taehoRetroTv'?'레트로 게임을':'TV를')+' 즐겼어요. 재미 +'+funGain);return;
+      }
+      if(key==='soraBookcase'){
+        const p=prog(),t=townEconomy?.ensureState?.(p)||p.town;
+        p.energy=Math.min(p.maxEnergy,p.energy+3);if(t)t.fun=Math.min(100,(t.fun||0)+6);
+        persist();updateStatus();setAvatarAction('smile',650);toast('희귀 책을 읽었어요. 체력 +3 · 재미 +6');return;
       }
     }
   });
