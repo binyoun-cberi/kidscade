@@ -1951,18 +1951,8 @@
                 const roomHint = document.getElementById('pet-room-hint');
                 if (roomHint) roomHint.innerHTML = `💡 쑥쑥이는 이제 <strong>오늘의 추천</strong>과 <strong>미션 보상</strong>을 도와주는 오락실 친구예요.`;
 
-                const sidebarAvatar = document.getElementById('sidebar-pet-avatar');
-                const sidebarTitle = document.getElementById('sidebar-pet-title');
-                const sidebarSub = document.getElementById('sidebar-pet-sub');
-                const sidebarFill = document.getElementById('sidebar-pet-fill');
-                const sidebarTalk = document.getElementById('sidebar-pet-talk');
-                if (sidebarAvatar) sidebarAvatar.innerText = avatar;
-                if (sidebarTitle) sidebarTitle.innerText = `쑥쑥이 · Lv.${pet.level}`;
-                if (sidebarSub) sidebarSub.innerText = `${animalText} · ${dominantInfo.label}`;
-                if (sidebarFill) sidebarFill.style.width = `${expPercent}%`;
-                if (sidebarTalk) sidebarTalk.innerText = dominantInfo.value > 0
-                    ? `${dominantInfo.label} 게임을 좋아하네! 오늘도 잘 맞는 게임을 골라줄게.`
-                    : '아직 취향을 알아가는 중이야. 여러 게임을 해보자!';
+                // Legacy care UI no longer owns the sidebar. World v3 Cube Pets does.
+                window.KidscadeLifeWorld?.syncCubePetsSidebar?.();
 
                 renderDailyMissions();
             }
