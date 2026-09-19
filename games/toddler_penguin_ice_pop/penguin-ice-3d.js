@@ -105,7 +105,7 @@ function home(){state.over=true;state.locked=true;hide($('#game'));hide($('#resu
 function hint(){if(state.over||state.locked)return;const alive=state.tiles.filter(t=>t.alive&&!(t.q===0&&t.r===0)&&(state.mode!=='color'||t.color===state.targetColor));if(!alive.length)return;alive.sort((a,b)=>{const sa=dist(a)*2+neighbors(a).filter(n=>n.alive).length,sb=dist(b)*2+neighbors(b).filter(n=>n.alive).length;return sb-sa});state.hintId=alive[0].id;updateHighlights();toast('이 얼음은 비교적 안전해 보여요 💡');setTimeout(()=>{state.hintId=null;updateHighlights()},2200)}
 
 function onPointer(e){
-  if(state.over||state.locked)return;const r=e.currentTarget.getBoundingClientRect();S.pointer.x=((e.clientX-r.left)/r.width)*2-1;S.pointer.y=-((e.clientY-r.top)/r.height)*2+1;S.raycaster.setFromCamera(S.pointer,S.camera);const hits=S.raycaster.intersectObjects(S.hitMeshes.filter(m=>m.visible),false);if(!hits.length)return;const t=state.tiles.find(x=>x.id===hits[0].object.userData.tileId);if(t)hitTile(t)
+  if(state.over||state.locked)return;const r=e.currentTarget.getBoundingClientRect();S.pointer.x=((e.clientX-r.left)/r.width)*2-1;S.pointer.y=-((e.clientY-r.top)/r.height)*2+1;S.raycaster.setFromCamera(S.pointer,S.camera);const hits=S.raycaster.intersectObjects(S.hitMeshes.filter(m=>m.visible),false);const hit=hits.find(h=>state.tiles.find(x=>x.id===h.object.userData.tileId)?.alive);if(!hit)return;const t=state.tiles.find(x=>x.id===hit.object.userData.tileId);if(t)hitTile(t)
 }
 function loop(now){
   const dt=Math.min(.04,(now-S.last)/1000||.016);S.last=now;S.boardRoot.rotation.y+=(state.boardRotTarget-S.boardRoot.rotation.y)*Math.min(1,dt*5);
