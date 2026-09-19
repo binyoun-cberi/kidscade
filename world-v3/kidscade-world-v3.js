@@ -64,6 +64,19 @@ const PET_NAMES={
 };
 const PET_MODELS={dog:ASSET.petDog,cat:ASSET.petCat,rabbit:ASSET.petRabbit,parrot:ASSET.petParrot,miniPig:ASSET.petPig};
 const FISH_IDS=new Set(['fish','neonTetra','platy','cory','betta']);
+const PET_PERKS={
+  hamster:'허기가 조금 천천히 줄어요.',
+  iguana:'밤의 피로 소모가 줄어요.',
+  dog:'걷는 속도가 조금 빨라져요.',
+  rabbit:'작물을 하나 더 수확해요.',
+  parrot:'낚시할 때 가끔 한 마리를 더 찾아줘요.',
+  turtle:'허기와 밤 피로가 모두 조금 줄어요.',
+  cat:'밤의 피로 소모를 크게 줄여줘요.',
+  goat:'채광할 때 체력 소모가 조금 줄어요.',
+  miniPig:'음식의 포만감 효과가 조금 커져요.',
+  sugarGlider:'밤에 이동 속도가 빨라져요.'
+};
+function companionId(){return prog().survival.companion||'';}
 
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
 renderer.autoClear=true;
@@ -229,7 +242,8 @@ function cookFood(key){
 }
 function eatFood(key){
   const p=prog(),f=FOOD_DEF[key];if(!f||(p.food[key]||0)<=0)return;
-  p.food[key]--;p.survival.hunger=Math.min(p.survival.maxHunger,p.survival.hunger+f.hunger);
+  p.food[key]--;const foodMul=companionId()==='miniPig'?1.15:1;
+  p.survival.hunger=Math.min(p.survival.maxHunger,p.survival.hunger+f.hunger*foodMul);
   p.energy=Math.min(p.maxEnergy,p.energy+f.energy);persist();setAvatarAction('smile',700);toast(f.name+'을(를) 먹었어요.');updateStatus();inventoryPanel();
 }
 
@@ -411,13 +425,13 @@ function sleep(){
 function fish(){
   const p=prog();if(p.energy<3){toast('체력이 부족해요.');return}
   p.energy=Math.max(0,p.energy-3);toast('낚시 중…');
-  setTimeout(()=>{const i=inv();i.fish=(i.fish||0)+1;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+1;persist();setAvatarAction('smile',900);updateStatus();toast('물고기를 잡았어요! +1');},850);
+  setTimeout(()=>{const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus;i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+gain;persist();setAvatarAction('smile',900);updateStatus();toast('물고기를 잡았어요! +'+gain);},850);
 }
 function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
-  const gain=t.tier==='iron'?2:1,cost=t.tier==='iron'?4:6;
+  const gain=t.tier==='iron'?2:1,cost=(t.tier==='iron'?4:6)*(companionId()==='goat'?.82:1);
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
   persist();setAvatarAction('smile',480);updateStatus();toast('철광석 +'+gain);return true;
 }
@@ -435,7 +449,7 @@ function cropAction(id,type,name){
   }else if(s.phase==='growing'){
     const sec=Math.max(1,Math.ceil((s.readyAt-Date.now())/1000));toast(name+' 성장 중 · '+sec+'초');
   }else{
-    i[type]=(i[type]||0)+2;p.seeds[type]=(p.seeds[type]||0)+1;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +2');updateStatus();
+    const gain=companionId()==='rabbit'?3:2;i[type]=(i[type]||0)+gain;p.seeds[type]=(p.seeds[type]||0)+1;s.phase='empty';s.readyAt=0;persist();toast(name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
 }
@@ -696,7 +710,7 @@ async function makePetObject(id){
 function petPanel(){
   const owned=gardenOwned().filter(id=>!FISH_IDS.has(id));
   const selected=prog().survival.companion;
-  const cards=owned.length?owned.map(id=>`<div class="item"><b>${PET_NAMES[id]||id}</b><div>${id===selected?'현재 동행 중':'펫 마당 친구'}</div><button data-pet="${id}" ${id===selected?'disabled':''}>함께 다니기</button></div>`).join(''):'<div class="item">육상 펫을 아직 만나지 못했어요.</div>';
+  const cards=owned.length?owned.map(id=>`<div class="item"><b>${PET_NAMES[id]||id}</b><div>${id===selected?'현재 동행 중':'펫 마당 친구'}</div><small>${PET_PERKS[id]||'함께 탐험해요.'}</small><br><button data-pet="${id}" ${id===selected?'disabled':''}>함께 다니기</button></div>`).join(''):'<div class="item">육상 펫을 아직 만나지 못했어요.</div>';
   openPanel(`<h2>펫 친구</h2><div class="grid">${cards}</div><p style="font-size:12px">Kidscade 정원에서 해금한 친구들이 그대로 연결됩니다.</p>`);
 }
 async function buildPets(){
@@ -773,11 +787,13 @@ function updateSurvival(dt,moving){
   s.time+=dt*3;
   if(s.time>=1440){s.time-=1440;s.day+=1;toast('새로운 하루가 시작됐어요. Day '+s.day);}
   const night=isNightTime(s.time);
-  s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055));
+  const pet=companionId(),hungerMul=pet==='hamster'?.90:pet==='turtle'?.93:1;
+  s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055)*hungerMul);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
     const nearFire=Math.hypot(player.x,player.z-17)<4.2;
-    if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04);
+    const nightMul=pet==='cat'?.68:pet==='iguana'?.78:pet==='turtle'?.90:1;
+    if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
   const hour=s.time/60;
   const daylight=Math.max(.16,Math.min(1,Math.sin(((hour-5)/15)*Math.PI)));
@@ -809,7 +825,8 @@ function tick(now){
   const moving=!!(dx||dz);
   if(moving){
     const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;
-    const nx=player.x+dx*player.speed*dt,nz=player.z+dz*player.speed*dt;
+    const pet=companionId(),speedMul=pet==='dog'?1.08:(pet==='sugarGlider'&&isNightTime(prog().survival.time)?1.12:1);
+    const nx=player.x+dx*player.speed*speedMul*dt,nz=player.z+dz*player.speed*speedMul*dt;
     if(!isBlocked(nx,player.z))player.x=nx;
     if(!isBlocked(player.x,nz))player.z=nz;
     if(dx){
