@@ -116,12 +116,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=9/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=11/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=16/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=16/);
+  assert.match(html,/kidscade-world-v3\.js\?v=17/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=17/);
 });
 
 
@@ -412,4 +412,31 @@ test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D s
   assert.doesNotMatch(city,/base\.clone\(true\)/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
   assert.match(city,/anchor\.add\(model\)/);
+});
+
+
+test('resident GLBs retain full animations and use the proven people normalization pipeline',()=>{
+  assert.match(runtime,/const gltfCache=new Map\(\)/);
+  assert.match(runtime,/function loadGLTF\(url\)/);
+  assert.match(city,/cloneSkeleton\(gltf\.scene\)/);
+  assert.match(city,/const baseSize=Math\.max\(size\.x,size\.y,size\.z\)\|\|1/);
+  assert.match(city,/model\.position\.x-=center\.x/);
+  assert.match(city,/model\.position\.z-=center\.z/);
+  assert.match(city,/model\.position\.y-=b\.min\.y/);
+  assert.match(city,/new THREE\.AnimationMixer\(model\)/);
+  assert.match(city,/\/idle\|stand\/i/);
+  assert.match(city,/\/walk\|run\/i/);
+  assert.match(city,/n\.mixer\?\.update\(dt\)/);
+});
+
+test('Seed Town approach is a visible protected three-metre pedestrian spine',()=>{
+  assert.match(runtime,/box\(outdoor,0,17\.25,3\.0,22\.5/);
+  assert.doesNotMatch(runtime,/\[-2,10\],\[2,10\]/);
+  assert.match(runtime,/function isProtectedRoute\(x,z\)/);
+  assert.match(runtime,/function addNatureCollider\(x,z,w,d\)/);
+  assert.match(runtime,/if\(mode==='outdoor'&&isProtectedRoute\(nx,nz\)\)return false/);
+  assert.match(runtime,/addNatureCollider\(x,z,\.7,\.7\)/);
+  assert.match(runtime,/addNatureCollider\(x,z,\.82,\.68\)/);
+  assert.match(runtime,/addNatureCollider\(x,z,\.72,\.72\)/);
+  assert.match(runtime,/addNatureCollider\(x,z,\.9,\.75\)/);
 });
