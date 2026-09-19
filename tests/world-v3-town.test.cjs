@@ -7,6 +7,7 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),'utf8');
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
+const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
 const audio=fs.readFileSync(path.join(root,'world-v3','kidscade-world-audio.js'),'utf8');
@@ -15,7 +16,7 @@ const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf
 const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,grid,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -108,22 +109,20 @@ test('city has bus travel and passes game time to NPC schedules',()=>{
   assert.match(city,/evening/);
 });
 
+
 test('Seed Town is connected into the continuous World v3 map and current cache',()=>{
+  assert.match(runtime,/WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,zoneAt,isCityArea,isTravelCorridor/);
   assert.match(runtime,/buildKidscadeCity/);
-  assert.match(runtime,/씨앗마을 중심가 · 장보기·일·놀이/);
-  assert.match(runtime,/z2:40/);
   assert.match(runtime,/cityRuntime\?\.update\?\.\(now,dt\)/);
-  assert.match(runtime,/도시 안내판 읽기/);
-  assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=13/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=14/);
+  assert.match(runtime,/kidscade-world-grid\.js\?v=1/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=19/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=19/);
+  assert.match(html,/kidscade-world-v3\.js\?v=20/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=20/);
 });
-
 
 test('starter resources provide six hand pickups per material and one-time guidance',()=>{
   assert.equal((runtime.match(/addGroundPickup\('starter-wood-/g)||[]).length,6);
@@ -229,6 +228,7 @@ test('named Seed Town residents expose roles services friendship milestones and 
   for(const at of ['at:3','at:7','at:12'])assert.ok(economy.includes(at),'missing friendship milestone '+at);
 });
 
+
 test('friendship perks affect the systems matching each resident role',()=>{
   assert.match(economy,/marketDiscount/);
   assert.match(economy,/hardwareDiscount/);
@@ -242,7 +242,7 @@ test('friendship perks affect the systems matching each resident role',()=>{
   assert.match(runtime,/townPerks\(\)\.harvestBonus/);
   assert.match(runtime,/townPerks\(\)\.mushroomBonus/);
   assert.match(runtime,/townPerks\(\)\.petFriendBonus/);
-  assert.match(runtime,/river:\{x:0,z:-15\.0,name:'북쪽 강가'\}/);
+  assert.match(runtime,/river:\{x:-10,z:-14\.0,name:'북쪽 강가'\}/);
 });
 
 test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
@@ -264,46 +264,45 @@ test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
 });
 
 
-test('World v3 map cleanup keeps town roads zones props and NPC anchors organized',()=>{
-  assert.match(city,/CITY_BOUNDS=\{x1:-26,x2:26,z1:20,z2:40\}/);
-  assert.match(city,/const roadX=\[-24,-20,-16,-12,-8,-4,4,8,12,16,20,24\]/);
+
+test('World v3 square grid keeps Seed Town in four equal districts',()=>{
+  assert.match(grid,/export const CELL_SIZE=20/);
+  assert.match(grid,/CITY_BOUNDS=\{x1:-20,x2:20,z1:10,z2:50\}/);
+  for(const id of ['cityMarket','cityLeisure','cityCivic','cityTransit'])assert.ok(grid.includes(id+':{id:'),'missing city square '+id);
+  assert.match(city,/city-road-horizontal/);
+  assert.match(city,/city-road-vertical/);
   assert.match(city,/city-road-cross/);
-  assert.match(city,/city-road-entry-25/);
-  assert.match(city,/city-road-entry-21/);
-  assert.doesNotMatch(city,/traffic-light\.glb/);
-  assert.match(city,/city-plaza/);
   assert.match(city,/market-display/);
   assert.match(city,/transport-corner/);
   assert.match(city,/validateMapLayout/);
-  assert.match(city,/\[World v3 map overlap\]/);
+  assert.doesNotMatch(city,/traffic-light\.glb/);
 });
 
-test('resident AI movement keeps interaction anchors attached to moving NPC models',()=>{
+
+test('resident AI movement keeps interaction anchors attached inside the new city squares',()=>{
   assert.match(city,/interaction:null/);
   assert.match(city,/function bind\(id,r,label,action\)/);
   assert.match(city,/n\.interaction\.x=n\.object\.position\.x/);
   assert.match(city,/n\.interaction\.z=n\.object\.position\.z/);
   assert.match(city,/dayRoleTargets/);
   assert.match(city,/eveningSlots/);
-  assert.match(city,/yuna:\{x:-15\.4,z:32\.0/);
-  assert.match(city,/woojin:\{x:-8\.0,z:32\.15/);
-  assert.match(city,/seoyeon:\{x:8\.0,z:32\.15/);
+  assert.match(city,/yuna:\{x:7\.0,z:24\.0/);
+  assert.match(city,/woojin:\{x:10\.0,z:25\.0/);
+  assert.match(city,/seoyeon:\{x:13\.0,z:24\.0/);
 });
 
-test('Cube Pets are separated into owned yard companions and habitat-based wild animals',()=>{
-  assert.match(runtime,/CITY_LIMITS=\{x1:-26,x2:26,z1:20,z2:40\}/);
-  assert.match(runtime,/function isCityArea\(x,z\)/);
-  for(const habitat of ["pond","farm-pasture","deep-forest","riverbank"])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
+
+test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
+  assert.match(runtime,/isCityArea,isTravelCorridor/);
+  for(const habitat of ['pond','ranch','deep-forest','waterfront'])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
   assert.match(runtime,/pet-yard-sign/);
   assert.match(runtime,/Cube Pets 마당 보기/);
-  assert.match(runtime,/farm-side ranch is the permanent home/);
+  assert.match(runtime,/Ranch square/);
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=4/);
-  assert.match(runtime,/if\(z>20\)zoneEl\.textContent='씨앗마을 중심가/);
+  assert.match(runtime,/const LAYOUT_VERSION=6/);
 });
-
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
   assert.match(city,/model\.position\.x-=center\.x/);
@@ -337,9 +336,12 @@ test('movement input resets on focus loss and panels without interrupting city c
   assert.match(runtime,/function setMode\(next\)\{\n  resetInput\(true\)/);
 });
 
-test('outdoor lawn uses one surface so the home grass cannot z-fight',()=>{
-  assert.doesNotMatch(runtime,/plane\(outdoor,0,5,82,96,0x7caf63,0\)/);
-  assert.match(runtime,/box\(outdoor,0,5,82,96,.26,0x7caf63,-.26\)/);
+
+test('outdoor map uses one sub-base plus separated square tiles without overlapping lawn planes',()=>{
+  assert.match(runtime,/box\(outdoor,0,10,80,80,\.24,0x668858,-\.30\)/);
+  assert.match(runtime,/for\(const cell of Object\.values\(WORLD_GRID\)\)/);
+  assert.match(runtime,/19\.6,19\.6,\.08,cell\.color,-\.08/);
+  assert.doesNotMatch(runtime,/plane\(outdoor,0,5,82,96/);
 });
 
 test('city labels are smaller and only shown near the player',()=>{
@@ -363,10 +365,11 @@ test('v3.14 removes the 2D fallback entry and exposes audio control instead',()=
   assert.match(integration,/resumeAudio/);
 });
 
-test('farm has six reusable plots and six selectable crops with market seeds',()=>{
+
+test('farm square has six reusable plots and six selectable crops with market seeds',()=>{
   assert.match(runtime,/const CROP_DEF=\{/);
   for(const crop of ['potato','carrot','tomato','strawberry','corn','pumpkin'])assert.ok(runtime.includes(crop+':{name:'),'missing crop '+crop);
-  assert.match(runtime,/const plotPos=\[\[4\.8,4\.25\],\[7\.4,4\.25\],\[10\.0,4\.25\],\[4\.8,7\.0\],\[7\.4,7\.0\],\[10\.0,7\.0\]\]/);
+  assert.match(runtime,/const plotPos=\[\[4\.5,3\.2\],\[7\.2,3\.2\],\[9\.9,3\.2\],\[4\.5,6\.0\],\[7\.2,6\.0\],\[9\.9,6\.0\]\]/);
   assert.match(runtime,/data-plant/);
   assert.match(runtime,/무엇을 심을까요/);
   assert.match(runtime,/밭 살펴보기/);
@@ -374,12 +377,13 @@ test('farm has six reusable plots and six selectable crops with market seeds',()
   assert.match(storage,/strawberry:1,corn:1,pumpkin:1/);
 });
 
-test('workshop camp and bridge are separated from farm and travel paths',()=>{
-  assert.match(runtime,/workbench,\{x:15\.2,z:7\.35/);
-  assert.match(runtime,/chest,\{x:13\.55,z:7\.55/);
-  assert.match(runtime,/campfire,\{x:-3\.2,z:16\.7/);
-  assert.match(runtime,/ASSET\.bridge,\{x:0,z:-15\.9,w:4\.2,h:\.9,d:5\.4,rot:Math\.PI\/2,name:'northBridge'\}/);
-  assert.doesNotMatch(runtime,/campfire,\{x:0,z:17\.0/);
+
+test('workshop camp bridge and beach each stay in their owning square',()=>{
+  assert.match(runtime,/workbench,\{x:16\.2,z:6\.6/);
+  assert.match(runtime,/chest,\{x:14\.2,z:7\.0/);
+  assert.match(runtime,/campfire,\{x:-31\.5,z:20/);
+  assert.match(runtime,/ASSET\.bridge,\{x:-10,z:-20,w:4\.2,h:\.9,d:5\.4,rot:Math\.PI\/2,name:'northBridge'\}/);
+  assert.match(runtime,/sea\.position\.set\(-30,\.055,-27\.1\)/);
 });
 
 test('owned ranch pets have daily products and dedicated ranch slots',()=>{
@@ -431,18 +435,16 @@ test('resident GLBs retain full animations and use the proven people normalizati
   assert.match(city,/n\.mixer\?\.update\(dt\)/);
 });
 
-test('Seed Town approach is a visible protected three-metre pedestrian spine',()=>{
-  assert.match(runtime,/box\(outdoor,0,17\.25,3\.0,22\.5/);
-  assert.doesNotMatch(runtime,/\[-2,10\],\[2,10\]/);
-  assert.match(runtime,/function isProtectedRoute\(x,z\)/);
-  assert.match(runtime,/function addNatureCollider\(x,z,w,d\)/);
-  assert.match(runtime,/if\(mode==='outdoor'&&isProtectedRoute\(nx,nz\)\)return false/);
-  assert.match(runtime,/addNatureCollider\(x,z,\.7,\.7\)/);
-  assert.match(runtime,/addNatureCollider\(x,z,\.82,\.68\)/);
-  assert.match(runtime,/addNatureCollider\(x,z,\.72,\.72\)/);
-  assert.match(runtime,/addNatureCollider\(x,z,\.9,\.75\)/);
-});
 
+test('square-grid connectors are protected three-metre travel corridors',()=>{
+  assert.match(grid,/function isTravelCorridor\(x,z\)/);
+  assert.match(grid,/z>=-1\.45&&z<=1\.45/);
+  assert.match(grid,/x>=-31\.45&&x<=-28\.55/);
+  assert.match(grid,/x>=-11\.45&&x<=-8\.55/);
+  assert.match(grid,/x>=8\.55&&x<=11\.45/);
+  assert.match(runtime,/if\(mode==='outdoor'&&isTravelCorridor\(nx,nz\)\)return false/);
+  assert.match(runtime,/function addNatureCollider\(x,z,w,d\)/);
+});
 
 test('resident walk animation strips root motion so visual bodies cannot detach from labels',()=>{
   assert.match(city,/const walkSource=/);
@@ -462,21 +464,38 @@ test('residents actually idle between short walks instead of perpetual sinusoida
   assert.doesNotMatch(city,/Math\.sin\(now\/2600\+n\.phase\)/);
 });
 
-test('v3.19 keeps all visible natural props and signs off travel corridors',()=>{
-  assert.match(runtime,/function isPathClearance\(x,z\)/);
-  assert.match(runtime,/if\(isPathClearance\(x,z\)\)continue/);
-  assert.doesNotMatch(runtime,/\[-18,1\]/);
-  assert.doesNotMatch(runtime,/\[-14,1\.5\]/);
-  assert.match(runtime,/ASSET\.signpost,\{x:-17\.0,z:2\.35/);
-  assert.match(runtime,/ASSET\.signpost,\{x:17\.0,z:2\.35/);
-  assert.match(runtime,/ASSET\.signpost,\{x:2\.2,z:-11\.1/);
-  assert.match(runtime,/ASSET\.signpost,\{x:2\.35,z:11\.2/);
-  assert.match(runtime,/ASSET\.signpost,\{x:2\.65,z:20\.65/);
+
+test('square-zone natural props and wayfinding stay off standardized connectors',()=>{
+  assert.match(runtime,/function isPathClearance\(x,z\)\{return isTravelCorridor\(x,z\)\}/);
+  assert.match(runtime,/if\(isTravelCorridor\(x,z\)\)continue/);
+  assert.match(runtime,/\[-21\.5,2\.2,-Math\.PI\/2,'← 깊은 숲'\]/);
+  assert.match(runtime,/\[-7\.7,-11\.8,Math\.PI,'↑ 북쪽 강가'\]/);
+  assert.match(runtime,/\[12\.3,-11\.8,Math\.PI,'↑ 목장'\]/);
+  assert.match(runtime,/\[-27\.7,-11\.8,Math\.PI,'↑ 해변'\]/);
 });
 
-test('city entrance has a continuous visible pedestrian connector and crosswalk',()=>{
-  assert.match(city,/plane\(parent,0,24\.0,3\.0,8\.0,0xd0c297,\.305\)/);
-  assert.match(city,/for\(const z of \[27\.8,28\.6,29\.4,30\.2\]\)/);
-  assert.match(city,/plane\(parent,0,31\.65,3\.0,2\.7,0xd0c297,\.305\)/);
-  assert.match(runtime,/const LAYOUT_VERSION=5/);
+
+test('four city squares share border roads and centered pedestrian entrances',()=>{
+  assert.match(city,/box\(parent,0,30,40,3\.2/);
+  assert.match(city,/box\(parent,0,30,3\.2,40/);
+  assert.match(city,/plane\(parent,-10,14\.5,3\.0,9\.0/);
+  assert.match(city,/plane\(parent,10,14\.5,3\.0,9\.0/);
+  assert.match(city,/for\(const x of \[-10,10\]\)for\(const z of \[28\.8,29\.6,30\.4,31\.2\]\)/);
+  assert.match(runtime,/const LAYOUT_VERSION=6/);
+});
+
+test('World v3 has one authoritative 20x20 square-zone grid',()=>{
+  assert.match(grid,/export const CELL_SIZE=20/);
+  for(const spec of [
+    ["beach",-30,-20],["waterfront",-10,-20],["ranch",10,-20],
+    ["forest",-30,0],["home",-10,0],["farm",10,0],["quarry",30,0],
+    ["camp",-30,20],["cityMarket",-10,20],["cityLeisure",10,20],
+    ["cityCivic",-10,40],["cityTransit",10,40]
+  ]){
+    const [id,cx,cz]=spec;
+    assert.ok(grid.includes(id+":{id:'"+id+"'"),'missing grid cell '+id);
+    assert.ok(grid.includes('cx:'+cx+',cz:'+cz),'wrong center for '+id);
+  }
+  assert.match(grid,/WORLD_BOUNDS=\{x1:-40,x2:40,z1:-30,z2:50\}/);
+  assert.match(runtime,/zoneAt\(player\.x,player\.z\)/);
 });
