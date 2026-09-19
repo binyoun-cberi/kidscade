@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v2/kidscade-world.html?v=8';
+  const WORLD_URL='world-v3/kidscade-world.html?v=1';
   let overlay=null, frame=null, activated=false;
 
   function installStyles(){
@@ -29,19 +29,19 @@
   function installEntryButton(){
     if(document.querySelector('[data-open-life-world="garden-entry"]'))return true;
     const heading=document.querySelector('.garden-heading');if(!heading)return false;
-    const btn=document.createElement('button');btn.type='button';btn.dataset.openLifeWorld='garden-entry';btn.textContent='🌿 생활 월드';btn.setAttribute('aria-label','Kidscade 생활 월드 v2 들어가기');heading.appendChild(btn);return true;
+    const btn=document.createElement('button');btn.type='button';btn.dataset.openLifeWorld='garden-entry';btn.textContent='🌿 생활 월드';btn.setAttribute('aria-label','Kidscade 생활 월드 v3 들어가기');heading.appendChild(btn);return true;
   }
 
   function ensure(){
     if(overlay)return;installStyles();overlay=document.createElement('div');overlay.id=OVERLAY_ID;overlay.setAttribute('aria-hidden','true');overlay.innerHTML=`
-      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활 월드 v2</strong><span>집 · 나의 정원 · 농장이 하나의 월드로 이어집니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
-      <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v2" src="about:blank"></iframe>`;
+      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활 월드 v3</strong><span>2D Deluxe 아바타가 3D 집 · 정원 · 농장을 생활합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
+      <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v3" src="about:blank"></iframe>`;
     document.body.appendChild(overlay);frame=overlay.querySelector('#'+FRAME_ID);overlay.querySelector('#kidscade-life-world-close').addEventListener('click',close);overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
   }
 
   function activate(){ensure();if(activated)return;activated=true;frame.src=WORLD_URL;}
-  function resetWorldInput(){try{const w=frame?.contentWindow?.KidscadeWorldV2?.activeWorld||frame?.contentWindow?.__kidscadeWorldV2;w?.input?.reset?.();}catch(_){} }
-  function refreshWorld(){try{frame.contentWindow?.postMessage({type:'kidscade-world-v2-refresh'},location.origin);frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin);}catch(_){} }
+  function resetWorldInput(){try{frame?.contentWindow?.KidscadeWorldV3?.resetInput?.();const w=frame?.contentWindow?.KidscadeWorldV2?.activeWorld||frame?.contentWindow?.__kidscadeWorldV2;w?.input?.reset?.();}catch(_){} }
+  function refreshWorld(){try{frame?.contentWindow?.KidscadeWorldV3?.refresh?.();frame.contentWindow?.postMessage({type:'kidscade-world-v3-refresh'},location.origin);frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin);}catch(_){} }
 
   function open(){activate();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
   function close(){if(!overlay)return;resetWorldInput();overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';}
@@ -51,5 +51,5 @@
   window.addEventListener('message',e=>{if(e.source!==frame?.contentWindow)return;if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();});
 
   installStyles();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton())observer.disconnect()});observer.observe(document.documentElement,{childList:true,subtree:true});}
-  const api={open,close,ensure,refresh:refreshWorld,getFrame:()=>frame,url:WORLD_URL,version:2};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
+  const api={open,close,ensure,refresh:refreshWorld,getFrame:()=>frame,url:WORLD_URL,version:3};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
 })(window);
