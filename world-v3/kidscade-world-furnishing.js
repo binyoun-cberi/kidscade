@@ -3,6 +3,11 @@ import * as THREE from 'three';
 const ROOT=new URL('../assets/game/3d/interiors/kenney-furniture-kit/',import.meta.url).href;
 
 export const FURNITURE_CATALOG={
+  classicDesk:{name:'기본 책상',file:'desk.glb',w:2.0,h:1.4,d:1.2,cw:1.8,cd:.9,recipe:{wood:8,iron:1},use:'책상 사용하기'},
+  tallBookcase:{name:'기본 책장',file:'bookcase-open.glb',w:1.6,h:2.45,d:.78,cw:1.35,cd:.62,recipe:{wood:10},use:'책장 살펴보기'},
+  classicSofa:{name:'기본 소파',file:'lounge-sofa.glb',w:2.9,h:1.4,d:1.45,cw:2.5,cd:1.1,recipe:{wood:12,iron:1},use:'소파에 앉기'},
+  diningTable:{name:'기본 식탁',file:'table.glb',w:2.4,h:1.3,d:1.9,cw:2.0,cd:1.5,recipe:{wood:9},use:'식탁 사용하기'},
+  rugRectangle:{name:'거실 러그',file:'rug-rectangle.glb',w:4.2,h:.10,d:2.8,cw:0,cd:0},
   woodChair:{name:'나무 의자',file:'chair.glb',w:.95,h:1.35,d:.95,cw:.72,cd:.72,recipe:{wood:4}},
   sideTable:{name:'작은 협탁',file:'side-table.glb',w:1.1,h:1.0,d:1.0,cw:.82,cd:.78,recipe:{wood:5,stone:1}},
   pottedPlant:{name:'화분',file:'potted-plant.glb',w:.9,h:1.35,d:.9,cw:.62,cd:.62,recipe:{wood:2,stone:2}},
@@ -24,7 +29,7 @@ function safeCount(v){return Math.max(0,Math.floor(Number(v)||0));}
 export function createFurnishingSystem(ctx){
   const {
     parent,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,
-    setAvatarAction,itemName,getMode,getPlacementPose,canPlace
+    setAvatarAction,itemName,getMode,getPlacementPose,canPlace,useFurniture
   }=ctx;
 
   const actors=new Map();
@@ -49,7 +54,7 @@ export function createFurnishingSystem(ctx){
     const cleanOwned={};
     for(const key of Object.keys(FURNITURE_CATALOG))cleanOwned[key]=safeCount(owned[key]);
     p.housing={
-      version:1,
+      version:2,
       owned:cleanOwned,
       placed:Array.isArray(raw.placed)?raw.placed.filter(r=>r&&FURNITURE_CATALOG[r.key]).map(r=>({
         id:String(r.id||'f'+Date.now()),
@@ -59,6 +64,7 @@ export function createFurnishingSystem(ctx){
         rot:Math.round(Number(r.rot)||0)%4
       })):[],
       starterGiftClaimed:!!raw.starterGiftClaimed,
+      defaultLayoutMigrated:!!raw.defaultLayoutMigrated,
       nextId:Math.max(1,Math.floor(Number(raw.nextId)||1))
     };
     return p.housing;
@@ -98,6 +104,21 @@ export function createFurnishingSystem(ctx){
     const object=await addModel(parent,ROOT+def.file,{x:rec.x,z:rec.z,w:def.w,h:def.h,d:def.d,rot:rec.rot*Math.PI/2,name:'placed-'+rec.id});
     if(!object)return null;
     return registerActor(rec,object);
+  }
+
+  function migrateDefaultLayout(){
+    const s=ensureState();if(s.defaultLayoutMigrated)return false;
+    s.defaultLayoutMigrated=true;
+    const defaults=[
+      {id:'home-desk',key:'classicDesk',x:-2.6,z:-3.75,rot:2},
+      {id:'home-bookcase',key:'tallBookcase',x:-5.7,z:-1.45,rot:1},
+      {id:'home-rug',key:'rugRectangle',x:-3.0,z:1.6,rot:0},
+      {id:'home-sofa',key:'classicSofa',x:-4.55,z:1.15,rot:1},
+      {id:'home-table',key:'diningTable',x:1.0,z:1.35,rot:0}
+    ];
+    const ids=new Set(s.placed.map(r=>String(r.id)));
+    for(const rec of defaults){if(!ids.has(rec.id))s.placed.push({...rec});}
+    persist();return true;
   }
 
   function claimStarterGift(){
@@ -211,7 +232,12 @@ export function createFurnishingSystem(ctx){
   function furnitureActionPanel(id){
     const actor=actors.get(String(id));if(!actor)return;
     const def=FURNITURE_CATALOG[actor.rec.key];
-    openPanel('<h2>'+def.name+'</h2><p>배치된 가구를 옮기거나 회수할 수 있어요.</p><div class="grid"><button data-furn-move="'+id+'">옮기기</button><button data-furn-turn="'+id+'">90° 회전</button><button data-furn-store="'+id+'">창고에 넣기</button></div>');
+    const use=def.use?'<button data-furn-use="'+id+'">'+def.use+'</button>':'';
+    openPanel('<h2>'+def.name+'</h2><p>이 가구는 이제 우리 집 어디든 옮길 수 있어요.</p><div class="grid">'+use+'<button data-furn-move="'+id+'">옮기기</button><button data-furn-turn="'+id+'">90° 회전</button><button data-furn-store="'+id+'">창고에 넣기</button></div>');
+  }
+  function usePlaced(id){
+    const actor=actors.get(String(id));if(!actor)return true;
+    closePanel();useFurniture?.(actor.rec.key);return true;
   }
   function turnPlaced(id){
     const actor=actors.get(String(id));if(!actor)return true;
@@ -231,6 +257,7 @@ export function createFurnishingSystem(ctx){
   function handlePanelClick(e){
     const craftBtn=e.target.closest('[data-furn-craft]');if(craftBtn)return craft(craftBtn.dataset.furnCraft);
     const placeBtn=e.target.closest('[data-furn-place]');if(placeBtn){beginPlacement(placeBtn.dataset.furnPlace);return true;}
+    const useBtn=e.target.closest('[data-furn-use]');if(useBtn)return usePlaced(useBtn.dataset.furnUse);
     const moveBtn=e.target.closest('[data-furn-move]');if(moveBtn){const a=actors.get(moveBtn.dataset.furnMove);if(a)beginPlacement(a.rec.key,a);return true;}
     const turnBtn=e.target.closest('[data-furn-turn]');if(turnBtn)return turnPlaced(turnBtn.dataset.furnTurn);
     const storeBtn=e.target.closest('[data-furn-store]');if(storeBtn)return storePlaced(storeBtn.dataset.furnStore);
@@ -238,6 +265,7 @@ export function createFurnishingSystem(ctx){
   }
 
   async function restore(){
+    migrateDefaultLayout();
     const s=ensureState();
     for(const rec of s.placed){
       if(actors.has(String(rec.id)))continue;
@@ -246,7 +274,7 @@ export function createFurnishingSystem(ctx){
   }
 
   return {
-    ensureState,restore,openCatalog:catalogPanel,handlePanelClick,beginPlacement,
+    ensureState,migrateDefaultLayout,restore,openCatalog:catalogPanel,handlePanelClick,beginPlacement,
     updatePreview,rotate:rotatePlacement,confirm:confirmPlacement,cancel:cancelPlacement,
     isPlacing:()=>!!active,catalog:FURNITURE_CATALOG
   };
