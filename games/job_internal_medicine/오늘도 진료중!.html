@@ -1002,19 +1002,21 @@ if(canvas&&stage){
       if(token!==requestId)return;
       while(group.children.length)group.remove(group.children[0]);
       current?.mixer?.stopAllAction();
-      const root=SkeletonUtils.clone(gltf.scene);
-      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
-      fit(root,2.7);
+      const modelRoot=SkeletonUtils.clone(gltf.scene);
+      modelRoot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+      fit(modelRoot,2.7);
+      const root=new THREE.Group();
+      root.add(modelRoot);
       root.position.set(0,0,-.08);
       root.lookAt(0,0,5);
       group.add(root);
       let mixer=null;
       if(gltf.animations?.length){
-        mixer=new THREE.AnimationMixer(root);
+        mixer=new THREE.AnimationMixer(modelRoot);
         const clip=gltf.animations.find(x=>/idle/i.test(x.name))||gltf.animations[0];
         mixer.clipAction(clip).reset().fadeIn(.12).play();
       }
-      current={root,mixer,cues:patient.visual?.cues||[],severity:patient.visual?.severity||1,seed:Math.random()*10};
+      current={root,mixer,cues:patient.visual?.cues||[],severity:patient.visual?.severity||1,seed:Math.random()*10,baseRotationY:root.rotation.y};
       stage.classList.add('asset-ready');
       fallback?.classList.add('hidden');
       if(statusEl){statusEl.textContent='3D 환자 에셋';statusEl.classList.add('ready')}
@@ -1052,8 +1054,8 @@ if(canvas&&stage){
         current.root.position.z=-.08;
       }
       if(current.cues.includes('nose')){
-        current.root.rotation.y=Math.sin(t*.8)*.025;
-      }else current.root.rotation.y=0;
+        current.root.rotation.y=current.baseRotationY+Math.sin(t*.8)*.025;
+      }else current.root.rotation.y=current.baseRotationY;
     }
     renderer.render(scene,camera);
   }
