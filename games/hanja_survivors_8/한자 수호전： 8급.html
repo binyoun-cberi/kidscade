@@ -79,15 +79,34 @@
             animation: castFlash 0.5s ease-out;
         }
         /* ===== v4 realtime spell-scroll rework ===== */
-        #battle-layout{position:relative;max-width:1240px!important;min-height:0}
-        #battle-panel{width:min(100%,1100px)!important;max-width:1100px}
-        #battle-canvas-wrap{max-width:900px!important;width:100%!important}
+        #battle-layout{
+            position:relative!important;max-width:none!important;width:100vw!important;height:100%!important;
+            min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important
+        }
+        #battle-panel{
+            position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;
+            padding:0!important;border:0!important;border-radius:0!important;background:#07100c!important;box-shadow:none!important
+        }
+        #battle-canvas-wrap{
+            position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;
+            aspect-ratio:auto!important;border:0!important;border-radius:0!important
+        }
+        #game-canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+        #battle-hud{
+            position:absolute;left:14px;top:12px;right:14px;z-index:28;
+            padding:8px 12px;margin:0!important;border:1px solid rgba(148,163,184,.18);
+            border-radius:14px;background:rgba(5,12,22,.66);backdrop-filter:blur(7px);pointer-events:none
+        }
+        #battle-xp{
+            position:absolute;left:14px;right:14px;top:50px;z-index:28;margin:0!important;
+            box-shadow:0 2px 12px rgba(0,0,0,.28);pointer-events:none
+        }
         #scroll-panel{
-            position:absolute;right:18px;top:66px;z-index:35;
-            width:min(32vw,330px);max-height:calc(100% - 82px);
-            padding:14px!important;border:1px solid rgba(251,191,36,.45)!important;
-            background:linear-gradient(180deg,rgba(63,45,24,.78),rgba(19,27,40,.78))!important;
-            backdrop-filter:blur(8px);box-shadow:0 18px 50px rgba(0,0,0,.42),inset 0 0 24px rgba(251,191,36,.06);
+            position:absolute;right:22px;bottom:20px;top:auto;z-index:35;
+            width:min(29vw,310px);max-height:min(68vh,570px);
+            padding:12px!important;border:1px solid rgba(251,191,36,.56)!important;
+            background:linear-gradient(180deg,rgba(83,54,24,.74),rgba(14,22,32,.72))!important;
+            backdrop-filter:blur(10px);box-shadow:0 18px 50px rgba(0,0,0,.42),inset 0 0 24px rgba(251,191,36,.08);
             border-radius:22px!important;
         }
         #scroll-panel::before,#scroll-panel::after{
@@ -103,11 +122,19 @@
         }
         #scroll-panel #hanja-target,#scroll-panel #hanja-target svg{width:100%!important;height:100%!important}
         #scroll-panel .scroll-only-hide{display:none!important}
-        #book-btn{border:1px solid rgba(251,191,36,.42);background:rgba(120,80,25,.22);color:#fde68a}
-        #book-btn:hover{background:rgba(180,120,28,.3);color:white}
+        #book-btn{
+            position:fixed!important;left:22px!important;bottom:22px!important;z-index:70!important;
+            min-width:132px!important;height:58px!important;padding:0 18px!important;
+            border:2px solid rgba(251,191,36,.82)!important;border-radius:18px!important;
+            background:linear-gradient(135deg,#7c4a16,#b96c1b)!important;color:#fff7d6!important;
+            box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 24px rgba(245,158,11,.25)!important;
+            font-size:16px!important;font-weight:900!important;gap:8px!important
+        }
+        #book-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+        #book-btn i{font-size:25px}
         #spellbook-modal{background:rgba(4,10,20,.86);backdrop-filter:blur(9px)}
         #spellbook-shell{
-            width:min(94vw,920px);max-height:88vh;overflow:auto;
+            width:min(97vw,1180px);height:min(92vh,820px);max-height:92vh;overflow:auto;
             background:
               linear-gradient(90deg,rgba(255,248,220,.96) 0 49.4%,rgba(117,82,45,.42) 49.6% 50.4%,rgba(255,248,220,.96) 50.6% 100%);
             color:#2f2418;border:10px solid #6b4428;border-radius:24px;
@@ -117,16 +144,18 @@
         .book-card.selected{outline:3px solid #d97706;background:rgba(254,243,199,.9)}
         #world-biome-label{font-size:10px;color:#a7f3d0;font-weight:800;letter-spacing:.08em}
         @media(max-width:900px){
-            #battle-panel{padding:8px!important}
-            #scroll-panel{right:6px;top:58px;width:min(43vw,260px);padding:9px!important}
-            #scroll-panel .canvas-container{width:min(100%,210px)}
+            #scroll-panel{right:10px;bottom:10px;width:min(42vw,270px);max-height:72vh;padding:9px!important}
+            #scroll-panel .canvas-container{width:min(100%,205px)}
             #scroll-panel #spell-desc{font-size:9px}
+            #book-btn{left:10px!important;bottom:10px!important;min-width:112px!important;height:52px!important;font-size:14px!important}
         }
         @media(max-width:620px){
-            #scroll-panel{width:46vw;top:54px;right:4px}
-            #scroll-panel .canvas-container{width:min(100%,180px)}
+            #scroll-panel{width:46vw;right:6px;bottom:6px}
+            #scroll-panel .canvas-container{width:min(100%,170px)}
             #scroll-panel #target-meaning,#scroll-panel #spell-name{font-size:9px}
             #scroll-panel #target-char{font-size:30px}
+            #battle-hud{left:6px;right:6px;top:6px;padding:6px 8px}
+            #battle-xp{left:6px;right:6px;top:42px}
         }
     </style>
 </head>
@@ -155,7 +184,7 @@
                 🏆 최고 기록: <span id="top-score-text">0 원령</span>
             </div>
             <div class="hidden md:flex flex-col items-end mr-1"><span id="world-biome-label">신록의 숲</span><span class="text-[8px] text-slate-500">책을 열면 시간 정지</span></div>
-            <button id="book-btn" class="text-xl p-1 min-w-[38px] min-h-[38px] rounded-xl flex items-center justify-center" title="한자 마법책 열기"><i class="ph-fill ph-book-open"></i></button>
+            <button id="book-btn" class="flex items-center justify-center" title="한자 마법책 열기"><i class="ph-fill ph-book-open"></i><span>마법책</span></button>
             <button id="btn-sound" class="text-slate-400 hover:text-white transition-colors text-xl p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
                 <i id="sound-icon" class="ph ph-speaker-high"></i>
             </button>
@@ -169,20 +198,20 @@
         <!-- Left: Game Screen -->
         <div id="battle-panel" class="relative flex flex-col items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 w-full shadow-2xl shrink-0">
             <!-- HUD Stats -->
-            <div class="w-full flex justify-between text-[11px] font-bold mb-2 px-1 text-slate-300">
+            <div id="battle-hud" class="w-full flex justify-between text-[11px] font-bold mb-2 px-1 text-slate-300">
                 <div class="flex items-center gap-1"><i class="ph-fill ph-heart text-red-500"></i> 체력: <span id="hud-hp" class="text-red-400">100/100</span></div>
                 <div class="flex items-center gap-1"><i class="ph-fill ph-skull text-slate-400"></i> 소탕: <span id="hud-kills" class="text-slate-200">0</span></div>
                 <div class="flex items-center gap-1"><i class="ph-fill ph-sparkles text-blue-400"></i> 레벨: <span id="hud-level" class="text-blue-300">1</span></div>
             </div>
 
             <!-- XP Bar -->
-            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mb-2 border border-slate-700">
+            <div id="battle-xp" class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mb-2 border border-slate-700">
                 <div id="xp-bar-fill" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full w-[0%] transition-all duration-150"></div>
             </div>
 
             <!-- Gameplay Canvas Container -->
-            <div id="battle-canvas-wrap" class="relative overflow-hidden rounded-xl border border-slate-850 w-full aspect-square">
-                <canvas id="game-canvas" width="600" height="600" class="w-full h-full bg-slate-900 block"></canvas>
+            <div id="battle-canvas-wrap" class="relative overflow-hidden w-full">
+                <canvas id="game-canvas" width="1280" height="720" class="w-full h-full bg-slate-900 block"></canvas>
                 
                 <!-- Touch drag dynamic zone indicator -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-[10px] text-slate-400 text-center px-4">
@@ -202,7 +231,7 @@
                     <div class="text-left">
                         <p id="target-meaning" class="text-base md:text-lg font-bold text-slate-200">한 일</p>
                         <p id="spell-name" class="text-[11px] text-emerald-400 font-semibold">일선 가르기 (Slash)</p>
-                        <p id="spell-growth" class="text-[9px] text-cyan-300 font-bold mt-0.5">숙련 Lv.1 · 피해 68% · 범위 74%</p>
+                        <p id="spell-growth" class="text-[9px] text-cyan-300 font-bold mt-0.5">숙련 Lv.1 · 피해 48% · 범위 68%</p>
                     </div>
                 </div>
             </div>
@@ -595,7 +624,7 @@
             x: 300,
             y: 300,
             radius: 16,
-            speed: 3.7, // 속도를 조금 높여 쾌적한 피하기 지원
+            speed: 2.65, // 초반은 천천히: 군세 사이를 읽고 피할 수 있는 뱀서형 속도
             hp: 120,
             maxHp: 120,
             level: 1,
@@ -657,9 +686,9 @@
             const lvl = spellStats[char]?.lvl || 1;
             return {
                 lvl,
-                damage: Math.min(1.72, 0.68 + (lvl - 1) * 0.15),
-                range: Math.min(1.34, 0.74 + (lvl - 1) * 0.085),
-                effect: Math.min(1.42, 0.78 + (lvl - 1) * 0.09)
+                damage: Math.min(1.39, 0.48 + (lvl - 1) * 0.13),
+                range: Math.min(1.28, 0.68 + (lvl - 1) * 0.085),
+                effect: Math.min(1.33, 0.70 + (lvl - 1) * 0.09)
             };
         }
         function updateSpellGrowthUI() {
@@ -691,6 +720,24 @@
             updateSpellGrowthUI();
             return leveled;
         }
+
+        function resizeBattleCanvas() {
+            const wrap=document.getElementById('battle-canvas-wrap');
+            if(!wrap)return;
+            const rect=wrap.getBoundingClientRect();
+            const nextW=Math.max(640,Math.round(rect.width));
+            const nextH=Math.max(420,Math.round(rect.height));
+            if(canvas.width===nextW&&canvas.height===nextH)return;
+            const oldW=canvas.width,oldH=canvas.height;
+            canvas.width=nextW;canvas.height=nextH;
+            if(oldW&&oldH&&isRunning){
+                player.x += (nextW-oldW)/2;
+                player.y += (nextH-oldH)/2;
+            }
+            camera.x=player.x-canvas.width/2;
+            camera.y=player.y-canvas.height/2;
+        }
+        window.addEventListener('resize',()=>requestAnimationFrame(resizeBattleCanvas));
 
         // ----------------------------------------------------
         // Input Listener Setup: movement pointer and writing pointer are separate.
@@ -811,47 +858,35 @@
         // ----------------------------------------------------
         // Entity Spawning & Physics
         // ----------------------------------------------------
-        function spawnEnemy() {
+        function spawnEnemy(forcedType = null) {
             if (!isRunning || isPaused) return;
-
             const angle = Math.random() * Math.PI * 2;
-            const distance = 400; 
+            const distance = Math.max(canvas.width,canvas.height) * (.58 + Math.random()*.13);
             const enemyX = player.x + Math.cos(angle) * distance;
             const enemyY = player.y + Math.sin(angle) * distance;
 
-            const spawnRand = Math.random();
-            let type = 'ghost';
-            
-            // 초등생 맞춤형 체력 성장 곡선 완화 (Ghost HP: 12+Lvl*5, 원래는 15+Lvl*8)
-            let hp = 12 + player.level * 5; 
-            let speed = 1.1 + Math.random() * 0.3 + (gameTime * 0.0006); 
-            let color = 'rgba(147, 197, 253, 0.7)'; 
-            let size = 12;
+            const r=Math.random();
+            let type=forcedType || 'ghost';
+            if(!forcedType){
+                if(gameTime>=210 && r>.92) type='elite';
+                else if(gameTime>=120 && r>.78) type='goblin';
+                else if(gameTime>=45 && r>.64) type='zombie';
+            }
 
-            if (gameTime > 60 && spawnRand > 0.75) {
-                type = 'zombie';
-                hp = 35 + player.level * 10; // (원래는 50 + Lvl*15)
-                speed = 0.75 + (gameTime * 0.0005);
-                color = 'rgba(110, 231, 183, 0.8)'; 
-                size = 15;
-            } else if (gameTime > 120 && spawnRand > 0.88) {
-                type = 'goblin';
-                hp = 12 + player.level * 3; // (원래는 15 + Lvl*4)
-                speed = 2.4 + (gameTime * 0.001); 
-                color = 'rgba(248, 113, 113, 0.8)'; 
-                size = 10;
+            let hp,speed,color,size;
+            if(type==='zombie'){
+                hp=32+player.level*8; speed=.42+Math.min(.18,gameTime*.00045); color='rgba(110,231,183,.82)'; size=15;
+            }else if(type==='goblin'){
+                hp=15+player.level*4; speed=.82+Math.min(.28,gameTime*.0007); color='rgba(248,113,113,.82)'; size=11;
+            }else if(type==='elite'){
+                hp=95+player.level*16; speed=.55+Math.min(.2,gameTime*.0004); color='rgba(251,146,60,.9)'; size=21;
+            }else{
+                hp=13+player.level*4; speed=.52+Math.random()*.12+Math.min(.16,gameTime*.00035); color='rgba(147,197,253,.78)'; size=12;
             }
 
             enemies.push({
-                x: enemyX,
-                y: enemyY,
-                hp: hp,
-                maxHp: hp,
-                speed: speed,
-                color: color,
-                size: size,
-                type: type,
-                stunTimer: 0
+                x:enemyX,y:enemyY,hp,maxHp:hp,speed,baseSpeed:speed,color,size,type,
+                stunTimer:0,slowTimer:0
             });
         }
 
@@ -895,6 +930,13 @@
         // ----------------------------------------------------
         // 마법 캐스팅 로직 (한자 인식 정답 시 시전)
         // ----------------------------------------------------
+        function getNearestEnemyAngle() {
+            if (!enemies.length) return -Math.PI/2;
+            let target=enemies[0],best=Infinity;
+            enemies.forEach(e=>{const d=Math.hypot(e.x-player.x,e.y-player.y);if(d<best){best=d;target=e;}});
+            return Math.atan2(target.y-player.y,target.x-player.x);
+        }
+
         function getSpellAimAngle() {
             if (joystickActive) return Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x);
             if (enemies.length) {
@@ -1074,16 +1116,16 @@
 
             // 1. 一 (한 일)
             if (char === '一') {
-                const angle = Math.random() * Math.PI * 2;
+                const angle = getNearestEnemyAngle();
                 projectiles.push({
                     type: 'slash',
                     x: player.x,
                     y: player.y,
                     angle: angle,
-                    width: 140 * spellSize,
-                    height: 25,
-                    duration: 15,
-                    damage: 45 * spellPower,
+                    width: 155 * spellSize,
+                    height: 24,
+                    duration: 16,
+                    damage: 58 * spellPower,
                     color: '#60a5fa',
                     hitEnemies: new Set(),
                     followPlayer: true
@@ -1189,28 +1231,23 @@
             // 7. 七 (일곱 칠)
             else if (char === '七') {
                 if (typeof playSynthSound === 'function') playSynthSound('earth');
-                triggerScreenShake(18);
+                triggerScreenShake(8);
                 for (let i = 0; i < 7; i++) {
                     setTimeout(() => {
                         if (!isRunning || isPaused) return;
-                        let targetX = player.x + (Math.random()-0.5)*300;
-                        let targetY = player.y + (Math.random()-0.5)*300;
-                        if (enemies.length > 0) {
-                            const target = enemies[Math.floor(Math.random() * enemies.length)];
-                            targetX = target.x; targetY = target.y;
-                        }
+                        const nearby=enemies
+                            .map(e=>({e,d:Math.hypot(e.x-player.x,e.y-player.y)}))
+                            .filter(v=>v.d<245*spellSize)
+                            .sort((a,b)=>a.d-b.d);
+                        const chosen=nearby.length?nearby[i%Math.min(nearby.length,4)]?.e:null;
+                        const targetX=chosen?.x ?? player.x+(Math.random()-.5)*210;
+                        const targetY=chosen?.y ?? player.y+(Math.random()-.5)*210;
                         projectiles.push({
-                            type: 'gold_sword',
-                            x: targetX,
-                            y: targetY - 300,
-                            targetY: targetY,
-                            width: 15,
-                            height: 100 * spellSize,
-                            damage: 100 * spellPower,
-                            duration: 120,
-                            colorOverride: '#fef08a'
+                            type:'gold_sword',x:targetX,y:targetY-150,targetY,
+                            width:9,height:58*spellSize,
+                            damage:24*spellPower,duration:56,colorOverride:'#fef08a'
                         });
-                    }, i * 100);
+                    }, i * 125);
                 }
             }
             // 8. 八 (여덟 팔)
@@ -2408,7 +2445,7 @@
                     enemies.forEach(e => {
                         const d = Math.hypot(e.x - proj.x, e.y - proj.y);
                         if (d < proj.radius) {
-                            e.speed = (1.2 + Math.random() * 0.4) * 0.5;
+                            e.slowTimer = Math.max(e.slowTimer || 0, 28);
                             
                             if (!e.lifeZoneCooldowns) e.lifeZoneCooldowns = {};
                             const lzId = idx;
@@ -2439,7 +2476,12 @@
                     return;
                 }
 
-                e.speed = e.type === 'zombie' ? 0.75 : (e.type === 'goblin' ? 2.4 : 1.25); // 기본 속도 소폭 완화
+                if (e.slowTimer > 0) {
+                    e.slowTimer--;
+                    e.speed = e.baseSpeed * .55;
+                } else {
+                    e.speed = e.baseSpeed;
+                }
 
                 if (e.beamCooldowns) for (let id in e.beamCooldowns) if (e.beamCooldowns[id] > 0) e.beamCooldowns[id]--;
                 if (e.tsunamiCooldowns) for (let id in e.tsunamiCooldowns) if (e.tsunamiCooldowns[id] > 0) e.tsunamiCooldowns[id]--;
@@ -2456,7 +2498,7 @@
                 const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
                 if (distToPlayer < player.radius + e.size) {
                     if (player.stealthTimer <= 0 && player.hitCooldown <= 0) {
-                        const touchDamage = e.type === 'zombie' ? 10 : (e.type === 'goblin' ? 7 : 8);
+                        const touchDamage = e.type === 'elite' ? 14 : (e.type === 'zombie' ? 9 : (e.type === 'goblin' ? 7 : 8));
                         player.hp -= touchDamage;
                         player.hitCooldown = 42;
                         const away = Math.atan2(player.y - e.y, player.x - e.x);
@@ -2487,8 +2529,8 @@
                             type: 'xp',
                             x: e.x,
                             y: e.y,
-                            xp: e.type === 'zombie' ? 25 : (e.type === 'goblin' ? 15 : 10),
-                            color: e.type === 'zombie' ? '#10b981' : '#3b82f6'
+                            xp: e.type === 'elite' ? 42 : (e.type === 'zombie' ? 22 : (e.type === 'goblin' ? 15 : 10)),
+                            color: e.type === 'elite' ? '#f59e0b' : (e.type === 'zombie' ? '#10b981' : '#3b82f6')
                         });
                     }
                     score++;
@@ -2665,10 +2707,10 @@
                 ctx.ellipse(e.x, e.y + e.size*.75, e.size * .85, e.size * .28, 0, 0, Math.PI * 2);
                 ctx.fill();
 
-                const assetKey = e.type === 'zombie' ? 'zombie' : (e.type === 'goblin' ? 'goblin' : 'ghost');
+                const assetKey = e.type === 'elite' ? 'elite' : (e.type === 'zombie' ? 'zombie' : (e.type === 'goblin' ? 'goblin' : 'ghost'));
                 if (assetReady(assetKey)) {
                     const img = GAME_ASSETS[assetKey];
-                    const scale = e.type === 'zombie' ? 3.0 : (e.type === 'goblin' ? 3.2 : 2.75);
+                    const scale = e.type === 'elite' ? 3.35 : (e.type === 'zombie' ? 3.0 : (e.type === 'goblin' ? 3.0 : 2.65));
                     const h = e.size * scale;
                     const w = h * (img.naturalWidth / img.naturalHeight);
                     ctx.imageSmoothingEnabled = false;
@@ -3032,15 +3074,25 @@
                 if (!isRunning || isPaused) return;
                 gameTime++;
                 updateBiomeLabel();
-                const min = String(Math.floor(gameTime / 60)).padStart(2, '0');
-                const sec = String(gameTime % 60).padStart(2, '0');
-                document.getElementById('game-timer').textContent = `${min}:${sec}`;
+                const min=String(Math.floor(gameTime/60)).padStart(2,'0');
+                const sec=String(gameTime%60).padStart(2,'0');
+                document.getElementById('game-timer').textContent=`${min}:${sec}`;
 
-                const spawnCount = 1 + Math.floor(Math.max(0, gameTime - 45) / 60); // 첫 45초는 1마리씩, 이후 천천히 증가
-                for (let i = 0; i < spawnCount; i++) {
-                    setTimeout(spawnEnemy, Math.random() * 1000);
+                // Vampire-survivor curve: danger comes from a growing army, not early sprint speed.
+                const phase=Math.floor(gameTime/60);
+                const desired=28 + phase*24;
+                const cap=Math.min(180,desired);
+                const perTick=Math.min(8,2+Math.floor(gameTime/45));
+                if(enemies.length<cap){
+                    const count=Math.min(perTick,cap-enemies.length);
+                    for(let i=0;i<count;i++) setTimeout(()=>spawnEnemy(),Math.random()*700);
                 }
-            }, 1000);
+                // Periodic dense wave makes the screen feel like an advancing horde.
+                if(gameTime>0 && gameTime%30===0 && enemies.length<cap){
+                    const wave=Math.min(10,3+phase*2,cap-enemies.length);
+                    for(let i=0;i<wave;i++) setTimeout(()=>spawnEnemy(),i*90);
+                }
+            },1000);
         }
 
         // ----------------------------------------------------
@@ -3102,8 +3154,9 @@
             spellStats = createInitialSpellStats();
             currentHanjaKey = '一';
 
-            player.x = 300;
-            player.y = 300;
+            resizeBattleCanvas();
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
             player.hp = 120;
             player.maxHp = 120;
             player.level = 1;
@@ -3111,6 +3164,7 @@
             player.xpNeeded = 100; // 빠른 초반 마법 확보
             player.power = 1.0;
             player.sizeMult = 1.0;
+            player.speed = 2.65;
             player.stealthTimer = 0;
             player.forceTimer = 0;
             player.forcePower = 0;
@@ -3141,7 +3195,7 @@
             startTimer();
             startBGM();
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 spawnEnemy();
             }
         }
@@ -3182,6 +3236,7 @@
         });
 
         window.onload = function() {
+            resizeBattleCanvas();
             // Draw initial static frame, wait for start button
             isRunning = false; // Prevent logic updates before start
             if(window.myHighScore !== undefined) updateHighScoreUI();
