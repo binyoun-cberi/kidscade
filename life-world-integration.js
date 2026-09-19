@@ -33,8 +33,13 @@
     if(talk)talk.textContent='정원 없이 월드에서 만나고 길들이고 함께 탐험해요.';
     if(avatar)avatar.textContent=id?(CUBE_PET_ICONS[id]||'🐾'):'🐾';
     if(fill)fill.style.width=`${Math.round(s.owned.length/total*100)}%`;
-    if(card)card.setAttribute('aria-label','Cube Pets 생존 월드 열기');
-    if(openBtn)openBtn.textContent='🌿 생존 월드 열기';
+    if(card){
+      card.setAttribute('aria-label','Cube Pets 현황');
+      card.removeAttribute('role');
+      card.removeAttribute('tabindex');
+      delete card.dataset.openLifeWorld;
+    }
+    if(openBtn)openBtn.remove();
   }
 
   function installStyles(){
@@ -74,7 +79,7 @@
   function open(){activate();syncCubePetsSidebar();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();try{frame?.contentWindow?.KidscadeWorldV3?.resumeAudio?.()}catch(_){}setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
   function close(){if(!overlay)return;resetWorldInput();try{frame?.contentWindow?.KidscadeWorldV3?.pauseAudio?.()}catch(_){}overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';syncCubePetsSidebar();}
 
-  document.addEventListener('click',e=>{const trigger=e.target.closest?.('[data-open-life-world]');if(!trigger)return;e.preventDefault();open();},true);
+  document.addEventListener('click',e=>{const trigger=e.target.closest?.('[data-open-life-world]');if(!trigger)return;e.preventDefault();e.stopImmediatePropagation?.();open();},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay?.classList.contains('open')){e.preventDefault();close()}},true);
   window.addEventListener('message',e=>{if(e.source!==frame?.contentWindow)return;if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();});
 
