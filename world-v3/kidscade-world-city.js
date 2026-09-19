@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 
 const ROOT=new URL('../assets/game/',import.meta.url);
 const PEOPLE=new URL('characters/people/',ROOT).href;
@@ -66,7 +67,9 @@ function makeLabel(text,{width=2.2,height=.52,font=38}={}){
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
   const base=await ctx.loadGLB(NPC_MODELS[id]);
-  const model=ctx.prepModel(base.clone(true));
+  // NPCs are skinned characters: Object3D.clone(true) leaves skeleton/bone bindings shared.
+  // SkeletonUtils.clone gives every resident an independent skeleton so bodies follow their anchors.
+  const model=ctx.prepModel(cloneSkeleton(base));
   model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
   const scale=1.82/Math.max(.01,size.y);
