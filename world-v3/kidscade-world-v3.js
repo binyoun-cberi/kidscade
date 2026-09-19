@@ -277,6 +277,7 @@ panel.addEventListener('click',e=>{
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
   const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
+  if(townEconomy?.handlePanelClick?.(e))return;
 });
 
 
@@ -653,6 +654,24 @@ async function buildOutdoor(){
   for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
+
+  cityRuntime=await buildKidscadeCity({
+    parent:outdoor,
+    addModel,
+    box,
+    plane,
+    interact,
+    collider,
+    loadGLB,
+    prepModel,
+    actions:{
+      shop:(kind,name)=>townEconomy?.shop(kind,name),
+      jobs:()=>townEconomy?.jobs(),
+      talk:(id,name)=>townEconomy?.talk(id,name),
+      arcade:()=>townEconomy?.arcade(),
+      bench:()=>townEconomy?.bench()
+    }
+  });
 }
 
 async function buildIndoor(){
