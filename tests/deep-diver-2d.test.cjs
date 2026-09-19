@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v8 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\\.css\\?v=8/);
-  assert.match(html,/diver-v7\\.js\\?v=8/);
+  assert.match(html,/deep-diver-2d\.css\?v=8/);
+  assert.match(html,/diver-v7\.js\?v=8/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -86,7 +86,7 @@ test('Deep Diver v8 gives every depth band a distinct biome identity',()=>{
   assert.match(js,/function drawZoneLandmarks/);
   assert.match(js,/seaweedOrangeA/);
   assert.match(js,/bgSeaA/);
-  assert.match(js,/const vents=/);
+  assert.match(js,/const VENTS=/);
   assert.match(css,/#zoneToast b/);
   assert.match(css,/#zoneToast small/);
 });
