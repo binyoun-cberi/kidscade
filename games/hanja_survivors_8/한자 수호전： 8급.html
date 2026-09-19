@@ -78,6 +78,56 @@
         .cast-active {
             animation: castFlash 0.5s ease-out;
         }
+        /* ===== v4 realtime spell-scroll rework ===== */
+        #battle-layout{position:relative;max-width:1240px!important;min-height:0}
+        #battle-panel{width:min(100%,1100px)!important;max-width:1100px}
+        #battle-canvas-wrap{max-width:900px!important;width:100%!important}
+        #scroll-panel{
+            position:absolute;right:18px;top:66px;z-index:35;
+            width:min(32vw,330px);max-height:calc(100% - 82px);
+            padding:14px!important;border:1px solid rgba(251,191,36,.45)!important;
+            background:linear-gradient(180deg,rgba(63,45,24,.78),rgba(19,27,40,.78))!important;
+            backdrop-filter:blur(8px);box-shadow:0 18px 50px rgba(0,0,0,.42),inset 0 0 24px rgba(251,191,36,.06);
+            border-radius:22px!important;
+        }
+        #scroll-panel::before,#scroll-panel::after{
+            content:"";position:absolute;left:8%;right:8%;height:10px;border-radius:50%;
+            background:linear-gradient(90deg,#7c522c,#d9a85f 45%,#80532d);
+            box-shadow:0 2px 8px rgba(0,0,0,.4)
+        }
+        #scroll-panel::before{top:-6px} #scroll-panel::after{bottom:-6px}
+        #scroll-panel .canvas-container{
+            width:min(100%,250px);height:auto;aspect-ratio:1;
+            background:rgba(245,222,179,.12)!important;border-color:rgba(251,191,36,.62)!important;
+            box-shadow:inset 0 0 32px rgba(0,0,0,.28),0 0 18px rgba(251,191,36,.12)!important
+        }
+        #scroll-panel #hanja-target,#scroll-panel #hanja-target svg{width:100%!important;height:100%!important}
+        #scroll-panel .scroll-only-hide{display:none!important}
+        #book-btn{border:1px solid rgba(251,191,36,.42);background:rgba(120,80,25,.22);color:#fde68a}
+        #book-btn:hover{background:rgba(180,120,28,.3);color:white}
+        #spellbook-modal{background:rgba(4,10,20,.86);backdrop-filter:blur(9px)}
+        #spellbook-shell{
+            width:min(94vw,920px);max-height:88vh;overflow:auto;
+            background:
+              linear-gradient(90deg,rgba(255,248,220,.96) 0 49.4%,rgba(117,82,45,.42) 49.6% 50.4%,rgba(255,248,220,.96) 50.6% 100%);
+            color:#2f2418;border:10px solid #6b4428;border-radius:24px;
+            box-shadow:0 28px 80px rgba(0,0,0,.65),inset 0 0 40px rgba(92,57,24,.18)
+        }
+        .book-card{background:rgba(255,255,255,.56);border:1px solid rgba(92,57,24,.24)}
+        .book-card.selected{outline:3px solid #d97706;background:rgba(254,243,199,.9)}
+        #world-biome-label{font-size:10px;color:#a7f3d0;font-weight:800;letter-spacing:.08em}
+        @media(max-width:900px){
+            #battle-panel{padding:8px!important}
+            #scroll-panel{right:6px;top:58px;width:min(43vw,260px);padding:9px!important}
+            #scroll-panel .canvas-container{width:min(100%,210px)}
+            #scroll-panel #spell-desc{font-size:9px}
+        }
+        @media(max-width:620px){
+            #scroll-panel{width:46vw;top:54px;right:4px}
+            #scroll-panel .canvas-container{width:min(100%,180px)}
+            #scroll-panel #target-meaning,#scroll-panel #spell-name{font-size:9px}
+            #scroll-panel #target-char{font-size:30px}
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -104,6 +154,8 @@
             <div class="text-[11px] bg-slate-950 px-2 py-1 rounded border border-slate-800 text-yellow-300 font-bold hidden sm:block">
                 🏆 최고 기록: <span id="top-score-text">0 원령</span>
             </div>
+            <div class="hidden md:flex flex-col items-end mr-1"><span id="world-biome-label">신록의 숲</span><span class="text-[8px] text-slate-500">책을 열면 시간 정지</span></div>
+            <button id="book-btn" class="text-xl p-1 min-w-[38px] min-h-[38px] rounded-xl flex items-center justify-center" title="한자 마법책 열기"><i class="ph-fill ph-book-open"></i></button>
             <button id="btn-sound" class="text-slate-400 hover:text-white transition-colors text-xl p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
                 <i id="sound-icon" class="ph ph-speaker-high"></i>
             </button>
@@ -112,10 +164,10 @@
     </header>
 
     <!-- Main Workspace (Responsive Split Layout) -->
-    <main class="flex-grow flex flex-col lg:flex-row items-center justify-center p-2.5 md:p-4 gap-4 max-w-7xl mx-auto w-full overflow-y-auto lg:overflow-hidden">
+    <main id="battle-layout" class="flex-grow flex items-center justify-center p-2.5 md:p-4 mx-auto w-full overflow-hidden">
         
         <!-- Left: Game Screen -->
-        <div class="relative flex flex-col items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 w-full lg:w-[540px] xl:w-[600px] shadow-2xl shrink-0">
+        <div id="battle-panel" class="relative flex flex-col items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 w-full shadow-2xl shrink-0">
             <!-- HUD Stats -->
             <div class="w-full flex justify-between text-[11px] font-bold mb-2 px-1 text-slate-300">
                 <div class="flex items-center gap-1"><i class="ph-fill ph-heart text-red-500"></i> 체력: <span id="hud-hp" class="text-red-400">100/100</span></div>
@@ -129,7 +181,7 @@
             </div>
 
             <!-- Gameplay Canvas Container -->
-            <div class="relative overflow-hidden rounded-xl border border-slate-850 w-full aspect-square max-w-[500px]">
+            <div id="battle-canvas-wrap" class="relative overflow-hidden rounded-xl border border-slate-850 w-full aspect-square">
                 <canvas id="game-canvas" width="600" height="600" class="w-full h-full bg-slate-900 block"></canvas>
                 
                 <!-- Touch drag dynamic zone indicator -->
@@ -140,7 +192,7 @@
         </div>
 
         <!-- Right: Hanja Writing Panel -->
-        <div class="bg-slate-900 border border-slate-800 p-4 md:p-6 rounded-2xl shadow-xl w-full max-w-md flex flex-col items-center shrink-0">
+        <div id="scroll-panel" class="bg-slate-900 border border-slate-800 p-4 md:p-6 rounded-2xl shadow-xl w-full max-w-md flex flex-col items-center shrink-0">
             
             <!-- Target Spell Header -->
             <div class="w-full text-center border-b border-slate-800 pb-3 mb-3">
@@ -175,8 +227,8 @@
                 </button>
             </div>
 
-            <!-- Unlocked Spells List -->
-            <div class="w-full">
+            <!-- Spellbook moved to pause-time book overlay -->
+            <div class="w-full scroll-only-hide">
                 <h3 class="text-[10px] font-bold text-slate-500 mb-1.5 uppercase flex items-center gap-1">
                     <i class="ph ph-scroll"></i> 8급 50자 마법첩 · 눌러서 선택
                 </h3>
@@ -188,6 +240,29 @@
         </div>
 
     </main>
+
+    <!-- Overlay: Spellbook (time stops while open) -->
+    <div id="spellbook-modal" class="fixed inset-0 hidden items-center justify-center z-[80] p-3">
+        <div id="spellbook-shell" class="p-5 md:p-7">
+            <div class="flex items-center justify-between gap-3 border-b border-amber-900/20 pb-3 mb-4">
+                <div>
+                    <div class="text-[10px] font-black tracking-[.22em] text-amber-800">時間停止 · 마법서 열람 중</div>
+                    <h2 class="text-2xl md:text-3xl font-black">八級 漢字 魔法書</h2>
+                    <p class="text-xs text-stone-600 mt-1">페이지를 넘겨 마법을 확인하세요. 책을 덮는 순간 전투가 다시 시작됩니다.</p>
+                </div>
+                <button id="close-book-btn" class="px-4 py-3 rounded-xl bg-amber-800 text-amber-50 font-black min-h-[44px]">책 덮기 ▶</button>
+            </div>
+            <div class="flex items-center justify-between mb-3">
+                <button id="book-prev" class="px-3 py-2 rounded-lg bg-stone-800 text-white font-bold">← 이전</button>
+                <div id="book-page-label" class="text-sm font-black text-amber-900">1 / 10</div>
+                <button id="book-next" class="px-3 py-2 rounded-lg bg-stone-800 text-white font-bold">다음 →</button>
+            </div>
+            <div id="book-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            <div class="mt-4 p-3 rounded-xl bg-amber-100/70 border border-amber-900/15 text-xs text-stone-700">
+                <b>조작:</b> PC는 WASD로 움직이면서 마우스로 두루마리에 쓰기 · 모바일은 왼손으로 전장 이동, 오른손으로 두루마리 필기
+            </div>
+        </div>
+    </div>
 
     <!-- Overlay: Level Up Selection (Pause Game) -->
     <div id="level-up-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -494,7 +569,9 @@
             zombie: '../../assets/game/2d/platformer-art/extended/enemies/slime-green.png',
             goblin: '../../assets/game/2d/platformer-art/extended/enemies/spider.png',
             elite: '../../assets/game/2d/platformer-art/extended/enemies/snake-lava.png',
-            xp: '../../assets/game/2d/platformer-art/base/items/gem-yellow.png'
+            xp: '../../assets/game/2d/platformer-art/base/items/gem-yellow.png',
+            tree: '../../assets/game/2d/racing/kenney-racing-pack/objects/tree_large.png',
+            treeSmall: '../../assets/game/2d/racing/kenney-racing-pack/objects/tree_small.png'
         };
         const GAME_ASSETS = {};
         Object.entries(ASSET_SRC).forEach(([key,src]) => {
@@ -553,6 +630,11 @@
         let joystickActive = false;
         let joystickStart = { x: 0, y: 0 };
         let joystickCurrent = { x: 0, y: 0 };
+        let movePointerId = null;
+        let bookOpen = false;
+        let writingActive = true;
+        let spellbookPage = 0;
+        const SPELLS_PER_PAGE = 5;
         const joystickThreshold = 10;
 
         // Hanja App States: every spell is available from the beginning.
@@ -611,7 +693,7 @@
         }
 
         // ----------------------------------------------------
-        // Input Listener Setup (모바일 완벽 방지)
+        // Input Listener Setup: movement pointer and writing pointer are separate.
         // ----------------------------------------------------
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
@@ -619,53 +701,112 @@
         window.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
+        window.addEventListener('blur', () => {
+            Object.keys(keys).forEach(k => keys[k] = false);
+            joystickActive = false;
+            movePointerId = null;
+        });
 
-        function getCanvasTouchPos(e, touchIndex = 0) {
+        function getCanvasPointerPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[touchIndex].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[touchIndex].clientY : e.clientY;
             return {
-                x: (clientX - rect.left) * (canvas.width / rect.width),
-                y: (clientY - rect.top) * (canvas.height / rect.height)
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
             };
         }
+        function releaseMovePointer(id = null) {
+            if (id !== null && movePointerId !== id) return;
+            joystickActive = false;
+            movePointerId = null;
+            joystickStart = {x:0,y:0};
+            joystickCurrent = {x:0,y:0};
+        }
 
-        canvas.addEventListener('mousedown', (e) => {
-            const pos = getCanvasTouchPos(e);
-            joystickStart = pos;
-            joystickCurrent = { ...pos };
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isPaused || bookOpen || movePointerId !== null) return;
+            // The scroll is a separate DOM layer, so a second finger may write there concurrently.
+            movePointerId = e.pointerId;
+            const pos = getCanvasPointerPos(e);
+            joystickStart = {...pos};
+            joystickCurrent = {...pos};
             joystickActive = true;
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!joystickActive) return;
-            joystickCurrent = getCanvasTouchPos(e);
-        });
-
-        window.addEventListener('mouseup', () => {
-            joystickActive = false;
-        });
-
-        canvas.addEventListener('touchstart', (e) => {
+            try { canvas.setPointerCapture(e.pointerId); } catch {}
             e.preventDefault();
-            if (e.touches.length > 0) {
-                const pos = getCanvasTouchPos(e);
-                joystickStart = pos;
-                joystickCurrent = { ...pos };
-                joystickActive = true;
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (joystickActive && e.touches.length > 0) {
-                joystickCurrent = getCanvasTouchPos(e);
-            }
-        }, { passive: false });
-
-        window.addEventListener('touchend', () => {
-            joystickActive = false;
         });
+        canvas.addEventListener('pointermove', (e) => {
+            if (e.pointerId !== movePointerId || !joystickActive) return;
+            joystickCurrent = getCanvasPointerPos(e);
+            e.preventDefault();
+        });
+        canvas.addEventListener('pointerup', e => releaseMovePointer(e.pointerId));
+        canvas.addEventListener('pointercancel', e => releaseMovePointer(e.pointerId));
+        canvas.addEventListener('lostpointercapture', e => releaseMovePointer(e.pointerId));
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        function currentWorldTheme() {
+            if (gameTime < 90) return {key:'forest',name:'신록의 숲'};
+            if (gameTime < 180) return {key:'snow',name:'한기의 설원'};
+            if (gameTime < 270) return {key:'hell',name:'불타는 지옥'};
+            return {key:'cave',name:'심연의 동굴'};
+        }
+        function updateBiomeLabel() {
+            const el=document.getElementById('world-biome-label');
+            if(el) el.textContent=currentWorldTheme().name;
+        }
+
+        function openSpellbook() {
+            if (!isRunning || bookOpen) return;
+            bookOpen = true;
+            writingActive = false;
+            isPaused = true;
+            releaseMovePointer();
+            Object.keys(keys).forEach(k => keys[k] = false);
+            stopBGM();
+            spellbookPage = Math.floor(Math.max(0,GRADE8_KEYS.indexOf(currentHanjaKey))/SPELLS_PER_PAGE);
+            renderSpellbookPage();
+            document.getElementById('spellbook-modal').classList.remove('hidden');
+            document.getElementById('spellbook-modal').classList.add('flex');
+            document.getElementById('scroll-panel').style.visibility='hidden';
+        }
+        function closeSpellbook() {
+            if (!bookOpen) return;
+            bookOpen = false;
+            isPaused = false;
+            writingActive = true;
+            document.getElementById('spellbook-modal').classList.add('hidden');
+            document.getElementById('spellbook-modal').classList.remove('flex');
+            document.getElementById('scroll-panel').style.visibility='visible';
+            initHanjaWriter(currentHanjaKey);
+            startBGM();
+        }
+        function renderSpellbookPage() {
+            const list=document.getElementById('book-list');
+            if(!list)return;
+            const total=Math.ceil(GRADE8_KEYS.length/SPELLS_PER_PAGE);
+            spellbookPage=(spellbookPage+total)%total;
+            document.getElementById('book-page-label').textContent=`${spellbookPage+1} / ${total}`;
+            list.innerHTML='';
+            GRADE8_KEYS.slice(spellbookPage*SPELLS_PER_PAGE,(spellbookPage+1)*SPELLS_PER_PAGE).forEach(key=>{
+                const spec=hanjaDB[key],stat=spellStats[key],g=getSpellGrowth(key);
+                const btn=document.createElement('button');
+                btn.className='book-card '+(key===currentHanjaKey?'selected ':'')+'rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5';
+                btn.innerHTML=`
+                    <div class="flex items-start gap-3">
+                        <div class="text-4xl font-black text-amber-900">${key}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="font-black text-base">${spec.meaning} · ${spec.spell}</div>
+                            <div class="text-[11px] text-stone-600 mt-1">${spec.desc}</div>
+                            <div class="mt-2 text-[10px] font-black text-cyan-800">숙련 Lv.${stat.lvl} · 피해 ${Math.round(g.damage*100)}% · 범위 ${Math.round(g.range*100)}%</div>
+                        </div>
+                    </div>`;
+                btn.onclick=()=>{selectHanja(key);renderSpellbookPage();};
+                list.appendChild(btn);
+            });
+        }
+        document.getElementById('book-btn').addEventListener('click',openSpellbook);
+        document.getElementById('close-book-btn').addEventListener('click',closeSpellbook);
+        document.getElementById('book-prev').addEventListener('click',()=>{spellbookPage--;renderSpellbookPage()});
+        document.getElementById('book-next').addEventListener('click',()=>{spellbookPage++;renderSpellbookPage()});
 
         // ----------------------------------------------------
         // Entity Spawning & Physics
@@ -1645,41 +1786,56 @@
             document.getElementById('spell-name').textContent = spec.spell;
             document.getElementById('spell-desc').textContent = spec.desc;
             updateSpellGrowthUI();
+            if (!bookOpen && restartQuiz) initHanjaWriter(spec.char);
             renderUnlockedBadges();
-            if (restartQuiz) initHanjaWriter(spec.char);
-            else initHanjaWriter(spec.char);
         }
 
         function nextHanjaTarget() {
             if (!hanjaDB[currentHanjaKey]) currentHanjaKey = GRADE8_KEYS[0];
-            selectHanja(currentHanjaKey, false);
+            const spec=hanjaDB[currentHanjaKey];
+            document.getElementById('target-char').textContent=spec.char;
+            document.getElementById('target-meaning').textContent=spec.meaning;
+            document.getElementById('spell-name').textContent=spec.spell;
+            document.getElementById('spell-desc').textContent=spec.desc;
+            updateSpellGrowthUI();
+            if (!bookOpen) initHanjaWriter(currentHanjaKey);
         }
 
         function initHanjaWriter(character) {
-            document.getElementById('hanja-target').innerHTML = '';
-            
+            const target=document.getElementById('hanja-target');
+            target.innerHTML = '';
+            const wrapper=document.getElementById('canvas-wrapper');
+            const size=Math.max(170,Math.min(250,Math.floor(wrapper.getBoundingClientRect().width || 250)));
+
             writerInstance = HanziWriter.create('hanja-target', character, {
-                width: 250,
-                height: 250,
-                padding: 15,
+                width: size,
+                height: size,
+                padding: 12,
                 showOutline: true,
-                strokeAnimationSpeed: 2.0,
-                delayBetweenStrokes: 100,
-                strokeColor: '#38bdf8', 
-                radicalColor: '#0284c7',
-                highlightColor: '#ef4444', 
-                outlineColor: '#334155', 
-                drawingColor: '#fbbf24', 
-                drawingWidth: 14,
+                strokeAnimationSpeed: 1.7,
+                delayBetweenStrokes: 80,
+                strokeColor: '#334155',
+                radicalColor: '#1d4ed8',
+                highlightColor: '#ef4444',
+                outlineColor: 'rgba(120,93,55,.32)',
+                drawingColor: '#fbbf24',
+                drawingWidth: 16,
                 showCharacter: false,
             });
 
+            let misses=0;
             writerInstance.quiz({
+                leniency: 2.35,
+                showHintAfterMisses: 1,
+                highlightOnComplete: true,
                 onMistake: function() {
+                    misses++;
+                    const desc=document.getElementById('spell-desc');
+                    if(desc && misses>=2) desc.textContent='조금 달라도 괜찮아요. 밝게 표시되는 다음 획을 따라 이어서 써 보세요.';
                     if (typeof playSynthSound === 'function') playSynthSound('hit');
                 },
                 onComplete: function() {
-                    castHanjaSpell();
+                    if (!bookOpen && !isPaused) castHanjaSpell();
                 }
             });
         }
@@ -1688,28 +1844,9 @@
         // UI & Level Up & Game State Management (봉인 및 스탯 기능 강화)
         // ----------------------------------------------------
         function renderUnlockedBadges() {
-            const listDiv = document.getElementById('unlocked-list');
-            listDiv.innerHTML = '';
-            GRADE8_KEYS.forEach(key => {
-                const spec = hanjaDB[key];
-                const stat = spellStats[key] || {lvl:1,xp:0,xpNeeded:spellXpNeeded(1)};
-                const selected = key === currentHanjaKey;
-                const pct = stat.lvl >= SPELL_MAX_LEVEL ? 100 : Math.min(100, (stat.xp / stat.xpNeeded) * 100);
-                const badge = document.createElement('button');
-                badge.type = 'button';
-                badge.title = `${spec.spell} · 숙련 Lv.${stat.lvl}`;
-                badge.className = `relative text-[11px] px-2 py-1.5 rounded-md border font-semibold flex items-center gap-1 overflow-hidden transition-all min-h-[34px] ${selected
-                    ? 'bg-amber-500/20 text-amber-200 border-amber-400 shadow-[0_0_10px_rgba(251,191,36,.28)]'
-                    : 'bg-blue-900/30 text-blue-200 border-blue-800 hover:border-cyan-400 hover:bg-blue-900/50'}`;
-                badge.innerHTML = `
-                    <span class="absolute left-0 bottom-0 h-[3px] bg-cyan-400/80" style="width:${pct}%"></span>
-                    <span class="font-black text-base leading-none">${spec.char}</span>
-                    <span class="text-[8px] opacity-80">${spec.meaning.split(' ')[0]}</span>
-                    <span class="bg-slate-950/80 text-cyan-200 text-[8px] px-1 rounded">Lv.${stat.lvl}</span>
-                `;
-                badge.onclick = () => selectHanja(key);
-                listDiv.appendChild(badge);
-            });
+            const oldList = document.getElementById('unlocked-list');
+            if (oldList) oldList.innerHTML = '';
+            if (document.getElementById('book-list')) renderSpellbookPage();
         }
 
         function triggerLevelUp() {
@@ -2422,6 +2559,57 @@
         // ----------------------------------------------------
         // 그래픽 렌더링 루프
         // ----------------------------------------------------
+        function hashCell(x,y,seed=0){
+            let n=(x*374761393+y*668265263+seed*69069)|0;
+            n=(n^(n>>13))*1274126177;
+            return ((n^(n>>16))>>>0)/4294967295;
+        }
+        function drawWorldEnvironment() {
+            const theme=currentWorldTheme().key;
+            const viewX=camera.x,viewY=camera.y,w=canvas.width,h=canvas.height;
+            const colors={
+                forest:['#173f2b','#245b37'],
+                snow:['#b9d9ea','#dceef6'],
+                hell:['#3a1012','#651b17'],
+                cave:['#171922','#292d39']
+            }[theme];
+            const g=ctx.createLinearGradient(viewX,viewY,viewX,viewY+h);
+            g.addColorStop(0,colors[0]);g.addColorStop(1,colors[1]);
+            ctx.fillStyle=g;ctx.fillRect(viewX-80,viewY-80,w+160,h+160);
+
+            const cell=92;
+            const sx=Math.floor((viewX-100)/cell)-1,ex=Math.floor((viewX+w+100)/cell)+1;
+            const sy=Math.floor((viewY-100)/cell)-1,ey=Math.floor((viewY+h+100)/cell)+1;
+            for(let gx=sx;gx<=ex;gx++)for(let gy=sy;gy<=ey;gy++){
+                const r=hashCell(gx,gy,gameTime<90?1:gameTime<180?2:gameTime<270?3:4);
+                const x=gx*cell+18+r*54,y=gy*cell+20+hashCell(gy,gx,7)*48;
+                if(theme==='forest'){
+                    if(r>.64 && assetReady(r>.82?'tree':'treeSmall')){
+                        const img=GAME_ASSETS[r>.82?'tree':'treeSmall'];const s=r>.82?48:36;
+                        ctx.globalAlpha=.82;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x-s/2,y-s/2,s,s);ctx.globalAlpha=1;
+                    }else if(r>.42){
+                        ctx.fillStyle='rgba(134,239,172,.22)';ctx.beginPath();ctx.arc(x,y,3+r*5,0,Math.PI*2);ctx.fill();
+                    }
+                }else if(theme==='snow'){
+                    if(r>.5){ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.arc(x,y,2+r*4,0,Math.PI*2);ctx.fill()}
+                    if(r>.86){ctx.strokeStyle='rgba(125,211,252,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-13,y);ctx.lineTo(x+11,y+5);ctx.lineTo(x+3,y+16);ctx.stroke()}
+                }else if(theme==='hell'){
+                    if(r>.72){ctx.strokeStyle='rgba(251,146,60,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-22,y-12);ctx.lineTo(x,y);ctx.lineTo(x-9,y+21);ctx.lineTo(x+16,y+32);ctx.stroke()}
+                    if(r>.9){ctx.fillStyle='rgba(253,186,116,.5)';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()}
+                }else{
+                    if(r>.72){ctx.fillStyle='rgba(139,92,246,.25)';ctx.beginPath();ctx.moveTo(x,y-18);ctx.lineTo(x+8,y+8);ctx.lineTo(x,y+16);ctx.lineTo(x-8,y+8);ctx.closePath();ctx.fill()}
+                    if(r>.48&&r<.58){ctx.fillStyle='rgba(120,113,108,.34)';ctx.beginPath();ctx.ellipse(x,y,15,9,.4,0,Math.PI*2);ctx.fill()}
+                }
+            }
+            ctx.globalAlpha=1;
+            // A subtle grid remains only as gameplay orientation, not as the world itself.
+            ctx.strokeStyle=theme==='snow'?'rgba(90,130,150,.08)':'rgba(255,255,255,.045)';
+            ctx.lineWidth=1;
+            const grid=120;
+            for(let x=Math.floor(viewX/grid)*grid;x<viewX+w+grid;x+=grid){ctx.beginPath();ctx.moveTo(x,viewY);ctx.lineTo(x,viewY+h);ctx.stroke()}
+            for(let y=Math.floor(viewY/grid)*grid;y<viewY+h+grid;y+=grid){ctx.beginPath();ctx.moveTo(viewX,y);ctx.lineTo(viewX+w,y);ctx.stroke()}
+        }
+
         function drawGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -2435,27 +2623,8 @@
 
             ctx.translate(-camera.x, -camera.y);
 
-            // 바닥 그리드
-            const gridSize = 60;
-            const startX = Math.floor(camera.x / gridSize) * gridSize - gridSize;
-            const startY = Math.floor(camera.y / gridSize) * gridSize - gridSize;
-            const endX = startX + canvas.width + gridSize * 2;
-            const endY = startY + canvas.height + gridSize * 2;
-
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 1;
-            for (let x = startX; x < endX; x += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, startY);
-                ctx.lineTo(x, endY);
-                ctx.stroke();
-            }
-            for (let y = startY; y < endY; y += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(startX, y);
-                ctx.lineTo(endX, y);
-                ctx.stroke();
-            }
+            // 판타지 월드 환경
+            drawWorldEnvironment();
 
             // 구슬 렌더링 (경험치 vs 체력 구별)
             consumables.forEach(gem => {
@@ -2862,6 +3031,7 @@
             timerInterval = setInterval(() => {
                 if (!isRunning || isPaused) return;
                 gameTime++;
+                updateBiomeLabel();
                 const min = String(Math.floor(gameTime / 60)).padStart(2, '0');
                 const sec = String(gameTime % 60).padStart(2, '0');
                 document.getElementById('game-timer').textContent = `${min}:${sec}`;
@@ -2958,6 +3128,13 @@
 
             isRunning = true;
             isPaused = false;
+            bookOpen = false;
+            writingActive = true;
+            releaseMovePointer();
+            document.getElementById('spellbook-modal').classList.add('hidden');
+            document.getElementById('spellbook-modal').classList.remove('flex');
+            document.getElementById('scroll-panel').style.visibility='visible';
+            updateBiomeLabel();
 
             renderUnlockedBadges();
             nextHanjaTarget();
