@@ -54,7 +54,7 @@ test('Classroom War math gates preview their resulting army count',()=>{
 test('Classroom War catalog points to the asset rework',()=>{
   const game=catalog.games.find(g=>g.id==='high_classroom_war_3d');
   assert.ok(game);
-  assert.equal(game.href,'games/high_classroom_war_3d/교실전쟁 3D.html?v=13');
+  assert.equal(game.href,'games/high_classroom_war_3d/교실전쟁 3D.html?v=14');
 });
 
 test('Classroom War uses SkeletonUtils clone and stable grounding for skinned people',()=>{
@@ -72,4 +72,21 @@ test('Classroom War spreads army ranks and rows instead of piling models togethe
   assert.match(html,/row\*rowStep/);
   assert.match(html,/player\.soldiers,createStudent,player\.agents,1\.35,5\.8,\.94/);
   assert.match(html,/player\.generals,createGeneralStudent,player\.generalAgents,-3\.92,6\.3,1\.08/);
+});
+
+test('Classroom War uses original idle and walk clips without root motion drift',()=>{
+  assert.match(html,/new THREE\.AnimationMixer\(model\)/);
+  assert.match(html,/\/idle\|stand\/i/);
+  assert.match(html,/\/walk\|run\|sprint\/i/);
+  assert.match(html,/!\/\^root\\\.position\$\/i\.test\(t\.name\)/);
+  assert.match(html,/playClassroomCharacterAnim\(a,move\?"walk":"idle"\)/);
+  assert.match(html,/playClassroomCharacterAnim\(e\.group,"walk"\)/);
+});
+
+test('Classroom War keeps allies visible and fires projectiles straight forward',()=>{
+  assert.match(html,/const PLAYER_LINE_Z=4\.15/);
+  assert.match(html,/player\.group\.position\.set\(0,0,PLAYER_LINE_Z\)/);
+  assert.match(html,/camera\.lookAt\(player\.group\.position\.x\*\.10,1\.0,-7\.2\)/);
+  assert.match(html,/vx:0,vz:-spec\.speed/);
+  assert.doesNotMatch(html,/aimX=targetAimX\(target,sx\)/);
 });
