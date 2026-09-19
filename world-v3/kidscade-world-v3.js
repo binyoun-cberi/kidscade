@@ -859,9 +859,10 @@ function updatePets(now,dt){
 }
 
 function updateStatus(){
-  const p=prog(),i=inv(),s=p.survival;
+  const p=prog(),i=inv(),s=p.survival,t=townEconomy?.ensureState?.(p)||p.town||{coins:0,fun:0};
   const pct=Math.max(0,Math.min(100,(p.energy||0)/(p.maxEnergy||100)*100));
   const hunger=Math.max(0,Math.min(100,s.hunger||0));
+  const fun=Math.max(0,Math.min(100,t.fun||0));
   const axe=p.tools.axe?.dur>0?`${p.tools.axe.tier==='iron'?'철도끼':'돌도끼'} ${p.tools.axe.dur}`:'도끼 없음';
   const pick=p.tools.pick?.dur>0?`${p.tools.pick.tier==='iron'?'철곡괭이':'돌곡괭이'} ${p.tools.pick.dur}`:'곡괭이 없음';
   const phase=isNightTime(s.time)?'밤':'낮';
@@ -869,6 +870,7 @@ function updateStatus(){
   statusEl.innerHTML=`<b>Day ${s.day} · ${clockText(s.time)} · ${phase}</b><br>
     체력 ${Math.round(p.energy||0)}/${p.maxEnergy||100}<div class="energy"><i style="width:${pct}%"></i></div>
     허기 ${Math.round(hunger)}/100<div class="energy"><i style="width:${hunger}%"></i></div>
+    재미 ${Math.round(fun)}/100 · 코인 ${t.coins||0}<br>
     ${axe}<br>${pick}<br>목재 ${i.wood||0} · 돌 ${i.stone||0} · 철 ${i.iron||0}<br>
     동행 펫 ${pet}<hr style="border:0;border-top:1px solid rgba(255,255,255,.25)">씨앗 ${Bridge?.readSeeds?.()||0}`;
 }
