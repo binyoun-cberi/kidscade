@@ -277,7 +277,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
     </div>
     <div class="board-wrap">
       <div id="boardShell" class="board-shell">
-        <canvas id="city3d" aria-hidden="true"></canvas><canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">미니어처 탑다운 도시에서 모든 배달 도로를 한 번씩 지나 보세요 · 같은 교차로는 다시 지나도 돼요!<br>주황색은 완료한 도로, 📦 목적지는 방문하면 ✓로 바뀌어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
+        <canvas id="city3d" aria-hidden="true"></canvas><canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">도로 양옆으로 이어진 미니어처 도시에서 모든 배달 도로를 한 번씩 지나 보세요 · 같은 교차로는 다시 지나도 돼요!<br>주황색은 완료한 도로, 📦 목적지는 방문하면 ✓로 바뀌어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
         <div id="hintLabel" class="hint-label"></div>
         <div class="side-tools">
           <button id="undoBtn" class="tool-btn" aria-label="한 단계 되돌리기">
@@ -641,7 +641,8 @@ function landmarkOffset(node,w,h){
   vx=-vx;vy=-vy;
   if(Math.hypot(vx,vy)<.2){vx=node.x<w/2?-1:1;vy=node.y<h/2?-1:1}
   const len=Math.hypot(vx,vy)||1;vx/=len;vy/=len;
-  const d=Math.min(74,Math.max(43,state.visualRadius*4.5));
+  const compact=w<700||h<480;
+  const d=Math.min(compact?66:96,Math.max(compact?48:70,state.visualRadius*5.6));
   let x=node.x+vx*d,y=node.y+vy*d;
   x=Math.max(40,Math.min(w-40,x));y=Math.max(92,Math.min(h-62,y));
   return{x,y};
@@ -686,7 +687,13 @@ function drawCityLandmarks(now){
 
     if(window.__oneStroke3DReady){
       const labels={hub:'출발',goal:'도착',home:'집',shop:'상점',cafe:'카페',school:'학교',apartment:'아파트',park:'공원'};
-      drawParcelBadge(l.x,l.y-l.r*.74,done,labels[l.role]||'배달');
+      const bx=n.x+(l.x-n.x)*.48,by=n.y+(l.y-n.y)*.48;
+      ctx.save();
+      ctx.fillStyle=done?'rgba(59,195,160,.22)':'rgba(255,154,50,.18)';
+      ctx.strokeStyle=done?'rgba(38,161,131,.75)':'rgba(255,138,31,.78)';
+      ctx.lineWidth=2;ctx.beginPath();ctx.arc(bx,by,11,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.restore();
+      drawParcelBadge(bx,by-17,done,labels[l.role]||'배달');
       continue;
     }
 
@@ -722,35 +729,87 @@ function buildCityDecor(w,h){
   if(!state.stage){state.cityDecor=[];return}
   state.cityTheme=state.stage.chapter||1;
   const rng=seededRandom(state.stage.num*9187+state.cityTheme*331),items=[],small=w<700||h<480;
-  // Fill most non-road space with compact lots. Roads and nodes always keep a clear interaction lane.
-  const step=small?54:62,top=84,target=small?30:58,candidates=[];
-  for(let y=top;y<h-(small?74:48);y+=step){
-    for(let x=24;x<w-(small?24:92);x+=step){
-      candidates.push({x:x+(rng()-.5)*22,y:y+(rng()-.5)*20,roll:rng()});
-    }
-  }
-  candidates.sort((a,b)=>a.roll-b.roll);
-  for(const p of candidates){
-    if(items.length>=target)break;
-    const roll=rng();
-    let kind=roll<.48?'building':roll<.64?'treeCluster':roll<.75?'parking':roll<.84?'plaza':roll<.92?'car':roll<.97?'light':'cone';
-    let r=kind==='building'?(small?18:23):kind==='treeCluster'?(small?16:20):kind==='parking'?(small?19:25):kind==='plaza'?(small?17:23):kind==='car'?13:kind==='light'?11:9;
-    const roadPad=(kind==='car'||kind==='light'||kind==='cone') ? .72 : 1.05;
-    if(!decorSafe(p.x,p.y,r,w,h,roadPad))continue;
-    const palette=CITY_THEME[state.cityTheme],color=palette.building[Math.floor(rng()*palette.building.length)],roof=palette.roof[Math.floor(rng()*palette.roof.length)];
-    items.push({kind,x:p.x,y:p.y,r,scale:.86+rng()*.34,color,roof,variant:Math.floor(rng()*8),flip:rng()>.5,phase:rng()*Math.PI*2,rot:(Math.floor(rng()*4)*Math.PI/2)});
-  }
-  // A second tighter pass fills small leftovers with greenery/street furniture instead of leaving blank holes.
-  if(items.length<target){
-    const micro=small?46:50;
-    for(let y=top+micro*.45;y<h-58&&items.length<target;y+=micro){
-      for(let x=36;x<w-(small?30:100)&&items.length<target;x+=micro){
-        const xx=x+(rng()-.5)*14,yy=y+(rng()-.5)*14,kind=rng()<.72?'treeCluster':'light',r=kind==='treeCluster'?12:9;
-        if(!decorSafe(xx,yy,r,w,h,.62))continue;
-        items.push({kind,x:xx,y:yy,r,scale:.82,color:CITY_THEME[state.cityTheme].building[0],roof:CITY_THEME[state.cityTheme].roof[0],variant:Math.floor(rng()*8),flip:rng()>.5,phase:rng()*Math.PI*2,rot:0});
+  const palette=CITY_THEME[state.cityTheme];
+
+  const push=(kind,x,y,r,variant,rot=0,extra={})=>{
+    if(!Number.isFinite(x)||!Number.isFinite(y))return false;
+    if(x-r<14||x+r>w-(small?18:96)||y-r<76||y+r>h-(small?84:24))return false;
+    if(state.nodes.some(n=>Math.hypot(n.x-x,n.y-y)<r+state.visualRadius*1.55))return false;
+    if(state.cityLandmarks.some(l=>Math.hypot(l.x-x,l.y-y)<r+l.r*.76))return false;
+    if(items.some(o=>Math.hypot(o.x-x,o.y-y)<(o.r+r)*.72))return false;
+    items.push({kind,x,y,r,scale:.9+rng()*.25,color:palette.building[Math.floor(rng()*palette.building.length)],roof:palette.roof[Math.floor(rng()*palette.roof.length)],variant,flip:rng()>.5,phase:rng()*Math.PI*2,rot,...extra});
+    return true;
+  };
+
+  // 1) Main urban fabric follows the puzzle roads. Every long street gets buildings on both sides.
+  state.edges.forEach((e,edgeIndex)=>{
+    const a=nodeById(e.a),b=nodeById(e.b),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
+    if(len<70)return;
+    const tx=dx/len,ty=dy/len,nx=-ty,ny=tx,roadAngle=Math.atan2(dy,dx);
+    const spacing=small?92:108,count=Math.max(1,Math.floor((len-58)/spacing));
+    for(let i=0;i<=count;i++){
+      const t=(i+1)/(count+2);
+      for(const side of [-1,1]){
+        const jitter=(rng()-.5)*(small?12:18),offset=(small?52:68)+(rng()*10);
+        const bx=a.x+dx*t+tx*jitter+nx*offset*side;
+        const by=a.y+dy*t+ty*jitter+ny*offset*side;
+        const variant=(edgeIndex*5+i*3+(side>0?1:0))%9;
+        const r=small?22:29;
+        const kindRoll=rng();
+        const primary=kindRoll<.68?'building':kindRoll<.82?'parking':'plaza';
+        push(primary,bx,by,primary==='building'?r:r*.9,variant,roadAngle+(side<0?Math.PI:0),{roadSide:side,edgeId:e.id});
+
+        // Street-side furniture sits closer to the curb, not in empty random space.
+        if(rng()<.72){
+          const sx=a.x+dx*t+tx*(jitter*.4)+nx*(small?33:42)*side;
+          const sy=a.y+dy*t+ty*(jitter*.4)+ny*(small?33:42)*side;
+          push('light',sx,sy,small?7:9,(variant+2)%8,roadAngle,{roadSide:side,edgeId:e.id});
+        }
+        // A second object behind the main lot makes each placement read as a city block.
+        if(!small&&rng()<.64){
+          const backX=bx+nx*(32+rng()*11)*side+tx*(rng()-.5)*24;
+          const backY=by+ny*(32+rng()*11)*side+ty*(rng()-.5)*24;
+          const backKind=rng()<.72?'building':'treeCluster';
+          push(backKind,backX,backY,backKind==='building'?22:18,(variant+3)%9,roadAngle+(side<0?Math.PI:0),{district:true});
+        }
       }
     }
+  });
+
+  // 2) Large areas far from any route become compact neighborhoods or parks instead of blank fields.
+  const grid=small?82:94;
+  const candidates=[];
+  for(let y=96;y<h-(small?92:44);y+=grid){
+    for(let x=42;x<w-(small?40:112);x+=grid){
+      const d=distanceToRoad({x,y});
+      if(d<(small?82:104))continue;
+      candidates.push({x:x+(rng()-.5)*26,y:y+(rng()-.5)*24,d,roll:rng()});
+    }
   }
+  candidates.sort((a,b)=>b.d-a.d||a.roll-b.roll);
+  const districtTarget=small?10:24;
+  let districts=0;
+  for(const p of candidates){
+    if(districts>=districtTarget)break;
+    const baseVariant=Math.floor(rng()*9),angle=(Math.floor(rng()*4)*Math.PI/2);
+    if(!push(rng()<.78?'building':'treeCluster',p.x,p.y,small?22:27,baseVariant,angle,{district:true}))continue;
+    districts++;
+    // Pair a neighboring lot so a distant district never looks like a lone house.
+    if(!small){
+      const ox=(rng()>.5?1:-1)*(31+rng()*12),oy=(rng()-.5)*22;
+      push(rng()<.7?'building':'parking',p.x+ox,p.y+oy,21,(baseVariant+4)%9,angle,{district:true});
+    }
+  }
+
+  // 3) Final micro-fill uses greenery only; this avoids giant blank zones without cluttering the route.
+  const microTarget=small?42:78;
+  for(let tries=0;tries<260&&items.length<microTarget;tries++){
+    const x=26+rng()*(w-(small?52:132)),y=90+rng()*(h-(small?190:128));
+    if(distanceToRoad({x,y})<34)continue;
+    const kind=rng()<.72?'treeCluster':'light';
+    push(kind,x,y,kind==='treeCluster'?(small?11:14):7,Math.floor(rng()*9),0,{micro:true});
+  }
+
   state.cityDecor=items.sort((a,b)=>a.y-b.y);
 }
 function drawAsset(im,x,y,w,h,rot=0,alpha=.82,flip=false){
@@ -859,14 +918,14 @@ function draw(){
   if(!state.stage)return;const rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);
   const now=performance.now();drawCityBackdrop(rect,now);let sx=0;if(now<state.shakeUntil){sx=Math.sin(now*.16)*5;requestAnimationFrame(draw)}if(now<state.hintUntil)requestAnimationFrame(draw);
   ctx.save();ctx.translate(sx,0);drawCityLandmarks(now);drawCityDecor(now);
-  const night=state.cityTheme===5,lineW=Math.min(11,Math.max(4,state.visualRadius*.62));ctx.lineCap='round';ctx.lineJoin='round';
+  const night=state.cityTheme===5,lineW=Math.min(9,Math.max(3.5,state.visualRadius*.52));ctx.lineCap='round';ctx.lineJoin='round';
   // Streets: sidewalk/curb, asphalt, then a crisp center marking.
-  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#263c46':'#d4ddd7';ctx.lineWidth=lineW+15;ctx.stroke()});
-  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#566771':'#68747e';ctx.lineWidth=lineW+6;ctx.stroke()});
+  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#263c46':'#d4ddd7';ctx.lineWidth=lineW+10;ctx.stroke()});
+  state.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=night?'#566771':'#69757d';ctx.lineWidth=lineW+4;ctx.stroke()});
   ctx.save();ctx.setLineDash([Math.max(5,lineW*.8),Math.max(6,lineW*1.05)]);ctx.globalAlpha=night?.62:.55;ctx.lineWidth=Math.max(1.4,lineW*.18);ctx.strokeStyle=night?'#d5dde0':'#f5f2dc';
   state.edges.forEach(e=>{if(state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()});ctx.restore();
   if(state.hintEdge&&now<state.hintUntil){const a=nodeById(state.hintEdge.a),b=nodeById(state.hintEdge.b);ctx.shadowColor='rgba(79,124,255,.65)';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#4f7cff';ctx.lineWidth=lineW+5;ctx.stroke();ctx.shadowBlur=0}
-  state.edges.forEach(e=>{if(!state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b),grad=ctx.createLinearGradient(a.x,a.y,b.x,b.y);grad.addColorStop(0,'#ff8a1f');grad.addColorStop(1,'#ffbd42');ctx.shadowColor='rgba(255,138,31,.32)';ctx.shadowBlur=13;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=grad;ctx.lineWidth=lineW+4;ctx.stroke();ctx.shadowBlur=0;
+  state.edges.forEach(e=>{if(!state.used.has(e.id))return;const a=nodeById(e.a),b=nodeById(e.b),grad=ctx.createLinearGradient(a.x,a.y,b.x,b.y);grad.addColorStop(0,'#ff8a1f');grad.addColorStop(1,'#ffbd42');ctx.shadowColor='rgba(255,138,31,.32)';ctx.shadowBlur=13;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=grad;ctx.lineWidth=lineW+3;ctx.stroke();ctx.shadowBlur=0;
     ctx.save();ctx.setLineDash([5,7]);ctx.strokeStyle='rgba(255,255,255,.82)';ctx.lineWidth=Math.max(1.3,lineW*.16);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore()});
   if(state.dragging&&currentNode()!==null){const a=nodeById(currentNode());ctx.setLineDash([9,9]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(state.pointer.x,state.pointer.y);ctx.strokeStyle='rgba(255,138,31,.32)';ctx.lineWidth=Math.max(3,lineW*.45);ctx.stroke();ctx.setLineDash([])}
   const baseR=state.visualRadius,visited=new Set(state.path);
