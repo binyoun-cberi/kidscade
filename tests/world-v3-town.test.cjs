@@ -9,12 +9,13 @@ const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
+const audio=fs.readFileSync(path.join(root,'world-v3','kidscade-world-audio.js'),'utf8');
 const storage=fs.readFileSync(path.join(root,'world-v2','kidscade-world-storage.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf8');
 const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,economy,furnishing]){
+  for(const src0 of [runtime,city,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -102,7 +103,7 @@ test('city has bus travel and passes game time to NPC schedules',()=>{
   assert.match(runtime,/const TRAVEL_POINTS=/);
   assert.match(runtime,/travel:travelTo/);
   assert.match(runtime,/getGameTime:\(\)=>prog\(\)\.survival\.time/);
-  assert.match(city,/민석에게 씨앗버스 타기/);
+  assert.match(city,/민석과 이야기하기/);
   assert.match(city,/getGameTime/);
   assert.match(city,/evening/);
 });
@@ -115,11 +116,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=7/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=7/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=8/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=8/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
-  assert.match(html,/kidscade-world-v3\.js\?v=13/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=13/);
+  assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
+  assert.match(html,/kidscade-world-v3\.js\?v=14/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=14/);
 });
 
 
@@ -294,18 +296,19 @@ test('Cube Pets are separated into owned yard companions and habitat-based wild 
   for(const habitat of ["pond","farm-pasture","deep-forest","riverbank"])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
   assert.match(runtime,/pet-yard-sign/);
   assert.match(runtime,/Cube Pets 마당 보기/);
-  assert.match(runtime,/Farm animals are grouped in a small pasture/);
+  assert.match(runtime,/farm-side ranch is the permanent home/);
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=3/);
+  assert.match(runtime,/const LAYOUT_VERSION=4/);
   assert.match(runtime,/if\(z>20\)zoneEl\.textContent='씨앗마을 중심가/);
 });
 
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
-  assert.match(city,/const groundY=-b\.min\.y/);
-  assert.match(city,/groundY,r:radius/);
+  assert.match(city,/model\.position\.set\(0,-b\.min\.y,0\)/);
+  assert.match(city,/const anchor=new THREE\.Group\(\)/);
+  assert.match(city,/object:anchor,model/);
   assert.match(city,/n\.object\.position\.y=n\.groundY/);
   assert.match(runtime,/o\.userData\.groundY=o\.position\.y/);
   assert.match(runtime,/groundY=Number\(object\.userData\.groundY\)\|\|0/);
@@ -343,4 +346,60 @@ test('city labels are smaller and only shown near the player',()=>{
   assert.match(city,/buildingLabels/);
   assert.match(city,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<3\.4/);
   assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<7\.5/);
+});
+
+
+test('v3.14 removes the 2D fallback entry and exposes audio control instead',()=>{
+  assert.doesNotMatch(html,/id="stable"/);
+  assert.doesNotMatch(html,/2D 안정판/);
+  assert.doesNotMatch(runtime,/getElementById\('stable'\)/);
+  assert.match(html,/id="audioToggle"/);
+  assert.match(runtime,/createWorldAudio/);
+  assert.match(runtime,/pauseAudio\(\)/);
+  assert.match(runtime,/resumeAudio\(\)/);
+  assert.match(integration,/pauseAudio/);
+  assert.match(integration,/resumeAudio/);
+});
+
+test('farm has six reusable plots and six selectable crops with market seeds',()=>{
+  assert.match(runtime,/const CROP_DEF=\{/);
+  for(const crop of ['potato','carrot','tomato','strawberry','corn','pumpkin'])assert.ok(runtime.includes(crop+':{name:'),'missing crop '+crop);
+  assert.match(runtime,/const plotPos=\[\[4\.8,4\.25\],\[7\.4,4\.25\],\[10\.0,4\.25\],\[4\.8,7\.0\],\[7\.4,7\.0\],\[10\.0,7\.0\]\]/);
+  assert.match(runtime,/data-plant/);
+  assert.match(runtime,/무엇을 심을까요/);
+  assert.match(runtime,/밭 살펴보기/);
+  for(const seed of ['seedStrawberry','seedCorn','seedPumpkin'])assert.ok(economy.includes(seed+':{name:'),'market missing '+seed);
+  assert.match(storage,/strawberry:1,corn:1,pumpkin:1/);
+});
+
+test('workshop camp and bridge are separated from farm and travel paths',()=>{
+  assert.match(runtime,/workbench,\{x:15\.2,z:7\.35/);
+  assert.match(runtime,/chest,\{x:13\.55,z:7\.55/);
+  assert.match(runtime,/campfire,\{x:-3\.2,z:16\.7/);
+  assert.match(runtime,/northBridge[\s\S]*rot:Math\.PI\/2/);
+  assert.doesNotMatch(runtime,/campfire,\{x:0,z:17\.0/);
+});
+
+test('owned ranch pets have daily products and dedicated ranch slots',()=>{
+  assert.match(runtime,/const RANCH_SLOTS=\{/);
+  assert.match(runtime,/const RANCH_PRODUCTS=\{/);
+  assert.match(runtime,/cow:\{key:'milk'/);
+  assert.match(runtime,/chick:\{key:'egg'/);
+  assert.match(runtime,/pig:\{key:'truffle'/);
+  assert.match(runtime,/function ranchPanel\(\)/);
+  assert.match(runtime,/function collectRanchProducts\(\)/);
+  assert.match(runtime,/목장 생산물 확인하기/);
+  assert.match(storage,/milk:0,egg:0,truffle:0/);
+  assert.match(economy,/milk:18,egg:12,truffle:38/);
+});
+
+test('World v3 audio uses local licensed project assets for BGM and interaction feedback',()=>{
+  assert.match(audio,/idoberg-relaxing-guitar-loop-v8-252351\.mp3/);
+  assert.match(audio,/coin-pickup-01\.mp3/);
+  assert.match(audio,/purchase-kaching-01\.mp3/);
+  assert.match(audio,/impact-heavy-01\.mp3/);
+  assert.match(audio,/localStorage\.getItem\(SETTINGS_KEY\)/);
+  assert.match(runtime,/worldAudio\.sfx\('impact'/);
+  assert.match(runtime,/worldAudio\.sfx\('pickup'/);
+  assert.match(economy,/playSfx\?\.\('purchase'/);
 });
