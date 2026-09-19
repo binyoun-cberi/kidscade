@@ -64,6 +64,13 @@ function bodyRotation(kind,p,facing){
 function targetPoint(t){return {x:t.centerX,y:t.y+Math.max(8,t.h*.45)};}
 
 function drawTool(c,kind,anchor,facing,p,target){
+  if(kind==='chop'||kind==='mine'){
+    const iron=target?.data?.__usedTier==='iron';
+    const key=kind==='chop'?(iron?'axeIron':'axe'):(iron?'pickaxeIron':'pickaxe');
+    const rot=swingProgress(kind,p);
+    const px=anchor.x+facing*25,py=anchor.y-17;
+    if(K.ModelSprites?.drawAt?.(key,c,px,py,62,62,{rotation:rot,flip:facing<0}))return;
+  }
   c.save();c.translate(anchor.x,anchor.y);c.scale(facing,1);c.rotate(swingProgress(kind,p));c.lineCap='round';c.lineJoin='round';
   if(kind==='chop'||kind==='mine'){
     c.strokeStyle='#5e3b26';c.lineWidth=6;c.beginPath();c.moveTo(-2,3);c.lineTo(38,-23);c.stroke();c.translate(38,-23);c.rotate(.34);
