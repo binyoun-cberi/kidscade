@@ -230,7 +230,7 @@ function workbenchPanel(){
     ${tool('pick','돌곡괭이',{wood:2,stone:3},pickTier==='stone')}
     ${tool('axeIron','철도끼',{wood:2,iron:3},axeTier==='iron')}
     ${tool('pickIron','철곡괭이',{wood:2,iron:3},pickTier==='iron')}
-  </div><p style="font-size:12px">철도구는 내구도가 높고 한 번에 더 많은 자원을 얻어요.</p>`);
+  </div><p style="font-size:12px">처음에는 집 주변의 떨어진 나뭇가지와 작은 돌을 맨손으로 주워 돌도구를 만들 수 있어요. 철도구는 내구도와 채집 효율이 높습니다.</p>`);
 }
 function cookingPanel(kind='stove'){
   panel.dataset.cookKind=kind;
@@ -480,6 +480,20 @@ function updateCropVisuals(){
 }
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
+const groundPickups=[];
+async function addGroundPickup(id,kind,x,z){
+  const url=kind==='wood'?ASSET.wood:P.nature+'stone-small-a.glb';
+  const object=await addModel(outdoor,url,{x,z,w:kind==='wood'?.8:.65,h:kind==='wood'?.48:.45,d:kind==='wood'?.65:.65,rot:(groundPickups.length*.71)%6.2,name:id});
+  if(!object)return;
+  const actor={id,kind,object,ready:true};groundPickups.push(actor);
+  interact('outdoor',x,z,1.0,kind==='wood'?'떨어진 나뭇가지 줍기':'작은 돌 줍기',()=>{
+    if(!actor.ready){toast('조금 뒤에 다시 찾아보세요.');return;}
+    actor.ready=false;actor.object.visible=false;
+    const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();
+    toast((kind==='wood'?'나뭇가지':'작은 돌')+' +1 · 도구 없이 주웠어요.');
+    setTimeout(()=>{actor.ready=true;actor.object.visible=true;},45000);
+  });
+}
 async function buildOutdoor(){
   // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
   plane(outdoor,0,0,64,46,0x7caf63,0);
@@ -548,6 +562,20 @@ async function buildOutdoor(){
   interact('outdoor',13.6,4.65,1.45,'제작대 사용하기',workbenchPanel);
   interact('outdoor',11.8,4.9,1.35,'보관 상자 보기',inventoryPanel);
   interact('outdoor',-10.8,6.1,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+
+  // Starter loop: hand-pickable branches and pebbles prevent tool/resource deadlocks.
+  await Promise.all([
+    addGroundPickup('starter-wood-1','wood',-5.8,2.8),
+    addGroundPickup('starter-wood-2','wood',-3.6,5.0),
+    addGroundPickup('starter-wood-3','wood',1.8,3.1),
+    addGroundPickup('starter-wood-4','wood',3.3,7.2),
+    addGroundPickup('starter-wood-5','wood',-7.0,7.6),
+    addGroundPickup('starter-stone-1','stone',-1.2,4.7),
+    addGroundPickup('starter-stone-2','stone',2.0,6.0),
+    addGroundPickup('starter-stone-3','stone',5.0,8.0),
+    addGroundPickup('starter-stone-4','stone',-5.1,8.4),
+    addGroundPickup('starter-stone-5','stone',8.2,1.9)
+  ]);
 
   // Farm plots: one compact farm block, off the road.
   const types=[['potato','감자',0xc69b5b],['carrot','당근',0xe67e3a],['tomato','토마토',0xc95142]];
