@@ -150,18 +150,18 @@ export async function buildKidscadeCity(ctx){
   npcs.push(await addNpc(npcCtx,'minseok','민석',21.3,31.9,{role:'bus'}));
   npcs.push(await addNpc(npcCtx,'clerk','마트직원',-16.1,29.9,{role:'shop',label:false}));
 
-  interact('outdoor',-18.0,30.5,1.35,'민지에게 장보기',()=>actions.shop('market','민지'));
-  interact('outdoor',-9.7,30.4,1.35,'준호에게 도구·재료 사기',()=>actions.shop('hardware','준호'));
-  interact('outdoor',9.7,30.3,1.35,'하늘 카페 이용하기',()=>actions.shop('cafe','하늘'));
-  interact('outdoor',0.0,33.0,1.35,'도윤에게 오늘 일거리 묻기',()=>actions.jobs());
-  interact('outdoor',4.4,30.9,1.35,'유나와 이야기하기',()=>actions.talk('yuna','유나'));
-  interact('outdoor',18.0,30.2,1.35,'태호와 아케이드 놀기',()=>actions.arcade());
-  interact('outdoor',-13.2,32.7,1.35,'소라와 도서관 이용하기',()=>actions.library());
-  interact('outdoor',-5.0,33.0,1.35,'현우에게 배달 일 묻기',()=>actions.delivery());
-  interact('outdoor',13.2,32.8,1.35,'나리에게 보건소 이용하기',()=>actions.clinic());
-  interact('outdoor',-3.3,30.8,1.35,'우진과 이야기하기',()=>actions.talk('woojin','우진'));
-  interact('outdoor',2.2,31.6,1.35,'서연과 이야기하기',()=>actions.talk('seoyeon','서연'));
-  interact('outdoor',21.3,31.9,1.45,'민석에게 씨앗버스 타기',()=>actions.transport());
+  interact('outdoor',-18.0,30.5,1.35,'민지와 이야기하기',()=>actions.resident('minji'));
+  interact('outdoor',-9.7,30.4,1.35,'준호와 이야기하기',()=>actions.resident('junho'));
+  interact('outdoor',9.7,30.3,1.35,'하늘과 이야기하기',()=>actions.resident('haneul'));
+  interact('outdoor',0.0,33.0,1.35,'도윤과 이야기하기',()=>actions.resident('doyun'));
+  interact('outdoor',4.4,30.9,1.35,'유나와 이야기하기',()=>actions.resident('yuna'));
+  interact('outdoor',18.0,30.2,1.35,'태호와 이야기하기',()=>actions.resident('taeho'));
+  interact('outdoor',-13.2,32.7,1.35,'소라와 이야기하기',()=>actions.resident('sora'));
+  interact('outdoor',-5.0,33.0,1.35,'현우와 이야기하기',()=>actions.resident('hyunwoo'));
+  interact('outdoor',13.2,32.8,1.35,'나리와 이야기하기',()=>actions.resident('nari'));
+  interact('outdoor',-3.3,30.8,1.35,'우진과 이야기하기',()=>actions.resident('woojin'));
+  interact('outdoor',2.2,31.6,1.35,'서연과 이야기하기',()=>actions.resident('seoyeon'));
+  interact('outdoor',21.3,31.9,1.45,'민석과 이야기하기',()=>actions.resident('minseok'));
   interact('outdoor',4.8,31.9,1.2,'도시 벤치에서 쉬기',()=>actions.bench());
   interact('outdoor',-4.8,31.9,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
 
