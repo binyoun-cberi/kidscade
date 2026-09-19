@@ -46,10 +46,21 @@ const ASSET={
   sink:P.furniture+'kitchen-sink.glb',
   cabinet:P.furniture+'kitchen-cabinet.glb',
   stove:P.furniture+'kitchen-stove.glb',
-  rug:P.furniture+'rug-rectangle.glb'
+  rug:P.furniture+'rug-rectangle.glb',
+  bridge:P.nature+'bridge-wood.glb',
+  mushroom:P.nature+'mushroom-red-group.glb',
+  logStack:P.nature+'log-stack.glb',
+  campfire:P.survival+'campfire-pit.glb',
+  petDog:'../assets/game/characters/pets/animal-dog.glb',
+  petCat:'../assets/game/characters/pets/animal-cat.glb',
+  petRabbit:'../assets/game/characters/pets/animal-bunny.glb',
+  petParrot:'../assets/game/characters/pets/animal-parrot.glb',
+  petPig:'../assets/game/characters/pets/animal-pig.glb'
 };
 
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
+renderer.autoClear=true;
+renderer.setClearColor(0xb9d8ee,1);
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -65,7 +76,8 @@ const camera=new THREE.OrthographicCamera(-10,10,6,-6,.1,100);
 camera.position.set(10,13,13);
 camera.lookAt(0,0,0);
 
-scene.add(new THREE.HemisphereLight(0xfff7e2,0x5d7b54,2.0));
+const hemi=new THREE.HemisphereLight(0xfff7e2,0x5d7b54,2.0);
+scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff0cc,3.4);
 sun.position.set(-10,18,11);
 sun.castShadow=true;
@@ -73,8 +85,8 @@ sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22;
 scene.add(sun);
 
-const outdoor=new THREE.Group(),indoor=new THREE.Group();
-scene.add(outdoor,indoor);indoor.visible=false;
+const outdoor=new THREE.Group(),indoor=new THREE.Group(),petLayer=new THREE.Group();
+scene.add(outdoor,indoor,petLayer);indoor.visible=false;
 
 const loader=new GLTFLoader();
 const modelCache=new Map();
@@ -272,7 +284,7 @@ const player={
   speed:5.1
 };
 function isBlocked(nx,nz){
-  const bounds=mode==='outdoor'?{x1:-18,x2:18,z1:-11,z2:11}:{x1:-6,x2:6,z1:-4.4,z2:4.6};
+  const bounds=mode==='outdoor'?{x1:-30,x2:30,z1:-22,z2:22}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
   return colliders[mode].some(c=>nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
