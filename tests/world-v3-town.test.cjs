@@ -115,11 +115,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=5/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=6/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=7/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
-  assert.match(html,/kidscade-world-v3\.js\?v=11/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=11/);
+  assert.match(html,/kidscade-world-v3\.js\?v=12/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=12/);
 });
 
 
@@ -259,4 +259,45 @@ test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
   }
   assert.match(runtime,/key==='taehoRetroTv'/);
   assert.match(runtime,/key==='soraBookcase'/);
+});
+
+
+test('World v3 map cleanup keeps town roads zones props and NPC anchors organized',()=>{
+  assert.match(city,/CITY_BOUNDS=\{x1:-26,x2:26,z1:20,z2:40\}/);
+  assert.match(city,/const roadX=\[-24,-20,-16,-12,-8,-4,4,8,12,16,20,24\]/);
+  assert.match(city,/city-road-cross/);
+  assert.match(city,/city-road-entry-25/);
+  assert.match(city,/city-road-entry-21/);
+  assert.doesNotMatch(city,/traffic-light\.glb/);
+  assert.match(city,/city-plaza/);
+  assert.match(city,/market-display/);
+  assert.match(city,/transport-corner/);
+  assert.match(city,/validateMapLayout/);
+  assert.match(city,/\[World v3 map overlap\]/);
+});
+
+test('resident AI movement keeps interaction anchors attached to moving NPC models',()=>{
+  assert.match(city,/interaction:null/);
+  assert.match(city,/function bind\(id,r,label,action\)/);
+  assert.match(city,/n\.interaction\.x=n\.object\.position\.x/);
+  assert.match(city,/n\.interaction\.z=n\.object\.position\.z/);
+  assert.match(city,/dayRoleTargets/);
+  assert.match(city,/eveningSlots/);
+  assert.match(city,/yuna:\{x:11\.8,z:8\.0/);
+  assert.match(city,/woojin:\{x:-19\.6,z:4\.0/);
+  assert.match(city,/seoyeon:\{x:-13\.6,z:-4\.35/);
+});
+
+test('Cube Pets are separated into owned yard companions and habitat-based wild animals',()=>{
+  assert.match(runtime,/CITY_LIMITS=\{x1:-26,x2:26,z1:20,z2:40\}/);
+  assert.match(runtime,/function isCityArea\(x,z\)/);
+  for(const habitat of ["pond","farm-pasture","deep-forest","riverbank"])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
+  assert.match(runtime,/pet-yard-sign/);
+  assert.match(runtime,/Cube Pets 마당 보기/);
+  assert.match(runtime,/Farm animals are grouped in a small pasture/);
+  assert.match(runtime,/if\(isCityArea\(nx,nz\)\)/);
+  assert.match(runtime,/a\.interaction\.x=nx/);
+  assert.match(runtime,/a\.interaction\.z=nz/);
+  assert.match(runtime,/const LAYOUT_VERSION=3/);
+  assert.match(runtime,/if\(z>20\)zoneEl\.textContent='씨앗마을 중심가/);
 });
