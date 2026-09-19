@@ -4,6 +4,7 @@ import {buildKidscadeCity} from './kidscade-world-city.js?v=13';
 import {createTownEconomy} from './kidscade-world-economy.js?v=9';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
+import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,zoneAt,isCityArea,isTravelCorridor} from './kidscade-world-grid.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -436,21 +437,23 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 
-const LAYOUT_VERSION=5;
+const LAYOUT_VERSION=6;
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
-  x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-8.4,
-  z:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3z))?Number(save.player.v3z):1.7,
+  x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-10,
+  z:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3z))?Number(save.player.v3z):2.0,
   speed:5.1
 };
 const TRAVEL_POINTS={
-  home:{x:-8.8,z:-1.55,name:'집 앞'},
-  forest:{x:-19.0,z:.7,name:'깊은 숲 입구'},
-  quarry:{x:18.5,z:.7,name:'돌산 입구'},
-  camp:{x:-1.6,z:15.2,name:'남쪽 야영지'},
-  city:{x:0,z:23.6,name:'씨앗마을 중심가'},
-  river:{x:0,z:-15.0,name:'북쪽 강가'}
+  home:{x:-10,z:2.0,name:'집 구역'},
+  forest:{x:-25.5,z:0,name:'깊은 숲'},
+  quarry:{x:25.5,z:0,name:'광산'},
+  camp:{x:-30,z:16.0,name:'야영지'},
+  city:{x:-10,z:13.0,name:'씨앗마을 상점가'},
+  river:{x:-10,z:-14.0,name:'북쪽 강가'},
+  ranch:{x:10,z:-14.0,name:'목장'},
+  beach:{x:-30,z:-14.0,name:'해변가'}
 };
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
@@ -475,9 +478,9 @@ function showStarterHintOnce(){
   setTimeout(()=>toast('첫 도구 만들기: 집 주변 나뭇가지·작은 돌을 맨손으로 줍거나, 집 앞 초보자 보급상자를 열어보세요.'),650);
 }
 function isBlocked(nx,nz){
-  const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
-  if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
-  if(mode==='outdoor'&&isProtectedRoute(nx,nz))return false;
+  const bounds=mode==='outdoor'?WORLD_BOUNDS:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
+  if(nx<bounds.x1+.25||nx>bounds.x2-.25||nz<bounds.z1+.25||nz>bounds.z2-.25)return true;
+  if(mode==='outdoor'&&isTravelCorridor(nx,nz))return false;
   return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
 let near=null;
@@ -491,22 +494,13 @@ function nearestInteraction(){
 function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confirm();return;}if(near)near.action()}
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
-  const x=player.x,z=player.z;
-  if(z>20)zoneEl.textContent='씨앗마을 중심가 · 장보기·일·놀이';
-  else if(x<-18)zoneEl.textContent='깊은 숲 · 목재·버섯';
-  else if(x>18)zoneEl.textContent='돌산 · 돌·철광석';
-  else if(z<-12)zoneEl.textContent='북쪽 강가 · 다리';
-  else if(z>12)zoneEl.textContent='남쪽 야영지 · 모닥불';
-  else if(x<-8.5&&z>3.0)zoneEl.textContent='연못 · 낚시터';
-  else if(x>12.2&&z>5.2)zoneEl.textContent='작업장 · 제작 구역';
-  else if(x>3.0&&x<12.2&&z>2.7&&z<8.6)zoneEl.textContent='농장 · 자유 재배 구역';
-  else if(x<-5.5&&z<-.8)zoneEl.textContent='집 앞 · 마당';
-  else zoneEl.textContent='마을길 · 안전 지역';
+  const cell=zoneAt(player.x,player.z);
+  zoneEl.textContent=cell?(cell.name+' · '+cell.hint):'구역 사이 길';
 }
 function setMode(next){
   resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
-  else{player.x=-8.8;player.z=-1.55;zoneEl.textContent='집 앞 · 3D 마을';toast('집 밖으로 나왔어요.')}
+  else{player.x=-10;player.z=-1.8;zoneEl.textContent='집 구역 · 집·연못·펫 마당';toast('집 밖으로 나왔어요.')}
   setAvatarAction('smile',520);near=null;
 }
 function spendTool(kind,item){
@@ -604,19 +598,9 @@ function updateCropVisuals(){
 }
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
-function isProtectedRoute(x,z){
-  return x>-1.85&&x<1.85&&z>5.6&&z<32.2;
-}
-function isPathClearance(x,z){
-  if(isProtectedRoute(x,z))return true;
-  if(z>-.55&&z<1.95&&x>-26.0&&x<26.0)return true;      // main east-west village path
-  if(x>-1.55&&x<1.55&&z>-15.2&&z<6.0)return true;      // north river route
-  if(x>-10.25&&x<-7.35&&z>-5.8&&z<1.9)return true;     // home connector
-  if(x>9.2&&x<12.4&&z>-5.7&&z<1.8)return true;         // farm-house connector
-  return false;
-}
+function isPathClearance(x,z){return isTravelCorridor(x,z)}
 function addNatureCollider(x,z,w,d){
-  if(isPathClearance(x,z))return null;
+  if(isTravelCorridor(x,z))return null;
   return addColliderFor('outdoor',x,z,w,d);
 }
 const groundPickups=[];
@@ -650,98 +634,71 @@ async function addGroundPickup(id,kind,x,z){
   else prog().groundPickups[id]=0;
 }
 async function buildOutdoor(){
-  // Single lawn surface. The old plane + box top shared Y=0 and caused visible Z-fighting.
-  box(outdoor,0,5,82,96,.26,0x7caf63,-.26);
+  // v6 uses a strict 20x20 square grid. A dark sub-base sits below all zone tiles.
+  box(outdoor,0,10,80,80,.24,0x668858,-.30);
+  for(const cell of Object.values(WORLD_GRID)){
+    box(outdoor,cell.cx,cell.cz,19.6,19.6,.08,cell.color,-.08);
+  }
 
-  // Distinct connected biomes around the safe home region.
-  plane(outdoor,-24,0,12,44,0x4f8050,.015);       // deep forest
-  plane(outdoor,24,0,12,44,0x8e8b73,.015);        // quarry
-  plane(outdoor,0,17,34,9,0x91a95d,.017);         // camp meadow
-  plane(outdoor,0,-19,34,5,0x6d9c69,.017);        // north riverbank
-  const river=new THREE.Mesh(new THREE.PlaneGeometry(36,5.4),new THREE.MeshStandardMaterial({color:0x579fc1,roughness:.25,metalness:.03,transparent:true,opacity:.94}));
-  river.rotation.x=-Math.PI/2;river.position.set(0,.035,-15.9);river.receiveShadow=true;outdoor.add(river);
+  // Standard 3m travel corridors always meet at the midpoint of square edges.
+  box(outdoor,0,0,80,2.8,.08,0xd8c79c,.015);          // forest-home-farm-quarry
+  box(outdoor,-30,-10,2.8,40,.08,0xd2c299,.015);      // beach-forest-camp
+  box(outdoor,-10,-10,2.8,40,.08,0xd2c299,.015);      // river-home-city
+  box(outdoor,10,-10,2.8,40,.08,0xd2c299,.015);       // ranch-farm-city
 
-  // Main village path plus routes out to the four survival regions.
-  box(outdoor,0,.7,31,2.0,.10,0xd8c79c,.03);
-  box(outdoor,-8.8,-2.2,2.1,6.0,.10,0xd8c79c,.03);
-  box(outdoor,10.8,-2.5,2.1,5.5,.10,0xd8c79c,.03);
-  box(outdoor,-10.8,4.0,1.8,5.8,.10,0xd8c79c,.03);
-  box(outdoor,14.6,7.2,4.8,3.6,.10,0xbda873,.025);
-  box(outdoor,-20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
-  box(outdoor,20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
-  // One obvious continuous road from the safe area to Seed Town.
-  box(outdoor,0,17.25,3.0,22.5,.10,0xd0c297,.035);
-  box(outdoor,0,-10.8,1.8,8.0,.09,0xc6b88e,.03);
-
-  // Signposts make the connected regions discoverable without a map menu.
-  await Promise.all([
-    addModel(outdoor,ASSET.signpost,{x:-17.0,z:2.35,w:.8,h:1.8,d:.8,rot:-Math.PI/2}),
-    addModel(outdoor,ASSET.signpost,{x:17.0,z:2.35,w:.8,h:1.8,d:.8,rot:Math.PI/2}),
-    addModel(outdoor,ASSET.signpost,{x:2.2,z:-11.1,w:.8,h:1.8,d:.8,rot:Math.PI}),
-    addModel(outdoor,ASSET.signpost,{x:2.35,z:11.2,w:.8,h:1.8,d:.8,rot:0})
-  ]);
-  interact('outdoor',-17,2.35,1.2,'표지판 읽기',()=>toast('← 깊은 숲 · 목재와 버섯'));
-  interact('outdoor',17,2.35,1.2,'표지판 읽기',()=>toast('→ 돌산 · 돌과 철광석'));
-  interact('outdoor',2.2,-11.1,1.2,'표지판 읽기',()=>toast('↑ 북쪽 강가 · 나무다리'));
-  interact('outdoor',2.35,11.2,1.2,'표지판 읽기',()=>toast('↓ 남쪽 야영지 · 씨앗마을'));
-
-  // Pond and a calmer resting/garden area on the west side.
+  // Home square: house, pond, starter chest and pet yard.
   const pond=new THREE.Mesh(
-    new THREE.CylinderGeometry(3.15,3.3,.13,48),
+    new THREE.CylinderGeometry(3.05,3.18,.12,48),
     new THREE.MeshStandardMaterial({color:0x67b5d3,roughness:.26,metalness:.03,transparent:true,opacity:.94})
   );
-  pond.position.set(-12.4,.04,6.5);pond.receiveShadow=true;outdoor.add(pond);
+  pond.position.set(-14.0,.055,5.0);pond.receiveShadow=true;outdoor.add(pond);
   const pondRim=new THREE.Mesh(
-    new THREE.RingGeometry(3.15,3.48,48),
+    new THREE.RingGeometry(3.05,3.38,48),
     new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide})
   );
-  pondRim.rotation.x=-Math.PI/2;pondRim.position.set(-12.4,.115,6.5);outdoor.add(pondRim);
+  pondRim.rotation.x=-Math.PI/2;pondRim.position.set(-14.0,.12,5.0);outdoor.add(pondRim);
 
-  // River is blocked except at the wooden bridge.
-  collider('outdoor',-10,-15.9,16,5.0);
-  collider('outdoor',10,-15.9,16,5.0);
-  await addModel(outdoor,ASSET.bridge,{x:0,z:-15.9,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
-
-  // Home lot, farm house/barn, workshop.
   await Promise.all([
-    addModel(outdoor,ASSET.house,{x:-8.8,z:-5.6,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
-    addModel(outdoor,ASSET.farmHouse,{x:10.8,z:-6.0,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
-    addModel(outdoor,ASSET.workbench,{x:15.2,z:7.35,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
-    addModel(outdoor,ASSET.chest,{x:13.55,z:7.55,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'}),
-    addModel(outdoor,ASSET.chest,{x:-4.3,z:-1.4,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
+    addModel(outdoor,ASSET.house,{x:-10,z:-5.5,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
+    addModel(outdoor,ASSET.chest,{x:-4.0,z:-4.8,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
   ]);
-  addColliderFor('outdoor',-8.8,-5.6,5.8,4.4);
-  addColliderFor('outdoor',10.8,-6.0,4.0,3.3);
-  addColliderFor('outdoor',15.2,7.35,1.6,1.0);
-  addColliderFor('outdoor',13.55,7.55,1.0,.8);
-  interact('outdoor',-8.8,-2.45,1.8,'집에 들어가기',()=>setMode('indoor'));
-  interact('outdoor',15.2,6.45,1.45,'제작대 사용하기',workbenchPanel);
-  interact('outdoor',13.55,6.75,1.35,'보관 상자 보기',inventoryPanel);
-  interact('outdoor',-4.3,-1.4,1.3,'초보자 보급 상자 열기',claimStarterKit);
-  await addModel(outdoor,ASSET.signpost,{x:-2.5,z:1.1,w:.72,h:1.55,d:.72,rot:.15,name:'starter-guide-sign'});
-  interact('outdoor',-2.5,1.1,1.15,'초보자 안내 읽기',()=>{
-    openPanel('<h2>처음 살아남기</h2><div class="grid"><div class="item"><b>1. 맨손 채집</b><div>집 주변의 나뭇가지와 작은 돌을 주워요.</div></div><div class="item"><b>2. 제작</b><div>목재 5 · 돌 5를 모으면 돌도끼와 돌곡괭이를 둘 다 만들 수 있어요.</div></div><div class="item"><b>3. 본격 채집</b><div>도끼로 나무를 베고 곡괭이로 바위를 캐요.</div></div></div><p style="font-size:12px">자원이 모자라면 집 앞 보급상자를 한 번 사용할 수 있어요.</p>');
+  addColliderFor('outdoor',-10,-5.5,5.8,4.4);
+  interact('outdoor',-10,-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
+  interact('outdoor',-4.0,-4.8,1.3,'초보자 보급 상자 열기',claimStarterKit);
+  interact('outdoor',-14.0,6.3,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+  await addModel(outdoor,ASSET.signpost,{x:-3.6,z:2.1,w:.72,h:1.55,d:.72,rot:.15,name:'starter-guide-sign'});
+  interact('outdoor',-3.6,2.1,1.15,'초보자 안내 읽기',()=>{
+    openPanel('<h2>처음 살아남기</h2><div class="grid"><div class="item"><b>1. 맨손 채집</b><div>집 구역의 나뭇가지와 작은 돌을 주워요.</div></div><div class="item"><b>2. 제작</b><div>오른쪽 농장 구역의 제작대에서 도구를 만들어요.</div></div><div class="item"><b>3. 탐험</b><div>왼쪽 숲과 오른쪽 광산으로 나가 자원을 모아요.</div></div></div>');
   });
-  interact('outdoor',-10.8,6.1,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
 
-  // Starter loop: hand-pickable branches and pebbles prevent tool/resource deadlocks.
   await Promise.all([
-    addGroundPickup('starter-wood-1','wood',-5.8,2.8),
-    addGroundPickup('starter-wood-2','wood',-3.6,5.0),
-    addGroundPickup('starter-wood-3','wood',1.8,3.1),
-    addGroundPickup('starter-wood-4','wood',3.3,7.2),
-    addGroundPickup('starter-wood-5','wood',-7.0,7.6),
-    addGroundPickup('starter-wood-6','wood',9.1,8.8),
-    addGroundPickup('starter-stone-1','stone',-1.2,4.7),
-    addGroundPickup('starter-stone-2','stone',2.0,6.0),
-    addGroundPickup('starter-stone-3','stone',5.0,8.0),
-    addGroundPickup('starter-stone-4','stone',-5.1,8.4),
-    addGroundPickup('starter-stone-5','stone',8.2,1.9),
-    addGroundPickup('starter-stone-6','stone',-9.2,9.0)
+    addGroundPickup('starter-wood-1','wood',-16.5,2.7),
+    addGroundPickup('starter-wood-2','wood',-13.0,1.9),
+    addGroundPickup('starter-wood-3','wood',-7.0,5.7),
+    addGroundPickup('starter-wood-4','wood',-4.5,6.8),
+    addGroundPickup('starter-wood-5','wood',-16.2,7.5),
+    addGroundPickup('starter-wood-6','wood',-6.0,-7.0),
+    addGroundPickup('starter-stone-1','stone',-17.0,5.8),
+    addGroundPickup('starter-stone-2','stone',-12.0,7.8),
+    addGroundPickup('starter-stone-3','stone',-6.2,3.8),
+    addGroundPickup('starter-stone-4','stone',-4.2,-6.8),
+    addGroundPickup('starter-stone-5','stone',-15.8,-7.4),
+    addGroundPickup('starter-stone-6','stone',-7.6,7.8)
   ]);
 
-  // Six reusable plots: every empty plot can grow any unlocked crop.
-  const plotPos=[[4.8,4.25],[7.4,4.25],[10.0,4.25],[4.8,7.0],[7.4,7.0],[10.0,7.0]];
+  // Farm square: farmhouse, six reusable plots and a dedicated workshop corner.
+  await Promise.all([
+    addModel(outdoor,ASSET.farmHouse,{x:10,z:-5.7,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
+    addModel(outdoor,ASSET.workbench,{x:16.2,z:6.6,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
+    addModel(outdoor,ASSET.chest,{x:14.2,z:7.0,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
+  ]);
+  addColliderFor('outdoor',10,-5.7,4.0,3.3);
+  addColliderFor('outdoor',16.2,6.6,1.6,1.0);
+  addColliderFor('outdoor',14.2,7.0,1.0,.8);
+  interact('outdoor',16.2,5.7,1.45,'제작대 사용하기',workbenchPanel);
+  interact('outdoor',14.2,6.2,1.35,'보관 상자 보기',inventoryPanel);
+
+  const plotPos=[[4.5,3.2],[7.2,3.2],[9.9,3.2],[4.5,6.0],[7.2,6.0],[9.9,6.0]];
   plotPos.forEach(([x,z],i)=>{
     box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
     for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
@@ -750,94 +707,88 @@ async function buildOutdoor(){
     interact('outdoor',x,z,1.35,'밭 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
   });
   updateCropVisuals();
-
-  // Farm fence separates the six plots from the village path while leaving an entrance.
-  for(const [x,z,rot] of [[4.3,2.75,0],[6.7,2.75,0],[9.1,2.75,0],[11.5,2.75,0],[3.25,4.9,Math.PI/2],[3.25,7.15,Math.PI/2],[11.55,4.9,Math.PI/2],[11.55,7.15,Math.PI/2]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.2,h:.95,d:.33,rot});
+  for(const [x,z,rot] of [[3.2,1.7,0],[5.5,1.7,0],[7.8,1.7,0],[10.1,1.7,0],[11.5,3.9,Math.PI/2],[11.5,6.2,Math.PI/2],[3.1,4.0,Math.PI/2],[3.1,6.3,Math.PI/2]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.15,h:.9,d:.30,rot});
   }
 
-  // Trees form a readable perimeter/woodland rather than random clutter.
-  const treePos=[
-    [-17,-9],[-14,-9],[-4,-9],[1,-9],[5,-9],[16,-9],
-    [-18,-4],[-18,8],[-7,10],[17,3],[17,-3],
-    [-4,6.8]
-  ];
+  // Waterfront square: one river entirely contained in its cell, with a centered bridge.
+  const river=new THREE.Mesh(new THREE.PlaneGeometry(19.3,5.5),new THREE.MeshStandardMaterial({color:0x579fc1,roughness:.25,metalness:.03,transparent:true,opacity:.94}));
+  river.rotation.x=-Math.PI/2;river.position.set(-10,.06,-20);river.receiveShadow=true;outdoor.add(river);
+  collider('outdoor',-16.0,-20,7.0,5.0);
+  collider('outdoor',-4.0,-20,7.0,5.0);
+  await addModel(outdoor,ASSET.bridge,{x:-10,z:-20,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
+  await addModel(outdoor,ASSET.signpost,{x:-7.6,z:-13.2,w:.75,h:1.6,d:.75,rot:0,name:'river-sign'});
+  interact('outdoor',-7.6,-13.2,1.2,'강가 안내 읽기',()=>toast('북쪽 강가 · 다리와 비버 서식지'));
+
+  // Beach square: a clean sand cell with a shoreline and a second fishing spot.
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(19.2,5.0),new THREE.MeshStandardMaterial({color:0x62a8c9,roughness:.2,metalness:.02,transparent:true,opacity:.95}));
+  sea.rotation.x=-Math.PI/2;sea.position.set(-30,.055,-27.1);sea.receiveShadow=true;outdoor.add(sea);
+  box(outdoor,-30,-23.9,19.0,1.0,.04,0xe7d7a4,.005);
+  interact('outdoor',-30,-24.2,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+  await addModel(outdoor,ASSET.logStack,{x:-35.5,z:-16.0,w:2.2,h:1.0,d:1.15,rot:.25});
+
+  // Deep forest square: dense but kept inside its 20x20 cell.
   const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
-  for(let i=0;i<treePos.length;i++){
-    const [x,z]=treePos[i];if(isPathClearance(x,z))continue;
-    await addModel(outdoor,treeAssets[i%3],{x,z,w:2.4,h:3.8+(i%2)*.5,d:2.4,rot:(i%5)*.42});
-    addNatureCollider(x,z,.7,.7);
-    interact('outdoor',x,z,1.3,'나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
-  }
-
-  // Rocks are grouped as a small quarry near the eastern edge.
-  const rocks=[[15.1,1.8],[16.0,4.1],[14.7,7.2],[-15.8,7.7]];
-  const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
-  for(let i=0;i<rocks.length;i++){
-    const [x,z]=rocks[i];if(isPathClearance(x,z))continue;
-    await addModel(outdoor,rockAssets[i%3],{x,z,w:1.45,h:1.1,d:1.4,rot:i*.65});
-    addNatureCollider(x,z,.82,.68);
-    interact('outdoor',x,z,1.2,'바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
-  }
-
-  // Deep forest: denser timber, fallen logs and edible mushrooms.
-  const forestTrees=[[-27,-10],[-24,-8],[-21,-11],[-28,-4],[-24,-2],[-21,2],[-28,6],[-24,9],[-21,12],[-27,16],[-22,18]];
+  const forestTrees=[[-36,-7],[-32,-8],[-27,-7],[-36,-3],[-32,-3],[-26,-2],[-36,4],[-32,6],[-26,5],[-35,8],[-28,8]];
   for(let i=0;i<forestTrees.length;i++){
-    const [x,z]=forestTrees[i];if(isPathClearance(x,z))continue;
+    const [x,z]=forestTrees[i];if(isTravelCorridor(x,z))continue;
     await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
     addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
   }
-  for(const [x,z] of [[-25,4],[-22,6.5],[-27,12],[-23,-5]]){
+  for(const [x,z] of [[-35,2.8],[-31,4.8],[-27,3.2],[-34,-5.2]]){
     await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
     interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
   }
-  await addModel(outdoor,ASSET.logStack,{x:-24,z:14.8,w:2.4,h:1.1,d:1.2,rot:.2});
+  await addModel(outdoor,ASSET.logStack,{x:-35,z:7.2,w:2.4,h:1.1,d:1.2,rot:.2});
 
-  // Quarry: concentrated stone and rarer iron ore.
-  const quarryRocks=[[21,-8],[25,-10],[28,-6],[22,-2],[26,1],[28,5],[22,9],[26,12],[28,16]];
+  // Quarry square: all mining nodes stay inside x=20..40 / z=-10..10.
+  const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
+  const quarryRocks=[[24,-6],[28,-7],[33,-6],[36,-3],[24,-1],[29,2],[35,2],[24,6],[30,7],[36,6]];
   for(let i=0;i<quarryRocks.length;i++){
-    const [x,z]=quarryRocks[i];if(isPathClearance(x,z))continue;
+    const [x,z]=quarryRocks[i];if(isTravelCorridor(x,z))continue;
     await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});
     addNatureCollider(x,z,.9,.75);
     if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
-    else interact('outdoor',x,z,1.25,'돌산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
+    else interact('outdoor',x,z,1.25,'광산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
   }
 
-  // Southern camp: a safe outdoor cooking/rest point for long trips.
-  await addModel(outdoor,ASSET.campfire,{x:-3.2,z:16.7,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
-  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(-3.2,1.4,16.7);fireLight.userData.campfire=true;outdoor.add(fireLight);
-  interact('outdoor',-3.2,16.7,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
-  interact('outdoor',-1.4,16.7,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+  // Camp square lives left of the city instead of floating in the city approach.
+  await addModel(outdoor,ASSET.campfire,{x:-31.5,z:20,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
+  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(-31.5,1.4,20);fireLight.userData.campfire=true;outdoor.add(fireLight);
+  interact('outdoor',-31.5,20,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
+  interact('outdoor',-28.8,20,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+  for(const [x,z] of [[-36,15],[-34,25],[-26,16],[-25,25]])await addModel(outdoor,ASSET.pine,{x,z,w:2.4,h:4.0,d:2.4,rot:.2});
 
-  // Home flower bed and pond-side flowers.
-  for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
+  // Small home/farm decorations stay inside their owning squares.
+  for(const [x,z] of [[-16,-5],[-15.2,-4.4],[-6.0,-5.0],[-13.8,7.4],[-6.5,6.7]]){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
 
-  await addModel(outdoor,ASSET.signpost,{x:2.65,z:20.65,w:.8,h:1.8,d:.8,rot:.15,name:'city-sign'});
-  interact('outdoor',2.65,20.65,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 · 상업가 · 광장 · 공공시설 · 버스정류장'));
+  // Square-edge wayfinding. Signs sit beside, never on, the 3m connectors.
+  const signs=[
+    [-21.5,2.2,-Math.PI/2,'← 깊은 숲'],
+    [1.8,2.2,Math.PI/2,'→ 농장'],
+    [21.8,2.2,Math.PI/2,'→ 광산'],
+    [-7.7,-11.8,Math.PI,'↑ 북쪽 강가'],
+    [12.3,-11.8,Math.PI,'↑ 목장'],
+    [-27.7,-11.8,Math.PI,'↑ 해변'],
+    [-27.7,11.8,0,'↓ 야영지'],
+    [-7.7,11.8,0,'↓ 씨앗마을 상점가'],
+    [12.3,11.8,0,'↓ 씨앗마을 광장']
+  ];
+  for(const [x,z,rot,label] of signs){
+    await addModel(outdoor,ASSET.signpost,{x,z,w:.75,h:1.6,d:.75,rot});
+    interact('outdoor',x,z,1.1,'표지판 읽기',()=>toast(label));
+  }
 
   cityRuntime=await buildKidscadeCity({
-    parent:outdoor,
-    addModel,
-    box,
-    plane,
-    interact,
-    collider,
-    loadGLB,
-    loadGLTF,
-    prepModel,
+    parent:outdoor,addModel,box,plane,interact,collider,loadGLB,loadGLTF,prepModel,
     actions:{
-      resident:id=>townEconomy?.resident(id),
-      shop:(kind,name)=>townEconomy?.shop(kind,name),
-      jobs:()=>townEconomy?.jobs(),
-      delivery:()=>townEconomy?.delivery(),
-      talk:(id,name)=>townEconomy?.talk(id,name),
-      arcade:()=>townEconomy?.arcade(),
-      library:()=>townEconomy?.library(),
-      clinic:()=>townEconomy?.clinic(),
-      transport:()=>townEconomy?.transport(),
-      bench:()=>townEconomy?.bench()
+      resident:id=>townEconomy?.resident(id),shop:(kind,name)=>townEconomy?.shop(kind,name),
+      jobs:()=>townEconomy?.jobs(),delivery:()=>townEconomy?.delivery(),
+      talk:(id,name)=>townEconomy?.talk(id,name),arcade:()=>townEconomy?.arcade(),
+      library:()=>townEconomy?.library(),clinic:()=>townEconomy?.clinic(),
+      transport:()=>townEconomy?.transport(),bench:()=>townEconomy?.bench()
     },
     getGameTime:()=>prog().survival.time,
     getPlayerPosition:()=>({x:player.x,z:player.z})
