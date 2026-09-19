@@ -480,6 +480,7 @@ function showStarterHintOnce(){
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?WORLD_BOUNDS:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1+.25||nx>bounds.x2-.25||nz<bounds.z1+.25||nz>bounds.z2-.25)return true;
+  if(mode==='outdoor'&&!zoneAt(nx,nz)&&!isTravelCorridor(nx,nz))return true;
   if(mode==='outdoor'&&isTravelCorridor(nx,nz))return false;
   return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
