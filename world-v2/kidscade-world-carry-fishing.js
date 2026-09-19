@@ -31,6 +31,8 @@ function saveInventory(world){const st=ensureState(world);if(!K.Storage)return;c
 function nameOf(item){return ITEM[item]?.name||item;}
 
 function drawItem(c,item,x,y,scale=1){
+  const modelKey=item==='wood'?'resourceWood':item==='stone'?'resourceStone':null;
+  if(modelKey&&K.ModelSprites?.drawAt?.(modelKey,c,x,y,48*scale,48*scale))return;
   const m=ITEM[item]||ITEM.wood;c.save();c.translate(x,y);c.scale(scale,scale);c.lineWidth=2;c.strokeStyle='#332f27';
   if(item==='wood'){
     c.fillStyle=m.color;c.fillRect(-18,-8,36,16);c.strokeRect(-18,-8,36,16);c.fillStyle=m.accent;c.fillRect(-13,-5,22,4);c.beginPath();c.arc(14,0,6,0,Math.PI*2);c.stroke();
@@ -69,7 +71,12 @@ function dropHeld(world){
   st.held=null;tone(260,.07,'triangle',.025);toast(`${nameOf(h.item)}을(를) 내려놓았어요.`);return true;
 }
 function deposit(world){const st=ensureState(world),h=st.held;if(!h){const parts=Object.entries(st.inventory).filter(([,v])=>v>0).map(([k,v])=>`${nameOf(k)} ${v}`).join(' · ');toast(parts||'보관 상자가 비어 있어요.');return false;}st.inventory[h.item]=(st.inventory[h.item]||0)+h.qty;if(h.source)world.entities.remove(h.source.id);st.held=null;saveInventory(world);tone(840,.09,'square',.025);toast(`${nameOf(h.item)} ${h.qty}개를 보관했어요.`);return true;}
-function chestRender(c,e,w){const st=ensureState(w);c.save();c.imageSmoothingEnabled=false;c.fillStyle='#6c472f';c.fillRect(e.x,e.y+12,e.w,e.h-12);c.strokeStyle='#2f2a24';c.lineWidth=3;c.strokeRect(e.x+1.5,e.y+13.5,e.w-3,e.h-15);c.fillStyle='#9a7045';c.fillRect(e.x+4,e.y+5,e.w-8,14);c.strokeRect(e.x+4.5,e.y+5.5,e.w-9,12);c.fillStyle='#d2ae67';c.fillRect(e.centerX-5,e.y+23,10,9);if(st.held){c.globalAlpha=.9;drawItem(c,st.held.item,e.centerX,e.y-8,.55);}c.restore();}
+function chestRender(c,e,w){
+  const st=ensureState(w),sprites=K.ModelSprites;
+  const fallback=(ctx,en)=>{ctx.save();ctx.imageSmoothingEnabled=false;ctx.fillStyle='#6c472f';ctx.fillRect(en.x,en.y+12,en.w,en.h-12);ctx.strokeStyle='#2f2a24';ctx.lineWidth=3;ctx.strokeRect(en.x+1.5,en.y+13.5,en.w-3,en.h-15);ctx.fillStyle='#9a7045';ctx.fillRect(en.x+4,en.y+5,en.w-8,14);ctx.strokeRect(en.x+4.5,en.y+5.5,en.w-9,12);ctx.fillStyle='#d2ae67';ctx.fillRect(en.centerX-5,en.y+23,10,9);ctx.restore();};
+  if(sprites?.draw)sprites.draw('storageChest',c,e,fallback);else fallback(c,e);
+  if(st.held){c.save();c.globalAlpha=.92;drawItem(c,st.held.item,e.centerX,e.y-12,.55);c.restore();}
+}
 function installChest(world){if(world.entities.get('carry-storage-chest'))return;const inside=isInside(world);world.spawn({id:'carry-storage-chest',type:'storage',x:2440,y:855,w:72,h:54,solid:true,visible:!inside,active:!inside,tags:['outdoor','storage'],render:chestRender,interactionRadius:108,interaction:{label:'보관 상자 보기',action(t,w){deposit(w);}}});}
 
 function fishingSpotRender(c,e){c.save();c.imageSmoothingEnabled=false;c.fillStyle='#765033';c.fillRect(e.x,e.y+18,e.w,12);for(let i=0;i<4;i++)c.fillRect(e.x+8+i*24,e.y+12,8,28);c.fillStyle='#c9ad72';c.fillRect(e.x+5,e.y+16,e.w-10,4);c.restore();}
