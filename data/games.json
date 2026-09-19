@@ -82,12 +82,12 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=6",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=7",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
       "description": "2D 픽셀 잠수 탐사 v5.1! 산호 선반·해초 협곡·침수 유적·난파선 암초·심해 절벽을 실제로 헤엄쳐 통과하며 생물을 촬영하고 표본·유물을 회수해 장비와 도감을 성장시키는 다이버 직업 체험 게임.",
-      "scoreKey": "deep_diver_2d_v5"
+      "scoreKey": "deep_diver_2d_v7"
     },
     {
       "id": "math_timing_lcd",
