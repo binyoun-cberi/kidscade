@@ -181,8 +181,12 @@ function toast(text) {
 function updateStockUI(){
   for(const ing of INGREDIENTS){
     const label=els.labels.querySelector(`[data-id="${ing.id}"]`);
-    const left=state.stock[ing.id]??0;
-    if(label){label.textContent=ing.name+' · '+left;label.classList.toggle('out',left<=0)}
+    const left=state.stock[ing.id]??0,unlocked=isIngredientUnlocked(ing.id);
+    if(label){
+      label.textContent=unlocked?ing.name+' · '+left:`DAY ${ing.unlockDay} · ${ing.name}`;
+      label.classList.toggle('out',unlocked&&left<=0);
+      label.classList.toggle('locked',!unlocked);
+    }
   }
   scene?.refreshStockVisuals?.();
 }
@@ -195,6 +199,11 @@ function updateReadout() {
   els.reputation.textContent=Math.round(state.reputation);
   els.dayTarget.textContent=state.dayTarget;
   els.queue.textContent=state.queue;
+  if(els.eventBanner){
+    const e=state.event||DAILY_EVENTS[0];
+    els.eventBanner.hidden=false;
+    els.eventBanner.innerHTML=`<b>${e.title}</b><span>${e.desc}</span>`;
+  }
   updateStockUI();
 }
 function setPhase(phase) {
@@ -209,8 +218,9 @@ function setPhase(phase) {
 }
 function setOrder(order) {
   state.order=order;
-  els.orderTitle.textContent=order.title;
-  els.orderText.textContent=order.text+` · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
+  const type=order.customerType||CUSTOMER_TYPES[0];
+  els.orderTitle.textContent=type.label+' · '+order.title;
+  els.orderText.textContent=order.text+` · ${type.desc} · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
   state.patience=100;state.customerSettled=false;
   els.patienceFill.style.transform='scaleX(1)';
 }
@@ -279,12 +289,9 @@ class SelfBarScene {
   }
   makeShelf(){
     this.shelfGroup=new THREE.Group();this.scene.add(this.shelfGroup);
-    const positions=[
-      [-3.2,-1.85],[-1.6,-1.85],[0,-1.85],[1.6,-1.85],[3.2,-1.85],
-      [-2.4,-.35],[-.8,-.35],[.8,-.35],[2.4,-.35]
-    ];
+    const cols=5,xs=[-3.2,-1.6,0,1.6,3.2],zs=[-2.05,-.72,.61];
     INGREDIENTS.forEach((ing,i)=>{
-      const [x,z]=positions[i];
+      const x=xs[i%cols],z=zs[Math.floor(i/cols)];
       const tray=new THREE.Mesh(new THREE.BoxGeometry(1.42,.22,1.05),new THREE.MeshStandardMaterial({color:0x71503a,roughness:.75,metalness:.05}));
       tray.position.set(x,-.02,z);tray.receiveShadow=true;tray.userData.ingredientId=ing.id;this.shelfGroup.add(tray);
       const inner=new THREE.Mesh(new THREE.BoxGeometry(1.23,.12,.88),new THREE.MeshStandardMaterial({color:0xe5d1b8,roughness:.9}));
@@ -301,7 +308,7 @@ class SelfBarScene {
     this.shelfGroup.add(obj);
   }
   refreshStockVisuals(){
-    for(const [id,obj] of this.displayItems)obj.visible=(state.stock[id]??0)>0;
+    for(const [id,obj] of this.displayItems)obj.visible=isIngredientUnlocked(id)&&(state.stock[id]??0)>0;
   }
   async cloneModel(file,size=.7){
     let source=this.cache.get(file);
@@ -360,6 +367,8 @@ class SelfBarScene {
     if(state.phase!=='shopping')return;
     this.setPointer(e);
     const id=this.getIngredientHit();if(!id)return;
+    if(!isIngredientUnlocked(id)){toast((ingredientById(id)?.name||'재료')+` · DAY ${ingredientById(id)?.unlockDay||'?'}에 해금`);return}
+    if((state.stock[id]||0)<=0){toast((ingredientById(id)?.name||'재료')+' 품절! 영업 후 재고를 보충하세요');return}
     e.preventDefault();this.canvas.setPointerCapture?.(e.pointerId);
     this.dragId=id;this.dragStart={x:e.clientX,y:e.clientY};state.dragging=true;this.canvas.classList.add('dragging');
     const ing=ingredientById(id);
