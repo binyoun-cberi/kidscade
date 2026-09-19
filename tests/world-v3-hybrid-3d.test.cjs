@@ -12,7 +12,7 @@ test('World v3 loads local Three.js and the v2 storage/avatar bridge',()=>{
   assert.match(html,/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
   assert.match(html,/\.\.\/world-v2\/kidscade-world-storage\.js/);
   assert.match(html,/\.\.\/world-v2\/kidscade-world-bridge\.js/);
-  assert.match(html,/kidscade-world-v3\.js\?v=1/);
+  assert.match(html,/kidscade-world-v3\.js\?v=2/);
   assert.match(runtime,/import \* as THREE from 'three'/);
   assert.match(runtime,/GLTFLoader/);
 });
@@ -21,7 +21,11 @@ test('World v3 keeps the player 2D while the environment is 3D',()=>{
   assert.match(runtime,/new THREE\.Sprite\(avatarMaterial\)/);
   assert.match(runtime,/new THREE\.CanvasTexture\(avatarCanvas\)/);
   assert.match(runtime,/Bridge\?\.readAvatarSource/);
-  assert.match(runtime,/renderPreviewFrame\(moving\?'walk':'idle'/);
+  assert.match(html,/id="avatarRuntime"/);
+  assert.match(html,/\.\.\/avatar-studio\.html/);
+  assert.match(runtime,/renderPreviewFrame/);
+  assert.match(runtime,/applyAvatarMotion/);
+  assert.match(runtime,/const LAYOUT_VERSION=2/);
   assert.match(runtime,/new THREE\.WebGLRenderer/);
 });
 
@@ -60,7 +64,7 @@ test('World v3 retains core life interactions and shared saves',()=>{
 });
 
 test('World v3 is the default entry and v2 remains reachable',()=>{
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=1/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=2/);
   assert.match(integration,/version:3/);
   assert.match(html,/2D 안정판/);
   assert.match(runtime,/\.\.\/world-v2\/kidscade-world\.html\?v=8/);
