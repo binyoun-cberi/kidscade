@@ -101,7 +101,7 @@ const els = {
   resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'), resultUnit:$('#resultUnit'),
   resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn'),
   manageOverlay:$('#manageOverlay'), manageTitle:$('#manageTitle'), manageSummary:$('#manageSummary'), stockRows:$('#stockRows'),
-  restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn')
+  restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn'), eventBanner:$('#eventBanner'), tomorrowEvent:$('#tomorrowEvent')
 };
 
 const state = {
@@ -110,8 +110,9 @@ const state = {
   patience:100, patienceTimer:null, cookTimer:null, cookProgress:0, readyAt:0,
   sound:true, dragging:false, completed:false, customerSettled:false,
   dayRevenue:0, dayCogs:0, dayWaste:0, dayWalkouts:0,
-  stock:Object.fromEntries(INGREDIENTS.map(i=>[i.id,BASE_STOCK])),
-  upgrades:{fridge:0,burner:0,service:0,marketing:0}
+  stock:Object.fromEntries(INGREDIENTS.map(i=>[i.id,i.unlockDay===1?BASE_STOCK:0])),
+  upgrades:{fridge:0,burner:0,service:0,marketing:0},
+  event:DAILY_EVENTS[0], nextEvent:null, lastEventId:null, unlockedToday:[]
 };
 
 const ingredientById = id => INGREDIENTS.find(x=>x.id===id);
@@ -119,13 +120,53 @@ const bowlWeight = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.we
 const bowlCost = () => Math.max(0,Math.round((bowlWeight()/100*PRICE_PER_100G)/100)*100);
 const bowlIngredientCost = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.cost||0),0);
 const stockCapacity = () => BASE_STOCK + state.upgrades.fridge*3;
-const customersForDay = () => BASE_CUSTOMERS + Math.min(2,state.day-1) + state.upgrades.marketing;
+const isIngredientUnlocked = (id,day=state.day) => (ingredientById(typeof id==='string'?id:id.id)?.unlockDay||1)<=day;
+const activeIngredients = (day=state.day) => INGREDIENTS.filter(ing=>ing.unlockDay<=day);
+const customersForDay = (day=state.day,event=state.event) => Math.max(3,BASE_CUSTOMERS+Math.min(4,Math.floor((day-1)/3))+state.upgrades.marketing+(event?.customerDelta||0));
+const purchaseUnitCost = (ing,event=state.nextEvent||state.event) => Math.max(50,Math.round(ing.cost*(event?.costMult||1)*(event?.costById?.[ing.id]||1)/10)*10);
+const orderAvailable = (order,day=state.day) => [...Object.keys(order.must),...order.avoid].every(id=>isIngredientUnlocked(id,day));
+const dayUnlocks = day => INGREDIENTS.filter(ing=>ing.unlockDay===day);
 const countInBowl = id => state.bowl.filter(x=>x===id).length;
 const shuffle = a => {
   const out=[...a];
   for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}
   return out;
 };
+function chooseDailyEvent(day){
+  if(day<=1)return DAILY_EVENTS[0];
+  let pool=DAILY_EVENTS.filter(e=>e.id!=='normal'&&e.id!==state.lastEventId);
+  if(day<4)pool=pool.filter(e=>!['meatPrice','viral'].includes(e.id));
+  const event=pool[Math.floor(Math.random()*pool.length)]||DAILY_EVENTS[0];
+  state.lastEventId=event.id;return event;
+}
+function customerTypeForDay(day){
+  const pool=CUSTOMER_TYPES.filter(t=>t.minDay<=day);
+  return pool[Math.floor(Math.random()*pool.length)]||CUSTOMER_TYPES[0];
+}
+function makeCustomerOrder(base){
+  const type=customerTypeForDay(state.day),event=state.event||DAILY_EVENTS[0];
+  const weightShift=type.weight||0;
+  const order={...base,must:{...base.must},avoid:[...base.avoid],customerType:type};
+  order.budget=Math.round(base.budget*(type.budget||1)/100)*100;
+  order.minWeight=Math.max(120,base.minWeight+weightShift);
+  order.maxWeight=base.maxWeight+Math.max(0,weightShift);
+  order.patienceRate=base.patienceRate*(type.patience||1)*(event.patience||1);
+  order.tipMult=(type.tip||1)*(event.tip||1);
+  order.repMult=(type.rep||1)*(event.rep||1);
+  if(event.forceSpice!==undefined)order.spice=event.forceSpice;
+  return order;
+}
+function makeOrderDeck(){
+  const eligible=ORDERS.filter(o=>orderAvailable(o,state.day));
+  const freshIds=new Set(dayUnlocks(state.day).map(x=>x.id));
+  const featured=eligible.filter(o=>Object.keys(o.must).some(id=>freshIds.has(id)));
+  return shuffle([...eligible,...featured,...featured]);
+}
+function unlockIngredientsForDay(day){
+  const unlocked=dayUnlocks(day);state.unlockedToday=unlocked.map(x=>x.id);
+  for(const ing of unlocked)state.stock[ing.id]=Math.max(state.stock[ing.id]||0,Math.min(4,stockCapacity()));
+  return unlocked;
+}
 
 function sfx(key, options={}) {
   if(!state.sound) return;
