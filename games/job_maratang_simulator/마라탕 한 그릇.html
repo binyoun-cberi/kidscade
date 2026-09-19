@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>마라탕 한 그릇</title>
-<link rel="stylesheet" href="maratang-selfbar.css?v=7">
+<link rel="stylesheet" href="maratang-selfbar.css?v=8">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -23,6 +23,8 @@
 
   <main class="playfield" id="playfield">
     <canvas id="scene" aria-label="마라탕 셀프바"></canvas>
+
+    <div class="event-banner" id="eventBanner" hidden></div>
 
     <section class="order-ticket" id="orderTicket">
       <small>주문서</small>
@@ -64,7 +66,7 @@
 <div class="overlay show" id="startOverlay">
   <div class="start-card">
     <h1>마라탕 한 그릇</h1>
-    <p>5일 동안 작은 마라탕집을 운영하세요. 주문을 맞추고, 재고를 관리하고, 번 돈으로 가게를 키워야 합니다.</p>
+    <p>15일 동안 작은 마라탕집을 키워 보세요. 며칠마다 새 재료와 새 손님이 열리고, 매일 다른 영업 이벤트에 맞춰 재고와 투자를 결정해야 합니다.</p>
     <button id="startBtn" class="primary big" type="button">영업 시작</button>
   </div>
 </div>
@@ -84,6 +86,7 @@
     <small>영업 종료 · 가게 관리</small>
     <h2 id="manageTitle">1일차 결산</h2>
     <div class="manage-summary" id="manageSummary"></div>
+    <div class="tomorrow-event" id="tomorrowEvent"></div>
     <div class="stock-manager">
       <h3>재고 보충</h3>
       <div id="stockRows" class="stock-rows"></div>
@@ -101,6 +104,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="maratang-selfbar.js?v=7"></script>
+<script type="module" src="maratang-selfbar.js?v=8"></script>
 </body>
 </html>
