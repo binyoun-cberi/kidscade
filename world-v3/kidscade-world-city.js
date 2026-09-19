@@ -107,7 +107,7 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   ctx.parent.add(anchor);
   const tag=label?makeLabel(name,{width:1.2,height:.30,font:32}):null;
   if(tag){tag.position.set(x,2.12,z);tag.visible=false;ctx.parent.add(tag)}
-  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2};
+  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z};
 }
 
 function overlaps(a,b,pad=.08){
@@ -143,6 +143,10 @@ export async function buildKidscadeCity(ctx){
     addModel(parent,CITY_ASSET.road,{x:0,z:25,w:4.0,h:.28,d:4.0,rot:0,name:'city-road-entry-25'}),
     addModel(parent,CITY_ASSET.road,{x:0,z:21,w:4.0,h:.28,d:4.0,rot:0,name:'city-road-entry-21'})
   ]);
+  // Continue the beige village footpath through the city entrance and across the asphalt.
+  plane(parent,0,24.0,3.0,8.0,0xd0c297,.305);
+  for(const z of [27.8,28.6,29.4,30.2])plane(parent,0,z,3.0,.34,0xf1ead4,.32);
+  plane(parent,0,31.65,3.0,2.7,0xd0c297,.305);
   track('main-road','road',0,29,52,3.2);track('entry-road','road',0,23,3.2,8);
 
   const buildings=[
@@ -244,6 +248,19 @@ export async function buildKidscadeCity(ctx){
     hyunwoo:{x:-5.7,z:34.1,r:.38}     // mailbox / delivery corner
   };
 
+  function chooseNpcDecision(n,hx,hz,r,now){
+    const mostlyStationary=['shop','arcade','library','clinic','bus','civic'].includes(n.role);
+    const pauseChance=mostlyStationary?.82:.55;
+    n.anchorX=hx;n.anchorZ=hz;
+    n.nextDecision=now+(mostlyStationary?2800:1800)+Math.random()*(mostlyStationary?4200:3000);
+    if(Math.random()<pauseChance){
+      n.moving=false;n.targetX=n.object.position.x;n.targetZ=n.object.position.z;return;
+    }
+    n.targetX=hx+(Math.random()*2-1)*r;
+    n.targetZ=hz+(Math.random()*2-1)*r*.62;
+    n.moving=true;
+  }
+
   return {
     npcs,
     bounds:CITY_BOUNDS,
@@ -256,16 +273,29 @@ export async function buildKidscadeCity(ctx){
         let hx=n.homeX,hz=n.homeZ,r=n.r;
         if(daytime&&dayRoleTargets[n.id]){const q=dayRoleTargets[n.id];hx=q.x;hz=q.z;r=q.r;}
         else if(evening&&eveningSlots[n.id]){const q=eveningSlots[n.id];hx=q.x;hz=q.z;r=.35;}
-        const tx=hx+Math.sin(now/2600+n.phase)*r;
-        const tz=hz+Math.cos(now/3100+n.phase)*r*.55;
-        const dx=tx-n.object.position.x,dz=tz-n.object.position.z;
-        n.object.position.x+=dx*Math.min(1,dt*.72);
-        n.object.position.z+=dz*Math.min(1,dt*.72);
-        if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
-        const walking=Math.abs(dx)+Math.abs(dz)>.025;
+        const anchorShift=Math.hypot((n.anchorX??hx)-hx,(n.anchorZ??hz)-hz);
+        if(anchorShift>.12){
+          n.anchorX=hx;n.anchorZ=hz;n.targetX=hx;n.targetZ=hz;n.moving=true;n.nextDecision=now+900;
+        }else if(now>=n.nextDecision){
+          chooseNpcDecision(n,hx,hz,r,now);
+        }
+        let walking=false;
+        if(n.moving){
+          const dx=n.targetX-n.object.position.x,dz=n.targetZ-n.object.position.z,d=Math.hypot(dx,dz);
+          if(d<.055){
+            n.moving=false;n.nextDecision=now+1800+Math.random()*3200;
+          }else{
+            const speed=['shop','arcade','library','clinic','bus','civic'].includes(n.role)?.38:.58;
+            const step=Math.min(d,speed*dt);
+            n.object.position.x+=dx/d*step;
+            n.object.position.z+=dz/d*step;
+            n.object.rotation.y=Math.atan2(dx,dz);
+            walking=true;
+          }
+        }
         n.playAnim?.(walking?'walk':'idle');
         n.mixer?.update(dt);
-        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.012:0);
+        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.010:0);
         if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
         if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
