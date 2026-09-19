@@ -40,5 +40,16 @@ test('One Stroke delivery city UI keeps route gameplay intact',()=>{
 test('One Stroke catalog points to city rework',()=>{
   const game=catalog.games.find(g=>g.id==='low_one_stroke');
   assert.ok(game);
-  assert.equal(game.href,'한붓쓱.html?v=3');
+  assert.equal(game.href,'한붓쓱.html?v=4');
+});
+
+test('One Stroke renders a dense top-down 2.5D city without empty dead zones',()=>{
+  assert.match(html,/target=small\?30:58/);
+  assert.match(html,/function shadeColor/);
+  assert.match(html,/o\.kind==='building'/);
+  assert.match(html,/o\.kind==='parking'/);
+  assert.match(html,/o\.kind==='plaza'/);
+  assert.match(html,/o\.kind==='treeCluster'/);
+  assert.match(html,/tiny rear-right shadow gives the whole map a 2\.5D board-game tilt/);
+  assert.match(html,/미니어처 탑다운 도시/);
 });
