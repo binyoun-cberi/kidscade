@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>오늘도 진료중! - 내과 의사 시뮬레이터</title>
+<style>
+:root{
+  --bg:#eaf2f4;--paper:#fff;--ink:#16252a;--muted:#66777c;--line:#d9e4e6;
+  --navy:#173c46;--teal:#168a86;--teal2:#0f716f;--mint:#dff4ef;--amber:#f0a33b;
+  --red:#c75151;--redbg:#fff0ef;--blue:#3b71c8;--shadow:0 18px 50px rgba(31,60,67,.12);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,select,input{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+.hidden{display:none!important}
+.app{min-height:100vh;background:
+  radial-gradient(circle at 10% -10%,rgba(22,138,134,.10),transparent 28rem),
+  linear-gradient(180deg,#edf5f6,#e8eff1 70%,#e3ecee)}
+.topbar{position:sticky;top:0;z-index:20;display:flex;gap:14px;align-items:center;padding:12px 18px;background:rgba(255,255,255,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;min-width:220px}
+.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--navy);color:#fff;font-size:22px;box-shadow:0 8px 18px rgba(23,60,70,.22)}
+.brand b{display:block;font-size:17px}
+.brand small{color:var(--muted)}
+.hud{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:flex;gap:6px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;color:var(--muted)}
+.pill strong{color:var(--ink)}
+.page{max-width:1520px;margin:0 auto;padding:16px}
+.workspace{display:grid;grid-template-columns:minmax(250px,330px) minmax(420px,1fr) minmax(310px,390px);gap:14px;align-items:start}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.patient-card{overflow:hidden;position:sticky;top:84px}
+.patient-stage{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:22px 18px 0;background:linear-gradient(180deg,#dfeff0 0 62%,#ccdadd 62% 65%,#eef3f2 65%)}
+.wall-decor{position:absolute;top:18px;left:20px;padding:8px 12px;border:4px solid #fff;background:#a7d7d3;color:#31535a;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.07);transform:rotate(-2deg)}
+.avatar{position:relative;width:150px;height:205px;--skin:#f0c4a8;--hair:#3b302c;--shirt:#7aa9bd}
+.head{position:absolute;left:43px;top:18px;width:66px;height:78px;border-radius:45% 45% 48% 48%;background:var(--skin);z-index:3;box-shadow:inset 0 -7px 0 rgba(135,76,54,.06)}
+.hair{position:absolute;left:38px;top:8px;width:76px;height:46px;border-radius:50% 50% 34% 34%;background:var(--hair);z-index:5}
+.hair:after{content:"";position:absolute;left:4px;top:26px;width:14px;height:52px;border-radius:10px;background:var(--hair);opacity:.95}
+.ear{position:absolute;top:50px;width:12px;height:20px;background:var(--skin);border-radius:8px;z-index:2}.ear.l{left:36px}.ear.r{right:35px}
+.eye{position:absolute;top:45px;width:6px;height:7px;border-radius:50%;background:#28343a;z-index:6}.eye.l{left:58px}.eye.r{right:56px}
+.mouth{position:absolute;left:68px;top:70px;width:16px;height:6px;border-bottom:2px solid #9b5c5c;border-radius:0 0 12px 12px;z-index:6}
+.neck{position:absolute;left:63px;top:87px;width:28px;height:25px;background:var(--skin);z-index:2}
+.body{position:absolute;left:27px;top:103px;width:100px;height:104px;border-radius:36px 36px 8px 8px;background:var(--shirt);z-index:1}
+.body:before,.body:after{content:"";position:absolute;top:10px;width:28px;height:85px;border-radius:16px;background:var(--shirt)}
+.body:before{left:-16px;transform:rotate(8deg)}.body:after{right:-16px;transform:rotate(-8deg)}
+.patient-meta{padding:16px}
+.patient-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.patient-name{font-size:22px;font-weight:900}
+.tag{padding:4px 8px;border-radius:999px;background:#edf3f4;color:#5e7378;font-size:12px;font-weight:700}
+.tag.return{background:#fff0d8;color:#94600a}
+.complaint{margin:12px 0 0;padding:13px 14px;border-radius:14px;background:#f6f9f9;border-left:4px solid var(--teal);line-height:1.55;font-size:15px}
+.micro{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45}
+.center-card{min-height:670px;overflow:hidden}
+.tabs{display:flex;gap:5px;padding:10px;border-bottom:1px solid var(--line);background:#f8fbfb;position:sticky;top:68px;z-index:5}
+.tab{border:0;background:transparent;color:var(--muted);padding:9px 13px;border-radius:11px;font-weight:800}
+.tab.active{background:var(--navy);color:#fff}
+.tab-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:rgba(255,255,255,.18);font-size:11px}
+.panel{padding:18px}
+.section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+.section-title h2{font-size:18px;margin:0}
+.section-title p{margin:0;color:var(--muted);font-size:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.action{min-height:58px;padding:11px 12px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:13px;color:var(--ink);transition:.15s}
+.action:hover{border-color:#9dcac8;transform:translateY(-1px)}
+.action.done{background:var(--mint);border-color:#9ad1c8}
+.action .cost{float:right;font-size:11px;background:#f0f3f4;border-radius:999px;padding:3px 6px;color:var(--muted)}
+.action b{display:block;font-size:14px}
+.action small{display:block;color:var(--muted);margin-top:4px;line-height:1.3}
+.log{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+.bubble{padding:11px 13px;border-radius:14px;line-height:1.5;font-size:14px;max-width:94%}
+.bubble.patient{background:#eef4f5;align-self:flex-start}
+.bubble.doctor{background:#e2f4ef;align-self:flex-end}
+.bubble.result{background:#f6f2e8;border:1px solid #ebdec0;align-self:stretch}
+.bubble .who{font-size:11px;font-weight:900;color:var(--muted);display:block;margin-bottom:4px}
+.test-budget{height:9px;border-radius:99px;background:#e8eeee;overflow:hidden;margin:10px 0 16px}.test-budget span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#6fc4ba);transition:.25s}
+.protocols{display:grid;gap:10px}
+.protocol{border:1px solid var(--line);border-radius:15px;padding:13px;background:#fff}
+.protocol-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.protocol-title{font-weight:900}
+.protocol-desc{font-size:12px;color:var(--muted);line-height:1.5;margin:7px 0}
+.rule-list{display:flex;gap:6px;flex-wrap:wrap}.rule-chip{font-size:11px;padding:4px 7px;border-radius:8px;background:#edf6f4;color:#376763}
+.lockbox{padding:28px;text-align:center;border:1px dashed #afc3c6;border-radius:16px;background:#f8fbfb}.lockbox b{display:block;font-size:18px;margin-bottom:8px}.lockbox p{margin:0;color:var(--muted);line-height:1.5}
+.chart-card{position:sticky;top:84px;overflow:hidden}
+.chart-head{padding:14px 16px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.chart-head strong{font-size:16px}.chart-head span{font-size:11px;opacity:.7}
+.chart-body{padding:14px}
+.record{padding:10px 0;border-bottom:1px dashed var(--line)}
+.record:last-child{border-bottom:0}
+.record-label{font-size:11px;color:var(--muted);font-weight:800;margin-bottom:4px;text-transform:uppercase}
+.record-value{font-size:14px;line-height:1.45}
+.alert-text{color:var(--red);font-weight:900}
+.decision{margin-top:12px;border-top:1px solid var(--line);padding-top:14px}
+.decision h3{margin:0 0 10px;font-size:15px}
+.select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)}
+.rx-list{display:grid;gap:7px;margin-top:9px}
+.rx{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.rx input{margin-top:3px}
+.rx b{font-size:13px;display:block}.rx small{font-size:11px;color:var(--muted);line-height:1.35}
+.finish{width:100%;border:0;border-radius:13px;background:var(--teal);color:#fff;padding:13px 14px;font-weight:900;margin-top:13px;box-shadow:0 8px 20px rgba(22,138,134,.2)}
+.finish:hover{background:var(--teal2)}
+.note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:11px;padding:9px 12px;font-weight:800}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.danger{border-color:#e0b7b7;color:#a43f3f;background:#fff6f6}.btn.small{padding:7px 9px;font-size:12px}
+.modal-back{position:fixed;inset:0;z-index:100;background:rgba(12,30,35,.66);display:grid;place-items:center;padding:18px;backdrop-filter:blur(5px)}
+.modal{width:min(100%,860px);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;box-shadow:0 30px 100px rgba(0,0,0,.3)}
+.hero{padding:30px;background:linear-gradient(135deg,#163c46,#1c726f);color:#fff;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.06);right:-80px;top:-100px}
+.hero-kicker{font-size:12px;font-weight:900;letter-spacing:.14em;opacity:.72}.hero h1{font-size:34px;margin:8px 0 8px}.hero p{margin:0;max-width:650px;line-height:1.6;opacity:.9}
+.modal-body{padding:24px 28px}
+.feature-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.feature{padding:13px;border-radius:14px;background:#f3f8f8;border:1px solid var(--line)}.feature b{display:block;font-size:13px;margin-bottom:5px}.feature span{font-size:12px;color:var(--muted);line-height:1.4}
+.disclaimer{padding:12px 14px;background:#fff6e7;border:1px solid #f0d6a5;border-radius:12px;color:#74531d;font-size:12px;line-height:1.55}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.day-review{width:min(1100px,100%)}.review-top{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--line)}
+.review-summary{display:flex;gap:8px;flex-wrap:wrap}.summary-box{padding:8px 11px;border-radius:10px;background:#f2f6f6;font-size:12px}.summary-box strong{display:block;font-size:17px;color:var(--ink)}
+.review-list{padding:14px 20px 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.review-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff}
+.review-card.bad{border-color:#edc5c3;background:#fffafa}.review-card.good{border-color:#bfdfd8;background:#fbfffe}
+.review-patient{display:flex;align-items:center;justify-content:space-between;gap:8px}.stars{letter-spacing:1px;color:#dc901f;font-size:14px}
+.review-comment{margin:9px 0;padding:10px 11px;border-radius:10px;background:#f4f7f7;font-size:13px;line-height:1.5}
+.audit{font-size:12px;line-height:1.6;color:#53676c}.audit b{color:var(--ink)}
+.audit .miss{color:var(--red);font-weight:800}.audit .ok{color:var(--teal2);font-weight:800}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:200;background:#173c46;color:#fff;padding:10px 15px;border-radius:12px;font-size:13px;font-weight:800;transition:.2s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.inline-actions{display:flex;gap:7px;flex-wrap:wrap}
+.save-protocol{margin-top:14px;padding:13px;border:1px dashed #a8c5c2;border-radius:14px;background:#f6fbfa}
+.save-protocol h4{margin:0 0 8px;font-size:14px}
+.switches{display:grid;gap:6px;margin:8px 0}.switches label{font-size:12px;color:#4c6267}
+.empty{padding:22px;border:1px dashed var(--line);border-radius:14px;text-align:center;color:var(--muted)}
+@media(max-width:1080px){
+  .workspace{grid-template-columns:280px 1fr}.chart-card{position:static;grid-column:1/-1}.patient-card{top:76px}
+}
+@media(max-width:760px){
+  .topbar{padding:8px 10px}.brand{min-width:0}.brand small{display:none}.brand b{font-size:14px}.logo{width:36px;height:36px}
+  .hud .pill:nth-child(n+3){display:none}.page{padding:8px}.workspace{display:block}.patient-card,.chart-card{position:static;margin-bottom:9px}
+  .patient-stage{min-height:200px}.avatar{transform:scale(.82);transform-origin:bottom center;margin-top:-25px}
+  .center-card{min-height:auto}.tabs{top:53px;overflow-x:auto}.tab{white-space:nowrap;padding:8px 10px}.panel{padding:13px}.grid2{grid-template-columns:1fr}
+  .review-list{grid-template-columns:1fr;padding:10px}.review-top{align-items:flex-start;flex-direction:column}.feature-row{grid-template-columns:1fr}.hero{padding:23px}.hero h1{font-size:28px}.modal-body{padding:18px}
+}
+@media(max-width:420px){.hud .pill:nth-child(n+2){display:none}.patient-name{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="logo">✚</div><div><b>오늘도 진료중!</b><small>내과 의사 시뮬레이터</small></div></div>
+    <div class="hud">
+      <div class="pill">DAY <strong id="hudDay">1</strong></div>
+      <div class="pill">진료 <strong id="hudPatient">1 / 6</strong></div>
+      <div class="pill">신뢰도 <strong id="hudTrust">70</strong></div>
+      <div class="pill">재방문 <strong id="hudReturns">0</strong></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="workspace">
+      <aside class="card patient-card">
+        <div class="patient-stage">
+          <div class="wall-decor">진료실 2</div>
+          <div class="avatar" id="avatar">
+            <div class="hair"></div><div class="ear l"></div><div class="ear r"></div><div class="head"></div>
+            <div class="eye l"></div><div class="eye r"></div><div class="mouth"></div><div class="neck"></div><div class="body"></div>
+          </div>
+        </div>
+        <div class="patient-meta">
+          <div class="patient-line"><span class="patient-name" id="patientName">환자</span><span class="tag" id="patientAge">-</span><span class="tag return hidden" id="returnTag">재방문</span></div>
+          <div class="complaint" id="complaint">환자의 이야기를 듣는 중입니다.</div>
+          <div class="micro">진료 중에는 정답·오답 피드백이 없습니다. 검사 결과와 차트를 읽고 직접 판단하세요.</div>
+        </div>
+      </aside>
+
+      <section class="card center-card">
+        <nav class="tabs">
+          <button class="tab active" data-tab="questions">문진 <span class="tab-badge" id="questionCount">5</span></button>
+          <button class="tab" data-tab="tests">검사 <span class="tab-badge" id="testPoints">5</span></button>
+          <button class="tab" data-tab="notes">진료기록</button>
+          <button class="tab" data-tab="automation">자동화 <span class="tab-badge" id="protocolCount">0</span></button>
+        </nav>
+
+        <div class="panel" id="panelQuestions">
+          <div class="section-title"><div><h2>추가 문진</h2><p>중요한 질문을 골라 정보를 더 얻으세요.</p></div><p>남은 질문 <b id="qLeft">5</b>회</p></div>
+          <div class="grid2" id="questionGrid"></div>
+          <div class="log" id="conversationLog"></div>
+        </div>
+
+        <div class="panel hidden" id="panelTests">
+          <div class="section-title"><div><h2>검사 선택</h2><p>모든 검사를 할 수는 없습니다. 시간 배분이 중요합니다.</p></div><p>검사 시간 <b id="testLeft">5</b></p></div>
+          <div class="test-budget"><span id="testBudgetBar" style="width:100%"></span></div>
+          <div class="grid2" id="testGrid"></div>
+          <div class="log" id="testLog"></div>
+        </div>
+
+        <div class="panel hidden" id="panelNotes">
+          <div class="section-title"><div><h2>현재 진료기록</h2><p>문진과 검사에서 확인한 정보만 모아 봅니다.</p></div></div>
+          <div id="notesView"></div>
+        </div>
+
+        <div class="panel hidden" id="panelAutomation">
+          <div class="section-title"><div><h2>진료 자동화</h2><p>저장한 프로토콜을 한 번에 실행합니다. 잘못 만든 자동화도 그대로 실행됩니다.</p></div></div>
+          <div id="automationContent"></div>
+        </div>
+      </section>
+
+      <aside class="card chart-card">
+        <div class="chart-head"><strong>전자 차트</strong><span>게임용 가상 의무기록</span></div>
+        <div class="chart-body">
+          <div id="chartRecords"></div>
+          <div class="decision">
+            <h3>진단</h3>
+            <select class="select" id="diagnosisSelect"></select>
+            <h3 style="margin-top:13px">처방 / 조치</h3>
+            <div class="rx-list" id="rxList"></div>
+            <button class="finish" id="finishBtn">진료 완료 · 다음 환자</button>
+            <div class="note">실제 의약품·용량을 사용하지 않는 교육용 가상 규칙입니다. 진료 결과 평가는 하루가 끝난 뒤 확인할 수 있습니다.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="modal-back" id="introModal">
+  <div class="modal">
+    <div class="hero">
+      <div class="hero-kicker">KIDSCADE · JOB SIMULATION</div>
+      <h1>오늘도 진료중!</h1>
+      <p>환자의 말을 읽고, 필요한 검사만 선택하고, 차트의 알레르기와 복용약까지 확인해 진단과 처방을 결정하세요. 정답은 진료실에서 알려주지 않습니다.</p>
+    </div>
+    <div class="modal-body">
+      <div class="feature-row">
+        <div class="feature"><b>① 듣고 기억하기</b><span>환자의 첫 설명과 추가 문진에서 핵심 단서를 찾아야 합니다.</span></div>
+        <div class="feature"><b>② 검사 선별하기</b><span>검사 시간은 제한됩니다. 불필요한 검사는 하루 리뷰에서 드러납니다.</span></div>
+        <div class="feature"><b>③ 결과가 돌아오기</b><span>오진한 환자가 더 아파져 다음 날 다시 찾아올 수도 있습니다.</span></div>
+      </div>
+      <div class="disclaimer"><b>교육용 가상 진료 게임</b><br>질환 표현은 읽기·기억·조건 판단을 위한 단순화된 게임 규칙이며 실제 진단이나 치료 지침이 아닙니다. 약 이름과 상호작용도 모두 게임용 가상 설정입니다.</div>
+      <div class="modal-actions">
+        <button class="btn danger hidden" id="resetBtn">기록 초기화</button>
+        <button class="btn" id="resumeBtn">이어하기</button>
+        <button class="btn primary" id="startBtn">새 진료 시작</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back hidden" id="reviewModal">
+  <div class="modal day-review">
+    <div class="review-top">
+      <div><div style="font-size:12px;color:var(--muted);font-weight:900">DAY <span id="reviewDay">1</span> CLOSED</div><h2 style="margin:3px 0 0">오늘의 진료 리뷰</h2></div>
+      <div class="review-summary" id="reviewSummary"></div>
+    </div>
+    <div class="review-list" id="reviewList"></div>
+    <div style="padding:0 20px 20px;display:flex;justify-content:flex-end"><button class="btn primary" id="nextDayBtn">다음 날 출근</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+var SAVE_KEY='kidscade_internal_medicine_v1';
+var PATIENTS_PER_DAY=6;
+
+var QUESTIONS=[
+  {id:'onset',label:'언제부터 시작됐나요?',hint:'증상의 시작 시점과 진행 속도'},
+  {id:'fever',label:'열이나 오한이 있었나요?',hint:'발열 정도와 변화'},
+  {id:'breathing',label:'숨쉬기는 괜찮으세요?',hint:'숨참·가슴 불편 여부'},
+  {id:'digestive',label:'구토나 설사는 있었나요?',hint:'소화기 증상 여부'},
+  {id:'exposure',label:'주변에 비슷한 사람이 있나요?',hint:'접촉·유행 단서'},
+  {id:'food',label:'최근 먹은 음식은 어땠나요?',hint:'식사와 증상의 관계'},
+  {id:'pattern',label:'언제 더 심해지나요?',hint:'계절·식후·밤 등 양상'},
+  {id:'pain',label:'어디가 가장 불편한가요?',hint:'통증과 불편 위치'}
+];
+
+var TESTS=[
+  {id:'temp',label:'체온 측정',cost:1,desc:'현재 체온을 확인합니다.'},
+  {id:'throat',label:'목 관찰',cost:1,desc:'인후 상태를 관찰합니다.'},
+  {id:'ausc',label:'청진',cost:1,desc:'호흡음을 들어봅니다.'},
+  {id:'spo2',label:'산소포화도',cost:1,desc:'산소 상태를 확인합니다.'},
+  {id:'abd',label:'복부 진찰',cost:1,desc:'압통과 장음 등을 확인합니다.'},
+  {id:'nose',label:'코 점막 관찰',cost:1,desc:'비강 점막과 분비물을 봅니다.'},
+  {id:'virus',label:'신속 바이러스 검사',cost:2,desc:'가상 바이러스 표지 검사를 시행합니다.'},
+  {id:'inflam',label:'염증 표지 검사',cost:2,desc:'가상 염증 지표를 확인합니다.'},
+  {id:'xray',label:'흉부 영상검사',cost:3,desc:'폐의 영상 소견을 확인합니다.'},
+  {id:'urine',label:'소변 검사',cost:2,desc:'소변의 기본 지표를 확인합니다.'}
+];
+
+var MEDS=[
+  {id:'S',label:'증상완화제 S',group:'support',allergy:'S',desc:'기침·목 불편을 줄이는 게임용 가상 약.'},
+  {id:'F',label:'해열제 F',group:'fever',allergy:'F',desc:'고열 불편을 낮추는 게임용 가상 약.'},
+  {id:'H',label:'항알레르기제 H',group:'allergy',allergy:'H',interacts:['Z'],desc:'재채기·맑은 콧물용 가상 약. Z 계열과 충돌.'},
+  {id:'G',label:'위장보호제 G',group:'gastric',allergy:'G',desc:'속쓰림 완화용 가상 약.'},
+  {id:'R',label:'수분보충제 R',group:'rehydration',allergy:'R',desc:'구토·설사 때 수분 보충을 돕는 가상 처방.'},
+  {id:'P',label:'항균제 P',group:'antibacterial',allergy:'P',desc:'세균성 호흡기 질환용 가상 약.'},
+  {id:'Q',label:'항균제 Q',group:'antibacterial',allergy:'Q',desc:'P 계열을 쓸 수 없을 때 고려하는 가상 약.'},
+  {id:'REF',label:'상급진료 의뢰',group:'referral',allergy:null,desc:'위험 신호가 있는 환자를 추가 진료로 연결.'}
+];
+
+var DISEASES={
+  cold:{
+    label:'감기성 상기도염',risk:1,
+    base:'며칠 전부터 목이 칼칼하고 콧물이 나요. 기침도 조금 있어요.',
+    returnText:'어제 진료받았는데 밤새 기침이 더 심해졌어요. 열도 조금 더 오른 것 같아요.',
+    answers:{onset:'3일 전부터 천천히 시작됐어요.',fever:'춥지는 않고 미열이 있는 것 같아요.',breathing:'숨쉬는 건 괜찮아요.',digestive:'구토나 설사는 없어요.',exposure:'회사에 감기 걸린 사람이 몇 명 있어요.',food:'평소처럼 먹었어요.',pattern:'아침에 목이 조금 더 따가워요.',pain:'목이 가장 불편해요.'},
+    tests:{temp:'37.5℃',throat:'목 점막이 약간 붉지만 심한 부종은 없습니다.',ausc:'양쪽 폐에서 뚜렷한 이상음이 들리지 않습니다.',spo2:'98%',abd:'특별한 압통이 없습니다.',nose:'맑은 콧물과 가벼운 점막 부종이 보입니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 낮음',xray:'뚜렷한 폐 침윤 소견이 없습니다.',urine:'특이 소견이 없습니다.'},
+    essential:['temp'],useful:['temp','throat','ausc','nose'],groups:['support'],banned:['antibacterial'],redFlag:false
+  },
+  flu:{
+    label:'독감성 바이러스 질환',risk:2,
+    base:'어제 갑자기 열이 확 오르고 온몸이 쑤셔요. 기침도 시작됐어요.',
+    returnText:'어제보다 몸살이 더 심하고 열이 잘 안 내려요.',
+    answers:{onset:'어제 오후부터 갑자기 심해졌어요.',fever:'39도 가까이 올랐고 오한도 있었어요.',breathing:'숨이 차지는 않아요.',digestive:'속이 조금 메스껍지만 설사는 없어요.',exposure:'같이 일하는 분이 며칠 전 독감으로 쉬었어요.',food:'식욕이 거의 없어요.',pattern:'밤에 열과 몸살이 더 심했어요.',pain:'온몸 근육이 쑤시는 게 제일 힘들어요.'},
+    tests:{temp:'39.0℃',throat:'목이 붉지만 고름성 분비물은 보이지 않습니다.',ausc:'뚜렷한 국소 이상음은 없습니다.',spo2:'97%',abd:'경미한 불편 외 뚜렷한 압통은 없습니다.',nose:'점막이 붓고 분비물이 있습니다.',virus:'가상 바이러스 표지: 양성',inflam:'염증 표지: 중간',xray:'폐렴을 시사하는 뚜렷한 그림자는 없습니다.',urine:'특이 소견이 없습니다.'},
+    essential:['temp','virus'],useful:['temp','virus','ausc','spo2','throat'],groups:['fever','support'],banned:['antibacterial'],redFlag:false
+  },
+  allergy:{
+    label:'알레르기 비염',risk:1,
+    base:'아침마다 재채기가 계속 나고 맑은 콧물이 멈추질 않아요. 눈도 조금 간지러워요.',
+    returnText:'약을 먹었는데도 재채기가 계속되고 눈까지 더 가려워졌어요.',
+    answers:{onset:'꽃가루가 많아진 뒤부터 반복됐어요.',fever:'열이나 오한은 없었어요.',breathing:'숨쉬기는 괜찮아요.',digestive:'소화기 증상은 없어요.',exposure:'가족 중에도 비염이 있는 사람이 있어요.',food:'음식과는 관계없는 것 같아요.',pattern:'아침과 야외에 다녀온 뒤 심해져요.',pain:'통증보다는 코와 눈이 가려운 게 힘들어요.'},
+    tests:{temp:'36.6℃',throat:'목에 뚜렷한 염증 소견이 없습니다.',ausc:'호흡음은 깨끗합니다.',spo2:'99%',abd:'특별한 압통이 없습니다.',nose:'창백하고 부은 점막과 맑은 분비물이 보입니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 낮음',xray:'특이 폐 소견이 없습니다.',urine:'특이 소견이 없습니다.'},
+    essential:['nose'],useful:['nose','temp'],groups:['allergy'],banned:['antibacterial'],redFlag:false
+  },
+  bronchitis:{
+    label:'급성 기관지염',risk:2,
+    base:'기침이 일주일째 계속돼요. 가래가 조금 생기고 밤에 더 심해요.',
+    returnText:'기침 때문에 거의 못 잤어요. 숨 쉴 때도 약간 답답해진 느낌이에요.',
+    answers:{onset:'일주일 전 감기처럼 시작했는데 기침만 계속 남았어요.',fever:'처음엔 미열이 있었는데 지금은 거의 없어요.',breathing:'빠르게 걸으면 조금 답답하지만 가만히 있으면 괜찮아요.',digestive:'구토나 설사는 없어요.',exposure:'주변에 기침하는 사람이 좀 있었어요.',food:'음식과는 상관없는 것 같아요.',pattern:'밤과 찬 공기에서 더 심해져요.',pain:'기침을 많이 해서 가슴 근육이 뻐근해요.'},
+    tests:{temp:'37.2℃',throat:'가벼운 자극 소견이 있습니다.',ausc:'양쪽에서 거친 호흡음이 들리지만 국소 수포음은 뚜렷하지 않습니다.',spo2:'97%',abd:'특별한 압통이 없습니다.',nose:'가벼운 분비물이 있습니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 낮음~중간',xray:'뚜렷한 폐 침윤은 없습니다.',urine:'특이 소견이 없습니다.'},
+    essential:['ausc','temp'],useful:['ausc','temp','spo2','xray'],groups:['support'],banned:['antibacterial'],redFlag:false
+  },
+  pneumonia:{
+    label:'폐렴성 감염',risk:3,
+    base:'열이 나고 기침을 하는데 계단만 올라가도 숨이 차요. 가슴도 묵직해요.',
+    returnText:'어제보다 숨이 더 차고 열도 더 올랐어요. 밤에는 가슴 통증 때문에 깼어요.',
+    answers:{onset:'4일 전부터였는데 이틀 사이 갑자기 심해졌어요.',fever:'38도 후반까지 올랐고 오한이 있어요.',breathing:'조금만 움직여도 숨이 차요.',digestive:'식욕은 없지만 구토나 설사는 없어요.',exposure:'주변에 비슷한 사람은 잘 모르겠어요.',food:'음식은 거의 못 먹었어요.',pattern:'걷거나 깊게 숨 쉴 때 더 힘들어요.',pain:'오른쪽 가슴 아래쪽이 묵직하고 깊게 숨 쉬면 아파요.'},
+    tests:{temp:'38.8℃',throat:'가벼운 발적이 있습니다.',ausc:'오른쪽 아래 폐에서 비정상적인 수포음이 들립니다.',spo2:'92%',abd:'복부에 특이 압통은 없습니다.',nose:'가벼운 분비물이 있습니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 높음',xray:'오른쪽 아래 폐에 국소적인 침윤 그림자가 보입니다.',urine:'특이 소견이 없습니다.'},
+    essential:['ausc','spo2','xray'],useful:['ausc','spo2','xray','temp','inflam'],groups:['antibacterial','referral'],banned:[],redFlag:true
+  },
+  gastro:{
+    label:'급성 위장염',risk:2,
+    base:'어제부터 배가 꾸르륵거리면서 설사를 여러 번 했고 한 번 토했어요.',
+    returnText:'설사가 계속돼서 기운이 없고 입이 자꾸 말라요.',
+    answers:{onset:'어제 아침부터 시작됐어요.',fever:'37도 후반 정도였어요.',breathing:'숨쉬기는 괜찮아요.',digestive:'설사를 다섯 번 정도 했고 한 번 토했어요.',exposure:'가족 중 한 명도 배가 안 좋다고 했어요.',food:'특별히 상한 걸 먹은 기억은 없어요.',pattern:'먹고 나면 배가 더 꾸르륵거려요.',pain:'배 전체가 살살 아프고 꼬이는 느낌이에요.'},
+    tests:{temp:'37.8℃',throat:'특이 소견이 없습니다.',ausc:'호흡음은 깨끗합니다.',spo2:'99%',abd:'복부 전반에 가벼운 압통과 활발한 장음이 있습니다.',nose:'특이 소견이 없습니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 낮음~중간',xray:'특이 폐 소견이 없습니다.',urine:'농축된 소변 소견이 약간 보입니다.'},
+    essential:['abd','temp'],useful:['abd','temp','urine'],groups:['rehydration'],banned:['antibacterial'],redFlag:false
+  },
+  foodpoison:{
+    label:'급성 식중독',risk:2,
+    base:'어젯밤 회식 뒤에 갑자기 토하고 설사를 했어요. 같이 먹은 사람도 아프대요.',
+    returnText:'밤새 토하고 설사해서 물도 제대로 못 마셨어요. 어지럽기도 해요.',
+    answers:{onset:'회식하고 몇 시간 뒤부터 갑자기 시작됐어요.',fever:'열은 거의 없는 것 같아요.',breathing:'숨쉬기는 괜찮아요.',digestive:'구토 세 번, 설사는 여러 번 했어요.',exposure:'같은 음식을 먹은 동료 둘도 비슷하게 아파요.',food:'어젯밤 여러 사람이 같이 해산물 요리를 먹었어요.',pattern:'뭘 먹거나 마시면 바로 메스꺼워져요.',pain:'명치와 배 가운데가 쥐어짜듯 아팠다가 괜찮아져요.'},
+    tests:{temp:'36.9℃',throat:'특이 소견이 없습니다.',ausc:'호흡음은 깨끗합니다.',spo2:'99%',abd:'복부 전반의 경련성 압통과 활발한 장음이 있습니다.',nose:'특이 소견이 없습니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 중간',xray:'특이 폐 소견이 없습니다.',urine:'수분 부족을 시사하는 농축 소견이 있습니다.'},
+    essential:['abd'],useful:['abd','temp','urine'],groups:['rehydration'],banned:['antibacterial'],redFlag:false
+  },
+  reflux:{
+    label:'위식도 역류 증상',risk:1,
+    base:'밥을 먹고 나면 명치부터 가슴 쪽까지 화끈거리고 신물이 올라와요.',
+    returnText:'어제도 밤에 누우니까 속이 더 쓰리고 신물이 올라와서 잠을 설쳤어요.',
+    answers:{onset:'몇 주 전부터 가끔 있었는데 최근 자주 그래요.',fever:'열은 없어요.',breathing:'숨쉬기는 괜찮아요.',digestive:'구토나 설사는 없는데 신물이 올라와요.',exposure:'주변 사람과는 관계없는 것 같아요.',food:'늦게 많이 먹은 날 특히 심해요.',pattern:'식후와 바로 누웠을 때 더 심해요.',pain:'명치와 가슴 중앙이 타는 느낌이에요.'},
+    tests:{temp:'36.7℃',throat:'목 뒤쪽에 가벼운 자극 소견이 있습니다.',ausc:'호흡음은 깨끗합니다.',spo2:'99%',abd:'명치 부위에 가벼운 불편감이 있으나 심한 압통은 없습니다.',nose:'특이 소견이 없습니다.',virus:'가상 바이러스 표지: 음성',inflam:'염증 표지: 낮음',xray:'특이 폐 소견이 없습니다.',urine:'특이 소견이 없습니다.'},
+    essential:['abd'],useful:['abd','temp'],groups:['gastric'],banned:['antibacterial'],redFlag:false
+  }
+};
+
+var NAMES=['김민준','박서연','이도윤','최지우','정하늘','한예준','윤서아','송지호','오유진','문시우','배수빈','강지훈','임다은','조현우','신가은','권민재'];
+var SHIRTS=['#789faf','#9d7cac','#7eaa8c','#b08a68','#6e91bd','#b67676','#728b7d'];
+var HAIRS=['#3b302c','#211d1d','#654a3a','#2f3135','#503a2e'];
+var SKINS=['#f0c4a8','#e5ae8c','#f5d1b8','#c98f6c'];
+
+function freshState(){
+  return {day:1,trust:70,totalSeen:0,totalReturns:0,pendingReturns:[],protocols:[],history:[],today:[],queue:[],index:0,current:null,encounter:null,reviewOpen:false};
+}
+var state=freshState();
+
+function save(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){}
+}
+function load(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    var parsed=JSON.parse(raw);
+    if(!parsed||!parsed.day)return false;
+    state=Object.assign(freshState(),parsed);
+    return true;
+  }catch(e){return false}
+}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(arr){
+  var a=arr.slice();
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}
+  return a;
+}
+function medById(id){return MEDS.find(function(m){return m.id===id})}
+function testById(id){return TESTS.find(function(t){return t.id===id})}
+function diseaseById(id){return DISEASES[id]}
+function diseaseLabel(id){return DISEASES[id]?DISEASES[id].label:id}
+function uid(){return 'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+
+function makePatient(diseaseId,returnInfo){
+  var d=diseaseById(diseaseId);
+  var day=state.day;
+  var allergyChance=day<=1?0:(day===2?.18:.34);
+  var interactionChance=day<3?0:.20;
+  var allergies=[];
+  if(Math.random()<allergyChance){
+    var pool=diseaseId==='pneumonia'?['P','Q','F']:['S','F','H','G','R','P'];
+    allergies.push(pick(pool));
+  }
+  if(day>=4&&Math.random()<.10){
+    var second=pick(['S','F','H','G','R','P','Q']);
+    if(allergies.indexOf(second)<0)allergies.push(second);
+  }
+  var currentMeds=[];
+  if(Math.random()<interactionChance)currentMeds.push('Z');
+  if(Math.random()<.12&&day>=3)currentMeds.push('B');
+
+  var p={
+    id:uid(),name:pick(NAMES),age:20+Math.floor(Math.random()*55),sex:Math.random()<.5?'F':'M',
+    disease:diseaseId,severity:d.risk,returning:false,visitCount:1,
+    allergies:allergies,currentMeds:currentMeds,
+    complaint:d.base,avatar:{shirt:pick(SHIRTS),hair:pick(HAIRS),skin:pick(SKINS)}
+  };
+  if(returnInfo){
+    p=Object.assign({},returnInfo.patient);
+    p.returning=true;
+    p.visitCount=(p.visitCount||1)+1;
+    p.severity=Math.min(4,(p.severity||d.risk)+1);
+    p.complaint=d.returnText;
+    p.id=returnInfo.patient.id;
+  }
+  return p;
+}
+
+function diseasePool(){
+  if(state.day===1)return ['cold','allergy','gastro','reflux','bronchitis'];
+  if(state.day===2)return ['cold','flu','allergy','bronchitis','gastro','foodpoison','reflux'];
+  return Object.keys(DISEASES);
+}
+function buildQueue(){
+  var q=[];
+  var returns=(state.pendingReturns||[]).splice(0,2);
+  returns.forEach(function(r){q.push(makePatient(r.patient.disease,r))});
+  var pool=diseasePool();
+  while(q.length<PATIENTS_PER_DAY){
+    var id=pick(pool);
+    q.push(makePatient(id,null));
+  }
+  state.queue=shuffle(q);
+  state.index=0;
+  state.today=[];
+  state.current=null;
+  state.encounter=null;
+  state.reviewOpen=false;
+  save();
+}
+
+function newEncounter(patient){
+  return {patientId:patient.id,questions:[],answers:{},tests:[],results:{},testSpent:0,diagnosis:'',meds:[],protocolUsed:null,startedAt:Date.now()};
+}
+
+function e(id){return document.getElementById(id)}
+function toast(msg){
+  var t=e('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toast._timer);toast._timer=setTimeout(function(){t.classList.remove('show')},1700);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
+}
+function stars(n){var s='';for(var i=1;i<=5;i++)s+=i<=n?'★':'☆';return s}
+
+function renderHud(){
+  e('hudDay').textContent=state.day;
+  e('hudPatient').textContent=Math.min(state.index+1,PATIENTS_PER_DAY)+' / '+PATIENTS_PER_DAY;
+  e('hudTrust').textContent=Math.round(state.trust);
+  e('hudReturns').textContent=state.totalReturns||0;
+  e('protocolCount').textContent=(state.protocols||[]).length;
+}
+function applyAvatar(p){
+  var a=e('avatar');
+  a.style.setProperty('--shirt',p.avatar.shirt);
+  a.style.setProperty('--hair',p.avatar.hair);
+  a.style.setProperty('--skin',p.avatar.skin);
+}
+function renderPatient(){
+  var p=state.current;
+  e('patientName').textContent=p.name;
+  e('patientAge').textContent=p.age+'세';
+  e('returnTag').classList.toggle('hidden',!p.returning);
+  e('complaint').textContent='“'+p.complaint+'”';
+  applyAvatar(p);
+  renderChart();
+  renderQuestions();
+  renderTests();
+  renderNotes();
+  renderAutomation();
+  syncDecision();
+  renderHud();
+}
+function renderChart(){
+  var p=state.current;
+  var allergyText=p.allergies.length?p.allergies.map(function(x){return x+' 계열'}).join(', '):'기록 없음';
+  var medText=p.currentMeds.length?p.currentMeds.map(function(x){return x==='Z'?'진정계열 Z':x==='B'?'기존 처방 B':x}).join(', '):'없음';
+  var prior=p.returning?'어제 본원 진료 기록 있음 · 증상 악화로 재방문':'특이 진료 기록 없음';
+  e('chartRecords').innerHTML=
+    '<div class="record"><div class="record-label">환자</div><div class="record-value">'+escapeHtml(p.name)+' · '+p.age+'세</div></div>'+
+    '<div class="record"><div class="record-label">약물 알레르기</div><div class="record-value '+(p.allergies.length?'alert-text':'')+'">'+escapeHtml(allergyText)+'</div></div>'+
+    '<div class="record"><div class="record-label">현재 복용약</div><div class="record-value">'+escapeHtml(medText)+'</div></div>'+
+    '<div class="record"><div class="record-label">과거 기록</div><div class="record-value">'+escapeHtml(prior)+'</div></div>';
+}
+function renderQuestions(){
+  var en=state.encounter;
+  e('questionCount').textContent=Math.max(0,5-en.questions.length);
+  e('qLeft').textContent=Math.max(0,5-en.questions.length);
+  e('questionGrid').innerHTML=QUESTIONS.map(function(q){
+    var done=en.questions.indexOf(q.id)>=0;
+    return '<button class="action '+(done?'done':'')+'" data-q="'+q.id+'" '+(done||en.questions.length>=5?'disabled':'')+'><b>'+escapeHtml(q.label)+'</b><small>'+escapeHtml(q.hint)+'</small></button>';
+  }).join('');
+  var log=['<div class="bubble patient"><span class="who">'+escapeHtml(state.current.name)+'</span>'+escapeHtml(state.current.complaint)+'</div>'];
+  en.questions.forEach(function(qid){
+    var q=QUESTIONS.find(function(x){return x.id===qid});
+    log.push('<div class="bubble doctor"><span class="who">나</span>'+escapeHtml(q.label)+'</div>');
+    log.push('<div class="bubble patient"><span class="who">'+escapeHtml(state.current.name)+'</span>'+escapeHtml(en.answers[qid])+'</div>');
+  });
+  e('conversationLog').innerHTML=log.join('');
+}
+function askQuestion(qid){
+  var en=state.encounter;
+  if(en.questions.length>=5||en.questions.indexOf(qid)>=0)return;
+  var d=diseaseById(state.current.disease);
+  en.questions.push(qid);en.answers[qid]=d.answers[qid]||'잘 모르겠어요.';
+  save();renderQuestions();renderNotes();
+}
+function renderTests(){
+  var en=state.encounter,remaining=5-en.testSpent;
+  e('testPoints').textContent=remaining;
+  e('testLeft').textContent=remaining;
+  e('testBudgetBar').style.width=Math.max(0,remaining/5*100)+'%';
+  e('testGrid').innerHTML=TESTS.map(function(t){
+    var done=en.tests.indexOf(t.id)>=0;
+    return '<button class="action '+(done?'done':'')+'" data-test="'+t.id+'" '+(done||t.cost>remaining?'disabled':'')+'><span class="cost">'+t.cost+'칸</span><b>'+escapeHtml(t.label)+'</b><small>'+escapeHtml(t.desc)+'</small></button>';
+  }).join('');
+  var logs=en.tests.map(function(tid){
+    var t=testById(tid);
+    return '<div class="bubble result"><span class="who">'+escapeHtml(t.label)+'</span>'+escapeHtml(en.results[tid])+'</div>';
+  });
+  e('testLog').innerHTML=logs.length?logs.join(''):'<div class="empty">아직 시행한 검사가 없습니다.</div>';
+}
+function runTest(tid,silent){
+  var en=state.encounter,t=testById(tid);
+  if(!t||en.tests.indexOf(tid)>=0)return true;
+  if(en.testSpent+t.cost>5){if(!silent)toast('검사 시간이 부족합니다.');return false}
+  var d=diseaseById(state.current.disease);
+  en.tests.push(tid);en.testSpent+=t.cost;en.results[tid]=d.tests[tid]||'특이 소견이 없습니다.';
+  save();renderTests();renderNotes();
+  return true;
+}
+function renderNotes(){
+  var en=state.encounter;
+  var qa=en.questions.map(function(id){
+    var q=QUESTIONS.find(function(x){return x.id===id});
+    return '<div class="record"><div class="record-label">'+escapeHtml(q.label)+'</div><div class="record-value">'+escapeHtml(en.answers[id])+'</div></div>';
+  }).join('');
+  var tt=en.tests.map(function(id){
+    var t=testById(id);
+    return '<div class="record"><div class="record-label">'+escapeHtml(t.label)+'</div><div class="record-value">'+escapeHtml(en.results[id])+'</div></div>';
+  }).join('');
+  e('notesView').innerHTML=(qa||tt)?'<div class="card" style="box-shadow:none;padding:8px 14px">'+qa+tt+'</div>':'<div class="empty">문진이나 검사를 진행하면 확인한 정보가 여기에 정리됩니다.</div>';
+}
+function buildDiagnosisOptions(){
+  var html='<option value="">진단을 선택하세요</option>';
+  Object.keys(DISEASES).forEach(function(id){html+='<option value="'+id+'">'+escapeHtml(DISEASES[id].label)+'</option>'});
+  html+='<option value="observe">진단 보류 · 경과 관찰</option>';
+  e('diagnosisSelect').innerHTML=html;
+}
+function buildRx(){
+  e('rxList').innerHTML=MEDS.map(function(m){
+    return '<label class="rx"><input type="checkbox" value="'+m.id+'"><span><b>'+escapeHtml(m.label)+'</b><small>'+escapeHtml(m.desc)+'</small></span></label>';
+  }).join('');
+}
+function syncDecision(){
+  var en=state.encounter;
+  e('diagnosisSelect').value=en.diagnosis||'';
+  Array.prototype.forEach.call(e('rxList').querySelectorAll('input[type=checkbox]'),function(cb){cb.checked=en.meds.indexOf(cb.value)>=0});
+}
+function selectedMedsFromDom(){
+  return Array.prototype.filter.call(e('rxList').querySelectorAll('input[type=checkbox]'),function(cb){return cb.checked}).map(function(cb){return cb.value});
+}
+
+function evaluate(){
+  var p=state.current,en=state.encounter,d=diseaseById(p.disease);
+  var diagnosisCorrect=en.diagnosis===p.disease;
+  var missing=d.essential.filter(function(x){return en.tests.indexOf(x)<0});
+  var unnecessary=en.tests.filter(function(x){return d.useful.indexOf(x)<0});
+  var unsafe=[];
+  en.meds.forEach(function(mid){
+    var m=medById(mid);
+    if(!m)return;
+    if(m.allergy&&p.allergies.indexOf(m.allergy)>=0)unsafe.push(m.label+' · 알레르기');
+    if(m.interacts&&m.interacts.some(function(x){return p.currentMeds.indexOf(x)>=0}))unsafe.push(m.label+' · 복용약 충돌');
+  });
+  var selectedGroups=en.meds.map(function(id){var m=medById(id);return m?m.group:null});
+  var missingGroups=d.groups.filter(function(g){return selectedGroups.indexOf(g)<0});
+  var banned=en.meds.filter(function(id){var m=medById(id);return m&&d.banned.indexOf(m.group)>=0}).map(function(id){return medById(id).label});
+  var score=100;
+  if(!diagnosisCorrect)score-=35;
+  score-=missing.length*12;
+  score-=unnecessary.length*5;
+  score-=unsafe.length*35;
+  score-=missingGroups.length*14;
+  score-=banned.length*12;
+  score=Math.max(0,Math.min(100,score));
+  var success=diagnosisCorrect&&missing.length===0&&unsafe.length===0&&missingGroups.length===0&&banned.length===0;
+  var needsReturn=!success&&(d.risk>=2||!diagnosisCorrect||unsafe.length>0);
+  var rating=score>=90?5:score>=75?4:score>=60?3:score>=40?2:1;
+  var comments;
+  if(rating===5)comments=['설명도 차분했고 필요한 검사만 해서 좋았어요.','진료가 깔끔했어요. 다음에도 올 것 같아요.','불필요하게 이것저것 하지 않고 딱 필요한 것만 봐주셨어요.'];
+  else if(rating===4)comments=['대체로 괜찮았어요. 조금 기다렸지만 나아졌습니다.','진료는 괜찮았는데 검사가 하나쯤 많았던 느낌이에요.'];
+  else if(rating===3)comments=['나쁘진 않았는데 확신이 들진 않았어요.','검사가 좀 많았고 설명도 애매했어요.'];
+  else if(rating===2)comments=['진료받고도 상태가 별로 달라지지 않았어요.','괜히 검사만 여러 개 한 것 같아 아쉬워요.'];
+  else comments=['다음 날 더 아파졌어요. 솔직히 돌팔이 아닌가 싶었습니다.','차트에 적힌 내용을 제대로 본 건지 모르겠어요. 다시 가고 싶진 않아요.'];
+  var unresolved=needsReturn&&!success;
+  return {
+    patient:JSON.parse(JSON.stringify(p)),encounter:JSON.parse(JSON.stringify(en)),actual:p.disease,
+    diagnosisCorrect:diagnosisCorrect,missing:missing,unnecessary:unnecessary,unsafe:unsafe,missingGroups:missingGroups,banned:banned,
+    score:score,success:success,needsReturn:needsReturn,rating:rating,comment:pick(comments),unresolved:unresolved
+  };
+}
+function finishEncounter(){
+  var diagnosis=e('diagnosisSelect').value;
+  if(!diagnosis){toast('진단을 선택해야 진료를 마칠 수 있습니다.');return}
+  state.encounter.diagnosis=diagnosis;
+  state.encounter.meds=selectedMedsFromDom();
+  var ev=evaluate();
+  state.today.push(ev);
+  state.history.push(ev);
+  state.totalSeen=(state.totalSeen||0)+1;
+  var delta=(ev.score-65)/12;
+  state.trust=Math.max(0,Math.min(100,state.trust+delta));
+  if(ev.needsReturn){
+    state.pendingReturns.push({patient:ev.patient,fromDay:state.day});
+  }
+  state.index++;
+  save();
+  if(state.index>=PATIENTS_PER_DAY){openReview();return}
+  startPatient();
+}
+
+function startPatient(){
+  if(!state.queue||!state.queue.length)buildQueue();
+  state.current=state.queue[state.index];
+  state.encounter=newEncounter(state.current);
+  save();
+  renderPatient();
+  switchTab('questions');
+}
+function switchTab(name){
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){b.classList.toggle('active',b.getAttribute('data-tab')===name)});
+  ['Questions','Tests','Notes','Automation'].forEach(function(n){e('panel'+n).classList.toggle('hidden',n.toLowerCase()!==name.toLowerCase())});
+  if(name==='automation')renderAutomation();
+}
+
+function reviewReason(ev){
+  var rows=[];
+  if(ev.diagnosisCorrect)rows.push('<span class="ok">진단 일치</span>');
+  else rows.push('<span class="miss">진단 재검토 필요</span>');
+  if(ev.missing.length)rows.push('<span class="miss">놓친 핵심 검사: '+ev.missing.map(function(id){return testById(id).label}).join(', ')+'</span>');
+  else rows.push('<span class="ok">핵심 검사 확인</span>');
+  if(ev.unnecessary.length)rows.push('우선순위 낮았던 검사: '+ev.unnecessary.map(function(id){return testById(id).label}).join(', '));
+  if(ev.unsafe.length)rows.push('<span class="miss">처방 안전 문제: '+escapeHtml(ev.unsafe.join(', '))+'</span>');
+  if(ev.missingGroups.length)rows.push('<span class="miss">필요한 처방/조치 부족: '+ev.missingGroups.map(groupLabel).join(', ')+'</span>');
+  if(ev.banned.length)rows.push('<span class="miss">불필요한 처방: '+escapeHtml(ev.banned.join(', '))+'</span>');
+  if(ev.unresolved)rows.push('<b>결과: 추적 필요 — 상태가 악화되면 다시 올 수 있습니다.</b>');
+  else if(ev.success)rows.push('<b>결과: 경과 양호</b>');
+  return rows.join('<br>');
+}
+function groupLabel(g){
+  return {support:'증상 완화',fever:'해열',allergy:'알레르기 조절',gastric:'위장 증상 조절',rehydration:'수분 보충',antibacterial:'항균 처방',referral:'상급진료 의뢰'}[g]||g;
+}
+function openReview(){
+  state.reviewOpen=true;
+  var avg=state.today.reduce(function(a,b){return a+b.score},0)/Math.max(1,state.today.length);
+  var good=state.today.filter(function(x){return x.success}).length;
+  var returns=state.today.filter(function(x){return x.needsReturn}).length;
+  state.totalReturns=(state.totalReturns||0)+returns;
+  e('reviewDay').textContent=state.day;
+  e('reviewSummary').innerHTML=
+    '<div class="summary-box">평균 판단<strong>'+Math.round(avg)+'</strong></div>'+
+    '<div class="summary-box">안정 진료<strong>'+good+' / '+PATIENTS_PER_DAY+'</strong></div>'+
+    '<div class="summary-box">재방문 가능<strong>'+returns+'</strong></div>'+
+    '<div class="summary-box">신뢰도<strong>'+Math.round(state.trust)+'</strong></div>';
+  e('reviewList').innerHTML=state.today.map(function(ev){
+    var p=ev.patient;
+    return '<div class="review-card '+(ev.rating<=2?'bad':ev.rating>=4?'good':'')+'">'+
+      '<div class="review-patient"><b>'+escapeHtml(p.name)+' · '+p.age+'세</b><span class="stars">'+stars(ev.rating)+'</span></div>'+
+      '<div class="review-comment">“'+escapeHtml(ev.comment)+'”</div>'+
+      '<div class="audit">'+reviewReason(ev)+'</div>'+
+      '</div>';
+  }).join('');
+  e('reviewModal').classList.remove('hidden');
+  save();
+}
+function nextDay(){
+  e('reviewModal').classList.add('hidden');
+  state.day++;
+  state.reviewOpen=false;
+  state.today=[];
+  state.queue=[];
+  state.current=null;
+  state.encounter=null;
+  buildQueue();
+  startPatient();
+  if(state.day===3)toast('진료 자동화가 해금되었습니다.');
+}
+
+function renderAutomation(){
+  var box=e('automationContent');
+  if(state.day<3){
+    box.innerHTML='<div class="lockbox"><b>DAY 3에 해금</b><p>반복 진료가 익숙해지면 프로토콜을 저장하고<br>문진 직후 검사·진단·처방을 한 번에 실행할 수 있습니다.</p></div>';
+    return;
+  }
+  var protocols=state.protocols||[];
+  var list=protocols.length?'<div class="protocols">'+protocols.map(function(p,i){
+    var tests=p.tests.map(function(id){return testById(id)?testById(id).label:id}).join(' · ')||'검사 없음';
+    var meds=p.meds.map(function(id){return medById(id)?medById(id).label:id}).join(' · ')||'처방 없음';
+    var rules=[];
+    if(p.rules.allergy)rules.push('IF 알레르기 → 해당 약 제외');
+    if(p.rules.interaction)rules.push('IF 복용약 충돌 → 해당 약 제외');
+    if(p.rules.fever)rules.push('IF 체온 ≥ 38.5 → F 추가');
+    return '<div class="protocol"><div class="protocol-head"><span class="protocol-title">'+escapeHtml(p.name)+'</span><div class="inline-actions"><button class="btn small primary" data-run-protocol="'+i+'">실행</button><button class="btn small danger" data-del-protocol="'+i+'">삭제</button></div></div>'+
+      '<div class="protocol-desc"><b>검사</b> '+escapeHtml(tests)+'<br><b>진단</b> '+escapeHtml(diseaseLabel(p.diagnosis))+'<br><b>처방</b> '+escapeHtml(meds)+'</div>'+
+      '<div class="rule-list">'+(rules.length?rules.map(function(r){return '<span class="rule-chip">'+escapeHtml(r)+'</span>'}).join(''):'<span class="rule-chip">안전 조건 없음</span>')+'</div></div>';
+  }).join('')+'</div>':'<div class="empty">아직 저장된 자동 진료 프로토콜이 없습니다.</div>';
+
+  box.innerHTML=list+
+    '<div class="save-protocol"><h4>현재 선택을 프로토콜로 저장</h4>'+
+    '<div class="note">현재 시행한 검사 + 선택한 진단 + 체크한 처방을 그대로 저장합니다. 잘못 저장한 프로토콜도 이후 그대로 실행됩니다.</div>'+
+    '<div class="switches"><label><input type="checkbox" id="ruleAllergy" checked> IF 알레르기 기록이 있으면 해당 약 자동 제외</label>'+
+    '<label><input type="checkbox" id="ruleInteraction"> IF 현재 복용약과 충돌하면 해당 약 자동 제외</label>'+
+    '<label><input type="checkbox" id="ruleFever"> IF 체온이 38.5℃ 이상이면 해열제 F 자동 추가</label></div>'+
+    '<button class="btn primary" id="saveProtocolBtn">현재 진료 방식 저장</button></div>';
+}
+function saveProtocol(){
+  var en=state.encounter;
+  var diagnosis=e('diagnosisSelect').value;
+  var meds=selectedMedsFromDom();
+  if(!diagnosis){toast('먼저 진단을 선택하세요.');return}
+  var name=diseaseLabel(diagnosis)+' 프로토콜 '+((state.protocols||[]).filter(function(p){return p.diagnosis===diagnosis}).length+1);
+  state.protocols.push({
+    name:name,tests:en.tests.slice(),diagnosis:diagnosis,meds:meds,
+    rules:{allergy:e('ruleAllergy').checked,interaction:e('ruleInteraction').checked,fever:e('ruleFever').checked}
+  });
+  save();renderAutomation();renderHud();toast('프로토콜을 저장했습니다.');
+}
+function runProtocol(index){
+  var p=state.protocols[index];if(!p)return;
+  var en=state.encounter;
+  p.tests.forEach(function(tid){runTest(tid,true)});
+  en.diagnosis=p.diagnosis;
+  var meds=p.meds.slice();
+  if(p.rules.fever&&en.results.temp){
+    var val=parseFloat(String(en.results.temp).replace('℃',''));
+    if(val>=38.5&&meds.indexOf('F')<0)meds.push('F');
+  }
+  if(p.rules.allergy){
+    meds=meds.filter(function(mid){var m=medById(mid);return !m||!m.allergy||state.current.allergies.indexOf(m.allergy)<0});
+  }
+  if(p.rules.interaction){
+    meds=meds.filter(function(mid){var m=medById(mid);return !m||!m.interacts||!m.interacts.some(function(x){return state.current.currentMeds.indexOf(x)>=0})});
+  }
+  en.meds=meds;en.protocolUsed=p.name;
+  save();syncDecision();renderTests();renderNotes();
+  toast('자동 진료를 실행했습니다. 결과는 하루 리뷰에서 확인됩니다.');
+}
+
+function resetGame(){
+  localStorage.removeItem(SAVE_KEY);state=freshState();buildQueue();startPatient();e('introModal').classList.add('hidden');e('reviewModal').classList.add('hidden');
+}
+function startNew(){
+  state=freshState();buildQueue();startPatient();e('introModal').classList.add('hidden');
+}
+function resume(){
+  if(!load()){startNew();return}
+  if(!state.queue||!state.queue.length)buildQueue();
+  if(state.reviewOpen&&state.today&&state.today.length){e('introModal').classList.add('hidden');openReview();return}
+  if(!state.current||!state.encounter){
+    if(state.index>=PATIENTS_PER_DAY){openReview();e('introModal').classList.add('hidden');return}
+    state.current=state.queue[state.index];state.encounter=newEncounter(state.current);
+  }
+  renderPatient();e('introModal').classList.add('hidden');
+}
+
+buildDiagnosisOptions();buildRx();
+var hasSave=load();
+e('resumeBtn').classList.toggle('hidden',!hasSave);
+e('resetBtn').classList.toggle('hidden',!hasSave);
+if(hasSave){renderHud()}
+
+document.querySelector('.tabs').addEventListener('click',function(ev){
+  var b=ev.target.closest('.tab');if(b)switchTab(b.getAttribute('data-tab'));
+});
+e('questionGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-q]');if(b)askQuestion(b.getAttribute('data-q'))});
+e('testGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-test]');if(b)runTest(b.getAttribute('data-test'),false)});
+e('diagnosisSelect').addEventListener('change',function(){state.encounter.diagnosis=this.value;save()});
+e('rxList').addEventListener('change',function(){state.encounter.meds=selectedMedsFromDom();save()});
+e('finishBtn').addEventListener('click',finishEncounter);
+e('nextDayBtn').addEventListener('click',nextDay);
+e('startBtn').addEventListener('click',startNew);
+e('resumeBtn').addEventListener('click',resume);
+e('resetBtn').addEventListener('click',function(){if(confirm('진료 기록과 자동화 프로토콜을 모두 초기화할까요?'))resetGame()});
+e('automationContent').addEventListener('click',function(ev){
+  var run=ev.target.closest('[data-run-protocol]');if(run){runProtocol(Number(run.getAttribute('data-run-protocol')));return}
+  var del=ev.target.closest('[data-del-protocol]');if(del){state.protocols.splice(Number(del.getAttribute('data-del-protocol')),1);save();renderAutomation();renderHud();return}
+  if(ev.target.closest('#saveProtocolBtn'))saveProtocol();
+});
+document.addEventListener('contextmenu',function(ev){ev.preventDefault()});
+})();
+</script>
+</body>
+</html>
