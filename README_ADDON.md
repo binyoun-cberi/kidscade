@@ -41,4 +41,11 @@ Extract this ZIP at the Kidscade repository root and **merge** the included `ass
 
 ## Important license note
 
-The Underwater Diving artwork is **CC BY 3.0**, not CC0, so its Luis Zuno (@ansimuz) attribution must be retained. The two standalone seafloor tile PNGs have no license metadata in the uploads and are marked accordingly.
+This library is **not all CC0**.
+
+- Underwater Diving artwork is tracked as **CC BY 3.0** in the repository and keeps the Luis Zuno (@ansimuz) attribution.
+- 3D v4 includes mixed CC0 / CC-BY packs; check each model before use.
+- Pixabay audio under `assets/audio/incoming/newmusical/` is tracked under the Pixabay Content License based on owner-confirmed provenance.
+- The two standalone seafloor tile PNGs have no license metadata and remain unverified.
+
+Central record: `CREDITS.md` / `credits.html`.
