@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v7 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=7/);
-  assert.match(html,/diver-v5\.js\?v=6/);
+  assert.match(html,/diver-v7\.js\?v=7/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
