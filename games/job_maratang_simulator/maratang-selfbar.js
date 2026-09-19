@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const FOOD = new URL('../../assets/game/food/', import.meta.url).href;
 const MAX_PORTIONS = 12;
-const CAMPAIGN_DAYS = 5;
+const CAMPAIGN_DAYS = 15;
 const BASE_CUSTOMERS = 5;
 const PRICE_PER_100G = 1900;
 const START_CASH = 12000;
@@ -16,15 +16,42 @@ const UPGRADES = {
 };
 
 const INGREDIENTS = [
-  {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78},
-  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', cost:240, weight:45, size:.70},
-  {id:'carrot', name:'당근', model:'carrot.glb', cost:160, weight:40, size:.72},
-  {id:'mushroom', name:'버섯', model:'mushroom.glb', cost:300, weight:45, size:.66},
-  {id:'sausage', name:'소시지', model:'sausage.glb', cost:420, weight:50, size:.68},
-  {id:'meat', name:'소고기', model:'meat-raw.glb', cost:650, weight:60, size:.66},
-  {id:'corn', name:'옥수수', model:'corn.glb', cost:260, weight:65, size:.72},
-  {id:'leek', name:'대파', model:'leek.glb', cost:140, weight:35, size:.80},
-  {id:'onion', name:'양파', model:'onion.glb', cost:170, weight:50, size:.68}
+  {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78, unlockDay:1},
+  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', cost:240, weight:45, size:.70, unlockDay:1},
+  {id:'carrot', name:'당근', model:'carrot.glb', cost:160, weight:40, size:.72, unlockDay:1},
+  {id:'mushroom', name:'버섯', model:'mushroom.glb', cost:300, weight:45, size:.66, unlockDay:1},
+  {id:'sausage', name:'소시지', model:'sausage.glb', cost:420, weight:50, size:.68, unlockDay:1},
+  {id:'meat', name:'소고기', model:'meat-raw.glb', cost:650, weight:60, size:.66, unlockDay:1},
+  {id:'corn', name:'옥수수', model:'corn.glb', cost:260, weight:65, size:.72, unlockDay:1},
+  {id:'leek', name:'대파', model:'leek.glb', cost:140, weight:35, size:.80, unlockDay:1},
+  {id:'onion', name:'양파', model:'onion.glb', cost:170, weight:50, size:.68, unlockDay:1},
+  {id:'cauliflower', name:'콜리플라워', model:'cauliflower.glb', cost:230, weight:50, size:.70, unlockDay:3},
+  {id:'eggplant', name:'가지', model:'eggplant.glb', cost:210, weight:55, size:.72, unlockDay:5},
+  {id:'radish', name:'무', model:'radish.glb', cost:180, weight:55, size:.72, unlockDay:7},
+  {id:'dimsum', name:'만두', model:'dim-sum.glb', cost:390, weight:60, size:.68, unlockDay:9},
+  {id:'mussel', name:'홍합', model:'mussel-open.glb', cost:470, weight:45, size:.66, unlockDay:11},
+  {id:'egg', name:'달걀', model:'egg-half.glb', cost:250, weight:50, size:.66, unlockDay:13}
+];
+
+const CUSTOMER_TYPES = [
+  {id:'regular',label:'동네 단골',minDay:1,patience:.94,budget:1,weight:0,tip:1,rep:1,desc:'천천히 정확한 한 그릇을 원해요.'},
+  {id:'hurried',label:'급한 직장인',minDay:2,patience:1.34,budget:1.08,weight:0,tip:1.25,rep:1,desc:'기다리는 시간이 길면 바로 떠날 수 있어요.'},
+  {id:'budget',label:'알뜰 손님',minDay:3,patience:1.04,budget:.86,weight:-20,tip:.65,rep:1,desc:'예산을 넘기지 않는 게 가장 중요해요.'},
+  {id:'big',label:'대식가',minDay:4,patience:.91,budget:1.30,weight:95,tip:1.1,rep:1,desc:'평소보다 훨씬 푸짐한 양을 원해요.'},
+  {id:'gourmet',label:'미식가',minDay:6,patience:.98,budget:1.16,weight:20,tip:1.7,rep:1.25,desc:'완성도가 높으면 팁을 크게 줍니다.'},
+  {id:'influencer',label:'맛집 크리에이터',minDay:8,patience:1.08,budget:1.22,weight:15,tip:1.55,rep:2,desc:'만족시키면 평판이 크게 오르지만 실수도 더 눈에 띄어요.'},
+  {id:'family',label:'가족 손님',minDay:10,patience:.86,budget:1.36,weight:120,tip:1.2,rep:1.2,desc:'양이 많고 예산도 넉넉하지만 주문이 큽니다.'}
+];
+
+const DAILY_EVENTS = [
+  {id:'normal',title:'평범한 하루',desc:'특별한 변수 없이 기본 영업을 합니다.',customerDelta:0,patience:1,tip:1,costMult:1},
+  {id:'lunchRush',title:'점심시간 러시',desc:'손님이 2명 더 오고 모두 조금 더 조급합니다.',customerDelta:2,patience:1.14,tip:1.05,costMult:1},
+  {id:'rain',title:'비 오는 날',desc:'손님은 1명 줄지만 기다림에는 조금 관대합니다.',customerDelta:-1,patience:.88,tip:1.08,costMult:1},
+  {id:'viral',title:'SNS 입소문',desc:'손님이 2명 늘고 팁과 평판 상승 효과가 커집니다.',customerDelta:2,patience:1.04,tip:1.28,rep:1.25,costMult:1},
+  {id:'wholesale',title:'도매시장 특가',desc:'다음 영업용 모든 재료 발주 가격이 20% 저렴합니다.',customerDelta:0,patience:1,tip:1,costMult:.8},
+  {id:'meatPrice',title:'고기값 급등',desc:'소고기와 소시지 발주 가격이 크게 올랐습니다.',customerDelta:0,patience:1,tip:1,costMult:1,costById:{meat:1.45,sausage:1.25}},
+  {id:'vegSale',title:'채소 풍년',desc:'주요 채소 발주 가격이 25% 내려갑니다.',customerDelta:0,patience:1,tip:1,costMult:1,costById:{cabbage:.75,broccoli:.75,carrot:.75,leek:.75,onion:.75,cauliflower:.75,eggplant:.75,radish:.75}},
+  {id:'spicy',title:'매운맛 챌린지',desc:'오늘 손님들은 모두 3단계 맵기를 찾습니다. 팁도 조금 커집니다.',customerDelta:1,patience:1.05,tip:1.18,costMult:1,forceSpice:3}
 ];
 
 const ORDERS = [
@@ -48,6 +75,19 @@ const ORDERS = [
    text:'브로콜리, 당근, 양파, 옥수수로 채소 듬뿍 담아 주세요. 소시지는 빼고 안 맵게요.'},
   {title:'매운맛 도전 손님', must:{meat:1,mushroom:1,leek:1}, avoid:['cabbage'], spice:3, budget:8400,minWeight:210,maxWeight:360,patienceRate:1.12,
    text:'소고기, 버섯, 대파 넣고 양배추는 빼 주세요. 맵기는 3단계로 도전할게요.'}
+,
+  {title:'콜리플라워 채소탕', must:{cauliflower:2,cabbage:1,mushroom:1}, avoid:['sausage'], spice:1, budget:7600,minWeight:220,maxWeight:370,patienceRate:.96,
+   text:'콜리플라워는 두 번, 양배추와 버섯도 넣고 소시지는 빼 주세요. 1단계요.'},
+  {title:'가지 소고기 한 그릇', must:{eggplant:1,meat:1,onion:1}, avoid:['corn'], spice:2, budget:8600,minWeight:220,maxWeight:380,patienceRate:1.0,
+   text:'가지, 소고기, 양파를 넣고 옥수수는 빼 주세요. 2단계로 부탁해요.'},
+  {title:'담백한 무 채소탕', must:{radish:2,cabbage:1,leek:1}, avoid:['sausage'], spice:0, budget:6900,minWeight:240,maxWeight:390,patienceRate:.9,
+   text:'무는 두 번, 양배추와 대파도 넣어 주세요. 소시지는 빼고 안 맵게요.'},
+  {title:'만두 듬뿍 마라탕', must:{dimsum:2,broccoli:1,onion:1}, avoid:['meat'], spice:2, budget:8400,minWeight:250,maxWeight:420,patienceRate:1.04,
+   text:'만두 두 번에 브로콜리와 양파를 넣고 소고기는 빼 주세요. 2단계요.'},
+  {title:'홍합 얼큰탕', must:{mussel:2,mushroom:1,leek:1}, avoid:['sausage'], spice:3, budget:9200,minWeight:240,maxWeight:410,patienceRate:1.08,
+   text:'홍합은 두 번, 버섯과 대파도 넣어 주세요. 소시지는 빼고 3단계요.'},
+  {title:'달걀 고기 마라탕', must:{egg:2,meat:1,onion:1}, avoid:['broccoli'], spice:1, budget:9000,minWeight:250,maxWeight:420,patienceRate:.98,
+   text:'달걀 두 번, 소고기와 양파를 넣고 브로콜리는 빼 주세요. 1단계로요.'}
 ]
 
 const $ = s => document.querySelector(s);
