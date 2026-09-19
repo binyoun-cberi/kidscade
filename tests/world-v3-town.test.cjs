@@ -306,7 +306,9 @@ test('Cube Pets are separated into owned yard companions and habitat-based wild 
 
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
-  assert.match(city,/model\.position\.x-=center\.x/);\n  assert.match(city,/model\.position\.z-=center\.z/);\n  assert.match(city,/model\.position\.y-=b\.min\.y/);
+  assert.match(city,/model\.position\.x-=center\.x/);
+  assert.match(city,/model\.position\.z-=center\.z/);
+  assert.match(city,/model\.position\.y-=b\.min\.y/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
   assert.match(city,/object:anchor,model/);
   assert.match(city,/n\.object\.position\.y=n\.groundY/);
