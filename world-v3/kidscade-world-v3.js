@@ -1023,10 +1023,7 @@ async function init(){
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await buildPets();
-  const starter=prog();
-  if(!(starter.tools.axe?.dur>0)||!(starter.tools.pick?.dur>0)){
-    setTimeout(()=>toast('처음엔 집 주변 나뭇가지·작은 돌을 맨손으로 주우세요. 목재 5 · 돌 5면 두 돌도구를 만들 수 있어요.'),650);
-  }
+  showStarterHintOnce();
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
   else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을'}
