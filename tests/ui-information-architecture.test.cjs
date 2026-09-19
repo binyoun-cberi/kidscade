@@ -30,7 +30,7 @@ test('mobile primary navigation exposes the four intended destinations', () => {
   assert.match(source, /data-mobile-nav=\"growth\"/);
   assert.match(source, /data-mobile-nav=\"search\"/);
   assert.match(source, />내 프로필</);
-  assert.match(source, />쑥쑥랜드</);
+  assert.match(source, />Cube Pets</);
   assert.match(source, />찾기</);
 });
 
@@ -76,7 +76,7 @@ test('signed-in play record copy describes account synchronization', () => {
 
 test('growth modal no longer presents profile wording or tab duplication', () => {
   assert.match(source, /#pet-modal \.sook-main-tabs \{ display:none !important; \}/);
-  assert.match(source, /room: \['🌱 쑥쑥랜드', '쑥쑥랜드'\]/);
+  assert.match(source, /room: \['🐾 Cube Pets 월드', 'Cube Pets 월드'\]/);
   assert.match(source, /missions: \['🎯 오늘의 미션', '오늘의 미션'\]/);
   assert.match(source, /recommend: \['💬 게임 추천', '게임 추천'\]/);
 });
