@@ -70,12 +70,19 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   // NPCs are skinned characters: Object3D.clone(true) leaves skeleton/bone bindings shared.
   // SkeletonUtils.clone gives every resident an independent skeleton so bodies follow their anchors.
   const model=ctx.prepModel(cloneSkeleton(base));
+  // Match the already-working people pipeline used by the market game:
+  // normalize by the largest axis, then center X/Z and put feet on local Y=0.
   model.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
-  const scale=1.82/Math.max(.01,size.y);
-  model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
-  const b=new THREE.Box3().setFromObject(model);
-  model.position.set(0,-b.min.y,0);
+  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3());
+  const baseSize=Math.max(size.x,size.y,size.z)||1;
+  model.scale.multiplyScalar(1.82/baseSize);
+  model.updateMatrixWorld(true);
+  b=new THREE.Box3().setFromObject(model);
+  const center=b.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;
+  model.position.z-=center.z;
+  model.position.y-=b.min.y;
+  model.updateMatrixWorld(true);
   const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,20),new THREE.MeshBasicMaterial({color:0x263126,transparent:true,opacity:.18,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.008;anchor.add(shadow);
