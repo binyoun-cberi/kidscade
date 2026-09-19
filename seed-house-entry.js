@@ -94,7 +94,7 @@
         <div class="kc-seed-house-icon">🌱🏠</div>
         <div>
           <div class="kc-seed-house-title">씨앗하우스</div>
-          <div class="kc-seed-house-desc">집 · 정원 · 농장을 돌아다니며 생활해요.</div>
+          <div class="kc-seed-house-desc">집 · 농장 · 숲 · 강가 · 돌산을 탐험하며 살아가요.</div>
         </div>
       </div>
       <button class="kc-seed-house-open" type="button" data-open-life-world="seed-house-button">씨앗하우스 들어가기</button>
@@ -143,7 +143,7 @@
       const strong = bar.querySelector('strong');
       const sub = bar.querySelector('span');
       if (strong && strong.textContent !== '🌱 씨앗하우스') strong.textContent = '🌱 씨앗하우스';
-      if (sub && sub.textContent !== '집 · 나의 정원 · 농장이 하나로 이어지는 공간') sub.textContent = '집 · 나의 정원 · 농장이 하나로 이어지는 공간';
+      if (sub && sub.textContent !== '집 · 농장 · 숲 · 강가 · 돌산에서 Cube Pets와 살아가는 공간') sub.textContent = '집 · 농장 · 숲 · 강가 · 돌산에서 Cube Pets와 살아가는 공간';
     }
     const frame = document.getElementById('kidscade-life-world-frame');
     if (frame && frame.title !== 'Kidscade 씨앗하우스') frame.title = 'Kidscade 씨앗하우스';
