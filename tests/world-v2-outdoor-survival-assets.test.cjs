@@ -58,5 +58,5 @@ test('World v2 outdoor asset pass is cache-bumped',()=>{
   assert.match(life,/kidscade-world-work-animation\.js\?v=2/);
   assert.match(life,/kidscade-world-carry-fishing\.js\?v=2/);
   assert.match(life,/kidscade-world-progression\.js\?v=2/);
-  assert.match(integration,/world-v2\/kidscade-world\.html\?v=7/);
+  assert.match(integration,/world-v2\\/kidscade-world\\.html\\?v=8/);
 });
