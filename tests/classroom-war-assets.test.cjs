@@ -54,5 +54,22 @@ test('Classroom War math gates preview their resulting army count',()=>{
 test('Classroom War catalog points to the asset rework',()=>{
   const game=catalog.games.find(g=>g.id==='high_classroom_war_3d');
   assert.ok(game);
-  assert.equal(game.href,'games/high_classroom_war_3d/교실전쟁 3D.html?v=12');
+  assert.equal(game.href,'games/high_classroom_war_3d/교실전쟁 3D.html?v=13');
+});
+
+test('Classroom War uses SkeletonUtils clone and stable grounding for skinned people',()=>{
+  assert.match(html,/addons\/utils\/SkeletonUtils\.js/);
+  assert.match(html,/window\.cloneSkeleton = skeletonMod\.clone/);
+  assert.match(html,/window\.cloneSkeleton\?window\.cloneSkeleton\(gltf\.scene\)/);
+  assert.match(html,/const baseSize=Math\.max\(size\.x,size\.y,size\.z\)\|\|1/);
+  assert.match(html,/model\.position\.y-=bounds\.min\.y/);
+  assert.match(html,/root\.userData\.groundY=\.035/);
+  assert.match(html,/Math\.max\(0,Math\.sin\(phase\)\)/);
+});
+
+test('Classroom War spreads army ranks and rows instead of piling models together',()=>{
+  assert.match(html,/function lineUp\(list,z,span=6\.2,rowStep=\.96\)/);
+  assert.match(html,/row\*rowStep/);
+  assert.match(html,/player\.soldiers,createStudent,player\.agents,1\.35,5\.8,\.94/);
+  assert.match(html,/player\.generals,createGeneralStudent,player\.generalAgents,-3\.92,6\.3,1\.08/);
 });
