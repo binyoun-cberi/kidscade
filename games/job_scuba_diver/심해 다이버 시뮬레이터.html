@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>심해 다이버 시뮬레이터</title>
-<link rel="stylesheet" href="./deep-diver-2d.css?v=6">
+<link rel="stylesheet" href="./deep-diver-2d.css?v=7">
 </head>
 <body>
 <canvas id="game" aria-label="2D 심해 잠수 탐사 게임"></canvas>
@@ -17,7 +17,7 @@
       <div class="row"><span id="depthText">0m</span><b id="zoneText">산호 정원</b></div>
     </div>
     <div class="hudBox" id="missionHud"><div class="missionTitle" id="missionName">생태 조사</div><div class="missionText" id="missionText"></div></div>
-    <div class="hudBox" id="rightHud"><div>가방 <b id="bagText">0 / 8kg</b></div><div>수익 <b id="moneyText">0원</b></div><div id="sonarText">SONAR READY</div></div>
+    <div class="hudBox" id="rightHud"><div>가방 <b id="bagText">0 / 8kg</b></div><div>수익 <b id="moneyText">0원</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
   </div>
   <div id="toolBar">
     <button class="toolBtn active" data-tool="camera">1 · 카메라</button>
@@ -36,22 +36,21 @@
 <div id="mobile">
   <div id="stick"><div id="knob"></div></div>
   <div id="mActions">
-    <button class="mBtn" data-tool="camera">카메라</button>
+    <button class="mBtn" data-tool="camera">촬영</button>
     <button class="mBtn" data-tool="harpoon">작살</button>
     <button class="mBtn" data-tool="sonar">소나</button>
-    <button class="mBtn gold" id="actionMobile">사용</button>
-    <button class="mBtn" id="interactMobile">회수</button>
     <button class="mBtn green" id="dashMobile">대시</button>
+    <button class="mBtn gold" id="interactMobile">회수</button>
+    <button class="mBtn" id="actionMobile" aria-hidden="true">사용</button>
   </div>
 </div>
 
-<button class="btn dark" id="soundBtn" style="position:fixed;z-index:61;right:max(10px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));padding:7px 10px;margin:0;font-size:10px">SOUND OFF</button>
 
 <section class="overlay" id="startScreen">
   <div class="panel">
     <div class="hero">
       <div class="heroSprite" style="background-image:url('../../assets/game/2d/underwater/underwater-diving/player/player-swiming.png')"></div>
-      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v6</div></div>
+      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v7 · EXPEDITION REWORK</div></div>
     </div>
     <div class="notice"><b>1인칭 오픈워터에서 2D 픽셀 탐사 게임으로 완전 리워크.</b><br>절벽·해저 선반·동굴 통로를 따라 위·아래·좌·우로 탐사하며 생물을 촬영하고, 표본과 유물을 회수한 뒤 산소가 떨어지기 전에 수면으로 돌아오세요.</div>
     <div class="grid">
@@ -70,6 +69,6 @@
 <section class="overlay hidden" id="codexScreen"><div class="panel"><h2>해양 생물 도감</h2><div id="codexBody"></div></div></section>
 <section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar"><button class="btn gold" id="nextBtn">계약 게시판</button><button class="btn dark" id="homeBtn">시작 화면</button></div></div></section>
 
-<script src="./diver-v5.js?v=6"></script>
+<script src="./diver-v7.js?v=7"></script>
 </body>
 </html>
