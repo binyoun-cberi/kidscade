@@ -110,11 +110,11 @@
     {
       "id": "low_one_stroke",
       "title": "한붓쓱",
-      "href": "한붓쓱.html?v=4",
+      "href": "한붓쓱.html?v=5",
       "category": "math",
       "age": "low",
       "icon": "🛵",
-      "description": "빈 공간을 촘촘히 채운 미니어처 탑다운 도시에서 택배 허브·집·학교·상점·공원을 지나며 모든 배달 도로를 한 번씩 잇는 50스테이지 한붓그리기 퍼즐!",
+      "description": "실제 Kenney 3D 건물·나무·차량 에셋으로 채운 탑다운 미니어처 도시에서 모든 배달 도로를 한 번씩 잇는 50스테이지 한붓그리기 퍼즐!",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M15 55L30 19L52 29L62 57L36 62L15 55Z\"\n                  fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"7\"\n                  stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n            <circle cx=\"15\" cy=\"55\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"30\" cy=\"19\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"52\" cy=\"29\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"62\" cy=\"57\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"36\" cy=\"62\" r=\"7\" fill=\"#303845\"/>\n        </svg>",
       "cover": "assets/gate-image/한붓쓱.png"
     },
