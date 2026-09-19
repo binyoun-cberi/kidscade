@@ -197,6 +197,7 @@ function prog(){
     migratedLegacy:!!rawPets.migratedLegacy
   };
   p.starterKitClaimed=!!p.starterKitClaimed;
+  p.starterHintSeen=!!p.starterHintSeen;
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
   return p;
 }
@@ -411,6 +412,15 @@ function claimStarterKit(){
   p.starterKitClaimed=true;i.wood=(i.wood||0)+5;i.stone=(i.stone||0)+5;
   persist();setAvatarAction('smile',700);updateStatus();
   toast('초보자 보급: 목재 +5 · 돌 +5! 이제 돌도끼와 돌곡괭이를 만들 수 있어요.');
+}
+function showStarterHintOnce(){
+  const p=prog(),i=inv();
+  if(p.starterHintSeen)return;
+  const hasAxe=(p.tools.axe?.dur||0)>0,hasPick=(p.tools.pick?.dur||0)>0;
+  const enoughForBoth=(i.wood||0)>=5&&(i.stone||0)>=5;
+  if(hasAxe&&hasPick||enoughForBoth){p.starterHintSeen=true;persist();return;}
+  p.starterHintSeen=true;persist();
+  setTimeout(()=>toast('첫 도구 만들기: 집 주변 나뭇가지·작은 돌을 맨손으로 줍거나, 집 앞 초보자 보급상자를 열어보세요.'),650);
 }
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
