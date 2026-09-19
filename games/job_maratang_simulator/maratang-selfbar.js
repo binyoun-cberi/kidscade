@@ -97,11 +97,24 @@ function toast(text) {
   clearTimeout(toast.t);
   toast.t=setTimeout(()=>els.toast.classList.remove('show'),1300);
 }
+function updateStockUI(){
+  for(const ing of INGREDIENTS){
+    const label=els.labels.querySelector(`[data-id="${ing.id}"]`);
+    const left=state.stock[ing.id]??0;
+    if(label){label.textContent=ing.name+' · '+left;label.classList.toggle('out',left<=0)}
+  }
+  scene?.refreshStockVisuals?.();
+}
 function updateReadout() {
   els.weight.textContent=bowlWeight();
   els.cost.textContent=bowlCost().toLocaleString();
-  els.served.textContent=state.served;
-  els.score.textContent=state.score;
+  els.served.textContent=state.dayServed;
+  els.day.textContent=state.day;
+  els.cash.textContent='₩'+Math.max(0,Math.round(state.cash)).toLocaleString();
+  els.reputation.textContent=Math.round(state.reputation);
+  els.dayTarget.textContent=state.dayTarget;
+  els.queue.textContent=state.queue;
+  updateStockUI();
 }
 function setPhase(phase) {
   state.phase=phase;
@@ -116,16 +129,20 @@ function setPhase(phase) {
 function setOrder(order) {
   state.order=order;
   els.orderTitle.textContent=order.title;
-  els.orderText.textContent=order.text;
-  state.patience=100;
+  els.orderText.textContent=order.text+` · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
+  state.patience=100;state.customerSettled=false;
   els.patienceFill.style.transform='scaleX(1)';
 }
 function startPatience() {
   clearInterval(state.patienceTimer);
   state.patienceTimer=setInterval(()=>{
-    if(state.phase==='idle'||state.completed)return;
-    state.patience=Math.max(0,state.patience-.7);
+    if(state.phase==='idle'||state.completed||state.customerSettled)return;
+    const serviceBonus=Math.max(.48,1-state.upgrades.service*.12);
+    const queuePressure=1+state.queue*.035;
+    const rate=.7*(state.order?.patienceRate||1)*serviceBonus*queuePressure;
+    state.patience=Math.max(0,state.patience-rate);
     els.patienceFill.style.transform=`scaleX(${state.patience/100})`;
+    if(state.patience<=0)customerLeaves();
   },500);
 }
 function stopPatience(){clearInterval(state.patienceTimer);state.patienceTimer=null}
@@ -152,6 +169,7 @@ class SelfBarScene {
     this.dragStart=null;
     this.bowlCenter=new THREE.Vector3(0,.45,2.65);
     this.labelAnchors=new Map();
+    this.displayItems=new Map();
     this.bowlItems=[];
     this.mode='idle';
     this.time=0;
@@ -198,7 +216,11 @@ class SelfBarScene {
     const obj=await this.cloneModel(ing.model,ing.size);
     obj.position.set(x,.34,z);obj.rotation.y=(Math.random()-.5)*.5;
     this.markIngredient(obj,ing.id);
+    this.displayItems.set(ing.id,obj);obj.visible=(state.stock[ing.id]??0)>0;
     this.shelfGroup.add(obj);
+  }
+  refreshStockVisuals(){
+    for(const [id,obj] of this.displayItems)obj.visible=(state.stock[id]??0)>0;
   }
   async cloneModel(file,size=.7){
     let source=this.cache.get(file);
