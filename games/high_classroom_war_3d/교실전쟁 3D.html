@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>교실전쟁 3D v4.0 - 진짜 투사체와 전선 위협</title>
+<title>교실전쟁 3D v5.0 - 에셋 전장 리워크</title>
 <style>
 :root{
   --ink:#07111f;--panel:rgba(8,18,32,.88);--line:rgba(255,255,255,.14);
@@ -14,7 +14,8 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08111d;color:#fff;
 font-family:ui-rounded,system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif}
 body{display:grid;place-items:center}
-#app{position:relative;width:min(100vw,720px);height:100dvh;max-height:1100px;overflow:hidden;background:#0b1320;touch-action:none}
+#app{position:relative;width:min(100vw,1180px);height:100dvh;max-height:1100px;overflow:hidden;background:#0b1320;touch-action:none}
+@media(min-width:900px){#app{width:min(96vw,1180px);height:min(100dvh,980px);border-radius:22px;box-shadow:0 28px 90px rgba(0,0,0,.38)}}
 #game{position:absolute;inset:0;width:100%;height:100%;display:block}
 #hud{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 10px 0;z-index:10;pointer-events:none}
 .hudtop{display:grid;grid-template-columns:1fr auto 1fr;gap:7px;align-items:center}
@@ -88,7 +89,7 @@ background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#083344;box-shadow:0 10
   <div id="overlay">
     <div class="panel" id="panel">
       <span class="eyebrow">KIDSCADE · 3D ENDLESS MATH DEFENSE</span>
-      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">v4.0 · 진짜 투사체 · 교과서 방어벽 · 숙제 폭탄</div>
+      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">v5.0 · 실제 3D 학생 에셋 · 관문 결과 미리보기</div>
       <div class="lead">
         책상 사이 통로를 지키는 학생 부대. 수학 관문을 골라 화력을 키우고,
         적이 교실 방어선을 넘지 못하게 최대한 오래 버티세요.
@@ -100,48 +101,51 @@ background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#083344;box-shadow:0 10
         <div class="mini"><b>숫자가 곧 편제</b>병력 12,345는 장군1 · 장교2 · 부사관3 · 엘리트4 · 병사5로 보입니다.</div>
       </div>
       <button class="cta" id="startBtn">3D 교실 방어 시작</button>
-      <div class="fine">Three.js 로더를 3중화했습니다. 배포 시 라이브러리를 사이트에 함께 두면 완전 오프라인 실행도 가능합니다.</div>
+      <div class="fine">사이트에 포함된 로컬 Three.js와 3D 캐릭터 에셋을 우선 사용하며, 로딩 실패 시 기존 절차형 모델로 안전하게 전환됩니다.</div>
     </div>
   </div>
   <div id="webglFail"></div>
 </div>
 
+<script type="importmap">
+{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}
+</script>
 <script>
 /*
-  Three.js loader
-  - v0.180+ no longer provides the old global build path used by the previous file.
-  - This game intentionally uses the compatible r147 global UMD build and tries
-    three different CDNs before showing an error.
+  Local-first Three.js loader
+  - Uses the repository's Three r160 + GLTFLoader for real GLB assets.
+  - Falls back to the old r147 CDN runtime if local module loading fails.
 */
-window.__threeReady = new Promise((resolve, reject) => {
-  const urls = [
-    "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js",
-    "https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js",
-    "https://unpkg.com/three@0.147.0/build/three.min.js"
-  ];
-  let index = 0;
-
-  const tryNext = () => {
-    if (window.THREE) { resolve(window.THREE); return; }
-    if (index >= urls.length) {
-      reject(new Error("Three.js CDN load failed"));
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = urls[index++];
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    script.onload = () => window.THREE ? resolve(window.THREE) : tryNext();
-    script.onerror = () => {
-      script.remove();
+window.__threeReady = (async () => {
+  try {
+    const THREE = await import("../../assets/vendor/three-r160/three.module.js");
+    const loaderMod = await import("../../assets/vendor/three-r160/addons/loaders/GLTFLoader.js");
+    window.THREE = THREE;
+    window.GLTFLoader = loaderMod.GLTFLoader;
+    window.__classroomAssetRuntime = "local-r160";
+    return THREE;
+  } catch (localError) {
+    console.warn("[ClassroomWar] Local Three/GLTF loader failed; using procedural fallback.", localError);
+    const urls = [
+      "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js",
+      "https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js",
+      "https://unpkg.com/three@0.147.0/build/three.min.js"
+    ];
+    return await new Promise((resolve,reject)=>{
+      let index=0;
+      const tryNext=()=>{
+        if(window.THREE){resolve(window.THREE);return;}
+        if(index>=urls.length){reject(new Error("Three.js load failed"));return;}
+        const script=document.createElement("script");
+        script.src=urls[index++];script.async=true;script.crossOrigin="anonymous";
+        script.onload=()=>window.THREE?resolve(window.THREE):tryNext();
+        script.onerror=()=>{script.remove();tryNext();};
+        document.head.appendChild(script);
+      };
       tryNext();
-    };
-    document.head.appendChild(script);
-  };
-  tryNext();
-});
-</script>
+    });
+  }
+})();
 <script>
 window.__threeReady.then(() => {
 (() => {
@@ -225,6 +229,91 @@ function cyl(r,h,color){
 function sphere(r,color){
   const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),mat(color,.58,.03));m.castShadow=true;m.receiveShadow=true;return m;
 }
+
+/* ===== Real GLB character asset layer ===== */
+const CLASSROOM_CHARACTER_ASSETS={
+  "male-a":"../../assets/game/characters/people/character-male-a.glb",
+  "male-b":"../../assets/game/characters/people/character-male-b.glb",
+  "male-c":"../../assets/game/characters/people/character-male-c.glb",
+  "male-d":"../../assets/game/characters/people/character-male-d.glb",
+  "male-e":"../../assets/game/characters/people/character-male-e.glb",
+  "male-f":"../../assets/game/characters/people/character-male-f.glb",
+  "female-a":"../../assets/game/characters/people/character-female-a.glb",
+  "female-b":"../../assets/game/characters/people/character-female-b.glb",
+  "female-c":"../../assets/game/characters/people/character-female-c.glb",
+  "female-d":"../../assets/game/characters/people/character-female-d.glb",
+  "female-e":"../../assets/game/characters/people/character-female-e.glb",
+  "female-f":"../../assets/game/characters/people/character-female-f.glb"
+};
+const classroomAssetTemplates=new Map();
+let classroomAssetLoadDone=false;
+let classroomAssetLoadCount=0;
+
+async function preloadClassroomCharacters(){
+  if(!window.GLTFLoader){classroomAssetLoadDone=true;return false;}
+  const loader=new window.GLTFLoader();
+  const results=await Promise.allSettled(Object.entries(CLASSROOM_CHARACTER_ASSETS).map(async([key,url])=>{
+    const gltf=await loader.loadAsync(url);
+    classroomAssetTemplates.set(key,gltf.scene);
+    classroomAssetLoadCount++;
+  }));
+  classroomAssetLoadDone=true;
+  if(results.some(r=>r.status==="rejected")){
+    console.warn("[ClassroomWar] Some GLB characters failed; procedural fallback remains active.",results.filter(r=>r.status==="rejected"));
+  }
+  return classroomAssetLoadCount>0;
+}
+
+function addAssetRing(root,color,radius=.43){
+  const ring=new THREE.Mesh(
+    new THREE.RingGeometry(radius*.72,radius,24),
+    new THREE.MeshBasicMaterial({color,transparent:true,opacity:.62,side:THREE.DoubleSide,depthWrite:false})
+  );
+  ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
+}
+function cloneClassroomCharacter(key,{height=1.55,facing=Math.PI,ring=0x38bdf8}={}){
+  const template=classroomAssetTemplates.get(key);
+  if(!template)return null;
+  const model=template.clone(true);
+  model.traverse(n=>{
+    if(!n.isMesh)return;
+    n.castShadow=true;n.receiveShadow=true;
+    n.userData.sharedAssetGeometry=true;
+    if(n.material){
+      if(Array.isArray(n.material))n.material=n.material.map(m=>m.clone());
+      else n.material=n.material.clone();
+    }
+  });
+  model.updateMatrixWorld(true);
+  let bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());
+  if(!Number.isFinite(size.y)||size.y<=.0001)return null;
+  const scale=height/size.y;model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
+  bounds=new THREE.Box3().setFromObject(model);
+  const center=bounds.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=bounds.min.y;
+  const root=new THREE.Group();root.add(model);root.rotation.y=facing;
+  root.userData.assetCharacter=true;root.userData.visualHeight=height;
+  addAssetRing(root,ring,Math.max(.38,height*.28));
+  return root;
+}
+function rankAssetCharacter(tier){
+  const keys=[
+    ["male-a","female-a"],["male-b","female-b"],["male-c","female-c"],
+    ["male-d","female-d"],["male-e","female-e"]
+  ][tier]||["male-a","female-a"];
+  const colors=[0x38bdf8,0x0ea5e9,0x22c55e,0x8b5cf6,0xf59e0b];
+  return cloneClassroomCharacter(pick(keys),{height:1.42+tier*.08,facing:Math.PI,ring:colors[tier]||0x38bdf8});
+}
+function enemyAssetCharacter(type){
+  const cfg={
+    normal:{keys:["male-f","female-f"],height:1.48,ring:0xef4444},
+    runner:{keys:["male-b","female-b"],height:1.38,ring:0xfb923c},
+    tank:{keys:["male-e","female-e"],height:1.72,ring:0x94a3b8},
+    elite:{keys:["male-d","female-d"],height:1.76,ring:0xe879f9},
+    boss:{keys:["male-c","female-c"],height:2.45,ring:0xf59e0b}
+  }[type]||{keys:["male-f","female-f"],height:1.48,ring:0xef4444};
+  return cloneClassroomCharacter(pick(cfg.keys),{height:cfg.height,facing:0,ring:cfg.ring});
+}
 function textTexture(lines,{bg="rgba(6,15,28,.92)",fg="#ffffff",accent="#38bdf8",w=512,h=240}={}){
   const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");
   g.clearRect(0,0,w,h);g.fillStyle=bg;g.fillRect(0,0,w,h);
@@ -250,32 +339,32 @@ function makeSpriteText(text,color="#fff",fontSize=58){
 
 function createClassroom(){
   // floor
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,82),mat(0x936341,.82,.0));
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,82),mat(0x936341,.82,.0));
   floor.rotation.x=-Math.PI/2;floor.position.set(0,0,-19);floor.receiveShadow=true;arena.add(floor);
 
   // aisle carpet
-  const aisle=new THREE.Mesh(new THREE.PlaneGeometry(9.1,82),mat(0x202a38,.87,.02));
+  const aisle=new THREE.Mesh(new THREE.PlaneGeometry(10.4,82),mat(0x202a38,.87,.02));
   aisle.rotation.x=-Math.PI/2;aisle.position.set(0,.015,-19);aisle.receiveShadow=true;arena.add(aisle);
 
   // side walls
-  const wallL=box(.35,6.2,82,0xe9eef2,.92,0);wallL.position.set(-9,3,-19);arena.add(wallL);
-  const wallR=wallL.clone();wallR.position.x=9;arena.add(wallR);
+  const wallL=box(.35,6.2,82,0xe9eef2,.92,0);wallL.position.set(-13,3,-19);arena.add(wallL);
+  const wallR=wallL.clone();wallR.position.x=13;arena.add(wallR);
 
   // far chalkboard
-  const back=box(12,4,.35,0x224b3f,.86,0);back.position.set(0,3,-59.4);arena.add(back);
-  const frame=box(12.6,4.5,.2,0x7a5237,.8,0);frame.position.set(0,3,-59.7);arena.add(frame);
+  const back=box(18,4,.35,0x224b3f,.86,0);back.position.set(0,3,-59.4);arena.add(back);
+  const frame=box(18.6,4.5,.2,0x7a5237,.8,0);frame.position.set(0,3,-59.7);arena.add(frame);
   back.position.z=-59.5;
   // recreate layering by offset
   back.position.z=-59.25;
 
   // blackboard title
   const boardTex=textTexture(["교실전쟁","끝까지 방어하라!"],{bg:"#234b3f",accent:"#d5b68a"});
-  const board=new THREE.Mesh(new THREE.PlaneGeometry(10.8,3.1),new THREE.MeshBasicMaterial({map:boardTex}));
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(16.8,3.1),new THREE.MeshBasicMaterial({map:boardTex}));
   board.position.set(0,3,-59.02);arena.add(board);
 
   // desks left/right
   for(let z=-53;z<9;z+=6.3){
-    for(const x of [-6.6,6.6]){
+    for(const x of [-10.2,10.2]){
       const desk=new THREE.Group();
       const top=box(3.1,.28,1.8,0xb9784c,.65,0);top.position.y=1.55;desk.add(top);
       for(const lx of [-1.25,1.25]) for(const lz of [-.62,.62]){
@@ -291,7 +380,7 @@ function createClassroom(){
     const z=-52+i*9.8;
     const win=box(.18,2.3,4.2,0xa7dbf6,.35,0,0x6cc8ff,0.6);
     win.material.emissive.setHex(0x6cc8ff);win.material.emissiveIntensity=.45;
-    win.position.set(-8.76,3.5,z);arena.add(win);
+    win.position.set(-12.76,3.5,z);arena.add(win);
   }
 
   // ceiling lights
@@ -386,6 +475,7 @@ function hitSound(){
 
 
 function createStudent(){
+  const asset=rankAssetCharacter(0);if(asset)return asset;
   const g=new THREE.Group();
   const body=box(.46,.62,.34,0xe7edf4,.7,.0);body.position.y=.55;g.add(body);
   const head=sphere(.24,0xf2c49d);head.position.y=1.03;g.add(head);
@@ -399,6 +489,7 @@ function createStudent(){
 }
 
 function createEliteStudent(){
+  const asset=rankAssetCharacter(1);if(asset)return asset;
   const g=new THREE.Group();
   const body=box(.62,.78,.44,0x0ea5e9,.48,.08);body.position.y=.68;g.add(body);
   const vest=box(.66,.38,.12,0x082f49,.38,.12);vest.position.set(0,.70,.28);g.add(vest);
@@ -417,6 +508,7 @@ function createEliteStudent(){
 
 
 function createNcoStudent(){
+  const asset=rankAssetCharacter(2);if(asset)return asset;
   const g=createEliteStudent();
   // Green beret + gold chevrons
   const beret=box(.48,.10,.34,0x166534,.40,.08);beret.position.set(-.03,1.43,.02);beret.rotation.z=-.12;g.add(beret);
@@ -428,6 +520,7 @@ function createNcoStudent(){
 }
 
 function createOfficerStudent(){
+  const asset=rankAssetCharacter(3);if(asset)return asset;
   const g=new THREE.Group();
   const body=box(.68,.84,.46,0x4c1d95,.45,.10);body.position.y=.72;g.add(body);
   const chest=box(.70,.34,.12,0xddd6fe,.32,.14);chest.position.set(0,.78,.30);g.add(chest);
@@ -446,6 +539,7 @@ function createOfficerStudent(){
 }
 
 function createGeneralStudent(){
+  const asset=rankAssetCharacter(4);if(asset)return asset;
   const g=new THREE.Group();
   const cape=box(.82,.88,.10,0x7c2d12,.48,.05);cape.position.set(0,.76,.23);g.add(cape);
   const body=box(.74,.92,.50,0x172554,.38,.16);body.position.y=.77;g.add(body);
@@ -468,7 +562,7 @@ function createGeneralStudent(){
 
 function disposeObject(obj){
   obj.traverse?.(n=>{
-    if(n.geometry && n.geometry!==bulletGeometry && n.geometry!==particleGeometry) n.geometry.dispose?.();
+    if(n.geometry && !n.userData?.sharedAssetGeometry && n.geometry!==bulletGeometry && n.geometry!==particleGeometry) n.geometry.dispose?.();
     if(n.material){
       const mats=Array.isArray(n.material)?n.material:[n.material];
       mats.forEach(m=>{if(m.map?.userData?.ownedTexture)m.map.dispose?.();m.dispose?.();});
@@ -501,6 +595,7 @@ function particleMat(color){if(!particleMats.has(color))particleMats.set(color,n
 function burst(x,y,z,color=0x67e8f9,count=8,power=2.2){const shared=particleMat(color);for(let i=0;i<count;i++){const m=new THREE.Mesh(particleGeometry,shared);m.position.set(x,y,z);m.scale.setScalar(rand(.55,1.2));fxRoot.add(m);particles.push({mesh:m,vx:rand(-power,power),vy:rand(.5,power*1.35),vz:rand(-power,power),life:rand(.35,.75),shared:true});}}
 function shockwave(x,z,color=0x67e8f9){const matl=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.7,side:THREE.DoubleSide});const mesh=new THREE.Mesh(new THREE.RingGeometry(.15,.23,24),matl);mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.06,z);fxRoot.add(mesh);shockwaves.push({mesh,life:.45});}
 function createEnemyModel(type="normal"){
+  const asset=enemyAssetCharacter(type);if(asset)return asset;
   const g=new THREE.Group();const cfg={normal:{body:0x7f1d1d,trim:0xef4444,scale:.92},runner:{body:0x9a3412,trim:0xfb923c,scale:.82},tank:{body:0x334155,trim:0x94a3b8,scale:1.18},elite:{body:0x701a75,trim:0xe879f9,scale:1.10},boss:{body:0x450a0a,trim:0xf59e0b,scale:1.55}}[type]||{body:0x7f1d1d,trim:0xef4444,scale:.92};
   const body=box(.72,.82,.48,cfg.body,.50,.08);body.position.y=.70;g.add(body);const vest=box(.76,.28,.10,cfg.trim,.38,.08);vest.position.set(0,.75,.30);g.add(vest);const head=sphere(.28,0xe8b88f);head.position.y=1.28;g.add(head);const hair=box(.58,.15,.42,0x1f2937,.62,.02);hair.position.set(0,1.47,.01);g.add(hair);const eyeL=box(.06,.055,.03,0xfef2f2,.25,0),eyeR=eyeL.clone();eyeL.position.set(-.09,1.31,.27);eyeR.position.set(.09,1.31,.27);g.add(eyeL,eyeR);const gun=box(.14,.14,.70,0x111827,.36,.18);gun.position.set(-.31,.76,.36);gun.rotation.x=Math.PI/2;g.add(gun);const leg1=box(.15,.44,.15,0x1f2937,.65,.02),leg2=leg1.clone();leg1.position.set(-.15,.21,0);leg2.position.set(.15,.21,0);g.add(leg1,leg2);
   if(type==="tank"||type==="boss"){const pack=box(.88,.66,.34,type==="boss"?0x7c2d12:0x475569,.58,.08);pack.position.set(0,.74,-.30);g.add(pack);}if(type==="elite"||type==="boss"){const crest=box(.62,.08,.45,cfg.trim,.25,.14);crest.position.set(0,1.53,.03);g.add(crest);}g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.scale.setScalar(cfg.scale);return g;
@@ -511,7 +606,7 @@ function enemyStats(type){
   const hp=type==="boss"?Math.ceil(map.hp*Math.pow(1.32,p-1)+Math.sqrt(Math.max(1,player.maxArmy||1))*22):Math.ceil(map.hp*grow);
   return {hp,speed:map.sp*(1+Math.min(.35,(p-1)*.025)),baseDmg:map.dmg,score:map.score};
 }
-function addHealthBar(enemy){const g=new THREE.Group(),bg=box(1.20,.07,.04,0x111827,.9,0),fill=box(1.14,.045,.045,enemy.type==="boss"?0xf59e0b:0xef4444,.4,0);bg.position.y=1.95;fill.position.set(0,1.95,.03);g.add(bg,fill);enemy.group.add(g);enemy.hpFill=fill;}
+function addHealthBar(enemy){const g=new THREE.Group(),bg=box(1.20,.07,.04,0x111827,.9,0),fill=box(1.14,.045,.045,enemy.type==="boss"?0xf59e0b:0xef4444,.4,0),barY=(enemy.group.userData.visualHeight||1.5)+.42;bg.position.y=barY;fill.position.set(0,barY,.03);g.add(bg,fill);enemy.group.add(g);enemy.hpFill=fill;}
 function spawnEnemy(type=null,x=null){
   if(!type){const r=Math.random();type=state.period>=4&&r<.08?"elite":state.period>=2&&r<.22?"tank":r<.43?"runner":"normal";}
   const st=enemyStats(type),group=createEnemyModel(type);
@@ -635,8 +730,8 @@ function updateShots(dt){
 }
 function gateChoiceSet(good,count){const out=[];if(good){const add1=irand(2+Math.min(4,state.period),6+Math.min(8,state.period*2)),add2=irand(3,9+state.period);out.push({label:`+${add1}`,kind:"add",v:add1},{label:"×2",kind:"mul",v:2});if(count===3)out.push(state.period>=3&&Math.random()<.45?{label:`+(${Math.min(6,state.period+1)}×2)`,kind:"add",v:Math.min(6,state.period+1)*2}:{label:`+${add2}`,kind:"add",v:add2});}else{const sub=irand(2,Math.max(4,Math.min(18,6+state.period*2)));out.push({label:`-${sub}`,kind:"sub",v:sub},{label:"÷2",kind:"div",v:2});if(count===3){if(Math.random()<.5){const v=irand(3,12);out.push({label:`-${v}`,kind:"sub",v});}else out.push({label:"÷3",kind:"div",v:3});}}return out;}
 function gateResult(choice,n){if(choice.kind==="add")return n+choice.v;if(choice.kind==="sub")return n-choice.v;if(choice.kind==="mul")return n*choice.v;if(choice.kind==="div")return Math.floor(n/choice.v);return n;}
-function gatePanel(choice,width,good){const tex=textTexture([choice.label,good?"병력 강화":"병력 감소"],{bg:good?"#14532d":"#7f1d1d",accent:good?"#86efac":"#fda4af",w:512,h:220});tex.userData.ownedTexture=true;const root=new THREE.Group(),panel=new THREE.Mesh(new THREE.PlaneGeometry(width,2.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));panel.position.y=2.2;root.add(panel);const l=box(.08,3.1,.08,good?0x4ade80:0xfb7185,.35,.15),r=l.clone();l.position.set(-width/2,1.55,0);r.position.set(width/2,1.55,0);root.add(l,r);root.userData.texture=tex;return root;}
-function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(good?"강화 관문! 좌·중·우 위치를 골라 통과하세요":"위험 관문! 좌·중·우 위치를 골라 통과하세요",1.25);}
+function gatePanel(choice,width,good){const before=totalArmy(),after=clamp(gateResult(choice,before),1,99999),tex=textTexture([choice.label,`${before.toLocaleString()} → ${after.toLocaleString()}명`],{bg:good?"#14532d":"#7f1d1d",accent:good?"#86efac":"#fda4af",w:512,h:220});tex.userData.ownedTexture=true;const root=new THREE.Group(),panel=new THREE.Mesh(new THREE.PlaneGeometry(width,2.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));panel.position.y=2.2;root.add(panel);const l=box(.08,3.1,.08,good?0x4ade80:0xfb7185,.35,.15),r=l.clone();l.position.set(-width/2,1.55,0);r.position.set(width/2,1.55,0);root.add(l,r);root.userData.texture=tex;return root;}
+function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(good?"강화 관문! 계산 결과를 보고 가장 좋은 통로를 고르세요":"위험 관문! 현재 병력에서 손실이 가장 작은 통로를 고르세요",1.25);}
 function applyGate(item){const before=totalArmy(),after=clamp(gateResult(item.choice,before),1,99999);state.gatesPassed=(state.gatesPassed||0)+1;setArmyTotal(after,{announce:true,reason:`${item.choice.label} → ${after.toLocaleString()}명`});tone("gate");if(after>before&&rankNameForTotal(after)!==rankNameForTotal(before))showBanner(`🎖 ${rankNameForTotal(after)} 승급!`,rankSummaryText(),1.6);}
 function updateGates(dt){for(const g of gates){g.z+=g.speed*dt;g.items.forEach(it=>{it.mesh.position.x=it.baseX;it.mesh.position.z=g.z;});if(!g.resolved&&g.z>=4.7){let picked=g.items[0],best=Infinity;for(const it of g.items){const d=Math.abs(player.group.position.x-it.mesh.position.x);if(d<best){best=d;picked=it;}}g.resolved=true;applyGate(picked);g.items.forEach(it=>{if(it!==picked)it.mesh.visible=false;});}}gates=gates.filter(g=>{if(g.z<9.5)return true;for(const it of g.items){const tex=it.mesh.userData.texture;actorRoot.remove(it.mesh);disposeObject(it.mesh);tex?.dispose?.();}return false;});}
 function armyCollisionLoss(e){const n=totalArmy();if(n<=0)return false;const loss=Math.min(n,Math.max(1,Math.ceil(e.hp/(e.type==="boss"?10:5))));setArmyTotal(n-loss,{announce:true,reason:`전선 충돌 -${loss}명`});burst(e.x,.8,e.z,0xf97316,10,2.2);shockwave(e.x,e.z,0xfb7185);state.camShake=Math.max(state.camShake,0.18);tone("hurt");killEnemy(e);return true;}
@@ -663,7 +758,12 @@ function clearBattle(){clearSceneArray(enemies,actorRoot);clearSceneArray(obstac
 function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,6.1);player.targetX=0;rebuildArmy();updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pauseBtn.textContent=state.paused?"▶":"Ⅱ";clearInput();showToast(state.paused?"일시정지":"전투 재개",.8);}
 function gameOver(){if(state.over)return;state.over=true;state.running=false;clearInput();tone("over");ui.pauseBtn.style.display="none";const score=Math.floor(state.t*10+state.kills*18+state.bossKills*260+(state.hazardsDestroyed||0)*75+player.maxArmy/20),isBest=score>state.best;if(isBest){state.best=score;localStorage.setItem("classWar3DBest",String(score));}ui.overlay.style.display="grid";ui.panel.innerHTML=`<span class="eyebrow">${isBest?"NEW RECORD":"3D CLASSROOM DEFENSE REPORT"}</span><h2>${isBest?"새 최고 기록!":"교실 방어선이 무너졌습니다"}</h2><div class="lead">생존 <b style="color:#7dd3fc">${fmtTime(state.t)}</b> · 적 ${state.kills}명 처치 · 보스 ${state.bossKills}명 격파 · 전선 위협 ${state.hazardsDestroyed||0}개 제거</div><div class="grid"><div class="mini"><b>최대 전체 병력</b>${player.maxArmy.toLocaleString()}명</div><div class="mini"><b>최고 계급</b>${rankNameForTotal(player.maxArmy)}</div><div class="mini"><b>점수</b>${score.toLocaleString()}</div><div class="mini"><b>최고 기록</b>${Math.max(state.best,score).toLocaleString()}</div></div><button class="cta" id="restartBtn">다시 방어하기</button><div class="fine">관문 타이밍과 이동 위치를 바꾸면 더 오래 버틸 수 있습니다.</div>`;$("restartBtn").onclick=resetGame;}
-ui.startBtn.onclick=resetGame;ui.pauseBtn.onclick=togglePause;
+ui.startBtn.disabled=true;ui.startBtn.textContent="3D 학생 에셋 준비 중…";
+preloadClassroomCharacters().catch(err=>console.warn("[ClassroomWar] asset preload error",err)).finally(()=>{
+  ui.startBtn.disabled=false;
+  ui.startBtn.textContent=classroomAssetLoadCount>0?`실제 3D 학생 ${classroomAssetLoadCount}종으로 시작`:"3D 교실 방어 시작";
+});
+ui.startBtn.onclick=()=>{if(!classroomAssetLoadDone)return;resetGame();};ui.pauseBtn.onclick=togglePause;
 function resize(){const r=app.getBoundingClientRect(),w=Math.max(1,r.width),h=Math.max(1,r.height);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener("resize",resize);resize();updateHud();
 function update(dt){updateFx(dt);if(!state.running||state.paused)return;state.t+=dt;updateInput(dt);updateArmyAnim(dt);updateSpawns(dt);updateGates(dt);updateEnemies(dt);updateObstacles(dt);updateShooting(dt);updateShots(dt);updateHud();}
