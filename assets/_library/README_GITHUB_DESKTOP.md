@@ -13,7 +13,7 @@ This package is structured so the top-level folder is exactly `assets/`.
 - `assets/game/2d/racing/kenney-racing-pack/` - Kenney Racing Pack, CC0.
 - `assets/game/2d/characters/kenney-modular-characters/` - Kenney Modular Characters, CC0.
 - `assets/game/2d/tower-defense/isometric/` - already contained the uploaded Kenney Tower Defense pack, so the duplicate upload was not copied again.
-- `assets/audio/incoming/newmusical/` - uploaded audio kept in quarantine because the ZIP had no license/readme. It is not added to the active audio catalog.
+- `assets/audio/incoming/newmusical/` - project owner confirmed the 12 files were downloaded from Pixabay; tracked under the Pixabay Content License. Do not repackage the raw files as a standalone audio pack.
 
 ## Naming rules used
 - Existing Kidscade paths were preserved.
