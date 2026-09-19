@@ -51,6 +51,7 @@ const ASSET={
   mushroom:P.nature+'mushroom-red-group.glb',
   logStack:P.nature+'log-stack.glb',
   campfire:P.survival+'campfire-pit.glb',
+  signpost:P.survival+'signpost.glb',
   petDog:'../assets/game/characters/pets/animal-dog.glb',
   petCat:'../assets/game/characters/pets/animal-cat.glb',
   petRabbit:'../assets/game/characters/pets/animal-bunny.glb',
@@ -431,7 +432,7 @@ function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
-  const gain=t.tier==='iron'?2:1,cost=(t.tier==='iron'?4:6)*(companionId()==='goat'?.82:1);
+  const gain=t.tier==='iron'?2:1,cost=(t.tier==='iron'?4:6)*(companionId()==='goat' ? .82 : 1);
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
   persist();setAvatarAction('smile',480);updateStatus();toast('철광석 +'+gain);return true;
 }
@@ -495,6 +496,18 @@ async function buildOutdoor(){
   box(outdoor,20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
   box(outdoor,0,11.8,1.8,10.5,.09,0xc6b88e,.03);
   box(outdoor,0,-10.8,1.8,8.0,.09,0xc6b88e,.03);
+
+  // Signposts make the connected regions discoverable without a map menu.
+  await Promise.all([
+    addModel(outdoor,ASSET.signpost,{x:-17.0,z:.0,w:.8,h:1.8,d:.8,rot:-Math.PI/2}),
+    addModel(outdoor,ASSET.signpost,{x:17.0,z:.0,w:.8,h:1.8,d:.8,rot:Math.PI/2}),
+    addModel(outdoor,ASSET.signpost,{x:.0,z:-11.1,w:.8,h:1.8,d:.8,rot:Math.PI}),
+    addModel(outdoor,ASSET.signpost,{x:.0,z:11.2,w:.8,h:1.8,d:.8,rot:0})
+  ]);
+  interact('outdoor',-17,0,1.2,'표지판 읽기',()=>toast('← 깊은 숲 · 목재와 버섯'));
+  interact('outdoor',17,0,1.2,'표지판 읽기',()=>toast('→ 돌산 · 돌과 철광석'));
+  interact('outdoor',0,-11.1,1.2,'표지판 읽기',()=>toast('↑ 북쪽 강가 · 나무다리'));
+  interact('outdoor',0,11.2,1.2,'표지판 읽기',()=>toast('↓ 남쪽 야영지 · 모닥불'));
 
   // Pond and a calmer resting/garden area on the west side.
   const pond=new THREE.Mesh(
@@ -787,12 +800,12 @@ function updateSurvival(dt,moving){
   s.time+=dt*3;
   if(s.time>=1440){s.time-=1440;s.day+=1;toast('새로운 하루가 시작됐어요. Day '+s.day);}
   const night=isNightTime(s.time);
-  const pet=companionId(),hungerMul=pet==='hamster'?.90:pet==='turtle'?.93:1;
+  const pet=companionId(),hungerMul=pet==='hamster' ? .90 : pet==='turtle' ? .93 : 1;
   s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055)*hungerMul);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
     const nearFire=Math.hypot(player.x,player.z-17)<4.2;
-    const nightMul=pet==='cat'?.68:pet==='iguana'?.78:pet==='turtle'?.90:1;
+    const nightMul=pet==='cat' ? .68 : pet==='iguana' ? .78 : pet==='turtle' ? .90 : 1;
     if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
   const hour=s.time/60;
