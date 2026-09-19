@@ -40,7 +40,7 @@
         starterKitClaimed:false,
         starterHintSeen:false,
         groundPickups:{},
-        housing:{version:1,owned:{},placed:[],starterGiftClaimed:false,nextId:1},
+        housing:{version:2,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,nextId:1},
         town:{
           coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0,
           delivery:{active:false,target:'cafe',startedDay:0,completedDay:0,reward:95},
