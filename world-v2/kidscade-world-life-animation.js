@@ -88,6 +88,7 @@ function perform(world,player,target,type,options={}){
 
 function drawFront(type,c,e,world,target=e){
   const F=K.LifeFurniture;if(!F)return;
+  if(K.ModelSprites?.ready?.(type))return;
   const P=F.PAL||{};c.save();c.imageSmoothingEnabled=false;
   if(type==='sofa'){
     c.fillStyle=P.cloth2||'#91aa82';
@@ -114,12 +115,16 @@ function drawFurnitureFx(type,c,e){
   const F=K.LifeFurniture,P=F?.PAL||{};const q=ease(a.p),pulse=a.wave;
   c.save();c.imageSmoothingEnabled=false;
   if(type==='fridge'){
-    const open=Math.sin(Math.min(1,a.p)*Math.PI)*.94;
-    const doorW=Math.max(18,(e.w-12)*(1-open*.56));
-    const dx=e.x+e.w-8;
-    c.fillStyle=P.metal2||'#d0d1c7';c.fillRect(dx,e.y+3,doorW,e.h-6);
-    c.strokeStyle=P.ink||'#302b24';c.lineWidth=3;c.strokeRect(dx+1.5,e.y+4.5,doorW-3,e.h-9);
-    c.fillStyle='rgba(205,236,239,.45)';c.fillRect(e.x+11,e.y+18,e.w-22,e.h-31);
+    const open=Math.sin(Math.min(1,a.p)*Math.PI);
+    if(K.ModelSprites?.ready?.('fridge')){
+      c.globalAlpha=.18+.28*open;c.fillStyle='#dff8ff';c.beginPath();c.ellipse(e.centerX+e.w*.34,e.centerY,e.w*.38,e.h*.42,0,0,Math.PI*2);c.fill();
+    }else{
+      const doorW=Math.max(18,(e.w-12)*(1-open*.56));
+      const dx=e.x+e.w-8;
+      c.fillStyle=P.metal2||'#d0d1c7';c.fillRect(dx,e.y+3,doorW,e.h-6);
+      c.strokeStyle=P.ink||'#302b24';c.lineWidth=3;c.strokeRect(dx+1.5,e.y+4.5,doorW-3,e.h-9);
+      c.fillStyle='rgba(205,236,239,.45)';c.fillRect(e.x+11,e.y+18,e.w-22,e.h-31);
+    }
   }else if(type==='sink'){
     c.fillStyle=P.water||'#66a9bd';
     for(let i=0;i<4;i++){const yy=e.y+18+((performance.now()/7+i*14)%26);c.fillRect(e.centerX-2+i%2*5,yy,3,6);}
