@@ -113,7 +113,7 @@ export function createTownEconomy(ctx){
     else if(d.type==='inv')inv()[d.key]=(inv()[d.key]||0)+d.qty;
     else if(d.type==='food')p.food[d.key]=(p.food[d.key]||0)+d.qty;
     else if(d.type==='furniture'){
-      p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:1,owned:{},placed:[],starterGiftClaimed:false,nextId:1};
+      p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:3,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1};
       p.housing.owned=p.housing.owned&&typeof p.housing.owned==='object'?p.housing.owned:{};
       p.housing.owned[d.key]=(p.housing.owned[d.key]||0)+(d.qty||1);
     }
