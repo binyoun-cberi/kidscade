@@ -117,11 +117,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=14/);
   assert.match(runtime,/kidscade-world-grid\.js\?v=1/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=10/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=20/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=20/);
+  assert.match(html,/kidscade-world-v3\.js\?v=21/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=21/);
 });
 
 test('starter resources provide six hand pickups per material and one-time guidance',()=>{
@@ -498,4 +498,12 @@ test('World v3 has one authoritative 20x20 square-zone grid',()=>{
   }
   assert.match(grid,/WORLD_BOUNDS=\{x1:-40,x2:40,z1:-30,z2:50\}/);
   assert.match(runtime,/zoneAt\(player\.x,player\.z\)/);
+});
+
+
+test('Seed Bus exposes the new square ranch and beach districts',()=>{
+  assert.match(economy,/data-city-travel="ranch"/);
+  assert.match(economy,/data-city-travel="beach"/);
+  assert.match(runtime,/ranch:\{x:10,z:-14\.0,name:'목장'\}/);
+  assert.match(runtime,/beach:\{x:-30,z:-14\.0,name:'해변가'\}/);
 });
