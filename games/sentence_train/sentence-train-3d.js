@@ -94,7 +94,7 @@ function init(){
  trainGroup=new THREE.Group();railGroup=new THREE.Group();decorGroup=new THREE.Group();scene.add(decorGroup,railGroup,trainGroup);
  loader=new GLTFLoader();
  Promise.all(Object.entries(MODEL).map(([k,u])=>load(k,u))).then(()=>{
-   addRails();addDecor();buildTrain(carCount);ready=true;document.body.classList.add('sentence-train-3d-ready');
+   addRails();addDecor();const liveSlots=document.querySelectorAll('#track .slot').length;buildTrain(liveSlots||carCount);ready=true;document.body.classList.add('sentence-train-3d-ready');resize();
  });
  addEventListener('resize',resize,{passive:true});requestAnimationFrame(loop);
 }
@@ -123,6 +123,6 @@ function loop(now){
  if(pulse>0){pulse=Math.max(0,pulse-dt);renderer.toneMappingExposure=1.05+pulse*.38}else renderer.toneMappingExposure+=(1.05-renderer.toneMappingExposure)*.12;
  renderer.render(scene,camera);
 }
-window.SentenceTrain3D={setCars,reset,depart,celebrate,ready:()=>ready};
+window.SentenceTrain3D={setCars,reset,depart,celebrate,resize,ready:()=>ready};
 init();
 })();
