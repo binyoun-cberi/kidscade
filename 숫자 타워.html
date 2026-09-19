@@ -109,6 +109,44 @@ button{font:inherit}
 #loseReason{font-size:18px;line-height:1.55}
 @keyframes glow{50%{box-shadow:0 0 0 7px rgba(255,226,95,.17),0 0 28px rgba(255,226,95,.5)}}
 @keyframes runbob{to{transform:translateY(-4px)}}@keyframes lunge{0%,100%{transform:none}48%{transform:translateX(40px) translateY(-5px)}}@keyframes slash{0%{transform:rotate(-25deg)}50%{transform:rotate(85deg)}100%{transform:rotate(-18deg)}}@keyframes hit{40%{transform:translateX(11px) rotate(7deg);filter:brightness(1.8)}}@keyframes enemyLunge{50%{transform:translateX(-28px)}}@keyframes heroHit{45%{transform:translateX(-10px) rotate(-7deg);filter:brightness(1.8)}}@keyframes fall{to{opacity:0;transform:translateY(25px) rotate(38deg) scale(.7)}}@keyframes pop{45%{opacity:1;transform:scale(1.35)}100%{opacity:0}}@keyframes slashArc{30%{opacity:1}100%{opacity:0;transform:rotate(60deg) scale(1.3)}}@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+/* Asset pass v3: textured tower rooms, treasure/trap props, and gate doors. */
+.room{
+ --roomTile:url("assets/game/2d/platformer-art/base/tiles/castle-center.png");
+ border-color:#707d91;
+ background-image:linear-gradient(rgba(20,38,59,.28),rgba(16,29,47,.36)),var(--roomTile);
+ background-size:cover,70px 70px;background-repeat:no-repeat,repeat;
+ image-rendering:auto
+}
+.room[data-zi="0"]{--roomTile:url("assets/game/2d/platformer-art/base/tiles/castle-center.png")}
+.room[data-zi="1"]{--roomTile:url("assets/game/2d/platformer-art/base/tiles/stone-center.png");border-color:#676e7e}
+.room[data-zi="2"]{--roomTile:url("assets/game/2d/platformer-art/base/tiles/brick-wall.png");border-color:#7b5d66}
+.room.enemy{background-image:linear-gradient(rgba(111,44,94,.47),rgba(69,34,71,.54)),var(--roomTile)}
+.room.plus{background-image:linear-gradient(rgba(22,105,77,.34),rgba(18,70,58,.47)),var(--roomTile)}
+.room.minus{background-image:linear-gradient(rgba(135,49,49,.43),rgba(84,32,40,.58)),var(--roomTile)}
+.room:before{background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 26%,rgba(0,0,0,.12));opacity:.7}
+.room .torch{position:absolute;left:7px;top:8px;width:23px;height:31px;object-fit:contain;z-index:8;filter:drop-shadow(0 0 7px rgba(255,160,52,.7))}
+.roomPropWrap{position:relative;z-index:6;width:82px;height:60px;display:grid;place-items:center;margin-top:8px}
+.roomProp{display:block;object-fit:contain;filter:drop-shadow(0 7px 6px rgba(0,0,0,.28))}
+.roomProp.treasure{width:48px;height:48px;animation:treasureBob 1.35s ease-in-out infinite}
+.roomCoin{position:absolute;width:25px;height:25px;right:5px;bottom:1px;transform:rotate(15deg);filter:drop-shadow(0 4px 4px rgba(0,0,0,.28))}
+.roomProp.trap{width:78px;height:42px;align-self:end;filter:drop-shadow(0 5px 4px rgba(0,0,0,.32))}
+.room.minus.exposed .roomProp.trap{animation:trapWarn .7s ease-in-out infinite alternate}
+@keyframes treasureBob{50%{transform:translateY(-5px) rotate(3deg)}}@keyframes trapWarn{to{transform:translateY(-3px);filter:drop-shadow(0 0 8px rgba(255,91,72,.8))}}
+.gateArch{
+ background-image:linear-gradient(rgba(48,35,72,.46),rgba(28,26,50,.58)),url("assets/game/2d/platformer-art/base/tiles/castle-center.png");
+ background-size:cover,70px 70px;background-repeat:no-repeat,repeat;border-color:#626b7b
+}
+.gateArch.finalGate{
+ background-image:linear-gradient(rgba(100,34,48,.48),rgba(55,22,49,.64)),url("assets/game/2d/platformer-art/base/tiles/brick-wall.png");
+ border-color:#8e5864;box-shadow:inset 0 0 0 3px rgba(255,214,164,.12),0 0 28px rgba(204,64,48,.22)
+}
+.gateDoor{position:absolute;z-index:1;left:50%;bottom:13px;width:76px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;filter:brightness(.72) saturate(.85) drop-shadow(0 5px 6px rgba(0,0,0,.35))}
+.gateDoor img{display:block;width:76px;height:auto;margin-top:-1px;image-rendering:auto}
+.gateSprite{z-index:4}
+.gateNum,.gateCap{z-index:7}
+.zoneShade:nth-of-type(3n+1){background:linear-gradient(90deg,rgba(73,120,84,.025),rgba(89,141,102,.065),rgba(73,120,84,.025))}
+.zoneShade:nth-of-type(3n+2){background:linear-gradient(90deg,rgba(78,90,112,.025),rgba(98,111,138,.065),rgba(78,90,112,.025))}
+.zoneShade:nth-of-type(3n){background:linear-gradient(90deg,rgba(116,58,58,.025),rgba(133,65,67,.07),rgba(116,58,58,.025))}
 @media(max-width:700px){#guide{font-size:10px}.tower{width:145px}.room{height:100px}}
 </style>
 </head>
@@ -184,6 +222,14 @@ const stages=[
 let si=0, power=0, zoneIndex=0, state=[], busy=false, currentQuiz=null;
 const towerEls=[], gateEls=[];
 const ASSET={
+ tower:{
+  treasure:'assets/game/2d/platformer-art/base/items/gem-yellow.png',
+  coin:'assets/game/2d/platformer-art/base/items/coin-gold.png',
+  trap:'assets/game/2d/platformer-art/base/items/spikes.png',
+  torch:'assets/game/2d/platformer-art/base/tiles/torch.png',
+  gateTop:'assets/game/2d/platformer-art/base/tiles/door-closed-top.png',
+  gateMid:'assets/game/2d/platformer-art/base/tiles/door-closed-mid.png'
+ },
  hero:{
   base:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',
   walk:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-walk1.png',
@@ -204,8 +250,8 @@ function sprite(kind,seed=0){
 }
 function roomInfo(r){
  if(r.type==="enemy") return {v:r.n,cap:"몬스터 · 승리하면 +"+r.n,body:sprite("enemy",r.n)};
- if(r.type==="plus") return {v:"+"+r.n,cap:"보물방",body:'<div style="font-size:43px;z-index:6">💎</div>'};
- return {v:"−"+r.n,cap:"함정방",body:'<div style="font-size:43px;z-index:6">🕳️</div>'};
+ if(r.type==="plus") return {v:"+"+r.n,cap:"보물방 · 숫자 강화",body:`<div class="roomPropWrap treasureWrap"><img class="roomProp treasure" src="${ASSET.tower.treasure}" alt=""><img class="roomCoin" src="${ASSET.tower.coin}" alt=""></div>`};
+ return {v:"−"+r.n,cap:"함정방 · 숫자 감소",body:`<div class="roomPropWrap trapWrap"><img class="roomProp trap" src="${ASSET.tower.trap}" alt=""></div>`};
 }
 function init(){
  [...world.querySelectorAll(".tower,.gate,.zoneShade,.zoneLabel")].forEach(e=>e.remove());
@@ -221,13 +267,13 @@ function init(){
    const t=document.createElement("div");t.className="tower";t.style.left=x+"px";t.dataset.zi=zi;t.dataset.ti=ti;
    tower.forEach((r,ri)=>{
     const d=roomInfo(r),el=document.createElement("div");el.className="room "+r.type;el.dataset.zi=zi;el.dataset.ti=ti;el.dataset.ri=ri;
-    el.innerHTML=`<span class="torch">🔥</span><div class="val">${d.v}</div>${d.body}<div class="cap">${d.cap}</div><div class="risk">위험!</div>`;
+    el.innerHTML=`<img class="torch" src="${ASSET.tower.torch}" alt=""><div class="val">${d.v}</div>${d.body}<div class="cap">${d.cap}</div><div class="risk">위험!</div>`;
     el.onclick=()=>chooseRoom(el,zi,ti,ri,r);t.appendChild(el);
    });
    world.appendChild(t);towerEls.push(t);x+=205;
   });
   const g=document.createElement("div");g.className="gate";g.style.left=(x+25)+"px";g.dataset.zi=zi;
-  g.innerHTML=`<div class="gateArch"><div class="gateNum">${z.gate}</div><div class="gateSprite">${sprite(z.boss?"boss":"enemy",z.gate)}</div><div class="gateCap">${z.boss?"최종 보스":"구역 보스 · 승리하면 다음 구역"}</div></div>`;
+  g.innerHTML=`<div class="gateArch ${z.boss?'finalGate':''}"><div class="gateNum">${z.gate}</div><div class="gateDoor"><img src="${ASSET.tower.gateTop}" alt=""><img src="${ASSET.tower.gateMid}" alt=""></div><div class="gateSprite">${sprite(z.boss?"boss":"enemy",z.gate)}</div><div class="gateCap">${z.boss?"최종 보스":"구역 보스 · 승리하면 다음 구역"}</div></div>`;
   g.querySelector(".gateArch").onclick=()=>chooseGate(g,zi,z);world.appendChild(g);gateEls.push(g);x+=305;
  });
  hero.style.left="90px";hero.style.bottom="78px";world.style.transform="translateX(0px)";end.classList.remove("open");modal.classList.remove("open");hero.style.opacity="1";
