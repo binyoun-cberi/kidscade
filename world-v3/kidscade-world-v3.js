@@ -197,6 +197,7 @@ function prog(){
     migratedLegacy:!!rawPets.migratedLegacy
   };
   p.starterKitClaimed=!!p.starterKitClaimed;
+  p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
   return p;
 }
 const itemName=k=>({
@@ -230,12 +231,15 @@ function workbenchPanel(){
   const p=prog(),i=inv();
   const tool=(key,name,req,owned)=>{const have=Object.entries(req).every(([k,v])=>(i[k]||0)>=v);return `<div class="item"><b>${name}</b><div>${Object.entries(req).map(([k,v])=>itemName(k)+' '+v).join(' · ')}</div><button data-craft="${key}" ${have?'':'disabled'}>${owned?'재제작':'제작'}</button></div>`;};
   const axeTier=p.tools.axe?.tier||'',pickTier=p.tools.pick?.tier||'';
-  openPanel(`<h2>3D 제작대</h2><div class="grid">
-    ${tool('axe','돌도끼',{wood:3,stone:2},axeTier==='stone')}
-    ${tool('pick','돌곡괭이',{wood:2,stone:3},pickTier==='stone')}
-    ${tool('axeIron','철도끼',{wood:2,iron:3},axeTier==='iron')}
-    ${tool('pickIron','철곡괭이',{wood:2,iron:3},pickTier==='iron')}
-  </div><p style="font-size:12px">처음에는 집 주변의 떨어진 나뭇가지와 작은 돌을 맨손으로 주워 돌도구를 만들 수 있어요. 철도구는 내구도와 채집 효율이 높습니다.</p>`);
+  openPanel(`<h2>3D 제작대</h2>
+    <p><b>현재 재료</b> · 목재 ${i.wood||0} · 돌 ${i.stone||0} · 철광석 ${i.iron||0}</p>
+    <div class="grid">
+      ${tool('axe','돌도끼',{wood:3,stone:2},axeTier==='stone')}
+      ${tool('pick','돌곡괭이',{wood:2,stone:3},pickTier==='stone')}
+      ${tool('axeIron','철도끼',{wood:2,iron:3},axeTier==='iron')}
+      ${tool('pickIron','철곡괭이',{wood:2,iron:3},pickTier==='iron')}
+    </div>
+    <p style="font-size:12px">돌도끼+돌곡괭이를 둘 다 처음 만들려면 총 목재 5 · 돌 5가 필요해요. 집 주변의 떨어진 나뭇가지와 작은 돌은 도구 없이 주울 수 있고, 초보자 보급상자는 한 번만 사용할 수 있어요.</p>`);
 }
 function cookingPanel(kind='stove'){
   panel.dataset.cookKind=kind;
@@ -508,18 +512,34 @@ function updateCropVisuals(){
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
 const groundPickups=[];
+const GROUND_PICKUP_RESPAWN_MS=45000;
+function scheduleGroundPickup(actor,delay){
+  clearTimeout(actor.timer);
+  actor.ready=false;actor.object.visible=false;
+  if(actor.interaction)actor.interaction.enabled=false;
+  actor.timer=setTimeout(()=>{
+    actor.ready=true;actor.object.visible=true;
+    if(actor.interaction)actor.interaction.enabled=true;
+    prog().groundPickups[actor.id]=0;persist();
+  },Math.max(0,delay));
+}
 async function addGroundPickup(id,kind,x,z){
   const url=kind==='wood'?ASSET.wood:P.nature+'stone-small-a.glb';
   const object=await addModel(outdoor,url,{x,z,w:kind==='wood'?.8:.65,h:kind==='wood'?.48:.45,d:kind==='wood'?.65:.65,rot:(groundPickups.length*.71)%6.2,name:id});
   if(!object)return;
-  const actor={id,kind,object,ready:true,interaction:null};groundPickups.push(actor);
+  const actor={id,kind,object,ready:true,interaction:null,timer:null};groundPickups.push(actor);
   actor.interaction=interact('outdoor',x,z,1.0,kind==='wood'?'떨어진 나뭇가지 줍기':'작은 돌 줍기',()=>{
     if(!actor.ready)return;
-    actor.ready=false;actor.object.visible=false;actor.interaction.enabled=false;
+    const nextAt=Date.now()+GROUND_PICKUP_RESPAWN_MS;
+    prog().groundPickups[id]=nextAt;
     const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();
     toast((kind==='wood'?'나뭇가지':'작은 돌')+' +1 · 도구 없이 주웠어요.');
-    setTimeout(()=>{actor.ready=true;actor.object.visible=true;actor.interaction.enabled=true;},45000);
+    scheduleGroundPickup(actor,GROUND_PICKUP_RESPAWN_MS);
   });
+  const nextAt=Number(prog().groundPickups[id]||0);
+  const remain=nextAt-Date.now();
+  if(remain>0)scheduleGroundPickup(actor,remain);
+  else prog().groundPickups[id]=0;
 }
 async function buildOutdoor(){
   // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
@@ -591,6 +611,10 @@ async function buildOutdoor(){
   interact('outdoor',13.6,4.65,1.45,'제작대 사용하기',workbenchPanel);
   interact('outdoor',11.8,4.9,1.35,'보관 상자 보기',inventoryPanel);
   interact('outdoor',-4.3,-1.4,1.3,'초보자 보급 상자 열기',claimStarterKit);
+  await addModel(outdoor,ASSET.signpost,{x:-2.5,z:1.1,w:.72,h:1.55,d:.72,rot:.15,name:'starter-guide-sign'});
+  interact('outdoor',-2.5,1.1,1.15,'초보자 안내 읽기',()=>{
+    openPanel('<h2>처음 살아남기</h2><div class="grid"><div class="item"><b>1. 맨손 채집</b><div>집 주변의 나뭇가지와 작은 돌을 주워요.</div></div><div class="item"><b>2. 제작</b><div>목재 5 · 돌 5를 모으면 돌도끼와 돌곡괭이를 둘 다 만들 수 있어요.</div></div><div class="item"><b>3. 본격 채집</b><div>도끼로 나무를 베고 곡괭이로 바위를 캐요.</div></div></div><p style="font-size:12px">자원이 모자라면 집 앞 보급상자를 한 번 사용할 수 있어요.</p>');
+  });
   interact('outdoor',-10.8,6.1,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
 
   // Starter loop: hand-pickable branches and pebbles prevent tool/resource deadlocks.
@@ -989,6 +1013,10 @@ async function init(){
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await buildPets();
+  const starter=prog();
+  if(!(starter.tools.axe?.dur>0)||!(starter.tools.pick?.dur>0)){
+    setTimeout(()=>toast('처음엔 집 주변 나뭇가지·작은 돌을 맨손으로 주우세요. 목재 5 · 돌 5면 두 돌도구를 만들 수 있어요.'),650);
+  }
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
   else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을'}
