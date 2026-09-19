@@ -314,7 +314,7 @@ class SelfBarScene {
     this.shelfGroup.clear();this.labelAnchors.clear();this.displayItems.clear();
     const items=activeIngredients(),mobile=this.mobileLayout;
     const cols=mobile?3:5,rows=Math.max(1,Math.ceil(items.length/cols));
-    const colGap=mobile?1.72:1.55,rowGap=mobile?.92:1.08;
+    const colGap=mobile?1.72:1.55,rowGap=mobile ? .92 : 1.08;
     const maxCols=Math.min(cols,Math.max(1,items.length));
     const cabinetW=(maxCols-1)*colGap+1.72;
     const baseY=.52,z=mobile?-2.35:-2.45;
