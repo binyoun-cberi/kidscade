@@ -36,7 +36,8 @@
         food:{},
         fishDex:{},
         kitchen:{pending:null},
-        cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false}
+        cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false},
+        town:{coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0}
       },
       world:{flags:{},objects:{}},
       migration:{source:'legacy-readonly',completed:false,lastPreview:null}
