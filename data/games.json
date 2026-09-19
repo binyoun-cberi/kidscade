@@ -14,12 +14,12 @@
     {
       "id": "high_classroom_war_3d",
       "title": "교실전쟁 3D",
-      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=11",
+      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=12",
       "category": "math",
       "age": "high",
       "icon": "🎖️",
       "cover": "assets/gate-image/교실전쟁3D.png",
-      "description": "사칙연산 관문으로 병력을 키우고, 탄환과 교과서 방어벽·숙제 폭탄을 뚫으며 교실 방어선을 지키는 3D 무한 방어전!"
+      "description": "실제 3D 학생 캐릭터 에셋을 편제·적군에 연결하고, 계산 결과를 미리 보여주는 사칙연산 관문과 교과서 방어벽·숙제 폭탄을 돌파하는 3D 무한 교실 방어전!"
     },
     {
       "id": "high_byeokrando_voyage",
