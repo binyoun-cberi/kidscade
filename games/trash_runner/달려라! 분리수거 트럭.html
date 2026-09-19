@@ -7,121 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-
-        body {
-            font-family: 'Jua', sans-serif;
-            margin: 0;
-            overflow: hidden;
-            background-color: #bae6fd;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none; /* 모바일 확대 및 스와이프 방지를 위해 조작 완전 차단 */
-        }
-
-        /* 애니메이션 키프레임 */
-        @keyframes road-move { from { background-position: 0 0; } to { background-position: -120px 0; } }
-        @keyframes bg-move { from { background-position: 0 bottom; } to { background-position: -200px bottom; } }
-        @keyframes cloud-move { from { background-position: 0 20px; } to { background-position: -300px 20px; } }
-        @keyframes drive { from { left: 110vw; } to { left: -20vw; } }
-        @keyframes bounce-truck { 
-            0%, 100% { transform: translateY(0) scaleX(-1); } 
-            50% { transform: translateY(-8px) scaleX(-1); } 
-        }
-        @keyframes float-up { 
-            0% { opacity: 1; transform: translateY(0) scale(1); } 
-            100% { opacity: 0; transform: translateY(-50px) scale(1.5); } 
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px) rotate(-2deg); }
-            50% { transform: translateX(10px) rotate(2deg); }
-            75% { transform: translateX(-10px) rotate(-2deg); }
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .animate-road {
-            animation: road-move 0.3s linear infinite;
-            background-image: linear-gradient(90deg, transparent 50%, #facc15 50%);
-            background-size: 120px 12px;
-            background-position-y: center;
-            background-repeat: repeat-x;
-        }
-        .animate-trees { animation: bg-move 2s linear infinite; }
-        .animate-clouds { animation: cloud-move 20s linear infinite; }
-        
-        .moving-trash {
-            animation-name: drive;
-            animation-timing-function: linear;
-            animation-fill-mode: forwards;
-        }
-        .animate-bounce-truck { animation: bounce-truck 0.4s ease-in-out infinite alternate; }
-        .float-anim { animation: float-up 1s ease-out forwards; }
-        .shake-screen { animation: shake 0.4s ease-in-out; }
-        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        .hidden { display: none !important; }
-        .text-shadow { text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        
-        /* v2 asset rework */
-        #city3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
-        #play-screen>.legacy-sky,#bg-clouds,#bg-trees{transition:opacity .35s ease}
-        body.three-ready #play-screen>.legacy-sky,body.three-ready #bg-clouds,body.three-ready #bg-trees{opacity:0!important}
-        #road-stage{
-            background:linear-gradient(180deg,rgba(28,36,43,.12),rgba(28,36,43,.34));
-            border-top:1px solid rgba(255,255,255,.16);border-bottom:0;
-            box-shadow:0 -12px 28px rgba(16,31,38,.12) inset;
-            backdrop-filter:blur(1px)
-        }
-        body.three-ready #road-stage{background:linear-gradient(180deg,rgba(18,32,39,.03),rgba(18,32,39,.16));border-color:transparent;box-shadow:none}
-        body.three-ready #road-stage>.animate-road{opacity:0}
-        #truck-fallback{transition:opacity .25s ease}
-        body.three-ready #truck-fallback{opacity:0}
-        .pickup-card{
-            width:118px;min-height:88px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,250,252,.96));
-            border:3px solid #f4c84a;border-radius:20px;padding:7px 8px 8px;display:flex;flex-direction:column;
-            align-items:center;justify-content:center;gap:2px;box-shadow:0 10px 24px rgba(27,43,53,.24),inset 0 0 0 2px rgba(255,255,255,.7)
-        }
-        .pickup-card:before{content:"수거";position:absolute;top:-9px;background:#173c50;color:white;border-radius:999px;padding:2px 8px;font:900 10px/1 system-ui,sans-serif;letter-spacing:.04em}
-        .pickup-glyph{font-size:34px;line-height:1;filter:drop-shadow(0 3px 2px rgba(0,0,0,.13));pointer-events:none}
-        .pickup-name{font:900 12px/1.15 system-ui,sans-serif;color:#17324a;text-align:center;max-width:100px;word-break:keep-all;pointer-events:none}
-        .pickup-level{font:800 9px/1 system-ui,sans-serif;color:#6a7d89;background:#edf3f5;padding:3px 6px;border-radius:999px;pointer-events:none}
-        .moving-trash:hover .pickup-card{border-color:#ff9c3b;box-shadow:0 12px 28px rgba(255,145,36,.28),0 0 0 4px rgba(255,205,75,.16)}
+        body{font-family:'Jua',sans-serif;margin:0;overflow:hidden;background:#0f2028;user-select:none;-webkit-user-select:none;touch-action:none}
+        @keyframes float-up{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-50px) scale(1.5)}}
+        @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px) rotate(-2deg)}50%{transform:translateX(10px) rotate(2deg)}75%{transform:translateX(-10px) rotate(-2deg)}}
+        @keyframes popIn{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+        .float-anim{animation:float-up 1s ease-out forwards}.shake-screen{animation:shake .4s ease-in-out}.pop-in{animation:popIn .5s cubic-bezier(.175,.885,.32,1.275) forwards}
+        .hidden{display:none!important}.text-shadow{text-shadow:1px 1px 2px rgba(0,0,0,.5)}
+        #city3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:auto;touch-action:none;cursor:pointer;background:#8ed6eb}
+        #world-hint{position:absolute;left:50%;bottom:132px;z-index:25;transform:translateX(-50%);pointer-events:none;background:rgba(15,32,40,.72);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 13px;font:900 11px/1 system-ui,sans-serif;backdrop-filter:blur(7px);white-space:nowrap}
         #slot-box{border-radius:26px!important}
-        #slot-item{gap:4px}
-        #slot-emoji{display:grid;place-items:center;width:68px;height:68px;border-radius:18px;background:white;border:3px solid #b9d8c3;box-shadow:0 7px 14px rgba(42,88,58,.14)}
+        #slot-item{gap:5px}
+        #slot-badge{display:grid;place-items:center;min-width:70px;height:34px;border-radius:999px;background:#173c50;color:#fff;border:3px solid #b9d8c3;box-shadow:0 7px 14px rgba(42,88,58,.14);font:1000 12px/1 system-ui,sans-serif;letter-spacing:.06em;padding:0 10px}
         #bins-area{background:linear-gradient(180deg,#17252e,#0f171d);gap:8px!important;padding-bottom:max(6px,env(safe-area-inset-bottom))}
-        .recycle-bin{
-            position:relative;flex:1 0 74px;max-width:118px;height:88px;border:0;border-radius:16px 16px 13px 13px;color:white;
-            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 7px 0 var(--bin-dark),0 10px 18px rgba(0,0,0,.22);
-            transition:transform .15s,filter .15s,opacity .15s;touch-action:manipulation
-        }
+        .recycle-bin{position:relative;flex:1 0 74px;max-width:118px;height:88px;border:0;border-radius:16px 16px 13px 13px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 7px 0 var(--bin-dark),0 10px 18px rgba(0,0,0,.22);transition:transform .15s,filter .15s,opacity .15s;touch-action:manipulation}
         .recycle-bin:before{content:"";position:absolute;left:7px;right:7px;top:-5px;height:11px;border-radius:8px;background:var(--bin-lid);box-shadow:0 2px 0 rgba(0,0,0,.18)}
         .recycle-bin img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
-        .recycle-bin .bin-label{font:900 11px/1 system-ui,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap}
-        .recycle-bin .bin-sub{font:800 8px/1 system-ui,sans-serif;opacity:.8;letter-spacing:.05em}
-        .recycle-bin.disabled{opacity:.34;filter:grayscale(.8);cursor:not-allowed}
-        .recycle-bin.ready{opacity:1;cursor:pointer}
-        .recycle-bin.ready:active{transform:translateY(6px);box-shadow:0 1px 0 var(--bin-dark),0 4px 10px rgba(0,0,0,.18)}
-        .bin-general{background:#64748b;--bin-dark:#334155;--bin-lid:#94a3b8}
-        .bin-plastic{background:#3387d6;--bin-dark:#1f5d9a;--bin-lid:#6bb8ff}
-        .bin-can_glass{background:#d5a423;--bin-dark:#8f6d16;--bin-lid:#f6d55d}
-        .bin-paper{background:#2f9b70;--bin-dark:#1d6b4c;--bin-lid:#61c99e}
-        .bin-food{background:#d67b2b;--bin-dark:#914f19;--bin-lid:#f5a95d}
-        .eco-brand{display:inline-flex;align-items:center;gap:7px}
-        .eco-brand:before{content:"ECO";font:1000 10px/1 system-ui,sans-serif;background:#2f9b70;color:white;padding:4px 6px;border-radius:7px;letter-spacing:.08em}
-        .start-fleet{
-            margin:0 auto 14px;width:178px;height:82px;border-radius:24px;background:linear-gradient(145deg,#dff7e7,#eef9ff);
-            display:grid;place-items:center;border:3px solid #7bcf99;box-shadow:0 12px 24px rgba(41,111,67,.16)
-        }
+        .recycle-bin .bin-label{font:900 11px/1 system-ui,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap}.recycle-bin .bin-sub{font:800 8px/1 system-ui,sans-serif;opacity:.8;letter-spacing:.05em}
+        .recycle-bin.disabled{opacity:.34;filter:grayscale(.8);cursor:not-allowed}.recycle-bin.ready{opacity:1;cursor:pointer}.recycle-bin.ready:active{transform:translateY(6px);box-shadow:0 1px 0 var(--bin-dark),0 4px 10px rgba(0,0,0,.18)}
+        .bin-general{background:#64748b;--bin-dark:#334155;--bin-lid:#94a3b8}.bin-plastic{background:#3387d6;--bin-dark:#1f5d9a;--bin-lid:#6bb8ff}.bin-can_glass{background:#d5a423;--bin-dark:#8f6d16;--bin-lid:#f6d55d}.bin-paper{background:#2f9b70;--bin-dark:#1d6b4c;--bin-lid:#61c99e}.bin-food{background:#d67b2b;--bin-dark:#914f19;--bin-lid:#f5a95d}
+        .eco-brand{display:inline-flex;align-items:center;gap:7px}.eco-brand:before{content:"ECO";font:1000 10px/1 system-ui,sans-serif;background:#2f9b70;color:white;padding:4px 6px;border-radius:7px;letter-spacing:.08em}
+        .start-fleet{margin:0 auto 14px;width:178px;height:82px;border-radius:24px;background:linear-gradient(145deg,#dff7e7,#eef9ff);display:grid;place-items:center;border:3px solid #7bcf99;box-shadow:0 12px 24px rgba(41,111,67,.16)}
         .start-fleet strong{font:1000 20px/1 system-ui,sans-serif;color:#276d43}.start-fleet small{display:block;margin-top:6px;font:800 10px/1 system-ui,sans-serif;color:#57836a;letter-spacing:.08em}
-        @media(max-width:640px){
-            .pickup-card{width:98px;min-height:76px;border-radius:17px;padding:6px}.pickup-glyph{font-size:29px}.pickup-name{font-size:10px;max-width:86px}
-            .recycle-bin{flex-basis:70px;height:78px}.recycle-bin img{width:29px;height:29px}.recycle-bin .bin-label{font-size:9px}
-            #bins-area{justify-content:flex-start}
-        }
+        #asset-status{margin:-8px 0 12px;font:800 12px/1.35 system-ui,sans-serif;color:#527080}
+        #btn-start:disabled{opacity:.55;cursor:wait;transform:none!important;box-shadow:0 4px 0 #64748b!important;filter:grayscale(.25)}
+        @media(max-width:640px){.recycle-bin{flex-basis:70px;height:78px}.recycle-bin img{width:29px;height:29px}.recycle-bin .bin-label{font-size:9px}#bins-area{justify-content:flex-start}#world-hint{bottom:116px;font-size:9px}.slot-shell{top:112px!important;transform:scale(.88);transform-origin:top center}}
     </style>
 </head>
 <body>
@@ -157,41 +66,22 @@
         </header>
 
         <main id="play-screen" class="flex-1 relative flex flex-col hidden">
-            
-            <canvas id="city3d" aria-label="3D 분리수거 트럭 운행 배경"></canvas>
-            <div class="legacy-sky absolute inset-0 z-0 bg-gradient-to-b from-sky-300 to-sky-100"></div>
-            <div class="absolute inset-0 z-0 animate-clouds" id="bg-clouds" style="background-size: 250px;"></div>
-            <div class="absolute bottom-[200px] w-full h-64 z-0 animate-trees opacity-80" id="bg-trees" style="background-size: 150px; background-repeat: repeat-x; background-position: bottom;"></div>
-
-            <div class="absolute top-36 w-full flex justify-center z-20 pointer-events-none">
+            <canvas id="city3d" aria-label="3D 분리수거 트럭 운행 장면"></canvas>
+            <div id="world-hint">도로의 3D 쓰레기를 직접 터치하세요</div>
+            <div class="slot-shell absolute top-36 w-full flex justify-center z-20 pointer-events-none">
                 <div id="slot-box" class="w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-white/50 border-gray-400 backdrop-blur-md transition-all duration-300 shadow-xl">
                     <div class="text-xs md:text-sm font-bold text-gray-500 mb-2 bg-white px-3 py-1 rounded-full shadow-sm" id="slot-label">수거 슬롯</div>
-                    
                     <div id="slot-empty" class="flex flex-col items-center opacity-40">
-                        <span class="text-3xl font-black text-slate-500">PICK</span>
-                        <span class="text-xs font-bold mt-1">길가의 수거물을 터치</span>
+                        <span class="text-3xl font-black text-slate-500">3D PICK</span>
+                        <span class="text-xs font-bold mt-1">길가의 물체를 터치</span>
                     </div>
-
                     <div id="slot-item" class="flex flex-col items-center animate-bounce hidden">
-                        <span id="slot-emoji" class="text-5xl md:text-6xl drop-shadow-lg"></span>
+                        <span id="slot-badge">수거 완료</span>
                         <span id="slot-name" class="text-xs md:text-sm font-black text-white bg-slate-800/90 px-3 py-1 rounded-md mt-2 shadow-sm whitespace-nowrap"></span>
                     </div>
                 </div>
             </div>
-
-            <div id="road-stage" class="absolute bottom-[100px] md:bottom-[120px] w-full h-32 md:h-40 z-10 flex items-center">
-                <div class="absolute w-full h-full animate-road"></div>
-                
-                <div id="truck-fallback" class="absolute left-2 md:left-12 bottom-6 animate-bounce-truck z-30 pointer-events-none">
-                    <div class="text-[90px] md:text-[130px] drop-shadow-2xl">🚛</div>
-                    <div class="absolute right-[-20px] bottom-4 text-2xl opacity-50 animate-pulse">💨</div>
-                </div>
-
-                <div id="road-area" class="absolute w-full h-full"></div>
-            </div>
-
-            <div id="bins-area" class="absolute bottom-0 w-full h-[100px] md:h-[120px] bg-slate-900 px-2 md:px-4 z-40 flex justify-center items-center gap-2 md:gap-4 overflow-x-auto shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
-                </div>
+            <div id="bins-area" class="absolute bottom-0 w-full h-[100px] md:h-[120px] bg-slate-900 px-2 md:px-4 z-40 flex justify-center items-center gap-2 md:gap-4 overflow-x-auto shadow-[0_-10px_25px_rgba(0,0,0,0.5)]"></div>
         </main>
 
         <div id="start-modal" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -207,8 +97,9 @@
                         ⚠️ 주의: 치킨 뼈, 조개 껍데기 등 헷갈리기 쉬운 일반쓰레기도 등장합니다!
                     </p>
                 </div>
-                <button id="btn-start" class="w-full py-4 bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-white font-black text-2xl rounded-2xl shadow-[0_6px_0_#0369a1] active:shadow-none active:translate-y-2 transition-all">
-                    출발하기!
+                <p id="asset-status">3D 자산을 준비하고 있어요…</p>
+                <button id="btn-start" disabled class="w-full py-4 bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-white font-black text-2xl rounded-2xl shadow-[0_6px_0_#0369a1] active:shadow-none active:translate-y-2 transition-all">
+                    3D 준비 중…
                 </button>
             </div>
         </div>
@@ -362,13 +253,13 @@
     let heldTrash = null;
     let spawnTimer = null;
     let msgTimer = null;
+    let threeReady = false;
 
     // DOM Elements
     const elGameWrapper = document.getElementById('game-wrapper');
     const elPlayScreen = document.getElementById('play-screen');
     const elStartModal = document.getElementById('start-modal');
     const elGameoverModal = document.getElementById('gameover-modal');
-    const elRoadArea = document.getElementById('road-area');
     const elBinsArea = document.getElementById('bins-area');
     
     const elScoreText = document.getElementById('score-text');
@@ -380,10 +271,10 @@
     const elSlotLabel = document.getElementById('slot-label');
     const elSlotEmpty = document.getElementById('slot-empty');
     const elSlotItem = document.getElementById('slot-item');
-    const elSlotEmoji = document.getElementById('slot-emoji');
+    const elSlotBadge = document.getElementById('slot-badge');
     const elSlotName = document.getElementById('slot-name');
-
-    // 3D가 준비되기 전에는 기존 하늘/도로 레이어가 폴백으로 남습니다.
+    const elStartBtn = document.getElementById('btn-start');
+    const elAssetStatus = document.getElementById('asset-status');
 
     // 하단 휴지통 생성 (pointerdown 이벤트 적용)
     BINS.forEach(bin => {
@@ -453,7 +344,7 @@
         if (heldTrash) {
             elSlotEmpty.classList.add('hidden');
             elSlotItem.classList.remove('hidden');
-            elSlotEmoji.innerText = heldTrash.emoji;
+            elSlotBadge.innerText = BINS.find(b => b.id === heldTrash.type)?.sub || 'ITEM';
             elSlotName.innerText = heldTrash.name;
             
             elSlotBox.className = "w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-green-50 backdrop-blur-md transition-all duration-300 shadow-xl border-green-400 scale-110 shadow-green-400/40";
@@ -485,61 +376,12 @@
     }
 
     function spawnTrash() {
-        if (status !== 'playing') return;
-
+        if (status !== 'playing' || !threeReady) return;
         const available = getAvailableTrash();
         const trashData = available[Math.floor(Math.random() * available.length)];
-        
-        const el = document.createElement('div');
-        el.className = 'moving-trash absolute bottom-6 z-20 cursor-pointer transition-transform transform hover:scale-110 active:scale-95';
-        
-        const speed = Math.max(2.5, 6.0 - (score / 150));
-        el.style.animationDuration = speed + 's';
-        
-        el.innerHTML = `
-            <div class="pickup-card">
-                <span class="pickup-glyph">${trashData.emoji}</span>
-                <span class="pickup-name">${trashData.name}</span>
-                <span class="pickup-level">난이도 ${trashData.level}</span>
-            </div>
-        `;
-
-        // 터치 인식률 100% 개선 (click -> pointerdown 교체)
-        el.onpointerdown = (e) => {
-            e.preventDefault();
-            if (heldTrash) {
-                showMsg('먼저 슬롯의 쓰레기를 비워주세요!');
-                return;
-            }
-            AudioEngine.playCatch();
-            window.TrashRunner3D?.collect?.();
-            
-            const rect = el.getBoundingClientRect();
-            addFloatText('GET!', rect.left, rect.top, 'text-yellow-300');
-            
-            heldTrash = trashData;
-            el.remove(); // DOM에서 제거
-            showMsg('알맞은 통을 눌러 분류하세요!');
-            updateUI();
-        };
-
-        // 화면 밖으로 나갔을 때 (Miss)
-        el.onanimationend = () => {
-            if (status === 'playing' && document.body.contains(el)) {
-                lives--;
-                combo = 0;
-                showMsg('앗! 쓰레기를 놓쳤어요!');
-                AudioEngine.playMiss();
-                window.TrashRunner3D?.wrong?.();
-                triggerShake();
-                updateUI();
-            }
-            el.remove();
-        };
-
-        elRoadArea.appendChild(el);
-
-        const spawnRate = Math.max(800, 2500 - (score / 20));
+        const duration = Math.max(2.8, 6.2 - (score / 160));
+        window.TrashRunner3D?.spawnTrash?.(trashData, duration);
+        const spawnRate = Math.max(850, 2450 - (score / 20));
         spawnTimer = setTimeout(spawnTrash, spawnRate);
     }
 
@@ -582,13 +424,17 @@
     }
 
     function startGame() {
+        if (!threeReady || !window.TrashRunner3D?.ready?.()) {
+            elAssetStatus.innerText = '3D 자산 준비가 끝난 뒤 출발할 수 있어요.';
+            return;
+        }
         AudioEngine.init();
         status = 'playing';
         score = 0;
         lives = 3;
         combo = 0;
         heldTrash = null;
-        elRoadArea.innerHTML = ''; // 기존 쓰레기 청소
+        window.TrashRunner3D?.clearTrash?.();
         clearTimeout(spawnTimer);
         
         elStartModal.classList.add('hidden');
@@ -610,12 +456,7 @@
         window.TrashRunner3D?.stop?.();
         AudioEngine.playOver();
 
-        // 멈추기
-        const garbages = document.querySelectorAll('.moving-trash');
-        garbages.forEach(g => {
-            g.style.animationPlayState = 'paused';
-            g.onpointerdown = null; // 수정된 터치 이벤트 해제
-        });
+        window.TrashRunner3D?.clearTrash?.();
 
         document.getElementById('final-score-text').innerText = score + '점';
         
@@ -640,6 +481,45 @@
         } catch(e) {}
     }
 
+    window.TrashRunnerGame = {
+        onCollect(trashData, x, y) {
+            if (status !== 'playing') return false;
+            if (heldTrash) {
+                showMsg('먼저 슬롯의 쓰레기를 비워주세요!');
+                return false;
+            }
+            AudioEngine.playCatch();
+            addFloatText('GET!', x, y, 'text-yellow-300');
+            heldTrash = trashData;
+            showMsg('알맞은 통을 눌러 분류하세요!');
+            updateUI();
+            return true;
+        },
+        onMiss() {
+            if (status !== 'playing') return;
+            lives--;
+            combo = 0;
+            showMsg('앗! 쓰레기를 놓쳤어요!');
+            AudioEngine.playMiss();
+            window.TrashRunner3D?.wrong?.();
+            triggerShake();
+            updateUI();
+        }
+    };
+
+    document.addEventListener('trashrunner3d-ready', () => {
+        threeReady = true;
+        elAssetStatus.innerText = '3D 도시와 수거물이 준비됐어요.';
+        elStartBtn.disabled = false;
+        elStartBtn.innerText = '출발하기!';
+    });
+    document.addEventListener('trashrunner3d-error', (e) => {
+        threeReady = false;
+        elAssetStatus.innerText = e.detail || '3D 엔진을 준비하지 못했습니다. 새로고침해 주세요.';
+        elStartBtn.disabled = true;
+        elStartBtn.innerText = '3D 준비 실패';
+    });
+
     // 버튼 이벤트 리스너 (모두 pointerdown 으로 통일하여 딜레이 제거 및 터치율 100% 반영)
     document.getElementById('btn-start').onpointerdown = (e) => { e.preventDefault(); startGame(); };
     document.getElementById('btn-restart').onpointerdown = (e) => { e.preventDefault(); startGame(); };
@@ -656,6 +536,6 @@
 
 </script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="trash-runner-3d-loader.js?v=2"></script>
+<script type="module" src="trash-runner-3d-loader.js?v=3"></script>
 </body>
 </html>
