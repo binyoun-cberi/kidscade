@@ -137,7 +137,7 @@ export async function buildKidscadeCity(ctx){
     addModel(parent,CITY_ASSET.cart,{x:-15.15,z:26.0,w:1.0,h:.95,d:1.1,rot:.1,name:'market-cart'}),
     addModel(parent,CITY_ASSET.atm,{x:-21.0,z:26.0,w:.75,h:1.45,d:.65,rot:Math.PI/2,name:'market-atm'})
   ]);
-  track('market-display','decor',-18.1,26.1,5.9,1.35);
+  track('market-display','decor',-18.1,26.5,5.9,1.35);
 
   // Plaza furniture stays off the road and leaves the center open for resident gatherings.
   await Promise.all([
@@ -205,8 +205,8 @@ export async function buildKidscadeCity(ctx){
     woojin:{x:2.8,z:33.15},seoyeon:{x:0,z:33.25}
   };
   const dayRoleTargets={
-    yuna:{x:7.3,z:8.1,r:.6},          // farm meadow
-    woojin:{x:-18.8,z:.8,r:.65},      // forest entrance
+    yuna:{x:11.8,z:8.0,r:.55},        // farm edge
+    woojin:{x:-19.6,z:4.0,r:.55},      // forest entrance
     seoyeon:{x:-13.6,z:-4.35,r:.5},   // Cube Pets yard
     hyunwoo:{x:-4.8,z:33.75,r:.75}    // mailbox/delivery side of plaza
   };
