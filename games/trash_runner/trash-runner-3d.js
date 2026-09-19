@@ -130,6 +130,8 @@ function init(){
  loader=new GLTFLoader();
  Promise.all(Object.entries(MODEL).map(([k,u])=>load(k,u))).then(()=>{
   buildWorld();ready=true;document.body.classList.add('three-ready');
+  const play=document.getElementById('play-screen');
+  if(play&&!play.classList.contains('hidden'))running=true;
  });
  addEventListener('resize',resize,{passive:true});
  requestAnimationFrame(loop);
