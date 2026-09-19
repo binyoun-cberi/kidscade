@@ -435,7 +435,7 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 
-const LAYOUT_VERSION=3;
+const LAYOUT_VERSION=4;
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
@@ -447,7 +447,7 @@ const TRAVEL_POINTS={
   home:{x:-8.8,z:-1.55,name:'집 앞'},
   forest:{x:-19.0,z:.7,name:'깊은 숲 입구'},
   quarry:{x:18.5,z:.7,name:'돌산 입구'},
-  camp:{x:0,z:14.0,name:'남쪽 야영지'},
+  camp:{x:-1.6,z:15.2,name:'남쪽 야영지'},
   city:{x:0,z:23.6,name:'씨앗마을 중심가'},
   river:{x:0,z:-15.0,name:'북쪽 강가'}
 };
@@ -1190,4 +1190,4 @@ async function init(){
 }
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},setMode};
+window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
