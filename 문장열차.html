@@ -162,7 +162,7 @@ function errorSound(){tone(180,.16,0,'square',.035);tone(145,.22,.12,'square',.0
 function successSound(){tone(523,.14,0,'sine',.06);tone(659,.14,.11,'sine',.06);tone(784,.22,.22,'sine',.07)}
 function whistle(){tone(760,.42,0,'sine',.07);tone(980,.55,.18,'sine',.065)}
 function chug(){for(let i=0;i<9;i++){tone(i%2?105:90,.09,.16+i*.14,'square',.024)}}
-function startGame(){ensureAudio();questions=shuffle(BANK[level]).slice(0,10);round=0;attempts=0;corrects=0;hints=4;hintsUsed=0;locked=false;$('#setup').style.display='none';$('#result').classList.remove('active');$('#game').classList.add('active');updateJourney(0,false);renderRound();updateStats();}
+function startGame(){ensureAudio();questions=shuffle(BANK[level]).slice(0,10);round=0;attempts=0;corrects=0;hints=4;hintsUsed=0;locked=false;$('#setup').style.display='none';$('#result').classList.remove('active');$('#game').classList.add('active');updateJourney(0,false);renderRound();requestAnimationFrame(()=>window.SentenceTrain3D?.resize?.());updateStats();}
 $('#startBtn').onclick=startGame; $('#againBtn').onclick=()=>{$('#result').classList.remove('active');$('#setup').style.display='block';scrollTo({top:0,behavior:'smooth'});};
 function targetMilestone(completed=round){return MILESTONES.find(m=>completed<m.threshold)||MILESTONES[MILESTONES.length-1];}
 function reachedMilestone(completed){return MILESTONES.find(m=>completed===m.threshold)||null;}
