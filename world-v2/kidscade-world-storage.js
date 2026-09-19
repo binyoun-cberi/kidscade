@@ -40,6 +40,7 @@
         starterKitClaimed:false,
         starterHintSeen:false,
         groundPickups:{},
+        housing:{version:1,owned:{},placed:[],starterGiftClaimed:false,nextId:1},
         town:{
           coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0,
           delivery:{active:false,target:'cafe',startedDay:0,completedDay:0,reward:95},
@@ -69,7 +70,12 @@
         food:{...base.progression.food,...(p.food||{})},
         fishDex:{...base.progression.fishDex,...(p.fishDex||{})},
         kitchen:{...base.progression.kitchen,...(p.kitchen||{})},
-        groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})}
+        groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})},
+        housing:{
+          ...base.progression.housing,...(p.housing||{}),
+          owned:{...base.progression.housing.owned,...(p.housing?.owned||{})},
+          placed:Array.isArray(p.housing?.placed)?p.housing.placed.map(v=>({...v})):[]
+        }
       };
     }
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
