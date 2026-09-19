@@ -698,7 +698,7 @@ async function buildPets(){
   const slots=[[-15,-6.1],[-13.6,-6.2],[-12.2,-6.0],[-15,-5.2],[-13.6,-5.25],[-12.2,-5.15],[-14.4,-4.5],[-12.8,-4.5]];
   for(let n=0;n<owned.length;n++){
     const id=owned[n],object=await makePetObject(id),slot=slots[n%slots.length];
-    object.position.set(slot[0],.05,slot[1]);object.scale.multiplyScalar(id==='goat'||id==='miniPig'?.95:.8);
+    object.position.set(slot[0],.05,slot[1]);object.scale.multiplyScalar((id==='goat'||id==='miniPig') ? .95 : .8);
     petLayer.add(object);petActors.push({id,object,homeX:slot[0],homeZ:slot[1],phase:n*.83});
   }
 
