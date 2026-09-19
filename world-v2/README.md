@@ -32,6 +32,16 @@ World v2는 이제 단순 애니메이션 데모가 아니라 아래 순환이 �
 - sit / sleep / use / wash / read / cook / carry 포즈
 - 도구 연결용 `handAnchor()`
 
+### 생활 가구 에셋 브리지
+`kidscade-world-model-sprites.js`
+
+- Kenney Furniture Kit GLB를 로컬 Three.js로 한 번 렌더링해 투명 2D 스프라이트로 캐시
+- 생활 월드 엔진은 기존 Canvas 2D 구조 유지
+- 침대 / 책상 / 책장 / 소파 / 식탁 / 냉장고 / 싱크대 / 조리대 / 가스레인지 / 러그 적용
+- 모델 로딩 전·WebGL 실패 시 기존 BQ3 픽셀 가구 자동 폴백
+- 기존 sit / sleep / use / wash / read / cook 상호작용 로직 유지
+- 모델 가구 사용 시 기존 픽셀 전면 마스크와 냉장고 문 덮개를 비활성화해 스타일 충돌 방지
+
 ### 실내 생활 애니메이션
 `kidscade-world-life-animation.js`
 
