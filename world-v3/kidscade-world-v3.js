@@ -222,7 +222,7 @@ function updateAvatarFrame(now,moving){
     try{
       let s=api.renderPreviewFrame?.(mode,now/1000)||'';
       if(!s)s=api.getPreviewDataURL?.()||'';
-      if(s?.startsWith('data:image'))setAvatarSource(s,true);
+      if(s?.startsWith('data:image'))setAvatarSource(s);
     }catch(_){}
   }else if(now%1600<110){
     setAvatarSource(Bridge?.readAvatarSource?.()||'',true);
@@ -285,6 +285,15 @@ function nearestInteraction(){
   promptEl.classList.toggle('show',!!best);
 }
 function doInteract(){if(near)near.action()}
+function updateZone(){
+  if(mode==='indoor'){zoneEl.textContent='우리 집 · 3D 실내';return;}
+  const x=player.x,z=player.z;
+  if(x<-8.5&&z>3.0)zoneEl.textContent='연못 · 휴식 구역';
+  else if(x>10.5&&z>3.2)zoneEl.textContent='작업장 · 제작 구역';
+  else if(x>4.2&&z>2.7)zoneEl.textContent='농장 · 작물 구역';
+  else if(x<-5.5&&z<-.8)zoneEl.textContent='집 앞 · 마당';
+  else zoneEl.textContent='마을길';
+}
 function setMode(next){
   mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
@@ -508,7 +517,10 @@ function tick(now){
     const nx=player.x+dx*player.speed*dt,nz=player.z+dz*player.speed*dt;
     if(!isBlocked(nx,player.z))player.x=nx;
     if(!isBlocked(player.x,nz))player.z=nz;
-    if(dx)avatarFacing=dx<0?-1:1;
+    if(dx){
+      const nextFacing=dx<0?-1:1;
+      if(nextFacing!==avatarFacing){avatarFacing=nextFacing;if(avatarImg.complete)drawAvatarImage();}
+    }
   }
   avatar.position.x=player.x;avatar.position.z=player.z;
   shadow.position.set(player.x,.035,player.z+.08);
@@ -520,6 +532,7 @@ function tick(now){
   camera.position.lerp(target.clone().add(off),1-Math.pow(.0015,dt));
   camera.lookAt(target.x,mode==='outdoor'?.2:.55,target.z);
   nearestInteraction();
+  updateZone();
 
   saveClock+=dt;if(saveClock>1.4){saveClock=0;save.player=save.player||{};save.player.v3x=player.x;save.player.v3z=player.z;save.player.v3scene=mode;save.player.v3Layout=LAYOUT_VERSION;persist();}
   renderer.render(scene,camera);
