@@ -2220,6 +2220,8 @@ body.dark-mode .site-credits {
         .kc-mission-fill { width:0%; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--kc-brand),var(--kc-yellow)); transition:width .25s ease; }
         .kc-mission-note { margin-top:8px; color:var(--kc-muted); font-size:.71rem; line-height:1.4; font-weight:750; }
         .kc-credits { padding:2px 8px; color:var(--kc-muted); font-size:.63rem; line-height:1.45; text-align:center; }
+        .kc-credits a { color:inherit; font-weight:900; text-decoration:underline; text-underline-offset:2px; }
+        .kc-credits a:hover { color:var(--kc-brand); }
 
         /* ---------- Arcade heading ---------- */
         .kc-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:end; padding:8px 2px 15px; text-align:left; }
