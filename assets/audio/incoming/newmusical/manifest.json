@@ -5,7 +5,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "sfx",
     "creator_inferred_from_filename": "randomahhaccount",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "blackbox-loop-black-box-exciting-bass-loop-130bpm-13888.mp3",
@@ -13,7 +17,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "blackbox",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "mleckert82-dramatic-ochestral-loop-154350.mp3",
@@ -21,7 +29,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "mleckert82",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "brvhrtz-action-loop-e-90-bpm-brvhrtz-233462.mp3",
@@ -29,7 +41,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "brvhrtz",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "idoberg-relaxing-guitar-loop-v8-252351.mp3",
@@ -37,7 +53,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "idoberg",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "mleckert82-violin-loop-154193.mp3",
@@ -45,7 +65,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "mleckert82",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "musiqo-flute-rain-flute-loop-ambient-short-loop-340800.mp3",
@@ -53,7 +77,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "musiqo",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "sergequadrado-cool-hip-hop-loop-275527.mp3",
@@ -61,11 +89,13 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "sergequadrado",
-    "license_status": "VERIFIED",
+    "license_status": "USER_CONFIRMED_PIXABAY",
     "source": "Pixabay",
     "source_url": "https://pixabay.com/sound-effects/cool-hip-hop-loop-275527/",
     "license": "Pixabay Content License",
-    "verified_for_use": "Kidscade math_tower_defense"
+    "verified_for_use": "Kidscade math_tower_defense",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "idoberg-creepy-halloween-bells-loop-408748.mp3",
@@ -73,7 +103,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "music-loop",
     "creator_inferred_from_filename": "idoberg",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "freesound_community-boiling-water-sound-62556.mp3",
@@ -81,7 +115,11 @@
     "bitrate_kbps": 160,
     "suggested_kind": "sfx",
     "creator_inferred_from_filename": "freesound_community",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "u_dtbxmnju4i-taking-out-knife-217793.mp3",
@@ -89,7 +127,11 @@
     "bitrate_kbps": 256,
     "suggested_kind": "sfx",
     "creator_inferred_from_filename": "u_dtbxmnju4i",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   },
   {
     "file": "freesound_community-knife-slice-41231.mp3",
@@ -97,6 +139,10 @@
     "bitrate_kbps": 160,
     "suggested_kind": "sfx",
     "creator_inferred_from_filename": "freesound_community",
-    "license_status": "UNVERIFIED"
+    "license_status": "USER_CONFIRMED_PIXABAY",
+    "source": "Pixabay",
+    "license": "Pixabay Content License",
+    "license_url": "https://pixabay.com/service/license-summary/",
+    "provenance_note": "Project owner confirmed this file was downloaded from Pixabay; exact item URL is not retained unless source_url is present."
   }
 ]
