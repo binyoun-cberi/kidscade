@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=4';
-import {createTownEconomy} from './kidscade-world-economy.js?v=5';
+import {createTownEconomy} from './kidscade-world-economy.js?v=6';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=3';
 
 const V2=window.KidscadeWorldV2||{};
@@ -483,8 +483,8 @@ function spendTool(kind,item){
   toast((kind==='wood'?'목재':'돌')+' +'+gain);return true;
 }
 function canPlaceFurniture(x,z,w,d,ignore=null){
-  if(w<=0||d<=0)return x>-6.15&&x<6.15&&z>-4.35&&z<3.65;
-  if(x-w/2<-6.15||x+w/2>6.15||z-d/2<-4.35||z+d/2>3.65)return false;
+  if(w<=0||d<=0)return x>-6.55&&x<6.55&&z>-4.75&&z<4.15;
+  if(x-w/2<-6.55||x+w/2>6.55||z-d/2<-4.75||z+d/2>4.15)return false;
   if(z+d/2>3.05&&Math.abs(x)<1.45)return false;
   return !colliders.indoor.some(c=>c!==ignore&&c.enabled!==false&&Math.abs(x-c.x)<(w+c.w)/2+.12&&Math.abs(z-c.z)<(d+c.d)/2+.12);
 }
@@ -1035,7 +1035,11 @@ async function init(){
       if(key==='classicDesk'){toast('책상에 앉아 오늘 할 일을 정리했어요.');return;}
       if(key==='television'){
         const p=prog(),t=townEconomy?.ensureState?.(p)||p.town;
-        if(t){t.fun=Math.min(100,(t.fun||0)+15);p.survival.time=(p.survival.time+20)%1440;p.survival.hunger=Math.max(0,p.survival.hunger-2);persist();updateStatus();}
+        if(t){
+          t.fun=Math.min(100,(t.fun||0)+15);
+          const nextTime=p.survival.time+20;if(nextTime>=1440)p.survival.day+=1;p.survival.time=nextTime%1440;
+          p.survival.hunger=Math.max(0,p.survival.hunger-2);persist();updateStatus();
+        }
         setAvatarAction('smile',900);toast('TV를 보며 쉬었어요. 재미 +15');return;
       }
     }
