@@ -8,24 +8,32 @@ const html=fs.readFileSync(path.join(root,'한붓쓱.html'),'utf8');
 const runtime=fs.readFileSync(path.join(root,'one-stroke-city-3d.js'),'utf8');
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
 
-test('One Stroke keeps the original route puzzle logic intact',()=>{
-  assert.match(html,/function completionTrail/);
-  assert.match(html,/function startDelivery/);
-  assert.match(html,/function drawDelivery/);
-  assert.match(html,/function processSegment/);
-  assert.match(html,/function isCompletePath/);
+test('One Stroke keeps the original one-stroke route logic intact',()=>{
+  for(const token of ['function completionTrail','function startDelivery','function drawDelivery','function processSegment','function isCompletePath']){
+    assert.ok(html.includes(token),'missing '+token);
+  }
 });
 
 test('One Stroke layers a real Three.js city under the interactive route canvas',()=>{
   assert.match(html,/id="city3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/one-stroke-city-3d\.js\?v=2/);
+  assert.match(html,/one-stroke-city-3d\.js\?v=3/);
   assert.match(html,/publishCity3D/);
   assert.match(html,/one-stroke-city-layout/);
   assert.match(html,/__oneStroke3DReady/);
 });
 
-test('One Stroke 3D renderer uses committed Kenney buildings, nature, vehicles and props',()=>{
+test('One Stroke builds neighborhoods from puzzle roads instead of random scatter',()=>{
+  assert.match(html,/Main urban fabric follows the puzzle roads/);
+  assert.match(html,/Large areas far from any route become compact neighborhoods/);
+  assert.match(html,/Final micro-fill uses greenery only/);
+  assert.match(html,/roadSide:side/);
+  assert.match(html,/edgeId:e\.id/);
+  assert.match(html,/distanceToRoad/);
+  assert.match(html,/const bx=n\.x\+\(l\.x-n\.x\)\*\.48/);
+});
+
+test('One Stroke 3D renderer uses committed Kenney city assets',()=>{
   const required=[
     'assets/game/3d/city/kenney-city-kit-suburban/building-type-a.glb',
     'assets/game/3d/city/kenney-city-kit-suburban/building-type-b.glb',
@@ -51,20 +59,17 @@ test('One Stroke 3D renderer uses committed Kenney buildings, nature, vehicles a
   }
 });
 
-test('One Stroke keeps dense city placement while swapping fake drawings for 3D assets',()=>{
-  assert.match(html,/target=small\?30:58/);
-  assert.match(html,/o\.kind==='building'/);
-  assert.match(html,/o\.kind==='parking'/);
-  assert.match(html,/o\.kind==='plaza'/);
-  assert.match(html,/o\.kind==='treeCluster'/);
-  assert.match(runtime,/function addLandmark/);
-  assert.match(runtime,/function addDecor/);
-  assert.match(runtime,/function screenToGround/);
+test('One Stroke makes the city visibly larger and more three-dimensional',()=>{
   assert.match(runtime,/OrthographicCamera/);
+  assert.match(runtime,/camera\.position\.set\(11,76,58\)/);
+  assert.match(runtime,/const scale=o\.district\?3\.0:2\.82/);
+  assert.match(runtime,/l\.role==='apartment'\?3\.55/);
+  assert.match(runtime,/addTreeCluster\(p\.x-r\*\.26/);
+  assert.match(html,/lineW=Math\.min\(9/);
 });
 
-test('One Stroke catalog points to the real 3D city rework',()=>{
+test('One Stroke catalog points to the road-oriented 3D rework',()=>{
   const game=catalog.games.find(g=>g.id==='low_one_stroke');
   assert.ok(game);
-  assert.equal(game.href,'한붓쓱.html?v=5');
+  assert.equal(game.href,'한붓쓱.html?v=6');
 });
