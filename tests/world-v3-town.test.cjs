@@ -115,11 +115,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=6/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=7/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=7/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
-  assert.match(html,/kidscade-world-v3\.js\?v=12/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=12/);
+  assert.match(html,/kidscade-world-v3\.js\?v=13/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=13/);
 });
 
 
@@ -283,9 +283,9 @@ test('resident AI movement keeps interaction anchors attached to moving NPC mode
   assert.match(city,/n\.interaction\.z=n\.object\.position\.z/);
   assert.match(city,/dayRoleTargets/);
   assert.match(city,/eveningSlots/);
-  assert.match(city,/yuna:\{x:11\.8,z:8\.0/);
-  assert.match(city,/woojin:\{x:-19\.6,z:4\.0/);
-  assert.match(city,/seoyeon:\{x:-13\.6,z:-4\.35/);
+  assert.match(city,/yuna:\{x:-15\.4,z:32\.0/);
+  assert.match(city,/woojin:\{x:-8\.0,z:32\.15/);
+  assert.match(city,/seoyeon:\{x:8\.0,z:32\.15/);
 });
 
 test('Cube Pets are separated into owned yard companions and habitat-based wild animals',()=>{
@@ -300,4 +300,47 @@ test('Cube Pets are separated into owned yard companions and habitat-based wild 
   assert.match(runtime,/a\.interaction\.z=nz/);
   assert.match(runtime,/const LAYOUT_VERSION=3/);
   assert.match(runtime,/if\(z>20\)zoneEl\.textContent='씨앗마을 중심가/);
+});
+
+
+test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
+  assert.match(city,/const groundY=-b\.min\.y/);
+  assert.match(city,/groundY,r:radius/);
+  assert.match(city,/n\.object\.position\.y=n\.groundY/);
+  assert.match(runtime,/o\.userData\.groundY=o\.position\.y/);
+  assert.match(runtime,/groundY=Number\(object\.userData\.groundY\)\|\|0/);
+  assert.match(runtime,/a\.object\.position\.y=a\.groundY/);
+});
+
+test('wild and yard animals have roaming decisions pauses and directional facing',()=>{
+  assert.match(runtime,/function chooseAnimalTarget/);
+  assert.match(runtime,/function stepAnimal/);
+  assert.match(runtime,/Math\.random\(\)<\.32/);
+  assert.match(runtime,/a\.object\.rotation\.y=Math\.atan2\(dx,dz\)/);
+  assert.match(runtime,/a\.moving=false/);
+  assert.match(runtime,/a\.speed=\.22\+Math\.random\(\)\*\.18/);
+});
+
+test('movement input cannot remain stuck across focus loss panels travel or city entry',()=>{
+  assert.match(runtime,/function resetInput\(requireRelease=false\)/);
+  assert.match(runtime,/inputNeedsRelease/);
+  assert.match(runtime,/addEventListener\('blur',\(\)=>resetInput\(true\)\)/);
+  assert.match(runtime,/visibilitychange/);
+  assert.match(runtime,/pagehide/);
+  assert.match(runtime,/if\(nowInCity&&!wasInCity\)\{resetInput\(true\);\}/);
+  assert.match(runtime,/function openPanel\(html\)\{resetInput\(true\)/);
+  assert.match(runtime,/function setMode\(next\)\{\n  resetInput\(true\)/);
+});
+
+test('map camera no longer exposes the blue void at town and river edges',()=>{
+  assert.match(runtime,/plane\(outdoor,0,5,82,96,0x7caf63,0\)/);
+  assert.match(runtime,/box\(outdoor,0,5,82,96,.22,0x6c9657,-.22\)/);
+});
+
+test('city labels are smaller and only shown near the player',()=>{
+  assert.match(city,/width:1\.45,height:\.36/);
+  assert.match(city,/tag\.visible=false/);
+  assert.match(city,/buildingLabels/);
+  assert.match(city,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<5\.2/);
+  assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<10\.5/);
 });
