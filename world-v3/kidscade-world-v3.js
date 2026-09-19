@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=4';
-import {createTownEconomy} from './kidscade-world-economy.js?v=4';
+import {createTownEconomy} from './kidscade-world-economy.js?v=5';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -154,7 +155,7 @@ function plane(parent,x,z,w,d,color,y=.02){
 
 const colliders={outdoor:[],indoor:[]};
 const interactables={outdoor:[],indoor:[]};
-function collider(mode,x,z,w,d){colliders[mode].push({x,z,w,d});}
+function collider(mode,x,z,w,d){const c={x,z,w,d,enabled:true};colliders[mode].push(c);return c;}
 function interact(mode,x,z,r,label,action){const q={x,z,r,label,action,enabled:true};interactables[mode].push(q);return q;}
 
 let save=Storage?.load?.()||{player:{},inventory:{},progression:{energy:100,maxEnergy:100,tools:{},seeds:{potato:2,carrot:2,tomato:2},crops:{},food:{},fishDex:{}}};
@@ -199,6 +200,14 @@ function prog(){
   p.starterKitClaimed=!!p.starterKitClaimed;
   p.starterHintSeen=!!p.starterHintSeen;
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
+  const rawHousing=p.housing&&typeof p.housing==='object'?p.housing:{};
+  p.housing={
+    version:1,
+    owned:rawHousing.owned&&typeof rawHousing.owned==='object'?rawHousing.owned:{},
+    placed:Array.isArray(rawHousing.placed)?rawHousing.placed:[],
+    starterGiftClaimed:!!rawHousing.starterGiftClaimed,
+    nextId:Math.max(1,Math.floor(Number(rawHousing.nextId)||1))
+  };
   return p;
 }
 const itemName=k=>({
@@ -283,6 +292,7 @@ panel.addEventListener('click',e=>{
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
   const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
+  if(furnishingSystem?.handlePanelClick?.(e))return;
   if(townEconomy?.handlePanelClick?.(e))return;
 });
 
@@ -370,10 +380,16 @@ function applyAvatarMotion(now,moving){
 }
 
 const keys=new Set();
+const lastMove={x:0,z:1};
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(e.key)){keys.add(e.key.toLowerCase());e.preventDefault()}
+  if((e.key==='r'||e.key==='R')&&furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.rotate();return;}
   if((e.key==='e'||e.key==='E'||e.key===' ')&&!panel.classList.contains('open')){e.preventDefault();doInteract()}
-  if(e.key==='Escape'){if(panel.classList.contains('open'))closePanel();else window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin)}
+  if(e.key==='Escape'){
+    if(furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.cancel();}
+    else if(panel.classList.contains('open'))closePanel();
+    else window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
+  }
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 document.querySelectorAll('.mobile [data-key]').forEach(b=>{
@@ -425,7 +441,7 @@ function showStarterHintOnce(){
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
-  return colliders[mode].some(c=>nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
+  return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
 let near=null;
 function nearestInteraction(){
@@ -435,7 +451,7 @@ function nearestInteraction(){
   promptEl.textContent=best?((matchMedia('(max-width:760px)').matches?'행동':'E / Space')+' · '+best.label):'';
   promptEl.classList.toggle('show',!!best);
 }
-function doInteract(){if(near)near.action()}
+function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confirm();return;}if(near)near.action()}
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
   const x=player.x,z=player.z;
@@ -463,6 +479,12 @@ function spendTool(kind,item){
   const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();
   toast((kind==='wood'?'목재':'돌')+' +'+gain);return true;
+}
+function canPlaceFurniture(x,z,w,d,ignore=null){
+  if(w<=0||d<=0)return x>-6.15&&x<6.15&&z>-4.35&&z<3.65;
+  if(x-w/2<-6.15||x+w/2>6.15||z-d/2<-4.35||z+d/2>3.65)return false;
+  if(z+d/2>3.05&&Math.abs(x)<1.45)return false;
+  return !colliders.indoor.some(c=>c!==ignore&&c.enabled!==false&&Math.abs(x-c.x)<(w+c.w)/2+.12&&Math.abs(z-c.z)<(d+c.d)/2+.12);
 }
 function sleep(){
   const p=prog(),s=p.survival;
@@ -769,7 +791,8 @@ async function buildIndoor(){
     addModel(indoor,ASSET.stove,{x:1.4,z:-4.0,w:1.3,h:1.45,d:1.1,rot:Math.PI}),
     addModel(indoor,ASSET.sink,{x:3.0,z:-4.0,w:1.55,h:1.3,d:1.0,rot:Math.PI}),
     addModel(indoor,ASSET.cabinet,{x:4.55,z:-4.0,w:1.55,h:1.3,d:1.0,rot:Math.PI}),
-    addModel(indoor,ASSET.fridge,{x:5.9,z:-3.7,w:1.25,h:2.3,d:1.2,rot:Math.PI})
+    addModel(indoor,ASSET.fridge,{x:5.9,z:-3.7,w:1.25,h:2.3,d:1.2,rot:Math.PI}),
+    addModel(indoor,ASSET.chest,{x:5.35,z:2.65,w:1.45,h:1.0,d:1.0,rot:Math.PI/2,name:'furniture-storage'})
   ]);
 
   // Collisions leave a wide central route from door to every zone.
@@ -782,6 +805,7 @@ async function buildIndoor(){
   addColliderFor('indoor',3.0,-4.0,1.35,.78);
   addColliderFor('indoor',4.55,-4.0,1.35,.78);
   addColliderFor('indoor',5.9,-3.7,1.0,.9);
+  addColliderFor('indoor',5.35,2.65,1.05,.75);
 
   interact('indoor',0,4.35,1.45,'밖으로 나가기',()=>setMode('outdoor'));
   interact('indoor',-5.2,-2.55,1.4,'침대에서 쉬기',()=>{setAvatarAction('smile',850);sleep();});
@@ -791,6 +815,7 @@ async function buildIndoor(){
   interact('indoor',3.0,-2.9,1.25,'싱크대 사용하기',()=>{setAvatarAction('smile',650);toast('손을 깨끗이 씻었어요.');});
   interact('indoor',1.4,-2.9,1.25,'가스레인지에서 요리하기',()=>{setAvatarAction('smile',500);cookingPanel('stove');});
   interact('indoor',1.0,2.25,1.35,'식탁 살펴보기',()=>toast('식사와 요리를 이어갈 수 있는 식탁이에요.'));
+  interact('indoor',5.35,2.65,1.35,'가구 창고 · 집 꾸미기',()=>furnishingSystem?.openCatalog?.());
 }
 
 function clockText(minutes){
@@ -976,7 +1001,7 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 
-let townEconomy=null,cityRuntime=null;
+let townEconomy=null,cityRuntime=null,furnishingSystem=null;
 let last=performance.now(),saveClock=0;
 function tick(now){
   requestAnimationFrame(tick);
@@ -989,6 +1014,7 @@ function tick(now){
   const moving=!!(dx||dz);
   if(moving){
     const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;
+    lastMove.x=dx;lastMove.z=dz;
     const pet=companionId(),speedMul=pet==='dog'?1.08:1;
     const nx=player.x+dx*player.speed*speedMul*dt,nz=player.z+dz*player.speed*speedMul*dt;
     if(!isBlocked(nx,player.z))player.x=nx;
@@ -1003,6 +1029,7 @@ function tick(now){
   updateAvatarFrame(now,moving);
   applyAvatarMotion(now,moving);
   updatePets(now,dt);
+  furnishingSystem?.updatePreview?.();
   cityRuntime?.update?.(now,dt);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
@@ -1018,10 +1045,17 @@ function tick(now){
   renderer.render(scene,camera);
 }
 async function init(){
+  furnishingSystem=createFurnishingSystem({
+    parent:indoor,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,setAvatarAction,itemName,
+    getMode:()=>mode,
+    getPlacementPose:()=>({x:player.x,z:player.z,dx:lastMove.x,dz:lastMove.z}),
+    canPlace:canPlaceFurniture
+  });
   townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo});
   townEconomy.ensureState(prog());
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
+  await furnishingSystem.restore();
   await buildPets();
   showStarterHintOnce();
   const previous=save.player?.v3scene;
