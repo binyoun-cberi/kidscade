@@ -18,8 +18,8 @@ const foodModels = [
 
 test('Maratang v8 keeps the 3D selfbar and adds tycoon UI', () => {
   assert.match(html, /<title>마라탕 한 그릇<\/title>/);
-  assert.match(html, /maratang-selfbar\.css\?v=9/);
-  assert.match(html, /maratang-selfbar\.js\?v=9/);
+  assert.match(html, /maratang-selfbar\.css\?v=10/);
+  assert.match(html, /maratang-selfbar\.js\?v=10/);
   assert.doesNotMatch(html, /maratang-dx|maratang-ui-v4/i);
   assert.match(html, /id="orderTicket"/);
   assert.match(html, /id="weight"/);
@@ -103,13 +103,13 @@ test('Maratang Selfbar uses valid shared audio keys', () => {
 test('Maratang Selfbar build output is v9 and contains only new runtime files', () => {
   const distCatalog = JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game = distCatalog.games.find(g=>g.id==='job_maratang_simulator');
-  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=9');
+  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=10');
 
   const builtDir=path.join(root,'dist','games','job_maratang_simulator');
   const built=fs.readFileSync(path.join(builtDir,'마라탕 한 그릇.html'),'utf8');
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
-  assert.match(built,/maratang-selfbar\.css\?v=9/);
-  assert.match(built,/maratang-selfbar\.js\?v=9/);
+  assert.match(built,/maratang-selfbar\.css\?v=10/);
+  assert.match(built,/maratang-selfbar\.js\?v=10/);
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.js')));
   assert.ok(!fs.existsSync(path.join(builtDir,'maratang-dx.js')));
@@ -222,4 +222,26 @@ test('Maratang v9 moves the daily event out of the mobile action stack',()=>{
   assert.doesNotMatch(css,/\.event-banner/);
   assert.match(css,/\.event-chip/);
   assert.match(html,/id="nextUnlock"/);
+});
+
+
+test('Maratang v10 seats ingredient models on tray surfaces and tunes display scale',()=>{
+  assert.match(js,/const DISPLAY_TUNING = \{/);
+  assert.match(js,/const trayTop=y\+\.08/);
+  assert.match(js,/obj\.position\.add\(new THREE\.Vector3\(x,trayTop-box\.min\.y/);
+  assert.match(js,/frontLip/);
+  assert.match(js,/anchor\.position\.set\(x,y\+\.01,z\+\.5\)/);
+});
+
+test('Maratang v10 shrinks the bowl and pulls the mobile cooking station inward',()=>{
+  assert.match(js,/cloneModel\('bowl\.glb',1\.95\)/);
+  assert.match(js,/CylinderGeometry\(\.92,\.92,\.2,32\)/);
+  assert.match(js,/const cookX=1\.62/);
+  assert.match(js,/this\.cookBase\.scale\.set\(\.88,1,\.94\)/);
+  assert.match(js,/this\.bowlCenter\.set\(-\.92,\.43,2\.12\)/);
+});
+
+test('Maratang v10 ingredient labels render as compact tray nameplates',()=>{
+  assert.match(css,/\.ingredient-label\{[^}]*border-radius:4px/);
+  assert.match(css,/background:rgba\(66,45,32,\.94\)/);
 });
