@@ -127,7 +127,7 @@ h1 .en{display:block;color:var(--teal);font-size:.58em;letter-spacing:-.04em;mar
         <path d="M224 121h84l-13 49h-58z" fill="#4b8df8"/><path d="M236 121l7-34h46l9 34" fill="#fff" stroke="#4b8df8" stroke-width="10"/>
         <circle cx="266" cy="111" r="13" fill="#ffc83d"/>
       </svg>
-      <img class="hero-animal a1" src="../../assets/game/2d/animals/round/lion.png" alt="">
+      <img class="hero-animal a1" src="../../assets/game/2d/animals/round/giraffe.png" alt="">
       <img class="hero-animal a2" src="../../assets/game/2d/animals/round/elephant.png" alt="">
       <img class="hero-animal a3" src="../../assets/game/2d/animals/round/penguin.png" alt="">
       <img class="hero-animal a4" src="../../assets/game/2d/animals/round/zebra.png" alt="">
@@ -191,12 +191,11 @@ const STORAGE_KEY='zoolympic-save-v2';
 const LEGACY_STORAGE_KEY='zoolympic-save-v1';
 const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
 const ANIMAL_ART={
-  '사자':'lion','호랑이':'tiger','북극곰':'polar','대왕판다':'panda','아프리카코끼리':'elephant',
-  '기린':'giraffe','얼룩말':'zebra','염소':'goat','아메리카들소':'buffalo','하마':'hippo',
-  '흰코뿔소':'rhino','코알라':'koala','세발가락나무늘보':'sloth','비버':'beaver','고릴라':'gorilla',
-  '황제펭귄':'penguin','수리부엉이':'owl','회색앵무':'parrot','청둥오리':'duck',
-  '나일악어':'crocodile','미시시피악어':'crocodile','그물무늬비단뱀':'snake','킹코브라':'snake','방울뱀':'snake',
-  '청개구리':'frog','독화살개구리':'frog','혹등고래':'whale'
+  '아프리카코끼리':'elephant','기린':'giraffe','얼룩말':'zebra','염소':'goat','아메리카들소':'buffalo',
+  '하마':'hippo','흰코뿔소':'rhino','세발가락나무늘보':'sloth','고릴라':'gorilla','황제펭귄':'penguin',
+  '수리부엉이':'owl','회색앵무':'parrot','청둥오리':'duck','나일악어':'crocodile','미시시피악어':'crocodile',
+  '그물무늬비단뱀':'snake','킹코브라':'snake','방울뱀':'snake','청개구리':'frog','독화살개구리':'frog',
+  '혹등고래':'whale'
 };
 function animalArtHTML(name){
   const file=ANIMAL_ART[name];
