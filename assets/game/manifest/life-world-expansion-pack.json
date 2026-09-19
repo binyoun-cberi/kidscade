@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "bundle": "Kidscade Life World Asset Expansion v1",
+  "root_policy": "Extract this ZIP at the Kidscade repository root. It contains assets/game/... paths only.",
+  "license_summary": "All seven uploaded Kenney packs were verified from their included License.txt as Creative Commons Zero (CC0).",
+  "packs": {
+    "kenney-survival-kit": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-survival-kit.txt",
+      "source_archive": "kenney_survival-kit.zip",
+      "runtime_root": "assets/game/3d/survival/kenney-survival-kit",
+      "included_runtime_files_excluding_license": 81,
+      "runtime_policy": "GLB runtime models retained; required external Textures/colormap.png retained. FBX/OBJ/MTL/source previews omitted."
+    },
+    "kenney-modular-buildings": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-modular-buildings.txt",
+      "source_archive": "kenney_modular-buildings.zip",
+      "runtime_root": "assets/game/3d/buildings/kenney-modular-buildings",
+      "included_runtime_files_excluding_license": 109,
+      "runtime_policy": "GLB runtime models retained; required external Textures/colormap.png retained. FBX/OBJ/MTL/source previews omitted."
+    },
+    "kenney-city-kit-suburban": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-city-kit-suburban.txt",
+      "source_archive": "kenney_city-kit-suburban_20.zip",
+      "runtime_root": "assets/game/3d/city/kenney-city-kit-suburban",
+      "included_runtime_files_excluding_license": 41,
+      "runtime_policy": "GLB runtime models retained; required external Textures/colormap.png retained. FBX/OBJ/MTL/source previews omitted."
+    },
+    "kenney-furniture-kit": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-furniture-kit.txt",
+      "source_archive": "kenney_furniture-kit.zip",
+      "runtime_root": "assets/game/3d/interiors/kenney-furniture-kit",
+      "included_runtime_files_excluding_license": 140,
+      "runtime_policy": "GLB runtime models retained. DAE/FBX/OBJ/MTL/STL/isometric/side preview duplicates omitted."
+    },
+    "kenney-tiny-town": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-tiny-town.txt",
+      "source_archive": "kenney_tiny-town.zip",
+      "runtime_root": "assets/game/2d/tilesets/kenney-tiny-town",
+      "included_runtime_files_excluding_license": 135,
+      "runtime_policy": "Individual 16px PNG tiles retained with packed tilemaps and tilesheet metadata; preview/sample/link files omitted."
+    },
+    "kenney-tiny-farm": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-tiny-farm.txt",
+      "source_archive": "kenney_tiny-farm.zip",
+      "runtime_root": "assets/game/2d/tilesets/kenney-tiny-farm",
+      "included_runtime_files_excluding_license": 135,
+      "runtime_policy": "Individual 16px PNG tiles retained with packed tilemaps and tilesheet metadata; preview/sample/link files omitted."
+    },
+    "kenney-ui-pack-pixel-adventure": {
+      "license": "CC0-1.0",
+      "license_file": "assets/game/licenses/kenney-ui-pack-pixel-adventure.txt",
+      "source_archive": "kenney_ui-pack-pixel-adventure.zip",
+      "runtime_root": "assets/game/ui/pixel-adventure",
+      "included_runtime_files_excluding_license": 514,
+      "runtime_policy": "All individual PNG UI tiles retained; packed tilemaps and per-size metadata retained; preview/sample/link files omitted."
+    }
+  },
+  "totals": {
+    "packs": 7,
+    "runtime_files_excluding_manifest": 1162,
+    "tracked_source_map_entries": 1162
+  }
+}

@@ -1,0 +1,19 @@
+Kidscade Life World Asset Expansion v1
+
+적용 방법
+- 이 ZIP을 Kidscade 저장소 루트에서 압축 해제하세요.
+- ZIP 내부가 assets/game/... 로 시작하므로 GitHub Desktop에서 그대로 변경사항을 확인할 수 있습니다.
+- 기존 파일을 삭제하거나 덮어쓰는 경로는 만들지 않았습니다.
+
+정리 기준
+- 3D: GLB만 런타임에 유지했습니다.
+- Survival / Modular Buildings / City Suburban: GLB가 상대경로 Textures/colormap.png를 참조하므로 텍스처를 함께 보존했습니다.
+- Furniture: GLB 파일명을 Kidscade 규칙에 맞게 kebab-case로 정리했습니다.
+- Tiny Town / Tiny Farm: 개별 16px PNG + packed tilemap + Tilesheet.txt를 유지했습니다.
+- Pixel Adventure UI: 개별 타일 + packed atlas + size metadata를 유지했습니다.
+- 원본 Preview/Sample/URL 및 FBX/OBJ/MTL/DAE/STL 중복 포맷은 제외했습니다.
+
+라이선스
+- 모든 팩의 원본 License.txt에서 CC0를 확인했습니다.
+- 각 원문은 assets/game/licenses/ 아래에 보존했습니다.
+- 출처/원본경로/SHA-256은 life-world-expansion-source-map.json에 기록했습니다.
