@@ -62,6 +62,32 @@ button{font:inherit}
 .sprite.goblin:before,.sprite.goblin:after{content:"";position:absolute;top:9px;width:13px;height:9px;background:#74b566;border:2px solid #18351d;z-index:4}.sprite.goblin:before{left:4px;clip-path:polygon(100% 0,0 50%,100% 100%)}.sprite.goblin:after{right:2px;clip-path:polygon(0 0,100% 50%,0 100%)}
 .sprite.boss{width:68px;height:82px}.sprite.boss .head{left:19px;top:7px;width:30px;height:28px;background:#9e68d0;border-color:#32164e}.sprite.boss .hair{left:17px;top:3px;width:34px;background:#47205f;border-color:#32164e}.sprite.boss .body{left:14px;top:34px;width:40px;height:34px;background:#713c96;border-color:#32164e}.sprite.boss .arm{top:38px;height:28px;background:#9e68d0;border-color:#32164e}.sprite.boss .leg{top:65px;background:#44245f;border-color:#32164e}.sprite.boss .leg.l{left:17px}.sprite.boss .leg.r{right:15px}.sprite.boss .sword{display:none}
 .horn{position:absolute;top:-5px;width:17px;height:18px;background:#ead8a3;border:2px solid #39283f;clip-path:polygon(50% 0,100% 100%,0 80%);z-index:7}.horn.h1{left:7px;transform:rotate(-20deg)}.horn.h2{right:5px;transform:rotate(20deg)}
+/* Asset pass v2: real Kenney character/enemy sprites replace CSS-built figures. */
+.asset-sprite{position:relative;width:66px;height:76px;transform-origin:50% 100%;filter:drop-shadow(0 6px 5px rgba(0,0,0,.30));z-index:6}
+.asset-sprite .pose{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.asset-sprite .walkPose,.asset-sprite .attackPose,.asset-sprite .hurtPose,.asset-sprite .hitPose,.asset-sprite .deadPose{display:none}
+.asset-hero{width:64px;height:78px}
+.asset-enemy{width:62px;height:68px}
+.asset-enemy.monster-ghost{height:78px}
+.asset-enemy.monster-boss{width:76px;height:102px}
+#hero.run .asset-hero .base{display:none}
+#hero.run .asset-hero .walkPose{display:block}
+#hero.run .asset-hero{animation:assetWalkBob .23s infinite alternate}
+.battle.attack .heroF .asset-hero .base{display:none}
+.battle.attack .heroF .asset-hero .attackPose{display:block}
+.battle.counter .heroF .asset-hero .base{display:none}
+.battle.counter .heroF .asset-hero .hurtPose{display:block}
+.battle.attack .enemyF .asset-enemy .base{display:none}
+.battle.attack .enemyF .asset-enemy .hitPose{display:block}
+.battle.dead .enemyF .asset-enemy .base,.battle.dead .enemyF .asset-enemy .hitPose{display:none}
+.battle.dead .enemyF .asset-enemy .deadPose{display:block}
+.room .asset-sprite{width:52px;height:58px}
+.gateSprite .asset-sprite{width:72px;height:92px}
+.battle .asset-hero{width:66px;height:82px}
+.battle .asset-enemy{width:68px;height:80px}
+.battle .asset-enemy.monster-boss{width:86px;height:110px}
+@keyframes assetWalkBob{to{transform:translateY(-4px) rotate(-1deg)}}
+
 #hero{position:absolute;z-index:25;left:75px;bottom:78px;display:flex;flex-direction:column;align-items:center;transition:left .62s cubic-bezier(.2,.8,.2,1),bottom .62s cubic-bezier(.2,.8,.2,1)}
 #heroBubble{min-width:60px;background:#fff;color:#24375c;border:4px solid #253a62;border-radius:999px;text-align:center;padding:2px 8px;font-size:23px;font-weight:1000;box-shadow:0 5px 14px rgba(0,0,0,.28)}
 #hero.run .sprite{animation:runbob .23s infinite alternate}
@@ -99,9 +125,9 @@ button{font:inherit}
       <button id="restart">↻ 다시하기</button><button id="next">다음 스테이지 ▶</button>
     </div>
   </header>
-  <div id="guide"><b>노란 테두리</b>는 지금 갈 수 있는 층. 너무 강한 적을 고르거나 계산을 틀리면 바로 패배!</div>
+  <div id="guide"><b>노란 테두리</b>는 지금 갈 수 있는 층. 슬라임·거미·유령을 물리치며 숫자를 키우고, 너무 강한 적이나 잘못된 계산은 피하세요!</div>
   <div id="viewport"><div id="world"><div id="mountains"></div><div id="ground"></div>
-    <div id="hero"><div id="heroBubble">10</div><div class="sprite"><div class="hair"></div><div class="head"></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="leg l"></div><div class="leg r"></div><div class="sword"></div></div></div>
+    <div id="hero"><div id="heroBubble">10</div><div class="sprite asset-sprite asset-hero"><img class="pose base" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png" alt=""><img class="pose walkPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-walk1.png" alt=""><img class="pose attackPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-action1.png" alt=""><img class="pose hurtPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-hurt.png" alt=""></div></div>
   </div></div>
 </div>
 <div id="modal"><div class="panel"><h2 id="modalTitle">계산!</h2><div class="small" id="modalSub">틀리면 패배합니다.</div><div id="equation">10 + 6 = ?</div><div id="answers"></div></div></div>
@@ -157,13 +183,27 @@ const stages=[
 ];
 let si=0, power=0, zoneIndex=0, state=[], busy=false, currentQuiz=null;
 const towerEls=[], gateEls=[];
-function sprite(kind){
- const cls=kind==="enemy"?"goblin":kind==="boss"?"boss":"";
- const horns=kind==="boss"?'<div class="horn h1"></div><div class="horn h2"></div>':'';
- return `<div class="sprite ${cls}">${horns}<div class="hair"></div><div class="head"></div><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="leg l"></div><div class="leg r"></div><div class="sword"></div></div>`;
+const ASSET={
+ hero:{
+  base:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',
+  walk:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-walk1.png',
+  attack:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-action1.png',
+  hurt:'assets/game/characters/people/kenney-platformer-characters/player/poses/player-hurt.png'
+ },
+ monsters:[
+  {id:'slime',base:'assets/game/2d/platformer-art/extended/enemies/slime-green.png',hit:'assets/game/2d/platformer-art/extended/enemies/slime-green-hit.png',dead:'assets/game/2d/platformer-art/extended/enemies/slime-green-dead.png'},
+  {id:'spider',base:'assets/game/2d/platformer-art/extended/enemies/spider.png',hit:'assets/game/2d/platformer-art/extended/enemies/spider-hit.png',dead:'assets/game/2d/platformer-art/extended/enemies/spider-dead.png'},
+  {id:'ghost',base:'assets/game/2d/platformer-art/extended/enemies/ghost.png',hit:'assets/game/2d/platformer-art/extended/enemies/ghost-hit.png',dead:'assets/game/2d/platformer-art/extended/enemies/ghost-dead.png'}
+ ],
+ boss:{id:'boss',base:'assets/game/2d/platformer-art/extended/enemies/snake-lava.png',hit:'assets/game/2d/platformer-art/extended/enemies/snake-lava-hit.png',dead:'assets/game/2d/platformer-art/extended/enemies/snake-lava-dead.png'}
+};
+function sprite(kind,seed=0){
+ if(kind==='hero') return `<div class="sprite asset-sprite asset-hero"><img class="pose base" src="${ASSET.hero.base}" alt=""><img class="pose walkPose" src="${ASSET.hero.walk}" alt=""><img class="pose attackPose" src="${ASSET.hero.attack}" alt=""><img class="pose hurtPose" src="${ASSET.hero.hurt}" alt=""></div>`;
+ const m=kind==='boss'?ASSET.boss:ASSET.monsters[Math.abs(seed)%ASSET.monsters.length];
+ return `<div class="sprite asset-sprite asset-enemy monster-${m.id}"><img class="pose base" src="${m.base}" alt=""><img class="pose hitPose" src="${m.hit}" alt=""><img class="pose deadPose" src="${m.dead}" alt=""></div>`;
 }
 function roomInfo(r){
- if(r.type==="enemy") return {v:r.n,cap:"몬스터 · 승리하면 +"+r.n,body:sprite("enemy")};
+ if(r.type==="enemy") return {v:r.n,cap:"몬스터 · 승리하면 +"+r.n,body:sprite("enemy",r.n)};
  if(r.type==="plus") return {v:"+"+r.n,cap:"보물방",body:'<div style="font-size:43px;z-index:6">💎</div>'};
  return {v:"−"+r.n,cap:"함정방",body:'<div style="font-size:43px;z-index:6">🕳️</div>'};
 }
@@ -187,7 +227,7 @@ function init(){
    world.appendChild(t);towerEls.push(t);x+=205;
   });
   const g=document.createElement("div");g.className="gate";g.style.left=(x+25)+"px";g.dataset.zi=zi;
-  g.innerHTML=`<div class="gateArch"><div class="gateNum">${z.gate}</div><div class="gateSprite">${sprite(z.boss?"boss":"enemy")}</div><div class="gateCap">${z.boss?"최종 보스":"구역 보스 · 승리하면 다음 구역"}</div></div>`;
+  g.innerHTML=`<div class="gateArch"><div class="gateNum">${z.gate}</div><div class="gateSprite">${sprite(z.boss?"boss":"enemy",z.gate)}</div><div class="gateCap">${z.boss?"최종 보스":"구역 보스 · 승리하면 다음 구역"}</div></div>`;
   g.querySelector(".gateArch").onclick=()=>chooseGate(g,zi,z);world.appendChild(g);gateEls.push(g);x+=305;
  });
  hero.style.left="90px";hero.style.bottom="78px";world.style.transform="translateX(0px)";end.classList.remove("open");modal.classList.remove("open");hero.style.opacity="1";
@@ -279,7 +319,7 @@ function ask(eq,correct,onCorrect,wrongReason){
  modal.classList.add("open");
 }
 async function winBattle(container,num,boss){
- const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(boss?"boss":"enemy")}</div><div class="slashfx"></div><div class="fx"></div>`;
+ const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(boss?"boss":"enemy",num)}</div><div class="slashfx"></div><div class="fx"></div>`;
  const target=container.classList.contains("gate")?container.querySelector(".gateArch"):container;target.appendChild(ov);hero.style.opacity="0";
  await wait(220);ov.classList.add("counter");await wait(420);ov.classList.remove("counter");ov.classList.add("attack");ov.querySelector(".slashfx").classList.add("go");const fx=ov.querySelector(".fx");fx.textContent=boss?"쾅!":"퍽!";fx.classList.add("pop");await wait(500);
  if(boss){ov.classList.remove("attack");ov.querySelector(".slashfx").classList.remove("go");fx.classList.remove("pop");await wait(70);void ov.offsetWidth;ov.classList.add("attack");ov.querySelector(".slashfx").classList.add("go");fx.textContent="필살!";fx.classList.add("pop");await wait(500);}
@@ -287,7 +327,7 @@ async function winBattle(container,num,boss){
 }
 async function loseBattle(container,num,reason){
  const target=container.classList.contains("gate")?container.querySelector(".gateArch"):container;
- const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(container.classList.contains("gate")?"boss":"enemy")}</div><div class="fx"></div>`;
+ const ov=document.createElement("div");ov.className="battle";ov.innerHTML=`<div class="fighter heroF"><div class="tag">${power}</div>${sprite("hero")}</div><div class="fighter enemyF"><div class="tag">${num}</div>${sprite(container.classList.contains("gate")?"boss":"enemy",num)}</div><div class="fx"></div>`;
  target.appendChild(ov);hero.style.opacity="0";await wait(220);ov.classList.add("counter");const fx=ov.querySelector(".fx");fx.textContent="패배!";fx.classList.add("pop");await wait(580);ov.remove();hero.style.opacity="1";lose(reason);
 }
 function finishAction(el,msg){el.querySelector(".battle")?.remove();busy=false;update();show(msg);}
