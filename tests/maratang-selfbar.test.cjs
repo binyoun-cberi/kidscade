@@ -179,12 +179,13 @@ test('Maratang v8 adds customer archetypes and meaningful daily events',()=>{
   assert.match(html,/id="tomorrowEvent"/);
 });
 
-test('Maratang v8 only offers orders and restocking for unlocked ingredients',()=>{
+test('Maratang v9 only offers orders, labels and restocking for unlocked ingredients',()=>{
   assert.match(js,/orderAvailable/);
   assert.match(js,/activeIngredients/);
   assert.match(js,/isIngredientUnlocked/);
-  assert.match(js,/DAY \$\{ing\.unlockDay\}/);
+  assert.match(js,/label\.hidden=!unlocked/);
   assert.match(js,/activeIngredients\(\)\.map/);
+  assert.match(js,/다음 입고 · DAY/);
 });
 
 
