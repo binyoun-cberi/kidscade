@@ -14,6 +14,13 @@ const UPGRADES = {
   service:{name:'서비스 교육',base:3000,max:4},
   marketing:{name:'지역 홍보',base:4200,max:3}
 };
+const DISPLAY_TUNING = {
+  cabbage:{scale:1.10}, broccoli:{scale:1.12}, carrot:{scale:1.10},
+  mushroom:{scale:1.12}, sausage:{scale:1.08}, meat:{scale:1.05},
+  corn:{scale:1.22}, leek:{scale:1.28}, onion:{scale:1.10},
+  cauliflower:{scale:1.10}, eggplant:{scale:1.12}, radish:{scale:1.08},
+  dimsum:{scale:1.06}, mussel:{scale:1.12}, egg:{scale:1.08}
+};
 
 const INGREDIENTS = [
   {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78, unlockDay:1},
@@ -300,10 +307,10 @@ class SelfBarScene {
     work.position.set(0,-.28,1.65);work.receiveShadow=true;this.scene.add(work);
     const front=new THREE.Mesh(new THREE.BoxGeometry(7.4,1.15,.18),dark);
     front.position.set(0,-.72,2.82);this.scene.add(front);
-    const cookBase=new THREE.Mesh(new THREE.BoxGeometry(2.35,.22,1.72),new THREE.MeshStandardMaterial({color:0x4d4b47,roughness:.65,metalness:.15}));
-    cookBase.position.set(2.25,.03,1.55);this.scene.add(cookBase);
-    const cookInset=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.08,28),new THREE.MeshStandardMaterial({color:0x242524,roughness:.5,metalness:.28}));
-    cookInset.position.set(2.25,.18,1.55);this.scene.add(cookInset);
+    this.cookBase=new THREE.Mesh(new THREE.BoxGeometry(2.35,.22,1.72),new THREE.MeshStandardMaterial({color:0x4d4b47,roughness:.65,metalness:.15}));
+    this.cookBase.position.set(2.25,.03,1.55);this.scene.add(this.cookBase);
+    this.cookInset=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.08,28),new THREE.MeshStandardMaterial({color:0x242524,roughness:.5,metalness:.28}));
+    this.cookInset.position.set(2.25,.18,1.55);this.scene.add(this.cookInset);
   }
   makeShelf(){
     this.shelfGroup=new THREE.Group();this.scene.add(this.shelfGroup);
@@ -343,14 +350,19 @@ class SelfBarScene {
       tray.position.set(x,y-.08,z+.06);tray.userData.ingredientId=ing.id;tray.receiveShadow=true;this.shelfGroup.add(tray);
       const inner=new THREE.Mesh(new THREE.BoxGeometry(1.08,.06,.62),new THREE.MeshStandardMaterial({color:0xf0d8b8,roughness:.92}));
       inner.position.set(x,y+.01,z+.06);inner.userData.ingredientId=ing.id;this.shelfGroup.add(inner);
-      const anchor=new THREE.Object3D();anchor.position.set(x,y+.57,z+.12);this.shelfGroup.add(anchor);this.labelAnchors.set(ing.id,anchor);
+      const frontLip=new THREE.Mesh(new THREE.BoxGeometry(1.22,.09,.08),new THREE.MeshStandardMaterial({color:0x5f3c2a,roughness:.8}));
+      frontLip.position.set(x,y+.02,z+.43);this.shelfGroup.add(frontLip);
+      const anchor=new THREE.Object3D();anchor.position.set(x,y+.01,z+.5);this.shelfGroup.add(anchor);this.labelAnchors.set(ing.id,anchor);
       this.loadIngredientDisplay(ing,x,y,z,token);
     });
   }
   async loadIngredientDisplay(ing,x,y,z,token=this.shelfBuildToken){
-    const obj=await this.cloneModel(ing.model,ing.size*(this.mobileLayout?1.05:1));
+    const tune=DISPLAY_TUNING[ing.id]||{};
+    const obj=await this.cloneModel(ing.model,ing.size*(this.mobileLayout?1.08:1)*(tune.scale||1));
     if(token!==this.shelfBuildToken)return;
-    obj.position.set(x,y+.24,z+.06);obj.rotation.y=(Math.random()-.5)*.45;
+    const box=new THREE.Box3().setFromObject(obj);
+    const trayTop=y+.08;
+    obj.position.add(new THREE.Vector3(x,trayTop-box.min.y,z+.06+(tune.z||0)));obj.rotation.y=(Math.random()-.5)*.32;
     this.markIngredient(obj,ing.id);
     this.displayItems.set(ing.id,obj);obj.visible=(state.stock[ing.id]??0)>0;
     this.shelfGroup.add(obj);
@@ -379,9 +391,9 @@ class SelfBarScene {
   async makeBowl(){
     this.bowlRoot=new THREE.Group();this.bowlRoot.position.copy(this.bowlCenter);this.scene.add(this.bowlRoot);
     this.bowlContents=new THREE.Group();this.bowlContents.position.y=.25;this.bowlRoot.add(this.bowlContents);
-    const hit=new THREE.Mesh(new THREE.CylinderGeometry(1.08,1.08,.22,32),new THREE.MeshBasicMaterial({transparent:true,opacity:.001,depthWrite:false}));
-    hit.position.y=.22;hit.userData.bowlHit=true;this.bowlRoot.add(hit);this.bowlHit=hit;
-    const bowl=await this.cloneModel('bowl.glb',2.35);bowl.rotation.x=.04;this.bowlRoot.add(bowl);
+    const hit=new THREE.Mesh(new THREE.CylinderGeometry(.92,.92,.2,32),new THREE.MeshBasicMaterial({transparent:true,opacity:.001,depthWrite:false}));
+    hit.position.y=.2;hit.userData.bowlHit=true;this.bowlRoot.add(hit);this.bowlHit=hit;
+    const bowl=await this.cloneModel('bowl.glb',1.95);bowl.rotation.x=.04;this.bowlRoot.add(bowl);
   }
   async makePot(){
     this.potRoot=new THREE.Group();this.potRoot.position.set(2.25,.2,1.55);this.potRoot.visible=false;this.scene.add(this.potRoot);
@@ -435,7 +447,7 @@ class SelfBarScene {
   }
   isPointerOverBowl(){
     const p=this.bowlCenter.clone().project(this.camera);
-    return Math.hypot(this.pointer.x-p.x,this.pointer.y-p.y)<.25;
+    return Math.hypot(this.pointer.x-p.x,this.pointer.y-p.y)<.22;
   }
   pointerUp(e){
     if(!this.dragObject)return;
@@ -449,8 +461,8 @@ class SelfBarScene {
   }
   async addBowlItem(id){
     const ing=ingredientById(id);
-    const obj=await this.cloneModel(ing.model,.46);
-    const angle=Math.random()*Math.PI*2, radius=Math.random()*.55;
+    const obj=await this.cloneModel(ing.model,.40);
+    const angle=Math.random()*Math.PI*2, radius=Math.random()*.44;
     obj.position.set(Math.cos(angle)*radius,.75+Math.random()*.15,Math.sin(angle)*radius);
     obj.rotation.set(Math.random()*.5,Math.random()*Math.PI*2,Math.random()*.45);
     this.bowlContents.add(obj);this.bowlItems.push(obj);
@@ -497,15 +509,21 @@ class SelfBarScene {
       const extra=Math.max(0,rows-3);
       this.camera.position.set(0,5.7+extra*.52,10.4+extra*.35);
       this.camera.fov=46;
-      this.bowlCenter.set(-.78,.45,2.15);
+      this.bowlCenter.set(-.92,.43,2.12);
       if(this.bowlRoot)this.bowlRoot.position.copy(this.bowlCenter);
-      if(this.potRoot)this.potRoot.position.set(2.15,.2,1.55);
+      const cookX=1.62;
+      if(this.potRoot)this.potRoot.position.set(cookX,.2,1.55);
+      if(this.cookBase){this.cookBase.position.x=cookX;this.cookBase.scale.set(.88,1,.94)}
+      if(this.cookInset)this.cookInset.position.x=cookX;
       this.camera.lookAt(0,1.3+extra*.42,-.45);
     }else{
       this.camera.position.set(0,6.35,9.7);this.camera.fov=39;
       this.bowlCenter.set(-1.15,.45,2.15);
       if(this.bowlRoot)this.bowlRoot.position.copy(this.bowlCenter);
-      if(this.potRoot)this.potRoot.position.set(2.35,.2,1.55);
+      const cookX=2.35;
+      if(this.potRoot)this.potRoot.position.set(cookX,.2,1.55);
+      if(this.cookBase){this.cookBase.position.x=cookX;this.cookBase.scale.set(1,1,1)}
+      if(this.cookInset)this.cookInset.position.x=cookX;
       this.camera.lookAt(0,1.15,-.3);
     }
     this.camera.updateProjectionMatrix();

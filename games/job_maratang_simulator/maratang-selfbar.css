@@ -37,7 +37,7 @@ button{font:inherit;color:inherit}
 .scale-readout small{display:block;font-size:6px;color:#6f9d68;font-weight:900}
 .scale-readout b{display:block;font-size:12px;line-height:1.15}
 .ingredient-labels{position:absolute;inset:0;pointer-events:none;z-index:8}
-.ingredient-label{position:absolute;transform:translate(-50%,-50%);padding:3px 6px;border-radius:7px;background:rgba(50,38,29,.86);color:#fff8eb;border:1px solid rgba(255,255,255,.18);font-size:7px;font-weight:950;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:opacity .18s}
+.ingredient-label{position:absolute;transform:translate(-50%,-50%);padding:3px 7px;border-radius:4px;background:rgba(66,45,32,.94);color:#fff8eb;border:1px solid rgba(255,255,255,.16);font-size:7px;font-weight:950;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.15);transition:opacity .18s}
 .ingredient-label.out{background:rgba(125,38,31,.9);color:#ffd9d1;border-color:#e97a69}
 .ingredient-label.locked{background:rgba(55,55,55,.78);color:#d8d0c7;border-color:#8b8178}
 .next-unlock{position:absolute;right:10px;top:82px;z-index:10;padding:5px 8px;border-radius:9px;background:rgba(55,45,38,.82);color:#fff5e8;border:1px solid rgba(255,255,255,.15);font-size:7px;font-weight:900;pointer-events:none}
