@@ -354,13 +354,17 @@ function nearestInteraction(){
 }
 function doInteract(){if(near)near.action()}
 function updateZone(){
-  if(mode==='indoor'){zoneEl.textContent='우리 집 · 3D 실내';return;}
+  if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
   const x=player.x,z=player.z;
-  if(x<-8.5&&z>3.0)zoneEl.textContent='연못 · 휴식 구역';
+  if(x<-18)zoneEl.textContent='깊은 숲 · 목재·버섯';
+  else if(x>18)zoneEl.textContent='돌산 · 돌·철광석';
+  else if(z<-12)zoneEl.textContent='북쪽 강가 · 다리';
+  else if(z>12)zoneEl.textContent='남쪽 야영지 · 모닥불';
+  else if(x<-8.5&&z>3.0)zoneEl.textContent='연못 · 낚시터';
   else if(x>10.5&&z>3.2)zoneEl.textContent='작업장 · 제작 구역';
   else if(x>4.2&&z>2.7)zoneEl.textContent='농장 · 작물 구역';
   else if(x<-5.5&&z<-.8)zoneEl.textContent='집 앞 · 마당';
-  else zoneEl.textContent='마을길';
+  else zoneEl.textContent='마을길 · 안전 지역';
 }
 function setMode(next){
   mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
@@ -375,7 +379,11 @@ function spendTool(kind,item){
   t.dur--;p.energy=Math.max(0,p.energy-(kind==='wood'?4:5));const i=inv();i[kind]=(i[kind]||0)+1;persist();updateStatus();toast(item==='axe'?'목재 +1':'돌 +1');return true;
 }
 function sleep(){
-  const p=prog();p.energy=p.maxEnergy||100;persist();updateStatus();toast('푹 쉬어서 체력이 회복됐어요.');
+  const p=prog(),s=p.survival;
+  p.energy=p.maxEnergy||100;
+  s.hunger=Math.max(0,s.hunger-10);
+  s.day+=1;s.time=420;
+  persist();updateStatus();toast('아침까지 푹 쉬었어요. 체력이 회복됐어요.');
 }
 function fish(){
   const p=prog();if(p.energy<3){toast('체력이 부족해요.');return}
@@ -607,11 +615,48 @@ async function buildIndoor(){
   interact('indoor',1.0,2.25,1.35,'식탁 살펴보기',()=>toast('식사와 요리를 이어갈 수 있는 식탁이에요.'));
 }
 
+function clockText(minutes){
+  const m=Math.floor(((minutes%1440)+1440)%1440),h=Math.floor(m/60),mm=String(m%60).padStart(2,'0');
+  return String(h).padStart(2,'0')+':'+mm;
+}
+function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||h>=20;}
 function updateStatus(){
-  const p=prog(),i=inv(),pct=Math.max(0,Math.min(100,(p.energy||0)/(p.maxEnergy||100)*100));
+  const p=prog(),i=inv(),s=p.survival;
+  const pct=Math.max(0,Math.min(100,(p.energy||0)/(p.maxEnergy||100)*100));
+  const hunger=Math.max(0,Math.min(100,s.hunger||0));
   const axe=p.tools.axe?.dur>0?`돌도끼 ${p.tools.axe.dur}`:'도끼 없음';
   const pick=p.tools.pick?.dur>0?`돌곡괭이 ${p.tools.pick.dur}`:'곡괭이 없음';
-  statusEl.innerHTML=`<b>체력 ${Math.round(p.energy||0)}/${p.maxEnergy||100}</b><div class="energy"><i style="width:${pct}%"></i></div>${axe}<br>${pick}<br>목재 ${i.wood||0} · 돌 ${i.stone||0} · 물고기 ${i.fish||0}<hr style="border:0;border-top:1px solid rgba(255,255,255,.25)">씨앗 ${Bridge?.readSeeds?.()||0}`;
+  const phase=isNightTime(s.time)?'밤':'낮';
+  const pet=s.companion?(PET_NAMES[s.companion]||s.companion):'없음';
+  statusEl.innerHTML=`<b>Day ${s.day} · ${clockText(s.time)} · ${phase}</b><br>
+    체력 ${Math.round(p.energy||0)}/${p.maxEnergy||100}<div class="energy"><i style="width:${pct}%"></i></div>
+    허기 ${Math.round(hunger)}/100<div class="energy"><i style="width:${hunger}%"></i></div>
+    ${axe}<br>${pick}<br>목재 ${i.wood||0} · 돌 ${i.stone||0} · 철 ${i.iron||0}<br>
+    동행 펫 ${pet}<hr style="border:0;border-top:1px solid rgba(255,255,255,.25)">씨앗 ${Bridge?.readSeeds?.()||0}`;
+}
+
+let survivalUiClock=0;
+function updateSurvival(dt,moving){
+  const p=prog(),s=p.survival;
+  const prevTime=s.time;
+  s.time+=dt*3;
+  if(s.time>=1440){s.time-=1440;s.day+=1;toast('새로운 하루가 시작됐어요. Day '+s.day);}
+  const night=isNightTime(s.time);
+  s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055));
+  if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
+  if(night&&mode==='outdoor'){
+    const nearFire=Math.hypot(player.x,player.z-17)<4.2;
+    if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04);
+  }
+  const hour=s.time/60;
+  const daylight=Math.max(.16,Math.min(1,Math.sin(((hour-5)/15)*Math.PI)));
+  sun.intensity=.45+daylight*2.95;
+  hemi.intensity=.55+daylight*1.45;
+  const dayColor=new THREE.Color(0xb9d8ee),nightColor=new THREE.Color(0x17243d);
+  const sky=nightColor.clone().lerp(dayColor,daylight);
+  scene.background.copy(sky);scene.fog.color.copy(sky);renderer.setClearColor(sky,1);
+  outdoor.traverse(o=>{if(o.isPointLight&&o.userData?.campfire)o.intensity=night?2.4:.35;});
+  survivalUiClock+=dt;if(survivalUiClock>.45){survivalUiClock=0;updateStatus();}
 }
 
 function resize(){
@@ -652,8 +697,10 @@ function tick(now){
   camera.lookAt(target.x,mode==='outdoor'?.2:.55,target.z);
   nearestInteraction();
   updateZone();
+  updateSurvival(dt,moving);
 
   saveClock+=dt;if(saveClock>1.4){saveClock=0;save.player=save.player||{};save.player.v3x=player.x;save.player.v3z=player.z;save.player.v3scene=mode;save.player.v3Layout=LAYOUT_VERSION;persist();}
+  renderer.clear(true,true,true);
   renderer.render(scene,camera);
 }
 async function init(){
