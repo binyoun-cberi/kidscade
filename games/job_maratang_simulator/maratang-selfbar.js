@@ -362,7 +362,7 @@ class SelfBarScene {
     if(token!==this.shelfBuildToken)return;
     const box=new THREE.Box3().setFromObject(obj);
     const trayTop=y+.08;
-    obj.position.set(x,trayTop-box.min.y,z+.06+(tune.z||0));obj.rotation.y=(Math.random()-.5)*.32;
+    obj.position.add(new THREE.Vector3(x,trayTop-box.min.y,z+.06+(tune.z||0)));obj.rotation.y=(Math.random()-.5)*.32;
     this.markIngredient(obj,ing.id);
     this.displayItems.set(ing.id,obj);obj.visible=(state.stock[ing.id]??0)>0;
     this.shelfGroup.add(obj);
