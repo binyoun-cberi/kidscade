@@ -70,6 +70,7 @@
   "notes": [
     "Source ZIPs did not embed license/readme files for the six newly supplied Poly Pizza bundles.",
     "License labels in this manifest were matched against the referenced Poly Pizza/author bundle pages.",
-    "Keep ATTRIBUTION_REQUIRED_3D_V4.md when distributing games that use CC-BY files."
+    "Keep ATTRIBUTION_REQUIRED_3D_V4.md when distributing games that use CC-BY files.",
+    "Central site credits are maintained in CREDITS.md and credits.html."
   ]
 }
