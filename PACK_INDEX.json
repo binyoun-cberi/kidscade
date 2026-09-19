@@ -1,7 +1,7 @@
 {
   "library": "Kidscade Asset Library v3",
   "version": "3.0.0",
-  "license": "CC0 source packs; see assets/game/licenses/",
+  "license": "Mixed library: mostly CC0; CC-BY attribution, Pixabay Content License audio, and unverified user-provided assets are tracked separately. See CREDITS.md and assets/game/licenses/.",
   "counts": {
     "v1_3d_assets": 246,
     "cube_pets_glb": 24,
@@ -98,5 +98,6 @@
     "Spritesheet/atlas metadata dependencies are declared in assets/game/compound-assets.json and must move together.",
     "Platformer extended-enemies standalone ZIP was not duplicated because its runtime content is already byte-identical inside Platformer Art Deluxe.",
     "Default/Retina or Default/Large duplicate representations were reduced to one selected runtime resolution where appropriate."
-  ]
+  ],
+  "license_document": "CREDITS.md"
 }
