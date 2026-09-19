@@ -198,6 +198,7 @@ function workbenchPanel(){
   openPanel(`<h2>3D 제작대</h2><div class="grid">${tool('axe','돌도끼',{wood:3,stone:2})}${tool('pick','돌곡괭이',{wood:2,stone:3})}</div><p style="font-size:12px">숲과 채석장에서 모은 자원으로 생존 도구를 만들어요.</p>`);
 }
 function cookingPanel(kind='stove'){
+  panel.dataset.cookKind=kind;
   const i=inv(),allowed=kind==='campfire'?['grilledFish','bakedPotato']:Object.keys(RECIPES);
   const cards=allowed.map(key=>{
     const r=RECIPES[key],have=Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v);
@@ -381,6 +382,13 @@ function fish(){
   p.energy=Math.max(0,p.energy-3);toast('낚시 중…');
   setTimeout(()=>{const i=inv();i.fish=(i.fish||0)+1;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+1;persist();setAvatarAction('smile',900);updateStatus();toast('물고기를 잡았어요! +1');},850);
 }
+function mineIron(){
+  const p=prog(),t=p.tools.pick;
+  if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
+  if(p.energy<=6){toast('체력이 부족해요.');return false;}
+  t.dur--;p.energy=Math.max(0,p.energy-6);const i=inv();i.iron=(i.iron||0)+1;
+  persist();setAvatarAction('smile',480);updateStatus();toast('철광석 +1');return true;
+}
 function cropState(id,type){
   const p=prog();let s=p.crops[id];if(!s||typeof s!=='object')s=p.crops[id]={type,phase:'empty',plantedAt:0,readyAt:0};s.type=type;
   if(s.phase==='growing'&&Date.now()>=s.readyAt)s.phase='ripe';return s;
@@ -420,15 +428,27 @@ function updateCropVisuals(){
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
 async function buildOutdoor(){
   // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
-  plane(outdoor,0,0,40,28,0x7caf63,0);
-  box(outdoor,0,0,40,28,.22,0x6c9657,-.22);
+  plane(outdoor,0,0,64,46,0x7caf63,0);
+  box(outdoor,0,0,64,46,.22,0x6c9657,-.22);
 
-  // Main east-west path and short branches.
+  // Distinct connected biomes around the safe home region.
+  plane(outdoor,-24,0,12,44,0x4f8050,.015);       // deep forest
+  plane(outdoor,24,0,12,44,0x8e8b73,.015);        // quarry
+  plane(outdoor,0,17,34,9,0x91a95d,.017);         // camp meadow
+  plane(outdoor,0,-19,34,5,0x6d9c69,.017);        // north riverbank
+  const river=new THREE.Mesh(new THREE.PlaneGeometry(36,5.4),new THREE.MeshStandardMaterial({color:0x579fc1,roughness:.25,metalness:.03,transparent:true,opacity:.94}));
+  river.rotation.x=-Math.PI/2;river.position.set(0,.035,-15.9);river.receiveShadow=true;outdoor.add(river);
+
+  // Main village path plus routes out to the four survival regions.
   box(outdoor,0,.7,31,2.0,.10,0xd8c79c,.03);
   box(outdoor,-8.8,-2.2,2.1,6.0,.10,0xd8c79c,.03);
   box(outdoor,10.8,-2.5,2.1,5.5,.10,0xd8c79c,.03);
   box(outdoor,-10.8,4.0,1.8,5.8,.10,0xd8c79c,.03);
   box(outdoor,12.8,5.3,4.8,3.6,.10,0xbda873,.025);
+  box(outdoor,-20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
+  box(outdoor,20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
+  box(outdoor,0,11.8,1.8,10.5,.09,0xc6b88e,.03);
+  box(outdoor,0,-10.8,1.8,8.0,.09,0xc6b88e,.03);
 
   // Pond and a calmer resting/garden area on the west side.
   const pond=new THREE.Mesh(
@@ -441,6 +461,11 @@ async function buildOutdoor(){
     new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide})
   );
   pondRim.rotation.x=-Math.PI/2;pondRim.position.set(-12.4,.115,6.5);outdoor.add(pondRim);
+
+  // River is blocked except at the wooden bridge.
+  collider('outdoor',-10,-15.9,16,5.0);
+  collider('outdoor',10,-15.9,16,5.0);
+  await addModel(outdoor,ASSET.bridge,{x:0,z:-15.9,w:4.2,h:.9,d:5.4,rot:0,name:'northBridge'});
 
   // Home lot, farm house/barn, workshop.
   await Promise.all([
@@ -497,6 +522,33 @@ async function buildOutdoor(){
     interact('outdoor',x,z,1.2,'바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
   }
 
+  // Deep forest: denser timber, fallen logs and edible mushrooms.
+  const forestTrees=[[-27,-10],[-24,-8],[-21,-11],[-28,-4],[-24,-2],[-21,2],[-28,6],[-24,9],[-21,12],[-27,16],[-22,18]];
+  for(let i=0;i<forestTrees.length;i++){
+    const [x,z]=forestTrees[i];await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
+    addColliderFor('outdoor',x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
+  }
+  for(const [x,z] of [[-25,4],[-22,6.5],[-27,12],[-23,-5]]){
+    await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
+    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv();i.mushroom=(i.mushroom||0)+1;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +1');updateStatus();});
+  }
+  await addModel(outdoor,ASSET.logStack,{x:-24,z:14.8,w:2.4,h:1.1,d:1.2,rot:.2});
+
+  // Quarry: concentrated stone and rarer iron ore.
+  const quarryRocks=[[21,-8],[25,-10],[28,-6],[22,-2],[26,1],[28,5],[22,9],[26,12],[28,16]];
+  for(let i=0;i<quarryRocks.length;i++){
+    const [x,z]=quarryRocks[i];await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});
+    addColliderFor('outdoor',x,z,.9,.75);
+    if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
+    else interact('outdoor',x,z,1.25,'돌산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
+  }
+
+  // Southern camp: a safe outdoor cooking/rest point for long trips.
+  await addModel(outdoor,ASSET.campfire,{x:0,z:17.0,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
+  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(0,1.4,17);fireLight.userData.campfire=true;outdoor.add(fireLight);
+  interact('outdoor',0,17.0,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
+  interact('outdoor',1.8,17.0,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+
   // Home flower bed and pond-side flowers.
   for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
@@ -551,7 +603,7 @@ async function buildIndoor(){
   interact('indoor',-5.0,-.8,1.25,'책장 살펴보기',()=>{setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');});
   interact('indoor',5.4,-2.75,1.35,'냉장고 열기',inventoryPanel);
   interact('indoor',3.0,-2.9,1.25,'싱크대 사용하기',()=>{setAvatarAction('smile',650);toast('손을 깨끗이 씻었어요.');});
-  interact('indoor',1.4,-2.9,1.25,'가스레인지 살펴보기',()=>{setAvatarAction('smile',650);toast('요리 시스템은 기존 저장과 연동해 이식 중이에요.');});
+  interact('indoor',1.4,-2.9,1.25,'가스레인지에서 요리하기',()=>{setAvatarAction('smile',500);cookingPanel('stove');});
   interact('indoor',1.0,2.25,1.35,'식탁 살펴보기',()=>toast('식사와 요리를 이어갈 수 있는 식탁이에요.'));
 }
 
