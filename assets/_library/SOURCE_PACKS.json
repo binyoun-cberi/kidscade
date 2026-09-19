@@ -42,11 +42,14 @@
   {
     "pack": "newmusical",
     "source_zip": "newmusical.zip",
-    "license": "UNVERIFIED",
+    "license": "Pixabay Content License",
     "destination": "assets/audio/incoming/newmusical/",
     "included": {
       "mp3": 12
     },
-    "notes": "Kept outside the active audio catalog because the ZIP contained no license/source documentation."
+    "notes": "Project owner confirmed all 12 MP3 files were downloaded from Pixabay. Exact item URLs were not retained for every file; do not redistribute the files as a standalone audio pack.",
+    "source": "Pixabay",
+    "provenance": "USER_CONFIRMED",
+    "license_url": "https://pixabay.com/service/license-summary/"
   }
 ]
