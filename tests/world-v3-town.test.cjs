@@ -116,12 +116,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=12/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=13/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=18/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=18/);
+  assert.match(html,/kidscade-world-v3\.js\?v=19/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=19/);
 });
 
 
@@ -326,20 +326,20 @@ test('wild and yard animals have roaming decisions pauses and directional facing
   assert.match(runtime,/speed:\.22\+Math\.random\(\)\*\.18/);
 });
 
-test('movement input cannot remain stuck across focus loss panels travel or city entry',()=>{
+test('movement input resets on focus loss and panels without interrupting city crossing',()=>{
   assert.match(runtime,/function resetInput\(requireRelease=false\)/);
   assert.match(runtime,/inputNeedsRelease/);
   assert.match(runtime,/addEventListener\('blur',\(\)=>resetInput\(true\)\)/);
   assert.match(runtime,/visibilitychange/);
   assert.match(runtime,/pagehide/);
-  assert.match(runtime,/if\(nowInCity&&!wasInCity\)\{resetInput\(true\);\}/);
+  assert.doesNotMatch(runtime,/if\(nowInCity&&!wasInCity\)\{resetInput\(true\);\}/);
   assert.match(runtime,/function openPanel\(html\)\{resetInput\(true\)/);
   assert.match(runtime,/function setMode\(next\)\{\n  resetInput\(true\)/);
 });
 
-test('map camera no longer exposes the blue void at town and river edges',()=>{
-  assert.match(runtime,/plane\(outdoor,0,5,82,96,0x7caf63,0\)/);
-  assert.match(runtime,/box\(outdoor,0,5,82,96,.22,0x6c9657,-.22\)/);
+test('outdoor lawn uses one surface so the home grass cannot z-fight',()=>{
+  assert.doesNotMatch(runtime,/plane\(outdoor,0,5,82,96,0x7caf63,0\)/);
+  assert.match(runtime,/box\(outdoor,0,5,82,96,.26,0x7caf63,-.26\)/);
 });
 
 test('city labels are smaller and only shown near the player',()=>{
@@ -450,4 +450,33 @@ test('resident walk animation strips root motion so visual bodies cannot detach 
   assert.match(city,/walkClip\.tracks=walkClip\.tracks\.filter/);
   assert.match(city,/\^root\\\.position\$/);
   assert.match(city,/n\.frustumCulled=false/);
+});
+
+
+test('residents actually idle between short walks instead of perpetual sinusoidal motion',()=>{
+  assert.match(city,/function chooseNpcDecision\(n,hx,hz,r,now\)/);
+  assert.match(city,/pauseChance=mostlyStationary\?\.82:\.55/);
+  assert.match(city,/n\.moving=false;n\.targetX=n\.object\.position\.x/);
+  assert.match(city,/n\.nextDecision=now\+1800\+Math\.random\(\)\*3200/);
+  assert.match(city,/n\.playAnim\?\.\(walking\?'walk':'idle'\)/);
+  assert.doesNotMatch(city,/Math\.sin\(now\/2600\+n\.phase\)/);
+});
+
+test('v3.19 keeps all visible natural props and signs off travel corridors',()=>{
+  assert.match(runtime,/function isPathClearance\(x,z\)/);
+  assert.match(runtime,/if\(isPathClearance\(x,z\)\)continue/);
+  assert.doesNotMatch(runtime,/\[-18,1\]/);
+  assert.doesNotMatch(runtime,/\[-14,1\.5\]/);
+  assert.match(runtime,/ASSET\.signpost,\{x:-17\.0,z:2\.35/);
+  assert.match(runtime,/ASSET\.signpost,\{x:17\.0,z:2\.35/);
+  assert.match(runtime,/ASSET\.signpost,\{x:2\.2,z:-11\.1/);
+  assert.match(runtime,/ASSET\.signpost,\{x:2\.35,z:11\.2/);
+  assert.match(runtime,/ASSET\.signpost,\{x:2\.65,z:20\.65/);
+});
+
+test('city entrance has a continuous visible pedestrian connector and crosswalk',()=>{
+  assert.match(city,/plane\(parent,0,24\.0,3\.0,8\.0,0xd0c297,\.305\)/);
+  assert.match(city,/for\(const z of \[27\.8,28\.6,29\.4,30\.2\]\)/);
+  assert.match(city,/plane\(parent,0,31\.65,3\.0,2\.7,0xd0c297,\.305\)/);
+  assert.match(runtime,/const LAYOUT_VERSION=5/);
 });
