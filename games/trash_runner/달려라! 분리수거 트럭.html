@@ -64,6 +64,64 @@
 
         .hidden { display: none !important; }
         .text-shadow { text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        
+        /* v2 asset rework */
+        #city3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+        #play-screen>.legacy-sky,#bg-clouds,#bg-trees{transition:opacity .35s ease}
+        body.three-ready #play-screen>.legacy-sky,body.three-ready #bg-clouds,body.three-ready #bg-trees{opacity:0!important}
+        #road-stage{
+            background:linear-gradient(180deg,rgba(28,36,43,.12),rgba(28,36,43,.34));
+            border-top:1px solid rgba(255,255,255,.16);border-bottom:0;
+            box-shadow:0 -12px 28px rgba(16,31,38,.12) inset;
+            backdrop-filter:blur(1px)
+        }
+        body.three-ready #road-stage{background:linear-gradient(180deg,rgba(18,32,39,.03),rgba(18,32,39,.16));border-color:transparent;box-shadow:none}
+        body.three-ready #road-stage>.animate-road{opacity:0}
+        #truck-fallback{transition:opacity .25s ease}
+        body.three-ready #truck-fallback{opacity:0}
+        .pickup-card{
+            width:118px;min-height:88px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,250,252,.96));
+            border:3px solid #f4c84a;border-radius:20px;padding:7px 8px 8px;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:2px;box-shadow:0 10px 24px rgba(27,43,53,.24),inset 0 0 0 2px rgba(255,255,255,.7)
+        }
+        .pickup-card:before{content:"수거";position:absolute;top:-9px;background:#173c50;color:white;border-radius:999px;padding:2px 8px;font:900 10px/1 system-ui,sans-serif;letter-spacing:.04em}
+        .pickup-glyph{font-size:34px;line-height:1;filter:drop-shadow(0 3px 2px rgba(0,0,0,.13));pointer-events:none}
+        .pickup-name{font:900 12px/1.15 system-ui,sans-serif;color:#17324a;text-align:center;max-width:100px;word-break:keep-all;pointer-events:none}
+        .pickup-level{font:800 9px/1 system-ui,sans-serif;color:#6a7d89;background:#edf3f5;padding:3px 6px;border-radius:999px;pointer-events:none}
+        .moving-trash:hover .pickup-card{border-color:#ff9c3b;box-shadow:0 12px 28px rgba(255,145,36,.28),0 0 0 4px rgba(255,205,75,.16)}
+        #slot-box{border-radius:26px!important}
+        #slot-item{gap:4px}
+        #slot-emoji{display:grid;place-items:center;width:68px;height:68px;border-radius:18px;background:white;border:3px solid #b9d8c3;box-shadow:0 7px 14px rgba(42,88,58,.14)}
+        #bins-area{background:linear-gradient(180deg,#17252e,#0f171d);gap:8px!important;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+        .recycle-bin{
+            position:relative;flex:1 0 74px;max-width:118px;height:88px;border:0;border-radius:16px 16px 13px 13px;color:white;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 7px 0 var(--bin-dark),0 10px 18px rgba(0,0,0,.22);
+            transition:transform .15s,filter .15s,opacity .15s;touch-action:manipulation
+        }
+        .recycle-bin:before{content:"";position:absolute;left:7px;right:7px;top:-5px;height:11px;border-radius:8px;background:var(--bin-lid);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+        .recycle-bin img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+        .recycle-bin .bin-label{font:900 11px/1 system-ui,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap}
+        .recycle-bin .bin-sub{font:800 8px/1 system-ui,sans-serif;opacity:.8;letter-spacing:.05em}
+        .recycle-bin.disabled{opacity:.34;filter:grayscale(.8);cursor:not-allowed}
+        .recycle-bin.ready{opacity:1;cursor:pointer}
+        .recycle-bin.ready:active{transform:translateY(6px);box-shadow:0 1px 0 var(--bin-dark),0 4px 10px rgba(0,0,0,.18)}
+        .bin-general{background:#64748b;--bin-dark:#334155;--bin-lid:#94a3b8}
+        .bin-plastic{background:#3387d6;--bin-dark:#1f5d9a;--bin-lid:#6bb8ff}
+        .bin-can_glass{background:#d5a423;--bin-dark:#8f6d16;--bin-lid:#f6d55d}
+        .bin-paper{background:#2f9b70;--bin-dark:#1d6b4c;--bin-lid:#61c99e}
+        .bin-food{background:#d67b2b;--bin-dark:#914f19;--bin-lid:#f5a95d}
+        .eco-brand{display:inline-flex;align-items:center;gap:7px}
+        .eco-brand:before{content:"ECO";font:1000 10px/1 system-ui,sans-serif;background:#2f9b70;color:white;padding:4px 6px;border-radius:7px;letter-spacing:.08em}
+        .start-fleet{
+            margin:0 auto 14px;width:178px;height:82px;border-radius:24px;background:linear-gradient(145deg,#dff7e7,#eef9ff);
+            display:grid;place-items:center;border:3px solid #7bcf99;box-shadow:0 12px 24px rgba(41,111,67,.16)
+        }
+        .start-fleet strong{font:1000 20px/1 system-ui,sans-serif;color:#276d43}.start-fleet small{display:block;margin-top:6px;font:800 10px/1 system-ui,sans-serif;color:#57836a;letter-spacing:.08em}
+        @media(max-width:640px){
+            .pickup-card{width:98px;min-height:76px;border-radius:17px;padding:6px}.pickup-glyph{font-size:29px}.pickup-name{font-size:10px;max-width:86px}
+            .recycle-bin{flex-basis:70px;height:78px}.recycle-bin img{width:29px;height:29px}.recycle-bin .bin-label{font-size:9px}
+            #bins-area{justify-content:flex-start}
+        }
     </style>
 </head>
 <body>
@@ -83,7 +141,7 @@
                 </div>
                 
                 <div class="text-center pointer-events-auto flex-1 px-2 md:px-4 flex flex-col items-center">
-                    <h1 class="text-lg md:text-2xl font-black text-sky-700 hidden sm:block drop-shadow-sm">🚛 달려라! 분리수거 트럭</h1>
+                    <h1 class="eco-brand text-lg md:text-2xl font-black text-sky-700 hidden sm:flex drop-shadow-sm">달려라! 분리수거 트럭</h1>
                     <div class="h-6 flex items-center justify-center">
                         <p id="msg-text" class="text-sm md:text-base font-bold text-rose-500 animate-pulse bg-rose-50 px-4 py-1 rounded-full border border-rose-200 shadow-sm hidden"></p>
                     </div>
@@ -100,7 +158,8 @@
 
         <main id="play-screen" class="flex-1 relative flex flex-col hidden">
             
-            <div class="absolute inset-0 z-0 bg-gradient-to-b from-sky-300 to-sky-100"></div>
+            <canvas id="city3d" aria-label="3D 분리수거 트럭 운행 배경"></canvas>
+            <div class="legacy-sky absolute inset-0 z-0 bg-gradient-to-b from-sky-300 to-sky-100"></div>
             <div class="absolute inset-0 z-0 animate-clouds" id="bg-clouds" style="background-size: 250px;"></div>
             <div class="absolute bottom-[200px] w-full h-64 z-0 animate-trees opacity-80" id="bg-trees" style="background-size: 150px; background-repeat: repeat-x; background-position: bottom;"></div>
 
@@ -109,8 +168,8 @@
                     <div class="text-xs md:text-sm font-bold text-gray-500 mb-2 bg-white px-3 py-1 rounded-full shadow-sm" id="slot-label">수거 슬롯</div>
                     
                     <div id="slot-empty" class="flex flex-col items-center opacity-40">
-                        <span class="text-4xl">👇</span>
-                        <span class="text-xs font-bold mt-1">대기 중</span>
+                        <span class="text-3xl font-black text-slate-500">PICK</span>
+                        <span class="text-xs font-bold mt-1">길가의 수거물을 터치</span>
                     </div>
 
                     <div id="slot-item" class="flex flex-col items-center animate-bounce hidden">
@@ -120,10 +179,10 @@
                 </div>
             </div>
 
-            <div class="absolute bottom-[100px] md:bottom-[120px] w-full h-32 md:h-40 bg-slate-800 border-t-8 border-slate-600 border-b-8 border-slate-900 z-10 flex items-center shadow-inner">
+            <div id="road-stage" class="absolute bottom-[100px] md:bottom-[120px] w-full h-32 md:h-40 z-10 flex items-center">
                 <div class="absolute w-full h-full animate-road"></div>
                 
-                <div class="absolute left-2 md:left-12 bottom-6 animate-bounce-truck z-30 pointer-events-none">
+                <div id="truck-fallback" class="absolute left-2 md:left-12 bottom-6 animate-bounce-truck z-30 pointer-events-none">
                     <div class="text-[90px] md:text-[130px] drop-shadow-2xl">🚛</div>
                     <div class="absolute right-[-20px] bottom-4 text-2xl opacity-50 animate-pulse">💨</div>
                 </div>
@@ -137,7 +196,7 @@
 
         <div id="start-modal" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div class="bg-white p-6 md:p-10 rounded-[2rem] text-center max-w-md w-11/12 border-[6px] border-sky-400 shadow-2xl transform transition-transform hover:scale-105">
-                <div class="text-7xl md:text-8xl mb-4 animate-bounce drop-shadow-lg">🚛💨</div>
+                <div class="start-fleet"><div><strong>KIDSCADE ECO</strong><small>RECYCLING ROUTE</small></div></div>
                 <h1 class="text-3xl md:text-4xl font-black text-sky-600 mb-3 tracking-tight">달려라!<br/>분리수거 트럭</h1>
                 <div class="bg-sky-50 rounded-xl p-4 mb-6 border-2 border-sky-100">
                     <p class="text-gray-700 font-bold text-sm md:text-base leading-relaxed break-keep">
@@ -284,12 +343,13 @@
         { id: 'g10', name: '파뿌리', emoji: '🌿', type: 'general', level: 4, reason: "파뿌리는 매운 향이 강해 사료로 부적합해요!" }
     ];
 
+    const BIN_ICON='../../assets/game/ui/icons/kenney-game-icons/white/2x/trashcan-open.png';
     const BINS = [
-        { id: 'general', name: '일반쓰레기', color: 'bg-slate-600', border: 'border-slate-800', hover: 'hover:bg-slate-500', shadow: 'shadow-slate-900', icon: '🗑️' },
-        { id: 'plastic', name: '플라스틱', color: 'bg-blue-500', border: 'border-blue-700', hover: 'hover:bg-blue-400', shadow: 'shadow-blue-800', icon: '♻️' },
-        { id: 'can_glass', name: '캔·유리', color: 'bg-yellow-500', border: 'border-yellow-700', hover: 'hover:bg-yellow-400', shadow: 'shadow-yellow-800', icon: '🧲' },
-        { id: 'paper', name: '종이류', color: 'bg-emerald-500', border: 'border-emerald-700', hover: 'hover:bg-emerald-400', shadow: 'shadow-emerald-800', icon: '📄' },
-        { id: 'food', name: '음식물', color: 'bg-orange-500', border: 'border-orange-700', hover: 'hover:bg-orange-400', shadow: 'shadow-orange-800', icon: '🍲' }
+        { id: 'general', name: '일반쓰레기', sub:'GENERAL' },
+        { id: 'plastic', name: '플라스틱', sub:'PLASTIC' },
+        { id: 'can_glass', name: '캔·유리', sub:'CAN · GLASS' },
+        { id: 'paper', name: '종이류', sub:'PAPER' },
+        { id: 'food', name: '음식물', sub:'FOOD' }
     ];
 
     // ==========================================
@@ -323,15 +383,13 @@
     const elSlotEmoji = document.getElementById('slot-emoji');
     const elSlotName = document.getElementById('slot-name');
 
-    // 배경 SVG 세팅
-    document.getElementById('bg-trees').style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ctext y='80' font-size='80'%3E🌲%3C/text%3E%3C/svg%3E")`;
-    document.getElementById('bg-clouds').style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='100'%3E%3Ctext y='80' font-size='80' opacity='0.5'%3E☁️%3C/text%3E%3C/svg%3E")`;
+    // 3D가 준비되기 전에는 기존 하늘/도로 레이어가 폴백으로 남습니다.
 
     // 하단 휴지통 생성 (pointerdown 이벤트 적용)
     BINS.forEach(bin => {
         const btn = document.createElement('button');
-        btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-40 cursor-not-allowed grayscale`;
-        btn.innerHTML = `<span class="text-3xl md:text-4xl mb-1 drop-shadow-md">${bin.icon}</span><span class="font-black text-[10px] md:text-sm whitespace-nowrap text-shadow">${bin.name}</span>`;
+        btn.className = `recycle-bin bin-${bin.id} disabled`;
+        btn.innerHTML = `<img src="${BIN_ICON}" alt=""><span class="bin-label">${bin.name}</span><span class="bin-sub">${bin.sub}</span>`;
         
         btn.onpointerdown = (e) => {
             e.preventDefault();
@@ -403,7 +461,7 @@
             // 통 버튼 활성화
             BINS.forEach(bin => {
                 const btn = document.getElementById(`bin-${bin.id}`);
-                btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-100 cursor-pointer ${bin.hover} active:translate-y-2 active:border-b-0`;
+                btn.className = `recycle-bin bin-${bin.id} ready`;
                 btn.disabled = false;
             });
         } else {
@@ -415,11 +473,12 @@
             // 통 버튼 비활성화
             BINS.forEach(bin => {
                 const btn = document.getElementById(`bin-${bin.id}`);
-                btn.className = `flex flex-col items-center justify-center flex-1 max-w-[100px] md:max-w-[120px] h-[80px] md:h-[90px] rounded-2xl border-b-[6px] transition-all duration-200 ${bin.color} ${bin.border} ${bin.shadow} text-white shadow-lg opacity-40 cursor-not-allowed grayscale`;
+                btn.className = `recycle-bin bin-${bin.id} disabled`;
                 btn.disabled = true;
             });
         }
 
+        window.TrashRunner3D?.setScore?.(score, combo);
         if (lives <= 0 && status === 'playing') {
             endGame();
         }
@@ -438,8 +497,10 @@
         el.style.animationDuration = speed + 's';
         
         el.innerHTML = `
-            <div class="bg-white/95 border-4 border-yellow-400 rounded-full w-16 h-16 md:w-20 md:h-20 flex items-center justify-center shadow-xl hover:border-orange-500 hover:shadow-orange-500/50">
-                <span class="text-4xl md:text-5xl drop-shadow-sm pointer-events-none">${trashData.emoji}</span>
+            <div class="pickup-card">
+                <span class="pickup-glyph">${trashData.emoji}</span>
+                <span class="pickup-name">${trashData.name}</span>
+                <span class="pickup-level">난이도 ${trashData.level}</span>
             </div>
         `;
 
@@ -451,6 +512,7 @@
                 return;
             }
             AudioEngine.playCatch();
+            window.TrashRunner3D?.collect?.();
             
             const rect = el.getBoundingClientRect();
             addFloatText('GET!', rect.left, rect.top, 'text-yellow-300');
@@ -468,6 +530,7 @@
                 combo = 0;
                 showMsg('앗! 쓰레기를 놓쳤어요!');
                 AudioEngine.playMiss();
+                window.TrashRunner3D?.wrong?.();
                 triggerShake();
                 updateUI();
             }
@@ -488,6 +551,7 @@
         if (heldTrash.type === binId) {
             // 정답
             AudioEngine.playCorrect();
+            window.TrashRunner3D?.correct?.();
             const earned = 10 + (combo * 2);
             score += earned;
             combo++;
@@ -496,6 +560,7 @@
         } else {
             // 오답
             AudioEngine.playWrong();
+            window.TrashRunner3D?.wrong?.();
             triggerShake();
             lives--;
             combo = 0;
@@ -532,6 +597,7 @@
         updateUI();
         
         AudioEngine.startBGM();
+        window.TrashRunner3D?.start?.();
         spawnTimer = setTimeout(spawnTrash, 1500); // 1.5초 후 첫 스폰
     }
 
@@ -539,6 +605,7 @@
         status = 'gameover';
         clearTimeout(spawnTimer);
         AudioEngine.stopBGM();
+        window.TrashRunner3D?.stop?.();
         AudioEngine.playOver();
 
         // 멈추기
@@ -586,5 +653,7 @@
     };
 
 </script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="trash-runner-3d-loader.js?v=2"></script>
 </body>
 </html>
