@@ -826,20 +826,20 @@ function clockText(minutes){
 function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||h>=20;}
 const petActors=[];
 const wildPetActors=[];
-const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
-const RANCH_SLOTS={bunny:[5.5,-22.2],pig:[6.8,-18.2],cow:[14.0,-22.0],chick:[14.2,-18.0]};
+const PET_SLOTS=[[-19.2,-7.0],[-17.8,-7.1],[-16.4,-7.0],[-19.0,-5.8],[-17.6,-5.8],[-16.2,-5.7],[-18.8,-4.6],[-17.4,-4.6],[-16.0,-4.5],[-20.1,-5.8]];
+const RANCH_SLOTS={bunny:[6.0,-27.0],pig:[7.5,-22.0],cow:[17.0,-27.0],chick:[17.0,-21.5]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const WILD_PETS={
-  cat:{habitat:'pond',x:-14.0,z:5.6,roamX:.34,roamZ:.38},
-  bunny:{habitat:'ranch',x:5.5,z:-22.2,roamX:.42,roamZ:.36},
-  pig:{habitat:'ranch',x:6.8,z:-18.2,roamX:.40,roamZ:.34},
-  cow:{habitat:'ranch',x:14.0,z:-22.0,roamX:.36,roamZ:.32},
-  chick:{habitat:'ranch',x:14.2,z:-18.0,roamX:.44,roamZ:.38},
-  fox:{habitat:'deep-forest',x:-34.0,z:2.8,roamX:.55,roamZ:.44},
-  deer:{habitat:'deep-forest',x:-28.0,z:6.2,roamX:.58,roamZ:.46},
-  parrot:{habitat:'deep-forest',x:-33.0,z:-5.0,roamX:.40,roamZ:.34},
-  beaver:{habitat:'waterfront',x:-4.5,z:-23.0,roamX:.46,roamZ:.28}
+  cat:{habitat:'pond',x:-16.0,z:5.6,roamX:.34,roamZ:.38},
+  bunny:{habitat:'ranch',x:6.0,z:-27.0,roamX:.42,roamZ:.36},
+  pig:{habitat:'ranch',x:7.5,z:-22.0,roamX:.40,roamZ:.34},
+  cow:{habitat:'ranch',x:17.0,z:-27.0,roamX:.36,roamZ:.32},
+  chick:{habitat:'ranch',x:17.0,z:-21.5,roamX:.44,roamZ:.38},
+  fox:{habitat:'deep-forest',x:-40.0,z:2.8,roamX:.55,roamZ:.44},
+  deer:{habitat:'deep-forest',x:-32.0,z:6.2,roamX:.58,roamZ:.46},
+  parrot:{habitat:'deep-forest',x:-39.0,z:-5.0,roamX:.40,roamZ:.34},
+  beaver:{habitat:'waterfront',x:-6.0,z:-27.0,roamX:.46,roamZ:.28}
 };
 function petState(){return prog().cubePets}
 function migrateLegacyCubePets(){
@@ -938,20 +938,20 @@ function petPanel(){
 async function buildPets(){
   const state=migrateLegacyCubePets();
 
-  // Owned Cube Pets live in a clearly marked yard beside the player home.
-  for(const [x,z,rot] of [[-15.8,-7.2,0],[-13.6,-7.2,0],[-11.4,-7.2,0],[-15.9,-4.9,Math.PI/2],[-11.3,-4.9,Math.PI/2]]){
+  // Owned Cube Pets stay inside the west side of the HOME square, away from road gutters.
+  for(const [x,z,rot] of [[-20.2,-8.2,0],[-18.0,-8.2,0],[-15.8,-8.2,0],[-20.7,-6.0,Math.PI/2],[-15.3,-6.0,Math.PI/2],[-20.2,-3.8,0],[-18.0,-3.8,0],[-15.8,-3.8,0]]){
     await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.85,d:.32,rot});
   }
-  await addModel(outdoor,ASSET.signpost,{x:-16.6,z:-4.35,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
-  interact('outdoor',-16.6,-4.35,1.35,'Cube Pets 마당 보기',petPanel);
+  await addModel(outdoor,ASSET.signpost,{x:-19.8,z:-2.9,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
+  interact('outdoor',-19.8,-2.9,1.35,'Cube Pets 보기',petPanel);
 
-  // Ranch square (x 0..20, z -30..-10) keeps production pets separate from crop fields.
-  for(const [x,z,rot] of [[4.0,-25.5,0],[7.0,-25.5,0],[13.0,-25.5,0],[16.0,-25.5,0],[4.0,-14.5,0],[7.0,-14.5,0],[13.0,-14.5,0],[16.0,-14.5,0],[2.6,-23.0,Math.PI/2],[2.6,-17.0,Math.PI/2],[17.4,-23.0,Math.PI/2],[17.4,-17.0,Math.PI/2]]){
+  // Ranch square (x 2..22, z -34..-14); fences stay at least 2m away from road gutters.
+  for(const [x,z,rot] of [[4.5,-31.5,0],[7.5,-31.5,0],[16.5,-31.5,0],[19.5,-31.5,0],[4.5,-16.5,0],[7.5,-16.5,0],[16.5,-16.5,0],[19.5,-16.5,0],[3.5,-28.5,Math.PI/2],[3.5,-19.5,Math.PI/2],[20.5,-28.5,Math.PI/2],[20.5,-19.5,Math.PI/2]]){
     await addModel(outdoor,ASSET.fence,{x,z,w:2.8,h:.82,d:.30,rot});
   }
-  await addModel(outdoor,ASSET.chest,{x:15.5,z:-13.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
-  await addModel(outdoor,ASSET.signpost,{x:12.8,z:-13.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
-  interact('outdoor',15.0,-13.7,1.7,'목장 생산물 확인하기',ranchPanel);
+  await addModel(outdoor,ASSET.chest,{x:18.5,z:-17.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
+  await addModel(outdoor,ASSET.signpost,{x:15.8,z:-17.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
+  interact('outdoor',18.0,-17.7,1.7,'목장 생산물 확인하기',ranchPanel);
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
@@ -1041,7 +1041,7 @@ function updateSurvival(dt,moving){
   townEconomy?.tick?.(dt);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
-    const nearFire=Math.hypot(player.x+31.5,player.z-20)<4.2;
+    const nearFire=Math.hypot(player.x+37.5,player.z-24)<4.2;
     const nightMul=pet==='cat' ? .68 : 1;
     if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
