@@ -117,9 +117,9 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=4/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=5/);
-  assert.match(runtime,/kidscade-world-furnishing\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=8/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=8/);
+  assert.match(runtime,/kidscade-world-furnishing\.js\?v=2/);
+  assert.match(html,/kidscade-world-v3\.js\?v=9/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=9/);
 });
 
 
@@ -138,7 +138,7 @@ test('starter resources provide six hand pickups per material and one-time guida
 
 
 test('World v3 furnishing supports persistent craft buy place rotate move and store loops',()=>{
-  assert.match(storage,/housing:\{version:1,owned:\{\},placed:\[\],starterGiftClaimed:false,nextId:1\}/);
+  assert.match(storage,/housing:\{version:2,owned:\{\},placed:\[\],starterGiftClaimed:false,defaultLayoutMigrated:false,nextId:1\}/);
   assert.match(runtime,/createFurnishingSystem/);
   assert.match(runtime,/가구 창고 · 집 꾸미기/);
   assert.match(runtime,/canPlaceFurniture/);
@@ -157,4 +157,32 @@ test('World v3 furnishing supports persistent craft buy place rotate move and st
   assert.match(economy,/둥근 러그/);
   assert.match(economy,/플로어 램프/);
   assert.match(economy,/모던 TV/);
+});
+
+
+test('default home study and living furniture migrates once into movable saved furniture',()=>{
+  assert.match(furnishing,/defaultLayoutMigrated/);
+  assert.match(furnishing,/id:'home-desk',key:'classicDesk'/);
+  assert.match(furnishing,/id:'home-bookcase',key:'tallBookcase'/);
+  assert.match(furnishing,/id:'home-rug',key:'rugRectangle'/);
+  assert.match(furnishing,/id:'home-sofa',key:'classicSofa'/);
+  assert.match(furnishing,/id:'home-table',key:'diningTable'/);
+  assert.match(furnishing,/migrateDefaultLayout\(\);/);
+  for(const file of ['desk.glb','bookcase-open.glb','rug-rectangle.glb','lounge-sofa.glb','table.glb']){
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing default furniture '+file);
+    assert.ok(furnishing.includes(file),'movable catalog missing '+file);
+  }
+  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.desk/);
+  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.bookcase/);
+  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.rug/);
+  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.sofa/);
+  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.table/);
+  assert.match(runtime,/addModel\(indoor,ASSET\.bed/);
+  assert.match(runtime,/addModel\(indoor,ASSET\.stove/);
+  assert.match(runtime,/addModel\(indoor,ASSET\.fridge/);
+  assert.match(furnishing,/data-furn-use/);
+  assert.match(runtime,/key==='classicSofa'/);
+  assert.match(runtime,/key==='tallBookcase'/);
+  assert.match(runtime,/key==='diningTable'/);
+  assert.match(runtime,/key==='classicDesk'/);
 });
