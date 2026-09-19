@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=5';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=6';
 import {createTownEconomy} from './kidscade-world-economy.js?v=7';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 
@@ -404,7 +404,7 @@ document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 document.getElementById('stable').onclick=()=>location.href='../world-v2/kidscade-world.html?v=8';
 
-const LAYOUT_VERSION=2;
+const LAYOUT_VERSION=3;
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
@@ -459,7 +459,7 @@ function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confi
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
   const x=player.x,z=player.z;
-  if(z>23)zoneEl.textContent='씨앗마을 중심가 · 장보기·일·놀이';
+  if(z>20)zoneEl.textContent='씨앗마을 중심가 · 장보기·일·놀이';
   else if(x<-18)zoneEl.textContent='깊은 숲 · 목재·버섯';
   else if(x>18)zoneEl.textContent='돌산 · 돌·철광석';
   else if(z<-12)zoneEl.textContent='북쪽 강가 · 다리';
@@ -740,8 +740,8 @@ async function buildOutdoor(){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
 
-  await addModel(outdoor,ASSET.signpost,{x:0,z:21.2,w:.8,h:1.8,d:.8,rot:0,name:'city-sign'});
-  interact('outdoor',0,21.2,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 중심가 · 마트 · 철물점 · 카페 · 일자리 · 아케이드'));
+  await addModel(outdoor,ASSET.signpost,{x:2.25,z:20.65,w:.8,h:1.8,d:.8,rot:.15,name:'city-sign'});
+  interact('outdoor',2.25,20.65,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 · 상업가 · 광장 · 공공시설 · 버스정류장'));
 
   cityRuntime=await buildKidscadeCity({
     parent:outdoor,
@@ -803,16 +803,18 @@ const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
+const CITY_LIMITS={x1:-26,x2:26,z1:20,z2:40};
+function isCityArea(x,z){return x>=CITY_LIMITS.x1&&x<=CITY_LIMITS.x2&&z>=CITY_LIMITS.z1&&z<=CITY_LIMITS.z2;}
 const WILD_PETS={
-  cat:{x:-10.8,z:5.2},
-  bunny:{x:6.0,z:5.6},
-  pig:{x:9.1,z:5.8},
-  cow:{x:12.3,z:2.3},
-  chick:{x:4.7,z:4.0},
-  fox:{x:-24.5,z:3.2},
-  deer:{x:-25.8,z:11.2},
-  parrot:{x:-22.2,z:-4.0},
-  beaver:{x:2.2,z:-18.0}
+  cat:{habitat:'pond',x:-8.65,z:6.45,roamX:.34,roamZ:.42},
+  bunny:{habitat:'farm-pasture',x:4.55,z:-6.75,roamX:.28,roamZ:.24},
+  pig:{habitat:'farm-pasture',x:6.15,z:-6.85,roamX:.26,roamZ:.22},
+  cow:{habitat:'farm-pasture',x:6.65,z:-5.25,roamX:.22,roamZ:.20},
+  chick:{habitat:'farm-pasture',x:4.55,z:-5.15,roamX:.30,roamZ:.26},
+  fox:{habitat:'deep-forest',x:-24.5,z:3.2,roamX:.48,roamZ:.38},
+  deer:{habitat:'deep-forest',x:-25.8,z:11.2,roamX:.52,roamZ:.42},
+  parrot:{habitat:'deep-forest',x:-22.2,z:-4.0,roamX:.34,roamZ:.28},
+  beaver:{habitat:'riverbank',x:2.5,z:-19.2,roamX:.42,roamZ:.24}
 };
 function petState(){return prog().cubePets}
 function migrateLegacyCubePets(){
@@ -891,18 +893,26 @@ function petPanel(){
 }
 async function buildPets(){
   const state=migrateLegacyCubePets();
+
+  // Owned Cube Pets live in a clearly marked yard beside the player home.
   for(const [x,z,rot] of [[-15.8,-7.2,0],[-13.6,-7.2,0],[-11.4,-7.2,0],[-15.9,-4.9,Math.PI/2],[-11.3,-4.9,Math.PI/2]]){
     await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.85,d:.32,rot});
   }
-  interact('outdoor',-13.6,-4.65,1.8,'Cube Pets 친구 보기',petPanel);
+  await addModel(outdoor,ASSET.signpost,{x:-16.6,z:-4.35,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
+  interact('outdoor',-16.6,-4.35,1.35,'Cube Pets 마당 보기',petPanel);
+
+  // Farm animals are grouped in a small pasture instead of standing on crop plots.
+  for(const [x,z,rot] of [[4.2,-7.65,0],[6.4,-7.65,0],[3.35,-6.0,Math.PI/2],[7.7,-6.0,Math.PI/2],[4.15,-4.35,0]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.8,d:.30,rot});
+  }
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
     const object=await makeCubePetObject(id);if(!object)continue;
     object.position.set(pos.x,.04,pos.z);petLayer.add(object);
-    const actor={id,object,x:pos.x,z:pos.z,phase:wildPetActors.length*.91};wildPetActors.push(actor);
+    const actor={id,object,x:pos.x,z:pos.z,habitat:pos.habitat,roamX:pos.roamX||.3,roamZ:pos.roamZ||.25,interaction:null,phase:wildPetActors.length*.91};wildPetActors.push(actor);
     object.visible=!state.owned.includes(id);
-    interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
+    actor.interaction=interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
 }
 function updatePets(now,dt){
@@ -928,9 +938,12 @@ function updatePets(now,dt){
   for(const a of wildPetActors){
     a.object.visible=mode==='outdoor'&&!state.owned.includes(a.id);
     if(!a.object.visible)continue;
-    a.object.position.x=a.x+Math.sin(now/2100+a.phase)*.38;
-    a.object.position.z=a.z+Math.cos(now/2600+a.phase)*.30;
+    let nx=a.x+Math.sin(now/2100+a.phase)*a.roamX;
+    let nz=a.z+Math.cos(now/2600+a.phase)*a.roamZ;
+    if(isCityArea(nx,nz)){nx=a.x;nz=a.z;}
+    a.object.position.x=nx;a.object.position.z=nz;
     a.object.position.y=.04+Math.abs(Math.sin(now/260+a.phase))*.025;
+    if(a.interaction){a.interaction.x=nx;a.interaction.z=nz;}
   }
 }
 
