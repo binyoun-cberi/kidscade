@@ -14,12 +14,12 @@
     {
       "id": "high_classroom_war_3d",
       "title": "교실전쟁 3D",
-      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=13",
+      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=14",
       "category": "math",
       "age": "high",
       "icon": "🎖️",
       "cover": "assets/gate-image/교실전쟁3D.png",
-      "description": "실제 SkinnedMesh 학생 에셋을 올바른 바닥 정렬·편제 간격으로 배치하고, 계산 결과 미리보기 관문과 교실 방어전을 즐기는 3D 무한 수학 디펜스!"
+      "description": "실제 3D 학생들이 Idle·Walk 애니메이션으로 움직이고, 화면 하단 편제에서 정면으로 직선 사격하며 사칙연산 관문과 적군을 돌파하는 3D 교실 디펜스!"
     },
     {
       "id": "high_byeokrando_voyage",
