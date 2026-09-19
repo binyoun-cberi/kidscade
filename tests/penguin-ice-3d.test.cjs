@@ -40,5 +40,5 @@ test('Penguin Ice Pop keeps board-game support and cascade rules',()=>{
 test('Penguin Ice Pop catalog points at the 3D rework',()=>{
   const game=catalog.games.find(g=>g.id==='toddler_penguin_ice_pop');
   assert.ok(game);
-  assert.equal(game.href,'games/toddler_penguin_ice_pop/펭귄 얼음 톡톡!.html?v=rework-3');
+  assert.equal(game.href,'games/toddler_penguin_ice_pop/펭귄 얼음 톡톡!.html?v=rework-4');
 });
