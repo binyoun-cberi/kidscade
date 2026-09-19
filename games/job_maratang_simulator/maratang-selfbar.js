@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const FOOD = new URL('../../assets/game/food/', import.meta.url).href;
 const MAX_PORTIONS = 12;
-const CAMPAIGN_DAYS = 5;
+const CAMPAIGN_DAYS = 15;
 const BASE_CUSTOMERS = 5;
 const PRICE_PER_100G = 1900;
 const START_CASH = 12000;
@@ -16,15 +16,42 @@ const UPGRADES = {
 };
 
 const INGREDIENTS = [
-  {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78},
-  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', cost:240, weight:45, size:.70},
-  {id:'carrot', name:'당근', model:'carrot.glb', cost:160, weight:40, size:.72},
-  {id:'mushroom', name:'버섯', model:'mushroom.glb', cost:300, weight:45, size:.66},
-  {id:'sausage', name:'소시지', model:'sausage.glb', cost:420, weight:50, size:.68},
-  {id:'meat', name:'소고기', model:'meat-raw.glb', cost:650, weight:60, size:.66},
-  {id:'corn', name:'옥수수', model:'corn.glb', cost:260, weight:65, size:.72},
-  {id:'leek', name:'대파', model:'leek.glb', cost:140, weight:35, size:.80},
-  {id:'onion', name:'양파', model:'onion.glb', cost:170, weight:50, size:.68}
+  {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78, unlockDay:1},
+  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', cost:240, weight:45, size:.70, unlockDay:1},
+  {id:'carrot', name:'당근', model:'carrot.glb', cost:160, weight:40, size:.72, unlockDay:1},
+  {id:'mushroom', name:'버섯', model:'mushroom.glb', cost:300, weight:45, size:.66, unlockDay:1},
+  {id:'sausage', name:'소시지', model:'sausage.glb', cost:420, weight:50, size:.68, unlockDay:1},
+  {id:'meat', name:'소고기', model:'meat-raw.glb', cost:650, weight:60, size:.66, unlockDay:1},
+  {id:'corn', name:'옥수수', model:'corn.glb', cost:260, weight:65, size:.72, unlockDay:1},
+  {id:'leek', name:'대파', model:'leek.glb', cost:140, weight:35, size:.80, unlockDay:1},
+  {id:'onion', name:'양파', model:'onion.glb', cost:170, weight:50, size:.68, unlockDay:1},
+  {id:'cauliflower', name:'콜리플라워', model:'cauliflower.glb', cost:230, weight:50, size:.70, unlockDay:3},
+  {id:'eggplant', name:'가지', model:'eggplant.glb', cost:210, weight:55, size:.72, unlockDay:5},
+  {id:'radish', name:'무', model:'radish.glb', cost:180, weight:55, size:.72, unlockDay:7},
+  {id:'dimsum', name:'만두', model:'dim-sum.glb', cost:390, weight:60, size:.68, unlockDay:9},
+  {id:'mussel', name:'홍합', model:'mussel-open.glb', cost:470, weight:45, size:.66, unlockDay:11},
+  {id:'egg', name:'달걀', model:'egg-half.glb', cost:250, weight:50, size:.66, unlockDay:13}
+];
+
+const CUSTOMER_TYPES = [
+  {id:'regular',label:'동네 단골',minDay:1,patience:.94,budget:1,weight:0,tip:1,rep:1,desc:'천천히 정확한 한 그릇을 원해요.'},
+  {id:'hurried',label:'급한 직장인',minDay:2,patience:1.34,budget:1.08,weight:0,tip:1.25,rep:1,desc:'기다리는 시간이 길면 바로 떠날 수 있어요.'},
+  {id:'budget',label:'알뜰 손님',minDay:3,patience:1.04,budget:.86,weight:-20,tip:.65,rep:1,desc:'예산을 넘기지 않는 게 가장 중요해요.'},
+  {id:'big',label:'대식가',minDay:4,patience:.91,budget:1.30,weight:95,tip:1.1,rep:1,desc:'평소보다 훨씬 푸짐한 양을 원해요.'},
+  {id:'gourmet',label:'미식가',minDay:6,patience:.98,budget:1.16,weight:20,tip:1.7,rep:1.25,desc:'완성도가 높으면 팁을 크게 줍니다.'},
+  {id:'influencer',label:'맛집 크리에이터',minDay:8,patience:1.08,budget:1.22,weight:15,tip:1.55,rep:2,desc:'만족시키면 평판이 크게 오르지만 실수도 더 눈에 띄어요.'},
+  {id:'family',label:'가족 손님',minDay:10,patience:.86,budget:1.36,weight:120,tip:1.2,rep:1.2,desc:'양이 많고 예산도 넉넉하지만 주문이 큽니다.'}
+];
+
+const DAILY_EVENTS = [
+  {id:'normal',title:'평범한 하루',desc:'특별한 변수 없이 기본 영업을 합니다.',customerDelta:0,patience:1,tip:1,costMult:1},
+  {id:'lunchRush',title:'점심시간 러시',desc:'손님이 2명 더 오고 모두 조금 더 조급합니다.',customerDelta:2,patience:1.14,tip:1.05,costMult:1},
+  {id:'rain',title:'비 오는 날',desc:'손님은 1명 줄지만 기다림에는 조금 관대합니다.',customerDelta:-1,patience:.88,tip:1.08,costMult:1},
+  {id:'viral',title:'SNS 입소문',desc:'손님이 2명 늘고 팁과 평판 상승 효과가 커집니다.',customerDelta:2,patience:1.04,tip:1.28,rep:1.25,costMult:1},
+  {id:'wholesale',title:'도매시장 특가',desc:'다음 영업용 모든 재료 발주 가격이 20% 저렴합니다.',customerDelta:0,patience:1,tip:1,costMult:.8},
+  {id:'meatPrice',title:'고기값 급등',desc:'소고기와 소시지 발주 가격이 크게 올랐습니다.',customerDelta:0,patience:1,tip:1,costMult:1,costById:{meat:1.45,sausage:1.25}},
+  {id:'vegSale',title:'채소 풍년',desc:'주요 채소 발주 가격이 25% 내려갑니다.',customerDelta:0,patience:1,tip:1,costMult:1,costById:{cabbage:.75,broccoli:.75,carrot:.75,leek:.75,onion:.75,cauliflower:.75,eggplant:.75,radish:.75}},
+  {id:'spicy',title:'매운맛 챌린지',desc:'오늘 손님들은 모두 3단계 맵기를 찾습니다. 팁도 조금 커집니다.',customerDelta:1,patience:1.05,tip:1.18,costMult:1,forceSpice:3}
 ];
 
 const ORDERS = [
@@ -48,6 +75,19 @@ const ORDERS = [
    text:'브로콜리, 당근, 양파, 옥수수로 채소 듬뿍 담아 주세요. 소시지는 빼고 안 맵게요.'},
   {title:'매운맛 도전 손님', must:{meat:1,mushroom:1,leek:1}, avoid:['cabbage'], spice:3, budget:8400,minWeight:210,maxWeight:360,patienceRate:1.12,
    text:'소고기, 버섯, 대파 넣고 양배추는 빼 주세요. 맵기는 3단계로 도전할게요.'}
+,
+  {title:'콜리플라워 채소탕', must:{cauliflower:2,cabbage:1,mushroom:1}, avoid:['sausage'], spice:1, budget:7600,minWeight:220,maxWeight:370,patienceRate:.96,
+   text:'콜리플라워는 두 번, 양배추와 버섯도 넣고 소시지는 빼 주세요. 1단계요.'},
+  {title:'가지 소고기 한 그릇', must:{eggplant:1,meat:1,onion:1}, avoid:['corn'], spice:2, budget:8600,minWeight:220,maxWeight:380,patienceRate:1.0,
+   text:'가지, 소고기, 양파를 넣고 옥수수는 빼 주세요. 2단계로 부탁해요.'},
+  {title:'담백한 무 채소탕', must:{radish:2,cabbage:1,leek:1}, avoid:['sausage'], spice:0, budget:6900,minWeight:240,maxWeight:390,patienceRate:.9,
+   text:'무는 두 번, 양배추와 대파도 넣어 주세요. 소시지는 빼고 안 맵게요.'},
+  {title:'만두 듬뿍 마라탕', must:{dimsum:2,broccoli:1,onion:1}, avoid:['meat'], spice:2, budget:8400,minWeight:250,maxWeight:420,patienceRate:1.04,
+   text:'만두 두 번에 브로콜리와 양파를 넣고 소고기는 빼 주세요. 2단계요.'},
+  {title:'홍합 얼큰탕', must:{mussel:2,mushroom:1,leek:1}, avoid:['sausage'], spice:3, budget:9200,minWeight:240,maxWeight:410,patienceRate:1.08,
+   text:'홍합은 두 번, 버섯과 대파도 넣어 주세요. 소시지는 빼고 3단계요.'},
+  {title:'달걀 고기 마라탕', must:{egg:2,meat:1,onion:1}, avoid:['broccoli'], spice:1, budget:9000,minWeight:250,maxWeight:420,patienceRate:.98,
+   text:'달걀 두 번, 소고기와 양파를 넣고 브로콜리는 빼 주세요. 1단계로요.'}
 ]
 
 const $ = s => document.querySelector(s);
@@ -61,7 +101,7 @@ const els = {
   resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'), resultUnit:$('#resultUnit'),
   resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn'),
   manageOverlay:$('#manageOverlay'), manageTitle:$('#manageTitle'), manageSummary:$('#manageSummary'), stockRows:$('#stockRows'),
-  restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn')
+  restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn'), eventBanner:$('#eventBanner'), tomorrowEvent:$('#tomorrowEvent')
 };
 
 const state = {
@@ -70,8 +110,9 @@ const state = {
   patience:100, patienceTimer:null, cookTimer:null, cookProgress:0, readyAt:0,
   sound:true, dragging:false, completed:false, customerSettled:false,
   dayRevenue:0, dayCogs:0, dayWaste:0, dayWalkouts:0,
-  stock:Object.fromEntries(INGREDIENTS.map(i=>[i.id,BASE_STOCK])),
-  upgrades:{fridge:0,burner:0,service:0,marketing:0}
+  stock:Object.fromEntries(INGREDIENTS.map(i=>[i.id,i.unlockDay===1?BASE_STOCK:0])),
+  upgrades:{fridge:0,burner:0,service:0,marketing:0},
+  event:DAILY_EVENTS[0], nextEvent:null, lastEventId:null, unlockedToday:[]
 };
 
 const ingredientById = id => INGREDIENTS.find(x=>x.id===id);
@@ -79,13 +120,53 @@ const bowlWeight = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.we
 const bowlCost = () => Math.max(0,Math.round((bowlWeight()/100*PRICE_PER_100G)/100)*100);
 const bowlIngredientCost = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.cost||0),0);
 const stockCapacity = () => BASE_STOCK + state.upgrades.fridge*3;
-const customersForDay = () => BASE_CUSTOMERS + Math.min(2,state.day-1) + state.upgrades.marketing;
+const isIngredientUnlocked = (id,day=state.day) => (ingredientById(typeof id==='string'?id:id.id)?.unlockDay||1)<=day;
+const activeIngredients = (day=state.day) => INGREDIENTS.filter(ing=>ing.unlockDay<=day);
+const customersForDay = (day=state.day,event=state.event) => Math.max(3,BASE_CUSTOMERS+Math.min(4,Math.floor((day-1)/3))+state.upgrades.marketing+(event?.customerDelta||0));
+const purchaseUnitCost = (ing,event=state.nextEvent||state.event) => Math.max(50,Math.round(ing.cost*(event?.costMult||1)*(event?.costById?.[ing.id]||1)/10)*10);
+const orderAvailable = (order,day=state.day) => [...Object.keys(order.must),...order.avoid].every(id=>isIngredientUnlocked(id,day));
+const dayUnlocks = day => INGREDIENTS.filter(ing=>ing.unlockDay===day);
 const countInBowl = id => state.bowl.filter(x=>x===id).length;
 const shuffle = a => {
   const out=[...a];
   for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}
   return out;
 };
+function chooseDailyEvent(day){
+  if(day<=1)return DAILY_EVENTS[0];
+  let pool=DAILY_EVENTS.filter(e=>e.id!=='normal'&&e.id!==state.lastEventId);
+  if(day<4)pool=pool.filter(e=>!['meatPrice','viral'].includes(e.id));
+  const event=pool[Math.floor(Math.random()*pool.length)]||DAILY_EVENTS[0];
+  state.lastEventId=event.id;return event;
+}
+function customerTypeForDay(day){
+  const pool=CUSTOMER_TYPES.filter(t=>t.minDay<=day);
+  return pool[Math.floor(Math.random()*pool.length)]||CUSTOMER_TYPES[0];
+}
+function makeCustomerOrder(base){
+  const type=customerTypeForDay(state.day),event=state.event||DAILY_EVENTS[0];
+  const weightShift=type.weight||0;
+  const order={...base,must:{...base.must},avoid:[...base.avoid],customerType:type};
+  order.budget=Math.round(base.budget*(type.budget||1)/100)*100;
+  order.minWeight=Math.max(120,base.minWeight+weightShift);
+  order.maxWeight=base.maxWeight+Math.max(0,weightShift);
+  order.patienceRate=base.patienceRate*(type.patience||1)*(event.patience||1);
+  order.tipMult=(type.tip||1)*(event.tip||1);
+  order.repMult=(type.rep||1)*(event.rep||1);
+  if(event.forceSpice!==undefined)order.spice=event.forceSpice;
+  return order;
+}
+function makeOrderDeck(){
+  const eligible=ORDERS.filter(o=>orderAvailable(o,state.day));
+  const freshIds=new Set(dayUnlocks(state.day).map(x=>x.id));
+  const featured=eligible.filter(o=>Object.keys(o.must).some(id=>freshIds.has(id)));
+  return shuffle([...eligible,...featured,...featured]);
+}
+function unlockIngredientsForDay(day){
+  const unlocked=dayUnlocks(day);state.unlockedToday=unlocked.map(x=>x.id);
+  for(const ing of unlocked)state.stock[ing.id]=Math.max(state.stock[ing.id]||0,Math.min(4,stockCapacity()));
+  return unlocked;
+}
 
 function sfx(key, options={}) {
   if(!state.sound) return;
@@ -100,8 +181,12 @@ function toast(text) {
 function updateStockUI(){
   for(const ing of INGREDIENTS){
     const label=els.labels.querySelector(`[data-id="${ing.id}"]`);
-    const left=state.stock[ing.id]??0;
-    if(label){label.textContent=ing.name+' · '+left;label.classList.toggle('out',left<=0)}
+    const left=state.stock[ing.id]??0,unlocked=isIngredientUnlocked(ing.id);
+    if(label){
+      label.textContent=unlocked?ing.name+' · '+left:`DAY ${ing.unlockDay} · ${ing.name}`;
+      label.classList.toggle('out',unlocked&&left<=0);
+      label.classList.toggle('locked',!unlocked);
+    }
   }
   scene?.refreshStockVisuals?.();
 }
@@ -114,6 +199,11 @@ function updateReadout() {
   els.reputation.textContent=Math.round(state.reputation);
   els.dayTarget.textContent=state.dayTarget;
   els.queue.textContent=state.queue;
+  if(els.eventBanner){
+    const e=state.event||DAILY_EVENTS[0];
+    els.eventBanner.hidden=false;
+    els.eventBanner.innerHTML=`<b>${e.title}</b><span>${e.desc}</span>`;
+  }
   updateStockUI();
 }
 function setPhase(phase) {
@@ -128,8 +218,9 @@ function setPhase(phase) {
 }
 function setOrder(order) {
   state.order=order;
-  els.orderTitle.textContent=order.title;
-  els.orderText.textContent=order.text+` · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
+  const type=order.customerType||CUSTOMER_TYPES[0];
+  els.orderTitle.textContent=type.label+' · '+order.title;
+  els.orderText.textContent=order.text+` · ${type.desc} · 권장 ${order.minWeight}~${order.maxWeight}g · 예산 ${order.budget.toLocaleString()}원`;
   state.patience=100;state.customerSettled=false;
   els.patienceFill.style.transform='scaleX(1)';
 }
@@ -198,12 +289,9 @@ class SelfBarScene {
   }
   makeShelf(){
     this.shelfGroup=new THREE.Group();this.scene.add(this.shelfGroup);
-    const positions=[
-      [-3.2,-1.85],[-1.6,-1.85],[0,-1.85],[1.6,-1.85],[3.2,-1.85],
-      [-2.4,-.35],[-.8,-.35],[.8,-.35],[2.4,-.35]
-    ];
+    const cols=5,xs=[-3.2,-1.6,0,1.6,3.2],zs=[-2.05,-.72,.61];
     INGREDIENTS.forEach((ing,i)=>{
-      const [x,z]=positions[i];
+      const x=xs[i%cols],z=zs[Math.floor(i/cols)];
       const tray=new THREE.Mesh(new THREE.BoxGeometry(1.42,.22,1.05),new THREE.MeshStandardMaterial({color:0x71503a,roughness:.75,metalness:.05}));
       tray.position.set(x,-.02,z);tray.receiveShadow=true;tray.userData.ingredientId=ing.id;this.shelfGroup.add(tray);
       const inner=new THREE.Mesh(new THREE.BoxGeometry(1.23,.12,.88),new THREE.MeshStandardMaterial({color:0xe5d1b8,roughness:.9}));
@@ -220,7 +308,7 @@ class SelfBarScene {
     this.shelfGroup.add(obj);
   }
   refreshStockVisuals(){
-    for(const [id,obj] of this.displayItems)obj.visible=(state.stock[id]??0)>0;
+    for(const [id,obj] of this.displayItems)obj.visible=isIngredientUnlocked(id)&&(state.stock[id]??0)>0;
   }
   async cloneModel(file,size=.7){
     let source=this.cache.get(file);
@@ -279,6 +367,8 @@ class SelfBarScene {
     if(state.phase!=='shopping')return;
     this.setPointer(e);
     const id=this.getIngredientHit();if(!id)return;
+    if(!isIngredientUnlocked(id)){toast((ingredientById(id)?.name||'재료')+` · DAY ${ingredientById(id)?.unlockDay||'?'}에 해금`);return}
+    if((state.stock[id]||0)<=0){toast((ingredientById(id)?.name||'재료')+' 품절! 영업 후 재고를 보충하세요');return}
     e.preventDefault();this.canvas.setPointerCapture?.(e.pointerId);
     this.dragId=id;this.dragStart={x:e.clientX,y:e.clientY};state.dragging=true;this.canvas.classList.add('dragging');
     const ing=ingredientById(id);
@@ -455,9 +545,11 @@ function evaluate(){
 function settleCustomer(result){
   const payRate=result.points>=90?1:result.points>=60?.85:.6;
   const baseRevenue=Math.max(0,Math.round(result.price*payRate/100)*100);
-  const tip=result.points>=115?Math.round((result.price*.08*(state.patience/100))/100)*100:result.points>=95?300:0;
+  const tipBase=result.points>=115?result.price*.08*(state.patience/100):result.points>=95?300:0;
+  const tip=Math.round((tipBase*(state.order?.tipMult||1))/100)*100;
   const revenue=baseRevenue+tip;
-  const repDelta=result.points>=115?3:result.points>=90?1:result.points<60?-3:0;
+  const rawRep=result.points>=115?3:result.points>=90?1:result.points<60?-3:0;
+  const repDelta=Math.round(rawRep*(state.order?.repMult||1));
   state.cash+=revenue;state.dayRevenue+=revenue;state.dayCogs+=result.cogs;
   state.reputation=Math.max(0,Math.min(100,state.reputation+repDelta));
   return{revenue,tip,repDelta,profit:revenue-result.cogs};
@@ -503,14 +595,14 @@ function upgradeCost(key){
 function restockIngredient(id,amount=3){
   const ing=ingredientById(id),cap=stockCapacity(),gap=Math.max(0,cap-(state.stock[id]||0)),qty=Math.min(amount,gap);
   if(!qty)return toast(ing.name+' 재고가 가득 찼어요');
-  const cost=ing.cost*qty;
+  const cost=purchaseUnitCost(ing)*qty;
   if(state.cash<cost)return toast('현금이 부족해요 · 필요 ₩'+cost.toLocaleString());
   state.cash-=cost;state.stock[id]=(state.stock[id]||0)+qty;renderManagement();updateReadout();sfx('shop.purchase',{volume:.2,cooldownMs:120});
 }
 function restockAll(){
   const cap=stockCapacity();
-  const need=INGREDIENTS.map(ing=>({ing,qty:Math.max(0,cap-(state.stock[ing.id]||0))}));
-  const cost=need.reduce((sum,x)=>sum+x.ing.cost*x.qty,0);
+  const need=activeIngredients().map(ing=>({ing,qty:Math.max(0,cap-(state.stock[ing.id]||0))}));
+  const cost=need.reduce((sum,x)=>sum+purchaseUnitCost(x.ing)*x.qty,0);
   if(!cost)return toast('모든 재고가 가득 찼어요');
   if(state.cash<cost)return toast('전체 보충 비용 ₩'+cost.toLocaleString()+'이 필요해요');
   state.cash-=cost;for(const {ing,qty} of need)state.stock[ing.id]+=qty;
@@ -526,9 +618,9 @@ function renderManagement(){
   els.manageTitle.textContent=`${state.day}일차 결산`;
   els.manageSummary.innerHTML=`<div><span>매출</span><b>₩${state.dayRevenue.toLocaleString()}</b></div><div><span>재료원가</span><b>₩${state.dayCogs.toLocaleString()}</b></div><div><span>폐기손실</span><b>₩${state.dayWaste.toLocaleString()}</b></div><div><span>영업이익</span><b>₩${profit.toLocaleString()}</b></div><div><span>평판</span><b>${Math.round(state.reputation)}</b></div><div><span>이탈 손님</span><b>${state.dayWalkouts}</b></div>`;
   const cap=stockCapacity();els.stockRows.innerHTML='';
-  for(const ing of INGREDIENTS){
+  for(const ing of activeIngredients()){
     const row=document.createElement('div');row.className='stock-row';
-    const qty=Math.min(3,Math.max(0,cap-(state.stock[ing.id]||0))),cost=qty*ing.cost;
+    const qty=Math.min(3,Math.max(0,cap-(state.stock[ing.id]||0))),cost=qty*purchaseUnitCost(ing);
     row.innerHTML=`<span>${ing.name}</span><b>${state.stock[ing.id]||0} / ${cap}</b><button type="button" ${qty?'':'disabled'}>+${qty||0} · ₩${cost.toLocaleString()}</button>`;
     row.querySelector('button').addEventListener('click',()=>restockIngredient(ing.id,3));els.stockRows.appendChild(row);
   }
@@ -537,33 +629,46 @@ function renderManagement(){
     if(el)el.textContent=lv>=u.max?'MAX':`Lv.${lv} → ${lv+1} · ₩${upgradeCost(key).toLocaleString()}`;
     const btn=document.querySelector(`[data-upgrade="${key}"]`);if(btn)btn.disabled=lv>=u.max;
   }
+  if(els.tomorrowEvent&&state.nextEvent){
+    const unlocks=dayUnlocks(state.day+1);
+    const unlockText=unlocks.length?` · 신규 재료: ${unlocks.map(x=>x.name).join(', ')}`:'';
+    els.tomorrowEvent.innerHTML=`<b>내일 예보 · ${state.nextEvent.title}</b><span>${state.nextEvent.desc}${unlockText}</span>`;
+  }
   updateReadout();
 }
 function finishCampaign(){
   state.completed=true;stopPatience();setPhase('idle');
   const rating=state.reputation>=75?'동네 인기 맛집':state.reputation>=55?'안정적인 마라탕집':'다시 손봐야 할 가게';
-  els.resultKicker.textContent='5일 타이쿤 결과';els.resultTitle.textContent=rating;
+  els.resultKicker.textContent='15일 타이쿤 결과';els.resultTitle.textContent=rating;
   els.resultScore.textContent=Math.round(state.cash).toLocaleString();els.resultUnit.textContent='원';els.resultText.textContent=`최종 현금 ₩${Math.round(state.cash).toLocaleString()} · 평판 ${Math.round(state.reputation)} · 총 손님 ${state.served}명`;
   els.nextBtn.textContent='새 가게 시작';els.resultOverlay.classList.add('show');sfx('success.victory_fanfare',{volume:.42,cooldownMs:1200});
 }
 function finishDay(){
   stopPatience();setPhase('idle');
   if(state.day>=CAMPAIGN_DAYS)return finishCampaign();
+  state.nextEvent=chooseDailyEvent(state.day+1);
   renderManagement();els.manageOverlay.classList.add('show');
 }
 function startNextDay(){
   els.manageOverlay.classList.remove('show');state.day++;state.dayServed=0;state.dayRevenue=0;state.dayCogs=0;state.dayWaste=0;state.dayWalkouts=0;
-  state.dayTarget=customersForDay();state._orderDeck=shuffle(ORDERS);updateReadout();beginCustomer();
+  state.event=state.nextEvent||chooseDailyEvent(state.day);state.nextEvent=null;
+  const unlocked=unlockIngredientsForDay(state.day);
+  state.dayTarget=customersForDay();state._orderDeck=makeOrderDeck();updateReadout();
+  if(unlocked.length)toast('신규 재료 해금 · '+unlocked.map(x=>x.name).join(', '));
+  beginCustomer();
 }
 function beginCustomer(){
   state.bowl=[];state.spice=null;state.cookProgress=0;state.readyAt=0;scene.clearBowl();
-  if(!state._orderDeck||!state._orderDeck.length)state._orderDeck=shuffle(ORDERS);
-  const order=state._orderDeck.pop();state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setOrder(order);updateReadout();setPhase('shopping');startPatience();
+  if(!state._orderDeck||!state._orderDeck.length)state._orderDeck=makeOrderDeck();
+  const base=state._orderDeck.pop()||ORDERS[0],order=makeCustomerOrder(base);
+  state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setOrder(order);updateReadout();setPhase('shopping');startPatience();
 }
 function startGame(){
   state.score=0;state.served=0;state.day=1;state.dayServed=0;state.cash=START_CASH;state.reputation=50;state.completed=false;
   state.dayRevenue=0;state.dayCogs=0;state.dayWaste=0;state.dayWalkouts=0;state.upgrades={fridge:0,burner:0,service:0,marketing:0};
-  state.stock=Object.fromEntries(INGREDIENTS.map(i=>[i.id,BASE_STOCK]));state.dayTarget=customersForDay();state._orderDeck=shuffle(ORDERS);
+  state.event=DAILY_EVENTS[0];state.nextEvent=null;state.lastEventId=null;state.unlockedToday=[];
+  state.stock=Object.fromEntries(INGREDIENTS.map(i=>[i.id,i.unlockDay===1?BASE_STOCK:0]));
+  state.dayTarget=customersForDay();state._orderDeck=makeOrderDeck();
   els.startOverlay.classList.remove('show');updateReadout();beginCustomer();
 }
 
