@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=1';
-import {createTownEconomy} from './kidscade-world-economy.js?v=1';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=2';
+import {createTownEconomy} from './kidscade-world-economy.js?v=2';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
