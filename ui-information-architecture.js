@@ -113,10 +113,12 @@
       #kc-local-profile-card .kph-name { font-size:.92rem !important; }
       #kc-local-profile-card .kph-note { font-size:.62rem !important; }
 
-      /* Cube Pets 카드는 생활·생존 월드로 들어가는 한 가지 동선만 남깁니다. */
+      /* Cube Pets는 진입 버튼이 아니라 월드 안 친구들의 현황 카드입니다. */
       #sidebar-recommend { display:none !important; }
-      #kc-pet-card .kc-side-actions { grid-template-columns:1fr !important; }
-      #kc-pet-card #sidebar-pet-open { grid-column:auto !important; }
+      #kc-pet-card { cursor:default !important; }
+      #kc-pet-card:hover { transform:none !important; }
+      #kc-pet-card .kc-side-actions { display:none !important; }
+      #kc-pet-card #sidebar-pet-open { display:none !important; }
 
       /* 미션은 프로필 사이드바에서 제거하고 게임 영역의 활동 도구로 이동합니다. */
       #sidebar-mission-card { display:none !important; }
@@ -264,9 +266,10 @@
     const avatarActions = shell.querySelector('.avatar-plaza-actions');
     if (shopButton && avatarActions) {
       if (shopButton.parentElement !== avatarActions) avatarActions.appendChild(shopButton);
-      shopButton.textContent = '🎁 씨앗 상점';
+      shopButton.textContent = '🌱 씨앗 월드';
       shopButton.classList.add('kc-profile-shop-btn');
-      shopButton.setAttribute('aria-label', '씨앗 상점 열기');
+      shopButton.dataset.openLifeWorld = 'profile-world';
+      shopButton.setAttribute('aria-label', '씨앗 월드 들어가기');
     }
     return true;
   }
@@ -289,14 +292,16 @@
 
   function normalizeGrowthArea() {
     const petCard = document.getElementById('kc-pet-card');
-    if (petCard) petCard.setAttribute('aria-label', 'Cube Pets 생존 월드 열기');
-    const petOpen = document.getElementById('sidebar-pet-open');
-    if (petOpen && petOpen.textContent !== '🌿 생존 월드 열기') petOpen.textContent = '🌿 생존 월드 열기';
+    if (petCard) {
+      petCard.setAttribute('aria-label', 'Cube Pets 현황');
+      petCard.removeAttribute('role');
+      petCard.removeAttribute('tabindex');
+      delete petCard.dataset.openLifeWorld;
+    }
+    document.getElementById('sidebar-pet-open')?.remove();
 
     const petTalk = document.getElementById('sidebar-pet-talk');
-    if (petTalk && petTalk.textContent === '게임을 하면 쑥쑥이도 함께 성장해요.') {
-      petTalk.textContent = '월드에서 Cube Pets를 만나고 함께 탐험해요.';
-    }
+    if (petTalk) petTalk.textContent = '씨앗 월드에서 만나고 길들이고 함께 생활해요.';
   }
 
   function openMission() {
