@@ -149,33 +149,88 @@ panel.addEventListener('pointerdown',e=>{if(e.target===panel)closePanel()});
 function inv(){save.inventory=save.inventory||{};return save.inventory}
 function prog(){
   save.progression=save.progression||{};
-  save.progression.energy=Number(save.progression.energy??100);
-  save.progression.maxEnergy=Number(save.progression.maxEnergy??100);
-  save.progression.tools=save.progression.tools||{};
-  save.progression.seeds={potato:2,carrot:2,tomato:2,...(save.progression.seeds||{})};
-  save.progression.crops=save.progression.crops||{};
-  save.progression.food=save.progression.food||{};
-  save.progression.fishDex=save.progression.fishDex||{};
-  return save.progression;
+  const p=save.progression;
+  p.energy=Number(p.energy??100);
+  p.maxEnergy=Number(p.maxEnergy??100);
+  p.tools=p.tools||{};
+  p.seeds={potato:2,carrot:2,tomato:2,...(p.seeds||{})};
+  p.crops=p.crops||{};
+  p.food=p.food||{};
+  p.fishDex=p.fishDex||{};
+  const old=p.survival&&typeof p.survival==='object'?p.survival:{};
+  p.survival={
+    hunger:Number.isFinite(Number(old.hunger))?Math.max(0,Math.min(100,Number(old.hunger))):100,
+    maxHunger:100,
+    time:Number.isFinite(Number(old.time))?((Number(old.time)%1440)+1440)%1440:480,
+    day:Math.max(1,Math.floor(Number(old.day)||1)),
+    companion:typeof old.companion==='string'?old.companion:'',
+    lastTick:Number(old.lastTick)||Date.now()
+  };
+  return p;
 }
-const itemName=k=>({wood:'목재',stone:'돌',iron:'철광석',potato:'감자',carrot:'당근',tomato:'토마토',fish:'물고기',bug:'곤충'})[k]||k;
+const itemName=k=>({
+  wood:'목재',stone:'돌',iron:'철광석',potato:'감자',carrot:'당근',tomato:'토마토',
+  fish:'물고기',bug:'곤충',mushroom:'버섯'
+})[k]||k;
+
+const FOOD_DEF={
+  grilledFish:{name:'구운 생선',hunger:34,energy:10},
+  bakedPotato:{name:'구운 감자',hunger:25,energy:6},
+  veggieSoup:{name:'채소 수프',hunger:42,energy:12},
+  mushroomSoup:{name:'버섯 수프',hunger:38,energy:10}
+};
+const RECIPES={
+  grilledFish:{name:'구운 생선',req:{fish:1}},
+  bakedPotato:{name:'구운 감자',req:{potato:1}},
+  veggieSoup:{name:'채소 수프',req:{carrot:1,tomato:1}},
+  mushroomSoup:{name:'버섯 수프',req:{mushroom:2}}
+};
 
 function inventoryPanel(){
   const items=Object.entries(inv()).filter(([,v])=>Number(v)>0);
-  openPanel(`<h2>보관함</h2><div class="grid">${items.length?items.map(([k,v])=>`<div class="item"><b>${itemName(k)}</b><div>${v}개</div></div>`).join(''):'<div class="item">아직 보관한 재료가 없어요.</div>'}</div>`);
+  const food=Object.entries(prog().food).filter(([k,v])=>FOOD_DEF[k]&&Number(v)>0);
+  openPanel(`<h2>보관함</h2>
+    <h3>재료</h3><div class="grid">${items.length?items.map(([k,v])=>`<div class="item"><b>${itemName(k)}</b><div>${v}개</div></div>`).join(''):'<div class="item">아직 보관한 재료가 없어요.</div>'}</div>
+    <h3>조리 음식</h3><div class="grid">${food.length?food.map(([k,v])=>`<div class="item"><b>${FOOD_DEF[k].name}</b><div>${v}개 · 허기 +${FOOD_DEF[k].hunger}</div><button data-eat="${k}">먹기</button></div>`).join(''):'<div class="item">아직 만든 음식이 없어요.</div>'}</div>`);
 }
 function workbenchPanel(){
   const p=prog(),i=inv(),tool=(key,name,req)=>{const have=Object.entries(req).every(([k,v])=>(i[k]||0)>=v);const owned=p.tools[key]?.dur>0;return `<div class="item"><b>${name}</b><div>${Object.entries(req).map(([k,v])=>itemName(k)+' '+v).join(' · ')}</div><button data-craft="${key}" ${have?'':'disabled'}>${owned?'수리/재제작':'제작'}</button></div>`;};
-  openPanel(`<h2>3D 제작대</h2><div class="grid">${tool('axe','돌도끼',{wood:3,stone:2})}${tool('pick','돌곡괭이',{wood:2,stone:3})}</div><p style="font-size:12px">기존 v2 저장과 같은 인벤토리·도구 상태를 사용합니다.</p>`);
+  openPanel(`<h2>3D 제작대</h2><div class="grid">${tool('axe','돌도끼',{wood:3,stone:2})}${tool('pick','돌곡괭이',{wood:2,stone:3})}</div><p style="font-size:12px">숲과 채석장에서 모은 자원으로 생존 도구를 만들어요.</p>`);
 }
+function cookingPanel(kind='stove'){
+  const i=inv(),allowed=kind==='campfire'?['grilledFish','bakedPotato']:Object.keys(RECIPES);
+  const cards=allowed.map(key=>{
+    const r=RECIPES[key],have=Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v);
+    const req=Object.entries(r.req).map(([k,v])=>itemName(k)+' '+v).join(' · ');
+    return `<div class="item"><b>${r.name}</b><div>${req}</div><button data-cook="${key}" ${have?'':'disabled'}>요리</button></div>`;
+  }).join('');
+  openPanel(`<h2>${kind==='campfire'?'야영지 모닥불':'우리 집 주방'}</h2><div class="grid">${cards}</div><p style="font-size:12px">음식은 허기를 채우고 체력도 조금 회복시켜요.</p>`);
+}
+function cookFood(key){
+  const r=RECIPES[key],i=inv(),p=prog();if(!r)return;
+  if(!Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v)){toast('요리 재료가 부족해요.');return;}
+  Object.entries(r.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  p.food[key]=(p.food[key]||0)+1;persist();setAvatarAction('smile',750);toast(r.name+' 완성!');updateStatus();
+}
+function eatFood(key){
+  const p=prog(),f=FOOD_DEF[key];if(!f||(p.food[key]||0)<=0)return;
+  p.food[key]--;p.survival.hunger=Math.min(p.survival.maxHunger,p.survival.hunger+f.hunger);
+  p.energy=Math.min(p.maxEnergy,p.energy+f.energy);persist();setAvatarAction('smile',700);toast(f.name+'을(를) 먹었어요.');updateStatus();inventoryPanel();
+}
+
 panel.addEventListener('click',e=>{
-  const b=e.target.closest('[data-craft]');if(!b)return;
-  const key=b.dataset.craft,p=prog(),i=inv();
-  const def=key==='axe'?{name:'돌도끼',req:{wood:3,stone:2},max:18}:{name:'돌곡괭이',req:{wood:2,stone:3},max:18};
-  if(!Object.entries(def.req).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
-  Object.entries(def.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-  p.tools[key]={dur:def.max,max:def.max,tier:'stone',craftedAt:Date.now()};persist();setAvatarAction('smile',750);toast(def.name+' 완성!');workbenchPanel();updateStatus();
+  const craft=e.target.closest('[data-craft]');
+  if(craft){
+    const key=craft.dataset.craft,p=prog(),i=inv();
+    const def=key==='axe'?{name:'돌도끼',req:{wood:3,stone:2},max:18}:{name:'돌곡괭이',req:{wood:2,stone:3},max:18};
+    if(!Object.entries(def.req).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
+    Object.entries(def.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+    p.tools[key]={dur:def.max,max:def.max,tier:'stone',craftedAt:Date.now()};persist();setAvatarAction('smile',750);toast(def.name+' 완성!');workbenchPanel();updateStatus();return;
+  }
+  const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
+  const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
 });
+
 
 const avatarCanvas=document.createElement('canvas');avatarCanvas.width=128;avatarCanvas.height=160;
 const avatarCtx=avatarCanvas.getContext('2d');
