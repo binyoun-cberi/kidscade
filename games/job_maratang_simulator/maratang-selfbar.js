@@ -587,6 +587,9 @@ $('#backToBarBtn').addEventListener('click',backToBar);
 $('#cookBtn').addEventListener('click',startCook);
 els.serveBtn.addEventListener('click',serve);
 els.nextBtn.addEventListener('click',next);
+els.restockAllBtn.addEventListener('click',restockAll);
+els.nextDayBtn.addEventListener('click',startNextDay);
+document.querySelectorAll('[data-upgrade]').forEach(btn=>btn.addEventListener('click',()=>buyUpgrade(btn.dataset.upgrade)));
 els.soundBtn.addEventListener('click',()=>{
   state.sound=!state.sound;els.soundBtn.textContent=state.sound?'SOUND ON':'SOUND OFF';
 });
