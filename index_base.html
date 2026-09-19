@@ -263,7 +263,7 @@
                         </div>
                     </section>
 
-                    <section class="kc-side-card kc-pet-card" id="kc-pet-card" tabindex="0" role="button" aria-label="Cube Pets 생존 월드 열기">
+                    <section class="kc-side-card kc-pet-card" id="kc-pet-card" aria-label="Cube Pets 현황">
                         <div class="kc-pet-top">
                             <div class="kc-pet-avatar" id="sidebar-pet-avatar">🐶</div>
                             <div>
@@ -274,9 +274,8 @@
                         </div>
                         <div class="kc-pet-talk" id="sidebar-pet-talk">별도 정원 없이 생활·생존 월드 안에서 펫을 만나요.</div>
                         <div class="kc-side-actions">
-                            <button class="kc-side-btn primary" id="sidebar-pet-open" type="button">🌿 생존 월드 열기</button>
                             <button class="kc-side-btn" id="sidebar-recommend" type="button">💬 추천</button>
-                            <button class="kc-side-btn" id="btn-open-shop" type="button">🎁 상점</button>
+                            <button class="kc-side-btn" id="btn-open-shop" type="button" data-open-life-world="profile-world">🌱 씨앗 월드</button>
                         </div>
                     </section>
 
@@ -2150,8 +2149,6 @@ ${getEvolutionHintText()}
             }
             document.getElementById('sidebar-pet-open')?.addEventListener('click', (e) => { e.stopPropagation(); openSookFromSidebar('room'); });
             document.getElementById('sidebar-recommend')?.addEventListener('click', (e) => { e.stopPropagation(); openSookFromSidebar('recommend'); });
-            document.getElementById('kc-pet-card')?.addEventListener('click', () => openSookFromSidebar('room'));
-            document.getElementById('kc-pet-card')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSookFromSidebar('room'); } });
             document.getElementById('sidebar-mission-card')?.addEventListener('click', () => openSookFromSidebar('missions'));
             document.getElementById('sidebar-mission-card')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSookFromSidebar('missions'); } });
 
@@ -2196,9 +2193,9 @@ ${getEvolutionHintText()}
                 });
             });
 
-            document.getElementById('btn-open-shop').addEventListener('click', (event) => {
+            document.getElementById('btn-open-shop')?.addEventListener('click', (event) => {
                 event?.stopPropagation?.();
-                playUISound('open'); document.getElementById('shop-modal').classList.remove('hidden'); renderShop();
+                window.openKidscadeLifeWorld?.();
             });
             document.getElementById('btn-open-pet-shop-compact')?.addEventListener('click', () => {
                 playUISound('open');
