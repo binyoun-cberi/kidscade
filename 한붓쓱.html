@@ -130,7 +130,10 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
   width:100%;height:100%;border-radius:30px;position:relative;overflow:hidden;
   background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.9);box-shadow:var(--shadow)
 }
-#gameCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+#city3d,#gameCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#city3d{z-index:0;pointer-events:none;background:#dfe9e1}
+#gameCanvas{z-index:1;touch-action:none;cursor:crosshair;background:transparent}
+.route-rule,.hint-label,.side-tools,.toast,#skipDelivery{z-index:4}
 .side-tools{
   position:absolute;right:30px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;z-index:4
 }
@@ -218,6 +221,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
 }
 .route-rule{position:absolute;left:12px;right:12px;top:10px;text-align:center;font-size:12px;line-height:1.5;color:#657b7d;pointer-events:none}.hint-label{top:50px;pointer-events:none}#skipDelivery{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);z-index:9;background:#214a53;color:white;cursor:pointer}.board-shell{background:#dfe9e1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),inset 0 -24px 60px rgba(54,76,66,.08),var(--shadow)}.home-card h1{font-size:clamp(30px,5vw,56px)}.tool-btn:disabled{opacity:.45;cursor:default}.toast{max-width:90%;white-space:normal;text-align:center}.stage-pill{max-width:50vw;overflow:hidden;white-space:nowrap}@media(max-width:800px){.hint-label{top:50px}.route-rule{font-size:11px}}@media(max-height:480px){.route-rule{font-size:10px;top:4px}.hint-label{top:33px;padding:5px 9px;font-size:12px}}
 </style>
+<script type="importmap">{"imports":{"three":"./assets/vendor/three-r160/three.module.js","three/addons/":"./assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div class="app">
@@ -273,7 +277,7 @@ h1{font-size:clamp(36px,6vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-
     </div>
     <div class="board-wrap">
       <div id="boardShell" class="board-shell">
-        <canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">미니어처 탑다운 도시에서 모든 배달 도로를 한 번씩 지나 보세요 · 같은 교차로는 다시 지나도 돼요!<br>주황색은 완료한 도로, 📦 목적지는 방문하면 ✓로 바뀌어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
+        <canvas id="city3d" aria-hidden="true"></canvas><canvas id="gameCanvas" aria-label="모든 골목을 한 번씩 잇는 배달 지도"></canvas><div class="route-rule">미니어처 탑다운 도시에서 모든 배달 도로를 한 번씩 지나 보세요 · 같은 교차로는 다시 지나도 돼요!<br>주황색은 완료한 도로, 📦 목적지는 방문하면 ✓로 바뀌어요.</div><button id="skipDelivery" class="mini-toggle" hidden>배달 도착 보기</button>
         <div id="hintLabel" class="hint-label"></div>
         <div class="side-tools">
           <button id="undoBtn" class="tool-btn" aria-label="한 단계 되돌리기">
@@ -520,6 +524,18 @@ function rebuildGeometry(w,h){
  state.edges=state.stage.edges.map((e,i)=>({id:i,a:e[0],b:e[1],key:edgeKey(e[0],e[1])}));
  buildCityLandmarks(w,h);
  buildCityDecor(w,h);
+ publishCity3D(w,h);
+}
+function publishCity3D(w,h){
+  const layout={
+    w,h,theme:state.cityTheme,stageNum:state.stage?.num||1,
+    nodes:state.nodes.map(n=>({id:n.id,x:n.x,y:n.y})),
+    edges:state.edges.map(e=>({id:e.id,a:e.a,b:e.b})),
+    landmarks:state.cityLandmarks.map(l=>({...l})),
+    decor:state.cityDecor.map(o=>({...o}))
+  };
+  window.__oneStrokeCityLayout=layout;
+  window.dispatchEvent(new CustomEvent('one-stroke-city-layout',{detail:layout}));
 }
 function nodeById(id){return state.nodes[id]}
 function currentNode(){return state.path.length?state.path[state.path.length-1]:null}
@@ -668,6 +684,12 @@ function drawCityLandmarks(now){
     // A short driveway visually anchors every destination to its graph node.
     ctx.save();ctx.globalAlpha=night?.5:.58;ctx.strokeStyle=night?'#83929b':'#a8b0ad';ctx.lineWidth=Math.max(3,state.visualRadius*.26);ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(l.x,l.y);ctx.stroke();ctx.restore();
 
+    if(window.__oneStroke3DReady){
+      const labels={hub:'출발',goal:'도착',home:'집',shop:'상점',cafe:'카페',school:'학교',apartment:'아파트',park:'공원'};
+      drawParcelBadge(l.x,l.y-l.r*.74,done,labels[l.role]||'배달');
+      continue;
+    }
+
     if(l.role==='park'){
       const im=l.variant%2?cityAssets.treeLarge:cityAssets.treeSmall;
       const s=l.r*1.55;drawAsset(im,l.x-l.r*.3,l.y,s,s,0,night?.65:.95,l.flip);drawAsset(cityAssets.treeSmall,l.x+l.r*.35,l.y+l.r*.08,s*.78,s*.78,0,night?.58:.9,!l.flip);
@@ -773,6 +795,7 @@ function shadeColor(hex,amount){
   return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
 }
 function drawCityBackdrop(rect,now){
+  if(window.__oneStroke3DReady)return;
   const th=CITY_THEME[state.cityTheme]||CITY_THEME[1],night=state.cityTheme===5;
   ctx.fillStyle=th.ground;ctx.fillRect(0,0,rect.width,rect.height);
 
@@ -798,6 +821,7 @@ function drawCityBackdrop(rect,now){
   }
 }
 function drawCityDecor(now){
+  if(window.__oneStroke3DReady)return;
   const night=state.cityTheme===5,theme=CITY_THEME[state.cityTheme]||CITY_THEME[1];
   for(const o of state.cityDecor){
     if(o.kind==='building'){drawBuilding(o,theme,now);continue}
@@ -941,6 +965,7 @@ function toggleAssist(){save.assist=!save.assist;persist();syncToggles();if(save
 $('#homeBgm').onclick=toggleBgm;$('#bgmSwitch').onclick=toggleBgm;$('#homeSfx').onclick=toggleSfx;$('#sfxSwitch').onclick=toggleSfx;$('#assistSwitch').onclick=toggleAssist;
 
 window.addEventListener('resize',resizeCanvas);
+window.addEventListener('one-stroke-3d-ready',()=>{if(state.stage)draw()});
 window.addEventListener('keydown',e=>{
   if(!screens.game.classList.contains('active'))return;
   if(e.key==='Escape'){if($('#settingsModal').classList.contains('show'))$('#settingsModal').classList.remove('show');else if($('#successModal').classList.contains('show')){$('#successModal').classList.remove('show');state.blocked=false;showScreen('select')}else showScreen('select');return}
@@ -971,6 +996,7 @@ function pointSegmentDistance(p,a,b){const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p
 
 })();
 </script>
+<script type="module" src="./one-stroke-city-3d.js?v=1"></script>
 </body>
 </html>
 
