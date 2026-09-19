@@ -87,7 +87,7 @@
         <h1 class="text-4xl md:text-6xl font-black text-blue-400 title-font mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">
             <i class="ph-fill ph-shield-checkered text-blue-500"></i> 漢字 守護戰
         </h1>
-        <p class="text-slate-300 text-sm md:text-lg mb-3 max-w-lg">처음부터 모든 한자 마법을 사용할 수 있어요. 좋아하는 한자를 골라 쓰고, 경험치를 모아 각 마법을 성장시키세요!</p>
+        <p class="text-slate-300 text-sm md:text-lg mb-3 max-w-lg">8급 한자 50자를 처음부터 전부 사용할 수 있어요. 좋아하는 한자를 골라 쓰고, 경험치를 모아 각 마법을 성장시키세요!</p>
         <p class="text-[11px] md:text-sm text-cyan-300 mb-8 max-w-lg">낮은 레벨에서는 피해·범위·지속시간이 약하지만, 숙련 레벨이 오를수록 눈에 띄게 강해집니다.</p>
         <button id="btn-start-game" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.5)] transform hover:scale-105">
             게임 시작
@@ -178,7 +178,7 @@
             <!-- Unlocked Spells List -->
             <div class="w-full">
                 <h3 class="text-[10px] font-bold text-slate-500 mb-1.5 uppercase flex items-center gap-1">
-                    <i class="ph ph-scroll"></i> 전체 한자 마법첩 · 눌러서 선택
+                    <i class="ph ph-scroll"></i> 8급 50자 마법첩 · 눌러서 선택
                 </h3>
                 <div id="unlocked-list" class="flex flex-wrap gap-1.5 max-h-[110px] lg:max-h-[140px] overflow-y-auto pr-1">
                     <!-- Dynamic badges go here -->
@@ -435,8 +435,49 @@
             '生': { char: '生', meaning: '살 생', minLvl: 3, spell: '생명의 낙원', desc: '발밑에 6초간 영구적인 푸른 풀밭 영역을 소환하며, 영역 안에서 서 있으면 0.5초당 체력이 +3 회복됩니다.' },
             '力': { char: '力', meaning: '힘 력', minLvl: 4, spell: '신력의 투지', desc: '5초간 투지 버프를 걸어 이동 속도를 극도로 높이고 몸싸움 충돌 피해로 적을 갈아 마십니다.' },
             '石': { char: '石', meaning: '돌 석', minLvl: 3, spell: '강석의 방벽', desc: '궤도를 회전하는 3개의 단단한 바위 실드를 생성하며, 부딪히는 모든 원령을 짓이겨 연타합니다.' },
-            '光': { char: '光', meaning: '빛 광', minLvl: 4, spell: '천사의 섬광', desc: '화면을 온통 메우는 신성 섬광을 터뜨려 광폭 피해를 준 뒤 모든 원령을 4초간 완전히 마비시킵니다.' }
+            '光': { char: '光', meaning: '빛 광', minLvl: 4, spell: '천사의 섬광', desc: '화면을 온통 메우는 신성 섬광을 터뜨려 광폭 피해를 준 뒤 모든 원령을 4초간 완전히 마비시킵니다.' },
+
+            // 대한검정회/급수 학습용 8급 50자 중 기존 게임에 빠져 있던 글자들
+            '白': { char: '白', meaning: '흰 백', minLvl: 1, spell: '백광 산탄', desc: '하얀 빛탄을 사방으로 뿌립니다. 숙련될수록 빛탄의 위력과 크기가 커집니다.' },
+            '百': { char: '百', meaning: '일백 백', minLvl: 1, spell: '백화 연탄', desc: '많은 작은 광탄을 연속 발사해 가까운 원령 무리를 정리합니다.' },
+            '萬': { char: '萬', meaning: '일만 만', minLvl: 1, spell: '만상 유성우', desc: '주변 여러 지점에 유성을 떨어뜨리는 광역 마법입니다.' },
+            '父': { char: '父', meaning: '아비 부', minLvl: 1, spell: '든든한 수호', desc: '몸 주위에 보호 성역을 만들고 가까운 원령을 밀어냅니다.' },
+            '母': { char: '母', meaning: '어미 모', minLvl: 1, spell: '따뜻한 치유', desc: '체력을 회복하고 잠시 머물 수 있는 회복 영역을 만듭니다.' },
+            '兄': { char: '兄', meaning: '맏 형', minLvl: 1, spell: '형의 선봉', desc: '곁에서 함께 싸우는 수호 분신을 소환합니다.' },
+            '弟': { char: '弟', meaning: '아우 제', minLvl: 1, spell: '재빠른 지원', desc: '빠른 마력탄을 여러 방향으로 쏘아 빈틈을 메웁니다.' },
+            '男': { char: '男', meaning: '사내 남', minLvl: 1, spell: '용맹 돌진', desc: '짧은 시간 이동이 빨라지고 몸에 닿는 원령에게 피해를 줍니다.' },
+            '女': { char: '女', meaning: '계집 녀', minLvl: 1, spell: '유연 월무', desc: '부드럽게 휘어지는 초승달 참격 세 개를 펼칩니다.' },
+            '國': { char: '國', meaning: '나라 국', minLvl: 1, spell: '나라의 결계', desc: '넓은 수호 결계를 펼쳐 안으로 들어온 원령을 밀어내고 공격합니다.' },
+            '地': { char: '地', meaning: '땅 지', minLvl: 1, spell: '지맥 파동', desc: '땅을 타고 퍼지는 충격파로 주변 원령에게 피해와 짧은 기절을 줍니다.' },
+            '春': { char: '春', meaning: '봄 춘', minLvl: 1, spell: '봄빛 새싹', desc: '생명의 영역을 만들고 체력을 조금 회복합니다.' },
+            '夏': { char: '夏', meaning: '여름 하', minLvl: 1, spell: '한여름 화염', desc: '뜨거운 화염탄을 세 갈래로 발사합니다.' },
+            '秋': { char: '秋', meaning: '가을 추', minLvl: 1, spell: '낙엽 난무', desc: '낙엽처럼 회전하는 참격을 여러 방향으로 흩뿌립니다.' },
+            '冬': { char: '冬', meaning: '겨울 동', minLvl: 1, spell: '겨울 빙창', desc: '차가운 얼음탄을 사방으로 발사하고 가까운 원령을 잠시 얼립니다.' },
+            '東': { char: '東', meaning: '동녘 동', minLvl: 1, spell: '동녘 첫빛', desc: '오른쪽으로 곧게 뻗는 아침빛 광선을 발사합니다.' },
+            '西': { char: '西', meaning: '서녘 서', minLvl: 1, spell: '서녘 노을', desc: '왼쪽으로 길게 뻗는 노을빛 광선을 발사합니다.' },
+            '南': { char: '南', meaning: '남녘 남', minLvl: 1, spell: '남풍 화살', desc: '아래쪽으로 퍼지는 세 갈래 마력탄을 발사합니다.' },
+            '北': { char: '北', meaning: '북녘 북', minLvl: 1, spell: '북풍 빙결', desc: '위쪽으로 얼음탄을 쏘고 맞은 원령의 움직임을 잠시 멈춥니다.' },
+            '上': { char: '上', meaning: '윗 상', minLvl: 1, spell: '상승 검기', desc: '위쪽으로 솟구치는 강한 검기를 발사합니다.' },
+            '下': { char: '下', meaning: '아래 하', minLvl: 1, spell: '낙하 강타', desc: '아래쪽 목표 지점에 바위를 떨어뜨려 범위 피해를 줍니다.' },
+            '左': { char: '左', meaning: '왼 좌', minLvl: 1, spell: '좌측 일섬', desc: '왼쪽을 크게 베는 검기를 펼칩니다.' },
+            '右': { char: '右', meaning: '오른 우', minLvl: 1, spell: '우측 일섬', desc: '오른쪽을 크게 베는 검기를 펼칩니다.' },
+            '前': { char: '前', meaning: '앞 전', minLvl: 1, spell: '전진 파검', desc: '바라보는 방향 앞으로 강한 검기를 밀어냅니다.' },
+            '後': { char: '後', meaning: '뒤 후', minLvl: 1, spell: '후방 수호참', desc: '바라보는 방향의 뒤쪽을 베어 추격하는 원령을 막습니다.' },
+            '內': { char: '內', meaning: '안 내', minLvl: 1, spell: '내공 집속', desc: '안쪽으로 원령을 끌어당기는 작은 중력장을 만듭니다.' },
+            '外': { char: '外', meaning: '바깥 외', minLvl: 1, spell: '외곽 방출', desc: '바깥으로 퍼지는 큰 충격파를 만들어 원령을 밀어냅니다.' }
         };
+
+        const GRADE8_KEYS = [
+            '一','二','三','四','五','六','七','八','九','十',
+            '人','山','水','木','金','土','日','月','火','門',
+            '白','百','萬','父','母','兄','弟','男','女','國',
+            '天','地','春','夏','秋','冬','東','西','南','北',
+            '上','中','下','左','右','前','後','內','外','大'
+        ];
+        const GRADE8_EXPANSION = new Set([
+            '白','百','萬','父','母','兄','弟','男','女','國','地','春','夏','秋','冬',
+            '東','西','南','北','上','下','左','右','前','後','內','外'
+        ]);
 
         // ----------------------------------------------------
         // 게임 상태 엔진 핵심 변수
@@ -518,14 +559,14 @@
         const SPELL_MAX_LEVEL = 8;
         const spellXpNeeded = lvl => 18 + lvl * 16;
         function createInitialSpellStats() {
-            return Object.fromEntries(Object.keys(hanjaDB).map(char => [char, {
+            return Object.fromEntries(GRADE8_KEYS.map(char => [char, {
                 lvl: 1,
                 xp: 0,
                 xpNeeded: spellXpNeeded(1),
                 casts: 0
             }]));
         }
-        let unlockedChars = Object.keys(hanjaDB);
+        let unlockedChars = [...GRADE8_KEYS];
         let spellStats = createInitialSpellStats();
         let currentHanjaKey = '一';
         let writerInstance = null;
@@ -713,13 +754,170 @@
         // ----------------------------------------------------
         // 마법 캐스팅 로직 (한자 인식 정답 시 시전)
         // ----------------------------------------------------
+        function getSpellAimAngle() {
+            if (joystickActive) return Math.atan2(joystickCurrent.y - joystickStart.y, joystickCurrent.x - joystickStart.x);
+            if (enemies.length) {
+                let target = enemies[0], best = Infinity;
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x-player.x,e.y-player.y);
+                    if (d < best) { best=d; target=e; }
+                });
+                return Math.atan2(target.y-player.y,target.x-player.x);
+            }
+            return -Math.PI/2;
+        }
+
+        function castGrade8ExpansionSpell(char, spellPower, spellSize, spellEffect) {
+            const aim = getSpellAimAngle();
+            const addBolt = (ang, damage, color, speed=5.5, radius=7, duration=70) => {
+                projectiles.push({
+                    type:'projectile',x:player.x,y:player.y,
+                    vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,
+                    radius:radius*spellSize,damage:damage*spellPower,color,
+                    trailColor:color,duration
+                });
+            };
+            const addSlash = (ang, damage, color, width=120, height=22) => {
+                projectiles.push({
+                    type:'slash',x:player.x,y:player.y,angle:ang,
+                    width:width*spellSize,height:height*spellSize,
+                    duration:15,damage:damage*spellPower,color,
+                    hitEnemies:new Set(),followPlayer:true
+                });
+            };
+            const addBeam = (ang, damage, color='#fef3c7') => {
+                projectiles.push({
+                    type:'solar_beam',x:player.x,y:player.y,angle:ang,
+                    length:360*spellSize,width:24*spellSize,
+                    damage:damage*spellPower,duration:34,color
+                });
+            };
+
+            switch(char) {
+                case '白':
+                    for(let i=0;i<6;i++) addBolt(i*Math.PI/3,18,'#f8fafc',5.7,6,58);
+                    playSynthSound?.('crystal');
+                    break;
+                case '百':
+                    for(let i=0;i<10;i++) addBolt((i*Math.PI*2)/10,12,'#c4b5fd',6.2,5,68);
+                    playSynthSound?.('crystal');
+                    break;
+                case '萬':
+                    for(let i=0;i<6;i++){
+                        const target=enemies.length?enemies[Math.floor(Math.random()*enemies.length)]:null;
+                        const tx=target?.x ?? player.x+(Math.random()-.5)*260;
+                        const ty=target?.y ?? player.y+(Math.random()-.5)*260;
+                        projectiles.push({type:'meteor',x:tx,y:ty-280,targetY:ty,radius:18*spellSize,damage:34*spellPower,duration:95,color:'#a78bfa'});
+                    }
+                    triggerScreenShake(9); playSynthSound?.('earth');
+                    break;
+                case '父':
+                    projectiles.push({type:'sanctuary',x:player.x,y:player.y,radius:105*spellSize,damage:7*spellPower,duration:150});
+                    player.hitCooldown=Math.max(player.hitCooldown,Math.round(34*spellEffect));
+                    playSynthSound?.('earth');
+                    break;
+                case '母':
+                    player.hp=Math.min(player.maxHp,player.hp+Math.max(8,player.maxHp*.07*spellEffect));
+                    document.getElementById('hud-hp').textContent=`${Math.ceil(player.hp)}/${player.maxHp}`;
+                    projectiles.push({type:'life_zone',x:player.x,y:player.y,radius:105*spellSize,damage:3.5*spellPower,duration:180});
+                    spawnDamageText(player.x,player.y-26,'+회복','#86efac'); playSynthSound?.('water');
+                    break;
+                case '兄':
+                    allies.push({x:player.x+28,y:player.y,life:Math.round(360*spellEffect),fireCooldown:0,power:.72*spellPower});
+                    spawnExplosion(player.x,player.y,'#f9a8d4',10,3); playSynthSound?.('crystal');
+                    break;
+                case '弟':
+                    [-.55,-.18,.18,.55].forEach(o=>addBolt(aim+o,16,'#67e8f9',7.2,5,55));
+                    playSynthSound?.('slash');
+                    break;
+                case '男':
+                    player.forceTimer=Math.max(player.forceTimer,Math.round(105*spellEffect));
+                    player.forcePower=Math.max(player.forcePower,28*spellPower);
+                    spawnExplosion(player.x,player.y,'#fb923c',12,4); playSynthSound?.('fire');
+                    break;
+                case '女':
+                    [-.55,0,.55].forEach(o=>projectiles.push({
+                        type:'crescent',x:player.x,y:player.y,angle:aim+o,
+                        vx:Math.cos(aim+o)*6,vy:Math.sin(aim+o)*6,
+                        size:24*spellSize,damage:22*spellPower,color:'#f9a8d4',duration:62,hitEnemies:new Set()
+                    }));
+                    playSynthSound?.('slash');
+                    break;
+                case '國':
+                    projectiles.push({type:'sanctuary',x:player.x,y:player.y,radius:145*spellSize,damage:8*spellPower,duration:190});
+                    spawnExplosion(player.x,player.y,'#60a5fa',14,4); playSynthSound?.('earth');
+                    break;
+                case '地':
+                    projectiles.push({type:'earthquake',x:player.x,y:player.y,radius:0,maxRadius:165*spellSize,damage:24*spellPower,color:'#a16207',duration:32});
+                    enemies.forEach(e=>{if(Math.hypot(e.x-player.x,e.y-player.y)<150*spellSize)e.stunTimer=Math.max(e.stunTimer||0,Math.round(42*spellEffect));});
+                    playSynthSound?.('earth');
+                    break;
+                case '春':
+                    player.hp=Math.min(player.maxHp,player.hp+6*spellEffect);
+                    document.getElementById('hud-hp').textContent=`${Math.ceil(player.hp)}/${player.maxHp}`;
+                    projectiles.push({type:'life_zone',x:player.x,y:player.y,radius:120*spellSize,damage:3*spellPower,duration:210});
+                    spawnExplosion(player.x,player.y,'#86efac',12,3); playSynthSound?.('water');
+                    break;
+                case '夏':
+                    [-.34,0,.34].forEach(o=>projectiles.push({
+                        type:'fireball',x:player.x,y:player.y,
+                        vx:Math.cos(aim+o)*5.6,vy:Math.sin(aim+o)*5.6,
+                        radius:11*spellSize,damage:26*spellPower,color:'#fb923c',duration:72
+                    }));
+                    playSynthSound?.('fire');
+                    break;
+                case '秋':
+                    for(let i=0;i<6;i++){const a=aim+(i-2.5)*.28;projectiles.push({
+                        type:'crescent',x:player.x,y:player.y,angle:a,
+                        vx:Math.cos(a)*5.8,vy:Math.sin(a)*5.8,size:20*spellSize,
+                        damage:18*spellPower,color:'#f59e0b',duration:62,hitEnemies:new Set()
+                    });}
+                    playSynthSound?.('slash');
+                    break;
+                case '冬':
+                    for(let i=0;i<8;i++) addBolt((i*Math.PI*2)/8,14,'#7dd3fc',5.2,6,62);
+                    enemies.forEach(e=>{if(Math.hypot(e.x-player.x,e.y-player.y)<125*spellSize)e.stunTimer=Math.max(e.stunTimer||0,Math.round(34*spellEffect));});
+                    playSynthSound?.('crystal');
+                    break;
+                case '東': addBeam(0,13,'#fde68a'); playSynthSound?.('crystal'); break;
+                case '西': addBeam(Math.PI,13,'#fb7185'); playSynthSound?.('crystal'); break;
+                case '南':
+                    [-.32,0,.32].forEach(o=>addBolt(Math.PI/2+o,18,'#fb923c',6,6,65));
+                    playSynthSound?.('fire'); break;
+                case '北':
+                    [-.28,0,.28].forEach(o=>addBolt(-Math.PI/2+o,16,'#93c5fd',6.2,6,65));
+                    enemies.forEach(e=>{if(e.y<player.y&&Math.abs(e.x-player.x)<125*spellSize)e.stunTimer=Math.max(e.stunTimer||0,Math.round(28*spellEffect));});
+                    playSynthSound?.('crystal'); break;
+                case '上': addSlash(-Math.PI/2,30,'#c4b5fd',150,20); playSynthSound?.('slash'); break;
+                case '下': {
+                    const tx=player.x,ty=player.y+105*spellSize;
+                    projectiles.push({type:'meteor',x:tx,y:ty-270,targetY:ty,radius:24*spellSize,damage:38*spellPower,duration:88,color:'#78716c'});
+                    playSynthSound?.('earth'); break;
+                }
+                case '左': addSlash(Math.PI,30,'#60a5fa',150,21); playSynthSound?.('slash'); break;
+                case '右': addSlash(0,30,'#34d399',150,21); playSynthSound?.('slash'); break;
+                case '前': addSlash(aim,34,'#fbbf24',170,22); playSynthSound?.('slash'); break;
+                case '後': addSlash(aim+Math.PI,31,'#a78bfa',155,22); playSynthSound?.('slash'); break;
+                case '內':
+                    projectiles.push({type:'blackhole',x:player.x,y:player.y,radius:115*spellSize,damage:5*spellPower,duration:125});
+                    playSynthSound?.('earth'); break;
+                case '外':
+                    projectiles.push({type:'earthquake',x:player.x,y:player.y,radius:0,maxRadius:215*spellSize,damage:20*spellPower,color:'#38bdf8',duration:34});
+                    enemies.forEach(e=>{
+                        const d=Math.hypot(e.x-player.x,e.y-player.y);
+                        if(d<185*spellSize&&d>0){const a=Math.atan2(e.y-player.y,e.x-player.x);e.x+=Math.cos(a)*22*spellEffect;e.y+=Math.sin(a)*22*spellEffect;}
+                    });
+                    playSynthSound?.('water'); break;
+            }
+        }
+
         function castHanjaSpell() {
             const char = currentHanjaKey;
             
             const sLvl = spellStats[char]?.lvl || 1;
             const growth = getSpellGrowth(char);
             const spellPower = player.power * growth.damage;
-            const spellSize = spellSize * growth.range;
+            const spellSize = player.sizeMult * growth.range;
             const spellEffect = growth.effect;
             const castStartIndex = projectiles.length;
             player.castFlashTimer = 16;
@@ -1408,6 +1606,10 @@
                 });
             }
 
+            else if (GRADE8_EXPANSION.has(char)) {
+                castGrade8ExpansionSpell(char, spellPower, spellSize, spellEffect);
+            }
+
             // Newly created effects also gain duration/effect strength as mastery grows.
             projectiles.slice(castStartIndex).forEach(p => {
                 if (Number.isFinite(p.duration)) p.duration = Math.max(8, Math.round(p.duration * spellEffect));
@@ -1449,7 +1651,7 @@
         }
 
         function nextHanjaTarget() {
-            if (!hanjaDB[currentHanjaKey]) currentHanjaKey = Object.keys(hanjaDB)[0];
+            if (!hanjaDB[currentHanjaKey]) currentHanjaKey = GRADE8_KEYS[0];
             selectHanja(currentHanjaKey, false);
         }
 
@@ -1488,7 +1690,7 @@
         function renderUnlockedBadges() {
             const listDiv = document.getElementById('unlocked-list');
             listDiv.innerHTML = '';
-            Object.keys(hanjaDB).forEach(key => {
+            GRADE8_KEYS.forEach(key => {
                 const spec = hanjaDB[key];
                 const stat = spellStats[key] || {lvl:1,xp:0,xpNeeded:spellXpNeeded(1)};
                 const selected = key === currentHanjaKey;
@@ -1535,7 +1737,7 @@
                 });
             }
 
-            const candidates = Object.keys(hanjaDB)
+            const candidates = GRADE8_KEYS
                 .filter(ch => ch !== current && spellStats[ch].lvl < SPELL_MAX_LEVEL)
                 .sort((a,b) => {
                     const sa=spellStats[a],sb=spellStats[b];
@@ -2726,7 +2928,7 @@
             orbitalStones = [];
             allies = [];
             
-            unlockedChars = Object.keys(hanjaDB);
+            unlockedChars = [...GRADE8_KEYS];
             spellStats = createInitialSpellStats();
             currentHanjaKey = '一';
 
