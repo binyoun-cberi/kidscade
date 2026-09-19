@@ -555,7 +555,9 @@
             const earned = 10 + (combo * 2);
             score += earned;
             combo++;
-            showMsg(`나이스! (+${earned}점)`);
+            const correctBin = BINS.find(b => b.id === heldTrash.type).name;
+            const learn = heldTrash.reason || `${heldTrash.name} → ${correctBin}`;
+            showMsg(`정답! ${learn} (+${earned}점)`);
             addFloatText(`+${earned}`, rect.left + rect.width/2, rect.top, 'text-green-400');
         } else {
             // 오답
