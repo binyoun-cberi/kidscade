@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=1';
+import {createTownEconomy} from './kidscade-world-economy.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -205,7 +207,9 @@ const FOOD_DEF={
   grilledFish:{name:'구운 생선',hunger:34,energy:10},
   bakedPotato:{name:'구운 감자',hunger:25,energy:6},
   veggieSoup:{name:'채소 수프',hunger:42,energy:12},
-  mushroomSoup:{name:'버섯 수프',hunger:38,energy:10}
+  mushroomSoup:{name:'버섯 수프',hunger:38,energy:10},
+  cityLunch:{name:'도시락',hunger:46,energy:14},
+  cafeToast:{name:'카페 토스트',hunger:28,energy:9}
 };
 const RECIPES={
   grilledFish:{name:'구운 생선',req:{fish:1}},
@@ -383,7 +387,7 @@ const player={
   speed:5.1
 };
 function isBlocked(nx,nz){
-  const bounds=mode==='outdoor'?{x1:-30,x2:30,z1:-22,z2:22}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
+  const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
   return colliders[mode].some(c=>nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
@@ -399,7 +403,8 @@ function doInteract(){if(near)near.action()}
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
   const x=player.x,z=player.z;
-  if(x<-18)zoneEl.textContent='깊은 숲 · 목재·버섯';
+  if(z>23)zoneEl.textContent='씨앗마을 중심가 · 장보기·일·놀이';
+  else if(x<-18)zoneEl.textContent='깊은 숲 · 목재·버섯';
   else if(x>18)zoneEl.textContent='돌산 · 돌·철광석';
   else if(z<-12)zoneEl.textContent='북쪽 강가 · 다리';
   else if(z>12)zoneEl.textContent='남쪽 야영지 · 모닥불';
@@ -496,8 +501,8 @@ async function addGroundPickup(id,kind,x,z){
 }
 async function buildOutdoor(){
   // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
-  plane(outdoor,0,0,64,46,0x7caf63,0);
-  box(outdoor,0,0,64,46,.22,0x6c9657,-.22);
+  plane(outdoor,0,5,68,72,0x7caf63,0);
+  box(outdoor,0,5,68,72,.22,0x6c9657,-.22);
 
   // Distinct connected biomes around the safe home region.
   plane(outdoor,-24,0,12,44,0x4f8050,.015);       // deep forest
@@ -516,6 +521,7 @@ async function buildOutdoor(){
   box(outdoor,-20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
   box(outdoor,20.6,.7,10.5,1.8,.09,0xc6b88e,.03);
   box(outdoor,0,11.8,1.8,10.5,.09,0xc6b88e,.03);
+  box(outdoor,0,21.0,2.2,10.5,.09,0xd0c297,.03);
   box(outdoor,0,-10.8,1.8,8.0,.09,0xc6b88e,.03);
 
   // Signposts make the connected regions discoverable without a map menu.
