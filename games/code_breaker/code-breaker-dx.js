@@ -19,6 +19,20 @@ let currentTurn = 'PLAYER', turnState = 'WAIT', newlyDrawnTile = null, targetTil
 let aiDifficulty = 'hard', audioEnabled = true, cpuFocusId = null, gameStarted = false;
 let actionToken = 0;
 
+const BOARD_SFX={
+  draw:'assets/game/audio/boardgame/cardSlide1.ogg',
+  place:'assets/game/audio/boardgame/cardPlace1.ogg',
+  chip:'assets/game/audio/boardgame/chipsCollide1.ogg'
+};
+const boardAudioCache={};
+function boardSfx(kind,volume=.32){
+  if(!audioEnabled)return;
+  try{
+    const src=BOARD_SFX[kind]; if(!src)return;
+    const a=boardAudioCache[kind]||(boardAudioCache[kind]=new Audio(src));
+    a.pause();a.currentTime=0;a.volume=volume;a.play().catch(()=>{});
+  }catch(_){}
+}
 function audio(key, options={}) {
   if (!audioEnabled) return;
   try { window.KidscadeAudio?.play?.(key, options); } catch (_) {}
@@ -201,6 +215,7 @@ function submitGuess(number) {
     renderBoard();
     const node=els.cpu.querySelector(`[data-id="${tile.id}"]`);
     node?.classList.add('flash-good');
+    boardSfx('chip',.38);
     audio('success.cheer_yay',{volume:.28,cooldownMs:300});
     toast('암호 적중');
     if(checkWin()) return;
@@ -235,6 +250,7 @@ function closeRevealNotice(){ closeModal(els.revealModal); }
 
 function passTurn() {
   closeModal(els.actionModal);
+  boardSfx('place',.3);
   if(newlyDrawnTile){ newlyDrawnTile.isNew=false; newlyDrawnTile=null; }
   cpuFocusId=null; renderBoard(); startCpuTurn();
 }
@@ -247,6 +263,7 @@ function handleDeckClick() {
   if(currentTurn!=='PLAYER' || turnState!=='DRAW' || !deck.length) return;
   newlyDrawnTile=drawTile(playerHand);
   renderBoard();
+  boardSfx('draw',.34);
   audio('collect.coin_pickup',{volume:.18,rate:1.08,cooldownMs:120});
   turnState='GUESS'; setStep('guess'); setStatus('AI의 숨은 타일 하나를 선택하세요.'); renderBoard();
 }
@@ -284,7 +301,7 @@ function startCpuTurn() {
   setTimeout(()=>{
     if(token!==actionToken)return;
     newlyDrawnTile=deck.length?drawTile(cpuHand):null;
-    renderBoard(); audio('collect.coin_pickup',{volume:.12,rate:.94,cooldownMs:150});
+    renderBoard(); boardSfx('draw',.24); audio('collect.coin_pickup',{volume:.12,rate:.94,cooldownMs:150});
     setStep('guess'); setStatus('AI가 내 암호열을 분석 중입니다.');
     setTimeout(()=>cpuGuess(token),650);
   },520);
