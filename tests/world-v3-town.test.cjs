@@ -116,6 +116,20 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=4/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=4/);
-  assert.match(html,/kidscade-world-v3\.js\?v=6/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=6/);
+  assert.match(html,/kidscade-world-v3\.js\?v=7/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=7/);
+});
+
+
+test('starter resources provide six hand pickups per material and one-time guidance',()=>{
+  assert.equal((runtime.match(/addGroundPickup\('starter-wood-/g)||[]).length,6);
+  assert.equal((runtime.match(/addGroundPickup\('starter-stone-/g)||[]).length,6);
+  assert.match(runtime,/GROUND_PICKUP_RESPAWN_MS=45000/);
+  assert.match(runtime,/function showStarterHintOnce\(\)/);
+  assert.match(runtime,/showStarterHintOnce\(\);/);
+  assert.match(runtime,/starterHintSeen/);
+  assert.match(storage,/starterHintSeen:false/);
+  assert.match(runtime,/초보자 보급: 목재 \+5 · 돌 \+5/);
+  assert.match(runtime,/돌도끼[\s\S]*wood:3,stone:2/);
+  assert.match(runtime,/돌곡괭이[\s\S]*wood:2,stone:3/);
 });
