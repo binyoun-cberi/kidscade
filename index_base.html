@@ -247,6 +247,7 @@
                                 </div>
                                 <div class="avatar-plaza-actions">
                                     <button class="avatar-open-btn" id="avatar-open-btn" type="button">👕 캐릭터 꾸미기</button>
+                                    <button class="kc-side-btn" id="btn-open-shop" type="button" data-open-life-world="profile-world">🌱 씨앗 월드</button>
                                             <div class="avatar-plaza-seeds" id="avatar-plaza-seeds">🌱 0 씨앗 보유</div>
                                 </div>
                             </div>
@@ -275,7 +276,6 @@
                         <div class="kc-pet-talk" id="sidebar-pet-talk">별도 정원 없이 생활·생존 월드 안에서 펫을 만나요.</div>
                         <div class="kc-side-actions">
                             <button class="kc-side-btn" id="sidebar-recommend" type="button">💬 추천</button>
-                            <button class="kc-side-btn" id="btn-open-shop" type="button" data-open-life-world="profile-world">🌱 씨앗 월드</button>
                         </div>
                     </section>
 
@@ -2147,7 +2147,6 @@ ${getEvolutionHintText()}
                 updatePetUI();
                 if (tabName === 'recommend') startPetTalk();
             }
-            document.getElementById('sidebar-pet-open')?.addEventListener('click', (e) => { e.stopPropagation(); openSookFromSidebar('room'); });
             document.getElementById('sidebar-recommend')?.addEventListener('click', (e) => { e.stopPropagation(); openSookFromSidebar('recommend'); });
             document.getElementById('sidebar-mission-card')?.addEventListener('click', () => openSookFromSidebar('missions'));
             document.getElementById('sidebar-mission-card')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSookFromSidebar('missions'); } });
