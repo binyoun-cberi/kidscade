@@ -20,6 +20,7 @@ const MODEL={
  can:asset('food/soda-can.glb'),
  tin:asset('food/can.glb'),
  cup:asset('food/cup.glb'),
+ bowl:asset('food/bowl-soup.glb'),
  carton:asset('food/carton.glb'),
  cartonSmall:asset('food/carton-small.glb'),
  bag:asset('food/bag.glb'),
@@ -30,13 +31,12 @@ const MODEL={
  orange:asset('food/orange.glb'),
  egg:asset('food/egg-half.glb'),
  onion:asset('food/onion-half.glb'),
- leek:asset('food/leek.glb'),
- bones:asset('food/fish-bones.glb')
+ leek:asset('food/leek.glb')
 };
 const TRASH_MODEL={
- g1:'cup',p1:'bottle',p2:'cartonSmall',p3:'oilBottle',p4:'cup',
+ g1:'bowl',p1:'bottle',p2:'cartonSmall',p3:'oilBottle',p4:'cup',
  c1:'can',c2:'tin',c3:'bottle',c4:'bottle',pa1:'pizzaBox',pa3:'carton',pa4:'bag',
- f1:'apple',f2:'banana',f3:'bread',f4:'orange',g5:'bones',g6:'egg',g9:'onion',g10:'leek'
+ f1:'apple',f2:'banana',f3:'bread',f4:'orange',g6:'egg',g9:'onion',g10:'leek'
 };
 let scene,camera,renderer,loader,truck=null,truckWheels=[],models=new Map(),running=false,ready=false;
 let roadTiles=[],laneMarks=[],scenery=[],trashEntries=[],speed=.095,last=performance.now(),flash=0,shake=0;
@@ -80,6 +80,8 @@ function proceduralTrash(data){
    const h=box(1.05,.12,.16,0x45a5d9);h.position.y=.13;g.add(h);const b=box(.26,.22,.24,0xf4f4ef);b.position.set(.57,.2,0);g.add(b);for(let i=0;i<4;i++){const br=box(.025,.18,.025,0xeef7ff);br.position.set(.48+i*.045,.38,0);g.add(br)}
  }else if(id==='g4'){
    for(let i=0;i<5;i++){const geo=new THREE.ConeGeometry(.18+.04*Math.random(),.45+.18*Math.random(),3);const m=new THREE.Mesh(geo,new THREE.MeshPhysicalMaterial({color:0xbdefff,transparent:true,opacity:.62,roughness:.08,metalness:0,transmission:.15}));m.position.set((i-2)*.13,.18,((i%2)-.5)*.18);m.rotation.set(Math.random(),Math.random(),Math.random());g.add(m)}
+ }else if(id==='g5'){
+   const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.11,.13,.72,14),mat(0xeee2c7));shaft.rotation.z=Math.PI/2;shaft.position.y=.24;g.add(shaft);for(const x of[-.39,.39])for(const z of[-.09,.09]){const end=new THREE.Mesh(new THREE.SphereGeometry(.15,12,10),mat(0xeee2c7));end.position.set(x,.24,z);g.add(end)}
  }else if(id==='g7'){
    for(const x of[-.14,.14]){const s=new THREE.Mesh(new THREE.SphereGeometry(.3,16,10),mat(0xd9c2a0));s.scale.set(1,.28,.8);s.position.set(x,.12,0);s.rotation.z=x<0?.28:-.28;g.add(s)}
  }else if(id==='g8'){
