@@ -42,5 +42,6 @@ test('Outdoor ground uses tiled terrain with BQ3 fallback',()=>{
   assert.match(world,/K\.TinyTiles\?\.onReady/);
 });
 
-test('World v2 entry is cache-bumped after terrain pass',()=>{
+test('World v2 terrain pass remains available in the stability fallback',()=>{
+  assert.match(world,/kidscade-world-tiny-tiles\.js\?v=1/);
 });
