@@ -66,17 +66,20 @@ function makeLabel(text,{width=2.2,height=.52,font=38}={}){
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
   const base=await ctx.loadGLB(NPC_MODELS[id]);
-  const object=ctx.prepModel(base.clone(true));
-  object.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3());
-  const scale=1.68/Math.max(.01,size.y);
-  object.scale.multiplyScalar(scale);object.updateMatrixWorld(true);
-  const b=new THREE.Box3().setFromObject(object);
-  const groundY=-b.min.y;object.position.set(x,groundY,z);
-  ctx.parent.add(object);
+  const model=ctx.prepModel(base.clone(true));
+  model.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+  const scale=1.82/Math.max(.01,size.y);
+  model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(model);
+  model.position.set(0,-b.min.y,0);
+  const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,20),new THREE.MeshBasicMaterial({color:0x263126,transparent:true,opacity:.18,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.008;anchor.add(shadow);
+  ctx.parent.add(anchor);
   const tag=label?makeLabel(name,{width:1.2,height:.30,font:32}):null;
-  if(tag){tag.position.set(x,groundY+2.02,z);tag.visible=false;ctx.parent.add(tag)}
-  return {id,name,object,label:tag,interaction:null,homeX:x,homeZ:z,groundY,r:radius,role,phase:(id.length*1.37)%6.2};
+  if(tag){tag.position.set(x,2.12,z);tag.visible=false;ctx.parent.add(tag)}
+  return {id,name,object:anchor,model,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2};
 }
 
 function overlaps(a,b,pad=.08){
@@ -232,8 +235,8 @@ export async function buildKidscadeCity(ctx){
         n.object.position.z+=dz*Math.min(1,dt*.72);
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
         const walking=Math.abs(dx)+Math.abs(dz)>.025;
-        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.025:0);
-        if(n.label){n.label.position.set(n.object.position.x,n.groundY+2.02,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
+        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.018:0);
+        if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
         if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
     }
