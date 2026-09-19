@@ -545,9 +545,11 @@ function evaluate(){
 function settleCustomer(result){
   const payRate=result.points>=90?1:result.points>=60?.85:.6;
   const baseRevenue=Math.max(0,Math.round(result.price*payRate/100)*100);
-  const tip=result.points>=115?Math.round((result.price*.08*(state.patience/100))/100)*100:result.points>=95?300:0;
+  const tipBase=result.points>=115?result.price*.08*(state.patience/100):result.points>=95?300:0;
+  const tip=Math.round((tipBase*(state.order?.tipMult||1))/100)*100;
   const revenue=baseRevenue+tip;
-  const repDelta=result.points>=115?3:result.points>=90?1:result.points<60?-3:0;
+  const rawRep=result.points>=115?3:result.points>=90?1:result.points<60?-3:0;
+  const repDelta=Math.round(rawRep*(state.order?.repMult||1));
   state.cash+=revenue;state.dayRevenue+=revenue;state.dayCogs+=result.cogs;
   state.reputation=Math.max(0,Math.min(100,state.reputation+repDelta));
   return{revenue,tip,repDelta,profit:revenue-result.cogs};
@@ -593,14 +595,14 @@ function upgradeCost(key){
 function restockIngredient(id,amount=3){
   const ing=ingredientById(id),cap=stockCapacity(),gap=Math.max(0,cap-(state.stock[id]||0)),qty=Math.min(amount,gap);
   if(!qty)return toast(ing.name+' 재고가 가득 찼어요');
-  const cost=ing.cost*qty;
+  const cost=purchaseUnitCost(ing)*qty;
   if(state.cash<cost)return toast('현금이 부족해요 · 필요 ₩'+cost.toLocaleString());
   state.cash-=cost;state.stock[id]=(state.stock[id]||0)+qty;renderManagement();updateReadout();sfx('shop.purchase',{volume:.2,cooldownMs:120});
 }
 function restockAll(){
   const cap=stockCapacity();
-  const need=INGREDIENTS.map(ing=>({ing,qty:Math.max(0,cap-(state.stock[ing.id]||0))}));
-  const cost=need.reduce((sum,x)=>sum+x.ing.cost*x.qty,0);
+  const need=activeIngredients().map(ing=>({ing,qty:Math.max(0,cap-(state.stock[ing.id]||0))}));
+  const cost=need.reduce((sum,x)=>sum+purchaseUnitCost(x.ing)*x.qty,0);
   if(!cost)return toast('모든 재고가 가득 찼어요');
   if(state.cash<cost)return toast('전체 보충 비용 ₩'+cost.toLocaleString()+'이 필요해요');
   state.cash-=cost;for(const {ing,qty} of need)state.stock[ing.id]+=qty;
@@ -616,9 +618,9 @@ function renderManagement(){
   els.manageTitle.textContent=`${state.day}일차 결산`;
   els.manageSummary.innerHTML=`<div><span>매출</span><b>₩${state.dayRevenue.toLocaleString()}</b></div><div><span>재료원가</span><b>₩${state.dayCogs.toLocaleString()}</b></div><div><span>폐기손실</span><b>₩${state.dayWaste.toLocaleString()}</b></div><div><span>영업이익</span><b>₩${profit.toLocaleString()}</b></div><div><span>평판</span><b>${Math.round(state.reputation)}</b></div><div><span>이탈 손님</span><b>${state.dayWalkouts}</b></div>`;
   const cap=stockCapacity();els.stockRows.innerHTML='';
-  for(const ing of INGREDIENTS){
+  for(const ing of activeIngredients()){
     const row=document.createElement('div');row.className='stock-row';
-    const qty=Math.min(3,Math.max(0,cap-(state.stock[ing.id]||0))),cost=qty*ing.cost;
+    const qty=Math.min(3,Math.max(0,cap-(state.stock[ing.id]||0))),cost=qty*purchaseUnitCost(ing);
     row.innerHTML=`<span>${ing.name}</span><b>${state.stock[ing.id]||0} / ${cap}</b><button type="button" ${qty?'':'disabled'}>+${qty||0} · ₩${cost.toLocaleString()}</button>`;
     row.querySelector('button').addEventListener('click',()=>restockIngredient(ing.id,3));els.stockRows.appendChild(row);
   }
@@ -627,33 +629,46 @@ function renderManagement(){
     if(el)el.textContent=lv>=u.max?'MAX':`Lv.${lv} → ${lv+1} · ₩${upgradeCost(key).toLocaleString()}`;
     const btn=document.querySelector(`[data-upgrade="${key}"]`);if(btn)btn.disabled=lv>=u.max;
   }
+  if(els.tomorrowEvent&&state.nextEvent){
+    const unlocks=dayUnlocks(state.day+1);
+    const unlockText=unlocks.length?` · 신규 재료: ${unlocks.map(x=>x.name).join(', ')}`:'';
+    els.tomorrowEvent.innerHTML=`<b>내일 예보 · ${state.nextEvent.title}</b><span>${state.nextEvent.desc}${unlockText}</span>`;
+  }
   updateReadout();
 }
 function finishCampaign(){
   state.completed=true;stopPatience();setPhase('idle');
   const rating=state.reputation>=75?'동네 인기 맛집':state.reputation>=55?'안정적인 마라탕집':'다시 손봐야 할 가게';
-  els.resultKicker.textContent='5일 타이쿤 결과';els.resultTitle.textContent=rating;
+  els.resultKicker.textContent='15일 타이쿤 결과';els.resultTitle.textContent=rating;
   els.resultScore.textContent=Math.round(state.cash).toLocaleString();els.resultUnit.textContent='원';els.resultText.textContent=`최종 현금 ₩${Math.round(state.cash).toLocaleString()} · 평판 ${Math.round(state.reputation)} · 총 손님 ${state.served}명`;
   els.nextBtn.textContent='새 가게 시작';els.resultOverlay.classList.add('show');sfx('success.victory_fanfare',{volume:.42,cooldownMs:1200});
 }
 function finishDay(){
   stopPatience();setPhase('idle');
   if(state.day>=CAMPAIGN_DAYS)return finishCampaign();
+  state.nextEvent=chooseDailyEvent(state.day+1);
   renderManagement();els.manageOverlay.classList.add('show');
 }
 function startNextDay(){
   els.manageOverlay.classList.remove('show');state.day++;state.dayServed=0;state.dayRevenue=0;state.dayCogs=0;state.dayWaste=0;state.dayWalkouts=0;
-  state.dayTarget=customersForDay();state._orderDeck=shuffle(ORDERS);updateReadout();beginCustomer();
+  state.event=state.nextEvent||chooseDailyEvent(state.day);state.nextEvent=null;
+  const unlocked=unlockIngredientsForDay(state.day);
+  state.dayTarget=customersForDay();state._orderDeck=makeOrderDeck();updateReadout();
+  if(unlocked.length)toast('신규 재료 해금 · '+unlocked.map(x=>x.name).join(', '));
+  beginCustomer();
 }
 function beginCustomer(){
   state.bowl=[];state.spice=null;state.cookProgress=0;state.readyAt=0;scene.clearBowl();
-  if(!state._orderDeck||!state._orderDeck.length)state._orderDeck=shuffle(ORDERS);
-  const order=state._orderDeck.pop();state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setOrder(order);updateReadout();setPhase('shopping');startPatience();
+  if(!state._orderDeck||!state._orderDeck.length)state._orderDeck=makeOrderDeck();
+  const base=state._orderDeck.pop()||ORDERS[0],order=makeCustomerOrder(base);
+  state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setOrder(order);updateReadout();setPhase('shopping');startPatience();
 }
 function startGame(){
   state.score=0;state.served=0;state.day=1;state.dayServed=0;state.cash=START_CASH;state.reputation=50;state.completed=false;
   state.dayRevenue=0;state.dayCogs=0;state.dayWaste=0;state.dayWalkouts=0;state.upgrades={fridge:0,burner:0,service:0,marketing:0};
-  state.stock=Object.fromEntries(INGREDIENTS.map(i=>[i.id,BASE_STOCK]));state.dayTarget=customersForDay();state._orderDeck=shuffle(ORDERS);
+  state.event=DAILY_EVENTS[0];state.nextEvent=null;state.lastEventId=null;state.unlockedToday=[];
+  state.stock=Object.fromEntries(INGREDIENTS.map(i=>[i.id,i.unlockDay===1?BASE_STOCK:0]));
+  state.dayTarget=customersForDay();state._orderDeck=makeOrderDeck();
   els.startOverlay.classList.remove('show');updateReadout();beginCustomer();
 }
 
