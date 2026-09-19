@@ -255,7 +255,7 @@
     if (title) title.textContent = '내 공간';
 
     const petOpen = document.getElementById('sidebar-pet-open');
-    if (petOpen) petOpen.textContent = '🐾 쑥쑥랜드';
+    if (petOpen) petOpen.textContent = '🐾 Cube Pets 월드';
 
     const shop = document.getElementById('btn-open-shop');
     if (shop) shop.textContent = '🛒 상점';
@@ -271,6 +271,10 @@
   }
 
   function openSookTab(tab) {
+    if (tab === 'room') {
+      window.openKidscadeLifeWorld?.();
+      return;
+    }
     document.getElementById('pet-widget')?.click();
     requestAnimationFrame(() => {
       document.querySelector(`.sook-main-tab[data-sook-tab="${tab}"]`)?.click();
