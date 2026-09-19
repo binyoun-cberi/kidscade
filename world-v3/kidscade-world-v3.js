@@ -186,11 +186,12 @@ function prog(){
     lastTick:Number(old.lastTick)||Date.now()
   };
   const rawPets=p.cubePets&&typeof p.cubePets==='object'?p.cubePets:{};
+  const legacyCompanion={rabbit:'bunny',miniPig:'pig'}[old.companion]||old.companion||'';
   p.cubePets={
     version:1,
     owned:Array.isArray(rawPets.owned)?rawPets.owned.filter(id=>CUBE_PETS[id]):[],
     met:Array.isArray(rawPets.met)?rawPets.met.filter(id=>CUBE_PETS[id]):[],
-    companion:CUBE_PETS[rawPets.companion]?rawPets.companion:'',
+    companion:CUBE_PETS[rawPets.companion]?rawPets.companion:(CUBE_PETS[legacyCompanion]?legacyCompanion:''),
     migratedLegacy:!!rawPets.migratedLegacy
   };
   return p;
@@ -705,8 +706,6 @@ function migrateLegacyCubePets(){
     const raw=JSON.parse(localStorage.getItem('kidscade_sook_canvas_pet')||'null');
     for(const id of Array.isArray(raw?.unlockedPets)?raw.unlockedPets:[]){const next=mapId(id);if(next)mapped.add(next)}
   }catch(_){}
-  const oldCompanion={rabbit:'bunny',miniPig:'pig'}[p.survival?.companion]||p.survival?.companion;
-  if(CUBE_PETS[oldCompanion])state.companion=oldCompanion;
   mapped.add('dog');
   state.owned=[...mapped].filter(id=>CUBE_PETS[id]);
   state.met=[...new Set([...(state.met||[]),...state.owned])];
