@@ -358,7 +358,7 @@
     const title = modal.querySelector('.sook-coach-header > span');
     const mode = activeSookPanel();
     const labels = {
-      room: ['🌱 쑥쑥랜드', '쑥쑥랜드'],
+      room: ['🐾 Cube Pets 월드', 'Cube Pets 월드'],
       missions: ['🎯 오늘의 미션', '오늘의 미션'],
       recommend: ['💬 게임 추천', '게임 추천']
     };
