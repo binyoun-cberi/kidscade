@@ -54,6 +54,14 @@ World v2는 이제 단순 애니메이션 데모가 아니라 아래 순환이 �
 - 책장 읽기
 - 행동 중 이동 잠금 / ESC 취소
 
+### 야외 Survival Kit 에셋 패스
+- 나무 / 바위: Kenney Survival Kit 모델을 2D 스프라이트로 렌더링
+- 벌목 / 채광 흔들림·파괴 판정·리스폰 로직 유지
+- 목재 / 돌 드롭과 손에 든 운반물도 Survival Kit 자원 모델 사용
+- 보관 상자와 제작대를 Survival Kit 오브젝트로 교체
+- 돌도끼 / 철도끼, 돌곡괭이 / 철곡괭이를 실제 도구 모델로 교체
+- WebGL 또는 모델 로딩 실패 시 기존 픽셀 렌더 자동 폴백
+
 ### 야외 작업
 `kidscade-world-work-animation.js`
 
