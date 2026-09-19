@@ -79,36 +79,7 @@
   }
 
   function installDesktopEntry() {
-    if (document.querySelector('.kc-seed-house-card')) return true;
-    const parent = document.querySelector('.kc-myspace-inner');
-    if (!parent) return false;
-
-    const card = document.createElement('section');
-    card.className = 'kc-side-card kc-seed-house-card';
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', '씨앗하우스 들어가기');
-    card.dataset.openLifeWorld = 'seed-house-sidebar';
-    card.innerHTML = `
-      <div class="kc-seed-house-top">
-        <div class="kc-seed-house-icon">🌱🏠</div>
-        <div>
-          <div class="kc-seed-house-title">씨앗하우스</div>
-          <div class="kc-seed-house-desc">집 · 농장 · 숲 · 강가 · 돌산을 탐험하며 살아가요.</div>
-        </div>
-      </div>
-      <button class="kc-seed-house-open" type="button" data-open-life-world="seed-house-button">씨앗하우스 들어가기</button>
-    `;
-
-    const mission = parent.querySelector('.kc-mission-card');
-    if (mission) parent.insertBefore(card, mission);
-    else parent.appendChild(card);
-
-    card.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      e.preventDefault();
-      window.openKidscadeLifeWorld?.();
-    });
+    document.querySelector('.kc-seed-house-card')?.remove();
     return true;
   }
 
@@ -117,8 +88,8 @@
       if (el.closest('.kc-seed-house-card')) return;
       const text = (el.textContent || '').trim();
       if (/생활\s*월드|Kidscade\s*World/i.test(text) || el.dataset.openLifeWorld === 'garden-entry') {
-        if (text !== '🌱 씨앗하우스') el.textContent = '🌱 씨앗하우스';
-        if (el.getAttribute('aria-label') !== '씨앗하우스 들어가기') el.setAttribute('aria-label', '씨앗하우스 들어가기');
+        if (text !== '🌱 씨앗 월드') el.textContent = '🌱 씨앗 월드';
+        if (el.getAttribute('aria-label') !== '씨앗 월드 들어가기') el.setAttribute('aria-label', '씨앗 월드 들어가기');
       }
     });
   }
@@ -132,8 +103,8 @@
     btn.dataset.mobileNav = 'seedhouse';
     btn.dataset.openLifeWorld = 'mobile-nav';
     btn.dataset.seedHouseReady = 'true';
-    btn.innerHTML = '<span class="kc-mobile-nav-icon">🌱</span>씨앗하우스';
-    btn.setAttribute('aria-label', '씨앗하우스');
+    btn.innerHTML = '<span class="kc-mobile-nav-icon">🌱</span>씨앗 월드';
+    btn.setAttribute('aria-label', '씨앗 월드');
     return true;
   }
 
@@ -142,15 +113,15 @@
     if (bar) {
       const strong = bar.querySelector('strong');
       const sub = bar.querySelector('span');
-      if (strong && strong.textContent !== '🌱 씨앗하우스') strong.textContent = '🌱 씨앗하우스';
+      if (strong && strong.textContent !== '🌱 씨앗 월드') strong.textContent = '🌱 씨앗 월드';
       if (sub && sub.textContent !== '집 · 농장 · 숲 · 강가 · 돌산에서 Cube Pets와 살아가는 공간') sub.textContent = '집 · 농장 · 숲 · 강가 · 돌산에서 Cube Pets와 살아가는 공간';
     }
     const frame = document.getElementById('kidscade-life-world-frame');
-    if (frame && frame.title !== 'Kidscade 씨앗하우스') frame.title = 'Kidscade 씨앗하우스';
+    if (frame && frame.title !== 'Kidscade 씨앗 월드') frame.title = 'Kidscade 씨앗 월드';
   }
 
   function replaceWorldName(text) {
-    return String(text || '').replace(/Kidscade\s*생활\s*월드\s*v2/gi, 'Kidscade 씨앗하우스').replace(/생활\s*월드\s*v2/gi, '씨앗하우스').replace(/생활\s*월드/gi, '씨앗하우스');
+    return String(text || '').replace(/Kidscade\s*생활\s*월드\s*v2/gi, 'Kidscade 씨앗 월드').replace(/생활\s*월드\s*v2/gi, '씨앗 월드').replace(/생활\s*월드/gi, '씨앗 월드');
   }
 
   function renameInsideFrame() {
@@ -159,11 +130,11 @@
     try {
       const doc = frame.contentDocument;
       if (!doc) return;
-      if (doc.title !== 'Kidscade 씨앗하우스') doc.title = 'Kidscade 씨앗하우스';
+      if (doc.title !== 'Kidscade 씨앗 월드') doc.title = 'Kidscade 씨앗 월드';
       const canvas = doc.getElementById('world');
-      if (canvas?.getAttribute('aria-label') !== 'Kidscade 씨앗하우스') canvas?.setAttribute('aria-label', 'Kidscade 씨앗하우스');
+      if (canvas?.getAttribute('aria-label') !== 'Kidscade 씨앗 월드') canvas?.setAttribute('aria-label', 'Kidscade 씨앗 월드');
       const hudTitle = doc.querySelector('.hud b');
-      if (hudTitle && hudTitle.textContent !== '🌱 씨앗하우스') hudTitle.textContent = '🌱 씨앗하우스';
+      if (hudTitle && hudTitle.textContent !== '🌱 씨앗 월드') hudTitle.textContent = '🌱 씨앗 월드';
       const toast = doc.getElementById('toast');
       if (toast && /생활\s*월드/.test(toast.textContent || '')) toast.textContent = replaceWorldName(toast.textContent);
       if (toast && !toast.dataset.seedHouseObserver) {
