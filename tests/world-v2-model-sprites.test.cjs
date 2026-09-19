@@ -40,5 +40,5 @@ test('World v2 keeps existing furniture interactions and falls back safely',()=>
 });
 
 test('World v2 embedded entry is cache bumped',()=>{
-  assert.match(integration,/world-v2\/kidscade-world\.html\?v=6/);
+  assert.match(integration,/world-v2\/kidscade-world\.html\?v=8/);
 });
