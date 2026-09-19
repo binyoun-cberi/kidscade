@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v3/kidscade-world.html?v=2';
+  const WORLD_URL='world-v3/kidscade-world.html?v=3';
   let overlay=null, frame=null, activated=false;
 
   function installStyles(){
@@ -34,7 +34,7 @@
 
   function ensure(){
     if(overlay)return;installStyles();overlay=document.createElement('div');overlay.id=OVERLAY_ID;overlay.setAttribute('aria-hidden','true');overlay.innerHTML=`
-      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활 월드 v3</strong><span>2D Deluxe 아바타가 3D 집 · 정원 · 농장을 생활합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
+      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활·생존 월드 v3</strong><span>2D Deluxe 아바타와 펫이 3D 집 · 숲 · 돌산 · 강가 · 농장을 탐험합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
       <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v3" src="about:blank"></iframe>`;
     document.body.appendChild(overlay);frame=overlay.querySelector('#'+FRAME_ID);overlay.querySelector('#kidscade-life-world-close').addEventListener('click',close);overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
   }
