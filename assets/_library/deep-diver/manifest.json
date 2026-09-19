@@ -1,0 +1,15 @@
+{
+  "package": "kidscade_deep_diver_github_ready",
+  "public_repo_safe_subset": true,
+  "included_source": {
+    "name": "32x32 Animated Shark Sprite",
+    "author": "Sergeant_Slash",
+    "source": "https://sergeant-slash.itch.io/32x32-animated-shark-sprite",
+    "files": 9
+  },
+  "excluded_source": {
+    "name": "400 + Pixel Underwater loot and junk",
+    "author": "RehanDev",
+    "reason": "Raw asset redistribution prohibited by source terms."
+  }
+}

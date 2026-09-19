@@ -1,0 +1,28 @@
+Deep Diver — Shark Asset License / Credit
+
+Asset:
+32x32 Animated Shark Sprite
+
+Creator:
+Sergeant_Slash
+
+Source:
+https://sergeant-slash.itch.io/32x32-animated-shark-sprite
+
+Usage note:
+The creator's asset page states: "Feel free to use this for whatever project you want."
+
+Included in this Kidscade package:
+- assets/game/2d/underwater/deep-diver/creatures/shark/shark-swim-atlas.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-01.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-02.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-03.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-04.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-05.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-06.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-07.png
+- assets/game/2d/underwater/deep-diver/creatures/shark/frames/shark-swim-08.png
+
+Repository note:
+This package intentionally excludes RehanDev's "400 + Pixel Underwater loot and junk"
+raw assets because the source page prohibits redistributing the raw asset files.
