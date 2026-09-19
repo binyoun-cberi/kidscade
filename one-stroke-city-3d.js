@@ -176,8 +176,10 @@ async function rebuild(layout){
   if(!layout||!models.size)return;
   const serial=++buildSerial,w=layout.w,h=layout.h;
   if(w<10||h<10)return;
-  configureCamera(w,h);addGround(w,h,THEME[layout.theme]||THEME[1]);clearGroup(cityGroup);
+  configureCamera(w,h);
   const theme=THEME[layout.theme]||THEME[1];
+  scene.background=new THREE.Color(theme.ground);
+  addGround(w,h,theme);clearGroup(cityGroup);
 
   // Landmarks are always full-size; background blocks remain smaller so roads stay readable.
   for(const l of layout.landmarks||[])addLandmark(l,w,h,theme);
@@ -207,10 +209,3 @@ if(window.__oneStrokeCityLayout){currentLayout=window.__oneStrokeCityLayout;rebu
 window.addEventListener('one-stroke-city-layout',e=>{currentLayout=e.detail;rebuild(currentLayout)});
 new ResizeObserver(()=>resize()).observe(shell);
 
-function animate(){
-  requestAnimationFrame(animate);
-  if(!currentLayout)return;
-  // Static city, but render continuously at low visual cost so CSS/layout changes stay smooth.
-  renderer.render(scene,camera);
-}
-animate();
