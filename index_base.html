@@ -3562,17 +3562,9 @@ ${getEvolutionHintText()}
                     }
                 };
             }
-            const gardenArtwork=setupSookCanvasPets();
-            const gardenController=window.KidscadeGarden?.init({
-                ...gardenArtwork,
-                avatar:()=>renderAvatarSVG(),
-                balance:()=>getPersistedCoins(),
-                spend:amount=>changeSeeds(-amount,'',{toast:false}),
-                refund:amount=>changeSeeds(amount,'',{toast:false}),
-                toast:message=>showToast(message,true),
-                games:category=>Array.from(document.querySelectorAll('#game-list .game-card')).filter(card=>!card.classList.contains('disabled')&&card.dataset.age===currentAgeGroup&&(!category||card.dataset.category===category)).map(card=>({id:card.dataset.id,title:card.querySelector('.game-title')?.textContent||'게임'})).slice(0,3),
-                play:gameId=>{const card=Array.from(document.querySelectorAll('#game-list .game-card')).find(card=>card.dataset.id===gameId);if(card){document.getElementById('pet-modal').classList.add('hidden');openGameModal({target:card,preventDefault(){}},card);}}
-            });
+            // Legacy garden / single-pet canvas is retired. Cube Pets lives in World v3.
+            const gardenArtwork={};
+            const gardenController=null;
             const updateLegacyPetUI=updatePetUI;
             updatePetUI=function(){updateLegacyPetUI();gardenController?.refresh();};
 
