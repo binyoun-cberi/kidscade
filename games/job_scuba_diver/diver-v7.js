@@ -385,8 +385,9 @@ function drawPickups(){
 }
 function drawFish(f){
  if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-100||p.x>view.w+100||p.y<-100||p.y>view.h+100)return;const flip=f.vx<0;
- if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,f.key==='giant'?.96:.9);
- else drawImg(imgs[sp.img],p.x,p.y,52*f.scale,33*f.scale,flip,0,.88);
+ if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,f.key==='giant'?.98:.92);
+ else drawImg(imgs[sp.img],p.x,p.y,52*f.scale,33*f.scale,flip,0,.9);
+ if(f.alert>0&&(sp.behavior==='predator'||sp.behavior==='ambush'||sp.behavior==='territorial')){ctx.strokeStyle=sp.behavior==='predator'?'rgba(255,92,72,.75)':'rgba(255,180,92,.62)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,28+f.scale*12+Math.sin(world.time*7)*3,0,Math.PI*2);ctx.stroke()}
  if(world.sonar>0&&(sp.rare||f.marked>0)){ctx.strokeStyle=sp===SPECIES.giant?'#ff987d':'#73f2ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,34+Math.sin(world.time*5)*4,0,Math.PI*2);ctx.stroke()}
 }
 function drawMine(m){if(m.dead)return;const p=screenPos(m.x,m.y);if(p.x<-70||p.x>view.w+70||p.y<-70||p.y>view.h+70)return;const im=imgs[m.size==='B'?'mineB':m.size==='S'?'mineS':'mine'],s=m.size==='B'?60:m.size==='S'?38:50;drawImg(im,p.x,p.y,s,s,false,0,.9);if(world.sonar>0||m.fuse>0){ctx.strokeStyle=m.fuse>0?'#ff7465':'#6df4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,s*.7+Math.sin(world.time*8)*4,0,Math.PI*2);ctx.stroke()}}
@@ -422,8 +423,25 @@ function drawPlayer(){
 function drawBubbles(){
  ctx.save();for(const b of world.bubbles){const p=screenPos(b.x,b.y);if(p.x<0||p.x>view.w||p.y<0||p.y>view.h)continue;ctx.strokeStyle='rgba(213,250,255,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,b.s,0,Math.PI*2);ctx.stroke()}ctx.restore()
 }
+function drawBiomeBoundaries(){
+ const bands=[360,720,1100,1480];
+ ctx.save();
+ for(let i=0;i<bands.length;i++){
+   const y=screenPos(0,bands[i]).y;if(y<-100||y>view.h+100)continue;
+   const g=ctx.createLinearGradient(0,y-54,0,y+54);g.addColorStop(0,'rgba(170,245,255,0)');g.addColorStop(.48,'rgba(170,245,255,.09)');g.addColorStop(.52,'rgba(22,64,77,.22)');g.addColorStop(1,'rgba(0,0,0,0)');
+   ctx.fillStyle=g;ctx.fillRect(0,y-54,view.w,108);
+   ctx.strokeStyle='rgba(185,244,255,.16)';ctx.lineWidth=2;ctx.beginPath();for(let x=0;x<=view.w;x+=20){const yy=y+Math.sin(world.time*1.4+x*.028+i)*5;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke();
+ }
+ ctx.restore()
+}
+function drawDangerFX(){
+ const z=zoneForY(world.player.y),rule=ZONE_RULES[z.id]||ZONE_RULES.reef;
+ if(rule.visibility<.98){ctx.save();ctx.fillStyle='rgba(0,7,14,'+((1-rule.visibility)*.34)+')';ctx.fillRect(0,0,view.w,view.h);ctx.restore()}
+ if(world.zoneFlash>0){ctx.save();ctx.globalAlpha=world.zoneFlash*.13;ctx.fillStyle=z.accent;ctx.fillRect(0,0,view.w,view.h);ctx.restore()}
+ if(world.envPulse>0){ctx.save();const g=ctx.createRadialGradient(view.w/2,view.h/2,view.h*.2,view.w/2,view.h/2,Math.max(view.w,view.h)*.7);g.addColorStop(0,'rgba(255,90,70,0)');g.addColorStop(1,'rgba(255,70,55,'+(world.envPulse*.16)+')');ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);ctx.restore()}
+}
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawZoneLandmarks();drawTerrain();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawSonarGuides();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();updateHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawSonarGuides();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawDangerFX();updateHud();updatePhotoLabel()
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
@@ -502,6 +520,56 @@ function explodeMine(m){
  if(m.dead)return;m.dead=true;world.effects.push({type:'boom',x:m.x,y:m.y,t:0,big:m.size==='B'});const d=Math.hypot(world.player.x-m.x,world.player.y-m.y);if(d<125){const dmg=Math.max(10,Math.round((38-d*.18)*world.st.armor));world.player.hp-=dmg;world.player.inv=1.1;showHint('기뢰 폭발! -'+dmg+' HP',1000);beep(90,.22,'sawtooth')}
 }
 
+function updateFishAI(f,dt,p,st){
+ const sp=SPECIES[f.key],dx=p.x-f.x,dy=p.y-f.y,dist=Math.hypot(dx,dy)||1;
+ f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);
+ const homeDx=f.homeX-f.x,homeDy=f.baseY-f.y,behavior=sp.behavior||'flee';
+ let tx=f.vx,ty=Math.sin(world.time*.9+f.phase)*8;
+ if(behavior==='school'){
+   tx+=(Math.sign(f.vx)||1)*(sp.speed||42)*.35;
+   ty+=Math.sin(world.time*1.3+f.phase)*10;
+   if(dist<95){tx-=dx/dist*115;ty-=dy/dist*85}
+ }else if(behavior==='flee'||behavior==='skittish'){
+   const trigger=behavior==='skittish'?175:110;
+   if(dist<trigger){tx-=dx/dist*(behavior==='skittish'?185:120);ty-=dy/dist*(behavior==='skittish'?150:95);f.alert=.8}
+   else{tx+=(Math.sign(f.vx)||1)*(sp.speed||48)*.28;ty+=homeDy*.025}
+ }else if(behavior==='territorial'){
+   if(dist<210){f.alert=1.1;tx=dx/dist*(sp.speed||70);ty=dy/dist*(sp.speed||70)*.72}
+   else{tx=homeDx*.18+(Math.sign(f.vx)||1)*(sp.speed||60)*.45;ty=homeDy*.12}
+ }else if(behavior==='ambush'){
+   if(dist<245){f.alert=1.4;tx=dx/dist*(sp.speed||105)*1.35;ty=dy/dist*(sp.speed||105)*1.15}
+   else{tx*=.94;ty=homeDy*.08+Math.sin(world.time*.45+f.phase)*3}
+ }else if(behavior==='predator'){
+   const sense=f.key==='giant'?520:360;
+   if(dist<sense){f.alert=1.2;const chase=(sp.speed||112)*(f.key==='giant'?1.06:1);tx=dx/dist*chase;ty=dy/dist*chase}
+   else{tx=homeDx*.08+(Math.sign(f.vx)||1)*(sp.speed||90)*.38;ty=homeDy*.06}
+ }
+ const max=(sp.speed||50)*(f.alert>0?1.6:1.05),mag=Math.hypot(tx,ty)||1;
+ if(mag>max){tx=tx/mag*max;ty=ty/mag*max}
+ f.vx=lerp(f.vx,tx,clamp(dt*(behavior==='predator'||behavior==='ambush'?2.8:1.7),0,1));
+ f.vy=lerp(f.vy,ty,clamp(dt*2.1,0,1));
+ f.x+=f.vx*dt;f.y+=f.vy*dt;
+ if(f.x<55||f.x>WORLD.w-55){f.x=clamp(f.x,55,WORLD.w-55);f.vx*=-1}
+ const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);
+ if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){f.x-=f.vx*dt*2;f.y-=f.vy*dt*2;f.vx*=-.65;f.vy*=-.65}
+ if((behavior==='territorial'||behavior==='ambush'||behavior==='predator')&&dist<48+(f.key==='giant'?34:0)&&f.attackCd<=0&&p.inv<=0){
+   const dmg=Math.round((sp.damage||8)*st.armor);p.hp-=dmg;p.inv=.72;f.attackCd=1.15;
+   p.vx+=dx/dist*55;p.vy+=dy/dist*55;
+   showHint((f.key==='giant'?'심해 상어':'포식 생물')+' 공격! -'+dmg+' HP',700);beep(105,.09,'sawtooth')
+ }
+}
+function applyZoneEnvironment(dt,p){
+ const z=zoneForY(p.y),rule=ZONE_RULES[z.id]||ZONE_RULES.reef;
+ if(rule.current){
+   const pulse=Math.sin(world.time*.72+p.y*.011)+Math.sin(world.time*.27+p.x*.004)*.5;
+   p.vx+=rule.current*pulse*dt;
+   if(z.id==='kelp')p.vy+=Math.cos(world.time*.55+p.x*.003)*18*dt;
+ }
+ if(z.id==='wreck'){
+   for(const m of world.mines)if(!m.dead&&Math.hypot(m.x-p.x,m.y-p.y)<150)world.envPulse=Math.max(world.envPulse,.75);
+ }
+ if(z.id==='abyss')world.envPulse=Math.max(world.envPulse,.32+Math.sin(world.time*2)*.08);
+}
 function resetInputs(){Object.keys(keys).forEach(k=>keys[k]=false);touch.x=touch.y=0;touch.dash=false;const k=$('knob');if(k)k.style.transform='translate(0,0)'}
 function update(dt){
  if(state!=='playing'||!world)return;world.time+=dt;const p=world.player,st=world.st;
@@ -510,9 +578,12 @@ function update(dt){
  const dashing=(keys.shift||touch.dash)&&p.dashCd<=0&&len>.1,spd=st.speed*(dashing?1.75:1);if(dashing)p.dashCd=.65;
  const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
  p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
- p.oxygen-=dt*(dashing?1.55:1);const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
- const zone=zoneForY(p.y),zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;showZone(zone);showHint(zone.tag,1600)}
- for(const f of world.fish){if(!f.alive)continue;const sp=SPECIES[f.key];f.marked=Math.max(0,f.marked-dt);let fear=Math.hypot(f.x-p.x,f.y-p.y)<105&&!sp.protected?1:0;f.x+=f.vx*dt*(fear?1.9:1);f.y+=Math.sin(world.time*.9+f.phase)*5*dt;if(f.x<60||f.x>WORLD.w-60)f.vx*=-1;if(world.terrain.some(s=>pointInSolid(f.x,f.y,s,8))){f.x-=f.vx*dt*2.2;f.vx*=-1;f.y=lerp(f.y,f.baseY,.16)}if(Math.abs(f.y-f.baseY)>65)f.y=lerp(f.y,f.baseY,.05);if(f.key==='giant'&&Math.hypot(f.x-p.x,f.y-p.y)<115&&p.inv<=0){p.hp-=14*st.armor;p.inv=1.2;showHint('심해 상어와 거리를 확보하세요!',900)}}
+ const zone=zoneForY(p.y),rule=ZONE_RULES[zone.id]||ZONE_RULES.reef;
+ p.oxygen-=dt*(dashing?1.55:1)*rule.oxygen;applyZoneEnvironment(dt,p);
+ const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
+ const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
+ world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
+ for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
  for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<92&&m.fuse<=0){m.fuse=1.25;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
