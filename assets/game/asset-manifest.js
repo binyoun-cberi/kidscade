@@ -2,7 +2,7 @@
 // Runtime paths are validated. Compound atlases must be kept with their metadata companions.
 export const KIDSCADE_ASSETS = {
   "version": "3.0.0",
-  "license_summary": "All source packs in Kidscade Asset Library v3 are CC0 according to their bundled License.txt files; exact copies are stored under assets/game/licenses/.",
+  "license_summary": "Mostly CC0. Some assets require attribution (CC-BY), Pixabay audio is tracked under the Pixabay Content License, and user-provided seafloor tiles remain unverified. See CREDITS.md and assets/game/licenses/.",
   "animations": [
     "static",
     "idle",
