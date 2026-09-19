@@ -115,11 +115,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=4/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=6/);
-  assert.match(runtime,/kidscade-world-furnishing\.js\?v=3/);
-  assert.match(html,/kidscade-world-v3\.js\?v=10/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=10/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=5/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=7/);
+  assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
+  assert.match(html,/kidscade-world-v3\.js\?v=11/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=11/);
 });
 
 
@@ -210,4 +210,53 @@ test('functional home essentials migrate separately and keep their actions while
   }
   assert.match(furnishing,/사용·꾸미기/);
   assert.match(storage,/functionalLayoutMigrated:false/);
+});
+
+
+test('named Seed Town residents expose roles services friendship milestones and exclusive rewards',()=>{
+  for(const id of ['minji','junho','haneul','doyun','yuna','taeho','sora','hyunwoo','nari','woojin','seoyeon','minseok']){
+    assert.ok(economy.includes(id+':{name:'),'resident profile missing '+id);
+    assert.ok(economy.includes(id+':['),'friendship reward track missing '+id);
+    assert.ok(city.includes("actions.resident('"+id+"')"),'city interaction missing '+id);
+  }
+  assert.match(economy,/data-resident-talk/);
+  assert.match(economy,/data-resident-service/);
+  assert.match(economy,/rewardClaims/);
+  assert.match(economy,/perks/);
+  assert.match(storage,/rewardClaims:\{\},perks:\{\}/);
+  for(const at of ['at:3','at:7','at:12'])assert.ok(economy.includes(at),'missing friendship milestone '+at);
+});
+
+test('friendship perks affect the systems matching each resident role',()=>{
+  assert.match(economy,/marketDiscount/);
+  assert.match(economy,/hardwareDiscount/);
+  assert.match(economy,/cafeDiscount/);
+  assert.match(economy,/jobBonus/);
+  assert.match(economy,/arcadeDiscount/);
+  assert.match(economy,/libraryEnergyBonus/);
+  assert.match(economy,/deliveryBonus/);
+  assert.match(economy,/clinicDiscount/);
+  assert.match(economy,/riverBus/);
+  assert.match(runtime,/townPerks\(\)\.harvestBonus/);
+  assert.match(runtime,/townPerks\(\)\.mushroomBonus/);
+  assert.match(runtime,/townPerks\(\)\.petFriendBonus/);
+  assert.match(runtime,/river:\{x:0,z:-15\.0,name:'북쪽 강가'\}/);
+});
+
+test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
+  const rewards=[
+    ['minjiPlanter','plant-small3.glb'],['junhoStool','stool-bar-square.glb'],
+    ['haneulTable','table-round.glb'],['doyunBench','bench-cushion.glb'],
+    ['yunaPlant','plant-small2.glb'],['taehoRetroTv','television-vintage.glb'],
+    ['soraBookcase','bookcase-closed-wide.glb'],['hyunwooDrawers','side-table-drawers.glb'],
+    ['nariLamp','lamp-square-floor.glb'],['woojinRelaxChair','lounge-chair-relax.glb'],
+    ['seoyeonPetChair','chair-rounded.glb'],['minseokTravelBench','bench-cushion-low.glb']
+  ];
+  for(const [key,file] of rewards){
+    assert.ok(furnishing.includes(key),'rare reward missing '+key);
+    assert.ok(furnishing.includes(file),'rare reward asset missing '+file);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'untracked reward asset '+file);
+  }
+  assert.match(runtime,/key==='taehoRetroTv'/);
+  assert.match(runtime,/key==='soraBookcase'/);
 });
