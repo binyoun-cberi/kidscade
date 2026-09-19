@@ -15,6 +15,12 @@ button{font:inherit;color:inherit}
 .playfield{position:relative;flex:1;min-height:0;background:linear-gradient(#dec7aa,#c99f77);overflow:hidden}
 #scene{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #scene.dragging{cursor:grabbing}
+
+.event-banner{position:absolute;left:50%;top:10px;z-index:13;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:min(520px,48vw);padding:7px 10px;border-radius:11px;background:rgba(60,39,26,.9);color:#fff7ea;border:1px solid rgba(255,255,255,.18);box-shadow:0 7px 20px rgba(40,23,12,.2);pointer-events:none}
+.event-banner b{font-size:9px;white-space:nowrap}.event-banner span{font-size:7px;font-weight:800;opacity:.86;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tomorrow-event{display:grid;gap:3px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#392b24;color:#fff7eb;border:1px solid #594437}
+.tomorrow-event b{font-size:11px}.tomorrow-event span{font-size:8px;font-weight:800;line-height:1.4;color:#e9d8c8}
+
 .order-ticket{position:absolute;left:10px;top:10px;width:min(300px,calc(100% - 20px));padding:11px 12px 10px;background:var(--paper);border:1px solid #d8c3aa;border-radius:12px;box-shadow:var(--shadow);transform:rotate(-.35deg);z-index:12}
 .order-ticket:before{content:"";position:absolute;left:18px;right:18px;top:-4px;height:7px;border-radius:99px;background:rgba(255,255,255,.6)}
 .order-ticket small{display:block;font-size:7px;font-weight:1000;letter-spacing:.16em;color:#a27d61}
@@ -29,6 +35,7 @@ button{font:inherit;color:inherit}
 .ingredient-labels{position:absolute;inset:0;pointer-events:none;z-index:8}
 .ingredient-label{position:absolute;transform:translate(-50%,-50%);padding:3px 6px;border-radius:7px;background:rgba(50,38,29,.86);color:#fff8eb;border:1px solid rgba(255,255,255,.18);font-size:7px;font-weight:950;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:opacity .18s}
 .ingredient-label.out{background:rgba(125,38,31,.9);color:#ffd9d1;border-color:#e97a69}
+.ingredient-label.locked{background:rgba(55,55,55,.78);color:#d8d0c7;border-color:#8b8178}
 .drag-tip{position:absolute;left:50%;bottom:61px;z-index:11;transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(255,252,245,.9);border:1px solid #d5c0a7;color:#6f5a48;font-size:8px;font-weight:900;pointer-events:none;transition:.2s}
 .drag-tip.hidden{opacity:0;transform:translate(-50%,6px)}
 .shopping-actions,.spice-dock,.cook-dock{position:absolute;left:50%;bottom:max(8px,env(safe-area-inset-bottom));z-index:15;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px;border-radius:13px;background:rgba(255,250,241,.96);border:1px solid #d8c3aa;box-shadow:0 8px 22px rgba(56,31,15,.2)}
@@ -66,6 +73,8 @@ button.big{width:100%;min-height:48px;border-radius:12px;font-size:12px;font-wei
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media(max-width:720px){
+  .event-banner{top:auto;bottom:58px;max-width:calc(100% - 14px);width:auto}.event-banner span{max-width:50vw}
+
   .topbar{height:44px;padding:5px 7px}.shop-name{font-size:13px}.top-stats span,.top-stats button{height:27px;padding:0 6px;font-size:7px}.top-stats span:nth-child(5){display:none}
   .order-ticket{left:7px;top:7px;width:min(242px,68vw);padding:9px 10px}.order-ticket h2{font-size:12px}.order-ticket p{font-size:7.7px;line-height:1.35}
   .scale-readout{right:7px;top:7px;padding:4px;gap:3px}.scale-readout div{min-width:54px;padding:3px 5px}.scale-readout b{font-size:10px}.scale-readout small{font-size:5px}
@@ -79,6 +88,8 @@ button.big{width:100%;min-height:48px;border-radius:12px;font-size:12px;font-wei
   .manage-card{padding:14px}.manage-summary{grid-template-columns:repeat(2,1fr)}.stock-rows{grid-template-columns:repeat(2,1fr)}.upgrade-grid{grid-template-columns:1fr}
 }
 @media(max-width:430px){
+  .event-banner{bottom:55px;padding:6px 8px}.event-banner span{display:none}
+
   .shop-name{font-size:12px}.top-stats span:nth-child(3),.top-stats span:nth-child(5){display:none}.top-stats span:nth-child(2){padding:0 5px}.top-stats button{font-size:0}.top-stats button:after{content:"SFX";font-size:6px}
   .order-ticket{width:62vw}.order-ticket h2{font-size:11px}.order-ticket p{font-size:7px}
   .scale-readout{flex-direction:column}.scale-readout div{min-width:58px}
