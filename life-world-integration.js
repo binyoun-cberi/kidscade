@@ -81,5 +81,5 @@
   installStyles();syncCubePetsSidebar();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton()){syncCubePetsSidebar();observer.disconnect()}});observer.observe(document.documentElement,{childList:true,subtree:true});}
   window.addEventListener('pageshow',syncCubePetsSidebar);
   window.addEventListener('storage',e=>{if(e.key==='kidscade_world_v2')syncCubePetsSidebar();});
-  const api={open,close,ensure,refresh:refreshWorld,getFrame:()=>frame,url:WORLD_URL,version:3};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
+  const api={open,close,ensure,refresh:refreshWorld,syncCubePetsSidebar,getFrame:()=>frame,url:WORLD_URL,version:3};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
 })(window);
