@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=6';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=7';
 import {createTownEconomy} from './kidscade-world-economy.js?v=7';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 
@@ -165,8 +165,8 @@ function toast(text){
   toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toastEl.__t);
   toastEl.__t=setTimeout(()=>toastEl.classList.remove('show'),1600);
 }
-function openPanel(html){panelBody.innerHTML=html;panel.classList.add('open')}
-function closePanel(){panel.classList.remove('open');canvas.focus()}
+function openPanel(html){resetInput(true);panelBody.innerHTML=html;panel.classList.add('open')}
+function closePanel(){resetInput(true);panel.classList.remove('open');canvas.focus()}
 document.getElementById('panelClose').onclick=closePanel;
 panel.addEventListener('pointerdown',e=>{if(e.target===panel)closePanel()});
 
@@ -383,9 +383,20 @@ function applyAvatarMotion(now,moving){
 }
 
 const keys=new Set();
+const MOVE_KEYS=new Set(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d']);
+let inputNeedsRelease=false;
+function resetInput(requireRelease=false){
+  keys.clear();
+  if(requireRelease)inputNeedsRelease=true;
+}
 const lastMove={x:0,z:1};
 addEventListener('keydown',e=>{
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(e.key)){keys.add(e.key.toLowerCase());e.preventDefault()}
+  const key=e.key.toLowerCase();
+  if(MOVE_KEYS.has(key)){
+    e.preventDefault();
+    if(inputNeedsRelease)return;
+    keys.add(key);
+  }
   if((e.key==='r'||e.key==='R')&&furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.rotate();return;}
   if((e.key==='e'||e.key==='E'||e.key===' ')&&!panel.classList.contains('open')){e.preventDefault();doInteract()}
   if(e.key==='Escape'){
@@ -394,10 +405,19 @@ addEventListener('keydown',e=>{
     else window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
   }
 });
-addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+addEventListener('keyup',e=>{
+  const key=e.key.toLowerCase();keys.delete(key);
+  if(MOVE_KEYS.has(key))inputNeedsRelease=false;
+});
+addEventListener('blur',()=>resetInput(true));
+addEventListener('pagehide',()=>resetInput(true));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInput(true);});
+addEventListener('pointerup',()=>{if(inputNeedsRelease)inputNeedsRelease=false;});
+addEventListener('pointercancel',()=>resetInput(true));
 document.querySelectorAll('.mobile [data-key]').forEach(b=>{
   const k=b.dataset.key.toLowerCase();
-  const down=e=>{e.preventDefault();keys.add(k)};const up=e=>{e.preventDefault();keys.delete(k)};
+  const down=e=>{e.preventDefault();if(inputNeedsRelease)return;keys.add(k)};
+  const up=e=>{e.preventDefault();keys.delete(k);inputNeedsRelease=false};
   b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
 });
 document.getElementById('mobileInteract').onclick=doInteract;
@@ -423,7 +443,7 @@ const TRAVEL_POINTS={
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
   if(mode!=='outdoor'){mode='outdoor';outdoor.visible=true;indoor.visible=false;}
-  player.x=d.x;player.z=d.z;near=null;closePanel();setAvatarAction('smile',450);
+  resetInput(true);player.x=d.x;player.z=d.z;near=null;panel.classList.remove('open');setAvatarAction('smile',450);
   toast('씨앗버스 도착 · '+d.name);
 }
 function claimStarterKit(){
@@ -471,7 +491,7 @@ function updateZone(){
   else zoneEl.textContent='마을길 · 안전 지역';
 }
 function setMode(next){
-  mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
+  resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
   else{player.x=-8.8;player.z=-1.55;zoneEl.textContent='집 앞 · 3D 마을';toast('집 밖으로 나왔어요.')}
   setAvatarAction('smile',520);near=null;
@@ -579,8 +599,8 @@ async function addGroundPickup(id,kind,x,z){
 }
 async function buildOutdoor(){
   // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
-  plane(outdoor,0,5,68,72,0x7caf63,0);
-  box(outdoor,0,5,68,72,.22,0x6c9657,-.22);
+  plane(outdoor,0,5,82,96,0x7caf63,0);
+  box(outdoor,0,5,82,96,.22,0x6c9657,-.22);
 
   // Distinct connected biomes around the safe home region.
   plane(outdoor,-24,0,12,44,0x4f8050,.015);       // deep forest
@@ -764,7 +784,8 @@ async function buildOutdoor(){
       transport:()=>townEconomy?.transport(),
       bench:()=>townEconomy?.bench()
     },
-    getGameTime:()=>prog().survival.time
+    getGameTime:()=>prog().survival.time,
+    getPlayerPosition:()=>({x:player.x,z:player.z})
   });
 }
 
@@ -844,7 +865,7 @@ async function makeCubePetObject(id){
     o.updateMatrixWorld(true);
     const box3=new THREE.Box3().setFromObject(o),size=box3.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
     o.scale.multiplyScalar((PET_SCALE[id]||.8)/max);o.updateMatrixWorld(true);
-    const b=new THREE.Box3().setFromObject(o);o.position.y-=b.min.y;
+    const b=new THREE.Box3().setFromObject(o);o.position.y-=b.min.y;o.userData.groundY=o.position.y;
     return o;
   }catch(err){console.warn('[World v3] Cube Pet failed',id,err);return null}
 }
@@ -870,8 +891,8 @@ async function ensureOwnedPetActor(id){
   if(petActors.some(a=>a.id===id))return;
   const object=await makeCubePetObject(id);if(!object)return;
   const owned=petState().owned,slot=PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
-  object.position.set(slot[0],.04,slot[1]);petLayer.add(object);
-  petActors.push({id,object,homeX:slot[0],homeZ:slot[1],phase:petActors.length*.83});
+  const groundY=Number(object.userData.groundY)||0;object.position.set(slot[0],groundY+.015,slot[1]);petLayer.add(object);
+  petActors.push({id,object,homeX:slot[0],homeZ:slot[1],groundY,phase:petActors.length*.83,targetX:slot[0],targetZ:slot[1],nextDecision:0,moving:false,speed:.28+Math.random()*.12});
 }
 async function tamePet(id){
   const state=petState(),def=CUBE_PETS[id];if(!def)return;
@@ -909,11 +930,36 @@ async function buildPets(){
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
     const object=await makeCubePetObject(id);if(!object)continue;
-    object.position.set(pos.x,.04,pos.z);petLayer.add(object);
-    const actor={id,object,x:pos.x,z:pos.z,habitat:pos.habitat,roamX:pos.roamX||.3,roamZ:pos.roamZ||.25,interaction:null,phase:wildPetActors.length*.91};wildPetActors.push(actor);
+    const groundY=Number(object.userData.groundY)||0;object.position.set(pos.x,groundY+.015,pos.z);petLayer.add(object);
+    const actor={id,object,x:pos.x,z:pos.z,groundY,habitat:pos.habitat,roamX:Math.max(.45,pos.roamX||.6),roamZ:Math.max(.4,pos.roamZ||.55),interaction:null,phase:wildPetActors.length*.91,targetX:pos.x,targetZ:pos.z,nextDecision:0,moving:false,speed:.22+Math.random()*.18};wildPetActors.push(actor);
     object.visible=!state.owned.includes(id);
     actor.interaction=interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
+}
+function chooseAnimalTarget(a,now,roamX,roamZ){
+  a.nextDecision=now+1200+Math.random()*2800;
+  if(Math.random()<.32){a.moving=false;return;}
+  a.targetX=a.x+(Math.random()*2-1)*roamX;
+  a.targetZ=a.z+(Math.random()*2-1)*roamZ;
+  if(isCityArea(a.targetX,a.targetZ)){a.targetX=a.x;a.targetZ=a.z;}
+  a.moving=true;
+}
+function stepAnimal(a,now,dt,centerX,centerZ,roamX,roamZ){
+  a.x=centerX;a.z=centerZ;
+  if(now>=a.nextDecision)chooseAnimalTarget(a,now,roamX,roamZ);
+  if(a.moving){
+    const dx=a.targetX-a.object.position.x,dz=a.targetZ-a.object.position.z,d=Math.hypot(dx,dz);
+    if(d<.07){a.moving=false;a.nextDecision=Math.min(a.nextDecision,now+450);}
+    else{
+      const step=Math.min(d,a.speed*dt);
+      a.object.position.x+=dx/d*step;a.object.position.z+=dz/d*step;
+      a.object.rotation.y=Math.atan2(dx,dz);
+    }
+  }else if(now+180>a.nextDecision){
+    a.object.rotation.y+=Math.sin(now/420+a.phase)*.004;
+  }
+  const walkBob=a.moving?Math.abs(Math.sin(now/125+a.phase))*.018:0;
+  a.object.position.y=a.groundY+.015+walkBob;
 }
 function updatePets(now,dt){
   const selected=companionId(),state=petState();
@@ -921,29 +967,22 @@ function updatePets(now,dt){
     const companion=a.id===selected;
     a.object.visible=companion||mode==='outdoor';
     if(!a.object.visible)continue;
-    let tx,tz;
     if(companion){
-      const side=avatarFacing<0?.75:-.75;
-      tx=player.x+side;tz=player.z+.75;
+      const side=avatarFacing<0?.75:-.75,tx=player.x+side,tz=player.z+.75;
       const dx=tx-a.object.position.x,dz=tz-a.object.position.z,d=Math.hypot(dx,dz);
+      let walking=false;
       if(d>8){a.object.position.x=tx;a.object.position.z=tz;}
-      else if(d>.55){const step=Math.min(d,dt*3.25);a.object.position.x+=dx/d*step;a.object.position.z+=dz/d*step;a.object.rotation.y=Math.atan2(dx,dz);}
+      else if(d>.55){const step=Math.min(d,dt*3.25);a.object.position.x+=dx/d*step;a.object.position.z+=dz/d*step;a.object.rotation.y=Math.atan2(dx,dz);walking=true;}
+      a.object.position.y=a.groundY+.015+(walking?Math.abs(Math.sin(now/120+a.phase))*.024:0);
     }else{
-      tx=a.homeX+Math.sin(now/1900+a.phase)*.55;tz=a.homeZ+Math.cos(now/2300+a.phase)*.4;
-      a.object.position.x+=(tx-a.object.position.x)*Math.min(1,dt*1.3);
-      a.object.position.z+=(tz-a.object.position.z)*Math.min(1,dt*1.3);
+      stepAnimal(a,now,dt,a.homeX,a.homeZ,.52,.38);
     }
-    a.object.position.y=.04+Math.abs(Math.sin(now/210+a.phase))*(companion?.055:.025);
   }
   for(const a of wildPetActors){
     a.object.visible=mode==='outdoor'&&!state.owned.includes(a.id);
     if(!a.object.visible)continue;
-    let nx=a.x+Math.sin(now/2100+a.phase)*a.roamX;
-    let nz=a.z+Math.cos(now/2600+a.phase)*a.roamZ;
-    if(isCityArea(nx,nz)){nx=a.x;nz=a.z;}
-    a.object.position.x=nx;a.object.position.z=nz;
-    a.object.position.y=.04+Math.abs(Math.sin(now/260+a.phase))*.025;
-    if(a.interaction){a.interaction.x=nx;a.interaction.z=nz;}
+    stepAnimal(a,now,dt,a.x,a.z,a.roamX,a.roamZ);
+    if(a.interaction){a.interaction.x=a.object.position.x;a.interaction.z=a.object.position.z;}
   }
 }
 
@@ -999,7 +1038,7 @@ function resize(){
 addEventListener('resize',resize);resize();
 
 let townEconomy=null,cityRuntime=null,furnishingSystem=null;
-let last=performance.now(),saveClock=0;
+let last=performance.now(),saveClock=0,wasInCity=false;
 function tick(now){
   requestAnimationFrame(tick);
   const dt=Math.min(.05,(now-last)/1000);last=now;
@@ -1021,6 +1060,11 @@ function tick(now){
       if(nextFacing!==avatarFacing){avatarFacing=nextFacing;if(avatarImg.complete)drawAvatarImage();}
     }
   }
+  if(mode==='outdoor'){
+    const nowInCity=isCityArea(player.x,player.z);
+    if(nowInCity&&!wasInCity){resetInput(true);}
+    wasInCity=nowInCity;
+  }else wasInCity=false;
   avatar.position.x=player.x;avatar.position.z=player.z;
   shadow.position.set(player.x,.035,player.z+.08);
   updateAvatarFrame(now,moving);
@@ -1082,10 +1126,10 @@ async function init(){
   showStarterHintOnce();
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
-  else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을'}
+  else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);
 }
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 2D 안정판 버튼으로 돌아갈 수 있어요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){keys.clear()},refresh(){save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},setMode};
+window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},setMode};
