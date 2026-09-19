@@ -6,13 +6,17 @@ export function createTownEconomy(ctx){
       seedPotato:{name:'감자 씨앗',price:12,type:'seed',key:'potato',qty:1},
       seedCarrot:{name:'당근 씨앗',price:12,type:'seed',key:'carrot',qty:1},
       seedTomato:{name:'토마토 씨앗',price:16,type:'seed',key:'tomato',qty:1},
-      lunch:{name:'도시락',price:34,type:'food',key:'cityLunch',qty:1}
+      lunch:{name:'도시락',price:34,type:'food',key:'cityLunch',qty:1},
+      rugRound:{name:'둥근 러그',price:68,type:'furniture',key:'rugRound',qty:1},
+      teddy:{name:'곰 인형',price:55,type:'furniture',key:'teddy',qty:1}
     },
     hardware:{
       wood3:{name:'목재 3개',price:24,type:'inv',key:'wood',qty:3},
       stone3:{name:'돌 3개',price:24,type:'inv',key:'stone',qty:3},
       axe:{name:'돌도끼',price:72,type:'tool',key:'axe',tier:'stone',dur:18},
-      pick:{name:'돌곡괭이',price:82,type:'tool',key:'pick',tier:'stone',dur:18}
+      pick:{name:'돌곡괭이',price:82,type:'tool',key:'pick',tier:'stone',dur:18},
+      floorLamp:{name:'플로어 램프',price:96,type:'furniture',key:'floorLamp',qty:1},
+      television:{name:'모던 TV',price:185,type:'furniture',key:'television',qty:1}
     },
     cafe:{
       toast:{name:'카페 토스트',price:26,type:'food',key:'cafeToast',qty:1},
@@ -108,6 +112,11 @@ export function createTownEconomy(ctx){
     if(d.type==='seed')p.seeds[d.key]=(p.seeds[d.key]||0)+d.qty;
     else if(d.type==='inv')inv()[d.key]=(inv()[d.key]||0)+d.qty;
     else if(d.type==='food')p.food[d.key]=(p.food[d.key]||0)+d.qty;
+    else if(d.type==='furniture'){
+      p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:1,owned:{},placed:[],starterGiftClaimed:false,nextId:1};
+      p.housing.owned=p.housing.owned&&typeof p.housing.owned==='object'?p.housing.owned:{};
+      p.housing.owned[d.key]=(p.housing.owned[d.key]||0)+(d.qty||1);
+    }
     else if(d.type==='tool')p.tools[d.key]={dur:d.dur,max:d.dur,tier:d.tier,boughtAt:Date.now()};
     persist();setAvatarAction('smile',500);toast(d.name+' 구매!');updateStatus();
     shop(kind,kind==='market'?'민지':kind==='hardware'?'준호':'하늘');
