@@ -3,6 +3,8 @@
 This add-on intentionally contains both **CC0** and **CC-BY** assets.
 If a game uses one of the CC-BY assets below, keep the corresponding credit in the game/site credits.
 
+Central credits: `CREDITS.md` and `credits.html`.
+
 ## Scifi Turrets
 
 - **Zsky — Scifi Turrets** — Creative Commons Attribution.
