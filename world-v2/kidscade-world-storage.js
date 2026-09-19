@@ -35,7 +35,8 @@
         crafted:[],
         food:{},
         fishDex:{},
-        kitchen:{pending:null}
+        kitchen:{pending:null},
+        cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false}
       },
       world:{flags:{},objects:{}},
       migration:{source:'legacy-readonly',completed:false,lastPreview:null}
