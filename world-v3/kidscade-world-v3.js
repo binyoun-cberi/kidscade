@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=4';
 import {createTownEconomy} from './kidscade-world-economy.js?v=5';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=1';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=2';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -202,10 +202,11 @@ function prog(){
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
   const rawHousing=p.housing&&typeof p.housing==='object'?p.housing:{};
   p.housing={
-    version:1,
+    version:2,
     owned:rawHousing.owned&&typeof rawHousing.owned==='object'?rawHousing.owned:{},
     placed:Array.isArray(rawHousing.placed)?rawHousing.placed:[],
     starterGiftClaimed:!!rawHousing.starterGiftClaimed,
+    defaultLayoutMigrated:!!rawHousing.defaultLayoutMigrated,
     nextId:Math.max(1,Math.floor(Number(rawHousing.nextId)||1))
   };
   return p;
@@ -778,15 +779,8 @@ async function buildIndoor(){
   plane(indoor,3.3,-1.8,6.0,6.0,0xdcc89b,.006);
 
   await Promise.all([
-    // Bedroom
+    // Fixed essentials only. Desk/bookcase/rug/sofa/table are restored by the furnishing system.
     addModel(indoor,ASSET.bed,{x:-5.2,z:-3.8,w:2.6,h:1.25,d:2.1,rot:Math.PI/2}),
-    addModel(indoor,ASSET.desk,{x:-2.6,z:-3.75,w:2.0,h:1.4,d:1.2,rot:Math.PI}),
-    addModel(indoor,ASSET.bookcase,{x:-5.7,z:-1.45,w:1.6,h:2.45,d:.78,rot:Math.PI/2}),
-    // Living
-    addModel(indoor,ASSET.rug,{x:-3.0,z:1.6,w:4.2,h:.10,d:2.8,rot:0}),
-    addModel(indoor,ASSET.sofa,{x:-4.55,z:1.15,w:2.9,h:1.4,d:1.45,rot:Math.PI/2}),
-    // Dining
-    addModel(indoor,ASSET.table,{x:1.0,z:1.35,w:2.4,h:1.3,d:1.9,rot:0}),
     // Kitchen line
     addModel(indoor,ASSET.stove,{x:1.4,z:-4.0,w:1.3,h:1.45,d:1.1,rot:Math.PI}),
     addModel(indoor,ASSET.sink,{x:3.0,z:-4.0,w:1.55,h:1.3,d:1.0,rot:Math.PI}),
@@ -797,10 +791,6 @@ async function buildIndoor(){
 
   // Collisions leave a wide central route from door to every zone.
   addColliderFor('indoor',-5.2,-3.8,2.35,1.6);
-  addColliderFor('indoor',-2.6,-3.75,1.8,.9);
-  addColliderFor('indoor',-5.7,-1.45,.7,1.2);
-  addColliderFor('indoor',-4.55,1.15,1.1,2.5);
-  addColliderFor('indoor',1.0,1.35,2.0,1.5);
   addColliderFor('indoor',1.4,-4.0,1.1,.78);
   addColliderFor('indoor',3.0,-4.0,1.35,.78);
   addColliderFor('indoor',4.55,-4.0,1.35,.78);
@@ -809,12 +799,9 @@ async function buildIndoor(){
 
   interact('indoor',0,4.35,1.45,'밖으로 나가기',()=>setMode('outdoor'));
   interact('indoor',-5.2,-2.55,1.4,'침대에서 쉬기',()=>{setAvatarAction('smile',850);sleep();});
-  interact('indoor',-4.0,2.3,1.35,'소파에 앉기',()=>{setAvatarAction('smile',700);toast('소파에서 편하게 쉬었어요.');});
-  interact('indoor',-5.0,-.8,1.25,'책장 살펴보기',()=>{setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');});
   interact('indoor',5.4,-2.75,1.35,'냉장고 열기',inventoryPanel);
   interact('indoor',3.0,-2.9,1.25,'싱크대 사용하기',()=>{setAvatarAction('smile',650);toast('손을 깨끗이 씻었어요.');});
   interact('indoor',1.4,-2.9,1.25,'가스레인지에서 요리하기',()=>{setAvatarAction('smile',500);cookingPanel('stove');});
-  interact('indoor',1.0,2.25,1.35,'식탁 살펴보기',()=>toast('식사와 요리를 이어갈 수 있는 식탁이에요.'));
   interact('indoor',5.35,2.65,1.35,'가구 창고 · 집 꾸미기',()=>furnishingSystem?.openCatalog?.());
 }
 
@@ -1049,7 +1036,13 @@ async function init(){
     parent:indoor,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,setAvatarAction,itemName,
     getMode:()=>mode,
     getPlacementPose:()=>({x:player.x,z:player.z,dx:lastMove.x,dz:lastMove.z}),
-    canPlace:canPlaceFurniture
+    canPlace:canPlaceFurniture,
+    useFurniture:key=>{
+      if(key==='classicSofa'){setAvatarAction('smile',700);toast('소파에서 편하게 쉬었어요.');return;}
+      if(key==='tallBookcase'){setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');return;}
+      if(key==='diningTable'){toast('내가 원하는 곳에 놓은 식탁이에요. 식사 공간을 자유롭게 꾸며보세요.');return;}
+      if(key==='classicDesk'){toast('책상에 앉아 오늘 할 일을 정리했어요.');return;}
+    }
   });
   townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo});
   townEconomy.ensureState(prog());
