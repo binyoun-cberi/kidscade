@@ -229,8 +229,8 @@ function chooseColor(){
 function updateRodHighlights(){
   for(const rod of state.rods){
     const chosen=state.ready&&!rod.out&&rod.color===state.picked;
-    rod.mesh.material.emissiveIntensity=chosen?.38:0;
-    rod.mesh.material.opacity=state.ready&&!chosen?.62:1;
+    rod.mesh.material.emissiveIntensity=chosen ? .38 : 0;
+    rod.mesh.material.opacity=state.ready&&!chosen ? .62 : 1;
     rod.mesh.material.transparent=state.ready&&!chosen;
   }
 }
