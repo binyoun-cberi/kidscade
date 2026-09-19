@@ -37,7 +37,12 @@
         fishDex:{},
         kitchen:{pending:null},
         cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false},
-        town:{coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0}
+        starterKitClaimed:false,
+        town:{
+          coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0,
+          delivery:{active:false,target:'cafe',startedDay:0,completedDay:0,reward:95},
+          dailyPlay:{arcadePrizeDay:0},libraryDay:0
+        }
       },
       world:{flags:{},objects:{}},
       migration:{source:'legacy-readonly',completed:false,lastPreview:null}
