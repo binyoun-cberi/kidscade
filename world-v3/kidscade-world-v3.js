@@ -829,21 +829,19 @@ function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||
 const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
-const RANCH_SLOTS={bunny:[4.5,-6.9],pig:[6.25,-6.9],cow:[6.7,-5.15],chick:[4.55,-5.1]};
+const RANCH_SLOTS={bunny:[6.5,-22.2],pig:[10.0,-22.3],cow:[13.5,-18.0],chick:[6.5,-18.0]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
-const CITY_LIMITS={x1:-26,x2:26,z1:20,z2:40};
-function isCityArea(x,z){return x>=CITY_LIMITS.x1&&x<=CITY_LIMITS.x2&&z>=CITY_LIMITS.z1&&z<=CITY_LIMITS.z2;}
 const WILD_PETS={
-  cat:{habitat:'pond',x:-8.65,z:6.45,roamX:.34,roamZ:.42},
-  bunny:{habitat:'farm-pasture',x:4.55,z:-6.75,roamX:.28,roamZ:.24},
-  pig:{habitat:'farm-pasture',x:6.15,z:-6.85,roamX:.26,roamZ:.22},
-  cow:{habitat:'farm-pasture',x:6.65,z:-5.25,roamX:.22,roamZ:.20},
-  chick:{habitat:'farm-pasture',x:4.55,z:-5.15,roamX:.30,roamZ:.26},
-  fox:{habitat:'deep-forest',x:-24.5,z:3.2,roamX:.48,roamZ:.38},
-  deer:{habitat:'deep-forest',x:-25.8,z:11.2,roamX:.52,roamZ:.42},
-  parrot:{habitat:'deep-forest',x:-22.2,z:-4.0,roamX:.34,roamZ:.28},
-  beaver:{habitat:'riverbank',x:2.5,z:-19.2,roamX:.42,roamZ:.24}
+  cat:{habitat:'pond',x:-14.0,z:5.6,roamX:.34,roamZ:.38},
+  bunny:{habitat:'ranch',x:6.5,z:-22.2,roamX:.42,roamZ:.36},
+  pig:{habitat:'ranch',x:10.0,z:-22.3,roamX:.40,roamZ:.34},
+  cow:{habitat:'ranch',x:13.5,z:-18.0,roamX:.36,roamZ:.32},
+  chick:{habitat:'ranch',x:6.5,z:-18.0,roamX:.44,roamZ:.38},
+  fox:{habitat:'deep-forest',x:-34.0,z:2.8,roamX:.55,roamZ:.44},
+  deer:{habitat:'deep-forest',x:-28.0,z:6.2,roamX:.58,roamZ:.46},
+  parrot:{habitat:'deep-forest',x:-33.0,z:-5.0,roamX:.40,roamZ:.34},
+  beaver:{habitat:'waterfront',x:-4.5,z:-23.0,roamX:.46,roamZ:.28}
 };
 function petState(){return prog().cubePets}
 function migrateLegacyCubePets(){
@@ -949,13 +947,13 @@ async function buildPets(){
   await addModel(outdoor,ASSET.signpost,{x:-16.6,z:-4.35,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
   interact('outdoor',-16.6,-4.35,1.35,'Cube Pets 마당 보기',petPanel);
 
-  // The farm-side ranch is the permanent home for owned bunny/pig/cow/chick.
-  for(const [x,z,rot] of [[4.25,-8.0,0],[6.55,-8.0,0],[3.15,-6.0,Math.PI/2],[8.0,-6.0,Math.PI/2],[4.15,-4.0,0],[7.15,-4.0,0]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.15,h:.82,d:.30,rot});
+  // Ranch square (x 0..20, z -30..-10) keeps production pets separate from crop fields.
+  for(const [x,z,rot] of [[4.0,-25.5,0],[7.0,-25.5,0],[10.0,-25.5,0],[13.0,-25.5,0],[16.0,-25.5,0],[4.0,-14.5,0],[7.0,-14.5,0],[13.0,-14.5,0],[16.0,-14.5,0],[2.6,-23.0,Math.PI/2],[2.6,-17.0,Math.PI/2],[17.4,-23.0,Math.PI/2],[17.4,-17.0,Math.PI/2]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.8,h:.82,d:.30,rot});
   }
-  await addModel(outdoor,ASSET.chest,{x:8.35,z:-3.55,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
-  await addModel(outdoor,ASSET.signpost,{x:6.65,z:-3.55,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
-  interact('outdoor',7.15,-3.65,1.55,'목장 생산물 확인하기',ranchPanel);
+  await addModel(outdoor,ASSET.chest,{x:15.5,z:-13.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
+  await addModel(outdoor,ASSET.signpost,{x:12.8,z:-13.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
+  interact('outdoor',15.0,-13.7,1.7,'목장 생산물 확인하기',ranchPanel);
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
@@ -1045,7 +1043,7 @@ function updateSurvival(dt,moving){
   townEconomy?.tick?.(dt);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
   if(night&&mode==='outdoor'){
-    const nearFire=Math.hypot(player.x+3.2,player.z-16.7)<4.2;
+    const nearFire=Math.hypot(player.x+31.5,player.z-20)<4.2;
     const nightMul=pet==='cat' ? .68 : 1;
     if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
   }
