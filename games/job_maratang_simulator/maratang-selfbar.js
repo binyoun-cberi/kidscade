@@ -3,55 +3,83 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const FOOD = new URL('../../assets/game/food/', import.meta.url).href;
 const MAX_PORTIONS = 12;
-const TOTAL_CUSTOMERS = 5;
+const CAMPAIGN_DAYS = 5;
+const BASE_CUSTOMERS = 5;
+const PRICE_PER_100G = 1900;
+const START_CASH = 12000;
+const BASE_STOCK = 7;
+const UPGRADES = {
+  fridge:{name:'냉장고 확장',base:3200,max:4},
+  burner:{name:'화력 강화',base:3600,max:4},
+  service:{name:'서비스 교육',base:3000,max:4},
+  marketing:{name:'지역 홍보',base:4200,max:3}
+};
 
 const INGREDIENTS = [
-  {id:'cabbage', name:'양배추', model:'cabbage.glb', price:900, weight:55, size:.78},
-  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', price:1100, weight:45, size:.70},
-  {id:'carrot', name:'당근', model:'carrot.glb', price:700, weight:40, size:.72},
-  {id:'mushroom', name:'버섯', model:'mushroom.glb', price:1200, weight:45, size:.66},
-  {id:'sausage', name:'소시지', model:'sausage.glb', price:1600, weight:50, size:.68},
-  {id:'meat', name:'소고기', model:'meat-raw.glb', price:2300, weight:60, size:.66},
-  {id:'corn', name:'옥수수', model:'corn.glb', price:1300, weight:65, size:.72},
-  {id:'leek', name:'대파', model:'leek.glb', price:800, weight:35, size:.80},
-  {id:'onion', name:'양파', model:'onion.glb', price:900, weight:50, size:.68}
+  {id:'cabbage', name:'양배추', model:'cabbage.glb', cost:180, weight:55, size:.78},
+  {id:'broccoli', name:'브로콜리', model:'broccoli.glb', cost:240, weight:45, size:.70},
+  {id:'carrot', name:'당근', model:'carrot.glb', cost:160, weight:40, size:.72},
+  {id:'mushroom', name:'버섯', model:'mushroom.glb', cost:300, weight:45, size:.66},
+  {id:'sausage', name:'소시지', model:'sausage.glb', cost:420, weight:50, size:.68},
+  {id:'meat', name:'소고기', model:'meat-raw.glb', cost:650, weight:60, size:.66},
+  {id:'corn', name:'옥수수', model:'corn.glb', cost:260, weight:65, size:.72},
+  {id:'leek', name:'대파', model:'leek.glb', cost:140, weight:35, size:.80},
+  {id:'onion', name:'양파', model:'onion.glb', cost:170, weight:50, size:.68}
 ];
 
 const ORDERS = [
-  {title:'버섯 좋아하는 손님', must:{mushroom:2,cabbage:1}, avoid:['sausage'], spice:1, budget:7200,
-   text:'버섯은 두 번, 양배추도 넣고 소시지는 빼 주세요. 1단계, 7,200원 안쪽으로요.'},
-  {title:'든든하게 먹고 싶은 손님', must:{meat:1,sausage:1,corn:1}, avoid:['broccoli'], spice:2, budget:9000,
-   text:'소고기, 소시지, 옥수수는 꼭 넣어 주세요. 브로콜리는 빼고 2단계로 부탁해요.'},
-  {title:'채소 위주 손님', must:{cabbage:1,broccoli:1,carrot:1,leek:1}, avoid:['meat'], spice:0, budget:6500,
-   text:'채소를 골고루 담고 소고기는 빼 주세요. 안 맵게, 6,500원 안쪽이면 좋아요.'},
-  {title:'얼큰한 마라탕 손님', must:{meat:1,mushroom:1,onion:1}, avoid:['corn'], spice:3, budget:8500,
+  {title:'버섯 좋아하는 단골', must:{mushroom:2,cabbage:1}, avoid:['sausage'], spice:1, budget:7200,minWeight:190,maxWeight:330,patienceRate:.95,
+   text:'버섯은 두 번, 양배추도 넣고 소시지는 빼 주세요. 1단계로 부탁해요.'},
+  {title:'든든하게 먹는 직장인', must:{meat:1,sausage:1,corn:1}, avoid:['broccoli'], spice:2, budget:9000,minWeight:250,maxWeight:420,patienceRate:1.18,
+   text:'소고기, 소시지, 옥수수는 꼭 넣어 주세요. 브로콜리는 빼고 2단계요. 시간이 많지 않아요.'},
+  {title:'채소 위주 손님', must:{cabbage:1,broccoli:1,carrot:1,leek:1}, avoid:['meat'], spice:0, budget:6500,minWeight:200,maxWeight:350,patienceRate:.9,
+   text:'채소를 골고루 담고 소고기는 빼 주세요. 안 맵게 부탁해요.'},
+  {title:'얼큰한 마라 마니아', must:{meat:1,mushroom:1,onion:1}, avoid:['corn'], spice:3, budget:8500,minWeight:210,maxWeight:360,patienceRate:1.0,
    text:'소고기, 버섯, 양파를 넣고 옥수수는 빼 주세요. 3단계로 얼큰하게요.'},
-  {title:'가볍게 먹는 손님', must:{carrot:1,corn:1,leek:1}, avoid:['sausage'], spice:1, budget:6000,
+  {title:'가볍게 먹는 학생', must:{carrot:1,corn:1,leek:1}, avoid:['sausage'], spice:1, budget:6000,minWeight:170,maxWeight:290,patienceRate:1.08,
    text:'당근, 옥수수, 대파를 담고 소시지는 빼 주세요. 1단계로 가볍게 먹을게요.'},
-  {title:'고기와 채소 반반', must:{meat:1,cabbage:1,broccoli:1}, avoid:['onion'], spice:2, budget:8200,
-   text:'소고기와 양배추, 브로콜리를 넣고 양파는 빼 주세요. 2단계로 부탁해요.'}
-];
+  {title:'고기와 채소 반반', must:{meat:1,cabbage:1,broccoli:1}, avoid:['onion'], spice:2, budget:8200,minWeight:210,maxWeight:370,patienceRate:.92,
+   text:'소고기와 양배추, 브로콜리를 넣고 양파는 빼 주세요. 2단계로 부탁해요.'},
+  {title:'양 많이 먹는 손님', must:{meat:1,sausage:1,cabbage:1,corn:1}, avoid:['carrot'], spice:2, budget:9800,minWeight:310,maxWeight:470,patienceRate:.88,
+   text:'오늘은 든든하게 먹을래요. 소고기, 소시지, 양배추, 옥수수 넣고 당근은 빼 주세요.'},
+  {title:'가격에 민감한 손님', must:{cabbage:1,mushroom:1,leek:1}, avoid:['meat','sausage'], spice:1, budget:5600,minWeight:170,maxWeight:270,patienceRate:1.05,
+   text:'비싸지 않게 양배추, 버섯, 대파로 부탁해요. 고기랑 소시지는 빼 주세요.'},
+  {title:'채소 듬뿍 손님', must:{broccoli:1,carrot:1,onion:1,corn:1}, avoid:['sausage'], spice:0, budget:7600,minWeight:230,maxWeight:390,patienceRate:.96,
+   text:'브로콜리, 당근, 양파, 옥수수로 채소 듬뿍 담아 주세요. 소시지는 빼고 안 맵게요.'},
+  {title:'매운맛 도전 손님', must:{meat:1,mushroom:1,leek:1}, avoid:['cabbage'], spice:3, budget:8400,minWeight:210,maxWeight:360,patienceRate:1.12,
+   text:'소고기, 버섯, 대파 넣고 양배추는 빼 주세요. 맵기는 3단계로 도전할게요.'}
+]
 
 const $ = s => document.querySelector(s);
 const els = {
   canvas: $('#scene'), labels: $('#ingredientLabels'), orderTitle: $('#orderTitle'), orderText: $('#orderText'),
-  patienceFill: $('#patienceFill'), weight: $('#weight'), cost: $('#cost'), served: $('#served'), score: $('#score'),
+  patienceFill: $('#patienceFill'), weight: $('#weight'), cost: $('#cost'), served: $('#served'), day:$('#day'), cash:$('#cash'),
+  reputation:$('#reputation'), dayTarget:$('#dayTarget'), queue:$('#queue'),
   dragTip: $('#dragTip'), shoppingActions: $('#shoppingActions'), spiceDock: $('#spiceDock'),
   spiceOptions: $('#spiceOptions'), cookDock: $('#cookDock'), cookFill: $('#cookFill'), cookText: $('#cookText'),
   serveBtn: $('#serveBtn'), startOverlay: $('#startOverlay'), resultOverlay: $('#resultOverlay'),
   resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'),
-  resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn')
+  resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn'),
+  manageOverlay:$('#manageOverlay'), manageTitle:$('#manageTitle'), manageSummary:$('#manageSummary'), stockRows:$('#stockRows'),
+  restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn')
 };
 
 const state = {
-  score:0, served:0, bowl:[], spice:null, order:null, phase:'idle',
-  patience:100, patienceTimer:null, cookTimer:null, cookProgress:0,
-  sound:true, dragging:false, completed:false
+  score:0, served:0, day:1, dayServed:0, dayTarget:BASE_CUSTOMERS, queue:0,
+  cash:START_CASH, reputation:50, bowl:[], spice:null, order:null, phase:'idle',
+  patience:100, patienceTimer:null, cookTimer:null, cookProgress:0, readyAt:0,
+  sound:true, dragging:false, completed:false, customerSettled:false,
+  dayRevenue:0, dayCogs:0, dayWaste:0, dayWalkouts:0,
+  stock:Object.fromEntries(INGREDIENTS.map(i=>[i.id,BASE_STOCK])),
+  upgrades:{fridge:0,burner:0,service:0,marketing:0}
 };
 
 const ingredientById = id => INGREDIENTS.find(x=>x.id===id);
-const bowlCost = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.price||0),0);
 const bowlWeight = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.weight||0),0);
+const bowlCost = () => Math.max(0,Math.round((bowlWeight()/100*PRICE_PER_100G)/100)*100);
+const bowlIngredientCost = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.cost||0),0);
+const stockCapacity = () => BASE_STOCK + state.upgrades.fridge*3;
+const customersForDay = () => BASE_CUSTOMERS + Math.min(2,state.day-1) + state.upgrades.marketing;
 const countInBowl = id => state.bowl.filter(x=>x===id).length;
 const shuffle = a => {
   const out=[...a];
