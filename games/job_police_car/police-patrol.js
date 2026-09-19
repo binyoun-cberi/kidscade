@@ -18,6 +18,15 @@ Object.values(A).flat().forEach(load);
 const img=s=>images.get(s)?.ok?images.get(s).im:null;
 const TAU=Math.PI*2,WORLD=2300,ROAD_MAIN=280,ROAD_SIDE=190,GRID=720,SHIFT=360;
 const roadXs=[-1440,-720,0,720,1440],roadYs=[-1440,-720,0,720,1440],roads=[],blocks=[],decor=[];
+const ROAD_MIN=roadXs[0],ROAD_MAX=roadXs[roadXs.length-1];
+const VEHICLE_TYPES={
+ sedan:{key:'sedan',label:'승용차',sprite:0,weight:34,cruise:[118,150],max:182,flee:210,accel:108,brake:154,radius:17,scale:1.12,drawW:42,drawH:76},
+ suv:{key:'suv',label:'SUV',sprite:6,weight:22,cruise:[108,138],max:168,flee:198,accel:96,brake:146,radius:19,scale:1.22,drawW:45,drawH:80},
+ hatch:{key:'hatch',label:'스포츠 해치백',sprite:3,weight:16,cruise:[126,158],max:198,flee:226,accel:120,brake:162,radius:16,scale:1.08,drawW:41,drawH:72},
+ taxi:{key:'taxi',label:'택시',sprite:4,weight:18,cruise:[116,148],max:178,flee:205,accel:105,brake:154,radius:17,scale:1.13,drawW:42,drawH:76},
+ truck:{key:'truck',label:'화물 트럭',sprite:1,weight:10,cruise:[84,112],max:136,flee:166,accel:72,brake:116,radius:24,scale:1.48,drawW:50,drawH:94}
+};
+const TRAFFIC_TYPE_KEYS=Object.keys(VEHICLE_TYPES),SUSPECT_TYPE_KEYS=['sedan','suv','hatch','taxi','truck'];
 let player=null,cars=[],pedestrians=[],mission=null,state='menu',last=performance.now(),score=0,solved=0,shiftTime=0,missionDelay=1.2,radioTimer=0,raf=false,missionIssued=0,lastMissionType='';
 const camera={x:0,y:0,zoom:1},view={w:innerWidth,h:innerHeight,dpr:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
 const coarse=matchMedia('(hover:none),(pointer:coarse)').matches;
@@ -155,6 +164,7 @@ function rebuildCity3D(){
      const park=box3(w,.12,d,0x68a960,.98);park.position.set(x,.04,z);world3.add(park);
    }else if(b.type==='parking'){
      const lot=box3(w,.08,d,0x777e80,.94);lot.position.set(x,.03,z);world3.add(lot);addParkingLines3(world3,b);
+     const parked=['sedan','suv','taxi','truck'];for(let k=0;k<4;k++){const key=parked[(b.shade+k)%parked.length],car=clone3(key,key==='truck'?1.18:.98);if(car){const row=k<2?-1:1,col=k%2?-1:1;car.position.set(x+col*w*.22,.075,z+row*d*.22);car.rotation.y=row>0?0:Math.PI;world3.add(car)}}
    }else{
      const landmark=models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
      if(landmark){
@@ -173,7 +183,7 @@ function rebuildCity3D(){
 function hash3(s=''){let h=2166136261;for(let i=0;i<s.length;i++)h=(h^s.charCodeAt(i))*16777619;return Math.abs(h|0)}
 function clearCarNodes3(){for(const g of carNodes3.values())cars3?.remove(g);carNodes3.clear()}
 function makeCarNode3(c,isPolice=false){
- const key=isPolice?'police':c.suspect?'hatch':['sedan','suv','hatch','taxi','truck'][hash3(c.sprite)%5],group=new T3.Group(),tint=c.suspect?0xe33f4f:null,model=clone3(key,isPolice?1.42:1.16,tint);
+ const key=isPolice?'police':(c.vehicleType||['sedan','suv','hatch','taxi','truck'][hash3(c.sprite)%5]),group=new T3.Group(),tint=c.suspect?0xe33f4f:null,model=clone3(key,isPolice?1.42:(c.vehicle?.scale||1.16),tint);
  if(model){model.position.y=.04;group.add(model)}else{const body=box3(1.08,.42,.56,isPolice?0xeaf2f8:c.suspect?0xe33f4f:MODEL_COLOR3[key]||0x5c8ad8,.62);body.position.y=.28;group.add(body)}
  if(isPolice){
    const stripe=box3(.9,.06,.58,0x2f67ad,.5);stripe.position.y=.28;group.add(stripe);
@@ -259,23 +269,78 @@ function render3D(time){
 }
 /* ===== END 3D CITY RENDERER ===== */
 
+function cityIntervals(centers,halfFn){
+ const out=[];let start=-WORLD+28;
+ for(const c of centers){const end=c-halfFn(c)-22;if(end-start>110)out.push([start,end]);start=c+halfFn(c)+22}
+ const end=WORLD-28;if(end-start>110)out.push([start,end]);return out
+}
 function buildWorld(){
  roads.length=0;blocks.length=0;decor.length=0;
  roadXs.forEach(x=>roads.push({x:x-(x===0?ROAD_MAIN:ROAD_SIDE)/2,y:-WORLD,w:x===0?ROAD_MAIN:ROAD_SIDE,h:WORLD*2,axis:'v'}));
  roadYs.forEach(y=>roads.push({x:-WORLD,y:y-(y===0?ROAD_MAIN:ROAD_SIDE)/2,w:WORLD*2,h:y===0?ROAD_MAIN:ROAD_SIDE,axis:'h'}));
  const halfX=x=>x===0?ROAD_MAIN/2:ROAD_SIDE/2,halfY=y=>y===0?ROAD_MAIN/2:ROAD_SIDE/2;
- for(let xi=0;xi<roadXs.length-1;xi++)for(let yi=0;yi<roadYs.length-1;yi++){
-   const l=roadXs[xi]+halfX(roadXs[xi])+22,r=roadXs[xi+1]-halfX(roadXs[xi+1])-22,t=roadYs[yi]+halfY(roadYs[yi])+22,b=roadYs[yi+1]-halfY(roadYs[yi+1])-22;
-   const type=(xi+yi)%5===0?'park':(xi*3+yi)%4===0?'parking':'building';
-   blocks.push({x:l,y:t,w:r-l,h:b-t,type,shade:(xi+yi)%4});
-   if(type==='park'){for(let k=0;k<6;k++)decor.push({type:'tree',x:l+45+Math.random()*(r-l-90),y:t+45+Math.random()*(b-t-90),small:k%2===0})}
-   else{for(let k=0;k<2;k++)decor.push({type:'tree',x:l+25+(k?Math.max(20,r-l-50):0),y:t+30+Math.random()*Math.max(20,b-t-60),small:true})}
+ const xs=cityIntervals(roadXs,halfX),ys=cityIntervals(roadYs,halfY);
+ for(let xi=0;xi<xs.length;xi++)for(let yi=0;yi<ys.length;yi++){
+   const [l,r]=xs[xi],[t,b]=ys[yi],edge=xi===0||yi===0||xi===xs.length-1||yi===ys.length-1,seed=xi*11+yi*7;
+   const type=seed%9===0?'park':seed%7===0?'parking':'building';
+   blocks.push({x:l,y:t,w:r-l,h:b-t,type,shade:(seed+xi+yi)%4,edge});
+   if(type==='park'){
+     for(let k=0;k<(edge?8:7);k++)decor.push({type:'tree',x:l+38+Math.random()*Math.max(30,r-l-76),y:t+38+Math.random()*Math.max(30,b-t-76),small:k%3===0})
+   }else{
+     for(let k=0;k<(edge?3:2);k++)decor.push({type:'tree',x:l+24+Math.random()*Math.max(20,r-l-48),y:t+24+Math.random()*Math.max(20,b-t-48),small:true})
+   }
  }
 }
 function onRoad(x,y,m=0){return roads.some(r=>x>r.x-m&&x<r.x+r.w+m&&y>r.y-m&&y<r.y+r.h+m)}
 function buildingHit(x,y,r=15){if(Math.abs(x)>WORLD-r||Math.abs(y)>WORLD-r)return true;return blocks.some(b=>b.type==='building'&&x+r>b.x+10&&x-r<b.x+b.w-10&&y+r>b.y+10&&y-r<b.y+b.h-10)}
 function nearRoad(x,y){let best={x,y,d:1e9};for(const rx of roadXs){const d=Math.abs(x-rx);if(d<best.d)best={x:rx,y:clamp(y,-WORLD+70,WORLD-70),d}}for(const ry of roadYs){const d=Math.abs(y-ry);if(d<best.d)best={x:clamp(x,-WORLD+70,WORLD-70),y:ry,d}}return best}
 function nearestIntersection(x,y){let out={x:0,y:0,d:1e9};for(const rx of roadXs)for(const ry of roadYs){const d=Math.hypot(x-rx,y-ry);if(d<out.d)out={x:rx,y:ry,d}}return out}
+function angleWrap(a){while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;return a}
+function roadIndex(arr,v){let best=0;for(let i=1;i<arr.length;i++)if(Math.abs(arr[i]-v)<Math.abs(arr[best]-v))best=i;return best}
+function intersectionKey(p){return roadIndex(roadXs,p.x)+','+roadIndex(roadYs,p.y)}
+function roadDirectionsAt(inter){
+ const xi=roadIndex(roadXs,inter.x),yi=roadIndex(roadYs,inter.y),dirs=[];
+ if(xi<roadXs.length-1)dirs.push(0);if(xi>0)dirs.push(Math.PI);
+ if(yi<roadYs.length-1)dirs.push(Math.PI/2);if(yi>0)dirs.push(-Math.PI/2);
+ return dirs
+}
+function nextIntersectionFor(inter,a){
+ const xi=roadIndex(roadXs,inter.x),yi=roadIndex(roadYs,inter.y);
+ if(Math.abs(Math.cos(a))>.7){const nx=clamp(xi+(Math.cos(a)>0?1:-1),0,roadXs.length-1);return{x:roadXs[nx],y:roadYs[yi]}}
+ const ny=clamp(yi+(Math.sin(a)>0?1:-1),0,roadYs.length-1);return{x:roadXs[xi],y:roadYs[ny]}
+}
+function chooseTrafficDirection(car,inter){
+ let dirs=roadDirectionsAt(inter),reverse=angleWrap(car.a+Math.PI);
+ const noReverse=dirs.filter(a=>Math.abs(angleWrap(a-reverse))>.18);
+ if(noReverse.length)dirs=noReverse;
+ if(car.suspect&&car.fleeing&&player){
+   let best=dirs[0],bestScore=-1e9;
+   for(const a of dirs){
+     const n=nextIntersectionFor(inter,a),key=intersectionKey(n),away=Math.hypot(n.x-player.x,n.y-player.y);
+     const revisit=car.routeHistory?.includes(key)?-260:0,straight=Math.abs(angleWrap(a-car.a))<.18?55:0,noise=Math.random()*120;
+     const score=away+revisit+straight+noise;if(score>bestScore){bestScore=score;best=a}
+   }
+   return best
+ }
+ const straight=dirs.find(a=>Math.abs(angleWrap(a-car.a))<.18);
+ if(straight!=null&&Math.random()<.56)return straight;
+ return dirs[Math.floor(Math.random()*dirs.length)]
+}
+function setTrafficDirection(car,a,inter){
+ car.a=a;const horiz=Math.abs(Math.cos(a))>.7;
+ if(horiz){car.x=inter.x+Math.cos(a)*62;car.y=inter.y+laneOffsetForAngle(a)}
+ else{car.x=inter.x+laneOffsetForAngle(a);car.y=inter.y+Math.sin(a)*62}
+ car.turnCd=1.05;car.routeHistory=car.routeHistory||[];car.routeHistory.push(intersectionKey(inter));if(car.routeHistory.length>6)car.routeHistory.shift()
+}
+function trafficSignalAllows(car,inter){
+ if(car.suspect)return true;
+ const horiz=Math.abs(Math.cos(car.a))>.7,offset=(roadIndex(roadXs,inter.x)*1.7+roadIndex(roadYs,inter.y)*2.3)%6,phase=(shiftTime+offset)%12;
+ return horiz?phase<6:phase>=6
+}
+function recoverTrafficCar(car){
+ const inter=nearestIntersection(clamp(car.x,ROAD_MIN,ROAD_MAX),clamp(car.y,ROAD_MIN,ROAD_MAX));
+ const a=chooseTrafficDirection(car,inter);setTrafficDirection(car,a,inter);car.speed=Math.min(Math.max(45,Math.abs(car.speed)),car.suspect?110:72);car.stuckTimer=0
+}
 function roadPoint(origin,min=400,max=950){for(let i=0;i<80;i++){const vertical=Math.random()<.5,p=vertical?{x:roadXs[Math.floor(Math.random()*roadXs.length)]+(Math.random()<.5?-34:34),y:origin.y+(Math.random()*2-1)*max}:{x:origin.x+(Math.random()*2-1)*max,y:roadYs[Math.floor(Math.random()*roadYs.length)]+(Math.random()<.5?-34:34)};p.x=clamp(p.x,-WORLD+100,WORLD-100);p.y=clamp(p.y,-WORLD+100,WORLD-100);const d=Math.hypot(p.x-origin.x,p.y-origin.y);if(d>=min&&d<=max&&onRoad(p.x,p.y,10))return p}return{x:origin.x+500,y:origin.y}}
 function laneOffsetForAngle(a){
  const horiz=Math.abs(Math.cos(a))>.7;
@@ -284,11 +349,11 @@ function laneOffsetForAngle(a){
 function trafficSpawnPoint(){
  const horizontal=Math.random()<.5,dir=Math.random()<.5?-1:1;
  if(horizontal){
-  const center=roadYs[Math.floor(Math.random()*roadYs.length)],a=dir>0?0:Math.PI;
-  return{x:rnd(-WORLD+120,WORLD-120),y:center+laneOffsetForAngle(a),a}
+  const yi=Math.floor(Math.random()*roadYs.length),seg=Math.floor(Math.random()*(roadXs.length-1)),a=dir>0?0:Math.PI;
+  return{x:rnd(roadXs[seg]+110,roadXs[seg+1]-110),y:roadYs[yi]+laneOffsetForAngle(a),a}
  }
- const center=roadXs[Math.floor(Math.random()*roadXs.length)],a=dir>0?Math.PI/2:-Math.PI/2;
- return{x:center+laneOffsetForAngle(a),y:rnd(-WORLD+120,WORLD-120),a}
+ const xi=Math.floor(Math.random()*roadXs.length),seg=Math.floor(Math.random()*(roadYs.length-1)),a=dir>0?Math.PI/2:-Math.PI/2;
+ return{x:roadXs[xi]+laneOffsetForAngle(a),y:rnd(roadYs[seg]+110,roadYs[seg+1]-110),a}
 }
 function trafficSpawnNear(origin,min=420,max=900){
  for(let i=0;i<90;i++){const p=trafficSpawnPoint(),d=Math.hypot(p.x-origin.x,p.y-origin.y);if(d>=min&&d<=max)return p}
@@ -299,11 +364,12 @@ function trafficDesiredSpeed(car,desired){
  for(const other of cars){
   if(other===car||other.stopped)continue;
   const dx=other.x-car.x,dy=other.y-car.y,front=dx*Math.cos(car.a)+dy*Math.sin(car.a),lat=Math.abs(-dx*Math.sin(car.a)+dy*Math.cos(car.a));
-  if(front>0&&front<best&&lat<42)best=front
+  const laneWidth=(car.radius||17)+(other.radius||17)+10;if(front>0&&front<best&&lat<laneWidth)best=front
  }
- if(best<48)return Math.min(desired,0);
- if(best<90)return Math.min(desired,(best-45)*1.7);
- if(best<145)return Math.min(desired,75+(best-90)*.75);
+ const buffer=(car.radius||17)*1.5;
+ if(best<42+buffer)return Math.min(desired,0);
+ if(best<88+buffer)return Math.min(desired,Math.max(0,(best-40-buffer)*1.7));
+ if(best<145+buffer)return Math.min(desired,70+(best-88-buffer)*.72);
  return desired
 }
 function snapTrafficToLane(car,inter=null){
@@ -341,7 +407,7 @@ function updatePedestrians(dt){
 }
 function separateTrafficCars(){
  for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){
-  const a=cars[i],b=cars[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=31;
+  const a=cars[i],b=cars[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=(a.radius||17)+(b.radius||17)-3;
   if(d>0&&d<min){const nx=dx/d,ny=dy/d,over=(min-d)*.5;a.x-=nx*over;a.y-=ny*over;b.x+=nx*over;b.y+=ny*over;a.speed*=.82;b.speed*=.82}
  }
 }
@@ -364,41 +430,48 @@ class Player extends Car{
 }
 class TrafficCar extends Car{
  update(dt){
-  if(this.stopped){this.speed=Math.max(0,this.speed-300*dt);return}
+  if(this.stopped){this.speed=Math.max(0,this.speed-(this.vehicle?.brake||150)*2*dt);return}
   this.turnCd=Math.max(0,this.turnCd-dt);
-  let desired=this.suspect&&this.fleeing?(this.commandStop?0:(this.fleeSpeed||195)):this.target;
+  let desired=this.suspect&&this.fleeing?(this.commandStop?0:(this.fleeSpeed||this.vehicle?.flee||195)):this.target;
   if(this.yield>0){
    this.yield-=dt;desired=Math.min(desired,55);
    const side=this.yieldSide||1,isH=Math.abs(Math.cos(this.a))>.7,inter=nearestIntersection(this.x,this.y);
-   if(isH)this.y=lerp(this.y,inter.y+side*70,dt*1.1);
-   else this.x=lerp(this.x,inter.x+side*70,dt*1.1)
+   if(isH)this.y=lerp(this.y,inter.y+side*70,dt*1.1);else this.x=lerp(this.x,inter.x+side*70,dt*1.1)
   }
-  if(!this.suspect)desired=trafficDesiredSpeed(this,desired);
-  if(this.speed<desired)this.speed=Math.min(desired,this.speed+105*dt);else this.speed=Math.max(desired,this.speed-150*dt);
-  const inter=nearestIntersection(this.x,this.y);
-  if(inter.d<38&&this.turnCd<=0&&this.yield<=0){
-   let turn=Math.random()<.64?0:(Math.random()<.5?-1:1);
-   if(this.suspect&&this.fleeing)turn=Math.random()<.48?0:(Math.random()<.5?-1:1);
-   this.a+=turn*Math.PI/2;
-   const horiz=Math.abs(Math.cos(this.a))>.7;
-   if(horiz){this.x=inter.x+Math.cos(this.a)*62;this.y=inter.y+laneOffsetForAngle(this.a)}
-   else{this.x=inter.x+laneOffsetForAngle(this.a);this.y=inter.y+Math.sin(this.a)*62}
-   this.turnCd=1.25
-  }
+  const inter=nearestIntersection(this.x,this.y),dx=inter.x-this.x,dy=inter.y-this.y,front=dx*Math.cos(this.a)+dy*Math.sin(this.a);
+  const redHold=!this.suspect&&front>8&&front<95&&!trafficSignalAllows(this,inter);
+  if(!this.suspect){desired=trafficDesiredSpeed(this,desired);if(redHold)desired=Math.min(desired,0)}
+  const accel=this.vehicle?.accel||105,brake=this.vehicle?.brake||150,max=this.suspect?(this.vehicle?.flee||220):(this.vehicle?.max||180);
+  desired=Math.min(desired,max);
+  if(this.speed<desired)this.speed=Math.min(desired,this.speed+accel*dt);else this.speed=Math.max(desired,this.speed-brake*dt);
+  if(inter.d<42&&this.turnCd<=0&&this.yield<=0&&!redHold)setTrafficDirection(this,chooseTrafficDirection(this,inter),inter);
   if(Math.abs(Math.cos(this.a))>.7){
-   const ry=roadYs.reduce((a,b)=>Math.abs(b-this.y)<Math.abs(a-this.y)?b:a,roadYs[0]),lane=ry+laneOffsetForAngle(this.a);this.y=lerp(this.y,lane,clamp(dt*2.4,0,1))
+   const ry=roadYs.reduce((a,b)=>Math.abs(b-this.y)<Math.abs(a-this.y)?b:a,roadYs[0]),lane=ry+laneOffsetForAngle(this.a);this.y=lerp(this.y,lane,clamp(dt*2.6,0,1))
   }else{
-   const rx=roadXs.reduce((a,b)=>Math.abs(b-this.x)<Math.abs(a-this.x)?b:a,roadXs[0]),lane=rx+laneOffsetForAngle(this.a);this.x=lerp(this.x,lane,clamp(dt*2.4,0,1))
+   const rx=roadXs.reduce((a,b)=>Math.abs(b-this.x)<Math.abs(a-this.x)?b:a,roadXs[0]),lane=rx+laneOffsetForAngle(this.a);this.x=lerp(this.x,lane,clamp(dt*2.6,0,1))
   }
-  this.move(dt)
+  this.move(dt);
+  if(this.suspect&&this.fleeing&&!this.commandStop){
+   const outside=this.x<ROAD_MIN-120||this.x>ROAD_MAX+120||this.y<ROAD_MIN-120||this.y>ROAD_MAX+120;
+   this.stuckTimer=(Math.abs(this.speed)<26?this.stuckTimer+dt:Math.max(0,(this.stuckTimer||0)-dt*1.8));
+   if(outside||this.stuckTimer>1.15)recoverTrafficCar(this)
+  }
  }
 }
-function spawnTraffic(n=18){
+function pickTrafficType(){
+ const total=TRAFFIC_TYPE_KEYS.reduce((n,k)=>n+VEHICLE_TYPES[k].weight,0),r=Math.random()*total;let sum=0;
+ for(const k of TRAFFIC_TYPE_KEYS){sum+=VEHICLE_TYPES[k].weight;if(r<=sum)return k}return 'sedan'
+}
+function createTrafficCar(p,typeName=pickTrafficType(),suspect=false){
+ const vehicle=VEHICLE_TYPES[typeName]||VEHICLE_TYPES.sedan,sprite=suspect?A.suspect:A.cars[vehicle.sprite%A.cars.length],c=new TrafficCar(p.x,p.y,p.a,sprite);
+ c.vehicleType=vehicle.key;c.vehicle=vehicle;c.radius=vehicle.radius;c.target=rnd(vehicle.cruise[0],vehicle.cruise[1]);c.routeHistory=[];c.stuckTimer=0;return c
+}
+function spawnTraffic(n=26){
  cars=[];
- for(let i=0;i<n;i++){const p=trafficSpawnPoint(),c=new TrafficCar(p.x,p.y,p.a,A.cars[i%A.cars.length]);c.target=118+Math.random()*34;cars.push(c)}
+ for(let i=0;i<n;i++){const p=trafficSpawnPoint(),c=createTrafficCar(p);cars.push(c)}
 }
 function updateYield(){if(!player.siren)return;for(const c of cars){if(c.suspect)continue;const d=dist(player,c);if(d<330){c.yield=Math.max(c.yield,1.2);c.yieldSide=((c.x+c.y)%2>0?1:-1)}}}
-function collisions(){for(const c of cars){const dx=c.x-player.x,dy=c.y-player.y,d=Math.hypot(dx,dy);if(d>0&&d<34){const nx=dx/d,ny=dy/d,over=34-d;player.x-=nx*over*.5;player.y-=ny*over*.5;c.x+=nx*over*.5;c.y+=ny*over*.5;const impact=Math.abs(player.speed-c.speed);player.speed*=.73;c.speed*=.73;if(impact>100){player.health=clamp(player.health-(impact-90)*.025,0,100);sfx('combat.impact_heavy',{volume:.16,cooldownMs:120});sparkBurst3(clamp((impact-90)/180,.25,1))}}}}
+function collisions(){for(const c of cars){const dx=c.x-player.x,dy=c.y-player.y,d=Math.hypot(dx,dy),min=(c.radius||17)+(player.radius||17);if(d>0&&d<min){const nx=dx/d,ny=dy/d,over=min-d;player.x-=nx*over*.5;player.y-=ny*over*.5;c.x+=nx*over*.5;c.y+=ny*over*.5;const impact=Math.abs(player.speed-c.speed);player.speed*=.73;c.speed*=.73;if(impact>100){const mass=c.vehicleType==='truck'?1.25:1;player.health=clamp(player.health-(impact-90)*.025*mass,0,100);sfx('combat.impact_heavy',{volume:.16,cooldownMs:120});sparkBurst3(clamp((impact-90)/180,.25,1))}}}}
 function missionTarget(){if(!mission)return null;if(mission.type==='pursuit')return mission.suspect;if(mission.type==='accident'||mission.type==='obstacle')return mission.scene;if(mission.type==='traffic')return mission.points[Math.min(mission.index,2)];return mission.point}
 function spawnMission(){
  const roll=Math.random();let type=missionIssued===0?'pursuit':roll<.43?'pursuit':roll<.63?'accident':roll<.76?'crosswalk':roll<.88?'traffic':'obstacle';
@@ -407,14 +480,14 @@ function spawnMission(){
  if(type==='pursuit')spawnPursuit();else if(type==='accident')spawnAccident();else if(type==='crosswalk')spawnCrosswalkMission();else if(type==='traffic')spawnTrafficMission();else spawnObstacle()
 }
 function spawnPursuit(){
- const p=trafficSpawnNear(player,480,920),s=new TrafficCar(p.x,p.y,p.a,A.suspect),variants=[
+ const p=trafficSpawnNear(player,480,920),type=SUSPECT_TYPE_KEYS[Math.floor(Math.random()*SUSPECT_TYPE_KEYS.length)],s=createTrafficCar(p,type,true),variants=[
   ['긴급 신고','수배 차량 추격','수배 차량을 발견했습니다. 사이렌을 켜고 가까운 거리에서 정차 명령을 유지하세요.'],
   ['뺑소니 신고','도주 차량 추격','사고 현장을 이탈한 차량입니다. 무리한 충돌 대신 사이렌으로 압박해 안전하게 정차시키세요.'],
   ['난폭 운전','위험 차량 추격','난폭 운전 차량이 도주 중입니다. 차량을 시야에 두고 정차 명령 게이지를 채우세요.']
  ],v=variants[Math.floor(Math.random()*variants.length)];
- s.suspect=true;s.target=165;s.fleeSpeed=205+Math.random()*22;s.commandStop=false;cars.push(s);
- mission={type:'pursuit',suspect:s,time:0,max:72,progress:0,phase:'locate',variant:v[1]};missionKey3='';
- setMission(v[0],v[1],v[2]);radio('용의 차량 위치 전송. 추격 중 민간 차량과 보행자를 주의하세요.','#ff8290')
+ s.suspect=true;s.target=Math.min(165,s.vehicle.max);s.fleeSpeed=s.vehicle.flee+Math.random()*8;s.commandStop=false;cars.push(s);
+ mission={type:'pursuit',suspect:s,time:0,max:72,progress:0,phase:'locate',variant:v[1],vehicleLabel:s.vehicle.label};missionKey3='';
+ setMission(v[0],v[1],v[2]+' 대상 차량: '+s.vehicle.label+'.');radio('용의 '+s.vehicle.label+' 위치 전송. 추격 중 민간 차량과 보행자를 주의하세요.','#ff8290')
 }
 function spawnAccident(){const p=roadPoint(player,380,760);mission={type:'accident',scene:p,time:0,max:55};missionKey3='';setMission('교통 사고','현장 안전 확보','사고 현장에 정차한 뒤 2차 사고를 막고 현장 조치를 완료하세요.');radio('접촉 사고 신고. 2차 사고 예방이 우선입니다.')}
 function spawnCrosswalkMission(){
@@ -484,7 +557,7 @@ function drawPedestrians2D(){
   ctx.fillStyle='#d7aa86';ctx.beginPath();ctx.arc(0,-8,4,0,TAU);ctx.fill();ctx.restore()
  }
 }
-function drawCar(c,police=false){const ok=drawSprite(c.sprite,c.x,c.y,police?46:42,police?82:76,c.a);if(!ok){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.a);ctx.fillStyle=police?'#3d8deb':'#ddd';ctx.fillRect(-36,-17,72,34);ctx.restore()}if(police){drawSprite(A.lights,c.x,c.y,18,34,c.a);if(player.siren){ctx.save();ctx.globalAlpha=.25+.15*Math.sin(shiftTime*12);ctx.fillStyle=Math.sin(shiftTime*12)>0?'#ff3348':'#3387ff';ctx.beginPath();ctx.arc(c.x,c.y,46,0,TAU);ctx.fill();ctx.restore()}}}
+function drawCar(c,police=false){const ok=drawSprite(c.sprite,c.x,c.y,police?46:(c.vehicle?.drawW||42),police?82:(c.vehicle?.drawH||76),c.a);if(!ok){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.a);ctx.fillStyle=police?'#3d8deb':'#ddd';ctx.fillRect(-36,-17,72,34);ctx.restore()}if(police){drawSprite(A.lights,c.x,c.y,18,34,c.a);if(player.siren){ctx.save();ctx.globalAlpha=.25+.15*Math.sin(shiftTime*12);ctx.fillStyle=Math.sin(shiftTime*12)>0?'#ff3348':'#3387ff';ctx.beginPath();ctx.arc(c.x,c.y,46,0,TAU);ctx.fill();ctx.restore()}}}
 function drawMission(){
  if(!mission)return;const t=missionTarget();if(!t)return;const col=mission.type==='pursuit'?'#ff586a':mission.type==='traffic'?'#ffd85e':'#53aaff';
  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=5;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(t.x,t.y,mission.type==='pursuit'?62:90,0,TAU);ctx.stroke();ctx.globalAlpha=.14;ctx.fillStyle=col;ctx.fill();ctx.restore();
@@ -507,7 +580,7 @@ function update(dt){
 function render(){const t=performance.now()/1000;if(threeReady3){render3D(t)}else{ctx.clearRect(0,0,view.w,view.h);ctx.save();ctx.translate(view.w/2,view.h/2);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);drawWorld();drawPedestrians2D();drawMission();drawArrow();for(const c of cars)drawCar(c);if(player)drawCar(player,true);ctx.restore()}if(player)drawMinimap()}
 function loop(now){const dt=clamp((now-last)/1000,0,.05);last=now;update(dt);render();requestAnimationFrame(loop)}
 function resetInputs(){for(const k of Object.keys(keys))keys[k]=false;touch.steer=0;touch.brake=false;touch.reverse=false;touch.boost=false;if(typeof knob!=='undefined'&&knob)knob.style.transform='translate(0,0)'}
-function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=.8;missionKey3='';missionIssued=0;lastMissionType='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3();clearPedNodes3()}player=new Player();spawnTraffic();spawnPedestrians();lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
+function startGame(){driveAudio.init();resetInputs();resize();score=0;solved=0;shiftTime=0;mission=null;missionDelay=.8;missionKey3='';missionIssued=0;lastMissionType='';buildWorld();if(threeReady3){rebuildCity3D();clearCarNodes3();clearPedNodes3()}player=new Player();spawnTraffic(coarse?20:28);spawnPedestrians(coarse?20:28);lastHealth3=player.health;camera.x=player.x;camera.y=player.y;camera.zoom=framingZoom();state='playing';ui.start.classList.remove('show');ui.end.classList.remove('show');setMission('순찰','근무 시작','첫 신고를 기다리며 주변을 순찰하세요.');setAction();setProgress();radio('순찰 근무를 시작합니다. 안전 운전하세요.');prepare3D().then(ok=>{if(ok){rebuildCity3D();clearCarNodes3();resize3D()}}).catch(err=>console.warn('[Police3D] preload failed, using 2D fallback',err));if(!raf){raf=true;last=performance.now();requestAnimationFrame(loop)}}
 function endGame(){state='end';player.siren=false;driveAudio.update(0,false,shiftTime);setAction();setProgress();ui.endTitle.textContent=solved>=7?'베테랑 순찰팀':solved>=4?'안정적인 순찰 완료':'오늘의 순찰 완료';ui.endText.textContent='6분 동안 '+solved+'건을 해결하고 실적 '+score.toFixed(1)+'점을 기록했어요.';ui.end.classList.add('show')}
 addEventListener('keydown',e=>{if(state!=='playing')return;const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=true;if(k==='s'||k==='arrowdown')keys.s=true;if(k==='a'||k==='arrowleft')keys.a=true;if(k==='d'||k==='arrowright')keys.d=true;if(k==='r')keys.r=true;if(k===' '&&!e.repeat){e.preventDefault();toggleSiren()}if(k==='enter'&&!e.repeat&&ui.action.onclick)ui.action.onclick();if(k==='t'&&!e.repeat)recover()});
 addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.w=false;if(k==='s'||k==='arrowdown')keys.s=false;if(k==='a'||k==='arrowleft')keys.a=false;if(k==='d'||k==='arrowright')keys.d=false;if(k==='r')keys.r=false});
