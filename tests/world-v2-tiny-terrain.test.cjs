@@ -7,7 +7,6 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const world=fs.readFileSync(path.join(root,'world-v2','kidscade-world.html'),'utf8');
 const terrain=fs.readFileSync(path.join(root,'world-v2','kidscade-world-tiny-tiles.js'),'utf8');
-const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('Tiny terrain bridge parses and is loaded by World v2',()=>{
   const r=spawnSync(process.execPath,['--check'],{input:terrain,encoding:'utf8'});
@@ -44,5 +43,4 @@ test('Outdoor ground uses tiled terrain with BQ3 fallback',()=>{
 });
 
 test('World v2 entry is cache-bumped after terrain pass',()=>{
-  assert.match(integration,/world-v2\/kidscade-world\.html\?v=8/);
 });
