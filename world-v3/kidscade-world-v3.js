@@ -829,15 +829,15 @@ function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||
 const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-15.1,-6.2],[-13.6,-6.25],[-12.1,-6.1],[-15.0,-5.15],[-13.5,-5.15],[-12.0,-5.05],[-14.7,-4.25],[-13.25,-4.25],[-11.8,-4.2],[-15.8,-5.7]];
-const RANCH_SLOTS={bunny:[6.5,-22.2],pig:[10.0,-22.3],cow:[13.5,-18.0],chick:[6.5,-18.0]};
+const RANCH_SLOTS={bunny:[5.5,-22.2],pig:[6.8,-18.2],cow:[14.0,-22.0],chick:[14.2,-18.0]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const WILD_PETS={
   cat:{habitat:'pond',x:-14.0,z:5.6,roamX:.34,roamZ:.38},
-  bunny:{habitat:'ranch',x:6.5,z:-22.2,roamX:.42,roamZ:.36},
-  pig:{habitat:'ranch',x:10.0,z:-22.3,roamX:.40,roamZ:.34},
-  cow:{habitat:'ranch',x:13.5,z:-18.0,roamX:.36,roamZ:.32},
-  chick:{habitat:'ranch',x:6.5,z:-18.0,roamX:.44,roamZ:.38},
+  bunny:{habitat:'ranch',x:5.5,z:-22.2,roamX:.42,roamZ:.36},
+  pig:{habitat:'ranch',x:6.8,z:-18.2,roamX:.40,roamZ:.34},
+  cow:{habitat:'ranch',x:14.0,z:-22.0,roamX:.36,roamZ:.32},
+  chick:{habitat:'ranch',x:14.2,z:-18.0,roamX:.44,roamZ:.38},
   fox:{habitat:'deep-forest',x:-34.0,z:2.8,roamX:.55,roamZ:.44},
   deer:{habitat:'deep-forest',x:-28.0,z:6.2,roamX:.58,roamZ:.46},
   parrot:{habitat:'deep-forest',x:-33.0,z:-5.0,roamX:.40,roamZ:.34},
@@ -948,7 +948,7 @@ async function buildPets(){
   interact('outdoor',-16.6,-4.35,1.35,'Cube Pets 마당 보기',petPanel);
 
   // Ranch square (x 0..20, z -30..-10) keeps production pets separate from crop fields.
-  for(const [x,z,rot] of [[4.0,-25.5,0],[7.0,-25.5,0],[10.0,-25.5,0],[13.0,-25.5,0],[16.0,-25.5,0],[4.0,-14.5,0],[7.0,-14.5,0],[13.0,-14.5,0],[16.0,-14.5,0],[2.6,-23.0,Math.PI/2],[2.6,-17.0,Math.PI/2],[17.4,-23.0,Math.PI/2],[17.4,-17.0,Math.PI/2]]){
+  for(const [x,z,rot] of [[4.0,-25.5,0],[7.0,-25.5,0],[13.0,-25.5,0],[16.0,-25.5,0],[4.0,-14.5,0],[7.0,-14.5,0],[13.0,-14.5,0],[16.0,-14.5,0],[2.6,-23.0,Math.PI/2],[2.6,-17.0,Math.PI/2],[17.4,-23.0,Math.PI/2],[17.4,-17.0,Math.PI/2]]){
     await addModel(outdoor,ASSET.fence,{x,z,w:2.8,h:.82,d:.30,rot});
   }
   await addModel(outdoor,ASSET.chest,{x:15.5,z:-13.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
