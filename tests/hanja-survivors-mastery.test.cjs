@@ -57,7 +57,7 @@ test('Hanja Survivors uses committed Kidscade character and monster assets',()=>
 test('Hanja Survivors catalog points to the full-arena balance rework',()=>{
   const game=catalog.games.find(g=>g.id==='hanja_survivors_8');
   assert.ok(game);
-  assert.equal(game.href,'games/hanja_survivors_8/한자 수호전： 8급.html?v=6');
+  assert.equal(game.href,'games/hanja_survivors_8/한자 수호전： 8급.html?v=7');
 });
 
 test('Hanja Survivors has the exact official grade-8 roster and all expansion spells',()=>{
@@ -121,4 +121,15 @@ test('Hanja Survivors nerfs Seven spam while One auto-aims at the nearest enemy'
   assert.match(html,/damage:58 \* spellPower/);
   assert.match(html,/damage:24\*spellPower/);
   assert.match(html,/filter\(v=>v\.d<245\*spellSize\)/);
+});
+
+test('Hanja Survivors uses asset-filled biome scenery without blocking combat',()=>{
+  for(const token of [
+    "objects/rock1.png","objects/rock2.png","objects/rock3.png","objects/oil.png",
+    "background_rock_a.png","background_rock_b.png","background_seaweed_a.png","background_seaweed_b.png"
+  ]) assert.ok(html.includes(token),token);
+  assert.match(html,/Dense deterministic scenery/);
+  assert.match(html,/const clearAlpha=\(x,y\)=>/);
+  assert.match(html,/fgTheme==='forest'/);
+  assert.match(html,/drawCrystal\(x,y/);
 });
