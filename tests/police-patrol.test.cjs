@@ -79,12 +79,12 @@ test('Police Patrol v10 fills outer city blocks and parks cars in parking lots',
   assert.match(js,/function cityIntervals/);
   assert.match(js,/const xs=cityIntervals\(roadXs,halfX\),ys=cityIntervals\(roadYs,halfY\)/);
   assert.match(js,/edge=xi===0\|\|yi===0/);
-  assert.match(js,/const parked=\['sedan','suv','taxi','truck'\]/);
+  assert.match(js,/const parked=\['sedan','suv','taxi','truck','van'\]/);
 });
 
 test('Police Patrol v10 gives traffic real vehicle profiles',()=>{
   assert.match(js,/const VEHICLE_TYPES=/);
-  for(const key of ['sedan','suv','hatch','taxi','truck'])assert.match(js,new RegExp(key+":\\{key:'"+key+"'"));
+  for(const key of ['sedan','suv','hatch','taxi','truck','van','ambulance'])assert.match(js,new RegExp(key+":\\{key:'"+key+"'"));
   assert.match(js,/label:'화물 트럭'/);
   assert.match(js,/function pickTrafficType/);
   assert.match(js,/function createTrafficCar/);
@@ -122,6 +122,8 @@ test('Police Patrol uses shared 3D police, traffic, city and nature assets',()=>
     'assets/game/3d/vehicles/kenney-car-kit/hatchback-sports.glb',
     'assets/game/3d/vehicles/kenney-car-kit/taxi.glb',
     'assets/game/3d/vehicles/kenney-car-kit/truck.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/van.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/ambulance.glb',
     'assets/game/3d/city/kenney-city-kit-roads/traffic-light.glb',
     'assets/game/3d/city/kenney-city-kit-roads/construction-cone.glb',
     'assets/game/3d/city/kenney-city-kit-roads/construction-barrier.glb',
