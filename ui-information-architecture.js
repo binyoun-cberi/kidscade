@@ -16,7 +16,7 @@
     style.textContent = `
       /* =========================================================
          Kidscade information architecture pass
-         게임 / 내 프로필 / 쑥쑥랜드를 명확히 분리합니다.
+         게임 / 내 프로필 / Cube Pets 생존 월드를 명확히 분리합니다.
          ========================================================= */
       .kc-side-card.avatar-shell .kc-side-head { padding-bottom: 7px !important; }
       .kc-side-card.avatar-shell .kc-eyebrow { color:#7c5cff !important; }
@@ -113,7 +113,7 @@
       #kc-local-profile-card .kph-name { font-size:.92rem !important; }
       #kc-local-profile-card .kph-note { font-size:.62rem !important; }
 
-      /* 쑥쑥랜드 카드에는 쑥쑥랜드로 들어가는 한 가지 동선만 남깁니다. */
+      /* Cube Pets 카드는 생활·생존 월드로 들어가는 한 가지 동선만 남깁니다. */
       #sidebar-recommend { display:none !important; }
       #kc-pet-card .kc-side-actions { grid-template-columns:1fr !important; }
       #kc-pet-card #sidebar-pet-open { grid-column:auto !important; }
@@ -289,13 +289,13 @@
 
   function normalizeGrowthArea() {
     const petCard = document.getElementById('kc-pet-card');
-    if (petCard) petCard.setAttribute('aria-label', '쑥쑥랜드 열기');
+    if (petCard) petCard.setAttribute('aria-label', 'Cube Pets 생존 월드 열기');
     const petOpen = document.getElementById('sidebar-pet-open');
-    if (petOpen && petOpen.textContent !== '🌱 쑥쑥랜드 들어가기') petOpen.textContent = '🌱 쑥쑥랜드 들어가기';
+    if (petOpen && petOpen.textContent !== '🌿 생존 월드 열기') petOpen.textContent = '🌿 생존 월드 열기';
 
     const petTalk = document.getElementById('sidebar-pet-talk');
     if (petTalk && petTalk.textContent === '게임을 하면 쑥쑥이도 함께 성장해요.') {
-      petTalk.textContent = '동물을 돌보고 정원을 꾸미는 나의 성장 공간이에요.';
+      petTalk.textContent = '월드에서 Cube Pets를 만나고 함께 탐험해요.';
     }
   }
 
@@ -395,7 +395,7 @@
       nav.innerHTML = `
         <button class="kc-mobile-nav-btn active" type="button" data-mobile-nav="games"><span class="kc-mobile-nav-icon">🎮</span>게임</button>
         <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="profile"><span class="kc-mobile-nav-icon">👤</span>내 프로필</button>
-        <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="growth"><span class="kc-mobile-nav-icon">🌱</span>쑥쑥랜드</button>
+        <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="growth"><span class="kc-mobile-nav-icon">🐾</span>Cube Pets</button>
         <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="search"><span class="kc-mobile-nav-icon">🔎</span>찾기</button>
       `;
     }
