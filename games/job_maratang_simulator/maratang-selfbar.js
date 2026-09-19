@@ -58,7 +58,7 @@ const els = {
   dragTip: $('#dragTip'), shoppingActions: $('#shoppingActions'), spiceDock: $('#spiceDock'),
   spiceOptions: $('#spiceOptions'), cookDock: $('#cookDock'), cookFill: $('#cookFill'), cookText: $('#cookText'),
   serveBtn: $('#serveBtn'), startOverlay: $('#startOverlay'), resultOverlay: $('#resultOverlay'),
-  resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'),
+  resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'), resultUnit:$('#resultUnit'),
   resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn'),
   manageOverlay:$('#manageOverlay'), manageTitle:$('#manageTitle'), manageSummary:$('#manageSummary'), stockRows:$('#stockRows'),
   restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn')
@@ -470,7 +470,7 @@ function serve(){
   const great=result.points>=115, okay=result.points>=80;
   els.resultKicker.textContent=`DAY ${state.day} · 손님 ${state.dayServed} / ${state.dayTarget}`;
   els.resultTitle.textContent=great?'단골이 생길 것 같아요':okay?'맛있게 먹었어요':'불만이 조금 있어요';
-  els.resultScore.textContent=result.points;
+  els.resultScore.textContent=result.points;els.resultUnit.textContent='점';
   const goodText=result.good.length?'잘한 점: '+result.good.join(', '):'';
   const badText=result.bad.length?' · '+result.bad.join(', '):'';
   els.resultText.textContent=`${goodText}${badText} · 결제 ₩${money.revenue.toLocaleString()} (팁 ₩${money.tip.toLocaleString()}) · 이익 ₩${Math.max(0,money.profit).toLocaleString()}`;
@@ -485,7 +485,7 @@ function customerLeaves(){
   state.reputation=Math.max(0,state.reputation-5);state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setPhase('idle');updateReadout();
   els.resultKicker.textContent=`DAY ${state.day} · 손님 이탈`;
   els.resultTitle.textContent='기다리다 돌아갔어요';
-  els.resultScore.textContent='0';
+  els.resultScore.textContent='0';els.resultUnit.textContent='점';
   els.resultText.textContent=`평판 -5 · 담아 둔 재료 ₩${waste.toLocaleString()}어치는 폐기되었습니다. 대기 손님을 더 빨리 처리해야 해요.`;
   els.nextBtn.textContent=state.dayServed>=state.dayTarget?'오늘 영업 마감':'다음 손님';
   els.resultOverlay.classList.add('show');sfx('failure.fail_sting',{volume:.34,cooldownMs:500});
@@ -543,7 +543,7 @@ function finishCampaign(){
   state.completed=true;stopPatience();setPhase('idle');
   const rating=state.reputation>=75?'동네 인기 맛집':state.reputation>=55?'안정적인 마라탕집':'다시 손봐야 할 가게';
   els.resultKicker.textContent='5일 타이쿤 결과';els.resultTitle.textContent=rating;
-  els.resultScore.textContent=Math.round(state.cash);els.resultText.textContent=`최종 현금 ₩${Math.round(state.cash).toLocaleString()} · 평판 ${Math.round(state.reputation)} · 총 손님 ${state.served}명`;
+  els.resultScore.textContent=Math.round(state.cash).toLocaleString();els.resultUnit.textContent='원';els.resultText.textContent=`최종 현금 ₩${Math.round(state.cash).toLocaleString()} · 평판 ${Math.round(state.reputation)} · 총 손님 ${state.served}명`;
   els.nextBtn.textContent='새 가게 시작';els.resultOverlay.classList.add('show');sfx('success.victory_fanfare',{volume:.42,cooldownMs:1200});
 }
 function finishDay(){
