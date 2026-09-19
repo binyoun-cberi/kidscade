@@ -57,6 +57,13 @@ const ASSET={
   petParrot:'../assets/game/characters/pets/animal-parrot.glb',
   petPig:'../assets/game/characters/pets/animal-pig.glb'
 };
+const PET_NAMES={
+  hamster:'햄스터',iguana:'이구아나',dog:'강아지',rabbit:'토끼',parrot:'앵무새',
+  turtle:'거북이',cat:'고양이',goat:'염소',miniPig:'미니돼지',sugarGlider:'슈가글라이더',
+  fish:'구피',neonTetra:'네온테트라',platy:'플래티',cory:'코리도라스',betta:'베타'
+};
+const PET_MODELS={dog:ASSET.petDog,cat:ASSET.petCat,rabbit:ASSET.petRabbit,parrot:ASSET.petParrot,miniPig:ASSET.petPig};
+const FISH_IDS=new Set(['fish','neonTetra','platy','cory','betta']);
 
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
 renderer.autoClear=true;
@@ -230,6 +237,7 @@ panel.addEventListener('click',e=>{
   }
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
+  const pet=e.target.closest('[data-pet]');if(pet){prog().survival.companion=pet.dataset.pet;persist();toast((PET_NAMES[pet.dataset.pet]||pet.dataset.pet)+'와 함께 다녀요!');petPanel();updateStatus();return;}
 });
 
 
@@ -620,6 +628,113 @@ function clockText(minutes){
   return String(h).padStart(2,'0')+':'+mm;
 }
 function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||h>=20;}
+const petActors=[];
+function gardenOwned(){
+  try{
+    const snap=Bridge?.snapshot?.();
+    const ids=Array.isArray(snap?.garden?.owned)?snap.garden.owned:[];
+    return [...new Set(ids)];
+  }catch(_){return []}
+}
+function makeMesh(geo,color){
+  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:.82}));m.castShadow=true;m.receiveShadow=true;return m;
+}
+function makeProceduralPet(id){
+  const g=new THREE.Group();
+  const add=(m,x,y,z,sx=1,sy=1,sz=1)=>{m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m};
+  if(id==='hamster'){
+    add(makeMesh(new THREE.SphereGeometry(.42,16,12),0xd99a45),0,.42,0,1.05,.92,1);
+    add(makeMesh(new THREE.SphereGeometry(.12,12,8),0xf3c678),-.25,.78,0);add(makeMesh(new THREE.SphereGeometry(.12,12,8),0xf3c678),.25,.78,0);
+  }else if(id==='iguana'){
+    add(makeMesh(new THREE.SphereGeometry(.34,16,10),0x72a94e),0,.34,0,1.45,.55,.72);
+    add(makeMesh(new THREE.ConeGeometry(.13,.9,10),0x5f8f42),-.72,.28,0,1,1,1);g.children.at(-1).rotation.z=Math.PI/2;
+  }else if(id==='turtle'){
+    add(makeMesh(new THREE.SphereGeometry(.4,16,12),0x5b8f55),0,.32,0,1.15,.5,1);
+    add(makeMesh(new THREE.SphereGeometry(.17,12,8),0x7aaa61),.48,.34,0);
+  }else if(id==='goat'){
+    add(makeMesh(new THREE.BoxGeometry(.75,.45,.38),0xe9e7df),0,.5,0);
+    add(makeMesh(new THREE.BoxGeometry(.33,.36,.32),0xf5f0df),.48,.67,0);
+    for(const z of [-.13,.13]){add(makeMesh(new THREE.CylinderGeometry(.035,.045,.48,7),0x5d5044),-.23,.2,z);add(makeMesh(new THREE.CylinderGeometry(.035,.045,.48,7),0x5d5044),.25,.2,z);}
+    for(const z of [-.11,.11]){const horn=add(makeMesh(new THREE.ConeGeometry(.045,.28,7),0xb7a37d),.53,.98,z);horn.rotation.z=-.25;}
+  }else if(id==='sugarGlider'){
+    add(makeMesh(new THREE.SphereGeometry(.3,14,10),0x858891),0,.45,0,1.2,.72,.75);
+    add(makeMesh(new THREE.SphereGeometry(.21,14,10),0x9b9da5),.28,.69,0);
+    const wing=makeMesh(new THREE.BoxGeometry(.72,.035,.48),0x6f727c);wing.material.transparent=true;wing.material.opacity=.72;add(wing,-.08,.45,0);
+  }else{
+    add(makeMesh(new THREE.SphereGeometry(.34,14,10),0x9a8f78),0,.36,0);
+  }
+  return g;
+}
+async function makePetObject(id){
+  const url=PET_MODELS[id];
+  if(!url)return makeProceduralPet(id);
+  try{
+    const base=await loadGLB(url),o=prepModel(base.clone(true));
+    o.updateMatrixWorld(true);
+    const box3=new THREE.Box3().setFromObject(o),size=box3.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
+    o.scale.multiplyScalar(1.0/max);o.updateMatrixWorld(true);
+    const b=new THREE.Box3().setFromObject(o);o.position.y-=b.min.y;
+    return o;
+  }catch(_){return makeProceduralPet(id)}
+}
+function petPanel(){
+  const owned=gardenOwned().filter(id=>!FISH_IDS.has(id));
+  const selected=prog().survival.companion;
+  const cards=owned.length?owned.map(id=>`<div class="item"><b>${PET_NAMES[id]||id}</b><div>${id===selected?'현재 동행 중':'펫 마당 친구'}</div><button data-pet="${id}" ${id===selected?'disabled':''}>함께 다니기</button></div>`).join(''):'<div class="item">육상 펫을 아직 만나지 못했어요.</div>';
+  openPanel(`<h2>펫 친구</h2><div class="grid">${cards}</div><p style="font-size:12px">Kidscade 정원에서 해금한 친구들이 그대로 연결됩니다.</p>`);
+}
+async function buildPets(){
+  const ownedAll=gardenOwned(),owned=ownedAll.filter(id=>!FISH_IDS.has(id));
+  const p=prog();
+  if(!owned.includes(p.survival.companion))p.survival.companion=owned[0]||'';
+  persist();
+
+  // Small pet yard beside the house.
+  for(const [x,z,rot] of [[-15.8,-7.2,0],[-13.6,-7.2,0],[-11.4,-7.2,0],[-15.9,-4.9,Math.PI/2],[-11.3,-4.9,Math.PI/2]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.0,h:.85,d:.32,rot});
+  }
+  interact('outdoor',-13.6,-4.7,1.8,'펫 친구 정하기',petPanel);
+
+  const slots=[[-15,-6.1],[-13.6,-6.2],[-12.2,-6.0],[-15,-5.2],[-13.6,-5.25],[-12.2,-5.15],[-14.4,-4.5],[-12.8,-4.5]];
+  for(let n=0;n<owned.length;n++){
+    const id=owned[n],object=await makePetObject(id),slot=slots[n%slots.length];
+    object.position.set(slot[0],.05,slot[1]);object.scale.multiplyScalar(id==='goat'||id==='miniPig'?.95:.8);
+    petLayer.add(object);petActors.push({id,object,homeX:slot[0],homeZ:slot[1],phase:n*.83});
+  }
+
+  // Collected fish live in the home pond instead of following the player.
+  const fishOwned=ownedAll.filter(id=>FISH_IDS.has(id)).slice(0,5);
+  for(let n=0;n<fishOwned.length;n++){
+    try{
+      const base=await loadGLB('../assets/game/characters/pets/animal-fish.glb'),fish=prepModel(base.clone(true));
+      fish.scale.setScalar(.35);fish.position.set(-12.4+(n-2)*.45,.18,6.4+(n%2)*.45);fish.userData.fishIndex=n;outdoor.add(fish);
+    }catch(_){}
+  }
+}
+function updatePets(now,dt){
+  const selected=prog().survival.companion;
+  for(const a of petActors){
+    const companion=a.id===selected;
+    a.object.visible=companion||mode==='outdoor';
+    if(!a.object.visible)continue;
+    let tx,tz;
+    if(companion){
+      const side=avatarFacing<0?.75:-.75;
+      tx=player.x+side;tz=player.z+.75;
+      const dx=tx-a.object.position.x,dz=tz-a.object.position.z,d=Math.hypot(dx,dz);
+      if(d>8){a.object.position.x=tx;a.object.position.z=tz;}
+      else if(d>.55){const step=Math.min(d,dt*3.25);a.object.position.x+=dx/d*step;a.object.position.z+=dz/d*step;a.object.rotation.y=Math.atan2(dx,dz);}
+    }else{
+      tx=a.homeX+Math.sin(now/1900+a.phase)*.55;tz=a.homeZ+Math.cos(now/2300+a.phase)*.4;
+      a.object.position.x+=(tx-a.object.position.x)*Math.min(1,dt*1.3);
+      a.object.position.z+=(tz-a.object.position.z)*Math.min(1,dt*1.3);
+    }
+    a.object.position.y=.04+Math.abs(Math.sin(now/210+a.phase))*(companion?.055:.025);
+  }
+  // Pond fish drift around their pond.
+  outdoor.children.forEach(o=>{if(o.userData?.fishIndex!=null){const q=o.userData.fishIndex,t=now/1600+q;o.position.x=-12.4+Math.cos(t)*1.5;o.position.z=6.5+Math.sin(t*.85+q)*.85;o.rotation.y=-t;}});
+}
+
 function updateStatus(){
   const p=prog(),i=inv(),s=p.survival;
   const pct=Math.max(0,Math.min(100,(p.energy||0)/(p.maxEnergy||100)*100));
@@ -690,6 +805,7 @@ function tick(now){
   shadow.position.set(player.x,.035,player.z+.08);
   updateAvatarFrame(now,moving);
   applyAvatarMotion(now,moving);
+  updatePets(now,dt);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
   const target=new THREE.Vector3(player.x,0,player.z);
@@ -706,6 +822,7 @@ function tick(now){
 async function init(){
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
+  await buildPets();
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
   else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을'}
