@@ -17,7 +17,7 @@ test('One Stroke keeps the original one-stroke route logic intact',()=>{
 test('One Stroke layers a real Three.js city under the interactive route canvas',()=>{
   assert.match(html,/id="city3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/one-stroke-city-3d\.js\?v=3/);
+  assert.match(html,/one-stroke-city-3d\\.js\\?v=4/);
   assert.match(html,/publishCity3D/);
   assert.match(html,/one-stroke-city-layout/);
   assert.match(html,/__oneStroke3DReady/);
@@ -71,5 +71,13 @@ test('One Stroke makes the city visibly larger and more three-dimensional',()=>{
 test('One Stroke catalog points to the road-oriented 3D rework',()=>{
   const game=catalog.games.find(g=>g.id==='low_one_stroke');
   assert.ok(game);
-  assert.equal(game.href,'한붓쓱.html?v=6');
+  assert.equal(game.href,'한붓쓱.html?v=7');
+});
+
+test('One Stroke uses role-based roof colors to break up repeated green roofs',()=>{
+  assert.match(runtime,/const ROOF=\{/);
+  assert.match(runtime,/function tintRoof/);
+  assert.match(runtime,/roofColor\(roofRole\(l\.role\)/);
+  assert.match(runtime,/const roles=o\.edgeId!=null/);
+  assert.match(runtime,/if\(roof!=null&&key\.startsWith\('building'\)\)tintRoof/);
 });
