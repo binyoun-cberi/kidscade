@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>퍼즐 버블 어드밴스드</title>
+    <title>알록달록 퍼즐 버블</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -97,7 +97,7 @@
 <div id="game-wrapper">
     <div id="top-bar">
         <div>
-            <h1 class="text-2xl font-black text-yellow-400 text-shadow leading-none">PUZZLE BOBBLE</h1>
+            <h1 class="text-2xl font-black text-yellow-400 text-shadow leading-none">알록달록 퍼즐 버블</h1>
             <div class="text-xs font-bold text-red-400 mt-1" id="danger-text"></div>
         </div>
         <div class="text-right">
@@ -206,6 +206,21 @@
     const COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#a855f7', '#f97316'];
     const SPECIAL_BOMB = 'BOMB'; const SPECIAL_STONE = 'STONE';
 
+    // Kidscade Puzzle Pack II art. The blue/yellow/black/grey balls are real repository assets;
+    // the blue ball is tintable so all six gameplay colors keep one consistent illustrated shape.
+    const BUBBLE_ART_PATHS = {
+        normal: '../../assets/game/2d/puzzle/balls/ballBlue_05.png',
+        yellow: '../../assets/game/2d/puzzle/balls/ballYellow_05.png',
+        bomb: '../../assets/game/2d/puzzle/balls/ballBlack_05.png',
+        stone: '../../assets/game/2d/puzzle/balls/ballGrey_05.png'
+    };
+    const BUBBLE_ART = {};
+    Object.entries(BUBBLE_ART_PATHS).forEach(([key,src]) => {
+        const im = new Image();
+        im.src = src;
+        BUBBLE_ART[key] = im;
+    });
+
     let level = 1; let score = 0;
     let board = []; let currentBubble = null; let nextBubbleColor = null;
     let shooterAngle = -Math.PI / 2;
@@ -253,21 +268,48 @@
     }
 
     function drawBubble(x, y, color, radius = BUBBLE_RADIUS, alpha = 1) {
-        ctx.save(); ctx.globalAlpha = alpha; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
-        if (color === SPECIAL_BOMB) {
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-            gradient.addColorStop(0, '#ff0000'); gradient.addColorStop(0.5, '#111111'); gradient.addColorStop(1, '#000000');
-            ctx.fillStyle = gradient; ctx.fill();
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - radius); ctx.lineTo(x + 5, y - radius - 5); ctx.stroke();
-        } else if (color === SPECIAL_STONE) {
-            ctx.fillStyle = '#64748b'; ctx.fill();
-            ctx.strokeStyle = '#334155'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x-8, y-5); ctx.lineTo(x+2, y+2); ctx.lineTo(x+8, y-2); ctx.stroke();
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const size = radius * 2.34;
+        let art = null;
+        if (color === SPECIAL_BOMB) art = BUBBLE_ART.bomb;
+        else if (color === SPECIAL_STONE) art = BUBBLE_ART.stone;
+        else if (color === '#eab308') art = BUBBLE_ART.yellow;
+        else art = BUBBLE_ART.normal;
+
+        if (art && art.complete && art.naturalWidth) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(art, x-size/2, y-size/2, size, size);
+
+            // Reuse the illustrated blue ball for red/green/purple/orange while preserving highlights.
+            if (color !== SPECIAL_BOMB && color !== SPECIAL_STONE && color !== '#3b82f6' && color !== '#eab308') {
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.globalAlpha = .63;
+                ctx.fillStyle = color;
+                ctx.fillRect(x-size/2, y-size/2, size, size);
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = .18;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(x-radius*.32,y-radius*.36,radius*.28,0,Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
         } else {
-            const gradient = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.35, radius * 0.1, x, y, radius);
-            gradient.addColorStop(0, '#ffffff'); gradient.addColorStop(0.3, color); gradient.addColorStop(1, shadeColor(color, -40));
-            ctx.fillStyle = gradient; ctx.fill();
+            // Safe fallback while images are still loading.
+            ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
+            const fallback = color === SPECIAL_BOMB ? '#111827' : color === SPECIAL_STONE ? '#64748b' : color;
+            ctx.fillStyle = fallback; ctx.fill();
         }
-        ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke(); ctx.restore();
+
+        if (color === SPECIAL_BOMB) {
+            ctx.strokeStyle='#ffd166';ctx.lineWidth=2;
+            ctx.beginPath();ctx.moveTo(x+2,y-radius*.86);ctx.quadraticCurveTo(x+7,y-radius*1.22,x+11,y-radius*1.1);ctx.stroke();
+            ctx.fillStyle='#ff7043';ctx.beginPath();ctx.arc(x+12,y-radius*1.12,2.2,0,Math.PI*2);ctx.fill();
+        } else if (color === SPECIAL_STONE) {
+            ctx.strokeStyle='rgba(31,41,55,.72)';ctx.lineWidth=1.6;
+            ctx.beginPath();ctx.moveTo(x-7,y-6);ctx.lineTo(x,y);ctx.lineTo(x+7,y-4);ctx.moveTo(x,y);ctx.lineTo(x-3,y+8);ctx.stroke();
+        }
+        ctx.restore();
     }
 
     // --- 게임 상태 관리 및 오버레이 (개선됨) ---
@@ -276,7 +318,7 @@
         overlayScoreWrap.classList.remove('hidden'); overlayScore.innerText = score;
         
         if (type === 'ready') {
-            overlayTitle.innerText = "PUZZLE BOBBLE"; overlayTitle.className = "text-5xl font-black text-blue-400 mb-2 text-glow text-center";
+            overlayTitle.innerText = "알록달록 퍼즐 버블"; overlayTitle.className = "text-5xl font-black text-blue-400 mb-2 text-glow text-center";
             overlayDesc.innerText = "상단의 버블을 맞춰 모두 떨어뜨리세요!";
             overlayScoreWrap.classList.add('hidden'); overlayBtn.innerText = "게임 시작";
         } else if (type === 'gameover') {
