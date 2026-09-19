@@ -12,13 +12,14 @@ const js = fs.readFileSync(path.join(gameDir, 'maratang-selfbar.js'), 'utf8');
 
 const foodModels = [
   'bowl.glb','pot-stew.glb','cabbage.glb','broccoli.glb','carrot.glb',
-  'mushroom.glb','sausage.glb','meat-raw.glb','corn.glb','leek.glb','onion.glb'
+  'mushroom.glb','sausage.glb','meat-raw.glb','corn.glb','leek.glb','onion.glb',
+  'cauliflower.glb','eggplant.glb','radish.glb','dim-sum.glb','mussel-open.glb','egg-half.glb'
 ];
 
-test('Maratang v7 keeps the 3D selfbar and adds tycoon UI', () => {
+test('Maratang v8 keeps the 3D selfbar and adds tycoon UI', () => {
   assert.match(html, /<title>마라탕 한 그릇<\/title>/);
-  assert.match(html, /maratang-selfbar\.css\?v=7/);
-  assert.match(html, /maratang-selfbar\.js\?v=7/);
+  assert.match(html, /maratang-selfbar\.css\?v=8/);
+  assert.match(html, /maratang-selfbar\.js\?v=8/);
   assert.doesNotMatch(html, /maratang-dx|maratang-ui-v4/i);
   assert.match(html, /id="orderTicket"/);
   assert.match(html, /id="weight"/);
@@ -65,7 +66,7 @@ test('Maratang Selfbar interaction is direct shelf-to-bowl dragging', () => {
   assert.match(css, /#scene\{[^}]*touch-action:none/);
 });
 
-test('Maratang v7 keeps compact play UI while adding between-day management', () => {
+test('Maratang v8 keeps compact play UI while adding between-day management', () => {
   assert.match(css, /\.order-ticket/);
   assert.match(css, /\.scale-readout/);
   assert.match(css, /\.ingredient-label/);
@@ -79,7 +80,7 @@ test('Maratang v7 keeps compact play UI while adding between-day management', ()
 });
 
 test('Maratang Selfbar runs a complete order to cook to serve loop', () => {
-  assert.match(js, /CAMPAIGN_DAYS = 5/);
+  assert.match(js, /CAMPAIGN_DAYS = 15/);
   assert.match(js, /PRICE_PER_100G = 1900/);
   assert.match(js, /START_CASH = 12000/);
   assert.match(js, /function checkout\(/);
@@ -102,13 +103,13 @@ test('Maratang Selfbar uses valid shared audio keys', () => {
 test('Maratang Selfbar build output is v7 and contains only new runtime files', () => {
   const distCatalog = JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game = distCatalog.games.find(g=>g.id==='job_maratang_simulator');
-  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=7');
+  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=8');
 
   const builtDir=path.join(root,'dist','games','job_maratang_simulator');
   const built=fs.readFileSync(path.join(builtDir,'마라탕 한 그릇.html'),'utf8');
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
-  assert.match(built,/maratang-selfbar\.css\?v=7/);
-  assert.match(built,/maratang-selfbar\.js\?v=7/);
+  assert.match(built,/maratang-selfbar\.css\?v=8/);
+  assert.match(built,/maratang-selfbar\.js\?v=8/);
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.js')));
   assert.ok(!fs.existsSync(path.join(builtDir,'maratang-dx.js')));
@@ -124,7 +125,7 @@ test('Maratang Selfbar build step is wired into package scripts', () => {
 });
 
 
-test('Maratang v7 depletes stock and makes weight drive the sale price',()=>{
+test('Maratang v8 depletes stock and makes weight drive the sale price',()=>{
   assert.match(js,/state\.stock\[id\]--/);
   assert.match(js,/state\.stock\[id\]=\(state\.stock\[id\]\|\|0\)\+1/);
   assert.match(js,/bowlWeight\(\)\/100\*PRICE_PER_100G/);
@@ -133,7 +134,7 @@ test('Maratang v7 depletes stock and makes weight drive the sale price',()=>{
   assert.match(js,/function restockAll/);
 });
 
-test('Maratang v7 turns patience and mistakes into business consequences',()=>{
+test('Maratang v8 turns patience and mistakes into business consequences',()=>{
   assert.match(js,/if\(state\.patience<=0\)customerLeaves\(\)/);
   assert.match(js,/function customerLeaves/);
   assert.match(js,/state\.dayWaste\+=waste/);
@@ -142,7 +143,7 @@ test('Maratang v7 turns patience and mistakes into business consequences',()=>{
   assert.match(js,/state\.cash\+=revenue/);
 });
 
-test('Maratang v7 has multi-day progression and purchasable upgrades',()=>{
+test('Maratang v8 has multi-day progression and purchasable upgrades',()=>{
   assert.match(js,/function finishDay/);
   assert.match(js,/function startNextDay/);
   assert.match(js,/function finishCampaign/);
@@ -151,4 +152,37 @@ test('Maratang v7 has multi-day progression and purchasable upgrades',()=>{
   assert.match(js,/customersForDay/);
   assert.match(js,/state\.upgrades\.burner/);
   assert.match(js,/state\.upgrades\.service/);
+});
+
+
+test('Maratang v8 stages six new ingredients across the 15-day campaign',()=>{
+  assert.match(js,/unlockDay:3/);
+  assert.match(js,/unlockDay:5/);
+  assert.match(js,/unlockDay:7/);
+  assert.match(js,/unlockDay:9/);
+  assert.match(js,/unlockDay:11/);
+  assert.match(js,/unlockDay:13/);
+  assert.match(js,/function unlockIngredientsForDay/);
+  assert.match(js,/function makeOrderDeck/);
+  for(const id of ['cauliflower','eggplant','radish','dimsum','mussel','egg']) assert.ok(js.includes(`id:'${id}'`),id);
+});
+
+test('Maratang v8 adds customer archetypes and meaningful daily events',()=>{
+  assert.match(js,/const CUSTOMER_TYPES = \[/);
+  assert.match(js,/const DAILY_EVENTS = \[/);
+  for(const id of ['hurried','budget','big','gourmet','influencer','family']) assert.ok(js.includes(`id:'${id}'`),id);
+  for(const id of ['lunchRush','rain','viral','wholesale','meatPrice','vegSale','spicy']) assert.ok(js.includes(`id:'${id}'`),id);
+  assert.match(js,/function makeCustomerOrder/);
+  assert.match(js,/function chooseDailyEvent/);
+  assert.match(js,/purchaseUnitCost/);
+  assert.match(html,/id="eventBanner"/);
+  assert.match(html,/id="tomorrowEvent"/);
+});
+
+test('Maratang v8 only offers orders and restocking for unlocked ingredients',()=>{
+  assert.match(js,/orderAvailable/);
+  assert.match(js,/activeIngredients/);
+  assert.match(js,/isIngredientUnlocked/);
+  assert.match(js,/DAY \$\{ing\.unlockDay\}/);
+  assert.match(js,/activeIngredients\(\)\.map/);
 });
