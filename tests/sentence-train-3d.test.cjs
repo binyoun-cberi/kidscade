@@ -44,7 +44,7 @@ test('Sentence Train keeps sentence ordering gameplay while syncing 3D carriage 
   assert.match(html,/SentenceTrain3D\?\.setCars/);
   assert.match(html,/SentenceTrain3D\?\.depart/);
   assert.match(html,/SentenceTrain3D\?\.celebrate/);
-  assert.match(html,/data-car/);
+  assert.match(html,/dataset\\.car/);
 });
 
 test('Sentence Train has local Three.js and CSS fallback train',()=>{
