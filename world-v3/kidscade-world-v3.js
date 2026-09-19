@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=10';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=11';
 import {createTownEconomy} from './kidscade-world-economy.js?v=9';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -477,6 +477,7 @@ function showStarterHintOnce(){
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?{x1:-32,x2:32,z1:-30,z2:40}:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
+  if(mode==='outdoor'&&isProtectedRoute(nx,nz))return false;
   return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
 let near=null;
