@@ -263,7 +263,7 @@
     if (petOpen) petOpen.textContent = '🐾 Cube Pets 월드';
 
     const shop = document.getElementById('btn-open-shop');
-    if (shop) shop.textContent = '🛒 상점';
+    if (shop) { shop.textContent = '🌱 씨앗 월드'; shop.dataset.openLifeWorld = 'profile-world'; shop.setAttribute('aria-label','씨앗 월드 들어가기'); }
 
     const petHeader = document.querySelector('#pet-modal .sook-coach-header > span');
     if (petHeader) petHeader.textContent = '🐾 Cube Pets는 생존 월드에서 만나요';
