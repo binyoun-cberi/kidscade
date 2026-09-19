@@ -436,7 +436,7 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 
-const LAYOUT_VERSION=4;
+const LAYOUT_VERSION=5;
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
@@ -605,10 +605,18 @@ function updateCropVisuals(){
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
 function isProtectedRoute(x,z){
-  return x>-1.85&&x<1.85&&z>5.6&&z<29.1;
+  return x>-1.85&&x<1.85&&z>5.6&&z<32.2;
+}
+function isPathClearance(x,z){
+  if(isProtectedRoute(x,z))return true;
+  if(z>-.55&&z<1.95&&x>-26.0&&x<26.0)return true;      // main east-west village path
+  if(x>-1.55&&x<1.55&&z>-15.2&&z<6.0)return true;      // north river route
+  if(x>-10.25&&x<-7.35&&z>-5.8&&z<1.9)return true;     // home connector
+  if(x>9.2&&x<12.4&&z>-5.7&&z<1.8)return true;         // farm-house connector
+  return false;
 }
 function addNatureCollider(x,z,w,d){
-  if(isProtectedRoute(x,z))return null;
+  if(isPathClearance(x,z))return null;
   return addColliderFor('outdoor',x,z,w,d);
 }
 const groundPickups=[];
@@ -642,9 +650,8 @@ async function addGroundPickup(id,kind,x,z){
   else prog().groundPickups[id]=0;
 }
 async function buildOutdoor(){
-  // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
-  plane(outdoor,0,5,82,96,0x7caf63,0);
-  box(outdoor,0,5,82,96,.22,0x6c9657,-.22);
+  // Single lawn surface. The old plane + box top shared Y=0 and caused visible Z-fighting.
+  box(outdoor,0,5,82,96,.26,0x7caf63,-.26);
 
   // Distinct connected biomes around the safe home region.
   plane(outdoor,-24,0,12,44,0x4f8050,.015);       // deep forest
@@ -668,15 +675,15 @@ async function buildOutdoor(){
 
   // Signposts make the connected regions discoverable without a map menu.
   await Promise.all([
-    addModel(outdoor,ASSET.signpost,{x:-17.0,z:.0,w:.8,h:1.8,d:.8,rot:-Math.PI/2}),
-    addModel(outdoor,ASSET.signpost,{x:17.0,z:.0,w:.8,h:1.8,d:.8,rot:Math.PI/2}),
-    addModel(outdoor,ASSET.signpost,{x:.0,z:-11.1,w:.8,h:1.8,d:.8,rot:Math.PI}),
-    addModel(outdoor,ASSET.signpost,{x:2.15,z:11.2,w:.8,h:1.8,d:.8,rot:0})
+    addModel(outdoor,ASSET.signpost,{x:-17.0,z:2.35,w:.8,h:1.8,d:.8,rot:-Math.PI/2}),
+    addModel(outdoor,ASSET.signpost,{x:17.0,z:2.35,w:.8,h:1.8,d:.8,rot:Math.PI/2}),
+    addModel(outdoor,ASSET.signpost,{x:2.2,z:-11.1,w:.8,h:1.8,d:.8,rot:Math.PI}),
+    addModel(outdoor,ASSET.signpost,{x:2.35,z:11.2,w:.8,h:1.8,d:.8,rot:0})
   ]);
-  interact('outdoor',-17,0,1.2,'표지판 읽기',()=>toast('← 깊은 숲 · 목재와 버섯'));
-  interact('outdoor',17,0,1.2,'표지판 읽기',()=>toast('→ 돌산 · 돌과 철광석'));
-  interact('outdoor',0,-11.1,1.2,'표지판 읽기',()=>toast('↑ 북쪽 강가 · 나무다리'));
-  interact('outdoor',2.15,11.2,1.2,'표지판 읽기',()=>toast('↓ 남쪽 야영지 · 씨앗마을'));
+  interact('outdoor',-17,2.35,1.2,'표지판 읽기',()=>toast('← 깊은 숲 · 목재와 버섯'));
+  interact('outdoor',17,2.35,1.2,'표지판 읽기',()=>toast('→ 돌산 · 돌과 철광석'));
+  interact('outdoor',2.2,-11.1,1.2,'표지판 읽기',()=>toast('↑ 북쪽 강가 · 나무다리'));
+  interact('outdoor',2.35,11.2,1.2,'표지판 읽기',()=>toast('↓ 남쪽 야영지 · 씨앗마을'));
 
   // Pond and a calmer resting/garden area on the west side.
   const pond=new THREE.Mesh(
@@ -752,12 +759,13 @@ async function buildOutdoor(){
   // Trees form a readable perimeter/woodland rather than random clutter.
   const treePos=[
     [-17,-9],[-14,-9],[-4,-9],[1,-9],[5,-9],[16,-9],
-    [-18,-4],[-18,1],[-18,8],[-7,10],[17,3],[17,-3],
-    [-14,1.5],[-4,6.8]
+    [-18,-4],[-18,8],[-7,10],[17,3],[17,-3],
+    [-4,6.8]
   ];
   const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
   for(let i=0;i<treePos.length;i++){
-    const [x,z]=treePos[i];await addModel(outdoor,treeAssets[i%3],{x,z,w:2.4,h:3.8+(i%2)*.5,d:2.4,rot:(i%5)*.42});
+    const [x,z]=treePos[i];if(isPathClearance(x,z))continue;
+    await addModel(outdoor,treeAssets[i%3],{x,z,w:2.4,h:3.8+(i%2)*.5,d:2.4,rot:(i%5)*.42});
     addNatureCollider(x,z,.7,.7);
     interact('outdoor',x,z,1.3,'나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
   }
@@ -766,7 +774,8 @@ async function buildOutdoor(){
   const rocks=[[15.1,1.8],[16.0,4.1],[14.7,7.2],[-15.8,7.7]];
   const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
   for(let i=0;i<rocks.length;i++){
-    const [x,z]=rocks[i];await addModel(outdoor,rockAssets[i%3],{x,z,w:1.45,h:1.1,d:1.4,rot:i*.65});
+    const [x,z]=rocks[i];if(isPathClearance(x,z))continue;
+    await addModel(outdoor,rockAssets[i%3],{x,z,w:1.45,h:1.1,d:1.4,rot:i*.65});
     addNatureCollider(x,z,.82,.68);
     interact('outdoor',x,z,1.2,'바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
   }
@@ -774,7 +783,8 @@ async function buildOutdoor(){
   // Deep forest: denser timber, fallen logs and edible mushrooms.
   const forestTrees=[[-27,-10],[-24,-8],[-21,-11],[-28,-4],[-24,-2],[-21,2],[-28,6],[-24,9],[-21,12],[-27,16],[-22,18]];
   for(let i=0;i<forestTrees.length;i++){
-    const [x,z]=forestTrees[i];await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
+    const [x,z]=forestTrees[i];if(isPathClearance(x,z))continue;
+    await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
     addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
   }
   for(const [x,z] of [[-25,4],[-22,6.5],[-27,12],[-23,-5]]){
@@ -786,7 +796,8 @@ async function buildOutdoor(){
   // Quarry: concentrated stone and rarer iron ore.
   const quarryRocks=[[21,-8],[25,-10],[28,-6],[22,-2],[26,1],[28,5],[22,9],[26,12],[28,16]];
   for(let i=0;i<quarryRocks.length;i++){
-    const [x,z]=quarryRocks[i];await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});
+    const [x,z]=quarryRocks[i];if(isPathClearance(x,z))continue;
+    await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});
     addNatureCollider(x,z,.9,.75);
     if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
     else interact('outdoor',x,z,1.25,'돌산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
@@ -803,8 +814,8 @@ async function buildOutdoor(){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
 
-  await addModel(outdoor,ASSET.signpost,{x:2.25,z:20.65,w:.8,h:1.8,d:.8,rot:.15,name:'city-sign'});
-  interact('outdoor',2.25,20.65,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 · 상업가 · 광장 · 공공시설 · 버스정류장'));
+  await addModel(outdoor,ASSET.signpost,{x:2.65,z:20.65,w:.8,h:1.8,d:.8,rot:.15,name:'city-sign'});
+  interact('outdoor',2.65,20.65,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 · 상업가 · 광장 · 공공시설 · 버스정류장'));
 
   cityRuntime=await buildKidscadeCity({
     parent:outdoor,
@@ -1129,9 +1140,8 @@ function tick(now){
     }
   }
   if(mode==='outdoor'){
-    const nowInCity=isCityArea(player.x,player.z);
-    if(nowInCity&&!wasInCity){resetInput(true);}
-    wasInCity=nowInCity;
+    // Crossing into Seed Town must be seamless. Focus-loss guards already handle stuck keys.
+    wasInCity=isCityArea(player.x,player.z);
   }else wasInCity=false;
   avatar.position.x=player.x;avatar.position.z=player.z;
   shadow.position.set(player.x,.035,player.z+.08);
