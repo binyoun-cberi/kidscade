@@ -32,6 +32,7 @@ test('Trash Runner v3 uses tracked 3D route and trash assets',()=>{
     'assets/game/food/soda-can.glb',
     'assets/game/food/can.glb',
     'assets/game/food/cup.glb',
+    'assets/game/food/bowl-soup.glb',
     'assets/game/food/carton.glb',
     'assets/game/food/bag.glb',
     'assets/game/food/pizza-box.glb',
@@ -41,8 +42,7 @@ test('Trash Runner v3 uses tracked 3D route and trash assets',()=>{
     'assets/game/food/orange.glb',
     'assets/game/food/egg-half.glb',
     'assets/game/food/onion-half.glb',
-    'assets/game/food/leek.glb',
-    'assets/game/food/fish-bones.glb'
+    'assets/game/food/leek.glb'
   ];
   for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
   assert.match(runtime,/const TRASH_MODEL=/);
