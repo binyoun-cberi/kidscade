@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=14';
-import {createTownEconomy} from './kidscade-world-economy.js?v=9';
+import {createTownEconomy} from './kidscade-world-economy.js?v=10';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,zoneAt,isCityArea,isTravelCorridor} from './kidscade-world-grid.js?v=1';
