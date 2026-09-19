@@ -531,11 +531,11 @@
     {
       "id": "hanja_survivors_8",
       "title": "한자 수호전: 8급",
-      "href": "games/hanja_survivors_8/한자 수호전： 8급.html?v=6",
+      "href": "games/hanja_survivors_8/한자 수호전： 8급.html?v=7",
       "category": "lang",
       "age": "low",
       "icon": "🛡️",
-      "description": "화면 전체를 쓰는 판타지 전장에서 느린 몬스터 군세를 피하며 이동과 필기를 동시에 하고, 마법책으로 시간을 멈춰 8급 50자 주문을 고르는 숙련 액션 서바이벌!",
+      "description": "숲·설원·지옥·동굴마다 실제 2D 나무·바위·지형 에셋이 촘촘히 배치된 전장에서 이동과 필기를 동시에 하며 8급 한자 50자 주문을 성장시키는 실시간 액션 서바이벌!",
       "scoreKey": "hanja_survivors_best",
       "cover": "assets/gate-image/한자수호전.png"
     },
