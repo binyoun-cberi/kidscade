@@ -141,7 +141,70 @@ button:disabled{cursor:not-allowed;opacity:.45}
   .review-list{grid-template-columns:1fr;padding:10px}.review-top{align-items:flex-start;flex-direction:column}.feature-row{grid-template-columns:1fr}.hero{padding:23px}.hero h1{font-size:28px}.modal-body{padding:18px}
 }
 @media(max-width:420px){.hud .pill:nth-child(n+2){display:none}.patient-name{font-size:19px}}
+
+/* ===== v2 · real 3D patient assets + single-screen clinic UI ===== */
+.patient-stage{position:relative;padding:0;overflow:hidden;background:linear-gradient(180deg,#dcebea,#cbdcda);isolation:isolate}
+#patientCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+.clinic-badge{position:absolute;top:10px;left:10px;z-index:6;padding:6px 9px;border-radius:9px;background:rgba(255,255,255,.9);border:1px solid rgba(77,111,115,.16);box-shadow:0 5px 16px rgba(32,66,70,.1);font-size:11px;font-weight:900;color:#49676b;backdrop-filter:blur(7px)}
+.asset-status{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:7;padding:5px 8px;border-radius:999px;background:rgba(20,50,57,.78);color:#fff;font-size:10px;font-weight:800;white-space:nowrap;transition:.2s}
+.asset-status.ready{opacity:0;pointer-events:none}
+.patient-stage .avatar{z-index:2}
+.patient-stage.asset-ready .avatar{display:none}
+.symptom-visual{position:absolute;inset:0;z-index:5;pointer-events:none}
+.face-flush{position:absolute;left:50%;top:27%;width:86px;height:58px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(224,63,63,.18),rgba(224,63,63,0) 70%);opacity:0;transition:.35s}
+.face-flush.show{opacity:1}
+.rash-layer{position:absolute;left:50%;top:31%;width:82px;height:82px;transform:translate(-50%,-50%);opacity:0;transition:.3s;background:
+ radial-gradient(circle at 28% 34%,rgba(185,53,72,.75) 0 2px,transparent 3px),
+ radial-gradient(circle at 62% 28%,rgba(185,53,72,.7) 0 2px,transparent 3px),
+ radial-gradient(circle at 47% 59%,rgba(185,53,72,.72) 0 2px,transparent 3px),
+ radial-gradient(circle at 70% 67%,rgba(185,53,72,.65) 0 1.7px,transparent 2.7px),
+ radial-gradient(circle at 34% 72%,rgba(185,53,72,.7) 0 1.7px,transparent 2.7px)}
+.rash-layer.show{opacity:1}
+.sweat-layer{position:absolute;left:59%;top:22%;width:7px;height:13px;border-radius:60% 40% 60% 40%;background:rgba(92,169,206,.75);transform:rotate(18deg);opacity:0;box-shadow:9px 11px 0 -1px rgba(92,169,206,.55)}
+.sweat-layer.show{opacity:1;animation:sweatPulse 1.2s ease-in-out infinite alternate}
+@keyframes sweatPulse{to{transform:translateY(5px) rotate(18deg);opacity:.55}}
+.patient-observe{margin-top:9px;padding:8px 10px;border-radius:11px;background:#edf6f4;border:1px solid #d7eae6;color:#526c6e;font-size:11px;line-height:1.45}
+.patient-observe b{color:#245d5c}
+@media(min-width:1000px){
+  html,body,.app{height:100%;overflow:hidden}
+  .topbar{height:58px;padding:8px 14px}
+  .brand{min-width:190px}.logo{width:38px;height:38px}.brand b{font-size:15px}.brand small{font-size:10px}
+  .page{height:calc(100vh - 58px);max-width:1680px;padding:10px}
+  .workspace{height:100%;grid-template-columns:minmax(255px,27%) minmax(430px,1fr) minmax(315px,31%);gap:10px;align-items:stretch}
+  .patient-card,.center-card,.chart-card{position:relative!important;top:auto!important;height:100%;min-height:0}
+  .patient-card{display:flex;flex-direction:column;overflow:hidden}
+  .patient-stage{height:43%;min-height:235px;flex:0 0 43%}
+  .patient-meta{padding:11px 13px;overflow:auto;min-height:0}
+  .patient-name{font-size:19px}.tag{padding:3px 7px;font-size:10px}
+  .complaint{margin-top:7px;padding:10px 11px;font-size:13px;line-height:1.45}
+  .micro{font-size:10px;margin-top:7px}
+  .patient-observe{margin-top:7px;padding:7px 9px}
+  .center-card{display:flex;flex-direction:column;min-height:0}
+  .tabs{position:static;top:auto;flex:0 0 auto;padding:7px;gap:4px}
+  .tab{padding:7px 10px;font-size:12px}
+  .panel{flex:1;min-height:0;overflow:auto;padding:11px 12px}
+  .section-title{margin-bottom:8px}.section-title h2{font-size:15px}.section-title p{font-size:10px}
+  .grid2{gap:6px}
+  .action{min-height:47px;padding:7px 9px;border-radius:10px}.action b{font-size:12px}.action small{font-size:10px;margin-top:2px}.action .cost{font-size:9px}
+  .test-budget{margin:6px 0 10px;height:6px}
+  .log{margin-top:9px;gap:6px}.bubble{padding:8px 10px;font-size:11px;line-height:1.4;border-radius:10px}.bubble .who{font-size:9px;margin-bottom:2px}
+  .chart-card{display:flex;flex-direction:column;overflow:hidden}
+  .chart-head{flex:0 0 auto;padding:10px 12px}.chart-head strong{font-size:14px}
+  .chart-body{flex:1;min-height:0;overflow:auto;padding:9px 11px}
+  .record{padding:6px 0}.record-label{font-size:9px;margin-bottom:2px}.record-value{font-size:11px;line-height:1.35}
+  .decision{margin-top:8px;padding-top:9px}.decision h3{font-size:12px;margin-bottom:6px}
+  .select{padding:8px 9px;font-size:11px}
+  .rx-list{gap:4px;margin-top:6px}.rx{padding:6px 7px;border-radius:8px;gap:6px}.rx b{font-size:10px}.rx small{font-size:9px}
+  .finish{padding:9px 10px;border-radius:9px;margin-top:8px;font-size:12px}.note{font-size:9px;margin-top:5px}
+  .protocol{padding:9px}.protocol-desc{font-size:10px}.save-protocol{padding:10px}
+}
+@media(min-width:1380px){
+  .workspace{grid-template-columns:minmax(285px,28%) minmax(500px,1fr) minmax(350px,30%)}
+  .patient-stage{height:46%;flex-basis:46%}
+}
+
 </style>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div class="app">
@@ -158,9 +221,16 @@ button:disabled{cursor:not-allowed;opacity:.45}
   <main class="page">
     <div class="workspace">
       <aside class="card patient-card">
-        <div class="patient-stage">
-          <div class="wall-decor">진료실 2</div>
-          <div class="avatar" id="avatar">
+        <div class="patient-stage" id="patientStage">
+          <canvas id="patientCanvas" aria-label="3D 환자"></canvas>
+          <div class="clinic-badge">진료실 2 · 관찰</div>
+          <div class="asset-status" id="assetStatus">환자 에셋 준비 중…</div>
+          <div class="symptom-visual" aria-hidden="true">
+            <div class="face-flush" id="faceFlush"></div>
+            <div class="rash-layer" id="rashLayer"></div>
+            <div class="sweat-layer" id="sweatLayer"></div>
+          </div>
+          <div class="avatar" id="avatar" aria-label="환자 에셋 대체 표시">
             <div class="hair"></div><div class="ear l"></div><div class="ear r"></div><div class="head"></div>
             <div class="eye l"></div><div class="eye r"></div><div class="mouth"></div><div class="neck"></div><div class="body"></div>
           </div>
@@ -168,7 +238,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
         <div class="patient-meta">
           <div class="patient-line"><span class="patient-name" id="patientName">환자</span><span class="tag" id="patientAge">-</span><span class="tag return hidden" id="returnTag">재방문</span></div>
           <div class="complaint" id="complaint">환자의 이야기를 듣는 중입니다.</div>
-          <div class="micro">진료 중에는 정답·오답 피드백이 없습니다. 검사 결과와 차트를 읽고 직접 판단하세요.</div>
+          <div class="patient-observe"><b>관찰도 진료의 일부입니다.</b> 환자의 말뿐 아니라 표정·피부·움직임도 살펴보세요.</div><div class="micro">진료 중에는 정답·오답 피드백이 없습니다. 검사 결과와 차트를 읽고 직접 판단하세요.</div>
         </div>
       </aside>
 
@@ -402,6 +472,21 @@ function diseaseById(id){return DISEASES[id]}
 function diseaseLabel(id){return DISEASES[id]?DISEASES[id].label:id}
 function uid(){return 'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
 
+
+var PEOPLE_MODELS={
+  F:['character-female-a.glb','character-female-b.glb','character-female-c.glb','character-female-d.glb','character-female-e.glb','character-female-f.glb'],
+  M:['character-male-a.glb','character-male-b.glb','character-male-c.glb','character-male-d.glb','character-male-e.glb','character-male-f.glb']
+};
+function makeVisual(diseaseId,sex,returning){
+  var cues=[];
+  if(['cold','flu','bronchitis','pneumonia'].indexOf(diseaseId)>=0)cues.push('cough');
+  if(['flu','pneumonia'].indexOf(diseaseId)>=0)cues.push('flush');
+  if(['gastro','foodpoison'].indexOf(diseaseId)>=0)cues.push('tired');
+  if(diseaseId==='allergy')cues.push('nose');
+  if(returning&&['flu','pneumonia','foodpoison'].indexOf(diseaseId)>=0)cues.push('sweat');
+  return {model:pick(PEOPLE_MODELS[sex]||PEOPLE_MODELS.F),cues:cues,severity:returning?2:1};
+}
+
 function makePatient(diseaseId,returnInfo){
   var d=diseaseById(diseaseId);
   var day=state.day;
@@ -420,11 +505,13 @@ function makePatient(diseaseId,returnInfo){
   if(Math.random()<interactionChance)currentMeds.push('Z');
   if(Math.random()<.12&&day>=3)currentMeds.push('B');
 
+  var sex=Math.random()<.5?'F':'M';
   var p={
-    id:uid(),name:pick(NAMES),age:20+Math.floor(Math.random()*55),sex:Math.random()<.5?'F':'M',
+    id:uid(),name:pick(NAMES),age:20+Math.floor(Math.random()*55),sex:sex,
     disease:diseaseId,severity:d.risk,returning:false,visitCount:1,
     allergies:allergies,currentMeds:currentMeds,
-    complaint:d.base,avatar:{shirt:pick(SHIRTS),hair:pick(HAIRS),skin:pick(SKINS)}
+    complaint:d.base,visual:makeVisual(diseaseId,sex,false),
+    avatar:{shirt:pick(SHIRTS),hair:pick(HAIRS),skin:pick(SKINS)}
   };
   if(returnInfo){
     p=Object.assign({},returnInfo.patient);
@@ -433,6 +520,9 @@ function makePatient(diseaseId,returnInfo){
     p.severity=Math.min(4,(p.severity||d.risk)+1);
     p.complaint=d.returnText;
     p.id=returnInfo.patient.id;
+    var keptModel=p.visual&&p.visual.model;
+    p.visual=makeVisual(diseaseId,p.sex,true);
+    if(keptModel)p.visual.model=keptModel;
   }
   return p;
 }
@@ -488,6 +578,18 @@ function applyAvatar(p){
   a.style.setProperty('--hair',p.avatar.hair);
   a.style.setProperty('--skin',p.avatar.skin);
 }
+
+function renderVisualObservation(p){
+  if(!p.visual)p.visual=makeVisual(p.disease,p.sex,!!p.returning);
+  var cues=p.visual.cues||[];
+  var flush=e('faceFlush'),rash=e('rashLayer'),sweat=e('sweatLayer');
+  if(flush)flush.classList.toggle('show',cues.indexOf('flush')>=0);
+  if(rash)rash.classList.toggle('show',cues.indexOf('rash')>=0);
+  if(sweat)sweat.classList.toggle('show',cues.indexOf('sweat')>=0);
+  window.__clinicPatientCurrent=p;
+  if(window.ClinicPatient3D&&window.ClinicPatient3D.show)window.ClinicPatient3D.show(p);
+}
+
 function renderPatient(){
   var p=state.current;
   e('patientName').textContent=p.name;
@@ -495,6 +597,7 @@ function renderPatient(){
   e('returnTag').classList.toggle('hidden',!p.returning);
   e('complaint').textContent='“'+p.complaint+'”';
   applyAvatar(p);
+  renderVisualObservation(p);
   renderChart();
   renderQuestions();
   renderTests();
@@ -820,6 +923,145 @@ e('automationContent').addEventListener('click',function(ev){
 });
 document.addEventListener('contextmenu',function(ev){ev.preventDefault()});
 })();
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+const canvas=document.getElementById('patientCanvas');
+const stage=document.getElementById('patientStage');
+const fallback=document.getElementById('avatar');
+const statusEl=document.getElementById('assetStatus');
+if(canvas&&stage){
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=.95;
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0xdcebea);
+  const camera=new THREE.PerspectiveCamera(34,1,.1,30);
+  camera.position.set(0,1.52,4.15);
+  camera.lookAt(0,1.22,0);
+
+  scene.add(new THREE.HemisphereLight(0xf7fffd,0x8aa0a0,1.65));
+  const key=new THREE.DirectionalLight(0xfff3dc,2.25);key.position.set(-3.5,5,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
+  const fill=new THREE.PointLight(0xa8d7d1,2.2,7,2);fill.position.set(2.7,2.4,2.6);scene.add(fill);
+
+  const mat=(color,rough=.8)=>new THREE.MeshStandardMaterial({color,roughness:rough});
+  function box(size,pos,color,rough=.8){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(...size),mat(color,rough));
+    m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+  }
+  box([5.5,3.7,.12],[0,1.7,-1.45],0xe9f2f0,.92);
+  box([5.5,.08,4.3],[0,-.04,.45],0xb9c9c5,.95);
+  box([1.45,.06,.95],[-1.42,1.95,-1.36],0xffffff,.7);
+  box([1.18,.025,.72],[-1.42,1.95,-1.31],0xb9ded8,.55);
+  box([.95,.12,.12],[1.55,2.2,-1.32],0x5c8584,.6);
+  box([.65,.12,.12],[1.55,2.0,-1.32],0xe6a85b,.6);
+  const desk=box([3.65,.12,1.08],[0,.72,1.04],0x9b7658,.72);
+  const front=box([3.55,.76,.12],[0,.35,1.48],0x6d5645,.78);
+  desk.castShadow=true;front.castShadow=true;
+
+  const group=new THREE.Group();scene.add(group);
+  const loader=new GLTFLoader(),cache=new Map();
+  let current=null,requestId=0,last=performance.now();
+
+  async function loadModel(name){
+    const url='../../assets/game/characters/people/'+name;
+    if(!cache.has(url))cache.set(url,loader.loadAsync(url));
+    return cache.get(url);
+  }
+  function fit(root,height=2.72){
+    let b=new THREE.Box3().setFromObject(root),s=new THREE.Vector3();b.getSize(s);
+    root.scale.multiplyScalar(height/(s.y||Math.max(s.x,s.z)||1));
+    b=new THREE.Box3().setFromObject(root);
+    const center=b.getCenter(new THREE.Vector3());
+    root.position.x-=center.x;root.position.z-=center.z;root.position.y-=b.min.y;
+  }
+  function setCueLayers(patient){
+    const cues=patient?.visual?.cues||[];
+    document.getElementById('faceFlush')?.classList.toggle('show',cues.includes('flush'));
+    document.getElementById('rashLayer')?.classList.toggle('show',cues.includes('rash'));
+    document.getElementById('sweatLayer')?.classList.toggle('show',cues.includes('sweat'));
+  }
+  async function show(patient){
+    if(!patient)return;
+    const token=++requestId;
+    const model=patient.visual?.model || (patient.sex==='M'?'character-male-a.glb':'character-female-a.glb');
+    setCueLayers(patient);
+    statusEl?.classList.remove('ready');
+    if(statusEl)statusEl.textContent='환자 불러오는 중…';
+    try{
+      const gltf=await loadModel(model);
+      if(token!==requestId)return;
+      while(group.children.length)group.remove(group.children[0]);
+      current?.mixer?.stopAllAction();
+      const root=SkeletonUtils.clone(gltf.scene);
+      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+      fit(root,2.7);
+      root.position.set(0,0,-.08);
+      root.lookAt(0,0,5);
+      group.add(root);
+      let mixer=null;
+      if(gltf.animations?.length){
+        mixer=new THREE.AnimationMixer(root);
+        const clip=gltf.animations.find(x=>/idle/i.test(x.name))||gltf.animations[0];
+        mixer.clipAction(clip).reset().fadeIn(.12).play();
+      }
+      current={root,mixer,cues:patient.visual?.cues||[],severity:patient.visual?.severity||1,seed:Math.random()*10};
+      stage.classList.add('asset-ready');
+      fallback?.classList.add('hidden');
+      if(statusEl){statusEl.textContent='3D 환자 에셋';statusEl.classList.add('ready')}
+    }catch(err){
+      console.warn('[Clinic] patient asset load failed',model,err);
+      stage.classList.remove('asset-ready');
+      fallback?.classList.remove('hidden');
+      if(statusEl){statusEl.textContent='환자 에셋 로딩 실패 · 기본 표시 사용';statusEl.classList.remove('ready')}
+    }
+  }
+  function resize(){
+    const r=stage.getBoundingClientRect();
+    const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+    renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);resize();
+
+  function animate(now){
+    requestAnimationFrame(animate);
+    const dt=Math.min(.05,(now-last)/1000);last=now;
+    if(current){
+      current.mixer?.update(dt);
+      const t=now/1000+current.seed;
+      const breath=Math.sin(t*1.7)*.006;
+      current.root.position.y=breath;
+      current.root.rotation.z=Math.sin(t*.65)*.006;
+      if(current.cues.includes('tired'))current.root.rotation.z+=.025;
+      if(current.cues.includes('cough')){
+        const cycle=(t%4.8);
+        const cough=cycle<.42?Math.sin(cycle/.42*Math.PI):0;
+        current.root.rotation.x=-.08*cough*(1+.2*current.severity);
+        current.root.position.z=-.09*cough;
+      }else{
+        current.root.rotation.x=0;
+        current.root.position.z=-.08;
+      }
+      if(current.cues.includes('nose')){
+        current.root.rotation.y=Math.sin(t*.8)*.025;
+      }else current.root.rotation.y=0;
+    }
+    renderer.render(scene,camera);
+  }
+  requestAnimationFrame(animate);
+
+  window.ClinicPatient3D={show,version:'asset-v2'};
+  if(window.__clinicPatientCurrent)show(window.__clinicPatientCurrent);
+}
 </script>
 </body>
 </html>
