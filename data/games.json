@@ -92,11 +92,11 @@
     {
       "id": "job_internal_medicine",
       "title": "오늘도 진료중!",
-      "href": "games/job_internal_medicine/오늘도 진료중!.html?v=2",
+      "href": "games/job_internal_medicine/오늘도 진료중!.html?v=3",
       "category": "trivia",
       "age": "job",
       "icon": "🩺",
-      "description": "환자의 말과 행동을 관찰하고 필요한 문진·검사를 골라 진단·처방하세요. 실제 3D 환자 에셋의 표정·움직임까지 단서가 되며, 하루가 끝난 뒤 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
+      "description": "3D 환자를 관찰하며 채팅처럼 문진하고, 문진→검사→진단→처방을 순서대로 진행하세요. 환자의 말뿐 아니라 기침·홍조·움직임도 단서가 되며 하루 종료 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
     },
     {
       "id": "math_timing_lcd",
