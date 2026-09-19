@@ -203,6 +203,63 @@ button:disabled{cursor:not-allowed;opacity:.45}
   .patient-stage{height:46%;flex-basis:46%}
 }
 
+
+/* ===== v3 · chat-first sequential consultation ===== */
+.phase-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line);background:#f9fbfb;flex:0 0 auto}
+.phase-steps{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
+.phase-step{display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;color:#8a989b;font-size:11px;font-style:normal;font-weight:800;white-space:nowrap;transition:.18s}
+.phase-step span{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:#e7edef;font-size:9px}
+.phase-step i{font-style:normal;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;background:#e9eff0;font-size:9px}
+.phase-step.active{background:#173c46;color:#fff}.phase-step.active span,.phase-step.active i{background:rgba(255,255,255,.16)}
+.phase-step.done{color:#27746f;background:#e5f4f0}.phase-step.done span{background:#2d8d83;color:#fff}
+.phase-tools{display:flex;gap:5px;flex:0 0 auto}
+.clinic-chat{flex:1;min-height:0;overflow:auto;padding:13px 14px 20px;background:
+ linear-gradient(rgba(244,248,248,.92),rgba(244,248,248,.92)),
+ radial-gradient(circle at 20px 20px,#dce8e8 1px,transparent 1px);background-size:auto,24px 24px;scroll-behavior:smooth}
+.chat-row{display:flex;margin:7px 0;gap:8px;align-items:flex-end}
+.chat-row.me{justify-content:flex-end}.chat-row.system{justify-content:center}
+.chat-avatar{width:29px;height:29px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;background:#dfeceb;color:#34565b;font-weight:900;font-size:11px}
+.chat-bubble{max-width:82%;padding:9px 11px;border-radius:15px 15px 15px 4px;background:#fff;border:1px solid #dce7e8;box-shadow:0 3px 10px rgba(29,56,62,.05);font-size:12px;line-height:1.52}
+.chat-bubble .chat-name{display:block;margin-bottom:3px;font-size:9px;font-weight:900;color:#7b8c90}
+.chat-row.me .chat-bubble{background:#1f7774;color:#fff;border-color:#1f7774;border-radius:15px 15px 4px 15px}
+.chat-row.me .chat-name{color:rgba(255,255,255,.72)}
+.chat-row.result .chat-bubble{background:#fff7e8;border-color:#ead7ad;color:#5d5238}
+.chat-row.system .chat-bubble{max-width:94%;padding:6px 10px;border-radius:999px;background:#e8efef;color:#6a7b7e;border:0;box-shadow:none;font-size:10px;text-align:center}
+.action-dock{flex:0 0 auto;border-top:1px solid var(--line);background:#fff;padding:9px 10px;max-height:44%;overflow:auto}
+.phase-panel{min-height:0}.dock-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}.dock-title>div{min-width:0}.dock-title b{display:block;font-size:12px}.dock-title span{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+.choice-scroll{max-height:176px;overflow:auto;padding-right:2px}
+.diagnosis-row{display:grid;grid-template-columns:1fr auto;gap:7px}
+.rx-compact{grid-template-columns:repeat(2,minmax(0,1fr));display:grid;max-height:190px;overflow:auto}
+.chart-close{display:none;border:0;background:transparent;color:#fff;font-size:24px;line-height:1}
+.chart-toggle{display:none}
+.chart-card .decision{display:none!important}
+@media(max-width:760px){
+  html,body,.app{height:auto;overflow:auto}
+  .page{padding:6px}
+  .workspace{display:flex;flex-direction:column;gap:7px}
+  .patient-card{margin:0;height:auto;display:grid;grid-template-columns:42% 58%;overflow:hidden}
+  .patient-stage{height:210px;min-height:210px}
+  .patient-meta{padding:10px;max-height:210px;overflow:auto}
+  .patient-name{font-size:18px}.complaint{font-size:12px;padding:8px 9px;margin-top:6px}.patient-observe{font-size:9px;padding:6px 7px}.micro{display:none}
+  .center-card{height:calc(100svh - 280px);min-height:500px;display:flex;flex-direction:column;overflow:hidden}
+  .phase-head{padding:7px}.phase-step{padding:5px 6px;font-size:10px}.phase-step b{display:none}.phase-step span{width:18px;height:18px}.phase-tools .btn{padding:6px 8px}
+  .clinic-chat{padding:10px 9px}.chat-bubble{max-width:88%;font-size:12px}
+  .action-dock{max-height:48%;padding:7px}.choice-scroll{max-height:185px}.grid2{grid-template-columns:1fr}
+  .action{min-height:48px}
+  .rx-compact{grid-template-columns:1fr;max-height:210px}
+  .chart-toggle{display:inline-flex}
+  .chart-card{position:fixed!important;z-index:90;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 72px);bottom:8px;height:auto!important;margin:0!important;transform:translateY(115%);transition:transform .25s ease;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+  .chart-card.open{transform:translateY(0)}
+  .chart-close{display:block;margin-left:auto}
+  .chart-body{overflow:auto}
+}
+@media(max-width:520px){
+  .patient-card{grid-template-columns:45% 55%}.patient-stage{height:190px;min-height:190px}.patient-meta{max-height:190px}
+  .center-card{height:calc(100svh - 252px);min-height:475px}
+  .phase-step{gap:3px;padding:4px}.phase-step i{display:none}
+  .diagnosis-row{grid-template-columns:1fr}.diagnosis-row .btn{width:100%}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
@@ -243,48 +300,60 @@ button:disabled{cursor:not-allowed;opacity:.45}
       </aside>
 
       <section class="card center-card">
-        <nav class="tabs">
-          <button class="tab active" data-tab="questions">문진 <span class="tab-badge" id="questionCount">5</span></button>
-          <button class="tab" data-tab="tests">검사 <span class="tab-badge" id="testPoints">5</span></button>
-          <button class="tab" data-tab="notes">진료기록</button>
-          <button class="tab" data-tab="automation">자동화 <span class="tab-badge" id="protocolCount">0</span></button>
-        </nav>
-
-        <div class="panel" id="panelQuestions">
-          <div class="section-title"><div><h2>추가 문진</h2><p>중요한 질문을 골라 정보를 더 얻으세요.</p></div><p>남은 질문 <b id="qLeft">5</b>회</p></div>
-          <div class="grid2" id="questionGrid"></div>
-          <div class="log" id="conversationLog"></div>
+        <div class="phase-head">
+          <div class="phase-steps" id="phaseSteps">
+            <div class="phase-step active" data-phase-step="questions"><span>1</span><b>문진</b><i id="questionCount">5</i></div>
+            <div class="phase-step" data-phase-step="tests"><span>2</span><b>검사</b><i id="testPoints">5</i></div>
+            <div class="phase-step" data-phase-step="diagnosis"><span>3</span><b>진단</b></div>
+            <div class="phase-step" data-phase-step="prescription"><span>4</span><b>처방</b></div>
+          </div>
+          <div class="phase-tools">
+            <button class="btn small chart-toggle" id="chartToggle">차트</button>
+            <button class="btn small hidden" id="automationToggle">자동화 <span id="protocolCount">0</span></button>
+          </div>
         </div>
 
-        <div class="panel hidden" id="panelTests">
-          <div class="section-title"><div><h2>검사 선택</h2><p>모든 검사를 할 수는 없습니다. 시간 배분이 중요합니다.</p></div><p>검사 시간 <b id="testLeft">5</b></p></div>
-          <div class="test-budget"><span id="testBudgetBar" style="width:100%"></span></div>
-          <div class="grid2" id="testGrid"></div>
-          <div class="log" id="testLog"></div>
-        </div>
+        <div class="clinic-chat" id="clinicChat" aria-live="polite"></div>
 
-        <div class="panel hidden" id="panelNotes">
-          <div class="section-title"><div><h2>현재 진료기록</h2><p>문진과 검사에서 확인한 정보만 모아 봅니다.</p></div></div>
-          <div id="notesView"></div>
-        </div>
+        <div class="action-dock">
+          <div class="phase-panel" id="panelQuestions">
+            <div class="dock-title"><div><b>무엇을 더 물어볼까요?</b><span>남은 질문 <strong id="qLeft">5</strong>회</span></div><button class="btn primary small" id="nextFromQuestions">문진 마치기 →</button></div>
+            <div class="choice-scroll grid2" id="questionGrid"></div>
+            <div id="conversationLog" class="hidden"></div>
+          </div>
 
-        <div class="panel hidden" id="panelAutomation">
-          <div class="section-title"><div><h2>진료 자동화</h2><p>저장한 프로토콜을 한 번에 실행합니다. 잘못 만든 자동화도 그대로 실행됩니다.</p></div></div>
-          <div id="automationContent"></div>
+          <div class="phase-panel hidden" id="panelTests">
+            <div class="dock-title"><div><b>어떤 검사가 필요할까요?</b><span>남은 검사 시간 <strong id="testLeft">5</strong></span></div><button class="btn primary small" id="nextFromTests">검사 마치기 →</button></div>
+            <div class="test-budget"><span id="testBudgetBar" style="width:100%"></span></div>
+            <div class="choice-scroll grid2" id="testGrid"></div>
+            <div id="testLog" class="hidden"></div>
+          </div>
+
+          <div class="phase-panel hidden" id="panelDiagnosis">
+            <div class="dock-title"><div><b>현재 정보로 진단을 결정하세요.</b><span>확정 전까지는 처방이 열리지 않습니다.</span></div></div>
+            <div class="diagnosis-row">
+              <select class="select" id="diagnosisSelect"></select>
+              <button class="btn primary" id="confirmDiagnosisBtn">진단 확정 → 처방</button>
+            </div>
+          </div>
+
+          <div class="phase-panel hidden" id="panelPrescription">
+            <div class="dock-title"><div><b>차트를 다시 확인하고 처방하세요.</b><span>알레르기·현재 복용약을 놓치지 마세요.</span></div></div>
+            <div class="rx-list rx-compact" id="rxList"></div>
+            <button class="finish" id="finishBtn">처방 확정 · 진료 완료</button>
+            <div class="note">실제 약 이름·용량을 사용하지 않는 게임용 가상 처방입니다.</div>
+          </div>
+
+          <div class="phase-panel hidden" id="panelAutomation">
+            <div class="dock-title"><div><b>진료 자동화</b><span>저장한 프로토콜을 실행하거나 현재 방식을 저장합니다.</span></div><button class="btn small" id="automationClose">진료로 돌아가기</button></div>
+            <div id="automationContent"></div>
+          </div>
+          <div id="notesView" class="hidden"></div>
         </div>
       </section>
 
       <aside class="card chart-card">
-        <div class="chart-head"><strong>전자 차트</strong><span>게임용 가상 의무기록</span></div>
-        <div class="chart-body">
-          <div id="chartRecords"></div>
-          <div class="decision">
-            <h3>진단</h3>
-            <select class="select" id="diagnosisSelect"></select>
-            <h3 style="margin-top:13px">처방 / 조치</h3>
-            <div class="rx-list" id="rxList"></div>
-            <button class="finish" id="finishBtn">진료 완료 · 다음 환자</button>
-            <div class="note">실제 의약품·용량을 사용하지 않는 교육용 가상 규칙입니다. 진료 결과 평가는 하루가 끝난 뒤 확인할 수 있습니다.</div>
+        <div class="chart-head"><strong>전자 차트</strong><span>게임용 가상 의무기록</span>          <button class="chart-close" id="chartClose" aria-label="차트 닫기">×</butt의약품·용량을 사용하지 않는 교육용 가상 규칙입니다. 진료 결과 평가는 하루가 끝난 뒤 확인할 수 있습니다.</div>
           </div>
         </div>
       </aside>
@@ -552,7 +621,7 @@ function buildQueue(){
 }
 
 function newEncounter(patient){
-  return {patientId:patient.id,questions:[],answers:{},tests:[],results:{},testSpent:0,diagnosis:'',meds:[],protocolUsed:null,startedAt:Date.now()};
+  return {patientId:patient.id,phase:'questions',questions:[],answers:{},tests:[],results:{},testSpent:0,diagnosis:'',diagnosisConfirmed:false,meds:[],protocolUsed:null,startedAt:Date.now()};
 }
 
 function e(id){return document.getElementById(id)}
@@ -590,6 +659,78 @@ function renderVisualObservation(p){
   if(window.ClinicPatient3D&&window.ClinicPatient3D.show)window.ClinicPatient3D.show(p);
 }
 
+
+function normalizeEncounterPhase(){
+  var en=state.encounter;
+  if(!en)return;
+  if(!en.phase)en.phase=en.diagnosisConfirmed?'prescription':(en.diagnosis?'diagnosis':'questions');
+  if(typeof en.diagnosisConfirmed!=='boolean')en.diagnosisConfirmed=en.phase==='prescription';
+}
+function renderChatFeed(){
+  if(!state.current||!state.encounter)return;
+  var p=state.current,en=state.encounter,rows=[];
+  rows.push('<div class="chat-row"><div class="chat-avatar">'+escapeHtml(p.name.slice(-2))+'</div><div class="chat-bubble"><span class="chat-name">'+escapeHtml(p.name)+'</span>'+escapeHtml(p.complaint)+'</div></div>');
+  en.questions.forEach(function(qid){
+    var q=QUESTIONS.find(function(x){return x.id===qid});
+    rows.push('<div class="chat-row me"><div class="chat-bubble"><span class="chat-name">의사</span>'+escapeHtml(q?q.label:qid)+'</div></div>');
+    rows.push('<div class="chat-row"><div class="chat-avatar">'+escapeHtml(p.name.slice(-2))+'</div><div class="chat-bubble"><span class="chat-name">'+escapeHtml(p.name)+'</span>'+escapeHtml(en.answers[qid]||'')+'</div></div>');
+  });
+  if(en.tests.length)rows.push('<div class="chat-row system"><div class="chat-bubble">검사 단계</div></div>');
+  en.tests.forEach(function(tid){
+    var t=testById(tid);
+    rows.push('<div class="chat-row me"><div class="chat-bubble"><span class="chat-name">의사</span>'+escapeHtml((t?t.label:tid)+' 시행')+'</div></div>');
+    rows.push('<div class="chat-row result"><div class="chat-avatar">검사</div><div class="chat-bubble"><span class="chat-name">'+escapeHtml(t?t.label:'검사 결과')+'</span>'+escapeHtml(en.results[tid]||'')+'</div></div>');
+  });
+  if(en.diagnosisConfirmed&&en.diagnosis){
+    rows.push('<div class="chat-row system"><div class="chat-bubble">진단 확정 · '+escapeHtml(diseaseLabel(en.diagnosis))+'</div></div>');
+  }
+  if(en.phase==='prescription'&&en.meds&&en.meds.length){
+    rows.push('<div class="chat-row me"><div class="chat-bubble"><span class="chat-name">처방 메모</span>'+escapeHtml(en.meds.map(function(id){var m=medById(id);return m?m.label:id}).join(', '))+'</div></div>');
+  }
+  var feed=e('clinicChat');
+  if(feed){feed.innerHTML=rows.join('');requestAnimationFrame(function(){feed.scrollTop=feed.scrollHeight})}
+}
+function renderPhase(){
+  if(!state.encounter)return;
+  normalizeEncounterPhase();
+  var phase=state.encounter.phase;
+  var order=['questions','tests','diagnosis','prescription'],idx=order.indexOf(phase);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-phase-step]'),function(step){
+    var si=order.indexOf(step.getAttribute('data-phase-step'));
+    step.classList.toggle('active',si===idx);
+    step.classList.toggle('done',si>=0&&si<idx);
+  });
+  ['Questions','Tests','Diagnosis','Prescription'].forEach(function(name){
+    var el=e('panel'+name);if(el)el.classList.toggle('hidden',name.toLowerCase()!==phase);
+  });
+  var auto=e('panelAutomation');if(auto&&!auto.dataset.open)auto.classList.add('hidden');
+  var autoBtn=e('automationToggle');if(autoBtn)autoBtn.classList.toggle('hidden',state.day<3);
+  renderChatFeed();
+}
+function setPhase(next){
+  state.encounter.phase=next;
+  save();renderPhase();syncDecision();
+}
+function endQuestions(){setPhase('tests');toast('검사 단계로 넘어갑니다.')}
+function endTests(){setPhase('diagnosis');toast('현재 정보로 진단을 결정하세요.')}
+function confirmDiagnosis(){
+  var value=e('diagnosisSelect').value;
+  if(!value){toast('진단을 먼저 선택하세요.');return}
+  state.encounter.diagnosis=value;
+  state.encounter.diagnosisConfirmed=true;
+  setPhase('prescription');
+}
+function openAutomationPanel(){
+  if(state.day<3)return;
+  e('panelAutomation').dataset.open='1';
+  ['Questions','Tests','Diagnosis','Prescription'].forEach(function(name){var el=e('panel'+name);if(el)el.classList.add('hidden')});
+  e('panelAutomation').classList.remove('hidden');renderAutomation();
+}
+function closeAutomationPanel(){
+  e('panelAutomation').dataset.open='';
+  renderPhase();
+}
+
 function renderPatient(){
   var p=state.current;
   e('patientName').textContent=p.name;
@@ -603,6 +744,8 @@ function renderPatient(){
   renderTests();
   renderNotes();
   renderAutomation();
+  normalizeEncounterPhase();
+  renderPhase();
   syncDecision();
   renderHud();
 }
@@ -638,7 +781,8 @@ function askQuestion(qid){
   if(en.questions.length>=5||en.questions.indexOf(qid)>=0)return;
   var d=diseaseById(state.current.disease);
   en.questions.push(qid);en.answers[qid]=d.answers[qid]||'잘 모르겠어요.';
-  save();renderQuestions();renderNotes();
+  save();renderQuestions();renderNotes();renderChatFeed();
+  if(window.ClinicPatient3D&&window.ClinicPatient3D.react)window.ClinicPatient3D.react('answer');
 }
 function renderTests(){
   var en=state.encounter,remaining=5-en.testSpent;
@@ -661,7 +805,8 @@ function runTest(tid,silent){
   if(en.testSpent+t.cost>5){if(!silent)toast('검사 시간이 부족합니다.');return false}
   var d=diseaseById(state.current.disease);
   en.tests.push(tid);en.testSpent+=t.cost;en.results[tid]=d.tests[tid]||'특이 소견이 없습니다.';
-  save();renderTests();renderNotes();
+  save();renderTests();renderNotes();renderChatFeed();
+  if(window.ClinicPatient3D&&window.ClinicPatient3D.react)window.ClinicPatient3D.react(tid==='ausc'?'breathe':'exam');
   return true;
 }
 function renderNotes(){
@@ -740,6 +885,7 @@ function finishEncounter(){
   if(!diagnosis){toast('진단을 선택해야 진료를 마칠 수 있습니다.');return}
   state.encounter.diagnosis=diagnosis;
   state.encounter.meds=selectedMedsFromDom();
+  renderChatFeed();
   var ev=evaluate();
   state.today.push(ev);
   state.history.push(ev);
@@ -761,12 +907,12 @@ function startPatient(){
   state.encounter=newEncounter(state.current);
   save();
   renderPatient();
-  switchTab('questions');
+  renderPhase();
 }
 function switchTab(name){
-  Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){b.classList.toggle('active',b.getAttribute('data-tab')===name)});
-  ['Questions','Tests','Notes','Automation'].forEach(function(n){e('panel'+n).classList.toggle('hidden',n.toLowerCase()!==name.toLowerCase())});
-  if(name==='automation')renderAutomation();
+  if(name==='automation'){openAutomationPanel();return}
+  var map={questions:'questions',tests:'tests',diagnosis:'diagnosis',prescription:'prescription'};
+  if(map[name])setPhase(map[name]);
 }
 
 function reviewReason(ev){
@@ -895,7 +1041,7 @@ function resume(){
     if(state.index>=PATIENTS_PER_DAY){openReview();e('introModal').classList.add('hidden');return}
     state.current=state.queue[state.index];state.encounter=newEncounter(state.current);
   }
-  renderPatient();e('introModal').classList.add('hidden');
+  normalizeEncounterPhase();renderPatient();renderPhase();e('introModal').classList.add('hidden');
 }
 
 buildDiagnosisOptions();buildRx();
@@ -904,13 +1050,17 @@ e('resumeBtn').classList.toggle('hidden',!hasSave);
 e('resetBtn').classList.toggle('hidden',!hasSave);
 if(hasSave){renderHud()}
 
-document.querySelector('.tabs').addEventListener('click',function(ev){
-  var b=ev.target.closest('.tab');if(b)switchTab(b.getAttribute('data-tab'));
-});
+e('nextFromQuestions').addEventListener('click',endQuestions);
+e('nextFromTests').addEventListener('click',endTests);
+e('confirmDiagnosisBtn').addEventListener('click',confirmDiagnosis);
+e('automationToggle').addEventListener('click',openAutomationPanel);
+e('automationClose').addEventListener('click',closeAutomationPanel);
+e('chartToggle').addEventListener('click',function(){document.querySelector('.chart-card').classList.add('open')});
+e('chartClose').addEventListener('click',function(){document.querySelector('.chart-card').classList.remove('open')});
 e('questionGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-q]');if(b)askQuestion(b.getAttribute('data-q'))});
 e('testGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-test]');if(b)runTest(b.getAttribute('data-test'),false)});
-e('diagnosisSelect').addEventListener('change',function(){state.encounter.diagnosis=this.value;save()});
-e('rxList').addEventListener('change',function(){state.encounter.meds=selectedMedsFromDom();save()});
+e('diagnosisSelect').addEventListener('change',function(){state.encounter.diagnosis=this.value;save();renderChatFeed()});
+e('rxList').addEventListener('change',function(){state.encounter.meds=selectedMedsFromDom();save();renderChatFeed()});
 e('finishBtn').addEventListener('click',finishEncounter);
 e('nextDayBtn').addEventListener('click',nextDay);
 e('startBtn').addEventListener('click',startNew);
@@ -1016,7 +1166,7 @@ if(canvas&&stage){
         const clip=gltf.animations.find(x=>/idle/i.test(x.name))||gltf.animations[0];
         mixer.clipAction(clip).reset().fadeIn(.12).play();
       }
-      current={root,mixer,cues:patient.visual?.cues||[],severity:patient.visual?.severity||1,seed:Math.random()*10,baseRotationY:root.rotation.y};
+      current={root,modelRoot,mixer,clips:gltf.animations||[],action:null,cues:patient.visual?.cues||[],severity:patient.visual?.severity||1,seed:Math.random()*10,baseRotationY:root.rotation.y,reaction:null,reactionUntil:0};
       stage.classList.add('asset-ready');
       fallback?.classList.add('hidden');
       if(statusEl){statusEl.textContent='3D 환자 에셋';statusEl.classList.add('ready')}
@@ -1027,6 +1177,34 @@ if(canvas&&stage){
       if(statusEl){statusEl.textContent='환자 에셋 로딩 실패 · 기본 표시 사용';statusEl.classList.remove('ready')}
     }
   }
+
+  function playNamed(names,duration=900){
+    if(!current||!current.mixer||!current.clips?.length)return false;
+    var list=Array.isArray(names)?names:[names];
+    var clip=null;
+    for(const n of list){
+      clip=current.clips.find(c=>c.name.toLowerCase()===String(n).toLowerCase())||
+        current.clips.find(c=>c.name.toLowerCase().includes(String(n).toLowerCase()));
+      if(clip)break;
+    }
+    if(!clip)return false;
+    current.action?.fadeOut(.1);
+    const a=current.mixer.clipAction(clip);a.reset().setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;a.fadeIn(.1).play();current.action=a;
+    setTimeout(()=>{
+      if(!current?.mixer)return;
+      const idle=current.clips.find(c=>/idle/i.test(c.name));
+      if(idle){a.fadeOut(.12);const ia=current.mixer.clipAction(idle);ia.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.12).play();current.action=ia}
+    },duration);
+    return true;
+  }
+  function react(kind){
+    if(!current)return;
+    current.reaction=kind;current.reactionUntil=performance.now()+850;
+    if(kind==='answer')playNamed(['emote-yes','interact-right'],780);
+    else if(kind==='exam')playNamed(['interact-left','emote-yes'],780);
+    else if(kind==='breathe')playNamed(['idle'],650);
+  }
+
   function resize(){
     const r=stage.getBoundingClientRect();
     const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
@@ -1056,12 +1234,21 @@ if(canvas&&stage){
       if(current.cues.includes('nose')){
         current.root.rotation.y=current.baseRotationY+Math.sin(t*.8)*.025;
       }else current.root.rotation.y=current.baseRotationY;
+      if(current.reactionUntil>now){
+        const p=1-(current.reactionUntil-now)/850;
+        const wave=Math.sin(Math.max(0,Math.min(1,p))*Math.PI);
+        if(current.reaction==='answer')current.root.rotation.x-=wave*.035;
+        if(current.reaction==='exam')current.root.position.x=Math.sin(p*Math.PI*2)*.012;
+        if(current.reaction==='breathe')current.root.scale.y=1+wave*.012;
+      }else{
+        current.reaction=null;current.root.scale.y=1;
+      }
     }
     renderer.render(scene,camera);
   }
   requestAnimationFrame(animate);
 
-  window.ClinicPatient3D={show,version:'asset-v2'};
+  window.ClinicPatient3D={show,react,version:'asset-v3'};
   if(window.__clinicPatientCurrent)show(window.__clinicPatientCurrent);
 }
 </script>
