@@ -24,7 +24,7 @@ test('Seed Town modules parse as modules after import/export stripping',()=>{
 });
 
 test('starter loop cannot deadlock on a fresh save',()=>{
-  for(const id of ['starter-wood-1','starter-wood-5','starter-stone-1','starter-stone-5'])assert.ok(runtime.includes(id),id);
+  for(const id of ['starter-wood-1','starter-wood-6','starter-stone-1','starter-stone-6'])assert.ok(runtime.includes(id),id);
   assert.match(runtime,/떨어진 나뭇가지 줍기/);
   assert.match(runtime,/작은 돌 줍기/);
   assert.match(runtime,/도구 없이 주웠어요/);
@@ -111,9 +111,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/씨앗마을 중심가 · 장보기·일·놀이/);
   assert.match(runtime,/z2:40/);
   assert.match(runtime,/cityRuntime\?\.update\?\.\(now,dt\)/);
+  assert.match(runtime,/도시 안내판 읽기/);
+  assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=3/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=3/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=4/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=4/);
   assert.match(html,/kidscade-world-v3\.js\?v=6/);
   assert.match(integration,/world-v3\/kidscade-world\.html\?v=6/);
 });
