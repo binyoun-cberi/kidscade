@@ -8,6 +8,34 @@
   const FRAME_ID='kidscade-life-world-frame';
   const WORLD_URL='world-v3/kidscade-world.html?v=3';
   let overlay=null, frame=null, activated=false;
+  const CUBE_PET_NAMES={dog:'강아지',cat:'고양이',bunny:'토끼',pig:'돼지',cow:'소',chick:'병아리',fox:'여우',deer:'사슴',parrot:'앵무새',beaver:'비버'};
+  const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
+  function cubePetsSnapshot(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('kidscade_world_v2')||'null');
+      const pets=raw?.progression?.cubePets||{};
+      const owned=Array.isArray(pets.owned)?pets.owned.filter(id=>CUBE_PET_NAMES[id]):[];
+      const companion=CUBE_PET_NAMES[pets.companion]?pets.companion:(owned[0]||'');
+      return {owned,companion};
+    }catch(_){return {owned:[],companion:''}}
+  }
+  function syncCubePetsSidebar(){
+    const s=cubePetsSnapshot(),total=Object.keys(CUBE_PET_NAMES).length,id=s.companion;
+    const title=document.getElementById('sidebar-pet-title');
+    const sub=document.getElementById('sidebar-pet-sub');
+    const talk=document.getElementById('sidebar-pet-talk');
+    const avatar=document.getElementById('sidebar-pet-avatar');
+    const fill=document.getElementById('sidebar-pet-fill');
+    const card=document.getElementById('kc-pet-card');
+    const openBtn=document.getElementById('sidebar-pet-open');
+    if(title)title.textContent=`Cube Pets · ${s.owned.length}/${total}`;
+    if(sub)sub.textContent=id?`동행: ${CUBE_PET_NAMES[id]}`:'월드에서 첫 친구를 만나보세요';
+    if(talk)talk.textContent='정원 없이 월드에서 만나고 길들이고 함께 탐험해요.';
+    if(avatar)avatar.textContent=id?(CUBE_PET_ICONS[id]||'🐾'):'🐾';
+    if(fill)fill.style.width=`${Math.round(s.owned.length/total*100)}%`;
+    if(card)card.setAttribute('aria-label','Cube Pets 생존 월드 열기');
+    if(openBtn)openBtn.textContent='🌿 생존 월드 열기';
+  }
 
   function installStyles(){
     if(document.getElementById('kidscade-life-world-style'))return;
@@ -43,13 +71,15 @@
   function resetWorldInput(){try{frame?.contentWindow?.KidscadeWorldV3?.resetInput?.();const w=frame?.contentWindow?.KidscadeWorldV2?.activeWorld||frame?.contentWindow?.__kidscadeWorldV2;w?.input?.reset?.();}catch(_){} }
   function refreshWorld(){try{frame?.contentWindow?.KidscadeWorldV3?.refresh?.();frame.contentWindow?.postMessage({type:'kidscade-world-v3-refresh'},location.origin);frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin);}catch(_){} }
 
-  function open(){activate();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
-  function close(){if(!overlay)return;resetWorldInput();overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';}
+  function open(){activate();syncCubePetsSidebar();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
+  function close(){if(!overlay)return;resetWorldInput();overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';syncCubePetsSidebar();}
 
   document.addEventListener('click',e=>{const trigger=e.target.closest?.('[data-open-life-world]');if(!trigger)return;e.preventDefault();open();},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay?.classList.contains('open')){e.preventDefault();close()}},true);
   window.addEventListener('message',e=>{if(e.source!==frame?.contentWindow)return;if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();});
 
-  installStyles();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton())observer.disconnect()});observer.observe(document.documentElement,{childList:true,subtree:true});}
+  installStyles();syncCubePetsSidebar();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton()){syncCubePetsSidebar();observer.disconnect()}});observer.observe(document.documentElement,{childList:true,subtree:true});}
+  window.addEventListener('pageshow',syncCubePetsSidebar);
+  window.addEventListener('storage',e=>{if(e.key==='kidscade_world_v2')syncCubePetsSidebar();});
   const api={open,close,ensure,refresh:refreshWorld,getFrame:()=>frame,url:WORLD_URL,version:3};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
 })(window);
