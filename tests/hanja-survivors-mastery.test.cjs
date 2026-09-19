@@ -12,7 +12,7 @@ test('Hanja Survivors starts with all official grade-8 50 Hanja available',()=>{
   assert.match(html,/const GRADE8_KEYS = \[/);
   assert.match(html,/let unlockedChars = \[\.\.\.GRADE8_KEYS\]/);
   assert.match(html,/let spellStats = createInitialSpellStats\(\)/);
-  assert.match(html,/badge\.onclick = \(\) => selectHanja\(key\)/);
+    assert.match(html,/btn\.onclick=\(\)=>\{selectHanja\(key\);renderSpellbookPage\(\)\}/);
   assert.match(html,/8급 50자 마법첩 · 눌러서 선택/);
 });
 
@@ -55,7 +55,7 @@ test('Hanja Survivors uses committed Kidscade character and monster assets',()=>
 test('Hanja Survivors catalog points to the mastery rework',()=>{
   const game=catalog.games.find(g=>g.id==='hanja_survivors_8');
   assert.ok(game);
-  assert.equal(game.href,'games/hanja_survivors_8/한자 수호전： 8급.html?v=4');
+  assert.equal(game.href,'games/hanja_survivors_8/한자 수호전： 8급.html?v=5');
 });
 
 test('Hanja Survivors has the exact official grade-8 roster and all 27 previously missing spells',()=>{
@@ -75,4 +75,34 @@ test('Hanja Survivors has the exact official grade-8 roster and all 27 previousl
 test('Hanja mastery range calculation uses the player range multiplier',()=>{
   assert.match(html,/const spellSize = player\.sizeMult \* growth\.range/);
   assert.doesNotMatch(html,/const spellSize = spellSize \* growth\.range/);
+});
+
+test('Hanja Survivors movement and writing own separate pointer input',()=>{
+  assert.match(html,/let movePointerId = null/);
+  assert.match(html,/e\.pointerId !== movePointerId/);
+  assert.match(html,/canvas\.setPointerCapture\(e\.pointerId\)/);
+  assert.match(html,/lostpointercapture/);
+  assert.doesNotMatch(html,/canvas\.addEventListener\('touchstart'/);
+});
+
+test('Hanja Survivors spellbook pauses time but closing it resumes realtime writing',()=>{
+  assert.match(html,/function openSpellbook/);
+  assert.match(html,/bookOpen = true;[\s\S]*?isPaused = true/);
+  assert.match(html,/function closeSpellbook/);
+  assert.match(html,/bookOpen = false;[\s\S]*?isPaused = false;[\s\S]*?writingActive = true/);
+  assert.match(html,/SPELLS_PER_PAGE = 5/);
+  assert.match(html,/renderSpellbookPage/);
+});
+
+test('Hanja battle writing is more forgiving and re-arms the same selected spell',()=>{
+  assert.match(html,/leniency: 2\.35/);
+  assert.match(html,/showHintAfterMisses: 1/);
+  assert.match(html,/if \(!bookOpen && !isPaused\) castHanjaSpell\(\)/);
+  assert.match(html,/if \(!bookOpen\) initHanjaWriter\(currentHanjaKey\)/);
+});
+
+test('Hanja Survivors has fantasy biome backgrounds',()=>{
+  for(const token of ['신록의 숲','한기의 설원','불타는 지옥','심연의 동굴']) assert.ok(html.includes(token),token);
+  assert.match(html,/function drawWorldEnvironment/);
+  assert.match(html,/assetReady\(r>\.82\?'tree':'treeSmall'\)/);
 });
