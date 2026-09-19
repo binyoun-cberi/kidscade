@@ -116,12 +116,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=8/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=9/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=15/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=15/);
+  assert.match(html,/kidscade-world-v3\.js\?v=16/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=16/);
 });
 
 
@@ -402,4 +402,14 @@ test('World v3 audio uses local licensed project assets for BGM and interaction 
   assert.match(runtime,/worldAudio\.sfx\('impact'/);
   assert.match(runtime,/worldAudio\.sfx\('pickup'/);
   assert.match(economy,/playSfx\?\.\('purchase'/);
+});
+
+
+test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D skeletons',()=>{
+  assert.match(city,/SkeletonUtils\.js/);
+  assert.match(city,/clone as cloneSkeleton/);
+  assert.match(city,/cloneSkeleton\(base\)/);
+  assert.doesNotMatch(city,/base\.clone\(true\)/);
+  assert.match(city,/const anchor=new THREE\.Group\(\)/);
+  assert.match(city,/anchor\.add\(model\)/);
 });
