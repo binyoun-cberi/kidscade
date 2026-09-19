@@ -90,6 +90,15 @@
       "scoreKey": "deep_diver_2d_v7"
     },
     {
+      "id": "job_internal_medicine",
+      "title": "오늘도 진료중!",
+      "href": "games/job_internal_medicine/오늘도 진료중!.html?v=1",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🩺",
+      "description": "환자의 설명을 읽고 필요한 문진과 검사만 골라 진단·처방하세요. 진료 중에는 정답을 알려주지 않고, 하루가 끝난 뒤 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
+    },
+    {
       "id": "math_timing_lcd",
       "title": "딱! 타임 LCD",
       "href": "딱! 타임 LCD.html",
