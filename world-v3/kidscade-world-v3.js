@@ -155,7 +155,7 @@ function plane(parent,x,z,w,d,color,y=.02){
 const colliders={outdoor:[],indoor:[]};
 const interactables={outdoor:[],indoor:[]};
 function collider(mode,x,z,w,d){colliders[mode].push({x,z,w,d});}
-function interact(mode,x,z,r,label,action){interactables[mode].push({x,z,r,label,action});}
+function interact(mode,x,z,r,label,action){const q={x,z,r,label,action,enabled:true};interactables[mode].push(q);return q;}
 
 let save=Storage?.load?.()||{player:{},inventory:{},progression:{energy:100,maxEnergy:100,tools:{},seeds:{potato:2,carrot:2,tomato:2},crops:{},food:{},fishDex:{}}};
 function persist(){Storage?.save?.(save)}
@@ -416,7 +416,7 @@ function isBlocked(nx,nz){
 let near=null;
 function nearestInteraction(){
   const list=interactables[mode];let best=null,bestD=999;
-  for(const q of list){const d=Math.hypot(player.x-q.x,player.z-q.z);if(d<q.r&&d<bestD){best=q;bestD=d}}
+  for(const q of list){if(q.enabled===false)continue;const d=Math.hypot(player.x-q.x,player.z-q.z);if(d<q.r&&d<bestD){best=q;bestD=d}}
   near=best;
   promptEl.textContent=best?((matchMedia('(max-width:760px)').matches?'행동':'E / Space')+' · '+best.label):'';
   promptEl.classList.toggle('show',!!best);
@@ -512,13 +512,13 @@ async function addGroundPickup(id,kind,x,z){
   const url=kind==='wood'?ASSET.wood:P.nature+'stone-small-a.glb';
   const object=await addModel(outdoor,url,{x,z,w:kind==='wood'?.8:.65,h:kind==='wood'?.48:.45,d:kind==='wood'?.65:.65,rot:(groundPickups.length*.71)%6.2,name:id});
   if(!object)return;
-  const actor={id,kind,object,ready:true};groundPickups.push(actor);
-  interact('outdoor',x,z,1.0,kind==='wood'?'떨어진 나뭇가지 줍기':'작은 돌 줍기',()=>{
-    if(!actor.ready){toast('조금 뒤에 다시 찾아보세요.');return;}
-    actor.ready=false;actor.object.visible=false;
+  const actor={id,kind,object,ready:true,interaction:null};groundPickups.push(actor);
+  actor.interaction=interact('outdoor',x,z,1.0,kind==='wood'?'떨어진 나뭇가지 줍기':'작은 돌 줍기',()=>{
+    if(!actor.ready)return;
+    actor.ready=false;actor.object.visible=false;actor.interaction.enabled=false;
     const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();
     toast((kind==='wood'?'나뭇가지':'작은 돌')+' +1 · 도구 없이 주웠어요.');
-    setTimeout(()=>{actor.ready=true;actor.object.visible=true;},45000);
+    setTimeout(()=>{actor.ready=true;actor.object.visible=true;actor.interaction.enabled=true;},45000);
   });
 }
 async function buildOutdoor(){
@@ -600,11 +600,13 @@ async function buildOutdoor(){
     addGroundPickup('starter-wood-3','wood',1.8,3.1),
     addGroundPickup('starter-wood-4','wood',3.3,7.2),
     addGroundPickup('starter-wood-5','wood',-7.0,7.6),
+    addGroundPickup('starter-wood-6','wood',9.1,8.8),
     addGroundPickup('starter-stone-1','stone',-1.2,4.7),
     addGroundPickup('starter-stone-2','stone',2.0,6.0),
     addGroundPickup('starter-stone-3','stone',5.0,8.0),
     addGroundPickup('starter-stone-4','stone',-5.1,8.4),
-    addGroundPickup('starter-stone-5','stone',8.2,1.9)
+    addGroundPickup('starter-stone-5','stone',8.2,1.9),
+    addGroundPickup('starter-stone-6','stone',-9.2,9.0)
   ]);
 
   // Farm plots: one compact farm block, off the road.
@@ -677,6 +679,9 @@ async function buildOutdoor(){
   for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
+
+  await addModel(outdoor,ASSET.signpost,{x:0,z:21.2,w:.8,h:1.8,d:.8,rot:0,name:'city-sign'});
+  interact('outdoor',0,21.2,1.2,'도시 안내판 읽기',()=>toast('↓ 씨앗마을 중심가 · 마트 · 철물점 · 카페 · 일자리 · 아케이드'));
 
   cityRuntime=await buildKidscadeCity({
     parent:outdoor,
