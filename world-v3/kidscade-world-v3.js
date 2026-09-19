@@ -121,12 +121,13 @@ const outdoor=new THREE.Group(),indoor=new THREE.Group(),petLayer=new THREE.Grou
 scene.add(outdoor,indoor,petLayer);indoor.visible=false;
 
 const loader=new GLTFLoader();
-const modelCache=new Map();
-function loadGLB(url){
-  if(modelCache.has(url))return modelCache.get(url);
-  const p=new Promise((resolve,reject)=>loader.load(url,g=>resolve(g.scene),undefined,reject));
-  modelCache.set(url,p);return p;
+const gltfCache=new Map();
+function loadGLTF(url){
+  if(gltfCache.has(url))return gltfCache.get(url);
+  const p=new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+  gltfCache.set(url,p);return p;
 }
+function loadGLB(url){return loadGLTF(url).then(g=>g.scene)}
 function prepModel(o){
   o.traverse(n=>{
     if(!n.isMesh)return;
@@ -812,6 +813,7 @@ async function buildOutdoor(){
     interact,
     collider,
     loadGLB,
+    loadGLTF,
     prepModel,
     actions:{
       resident:id=>townEconomy?.resident(id),
