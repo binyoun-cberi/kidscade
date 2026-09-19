@@ -66,6 +66,15 @@ h1 .en{display:block;color:var(--teal);font-size:.58em;letter-spacing:-.04em;mar
 .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:790px;margin:12px auto 0}.mc-option{min-height:92px;border:2px solid #dfe7ec;border-radius:21px;background:white;padding:18px;text-align:left;font-weight:900;font-size:19px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:.16s ease}.mc-option:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 8px 18px rgba(75,141,248,.11)}.num{flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#edf2f8;display:grid;place-items:center;font-size:14px}.mc-option.correct{border-color:var(--green);background:#ecfbf1}.mc-option.wrong{border-color:var(--red);background:#fff0f2}
 .btn-submit{background:var(--teal);color:white}.btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .feedback{display:none;margin:24px auto 0;max-width:820px;border-radius:22px;padding:20px 22px;position:relative}.feedback.show{display:block;animation:pop .24s ease-out}.feedback.good{background:#eaf9ef;border:2px solid #b7ebc8}.feedback.bad{background:#fff0f2;border:2px solid #ffc2ca}.feedback-title{font-size:21px;font-weight:1000;margin-bottom:7px}.feedback-text{font-size:15px;line-height:1.65;color:#466073;font-weight:700}.feedback-actions{display:flex;justify-content:flex-end;margin-top:16px}.feedback-actions .btn{min-height:48px;padding:12px 18px}
+.animal-feedback{display:grid;grid-template-columns:112px 1fr;gap:18px;align-items:center}
+.animal-feedback.no-art{grid-template-columns:1fr}
+.animal-feedback-art{width:112px;height:112px;border-radius:24px;background:rgba(255,255,255,.78);display:grid;place-items:center;border:1.5px solid rgba(23,50,74,.10);box-shadow:0 8px 18px rgba(31,66,91,.10)}
+.animal-feedback-art img{width:88px;height:88px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 7px 5px rgba(31,66,91,.13))}
+.animal-feedback-name{font-size:12px;color:var(--muted);font-weight:900;margin-top:6px;text-align:center}
+.hero-animal{position:absolute;z-index:2;width:84px;height:84px;object-fit:contain;filter:drop-shadow(0 8px 7px rgba(26,81,91,.18));animation:animalFloat 3.6s ease-in-out infinite}
+.hero-animal.a1{left:8%;top:17%;transform:rotate(-8deg)}.hero-animal.a2{right:8%;top:18%;animation-delay:-.8s}.hero-animal.a3{left:10%;bottom:12%;animation-delay:-1.5s}.hero-animal.a4{right:10%;bottom:13%;animation-delay:-2.2s}
+@keyframes animalFloat{0%,100%{translate:0 0}50%{translate:0 -8px}}
+
 .modal-screen{align-items:center;justify-content:center;padding:24px}.modal-card{width:min(100%,760px);max-height:calc(100vh - 48px);overflow:auto;background:var(--paper);border-radius:32px;box-shadow:var(--shadow);border:2px solid rgba(23,50,74,.08);padding:30px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:20px}.modal-head h2{margin:0;font-size:34px;letter-spacing:-.04em}.guide-grid{display:grid;gap:12px}.guide-item{display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:start;background:white;border:1.5px solid #e4ebee;border-radius:20px;padding:16px}.guide-no{width:46px;height:46px;border-radius:15px;background:#e6faf6;color:var(--teal-dark);display:grid;place-items:center;font-weight:1000}.guide-item h3{margin:1px 0 5px;font-size:18px}.guide-item p{margin:0;color:var(--muted);line-height:1.55;font-weight:700}
 .record-main{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}.record-box{background:white;border:1.5px solid #e2e9ec;border-radius:22px;padding:22px;text-align:center}.record-value{font-size:46px;font-weight:1000;color:var(--teal);letter-spacing:-.04em}.record-label{font-size:14px;color:var(--muted);font-weight:850}.record-note{background:#fff7d8;border-radius:18px;padding:16px;color:#725b16;font-weight:800;line-height:1.55}
 #result{align-items:center;justify-content:center;padding:24px}.result-card{width:min(100%,660px);background:var(--paper);border-radius:36px;box-shadow:var(--shadow);padding:38px;text-align:center;border:2px solid rgba(23,50,74,.07)}.medal{width:150px;height:150px;margin:0 auto 14px}.result-kicker{font-weight:950;color:var(--teal);letter-spacing:.08em;font-size:13px}.result-title{font-size:38px;margin:9px 0 6px;letter-spacing:-.05em}.result-score{font-size:78px;line-height:1;font-weight:1000;margin:17px 0 6px;color:var(--ink)}.result-score span{font-size:22px;color:var(--muted);margin-left:6px}.result-message{font-size:17px;color:var(--muted);font-weight:750;line-height:1.55}.result-stats{display:flex;justify-content:center;gap:12px;margin:24px 0}.mini-stat{background:white;border:1.5px solid #e1e8ec;border-radius:17px;padding:13px 18px;min-width:130px}.mini-stat b{display:block;font-size:23px}.mini-stat span{font-size:12px;color:var(--muted);font-weight:850}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.result-actions .btn-primary{grid-column:auto}
@@ -73,7 +82,7 @@ h1 .en{display:block;color:var(--teal);font-size:.58em;letter-spacing:-.04em;mar
 .confetti{position:fixed;width:10px;height:16px;border-radius:3px;top:-20px;z-index:99;animation:fall 1.15s linear forwards;pointer-events:none}
 @keyframes pop{from{transform:scale(.98);opacity:.4}to{transform:scale(1);opacity:1}}@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.8}}
 @media(max-width:820px){.home-card{grid-template-columns:1fr;min-height:auto}.hero-art{min-height:310px;order:-1}.home-copy{padding:34px 26px}.hero-stat.one{top:20px}.hero-stat.two{bottom:20px}.topbar{grid-template-columns:auto 1fr auto}.brand-mini{display:none}.stage-pill{justify-self:center}.keyboard-tip{display:none}}
-@media(max-width:560px){#home{padding:12px}.home-card{border-radius:26px}.hero-art{min-height:255px}.hero-svg{width:88%}.hero-stat{font-size:12px;padding:10px 12px}.home-actions{grid-template-columns:1fr}.btn-primary{grid-column:1}.topbar{height:68px;padding:10px}.icon-btn{width:44px;height:44px}.streak-pill{padding:8px 10px}.quiz-card{border-radius:24px;padding:20px 14px;min-height:calc(100dvh - 132px)}.question-title{margin:35px auto 25px;font-size:27px}.ox-grid{gap:10px}.ox-btn{height:160px}.ox-mark{font-size:76px}.mc-grid{grid-template-columns:1fr}.mc-option{min-height:72px;font-size:17px}.modal-card{padding:20px;border-radius:24px}.record-main{grid-template-columns:1fr}.result-card{padding:28px 20px}.result-score{font-size:66px}.result-actions{grid-template-columns:1fr}.result-actions .btn-primary{grid-column:1}.result-stats{flex-wrap:wrap}}
+@media(max-width:560px){.animal-feedback{grid-template-columns:76px 1fr;gap:10px}.animal-feedback-art{width:76px;height:76px;border-radius:18px}.animal-feedback-art img{width:60px;height:60px}.hero-animal{width:62px;height:62px}#home{padding:12px}.home-card{border-radius:26px}.hero-art{min-height:255px}.hero-svg{width:88%}.hero-stat{font-size:12px;padding:10px 12px}.home-actions{grid-template-columns:1fr}.btn-primary{grid-column:1}.topbar{height:68px;padding:10px}.icon-btn{width:44px;height:44px}.streak-pill{padding:8px 10px}.quiz-card{border-radius:24px;padding:20px 14px;min-height:calc(100dvh - 132px)}.question-title{margin:35px auto 25px;font-size:27px}.ox-grid{gap:10px}.ox-btn{height:160px}.ox-mark{font-size:76px}.mc-grid{grid-template-columns:1fr}.mc-option{min-height:72px;font-size:17px}.modal-card{padding:20px;border-radius:24px}.record-main{grid-template-columns:1fr}.result-card{padding:28px 20px}.result-score{font-size:66px}.result-actions{grid-template-columns:1fr}.result-actions .btn-primary{grid-column:1}.result-stats{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
 </head>
@@ -118,6 +127,10 @@ h1 .en{display:block;color:var(--teal);font-size:.58em;letter-spacing:-.04em;mar
         <path d="M224 121h84l-13 49h-58z" fill="#4b8df8"/><path d="M236 121l7-34h46l9 34" fill="#fff" stroke="#4b8df8" stroke-width="10"/>
         <circle cx="266" cy="111" r="13" fill="#ffc83d"/>
       </svg>
+      <img class="hero-animal a1" src="../../assets/game/2d/animals/round/lion.png" alt="">
+      <img class="hero-animal a2" src="../../assets/game/2d/animals/round/elephant.png" alt="">
+      <img class="hero-animal a3" src="../../assets/game/2d/animals/round/penguin.png" alt="">
+      <img class="hero-animal a4" src="../../assets/game/2d/animals/round/zebra.png" alt="">
     </div>
   </div>
 </section>
@@ -176,7 +189,20 @@ const TOTAL_QUESTIONS=1000;
 const QUIZ_ORDER=['ox','detective','habitat','classq','correct','incorrect'];
 const STORAGE_KEY='zoolympic-save-v2';
 const LEGACY_STORAGE_KEY='zoolympic-save-v1';
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
+const ANIMAL_ART={
+  '사자':'lion','호랑이':'tiger','북극곰':'polar','대왕판다':'panda','아프리카코끼리':'elephant',
+  '기린':'giraffe','얼룩말':'zebra','염소':'goat','아메리카들소':'buffalo','하마':'hippo',
+  '흰코뿔소':'rhino','코알라':'koala','세발가락나무늘보':'sloth','비버':'beaver','고릴라':'gorilla',
+  '황제펭귄':'penguin','수리부엉이':'owl','회색앵무':'parrot','청둥오리':'duck',
+  '나일악어':'crocodile','미시시피악어':'crocodile','그물무늬비단뱀':'snake','킹코브라':'snake','방울뱀':'snake',
+  '청개구리':'frog','독화살개구리':'frog','혹등고래':'whale'
+};
+function animalArtHTML(name){
+  const file=ANIMAL_ART[name];
+  if(!file)return'';
+  return '<div><div class="animal-feedback-art"><img src="../../assets/game/2d/animals/round/'+file+'.png" alt="'+esc(name)+' 대표 일러스트"></div><div class="animal-feedback-name">'+esc(name)+'</div></div>';
+}
 const homeBest=$('#homeBest'), homeSeen=$('#homeSeen'), recordBest=$('#recordBest'), recordSeen=$('#recordSeen');
 const resultBest=$('#resultBest'), resultSeen=$('#resultSeen'), resultScore=$('#resultScore'), resultTitle=$('#resultTitle'), resultMessage=$('#resultMessage'), medalWrap=$('#medalWrap');
 const soundBtn=$('#soundBtn'), startBtn=$('#startBtn'), retryBtn=$('#retryBtn'), gameHomeBtn=$('#gameHomeBtn'), resultHomeBtn=$('#resultHomeBtn'), guideBtn=$('#guideBtn'), recordBtn=$('#recordBtn');
@@ -197,13 +223,13 @@ function otherAnimals(a,seed,count=3){return shuffle(ANIMALS.filter(x=>x.name!==
 function wrongClass(a,seed){return classDistractors(a,seed)[0]}
 
 function buildOX(){const out=[];ANIMALS.forEach((a,i)=>{
-  out.push({id:`OX${String(i*3+1).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.fact1}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
-  out.push({id:`OX${String(i*3+2).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.fact2}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
-  out.push({id:`OX${String(i*3+3).padStart(3,'0')}`,type:'ox',statement:`${a.name} — ${a.wrong}`,answer:false,explain:`틀린 설명입니다. 실제 특징 — ${a.name}: ${a.fact1}. ${a.fact2}.`});
+  out.push({id:`OX${String(i*3+1).padStart(3,'0')}`,type:'ox',animal:a.name,statement:`${a.name} — ${a.fact1}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
+  out.push({id:`OX${String(i*3+2).padStart(3,'0')}`,type:'ox',animal:a.name,statement:`${a.name} — ${a.fact2}`,answer:true,explain:`${a.name}: ${a.fact1}. ${a.fact2}.`});
+  out.push({id:`OX${String(i*3+3).padStart(3,'0')}`,type:'ox',animal:a.name,statement:`${a.name} — ${a.wrong}`,answer:false,explain:`틀린 설명입니다. 실제 특징 — ${a.name}: ${a.fact1}. ${a.fact2}.`});
 });return out}
 function buildDetective(){const out=[];ANIMALS.forEach((a,i)=>{
   const ds1=animalDistractors(a,11000+i*31),ds2=animalDistractors(a,12000+i*31),ds3=animalDistractors(a,13000+i*31);
-  const make=(n,clue,ds,seed)=>({id:`DT${String(i*3+n).padStart(3,'0')}`,type:'detective',prompt:'어떤 동물일까요?',clue,options:optionSet(a.name,ds.map(x=>x.name),seeded(seed)),answer:a.name,explain:`${a.name}: ${a.fact1}. ${a.fact2}. 대표 서식지는 ${a.habitat}이다.`});
+  const make=(n,clue,ds,seed)=>({id:`DT${String(i*3+n).padStart(3,'0')}`,type:'detective',animal:a.name,prompt:'어떤 동물일까요?',clue,options:optionSet(a.name,ds.map(x=>x.name),seeded(seed)),answer:a.name,explain:`${a.name}: ${a.fact1}. ${a.fact2}. 대표 서식지는 ${a.habitat}이다.`});
   out.push(make(1,a.fact1,ds1,21000+i));
   out.push(make(2,a.fact2,ds2,22000+i));
   out.push(make(3,`${a.habitat}에서 주로 볼 수 있다. ${a.fact1}`,ds3,23000+i));
@@ -211,13 +237,13 @@ function buildDetective(){const out=[];ANIMALS.forEach((a,i)=>{
 function buildHabitat(){const out=[];ANIMALS.forEach((a,i)=>{
   for(let v=0;v<2;v++){
     const ds=habitatDistractors(a,31000+i*17+v);
-    out.push({id:`HB${String(i*2+v+1).padStart(3,'0')}`,type:'habitat',prompt:`${a.name}의 대표 서식지는 어디일까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.habitat,ds,seeded(32000+i*17+v)),answer:a.habitat,explain:`${a.name}은 ${a.habitat}에서 주로 볼 수 있다. ${a.fact1}.`});
+    out.push({id:`HB${String(i*2+v+1).padStart(3,'0')}`,type:'habitat',animal:a.name,prompt:`${a.name}의 대표 서식지는 어디일까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.habitat,ds,seeded(32000+i*17+v)),answer:a.habitat,explain:`${a.name}은 ${a.habitat}에서 주로 볼 수 있다. ${a.fact1}.`});
   }
 });return out}
 function buildClass(){const out=[];ANIMALS.forEach((a,i)=>{
   for(let v=0;v<2;v++){
     const ds=classDistractors(a,41000+i*13+v);
-    out.push({id:`CL${String(i*2+v+1).padStart(3,'0')}`,type:'classq',prompt:`${a.name}은 어느 분류에 속할까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.cls,ds,seeded(42000+i*13+v)),answer:a.cls,explain:`${a.name}은 ${a.cls}에 속한다. ${a.fact1}.`});
+    out.push({id:`CL${String(i*2+v+1).padStart(3,'0')}`,type:'classq',animal:a.name,prompt:`${a.name}은 어느 분류에 속할까요?`,clue:v===0?a.fact1:a.fact2,options:optionSet(a.cls,ds,seeded(42000+i*13+v)),answer:a.cls,explain:`${a.name}은 ${a.cls}에 속한다. ${a.fact1}.`});
   }
 });return out}
 function buildCorrect(){const out=[];ANIMALS.forEach((a,i)=>{
@@ -225,17 +251,17 @@ function buildCorrect(){const out=[];ANIMALS.forEach((a,i)=>{
     const others=otherAnimals(a,51000+i*19+v);
     const answer=`${a.name} — ${fact}`;
     const distractors=others.map(x=>`${x.name} — ${x.wrong}`);
-    out.push({id:`OK${String(i*2+v+1).padStart(3,'0')}`,type:'correct',prompt:'이름과 설명이 바르게 연결된 것은?',clue:'네 보기 중 사실인 연결을 하나 고르세요.',options:optionSet(answer,distractors,seeded(52000+i*19+v)),answer,explain:`바른 연결은 “${answer}”이다. ${a.fact2}.`});
+    out.push({id:`OK${String(i*2+v+1).padStart(3,'0')}`,type:'correct',animal:a.name,prompt:'이름과 설명이 바르게 연결된 것은?',clue:'네 보기 중 사실인 연결을 하나 고르세요.',options:optionSet(answer,distractors,seeded(52000+i*19+v)),answer,explain:`바른 연결은 “${answer}”이다. ${a.fact2}.`});
   })
 });return out}
 function buildIncorrect(){const out=[];ANIMALS.forEach((a,i)=>{
   const others1=otherAnimals(a,61000+i*23),others2=otherAnimals(a,62000+i*23);
   const answer1=`${a.name} — ${a.wrong}`;
   const ds1=others1.map((x,j)=>`${x.name} — ${j%2?x.fact2:x.fact1}`);
-  out.push({id:`NO${String(i*2+1).padStart(3,'0')}`,type:'incorrect',prompt:'이름과 설명이 잘못 연결된 것은?',clue:'네 보기 중 사실이 아닌 연결을 하나 고르세요.',options:optionSet(answer1,ds1,seeded(63000+i)),answer:answer1,explain:`“${answer1}”은 틀린 연결이다. 실제로 ${a.name}은 ${a.cls}이며, ${a.fact1}.`});
+  out.push({id:`NO${String(i*2+1).padStart(3,'0')}`,type:'incorrect',animal:a.name,prompt:'이름과 설명이 잘못 연결된 것은?',clue:'네 보기 중 사실이 아닌 연결을 하나 고르세요.',options:optionSet(answer1,ds1,seeded(63000+i)),answer:answer1,explain:`“${answer1}”은 틀린 연결이다. 실제로 ${a.name}은 ${a.cls}이며, ${a.fact1}.`});
   const wc=wrongClass(a,64000+i),answer2=`${a.name} — ${wc}에 속한다`;
   const ds2=others2.map((x,j)=>`${x.name} — ${j%2?x.fact1:x.fact2}`);
-  out.push({id:`NO${String(i*2+2).padStart(3,'0')}`,type:'incorrect',prompt:'이름과 설명이 잘못 연결된 것은?',clue:'동물의 분류까지 꼼꼼히 살펴보세요.',options:optionSet(answer2,ds2,seeded(65000+i)),answer:answer2,explain:`${a.name}은 ${wc}가 아니라 ${a.cls}에 속한다. ${a.fact1}.`});
+  out.push({id:`NO${String(i*2+2).padStart(3,'0')}`,type:'incorrect',animal:a.name,prompt:'이름과 설명이 잘못 연결된 것은?',clue:'동물의 분류까지 꼼꼼히 살펴보세요.',options:optionSet(answer2,ds2,seeded(65000+i)),answer:answer2,explain:`${a.name}은 ${wc}가 아니라 ${a.cls}에 속한다. ${a.fact1}.`});
 });return out}
 
 function requiredCounts(){const counts=Object.fromEntries(QUIZ_ORDER.map(t=>[t,0]));for(let i=0;i<TOTAL_QUESTIONS;i++)counts[QUIZ_ORDER[i%QUIZ_ORDER.length]]++;return counts}
@@ -257,7 +283,7 @@ function badge(type){const labels={ox:'OX 판단',detective:'동물 탐정',habi
 function renderOX(q){quizCard.innerHTML=`<div class="type-row">${badge('ox')}<div class="keyboard-tip">키보드 O · X</div></div><h2 class="question-title">${esc(q.statement)}</h2><p class="question-sub">이 설명이 맞으면 O, 틀리면 X를 선택하세요.</p><div class="ox-grid"><button class="ox-btn o" data-answer="true"><div class="ox-mark">O</div><div class="ox-label">맞다</div></button><button class="ox-btn x" data-answer="false"><div class="ox-mark">X</div><div class="ox-label">틀리다</div></button></div><div id="feedback" class="feedback"></div>`;$$('.ox-btn').forEach(b=>b.onclick=()=>answerSingle(b.dataset.answer==='true',q,b))}
 function renderChoice(q){quizCard.innerHTML=`<div class="type-row">${badge(q.type)}<div class="keyboard-tip">키보드 1 · 2 · 3 · 4</div></div><h2 class="question-title">${esc(q.prompt)}</h2><p class="question-sub">${esc(q.clue)}</p><div class="mc-grid">${q.options.map((o,i)=>`<button class="mc-option" data-index="${i}"><span class="num">${i+1}</span><span>${esc(o)}</span></button>`).join('')}</div><div id="feedback" class="feedback"></div>`;$$('.mc-option').forEach(b=>b.onclick=()=>answerSingle(q.options[Number(b.dataset.index)],q,b))}
 function answerSingle(value,q,button){if(state.locked)return;state.locked=true;const ok=value===q.answer;if(q.type!=='ox'){$$('.mc-option').forEach((b,i)=>{if(q.options[i]===q.answer)b.classList.add('correct')});if(!ok)button.classList.add('wrong')}showFeedback(ok,q,ok?'정확합니다!':`정답은 ${q.type==='ox'?(q.answer?'O':'X'):q.answer}입니다.`,q.explain)}
-function showFeedback(ok,q,title,text){if(ok){state.streak++;if(state.streak>save.best){save.best=state.streak;persist()}streakNum.textContent=state.streak;playSound('correct');confetti(Math.min(10+state.streak%10,18))}else playSound('wrong');const f=$('#feedback');f.className=`feedback show ${ok?'good':'bad'}`;f.innerHTML=`<div class="feedback-title">${esc(title)}</div><div class="feedback-text">${esc(text)}</div><div class="feedback-actions"><button id="feedbackNext" class="btn ${ok?'btn-submit':'btn-danger'}">${ok?(state.index===TOTAL_QUESTIONS-1?'최종 결과':'다음 문제'):'경기 결과 보기'}</button></div>`;$('#feedbackNext').onclick=()=>{if(ok&&state.index<TOTAL_QUESTIONS-1){state.index++;renderQuestion()}else endGame(ok&&state.index===TOTAL_QUESTIONS-1)}}
+function showFeedback(ok,q,title,text){if(ok){state.streak++;if(state.streak>save.best){save.best=state.streak;persist()}streakNum.textContent=state.streak;playSound('correct');confetti(Math.min(10+state.streak%10,18))}else playSound('wrong');const f=$('#feedback'),art=animalArtHTML(q.animal);f.className=`feedback show ${ok?'good':'bad'}`;f.innerHTML=`<div class="animal-feedback ${art?'':'no-art'}">${art}<div><div class="feedback-title">${esc(title)}</div><div class="feedback-text">${esc(text)}</div><div class="feedback-actions"><button id="feedbackNext" class="btn ${ok?'btn-submit':'btn-danger'}">${ok?(state.index===TOTAL_QUESTIONS-1?'최종 결과':'다음 문제'):'경기 결과 보기'}</button></div></div></div>`;$('#feedbackNext').onclick=()=>{if(ok&&state.index<TOTAL_QUESTIONS-1){state.index++;renderQuestion()}else endGame(ok&&state.index===TOTAL_QUESTIONS-1)}}
 function endGame(perfect=false){persist();resultScore.textContent=state.streak;resultTitle.textContent=perfect?'1,000문제 완주!':'경기 종료';const m=medalInfo(state.streak,perfect);resultMessage.textContent=m.message;medalWrap.innerHTML=medalSVG(m.color,m.label);showScreen('result');if(perfect)confetti(50)}
 function medalInfo(s,p){if(p)return{color:'#8b70e8',label:'1000',message:'1,000문제를 한 번도 틀리지 않고 완주했습니다. 줄림픽의 전설입니다!'};if(s>=500)return{color:'#8b70e8',label:'L',message:'500연속을 넘긴 전설적인 동물 상식 기록입니다.'};if(s>=250)return{color:'#4b8df8',label:'D',message:'250연속 돌파! 동물 박사급 실력입니다.'};if(s>=100)return{color:'#ffc83d',label:'G',message:'세 자릿수 연속 정답! 금메달급 기록입니다.'};if(s>=50)return{color:'#a9b7c7',label:'S',message:'은메달급 기록입니다. 다음에는 세 자릿수에 도전해 보세요.'};if(s>=20)return{color:'#c77f4f',label:'B',message:'동메달 획득! 동물 상식의 기초가 탄탄합니다.'};return{color:'#16b7a4',label:'Z',message:'새로운 사실을 하나씩 익히며 기록을 높여 보세요.'}}
 function medalSVG(color,label){const fs=String(label).length>3?24:38;return `<svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 10h28l15 56-29 8z" fill="#4b8df8"/><path d="M87 10h28l-14 64-29-8z" fill="#ff6f61"/><circle cx="80" cy="99" r="48" fill="${color}"/><circle cx="80" cy="99" r="36" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5"/><text x="80" y="111" text-anchor="middle" font-size="${fs}" font-weight="1000" fill="white">${label}</text></svg>`}
