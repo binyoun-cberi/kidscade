@@ -461,11 +461,11 @@
     {
       "id": "job_maratang_simulator",
       "title": "마라탕 한 그릇",
-      "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=8",
+      "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=9",
       "category": "trivia",
       "age": "job",
       "icon": "🍲",
-      "description": "15일 동안 마라탕집을 키우며 새 재료와 손님 유형을 해금하고, 매일 달라지는 영업 이벤트에 맞춰 재고·현금·평판·업그레이드를 운영하는 3D 마라탕 타이쿤!"
+      "description": "다층 3D 재료 찬장에서 해금된 식재료를 골라 작업대에 담고, 15일 동안 재고·현금·평판·이벤트를 운영하며 가게를 키우는 마라탕 타이쿤!"
     },
     {
       "id": "high_little_sculptor",
