@@ -266,7 +266,7 @@
     if (shop) shop.textContent = '🛒 상점';
 
     const petHeader = document.querySelector('#pet-modal .sook-coach-header > span');
-    if (petHeader) petHeader.textContent = '🏡 내 공간 · 쑥쑥랜드';
+    if (petHeader) petHeader.textContent = '🐾 Cube Pets는 생존 월드에서 만나요';
   }
 
   function setMobileActive(name) {
