@@ -38,6 +38,7 @@
         kitchen:{pending:null},
         cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false},
         starterKitClaimed:false,
+        starterHintSeen:false,
         groundPickups:{},
         town:{
           coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0,
