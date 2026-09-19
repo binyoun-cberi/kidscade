@@ -83,10 +83,16 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   model.position.y-=b.min.y;
   model.updateMatrixWorld(true);
   const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
+  model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
   const mixer=new THREE.AnimationMixer(model);
   const clips=Array.isArray(gltf.animations)?gltf.animations:[];
   const idleClip=clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null;
-  const walkClip=clips.find(c=>/walk|run/i.test(c.name))||idleClip;
+  const walkSource=clips.find(c=>/walk|run/i.test(c.name))||idleClip;
+  // KayKit/UnityGLTF walk clips contain root.position translation (root motion).
+  // The NPC anchor already handles world movement, so keeping that track makes the body drift away
+  // while labels/interactions remain at the correct town position.
+  const walkClip=walkSource?walkSource.clone():null;
+  if(walkClip)walkClip.tracks=walkClip.tracks.filter(t=>!/^root\.position$/i.test(t.name));
   let action=null,animState='';
   function playAnim(kind){
     const clip=kind==='walk'?walkClip:idleClip;
