@@ -74,7 +74,7 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   const b=new THREE.Box3().setFromObject(object);
   const groundY=-b.min.y;object.position.set(x,groundY,z);
   ctx.parent.add(object);
-  const tag=label?makeLabel(name,{width:1.45,height:.36,font:34}):null;
+  const tag=label?makeLabel(name,{width:1.2,height:.30,font:32}):null;
   if(tag){tag.position.set(x,groundY+2.02,z);tag.visible=false;ctx.parent.add(tag)}
   return {id,name,object,label:tag,interaction:null,homeX:x,homeZ:z,groundY,r:radius,role,phase:(id.length*1.37)%6.2};
 }
@@ -126,7 +126,7 @@ export async function buildKidscadeCity(ctx){
   for(const [id,url,x,z,w,d,name,labelDz] of buildings){
     await addModel(parent,url,{x,z,w,h:5.0,d,rot:Math.PI,name:'city-'+id});
     collider('outdoor',x,z,w*.82,d*.70);track('building-'+id,'building',x,z,w*.82,d*.70);
-    const label=makeLabel(name,{width:2.25,height:.52,font:35});label.position.set(x,3.72,z+labelDz);label.userData.anchor={x,z:z+labelDz};label.visible=false;parent.add(label);buildingLabels.push(label);
+    const label=makeLabel(name,{width:1.9,height:.44,font:33});label.position.set(x,3.72,z+labelDz);label.userData.anchor={x,z:z+labelDz};label.visible=false;parent.add(label);buildingLabels.push(label);
   }
 
   // Market props are grouped into one readable outdoor storefront, not scattered on the road.
@@ -220,7 +220,7 @@ export async function buildKidscadeCity(ctx){
       const minutes=typeof getGameTime==='function'?getGameTime():720;
       const hour=minutes/60,evening=hour>=18&&hour<23,daytime=hour>=7&&hour<18;
       const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
-      for(const label of buildingLabels){const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<10.5;}
+      for(const label of buildingLabels){const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<7.5;}
       for(const n of npcs){
         let hx=n.homeX,hz=n.homeZ,r=n.r;
         if(daytime&&dayRoleTargets[n.id]){const q=dayRoleTargets[n.id];hx=q.x;hz=q.z;r=q.r;}
@@ -233,7 +233,7 @@ export async function buildKidscadeCity(ctx){
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
         const walking=Math.abs(dx)+Math.abs(dz)>.025;
         n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.025:0);
-        if(n.label){n.label.position.set(n.object.position.x,n.groundY+2.02,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.2;}
+        if(n.label){n.label.position.set(n.object.position.x,n.groundY+2.02,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
         if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
     }
