@@ -66,10 +66,9 @@ function makeLabel(text,{width=2.2,height=.52,font=38}={}){
 }
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
-  const base=await ctx.loadGLB(NPC_MODELS[id]);
-  // NPCs are skinned characters: Object3D.clone(true) leaves skeleton/bone bindings shared.
-  // SkeletonUtils.clone gives every resident an independent skeleton so bodies follow their anchors.
-  const model=ctx.prepModel(cloneSkeleton(base));
+  const gltf=await ctx.loadGLTF(NPC_MODELS[id]);
+  // Keep the complete character asset: independent skeleton + original animation clips.
+  const model=ctx.prepModel(cloneSkeleton(gltf.scene));
   // Match the already-working people pipeline used by the market game:
   // normalize by the largest axis, then center X/Z and put feet on local Y=0.
   model.updateMatrixWorld(true);
@@ -84,12 +83,25 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   model.position.y-=b.min.y;
   model.updateMatrixWorld(true);
   const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
+  const mixer=new THREE.AnimationMixer(model);
+  const clips=Array.isArray(gltf.animations)?gltf.animations:[];
+  const idleClip=clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null;
+  const walkClip=clips.find(c=>/walk|run/i.test(c.name))||idleClip;
+  let action=null,animState='';
+  function playAnim(kind){
+    const clip=kind==='walk'?walkClip:idleClip;
+    if(!clip||animState===kind)return;
+    action?.fadeOut?.(.12);
+    const next=mixer.clipAction(clip);next.reset();next.enabled=true;next.setLoop(THREE.LoopRepeat,Infinity);next.fadeIn(.12);next.play();
+    action=next;animState=kind;
+  }
+  playAnim('idle');
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,20),new THREE.MeshBasicMaterial({color:0x263126,transparent:true,opacity:.18,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.008;anchor.add(shadow);
   ctx.parent.add(anchor);
   const tag=label?makeLabel(name,{width:1.2,height:.30,font:32}):null;
   if(tag){tag.position.set(x,2.12,z);tag.visible=false;ctx.parent.add(tag)}
-  return {id,name,object:anchor,model,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2};
+  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2};
 }
 
 function overlaps(a,b,pad=.08){
@@ -106,7 +118,7 @@ function validateMapLayout(objects){
 }
 
 export async function buildKidscadeCity(ctx){
-  const {parent,addModel,box,plane,interact,collider,loadGLB,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
+  const {parent,addModel,box,plane,interact,collider,loadGLB,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
   const layout=[],buildingLabels=[];const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
 
   // One continuous town floor, then clearly separated road, sidewalks/plaza, and building lots.
@@ -174,7 +186,7 @@ export async function buildKidscadeCity(ctx){
     await addModel(parent,CITY_ASSET.lamp,{x,z,w:.5,h:3.4,d:.5,rot:0});
   }
 
-  const npcCtx={parent,loadGLB,prepModel};
+  const npcCtx={parent,loadGLTF,prepModel};
   const npcs=[];
   npcs.push(await addNpc(npcCtx,'minji','민지',-18.0,26.65,{role:'shop'}));
   npcs.push(await addNpc(npcCtx,'junho','준호',-9.5,26.65,{role:'shop'}));
@@ -245,7 +257,9 @@ export async function buildKidscadeCity(ctx){
         n.object.position.z+=dz*Math.min(1,dt*.72);
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
         const walking=Math.abs(dx)+Math.abs(dz)>.025;
-        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.018:0);
+        n.playAnim?.(walking?'walk':'idle');
+        n.mixer?.update(dt);
+        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.012:0);
         if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
         if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
