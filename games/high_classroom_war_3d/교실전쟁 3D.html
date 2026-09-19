@@ -208,7 +208,7 @@ camera.lookAt(lookTarget);
 
 const hemi=new THREE.HemisphereLight(0xdff5ff,0x6a4b35,2.05);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(-5,13,9);sun.castShadow=true;
-sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=14;sun.shadow.camera.bottom=-22;
+sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-15;sun.shadow.camera.right=15;sun.shadow.camera.top=14;sun.shadow.camera.bottom=-22;
 sun.shadow.camera.near=.1;sun.shadow.camera.far=45;scene.add(sun);
 
 const fill=new THREE.DirectionalLight(0x9bdcff,1.0);fill.position.set(6,7,-12);scene.add(fill);
@@ -280,10 +280,7 @@ function cloneClassroomCharacter(key,{height=1.55,facing=Math.PI,ring=0x38bdf8}=
     if(!n.isMesh)return;
     n.castShadow=true;n.receiveShadow=true;
     n.userData.sharedAssetGeometry=true;
-    if(n.material){
-      if(Array.isArray(n.material))n.material=n.material.map(m=>m.clone());
-      else n.material=n.material.clone();
-    }
+    n.userData.sharedAssetMaterial=true;
   });
   model.updateMatrixWorld(true);
   let bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());
@@ -566,7 +563,7 @@ function createGeneralStudent(){
 function disposeObject(obj){
   obj.traverse?.(n=>{
     if(n.geometry && !n.userData?.sharedAssetGeometry && n.geometry!==bulletGeometry && n.geometry!==particleGeometry) n.geometry.dispose?.();
-    if(n.material){
+    if(n.material && !n.userData?.sharedAssetMaterial){
       const mats=Array.isArray(n.material)?n.material:[n.material];
       mats.forEach(m=>{if(m.map?.userData?.ownedTexture)m.map.dispose?.();m.dispose?.();});
     }
