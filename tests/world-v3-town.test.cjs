@@ -116,12 +116,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/도시 안내판 읽기/);
   assert.match(runtime,/interaction\.enabled=false/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=11/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=12/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=9/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=17/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=17/);
+  assert.match(html,/kidscade-world-v3\.js\?v=18/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=18/);
 });
 
 
@@ -306,7 +306,7 @@ test('Cube Pets are separated into owned yard companions and habitat-based wild 
 
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
-  assert.match(city,/model\.position\.set\(0,-b\.min\.y,0\)/);
+  assert.match(city,/model\.position\.x-=center\.x/);\n  assert.match(city,/model\.position\.z-=center\.z/);\n  assert.match(city,/model\.position\.y-=b\.min\.y/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
   assert.match(city,/object:anchor,model/);
   assert.match(city,/n\.object\.position\.y=n\.groundY/);
@@ -408,7 +408,7 @@ test('World v3 audio uses local licensed project assets for BGM and interaction 
 test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D skeletons',()=>{
   assert.match(city,/SkeletonUtils\.js/);
   assert.match(city,/clone as cloneSkeleton/);
-  assert.match(city,/cloneSkeleton\(base\)/);
+  assert.match(city,/cloneSkeleton\(gltf\.scene\)/);
   assert.doesNotMatch(city,/base\.clone\(true\)/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
   assert.match(city,/anchor\.add\(model\)/);
@@ -439,4 +439,13 @@ test('Seed Town approach is a visible protected three-metre pedestrian spine',()
   assert.match(runtime,/addNatureCollider\(x,z,\.82,\.68\)/);
   assert.match(runtime,/addNatureCollider\(x,z,\.72,\.72\)/);
   assert.match(runtime,/addNatureCollider\(x,z,\.9,\.75\)/);
+});
+
+
+test('resident walk animation strips root motion so visual bodies cannot detach from labels',()=>{
+  assert.match(city,/const walkSource=/);
+  assert.match(city,/walkSource\?walkSource\.clone\(\):null/);
+  assert.match(city,/walkClip\.tracks=walkClip\.tracks\.filter/);
+  assert.match(city,/\^root\\\.position\$/);
+  assert.match(city,/n\.frustumCulled=false/);
 });
