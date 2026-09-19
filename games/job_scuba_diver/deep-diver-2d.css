@@ -66,3 +66,28 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 #zoneToast{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;min-width:260px;padding:9px 16px;border-radius:13px;background:rgba(1,18,28,.72);border:1px solid rgba(162,235,247,.2);backdrop-filter:blur(5px)}
 #zoneToast b{display:block;font:1000 clamp(21px,3.3vw,34px)/1 Impact,"Arial Black",system-ui;letter-spacing:.07em;color:#f3feff;text-shadow:0 3px 0 #07566a,0 0 18px rgba(76,230,248,.45)}
 #zoneToast small{display:block;margin-top:5px;font-size:10px;font-weight:900;letter-spacing:.03em;color:#bcecf2;text-shadow:0 2px 5px #001}
+
+
+/* v7 expedition rework: cleaner mobile HUD and direct-action controls */
+#rightHud{pointer-events:auto;min-width:112px}
+#soundBtn{display:block;width:100%;margin:6px 0 0;padding:4px 6px;border-radius:8px;font-size:9px;line-height:1.1;box-shadow:none}
+#actionMobile{display:none!important}
+#interactMobile{grid-column:1 / span 2;height:46px}
+#photoFrame{border:2px solid rgba(229,253,255,.88);box-shadow:0 0 0 1px rgba(38,207,232,.24),0 0 0 9999px rgba(0,12,20,.035),inset 0 0 28px rgba(84,228,244,.10)}
+#photoFrame:before,#photoFrame:after{content:"";position:absolute;width:26px;height:26px;border-color:#9ef5ff;pointer-events:none}
+#photoFrame:before{left:-5px;top:-5px;border-left:4px solid #9ef5ff;border-top:4px solid #9ef5ff;background:none}
+#photoFrame:after{right:-5px;bottom:-5px;border-right:4px solid #9ef5ff;border-bottom:4px solid #9ef5ff;background:none}
+@media(hover:none),(pointer:coarse){
+  #rightHud{max-width:96px;min-width:86px}
+  #mActions{grid-template-columns:64px 64px;gap:8px}
+  .mBtn{height:54px}
+}
+@media(max-width:480px) and (orientation:portrait){
+  #vitals{width:142px}
+  #missionHud{top:72px;left:10px;right:10px;padding:6px 9px}
+  #rightHud{max-width:91px;font-size:8px}
+  #rightHud #soundBtn{font-size:8px;padding:3px 4px}
+  #hint{top:122px}
+  #mActions{right:max(10px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:62px 62px}
+  #interactMobile{height:44px}
+}
