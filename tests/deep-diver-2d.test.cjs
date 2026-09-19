@@ -38,7 +38,7 @@ test('Deep Diver v7 has core career systems',()=>{
 test('Deep Diver v7 uses tracked underwater, fish and pirate assets',()=>{
   const required=[
     'assets/game/2d/underwater/underwater-diving/player/player-swiming.png',
-    'assets/game/2d/underwater/underwater-diving/enemies/fish-big.png',
+    'assets/game/2d/underwater/deep-diver/creatures/shark/shark-swim-atlas.png',
     'assets/game/2d/underwater/underwater-diving/enemies/mine.png',
     'assets/game/2d/underwater/underwater-diving/environment/props.png',
     'assets/game/2d/fish/fish_blue.png',
@@ -49,6 +49,8 @@ test('Deep Diver v7 uses tracked underwater, fish and pirate assets',()=>{
   assert.match(js,/underwater-diving/);
   assert.match(js,/2d\/fish/);
   assert.match(js,/2d\/pirate/);
+  assert.match(js,/deep-diver\/creatures\/shark/);
+  assert.match(js,/giant:\{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8/);
 });
 
 test('Deep Diver v7 supports desktop and touch controls',()=>{
