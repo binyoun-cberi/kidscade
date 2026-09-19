@@ -33,3 +33,13 @@ v2는 삭제하지 않습니다. v3 화면의 **2D 안정판** 버튼으로 `../
 ## 주요 파일
 - `kidscade-world.html` : v3 화면/UI
 - `kidscade-world-v3.js` : Three.js 씬, 2D 아바타 billboard, 이동/충돌/상호작용
+
+
+## v3.1 배치·아바타 애니메이션
+- v3 내부에 숨김 `avatar-studio.html` 런타임을 두고 `renderPreviewFrame(idle/walk/smile)`을 직접 호출
+- 프레임 API가 늦거나 잠시 unavailable이어도 billboard 자체의 보폭 바운스 / squash / 그림자 변화가 동작
+- 좌우 이동 시 캐릭터 이미지 즉시 반전
+- 야외를 집 앞 마당 → 마을길 → 연못 휴식 구역 → 농장 작물 구역 → 작업장 제작 구역으로 재배치
+- 나무는 외곽 숲, 바위는 동쪽 채광 구역 중심으로 묶어 랜덤 테스트맵 인상을 줄임
+- 실내를 침실 / 거실 / 주방·식탁으로 구획하고 중앙 이동 통로를 비움
+- 기존 v3 좌표와 충돌하지 않도록 `LAYOUT_VERSION=2`에서 이전 v3 위치 저장을 안전하게 재설정
