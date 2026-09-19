@@ -38,6 +38,7 @@
         kitchen:{pending:null},
         cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false},
         starterKitClaimed:false,
+        groundPickups:{},
         town:{
           coins:120,fun:80,jobs:{},friendship:{},talked:{},visits:0,
           delivery:{active:false,target:'cafe',startedDay:0,completedDay:0,reward:95},
@@ -66,7 +67,8 @@
         crafted:Array.isArray(p.crafted)?[...p.crafted]:[],
         food:{...base.progression.food,...(p.food||{})},
         fishDex:{...base.progression.fishDex,...(p.fishDex||{})},
-        kitchen:{...base.progression.kitchen,...(p.kitchen||{})}
+        kitchen:{...base.progression.kitchen,...(p.kitchen||{})},
+        groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})}
       };
     }
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
