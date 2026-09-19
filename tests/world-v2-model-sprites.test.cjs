@@ -7,7 +7,6 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'world-v2','kidscade-world.html'),'utf8');
 const sprites=fs.readFileSync(path.join(root,'world-v2','kidscade-world-model-sprites.js'),'utf8');
 const life=fs.readFileSync(path.join(root,'world-v2','kidscade-world-life-animation.js'),'utf8');
-const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
 test('World v2 loads the local Three.js furniture sprite bridge',()=>{
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
@@ -39,6 +38,6 @@ test('World v2 keeps existing furniture interactions and falls back safely',()=>
   assert.match(sprites,/fallback\?\.\(ctx,e\)/);
 });
 
-test('World v2 embedded entry is cache bumped',()=>{
-  assert.match(integration,/world-v2\/kidscade-world\.html\?v=8/);
+test('World v2 remains a directly loadable stability fallback',()=>{
+  assert.match(html,/kidscade-world-model-sprites\.js\?v=2/);
 });
