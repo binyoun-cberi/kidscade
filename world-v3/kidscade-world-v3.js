@@ -500,7 +500,7 @@ function updateZone(){
 function setMode(next){
   resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
-  else{player.x=-10;player.z=-1.8;zoneEl.textContent='집 구역 · 집·연못·펫 마당';toast('집 밖으로 나왔어요.')}
+  else{player.x=-12;player.z=-1.8;zoneEl.textContent='집 구역 · 집·연못·펫 마당';toast('집 밖으로 나왔어요.')}
   setAvatarAction('smile',520);near=null;
 }
 function spendTool(kind,item){
