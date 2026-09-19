@@ -1,11 +1,14 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel,playSfx}=ctx;
 
   const BUY={
     market:{
       seedPotato:{name:'감자 씨앗',price:12,type:'seed',key:'potato',qty:1},
       seedCarrot:{name:'당근 씨앗',price:12,type:'seed',key:'carrot',qty:1},
       seedTomato:{name:'토마토 씨앗',price:16,type:'seed',key:'tomato',qty:1},
+      seedStrawberry:{name:'딸기 씨앗',price:18,type:'seed',key:'strawberry',qty:1},
+      seedCorn:{name:'옥수수 씨앗',price:18,type:'seed',key:'corn',qty:1},
+      seedPumpkin:{name:'호박 씨앗',price:22,type:'seed',key:'pumpkin',qty:1},
       lunch:{name:'도시락',price:34,type:'food',key:'cityLunch',qty:1},
       rugRound:{name:'둥근 러그',price:68,type:'furniture',key:'rugRound',qty:1},
       teddy:{name:'곰 인형',price:55,type:'furniture',key:'teddy',qty:1}
@@ -23,7 +26,7 @@ export function createTownEconomy(ctx){
       lunch:{name:'도시락',price:36,type:'food',key:'cityLunch',qty:1}
     }
   };
-  const SELL={wood:4,stone:4,iron:12,fish:14,potato:8,carrot:8,tomato:10,mushroom:10};
+  const SELL={wood:4,stone:4,iron:12,fish:14,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,mushroom:10,milk:18,egg:12,truffle:38};
   const JOBS={
     market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5},
     cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6},
@@ -138,7 +141,7 @@ export function createTownEconomy(ctx){
     if(reward.type==='coins')t.coins+=reward.qty||0;
     else if(reward.type==='item')inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);
     else if(reward.type==='food')p.food[reward.key]=(p.food[reward.key]||0)+(reward.qty||1);
-    else if(reward.type==='seedBundle'){for(const key of ['potato','carrot','tomato'])p.seeds[key]=(p.seeds[key]||0)+2;}
+    else if(reward.type==='seedBundle'){for(const key of ['potato','carrot','tomato','strawberry','corn','pumpkin'])p.seeds[key]=(p.seeds[key]||0)+(key==='potato'||key==='carrot'||key==='tomato'?2:1);}
     else if(reward.type==='petBundle'){inv().carrot=(inv().carrot||0)+2;inv().tomato=(inv().tomato||0)+2;inv().fish=(inv().fish||0)+1;inv().mushroom=(inv().mushroom||0)+1;}
     else if(reward.type==='perk')t.perks[reward.key]=reward.value??1;
     else if(reward.type==='furniture')addFurniture(reward.key,reward.qty||1);
@@ -194,12 +197,12 @@ export function createTownEconomy(ctx){
       p.housing.owned[d.key]=(p.housing.owned[d.key]||0)+(d.qty||1);
     }
     else if(d.type==='tool')p.tools[d.key]={dur:d.dur,max:d.dur,tier:d.tier,boughtAt:Date.now()};
-    persist();setAvatarAction('smile',500);toast(d.name+' 구매!');updateStatus();
+    persist();setAvatarAction('smile',500);playSfx?.('purchase',.18);toast(d.name+' 구매!');updateStatus();
     shop(kind,kind==='market'?'민지':kind==='hardware'?'준호':'하늘');
   }
   function sell(key){
     const price=SELL[key],i=inv();if(!price||(i[key]||0)<=0)return;
-    i[key]--;ensureState().coins+=price;persist();toast(itemName(key)+' 판매 +'+price+' 코인');updateStatus();shop('market','민지');
+    i[key]--;ensureState().coins+=price;persist();playSfx?.('pickup',.16);toast(itemName(key)+' 판매 +'+price+' 코인');updateStatus();shop('market','민지');
   }
 
   function jobs(){
@@ -215,7 +218,7 @@ export function createTownEconomy(ctx){
     p.energy-=j.energy;p.survival.hunger=Math.max(0,p.survival.hunger-j.hunger);
     const bonus=1+(Number(t.perks.jobBonus)||0);const reward=Math.round(j.reward*bonus);
     t.coins+=reward;t.jobs[id]=p.survival.day;t.fun=Math.max(0,t.fun-3);
-    persist();setAvatarAction('smile',700);toast(j.name+' 완료! +'+reward+' 코인');updateStatus();jobs();
+    persist();setAvatarAction('smile',700);playSfx?.('success',.10);toast(j.name+' 완료! +'+reward+' 코인');updateStatus();jobs();
   }
 
   function delivery(){
@@ -241,7 +244,7 @@ export function createTownEconomy(ctx){
     t.delivery.active=false;t.delivery.completedDay=day;t.coins+=reward;
     t.friendship.haneul=(t.friendship.haneul||0)+1;t.friendship.hyunwoo=(t.friendship.hyunwoo||0)+1;t.fun=Math.min(100,t.fun+6);
     claimFriendshipRewards('haneul');claimFriendshipRewards('hyunwoo');
-    persist();setAvatarAction('smile',800);toast('배달 완료! +'+reward+' 코인');updateStatus();shop('cafe','하늘');
+    persist();setAvatarAction('smile',800);playSfx?.('success',.11);toast('배달 완료! +'+reward+' 코인');updateStatus();shop('cafe','하늘');
   }
 
   function talk(id,name=RESIDENTS[id]?.name||id){
