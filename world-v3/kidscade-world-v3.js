@@ -162,7 +162,7 @@ panel.addEventListener('click',e=>{
   const def=key==='axe'?{name:'돌도끼',req:{wood:3,stone:2},max:18}:{name:'돌곡괭이',req:{wood:2,stone:3},max:18};
   if(!Object.entries(def.req).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
   Object.entries(def.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-  p.tools[key]={dur:def.max,max:def.max,tier:'stone',craftedAt:Date.now()};persist();toast(def.name+' 완성!');workbenchPanel();updateStatus();
+  p.tools[key]={dur:def.max,max:def.max,tier:'stone',craftedAt:Date.now()};persist();setAvatarAction('smile',750);toast(def.name+' 완성!');workbenchPanel();updateStatus();
 });
 
 const avatarCanvas=document.createElement('canvas');avatarCanvas.width=128;avatarCanvas.height=160;
@@ -173,7 +173,8 @@ const avatar=new THREE.Sprite(avatarMaterial);avatar.scale.set(1.55,1.94,1);avat
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.55,28),new THREE.MeshBasicMaterial({color:0x233123,transparent:true,opacity:.22,depthWrite:false}));
 shadow.rotation.x=-Math.PI/2;scene.add(shadow);
 const avatarImg=new Image();avatarImg.decoding='async';
-let avatarFacing=1,lastAvatarFrame=0,lastAvatarSource='';
+const avatarRuntimeFrame=document.getElementById('avatarRuntime');
+let avatarFacing=1,lastAvatarFrame=0,lastAvatarSource='',avatarAction='',avatarActionUntil=0;
 function drawFallbackAvatar(){
   avatarCtx.clearRect(0,0,128,160);avatarCtx.save();
   avatarCtx.fillStyle='#e0ba83';avatarCtx.beginPath();avatarCtx.arc(64,48,29,0,Math.PI*2);avatarCtx.fill();
@@ -186,14 +187,64 @@ function drawAvatarImage(){
   avatarCtx.drawImage(avatarImg,0,0,128,160);avatarCtx.restore();avatarTexture.needsUpdate=true;
 }
 avatarImg.onload=drawAvatarImage;avatarImg.onerror=drawFallbackAvatar;
-function setAvatarSource(src){if(!src||src===lastAvatarSource)return;lastAvatarSource=src;avatarImg.src=src}
-drawFallbackAvatar();setAvatarSource(Bridge?.readAvatarSource?.()||'');
+function setAvatarSource(src,force=false){
+  if(!src)return false;
+  if(!force&&src===lastAvatarSource)return false;
+  lastAvatarSource=src;avatarImg.src=src;return true;
+}
+function avatarApi(){
+  try{
+    const direct=avatarRuntimeFrame?.contentWindow?.KidscadeAvatarShop;
+    if(direct?.renderPreviewFrame)return direct;
+  }catch(_){}
+  return Bridge?.avatarApi?.()||null;
+}
+function setAvatarAction(mode='smile',duration=650){
+  avatarAction=mode;avatarActionUntil=performance.now()+duration;
+}
+function currentAvatarMode(now,moving){
+  if(avatarAction&&now<avatarActionUntil)return avatarAction;
+  if(avatarAction&&now>=avatarActionUntil)avatarAction='';
+  return moving?'walk':'idle';
+}
+drawFallbackAvatar();setAvatarSource(Bridge?.readAvatarSource?.()||'',true);
+avatarRuntimeFrame?.addEventListener('load',()=>{
+  try{
+    const api=avatarRuntimeFrame.contentWindow?.KidscadeAvatarShop;
+    const src=api?.getPreviewDataURL?.()||Bridge?.readAvatarSource?.()||'';
+    if(src)setAvatarSource(src,true);
+  }catch(_){}
+});
 function updateAvatarFrame(now,moving){
-  if(now-lastAvatarFrame<110)return;lastAvatarFrame=now;
-  const api=Bridge?.avatarApi?.();
-  if(api?.renderPreviewFrame){
-    try{const s=api.renderPreviewFrame(moving?'walk':'idle',now/1000);if(s?.startsWith('data:image'))setAvatarSource(s);}catch(_){}
-  }else if(now%2000<120)setAvatarSource(Bridge?.readAvatarSource?.()||'');
+  if(now-lastAvatarFrame<92)return;lastAvatarFrame=now;
+  const mode=currentAvatarMode(now,moving),api=avatarApi();
+  if(api){
+    try{
+      let s=api.renderPreviewFrame?.(mode,now/1000)||'';
+      if(!s)s=api.getPreviewDataURL?.()||'';
+      if(s?.startsWith('data:image'))setAvatarSource(s,true);
+    }catch(_){}
+  }else if(now%1600<110){
+    setAvatarSource(Bridge?.readAvatarSource?.()||'',true);
+  }
+}
+function applyAvatarMotion(now,moving){
+  const action=currentAvatarMode(now,moving);
+  let bob=0,sx=1,sy=1,shadowScale=1,shadowOpacity=.22;
+  if(moving){
+    const phase=now/112;
+    const step=Math.abs(Math.sin(phase*Math.PI));
+    bob=step*.115;sx=1+(1-step)*.018;sy=1-step*.035;shadowScale=1-step*.16;shadowOpacity=.22-step*.05;
+  }else if(action==='smile'){
+    const p=(now/180)%1;bob=Math.sin(p*Math.PI*2)*.035;sy=1.012;
+  }else{
+    const breathe=Math.sin(now/520)*.5+.5;
+    bob=breathe*.018;sx=1+breathe*.006;sy=1-breathe*.004;shadowScale=1-breathe*.025;
+  }
+  avatar.position.y=.12+bob;
+  avatar.scale.set(1.55*sx,1.94*sy,1);
+  shadow.scale.set(shadowScale,shadowScale,shadowScale);
+  shadow.material.opacity=shadowOpacity;
 }
 
 const keys=new Set();
@@ -212,8 +263,14 @@ document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 document.getElementById('stable').onclick=()=>location.href='../world-v2/kidscade-world.html?v=8';
 
+const LAYOUT_VERSION=2;
 let mode='outdoor';
-const player={x:Number(save.player?.v3x)||-7,z:Number(save.player?.v3z)||4,speed:5.1};
+const savedLayout=Number(save.player?.v3Layout||0);
+const player={
+  x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-8.4,
+  z:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3z))?Number(save.player.v3z):1.7,
+  speed:5.1
+};
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?{x1:-18,x2:18,z1:-11,z2:11}:{x1:-6,x2:6,z1:-4.4,z2:4.6};
   if(nx<bounds.x1||nx>bounds.x2||nz<bounds.z1||nz>bounds.z2)return true;
@@ -230,9 +287,9 @@ function nearestInteraction(){
 function doInteract(){if(near)near.action()}
 function setMode(next){
   mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
-  if(next==='indoor'){player.x=0;player.z=3.2;zoneEl.textContent='우리 집 · 3D 실내';toast('3D 집 안으로 들어왔어요.')}
-  else{player.x=-7;player.z=4.4;zoneEl.textContent='집 앞 · 3D 마을';toast('집 밖으로 나왔어요.')}
-  near=null;
+  if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
+  else{player.x=-8.8;player.z=-1.55;zoneEl.textContent='집 앞 · 3D 마을';toast('집 밖으로 나왔어요.')}
+  setAvatarAction('smile',520);near=null;
 }
 function spendTool(kind,item){
   const p=prog(),t=p.tools[item];
@@ -246,7 +303,7 @@ function sleep(){
 function fish(){
   const p=prog();if(p.energy<3){toast('체력이 부족해요.');return}
   p.energy=Math.max(0,p.energy-3);toast('낚시 중…');
-  setTimeout(()=>{const i=inv();i.fish=(i.fish||0)+1;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+1;persist();updateStatus();toast('물고기를 잡았어요! +1');},850);
+  setTimeout(()=>{const i=inv();i.fish=(i.fish||0)+1;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+1;persist();setAvatarAction('smile',900);updateStatus();toast('물고기를 잡았어요! +1');},850);
 }
 function cropState(id,type){
   const p=prog();let s=p.crops[id];if(!s||typeof s!=='object')s=p.crops[id]={type,phase:'empty',plantedAt:0,readyAt:0};s.type=type;
@@ -286,92 +343,140 @@ function updateCropVisuals(){
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
 async function buildOutdoor(){
-  plane(outdoor,0,0,38,25,0x78ad5f,0);
-  box(outdoor,0,0,38,25,.22,0x6c9657,-.22);
-  box(outdoor,-1.5,2.4,31,2.1,.12,0xd8c79c,.03);
-  box(outdoor,-7,0,2.2,8,.12,0xd8c79c,.03);
-  box(outdoor,7,3.3,2.2,9,.12,0xd8c79c,.03);
-  const pond=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.35,.12,48),new THREE.MeshStandardMaterial({color:0x68b7d5,roughness:.25,metalness:.05,transparent:true,opacity:.93}));
-  pond.position.set(-12,.04,7);outdoor.add(pond);
+  // Base lawn and a clear path hierarchy: home -> village path -> farm/work zone.
+  plane(outdoor,0,0,40,28,0x7caf63,0);
+  box(outdoor,0,0,40,28,.22,0x6c9657,-.22);
 
+  // Main east-west path and short branches.
+  box(outdoor,0,.7,31,2.0,.10,0xd8c79c,.03);
+  box(outdoor,-8.8,-2.2,2.1,6.0,.10,0xd8c79c,.03);
+  box(outdoor,10.8,-2.5,2.1,5.5,.10,0xd8c79c,.03);
+  box(outdoor,-10.8,4.0,1.8,5.8,.10,0xd8c79c,.03);
+  box(outdoor,12.8,5.3,4.8,3.6,.10,0xbda873,.025);
+
+  // Pond and a calmer resting/garden area on the west side.
+  const pond=new THREE.Mesh(
+    new THREE.CylinderGeometry(3.15,3.3,.13,48),
+    new THREE.MeshStandardMaterial({color:0x67b5d3,roughness:.26,metalness:.03,transparent:true,opacity:.94})
+  );
+  pond.position.set(-12.4,.04,6.5);pond.receiveShadow=true;outdoor.add(pond);
+  const pondRim=new THREE.Mesh(
+    new THREE.RingGeometry(3.15,3.48,48),
+    new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide})
+  );
+  pondRim.rotation.x=-Math.PI/2;pondRim.position.set(-12.4,.115,6.5);outdoor.add(pondRim);
+
+  // Home lot, farm house/barn, workshop.
   await Promise.all([
-    addModel(outdoor,ASSET.house,{x:-8.3,z:-3.3,w:6.8,h:6.4,d:5.5,rot:Math.PI,name:'home3d'}),
-    addModel(outdoor,ASSET.farmHouse,{x:11.2,z:-5.8,w:4.8,h:4.6,d:4.4,rot:Math.PI,name:'farmhouse3d'}),
-    addModel(outdoor,ASSET.workbench,{x:4.4,z:8.2,w:2.0,h:1.5,d:1.3,rot:-.45,name:'workbench3d'}),
-    addModel(outdoor,ASSET.chest,{x:2.5,z:8.0,w:1.25,h:1.0,d:1.0,rot:.25,name:'chest3d'})
+    addModel(outdoor,ASSET.house,{x:-8.8,z:-5.6,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
+    addModel(outdoor,ASSET.farmHouse,{x:10.8,z:-6.0,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
+    addModel(outdoor,ASSET.workbench,{x:13.6,z:5.5,w:2.0,h:1.5,d:1.3,rot:-.35,name:'workbench3d'}),
+    addModel(outdoor,ASSET.chest,{x:11.8,z:5.7,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
   ]);
-  addColliderFor('outdoor',-8.3,-3.3,5.9,4.5);
-  addColliderFor('outdoor',11.2,-5.8,4.1,3.4);
-  addColliderFor('outdoor',4.4,8.2,1.6,1.0);
-  addColliderFor('outdoor',2.5,8.0,1.0,.8);
-  interact('outdoor',-8.3,-.35,2.0,'집에 들어가기',()=>setMode('indoor'));
-  interact('outdoor',4.4,7.2,1.5,'제작대 사용하기',workbenchPanel);
-  interact('outdoor',2.5,7.1,1.4,'보관 상자 보기',inventoryPanel);
-  interact('outdoor',-10.5,6.5,2.1,'연못에서 낚시하기',fish);
+  addColliderFor('outdoor',-8.8,-5.6,5.8,4.4);
+  addColliderFor('outdoor',10.8,-6.0,4.0,3.3);
+  addColliderFor('outdoor',13.6,5.5,1.6,1.0);
+  addColliderFor('outdoor',11.8,5.7,1.0,.8);
+  interact('outdoor',-8.8,-2.45,1.8,'집에 들어가기',()=>setMode('indoor'));
+  interact('outdoor',13.6,4.65,1.45,'제작대 사용하기',workbenchPanel);
+  interact('outdoor',11.8,4.9,1.35,'보관 상자 보기',inventoryPanel);
+  interact('outdoor',-10.8,6.1,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
 
-  const treePos=[[-16,-7],[-13,-4],[-15,0],[-16,4],[-4,-8],[-1,-8],[3,-8],[7,-8],[15,-8],[16,-3],[15,2],[16,7],[-16,9],[-5,10],[0,10],[11,9]];
-  const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
-  for(let i=0;i<treePos.length;i++){
-    const [x,z]=treePos[i];await addModel(outdoor,treeAssets[i%3],{x,z,w:2.5,h:4.0+(i%2)*.5,d:2.5,rot:(i%5)*.45});
-    addColliderFor('outdoor',x,z,.7,.7);interact('outdoor',x,z,1.35,'나무 베기',()=>spendTool('wood','axe'));
-  }
-  const rocks=[[-3,7],[0,7.8],[13,5],[10,9],[-14,3.8]];
-  const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
-  for(let i=0;i<rocks.length;i++){
-    const [x,z]=rocks[i];await addModel(outdoor,rockAssets[i%3],{x,z,w:1.5,h:1.15,d:1.45,rot:i*.7});
-    addColliderFor('outdoor',x,z,.85,.7);interact('outdoor',x,z,1.25,'바위 캐기',()=>spendTool('stone','pick'));
-  }
-
+  // Farm plots: one compact farm block, off the road.
   const types=[['potato','감자',0xc69b5b],['carrot','당근',0xe67e3a],['tomato','토마토',0xc95142]];
   types.forEach((v,i)=>{
-    const x=6+i*2.7,z=2.1;
-    box(outdoor,x,z,2.1,2.0,.18,0x8a5d3b,.02);
-    for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,0.28,1.75,.12,0x70472f,.20);ridge.castShadow=false}
+    const x=5.8+i*2.8,z=4.55;
+    box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
+    for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
     const plant=makePlant(v[2]);plant.position.set(x,.24,z);outdoor.add(plant);
     const id='work-crop-'+(i+1);cropVisual.push({id,type:v[0],object:plant});
-    interact('outdoor',x,z,1.45,v[1]+' 밭 돌보기',()=>cropAction(id,v[0],v[1]));
+    interact('outdoor',x,z,1.45,v[1]+' 밭 돌보기',()=>{setAvatarAction('smile',650);cropAction(id,v[0],v[1]);});
   });
   updateCropVisuals();
 
-  for(const [x,z] of [[-11,-8],[-6,7],[8,-1],[12,2],[-2,-3],[4,5]]){
+  // A light fence line visually separates farm from the walking path.
+  for(const [x,z,rot] of [[5.0,2.95,0],[7.5,2.95,0],[10.0,2.95,0],[12.5,2.95,0],[4.5,5.3,Math.PI/2],[13.4,5.3,Math.PI/2]]){
+    await addModel(outdoor,ASSET.fence,{x,z,w:2.3,h:1.0,d:.35,rot});
+  }
+
+  // Trees form a readable perimeter/woodland rather than random clutter.
+  const treePos=[
+    [-17,-9],[-14,-9],[-4,-9],[1,-9],[5,-9],[16,-9],
+    [-18,-4],[-18,1],[-18,8],[-7,10],[-2,10],[2,10],[17,9],[17,3],[17,-3],
+    [-14,1.5],[-4,6.8]
+  ];
+  const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
+  for(let i=0;i<treePos.length;i++){
+    const [x,z]=treePos[i];await addModel(outdoor,treeAssets[i%3],{x,z,w:2.4,h:3.8+(i%2)*.5,d:2.4,rot:(i%5)*.42});
+    addColliderFor('outdoor',x,z,.7,.7);
+    interact('outdoor',x,z,1.3,'나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
+  }
+
+  // Rocks are grouped as a small quarry near the eastern edge.
+  const rocks=[[15.1,1.8],[16.0,4.1],[14.7,7.2],[-15.8,7.7]];
+  const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
+  for(let i=0;i<rocks.length;i++){
+    const [x,z]=rocks[i];await addModel(outdoor,rockAssets[i%3],{x,z,w:1.45,h:1.1,d:1.4,rot:i*.65});
+    addColliderFor('outdoor',x,z,.82,.68);
+    interact('outdoor',x,z,1.2,'바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
+  }
+
+  // Home flower bed and pond-side flowers.
+  for(const [x,z] of [[-5.2,-5.2],[-4.5,-4.7],[-5.4,-4.1],[-9.8,4.2],[-14.8,4.8],[-9.2,7.6]]){
     await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
   }
 }
 
 async function buildIndoor(){
-  box(indoor,0,0,13,10,.24,0xc8a36e,-.18);
-  box(indoor,0,-5,13,.28,2.7,0xe8d9b4,0);
-  box(indoor,-6.5,0,.28,10,2.7,0xe2d0a6,0);
-  box(indoor,6.5,0,.28,10,2.7,0xe2d0a6,0);
-  const backMat=0x9f7651;
-  box(indoor,0,-4.82,13,.18,.18,backMat,2.7);
+  // Open doll-house room with a clear entrance and three zones:
+  // bedroom (left/back), living (left/front), kitchen+dining (right).
+  box(indoor,0,0,14,10.5,.24,0xc8a36e,-.18);
+  box(indoor,0,-5.25,14,.28,2.75,0xe8d9b4,0);
+  box(indoor,-7,0,.28,10.5,2.75,0xe2d0a6,0);
+  box(indoor,7,0,.28,10.5,2.75,0xe2d0a6,0);
+  box(indoor,0,-5.05,14,.18,.18,0x9f7651,2.75);
+
+  // Subtle floor zones make the layout easier to read without full walls.
+  plane(indoor,-3.8,-2.7,5.4,4.5,0xd6b77f,.005);
+  plane(indoor,-3.5,1.9,5.5,3.3,0xcfaa73,.006);
+  plane(indoor,3.3,-1.8,6.0,6.0,0xdcc89b,.006);
+
   await Promise.all([
-    addModel(indoor,ASSET.bed,{x:-4.6,z:-3.3,w:2.7,h:1.3,d:2.2,rot:Math.PI/2}),
-    addModel(indoor,ASSET.desk,{x:-1.7,z:-3.5,w:2.2,h:1.45,d:1.25,rot:Math.PI}),
-    addModel(indoor,ASSET.bookcase,{x:.8,z:-4.1,w:1.8,h:2.5,d:.8,rot:Math.PI}),
-    addModel(indoor,ASSET.fridge,{x:4.9,z:-3.9,w:1.3,h:2.35,d:1.25,rot:Math.PI}),
-    addModel(indoor,ASSET.sink,{x:3.15,z:-3.85,w:1.6,h:1.35,d:1.05,rot:Math.PI}),
-    addModel(indoor,ASSET.stove,{x:1.75,z:-3.85,w:1.35,h:1.5,d:1.15,rot:Math.PI}),
-    addModel(indoor,ASSET.cabinet,{x:4.1,z:-1.9,w:1.7,h:1.35,d:1.0,rot:Math.PI/2}),
-    addModel(indoor,ASSET.sofa,{x:-3.8,z:1.1,w:3.0,h:1.45,d:1.5,rot:0}),
-    addModel(indoor,ASSET.table,{x:-.4,z:.7,w:2.4,h:1.35,d:2.0,rot:0}),
-    addModel(indoor,ASSET.rug,{x:-1.6,z:1.0,w:4.2,h:.12,d:3.1,rot:0})
+    // Bedroom
+    addModel(indoor,ASSET.bed,{x:-5.2,z:-3.8,w:2.6,h:1.25,d:2.1,rot:Math.PI/2}),
+    addModel(indoor,ASSET.desk,{x:-2.6,z:-3.75,w:2.0,h:1.4,d:1.2,rot:Math.PI}),
+    addModel(indoor,ASSET.bookcase,{x:-5.7,z:-1.45,w:1.6,h:2.45,d:.78,rot:Math.PI/2}),
+    // Living
+    addModel(indoor,ASSET.rug,{x:-3.0,z:1.6,w:4.2,h:.10,d:2.8,rot:0}),
+    addModel(indoor,ASSET.sofa,{x:-4.55,z:1.15,w:2.9,h:1.4,d:1.45,rot:Math.PI/2}),
+    // Dining
+    addModel(indoor,ASSET.table,{x:1.0,z:1.35,w:2.4,h:1.3,d:1.9,rot:0}),
+    // Kitchen line
+    addModel(indoor,ASSET.stove,{x:1.4,z:-4.0,w:1.3,h:1.45,d:1.1,rot:Math.PI}),
+    addModel(indoor,ASSET.sink,{x:3.0,z:-4.0,w:1.55,h:1.3,d:1.0,rot:Math.PI}),
+    addModel(indoor,ASSET.cabinet,{x:4.55,z:-4.0,w:1.55,h:1.3,d:1.0,rot:Math.PI}),
+    addModel(indoor,ASSET.fridge,{x:5.9,z:-3.7,w:1.25,h:2.3,d:1.2,rot:Math.PI})
   ]);
-  addColliderFor('indoor',-4.6,-3.3,2.5,1.7);
-  addColliderFor('indoor',-1.7,-3.5,2.0,1.0);
-  addColliderFor('indoor',.8,-4.1,1.3,.65);
-  addColliderFor('indoor',4.9,-3.9,1.1,.9);
-  addColliderFor('indoor',3.15,-3.85,1.4,.8);
-  addColliderFor('indoor',1.75,-3.85,1.15,.8);
-  addColliderFor('indoor',-3.8,1.1,2.7,1.1);
-  addColliderFor('indoor',-.4,.7,2.0,1.45);
-  interact('indoor',0,4.0,1.5,'밖으로 나가기',()=>setMode('outdoor'));
-  interact('indoor',-4.6,-2.1,1.45,'침대에서 쉬기',sleep);
-  interact('indoor',-3.8,2.2,1.45,'소파에 앉기',()=>toast('3D 소파에서 잠깐 쉬었어요.'));
-  interact('indoor',.8,-3.0,1.3,'책장 살펴보기',()=>toast('책이 가지런히 꽂혀 있어요.'));
-  interact('indoor',4.9,-2.8,1.3,'냉장고 열기',inventoryPanel);
-  interact('indoor',3.15,-2.8,1.3,'싱크대 사용하기',()=>toast('손을 깨끗이 씻었어요.'));
-  interact('indoor',1.75,-2.75,1.3,'가스레인지 살펴보기',()=>toast('요리 시스템은 기존 저장과 연동해 이식 중이에요.'));
+
+  // Collisions leave a wide central route from door to every zone.
+  addColliderFor('indoor',-5.2,-3.8,2.35,1.6);
+  addColliderFor('indoor',-2.6,-3.75,1.8,.9);
+  addColliderFor('indoor',-5.7,-1.45,.7,1.2);
+  addColliderFor('indoor',-4.55,1.15,1.1,2.5);
+  addColliderFor('indoor',1.0,1.35,2.0,1.5);
+  addColliderFor('indoor',1.4,-4.0,1.1,.78);
+  addColliderFor('indoor',3.0,-4.0,1.35,.78);
+  addColliderFor('indoor',4.55,-4.0,1.35,.78);
+  addColliderFor('indoor',5.9,-3.7,1.0,.9);
+
+  interact('indoor',0,4.35,1.45,'밖으로 나가기',()=>setMode('outdoor'));
+  interact('indoor',-5.2,-2.55,1.4,'침대에서 쉬기',()=>{setAvatarAction('smile',850);sleep();});
+  interact('indoor',-4.0,2.3,1.35,'소파에 앉기',()=>{setAvatarAction('smile',700);toast('소파에서 편하게 쉬었어요.');});
+  interact('indoor',-5.0,-.8,1.25,'책장 살펴보기',()=>{setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');});
+  interact('indoor',5.4,-2.75,1.35,'냉장고 열기',inventoryPanel);
+  interact('indoor',3.0,-2.9,1.25,'싱크대 사용하기',()=>{setAvatarAction('smile',650);toast('손을 깨끗이 씻었어요.');});
+  interact('indoor',1.4,-2.9,1.25,'가스레인지 살펴보기',()=>{setAvatarAction('smile',650);toast('요리 시스템은 기존 저장과 연동해 이식 중이에요.');});
+  interact('indoor',1.0,2.25,1.35,'식탁 살펴보기',()=>toast('식사와 요리를 이어갈 수 있는 식탁이에요.'));
 }
 
 function updateStatus(){
@@ -405,10 +510,10 @@ function tick(now){
     if(!isBlocked(player.x,nz))player.z=nz;
     if(dx)avatarFacing=dx<0?-1:1;
   }
-  avatar.position.set(player.x,.12,player.z);
+  avatar.position.x=player.x;avatar.position.z=player.z;
   shadow.position.set(player.x,.035,player.z+.08);
   updateAvatarFrame(now,moving);
-  if(moving&&avatarImg.complete)drawAvatarImage();
+  applyAvatarMotion(now,moving);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
   const target=new THREE.Vector3(player.x,0,player.z);
@@ -416,7 +521,7 @@ function tick(now){
   camera.lookAt(target.x,mode==='outdoor'?.2:.55,target.z);
   nearestInteraction();
 
-  saveClock+=dt;if(saveClock>1.4){saveClock=0;save.player=save.player||{};save.player.v3x=player.x;save.player.v3z=player.z;save.player.v3scene=mode;persist();}
+  saveClock+=dt;if(saveClock>1.4){saveClock=0;save.player=save.player||{};save.player.v3x=player.x;save.player.v3z=player.z;save.player.v3scene=mode;save.player.v3Layout=LAYOUT_VERSION;persist();}
   renderer.render(scene,camera);
 }
 async function init(){
