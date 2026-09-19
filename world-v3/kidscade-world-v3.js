@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=13';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=14';
 import {createTownEconomy} from './kidscade-world-economy.js?v=9';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -79,10 +79,10 @@ const ASSET={
 const CUBE_PETS={
   dog:{name:'강아지',model:ASSET.petDog,perk:'이동 속도 +8%',region:'첫 친구',req:{}},
   cat:{name:'고양이',model:ASSET.petCat,perk:'밤 야외 피로 감소',region:'연못 근처',req:{fish:1}},
-  bunny:{name:'토끼',model:ASSET.petBunny,perk:'작물 수확량 +1',region:'농장',req:{carrot:2}},
-  pig:{name:'돼지',model:ASSET.petPig,perk:'음식 포만감 +15%',region:'농장',req:{potato:2}},
-  cow:{name:'소',model:ASSET.petCow,perk:'허기가 조금 천천히 감소',region:'농장',req:{carrot:2,tomato:1}},
-  chick:{name:'병아리',model:ASSET.petChick,perk:'수확할 때 씨앗을 하나 더 발견',region:'농장',req:{tomato:1}},
+  bunny:{name:'토끼',model:ASSET.petBunny,perk:'작물 수확량 +1',region:'목장',req:{carrot:2}},
+  pig:{name:'돼지',model:ASSET.petPig,perk:'음식 포만감 +15%',region:'목장',req:{potato:2}},
+  cow:{name:'소',model:ASSET.petCow,perk:'허기가 조금 천천히 감소',region:'목장',req:{carrot:2,tomato:1}},
+  chick:{name:'병아리',model:ASSET.petChick,perk:'수확할 때 씨앗을 하나 더 발견',region:'목장',req:{tomato:1}},
   fox:{name:'여우',model:ASSET.petFox,perk:'버섯 채집량 +1',region:'깊은 숲',req:{fish:1,mushroom:1}},
   deer:{name:'사슴',model:ASSET.petDeer,perk:'허기 감소 속도 -7%',region:'깊은 숲',req:{carrot:2,tomato:1}},
   parrot:{name:'앵무새',model:ASSET.petParrot,perk:'낚시 추가 획득 확률',region:'깊은 숲',req:{tomato:2}},
