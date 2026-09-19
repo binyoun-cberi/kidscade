@@ -22,13 +22,32 @@ test('Number Tower uses tracked Kenney hero poses and enemy sprites',()=>{
     'assets/game/2d/platformer-art/extended/enemies/slime-green.png',
     'assets/game/2d/platformer-art/extended/enemies/spider.png',
     'assets/game/2d/platformer-art/extended/enemies/ghost.png',
-    'assets/game/2d/platformer-art/extended/enemies/snake-lava.png'
+    'assets/game/2d/platformer-art/extended/enemies/snake-lava.png',
+    'assets/game/2d/platformer-art/base/items/gem-yellow.png',
+    'assets/game/2d/platformer-art/base/items/coin-gold.png',
+    'assets/game/2d/platformer-art/base/items/spikes.png',
+    'assets/game/2d/platformer-art/base/tiles/torch.png',
+    'assets/game/2d/platformer-art/base/tiles/castle-center.png',
+    'assets/game/2d/platformer-art/base/tiles/stone-center.png',
+    'assets/game/2d/platformer-art/base/tiles/brick-wall.png',
+    'assets/game/2d/platformer-art/base/tiles/door-closed-top.png',
+    'assets/game/2d/platformer-art/base/tiles/door-closed-mid.png'
   ];
   for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
   assert.match(html,/const ASSET=/);
   assert.match(html,/asset-sprite asset-hero/);
   assert.match(html,/monster-\\$\\{m\.id\\}/);
   assert.match(html,/sprite\("enemy",r\.n\)/);
+  assert.match(html,/gem-yellow\.png/);
+  assert.match(html,/coin-gold\.png/);
+  assert.match(html,/spikes\.png/);
+  assert.match(html,/torch\.png/);
+  assert.match(html,/castle-center\.png/);
+  assert.match(html,/stone-center\.png/);
+  assert.match(html,/brick-wall\.png/);
+  assert.match(html,/door-closed-top\.png/);
+  assert.doesNotMatch(html,/보물방",body:'.*💎/);
+  assert.doesNotMatch(html,/함정방",body:'.*🕳️/);
 });
 
 test('Number Tower preserves combat and arithmetic progression systems',()=>{
@@ -44,5 +63,5 @@ test('Number Tower catalog cache-bumps the reworked game',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='low_math_number_tower');
   assert.ok(game);
-  assert.equal(game.href,'숫자 타워.html?v=2');
+  assert.equal(game.href,'숫자 타워.html?v=3');
 });
