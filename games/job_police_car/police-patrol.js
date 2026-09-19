@@ -20,13 +20,15 @@ const TAU=Math.PI*2,WORLD=2300,ROAD_MAIN=280,ROAD_SIDE=190,GRID=720,SHIFT=360;
 const roadXs=[-1440,-720,0,720,1440],roadYs=[-1440,-720,0,720,1440],roads=[],blocks=[],decor=[];
 const ROAD_MIN=roadXs[0],ROAD_MAX=roadXs[roadXs.length-1];
 const VEHICLE_TYPES={
- sedan:{key:'sedan',label:'승용차',sprite:0,weight:34,cruise:[118,150],max:182,flee:210,accel:108,brake:154,radius:17,scale:1.12,drawW:42,drawH:76},
- suv:{key:'suv',label:'SUV',sprite:6,weight:22,cruise:[108,138],max:168,flee:198,accel:96,brake:146,radius:19,scale:1.22,drawW:45,drawH:80},
- hatch:{key:'hatch',label:'스포츠 해치백',sprite:3,weight:16,cruise:[126,158],max:198,flee:226,accel:120,brake:162,radius:16,scale:1.08,drawW:41,drawH:72},
- taxi:{key:'taxi',label:'택시',sprite:4,weight:18,cruise:[116,148],max:178,flee:205,accel:105,brake:154,radius:17,scale:1.13,drawW:42,drawH:76},
- truck:{key:'truck',label:'화물 트럭',sprite:1,weight:10,cruise:[84,112],max:136,flee:166,accel:72,brake:116,radius:24,scale:1.48,drawW:50,drawH:94}
+ sedan:{key:'sedan',label:'승용차',sprite:0,weight:30,cruise:[118,150],max:182,flee:210,accel:108,brake:154,radius:17,scale:1.12,drawW:42,drawH:76},
+ suv:{key:'suv',label:'SUV',sprite:6,weight:20,cruise:[108,138],max:168,flee:198,accel:96,brake:146,radius:19,scale:1.22,drawW:45,drawH:80},
+ hatch:{key:'hatch',label:'스포츠 해치백',sprite:3,weight:15,cruise:[126,158],max:198,flee:226,accel:120,brake:162,radius:16,scale:1.08,drawW:41,drawH:72},
+ taxi:{key:'taxi',label:'택시',sprite:4,weight:16,cruise:[116,148],max:178,flee:205,accel:105,brake:154,radius:17,scale:1.13,drawW:42,drawH:76},
+ truck:{key:'truck',label:'화물 트럭',sprite:1,weight:9,cruise:[84,112],max:136,flee:166,accel:72,brake:116,radius:24,scale:1.48,drawW:50,drawH:94},
+ van:{key:'van',label:'승합 밴',sprite:5,weight:7,cruise:[96,126],max:154,flee:182,accel:84,brake:132,radius:21,scale:1.32,drawW:47,drawH:86},
+ ambulance:{key:'ambulance',label:'구급차',sprite:1,weight:3,cruise:[112,142],max:176,flee:190,accel:108,brake:158,radius:21,scale:1.34,drawW:47,drawH:88}
 };
-const TRAFFIC_TYPE_KEYS=Object.keys(VEHICLE_TYPES),SUSPECT_TYPE_KEYS=['sedan','suv','hatch','taxi','truck'];
+const TRAFFIC_TYPE_KEYS=Object.keys(VEHICLE_TYPES),SUSPECT_TYPE_KEYS=['sedan','suv','hatch','taxi','truck','van'];
 let player=null,cars=[],pedestrians=[],mission=null,state='menu',last=performance.now(),score=0,solved=0,shiftTime=0,missionDelay=1.2,radioTimer=0,raf=false,missionIssued=0,lastMissionType='';
 const camera={x:0,y:0,zoom:1},view={w:innerWidth,h:innerHeight,dpr:1},keys={w:false,a:false,s:false,d:false,r:false},touch={steer:0,brake:false,reverse:false,boost:false};
 const coarse=matchMedia('(hover:none),(pointer:coarse)').matches;
@@ -55,6 +57,8 @@ const MODEL3={
  hatch:modelUrl3('vehicles/kenney-car-kit/hatchback-sports.glb'),
  taxi:modelUrl3('vehicles/kenney-car-kit/taxi.glb'),
  truck:modelUrl3('vehicles/kenney-car-kit/truck.glb'),
+ van:modelUrl3('vehicles/kenney-car-kit/van.glb'),
+ ambulance:modelUrl3('vehicles/kenney-car-kit/ambulance.glb'),
  tree:modelUrl3('nature/kenney-nature-kit/tree-default.glb'),
  oak:modelUrl3('nature/kenney-nature-kit/tree-oak.glb'),
  pine:modelUrl3('nature/kenney-nature-kit/tree-pine-round-a.glb'),
@@ -68,7 +72,7 @@ const MODEL3={
  pedC:gameAssetUrl3('characters/people/character-female-b.glb'),
  pedD:gameAssetUrl3('characters/people/character-female-c.glb')
 };
-const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
+const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,van:0x7d8b98,ambulance:0xf3f5f6,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
 let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,people3=null,mission3=null,models3=new Map(),carNodes3=new Map(),pedNodes3=new Map(),prepare3Promise=null,threeReady3=false;
 let missionKey3='',missionMarker3=null,missionArrow3=null,missionBang3=null,lastRender3=performance.now(),cameraShake3=0,spark3=[],lastHealth3=100;
 let buildingMeshes3=[],fadedMeshes3=new Set();const occlusionRay3=T3?new T3.Raycaster():null;
@@ -164,7 +168,7 @@ function rebuildCity3D(){
      const park=box3(w,.12,d,0x68a960,.98);park.position.set(x,.04,z);world3.add(park);
    }else if(b.type==='parking'){
      const lot=box3(w,.08,d,0x777e80,.94);lot.position.set(x,.03,z);world3.add(lot);addParkingLines3(world3,b);
-     const parked=['sedan','suv','taxi','truck'];for(let k=0;k<4;k++){const key=parked[(b.shade+k)%parked.length],car=clone3(key,key==='truck'?1.18:.98);if(car){const row=k<2?-1:1,col=k%2?-1:1;car.position.set(x+col*w*.22,.075,z+row*d*.22);car.rotation.y=row>0?0:Math.PI;world3.add(car)}}
+     const parked=['sedan','suv','taxi','truck','van'];for(let k=0;k<4;k++){const key=parked[(b.shade+k)%parked.length],car=clone3(key,key==='truck'?1.18:.98);if(car){const row=k<2?-1:1,col=k%2?-1:1;car.position.set(x+col*w*.22,.075,z+row*d*.22);car.rotation.y=row>0?0:Math.PI;world3.add(car)}}
    }else{
      const landmark=models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
      if(landmark){
@@ -281,7 +285,7 @@ function buildWorld(){
  const halfX=x=>x===0?ROAD_MAIN/2:ROAD_SIDE/2,halfY=y=>y===0?ROAD_MAIN/2:ROAD_SIDE/2;
  const xs=cityIntervals(roadXs,halfX),ys=cityIntervals(roadYs,halfY);
  for(let xi=0;xi<xs.length;xi++)for(let yi=0;yi<ys.length;yi++){
-   const [l,r]=xs[xi],[t,b]=ys[yi],edge=xi===0||yi===0||xi===xs.length-1||yi===ys.length-1,seed=xi*11+yi*7;
+   const [l,r]=xs[xi],[t,b]=ys[yi],edge=xi===0||yi===0||xi===xs.length-1||yi===ys.length-1,seed=xi*17+yi*11+xi*yi*3+5;
    const type=seed%9===0?'park':seed%7===0?'parking':'building';
    blocks.push({x:l,y:t,w:r-l,h:b-t,type,shade:(seed+xi+yi)%4,edge});
    if(type==='park'){
@@ -453,7 +457,7 @@ class TrafficCar extends Car{
   this.move(dt);
   if(this.suspect&&this.fleeing&&!this.commandStop){
    const outside=this.x<ROAD_MIN-120||this.x>ROAD_MAX+120||this.y<ROAD_MIN-120||this.y>ROAD_MAX+120;
-   this.stuckTimer=(Math.abs(this.speed)<26?this.stuckTimer+dt:Math.max(0,(this.stuckTimer||0)-dt*1.8));
+   this.stuckTimer=(Math.abs(this.speed)<26?(this.stuckTimer||0)+dt:Math.max(0,(this.stuckTimer||0)-dt*1.8));
    if(outside||this.stuckTimer>1.15)recoverTrafficCar(this)
   }
  }
