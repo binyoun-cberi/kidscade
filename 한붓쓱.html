@@ -713,7 +713,7 @@ function buildCityDecor(w,h){
     const roll=rng();
     let kind=roll<.48?'building':roll<.64?'treeCluster':roll<.75?'parking':roll<.84?'plaza':roll<.92?'car':roll<.97?'light':'cone';
     let r=kind==='building'?(small?18:23):kind==='treeCluster'?(small?16:20):kind==='parking'?(small?19:25):kind==='plaza'?(small?17:23):kind==='car'?13:kind==='light'?11:9;
-    const roadPad=(kind==='car'||kind==='light'||kind==='cone')?.72:1.05;
+    const roadPad=(kind==='car'||kind==='light'||kind==='cone') ? .72 : 1.05;
     if(!decorSafe(p.x,p.y,r,w,h,roadPad))continue;
     const palette=CITY_THEME[state.cityTheme],color=palette.building[Math.floor(rng()*palette.building.length)],roof=palette.roof[Math.floor(rng()*palette.roof.length)];
     items.push({kind,x:p.x,y:p.y,r,scale:.86+rng()*.34,color,roof,variant:Math.floor(rng()*8),flip:rng()>.5,phase:rng()*Math.PI*2,rot:(Math.floor(rng()*4)*Math.PI/2)});
