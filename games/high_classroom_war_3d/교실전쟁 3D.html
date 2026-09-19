@@ -120,8 +120,10 @@ window.__threeReady = (async () => {
   try {
     const THREE = await import("../../assets/vendor/three-r160/three.module.js");
     const loaderMod = await import("../../assets/vendor/three-r160/addons/loaders/GLTFLoader.js");
+    const skeletonMod = await import("../../assets/vendor/three-r160/addons/utils/SkeletonUtils.js");
     window.THREE = THREE;
     window.GLTFLoader = loaderMod.GLTFLoader;
+    window.cloneSkeleton = skeletonMod.clone;
     window.__classroomAssetRuntime = "local-r160";
     return THREE;
   } catch (localError) {
@@ -255,7 +257,7 @@ async function preloadClassroomCharacters(){
   const loader=new window.GLTFLoader();
   const results=await Promise.allSettled(Object.entries(CLASSROOM_CHARACTER_ASSETS).map(async([key,url])=>{
     const gltf=await loader.loadAsync(url);
-    classroomAssetTemplates.set(key,gltf.scene);
+    classroomAssetTemplates.set(key,gltf);
     classroomAssetLoadCount++;
   }));
   classroomAssetLoadDone=true;
@@ -273,25 +275,47 @@ function addAssetRing(root,color,radius=.43){
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
 }
 function cloneClassroomCharacter(key,{height=1.55,facing=Math.PI,ring=0x38bdf8}={}){
-  const template=classroomAssetTemplates.get(key);
-  if(!template)return null;
-  const model=template.clone(true);
+  const gltf=classroomAssetTemplates.get(key);
+  if(!gltf?.scene)return null;
+
+  // These are skinned UnityGLTF characters. Use SkeletonUtils.clone just like World v3,
+  // then normalize by the largest axis and finally put the feet exactly on local Y=0.
+  const model=window.cloneSkeleton?window.cloneSkeleton(gltf.scene):gltf.scene.clone(true);
   model.traverse(n=>{
     if(!n.isMesh)return;
     n.castShadow=true;n.receiveShadow=true;
     n.userData.sharedAssetGeometry=true;
     n.userData.sharedAssetMaterial=true;
+    if(n.isSkinnedMesh)n.frustumCulled=false;
   });
+
   model.updateMatrixWorld(true);
-  let bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());
-  if(!Number.isFinite(size.y)||size.y<=.0001)return null;
-  const scale=height/size.y;model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
+  let bounds=new THREE.Box3().setFromObject(model);
+  const size=bounds.getSize(new THREE.Vector3());
+  const baseSize=Math.max(size.x,size.y,size.z)||1;
+  const scale=height/baseSize;
+  model.scale.multiplyScalar(scale);
+  model.updateMatrixWorld(true);
+
   bounds=new THREE.Box3().setFromObject(model);
   const center=bounds.getCenter(new THREE.Vector3());
-  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=bounds.min.y;
-  const root=new THREE.Group();root.add(model);root.rotation.y=facing;
-  root.userData.assetCharacter=true;root.userData.visualHeight=height;
-  addAssetRing(root,ring,Math.max(.38,height*.28));
+  model.position.x-=center.x;
+  model.position.z-=center.z;
+  model.position.y-=bounds.min.y;
+  model.updateMatrixWorld(true);
+
+  // Recheck once after all transforms. This guards against character files whose bind-pose bounds shift.
+  bounds=new THREE.Box3().setFromObject(model);
+  if(Number.isFinite(bounds.min.y))model.position.y-=bounds.min.y;
+
+  const root=new THREE.Group();
+  root.add(model);
+  root.rotation.y=facing;
+  root.position.y=.035;
+  root.userData.assetCharacter=true;
+  root.userData.visualHeight=Math.max(.9,bounds.max.y-bounds.min.y);
+  root.userData.groundY=.035;
+  addAssetRing(root,ring,Math.max(.34,height*.24));
   return root;
 }
 function rankAssetCharacter(tier){
@@ -301,15 +325,15 @@ function rankAssetCharacter(tier){
   ][tier]||["male-a","female-a"];
   const colors=[0x38bdf8,0x0ea5e9,0x22c55e,0x8b5cf6,0xf59e0b];
   const available=keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
-  return cloneClassroomCharacter(pick(available),{height:1.42+tier*.08,facing:Math.PI,ring:colors[tier]||0x38bdf8});
+  return cloneClassroomCharacter(pick(available),{height:1.28+tier*.07,facing:Math.PI,ring:colors[tier]||0x38bdf8});
 }
 function enemyAssetCharacter(type){
   const cfg={
-    normal:{keys:["male-f","female-f"],height:1.48,ring:0xef4444},
-    runner:{keys:["male-b","female-b"],height:1.38,ring:0xfb923c},
-    tank:{keys:["male-e","female-e"],height:1.72,ring:0x94a3b8},
-    elite:{keys:["male-d","female-d"],height:1.76,ring:0xe879f9},
-    boss:{keys:["male-c","female-c"],height:2.45,ring:0xf59e0b}
+    normal:{keys:["male-f","female-f"],height:1.30,ring:0xef4444},
+    runner:{keys:["male-b","female-b"],height:1.20,ring:0xfb923c},
+    tank:{keys:["male-e","female-e"],height:1.48,ring:0x94a3b8},
+    elite:{keys:["male-d","female-d"],height:1.55,ring:0xe879f9},
+    boss:{keys:["male-c","female-c"],height:2.15,ring:0xf59e0b}
   }[type]||{keys:["male-f","female-f"],height:1.48,ring:0xef4444};
   const available=cfg.keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
   return cloneClassroomCharacter(pick(available),{height:cfg.height,facing:0,ring:cfg.ring});
@@ -444,7 +468,7 @@ const player={
   agents:[],eliteAgents:[],ncoAgents:[],officerAgents:[],generalAgents:[],
   recoil:0,bob:0
 };
-player.group.position.set(0,0,6.1);actorRoot.add(player.group);
+player.group.position.set(0,0,7.0);actorRoot.add(player.group);
 
 let combatUid=0;
 let enemies=[],shots=[],gates=[],enemyGates=[],obstacles=[],particles=[],textSprites=[],shockwaves=[];
@@ -578,11 +602,33 @@ function totalArmy(){return player.soldiers+player.elites*10+player.ncos*100+pla
 function highestRankIndex(){if(player.generals)return 4;if(player.officers)return 3;if(player.ncos)return 2;if(player.elites)return 1;return 0;}
 function rankNameForTotal(n){if(n>=10000)return "장군";if(n>=1000)return "장교";if(n>=100)return "부사관";if(n>=10)return "엘리트";return "병사";}
 function removeArmyAgents(){const lists=[player.agents,player.eliteAgents,player.ncoAgents,player.officerAgents,player.generalAgents];for(const list of lists){for(const a of list)removeObject(player.group,a,true);list.length=0;}}
-function lineUp(list,z,span=5.2){const n=list.length;if(!n)return;const cols=Math.min(5,n);for(let i=0;i<n;i++){const row=Math.floor(i/cols),col=i%cols,rowCount=Math.min(cols,n-row*cols);const x=rowCount===1?0:(col-(rowCount-1)/2)*(span/Math.max(1,cols-1));list[i].position.set(x,0,z-row*.56);}}
+function lineUp(list,z,span=6.2,rowStep=.96){
+  const n=list.length;if(!n)return;
+  const cols=Math.min(5,n);
+  for(let i=0;i<n;i++){
+    const row=Math.floor(i/cols),col=i%cols,rowCount=Math.min(cols,n-row*cols);
+    const gap=rowCount<=1?0:span/Math.max(1,rowCount-1);
+    const x=(col-(rowCount-1)/2)*gap;
+    const a=list[i];
+    const ground=a.userData?.groundY??.025;
+    a.position.set(x,ground,z-row*rowStep);
+  }
+}
 function rebuildArmy(){
   removeArmyAgents();
-  const specs=[[player.soldiers,createStudent,player.agents,.75,5.0],[player.elites,createEliteStudent,player.eliteAgents,.08,5.2],[player.ncos,createNcoStudent,player.ncoAgents,-.67,5.3],[player.officers,createOfficerStudent,player.officerAgents,-1.48,5.45],[player.generals,createGeneralStudent,player.generalAgents,-2.36,5.55]];
-  for(const [count,factory,list,z,span] of specs){for(let i=0;i<count;i++){const a=factory();list.push(a);player.group.add(a);}lineUp(list,z,span);}
+  const specs=[
+    [player.soldiers,createStudent,player.agents,1.35,5.8,.94],
+    [player.elites,createEliteStudent,player.eliteAgents,.10,6.0,.98],
+    [player.ncos,createNcoStudent,player.ncoAgents,-1.18,6.1,1.02],
+    [player.officers,createOfficerStudent,player.officerAgents,-2.52,6.2,1.05],
+    [player.generals,createGeneralStudent,player.generalAgents,-3.92,6.3,1.08]
+  ];
+  for(const [count,factory,list,z,span,rowStep] of specs){
+    for(let i=0;i<count;i++){
+      const a=factory();list.push(a);player.group.add(a);
+    }
+    lineUp(list,z,span,rowStep);
+  }
 }
 function setArmyTotal(value,{announce=false,reason=""}={}){const old=totalArmy(),n=clamp(Math.floor(Number(value)||0),0,99999),d=decomposeArmy(n);Object.assign(player,d);player.maxArmy=Math.max(player.maxArmy||0,n);player.highestRank=Math.max(player.highestRank||0,highestRankIndex());rebuildArmy();updateHud();if(announce&&n!==old){const delta=n-old,sign=delta>0?"+":"";floatText(`${sign}${delta.toLocaleString()}`,player.group.position.x,1.7,5.25,delta>=0?"#86efac":"#fda4af");if(reason)showToast(reason);}}
 function rankSummaryText(){const parts=[];if(player.generals)parts.push(`장군 ${player.generals}`);if(player.officers)parts.push(`장교 ${player.officers}`);if(player.ncos)parts.push(`부사관 ${player.ncos}`);if(player.elites)parts.push(`엘리트 ${player.elites}`);if(player.soldiers||!parts.length)parts.push(`병사 ${player.soldiers}`);return parts.join(" · ");}
@@ -749,13 +795,27 @@ function updateSpawns(dt){
   const shouldPeriod=Math.floor(state.t/30)+1;if(shouldPeriod>state.period)periodUp();
 }
 function updateFx(dt){for(const p of particles){p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=5*dt;p.mesh.scale.multiplyScalar(.985);}particles=particles.filter(p=>{if(p.life>0)return true;fxRoot.remove(p.mesh);return false;});for(const s of textSprites){s.userData.life-=dt;s.position.y+=s.userData.vy*dt;s.material.opacity=clamp(s.userData.life/.35,0,1);}textSprites=textSprites.filter(s=>{if(s.userData.life>0)return true;fxRoot.remove(s);s.userData.texture?.dispose?.();s.material.dispose?.();return false;});for(const w of shockwaves){w.life-=dt;w.mesh.scale.addScalar(dt*7);w.mesh.material.opacity=clamp(w.life/.45,0,1)*.7;}shockwaves=shockwaves.filter(w=>{if(w.life>0)return true;fxRoot.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();return false;});if(state.toastT>0){state.toastT-=dt;if(state.toastT<=0){ui.toast.style.opacity="0";ui.toast.style.transform="translate(-50%,10px)";}}if(state.warningT>0){state.warningT-=dt;if(state.warningT<=0){ui.banner.style.opacity="0";ui.banner.style.transform="translate(-50%,-12px) scale(.94)";}}if(state.flash>0){state.flash-=dt;ui.flash.style.opacity=String(clamp(state.flash/.22,0,1)*.72);}else ui.flash.style.opacity="0";}
-function updateArmyAnim(dt){player.bob+=dt*6;const move=Math.abs(player.targetX-player.group.position.x)>.02,all=[...player.agents,...player.eliteAgents,...player.ncoAgents,...player.officerAgents,...player.generalAgents];for(let i=0;i<all.length;i++){const a=all[i],phase=player.bob+i*.55;a.position.y=Math.sin(phase)*(move?.055:.025);if(a.userData.leg1&&a.userData.leg2){a.userData.leg1.rotation.x=move?Math.sin(phase*1.8)*.30:0;a.userData.leg2.rotation.x=-a.userData.leg1.rotation.x;}}player.group.position.x=lerp(player.group.position.x,player.targetX,1-Math.pow(.001,dt));if(player.recoil>0)player.recoil=Math.max(0,player.recoil-dt);}
+function updateArmyAnim(dt){
+  player.bob+=dt*6;
+  const move=Math.abs(player.targetX-player.group.position.x)>.02;
+  const all=[...player.agents,...player.eliteAgents,...player.ncoAgents,...player.officerAgents,...player.generalAgents];
+  for(let i=0;i<all.length;i++){
+    const a=all[i],phase=player.bob+i*.55,ground=a.userData?.groundY??.025;
+    a.position.y=ground+Math.max(0,Math.sin(phase))*(move?.035:.014);
+    if(a.userData.leg1&&a.userData.leg2){
+      a.userData.leg1.rotation.x=move?Math.sin(phase*1.8)*.30:0;
+      a.userData.leg2.rotation.x=-a.userData.leg1.rotation.x;
+    }
+  }
+  player.group.position.x=lerp(player.group.position.x,player.targetX,1-Math.pow(.001,dt));
+  if(player.recoil>0)player.recoil=Math.max(0,player.recoil-dt);
+}
 const keys=new Set();function clearInput(){keys.clear();player.targetX=player.group.position.x;}
 addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["a","d","arrowleft","arrowright"," "].includes(k))e.preventDefault();if(k===" "&&state.running){togglePause();return;}keys.add(k);});addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));addEventListener("blur",clearInput);addEventListener("pagehide",clearInput);document.addEventListener("visibilitychange",()=>{if(document.hidden)clearInput();});
 let dragging=false;function pointerToLane(e){const r=canvas.getBoundingClientRect();player.targetX=clamp(((e.clientX-r.left)/r.width-.5)*9.0,-3.9,3.9);}canvas.addEventListener("pointerdown",e=>{dragging=true;canvas.setPointerCapture?.(e.pointerId);pointerToLane(e);e.preventDefault();});canvas.addEventListener("pointermove",e=>{if(dragging)pointerToLane(e);});canvas.addEventListener("pointerup",()=>dragging=false);canvas.addEventListener("pointercancel",()=>dragging=false);
 function updateInput(dt){let dir=0;if(keys.has("a")||keys.has("arrowleft"))dir--;if(keys.has("d")||keys.has("arrowright"))dir++;if(dir)player.targetX=clamp(player.targetX+dir*dt*6.4,-3.9,3.9);}
 function clearBattle(){clearSceneArray(enemies,actorRoot);clearSceneArray(obstacles,actorRoot);obstacles=[];clearSceneArray(gates.flatMap(g=>g.items.map(it=>({mesh:it.mesh,texture:it.mesh.userData.texture}))),actorRoot);gates=[];for(const s of shots){if(s.mesh.parent)fxRoot.remove(s.mesh);}shots=[];for(const p of particles){if(p.mesh.parent)fxRoot.remove(p.mesh);}particles=[];for(const s of textSprites){if(s.parent)fxRoot.remove(s);s.userData.texture?.dispose?.();s.material.dispose?.();}textSprites=[];for(const w of shockwaves){if(w.mesh.parent)fxRoot.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();}shockwaves=[];}
-function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,6.1);player.targetX=0;rebuildArmy();updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
+function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,7.0);player.targetX=0;rebuildArmy();updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pauseBtn.textContent=state.paused?"▶":"Ⅱ";clearInput();showToast(state.paused?"일시정지":"전투 재개",.8);}
 function gameOver(){if(state.over)return;state.over=true;state.running=false;clearInput();tone("over");ui.pauseBtn.style.display="none";const score=Math.floor(state.t*10+state.kills*18+state.bossKills*260+(state.hazardsDestroyed||0)*75+player.maxArmy/20),isBest=score>state.best;if(isBest){state.best=score;localStorage.setItem("classWar3DBest",String(score));}ui.overlay.style.display="grid";ui.panel.innerHTML=`<span class="eyebrow">${isBest?"NEW RECORD":"3D CLASSROOM DEFENSE REPORT"}</span><h2>${isBest?"새 최고 기록!":"교실 방어선이 무너졌습니다"}</h2><div class="lead">생존 <b style="color:#7dd3fc">${fmtTime(state.t)}</b> · 적 ${state.kills}명 처치 · 보스 ${state.bossKills}명 격파 · 전선 위협 ${state.hazardsDestroyed||0}개 제거</div><div class="grid"><div class="mini"><b>최대 전체 병력</b>${player.maxArmy.toLocaleString()}명</div><div class="mini"><b>최고 계급</b>${rankNameForTotal(player.maxArmy)}</div><div class="mini"><b>점수</b>${score.toLocaleString()}</div><div class="mini"><b>최고 기록</b>${Math.max(state.best,score).toLocaleString()}</div></div><button class="cta" id="restartBtn">다시 방어하기</button><div class="fine">관문 타이밍과 이동 위치를 바꾸면 더 오래 버틸 수 있습니다.</div>`;$("restartBtn").onclick=resetGame;}
 ui.startBtn.disabled=true;ui.startBtn.textContent="3D 학생 에셋 준비 중…";
