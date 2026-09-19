@@ -34,7 +34,39 @@ export function createTownEconomy(ctx){
     hardware:{open:8,close:20,label:'08:00~20:00'},
     cafe:{open:6,close:23,label:'06:00~23:00'}
   };
+  const RESIDENTS={
+    minji:{name:'민지',role:'씨앗마트 운영',service:'market',serviceLabel:'씨앗마트 이용'},
+    junho:{name:'준호',role:'철물·도구 전문가',service:'hardware',serviceLabel:'튼튼 철물점 이용'},
+    haneul:{name:'하늘',role:'카페 운영·요리',service:'cafe',serviceLabel:'하늘 카페 이용'},
+    doyun:{name:'도윤',role:'마을 일자리·행정',service:'jobs',serviceLabel:'오늘의 일거리 보기'},
+    yuna:{name:'유나',role:'농사·마을생활 조언',service:'advice',serviceLabel:'농사 이야기 듣기'},
+    taeho:{name:'태호',role:'키즈 아케이드 운영',service:'arcade',serviceLabel:'아케이드 놀기'},
+    sora:{name:'소라',role:'도서관·생활지식',service:'library',serviceLabel:'도서관 이용'},
+    hyunwoo:{name:'현우',role:'마을 배달',service:'delivery',serviceLabel:'배달 일 받기'},
+    nari:{name:'나리',role:'보건소·회복',service:'clinic',serviceLabel:'보건소 이용'},
+    woojin:{name:'우진',role:'숲 채집·탐험',service:'forest',serviceLabel:'숲 정보 듣기'},
+    seoyeon:{name:'서연',role:'Cube Pets 돌봄',service:'pets',serviceLabel:'펫 이야기 듣기'},
+    minseok:{name:'민석',role:'씨앗버스 운행',service:'transport',serviceLabel:'씨앗버스 타기'}
+  };
+  const FRIENDSHIP_REWARDS={
+    minji:[{at:3,type:'seedBundle',name:'민지의 씨앗 꾸러미'},{at:7,type:'perk',key:'marketDiscount',value:.10,name:'씨앗마트 10% 단골 할인'},{at:12,type:'furniture',key:'minjiPlanter',name:'민지의 시장 화분'}],
+    junho:[{at:3,type:'item',key:'iron',qty:3,name:'정제 철광석 3개'},{at:7,type:'perk',key:'hardwareDiscount',value:.12,name:'철물점 12% 단골 할인'},{at:12,type:'furniture',key:'junhoStool',name:'준호의 작업 스툴'}],
+    haneul:[{at:3,type:'food',key:'cafeToast',qty:3,name:'하늘의 토스트 3개'},{at:7,type:'perk',key:'cafeDiscount',value:.15,name:'카페 15% 단골 할인'},{at:12,type:'furniture',key:'haneulTable',name:'하늘의 카페 테이블'}],
+    doyun:[{at:3,type:'coins',qty:120,name:'마을 봉사 격려금 120코인'},{at:7,type:'perk',key:'jobBonus',value:.15,name:'알바 보수 15% 증가'},{at:12,type:'furniture',key:'doyunBench',name:'도윤의 마을 벤치'}],
+    yuna:[{at:3,type:'seedBundle',name:'유나의 텃밭 씨앗 꾸러미'},{at:7,type:'perk',key:'harvestBonus',value:1,name:'작물 수확량 +1'},{at:12,type:'furniture',key:'yunaPlant',name:'유나의 작은 화초'}],
+    taeho:[{at:3,type:'coins',qty:60,name:'아케이드 토큰 환급 60코인'},{at:7,type:'perk',key:'arcadeDiscount',value:3,name:'아케이드 이용료 3코인 할인'},{at:12,type:'furniture',key:'taehoRetroTv',name:'태호의 레트로 게임 TV'}],
+    sora:[{at:3,type:'food',key:'cityLunch',qty:2,name:'독서 도시락 2개'},{at:7,type:'perk',key:'libraryEnergyBonus',value:4,name:'도서관 체력 회복 +4'},{at:12,type:'furniture',key:'soraBookcase',name:'소라의 고전 책장'}],
+    hyunwoo:[{at:3,type:'coins',qty:100,name:'배달 감사비 100코인'},{at:7,type:'perk',key:'deliveryBonus',value:25,name:'배달 보상 +25코인'},{at:12,type:'furniture',key:'hyunwooDrawers',name:'현우의 배달 서랍장'}],
+    nari:[{at:3,type:'food',key:'cityLunch',qty:2,name:'회복 도시락 2개'},{at:7,type:'perk',key:'clinicDiscount',value:10,name:'보건소 진료비 10코인 할인'},{at:12,type:'furniture',key:'nariLamp',name:'나리의 진료실 램프'}],
+    woojin:[{at:3,type:'item',key:'mushroom',qty:4,name:'숲 버섯 4개'},{at:7,type:'perk',key:'mushroomBonus',value:1,name:'버섯 채집량 +1'},{at:12,type:'furniture',key:'woojinRelaxChair',name:'우진의 숲 휴식의자'}],
+    seoyeon:[{at:3,type:'petBundle',name:'Cube Pets 간식 꾸러미'},{at:7,type:'perk',key:'petFriendBonus',value:1,name:'펫 길들이기 요구량 1개 감소'},{at:12,type:'furniture',key:'seoyeonPetChair',name:'서연의 펫 의자'}],
+    minseok:[{at:3,type:'coins',qty:80,name:'교통 지원금 80코인'},{at:7,type:'perk',key:'riverBus',value:1,name:'북쪽 강가 버스 노선 해금'},{at:12,type:'furniture',key:'minseokTravelBench',name:'민석의 여행 벤치'}]
+  };
   const TALK_LINES={
+    minji:['오늘 들어온 씨앗 상태가 아주 좋아.','작물은 급하게 키우기보다 매일 조금씩 돌보는 게 좋아.','단골이 되면 내가 챙겨줄 것도 있지!'],
+    junho:['도구는 좋은 것보다 관리가 더 중요해.','돌도구로 시작해도 철을 모으면 훨씬 편해질 거야.','집 꾸미기 재료가 부족하면 철물점에 들러.'],
+    haneul:['탐험 전에 든든하게 먹는 게 제일 중요해.','카페에서는 쉬어가도 괜찮아.','언젠가 네 집에도 멋진 카페 공간이 생기겠네.'],
+    doyun:['오늘 마을 일거리 게시판 확인했어?','작은 일을 꾸준히 하면 마을도 점점 좋아져.','마을 주민들과 친해지는 것도 중요한 일이야.'],
     yuna:[
       '농장 쪽 해 질 무렵 풍경이 정말 예뻐.',
       '마을 사람들과 매일 조금씩 이야기해봐. 금방 친해질 거야.',
@@ -47,9 +79,15 @@ export function createTownEconomy(ctx){
     ],
     seoyeon:[
       'Cube Pets랑 같이 다니면 마을에서도 인기 만점이야.',
-      '카페 토스트 먹어봤어? 탐험 전에 먹으면 든든해.',
-      '언젠가는 여기서 축제도 열렸으면 좋겠다.'
-    ]
+      '먹이를 줄 때는 동물마다 좋아하는 걸 잘 살펴봐.',
+      '친해지면 펫을 돌보는 내 비법도 알려줄게.'
+    ],
+    taeho:['오늘도 한 판 할래?','게임도 적당히 쉬면서 해야 오래 즐길 수 있어.','진짜 단골에게만 주는 레트로 물건이 하나 있어.'],
+    sora:['오늘은 어떤 책이 궁금해?','생활 팁은 도서관 책 속에도 꽤 많이 있어.','오래된 책장 하나를 정말 소중한 친구에게 주고 싶어.'],
+    hyunwoo:['배달은 길을 잘 아는 게 절반이야.','하늘 카페까지는 광장을 가로지르면 빨라.','계속 도와줘서 정말 든든해.'],
+    nari:['무리한 뒤에는 꼭 쉬어야 해.','허기와 체력은 서로 영향을 줘.','건강은 모험을 오래 이어가는 가장 좋은 준비야.'],
+    woojin:['숲은 낮이랑 저녁 분위기가 꽤 달라.','버섯은 깊은 숲 쪽에서 더 잘 보여.','좋은 채집 자리는 친한 사람한테만 알려주는 거야.'],
+    minseok:['버스는 이동 시간을 아끼는 가장 좋은 방법이지.','노선은 마을 사람들이 자주 찾는 곳부터 늘리고 있어.','북쪽 강가 노선도 언젠가 열어볼 생각이야.']
   };
   const LIBRARY_TIPS=[
     '나뭇가지와 작은 돌은 도구 없이 주울 수 있어요.',
@@ -69,6 +107,8 @@ export function createTownEconomy(ctx){
       jobs:old.jobs&&typeof old.jobs==='object'?old.jobs:{},
       friendship:old.friendship&&typeof old.friendship==='object'?old.friendship:{},
       talked:old.talked&&typeof old.talked==='object'?old.talked:{},
+      rewardClaims:old.rewardClaims&&typeof old.rewardClaims==='object'?old.rewardClaims:{},
+      perks:old.perks&&typeof old.perks==='object'?old.perks:{},
       visits:Math.max(0,Math.floor(Number(old.visits)||0)),
       delivery:{
         active:!!d.active,
@@ -84,6 +124,42 @@ export function createTownEconomy(ctx){
     if(p.town.delivery.active&&p.town.delivery.startedDay!==day)p.town.delivery.active=false;
     return p.town;
   }
+  function addFurniture(key,qty=1){
+    const p=prog();
+    p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:3,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1};
+    p.housing.owned=p.housing.owned&&typeof p.housing.owned==='object'?p.housing.owned:{};
+    p.housing.owned[key]=(p.housing.owned[key]||0)+qty;
+  }
+  function grantReward(id,reward){
+    const p=prog(),t=ensureState(p),claimKey=id+':'+reward.at;
+    if(t.rewardClaims[claimKey])return false;
+    if((t.friendship[id]||0)<reward.at)return false;
+    t.rewardClaims[claimKey]=true;
+    if(reward.type==='coins')t.coins+=reward.qty||0;
+    else if(reward.type==='item')inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);
+    else if(reward.type==='food')p.food[reward.key]=(p.food[reward.key]||0)+(reward.qty||1);
+    else if(reward.type==='seedBundle'){for(const key of ['potato','carrot','tomato'])p.seeds[key]=(p.seeds[key]||0)+2;}
+    else if(reward.type==='petBundle'){inv().carrot=(inv().carrot||0)+2;inv().tomato=(inv().tomato||0)+2;inv().fish=(inv().fish||0)+1;inv().mushroom=(inv().mushroom||0)+1;}
+    else if(reward.type==='perk')t.perks[reward.key]=reward.value??1;
+    else if(reward.type==='furniture')addFurniture(reward.key,reward.qty||1);
+    persist();updateStatus();toast((RESIDENTS[id]?.name||id)+' 친밀도 보상 · '+reward.name);return true;
+  }
+  function claimFriendshipRewards(id){
+    for(const r of FRIENDSHIP_REWARDS[id]||[])grantReward(id,r);
+  }
+  function nextRewardText(id){
+    const t=ensureState(),f=t.friendship[id]||0;
+    const next=(FRIENDSHIP_REWARDS[id]||[]).find(r=>f<r.at);
+    return next?'다음 보상 ♥ '+next.at+' · '+next.name:'모든 친밀도 보상을 받았어요.';
+  }
+  function discountFor(kind){
+    const perks=ensureState().perks||{};
+    if(kind==='market')return Number(perks.marketDiscount)||0;
+    if(kind==='hardware')return Number(perks.hardwareDiscount)||0;
+    if(kind==='cafe')return Number(perks.cafeDiscount)||0;
+    return 0;
+  }
+  function priceFor(kind,base){return Math.max(1,Math.round(base*(1-discountFor(kind))))}
   function hour(){return ((prog().survival.time%1440)+1440)%1440/60}
   function isOpen(kind){
     const h=HOURS[kind];if(!h)return true;
@@ -97,7 +173,7 @@ export function createTownEconomy(ctx){
   function shop(kind,npcName='상인'){
     if(!isOpen(kind)){closedPanel(kind,npcName);return;}
     const p=prog(),t=ensureState(p),items=BUY[kind]||{};
-    const buyCards=Object.entries(items).map(([key,d])=>'<div class="item"><b>'+d.name+'</b><div>'+d.price+' 코인</div><button data-city-buy="'+kind+':'+key+'">구매</button></div>').join('');
+    const buyCards=Object.entries(items).map(([key,d])=>{const price=priceFor(kind,d.price);return '<div class="item"><b>'+d.name+'</b><div>'+price+' 코인'+(price<d.price?' <small>(단골 할인)</small>':'')+'</div><button data-city-buy="'+kind+':'+key+'">구매</button></div>';}).join('');
     const sellCards=kind==='market'?Object.entries(SELL).map(([key,price])=>'<div class="item"><b>'+itemName(key)+'</b><div>1개당 '+price+' 코인</div><button data-city-sell="'+key+'" '+((inv()[key]||0)>0?'':'disabled')+'>1개 팔기</button></div>').join(''):'';
     const delivery=kind==='cafe'&&t.delivery.active&&t.delivery.target==='cafe'
       ?'<h3>📦 배달</h3><div class="item"><b>현우의 배달 상자</b><div>하늘에게 전달하면 95코인</div><button data-city-delivery-complete="1">배달 완료</button></div>'
@@ -107,8 +183,8 @@ export function createTownEconomy(ctx){
   }
   function buy(kind,key){
     const d=BUY[kind]?.[key];if(!d)return;
-    const p=prog(),t=ensureState(p);if(t.coins<d.price){toast('코인이 부족해요.');return;}
-    t.coins-=d.price;
+    const p=prog(),t=ensureState(p),price=priceFor(kind,d.price);if(t.coins<price){toast('코인이 부족해요.');return;}
+    t.coins-=price;
     if(d.type==='seed')p.seeds[d.key]=(p.seeds[d.key]||0)+d.qty;
     else if(d.type==='inv')inv()[d.key]=(inv()[d.key]||0)+d.qty;
     else if(d.type==='food')p.food[d.key]=(p.food[d.key]||0)+d.qty;
@@ -137,8 +213,9 @@ export function createTownEconomy(ctx){
     if(t.jobs[id]===p.survival.day){toast('이 일은 오늘 이미 했어요.');return;}
     if(p.energy<j.energy||p.survival.hunger<j.hunger){toast('체력이나 허기가 부족해요.');return;}
     p.energy-=j.energy;p.survival.hunger=Math.max(0,p.survival.hunger-j.hunger);
-    t.coins+=j.reward;t.jobs[id]=p.survival.day;t.fun=Math.max(0,t.fun-3);
-    persist();setAvatarAction('smile',700);toast(j.name+' 완료! +'+j.reward+' 코인');updateStatus();jobs();
+    const bonus=1+(Number(t.perks.jobBonus)||0);const reward=Math.round(j.reward*bonus);
+    t.coins+=reward;t.jobs[id]=p.survival.day;t.fun=Math.max(0,t.fun-3);
+    persist();setAvatarAction('smile',700);toast(j.name+' 완료! +'+reward+' 코인');updateStatus();jobs();
   }
 
   function delivery(){
@@ -160,30 +237,55 @@ export function createTownEconomy(ctx){
   function completeDelivery(){
     const p=prog(),t=ensureState(p),day=p.survival.day;
     if(!t.delivery.active||t.delivery.target!=='cafe')return;
-    t.delivery.active=false;t.delivery.completedDay=day;t.coins+=t.delivery.reward;
-    t.friendship.haneul=(t.friendship.haneul||0)+1;t.fun=Math.min(100,t.fun+6);
-    persist();setAvatarAction('smile',800);toast('배달 완료! +'+t.delivery.reward+' 코인');updateStatus();shop('cafe','하늘');
+    const reward=t.delivery.reward+(Number(t.perks.deliveryBonus)||0);
+    t.delivery.active=false;t.delivery.completedDay=day;t.coins+=reward;
+    t.friendship.haneul=(t.friendship.haneul||0)+1;t.friendship.hyunwoo=(t.friendship.hyunwoo||0)+1;t.fun=Math.min(100,t.fun+6);
+    claimFriendshipRewards('haneul');claimFriendshipRewards('hyunwoo');
+    persist();setAvatarAction('smile',800);toast('배달 완료! +'+reward+' 코인');updateStatus();shop('cafe','하늘');
   }
 
-  function talk(id,name){
+  function talk(id,name=RESIDENTS[id]?.name||id){
     const p=prog(),t=ensureState(p),day=p.survival.day;
-    if(t.talked[id]!==day){t.talked[id]=day;t.friendship[id]=(t.friendship[id]||0)+1;persist();}
+    let grew=false;
+    if(t.talked[id]!==day){t.talked[id]=day;t.friendship[id]=(t.friendship[id]||0)+1;grew=true;persist();}
+    if(grew)claimFriendshipRewards(id);
     const f=t.friendship[id]||0,custom=TALK_LINES[id]||[];
-    const generic=f<2?['처음 보는 얼굴이네! 씨앗마을에 온 걸 환영해.','마을에는 낮과 밤마다 분위기가 조금 달라져.']:
-      f<5?['요즘 꽤 자주 보네. 농장은 잘 되어가?','일만 하지 말고 광장에서도 쉬어가!']:
-      ['이제 완전히 우리 마을 주민 같아!','다음에는 마을 축제도 같이 준비하자.'];
+    const generic=f<3?['처음 보는 얼굴이네! 씨앗마을에 온 걸 환영해.','마을에는 낮과 밤마다 분위기가 조금 달라져.']:
+      f<7?['요즘 꽤 자주 보네. 농장은 잘 되어가?','일만 하지 말고 광장에서도 쉬어가!']:
+      ['이제 완전히 우리 마을 주민 같아!','오래 알고 지낸 친구에게만 해주는 이야기도 있어.'];
     const lines=custom.length?custom:generic;
-    openPanel('<h2>'+name+'</h2><p>'+lines[p.survival.day%lines.length]+'</p><p>친밀도 ♥ '+f+'</p>');
+    openPanel('<h2>'+name+' · 대화</h2><p>'+lines[p.survival.day%lines.length]+'</p><p>친밀도 ♥ '+f+(grew?' <small>오늘 +1</small>':' <small>오늘 대화 완료</small>')+'</p><p><small>'+nextRewardText(id)+'</small></p><button data-resident-back="'+id+'">주민 카드로</button>');
+  }
+  function resident(id){
+    const r=RESIDENTS[id];if(!r)return;
+    const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
+    const rewardHtml=rewards.map(x=>'<div class="item"><b>♥ '+x.at+'</b><div>'+x.name+'</div><small>'+(t.rewardClaims[id+':'+x.at]?'획득 완료':f>=x.at?'획득 가능':'친밀도 필요')+'</small></div>').join('');
+    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-service="'+id+'">'+r.serviceLabel+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
+  }
+  function residentService(id){
+    const r=RESIDENTS[id];if(!r)return;
+    if(r.service==='market')return shop('market',r.name);
+    if(r.service==='hardware')return shop('hardware',r.name);
+    if(r.service==='cafe')return shop('cafe',r.name);
+    if(r.service==='jobs')return jobs();
+    if(r.service==='arcade')return arcade();
+    if(r.service==='library')return library();
+    if(r.service==='delivery')return delivery();
+    if(r.service==='clinic')return clinic();
+    if(r.service==='transport')return transport();
+    if(r.service==='advice')return openPanel('<h2>유나 · 농사 조언</h2><p>익은 작물은 바로 수확하면 씨앗도 다시 얻을 수 있어. 친해지면 수확하는 요령도 알려줄게.</p><button data-resident-back="yuna">돌아가기</button>');
+    if(r.service==='forest')return openPanel('<h2>우진 · 숲 정보</h2><p>깊은 숲에서는 버섯이 잘 보여. 여우와 함께라면 더 많이 모을 수 있고, 나와 친해져도 채집 요령을 배울 수 있어.</p><button data-resident-back="woojin">돌아가기</button>');
+    if(r.service==='pets')return openPanel('<h2>서연 · Cube Pets</h2><p>동물마다 좋아하는 재료가 달라. 친해지면 길들이기에 필요한 먹이를 조금 아끼는 방법을 알려줄게.</p><button data-resident-back="seoyeon">돌아가기</button>');
   }
 
   function arcade(){
-    const t=ensureState();
-    openPanel('<h2>태호 · 키즈 아케이드</h2><p>한 판 8코인. 이기면 재미가 크게 올라가고, 오늘 첫 승리에는 작은 코인 상품도 있어!</p><p><b>보유 '+t.coins+' 코인</b></p><div class="grid"><button data-city-rps="rock">✊ 바위</button><button data-city-rps="paper">✋ 보</button><button data-city-rps="scissors">✌️ 가위</button></div>');
+    const t=ensureState(),cost=Math.max(1,8-(Number(t.perks.arcadeDiscount)||0));
+    openPanel('<h2>태호 · 키즈 아케이드</h2><p>한 판 '+cost+'코인. 이기면 재미가 크게 올라가고, 오늘 첫 승리에는 작은 코인 상품도 있어!</p><p><b>보유 '+t.coins+' 코인</b></p><div class="grid"><button data-city-rps="rock">✊ 바위</button><button data-city-rps="paper">✋ 보</button><button data-city-rps="scissors">✌️ 가위</button></div>');
   }
   function playRps(choice){
-    const p=prog(),t=ensureState(p),day=p.survival.day;
-    if(t.coins<8){toast('아케이드 이용료 8코인이 필요해요.');return;}
-    t.coins-=8;
+    const p=prog(),t=ensureState(p),day=p.survival.day,cost=Math.max(1,8-(Number(t.perks.arcadeDiscount)||0));
+    if(t.coins<cost){toast('아케이드 이용료 '+cost+'코인이 필요해요.');return;}
+    t.coins-=cost;
     const options=['rock','paper','scissors'],cpu=options[Math.floor(Math.random()*3)];
     const win=(choice==='rock'&&cpu==='scissors')||(choice==='paper'&&cpu==='rock')||(choice==='scissors'&&cpu==='paper');
     const tie=choice===cpu;
@@ -202,22 +304,23 @@ export function createTownEconomy(ctx){
     const p=prog(),t=ensureState(p),day=p.survival.day;
     const tip=LIBRARY_TIPS[day%LIBRARY_TIPS.length];
     let bonus='';
-    if(t.libraryDay!==day){t.libraryDay=day;t.fun=Math.min(100,t.fun+8);p.energy=Math.min(p.maxEnergy,p.energy+2);bonus='<p>오늘의 독서 보너스: 재미 +8 · 체력 +2</p>';persist();updateStatus();}
+    if(t.libraryDay!==day){const energy=2+(Number(t.perks.libraryEnergyBonus)||0);t.libraryDay=day;t.fun=Math.min(100,t.fun+8);p.energy=Math.min(p.maxEnergy,p.energy+energy);bonus='<p>오늘의 독서 보너스: 재미 +8 · 체력 +'+energy+'</p>';persist();updateStatus();}
     openPanel('<h2>소라 · 마을 도서관</h2><p>📖 '+tip+'</p>'+bonus+'<p>조용히 쉬어가도 좋아요.</p>');
   }
   function clinic(){
     const p=prog(),t=ensureState(p),missing=Math.max(0,p.maxEnergy-p.energy);
     if(missing<1){openPanel('<h2>나리 · 튼튼 보건소</h2><p>지금은 아주 건강해 보여요!</p>');return;}
-    openPanel('<h2>나리 · 튼튼 보건소</h2><p>진료비 25코인으로 체력을 전부 회복할 수 있어요.</p><p>현재 체력 '+Math.round(p.energy)+' / '+p.maxEnergy+' · 보유 '+t.coins+'코인</p><button data-city-clinic="1">진료받기</button>');
+    const fee=Math.max(5,25-(Number(t.perks.clinicDiscount)||0));openPanel('<h2>나리 · 튼튼 보건소</h2><p>진료비 '+fee+'코인으로 체력을 전부 회복할 수 있어요.</p><p>현재 체력 '+Math.round(p.energy)+' / '+p.maxEnergy+' · 보유 '+t.coins+'코인</p><button data-city-clinic="1">진료받기</button>');
   }
   function heal(){
-    const p=prog(),t=ensureState(p);if(t.coins<25){toast('코인이 부족해요.');return;}
+    const p=prog(),t=ensureState(p),fee=Math.max(5,25-(Number(t.perks.clinicDiscount)||0));if(t.coins<fee){toast('코인이 부족해요.');return;}
     if(p.energy>=p.maxEnergy){toast('이미 건강해요.');return;}
-    t.coins-=25;p.energy=p.maxEnergy;persist();setAvatarAction('smile',650);toast('체력이 모두 회복됐어요.');updateStatus();clinic();
+    t.coins-=fee;p.energy=p.maxEnergy;persist();setAvatarAction('smile',650);toast('체력이 모두 회복됐어요.');updateStatus();clinic();
   }
 
   function transport(){
-    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 앞</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 돌산</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 중심가</button></div>');
+    const unlocked=!!ensureState().perks.riverBus;
+    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 앞</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 돌산</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 중심가</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
   }
 
   function bench(){
@@ -227,6 +330,9 @@ export function createTownEconomy(ctx){
   function tick(dt){const t=ensureState();t.fun=Math.max(0,t.fun-dt*.006)}
 
   function handlePanelClick(e){
+    const rt=e.target.closest('[data-resident-talk]');if(rt){talk(rt.dataset.residentTalk);return true;}
+    const rs=e.target.closest('[data-resident-service]');if(rs){residentService(rs.dataset.residentService);return true;}
+    const rb=e.target.closest('[data-resident-back]');if(rb){resident(rb.dataset.residentBack);return true;}
     const buyBtn=e.target.closest('[data-city-buy]');
     if(buyBtn){const [kind,key]=buyBtn.dataset.cityBuy.split(':');buy(kind,key);return true;}
     const sellBtn=e.target.closest('[data-city-sell]');if(sellBtn){sell(sellBtn.dataset.citySell);return true;}
@@ -240,7 +346,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,arcade,library,clinic,transport,bench,tick,handlePanelClick,
-    BUY,SELL,JOBS,HOURS
+    ensureState,shop,jobs,delivery,talk,resident,residentService,arcade,library,clinic,transport,bench,tick,handlePanelClick,
+    BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS
   };
 }
