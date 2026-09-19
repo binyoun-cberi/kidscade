@@ -8,6 +8,8 @@ const POLY=new URL('3d/city/poly-pizza-city-pack/',ROOT).href;
 const MARKET=new URL('shops/market/',ROOT).href;
 const FURNITURE=new URL('3d/interiors/kenney-furniture-kit/',ROOT).href;
 
+export const CITY_BOUNDS={x1:-26,x2:26,z1:20,z2:40};
+
 const CITY_ASSET={
   market:SUBURBAN+'building-type-b.glb',
   hardware:SUBURBAN+'building-type-c.glb',
@@ -19,7 +21,6 @@ const CITY_ASSET={
   road:ROADS+'road-straight.glb',
   cross:ROADS+'road-crossroad.glb',
   lamp:ROADS+'light-square.glb',
-  traffic:ROADS+'traffic-light.glb',
   busStop:POLY+'bus-stop.glb',
   busSign:POLY+'bus-stop-sign.glb',
   bicycle:POLY+'bicycle.glb',
@@ -30,7 +31,6 @@ const CITY_ASSET={
   bread:MARKET+'display-bread.glb',
   register:MARKET+'cash-register.glb',
   cart:MARKET+'shopping-cart.glb',
-  basket:MARKET+'shopping-basket.glb',
   employee:MARKET+'character-employee.glb',
   bench:FURNITURE+'bench.glb'
 };
@@ -76,115 +76,160 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   ctx.parent.add(object);
   const tag=label?makeLabel(name):null;
   if(tag){tag.position.set(x,2.05,z);ctx.parent.add(tag)}
-  return {id,name,object,label:tag,homeX:x,homeZ:z,r:radius,role,phase:(id.length*1.37)%6.2};
+  return {id,name,object,label:tag,interaction:null,homeX:x,homeZ:z,r:radius,role,phase:(id.length*1.37)%6.2};
+}
+
+function overlaps(a,b,pad=.08){
+  return Math.abs(a.x-b.x)<(a.w+b.w)/2+pad&&Math.abs(a.z-b.z)<(a.d+b.d)/2+pad;
+}
+function validateMapLayout(objects){
+  for(let i=0;i<objects.length;i++)for(let j=i+1;j<objects.length;j++){
+    const a=objects[i],b=objects[j];
+    if(!overlaps(a,b))continue;
+    const pair=a.type+'-'+b.type;
+    if(pair==='road-road'||pair==='road-plaza'||pair==='plaza-road')continue;
+    console.warn('[World v3 map overlap]',a.id,b.id);
+  }
 }
 
 export async function buildKidscadeCity(ctx){
   const {parent,addModel,box,plane,interact,collider,loadGLB,prepModel,actions,getGameTime}=ctx;
+  const layout=[];const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
 
-  // The city is part of the same continuous world, south of the campsite.
-  plane(parent,0,29,52,18,0xb8b09a,.012);
-  box(parent,0,29,52,18,.20,0x9e9a86,-.20);
-  box(parent,0,29,50,3.0,.10,0x6e7376,.03);
-  box(parent,0,24.4,3.0,7.0,.10,0x6e7376,.03);
-  box(parent,0,34.0,3.0,7.0,.10,0x6e7376,.03);
+  // One continuous town floor, then clearly separated road, sidewalks/plaza, and building lots.
+  plane(parent,0,30,52,20,0xb6b09c,.012);
+  box(parent,0,30,52,20,.18,0x9d9988,-.18);
+  plane(parent,0,32.6,11.0,3.4,0xcabd9c,.025);track('city-plaza','plaza',0,32.6,11,3.4);
+  plane(parent,0,35.0,8.0,1.7,0xd8caa7,.024);
+  box(parent,0,29,52,3.2,.06,0x666d70,.025);
 
+  // Roads use a strict four-unit grid. Only the entrance reaches the main road;
+  // the northern civic area is pedestrian space rather than another asphalt spur.
+  const roadX=[-24,-20,-16,-12,-8,-4,4,8,12,16,20,24];
   await Promise.all([
-    addModel(parent,CITY_ASSET.cross,{x:0,z:29,w:4.2,h:.32,d:4.2,rot:0}),
-    addModel(parent,CITY_ASSET.road,{x:-4.1,z:29,w:4.0,h:.32,d:4.0,rot:Math.PI/2}),
-    addModel(parent,CITY_ASSET.road,{x:4.1,z:29,w:4.0,h:.32,d:4.0,rot:Math.PI/2}),
-    addModel(parent,CITY_ASSET.road,{x:-8.2,z:29,w:4.0,h:.32,d:4.0,rot:Math.PI/2}),
-    addModel(parent,CITY_ASSET.road,{x:8.2,z:29,w:4.0,h:.32,d:4.0,rot:Math.PI/2}),
-    addModel(parent,CITY_ASSET.road,{x:0,z:25,w:4.0,h:.32,d:4.0,rot:0}),
-    addModel(parent,CITY_ASSET.road,{x:0,z:33,w:4.0,h:.32,d:4.0,rot:0})
+    addModel(parent,CITY_ASSET.cross,{x:0,z:29,w:4.0,h:.28,d:4.0,rot:0,name:'city-road-cross'}),
+    ...roadX.map(x=>addModel(parent,CITY_ASSET.road,{x,z:29,w:4.0,h:.28,d:4.0,rot:Math.PI/2,name:'city-road-main-'+x})),
+    addModel(parent,CITY_ASSET.road,{x:0,z:25,w:4.0,h:.28,d:4.0,rot:0,name:'city-road-entry-25'}),
+    addModel(parent,CITY_ASSET.road,{x:0,z:21,w:4.0,h:.28,d:4.0,rot:0,name:'city-road-entry-21'})
   ]);
+  track('main-road','road',0,29,52,3.2);track('entry-road','road',0,23,3.2,8);
 
   const buildings=[
-    ['market',CITY_ASSET.market,-18.0,25.7,6.0,5.2,'씨앗마트'],
-    ['hardware',CITY_ASSET.hardware,-9.7,25.7,6.0,5.2,'튼튼 철물점'],
-    ['cafe',CITY_ASSET.cafe,9.7,25.7,6.0,5.2,'하늘 카페'],
-    ['arcade',CITY_ASSET.arcade,18.0,25.7,6.0,5.2,'키즈 아케이드'],
-    ['library',CITY_ASSET.library,-13.2,35.6,6.2,5.0,'마을 도서관'],
-    ['civic',CITY_ASSET.civic,0,35.7,7.2,5.0,'마을회관'],
-    ['clinic',CITY_ASSET.clinic,13.2,35.6,6.2,5.0,'튼튼 보건소']
+    ['market',CITY_ASSET.market,-18.0,23.8,6.0,5.2,'씨앗마트',2.25],
+    ['hardware',CITY_ASSET.hardware,-9.5,23.8,6.0,5.2,'튼튼 철물점',2.25],
+    ['cafe',CITY_ASSET.cafe,9.5,23.8,6.0,5.2,'하늘 카페',2.25],
+    ['arcade',CITY_ASSET.arcade,18.0,23.8,6.0,5.2,'키즈 아케이드',2.25],
+    ['library',CITY_ASSET.library,-13.0,36.4,6.2,5.0,'마을 도서관',-2.25],
+    ['civic',CITY_ASSET.civic,0,36.5,7.2,5.0,'마을회관',-2.25],
+    ['clinic',CITY_ASSET.clinic,13.0,36.4,6.2,5.0,'튼튼 보건소',-2.25]
   ];
-  for(const [id,url,x,z,w,d,name] of buildings){
+  for(const [id,url,x,z,w,d,name,labelDz] of buildings){
     await addModel(parent,url,{x,z,w,h:5.0,d,rot:Math.PI,name:'city-'+id});
-    collider('outdoor',x,z,w*.82,d*.70);
-    const s=makeLabel(name);s.position.set(x,3.75,z+2.15);parent.add(s);
+    collider('outdoor',x,z,w*.82,d*.70);track('building-'+id,'building',x,z,w*.82,d*.70);
+    const label=makeLabel(name);label.position.set(x,3.75,z+labelDz);parent.add(label);
   }
 
+  // Market props are grouped into one readable outdoor storefront, not scattered on the road.
   await Promise.all([
-    addModel(parent,CITY_ASSET.fruit,{x:-19.5,z:29.2,w:1.8,h:1.45,d:1.2,rot:0}),
-    addModel(parent,CITY_ASSET.bread,{x:-17.0,z:29.2,w:1.8,h:1.45,d:1.2,rot:0}),
-    addModel(parent,CITY_ASSET.cart,{x:-15.0,z:30.1,w:1.1,h:1.0,d:1.2,rot:.25}),
-    addModel(parent,CITY_ASSET.register,{x:-18.2,z:30.4,w:.85,h:.65,d:.75,rot:Math.PI}),
-    addModel(parent,CITY_ASSET.bench,{x:4.8,z:31.9,w:2.1,h:1.0,d:.8,rot:0}),
-    addModel(parent,CITY_ASSET.bench,{x:-4.8,z:31.9,w:2.1,h:1.0,d:.8,rot:Math.PI}),
-    addModel(parent,CITY_ASSET.busStop,{x:22.0,z:33.2,w:2.7,h:2.5,d:1.5,rot:-Math.PI/2}),
-    addModel(parent,CITY_ASSET.busSign,{x:20.7,z:32.1,w:.55,h:2.2,d:.55,rot:0}),
-    addModel(parent,CITY_ASSET.bicycle,{x:18.8,z:34.3,w:1.6,h:1.2,d:.55,rot:.35}),
-    addModel(parent,CITY_ASSET.mailbox,{x:-6.3,z:33.5,w:.75,h:1.3,d:.65,rot:0}),
-    addModel(parent,CITY_ASSET.atm,{x:-21.0,z:30.3,w:.8,h:1.5,d:.7,rot:Math.PI/2}),
-    addModel(parent,CITY_ASSET.planter,{x:7.0,z:33.3,w:2.0,h:1.0,d:1.0,rot:0})
+    addModel(parent,CITY_ASSET.fruit,{x:-19.2,z:26.25,w:1.7,h:1.4,d:1.05,rot:0,name:'market-fruit'}),
+    addModel(parent,CITY_ASSET.bread,{x:-17.0,z:26.25,w:1.7,h:1.4,d:1.05,rot:0,name:'market-bread'}),
+    addModel(parent,CITY_ASSET.register,{x:-18.1,z:26.0,w:.8,h:.62,d:.7,rot:Math.PI,name:'market-register'}),
+    addModel(parent,CITY_ASSET.cart,{x:-15.15,z:26.0,w:1.0,h:.95,d:1.1,rot:.1,name:'market-cart'}),
+    addModel(parent,CITY_ASSET.atm,{x:-21.0,z:26.0,w:.75,h:1.45,d:.65,rot:Math.PI/2,name:'market-atm'})
+  ]);
+  track('market-display','decor',-18.1,26.1,5.9,1.35);
+
+  // Plaza furniture stays off the road and leaves the center open for resident gatherings.
+  await Promise.all([
+    addModel(parent,CITY_ASSET.bench,{x:-3.6,z:32.55,w:2.0,h:.95,d:.78,rot:Math.PI/2,name:'plaza-bench-west'}),
+    addModel(parent,CITY_ASSET.bench,{x:3.6,z:32.55,w:2.0,h:.95,d:.78,rot:-Math.PI/2,name:'plaza-bench-east'}),
+    addModel(parent,CITY_ASSET.planter,{x:-5.0,z:32.65,w:1.2,h:.85,d:.85,rot:0,name:'plaza-planter-west'}),
+    addModel(parent,CITY_ASSET.planter,{x:5.0,z:32.65,w:1.2,h:.85,d:.85,rot:0,name:'plaza-planter-east'}),
+    addModel(parent,CITY_ASSET.mailbox,{x:-6.0,z:34.45,w:.7,h:1.25,d:.6,rot:0,name:'town-mailbox'})
   ]);
 
-  for(const [x,z] of [[-23,23],[-12,23],[12,23],[23,23],[-23,34],[-6,34],[6,34],[23,34]]){
-    await addModel(parent,CITY_ASSET.lamp,{x,z,w:.55,h:3.5,d:.55,rot:0});
+  // Dedicated transport corner. The unused traffic light was removed until actual vehicle AI exists.
+  await Promise.all([
+    addModel(parent,CITY_ASSET.busStop,{x:21.5,z:33.0,w:2.7,h:2.5,d:1.5,rot:-Math.PI/2,name:'seed-bus-stop'}),
+    addModel(parent,CITY_ASSET.busSign,{x:20.1,z:31.85,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'}),
+    addModel(parent,CITY_ASSET.bicycle,{x:18.6,z:34.25,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'})
+  ]);
+  track('transport-corner','decor',20.4,33.1,5.2,3.3);
+
+  // Lamps follow sidewalks instead of sitting in the carriageway.
+  for(const [x,z] of [[-24,26.2],[-12,26.2],[12,26.2],[24,26.2],[-19.5,34.3],[-7,34.3],[7,34.3],[17,35.0]]){
+    await addModel(parent,CITY_ASSET.lamp,{x,z,w:.5,h:3.4,d:.5,rot:0});
   }
-  await addModel(parent,CITY_ASSET.traffic,{x:2.4,z:27,w:.65,h:2.8,d:.65,rot:0});
 
   const npcCtx={parent,loadGLB,prepModel};
   const npcs=[];
-  npcs.push(await addNpc(npcCtx,'minji','민지',-18.0,30.5,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'junho','준호',-9.7,30.4,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'haneul','하늘',9.7,30.3,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'doyun','도윤',0.0,33.0,{role:'civic'}));
-  npcs.push(await addNpc(npcCtx,'yuna','유나',4.4,30.9,{radius:.9}));
-  npcs.push(await addNpc(npcCtx,'taeho','태호',18.0,30.2,{role:'arcade'}));
-  npcs.push(await addNpc(npcCtx,'sora','소라',-13.2,32.7,{role:'library'}));
-  npcs.push(await addNpc(npcCtx,'hyunwoo','현우',-5.0,33.0,{role:'delivery'}));
-  npcs.push(await addNpc(npcCtx,'nari','나리',13.2,32.8,{role:'clinic'}));
-  npcs.push(await addNpc(npcCtx,'woojin','우진',-3.3,30.8,{radius:1.0}));
-  npcs.push(await addNpc(npcCtx,'seoyeon','서연',2.2,31.6,{radius:1.0}));
-  npcs.push(await addNpc(npcCtx,'minseok','민석',21.3,31.9,{role:'bus'}));
-  npcs.push(await addNpc(npcCtx,'clerk','마트직원',-16.1,29.9,{role:'shop',label:false}));
+  npcs.push(await addNpc(npcCtx,'minji','민지',-18.0,26.65,{role:'shop'}));
+  npcs.push(await addNpc(npcCtx,'junho','준호',-9.5,26.65,{role:'shop'}));
+  npcs.push(await addNpc(npcCtx,'haneul','하늘',9.5,26.65,{role:'shop'}));
+  npcs.push(await addNpc(npcCtx,'doyun','도윤',0.0,33.25,{role:'civic',radius:.62}));
+  npcs.push(await addNpc(npcCtx,'yuna','유나',4.0,32.25,{role:'resident',radius:.68}));
+  npcs.push(await addNpc(npcCtx,'taeho','태호',18.0,26.65,{role:'arcade'}));
+  npcs.push(await addNpc(npcCtx,'sora','소라',-13.0,33.35,{role:'library'}));
+  npcs.push(await addNpc(npcCtx,'hyunwoo','현우',-5.8,33.55,{role:'delivery',radius:.7}));
+  npcs.push(await addNpc(npcCtx,'nari','나리',13.0,33.35,{role:'clinic'}));
+  npcs.push(await addNpc(npcCtx,'woojin','우진',-2.4,32.2,{role:'resident',radius:.72}));
+  npcs.push(await addNpc(npcCtx,'seoyeon','서연',2.2,33.4,{role:'resident',radius:.68}));
+  npcs.push(await addNpc(npcCtx,'minseok','민석',21.0,31.55,{role:'bus'}));
+  npcs.push(await addNpc(npcCtx,'clerk','마트직원',-16.0,26.45,{role:'shop',label:false,radius:.25}));
 
-  interact('outdoor',-18.0,30.5,1.35,'민지와 이야기하기',()=>actions.resident('minji'));
-  interact('outdoor',-9.7,30.4,1.35,'준호와 이야기하기',()=>actions.resident('junho'));
-  interact('outdoor',9.7,30.3,1.35,'하늘과 이야기하기',()=>actions.resident('haneul'));
-  interact('outdoor',0.0,33.0,1.35,'도윤과 이야기하기',()=>actions.resident('doyun'));
-  interact('outdoor',4.4,30.9,1.35,'유나와 이야기하기',()=>actions.resident('yuna'));
-  interact('outdoor',18.0,30.2,1.35,'태호와 이야기하기',()=>actions.resident('taeho'));
-  interact('outdoor',-13.2,32.7,1.35,'소라와 이야기하기',()=>actions.resident('sora'));
-  interact('outdoor',-5.0,33.0,1.35,'현우와 이야기하기',()=>actions.resident('hyunwoo'));
-  interact('outdoor',13.2,32.8,1.35,'나리와 이야기하기',()=>actions.resident('nari'));
-  interact('outdoor',-3.3,30.8,1.35,'우진과 이야기하기',()=>actions.resident('woojin'));
-  interact('outdoor',2.2,31.6,1.35,'서연과 이야기하기',()=>actions.resident('seoyeon'));
-  interact('outdoor',21.3,31.9,1.45,'민석과 이야기하기',()=>actions.resident('minseok'));
-  interact('outdoor',4.8,31.9,1.2,'도시 벤치에서 쉬기',()=>actions.bench());
-  interact('outdoor',-4.8,31.9,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
+  const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
+  function bind(id,r,label,action){
+    const n=byId[id];if(!n)return;
+    n.interaction=interact('outdoor',n.object.position.x,n.object.position.z,r,label,action);
+  }
+  bind('minji',1.35,'민지와 이야기하기',()=>actions.resident('minji'));
+  bind('junho',1.35,'준호와 이야기하기',()=>actions.resident('junho'));
+  bind('haneul',1.35,'하늘과 이야기하기',()=>actions.resident('haneul'));
+  bind('doyun',1.35,'도윤과 이야기하기',()=>actions.resident('doyun'));
+  bind('yuna',1.35,'유나와 이야기하기',()=>actions.resident('yuna'));
+  bind('taeho',1.35,'태호와 이야기하기',()=>actions.resident('taeho'));
+  bind('sora',1.35,'소라와 이야기하기',()=>actions.resident('sora'));
+  bind('hyunwoo',1.35,'현우와 이야기하기',()=>actions.resident('hyunwoo'));
+  bind('nari',1.35,'나리와 이야기하기',()=>actions.resident('nari'));
+  bind('woojin',1.35,'우진과 이야기하기',()=>actions.resident('woojin'));
+  bind('seoyeon',1.35,'서연과 이야기하기',()=>actions.resident('seoyeon'));
+  bind('minseok',1.45,'민석과 이야기하기',()=>actions.resident('minseok'));
+
+  interact('outdoor',-3.6,32.55,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
+  interact('outdoor',3.6,32.55,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
+
+  validateMapLayout(layout);
+
+  const eveningSlots={
+    doyun:{x:-1.3,z:32.6},yuna:{x:1.3,z:32.45},hyunwoo:{x:-2.8,z:33.15},
+    woojin:{x:2.8,z:33.15},seoyeon:{x:0,z:33.25}
+  };
+  const dayRoleTargets={
+    yuna:{x:7.3,z:8.1,r:.6},          // farm meadow
+    woojin:{x:-18.8,z:.8,r:.65},      // forest entrance
+    seoyeon:{x:-13.6,z:-4.35,r:.5},   // Cube Pets yard
+    hyunwoo:{x:-4.8,z:33.75,r:.75}    // mailbox/delivery side of plaza
+  };
 
   return {
     npcs,
+    bounds:CITY_BOUNDS,
     update(now,dt){
       const minutes=typeof getGameTime==='function'?getGameTime():720;
-      const hour=minutes/60,evening=hour>=18&&hour<23;
-      for(let idx=0;idx<npcs.length;idx++){
-        const n=npcs[idx];
+      const hour=minutes/60,evening=hour>=18&&hour<23,daytime=hour>=7&&hour<18;
+      for(const n of npcs){
         let hx=n.homeX,hz=n.homeZ,r=n.r;
-        // Residents gather around the plaza in the evening; workers remain by their workplaces.
-        if(evening&&n.role==='resident'){
-          hx=-4+(idx%5)*2;hz=31.2+(idx%2)*1.0;r=.75;
-        }
+        if(daytime&&dayRoleTargets[n.id]){const q=dayRoleTargets[n.id];hx=q.x;hz=q.z;r=q.r;}
+        else if(evening&&eveningSlots[n.id]){const q=eveningSlots[n.id];hx=q.x;hz=q.z;r=.35;}
         const tx=hx+Math.sin(now/2600+n.phase)*r;
         const tz=hz+Math.cos(now/3100+n.phase)*r*.55;
         const dx=tx-n.object.position.x,dz=tz-n.object.position.z;
-        n.object.position.x+=dx*Math.min(1,dt*.7);
-        n.object.position.z+=dz*Math.min(1,dt*.7);
+        n.object.position.x+=dx*Math.min(1,dt*.72);
+        n.object.position.z+=dz*Math.min(1,dt*.72);
         if(Math.abs(dx)+Math.abs(dz)>.01)n.object.rotation.y=Math.atan2(dx,dz);
         n.object.position.y=Math.abs(Math.sin(now/420+n.phase))*.018;
         if(n.label)n.label.position.set(n.object.position.x,2.05,n.object.position.z);
+        if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
       }
     }
   };
