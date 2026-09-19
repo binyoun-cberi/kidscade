@@ -4,7 +4,7 @@ import {buildKidscadeCity} from './kidscade-world-city.js?v=14';
 import {createTownEconomy} from './kidscade-world-economy.js?v=10';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=4';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
-import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,zoneAt,isCityArea,isTravelCorridor} from './kidscade-world-grid.js?v=1';
+import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=2';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -437,23 +437,23 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 document.getElementById('mobileInteract').onclick=doInteract;
 document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 
-const LAYOUT_VERSION=6;
+const LAYOUT_VERSION=7;
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
-  x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-10,
+  x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-12,
   z:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3z))?Number(save.player.v3z):2.0,
   speed:5.1
 };
 const TRAVEL_POINTS={
-  home:{x:-10,z:2.0,name:'집 구역'},
-  forest:{x:-25.5,z:0,name:'깊은 숲'},
-  quarry:{x:25.5,z:0,name:'광산'},
-  camp:{x:-30,z:16.0,name:'야영지'},
-  city:{x:-10,z:13.0,name:'씨앗마을 상점가'},
-  river:{x:-10,z:-14.0,name:'북쪽 강가'},
-  ranch:{x:10,z:-14.0,name:'목장'},
-  beach:{x:-30,z:-14.0,name:'해변가'}
+  home:{x:-12,z:2.0,name:'집 구역'},
+  forest:{x:-30,z:0,name:'깊은 숲'},
+  quarry:{x:30,z:0,name:'광산'},
+  camp:{x:-36,z:18.0,name:'야영지'},
+  city:{x:-12,z:18.0,name:'씨앗마을 상점가'},
+  river:{x:-12,z:-18.0,name:'북쪽 강가'},
+  ranch:{x:12,z:-18.0,name:'목장'},
+  beach:{x:-36,z:-18.0,name:'해변가'}
 };
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
@@ -481,7 +481,6 @@ function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?WORLD_BOUNDS:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
   if(nx<bounds.x1+.25||nx>bounds.x2-.25||nz<bounds.z1+.25||nz>bounds.z2-.25)return true;
   if(mode==='outdoor'&&!zoneAt(nx,nz)&&!isTravelCorridor(nx,nz))return true;
-  if(mode==='outdoor'&&isTravelCorridor(nx,nz))return false;
   return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
 let near=null;
@@ -599,9 +598,9 @@ function updateCropVisuals(){
 }
 
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
-function isPathClearance(x,z){return isTravelCorridor(x,z)}
+function isPathClearance(x,z,w=0,d=0){return footprintTouchesRoad(x,z,w,d,.18)}
 function addNatureCollider(x,z,w,d){
-  if(isTravelCorridor(x,z))return null;
+  if(footprintTouchesRoad(x,z,w,d,.18))return null;
   return addColliderFor('outdoor',x,z,w,d);
 }
 const groundPickups=[];
@@ -635,151 +634,149 @@ async function addGroundPickup(id,kind,x,z){
   else prog().groundPickups[id]=0;
 }
 async function buildOutdoor(){
-  // v6 uses a strict 20x20 square grid. A dark sub-base sits below all zone tiles.
-  box(outdoor,0,10,80,80,.24,0x668858,-.30);
+  const point=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
+  const addZoneSign=async(id,dx,dz,label,rot=0)=>{
+    const p=point(id,dx,dz);
+    await addModel(outdoor,ASSET.signpost,{x:p.x,z:p.z,w:.74,h:1.58,d:.74,rot,name:'zone-sign-'+id});
+    interact('outdoor',p.x,p.z,1.1,'표지판 읽기',()=>toast(label));
+  };
+
+  // Road-first layout: 20m square land parcels sit BETWEEN 4m road gutters.
+  box(outdoor,0,12,92,92,.24,0x617b54,-.34);
   for(const cell of Object.values(WORLD_GRID)){
-    box(outdoor,cell.cx,cell.cz,19.6,19.6,.08,cell.color,-.08);
+    box(outdoor,cell.cx,cell.cz,20,20,.10,cell.color,-.10);
+  }
+  for(const x of ROAD_X)box(outdoor,x,12,4,92,.08,0xc8b98f,-.02);
+  for(const z of ROAD_Z)box(outdoor,0,z,92,4,.08,0xc8b98f,-.02);
+
+  // HOME square (-22..-2 / -10..10)
+  {
+    const h=point('home');
+    const pond=new THREE.Mesh(new THREE.CylinderGeometry(3.0,3.14,.12,48),new THREE.MeshStandardMaterial({color:0x67b5d3,roughness:.26,metalness:.03,transparent:true,opacity:.94}));
+    pond.position.set(h.x-4.0,.055,h.z+5.1);pond.receiveShadow=true;outdoor.add(pond);
+    const rim=new THREE.Mesh(new THREE.RingGeometry(3.0,3.34,48),new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide}));
+    rim.rotation.x=-Math.PI/2;rim.position.set(h.x-4.0,.12,h.z+5.1);outdoor.add(rim);
+    await Promise.all([
+      addModel(outdoor,ASSET.house,{x:h.x,z:h.z-5.5,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
+      addModel(outdoor,ASSET.chest,{x:h.x+6.1,z:h.z-5.0,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
+    ]);
+    addColliderFor('outdoor',h.x,h.z-5.5,5.8,4.4);
+    interact('outdoor',h.x,h.z-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
+    interact('outdoor',h.x+6.1,h.z-5.0,1.3,'초보자 보급 상자 열기',claimStarterKit);
+    interact('outdoor',h.x-4.0,h.z+6.2,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+    await addZoneSign('home',6.0,4.8,'집 구역 · 집 · 연못 · Cube Pets',.25);
+    await Promise.all([
+      addGroundPickup('starter-wood-1','wood',h.x-7.0,h.z+2.8),
+      addGroundPickup('starter-wood-2','wood',h.x-3.2,h.z+1.8),
+      addGroundPickup('starter-wood-3','wood',h.x+3.4,h.z+5.5),
+      addGroundPickup('starter-wood-4','wood',h.x+6.2,h.z+7.0),
+      addGroundPickup('starter-wood-5','wood',h.x-6.0,h.z+7.4),
+      addGroundPickup('starter-wood-6','wood',h.x+5.8,h.z-7.2),
+      addGroundPickup('starter-stone-1','stone',h.x-7.2,h.z+5.8),
+      addGroundPickup('starter-stone-2','stone',h.x-1.5,h.z+7.7),
+      addGroundPickup('starter-stone-3','stone',h.x+4.4,h.z+3.8),
+      addGroundPickup('starter-stone-4','stone',h.x+6.7,h.z-6.8),
+      addGroundPickup('starter-stone-5','stone',h.x-6.6,h.z-7.3),
+      addGroundPickup('starter-stone-6','stone',h.x+1.2,h.z+7.9)
+    ]);
   }
 
-  // Standard 3m travel corridors always meet at the midpoint of square edges.
-  box(outdoor,0,0,80,2.8,.08,0xd8c79c,.015);          // forest-home-farm-quarry
-  box(outdoor,-30,-10,2.8,40,.08,0xd2c299,.015);      // beach-forest-camp
-  box(outdoor,-10,-10,2.8,40,.08,0xd2c299,.015);      // river-home-city
-  box(outdoor,10,-10,2.8,40,.08,0xd2c299,.015);       // ranch-farm-city
-
-  // Home square: house, pond, starter chest and pet yard.
-  const pond=new THREE.Mesh(
-    new THREE.CylinderGeometry(3.05,3.18,.12,48),
-    new THREE.MeshStandardMaterial({color:0x67b5d3,roughness:.26,metalness:.03,transparent:true,opacity:.94})
-  );
-  pond.position.set(-14.0,.055,5.0);pond.receiveShadow=true;outdoor.add(pond);
-  const pondRim=new THREE.Mesh(
-    new THREE.RingGeometry(3.05,3.38,48),
-    new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide})
-  );
-  pondRim.rotation.x=-Math.PI/2;pondRim.position.set(-14.0,.12,5.0);outdoor.add(pondRim);
-
-  await Promise.all([
-    addModel(outdoor,ASSET.house,{x:-10,z:-5.5,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
-    addModel(outdoor,ASSET.chest,{x:-4.0,z:-4.8,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
-  ]);
-  addColliderFor('outdoor',-10,-5.5,5.8,4.4);
-  interact('outdoor',-10,-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
-  interact('outdoor',-4.0,-4.8,1.3,'초보자 보급 상자 열기',claimStarterKit);
-  interact('outdoor',-14.0,6.3,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
-  await addModel(outdoor,ASSET.signpost,{x:-3.6,z:2.1,w:.72,h:1.55,d:.72,rot:.15,name:'starter-guide-sign'});
-  interact('outdoor',-3.6,2.1,1.15,'초보자 안내 읽기',()=>{
-    openPanel('<h2>처음 살아남기</h2><div class="grid"><div class="item"><b>1. 맨손 채집</b><div>집 구역의 나뭇가지와 작은 돌을 주워요.</div></div><div class="item"><b>2. 제작</b><div>오른쪽 농장 구역의 제작대에서 도구를 만들어요.</div></div><div class="item"><b>3. 탐험</b><div>왼쪽 숲과 오른쪽 광산으로 나가 자원을 모아요.</div></div></div>');
-  });
-
-  await Promise.all([
-    addGroundPickup('starter-wood-1','wood',-16.5,2.7),
-    addGroundPickup('starter-wood-2','wood',-13.0,1.9),
-    addGroundPickup('starter-wood-3','wood',-7.0,5.7),
-    addGroundPickup('starter-wood-4','wood',-4.5,6.8),
-    addGroundPickup('starter-wood-5','wood',-16.2,7.5),
-    addGroundPickup('starter-wood-6','wood',-6.0,-7.0),
-    addGroundPickup('starter-stone-1','stone',-17.0,5.8),
-    addGroundPickup('starter-stone-2','stone',-12.0,7.8),
-    addGroundPickup('starter-stone-3','stone',-6.2,3.8),
-    addGroundPickup('starter-stone-4','stone',-4.2,-6.8),
-    addGroundPickup('starter-stone-5','stone',-15.8,-7.4),
-    addGroundPickup('starter-stone-6','stone',-7.6,7.8)
-  ]);
-
-  // Farm square: farmhouse, six reusable plots and a dedicated workshop corner.
-  await Promise.all([
-    addModel(outdoor,ASSET.farmHouse,{x:10,z:-5.7,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
-    addModel(outdoor,ASSET.workbench,{x:16.2,z:6.6,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
-    addModel(outdoor,ASSET.chest,{x:14.2,z:7.0,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
-  ]);
-  addColliderFor('outdoor',10,-5.7,4.0,3.3);
-  addColliderFor('outdoor',16.2,6.6,1.6,1.0);
-  addColliderFor('outdoor',14.2,7.0,1.0,.8);
-  interact('outdoor',16.2,5.7,1.45,'제작대 사용하기',workbenchPanel);
-  interact('outdoor',14.2,6.2,1.35,'보관 상자 보기',inventoryPanel);
-
-  const plotPos=[[4.5,3.2],[7.2,3.2],[9.9,3.2],[4.5,6.0],[7.2,6.0],[9.9,6.0]];
-  plotPos.forEach(([x,z],i)=>{
-    box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
-    for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
-    const plant=makePlant();plant.position.set(x,.24,z);outdoor.add(plant);
-    const id='work-crop-'+(i+1);cropVisual.push({id,object:plant});
-    interact('outdoor',x,z,1.35,'밭 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
-  });
-  updateCropVisuals();
-  for(const [x,z,rot] of [[3.2,1.7,0],[5.5,1.7,0],[7.8,1.7,0],[10.1,1.7,0],[11.5,3.9,Math.PI/2],[11.5,6.2,Math.PI/2],[3.1,4.0,Math.PI/2],[3.1,6.3,Math.PI/2]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.15,h:.9,d:.30,rot});
+  // FARM square (2..22 / -10..10)
+  {
+    const f=point('farm');
+    await Promise.all([
+      addModel(outdoor,ASSET.farmHouse,{x:f.x,z:f.z-5.7,w:4.8,h:4.5,d:4.2,rot:Math.PI,name:'farmhouse3d'}),
+      addModel(outdoor,ASSET.workbench,{x:f.x+6.2,z:f.z+6.5,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
+      addModel(outdoor,ASSET.chest,{x:f.x+4.1,z:f.z+6.9,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
+    ]);
+    addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
+    addColliderFor('outdoor',f.x+6.2,f.z+6.5,1.6,1.0);
+    addColliderFor('outdoor',f.x+4.1,f.z+6.9,1.0,.8);
+    interact('outdoor',f.x+6.2,f.z+5.65,1.45,'제작대 사용하기',workbenchPanel);
+    interact('outdoor',f.x+4.1,f.z+6.1,1.35,'보관 상자 보기',inventoryPanel);
+    const plotPos=[
+      [f.x-6.0,f.z+2.9],[f.x-3.35,f.z+2.9],[f.x-.7,f.z+2.9],
+      [f.x-6.0,f.z+5.65],[f.x-3.35,f.z+5.65],[f.x-.7,f.z+5.65]
+    ];
+    plotPos.forEach(([x,z],i)=>{
+      box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
+      for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
+      const plant=makePlant();plant.position.set(x,.24,z);outdoor.add(plant);
+      const id='work-crop-'+(i+1);cropVisual.push({id,object:plant});
+      interact('outdoor',x,z,1.35,'밭 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
+    });
+    updateCropVisuals();
+    for(const [dx,dz,rot] of [[-7.3,1.3,0],[-4.8,1.3,0],[-2.3,1.3,0],[.2,1.3,0],[.9,3.6,Math.PI/2],[.9,6.0,Math.PI/2],[-7.9,3.7,Math.PI/2],[-7.9,6.1,Math.PI/2]]){
+      await addModel(outdoor,ASSET.fence,{x:f.x+dx,z:f.z+dz,w:2.25,h:.9,d:.30,rot});
+    }
+    await addZoneSign('farm',6.7,-.7,'농장 · 자유 재배 · 제작',Math.PI/2);
   }
 
-  // Waterfront square: one river entirely contained in its cell, with a centered bridge.
-  const river=new THREE.Mesh(new THREE.PlaneGeometry(19.3,5.5),new THREE.MeshStandardMaterial({color:0x579fc1,roughness:.25,metalness:.03,transparent:true,opacity:.94}));
-  river.rotation.x=-Math.PI/2;river.position.set(-10,.06,-20);river.receiveShadow=true;outdoor.add(river);
-  collider('outdoor',-16.0,-20,7.0,5.0);
-  collider('outdoor',-4.0,-20,7.0,5.0);
-  await addModel(outdoor,ASSET.bridge,{x:-10,z:-20,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
-  await addModel(outdoor,ASSET.signpost,{x:-7.6,z:-13.2,w:.75,h:1.6,d:.75,rot:0,name:'river-sign'});
-  interact('outdoor',-7.6,-13.2,1.2,'강가 안내 읽기',()=>toast('북쪽 강가 · 다리와 비버 서식지'));
-
-  // Beach square: a clean sand cell with a shoreline and a second fishing spot.
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(19.2,5.0),new THREE.MeshStandardMaterial({color:0x62a8c9,roughness:.2,metalness:.02,transparent:true,opacity:.95}));
-  sea.rotation.x=-Math.PI/2;sea.position.set(-30,.055,-27.1);sea.receiveShadow=true;outdoor.add(sea);
-  box(outdoor,-30,-23.9,19.0,1.0,.04,0xe7d7a4,.005);
-  interact('outdoor',-30,-24.2,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
-  await addModel(outdoor,ASSET.logStack,{x:-35.5,z:-16.0,w:2.2,h:1.0,d:1.15,rot:.25});
-
-  // Deep forest square: dense but kept inside its 20x20 cell.
-  const treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
-  const forestTrees=[[-36,-7],[-32,-8],[-27,-7],[-36,-3],[-32,-3],[-26,-2],[-36,4],[-32,6],[-26,5],[-35,8],[-28,8]];
-  for(let i=0;i<forestTrees.length;i++){
-    const [x,z]=forestTrees[i];if(isTravelCorridor(x,z))continue;
-    await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
-    addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
-  }
-  for(const [x,z] of [[-35,2.8],[-31,4.8],[-27,3.2],[-34,-5.2]]){
-    await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
-    interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
-  }
-  await addModel(outdoor,ASSET.logStack,{x:-35,z:7.2,w:2.4,h:1.1,d:1.2,rot:.2});
-
-  // Quarry square: all mining nodes stay inside x=20..40 / z=-10..10.
-  const rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
-  const quarryRocks=[[24,-6],[28,-7],[33,-6],[36,-3],[24,-1],[29,2],[35,2],[24,6],[30,7],[36,6]];
-  for(let i=0;i<quarryRocks.length;i++){
-    const [x,z]=quarryRocks[i];if(isTravelCorridor(x,z))continue;
-    await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});
-    addNatureCollider(x,z,.9,.75);
-    if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
-    else interact('outdoor',x,z,1.25,'광산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
+  // WATERFRONT square (-22..-2 / -34..-14)
+  {
+    const w=point('waterfront');
+    const river=new THREE.Mesh(new THREE.PlaneGeometry(19.4,5.7),new THREE.MeshStandardMaterial({color:0x579fc1,roughness:.25,metalness:.03,transparent:true,opacity:.94}));
+    river.rotation.x=-Math.PI/2;river.position.set(w.x,.06,w.z);river.receiveShadow=true;outdoor.add(river);
+    collider('outdoor',w.x-6.0,w.z,7.0,5.1);collider('outdoor',w.x+6.0,w.z,7.0,5.1);
+    await addModel(outdoor,ASSET.bridge,{x:w.x,z:w.z,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
+    await addZoneSign('waterfront',6.5,6.8,'북쪽 강가 · 다리 · 비버',0);
   }
 
-  // Camp square lives left of the city instead of floating in the city approach.
-  await addModel(outdoor,ASSET.campfire,{x:-31.5,z:20,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
-  const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(-31.5,1.4,20);fireLight.userData.campfire=true;outdoor.add(fireLight);
-  interact('outdoor',-31.5,20,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
-  interact('outdoor',-28.8,20,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
-  for(const [x,z] of [[-36,15],[-34,25],[-26,16],[-25,25]])await addModel(outdoor,ASSET.pine,{x,z,w:2.4,h:4.0,d:2.4,rot:.2});
-
-  // Small home/farm decorations stay inside their owning squares.
-  for(const [x,z] of [[-16,-5],[-15.2,-4.4],[-6.0,-5.0],[-13.8,7.4],[-6.5,6.7]]){
-    await addModel(outdoor,ASSET.flower,{x,z,w:.55,h:.5,d:.55,rot:0});
+  // BEACH square (-46..-26 / -34..-14)
+  {
+    const b=point('beach');
+    const sea=new THREE.Mesh(new THREE.PlaneGeometry(19.5,5.2),new THREE.MeshStandardMaterial({color:0x62a8c9,roughness:.2,metalness:.02,transparent:true,opacity:.95}));
+    sea.rotation.x=-Math.PI/2;sea.position.set(b.x,.055,b.z-7.0);sea.receiveShadow=true;outdoor.add(sea);
+    box(outdoor,b.x,b.z-3.9,19.4,1.1,.04,0xe7d7a4,.005);
+    interact('outdoor',b.x,b.z-4.4,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+    await addModel(outdoor,ASSET.logStack,{x:b.x-5.8,z:b.z+5.8,w:2.2,h:1.0,d:1.15,rot:.25});
+    await addZoneSign('beach',6.4,6.6,'해변가 · 낚시 · 해안',0);
   }
 
-  // Square-edge wayfinding. Signs sit beside, never on, the 3m connectors.
-  const signs=[
-    [-21.5,2.2,-Math.PI/2,'← 깊은 숲'],
-    [1.8,2.2,Math.PI/2,'→ 농장'],
-    [21.8,2.2,Math.PI/2,'→ 광산'],
-    [-7.7,-11.8,Math.PI,'↑ 북쪽 강가'],
-    [12.3,-11.8,Math.PI,'↑ 목장'],
-    [-27.7,-11.8,Math.PI,'↑ 해변'],
-    [-27.7,11.8,0,'↓ 야영지'],
-    [-7.7,11.8,0,'↓ 씨앗마을 상점가'],
-    [12.3,11.8,0,'↓ 씨앗마을 광장']
-  ];
-  for(const [x,z,rot,label] of signs){
-    await addModel(outdoor,ASSET.signpost,{x,z,w:.75,h:1.6,d:.75,rot});
-    interact('outdoor',x,z,1.1,'표지판 읽기',()=>toast(label));
+  // FOREST square (-46..-26 / -10..10)
+  {
+    const c=point('forest'),treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
+    const trees=[[-7,-7],[-3,-8],[4,-7],[-7,-3],[-3,-3],[5,-2],[-7,4],[-3,6],[5,5],[-6,8],[4,8]];
+    for(let i=0;i<trees.length;i++){
+      const [dx,dz]=trees[i],x=c.x+dx,z=c.z+dz;if(isPathClearance(x,z,2.5,2.5))continue;
+      await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
+      addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
+    }
+    for(const [dx,dz] of [[-6,2.8],[-2,4.8],[5,3.2],[-5,-5.2]]){
+      const x=c.x+dx,z=c.z+dz;await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
+      interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
+    }
+    await addModel(outdoor,ASSET.logStack,{x:c.x-5,z:c.z+7.2,w:2.4,h:1.1,d:1.2,rot:.2});
+    await addZoneSign('forest',7.0,6.6,'깊은 숲 · 목재 · 버섯',Math.PI/2);
+  }
+
+  // QUARRY square (26..46 / -10..10)
+  {
+    const q=point('quarry'),rocks=[[-7,-6],[-3,-7],[2,-6],[6,-3],[-7,-1],[-2,2],[5,2],[-7,6],[0,7],[6,6]],rockAssets=[ASSET.rockA,ASSET.rockB,ASSET.rockC];
+    for(let i=0;i<rocks.length;i++){
+      const [dx,dz]=rocks[i],x=q.x+dx,z=q.z+dz;if(isPathClearance(x,z,1.7,1.6))continue;
+      await addModel(outdoor,rockAssets[i%3],{x,z,w:1.7,h:1.25,d:1.6,rot:i*.51});addNatureCollider(x,z,.9,.75);
+      if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
+      else interact('outdoor',x,z,1.25,'광산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
+    }
+    await addZoneSign('quarry',-7.0,6.6,'광산 · 돌 · 철광석',-Math.PI/2);
+  }
+
+  // CAMP square (-46..-26 / 14..34)
+  {
+    const c=point('camp');
+    await addModel(outdoor,ASSET.campfire,{x:c.x-1.5,z:c.z,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
+    const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(c.x-1.5,1.4,c.z);fireLight.userData.campfire=true;outdoor.add(fireLight);
+    interact('outdoor',c.x-1.5,c.z,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
+    interact('outdoor',c.x+1.3,c.z,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+    for(const [dx,dz] of [[-7,-7],[-5,6],[6,-7],[7,6]])await addModel(outdoor,ASSET.pine,{x:c.x+dx,z:c.z+dz,w:2.4,h:4.0,d:2.4,rot:.2});
+    await addZoneSign('camp',7.0,-6.5,'야영지 · 모닥불 · 휴식',Math.PI/2);
+  }
+
+  // Decorative home flowers stay well inside their parcel.
+  {
+    const h=point('home');
+    for(const [dx,dz] of [[-7,-5],[-6.3,-4.4],[5.8,-5.0],[-1.8,7.4],[5.3,6.7]])await addModel(outdoor,ASSET.flower,{x:h.x+dx,z:h.z+dz,w:.55,h:.5,d:.55,rot:0});
   }
 
   cityRuntime=await buildKidscadeCity({
