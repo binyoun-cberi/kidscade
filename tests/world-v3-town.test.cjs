@@ -338,9 +338,9 @@ test('map camera no longer exposes the blue void at town and river edges',()=>{
 });
 
 test('city labels are smaller and only shown near the player',()=>{
-  assert.match(city,/width:1\.45,height:\.36/);
+  assert.match(city,/width:1\.2,height:\.30/);
   assert.match(city,/tag\.visible=false/);
   assert.match(city,/buildingLabels/);
-  assert.match(city,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<5\.2/);
-  assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<10\.5/);
+  assert.match(city,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<3\.4/);
+  assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<7\.5/);
 });
