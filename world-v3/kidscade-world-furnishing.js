@@ -22,7 +22,19 @@ export const FURNITURE_CATALOG={
   rugRound:{name:'둥근 러그',file:'rug-round.glb',w:2.2,h:.10,d:2.2,cw:0,cd:0},
   floorLamp:{name:'플로어 램프',file:'lamp-round-floor.glb',w:.7,h:2.0,d:.7,cw:.46,cd:.46},
   teddy:{name:'곰 인형',file:'bear.glb',w:.8,h:.95,d:.75,cw:.45,cd:.42},
-  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,use:'TV 보기'}
+  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,use:'TV 보기'},
+  minjiPlanter:{name:'민지의 시장 화분',file:'plant-small3.glb',w:.8,h:1.0,d:.8,cw:.5,cd:.5,source:'민지 친밀도 희귀 보상'},
+  junhoStool:{name:'준호의 작업 스툴',file:'stool-bar-square.glb',w:.85,h:1.25,d:.85,cw:.6,cd:.6,source:'준호 친밀도 희귀 보상'},
+  haneulTable:{name:'하늘의 카페 테이블',file:'table-round.glb',w:1.6,h:1.15,d:1.6,cw:1.3,cd:1.3,source:'하늘 친밀도 희귀 보상'},
+  doyunBench:{name:'도윤의 마을 벤치',file:'bench-cushion.glb',w:2.0,h:1.0,d:.85,cw:1.7,cd:.7,source:'도윤 친밀도 희귀 보상'},
+  yunaPlant:{name:'유나의 작은 화초',file:'plant-small2.glb',w:.75,h:.95,d:.75,cw:.46,cd:.46,source:'유나 친밀도 희귀 보상'},
+  taehoRetroTv:{name:'태호의 레트로 게임 TV',file:'television-vintage.glb',w:1.35,h:1.1,d:.65,cw:1.1,cd:.5,source:'태호 친밀도 희귀 보상',use:'레트로 게임 하기'},
+  soraBookcase:{name:'소라의 고전 책장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,source:'소라 친밀도 희귀 보상',use:'희귀 책 읽기'},
+  hyunwooDrawers:{name:'현우의 배달 서랍장',file:'side-table-drawers.glb',w:1.05,h:1.0,d:.95,cw:.8,cd:.72,source:'현우 친밀도 희귀 보상'},
+  nariLamp:{name:'나리의 진료실 램프',file:'lamp-square-floor.glb',w:.7,h:2.0,d:.7,cw:.46,cd:.46,source:'나리 친밀도 희귀 보상'},
+  woojinRelaxChair:{name:'우진의 숲 휴식의자',file:'lounge-chair-relax.glb',w:1.35,h:1.25,d:1.5,cw:1.05,cd:1.2,source:'우진 친밀도 희귀 보상'},
+  seoyeonPetChair:{name:'서연의 펫 의자',file:'chair-rounded.glb',w:1.0,h:1.25,d:1.0,cw:.75,cd:.75,source:'서연 친밀도 희귀 보상'},
+  minseokTravelBench:{name:'민석의 여행 벤치',file:'bench-cushion-low.glb',w:2.0,h:.75,d:.85,cw:1.7,cd:.7,source:'민석 친밀도 희귀 보상'}
 };
 
 function recipeText(def,itemName){
