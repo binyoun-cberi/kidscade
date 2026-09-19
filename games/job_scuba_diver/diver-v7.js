@@ -6,6 +6,7 @@ const $=id=>document.getElementById(id);
 const U='../../assets/game/2d/underwater/underwater-diving/';
 const F='../../assets/game/2d/fish/';
 const P='../../assets/game/2d/pirate/';
+const SHARK='../../assets/game/2d/underwater/deep-diver/creatures/shark/';
 const SAVE='deep_diver_2d_v7',OLD='deep_diver_2d_v5',LEGACY='deep_diver_openwater_v4';
 const WORLD={w:4200,h:1900,surface:60,scaleDepth:4};
 const ZONES=[
@@ -20,7 +21,7 @@ const CONTRACTS=[
  {id:'kelp',title:'02 · 해초 숲 표본 조사',desc:'희귀 회색어를 촬영하고 일반 표본 2개를 회수하세요.',reward:1400,unlock:1,target:'kelp'},
  {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 촬영하고 고대 표식판을 회수하세요.',reward:2100,unlock:2,target:'ruins'},
  {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰를 피하고 침몰선의 항해기록 장치를 회수하세요.',reward:3000,unlock:3,target:'wreck'},
- {id:'abyss',title:'05 · 심해 생물 조사',desc:'350m 아래 대형 심해 포식어를 A등급 이상 촬영하고 귀환하세요.',reward:4200,unlock:4,target:'abyss'}
+ {id:'abyss',title:'05 · 심해 생물 조사',desc:'350m 아래 대형 심해 상어를 A등급 이상 촬영하고 귀환하세요.',reward:4200,unlock:4,target:'abyss'}
 ];
 const UPGRADES={
  oxygen:{name:'산소통',desc:'최대 산소 +18초',base:900,max:5},
@@ -33,7 +34,7 @@ const UPGRADES={
 };
 const ASSETS={
  playerIdle:U+'player/player-idle.png',playerSwim:U+'player/player-swiming.png',playerFast:U+'player/player-fast.png',playerRush:U+'player/player-rush.png',playerHurt:U+'player/player-hurt.png',
- fishAnim:U+'enemies/fish.png',fishDart:U+'enemies/fish-dart.png',fishBig:U+'enemies/fish-big.png',
+ fishAnim:U+'enemies/fish.png',fishDart:U+'enemies/fish-dart.png',shark:SHARK+'shark-swim-atlas.png',
  mineS:U+'enemies/mine-small.png',mine:U+'enemies/mine.png',mineB:U+'enemies/mine-big.png',
  bg:U+'environment/background.png',mid:U+'environment/midground.png',props:U+'environment/props.png',tiles:U+'environment/tiles.png',
  bubbles:U+'fx/bubbles.png',explosion:U+'fx/explosion.png',explosionB:U+'fx/explosion-big.png',
@@ -58,7 +59,7 @@ const SPECIES={
  long:{name:'회색 긴꼬리어',img:'greyLong',depth:[100,210],weight:1.8,value:330,protected:true,rare:true},
  dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[80,260],weight:1.6,value:360,protected:false,rare:true},
  angler:{name:'등불 심해어',img:'fishAnim',animated:true,fw:32,fh:32,frames:4,depth:[270,430],weight:2.2,value:520,protected:true,rare:true},
- giant:{name:'대형 심해 포식어',img:'fishBig',animated:true,fw:54,fh:49,frames:4,depth:[350,470],weight:0,value:0,protected:true,rare:true}
+ giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[350,470],weight:0,value:0,protected:true,rare:true}
 };
 
 let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null;
@@ -359,7 +360,7 @@ function drawPickups(){
 }
 function drawFish(f){
  if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-100||p.x>view.w+100||p.y<-100||p.y>view.h+100)return;const flip=f.vx<0;
- if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,sp.key==='giant'?.96:.9);
+ if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,f.key==='giant'?.96:.9);
  else drawImg(imgs[sp.img],p.x,p.y,52*f.scale,33*f.scale,flip,0,.88);
  if(world.sonar>0&&(sp.rare||f.marked>0)){ctx.strokeStyle=sp===SPECIES.giant?'#ff987d':'#73f2ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,34+Math.sin(world.time*5)*4,0,Math.PI*2);ctx.stroke()}
 }
@@ -410,7 +411,7 @@ function missionText(){
  if(id==='kelp')return'희귀어 '+(m.photos.long?'촬영':'미촬영')+' · 표본 '+m.samples+'/2';
  if(id==='ruins')return'유적 '+(m.statue?1:0)+(m.arch?1:0)+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
- return'350m '+(m.deep?'도달':'미도달')+' · 대형 심해어 '+(m.giantGrade?m.giantGrade:'미촬영');
+ return'350m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
 function missionComplete(){
  const m=world.mission,id=world.contract.id;
@@ -486,7 +487,7 @@ function update(dt){
  p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
  p.oxygen-=dt*(dashing?1.55:1);const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
  const zone=zoneForY(p.y),zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;showZone(zone);showHint(zone.tag,1600)}
- for(const f of world.fish){if(!f.alive)continue;const sp=SPECIES[f.key];f.marked=Math.max(0,f.marked-dt);let fear=Math.hypot(f.x-p.x,f.y-p.y)<105&&!sp.protected?1:0;f.x+=f.vx*dt*(fear?1.9:1);f.y+=Math.sin(world.time*.9+f.phase)*5*dt;if(f.x<60||f.x>WORLD.w-60)f.vx*=-1;if(world.terrain.some(s=>pointInSolid(f.x,f.y,s,8))){f.x-=f.vx*dt*2.2;f.vx*=-1;f.y=lerp(f.y,f.baseY,.16)}if(Math.abs(f.y-f.baseY)>65)f.y=lerp(f.y,f.baseY,.05);if(f.key==='giant'&&Math.hypot(f.x-p.x,f.y-p.y)<115&&p.inv<=0){p.hp-=14*st.armor;p.inv=1.2;showHint('대형 심해 생물과 거리를 확보하세요!',900)}}
+ for(const f of world.fish){if(!f.alive)continue;const sp=SPECIES[f.key];f.marked=Math.max(0,f.marked-dt);let fear=Math.hypot(f.x-p.x,f.y-p.y)<105&&!sp.protected?1:0;f.x+=f.vx*dt*(fear?1.9:1);f.y+=Math.sin(world.time*.9+f.phase)*5*dt;if(f.x<60||f.x>WORLD.w-60)f.vx*=-1;if(world.terrain.some(s=>pointInSolid(f.x,f.y,s,8))){f.x-=f.vx*dt*2.2;f.vx*=-1;f.y=lerp(f.y,f.baseY,.16)}if(Math.abs(f.y-f.baseY)>65)f.y=lerp(f.y,f.baseY,.05);if(f.key==='giant'&&Math.hypot(f.x-p.x,f.y-p.y)<115&&p.inv<=0){p.hp-=14*st.armor;p.inv=1.2;showHint('심해 상어와 거리를 확보하세요!',900)}}
  for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
  for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<92&&m.fuse<=0){m.fuse=1.25;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
