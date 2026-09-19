@@ -531,11 +531,11 @@
     {
       "id": "hanja_survivors_8",
       "title": "한자 수호전: 8급",
-      "href": "games/hanja_survivors_8/한자 수호전： 8급.html",
+      "href": "games/hanja_survivors_8/한자 수호전： 8급.html?v=3",
       "category": "lang",
       "age": "low",
       "icon": "🛡️",
-      "description": "올바른 획순으로 8급 한자를 적어 다가오는 원령들을 물리치는 디펜스 게임!",
+      "description": "처음부터 모든 한자 마법을 골라 쓸 수 있고, 경험치 구슬로 각 한자의 피해·범위·효과를 개별 성장시키는 획순 액션 서바이벌!",
       "scoreKey": "hanja_survivors_best",
       "cover": "assets/gate-image/한자수호전.png"
     },
