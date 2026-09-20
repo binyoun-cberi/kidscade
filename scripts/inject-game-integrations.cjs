@@ -6,7 +6,7 @@ const dist = path.join(root, 'dist');
 const TOUCH_GUARD_SRC = '/touch-interaction-guard.js?v=20260919-1';
 const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
 const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-2';
-const AUDIO_EXTRA_HOOKS_SRC = '/game-audio-hooks-extra.js?v=20260917-1';
+const AUDIO_EXTRA_HOOKS_SRC = '/game-audio-hooks-extra.js?v=20260920-2';
 const AUDIO_HOOK_TITLES = new Set([
   '인내의 탑',
   '멍멍 곱셈 러너',
