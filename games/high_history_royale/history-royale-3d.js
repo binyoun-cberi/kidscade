@@ -28,6 +28,7 @@ const fxMeshes=new Map();
 let fxSeq=1;
 let landmarkKey="";
 let landmarkGroup=null;
+let currentGameRef=null;
 
 let state=null;
 let lastTime=performance.now();
@@ -543,7 +544,7 @@ function createLifeBar(width=.76,y=1.66){
 function updateLifeBar(bar,ratio){
   if(!bar)return;ratio=THREE.MathUtils.clamp(ratio,0,1);
   const fill=bar.userData.fill;if(fill){fill.scale.x=Math.max(.001,ratio);fill.position.x=-(1-ratio)*.35;fill.material.color.setHex(ratio<.25?0xdd6a4c:0xe3bd59);}
-  bar.quaternion.copy(camera.quaternion);
+  faceCameraLocal(bar);
 }
 function createHealthBar(width=.86,y=1.55){
   const group=new THREE.Group();
@@ -552,10 +553,15 @@ function createHealthBar(width=.86,y=1.55){
   const fill=mesh(new THREE.PlaneGeometry(width*.94,.046),new THREE.MeshBasicMaterial({color:0x70c875,depthTest:false}),0,0,.003);
   group.add(bg,fill);group.userData.fill=fill;group.renderOrder=20;return group;
 }
+function faceCameraLocal(object){
+  if(!object?.parent){object.quaternion.copy(camera.quaternion);return;}
+  const parentQ=new THREE.Quaternion();object.parent.getWorldQuaternion(parentQ);parentQ.invert();
+  object.quaternion.copy(parentQ.multiply(camera.quaternion));
+}
 function updateHealthBar(bar,ratio,team){
   if(!bar)return;ratio=THREE.MathUtils.clamp(ratio,0,1);
   const fill=bar.userData.fill;if(fill){fill.scale.x=Math.max(.001,ratio);fill.position.x=-(1-ratio)*.40;fill.material.color.setHex(ratio<.28?0xd55245:(team==="player"?0x65b8e5:0xe27668));}
-  bar.quaternion.copy(camera.quaternion);
+  faceCameraLocal(bar);
 }
 function setHitFlash(root,on){
   root.traverse(function(o){if(!o.isMesh||!o.material)return;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(function(m){if(m&&m.emissive)m.emissive.setHex(on?0x3b0e08:0x000000);});});
@@ -833,7 +839,10 @@ function updateAtmosphere(g,dt){
   camera.lookAt(0,.4,-.2);
 }
 function resize(){
-  const w=Math.max(1,box.clientWidth),h=Math.max(1,box.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  const w=Math.max(1,box.clientWidth),h=Math.max(1,box.clientHeight);
+  renderer.setSize(w,h,false);camera.aspect=w/h;
+  camera.fov=camera.aspect<1.15?46:(camera.aspect<1.42?40:34);
+  camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(box);resize();
 
@@ -848,6 +857,17 @@ async function loadAssets(){
   const failed=results.filter(r=>r.status==="rejected");
   if(failed.length)console.warn("[History Royale 3D] 일부 에셋 로드 실패",failed.map(x=>x.reason));
 }
+function clearBattleObjects(){
+  unitMeshes.forEach(rec=>world.remove(rec.root));unitMeshes.clear();
+  buildingMeshes.forEach(rec=>world.remove(rec.root));buildingMeshes.clear();
+  towerMeshes.forEach(rec=>world.remove(rec.root));towerMeshes.clear();
+  projectileMeshes.forEach(m=>scene.remove(m));projectileMeshes.length=0;
+  fxMeshes.forEach(rec=>{scene.remove(rec.root);disposeFx(rec.root);});fxMeshes.clear();
+  mixers.clear();
+  if(landmarkGroup){world.remove(landmarkGroup);landmarkGroup=null;}
+  landmarkKey="";
+  previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;
+}
 async function init(){
   state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;
   window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 경량 모드":""}`;
@@ -857,6 +877,7 @@ async function init(){
 function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
+  if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
   if(ready&&g&&g.running){updateAtmosphere(g,dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
   else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;}
   renderer.render(scene,camera);
