@@ -14,12 +14,12 @@
     {
       "id": "high_classroom_war_3d",
       "title": "교실전쟁 3D",
-      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=14",
+      "href": "games/high_classroom_war_3d/교실전쟁 3D.html?v=15",
       "category": "math",
       "age": "high",
       "icon": "🎖️",
       "cover": "assets/gate-image/교실전쟁3D.png",
-      "description": "실제 3D 학생들이 Idle·Walk 애니메이션으로 움직이고, 화면 하단 편제에서 정면으로 직선 사격하며 사칙연산 관문과 적군을 돌파하는 3D 교실 디펜스!"
+      "description": "작아진 3D 학생 편제로 전장을 넓게 보며 정면 사격하고, 사칙연산 관문으로 병력을 키워 서로 다른 움직임의 적과 교실 위협을 막는 3D 교실 디펜스!"
     },
     {
       "id": "high_byeokrando_voyage",
