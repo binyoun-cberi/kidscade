@@ -1,0 +1,41 @@
+{
+  "pack": "deep_diver_fauna_pack_v1",
+  "target_root": "assets/game/2d/underwater/deep-diver/",
+  "notes": "Upload/extract at the Kidscade repository root. Existing deep-diver shark assets are not overwritten.",
+  "groups": {
+    "crustaceans": [
+      "crab",
+      "mantis-shrimp"
+    ],
+    "echinoderms": [
+      "purple-sea-urchin",
+      "ochre-sea-star",
+      "crown-of-thorns-starfish"
+    ],
+    "mollusks": [
+      "nautilus"
+    ],
+    "cephalopods": [
+      "squid",
+      "kraken"
+    ],
+    "cnidarians": [
+      "jellyfish"
+    ],
+    "megafauna": [
+      "whale",
+      "vaquita",
+      "shark variant"
+    ],
+    "bosses": [
+      "plasmasp"
+    ],
+    "experimental": [
+      "water-elemental"
+    ]
+  },
+  "excluded": [
+    "makisu-sprites.png (sushi/food sprite sheet; unrelated to Deep Diver fauna)"
+  ],
+  "license_note": "This pack organizes supplied files; it does not by itself establish redistribution rights. Keep/verify original source and license records before public release, especially files without embedded license metadata."
+}
