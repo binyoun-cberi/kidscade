@@ -91,3 +91,11 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
   #mActions{right:max(10px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:62px 62px}
   #interactMobile{height:44px}
 }
+
+
+/* v11 risk & return */
+#reserveText{font-weight:1000}
+#reserveText.reserve-safe{color:#74e6a7}
+#reserveText.reserve-warn{color:#ffd66d}
+#reserveText.reserve-critical{color:#ff7d72;text-shadow:0 0 9px rgba(255,82,72,.45)}
+.depthRating{margin:7px 0 5px;padding:5px 7px;border-radius:8px;background:rgba(81,217,238,.08);border:1px solid rgba(81,217,238,.18);color:#9eeaf4;font-size:10px;font-weight:900}
