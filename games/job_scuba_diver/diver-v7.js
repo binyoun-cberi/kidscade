@@ -7,6 +7,7 @@ const U='../../assets/game/2d/underwater/underwater-diving/';
 const F='../../assets/game/2d/fish/';
 const P='../../assets/game/2d/pirate/';
 const SHARK='../../assets/game/2d/underwater/deep-diver/creatures/shark/';
+const FAUNA='../../assets/game/2d/underwater/deep-diver/creatures/';
 const SAVE='deep_diver_2d_v7',OLD='deep_diver_2d_v5',LEGACY='deep_diver_openwater_v4';
 const WORLD={w:6800,h:4200,surface:60,scaleDepth:5.5};
 const ZONES=[
@@ -64,6 +65,13 @@ const ASSETS={
  seaweedB:F+'seaweed_pink_a.png',seaweedPinkB:F+'seaweed_pink_b.png',seaweedPinkC:F+'seaweed_pink_c.png',seaweedPinkD:F+'seaweed_pink_d.png',
  seaweedOrangeA:F+'seaweed_orange_a.png',seaweedOrangeB:F+'seaweed_orange_b.png',
  grassA:F+'seaweed_grass_a.png',grassB:F+'seaweed_grass_b.png',sand:F+'terrain_sand_top_a.png',dirt:F+'terrain_dirt_top_a.png',
+ crab1:FAUNA+'crustaceans/crab/frames/crab-walk-01.png',crab2:FAUNA+'crustaceans/crab/frames/crab-walk-02.png',
+ mantis:FAUNA+'crustaceans/mantis-shrimp/mantis-shrimp-2x.png',
+ urchin:FAUNA+'echinoderms/purple-sea-urchin.png',ochreStar:FAUNA+'echinoderms/ochre-sea-star.png',crownStar:FAUNA+'echinoderms/crown-of-thorns-starfish.png',
+ nautilus:FAUNA+'mollusks/nautilus/nautilus.png',squid:FAUNA+'cephalopods/squid/squid-sprites.png',kraken:FAUNA+'cephalopods/kraken/kraken-anim.gif',
+ jelly01:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-01.png',jelly02:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-02.png',jelly03:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-03.png',jelly04:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-04.png',jelly05:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-05.png',jelly06:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-06.png',jelly07:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-07.png',jelly08:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-08.png',jelly09:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-09.png',jelly10:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-10.png',jelly11:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-11.png',jelly12:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-12.png',
+ jellyAtk01:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-01.png',jellyAtk02:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-02.png',jellyAtk03:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-03.png',jellyAtk04:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-04.png',jellyAtk05:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-05.png',jellyAtk06:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-06.png',jellyAtk07:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-07.png',jellyAtk08:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-08.png',jellyAtk09:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-09.png',jellyAtk10:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-10.png',jellyAtk11:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-11.png',jellyAtk12:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-12.png',
+ whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:FAUNA+'shark/variants/shark-001-64px.gif',
  wreck:P+'ships/ship-8.png',wood1:P+'ship-parts/wood-1.png',wood2:P+'ship-parts/wood-2.png'
 };
 const imgs={}; let ready=false,loaded=0;
@@ -81,7 +89,19 @@ const SPECIES={
  dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[245,720],weight:1.6,value:360,protected:false,rare:true,behavior:'territorial',speed:92,damage:10},
  hunter:{name:'큰이빨 포식어',img:'fishBig',animated:true,fw:48,fh:32,frames:4,depth:[300,750],weight:2.8,value:610,protected:false,rare:true,behavior:'predator',speed:112,damage:14},
  angler:{name:'등불 심해어',img:'fishAnim',animated:true,fw:32,fh:32,frames:4,depth:[430,755],weight:2.2,value:520,protected:true,rare:true,behavior:'ambush',speed:105,damage:13},
- giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[600,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:24}
+ giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[600,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:24},
+ crab:{name:'바위게',img:'crab1',depth:[8,360],weight:.8,value:240,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:24,draw:[54,54]},
+ mantis:{name:'공작갯가재',img:'mantis',depth:[45,160],weight:0,value:0,protected:true,rare:true,behavior:'territorial',motion:'crawlerBoss',speed:58,damage:19,draw:[112,64]},
+ urchin:{name:'보라성게',img:'urchin',depth:[5,260],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[30,30]},
+ ochreStar:{name:'황토불가사리',img:'ochreStar',depth:[5,220],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[31,31]},
+ crownStar:{name:'가시왕관불가사리',img:'crownStar',depth:[20,180],weight:0,value:0,protected:true,rare:true,behavior:'sessile',motion:'sessile',speed:0,draw:[34,34]},
+ nautilus:{name:'앵무조개',img:'nautilus',depth:[115,390],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:31,draw:[63,41]},
+ squid:{name:'심해 오징어',img:'squid',depth:[210,650],weight:2.2,value:620,protected:false,rare:true,behavior:'skittish',motion:'jet',speed:88,draw:[82,60]},
+ jelly:{name:'푸른 해파리',img:'jelly01',depth:[90,610],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'jelly',speed:22,damage:7,draw:[58,58]},
+ whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150]},
+ vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78]},
+ shark2:{name:'회유성 상어',img:'shark2',depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
+ kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
 const BIOME_POPULATIONS={
  reef:[['blue',10],['orange',9],['pink',7],['green',7]],
@@ -89,6 +109,13 @@ const BIOME_POPULATIONS={
  ruins:[['grey',5],['brown',6],['dart',5],['hunter',3]],
  wreck:[['brown',8],['dart',7],['hunter',7],['angler',5]],
  abyss:[['angler',10],['hunter',8],['dart',5]]
+};
+const FAUNA_POPULATIONS={
+ reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['mantis',1],['vaquita',1]],
+ kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1]],
+ ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5]],
+ wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3]],
+ abyss:[['jelly',6],['squid',5],['shark2',4],['kraken',1]]
 };
 const ZONE_RULES={
  reef:{oxygen:1,current:0,visibility:1,danger:'낮음'},
@@ -103,9 +130,14 @@ const ATTACK_PROFILE={
  dart:{sense:285,windup:.18,lunge:.28,speed:335,cooldown:1.75,damage:1.12,label:'고속 찌르기'},
  angler:{sense:265,windup:.24,lunge:.42,speed:275,cooldown:2.65,damage:1.15,label:'암습 돌진'},
  hunter:{sense:390,windup:.46,lunge:.40,speed:315,cooldown:2.35,damage:1.22,label:'포식 돌진'},
- giant:{sense:590,windup:.72,lunge:.62,speed:405,cooldown:3.55,damage:1.35,label:'심해 상어 돌진'}
+ giant:{sense:590,windup:.72,lunge:.62,speed:405,cooldown:3.55,damage:1.35,label:'심해 상어 돌진'},
+ mantis:{sense:180,windup:.58,lunge:.20,speed:460,cooldown:3.1,damage:1.45,label:'갯가재 초고속 펀치'},
+ shark2:{sense:430,windup:.42,lunge:.38,speed:335,cooldown:2.55,damage:1.18,label:'상어 돌진'},
+ kraken:{sense:690,windup:.95,lunge:.70,speed:250,cooldown:4.2,damage:1.30,label:'크라켄 촉수 돌진'}
 };
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
+const JELLY_SWIM_KEYS=Array.from({length:12},(_,i)=>'jelly'+String(i+1).padStart(2,'0'));
+const JELLY_ATTACK_KEYS=Array.from({length:12},(_,i)=>'jellyAtk'+String(i+1).padStart(2,'0'));
 const CONTRACT_DEPTH_RATING=[150,285,430,575,760];
 const GRADE_SCORE={C:1,B:2,A:3,S:4};
 const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
@@ -133,7 +165,7 @@ function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zo
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
-function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1;return{kind:'fish',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||44)*(.72+rr()*.28),vy:(rr()-.5)*12,phase:rr()*Math.PI*2,scale:d===SPECIES.giant?2.65:d.behavior==='predator'?1.24:.8+rr()*.3,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0}}
+function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1,baseScale=d.motion==='boss'?2.15:d===SPECIES.giant?2.65:d.motion==='megafauna'?1.15:d.behavior==='predator'?1.24:.8+rr()*.3;return{kind:'creature',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||12)*(.72+rr()*.28),vy:(rr()-.5)*12,phase:rr()*Math.PI*2,scale:baseScale,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0,hooked:false,contactCd:0}}
 
 function rectSolid(x,y,w,h,zone='reef',edge='sand'){return{shape:'rect',x,y,w,h,zone,edge}}
 function circleSolid(x,y,r,zone='reef',edge='dirt'){return{shape:'circle',x,y,r,zone,edge}}
@@ -225,7 +257,7 @@ function buildWorld(contract){
  const st=stats(),r=seedRand(contract.unlock*9127+57);
  world={
    contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
-   fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
+   fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,income:0,photoIncome:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
  };
@@ -245,6 +277,25 @@ function buildWorld(contract){
      }
    }
  }
+ for(const z of ZONES){
+   const population=FAUNA_POPULATIONS[z.id]||[];
+   for(const [key,count] of population){
+     for(let i=0;i<count;i++){
+       const sp=SPECIES[key];let x=130+r()*(WORLD.w-260),y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110),tries=0;
+       if(sp.motion==='crawler'||sp.motion==='crawlerBoss'||sp.motion==='sessile'){
+         const floors=world.terrain.filter(t=>t.zone===z.id&&t.shape==='rect');
+         const floor=floors[Math.floor(r()*Math.max(1,floors.length))];
+         if(floor){x=floor.x+45+r()*Math.max(20,floor.w-90);y=floor.y-22}
+       }else{
+         do{x=130+r()*(WORLD.w-260);y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110);tries++}while(tries<20&&world.terrain.some(t=>pointInSolid(x,y,t,42)));
+       }
+       world.fish.push(makeFish(key,x,y,18000+fishSeed++*43+contract.unlock*701));
+     }
+   }
+ }
+ // Curated encounters: a reef-maze mantis shrimp and an abyssal kraken always exist.
+ world.fish.push(makeFish('mantis',WORLD.w*.58,485,19401));
+ world.fish.push(makeFish('kraken',WORLD.w*.53,4015,19402));
  // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
  world.fish.push(makeFish('blue',WORLD.w*.34,220,8101));
  world.fish.push(makeFish('orange',WORLD.w*.39,250,8102));
@@ -266,13 +317,15 @@ function buildWorld(contract){
  for(let i=0;i<52;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('이제 한 바이옴 안에도 여러 세부 구역이 있습니다. 깊게 내려갈수록 귀환 시간과 위험이 크게 늘어납니다.',3800);
+ resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('게·성게·불가사리·해파리·앵무조개·오징어·대형 생물까지 생태계가 확장되었습니다. 소나에는 희귀종과 보스급 생물도 잡힙니다.',4200);
 }
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
 function sheetFrame(im,frames,t){if(!im||!im.complete)return null;const fh=im.naturalHeight,fw=Math.floor(im.naturalWidth/frames),frame=Math.floor(t*8)%frames;return{sx:frame*fw,sy:0,sw:fw,sh:fh}}
 function drawImg(im,x,y,w,h,flip=false,rot=0,alpha=1,filter='none'){if(!im||!im.complete||!im.naturalWidth)return;ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.filter=filter;ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore()}
 function drawSheet(im,x,y,frames,w,h,flip=false,alpha=1){if(!im||!im.complete)return;const f=sheetFrame(im,frames,world.time);if(!f)return;ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,f.sy,f.sw,f.sh,-w/2,-h/2,w,h);ctx.restore()}
+function drawSequence(keys,x,y,w,h,flip=false,alpha=1,fps=8,phase=0){const idx=Math.floor((world.time+phase)*fps)%keys.length,im=imgs[keys[idx]];drawImg(im,x,y,w,h,flip,0,alpha)}
+function creatureDrawSize(sp,f){const d=sp.draw||[52,33];return[d[0]*f.scale,d[1]*f.scale]}
 
 function renderBackground(){
  const z=zoneForY(world.player.y),grad=ctx.createLinearGradient(0,0,0,view.h);grad.addColorStop(0,z.bg0);grad.addColorStop(1,z.bg1);ctx.fillStyle=grad;ctx.fillRect(0,0,view.w,view.h);
@@ -405,10 +458,13 @@ function drawPickups(){
  for(const q of world.pickups){if(q.taken)continue;const p=screenPos(q.x,q.y);if(p.x<-50||p.x>view.w+50||p.y<-50||p.y>view.h+50)continue;ctx.save();ctx.shadowColor=q.id==='relic'?'#f1d86b':'#6beafa';ctx.shadowBlur=12;ctx.fillStyle=q.id==='relic'?'#cfb85a':'#61dbe7';ctx.fillRect(p.x-13,p.y-9,26,18);ctx.shadowBlur=0;if(world.sonar>0){ctx.strokeStyle='#75f4ff';ctx.lineWidth=2;ctx.strokeRect(p.x-19,p.y-15,38,30)}ctx.restore()}
 }
 function drawFish(f){
- if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-130||p.x>view.w+130||p.y<-130||p.y>view.h+130)return;const flip=f.vx<0;
- const camo=f.hidden&&world.sonar<=0,alpha=camo?.20:(f.key==='giant'?.98:.92);
- if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,alpha);
- else drawImg(imgs[sp.img],p.x,p.y,52*f.scale,33*f.scale,flip,0,camo?.22:.9);
+ if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-280||p.x>view.w+280||p.y<-220||p.y>view.h+220)return;const flip=f.vx<0;
+ const camo=f.hidden&&world.sonar<=0,alpha=camo?.20:(f.key==='giant'||sp.motion==='boss'?.98:.92),[dw,dh]=creatureDrawSize(sp,f);
+ if(f.key==='crab')drawSequence(['crab1','crab2'],p.x,p.y,dw,dh,flip,alpha,5,f.phase);
+ else if(f.key==='jelly'){const attacking=f.alert>0||f.contactCd>0;drawSequence(attacking?JELLY_ATTACK_KEYS:JELLY_SWIM_KEYS,p.x,p.y,dw,dh,false,alpha,9,f.phase)}
+ else if(f.key==='squid')drawSheet(imgs.squid,p.x,p.y,2,dw,dh,flip,alpha);
+ else if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,alpha);
+ else drawImg(imgs[sp.img],p.x,p.y,dw,dh,flip,0,camo?.22:.9);
  if(camo){ctx.save();ctx.strokeStyle='rgba(113,235,188,.18)';ctx.setLineDash([4,7]);ctx.beginPath();ctx.arc(p.x,p.y,24+f.scale*8,0,Math.PI*2);ctx.stroke();ctx.restore()}
  if(f.attackMode==='windup'){
    const prof=ATTACK_PROFILE[f.key]||ATTACK_PROFILE.brown,t=clamp(f.attackT/Math.max(.01,prof.windup),0,1),r=30+f.scale*12+(1-t)*18;
@@ -417,7 +473,8 @@ function drawFish(f){
  }else if(f.attackMode==='lunge'){
    ctx.save();ctx.strokeStyle=f.key==='giant'?'rgba(255,102,70,.75)':'rgba(255,224,148,.58)';ctx.lineWidth=f.key==='giant'?8:4;ctx.globalAlpha=.72;ctx.beginPath();ctx.moveTo(p.x-f.vx*.16,p.y-f.vy*.16);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
  }else if(f.alert>0&&HOSTILE_BEHAVIORS.has(sp.behavior)){ctx.strokeStyle=sp.behavior==='predator'?'rgba(255,92,72,.62)':'rgba(255,180,92,.48)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,28+f.scale*12+Math.sin(world.time*7)*3,0,Math.PI*2);ctx.stroke()}
- if(world.sonar>0&&(sp.rare||f.marked>0)){ctx.strokeStyle=sp===SPECIES.giant?'#ff987d':'#73f2ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,34+Math.sin(world.time*5)*4,0,Math.PI*2);ctx.stroke()}
+ if(world.sonar>0&&(sp.rare||f.marked>0)){ctx.strokeStyle=(sp.motion==='boss'||sp===SPECIES.giant)?'#ff987d':'#73f2ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,34+Math.sin(world.time*5)*4+(sp.motion==='boss'?24:0),0,Math.PI*2);ctx.stroke()}
+ if(sp.motion==='boss'&&f.alive){ctx.save();ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,235,206,.92)';ctx.fillText('대형 개체 · '+sp.name,p.x,p.y-dh*.55-10);ctx.restore()}
 }
 function drawMine(m){if(m.dead)return;const p=screenPos(m.x,m.y);if(p.x<-70||p.x>view.w+70||p.y<-70||p.y>view.h+70)return;const im=imgs[m.size==='B'?'mineB':m.size==='S'?'mineS':'mine'],s=m.size==='B'?60:m.size==='S'?38:50;drawImg(im,p.x,p.y,s,s,false,0,.9);if(world.sonar>0||m.fuse>0){ctx.strokeStyle=m.fuse>0?'#ff7465':'#6df4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,s*.7+Math.sin(world.time*8)*4,0,Math.PI*2);ctx.stroke()}}
 function sonarGuideTargets(){
@@ -481,7 +538,7 @@ function render(){
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
- const t=findCameraTarget();$('photoLabel').textContent=t?SPECIES[t.key].name+' · 예상 '+photoGrade(t)+'등급':'물고기를 촬영 프레임 안에 넣으세요'
+ const t=findCameraTarget();$('photoLabel').textContent=t?SPECIES[t.key].name+' · 예상 '+photoGrade(t)+'등급':'생물을 촬영 프레임 안에 넣으세요'
 }
 function currentContract(){return world?.contract}
 function missionText(){
@@ -637,7 +694,30 @@ function fishHitPlayer(f,sp,p,st,mult=1){
 }
 function updateFishAI(f,dt,p,st){
  const sp=SPECIES[f.key],dx=p.x-f.x,dy=p.y-f.y,dist=Math.hypot(dx,dy)||1,behavior=sp.behavior||'flee';
- f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);
+ f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);f.contactCd=Math.max(0,(f.contactCd||0)-dt);
+ // Fauna movement classes keep the sea from feeling like one large school of fish.
+ if(sp.motion==='sessile'){f.vx=0;f.vy=0;return}
+ if(sp.motion==='megafauna'){
+   const dir=Math.sign(f.vx)||1;f.vx=lerp(f.vx,dir*(sp.speed||34),clamp(dt*.7,0,1));f.vy=Math.sin(world.time*.28+f.phase)*4;f.x+=f.vx*dt;f.y=clamp(f.y+f.vy*dt,zoneForY(f.baseY).y0+70,zoneForY(f.baseY).y1-70);
+   if(f.x<120||f.x>WORLD.w-120)f.vx*=-1;return
+ }
+ if(sp.motion==='crawler'){
+   const dir=Math.sign(f.vx)||1;if(Math.abs(f.x-f.homeX)>230)f.vx=-dir*(sp.speed||24);else f.vx=lerp(f.vx,dir*(sp.speed||24),clamp(dt*1.1,0,1));f.x+=f.vx*dt;f.y=f.baseY+Math.sin(world.time*3+f.phase)*2;return
+ }
+ if(sp.motion==='drifter'){
+   f.vx=lerp(f.vx,(Math.sign(f.vx)||1)*(sp.speed||28)+Math.sin(world.time*.37+f.phase)*9,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.75+f.phase)*11;f.x+=f.vx*dt;f.y+=f.vy*dt;if(Math.abs(f.x-f.homeX)>420)f.vx*=-1;
+   const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+45,zz.y1-45);return
+ }
+ if(sp.motion==='jelly'){
+   f.vx=lerp(f.vx,Math.sin(world.time*.31+f.phase)*18,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.95+f.phase)*18-5;f.x+=f.vx*dt;f.y+=f.vy*dt;const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+50,zz.y1-50);
+   if(dist<46&&f.contactCd<=0&&p.inv<=0){const dmg=Math.max(2,Math.round((sp.damage||7)*st.armor));p.hp-=dmg;p.inv=.55;f.contactCd=1.5;f.alert=.9;p.vx*=.55;p.vy*=.55;world.lightJam=Math.max(world.lightJam,.32);showHint('해파리 촉수 접촉! -'+dmg+' HP · 추진력 저하',800);beep(150,.07,'sawtooth')}return
+ }
+ if(sp.motion==='jet'&&dist<180&&f.specialCd<=0){const ex=f.x-p.x,ey=f.y-p.y,ed=Math.hypot(ex,ey)||1;f.vx=ex/ed*(sp.speed||88)*2.4;f.vy=ey/ed*(sp.speed||88)*1.9;f.specialCd=1.6;f.panic=1.4;world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false})}
+ if(sp.motion==='crawlerBoss'){
+   f.y=f.baseY+Math.sin(world.time*2+f.phase)*2;
+   if(!world.bossSeen.mantis&&dist<330){world.bossSeen.mantis=true;showHint('대형 공작갯가재 발견 · 펀치 직전 경고를 보고 피하세요!',2100)}
+ }
+ if(sp.motion==='boss'&&!world.bossSeen.kraken&&dist<720){world.bossSeen.kraken=true;world.envPulse=.75;showHint('소나에 거대한 생체 반응! · 심해 크라켄',2300);beep(72,.18,'sawtooth')}
  if(f.attackMode){f.attackT-=dt;if(f.attackMode==='windup'&&f.attackT<=0)launchFishAttack(f,p);else if(f.attackMode==='lunge'&&f.attackT<=0){f.attackMode='recover';f.attackT=f.key==='giant'?.75:.46}else if(f.attackMode==='recover'&&f.attackT<=0){f.attackMode='';f.attackKind=''}}
  const homeDx=f.homeX-f.x,homeDy=f.baseY-f.y;
  let tx=f.vx,ty=Math.sin(world.time*.9+f.phase)*8;
@@ -673,7 +753,7 @@ function updateFishAI(f,dt,p,st){
        else{tx*=.92;ty=homeDy*.08+Math.sin(world.time*.45+f.phase)*3}
      }else if(behavior==='predator'){
        const sense=prof?.sense||(f.key==='giant'?590:390);
-       if(dist<sense){f.alert=1.2;if(!f.attackMode&&f.specialCd<=0&&dist<sense*.78)startFishAttack(f,f.key==='giant'?'giantCharge':'hunterCharge');const chase=(sp.speed||112)*(f.key==='giant'?1.38:1.26);tx=dx/dist*chase;ty=dy/dist*chase}
+       if(dist<sense){f.alert=1.2;if(!f.attackMode&&f.specialCd<=0&&dist<sense*.78)startFishAttack(f,f.key==='giant'?'giantCharge':'hunterCharge');const chase=(sp.speed||112)*(f.key==='giant'||f.key==='kraken'?1.38:1.26);tx=dx/dist*chase;ty=dy/dist*chase}
        else{tx=homeDx*.08+(Math.sign(f.vx)||1)*(sp.speed||90)*.38;ty=homeDy*.06}
      }
    }
@@ -688,7 +768,7 @@ function updateFishAI(f,dt,p,st){
  f.vy=lerp(f.vy,ty,clamp(dt*(f.attackMode==='lunge'?9:2.2),0,1));
  f.x+=f.vx*dt;f.y+=f.vy*dt;
  if(f.x<55||f.x>WORLD.w-55){f.x=clamp(f.x,55,WORLD.w-55);f.vx*=-1}
- const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);
+ const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);if(sp.motion==='crawlerBoss')f.y=lerp(f.y,f.baseY,clamp(dt*5,0,1));
  if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){f.x-=f.vx*dt*2;f.y-=f.vy*dt*2;f.vx*=-.65;f.vy*=-.65;if(f.attackMode==='lunge'){f.attackMode='recover';f.attackT=.34}}
  const hitRange=48+(f.key==='giant'?48:0);
  if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&dist<hitRange&&f.attackCd<=0){
@@ -780,7 +860,7 @@ function openShop(){
  $('shopBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b></div><div class="grid">'+cards+'</div><button class="btn" id="shopBack">계약 게시판</button>';$('shopScreen').classList.remove('hidden');document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const k=b.dataset.up,c=upCost(k);if(meta.money<c){showHint('자금이 부족합니다.',900);return}meta.money-=c;meta.up[k]++;save();beep(760,.07);openShop()});$('shopBack').onclick=openContracts
 }
 function openCodex(){
- $('contractScreen').classList.add('hidden');const order=Object.keys(SPECIES);$('codexBody').innerHTML='<div class="grid">'+order.map(k=>{const sp=SPECIES[k],rec=meta.codex[k];return'<div class="card codexCard '+(rec?'':'unknown')+'"><h3>'+(rec?sp.name:'??? 미기록 생물')+'</h3><p>'+(rec?('발견 수심 '+sp.depth[0]+'~'+sp.depth[1]+'m · 최고 사진 '+(rec.best||'C')+' · 촬영 '+(rec.count||0)+'회'):'현장에서 카메라로 촬영하면 도감이 열립니다.')+'</p></div>'}).join('')+'</div><button class="btn" id="codexBack">계약 게시판</button>';$('codexScreen').classList.remove('hidden');$('codexBack').onclick=openContracts
+ $('contractScreen').classList.add('hidden');const order=Object.keys(SPECIES);$('codexBody').innerHTML='<div class="grid">'+order.map(k=>{const sp=SPECIES[k],rec=meta.codex[k];return'<div class="card codexCard '+(rec?'':'unknown')+'"><h3>'+(rec?sp.name:'??? 미기록 생물')+'</h3><p>'+(rec?('유형 '+(sp.motion||'swimmer')+' · 발견 수심 '+sp.depth[0]+'~'+sp.depth[1]+'m · 최고 사진 '+(rec.best||'C')+' · 촬영 '+(rec.count||0)+'회'):'현장에서 카메라로 촬영하면 도감이 열립니다.')+'</p></div>'}).join('')+'</div><button class="btn" id="codexBack">계약 게시판</button>';$('codexScreen').classList.remove('hidden');$('codexBack').onclick=openContracts
 }
 
 function bind(){
