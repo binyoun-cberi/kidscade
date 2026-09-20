@@ -165,7 +165,7 @@ function zonePlantPool(id,foreground=false){
 function buildForeground(seed){
   const r=seedRand(seed+4411),items=[];
   for(const z of ZONES){
-    const pool=zonePlantPool(z.id,true),count=z.id==='kelp'?30:z.id==='reef'?24:z.id==='ruins'?17:z.id==='wreck'?14:12;
+    const pool=zonePlantPool(z.id,true),count=z.id==='kelp'?56:z.id==='reef'?45:z.id==='ruins'?35:z.id==='wreck'?32:28;
     for(let i=0;i<count;i++){
       items.push({
         x:rnd(-120,WORLD.w+120),y:rnd(z.y0+35,z.y1-20),
@@ -222,7 +222,8 @@ function buildWorld(contract){
  for(const z of ZONES){
    const population=BIOME_POPULATIONS[z.id]||[];
    for(const [key,count] of population){
-     for(let i=0;i<count;i++){
+     const expandedCount=Math.max(count,Math.round(count*1.55));
+     for(let i=0;i<expandedCount;i++){
        let x=0,y=0,tries=0;
        do{
          x=130+r()*(WORLD.w-260);
@@ -241,7 +242,7 @@ function buildWorld(contract){
  world.fish.push(makeFish('giant',WORLD.w*.74,3920,9921));
  world.fish.push(makeFish('giant',WORLD.w*.31,4010,9922));
  for(const z of ZONES){
-   const pool=zonePlantPool(z.id,false),count=z.id==='reef'?62:z.id==='kelp'?78:z.id==='ruins'?36:z.id==='wreck'?28:18;
+   const pool=zonePlantPool(z.id,false),count=z.id==='reef'?110:z.id==='kelp'?145:z.id==='ruins'?72:z.id==='wreck'?62:50;
    for(let i=0;i<count;i++){
      const y=rnd(z.y0+24,z.y1-28),x=rnd(80,WORLD.w-80),type=pool[Math.floor(r()*pool.length)];
      world.decor.push({x,y,type,scale:z.id==='kelp'?rnd(.9,1.7):rnd(.65,1.3),flip:r()>.5,zone:z.id});
@@ -251,7 +252,7 @@ function buildWorld(contract){
  world.pickups.push({id:'relic',name:'고대 표식판',x:WORLD.w*.54,y:2250,value:850,taken:false,weight:2});
  world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5});
  for(let i=0;i<17;i++)world.mines.push({x:WORLD.w*.34+i*165+(i%2?65:-45),y:2670+(i%4)*105,size:i%4===0?'B':i%3===0?'S':'N',dead:false,fuse:0,marked:0});
- for(let i=0;i<30;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
+ for(let i=0;i<52;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('이제 한 바이옴 안에도 여러 세부 구역이 있습니다. 깊게 내려갈수록 귀환 시간과 위험이 크게 늘어납니다.',3800);
