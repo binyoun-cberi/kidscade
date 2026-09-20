@@ -32,15 +32,16 @@ let landmarkGroup=null;
 let state=null;
 let lastTime=performance.now();
 let ready=false;
+const LOW_POWER=innerWidth<760||((navigator.hardwareConcurrency||8)<=4);
 let riverMesh=null;
 let riverPhase=0;
 
 const renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.setClearColor(0x91a972,1);
-renderer.shadowMap.enabled=innerWidth>760;
+renderer.shadowMap.enabled=!LOW_POWER;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<760?1.25:1.6));
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW_POWER?1.15:1.6));
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x91a972);
@@ -206,6 +207,12 @@ previewRing.rotation.x=-Math.PI/2;
 previewRing.position.y=.055;
 previewRing.visible=false;
 scene.add(previewRing);
+
+const formationBand=new THREE.Mesh(
+  new THREE.PlaneGeometry(19.2,1.0),
+  new THREE.MeshBasicMaterial({color:0x7da8d6,transparent:true,opacity:.10,side:THREE.DoubleSide,depthWrite:false})
+);
+formationBand.rotation.x=-Math.PI/2;formationBand.position.y=.022;formationBand.visible=false;scene.add(formationBand);
 
 const previewFill=new THREE.Mesh(new THREE.CircleGeometry(.5,48),new THREE.MeshBasicMaterial({color:0x85e39c,transparent:true,opacity:.11,side:THREE.DoubleSide,depthWrite:false}));
 previewFill.rotation.x=-Math.PI/2;
@@ -373,8 +380,17 @@ function createAnimatedUnit(u,fid){
   mixers.add(mixer);
   addUnitSilhouette(holder,u,fid);const health=createHealthBar(u.hero?1.00:.72,u.cls==="기병"?2.12:(u.hero?1.75:1.48));holder.add(health);return {root:holder,mixer:mixer,clips:tpl.animations,anim:null,character:character,health:health,horse:horseRec};
 }
+function classRingColor(u){
+  if(u.hero)return 0xf3ce68;
+  if(u.cls==="기병")return 0xd99b55;
+  if(u.cls==="궁병")return 0x72a875;
+  if(u.cls==="창병")return 0x6f9eaa;
+  return 0xa79578;
+}
 function addUnitSilhouette(holder,u,fid){
   const fc=factionColor(fid);
+  const baseRing=mesh(new THREE.RingGeometry(u.hero?.28:.22,u.hero?.34:.27,24),new THREE.MeshBasicMaterial({color:classRingColor(u),transparent:true,opacity:u.hero?.75:.34,side:THREE.DoubleSide,depthWrite:false}),0,.015,0);
+  baseRing.rotation.x=-Math.PI/2;holder.add(baseRing);
   const pole=mesh(new THREE.CylinderGeometry(.012,.016,.62,5),mat(0x59402a),-.25,u.cls==="기병"?1.62:1.18,.06);
   holder.add(pole);
   const banner=mesh(new THREE.PlaneGeometry(.32,.19),new THREE.MeshBasicMaterial({color:fc,side:THREE.DoubleSide}),-.08,u.cls==="기병"?1.80:1.36,.06);
@@ -629,13 +645,22 @@ function syncProjectiles(g){
 }
 function syncPreview(g){
   const card=g.selectedIndex>=0?g.pHand[g.selectedIndex]:null,p=g.pointer;
-  if(!card||!p||!p.inside){previewRing.visible=false;previewFill.visible=false;return;}
+  if(!card||!p||!p.inside){previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;return;}
   const q=canvasToWorld(p.x,p.y);previewRing.visible=true;previewFill.visible=true;
   previewRing.position.x=previewFill.position.x=q.x;previewRing.position.z=previewFill.position.z=q.z;
   const rule=g.placementRule(card,"player",p.x,p.y),color=rule.ok?0x84e39c:0xe85b50;
   previewRing.material.color.setHex(color);previewFill.material.color.setHex(color);
   const radius=card.kind==="spell"?(card.id==="cavalry_charge"?4.4:3.7):(card.kind==="building"?.78:.58);
   previewRing.scale.setScalar(radius/.5);previewFill.scale.setScalar(radius/.5);
+
+  const activeHero=card.kind==="hero"&&g.isHeroAlive("player",card.id);
+  if((card.kind==="unit"||card.kind==="hero")&&!activeHero){
+    const f=g.formationFor("player",p.y);
+    const bands={front:{z:1.65,d:1.55,c:0xc98b61},mid:{z:3.25,d:1.62,c:0x7d9fc4},rear:{z:4.92,d:1.58,c:0x77946a}};
+    const b=bands[f]||bands.mid;
+    formationBand.visible=true;formationBand.position.z=b.z;formationBand.scale.z=b.d;formationBand.material.color.setHex(b.c);
+    formationBand.material.opacity=rule.ok?.10:.045;
+  }else formationBand.visible=false;
 }
 function setFxOpacity(root,value){
   root.traverse(function(o){if(!o.material)return;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(function(m){if(m){m.transparent=true;m.opacity=value;}});});
@@ -647,9 +672,9 @@ function makeFxRoot(f){
     const a=mesh(new THREE.BoxGeometry(.7,.055,.07),new THREE.MeshBasicMaterial({color:0xef5b50}),0,.12,0);a.rotation.y=.78;g.add(a);
     const b=a.clone();b.rotation.y=-.78;g.add(b);
   }else if(f.type==="hit"||f.type==="deflect"||f.type==="brace"){
-    for(let i=0;i<7;i++){const spark=mesh(new THREE.BoxGeometry(.025,.025,.26),new THREE.MeshBasicMaterial({color:f.type==="brace"?0xdde8d7:0xffe392}),0,.35,0);spark.rotation.y=i*Math.PI*2/7;spark.position.x=Math.cos(i*.9)*.18;spark.position.z=Math.sin(i*.9)*.18;g.add(spark);}
+    for(let i=0;i<(LOW_POWER?4:7);i++){const spark=mesh(new THREE.BoxGeometry(.025,.025,.26),new THREE.MeshBasicMaterial({color:f.type==="brace"?0xdde8d7:0xffe392}),0,.35,0);spark.rotation.y=i*Math.PI*2/(LOW_POWER?4:7);spark.position.x=Math.cos(i*.9)*.18;spark.position.z=Math.sin(i*.9)*.18;g.add(spark);}
   }else if(f.type==="deathDust"){
-    for(let i=0;i<8;i++){const dust=mesh(new THREE.DodecahedronGeometry(.07+(i%3)*.02,0),new THREE.MeshStandardMaterial({color:0x9f8b6d,transparent:true,opacity:.55}),Math.cos(i*.8)*.22,.07,Math.sin(i*.8)*.22);g.add(dust);}
+    for(let i=0;i<(LOW_POWER?4:8);i++){const dust=mesh(new THREE.DodecahedronGeometry(.07+(i%3)*.02,0),new THREE.MeshStandardMaterial({color:0x9f8b6d,transparent:true,opacity:.55}),Math.cos(i*.8)*.22,.07,Math.sin(i*.8)*.22);g.add(dust);}
   }else if(f.type==="build"){
     const ring=mesh(new THREE.RingGeometry(.42,.49,28),new THREE.MeshBasicMaterial({color:0xe8c986,side:THREE.DoubleSide,transparent:true,opacity:.7}),0,.045,0);ring.rotation.x=-Math.PI/2;g.add(ring);
     for(let i=0;i<5;i++){const beam=mesh(new THREE.BoxGeometry(.025,.75,.025),new THREE.MeshBasicMaterial({color:0xf0dba0,transparent:true,opacity:.5}),Math.cos(i*1.25)*.34,.38,Math.sin(i*1.25)*.34);g.add(beam);}
@@ -712,7 +737,7 @@ async function loadAssets(){
 }
 async function init(){
   state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;
-  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}`;
+  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 경량 모드":""}`;
   box.classList.add("three-ready");
   const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
@@ -720,7 +745,7 @@ function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
   if(ready&&g&&g.running){updateAtmosphere(g,dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
-  else{previewRing.visible=false;previewFill.visible=false;}
+  else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;}
   renderer.render(scene,camera);
 }
 requestAnimationFrame(loop);
