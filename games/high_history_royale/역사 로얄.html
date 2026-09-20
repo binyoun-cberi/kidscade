@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>역사 로얄 · 3D Battlefield Rework v15 · Safe Fallback</title>
+<title>역사 로얄 · 3D Battlefield Rework v16 · Mobile Stable</title>
 <style>
 :root{
   --ink:#241b14; --paper:#f4ead2; --paper2:#e6d3ad; --wood:#6b4428;
@@ -310,7 +310,7 @@ body{
 }
 .stagePanel canvas{image-rendering:auto}
 
-/* ===== Gameplay Rework v10: balance · dual-lane siege · formations · hero active ===== */
+/* ===== Gameplay Rework v16: balance · dual-lane siege · formations · hero active ===== */
 .card{transition:transform .12s ease,filter .12s ease,outline-color .12s ease}
 .card.dragging{transform:translateY(-10px) scale(1.025);filter:brightness(1.08);outline:3px solid #ffe28a}
 #canvasBox.deploying canvas{cursor:grabbing}
@@ -353,7 +353,7 @@ body{
 <div id="app">
   <div class="topbar">
     <div class="brand">
-      <h1>역사 로얄 <span style="opacity:.45">Gameplay Rework v10</span></h1>
+      <h1>역사 로얄 <span style="opacity:.45">Gameplay Rework v16</span></h1>
       <small>삼국 시대 · 2-레인 공성전 · 전열/중열/후열 진형 · 영웅 액티브 · 이중 성루 방호</small>
     </div>
     <div style="display:flex;gap:7px"><button class="btn" id="soundBtn">🔊 효과음</button><button class="btn" id="resetBtn">처음으로</button></div>
@@ -390,7 +390,7 @@ body{
           <button class="btn" id="makeCodeBtn">내 덱 코드 만들기</button>
           <button class="btn" id="loadCodeBtn">덱 코드 불러오기</button>
         </div>
-        <div class="note" style="margin-top:7px">Gameplay Rework v10: 다수 병력 효율을 조정하고, 양쪽 성루가 왕성 방호를 단계적으로 제공하도록 바꿨습니다. 전열·중열·후열에 따라 병종 보너스가 달라지며, 생존 중인 영웅 카드는 3 군량 액티브 전술로 재사용됩니다.</div>
+        <div class="note" style="margin-top:7px">Gameplay Rework v16: 다수 병력 효율을 조정하고, 양쪽 성루가 왕성 방호를 단계적으로 제공하도록 바꿨습니다. 전열·중열·후열에 따라 병종 보너스가 달라지며, 생존 중인 영웅 카드는 3 군량 액티브 전술로 재사용됩니다.</div>
       </div>
       <button class="btn primary" id="startBtn">전투 시작</button>
     </div>
@@ -2862,12 +2862,30 @@ function roundRect(c,x,y,w,h,r,fill){
 }
 
 $("#soundBtn").onclick=()=>SFX.toggle();
+let historyRoyale3DRequested=false;
+function ensureHistoryRoyale3D(){
+  if(window.HistoryRoyale3DReady||historyRoyale3DRequested)return;
+  historyRoyale3DRequested=true;
+  const ast=$("#assetStatus");
+  if(ast)ast.textContent="3D 전장 불러오는 중…";
+  const script=document.createElement("script");
+  script.type="module";
+  script.src="history-royale-3d.js?v=16";
+  script.onload=()=>{ if(ast&&!window.HistoryRoyale3DReady)ast.textContent="3D 에셋 준비 중…"; };
+  script.onerror=()=>{
+    historyRoyale3DRequested=false;
+    window.HistoryRoyale3DReady=false;
+    if(ast)ast.textContent="2D 폴백 · 3D 로드 실패";
+  };
+  document.body.appendChild(script);
+}
 $("#startBtn").onclick=()=>{SFX.unlock();SFX.sample("confirm",.28);startBattle();};
 function startBattle(){
   if(selectedCards.length!==7){alert("영웅 1장과 일반 카드 7장, 총 8장으로 덱을 완성하세요.");return;}
   if(game)game.destroy();
   $("#result").style.display="none";
   game=new Battle(selectedFaction,selectedHero,[...selectedCards]);
+  ensureHistoryRoyale3D();
 }
 $("#resetBtn").onclick=()=>resetToSetup();
 $("#toSetupBtn").onclick=()=>resetToSetup();
@@ -2884,6 +2902,5 @@ renderSetup();
 })();
 </script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="history-royale-3d.js?v=15"></script>
 </body>
 </html>
