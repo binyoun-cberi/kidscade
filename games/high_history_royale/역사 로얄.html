@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>역사 로얄 · Battlefield Visual Rework v9 · Setup Fix</title>
+<title>역사 로얄 · Gameplay Rework v10 · Formation & Siege</title>
 <style>
 :root{
   --ink:#241b14; --paper:#f4ead2; --paper2:#e6d3ad; --wood:#6b4428;
@@ -306,7 +306,7 @@ body{
 }
 .stagePanel canvas{image-rendering:auto}
 
-/* ===== Gameplay Rework v3 ===== */
+/* ===== Gameplay Rework v10: balance · dual-lane siege · formations · hero active ===== */
 .card{transition:transform .12s ease,filter .12s ease,outline-color .12s ease}
 .card.dragging{transform:translateY(-10px) scale(1.025);filter:brightness(1.08);outline:3px solid #ffe28a}
 #canvasBox.deploying canvas{cursor:grabbing}
@@ -349,8 +349,8 @@ body{
 <div id="app">
   <div class="topbar">
     <div class="brand">
-      <h1>역사 로얄 <span style="opacity:.45">Battlefield Visual Rework v9</span></h1>
-      <small>삼국 시대 · 2-레인 공성전 · 드래그 배치 · 진영별 전투 패시브</small>
+      <h1>역사 로얄 <span style="opacity:.45">Gameplay Rework v10</span></h1>
+      <small>삼국 시대 · 2-레인 공성전 · 전열/중열/후열 진형 · 영웅 액티브 · 이중 성루 방호</small>
     </div>
     <div style="display:flex;gap:7px"><button class="btn" id="soundBtn">🔊 효과음</button><button class="btn" id="resetBtn">처음으로</button></div>
   </div>
@@ -386,7 +386,7 @@ body{
           <button class="btn" id="makeCodeBtn">내 덱 코드 만들기</button>
           <button class="btn" id="loadCodeBtn">덱 코드 불러오기</button>
         </div>
-        <div class="note" style="margin-top:7px">Gameplay Rework v3: 두 다리의 병목과 측면 성루를 중심으로 전장을 재설계했습니다. 카드를 선택하거나 끌면 배치 범위·진형·전략 범위가 미리 보이며, 고구려·백제·신라는 서로 다른 전투 패시브를 가집니다.</div>
+        <div class="note" style="margin-top:7px">Gameplay Rework v10: 다수 병력 효율을 조정하고, 양쪽 성루가 왕성 방호를 단계적으로 제공하도록 바꿨습니다. 전열·중열·후열에 따라 병종 보너스가 달라지며, 생존 중인 영웅 카드는 3 군량 액티브 전술로 재사용됩니다.</div>
       </div>
       <button class="btn primary" id="startBtn">전투 시작</button>
     </div>
@@ -643,6 +643,11 @@ let game=null;
 function defaultDeck(fid){
   return FACTIONS[fid].cards.slice(0,7).map(c=>c.id);
 }
+function shuffleCards(cards){
+  const a=[...cards];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
 selectedCards=defaultDeck(selectedFaction);
 
 function findCard(fid,id){return FACTIONS[fid].cards.find(c=>c.id===id);}
@@ -829,8 +834,8 @@ class Battle {
     this.playerDeck=[this.playerHero,...chosen];
     const enemyPool=this.buildEnemyDeck(this.enemyFaction);
     this.enemyDeck=[this.enemyHero,...enemyPool];
-    this.pQueue=[...this.playerDeck];
-    this.eQueue=[...this.enemyDeck];
+    this.pQueue=shuffleCards(this.playerDeck);
+    this.eQueue=shuffleCards(this.enemyDeck);
     this.pHand=this.drawInitial(this.pQueue);
     this.eHand=this.drawInitial(this.eQueue);
     this.selectedIndex=-1;
@@ -843,6 +848,7 @@ class Battle {
     this.time=180;this.last=performance.now();this.accum=0;this.aiClock=1.25;
     this.running=true;this.idSeq=1;this.logLines=[];this.uiClock=0;this.screenShake=0;
     this.aiMemory={lastLane:Math.random()<.5?0:1,lastKind:null,patience:0};
+    this.visionUntil=0;
     this.battlePulse=0;
     this.towers=this.makeTowers();
     this.setupUI();
@@ -926,14 +932,15 @@ class Battle {
     const h=$("#hand");h.innerHTML="";
     this.pHand.forEach((c,i)=>{
       const el=document.createElement("div");
-      el.className="card"+(i===this.selectedIndex?" selected":"")+(this.grain<c.cost?" disabled":"");
-      el.innerHTML=`<div class="cost">${c.cost}</div><div class="icon">${portraitHTML(c,this.playerFaction)}</div><div class="name">${c.name}</div><div class="meta">${kindName(c.kind)} · ${c.role||""}</div>`;
+      const cost=this.cardCost(c,"player"),heroActive=this.isHeroAlive("player",c?.id)&&c.kind==="hero";
+      el.className="card"+(i===this.selectedIndex?" selected":"")+(this.grain<cost?" disabled":"");
+      el.innerHTML=`<div class="cost">${cost}</div><div class="icon">${portraitHTML(c,this.playerFaction)}</div><div class="name">${c.name}</div><div class="meta">${heroActive?"영웅 액티브 · 재사용":`${kindName(c.kind)} · ${c.role||""}`}</div>`;
       el.onpointerdown=e=>{
-        if(this.grain<c.cost){this.tip("군량이 부족합니다");return;}
+        if(this.grain<cost){this.tip("군량이 부족합니다");return;}
         this.selectedIndex=i;this.showHistory(c);this.dragging=true;this.dragIndex=i;this.dragMoved=false;
         $("#canvasBox").classList.add("deploying");this.renderHand();
       };
-      el.onclick=()=>{if(this.grain<c.cost){this.tip("군량이 부족합니다");return;}this.selectedIndex=i;this.showHistory(c);this.renderHand();};
+      el.onclick=()=>{if(this.grain<cost){this.tip("군량이 부족합니다");return;}this.selectedIndex=i;this.showHistory(c);this.renderHand();};
       if(this.dragging&&this.dragIndex===i)el.classList.add("dragging");
       h.append(el);
     });
@@ -942,8 +949,9 @@ class Battle {
   }
   showHistory(c){
     const t=tacticalSummary(c);
+    const activeNote=c.kind==="hero"&&this.isHeroAlive("player",c.id)?`<p><strong>액티브:</strong> 영웅 생존 중에는 군량 3으로 재사용합니다. 영웅 주변 230 범위 안에 전술 지점을 지정하세요.</p>`:"";
     $("#historyBox").innerHTML=`<b>${c.name} <span class="badge">${kindName(c.kind)}</span></b>
-      <p><strong>게임:</strong> ${c.desc||c.ability||""}</p>
+      <p><strong>게임:</strong> ${c.desc||c.ability||""}</p>${activeNote}
       <div class="matchup"><div>${t.tags.map(x=>`<span class="traitChip">${x}</span>`).join("")}</div>
       <div style="margin-top:5px"><span class="good">강점:</span> ${t.good} &nbsp; <span class="bad">주의:</span> ${t.bad}</div>
       <div style="margin-top:4px">${t.detail}</div></div>
@@ -956,10 +964,25 @@ class Battle {
   }
   factionIdFor(team){return team==="player"?this.playerFaction:this.enemyFaction;}
   passiveFor(team){return FACTION_PASSIVES[this.factionIdFor(team)];}
-  isKingProtected(team){return this.towers.filter(t=>t.team===team&&!t.king&&!t.dead).length===2;}
+  isHeroAlive(team,id){return !!this.units.find(u=>u.team===team&&u.hero&&!u.dead&&(!id||u.card.id===id));}
+  cardCost(c,team){return c?.kind==="hero"&&this.isHeroAlive(team,c.id)?3:(c?.cost||0);}
+  sideTowerCount(team){return this.towers.filter(t=>t.team===team&&!t.king&&!t.dead).length;}
+  kingShieldMultiplier(team){const n=this.sideTowerCount(team);return n>=2?.12:(n===1?.45:1);}
+  isKingProtected(team){return this.sideTowerCount(team)===2;}
+  formationFor(team,y){
+    if(team==="player") return y<426?"front":(y<506?"mid":"rear");
+    return y>194?"front":(y>114?"mid":"rear");
+  }
+  formationLabel(f){return f==="front"?"전열":(f==="rear"?"후열":"중열");}
   placementRule(c,team,x,y){
     const player=team==="player";
     if(x<55||x>905||y<35||y>585)return {ok:false,reason:"전장 안쪽에 배치하세요"};
+    if(c.kind==="hero"&&this.isHeroAlive(team,c.id)){
+      const hero=this.units.find(u=>u.team===team&&u.hero&&!u.dead&&u.card.id===c.id);
+      if(!hero)return {ok:false,reason:"영웅을 찾을 수 없습니다"};
+      if(Math.hypot(hero.x-x,hero.y-y)>230)return {ok:false,reason:"영웅 주변 230 범위 안에 지정하세요"};
+      return {ok:true,radius:190,heroActive:true};
+    }
     if(c.kind==="spell"){
       if(SUMMON_SPELLS.has(c.id)){
         const own=player?y>=350:y<=270;
@@ -998,13 +1021,22 @@ class Battle {
     c.fillStyle="rgba(73,126,181,.075)";c.fillRect(0,352,this.w,this.h-352);
     c.fillStyle="rgba(165,65,57,.045)";c.fillRect(0,0,this.w,268);
     c.setLineDash([9,8]);c.strokeStyle="rgba(222,233,211,.30)";c.lineWidth=2;c.beginPath();c.moveTo(0,352);c.lineTo(this.w,352);c.stroke();c.setLineDash([]);
+    if(card.kind==="unit"||(card.kind==="hero"&&!this.isHeroAlive("player",card.id))){
+      const bands=[{y:352,h:74,label:"전열 · 보병/창병 방어 +10%"},{y:426,h:80,label:"중열 · 균형 배치"},{y:506,h:79,label:"후열 · 궁병 사거리 +12% / 기병 돌격 +12%"}];
+      c.font="800 10px sans-serif";c.textAlign="left";
+      bands.forEach((b,idx)=>{c.fillStyle=idx===0?"rgba(76,135,103,.08)":(idx===2?"rgba(88,108,157,.09)":"rgba(214,187,107,.05)");c.fillRect(0,b.y,this.w,b.h);c.fillStyle="rgba(245,237,207,.62)";c.fillText(b.label,12,b.y+14);});
+    }
+    if(card.kind==="hero"&&this.isHeroAlive("player",card.id)){
+      const hero=this.units.find(u=>u.team==="player"&&u.hero&&!u.dead&&u.card.id===card.id);
+      if(hero){c.strokeStyle="rgba(246,214,112,.55)";c.fillStyle="rgba(246,214,112,.055)";c.lineWidth=2;c.beginPath();c.arc(hero.x,hero.y,230,0,Math.PI*2);c.fill();c.stroke();}
+    }
     if(!p.inside){c.restore();return;}
     const rule=this.placementRule(card,"player",p.x,p.y),good=rule.ok;
     const tint=good?"rgba(116,202,139,.72)":"rgba(226,91,76,.72)";
     const fill=good?"rgba(116,202,139,.13)":"rgba(226,91,76,.13)";
     c.strokeStyle=tint;c.fillStyle=fill;c.lineWidth=3;
-    if(card.kind==="spell"){
-      const rr=card.id==="cavalry_charge"?220:180;c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();c.stroke();
+    if(card.kind==="spell"||(card.kind==="hero"&&this.isHeroAlive("player",card.id))){
+      const rr=card.kind==="hero"?190:(card.id==="cavalry_charge"?220:180);c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();c.stroke();
     }else if(card.kind==="building"){
       c.beginPath();c.roundRect(p.x-34,p.y-27,68,54,8);c.fill();c.stroke();
       c.fillStyle=good?"rgba(234,215,159,.55)":"rgba(226,91,76,.35)";c.fillRect(p.x-22,p.y-16,44,32);
@@ -1017,15 +1049,17 @@ class Battle {
       }
     }
     c.font="900 11px sans-serif";c.textAlign="center";c.fillStyle=good?"#e8f5d9":"#ffd2c9";
-    c.fillText(good?`${card.name} 배치`:(rule.reason||"배치 불가"),p.x,Math.max(24,p.y-42));
+    const actionLabel=card.kind==="hero"&&this.isHeroAlive("player",card.id)?`${card.name} 액티브`:(card.kind==="unit"?`${card.name} · ${this.formationLabel(this.formationFor("player",p.y))}`:`${card.name} 배치`);
+    c.fillText(good?actionLabel:(rule.reason||"배치 불가"),p.x,Math.max(24,p.y-42));
     c.restore();
   }
   playPlayerCard(index,x,y){
     SFX.unlock();
-    const c=this.pHand[index]; if(!c||this.grain<c.cost)return;
+    const c=this.pHand[index]; if(!c)return;
+    const cost=this.cardCost(c,"player"); if(this.grain<cost)return;
     const rule=this.placementRule(c,"player",x,y);
     if(!rule.ok){this.tip(rule.reason);this.fx.push({x,y,type:"invalid",life:.42,max:.42});return;}
-    this.grain-=c.cost;
+    this.grain-=cost;
     this.executeCard(c,"player",x,y);
     this.applyFactionCardPassive(c,"player");
     this.log(`나: ${c.name}`);
@@ -1040,10 +1074,13 @@ class Battle {
     else if(c.kind==="spell"){this.fx.push({x,y,type:"cast",life:.55,max:.55,team});}
     else {this.fx.push({x,y,type:"deploy",life:.62,max:.62,team});SFX.play("deploy");}
     if(c.kind==="hero"){
-      this.spawnHero(c,team,x,y);
+      if(this.isHeroAlive(team,c.id))this.activateHeroSkill(c,team,x,y);
+      else this.spawnHero(c,team,x,y);
     }else if(c.kind==="unit"){
       const n=c.count||1;
-      for(let i=0;i<n;i++)this.spawnUnit(c,team,x+(i-(n-1)/2)*23,y+(i%2)*10);
+      const squad=n>=3?{hp:.60,damage:.70}:(n===2?{hp:.76,damage:.84}:{hp:1,damage:1});
+      const deployed=n>1?{...c,_squadScale:squad.hp,_squadDamageScale:squad.damage}:c;
+      for(let i=0;i<n;i++)this.spawnUnit(deployed,team,x+(i-(n-1)/2)*23,y+(i%2)*10);
     }else if(c.kind==="building"){
       this.spawnBuilding(c,team,x,y);
     }else{
@@ -1071,26 +1108,74 @@ class Battle {
       }
     }
   }
+  activateHeroSkill(h,team,x,y){
+    const hero=this.units.find(u=>u.team===team&&u.hero&&!u.dead&&u.card.id===h.id);
+    if(!hero)return;
+    const now=performance.now();
+    const allies=this.units.filter(u=>u.team===team&&!u.dead&&Math.hypot(u.x-x,u.y-y)<190);
+    const enemies=this.units.filter(u=>u.team!==team&&!u.dead&&Math.hypot(u.x-x,u.y-y)<200);
+    const buildings=this.buildings.filter(b=>b.team===team&&!b.dead&&Math.hypot(b.x-x,b.y-y)<220);
+    const banner={founder:"건국의 호령",aura:"정복의 진군",siege:"공성 명령",trap:"유인 함정",guard:"철벽 진형",heal:"왕권 재정비",support:"중흥의 지원",laststand:"결사의 명령",vision:"전황 예측",combo:"삼군 합세",martyr:"화랑 돌격",late:"총동원"}[h.skill]||"영웅 전술";
+    if(h.skill==="founder"){
+      if(team==="player")this.grain=clamp(this.grain+1.2,0,10);else this.enemyGrain=clamp(this.enemyGrain+1.2,0,10);
+      allies.forEach(u=>u.hp=Math.min(u.maxHp,u.hp+110));
+    }else if(h.skill==="aura"){
+      allies.forEach(u=>{u.buffUntil=now+6500;u.buffDamage=Math.max(u.buffDamage,1.24);u.buffSpeed=Math.max(u.buffSpeed,1.20);});
+    }else if(h.skill==="siege"){
+      allies.forEach(u=>{u.buffUntil=now+7000;u.buffDamage=Math.max(u.buffDamage,1.12);u.siegeBuffUntil=now+7000;});
+    }else if(h.skill==="trap"){
+      enemies.forEach(u=>{u.buffUntil=now+5500;u.buffSpeed=Math.min(u.buffSpeed,.52);u.buffDamage=Math.min(u.buffDamage,.90);});
+    }else if(h.skill==="guard"){
+      allies.forEach(u=>{u.activeGuardUntil=now+6500;u.hp=Math.min(u.maxHp,u.hp+80);});
+    }else if(h.skill==="heal"){
+      allies.forEach(u=>u.hp=Math.min(u.maxHp,u.hp+280));
+    }else if(h.skill==="support"){
+      buildings.forEach(b=>{b.lifetime=Math.min(b.maxLifetime+18,b.lifetime+12);b.hp=Math.min(b.maxHp,b.hp+220);});
+    }else if(h.skill==="laststand"){
+      allies.forEach(u=>{u.buffUntil=now+6000;u.buffDamage=Math.max(u.buffDamage,1.32);u.buffRate=Math.min(u.buffRate,.80);});
+    }else if(h.skill==="vision"){
+      this.visionUntil=now+10000;
+      if(team==="enemy")this.aiMemory.patience+=1;
+    }else if(h.skill==="combo"){
+      const classes=new Set(allies.map(u=>u.cls));const strong=classes.size>=3;
+      allies.forEach(u=>{u.buffUntil=now+6500;u.buffDamage=Math.max(u.buffDamage,strong?1.28:1.14);u.buffSpeed=Math.max(u.buffSpeed,strong?1.16:1.07);});
+    }else if(h.skill==="martyr"){
+      allies.forEach(u=>{u.buffUntil=now+6000;u.buffDamage=Math.max(u.buffDamage,1.24);u.buffSpeed=Math.max(u.buffSpeed,1.22);});
+    }else if(h.skill==="late"){
+      const boost=this.time<90?1.34:1.18;allies.forEach(u=>{u.buffUntil=now+7000;u.buffDamage=Math.max(u.buffDamage,boost);u.buffRate=Math.min(u.buffRate,this.time<90?.78:.90);});
+    }
+    this.fx.push({x,y,type:"ring",life:1,max:1});
+    this.fx.push({x,y:y-42,type:"banner",life:1.05,max:1.05,text:banner,team});
+    this.log(`${h.name}: ${banner}`);
+    this.screenShake=Math.max(this.screenShake,.32);SFX.play("hero");
+  }
+
   spawnUnit(c,team,x,y,hero=false,heroCard=null){
     const lane=x<480?0:1;
+    const formation=this.formationFor(team,y);
+    const squadScale=c._squadScale||1,scaledHp=Math.round(c.hp*squadScale),scaledDamage=c.damage*(c._squadDamageScale||1);
     const u={
       id:this.idSeq++,team,x:clamp(x,80,880),y, lane,
-      card:heroCard||c, hero, cls:c.cls||"보병",
-      hp:c.hp,maxHp:c.hp,damage:c.damage,rate:c.rate,range:c.range,speed:c.speed,
+      card:heroCard||c, hero, cls:c.cls||"보병",formation,formationDefense:1,
+      hp:scaledHp,maxHp:scaledHp,damage:scaledDamage,rate:c.rate,range:c.range,speed:c.speed,
       attackCd:Math.random()*.4,target:null,dead:false,deathTimer:0,
       buffUntil:0,buffDamage:1,buffSpeed:1,buffRate:1,
       radius:hero?18:(c.cls==="기병"?16:12),
       history:c.history, animTime:Math.random()*10, state:"idle",
       attackAnim:0, hitTimer:0, facing:team==="player"?-1:1,spawnTimer:.34+Math.random()*.12,bracing:false,
+      activeGuardUntil:0,siegeBuffUntil:0,
       moveSinceAttack:0, combat:combatProfile(heroCard||c)
     };
+    if(formation==="front"&&["보병","창병"].includes(u.cls))u.formationDefense=.90;
+    if(formation==="rear"&&u.cls==="궁병")u.range*=1.12;
+    if(formation==="rear"&&u.cls==="기병"&&u.combat.charge)u.combat.charge*=1.12;
     if(this.factionIdFor(team)==="goguryeo"&&u.cls==="기병"){u.speed*=1.10;if(u.combat.charge){u.combat.charge*=1.10;u.combat.chargeDistance=Math.max(55,u.combat.chargeDistance-10);}}
     this.units.push(u); return u;
   }
   spawnBuilding(c,team,x,y){
     const life=this.factionIdFor(team)==="baekje"?50.4:42;
     const b={id:this.idSeq++,team,x:clamp(x,100,860),y,hp:c.hp,maxHp:c.hp,damage:c.damage,range:c.range,
-      attackCd:0,card:c,dead:false,radius:28,lifetime:life,deathTimer:0,hitTimer:0,buildTimer:.65,bonusRemoved:false};
+      attackCd:0,card:c,dead:false,radius:28,lifetime:life,maxLifetime:life,deathTimer:0,hitTimer:0,buildTimer:.65,bonusRemoved:false};
     this.buildings.push(b);
     if(c.id==="trade_post"){
       if(team==="player")this.tradeBonusP++; else this.tradeBonusE++;
@@ -1129,7 +1214,7 @@ class Battle {
       this.spawnUnit(sh,team,x-18,y);this.spawnUnit(ar,team,x+18,y);
     }else if(c.id==="rapid_trade"){
       if(team==="player")this.grain=clamp(this.grain+2.5,0,10);else this.enemyGrain=clamp(this.enemyGrain+2.5,0,10);
-      this.buildings.filter(b=>b.team===team&&!b.dead&&Math.hypot(b.x-x,b.y-y)<220).forEach(b=>b.lifetime+=8);
+      this.buildings.filter(b=>b.team===team&&!b.dead&&Math.hypot(b.x-x,b.y-y)<220).forEach(b=>{b.maxLifetime+=8;b.lifetime+=8;});
     }else if(c.id==="rally"){
       allies.forEach(u=>{u.hp=Math.min(u.maxHp,u.hp+160);u.buffUntil=performance.now()+5500;u.buffDamage=1.15;});
       this.fx.push({x,y,type:"ring",life:.8,max:.8});
@@ -1190,7 +1275,7 @@ class Battle {
     this.checkVictory();
   }
   aiAct(){
-    const playable=this.eHand.map((c,i)=>({c,i})).filter(o=>o.c&&o.c.cost<=this.enemyGrain);
+    const playable=this.eHand.map((c,i)=>({c,i,cost:this.cardCost(c,"enemy")})).filter(o=>o.c&&o.cost<=this.enemyGrain);
     if(!playable.length)return;
 
     const sideTowers=this.towers.filter(t=>t.team==="enemy"&&!t.king&&!t.dead);
@@ -1237,8 +1322,8 @@ class Battle {
         if(c.kind==="building"&&["trade_post","cheomseongdae","hwarang_camp"].includes(c.id))s+=.9;
       }
       if(c.kind==="hero"){
-        const alive=this.units.some(u=>u.team==="enemy"&&!u.dead&&u.hero);
-        s+=alive?-8:(this.enemyGrain>=7?2.8:.4);
+        const alive=this.isHeroAlive("enemy",c.id);
+        s+=alive?(defending?2.2:1.25):(this.enemyGrain>=7?2.8:.4);
       }
       if(c.kind==="unit"&&!ownClasses.has(c.cls)&&fid==="silla")s+=1.6;
       if(fid==="goguryeo"&&c.cls==="기병")s+=1.5;
@@ -1246,14 +1331,14 @@ class Battle {
       if(fid==="baekje"&&c.kind==="building")s+=1.35;
       if(fid==="baekje"&&["sea_supply","rapid_trade","royal_guard"].includes(c.id))s+=1.0;
       if(fid==="silla"&&nowLate&&["late_mobilize","rally","s_elite_cav"].includes(c.id))s+=1.7;
-      if(this.enemyGrain<4&&c.cost>=4&&!defending)s-=1.5;
+      if(this.enemyGrain<4&&o.cost>=4&&!defending)s-=1.5;
       if(this.aiMemory.lastKind===c.kind)s-=.25;
       return s;
     };
 
     playable.sort((a,b)=>score(b)-score(a));
-    const pick=playable[0],c=pick.c;
-    if(!defending&&this.enemyGrain-c.cost<.7&&c.cost>=5&&Math.random()<.55)return;
+    const pick=playable[0],c=pick.c,cost=pick.cost;
+    if(!defending&&this.enemyGrain-cost<.7&&cost>=5&&Math.random()<.55)return;
 
     let x=lane?650:310,y=220;
     if(c.kind==="building"){
@@ -1267,13 +1352,21 @@ class Battle {
       else {y=175+Math.random()*75;}
     }else{
       y=defending?205+Math.random()*26:238+Math.random()*22;
-      if(c.kind==="hero")y=175+Math.random()*20;
+      if(c.kind==="hero"){
+        const liveHero=this.units.find(u=>u.team==="enemy"&&u.hero&&!u.dead&&u.card.id===c.id);
+        if(liveHero){x=liveHero.x+(Math.random()-.5)*150;y=liveHero.y+70+Math.random()*80;}
+        else y=175+Math.random()*20;
+      }
       x+=(Math.random()-.5)*34;
     }
 
-    const rule=this.placementRule(c,"enemy",x,y);
-    if(!rule.ok){x=lane?650:310;y=c.kind==="building"?205:230;}
-    this.enemyGrain-=c.cost;
+    let rule=this.placementRule(c,"enemy",x,y);
+    if(!rule.ok){
+      const liveHero=c.kind==="hero"?this.units.find(u=>u.team==="enemy"&&u.hero&&!u.dead&&u.card.id===c.id):null;
+      if(liveHero){x=liveHero.x;y=liveHero.y+80;rule=this.placementRule(c,"enemy",x,y);}
+      else{x=lane?650:310;y=c.kind==="building"?205:230;}
+    }
+    this.enemyGrain-=cost;
     this.executeCard(c,"enemy",x,y);
     this.applyFactionCardPassive(c,"enemy");
     this.aiMemory.lastLane=lane;this.aiMemory.lastKind=c.kind;
@@ -1330,6 +1423,7 @@ class Battle {
           u.state="attack";
           let dmg=u.damage*(u.buffDamage||1);
           dmg*=this.heroDamageModifier(u,u.target);
+          if(u.siegeBuffUntil&&now<u.siegeBuffUntil&&(u.target.isTower||u.target.card?.kind==="building"))dmg*=1.28;
           // 기본 상성: 창병 > 기병 > 궁병. 장창병은 더 강한 대기병 카드.
           if(u.cls==="창병" && u.target.cls==="기병")dmg*=u.card.id==="s_heavy_spear"?1.80:1.55;
           if(u.cls==="기병" && u.target.cls==="궁병")dmg*=1.22;
@@ -1460,6 +1554,8 @@ class Battle {
     const cp=target.combat||combatProfile(target.card||{});
     if(damageType==="projectile"&&cp.projectileResist)m*=cp.projectileResist;
     if(damageType==="melee"&&cp.meleeResist)m*=cp.meleeResist;
+    if(target.formationDefense)m*=target.formationDefense;
+    if(target.activeGuardUntil&&performance.now()<target.activeGuardUntil)m*=.78;
     // 산성 근처 아군은 추가 방어 보너스.
     for(const b of this.buildings.filter(b=>b.team===target.team&&!b.dead)){
       if(["mountain_fort","hill_fort"].includes(b.card.id)&&dist(target,b)<125)m*=.90;
@@ -1468,7 +1564,7 @@ class Battle {
       const nearby=new Set([target.cls,...this.units.filter(x=>x.team===target.team&&!x.dead&&x!==target&&dist(x,target)<118).map(x=>x.cls)]);
       if(nearby.size>=2)m*=.93;
     }
-    if(target.isTower&&target.king&&this.isKingProtected(target.team))m*=.15;
+    if(target.isTower&&target.king)m*=this.kingShieldMultiplier(target.team);
     return m;
   }
   hit(target,damage,source,damageType="melee"){
@@ -1631,14 +1727,17 @@ class Battle {
     $("#phase").textContent=this.time<60?"총공세 · 군량 가속":(this.time<120?"중반 교전":"초반 전개");
     $("#grainText").textContent=`${this.grain.toFixed(1)} / 10`;
     $("#grainBar").style.width=(this.grain*10)+"%";
-    const enemySides=this.towers.filter(t=>t.team==="enemy"&&!t.king&&!t.dead).length;
-    $("#objectiveText").textContent=enemySides===2?"측면 성루를 먼저 돌파":(enemySides===1?"왕성 길이 열림":"왕성 총공세");
+    const enemySides=this.sideTowerCount("enemy");
+    $("#objectiveText").textContent=enemySides===2?"왕성 방호 88% · 양쪽 성루 공략":(enemySides===1?"왕성 방호 55% · 남은 성루 공략":"왕성 방호 해제 · 총공세");
     const ast=$("#assetStatus");
     if(ast)ast.textContent=SpriteAtlas.ready?"LPC 스프라이트":(SpriteAtlas.failed?"벡터 대체":"불러오는 중");
     this.uiClock-=.016;
     if(this.uiClock<=0){this.uiClock=.15;this.renderHand();}
     const hasObservatory=this.buildings.some(b=>!b.dead&&b.team==="player"&&b.card.id==="cheomseongdae");
-    if(hasObservatory){
+    if(this.visionUntil>performance.now()){
+      const clues=this.eHand.map(c=>c?.name||"?").join(" / ");
+      $("#enemyHeroName").textContent=`${this.enemyHero.name} · 전황 예측: ${clues}`;
+    }else if(hasObservatory){
       const clues=this.eHand.slice(0,2).map(c=>c?.name||"?").join(" / ");
       $("#enemyHeroName").textContent=`${this.enemyHero.name} · 적 손패: ${clues}`;
     }else if(this.playerHero.skill==="vision"){
@@ -1893,9 +1992,12 @@ class Battle {
       if(t.damageFlash>0){c.translate((Math.random()-.5)*3,(Math.random()-.5)*2);}
       if(t.king)this.drawCapital(fid,false);else this.drawWatchTower(fid,false);
       this.drawTowerDamage(t,f);
-      if(t.king&&this.isKingProtected(t.team)){
-        c.strokeStyle="rgba(239,211,120,.72)";c.fillStyle="rgba(239,211,120,.07)";c.lineWidth=3;c.beginPath();c.ellipse(0,1,61,48,0,0,Math.PI*2);c.fill();c.stroke();
-        c.fillStyle="#f4d67c";c.font="900 9px sans-serif";c.textAlign="center";c.fillText("성루 방호",0,-58);
+      if(t.king){
+        const sideCount=this.sideTowerCount(t.team),shield=this.kingShieldMultiplier(t.team);
+        if(shield<1){
+          c.strokeStyle=sideCount===2?"rgba(239,211,120,.78)":"rgba(239,211,120,.48)";c.fillStyle=sideCount===2?"rgba(239,211,120,.075)":"rgba(239,211,120,.035)";c.lineWidth=sideCount===2?3:2;c.beginPath();c.ellipse(0,1,61,48,0,0,Math.PI*2);c.fill();c.stroke();
+          c.fillStyle="#f4d67c";c.font="900 9px sans-serif";c.textAlign="center";c.fillText(sideCount===2?"성루 방호 88%":"성루 방호 55%",0,-58);
+        }
       }
       const w=t.king?92:62;
       hpBar(c,-w/2,t.king?-55:-46,w,t.hp/t.maxHp,t.team);
@@ -2087,6 +2189,9 @@ class Battle {
       hpBar(c,-30,-51,60,b.hp/b.maxHp,b.team);
       c.fillStyle="rgba(25,20,15,.80)";c.beginPath();c.roundRect(-34,31,68,14,4);c.fill();
       c.fillStyle="#f2e4bd";c.font="800 8px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(b.card.name,0,38);
+      const lifeRatio=clamp(b.lifetime/Math.max(1,b.maxLifetime),0,1);
+      c.fillStyle="rgba(24,19,14,.72)";c.fillRect(-30,47,60,4);
+      c.fillStyle=lifeRatio<.25?"#d36b50":"#e1be63";c.fillRect(-30,47,60*lifeRatio,4);
     }
     c.restore();
   }
@@ -2642,7 +2747,7 @@ function tacticalSummary(c){
   if(p.charge){tags.push("돌격");detail+=` 이동 후 첫 타격 ×${p.charge.toFixed(2)}.`;}
   if(p.kite){tags.push("거리 유지");bad="근접전 · 창병/기병에게 붙잡힘";detail+=" 적이 너무 가까우면 거리를 벌리려 합니다.";}
   if(p.siege){tags.push("공성");good+=" · 시설";}
-  if(c.id==="s_heavy_spear"){good="기병에 매우 강함";detail+=" 기병에게 ×1.95 피해.";}
+  if(c.id==="s_heavy_spear"){good="기병에 매우 강함";detail+=" 기병에게 ×1.80 피해.";}
   return {short:tags.slice(0,2).join(" · "),tags,good,bad,detail};
 }
 
