@@ -49,6 +49,18 @@ test('Spelling Frog release entry keeps the moving-log progression fix wired in'
   assert.match(patch, /frogCol\s*=\s*clamp/);
 });
 
+test('History Royale defers heavy 3D boot until battle start for mobile stability', () => {
+  const game = gameById('high_history_royale');
+  const html = read(game.href);
+  assert.match(html, /function ensureHistoryRoyale3D\(\)/);
+  assert.match(html, /history-royale-3d\.js\?v=16/);
+  assert.doesNotMatch(html, /<script type="module" src="history-royale-3d\.js/);
+  const modulePath=path.join(root,'games','high_history_royale','history-royale-3d.js');
+  const moduleCode=fs.readFileSync(modulePath,'utf8');
+  assert.match(moduleCode, /const propNames=LOW_POWER/);
+  assert.match(moduleCode, /"Crate_Wooden","Stall_Empty","Banner_1","Banner_2","WeaponStand","Dummy"/);
+});
+
 test('History Royale release entry retains selectable faction, hero, deck and start controls', () => {
   const game = gameById('high_history_royale');
   assert.match(game.href, /games\/high_history_royale\/역사 로얄\.html/);
