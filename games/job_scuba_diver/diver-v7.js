@@ -123,8 +123,8 @@ const SPECIES={
  nautilus:{name:'앵무조개',img:'nautilus',depth:[115,390],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:31,draw:[63,41]},
  squid:{name:'심해 오징어',img:'squid',depth:[210,650],weight:2.2,value:620,protected:false,rare:true,behavior:'skittish',motion:'jet',speed:88,draw:[82,60]},
  jelly:{name:'푸른 해파리',img:'jelly01',depth:[90,610],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'jelly',speed:22,damage:7,draw:[58,58]},
- whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150]},
- vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78]},
+ whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150],spriteFacing:'left'},
+ vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78],spriteFacing:'left'},
  shark2:{name:'회유성 상어',img:'shark2',depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
@@ -197,7 +197,7 @@ function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zo
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
-function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1,baseScale=d.motion==='boss'?2.15:d===SPECIES.giant?2.65:d.motion==='megafauna'?1.15:d.behavior==='predator'?1.24:.8+rr()*.3;return{kind:'creature',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||12)*(.72+rr()*.28),vy:(rr()-.5)*12,phase:rr()*Math.PI*2,scale:baseScale,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0,hooked:false,contactCd:0}}
+function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1,baseScale=d.motion==='boss'?2.15:d===SPECIES.giant?2.65:d.motion==='megafauna'?1.15:d.behavior==='predator'?1.24:.8+rr()*.3;return{kind:'creature',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||12)*(.72+rr()*.28),vy:(rr()-.5)*12,patrolDir:dir,faceDir:dir,faceLock:0,turnLock:0,patrolMin:null,patrolMax:null,phase:rr()*Math.PI*2,scale:baseScale,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0,hooked:false,contactCd:0}}
 
 function rectSolid(x,y,w,h,zone='reef',edge='sand'){return{shape:'rect',x,y,w,h,zone,edge}}
 function circleSolid(x,y,r,zone='reef',edge='dirt'){return{shape:'circle',x,y,r,zone,edge}}
@@ -256,6 +256,50 @@ function pointInSolid(x,y,s,pad=0){
   if(s.shape==='circle')return Math.hypot(x-s.x,y-s.y)<s.r+pad;
   return x>s.x-pad&&x<s.x+s.w+pad&&y>s.y-pad&&y<s.y+s.h+pad;
 }
+function creatureSpawnPad(key){
+ const sp=SPECIES[key],d=sp.draw||[54,36],base=Math.max(d[0],d[1]);
+ if(sp.motion==='megafauna')return Math.max(64,base*.32);
+ if(sp.motion==='boss')return Math.max(52,base*.28);
+ if(sp.motion==='crawlerBoss')return 30;
+ if(sp.motion==='crawler'||sp.motion==='sessile')return 22;
+ return sp.behavior==='predator'?30:24
+}
+function spawnScope(scopeId,y){
+ const sub=SUBZONES.find(z=>z.id===scopeId),zone=ZONES.find(z=>z.id===scopeId);
+ if(sub)return{sub,zone:ZONES.find(z=>z.id===sub.zone),y0:sub.y0,y1:sub.y1};
+ const z=zone||zoneForY(y);return{sub:null,zone:z,y0:z.y0,y1:z.y1}
+}
+function spawnBlocked(key,x,y,pad){
+ if(world.terrain.some(t=>pointInSolid(x,y,t,pad)))return true;
+ for(const o of world.fish){if(!o.alive)continue;const op=creatureSpawnPad(o.key),min=(pad+op)*.42;if(Math.hypot(o.x-x,o.y-y)<min)return true}
+ return false
+}
+function safeCreatureSpawn(key,x,y,scopeId=null){
+ const sp=SPECIES[key],pad=creatureSpawnPad(key),scope=spawnScope(scopeId,y),minY=scope.y0+pad+8,maxY=scope.y1-pad-8;
+ x=clamp(x,pad+22,WORLD.w-pad-22);y=clamp(y,minY,maxY);
+ if(sp.motion==='crawler'||sp.motion==='crawlerBoss'||sp.motion==='sessile'){
+   const floors=world.terrain.filter(t=>t.shape==='rect'&&t.zone===scope.zone.id&&t.y>=scope.y0-20&&t.y<=scope.y1+60)
+     .sort((a,b)=>Math.abs(clamp(x,a.x,a.x+a.w)-x)+Math.abs(a.y-y)*.55-(Math.abs(clamp(x,b.x,b.x+b.w)-x)+Math.abs(b.y-y)*.55));
+   for(const floor of floors){
+     const minX=floor.x+pad+12,maxX=floor.x+floor.w-pad-12;if(maxX<=minX)continue;
+     const sx=clamp(x,minX,maxX),sy=floor.y-pad-5;
+     if(sy<minY||sy>maxY||spawnBlocked(key,sx,sy,pad))continue;
+     return{x:sx,y:sy,patrolMin:minX,patrolMax:maxX}
+   }
+ }
+ const golden=2.399963229728653;
+ for(let ring=0;ring<=12;ring++){
+   const radius=ring===0?0:26+ring*24,steps=ring===0?1:12;
+   for(let i=0;i<steps;i++){
+     const a=i/steps*Math.PI*2+ring*golden,nx=clamp(x+Math.cos(a)*radius,pad+22,WORLD.w-pad-22),ny=clamp(y+Math.sin(a)*radius,minY,maxY);
+     if(!spawnBlocked(key,nx,ny,pad))return{x:nx,y:ny,patrolMin:null,patrolMax:null}
+   }
+ }
+ return{x,y,patrolMin:null,patrolMax:null}
+}
+function spawnCreature(key,x,y,seed,scopeId=null){
+ const p=safeCreatureSpawn(key,x,y,scopeId),f=makeFish(key,p.x,p.y,seed);f.baseX=f.homeX=f.x=p.x;f.baseY=f.y=p.y;f.patrolMin=p.patrolMin;f.patrolMax=p.patrolMax;return f
+}
 function resolvePlayerTerrain(p,r=23){
   let hit=false;
   for(const s of world.terrain){
@@ -305,7 +349,7 @@ function buildWorld(contract){
          y=(z.y0+42)+r()*Math.max(40,(z.y1-z.y0)-84);
          tries++;
        }while(tries<24&&world.terrain.some(t=>pointInSolid(x,y,t,36)));
-       world.fish.push(makeFish(key,x,y,12000+fishSeed++*37+contract.unlock*503));
+       world.fish.push(spawnCreature(key,x,y,12000+fishSeed++*37+contract.unlock*503,z.id));
      }
    }
  }
@@ -313,15 +357,8 @@ function buildWorld(contract){
    const population=FAUNA_POPULATIONS[z.id]||[];
    for(const [key,count] of population){
      for(let i=0;i<count;i++){
-       const sp=SPECIES[key];let x=130+r()*(WORLD.w-260),y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110),tries=0;
-       if(sp.motion==='crawler'||sp.motion==='crawlerBoss'||sp.motion==='sessile'){
-         const floors=world.terrain.filter(t=>t.zone===z.id&&t.shape==='rect');
-         const floor=floors[Math.floor(r()*Math.max(1,floors.length))];
-         if(floor){x=floor.x+45+r()*Math.max(20,floor.w-90);y=floor.y-22}
-       }else{
-         do{x=130+r()*(WORLD.w-260);y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110);tries++}while(tries<20&&world.terrain.some(t=>pointInSolid(x,y,t,42)));
-       }
-       world.fish.push(makeFish(key,x,y,18000+fishSeed++*43+contract.unlock*701));
+       const x=130+r()*(WORLD.w-260),y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110);
+       world.fish.push(spawnCreature(key,x,y,18000+fishSeed++*43+contract.unlock*701,z.id));
      }
    }
  }
@@ -333,17 +370,17 @@ function buildWorld(contract){
    ['crab',1040,2570,19331],['squid',4560,2860,19332],['shark2',6040,3100,19333],
    ['jelly',1840,3410,19341],['squid',4380,3710,19342]
  ];
- for(const [key,x,y,seed] of encounters)world.fish.push(makeFish(key,x,y,seed));
+ for(const [key,x,y,seed] of encounters)world.fish.push(spawnCreature(key,x,y,seed,subzoneForY(y).id));
  // Boss encounters are unique: mantis shrimp in the reef maze, kraken in the predator trench.
- world.fish.push(makeFish('mantis',WORLD.w*.58,485,19401));
- world.fish.push(makeFish('kraken',WORLD.w*.53,4015,19402));
+ world.fish.push(spawnCreature('mantis',WORLD.w*.61,455,19401,'reefMaze'));
+ world.fish.push(spawnCreature('kraken',WORLD.w*.53,4015,19402,'predatorTrench'));
  // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
- world.fish.push(makeFish('blue',WORLD.w*.34,220,8101));
- world.fish.push(makeFish('orange',WORLD.w*.39,250,8102));
- world.fish.push(makeFish('pink',WORLD.w*.765,590,8103));
- world.fish.push(makeFish('long',WORLD.w*.43,1180,8104));
- world.fish.push(makeFish('giant',WORLD.w*.74,3920,9921));
- world.fish.push(makeFish('giant',WORLD.w*.31,4010,9922));
+ world.fish.push(spawnCreature('blue',WORLD.w*.34,220,8101,'reefShelf'));
+ world.fish.push(spawnCreature('orange',WORLD.w*.39,250,8102,'reefShelf'));
+ world.fish.push(spawnCreature('pink',WORLD.w*.765,590,8103,'blueDrop'));
+ world.fish.push(spawnCreature('long',WORLD.w*.43,1180,8104,'kelpCathedral'));
+ world.fish.push(spawnCreature('giant',WORLD.w*.74,3920,9921,'predatorTrench'));
+ world.fish.push(spawnCreature('giant',WORLD.w*.31,4010,9922,'predatorTrench'));
  for(const z of ZONES){
    const pool=zonePlantPool(z.id,false),count=z.id==='reef'?110:z.id==='kelp'?145:z.id==='ruins'?72:z.id==='wreck'?62:50;
    for(let i=0;i<count;i++){
@@ -531,7 +568,7 @@ function drawPickups(){
  }
 }
 function drawFish(f){
- if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-280||p.x>view.w+280||p.y<-220||p.y>view.h+220)return;const flip=f.vx<0;
+ if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-280||p.x>view.w+280||p.y<-220||p.y>view.h+220)return;const dir=f.faceDir||f.patrolDir||1,flip=sp.spriteFacing==='left'?dir>0:dir<0;
  const camo=f.hidden&&world.sonar<=0,alpha=camo?.20:(f.key==='giant'||sp.motion==='boss'?.98:.92),[dw,dh]=creatureDrawSize(sp,f);
  if(f.key==='crab')drawSequence(['crab1','crab2'],p.x,p.y,dw,dh,flip,alpha,5,f.phase);
  else if(f.key==='jelly'){const attacking=f.alert>0||f.contactCd>0;drawSequence(attacking?JELLY_ATTACK_KEYS:JELLY_SWIM_KEYS,p.x,p.y,dw,dh,false,alpha,9,f.phase)}
@@ -791,7 +828,7 @@ function startFishAttack(f,kind){
 }
 function launchFishAttack(f,p){
  const prof=ATTACK_PROFILE[f.key]||ATTACK_PROFILE.brown,dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1;
- f.attackMode='lunge';f.attackT=prof.lunge;f.attackVx=dx/d*prof.speed;f.attackVy=dy/d*prof.speed;
+ f.attackMode='lunge';f.attackT=prof.lunge;f.attackVx=dx/d*prof.speed;f.attackVy=dy/d*prof.speed;f.faceDir=Math.sign(f.attackVx)||f.faceDir;f.faceLock=.18;
  world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:f.key==='giant'||f.key==='kraken'});
  if(f.key==='giant'||f.key==='kraken'){world.envPulse=Math.max(world.envPulse,f.key==='kraken'?1:.85);beep(f.key==='kraken'?58:78,.12,'sawtooth')}
  else if(f.key==='angler'){world.lightJam=Math.max(world.lightJam,1.15);beep(145,.07,'sawtooth')}
@@ -807,19 +844,28 @@ function fishHitPlayer(f,sp,p,st,mult=1){
 }
 function updateFishAI(f,dt,p,st){
  const sp=SPECIES[f.key],dx=p.x-f.x,dy=p.y-f.y,dist=Math.hypot(dx,dy)||1,behavior=sp.behavior||'flee',playerSub=subzoneForY(p.y),playerRule=SUBZONE_RULES[playerSub.id]||{},senseMod=(world.sonar>0?1:(playerRule.stealth||1))*(playerRule.predatorAggro||1);
- f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);f.contactCd=Math.max(0,(f.contactCd||0)-dt);
+ f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);f.contactCd=Math.max(0,(f.contactCd||0)-dt);f.faceLock=Math.max(0,(f.faceLock||0)-dt);f.turnLock=Math.max(0,(f.turnLock||0)-dt);
  // Fauna movement classes keep the sea from feeling like one large school of fish.
  if(sp.motion==='sessile'){f.vx=0;f.vy=0;return}
  if(sp.motion==='megafauna'){
-   const dir=Math.sign(f.vx)||1;f.vx=lerp(f.vx,dir*(sp.speed||34),clamp(dt*.7,0,1));f.vy=Math.sin(world.time*.28+f.phase)*4;f.x+=f.vx*dt;f.y=clamp(f.y+f.vy*dt,zoneForY(f.baseY).y0+70,zoneForY(f.baseY).y1-70);
-   if(f.x<120||f.x>WORLD.w-120)f.vx*=-1;return
+   const half=Math.max(90,(sp.draw?.[0]||180)*f.scale*.48),left=half+35,right=WORLD.w-half-35;
+   if(f.x<=left&&f.patrolDir<0){f.patrolDir=1;f.faceDir=1;f.faceLock=.25}
+   else if(f.x>=right&&f.patrolDir>0){f.patrolDir=-1;f.faceDir=-1;f.faceLock=.25}
+   f.vx=lerp(f.vx,f.patrolDir*(sp.speed||34),clamp(dt*.72,0,1));f.vy=Math.sin(world.time*.28+f.phase)*4;f.x=clamp(f.x+f.vx*dt,left,right);f.y=clamp(f.y+f.vy*dt,zoneForY(f.baseY).y0+90,zoneForY(f.baseY).y1-90);
+   if(Math.abs(f.vx)>8&&f.faceLock<=0)f.faceDir=Math.sign(f.vx)||f.faceDir;return
  }
  if(sp.motion==='crawler'){
-   const dir=Math.sign(f.vx)||1;if(Math.abs(f.x-f.homeX)>230)f.vx=-dir*(sp.speed||24);else f.vx=lerp(f.vx,dir*(sp.speed||24),clamp(dt*1.1,0,1));f.x+=f.vx*dt;f.y=f.baseY+Math.sin(world.time*3+f.phase)*2;return
+   const left=f.patrolMin??(f.homeX-230),right=f.patrolMax??(f.homeX+230);
+   if(f.x>=right&&f.patrolDir>0){f.patrolDir=-1;f.faceDir=-1;f.faceLock=.18}
+   else if(f.x<=left&&f.patrolDir<0){f.patrolDir=1;f.faceDir=1;f.faceLock=.18}
+   f.vx=lerp(f.vx,f.patrolDir*(sp.speed||24),clamp(dt*1.25,0,1));f.x=clamp(f.x+f.vx*dt,left,right);f.y=f.baseY+Math.sin(world.time*2.2+f.phase)*1.2;return
  }
  if(sp.motion==='drifter'){
-   f.vx=lerp(f.vx,(Math.sign(f.vx)||1)*(sp.speed||28)+Math.sin(world.time*.37+f.phase)*9,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.75+f.phase)*11;f.x+=f.vx*dt;f.y+=f.vy*dt;if(Math.abs(f.x-f.homeX)>420)f.vx*=-1;
-   const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+45,zz.y1-45);return
+   const left=f.homeX-420,right=f.homeX+420;
+   if(f.x>=right&&f.patrolDir>0){f.patrolDir=-1;f.faceDir=-1;f.faceLock=.20}
+   else if(f.x<=left&&f.patrolDir<0){f.patrolDir=1;f.faceDir=1;f.faceLock=.20}
+   f.vx=lerp(f.vx,f.patrolDir*(sp.speed||28)+Math.sin(world.time*.37+f.phase)*5,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.75+f.phase)*9;f.x+=f.vx*dt;f.y+=f.vy*dt;
+   const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+45,zz.y1-45);if(Math.abs(f.vx)>8&&f.faceLock<=0)f.faceDir=Math.sign(f.vx)||f.faceDir;return
  }
  if(sp.motion==='jelly'){
    f.vx=lerp(f.vx,Math.sin(world.time*.31+f.phase)*18,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.95+f.phase)*18-5;f.x+=f.vx*dt;f.y+=f.vy*dt;const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+50,zz.y1-50);
@@ -827,7 +873,10 @@ function updateFishAI(f,dt,p,st){
  }
  if(sp.motion==='jet'&&dist<180&&f.specialCd<=0){const ex=f.x-p.x,ey=f.y-p.y,ed=Math.hypot(ex,ey)||1;f.vx=ex/ed*(sp.speed||88)*2.4;f.vy=ey/ed*(sp.speed||88)*1.9;f.specialCd=1.6;f.panic=1.4;world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false})}
  if(sp.motion==='crawlerBoss'){
-   f.y=f.baseY+Math.sin(world.time*2+f.phase)*2;
+   const left=f.patrolMin??(f.homeX-170),right=f.patrolMax??(f.homeX+170);
+   if(f.x>=right&&f.patrolDir>0){f.patrolDir=-1;f.faceDir=-1;f.faceLock=.18}
+   else if(f.x<=left&&f.patrolDir<0){f.patrolDir=1;f.faceDir=1;f.faceLock=.18}
+   f.y=f.baseY+Math.sin(world.time*2+f.phase)*1.1;
    if(!world.bossSeen.mantis&&dist<330){world.bossSeen.mantis=true;showHint('대형 공작갯가재 발견 · 펀치 직전 경고를 보고 피하세요!',2100)}
  }
  if(sp.motion==='boss'&&!world.bossSeen.kraken&&dist<720){world.bossSeen.kraken=true;world.envPulse=.75;showHint('소나에 거대한 생체 반응! · 심해 크라켄',2300);beep(72,.18,'sawtooth')}
@@ -844,12 +893,12 @@ function updateFishAI(f,dt,p,st){
    let n=0,ax=0,ay=0,cx=0,cy=0,sx=0,sy=0;
    for(const o of world.fish){if(o===f||!o.alive||o.key!==f.key)continue;const qx=o.x-f.x,qy=o.y-f.y,qd=Math.hypot(qx,qy);if(qd>170)continue;n++;ax+=o.vx;ay+=o.vy;cx+=o.x;cy+=o.y;if(qd<54&&qd>0){sx-=qx/qd*(54-qd);sy-=qy/qd*(54-qd)}}
    if(n){ax/=n;ay/=n;cx=cx/n-f.x;cy=cy/n-f.y;tx+=ax*.18+cx*.045+sx*.85;ty+=ay*.18+cy*.045+sy*.85}
-   tx+=(Math.sign(f.vx)||1)*(sp.speed||42)*.22;ty+=Math.sin(world.time*1.3+f.phase)*8;
+   tx+=(f.patrolDir||1)*(sp.speed||42)*.22;ty+=Math.sin(world.time*1.3+f.phase)*8;
    if(dist<105){tx-=dx/dist*125;ty-=dy/dist*95;f.panic=.6}
  }else if(behavior==='flee'||behavior==='skittish'){
    const trigger=behavior==='skittish'?195:120;
    if(dist<trigger){f.panic=.9;const cover=behavior==='skittish'?nearestKelpCover(f,260):null;if(cover){const cx=cover.cover.x-f.x,cy=cover.cover.y-f.y,cd=Math.hypot(cx,cy)||1;tx=cx/cd*175;ty=cy/cd*150;f.hidden=cover.d<72}else{tx-=dx/dist*(behavior==='skittish'?205:135);ty-=dy/dist*(behavior==='skittish'?165:105)}f.alert=.8}
-   else{f.hidden=behavior==='skittish'&&nearestKelpCover(f,64)?.d<64;tx+=(Math.sign(f.vx)||1)*(sp.speed||48)*.28;ty+=homeDy*.025}
+   else{f.hidden=behavior==='skittish'&&nearestKelpCover(f,64)?.d<64;tx+=(f.patrolDir||1)*(sp.speed||48)*.28;ty+=homeDy*.025}
  }else{
    // Hostile fish also hunt the ecosystem when the diver is not the closest target.
    const prey=nearestEcoFish(f,f.key==='giant'||f.key==='kraken'?430:285,o=>!HOSTILE_BEHAVIORS.has(SPECIES[o.key]?.behavior)&&!['sessile','megafauna','boss'].includes(SPECIES[o.key]?.motion));
@@ -859,7 +908,7 @@ function updateFishAI(f,dt,p,st){
      const prof=ATTACK_PROFILE[f.key];
      if(behavior==='territorial'){
        if(dist<(prof?.sense||220)*senseMod){f.alert=1.1;if(!f.attackMode&&f.specialCd<=0)startFishAttack(f,f.key);tx=dx/dist*(sp.speed||70)*1.05;ty=dy/dist*(sp.speed||70)*.82}
-       else{tx=homeDx*.18+(Math.sign(f.vx)||1)*(sp.speed||60)*.45;ty=homeDy*.12}
+       else{tx=homeDx*.18+(f.patrolDir||1)*(sp.speed||60)*.45;ty=homeDy*.12}
      }else if(behavior==='ambush'){
        f.hidden=dist>185&&f.attackMode!=='lunge'&&world.sonar<=0;
        if(dist<(prof?.sense||265)*senseMod){f.alert=1.4;if(!f.attackMode&&f.specialCd<=0)startFishAttack(f,'ambush');tx=dx/dist*(sp.speed||105)*1.12;ty=dy/dist*(sp.speed||105)*.98}
@@ -867,7 +916,7 @@ function updateFishAI(f,dt,p,st){
      }else if(behavior==='predator'){
        const sense=(prof?.sense||(f.key==='giant'?590:390))*senseMod;
        if(dist<sense){f.alert=1.2;if(!f.attackMode&&f.specialCd<=0&&dist<sense*.78)startFishAttack(f,f.key==='giant'?'giantCharge':'hunterCharge');const chase=(sp.speed||112)*(f.key==='giant'||f.key==='kraken'?1.38:1.26)*(playerRule.predatorAggro||1);tx=dx/dist*chase;ty=dy/dist*chase}
-       else{tx=homeDx*.08+(Math.sign(f.vx)||1)*(sp.speed||90)*.38;ty=homeDy*.06}
+       else{tx=homeDx*.08+(f.patrolDir||1)*(sp.speed||90)*.38;ty=homeDy*.06}
      }
    }
  }
@@ -875,16 +924,26 @@ function updateFishAI(f,dt,p,st){
  if(f.attackMode==='windup'){tx*=.32;ty*=.32}
  if(f.attackMode==='lunge'){tx=f.attackVx;ty=f.attackVy;if(f.key==='giant'){const near=Math.hypot(p.x-f.x,p.y-f.y);if(near<160){p.vx+=f.vx*.08*dt;p.vy+=f.vy*.08*dt;world.envPulse=Math.max(world.envPulse,.38)}}}
  if(f.attackMode==='recover'){tx*=.58;ty*=.58}
+ if(sp.motion==='crawlerBoss'){ty=0;if(f.attackMode==='lunge')tx=(Math.sign(f.attackVx)||f.patrolDir||1)*(ATTACK_PROFILE.mantis?.speed||460)}
  const dangerBoost=behavior==='predator'?1.52:behavior==='ambush'?1.42:behavior==='territorial'?1.28:1,max=(sp.speed||50)*(f.attackMode==='lunge'?4.0:f.alert>0?1.65*dangerBoost:1.05),mag=Math.hypot(tx,ty)||1;
  if(mag>max){tx=tx/mag*max;ty=ty/mag*max}
  f.vx=lerp(f.vx,tx,clamp(dt*(f.attackMode==='lunge'?9:behavior==='predator'||behavior==='ambush'?3.1:1.8),0,1));
  f.vy=lerp(f.vy,ty,clamp(dt*(f.attackMode==='lunge'?9:2.2),0,1));
- f.x+=f.vx*dt;f.y+=f.vy*dt;
- if(f.x<55||f.x>WORLD.w-55){f.x=clamp(f.x,55,WORLD.w-55);f.vx*=-1}
- const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);if(sp.motion==='crawlerBoss')f.y=lerp(f.y,f.baseY,clamp(dt*5,0,1));
- if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){f.x-=f.vx*dt*2;f.y-=f.vy*dt*2;f.vx*=-.65;f.vy*=-.65;if(f.attackMode==='lunge'){f.attackMode='recover';f.attackT=.34}}
- const hitRange=48+(f.key==='giant'?48:0);
- if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&dist<hitRange&&f.attackCd<=0){
+ const prevX=f.x,prevY=f.y;f.x+=f.vx*dt;f.y+=f.vy*dt;
+ if(f.x<55){f.x=55;f.patrolDir=1;f.vx=Math.abs(f.vx)*.65;f.faceDir=1;f.faceLock=.18}
+ else if(f.x>WORLD.w-55){f.x=WORLD.w-55;f.patrolDir=-1;f.vx=-Math.abs(f.vx)*.65;f.faceDir=-1;f.faceLock=.18}
+ if(Math.abs(f.vx)>12&&f.faceLock<=0){const nd=Math.sign(f.vx)||f.faceDir;if(nd!==f.faceDir){f.faceDir=nd;f.faceLock=.16}}
+ const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);
+ if(sp.motion==='crawlerBoss'){f.y=lerp(f.y,f.baseY,clamp(dt*7,0,1));if(f.patrolMin!=null&&f.x<f.patrolMin){f.x=f.patrolMin;f.patrolDir=1}if(f.patrolMax!=null&&f.x>f.patrolMax){f.x=f.patrolMax;f.patrolDir=-1}}
+ if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){
+   f.x=prevX;f.y=prevY;
+   if(f.turnLock<=0){f.patrolDir=(f.vx>=0?-1:1);f.faceDir=f.patrolDir;f.turnLock=.55;f.faceLock=.20}
+   f.vx=f.patrolDir*Math.max(12,(sp.speed||50)*.58);f.vy=(Math.sin(f.phase)>=0?1:-1)*Math.max(8,(sp.speed||50)*.24);
+   if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){const safe=safeCreatureSpawn(f.key,f.homeX,f.baseY,subzoneForY(f.baseY).id);f.x=f.homeX=f.baseX=safe.x;f.y=f.baseY=safe.y;f.patrolMin=safe.patrolMin;f.patrolMax=safe.patrolMax}
+   if(f.attackMode==='lunge'){f.attackMode='recover';f.attackT=.34}
+ }
+ const hitRange=48+(f.key==='giant'?48:0),hitDist=Math.hypot(p.x-f.x,p.y-f.y);
+ if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&hitDist<hitRange&&f.attackCd<=0){
    const special=f.attackMode==='lunge';if(fishHitPlayer(f,sp,p,st,special?1.16:.68)&&special){f.attackMode='recover';f.attackT=f.key==='giant'?.82:.52}
  }
 }
