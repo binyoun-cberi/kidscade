@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>역사 로얄 · 3D Battlefield Rework v12 · Armed Units</title>
+<title>역사 로얄 · 3D Battlefield Rework v13 · Full Combat Pass</title>
 <style>
 :root{
   --ink:#241b14; --paper:#f4ead2; --paper2:#e6d3ad; --wood:#6b4428;
@@ -896,6 +896,10 @@ class Battle {
   }
   bind(){
     const canvasPoint=e=>{
+      if(window.HistoryRoyale3DReady&&window.HistoryRoyale3DProjectPointer){
+        const p=window.HistoryRoyale3DProjectPointer(e.clientX,e.clientY);
+        if(p)return p;
+      }
       const r=this.canvas.getBoundingClientRect();
       return {x:(e.clientX-r.left)*this.canvas.width/r.width,y:(e.clientY-r.top)*this.canvas.height/r.height,inside:e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom};
     };
@@ -1723,7 +1727,7 @@ class Battle {
   loop(now){
     if(!this.running)return;
     const dt=Math.min(.035,(now-this.last)/1000);this.last=now;
-    this.update(dt,now);this.draw();
+    this.update(dt,now);if(!window.HistoryRoyale3DReady)this.draw();
     this.updateHUD();
     requestAnimationFrame(t=>this.loop(t));
   }
@@ -1736,7 +1740,7 @@ class Battle {
     const enemySides=this.sideTowerCount("enemy");
     $("#objectiveText").textContent=enemySides===2?"왕성 방호 88% · 양쪽 성루 공략":(enemySides===1?"왕성 방호 55% · 남은 성루 공략":"왕성 방호 해제 · 총공세");
     const ast=$("#assetStatus");
-    if(ast)ast.textContent=window.HistoryRoyale3DReady?"3D · Quaternius CC0":(SpriteAtlas.ready?"2D · LPC 폴백":(SpriteAtlas.failed?"2D · 벡터 폴백":"3D 준비 중"));
+    if(ast)ast.textContent=window.HistoryRoyale3DReady?(window.HistoryRoyale3DStatus||"3D 전장 활성"):(SpriteAtlas.ready?"2D · LPC 폴백":(SpriteAtlas.failed?"2D · 벡터 폴백":"3D 준비 중"));
     this.uiClock-=.016;
     if(this.uiClock<=0){this.uiClock=.15;this.renderHand();}
     const hasObservatory=this.buildings.some(b=>!b.dead&&b.team==="player"&&b.card.id==="cheomseongdae");
@@ -2880,6 +2884,6 @@ renderSetup();
 })();
 </script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="history-royale-3d.js?v=12"></script>
+<script type="module" src="history-royale-3d.js?v=13"></script>
 </body>
 </html>
