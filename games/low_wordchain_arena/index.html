@@ -59,7 +59,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
     <button id="modeBtn" class="btn primary">🎮 모드 선택</button>
     <button id="homeBtn" class="btn">Kidscade로</button>
   </div>
-  <div class="rules">실시간 사전 API를 사용하지 않습니다. 한국어기초사전 기반 27,832개 명사를 서버 API 없이 필요한 초성 묶음만 불러와 판정합니다.</div>
+  <div class="rules">실시간 사전 API를 사용하지 않습니다. 한국어기초사전 + 표준국어대사전 기반 195,217개 명사를 서버 API 없이 필요한 초성 묶음만 불러와 판정합니다.</div>
 </div>
 
 <div class="overlay" id="intro">
@@ -87,7 +87,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
       </button>
     </div>
     <div class="introFoot">
-      <span class="small">한국어기초사전 기반 27,832개 명사 사용</span>
+      <span class="small">한국어기초사전 + 표준국어대사전 기반 195,217개 명사 사용</span>
       <button class="btn" id="introHomeBtn">Kidscade로</button>
     </div>
   </section>
@@ -178,7 +178,7 @@ async function prepareDb(){
    $('dbText').textContent='정적 단어 DB · '+Number(manifest.total||0).toLocaleString()+'개';
    $('soloModeBtn').disabled=false;
    $('soloModeTag').textContent='바로 플레이';
-   setMsg('사전 준비 완료! 새 게임을 눌러 시작하세요.','good');
+   setMsg('사전 준비 완료! 낱말봇 대결을 선택해 시작하세요.','good');
  }catch(error){
    console.error(error);
    $('dbDot').className='dot bad';

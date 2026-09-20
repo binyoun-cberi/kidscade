@@ -10,16 +10,19 @@ function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
 
-test('Korean Basic Dictionary import is complete and grouped', () => {
+test('merged Korean dictionaries are complete and initial-sharded', () => {
   const manifest = JSON.parse(read('data/wordchain/manifest.json'));
-  assert.equal(manifest.version, 3);
-  assert.equal(manifest.format, 'grouped-newline-text');
-  assert.equal(manifest.total, 27832);
-  assert.match(manifest.source?.name || '', /한국어기초사전/);
+  assert.equal(manifest.version, 4);
+  assert.equal(manifest.format, 'initial-sharded-newline-text');
+  assert.equal(manifest.total, 195217);
+  assert.equal(Object.keys(manifest.groups || {}).length, 19);
+  assert.ok((manifest.sources || []).some(source => /한국어기초사전/.test(source.name || '')));
+  assert.ok((manifest.sources || []).some(source => /표준국어대사전/.test(source.name || '')));
 
   const words = [];
   for (const info of Object.values(manifest.groups || {})) {
     assert.ok(info.file);
+    assert.equal(info.keys?.length, 1);
     const rows = read('data/wordchain/' + info.file).split(/\r?\n/).filter(Boolean);
     assert.equal(rows.length, info.count);
     words.push(...rows);
@@ -37,6 +40,8 @@ test('word-chain dictionary includes attribution and child-safe exclusions', () 
   const attribution = read('data/wordchain/ATTRIBUTION.txt');
   const blocked = new Set(read('data/wordchain/blocked-words.txt').split(/\r?\n/).filter(Boolean));
   assert.match(attribution, /한국어기초사전/);
+  assert.match(attribution, /표준국어대사전/);
+  assert.match(attribution, /195,217/);
   assert.match(attribution, /CC BY-SA 2.0 KR/);
   assert.ok(blocked.size >= 20);
 });
@@ -52,7 +57,7 @@ test('static dictionary client lazy-loads grouped files and contains no API depe
   assert.doesNotThrow(() => new Function(client));
 });
 
-test('word-chain arena uses the bundled Korean Basic Dictionary', () => {
+test('word-chain arena uses the merged offline Korean dictionaries', () => {
   const catalog = JSON.parse(read('data/games.json'));
   const game = catalog.games.find(item => item.id === 'low_wordchain_arena');
   assert.ok(game);
@@ -63,7 +68,7 @@ test('word-chain arena uses the bundled Korean Basic Dictionary', () => {
   assert.match(html, /wordchain-static-db\.js\?v=2/);
   assert.match(html, /KidscadeWordDB\.has/);
   assert.match(html, /KidscadeWordDB\.candidates/);
-  assert.match(html, /27,832/);
+  assert.match(html, /195,217/);
   assert.match(html, /12초/);
   assert.match(html, /낱말봇 대결/);
   assert.match(html, /1:1 온라인/);

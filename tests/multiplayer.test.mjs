@@ -221,7 +221,8 @@ test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and se
 
   const solo = fs.readFileSync(path.join(root, 'games', 'low_wordchain_arena', 'index.html'), 'utf8');
   assert.match(solo, /multiplayer\.html/);
-  assert.match(solo, /온라인 대결/);
+  assert.match(solo, /1:1 온라인/);
+  assert.match(solo, /다대다 온라인/);
 });
 
 test('word-chain multiplayer migration is shipped for remote D1 deploys', () => {
