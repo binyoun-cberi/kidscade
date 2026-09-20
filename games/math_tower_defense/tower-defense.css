@@ -11,6 +11,11 @@ button{font:inherit;color:inherit;border:0}
 .brand div{min-width:0}.brand b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stats{display:flex;gap:6px}.stats span{min-width:66px;padding:6px 9px;border:1px solid var(--line);border-radius:13px;background:rgba(15,31,52,.72);text-align:center}.stats small{display:block;font-size:9px;color:var(--muted)}.stats b{font-size:16px}
 .topActions{display:flex;gap:6px;align-items:center}.iconBtn,.speedBtn{height:38px;border-radius:12px;background:rgba(20,38,62,.9);border:1px solid var(--line);font-weight:900}.iconBtn{width:38px}.speedBtn{padding:0 12px}
+.speedControl{position:relative}
+.speedMenu{position:absolute;right:0;top:calc(100% + 7px);display:none;grid-template-columns:repeat(5,auto);gap:4px;padding:6px;border-radius:13px;background:rgba(5,15,28,.97);border:1px solid rgba(130,188,236,.3);box-shadow:0 12px 30px rgba(0,0,0,.38);backdrop-filter:blur(12px)}
+.speedControl.open .speedMenu{display:grid}
+.speedMenu button{min-width:42px;height:34px;padding:0 8px;border-radius:9px;background:rgba(20,38,62,.94);border:1px solid var(--line);font-size:11px;font-weight:1000}
+.speedMenu button.active{background:linear-gradient(135deg,#0ea5e9,#22c55e);border-color:rgba(255,255,255,.45);box-shadow:0 4px 12px rgba(14,165,233,.24)}
 #waveCard{position:fixed;z-index:18;top:84px;left:14px;width:min(390px,calc(100vw - 28px));padding:11px 12px;border-radius:18px;background:rgba(6,18,34,.88);border:1px solid rgba(56,189,248,.28);backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.25)}
 #waveCard>div{display:flex;align-items:end;gap:8px}#waveCard small{color:var(--muted);font-size:9px}#enemyPreview{color:#fde68a;font-size:18px}#enemyCount{font-size:10px;color:#b9c8d8}
 #waveMission{margin:5px 0 8px;color:#c8d8e8;font-size:11px;line-height:1.35}
@@ -35,6 +40,7 @@ button{font:inherit;color:inherit;border:0}
   .brandIcon{width:34px;height:34px;border-radius:11px;font-size:18px}.brand b{font-size:13px}.brand small{font-size:8px}
   .stats{grid-column:1/3;position:absolute;left:7px;right:7px;top:50px;justify-content:flex-start;pointer-events:none}.stats span{min-width:58px;padding:4px 7px;background:rgba(8,20,36,.82)}.stats small{font-size:7px}.stats b{font-size:12px}
   .desktopOnly{display:none!important}.topActions{gap:4px}.iconBtn,.speedBtn{height:32px;border-radius:10px}.iconBtn{width:32px}.speedBtn{padding:0 8px;font-size:10px}
+  .speedMenu{right:0;grid-template-columns:repeat(5,1fr);gap:3px;padding:5px}.speedMenu button{min-width:34px;height:30px;padding:0 5px;font-size:10px}
   #waveCard{top:91px;left:7px;width:calc(100vw - 14px);padding:7px 9px;border-radius:13px}#waveCard>div{gap:6px}#enemyPreview{font-size:13px}#waveMission{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 5px}#startWaveBtn{padding:7px;font-size:11px}
   #calcFeed{top:150px;right:6px}.calcItem{font-size:8px;padding:4px 6px}
   #towerDeck{gap:6px;padding:6px 7px calc(6px + env(safe-area-inset-bottom))}.towerCard{flex-basis:86px;min-height:67px;padding:6px}.op{width:29px;height:29px;font-size:14px}.towerCard b{font-size:9px}.towerCard small{font-size:9px}
