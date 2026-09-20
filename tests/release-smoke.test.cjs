@@ -53,12 +53,12 @@ test('History Royale defers heavy 3D boot until battle start for mobile stabilit
   const game = gameById('high_history_royale');
   const html = read(game.href);
   assert.match(html, /function ensureHistoryRoyale3D\(\)/);
-  assert.match(html, /history-royale-3d\\.js\\?v=17/);
+  assert.match(html, /history-royale-3d\.js\?v=17/);
   assert.doesNotMatch(html, /<script type="module" src="history-royale-3d\.js/);
-  const modulePath=path.join(root,'games','high_history_royale','history-royale-3d.js');
-  const moduleCode=fs.readFileSync(modulePath,'utf8');
-  assert.match(moduleCode, /const propNames=LOW_POWER/);
-  assert.match(moduleCode, /"Crate_Wooden","Stall_Empty","Banner_1","Banner_2","WeaponStand","Dummy"/);
+  const modulePath = path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js');
+  const moduleCode = fs.readFileSync(modulePath, 'utf8');
+  assert.match(moduleCode, /LOW_POWER\s*\? \[loadCharacter\("King"\)\]/);
+  assert.match(moduleCode, /if\(!LOW_POWER\)decorateWithProps\(\)/);
 });
 
 test('History Royale release entry retains selectable faction, hero, deck and start controls', () => {
@@ -72,7 +72,7 @@ test('History Royale release entry retains selectable faction, hero, deck and st
   assert.match(html, /#startBtn/);
   assert.match(html, /startBattle\(\)/);
   assert.match(html, /selectedCards\.length!==7/);
-  assert.match(html, /history-royale-3d\.js\?v=15/);
+  assert.match(html, /history-royale-3d\.js\?v=17/);
   const renderer3d=fs.readFileSync(path.join(ROOT,'games','high_history_royale','history-royale-3d.js'),'utf8');
   assert.match(renderer3d, /function use2DFallback/);
   assert.match(renderer3d, /2D 안정 모드/);
@@ -95,4 +95,6 @@ test('History Royale mobile battle uses procedural troops and bounded effects', 
   assert.match(moduleCode, /LOW_POWER\?g\.fx\.slice\(-20\):g\.fx/);
   assert.match(moduleCode, /rec\.horse\?\.mixer/);
   assert.match(moduleCode, /LOW_POWER\s*\? \[loadCharacter\("King"\)\]/);
+  assert.match(moduleCode, /disposable:true/);
+  assert.match(moduleCode, /if\(rec\.disposable\)disposeFx\(rec\.root\)/);
 });
