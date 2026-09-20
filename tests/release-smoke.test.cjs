@@ -100,25 +100,26 @@ test('History Royale mobile battle uses procedural troops and bounded effects', 
 });
 
 
-test('Nyam Universe release uses external Three.js and bounded 3D asset integration', () => {
+test('Nyam Universe v4 uses a size ladder, final-goal progression and bounded real 3D assets', () => {
   const game = gameById('low_nyam_universe');
-  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\.html\?v=3/);
+  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\.html\?v=4/);
   const html = read(game.href);
-  assert.match(html, /nyam-universe-v2\.js\?v=3/);
-  assert.match(html, /type="importmap"/);
-  assert.doesNotMatch(html, /Copyright 2010-2023 Three\.js Authors/);
+  assert.match(html, /nyam-universe-v2\.js\?v=4/);
+  assert.match(html, /초록=지금 냠냠/);
   const runtime = fs.readFileSync(path.join(ROOT, 'games', 'low_nyam_universe', 'nyam-universe-v2.js'), 'utf8');
-  assert.match(runtime, /GLTFLoader/);
-  assert.match(runtime, /assets\/game\/food\/carrot\.glb/);
-  assert.match(runtime, /assets\/game\/food\/broccoli\.glb/);
-  assert.match(runtime, /assets\/game\/food\/pumpkin-basic\.glb/);
-  assert.match(runtime, /kenney-car-kit\/sedan\.glb/);
-  assert.match(runtime, /kenney-city-kit-suburban\/building-type-a\.glb/);
-  assert.match(runtime, /kenney-nature-kit\/rock-tall-a\.glb/);
-  assert.match(runtime, /space\/planets\/planet0/);
+  assert.match(runtime, /green-blob\.glb/);
+  assert.match(runtime, /green-spiky-blob\.glb/);
+  assert.match(runtime, /pink-blob\.glb/);
+  assert.match(runtime, /방울토마토/);
+  assert.match(runtime, /큰 건물/);
+  assert.match(runtime, /목성/);
+  assert.match(runtime, /초거대별/);
+  assert.match(runtime, /function canEatFood\(f\)/);
+  assert.match(runtime, /function advanceStage\(\)/);
+  assert.match(runtime, /if\(food\?\.goal\)/);
   assert.match(runtime, /MAX_REAL_FOODS=LOW_POWER\?16:30/);
-  assert.match(runtime, /const foodRingMaterial=/);
-  assert.match(runtime, /if\(f\.real\)realFoodCount/);
-  assert.match(runtime, /LOW_POWER\?105:145/);
-  assert.match(runtime, /decorateAssetScenery/);
+  assert.match(runtime, /attachFoodLabel/);
+  assert.match(runtime, /★ 이걸 먹으면 다음 세계/);
+  assert.match(runtime, /LOW_POWER\?118:158/);
+  assert.doesNotMatch(runtime, /if\(logSize>=Math\.log10\(stages\[level\]\.max\)\)/);
 });
