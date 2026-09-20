@@ -478,6 +478,17 @@ function buildingBase(b,fid){
   const ring=mesh(new THREE.RingGeometry(.72,.80,32),new THREE.MeshBasicMaterial({color:fc,transparent:true,opacity:.42,side:THREE.DoubleSide}),0,.025,0);
   ring.rotation.x=-Math.PI/2;g.add(ring);return g;
 }
+function createLifeBar(width=.76,y=1.66){
+  const group=new THREE.Group();group.position.y=y;
+  const bg=mesh(new THREE.PlaneGeometry(width,.045),new THREE.MeshBasicMaterial({color:0x282015,transparent:true,opacity:.72,depthTest:false}),0,0,0);
+  const fill=mesh(new THREE.PlaneGeometry(width*.94,.027),new THREE.MeshBasicMaterial({color:0xe3bd59,depthTest:false}),0,0,.003);
+  group.add(bg,fill);group.userData.fill=fill;group.renderOrder=20;return group;
+}
+function updateLifeBar(bar,ratio){
+  if(!bar)return;ratio=THREE.MathUtils.clamp(ratio,0,1);
+  const fill=bar.userData.fill;if(fill){fill.scale.x=Math.max(.001,ratio);fill.position.x=-(1-ratio)*.35;fill.material.color.setHex(ratio<.25?0xdd6a4c:0xe3bd59);}
+  bar.quaternion.copy(camera.quaternion);
+}
 function createHealthBar(width=.86,y=1.55){
   const group=new THREE.Group();
   group.position.y=y;
@@ -544,11 +555,21 @@ function ensureDamageSmoke(rec,ratio){
 }
 function createTower(t,g){
   const fid=t.team==="player"?g.playerFaction:g.enemyFaction,root=makeFortress(fid,!!t.king),p=canvasToWorld(t.x,t.y);
-  root.position.copy(p);root.position.y=.02;if(t.team==="enemy")root.rotation.y=Math.PI;const health=createHealthBar(t.king?1.35:1.05,t.king?3.18:2.35);root.add(health);world.add(root);return {root:root,health:health};
+  root.position.copy(p);root.position.y=.02;if(t.team==="enemy")root.rotation.y=Math.PI;
+  const health=createHealthBar(t.king?1.35:1.05,t.king?3.18:2.35);root.add(health);
+  let protection=null;
+  if(t.king){
+    protection=mesh(new THREE.RingGeometry(1.15,1.28,48),new THREE.MeshBasicMaterial({color:0xe3cd78,side:THREE.DoubleSide,transparent:true,opacity:.44,depthWrite:false}),0,.045,0);
+    protection.rotation.x=-Math.PI/2;root.add(protection);
+  }
+  world.add(root);return {root:root,health:health,protection:protection};
 }
 function createBuilding(b,g){
   const fid=b.team==="player"?g.playerFaction:g.enemyFaction,root=buildingBase(b,fid),p=canvasToWorld(b.x,b.y);
-  root.position.copy(p);if(b.team==="enemy")root.rotation.y=Math.PI;const health=createHealthBar(.92,1.78);root.add(health);world.add(root);return {root:root,health:health};
+  root.position.copy(p);if(b.team==="enemy")root.rotation.y=Math.PI;
+  const health=createHealthBar(.92,1.82);root.add(health);
+  const life=createLifeBar(.78,1.69);root.add(life);
+  world.add(root);return {root:root,health:health,life:life};
 }
 function syncTowers(g){
   const live=new Set();
@@ -556,7 +577,15 @@ function syncTowers(g){
     live.add(t.id);let rec=towerMeshes.get(t.id);
     if(!rec){rec=createTower(t,g);towerMeshes.set(t.id,rec);}
     const p=canvasToWorld(t.x,t.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    const ratio=Math.max(0,t.hp/t.maxHp);updateHealthBar(rec.health,ratio,t.team);setHitFlash(rec.root,t.damageFlash>0);ensureDamageSmoke(rec,ratio);if(t.dead){rec.root.rotation.z=.28;rec.root.rotation.x=.10;rec.root.position.y=-.34;}
+    const ratio=Math.max(0,t.hp/t.maxHp);updateHealthBar(rec.health,ratio,t.team);setHitFlash(rec.root,t.damageFlash>0);ensureDamageSmoke(rec,ratio);
+    if(t.king&&rec.protection){
+      const sideCount=g.towers.filter(x=>x.team===t.team&&!x.king&&!x.dead).length;
+      rec.protection.visible=sideCount>0;
+      rec.protection.material.opacity=sideCount===2?.46:(sideCount===1?.24:0);
+      rec.protection.material.color.setHex(sideCount===2?0xe3cd78:0xd28b56);
+      rec.protection.rotation.z+=.006;
+    }
+    if(t.dead){rec.root.rotation.z=.28;rec.root.rotation.x=.10;rec.root.position.y=-.34;}
   });
   towerMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);towerMeshes.delete(id);}});
 }
@@ -567,7 +596,8 @@ function syncBuildings(g){
     live.add(key);let rec=buildingMeshes.get(key);
     if(!rec){rec=createBuilding(b,g);buildingMeshes.set(key,rec);}
     const p=canvasToWorld(b.x,b.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;rec.root.scale.setScalar(.92+.08*life);const ratio=Math.max(0,b.hp/b.maxHp);updateHealthBar(rec.health,ratio,b.team);setHitFlash(rec.root,b.hitTimer>0);ensureDamageSmoke(rec,ratio);
+    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;rec.root.scale.setScalar(.92+.08*life);
+    const ratio=Math.max(0,b.hp/b.maxHp);updateHealthBar(rec.health,ratio,b.team);updateLifeBar(rec.life,b.maxLifetime?b.lifetime/b.maxLifetime:1);setHitFlash(rec.root,b.hitTimer>0);ensureDamageSmoke(rec,ratio);
     if(b.dead){rec.root.rotation.z=.22;rec.root.position.y=-.18;}
   });
   buildingMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);buildingMeshes.delete(id);}});
@@ -651,6 +681,19 @@ function syncFx(g){
   }
   fxMeshes.forEach(function(rec,id){if(!live.has(id)){scene.remove(rec.root);fxMeshes.delete(id);}});
 }
+function updateAtmosphere(g,dt){
+  const assault=g.time<60;
+  const targetBg=new THREE.Color(assault?0x756b54:0x91a972);
+  const targetFog=new THREE.Color(assault?0x8f795f:0xa9b98a);
+  scene.background.lerp(targetBg,Math.min(1,dt*1.4));
+  scene.fog.color.lerp(targetFog,Math.min(1,dt*1.4));
+  sun.intensity=THREE.MathUtils.lerp(sun.intensity,assault?3.2:2.7,Math.min(1,dt*1.8));
+  hemi.intensity=THREE.MathUtils.lerp(hemi.intensity,assault?1.9:2.3,Math.min(1,dt*1.8));
+  const targetY=assault?14.15:14.8,targetZ=assault?16.15:16.8;
+  camera.position.y=THREE.MathUtils.lerp(camera.position.y,targetY,Math.min(1,dt*.8));
+  camera.position.z=THREE.MathUtils.lerp(camera.position.z,targetZ,Math.min(1,dt*.8));
+  camera.lookAt(0,.4,-.2);
+}
 function resize(){
   const w=Math.max(1,box.clientWidth),h=Math.max(1,box.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
@@ -668,13 +711,15 @@ async function loadAssets(){
   if(failed.length)console.warn("[History Royale 3D] 일부 에셋 로드 실패",failed.map(x=>x.reason));
 }
 async function init(){
-  state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;box.classList.add("three-ready");
-  const ast=document.getElementById("assetStatus");if(ast)ast.textContent=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size}`;
+  state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;
+  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}`;
+  box.classList.add("three-ready");
+  const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
 function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
-  if(ready&&g&&g.running){syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
+  if(ready&&g&&g.running){updateAtmosphere(g,dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
   else{previewRing.visible=false;previewFill.visible=false;}
   renderer.render(scene,camera);
 }
