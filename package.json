@@ -7,7 +7,7 @@
     "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
     "db:migrate:remote": "wrangler d1 migrations apply kidscade-stats --remote",
     "deploy:cloudflare": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy",
-    "wordchain:import": "node scripts/wordchain-import.cjs"
+    "wordchain:build": "node scripts/build-wordchain-static.cjs"
   },
   "devDependencies": {
     "sharp": "0.35.4",
