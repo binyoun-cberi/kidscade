@@ -79,7 +79,7 @@ test('Cloudflare build injector adds the audio manager and both game hook tiers'
   assert.match(source, /AUDIO_HOOKS_SRC/);
   assert.match(source, /AUDIO_EXTRA_HOOKS_SRC/);
   assert.match(source, /game-audio-hooks\.js\?v=20260917-2/);
-  assert.match(source, /game-audio-hooks-extra\.js\?v=20260917-1/);
+  assert.match(source, /game-audio-hooks-extra\.js\?v=20260920-2/);
   for (const title of ENHANCED_TITLES) {
     assert.ok(source.includes(title), `enhanced audio title missing: ${title}`);
   }
@@ -124,7 +124,7 @@ test('built third pass games contain the extra real-sound hook runtime', () => {
     assert.ok(game, `extra enhanced game missing from built catalog: ${title}`);
     const relative = stripHref(game.href);
     const html = fs.readFileSync(path.join(root, 'dist', relative), 'utf8');
-    assert.match(html, /game-audio-hooks-extra\.js\?v=20260917-1/, `extra audio hooks missing from ${title}`);
+    assert.match(html, /game-audio-hooks-extra\.js\?v=20260920-2/, `extra audio hooks missing from ${title}`);
   }
 });
 
@@ -196,3 +196,24 @@ test('third audio pass uses game-specific events in the extra hook layer', () =>
 });
 
 require('./audio-v4-integration.test.cjs');
+
+
+test('Korea BGM is wired into Byeokrando and History Royale', () => {
+  const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
+  assert.deepEqual(catalog.sounds['music.korea_welcome'], ['music/korea/welcome-to-korea-01.mp3']);
+
+  const byeokrandoLaunch = read('games/high_byeokrando_voyage/벽란도 상행기-launch.html');
+  const byeokrandoBgm = read('games/high_byeokrando_voyage/byeokrando-bgm.js');
+  assert.match(byeokrandoLaunch, /audio-manager\.js/);
+  assert.match(byeokrandoLaunch, /byeokrando-bgm\.js\?v=1/);
+  assert.match(byeokrandoBgm, /music\.korea_welcome/);
+  assert.match(byeokrandoBgm, /loop:\s*true/);
+  assert.doesNotThrow(() => new Function(byeokrandoBgm));
+
+  const extra = read('game-audio-hooks-extra.js');
+  const start = extra.indexOf('function setupHistoryRoyale()');
+  assert.ok(start >= 0);
+  const section = extra.slice(start, extra.indexOf('function setupOmokArena()', start));
+  assert.match(section, /music\.korea_welcome/);
+  assert.match(section, /loop:\s*true/);
+});
