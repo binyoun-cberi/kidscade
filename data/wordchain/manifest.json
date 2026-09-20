@@ -1,69 +1,157 @@
 {
-  "version": 3,
-  "format": "grouped-newline-text",
-  "source": {
-    "name": "국립국어원 한국어기초사전",
-    "edition": "전체 내려받기 JSON 2026-09-19",
-    "url": "https://krdict.korean.go.kr/",
-    "license": "CC BY-SA 2.0 KR"
-  },
-  "filter": "lexicalUnit=단어; partOfSpeech=명사; 2~24글자 완성형 한글; 중복 표제어 병합",
-  "total": 27832,
+  "version": 4,
+  "format": "initial-sharded-newline-text",
+  "sources": [
+    {
+      "name": "국립국어원 한국어기초사전",
+      "edition": "전체 내려받기 JSON 2026-09-19",
+      "url": "https://krdict.korean.go.kr/",
+      "license": "CC BY-SA 2.0 KR"
+    },
+    {
+      "name": "국립국어원 표준국어대사전",
+      "edition": "전체 내려받기 XML 2026-06-05",
+      "url": "https://stdict.korean.go.kr/",
+      "mirror": "https://github.com/spellcheck-ko/korean-dict-nikl",
+      "mirrorCommit": "c31ae259de4cd0a355cf8a19b16e75578fd396e2",
+      "license": "CC BY-SA 2.0 KR"
+    }
+  ],
+  "filter": "단어; 명사; 2~24글자 완성형 한글; 공백·구분기호 제거; 중복 표제어 병합",
+  "total": 195217,
   "groups": {
-    "a": {
+    "g": {
       "keys": [
-        "g",
-        "gg",
-        "n",
-        "d",
-        "dd",
-        "r"
+        "g"
       ],
-      "count": 7306,
-      "file": "krdict-a.txt"
+      "count": 26716,
+      "file": "words-g.txt"
     },
-    "b": {
+    "gg": {
       "keys": [
-        "m",
-        "b",
-        "bb"
+        "gg"
       ],
-      "count": 4414,
-      "file": "krdict-b.txt"
+      "count": 1421,
+      "file": "words-gg.txt"
     },
-    "c": {
+    "n": {
       "keys": [
-        "s",
-        "ss"
+        "n"
       ],
-      "count": 3591,
-      "file": "krdict-c.txt"
+      "count": 7725,
+      "file": "words-n.txt"
     },
     "d": {
       "keys": [
+        "d"
+      ],
+      "count": 11976,
+      "file": "words-d.txt"
+    },
+    "dd": {
+      "keys": [
+        "dd"
+      ],
+      "count": 976,
+      "file": "words-dd.txt"
+    },
+    "r": {
+      "keys": [
+        "r"
+      ],
+      "count": 1599,
+      "file": "words-r.txt"
+    },
+    "m": {
+      "keys": [
+        "m"
+      ],
+      "count": 12888,
+      "file": "words-m.txt"
+    },
+    "b": {
+      "keys": [
+        "b"
+      ],
+      "count": 17144,
+      "file": "words-b.txt"
+    },
+    "bb": {
+      "keys": [
+        "bb"
+      ],
+      "count": 404,
+      "file": "words-bb.txt"
+    },
+    "s": {
+      "keys": [
+        "s"
+      ],
+      "count": 24054,
+      "file": "words-s.txt"
+    },
+    "ss": {
+      "keys": [
+        "ss"
+      ],
+      "count": 909,
+      "file": "words-ss.txt"
+    },
+    "ng": {
+      "keys": [
         "ng"
       ],
-      "count": 4193,
-      "file": "krdict-d.txt"
+      "count": 31589,
+      "file": "words-ng.txt"
     },
-    "e": {
+    "j": {
       "keys": [
-        "j",
-        "jj",
+        "j"
+      ],
+      "count": 19971,
+      "file": "words-j.txt"
+    },
+    "jj": {
+      "keys": [
+        "jj"
+      ],
+      "count": 324,
+      "file": "words-jj.txt"
+    },
+    "ch": {
+      "keys": [
         "ch"
       ],
-      "count": 4631,
-      "file": "krdict-e.txt"
+      "count": 9851,
+      "file": "words-ch.txt"
     },
-    "f": {
+    "k": {
       "keys": [
-        "k",
-        "t",
-        "p",
+        "k"
+      ],
+      "count": 3163,
+      "file": "words-k.txt"
+    },
+    "t": {
+      "keys": [
+        "t"
+      ],
+      "count": 4826,
+      "file": "words-t.txt"
+    },
+    "p": {
+      "keys": [
+        "p"
+      ],
+      "count": 6472,
+      "file": "words-p.txt"
+    },
+    "h": {
+      "keys": [
         "h"
       ],
-      "count": 3697,
-      "file": "krdict-f.txt"
+      "count": 13209,
+      "file": "words-h.txt"
     }
   }
 }
