@@ -142,3 +142,15 @@
 - 오디오: MP3, 44.1 kHz, 스테레오, 256 kbps
 - 원본 페이지: https://pixabay.com/music/beats-welcome-to-korea-173264/
 - 메모: Pixabay 페이지에 Content ID 등록 표시가 있으므로, 게임 플레이 영상을 외부 영상 플랫폼에 올릴 때 자동 저작권 클레임이 발생할 수 있음
+
+## `welcome-to-korea-01.mp3`
+- 원본: `soulprodmusic-welcome-to-korea-173264.mp3`
+- 제목: Welcome to Korea
+- 출처: Pixabay
+- 제작자: SoulProdMusic
+- Pixabay 자산 ID: `173264`
+- 라이선스: Pixabay Content License
+- 용도: 한국·역사 테마 게임의 로비/배경 BGM
+- 길이: 약 2분 13초
+- 원본 페이지: https://pixabay.com/music/beats-welcome-to-korea-173264/
+- 메모: Pixabay 페이지에 Content ID 등록 표시가 있으므로 영상 업로드 등 외부 배포 시 해당 플랫폼의 Content ID 정책을 확인하세요.
