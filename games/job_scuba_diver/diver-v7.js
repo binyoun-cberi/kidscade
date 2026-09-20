@@ -216,7 +216,7 @@ function buildWorld(contract){
    contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,inv:0},
    fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
    bag:[],bagWeight:0,income:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,complete:false,returned:false,
-   mission:{photos:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null}
+   mission:{photos:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
  for(const z of ZONES){
@@ -236,8 +236,8 @@ function buildWorld(contract){
  }
  // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
  world.fish.push(makeFish('blue',WORLD.w*.34,220,8101));
- world.fish.push(makeFish('orange',WORLD.w*.51,340,8102));
- world.fish.push(makeFish('pink',WORLD.w*.68,510,8103));
+ world.fish.push(makeFish('orange',WORLD.w*.39,250,8102));
+ world.fish.push(makeFish('pink',WORLD.w*.765,590,8103));
  world.fish.push(makeFish('long',WORLD.w*.43,1180,8104));
  world.fish.push(makeFish('giant',WORLD.w*.74,3920,9921));
  world.fish.push(makeFish('giant',WORLD.w*.31,4010,9922));
@@ -249,7 +249,7 @@ function buildWorld(contract){
    }
  }
  world.props.push({id:'statue',x:WORLD.w*.34,y:1810,type:'statue',done:false},{id:'arch',x:WORLD.w*.67,y:2050,type:'arch',done:false});
- world.pickups.push({id:'relic',name:'고대 표식판',x:WORLD.w*.54,y:2250,value:850,taken:false,weight:2});
+ world.pickups.push({id:'relic',name:'고대 표식판',x:3950,y:2250,value:850,taken:false,weight:2});
  world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5});
  for(let i=0;i<17;i++)world.mines.push({x:WORLD.w*.34+i*165+(i%2?65:-45),y:2670+(i%4)*105,size:i%4===0?'B':i%3===0?'S':'N',dead:false,fuse:0,marked:0});
  for(let i=0;i<52;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
@@ -460,16 +460,16 @@ function updatePhotoLabel(){
 function currentContract(){return world?.contract}
 function missionText(){
  if(!world)return'';const m=world.mission,id=world.contract.id;
- if(id==='reef')return'촬영 '+['blue','orange','pink'].filter(k=>m.photos[k]).length+'/3 · 산호 미로 탐사 · 수면 귀환';
- if(id==='kelp')return'희귀어 '+(m.photos.long?'촬영':'미촬영')+' · 표본 '+m.samples+'/2';
+ if(id==='reef')return'촬영 '+['blue','orange','pink'].filter(k=>m.photos[k]).length+'/3 · 산호 미로 '+(m.visited.reefMaze?'통과':'미탐사')+' · 수면 귀환';
+ if(id==='kelp')return'희귀어 '+(m.photos.long?'촬영':'미촬영')+' · 표본 '+m.samples+'/2 · 조류 협곡 '+(m.visited.currentCut?'통과':'미탐사');
  if(id==='ruins')return'유적 '+(m.statue?1:0)+(m.arch?1:0)+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
  return'600m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
 function missionComplete(){
  const m=world.mission,id=world.contract.id;
- if(id==='reef')return !!(m.photos.blue&&m.photos.orange&&m.photos.pink);
- if(id==='kelp')return !!(m.photos.long&&m.samples>=2);
+ if(id==='reef')return !!(m.photos.blue&&m.photos.orange&&m.photos.pink&&m.visited.reefMaze);
+ if(id==='kelp')return !!(m.photos.long&&m.samples>=2&&m.visited.currentCut);
  if(id==='ruins')return !!(m.statue&&m.arch&&m.relic);
  if(id==='wreck')return !!m.recorder;
  return !!(m.deep&&['A','S'].includes(m.giantGrade));
@@ -602,7 +602,7 @@ function update(dt){
  p.oxygen-=dt*(dashing?2.05:1)*rule.oxygen;applyZoneEnvironment(dt,p);
  const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
- const sub=subzoneForY(p.y);if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+zone.name,1300)}}
+ const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+zone.name,1300)}}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
  for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
