@@ -102,9 +102,9 @@ test('History Royale mobile battle uses procedural troops and bounded effects', 
 
 test('Nyam Universe release uses external Three.js and bounded 3D asset integration', () => {
   const game = gameById('low_nyam_universe');
-  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\.html\?v=2/);
+  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\\.html\\?v=3/);
   const html = read(game.href);
-  assert.match(html, /nyam-universe-v2\.js\?v=2/);
+  assert.match(html, /nyam-universe-v2\\.js\\?v=3/);
   assert.match(html, /type="importmap"/);
   assert.doesNotMatch(html, /Copyright 2010-2023 Three\.js Authors/);
   const runtime = fs.readFileSync(path.join(ROOT, 'games', 'low_nyam_universe', 'nyam-universe-v2.js'), 'utf8');
@@ -115,6 +115,9 @@ test('Nyam Universe release uses external Three.js and bounded 3D asset integrat
   assert.match(runtime, /kenney-car-kit\/sedan\.glb/);
   assert.match(runtime, /kenney-city-kit-suburban\/building-type-a\.glb/);
   assert.match(runtime, /space\/planets\/planet0/);
-  assert.match(runtime, /LOW_POWER\?120:170/);
-  assert.match(runtime, /index%3===0/);
+  assert.match(runtime, /MAX_REAL_FOODS=LOW_POWER\?16:30/);
+  assert.match(runtime, /const foodRingMaterial=/);
+  assert.match(runtime, /if\(f\.real\)realFoodCount/);
+  assert.match(runtime, /LOW_POWER\\?105:145/);
+  assert.match(runtime, /MAX_REAL_FOODS/);
 });
