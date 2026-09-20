@@ -29,55 +29,101 @@
     constructor() {
       this.manifest = null;
       this.manifestPromise = null;
-      this.bucketPromises = new Map();
+      this.keyToGroup = new Map();
+      this.groupPromises = new Map();
       this.bucketSets = new Map();
+      this.blockedWords = new Set();
     }
 
     async init() {
       if (this.manifest) return this.manifest;
       if (!this.manifestPromise) {
-        this.manifestPromise = fetch(new URL('manifest.json', DATA_BASE), { cache: 'no-cache' })
-          .then(async response => {
-            if (!response.ok) throw new Error(`wordchain manifest failed: ${response.status}`);
-            const manifest = await response.json();
-            if (!manifest || !manifest.buckets) throw new Error('invalid wordchain manifest');
-            this.manifest = manifest;
-            return manifest;
-          })
-          .catch(error => {
-            this.manifestPromise = null;
-            throw error;
-          });
+        this.manifestPromise = (async () => {
+          const response = await fetch(new URL('manifest.json', DATA_BASE), { cache: 'no-cache' });
+          if (!response.ok) throw new Error(`wordchain manifest failed: ${response.status}`);
+          const manifest = await response.json();
+          if (!manifest || (!manifest.groups && !manifest.buckets)) {
+            throw new Error('invalid wordchain manifest');
+          }
+
+          this.manifest = manifest;
+          this.keyToGroup.clear();
+
+          if (manifest.groups) {
+            for (const [groupName, info] of Object.entries(manifest.groups)) {
+              for (const key of Array.isArray(info?.keys) ? info.keys : []) {
+                this.keyToGroup.set(key, { groupName, info });
+              }
+            }
+          } else {
+            for (const [key, info] of Object.entries(manifest.buckets || {})) {
+              this.keyToGroup.set(key, { groupName: key, info: { ...info, keys: [key] } });
+            }
+          }
+
+          try {
+            const blocked = await fetch(new URL('blocked-words.txt', DATA_BASE), { cache: 'force-cache' });
+            if (blocked.ok) {
+              this.blockedWords = new Set(
+                (await blocked.text()).split(/\r?\n/).map(normalizeWord).filter(Boolean)
+              );
+            }
+          } catch (_) {
+            this.blockedWords = new Set();
+          }
+
+          return manifest;
+        })().catch(error => {
+          this.manifestPromise = null;
+          throw error;
+        });
       }
       return this.manifestPromise;
     }
 
-    async loadBucketByKey(key) {
-      if (!key) return new Set();
-      if (this.bucketSets.has(key)) return this.bucketSets.get(key);
-      if (this.bucketPromises.has(key)) return this.bucketPromises.get(key);
+    async loadGroup(groupName, info) {
+      if (this.groupPromises.has(groupName)) return this.groupPromises.get(groupName);
 
       const promise = (async () => {
-        const manifest = await this.init();
-        const info = manifest.buckets?.[key];
-        if (!info?.file) return new Set();
+        if (!info?.file) return;
         const response = await fetch(new URL(info.file, DATA_BASE), { cache: 'force-cache' });
-        if (!response.ok) throw new Error(`wordchain bucket failed: ${key} ${response.status}`);
-        const text = await response.text();
-        const set = new Set(
-          text.split(/\r?\n/)
-            .map(normalizeWord)
-            .filter(Boolean)
-        );
-        this.bucketSets.set(key, set);
-        return set;
+        if (!response.ok) throw new Error(`wordchain group failed: ${groupName} ${response.status}`);
+        const words = (await response.text()).split(/\r?\n/).map(normalizeWord).filter(Boolean);
+
+        for (const word of words) {
+          if (this.blockedWords.has(word)) continue;
+          const key = bucketKeyForSyllable(word);
+          if (!key) continue;
+          if (!this.bucketSets.has(key)) this.bucketSets.set(key, new Set());
+          this.bucketSets.get(key).add(word);
+        }
+
+        for (const key of Array.isArray(info.keys) ? info.keys : []) {
+          if (!this.bucketSets.has(key)) this.bucketSets.set(key, new Set());
+        }
       })().catch(error => {
-        this.bucketPromises.delete(key);
+        this.groupPromises.delete(groupName);
         throw error;
       });
 
-      this.bucketPromises.set(key, promise);
+      this.groupPromises.set(groupName, promise);
       return promise;
+    }
+
+    async loadBucketByKey(key) {
+      if (!key) return new Set();
+      await this.init();
+      if (this.bucketSets.has(key)) return this.bucketSets.get(key);
+
+      const group = this.keyToGroup.get(key);
+      if (!group) {
+        const empty = new Set();
+        this.bucketSets.set(key, empty);
+        return empty;
+      }
+
+      await this.loadGroup(group.groupName, group.info);
+      return this.bucketSets.get(key) || new Set();
     }
 
     async loadForWord(word) {
@@ -86,7 +132,7 @@
 
     async has(word) {
       const normalized = normalizeWord(word);
-      if (!normalized) return false;
+      if (!normalized || this.blockedWords.has(normalized)) return false;
       const set = await this.loadForWord(normalized);
       return set.has(normalized);
     }
@@ -103,7 +149,7 @@
 
       for (const set of sets) {
         for (const word of set) {
-          if (seen.has(word) || excluded.has(word)) continue;
+          if (seen.has(word) || excluded.has(word) || this.blockedWords.has(word)) continue;
           if (!required.includes(firstSyllable(word))) continue;
           seen.add(word);
           pool.push(word);
