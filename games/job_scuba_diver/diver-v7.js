@@ -8,20 +8,38 @@ const F='../../assets/game/2d/fish/';
 const P='../../assets/game/2d/pirate/';
 const SHARK='../../assets/game/2d/underwater/deep-diver/creatures/shark/';
 const SAVE='deep_diver_2d_v7',OLD='deep_diver_2d_v5',LEGACY='deep_diver_openwater_v4';
-const WORLD={w:4200,h:1900,surface:60,scaleDepth:4};
+const WORLD={w:6800,h:4200,surface:60,scaleDepth:5.5};
 const ZONES=[
- {id:'reef',name:'산호 정원',tag:'햇빛과 산호 군락',y0:60,y1:360,bg0:'#58c9d0',bg1:'#087792',accent:'#ffd36a'},
- {id:'kelp',name:'해초 숲',tag:'거대한 해초와 흐르는 조류',y0:360,y1:720,bg0:'#198b79',bg1:'#07545c',accent:'#6bd88a'},
- {id:'ruins',name:'침수 유적',tag:'석조 기둥과 가라앉은 회랑',y0:720,y1:1100,bg0:'#315f70',bg1:'#17394f',accent:'#c5b78d'},
- {id:'wreck',name:'난파선 지대',tag:'녹슨 잔해와 기뢰 수역',y0:1100,y1:1480,bg0:'#244b5a',bg1:'#102b3e',accent:'#db8b62'},
- {id:'abyss',name:'암흑 심해',tag:'빛이 사라진 열수 분출대',y0:1480,y1:1900,bg0:'#111c35',bg1:'#030713',accent:'#79e9ff'}
+ {id:'reef',name:'산호 정원',tag:'햇빛·산호 절벽·얕은 수로',y0:60,y1:720,bg0:'#58c9d0',bg1:'#087792',accent:'#ffd36a'},
+ {id:'kelp',name:'해초 숲',tag:'거대한 해초·강한 조류·숨은 통로',y0:720,y1:1500,bg0:'#198b79',bg1:'#07545c',accent:'#6bd88a'},
+ {id:'ruins',name:'침수 유적',tag:'석조 회랑·붕괴된 광장·깊은 우물',y0:1500,y1:2350,bg0:'#315f70',bg1:'#17394f',accent:'#c5b78d'},
+ {id:'wreck',name:'난파선 지대',tag:'선체 잔해·기뢰 골목·화물 구역',y0:2350,y1:3250,bg0:'#244b5a',bg1:'#102b3e',accent:'#db8b62'},
+ {id:'abyss',name:'암흑 심해',tag:'무광층·열수 계곡·포식자 영역',y0:3250,y1:4200,bg0:'#111c35',bg1:'#030713',accent:'#79e9ff'}
 ];
+const SUBZONES=[
+ {id:'reefShelf',zone:'reef',name:'산호 선반',y0:60,y1:300},
+ {id:'reefMaze',zone:'reef',name:'산호 미로',y0:300,y1:520},
+ {id:'blueDrop',zone:'reef',name:'푸른 낙차',y0:520,y1:720},
+ {id:'kelpEdge',zone:'kelp',name:'해초 초입',y0:720,y1:960},
+ {id:'kelpCathedral',zone:'kelp',name:'해초 대성당',y0:960,y1:1260},
+ {id:'currentCut',zone:'kelp',name:'조류 협곡',y0:1260,y1:1500},
+ {id:'ruinGate',zone:'ruins',name:'가라앉은 문',y0:1500,y1:1760},
+ {id:'ruinCourt',zone:'ruins',name:'침수 광장',y0:1760,y1:2070},
+ {id:'ruinWell',zone:'ruins',name:'고대 수직 우물',y0:2070,y1:2350},
+ {id:'wreckOuter',zone:'wreck',name:'잔해 외곽',y0:2350,y1:2620},
+ {id:'mineLane',zone:'wreck',name:'기뢰 골목',y0:2620,y1:2940},
+ {id:'cargoGrave',zone:'wreck',name:'화물선 무덤',y0:2940,y1:3250},
+ {id:'blackwater',zone:'abyss',name:'무광 수역',y0:3250,y1:3500},
+ {id:'ventValley',zone:'abyss',name:'열수 계곡',y0:3500,y1:3840},
+ {id:'predatorTrench',zone:'abyss',name:'포식자 해구',y0:3840,y1:4200}
+];
+const subzoneForY=y=>SUBZONES.find(z=>y>=z.y0&&y<z.y1)||SUBZONES[SUBZONES.length-1];
 const CONTRACTS=[
- {id:'reef',title:'01 · 산호초 생태 조사',desc:'청색어·주황어·빠른 암초어를 촬영하고 안전하게 귀환하세요.',reward:900,unlock:0,target:'reef'},
- {id:'kelp',title:'02 · 해초 숲 표본 조사',desc:'희귀 회색어를 촬영하고 일반 표본 2개를 회수하세요.',reward:1400,unlock:1,target:'kelp'},
- {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 촬영하고 고대 표식판을 회수하세요.',reward:2100,unlock:2,target:'ruins'},
- {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰를 피하고 침몰선의 항해기록 장치를 회수하세요.',reward:3000,unlock:3,target:'wreck'},
- {id:'abyss',title:'05 · 심해 생물 조사',desc:'350m 아래 대형 심해 상어를 A등급 이상 촬영하고 귀환하세요.',reward:4200,unlock:4,target:'abyss'}
+ {id:'reef',title:'01 · 산호초 생태 조사',desc:'청색 암초어·주황 산호어·분홍 산호어를 촬영하고 산호 미로를 지나 안전하게 귀환하세요.',reward:1100,unlock:0,target:'reef'},
+ {id:'kelp',title:'02 · 해초 숲 표본 조사',desc:'희귀 회색 긴꼬리어를 촬영하고 일반 표본 2개를 회수한 뒤 조류 협곡을 통과하세요.',reward:1800,unlock:1,target:'kelp'},
+ {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 기록하고 고대 표식판을 회수하세요.',reward:2700,unlock:2,target:'ruins'},
+ {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰 골목을 지나 침몰선의 항해기록 장치를 회수하세요.',reward:3900,unlock:3,target:'wreck'},
+ {id:'abyss',title:'05 · 심해 생물 조사',desc:'600m 아래 포식자 해구에서 대형 심해 상어를 A등급 이상 촬영하고 살아서 귀환하세요.',reward:5600,unlock:4,target:'abyss'}
 ];
 const UPGRADES={
  oxygen:{name:'산소통',desc:'최대 산소 +18초',base:900,max:5},
@@ -52,34 +70,34 @@ const imgs={}; let ready=false,loaded=0;
 for(const [k,src] of Object.entries(ASSETS)){const im=new Image();imgs[k]=im;im.onload=im.onerror=()=>{loaded++;if(loaded===Object.keys(ASSETS).length){ready=true;updateStartButtons()}};im.src=src}
 
 const SPECIES={
- blue:{name:'청색 암초어',img:'blue',depth:[5,75],weight:1.2,value:160,protected:false,rare:false,behavior:'school',speed:44},
- orange:{name:'주황 산호어',img:'orange',depth:[8,80],weight:1.0,value:150,protected:false,rare:false,behavior:'school',speed:40},
- pink:{name:'분홍 산호어',img:'pink',depth:[12,85],weight:1.1,value:175,protected:false,rare:false,behavior:'school',speed:42},
- green:{name:'초록 암초어',img:'green',depth:[30,155],weight:1.3,value:180,protected:false,rare:false,behavior:'flee',speed:48},
- red:{name:'붉은 해초어',img:'red',depth:[75,180],weight:1.4,value:220,protected:false,rare:false,behavior:'flee',speed:55},
- grey:{name:'회색 암초어',img:'grey',depth:[60,205],weight:1.5,value:210,protected:false,rare:false,behavior:'flee',speed:46},
- long:{name:'회색 긴꼬리어',img:'greyLong',depth:[100,225],weight:1.8,value:330,protected:true,rare:true,behavior:'skittish',speed:70},
- brown:{name:'갈색 난파어',img:'brown',depth:[170,340],weight:1.7,value:280,protected:false,rare:false,behavior:'territorial',speed:60,damage:7},
- dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[80,290],weight:1.6,value:360,protected:false,rare:true,behavior:'territorial',speed:92,damage:9},
- hunter:{name:'큰이빨 포식어',img:'fishBig',animated:true,fw:48,fh:32,frames:4,depth:[165,390],weight:2.8,value:610,protected:false,rare:true,behavior:'predator',speed:112,damage:12},
- angler:{name:'등불 심해어',img:'fishAnim',animated:true,fw:32,fh:32,frames:4,depth:[270,445],weight:2.2,value:520,protected:true,rare:true,behavior:'ambush',speed:105,damage:11},
- giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[350,470],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:18}
+ blue:{name:'청색 암초어',img:'blue',depth:[5,110],weight:1.2,value:160,protected:false,rare:false,behavior:'school',speed:44},
+ orange:{name:'주황 산호어',img:'orange',depth:[8,115],weight:1.0,value:150,protected:false,rare:false,behavior:'school',speed:40},
+ pink:{name:'분홍 산호어',img:'pink',depth:[12,120],weight:1.1,value:175,protected:false,rare:false,behavior:'school',speed:42},
+ green:{name:'초록 암초어',img:'green',depth:[55,255],weight:1.3,value:180,protected:false,rare:false,behavior:'flee',speed:48},
+ red:{name:'붉은 해초어',img:'red',depth:[120,265],weight:1.4,value:220,protected:false,rare:false,behavior:'flee',speed:55},
+ grey:{name:'회색 암초어',img:'grey',depth:[105,330],weight:1.5,value:210,protected:false,rare:false,behavior:'flee',speed:46},
+ long:{name:'회색 긴꼬리어',img:'greyLong',depth:[165,300],weight:1.8,value:330,protected:true,rare:true,behavior:'skittish',speed:70},
+ brown:{name:'갈색 난파어',img:'brown',depth:[280,585],weight:1.7,value:280,protected:false,rare:false,behavior:'territorial',speed:60,damage:8},
+ dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[245,720],weight:1.6,value:360,protected:false,rare:true,behavior:'territorial',speed:92,damage:10},
+ hunter:{name:'큰이빨 포식어',img:'fishBig',animated:true,fw:48,fh:32,frames:4,depth:[300,750],weight:2.8,value:610,protected:false,rare:true,behavior:'predator',speed:112,damage:14},
+ angler:{name:'등불 심해어',img:'fishAnim',animated:true,fw:32,fh:32,frames:4,depth:[430,755],weight:2.2,value:520,protected:true,rare:true,behavior:'ambush',speed:105,damage:13},
+ giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[600,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:24}
 };
 const BIOME_POPULATIONS={
  reef:[['blue',10],['orange',9],['pink',7],['green',7]],
  kelp:[['green',7],['red',8],['grey',7],['long',4]],
  ruins:[['grey',5],['brown',6],['dart',5],['hunter',3]],
- wreck:[['brown',5],['dart',4],['hunter',5],['angler',3]],
- abyss:[['angler',7],['hunter',4]]
+ wreck:[['brown',8],['dart',7],['hunter',7],['angler',5]],
+ abyss:[['angler',10],['hunter',8],['dart',5]]
 };
 const ZONE_RULES={
  reef:{oxygen:1,current:0,visibility:1,danger:'낮음'},
- kelp:{oxygen:1.06,current:32,visibility:.88,danger:'조류'},
- ruins:{oxygen:1.13,current:12,visibility:.82,danger:'시야 저하'},
- wreck:{oxygen:1.22,current:18,visibility:.75,danger:'기뢰·포식어'},
- abyss:{oxygen:1.38,current:10,visibility:.56,danger:'고압·열수·포식자'}
+ kelp:{oxygen:1.08,current:38,visibility:.86,danger:'강한 조류'},
+ ruins:{oxygen:1.18,current:16,visibility:.78,danger:'시야 저하·포식어'},
+ wreck:{oxygen:1.30,current:24,visibility:.68,danger:'기뢰·포식자'},
+ abyss:{oxygen:1.52,current:14,visibility:.46,danger:'고압·열수·대형 포식자'}
 };
-const VENTS=[[1320,1810,1],[2280,1840,1.25],[3220,1800,.9]];
+const VENTS=[[1180,3650,1.0],[2580,3710,1.25],[4120,3600,.95],[5480,3790,1.15],[6260,3880,.9]];
 
 let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null;
 const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0};
@@ -90,7 +108,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rnd=(a,b)=>a+Math.random()*(b-a),
 const depthOf=y=>Math.max(0,(y-WORLD.surface)/WORLD.scaleDepth);
 const zoneForY=y=>ZONES.find(z=>y>=z.y0&&y<z.y1)||ZONES[ZONES.length-1];
 const money=n=>Math.round(n).toLocaleString('ko-KR')+'원';
-function stats(){return{oxygen:110+meta.up.oxygen*18,speed:185*(1+meta.up.fins*.07),bag:8+meta.up.bag*3,camera:185+meta.up.camera*26,harpoon:270+meta.up.harpoon*38,sonar:Math.max(4,10-meta.up.sonar*1.15),armor:1-meta.up.suit*.11}}
+function stats(){return{oxygen:125+meta.up.oxygen*16,speed:168*(1+meta.up.fins*.065),bag:8+meta.up.bag*3,camera:185+meta.up.camera*26,harpoon:300+meta.up.harpoon*42,sonar:Math.max(4,10-meta.up.sonar*1.15),armor:1-meta.up.suit*.11}}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(meta))}catch(e){}}
 function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
@@ -104,47 +122,37 @@ function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zo
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
-function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1;return{kind:'fish',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||44)*(.72+rr()*.28),vy:(rr()-.5)*12,phase:rr()*Math.PI*2,scale:d===SPECIES.giant?1.5:d.behavior==='predator'?1.18:.8+rr()*.3,alive:true,photo:null,marked:0,alert:0,attackCd:0}}
+function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1;return{kind:'fish',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||44)*(.72+rr()*.28),vy:(rr()-.5)*12,phase:rr()*Math.PI*2,scale:d===SPECIES.giant?2.65:d.behavior==='predator'?1.24:.8+rr()*.3,alive:true,photo:null,marked:0,alert:0,attackCd:0}}
 
 function rectSolid(x,y,w,h,zone='reef',edge='sand'){return{shape:'rect',x,y,w,h,zone,edge}}
 function circleSolid(x,y,r,zone='reef',edge='dirt'){return{shape:'circle',x,y,r,zone,edge}}
 function buildTerrain(){
-  // The gaps between these shelves form a continuous route from the surface to the abyss.
+  // Wide/deep expedition map. Each biome has several chambers and at least two vertical routes.
   return[
-    // Coral garden: broad shelves with two generous passages.
-    rectSolid(0,300,760,90,'reef','sand'),
-    rectSolid(910,330,720,80,'reef','sand'),
-    rectSolid(2740,305,620,90,'reef','sand'),
-    rectSolid(3520,340,680,90,'reef','sand'),
-    circleSolid(820,340,95,'reef','sand'),circleSolid(3410,365,105,'reef','sand'),
+    // REEF 60~720 : shelves -> coral maze -> blue drop
+    rectSolid(0,330,980,100,'reef','sand'),rectSolid(1220,410,1080,95,'reef','sand'),rectSolid(2820,300,900,110,'reef','sand'),rectSolid(4230,430,900,95,'reef','sand'),rectSolid(5620,320,1180,110,'reef','sand'),
+    circleSolid(1080,385,110,'reef','sand'),circleSolid(2440,520,95,'reef','sand'),circleSolid(3960,390,105,'reef','sand'),circleSolid(5400,510,120,'reef','sand'),
+    rectSolid(0,650,720,70,'reef','sand'),rectSolid(1700,625,900,95,'reef','sand'),rectSolid(3500,640,980,80,'reef','sand'),rectSolid(5850,620,950,100,'reef','sand'),
 
-    // Kelp forest: staggered walls create an S-shaped swim route.
-    rectSolid(0,510,650,145,'kelp','dirt'),
-    rectSolid(760,610,720,125,'kelp','dirt'),
-    rectSolid(2740,500,680,135,'kelp','dirt'),
-    rectSolid(3520,625,680,130,'kelp','dirt'),
-    circleSolid(690,570,78,'kelp'),circleSolid(3425,590,88,'kelp'),
+    // KELP 720~1500 : tall walls and long current channels
+    rectSolid(0,860,780,210,'kelp','dirt'),rectSolid(1020,1030,980,185,'kelp','dirt'),rectSolid(2320,820,720,260,'kelp','dirt'),rectSolid(3370,1110,980,185,'kelp','dirt'),rectSolid(4680,850,760,250,'kelp','dirt'),rectSolid(5740,1110,1060,190,'kelp','dirt'),
+    circleSolid(890,980,100,'kelp'),circleSolid(2160,1180,105,'kelp'),circleSolid(3210,980,95,'kelp'),circleSolid(4540,1230,110,'kelp'),circleSolid(5580,980,100,'kelp'),
+    rectSolid(520,1410,940,90,'kelp','dirt'),rectSolid(2600,1390,980,110,'kelp','dirt'),rectSolid(4930,1400,930,100,'kelp','dirt'),
 
-    // Sunken ruins: broken stone platforms frame open courtyards.
-    rectSolid(0,805,710,135,'ruins','dirt'),
-    rectSolid(820,985,650,115,'ruins','dirt'),
-    rectSolid(2760,820,650,135,'ruins','dirt'),
-    rectSolid(3520,990,680,115,'ruins','dirt'),
-    circleSolid(1500,770,70,'ruins'),circleSolid(2685,1030,72,'ruins'),
+    // RUINS 1500~2350 : courtyards, broken gates, vertical well
+    rectSolid(0,1650,950,160,'ruins','dirt'),rectSolid(1240,1840,850,145,'ruins','dirt'),rectSolid(2440,1600,1120,155,'ruins','dirt'),rectSolid(3920,1880,900,145,'ruins','dirt'),rectSolid(5260,1620,1540,165,'ruins','dirt'),
+    circleSolid(1080,1760,105,'ruins'),circleSolid(2240,1960,90,'ruins'),circleSolid(3740,1720,100,'ruins'),circleSolid(5000,1980,115,'ruins'),
+    rectSolid(600,2210,880,120,'ruins','dirt'),rectSolid(2780,2180,950,170,'ruins','dirt'),rectSolid(4720,2200,920,150,'ruins','dirt'),
 
-    // Wreck field: tight rock shelves, but the wreck/recorder pocket stays open.
-    rectSolid(0,1180,720,155,'wreck','dirt'),
-    rectSolid(850,1370,760,120,'wreck','dirt'),
-    rectSolid(3400,1180,800,150,'wreck','dirt'),
-    rectSolid(3130,1400,1070,110,'wreck','dirt'),
-    circleSolid(1720,1240,95,'wreck'),circleSolid(3260,1300,88,'wreck'),
+    // WRECK 2350~3250 : debris pockets and mine lanes
+    rectSolid(0,2500,1080,190,'wreck','dirt'),rectSolid(1380,2770,900,165,'wreck','dirt'),rectSolid(2600,2460,880,200,'wreck','dirt'),rectSolid(3860,2800,980,160,'wreck','dirt'),rectSolid(5200,2480,1600,200,'wreck','dirt'),
+    circleSolid(1210,2600,105,'wreck'),circleSolid(2420,2870,115,'wreck'),circleSolid(3660,2580,100,'wreck'),circleSolid(5000,2920,115,'wreck'),
+    rectSolid(500,3140,920,110,'wreck','dirt'),rectSolid(3000,3110,1050,140,'wreck','dirt'),rectSolid(5600,3120,1200,130,'wreck','dirt'),
 
-    // Abyss: two cliff faces narrow the route into a dramatic central trench.
-    rectSolid(0,1520,1120,380,'abyss','dirt'),
-    rectSolid(3520,1510,680,390,'abyss','dirt'),
-    rectSolid(1180,1765,610,135,'abyss','dirt'),
-    rectSolid(2780,1775,650,125,'abyss','dirt'),
-    circleSolid(1870,1815,95,'abyss'),circleSolid(2700,1810,100,'abyss')
+    // ABYSS 3250~4200 : blackwater entry -> vent valley -> predator trench
+    rectSolid(0,3420,1250,250,'abyss','dirt'),rectSolid(1570,3650,900,180,'abyss','dirt'),rectSolid(2860,3370,980,260,'abyss','dirt'),rectSolid(4300,3690,980,185,'abyss','dirt'),rectSolid(5720,3410,1080,250,'abyss','dirt'),
+    circleSolid(1410,3510,120,'abyss'),circleSolid(2680,3790,105,'abyss'),circleSolid(4080,3510,115,'abyss'),circleSolid(5520,3820,120,'abyss'),
+    rectSolid(0,4090,850,110,'abyss','dirt'),rectSolid(1880,4070,980,130,'abyss','dirt'),rectSolid(3620,4050,920,150,'abyss','dirt'),rectSolid(5900,4060,900,140,'abyss','dirt')
   ];
 }
 function zonePlantPool(id,foreground=false){
@@ -205,9 +213,9 @@ function resolvePlayerTerrain(p,r=23){
 function buildWorld(contract){
  const st=stats(),r=seedRand(contract.unlock*9127+57);
  world={
-   contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,oxygen:st.oxygen,hp:100,dashCd:0,inv:0},
+   contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,inv:0},
    fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
-   bag:[],bagWeight:0,income:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',zoneFlash:0,envPulse:0,complete:false,returned:false,
+   bag:[],bagWeight:0,income:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,complete:false,returned:false,
    mission:{photos:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null}
  };
  let fishSeed=0;
@@ -226,11 +234,12 @@ function buildWorld(contract){
    }
  }
  // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
- world.fish.push(makeFish('blue',WORLD.w*.46,180,8101));
- world.fish.push(makeFish('orange',WORLD.w*.56,230,8102));
- world.fish.push(makeFish('dart',WORLD.w*.63,430,8103));
- world.fish.push(makeFish('long',WORLD.w*.40,600,8104));
- world.fish.push(makeFish('giant',WORLD.w*.73,1605,9921));
+ world.fish.push(makeFish('blue',WORLD.w*.34,220,8101));
+ world.fish.push(makeFish('orange',WORLD.w*.51,340,8102));
+ world.fish.push(makeFish('pink',WORLD.w*.68,510,8103));
+ world.fish.push(makeFish('long',WORLD.w*.43,1180,8104));
+ world.fish.push(makeFish('giant',WORLD.w*.74,3920,9921));
+ world.fish.push(makeFish('giant',WORLD.w*.31,4010,9922));
  for(const z of ZONES){
    const pool=zonePlantPool(z.id,false),count=z.id==='reef'?62:z.id==='kelp'?78:z.id==='ruins'?36:z.id==='wreck'?28:18;
    for(let i=0;i<count;i++){
@@ -238,14 +247,14 @@ function buildWorld(contract){
      world.decor.push({x,y,type,scale:z.id==='kelp'?rnd(.9,1.7):rnd(.65,1.3),flip:r()>.5,zone:z.id});
    }
  }
- world.props.push({id:'statue',x:WORLD.w*.38,y:830,type:'statue',done:false},{id:'arch',x:WORLD.w*.61,y:945,type:'arch',done:false});
- world.pickups.push({id:'relic',name:'고대 표식판',x:WORLD.w*.55,y:1010,value:650,taken:false,weight:2});
- world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.67,y:1360,value:1200,taken:false,weight:3.5});
- for(let i=0;i<9;i++)world.mines.push({x:WORLD.w*.52+i*95+(i%2?55:-40),y:1170+(i%3)*85,size:i%3===0?'B':i%3===1?'N':'S',dead:false,fuse:0,marked:0});
+ world.props.push({id:'statue',x:WORLD.w*.34,y:1810,type:'statue',done:false},{id:'arch',x:WORLD.w*.67,y:2050,type:'arch',done:false});
+ world.pickups.push({id:'relic',name:'고대 표식판',x:WORLD.w*.54,y:2250,value:850,taken:false,weight:2});
+ world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5});
+ for(let i=0;i<17;i++)world.mines.push({x:WORLD.w*.34+i*165+(i%2?65:-45),y:2670+(i%4)*105,size:i%4===0?'B':i%3===0?'S':'N',dead:false,fuse:0,marked:0});
  for(let i=0;i<30;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('지역마다 지형·시야·생물이 달라집니다. 아래로 내려갈수록 빛이 줄어드니 산소와 귀환 경로를 확인하세요.',3400);
+ resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('이제 한 바이옴 안에도 여러 세부 구역이 있습니다. 깊게 내려갈수록 귀환 시간과 위험이 크게 늘어납니다.',3800);
 }
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
@@ -354,13 +363,13 @@ function drawTerrain(){
 }
 function drawZoneLandmarks(){
  const onScreen=(p,m=240)=>p.x>-m&&p.x<view.w+m&&p.y>-m&&p.y<view.h+m;
- const clusters=[[420,260,'seaweedOrangeA',1.8],[720,285,'seaweedPinkC',1.5],[1880,270,'seaweedGreenB',2.0],[2380,300,'seaweedOrangeB',1.7],[3740,285,'seaweedPinkB',1.8]];
+ const clusters=[[420,270,'seaweedOrangeA',1.8],[1280,420,'seaweedPinkC',1.7],[2380,300,'seaweedGreenB',2.0],[3460,560,'seaweedOrangeB',1.9],[4760,370,'seaweedPinkB',1.8],[6120,540,'seaweedOrangeA',2.0]];
  for(const [x,y,t,sc] of clusters){const p=screenPos(x,y);if(onScreen(p))drawImg(imgs[t],p.x,p.y,72*sc,88*sc,false,Math.sin(world.time*.7+x)*.025,.92)}
- const stalks=[[360,665,2.8],[640,700,3.5],[1710,690,3.7],[2130,680,3.1],[3060,700,3.8],[3840,685,3.2]];
+ const stalks=[[360,920,3.0],[930,1180,4.0],[1860,880,3.8],[2640,1320,4.3],[3550,970,3.5],[4520,1280,4.1],[5480,900,3.9],[6350,1320,4.4]];
  for(let i=0;i<stalks.length;i++){const [x,y,sc]=stalks[i],p=screenPos(x,y),t=i%3===0?'seaweedGreenC':i%2?'seaweedA':'seaweedGreenB';if(onScreen(p,320))drawImg(imgs[t],p.x,p.y,72*sc,115*sc,i%2===0,Math.sin(world.time*.55+i)*.04,.86)}
- const ruins=[[510,1020,160],[1180,890,125],[2080,1040,175],[3220,930,150],[3890,1040,130]];
+ const ruins=[[520,1730,180],[1320,2060,150],[2460,1760,210],[3420,2200,165],[4580,1880,220],[5700,2120,175],[6420,1700,150]];
  ctx.save();for(const [x,y,h] of ruins){const p=screenPos(x,y);if(!onScreen(p,220))continue;ctx.fillStyle='rgba(44,57,59,.80)';ctx.fillRect(p.x-17,p.y-h,34,h);ctx.fillStyle='rgba(116,118,105,.72)';ctx.fillRect(p.x-29,p.y-h-10,58,13);ctx.fillRect(p.x-25,p.y-8,50,10);ctx.strokeStyle='rgba(156,151,123,.42)';ctx.lineWidth=3;ctx.strokeRect(p.x-17,p.y-h,34,h)}ctx.restore();
- const debris=[[760,1270,'wood1',.9,-.25],[1030,1410,'wood2',1.1,.34],[2460,1240,'wood1',.8,.42],[2890,1430,'wood2',1.0,-.31]];
+ const debris=[[760,2550,'wood1',1.0,-.25],[1480,2860,'wood2',1.2,.34],[2720,2460,'wood1',.9,.42],[3680,3010,'wood2',1.1,-.31],[4860,2680,'wood1',1.0,.18],[6040,3090,'wood2',1.2,-.22]];
  for(const [x,y,t,sc,rot] of debris){const p=screenPos(x,y);if(onScreen(p))drawImg(imgs[t],p.x,p.y,55*sc,38*sc,false,rot,.72,'brightness(.62) saturate(.65)')}
  ctx.save();for(let vi=0;vi<VENTS.length;vi++){const [x,y,sc]=VENTS[vi],p=screenPos(x,y);if(!onScreen(p,260))continue;ctx.fillStyle='#182132';ctx.beginPath();ctx.moveTo(p.x-34*sc,p.y);ctx.lineTo(p.x-12*sc,p.y-95*sc);ctx.lineTo(p.x+14*sc,p.y-88*sc);ctx.lineTo(p.x+38*sc,p.y);ctx.closePath();ctx.fill();for(let k=0;k<6;k++){const yy=p.y-105*sc-((world.time*22+k*31+vi*17)%150)*sc,xx=p.x+Math.sin(world.time*1.2+k)*12*sc;ctx.fillStyle=k%2?'rgba(120,105,255,.25)':'rgba(86,231,255,.34)';ctx.beginPath();ctx.arc(xx,yy,3+(k%3),0,Math.PI*2);ctx.fill()}}ctx.restore()
 }
@@ -379,7 +388,7 @@ function drawProps(){
  for(const o of world.props){const p=screenPos(o.x,o.y);if(p.x<-130||p.x>view.w+130||p.y<-160||p.y>view.h+160)continue;if(!imgs.props.complete)continue;let s;if(o.type==='statue')s={sx:372,sy:24,sw:92,sh:215,w:80,h:188};else s={sx:145,sy:24,sw:195,sh:195,w:180,h:180};ctx.save();ctx.globalAlpha=.84;ctx.imageSmoothingEnabled=false;ctx.drawImage(imgs.props,s.sx,s.sy,s.sw,s.sh,p.x-s.w/2,p.y-s.h/2,s.w,s.h);if(world.sonar>0&&!o.done){ctx.strokeStyle='#6df5ff';ctx.lineWidth=3;ctx.strokeRect(p.x-s.w*.45,p.y-s.h*.45,s.w*.9,s.h*.9)}ctx.restore()}
 }
 function drawWreck(){
- const p=screenPos(WORLD.w*.66,1320);if(p.x<-300||p.x>view.w+300||p.y<-240||p.y>view.h+240)return;drawImg(imgs.wreck,p.x,p.y,260,150,false,.17,.42,'brightness(.52) saturate(.65)');drawImg(imgs.wood1,p.x-115,p.y+48,42,34,false,.3,.65,'brightness(.55)');drawImg(imgs.wood2,p.x+126,p.y+56,38,30,true,-.2,.65,'brightness(.55)')}
+ const p=screenPos(WORLD.w*.72,2980);if(p.x<-300||p.x>view.w+300||p.y<-240||p.y>view.h+240)return;drawImg(imgs.wreck,p.x,p.y,260,150,false,.17,.42,'brightness(.52) saturate(.65)');drawImg(imgs.wood1,p.x-115,p.y+48,42,34,false,.3,.65,'brightness(.55)');drawImg(imgs.wood2,p.x+126,p.y+56,38,30,true,-.2,.65,'brightness(.55)')}
 function drawPickups(){
  for(const q of world.pickups){if(q.taken)continue;const p=screenPos(q.x,q.y);if(p.x<-50||p.x>view.w+50||p.y<-50||p.y>view.h+50)continue;ctx.save();ctx.shadowColor=q.id==='relic'?'#f1d86b':'#6beafa';ctx.shadowBlur=12;ctx.fillStyle=q.id==='relic'?'#cfb85a':'#61dbe7';ctx.fillRect(p.x-13,p.y-9,26,18);ctx.shadowBlur=0;if(world.sonar>0){ctx.strokeStyle='#75f4ff';ctx.lineWidth=2;ctx.strokeRect(p.x-19,p.y-15,38,30)}ctx.restore()}
 }
@@ -415,7 +424,7 @@ function drawSonarGuides(){
 }
 function drawShots(){for(const s of world.shots){const p=screenPos(s.x,s.y);ctx.strokeStyle='#d8eef3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-s.vx*.045,p.y-s.vy*.045);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.fillStyle='#f7f1d2';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill()}}
 function drawEffects(){for(const e of world.effects){const p=screenPos(e.x,e.y);if(e.type==='boom'){const im=e.big?imgs.explosionB:imgs.explosion,frames=10,fh=im.naturalHeight||82,fw=Math.floor((im.naturalWidth||660)/frames),fr=Math.min(frames-1,Math.floor(e.t/.075));ctx.save();ctx.globalAlpha=clamp(1-e.t/.8,0,1);ctx.imageSmoothingEnabled=false;if(im.complete)ctx.drawImage(im,fr*fw,0,fw,fh,p.x-45,p.y-45,90,90);ctx.restore()}else if(e.type==='spark'){ctx.save();ctx.globalAlpha=clamp(1-e.t/.35,0,1);ctx.strokeStyle='#d9f7ff';ctx.lineWidth=2;for(let i=0;i<5;i++){const a=i/5*Math.PI*2+e.t*3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(a)*(8+e.t*22),p.y+Math.sin(a)*(8+e.t*22));ctx.stroke()}ctx.restore()}else{ctx.fillStyle='rgba(125,238,249,'+clamp(1-e.t/.6,0,1)+')';ctx.beginPath();ctx.arc(p.x,p.y,10+e.t*30,0,Math.PI*2);ctx.strokeStyle='#7eeef7';ctx.stroke()}}}
-function playerAnim(){const p=world.player,speed=Math.hypot(p.vx,p.vy);if(p.inv>0)return{img:imgs.playerHurt};if(touch.dash||keys.shift)return{img:imgs.playerRush};if(speed<18)return{img:imgs.playerIdle};if(speed>world.st.speed*.78)return{img:imgs.playerFast};return{img:imgs.playerSwim}}
+function playerAnim(){const p=world.player,speed=Math.hypot(p.vx,p.vy);if(p.inv>0)return{img:imgs.playerHurt};if(world.player.dashTime>0)return{img:imgs.playerRush};if(speed<18)return{img:imgs.playerIdle};if(speed>world.st.speed*.78)return{img:imgs.playerFast};return{img:imgs.playerSwim}}
 function drawPlayer(){
  const p=screenPos(world.player.x,world.player.y),a=playerAnim(),im=a.img;if(!im||!im.complete)return;const frames=Math.max(1,Math.round(im.naturalWidth/im.naturalHeight)),f=sheetFrame(im,frames,world.time);const size=64;ctx.save();ctx.translate(p.x,p.y);ctx.scale(world.player.face<0?-1:1,1);if(world.player.inv>0)ctx.globalAlpha=.55+.35*Math.sin(world.time*25);ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,0,f.sw,f.sh,-size/2,-size/2,size,size);ctx.restore();
  for(let i=0;i<2;i++){ctx.fillStyle='rgba(210,249,255,.45)';ctx.beginPath();ctx.arc(p.x-world.player.face*26+i*5,p.y-12-i*6,2+i*.6,0,Math.PI*2);ctx.fill()}
@@ -424,7 +433,7 @@ function drawBubbles(){
  ctx.save();for(const b of world.bubbles){const p=screenPos(b.x,b.y);if(p.x<0||p.x>view.w||p.y<0||p.y>view.h)continue;ctx.strokeStyle='rgba(213,250,255,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,b.s,0,Math.PI*2);ctx.stroke()}ctx.restore()
 }
 function drawBiomeBoundaries(){
- const bands=[360,720,1100,1480];
+ const bands=[720,1500,2350,3250];
  ctx.save();
  for(let i=0;i<bands.length;i++){
    const y=screenPos(0,bands[i]).y;if(y<-100||y>view.h+100)continue;
@@ -450,15 +459,15 @@ function updatePhotoLabel(){
 function currentContract(){return world?.contract}
 function missionText(){
  if(!world)return'';const m=world.mission,id=world.contract.id;
- if(id==='reef')return'촬영 '+['blue','orange','dart'].filter(k=>m.photos[k]).length+'/3 · 수면 귀환';
+ if(id==='reef')return'촬영 '+['blue','orange','pink'].filter(k=>m.photos[k]).length+'/3 · 산호 미로 탐사 · 수면 귀환';
  if(id==='kelp')return'희귀어 '+(m.photos.long?'촬영':'미촬영')+' · 표본 '+m.samples+'/2';
  if(id==='ruins')return'유적 '+(m.statue?1:0)+(m.arch?1:0)+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
- return'350m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
+ return'600m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
 function missionComplete(){
  const m=world.mission,id=world.contract.id;
- if(id==='reef')return !!(m.photos.blue&&m.photos.orange&&m.photos.dart);
+ if(id==='reef')return !!(m.photos.blue&&m.photos.orange&&m.photos.pink);
  if(id==='kelp')return !!(m.photos.long&&m.samples>=2);
  if(id==='ruins')return !!(m.statue&&m.arch&&m.relic);
  if(id==='wreck')return !!m.recorder;
@@ -517,7 +526,7 @@ function captureFish(f){
  f.alive=false;world.bagWeight+=sp.weight;world.bag.push(f.key);world.income+=sp.value;world.mission.samples++;beep(650,.06);showHint(sp.name+' 표본 확보 +'+money(sp.value),1000)
 }
 function explodeMine(m){
- if(m.dead)return;m.dead=true;world.effects.push({type:'boom',x:m.x,y:m.y,t:0,big:m.size==='B'});const d=Math.hypot(world.player.x-m.x,world.player.y-m.y);if(d<125){const dmg=Math.max(10,Math.round((38-d*.18)*world.st.armor));world.player.hp-=dmg;world.player.inv=1.1;showHint('기뢰 폭발! -'+dmg+' HP',1000);beep(90,.22,'sawtooth')}
+ if(m.dead)return;m.dead=true;world.effects.push({type:'boom',x:m.x,y:m.y,t:0,big:m.size==='B'});const d=Math.hypot(world.player.x-m.x,world.player.y-m.y);if(d<165){const dmg=Math.max(12,Math.round((46-d*.17)*world.st.armor));world.player.hp-=dmg;world.player.inv=1.1;showHint('기뢰 폭발! -'+dmg+' HP',1000);beep(90,.22,'sawtooth')}
 }
 
 function updateFishAI(f,dt,p,st){
@@ -537,14 +546,15 @@ function updateFishAI(f,dt,p,st){
    if(dist<210){f.alert=1.1;tx=dx/dist*(sp.speed||70);ty=dy/dist*(sp.speed||70)*.72}
    else{tx=homeDx*.18+(Math.sign(f.vx)||1)*(sp.speed||60)*.45;ty=homeDy*.12}
  }else if(behavior==='ambush'){
-   if(dist<245){f.alert=1.4;tx=dx/dist*(sp.speed||105)*1.35;ty=dy/dist*(sp.speed||105)*1.15}
+   if(dist<280){f.alert=1.4;tx=dx/dist*(sp.speed||105)*1.62;ty=dy/dist*(sp.speed||105)*1.42}
    else{tx*=.94;ty=homeDy*.08+Math.sin(world.time*.45+f.phase)*3}
  }else if(behavior==='predator'){
    const sense=f.key==='giant'?520:360;
-   if(dist<sense){f.alert=1.2;const chase=(sp.speed||112)*(f.key==='giant'?1.06:1);tx=dx/dist*chase;ty=dy/dist*chase}
+   if(dist<sense){f.alert=1.2;const chase=(sp.speed||112)*(f.key==='giant'?1.72:1.58);tx=dx/dist*chase;ty=dy/dist*chase}
    else{tx=homeDx*.08+(Math.sign(f.vx)||1)*(sp.speed||90)*.38;ty=homeDy*.06}
  }
- const max=(sp.speed||50)*(f.alert>0?1.6:1.05),mag=Math.hypot(tx,ty)||1;
+ const dangerBoost=behavior==='predator'?1.48:behavior==='ambush'?1.38:behavior==='territorial'?1.22:1;
+ const max=(sp.speed||50)*(f.alert>0?1.6*dangerBoost:1.05),mag=Math.hypot(tx,ty)||1;
  if(mag>max){tx=tx/mag*max;ty=ty/mag*max}
  f.vx=lerp(f.vx,tx,clamp(dt*(behavior==='predator'||behavior==='ambush'?2.8:1.7),0,1));
  f.vy=lerp(f.vy,ty,clamp(dt*2.1,0,1));
@@ -582,20 +592,21 @@ function applyZoneEnvironment(dt,p){
 function resetInputs(){Object.keys(keys).forEach(k=>keys[k]=false);touch.x=touch.y=0;touch.dash=false;const k=$('knob');if(k)k.style.transform='translate(0,0)'}
 function update(dt){
  if(state!=='playing'||!world)return;world.time+=dt;const p=world.player,st=world.st;
- p.dashCd=Math.max(0,p.dashCd-dt);p.inv=Math.max(0,p.inv-dt);world.sonar=Math.max(0,world.sonar-dt);world.sonarCd=Math.max(0,world.sonarCd-dt);
+ p.dashCd=Math.max(0,p.dashCd-dt);p.dashTime=Math.max(0,p.dashTime-dt);p.inv=Math.max(0,p.inv-dt);world.sonar=Math.max(0,world.sonar-dt);world.sonarCd=Math.max(0,world.sonarCd-dt);
  let ix=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0)+touch.x,iy=(keys.w||keys.arrowup?-1:0)+(keys.s||keys.arrowdown?1:0)+touch.y;let len=Math.hypot(ix,iy);if(len>1){ix/=len;iy/=len}
- const dashing=(keys.shift||touch.dash)&&p.dashCd<=0&&len>.1,spd=st.speed*(dashing?1.75:1);if(dashing)p.dashCd=.65;
+ const dashPressed=(keys.shift||touch.dash)&&len>.1;if(dashPressed&&p.dashCd<=0){p.dashTime=.24;p.dashCd=.82;beep(210,.035)}const dashing=p.dashTime>0,spd=st.speed*(dashing?2.05:1);
  const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
  p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
  const zone=zoneForY(p.y),rule=ZONE_RULES[zone.id]||ZONE_RULES.reef;
  p.oxygen-=dt*(dashing?2.05:1)*rule.oxygen;applyZoneEnvironment(dt,p);
- const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=350)world.mission.deep=true;
+ const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
+ const sub=subzoneForY(p.y);if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+zone.name,1300)}}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
  for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
- for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<92&&m.fuse<=0){m.fuse=1.25;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
+ for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<115&&m.fuse<=0){m.fuse=.92;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
  for(const b of world.bubbles){b.y-=b.speed*dt;if(b.y<70){b.y=WORLD.h-20;b.x=rnd(0,WORLD.w)}}
  for(const e of world.effects)e.t+=dt;world.effects=world.effects.filter(e=>e.t<.85);
  const cameraLead=world.tool==='camera'?p.face*Math.min(170,view.w*.22):clamp(p.vx*.18,-70,70);world.camera.x=lerp(world.camera.x,p.x+cameraLead,1-Math.pow(.002,dt));world.camera.y=lerp(world.camera.y,p.y,1-Math.pow(.002,dt));
