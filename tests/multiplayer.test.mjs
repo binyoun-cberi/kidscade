@@ -212,6 +212,9 @@ test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and se
   assert.match(html, /failure\.fail_sting/);
   assert.match(html, /combat\.impact_heavy/);
   assert.match(html, /music\.korea_welcome/);
+  assert.match(html, /playTurnCue/);
+  assert.match(html, /playTimerWarning/);
+  assert.match(html, /warningSecond/);
   assert.match(html, /ensureBgm/);
   assert.match(html, /requestedMode/);
   assert.match(html, /mode=duel|requestedMode==='duel'/);
