@@ -12,7 +12,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
 </head>
 <body>
 <iframe id="game" title="벽란도 상행기" allow="autoplay; fullscreen" allowfullscreen></iframe>
-<div id="patchStatus">삽화 + 3D 항구 에셋 연결 중…</div>
+<div id="patchStatus">삽화 유지 + 별도 3D 항구 연결 중…</div>
 <script>
 (async()=>{
   const frame=document.getElementById('game');
@@ -21,7 +21,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
 
   window.addEventListener('message',e=>{
     if(e.source===frame.contentWindow&&e.data?.type==='byeokrando-hybrid-ready'){
-      status.textContent='삽화 + 3D 항구 연결 완료';
+      status.textContent='삽화 유지 + 별도 3D 항구 연결 완료';
       setTimeout(()=>status.remove(),1800);
     }
   });
@@ -57,7 +57,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
 
     const extras=[
       '<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>',
-      '<script src="./byeokrando-assets.js?v=2"><\/script>'
+      '<script src="./byeokrando-assets.js?v=3"><\/script>'
     ].join('\n');
     html=html.replace('</body>',extras+'\n</body>');
 
