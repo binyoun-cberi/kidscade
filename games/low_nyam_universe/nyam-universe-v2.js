@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 (()=>{'use strict';
-const $=id=>document.getElementById(id),T=THREE,KEY='nyamUniverse_v2';
+const $=id=>document.getElementById(id),T=THREE,KEY='nyamUniverse_v1';
 const LOW_POWER=innerWidth<760||((navigator.hardwareConcurrency||8)<=4);
 const SHADOWS=!LOW_POWER;
 const stages=[
@@ -14,8 +14,8 @@ const stages=[
  {name:'행성 산책',min:1e6,max:1e9,sky:0x111932,ground:0x18213a,items:['소행성','달','행성'],types:[0,7,7]},
  {name:'별들의 바다',min:1e9,max:149597870700,sky:0x0b1029,ground:0x10172c,items:['행성','고리 행성','별'],types:[7,8,9]}
 ];
-let renderer;try{renderer=new T.WebGLRenderer({canvas:$('view'),antialias:true});}catch(e){$('err').classList.remove('hidden');return}
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW_POWER?1.1:1.6));renderer.shadowMap.enabled=SHADOWS;renderer.shadowMap.type=T.PCFSoftShadowMap;
+let renderer;try{renderer=new T.WebGLRenderer({canvas:$('view'),antialias:!LOW_POWER,powerPreference:"high-performance"});}catch(e){$('err').classList.remove('hidden');return}
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW_POWER?1.05:1.6));renderer.shadowMap.enabled=SHADOWS;renderer.shadowMap.type=T.PCFSoftShadowMap;
 const scene=new T.Scene(),cam=new T.PerspectiveCamera(52,1,.1,350);scene.add(new T.HemisphereLight(0xffffff,0x647d83,2));const sun=new T.DirectionalLight(0xffffff,2.4);sun.position.set(-18,35,15);sun.castShadow=SHADOWS;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,far:100});scene.add(sun);scene.add(sun.target);
 const world=new T.Group();scene.add(world);const floor=new T.Mesh(new T.PlaneGeometry(350,350),new T.MeshStandardMaterial({color:0x8cbb70,roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 const sphere=new T.IcosahedronGeometry(1,2),box=new T.BoxGeometry(1,1,1),cone=new T.ConeGeometry(1,1,6),ring=new T.RingGeometry(.92,1,36);ring.rotateX(-Math.PI/2);
@@ -67,8 +67,8 @@ const assetWarmup=Promise.allSettled([
 
 function critter(color){let g=new T.Group();part(g,sphere,color,0,.8,0,.8,.72,.8);for(let x of [-.29,.29]){part(g,sphere,0xffffff,x,1.04,.66,.22);part(g,sphere,0x243343,x,1.04,.84,.105);part(g,sphere,0xffa9ac,x*1.6,.75,.64,.13,.07,.07);part(g,sphere,color,x,.15,.1,.26,.16,.36)}part(g,sphere,0x283e48,0,.63,.74,.2,.09,.05);part(g,cone,color,-.43,1.58,0,.22,.43,.22);part(g,cone,color,.43,1.58,0,.22,.43,.22);return g}
 const player=critter(0x62cfa3);scene.add(player);
-function model(type,color){
- const real=cloneAsset(TYPE_ASSET[type]);
+function model(type,color,useReal=true){
+ const real=useReal?cloneAsset(TYPE_ASSET[type]):null;
  if(real){real.userData.realAsset=TYPE_ASSET[type];return real;}
  let g=new T.Group();if(type===0){part(g,sphere,color,0,.48,0,.5);part(g,sphere,0xffffff,.25,.72,.25,.14)}
  if(type===1){part(g,sphere,color,0,.43,0,.48,.43,.48);part(g,box,0x49794c,0,.95,0,.12,.26,.12)}
@@ -157,7 +157,7 @@ function fmt(m){let n,u;if(m<1e-6){n=m/1e-9;u='nm'}else if(m<.001){n=m/1e-6;u='�
 function progress(){let s=stages[level];return Math.max(0,Math.min(1,(logSize-Math.log10(s.min))/Math.log10(s.max/s.min)))}function radius(){return .8+progress()*3.8}
 function tell(t){$('toast').textContent=t;toastTime=3}
 function beep(f=600){if(!sound)return;try{ac??=new (window.AudioContext||window.webkitAudioContext)();ac.resume();let o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(f,ac.currentTime);o.frequency.exponentialRampToValueAtTime(f*.55,ac.currentTime+.12);g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.18);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.2)}catch(e){}}
-function spawnFood(index,near=false){let s=stages[level],tier=index%3,sz=[.32,.8,1.8][tier]*(.85+Math.random()*.4);let g=model(s.types[tier],colors[index%colors.length]);g.scale.setScalar(sz);let ang=Math.random()*Math.PI*2,dist=near?4+Math.random()*9:8+Math.random()*65;g.position.set(player.position.x+Math.cos(ang)*dist,0,player.position.z+Math.sin(ang)*dist);world.add(g);let r=new T.Mesh(ring,new T.MeshBasicMaterial({color:0xafffc1,transparent:true,opacity:.65,side:T.DoubleSide}));r.scale.setScalar(sz*.85+.2);r.position.y=.025;g.add(r);foods.push({g,r,size:sz,name:s.items[tier]})}
+function spawnFood(index,near=false){let s=stages[level],tier=index%3,sz=[.32,.8,1.8][tier]*(.85+Math.random()*.4);const useReal=!LOW_POWER||index%3===0;let g=model(s.types[tier],colors[index%colors.length],useReal);g.scale.setScalar(sz);let ang=Math.random()*Math.PI*2,dist=near?4+Math.random()*9:8+Math.random()*65;g.position.set(player.position.x+Math.cos(ang)*dist,0,player.position.z+Math.sin(ang)*dist);world.add(g);let r=new T.Mesh(ring,new T.MeshBasicMaterial({color:0xafffc1,transparent:true,opacity:.65,side:T.DoubleSide}));r.scale.setScalar(sz*.85+.2);r.position.y=.025;g.add(r);foods.push({g,r,size:sz,name:s.items[tier]})}
 function build(){grace=2;death=null;stageStartCount=count;player.visible=true;for(let f of foods)f.r.material.dispose();for(let b of bots)b.halo.material.dispose();world.clear();foods=[];bots=[];effects=[];scene.fog=new T.Fog(stages[level].sky,65,155);floor.material.color.setHex(stages[level].ground);player.position.set(0,0,0);player.rotation.set(0,0,0);decorate();showChapter();for(let i=0;i<(LOW_POWER?120:170);i++)spawnFood(i,i<20);for(let i=0;i<7;i++){let size=1.1+i*.46,g=critter(colors[i%6]);g.scale.setScalar(size);g.position.set(Math.cos(i)* (14+i*5),0,Math.sin(i)*(14+i*5));world.add(g);const halo=new T.Mesh(ring,new T.MeshBasicMaterial({color:0xff6969,transparent:true,opacity:.8,side:T.DoubleSide}));halo.position.y=.025;halo.scale.setScalar(1.1);g.add(halo);bots.push({g,halo,size,phase:Math.random()*6,hit:0})}tell(stages[level].name+' · 작은 것부터 냠냠!');cam.position.set(0,13,19)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({level,logSize,count}))}catch(e){}}function saved(){try{let s=JSON.parse(localStorage.getItem(KEY));if(s&&Number.isInteger(s.level)&&s.level>=0&&s.level<8&&Number.isFinite(s.logSize)&&s.logSize>=Math.log10(stages[s.level].min)&&s.logSize<=Math.log10(stages[s.level].max)&&Number.isFinite(s.count))return s}catch(e){}return null}
 function clearInput(){keys={};pointer=null;joy.x=joy.y=0;$('knob').style.transform=''}async function start(load){let s=load?saved():null;level=s?.level||0;logSize=s?.logSize??-8;count=s?.count||0;dash=0;dashCool=0;if(level>=2&&!assetsReady)await Promise.race([assetWarmup,new Promise(r=>setTimeout(r,1300))]);build();playing=true;mode='play';for(let id of ['menu','paused','win','lost'])$(id).classList.add('hidden');clearInput();beep();save()}
