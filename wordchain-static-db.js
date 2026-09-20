@@ -163,6 +163,50 @@
       return pool.slice(0, Math.max(1, Math.min(30, Number(limit) || 12)));
     }
 
+    async sample(options = {}, limit = 40) {
+      await this.init();
+      const minLength = Math.max(2, Number(options.minLength) || 2);
+      const maxLength = Math.max(minLength, Math.min(24, Number(options.maxLength) || 24));
+      const excluded = options.exclude instanceof Set
+        ? options.exclude
+        : new Set((options.exclude || []).map(normalizeWord));
+      const predicate = typeof options.predicate === 'function' ? options.predicate : null;
+      const target = Math.max(1, Math.min(300, Number(limit) || 40));
+      const keys = [...this.keyToGroup.keys()];
+
+      for (let i = keys.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [keys[i], keys[j]] = [keys[j], keys[i]];
+      }
+
+      const pool = [];
+      const seen = new Set();
+      for (const key of keys) {
+        const set = await this.loadBucketByKey(key);
+        const local = [];
+        for (const word of set) {
+          if (seen.has(word) || excluded.has(word) || this.blockedWords.has(word)) continue;
+          const len = [...word].length;
+          if (len < minLength || len > maxLength) continue;
+          if (predicate && !predicate(word)) continue;
+          seen.add(word);
+          local.push(word);
+        }
+        for (let i = local.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [local[i], local[j]] = [local[j], local[i]];
+        }
+        pool.push(...local.slice(0, Math.max(18, target)));
+        if (pool.length >= target * 4) break;
+      }
+
+      for (let i = pool.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, target);
+    }
+
     get loadedBucketCount() {
       return this.bucketSets.size;
     }
