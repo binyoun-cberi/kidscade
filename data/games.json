@@ -403,11 +403,11 @@
     {
       "id": "low_nyam_universe",
       "title": "냠냠 우주 여행",
-      "href": "games/low_nyam_universe/냠냠 우주 여행.html?v=3",
+      "href": "games/low_nyam_universe/냠냠 우주 여행.html?v=4",
       "category": "trivia",
       "age": "low",
       "icon": "🪐",
-      "description": "바이러스에서 시작해 실제 3D 버섯·채소·나무·자동차·집·산을 지나 행성과 별까지 냠냠! 크기 단위가 바뀔 때마다 세계가 확 달라지는 3D 성장 모험!",
+      "description": "물건마다 실제 크기를 비교하며 작은 것부터 냠냠! 바이러스·미생물·채소·자동차·집·산·행성·별까지 단계별 최종 목표를 먹어 다음 세계로 커지는 3D 크기 성장 모험!",
       "cover": "assets/gate-image/냠냠 우주 여행.png"
     },
     {
