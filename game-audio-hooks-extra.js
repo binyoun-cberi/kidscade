@@ -237,7 +237,24 @@
 
   function setupHistoryRoyale() {
     soundAllowed = () => !document.getElementById('soundBtn')?.classList.contains('muted');
-    preload(['success.victory_fanfare', 'failure.fail_sting', 'failure.disappointed_voice']);
+    preload(['music.korea_welcome', 'success.victory_fanfare', 'failure.fail_sting', 'failure.disappointed_voice']);
+
+    let bgmStarted = false;
+    const startBgm = () => {
+      if (bgmStarted || !soundAllowed()) return;
+      bgmStarted = true;
+      play('music.korea_welcome', { loop: true, volume: 0.12, cooldownMs: 700 });
+      document.removeEventListener('pointerdown', startBgm);
+      document.removeEventListener('keydown', startBgm);
+    };
+    document.addEventListener('pointerdown', startBgm, { passive: true });
+    document.addEventListener('keydown', startBgm);
+
+    waitFor('#soundBtn', button => {
+      button.addEventListener('click', () => {
+        if (!bgmStarted) setTimeout(startBgm, 0);
+      });
+    });
 
     waitFor('#result', result => {
       let wasOpen = result.style.display === 'grid';
