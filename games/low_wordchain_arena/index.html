@@ -100,12 +100,19 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
 (() => {
 'use strict';
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
+let bgmHandle=null;
 const preloadSfx=()=>window.KidscadeAudio?.preload?.([
+ 'music.korea_welcome',
  'collect.coin_drop','collect.coin_pickup','movement.jump',
  'success.cheer_yay','success.cheer_woohoo','success.victory_fanfare',
  'failure.fail_sting','failure.disappointed_voice',
  'combat.impact_heavy','combat.hurt_grunt','shop.register_open'
 ])?.catch?.(()=>{});
+async function ensureBgm(){
+ if(bgmHandle||window.KidscadeAudio?.getSettings?.().muted)return;
+ const result=await window.KidscadeAudio?.play?.('music.korea_welcome',{loop:true,volume:.13,cooldownMs:500}).catch?.(()=>null);
+ if(result?.ok)bgmHandle=result;
+}
 function updateSoundButton(){
  const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted),btn=$('soundBtn');
  if(btn){btn.textContent=muted?'🔇 효과음':'🔊 효과음';btn.title=muted?'효과음 켜기':'효과음 끄기'}
@@ -113,7 +120,7 @@ function updateSoundButton(){
 function toggleSound(){
  const api=window.KidscadeAudio;if(!api)return;
  const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();
- if(!muted)sfx('collect.coin_pickup',{volume:.24,rate:1.15});
+ if(!muted){ensureBgm();sfx('collect.coin_pickup',{volume:.24,rate:1.15});}
 }
 
 const $=id=>document.getElementById(id);
@@ -185,6 +192,7 @@ async function timeoutPlayer(){
 }
 function newRound(){const available=starters.filter(w=>!used.includes(w));const list=available.length?available:starters;const w=list[Math.floor(Math.random()*list.length)];currentWord=w;if(!used.includes(w))used.push(w);$('currentWord').textContent=w;chip(w,'start');renderNeed();sfx('collect.coin_drop',{volume:.20,rate:1.08,cooldownMs:250});setTimeout(playerTurn,450)}
 function start(){
+ ensureBgm();
  if(!dbReady){setMsg('사전 준비가 아직 끝나지 않았어요.','bad');return}
  stopTimer();playing=true;myTurn=false;used=[];meLife=3;cpuLife=3;sfx('shop.register_open',{volume:.22,cooldownMs:500});renderLives();$('chips').innerHTML='';$('intro').classList.add('hidden');setMsg('시작 단어를 정하는 중…');newRound()
 }
@@ -209,8 +217,8 @@ async function prepareDb(){
 }
 $('soundBtn').addEventListener('click',toggleSound);
 $('soloModeBtn').addEventListener('click',start);
-$('duelModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?v=6&mode=duel');
-$('multiModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?v=6&mode=multi');
+$('duelModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=7&mode=duel'});
+$('multiModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=7&mode=multi'});
 $('modeBtn').addEventListener('click',()=>{stopTimer();playing=false;myTurn=false;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('intro').classList.remove('hidden')});
 $('introHomeBtn').addEventListener('click',()=>location.href='../../');
 $('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});$('homeBtn').addEventListener('click',()=>location.href='../../');
