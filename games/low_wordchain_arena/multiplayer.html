@@ -52,7 +52,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
     <div class="chips" id="chips"></div>
   </section>
 
-  <div class="controls"><button class="btn danger" id="leaveMatchBtn" disabled>방 나가기</button><button class="btn" onclick="location.href='./index.html'">혼자 하기</button><button class="btn" onclick="location.href='../../'">Kidscade</button></div>
+  <div class="controls"><button class="btn danger" id="leaveMatchBtn" disabled>방 나가기</button><button class="btn" onclick="location.href='./index.html?v=6'">혼자 하기</button><button class="btn" onclick="location.href='../../'">Kidscade</button></div>
 </div>
 
 <div class="overlay" id="entryOverlay">
@@ -107,7 +107,7 @@ const requestedMode=new URLSearchParams(location.search).get('mode');
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
-const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open','failure.disappointed_voice'])?.catch?.(()=>{});
+const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_grunt','shop.register_open','failure.disappointed_voice'])?.catch?.(()=>{});
 function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇':'🔊';$('soundBtn').title=muted?'효과음 켜기':'효과음 끄기'}
 function toggleSound(){const api=window.KidscadeAudio;if(!api)return;const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();if(!muted)sfx('collect.coin_pickup',{volume:.24,rate:1.15})}
 
@@ -233,8 +233,8 @@ function reactSfx(next){
    }
    for(const event of fresh){
      if(event.kind==='word')sfx(event.slot===next.self?.slot?'success.cheer_yay':'collect.coin_pickup',{volume:event.slot===next.self?.slot ? .38 : .18,cooldownMs:120});
-     else if(event.kind==='timeout'){sfx('combat.impact_heavy',{volume:.34,cooldownMs:120});if(event.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.28,cooldownMs:210})}
-     else if(event.kind==='one-shot'){sfx('combat.impact_heavy',{volume:.48,rate:.86,cooldownMs:180});if(event.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.30,cooldownMs:220})}
+     else if(event.kind==='timeout'){sfx('combat.impact_heavy',{volume:.34,cooldownMs:120});if(event.slot===next.self?.slot)sfx('combat.hurt_grunt',{volume:.28,cooldownMs:210})}
+     else if(event.kind==='one-shot'){sfx('combat.impact_heavy',{volume:.48,rate:.86,cooldownMs:180});if(event.slot===next.self?.slot)sfx('combat.hurt_grunt',{volume:.30,cooldownMs:220})}
      else if(event.kind==='starter')sfx('collect.coin_drop',{volume:.17,rate:1.1,cooldownMs:100});
      else if(event.kind==='leave')sfx('failure.fail_sting',{volume:.22,cooldownMs:280});
    }
@@ -243,7 +243,7 @@ function reactSfx(next){
  const slot=Number(next.match?.currentSlot);
  if(next.status==='playing'&&soundState.lastTurnSlot!==null&&slot!==soundState.lastTurnSlot&&slot===Number(next.self?.slot))sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240});
  if(next.status==='playing')soundState.lastTurnSlot=slot;
- if(next.status==='finished'&&soundState.resultRoom!==next.id){soundState.resultRoom=next.id;sfx(next.result?.outcome==='win'?'success.victory_fanfare':'failure.fail_sting',{volume:next.result?.outcome==='win' ? .46 : .36,cooldownMs:1000})}
+ if(next.status==='finished'&&soundState.resultRoom!==next.id){soundState.resultRoom=next.id;const won=next.result?.outcome==='win';sfx(won?'success.victory_fanfare':'failure.fail_sting',{volume:won?.46:.36,cooldownMs:1000});if(!won)sfx('failure.disappointed_voice',{volume:.22,cooldownMs:1000})}
 }
 function render(next){
  room=next;setServerNow(next.serverNow);reactSfx(next);renderPlayers(next);renderHistory(next);
