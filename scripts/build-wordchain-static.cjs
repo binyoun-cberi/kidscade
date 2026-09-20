@@ -7,17 +7,9 @@ const input = path.resolve(process.argv[2] || path.join(ROOT, 'data', 'wordchain
 const outDir = path.resolve(process.argv[3] || path.join(ROOT, 'data', 'wordchain'));
 
 const CHO_KEYS = ['g','gg','n','d','dd','r','m','b','bb','s','ss','ng','j','jj','ch','k','t','p','h'];
-const GROUPS = {
-  a: ['g','gg','n','d','dd','r'],
-  b: ['m','b','bb'],
-  c: ['s','ss'],
-  d: ['ng'],
-  e: ['j','jj','ch'],
-  f: ['k','t','p','h']
-};
 
 function normalizeWord(value) {
-  return String(value || '').normalize('NFC').replace(/[\s·ㆍ・\-]/g, '').trim().slice(0, 24);
+  return String(value || '').normalize('NFC').replace(/[\s·ㆍ・\-^]/g, '').trim().slice(0, 24);
 }
 function isPlayableWord(word) {
   const chars = [...word];
@@ -53,25 +45,41 @@ const keySets = Object.fromEntries(CHO_KEYS.map(key => [key, []]));
 for (const word of words) keySets[keyFor(word)].push(word);
 
 fs.mkdirSync(outDir, { recursive: true });
+for (const name of fs.readdirSync(outDir)) {
+  if (/^(?:krdict-[a-z]+|bucket-[a-z]+|words-[a-z]+)\.txt$/i.test(name)) {
+    fs.rmSync(path.join(outDir, name), { force: true });
+  }
+}
+
 const manifest = {
-  version: 3,
-  format: 'grouped-newline-text',
-  source: {
-    name: '국립국어원 한국어기초사전',
-    edition: '전체 내려받기 JSON 2026-09-19',
-    url: 'https://krdict.korean.go.kr/',
-    license: 'CC BY-SA 2.0 KR'
-  },
-  filter: 'lexicalUnit=단어; partOfSpeech=명사; 2~24글자 완성형 한글; 중복 표제어 병합',
+  version: 4,
+  format: 'initial-sharded-newline-text',
+  sources: [
+    {
+      name: '국립국어원 한국어기초사전',
+      edition: '전체 내려받기 JSON 2026-09-19',
+      url: 'https://krdict.korean.go.kr/',
+      license: 'CC BY-SA 2.0 KR'
+    },
+    {
+      name: '국립국어원 표준국어대사전',
+      edition: '전체 내려받기 XML 2026-06-05',
+      url: 'https://stdict.korean.go.kr/',
+      mirror: 'https://github.com/spellcheck-ko/korean-dict-nikl',
+      mirrorCommit: 'c31ae259de4cd0a355cf8a19b16e75578fd396e2',
+      license: 'CC BY-SA 2.0 KR'
+    }
+  ],
+  filter: '단어; 명사; 2~24글자 완성형 한글; 공백·구분기호 제거; 중복 표제어 병합',
   total: words.length,
   groups: {}
 };
 
-for (const [groupName, keys] of Object.entries(GROUPS)) {
-  const rows = keys.flatMap(key => keySets[key]);
-  const file = `krdict-${groupName}.txt`;
+for (const key of CHO_KEYS) {
+  const rows = keySets[key];
+  const file = `words-${key}.txt`;
   fs.writeFileSync(path.join(outDir, file), rows.join('\n') + (rows.length ? '\n' : ''), 'utf8');
-  manifest.groups[groupName] = { keys, count: rows.length, file };
+  manifest.groups[key] = { keys: [key], count: rows.length, file };
 }
 fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-console.log(`wordchain grouped static DB: ${words.length} words -> ${outDir}`);
+console.log(`wordchain initial-sharded static DB: ${words.length} words -> ${outDir}`);
