@@ -68,7 +68,6 @@ fs.mkdirSync(outDir, { recursive: true });
 const manifest = {
   version: 1,
   format: 'newline-text',
-  generatedAt: new Date().toISOString(),
   total: normalized.length,
   buckets: {}
 };
