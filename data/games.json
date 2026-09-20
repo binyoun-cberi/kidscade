@@ -1012,6 +1012,15 @@
       "title": "셋 친구 찾기!",
       "description": "모양·색깔·개수를 비교해 모두 같거나 모두 다른 카드 3장을 찾으며 관찰력과 분류·논리 사고를 길러요.",
       "cover": "assets/gate-image/셋 친구 찾기!.png"
+    },
+    {
+      "id": "low_wordchain_arena",
+      "title": "끝말잇기 아레나",
+      "href": "games/low_wordchain_arena/index.html?v=1",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🔤",
+      "description": "앞말의 끝 글자를 이어 12초 안에 새 단어를 만드는 낱말 대결! 두음법칙과 중복 판정을 지원하고, 서버 단어 DB가 연결되면 더 넓은 사전으로 검증해요."
     }
   ]
 }
