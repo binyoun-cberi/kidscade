@@ -103,7 +103,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
 const ROOM_STORAGE='kidscadeWordchainRoomId';
-let soundState={historyToken:'',countdown:null,resultRoom:'',lastTurnSlot:null};
+let soundState={historyCount:0,historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null};
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
 const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open'])?.catch?.(()=>{});
@@ -151,7 +151,7 @@ function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.elimin
 function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',countdown:null,resultRoom:'',lastTurnSlot:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyCount:0,historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 async function checkAccount(){
  try{
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
@@ -203,16 +203,20 @@ function renderHistory(next){
 }
 function reactSfx(next){
  const rows=next.match?.history||[];
- const newest=rows.at(-1);
- const token=newest?JSON.stringify([newest.kind,newest.turn,newest.word,newest.slot,newest.at]):'';
- if(token&&token!==soundState.historyToken){
-   if(soundState.historyToken){
-     if(newest.kind==='word')sfx(newest.slot===next.self?.slot?'success.cheer_yay':'collect.coin_pickup',{volume:newest.slot===next.self?.slot ? .38 : .18,cooldownMs:160});
-     else if(newest.kind==='timeout'){sfx('combat.impact_heavy',{volume:.34,cooldownMs:150});if(newest.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.28,cooldownMs:260})}
-     else if(newest.kind==='one-shot'){sfx('combat.impact_heavy',{volume:.48,rate:.86,cooldownMs:220});if(newest.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.30,cooldownMs:260})}
-     else if(newest.kind==='leave')sfx('failure.fail_sting',{volume:.22,cooldownMs:320});
+ if(!soundState.historyPrimed){
+   soundState.historyCount=rows.length;
+   soundState.historyPrimed=true;
+ } else if(rows.length<soundState.historyCount){
+   soundState.historyCount=rows.length;
+ } else if(rows.length>soundState.historyCount){
+   for(const event of rows.slice(soundState.historyCount)){
+     if(event.kind==='word')sfx(event.slot===next.self?.slot?'success.cheer_yay':'collect.coin_pickup',{volume:event.slot===next.self?.slot ? .38 : .18,cooldownMs:120});
+     else if(event.kind==='timeout'){sfx('combat.impact_heavy',{volume:.34,cooldownMs:120});if(event.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.28,cooldownMs:210})}
+     else if(event.kind==='one-shot'){sfx('combat.impact_heavy',{volume:.48,rate:.86,cooldownMs:180});if(event.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.30,cooldownMs:220})}
+     else if(event.kind==='starter')sfx('collect.coin_drop',{volume:.17,rate:1.1,cooldownMs:100});
+     else if(event.kind==='leave')sfx('failure.fail_sting',{volume:.22,cooldownMs:280});
    }
-   soundState.historyToken=token;
+   soundState.historyCount=rows.length;
  }
  const slot=Number(next.match?.currentSlot);
  if(next.status==='playing'&&soundState.lastTurnSlot!==null&&slot!==soundState.lastTurnSlot&&slot===Number(next.self?.slot))sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240});
