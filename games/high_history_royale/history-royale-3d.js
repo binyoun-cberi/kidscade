@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
+try {
 const canvas=document.getElementById("game3d");
 const box=document.getElementById("canvasBox");
 if(!canvas||!box)throw new Error("History Royale 3D canvas not found.");
@@ -35,6 +36,7 @@ let assaultAnnounced=false;
 let state=null;
 let lastTime=performance.now();
 let ready=false;
+let runtimeFailed=false;
 const LOW_POWER=innerWidth<760||((navigator.hardwareConcurrency||8)<=4);
 const DEBUG_3D=new URLSearchParams(location.search).get("debug3d")==="1";
 let debugEl=null,debugClock=0,debugFrames=0,debugFps=0;
@@ -862,7 +864,7 @@ function resize(){
   camera.fov=camera.aspect<1.15?46:(camera.aspect<1.42?40:34);
   camera.updateProjectionMatrix();
 }
-new ResizeObserver(resize).observe(box);resize();
+if(typeof ResizeObserver==='function')new ResizeObserver(resize).observe(box);else addEventListener('resize',resize);resize();
 
 async function loadAssets(){
   const jobs=[
@@ -931,20 +933,32 @@ async function init(){
   box.classList.add("three-ready");
   const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
+function use2DFallback(err,phase){
+  if(runtimeFailed)return;runtimeFailed=true;ready=false;window.HistoryRoyale3DReady=false;
+  box.classList.remove("three-ready");
+  const ast=document.getElementById("assetStatus");if(ast)ast.textContent="2D 안정 모드";
+  console.warn("[History Royale 3D] "+phase+" fallback to 2D",err);
+}
 function loop(now){
-  requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
-  state=window.HistoryRoyaleState||state;const g=state&&state.game;updateDebug(dt,g);
-  if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
-  if(ready&&g&&g.running){
-    updateAtmosphere(g,dt);
-    if(g.time<60&&!assaultAnnounced){assaultAnnounced=true;assaultFx=createAssaultFx();}
-    updateAssaultFx(dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);
-  }
-  else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;}
-  renderer.render(scene,camera);
+  requestAnimationFrame(loop);if(runtimeFailed)return;
+  try{
+    const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
+    state=window.HistoryRoyaleState||state;const g=state&&state.game;updateDebug(dt,g);
+    if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
+    if(ready&&g&&g.running){
+      updateAtmosphere(g,dt);
+      if(g.time<60&&!assaultAnnounced){assaultAnnounced=true;assaultFx=createAssaultFx();}
+      updateAssaultFx(dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);
+    }
+    else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;}
+    renderer.render(scene,camera);
+  }catch(err){use2DFallback(err,"runtime");}
 }
 requestAnimationFrame(loop);
-init().catch(function(err){
-  console.error("[History Royale 3D] fallback to 2D",err);window.HistoryRoyale3DReady=false;box.classList.remove("three-ready");
-  const ast=document.getElementById("assetStatus");if(ast)ast.textContent="2D 폴백 · 3D 로드 실패";
-});
+init().catch(function(err){use2DFallback(err,"init");});
+} catch (err) {
+  window.HistoryRoyale3DReady=false;
+  const fallbackBox=document.getElementById("canvasBox");fallbackBox?.classList?.remove("three-ready");
+  const ast=document.getElementById("assetStatus");if(ast)ast.textContent="2D 안정 모드";
+  console.warn("[History Royale 3D] boot fallback to 2D",err);
+}
