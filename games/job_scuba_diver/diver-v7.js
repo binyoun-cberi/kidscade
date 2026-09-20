@@ -48,7 +48,7 @@ const UPGRADES={
  camera:{name:'카메라 렌즈',desc:'촬영 판정 거리 증가',base:1100,max:4},
  harpoon:{name:'작살 릴',desc:'작살 사거리·속도 증가',base:1000,max:4},
  sonar:{name:'소나',desc:'쿨다운 감소',base:1100,max:4},
- suit:{name:'잠수복',desc:'충격 피해 감소',base:1200,max:4}
+ suit:{name:'잠수복',desc:'충격 피해 감소 · 안전 수심 +22m',base:1200,max:4}
 };
 const ASSETS={
  playerIdle:U+'player/player-idle.png',playerSwim:U+'player/player-swiming.png',playerFast:U+'player/player-fast.png',playerRush:U+'player/player-rush.png',playerHurt:U+'player/player-hurt.png',
@@ -106,6 +106,9 @@ const ATTACK_PROFILE={
  giant:{sense:590,windup:.72,lunge:.62,speed:405,cooldown:3.55,damage:1.35,label:'심해 상어 돌진'}
 };
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
+const CONTRACT_DEPTH_RATING=[150,285,430,575,760];
+const GRADE_SCORE={C:1,B:2,A:3,S:4};
+const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
 
 let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null;
 const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0};
@@ -116,7 +119,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rnd=(a,b)=>a+Math.random()*(b-a),
 const depthOf=y=>Math.max(0,(y-WORLD.surface)/WORLD.scaleDepth);
 const zoneForY=y=>ZONES.find(z=>y>=z.y0&&y<z.y1)||ZONES[ZONES.length-1];
 const money=n=>Math.round(n).toLocaleString('ko-KR')+'원';
-function stats(){return{oxygen:125+meta.up.oxygen*16,speed:168*(1+meta.up.fins*.065),bag:8+meta.up.bag*3,camera:185+meta.up.camera*26,harpoon:300+meta.up.harpoon*42,sonar:Math.max(4,10-meta.up.sonar*1.15),armor:1-meta.up.suit*.11}}
+function stats(){return{oxygen:105+meta.up.oxygen*15,speed:168*(1+meta.up.fins*.065),bag:8+meta.up.bag*3,camera:185+meta.up.camera*26,harpoon:300+meta.up.harpoon*42,sonar:Math.max(4,10-meta.up.sonar*1.15),armor:1-meta.up.suit*.11}}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(meta))}catch(e){}}
 function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
@@ -221,10 +224,10 @@ function resolvePlayerTerrain(p,r=23){
 function buildWorld(contract){
  const st=stats(),r=seedRand(contract.unlock*9127+57);
  world={
-   contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,inv:0},
+   contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],
-   bag:[],bagWeight:0,income:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,complete:false,returned:false,
-   mission:{photos:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
+   bag:[],bagWeight:0,income:0,photoIncome:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
+   mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
  for(const z of ZONES){
@@ -439,6 +442,11 @@ function drawSonarGuides(){
  }
  ctx.restore()
 }
+function drawTether(){
+ const t=world.tether;if(!t?.fish?.alive)return;const a=screenPos(world.player.x,world.player.y),b=screenPos(t.fish.x,t.fish.y);
+ ctx.save();ctx.strokeStyle=t.tension>1?'#ff8e77':t.tension>.86?'#ffd66d':'#d8eef3';ctx.lineWidth=2+(t.reelPulse>0?1.5:0);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+ ctx.fillStyle='rgba(0,18,28,.82)';ctx.fillRect((a.x+b.x)/2-34,(a.y+b.y)/2-12,68,16);ctx.fillStyle='#dffaff';ctx.font='800 9px system-ui';ctx.textAlign='center';ctx.fillText('릴 '+Math.round(t.progress*100)+'%',(a.x+b.x)/2,(a.y+b.y)/2);ctx.restore()
+}
 function drawShots(){for(const s of world.shots){const p=screenPos(s.x,s.y);ctx.strokeStyle='#d8eef3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-s.vx*.045,p.y-s.vy*.045);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.fillStyle='#f7f1d2';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill()}}
 function drawEffects(){for(const e of world.effects){const p=screenPos(e.x,e.y);if(e.type==='boom'){const im=e.big?imgs.explosionB:imgs.explosion,frames=10,fh=im.naturalHeight||82,fw=Math.floor((im.naturalWidth||660)/frames),fr=Math.min(frames-1,Math.floor(e.t/.075));ctx.save();ctx.globalAlpha=clamp(1-e.t/.8,0,1);ctx.imageSmoothingEnabled=false;if(im.complete)ctx.drawImage(im,fr*fw,0,fw,fh,p.x-45,p.y-45,90,90);ctx.restore()}else if(e.type==='spark'){ctx.save();ctx.globalAlpha=clamp(1-e.t/.35,0,1);ctx.strokeStyle='#d9f7ff';ctx.lineWidth=2;for(let i=0;i<5;i++){const a=i/5*Math.PI*2+e.t*3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(a)*(8+e.t*22),p.y+Math.sin(a)*(8+e.t*22));ctx.stroke()}ctx.restore()}else if(e.type==='wake'){ctx.save();ctx.globalAlpha=clamp(1-e.t/.65,0,1);ctx.strokeStyle=e.big?'rgba(255,143,110,.7)':'rgba(160,238,255,.62)';ctx.lineWidth=e.big?5:3;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(p.x,p.y,(18+i*13)+e.t*(e.big?115:70),0,Math.PI*2);ctx.stroke()}ctx.restore()}else{ctx.fillStyle='rgba(125,238,249,'+clamp(1-e.t/.6,0,1)+')';ctx.beginPath();ctx.arc(p.x,p.y,10+e.t*30,0,Math.PI*2);ctx.strokeStyle='#7eeef7';ctx.stroke()}}}
 function playerAnim(){const p=world.player,speed=Math.hypot(p.vx,p.vy);if(p.inv>0)return{img:imgs.playerHurt};if(world.player.dashTime>0)return{img:imgs.playerRush};if(speed<18)return{img:imgs.playerIdle};if(speed>world.st.speed*.78)return{img:imgs.playerFast};return{img:imgs.playerSwim}}
@@ -469,33 +477,35 @@ function drawDangerFX(){
  if(world.currentBurst>0){ctx.save();ctx.globalAlpha=clamp(world.currentBurst*.28,0,.22);ctx.strokeStyle='#b8f6ff';ctx.lineWidth=2;for(let y=90;y<view.h;y+=70){const off=(world.time*210+y*1.7)%180;ctx.beginPath();ctx.moveTo(-40+off,y);ctx.lineTo(120+off,y-18);ctx.stroke()}ctx.restore()}
 }
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawSonarGuides();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawDangerFX();updateHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDecor();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawDangerFX();updateHud();updatePhotoLabel()
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
- const t=findCameraTarget();$('photoLabel').textContent=t?SPECIES[t.key].name+' · 촬영 가능':'물고기를 촬영 프레임 안에 넣으세요'
+ const t=findCameraTarget();$('photoLabel').textContent=t?SPECIES[t.key].name+' · 예상 '+photoGrade(t)+'등급':'물고기를 촬영 프레임 안에 넣으세요'
 }
 function currentContract(){return world?.contract}
 function missionText(){
  if(!world)return'';const m=world.mission,id=world.contract.id;
- if(id==='reef')return'촬영 '+['blue','orange','pink'].filter(k=>m.photos[k]).length+'/3 · 산호 미로 '+(m.visited.reefMaze?'통과':'미탐사')+' · 수면 귀환';
- if(id==='kelp')return'희귀어 '+(m.photos.long?'촬영':'미촬영')+' · 표본 '+m.samples+'/2 · 조류 협곡 '+(m.visited.currentCut?'통과':'미탐사');
+ if(id==='reef')return'B+ 촬영 '+['blue','orange','pink'].filter(k=>gradeAtLeast(m.photoGrades[k],'B')).length+'/3 · 산호 미로 '+(m.visited.reefMaze?'통과':'미탐사')+' · 수면 귀환';
+ if(id==='kelp')return'긴꼬리어 A+ '+(gradeAtLeast(m.photoGrades.long,'A')?(m.photoGrades.long+'등급'):'미달')+' · 표본 '+m.samples+'/2 · 조류 협곡 '+(m.visited.currentCut?'통과':'미탐사');
  if(id==='ruins')return'유적 '+(m.statue?1:0)+(m.arch?1:0)+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
  return'600m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
 function missionComplete(){
  const m=world.mission,id=world.contract.id;
- if(id==='reef')return !!(m.photos.blue&&m.photos.orange&&m.photos.pink&&m.visited.reefMaze);
- if(id==='kelp')return !!(m.photos.long&&m.samples>=2&&m.visited.currentCut);
+ if(id==='reef')return !!(['blue','orange','pink'].every(k=>gradeAtLeast(m.photoGrades[k],'B'))&&m.visited.reefMaze);
+ if(id==='kelp')return !!(gradeAtLeast(m.photoGrades.long,'A')&&m.samples>=2&&m.visited.currentCut);
  if(id==='ruins')return !!(m.statue&&m.arch&&m.relic);
  if(id==='wreck')return !!m.recorder;
  return !!(m.deep&&['A','S'].includes(m.giantGrade));
 }
 function updateHud(){
- const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y);
- $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y);$('zoneText').textContent=z.name+' · '+(ZONE_RULES[z.id]?.danger||'');
- $('missionName').textContent=world.contract.title;$('missionText').textContent=missionText();$('bagText').textContent=world.bagWeight.toFixed(1)+' / '+world.st.bag+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY'
+ const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y),reserve=oxygenReserveStatus();
+ $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y),pressure=world.pressureOver>0?' · 압력+'+Math.round(world.pressureOver)+'m':'';
+ $('zoneText').textContent=z.name+' · '+(ZONE_RULES[z.id]?.danger||'')+pressure;
+ $('missionName').textContent=world.contract.title;$('missionText').textContent=missionText();$('bagText').textContent=world.bagWeight.toFixed(1)+' / '+world.st.bag+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
+ const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}
 }
 function setTool(name){
  if(!world)return;world.tool=name;document.body.classList.toggle('cameraMode',name==='camera');document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===name));
@@ -521,13 +531,40 @@ function photoGrade(f){
  const d=Math.hypot(f.x-world.player.x,f.y-world.player.y),ideal=world.st.camera*.52,range=clamp(1-Math.abs(d-ideal)/Math.max(ideal,1),0,1);
  const q=center*.78+range*.22;return q>.82?'S':q>.64?'A':q>.44?'B':'C'
 }
+function betterGrade(a,b){if(!a)return b;if(!b)return a;return GRADE_SCORE[b]>GRADE_SCORE[a]?b:a}
+function gradeAtLeast(g,min){return !!g&&GRADE_SCORE[g]>=GRADE_SCORE[min]}
+function photoValue(f,grade){
+ const sp=SPECIES[f.key],depth=depthOf(f.y),base=sp.rare?150:72,depthFactor=1+Math.min(1.15,depth/620*.9);
+ return Math.round(base*PHOTO_MULT[grade]*depthFactor)
+}
+function ratedDepth(){return (CONTRACT_DEPTH_RATING[world?.contract?.unlock||0]||150)+meta.up.suit*22}
+function oxygenReserveStatus(){
+ if(!world)return{code:'safe',label:'여유',ratio:9,need:0};const p=world.player,vertical=Math.max(0,p.y-WORLD.surface),travel=vertical/Math.max(95,world.st.speed*.74)*1.48;
+ const z=zoneForY(p.y),rule=ZONE_RULES[z.id]||ZONE_RULES.reef,pressure=1+Math.min(.8,(world.pressureOver||0)/180*.45),load=1+clamp(world.bagWeight/Math.max(1,world.st.bag),0,1)*.12;
+ const need=travel*rule.oxygen*pressure*load+8,ratio=p.oxygen/Math.max(1,need);
+ return ratio>1.65?{code:'safe',label:'여유',ratio,need}:ratio>1.08?{code:'warn',label:'주의',ratio,need}:{code:'critical',label:'즉시 상승',ratio,need}
+}
 function useCamera(){
  const f=findCameraTarget();if(!f){showHint('촬영 대상을 앞쪽 프레임에 맞추세요.',1100);beep(180,.05);return}
- const grade=photoGrade(f),old=f.photo;f.photo=old&&['S','A','B','C'].indexOf(old)<['S','A','B','C'].indexOf(grade)?old:grade;meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0};meta.codex[f.key].count++;const order={S:4,A:3,B:2,C:1};if(order[grade]>order[meta.codex[f.key].best||'C'])meta.codex[f.key].best=grade;
- world.mission.photos[f.key]=true;if(f.key==='giant')world.mission.giantGrade=grade;save();beep(1050,.06);setTimeout(()=>beep(1500,.07),65);world.effects.push({type:'flash',x:f.x,y:f.y,t:0});showHint(SPECIES[f.key].name+' · '+grade+'등급 촬영',1200)
+ const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade);
+ f.photo=betterGrade(f.photo,grade);world.mission.photos[f.key]=true;world.mission.photoGrades[f.key]=newBest;
+ meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0};meta.codex[f.key].count++;meta.codex[f.key].best=betterGrade(meta.codex[f.key].best,grade);
+ const oldValue=oldDive?photoValue(f,oldDive):0,newValue=photoValue(f,newBest),bonus=Math.max(0,newValue-oldValue);
+ if(bonus>0){world.income+=bonus;world.photoIncome+=bonus}
+ if(f.key==='giant')world.mission.giantGrade=betterGrade(world.mission.giantGrade,grade);
+ save();beep(1050,.06);setTimeout(()=>beep(1500,.07),65);world.effects.push({type:'flash',x:f.x,y:f.y,t:0});
+ showHint(SPECIES[f.key].name+' · '+grade+'등급 촬영'+(bonus>0?' · 연구 +'+money(bonus):' · 기존 기록 유지'),1350)
+}
+function reelHarpoon(){
+ const t=world.tether;if(!t||!t.fish?.alive){world.tether=null;return}
+ t.progress=clamp(t.progress+.13+meta.up.harpoon*.018,0,1);t.reelPulse=.18;
+ const f=t.fish,p=world.player,dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1;f.x+=dx/d*(12+meta.up.harpoon*3);f.y+=dy/d*(12+meta.up.harpoon*3);
+ beep(430,.035);showHint('릴 감기 · '+Math.round(t.progress*100)+'%',500)
 }
 function fireHarpoon(){
- const p=world.player;if(world.shots.length>2)return;const speed=520+meta.up.harpoon*55;world.shots.push({x:p.x+p.face*24,y:p.y,vx:p.face*speed,vy:0,life:world.st.harpoon/speed});beep(330,.04)
+ const p=world.player;if(world.tether){reelHarpoon();return}if(world.shots.length>2)return;
+ const speed=520+meta.up.harpoon*55,ax=p.aimX||p.face||1,ay=p.aimY||0,mag=Math.hypot(ax,ay)||1,ux=ax/mag,uy=ay/mag;
+ world.shots.push({x:p.x+ux*24,y:p.y+uy*24,vx:ux*speed,vy:uy*speed,life:world.st.harpoon/speed});beep(330,.04)
 }
 function useSonar(){
  if(world.sonarCd>0){showHint('소나 재사용까지 '+world.sonarCd.toFixed(1)+'초',900);return}world.sonar=4.5;world.sonarCd=world.st.sonar;document.body.classList.add('sonarActive');setTimeout(()=>document.body.classList.remove('sonarActive'),1250);beep(220,.18);setTimeout(()=>beep(760,.12),80);showHint('소나 펄스 · 희귀 생물과 위험물이 표시됩니다.',1200)
@@ -540,9 +577,26 @@ function interact(){
  showHint('가까운 조사 대상이 없습니다.',800)
 }
 function captureFish(f){
- const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호 관찰 대상입니다. 촬영하세요.',1200);return}
- if(world.bagWeight+sp.weight>world.st.bag){showHint('가방 무게가 부족합니다.',900);return}
- f.alive=false;world.bagWeight+=sp.weight;world.bag.push(f.key);world.income+=sp.value;world.mission.samples++;beep(650,.06);showHint(sp.name+' 표본 확보 +'+money(sp.value),1000)
+ const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호 관찰 대상입니다. 촬영하세요.',1200);return false}
+ if(world.bagWeight+sp.weight>world.st.bag){showHint('가방 무게가 부족합니다.',900);return false}
+ f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.bagWeight+=sp.weight;world.bag.push(f.key);world.income+=sp.value;world.mission.samples++;beep(650,.06);showHint(sp.name+' 표본 확보 +'+money(sp.value),1000);return true
+}
+function hookFish(f){
+ const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호종입니다. 작살 대신 촬영하세요.',1100);beep(150,.05);return false}
+ if(world.bagWeight+sp.weight>world.st.bag){showHint('가방 무게가 부족합니다.',900);return false}
+ if(world.tether)return false;f.hooked=true;f.attackMode='';f.specialCd=Math.max(f.specialCd,3);f.panic=2;
+ const struggle=1.05+sp.weight*.24+(sp.behavior==='predator'?.42:0);
+ world.tether={fish:f,progress:0,tension:0,reelPulse:0,struggle};world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false});beep(520,.055);
+ showHint(sp.name+' 명중! 작살을 다시 사용해 릴을 감으세요.',1250);return true
+}
+function updateTether(dt){
+ const t=world.tether;if(!t)return;const f=t.fish,p=world.player;if(!f?.alive){world.tether=null;return}
+ t.reelPulse=Math.max(0,t.reelPulse-dt);const dx=f.x-p.x,dy=f.y-p.y,d=Math.hypot(dx,dy)||1,maxLine=world.st.harpoon*1.12,ux=dx/d,uy=dy/d;
+ const struggleWave=.12+Math.abs(Math.sin(world.time*3.4+f.phase))*.17;t.tension=clamp(d/maxLine+struggleWave,0,1.4);
+ if(t.tension>1.16){f.hooked=false;world.tether=null;showHint('작살 줄이 끊어졌습니다! 너무 멀어졌습니다.',1000);beep(110,.08,'sawtooth');return}
+ const passive=(.12+meta.up.harpoon*.025)/Math.max(.9,t.struggle);t.progress=clamp(t.progress+dt*passive*(1-clamp(t.tension-.72,0,.65)),0,1);
+ f.vx+=ux*(70+f.scale*16)*dt;f.vy+=uy*(55+f.scale*12)*dt;p.vx+=ux*18*dt;p.vy+=uy*18*dt;
+ if(t.progress>=1)captureFish(f)
 }
 function explodeMine(m){
  if(m.dead)return;m.dead=true;world.effects.push({type:'boom',x:m.x,y:m.y,t:0,big:m.size==='B'});const d=Math.hypot(world.player.x-m.x,world.player.y-m.y);if(d<165){const dmg=Math.max(12,Math.round((46-d*.17)*world.st.armor));world.player.hp-=dmg;world.player.inv=1.1;showHint('기뢰 폭발! -'+dmg+' HP',1000);beep(90,.22,'sawtooth')}
@@ -637,7 +691,7 @@ function updateFishAI(f,dt,p,st){
  const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);
  if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){f.x-=f.vx*dt*2;f.y-=f.vy*dt*2;f.vx*=-.65;f.vy*=-.65;if(f.attackMode==='lunge'){f.attackMode='recover';f.attackT=.34}}
  const hitRange=48+(f.key==='giant'?48:0);
- if(HOSTILE_BEHAVIORS.has(behavior)&&dist<hitRange&&f.attackCd<=0){
+ if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&dist<hitRange&&f.attackCd<=0){
    const special=f.attackMode==='lunge';if(fishHitPlayer(f,sp,p,st,special?1.16:.68)&&special){f.attackMode='recover';f.attackT=f.key==='giant'?.82:.52}
  }
 }
@@ -666,22 +720,32 @@ function applyZoneEnvironment(dt,p){
    }
  }
 }
+function applyDepthPressure(dt,p,dep){
+ const rating=ratedDepth(),over=Math.max(0,dep-rating);world.pressureOver=over;
+ if(over<=0){world.pressureState='safe';world.pressureTick=0;return}
+ world.envPulse=Math.max(world.envPulse,clamp(.12+over/260*.35,.12,.48));
+ if(world.pressureState==='safe'){world.pressureState='over';showHint('장비 권장 수심 '+Math.round(rating)+'m 초과 · 산소 소모와 압력 위험 증가',1800)}
+ if(over>42){world.pressureTick-=dt;if(world.pressureTick<=0&&p.inv<=0){const dmg=Math.max(2,Math.round((2+over/85)*world.st.armor));p.hp-=dmg;p.inv=.32;world.pressureTick=1.18;showHint('수압 한계 초과! -'+dmg+' HP',650);beep(92,.07,'sawtooth')}}
+}
 function resetInputs(){Object.keys(keys).forEach(k=>keys[k]=false);touch.x=touch.y=0;touch.dash=false;const k=$('knob');if(k)k.style.transform='translate(0,0)'}
 function update(dt){
  if(state!=='playing'||!world)return;world.time+=dt;const p=world.player,st=world.st;
  p.dashCd=Math.max(0,p.dashCd-dt);p.dashTime=Math.max(0,p.dashTime-dt);p.inv=Math.max(0,p.inv-dt);world.sonar=Math.max(0,world.sonar-dt);world.sonarCd=Math.max(0,world.sonarCd-dt);world.lightJam=Math.max(0,world.lightJam-dt);world.currentBurst=Math.max(0,world.currentBurst-dt*.9);
  let ix=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0)+touch.x,iy=(keys.w||keys.arrowup?-1:0)+(keys.s||keys.arrowdown?1:0)+touch.y;let len=Math.hypot(ix,iy);if(len>1){ix/=len;iy/=len}
- const dashPressed=(keys.shift||touch.dash)&&len>.1;if(dashPressed&&p.dashCd<=0){p.dashTime=.24;p.dashCd=.82;beep(210,.035)}const dashing=p.dashTime>0,spd=st.speed*(dashing?2.05:1);
- const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
+ const dashInput=!!(keys.shift||touch.dash),dashPressed=dashInput&&!p.dashHeld&&len>.1;p.dashHeld=dashInput;if(dashPressed&&p.dashCd<=0){p.dashTime=.24;p.dashCd=.82;beep(210,.035)}const dashing=p.dashTime>0,spd=st.speed*(dashing?2.05:1);
+ if(len>.12){p.aimX=ix;p.aimY=iy;if(Math.abs(ix)>.12)p.face=ix>0?1:-1}const accel=6,tx=ix*spd,ty=iy*spd;p.vx=lerp(p.vx,tx,clamp(dt*accel,0,1));p.vy=lerp(p.vy,ty,clamp(dt*accel,0,1));if(len<.05){p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt)}
  p.x=clamp(p.x+p.vx*dt,45,WORLD.w-45);p.y=clamp(p.y+p.vy*dt,WORLD.surface+18,WORLD.h-35);const terrainHit=resolvePlayerTerrain(p,23);if(terrainHit){p.vx*=.82;p.vy*=.82}if(Math.abs(p.vx)>8)p.face=p.vx>0?1:-1;
- const zone=zoneForY(p.y),rule=ZONE_RULES[zone.id]||ZONE_RULES.reef;
- p.oxygen-=dt*(dashing?2.05:1)*rule.oxygen;applyZoneEnvironment(dt,p);
- const dep=depthOf(p.y);world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;
+ const zone=zoneForY(p.y),rule=ZONE_RULES[zone.id]||ZONE_RULES.reef,dep=depthOf(p.y);applyDepthPressure(dt,p,dep);
+ const bagLoad=clamp(world.bagWeight/Math.max(1,st.bag),0,1),effort=1+len*.10+bagLoad*.18+(dashing?.72:0),pressureBurn=1+Math.min(1.15,world.pressureOver/150*.52);
+ p.oxygen-=dt*rule.oxygen*effort*pressureBurn;applyZoneEnvironment(dt,p);
+ world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;
+ const reserve=oxygenReserveStatus();if(reserve.code!==world.reserveState){world.reserveState=reserve.code;if(reserve.code==='warn')showHint('귀환 산소가 빠듯합니다. 더 깊이 갈지 돌아갈지 결정하세요.',1500);if(reserve.code==='critical')showHint('귀환 산소 위험 · 지금 상승하세요!',1800)}
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
  const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+zone.name,1300)}}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
  for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
- for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){captureFish(f);s.life=0;break}}}
+ updateTether(dt);
+ for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){hookFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
  for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<115&&m.fuse<=0){m.fuse=.92;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
  for(const b of world.bubbles){b.y-=b.speed*dt;if(b.y<70){b.y=WORLD.h-20;b.x=rnd(0,WORLD.w)}}
@@ -692,17 +756,18 @@ function update(dt){
 }
 function finishDive(ok,reason){
  if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();
- const complete=missionComplete(),base=ok&&complete?world.contract.reward:0,depthBonus=Math.round(world.maxDepth*(ok?1.25:.25)),survival=ok?250:0,penalty=ok?0:Math.round(world.income*.45),gain=Math.max(0,world.income-penalty+base+depthBonus+survival),score=Math.round(gain+world.maxDepth*2+(ok?400:0));
- meta.money+=gain;meta.bestDepth=Math.max(meta.bestDepth,world.maxDepth);meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(CONTRACTS.length-1,world.contract.unlock+1));save();
+ const complete=missionComplete(),base=ok&&complete?world.contract.reward:0,depthBonus=ok?Math.round(world.maxDepth*1.25):0,survival=ok?250:0,gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
+ meta.money+=gain;meta.bestDepth=Math.max(meta.bestDepth,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(CONTRACTS.length-1,world.contract.unlock+1));save();
  $('resultTitle').textContent=ok?'무사 귀환 · 잠수 보고서':'긴급 구조 · 잠수 보고서';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div><div class="report"><div class="card"><span>계약</span><b>'+(complete?'완료':'미완료')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>수집 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>계약 보상</span><b>'+money(base)+'</b></div><div class="card"><span>총 획득</span><b>'+money(gain)+'</b></div><div class="card"><span>탐사 점수</span><b>'+score+'</b></div></div>';
+ const loss=ok?'':'<div class="notice">구조 시 현장 표본·유물·사진 연구 보상은 회수되지 않습니다. 도감 기록만 남습니다.</div>';
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+'<div class="report"><div class="card"><span>계약</span><b>'+(complete?'완료':'미완료')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>현장 가치</span><b>'+money(world.income)+'</b></div><div class="card"><span>계약 보상</span><b>'+money(base)+'</b></div><div class="card"><span>총 획득</span><b>'+money(gain)+'</b></div><div class="card"><span>탐사 점수</span><b>'+score+'</b></div></div>';
  $('resultScreen').classList.remove('hidden')
 }
 
 function frame(now){const dt=clamp((now-last)/1000,0,.033);last=now;if(state==='playing'){update(dt);render()}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
 function contractCards(){
- return CONTRACTS.map((c,i)=>'<div class="card '+(i>meta.unlocked?'locked':'')+'"><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="reward">계약 보상 '+money(c.reward)+'</div><button class="btn '+(i>meta.unlocked?'dark':'gold')+'" data-contract="'+c.id+'" '+(i>meta.unlocked?'disabled':'')+'>'+(i>meta.unlocked?'잠김':'잠수 시작')+'</button></div>').join('')
+ return CONTRACTS.map((c,i)=>'<div class="card '+(i>meta.unlocked?'locked':'')+'"><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">장비 권장 수심 '+(CONTRACT_DEPTH_RATING[i]+meta.up.suit*22)+'m</div><div class="reward">계약 보상 '+money(c.reward)+'</div><button class="btn '+(i>meta.unlocked?'dark':'gold')+'" data-contract="'+c.id+'" '+(i>meta.unlocked?'disabled':'')+'>'+(i>meta.unlocked?'잠김':'잠수 시작')+'</button></div>').join('')
 }
 function openContracts(){
  state='menu';document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
