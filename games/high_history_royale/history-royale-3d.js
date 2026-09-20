@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
 const canvas=document.getElementById("game3d");
@@ -9,10 +10,13 @@ if(!canvas||!box)throw new Error("History Royale 3D canvas not found.");
 const ASSET_ROOT="../../assets/game/history_royale/source_cc0/";
 const CHAR_ROOT=ASSET_ROOT+"quaternius_modular_males/gltf/";
 const PROP_ROOT=ASSET_ROOT+"quaternius_fantasy_props/gltf/";
+const WEAPON_ROOT=ASSET_ROOT+"quaternius_medieval_weapons/fbx/";
 const loader=new GLTFLoader();
+const fbxLoader=new FBXLoader();
 
 const characterTemplates=new Map();
 const propTemplates=new Map();
+const weaponTemplates=new Map();
 const unitMeshes=new Map();
 const buildingMeshes=new Map();
 const towerMeshes=new Map();
@@ -22,6 +26,8 @@ const projectileMeshes=[];
 let state=null;
 let lastTime=performance.now();
 let ready=false;
+let riverMesh=null;
+let riverPhase=0;
 
 const renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -113,6 +119,17 @@ function makeTree(x,z,s){
   g.position.set(x,0,z);
   world.add(g);
 }
+function makeHill(x,z,sx,sz,h,color){
+  const hill=mesh(new THREE.SphereGeometry(1,18,10),mat(color||0x708553),x,-.62+h*.25,z);
+  hill.scale.set(sx,h,sz);
+  hill.receiveShadow=true;
+  world.add(hill);
+}
+function makeLaneMarker(x,z,teamColor){
+  const post=mesh(new THREE.CylinderGeometry(.035,.045,.78,6),mat(0x60442d),x,.39,z);world.add(post);
+  const flag=mesh(new THREE.PlaneGeometry(.48,.24),new THREE.MeshBasicMaterial({color:teamColor,side:THREE.DoubleSide}),x+.24,.63,z);
+  flag.rotation.y=Math.PI/2;world.add(flag);
+}
 function buildWorld(){
   const ground=mesh(new THREE.PlaneGeometry(21,13.5),mat(0x7f985f),0,0,0);
   ground.rotation.x=-Math.PI/2;
@@ -125,9 +142,9 @@ function buildWorld(){
     world.add(road);
   });
 
-  const river=mesh(new THREE.PlaneGeometry(21,1.45),new THREE.MeshStandardMaterial({color:0x5e8994,roughness:.28,metalness:.05,transparent:true,opacity:.93}),0,.018,0);
-  river.rotation.x=-Math.PI/2;
-  world.add(river);
+  riverMesh=mesh(new THREE.PlaneGeometry(21,1.45),new THREE.MeshStandardMaterial({color:0x5e8994,roughness:.22,metalness:.08,transparent:true,opacity:.94}),0,.018,0);
+  riverMesh.rotation.x=-Math.PI/2;
+  world.add(riverMesh);
   groundBox(21,.09,.14,0x655f46,0,-.79,.03);
   groundBox(21,.09,.14,0x655f46,0,.79,.03);
 
@@ -138,12 +155,18 @@ function buildWorld(){
     groundBox(2.16,.13,.10,0x5f452d,x,.77,.28);
   });
 
+  makeHill(-8.9,-3.8,2.2,2.0,.72,0x667c4b);
+  makeHill(8.9,-3.3,2.0,2.4,.66,0x6f8452);
+  makeHill(-8.8,3.6,2.4,2.1,.70,0x6b8050);
+  makeHill(8.8,3.9,2.1,2.2,.68,0x738858);
   for(let i=0;i<26;i++){
     const side=i%2?-1:1;
     const x=side*(8.1+(i%3)*.35);
     const z=-5.6+(i*1.73)%11.2;
     makeTree(x,z,.72+(i%4)*.08);
   }
+  makeLaneMarker(-4.55,4.8,0x476d9f);makeLaneMarker(4.55,4.8,0x476d9f);
+  makeLaneMarker(-4.55,-4.8,0xa4554c);makeLaneMarker(4.55,-4.8,0xa4554c);
   for(let i=0;i<18;i++){
     const a=i*1.71,x=Math.sin(a)*8.2,z=Math.cos(a*1.27)*5.3;
     if(Math.abs(x-3.54)<1.7||Math.abs(x+3.54)<1.7)continue;
@@ -195,7 +218,7 @@ function makeHorse(color){
   [-.25,.25].forEach(function(x){[-.38,.38].forEach(function(z){g.add(mesh(new THREE.CylinderGeometry(.065,.055,.62,6),mat(color),x,.30,z));});});
   return g;
 }
-function makeWeapon(cls,teamColor){
+function makeProceduralWeapon(cls,teamColor){
   const g=new THREE.Group();
   if(cls==="창병"){
     const shaft=mesh(new THREE.CylinderGeometry(.018,.018,1.45,6),mat(0x73502f),.30,.78,0);shaft.rotation.z=-.18;g.add(shaft);
@@ -203,11 +226,8 @@ function makeWeapon(cls,teamColor){
   }else if(cls==="궁병"){
     const curve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(.2,.25,0),new THREE.Vector3(.5,.75,0),new THREE.Vector3(.2,1.25,0));
     g.add(mesh(new THREE.TubeGeometry(curve,12,.018,5,false),mat(0x6b442d)));
-    const stringGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(.2,.25,0),new THREE.Vector3(.35,.75,0),new THREE.Vector3(.2,1.25,0)]);
-    g.add(new THREE.Line(stringGeo,new THREE.LineBasicMaterial({color:0xd9d2b8})));
   }else{
     const blade=mesh(new THREE.BoxGeometry(.07,.72,.035),mat(0xb9b8b0,.35,.5),.28,.82,0);blade.rotation.z=-.20;g.add(blade);
-    const hilt=mesh(new THREE.BoxGeometry(.28,.055,.07),mat(0x73502f),.22,.48,0);hilt.rotation.z=-.20;g.add(hilt);
   }
   if(cls==="보병"){
     const shield=mesh(new THREE.CylinderGeometry(.30,.30,.08,16),mat(teamColor),-.28,.72,.02);
@@ -215,17 +235,66 @@ function makeWeapon(cls,teamColor){
   }
   return g;
 }
+function centerWeaponObject(object,mode="center"){
+  object.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(object);
+  const center=b.getCenter(new THREE.Vector3());
+  const min=b.min.clone();
+  object.position.x-=center.x;
+  object.position.z-=center.z;
+  object.position.y-=mode==="base"?min.y:center.y;
+}
+function normalizeWeapon(object,target,mode="center"){
+  object.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(object),size=b.getSize(new THREE.Vector3());
+  const longest=Math.max(.001,size.x,size.y,size.z);
+  object.scale.multiplyScalar(target/longest);
+  object.updateMatrixWorld(true);
+  centerWeaponObject(object,mode);
+}
+async function loadWeapon(name,target,mode="center"){
+  const obj=await fbxLoader.loadAsync(WEAPON_ROOT+name+".fbx");
+  normalizeWeapon(obj,target,mode);
+  obj.traverse(function(o){if(o.isMesh){o.castShadow=renderer.shadowMap.enabled;o.receiveShadow=true;}});
+  weaponTemplates.set(name,obj);
+}
+function cloneWeaponAsset(name){
+  const t=weaponTemplates.get(name);return t?t.clone(true):null;
+}
+const WEAPON_RIG={
+  Spear:{hand:"Wrist.R",pos:[.01,.01,.02],rot:[0,0,-.18]},
+  Bow_Wooden:{hand:"Wrist.L",pos:[.02,.01,.01],rot:[0,0,Math.PI/2]},
+  Sword:{hand:"Wrist.R",pos:[.01,.01,.01],rot:[0,0,-.10]},
+  Shield_Round:{hand:"Wrist.L",pos:[.02,.01,.03],rot:[Math.PI/2,0,Math.PI/2]}
+};
+function attachWeapon(character,name){
+  const cfg=WEAPON_RIG[name],weapon=cloneWeaponAsset(name);
+  if(!cfg||!weapon)return false;
+  const hand=character.getObjectByName(cfg.hand);
+  if(!hand)return false;
+  weapon.position.set(...cfg.pos);weapon.rotation.set(...cfg.rot);
+  hand.add(weapon);return true;
+}
+function equipActualWeapons(character,u,fid){
+  const icon=u.card?.icon||"";
+  let used=false;
+  if(u.cls==="창병"||icon==="spear")used=attachWeapon(character,"Spear")||used;
+  else if(u.cls==="궁병"||icon==="bow"||icon==="horsebow")used=attachWeapon(character,"Bow_Wooden")||used;
+  else used=attachWeapon(character,"Sword")||used;
+  if(u.cls==="보병"||icon==="shield"||u.hero)used=attachWeapon(character,"Shield_Round")||used;
+  return used;
+}
 function makeFallbackUnit(u,fid){
   const g=new THREE.Group(),fc=factionColor(fid),raise=u.cls==="기병"?.85:0;
   if(u.cls==="기병")g.add(makeHorse(0x76533b));
   g.add(mesh(new THREE.CylinderGeometry(.18,.22,.72,8),mat(fc),0,.55+raise,0));
   g.add(mesh(new THREE.SphereGeometry(.16,10,8),mat(0xd4aa7d),0,1.03+raise,0));
-  const weapon=makeWeapon(u.cls,fc);weapon.position.y=raise;g.add(weapon);
+  const weapon=makeProceduralWeapon(u.cls,fc);weapon.position.y=raise;g.add(weapon);
   if(u.hero){
     const halo=mesh(new THREE.TorusGeometry(.32,.035,6,20),new THREE.MeshBasicMaterial({color:0xf1ce69}),0,1.40+raise,0);
     halo.rotation.x=Math.PI/2;g.add(halo);
   }
-  return {root:g,mixer:null,clips:[],anim:null};
+  const health=createHealthBar(u.hero?1.00:.72,1.60+raise);g.add(health);return {root:g,mixer:null,clips:[],anim:null,health:health};
 }
 function pickCharacter(u){
   if(u.hero)return "King";
@@ -244,34 +313,38 @@ function createAnimatedUnit(u,fid){
     character.scale.multiplyScalar(.88);
   }
   holder.add(character);
-  const weapon=makeWeapon(u.cls,factionColor(fid));
-  if(u.cls==="기병")weapon.position.y=.78;
-  holder.add(weapon);
+  const equipped=equipActualWeapons(character,u,fid);
+  if(!equipped){const weapon=makeProceduralWeapon(u.cls,factionColor(fid));if(u.cls==="기병")weapon.position.y=.78;holder.add(weapon);}
   if(u.hero){
     const halo=mesh(new THREE.TorusGeometry(.38,.035,6,24),new THREE.MeshBasicMaterial({color:0xf2cf66}),0,1.55,0);
     halo.rotation.x=Math.PI/2;holder.add(halo);
   }
   const mixer=new THREE.AnimationMixer(character);
   mixers.add(mixer);
-  return {root:holder,mixer:mixer,clips:tpl.animations,anim:null,character:character};
+  const health=createHealthBar(u.hero?1.00:.72,u.cls==="기병"?1.98:(u.hero?1.75:1.48));holder.add(health);return {root:holder,mixer:mixer,clips:tpl.animations,anim:null,character:character,health:health};
 }
 function animName(u){
   if(u.dead)return "Death";
+  if(u.hitTimer>0||u.state==="hit")return "HitRecieve";
+  if(u.attackAnim>0||u.state==="attack"){
+    if(u.cls==="궁병"||u.card?.icon==="bow"||u.card?.icon==="horsebow")return "Gun_Shoot";
+    if(u.cls==="창병"||u.card?.icon==="spear")return "Punch_Right";
+    return "Sword_Slash";
+  }
   if(u.state==="move")return "Run";
-  if(u.state==="attack")return "Sword_Slash";
-  if(u.state==="hit")return "HitRecieve";
-  return "Idle";
+  if(u.cls==="궁병"||u.card?.icon==="bow"||u.card?.icon==="horsebow")return "Idle_Gun";
+  return "Idle_Sword";
 }
 function setAnimation(rec,name){
   if(!rec.mixer||rec.anim===name)return;
   let clip=THREE.AnimationClip.findByName(rec.clips,name);
-  if(!clip)clip=THREE.AnimationClip.findByName(rec.clips,name==="Run"?"Walk":"Idle");
+  if(!clip)clip=THREE.AnimationClip.findByName(rec.clips,name==="Run"?"Walk":(name.startsWith("Idle_")?"Idle":"Idle"));
   if(!clip)return;
   const next=rec.mixer.clipAction(clip);next.reset();
   if(name==="Sword_Slash"||name==="HitRecieve"||name==="Death"){next.setLoop(THREE.LoopOnce,1);next.clampWhenFinished=true;}
   else next.setLoop(THREE.LoopRepeat,Infinity);
   if(rec.action&&rec.action!==next)rec.action.fadeOut(.12);
-  next.fadeIn(.12).play();rec.action=next;rec.anim=name;
+  next.timeScale=name==="Run"?1.15:(name==="Punch_Right"||name==="Sword_Slash"||name==="Gun_Shoot"?1.45:1);next.fadeIn(.12).play();rec.action=next;rec.anim=name;
 }
 async function loadCharacter(name){
   const gltf=await loader.loadAsync(CHAR_ROOT+name+".gltf");
@@ -295,9 +368,13 @@ function addScenicProp(name,x,z,scale,rot){
 function decorateWithProps(){
   [
     ["Barrel",-7.1,4.75,.45,.4],["Crate_Wooden",-6.55,4.95,.42,-.2],["Bag",-7.55,5.05,.38,.5],
+    ["FarmCrate_Empty",-6.10,5.12,.36,.15],["Cauldron",-8.0,4.65,.34,.2],["Torch_Metal",-7.85,4.1,.52,0],
     ["Stall_Empty",7.15,4.75,.62,-.5],["Chest_Wood",6.55,5.08,.38,.3],["Banner_1",7.75,5.05,.55,0],
+    ["Vase_2",6.05,5.12,.28,.1],["Pot_1",6.35,4.75,.28,-.2],["Pouch_Large",7.62,4.55,.28,.2],
     ["Barrel",-7.15,-4.75,.45,-.4],["Crate_Wooden",-6.55,-5.0,.42,.3],["Bag",-7.55,-5.05,.38,-.5],
-    ["Stall_Empty",7.15,-4.75,.62,.5],["WeaponStand",6.45,-5.05,.50,-.3],["Banner_2",7.75,-5.05,.55,Math.PI]
+    ["FarmCrate_Empty",-6.12,-5.15,.36,-.1],["Workbench",-7.9,-4.65,.40,.2],["Anvil",-8.15,-4.15,.35,.3],
+    ["Stall_Empty",7.15,-4.75,.62,.5],["WeaponStand",6.45,-5.05,.50,-.3],["Banner_2",7.75,-5.05,.55,Math.PI],
+    ["Dummy",6.1,-4.5,.38,-.2],["Shield_Wooden",7.9,-4.25,.34,.2],["Torch_Metal",7.6,-3.95,.52,0]
   ].forEach(function(a){addScenicProp(a[0],a[1],a[2],a[3],a[4]);});
 }
 function buildingBase(b,fid){
@@ -332,13 +409,28 @@ function buildingBase(b,fid){
   const ring=mesh(new THREE.RingGeometry(.72,.80,32),new THREE.MeshBasicMaterial({color:fc,transparent:true,opacity:.42,side:THREE.DoubleSide}),0,.025,0);
   ring.rotation.x=-Math.PI/2;g.add(ring);return g;
 }
+function createHealthBar(width=.86,y=1.55){
+  const group=new THREE.Group();
+  group.position.y=y;
+  const bg=mesh(new THREE.PlaneGeometry(width,.075),new THREE.MeshBasicMaterial({color:0x241d18,transparent:true,opacity:.82,depthTest:false}),0,0,0);
+  const fill=mesh(new THREE.PlaneGeometry(width*.94,.046),new THREE.MeshBasicMaterial({color:0x70c875,depthTest:false}),0,0,.003);
+  group.add(bg,fill);group.userData.fill=fill;group.renderOrder=20;return group;
+}
+function updateHealthBar(bar,ratio,team){
+  if(!bar)return;ratio=THREE.MathUtils.clamp(ratio,0,1);
+  const fill=bar.userData.fill;if(fill){fill.scale.x=Math.max(.001,ratio);fill.position.x=-(1-ratio)*.40;fill.material.color.setHex(ratio<.28?0xd55245:(team==="player"?0x65b8e5:0xe27668));}
+  bar.quaternion.copy(camera.quaternion);
+}
+function setHitFlash(root,on){
+  root.traverse(function(o){if(!o.isMesh||!o.material)return;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(function(m){if(m&&m.emissive)m.emissive.setHex(on?0x3b0e08:0x000000);});});
+}
 function createTower(t,g){
   const fid=t.team==="player"?g.playerFaction:g.enemyFaction,root=makeFortress(fid,!!t.king),p=canvasToWorld(t.x,t.y);
-  root.position.copy(p);root.position.y=.02;if(t.team==="enemy")root.rotation.y=Math.PI;world.add(root);return {root:root};
+  root.position.copy(p);root.position.y=.02;if(t.team==="enemy")root.rotation.y=Math.PI;const health=createHealthBar(t.king?1.35:1.05,t.king?3.18:2.35);root.add(health);world.add(root);return {root:root,health:health};
 }
 function createBuilding(b,g){
   const fid=b.team==="player"?g.playerFaction:g.enemyFaction,root=buildingBase(b,fid),p=canvasToWorld(b.x,b.y);
-  root.position.copy(p);if(b.team==="enemy")root.rotation.y=Math.PI;world.add(root);return {root:root};
+  root.position.copy(p);if(b.team==="enemy")root.rotation.y=Math.PI;const health=createHealthBar(.92,1.78);root.add(health);world.add(root);return {root:root,health:health};
 }
 function syncTowers(g){
   const live=new Set();
@@ -346,7 +438,7 @@ function syncTowers(g){
     live.add(t.id);let rec=towerMeshes.get(t.id);
     if(!rec){rec=createTower(t,g);towerMeshes.set(t.id,rec);}
     const p=canvasToWorld(t.x,t.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    if(t.dead){rec.root.rotation.z=.18;rec.root.position.y=-.28;}
+    updateHealthBar(rec.health,t.hp/t.maxHp,t.team);setHitFlash(rec.root,t.damageFlash>0);if(t.dead){rec.root.rotation.z=.18;rec.root.position.y=-.28;}
   });
   towerMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);towerMeshes.delete(id);}});
 }
@@ -357,7 +449,7 @@ function syncBuildings(g){
     live.add(key);let rec=buildingMeshes.get(key);
     if(!rec){rec=createBuilding(b,g);buildingMeshes.set(key,rec);}
     const p=canvasToWorld(b.x,b.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;rec.root.scale.setScalar(.92+.08*life);
+    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;rec.root.scale.setScalar(.92+.08*life);updateHealthBar(rec.health,b.hp/b.maxHp,b.team);setHitFlash(rec.root,b.hitTimer>0);
     if(b.dead){rec.root.rotation.z=.22;rec.root.position.y=-.18;}
   });
   buildingMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);buildingMeshes.delete(id);}});
@@ -370,15 +462,22 @@ function syncUnits(g){
     const p=canvasToWorld(u.x,u.y);rec.root.position.x=p.x;rec.root.position.z=p.z;rec.root.position.y=u.spawnTimer>0?Math.max(0,.18-u.spawnTimer*.35):0;
     if(u.target&&u.target.x!=null){const q=canvasToWorld(u.target.x,u.target.y);rec.root.rotation.y=Math.atan2(q.x-p.x,q.z-p.z)+Math.PI;}
     else rec.root.rotation.y=u.team==="player"?Math.PI:0;
-    setAnimation(rec,animName(u));rec.root.scale.setScalar(u.hero?1.12:1);
+    setAnimation(rec,animName(u));const spawnScale=u.spawnTimer>0?THREE.MathUtils.clamp(1-u.spawnTimer/.42,.25,1):1;rec.root.scale.setScalar((u.hero?1.12:1)*spawnScale);updateHealthBar(rec.health,u.hp/u.maxHp,u.team);setHitFlash(rec.root,u.hitTimer>0);
   });
   unitMeshes.forEach(function(rec,id){if(!live.has(id)){if(rec.mixer)mixers.delete(rec.mixer);world.remove(rec.root);unitMeshes.delete(id);}});
 }
+function createProjectileMesh(){
+  const arrow=cloneWeaponAsset("Arrow");
+  if(arrow){arrow.scale.multiplyScalar(.72);scene.add(arrow);return arrow;}
+  const p=mesh(new THREE.CylinderGeometry(.025,.025,.55,5),mat(0xd7c79c,.5,.15),0,.7,0);p.rotation.x=Math.PI/2;scene.add(p);return p;
+}
 function syncProjectiles(g){
-  while(projectileMeshes.length<g.projectiles.length){
-    const p=mesh(new THREE.CylinderGeometry(.025,.025,.55,5),mat(0xd7c79c,.5,.15),0,.7,0);p.rotation.x=Math.PI/2;scene.add(p);projectileMeshes.push(p);
-  }
-  projectileMeshes.forEach(function(m,i){const p=g.projectiles[i];m.visible=!!p;if(!p)return;const q=canvasToWorld(p.x,p.y);m.position.set(q.x,.82,q.z);});
+  while(projectileMeshes.length<g.projectiles.length)projectileMeshes.push(createProjectileMesh());
+  projectileMeshes.forEach(function(m,i){
+    const p=g.projectiles[i];m.visible=!!p;if(!p)return;
+    const q=canvasToWorld(p.x,p.y);m.position.set(q.x,.82,q.z);
+    if(p.target){const tq=canvasToWorld(p.target.x,p.target.y),dir=tq.clone().sub(q);m.rotation.y=Math.atan2(dir.x,dir.z);m.rotation.z=-.08;}
+  });
 }
 function syncPreview(g){
   const card=g.selectedIndex>=0?g.pHand[g.selectedIndex]:null,p=g.pointer;
@@ -396,18 +495,22 @@ function resize(){
 new ResizeObserver(resize).observe(box);resize();
 
 async function loadAssets(){
-  await Promise.allSettled([
+  const jobs=[
     loadCharacter("Adventurer"),loadCharacter("Farmer"),loadCharacter("King"),
-    loadProp("Barrel"),loadProp("Crate_Wooden"),loadProp("Bag"),loadProp("Stall_Empty"),loadProp("Chest_Wood"),
-    loadProp("Banner_1"),loadProp("Banner_2"),loadProp("WeaponStand"),loadProp("Dummy")
-  ]);
+    loadWeapon("Spear",1.55,"base"),loadWeapon("Bow_Wooden",1.10,"center"),loadWeapon("Sword",.82,"base"),
+    loadWeapon("Shield_Round",.66,"center"),loadWeapon("Arrow",.58,"base"),
+    ...["Barrel","Crate_Wooden","Bag","Stall_Empty","Chest_Wood","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden"].map(loadProp)
+  ];
+  const results=await Promise.allSettled(jobs);
+  const failed=results.filter(r=>r.status==="rejected");
+  if(failed.length)console.warn("[History Royale 3D] 일부 에셋 로드 실패",failed.map(x=>x.reason));
 }
 async function init(){
   state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;box.classList.add("three-ready");
-  const ast=document.getElementById("assetStatus");if(ast)ast.textContent="3D · Quaternius CC0";
+  const ast=document.getElementById("assetStatus");if(ast)ast.textContent=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size}`;
 }
 function loop(now){
-  requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});
+  requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
   if(ready&&g&&g.running){syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncPreview(g);}
   else{previewRing.visible=false;previewFill.visible=false;}
