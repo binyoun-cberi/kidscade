@@ -100,11 +100,11 @@ test('History Royale mobile battle uses procedural troops and bounded effects', 
 });
 
 
-test('Nyam Universe v4 uses a size ladder, final-goal progression and bounded real 3D assets', () => {
+test('Nyam Universe v5 uses a size ladder, final-goal progression and bounded real 3D assets', () => {
   const game = gameById('low_nyam_universe');
-  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\.html\?v=4/);
+  assert.match(game.href, /games\/low_nyam_universe\/냠냠 우주 여행\.html\?v=5/);
   const html = read(game.href);
-  assert.match(html, /nyam-universe-v2\.js\?v=4/);
+  assert.match(html, /nyam-universe-v2\.js\?v=5/);
   assert.match(html, /초록=지금 냠냠/);
   const runtime = fs.readFileSync(path.join(ROOT, 'games', 'low_nyam_universe', 'nyam-universe-v2.js'), 'utf8');
   assert.match(runtime, /green-blob\.glb/);
@@ -121,5 +121,6 @@ test('Nyam Universe v4 uses a size ladder, final-goal progression and bounded re
   assert.match(runtime, /attachFoodLabel/);
   assert.match(runtime, /★ 이걸 먹으면 다음 세계/);
   assert.match(runtime, /LOW_POWER\?118:158/);
+  assert.match(runtime, /setTimeout\(r,950\)/);
   assert.doesNotMatch(runtime, /if\(logSize>=Math\.log10\(stages\[level\]\.max\)\)/);
 });
