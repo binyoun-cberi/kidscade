@@ -80,11 +80,13 @@ function model(type,color,useReal=true){
  if(type>=7){part(g,sphere,color,0,.6,0,.6);if(type===8){const r=new T.Mesh(ring,mat(0xe8c799));r.scale.set(1.05,1,1.05);r.position.y=.6;r.rotation.z=.25;g.add(r)}if(type===9){for(let a=0;a<6;a++){const p=part(g,cone,0xffdc80,Math.cos(a)*.7,.6+Math.sin(a)*.7,0,.18,.4,.18);p.rotation.z=a-1.57}}}return g}
 // Recognizable produce, with shared geometry and materials.
 const originalModel=model;
-model=function(type,color){
- if(type<10){const g=originalModel(type,color);
-  if(type===7||type===8){for(let i=0;i<5;i++){const a=i*2.4;part(g,sphere,type===7?0x65bfa8:0xceaa71,Math.sin(a)*.43,.7+Math.cos(a)*.3,Math.cos(a)*.4,.21,.12,.15)} }
+model=function(type,color,useReal=true){
+ if(type<10){const g=originalModel(type,color,useReal);
+  if(!g.userData.realAsset&&(type===7||type===8)){for(let i=0;i<5;i++){const a=i*2.4;part(g,sphere,type===7?0x65bfa8:0xceaa71,Math.sin(a)*.43,.7+Math.cos(a)*.3,Math.cos(a)*.4,.21,.12,.15)} }
   return g;
  }
+ const real=useReal?cloneAsset(TYPE_ASSET[type]):null;
+ if(real){real.userData.realAsset=TYPE_ASSET[type];return real;}
  const g=new T.Group();
  function leaf(x,y,z,a=0,scale=1){const m=part(g,sphere,0x459d49,x,y,z,.1*scale,.34*scale,.07*scale);m.rotation.z=a;return m}
  if(type===10){const root=part(g,cone,0xf58a27,0,.48,0,.31,.92,.31);root.rotation.z=Math.PI;for(let i=-1;i<=1;i++)leaf(i*.12,1.03,0,-i*.5);for(let i=0;i<3;i++)part(g,box,0xd56a20,.04,.35+i*.18,.19,.18,.024,.025);}
