@@ -1,0 +1,1247 @@
+[
+  {
+    "path": "assets/game/history_royale/README_CC0_ASSETS_KR.md",
+    "bytes": 2585,
+    "sha256": "5706fc1a1fc5fce85070d88cb9302c5a9b601a717f1ffff2335562151d4b904f"
+  },
+  {
+    "path": "assets/game/history_royale/_licenses/Kenney_Interface_Sounds_CC0.txt",
+    "bytes": 574,
+    "sha256": "f7966c773bbed0eca6a9c75081c44a178b38eae112724dbb5fdfbd4192d118a9"
+  },
+  {
+    "path": "assets/game/history_royale/_licenses/Quaternius_Fantasy_Props_MegaKit_CC0.txt",
+    "bytes": 837,
+    "sha256": "edad12240087a33e08fc031e4e66c2b2b4b2a6d4f086339bde04f741b385fbda"
+  },
+  {
+    "path": "assets/game/history_royale/_licenses/Quaternius_Medieval_Weapons_CC0.txt",
+    "bytes": 528,
+    "sha256": "d32abf5eb61a5d20c582525c2ee9d8d42d86401d6b3ea0a2d5283fcaecaa35b9"
+  },
+  {
+    "path": "assets/game/history_royale/_licenses/Quaternius_Ultimate_Modular_Males_CC0.txt",
+    "bytes": 372,
+    "sha256": "e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/back_001.ogg",
+    "bytes": 6997,
+    "sha256": "07db973f79f6ae0f2edc34561e7592e24d0577455919fb602cb8ecc0da991dcf"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/back_002.ogg",
+    "bytes": 7029,
+    "sha256": "61581c58194e3f19f531072edabbc344204c7e0a2887b8ededce4357bcf09195"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/back_003.ogg",
+    "bytes": 7208,
+    "sha256": "ff5e87de1230b1a5f1fa83e5a4ba9d7eb1c07154267ac34b510a17d4caa03cef"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/back_004.ogg",
+    "bytes": 6923,
+    "sha256": "c22e3c49f42c2a5ba6748e91283efe124f32822469c1258c3e5d7b3d7ab9361c"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/bong_001.ogg",
+    "bytes": 4848,
+    "sha256": "d21d0f0b782445db579d11e2506b24cd1ac9d664ee33aeaf807761aa7b6fd710"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/click_001.ogg",
+    "bytes": 4876,
+    "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/click_002.ogg",
+    "bytes": 4275,
+    "sha256": "adcd1f4adc35f1b41bc1b5bbefeff7aa44f2f3f0d96d3199b544140c7c1e761c"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/click_003.ogg",
+    "bytes": 4371,
+    "sha256": "2fa929138bc3a0f432696588f66eac94b8f6d463905ec8808c6461ce4b054292"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/click_004.ogg",
+    "bytes": 4486,
+    "sha256": "09e2c1b643b71b9aff9932b4e02d78db116446b9a14b00a5b2a9b28d2668fd8e"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/click_005.ogg",
+    "bytes": 4410,
+    "sha256": "a3ee7ebb036bc3cdc218ae52bb27548c4f49bcf07505274f8b61b1af8236acc2"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/close_001.ogg",
+    "bytes": 9915,
+    "sha256": "44af8249b933e0fd35ec957a638bb1a0b01f85b53fbe9674bf77bd3ca3168ef4"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/close_002.ogg",
+    "bytes": 14752,
+    "sha256": "bc4279d2bb2bf86592473eab6a8eab55e51b54a8619315000dbd780a83b102d8"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/close_003.ogg",
+    "bytes": 15648,
+    "sha256": "39a1a7f3bc001766c1881841e9903c6b16f5a10b5666e0791d7f6444677d8b05"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/close_004.ogg",
+    "bytes": 16263,
+    "sha256": "41b41e01ac75f4bc5a9c8dc3b0de744fa7f877757463692783c12a8ae4bfae6b"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/confirmation_001.ogg",
+    "bytes": 8968,
+    "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/confirmation_002.ogg",
+    "bytes": 14169,
+    "sha256": "33b17a9a9a2397c62b285c52c33a907fdffb476909c99e42dde603f6a7a8b12c"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/confirmation_003.ogg",
+    "bytes": 9535,
+    "sha256": "3091bf0be0497f825769ee0733ca7bdc3bcd59bd6c6e8f2ba8f93d580ff38022"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/confirmation_004.ogg",
+    "bytes": 12391,
+    "sha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/drop_001.ogg",
+    "bytes": 5859,
+    "sha256": "692ee3a6f1821402ca649ff735bee9591dc4846c8098fc7d6a90fd15fa57c1af"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/drop_002.ogg",
+    "bytes": 6411,
+    "sha256": "4ac4d1cef7e936965cbf795852ca2020300b9e2ba7daa59f2bf4f1f7bf416218"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/drop_003.ogg",
+    "bytes": 6288,
+    "sha256": "43d086d50f90493a98cd2e09aa6dbf150d164f1578e1ec768d21cb185571ad87"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/drop_004.ogg",
+    "bytes": 7230,
+    "sha256": "10738707f9300f9b963ceba46d5da2ed4a221faf7d39484a643c2d3bc151c5f2"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_001.ogg",
+    "bytes": 7373,
+    "sha256": "46e67425d16339772e8d328fb36a49426c9467418686e11beeb71ff84b0f6433"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_002.ogg",
+    "bytes": 7369,
+    "sha256": "76810ec365f41078fd0507101da5bb7b8730fe011dde43908329fdabd8575e79"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_003.ogg",
+    "bytes": 12256,
+    "sha256": "885b28175c7b511118bcffab95675b48bbac9005cf6514656ebdad979276b3ab"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_004.ogg",
+    "bytes": 6393,
+    "sha256": "0b574cea597d96507e782ae9764f88482ce49f46e931e57054bf7150047f2d69"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_005.ogg",
+    "bytes": 7266,
+    "sha256": "3f75b11df5b06d68d2c25fbf0e9c9d9e7dd9250562a4007ee34856b8a309a2ae"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_006.ogg",
+    "bytes": 8288,
+    "sha256": "a97513d7fd2b12b1210c423be943b4c1ab0e899b11db95855e9b74836e646ae0"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_007.ogg",
+    "bytes": 10225,
+    "sha256": "f1ee4c1ac8bfe1a82eacb54b26f49e8974bab93bcf10c01800bc10dbf730f559"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/error_008.ogg",
+    "bytes": 9215,
+    "sha256": "eba17ecb2a426bfd4a8a6acff5f8a86202b6424a77af0fd842e37809a1ab6d81"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_001.ogg",
+    "bytes": 6103,
+    "sha256": "183eebee20eb0a532b0b85104d139cbf2673eb66d95c3cc733ac9ea98362e7e8"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_002.ogg",
+    "bytes": 4917,
+    "sha256": "08e972c73e53c91d6d310e107e80db60edce78ae47225889a028e628a6f3da49"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_003.ogg",
+    "bytes": 5732,
+    "sha256": "9a6f16e3c2eff6fe5d017a4755a28306b14555728831cd00d70308e8f9689566"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_004.ogg",
+    "bytes": 8323,
+    "sha256": "2379b58f953e3d86982aa8cddcae763022c6258e9820171bf905ce58b4e97766"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_005.ogg",
+    "bytes": 6206,
+    "sha256": "1f6c88008d0d9fe449197512811785e1d4638daf408a96a4a02756530e019172"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glass_006.ogg",
+    "bytes": 6956,
+    "sha256": "840500be48078f1210f1fd7a9ac4e5665ed9b6f4a2b8dce91a237152a65e94cc"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glitch_001.ogg",
+    "bytes": 5121,
+    "sha256": "da78c642bbd95da2c364ed0e991ebbfc5a4c0d281165d932b5819e0dd31a39d2"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glitch_002.ogg",
+    "bytes": 5473,
+    "sha256": "1da06a2e63ce131f5e0316ca27c75fc0d672db7a8f9b986c70693f2bd992eabc"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glitch_003.ogg",
+    "bytes": 4915,
+    "sha256": "d55e0c64aee9f1ab2ba9523d0e256ca76639c3ec2f230405e2ff25aff36020b3"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/glitch_004.ogg",
+    "bytes": 5225,
+    "sha256": "d0f4db4d12f88592bc328bd621d356d099eaa2dda37bab37a6cf17891c5026d1"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_001.ogg",
+    "bytes": 12111,
+    "sha256": "fd3e75e1de2f2fda90aceeacaeb0427ac8bddd3b07a6ce2a8f9ba923df3771f9"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_002.ogg",
+    "bytes": 9915,
+    "sha256": "cc51162cb4506158b953b121bf479aad070056533ade5c5cd2f980183127ceb4"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_003.ogg",
+    "bytes": 11748,
+    "sha256": "df16f25d45189f5d44d6a482ab20d5067350ca8525a9affa1f8ce599e31a20a5"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_004.ogg",
+    "bytes": 17723,
+    "sha256": "59c7a24b204be24d2a44a86d1e4d18c2cf51fa0446967a14b2590e8fb3afaf34"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_005.ogg",
+    "bytes": 20900,
+    "sha256": "0ee06fc3ee494723fc95b2224f9dc0af857f2903e7f94d5d33d8e67f454b3cf7"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_006.ogg",
+    "bytes": 11618,
+    "sha256": "f050b3bb77cb0b901bc8df43d2cc1872c353aebae10b4030cf8ae681726ad343"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_007.ogg",
+    "bytes": 8097,
+    "sha256": "3400931f3f3a1e9cf253efef9069bcdf053edd2234e4ee9bf88977c389943484"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_008.ogg",
+    "bytes": 9085,
+    "sha256": "57c074e600e193a303ce781c04c0ccc191c6030f9f106594fd94a65e55435c17"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/maximize_009.ogg",
+    "bytes": 7650,
+    "sha256": "b4d56386258b3cc1c8f6e5a22465f8cd65de3d4309e022664050f43151e466cd"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_001.ogg",
+    "bytes": 11924,
+    "sha256": "8481912bc7fa5828924a00ef15b6cd613b994956e0817bd3122065c9b2896d2d"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_002.ogg",
+    "bytes": 9441,
+    "sha256": "670e47846dc003fe29d39c8dfebb8635bfcacae3c0916392c0e8bff659493ad6"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_003.ogg",
+    "bytes": 11739,
+    "sha256": "400e1041499de85ec8b5529a35ff36787288175c4696cf2018ecff24a3a3fd29"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_004.ogg",
+    "bytes": 17099,
+    "sha256": "fcfe6fbb03a728e90b907f34d2ec7bf3ea1857397c3e47ee01990c1be059e4f6"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_005.ogg",
+    "bytes": 19501,
+    "sha256": "4e6792a98c75d3ff187c0c55561c38c569e02c64757ebebb98831cfe84e3e172"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_006.ogg",
+    "bytes": 11292,
+    "sha256": "39d7c47855b9642f43548b7b132c20e20a1490c7eb13d10008c32fcb24da19f8"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_007.ogg",
+    "bytes": 7677,
+    "sha256": "e951505044de0d5d87b72ce7f312ac3fbbdde025ec8c10db70f9d2651a2c8947"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_008.ogg",
+    "bytes": 9298,
+    "sha256": "bc14c17875436dcaaf809c25db5e61454dbc35612880f329ff37a95ef9b6a865"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/minimize_009.ogg",
+    "bytes": 7665,
+    "sha256": "885c20fc8b5b52226288794842a403821cd16e9800ec1d76be7a2f1655542eb8"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/open_001.ogg",
+    "bytes": 9834,
+    "sha256": "a27c6bb0df7da1e6af5dd5937593c98bc58b6e513f42fe6a3254cd6a6949c648"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/open_002.ogg",
+    "bytes": 14975,
+    "sha256": "24ff224fe2c09c6aed1b41249825382dc74cf324b887ff279d8494912ce2beee"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/open_003.ogg",
+    "bytes": 15046,
+    "sha256": "bcdca6b5c9c33aa15ca3fb18a1fa8d98a01b528b85be08c5a610e57c75fc022d"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/open_004.ogg",
+    "bytes": 15879,
+    "sha256": "4e02b8287bc4d9e7bf7a889cb9e48613c8eb22a310dfb0bf29c2bfd0a1e4bea5"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/pluck_001.ogg",
+    "bytes": 6317,
+    "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/pluck_002.ogg",
+    "bytes": 6941,
+    "sha256": "c977fe249ff42d1c93a552b33abc13a8399df3879fa510475426e5c4bbac1da9"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/question_001.ogg",
+    "bytes": 11700,
+    "sha256": "abb8f9e4eb2071491b0b15f84ee302386b1847609310c1b000ae174639a6cc5a"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/question_002.ogg",
+    "bytes": 9455,
+    "sha256": "46056f10c70dda860e93bd27b66f4d33c0b7154eff28def06471b50028efa5b3"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/question_003.ogg",
+    "bytes": 8233,
+    "sha256": "00bafc564e29c12e99da584864a750260e7110378251d63d3aa5b3d727836efe"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/question_004.ogg",
+    "bytes": 9821,
+    "sha256": "585ecb58b529dc49b5c5ce5ba93427bf73b7052bae55e49c43ba8f169c93ac99"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scratch_001.ogg",
+    "bytes": 8989,
+    "sha256": "5c294d2e1a6b6d07ee2d75b17105a55ad3527e5482dd60652dc49c2ea4c70096"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scratch_002.ogg",
+    "bytes": 9319,
+    "sha256": "2b07edafc1f3f49c4813f2b0ae9481c566c1f9962a22d5f5b79da7111e058e56"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scratch_003.ogg",
+    "bytes": 8849,
+    "sha256": "2d80371b55ebe2e8b916b84093a8ae7717d09a80c6b617079ade5bd0dacba7b7"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scratch_004.ogg",
+    "bytes": 16478,
+    "sha256": "26009c67ef90ee7a5a2bc458ef9e7f5a9da83da9397a830cff9e4a1813914687"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scratch_005.ogg",
+    "bytes": 15824,
+    "sha256": "65742c15dca9853611e1c9e83bd04ac0d693f79896715cafa90bad39745d7a62"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scroll_001.ogg",
+    "bytes": 21633,
+    "sha256": "320c6aafb2c7a503eae508dc443b72d7f7c0a317bfd16813157ed400cd04cf16"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scroll_002.ogg",
+    "bytes": 24628,
+    "sha256": "6fbcda22bc45349c66f1ba4b56d6c211b12264e83667de4b9af1e4ffcef74be5"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scroll_003.ogg",
+    "bytes": 29488,
+    "sha256": "c2fecaa6e37c73d7141d0bd303d1c2231428d97c19ce83d50236a56804818643"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scroll_004.ogg",
+    "bytes": 20348,
+    "sha256": "431398a3c12ba3aa30ead97f3e2f9b05eb00978facf04b31bda138ab77a2f54c"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/scroll_005.ogg",
+    "bytes": 20448,
+    "sha256": "e39d059462225efa31f758fb2e01871cc96781972b5062873a24a55c88174e02"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_001.ogg",
+    "bytes": 5468,
+    "sha256": "aec0c31ea934a35936ae0d2ab8fac8123c93aa5647f935853a58dbaf90278b7a"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_002.ogg",
+    "bytes": 5463,
+    "sha256": "4cc6ac5341b9b2c86fef80c347de028e9ab9f2e037586ac7d9fa59a403a1c012"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_003.ogg",
+    "bytes": 6901,
+    "sha256": "9a612fd2f513d52a296906b41071c990f75defe56be3bee60d2d4e2423b51b8b"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_004.ogg",
+    "bytes": 6909,
+    "sha256": "eb6cb435f3f2ab14f85f46a2bdd9073ec511d0f1f8d8c890c6636045703a5fd4"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_005.ogg",
+    "bytes": 6767,
+    "sha256": "ad09146e4ea33b931b2f5dfb4051a4f1fe4a36f1a48c42c5e9269c292ae21214"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_006.ogg",
+    "bytes": 8101,
+    "sha256": "b44550fa8d3276c072ce7c3c1315d949f7a28a95bc22b3618ad4eea62eac8abe"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_007.ogg",
+    "bytes": 6580,
+    "sha256": "cd4390dd2b24f09016a5fa1be63334fa0f1859811f4cf29c02e8e2750f6a2cd0"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/select_008.ogg",
+    "bytes": 6339,
+    "sha256": "f703b6b1c62dae1c246a46d5c2442802588f68be2df4d17e0d65cf7e0dbfc826"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_001.ogg",
+    "bytes": 6753,
+    "sha256": "3b74efad87f1e69dbd1d05c5ad952ab90859b5a3d11da6ec5bd79b4f03b42afa"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_002.ogg",
+    "bytes": 7097,
+    "sha256": "6fc395be2ad1f99ce318a5d28f98fb76dbeb676d83a0b28239d8c1fb90736180"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_003.ogg",
+    "bytes": 9653,
+    "sha256": "ca12dd32103f401481d5aff56d5e9831174e99bb577139c09b07d046eb8b837e"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_004.ogg",
+    "bytes": 7248,
+    "sha256": "541c19cc1ab712a9efc5765df602e7d0da09d9cafdd297ce1e19b092289fd62f"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_005.ogg",
+    "bytes": 7814,
+    "sha256": "e94dfab6fd6558068ab3ea97e22e4b4f16b83ee440e6abf33ec4c4e9fbe8a70e"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_006.ogg",
+    "bytes": 7873,
+    "sha256": "2676ddc4e341ee557b4d1dc8767ef8655540d66fb3ded6a1614080dbc4dc6f18"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/switch_007.ogg",
+    "bytes": 7921,
+    "sha256": "eeaf60c2abc7e1b715e2b032401bcbf6b3753b77f96b238f861a034a75515967"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/tick_001.ogg",
+    "bytes": 4497,
+    "sha256": "9d057b918024c787bbe6c00beed13a7ef72a3fa0c259add3cef36582792f4230"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/tick_002.ogg",
+    "bytes": 4514,
+    "sha256": "869442f54214be902ec7437f79e400dc91c1bfd90d18a6dd2d5b7e41ffbf457b"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/tick_004.ogg",
+    "bytes": 5031,
+    "sha256": "0253d5f7d8d2afbbc370eac2a4539bb844239f0c98343e516d376b137c06d27c"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/toggle_001.ogg",
+    "bytes": 7369,
+    "sha256": "ca1d2dde5f0b286abac4f070e23edab8f30927c8a533665cdf2ac6492a415e49"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/toggle_002.ogg",
+    "bytes": 8056,
+    "sha256": "1f564f5520cfa0764028ce245ad97599d3ece8f0ab504554c403af92ac72b900"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/toggle_003.ogg",
+    "bytes": 8654,
+    "sha256": "7e69aba356d590826cce291bbd9dc6a85d7c53858b0e3712fcad30e1ad080b23"
+  },
+  {
+    "path": "assets/game/history_royale/audio/ui/kenney_interface/toggle_004.ogg",
+    "bytes": 6695,
+    "sha256": "d7bf2236fc95a0fe1e3b278259392bcb062644e2d4ec5f9c96f7c09a9928262f"
+  },
+  {
+    "path": "assets/game/history_royale/history_royale_asset_map.json",
+    "bytes": 2111,
+    "sha256": "45becf183e92840b02f9e957f884f55bf316bdc35de87fd2e4314f6cdefa5b2d"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/Preview_1.jpg",
+    "bytes": 502435,
+    "sha256": "4086549966a54ca6caba54dc7263f51e41676d25b38fd17a34c9f79d6e11fad1"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/Preview_2.jpg",
+    "bytes": 661996,
+    "sha256": "ce2eb3ed6398de101ba725f4ece6fec0fc9af5bef8bde4bc2e90ee1333e32ccc"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/Preview_3.jpg",
+    "bytes": 525641,
+    "sha256": "ce7f189ba15e6f4570d5951ee9ed8a44a72ba1c6d743761f396a3bf74ecada26"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Anvil.bin",
+    "bytes": 24020,
+    "sha256": "d52a9ab436577e8ee8ca00b2929b15595a60b0294c6275a39ecfe1f27408bfcf"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Anvil.gltf",
+    "bytes": 3189,
+    "sha256": "29e0a6a19f9a579ffe8d463c2a8d445c531a39271ba4eab9754d3f5d9f9d9ce1"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Anvil_Log.bin",
+    "bytes": 130880,
+    "sha256": "7d3d078f1be72c9c56abc0ee2fc5dfa23826b8a03beaaa756d27054a7443919c"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Anvil_Log.gltf",
+    "bytes": 5580,
+    "sha256": "878f803a0d8d7a4db5ad31f4839bc87ac03fd409cb69e30aa078c00729a38df2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Axe_Bronze.bin",
+    "bytes": 31156,
+    "sha256": "d608e8dea796ae8a200cd78bb1836d2705944f628abb6ac2e03c76e6637187b2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Axe_Bronze.gltf",
+    "bytes": 2591,
+    "sha256": "338ce6e6947b8849774aac2deb9d2bf3a1cb14dc869effb7be0a91053e67b64f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bag.bin",
+    "bytes": 27188,
+    "sha256": "6bf8ad99d0048264aa37157a92f394ab32aeeb5270dab2f3f76282b1eda4e012"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bag.gltf",
+    "bytes": 4318,
+    "sha256": "ccbf22a9162a2a2173caa7346e796b8f92a86dbbbe02a196530bf5642293e545"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_1.bin",
+    "bytes": 20976,
+    "sha256": "7d98308055e39b01192ec5fe9a44688f9ba549ec1d2b12c94d6e5fc4f094cf32"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_1.gltf",
+    "bytes": 6789,
+    "sha256": "a00162c8ef35912d0fe9137b0ee53f94752a1b61fcd8033d4f1e50bd2c54eca1"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_1_Cloth.bin",
+    "bytes": 6636,
+    "sha256": "30cc64edb6898f378dbcc573acbff6ab7731f448025b13ff884541348fce5ea5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_1_Cloth.gltf",
+    "bytes": 4670,
+    "sha256": "ab59fad1699f4d04993e6bd3b3c2e909de8b5255b023b061cca22c4400196ffc"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_2.bin",
+    "bytes": 19280,
+    "sha256": "bb694e19ced6d0a7da5d6d8c1f6b518f3cecdb751b8dea69a21a47fdd798d4e3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_2.gltf",
+    "bytes": 6788,
+    "sha256": "c759b5da84c6b7b9d10ee69f498f4ac9022a6f7003e4deb7f6cd49f4fa6f29df"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_2_Cloth.bin",
+    "bytes": 4940,
+    "sha256": "258fa990f109353326ff14f71581fa71f3a2bd5aaa3b62c0cddf05d0b55d3dc0"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Banner_2_Cloth.gltf",
+    "bytes": 4671,
+    "sha256": "fd5e8d3ededb8404bec7b872a569d12025ed5e3bca617a7432674ffe746ffea7"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel.bin",
+    "bytes": 57144,
+    "sha256": "d8f963e2975b6bbd4b631b5cd7ade2d5dfc76dfb9f8387e2d398935f5405cf20"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel.gltf",
+    "bytes": 4311,
+    "sha256": "cececb2da345addb21567e3ce1b30a9da071b689bcec59d85cd7a4446f531e87"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel_Apples.bin",
+    "bytes": 104600,
+    "sha256": "774c97d9b2b2faa04ef40c681540ca3be74a3942ab8bbbd8c8d260b66121f8c8"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel_Apples.gltf",
+    "bytes": 6241,
+    "sha256": "07520279b51bd1cc75b6db88b572b5ec445fc7decf0b115fba5c9e20f8caa111"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel_Holder.bin",
+    "bytes": 161816,
+    "sha256": "a4aa5eb66d4261565dea3389f73005b6c5cac1f6b226d090cecbc5791d5a418a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Barrel_Holder.gltf",
+    "bytes": 4347,
+    "sha256": "aa318d71e8d5ebcae5f7aff76ed2046eec3d398d2b71f474a04150fa845859c3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bench.bin",
+    "bytes": 19304,
+    "sha256": "08d6976112645dc1f6a554019e2fc965d0bceba7a01c4f6013615ac46520b418"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bench.gltf",
+    "bytes": 4298,
+    "sha256": "0184d3b128a8a3bcc828d7bc6aa867038e2a85a339130ed015f2727e739f9ab7"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bucket_Wooden_1.bin",
+    "bytes": 32544,
+    "sha256": "be608473cd78557d466be9b9e2f6ff15f1edf1e4f5fcdd27be75d494f52578f2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Bucket_Wooden_1.gltf",
+    "bytes": 3911,
+    "sha256": "b4f93568d96d38dca162098e75fb3eb4ffaf5ff6e41f8f788476abd3be4984cf"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Cauldron.bin",
+    "bytes": 62712,
+    "sha256": "63fd1b9d8d44a12fcb421f74a4f3d806f023b4aa1be9391a7c313a996a8f7f4b"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Cauldron.gltf",
+    "bytes": 2195,
+    "sha256": "3937dcadb9b920ae88d7674009b73e2da6c6d9f73d0f4fe6e79408a04dbffec1"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Chain_Coil.bin",
+    "bytes": 193664,
+    "sha256": "ee403f5a0068cbadcf002231985668993c8231007ef59e06087e4c2cb902ace9"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Chain_Coil.gltf",
+    "bytes": 2424,
+    "sha256": "a1ddf045b66e6433459a68b871ea9a31162c55fa1d5fc5f6ea1685bac3225c97"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Chest_Wood.bin",
+    "bytes": 184356,
+    "sha256": "e4aea6f99587b8ad9ac08fac82013c55111a748c2e3febedbc4de3e301253901"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Chest_Wood.gltf",
+    "bytes": 21402,
+    "sha256": "b2022f69b76526fcbbc7f7a8855848beeefa6e8a6f55337d923bce38ed03b2b6"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin.bin",
+    "bytes": 14464,
+    "sha256": "090091faeeb77273e3ca18daaddfd7f8d12ed690508c8ec0e1ce6684ad4ba54a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin.gltf",
+    "bytes": 2408,
+    "sha256": "79c3f75e5d8d56c8f7bcc2d095ebdbb6d4f649701880414ab463fc0f98ef7124"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin_Pile.bin",
+    "bytes": 47520,
+    "sha256": "e18ad9b7cfe2304f2476662b43079f2f2d273fc845aa5ca0b41a6f84bd0f3a20"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin_Pile.gltf",
+    "bytes": 2424,
+    "sha256": "aec9db3acc8a8011e0287e9a4b29b6d7ff25234f12387ba8899a6622d52487bd"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin_Pile_2.bin",
+    "bytes": 52612,
+    "sha256": "24f55251a466526ded6ec0d3445bbfba066f75adb90dd9a9a01fbacb5a96aff3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Coin_Pile_2.gltf",
+    "bytes": 2429,
+    "sha256": "13e3fcf52255db66e22b09ea8279fe88162ab0b06e5797cb0daf89f0856089e4"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Crate_Wooden.bin",
+    "bytes": 66496,
+    "sha256": "7ae016386790e5998fbdf1656a5dc53a3f1374c3525b22798d84397a36ae937b"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Crate_Wooden.gltf",
+    "bytes": 4412,
+    "sha256": "fb06d4b7b9bbfbb9dc51fa56ecff3fe7ba8e9142d643cabedd17a55d7ea46ee5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Dummy.bin",
+    "bytes": 80988,
+    "sha256": "a8c0897c085b0cee9ef3f7f2f88bc37fd29d9cde1cc281f45d936f620adb98c1"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Dummy.gltf",
+    "bytes": 5570,
+    "sha256": "e7acf49819a78d0ff8ebf8982ee6e9fa1f56e61adb98355743ead4d180d4ba30"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Apple.bin",
+    "bytes": 134488,
+    "sha256": "9f764bf2f2e960ec32ff31198f6b54787391e71bec166da59372f596299d24e6"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Apple.gltf",
+    "bytes": 6263,
+    "sha256": "56de7097ddbf22801537f38b77335b2d85a4e2d24bdcbe9ceb1b3bc666a24997"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Carrot.bin",
+    "bytes": 204292,
+    "sha256": "18858970c67b1e6fb2d174a4b4a946787cdde12b42d88cce9d846fc4ede50e19"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Carrot.gltf",
+    "bytes": 6273,
+    "sha256": "6aaa750a27ee652c8090fe7415f1bdd1d66b17d6cfecafc0767559afaef3248c"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Empty.bin",
+    "bytes": 54704,
+    "sha256": "9c380c8ff9314aa5ca94deaf816527be4aae60802c8bba42d30978f1685b520d"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/FarmCrate_Empty.gltf",
+    "bytes": 3915,
+    "sha256": "7dccd0a93f29a31ffc05b8b5d39704b2d6c65eb477c895325ecf19c6dc17c644"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Lantern_Wall.bin",
+    "bytes": 120036,
+    "sha256": "fe9f3816130587308b73bb8b4b28031b71fe9405a111f115463022709fa04b2e"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Lantern_Wall.gltf",
+    "bytes": 2203,
+    "sha256": "9e7623e1d3a16f9212ff7cb41c939746435187f0071bd94849ee7bc6a59785a2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pickaxe_Bronze.bin",
+    "bytes": 30736,
+    "sha256": "df51d6075a9d1a8c44ed1b1596796c1b301546c8c2607ddbc88c82d691121bef"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pickaxe_Bronze.gltf",
+    "bytes": 2425,
+    "sha256": "2a934389f82610fc7702e45dcac859b75181633befad409de238932f5f8f2c7f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pot_1.bin",
+    "bytes": 37160,
+    "sha256": "eebe6918dbdc743501bdcb2d9f576a52028eb3451bdcf95d92674b97918cafc9"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pot_1.gltf",
+    "bytes": 2185,
+    "sha256": "d925a5e5541d83d2d1885b9d3928fbf553cf4a37ff902cf22d33280805efcf6f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pot_1_Lid.bin",
+    "bytes": 46120,
+    "sha256": "5c125852b29cf3afa17ec2f0a28585651cb9fbc6b1dd84339288a3a0d504ec8a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pot_1_Lid.gltf",
+    "bytes": 2196,
+    "sha256": "b8455f37f1eee179893d08a396aff3b6e715878d1a2bedcdaa4ea6b596d9b5b2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pouch_Large.bin",
+    "bytes": 31580,
+    "sha256": "e83904bdef5ea9b4038f0005a76d5e47367900b4af2bdd44e9869af6e042967b"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Pouch_Large.gltf",
+    "bytes": 4306,
+    "sha256": "9af4639dfbf39f07142e3491e62e80161164ec0729dc92e9cb0d00abc50d3358"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_1.bin",
+    "bytes": 41624,
+    "sha256": "950d7977e2dcd8fa40c6103f7cd6d4bc9eb93dbc2da37bd3a3b092868efd61c4"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_1.gltf",
+    "bytes": 2223,
+    "sha256": "b4722ec5baf1313b654d2500ba36e2a2b512bbd9b037f304b94b6665d2286313"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_2.bin",
+    "bytes": 34904,
+    "sha256": "412afce0c7a43f3b8d87ade3298ef4d76b2124937ec8bc1809fe471a6b7b56cb"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_2.gltf",
+    "bytes": 2223,
+    "sha256": "2df33e9eef473315c9c65abf63152c2ee264c53391e244e1a5cebe77cb0826bf"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_3.bin",
+    "bytes": 41624,
+    "sha256": "8c647df0b8dce95ed0a3310ff5f42c7c38dc9b20298f74bed9833abf077dd7ec"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Rope_3.gltf",
+    "bytes": 2225,
+    "sha256": "b87badbc1eeff6905b5f89d7d4096e57eb80378239e74f4b4b925701dca6a874"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Shield_Wooden.bin",
+    "bytes": 64184,
+    "sha256": "98b663ab52b6e72bb796363feef172eebbf6316594d1737d8546078664680452"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Shield_Wooden.gltf",
+    "bytes": 6243,
+    "sha256": "57d46c4a5f34cad7b8a391805d6d4def373778a7b84ef3e4184f83f791082209"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stall_Cart_Empty.bin",
+    "bytes": 237264,
+    "sha256": "d70b989c539d9883e9e83f0428390857bf846bb109715a60cb5d526753c33deb"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stall_Cart_Empty.gltf",
+    "bytes": 6857,
+    "sha256": "aaeda0ad9ffe8c317909d7450c994b28b1e608fdf04690fa07726b810fb64c88"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stall_Empty.bin",
+    "bytes": 88176,
+    "sha256": "9ddececa6f5e0922ee32b064c400abea4dd068be2bfc78891017fca334158826"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stall_Empty.gltf",
+    "bytes": 6804,
+    "sha256": "b0e6b4f6cb6b9dc0b35d92eceb89ebc27addac167fe56fe38cfc77e3afd62af9"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stool.bin",
+    "bytes": 11472,
+    "sha256": "6ca3a6bc9b415409d842a338a74c174d0efe4d4972bf8a924fda87c8bda40191"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Stool.gltf",
+    "bytes": 2423,
+    "sha256": "55a111d97463adb71a59eddb8bbee777c5743e66a58403b06e869cc35e4da670"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Sword_Bronze.bin",
+    "bytes": 69920,
+    "sha256": "01a7a7136344687330f4f2c6109b13a229092e105a4245114f2b68733381645c"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Sword_Bronze.gltf",
+    "bytes": 2436,
+    "sha256": "fcfbcee736bc6b0408e49922a2eefc11d9131f60777e6053e92d262c1ea37a98"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Cloth_BaseColor.png",
+    "bytes": 1936754,
+    "sha256": "c4d0e14506e05cc56e7ca62ebeeb2d45de055296a55e5a8e9c1330ff8ff1833a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Cloth_Normal.png",
+    "bytes": 3920858,
+    "sha256": "e91a490f94bc00707fb5be08045e316b4a18962f07a3b6e3d9d7c2058cfc51c0"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Cloth_ORM.png",
+    "bytes": 623426,
+    "sha256": "9bdaa0d1be8c393b07d6185165d73c7cddc058d5c123ad49449945f45a7e0c0d"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Furniture_BaseColor.png",
+    "bytes": 2232961,
+    "sha256": "075fbc9ec2fabc15732bd4025b6f63a0b25762df38440d06bf30437565d39bab"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Furniture_Normal.png",
+    "bytes": 3485710,
+    "sha256": "3340c4cc47ff06d5e94a2dbe2a2a12d914d0ef055fcf66f63d876666bd160e42"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Furniture_ORM.png",
+    "bytes": 2064585,
+    "sha256": "7bf417e82baf313793c5791bf48cdc8e573f1f7136197785bf0eb235cb0f8153"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Metal_BaseColor.png",
+    "bytes": 1361221,
+    "sha256": "50422bbda9661effc259caf8b386224cac4b5ca811d2c5b3b8b25ae8efc714db"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Metal_Normal.png",
+    "bytes": 3625541,
+    "sha256": "ab7315c864c9a9e6d716c940a599928506e1569d3b0c9085f8f1a64ec520d790"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Metal_ORM.png",
+    "bytes": 1871475,
+    "sha256": "7407bccfc39ca74ecd68a61217395959bf56ac2063e6c93b384b11f07f5687c5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Props_BaseColor.png",
+    "bytes": 2263132,
+    "sha256": "75225a4ccfd8cc358c871de7a7a3cab7118ef197419a88464e807b81716215c8"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Props_Normal.png",
+    "bytes": 4441458,
+    "sha256": "c4b28a8ba8efe3108cd11356ecab67e8bf75a10cebf29c78ee7724552c305a3e"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/T_Trim_Props_ORM.png",
+    "bytes": 3017151,
+    "sha256": "2d83d8df79aca2c8f630d389b43f09113afee98e746dfd42ddc3ce3302a136a2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Table_Large.bin",
+    "bytes": 56396,
+    "sha256": "af7bfe0cbf0532e01543e4fd5d6d710df70106a7d938c4d74a50c8911ee9bf35"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Table_Large.gltf",
+    "bytes": 4316,
+    "sha256": "ffd4e5b803f38f02922c2b0303ae3b5a602f7c239e717b725c0553019be8fcf2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Torch_Metal.bin",
+    "bytes": 39100,
+    "sha256": "522de8798b4c2e0db9ba640d69a5c6e506b558f22b98e95c0cfc95ba2d7b79e7"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Torch_Metal.gltf",
+    "bytes": 2203,
+    "sha256": "f28978f4f351030766996ccb5585f258882b6892f3944bbf06609a761ffb01a5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Vase_2.bin",
+    "bytes": 21188,
+    "sha256": "1dce19b5d65d83c271b4ca1340446a482aefbd4a03dac61bb2a94ca3c71f99ea"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Vase_2.gltf",
+    "bytes": 2407,
+    "sha256": "92218a88b02bac2bf4b3855dff452f209068cbfd58724585b7bf20556ac17ab5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Vase_4.bin",
+    "bytes": 22028,
+    "sha256": "3348683b971156e44965efbcec6008970adc73d9efe97a5131965e216cac892f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Vase_4.gltf",
+    "bytes": 2412,
+    "sha256": "bfc60358ab3bab21ff6fed8141ea9bc910877f752ef2bb5a22f6215086aa17e3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/WeaponStand.bin",
+    "bytes": 76312,
+    "sha256": "ac76bb8f6a511179842ecf0610ceabd96486e9cc5ca8dfa7639118f9796e4441"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/WeaponStand.gltf",
+    "bytes": 3903,
+    "sha256": "039675f0ea79a8615a27e544eb9ec7799a2a1a94e070858dc400cb50be9a76f9"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Whetstone.bin",
+    "bytes": 59280,
+    "sha256": "c3aae752f1a92cc58d8ca0ca033c8d5d9f90b00238c0e369f835198c0f9cbb6a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Whetstone.gltf",
+    "bytes": 6212,
+    "sha256": "ec0f5173ac53dba3bf112b384b7c88efb6e8814f22b4092cafd1c38345f3001c"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Workbench.bin",
+    "bytes": 63408,
+    "sha256": "d26f2a0ba01b4a8db8d6820d1bd0d281297fea30e48c9952484167d18a637b39"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Workbench.gltf",
+    "bytes": 4318,
+    "sha256": "518fc5c955def18cfcb781b3b955da0e8edcf4f37830a21561ef32c03ad0397e"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Workbench_Drawers.bin",
+    "bytes": 16824,
+    "sha256": "1c59f665e4c12ee9de34ba9d22f48c3c6ba7086c3ee483883ff5881fab3dd87f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_fantasy_props/gltf/Workbench_Drawers.gltf",
+    "bytes": 4313,
+    "sha256": "f7f5a88b34e29dbc58402dce54b80d0404f4b6eb1042f4002479b712e36fa10f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/Preview.png",
+    "bytes": 8309191,
+    "sha256": "23876fd9a6efdd9f5e32a9b386b666023fa541386d17f0c7d576ce66dbab5eb4"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Arrow.fbx",
+    "bytes": 21580,
+    "sha256": "51c344524e4912b13e4c84e70323b362a4791e503c565e529d262d233fb88475"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Axe.fbx",
+    "bytes": 39164,
+    "sha256": "20a49794928aefb00763d34b747891b8bbaa9e1fd0d5d5e4243382b817687ae5"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Axe_Double.fbx",
+    "bytes": 50236,
+    "sha256": "ab81d5d87093657bce9905c8b07348c26b27d92aeed84e85fdc03d03367d9596"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Axe_Small.fbx",
+    "bytes": 36492,
+    "sha256": "c89df799b922f572481519c12ac6be2071a33e15f632dd00b86600dda5af08fa"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Bow_Evil.fbx",
+    "bytes": 28364,
+    "sha256": "89ed6753c959d57bf3eb71bf28b6d00c49756e8ab5df60f62510e5a04450c83d"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Bow_Golden.fbx",
+    "bytes": 28812,
+    "sha256": "7a2f0d97a8f96cde02a7f9ade0a62ea7f9699cd5ea606c84fafe29d9133ab6fd"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Bow_Wooden.fbx",
+    "bytes": 28540,
+    "sha256": "af0055bf6391d17a4cc156d4b063f9687d2e01b01e600dbffce545b54f7ce804"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Bow_Wooden2.fbx",
+    "bytes": 27468,
+    "sha256": "59870812adbb8a5439655349d0b6ede8b1463e1a53bef4e5d8298adce1a798dc"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Claymore.fbx",
+    "bytes": 34668,
+    "sha256": "0bc24e1f7a52d78bb3deac765c1f2bab71184a92b107f6c094998f4cf6280447"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Dagger.fbx",
+    "bytes": 32044,
+    "sha256": "814db5370cab363f34abd0b54f902c0962cd9dd9cfdc48e88e2b817a9438bd06"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Dagger_2.fbx",
+    "bytes": 30076,
+    "sha256": "0c8e12e5c0d6272e4349e4d79ce9ac13a9e8a8906400d54f6ccf21afb0975908"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Hammer_Double.fbx",
+    "bytes": 48604,
+    "sha256": "a2875070113d96c6521a312928653ef031e7a2e52d7abc1ba599b64c64bfc5e2"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Hammer_Small.fbx",
+    "bytes": 42668,
+    "sha256": "ae7ed92fc799b5f1b8bf316e5f273b72e9719a441feabf6582f98e88c169799d"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Scythe.fbx",
+    "bytes": 45452,
+    "sha256": "6ed77fefa380d99fab000b0ef339871be920d3365feabd0c1d2672583b63383b"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Shield_Celtic_Golden.fbx",
+    "bytes": 30476,
+    "sha256": "29335e34ed09fd2f3d20a90e5b8880962f213d279d7d5016a23019bf7172561e"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Shield_Heater.fbx",
+    "bytes": 44476,
+    "sha256": "f879b6acb02700e0a039e4beec6969c3a8de500ccf54878f39ade3f536c6950f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Shield_Heater_2.fbx",
+    "bytes": 37484,
+    "sha256": "6cedaad091921e85c1f2d69af2e2965e1c97b66b227b13d12731a53289229337"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Shield_Round.fbx",
+    "bytes": 34092,
+    "sha256": "1414fb46e1b687e9fbdcce73698a0e01f9a3160f071f023911cbc08dc5e14bcc"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Shield_Round_2.fbx",
+    "bytes": 38092,
+    "sha256": "efe8ae967f25aaf27bccdfd647e0044a0e888e6cbc0e6ff1210316c321890071"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Spear.fbx",
+    "bytes": 38556,
+    "sha256": "229b3bacb9bd4a00d151b82618d411f90b8cdc1394349e3e697b772383aafea7"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Sword.fbx",
+    "bytes": 33420,
+    "sha256": "eb8e0611db727471e853cce1ee07d05a6057a665b1f2a1efc04026bc6120ca5f"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Sword_2.fbx",
+    "bytes": 35612,
+    "sha256": "7012009f12c4ada27abfb2a3d55686ba9d8b18b416a4e73aed8d22ead93db7ab"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Sword_Big.fbx",
+    "bytes": 32732,
+    "sha256": "d767a470ed4a94b9377ea7882eb931b651acf689cd799b4f97a0a6729904a728"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_medieval_weapons/fbx/Sword_Golden.fbx",
+    "bytes": 36108,
+    "sha256": "aaca755dd334133862d5b89a688f10311d5958e991b212fbd507034eb25e2c64"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/HOW_TO_USE_ORIGINAL.txt",
+    "bytes": 1224,
+    "sha256": "9b684add13cc5aa20e7671bd1f47202d762bae1839c00a247fcdd57e29a37439"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/Preview.jpg",
+    "bytes": 360869,
+    "sha256": "ccf065362f4035d5a62a7a18dcb092365670d1e0877e55c1de0b5cc184652e4b"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Adventurer.gltf",
+    "bytes": 3671456,
+    "sha256": "21f7a61afb6bd6cef6961490c367594e3c2fc01ec1f041662131172ce763063e"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Beach.gltf",
+    "bytes": 3166143,
+    "sha256": "76e001ea131fd76a1bd938a7862606cb8037f7049b632783580b9bf4da2371a8"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Casual_2.gltf",
+    "bytes": 3058092,
+    "sha256": "55c654d09a2a5ff6e3bd6158d4a1b462f181cd6f1e12a0f5e9d959f9c3abc438"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Casual_Hoodie.gltf",
+    "bytes": 3104001,
+    "sha256": "dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Farmer.gltf",
+    "bytes": 2998119,
+    "sha256": "46d3e85fa8d848ee479ab8e4672c16724ee4ea51f3af5733705a153937f93555"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/King.gltf",
+    "bytes": 3790158,
+    "sha256": "659c7d84dcea8c6331698c3430484861944c83e629389425664b782d4aecd17c"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Punk.gltf",
+    "bytes": 3003321,
+    "sha256": "f9224072f5e6cbb207eca250faa7f1868614a1a984074fe79c7b2862df4feb42"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Spacesuit.gltf",
+    "bytes": 3715406,
+    "sha256": "33e0e0fbc6140ffc936a099fd84a274be406115c4b32aa0a697641710b67392a"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Suit.gltf",
+    "bytes": 3315342,
+    "sha256": "6c89fbb31b96c1a63ad94e3dee0942bd7b34bc789a5d39fd6a6a1738a9214fb3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Swat.gltf",
+    "bytes": 3368868,
+    "sha256": "622b3f36fcac90539ef8f7121ec1f11b5e1ae603a085019b3fa96eba20dddfd3"
+  },
+  {
+    "path": "assets/game/history_royale/source_cc0/quaternius_modular_males/gltf/Worker.gltf",
+    "bytes": 2967023,
+    "sha256": "e49f8ec0f8a7de72dd26b1c01e6413c9a87a9116eeee21f9364ccd36bc286335"
+  }
+]
