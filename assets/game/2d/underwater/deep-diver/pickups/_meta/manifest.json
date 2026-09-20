@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "pickupRuntimePath": "assets/game/2d/underwater/deep-diver/pickups/icons_128/",
+  "pickupHiresPath": "assets/game/2d/underwater/deep-diver/pickups/hires_512/",
+  "vegetationPath": "assets/game/2d/underwater/deep-diver/vegetation/",
+  "audioPath": "assets/audio/incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3",
+  "pickups": [
+    "bucket.png",
+    "fishingrod.png",
+    "gold.png",
+    "key.png",
+    "ruby.png",
+    "saphire.png",
+    "seashell.png",
+    "silvercup.png",
+    "silverplate.png",
+    "telescope.png",
+    "tincan.png",
+    "trout.png"
+  ],
+  "vegetation": [
+    "water-plant-02.png",
+    "grass-clump-01.png"
+  ],
+  "audio": {
+    "filename": "dragon-studio-underwater-ambience-376890.mp3",
+    "durationSeconds": 22.073,
+    "channels": 2,
+    "sampleRate": 44100
+  }
+}
