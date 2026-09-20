@@ -580,11 +580,11 @@
     {
       "id": "kor_typing_tadak",
       "title": "타닥타닥 한글 타자연습",
-      "href": "games/kor_typing_tadak/타닥타닥 한글 타자연습.html",
+      "href": "games/kor_typing_tadak/타닥타닥 한글 타자연습.html?v=2",
       "category": "korean",
       "age": "low",
       "icon": "⌨️",
-      "description": "자음·모음 자리 연습부터 신나는 글비 게임까지! 낱말과 짧은 문장을 타닥타닥 재미있게 치며 바른 타자 습관과 한글 실력을 쑥쑥 키워보세요.",
+      "description": "자음·모음 자리 연습부터 19만 사전 낱말·약점 집중 연습·글비 게임까지! 틀린 자모를 기억해 맞춤 낱말로 다시 연습해요.",
       "scoreKey": "tadak_bestSpeed2"
     },
     {
