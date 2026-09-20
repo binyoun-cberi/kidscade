@@ -36,6 +36,8 @@ let state=null;
 let lastTime=performance.now();
 let ready=false;
 const LOW_POWER=innerWidth<760||((navigator.hardwareConcurrency||8)<=4);
+const DEBUG_3D=new URLSearchParams(location.search).get("debug3d")==="1";
+let debugEl=null,debugClock=0,debugFrames=0,debugFps=0;
 let riverMesh=null;
 let riverPhase=0;
 
@@ -897,15 +899,41 @@ function clearBattleObjects(){
   landmarkKey="";assaultAnnounced=false;if(assaultFx){scene.remove(assaultFx.root);disposeFx(assaultFx.root);assaultFx=null;}
   previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;
 }
+function initDebug(){
+  if(!DEBUG_3D||debugEl)return;
+  debugEl=document.createElement("div");
+  debugEl.style.cssText="position:absolute;right:8px;top:42px;z-index:20;background:rgba(10,13,15,.82);color:#dff2df;padding:7px 9px;border:1px solid rgba(255,255,255,.18);border-radius:7px;font:700 11px/1.45 ui-monospace,monospace;pointer-events:none;white-space:pre";
+  debugEl.textContent="3D 진단 준비";
+  box.appendChild(debugEl);
+}
+function updateDebug(dt,g){
+  if(!DEBUG_3D)return;
+  initDebug();debugClock+=dt;debugFrames++;
+  if(debugClock>=.5){
+    debugFps=Math.round(debugFrames/debugClock);debugClock=0;debugFrames=0;
+    const ri=renderer.info.render;
+    debugEl.textContent=[
+      `FPS ${debugFps} ${LOW_POWER?"LOW":"FULL"}`,
+      `units ${g?.units?.length||0} / buildings ${g?.buildings?.length||0}`,
+      `draw ${ri.calls} / triangles ${ri.triangles}`,
+      `weapons ${weaponTemplates.size} / props ${propTemplates.size}`,
+      `horse ${horseTemplate?"GLB":"fallback"}`
+    ].join("\n");
+  }
+}
+window.HistoryRoyale3DDebug=function(){
+  const g=window.HistoryRoyaleState?.game;
+  return {ready,lowPower:LOW_POWER,units:g?.units?.length||0,buildings:g?.buildings?.length||0,characters:characterTemplates.size,weapons:weaponTemplates.size,props:propTemplates.size,horse:!!horseTemplate,render:{...renderer.info.render}};
+};
 async function init(){
-  state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;
+  state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;initDebug();
   window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 경량 모드":""}`;
   box.classList.add("three-ready");
   const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
 function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
-  state=window.HistoryRoyaleState||state;const g=state&&state.game;
+  state=window.HistoryRoyaleState||state;const g=state&&state.game;updateDebug(dt,g);
   if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
   if(ready&&g&&g.running){
     updateAtmosphere(g,dt);
