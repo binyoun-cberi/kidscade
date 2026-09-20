@@ -39,11 +39,41 @@ const MULTIPLAYER_SCHEMA_STATEMENTS = Object.freeze([
   `CREATE INDEX IF NOT EXISTS idx_multiplayer_players_student
     ON multiplayer_room_players (student_id, last_seen_at)`,
   `CREATE INDEX IF NOT EXISTS idx_multiplayer_players_room
-    ON multiplayer_room_players (room_id, slot)`
+    ON multiplayer_room_players (room_id, slot)`,
+  `CREATE TABLE IF NOT EXISTS wordchain_match_state (
+    room_id TEXT PRIMARY KEY,
+    current_word TEXT NOT NULL DEFAULT '',
+    current_slot INTEGER,
+    turn_no INTEGER NOT NULL DEFAULT 0,
+    turn_deadline TEXT,
+    history_json TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (room_id) REFERENCES multiplayer_rooms(id) ON DELETE CASCADE
+  )`,
+  `CREATE TABLE IF NOT EXISTS wordchain_used_words (
+    room_id TEXT NOT NULL,
+    word TEXT NOT NULL,
+    student_id TEXT,
+    turn_no INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (room_id, word),
+    FOREIGN KEY (room_id) REFERENCES multiplayer_rooms(id) ON DELETE CASCADE
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_wordchain_used_room_turn
+    ON wordchain_used_words (room_id, turn_no)`,
+  `CREATE TABLE IF NOT EXISTS wordchain_actions (
+    room_id TEXT NOT NULL,
+    action_id TEXT NOT NULL,
+    student_id TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (room_id, action_id),
+    FOREIGN KEY (room_id) REFERENCES multiplayer_rooms(id) ON DELETE CASCADE
+  )`
 ]);
 
 const MULTIPLAYER_SCHEMA_SQL = `${MULTIPLAYER_SCHEMA_STATEMENTS.join(';\n')};`;
-const REQUIRED_TABLES = Object.freeze(['multiplayer_rooms', 'multiplayer_room_players']);
+const REQUIRED_TABLES = Object.freeze(['multiplayer_rooms', 'multiplayer_room_players', 'wordchain_match_state', 'wordchain_used_words', 'wordchain_actions']);
 const schemaPromises = new WeakMap();
 
 async function getExistingMultiplayerTables(db) {
@@ -51,7 +81,7 @@ async function getExistingMultiplayerTables(db) {
     SELECT name
     FROM sqlite_master
     WHERE type = 'table'
-      AND name IN ('multiplayer_rooms', 'multiplayer_room_players')
+      AND name IN ('multiplayer_rooms', 'multiplayer_room_players', 'wordchain_match_state', 'wordchain_used_words', 'wordchain_actions')
   `).all();
   return new Set((result?.results || []).map(row => String(row?.name || '')));
 }
@@ -84,7 +114,10 @@ export async function multiplayerDatabaseHealth(env) {
   await ensureMultiplayerSchema(env);
   await env.DB.batch([
     env.DB.prepare('SELECT 1 AS ok FROM multiplayer_rooms LIMIT 1'),
-    env.DB.prepare('SELECT 1 AS ok FROM multiplayer_room_players LIMIT 1')
+    env.DB.prepare('SELECT 1 AS ok FROM multiplayer_room_players LIMIT 1'),
+    env.DB.prepare('SELECT 1 AS ok FROM wordchain_match_state LIMIT 1'),
+    env.DB.prepare('SELECT 1 AS ok FROM wordchain_used_words LIMIT 1'),
+    env.DB.prepare('SELECT 1 AS ok FROM wordchain_actions LIMIT 1')
   ]);
   return { ok: true, database: 'ready' };
 }
