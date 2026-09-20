@@ -1016,11 +1016,11 @@
     {
       "id": "low_wordchain_arena",
       "title": "끝말잇기 아레나",
-      "href": "games/low_wordchain_arena/index.html?v=1",
+      "href": "games/low_wordchain_arena/index.html?v=2",
       "category": "trivia",
       "age": "low",
       "icon": "🔤",
-      "description": "앞말의 끝 글자를 이어 12초 안에 새 단어를 만드는 낱말 대결! 두음법칙과 중복 판정을 지원하고, 서버 단어 DB가 연결되면 더 넓은 사전으로 검증해요."
+      "description": "앞말의 끝 글자를 이어 12초 안에 새 단어를 만드는 낱말 대결! 두음법칙과 중복 판정을 지원하며, 실시간 사전 API 없이 Kidscade에 포함된 정적 단어 DB로 빠르게 검증해요."
     }
   ]
 }
