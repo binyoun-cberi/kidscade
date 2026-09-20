@@ -56,8 +56,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
     html=html.replace('<head>','<head><base href="'+baseHref+'">');
 
     const extras=[
-      '<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\\/script>',
-      '<script src="./byeokrando-assets.js?v=2"><\\/script>'
+      '<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>',
+      '<script src="./byeokrando-assets.js?v=2"><\/script>'
     ].join('\n');
     html=html.replace('</body>',extras+'\n</body>');
 
