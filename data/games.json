@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=11",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=12",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v11! 산소 귀환 여유와 장비 안전 수심을 계산하며 잠수하고, 사진 등급별 연구 보상·방향 조준 작살과 릴 포획·구조 시 현장 보상 상실까지 연결한 위험-보상형 심해 탐사 게임.",
+      "description": "2D 픽셀 잠수 탐사 v12! 게·성게·불가사리·해파리·앵무조개·오징어·고래·바키타·상어가 서로 다른 방식으로 움직이고, 공작갯가재 미니보스와 심해 크라켄 이벤트까지 더해진 살아있는 해저 생태 탐사 게임.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
