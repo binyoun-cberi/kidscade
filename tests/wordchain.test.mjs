@@ -53,6 +53,7 @@ test('static dictionary client lazy-loads grouped files and contains no API depe
   assert.match(client, /keyToGroup/);
   assert.match(client, /blocked-words\.txt/);
   assert.match(client, /async candidates/);
+  assert.match(client, /async sample/);
   assert.doesNotMatch(client, /\/api\/wordchain/);
   assert.doesNotThrow(() => new Function(client));
 });
