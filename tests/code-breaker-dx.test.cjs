@@ -11,8 +11,8 @@ const js = fs.readFileSync(path.join(root, 'games', 'code_breaker', 'code-breake
 
 test('Code Breaker DX uses split local files and no external CDN', () => {
   assert.match(html, /<title>코드 브레이커<\/title>/);
-  assert.match(html, /games\/code_breaker\/code-breaker-dx\.css\?v=2/);
-  assert.match(html, /games\/code_breaker\/code-breaker-dx\.js\?v=2/);
+  assert.match(html, /games\/code_breaker\/code-breaker-dx\.css\?v=3/);
+  assert.match(html, /games\/code_breaker\/code-breaker-dx\.js\?v=3/);
   assert.doesNotMatch(html + css + js, /https?:\/\//i);
   assert.doesNotMatch(html, /cdn\.tailwindcss|fonts\.googleapis/i);
 });
@@ -38,11 +38,17 @@ test('Code Breaker DX keeps 24-tile deduction rules and two AI levels', () => {
 test('Code Breaker DX uses tracked local boardgame card assets', () => {
   const assets = [
     'assets/game/2d/boardgame/cards/cardBack_blue2.png',
-    'assets/game/2d/boardgame/cards/cardBack_red2.png'
+    'assets/game/2d/boardgame/cards/cardBack_red2.png',
+    'assets/game/2d/boardgame/chips/chipBlackWhite.png',
+    'assets/game/2d/boardgame/chips/chipWhite.png',
+    'assets/game/2d/boardgame/chips/chipBlue.png'
   ];
   for (const asset of assets) assert.ok(fs.existsSync(path.join(root, asset)), 'missing asset: ' + asset);
   assert.match(css, /cardBack_blue2\.png/);
   assert.match(css, /cardBack_red2\.png/);
+  assert.match(css, /chipBlackWhite\.png/);
+  assert.match(css, /chipWhite\.png/);
+  assert.match(css, /chipBlue\.png/);
 });
 
 test('Code Breaker DX owns its shared-audio events without legacy hook duplication', () => {
@@ -60,7 +66,7 @@ test('Code Breaker catalog cache-bumps DX root entry', () => {
   const source = sourceCatalog.games.find(g=>g.id==='code_breaker');
   assert.ok(source);
   assert.equal(source.title, '코드 브레이커');
-  assert.equal(source.href, '코드 브레이커.html?v=2');
+  assert.equal(source.href, '코드 브레이커.html?v=3');
 
   const distCatalogPath = path.join(root, 'dist', 'data', 'games.json');
   assert.ok(fs.existsSync(distCatalogPath), 'dist catalog must exist');
