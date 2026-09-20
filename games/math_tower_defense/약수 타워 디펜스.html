@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>약수 타워 디펜스 3D</title>
-<link rel="stylesheet" href="tower-defense.css?v=8">
+<link rel="stylesheet" href="tower-defense.css?v=9">
 </head>
 <body>
 <canvas id="world" aria-label="약수 타워 디펜스 3D 전장"></canvas>
@@ -21,7 +21,16 @@
     <button id="cameraResetBtn" class="iconBtn" type="button" aria-label="카메라 초기화">↻</button>
     <button id="soundBtn" class="iconBtn" type="button" aria-label="소리">🔊</button>
     <button id="pauseBtn" class="iconBtn" type="button" aria-label="일시정지">⏸</button>
-    <button id="speedBtn" class="speedBtn" type="button">1배속</button>
+    <div class="speedControl">
+      <button id="speedBtn" class="speedBtn" type="button" aria-haspopup="true" aria-expanded="false">1배속 ▾</button>
+      <div id="speedMenu" class="speedMenu" role="menu" aria-label="게임 배속 선택">
+        <button type="button" data-speed="1" class="active" role="menuitem">1×</button>
+        <button type="button" data-speed="2" role="menuitem">2×</button>
+        <button type="button" data-speed="4" role="menuitem">4×</button>
+        <button type="button" data-speed="8" role="menuitem">8×</button>
+        <button type="button" data-speed="16" role="menuitem">16×</button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -79,6 +88,6 @@
 </section>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="tower-defense-loader.js?v=8"></script>
+<script type="module" src="tower-defense-loader.js?v=9"></script>
 </body>
 </html>
