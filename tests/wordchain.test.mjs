@@ -73,8 +73,8 @@ test('word-chain arena uses the merged offline Korean dictionaries', () => {
   assert.match(html, /낱말봇 대결/);
   assert.match(html, /1:1 온라인/);
   assert.match(html, /다대다 온라인/);
-  assert.match(html, /multiplayer\.html\?mode=duel/);
-  assert.match(html, /multiplayer\.html\?mode=multi/);
+  assert.match(html, /multiplayer\.html\?v=6&mode=duel/);
+  assert.match(html, /multiplayer\.html\?v=6&mode=multi/);
   assert.doesNotMatch(html, /\/api\/wordchain/);
 
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
@@ -94,4 +94,21 @@ test('main Worker has no word-chain dictionary API route', () => {
   const main = read('worker/main.mjs');
   assert.doesNotMatch(main, /handleWordchainRequest/);
   assert.doesNotMatch(main, /WORDCHAIN_PREFIX/);
+});
+
+
+test('word-chain arena sound hooks use valid shared audio keys', () => {
+  const solo = read('games/low_wordchain_arena/index.html');
+  const multi = read('games/low_wordchain_arena/multiplayer.html');
+  const audio = read('audio-manager.js');
+  for (const html of [solo, multi]) {
+    assert.match(html, /audio-manager\.js/);
+    assert.match(html, /combat\.hurt_grunt/);
+    assert.doesNotMatch(html, /combat\.hurt_voice/);
+    assert.match(html, /success\.victory_fanfare/);
+    assert.match(html, /failure\.fail_sting/);
+  }
+  for (const key of ['collect.coin_drop','collect.coin_pickup','success.cheer_yay','success.victory_fanfare','failure.fail_sting','failure.disappointed_voice','combat.impact_heavy','combat.hurt_grunt','shop.register_open']) {
+    assert.ok(audio.includes(key), 'missing audio key: '+key);
+  }
 });
