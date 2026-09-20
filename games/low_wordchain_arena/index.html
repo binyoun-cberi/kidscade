@@ -7,8 +7,8 @@
 <style>
 :root{--bg:#07111f;--panel:#101d31;--panel2:#162741;--line:#29415f;--ink:#f6fbff;--muted:#9fb3cc;--cyan:#67e8f9;--lime:#bef264;--gold:#fde68a;--rose:#fda4af;--bad:#fb7185}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#173355 0,#081321 46%,#050b13 100%);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
-body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscroll-behavior:none}button,input,select{font:inherit}.app{width:min(980px,100%);display:flex;flex-direction:column;gap:12px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-weight:1000;font-size:clamp(24px,4vw,38px);letter-spacing:-.05em}.status{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(9,21,36,.8);font-size:12px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:#64748b}.dot.on{background:#4ade80;box-shadow:0 0 12px #4ade80}.dot.local{background:#facc15}
+body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscroll-behavior:none}button,input{font:inherit}.app{width:min(980px,100%);display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-weight:1000;font-size:clamp(24px,4vw,38px);letter-spacing:-.05em}.status{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(9,21,36,.8);font-size:12px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:#64748b}.dot.on{background:#4ade80;box-shadow:0 0 12px #4ade80}.dot.bad{background:#fb7185}
 .board{display:grid;grid-template-columns:220px minmax(0,1fr) 220px;gap:12px}.card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(22,39,65,.96),rgba(12,24,41,.96));box-shadow:0 18px 50px rgba(0,0,0,.22)}
 .player{padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:188px}.avatar{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;font-size:42px;background:#0a182a;border:1px solid var(--line);box-shadow:inset 0 0 30px rgba(255,255,255,.03)}.name{font-size:19px;font-weight:1000;margin-top:9px}.lives{font-size:23px;letter-spacing:2px;margin-top:7px}.me .lives{color:var(--cyan)}.cpu .lives{color:var(--rose)}
 .center{padding:20px;min-height:188px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.turnLabel{font-size:13px;color:var(--muted);font-weight:800}.current{font-size:clamp(38px,7vw,72px);font-weight:1000;letter-spacing:-.08em;margin:4px 0 0}.need{font-weight:1000;color:var(--gold);font-size:18px;margin-top:2px}.timer{width:min(420px,90%);height:10px;border-radius:999px;background:#07111f;border:1px solid var(--line);overflow:hidden;margin-top:13px}.timerFill{height:100%;width:100%;background:linear-gradient(90deg,#22d3ee,#bef264);transform-origin:left center;transition:width .1s linear}
@@ -16,8 +16,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
 .message{min-height:28px;margin-top:8px;text-align:center;font-weight:900;color:#cbd5e1}.message.good{color:#86efac}.message.bad{color:#fda4af}
 .history{padding:14px;min-height:210px}.historyTitle{font-size:13px;color:var(--muted);font-weight:900;margin-bottom:9px}.chips{display:flex;flex-wrap:wrap;gap:7px;align-content:flex-start}.chip{border:1px solid var(--line);background:#0a1728;border-radius:999px;padding:7px 10px;font-size:14px;font-weight:850}.chip.me{border-color:rgba(103,232,249,.4)}.chip.cpu{border-color:rgba(253,164,175,.38)}.chip.start{border-color:rgba(253,230,138,.45);color:#fde68a}
 .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.btn{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:#132640;color:white;font-weight:900;cursor:pointer}.btn.primary{border:0;background:linear-gradient(135deg,#84cc16,#14b8a6);color:#04140c}.btn:disabled{opacity:.45}.rules{font-size:12px;color:var(--muted);line-height:1.6;text-align:center;padding:0 8px}
-.overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(3,8,15,.75);backdrop-filter:blur(10px);padding:18px}.overlay.hidden{display:none}.modal{width:min(560px,96vw);padding:28px;text-align:center}.modal h1{margin:0;font-size:42px;letter-spacing:-.06em}.modal p{color:var(--muted);line-height:1.65}.modeRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0}.mode{border:1px solid var(--line);border-radius:16px;padding:11px 14px;background:#0b192b;color:white;font-weight:900;cursor:pointer}.mode.active{border-color:#67e8f9;box-shadow:0 0 0 2px rgba(103,232,249,.14)}
-.small{font-size:12px;color:var(--muted)}
+.overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(3,8,15,.75);backdrop-filter:blur(10px);padding:18px}.overlay.hidden{display:none}.modal{width:min(560px,96vw);padding:28px;text-align:center}.modal h1{margin:0;font-size:42px;letter-spacing:-.06em}.modal p{color:var(--muted);line-height:1.65}.small{font-size:12px;color:var(--muted)}
 @media(max-width:760px){body{padding:8px}.board{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;grid-row:1}.player{min-height:116px;padding:12px}.avatar{width:55px;height:55px;font-size:31px;border-radius:17px}.name{font-size:15px}.lives{font-size:18px}.center{min-height:160px;padding:14px}.inputRow{grid-template-columns:1fr}.submit{padding:14px}.history{min-height:170px}.top{align-items:flex-start;flex-direction:column}.status{align-self:flex-start}}
 </style>
 </head>
@@ -25,7 +24,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
 <div class="app">
   <div class="top">
     <div class="brand">🔤 끝말잇기 아레나</div>
-    <div class="status"><span class="dot" id="dbDot"></span><span id="dbText">단어 DB 확인 중…</span></div>
+    <div class="status"><span class="dot" id="dbDot"></span><span id="dbText">정적 사전 읽는 중…</span></div>
   </div>
 
   <div class="board">
@@ -48,7 +47,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
       <input id="wordInput" class="wordInput" placeholder="이어질 단어를 입력하세요" autocomplete="off" autocapitalize="off" spellcheck="false" disabled>
       <button id="submitBtn" class="submit" disabled>제출</button>
     </div>
-    <div id="message" class="message">시작하면 12초 안에 단어를 입력하세요.</div>
+    <div id="message" class="message">사전을 준비하고 있어요.</div>
   </section>
 
   <section class="card history">
@@ -57,38 +56,30 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
   </section>
 
   <div class="controls">
-    <button id="startBtn" class="btn primary">새 게임</button>
+    <button id="startBtn" class="btn primary" disabled>새 게임</button>
     <button id="homeBtn" class="btn">Kidscade로</button>
   </div>
-  <div class="rules">기본 모드는 어린이용 안전 명사입니다. 서버 DB가 연결되면 D1 사전으로 판정하고, 서버가 없는 환경에서는 내장된 작은 연습 사전으로 자동 전환됩니다.</div>
+  <div class="rules">실시간 사전 API를 사용하지 않습니다. Kidscade에 포함된 정적 단어 DB를 초성별로 필요한 만큼만 불러와 판정합니다.</div>
 </div>
 
 <div class="overlay" id="intro">
   <section class="card modal">
     <h1>끝말잇기 아레나</h1>
     <p>낱말봇과 3목숨 대결! 앞 단어의 마지막 글자로 시작하는 단어를 12초 안에 입력하세요. 두음법칙도 인정합니다.</p>
-    <div class="modeRow">
-      <button class="mode active" data-mode="kids">🌱 어린이</button>
-      <button class="mode" data-mode="standard">📘 일반</button>
-      <button class="mode" data-mode="open">🧪 자유</button>
-    </div>
-    <button class="btn primary" id="introStart">대결 시작</button>
-    <div class="small" style="margin-top:13px">현재는 1인용 기반판입니다. 같은 단어 엔진을 다음 단계의 1:1·다대다 서버 방에서도 그대로 사용합니다.</div>
+    <button class="btn primary" id="introStart" disabled>사전 준비 중…</button>
+    <div class="small" style="margin-top:13px">현재 사전은 로컬 정적 DB 기반입니다. 앞으로 전체 사전 파일을 추가해도 게임 코드는 그대로 유지됩니다.</div>
   </section>
 </div>
 
+<script src="../../wordchain-static-db.js?v=1"></script>
 <script>
 (() => {
 'use strict';
 const $=id=>document.getElementById(id);
-const LOCAL_WORDS = [
-'가방','가게','가구','가위','가족','가지','간식','감자','강아지','강물','개구리','개나리','개미','거미','거울','건물','겨울','계단','계란','고구마','고기','고래','고양이','고추','공기','공원','공책','공항','과일','교실','구름','구슬','국물','국수','그네','그림','기린','기차','김밥','까치','꽃밭','나무','나비','낙엽','냄비','냉장고','노래','노을','놀이터','농장','눈사람','다리','단추','달력','달빛','당근','대문','도서관','도시','도로','도토리','동굴','동물','돼지','두부','딸기','라면','마당','마을','마음','마차','마늘','만두','망치','매미','머리','모래','모자','목도리','무궁화','무지개','문어','물고기','미역','바구니','바나나','바다','바람','바위','박물관','반찬','발자국','밤하늘','방울','배추','버스','버섯','벌레','베개','벽돌','병원','보리','보물','복숭아','봄비','부엌','분수','비누','비행기','빗자루','사과','사슴','사자','사진','산길','새우','색연필','샌드위치','서랍','선물','선생님','소금','소나무','소리','손수건','수박','수영장','숟가락','숲길','시계','시장','신문','신발','아기','아파트','안경','야구','양말','양배추','어깨','얼음','여우','여행','연필','열쇠','오리','오이','옥수수','온도','옷장','우산','우유','운동장','원숭이','유리','음악','의자','이불','자동차','자두','자전거','잠자리','장갑','장난감','저녁','전구','전철','전화','젓가락','종이','주머니','주스','지도','지우개','지하철','집게','참새','책상','체육관','초콜릿','축구','치마','치약','친구','칠판','카메라','케이크','코끼리','콩나물','쿠키','크레파스','타조','토끼','토마토','파도','파리','포도','풍선','피아노','하늘','학교','한글','햄버거','호랑이','호수','화분','화장실','휴지','귤','김치','꽃','달','물','밥','방','배','별','비','빵','산','새','손','숲','연','차','책','컵','코','해'
-];
-const LOCAL_SET=new Set(LOCAL_WORDS);
 const starters=['사과','기차','나무','바다','학교','토끼','고래','우산','친구','공원','자동차','강아지'];
-let mode='kids', serverReady=false, playing=false, myTurn=false, currentWord='', used=[], meLife=3, cpuLife=3, deadline=0, timerRAF=0, turnToken=0;
+let dbReady=false,playing=false,myTurn=false,currentWord='',used=[],meLife=3,cpuLife=3,deadline=0,timerRAF=0,turnToken=0;
 
-function normalize(v){return String(v||'').normalize('NFC').replace(/[\s·ㆍ・\-]/g,'').trim().slice(0,24)}
+function normalize(v){return window.KidscadeWordDBUtils?.normalizeWord(v)||String(v||'').normalize('NFC').replace(/[\s·ㆍ・\-]/g,'').trim().slice(0,24)}
 function replaceInitial(s,n){const c=s.codePointAt(0)-0xac00;if(c<0||c>11171)return s;const j=Math.floor((c%588)/28),t=c%28;return String.fromCodePoint(0xac00+(n*21+j)*28+t)}
 function initials(last){const s=String(last||'').slice(0,1);if(!s)return[];const c=s.codePointAt(0)-0xac00;if(c<0||c>11171)return[];const cho=Math.floor(c/588),jung=Math.floor((c%588)/28),io=new Set([2,6,7,12,17,20]);const out=[s];if(cho===5)out.push(replaceInitial(s,io.has(jung)?11:2));else if(cho===2&&io.has(jung))out.push(replaceInitial(s,11));return [...new Set(out)]}
 function nextInitials(word){return initials([...word].at(-1))}
@@ -97,29 +88,33 @@ function lives(n){return n>0?'♥ '.repeat(n).trim():'—'}
 function renderLives(){$('meLives').textContent=lives(meLife);$('cpuLives').textContent=lives(cpuLife)}
 function renderNeed(){const ins=nextInitials(currentWord);$('needText').textContent=ins.length?ins.map(v=>'「'+v+'」').join(' 또는 ')+'로 시작하세요':'새 단어를 준비 중…'}
 function chip(word,who){const el=document.createElement('span');el.className='chip '+who;el.textContent=word;$('chips').appendChild(el);el.scrollIntoView({block:'nearest',inline:'nearest'})}
-async function api(path,body){const res=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});let data={};try{data=await res.json()}catch(_){}if(!res.ok||data.ok===false){const e=new Error(data.error||'request_failed');e.code=data.error;e.data=data;throw e}return data}
-function localValidate(word){
- const w=normalize(word);if([...w].length<2||![...w].every(ch=>{const c=ch.codePointAt(0);return c>=0xac00&&c<=0xd7a3}))return {ok:false,error:'invalid_hangul_word'};
- if(used.includes(w))return {ok:false,error:'already_used'};
- if(currentWord&&!nextInitials(currentWord).includes([...w][0]))return {ok:false,error:'wrong_initial',required:nextInitials(currentWord)};
- if(!LOCAL_SET.has(w))return {ok:false,error:'word_not_found'};return {ok:true,word:w,next:nextInitials(w)}
-}
+function isHangulWord(w){const chars=[...w];return chars.length>=2&&chars.length<=24&&chars.every(ch=>{const c=ch.codePointAt(0);return c>=0xac00&&c<=0xd7a3})}
+
 async function validate(word){
- if(serverReady){try{return await api('/api/wordchain/validate',{word,previousWord:currentWord,usedWords:used,useDueum:true,mode})}catch(e){if(['word_not_found','wrong_initial','already_used','invalid_hangul_word','word_not_allowed_in_mode'].includes(e.code))return {ok:false,error:e.code,required:e.data?.required};serverReady=false;paintDb('local')}}
- return localValidate(word)
+ const w=normalize(word);
+ if(!isHangulWord(w))return {ok:false,error:'invalid_hangul_word'};
+ if(used.includes(w))return {ok:false,error:'already_used'};
+ const required=nextInitials(currentWord);
+ if(currentWord&&!required.includes([...w][0]))return {ok:false,error:'wrong_initial',required};
+ try{
+   if(!(await window.KidscadeWordDB.has(w)))return {ok:false,error:'word_not_found'};
+ }catch(_){return {ok:false,error:'dictionary_error'}}
+ return {ok:true,word:w,next:nextInitials(w)}
 }
+
 async function pickCpu(){
  const required=nextInitials(currentWord);
- if(serverReady){
-  try{const d=await api('/api/wordchain/candidates',{initials:required,exclude:used,limit:12,mode});if(d.words?.length)return d.words[Math.floor(Math.random()*d.words.length)].word}catch(_){serverReady=false;paintDb('local')}
- }
- const list=LOCAL_WORDS.filter(w=>required.includes([...w][0])&&!used.includes(w));return list.length?list[Math.floor(Math.random()*list.length)]:null
+ try{
+   const words=await window.KidscadeWordDB.candidates(required,used,18);
+   return words.length?words[Math.floor(Math.random()*words.length)]:null;
+ }catch(_){return null}
 }
+
 function errorText(r){
  if(r.error==='wrong_initial')return (r.required||nextInitials(currentWord)).join(' / ')+'로 시작해야 해요.';
  if(r.error==='already_used')return '이미 나온 단어예요.';
- if(r.error==='word_not_found')return serverReady?'사전에 없는 단어예요.':'연습 사전에 없는 단어예요.';
- if(r.error==='word_not_allowed_in_mode')return '현재 모드에서는 사용할 수 없는 단어예요.';
+ if(r.error==='word_not_found')return '현재 Kidscade 사전에 없는 단어예요.';
+ if(r.error==='dictionary_error')return '단어 사전을 읽지 못했어요. 새로고침해 주세요.';
  return '두 글자 이상의 한글 단어를 입력해 주세요.'
 }
 function stopTimer(){cancelAnimationFrame(timerRAF);deadline=0}
@@ -131,38 +126,49 @@ function playerTurn(){
  if(!playing)return;myTurn=true;turnToken++;$('turnLabel').textContent='내 차례';renderNeed();$('wordInput').disabled=false;$('submitBtn').disabled=false;$('wordInput').value='';$('wordInput').focus({preventScroll:true});setMsg('12초 안에 단어를 이어 보세요.');runTimer(turnToken)
 }
 async function cpuTurn(){
- if(!playing)return;myTurn=false;turnToken++;stopTimer();$('timerFill').style.width='100%';$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='낱말봇 생각 중…';setMsg('낱말봇이 이어갈 단어를 찾고 있어요.');
+ if(!playing)return;myTurn=false;turnToken++;stopTimer();$('timerFill').style.width='100%';$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='낱말봇 생각 중…';setMsg('낱말봇이 로컬 사전에서 단어를 찾고 있어요.');
  const token=turnToken;await new Promise(r=>setTimeout(r,650+Math.random()*650));if(!playing||token!==turnToken)return;
  const word=await pickCpu();if(!playing||token!==turnToken)return;
  if(!word){cpuLife--;renderLives();setMsg('낱말봇이 이어갈 단어를 못 찾았어요!','good');if(cpuLife<=0)return finish(true);await new Promise(r=>setTimeout(r,900));return newRound()}
  currentWord=word;used.push(word);$('currentWord').textContent=word;chip(word,'cpu');renderNeed();setMsg('낱말봇: '+word);await new Promise(r=>setTimeout(r,520));playerTurn()
 }
 async function submit(){
- if(!playing||!myTurn)return;const raw=$('wordInput').value;const w=normalize(raw);if(!w)return;
+ if(!playing||!myTurn)return;const w=normalize($('wordInput').value);if(!w)return;
  $('submitBtn').disabled=true;const token=turnToken;const result=await validate(w);if(!playing||token!==turnToken)return;
  if(!result.ok){$('submitBtn').disabled=false;$('wordInput').select();setMsg(errorText(result),'bad');return}
- stopTimer();myTurn=false;currentWord=result.word||w;used.push(currentWord);$('currentWord').textContent=currentWord;chip(currentWord,'me');renderNeed();setMsg('좋아요! '+currentWord,'good');await cpuTurn()
+ stopTimer();myTurn=false;currentWord=result.word;used.push(currentWord);$('currentWord').textContent=currentWord;chip(currentWord,'me');renderNeed();setMsg('좋아요! '+currentWord,'good');await cpuTurn()
 }
 async function timeoutPlayer(){
  if(!playing||!myTurn)return;myTurn=false;turnToken++;stopTimer();meLife--;renderLives();$('wordInput').disabled=true;$('submitBtn').disabled=true;setMsg('시간 초과! 목숨이 하나 줄었어요.','bad');if(meLife<=0)return finish(false);await new Promise(r=>setTimeout(r,750));
  const replacement=await pickCpu();if(replacement){currentWord=replacement;used.push(replacement);$('currentWord').textContent=replacement;chip(replacement,'cpu');setMsg('낱말봇이 대신 이어서 '+replacement+'!')}await new Promise(r=>setTimeout(r,550));playerTurn()
 }
-function newRound(){const available=starters.filter(w=>!used.includes(w));const w=(available.length?available:starters)[Math.floor(Math.random()*(available.length||starters.length))];currentWord=w;if(!used.includes(w))used.push(w);$('currentWord').textContent=w;chip(w,'start');renderNeed();setTimeout(playerTurn,450)}
+function newRound(){const available=starters.filter(w=>!used.includes(w));const list=available.length?available:starters;const w=list[Math.floor(Math.random()*list.length)];currentWord=w;if(!used.includes(w))used.push(w);$('currentWord').textContent=w;chip(w,'start');renderNeed();setTimeout(playerTurn,450)}
 function start(){
+ if(!dbReady){setMsg('사전 준비가 아직 끝나지 않았어요.','bad');return}
  stopTimer();playing=true;myTurn=false;used=[];meLife=3;cpuLife=3;renderLives();$('chips').innerHTML='';$('intro').classList.add('hidden');setMsg('시작 단어를 정하는 중…');newRound()
 }
 function finish(win){playing=false;myTurn=false;turnToken++;stopTimer();$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent=win?'승리!':'이번 판 종료';$('needText').textContent=win?'낱말봇의 목숨을 모두 없앴어요.':'다시 도전해 보세요.';setMsg(win?'🎉 승리! '+used.length+'개의 단어를 이어 갔어요.':'낱말봇 승리! '+used.length+'개의 단어가 나왔어요.',win?'good':'bad')}
-function paintDb(kind,count){
- const dot=$('dbDot');dot.className='dot '+(kind==='server'?'on':'local');
- $('dbText').textContent=kind==='server'?'서버 단어 DB · '+count.toLocaleString()+'개':'로컬 연습 사전 · '+LOCAL_WORDS.length+'개'
+async function prepareDb(){
+ try{
+   const manifest=await window.KidscadeWordDB.init();
+   dbReady=true;
+   $('dbDot').className='dot on';
+   $('dbText').textContent='정적 단어 DB · '+Number(manifest.total||0).toLocaleString()+'개';
+   $('startBtn').disabled=false;
+   $('introStart').disabled=false;
+   $('introStart').textContent='대결 시작';
+   setMsg('사전 준비 완료! 새 게임을 눌러 시작하세요.','good');
+ }catch(error){
+   console.error(error);
+   $('dbDot').className='dot bad';
+   $('dbText').textContent='정적 단어 DB 오류';
+   $('introStart').textContent='사전을 읽지 못했어요';
+   setMsg('정적 단어 사전을 읽지 못했습니다.','bad');
+ }
 }
-async function checkDb(){
- try{const r=await fetch('/api/wordchain/health',{cache:'no-store'});const d=await r.json();if(r.ok&&d.ok){serverReady=true;paintDb('server',d.safe||d.total||0);return}}catch(_){}serverReady=false;paintDb('local')
-}
-document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode}));
-$('introStart').addEventListener('click',start);$('startBtn').addEventListener('click',start);$('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});$('homeBtn').addEventListener('click',()=>location.href='/');
+$('introStart').addEventListener('click',start);$('startBtn').addEventListener('click',start);$('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});$('homeBtn').addEventListener('click',()=>location.href='../../');
 document.addEventListener('contextmenu',e=>{if(e.target.closest('button,input'))e.preventDefault()});
-checkDb();
+prepareDb();
 })();
 </script>
 </body>
