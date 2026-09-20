@@ -1,0 +1,74 @@
+name: Update Wordchain Standard Dictionary
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update-wordchain-stdict.yml"
+      - "scripts/import-stdict.cjs"
+      - "scripts/build-wordchain-static.cjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-wordchain-stdict
+  cancel-in-progress: false
+
+jobs:
+  build-dictionary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kidscade
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch pinned Standard Korean Dictionary XML
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/korean-dict-nikl
+          git clone --filter=blob:none --no-checkout https://github.com/spellcheck-ko/korean-dict-nikl.git /tmp/korean-dict-nikl
+          git -C /tmp/korean-dict-nikl sparse-checkout init --cone
+          git -C /tmp/korean-dict-nikl sparse-checkout set stdict
+          git -C /tmp/korean-dict-nikl checkout c31ae259de4cd0a355cf8a19b16e75578fd396e2
+
+      - name: Merge and shard dictionary
+        run: |
+          node scripts/import-stdict.cjs /tmp/korean-dict-nikl/stdict
+          node scripts/build-wordchain-static.cjs
+
+      - name: Verify generated dictionary
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const m=JSON.parse(fs.readFileSync('data/wordchain/manifest.json','utf8'));
+          if(m.total !== 195217) throw new Error('Unexpected word total: '+m.total);
+          const files=Object.values(m.groups).map(x=>x.file);
+          if(files.length !== 19) throw new Error('Expected 19 shards, got '+files.length);
+          let total=0;
+          for(const info of Object.values(m.groups)){
+            const rows=fs.readFileSync('data/wordchain/'+info.file,'utf8').split(/\r?\n/).filter(Boolean);
+            if(rows.length !== info.count) throw new Error(info.file+' count mismatch');
+            total += rows.length;
+          }
+          if(total !== m.total) throw new Error('Shard total mismatch');
+          console.log('verified',m.total,'words across',files.length,'shards');
+          NODE
+
+      - name: Commit generated dictionary
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/wordchain; then
+            echo "Dictionary already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data/wordchain
+          git commit -m "Expand word-chain dictionary with Standard Korean Dictionary"
+          git push origin HEAD:main
