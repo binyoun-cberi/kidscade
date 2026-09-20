@@ -260,7 +260,7 @@ test('Deep Diver v12 has living ecology and species-specific attack states',()=>
   assert.match(js,/function nearestEcoFish/);
   assert.match(js,/function nearestKelpCover/);
   assert.match(js,/school fish actually align\/cohere\/separate/);
-  assert.match(js,/nearestEcoFish\(f,f\.key==='giant'\?430:285/);
+  assert.match(js,/nearestEcoFish\(f,f\.key==='giant'\|\|f\.key==='kraken'\?430:285/);
   assert.match(js,/attackMode='windup'/);
   assert.match(js,/attackMode='lunge'/);
   assert.match(js,/function launchFishAttack/);
