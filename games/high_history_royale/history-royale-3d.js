@@ -721,17 +721,41 @@ function syncPreview(g){
     formationBand.material.opacity=rule.ok?.10:.045;
   }else formationBand.visible=false;
 }
+function makeTextSprite(text,color="#fff2c4",scale=1){
+  const c=document.createElement("canvas");c.width=512;c.height=128;
+  const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);
+  x.font="900 48px system-ui, sans-serif";x.textAlign="center";x.textBaseline="middle";
+  x.lineJoin="round";x.lineWidth=10;x.strokeStyle="rgba(25,18,13,.82)";x.strokeText(String(text||""),256,64);
+  x.fillStyle=color;x.fillText(String(text||""),256,64);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false}));
+  sp.scale.set(2.2*scale,.55*scale,1);sp.renderOrder=40;sp.userData.textSprite=true;return sp;
+}
+function disposeFx(root){
+  root.traverse(function(o){
+    if(o.material?.map&&o.userData.textSprite)o.material.map.dispose();
+    if(o.material)o.material.dispose?.();
+    if(o.geometry)o.geometry.dispose?.();
+  });
+}
 function setFxOpacity(root,value){
   root.traverse(function(o){if(!o.material)return;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(function(m){if(m){m.transparent=true;m.opacity=value;}});});
 }
 function fxColor(f){return f.team==="player"?0x76b8e8:(f.team==="enemy"?0xe07b6f:0xf1d36f);}
 function makeFxRoot(f){
   const g=new THREE.Group(),color=fxColor(f);
-  if(f.type==="invalid"){
+  if(f.type==="float"){
+    const colors={bad:"#ef9078",guard:"#e9dda0",crit:"#ffd15f",damage:"#fff1c8"};
+    const sp=makeTextSprite(f.text||"",colors[f.tone]||"#fff1c8",f.tone==="crit"?1.08:.86);sp.position.y=.76;g.add(sp);
+  }else if(f.type==="banner"){
+    const sp=makeTextSprite(f.text||"",f.team==="player"?"#bfe3ff":"#ffd0c7",1.0);sp.position.y=1.15;g.add(sp);
+    const ring=mesh(new THREE.RingGeometry(.42,.50,40),new THREE.MeshBasicMaterial({color:color,side:THREE.DoubleSide,transparent:true,opacity:.72}),0,.045,0);ring.rotation.x=-Math.PI/2;g.add(ring);
+  }else if(f.type==="invalid"){
     const a=mesh(new THREE.BoxGeometry(.7,.055,.07),new THREE.MeshBasicMaterial({color:0xef5b50}),0,.12,0);a.rotation.y=.78;g.add(a);
     const b=a.clone();b.rotation.y=-.78;g.add(b);
   }else if(f.type==="hit"||f.type==="deflect"||f.type==="brace"){
     for(let i=0;i<(LOW_POWER?4:7);i++){const spark=mesh(new THREE.BoxGeometry(.025,.025,.26),new THREE.MeshBasicMaterial({color:f.type==="brace"?0xdde8d7:0xffe392}),0,.35,0);spark.rotation.y=i*Math.PI*2/(LOW_POWER?4:7);spark.position.x=Math.cos(i*.9)*.18;spark.position.z=Math.sin(i*.9)*.18;g.add(spark);}
+    if(f.type==="brace"){const sp=makeTextSprite(f.text||"돌격 저지!","#e7d77a",.72);sp.position.y=.92;g.add(sp);}
   }else if(f.type==="deathDust"){
     for(let i=0;i<(LOW_POWER?4:8);i++){const dust=mesh(new THREE.DodecahedronGeometry(.07+(i%3)*.02,0),new THREE.MeshStandardMaterial({color:0x9f8b6d,transparent:true,opacity:.55}),Math.cos(i*.8)*.22,.07,Math.sin(i*.8)*.22);g.add(dust);}
   }else if(f.type==="build"){
@@ -759,11 +783,13 @@ function syncFx(g){
     const q=canvasToWorld(f.x||480,f.y||310);rec.root.position.x=q.x;rec.root.position.z=q.z;
     const t=f.max?THREE.MathUtils.clamp(f.life/f.max,0,1):1,p=1-t;
     if(["ring","cast","charge","deploy","portraitSummon","banner","build"].includes(f.type))rec.root.scale.setScalar(.65+p*1.35);
+    if(f.type==="float")rec.root.position.y=.15+p*.75;
+    if(f.type==="banner")rec.root.position.y=.08+p*.20;
     if(f.type==="hit"||f.type==="brace"||f.type==="deflect")rec.root.rotation.y+=.15;
     if(f.type==="deathDust")rec.root.children.forEach((o,i)=>{o.position.x+=Math.cos(i*.8)*.01;o.position.z+=Math.sin(i*.8)*.01;o.position.y+=.006;});
     setFxOpacity(rec.root,Math.max(.05,t*.82));
   }
-  fxMeshes.forEach(function(rec,id){if(!live.has(id)){scene.remove(rec.root);fxMeshes.delete(id);}});
+  fxMeshes.forEach(function(rec,id){if(!live.has(id)){scene.remove(rec.root);disposeFx(rec.root);fxMeshes.delete(id);}});
 }
 function updateAtmosphere(g,dt){
   const assault=g.time<60;
