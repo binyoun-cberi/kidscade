@@ -8,17 +8,18 @@
 :root{--bg:#07111f;--panel:#101d31;--panel2:#162741;--line:#29415f;--ink:#f7fbff;--muted:#9fb3cc;--cyan:#67e8f9;--lime:#bef264;--gold:#fde68a;--rose:#fda4af;--bad:#fb7185;--ok:#86efac}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#173a61 0,#091626 48%,#050b13 100%);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
 body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select{font:inherit}.app{width:min(1080px,100%);margin:auto;display:flex;flex-direction:column;gap:12px}.card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(22,39,65,.97),rgba(10,22,38,.97));box-shadow:0 18px 50px rgba(0,0,0,.22)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-size:clamp(24px,4vw,38px);font-weight:1000;letter-spacing:-.05em}.account{font-size:13px;color:var(--muted);padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#091525}
-.board{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;gap:12px}.selfCard,.roster{padding:16px;min-height:215px}.selfCard{display:flex;flex-direction:column;align-items:center;justify-content:center}.avatar{width:74px;height:74px;border:1px solid var(--line);border-radius:22px;display:grid;place-items:center;background:#081525;font-size:40px}.meName{font-weight:1000;font-size:20px;margin-top:8px}.lives{color:var(--cyan);font-size:25px;letter-spacing:3px;margin-top:5px}.center{min-height:215px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.turn{color:var(--muted);font-size:14px;font-weight:850}.word{font-weight:1000;font-size:clamp(40px,7vw,76px);letter-spacing:-.08em;line-height:1.05;margin-top:5px}.required{color:var(--gold);font-size:18px;font-weight:1000;margin-top:8px}.timer{width:min(460px,94%);height:10px;background:#06101d;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:13px}.timerFill{height:100%;width:100%;background:linear-gradient(90deg,#22d3ee,#bef264);transition:width .12s linear}.rosterTitle,.historyTitle{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:8px}.playerList{display:flex;flex-direction:column;gap:7px;max-height:170px;overflow:auto}.player{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:7px;background:#091728;border:1px solid #223d5a;border-radius:12px;padding:8px 9px}.player.current{border-color:#fde68a;box-shadow:0 0 0 2px rgba(253,230,138,.10)}.player.dead{opacity:.45}.slot{font-size:12px;color:var(--muted)}.pname{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plife{font-size:13px;color:#fda4af}.host{color:#fde68a;font-size:10px;margin-left:4px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-size:clamp(24px,4vw,38px);font-weight:1000;letter-spacing:-.05em}.topActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.account{font-size:13px;color:var(--muted);padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#091525}.soundBtn{width:40px;height:40px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:18px}.matchMeta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:0 2px}.matchMeta.hidden{display:none}.badge{font-size:12px;font-weight:900;color:#cbd5e1;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:#091525}.badge.room{color:var(--gold);border-color:rgba(253,230,138,.35)}.badge.live{color:#86efac}.badge.rule{color:#bae6fd}
+.board{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;gap:12px}.selfCard,.roster{padding:16px;min-height:215px}.selfCard{display:flex;flex-direction:column;align-items:center;justify-content:center}.avatar{width:74px;height:74px;border:1px solid var(--line);border-radius:22px;display:grid;place-items:center;background:#081525;font-size:40px}.meName{font-weight:1000;font-size:20px;margin-top:8px}.lives{color:var(--cyan);font-size:25px;letter-spacing:3px;margin-top:5px}.center{min-height:215px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:border-color .18s,box-shadow .18s,transform .18s}.center.myturn{border-color:#67e8f9;box-shadow:0 0 0 3px rgba(103,232,249,.12),0 18px 50px rgba(0,0,0,.22);transform:translateY(-1px)}.center.myturn .turn{color:#67e8f9}.center.myturn .word{text-shadow:0 0 28px rgba(103,232,249,.22)}.turn{color:var(--muted);font-size:14px;font-weight:850}.word{font-weight:1000;font-size:clamp(40px,7vw,76px);letter-spacing:-.08em;line-height:1.05;margin-top:5px}.required{color:var(--gold);font-size:18px;font-weight:1000;margin-top:8px}.timer{width:min(460px,94%);height:10px;background:#06101d;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:13px;transition:border-color .2s,box-shadow .2s}.timer.urgent{border-color:#fb7185;box-shadow:0 0 12px rgba(251,113,133,.28)}.timerFill{height:100%;width:100%;background:linear-gradient(90deg,#22d3ee,#bef264);transition:width .12s linear}.timer.urgent .timerFill{background:linear-gradient(90deg,#fb7185,#f59e0b)}.rosterTitle,.historyTitle{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:8px}.playerList{display:flex;flex-direction:column;gap:7px;max-height:170px;overflow:auto}.player{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:7px;background:#091728;border:1px solid #223d5a;border-radius:12px;padding:8px 9px}.player.current{border-color:#fde68a;box-shadow:0 0 0 2px rgba(253,230,138,.10)}.player.you{background:linear-gradient(90deg,rgba(103,232,249,.08),#091728)}.player.dead{opacity:.45;filter:saturate(.55)}.slot{font-size:12px;color:var(--muted)}.pname{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plife{font-size:13px;color:#fda4af}.host{color:#fde68a;font-size:10px;margin-left:4px}
 .inputCard{padding:14px}.inputRow{display:grid;grid-template-columns:1fr auto;gap:9px}.wordInput{min-width:0;padding:15px 16px;border:1px solid #36516f;border-radius:17px;background:#071424;color:white;font-size:21px;font-weight:900;outline:none}.wordInput:focus{border-color:#67e8f9;box-shadow:0 0 0 3px rgba(103,232,249,.12)}.submit{border:0;border-radius:17px;padding:0 24px;background:linear-gradient(135deg,#22d3ee,#6366f1);color:white;font-weight:1000;cursor:pointer}.submit:disabled,.wordInput:disabled{opacity:.42}.message{min-height:27px;text-align:center;margin-top:8px;font-weight:900;color:#cbd5e1}.message.good{color:var(--ok)}.message.bad{color:#fda4af}
-.history{padding:14px;min-height:150px}.chips{display:flex;gap:7px;flex-wrap:wrap}.chip{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#081525;font-size:13px;font-weight:850}.chip.starter{color:#fde68a}.chip.timeout{color:#fda4af}.chip.oneshot{color:#c4b5fd}.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:#132640;color:white;font-weight:900;cursor:pointer}.btn.primary{border:0;background:linear-gradient(135deg,#84cc16,#14b8a6);color:#04140c}.btn.danger{border-color:#7f1d1d;background:#3b111b}.btn:disabled{opacity:.42;cursor:not-allowed}
+.history{padding:14px;min-height:150px}.chips{display:flex;gap:7px;flex-wrap:wrap;max-height:150px;overflow:auto;align-content:flex-start}.chip:last-child{box-shadow:0 0 0 2px rgba(103,232,249,.08)}.chip{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#081525;font-size:13px;font-weight:850}.chip.starter{color:#fde68a}.chip.timeout{color:#fda4af}.chip.oneshot{color:#c4b5fd}.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:#132640;color:white;font-weight:900;cursor:pointer}.btn.primary{border:0;background:linear-gradient(135deg,#84cc16,#14b8a6);color:#04140c}.btn.danger{border-color:#7f1d1d;background:#3b111b}.btn:disabled{opacity:.42;cursor:not-allowed}
 .overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(2,7,14,.78);backdrop-filter:blur(10px);padding:16px}.overlay.hidden{display:none}.modal{width:min(690px,96vw);padding:25px}.title{font-size:34px;font-weight:1000;letter-spacing:-.05em;margin:0;text-align:center}.sub{color:var(--muted);text-align:center;line-height:1.6}.chooser{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}.choice{padding:17px;border:1px solid var(--line);border-radius:18px;background:#0a192b;color:white;text-align:left;cursor:pointer}.choice b{font-size:18px}.choice span{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.5}.multiRow,.joinRow{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0}.joinRow input{width:190px;text-align:center;text-transform:uppercase;letter-spacing:.12em;font-size:20px;font-weight:1000;padding:11px;border:1px solid var(--line);border-radius:14px;background:#071424;color:white}.multiRow select{padding:10px;border:1px solid var(--line);border-radius:12px;background:#071424;color:white}.roomCode{font-size:42px;letter-spacing:.14em;font-weight:1000;text-align:center;color:#fde68a}.lobbyList{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.lobbyPlayer{border:1px solid var(--line);border-radius:14px;background:#091728;padding:10px}.ready{color:#86efac;font-size:12px}.notReady{color:#fda4af;font-size:12px}.rule{font-size:12px;color:var(--muted);line-height:1.55;text-align:center;margin-top:12px}.resultTitle{text-align:center;font-size:40px;font-weight:1000}.resultPlayers{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0}.resultP{padding:10px 12px;border:1px solid var(--line);border-radius:13px;background:#091728}.countdown{position:fixed;inset:0;z-index:35;display:none;place-items:center;background:rgba(2,7,14,.4);pointer-events:none}.countdown.show{display:grid}.countText{font-size:clamp(80px,20vw,180px);font-weight:1000;text-shadow:0 12px 40px #000}
 @media(max-width:820px){.board{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;grid-row:1}.selfCard,.roster{min-height:145px}.chooser{grid-template-columns:1fr}.lobbyList{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.inputRow{grid-template-columns:1fr}.submit{padding:14px}.roomCode{font-size:34px}}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="top"><div class="brand">🌐 끝말잇기 온라인 대결</div><div class="account" id="accountState">계정 확인 중…</div></div>
+  <div class="top"><div class="brand">🌐 끝말잇기 온라인 대결</div><div class="topActions"><div class="account" id="accountState">계정 확인 중…</div><button class="btn soundBtn" id="soundBtn" title="효과음 켜기/끄기">🔊</button></div></div>
+  <div class="matchMeta hidden" id="matchMeta"><span class="badge room" id="roomBadge">방 ------</span><span class="badge" id="modeBadge">1:1</span><span class="badge rule">3목숨 · 12초</span><span class="badge live">● 온라인</span></div>
 
   <div class="board">
     <section class="card selfCard">
@@ -26,11 +27,11 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
       <div class="meName" id="meName">나</div>
       <div class="lives" id="meLives">♥ ♥ ♥</div>
     </section>
-    <section class="card center">
+    <section class="card center" id="turnCard">
       <div class="turn" id="turnLabel">방에 입장하세요</div>
       <div class="word" id="currentWord">끝말잇기</div>
       <div class="required" id="requiredText">로그인 사용자끼리 대결</div>
-      <div class="timer"><div class="timerFill" id="timerFill"></div></div>
+      <div class="timer" id="timerBar"><div class="timerFill" id="timerFill"></div></div>
     </section>
     <section class="card roster">
       <div class="rosterTitle">참가자</div>
@@ -95,12 +96,19 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 
 <div class="countdown" id="countdown"><div class="countText" id="countText">3</div></div>
 
+<script src="../../audio-manager.js?v=20260917-1"></script>
 <script>
 (() => {
 'use strict';
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
 const ROOM_STORAGE='kidscadeWordchainRoomId';
+let soundState={historyToken:'',countdown:null,resultRoom:'',lastTurnSlot:null};
+
+const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
+const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open'])?.catch?.(()=>{});
+function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇':'🔊';$('soundBtn').title=muted?'효과음 켜기':'효과음 끄기'}
+function toggleSound(){const api=window.KidscadeAudio;if(!api)return;const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();if(!muted)sfx('collect.coin_pickup',{volume:.24,rate:1.15})}
 
 const errors={
  not_authenticated:'로그인이 필요합니다.',
@@ -143,7 +151,7 @@ function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.elimin
 function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;cancelAnimationFrame(timerRAF);$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',countdown:null,resultRoom:'',lastTurnSlot:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 async function checkAccount(){
  try{
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
@@ -165,9 +173,11 @@ async function join(){
   const data=await api('join',{code});enterRoom(data.room);
  }catch(e){alert(e.message)}
 }
-function enterRoom(next){room=next;localStorage.setItem(ROOM_STORAGE,next.id);setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;showOverlay('lobbyOverlay');render(next);startPoll()}
+function enterRoom(next){room=next;localStorage.setItem(ROOM_STORAGE,next.id);setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;$('matchMeta').classList.remove('hidden');sfx('collect.coin_pickup',{volume:.24,rate:1.08,cooldownMs:300});showOverlay('lobbyOverlay');render(next);startPoll()}
 function renderLobby(next){
+ soundState.countdown=null;
  $('roomCodeText').textContent=next.code;$('roomRuleText').textContent=next.maxPlayers===2?'1:1 · 최대 2명':'다대다 · 최대 '+next.maxPlayers+'명';
+ $('roomBadge').textContent='방 '+next.code;$('modeBadge').textContent=next.maxPlayers===2?'1:1 대결':'최대 '+next.maxPlayers+'인';
  $('lobbyPlayers').innerHTML=next.players.map(p=>'<div class="lobbyPlayer"><b>'+esc(p.nickname)+(p.isHost?'<span class="host">방장</span>':'')+'</b><div class="'+(p.ready?'ready':'notReady')+'">'+(p.ready?'준비 완료':'준비 전')+(p.online?'':' · 연결 확인 중')+'</div></div>').join('');
  $('readyBtn').textContent=next.self?.ready?'준비 취소':'준비 완료';
  $('startBtn').style.display=next.isHost?'inline-block':'none';$('startBtn').disabled=!next.canStart;
@@ -176,7 +186,7 @@ function renderLobby(next){
 }
 function renderPlayers(next){
  const current=Number(next.match?.currentSlot);
- $('playerList').innerHTML=next.players.map(p=>'<div class="player '+(p.slot===current?'current ':'')+(p.eliminated?'dead':'')+'"><span class="slot">#'+p.slot+'</span><span class="pname">'+esc(p.nickname)+(p.isHost?'<span class="host">방장</span>':'')+(p.isSelf?' · 나':'')+'</span><span class="plife">'+hearts(p.lives)+'</span></div>').join('');
+ $('playerList').innerHTML=next.players.map(p=>'<div class="player '+(p.slot===current?'current ':'')+(p.isSelf?'you ':'')+(p.eliminated?'dead':'')+'"><span class="slot">#'+p.slot+'</span><span class="pname">'+esc(p.nickname)+(p.isHost?'<span class="host">방장</span>':'')+(p.isSelf?' · 나':'')+'</span><span class="plife">'+hearts(p.lives)+'</span></div>').join('');
  $('meName').textContent=next.self?.nickname||'나';$('meLives').textContent=hearts(next.self?.lives||0);
 }
 function renderHistory(next){
@@ -191,20 +201,44 @@ function renderHistory(next){
   return '';
  }).join('');
 }
+function reactSfx(next){
+ const rows=next.match?.history||[];
+ const newest=rows.at(-1);
+ const token=newest?JSON.stringify([newest.kind,newest.turn,newest.word,newest.slot,newest.at]):'';
+ if(token&&token!==soundState.historyToken){
+   if(soundState.historyToken){
+     if(newest.kind==='word')sfx(newest.slot===next.self?.slot?'success.cheer_yay':'collect.coin_pickup',{volume:newest.slot===next.self?.slot ? .38 : .18,cooldownMs:160});
+     else if(newest.kind==='timeout'){sfx('combat.impact_heavy',{volume:.34,cooldownMs:150});if(newest.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.28,cooldownMs:260})}
+     else if(newest.kind==='one-shot'){sfx('combat.impact_heavy',{volume:.48,rate:.86,cooldownMs:220});if(newest.slot===next.self?.slot)sfx('combat.hurt_voice',{volume:.30,cooldownMs:260})}
+     else if(newest.kind==='leave')sfx('failure.fail_sting',{volume:.22,cooldownMs:320});
+   }
+   soundState.historyToken=token;
+ }
+ const slot=Number(next.match?.currentSlot);
+ if(next.status==='playing'&&soundState.lastTurnSlot!==null&&slot!==soundState.lastTurnSlot&&slot===Number(next.self?.slot))sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240});
+ if(next.status==='playing')soundState.lastTurnSlot=slot;
+ if(next.status==='finished'&&soundState.resultRoom!==next.id){soundState.resultRoom=next.id;sfx(next.result?.outcome==='win'?'success.victory_fanfare':'failure.fail_sting',{volume:next.result?.outcome==='win' ? .46 : .36,cooldownMs:1000})}
+}
 function render(next){
- room=next;setServerNow(next.serverNow);renderPlayers(next);renderHistory(next);
+ room=next;setServerNow(next.serverNow);reactSfx(next);renderPlayers(next);renderHistory(next);
  if(next.status==='waiting'){showOverlay('lobbyOverlay');renderLobby(next);return}
  if(next.status==='playing'){showOverlay('__none__');renderMatch(next);return}
  if(next.status==='finished'){showResult(next)}
 }
 function renderMatch(next){
  const startMs=new Date(next.startAt||0).getTime(),now=nowServer();
- if(now<startMs){$('countdown').classList.add('show');$('countText').textContent=String(Math.max(1,Math.ceil((startMs-now)/1000)));$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='곧 시작합니다';}
- else{$('countdown').classList.remove('show')}
+ if(now<startMs){
+   const count=Math.max(1,Math.ceil((startMs-now)/1000));$('countdown').classList.add('show');$('countText').textContent=String(count);$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='곧 시작합니다';
+   if(soundState.countdown!==count){soundState.countdown=count;sfx('collect.coin_drop',{volume:.25,rate:1+(3-count)*.08,cooldownMs:350})}
+ } else {
+   $('countdown').classList.remove('show');
+   if(soundState.countdown!==0){soundState.countdown=0;sfx('success.cheer_woohoo',{volume:.30,cooldownMs:700})}
+ }
  const word=next.match?.currentWord||'';$('currentWord').textContent=word||'—';
  $('requiredText').textContent=(next.match?.required||[]).length?(next.match.required.map(v=>'「'+v+'」').join(' 또는 ')+'로 시작'):'단어를 준비 중…';
  const current=next.players.find(p=>Number(p.slot)===Number(next.match?.currentSlot));
- const mine=myTurn();
+ const mine=myTurn();$('turnCard').classList.toggle('myturn',mine);
+ $('roomBadge').textContent='방 '+next.code;$('modeBadge').textContent=next.maxPlayers===2?'1:1 대결':'최대 '+next.maxPlayers+'인';
  $('turnLabel').textContent=mine?'내 차례!':(current?current.nickname+' 차례':'진행 중');
  $('wordInput').disabled=!mine||submitting;$('submitBtn').disabled=!mine||submitting;
  if(mine&&!submitting&&document.activeElement!==$('wordInput'))$('wordInput').focus({preventScroll:true});
@@ -215,15 +249,15 @@ function renderMatch(next){
 }
 function animateTimer(){
  cancelAnimationFrame(timerRAF);
- const tick=()=>{if(!room||room.status!=='playing')return;const deadline=new Date(room.match?.turnDeadline||0).getTime();const left=Math.max(0,deadline-nowServer());$('timerFill').style.width=Math.max(0,Math.min(100,left/12000*100))+'%';timerRAF=requestAnimationFrame(tick)};tick();
+ const tick=()=>{if(!room||room.status!=='playing')return;const deadline=new Date(room.match?.turnDeadline||0).getTime();const left=Math.max(0,deadline-nowServer());$('timerFill').style.width=Math.max(0,Math.min(100,left/12000*100))+'%';$('timerBar').classList.toggle('urgent',left>0&&left<=4000);timerRAF=requestAnimationFrame(tick)};tick();
 }
 async function sync(){
  if(!room)return;
  try{const data=await api('state',{roomId:room.id});render(data.room)}
  catch(e){if(e.code==='room_not_found'){resetToEntry();return}if(e.code==='not_authenticated'||e.code==='session_expired'){stopPoll();alert(e.message);location.href='../../'}}
 }
-async function toggleReady(){if(!room)return;try{const data=await api('ready',{roomId:room.id,ready:!room.self?.ready});render(data.room)}catch(e){alert(e.message)}}
-async function startMatch(){if(!room)return;try{$('startBtn').disabled=true;const data=await api('start',{roomId:room.id});render(data.room)}catch(e){alert(e.message)}}
+async function toggleReady(){if(!room)return;try{const data=await api('ready',{roomId:room.id,ready:!room.self?.ready});sfx('movement.jump',{volume:.20,rate:data.room.self?.ready?1.12:.92,cooldownMs:180});render(data.room)}catch(e){sfx('failure.fail_sting',{volume:.24,cooldownMs:250});alert(e.message)}}
+async function startMatch(){if(!room)return;try{$('startBtn').disabled=true;sfx('shop.register_open',{volume:.22,cooldownMs:500});const data=await api('start',{roomId:room.id});render(data.room)}catch(e){sfx('failure.fail_sting',{volume:.24,cooldownMs:250});alert(e.message)}}
 async function submit(){
  if(!room||!myTurn()||submitting)return;const word=$('wordInput').value.trim();if(!word)return;
  submitting=true;$('submitBtn').disabled=true;
@@ -231,7 +265,7 @@ async function submit(){
   const data=await api('submit',{roomId:room.id,word,actionId:actionId()});$('wordInput').value='';render(data.room);setMsg(data.oneShot?'한방단어! 다음 플레이어의 목숨이 줄었습니다.':'인정! '+word,'good');
  }catch(e){
   if(e.code==='wrong_initial'&&e.data?.required)e.message=e.data.required.join(' / ')+'로 시작해야 합니다.';
-  setMsg(e.message,'bad');$('wordInput').select();
+  sfx('failure.fail_sting',{volume:.28,cooldownMs:220});setMsg(e.message,'bad');$('wordInput').select();
  }finally{submitting=false;if(myTurn()){$('submitBtn').disabled=false;$('wordInput').disabled=false}}
 }
 async function leave(){
@@ -245,13 +279,14 @@ function showResult(next){
  $('resultSub').textContent=next.result?.winnerNickname?'최후의 생존자: '+next.result.winnerNickname:'승자가 정해지지 않았습니다.';
  $('resultPlayers').innerHTML=next.players.map(p=>'<div class="resultP"><b>'+esc(p.nickname)+'</b><div style="color:'+(p.eliminated?'#fda4af':'#86efac')+'">'+(p.eliminated?'탈락':'생존')+' · '+hearts(p.lives)+'</div></div>').join('');
 }
+$('soundBtn').addEventListener('click',toggleSound);
 $('createDuel').addEventListener('click',()=>create(2));$('createMulti').addEventListener('click',()=>create(Number($('multiSize').value)||4));$('joinBtn').addEventListener('click',join);
 $('roomCodeInput').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6));$('roomCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')join()});
 $('readyBtn').addEventListener('click',toggleReady);$('startBtn').addEventListener('click',startMatch);$('leaveLobbyBtn').addEventListener('click',leave);$('leaveMatchBtn').addEventListener('click',leave);$('newMatchBtn').addEventListener('click',resetToEntry);
 $('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});
 $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room?.code||'');setMsg('방 코드를 복사했습니다.','good')}catch(_){alert('방 코드: '+(room?.code||''))}});
 window.addEventListener('beforeunload',()=>{if(!room||room.status==='finished')return;try{navigator.sendBeacon('/api/multiplayer/wordchain/leave',new Blob([JSON.stringify({roomId:room.id})],{type:'application/json'}))}catch(_){}});
-checkAccount();
+preloadSfx();updateSoundButton();checkAccount();
 })();
 </script>
 </body>
