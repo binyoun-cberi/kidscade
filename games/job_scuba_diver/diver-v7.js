@@ -35,8 +35,8 @@ const SUBZONES=[
 ];
 const subzoneForY=y=>SUBZONES.find(z=>y>=z.y0&&y<z.y1)||SUBZONES[SUBZONES.length-1];
 const CONTRACTS=[
- {id:'reef',title:'01 · 산호초 생태 조사',desc:'청색 암초어·주황 산호어·분홍 산호어를 촬영하고 산호 미로를 지나 안전하게 귀환하세요.',reward:1100,unlock:0,target:'reef'},
- {id:'kelp',title:'02 · 해초 숲 표본 조사',desc:'희귀 회색 긴꼬리어를 촬영하고 일반 표본 2개를 회수한 뒤 조류 협곡을 통과하세요.',reward:1800,unlock:1,target:'kelp'},
+ {id:'reef',title:'01 · 산호초 생태 조사',desc:'청색 암초어·주황 산호어·분홍 산호어를 각각 B등급 이상 촬영하고 산호 미로를 지나 안전하게 귀환하세요.',reward:1100,unlock:0,target:'reef'},
+ {id:'kelp',title:'02 · 해초 숲 표본 조사',desc:'희귀 회색 긴꼬리어를 A등급 이상 촬영하고 일반 표본 2개를 회수한 뒤 조류 협곡을 통과하세요.',reward:1800,unlock:1,target:'kelp'},
  {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 기록하고 고대 표식판을 회수하세요.',reward:2700,unlock:2,target:'ruins'},
  {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰 골목을 지나 침몰선의 항해기록 장치를 회수하세요.',reward:3900,unlock:3,target:'wreck'},
  {id:'abyss',title:'05 · 심해 생물 조사',desc:'600m 아래 포식자 해구에서 대형 심해 상어를 A등급 이상 촬영하고 살아서 귀환하세요.',reward:5600,unlock:4,target:'abyss'}
