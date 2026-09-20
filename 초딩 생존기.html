@@ -16,6 +16,7 @@
     --happy:#f2a23a;
     --social:#ea6279;
     --danger:#d94747;
+    --stress:#8f5cc2;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#e9eef7}
@@ -54,11 +55,13 @@
   .hud{height:84px;max-width:1160px;width:100%;margin:0 auto 10px;display:grid;grid-template-columns:180px 1fr 150px;align-items:center;gap:14px}
   .brand-small{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:-.04em}
   .brand-mark{width:40px;height:40px;border-radius:14px;background:#26324a;color:white;display:grid;place-items:center;font-weight:1000}
-  .hud-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .hud-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
   .stat{position:relative;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.9);border-radius:16px;padding:10px 11px 9px;box-shadow:0 8px 20px rgba(45,58,90,.08);overflow:hidden}
   .stat-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;font-weight:900;margin-bottom:7px}.stat-value{font-variant-numeric:tabular-nums}
   .stat-track{height:8px;border-radius:999px;background:#edf0f5;overflow:hidden}.stat-fill{height:100%;border-radius:inherit;transition:width .5s cubic-bezier(.2,.8,.2,1)}
-  .stat.study .stat-fill{background:var(--study)}.stat.health .stat-fill{background:var(--health)}.stat.happy .stat-fill{background:var(--happy)}.stat.social .stat-fill{background:var(--social)}
+  .stat.study .stat-fill{background:var(--study)}.stat.health .stat-fill{background:var(--health)}.stat.happy .stat-fill{background:var(--happy)}.stat.social .stat-fill{background:var(--social)}.stat.stress .stat-fill{background:var(--stress)}
+  .stat.preview-up{box-shadow:0 0 0 3px rgba(46,166,111,.24),0 8px 20px rgba(45,58,90,.08)}.stat.preview-down{box-shadow:0 0 0 3px rgba(217,71,71,.22),0 8px 20px rgba(45,58,90,.08)}.stat.preview-flat{opacity:.72}
+  .start-actions{display:flex;gap:10px;flex-wrap:wrap}.start-actions .primary,.start-actions .secondary{flex:1;min-width:170px}.continue-note{font-size:12px;color:var(--muted);margin-top:10px}
   .stat.flash{animation:statFlash .45s ease}@keyframes statFlash{50%{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,52,82,.18)}}
   .hud-actions{display:flex;justify-content:flex-end;gap:8px}.icon-btn{width:43px;height:43px;border-radius:14px;border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.82);cursor:pointer;font-weight:900;box-shadow:0 8px 18px rgba(45,58,90,.08)}
   .stage{position:relative;flex:1;min-height:0;width:min(1160px,100%);margin:0 auto;display:grid;grid-template-columns:220px minmax(360px,520px) 220px;justify-content:center;align-items:center;gap:26px}
@@ -341,11 +344,11 @@
         <div class="rule-row">
           <span class="pill">좌우로 카드 넘기기</span>
           <span class="pill">학년별 30개 사건 진행</span>
-          <span class="pill">총 216개 카드 풀</span>
+          <span class="pill">216개 기본 카드 + 연속 사건</span>
           <span class="pill">8개 과목 매 학년 등장</span>
           <span class="pill">인물별 목소리 · BGM</span>
         </div>
-        <button id="startBtn" class="primary">1학년 생활 시작</button>
+        <div class="start-actions"><button id="startBtn" class="primary">새 1학년 시작</button><button id="continueBtn" class="secondary" hidden>이어하기</button></div><div id="continueNote" class="continue-note" hidden>자동 저장된 학교생활이 있어요.</div>
       </div>
       <div class="start-art">
         <div class="poster">
@@ -369,7 +372,8 @@
         <div class="stat study" data-stat="study"><div class="stat-top"><span>학업</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
         <div class="stat health" data-stat="health"><div class="stat-top"><span>건강</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
         <div class="stat happy" data-stat="happy"><div class="stat-top"><span>행복</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
-        <div class="stat social" data-stat="social"><div class="stat-top"><span>평판</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+        <div class="stat social" data-stat="social"><div class="stat-top"><span>관계</span><span class="stat-value">50</span></div><div class="stat-track"><div class="stat-fill" style="width:50%"></div></div></div>
+        <div class="stat stress" data-stat="stress"><div class="stat-top"><span>부담</span><span class="stat-value">20</span></div><div class="stat-track"><div class="stat-fill" style="width:20%"></div></div></div>
       </div>
       <div class="hud-actions"><button id="soundBtn" class="icon-btn active" aria-label="배경음악과 효과음" title="배경음악과 효과음 켜기/끄기">♫</button><button id="voiceBtn" class="icon-btn active voice-btn" aria-label="등장인물 목소리" title="등장인물 목소리 켜기/끄기">말</button><button id="homeBtn" class="icon-btn" aria-label="처음으로" title="처음 화면">⌂</button></div>
     </header>
@@ -435,7 +439,7 @@
 </div>
 <script>
 (()=>{
-  const S=(study,health,happy,social)=>({study,health,happy,social});
+  const S=(study,health,happy,social,stress=0)=>({study,health,happy,social,stress});
   const E=(who,theme,q,left,leftFx,right,rightFx,leftMsg,rightMsg,c1,c2)=>({who,theme,q,left,leftFx,right,rightFx,leftMsg,rightMsg,c1,c2});
   const decks={
     1:[
@@ -685,7 +689,7 @@
   Object.keys(subjectCards).forEach(g=>decks[g].push(...subjectCards[g]));
 
   const gradeNames={1:'1학년 · 적응기',2:'2학년 · 적응기',3:'3학년 · 확장기',4:'4학년 · 확장기',5:'5학년 · 질풍노도',6:'6학년 · 질풍노도'};
-  const statNames={study:'학업',health:'건강',happy:'행복',social:'평판'};
+  const statNames={study:'학업',health:'건강',happy:'행복',social:'관계',stress:'부담'};
   const statReasons={
     study:{low:'공부와 멀어져 학교생활에 적응하기 어려워졌어요.',high:'공부만 계속하다 마음의 배터리가 완전히 방전됐어요.'},
     health:{low:'몸의 신호를 계속 놓쳐 병원에서 푹 쉬게 됐어요.',high:'넘치는 에너지를 조절하지 못해 매일이 과열됐어요.'},
@@ -757,10 +761,63 @@
   const subjects=['국어','수학','사회','과학','영어','체육','미술','음악'];
   function blankSubjectMap(){return Object.fromEntries(subjects.map(x=>[x,0]))}
   function freshState(sound=true,voice=true){
-    return {grade:1,turn:0,stats:{study:50,health:50,happy:50,social:50},queue:[],current:null,locked:false,sound,voice,
-      history:[],subjectSeen:blankSubjectMap(),subjectGood:blankSubjectMap(),friendCare:0,friendNames:{},sportCare:0,recoveries:0,
-      minSeen:{study:50,health:50,happy:50,social:50},maxSeen:{study:50,health:50,happy:50,social:50}};
+    return {grade:1,turn:0,stats:{study:50,health:50,happy:50,social:50,stress:20},queue:[],current:null,locked:false,sound,voice,
+      history:[],subjectSeen:blankSubjectMap(),subjectGood:blankSubjectMap(),friendCare:0,friendNames:{},friendRelations:{},friendMoments:{},sportCare:0,recoveries:0,
+      minSeen:{study:50,health:50,happy:50,social:50,stress:20},maxSeen:{study:50,health:50,happy:50,social:50,stress:20}};
   }
+
+  const dilemmaCards={
+    1:[
+      Object.assign(E('엄마','주말 계획','토요일 오전에 받아쓰기 연습과 사촌과의 나들이가 겹쳤어. 둘 다 하고 싶지만 시간은 하나뿐이야.','받아쓰기를 먼저 한다',S(7,0,-4,0,3),'나들이를 간다',S(-3,3,7,2,-3),'준비는 든든해졌지만 아쉬움이 남았어요.','공부는 미뤘지만 가족과 즐거운 시간을 보냈어요.'),{dilemma:true}),
+      Object.assign(E('친구 민서','놀이 선택','쉬는 시간에 민서는 그림을 그리고 싶고 너는 운동장에 가고 싶어. 오늘은 한 가지만 할 수 있어.','그림을 함께 그린다',S(1,-2,5,5,-2),'운동장에 간다',S(0,6,5,-2,-3),'친구와 시간을 보냈지만 몸을 움직일 기회는 줄었어요.','신나게 뛰었지만 민서와의 약속은 다음으로 미뤘어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','발표 역할','학급 발표에서 짧고 쉬운 역할과 길지만 재미있는 역할 중 하나를 고를 수 있어.','짧은 역할을 맡는다',S(2,1,3,-1,-2),'긴 역할에 도전한다',S(6,-2,5,3,4),'편안하게 끝냈지만 새로운 도전은 적었어요.','준비는 힘들어도 기억에 남는 경험이 됐어요.'),{dilemma:true}),
+      Object.assign(E('아빠','저녁 시간','숙제를 조금 더 하면 내일이 편하지만 지금 자면 오늘 푹 쉴 수 있어.','숙제를 더 한다',S(5,-3,-3,0,4),'일찍 잔다',S(-2,7,4,0,-5),'내일 준비는 됐지만 몸이 조금 지쳤어요.','숙제는 남았지만 아침에 힘이 생겼어요.'),{dilemma:true})
+    ],
+    2:[
+      Object.assign(E('친구 세아','생일 초대','세아 생일파티와 가족 영화 약속이 같은 시간이야. 어느 쪽도 취소하고 싶지 않아.','생일파티에 간다',S(0,1,6,6,-1),'가족 약속을 지킨다',S(1,2,4,-3,-3),'친구와 추억을 만들었지만 가족은 아쉬워했어요.','가족과 즐거웠지만 세아의 파티는 놓쳤어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','모둠 역할','모둠에서 네가 잘하는 발표와 처음 해보는 자료 정리 중 하나를 맡을 수 있어.','발표를 맡는다',S(5,-1,4,4,1),'자료 정리를 배운다',S(6,-2,2,-1,3),'잘하는 일을 맡아 든든했어요.','조금 느렸지만 새로운 방법을 배웠어요.'),{dilemma:true}),
+      Object.assign(E('엄마','용돈 계획','용돈으로 지금 갖고 싶은 장난감을 살지, 다음 달 더 큰 것을 위해 모을지 고민돼.','지금 산다',S(0,0,7,1,-3),'모은다',S(2,0,-3,0,1),'기분은 좋아졌지만 저금은 다시 시작해야 해요.','기다림은 아쉽지만 다음 선택지가 커졌어요.'),{dilemma:true}),
+      Object.assign(E('친구 지호','운동회','운동회에서 달리기 선수와 응원 도구 만들기 중 하나만 맡을 수 있어.','달리기 선수를 한다',S(0,7,5,2,4),'응원 도구를 만든다',S(2,-1,6,5,-2),'몸은 힘들었지만 트랙 위의 주인공이 됐어요.','경기에는 못 나가도 반 전체를 돕는 재미가 있었어요.'),{dilemma:true})
+    ],
+    3:[
+      Object.assign(E('엄마','방과 후','수학 학원 보강과 친구들과의 축구 약속이 겹쳤어.','보강에 간다',S(8,-3,-5,-2,4),'축구 약속을 지킨다',S(-4,7,7,5,-4),'진도는 따라갔지만 친구들과의 시간을 놓쳤어요.','즐거운 약속을 지켰지만 공부는 따로 보충해야 해요.'),{dilemma:true}),
+      Object.assign(E('친구 유진','모둠 완성도','모둠 과제가 조금 어설프지만 모두가 만든 흔적이 있어. 네가 밤에 고치면 더 완벽해져.','혼자 더 고친다',S(8,-3,-4,-3,5),'현재 결과로 제출한다',S(3,2,4,5,-2),'완성도는 올랐지만 네 부담도 커졌어요.','조금 부족해도 모두의 작품으로 남았어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','반장 선거','반장 선거에 나가면 재미있는 경험이지만 준비 시간이 많이 들어.','출마한다',S(3,-2,5,8,5),'이번에는 응원한다',S(2,2,3,3,-3),'바빴지만 새로운 역할을 경험했어요.','여유는 남았지만 직접 이끌 기회는 다음으로 미뤘어요.'),{dilemma:true}),
+      Object.assign(E('아빠','주말 루틴','주말을 계획대로 보내면 마음은 편하지만 갑자기 생긴 가족 나들이를 놓쳐.','계획을 지킨다',S(6,1,-3,0,2),'나들이에 간다',S(-2,4,8,2,-4),'할 일은 끝났지만 주말이 조금 딱딱했어요.','계획은 바뀌었지만 오래 기억할 하루가 됐어요.'),{dilemma:true})
+    ],
+    4:[
+      Object.assign(E('친구 수아','SNS 활동','학급 홍보 영상을 올리면 반응은 좋겠지만 네 얼굴도 공개돼.','영상에 출연한다',S(1,0,5,7,3),'촬영만 돕는다',S(2,0,3,1,-2),'주목을 받았지만 공개되는 정보도 늘었어요.','덜 눈에 띄어도 편안하게 참여했어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','학교 축제','축제 부스를 크게 꾸미면 인기 있을 것 같지만 준비가 힘들어져.','크게 준비한다',S(5,-4,6,7,6),'작게 완성한다',S(3,2,4,3,-2),'멋진 부스가 됐지만 모두가 지쳤어요.','화려하진 않아도 끝까지 즐길 여유가 있었어요.'),{dilemma:true}),
+      Object.assign(E('엄마','시험 뒤 휴식','시험이 끝난 오늘 바로 다음 단원을 시작할지 친구들과 놀지 고민돼.','다음 단원을 시작한다',S(7,-2,-5,0,4),'친구들과 논다',S(-2,3,8,5,-5),'앞서갔지만 시험이 끝난 느낌은 적었어요.','공부는 하루 미뤘지만 머리가 가벼워졌어요.'),{dilemma:true}),
+      Object.assign(E('친구 태오','팀 전략','경기에서 이기려면 잘하는 친구 위주가 유리하지만 모두 뛰고 싶어 해.','승리를 우선한다',S(1,4,3,-4,3),'출전 시간을 나눈다',S(0,2,5,7,-1),'이길 가능성은 커졌지만 벤치가 조용해졌어요.','조금 불리해도 모두가 경기에 참여했어요.'),{dilemma:true})
+    ],
+    5:[
+      Object.assign(E('엄마','진로 체험','주말 영재원 준비반과 네가 기다리던 만화 창작 체험이 겹쳤어.','준비반에 간다',S(9,-2,-6,0,5),'창작 체험에 간다',S(-3,1,9,2,-4),'준비는 앞섰지만 좋아하는 활동은 놓쳤어요.','진도는 미뤘지만 네 관심을 깊게 파봤어요.'),{dilemma:true}),
+      Object.assign(E('친구 지우','친구 관계','친구 모임과 혼자 쉬는 시간이 겹쳤어. 요즘 조금 피곤해.','모임에 간다',S(0,-3,5,7,4),'혼자 쉰다',S(0,6,5,-2,-5),'즐거웠지만 피로가 남았어요.','친구는 아쉬워했지만 다시 힘을 채웠어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','학생회','학생회 일을 맡으면 좋은 경험이지만 시험 준비 시간은 줄어들어.','학생회 일을 맡는다',S(2,-2,5,9,6),'시험 준비에 집중한다',S(8,1,2,-4,1),'바빴지만 학교를 움직이는 경험을 했어요.','준비는 안정됐지만 학교 활동은 줄었어요.'),{dilemma:true}),
+      Object.assign(E('아빠','스마트폰','친구들과 단체 게임 약속과 가족 산책이 겹쳤어.','게임에 참여한다',S(-2,-3,8,6,1),'가족 산책을 간다',S(0,7,6,-2,-4),'친구들과 즐거웠지만 몸은 오래 앉아 있었어요.','게임은 놓쳤지만 가족과 몸을 움직였어요.'),{dilemma:true})
+    ],
+    6:[
+      Object.assign(E('부모님','중학교 준비','중학교 대비 캠프와 마지막 초등학교 친구 여행이 같은 주말이야.','대비 캠프에 간다',S(10,-3,-7,-2,6),'친구 여행에 간다',S(-5,4,10,8,-5),'준비는 탄탄해졌지만 마지막 추억 하나를 놓쳤어요.','공부는 미뤘지만 초등학교의 마지막 장면이 생겼어요.'),{dilemma:true}),
+      Object.assign(E('친구 정우','졸업 준비','졸업 영상 편집을 맡으면 멋진 결과가 나오겠지만 네 공부 시간이 크게 줄어.','편집을 맡는다',S(2,-4,7,9,7),'작은 역할을 맡는다',S(6,2,3,1,-2),'영상은 빛났지만 일정은 빡빡해졌어요.','여유는 지켰지만 큰 역할은 다른 친구에게 갔어요.'),{dilemma:true}),
+      Object.assign(E('담임 선생님','마지막 발표','졸업식 대표 낭독과 친구들과 만드는 합주 중 하나만 선택할 수 있어.','대표 낭독을 한다',S(5,-1,4,7,4),'합주를 한다',S(2,1,8,6,1),'혼자 빛나는 순간을 만들었어요.','친구들과 마지막 무대를 함께 만들었어요.'),{dilemma:true}),
+      Object.assign(E('나 자신','방학 계획','중학교 전 마지막 방학을 촘촘히 준비할지, 여유를 남길지 고민돼.','계획을 촘촘히 짠다',S(9,-3,-4,0,6),'여유를 남긴다',S(3,4,7,1,-5),'준비는 많아졌지만 빈 시간이 사라졌어요.','조금 덜 앞서가도 숨 쉴 공간을 남겼어요.'),{dilemma:true})
+    ]
+  };
+  const milestoneCards={
+    1:Object.assign(E('담임 선생님','1학년 큰 사건','첫 운동회 날이야. 계주 연습과 반 응원 그림 준비가 동시에 필요해.','계주 연습에 집중한다',S(1,9,5,1,5),'응원 그림을 돕는다',S(3,-1,7,8,-2),'트랙에서 자신감이 생겼지만 준비실에는 손이 부족했어요.','달리기는 덜 했지만 반 친구들이 네 그림을 흔들었어요.'),{milestone:true}),
+    2:Object.assign(E('담임 선생님','2학년 큰 사건','학예회에서 무대 역할과 무대 뒤 준비 역할 중 하나를 맡아야 해.','무대에 선다',S(4,-2,8,6,5),'무대 뒤를 돕는다',S(3,0,5,8,-1),'떨렸지만 큰 박수를 받았어요.','눈에 띄진 않아도 공연이 매끄럽게 이어졌어요.'),{milestone:true}),
+    3:Object.assign(E('담임 선생님','3학년 큰 사건','학급 프로젝트 발표 날이야. 발표 완성도를 높일지 친구들 의견을 더 넣을지 시간이 부족해.','완성도를 다듬는다',S(9,-2,2,-1,5),'친구 의견을 더 넣는다',S(5,-1,5,8,2),'발표는 매끈했지만 몇몇 아이디어는 빠졌어요.','조금 거칠어도 모두의 흔적이 남았어요.'),{milestone:true}),
+    4:Object.assign(E('담임 선생님','4학년 큰 사건','학교 축제 마지막 한 시간, 인기 부스를 계속 운영할지 다른 반 축제를 구경할지 정해야 해.','부스를 지킨다',S(3,-4,4,9,6),'축제를 구경한다',S(0,3,9,2,-4),'우리 반은 든든했지만 네 축제 시간은 짧았어요.','우리 반은 바빠졌지만 너도 축제를 즐겼어요.'),{milestone:true}),
+    5:Object.assign(E('진로 선생님','5학년 큰 사건','진로 체험에서 잘하는 분야와 전혀 새로운 분야 중 하나를 골라야 해.','잘하는 분야를 고른다',S(7,0,5,4,1),'새로운 분야를 고른다',S(4,-1,8,2,4),'자신 있게 해냈지만 익숙한 길이었어요.','서툴렀지만 몰랐던 관심을 하나 발견했어요.'),{milestone:true}),
+    6:Object.assign(E('담임 선생님','6학년 큰 사건','졸업 프로젝트 마지막 날, 결과를 더 고칠지 친구들과 마지막 운동장 사진을 찍을지 시간이 하나뿐이야.','프로젝트를 마무리한다',S(9,-2,2,2,5),'사진을 찍으러 간다',S(1,2,10,8,-5),'결과는 깔끔해졌지만 마지막 사진 한 장을 놓쳤어요.','조금 아쉬운 결과 대신 오래 남을 장면을 얻었어요.'),{milestone:true})
+  };
+
+  const SAVE_KEY='kidscade_school_survival_v2';
+  function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({...state,current:null,locked:false}));syncContinueButton()}catch(err){}}
+  function clearSave(){try{localStorage.removeItem(SAVE_KEY);syncContinueButton()}catch(err){}}
+  function loadSavedState(){try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;const s=JSON.parse(raw);if(!s||!s.grade||!Array.isArray(s.queue))return null;s.stats={study:50,health:50,happy:50,social:50,stress:20,...s.stats};s.friendRelations=s.friendRelations||{};s.friendMoments=s.friendMoments||{};s.minSeen={study:50,health:50,happy:50,social:50,stress:20,...s.minSeen};s.maxSeen={study:50,health:50,happy:50,social:50,stress:20,...s.maxSeen};s.locked=false;s.current=null;return s}catch(err){return null}}
+  function syncContinueButton(){const btn=$('#continueBtn'),note=$('#continueNote');if(!btn||!note)return;let has=false;try{has=!!localStorage.getItem(SAVE_KEY)}catch(err){}btn.hidden=!has;note.hidden=!has}
   let state=freshState(true,true);
   let endingQueue=[];
   const $=s=>document.querySelector(s);
@@ -769,11 +826,23 @@
   let drag={active:false,startX:0,x:0};
 
   function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+  function relationCard(){
+    if(state.grade<=1)return null;
+    const entries=Object.entries(state.friendRelations||{}).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])||b[1]-a[1]);
+    if(!entries.length)return null;
+    const [name,rel]=entries[0];
+    if(rel>=0)return Object.assign(E('친구 '+name,'지난 인연',`지난 학년부터 자주 함께한 ${name}가 오늘 혼자 남아 있어. 네 일정도 바쁘지만 먼저 가볼까?`,'내 할 일을 먼저 한다',S(4,1,-1,-2,1),'잠깐 함께한다',S(0,-1,5,8,-2),'내 일정은 지켰지만 '+name+'와 이야기할 시간은 다음으로 미뤘어요.','시간은 조금 썼지만 지난 인연이 더 단단해졌어요.'),{callbackFriend:name});
+    return Object.assign(E('친구 '+name,'지난 인연',`${name}와 지난번 일이 아직 조금 어색해. 이번에는 먼저 말을 걸 기회가 생겼어.`,'그냥 지나간다',S(2,0,1,-2,-1),'먼저 이야기한다',S(0,0,3,7,2),'갈등은 피했지만 어색함도 그대로 남았어요.','조금 불편해도 다시 이야기할 문을 열었어요.'),{callbackFriend:name});
+  }
   function buildQueue(){
     const all=decks[state.grade], subjects=shuffle(all.filter(e=>e.subject)), life=shuffle(all.filter(e=>!e.subject));
-    state.queue=shuffle([...subjects,...life.slice(0,14)]);state.turn=0
+    const dilemmas=shuffle(dilemmaCards[state.grade]||[]), milestone=milestoneCards[state.grade], callback=relationCard();
+    const lifeCount=callback?8:9;
+    state.queue=shuffle([...subjects,...life.slice(0,lifeCount),...dilemmas, ...(milestone?[milestone]:[]), ...(callback?[callback]:[])]);
+    state.turn=0
   }
-  function startGame(){const keepSound=state.sound,keepVoice=state.voice;state=freshState(keepSound,keepVoice);endingQueue=[];initAudio();if(state.sound)startBgm();buildQueue();$('#startScreen').classList.remove('active');$('#gameScreen').classList.add('active');$('#modal').classList.remove('show');renderStats();syncAudioButtons();nextCard()}
+  function startGame(){clearSave();const keepSound=state.sound,keepVoice=state.voice;state=freshState(keepSound,keepVoice);endingQueue=[];initAudio();if(state.sound)startBgm();buildQueue();$('#startScreen').classList.remove('active');$('#gameScreen').classList.add('active');$('#modal').classList.remove('show');renderStats();syncAudioButtons();nextCard();saveState()}
+  function continueSavedGame(){const saved=loadSavedState();if(!saved){syncContinueButton();return}state=saved;endingQueue=[];initAudio();if(state.sound)startBgm();$('#startScreen').classList.remove('active');$('#gameScreen').classList.add('active');$('#modal').classList.remove('show');renderStats();syncAudioButtons();if(state.turn>=state.queue.length)finishGrade();else nextCard()}
   const styleMap={국어:'korean',수학:'math',사회:'social',과학:'science',영어:'english',체육:'pe',미술:'art',음악:'music'};
   function stableHash(text){let h=0;for(const ch of text)h=(h*31+ch.charCodeAt(0))>>>0;return h}
   function inferStyle(e){return e.style||styleMap[e.subject]||'life'}
@@ -825,6 +894,7 @@
     if(/엄마/.test(who))return 'mom';
     if(/아빠/.test(who))return 'dad';
     if(/부모|가족/.test(who))return stableHash(who)%2?'mom':'dad';
+    const namedFriend=who.match(/친구\s*([가-힣]{1,4})/);if(namedFriend)return ['friendA','friendB','friendC','friendD'][stableHash(namedFriend[1])%4];
     if(sub==='체육'||/축구|운동|달리|체육|경기|그네|술래잡기/.test(text))return 'athleticFriend';
     if(sub==='미술'||/그림|색연필|작품|미술/.test(text))return 'artFriend';
     if(sub==='음악'||/음악|합주|공연|리듬|리코더/.test(text))return 'musicFriend';
@@ -850,7 +920,7 @@
   }
   function clearPreview(){document.querySelectorAll('.stat').forEach(el=>el.classList.remove('preview-up','preview-down','preview-flat'))}
   function previewEffects(side){
-    clearPreview();if(!side||!state.current)return;const fx=side==='left'?state.current.leftFx:state.current.rightFx;
+    clearPreview();if(!side||!state.current)return;const fx=effectiveFx(state.current,side);
     Object.entries(fx).forEach(([k,v])=>document.querySelector(`.stat[data-stat="${k}"]`).classList.add(v>0?'preview-up':v<0?'preview-down':'preview-flat'))
   }
   function nextCard(){
@@ -858,7 +928,7 @@
     if(state.turn>=state.queue.length){return finishGrade()}
     state.current=state.queue[state.turn];
     const e=state.current;
-    speaker.textContent=e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
+    const fname=extractFriendName(e.who),rel=fname?(state.friendRelations[fname]||0):0;speaker.textContent=fname?`${e.who} · 인연 ${rel>0?'+':''}${rel}`:e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
     leftGuide.querySelector('strong').textContent=e.left;rightGuide.querySelector('strong').textContent=e.right;leftBtn.textContent=e.left;rightBtn.textContent=e.right;
     const p=palette[(state.grade-1)%palette.length];cardBanner.style.setProperty('--c1',e.c1||p[0]);cardBanner.style.setProperty('--c2',e.c2||p[1]);
     $('#gradeText').textContent=gradeNames[state.grade];$('#turnText').textContent=`${state.turn+1} / ${state.queue.length}`;
@@ -879,23 +949,41 @@
     const item={grade:state.grade,subject:e.subject||'',who:e.who,theme:e.theme,side,label,fx:{...fx},msg};state.history.push(item);
     if(e.subject){state.subjectSeen[e.subject]++;if(isConstructiveMessage(msg))state.subjectGood[e.subject]++}
     if(e.subject==='체육'&&fx.health>0&&isConstructiveMessage(msg))state.sportCare++;
-    if(/친구|단짝|짝꿍|모둠/.test(e.who+' '+e.q)&&supportiveMessage(msg)){
-      state.friendCare++;const name=extractFriendName(e.who);if(name)state.friendNames[name]=(state.friendNames[name]||0)+1;
+    const name=extractFriendName(e.who);
+    if(name){
+      let delta=Math.max(-3,Math.min(3,Math.round((fx.social||0)/3)));
+      if(supportiveMessage(msg))delta+=1;
+      if(!isConstructiveMessage(msg)&&fx.social<0)delta-=1;
+      state.friendRelations[name]=Math.max(-12,Math.min(12,(state.friendRelations[name]||0)+delta));
+      state.friendMoments[name]=(state.friendMoments[name]||0)+1;
+      if(delta>0){state.friendCare++;state.friendNames[name]=(state.friendNames[name]||0)+1}
     }
-    Object.keys(before).forEach(k=>{if((before[k]<=15&&fx[k]>0)||(before[k]>=85&&fx[k]<0))state.recoveries++});
+    Object.keys(before).forEach(k=>{if(k==='stress')return;if((before[k]<=15&&fx[k]>0)||(before[k]>=85&&fx[k]<0))state.recoveries++});
+  }
+  function effectiveFx(e,side){
+    const base={...(side==='left'?e.leftFx:e.rightFx)},label=side==='left'?e.left:e.right,msg=side==='left'?e.leftMsg:e.rightMsg;
+    let pressure=Number(base.stress||0);
+    if(!pressure){
+      if(base.study>=7&&(base.health<=-3||base.happy<=-3))pressure+=4;
+      if(base.health<=-7)pressure+=3;if(base.happy<=-7)pressure+=3;if(base.social<=-7)pressure+=2;
+      if(base.health>=5&&base.happy>=2)pressure-=3;else if(base.happy>=6&&base.study<=1)pressure-=2;
+      if(/쉬|휴식|잔다|조절|협의|도움을|말한다|산책/.test(label+' '+msg))pressure-=1;
+      if(/밤|새벽|무리|참고|꽉|숨긴다|혼자 참|모두 다닌다/.test(label+' '+msg))pressure+=2;
+    }
+    base.stress=Math.max(-10,Math.min(12,pressure));return base;
   }
   function updateSeenExtremes(){
     Object.keys(state.stats).forEach(k=>{state.minSeen[k]=Math.min(state.minSeen[k],state.stats[k]);state.maxSeen[k]=Math.max(state.maxSeen[k],state.stats[k])});
   }
 
   function choose(side){
-    if(state.locked)return;state.locked=true;clearPreview();const e=state.current;const fx=side==='left'?e.leftFx:e.rightFx;const msg=side==='left'?e.leftMsg:e.rightMsg;const label=side==='left'?e.left:e.right;
+    if(state.locked)return;state.locked=true;clearPreview();const e=state.current;const fx=effectiveFx(e,side);const msg=side==='left'?e.leftMsg:e.rightMsg;const label=side==='left'?e.left:e.right;
     cancelSpeech();playSfx(side==='right'?'right':'left');
     card.style.transition='transform .36s cubic-bezier(.2,.8,.2,1), opacity .3s';card.style.transform=`translate3d(${side==='left'?-760:760}px,-20px,0) rotate(${side==='left'?-18:18}deg)`;card.style.opacity='0';
     const before={...state.stats};recordChoice(e,side,fx,msg,label,before);
     Object.keys(state.stats).forEach(k=>{state.stats[k]=Math.max(0,Math.min(100,state.stats[k]+fx[k]))});updateSeenExtremes();
     renderStats(fx);showFeedback(label,msg,fx);
-    state.turn++;
+    state.turn++;saveState();
     setTimeout(()=>{const over=checkGameOver();if(!over){nextCard()}},760)
   }
   function renderStats(changed){
@@ -908,22 +996,26 @@
     $('#feedback').classList.add('show');setTimeout(()=>$('#feedback').classList.remove('show'),680)
   }
   function checkGameOver(){
-    if(Object.values(state.stats).some(v=>v<=10||v>=90))playSfx('warning');
-    for(const [k,v] of Object.entries(state.stats)){
-      if(v<=0||v>=100){
-        const dir=v<=0?'low':'high',band=Math.min(2,Math.floor((state.grade-1)/2));
-        showDramaticEnding(endingStories[k][dir][band],`end-${k}-${dir}`,k,[]);return true;
+    const core=['study','health','happy','social'];
+    if(core.some(k=>state.stats[k]<=10)||state.stats.stress>=85)playSfx('warning');
+    for(const k of core){
+      if(state.stats[k]<=0){
+        const band=Math.min(2,Math.floor((state.grade-1)/2));
+        showDramaticEnding(endingStories[k].low[band],`end-${k}-low`,k,[]);return true;
       }
+    }
+    if(state.stats.stress>=100){
+      showDramaticEnding({kicker:'학교생활 · 부담 한계',symbol:'100',title:'일정표가 나보다 먼저 쓰러졌다',text:'공부도 관계도 놓치지 않으려다 쉴 자리가 사라졌습니다. 결국 잘하려던 일들까지 손에 잡히지 않기 시작했습니다.',quote:'할 일을 줄이는 것도 계획의 일부입니다. 도움을 청하고 다시 나눠보세요.'},'end-happy-low','stress',[]);return true;
     }
     return false
   }
   function chooseGraduationStory(){
-    const vals=Object.values(state.stats),spread=Math.max(...vals)-Math.min(...vals),avg=vals.reduce((a,b)=>a+b,0)/4;
+    const vals=['study','health','happy','social'].map(k=>state.stats[k]),spread=Math.max(...vals)-Math.min(...vals),avg=vals.reduce((a,b)=>a+b,0)/4;
     const highest=Object.keys(state.stats).sort((a,b)=>state.stats[b]-state.stats[a])[0];
     const touchedEdge=Object.keys(state.stats).some(k=>state.minSeen[k]<=10||state.maxSeen[k]>=90);
-    if(touchedEdge&&state.recoveries>=5&&spread<=35)return graduationStories.comeback;
-    if(spread<=16&&Math.min(...vals)>=34&&Math.max(...vals)<=78)return graduationStories.balanced;
-    if(avg>=70&&spread<=30)return graduationStories.allround;
+    if(touchedEdge&&state.recoveries>=5&&spread<=35&&state.stats.stress<=75)return graduationStories.comeback;
+    if(spread<=16&&Math.min(...vals)>=34&&Math.max(...vals)<=82&&state.stats.stress<=55)return graduationStories.balanced;
+    if(avg>=70&&spread<=30&&state.stats.stress<=65)return graduationStories.allround;
     if(highest==='study'&&state.stats.study>=68)return graduationStories.scholar;
     if(highest==='health'&&state.stats.health>=68)return graduationStories.captain;
     if(highest==='happy'&&state.stats.happy>=68)return graduationStories.creator;
@@ -964,9 +1056,9 @@
       const story=chooseGraduationStory(),cookies=buildFutureCookies();
       showDramaticEnding(story,'end-graduate',null,cookies);return;
     }
-    state.grade++;playSfx('grade');startBgm();$('#gradeUpBig').textContent=state.grade+'학년';$('#gradeUpText').textContent=state.grade<=2?'생활 습관과 여덟 과목의 작은 선택이 이어집니다.':state.grade<=4?'과목 공부, 친구, 스마트폰 사이의 균형이 더 복잡해집니다.':'한 선택이 공부·건강·행복·평판을 동시에 흔들기 시작합니다.';$('#gradeUp').classList.add('show')
+    const prev=state.grade;state.grade++;playSfx('grade');startBgm();$('#gradeUpBig').textContent=state.grade+'학년';const top=Object.entries(state.friendRelations||{}).sort((a,b)=>b[1]-a[1])[0];$('#gradeUpText').textContent=`${prev}학년 종료 · 학업 ${state.stats.study} / 건강 ${state.stats.health} / 행복 ${state.stats.happy} / 관계 ${state.stats.social} / 부담 ${state.stats.stress}`+(top?` · 가장 가까워진 친구: ${top[0]} (${top[1]>0?'+':''}${top[1]})`:'');$('#gradeUp').classList.add('show')
   }
-  function continueGrade(){buildQueue();$('#gradeUp').classList.remove('show');startBgm();nextCard()}
+  function continueGrade(){buildQueue();$('#gradeUp').classList.remove('show');startBgm();nextCard();saveState()}
   function paintEnding(story,endingClass,brokenKey,isCookie=false){
     const screen=$('#endingScreen');screen.className=`ending-screen show ${endingClass}${isCookie?' cookie-mode':''}`;
     $('#endingKicker').textContent=story.kicker;$('#endingSymbol').textContent=story.symbol;$('#endingTitle').textContent=story.title;$('#endingText').textContent=story.text;$('#endingQuote').textContent=story.quote;
@@ -974,7 +1066,7 @@
     const next=$('#endingNext');next.hidden=endingQueue.length===0;next.textContent=endingQueue.length>1?'다음 미래 보기':'그 후의 이야기';
   }
   function showDramaticEnding(story,endingClass,brokenKey,extras=[]){
-    state.locked=true;clearPreview();cancelSpeech();stopBgm();endingQueue=[...extras];const screen=$('#endingScreen');
+    state.locked=true;clearPreview();cancelSpeech();stopBgm();clearSave();endingQueue=[...extras];const screen=$('#endingScreen');
     screen.setAttribute('aria-hidden','false');paintEnding(story,endingClass,brokenKey,false);
     $('.app').classList.add('ending-active');playEndSequence(endingClass==='end-graduate');
     requestAnimationFrame(()=>requestAnimationFrame(()=>screen.classList.add('reveal')))
@@ -1027,11 +1119,11 @@
   card.addEventListener('pointerdown',e=>{if(state.locked)return;drag.active=true;drag.startX=e.clientX;drag.x=0;card.setPointerCapture(e.pointerId);card.style.transition='none';card.classList.add('dragging')});
   card.addEventListener('pointermove',e=>{if(!drag.active)return;setDrag(e.clientX-drag.startX)});card.addEventListener('pointerup',endDrag);card.addEventListener('pointercancel',endDrag);
   window.addEventListener('keydown',e=>{if(!$('#gameScreen').classList.contains('active')||state.locked)return;if(e.key==='ArrowLeft')choose('left');if(e.key==='ArrowRight')choose('right')});
-  $('#startBtn').onclick=startGame;leftBtn.onclick=()=>choose('left');rightBtn.onclick=()=>choose('right');$('#homeBtn').onclick=goHome;$('#modalHome').onclick=goHome;$('#retryBtn').onclick=startGame;$('#endingHome').onclick=goHome;$('#endingNext').onclick=showNextEnding;$('#endingRetry').onclick=()=>{hideEnding();startGame()};$('#nextGradeBtn').onclick=continueGrade;
+  $('#startBtn').onclick=startGame;$('#continueBtn').onclick=continueSavedGame;leftBtn.onclick=()=>choose('left');rightBtn.onclick=()=>choose('right');$('#homeBtn').onclick=goHome;$('#modalHome').onclick=goHome;$('#retryBtn').onclick=startGame;$('#endingHome').onclick=goHome;$('#endingNext').onclick=showNextEnding;$('#endingRetry').onclick=()=>{hideEnding();startGame()};$('#nextGradeBtn').onclick=continueGrade;
   $('#soundBtn').onclick=()=>{state.sound=!state.sound;initAudio();if(masterGain)masterGain.gain.setTargetAtTime(state.sound?1:0,audioCtx.currentTime,.03);if(state.sound)startBgm();else stopBgm();syncAudioButtons()};
   $('#voiceBtn').onclick=()=>{state.voice=!state.voice;if(!state.voice)cancelSpeech();else speakCurrentCard(true);syncAudioButtons()};
   speaker.onclick=()=>speakCurrentCard(true);speaker.title='등장인물의 말을 다시 듣기';speaker.setAttribute('role','button');speaker.setAttribute('tabindex','0');speaker.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();speakCurrentCard(true)}};
-  syncAudioButtons();
+  syncAudioButtons();syncContinueButton();
   document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelSpeech()});
 })();
 </script>
