@@ -34,7 +34,7 @@
     {
       "id": "high_history_royale",
       "title": "역사 로얄",
-      "href": "games/high_history_royale/역사 로얄.html?v=17",
+      "href": "games/high_history_royale/역사 로얄.html?v=18",
       "category": "trivia",
       "age": "high",
       "icon": "⚔️",
@@ -1016,7 +1016,7 @@
     {
       "id": "low_wordchain_arena",
       "title": "끝말잇기 아레나",
-      "href": "games/low_wordchain_arena/index.html?v=5",
+      "href": "games/low_wordchain_arena/index.html?v=6",
       "category": "trivia",
       "age": "low",
       "icon": "🔤",
