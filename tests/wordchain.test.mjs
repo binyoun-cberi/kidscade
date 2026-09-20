@@ -73,8 +73,8 @@ test('word-chain arena uses the merged offline Korean dictionaries', () => {
   assert.match(html, /낱말봇 대결/);
   assert.match(html, /1:1 온라인/);
   assert.match(html, /다대다 온라인/);
-  assert.match(html, /multiplayer\.html\?v=6&mode=duel/);
-  assert.match(html, /multiplayer\.html\?v=6&mode=multi/);
+  assert.match(html, /multiplayer\.html\?v=7&mode=duel/);
+  assert.match(html, /multiplayer\.html\?v=7&mode=multi/);
   assert.doesNotMatch(html, /\/api\/wordchain/);
 
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
@@ -101,6 +101,10 @@ test('word-chain arena sound hooks use valid shared audio keys', () => {
   const solo = read('games/low_wordchain_arena/index.html');
   const multi = read('games/low_wordchain_arena/multiplayer.html');
   const audio = read('audio-manager.js');
+  const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
+  assert.deepEqual(catalog.sounds['music.korea_welcome'], ['music/korea/welcome-to-korea-01.mp3']);
+  assert.match(solo, /music\.korea_welcome/);
+  assert.match(multi, /music\.korea_welcome/);
   for (const html of [solo, multi]) {
     assert.match(html, /audio-manager\.js/);
     assert.match(html, /combat\.hurt_grunt/);
