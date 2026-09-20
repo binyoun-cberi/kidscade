@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=12",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=13",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v12! 게·성게·불가사리·해파리·앵무조개·오징어·고래·바키타·상어가 서로 다른 방식으로 움직이고, 공작갯가재 미니보스와 심해 크라켄 이벤트까지 더해진 살아있는 해저 생태 탐사 게임.",
+      "description": "2D 픽셀 잠수 탐사 v13! 15개 세부 구역마다 사진 보너스·산호 충돌·하강류·해초 은폐·소나 공명·자기 기뢰·고가 화물·암흑 촬영·열수 상승류·포식자 소나 반응 등 고유 규칙이 작동하는 심해 탐사 게임.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
