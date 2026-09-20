@@ -54,6 +54,7 @@ jobs:
             worker/seed-rankings.mjs \
             worker/game-records.mjs \
             worker/multiplayer.mjs \
+            worker/wordchain-match.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -71,6 +72,8 @@ jobs:
             scripts/build-cloudflare.cjs \
             scripts/apply-game-classification-overrides.cjs \
             scripts/inject-game-integrations.cjs \
+            scripts/import-stdict.cjs \
+            scripts/build-wordchain-static.cjs \
             scripts/maratang-selfbar-build.cjs \
             scripts/bunsik-kitchen-build.cjs; do
             node --check "$file"
@@ -113,6 +116,8 @@ jobs:
         run: node --test tests/game-records.test.mjs
       - name: Run multiplayer room and Patience Tower duel tests
         run: node --test tests/multiplayer.test.mjs
+      - name: Run word-chain dictionary tests
+        run: node --test tests/wordchain.test.mjs
       - name: Run Rhythm Dash v11 tests
         run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run Alien Pizza DX2 tests

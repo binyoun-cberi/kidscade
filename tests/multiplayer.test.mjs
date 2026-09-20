@@ -139,6 +139,7 @@ test('multiplayer database bootstrap uses prepared batch only when the D1 tables
   assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_match_state/.test(statement.sql)));
   assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_used_words/.test(statement.sql)));
   assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_actions/.test(statement.sql)));
+  assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_turn_claims/.test(statement.sql)));
 });
 
 test('multiplayer database bootstrap does not rewrite an already prepared database', async () => {
@@ -154,7 +155,8 @@ test('multiplayer database bootstrap does not rewrite an already prepared databa
               { name: 'multiplayer_room_players' },
               { name: 'wordchain_match_state' },
               { name: 'wordchain_used_words' },
-              { name: 'wordchain_actions' }
+              { name: 'wordchain_actions' },
+              { name: 'wordchain_turn_claims' }
             ] };
           }
         };
@@ -230,6 +232,8 @@ test('word-chain multiplayer migration is shipped for remote D1 deploys', () => 
   assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_match_state/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_used_words/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_actions/);
+  const claimMigration = fs.readFileSync(path.join(root, 'migrations', '0008_wordchain_turn_claims.sql'), 'utf8');
+  assert.match(claimMigration, /CREATE TABLE IF NOT EXISTS wordchain_turn_claims/);
 });
 
 test('Cloudflare deploy script applies D1 migrations before deploying the Worker', () => {
