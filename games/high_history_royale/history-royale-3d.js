@@ -718,8 +718,12 @@ function syncUnits(g){
     live.add(u.id);let rec=unitMeshes.get(u.id);
     if(!rec){const fid=u.team==="player"?g.playerFaction:g.enemyFaction;rec=createAnimatedUnit(u,fid);world.add(rec.root);unitMeshes.set(u.id,rec);}
     const p=canvasToWorld(u.x,u.y);rec.root.position.x=p.x;rec.root.position.z=p.z;rec.root.position.y=u.spawnTimer>0?Math.max(0,.18-u.spawnTimer*.35):0;
-    if(u.target&&u.target.x!=null){const q=canvasToWorld(u.target.x,u.target.y);rec.root.rotation.y=Math.atan2(q.x-p.x,q.z-p.z)+Math.PI;}
-    else rec.root.rotation.y=u.team==="player"?Math.PI:0;
+    if(u.target&&u.target.x!=null){
+      const q=canvasToWorld(u.target.x,u.target.y);
+      // Quaternius/Kenney humanoids face +Z at yaw 0. Math.atan2(dx,dz)
+      // already yields the correct world yaw; adding PI made run/attack face backward.
+      rec.root.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);
+    } else rec.root.rotation.y=u.team==="player"?Math.PI:0;
     setAnimation(rec,animName(u));setHorseAnimation(rec.horse,u.state==="move");if(rec.horse&&!rec.horse.mixer&&rec.horse.root.userData.legs){const gait=performance.now()*.012;rec.horse.root.userData.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(u.state==="move"?.42:.05));}
     const now=performance.now();
     rec.root.traverse(function(o){
