@@ -201,6 +201,14 @@ test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and se
   assert.match(html, /turnDeadline/);
   assert.match(html, /3목숨/);
   assert.match(html, /12초/);
+  assert.match(html, /audio-manager\.js/);
+  assert.match(html, /soundBtn/);
+  assert.match(html, /reactSfx/);
+  assert.match(html, /timer\.urgent/);
+  assert.match(html, /center\.myturn/);
+  assert.match(html, /success\.victory_fanfare/);
+  assert.match(html, /failure\.fail_sting/);
+  assert.match(html, /combat\.impact_heavy/);
 
   const marker = '<script>\n(() => {';
   const start = html.indexOf(marker);
