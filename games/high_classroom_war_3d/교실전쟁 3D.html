@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>교실전쟁 3D v5.1 - 소형 편제 전투 리밸런스</title>
+<title>교실전쟁 3D</title>
 <style>
 :root{
   --ink:#07111f;--panel:rgba(8,18,32,.88);--line:rgba(255,255,255,.14);
@@ -88,8 +88,8 @@ background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#083344;box-shadow:0 10
 
   <div id="overlay">
     <div class="panel" id="panel">
-      <span class="eyebrow">KIDSCADE · 3D ENDLESS MATH DEFENSE</span>
-      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">v5.1 · 소형 3D 편제 · 승급 화력 보정 · 전술 충돌</div>
+      <span class="eyebrow">KIDSCADE · 수학 교실 방어전</span>
+      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">계산하고 · 움직이고 · 끝까지 막아내자!</div>
       <div class="lead">
         책상 사이 통로를 지키는 학생 부대. 수학 관문을 골라 화력을 키우고,
         적이 교실 방어선을 넘지 못하게 최대한 오래 버티세요.
@@ -100,8 +100,8 @@ background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#083344;box-shadow:0 10
         <div class="mini"><b>사칙연산이 핵심</b>+ · - · × · ÷, 괄호와 혼합 계산으로 전체 병력을 바꿉니다.</div>
         <div class="mini"><b>숫자가 곧 편제</b>병력 12,345는 장군1 · 장교2 · 부사관3 · 엘리트4 · 병사5로 보입니다.</div>
       </div>
-      <button class="cta" id="startBtn">3D 교실 방어 시작</button>
-      <div class="fine">사이트에 포함된 로컬 Three.js와 3D 캐릭터 에셋을 우선 사용하며, 로딩 실패 시 기존 절차형 모델로 안전하게 전환됩니다.</div>
+      <button class="cta" id="startBtn">교실 방어 시작</button>
+      <div class="fine">좌우로 움직여 사선을 맞추고, 관문을 계산해 병력을 키우세요.</div>
     </div>
   </div>
   <div id="webglFail"></div>
@@ -421,7 +421,7 @@ function createClassroom(){
   back.position.z=-59.25;
 
   // blackboard title
-  const boardTex=textTexture(["교실전쟁","끝까지 방어하라!"],{bg:"#234b3f",accent:"#d5b68a"});
+  const boardTex=textTexture(["교실전쟁",""],{bg:"#234b3f",accent:"#d5b68a"});
   const board=new THREE.Mesh(new THREE.PlaneGeometry(16.8,3.1),new THREE.MeshBasicMaterial({map:boardTex}));
   board.position.set(0,3,-59.02);arena.add(board);
 
@@ -844,19 +844,17 @@ function updateShots(dt){
 function gateChoiceSet(good,count){const out=[];if(good){const add1=irand(2+Math.min(4,state.period),6+Math.min(8,state.period*2)),add2=irand(3,9+state.period);out.push({label:`+${add1}`,kind:"add",v:add1},{label:"×2",kind:"mul",v:2});if(count===3)out.push(state.period>=3&&Math.random()<.45?{label:`+(${Math.min(6,state.period+1)}×2)`,kind:"add",v:Math.min(6,state.period+1)*2}:{label:`+${add2}`,kind:"add",v:add2});}else{const sub=irand(2,Math.max(4,Math.min(18,6+state.period*2)));out.push({label:`-${sub}`,kind:"sub",v:sub},{label:"÷2",kind:"div",v:2});if(count===3){if(Math.random()<.5){const v=irand(3,12);out.push({label:`-${v}`,kind:"sub",v});}else out.push({label:"÷3",kind:"div",v:3});}}return out;}
 function gateResult(choice,n){if(choice.kind==="add")return n+choice.v;if(choice.kind==="sub")return n-choice.v;if(choice.kind==="mul")return n*choice.v;if(choice.kind==="div")return Math.floor(n/choice.v);return n;}
 function refreshGatePanel(root,force=false){
-  const before=totalArmy(),choice=root.userData.choice,good=root.userData.good,reveal=root.userData.reveal;
-  const after=clamp(gateResult(choice,before),1,99999),key=`${before}|${after}|${reveal?1:0}`;
+  const choice=root.userData.choice,good=root.userData.good,key=choice.label;
   if(!force&&root.userData.previewKey===key)return;
   root.userData.previewKey=key;
   const c=root.userData.canvas,g=c.getContext("2d");
   g.clearRect(0,0,c.width,c.height);g.fillStyle=good?"#14532d":"#7f1d1d";g.fillRect(0,0,c.width,c.height);
   g.strokeStyle=good?"#86efac":"#fda4af";g.lineWidth=10;g.strokeRect(6,6,c.width-12,c.height-12);
-  g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff";g.font="900 92px system-ui";g.fillText(choice.label,c.width/2,c.height*.43);
-  g.font="800 34px system-ui";g.fillStyle="#dbeafe";
-  g.fillText(reveal?`${before.toLocaleString()} → ${after.toLocaleString()}명`:`현재 ${before.toLocaleString()}명 · 암산!`,c.width/2,c.height*.78);
+  g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff";g.font="900 104px system-ui";
+  g.fillText(choice.label,c.width/2,c.height*.52);
   root.userData.texture.needsUpdate=true;
 }
-function gatePanel(choice,width,good,reveal){
+function gatePanel(choice,width,good){
   const c=document.createElement("canvas");c.width=512;c.height=220;
   const tex=new THREE.CanvasTexture(c);tex.userData.ownedTexture=true;
   if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;
@@ -865,9 +863,9 @@ function gatePanel(choice,width,good,reveal){
   const root=new THREE.Group(),panel=new THREE.Mesh(new THREE.PlaneGeometry(width,2.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
   panel.position.y=2.2;root.add(panel);
   const l=box(.08,3.1,.08,good?0x4ade80:0xfb7185,.35,.15),r=l.clone();l.position.set(-width/2,1.55,0);r.position.set(width/2,1.55,0);root.add(l,r);
-  Object.assign(root.userData,{texture:tex,canvas:c,choice,good,reveal,previewKey:""});refreshGatePanel(root,true);return root;
+  Object.assign(root.userData,{texture:tex,canvas:c,choice,good,previewKey:""});refreshGatePanel(root,true);return root;
 }
-function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,reveal=(state.gatesPassed||0)<2,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good,reveal);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(reveal?"연습 관문! 결과 미리보기로 규칙을 익혀보세요":good?"강화 관문! 현재 병력으로 결과를 계산해 좋은 통로를 고르세요":"위험 관문! 손실이 가장 작은 통로를 암산해 고르세요",1.25);}
+function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(good?"강화 관문! 계산해서 더 좋은 통로를 고르세요":"위험 관문! 손실이 적은 통로를 고르세요",1.25);}
 function applyGate(item){const before=totalArmy(),after=clamp(gateResult(item.choice,before),1,99999);state.gatesPassed=(state.gatesPassed||0)+1;setArmyTotal(after,{announce:true,reason:`${item.choice.label} → ${after.toLocaleString()}명`});tone("gate");if(after>before&&rankNameForTotal(after)!==rankNameForTotal(before))showBanner(`🎖 ${rankNameForTotal(after)} 승급!`,rankSummaryText(),1.6);}
 function updateGates(dt){for(const g of gates){g.z+=g.speed*dt;g.items.forEach(it=>{it.mesh.position.x=it.baseX;it.mesh.position.z=g.z;if(!g.resolved)refreshGatePanel(it.mesh);});if(!g.resolved&&g.z>=GATE_TRIGGER_Z){let picked=g.items[0],best=Infinity;for(const it of g.items){const d=Math.abs(player.group.position.x-it.mesh.position.x);if(d<best){best=d;picked=it;}}g.resolved=true;applyGate(picked);g.items.forEach(it=>{if(it!==picked)it.mesh.visible=false;});}}gates=gates.filter(g=>{if(g.z<PLAYER_LINE_Z+1.8)return true;for(const it of g.items){const tex=it.mesh.userData.texture;actorRoot.remove(it.mesh);disposeObject(it.mesh);tex?.dispose?.();}return false;});}
 function armyCollisionLoss(e){const n=totalArmy();if(n<=0)return false;const loss=Math.min(n,Math.max(1,Math.ceil(e.hp/(e.type==="boss"?10:5))));setArmyTotal(n-loss,{announce:true,reason:`전선 충돌 -${loss}명`});burst(e.x,.8,e.z,0xf97316,10,2.2);shockwave(e.x,e.z,0xfb7185);state.camShake=Math.max(state.camShake,0.18);tone("hurt");killEnemy(e);return true;}
@@ -948,11 +946,11 @@ function updateInput(dt){let dir=0;if(keys.has("a")||keys.has("arrowleft"))dir--
 function clearBattle(){clearSceneArray(enemies,actorRoot);clearSceneArray(obstacles,actorRoot);obstacles=[];clearSceneArray(gates.flatMap(g=>g.items.map(it=>({mesh:it.mesh,texture:it.mesh.userData.texture}))),actorRoot);gates=[];for(const s of shots){if(s.mesh.parent)fxRoot.remove(s.mesh);}shots=[];for(const p of particles){if(p.mesh.parent)fxRoot.remove(p.mesh);}particles=[];for(const s of textSprites){if(s.parent)fxRoot.remove(s);s.userData.texture?.dispose?.();s.material.dispose?.();}textSprites=[];for(const w of shockwaves){if(w.mesh.parent)fxRoot.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();}shockwaves=[];}
 function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,PLAYER_LINE_Z);player.targetX=0;rebuildArmy(true);updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pauseBtn.textContent=state.paused?"▶":"Ⅱ";clearInput();showToast(state.paused?"일시정지":"전투 재개",.8);}
-function gameOver(){if(state.over)return;state.over=true;state.running=false;clearInput();tone("over");ui.pauseBtn.style.display="none";const score=Math.floor(state.t*10+state.kills*18+state.bossKills*260+(state.hazardsDestroyed||0)*75+player.maxArmy/20),isBest=score>state.best;if(isBest){state.best=score;localStorage.setItem("classWar3DBest",String(score));}ui.overlay.style.display="grid";ui.panel.innerHTML=`<span class="eyebrow">${isBest?"NEW RECORD":"3D CLASSROOM DEFENSE REPORT"}</span><h2>${isBest?"새 최고 기록!":"교실 방어선이 무너졌습니다"}</h2><div class="lead">생존 <b style="color:#7dd3fc">${fmtTime(state.t)}</b> · 적 ${state.kills}명 처치 · 보스 ${state.bossKills}명 격파 · 전선 위협 ${state.hazardsDestroyed||0}개 제거</div><div class="grid"><div class="mini"><b>최대 전체 병력</b>${player.maxArmy.toLocaleString()}명</div><div class="mini"><b>최고 계급</b>${rankNameForTotal(player.maxArmy)}</div><div class="mini"><b>점수</b>${score.toLocaleString()}</div><div class="mini"><b>최고 기록</b>${Math.max(state.best,score).toLocaleString()}</div></div><button class="cta" id="restartBtn">다시 방어하기</button><div class="fine">관문 타이밍과 이동 위치를 바꾸면 더 오래 버틸 수 있습니다.</div>`;$("restartBtn").onclick=resetGame;}
-ui.startBtn.disabled=true;ui.startBtn.textContent="3D 학생 에셋 준비 중…";
+function gameOver(){if(state.over)return;state.over=true;state.running=false;clearInput();tone("over");ui.pauseBtn.style.display="none";const score=Math.floor(state.t*10+state.kills*18+state.bossKills*260+(state.hazardsDestroyed||0)*75+player.maxArmy/20),isBest=score>state.best;if(isBest){state.best=score;localStorage.setItem("classWar3DBest",String(score));}ui.overlay.style.display="grid";ui.panel.innerHTML=`<span class="eyebrow">${isBest?"새 기록":"교실 방어 결과"}</span><h2>${isBest?"새 최고 기록!":"교실 방어선이 무너졌습니다"}</h2><div class="lead">생존 <b style="color:#7dd3fc">${fmtTime(state.t)}</b> · 적 ${state.kills}명 처치 · 보스 ${state.bossKills}명 격파 · 전선 위협 ${state.hazardsDestroyed||0}개 제거</div><div class="grid"><div class="mini"><b>최대 전체 병력</b>${player.maxArmy.toLocaleString()}명</div><div class="mini"><b>최고 계급</b>${rankNameForTotal(player.maxArmy)}</div><div class="mini"><b>점수</b>${score.toLocaleString()}</div><div class="mini"><b>최고 기록</b>${Math.max(state.best,score).toLocaleString()}</div></div><button class="cta" id="restartBtn">다시 방어하기</button><div class="fine">관문 타이밍과 이동 위치를 바꾸면 더 오래 버틸 수 있습니다.</div>`;$("restartBtn").onclick=resetGame;}
+ui.startBtn.disabled=true;ui.startBtn.textContent="교실 준비 중…";
 preloadClassroomCharacters().catch(err=>console.warn("[ClassroomWar] asset preload error",err)).finally(()=>{
   ui.startBtn.disabled=false;
-  ui.startBtn.textContent=classroomAssetLoadCount>0?`실제 3D 학생 ${classroomAssetLoadCount}종으로 시작`:"3D 교실 방어 시작";
+  ui.startBtn.textContent="교실 방어 시작";
 });
 ui.startBtn.onclick=()=>{if(!classroomAssetLoadDone)return;resetGame();};ui.pauseBtn.onclick=togglePause;
 function resize(){const r=app.getBoundingClientRect(),w=Math.max(1,r.width),h=Math.max(1,r.height);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
