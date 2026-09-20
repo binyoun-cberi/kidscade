@@ -403,11 +403,11 @@
     {
       "id": "low_nyam_universe",
       "title": "냠냠 우주 여행",
-      "href": "games/low_nyam_universe/냠냠 우주 여행.html?v=2",
+      "href": "games/low_nyam_universe/냠냠 우주 여행.html?v=3",
       "category": "trivia",
       "age": "low",
       "icon": "🪐",
-      "description": "작은 물건을 냠냠 먹으며 우주까지 자라요! 나보다 작은 친구도 먹고, 정원과 마을을 지나 행성까지 탐험하는 3D 성장 모험!",
+      "description": "바이러스에서 시작해 실제 3D 버섯·채소·나무·자동차·집·산을 지나 행성과 별까지 냠냠! 크기 단위가 바뀔 때마다 세계가 확 달라지는 3D 성장 모험!",
       "cover": "assets/gate-image/냠냠 우주 여행.png"
     },
     {
