@@ -60,10 +60,15 @@ test('History Royale release entry retains selectable faction, hero, deck and st
   assert.match(html, /#startBtn/);
   assert.match(html, /startBattle\(\)/);
   assert.match(html, /selectedCards\.length!==7/);
+  assert.match(html, /history-royale-3d\.js\?v=15/);
+  const renderer3d=fs.readFileSync(path.join(ROOT,'games','high_history_royale','history-royale-3d.js'),'utf8');
+  assert.match(renderer3d, /function use2DFallback/);
+  assert.match(renderer3d, /2D 안정 모드/);
+  assert.match(renderer3d, /typeof ResizeObserver==='function'/);
 });
 
 test('critical catalog entries stay on the reviewed release files', () => {
   assert.match(gameById('high_classroom_war_3d').href, /^games\/high_classroom_war_3d\/교실전쟁 3D\.html/);
   assert.match(gameById('spelling_frog').href, /^games\/spelling_frog\/스펠링 프로그\.html/);
-  assert.match(gameById('high_history_royale').href, /games\/high_history_royale\/역사 로얄\.html$/);
+  assert.match(gameById('high_history_royale').href, /^games\/high_history_royale\/역사 로얄\.html(?:\?|$)/);
 });
