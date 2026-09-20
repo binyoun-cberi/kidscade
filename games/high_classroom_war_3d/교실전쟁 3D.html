@@ -315,7 +315,9 @@ function cloneClassroomCharacter(key,{height=1.55,facing=Math.PI,ring=0x38bdf8,i
   model.updateMatrixWorld(true);
   let bounds=new THREE.Box3().setFromObject(model);
   const size=bounds.getSize(new THREE.Vector3());
-  const baseSize=Math.max(size.x,size.y,size.z)||1;
+  // Character assets have different arm/pose widths. Normalize by true vertical height
+  // so soldiers of the same rank do not randomly look taller or shorter.
+  const baseSize=Math.max(.001,size.y||Math.max(size.x,size.z)||1);
   const scale=height/baseSize;
   model.scale.multiplyScalar(scale);
   model.updateMatrixWorld(true);
@@ -364,7 +366,8 @@ function rankAssetCharacter(tier){
   ][tier]||["male-a","female-a"];
   const colors=[0x38bdf8,0x0ea5e9,0x22c55e,0x8b5cf6,0xf59e0b];
   const available=keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
-  return cloneClassroomCharacter(pick(available),{height:1.10+tier*.055,facing:Math.PI,ring:colors[tier]||0x38bdf8,initialAnim:"idle"});
+  const heights=[.96,1.12,1.24,1.36,1.50];
+  return cloneClassroomCharacter(pick(available),{height:heights[tier]||.96,facing:Math.PI,ring:colors[tier]||0x38bdf8,initialAnim:"idle"});
 }
 function enemyAssetCharacter(type){
   const cfg={
@@ -646,13 +649,12 @@ function totalArmy(){return player.soldiers+player.elites*10+player.ncos*100+pla
 function highestRankIndex(){if(player.generals)return 4;if(player.officers)return 3;if(player.ncos)return 2;if(player.elites)return 1;return 0;}
 function rankNameForTotal(n){if(n>=10000)return "장군";if(n>=1000)return "장교";if(n>=100)return "부사관";if(n>=10)return "엘리트";return "병사";}
 function removeArmyAgents(){const lists=[player.agents,player.eliteAgents,player.ncoAgents,player.officerAgents,player.generalAgents];for(const list of lists){for(const a of list)removeObject(player.group,a,true);list.length=0;}}
-function lineUp(list,z,span=5.0,rowStep=.76){
+function lineUp(list,z,colGap=.62,rowStep=.52,maxCols=5){
   const n=list.length;if(!n)return;
-  const cols=Math.min(5,n);
+  const cols=Math.min(maxCols,n);
   for(let i=0;i<n;i++){
     const row=Math.floor(i/cols),col=i%cols,rowCount=Math.min(cols,n-row*cols);
-    const gap=rowCount<=1?0:span/Math.max(1,rowCount-1);
-    const x=(col-(rowCount-1)/2)*gap;
+    const x=(col-(rowCount-1)/2)*colGap;
     const a=list[i];
     const ground=a.userData?.groundY??.025;
     a.position.set(x,ground,z-row*rowStep);
@@ -664,16 +666,18 @@ function syncRankAgents(count,factory,list){
 }
 function rebuildArmy(force=false){
   if(force)removeArmyAgents();
+  // Keep every rank in nearly the same depth band so perspective does not make
+  // ordinary soldiers look larger than promoted units.
   const specs=[
-    [player.soldiers,createStudent,player.agents,1.48,4.65,.72],
-    [player.elites,createEliteStudent,player.eliteAgents,.42,4.75,.74],
-    [player.ncos,createNcoStudent,player.ncoAgents,-.66,4.85,.76],
-    [player.officers,createOfficerStudent,player.officerAgents,-1.78,4.95,.78],
-    [player.generals,createGeneralStudent,player.generalAgents,-2.94,5.05,.80]
+    [player.soldiers,createStudent,player.agents,.12,.58,.50],
+    [player.elites,createEliteStudent,player.eliteAgents,.42,.64,.52],
+    [player.ncos,createNcoStudent,player.ncoAgents,.70,.68,.54],
+    [player.officers,createOfficerStudent,player.officerAgents,.98,.72,.56],
+    [player.generals,createGeneralStudent,player.generalAgents,1.26,.76,.58]
   ];
-  for(const [count,factory,list,z,span,rowStep] of specs){
+  for(const [count,factory,list,z,colGap,rowStep] of specs){
     syncRankAgents(count,factory,list);
-    lineUp(list,z,span,rowStep);
+    lineUp(list,z,colGap,rowStep);
   }
 }
 function armyHalfWidth(){
@@ -683,7 +687,7 @@ function armyHalfWidth(){
   return Math.min(3.25,half);
 }
 function setArmyTotal(value,{announce=false,reason=""}={}){const old=totalArmy(),n=clamp(Math.floor(Number(value)||0),0,99999),d=decomposeArmy(n);Object.assign(player,d);player.maxArmy=Math.max(player.maxArmy||0,n);player.highestRank=Math.max(player.highestRank||0,highestRankIndex());rebuildArmy();updateHud();if(announce&&n!==old){const delta=n-old,sign=delta>0?"+":"";floatText(`${sign}${delta.toLocaleString()}`,player.group.position.x,1.7,5.25,delta>=0?"#86efac":"#fda4af");if(reason)showToast(reason);}}
-function rankSummaryText(){const parts=[];if(player.generals)parts.push(`장군 ${player.generals}`);if(player.officers)parts.push(`장교 ${player.officers}`);if(player.ncos)parts.push(`부사관 ${player.ncos}`);if(player.elites)parts.push(`엘리트 ${player.elites}`);if(player.soldiers||!parts.length)parts.push(`병사 ${player.soldiers}`);return parts.join(" · ");}
+function rankSummaryText(){const parts=[];if(player.generals)parts.push(`장군 ${player.generals}(×10,000)`);if(player.officers)parts.push(`장교 ${player.officers}(×1,000)`);if(player.ncos)parts.push(`부사관 ${player.ncos}(×100)`);if(player.elites)parts.push(`엘리트 ${player.elites}(×10)`);if(player.soldiers||!parts.length)parts.push(`병사 ${player.soldiers}`);return parts.join(" · ");}
 function updateHud(){const n=totalArmy();ui.armyTotal.textContent=n.toLocaleString();ui.rankSummary.textContent=rankSummaryText();ui.time.textContent=fmtTime(state.t);ui.period.textContent=`${state.period}교시`;ui.baseHpText.textContent=`${Math.max(0,Math.ceil(state.baseHp))} / ${state.maxBaseHp}`;const ratio=clamp(state.baseHp/state.maxBaseHp,0,1);ui.baseHpFill.style.width=`${ratio*100}%`;ui.baseHpFill.style.background=ratio>.55?"linear-gradient(90deg,#22c55e,#67e8f9)":ratio>.25?"linear-gradient(90deg,#f59e0b,#fde68a)":"linear-gradient(90deg,#ef4444,#fb7185)";updateBaseHealthSprite();}
 function showToast(text,dur=1.2){ui.toast.textContent=text;ui.toast.style.opacity="1";ui.toast.style.transform="translate(-50%,0)";state.toastT=dur;}
 function showBanner(title,sub="",dur=2){ui.banner.querySelector("strong").textContent=title;ui.banner.querySelector("span").textContent=sub;ui.banner.style.opacity="1";ui.banner.style.transform="translate(-50%,0) scale(1)";state.warningT=dur;}
