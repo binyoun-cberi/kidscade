@@ -48,7 +48,7 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.setClearColor(0x91a972,1);
 renderer.shadowMap.enabled=!LOW_POWER;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW_POWER?1.15:1.6));
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW_POWER?1:1.6));
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x91a972);
@@ -282,7 +282,7 @@ function makeProceduralHorse(color){
   return {root:g,mixer:null,clips:[]};
 }
 function createHorse(){
-  if(!horseTemplate)return makeProceduralHorse(0x74513a);
+  if(LOW_POWER||!horseTemplate)return makeProceduralHorse(0x74513a);
   const horse=SkeletonUtils.clone(horseTemplate.scene);
   const mixer=new THREE.AnimationMixer(horse);
   mixers.add(mixer);
@@ -387,6 +387,7 @@ function pickCharacter(u){
   return "Adventurer";
 }
 function createAnimatedUnit(u,fid){
+  if(LOW_POWER&&!u.hero)return makeFallbackUnit(u,fid);
   const tpl=characterTemplates.get(pickCharacter(u));
   if(!tpl)return makeFallbackUnit(u,fid);
   const holder=new THREE.Group();
@@ -559,10 +560,11 @@ function createHealthBar(width=.86,y=1.55){
   const fill=mesh(new THREE.PlaneGeometry(width*.94,.046),new THREE.MeshBasicMaterial({color:0x70c875,depthTest:false}),0,0,.003);
   group.add(bg,fill);group.userData.fill=fill;group.renderOrder=20;return group;
 }
+const faceParentQ=new THREE.Quaternion();
 function faceCameraLocal(object){
   if(!object?.parent){object.quaternion.copy(camera.quaternion);return;}
-  const parentQ=new THREE.Quaternion();object.parent.getWorldQuaternion(parentQ);parentQ.invert();
-  object.quaternion.copy(parentQ.multiply(camera.quaternion));
+  object.parent.getWorldQuaternion(faceParentQ);faceParentQ.invert();
+  object.quaternion.copy(faceParentQ.multiply(camera.quaternion));
 }
 function updateHealthBar(bar,ratio,team){
   if(!bar)return;ratio=THREE.MathUtils.clamp(ratio,0,1);
@@ -733,7 +735,13 @@ function syncUnits(g){
     });
     const spawnScale=u.spawnTimer>0?THREE.MathUtils.clamp(1-u.spawnTimer/.42,.25,1):1;rec.root.scale.setScalar((u.hero?1.12:1)*spawnScale);updateHealthBar(rec.health,u.hp/u.maxHp,u.team);setHitFlash(rec.root,u.hitTimer>0);
   });
-  unitMeshes.forEach(function(rec,id){if(!live.has(id)){if(rec.mixer)mixers.delete(rec.mixer);world.remove(rec.root);unitMeshes.delete(id);}});
+  unitMeshes.forEach(function(rec,id){
+    if(!live.has(id)){
+      if(rec.mixer){rec.mixer.stopAllAction();rec.mixer.uncacheRoot(rec.character||rec.root);mixers.delete(rec.mixer);}
+      if(rec.horse?.mixer){rec.horse.mixer.stopAllAction();rec.horse.mixer.uncacheRoot(rec.horse.root);mixers.delete(rec.horse.mixer);}
+      world.remove(rec.root);unitMeshes.delete(id);
+    }
+  });
 }
 function createProjectileMesh(){
   const arrow=cloneWeaponAsset("Arrow");
@@ -741,9 +749,10 @@ function createProjectileMesh(){
   const p=mesh(new THREE.CylinderGeometry(.025,.025,.55,5),mat(0xd7c79c,.5,.15),0,.7,0);p.rotation.x=Math.PI/2;scene.add(p);return p;
 }
 function syncProjectiles(g){
-  while(projectileMeshes.length<g.projectiles.length)projectileMeshes.push(createProjectileMesh());
+  const visualCount=LOW_POWER?Math.min(g.projectiles.length,28):g.projectiles.length;
+  while(projectileMeshes.length<visualCount)projectileMeshes.push(createProjectileMesh());
   projectileMeshes.forEach(function(m,i){
-    const p=g.projectiles[i];m.visible=!!p;if(!p)return;
+    const p=i<visualCount?g.projectiles[i]:null;m.visible=!!p;if(!p)return;
     const q=canvasToWorld(p.x,p.y);m.position.set(q.x,.82,q.z);
     if(p.target){const tq=canvasToWorld(p.target.x,p.target.y),dir=tq.clone().sub(q);m.rotation.y=Math.atan2(dir.x,dir.z);m.rotation.z=-.08;}
   });
@@ -829,7 +838,8 @@ function makeFxRoot(f){
 }
 function syncFx(g){
   const live=new Set();
-  for(const f of g.fx){
+  const visualFx=LOW_POWER?g.fx.slice(-20):g.fx;
+  for(const f of visualFx){
     if(!f.__v3id)f.__v3id=fxSeq++;
     live.add(f.__v3id);
     let rec=fxMeshes.get(f.__v3id);
@@ -867,15 +877,14 @@ function resize(){
 if(typeof ResizeObserver==='function')new ResizeObserver(resize).observe(box);else addEventListener('resize',resize);resize();
 
 async function loadAssets(){
-  const propNames=LOW_POWER
-    ? ["Crate_Wooden","Stall_Empty","Banner_1","Banner_2","WeaponStand","Dummy"]
-    : ["Barrel","Crate_Wooden","Bag","Stall_Empty","Stall_Cart_Empty","Chest_Wood","Coin_Pile","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden","Bench"];
-  const jobs=[
-    loadCharacter("Adventurer"),loadCharacter("Farmer"),loadCharacter("King"),loadHorse(),
-    loadWeapon("Spear",1.55,"base"),loadWeapon("Bow_Wooden",1.10,"center"),loadWeapon("Sword",.82,"base"),
-    loadWeapon("Shield_Round",.66,"center"),loadWeapon("Arrow",.58,"base"),
-    ...propNames.map(loadProp)
-  ];
+  const jobs=LOW_POWER
+    ? [loadCharacter("King")]
+    : [
+        loadCharacter("Adventurer"),loadCharacter("Farmer"),loadCharacter("King"),loadHorse(),
+        loadWeapon("Spear",1.55,"base"),loadWeapon("Bow_Wooden",1.10,"center"),loadWeapon("Sword",.82,"base"),
+        loadWeapon("Shield_Round",.66,"center"),loadWeapon("Arrow",.58,"base"),
+        ...["Barrel","Crate_Wooden","Bag","Stall_Empty","Stall_Cart_Empty","Chest_Wood","Coin_Pile","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden","Bench"].map(loadProp)
+      ];
   const results=await Promise.allSettled(jobs);
   const failed=results.filter(r=>r.status==="rejected");
   if(failed.length)console.warn("[History Royale 3D] 일부 에셋 로드 실패",failed.map(x=>x.reason));
@@ -931,8 +940,8 @@ window.HistoryRoyale3DDebug=function(){
   return {ready,lowPower:LOW_POWER,units:g?.units?.length||0,buildings:g?.buildings?.length||0,characters:characterTemplates.size,weapons:weaponTemplates.size,props:propTemplates.size,horse:!!horseTemplate,render:{...renderer.info.render}};
 };
 async function init(){
-  state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;initDebug();
-  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 모바일 경량 모드":""}`;
+  state=window.HistoryRoyaleState||null;await loadAssets();if(!LOW_POWER)decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;initDebug();
+  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 모바일 초경량 모드":""}`;
   box.classList.add("three-ready");
   const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
@@ -945,8 +954,10 @@ function use2DFallback(err,phase){
 function loop(now){
   requestAnimationFrame(loop);if(runtimeFailed)return;
   try{
-    const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
+    const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;
     state=window.HistoryRoyaleState||state;const g=state&&state.game;updateDebug(dt,g);
+    if(document.hidden||!g||!g.running)return;
+    mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
     if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
     if(ready&&g&&g.running){
       updateAtmosphere(g,dt);
