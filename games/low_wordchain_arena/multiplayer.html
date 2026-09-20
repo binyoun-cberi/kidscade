@@ -100,6 +100,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 'use strict';
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
+const ROOM_STORAGE='kidscadeWordchainRoomId';
 
 const errors={
  not_authenticated:'로그인이 필요합니다.',
@@ -142,12 +143,14 @@ function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.elimin
 function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();room=null;cancelAnimationFrame(timerRAF);$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;cancelAnimationFrame(timerRAF);$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 async function checkAccount(){
  try{
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
   if(!res.ok||!data.ok)throw new Error();
   account=data.account;$('accountState').textContent=(account.nickname||'학생')+' 로그인';$('entryContent').style.display='block';$('loginNeeded').style.display='none';
+  const saved=localStorage.getItem(ROOM_STORAGE);
+  if(saved){try{const restored=await api('state',{roomId:saved});if(restored?.room){enterRoom(restored.room);return}}catch(_){localStorage.removeItem(ROOM_STORAGE)}}
  }catch(_){$('accountState').textContent='로그인 필요';$('entryContent').style.display='none';$('loginNeeded').style.display='block'}
 }
 async function create(maxPlayers){
@@ -162,7 +165,7 @@ async function join(){
   const data=await api('join',{code});enterRoom(data.room);
  }catch(e){alert(e.message)}
 }
-function enterRoom(next){room=next;setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;showOverlay('lobbyOverlay');render(next);startPoll()}
+function enterRoom(next){room=next;localStorage.setItem(ROOM_STORAGE,next.id);setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;showOverlay('lobbyOverlay');render(next);startPoll()}
 function renderLobby(next){
  $('roomCodeText').textContent=next.code;$('roomRuleText').textContent=next.maxPlayers===2?'1:1 · 최대 2명':'다대다 · 최대 '+next.maxPlayers+'명';
  $('lobbyPlayers').innerHTML=next.players.map(p=>'<div class="lobbyPlayer"><b>'+esc(p.nickname)+(p.isHost?'<span class="host">방장</span>':'')+'</b><div class="'+(p.ready?'ready':'notReady')+'">'+(p.ready?'준비 완료':'준비 전')+(p.online?'':' · 연결 확인 중')+'</div></div>').join('');
@@ -237,7 +240,7 @@ async function leave(){
  resetToEntry();
 }
 function showResult(next){
- stopPoll();cancelAnimationFrame(timerRAF);$('countdown').classList.remove('show');showOverlay('resultOverlay');
+ stopPoll();localStorage.removeItem(ROOM_STORAGE);cancelAnimationFrame(timerRAF);$('countdown').classList.remove('show');showOverlay('resultOverlay');
  const outcome=next.result?.outcome||'draw';$('resultTitle').textContent=outcome==='win'?'🏆 승리!':outcome==='lose'?'대결 종료':'🤝 무승부';
  $('resultSub').textContent=next.result?.winnerNickname?'최후의 생존자: '+next.result.winnerNickname:'승자가 정해지지 않았습니다.';
  $('resultPlayers').innerHTML=next.players.map(p=>'<div class="resultP"><b>'+esc(p.nickname)+'</b><div style="color:'+(p.eliminated?'#fda4af':'#86efac')+'">'+(p.eliminated?'탈락':'생존')+' · '+hearts(p.lives)+'</div></div>').join('');
