@@ -400,8 +400,11 @@ function charJamo(ch){
  return [CHO_JAMO[cho],JUNG_JAMO[jung],JONG_JAMO[jong]].filter(Boolean);
 }
 function weaknessMap(){const map=safe.get(WEAKNESS_KEY,{});return map&&typeof map==='object'?map:{}}
-function recordWeakChar(ch){
- const parts=charJamo(ch);if(!parts.length)return;
+function recordWeakChar(expected,actual=''){
+ const expectedParts=charJamo(expected);if(!expectedParts.length)return;
+ const actualParts=charJamo(actual);
+ const parts=actualParts.length?expectedParts.filter((jamo,i)=>actualParts[i]!==jamo):expectedParts;
+ if(!parts.length)return;
  const map=weaknessMap();for(const jamo of parts)map[jamo]=(Number(map[jamo])||0)+1;safe.set(WEAKNESS_KEY,map);
 }
 function weakEntries(){return Object.entries(weaknessMap()).filter(([,n])=>Number(n)>0).sort((a,b)=>Number(b[1])-Number(a[1]))}
@@ -558,7 +561,7 @@ function highlightKey(ch){
  if(mode!=='position')return;const e=KEYMAP[ch];if(e){const el=document.querySelector(`.key[data-key="${e}"]`);if(el)el.classList.add('active')}
 }
 function renderTargetProgress(val){
- if(!composing)for(let i=0;i<val.length;i++){if(val[i]!==target[i]&&!normalErrorKeys.has(i)){normalErrorKeys.add(i);totalErrors++;recordWeakChar(target[i])}}
+ if(!composing)for(let i=0;i<val.length;i++){if(val[i]!==target[i]&&!normalErrorKeys.has(i)){normalErrorKeys.add(i);totalErrors++;recordWeakChar(target[i],val[i])}}
  if(mode==='position')return;
  let html='';for(let i=0;i<target.length;i++){const ch=target[i];if(i<val.length)html+=`<span class="${val[i]===ch?'ok':'wrong'}">${esc(ch)}</span>`;else html+=esc(ch)}
  $('#targetText').innerHTML=html;
@@ -872,7 +875,7 @@ function handleLongInput(inp){
  for(let i=0;i<Math.min(value.length,target.length);i++){
    if(value[i]!==target[i]){
      const key=`${longLine}:${i}`;
-     if(!longErrorKeys.has(key)){longErrorKeys.add(key);longErrors++;recordWeakChar(target[i])}
+     if(!longErrorKeys.has(key)){longErrorKeys.add(key);longErrors++;recordWeakChar(target[i],value[i])}
    }
  }
  if(value.length>target.length){
