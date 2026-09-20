@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=14",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=15",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v14! 15개 고유 세부 구역과 살아있는 생태계에 실제 3D 렌더 회수품 12종, 신규 수중 식생, 잠수 중 루프되는 수중 앰비언스까지 연결한 위험-보상형 심해 탐사 게임.",
+      "description": "2D 픽셀 잠수 탐사 v15! 모든 생물 스폰을 지형 충돌 검사 후 확정하고, 고래·바키타 방향 보정과 안정된 순찰 방향/회전 잠금으로 좌우 진동과 잘못된 배치를 줄인 심해 생태 탐사 게임.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
