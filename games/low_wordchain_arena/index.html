@@ -57,6 +57,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
 
   <div class="controls">
     <button id="modeBtn" class="btn primary">🎮 모드 선택</button>
+    <button id="soundBtn" class="btn" title="효과음 켜기/끄기">🔊 효과음</button>
     <button id="homeBtn" class="btn">Kidscade로</button>
   </div>
   <div class="rules">실시간 사전 API를 사용하지 않습니다. 한국어기초사전 + 표준국어대사전 기반 195,217개 명사를 서버 API 없이 필요한 초성 묶음만 불러와 판정합니다.</div>
@@ -93,10 +94,28 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
   </section>
 </div>
 
+<script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../wordchain-static-db.js?v=2"></script>
 <script>
 (() => {
 'use strict';
+const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
+const preloadSfx=()=>window.KidscadeAudio?.preload?.([
+ 'collect.coin_drop','collect.coin_pickup','movement.jump',
+ 'success.cheer_yay','success.cheer_woohoo','success.victory_fanfare',
+ 'failure.fail_sting','failure.disappointed_voice',
+ 'combat.impact_heavy','combat.hurt_grunt','shop.register_open'
+])?.catch?.(()=>{});
+function updateSoundButton(){
+ const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted),btn=$('soundBtn');
+ if(btn){btn.textContent=muted?'🔇 효과음':'🔊 효과음';btn.title=muted?'효과음 켜기':'효과음 끄기'}
+}
+function toggleSound(){
+ const api=window.KidscadeAudio;if(!api)return;
+ const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();
+ if(!muted)sfx('collect.coin_pickup',{volume:.24,rate:1.15});
+}
+
 const $=id=>document.getElementById(id);
 const starters=['사과','기차','나무','바다','학교','토끼','고래','우산','친구','공원','자동차','강아지'];
 let dbReady=false,playing=false,myTurn=false,currentWord='',used=[],meLife=3,cpuLife=3,deadline=0,timerRAF=0,turnToken=0;
@@ -151,25 +170,25 @@ async function cpuTurn(){
  if(!playing)return;myTurn=false;turnToken++;stopTimer();$('timerFill').style.width='100%';$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='낱말봇 생각 중…';setMsg('낱말봇이 로컬 사전에서 단어를 찾고 있어요.');
  const token=turnToken;await new Promise(r=>setTimeout(r,650+Math.random()*650));if(!playing||token!==turnToken)return;
  const word=await pickCpu();if(!playing||token!==turnToken)return;
- if(!word){cpuLife--;renderLives();setMsg('낱말봇이 이어갈 단어를 못 찾았어요!','good');if(cpuLife<=0)return finish(true);await new Promise(r=>setTimeout(r,900));return newRound()}
- currentWord=word;used.push(word);$('currentWord').textContent=word;chip(word,'cpu');renderNeed();setMsg('낱말봇: '+word);await new Promise(r=>setTimeout(r,520));playerTurn()
+ if(!word){cpuLife--;renderLives();sfx('success.cheer_woohoo',{volume:.30,cooldownMs:450});setMsg('낱말봇이 이어갈 단어를 못 찾았어요!','good');if(cpuLife<=0)return finish(true);await new Promise(r=>setTimeout(r,900));return newRound()}
+ currentWord=word;used.push(word);$('currentWord').textContent=word;chip(word,'cpu');renderNeed();sfx('collect.coin_drop',{volume:.18,rate:1.05,cooldownMs:160});setMsg('낱말봇: '+word);await new Promise(r=>setTimeout(r,520));playerTurn()
 }
 async function submit(){
  if(!playing||!myTurn)return;const w=normalize($('wordInput').value);if(!w)return;
  $('submitBtn').disabled=true;const token=turnToken;const result=await validate(w);if(!playing||token!==turnToken)return;
- if(!result.ok){$('submitBtn').disabled=false;$('wordInput').select();setMsg(errorText(result),'bad');return}
- stopTimer();myTurn=false;currentWord=result.word;used.push(currentWord);$('currentWord').textContent=currentWord;chip(currentWord,'me');renderNeed();setMsg('좋아요! '+currentWord,'good');await cpuTurn()
+ if(!result.ok){$('submitBtn').disabled=false;$('wordInput').select();sfx('failure.fail_sting',{volume:.24,cooldownMs:220});setMsg(errorText(result),'bad');return}
+ stopTimer();myTurn=false;currentWord=result.word;used.push(currentWord);$('currentWord').textContent=currentWord;chip(currentWord,'me');renderNeed();sfx('success.cheer_yay',{volume:.32,cooldownMs:180});setMsg('좋아요! '+currentWord,'good');await cpuTurn()
 }
 async function timeoutPlayer(){
- if(!playing||!myTurn)return;myTurn=false;turnToken++;stopTimer();meLife--;renderLives();$('wordInput').disabled=true;$('submitBtn').disabled=true;setMsg('시간 초과! 목숨이 하나 줄었어요.','bad');if(meLife<=0)return finish(false);await new Promise(r=>setTimeout(r,750));
+ if(!playing||!myTurn)return;myTurn=false;turnToken++;stopTimer();meLife--;renderLives();$('wordInput').disabled=true;$('submitBtn').disabled=true;sfx('combat.impact_heavy',{volume:.32,cooldownMs:180});sfx('combat.hurt_grunt',{volume:.25,cooldownMs:240});setMsg('시간 초과! 목숨이 하나 줄었어요.','bad');if(meLife<=0)return finish(false);await new Promise(r=>setTimeout(r,750));
  const replacement=await pickCpu();if(replacement){currentWord=replacement;used.push(replacement);$('currentWord').textContent=replacement;chip(replacement,'cpu');setMsg('낱말봇이 대신 이어서 '+replacement+'!')}await new Promise(r=>setTimeout(r,550));playerTurn()
 }
-function newRound(){const available=starters.filter(w=>!used.includes(w));const list=available.length?available:starters;const w=list[Math.floor(Math.random()*list.length)];currentWord=w;if(!used.includes(w))used.push(w);$('currentWord').textContent=w;chip(w,'start');renderNeed();setTimeout(playerTurn,450)}
+function newRound(){const available=starters.filter(w=>!used.includes(w));const list=available.length?available:starters;const w=list[Math.floor(Math.random()*list.length)];currentWord=w;if(!used.includes(w))used.push(w);$('currentWord').textContent=w;chip(w,'start');renderNeed();sfx('collect.coin_drop',{volume:.20,rate:1.08,cooldownMs:250});setTimeout(playerTurn,450)}
 function start(){
  if(!dbReady){setMsg('사전 준비가 아직 끝나지 않았어요.','bad');return}
- stopTimer();playing=true;myTurn=false;used=[];meLife=3;cpuLife=3;renderLives();$('chips').innerHTML='';$('intro').classList.add('hidden');setMsg('시작 단어를 정하는 중…');newRound()
+ stopTimer();playing=true;myTurn=false;used=[];meLife=3;cpuLife=3;sfx('shop.register_open',{volume:.22,cooldownMs:500});renderLives();$('chips').innerHTML='';$('intro').classList.add('hidden');setMsg('시작 단어를 정하는 중…');newRound()
 }
-function finish(win){playing=false;myTurn=false;turnToken++;stopTimer();$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent=win?'승리!':'이번 판 종료';$('needText').textContent=win?'낱말봇의 목숨을 모두 없앴어요.':'다시 도전해 보세요.';setMsg(win?'🎉 승리! '+used.length+'개의 단어를 이어 갔어요.':'낱말봇 승리! '+used.length+'개의 단어가 나왔어요.',win?'good':'bad')}
+function finish(win){playing=false;myTurn=false;turnToken++;stopTimer();sfx(win?'success.victory_fanfare':'failure.fail_sting',{volume:win?.46:.34,cooldownMs:900});if(!win)sfx('failure.disappointed_voice',{volume:.24,cooldownMs:900});$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent=win?'승리!':'이번 판 종료';$('needText').textContent=win?'낱말봇의 목숨을 모두 없앴어요.':'다시 도전해 보세요.';setMsg(win?'🎉 승리! '+used.length+'개의 단어를 이어 갔어요.':'낱말봇 승리! '+used.length+'개의 단어가 나왔어요.',win?'good':'bad')}
 async function prepareDb(){
  try{
    const manifest=await window.KidscadeWordDB.init();
@@ -188,14 +207,15 @@ async function prepareDb(){
    setMsg('정적 단어 사전을 읽지 못했습니다.','bad');
  }
 }
+$('soundBtn').addEventListener('click',toggleSound);
 $('soloModeBtn').addEventListener('click',start);
-$('duelModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?mode=duel');
-$('multiModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?mode=multi');
+$('duelModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?v=6&mode=duel');
+$('multiModeBtn').addEventListener('click',()=>location.href='./multiplayer.html?v=6&mode=multi');
 $('modeBtn').addEventListener('click',()=>{stopTimer();playing=false;myTurn=false;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('intro').classList.remove('hidden')});
 $('introHomeBtn').addEventListener('click',()=>location.href='../../');
 $('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});$('homeBtn').addEventListener('click',()=>location.href='../../');
 document.addEventListener('contextmenu',e=>{if(e.target.closest('button,input'))e.preventDefault()});
-prepareDb();
+preloadSfx();updateSoundButton();prepareDb();
 })();
 </script>
 </body>
