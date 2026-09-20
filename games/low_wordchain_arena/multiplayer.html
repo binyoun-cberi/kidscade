@@ -8,7 +8,7 @@
 :root{--bg:#07111f;--panel:#101d31;--panel2:#162741;--line:#29415f;--ink:#f7fbff;--muted:#9fb3cc;--cyan:#67e8f9;--lime:#bef264;--gold:#fde68a;--rose:#fda4af;--bad:#fb7185;--ok:#86efac}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#173a61 0,#091626 48%,#050b13 100%);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
 body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select{font:inherit}.app{width:min(1080px,100%);margin:auto;display:flex;flex-direction:column;gap:12px}.card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(22,39,65,.97),rgba(10,22,38,.97));box-shadow:0 18px 50px rgba(0,0,0,.22)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-size:clamp(24px,4vw,38px);font-weight:1000;letter-spacing:-.05em}.topActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.account{font-size:13px;color:var(--muted);padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#091525}.soundBtn{width:40px;height:40px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:18px}.matchMeta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:0 2px}.matchMeta.hidden{display:none}.badge{font-size:12px;font-weight:900;color:#cbd5e1;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:#091525}.badge.room{color:var(--gold);border-color:rgba(253,230,138,.35)}.badge.live{color:#86efac}.badge.rule{color:#bae6fd}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px}.brand{font-size:clamp(24px,4vw,38px);font-weight:1000;letter-spacing:-.05em}.topActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.account{font-size:13px;color:var(--muted);padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#091525}.soundBtn{height:40px;padding:0 12px;border-radius:999px;display:grid;place-items:center;font-size:14px;white-space:nowrap}.matchMeta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:0 2px}.matchMeta.hidden{display:none}.badge{font-size:12px;font-weight:900;color:#cbd5e1;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:#091525}.badge.room{color:var(--gold);border-color:rgba(253,230,138,.35)}.badge.live{color:#86efac}.badge.rule{color:#bae6fd}
 .board{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;gap:12px}.selfCard,.roster{padding:16px;min-height:215px}.selfCard{display:flex;flex-direction:column;align-items:center;justify-content:center}.avatar{width:74px;height:74px;border:1px solid var(--line);border-radius:22px;display:grid;place-items:center;background:#081525;font-size:40px}.meName{font-weight:1000;font-size:20px;margin-top:8px}.lives{color:var(--cyan);font-size:25px;letter-spacing:3px;margin-top:5px}.center{min-height:215px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:border-color .18s,box-shadow .18s,transform .18s}.center.myturn{border-color:#67e8f9;box-shadow:0 0 0 3px rgba(103,232,249,.12),0 18px 50px rgba(0,0,0,.22);transform:translateY(-1px)}.center.myturn .turn{color:#67e8f9}.center.myturn .word{text-shadow:0 0 28px rgba(103,232,249,.22)}.turn{color:var(--muted);font-size:14px;font-weight:850}.word{font-weight:1000;font-size:clamp(40px,7vw,76px);letter-spacing:-.08em;line-height:1.05;margin-top:5px}.required{color:var(--gold);font-size:18px;font-weight:1000;margin-top:8px}.timer{width:min(460px,94%);height:10px;background:#06101d;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:13px;transition:border-color .2s,box-shadow .2s}.timer.urgent{border-color:#fb7185;box-shadow:0 0 12px rgba(251,113,133,.28)}.timerFill{height:100%;width:100%;background:linear-gradient(90deg,#22d3ee,#bef264);transition:width .12s linear}.timer.urgent .timerFill{background:linear-gradient(90deg,#fb7185,#f59e0b)}.rosterTitle,.historyTitle{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:8px}.playerList{display:flex;flex-direction:column;gap:7px;max-height:170px;overflow:auto}.player{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:7px;background:#091728;border:1px solid #223d5a;border-radius:12px;padding:8px 9px}.player.current{border-color:#fde68a;box-shadow:0 0 0 2px rgba(253,230,138,.10)}.player.you{background:linear-gradient(90deg,rgba(103,232,249,.08),#091728)}.player.dead{opacity:.45;filter:saturate(.55)}.slot{font-size:12px;color:var(--muted)}.pname{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plife{font-size:13px;color:#fda4af}.host{color:#fde68a;font-size:10px;margin-left:4px}
 .inputCard{padding:14px}.inputRow{display:grid;grid-template-columns:1fr auto;gap:9px}.wordInput{min-width:0;padding:15px 16px;border:1px solid #36516f;border-radius:17px;background:#071424;color:white;font-size:21px;font-weight:900;outline:none}.wordInput:focus{border-color:#67e8f9;box-shadow:0 0 0 3px rgba(103,232,249,.12)}.submit{border:0;border-radius:17px;padding:0 24px;background:linear-gradient(135deg,#22d3ee,#6366f1);color:white;font-weight:1000;cursor:pointer}.submit:disabled,.wordInput:disabled{opacity:.42}.message{min-height:27px;text-align:center;margin-top:8px;font-weight:900;color:#cbd5e1}.message.good{color:var(--ok)}.message.bad{color:#fda4af}
 .history{padding:14px;min-height:150px}.chips{display:flex;gap:7px;flex-wrap:wrap;max-height:150px;overflow:auto;align-content:flex-start}.chip:last-child{box-shadow:0 0 0 2px rgba(103,232,249,.08)}.chip{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#081525;font-size:13px;font-weight:850}.chip.starter{color:#fde68a}.chip.timeout{color:#fda4af}.chip.oneshot{color:#c4b5fd}.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:#132640;color:white;font-weight:900;cursor:pointer}.btn.primary{border:0;background:linear-gradient(135deg,#84cc16,#14b8a6);color:#04140c}.btn.danger{border-color:#7f1d1d;background:#3b111b}.btn:disabled{opacity:.42;cursor:not-allowed}
@@ -18,7 +18,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 </head>
 <body>
 <div class="app">
-  <div class="top"><div class="brand">🌐 끝말잇기 온라인 대결</div><div class="topActions"><div class="account" id="accountState">계정 확인 중…</div><button class="btn soundBtn" id="soundBtn" title="효과음 켜기/끄기">🔊</button></div></div>
+  <div class="top"><div class="brand">🌐 끝말잇기 온라인 대결</div><div class="topActions"><div class="account" id="accountState">계정 확인 중…</div><button class="btn soundBtn" id="soundBtn" title="소리 켜기/끄기" aria-label="소리 켜기/끄기">🔊 소리</button></div></div>
   <div class="matchMeta hidden" id="matchMeta"><span class="badge room" id="roomBadge">방 ------</span><span class="badge" id="modeBadge">1:1</span><span class="badge rule">3목숨 · 12초</span><span class="badge live">● 온라인</span></div>
 
   <div class="board">
@@ -104,7 +104,7 @@ const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
 const ROOM_STORAGE='kidscadeWordchainRoomId';
 const requestedMode=new URLSearchParams(location.search).get('mode');
-let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};
+let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};
 let bgmHandle=null;
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
@@ -114,8 +114,10 @@ async function ensureBgm(){
  const result=await window.KidscadeAudio?.play?.('music.korea_welcome',{loop:true,volume:.13,cooldownMs:500}).catch?.(()=>null);
  if(result?.ok)bgmHandle=result;
 }
-function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇':'🔊';$('soundBtn').title=muted?'효과음 켜기':'효과음 끄기'}
+function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇 소리':'🔊 소리';$('soundBtn').title=muted?'소리 켜기':'소리 끄기';$('soundBtn').setAttribute('aria-label',$('soundBtn').title)}
 function toggleSound(){const api=window.KidscadeAudio;if(!api)return;const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();if(!muted){ensureBgm();sfx('collect.coin_pickup',{volume:.24,rate:1.15})}}
+function playTurnCue(){sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240})}
+function playTimerWarning(second){sfx('collect.coin_drop',{volume:.25,rate:1+(3-second)*.14,cooldownMs:180})}
 
 const errors={
  not_authenticated:'로그인이 필요합니다.',
@@ -158,7 +160,7 @@ function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.elimin
 function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 function applyRequestedMode(){
  if(requestedMode==='duel'){
    $('createDuel').style.display='block';
@@ -249,8 +251,10 @@ function reactSfx(next){
    soundState.historyToken=tokenOf(rows.at(-1));
  }
  const slot=Number(next.match?.currentSlot);
- if(next.status==='playing'&&soundState.lastTurnSlot!==null&&slot!==soundState.lastTurnSlot&&slot===Number(next.self?.slot))sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240});
- if(next.status==='playing')soundState.lastTurnSlot=slot;
+ const turnLive=next.status==='playing'&&nowServer()>=new Date(next.startAt||0).getTime();
+ const turnCueToken=turnLive?String(slot)+':'+String(next.match?.turnDeadline||''):'';
+ if(turnCueToken&&slot===Number(next.self?.slot)&&soundState.turnCueToken!==turnCueToken)playTurnCue();
+ if(turnCueToken){soundState.turnCueToken=turnCueToken;soundState.lastTurnSlot=slot}
  if(next.status==='finished'&&soundState.resultRoom!==next.id){soundState.resultRoom=next.id;const won=next.result?.outcome==='win';sfx(won?'success.victory_fanfare':'failure.fail_sting',{volume:won?.46:.36,cooldownMs:1000});if(!won)sfx('failure.disappointed_voice',{volume:.22,cooldownMs:1000})}
 }
 function render(next){
@@ -283,7 +287,7 @@ function renderMatch(next){
 }
 function animateTimer(){
  cancelAnimationFrame(timerRAF);
- const tick=()=>{if(!room||room.status!=='playing')return;const deadline=new Date(room.match?.turnDeadline||0).getTime();const left=Math.max(0,deadline-nowServer());$('timerFill').style.width=Math.max(0,Math.min(100,left/12000*100))+'%';$('timerBar').classList.toggle('urgent',left>0&&left<=4000);timerRAF=requestAnimationFrame(tick)};tick();
+ const tick=()=>{if(!room||room.status!=='playing')return;const deadline=new Date(room.match?.turnDeadline||0).getTime();const turnKey=String(room.match?.currentSlot||'')+':'+String(room.match?.turnDeadline||'');if(soundState.warningTurn!==turnKey){soundState.warningTurn=turnKey;soundState.warningSecond=0}const left=Math.max(0,deadline-nowServer());$('timerFill').style.width=Math.max(0,Math.min(100,left/12000*100))+'%';$('timerBar').classList.toggle('urgent',left>0&&left<=4000);const warningSecond=Math.ceil(left/1000);if(myTurn()&&warningSecond>=1&&warningSecond<=3&&warningSecond!==soundState.warningSecond){soundState.warningSecond=warningSecond;playTimerWarning(warningSecond)}timerRAF=requestAnimationFrame(tick)};tick();
 }
 async function sync(){
  if(!room)return;
