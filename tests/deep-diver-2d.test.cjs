@@ -206,7 +206,7 @@ test('Deep Diver v13 gives all fifteen subzones unique gameplay rules',()=>{
 });
 
 test('Deep Diver v13 exposes subzone mechanics through HUD and entry feedback',()=>{
-  assert.match(js,/function subRuleForY/);
+  assert.match(js,/const subRuleForY=/);
   assert.match(js,/sr\.short/);
   assert.match(js,/SUBZONE_RULES\[sub\.id\]\?\.tip/);
   assert.match(js,/function drawSubzoneFX/);
