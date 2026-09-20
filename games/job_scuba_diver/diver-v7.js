@@ -111,11 +111,11 @@ const BIOME_POPULATIONS={
  abyss:[['angler',10],['hunter',8],['dart',5]]
 };
 const FAUNA_POPULATIONS={
- reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['mantis',1],['vaquita',1]],
+ reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1]],
  kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1]],
  ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5]],
  wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3]],
- abyss:[['jelly',6],['squid',5],['shark2',4],['kraken',1]]
+ abyss:[['jelly',6],['squid',5],['shark2',4]]
 };
 const ZONE_RULES={
  reef:{oxygen:1,current:0,visibility:1,danger:'낮음'},
@@ -293,7 +293,16 @@ function buildWorld(contract){
      }
    }
  }
- // Curated encounters: a reef-maze mantis shrimp and an abyssal kraken always exist.
+ // Curated subzone ecology makes the fifteen named areas feel different instead of random.
+ const encounters=[
+   ['crab',760,305,19301],['urchin',1450,392,19302],['ochreStar',3470,624,19303],['crownStar',4930,416,19304],
+   ['nautilus',2140,980,19311],['jelly',3620,1110,19312],['jelly',5340,1325,19313],
+   ['squid',1760,1705,19321],['nautilus',4210,1990,19322],['squid',3220,2240,19323],
+   ['crab',1040,2570,19331],['squid',4560,2860,19332],['shark2',6040,3100,19333],
+   ['jelly',1840,3410,19341],['squid',4380,3710,19342]
+ ];
+ for(const [key,x,y,seed] of encounters)world.fish.push(makeFish(key,x,y,seed));
+ // Boss encounters are unique: mantis shrimp in the reef maze, kraken in the predator trench.
  world.fish.push(makeFish('mantis',WORLD.w*.58,485,19401));
  world.fish.push(makeFish('kraken',WORLD.w*.53,4015,19402));
  // Mission-critical species are guaranteed so a contract can never become impossible because of random generation.
@@ -679,15 +688,15 @@ function startFishAttack(f,kind){
 function launchFishAttack(f,p){
  const prof=ATTACK_PROFILE[f.key]||ATTACK_PROFILE.brown,dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1;
  f.attackMode='lunge';f.attackT=prof.lunge;f.attackVx=dx/d*prof.speed;f.attackVy=dy/d*prof.speed;
- world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:f.key==='giant'});
- if(f.key==='giant'){world.envPulse=Math.max(world.envPulse,.85);beep(78,.12,'sawtooth')}
+ world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:f.key==='giant'||f.key==='kraken'});
+ if(f.key==='giant'||f.key==='kraken'){world.envPulse=Math.max(world.envPulse,f.key==='kraken'?1:.85);beep(f.key==='kraken'?58:78,.12,'sawtooth')}
  else if(f.key==='angler'){world.lightJam=Math.max(world.lightJam,1.15);beep(145,.07,'sawtooth')}
  else beep(190,.045)
 }
 function fishHitPlayer(f,sp,p,st,mult=1){
  if(p.inv>0)return false;const prof=ATTACK_PROFILE[f.key],dmg=Math.max(1,Math.round((sp.damage||8)*(prof?.damage||1)*mult*st.armor));
  p.hp-=dmg;p.inv=.72;f.attackCd=1.1;
- const dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1;p.vx+=dx/d*(f.key==='giant'?145:72);p.vy+=dy/d*(f.key==='giant'?145:72);
+ const dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1,bossKnock=f.key==='giant'||f.key==='kraken';p.vx+=dx/d*(bossKnock?155:72);p.vy+=dy/d*(bossKnock?155:72);
  if(f.key==='angler')world.lightJam=Math.max(world.lightJam,1.7);
  if(f.key==='giant')world.envPulse=1;
  showHint((prof?.label||'포식 생물 공격')+'! -'+dmg+' HP',760);beep(f.key==='giant'?70:105,.10,'sawtooth');return true
@@ -739,7 +748,7 @@ function updateFishAI(f,dt,p,st){
    else{f.hidden=behavior==='skittish'&&nearestKelpCover(f,64)?.d<64;tx+=(Math.sign(f.vx)||1)*(sp.speed||48)*.28;ty+=homeDy*.025}
  }else{
    // Hostile fish also hunt the ecosystem when the diver is not the closest target.
-   const prey=nearestEcoFish(f,f.key==='giant'?430:285,o=>!HOSTILE_BEHAVIORS.has(SPECIES[o.key]?.behavior));
+   const prey=nearestEcoFish(f,f.key==='giant'||f.key==='kraken'?430:285,o=>!HOSTILE_BEHAVIORS.has(SPECIES[o.key]?.behavior)&&!['sessile','megafauna','boss'].includes(SPECIES[o.key]?.motion));
    const huntPrey=prey&&prey.d<dist*.82&&f.attackMode!=='windup'&&f.attackMode!=='lunge';
    if(huntPrey){const o=prey.fish,hx=o.x-f.x,hy=o.y-f.y,hd=Math.hypot(hx,hy)||1;tx=hx/hd*(sp.speed||90)*1.12;ty=hy/hd*(sp.speed||90)*1.05;f.alert=.55;if(prey.d<34&&f.feeding<=0){o.panic=2.2;o.vx+=hx/hd*190;o.vy+=hy/hd*150;f.feeding=.9}}
    if(!huntPrey){
