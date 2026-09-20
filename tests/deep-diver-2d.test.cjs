@@ -314,7 +314,7 @@ test('Deep Diver v13 has living ecology and species-specific attack states',()=>
 });
 
 test('Deep Diver v13 makes biome hazards demand active navigation',()=>{
-  assert.match(js,/sub\.id==='currentCut'/);
+  assert.match(js,/currentCut:\{[^\n]*surge:true/);
   assert.match(js,/world\.currentBurst/);
   assert.match(js,/other\.fuse=\.18/);
   assert.match(js,/d<125\*sc&&burst>\.68/);
