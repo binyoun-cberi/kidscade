@@ -379,7 +379,7 @@ function makeFallbackUnit(u,fid){
     const halo=mesh(new THREE.TorusGeometry(.32,.035,6,20),new THREE.MeshBasicMaterial({color:0xf1ce69}),0,1.40+raise,0);
     halo.rotation.x=Math.PI/2;g.add(halo);
   }
-  const health=createHealthBar(u.hero?1.00:.72,1.60+raise);g.add(health);return {root:g,mixer:null,clips:[],anim:null,health:health,horse:horseRec};
+  const health=createHealthBar(u.hero?1.00:.72,1.60+raise);g.add(health);return {root:g,mixer:null,clips:[],anim:null,health:health,horse:horseRec,disposable:true};
 }
 function pickCharacter(u){
   if(u.hero)return "King";
@@ -710,7 +710,7 @@ function syncBuildings(g){
     ensureBuildingAura(rec,b,b.team==="player"?g.playerFaction:g.enemyFaction);
     if(b.dead){rec.root.rotation.z=.22;rec.root.position.y=-.18;}
   });
-  buildingMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);buildingMeshes.delete(id);}});
+  buildingMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);if(LOW_POWER)disposeFx(rec.root);buildingMeshes.delete(id);}});
 }
 function syncUnits(g){
   const live=new Set();
@@ -739,7 +739,7 @@ function syncUnits(g){
     if(!live.has(id)){
       if(rec.mixer){rec.mixer.stopAllAction();rec.mixer.uncacheRoot(rec.character||rec.root);mixers.delete(rec.mixer);}
       if(rec.horse?.mixer){rec.horse.mixer.stopAllAction();rec.horse.mixer.uncacheRoot(rec.horse.root);mixers.delete(rec.horse.mixer);}
-      world.remove(rec.root);unitMeshes.delete(id);
+      world.remove(rec.root);if(rec.disposable)disposeFx(rec.root);unitMeshes.delete(id);
     }
   });
 }
@@ -903,13 +903,17 @@ function updateAssaultFx(dt){
   if(assaultFx.life<=0){scene.remove(assaultFx.root);disposeFx(assaultFx.root);assaultFx=null;}
 }
 function clearBattleObjects(){
-  unitMeshes.forEach(rec=>world.remove(rec.root));unitMeshes.clear();
-  buildingMeshes.forEach(rec=>world.remove(rec.root));buildingMeshes.clear();
-  towerMeshes.forEach(rec=>world.remove(rec.root));towerMeshes.clear();
+  unitMeshes.forEach(rec=>{
+    if(rec.mixer){rec.mixer.stopAllAction();rec.mixer.uncacheRoot(rec.character||rec.root);mixers.delete(rec.mixer);}
+    if(rec.horse?.mixer){rec.horse.mixer.stopAllAction();rec.horse.mixer.uncacheRoot(rec.horse.root);mixers.delete(rec.horse.mixer);}
+    world.remove(rec.root);if(rec.disposable)disposeFx(rec.root);
+  });unitMeshes.clear();
+  buildingMeshes.forEach(rec=>{world.remove(rec.root);if(LOW_POWER)disposeFx(rec.root);});buildingMeshes.clear();
+  towerMeshes.forEach(rec=>{world.remove(rec.root);if(LOW_POWER)disposeFx(rec.root);});towerMeshes.clear();
   projectileMeshes.forEach(m=>scene.remove(m));projectileMeshes.length=0;
   fxMeshes.forEach(rec=>{scene.remove(rec.root);disposeFx(rec.root);});fxMeshes.clear();
   mixers.clear();
-  if(landmarkGroup){world.remove(landmarkGroup);landmarkGroup=null;}
+  if(landmarkGroup){world.remove(landmarkGroup);if(LOW_POWER)disposeFx(landmarkGroup);landmarkGroup=null;}
   landmarkKey="";assaultAnnounced=false;if(assaultFx){scene.remove(assaultFx.root);disposeFx(assaultFx.root);assaultFx=null;}
   previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;
 }
