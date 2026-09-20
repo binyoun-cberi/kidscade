@@ -82,13 +82,13 @@ test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
   assert.equal(game.title,'약수 타워 디펜스');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=8');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=9');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=8');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=9');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
@@ -135,6 +135,16 @@ test('v8 uses a cohesive eco-city battlefield with dependency-free camera contro
   assert.match(runtime,/bgm\.loop=true/);
   assert.match(runtime,/bgm\.volume=\.14/);
   assert.match(runtime,/visibilitychange/);
+});
+
+test('v9 exposes direct 1x to 16x speed choices and substeps high-speed simulation',()=>{
+  for(const speed of [1,2,4,8,16]) assert.match(html,new RegExp('data-speed="'+speed+'"'));
+  assert.match(runtime,/const GAME_SPEEDS=\[1,2,4,8,16\]/);
+  assert.match(runtime,/MAX_SIM_STEP=\.05/);
+  assert.match(runtime,/Math\.ceil\(scaledDt\/MAX_SIM_STEP\)/);
+  assert.match(runtime,/for\(let i=0;i<steps;i\+\+\)update\(simStep\)/);
+  assert.match(runtime,/function setGameSpeed\(speed\)/);
+  assert.match(css,/\.speedMenu/);
 });
 
 test('required CC-BY credit stays visible',()=>{
