@@ -65,6 +65,11 @@ test('word-chain arena uses the bundled Korean Basic Dictionary', () => {
   assert.match(html, /KidscadeWordDB\.candidates/);
   assert.match(html, /27,832/);
   assert.match(html, /12초/);
+  assert.match(html, /낱말봇 대결/);
+  assert.match(html, /1:1 온라인/);
+  assert.match(html, /다대다 온라인/);
+  assert.match(html, /multiplayer\.html\?mode=duel/);
+  assert.match(html, /multiplayer\.html\?mode=multi/);
   assert.doesNotMatch(html, /\/api\/wordchain/);
 
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
