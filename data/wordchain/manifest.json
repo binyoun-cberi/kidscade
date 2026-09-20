@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "format": "newline-text",
+  "total": 336,
+  "buckets": {
+    "g": {
+      "label": "ㄱ",
+      "count": 65,
+      "file": "bucket-g.txt"
+    },
+    "gg": {
+      "label": "ㄲ",
+      "count": 3,
+      "file": "bucket-gg.txt"
+    },
+    "n": {
+      "label": "ㄴ",
+      "count": 16,
+      "file": "bucket-n.txt"
+    },
+    "d": {
+      "label": "ㄷ",
+      "count": 21,
+      "file": "bucket-d.txt"
+    },
+    "dd": {
+      "label": "ㄸ",
+      "count": 2,
+      "file": "bucket-dd.txt"
+    },
+    "r": {
+      "label": "ㄹ",
+      "count": 2,
+      "file": "bucket-r.txt"
+    },
+    "m": {
+      "label": "ㅁ",
+      "count": 24,
+      "file": "bucket-m.txt"
+    },
+    "b": {
+      "label": "ㅂ",
+      "count": 38,
+      "file": "bucket-b.txt"
+    },
+    "bb": {
+      "label": "ㅃ",
+      "count": 1,
+      "file": "bucket-bb.txt"
+    },
+    "s": {
+      "label": "ㅅ",
+      "count": 36,
+      "file": "bucket-s.txt"
+    },
+    "ss": {
+      "label": "ㅆ",
+      "count": 0,
+      "file": "bucket-ss.txt"
+    },
+    "ng": {
+      "label": "ㅇ",
+      "count": 40,
+      "file": "bucket-ng.txt"
+    },
+    "j": {
+      "label": "ㅈ",
+      "count": 28,
+      "file": "bucket-j.txt"
+    },
+    "jj": {
+      "label": "ㅉ",
+      "count": 0,
+      "file": "bucket-jj.txt"
+    },
+    "ch": {
+      "label": "ㅊ",
+      "count": 16,
+      "file": "bucket-ch.txt"
+    },
+    "k": {
+      "label": "ㅋ",
+      "count": 10,
+      "file": "bucket-k.txt"
+    },
+    "t": {
+      "label": "ㅌ",
+      "count": 7,
+      "file": "bucket-t.txt"
+    },
+    "p": {
+      "label": "ㅍ",
+      "count": 11,
+      "file": "bucket-p.txt"
+    },
+    "h": {
+      "label": "ㅎ",
+      "count": 16,
+      "file": "bucket-h.txt"
+    }
+  }
+}
