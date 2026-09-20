@@ -390,6 +390,9 @@ function classRingColor(u){
   if(u.cls==="창병")return 0x6f9eaa;
   return 0xa79578;
 }
+function heroAuraColor(skill){
+  return ({founder:0xe0b85b,aura:0xf1cf66,siege:0xd48b55,trap:0x8d75b8,guard:0x6e9bc1,heal:0x73af78,support:0x65a79e,laststand:0xd66a55,vision:0x9c92cf,combo:0xe2c763,martyr:0xe18a58,late:0xd6b14f})[skill]||0xe0c56a;
+}
 function addUnitSilhouette(holder,u,fid){
   const fc=factionColor(fid);
   const baseRing=mesh(new THREE.RingGeometry(u.hero?.28:.22,u.hero?.34:.27,24),new THREE.MeshBasicMaterial({color:classRingColor(u),transparent:true,opacity:u.hero?.75:.34,side:THREE.DoubleSide,depthWrite:false}),0,.015,0);
@@ -398,6 +401,12 @@ function addUnitSilhouette(holder,u,fid){
   holder.add(pole);
   const banner=mesh(new THREE.PlaneGeometry(.32,.19),new THREE.MeshBasicMaterial({color:fc,side:THREE.DoubleSide}),-.08,u.cls==="기병"?1.80:1.36,.06);
   banner.rotation.y=Math.PI/2;holder.add(banner);
+  if(u.hero){
+    const aura=mesh(new THREE.RingGeometry(.48,.57,36),new THREE.MeshBasicMaterial({color:heroAuraColor(u.card?.skill),transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false}),0,.022,0);
+    aura.rotation.x=-Math.PI/2;aura.userData.heroAura=true;holder.add(aura);
+  }
+  const buffRing=mesh(new THREE.RingGeometry(.31,.36,28),new THREE.MeshBasicMaterial({color:0xf0d16f,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}),0,.019,0);
+  buffRing.rotation.x=-Math.PI/2;buffRing.userData.buffRing=true;holder.add(buffRing);
   if(u.cls==="창병"){
     const crest=mesh(new THREE.ConeGeometry(.13,.19,6),mat(0x4a4035),0,u.cls==="기병"?1.72:1.25,0);holder.add(crest);
   }else if(u.cls==="보병"){
@@ -556,6 +565,8 @@ function syncFactionLandmarks(g){
   const key=g.playerFaction+"|"+g.enemyFaction;if(key===landmarkKey)return;
   landmarkKey=key;if(landmarkGroup)world.remove(landmarkGroup);
   landmarkGroup=new THREE.Group();
+  const enemyBand=mesh(new THREE.PlaneGeometry(20.6,5.25),new THREE.MeshBasicMaterial({color:factionColor(g.enemyFaction),transparent:true,opacity:.055,side:THREE.DoubleSide,depthWrite:false}),0,.016,-3.85);enemyBand.rotation.x=-Math.PI/2;landmarkGroup.add(enemyBand);
+  const playerBand=mesh(new THREE.PlaneGeometry(20.6,5.25),new THREE.MeshBasicMaterial({color:factionColor(g.playerFaction),transparent:true,opacity:.060,side:THREE.DoubleSide,depthWrite:false}),0,.016,3.85);playerBand.rotation.x=-Math.PI/2;landmarkGroup.add(playerBand);
   const enemy=factionLandmark(g.enemyFaction);enemy.position.set(-7.2,0,-3.25);enemy.scale.setScalar(.90);landmarkGroup.add(enemy);
   const player=factionLandmark(g.playerFaction);player.position.set(7.2,0,3.25);player.rotation.y=Math.PI;player.scale.setScalar(.90);landmarkGroup.add(player);
   world.add(landmarkGroup);
@@ -653,7 +664,20 @@ function syncUnits(g){
     const p=canvasToWorld(u.x,u.y);rec.root.position.x=p.x;rec.root.position.z=p.z;rec.root.position.y=u.spawnTimer>0?Math.max(0,.18-u.spawnTimer*.35):0;
     if(u.target&&u.target.x!=null){const q=canvasToWorld(u.target.x,u.target.y);rec.root.rotation.y=Math.atan2(q.x-p.x,q.z-p.z)+Math.PI;}
     else rec.root.rotation.y=u.team==="player"?Math.PI:0;
-    setAnimation(rec,animName(u));setHorseAnimation(rec.horse,u.state==="move");if(rec.horse&&!rec.horse.mixer&&rec.horse.root.userData.legs){const gait=performance.now()*.012;rec.horse.root.userData.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(u.state==="move"?.42:.05));}const spawnScale=u.spawnTimer>0?THREE.MathUtils.clamp(1-u.spawnTimer/.42,.25,1):1;rec.root.scale.setScalar((u.hero?1.12:1)*spawnScale);updateHealthBar(rec.health,u.hp/u.maxHp,u.team);setHitFlash(rec.root,u.hitTimer>0);
+    setAnimation(rec,animName(u));setHorseAnimation(rec.horse,u.state==="move");if(rec.horse&&!rec.horse.mixer&&rec.horse.root.userData.legs){const gait=performance.now()*.012;rec.horse.root.userData.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(u.state==="move"?.42:.05));}
+    const now=performance.now();
+    rec.root.traverse(function(o){
+      if(o.userData.heroAura){const pulse=1+Math.sin(now*.004)*.07;o.scale.setScalar(pulse);o.material.opacity=.18+Math.sin(now*.004)*.05;}
+      if(o.userData.buffRing){
+        const buffed=(u.buffUntil&&now<u.buffUntil)||u.activeGuardUntil&&now<u.activeGuardUntil||u.siegeBuffUntil&&now<u.siegeBuffUntil;
+        o.material.opacity=buffed?.42:0;
+        if(u.activeGuardUntil&&now<u.activeGuardUntil)o.material.color.setHex(0x70a7cf);
+        else if((u.buffSpeed||1)<.8)o.material.color.setHex(0x9276b5);
+        else o.material.color.setHex(0xf0d16f);
+        if(buffed)o.scale.setScalar(1+Math.sin(now*.006)*.08);
+      }
+    });
+    const spawnScale=u.spawnTimer>0?THREE.MathUtils.clamp(1-u.spawnTimer/.42,.25,1):1;rec.root.scale.setScalar((u.hero?1.12:1)*spawnScale);updateHealthBar(rec.health,u.hp/u.maxHp,u.team);setHitFlash(rec.root,u.hitTimer>0);
   });
   unitMeshes.forEach(function(rec,id){if(!live.has(id)){if(rec.mixer)mixers.delete(rec.mixer);world.remove(rec.root);unitMeshes.delete(id);}});
 }
@@ -679,16 +703,16 @@ function syncPreview(g){
   previewRing.material.color.setHex(color);previewFill.material.color.setHex(color);
   const radius=card.kind==="spell"?(card.id==="cavalry_charge"?4.4:3.7):(card.kind==="building"?.78:.58);
   previewRing.scale.setScalar(radius/.5);previewFill.scale.setScalar(radius/.5);
+  const activeHero=card.kind==="hero"&&g.isHeroAlive("player",card.id);
   let tacticalRadius=0;
-  if(card.kind==="spell")tacticalRadius=180/48;
+  if(activeHero)tacticalRadius=190/48;
+  else if(card.kind==="spell")tacticalRadius=180/48;
   else if(card.kind==="building"&&card.damage>0)tacticalRadius=(card.range||120)/48;
   else if(card.kind==="unit"&&(card.range||0)>80)tacticalRadius=card.range/48;
   if(tacticalRadius>0){
     rangePreview.visible=true;rangePreview.position.x=q.x;rangePreview.position.z=q.z;rangePreview.scale.setScalar(tacticalRadius);
-    rangePreview.material.color.setHex(rule.ok?0xf0d27a:0xe85b50);
+    rangePreview.material.color.setHex(rule.ok?(activeHero?0xe8c862:0xf0d27a):0xe85b50);
   }else rangePreview.visible=false;
-
-  const activeHero=card.kind==="hero"&&g.isHeroAlive("player",card.id);
   if((card.kind==="unit"||card.kind==="hero")&&!activeHero){
     const f=g.formationFor("player",p.y);
     const bands={front:{z:1.65,d:1.55,c:0xc98b61},mid:{z:3.25,d:1.62,c:0x7d9fc4},rear:{z:4.92,d:1.58,c:0x77946a}};
