@@ -5,19 +5,8 @@ import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
 import { handleMultiplayerRequest } from './multiplayer.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
-import { handleWordchainRequest } from './wordchain.mjs';
-import { ensureWordchainSchema } from './wordchain-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
-const WORDCHAIN_PREFIX = '/api/wordchain/';
-
-function wordchainDatabaseError(error) {
-  console.error('wordchain database bootstrap failed', error);
-  return Response.json(
-    { ok: false, error: 'wordchain_database_not_ready' },
-    { status: 503, headers: { 'cache-control': 'no-store' } }
-  );
-}
 
 function multiplayerDatabaseError(error) {
   console.error('multiplayer database bootstrap failed', error);
@@ -33,13 +22,6 @@ export default {
     if (teacherResponse) return teacherResponse;
 
     const url = new URL(request.url);
-    if (url.pathname.startsWith(WORDCHAIN_PREFIX)) {
-      try {
-        await ensureWordchainSchema(env);
-      } catch (error) {
-        return wordchainDatabaseError(error);
-      }
-    }
 
     if (url.pathname.startsWith(MULTIPLAYER_PREFIX)) {
       try {
@@ -54,8 +36,6 @@ export default {
       }
     }
 
-    const wordchainResponse = await handleWordchainRequest(request, env);
-    if (wordchainResponse) return wordchainResponse;
 
     const multiplayerResponse = await handleMultiplayerRequest(request, env);
     if (multiplayerResponse) return multiplayerResponse;
