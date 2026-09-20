@@ -121,7 +121,7 @@ jobs:
         run: node --test tests/maratang-selfbar.test.cjs
       - name: Run Bunsik Kitchen tests
         run: node --test tests/bunsik-kitchen.test.cjs
-      - name: Run Deep Diver v12 tests
+      - name: Run Deep Diver v13 tests
         run: node --test tests/deep-diver-2d.test.cjs
 
       - name: Run Code Breaker DX tests
