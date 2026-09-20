@@ -183,7 +183,9 @@ test('Deep Diver v10 separates biome ecology and hostile behavior',()=>{
   assert.match(js,/behavior:'ambush'/);
   assert.match(js,/behavior:'territorial'/);
   assert.match(js,/function updateFishAI/);
-  assert.match(js,/sense=f\.key==='giant'\?520:360/);
+  assert.match(js,/const ATTACK_PROFILE=/);
+  assert.match(js,/giant:\{sense:590/);
+  assert.match(js,/hunter:\{sense:390/);
 });
 
 test('Deep Diver v10 makes depth itself more dangerous',()=>{
