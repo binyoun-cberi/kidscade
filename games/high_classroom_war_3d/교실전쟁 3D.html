@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>교실전쟁 3D v5.0 - 에셋 전장 리워크</title>
+<title>교실전쟁 3D v5.1 - 소형 편제 전투 리밸런스</title>
 <style>
 :root{
   --ink:#07111f;--panel:rgba(8,18,32,.88);--line:rgba(255,255,255,.14);
@@ -89,7 +89,7 @@ background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#083344;box-shadow:0 10
   <div id="overlay">
     <div class="panel" id="panel">
       <span class="eyebrow">KIDSCADE · 3D ENDLESS MATH DEFENSE</span>
-      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">v5.0 · 실제 3D 학생 에셋 · 관문 결과 미리보기</div>
+      <h1>교실전쟁 3D</h1><div style="font-size:11px;color:#7dd3fc;font-weight:900;margin:-2px 0 8px">v5.1 · 소형 3D 편제 · 승급 화력 보정 · 전술 충돌</div>
       <div class="lead">
         책상 사이 통로를 지키는 학생 부대. 수학 관문을 골라 화력을 키우고,
         적이 교실 방어선을 넘지 못하게 최대한 오래 버티세요.
@@ -353,7 +353,7 @@ function cloneClassroomCharacter(key,{height=1.55,facing=Math.PI,ring=0x38bdf8,i
     };
   }
 
-  addAssetRing(root,ring,Math.max(.34,height*.24));
+  addAssetRing(root,ring,Math.max(.25,height*.22));
   playClassroomCharacterAnim(root,initialAnim);
   return root;
 }
@@ -364,7 +364,7 @@ function rankAssetCharacter(tier){
   ][tier]||["male-a","female-a"];
   const colors=[0x38bdf8,0x0ea5e9,0x22c55e,0x8b5cf6,0xf59e0b];
   const available=keys.filter(k=>classroomAssetTemplates.has(k));if(!available.length)return null;
-  return cloneClassroomCharacter(pick(available),{height:1.45+tier*.08,facing:Math.PI,ring:colors[tier]||0x38bdf8,initialAnim:"idle"});
+  return cloneClassroomCharacter(pick(available),{height:1.10+tier*.055,facing:Math.PI,ring:colors[tier]||0x38bdf8,initialAnim:"idle"});
 }
 function enemyAssetCharacter(type){
   const cfg={
@@ -551,7 +551,7 @@ function createStudent(){
   const gun=box(.11,.11,.56,0xfacc15,.55,.04);gun.position.set(.25,.66,-.25);gun.rotation.x=.04;g.add(gun);
   const tip=box(.12,.12,.14,0xef4444,.55,.02);tip.position.set(.25,.66,-.58);g.add(tip);
   const leg1=box(.12,.38,.12,0x1e3a8a,.75,0),leg2=leg1.clone();leg1.position.set(-.12,.16,0);leg2.position.set(.12,.16,0);g.add(leg1,leg2);
-  g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.userData.tip=tip;g.scale.setScalar(.9);
+  g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.userData.tip=tip;g.scale.setScalar(.72);
   return g;
 }
 
@@ -569,7 +569,7 @@ function createEliteStudent(){
   const leg1=box(.15,.45,.15,0x172554,.65,.02),leg2=leg1.clone();
   leg1.position.set(-.15,.22,0);leg2.position.set(.15,.22,0);g.add(leg1,leg2);
   g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.userData.elite=true;
-  g.scale.setScalar(.98);
+  g.scale.setScalar(.76);
   return g;
 }
 
@@ -582,7 +582,7 @@ function createNcoStudent(){
   const badge=box(.12,.13,.04,0xfacc15,.32,.12);badge.position.set(.13,1.44,.20);g.add(badge);
   const stripe1=box(.32,.05,.03,0xfacc15,.3,.08),stripe2=stripe1.clone();
   stripe1.position.set(0,.79,.31);stripe2.position.set(0,.70,.31);g.add(stripe1,stripe2);
-  g.scale.setScalar(1.03);g.userData.rankTier=2;
+  g.scale.setScalar(.79);g.userData.rankTier=2;
   return g;
 }
 
@@ -601,7 +601,7 @@ function createOfficerStudent(){
   const ep1=box(.24,.10,.34,0xfacc15,.28,.18),ep2=ep1.clone();
   ep1.position.set(-.42,1.02,0);ep2.position.set(.42,1.02,0);g.add(ep1,ep2);
   g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.userData.rankTier=3;
-  g.scale.setScalar(1.04);
+  g.scale.setScalar(.82);
   return g;
 }
 
@@ -623,7 +623,7 @@ function createGeneralStudent(){
   const ep1=box(.30,.10,.38,0xf59e0b,.25,.18),ep2=ep1.clone();
   ep1.position.set(-.48,1.08,0);ep2.position.set(.48,1.08,0);g.add(ep1,ep2);
   g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.userData.rankTier=4;
-  g.scale.setScalar(1.08);
+  g.scale.setScalar(.85);
   return g;
 }
 
@@ -646,7 +646,7 @@ function totalArmy(){return player.soldiers+player.elites*10+player.ncos*100+pla
 function highestRankIndex(){if(player.generals)return 4;if(player.officers)return 3;if(player.ncos)return 2;if(player.elites)return 1;return 0;}
 function rankNameForTotal(n){if(n>=10000)return "장군";if(n>=1000)return "장교";if(n>=100)return "부사관";if(n>=10)return "엘리트";return "병사";}
 function removeArmyAgents(){const lists=[player.agents,player.eliteAgents,player.ncoAgents,player.officerAgents,player.generalAgents];for(const list of lists){for(const a of list)removeObject(player.group,a,true);list.length=0;}}
-function lineUp(list,z,span=6.2,rowStep=.96){
+function lineUp(list,z,span=5.0,rowStep=.76){
   const n=list.length;if(!n)return;
   const cols=Math.min(5,n);
   for(let i=0;i<n;i++){
@@ -658,21 +658,29 @@ function lineUp(list,z,span=6.2,rowStep=.96){
     a.position.set(x,ground,z-row*rowStep);
   }
 }
-function rebuildArmy(){
-  removeArmyAgents();
+function syncRankAgents(count,factory,list){
+  while(list.length<count){const a=factory();list.push(a);player.group.add(a);}
+  while(list.length>count){const a=list.pop();removeObject(player.group,a,true);}
+}
+function rebuildArmy(force=false){
+  if(force)removeArmyAgents();
   const specs=[
-    [player.soldiers,createStudent,player.agents,1.35,5.8,.94],
-    [player.elites,createEliteStudent,player.eliteAgents,.10,6.0,.98],
-    [player.ncos,createNcoStudent,player.ncoAgents,-1.18,6.1,1.02],
-    [player.officers,createOfficerStudent,player.officerAgents,-2.52,6.2,1.05],
-    [player.generals,createGeneralStudent,player.generalAgents,-3.92,6.3,1.08]
+    [player.soldiers,createStudent,player.agents,1.48,4.65,.72],
+    [player.elites,createEliteStudent,player.eliteAgents,.42,4.75,.74],
+    [player.ncos,createNcoStudent,player.ncoAgents,-.66,4.85,.76],
+    [player.officers,createOfficerStudent,player.officerAgents,-1.78,4.95,.78],
+    [player.generals,createGeneralStudent,player.generalAgents,-2.94,5.05,.80]
   ];
   for(const [count,factory,list,z,span,rowStep] of specs){
-    for(let i=0;i<count;i++){
-      const a=factory();list.push(a);player.group.add(a);
-    }
+    syncRankAgents(count,factory,list);
     lineUp(list,z,span,rowStep);
   }
+}
+function armyHalfWidth(){
+  const all=[...player.agents,...player.eliteAgents,...player.ncoAgents,...player.officerAgents,...player.generalAgents];
+  let half=.48;
+  for(const a of all)half=Math.max(half,Math.abs(a.position.x)+.30);
+  return Math.min(3.25,half);
 }
 function setArmyTotal(value,{announce=false,reason=""}={}){const old=totalArmy(),n=clamp(Math.floor(Number(value)||0),0,99999),d=decomposeArmy(n);Object.assign(player,d);player.maxArmy=Math.max(player.maxArmy||0,n);player.highestRank=Math.max(player.highestRank||0,highestRankIndex());rebuildArmy();updateHud();if(announce&&n!==old){const delta=n-old,sign=delta>0?"+":"";floatText(`${sign}${delta.toLocaleString()}`,player.group.position.x,1.7,5.25,delta>=0?"#86efac":"#fda4af");if(reason)showToast(reason);}}
 function rankSummaryText(){const parts=[];if(player.generals)parts.push(`장군 ${player.generals}`);if(player.officers)parts.push(`장교 ${player.officers}`);if(player.ncos)parts.push(`부사관 ${player.ncos}`);if(player.elites)parts.push(`엘리트 ${player.elites}`);if(player.soldiers||!parts.length)parts.push(`병사 ${player.soldiers}`);return parts.join(" · ");}
@@ -691,16 +699,17 @@ function createEnemyModel(type="normal"){
   if(type==="tank"||type==="boss"){const pack=box(.88,.66,.34,type==="boss"?0x7c2d12:0x475569,.58,.08);pack.position.set(0,.74,-.30);g.add(pack);}if(type==="elite"||type==="boss"){const crest=box(.62,.08,.45,cfg.trim,.25,.14);crest.position.set(0,1.53,.03);g.add(crest);}g.userData.leg1=leg1;g.userData.leg2=leg2;g.userData.gun=gun;g.scale.setScalar(cfg.scale);return g;
 }
 function enemyStats(type){
-  const p=Math.max(1,state.period),grow=Math.pow(1.24,p-1);
-  const map={normal:{hp:6,sp:2.7,dmg:1,score:10},runner:{hp:4,sp:4.15,dmg:1,score:14},tank:{hp:18,sp:1.75,dmg:3,score:28},elite:{hp:42,sp:2.15,dmg:5,score:55},boss:{hp:420,sp:1.10,dmg:12,score:520}}[type];
-  const hp=type==="boss"?Math.ceil(map.hp*Math.pow(1.32,p-1)+Math.sqrt(Math.max(1,player.maxArmy||1))*22):Math.ceil(map.hp*grow);
+  const p=Math.max(1,state.period),grow=Math.pow(1.24,p-1),army=Math.max(1,player.maxArmy||1);
+  const map={normal:{hp:6,sp:2.7,dmg:1,score:10,army:.20},runner:{hp:4,sp:4.15,dmg:1,score:14,army:.14},tank:{hp:18,sp:1.75,dmg:3,score:28,army:.65},elite:{hp:42,sp:2.15,dmg:5,score:55,army:1.40},boss:{hp:420,sp:1.10,dmg:12,score:520,army:8.0}}[type];
+  const periodHp=type==="boss"?map.hp*Math.pow(1.32,p-1)+Math.sqrt(army)*22:map.hp*grow;
+  const hp=Math.ceil(Math.max(periodHp,army*map.army));
   return {hp,speed:map.sp*(1+Math.min(.35,(p-1)*.025)),baseDmg:map.dmg,score:map.score};
 }
 function addHealthBar(enemy){const g=new THREE.Group(),bg=box(1.20,.07,.04,0x111827,.9,0),fill=box(1.14,.045,.045,enemy.type==="boss"?0xf59e0b:0xef4444,.4,0),barY=(enemy.group.userData.visualHeight||1.5)+.42;bg.position.y=barY;fill.position.set(0,barY,.03);g.add(bg,fill);enemy.group.add(g);enemy.hpFill=fill;}
 function spawnEnemy(type=null,x=null){
   if(!type){const r=Math.random();type=state.period>=4&&r<.08?"elite":state.period>=2&&r<.22?"tank":r<.43?"runner":"normal";}
-  const st=enemyStats(type),group=createEnemyModel(type);
-  const e={uid:++combatUid,type,group,x:x??rand(-3.85,3.85),z:-56,hp:st.hp,maxHp:st.hp,speed:st.speed,baseDmg:st.baseDmg,score:st.score,dead:false,t:rand(0,6.28),phase70:false,phase40:false,phase18:false,hitRadius:type==="boss"?1.18:type==="tank"?.82:.62};
+  const st=enemyStats(type),group=createEnemyModel(type),spawnX=x??rand(-3.85,3.85);
+  const e={uid:++combatUid,type,group,x:spawnX,anchorX:spawnX,weave:rand(0,Math.PI*2),z:-56,hp:st.hp,maxHp:st.hp,speed:st.speed,baseDmg:st.baseDmg,score:st.score,dead:false,t:rand(0,6.28),phase70:false,phase40:false,phase18:false,hitRadius:type==="boss"?1.18:type==="tank"?.82:.62};
   group.position.set(e.x,group.userData?.groundY??0,e.z);actorRoot.add(group);addHealthBar(e);enemies.push(e);
   if(type==="boss"){showBanner("🚨 강화 보스 출현!","HP "+e.hp.toLocaleString()+" · 체력 구간마다 전선 위협을 꺼냅니다.",2.4);tone("boss");}
   return e;
@@ -718,7 +727,8 @@ function damageEnemy(e,amount,hitX=null){
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){if(!e||e.dead)return;e.dead=true;state.kills++;if(e.type==="boss")state.bossKills++;burst(e.x,1.0,e.z,e.type==="boss"?0xf59e0b:0xfb7185,e.type==="boss"?22:9,e.type==="boss"?3.5:2.0);shockwave(e.x,e.z,e.type==="boss"?0xf59e0b:0x67e8f9);floatText(e.type==="boss"?"보스 격파!":"+1",e.x,1.9,e.z,e.type==="boss"?"#fde68a":"#fda4af");removeObject(actorRoot,e.group,true);}
-const RANK_POWER=[1,3,9,27,81];
+// Promotion keeps decimal-place strength monotonic and adds a small rank bonus.
+const RANK_POWER=RANKS.map((r,i)=>(RANKS[0].fireRate*r.weight/r.fireRate)*Math.pow(1.06,i));
 const PROJECTILE_SPECS=[
   {speed:29,pierce:0,splash:0,scale:.90},
   {speed:32,pierce:0,splash:0,scale:1.02},
@@ -760,7 +770,7 @@ function createHomeworkBombModel(){
   const spark=sphere(.13,0xfbbf24);spark.position.set(.48,1.77,0);spark.material.emissive?.setHex?.(0xf59e0b);if(spark.material)spark.material.emissiveIntensity=1.8;g.add(spark);
   return g;
 }
-function obstacleHp(type){const p=Math.max(1,state.period),army=Math.sqrt(Math.max(1,player.maxArmy||1));return type==="textbook"?Math.ceil(120*Math.pow(1.65,p-1)+army*15):Math.ceil(58*Math.pow(1.46,p-1)+army*6);}
+function obstacleHp(type){const p=Math.max(1,state.period),army=Math.max(1,player.maxArmy||1),periodHp=type==="textbook"?120*Math.pow(1.65,p-1):58*Math.pow(1.46,p-1),armyHp=army*(type==="textbook"?2.8:1.35);return Math.ceil(Math.max(periodHp,armyHp));}
 function spawnTextbookWall(z=-40,forced=false){
   if(!forced&&obstacles.some(o=>!o.dead&&o.type==="textbook"))return null;
   const group=createTextbookWallModel(),hp=obstacleHp("textbook"),o={uid:++combatUid,type:"textbook",group,x:0,z,hp,maxHp:hp,dead:false,halfW:3.9,hitRadius:.72,speed:.45+state.period*.055};
@@ -833,16 +843,44 @@ function updateShots(dt){
 }
 function gateChoiceSet(good,count){const out=[];if(good){const add1=irand(2+Math.min(4,state.period),6+Math.min(8,state.period*2)),add2=irand(3,9+state.period);out.push({label:`+${add1}`,kind:"add",v:add1},{label:"×2",kind:"mul",v:2});if(count===3)out.push(state.period>=3&&Math.random()<.45?{label:`+(${Math.min(6,state.period+1)}×2)`,kind:"add",v:Math.min(6,state.period+1)*2}:{label:`+${add2}`,kind:"add",v:add2});}else{const sub=irand(2,Math.max(4,Math.min(18,6+state.period*2)));out.push({label:`-${sub}`,kind:"sub",v:sub},{label:"÷2",kind:"div",v:2});if(count===3){if(Math.random()<.5){const v=irand(3,12);out.push({label:`-${v}`,kind:"sub",v});}else out.push({label:"÷3",kind:"div",v:3});}}return out;}
 function gateResult(choice,n){if(choice.kind==="add")return n+choice.v;if(choice.kind==="sub")return n-choice.v;if(choice.kind==="mul")return n*choice.v;if(choice.kind==="div")return Math.floor(n/choice.v);return n;}
-function gatePanel(choice,width,good){const before=totalArmy(),after=clamp(gateResult(choice,before),1,99999),tex=textTexture([choice.label,`${before.toLocaleString()} → ${after.toLocaleString()}명`],{bg:good?"#14532d":"#7f1d1d",accent:good?"#86efac":"#fda4af",w:512,h:220});tex.userData.ownedTexture=true;const root=new THREE.Group(),panel=new THREE.Mesh(new THREE.PlaneGeometry(width,2.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));panel.position.y=2.2;root.add(panel);const l=box(.08,3.1,.08,good?0x4ade80:0xfb7185,.35,.15),r=l.clone();l.position.set(-width/2,1.55,0);r.position.set(width/2,1.55,0);root.add(l,r);root.userData.texture=tex;return root;}
-function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(good?"강화 관문! 계산 결과를 보고 가장 좋은 통로를 고르세요":"위험 관문! 현재 병력에서 손실이 가장 작은 통로를 고르세요",1.25);}
+function refreshGatePanel(root,force=false){
+  const before=totalArmy(),choice=root.userData.choice,good=root.userData.good,reveal=root.userData.reveal;
+  const after=clamp(gateResult(choice,before),1,99999),key=`${before}|${after}|${reveal?1:0}`;
+  if(!force&&root.userData.previewKey===key)return;
+  root.userData.previewKey=key;
+  const c=root.userData.canvas,g=c.getContext("2d");
+  g.clearRect(0,0,c.width,c.height);g.fillStyle=good?"#14532d":"#7f1d1d";g.fillRect(0,0,c.width,c.height);
+  g.strokeStyle=good?"#86efac":"#fda4af";g.lineWidth=10;g.strokeRect(6,6,c.width-12,c.height-12);
+  g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff";g.font="900 92px system-ui";g.fillText(choice.label,c.width/2,c.height*.43);
+  g.font="800 34px system-ui";g.fillStyle="#dbeafe";
+  g.fillText(reveal?`${before.toLocaleString()} → ${after.toLocaleString()}명`:`현재 ${before.toLocaleString()}명 · 암산!`,c.width/2,c.height*.78);
+  root.userData.texture.needsUpdate=true;
+}
+function gatePanel(choice,width,good,reveal){
+  const c=document.createElement("canvas");c.width=512;c.height=220;
+  const tex=new THREE.CanvasTexture(c);tex.userData.ownedTexture=true;
+  if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;
+  else if("encoding" in tex&&THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
+  tex.minFilter=THREE.LinearFilter;
+  const root=new THREE.Group(),panel=new THREE.Mesh(new THREE.PlaneGeometry(width,2.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
+  panel.position.y=2.2;root.add(panel);
+  const l=box(.08,3.1,.08,good?0x4ade80:0xfb7185,.35,.15),r=l.clone();l.position.set(-width/2,1.55,0);r.position.set(width/2,1.55,0);root.add(l,r);
+  Object.assign(root.userData,{texture:tex,canvas:c,choice,good,reveal,previewKey:""});refreshGatePanel(root,true);return root;
+}
+function spawnGate(){const count=state.period>=2&&Math.random()<.42?3:2,safeOpening=(state.gatesPassed||0)<3||totalArmy()<8||state.t<18,good=safeOpening||Math.random()<.72,choices=gateChoiceSet(good,count),bases=count===2?[-2.15,2.15]:[-2.85,0,2.85],width=count===2?3.7:2.45,reveal=(state.gatesPassed||0)<2,gate={z:-47,speed:5.9+Math.min(2.0,state.period*.22),good,resolved:false,phase:rand(0,6.28),items:[]};choices.forEach((choice,i)=>{const mesh=gatePanel(choice,width,good,reveal);mesh.position.set(bases[i],0,gate.z);actorRoot.add(mesh);gate.items.push({choice,mesh,baseX:bases[i],dir:i%2?1:-1});});gates.push(gate);showToast(reveal?"연습 관문! 결과 미리보기로 규칙을 익혀보세요":good?"강화 관문! 현재 병력으로 결과를 계산해 좋은 통로를 고르세요":"위험 관문! 손실이 가장 작은 통로를 암산해 고르세요",1.25);}
 function applyGate(item){const before=totalArmy(),after=clamp(gateResult(item.choice,before),1,99999);state.gatesPassed=(state.gatesPassed||0)+1;setArmyTotal(after,{announce:true,reason:`${item.choice.label} → ${after.toLocaleString()}명`});tone("gate");if(after>before&&rankNameForTotal(after)!==rankNameForTotal(before))showBanner(`🎖 ${rankNameForTotal(after)} 승급!`,rankSummaryText(),1.6);}
-function updateGates(dt){for(const g of gates){g.z+=g.speed*dt;g.items.forEach(it=>{it.mesh.position.x=it.baseX;it.mesh.position.z=g.z;});if(!g.resolved&&g.z>=GATE_TRIGGER_Z){let picked=g.items[0],best=Infinity;for(const it of g.items){const d=Math.abs(player.group.position.x-it.mesh.position.x);if(d<best){best=d;picked=it;}}g.resolved=true;applyGate(picked);g.items.forEach(it=>{if(it!==picked)it.mesh.visible=false;});}}gates=gates.filter(g=>{if(g.z<PLAYER_LINE_Z+1.8)return true;for(const it of g.items){const tex=it.mesh.userData.texture;actorRoot.remove(it.mesh);disposeObject(it.mesh);tex?.dispose?.();}return false;});}
+function updateGates(dt){for(const g of gates){g.z+=g.speed*dt;g.items.forEach(it=>{it.mesh.position.x=it.baseX;it.mesh.position.z=g.z;if(!g.resolved)refreshGatePanel(it.mesh);});if(!g.resolved&&g.z>=GATE_TRIGGER_Z){let picked=g.items[0],best=Infinity;for(const it of g.items){const d=Math.abs(player.group.position.x-it.mesh.position.x);if(d<best){best=d;picked=it;}}g.resolved=true;applyGate(picked);g.items.forEach(it=>{if(it!==picked)it.mesh.visible=false;});}}gates=gates.filter(g=>{if(g.z<PLAYER_LINE_Z+1.8)return true;for(const it of g.items){const tex=it.mesh.userData.texture;actorRoot.remove(it.mesh);disposeObject(it.mesh);tex?.dispose?.();}return false;});}
 function armyCollisionLoss(e){const n=totalArmy();if(n<=0)return false;const loss=Math.min(n,Math.max(1,Math.ceil(e.hp/(e.type==="boss"?10:5))));setArmyTotal(n-loss,{announce:true,reason:`전선 충돌 -${loss}명`});burst(e.x,.8,e.z,0xf97316,10,2.2);shockwave(e.x,e.z,0xfb7185);state.camShake=Math.max(state.camShake,0.18);tone("hurt");killEnemy(e);return true;}
 function hitBase(e){state.baseHp=Math.max(0,state.baseHp-e.baseDmg);ui.flash.style.opacity=".72";state.flash=.22;state.camShake=Math.max(state.camShake,.28);tone("hurt");floatText(`-${e.baseDmg}`,e.x,1.8,8.6,"#fda4af");burst(e.x,.7,8.6,0xef4444,12,2.8);removeObject(actorRoot,e.group,true);e.dead=true;updateHud();if(state.baseHp<=0)gameOver();}
 function updateEnemies(dt){
   for(const e of enemies){
     if(e.dead)continue;
-    e.t+=dt;e.z+=e.speed*dt;e.x+=Math.sin(e.t*2.1)*dt*.10;
+    e.t+=dt;e.z+=e.speed*dt;
+    if(e.type==="runner")e.x=e.anchorX+Math.sin(e.t*5.1+e.weave)*1.05;
+    else if(e.type==="elite")e.x=lerp(e.x,player.group.position.x,1-Math.pow(.24,dt));
+    else if(e.type==="boss")e.x=lerp(e.x,player.group.position.x,1-Math.pow(.52,dt));
+    else if(e.type==="normal")e.x=e.anchorX+Math.sin(e.t*2.2+e.weave)*.16;
+    e.x=clamp(e.x,-4.05,4.05);
     const ground=e.group.userData?.groundY??0;
     e.group.position.set(e.x,ground,e.z);
     const anim=e.group.userData?.anim;
@@ -853,7 +891,8 @@ function updateEnemies(dt){
       const l=e.group.userData.leg1,r=e.group.userData.leg2;
       if(l&&r){l.rotation.x=Math.sin(e.t*10)*.45;r.rotation.x=-l.rotation.x;}
     }
-    if(e.z>=ARMY_HIT_Z&&totalArmy()>0){armyCollisionLoss(e);continue;}
+    const touchesArmy=Math.abs(e.x-player.group.position.x)<=armyHalfWidth()+(e.hitRadius||.62)*.62;
+    if(e.z>=ARMY_HIT_Z&&totalArmy()>0&&touchesArmy){armyCollisionLoss(e);continue;}
     if(e.z>=8.65)hitBase(e);
   }
   enemies=enemies.filter(e=>!e.dead);
@@ -864,9 +903,19 @@ function updateSpawns(dt){
   state.spawnT-=dt;state.gateT-=dt;state.eventT-=dt;state.bossT-=dt;state.hazardT-=dt;
   if(state.spawnT<=0){spawnEnemy();const base=Math.max(.28,1.18*Math.pow(.89,state.period-1));state.spawnT=base*rand(.72,1.18);}
   if(state.gateT<=0){spawnGate();state.gateT=rand(7.3,9.2);}
-  if(state.eventT<=0){spawnWaveEvent();state.eventT=rand(18,25);}
-  if(state.hazardT<=0){spawnHazard();state.hazardT=Math.max(12,24-state.period*.8)*rand(.82,1.18);}
-  if(state.bossT<=0){spawnEnemy("boss",rand(-2.3,2.3));state.bossT=Math.max(28,50-state.period*1.45);}
+  if(state.bossT<=0){
+    if(obstacles.some(o=>!o.dead))state.bossT=4.5;
+    else{spawnEnemy("boss",rand(-2.3,2.3));state.bossT=Math.max(28,50-state.period*1.45);state.eventT=Math.max(state.eventT,7);state.hazardT=Math.max(state.hazardT,6);}
+  }
+  const bossAlive=enemies.some(e=>!e.dead&&e.type==="boss");
+  if(state.eventT<=0){
+    if(!bossAlive&&obstacles.filter(o=>!o.dead).length<2){spawnWaveEvent();state.eventT=rand(18,25);}
+    else state.eventT=4;
+  }
+  if(state.hazardT<=0){
+    if(!bossAlive){spawnHazard();state.hazardT=Math.max(12,24-state.period*.8)*rand(.82,1.18);}
+    else state.hazardT=4;
+  }
   const shouldPeriod=Math.floor(state.t/30)+1;if(shouldPeriod>state.period)periodUp();
 }
 function updateFx(dt){for(const p of particles){p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=5*dt;p.mesh.scale.multiplyScalar(.985);}particles=particles.filter(p=>{if(p.life>0)return true;fxRoot.remove(p.mesh);return false;});for(const s of textSprites){s.userData.life-=dt;s.position.y+=s.userData.vy*dt;s.material.opacity=clamp(s.userData.life/.35,0,1);}textSprites=textSprites.filter(s=>{if(s.userData.life>0)return true;fxRoot.remove(s);s.userData.texture?.dispose?.();s.material.dispose?.();return false;});for(const w of shockwaves){w.life-=dt;w.mesh.scale.addScalar(dt*7);w.mesh.material.opacity=clamp(w.life/.45,0,1)*.7;}shockwaves=shockwaves.filter(w=>{if(w.life>0)return true;fxRoot.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();return false;});if(state.toastT>0){state.toastT-=dt;if(state.toastT<=0){ui.toast.style.opacity="0";ui.toast.style.transform="translate(-50%,10px)";}}if(state.warningT>0){state.warningT-=dt;if(state.warningT<=0){ui.banner.style.opacity="0";ui.banner.style.transform="translate(-50%,-12px) scale(.94)";}}if(state.flash>0){state.flash-=dt;ui.flash.style.opacity=String(clamp(state.flash/.22,0,1)*.72);}else ui.flash.style.opacity="0";}
@@ -897,7 +946,7 @@ addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["a","d","arrowlef
 let dragging=false;function pointerToLane(e){const r=canvas.getBoundingClientRect();player.targetX=clamp(((e.clientX-r.left)/r.width-.5)*9.0,-3.9,3.9);}canvas.addEventListener("pointerdown",e=>{dragging=true;canvas.setPointerCapture?.(e.pointerId);pointerToLane(e);e.preventDefault();});canvas.addEventListener("pointermove",e=>{if(dragging)pointerToLane(e);});canvas.addEventListener("pointerup",()=>dragging=false);canvas.addEventListener("pointercancel",()=>dragging=false);
 function updateInput(dt){let dir=0;if(keys.has("a")||keys.has("arrowleft"))dir--;if(keys.has("d")||keys.has("arrowright"))dir++;if(dir)player.targetX=clamp(player.targetX+dir*dt*6.4,-3.9,3.9);}
 function clearBattle(){clearSceneArray(enemies,actorRoot);clearSceneArray(obstacles,actorRoot);obstacles=[];clearSceneArray(gates.flatMap(g=>g.items.map(it=>({mesh:it.mesh,texture:it.mesh.userData.texture}))),actorRoot);gates=[];for(const s of shots){if(s.mesh.parent)fxRoot.remove(s.mesh);}shots=[];for(const p of particles){if(p.mesh.parent)fxRoot.remove(p.mesh);}particles=[];for(const s of textSprites){if(s.parent)fxRoot.remove(s);s.userData.texture?.dispose?.();s.material.dispose?.();}textSprites=[];for(const w of shockwaves){if(w.mesh.parent)fxRoot.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();}shockwaves=[];}
-function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,PLAYER_LINE_Z);player.targetX=0;rebuildArmy();updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
+function resetGame(){clearBattle();Object.assign(state,{running:true,paused:false,over:false,t:0,last:performance.now(),baseHp:20,maxBaseHp:20,kills:0,bossKills:0,spawnT:.55,gateT:4.6,eventT:18,bossT:48,hazardT:20,period:1,shownPeriod:1,gatesPassed:0,hazardsDestroyed:0,warningT:0,toastT:0,camShake:0,flash:0,hitStop:0,worldSpeed:1,playerX:0,targetX:0});Object.assign(player,{soldiers:1,elites:0,ncos:0,officers:0,generals:0,fireTimers:[0,0,0,0,0],maxArmy:1,highestRank:0,recoil:0,bob:0});player.group.position.set(0,0,PLAYER_LINE_Z);player.targetX=0;rebuildArmy(true);updateHud();ui.overlay.style.display="none";ui.pauseBtn.style.display="block";ui.pauseBtn.textContent="Ⅱ";try{audioCtx?.resume?.();}catch(_){ }showBanner("🔔 1교시 시작!","관문을 골라 병력을 키우고 방어선을 지키세요.",2.0);tone("bell");}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pauseBtn.textContent=state.paused?"▶":"Ⅱ";clearInput();showToast(state.paused?"일시정지":"전투 재개",.8);}
 function gameOver(){if(state.over)return;state.over=true;state.running=false;clearInput();tone("over");ui.pauseBtn.style.display="none";const score=Math.floor(state.t*10+state.kills*18+state.bossKills*260+(state.hazardsDestroyed||0)*75+player.maxArmy/20),isBest=score>state.best;if(isBest){state.best=score;localStorage.setItem("classWar3DBest",String(score));}ui.overlay.style.display="grid";ui.panel.innerHTML=`<span class="eyebrow">${isBest?"NEW RECORD":"3D CLASSROOM DEFENSE REPORT"}</span><h2>${isBest?"새 최고 기록!":"교실 방어선이 무너졌습니다"}</h2><div class="lead">생존 <b style="color:#7dd3fc">${fmtTime(state.t)}</b> · 적 ${state.kills}명 처치 · 보스 ${state.bossKills}명 격파 · 전선 위협 ${state.hazardsDestroyed||0}개 제거</div><div class="grid"><div class="mini"><b>최대 전체 병력</b>${player.maxArmy.toLocaleString()}명</div><div class="mini"><b>최고 계급</b>${rankNameForTotal(player.maxArmy)}</div><div class="mini"><b>점수</b>${score.toLocaleString()}</div><div class="mini"><b>최고 기록</b>${Math.max(state.best,score).toLocaleString()}</div></div><button class="cta" id="restartBtn">다시 방어하기</button><div class="fine">관문 타이밍과 이동 위치를 바꾸면 더 오래 버틸 수 있습니다.</div>`;$("restartBtn").onclick=resetGame;}
 ui.startBtn.disabled=true;ui.startBtn.textContent="3D 학생 에셋 준비 중…";
