@@ -8,6 +8,9 @@ const F='../../assets/game/2d/fish/';
 const P='../../assets/game/2d/pirate/';
 const SHARK='../../assets/game/2d/underwater/deep-diver/creatures/shark/';
 const FAUNA='../../assets/game/2d/underwater/deep-diver/creatures/';
+const PICKUP='../../assets/game/2d/underwater/deep-diver/pickups/icons_128/';
+const VEG='../../assets/game/2d/underwater/deep-diver/vegetation/';
+const AMBIENCE_SRC='../../assets/audio/incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3';
 const SAVE='deep_diver_2d_v7',OLD='deep_diver_2d_v5',LEGACY='deep_diver_openwater_v4';
 const WORLD={w:6800,h:4200,surface:60,scaleDepth:5.5};
 const ZONES=[
@@ -90,6 +93,10 @@ const ASSETS={
  jelly01:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-01.png',jelly02:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-02.png',jelly03:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-03.png',jelly04:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-04.png',jelly05:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-05.png',jelly06:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-06.png',jelly07:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-07.png',jelly08:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-08.png',jelly09:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-09.png',jelly10:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-10.png',jelly11:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-11.png',jelly12:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-12.png',
  jellyAtk01:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-01.png',jellyAtk02:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-02.png',jellyAtk03:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-03.png',jellyAtk04:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-04.png',jellyAtk05:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-05.png',jellyAtk06:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-06.png',jellyAtk07:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-07.png',jellyAtk08:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-08.png',jellyAtk09:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-09.png',jellyAtk10:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-10.png',jellyAtk11:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-11.png',jellyAtk12:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-12.png',
  whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:FAUNA+'shark/variants/shark-001-64px.gif',
+ waterPlant2:VEG+'water-plant-02.png',grassClump:VEG+'grass-clump-01.png',
+ pickupBucket:PICKUP+'bucket.png',pickupFishingrod:PICKUP+'fishingrod.png',pickupGold:PICKUP+'gold.png',pickupKey:PICKUP+'key.png',
+ pickupRuby:PICKUP+'ruby.png',pickupSaphire:PICKUP+'saphire.png',pickupSeashell:PICKUP+'seashell.png',pickupSilvercup:PICKUP+'silvercup.png',
+ pickupSilverplate:PICKUP+'silverplate.png',pickupTelescope:PICKUP+'telescope.png',pickupTincan:PICKUP+'tincan.png',pickupTrout:PICKUP+'trout.png',
  wreck:P+'ships/ship-8.png',wood1:P+'ship-parts/wood-1.png',wood2:P+'ship-parts/wood-2.png'
 };
 const imgs={}; let ready=false,loaded=0;
@@ -160,7 +167,7 @@ const CONTRACT_DEPTH_RATING=[150,285,430,575,760];
 const GRADE_SCORE={C:1,B:2,A:3,S:4};
 const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
 
-let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null;
+let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null,ambience=null;
 const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0};
 
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
@@ -178,6 +185,13 @@ function load(){
   if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});meta.codex=r.codex||{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;save()}
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
+function ensureAmbience(){
+ if(ambience)return ambience;ambience=new Audio(AMBIENCE_SRC);ambience.loop=true;ambience.preload='auto';ambience.volume=.20;return ambience
+}
+function syncAmbience(){
+ const a=ensureAmbience(),shouldPlay=sound&&state==='playing'&&!document.hidden;
+ if(shouldPlay){const p=a.play();if(p?.catch)p.catch(()=>{})}else if(!a.paused){a.pause()}
+}
 function showHint(t,ms=1500){const el=$('hint');el.textContent=t;el.classList.add('show');clearTimeout(showHint.t);showHint.t=setTimeout(()=>el.classList.remove('show'),ms)}
 function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zone):zone,el=$('zoneToast');el.innerHTML=z?'<b>'+z.name+'</b><small>'+z.tag+'</small>':String(zone||'');el.classList.add('show');clearTimeout(showZone.t);showZone.t=setTimeout(()=>el.classList.remove('show'),1700)}
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
@@ -217,10 +231,10 @@ function buildTerrain(){
   ];
 }
 function zonePlantPool(id,foreground=false){
-  if(id==='reef')return foreground?['bgSeaB','bgSeaD','seaweedOrangeA','seaweedPinkB','seaweedPinkD','seaweedGreenB']:['seaweedOrangeA','seaweedOrangeB','seaweedB','seaweedPinkB','seaweedPinkC','seaweedPinkD','seaweedGreenB','grassA'];
-  if(id==='kelp')return foreground?['bgSeaA','bgSeaC','bgSeaE','bgSeaG','bgSeaH','seaweedGreenC','seaweedGreenD']:['seaweedA','seaweedGreenB','seaweedGreenC','seaweedGreenD','grassA','grassB'];
-  if(id==='ruins')return foreground?['bgSeaF','bgRockA','bgRockB','grassA','seaweedGreenD']:['rockA','rockB','grassA','seaweedGreenD','seaweedPinkD'];
-  if(id==='wreck')return foreground?['bgRockB','bgSeaH','rockA','rockB','seaweedGreenD']:['rockA','rockB','grassB','seaweedGreenD'];
+  if(id==='reef')return foreground?['bgSeaB','bgSeaD','seaweedOrangeA','seaweedPinkB','seaweedPinkD','seaweedGreenB']:['seaweedOrangeA','seaweedOrangeB','seaweedB','seaweedPinkB','seaweedPinkC','seaweedPinkD','seaweedGreenB','grassA','waterPlant2','grassClump'];
+  if(id==='kelp')return foreground?['bgSeaA','bgSeaC','bgSeaE','bgSeaG','bgSeaH','seaweedGreenC','seaweedGreenD']:['seaweedA','seaweedGreenB','seaweedGreenC','seaweedGreenD','grassA','grassB','waterPlant2','grassClump'];
+  if(id==='ruins')return foreground?['bgSeaF','bgRockA','bgRockB','grassA','seaweedGreenD']:['rockA','rockB','grassA','seaweedGreenD','seaweedPinkD','grassClump'];
+  if(id==='wreck')return foreground?['bgRockB','bgSeaH','rockA','rockB','seaweedGreenD']:['rockA','rockB','grassB','seaweedGreenD','grassClump'];
   return foreground?['bgRockA','bgRockB','bgSeaH']:['rockA','rockB','grassB'];
 }
 function buildForeground(seed){
@@ -337,19 +351,32 @@ function buildWorld(contract){
      world.decor.push({x,y,type,scale:z.id==='kelp'?rnd(.9,1.7):rnd(.65,1.3),flip:r()>.5,zone:z.id});
    }
  }
+ world.decor.push(
+   {x:640,y:286,type:'waterPlant2',scale:1.10,flip:false,zone:'reef'},{x:1280,y:382,type:'waterPlant2',scale:.92,flip:true,zone:'reef'},
+   {x:2860,y:602,type:'grassClump',scale:1.15,flip:false,zone:'reef'},{x:1910,y:905,type:'waterPlant2',scale:1.18,flip:false,zone:'kelp'},
+   {x:4120,y:1180,type:'grassClump',scale:1.32,flip:true,zone:'kelp'},{x:1480,y:1690,type:'grassClump',scale:.96,flip:false,zone:'ruins'},
+   {x:3310,y:2210,type:'grassClump',scale:1.08,flip:true,zone:'ruins'},{x:970,y:2520,type:'grassClump',scale:.90,flip:false,zone:'wreck'}
+ );
  world.props.push({id:'statue',x:WORLD.w*.34,y:1810,type:'statue',done:false},{id:'arch',x:WORLD.w*.67,y:2050,type:'arch',done:false});
- world.pickups.push({id:'relic',name:'고대 표식판',x:3950,y:2250,value:850,taken:false,weight:2});
- world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5});
+ world.pickups.push({id:'relic',name:'고대 유적 열쇠',x:3950,y:2250,value:850,taken:false,weight:.2,icon:'pickupKey',iconSize:48});
+ world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5,icon:'pickupTelescope',iconSize:62});
  world.pickups.push(
-   {id:'cargoA',name:'밀봉 화물 상자',x:1450,y:3095,value:720,taken:false,weight:2.6},
-   {id:'cargoB',name:'의료 장비 화물',x:3480,y:3015,value:980,taken:false,weight:3.4},
-   {id:'cargoC',name:'희귀 금속 화물',x:5920,y:3140,value:1250,taken:false,weight:4.1},
-   {id:'ventMineralA',name:'열수 광물 표본',x:2660,y:3670,value:1050,taken:false,weight:1.8},
-   {id:'ventMineralB',name:'심해 황화광 표본',x:5450,y:3760,value:1380,taken:false,weight:2.2}
+   {id:'seashellA',name:'큰 조개껍데기',x:1080,y:275,value:90,taken:false,weight:.2,icon:'pickupSeashell',iconSize:48},
+   {id:'troutA',name:'유실된 어획물',x:5260,y:610,value:150,taken:false,weight:.6,icon:'pickupTrout',iconSize:58},
+   {id:'silvercupA',name:'은제 잔',x:1780,y:1930,value:480,taken:false,weight:.7,icon:'pickupSilvercup',iconSize:50},
+   {id:'silverplateA',name:'은제 접시',x:4580,y:2165,value:420,taken:false,weight:.9,icon:'pickupSilverplate',iconSize:54},
+   {id:'bucketA',name:'낡은 양동이',x:820,y:2490,value:110,taken:false,weight:1.0,icon:'pickupBucket',iconSize:52},
+   {id:'fishingrodA',name:'부러진 낚싯대',x:2160,y:2575,value:140,taken:false,weight:1.1,icon:'pickupFishingrod',iconSize:68},
+   {id:'tincanA',name:'녹슨 통조림',x:3180,y:2860,value:70,taken:false,weight:.5,icon:'pickupTincan',iconSize:50},
+   {id:'cargoA',name:'루비 화물',x:1450,y:3095,value:820,taken:false,weight:.3,icon:'pickupRuby',iconSize:52},
+   {id:'cargoB',name:'사파이어 화물',x:3480,y:3015,value:820,taken:false,weight:.3,icon:'pickupSaphire',iconSize:52},
+   {id:'cargoC',name:'금제 화물',x:5920,y:3140,value:1250,taken:false,weight:1.3,icon:'pickupGold',iconSize:54},
+   {id:'ventMineralA',name:'열수 광물 표본',x:2660,y:3670,value:1050,taken:false,weight:1.8,icon:'pickupRuby',iconSize:48},
+   {id:'ventMineralB',name:'심해 황화광 표본',x:5450,y:3760,value:1380,taken:false,weight:2.2,icon:'pickupSaphire',iconSize:48}
  );
  for(let i=0;i<17;i++)world.mines.push({x:WORLD.w*.34+i*165+(i%2?65:-45),y:2670+(i%4)*105,size:i%4===0?'B':i%3===0?'S':'N',dead:false,fuse:0,marked:0});
  for(let i=0;i<52;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
- state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);
+ state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);syncAmbience();
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint('게·성게·불가사리·해파리·앵무조개·오징어·대형 생물까지 생태계가 확장되었습니다. 소나에는 희귀종과 보스급 생물도 잡힙니다.',4200);
 }
@@ -481,7 +508,9 @@ function drawForeground(){
   }
 }
 function drawDecor(){
- for(const d of world.decor){const p=screenPos(d.x,d.y);if(p.x<-80||p.x>view.w+80||p.y<-80||p.y>view.h+80)continue;const im=imgs[d.type],size=d.type.startsWith('seaweed')?55*d.scale:46*d.scale;drawImg(im,p.x,p.y,size,size,d.flip,0,.7)}
+ for(const d of world.decor){const p=screenPos(d.x,d.y);if(p.x<-90||p.x>view.w+90||p.y<-90||p.y>view.h+90)continue;const im=imgs[d.type];
+ const base=d.type==='waterPlant2'?62:d.type==='grassClump'?54:d.type.startsWith('seaweed')?55:46,size=base*d.scale,alpha=d.type==='waterPlant2'?.82:d.type==='grassClump'?.76:.7;
+ drawImg(im,p.x,p.y,size,size,d.flip,Math.sin(world.time*.55+d.x*.012)*.018,alpha)}
 }
 function drawProps(){
  for(const o of world.props){const p=screenPos(o.x,o.y);if(p.x<-130||p.x>view.w+130||p.y<-160||p.y>view.h+160)continue;if(!imgs.props.complete)continue;let s;if(o.type==='statue')s={sx:372,sy:24,sw:92,sh:215,w:80,h:188};else s={sx:145,sy:24,sw:195,sh:195,w:180,h:180};ctx.save();ctx.globalAlpha=.84;ctx.imageSmoothingEnabled=false;ctx.drawImage(imgs.props,s.sx,s.sy,s.sw,s.sh,p.x-s.w/2,p.y-s.h/2,s.w,s.h);if(world.sonar>0&&!o.done){ctx.strokeStyle='#6df5ff';ctx.lineWidth=3;ctx.strokeRect(p.x-s.w*.45,p.y-s.h*.45,s.w*.9,s.h*.9)}ctx.restore()}
@@ -489,7 +518,17 @@ function drawProps(){
 function drawWreck(){
  const p=screenPos(WORLD.w*.72,2980);if(p.x<-300||p.x>view.w+300||p.y<-240||p.y>view.h+240)return;drawImg(imgs.wreck,p.x,p.y,260,150,false,.17,.42,'brightness(.52) saturate(.65)');drawImg(imgs.wood1,p.x-115,p.y+48,42,34,false,.3,.65,'brightness(.55)');drawImg(imgs.wood2,p.x+126,p.y+56,38,30,true,-.2,.65,'brightness(.55)')}
 function drawPickups(){
- for(const q of world.pickups){if(q.taken)continue;const p=screenPos(q.x,q.y);if(p.x<-50||p.x>view.w+50||p.y<-50||p.y>view.h+50)continue;ctx.save();const cargo=q.id.startsWith('cargo'),mineral=q.id.startsWith('ventMineral');ctx.shadowColor=q.id==='relic'?'#f1d86b':cargo?'#ffd071':mineral?'#a97cff':'#6beafa';ctx.shadowBlur=12;ctx.fillStyle=q.id==='relic'?'#cfb85a':cargo?'#c89445':mineral?'#8565cf':'#61dbe7';ctx.fillRect(p.x-(cargo?17:13),p.y-(cargo?11:9),cargo?34:26,cargo?22:18);ctx.shadowBlur=0;if(world.sonar>0){ctx.strokeStyle='#75f4ff';ctx.lineWidth=2;ctx.strokeRect(p.x-19,p.y-15,38,30)}ctx.restore()}
+ for(const q of world.pickups){
+   if(q.taken)continue;const p=screenPos(q.x,q.y),bob=Math.sin(world.time*2.15+q.x*.009)*3;if(p.x<-80||p.x>view.w+80||p.y<-80||p.y>view.h+80)continue;
+   const cargo=q.id.startsWith('cargo'),mineral=q.id.startsWith('ventMineral'),im=q.icon?imgs[q.icon]:null,size=q.iconSize||52;
+   ctx.save();ctx.shadowColor=q.id==='relic'?'#f1d86b':cargo?'#ffd071':mineral?'#a97cff':'#6beafa';ctx.shadowBlur=10;
+   if(im?.complete&&im.naturalWidth){ctx.restore();drawImg(im,p.x,p.y+bob,size,size,false,0,.98);ctx.save()}
+   else{ctx.fillStyle=q.id==='relic'?'#cfb85a':cargo?'#c89445':mineral?'#8565cf':'#61dbe7';ctx.fillRect(p.x-14,p.y+bob-10,28,20)}
+   ctx.shadowBlur=0;
+   if(world.sonar>0){ctx.strokeStyle='#75f4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y+bob,Math.max(24,size*.48)+Math.sin(world.time*5)*2,0,Math.PI*2);ctx.stroke()}
+   if(Math.hypot(q.x-world.player.x,q.y-world.player.y)<90){ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(231,252,255,.94)';ctx.fillText(q.name,p.x,p.y+bob-size*.52-8)}
+   ctx.restore()
+ }
 }
 function drawFish(f){
  if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-280||p.x>view.w+280||p.y<-220||p.y>view.h+220)return;const flip=f.vx<0;
@@ -703,7 +742,7 @@ function useSonar(){
 function useTool(){if(!world)return;if(world.tool==='camera')useCamera();else if(world.tool==='harpoon')fireHarpoon();else useSonar()}
 function interact(){
  const p=world.player;
- for(const q of world.pickups){if(q.taken)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<72){if(world.bagWeight+q.weight>world.st.bag){showHint('가방 무게가 부족합니다.',1000);return}q.taken=true;world.bagWeight+=q.weight;world.bag.push(q.id);world.income+=q.value;if(q.id==='relic')world.mission.relic=true;if(q.id==='recorder')world.mission.recorder=true;beep(760,.08);showHint(q.name+' 회수',1100);return}}
+ for(const q of world.pickups){if(q.taken)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<72){if(world.bagWeight+q.weight>world.st.bag){showHint('가방 무게가 부족합니다.',1000);return}q.taken=true;world.bagWeight+=q.weight;world.bag.push(q.id);world.income+=q.value;if(q.id==='relic')world.mission.relic=true;if(q.id==='recorder')world.mission.recorder=true;beep(760,.08);showHint(q.name+' 회수 · +'+money(q.value)+' · '+q.weight+'kg',1250);return}}
  for(const o of world.props){if(o.done)continue;if(Math.hypot(o.x-p.x,o.y-p.y)<95){o.done=true;world.mission[o.id]=true;beep(880,.08);showHint((o.id==='statue'?'침수 석상':'거대 석조 아치')+' 기록 완료',1000);return}}
  showHint('가까운 조사 대상이 없습니다.',800)
 }
@@ -741,7 +780,7 @@ function nearestEcoFish(f,maxDist,predicate){
 }
 function nearestKelpCover(f,maxDist=240){
  let best=null,bd=maxDist;
- for(const d of world.decor){if(!d.type?.startsWith('seaweed'))continue;const dd=Math.hypot(d.x-f.x,d.y-f.y);if(dd<bd){bd=dd;best=d}}
+ for(const d of world.decor){if(!(d.type?.startsWith('seaweed')||d.type==='waterPlant2'||d.type==='grassClump'))continue;const dd=Math.hypot(d.x-f.x,d.y-f.y);if(dd<bd){bd=dd;best=d}}
  return best?{cover:best,d:bd}:null
 }
 function startFishAttack(f,kind){
@@ -922,7 +961,7 @@ function update(dt){
  if(p.y<WORLD.surface+45&&missionComplete()&&world.time>4){finishDive(true,'계약 목표를 완료하고 수면으로 무사 귀환했습니다.')}
 }
 function finishDive(ok,reason){
- if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();
+ if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();syncAmbience();
  const complete=missionComplete(),base=ok&&complete?world.contract.reward:0,depthBonus=ok?Math.round(world.maxDepth*1.25):0,survival=ok?250:0,gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  meta.money+=gain;meta.bestDepth=Math.max(meta.bestDepth,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(CONTRACTS.length-1,world.contract.unlock+1));save();
  $('resultTitle').textContent=ok?'무사 귀환 · 잠수 보고서':'긴급 구조 · 잠수 보고서';
@@ -937,7 +976,7 @@ function contractCards(){
  return CONTRACTS.map((c,i)=>'<div class="card '+(i>meta.unlocked?'locked':'')+'"><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">장비 권장 수심 '+(CONTRACT_DEPTH_RATING[i]+meta.up.suit*22)+'m</div><div class="reward">계약 보상 '+money(c.reward)+'</div><button class="btn '+(i>meta.unlocked?'dark':'gold')+'" data-contract="'+c.id+'" '+(i>meta.unlocked?'disabled':'')+'>'+(i>meta.unlocked?'잠김':'잠수 시작')+'</button></div>').join('')
 }
 function openContracts(){
- state='menu';document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  $('contractBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b> · 최고 수심 <b>'+Math.round(meta.bestDepth)+'m</b> · 최고 점수 <b>'+meta.bestScore+'</b></div><div class="grid">'+contractCards()+'</div><div class="toolbar"><button class="btn" id="shopBtn">장비실</button><button class="btn dark" id="codexBtn">생물 도감</button><button class="btn dark" id="menuBtn">시작 화면</button></div>';
  $('contractScreen').classList.remove('hidden');document.querySelectorAll('[data-contract]').forEach(b=>b.onclick=()=>{const c=CONTRACTS.find(x=>x.id===b.dataset.contract);if(c)buildWorld(c)});$('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
@@ -954,11 +993,11 @@ function bind(){
  $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;save();openContracts()};
  $('continueBtn').onclick=()=>{if(!ready)return;load();openContracts()};
  $('nextBtn').onclick=openContracts;$('homeBtn').onclick=()=>{$('resultScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');state='menu'};
- $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07)};
+ $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};
  document.querySelectorAll('#toolBar [data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));document.querySelectorAll('#mActions [data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);useTool()});
  $('actionMain').onclick=useTool;$('interactMain').onclick=interact;$('actionMobile').onclick=useTool;$('interactMobile').onclick=interact;$('dashMobile').onpointerdown=e=>{e.preventDefault();touch.dash=true};$('dashMobile').onpointerup=$('dashMobile').onpointercancel=$('dashMobile').onlostpointercapture=()=>touch.dash=false;
  addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(state!=='playing')return;if(k==='1')setTool('camera');if(k==='2')setTool('harpoon');if(k==='3')setTool('sonar');if((k==='x'||k===' ')&&!e.repeat)useTool();if(k==='e'&&!e.repeat)interact()});
- addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',resetInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs()});
+ addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>{resetInputs();syncAmbience()});document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs();syncAmbience()});
  let joyId=null;const stick=$('stick'),knob=$('knob');
  function moveJoy(e){const r=stick.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=r.width*.34,l=Math.hypot(dx,dy)||1,k=Math.min(1,l/m);touch.x=dx/l*k;touch.y=dy/l*k;knob.style.transform='translate('+(touch.x*36)+'px,'+(touch.y*36)+'px)'}
  stick.onpointerdown=e=>{joyId=e.pointerId;stick.setPointerCapture?.(e.pointerId);moveJoy(e)};stick.onpointermove=e=>{if(e.pointerId===joyId)moveJoy(e)};const end=e=>{if(joyId!==null&&e.pointerId!==joyId)return;joyId=null;touch.x=touch.y=0;knob.style.transform='translate(0,0)'};stick.onpointerup=end;stick.onpointercancel=end;stick.onlostpointercapture=end;
