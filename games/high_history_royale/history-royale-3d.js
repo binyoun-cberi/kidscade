@@ -214,6 +214,9 @@ const formationBand=new THREE.Mesh(
 );
 formationBand.rotation.x=-Math.PI/2;formationBand.position.y=.022;formationBand.visible=false;scene.add(formationBand);
 
+const rangePreview=new THREE.Mesh(new THREE.RingGeometry(.94,1,64),new THREE.MeshBasicMaterial({color:0xf0d27a,transparent:true,opacity:.24,side:THREE.DoubleSide,depthWrite:false}));
+rangePreview.rotation.x=-Math.PI/2;rangePreview.position.y=.032;rangePreview.visible=false;scene.add(rangePreview);
+
 const previewFill=new THREE.Mesh(new THREE.CircleGeometry(.5,48),new THREE.MeshBasicMaterial({color:0x85e39c,transparent:true,opacity:.11,side:THREE.DoubleSide,depthWrite:false}));
 previewFill.rotation.x=-Math.PI/2;
 previewFill.position.y=.045;
@@ -557,6 +560,27 @@ function syncFactionLandmarks(g){
   const player=factionLandmark(g.playerFaction);player.position.set(7.2,0,3.25);player.rotation.y=Math.PI;player.scale.setScalar(.90);landmarkGroup.add(player);
   world.add(landmarkGroup);
 }
+function ensureRubble(rec,root,ratio){
+  if(ratio>0||rec.rubble)return;
+  rec.rubble=new THREE.Group();
+  for(let i=0;i<(LOW_POWER?5:9);i++){
+    const piece=mesh(new THREE.BoxGeometry(.12+(i%3)*.05,.08+(i%2)*.04,.14+(i%4)*.035),mat(i%2?0x716a5f:0x8a7b65),Math.cos(i*.9)*(.35+(i%3)*.10),.05,Math.sin(i*.9)*(.32+(i%2)*.12));
+    piece.rotation.set(i*.13,i*.37,i*.21);rec.rubble.add(piece);
+  }
+  root.add(rec.rubble);
+}
+function ensureBuildingAura(rec,b,fid){
+  const id=b.card?.id;
+  const auraType=["mountain_fort","hill_fort"].includes(id)?"fort":(id==="hwarang_camp"?"camp":null);
+  if(!auraType)return;
+  if(!rec.aura){
+    const color=auraType==="fort"?factionColor(fid):new THREE.Color(0xe1bd62);
+    rec.aura=mesh(new THREE.RingGeometry(.88,.93,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}),0,.025,0);
+    rec.aura.rotation.x=-Math.PI/2;rec.root.add(rec.aura);
+  }
+  rec.aura.visible=!b.dead&&b.buildTimer<=0;
+  if(rec.aura.visible){const pulse=1+Math.sin(performance.now()*.003)*.05;rec.aura.scale.setScalar(pulse);}
+}
 function ensureDamageSmoke(rec,ratio){
   if(!rec.smoke){
     rec.smoke=new THREE.Group();
@@ -593,7 +617,7 @@ function syncTowers(g){
     live.add(t.id);let rec=towerMeshes.get(t.id);
     if(!rec){rec=createTower(t,g);towerMeshes.set(t.id,rec);}
     const p=canvasToWorld(t.x,t.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    const ratio=Math.max(0,t.hp/t.maxHp);updateHealthBar(rec.health,ratio,t.team);setHitFlash(rec.root,t.damageFlash>0);ensureDamageSmoke(rec,ratio);
+    const ratio=Math.max(0,t.hp/t.maxHp);updateHealthBar(rec.health,ratio,t.team);setHitFlash(rec.root,t.damageFlash>0);ensureDamageSmoke(rec,ratio);ensureRubble(rec,rec.root,ratio);
     if(t.king&&rec.protection){
       const sideCount=g.towers.filter(x=>x.team===t.team&&!x.king&&!x.dead).length;
       rec.protection.visible=sideCount>0;
@@ -612,8 +636,11 @@ function syncBuildings(g){
     live.add(key);let rec=buildingMeshes.get(key);
     if(!rec){rec=createBuilding(b,g);buildingMeshes.set(key,rec);}
     const p=canvasToWorld(b.x,b.y);rec.root.position.x=p.x;rec.root.position.z=p.z;
-    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;rec.root.scale.setScalar(.92+.08*life);
-    const ratio=Math.max(0,b.hp/b.maxHp);updateHealthBar(rec.health,ratio,b.team);updateLifeBar(rec.life,b.maxLifetime?b.lifetime/b.maxLifetime:1);setHitFlash(rec.root,b.hitTimer>0);ensureDamageSmoke(rec,ratio);
+    const life=b.maxLifetime?Math.max(.78,b.lifetime/b.maxLifetime):1;
+    const buildScale=b.buildTimer>0?THREE.MathUtils.lerp(.24,1,1-THREE.MathUtils.clamp(b.buildTimer/.65,0,1)):1;
+    rec.root.scale.setScalar((.92+.08*life)*buildScale);
+    const ratio=Math.max(0,b.hp/b.maxHp);updateHealthBar(rec.health,ratio,b.team);updateLifeBar(rec.life,b.maxLifetime?b.lifetime/b.maxLifetime:1);setHitFlash(rec.root,b.hitTimer>0);ensureDamageSmoke(rec,ratio);ensureRubble(rec,rec.root,ratio);
+    ensureBuildingAura(rec,b,b.team==="player"?g.playerFaction:g.enemyFaction);
     if(b.dead){rec.root.rotation.z=.22;rec.root.position.y=-.18;}
   });
   buildingMeshes.forEach(function(rec,id){if(!live.has(id)){world.remove(rec.root);buildingMeshes.delete(id);}});
@@ -645,20 +672,28 @@ function syncProjectiles(g){
 }
 function syncPreview(g){
   const card=g.selectedIndex>=0?g.pHand[g.selectedIndex]:null,p=g.pointer;
-  if(!card||!p||!p.inside){previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;return;}
+  if(!card||!p||!p.inside){previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;return;}
   const q=canvasToWorld(p.x,p.y);previewRing.visible=true;previewFill.visible=true;
   previewRing.position.x=previewFill.position.x=q.x;previewRing.position.z=previewFill.position.z=q.z;
   const rule=g.placementRule(card,"player",p.x,p.y),color=rule.ok?0x84e39c:0xe85b50;
   previewRing.material.color.setHex(color);previewFill.material.color.setHex(color);
   const radius=card.kind==="spell"?(card.id==="cavalry_charge"?4.4:3.7):(card.kind==="building"?.78:.58);
   previewRing.scale.setScalar(radius/.5);previewFill.scale.setScalar(radius/.5);
+  let tacticalRadius=0;
+  if(card.kind==="spell")tacticalRadius=180/48;
+  else if(card.kind==="building"&&card.damage>0)tacticalRadius=(card.range||120)/48;
+  else if(card.kind==="unit"&&(card.range||0)>80)tacticalRadius=card.range/48;
+  if(tacticalRadius>0){
+    rangePreview.visible=true;rangePreview.position.x=q.x;rangePreview.position.z=q.z;rangePreview.scale.setScalar(tacticalRadius);
+    rangePreview.material.color.setHex(rule.ok?0xf0d27a:0xe85b50);
+  }else rangePreview.visible=false;
 
   const activeHero=card.kind==="hero"&&g.isHeroAlive("player",card.id);
   if((card.kind==="unit"||card.kind==="hero")&&!activeHero){
     const f=g.formationFor("player",p.y);
     const bands={front:{z:1.65,d:1.55,c:0xc98b61},mid:{z:3.25,d:1.62,c:0x7d9fc4},rear:{z:4.92,d:1.58,c:0x77946a}};
     const b=bands[f]||bands.mid;
-    formationBand.visible=true;formationBand.position.z=b.z;formationBand.scale.z=b.d;formationBand.material.color.setHex(b.c);
+    formationBand.visible=true;formationBand.position.z=b.z;formationBand.scale.y=b.d;formationBand.material.color.setHex(b.c);
     formationBand.material.opacity=rule.ok?.10:.045;
   }else formationBand.visible=false;
 }
@@ -745,7 +780,7 @@ function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
   if(ready&&g&&g.running){updateAtmosphere(g,dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
-  else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;}
+  else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;}
   renderer.render(scene,camera);
 }
 requestAnimationFrame(loop);
