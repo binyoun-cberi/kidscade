@@ -103,7 +103,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
 const ROOM_STORAGE='kidscadeWordchainRoomId';
-let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null};
+let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
 const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open'])?.catch?.(()=>{});
@@ -151,7 +151,7 @@ function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.elimin
 function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 async function checkAccount(){
  try{
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
@@ -176,6 +176,8 @@ async function join(){
 function enterRoom(next){room=next;localStorage.setItem(ROOM_STORAGE,next.id);setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;$('matchMeta').classList.remove('hidden');sfx('collect.coin_pickup',{volume:.24,rate:1.08,cooldownMs:300});showOverlay('lobbyOverlay');render(next);startPoll()}
 function renderLobby(next){
  soundState.countdown=null;
+ if(soundState.playerCount!==null&&next.playerCount!==soundState.playerCount)sfx(next.playerCount>soundState.playerCount?'collect.coin_pickup':'failure.disappointed_voice',{volume:.18,cooldownMs:260});
+ soundState.playerCount=next.playerCount;
  $('roomCodeText').textContent=next.code;$('roomRuleText').textContent=next.maxPlayers===2?'1:1 · 최대 2명':'다대다 · 최대 '+next.maxPlayers+'명';
  $('roomBadge').textContent='방 '+next.code;$('modeBadge').textContent=next.maxPlayers===2?'1:1 대결':'최대 '+next.maxPlayers+'인';
  $('lobbyPlayers').innerHTML=next.players.map(p=>'<div class="lobbyPlayer"><b>'+esc(p.nickname)+(p.isHost?'<span class="host">방장</span>':'')+'</b><div class="'+(p.ready?'ready':'notReady')+'">'+(p.ready?'준비 완료':'준비 전')+(p.online?'':' · 연결 확인 중')+'</div></div>').join('');
