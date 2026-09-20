@@ -1,7 +1,12 @@
 {
   "version": 3,
   "format": "grouped-newline-text",
-  "source": "한국어기초사전 전체 내려받기 JSON 2026-09-19",
+  "source": {
+    "name": "국립국어원 한국어기초사전",
+    "edition": "전체 내려받기 JSON 2026-09-19",
+    "url": "https://krdict.korean.go.kr/",
+    "license": "CC BY-SA 2.0 KR"
+  },
   "filter": "lexicalUnit=단어; partOfSpeech=명사; 2~24글자 완성형 한글; 중복 표제어 병합",
   "total": 27832,
   "groups": {
