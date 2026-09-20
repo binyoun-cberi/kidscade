@@ -128,3 +128,17 @@
 - 라이선스: Pixabay Content License
 - 용도: 약수 타워 디펜스 3D 배경음악
 - 원본 페이지: https://pixabay.com/sound-effects/cool-hip-hop-loop-275527/
+
+
+## `welcome-to-korea-01.mp3`
+- 원본: `soulprodmusic-welcome-to-korea-173264.mp3`
+- 제목: Welcome to Korea
+- 출처: Pixabay
+- 제작자: SoulProdMusic
+- Pixabay 자산 ID: `173264`
+- 라이선스: Pixabay Content License
+- 용도: 한국 관련 게임·로비·여행/역사 콘텐츠용 공용 배경음악
+- 재생 길이: 약 2분 13초
+- 오디오: MP3, 44.1 kHz, 스테레오, 256 kbps
+- 원본 페이지: https://pixabay.com/music/beats-welcome-to-korea-173264/
+- 메모: Pixabay 페이지에 Content ID 등록 표시가 있으므로, 게임 플레이 영상을 외부 영상 플랫폼에 올릴 때 자동 저작권 클레임이 발생할 수 있음
