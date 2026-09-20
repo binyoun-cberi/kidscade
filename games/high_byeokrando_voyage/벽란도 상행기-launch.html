@@ -14,33 +14,61 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
 <iframe id="game" title="벽란도 상행기" allow="autoplay; fullscreen" allowfullscreen></iframe>
 <div id="patchStatus">삽화 + 3D 항구 에셋 연결 중…</div>
 <script>
-(() => {
+(async()=>{
   const frame=document.getElementById('game');
   const status=document.getElementById('patchStatus');
-  const target=new URL('./벽란도 상행기.html',location.href);
-  const params=new URLSearchParams(location.search);
-  params.delete('v');
-  target.search=params.toString();
-  target.hash=location.hash;
-  frame.src=target.href;
+  const source=new URL('./벽란도 상행기.html',location.href);
 
-  function inject(){
-    const doc=frame.contentDocument,win=frame.contentWindow;
-    if(!doc||!win){status.textContent='게임 프레임 연결 실패';return}
-    const loader=doc.createElement('script');
-    loader.src='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-    loader.onload=()=>{
-      const patch=doc.createElement('script');
-      patch.src='./byeokrando-assets.js?v=1';
-      patch.onload=()=>{status.textContent='삽화 + 3D 항구 연결 완료';setTimeout(()=>status.remove(),2200)};
-      patch.onerror=()=>{status.textContent='3D 항구 에셋 레이어를 불러오지 못했습니다'};
-      doc.body.appendChild(patch);
-    };
-    loader.onerror=()=>{status.textContent='GLTF 로더를 불러오지 못했습니다'};
-    doc.head.appendChild(loader);
-    win.focus();
+  window.addEventListener('message',e=>{
+    if(e.source===frame.contentWindow&&e.data?.type==='byeokrando-hybrid-ready'){
+      status.textContent='삽화 + 3D 항구 연결 완료';
+      setTimeout(()=>status.remove(),1800);
+    }
+  });
+
+  try{
+    const response=await fetch(source,{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    let html=await response.text();
+
+    const marker='boot();\n})();';
+    const bridge=[
+      'window.__byeokrandoBridge={',
+      ' getState:()=>State,',
+      ' getPortGroup:()=>portGroup,',
+      ' getCamera:()=>camera,',
+      ' getPorts:()=>PORTS,',
+      ' hideIllustratedPort,',
+      ' showIllustratedPort,',
+      ' getBuildPort:()=>buildPort,',
+      ' setBuildPort:fn=>{buildPort=fn},',
+      ' getStartSailing:()=>startSailing,',
+      ' setStartSailing:fn=>{startSailing=fn}',
+      '};',
+      'boot();',
+      '})();'
+    ].join('\n');
+
+    if(!html.includes(marker))throw new Error('bridge anchor missing');
+    html=html.replace(marker,bridge);
+
+    const baseHref=new URL('./',location.href).href;
+    html=html.replace('<head>','<head><base href="'+baseHref+'">');
+
+    const extras=[
+      '<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\\/script>',
+      '<script src="./byeokrando-assets.js?v=2"><\\/script>'
+    ].join('\n');
+    html=html.replace('</body>',extras+'\n</body>');
+
+    frame.srcdoc=html;
+  }catch(err){
+    console.warn('[Byeokrando hybrid launch]',err);
+    status.textContent='확장 레이어 없이 기본 게임으로 시작합니다';
+    frame.src=source.href;
+    setTimeout(()=>status.remove(),2600);
   }
-  frame.addEventListener('load',inject,{once:true});
+
   window.addEventListener('pointerdown',()=>frame.contentWindow?.focus(),{passive:true});
 })();
 </script>
