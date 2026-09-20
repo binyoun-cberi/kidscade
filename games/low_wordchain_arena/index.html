@@ -57,7 +57,7 @@ body{min-height:100dvh;display:flex;justify-content:center;padding:14px;overscro
 
   <div class="controls">
     <button id="modeBtn" class="btn primary">🎮 모드 선택</button>
-    <button id="soundBtn" class="btn" title="효과음 켜기/끄기">🔊 효과음</button>
+    <button id="soundBtn" class="btn" title="소리 켜기/끄기">🔊 소리</button>
     <button id="homeBtn" class="btn">Kidscade로</button>
   </div>
   <div class="rules">실시간 사전 API를 사용하지 않습니다. 한국어기초사전 + 표준국어대사전 기반 195,217개 명사를 서버 API 없이 필요한 초성 묶음만 불러와 판정합니다.</div>
@@ -115,7 +115,7 @@ async function ensureBgm(){
 }
 function updateSoundButton(){
  const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted),btn=$('soundBtn');
- if(btn){btn.textContent=muted?'🔇 효과음':'🔊 효과음';btn.title=muted?'효과음 켜기':'효과음 끄기'}
+ if(btn){btn.textContent=muted?'🔇 소리':'🔊 소리';btn.title=muted?'소리 켜기':'소리 끄기'}
 }
 function toggleSound(){
  const api=window.KidscadeAudio;if(!api)return;
@@ -125,7 +125,10 @@ function toggleSound(){
 
 const $=id=>document.getElementById(id);
 const starters=['사과','기차','나무','바다','학교','토끼','고래','우산','친구','공원','자동차','강아지'];
-let dbReady=false,playing=false,myTurn=false,currentWord='',used=[],meLife=3,cpuLife=3,deadline=0,timerRAF=0,turnToken=0;
+let dbReady=false,playing=false,myTurn=false,currentWord='',used=[],meLife=3,cpuLife=3,deadline=0,timerRAF=0,turnToken=0,lastWarningSecond=0;
+
+function playTurnCue(){sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240})}
+function playTimerWarning(second){sfx('collect.coin_drop',{volume:.25,rate:1+(3-second)*.14,cooldownMs:180})}
 
 function normalize(v){return window.KidscadeWordDBUtils?.normalizeWord(v)||String(v||'').normalize('NFC').replace(/[\s·ㆍ・\-]/g,'').trim().slice(0,24)}
 function replaceInitial(s,n){const c=s.codePointAt(0)-0xac00;if(c<0||c>11171)return s;const j=Math.floor((c%588)/28),t=c%28;return String.fromCodePoint(0xac00+(n*21+j)*28+t)}
@@ -165,13 +168,13 @@ function errorText(r){
  if(r.error==='dictionary_error')return '단어 사전을 읽지 못했어요. 새로고침해 주세요.';
  return '두 글자 이상의 한글 단어를 입력해 주세요.'
 }
-function stopTimer(){cancelAnimationFrame(timerRAF);deadline=0}
+function stopTimer(){cancelAnimationFrame(timerRAF);deadline=0;lastWarningSecond=0}
 function runTimer(token){
- deadline=performance.now()+12000;
- const tick=()=>{if(!playing||!myTurn||token!==turnToken)return;const left=Math.max(0,deadline-performance.now());$('timerFill').style.width=(left/12000*100)+'%';if(left<=0){timeoutPlayer();return}timerRAF=requestAnimationFrame(tick)};tick()
+ deadline=performance.now()+12000;lastWarningSecond=0;
+ const tick=()=>{if(!playing||!myTurn||token!==turnToken)return;const left=Math.max(0,deadline-performance.now());$('timerFill').style.width=(left/12000*100)+'%';const warningSecond=Math.ceil(left/1000);if(warningSecond>=1&&warningSecond<=3&&warningSecond!==lastWarningSecond){lastWarningSecond=warningSecond;playTimerWarning(warningSecond)}if(left<=0){timeoutPlayer();return}timerRAF=requestAnimationFrame(tick)};tick()
 }
 function playerTurn(){
- if(!playing)return;myTurn=true;turnToken++;$('turnLabel').textContent='내 차례';renderNeed();$('wordInput').disabled=false;$('submitBtn').disabled=false;$('wordInput').value='';$('wordInput').focus({preventScroll:true});setMsg('12초 안에 단어를 이어 보세요.');runTimer(turnToken)
+ if(!playing)return;myTurn=true;turnToken++;$('turnLabel').textContent='내 차례';renderNeed();$('wordInput').disabled=false;$('submitBtn').disabled=false;$('wordInput').value='';$('wordInput').focus({preventScroll:true});setMsg('12초 안에 단어를 이어 보세요.');playTurnCue();runTimer(turnToken)
 }
 async function cpuTurn(){
  if(!playing)return;myTurn=false;turnToken++;stopTimer();$('timerFill').style.width='100%';$('wordInput').disabled=true;$('submitBtn').disabled=true;$('turnLabel').textContent='낱말봇 생각 중…';setMsg('낱말봇이 로컬 사전에서 단어를 찾고 있어요.');
@@ -217,8 +220,8 @@ async function prepareDb(){
 }
 $('soundBtn').addEventListener('click',toggleSound);
 $('soloModeBtn').addEventListener('click',start);
-$('duelModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=7&mode=duel'});
-$('multiModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=7&mode=multi'});
+$('duelModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=8&mode=duel'});
+$('multiModeBtn').addEventListener('click',()=>{ensureBgm();location.href='./multiplayer.html?v=8&mode=multi'});
 $('modeBtn').addEventListener('click',()=>{stopTimer();playing=false;myTurn=false;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('intro').classList.remove('hidden')});
 $('introHomeBtn').addEventListener('click',()=>location.href='../../');
 $('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});$('homeBtn').addEventListener('click',()=>location.href='../../');
