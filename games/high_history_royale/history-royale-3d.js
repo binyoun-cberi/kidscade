@@ -29,6 +29,8 @@ let fxSeq=1;
 let landmarkKey="";
 let landmarkGroup=null;
 let currentGameRef=null;
+let assaultFx=null;
+let assaultAnnounced=false;
 
 let state=null;
 let lastTime=performance.now();
@@ -590,6 +592,18 @@ function makeObservatory(){
   for(let i=0;i<7;i++){const r=.38-i*.025;g.add(mesh(new THREE.CylinderGeometry(r-.015,r,.15,14),mat(0x999181),0,.075+i*.14,0));}
   return g;
 }
+function factionCamp(fid){
+  const g=new THREE.Group();
+  const add=(name,x,z,scale=.35,rot=0)=>{const p=cloneProp(name,scale);if(p){p.position.set(x,0,z);p.rotation.y=rot;g.add(p);}};
+  if(fid==="goguryeo"){
+    add("WeaponStand",-.45,.05,.48,-.3);add("Shield_Wooden",.35,.10,.34,.4);add("Crate_Wooden",-.15,.50,.32,.1);add("Torch_Metal",.55,.48,.46,0);
+  }else if(fid==="baekje"){
+    add("Stall_Cart_Empty",-.25,.05,.58,-.2);add("Vase_2",.52,.30,.26,.2);add("Coin_Pile",.34,-.30,.22,0);add("Pouch_Large",-.62,.42,.25,.2);
+  }else{
+    add("Dummy",-.35,.08,.40,-.2);add("WeaponStand",.38,.08,.45,.25);add("Banner_1",-.64,.46,.45,0);add("Bench",.52,.48,.35,.1);
+  }
+  return g;
+}
 function factionLandmark(fid){
   if(fid==="goguryeo")return makeSteppedTomb();
   if(fid==="baekje")return makePagoda(4,0x785548);
@@ -602,7 +616,9 @@ function syncFactionLandmarks(g){
   const enemyBand=mesh(new THREE.PlaneGeometry(20.6,5.25),new THREE.MeshBasicMaterial({color:factionColor(g.enemyFaction),transparent:true,opacity:.055,side:THREE.DoubleSide,depthWrite:false}),0,.016,-3.85);enemyBand.rotation.x=-Math.PI/2;landmarkGroup.add(enemyBand);
   const playerBand=mesh(new THREE.PlaneGeometry(20.6,5.25),new THREE.MeshBasicMaterial({color:factionColor(g.playerFaction),transparent:true,opacity:.060,side:THREE.DoubleSide,depthWrite:false}),0,.016,3.85);playerBand.rotation.x=-Math.PI/2;landmarkGroup.add(playerBand);
   const enemy=factionLandmark(g.enemyFaction);enemy.position.set(-7.2,0,-3.25);enemy.scale.setScalar(.90);landmarkGroup.add(enemy);
+  const enemyCamp=factionCamp(g.enemyFaction);enemyCamp.position.set(7.25,0,-4.45);enemyCamp.rotation.y=Math.PI;landmarkGroup.add(enemyCamp);
   const player=factionLandmark(g.playerFaction);player.position.set(7.2,0,3.25);player.rotation.y=Math.PI;player.scale.setScalar(.90);landmarkGroup.add(player);
+  const playerCamp=factionCamp(g.playerFaction);playerCamp.position.set(-7.25,0,4.45);landmarkGroup.add(playerCamp);
   world.add(landmarkGroup);
 }
 function ensureRubble(rec,root,ratio){
@@ -851,11 +867,24 @@ async function loadAssets(){
     loadCharacter("Adventurer"),loadCharacter("Farmer"),loadCharacter("King"),loadHorse(),
     loadWeapon("Spear",1.55,"base"),loadWeapon("Bow_Wooden",1.10,"center"),loadWeapon("Sword",.82,"base"),
     loadWeapon("Shield_Round",.66,"center"),loadWeapon("Arrow",.58,"base"),
-    ...["Barrel","Crate_Wooden","Bag","Stall_Empty","Chest_Wood","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden"].map(loadProp)
+    ...["Barrel","Crate_Wooden","Bag","Stall_Empty","Stall_Cart_Empty","Chest_Wood","Coin_Pile","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden","Bench"].map(loadProp)
   ];
   const results=await Promise.allSettled(jobs);
   const failed=results.filter(r=>r.status==="rejected");
   if(failed.length)console.warn("[History Royale 3D] 일부 에셋 로드 실패",failed.map(x=>x.reason));
+}
+function createAssaultFx(){
+  const g=new THREE.Group();
+  const ring=mesh(new THREE.RingGeometry(1.0,1.08,64),new THREE.MeshBasicMaterial({color:0xf0bd61,transparent:true,opacity:.70,side:THREE.DoubleSide,depthWrite:false}),0,.08,0);ring.rotation.x=-Math.PI/2;g.add(ring);
+  const ring2=mesh(new THREE.RingGeometry(1.55,1.61,64),new THREE.MeshBasicMaterial({color:0xdc7858,transparent:true,opacity:.42,side:THREE.DoubleSide,depthWrite:false}),0,.07,0);ring2.rotation.x=-Math.PI/2;g.add(ring2);
+  const text=makeTextSprite("총공세","#ffe18b",1.45);text.position.y=1.45;g.add(text);
+  g.position.set(0,0,0);scene.add(g);return {root:g,life:1.8,max:1.8};
+}
+function updateAssaultFx(dt){
+  if(!assaultFx)return;assaultFx.life-=dt;
+  const p=1-Math.max(0,assaultFx.life)/assaultFx.max,t=Math.max(0,assaultFx.life/assaultFx.max);
+  assaultFx.root.scale.setScalar(.65+p*2.2);setFxOpacity(assaultFx.root,t*.82);
+  if(assaultFx.life<=0){scene.remove(assaultFx.root);disposeFx(assaultFx.root);assaultFx=null;}
 }
 function clearBattleObjects(){
   unitMeshes.forEach(rec=>world.remove(rec.root));unitMeshes.clear();
@@ -865,7 +894,7 @@ function clearBattleObjects(){
   fxMeshes.forEach(rec=>{scene.remove(rec.root);disposeFx(rec.root);});fxMeshes.clear();
   mixers.clear();
   if(landmarkGroup){world.remove(landmarkGroup);landmarkGroup=null;}
-  landmarkKey="";
+  landmarkKey="";assaultAnnounced=false;if(assaultFx){scene.remove(assaultFx.root);disposeFx(assaultFx.root);assaultFx=null;}
   previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;
 }
 async function init(){
@@ -878,7 +907,11 @@ function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;mixers.forEach(function(m){m.update(dt);});riverPhase+=dt;if(riverMesh){riverMesh.position.y=.018+Math.sin(riverPhase*1.7)*.008;riverMesh.material.opacity=.91+Math.sin(riverPhase*1.2)*.025;}
   state=window.HistoryRoyaleState||state;const g=state&&state.game;
   if(g!==currentGameRef){clearBattleObjects();currentGameRef=g;}
-  if(ready&&g&&g.running){updateAtmosphere(g,dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);}
+  if(ready&&g&&g.running){
+    updateAtmosphere(g,dt);
+    if(g.time<60&&!assaultAnnounced){assaultAnnounced=true;assaultFx=createAssaultFx();}
+    updateAssaultFx(dt);syncFactionLandmarks(g);syncTowers(g);syncBuildings(g);syncUnits(g);syncProjectiles(g);syncFx(g);syncPreview(g);
+  }
   else{previewRing.visible=false;previewFill.visible=false;formationBand.visible=false;rangePreview.visible=false;}
   renderer.render(scene,camera);
 }
