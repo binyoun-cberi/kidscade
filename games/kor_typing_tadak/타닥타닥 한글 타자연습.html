@@ -117,7 +117,7 @@ button{cursor:pointer}
     </div>
   </div>
 
-  <section id="home" class="screen active"><div class="hero"><div class="chapter">TYPE / EXPLORE / GROW</div><h1>손끝에서 자라는<br>나의 낱말 세계.</h1><p>처음 만나는 낱말과 새로운 문장. 오늘도 정확하게, 한 글자씩.</p><div class="bank-stats">980개 낱말 · 180개 문장 · 글비 중복 출제 방지</div></div>
+  <section id="home" class="screen active"><div class="hero"><div class="chapter">TYPE / EXPLORE / GROW</div><h1>손끝에서 자라는<br>나의 낱말 세계.</h1><p>처음 만나는 낱말과 새로운 문장. 오늘도 정확하게, 한 글자씩.</p><div class="bank-stats" id="bankStats">19만 사전 낱말 연결 중 · 180개 문장 · 약점 맞춤 연습</div></div>
     <div class="mode-grid">
       <button class="mode-card" data-mode="position"><div class="mode-icon">🖐️</div><h3>자리 연습</h3><p>자음과 모음의 위치를 손에 익혀요.</p></button>
       <button class="mode-card" data-mode="word"><div class="mode-icon">🍀</div><h3>낱말 연습</h3><p>짧은 낱말을 정확하고 빠르게 입력해요.</p></button>
@@ -215,6 +215,7 @@ button{cursor:pointer}
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="../../wordchain-static-db.js?v=3"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -326,6 +327,12 @@ const sound={ctx:null,on:safe.get('kidscade_language_sound',true),volume:safe.ge
  },toggle(){this.on=!this.on;safe.set('kidscade_language_sound',this.on);this.render()},render(){if($('sound')){$('sound').textContent=this.on?'소리 켬':'소리 끔';$('sound').setAttribute('aria-pressed',String(this.on))}}};
 
 DATA.word=[{"name": "쉬운 낱말", "items": ["가방", "가수", "가위", "가을", "가재", "가족", "가지", "간장", "갈비", "감사", "감자", "강당", "개미", "개울", "개학", "갯벌", "거미", "거실", "거울", "거위", "걱정", "건강", "걸레", "검도", "겨울", "경단", "경보", "경차", "경험", "계곡", "계단", "계절", "계주", "계획", "고래", "고추", "골프", "공원", "공작", "공책", "공항", "과자", "교실", "교탁", "구두", "구름", "구슬", "국밥", "국수", "국자", "국화", "군인", "궁궐", "규칙", "그릇", "그림", "금성", "기린", "기쁨", "기자", "기차", "김밥", "김치", "까치", "깻잎", "꽃게", "꿀떡", "나무", "나비", "낙타", "남극", "냄비", "냉면", "냉이", "노력", "노을", "놀람", "농구", "농부", "늑대", "다리", "단추", "달래", "달력", "달빛", "담비", "당구", "당근", "대게", "대답", "대추", "도넛", "도마", "도전", "독서", "동굴", "돼지", "된장", "두부", "듀공", "드론", "들판", "등대", "딱지", "딸기", "떡국", "뗏목", "라면", "럭비", "레고", "레몬", "로봇", "루지", "마늘", "마당", "마차", "마트", "만두", "망고", "매미", "멜론", "면봉", "모과", "모기", "모둠", "모래", "모자", "목성", "목수", "문어", "물감", "물개", "물범", "물병", "미소", "미역", "믿음", "밀대", "밀물", "바늘", "바다", "바람", "바위", "바지", "박수", "박스", "박쥐", "반장", "반지", "발표", "밥솥", "방법", "방학", "배구", "배낭", "배려", "배영", "배우", "배추", "백조", "백합", "버섯", "버스", "버터", "번개", "벚꽃", "베개", "벨트", "별빛", "병원", "보드", "보쌈", "보트", "복도", "복싱", "볼링", "볼펜", "봉투", "부추", "북극", "블록", "비누", "빙수", "빙하", "빵집", "사격", "사과", "사랑", "사막", "사서", "사슴", "사자", "사진", "사탕", "산책", "산호", "살구", "상상", "상어", "상추", "새벽", "샘물", "생각", "생일", "샤프", "샴푸", "서리", "서점", "서핑", "석류", "선물", "설탕", "성게", "성공", "성냥", "셔츠", "소금", "소라", "소파", "소풍", "손뼉", "송편", "수건", "수구", "수달", "수련", "수박", "수성", "수영", "수첩", "수프", "순대", "순서", "스키", "슬픔", "승마", "시계", "시장", "식당", "식빵", "식초", "식탁", "식혜", "실패", "쌈장", "썰매", "썰물", "씨름", "아침", "악어", "안개", "안경", "안방", "안전", "압정", "액자", "앵두", "야구", "약과", "약국", "약사", "약속", "양궁", "양말", "양보", "양파", "어묵", "어부", "언덕", "여름", "여우", "여치", "여행", "역도", "연고", "연꽃", "연못", "연필", "열쇠", "열차", "오디", "오리", "오븐", "오이", "온천", "옷장", "와플", "요가", "요트", "용기", "용암", "우동", "우비", "우산", "우유", "우정", "우주", "운석", "웃음", "위생", "위성", "유도", "유성", "유자", "육상", "은행", "음악", "응원", "의견", "의사", "의자", "이끼", "이불", "이슬", "이웃", "이유", "인사", "인형", "읽기", "입학", "자갈", "자두", "자매", "자몽", "작가", "잡채", "장갑", "장마", "장미", "장화", "쟁반", "저녁", "저울", "전구", "전복", "접시", "접영", "정원", "정직", "제비", "젤리", "조정", "족구", "족발", "존중", "졸업", "종이", "주걱", "주방", "지갑", "지구", "지진", "지퍼", "지하", "진흙", "질문", "짝꿍", "짬뽕", "쪽파", "쫄면", "찌개", "찐빵", "찜닭", "참새", "창문", "채반", "책상", "책임", "천둥", "철쭉", "체리", "체조", "초밥", "추억", "축구", "축하", "취미", "치마", "치약", "치즈", "치킨", "치타", "친구", "친절", "칠판", "침낭", "침대", "칫솔", "카누", "카레", "카약", "카페", "커튼", "컬링", "케첩", "코트", "클립", "키위", "킥볼", "타조", "타코", "탁구", "탁자", "태양", "태풍", "택시", "터널", "텐트", "토끼", "토론", "토성", "투호", "튀김", "튤립", "트럭", "티볼", "파도", "파리", "파스", "파전", "판사", "팝콘", "패딩", "팬더", "팽이", "퍼즐", "펀치", "펜싱", "펭귄", "편지", "평영", "포도", "포크", "폭포", "표범", "푸딩", "풋살", "퓨마", "피겨", "피구", "피자", "필통", "하늘", "하마", "하키", "학교", "학급", "학생", "학원", "한옥", "항구", "해달", "해마", "해변", "햇빛", "햇살", "행복", "행성", "허들", "현관", "협동", "형제", "혜성", "호떡", "호박", "호수", "홍합", "화가", "화분", "화산", "화성", "황새", "후추", "휴식", "휴지", "희망"]}, {"name": "생활 낱말", "items": ["가랑비", "가리비", "가습기", "가오리", "각도기", "간호사", "갈매기", "갈비탕", "감자전", "감자탕", "강아지", "개구리", "개나리", "개발자", "거북이", "건전지", "건축가", "경찰관", "경찰서", "경찰차", "경호원", "계란빵", "계란찜", "계량컵", "계산기", "고구마", "고사리", "고양이", "고추장", "공연장", "공유기", "과학관", "과학실", "과학자", "교과서", "교무실", "구급차", "국화빵", "군만두", "귀걸이", "귀마개", "글쓰기", "급식실", "기관사", "기차역", "김치전", "까마귀", "깐풍기", "꾀꼬리", "나침반", "나팔꽃", "냉장고", "너구리", "널뛰기", "노래방", "노트북", "녹두전", "놀이터", "누룽지", "눈보라", "눈송이", "다락방", "다람쥐", "다리미", "다이빙", "단무지", "달걀찜", "달리기", "달팽이", "닭갈비", "닭강정", "닭고기", "닭꼬치", "대나무", "대통령", "대학교", "도마뱀", "도서관", "도서실", "도시락", "도토리", "독서록", "독수리", "돈가스", "돋보기", "돌고래", "돗자리", "동물원", "동아리", "두꺼비", "두더지", "두루미", "뒤집개", "등산화", "따개비", "떡꼬치", "떡볶이", "또띠아", "뜸부기", "라디오", "라벤더", "라이터", "레슬링", "리모컨", "마라탕", "마라톤", "마술사", "마스크", "마우스", "마이크", "만화가", "말미잘", "망원경", "머리띠", "머리핀", "멀티탭", "메뚜기", "면도기", "모기장", "모니터", "목걸이", "목도리", "목욕탕", "무궁화", "무용가", "무용수", "무지개", "무화과", "문방구", "문제집", "물방개", "물티슈", "미술관", "미역국", "미용사", "미용실", "믹서기", "민들레", "바게트", "바구니", "바나나", "바지락", "박물관", "반창고", "발명가", "밤하늘", "방송실", "백설기", "백화점", "베란다", "변호사", "별자리", "병아리", "보건실", "보리밥", "보리차", "보일러", "복분자", "복사기", "복숭아", "볶음밥", "봉선화", "부모님", "부엉이", "부침개", "북엇국", "불고기", "붕어빵", "비둘기", "비빔밥", "비행기", "빗자루", "사마귀", "사물함", "사이클", "사인펜", "사진가", "산딸기", "삼겹살", "삼계탕", "색연필", "샐러드", "서랍장", "선생님", "선인장", "선풍기", "설렁탕", "세탁기", "세탁소", "소고기", "소금빵", "소나기", "소나무", "소방관", "소방서", "소방차", "소시지", "손수건", "손전등", "솔방울", "수선화", "수세미", "수영장", "수의사", "수정과", "수제비", "수족관", "숟가락", "스캐너", "스쿠터", "스쿼시", "스키장", "스탠드", "스피커", "슬리퍼", "승무원", "승합차", "시간표", "시금치", "시냇물", "식물원", "신발장", "실내화", "쌀국수", "아귀찜", "알림장", "앵무새", "양꼬치", "양배추", "얼룩말", "에어컨", "여객선", "열기구", "영화관", "오렌지", "오소리", "오징어", "옥수수", "온도계", "옷걸이", "왜가리", "요거트", "요리사", "우주복", "우주선", "우체국", "우체통", "운동장", "운동화", "운동회", "원숭이", "유모차", "유치원", "육개장", "윷놀이", "은하수", "음악실", "이름표", "이발사", "이어폰", "인절미", "일기장", "자동차", "자물쇠", "자유형", "자전거", "작곡가", "잠수함", "잠자리", "잡곡밥", "잣나무", "장난감", "장조림", "재규어", "전나무", "전시회", "전학생", "젓가락", "정류장", "제빵사", "제습기", "조종사", "족제비", "종달새", "주먹밥", "주사위", "주유소", "주짓수", "주차장", "준비물", "줄넘기", "지렁이", "지우개", "지하철", "진달래", "짜장면", "찐만두", "참고서", "참기름", "책가방", "천왕성", "청국장", "청소기", "체육관", "초콜릿", "추어탕", "출석부", "충전기", "칠면조", "카메라", "칼국수", "캐리어", "캠핑장", "캥거루", "컴퍼스", "컴퓨터", "케이크", "코끼리", "코뿔소", "코알라", "코코넛", "크리켓", "키보드", "킥보드", "탕수육", "탕후루", "태권도", "태블릿", "터미널", "텀블러", "테니스", "테이프", "토마토", "토스터", "통역사", "투포환", "파리채", "파스타", "펠리컨", "편의점", "풍뎅이", "프린터", "피시방", "학부모", "학예회", "할머니", "함박눈", "합기도", "핫도그", "해왕성", "해장국", "해파리", "핸드볼", "햄버거", "햄스터", "헤드셋", "헤드폰", "현미경", "현미밥", "형광펜", "호랑이", "화물선", "화장실", "휴지통"]}, {"name": "긴 낱말", "items": ["가스레인지", "갈매기살", "감자조림", "감자튀김", "계란말이", "고등어구이", "고래상어", "고무장갑", "고속버스", "고슴도치", "공기청정기", "과일주스", "군고구마", "귀뚜라미", "김치볶음밥", "김치찌개", "꿔바로우", "놀이공원", "높이뛰기", "느티나무", "다이어리", "단풍나무", "돼지고기", "된장찌개", "두부조림", "딱따구리", "리듬체조", "마라샹궈", "마요네즈", "마을버스", "마파두부", "머스터드", "멀리뛰기", "메추라기", "멸치볶음", "모래시계", "모터보트", "무당벌레", "바다사자", "바다코끼리", "바람개비", "반딧불이", "받아쓰기", "발레리나", "방아깨비", "배드민턴", "버드나무", "버스정류장", "보물찾기", "보조배터리", "봅슬레이", "북두칠성", "불가사리", "브로콜리", "블라인드", "블루베리", "빨래집게", "사슴벌레", "새우튀김", "샌드위치", "생선구이", "세단뛰기", "소금쟁이", "소떡소떡", "손톱깎이", "쇼트트랙", "수리부엉이", "수수께끼", "수학여행", "술래잡기", "숨바꼭질", "스노보드", "스라소니", "스마트폰", "스케이트", "스케치북", "스켈레톤", "스테이크", "스테이플러", "스포츠카", "스피드스케이팅", "시금치나물", "쓰레기통", "쓰레받기", "아나운서", "아보카도", "아이스크림", "아이스하키", "에스컬레이터", "엘리베이터", "연어구이", "연필깎이", "영화감독", "오므라이스", "오이무침", "오토바이", "요구르트", "우주비행사", "운동선수", "운전기사", "유부초밥", "은행나무", "자작나무", "장수풍뎅이", "전기밥솥", "전기주전자", "전자레인지", "제기차기", "제육볶음", "줄다리기", "짜파게티", "찐옥수수", "철인삼종", "케이블카", "코스모스", "콜리플라워", "콩나물국", "크레파스", "크루아상", "클라이밍", "타코야키", "텔레비전", "파인애플", "팬케이크", "포크레인", "프라이팬", "프로게이머", "플로어볼", "피겨스케이팅", "피아니스트", "하루살이", "하이에나", "학급회의", "할아버지", "해바라기", "해수욕장", "헤어드라이어", "헬리콥터", "현장체험학습", "호두과자"]}];
+DATA.word.push(
+ {name:'사전 쉬움',items:[],dynamic:'dictionary',minLength:2,maxLength:3,loadCount:140},
+ {name:'사전 보통',items:[],dynamic:'dictionary',minLength:3,maxLength:5,loadCount:160},
+ {name:'사전 도전',items:[],dynamic:'dictionary',minLength:5,maxLength:9,loadCount:180},
+ {name:'🎯 약점 집중',items:[],dynamic:'weak',minLength:2,maxLength:6,loadCount:180}
+);
 DATA.sentence=[{"name": "짧은 문장", "items": ["참새가 나뭇가지에 앉았어요.", "고양이가 기지개를 켜요.", "강아지가 꼬리를 흔들어요.", "호수에 달빛이 비쳐요.", "풀잎 끝에 이슬이 맺혔어요.", "바람에 빨래가 흔들려요.", "눈사람에게 모자를 씌워요.", "친구에게 먼저 인사해요.", "책을 읽고 책갈피를 꽂아요.", "연필을 깎고 필통에 넣어요.", "발표할 때 손을 들어요.", "친구의 말을 끝까지 들어요.", "준비물을 가방에 챙겨요.", "알림장을 꼼꼼히 확인해요.", "책상 위를 깨끗이 정리해요.", "칠판에 오늘 날짜를 적어요.", "달걀을 그릇에 깨뜨려요.", "당근을 깨끗하게 씻어요.", "따뜻한 밥에서 김이 나요.", "식탁에 숟가락을 놓아요.", "배가 고파서 간식을 먹어요.", "물병에 시원한 물을 담아요.", "사과를 반으로 잘라요.", "우유를 컵에 따라요.", "공을 두 손으로 받아요.", "출발선에서 신호를 기다려요.", "줄을 넘으며 숫자를 세어요.", "운동을 마치고 물을 마셔요.", "넘어진 친구를 일으켜 줘요.", "바닥의 물기를 닦아요.", "공원에서 가볍게 산책해요.", "신발 끈을 단단히 묶어요.", "씨앗을 화분에 심어요.", "흙이 마르면 물을 줘요.", "새싹이 흙을 뚫고 나와요.", "꽃봉오리가 조금씩 벌어져요.", "벌이 꽃 사이를 날아다녀요.", "나비가 날개를 접었어요.", "낙엽이 길 위에 쌓여요.", "도토리를 주워 살펴봐요.", "나이테를 하나씩 세어 봐요.", "파도가 모래사장에 밀려와요.", "모래성을 높게 쌓아요.", "갈매기가 바다 위를 날아요.", "등대가 밤바다를 밝혀요.", "배가 천천히 항구를 떠나요.", "갯벌에 작은 구멍이 보여요.", "글의 제목을 먼저 읽어요.", "주인공에게 편지를 써요.", "좋아하는 문장에 표시해요.", "나침반의 바늘이 움직여요.", "기차가 긴 터널을 지나가요.", "버스 정류장에서 줄을 서요.", "초록불에도 주변을 살펴요.", "차 안에서는 안전띠를 매요.", "종이를 반으로 접어요.", "색연필로 무지개를 그려요.", "찰흙을 둥글게 빚어요.", "가위는 조심해서 사용해요.", "풀을 바르고 종이를 붙여요.", "붓을 물에 깨끗이 씻어요.", "팔레트에서 색을 섞어요.", "노래에 맞추어 손뼉을 쳐요.", "동전을 종류별로 나누어요.", "물건값을 더해 보아요.", "시계를 보고 시간을 말해요.", "달력에서 생일을 찾아요.", "자로 책의 길이를 재어요.", "도형의 꼭짓점을 세어요.", "세모와 네모를 찾아봐요.", "두 수의 크기를 비교해요.", "문제를 풀고 답을 확인해요.", "뜨거운 냄비는 조심해요.", "계단에서는 뛰지 않아요.", "도움이 필요하면 부탁해요.", "서로 다른 생각도 존중해요.", "약속한 시간에 만나요.", "고운 말을 사용해요.", "작은 일에도 감사해요.", "새로운 일에 용기를 내요.", "건전지의 방향을 확인해요.", "얼음이 녹아 물이 되었어요.", "물에 설탕을 넣고 저어요.", "그림자의 길이가 달라져요.", "돋보기로 나뭇잎을 관찰해요.", "온도계의 눈금을 읽어요.", "종이비행기를 멀리 날려요.", "밤하늘에 별이 반짝여요.", "지구는 태양 주위를 돌아요.", "망원경으로 달을 살펴봐요.", "별자리 그림을 따라 그려요.", "태양은 스스로 빛을 내요.", "낮에는 하늘이 밝아요.", "로켓이 하늘로 올라가요.", "우주에 대한 책을 읽어요.", "봄바람이 살랑살랑 불어요.", "여름에는 그늘에서 쉬어요.", "장마철에는 우산을 챙겨요.", "봄이 오면 새싹이 돋아나요."]}, {"name": "보통 문장", "items": ["아침 햇살이 창문으로 들어와요.", "우산 위로 빗방울이 떨어져요.", "토끼는 긴 귀를 쫑긋 세워요.", "틀린 글자를 지우개로 지워요.", "냄비에서 국이 보글보글 끓어요.", "밥을 먹기 전에 손을 씻어요.", "경기가 끝나면 서로 인사해요.", "차례를 지켜 미끄럼틀을 타요.", "솔방울이 나무 아래 떨어졌어요.", "바위틈에서 작은 게를 찾았어요.", "조개껍데기를 귀에 대어 봐요.", "물고기가 지느러미를 움직여요.", "해가 수평선 아래로 내려가요.", "도서관에서는 작은 소리로 말해요.", "빌린 책은 제자리에 돌려줘요.", "새로운 단어를 사전에서 찾아요.", "궁금한 내용을 공책에 적어요.", "이야기의 다음 장면을 상상해요.", "다 읽은 책을 친구에게 소개해요.", "표지 그림을 자세히 살펴봐요.", "지도에서 우리 동네를 찾아요.", "횡단보도 앞에서 잠시 멈춰요.", "길을 건널 때 휴대전화를 보지 않아요.", "자전거를 탈 때 안전모를 써요.", "비 오는 날에는 천천히 걸어요.", "북을 두드리며 박자를 맞춰요.", "친구들과 함께 노래를 불러요.", "작은 블록을 차곡차곡 쌓아요.", "깨진 유리는 어른에게 알려요.", "모르는 사람을 따라가지 않아요.", "젖은 손으로 전기 기구를 만지지 않아요.", "문을 닫을 때 손을 조심해요.", "아픈 곳이 있으면 선생님께 말해요.", "기침할 때는 옷소매로 가려요.", "사용한 휴지는 휴지통에 버려요.", "잠자리에 들기 전에 이를 닦아요.", "동생과 장난감을 나누어 써요.", "가족에게 고마운 마음을 전해요.", "잘못했을 때는 솔직하게 말해요.", "친구가 슬플 때 곁에 있어 줘요.", "로봇이 천천히 앞으로 움직여요.", "자석이 철로 된 클립을 끌어당겨요.", "실험이 끝나면 도구를 정리해요.", "달의 모양은 날마다 달라 보여요.", "우주비행사가 우주복을 입어요.", "가을 들판이 황금빛으로 물들어요.", "겨울 아침에는 옷을 따뜻하게 입어요.", "비가 그치자 무지개가 나타났어요.", "눈길에서는 미끄러지지 않게 걸어요.", "소나기가 지나간 뒤 공기가 맑아졌어요.", "가을바람에 코스모스가 흔들려요.", "작은 실수는 배움의 시작이 될 수 있어요."]}, {"name": "도전 문장", "items": ["어려운 문제를 만나면 아는 것부터 차근차근 생각해 보세요.", "빠르게 끝내는 것보다 정확하게 하는 것이 더 중요할 때도 있어요.", "내 생각과 다른 의견에도 귀를 기울여 보세요.", "처음에는 서툴러도 꾸준히 연습하면 조금씩 나아져요.", "함께 쓰는 물건은 다음 사람을 생각하며 소중하게 사용해요.", "쓰레기를 줄이기 위해 꼭 필요한 물건만 사기로 했어요.", "친구에게 빌린 물건은 약속한 날에 깨끗하게 돌려줘요.", "책에서 알게 된 내용을 내 말로 설명해 보았어요.", "결과가 예상과 다르면 어떤 과정이 달랐는지 살펴보세요.", "오늘 아침에는 평소보다 일찍 일어나 창문을 열었어요.", "운동장에서 뛰어놀다가 목이 말라 물을 마셨어요.", "비가 오는 날에는 도서관에서 조용히 책을 읽고 싶어요.", "할머니께서 들려주신 옛이야기를 동생에게 전해 주었어요.", "시장에 가기 전에 필요한 물건을 목록으로 적었어요.", "우리는 모둠 친구들과 역할을 나누어 발표를 준비했어요.", "길가에 핀 이름 모를 꽃을 사진으로 남겨 두었어요.", "새로 전학 온 친구에게 학교의 여러 장소를 소개했어요.", "밤새 내린 눈 때문에 운동장이 하얗게 변했어요.", "버스를 타기 전에 목적지로 가는 버스인지 확인했어요.", "도서관에서 빌린 책을 다 읽고 기억에 남는 장면을 그렸어요.", "친구와 의견이 달랐지만 서로 이유를 말하며 해결했어요.", "과학 시간에 관찰한 나뭇잎의 모양을 공책에 자세히 적었어요.", "소풍을 마친 뒤 우리가 머물렀던 자리를 깨끗하게 치웠어요.", "인터넷에서 찾은 정보가 사실인지 다른 자료와 비교했어요.", "어제보다 타수가 조금 느려도 정확하게 입력했다면 잘한 거예요.", "서두르지 않고 한 글자씩 확인하며 문장을 완성해 보세요.", "처음 보는 낱말도 소리 내어 읽으면 기억하기 쉬워요.", "오늘 배운 내용을 가족에게 설명하면서 다시 떠올려 보았어요.", "모두가 즐겁게 놀 수 있도록 놀이의 규칙을 함께 정했어요."]}];
 DATA.long.push({"name": "우리 반의 작은 정원", "author": "타닥타닥 창작 연습글", "source": "자체 제작", "preserveLines": true, "embedded": "씨앗을 화분에 심어요.\n흙이 마르면 물을 줘요.\n새싹이 흙을 뚫고 나와요.\n꽃봉오리가 조금씩 벌어져요.\n벌이 꽃 사이를 날아다녀요.\n나비가 날개를 접었어요.\n낙엽이 길 위에 쌓여요.\n도토리를 주워 살펴봐요.\n솔방울이 나무 아래 떨어졌어요.\n나이테를 하나씩 세어 봐요."});
 DATA.long.push({"name": "비 오는 날의 도서관", "author": "타닥타닥 창작 연습글", "source": "자체 제작", "preserveLines": true, "embedded": "도서관에서는 작은 소리로 말해요.\n빌린 책은 제자리에 돌려줘요.\n새로운 단어를 사전에서 찾아요.\n궁금한 내용을 공책에 적어요.\n글의 제목을 먼저 읽어요.\n이야기의 다음 장면을 상상해요.\n주인공에게 편지를 써요.\n좋아하는 문장에 표시해요.\n다 읽은 책을 친구에게 소개해요.\n표지 그림을 자세히 살펴봐요."});
@@ -343,6 +350,7 @@ let completedTyped='', currentInput='', totalErrors=0;
 let longFullText='', longLines=[], longLine=0, longCompletedText='', longLoading=false, longErrors=0, longErrorKeys=new Set(), longLastValue='';
 let timerRAF=0,audioCtx=null;
 let practiceDeck=null,rainDeck=null,rainActive=false,rainPaused=false,rainPauseAt=0,rainCombo=0,rainBestCombo=0,rainTyped='',rainWrong=0,normalErrorKeys=new Set(),practiceRun=0;
+let dictionaryReady=false,dictionaryTotal=0,dictionaryRainWords=[];
 let fallTimer=null,spawnTimer=null,falling=[],gameStart=0,gameHits=0,gameMiss=0,gameScore=0;
 
 function renderKeyboard(){
@@ -381,6 +389,85 @@ function jamoStrokeCount(str){
  }
  return n;
 }
+const CHO_JAMO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JUNG_JAMO=['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+const JONG_JAMO=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const WEAKNESS_KEY='tadak_weak_jamo_v1';
+function charJamo(ch){
+ const code=String(ch||'').codePointAt(0);
+ if(code<0xAC00||code>0xD7A3)return [];
+ const s=code-0xAC00,cho=Math.floor(s/588),jung=Math.floor((s%588)/28),jong=s%28;
+ return [CHO_JAMO[cho],JUNG_JAMO[jung],JONG_JAMO[jong]].filter(Boolean);
+}
+function weaknessMap(){const map=safe.get(WEAKNESS_KEY,{});return map&&typeof map==='object'?map:{}}
+function recordWeakChar(ch){
+ const parts=charJamo(ch);if(!parts.length)return;
+ const map=weaknessMap();for(const jamo of parts)map[jamo]=(Number(map[jamo])||0)+1;safe.set(WEAKNESS_KEY,map);
+}
+function weakEntries(){return Object.entries(weaknessMap()).filter(([,n])=>Number(n)>0).sort((a,b)=>Number(b[1])-Number(a[1]))}
+function weakScore(word){
+ const map=weaknessMap();let score=0;
+ for(const ch of String(word||''))for(const jamo of charJamo(ch))score+=Number(map[jamo])||0;
+ return score;
+}
+function weakSummary(){
+ const rows=weakEntries().slice(0,4);return rows.length?rows.map(([j,n])=>j+' '+n+'회').join(' · '):'아직 기록 없음';
+}
+async function initDictionaryBank(){
+ if(dictionaryReady)return dictionaryTotal;
+ try{
+  const manifest=await window.KidscadeWordDB?.init?.();
+  dictionaryTotal=Number(manifest?.total||window.KidscadeWordDB?.total||0);
+  dictionaryReady=dictionaryTotal>0;
+  if(dictionaryReady&&$('#bankStats'))$('#bankStats').textContent=dictionaryTotal.toLocaleString()+'개 사전 낱말 · 180개 문장 · 약점 맞춤 연습';
+ }catch(error){
+  console.warn('타닥타닥 사전 연결 실패',error);
+  if($('#bankStats'))$('#bankStats').textContent='980개 기본 낱말 · 180개 문장 · 오프라인 안전 모드';
+ }
+ return dictionaryTotal;
+}
+async function dictionaryWords(cfg,runToken){
+ await initDictionaryBank();
+ if(runToken!==practiceRun)return [];
+ if(!dictionaryReady||!window.KidscadeWordDB?.sample)return [];
+ let words=[];
+ if(cfg.dynamic==='weak'){
+  const hasWeak=weakEntries().length>0;
+  words=await window.KidscadeWordDB.sample({
+   minLength:cfg.minLength,maxLength:cfg.maxLength,
+   predicate:hasWeak?(word=>weakScore(word)>0):null
+  },cfg.loadCount||160);
+  if(hasWeak)words.sort((a,b)=>weakScore(b)-weakScore(a)||a.length-b.length);
+ }else{
+  words=await window.KidscadeWordDB.sample({minLength:cfg.minLength,maxLength:cfg.maxLength},cfg.loadCount||160);
+ }
+ return [...new Set(words)].slice(0,cfg.loadCount||160);
+}
+async function prepareDynamicWordLesson(cfg,runToken){
+ $('#typingInput').disabled=true;
+ $('#targetText').className='target-text small';
+ $('#targetText').textContent=cfg.dynamic==='weak'?'내 오타 기록을 보고 연습 낱말을 고르는 중…':'19만 단어 사전에서 낱말을 고르는 중…';
+ $('#promptText').textContent='잠시 후 자동으로 시작합니다.';
+ let words=[];
+ try{words=await dictionaryWords(cfg,runToken)}catch(error){console.warn(error)}
+ if(runToken!==practiceRun)return false;
+ if(words.length<10){
+  const fallback=RAIN_WORDS.filter(word=>[...word].length>=cfg.minLength&&[...word].length<=cfg.maxLength);
+  words=shuffle(fallback).slice(0,Math.max(40,cfg.loadCount||120));
+ }
+ cfg.items=words;
+ return words.length>0;
+}
+async function prepareDictionaryRain(runToken){
+ dictionaryRainWords=[];
+ await initDictionaryBank();
+ if(runToken!==practiceRun||!dictionaryReady||!window.KidscadeWordDB?.sample)return;
+ try{
+  const words=await window.KidscadeWordDB.sample({minLength:2,maxLength:6},260);
+  if(runToken===practiceRun&&words.length>=30)dictionaryRainWords=words;
+ }catch(error){console.warn(error)}
+}
+
 function expectedTargetText(){
  if(mode==='long')return longLines[longLine]||'';
  return target||'';
@@ -431,26 +518,31 @@ function updateLive(){
 }
 function buildLessons(){
  const list=$('#lessonList');list.innerHTML='';
- DATA[mode].forEach((x,i)=>{const b=document.createElement('button');b.className='lesson'+(i===lesson?' active':'');b.textContent=x.name+(x.items?' · '+x.items.length:'');b.onclick=()=>startMode(mode,i);list.appendChild(b)})
+ DATA[mode].forEach((x,i)=>{const b=document.createElement('button');b.className='lesson'+(i===lesson?' active':'');const extra=x.dynamic==='weak'?' · 맞춤':x.dynamic?' · 사전':x.items?' · '+x.items.length:'';b.textContent=x.name+extra;b.onclick=()=>startMode(mode,i);list.appendChild(b)})
 }
 function modeLabels(){
  return {
   position:['자리 연습','자판 위치를 익혀요.'],
-  word:['낱말 연습','짧은 낱말부터 정확하게 입력해요.'],
+  word:['낱말 연습','기본 낱말과 19만 단어 사전에서 골라 낸 새 낱말을 연습해요.'],
   sentence:['문장 연습','문장을 끝까지 정확하게 입력해요.'],
   long:['장문 연습','한 줄씩 확인하며 유명한 글을 끝까지 완주해요.'],
   rain:['글비 게임','하늘에서 떨어지는 글을 입력해 없애요.']
  }[mode]
 }
-function startMode(m,l=0){
- stopGame();practiceRun++;composing=false;normalErrorKeys.clear();$('#overlay').classList.remove('show');cancelAnimationFrame(timerRAF);mode=m;lesson=l;index=0;completedTyped='';currentInput='';totalErrors=0;endTime=0;startTime=Date.now();
+async function startMode(m,l=0){
+ stopGame();const runToken=++practiceRun;composing=false;normalErrorKeys.clear();$('#overlay').classList.remove('show');cancelAnimationFrame(timerRAF);mode=m;lesson=l;index=0;completedTyped='';currentInput='';totalErrors=0;endTime=0;startTime=Date.now();
  showScreen('practice');buildLessons();
- const [t,d]=modeLabels();$('#title').textContent=t;$('#desc').textContent=d;$('#lessonBadge').textContent=DATA[m][l].name;
+ const cfg=DATA[m][l],labels=modeLabels(),t=labels[0],d=labels[1];$('#title').textContent=t;$('#desc').textContent=d;$('#lessonBadge').textContent=cfg.name;
  $('#normalArea').style.display=['position','word','sentence'].includes(m)?'block':'none';
  $('#longArea').style.display=m==='long'?'block':'none';$('#rainArea').style.display=m==='rain'?'block':'none';
- $('#tipBox').textContent=m==='long'?'💡 현재 한 줄만 입력합니다. 틀린 글자는 원문에서 빨갛게 표시되고, 정확히 입력하면 자동으로 다음 줄로 넘어가요.':m==='rain'?'💡 문장 비에서는 짧은 문장부터 먼저 지우면 화면에 여유가 생겨요.':'💡 처음에는 속도보다 정확도를 높이는 것이 더 중요해요.';
+ $('#tipBox').textContent=m==='long'?'💡 현재 한 줄만 입력합니다. 틀린 글자는 원문에서 빨갛게 표시되고, 정확히 입력하면 자동으로 다음 줄로 넘어가요.':m==='rain'?'💡 낱말 비는 19만 단어 사전에서 새 낱말을 골라 오고, 문장 비는 어린이용 문장을 사용해요.':cfg?.dynamic==='weak'?'🎯 자주 틀린 자모가 들어간 낱말을 우선 출제해요. 현재 약점: '+weakSummary():'💡 처음에는 속도보다 정확도를 높이는 것이 더 중요해요.';
  $('#keyboard').style.display=m==='position'?'block':'none';$('#liveSpeed').nextElementSibling.textContent=m==='rain'?'현재 점수':'실시간 타수';$('#pauseRain').hidden=m!=='rain';$('#rainCombo').textContent='';loadRecords();
- if(['position','word','sentence'].includes(m))practiceDeck=new QuestionDeck('typing_'+m+'_'+l,DATA[m][l].items);
+ if(m==='word'&&cfg.dynamic){
+  const ok=await prepareDynamicWordLesson(cfg,runToken);if(!ok||runToken!==practiceRun)return;
+  buildLessons();$('#lessonBadge').textContent=cfg.name+' · '+cfg.items.length+'개 후보';startTime=Date.now();
+ }
+ if(m==='rain'&&cfg.type==='word'){await prepareDictionaryRain(runToken);if(runToken!==practiceRun)return;startTime=Date.now()}
+ if(['position','word','sentence'].includes(m)){practiceDeck=new QuestionDeck('typing_'+m+'_'+l,DATA[m][l].items);$('#typingInput').disabled=false}
  if(m==='long')startLong();else if(m==='rain')startRain();else nextTarget(true);
  updateLive();
 }
@@ -466,7 +558,7 @@ function highlightKey(ch){
  if(mode!=='position')return;const e=KEYMAP[ch];if(e){const el=document.querySelector(`.key[data-key="${e}"]`);if(el)el.classList.add('active')}
 }
 function renderTargetProgress(val){
- if(!composing)for(let i=0;i<val.length;i++){if(val[i]!==target[i]&&!normalErrorKeys.has(i)){normalErrorKeys.add(i);totalErrors++;}}
+ if(!composing)for(let i=0;i<val.length;i++){if(val[i]!==target[i]&&!normalErrorKeys.has(i)){normalErrorKeys.add(i);totalErrors++;recordWeakChar(target[i])}}
  if(mode==='position')return;
  let html='';for(let i=0;i<target.length;i++){const ch=target[i];if(i<val.length)html+=`<span class="${val[i]===ch?'ok':'wrong'}">${esc(ch)}</span>`;else html+=esc(ch)}
  $('#targetText').innerHTML=html;
@@ -780,7 +872,7 @@ function handleLongInput(inp){
  for(let i=0;i<Math.min(value.length,target.length);i++){
    if(value[i]!==target[i]){
      const key=`${longLine}:${i}`;
-     if(!longErrorKeys.has(key)){longErrorKeys.add(key);longErrors++}
+     if(!longErrorKeys.has(key)){longErrorKeys.add(key);longErrors++;recordWeakChar(target[i])}
    }
  }
  if(value.length>target.length){
@@ -854,10 +946,11 @@ function showResult(speed,acc,score){
 function startRain(){
  falling=[];gameHits=0;gameMiss=0;gameScore=0;rainCombo=0;rainBestCombo=0;rainWrong=0;rainTyped='';rainPaused=false;rainActive=true;gameStart=Date.now();
  $('#pauseRain').textContent='잠깐 쉬기';$('#rainPaused').hidden=true;
- rainDeck=new QuestionDeck('typing_rain_'+DATA.rain[lesson].type,DATA.rain[lesson].type==='sentence'?RAIN_SENTENCES:RAIN_WORDS);
+ const isSentence=DATA.rain[lesson].type==='sentence',wordSource=dictionaryRainWords.length?dictionaryRainWords:RAIN_WORDS,source=isSentence?RAIN_SENTENCES:wordSource;
+ rainDeck=new QuestionDeck('typing_rain_'+DATA.rain[lesson].type,source);
  $('#gameArea').querySelectorAll('.fall-item').forEach(e=>e.remove());$('#gameInput').value='';$('#gameInput').disabled=false;$('#gameEnter').disabled=false;$('#gameInput').focus();
- $('#desc').textContent=`${DATA.rain[lesson].type==='sentence'?RAIN_SENTENCES.length:RAIN_WORDS.length}개 표현 · 다 나오기 전에는 반복하지 않아요`;
- spawnRain();spawnTimer=setInterval(spawnRain,DATA.rain[lesson].type==='sentence'?3600:DATA.rain[lesson].spawn);fallTimer=setInterval(tickRain,30);
+ $('#desc').textContent=`${source.length}개 표현 · ${!isSentence&&dictionaryRainWords.length?'19만 사전에서 새로 선별 · ':''}다 나오기 전에는 반복하지 않아요`;
+ spawnRain();spawnTimer=setInterval(spawnRain,isSentence?3600:DATA.rain[lesson].spawn);fallTimer=setInterval(tickRain,30);
 }
 
 function stopGame(){rainActive=false;rainPaused=false;clearInterval(spawnTimer);clearInterval(fallTimer);spawnTimer=fallTimer=null;falling=[];if($('#rainPaused'))$('#rainPaused').hidden=true}
@@ -914,7 +1007,7 @@ $('#gameInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposin
 $('#gameEnter').onclick=submitRain;
 
 $('#pauseRain').onclick=toggleRainPause;$('#resumeRain').onclick=toggleRainPause;document.addEventListener('visibilitychange',()=>{if(document.hidden&&rainActive&&!rainPaused)toggleRainPause()});
-$('#soundBtn').textContent=soundOn?'🔊 소리 켬':'🔇 소리 끔';renderKeyboard();loadRecords();
+$('#soundBtn').textContent=soundOn?'🔊 소리 켬':'🔇 소리 끔';renderKeyboard();loadRecords();initDictionaryBank();
 })();
 </script>
 </body>
