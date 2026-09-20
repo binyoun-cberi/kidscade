@@ -128,5 +128,24 @@
   "2D 플랫포머 게임": [
     "2d/platformer-art/base/player/p1-front.png",
     "2d/platformer-art/base/items/star.png"
+  ],
+  "냠냠 우주 여행": [
+    "3d/nature/kenney-nature-kit/mushroom-red.glb",
+    "food/soy.glb",
+    "3d/nature/kenney-nature-kit/crops-leafs-stage-a.glb",
+    "food/carrot.glb",
+    "food/broccoli.glb",
+    "food/pumpkin-basic.glb",
+    "3d/nature/kenney-nature-kit/tree-default.glb",
+    "3d/vehicles/kenney-car-kit/sedan.glb",
+    "3d/city/kenney-city-kit-suburban/building-type-a.glb",
+    "3d/nature/kenney-nature-kit/rock-tall-a.glb",
+    "platformer/pickups/star_yellow.glb",
+    "space/planets/planet00.png",
+    "space/planets/planet01.png",
+    "space/planets/planet02.png",
+    "space/planets/planet03.png",
+    "space/planets/planet04.png",
+    "space/planets/planet05.png"
   ]
 }
