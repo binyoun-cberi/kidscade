@@ -78,7 +78,7 @@ test('catalog points to Deep Diver v9',()=>{
 
 test('Deep Diver v9 is substantially deeper and wider',()=>{
   assert.match(js,/const WORLD=\{w:6800,h:4200,surface:60,scaleDepth:5\.5\}/);
-  assert.match(js,/const SUBZONES=\[/);
+  assert.match(js,/const SUBZONES=\[/);\n  assert.match(js,/expandedCount=Math\.max\(count,Math\.round\(count\*1\.55\)\)/);
   assert.match(js,/name:'포식자 해구'/);
   assert.match(js,/if\(dep>=600\)world\.mission\.deep=true/);
   assert.match(js,/dashTime/);
@@ -170,5 +170,5 @@ test('Deep Diver v9 uses the wider vegetation library',()=>{
   for(const token of ['background_seaweed_b.png','background_seaweed_d.png','background_seaweed_e.png','background_seaweed_g.png','background_seaweed_h.png','seaweed_green_d.png','seaweed_pink_d.png']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(js,/count=z\.id==='reef'\?62:z\.id==='kelp'\?78/);
+  assert.match(js,/count=z\.id==='reef'\?110:z\.id==='kelp'\?145/);
 });
