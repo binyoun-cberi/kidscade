@@ -10,20 +10,20 @@ const html=fs.readFileSync(path.join(dir,'심해 다이버 시뮬레이터.html'
 const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
-test('Deep Diver v9 uses the 2D runtime',()=>{
+test('Deep Diver v10 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=9/);
-  assert.match(html,/diver-v7\.js\?v=9/);
+  assert.match(html,/diver-v7\.js\?v=10/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
 });
 
-test('Deep Diver v9 browser runtime parses',()=>{
+test('Deep Diver v10 browser runtime parses',()=>{
   const result=spawnSync(process.execPath,['--check',path.join(dir,'diver-v7.js')],{encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
 });
 
-test('Deep Diver v9 has core career systems',()=>{
+test('Deep Diver v10 has core career systems',()=>{
   for(const token of ['산호초 생태 조사','해초 숲 표본 조사','침수 유적 기록','난파선 기록 장치','심해 생물 조사']){
     assert.ok(js.includes(token),token);
   }
@@ -35,7 +35,7 @@ test('Deep Diver v9 has core career systems',()=>{
   assert.match(js,/function missionComplete/);
 });
 
-test('Deep Diver v9 uses tracked underwater, fish and pirate assets',()=>{
+test('Deep Diver v10 uses tracked underwater, fish and pirate assets',()=>{
   const required=[
     'assets/game/2d/underwater/underwater-diving/player/player-swiming.png',
     'assets/game/2d/underwater/deep-diver/creatures/shark/shark-swim-atlas.png',
@@ -53,7 +53,7 @@ test('Deep Diver v9 uses tracked underwater, fish and pirate assets',()=>{
   assert.match(js,/giant:\{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8/);
 });
 
-test('Deep Diver v9 supports desktop and touch controls',()=>{
+test('Deep Diver v10 supports desktop and touch controls',()=>{
   assert.match(js,/keys\.arrowleft/);
   assert.match(js,/touch\.x/);
   assert.match(html,/id="stick"/);
@@ -62,21 +62,21 @@ test('Deep Diver v9 supports desktop and touch controls',()=>{
   assert.match(css,/100dvh/);
 });
 
-test('Deep Diver v9 guarantees mission-critical fish',()=>{
+test('Deep Diver v10 guarantees mission-critical fish',()=>{
   for(const k of ['blue','orange','pink','long','giant']){
     assert.match(js,new RegExp("makeFish\\('"+k+"'"));
   }
 });
 
-test('catalog points to Deep Diver v9',()=>{
+test('catalog points to Deep Diver v10',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=9');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=10');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
 
-test('Deep Diver v9 is substantially deeper and wider',()=>{
+test('Deep Diver v10 is substantially deeper and wider',()=>{
   assert.match(js,/const WORLD=\{w:6800,h:4200,surface:60,scaleDepth:5\.5\}/);
   assert.match(js,/const SUBZONES=\[/);
   assert.match(js,/expandedCount=Math\.max\(count,Math\.round\(count\*1\.55\)\)/);
@@ -88,7 +88,7 @@ test('Deep Diver v9 is substantially deeper and wider',()=>{
   assert.match(js,/d\.behavior==='predator'\?1\.24/);
 });
 
-test('Deep Diver v9 gives every depth band a distinct biome identity',()=>{
+test('Deep Diver v10 gives every depth band a distinct biome identity',()=>{
   assert.match(js,/tag:'햇빛·산호 절벽·얕은 수로'/);
   assert.match(js,/tag:'거대한 해초·강한 조류·숨은 통로'/);
   assert.match(js,/tag:'석조 회랑·붕괴된 광장·깊은 우물'/);
@@ -103,7 +103,7 @@ test('Deep Diver v9 gives every depth band a distinct biome identity',()=>{
   assert.match(css,/#zoneToast small/);
 });
 
-test('Deep Diver v9 has terrain collision and foreground depth',()=>{
+test('Deep Diver v10 has terrain collision and foreground depth',()=>{
   assert.match(js,/function buildTerrain/);
   assert.match(js,/function resolvePlayerTerrain/);
   assert.match(js,/function drawTerrain/);
@@ -115,37 +115,65 @@ test('Deep Diver v9 has terrain collision and foreground depth',()=>{
 });
 
 
-test('Deep Diver v9 camera uses the visible photo frame',()=>{
+test('Deep Diver v10 camera uses the visible photo frame',()=>{
   assert.match(js,/function photoFrameRect/);
   assert.match(js,/getBoundingClientRect/);
   assert.match(js,/cameraLead/);
   assert.match(js,/o\.s\.x>=r\.left/);
 });
 
-test('Deep Diver v9 sonar guides off-screen targets',()=>{
+test('Deep Diver v10 sonar guides off-screen targets',()=>{
   assert.match(js,/function drawSonarGuides/);
   assert.match(js,/function sonarGuideTargets/);
   assert.match(js,/수면 귀환/);
 });
 
-test('Deep Diver v9 does not award the contract reward on rescue failure',()=>{
+test('Deep Diver v10 does not award the contract reward on rescue failure',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
   assert.match(js,/world\.maxDepth\*\(ok\?1\.25:\.25\)/);
 });
 
-test('Deep Diver v9 separates collision primitives from visible terrain',()=>{
+test('Deep Diver v10 separates collision primitives from visible terrain',()=>{
   assert.match(js,/function terrainTopOffset/);
   assert.doesNotMatch(js,/ctx\.roundRect/);
   assert.match(js,/const pts=14/);
 });
 
-test('Deep Diver v9 touch tools fire directly',()=>{
+test('Deep Diver v10 touch tools fire directly',()=>{
   assert.match(js,/#mActions \[data-tool\]/);
   assert.match(css,/#actionMobile\{display:none!important\}/);
 });
 
 
-test('Deep Diver v9 separates biome ecology and hostile behavior',()=>{
+test('Deep Diver v10 has living ecology and species-specific attack states',()=>{
+  assert.match(js,/const ATTACK_PROFILE=/);
+  for(const token of ["brown:{sense:205","dart:{sense:285","angler:{sense:265","hunter:{sense:390","giant:{sense:590"])assert.ok(js.includes(token),token);
+  assert.match(js,/function nearestEcoFish/);
+  assert.match(js,/function nearestKelpCover/);
+  assert.match(js,/school fish actually align\/cohere\/separate/);
+  assert.match(js,/nearestEcoFish\(f,f\.key==='giant'\?430:285/);
+  assert.match(js,/attackMode='windup'/);
+  assert.match(js,/attackMode='lunge'/);
+  assert.match(js,/function launchFishAttack/);
+  assert.match(js,/world\.lightJam=Math\.max/);
+  assert.match(js,/type:'wake'/);
+});
+
+test('Deep Diver v10 makes biome hazards demand active navigation',()=>{
+  assert.match(js,/sub\.id==='currentCut'/);
+  assert.match(js,/world\.currentBurst/);
+  assert.match(js,/other\.fuse=\.18/);
+  assert.match(js,/d<125\*sc&&burst>\.68/);
+  assert.match(js,/p\.vy-=130/);
+});
+
+test('Deep Diver v10 reef contract stays inside reef ecology',()=>{
+  assert.match(js,/청색 암초어·주황 산호어·분홍 산호어/);
+  assert.match(js,/m\.photos\.blue&&m\.photos\.orange&&m\.photos\.pink&&m\.visited\.reefMaze/);
+  assert.doesNotMatch(js,/m\.photos\.blue&&m\.photos\.orange&&m\.photos\.dart/);
+});
+
+test('Deep Diver v10 separates biome ecology and hostile behavior',()=>{
   assert.match(js,/const BIOME_POPULATIONS=/);
   assert.match(js,/reef:\[\['blue',10\]/);
   assert.match(js,/kelp:\[\['green',7\]/);
@@ -158,7 +186,7 @@ test('Deep Diver v9 separates biome ecology and hostile behavior',()=>{
   assert.match(js,/sense=f\.key==='giant'\?520:360/);
 });
 
-test('Deep Diver v9 makes depth itself more dangerous',()=>{
+test('Deep Diver v10 makes depth itself more dangerous',()=>{
   assert.match(js,/const ZONE_RULES=/);
   assert.match(js,/abyss:\{oxygen:1\.52/);
   assert.match(js,/dashing\?2\.05:1/);
@@ -169,7 +197,7 @@ test('Deep Diver v9 makes depth itself more dangerous',()=>{
   assert.match(js,/drawBiomeBoundaries/);
 });
 
-test('Deep Diver v9 uses the wider vegetation library',()=>{
+test('Deep Diver v10 uses the wider vegetation library',()=>{
   for(const token of ['background_seaweed_b.png','background_seaweed_d.png','background_seaweed_e.png','background_seaweed_g.png','background_seaweed_h.png','seaweed_green_d.png','seaweed_pink_d.png']){
     assert.ok(js.includes(token),token);
   }
