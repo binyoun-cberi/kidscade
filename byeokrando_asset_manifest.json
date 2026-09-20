@@ -1,0 +1,364 @@
+{
+  "pack": "Byeokrando CC0 Curated Pack v1",
+  "target_repo_path": "assets/game/3d/byeokrando/",
+  "design_rule": "기존 삽화는 유지하고, 3D 에셋은 항구/교역/이동 장면의 공간 밀도와 상호작용을 보강한다.",
+  "core": [
+    {
+      "file": "assets/game/3d/byeokrando/ships/boat-row-small.glb",
+      "source_pack": "Kenney Watercraft Kit",
+      "suggested_use": "부두의 소형 나룻배/연안 이동",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/ships/boat-row-large.glb",
+      "source_pack": "Kenney Watercraft Kit",
+      "suggested_use": "화물 하역 보조선/나룻배",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Bag Open.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "곡물/약재/향료 자루",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Bag.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "교역품 자루",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Bags.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "창고 적재 더미",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Bench.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "객막/부두 휴식 공간",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Cart.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "항구 하역 수레",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Cauldron.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "주막/야외 취사",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Crate.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "목재 화물 상자",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Fence.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "창고/가축 구획",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Hay.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "가축 사료/마구간 주변",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Package.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "포장 화물",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Package-kYvD6QCQRd.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "포장 화물 변형",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Path Straight.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "부두 뒤 흙길/상점 사이 길",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Rocks.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "강변/부두 가장자리",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Smoke.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "주막·화덕·항구 생활 연기",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Stairs.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "부두 단차/창고 진입",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/port_props/Well.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "생활 공간 우물",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/animals/Horse.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "상인/역참/육상 운송 배경",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/animals/Donkey.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "소형 화물 운반 동물",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/animals/Cow.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "시장 주변 생활감/가축 거래",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/animals/Bull.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "가축 시장/농축산 배경",
+      "historical_fit": "high"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Bag.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "교역 자루/보따리",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Bench.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "부두/창고 휴식 공간",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Bucket_Wooden_1.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "목제 물통",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Candle_1.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "실내 조명 소품",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Candle_2.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "실내 조명 소품 변형",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Cauldron.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "주막/조리 공간",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Chain_Coil.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "부두 고정 장비/하역 소품",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Crate_Wooden.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "목재 화물 상자",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Pot_1.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "도기/생활용기 대용",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Pot_1_Lid.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "도기 뚜껑",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Pouch_Large.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "소형 교역품/화폐 보관 주머니",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Rope_1.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "계류 로프/화물 결속",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Rope_2.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "계류 로프 변형",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Rope_3.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "계류 로프 변형",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Scroll_1.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "문서/교역 기록/통행 문서",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Scroll_2.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "문서 변형",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Stool.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "주막/창고 좌석",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Table_Large.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "상점/검사대/창고 작업대",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Vase_2.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "도자기 교역품 후보",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Vase_4.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "도자기 교역품 후보",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/trade_props/fantasy_props/Workbench.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "창고/수리 작업대",
+      "historical_fit": "high",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    }
+  ],
+  "optional_review": [
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/boat-sail-a.glb",
+      "source_pack": "Kenney Watercraft Kit",
+      "suggested_use": "원거리 상선 프로토타입. 돛 형태가 동아시아 선박과 다르면 리스킨 권장",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/boat-sail-b.glb",
+      "source_pack": "Kenney Watercraft Kit",
+      "suggested_use": "원거리 상선 프로토타입. 돛 형태가 동아시아 선박과 다르면 리스킨 권장",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/boat-fishing-small.glb",
+      "source_pack": "Kenney Watercraft Kit",
+      "suggested_use": "연안 어선 후보. 현대적으로 보이면 사용 제외",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/Market Stand.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "시장 좌판 후보. 서양풍 지붕/천막이면 형태 수정 후 사용",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/Market Stand-DGIM5HGISb.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "시장 좌판 변형. 서양풍이면 형태 수정 후 사용",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/Bonfire.glb",
+      "source_pack": "Quaternius Medieval Village Pack",
+      "suggested_use": "야간 항구 이벤트/경비 장면",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/White Horse.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "말 변형. 장면 다양화용",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/Deer.glb",
+      "source_pack": "Quaternius Ultimate Animated Animal Pack",
+      "suggested_use": "도시 밖 육상 이동 장면 배경",
+      "historical_fit": "medium"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/fantasy_props/Stall_Empty.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "시장 좌판 후보. 서양풍 천막이면 수정 후 사용",
+      "historical_fit": "medium",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/fantasy_props/Stall_Cart_Empty.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "이동 좌판 후보. 형태 검토 후 사용",
+      "historical_fit": "medium",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/fantasy_props/Barrel.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "목재 통. 서양식 철제 테두리 인상이 강하면 사용 제외",
+      "historical_fit": "medium",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    },
+    {
+      "file": "assets/game/3d/byeokrando/optional_review/fantasy_props/Lantern_Wall.gltf",
+      "source_pack": "Quaternius Fantasy Props MegaKit Standard",
+      "suggested_use": "야간 조명 후보. 형태가 서양풍이면 사용 제외",
+      "historical_fit": "medium",
+      "note": "glTF와 같은 폴더의 .bin/.png 파일을 함께 유지해야 함"
+    }
+  ]
+}
