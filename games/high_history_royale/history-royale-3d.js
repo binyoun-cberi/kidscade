@@ -867,11 +867,14 @@ function resize(){
 if(typeof ResizeObserver==='function')new ResizeObserver(resize).observe(box);else addEventListener('resize',resize);resize();
 
 async function loadAssets(){
+  const propNames=LOW_POWER
+    ? ["Crate_Wooden","Stall_Empty","Banner_1","Banner_2","WeaponStand","Dummy"]
+    : ["Barrel","Crate_Wooden","Bag","Stall_Empty","Stall_Cart_Empty","Chest_Wood","Coin_Pile","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden","Bench"];
   const jobs=[
     loadCharacter("Adventurer"),loadCharacter("Farmer"),loadCharacter("King"),loadHorse(),
     loadWeapon("Spear",1.55,"base"),loadWeapon("Bow_Wooden",1.10,"center"),loadWeapon("Sword",.82,"base"),
     loadWeapon("Shield_Round",.66,"center"),loadWeapon("Arrow",.58,"base"),
-    ...["Barrel","Crate_Wooden","Bag","Stall_Empty","Stall_Cart_Empty","Chest_Wood","Coin_Pile","Banner_1","Banner_2","WeaponStand","Dummy","FarmCrate_Empty","Cauldron","Torch_Metal","Vase_2","Pot_1","Pouch_Large","Workbench","Anvil","Shield_Wooden","Bench"].map(loadProp)
+    ...propNames.map(loadProp)
   ];
   const results=await Promise.allSettled(jobs);
   const failed=results.filter(r=>r.status==="rejected");
@@ -929,7 +932,7 @@ window.HistoryRoyale3DDebug=function(){
 };
 async function init(){
   state=window.HistoryRoyaleState||null;await loadAssets();decorateWithProps();ready=true;window.HistoryRoyale3DReady=true;initDebug();
-  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 경량 모드":""}`;
+  window.HistoryRoyale3DStatus=`3D · 캐릭터 ${characterTemplates.size} · 무기 ${weaponTemplates.size} · 소품 ${propTemplates.size} · 말 ${horseTemplate?"실제 에셋":"대체"}${LOW_POWER?" · 모바일 경량 모드":""}`;
   box.classList.add("three-ready");
   const ast=document.getElementById("assetStatus");if(ast)ast.textContent=window.HistoryRoyale3DStatus;
 }
