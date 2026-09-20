@@ -2,8 +2,8 @@
   "name": "kidscade",
   "private": true,
   "scripts": {
-    "build": "node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs && node scripts/inject-game-audio-v4.cjs && node scripts/maratang-selfbar-build.cjs && node scripts/bunsik-kitchen-build.cjs",
-    "build:cloudflare": "node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs && node scripts/inject-game-audio-v4.cjs && node scripts/maratang-selfbar-build.cjs && node scripts/bunsik-kitchen-build.cjs",
+    "build": "npm run wordchain:build && node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs && node scripts/inject-game-audio-v4.cjs && node scripts/maratang-selfbar-build.cjs && node scripts/bunsik-kitchen-build.cjs",
+    "build:cloudflare": "npm run wordchain:build && node scripts/build-cloudflare.cjs && node scripts/apply-game-classification-overrides.cjs && node scripts/inject-game-integrations.cjs && node scripts/inject-game-audio-v4.cjs && node scripts/maratang-selfbar-build.cjs && node scripts/bunsik-kitchen-build.cjs",
     "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
     "db:migrate:remote": "wrangler d1 migrations apply kidscade-stats --remote",
     "deploy:cloudflare": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy",
