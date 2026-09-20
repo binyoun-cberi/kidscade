@@ -111,8 +111,8 @@ test('Deep Diver v15 adds mantis shrimp and kraken boss encounters',()=>{
   assert.match(js,/kraken:\{name:'심해 크라켄'/);
   assert.match(js,/mantis:\{sense:180/);
   assert.match(js,/kraken:\{sense:690/);
-  assert.match(js,/makeFish\('mantis',WORLD\.w\*\.58,485,19401\)/);
-  assert.match(js,/makeFish\('kraken',WORLD\.w\*\.53,4015,19402\)/);
+  assert.match(js,/spawnCreature\('mantis',WORLD\.w\*\.61,455,19401,'reefMaze'\)/);
+  assert.match(js,/spawnCreature\('kraken',WORLD\.w\*\.53,4015,19402,'predatorTrench'\)/);
   assert.match(js,/대형 공작갯가재 발견/);
   assert.match(js,/심해 크라켄/);
   assert.match(js,/대형 개체 · /);
@@ -218,9 +218,9 @@ test('Deep Diver v15 supports desktop and touch controls',()=>{
   assert.match(css,/100dvh/);
 });
 
-test('Deep Diver v15 guarantees mission-critical fish',()=>{
+test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=>{
   for(const k of ['blue','orange','pink','long','giant']){
-    assert.match(js,new RegExp("makeFish\\('"+k+"'"));
+    assert.match(js,new RegExp("spawnCreature\\('"+k+"'"));
   }
 });
 
