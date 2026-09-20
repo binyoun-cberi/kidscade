@@ -58,11 +58,11 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 <div class="overlay" id="entryOverlay">
   <section class="card modal">
     <h1 class="title">끝말잇기 온라인 대결</h1>
-    <p class="sub">로그인한 Kidscade 학생끼리 방 코드를 공유해 대결합니다. 3목숨 · 턴당 12초 · 두음법칙 적용.</p>
+    <p class="sub" id="entrySub">로그인한 Kidscade 학생끼리 방 코드를 공유해 대결합니다. 3목숨 · 턴당 12초 · 두음법칙 적용.</p>
     <div id="entryContent">
       <div class="chooser">
         <button class="choice" id="createDuel"><b>⚔️ 1:1 방 만들기</b><span>두 명이 번갈아 단어를 잇고 마지막까지 살아남으면 승리합니다.</span></button>
-        <div class="choice">
+        <div class="choice" id="multiChoice">
           <b>👥 다대다 방 만들기</b><span>3~8명이 순서대로 이어 갑니다. 방장이 참가 인원 상한을 정합니다.</span>
           <div class="multiRow"><select id="multiSize"><option value="3">최대 3명</option><option value="4" selected>최대 4명</option><option value="5">최대 5명</option><option value="6">최대 6명</option><option value="7">최대 7명</option><option value="8">최대 8명</option></select><button class="btn primary" id="createMulti">만들기</button></div>
         </div>
@@ -103,6 +103,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
 const ROOM_STORAGE='kidscadeWordchainRoomId';
+const requestedMode=new URLSearchParams(location.search).get('mode');
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
@@ -152,6 +153,21 @@ function stopPoll(){clearInterval(pollTimer);pollTimer=null}
 function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
 function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function applyRequestedMode(){
+ if(requestedMode==='duel'){
+   $('createDuel').style.display='block';
+   $('multiChoice').style.display='none';
+   $('entrySub').textContent='1:1 온라인 대결을 선택했습니다. 새 방을 만들거나 친구가 만든 방 코드로 참가하세요.';
+ }else if(requestedMode==='multi'){
+   $('createDuel').style.display='none';
+   $('multiChoice').style.display='block';
+   $('entrySub').textContent='다대다 온라인 대결을 선택했습니다. 최대 인원을 정해 새 방을 만들거나 방 코드로 참가하세요.';
+ }else{
+   $('createDuel').style.display='block';
+   $('multiChoice').style.display='block';
+   $('entrySub').textContent='로그인한 Kidscade 학생끼리 방 코드를 공유해 대결합니다. 3목숨 · 턴당 12초 · 두음법칙 적용.';
+ }
+}
 async function checkAccount(){
  try{
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
@@ -296,7 +312,7 @@ $('readyBtn').addEventListener('click',toggleReady);$('startBtn').addEventListen
 $('submitBtn').addEventListener('click',submit);$('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});
 $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room?.code||'');setMsg('방 코드를 복사했습니다.','good')}catch(_){alert('방 코드: '+(room?.code||''))}});
 window.addEventListener('beforeunload',()=>{if(!room||room.status==='finished')return;try{navigator.sendBeacon('/api/multiplayer/wordchain/leave',new Blob([JSON.stringify({roomId:room.id})],{type:'application/json'}))}catch(_){}});
-preloadSfx();updateSoundButton();checkAccount();
+preloadSfx();updateSoundButton();applyRequestedMode();checkAccount();
 })();
 </script>
 </body>
