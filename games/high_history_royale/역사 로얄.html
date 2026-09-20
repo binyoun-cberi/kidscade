@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>역사 로얄 · Gameplay Rework v10 · Formation & Siege</title>
+<title>역사 로얄 · 3D Battlefield Rework v11 · Three Kingdoms Arena</title>
 <style>
 :root{
   --ink:#241b14; --paper:#f4ead2; --paper2:#e6d3ad; --wood:#6b4428;
@@ -59,7 +59,11 @@ button{font:inherit}
   background:linear-gradient(90deg,rgba(148,72,63,.38),rgba(255,255,255,.025),rgba(63,92,133,.38));
   border-bottom:1px solid rgba(255,255,255,.1)
 }
-#canvasBox{position:relative;background:#9caf72}
+#canvasBox{position:relative;background:#9caf72;isolation:isolate}
+#game3d{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block;aspect-ratio:auto}
+#game{position:relative;z-index:2;transition:opacity .28s ease}
+#canvasBox.three-ready #game{opacity:0}
+#overlayTip{z-index:4}
 canvas{display:block;width:100%;height:auto;aspect-ratio:960/620;cursor:crosshair}
 .overlayTip{
   position:absolute;left:50%;top:10px;transform:translateX(-50%);
@@ -393,7 +397,7 @@ body{
     <div class="assetCredits">
       <b>아트 자산</b> · 전장 병졸: Universal LPC Spritesheet Character Generator
       (CC BY-SA/GPL 계열 — 공개 배포 전 프로젝트의 전체 credits 확인 권장) ·
-      한국사 건물/랜드마크: 본 게임용 재구성 · 카드 일러스트: 사용자 제공 이미지 기반 게임용 크롭 · assets/game/history_royale/cards/ 외부 파일 참조.
+      한국사 건물/랜드마크: 본 게임용 재구성 · 카드 일러스트: 사용자 제공 이미지 기반 게임용 크롭 · 3D 캐릭터/전장 소품: Quaternius CC0 · UI 효과음: Kenney CC0 · assets/game/history_royale/ 외부 파일 참조.
     </div>
   </section>
 
@@ -406,7 +410,8 @@ body{
           <div><b id="playerLabel">고구려</b> <span class="note">나</span></div>
         </div>
         <div id="canvasBox">
-          <canvas id="game" width="960" height="620"></canvas>
+          <canvas id="game3d" width="960" height="620" aria-label="역사 로얄 3D 전장"></canvas>
+          <canvas id="game" width="960" height="620" aria-label="역사 로얄 2D 폴백 전장"></canvas>
           <div id="overlayTip" class="overlayTip">아군 진영에 배치하세요</div>
         </div>
         <div id="hand" class="hand"></div>
@@ -422,7 +427,7 @@ body{
           <div class="stat"><span>공성 목표</span><b id="objectiveText">측면 성루 돌파</b></div>
           <div class="stat"><span>적 영웅</span><b id="enemyHeroName">-</b></div>
           <div class="stat"><span>선택 카드</span><b id="selectedName">없음</b></div>
-          <div class="stat"><span>병졸 아트</span><b id="assetStatus">불러오는 중</b></div>
+          <div class="stat"><span>전장 렌더러</span><b id="assetStatus">3D 준비 중</b></div>
         </div>
         <div class="history" id="historyBox">
           <b>카드를 선택해 보세요</b>
@@ -1056,10 +1061,11 @@ class Battle {
   playPlayerCard(index,x,y){
     SFX.unlock();
     const c=this.pHand[index]; if(!c)return;
-    const cost=this.cardCost(c,"player"); if(this.grain<cost)return;
+    const cost=this.cardCost(c,"player"); if(this.grain<cost){this.tip("군량이 부족합니다");SFX.sample("error",.30);return;}
     const rule=this.placementRule(c,"player",x,y);
-    if(!rule.ok){this.tip(rule.reason);this.fx.push({x,y,type:"invalid",life:.42,max:.42});return;}
+    if(!rule.ok){this.tip(rule.reason);SFX.sample("error",.30);this.fx.push({x,y,type:"invalid",life:.42,max:.42});return;}
     this.grain-=cost;
+    SFX.sample("drop",.24);
     this.executeCard(c,"player",x,y);
     this.applyFactionCardPassive(c,"player");
     this.log(`나: ${c.name}`);
@@ -1147,7 +1153,7 @@ class Battle {
     this.fx.push({x,y,type:"ring",life:1,max:1});
     this.fx.push({x,y:y-42,type:"banner",life:1.05,max:1.05,text:banner,team});
     this.log(`${h.name}: ${banner}`);
-    this.screenShake=Math.max(this.screenShake,.32);SFX.play("hero");
+    this.screenShake=Math.max(this.screenShake,.32);SFX.play("hero");SFX.sample("heroReady",.38);
   }
 
   spawnUnit(c,team,x,y,hero=false,heroCard=null){
@@ -1730,7 +1736,7 @@ class Battle {
     const enemySides=this.sideTowerCount("enemy");
     $("#objectiveText").textContent=enemySides===2?"왕성 방호 88% · 양쪽 성루 공략":(enemySides===1?"왕성 방호 55% · 남은 성루 공략":"왕성 방호 해제 · 총공세");
     const ast=$("#assetStatus");
-    if(ast)ast.textContent=SpriteAtlas.ready?"LPC 스프라이트":(SpriteAtlas.failed?"벡터 대체":"불러오는 중");
+    if(ast)ast.textContent=window.HistoryRoyale3DReady?"3D · Quaternius CC0":(SpriteAtlas.ready?"2D · LPC 폴백":(SpriteAtlas.failed?"2D · 벡터 폴백":"3D 준비 중"));
     this.uiClock-=.016;
     if(this.uiClock<=0){this.uiClock=.15;this.renderHand();}
     const hasObservatory=this.buildings.some(b=>!b.dead&&b.team==="player"&&b.card.id==="cheomseongdae");
@@ -2624,6 +2630,8 @@ class Battle {
 
 const SFX={
   ctx:null,muted:false,
+  samples:{select:"../../assets/game/history_royale/audio/ui/kenney_interface/click_001.ogg",drop:"../../assets/game/history_royale/audio/ui/kenney_interface/drop_001.ogg",confirm:"../../assets/game/history_royale/audio/ui/kenney_interface/confirmation_001.ogg",error:"../../assets/game/history_royale/audio/ui/kenney_interface/error_001.ogg",open:"../../assets/game/history_royale/audio/ui/kenney_interface/open_001.ogg",close:"../../assets/game/history_royale/audio/ui/kenney_interface/close_001.ogg",heroReady:"../../assets/game/history_royale/audio/ui/kenney_interface/bong_001.ogg"},
+  sample(k,vol=.32){if(this.muted||!this.samples[k])return;try{const a=new Audio(this.samples[k]);a.volume=vol;a.play().catch(()=>{});}catch(e){}},
   unlock(){
     if(this.muted)return;
     try{
@@ -2658,6 +2666,8 @@ const SFX={
     if(!this.muted)this.unlock();
   }
 };
+
+document.addEventListener("pointerdown",e=>{if(e.target.closest(".choice,.poolCard,.deckMini,.filterBtn,.btn,.card"))SFX.sample("select",.20);},{passive:true});
 
 function hexAlpha(hex,a){
   const h=hex.replace('#','');const n=parseInt(h,16);const r=(n>>16)&255,g=(n>>8)&255,b=n&255;return `rgba(${r},${g},${b},${a})`;
@@ -2848,7 +2858,7 @@ function roundRect(c,x,y,w,h,r,fill){
 }
 
 $("#soundBtn").onclick=()=>SFX.toggle();
-$("#startBtn").onclick=()=>{SFX.unlock();startBattle();};
+$("#startBtn").onclick=()=>{SFX.unlock();SFX.sample("confirm",.28);startBattle();};
 function startBattle(){
   if(selectedCards.length!==7){alert("영웅 1장과 일반 카드 7장, 총 8장으로 덱을 완성하세요.");return;}
   if(game)game.destroy();
@@ -2865,8 +2875,11 @@ function resetToSetup(){
   renderSetup();
 }
 
+window.HistoryRoyaleState={get game(){return game;},get factions(){return FACTIONS;},get selectedFaction(){return selectedFaction;},get selectedHero(){return selectedHero;}};
 renderSetup();
 })();
 </script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="history-royale-3d.js?v=11"></script>
 </body>
 </html>
