@@ -53,7 +53,7 @@ test('History Royale defers heavy 3D boot until battle start for mobile stabilit
   const game = gameById('high_history_royale');
   const html = read(game.href);
   assert.match(html, /function ensureHistoryRoyale3D\(\)/);
-  assert.match(html, /history-royale-3d\.js\?v=17/);
+  assert.match(html, /history-royale-3d\.js\?v=18/);
   assert.doesNotMatch(html, /<script type="module" src="history-royale-3d\.js/);
   const modulePath = path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js');
   const moduleCode = fs.readFileSync(modulePath, 'utf8');
@@ -72,7 +72,7 @@ test('History Royale release entry retains selectable faction, hero, deck and st
   assert.match(html, /#startBtn/);
   assert.match(html, /startBattle\(\)/);
   assert.match(html, /selectedCards\.length!==7/);
-  assert.match(html, /history-royale-3d\.js\?v=17/);
+  assert.match(html, /history-royale-3d\.js\?v=18/);
   const renderer3d=fs.readFileSync(path.join(ROOT,'games','high_history_royale','history-royale-3d.js'),'utf8');
   assert.match(renderer3d, /function use2DFallback/);
   assert.match(renderer3d, /2D 안정 모드/);
@@ -123,4 +123,12 @@ test('Nyam Universe v5 uses a size ladder, final-goal progression and bounded re
   assert.match(runtime, /LOW_POWER\?118:158/);
   assert.match(runtime, /setTimeout\(r,950\)/);
   assert.doesNotMatch(runtime, /if\(logSize>=Math\.log10\(stages\[level\]\.max\)\)/);
+});
+
+
+test('History Royale units face their target without a 180 degree reversal', () => {
+  const moduleCode = fs.readFileSync(path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js'), 'utf8');
+  assert.match(moduleCode, /rec\.root\.rotation\.y=Math\.atan2\(q\.x-p\.x,q\.z-p\.z\)/);
+  assert.doesNotMatch(moduleCode, /Math\.atan2\(q\.x-p\.x,q\.z-p\.z\)\+Math\.PI/);
+  assert.match(moduleCode, /u\.team==="player"\?Math\.PI:0/);
 });
