@@ -53,7 +53,7 @@ test('History Royale defers heavy 3D boot until battle start for mobile stabilit
   const game = gameById('high_history_royale');
   const html = read(game.href);
   assert.match(html, /function ensureHistoryRoyale3D\(\)/);
-  assert.match(html, /history-royale-3d\.js\?v=16/);
+  assert.match(html, /history-royale-3d\\.js\\?v=17/);
   assert.doesNotMatch(html, /<script type="module" src="history-royale-3d\.js/);
   const modulePath=path.join(root,'games','high_history_royale','history-royale-3d.js');
   const moduleCode=fs.readFileSync(modulePath,'utf8');
@@ -83,4 +83,16 @@ test('critical catalog entries stay on the reviewed release files', () => {
   assert.match(gameById('high_classroom_war_3d').href, /^games\/high_classroom_war_3d\/교실전쟁 3D\.html/);
   assert.match(gameById('spelling_frog').href, /^games\/spelling_frog\/스펠링 프로그\.html/);
   assert.match(gameById('high_history_royale').href, /^games\/high_history_royale\/역사 로얄\.html(?:\?|$)/);
+});
+
+
+test('History Royale mobile battle uses procedural troops and bounded effects', () => {
+  const modulePath = path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js');
+  const moduleCode = fs.readFileSync(modulePath, 'utf8');
+  assert.match(moduleCode, /if\(LOW_POWER&&!u\.hero\)return makeFallbackUnit/);
+  assert.match(moduleCode, /if\(LOW_POWER\|\|!horseTemplate\)return makeProceduralHorse/);
+  assert.match(moduleCode, /LOW_POWER\?Math\.min\(g\.projectiles\.length,28\)/);
+  assert.match(moduleCode, /LOW_POWER\?g\.fx\.slice\(-20\):g\.fx/);
+  assert.match(moduleCode, /rec\.horse\?\.mixer/);
+  assert.match(moduleCode, /LOW_POWER\s*\? \[loadCharacter\("King"\)\]/);
 });
