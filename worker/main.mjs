@@ -4,6 +4,7 @@ import { handleTeacherManagementRequest } from './teacher-admin.mjs';
 import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
 import { handleMultiplayerRequest } from './multiplayer.mjs';
+import { handleWordchainMatchRequest } from './wordchain-match.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
@@ -36,6 +37,9 @@ export default {
       }
     }
 
+
+    const wordchainMatchResponse = await handleWordchainMatchRequest(request, env);
+    if (wordchainMatchResponse) return wordchainMatchResponse;
 
     const multiplayerResponse = await handleMultiplayerRequest(request, env);
     if (multiplayerResponse) return multiplayerResponse;
