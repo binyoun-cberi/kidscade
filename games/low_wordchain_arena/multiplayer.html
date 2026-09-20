@@ -106,7 +106,7 @@ const ROOM_STORAGE='kidscadeWordchainRoomId';
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,playerCount:null};
 
 const sfx=(key,options={})=>window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});
-const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open'])?.catch?.(()=>{});
+const preloadSfx=()=>window.KidscadeAudio?.preload?.(['collect.coin_drop','collect.coin_pickup','movement.jump','success.cheer_yay','success.cheer_woohoo','success.victory_fanfare','failure.fail_sting','combat.impact_heavy','combat.hurt_voice','shop.register_open','failure.disappointed_voice'])?.catch?.(()=>{});
 function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇':'🔊';$('soundBtn').title=muted?'효과음 켜기':'효과음 끄기'}
 function toggleSound(){const api=window.KidscadeAudio;if(!api)return;const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();if(!muted)sfx('collect.coin_pickup',{volume:.24,rate:1.15})}
 
