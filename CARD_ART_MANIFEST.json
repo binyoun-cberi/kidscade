@@ -1,0 +1,573 @@
+{
+  "effective_art_count": 67,
+  "embedded_occurrences_replaced": 68,
+  "fallback_without_image": [
+    "b_watchtower"
+  ],
+  "counts": {
+    "goguryeo": {
+      "heroes": 5,
+      "units": 10,
+      "buildings": 3,
+      "spells": 4
+    },
+    "baekje": {
+      "heroes": 6,
+      "units": 10,
+      "spells": 4,
+      "buildings": 2
+    },
+    "silla": {
+      "heroes": 6,
+      "units": 10,
+      "buildings": 3,
+      "spells": 4
+    }
+  },
+  "files": [
+    {
+      "id": "jumong",
+      "faction": "goguryeo",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/goguryeo/heroes/jumong.webp",
+      "bytes": 70080,
+      "effective": true
+    },
+    {
+      "id": "gwanggaeto",
+      "faction": "goguryeo",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/goguryeo/heroes/gwanggaeto.webp",
+      "bytes": 88092,
+      "effective": true
+    },
+    {
+      "id": "eulji",
+      "faction": "goguryeo",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/goguryeo/heroes/eulji.webp",
+      "bytes": 91950,
+      "effective": true
+    },
+    {
+      "id": "gaemamusa",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/gaemamusa.webp",
+      "bytes": 79786,
+      "effective": true
+    },
+    {
+      "id": "g_archer",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_archer.webp",
+      "bytes": 79334,
+      "effective": true
+    },
+    {
+      "id": "onjo",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/onjo.webp",
+      "bytes": 82864,
+      "effective": true
+    },
+    {
+      "id": "geunchogo",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/geunchogo.webp",
+      "bytes": 97154,
+      "effective": true
+    },
+    {
+      "id": "gyebaek",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/gyebaek.webp",
+      "bytes": 83868,
+      "effective": true
+    },
+    {
+      "id": "hyeokgeose",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/hyeokgeose.webp",
+      "bytes": 85248,
+      "effective": true
+    },
+    {
+      "id": "kimyusin",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/kimyusin.webp",
+      "bytes": 84890,
+      "effective": true
+    },
+    {
+      "id": "munmu",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/munmu.webp",
+      "bytes": 67358,
+      "effective": true
+    },
+    {
+      "id": "s_elite_cav",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_elite_cav.webp",
+      "bytes": 41382,
+      "effective": true
+    },
+    {
+      "id": "beacon",
+      "faction": "goguryeo",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/goguryeo/buildings/beacon.webp",
+      "bytes": 42660,
+      "effective": true
+    },
+    {
+      "id": "uija",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/uija.webp",
+      "bytes": 66458,
+      "effective": true
+    },
+    {
+      "id": "hwarang",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/hwarang.webp",
+      "bytes": 40626,
+      "effective": true
+    },
+    {
+      "id": "muryeong",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/muryeong.webp",
+      "bytes": 43312,
+      "effective": true
+    },
+    {
+      "id": "jangsu",
+      "faction": "goguryeo",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/goguryeo/heroes/jangsu.webp",
+      "bytes": 38278,
+      "effective": true
+    },
+    {
+      "id": "jinheung",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/jinheung.webp",
+      "bytes": 62080,
+      "effective": true
+    },
+    {
+      "id": "seondeok",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/seondeok.webp",
+      "bytes": 32020,
+      "effective": true
+    },
+    {
+      "id": "cavalry_charge",
+      "faction": "goguryeo",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/goguryeo/spells/cavalry_charge.webp",
+      "bytes": 69676,
+      "effective": true
+    },
+    {
+      "id": "g_heavy",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_heavy.webp",
+      "bytes": 38932,
+      "effective": true
+    },
+    {
+      "id": "horsearcher",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/horsearcher.webp",
+      "bytes": 38900,
+      "effective": true
+    },
+    {
+      "id": "b_landing",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_landing.webp",
+      "bytes": 43024,
+      "effective": true
+    },
+    {
+      "id": "yeongaesomun",
+      "faction": "goguryeo",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/goguryeo/heroes/yeongaesomun.webp",
+      "bytes": 40384,
+      "effective": true
+    },
+    {
+      "id": "mountain_fort",
+      "faction": "goguryeo",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/goguryeo/buildings/mountain_fort.webp",
+      "bytes": 67898,
+      "effective": true
+    },
+    {
+      "id": "seong",
+      "faction": "baekje",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/baekje/heroes/seong.webp",
+      "bytes": 72680,
+      "effective": true
+    },
+    {
+      "id": "b_guard",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_guard.webp",
+      "bytes": 47584,
+      "effective": true
+    },
+    {
+      "id": "focus_attack",
+      "faction": "baekje",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/baekje/spells/focus_attack.webp",
+      "bytes": 74472,
+      "effective": true
+    },
+    {
+      "id": "cheomseongdae",
+      "faction": "silla",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/silla/buildings/cheomseongdae.webp",
+      "bytes": 53020,
+      "effective": true
+    },
+    {
+      "id": "trade_post",
+      "faction": "baekje",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/baekje/buildings/trade_post.webp",
+      "bytes": 76594,
+      "effective": true
+    },
+    {
+      "id": "g_swordsman",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_swordsman.webp",
+      "bytes": 130146,
+      "effective": true
+    },
+    {
+      "id": "s_archer",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_archer.webp",
+      "bytes": 111580,
+      "effective": true
+    },
+    {
+      "id": "b_shield",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_shield.webp",
+      "bytes": 135060,
+      "effective": true
+    },
+    {
+      "id": "b_archer",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_archer.webp",
+      "bytes": 110938,
+      "effective": true
+    },
+    {
+      "id": "b_cavalry",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_cavalry.webp",
+      "bytes": 127784,
+      "effective": true
+    },
+    {
+      "id": "g_scout",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_scout.webp",
+      "bytes": 130220,
+      "effective": true
+    },
+    {
+      "id": "s_guard",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_guard.webp",
+      "bytes": 117158,
+      "effective": true
+    },
+    {
+      "id": "s_spear",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_spear.webp",
+      "bytes": 109264,
+      "effective": true
+    },
+    {
+      "id": "g_fort_archer",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_fort_archer.webp",
+      "bytes": 128370,
+      "effective": true
+    },
+    {
+      "id": "s_heavy_spear",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_heavy_spear.webp",
+      "bytes": 114070,
+      "effective": true
+    },
+    {
+      "id": "b_scout",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_scout.webp",
+      "bytes": 68552,
+      "effective": true
+    },
+    {
+      "id": "fort_guard",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/fort_guard.webp",
+      "bytes": 61310,
+      "effective": true
+    },
+    {
+      "id": "g_spear",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_spear.webp",
+      "bytes": 66022,
+      "effective": true
+    },
+    {
+      "id": "b_palace_guard",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_palace_guard.webp",
+      "bytes": 67082,
+      "effective": true
+    },
+    {
+      "id": "g_raider",
+      "faction": "goguryeo",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/goguryeo/units/g_raider.webp",
+      "bytes": 68172,
+      "effective": true
+    },
+    {
+      "id": "g_supply",
+      "faction": "goguryeo",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/goguryeo/spells/g_supply.webp",
+      "bytes": 74166,
+      "effective": true
+    },
+    {
+      "id": "ambush",
+      "faction": "goguryeo",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/goguryeo/spells/ambush.webp",
+      "bytes": 71854,
+      "effective": true
+    },
+    {
+      "id": "stone_barrier",
+      "faction": "goguryeo",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/goguryeo/buildings/stone_barrier.webp",
+      "bytes": 60514,
+      "effective": true
+    },
+    {
+      "id": "b_spear",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_spear.webp",
+      "bytes": 65508,
+      "effective": true
+    },
+    {
+      "id": "feigned_retreat",
+      "faction": "goguryeo",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/goguryeo/spells/feigned_retreat.webp",
+      "bytes": 64034,
+      "effective": true
+    },
+    {
+      "id": "s_cavalry",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_cavalry.webp",
+      "bytes": 136614,
+      "effective": true
+    },
+    {
+      "id": "rapid_trade",
+      "faction": "baekje",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/baekje/spells/rapid_trade.webp",
+      "bytes": 133080,
+      "effective": true
+    },
+    {
+      "id": "sea_supply",
+      "faction": "baekje",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/baekje/spells/sea_supply.webp",
+      "bytes": 134668,
+      "effective": true
+    },
+    {
+      "id": "royal_guard",
+      "faction": "baekje",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/baekje/spells/royal_guard.webp",
+      "bytes": 131382,
+      "effective": true
+    },
+    {
+      "id": "b_longbow",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_longbow.webp",
+      "bytes": 109890,
+      "effective": true
+    },
+    {
+      "id": "nangdo",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/nangdo.webp",
+      "bytes": 109762,
+      "effective": true
+    },
+    {
+      "id": "b_stockade",
+      "faction": "baekje",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/baekje/buildings/b_stockade.webp",
+      "bytes": 109844,
+      "effective": true
+    },
+    {
+      "id": "b_raider",
+      "faction": "baekje",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/baekje/units/b_raider.webp",
+      "bytes": 127304,
+      "effective": true
+    },
+    {
+      "id": "gwanChang",
+      "faction": "silla",
+      "type": "heroes",
+      "file": "assets/game/history_royale/cards/silla/heroes/gwanChang.webp",
+      "bytes": 111496,
+      "effective": true
+    },
+    {
+      "id": "hill_fort",
+      "faction": "silla",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/silla/buildings/hill_fort_legacy1.webp",
+      "bytes": 127568,
+      "effective": false
+    },
+    {
+      "id": "rally",
+      "faction": "silla",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/silla/spells/rally.webp",
+      "bytes": 126716,
+      "effective": true
+    },
+    {
+      "id": "late_mobilize",
+      "faction": "silla",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/silla/spells/late_mobilize.webp",
+      "bytes": 134114,
+      "effective": true
+    },
+    {
+      "id": "hwarang_camp",
+      "faction": "silla",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/silla/buildings/hwarang_camp.webp",
+      "bytes": 105070,
+      "effective": true
+    },
+    {
+      "id": "morale",
+      "faction": "silla",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/silla/spells/morale.webp",
+      "bytes": 123930,
+      "effective": true
+    },
+    {
+      "id": "allied_force",
+      "faction": "silla",
+      "type": "spells",
+      "file": "assets/game/history_royale/cards/silla/spells/allied_force.webp",
+      "bytes": 139448,
+      "effective": true
+    },
+    {
+      "id": "s_hwarang_archer",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_hwarang_archer.webp",
+      "bytes": 129468,
+      "effective": true
+    },
+    {
+      "id": "s_light",
+      "faction": "silla",
+      "type": "units",
+      "file": "assets/game/history_royale/cards/silla/units/s_light.webp",
+      "bytes": 109898,
+      "effective": true
+    },
+    {
+      "id": "hill_fort",
+      "faction": "silla",
+      "type": "buildings",
+      "file": "assets/game/history_royale/cards/silla/buildings/hill_fort.webp",
+      "bytes": 122464,
+      "effective": true
+    }
+  ]
+}
