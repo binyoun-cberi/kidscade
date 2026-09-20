@@ -3,69 +3,100 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normalizeKoreanWord, isPlayableWord, allowedInitials, validateChainInput } from '../worker/wordchain.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const keys = ['g','gg','n','d','dd','r','m','b','bb','s','ss','ng','j','jj','ch','k','t','p','h'];
 
-test('word-chain normalization keeps Korean syllables and removes separators', () => {
-  assert.equal(normalizeKoreanWord(' 자-동 차 '), '자동차');
-  assert.equal(isPlayableWord('자동차'), true);
-  assert.equal(isPlayableWord('A차'), false);
-  assert.equal(isPlayableWord('차'), false);
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), 'utf8');
+}
+
+function bucketKey(word) {
+  const first = [...word][0];
+  const code = first.codePointAt(0) - 0xac00;
+  return keys[Math.floor(code / 588)];
+}
+
+test('API-free static dictionary source and buckets stay consistent', () => {
+  const sourceWords = read('data/wordchain/source-words.txt').split(/\r?\n/).filter(Boolean);
+  const manifest = JSON.parse(read('data/wordchain/manifest.json'));
+  assert.ok(sourceWords.length >= 300);
+  assert.equal(new Set(sourceWords).size, sourceWords.length);
+  assert.equal(manifest.total, sourceWords.length);
+  assert.equal(Object.keys(manifest.buckets).length, 19);
+
+  const all = [];
+  for (const key of keys) {
+    const info = manifest.buckets[key];
+    assert.ok(info, `missing manifest bucket ${key}`);
+    const words = read(`data/wordchain/${info.file}`).split(/\r?\n/).filter(Boolean);
+    assert.equal(words.length, info.count);
+    for (const word of words) {
+      assert.equal(bucketKey(word), key, `${word} should be in ${key}`);
+      all.push(word);
+    }
+  }
+
+  assert.equal(all.length, manifest.total);
+  assert.equal(new Set(all).size, manifest.total);
+  assert.deepEqual([...all].sort((a,b) => a.localeCompare(b, 'ko')), [...sourceWords].sort((a,b) => a.localeCompare(b, 'ko')));
 });
 
-test('word-chain dueum rules expose direct and transformed initials', () => {
-  assert.deepEqual(allowedInitials('력'), ['력', '역']);
-  assert.deepEqual(allowedInitials('류'), ['류', '유']);
-  assert.deepEqual(allowedInitials('락'), ['락', '낙']);
-  assert.deepEqual(allowedInitials('녀'), ['녀', '여']);
-  assert.deepEqual(allowedInitials('과'), ['과']);
-  assert.deepEqual(allowedInitials('력', false), ['력']);
+test('static dictionary client lazy-loads buckets and contains no word-chain API dependency', () => {
+  const client = read('wordchain-static-db.js');
+  assert.match(client, /loadBucketByKey/);
+  assert.match(client, /bucketKeyForSyllable/);
+  assert.match(client, /async candidates/);
+  assert.match(client, /new URL\('data\/wordchain\/'/);
+  assert.doesNotMatch(client, /\/api\/wordchain/);
+  assert.doesNotThrow(() => new Function(client));
 });
 
-test('word-chain validates connection and duplicate use before DB lookup', () => {
-  assert.equal(validateChainInput({ word: '과자', previousWord: '사과', usedWords: [] }).ok, true);
-  assert.equal(validateChainInput({ word: '자동차', previousWord: '사과', usedWords: [] }).error, 'wrong_initial');
-  assert.equal(validateChainInput({ word: '과자', previousWord: '사과', usedWords: ['과자'] }).error, 'already_used');
-  assert.equal(validateChainInput({ word: '역사', previousWord: '능력', usedWords: [] }).ok, true);
-});
-
-test('word-chain D1 migration defines indexed reusable dictionary fields', () => {
-  const sql = fs.readFileSync(path.join(root, 'migrations', '0007_wordchain_dictionary.sql'), 'utf8');
-  assert.match(sql, /CREATE TABLE IF NOT EXISTS wordchain_words/);
-  assert.match(sql, /first_syllable TEXT NOT NULL/);
-  assert.match(sql, /last_syllable TEXT NOT NULL/);
-  assert.match(sql, /is_safe INTEGER NOT NULL/);
-  assert.match(sql, /is_technical INTEGER NOT NULL/);
-  assert.match(sql, /idx_wordchain_words_first/);
-  const seeded = (sql.match(/'kidscade_seed'/g) || []).length;
-  assert.ok(seeded >= 300, 'starter dictionary should contain at least 300 safe nouns');
-});
-
-test('word-chain arena is registered and has server/local fallback', () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
+test('word-chain arena uses only the bundled static dictionary', () => {
+  const catalog = JSON.parse(read('data/games.json'));
   const game = catalog.games.find(item => item.id === 'low_wordchain_arena');
   assert.ok(game);
   assert.equal(game.age, 'low');
   assert.match(game.href, /games\/low_wordchain_arena\/index\.html/);
 
-  const html = fs.readFileSync(path.join(root, 'games', 'low_wordchain_arena', 'index.html'), 'utf8');
-  assert.match(html, /\/api\/wordchain\/health/);
-  assert.match(html, /\/api\/wordchain\/validate/);
-  assert.match(html, /\/api\/wordchain\/candidates/);
-  assert.match(html, /LOCAL_WORDS/);
+  const html = read('games/low_wordchain_arena/index.html');
+  assert.match(html, /wordchain-static-db\.js/);
+  assert.match(html, /KidscadeWordDB\.has/);
+  assert.match(html, /KidscadeWordDB\.candidates/);
   assert.match(html, /12초/);
+  assert.doesNotMatch(html, /\/api\/wordchain/);
+  assert.doesNotMatch(html, /LOCAL_WORDS/);
 
-  const marker = '<script>\n(() => {';
-  const start = html.indexOf(marker);
-  const end = html.lastIndexOf('\n</script>');
-  assert.ok(start >= 0 && end > start);
-  const script = html.slice(start + '<script>\n'.length, end);
-  assert.doesNotThrow(() => new Function(script));
+  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .map(match => match[1])
+    .filter(Boolean);
+  assert.ok(scripts.length >= 1);
+  for (const script of scripts) assert.doesNotThrow(() => new Function(script));
 });
 
-test('main worker routes the word-chain API', () => {
-  const main = fs.readFileSync(path.join(root, 'worker', 'main.mjs'), 'utf8');
-  assert.match(main, /handleWordchainRequest/);
-  assert.match(main, /wordchainResponse/);
+test('word-chain static builder supports reusable source files', () => {
+  const builder = read('scripts/build-wordchain-static.cjs');
+  assert.match(builder, /source-words\.txt/);
+  assert.match(builder, /manifest\.json/);
+  assert.match(builder, /bucket-/);
+  assert.match(builder, /\.jsonl/);
+  assert.match(builder, /\.tsv/);
+  assert.doesNotMatch(builder, /generatedAt/);
+  assert.doesNotThrow(() => new Function('require', 'process', 'console', builder.replace(/^#!.*\n/, '')));
+});
+
+test('normal builds regenerate the word-chain static database first', () => {
+  const pkg = JSON.parse(read('package.json'));
+  assert.equal(pkg.scripts['wordchain:build'], 'node scripts/build-wordchain-static.cjs');
+  assert.match(pkg.scripts.build, /^npm run wordchain:build && /);
+  assert.match(pkg.scripts['build:cloudflare'], /^npm run wordchain:build && /);
+});
+
+test('main Worker has no dictionary API route', () => {
+  const main = read('worker/main.mjs');
+  assert.doesNotMatch(main, /handleWordchainRequest/);
+  assert.doesNotMatch(main, /WORDCHAIN_PREFIX/);
+  assert.equal(fs.existsSync(path.join(root, 'worker', 'wordchain.mjs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'worker', 'wordchain-schema.mjs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'migrations', '0007_wordchain_dictionary.sql')), false);
 });
