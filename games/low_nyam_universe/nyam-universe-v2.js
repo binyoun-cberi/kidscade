@@ -88,8 +88,8 @@ function foodLabelMaterial(item){
  const key=item.name+'|'+fmtSizeStatic(item.size)+'|'+(item.goal?'goal':'food');
  if(labelMaterialCache.has(key))return labelMaterialCache.get(key);
  const c=document.createElement('canvas');c.width=512;c.height=112;const x=c.getContext('2d');
- x.fillStyle=item.goal?'rgba(73,51,8,.90)':'rgba(15,33,49,.88)';x.beginPath();x.roundRect(4,4,504,104,26);x.fill();
- x.strokeStyle=item.goal?'#ffe66d':'#ffffff88';x.lineWidth=4;x.stroke();
+ x.fillStyle=item.goal?'rgba(73,51,8,.90)':'rgba(15,33,49,.88)';x.fillRect(4,4,504,104);
+ x.strokeStyle=item.goal?'#ffe66d':'#ffffff88';x.lineWidth=4;x.strokeRect(6,6,500,100);
  x.textAlign='center';x.fillStyle='#fff';x.font='900 28px system-ui, sans-serif';x.fillText(item.name+' · '+fmtSizeStatic(item.size),256,48);
  x.fillStyle=item.goal?'#ffe66d':'#bcefdc';x.font='800 19px system-ui, sans-serif';x.fillText(item.goal?'★ 이걸 먹으면 다음 세계':'크기를 비교해 보세요',256,82);
  const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;const mat=new T.SpriteMaterial({map:tex,transparent:true,depthWrite:false});
@@ -276,7 +276,7 @@ function saved(){
   return {level:s.level,logSize:value,count:s.count};
  }catch(e){return null}
 }
-function clearInput(){keys={};pointer=null;joy.x=joy.y=0;$('knob').style.transform=''}async function start(load){let s=load?saved():null;level=s?.level||0;logSize=s?.logSize??-8;count=s?.count||0;dash=0;dashCool=0;if(level>=2&&!assetsReady)await Promise.race([assetWarmup,new Promise(r=>setTimeout(r,1300))]);build();playing=true;mode='play';for(let id of ['menu','paused','win','lost'])$(id).classList.add('hidden');clearInput();beep();save()}
+function clearInput(){keys={};pointer=null;joy.x=joy.y=0;$('knob').style.transform=''}async function start(load){let s=load?saved():null;level=s?.level||0;logSize=s?.logSize??Math.log10(stages[0].min);count=s?.count||0;dash=0;dashCool=0;if(!assetsReady)await Promise.race([assetWarmup,new Promise(r=>setTimeout(r,950))]);build();playing=true;mode='play';for(let id of ['menu','paused','win','lost'])$(id).classList.add('hidden');clearInput();beep();save()}
 function burst(pos){for(let i=0;i<9;i++){let m=new T.Mesh(sphere,mat(colors[i%6]));m.scale.setScalar(.12);m.position.copy(pos);m.position.y=1;world.add(m);effects.push({m,t:0,v:new T.Vector3((Math.random()-.5)*5,2+Math.random()*4,(Math.random()-.5)*5)})}}
 function advanceStage(){
  if(level===stages.length-1){
