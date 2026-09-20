@@ -232,16 +232,35 @@ function roofMesh(width,depth,color){
 function makeFortress(fid,king){
   const g=new THREE.Group(),fc=factionColor(fid),roof=factionRoof(fid);
   const baseW=king?2.05:1.4,baseD=king?1.28:1.0;
-  g.add(mesh(new THREE.BoxGeometry(baseW,king?1.12:.88,baseD),mat(king?0x8b8170:0x837967),0,king?.56:.44,0));
-  g.add(mesh(new THREE.BoxGeometry(baseW*.78,.42,baseD*.78),mat(0xa78255),0,king?1.23:1.00,0));
-  const r1=roofMesh(baseW*1.03,baseD*1.15,roof);r1.position.y=king?1.54:1.29;g.add(r1);
-  if(king){
-    g.add(mesh(new THREE.BoxGeometry(baseW*.48,.38,baseD*.48),mat(0xa78255),0,1.80,0));
-    const r2=roofMesh(baseW*.67,baseD*.72,roof);r2.position.y=2.11;g.add(r2);
+  const stoneColor=fid==="goguryeo"?0x706f6a:(fid==="baekje"?0x8d785f:0x887f6d);
+  const woodColor=fid==="baekje"?0xaa7950:0x9b754e;
+  g.add(mesh(new THREE.BoxGeometry(baseW,king?1.12:.88,baseD),mat(stoneColor),0,king?.56:.44,0));
+  g.add(mesh(new THREE.BoxGeometry(baseW*.78,.42,baseD*.78),mat(woodColor),0,king?1.23:1.00,0));
+
+  if(fid==="goguryeo"){
+    for(const sx of [-1,1])for(const sz of [-1,1]){
+      const butt=mesh(new THREE.BoxGeometry(.24,king?.82:.62,.24),mat(0x666660),sx*baseW*.43,king?.41:.31,sz*baseD*.40);g.add(butt);
+    }
+    const r1=roofMesh(baseW*.98,baseD*1.08,roof);r1.position.y=king?1.53:1.28;g.add(r1);
+    if(king){const cap=mesh(new THREE.BoxGeometry(baseW*.44,.34,baseD*.44),mat(0x8f6a47),0,1.78,0);g.add(cap);const r2=roofMesh(baseW*.61,baseD*.66,roof);r2.position.y=2.04;g.add(r2);}
+  }else if(fid==="baekje"){
+    for(const sx of [-.33,.33])for(const sz of [-.28,.28])g.add(mesh(new THREE.CylinderGeometry(.035,.045,king?.75:.58,6),mat(0x70462f),sx*baseW,king?.82:.68,sz*baseD));
+    const r1=roofMesh(baseW*1.18,baseD*1.32,roof);r1.scale.y=.82;r1.position.y=king?1.55:1.30;g.add(r1);
+    if(king){const upper=mesh(new THREE.BoxGeometry(baseW*.48,.32,baseD*.48),mat(0xa77a52),0,1.78,0);g.add(upper);const r2=roofMesh(baseW*.72,baseD*.78,roof);r2.scale.y=.78;r2.position.y=2.04;g.add(r2);}
+  }else{
+    const r1=roofMesh(baseW*1.08,baseD*1.18,roof);r1.position.y=king?1.52:1.28;g.add(r1);
+    const tier=mesh(new THREE.BoxGeometry(baseW*.56,.28,baseD*.56),mat(0xa17a50),0,king?1.79:1.53,0);g.add(tier);
+    const r2=roofMesh(baseW*.77,baseD*.83,new THREE.Color(0x70503d));r2.position.y=king?2.02:1.74;g.add(r2);
+    if(king){
+      const finial=mesh(new THREE.CylinderGeometry(.035,.055,.42,8),mat(0xc8a94d,.45,.2),0,2.45,0);g.add(finial);
+      const orb=mesh(new THREE.SphereGeometry(.075,8,6),mat(0xd7b858,.4,.25),0,2.68,0);g.add(orb);
+    }
   }
+
   g.add(mesh(new THREE.BoxGeometry(.35,.54,.08),mat(0x33271f),0,.28,baseD/2+.045));
   g.add(mesh(new THREE.CylinderGeometry(.025,.025,.85,6),mat(0x4a3828),0,king?2.64:1.92,0));
-  const flag=mesh(new THREE.PlaneGeometry(.55,.28),new THREE.MeshBasicMaterial({color:fc,side:THREE.DoubleSide}),.29,king?2.82:2.10,0);
+  const flagY=king?2.82:2.10;
+  const flag=mesh(new THREE.PlaneGeometry(.55,.28),new THREE.MeshBasicMaterial({color:fc,side:THREE.DoubleSide}),.29,flagY,0);
   flag.rotation.y=Math.PI/2;g.add(flag);
   return g;
 }
@@ -412,7 +431,16 @@ function addUnitSilhouette(holder,u,fid){
   }else if(u.cls==="보병"){
     const rim=mesh(new THREE.TorusGeometry(.17,.025,5,12),mat(0x6b604f),0,1.25,0);rim.rotation.x=Math.PI/2;holder.add(rim);
   }else if(u.hero){
-    const crown=mesh(new THREE.CylinderGeometry(.16,.18,.12,8),mat(0xd3a83e,.42,.25),0,1.35,0);holder.add(crown);
+    if(fid==="goguryeo"){
+      const crown=mesh(new THREE.CylinderGeometry(.15,.18,.16,8),mat(0x514b45,.48,.20),0,1.35,0);holder.add(crown);
+      const crest=mesh(new THREE.BoxGeometry(.05,.24,.16),mat(0x9d3d35),0,1.51,0);holder.add(crest);
+    }else if(fid==="baekje"){
+      const crown=mesh(new THREE.CylinderGeometry(.14,.18,.12,8),mat(0xd3aa52,.40,.28),0,1.35,0);holder.add(crown);
+      const band=mesh(new THREE.TorusGeometry(.16,.022,5,12),mat(0xe2c36a,.38,.30),0,1.39,0);band.rotation.x=Math.PI/2;holder.add(band);
+    }else{
+      const band=mesh(new THREE.TorusGeometry(.15,.025,5,12),mat(0xd8b64f,.38,.32),0,1.35,0);band.rotation.x=Math.PI/2;holder.add(band);
+      for(const x of [-.09,0,.09]){const branch=mesh(new THREE.BoxGeometry(.025,.25,.025),mat(0xdfbd55,.38,.32),x,1.51,0);branch.rotation.z=x*2;holder.add(branch);}
+    }
   }
 }
 function animName(u){
