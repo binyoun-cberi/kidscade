@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=13/);
-  assert.match(html,/diver-v7\.js\?v=17/);
+  assert.match(html,/deep-diver-2d\.css\?v=14/);
+  assert.match(html,/diver-v7\.js\?v=18/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=17');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=18');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -454,7 +454,7 @@ test('Deep Diver v15 uses the wider vegetation library',()=>{
 
 test('Deep Diver v16 fixes the opaque shark variant and adds a day-night restaurant loop',()=>{
   assert.match(html,/id="restaurantScreen"/);
-  assert.match(html,/DIVE BY DAY \/ TYCOON BY NIGHT/);
+  assert.match(html,/FREE DIVE \/ TYCOON BY NIGHT/);
   assert.match(js,/shark2:SHARK\+'shark-swim-atlas\.png'/);
   assert.match(js,/shark2:\{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8/);
   assert.doesNotMatch(js,/shark2:FAUNA\+'shark\/variants\/shark-001-64px\.gif'/);
