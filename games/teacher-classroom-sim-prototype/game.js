@@ -138,7 +138,7 @@
     var k=pairKey(a.name,b.name);
     if(!relations[k]){
       relations[k]={
-        affinity:.34,
+        affinity:clamp(.18+interestSimilarity(a,b)*.34+deterministicNoise((a.id||0)+(b.id||0),a.name+b.name)*.07,.18,.58),
         irritation:.06,
         rivalry:clamp(((a.compete||.3)+(b.compete||.3))*.18,.04,.42),
         positive:0,
@@ -415,6 +415,50 @@
     });
     return out.slice(0,3);
   }
+  function latestDiagnosisSummary(s){
+    var rows=[];
+    Object.keys(SUBJECT_MODELS).forEach(function(subject){
+      var model=SUBJECT_MODELS[subject];
+      Object.keys(model.concepts).forEach(function(key){
+        var node=s.knowledge&&s.knowledge[subject]?s.knowledge[subject][key]:null;
+        if(!node||node.evidence<=0)return;
+        rows.push({
+          subject:subject,
+          lastSeen:node.lastSeen||0,
+          text:node.evidence===1
+            ? subject+" · 관찰 1회 · "+model.concepts[key].label+": "+node.observations[0].text
+            : subject+" · 진단 단서 "+node.evidence+"회 · "+model.concepts[key].label+": "+node.hypothesis,
+          hypothesis:node.evidence>=2
+        });
+      });
+    });
+    rows.sort(function(a,b){return b.lastSeen-a.lastSeen});
+    return rows.slice(0,3);
+  }
+  function renderDiagnosisPanel(s){
+    var unit=q("#diagnosisUnit"),box=q("#diagnosisEvidence");
+    if(!s){
+      unit.textContent="학생을 선택하세요.";
+      box.innerHTML="활동지 확인이나 확인 질문으로 학습 근거를 모을 수 있습니다.";
+      return;
+    }
+    var rows=[];
+    if(current().kind==="lesson"&&subjectModel(current().subject)){
+      unit.textContent=current().subject+" · "+(current().unit||"현재 단원");
+      rows=diagnosisSummary(s).map(function(text){return {text:text,hypothesis:text.indexOf("진단 단서")===0}});
+    }else{
+      unit.textContent="최근 학습 관찰";
+      rows=latestDiagnosisSummary(s);
+    }
+    if(!rows.length){
+      box.innerHTML="아직 확인된 학습 근거가 없습니다. 활동지 확인·확인 질문처럼 진단 가능한 행동을 사용해 보세요.";
+      return;
+    }
+    box.innerHTML=rows.map(function(row){
+      return '<div class="diagnosis-item '+(row.hypothesis?"hypothesis":"")+'">'+row.text+'</div>';
+    }).join("");
+  }
+
 
   function resetStudents(){
     students=templates.map(function(t,i){
@@ -1225,7 +1269,9 @@
       var fit=lessonFit(s);
       s.talkNeed=clamp(s.talkNeed+.018*s.soc+.014*(1-fit));
       s.moveNeed=clamp(s.moveNeed+.016*s.move);
-      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-currentMastery(s)));
+      var diagNode=currentKnowledgeNode(s);
+      var repeatedGap=diagNode?Math.min(.08,diagNode.evidence*.012):0;
+      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-currentMastery(s))+repeatedGap*.08);
       s.sleepNeed=clamp(s.sleepNeed+.006*(1-s.energy));
       s.socialNeed=clamp(s.socialNeed+.006*s.soc);
       s.boredom=clamp(s.boredom+.013*(1-fit)-.006*s.persist);
@@ -2015,7 +2061,7 @@
   }
   function boardText(){
     var p=current();
-    if(p.kind==="lesson")return p.subject+" · "+currentPhase().label;
+    if(p.kind==="lesson")return p.subject+" · "+(p.unit||currentPhase().label)+" · "+currentPhase().label;
     if(p.kind==="morning")return "가방 정리 · 아침 독서";
     if(p.kind==="closing")return "청소 · 오늘 하루 돌아보기";
     return "우리 반";
@@ -2174,6 +2220,7 @@
       q("#studentSummary").textContent="학생을 선택하지 않으면 현재 공간 전체에 할 수 있는 행동이 나타납니다.";
       q("#studentState").textContent=SCENE_NAME[teacherScene]+" 전체 관찰";
       q("#memory").textContent="개별 학생을 선택하면 행동 원인과 관계 상황에 맞는 개별 행동으로 바뀝니다.";
+      renderDiagnosisPanel(null);
       renderTeacherBusy();renderActionPanel(null);return;
     }
     q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);
@@ -2196,6 +2243,7 @@
       notes.push("자주 어울리는 무리: "+names+" / "+circle.label);
     }
     q("#memory").textContent=notes.join(" · ")||"최근에 특별히 기록된 일 없음";
+    renderDiagnosisPanel(s);
     renderTeacherBusy();renderActionPanel(s);
   }
   function renderFeed(){
@@ -2253,7 +2301,7 @@
   function renderHeader(){
     var p=current();
     q("#time").textContent=fmtMin(gameMinute());q("#periodName").textContent=p.name;
-    q("#periodDesc").textContent=p.kind==="lesson"?"학생의 몸짓·학습·관계를 보며 수업을 운영하세요.":p.kind==="break"?"아이들이 친구를 찾아가거나 혼자 머무르며 관계가 움직입니다.":p.kind==="lunch"?"급식실에서는 자리·친구·나눔 행동이 드러납니다.":p.kind==="lunchplay"?"아이들이 원하는 공간과 친구를 찾아 움직입니다.":"하루 일과를 준비하거나 정리하는 시간입니다.";
+    q("#periodDesc").textContent=p.kind==="lesson"?(p.unit+" · 학생의 몸짓·학습·관계를 보며 수업을 운영하세요."):p.kind==="break"?"아이들이 친구를 찾아가거나 혼자 머무르며 관계가 움직입니다.":p.kind==="lunch"?"급식실에서는 자리·친구·나눔 행동이 드러납니다.":p.kind==="lunchplay"?"아이들이 원하는 공간과 친구를 찾아 움직입니다.":"하루 일과를 준비하거나 정리하는 시간입니다.";
     q("#locationName").textContent=SCENE_NAME[teacherScene];
     q("#progress").style.width=(clamp((gameSec/60-p.start)/(p.end-p.start))*100)+"%";
   }
