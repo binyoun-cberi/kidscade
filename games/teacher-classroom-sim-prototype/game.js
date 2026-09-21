@@ -210,6 +210,10 @@
   function current(){return schedule[Math.min(periodIndex,schedule.length-1)]}
   function gameMinute(){return Math.floor(gameSec/60)}
   function fmtMin(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
+  function fmtDuration(sec){
+    if(sec>=60){var m=Math.floor(sec/60),s=Math.round(sec%60);return s?m+"분 "+s+"초":m+"분"}
+    return Math.round(sec)+"초";
+  }
   function posePath(s,pose){return ASSET+s.char+"/poses/"+s.char+"-"+pose+".png"}
   function fallbackPose(s){return posePath(s,"stand")}
   function studentById(id){return students.find(function(s){return s.id===id})||null}
@@ -1105,7 +1109,8 @@
   function isSeatAnchored(s){
     return s.scene==="classroom"&&current().kind==="lesson"&&seated(s)&&!s.moving&&s.behaviorPhase!=="approach";
   }
-  function resolveStudentCrowding(){
+  function resolveStudentCrowding(gameDt){
+    var response=1-Math.exp(-1.05*Math.max(0,gameDt||0));
     for(var i=0;i<students.length;i++){
       var a=students[i];if(a.targetScene)continue;
       for(var j=i+1;j<students.length;j++){
@@ -1116,7 +1121,7 @@
         var min=interacting?4.8:7.2;
         if(d>=min)continue;
         if(d<.05){dx=(a.id%2?1:-1);dy=.3;d=Math.hypot(dx,dy)}
-        var push=(min-d)*.16,nx=dx/d,ny=dy/d;
+        var push=(min-d)*response,nx=dx/d,ny=dy/d;
         if(!isSeatAnchored(a)){a.x=clamp(a.x-nx*push,5,95);a.y=clamp(a.y-ny*push,16,92)}
         if(!isSeatAnchored(b)){b.x=clamp(b.x+nx*push,5,95);b.y=clamp(b.y+ny*push,16,92)}
       }
@@ -1138,7 +1143,7 @@
         if(target&&target.scene===s.scene)s.facing=target.x<s.x?-1:1;
       }
     });
-    resolveStudentCrowding();
+    resolveStudentCrowding(gameDt);
   }
   function sampleStats(){
     if(current().kind!=="lesson")return;
@@ -2022,7 +2027,7 @@
       var a=INSTRUCTION_ACTIONS[id],b=document.createElement("button");b.type="button";
       b.className="instruction-action"+(lessonState.phase===a.phase?" current":"")+(recommendedInstruction(id)?" recommended":"");
       b.disabled=teacherIsBusy()||teacherScene!==current().loc;
-      b.innerHTML="<strong>"+a.label+"</strong><small>"+a.duration+"초 · "+a.desc+"</small>";
+      b.innerHTML="<strong>"+a.label+"</strong><small>"+fmtDuration(a.duration)+" · "+a.desc+"</small>";
       b.addEventListener("click",function(){if(!teacherIsBusy())startTeacherTask(a,null)});
       wrap.appendChild(b);
     });
