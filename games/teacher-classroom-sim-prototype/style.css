@@ -79,31 +79,81 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .cafe-counter:after{content:"배식대";position:absolute;left:50%;top:23px;transform:translateX(-50%);font-size:16px;font-weight:800;color:#5a4636}
 .cafe-table{position:absolute;z-index:2;width:190px;height:70px;border:4px solid #75583e;border-radius:35px;background:#c59461;transform:translate(-50%,-50%)}
 .cafe-table:before,.cafe-table:after{content:"";position:absolute;left:18px;right:18px;height:10px;border-radius:10px;background:#8a6c50}.cafe-table:before{top:-18px}.cafe-table:after{bottom:-18px}
-.teacher{position:absolute;z-index:12;width:54px;text-align:center;transform:translate(-50%,-50%);transition:left .35s linear,top .35s linear}
-.teacher img{display:block;width:42px;height:56px;object-fit:contain;image-rendering:auto;margin:0 auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.16))}
-.teacher span{display:inline-block;margin-top:-5px;padding:1px 4px;border:1px solid var(--line);border-radius:5px;background:#fff;font-size:10px}
+.teacher{position:absolute;z-index:12;width:62px;height:92px;text-align:center;transform:translate(-50%,-50%);transition:left .13s linear,top .13s linear;pointer-events:none}
+.teacher-avatar-mount{display:block;width:54px;height:78px;margin:0 auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.16))}
+.teacher-label{display:inline-block;position:absolute;left:50%;bottom:0;transform:translateX(-50%);padding:1px 4px;border:1px solid var(--line);border-radius:5px;background:#fff;font-size:10px;white-space:nowrap}
+.teacher.moving .modular-avatar{animation:avatarBob .34s infinite alternate}
+.teacher.busy:not(.moving) .mod-arm.right{transform:rotate(-18deg)}
+
 .interaction-links{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:visible}
 .interaction-links line{vector-effect:non-scaling-stroke;stroke-width:2;stroke-linecap:round;opacity:.62}
 .interaction-links line.neutral{stroke:#6f7f8d;stroke-dasharray:5 5}
 .interaction-links line.positive{stroke:#5f8a67;stroke-dasharray:4 4}
 .interaction-links line.warning{stroke:#b47a4d;stroke-dasharray:3 4}
 .interaction-links line.danger{stroke:#aa5555;stroke-width:3;stroke-dasharray:2 3;opacity:.8}
-.student{position:absolute;z-index:10;width:62px;height:86px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
+
+.student{position:absolute;z-index:10;width:62px;height:88px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
 .student.selected .sprite-wrap{outline:3px solid var(--accent);outline-offset:2px;border-radius:9px}
-.sprite-wrap{position:absolute;left:50%;top:4px;width:47px;height:59px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;overflow:visible;transform-origin:50% 70%}
+.sprite-wrap{position:absolute;left:50%;top:0;width:52px;height:76px;transform:translateX(-50%);display:flex;align-items:flex-start;justify-content:center;overflow:visible;transform-origin:50% 70%}
 .student.face-left .sprite-wrap{transform:translateX(-50%) scaleX(-1)}
-.sprite{display:block;max-width:46px;max-height:56px;object-fit:contain;transform-origin:50% 85%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.17))}
-.student.seated .sprite-wrap{height:47px;top:13px;overflow:hidden}
-.student.seated .sprite{transform:translateY(7px) scale(.9)}
-.student.talk .sprite,.student.pair_work .sprite,.student.tease .sprite,.student.argue .sprite{animation:talkGesture .55s infinite alternate}
-.student.sleep .sprite{transform:translateY(10px) rotate(13deg) scale(.88);filter:brightness(.9) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
-.student.move .sprite,.student.walk .sprite,.student.run .sprite,.student.seek .sprite,.student.help_peer .sprite{animation:bob .42s infinite alternate}
-.student.help .sprite,.student.raise_hand .sprite,.student.report_incident .sprite{animation:raise .7s infinite alternate}
-.student.play .sprite,.student.compete .sprite{animation:bob .38s infinite alternate}
-.student.eat .sprite{transform:scale(.94)}
-.student.rejected .sprite,.student.hurt .sprite{filter:brightness(.88) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
-@keyframes bob{to{transform:translateY(-3px)}}@keyframes raise{to{transform:translateY(-2px) rotate(-3deg)}}@keyframes talkGesture{to{transform:rotate(5deg) translateX(1px)}}
-.student-name{position:absolute;left:50%;bottom:-4px;z-index:22;transform:translateX(-50%);font-size:8px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
+.student.seated .sprite-wrap{height:56px;top:11px;overflow:hidden}
+.student.seated .modular-avatar{transform:translateY(6px) scale(.90)}
+
+.modular-avatar{position:relative;width:52px;height:76px;transform-origin:50% 78%;pointer-events:none}
+.modular-avatar img{position:absolute;display:block;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.mod-part.hair{left:5%;top:-2%;width:90%;height:43%;z-index:7}
+.mod-part.head{left:18%;top:5%;width:64%;height:34%;z-index:4}
+.mod-part.face{left:30%;top:14%;width:40%;height:20%;z-index:8}
+.mod-part.neck{left:38%;top:32%;width:24%;height:8%;z-index:3}
+.mod-part.shirt{left:20%;top:34%;width:60%;height:39%;z-index:5}
+.mod-part.pants{left:27%;top:64%;width:46%;height:12%;z-index:7}
+
+.mod-arm,.mod-leg{position:absolute;pointer-events:none;transform-origin:50% 8%;z-index:3}
+.mod-arm{top:37%;width:30%;height:31%}
+.mod-arm.left{left:3%;transform:rotate(8deg)}
+.mod-arm.right{right:3%;transform:rotate(-8deg)}
+.mod-arm .skin-arm{left:0;top:0;width:100%;height:100%;z-index:1}
+.mod-arm .sleeve{left:6%;top:-2%;width:70%;height:68%;z-index:3}
+.mod-arm .hand{left:48%;bottom:-4%;width:38%;height:31%;z-index:4}
+
+.mod-leg{top:68%;width:26%;height:29%;z-index:2}
+.mod-leg.left{left:25%}
+.mod-leg.right{right:25%}
+.mod-leg .leg-img{left:0;top:0;width:100%;height:86%;z-index:2}
+.mod-leg .shoe{left:0;bottom:0;width:100%;height:25%;z-index:4}
+.mod-leg.right .leg-img,.mod-leg.right .shoe{transform:scaleX(-1)}
+
+.student-desk-mask{display:none;position:absolute;z-index:12;left:7px;right:7px;bottom:20px;height:17px;border:0;border-top:3px solid #72523a;border-radius:0 0 6px 6px;background:linear-gradient(#b98552,#a9784c);pointer-events:none}
+.student.seated .student-desk-mask{display:block}
+
+.student.locomotion .modular-avatar{animation:avatarBob .34s infinite alternate}
+.student.locomotion .mod-leg.left{animation:legForward .42s infinite alternate}
+.student.locomotion .mod-leg.right{animation:legBack .42s infinite alternate}
+.student.locomotion .mod-arm.left{animation:armBack .42s infinite alternate}
+.student.locomotion .mod-arm.right{animation:armForward .42s infinite alternate}
+.student.run .modular-avatar{animation-duration:.22s}
+.student.run .mod-leg.left,.student.run .mod-leg.right,.student.run .mod-arm.left,.student.run .mod-arm.right{animation-duration:.26s}
+
+.student.raise_hand .mod-arm.right,.student.report_incident .mod-arm.right,.student.help .mod-arm.right{transform:rotate(-128deg)}
+.student.present .mod-arm.left,.student.present .mod-arm.right{animation:presentGesture .65s infinite alternate}
+.student.talk .mod-arm.right,.student.pair_work .mod-arm.right,.student.tease .mod-arm.right,.student.argue .mod-arm.right,.student.shout_teacher .mod-arm.right,.student.insult_teacher .mod-arm.right{animation:talkArm .55s infinite alternate}
+.student.help_peer .mod-arm.left,.student.comfort .mod-arm.left,.student.defend_peer .mod-arm.left{transform:rotate(38deg)}
+.student.compete .mod-arm.left,.student.compete .mod-arm.right,.student.threaten .mod-arm.left,.student.threaten .mod-arm.right{transform:rotate(24deg)}
+.student.hit .mod-arm.right,.student.shove .mod-arm.right,.student.throw_at_teacher .mod-arm.right{transform:rotate(-54deg)}
+.student.sleep .modular-avatar{transform:translateY(7px) rotate(10deg) scale(.9);filter:brightness(.9)}
+.student.rejected .modular-avatar,.student.hurt .modular-avatar{transform:translateY(3px) rotate(-6deg);filter:brightness(.9)}
+.student.stretch .mod-arm.left{transform:rotate(150deg)}
+.student.stretch .mod-arm.right{transform:rotate(-150deg)}
+
+@keyframes avatarBob{to{transform:translateY(-2px)}}
+@keyframes legForward{to{transform:rotate(18deg)}}
+@keyframes legBack{to{transform:rotate(-18deg)}}
+@keyframes armForward{to{transform:rotate(28deg)}}
+@keyframes armBack{to{transform:rotate(-28deg)}}
+@keyframes talkArm{to{transform:rotate(-34deg)}}
+@keyframes presentGesture{to{transform:rotate(-48deg)}}
+
+.student-name{position:absolute;left:50%;bottom:-2px;z-index:22;transform:translateX(-50%);font-size:8px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
 .status-stack{position:absolute;z-index:23;left:50%;top:-22px;transform:translateX(-50%);display:grid;gap:2px;justify-items:center;pointer-events:none;white-space:nowrap}
 .intent-tag,.action-tag{max-width:105px;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);padding:2px 5px;font-size:8px;line-height:1.2;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .intent-tag{color:var(--muted);border-style:dashed}
@@ -111,8 +161,6 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .action-tag.positive{border-color:#88a98d;background:#f3faf4;color:#45674a}
 .action-tag.warning{border-color:#c9a078;background:#fff8ef;color:#805d3c}
 .action-tag.danger{border-color:#be7777;background:#fff1f1;color:#8e3f3f}
-.student-desk-mask{display:none;position:absolute;z-index:12;left:7px;right:7px;bottom:20px;height:17px;border:0;border-top:3px solid #72523a;border-radius:0 0 6px 6px;background:linear-gradient(#b98552,#a9784c);pointer-events:none}
-.student.seated .student-desk-mask{display:block}
 .panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:12px}
 .panel h3{font-size:18px;margin:0 0 4px}.state{margin:10px 0;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:700}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.actions button{font-size:12px;padding:6px}
@@ -165,9 +213,9 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   .metrics{grid-template-columns:1fr 1fr}
   .report-cols{grid-template-columns:1fr}
   .panel{margin-top:0}
-  .student{width:54px;height:78px}
-  .sprite-wrap{width:42px}
-  .sprite{max-width:41px;max-height:50px}
+  .student{width:54px;height:80px}
+  .sprite-wrap{width:46px;height:70px}
+  .modular-avatar{width:46px;height:68px}
   .instruction-actions{grid-template-columns:repeat(7,108px)}
   .student-selected .panel{
     position:fixed;
