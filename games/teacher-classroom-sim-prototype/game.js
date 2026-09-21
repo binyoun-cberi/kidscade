@@ -85,6 +85,8 @@
   var teacher={x:50,y:22};
   var stats=null;
   var feed=[];
+  var dayEvents=[];
+  var incidentRecords=[];
   var reportOpen=false;
   var lastFrame=performance.now();
   var aiAccumulator=0;
@@ -253,6 +255,7 @@
     type=type||"normal";scene=scene||teacherScene;
     var item={stamp:fmtMin(gameMinute()),text:text,type:type,scene:scene};
     feed.unshift(item);feed=feed.slice(0,14);
+    if(type!=="ambient"){dayEvents.push(item);dayEvents=dayEvents.slice(-160);}
     if(stats&&current().kind==="lesson"&&type!=="ambient")stats.events.push(item);
     renderFeed();
   }
@@ -630,6 +633,7 @@
   }
   function recordSeriousIncident(actor,target,kind,text){
     actor.lastSeriousIncident={kind:kind,targetId:target?target.id:null,time:gameMinute()};
+    incidentRecords.push({time:gameMinute(),kind:kind,actorId:actor.id,targetId:target?target.id:null,scene:actor.scene,text:text});
     actor.severeCooldown=gameSec+10*60;
     stats.seriousIncidents++;
     if(target){
@@ -1075,7 +1079,7 @@
     }
   }
 
-  function updateSocialTracking(){
+  function updateSocialTracking(gameDt){
     students.forEach(function(s){
       var target=studentById(s.socialTarget);
       if(!target||target.scene!==s.scene)return;
@@ -1089,15 +1093,13 @@
       var peers=circlePeers(s,s.scene);
       peers.forEach(function(p){
         if(distance(s,p)<18){
-          var r=relation(s,p);r.timeTogether=(r.timeTogether||0)+.12;
+          var r=relation(s,p);
+          r.timeTogether=(r.timeTogether||0)+gameDt*.72;
           if(current().kind!=="lesson"&&s.action!=="REJECTED"&&p.action!=="REJECTED"){
-            s.belonging=clamp(s.belonging+.0007);
+            s.belonging=clamp(s.belonging+gameDt*.00042);
           }
         }
       });
-      if(current().kind!=="lesson"&&!s.socialTarget&&peers.length&&s.socialNeed>.30&&Math.random()<.02){
-        beginSeek(s,pick(peers),current().kind==="lunchplay"&&s.scene==="playground"?"PLAY":"TALK");
-      }
     });
   }
   function isSeatAnchored(s){
@@ -1620,12 +1622,12 @@
     structure=clamp(structure/100);
     var design=Math.round((fitAvg*.64+structure*.36)*100);
     var engage=Math.round(engAvg*100);
-    var learning=Math.round(Math.min(100,52+gain*3500+stats.helped*3));
+    var learning=Math.round(Math.min(100,50+gain*3800));
     var latenessPenalty=Math.min(14,stats.lateTicks*.22);
     var conflictPenalty=Math.min(18,stats.conflicts*5);
     var seriousPenalty=Math.min(26,stats.seriousIncidents*8);
     var recoveryBonus=Math.min(10,stats.reconciled*4);
-    var climate=Math.round(clamp((92-stats.disruptions*7-latenessPenalty-conflictPenalty-seriousPenalty+recoveryBonus+Math.min(8,stats.teacherActs*.9)+Math.min(8,stats.safetyInterventions*2))/100)*100);
+    var climate=Math.round(clamp((92-stats.disruptions*7-latenessPenalty-conflictPenalty-seriousPenalty+recoveryBonus+Math.min(8,stats.safetyInterventions*2))/100)*100);
     var avg=(design+engage+learning+climate)/4;
     var grade=avg>=90?"A+":avg>=84?"A":avg>=78?"B+":avg>=70?"B":avg>=62?"C+":"C";
     return {p:p,design:design,engage:engage,learning:learning,climate:climate,grade:grade};
@@ -1653,6 +1655,8 @@
     if(stats.peerHarm)findings.push("반복 배제·위협·거친 신체행동 등 심각한 또래 사건이 "+stats.peerHarm+"건 발생해 안전과 관계 회복이 우선 과제가 되었다.");
     if(stats.teacherIncidents)findings.push("교사를 향한 고성·모욕적 말·물건 던지기 등 심각한 수업 방해 상황이 "+stats.teacherIncidents+"건 발생했다.");
     if(stats.safetyInterventions)findings.push("심각 상황에서 안전 확보·보호·지원 요청을 "+stats.safetyInterventions+"회 실시했다.");
+    var todaySerious=incidentRecords.filter(function(e){return e.time<=gameMinute()});
+    if(todaySerious.length)findings.push("오늘 누적 심각 사건 기록 "+todaySerious.length+"건이 유지되고 있다. 쉬는시간·점심시간 사건도 사라지지 않는다.");
     if(stats.reconciled) findings.push("교사 중재로 "+stats.reconciled+"건의 갈등이 비교적 안정적으로 정리되었다.");
     if(stats.roles) findings.push("역할을 맡긴 학생의 행동 방향이 도움·정리 쪽으로 바뀌는 장면이 있었다.");
     if(stats.connections) findings.push("교사가 연결한 또래 관계가 이후 상호작용의 기회를 만들었다.");
@@ -2016,7 +2020,7 @@
     log("선생님이 "+SCENE_NAME[scene]+" 쪽으로 이동했다.","teacher",scene);render();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;feed=[];reportOpen=false;
+    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;feed=[];dayEvents=[];incidentRecords=[];reportOpen=false;
     resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
@@ -2029,7 +2033,7 @@
       var gameDt=realDt*GAME_SECONDS_PER_REAL_SECOND*speed;
       gameSec+=gameDt;
       if(handlePeriodChange()){
-        updateTransit();updateTeacherTask();updateSocialTracking();updateMovement(gameDt);
+        updateTransit();updateTeacherTask();updateSocialTracking(gameDt);updateMovement(gameDt);
         aiAccumulator+=gameDt;
         circleAccumulator+=gameDt;
         var guard=0;
