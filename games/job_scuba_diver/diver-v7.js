@@ -1088,7 +1088,8 @@ function render(){
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
- const t=findCameraTarget();$('photoLabel').textContent=t?SPECIES[t.key].name+' · 예상 '+photoGrade(t)+'등급':'생물을 촬영 프레임 안에 넣으세요'
+ const t=findCameraTarget();if(!t){$('photoLabel').textContent='생물을 촬영 프레임 안에 넣으세요';return}
+ const band=creatureSizeBand(t),state=creatureCaptureState(t);$('photoLabel').textContent=band.label+' '+SPECIES[t.key].name+' · '+state.label+' · 예상 '+photoGrade(t)+'등급'
 }
 function currentContract(){return world?.contract}
 function missionText(){
@@ -1709,7 +1710,7 @@ function gearUpCost(k){return Math.round(900*gearTier(k)*(1+(k==='trap'?.28:k===
 function openShop(){
  $('contractScreen').classList.add('hidden');
  const diveCards=Object.keys(UPGRADES).map(k=>{const u=UPGRADES[k],lv=meta.up[k]||0,max=lv>=u.max,c=upCost(k);return'<div class="card"><h3>'+u.name+' Lv.'+lv+'/'+u.max+'</h3><p>'+u.desc+'</p><button class="btn '+(max?'dark':'gold')+'" data-up="'+k+'" '+(max?'disabled':'')+'>'+(max?'최대 강화':money(c)+' 강화')+'</button></div>'}).join('');
- const gearCards=Object.entries(GEAR_DEFS).map(([k,g])=>{const lv=gearTier(k),max=lv>=4,c=gearUpCost(k);return'<div class="card gearUpgrade" style="--tier:'+GEAR_TIER_COLORS[lv]+'"><h3>'+g.icon+' '+g.name+' · '+GEAR_TIER_NAMES[lv]+'</h3><p>'+g.desc+' · 등급이 오르면 범위/성공률/조작성이 좋아집니다.</p><button class="btn '+(max?'dark':'gold')+'" data-gearup="'+k+'" '+(max?'disabled':'')+'>'+(max?'최고 등급':money(c)+' 등급 강화')+'</button></div>'}).join('');
+ const gearCards=Object.entries(GEAR_DEFS).map(([k,g])=>{const lv=gearTier(k),max=lv>=4,c=gearUpCost(k),now=gearCapabilityText(k,lv),next=max?'':gearCapabilityText(k,lv+1);return'<div class="card gearUpgrade" style="--tier:'+GEAR_TIER_COLORS[lv]+'"><h3>'+g.icon+' '+g.name+' · '+GEAR_TIER_NAMES[lv]+'</h3><p>'+g.desc+'<br><b>현재: '+now+'</b>'+(next?'<br>다음 등급: '+next:'')+'</p><button class="btn '+(max?'dark':'gold')+'" data-gearup="'+k+'" '+(max?'disabled':'')+'>'+(max?'최고 등급':money(c)+' 등급 강화')+'</button></div>'}).join('');
  const shopCards=Object.keys(SHOP_UPGRADES).map(k=>{const u=SHOP_UPGRADES[k],lv=meta.shopUp[k]||0,max=lv>=u.max,c=shopUpCost(k);return'<div class="card"><h3>'+u.name+' Lv.'+lv+'/'+u.max+'</h3><p>'+u.desc+'</p><button class="btn '+(max?'dark':'gold')+'" data-shopup="'+k+'" '+(max?'disabled':'')+'>'+(max?'최대 강화':money(c)+' 강화')+'</button></div>'}).join('');
  $('shopBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b> · 어획 한도 <b>'+stats().catchCap+'kg</b> · 장비 슬롯 <b>'+stats().toolSlots+'칸</b></div><h3 class="sectionTitle">잠수·어획 설비</h3><div class="grid">'+diveCards+'</div><h3 class="sectionTitle">채집 장비 등급</h3><div class="grid">'+gearCards+'</div><h3 class="sectionTitle">BLUE KITCHEN 업그레이드</h3><div class="grid">'+shopCards+'</div><button class="btn" id="shopBack">선착장으로</button>';
  $('shopScreen').classList.remove('hidden');
