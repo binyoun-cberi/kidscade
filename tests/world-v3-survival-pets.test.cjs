@@ -69,7 +69,7 @@ test('legacy garden runtime is retired from active boot',()=>{
 });
 
 test('Cube Pets survival expansion is the current default cache',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=26/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=26/);
+  assert.match(html,/kidscade-world-v3\.js\?v=27/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=27/);
   assert.match(integration,/syncCubePetsSidebar/);
 });
