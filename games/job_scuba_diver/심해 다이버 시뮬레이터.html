@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>심해 다이버 시뮬레이터</title>
-<link rel="stylesheet" href="./deep-diver-2d.css?v=13">
+<link rel="stylesheet" href="./deep-diver-2d.css?v=14">
 </head>
 <body>
 <canvas id="game" aria-label="2D 심해 잠수 탐사 게임"></canvas>
@@ -17,13 +17,17 @@
       <div class="row"><span id="depthText">0m</span><b id="zoneText">산호 정원</b></div>
     </div>
     <div class="hudBox" id="missionHud"><div class="missionTitle" id="missionName">생태 조사</div><div class="missionText" id="missionText"></div></div>
-    <div class="hudBox" id="rightHud"><div>가방 <b id="bagText">0 / 8kg</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
+    <div class="hudBox" id="rightHud"><div>오늘 어획 <b id="bagText">0 / 4kg</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
   </div>
   <div id="toolBar">
     <button class="toolBtn active" data-tool="camera">1 · 카메라</button>
     <button class="toolBtn" data-tool="harpoon">2 · 작살</button>
-    <button class="toolBtn" data-tool="sonar">3 · 소나</button>
-    <button class="toolBtn" id="interactMain">E · 회수</button>
+    <button class="toolBtn" data-tool="net">3 · 그물</button>
+    <button class="toolBtn" data-tool="gloves">4 · 장갑</button>
+    <button class="toolBtn" data-tool="knife">5 · 채집칼</button>
+    <button class="toolBtn" data-tool="trap">6 · 통발</button>
+    <button class="toolBtn" data-tool="sonar">7 · 소나</button>
+    <button class="toolBtn" id="interactMain">E · 조사/귀환</button>
     <button class="toolBtn" id="actionMain">X · 사용</button>
   </div>
 </div>
@@ -38,9 +42,13 @@
   <div id="mActions">
     <button class="mBtn" data-tool="camera">촬영</button>
     <button class="mBtn" data-tool="harpoon">작살</button>
+    <button class="mBtn" data-tool="net">그물</button>
+    <button class="mBtn" data-tool="gloves">장갑</button>
+    <button class="mBtn" data-tool="knife">채집칼</button>
+    <button class="mBtn" data-tool="trap">통발</button>
     <button class="mBtn" data-tool="sonar">소나</button>
     <button class="mBtn green" id="dashMobile">대시</button>
-    <button class="mBtn gold" id="interactMobile">회수</button>
+    <button class="mBtn gold" id="interactMobile">조사/귀환</button>
     <button class="mBtn" id="actionMobile" aria-hidden="true">사용</button>
   </div>
 </div>
@@ -50,27 +58,28 @@
   <div class="panel">
     <div class="hero">
       <div class="heroSprite" style="background-image:url('../../assets/game/2d/underwater/underwater-diving/player/player-swiming.png')"></div>
-      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v17 · DIVE BY DAY / TYCOON BY NIGHT</div></div>
+      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v18 · FREE DIVE / TYCOON BY NIGHT</div></div>
     </div>
-    <div class="notice"><b>낮에는 잠수하고, 밤에는 직접 잡아온 해산물로 가게를 운영합니다.</b><br>절벽·해저 선반·동굴 통로를 탐사하며 생물을 촬영하고 식재료와 유물을 회수하세요. 무사히 수면으로 돌아와야 잡은 재료가 냉장고에 들어가고 밤 장사를 열 수 있습니다.</div>
+    <div class="notice"><b>의뢰는 선택 사항. 오늘 필요한 장비를 골라 자유롭게 잠수하세요.</b><br>수면 중앙 탐사선에서 출발해 그물·작살·철제 장갑·채집칼·통발 중 필요한 장비를 빌리고, 하루 어획 한도 안에서 물고기·성게·미역·다시마·홍합을 모으세요. 배로 돌아와야 낮 탐사가 끝나고 식재료가 BLUE KITCHEN 냉장고에 들어갑니다.</div>
     <div class="grid">
       <div class="card"><h3>생태 조사</h3><p>물고기뿐 아니라 게·성게·불가사리·해파리·앵무조개·오징어·대형 보호종까지 촬영해 도감을 채웁니다.</p></div>
       <div class="card"><h3>진짜 해저 지형</h3><p>15개 세부 구역에 실제 회수품 아이콘·새 수중 식생·수중 앰비언스가 더해져 탐사와 인양의 시각·청각 피드백이 강화되었습니다.</p></div>
-      <div class="card"><h3>장비 성장</h3><p>산소통·핀·가방·카메라·작살·소나·잠수복을 강화해 더 깊이 내려갑니다.</p></div>
-      <div class="card"><h3>낮 탐사 · 밤 장사</h3><p>작살로 확보한 식재료는 바로 돈이 되지 않습니다. 밤에 BLUE KITCHEN에서 손님 주문에 맞춰 요리해야 진짜 매출이 됩니다.</p></div>
+      <div class="card"><h3>출항 장비 선택</h3><p>작살·그물·철제 장갑·채집칼·통발을 매일 다르게 빌립니다. 장비 등급이 초록→파랑→보라→주황으로 올라갈수록 포획이 쉬워집니다.</p></div>
+      <div class="card"><h3>어획과 식당 성장</h3><p>초반 하루 어획은 단 4kg. 선상 냉장 어획함과 장비 랙을 키우고, 밤에는 좌석·화구·손질대·냉장고·메뉴판·직원까지 업그레이드합니다.</p></div>
+      <div class="card"><h3>낮 탐사 · 밤 장사</h3><p>미역·다시마·성게·홍합까지 요리에 들어갑니다. 복합 재료 레시피를 맞추며 BLUE KITCHEN의 메뉴와 매출을 키우세요.</p></div>
     </div>
-    <div class="notice"><b>조작</b> · WASD/방향키 이동 · Shift 대시 · 1 카메라 · 2 작살 · 3 소나 · X/Space 장비 사용 · E 조사/회수</div>
+    <div class="notice"><b>조작</b> · WASD/방향키 이동 · Shift 대시 · 1 카메라 · 2 작살 · 3 그물 · 4 장갑 · 5 채집칼 · 6 통발 · 7 소나 · X/Space 장비 사용 · E 조사/탐사선 귀환</div>
     <div class="toolbar"><button class="btn gold" id="startBtn">새 잠수 경력 시작</button><button class="btn dark" id="continueBtn">이어하기</button></div>
     <div id="credit">Underwater Diving artwork © Luis Zuno (@ansimuz), CC BY 3.0 · 추가 물고기/수중 소품 및 기타 사용 자산은 Kidscade 공용 무료 에셋 라이브러리의 라이선스 기록을 따릅니다.</div>
   </div>
 </section>
 
-<section class="overlay hidden" id="contractScreen"><div class="panel"><h2>잠수 계약 게시판</h2><div id="contractBody"></div></div></section>
-<section class="overlay hidden" id="shopScreen"><div class="panel"><h2>잠수 장비실</h2><div id="shopBody"></div></div></section>
+<section class="overlay hidden" id="contractScreen"><div class="panel dockPanel"><h2>선착장 · 오늘의 출항 준비</h2><div id="contractBody"></div></div></section>
+<section class="overlay hidden" id="shopScreen"><div class="panel"><h2>업그레이드 공방</h2><div id="shopBody"></div></div></section>
 <section class="overlay hidden" id="codexScreen"><div class="panel"><h2>해양 생물 도감</h2><div id="codexBody"></div></div></section>
 <section class="overlay hidden" id="restaurantScreen"><div class="panel restaurantPanel"><h2>밤 장사 · BLUE KITCHEN</h2><div id="restaurantBody"></div></div></section>
-<section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar"><button class="btn gold" id="nextBtn">계약 게시판</button><button class="btn dark" id="homeBtn">시작 화면</button></div></div></section>
+<section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar"><button class="btn gold" id="nextBtn">선착장으로</button><button class="btn dark" id="homeBtn">시작 화면</button></div></div></section>
 
-<script src="./diver-v7.js?v=17"></script>
+<script src="./diver-v7.js?v=18"></script>
 </body>
 </html>
