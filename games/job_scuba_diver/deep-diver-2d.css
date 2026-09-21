@@ -360,3 +360,30 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .missionCard.dailyMission{cursor:default;border-color:rgba(99,221,177,.44);background:linear-gradient(135deg,rgba(19,91,72,.58),rgba(7,52,64,.86));box-shadow:inset 0 0 0 1px rgba(128,240,195,.06)}
 .missionCard.dailyMission>span{color:#8df0bd}.missionCard.dailyMission h3{color:#dfffe9}.missionCard.dailyMission b{color:#a8f2ca}
 .dockStatus .dailyStatus{color:#aaf1c7;background:rgba(24,101,74,.48);border:1px solid rgba(118,226,174,.18)}
+
+
+/* v32 observation + specimen record loop */
+#observeHud{position:absolute;left:max(10px,env(safe-area-inset-left));top:118px;width:min(350px,calc(100vw - 20px));pointer-events:none;transition:.16s}
+#observeHud.trophy{border-color:rgba(255,219,104,.72);box-shadow:0 0 0 1px rgba(255,220,105,.08),0 8px 28px rgba(0,0,0,.36),0 0 22px rgba(255,202,69,.13)}
+.observeHead{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.observeHead span{flex:0 0 auto;padding:2px 6px;border-radius:999px;background:rgba(81,217,238,.14);border:1px solid rgba(111,230,244,.25);color:#8ceaf5;font-size:8px;font-weight:1000;letter-spacing:.06em}
+#observeHud.trophy .observeHead span{background:rgba(255,203,77,.15);border-color:rgba(255,221,119,.28);color:#ffe17c}
+.observeHead b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f2fdff;font-size:12px}
+#observeMain{color:#ffe89a;font-size:11px;font-weight:1000;line-height:1.35}
+#observeSub{margin-top:3px;color:#b8dce3;font-size:9px;font-weight:800;line-height:1.4}
+.codexCard.trophyRecord{border-color:rgba(255,214,91,.46);background:linear-gradient(145deg,rgba(84,66,24,.55),rgba(8,51,65,.78))}
+.codexCard.trophyRecord h3{color:#ffe388}
+@media(max-width:720px){
+ #observeHud{top:110px;width:min(300px,56vw);padding:6px 8px}
+ .observeHead b{font-size:10px}#observeMain{font-size:9px}#observeSub{font-size:8px}
+}
+@media(max-width:480px) and (orientation:portrait){
+ #observeHud{left:50%;top:126px;transform:translateX(-50%);width:min(310px,calc(100vw - 28px));text-align:center}
+ .observeHead{justify-content:center}
+ #observeSub{line-height:1.3}
+ #hint{top:192px}
+}
+@media(max-height:520px){
+ #observeHud{top:82px;width:min(300px,48vw)}
+ #observeSub{display:none}
+}
