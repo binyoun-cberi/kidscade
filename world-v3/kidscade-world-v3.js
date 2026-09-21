@@ -10,6 +10,7 @@ const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
 const Bridge=V2.Bridge;
 const Meta=window.KidscadeSeedWorldMeta||null;
+const HOMESTEAD_REWORK_VERSION=2;
 const canvas=document.getElementById('world3d');
 const loading=document.getElementById('loading');
 const toastEl=document.getElementById('toast');
@@ -261,27 +262,45 @@ function prog(){
     nextId:Math.max(1,Math.floor(Number(rawHousing.nextId)||1))
   };
   const rawHome=p.homestead&&typeof p.homestead==='object'?p.homestead:{};
-  const legacyComfort=!rawHome.initialized&&(p.housing.defaultLayoutMigrated||p.housing.functionalLayoutMigrated||p.housing.placed.some(v=>/^home-/.test(String(v?.id||''))));
   p.homestead={
-    version:1,
+    version:2,
+    reworkVersion:Math.max(0,Math.floor(Number(rawHome.reworkVersion)||0)),
     initialized:true,
-    campfireBuilt:rawHome.campfireBuilt===true||legacyComfort,
-    kitchenLevel:clampLevel(rawHome.kitchenLevel,0,2,legacyComfort?2:0),
-    bedLevel:clampLevel(rawHome.bedLevel,0,2,legacyComfort?2:0),
-    backpackLevel:clampLevel(rawHome.backpackLevel,1,4,legacyComfort?2:1),
-    storageLevel:clampLevel(rawHome.storageLevel,1,4,legacyComfort?2:1),
-    wardrobeBuilt:rawHome.wardrobeBuilt===true||legacyComfort,
+    campfireBuilt:rawHome.campfireBuilt===true,
+    kitchenLevel:clampLevel(rawHome.kitchenLevel,0,2,0),
+    bedLevel:clampLevel(rawHome.bedLevel,0,2,0),
+    backpackLevel:clampLevel(rawHome.backpackLevel,1,4,1),
+    storageLevel:clampLevel(rawHome.storageLevel,1,4,1),
+    wardrobeBuilt:rawHome.wardrobeBuilt===true,
     homeStorage:rawHome.homeStorage&&typeof rawHome.homeStorage==='object'?rawHome.homeStorage:{},
     homeFoodStorage:rawHome.homeFoodStorage&&typeof rawHome.homeFoodStorage==='object'?rawHome.homeFoodStorage:{}
   };
   p.orchard=p.orchard&&typeof p.orchard==='object'?p.orchard:{};
   p.orchard.trees=p.orchard.trees&&typeof p.orchard.trees==='object'?p.orchard.trees:{};
   p.orchard.harvests=p.orchard.harvests&&typeof p.orchard.harvests==='object'?p.orchard.harvests:{};
-  if(legacyComfort){
-    p.development.waterLevel=Math.max(p.development.waterLevel,3);
-    p.development.houseLevel=Math.max(p.development.houseLevel,3);
-    p.development.carpenterLevel=Math.max(p.development.carpenterLevel,1);
-    p.development.fishingLevel=Math.max(p.development.fishingLevel,1);
+
+  // v3.22: old housing migrations used to auto-promote returning saves to a nearly finished home.
+  // Rebase only the physical homestead once; keep seeds, coins, trophies, pets and town friendships intact.
+  if(p.homestead.reworkVersion<HOMESTEAD_REWORK_VERSION){
+    Object.assign(p.development,{
+      farmLevel:1,fishingLevel:0,stoneMineLevel:1,ironMineLevel:1,techLevel:1,
+      orchardLevel:0,ranchLevel:0,waterLevel:0,houseLevel:1,carpenterLevel:0
+    });
+    Object.assign(p.homestead,{
+      reworkVersion:HOMESTEAD_REWORK_VERSION,campfireBuilt:false,kitchenLevel:0,bedLevel:0,
+      backpackLevel:1,storageLevel:1,wardrobeBuilt:false
+    });
+    const progressionFurniture=new Set([
+      'bedSingle','kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge','homeDrawers','wardrobe',
+      'classicDesk','tallBookcase','classicSofa','diningTable','rugRectangle','woodChair','sideTable',
+      'pottedPlant','bookcase','coffeeTable','loungeChair','rugRound','floorLamp','teddy','television'
+    ]);
+    p.housing.placed=p.housing.placed.filter(v=>v&&!progressionFurniture.has(v.key));
+    for(const key of progressionFurniture)delete p.housing.owned[key];
+    // These flags now mean "do not resurrect the old furnished starter house".
+    p.housing.defaultLayoutMigrated=true;
+    p.housing.functionalLayoutMigrated=true;
+    p.orchard.harvests={};
   }
   return p;
 }
@@ -1012,6 +1031,7 @@ document.getElementById('mobileInteract').onclick=doInteract;
 const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
+let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
 const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
@@ -1084,6 +1104,10 @@ function updateHomesteadVisuals(){
     const size=d.houseLevel===1?4.3:d.houseLevel===2?5.1:5.8;
     homeHouseCollider.w=size;homeHouseCollider.d=d.houseLevel===1?3.45:d.houseLevel===2?3.9:4.4;
   }
+  const carpenterOpen=d.carpenterLevel>=1;
+  if(carpenterBuildingObject)carpenterBuildingObject.visible=carpenterOpen;
+  if(carpenterInteraction)carpenterInteraction.enabled=carpenterOpen;
+  if(carpenterFoundation)carpenterFoundation.visible=!carpenterOpen;
 }
 function claimStarterKit(){
   const p=prog();
@@ -1285,7 +1309,7 @@ function addFruitDots(group,color){
   }
 }
 
-function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
+function addColliderFor(modeName,x,z,w,d){return collider(modeName,x,z,w,d)}
 function isPathClearance(x,z,w=0,d=0){return footprintTouchesRoad(x,z,w,d,.18)}
 function addNatureCollider(x,z,w,d){
   if(footprintTouchesRoad(x,z,w,d,.18))return null;
@@ -1411,11 +1435,14 @@ async function buildOutdoor(){
       addModel(outdoor,ASSET.workbench,{x:f.x+6.2,z:f.z+6.5,w:2.0,h:1.5,d:1.3,rot:-.2,name:'workbench3d'}),
       addModel(outdoor,ASSET.chest,{x:f.x+4.1,z:f.z+6.9,w:1.3,h:1.0,d:1.0,rot:.15,name:'chest3d'})
     ]);
-    addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
+    carpenterBuildingObject=outdoor.getObjectByName('farmhouse3d')||null;
+    carpenterFoundation=box(outdoor,f.x,f.z-5.7,4.5,3.7,.16,0x8d7657,.015);
+    const carpenterCollider=addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
+    if(carpenterCollider)carpenterCollider.enabled=devState().carpenterLevel>=1;
     addColliderFor('outdoor',f.x+6.2,f.z+6.5,1.6,1.0);
     addColliderFor('outdoor',f.x+4.1,f.z+6.9,1.0,.8);
     interact('outdoor',f.x+6.2,f.z+5.65,1.45,'3×3 제작대 사용하기',workbenchPanel);
-    interact('outdoor',f.x,f.z-3.25,1.65,'🪚 목수공방 이용하기',carpenterPanel);
+    carpenterInteraction=interact('outdoor',f.x,f.z-3.25,1.65,'🪚 목수공방 이용하기',carpenterPanel);
     interact('outdoor',f.x+4.1,f.z+6.1,1.35,'보관 상자 보기',inventoryPanel);
     const plotPos=[
       [f.x-6.0,f.z+1.1],[f.x-3.35,f.z+1.1],[f.x-.7,f.z+1.1],
