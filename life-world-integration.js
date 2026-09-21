@@ -116,9 +116,10 @@
   window.addEventListener('message',e=>{if(e.source!==frame?.contentWindow)return;if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();});
 
   installStyles();syncCubePetsSidebar();syncWorldEntryStatus();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton()){syncCubePetsSidebar();observer.disconnect()}});observer.observe(document.documentElement,{childList:true,subtree:true});}
-  window.addEventListener('pageshow',syncCubePetsSidebar);
+  window.addEventListener('pageshow',()=>{syncCubePetsSidebar();syncWorldEntryStatus();});
   window.addEventListener('storage',e=>{if(e.key==='kidscade_world_v2'){syncCubePetsSidebar();syncWorldEntryStatus();}if(e.key==='kidscade_seed_world_meta_v1'||e.key==='kidscade_coins')syncWorldEntryStatus();});
   root.addEventListener('kidscade-seed-world-meta-change',syncWorldEntryStatus);
   root.addEventListener('kidscade-seed-world-meta-ready',syncWorldEntryStatus);
+  setInterval(syncWorldEntryStatus,15000);
   const api={open,close,ensure,refresh:refreshWorld,syncCubePetsSidebar,syncWorldEntryStatus,getFrame:()=>frame,url:WORLD_URL,version:3};root.KidscadeWorld=api;root.KidscadeLifeWorld=api;root.openKidscadeLifeWorld=open;root.closeKidscadeLifeWorld=close;
 })(window);
