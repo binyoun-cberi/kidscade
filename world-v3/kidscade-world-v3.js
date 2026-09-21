@@ -1031,7 +1031,7 @@ document.getElementById('mobileInteract').onclick=doInteract;
 const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
-let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null;
+let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null,carpenterCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
 const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
@@ -1107,6 +1107,7 @@ function updateHomesteadVisuals(){
   const carpenterOpen=d.carpenterLevel>=1;
   if(carpenterBuildingObject)carpenterBuildingObject.visible=carpenterOpen;
   if(carpenterInteraction)carpenterInteraction.enabled=carpenterOpen;
+  if(carpenterCollider)carpenterCollider.enabled=carpenterOpen;
   if(carpenterFoundation)carpenterFoundation.visible=!carpenterOpen;
 }
 function claimStarterKit(){
@@ -1437,7 +1438,7 @@ async function buildOutdoor(){
     ]);
     carpenterBuildingObject=outdoor.getObjectByName('farmhouse3d')||null;
     carpenterFoundation=box(outdoor,f.x,f.z-5.7,4.5,3.7,.16,0x8d7657,.015);
-    const carpenterCollider=addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
+    carpenterCollider=addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
     if(carpenterCollider)carpenterCollider.enabled=devState().carpenterLevel>=1;
     addColliderFor('outdoor',f.x+6.2,f.z+6.5,1.6,1.0);
     addColliderFor('outdoor',f.x+4.1,f.z+6.9,1.0,.8);
@@ -1988,6 +1989,8 @@ async function init(){
     travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
   });
   townEconomy.ensureState(prog());
+  // Persist one-time v3.22 starter-world migration before any later refresh/reload.
+  persist();
   syncCosmeticAura();
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
