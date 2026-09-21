@@ -954,11 +954,12 @@ function spendTool(kind,item){
   if(!requireEquippedTool(item))return false;
   if(p.energy<=4){toast('체력이 부족해요. 집 침대에서 쉬어 보세요.');return false}
   const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
-  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv(),extras=[];i[kind]=(i[kind]||0)+gain;
+  if(!addInventoryItem(kind,gain))return false;
+  t.dur--;p.energy=Math.max(0,p.energy-cost);const extras=[];
   if(kind==='stone'){
     const level=devState().stoneMineLevel;
-    if(level>=2&&Math.random()<(level>=3?.38:.22)){i.quartz=(i.quartz||0)+1;extras.push('석영 +1');}
-    if(level>=3&&Math.random()<.06){i.gold=(i.gold||0)+1;extras.push('금 +1');}
+    if(level>=2&&Math.random()<(level>=3?.38:.22)&&addInventoryItem('quartz',1,{silent:true}))extras.push('석영 +1');
+    if(level>=3&&Math.random()<.06&&addInventoryItem('gold',1,{silent:true}))extras.push('금 +1');
   }
   persist();updateStatus();worldAudio.sfx('impact',.12);
   toast((kind==='wood'?'목재':'돌')+' +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
@@ -979,17 +980,18 @@ function sleep(){
 function fish(place='pond'){
   const p=prog(),d=devState(),required=place==='beach'?3:place==='river'?2:1;
   if(d.fishingLevel<required){toast('🎣 낚시터 '+required+'단계에서 이용할 수 있어요. 마을 성장 보드에서 확장해 보세요.');return}
+  if(!canCarryNewKey('fish')){toast('🎒 물고기를 넣을 가방 칸이 없어요.');return}
   if(p.energy<3){toast('체력이 부족해요.');return}
   p.energy=Math.max(0,p.energy-3);toast(place==='beach'?'바닷가 낚시 중…':place==='river'?'강가 낚시 중…':'연못 낚시 중…');
   setTimeout(()=>{
-    const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
-    i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};
+    const bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
+    addInventoryItem('fish',gain,{silent:true});p.fishDex=p.fishDex||{};
     const label=place==='beach'?'해변 물고기':place==='river'?'강가 물고기':'연못 물고기';
     p.fishDex[label]=(p.fishDex[label]||0)+gain;
-    if(place==='river'&&Math.random()<.24){i.rareFish=(i.rareFish||0)+1;extras.push('희귀 물고기 +1');}
+    if(place==='river'&&Math.random()<.24&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
     if(place==='beach'){
-      if(Math.random()<.32){i.rareFish=(i.rareFish||0)+1;extras.push('희귀 물고기 +1');}
-      if(Math.random()<.16){i.pearl=(i.pearl||0)+1;extras.push('진주 +1');}
+      if(Math.random()<.32&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
+      if(Math.random()<.16&&addInventoryItem('pearl',1,{silent:true}))extras.push('진주 +1');
     }
     persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);
     toast('물고기 +'+gain+(extras.length?' · '+extras.join(' · '):''));
@@ -999,11 +1001,12 @@ function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
   if(!requireEquippedTool('pick'))return false;
+  if(!canCarryNewKey('iron')){toast('🎒 철광석을 넣을 가방 칸이 없어요.');return false;}
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
   const level=devState().ironMineLevel,gain=(t.tier==='iron'?2:1)+(level>=3?1:0),cost=t.tier==='iron'?4:6,extras=[];
-  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
-  if(level>=2&&Math.random()<(level>=3?.42:.24)){i.copper=(i.copper||0)+1;extras.push('구리 +1');}
-  if(level>=3&&Math.random()<.10){i.gold=(i.gold||0)+1;extras.push('금 +1');}
+  addInventoryItem('iron',gain,{silent:true});t.dur--;p.energy=Math.max(0,p.energy-cost);
+  if(level>=2&&Math.random()<(level>=3?.42:.24)&&addInventoryItem('copper',1,{silent:true}))extras.push('구리 +1');
+  if(level>=3&&Math.random()<.10&&addInventoryItem('gold',1,{silent:true}))extras.push('금 +1');
   persist();setAvatarAction('smile',480);updateStatus();worldAudio.sfx('impact',.14);
   toast('철광석 +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
 }
@@ -1038,12 +1041,14 @@ function cropAction(id){
   if(state.phase==='empty'){cropChoicePanel(id);return;}
   const def=CROP_DEF[state.type];
   if(state.phase==='planted'){
-    state.phase='growing';state.readyAt=Date.now()+def.growMs;persist();worldAudio.sfx('pickup',.09);toast(def.name+'에 물을 줬어요.');
+    if(!useWater(1))return;
+    state.phase='growing';state.readyAt=Date.now()+def.growMs;persist();worldAudio.sfx('pickup',.09);toast(def.name+'에 물을 줬어요. · 남은 물 '+(inv().water||0));
   }else if(state.phase==='growing'){
     const sec=Math.max(1,Math.ceil((state.readyAt-Date.now())/1000));toast(def.name+' 성장 중 · '+sec+'초');
   }else{
     const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;
-    i[state.type]=(i[state.type]||0)+gain;p.seeds[state.type]=(p.seeds[state.type]||0)+seedGain;
+    if(!addInventoryItem(state.type,gain))return;
+    p.seeds[state.type]=(p.seeds[state.type]||0)+seedGain;
     state.type='';state.phase='empty';state.readyAt=0;state.plantedAt=0;persist();Meta?.advanceTask?.('harvest',1);worldAudio.sfx('pickup',.20);toast(def.name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
@@ -1098,9 +1103,10 @@ async function addGroundPickup(id,kind,x,z){
   const actor={id,kind,object,ready:true,interaction:null,timer:null};groundPickups.push(actor);
   actor.interaction=interact('outdoor',x,z,1.0,kind==='wood'?'떨어진 나뭇가지 줍기':'작은 돌 줍기',()=>{
     if(!actor.ready)return;
+    if(!addInventoryItem(kind,1))return;
     const nextAt=Date.now()+GROUND_PICKUP_RESPAWN_MS;
     prog().groundPickups[id]=nextAt;
-    const i=inv();i[kind]=(i[kind]||0)+1;persist();setAvatarAction('smile',380);updateStatus();worldAudio.sfx('pickup',.14);
+    persist();setAvatarAction('smile',380);updateStatus();worldAudio.sfx('pickup',.14);
     toast((kind==='wood'?'나뭇가지':'작은 돌')+' +1 · 도구 없이 주웠어요.');
     scheduleGroundPickup(actor,GROUND_PICKUP_RESPAWN_MS);
   });
@@ -1228,7 +1234,7 @@ async function buildOutdoor(){
     }
     for(const [dx,dz] of [[-6,2.8],[-2,4.8],[5,3.2],[-5,-5.2]]){
       const x=c.x+dx,z=c.z+dz;await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
-      interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const i=inv(),gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);i.mushroom=(i.mushroom||0)+gain;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
+      interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);if(!addInventoryItem('mushroom',gain))return;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
     }
     await addModel(outdoor,ASSET.logStack,{x:c.x-5,z:c.z+7.2,w:2.4,h:1.1,d:1.2,rot:.2});
     await addZoneSign('forest',7.0,6.6,'깊은 숲 · 목재 · 버섯',Math.PI/2);
@@ -1396,7 +1402,7 @@ function collectRanchProducts(){
   for(const [id,d] of Object.entries(RANCH_PRODUCTS)){
     if(!state.owned.includes(id))continue;
     const last=Number(state.products[id]??-999);if(day-last<d.cooldown)continue;
-    i[d.key]=(i[d.key]||0)+d.qty;state.products[id]=day;got.push(d.name+' +'+d.qty);
+    const added=addInventoryItem(d.key,d.qty,{silent:true});if(!added)continue;state.products[id]=day;got.push(d.name+' +'+d.qty);
   }
   if(!got.length){toast('오늘 모을 생산물이 아직 없어요.');ranchPanel();return;}
   persist();Meta?.advanceTask?.('harvest',1);worldAudio.sfx('pickup',.20);toast(got.join(' · '));updateStatus();ranchPanel();
