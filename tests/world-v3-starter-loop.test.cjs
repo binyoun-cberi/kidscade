@@ -35,7 +35,7 @@ test('starter inventory is limited and home storage matters',()=>{
 
 test('starter guidance reveals one homestead goal at a time',()=>{
   assert.match(runtime,/function nextHomesteadGoal/);
-  for(const phrase of ['강물 한 통 떠오기','집 앞 캠프파이어 만들기','첫 작물 키우기','우물 만들기','바닥 이불 졸업하기'])assert.ok(runtime.includes(phrase),phrase);
+  for(const phrase of ['강물 한 통 떠오기','집 앞 캠프파이어 만들기','첫 작물 키우기','우물 만들기','나무 침대 만들기','침대를 집에 배치하기'])assert.ok(runtime.includes(phrase),phrase);
   assert.match(runtime,/첫 개척 목표/);
 });
 
