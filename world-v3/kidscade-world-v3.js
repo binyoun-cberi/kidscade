@@ -236,6 +236,14 @@ function prog(){
   p.starterKitClaimed=!!p.starterKitClaimed;
   p.starterHintSeen=!!p.starterHintSeen;
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
+  const rawDev=p.development&&typeof p.development==='object'?p.development:{};
+  p.development={
+    farmLevel:Math.max(1,Math.min(5,Math.floor(Number(rawDev.farmLevel)||1))),
+    fishingLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.fishingLevel)||1))),
+    stoneMineLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.stoneMineLevel)||1))),
+    ironMineLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.ironMineLevel)||1))),
+    techLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.techLevel)||1)))
+  };
   const rawHousing=p.housing&&typeof p.housing==='object'?p.housing:{};
   p.housing={
     version:3,
@@ -249,9 +257,9 @@ function prog(){
   return p;
 }
 const itemName=k=>({
-  wood:'목재',stone:'돌',iron:'철광석',potato:'감자',carrot:'당근',tomato:'토마토',
-  strawberry:'딸기',corn:'옥수수',pumpkin:'호박',milk:'우유',egg:'달걀',truffle:'트러플',
-  fish:'물고기',bug:'곤충',mushroom:'버섯'
+  wood:'목재',stone:'돌',iron:'철광석',copper:'구리',quartz:'석영',gold:'금',semiconductor:'반도체',
+  potato:'감자',carrot:'당근',tomato:'토마토',strawberry:'딸기',corn:'옥수수',pumpkin:'호박',
+  milk:'우유',egg:'달걀',truffle:'트러플',fish:'물고기',rareFish:'희귀 물고기',pearl:'진주',bug:'곤충',mushroom:'버섯'
 })[k]||k;
 
 function toolName(key,p=prog()){
@@ -301,6 +309,8 @@ function helpPanel(){
     '<div class="helpItem"><b>🐾 Cube Pets</b>5번 슬롯에서 내가 만난 펫을 즉시 동행시킬 수 있어요.</div>'+
     '<div class="helpItem"><b>❤ 생존</b>왼쪽 구는 체력, 오른쪽 구는 허기예요. 음식과 휴식으로 관리해요.</div>'+
     '<div class="helpItem"><b>📬 바로가기</b>위쪽의 📬 택배와 📋 오늘 할 일을 어디서든 바로 눌러 확인할 수 있어요.</div>'+
+    '<div class="helpItem"><b>🧰 직접 제작</b>농장 제작대에서 재료를 3×3 칸에 직접 놓아 도구·반도체·TV를 만들어요.</div>'+
+    '<div class="helpItem"><b>🏗️ 마을 성장</b>씨앗으로 밭·낚시터·광산·기술 공방을 발전시키면 월드에서 실제로 가능한 일이 늘어나요.</div>'+
     '</div><p><b>현재 지역 이름</b>을 누르면 씨앗버스 지도가 열립니다. 자원 총량과 음식은 가방에서 확인하세요.</p>');
 }
 function activateQuickSlot(key){
@@ -316,6 +326,96 @@ petPicker?.addEventListener('click',e=>{
 });
 helpBtn?.addEventListener('click',helpPanel);
 
+
+const FARM_PLOT_COUNTS=[1,2,3,6,9];
+const DEVELOPMENT_TRACKS={
+  farm:{key:'farmLevel',icon:'🥕',name:'농장',max:5,costs:[20,35,70,120],effects:['밭 1칸','밭 2칸','밭 3칸','밭 6칸','밭 9칸']},
+  fishing:{key:'fishingLevel',icon:'🎣',name:'낚시터',max:3,costs:[35,80],effects:['집 연못','강가 낚시터','해변 희귀 낚시']},
+  stone:{key:'stoneMineLevel',icon:'🪨',name:'돌 광산',max:3,costs:[45,100],effects:['돌','석영 발견','석영 증가 · 금 소량']},
+  iron:{key:'ironMineLevel',icon:'⛏️',name:'철 광산',max:3,costs:[55,120],effects:['철광석','구리 발견','구리 증가 · 금 발견']},
+  tech:{key:'techLevel',icon:'⚙️',name:'기술 공방',max:3,costs:[80,160],effects:['기초 도구','반도체 제작','전자제품 · TV 제작']}
+};
+function devState(){return prog().development}
+function farmPlotCount(){return FARM_PLOT_COUNTS[Math.max(0,Math.min(4,devState().farmLevel-1))]||1}
+function villageStars(){
+  const d=devState(),score=(d.farmLevel-1)+(d.fishingLevel-1)+(d.stoneMineLevel-1)+(d.ironMineLevel-1)+(d.techLevel-1);
+  return Math.max(1,Math.min(5,1+Math.floor(score/3)));
+}
+function developmentRequirement(track,nextLevel){
+  const d=devState();
+  if(track==='tech'&&nextLevel===2&&(d.stoneMineLevel<2||d.ironMineLevel<2))return '돌 광산 2단계와 철 광산 2단계가 필요해요.';
+  if(track==='tech'&&nextLevel===3&&(d.stoneMineLevel<3||d.ironMineLevel<3))return '돌 광산 3단계와 철 광산 3단계가 필요해요.';
+  return '';
+}
+function developmentPanel(){
+  const d=devState(),seeds=Bridge?.readSeeds?.()||0,stars=villageStars();
+  const cards=Object.entries(DEVELOPMENT_TRACKS).map(([id,def])=>{
+    const level=d[def.key],maxed=level>=def.max,next=Math.min(def.max,level+1),cost=maxed?0:def.costs[level-1],req=maxed?'':developmentRequirement(id,next);
+    const button=maxed?'최대 단계':req?req:'🌱 '+cost+' 투자';
+    return '<div class="item"><b>'+def.icon+' '+def.name+' '+level+'/'+def.max+'</b><div>'+def.effects[level-1]+'</div>'+
+      (maxed?'':'<small>다음: '+def.effects[next-1]+'</small><br>')+
+      '<button data-dev-upgrade="'+id+'" '+(maxed||req?'disabled':'')+'>'+button+'</button></div>';
+  }).join('');
+  openPanel('<h2>🏗️ 씨앗마을 성장 · '+ '⭐'.repeat(stars)+'</h2><p>게임에서 모은 씨앗을 마을에 투자하면 <b>실제로 할 수 있는 일과 월드의 규모</b>가 커져요. 보유 🌱 '+seeds+'</p><div class="grid">'+cards+'</div><p style="font-size:12px">광산을 발전시키면 희귀 광물이 나오고, 기술 공방을 발전시키면 그 광물로 반도체와 전자제품을 만들 수 있어요.</p>');
+}
+function upgradeDevelopment(track){
+  const def=DEVELOPMENT_TRACKS[track],d=devState();if(!def)return;
+  const level=d[def.key];if(level>=def.max)return;
+  const next=level+1,req=developmentRequirement(track,next);if(req){toast(req);return;}
+  const cost=def.costs[level-1]||0,spent=Bridge?.spendSeeds?.(cost,'씨앗 월드 성장 · '+def.name);
+  if(!spent?.ok){toast('씨앗이 부족해요. 다른 게임을 플레이해서 씨앗을 모아보세요.');return;}
+  d[def.key]=next;persist();updateFarmExpansionVisuals();updateStatus();worldAudio.sfx('success',.14);
+  toast(def.icon+' '+def.name+' '+next+'단계! · '+def.effects[next-1]);developmentPanel();
+}
+
+const CRAFT_MATERIAL_ICONS={wood:'🪵',stone:'🪨',iron:'⬛',copper:'🟠',quartz:'💎',gold:'🟡',semiconductor:'💾'};
+const GRID_RECIPES=[
+  {id:'stoneAxe',name:'돌도끼',minTech:1,pattern:['stone','stone','', 'stone','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'stone',dur:18}},
+  {id:'stonePick',name:'돌곡괭이',minTech:1,pattern:['stone','stone','stone', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'stone',dur:18}},
+  {id:'ironAxe',name:'철도끼',minTech:1,pattern:['iron','iron','', 'iron','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'iron',dur:38}},
+  {id:'ironPick',name:'철곡괭이',minTech:1,pattern:['iron','iron','iron', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'iron',dur:38}},
+  {id:'semiconductor',name:'반도체',minTech:2,pattern:['quartz','copper','quartz', 'copper','iron','copper', 'quartz','copper','quartz'],out:{kind:'item',item:'semiconductor',qty:1}},
+  {id:'television',name:'모던 TV',minTech:3,pattern:['iron','semiconductor','iron', 'wood','semiconductor','wood', 'wood','wood','wood'],out:{kind:'furniture',item:'television',qty:1}}
+];
+let craftGrid=Array(9).fill(''),craftSelected='wood';
+function gridCounts(grid=craftGrid){const out={};for(const k of grid)if(k)out[k]=(out[k]||0)+1;return out}
+function gridRecipe(){const key=craftGrid.join('|');return GRID_RECIPES.find(r=>r.pattern.join('|')===key)||null}
+function gridMaterialButton(k,i){
+  const have=Number(i[k]||0),used=gridCounts()[k]||0,sel=craftSelected===k?' style="outline:3px solid #f4c542"':'';
+  return '<button data-craft-material="'+k+'"'+sel+' '+(have-used>0?'':'disabled')+'>'+(CRAFT_MATERIAL_ICONS[k]||'◼')+' '+itemName(k)+' '+Math.max(0,have-used)+'</button>';
+}
+function craftingRecipeBook(){
+  const tech=devState().techLevel;
+  const rows=GRID_RECIPES.map(r=>'<div class="item"><b>'+(r.minTech>tech?'🔒 ':'')+r.name+'</b><div style="font-size:11px">'+r.pattern.map(x=>x?(CRAFT_MATERIAL_ICONS[x]||itemName(x)):'·').reduce((a,x,i)=>a+x+((i%3===2)?'<br>':' '),'')+'</div><small>기술 '+r.minTech+'단계</small></div>').join('');
+  openPanel('<h2>📖 3×3 조합법 책</h2><div class="grid">'+rows+'</div><button data-craft-back="1">제작대로 돌아가기</button>');
+}
+function craftGridPanel(){
+  const i=inv(),recipe=gridRecipe(),tech=devState().techLevel;
+  const mats=['wood','stone','iron','copper','quartz','gold','semiconductor'].filter(k=>(i[k]||0)>0||['wood','stone','iron'].includes(k));
+  const cells=craftGrid.map((k,idx)=>'<button data-craft-cell="'+idx+'" style="width:58px;height:58px;font-size:24px;border:2px solid #776d4f;border-radius:8px;background:#fffdf1">'+(k?(CRAFT_MATERIAL_ICONS[k]||'◼'):'')+'</button>').join('');
+  const result=recipe?(recipe.minTech>tech?'🔒 '+recipe.name+' · 기술 '+recipe.minTech+'단계 필요':'✅ '+recipe.name):'재료를 3×3 칸에 놓아 조합해 보세요.';
+  openPanel('<h2>🧰 3×3 직접 제작대</h2><p>재료를 고른 뒤 칸을 눌러 직접 배치해요. 채운 칸을 다시 누르면 재료를 뺄 수 있어요.</p>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+mats.map(k=>gridMaterialButton(k,i)).join('')+'</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,58px);gap:5px;justify-content:center;margin:10px 0">'+cells+'</div>'+
+    '<div style="text-align:center;font-weight:1000;margin:8px 0">'+result+'</div>'+
+    '<div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap"><button data-craft-grid="make" '+(!recipe||recipe.minTech>tech?'disabled':'')+'>🔨 제작</button><button data-craft-grid="clear">전부 빼기</button><button data-craft-book="1">📖 조합법 책</button></div>');
+}
+function performGridCraft(){
+  const recipe=gridRecipe(),p=prog(),i=inv();if(!recipe){toast('완성되는 조합이 아니에요.');return;}
+  if(devState().techLevel<recipe.minTech){toast('기술 공방 '+recipe.minTech+'단계가 필요해요.');return;}
+  const need=gridCounts();
+  if(!Object.entries(need).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
+  Object.entries(need).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  if(recipe.out.kind==='tool'){
+    p.tools[recipe.out.slot]={dur:recipe.out.dur,max:recipe.out.dur,tier:recipe.out.tier,craftedAt:Date.now()};p.equippedTool=recipe.out.slot;
+  }else if(recipe.out.kind==='item'){
+    i[recipe.out.item]=(i[recipe.out.item]||0)+(recipe.out.qty||1);
+  }else if(recipe.out.kind==='furniture'){
+    p.housing.owned[recipe.out.item]=(p.housing.owned[recipe.out.item]||0)+(recipe.out.qty||1);
+  }
+  craftGrid=Array(9).fill('');persist();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
+  toast('🔨 '+recipe.name+' 제작 완료!');craftGridPanel();
+}
 const FOOD_DEF={
   grilledFish:{name:'구운 생선',hunger:34,energy:10},
   bakedPotato:{name:'구운 감자',hunger:25,energy:6},
@@ -394,6 +494,7 @@ function homeHubPanel(){
     '<div class="item"><b>📋 오늘 할 일</b><div>'+s.dailyDone+'/'+s.dailyTotal+' 완료</div><button data-world-hub="daily">보기</button></div>'+
     '<div class="item"><b>🏆 게임 트로피</b><div>'+s.trophies+'종 수집</div><button data-world-hub="trophy">보기</button></div>'+
     '<div class="item"><b>✨ 꾸미기 상점</b><div>게임에서 번 씨앗 사용</div><button data-world-hub="shop">보기</button></div>'+
+    '<div class="item"><b>🏗️ 마을 성장</b><div>현재 '+ '⭐'.repeat(villageStars())+'</div><button data-world-hub="develop">투자하기</button></div>'+
     '<div class="item"><b>🗺️ 빠른 이동</b><div>씨앗버스로 바로 이동</div><button data-world-hub="map">지도</button></div>'+
     '</div>');
 }
@@ -409,20 +510,7 @@ function inventoryPanel(){
     <h3>재료</h3><div class="grid">${items.length?items.map(([k,v])=>`<div class="item"><b>${itemName(k)}</b><div>${v}개</div></div>`).join(''):'<div class="item">아직 보관한 재료가 없어요.</div>'}</div>
     <h3>조리 음식</h3><div class="grid">${food.length?food.map(([k,v])=>`<div class="item"><b>${FOOD_DEF[k].name}</b><div>${v}개 · 허기 +${FOOD_DEF[k].hunger}</div><button data-eat="${k}">먹기</button></div>`).join(''):'<div class="item">아직 만든 음식이 없어요.</div>'}</div>`);
 }
-function workbenchPanel(){
-  const p=prog(),i=inv();
-  const tool=(key,name,req,owned)=>{const have=Object.entries(req).every(([k,v])=>(i[k]||0)>=v);return `<div class="item"><b>${name}</b><div>${Object.entries(req).map(([k,v])=>itemName(k)+' '+v).join(' · ')}</div><button data-craft="${key}" ${have?'':'disabled'}>${owned?'재제작':'제작'}</button></div>`;};
-  const axeTier=p.tools.axe?.tier||'',pickTier=p.tools.pick?.tier||'';
-  openPanel(`<h2>3D 제작대</h2>
-    <p><b>현재 재료</b> · 목재 ${i.wood||0} · 돌 ${i.stone||0} · 철광석 ${i.iron||0}</p>
-    <div class="grid">
-      ${tool('axe','돌도끼',{wood:3,stone:2},axeTier==='stone')}
-      ${tool('pick','돌곡괭이',{wood:2,stone:3},pickTier==='stone')}
-      ${tool('axeIron','철도끼',{wood:2,iron:3},axeTier==='iron')}
-      ${tool('pickIron','철곡괭이',{wood:2,iron:3},pickTier==='iron')}
-    </div>
-    <p style="font-size:12px">돌도끼+돌곡괭이를 둘 다 처음 만들려면 총 목재 5 · 돌 5가 필요해요. 집 주변의 떨어진 나뭇가지와 작은 돌은 도구 없이 주울 수 있고, 초보자 보급상자는 한 번만 사용할 수 있어요.</p>`);
-}
+function workbenchPanel(){craftGridPanel();}
 function cookingPanel(kind='stove'){
   panel.dataset.cookKind=kind;
   const i=inv(),allowed=kind==='campfire'?['grilledFish','bakedPotato']:Object.keys(RECIPES);
@@ -458,7 +546,7 @@ panel.addEventListener('click',e=>{
     return;
   }
   const hub=e.target.closest('[data-world-hub]');
-  if(hub){({mail:mailboxPanel,daily:dailyLifePanel,trophy:trophyPanel,shop:cosmeticShopPanel,map:worldMapPanel}[hub.dataset.worldHub]||homeHubPanel)();return;}
+  if(hub){({mail:mailboxPanel,daily:dailyLifePanel,trophy:trophyPanel,shop:cosmeticShopPanel,develop:developmentPanel,map:worldMapPanel}[hub.dataset.worldHub]||homeHubPanel)();return;}
   const travel=e.target.closest('[data-world-travel]');
   if(travel){closePanel();travelTo(travel.dataset.worldTravel);return;}
   const cosmetic=e.target.closest('[data-world-cosmetic]');
@@ -472,6 +560,18 @@ panel.addEventListener('click',e=>{
     Meta?.equipCosmetic?.(def.id);syncCosmeticAura();updateStatus();worldAudio.sfx('purchase',.14);toast(def.name+' 장착!');cosmeticShopPanel();return;
   }
   if(e.target.closest('[data-world-cosmetic-clear]')){Meta?.equipCosmetic?.('');syncCosmeticAura();cosmeticShopPanel();return;}
+  const devUpgrade=e.target.closest('[data-dev-upgrade]');if(devUpgrade){upgradeDevelopment(devUpgrade.dataset.devUpgrade);return;}
+  const material=e.target.closest('[data-craft-material]');if(material){craftSelected=material.dataset.craftMaterial;craftGridPanel();return;}
+  const cell=e.target.closest('[data-craft-cell]');if(cell){
+    const idx=Number(cell.dataset.craftCell),current=craftGrid[idx];
+    if(current){craftGrid[idx]='';craftGridPanel();return;}
+    const counts=gridCounts(),available=Number(inv()[craftSelected]||0)-(counts[craftSelected]||0);
+    if(available<=0){toast(itemName(craftSelected)+'이(가) 더 필요해요.');return;}
+    craftGrid[idx]=craftSelected;craftGridPanel();return;
+  }
+  const gridAction=e.target.closest('[data-craft-grid]');if(gridAction){if(gridAction.dataset.craftGrid==='make')performGridCraft();else{craftGrid=Array(9).fill('');craftGridPanel();}return;}
+  if(e.target.closest('[data-craft-book]')){craftingRecipeBook();return;}
+  if(e.target.closest('[data-craft-back]')){craftGridPanel();return;}
   const craft=e.target.closest('[data-craft]');
   if(craft){
     const key=craft.dataset.craft,p=prog(),i=inv();
@@ -716,8 +816,14 @@ function spendTool(kind,item){
   if(!requireEquippedTool(item))return false;
   if(p.energy<=4){toast('체력이 부족해요. 집 침대에서 쉬어 보세요.');return false}
   const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
-  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();worldAudio.sfx('impact',.12);
-  toast((kind==='wood'?'목재':'돌')+' +'+gain);return true;
+  t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv(),extras=[];i[kind]=(i[kind]||0)+gain;
+  if(kind==='stone'){
+    const level=devState().stoneMineLevel;
+    if(level>=2&&Math.random()<(level>=3?.38:.22)){i.quartz=(i.quartz||0)+1;extras.push('석영 +1');}
+    if(level>=3&&Math.random()<.06){i.gold=(i.gold||0)+1;extras.push('금 +1');}
+  }
+  persist();updateStatus();worldAudio.sfx('impact',.12);
+  toast((kind==='wood'?'목재':'돌')+' +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
 }
 function canPlaceFurniture(x,z,w,d,ignore=null){
   if(w<=0||d<=0)return x>-6.55&&x<6.55&&z>-4.75&&z<4.15;
@@ -732,19 +838,36 @@ function sleep(){
   s.day+=1;s.time=420;
   persist();updateStatus();toast('아침까지 푹 쉬었어요. 체력이 회복됐어요.');
 }
-function fish(){
-  const p=prog();if(p.energy<3){toast('체력이 부족해요.');return}
-  p.energy=Math.max(0,p.energy-3);toast('낚시 중…');
-  setTimeout(()=>{const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus;i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};p.fishDex['3D 연못 물고기']=(p.fishDex['3D 연못 물고기']||0)+gain;persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);toast('물고기를 잡았어요! +'+gain);},850);
+function fish(place='pond'){
+  const p=prog(),d=devState(),required=place==='beach'?3:place==='river'?2:1;
+  if(d.fishingLevel<required){toast('🎣 낚시터 '+required+'단계에서 이용할 수 있어요. 마을 성장 보드에서 확장해 보세요.');return}
+  if(p.energy<3){toast('체력이 부족해요.');return}
+  p.energy=Math.max(0,p.energy-3);toast(place==='beach'?'바닷가 낚시 중…':place==='river'?'강가 낚시 중…':'연못 낚시 중…');
+  setTimeout(()=>{
+    const i=inv(),bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
+    i.fish=(i.fish||0)+gain;p.fishDex=p.fishDex||{};
+    const label=place==='beach'?'해변 물고기':place==='river'?'강가 물고기':'연못 물고기';
+    p.fishDex[label]=(p.fishDex[label]||0)+gain;
+    if(place==='river'&&Math.random()<.24){i.rareFish=(i.rareFish||0)+1;extras.push('희귀 물고기 +1');}
+    if(place==='beach'){
+      if(Math.random()<.32){i.rareFish=(i.rareFish||0)+1;extras.push('희귀 물고기 +1');}
+      if(Math.random()<.16){i.pearl=(i.pearl||0)+1;extras.push('진주 +1');}
+    }
+    persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);
+    toast('물고기 +'+gain+(extras.length?' · '+extras.join(' · '):''));
+  },850);
 }
 function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
   if(!requireEquippedTool('pick'))return false;
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
-  const gain=t.tier==='iron'?2:1,cost=t.tier==='iron'?4:6;
+  const level=devState().ironMineLevel,gain=(t.tier==='iron'?2:1)+(level>=3?1:0),cost=t.tier==='iron'?4:6,extras=[];
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
-  persist();setAvatarAction('smile',480);updateStatus();worldAudio.sfx('impact',.14);toast('철광석 +'+gain);return true;
+  if(level>=2&&Math.random()<(level>=3?.42:.24)){i.copper=(i.copper||0)+1;extras.push('구리 +1');}
+  if(level>=3&&Math.random()<.10){i.gold=(i.gold||0)+1;extras.push('금 +1');}
+  persist();setAvatarAction('smile',480);updateStatus();worldAudio.sfx('impact',.14);
+  toast('철광석 +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
 }
 const CROP_DEF={
   potato:{name:'감자',color:0xc69b5b,growMs:35000},
@@ -788,6 +911,12 @@ function cropAction(id){
   updateCropVisuals();
 }
 const cropVisual=[];
+const farmPlotActors=[];
+function updateFarmExpansionVisuals(){
+  const unlocked=farmPlotCount();
+  for(const a of farmPlotActors){const open=a.index<unlocked;a.group.visible=open;a.interaction.enabled=open;}
+  updateCropVisuals();
+}
 function makePlant(){
   const g=new THREE.Group();
   const stem=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.65,8),new THREE.MeshStandardMaterial({color:0x5d9b4e}));
@@ -876,7 +1005,7 @@ async function buildOutdoor(){
     interact('outdoor',h.x+6.1,h.z-5.0,1.3,'초보자 보급 상자 열기',claimStarterKit);
     interact('outdoor',h.x+5.5,h.z-2.6,1.25,'📬 게임 택배 우편함',mailboxPanel);
     interact('outdoor',h.x+5.4,h.z+.2,1.25,'🌱 씨앗 생활 보드',homeHubPanel);
-    interact('outdoor',h.x-4.0,h.z+6.2,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+    interact('outdoor',h.x-4.0,h.z+6.2,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish('pond');});
     await addZoneSign('home',6.0,4.8,'집 구역 · 집 · 연못 · Cube Pets',.25);
     await Promise.all([
       addGroundPickup('starter-wood-1','wood',h.x-7.0,h.z+2.8),
@@ -908,21 +1037,25 @@ async function buildOutdoor(){
     interact('outdoor',f.x+6.2,f.z+5.65,1.45,'제작대 사용하기',workbenchPanel);
     interact('outdoor',f.x+4.1,f.z+6.1,1.35,'보관 상자 보기',inventoryPanel);
     const plotPos=[
-      [f.x-6.0,f.z+2.9],[f.x-3.35,f.z+2.9],[f.x-.7,f.z+2.9],
-      [f.x-6.0,f.z+5.65],[f.x-3.35,f.z+5.65],[f.x-.7,f.z+5.65]
+      [f.x-6.0,f.z+1.1],[f.x-3.35,f.z+1.1],[f.x-.7,f.z+1.1],
+      [f.x-6.0,f.z+3.8],[f.x-3.35,f.z+3.8],[f.x-.7,f.z+3.8],
+      [f.x-6.0,f.z+6.5],[f.x-3.35,f.z+6.5],[f.x-.7,f.z+6.5]
     ];
     plotPos.forEach(([x,z],i)=>{
-      box(outdoor,x,z,2.15,2.2,.18,0x8a5d3b,.02);
-      for(let r=-1;r<=1;r++){const ridge=box(outdoor,x+r*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
-      const plant=makePlant();plant.position.set(x,.24,z);outdoor.add(plant);
-      const id='work-crop-'+(i+1);cropVisual.push({id,object:plant});
-      interact('outdoor',x,z,1.35,'밭 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
+      const group=new THREE.Group();outdoor.add(group);
+      box(group,x,z,2.15,2.2,.18,0x8a5d3b,.02);
+      for(let rr=-1;rr<=1;rr++){const ridge=box(group,x+rr*.55,z,.28,1.9,.12,0x70472f,.20);ridge.castShadow=false}
+      const plant=makePlant();plant.position.set(x,.24,z);group.add(plant);
+      const id='work-crop-'+(i+1);
+      const interaction=interact('outdoor',x,z,1.35,'밭 '+(i+1)+' 살펴보기',()=>{setAvatarAction('smile',500);cropAction(id);});
+      cropVisual.push({id,object:plant});farmPlotActors.push({index:i,group,interaction});
     });
-    updateCropVisuals();
+    updateFarmExpansionVisuals();
     for(const [dx,dz,rot] of [[-7.3,1.3,0],[-4.8,1.3,0],[-2.3,1.3,0],[.2,1.3,0],[.9,3.6,Math.PI/2],[.9,6.0,Math.PI/2],[-7.9,3.7,Math.PI/2],[-7.9,6.1,Math.PI/2]]){
       await addModel(outdoor,ASSET.fence,{x:f.x+dx,z:f.z+dz,w:2.25,h:.9,d:.30,rot});
     }
-    await addZoneSign('farm',6.7,-.7,'농장 · 자유 재배 · 제작',Math.PI/2);
+    await addZoneSign('farm',6.7,-.7,'농장 · 밭 '+farmPlotCount()+'칸 · 3×3 제작',Math.PI/2);
+    interact('outdoor',f.x+6.7,f.z-.7,1.25,'🏗️ 농장과 마을 성장 보기',developmentPanel);
   }
 
   // WATERFRONT square (-22..-2 / -34..-14)
@@ -932,7 +1065,8 @@ async function buildOutdoor(){
     river.rotation.x=-Math.PI/2;river.position.set(w.x,.06,w.z);river.receiveShadow=true;outdoor.add(river);
     collider('outdoor',w.x-6.0,w.z,7.0,5.1);collider('outdoor',w.x+6.0,w.z,7.0,5.1);
     await addModel(outdoor,ASSET.bridge,{x:w.x,z:w.z,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
-    await addZoneSign('waterfront',6.5,6.8,'북쪽 강가 · 다리 · 비버',0);
+    interact('outdoor',w.x+1.8,w.z-2.2,1.8,'강가 낚시터 이용하기',()=>{setAvatarAction('smile',850);fish('river');});
+    await addZoneSign('waterfront',6.5,6.8,'북쪽 강가 · 2단계 낚시터 · 비버',0);
   }
 
   // BEACH square (-46..-26 / -34..-14)
@@ -941,7 +1075,7 @@ async function buildOutdoor(){
     const sea=new THREE.Mesh(new THREE.PlaneGeometry(19.5,5.2),new THREE.MeshStandardMaterial({color:0x62a8c9,roughness:.2,metalness:.02,transparent:true,opacity:.95}));
     sea.rotation.x=-Math.PI/2;sea.position.set(b.x,.055,b.z-7.0);sea.receiveShadow=true;outdoor.add(sea);
     box(outdoor,b.x,b.z-3.9,19.4,1.1,.04,0xe7d7a4,.005);
-    interact('outdoor',b.x,b.z-4.4,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
+    interact('outdoor',b.x,b.z-4.4,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish('beach');});
     await addModel(outdoor,ASSET.logStack,{x:b.x-5.8,z:b.z+5.8,w:2.2,h:1.0,d:1.15,rot:.25});
     await addZoneSign('beach',6.4,6.6,'해변가 · 낚시 · 해안',0);
   }
@@ -972,7 +1106,8 @@ async function buildOutdoor(){
       if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
       else interact('outdoor',x,z,1.25,'광산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
     }
-    await addZoneSign('quarry',-7.0,6.6,'광산 · 돌 · 철광석',-Math.PI/2);
+    await addZoneSign('quarry',-7.0,6.6,'광산 · 돌 · 철 · 희귀 광물',-Math.PI/2);
+    interact('outdoor',q.x-7.0,q.z+6.6,1.25,'🏗️ 광산 개발 보기',developmentPanel);
   }
 
   // CAMP square (-46..-26 / 14..34)
@@ -1236,7 +1371,7 @@ function updateStatus(){
   if(statusClockEl)statusClockEl.textContent='Day '+s.day+' · '+clockText(s.time);
   if(statusPhaseEl)statusPhaseEl.textContent=(phase==='밤'?'🌙 ':'☀ ') + phase;
   if(coinCountEl)coinCountEl.textContent='🪙 '+Math.round(Number(t.coins)||0);
-  if(seedCountEl)seedCountEl.textContent='🌱 '+(Bridge?.readSeeds?.()||0);
+  if(seedCountEl){seedCountEl.textContent='🌱 '+(Bridge?.readSeeds?.()||0);seedCountEl.title='씨앗마을 '+'⭐'.repeat(villageStars());}
   if(funCountEl)funCountEl.textContent='🙂 '+Math.round(fun);
   const meta=Meta?.summary?.()||{pendingMail:0,dailyDone:0,dailyTotal:3};
   if(worldMailChip)worldMailChip.textContent='📬 '+meta.pendingMail;
