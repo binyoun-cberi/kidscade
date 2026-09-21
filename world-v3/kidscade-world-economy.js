@@ -330,6 +330,7 @@ export function createTownEconomy(ctx){
   }
   function resident(id){
     const r=RESIDENTS[id];if(!r)return;
+    claimFriendshipRewards(id);
     const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
     const rewardHtml=rewards.map(x=>'<div class="item"><b>♥ '+x.at+'</b><div>'+x.name+'</div><small>'+(t.rewardClaims[id+':'+x.at]?'획득 완료':f>=x.at?'획득 가능':'친밀도 필요')+'</small></div>').join('');
     openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+r.serviceLabel+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
@@ -392,7 +393,7 @@ export function createTownEconomy(ctx){
 
   function transport(){
     const unlocked=!!ensureState().perks.riverBus;
-    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 구역</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 광산</button><button data-city-travel="ranch">🐄 목장</button><button data-city-travel="beach">🏖️ 해변</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 상점가</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
+    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 구역</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 광산</button><button data-city-travel="ranch">🐄 목장</button><button data-city-travel="orchard">🍎 과수원</button><button data-city-travel="beach">🏖️ 해변</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 상점가</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
   }
 
   function bench(){
