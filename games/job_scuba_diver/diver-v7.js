@@ -240,7 +240,7 @@ function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
   if(!r){try{r=JSON.parse(localStorage.getItem(OLD)||'null')}catch(e){}}
   if(!r){try{const o=JSON.parse(localStorage.getItem(LEGACY)||'null');if(o)r={money:o.money||0,unlocked:Math.min(4,o.unlocked||0),up:o.up||{},codex:o.codex||{},bestDepth:o.bestDepth||0,bestScore:o.bestScore||0}}catch(e){}}
-  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,4):meta.loadout;meta.codex=r.codex||{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
+  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,2+(meta.up.slots||0)):meta.loadout;meta.codex=r.codex||{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
 function ensureAmbience(){
@@ -1290,6 +1290,7 @@ function serveRestaurant(recipeId){
  const c=restaurant?.customers.find(x=>x.recipeId===recipeId);if(c)selectRestaurantCustomer(c.id)
 }
 function startRestaurant(){
+ if(!availableRecipes().length){showHint('현재 재고로 만들 수 있는 메뉴가 없습니다. 다음 낮 탐사에서 필요한 재료를 모아오세요.',1500);return}
  state='restaurant';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  $('restaurantScreen').classList.remove('hidden');
