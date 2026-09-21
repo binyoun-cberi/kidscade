@@ -340,3 +340,10 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
  .dockOffice{left:0}.dockWorkshop{left:21%}.dockGear{left:42%}.dockCodex{left:10%}.dockKitchen{left:36%}
  .dockStatus span:nth-of-type(4){display:none}
 }
+
+
+/* v25 day-flow rework */
+.eveningNote{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 4px;padding:11px 13px;border-radius:14px;background:linear-gradient(135deg,rgba(18,68,80,.80),rgba(34,39,72,.78));border:1px solid rgba(151,226,238,.18)}
+.eveningNote b{color:#ffe38a;font-size:11px}.eveningNote span{color:#c7e7ec;font-size:9px;line-height:1.45;text-align:right}
+.eveningActions{margin-top:10px}.eveningActions .btn{flex:1 1 180px}
+@media(max-width:620px){.eveningNote{display:block}.eveningNote span{display:block;margin-top:4px;text-align:left}.eveningActions .btn{flex:1 1 100%}}
