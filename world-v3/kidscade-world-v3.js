@@ -370,7 +370,7 @@ function upgradeDevelopment(track){
 
 const CRAFT_MATERIAL_ICONS={wood:'🪵',stone:'🪨',iron:'⬛',copper:'🟠',quartz:'💎',gold:'🟡',semiconductor:'💾'};
 const GRID_RECIPES=[
-  {id:'stoneAxe',name:'돌도끼',minTech:1,pattern:['stone','stone','', 'stone','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'stone',dur:18}},
+  {id:'stoneAxe',name:'돌도끼',minTech:1,pattern:['stone','stone','', 'wood','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'stone',dur:18}},
   {id:'stonePick',name:'돌곡괭이',minTech:1,pattern:['stone','stone','stone', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'stone',dur:18}},
   {id:'ironAxe',name:'철도끼',minTech:1,pattern:['iron','iron','', 'iron','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'iron',dur:38}},
   {id:'ironPick',name:'철곡괭이',minTech:1,pattern:['iron','iron','iron', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'iron',dur:38}},
@@ -973,10 +973,10 @@ async function addGroundPickup(id,kind,x,z){
 }
 async function buildOutdoor(){
   const point=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
-  const addZoneSign=async(id,dx,dz,label,rot=0)=>{
+  const addZoneSign=async(id,dx,dz,label,rot=0,action=null)=>{
     const p=point(id,dx,dz);
     await addModel(outdoor,ASSET.signpost,{x:p.x,z:p.z,w:.74,h:1.58,d:.74,rot,name:'zone-sign-'+id});
-    interact('outdoor',p.x,p.z,1.1,'표지판 읽기',()=>toast(label));
+    interact('outdoor',p.x,p.z,1.1,action?'🏗️ 성장판 보기':'표지판 읽기',()=>action?action():toast(label));
   };
 
   // Road-first layout: 20m square land parcels sit BETWEEN 4m road gutters.
@@ -1054,8 +1054,7 @@ async function buildOutdoor(){
     for(const [dx,dz,rot] of [[-7.3,1.3,0],[-4.8,1.3,0],[-2.3,1.3,0],[.2,1.3,0],[.9,3.6,Math.PI/2],[.9,6.0,Math.PI/2],[-7.9,3.7,Math.PI/2],[-7.9,6.1,Math.PI/2]]){
       await addModel(outdoor,ASSET.fence,{x:f.x+dx,z:f.z+dz,w:2.25,h:.9,d:.30,rot});
     }
-    await addZoneSign('farm',6.7,-.7,'농장 · 밭 '+farmPlotCount()+'칸 · 3×3 제작',Math.PI/2);
-    interact('outdoor',f.x+6.7,f.z-.7,1.25,'🏗️ 농장과 마을 성장 보기',developmentPanel);
+    await addZoneSign('farm',6.7,-.7,'농장 · 확장형 밭 · 3×3 제작',Math.PI/2,developmentPanel);
   }
 
   // WATERFRONT square (-22..-2 / -34..-14)
@@ -1106,8 +1105,7 @@ async function buildOutdoor(){
       if(i%3===1)interact('outdoor',x,z,1.25,'철광석 캐기',()=>mineIron());
       else interact('outdoor',x,z,1.25,'광산 바위 캐기',()=>{if(spendTool('stone','pick'))setAvatarAction('smile',450);});
     }
-    await addZoneSign('quarry',-7.0,6.6,'광산 · 돌 · 철 · 희귀 광물',-Math.PI/2);
-    interact('outdoor',q.x-7.0,q.z+6.6,1.25,'🏗️ 광산 개발 보기',developmentPanel);
+    await addZoneSign('quarry',-7.0,6.6,'광산 · 돌 · 철 · 희귀 광물',-Math.PI/2,developmentPanel);
   }
 
   // CAMP square (-46..-26 / 14..34)
