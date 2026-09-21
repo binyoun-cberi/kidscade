@@ -26,7 +26,7 @@
       createdAt:new Date().toISOString(),
       updatedAt:new Date().toISOString(),
       player:{x:620,y:520,lastZone:'home-yard'},
-      inventory:{wood:0,stone:0,iron:0,copper:0,quartz:0,gold:0,semiconductor:0,crop:0,fish:0,rareFish:0,pearl:0,bug:0,potato:0,carrot:0,tomato:0,strawberry:0,corn:0,pumpkin:0,milk:0,egg:0,truffle:0},
+      inventory:{wood:0,stone:0,iron:0,copper:0,quartz:0,gold:0,semiconductor:0,water:0,nails:0,fabric:0,glass:0,wire:0,paint:0,crop:0,fish:0,rareFish:0,pearl:0,bug:0,potato:0,carrot:0,tomato:0,strawberry:0,corn:0,pumpkin:0,apple:0,pear:0,peach:0,orange:0,cherry:0,milk:0,egg:0,truffle:0},
       progression:{
         energy:100,maxEnergy:100,
         tools:{},
@@ -40,8 +40,10 @@
         starterKitClaimed:false,
         starterHintSeen:false,
         groundPickups:{},
-        development:{farmLevel:1,fishingLevel:1,stoneMineLevel:1,ironMineLevel:1,techLevel:1},
-        housing:{version:3,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1},
+        development:{farmLevel:1,fishingLevel:0,stoneMineLevel:1,ironMineLevel:1,techLevel:1,orchardLevel:0,ranchLevel:0,waterLevel:0,houseLevel:1,carpenterLevel:0},
+        homestead:{version:1,initialized:false,kitchenLevel:0,bedLevel:0,backpackLevel:1,storageLevel:1,wardrobeBuilt:false,homeStorage:{}},
+        orchard:{trees:{},harvests:{}},
+        housing:{version:4,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1},
         town:{
           coins:120,fun:80,jobs:{},friendship:{},talked:{},rewardClaims:{},perks:{},visits:0,
           delivery:{active:false,target:'cafe',startedDay:0,completedDay:0,reward:95},
@@ -73,6 +75,15 @@
         kitchen:{...base.progression.kitchen,...(p.kitchen||{})},
         groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})},
         development:{...base.progression.development,...(p.development||{})},
+        homestead:{
+          ...base.progression.homestead,...(p.homestead||{}),
+          homeStorage:{...base.progression.homestead.homeStorage,...(p.homestead?.homeStorage||{})}
+        },
+        orchard:{
+          ...base.progression.orchard,...(p.orchard||{}),
+          trees:{...base.progression.orchard.trees,...(p.orchard?.trees||{})},
+          harvests:{...base.progression.orchard.harvests,...(p.orchard?.harvests||{})}
+        },
         housing:{
           ...base.progression.housing,...(p.housing||{}),
           owned:{...base.progression.housing.owned,...(p.housing?.owned||{})},
