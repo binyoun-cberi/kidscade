@@ -354,3 +354,9 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .kitchenPrepHero h3{margin:3px 0 4px}.kitchenPrepHero p{margin:0;color:#bddce1;font-size:9px;line-height:1.45}.kitchenPrepHero>b{color:#ffe17a;font-size:18px;white-space:nowrap}
 .kitchenPrepCard{min-height:128px}.kitchenPrepCard>span{display:inline-block;margin-bottom:4px;font-size:8px;font-weight:1000;color:#80e7b4}.kitchenPrepCard.locked{opacity:.58}.kitchenPrepCard.locked>span{color:#db9d9d}.kitchenPrepCard small{color:#9fc7cf;font-size:8px;line-height:1.35}
 @media(max-width:620px){.kitchenPrepHero{display:block}.kitchenPrepHero>b{display:block;margin-top:8px}}
+
+
+/* v28 daily request split */
+.missionCard.dailyMission{cursor:default;border-color:rgba(99,221,177,.44);background:linear-gradient(135deg,rgba(19,91,72,.58),rgba(7,52,64,.86));box-shadow:inset 0 0 0 1px rgba(128,240,195,.06)}
+.missionCard.dailyMission>span{color:#8df0bd}.missionCard.dailyMission h3{color:#dfffe9}.missionCard.dailyMission b{color:#a8f2ca}
+.dockStatus .dailyStatus{color:#aaf1c7;background:rgba(24,101,74,.48);border:1px solid rgba(118,226,174,.18)}
