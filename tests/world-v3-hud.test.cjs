@@ -22,6 +22,9 @@ test('Seed World uses the compact survival HUD instead of the old debug panels',
   assert.match(html,/id="statusClock"/);
   assert.match(html,/id="coinCount"/);
   assert.match(html,/id="seedCount"/);
+  assert.match(html,/id="worldMailChip"/);
+  assert.match(html,/id="worldTaskChip"/);
+  assert.match(html,/seed-world-meta\.js\?v=1/);
   assert.doesNotMatch(html,/class="hud"/);
   assert.doesNotMatch(html,/id="close"/);
 });
@@ -39,6 +42,13 @@ test('Seed World quickbar has real equipment, durability, inventory and pet swit
   assert.match(runtime,/hungerLiquid\.style\.height/);
   assert.match(runtime,/axeDur\.style\.width/);
   assert.match(runtime,/pickDur\.style\.width/);
+  assert.match(runtime,/function mailboxPanel/);
+  assert.match(runtime,/function dailyLifePanel/);
+  assert.match(runtime,/function trophyPanel/);
+  assert.match(runtime,/function cosmeticShopPanel/);
+  assert.match(runtime,/function worldMapPanel/);
+  assert.match(runtime,/name:'game-mailbox'/);
+  assert.match(runtime,/Meta\?\.recordExplore/);
 });
 
 test('hidden avatar runtimes are silenced while games or Seed World are active',()=>{
@@ -54,8 +64,8 @@ test('hidden avatar runtimes are silenced while games or Seed World are active',
 test('Seed World HUD release is cache-bumped and scripts parse',()=>{
   assert.match(html,/kidscade-world-v3\.js\?v=23/);
   assert.match(integration,/world-v3\/kidscade-world\.html\?v=23/);
-  assert.match(garden,/avatar-preview-audio-pause-v3/);
-  assert.match(garden,/world-v3-hud-v23/);
+  assert.match(garden,/avatar-preview-inline-edit-v4/);
+  assert.match(garden,/world-v3-homebase-v24/);
   assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-hud-1/);
 
   const moduleSource=runtime.replace(/^import .*$/gm,'').replace(/^export /gm,'');
