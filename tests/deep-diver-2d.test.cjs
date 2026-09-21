@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=12/);
-  assert.match(html,/diver-v7\.js\?v=16/);
+  assert.match(html,/deep-diver-2d\.css\?v=13/);
+  assert.match(html,/diver-v7\.js\?v=17/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=16');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=17');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -467,4 +467,24 @@ test('Deep Diver v16 fixes the opaque shark variant and adds a day-night restaur
   assert.match(js,/밤 장사 시작/);
   assert.match(css,/\.recipeGrid/);
   assert.match(css,/\.restaurantOrder/);
+});
+
+
+test('Deep Diver v17 turns night service into an active mini tycoon',()=>{
+  assert.match(html,/TYCOON BY NIGHT/);
+  assert.match(js,/const CUSTOMER_SPRITES=\[/);
+  assert.match(js,/female\/poses\/female-stand\.png/);
+  assert.match(js,/function spawnRestaurantCustomer/);
+  assert.match(js,/function tickRestaurant/);
+  assert.match(js,/function selectRestaurantCustomer/);
+  assert.match(js,/function startRestaurantPrep/);
+  assert.match(js,/function stopRestaurantPrep/);
+  assert.match(js,/function stopRestaurantCook/);
+  assert.match(js,/function serveRestaurantDish/);
+  assert.match(js,/patience/);
+  assert.match(js,/restaurantTimingScore/);
+  assert.match(css,/\.diningRoom/);
+  assert.match(css,/\.tycoonSeat/);
+  assert.match(css,/\.timingBar/);
+  assert.match(css,/\.customerSprite/);
 });
