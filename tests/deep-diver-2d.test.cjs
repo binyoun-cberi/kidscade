@@ -542,7 +542,7 @@ test('Deep Diver v18 harvests sea plants and shellfish for richer recipes',()=>{
   assert.match(js,/name:'성게 해초 덮밥'/);
   assert.match(js,/name:'패류 다시마 국'/);
   assert.match(js,/name:'오징어 붉은해조 무침'/);
-  assert.match(js,/groups:\[\['mussel'\],\['kelp','seaweed'\]\]/);
+  assert.match(js,/groups:\[\['mussel','scallop'\],\['kelp','seaweed'\]\]/);
 });
 
 test('Deep Diver v18 adds restaurant and expedition upgrade trees',()=>{
