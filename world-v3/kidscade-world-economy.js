@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel,playSfx,addInventoryItem,canCarryNewKey}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey}=ctx;
 
   const BUY={
     market:{
@@ -154,7 +154,7 @@ export function createTownEconomy(ctx){
     if((t.friendship[id]||0)<reward.at)return false;
     t.rewardClaims[claimKey]=true;
     if(reward.type==='coins')t.coins+=reward.qty||0;
-    else if(reward.type==='item')inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);
+    else if(reward.type==='item'){if(addInventoryItem)addInventoryItem(reward.key,reward.qty||1,{silent:true});else inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);}
     else if(reward.type==='food')p.food[reward.key]=(p.food[reward.key]||0)+(reward.qty||1);
     else if(reward.type==='seedBundle'){for(const key of ['potato','carrot','tomato','strawberry','corn','pumpkin'])p.seeds[key]=(p.seeds[key]||0)+(key==='potato'||key==='carrot'||key==='tomato'?2:1);}
     else if(reward.type==='petBundle'){inv().carrot=(inv().carrot||0)+2;inv().tomato=(inv().tomato||0)+2;inv().fish=(inv().fish||0)+1;inv().mushroom=(inv().mushroom||0)+1;}
@@ -288,7 +288,7 @@ export function createTownEconomy(ctx){
     const p=prog(),t=ensureState(p),day=p.survival.day,foods=Object.entries(p.food||{}).filter(([,qty])=>Number(qty)>0);
     const cards=foods.map(([key,qty])=>{
       const favorite=(GIFT_FAVORITES[id]||[]).includes(key);
-      return '<div class="item"><b>'+(favorite?'💖 ':'🍱 ')+key+'</b><div>'+qty+'개</div><button data-resident-gift="'+id+':'+key+'" '+(t.gifts[id]===day?'disabled':'')+'>선물하기</button></div>';
+      return '<div class="item"><b>'+(favorite?'💖 ':'🍱 ')+foodName(key)+'</b><div>'+qty+'개</div><button data-resident-gift="'+id+':'+key+'" '+(t.gifts[id]===day?'disabled':'')+'>선물하기</button></div>';
     }).join('');
     openPanel('<h2>🎁 '+r.name+'에게 요리 선물</h2><p>좋아하는 요리를 주면 친밀도가 더 많이 올라가요. 하루 한 번 선물할 수 있어요.</p><div class="grid">'+(cards||'<div class="item">가방에 선물할 요리가 없어요.</div>')+'</div><button data-resident-back="'+id+'">돌아가기</button>');
   }
