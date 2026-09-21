@@ -201,6 +201,9 @@ test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and se
   assert.match(html, /readyBtn/);
   assert.match(html, /startBtn/);
   assert.match(html, /turnDeadline/);
+  assert.match(html, /Kidscade로 나가기/);
+  assert.match(html, /data-exit-kidscade/);
+  assert.match(html, /kidscade:close-game/);
   assert.match(html, /3목숨/);
   assert.match(html, /12초/);
   assert.match(html, /audio-manager\.js/);
