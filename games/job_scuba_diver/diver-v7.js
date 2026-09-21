@@ -1458,7 +1458,7 @@ function finishRestaurant(reason='영업 종료'){
 }
 
 function contractCards(){
- return CONTRACTS.map((c,i)=>{const selected=dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected':'')+'" data-mission="'+c.id+'"><span>선택 의뢰</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(selected?'✓ 오늘 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
+ return CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 의뢰':'선택 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
 }
 function gearLoadoutCards(){
  const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'</small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
