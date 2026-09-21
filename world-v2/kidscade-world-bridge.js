@@ -30,6 +30,23 @@
     const n=Number(localStorage.getItem('kidscade_coins'));return Number.isFinite(n)?n:0;
   }
 
+  function changeSeeds(delta,reason='씨앗 월드'){
+    const amount=Math.trunc(Number(delta)||0),h=host();
+    const wallet=safe(()=>h.KidscadeSeedWallet,null);
+    if(wallet?.change)return safe(()=>wallet.change(amount,{reason,source:'seed-world'}),{ok:false,balance:readSeeds(),delta:amount});
+    const before=readSeeds(),next=before+amount;
+    if(next<0)return {ok:false,balance:before,delta:amount,error:'insufficient-balance'};
+    localStorage.setItem('kidscade_coins',String(next));
+    try{h.dispatchEvent(new CustomEvent('kidscade-seeds-change',{detail:{balance:next,delta:amount,reason}}))}catch(_){}
+    return {ok:true,balance:next,delta:amount,reason};
+  }
+  function spendSeeds(amount,reason='씨앗 월드 꾸미기'){
+    return changeSeeds(-Math.abs(Math.trunc(Number(amount)||0)),reason);
+  }
+  function earnSeeds(amount,reason='씨앗 월드 보상'){
+    return changeSeeds(Math.abs(Math.trunc(Number(amount)||0)),reason);
+  }
+
   function readAvatarSVG(){
     const h=host();
     const fn=safe(()=>h.renderAvatarSVG,null);
@@ -81,9 +98,10 @@
       capabilities:{
         liveGardenApi:!!safe(()=>host().KidscadeGarden,false),
         liveSeedApi:typeof safe(()=>host().getPersistedCoins,null)==='function',
+        liveSeedWriteApi:!!safe(()=>host().KidscadeSeedWallet?.change,false),
         liveAvatarApi:typeof safe(()=>host().renderAvatarSVG,null)==='function',
         liveAvatarFrameApi:liveFrameApi,
-        phase1ReadOnly:true
+        phase1ReadOnly:false
       }
     };
   }
@@ -282,6 +300,6 @@
   });
 
   NS.AvatarActor=AvatarActor;
-  NS.Bridge={host,readGarden,readSeeds,readAvatarSVG,readAvatarSource,avatarApi,storedAvatarPreview,snapshot,AvatarActor};
+  NS.Bridge={host,readGarden,readSeeds,changeSeeds,spendSeeds,earnSeeds,readAvatarSVG,readAvatarSource,avatarApi,storedAvatarPreview,snapshot,AvatarActor};
   installAvatarActorHook();
 })(window);
