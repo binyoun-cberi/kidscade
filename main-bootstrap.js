@@ -287,7 +287,12 @@
                 },
                 savePet: () => savePet(),
                 updateMission: (category, id) => updateMissionProgress(category, id),
-                recordGardenSession: (payload) => gardenController?.session(payload),
+                recordGardenSession: (payload) => {
+                    const result = window.KidscadeSeedWorldMeta?.recordGameSession?.(payload);
+                    if (result?.parcelCreated) showToast('📬 씨앗 월드에 ' + (result.parcel?.name || '게임 선물') + ' 도착!');
+                    window.KidscadeWorld?.syncWorldEntryStatus?.();
+                    return result;
+                },
                 resetSession: () => {
                     playStartTime = 0;
                     playCheckpointTime = 0;
