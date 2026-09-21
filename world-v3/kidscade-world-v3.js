@@ -1875,13 +1875,19 @@ async function init(){
       }
     }
   });
-  townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)});
+  townEconomy=createTownEconomy({
+    prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,
+    foodName:key=>FOOD_DEF[key]?.name||key,
+    addInventoryItem,canCarryNewKey,
+    travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
+  });
   townEconomy.ensureState(prog());
   syncCosmeticAura();
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await furnishingSystem.restore();
   await buildPets();
+  updateHomesteadVisuals();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();
   updateStatus();
   showStarterHintOnce();
   const previous=save.player?.v3scene;
