@@ -120,12 +120,12 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/cityRuntime\?\.update\?\.\(now,dt\)/);
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=15/);
-  assert.match(runtime,/kidscade-world-grid\.js\?v=2/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=10/);
-  assert.match(runtime,/kidscade-world-furnishing\.js\?v=4/);
+  assert.match(runtime,/kidscade-world-grid\.js\?v=3/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=12/);
+  assert.match(runtime,/kidscade-world-furnishing\.js\?v=6/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=22/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=22/);
+  assert.match(html,/kidscade-world-v3\.js\?v=27/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=27/);
 });
 
 test('starter resources provide six hand pickups per material and one-time guidance',()=>{
@@ -143,7 +143,7 @@ test('starter resources provide six hand pickups per material and one-time guida
 
 
 test('World v3 furnishing supports persistent craft buy place rotate move and store loops',()=>{
-  assert.match(storage,/housing:\{version:3,owned:\{\},placed:\[\],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1\}/);
+  assert.match(storage,/housing:\{version:4,owned:\{\},placed:\[\],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1\}/);
   assert.match(runtime,/createFurnishingSystem/);
   assert.match(runtime,/가구 창고 · 집 꾸미기/);
   assert.match(runtime,/canPlaceFurniture/);
@@ -161,62 +161,35 @@ test('World v3 furnishing supports persistent craft buy place rotate move and st
   assert.match(economy,/type:'furniture'/);
   assert.match(economy,/둥근 러그/);
   assert.match(economy,/플로어 램프/);
-  assert.match(economy,/모던 TV/);
+  assert.doesNotMatch(economy,/television:\{name:'모던 TV'/);
+  assert.match(runtime,/id:'television'/);
 });
 
 
-test('default home study and living furniture migrates once into movable saved furniture',()=>{
-  assert.match(furnishing,/defaultLayoutMigrated/);
-  assert.match(furnishing,/id:'home-desk',key:'classicDesk'/);
-  assert.match(furnishing,/id:'home-bookcase',key:'tallBookcase'/);
-  assert.match(furnishing,/id:'home-rug',key:'rugRectangle'/);
-  assert.match(furnishing,/id:'home-sofa',key:'classicSofa'/);
-  assert.match(furnishing,/id:'home-table',key:'diningTable'/);
-  assert.match(furnishing,/migrateDefaultLayout\(\);/);
-  for(const file of ['desk.glb','bookcase-open.glb','rug-rectangle.glb','lounge-sofa.glb','table.glb']){
-    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing default furniture '+file);
-    assert.ok(furnishing.includes(file),'movable catalog missing '+file);
+test('fresh homes no longer auto-fill study and living furniture',()=>{
+  assert.match(furnishing,/function migrateDefaultLayout/);
+  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateDefaultLayout\(\)/);
+  assert.match(runtime,/starter-home-storage/);
+  assert.match(runtime,/바닥 이불에서 자기/);
+  assert.match(runtime,/HOUSE_BOUNDS/);
+  for(const key of ['classicDesk','tallBookcase','classicSofa','diningTable']){
+    assert.ok(runtime.includes("key==='"+key+"'"),'missing retained furniture callback '+key);
   }
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.desk/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.bookcase/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.rug/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.sofa/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.table/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.bed/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.stove/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.fridge/);
-  assert.match(furnishing,/data-furn-use/);
-  assert.match(runtime,/key==='classicSofa'/);
-  assert.match(runtime,/key==='tallBookcase'/);
-  assert.match(runtime,/key==='diningTable'/);
-  assert.match(runtime,/key==='classicDesk'/);
 });
 
-
-test('functional home essentials migrate separately and keep their actions while movable',()=>{
-  assert.match(furnishing,/functionalLayoutMigrated/);
-  assert.match(furnishing,/id:'home-bed',key:'bedSingle'/);
-  assert.match(furnishing,/id:'home-stove',key:'kitchenStove'/);
-  assert.match(furnishing,/id:'home-sink',key:'kitchenSink'/);
-  assert.match(furnishing,/id:'home-cabinet',key:'kitchenCabinet'/);
-  assert.match(furnishing,/id:'home-fridge',key:'kitchenFridge'/);
-  assert.match(furnishing,/migrateFunctionalLayout\(\);/);
-  for(const file of ['bed-single.glb','kitchen-stove.glb','kitchen-sink.glb','kitchen-cabinet.glb','kitchen-fridge.glb']){
-    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing functional furniture '+file);
-    assert.ok(furnishing.includes(file),'functional catalog missing '+file);
-  }
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.bed/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.stove/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.sink/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.cabinet/);
-  assert.doesNotMatch(runtime,/addModel\(indoor,ASSET\.fridge/);
-  for(const key of ['bedSingle','kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge','television']){
-    assert.ok(runtime.includes("key==='"+key+"'"),'missing functional callback '+key);
-  }
-  assert.match(furnishing,/사용·꾸미기/);
-  assert.match(storage,/functionalLayoutMigrated:false/);
+test('bed kitchen storage and wardrobe are earned through homestead progression',()=>{
+  assert.match(furnishing,/bedSingle:\{name:'나무 침대'/);
+  assert.match(furnishing,/kitchenStove/);
+  assert.match(furnishing,/kitchenSink/);
+  assert.match(furnishing,/kitchenCabinet/);
+  assert.match(furnishing,/kitchenFridge/);
+  assert.match(furnishing,/homeDrawers/);
+  assert.match(furnishing,/wardrobe/);
+  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateFunctionalLayout\(\)/);
+  assert.match(runtime,/const CARPENTER_RECIPES=/);
+  assert.match(runtime,/kidscade:open-avatar-studio/);
+  assert.match(runtime,/hasPlacedFurniture\('kitchenSink'\)/);
 });
-
 
 test('named Seed Town residents expose roles services friendship milestones and exclusive rewards',()=>{
   for(const id of ['minji','junho','haneul','doyun','yuna','taeho','sora','hyunwoo','nari','woojin','seoyeon','minseok']){
