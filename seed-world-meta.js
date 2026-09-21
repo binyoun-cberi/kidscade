@@ -138,7 +138,9 @@
   function recordGameSession(payload={}){
     const game=String(payload.game||'').trim();
     if(!game)return {ok:false,reason:'missing-game'};
-    const category=String(payload.category||'all'),title=String(payload.title||game);
+    const category=String(payload.category||'all');
+    const catalogTitle=root?.KidscadeGames?.get?.(game)?.title||root?.KidscadeCatalog?.games?.find?.(item=>item?.id===game)?.title||'';
+    const title=String(payload.title||catalogTitle||game);
     const state=read(),today=dateKey();
     ensureDaily(state);
     const existing=state.trophies[game]||{};
@@ -207,9 +209,11 @@
   function getState(){const state=read();ensureDaily(state);return state}
   function reset(){try{root?.localStorage?.removeItem(KEY)}catch(_){}emit({reason:'reset'});return fresh()}
 
-  return {
+  const api={
     KEY,VERSION,CHANGE_EVENT,CATEGORY_GIFTS,COSMETICS,
     dateKey,getState,summary,pendingParcels,claimParcel,trophies,
     recordGameSession,advanceTask,recordExplore,unlockCosmetic,equipCosmetic,cosmeticState,reset
   };
+  try{queueMicrotask(()=>root?.dispatchEvent?.(new CustomEvent('kidscade-seed-world-meta-ready',{detail:{summary:summary()}})))}catch(_){}
+  return api;
 });
