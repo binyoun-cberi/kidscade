@@ -15,11 +15,29 @@ const toastEl=document.getElementById('toast');
 const promptEl=document.getElementById('prompt');
 const zoneEl=document.getElementById('zone');
 const statusEl=document.getElementById('status');
+const statusClockEl=document.getElementById('statusClock');
+const statusPhaseEl=document.getElementById('statusPhase');
+const coinCountEl=document.getElementById('coinCount');
+const seedCountEl=document.getElementById('seedCount');
+const funCountEl=document.getElementById('funCount');
+const healthLiquid=document.getElementById('healthLiquid');
+const hungerLiquid=document.getElementById('hungerLiquid');
+const healthValue=document.getElementById('healthValue');
+const hungerValue=document.getElementById('hungerValue');
+const quickbar=document.getElementById('quickbar');
+const petPicker=document.getElementById('petPicker');
+const helpBtn=document.getElementById('helpBtn');
+const axeQuick=document.getElementById('axeQuick');
+const pickQuick=document.getElementById('pickQuick');
+const axeDur=document.getElementById('axeDur');
+const pickDur=document.getElementById('pickDur');
+const petQuickIcon=document.getElementById('petQuickIcon');
+const petQuickName=document.getElementById('petQuickName');
 const panel=document.getElementById('panel');
 const panelBody=document.getElementById('panelBody');
 const audioToggle=document.getElementById('audioToggle');
 const worldAudio=createWorldAudio();
-function syncAudioButton(){if(audioToggle)audioToggle.textContent=worldAudio.label()}
+function syncAudioButton(){if(audioToggle){audioToggle.textContent=worldAudio.isEnabled()?'🔊':'🔇';audioToggle.title=worldAudio.isEnabled()?'소리 끄기':'소리 켜기'}}
 audioToggle?.addEventListener('click',()=>{worldAudio.toggle();syncAudioButton()});
 addEventListener('pointerdown',()=>worldAudio.unlock(),{once:true});
 addEventListener('keydown',()=>worldAudio.unlock(),{once:true});
@@ -88,6 +106,8 @@ const CUBE_PETS={
   parrot:{name:'앵무새',model:ASSET.petParrot,perk:'낚시 추가 획득 확률',region:'깊은 숲',req:{tomato:2}},
   beaver:{name:'비버',model:ASSET.petBeaver,perk:'벌목 목재 +1',region:'북쪽 강가',req:{wood:2,carrot:1}}
 };
+const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
+
 function companionId(){return prog().cubePets?.companion||'';}
 function townPerks(){return prog().town?.perks||{};}
 
@@ -175,7 +195,7 @@ function toast(text){
   toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toastEl.__t);
   toastEl.__t=setTimeout(()=>toastEl.classList.remove('show'),1600);
 }
-function openPanel(html){resetInput(true);panelBody.innerHTML=html;panel.classList.add('open')}
+function openPanel(html){resetInput(true);petPicker?.classList.remove('open');panelBody.innerHTML=html;panel.classList.add('open')}
 function closePanel(){resetInput(true);panel.classList.remove('open');canvas.focus()}
 document.getElementById('panelClose').onclick=closePanel;
 panel.addEventListener('pointerdown',e=>{if(e.target===panel)closePanel()});
@@ -187,6 +207,7 @@ function prog(){
   p.energy=Number(p.energy??100);
   p.maxEnergy=Number(p.maxEnergy??100);
   p.tools=p.tools||{};
+  p.equippedTool=['hand','axe','pick'].includes(p.equippedTool)?p.equippedTool:'hand';
   p.seeds={potato:2,carrot:2,tomato:2,strawberry:1,corn:1,pumpkin:1,...(p.seeds||{})};
   p.crops=p.crops||{};
   p.food=p.food||{};
@@ -229,6 +250,67 @@ const itemName=k=>({
   strawberry:'딸기',corn:'옥수수',pumpkin:'호박',milk:'우유',egg:'달걀',truffle:'트러플',
   fish:'물고기',bug:'곤충',mushroom:'버섯'
 })[k]||k;
+
+function toolName(key,p=prog()){
+  if(key==='hand')return '맨손';
+  const t=p.tools[key];
+  if(!t||t.dur<=0)return key==='axe'?'도끼 없음':'곡괭이 없음';
+  return (t.tier==='iron'?'철':'돌')+(key==='axe'?'도끼':'곡괭이');
+}
+function toolSlotNumber(key){return key==='axe'?'2':key==='pick'?'3':'1'}
+function normalizeEquippedTool(p=prog()){
+  if((p.equippedTool==='axe'&&!(p.tools.axe?.dur>0))||(p.equippedTool==='pick'&&!(p.tools.pick?.dur>0)))p.equippedTool='hand';
+  return p.equippedTool;
+}
+function setEquippedTool(key,{silent=false}={}){
+  if(!['hand','axe','pick'].includes(key))return false;
+  const p=prog();
+  if(key!=='hand'&&!(p.tools[key]?.dur>0)){if(!silent)toast((key==='axe'?'도끼':'곡괭이')+'가 없어요. 제작대에서 먼저 만들어 보세요.');return false}
+  p.equippedTool=key;persist();updateStatus();
+  if(!silent)toast(toolName(key,p)+' 장착');
+  return true;
+}
+function requireEquippedTool(key){
+  const p=prog();
+  if(p.equippedTool===key&&p.tools[key]?.dur>0)return true;
+  toast(toolName(key,p)+'를 '+toolSlotNumber(key)+'번 슬롯에서 장착하세요.');
+  return false;
+}
+function renderPetPicker(){
+  if(!petPicker)return;
+  const state=petState(),selected=state.companion;
+  petPicker.innerHTML=state.owned.map(id=>{
+    const def=CUBE_PETS[id];if(!def)return '';
+    return '<button type="button" class="petChoice '+(id===selected?'active':'')+'" data-pet-quick="'+id+'" title="'+def.perk+'">'+(CUBE_PET_ICONS[id]||'🐾')+'<br><small>'+def.name+'</small></button>';
+  }).join('')||'<span style="color:#fff;padding:10px">아직 동행 가능한 펫이 없어요.</span>';
+}
+function togglePetPicker(){
+  if(!petPicker)return;
+  renderPetPicker();petPicker.classList.toggle('open');
+}
+function helpPanel(){
+  openPanel('<h2>❓ 씨앗 월드 도움말</h2>'+
+    '<div class="helpGrid">'+
+    '<div class="helpItem"><b>🚶 이동</b>WASD 또는 방향키로 움직여요.</div>'+
+    '<div class="helpItem"><b>✨ 행동</b>E 또는 Space로 가까운 대상과 상호작용해요.</div>'+
+    '<div class="helpItem"><b>🪓 도구</b>1 맨손 · 2 도끼 · 3 곡괭이. 나무와 광물은 맞는 도구를 장착해야 해요.</div>'+
+    '<div class="helpItem"><b>🎒 가방</b>4번 슬롯에서 재료와 음식을 확인하고 먹을 수 있어요.</div>'+
+    '<div class="helpItem"><b>🐾 Cube Pets</b>5번 슬롯에서 내가 만난 펫을 즉시 동행시킬 수 있어요.</div>'+
+    '<div class="helpItem"><b>❤ 생존</b>왼쪽 구는 체력, 오른쪽 구는 허기예요. 음식과 휴식으로 관리해요.</div>'+
+    '</div><p><b>화면 위쪽</b>에는 현재 지역, 날짜·시간, 코인·씨앗만 간단히 표시돼요. 자원 총량과 음식은 가방에서 확인하세요.</p>');
+}
+function activateQuickSlot(key){
+  if(key==='hand'||key==='axe'||key==='pick'){setEquippedTool(key);return}
+  if(key==='bag'){inventoryPanel();return}
+  if(key==='pet'){togglePetPicker()}
+}
+quickbar?.addEventListener('click',e=>{const b=e.target.closest?.('[data-quick]');if(b&&!b.disabled)activateQuickSlot(b.dataset.quick)});
+petPicker?.addEventListener('click',e=>{
+  const b=e.target.closest?.('[data-pet-quick]');if(!b)return;
+  const id=b.dataset.petQuick,state=petState();if(!state.owned.includes(id)||!CUBE_PETS[id])return;
+  state.companion=id;persist();petPicker.classList.remove('open');setAvatarAction('smile',500);toast(CUBE_PETS[id].name+'와 함께 다녀요!');updateStatus();
+});
+helpBtn?.addEventListener('click',helpPanel);
 
 const FOOD_DEF={
   grilledFish:{name:'구운 생선',hunger:34,energy:10},
@@ -302,11 +384,11 @@ panel.addEventListener('click',e=>{
     const def=defs[key];if(!def)return;
     if(!Object.entries(def.req).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
     Object.entries(def.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-    p.tools[def.slot]={dur:def.max,max:def.max,tier:def.tier,craftedAt:Date.now()};persist();setAvatarAction('smile',750);worldAudio.sfx('success',.10);toast(def.name+' 완성!');workbenchPanel();updateStatus();return;
+    p.tools[def.slot]={dur:def.max,max:def.max,tier:def.tier,craftedAt:Date.now()};p.equippedTool=def.slot;persist();setAvatarAction('smile',750);worldAudio.sfx('success',.10);toast(def.name+' 완성! · 자동 장착');workbenchPanel();updateStatus();return;
   }
   const cook=e.target.closest('[data-cook]');if(cook){cookFood(cook.dataset.cook);cookingPanel(panel.dataset.cookKind||'stove');return;}
   const eat=e.target.closest('[data-eat]');if(eat){eatFood(eat.dataset.eat);return;}
-  const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
+  const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();petPicker?.classList.remove('open');toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
   const plant=e.target.closest('[data-plant]');if(plant){const [id,type]=plant.dataset.plant.split(':');plantCrop(id,type);return;}
   if(e.target.closest('[data-ranch-collect]')){collectRanchProducts();return;}
   if(furnishingSystem?.handlePanelClick?.(e))return;
@@ -412,6 +494,9 @@ addEventListener('keydown',e=>{
     keys.add(key);
   }
   if((e.key==='r'||e.key==='R')&&furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.rotate();return;}
+  if(!panel.classList.contains('open')&&['1','2','3','4','5'].includes(e.key)){
+    e.preventDefault();activateQuickSlot(({1:'hand',2:'axe',3:'pick',4:'bag',5:'pet'})[e.key]);return;
+  }
   if((e.key==='e'||e.key==='E'||e.key===' ')&&!panel.classList.contains('open')){e.preventDefault();doInteract()}
   if(e.key==='Escape'){
     if(furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.cancel();}
@@ -435,7 +520,6 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
   b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
 });
 document.getElementById('mobileInteract').onclick=doInteract;
-document.getElementById('close').onclick=()=>window.parent?.postMessage({type:'kidscade-life-world-close'},location.origin);
 
 const LAYOUT_VERSION=7;
 let mode='outdoor';
@@ -506,6 +590,7 @@ function setMode(next){
 function spendTool(kind,item){
   const p=prog(),t=p.tools[item];
   if(!t||t.dur<=0){toast((item==='axe'?'도끼':'곡괭이')+'가 필요해요. 제작대에서 만들어 보세요.');return false}
+  if(!requireEquippedTool(item))return false;
   if(p.energy<=4){toast('체력이 부족해요. 집 침대에서 쉬어 보세요.');return false}
   const iron=t.tier==='iron',petBonus=kind==='wood'&&companionId()==='beaver'?1:0,gain=(iron?2:1)+petBonus,cost=kind==='wood'?(iron?2.6:4):(iron?3.2:5);
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i[kind]=(i[kind]||0)+gain;persist();updateStatus();worldAudio.sfx('impact',.12);
@@ -532,6 +617,7 @@ function fish(){
 function mineIron(){
   const p=prog(),t=p.tools.pick;
   if(!t||t.dur<=0){toast('곡괭이가 필요해요.');return false;}
+  if(!requireEquippedTool('pick'))return false;
   if(p.energy<=6){toast('체력이 부족해요.');return false;}
   const gain=t.tier==='iron'?2:1,cost=t.tier==='iron'?4:6;
   t.dur--;p.energy=Math.max(0,p.energy-cost);const i=inv();i.iron=(i.iron||0)+gain;
@@ -1013,20 +1099,38 @@ function updatePets(now,dt){
 }
 
 function updateStatus(){
-  const p=prog(),i=inv(),s=p.survival,t=townEconomy?.ensureState?.(p)||p.town||{coins:0,fun:0};
-  const pct=Math.max(0,Math.min(100,(p.energy||0)/(p.maxEnergy||100)*100));
-  const hunger=Math.max(0,Math.min(100,s.hunger||0));
-  const fun=Math.max(0,Math.min(100,t.fun||0));
-  const axe=p.tools.axe?.dur>0?`${p.tools.axe.tier==='iron'?'철도끼':'돌도끼'} ${p.tools.axe.dur}`:'도끼 없음';
-  const pick=p.tools.pick?.dur>0?`${p.tools.pick.tier==='iron'?'철곡괭이':'돌곡괭이'} ${p.tools.pick.dur}`:'곡괭이 없음';
+  const p=prog(),s=p.survival,t=townEconomy?.ensureState?.(p)||p.town||{coins:0,fun:0};
+  const equipped=normalizeEquippedTool(p);
+  const energy=Math.max(0,Math.min(p.maxEnergy||100,Number(p.energy)||0));
+  const pct=Math.max(0,Math.min(100,energy/(p.maxEnergy||100)*100));
+  const hunger=Math.max(0,Math.min(100,Number(s.hunger)||0));
+  const fun=Math.max(0,Math.min(100,Number(t.fun)||0));
   const phase=isNightTime(s.time)?'밤':'낮';
-  const petId=companionId(),pet=petId?(CUBE_PETS[petId]?.name||petId):'없음';
-  statusEl.innerHTML=`<b>Day ${s.day} · ${clockText(s.time)} · ${phase}</b><br>
-    체력 ${Math.round(p.energy||0)}/${p.maxEnergy||100}<div class="energy"><i style="width:${pct}%"></i></div>
-    허기 ${Math.round(hunger)}/100<div class="energy"><i style="width:${hunger}%"></i></div>
-    재미 ${Math.round(fun)}/100 · 코인 ${t.coins||0}<br>
-    ${axe}<br>${pick}<br>목재 ${i.wood||0} · 돌 ${i.stone||0} · 철 ${i.iron||0}<br>
-    동행 펫 ${pet}<hr style="border:0;border-top:1px solid rgba(255,255,255,.25)">씨앗 ${Bridge?.readSeeds?.()||0}`;
+  if(statusClockEl)statusClockEl.textContent='Day '+s.day+' · '+clockText(s.time);
+  if(statusPhaseEl)statusPhaseEl.textContent=(phase==='밤'?'🌙 ':'☀ ') + phase;
+  if(coinCountEl)coinCountEl.textContent='🪙 '+Math.round(Number(t.coins)||0);
+  if(seedCountEl)seedCountEl.textContent='🌱 '+(Bridge?.readSeeds?.()||0);
+  if(funCountEl)funCountEl.textContent='🙂 '+Math.round(fun);
+  if(healthLiquid)healthLiquid.style.height=pct+'%';
+  if(hungerLiquid)hungerLiquid.style.height=hunger+'%';
+  if(healthValue)healthValue.textContent=Math.round(energy);
+  if(hungerValue)hungerValue.textContent=Math.round(hunger);
+
+  const axe=p.tools.axe, pick=p.tools.pick;
+  const axeOk=axe?.dur>0,pickOk=pick?.dur>0;
+  if(axeQuick)axeQuick.textContent=axeOk?toolName('axe',p):'도끼 없음';
+  if(pickQuick)pickQuick.textContent=pickOk?toolName('pick',p):'곡괭이 없음';
+  if(axeDur)axeDur.style.width=(axeOk?Math.max(0,Math.min(100,axe.dur/Math.max(1,axe.max||axe.dur)*100)):0)+'%';
+  if(pickDur)pickDur.style.width=(pickOk?Math.max(0,Math.min(100,pick.dur/Math.max(1,pick.max||pick.dur)*100)):0)+'%';
+  const axeButton=quickbar?.querySelector('[data-quick="axe"]'),pickButton=quickbar?.querySelector('[data-quick="pick"]');
+  if(axeButton)axeButton.disabled=!axeOk;
+  if(pickButton)pickButton.disabled=!pickOk;
+  quickbar?.querySelectorAll('[data-quick="hand"],[data-quick="axe"],[data-quick="pick"]').forEach(b=>b.classList.toggle('selected',b.dataset.quick===equipped));
+
+  const petId=companionId(),pet=CUBE_PETS[petId];
+  if(petQuickIcon)petQuickIcon.textContent=petId?(CUBE_PET_ICONS[petId]||'🐾'):'🐾';
+  if(petQuickName)petQuickName.textContent=pet?.name||'펫';
+  if(petPicker?.classList.contains('open'))renderPetPicker();
 }
 
 let survivalUiClock=0;
@@ -1148,6 +1252,7 @@ async function init(){
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await furnishingSystem.restore();
   await buildPets();
+  updateStatus();
   showStarterHintOnce();
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
