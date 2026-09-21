@@ -375,7 +375,7 @@ const GRID_RECIPES=[
   {id:'ironAxe',name:'철도끼',minTech:1,pattern:['iron','iron','', 'iron','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'iron',dur:38}},
   {id:'ironPick',name:'철곡괭이',minTech:1,pattern:['iron','iron','iron', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'iron',dur:38}},
   {id:'semiconductor',name:'반도체',minTech:2,pattern:['quartz','copper','quartz', 'copper','iron','copper', 'quartz','copper','quartz'],out:{kind:'item',item:'semiconductor',qty:1}},
-  {id:'television',name:'모던 TV',minTech:3,pattern:['iron','semiconductor','iron', 'wood','semiconductor','wood', 'wood','wood','wood'],out:{kind:'furniture',item:'television',qty:1}}
+  {id:'television',name:'모던 TV',minTech:3,pattern:['iron','semiconductor','gold', 'wood','semiconductor','wood', 'wood','wood','wood'],out:{kind:'furniture',item:'television',qty:1}}
 ];
 let craftGrid=Array(9).fill(''),craftSelected='wood';
 function gridCounts(grid=craftGrid){const out={};for(const k of grid)if(k)out[k]=(out[k]||0)+1;return out}
@@ -488,7 +488,7 @@ function worldMapPanel(){
 }
 function homeHubPanel(){
   const s=Meta?.summary?.()||{pendingMail:0,trophies:0,dailyDone:0,dailyTotal:3};
-  openPanel('<h2>🌱 씨앗 생활 보드</h2><p>오늘 할 일과 Kidscade에서 가져온 보상을 여기서 한 번에 확인해요.</p>'+
+  openPanel('<h2>🌱 씨앗 생활 보드 · '+ '⭐'.repeat(villageStars())+'</h2><p>오늘 할 일과 Kidscade에서 가져온 보상을 여기서 한 번에 확인해요.</p>'+
     '<div class="grid">'+
     '<div class="item"><b>📬 게임 택배</b><div>도착 '+s.pendingMail+'개</div><button data-world-hub="mail">열기</button></div>'+
     '<div class="item"><b>📋 오늘 할 일</b><div>'+s.dailyDone+'/'+s.dailyTotal+' 완료</div><button data-world-hub="daily">보기</button></div>'+
