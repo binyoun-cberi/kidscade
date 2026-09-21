@@ -8,6 +8,7 @@ export const WORLD_GRID={
   beach:{id:'beach',name:'해변가',cx:-36,cz:-24,color:0xd7c58f,kind:'nature',hint:'낚시·해안'},
   waterfront:{id:'waterfront',name:'북쪽 강가',cx:-12,cz:-24,color:0x78a77b,kind:'nature',hint:'다리·비버'},
   ranch:{id:'ranch',name:'목장',cx:12,cz:-24,color:0x9db66d,kind:'life',hint:'Cube Pets·생산물'},
+  orchard:{id:'orchard',name:'과수원',cx:36,cz:-24,color:0xa8b86c,kind:'life',hint:'과일나무·수확'},
   forest:{id:'forest',name:'깊은 숲',cx:-36,cz:0,color:0x4f8050,kind:'resource',hint:'목재·버섯'},
   home:{id:'home',name:'집 구역',cx:-12,cz:0,color:0x7faf62,kind:'life',hint:'집·연못·펫 마당'},
   farm:{id:'farm',name:'농장',cx:12,cz:0,color:0x94b76b,kind:'life',hint:'자유 재배·제작'},
