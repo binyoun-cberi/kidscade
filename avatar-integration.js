@@ -149,7 +149,7 @@
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:auto;transform-origin:50% 92%;will-change:transform;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center;will-change:transform,opacity}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#756c86;font-size:.85rem}
-      #avatar-plaza-preview .avatar-preview-edit{position:absolute;right:10px;bottom:10px;z-index:35;min-height:34px!important;padding:0 11px!important;border-radius:999px!important;font-size:.72rem!important;box-shadow:0 6px 16px rgba(83,51,145,.28)!important;pointer-events:auto}
+      #avatar-plaza-preview .avatar-preview-edit{position:absolute!important;right:10px!important;bottom:10px!important;left:auto!important;top:auto!important;z-index:80!important;display:inline-flex!important;align-items:center;justify-content:center;min-height:36px!important;width:auto!important;padding:0 12px!important;border:2px solid rgba(255,255,255,.92)!important;border-radius:999px!important;background:linear-gradient(135deg,#8b5cf6,#ec4899)!important;color:#fff!important;font-size:.74rem!important;font-weight:1000!important;box-shadow:0 6px 16px rgba(83,51,145,.34)!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important}
       @media(max-width:700px){#kidscade-avatar-studio-overlay{padding:0}#kidscade-avatar-studio-bar{border-radius:0;padding:8px 10px}#kidscade-avatar-studio-bar span{display:none}#kidscade-avatar-studio-frame{border-radius:0}}
       @media(prefers-reduced-motion:reduce){#kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{transition:none!important}}
     `;
@@ -160,6 +160,22 @@
     for (const child of [...host.children]) {
       if (child !== keep && child.id !== 'avatar-open-btn') child.remove();
     }
+  }
+
+  function ensurePreviewEditButton(host) {
+    if (!host) return null;
+    let button = host.querySelector('#avatar-open-btn');
+    if (!button) {
+      button = document.createElement('button');
+      button.id = 'avatar-open-btn';
+      button.type = 'button';
+      button.className = 'avatar-open-btn avatar-preview-edit';
+      host.appendChild(button);
+    }
+    button.classList.add('avatar-open-btn','avatar-preview-edit');
+    button.textContent = '👕 꾸미기';
+    button.setAttribute('aria-label','내 캐릭터 꾸미기');
+    return button;
   }
 
   function hideBrokenPreview(layer) {
@@ -176,6 +192,7 @@
     const host = document.getElementById('avatar-plaza-preview');
     if (!host) return;
     host.style.position = 'relative';
+    ensurePreviewEditButton(host);
     let layer = host.querySelector('#kidscade-deluxe-avatar-preview');
     if (!layer) {
       layer = document.createElement('div');
@@ -194,6 +211,8 @@
       host.appendChild(layer);
     }
     purgeLegacyPreview(host, layer);
+    const editButton = ensurePreviewEditButton(host);
+    if (editButton && editButton !== host.lastElementChild) host.appendChild(editButton);
     liveImg = layer.querySelector('.kidscade-avatar-live-img');
     liveShadow = layer.querySelector('.kidscade-avatar-live-shadow');
     const empty = layer.querySelector('.kidscade-avatar-empty');
@@ -219,8 +238,8 @@
 
     const summary = document.getElementById('avatar-collection-summary');
     if (summary) summary.textContent = ownedSummary();
-    const button = document.getElementById('avatar-open-btn');
-    if (button) button.textContent = '👕 캐릭터 꾸미기 · 상점';
+    const button = ensurePreviewEditButton(host);
+    if (button) button.textContent = '👕 꾸미기';
   }
 
   function watchPreview() {
