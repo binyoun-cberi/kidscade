@@ -253,6 +253,19 @@ function creatureEdgeDistance(f,x,y){
 function speciesDepthAllows(key,y){
  const sp=SPECIES[key],dep=depthOf(y);return !sp?.depth||(dep>=sp.depth[0]&&dep<=sp.depth[1])
 }
+const FISH_GRID_SIZE=240;
+function fishGridKey(cx,cy){return cx+','+cy}
+function rebuildFishGrid(){
+ if(!world)return;const grid=new Map();
+ for(const f of world.fish){if(!f.alive)continue;const cx=Math.floor(f.x/FISH_GRID_SIZE),cy=Math.floor(f.y/FISH_GRID_SIZE),k=fishGridKey(cx,cy);let cell=grid.get(k);if(!cell){cell=[];grid.set(k,cell)}cell.push(f)}
+ world.fishGrid=grid
+}
+function nearbyFish(x,y,r){
+ if(!world?.fishGrid)return world?.fish||[];
+ const minX=Math.floor((x-r)/FISH_GRID_SIZE),maxX=Math.floor((x+r)/FISH_GRID_SIZE),minY=Math.floor((y-r)/FISH_GRID_SIZE),maxY=Math.floor((y+r)/FISH_GRID_SIZE),out=[];
+ for(let cy=minY;cy<=maxY;cy++)for(let cx=minX;cx<=maxX;cx++){const cell=world.fishGrid.get(fishGridKey(cx,cy));if(cell)out.push(...cell)}
+ return out
+}
 function requiredGearTier(f,method){
  const sp=SPECIES[f.key],size=creatureSizeClass(f.key),difficulty=sp.catchDifficulty||1;
  let tier=difficulty>=5?3:difficulty>=3?2:1;
@@ -551,7 +564,7 @@ function buildWorld(contract=FREE_DIVE){
  const loadout=(meta.loadout||[]).filter(k=>GEAR_DEFS[k]).slice(0,st.toolSlots);
  world={
    contract,st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
-   fish:[],decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
+   fish:[],fishGrid:new Map(),decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,catchWeight:0,catchCounts:{},income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
  };
@@ -1127,7 +1140,7 @@ function explodeMine(m){
 
 function nearestEcoFish(f,maxDist,predicate){
  let best=null,bd=maxDist;
- for(const o of world.fish){if(o===f||!o.alive||!predicate(o))continue;const d=Math.hypot(o.x-f.x,o.y-f.y);if(d<bd){bd=d;best=o}}
+ for(const o of nearbyFish(f.x,f.y,maxDist)){if(o===f||!o.alive||!predicate(o))continue;const d=Math.hypot(o.x-f.x,o.y-f.y);if(d<bd){bd=d;best=o}}
  return best?{fish:best,d:bd}:null
 }
 function nearestKelpCover(f,maxDist=240){
@@ -1206,7 +1219,7 @@ function updateFishAI(f,dt,p,st){
  }
  if(behavior==='school'){
    let n=0,ax=0,ay=0,cx=0,cy=0,sx=0,sy=0;
-   for(const o of world.fish){if(o===f||!o.alive||o.key!==f.key)continue;const qx=o.x-f.x,qy=o.y-f.y,qd=Math.hypot(qx,qy);if(qd>170)continue;n++;ax+=o.vx;ay+=o.vy;cx+=o.x;cy+=o.y;if(qd<54&&qd>0){sx-=qx/qd*(54-qd);sy-=qy/qd*(54-qd)}}
+   for(const o of nearbyFish(f.x,f.y,170)){if(o===f||!o.alive||o.key!==f.key)continue;const qx=o.x-f.x,qy=o.y-f.y,qd=Math.hypot(qx,qy);if(qd>170)continue;n++;ax+=o.vx;ay+=o.vy;cx+=o.x;cy+=o.y;if(qd<54&&qd>0){sx-=qx/qd*(54-qd);sy-=qy/qd*(54-qd)}}
    if(n){ax/=n;ay/=n;cx=cx/n-f.x;cy=cy/n-f.y;tx+=ax*.18+cx*.045+sx*.85;ty+=ay*.18+cy*.045+sy*.85}
    tx+=(f.patrolDir||1)*(sp.speed||42)*.22;ty+=Math.sin(world.time*1.3+f.phase)*8;
    if(dist<105){tx-=dx/dist*125;ty-=dy/dist*95;f.panic=.6}
@@ -1326,7 +1339,7 @@ function update(dt){
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
  const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+(SUBZONE_RULES[sub.id]?.tip||zone.name),2300)}}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
- for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
+ rebuildFishGrid();for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  updateTether(dt);updateTraps(dt);
  for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(creaturePointHit(f,s.x,s.y,3)){hookFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
