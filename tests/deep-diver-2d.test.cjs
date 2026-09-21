@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=19');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=20');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -585,4 +585,38 @@ test('Deep Diver v19 generated species are distributed across all five biomes',(
   assert.match(js,/ruins:\[.*\['moray',3\].*\['scallop',4\]/);
   assert.match(js,/wreck:\[.*\['giantIsopod',2\]/);
   assert.match(js,/abyss:\[.*\['coelacanth',3\].*\['giantIsopod',5\]/);
+});
+
+
+test('Deep Diver v20 integrates the newly committed four-frame marine sheets',()=>{
+  const required=[
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/deepsea anglerfish.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/flounder.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/lanternfish.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/mackerel.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/shrimp.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/slippler lobster.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/sword fish.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/titan triggerfish.png',
+    'assets/game/2d/underwater/deep-diver/creatures/generated/fish/yellow tuna.png'
+  ];
+  for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
+  for(const token of [
+    "mackerel:{name:'고등어'",
+    "yellowfin:{name:'황다랑어'",
+    "swordfish:{name:'황새치'",
+    "triggerfish:{name:'타이탄 트리거피시'",
+    "flounder:{name:'가자미'",
+    "shrimp:{name:'새우'",
+    "slipperLobster:{name:'부채새우'",
+    "lanternfish:{name:'랜턴피시'",
+    "angler:{name:'심해 아귀'"
+  ]) assert.ok(js.includes(token),token);
+  assert.match(js,/genLanternfish:GEN_FAUNA\+'fish\/lanternfish\.png'/);
+  assert.match(js,/stripFrames:4/);
+  assert.match(js,/\['lanternfish',12\]/);
+  assert.match(js,/\['slipperLobster',5\]/);
+  assert.match(js,/pelagicSteak/);
+  assert.match(js,/crustaceanGrill/);
+  assert.match(js,/triggerfish:\{sense:195/);
 });
