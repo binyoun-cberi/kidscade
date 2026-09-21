@@ -374,7 +374,8 @@ test('Deep Diver v15 sonar guides off-screen targets',()=>{
 test('Deep Diver v15 requires safe return for all economic rewards',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
   assert.match(js,/recordDepth=ok\?Math\.max\(0,world\.maxDepth-previousBest\):0/);
-  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);\n  assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
+  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);
+  assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
   assert.match(js,/구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다/);
 });
 
