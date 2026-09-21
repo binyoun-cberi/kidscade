@@ -53,8 +53,11 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .class-door{right:2.5%;top:26%;width:52px;height:112px;border:4px solid #856546;border-bottom:0;border-radius:5px 5px 0 0;background:#d7bc93}
 .class-door:after{content:"";position:absolute;left:9px;top:50%;width:6px;height:6px;background:#594638;border-radius:50%}
 .class-shelf{left:3%;bottom:8%;width:100px;height:75px;border:4px solid #72563f;background:repeating-linear-gradient(#a87a4c 0 21px,#5f4938 21px 25px)}
-.fixed-desk{position:absolute;z-index:2;width:76px;height:45px;transform:translate(-50%,-50%);border:3px solid #72523a;background:var(--wood);border-radius:7px}
-.fixed-desk:after{content:"";position:absolute;left:14px;right:14px;top:8px;height:15px;background:#fffdf4;border:1px solid #cfc5b6;transform:skewX(-8deg)}
+.fixed-desk{position:absolute;width:70px;transform:translate(-50%,-50%);pointer-events:none}
+.desk-back{z-index:2;height:36px;border:3px solid #72523a;background:linear-gradient(#bb8a59,#ad7b4f);border-radius:7px 7px 5px 5px;box-shadow:0 2px 0 rgba(83,55,34,.12)}
+.desk-back:before{content:"";position:absolute;left:4px;right:4px;top:-4px;height:9px;border:2px solid #72523a;border-radius:6px;background:#c39666}
+.desk-paper{position:absolute;left:17px;right:17px;top:7px;height:12px;background:#fffdf4;border:1px solid #cfc5b6;transform:skewX(-7deg)}
+.desk-front{z-index:11;height:14px;margin-top:17px;border:3px solid #72523a;border-top-width:2px;border-radius:2px 2px 6px 6px;background:linear-gradient(#ae7b4f,#9e6d46);box-shadow:0 2px 0 rgba(83,55,34,.12)}
 .hall-lockers{left:4%;right:4%;top:22px;height:118px;display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
 .hall-lockers i{border:2px solid #756e65;border-radius:3px;background:#8da2ae;position:relative}
 .hall-lockers i:after{content:"";position:absolute;right:5px;top:48%;width:5px;height:2px;background:#4d565b}
@@ -79,70 +82,88 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .cafe-counter:after{content:"배식대";position:absolute;left:50%;top:23px;transform:translateX(-50%);font-size:16px;font-weight:800;color:#5a4636}
 .cafe-table{position:absolute;z-index:2;width:190px;height:70px;border:4px solid #75583e;border-radius:35px;background:#c59461;transform:translate(-50%,-50%)}
 .cafe-table:before,.cafe-table:after{content:"";position:absolute;left:18px;right:18px;height:10px;border-radius:10px;background:#8a6c50}.cafe-table:before{top:-18px}.cafe-table:after{bottom:-18px}
-.teacher{position:absolute;z-index:12;width:62px;height:92px;text-align:center;transform:translate(-50%,-50%);transition:left .13s linear,top .13s linear;pointer-events:none}
-.teacher-avatar-mount{display:block;width:54px;height:78px;margin:0 auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.16))}
-.teacher-label{display:inline-block;position:absolute;left:50%;bottom:0;transform:translateX(-50%);padding:1px 4px;border:1px solid var(--line);border-radius:5px;background:#fff;font-size:10px;white-space:nowrap}
+.teacher{position:absolute;z-index:12;width:66px;height:98px;text-align:center;transform:translate(-50%,-50%);transition:left .13s linear,top .13s linear;pointer-events:none}
+.teacher-avatar-mount{display:block;width:58px;height:84px;margin:0 auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.18))}
+.teacher-avatar-mount .modular-avatar{transform:scale(1.08);transform-origin:50% 82%}
+.teacher-label{display:inline-block;position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);padding:2px 5px;border:2px solid #7d6a54;border-radius:6px;background:#fff;font-size:10px;font-weight:800;white-space:nowrap}
 .teacher.moving .modular-avatar{animation:avatarBob .34s infinite alternate}
 .teacher.busy:not(.moving) .mod-arm.right{transform:rotate(-18deg)}
 
 .interaction-links{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:visible}
-.interaction-links line{vector-effect:non-scaling-stroke;stroke-width:2;stroke-linecap:round;opacity:.62}
+.interaction-links line{vector-effect:non-scaling-stroke;stroke-width:1.6;stroke-linecap:round;opacity:.46}
 .interaction-links line.neutral{stroke:#6f7f8d;stroke-dasharray:5 5}
 .interaction-links line.positive{stroke:#5f8a67;stroke-dasharray:4 4}
 .interaction-links line.warning{stroke:#b47a4d;stroke-dasharray:3 4}
 .interaction-links line.danger{stroke:#aa5555;stroke-width:3;stroke-dasharray:2 3;opacity:.8}
 
-.student{position:absolute;z-index:10;width:62px;height:88px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
+.student{position:absolute;z-index:10;width:56px;height:82px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
 .student.selected .sprite-wrap{outline:3px solid var(--accent);outline-offset:2px;border-radius:9px}
-.sprite-wrap{position:absolute;left:50%;top:0;width:52px;height:76px;transform:translateX(-50%);display:flex;align-items:flex-start;justify-content:center;overflow:visible;transform-origin:50% 70%}
+.sprite-wrap{position:absolute;left:50%;top:1px;width:48px;height:72px;transform:translateX(-50%);overflow:visible;transform-origin:50% 72%}
 .student.face-left .sprite-wrap{transform:translateX(-50%) scaleX(-1)}
-.student.seated .sprite-wrap{height:56px;top:11px;overflow:hidden}
-.student.seated .modular-avatar{transform:translateY(6px) scale(.90)}
+.student.seated .sprite-wrap{top:8px;height:61px}
 
-.modular-avatar{position:relative;width:52px;height:76px;transform-origin:50% 78%;pointer-events:none}
+.modular-avatar{position:absolute;left:0;top:0;width:48px;height:72px;transform-origin:24px 60px;pointer-events:none}
+.modular-avatar[hidden]{display:none!important}
 .modular-avatar img{position:absolute;display:block;object-fit:contain;user-select:none;-webkit-user-drag:none}
-.mod-part.hair{left:5%;top:-2%;width:90%;height:43%;z-index:9}
-.mod-part.head{left:18%;top:5%;width:64%;height:34%;z-index:4}
-.mod-part.face{left:30%;top:14%;width:40%;height:20%;z-index:8}
-.mod-part.neck{left:38%;top:32%;width:24%;height:8%;z-index:3}
-.mod-part.shirt{left:20%;top:34%;width:60%;height:39%;z-index:5}
-.mod-part.pants{left:27%;top:64%;width:46%;height:12%;z-index:7}
 
-.mod-arm,.mod-leg{position:absolute;pointer-events:none;transform-origin:50% 8%;z-index:3}
-.mod-arm{top:37%;width:30%;height:31%}
-.mod-arm.left{left:3%;transform:rotate(8deg)}
-.mod-arm.right{right:3%;transform:rotate(-8deg)}
-.mod-arm .skin-arm{left:0;top:0;width:100%;height:100%;z-index:1}
-.mod-arm .sleeve{left:6%;top:-2%;width:70%;height:68%;z-index:3}
-.mod-arm .hand{left:48%;bottom:-4%;width:38%;height:31%;z-index:4}
+.mod-part.hair-back{left:6px;top:0;width:36px;height:28px;z-index:2}
+.mod-part.head{left:11px;top:5px;width:26px;height:23px;z-index:4}
+.mod-part.face{left:16px;top:11px;width:16px;height:11px;z-index:8}
+.mod-part.hair-front{left:6px;top:0;width:36px;height:28px;z-index:9;clip-path:inset(0 0 46% 0)}
+.mod-part.neck{left:19px;top:25px;width:10px;height:7px;z-index:3}
+.mod-part.shirt{left:10px;top:29px;width:28px;height:25px;z-index:5}
+.mod-part.pants{left:15px;top:50px;width:18px;height:8px;z-index:7}
+
+.mod-arm,.mod-leg{position:absolute;pointer-events:none;transform-origin:50% 7%;z-index:3}
+.mod-arm{top:31px;width:15px;height:24px}
+.mod-arm.left{left:3px;transform:rotate(7deg)}
+.mod-arm.right{right:3px;transform:rotate(-7deg)}
+.mod-arm .skin-arm{left:1px;top:0;width:13px;height:23px;z-index:1}
+.mod-arm .sleeve{left:2px;top:0;width:10px;height:15px;z-index:3}
+.mod-arm .hand{left:7px;bottom:-1px;width:7px;height:8px;z-index:4}
 .mod-arm.right img{transform:scaleX(-1)}
 
-.mod-leg{top:68%;width:26%;height:29%;z-index:2}
-.mod-leg.left{left:25%}
-.mod-leg.right{right:25%}
-.mod-leg .leg-img{left:0;top:0;width:100%;height:86%;z-index:2}
-.mod-leg .shoe{left:0;bottom:0;width:100%;height:25%;z-index:4}
+.mod-leg{top:53px;width:12px;height:19px;z-index:2}
+.mod-leg.left{left:13px}
+.mod-leg.right{right:13px}
+.mod-leg .leg-img{left:0;top:0;width:12px;height:17px;z-index:2}
+.mod-leg .shoe{left:-1px;bottom:0;width:14px;height:6px;z-index:4}
 .mod-leg.right .leg-img,.mod-leg.right .shoe{transform:scaleX(-1)}
 
-.student-desk-mask{display:none;position:absolute;z-index:12;left:7px;right:7px;bottom:20px;height:17px;border:0;border-top:3px solid #72523a;border-radius:0 0 6px 6px;background:linear-gradient(#b98552,#a9784c);pointer-events:none}
-.student.seated .student-desk-mask{display:block}
+.seated-rig{top:4px}
+.seated-rig .seated-lap{position:absolute;left:13px;top:50px;width:22px;height:8px;z-index:4;overflow:hidden}
+.seated-rig .seated-lap .pants{left:1px;top:0;width:20px;height:8px}
+.student.seated .seated-rig .mod-arm{top:32px}
+.student.seated .seated-rig .mod-arm.left{left:4px;transform:rotate(-48deg)}
+.student.seated .seated-rig .mod-arm.right{right:4px;transform:rotate(48deg)}
+.student.seated .seated-rig .hand{bottom:-2px}
+.student.seated .standing-rig{display:none!important}
+.student:not(.seated) .seated-rig{display:none!important}
 
-.student.locomotion .modular-avatar{animation:avatarBob .34s infinite alternate}
-.student.locomotion .mod-leg.left{animation:legForward .42s infinite alternate}
-.student.locomotion .mod-leg.right{animation:legBack .42s infinite alternate}
-.student.locomotion .mod-arm.left{animation:armBack .42s infinite alternate}
-.student.locomotion .mod-arm.right{animation:armForward .42s infinite alternate}
-.student.run .modular-avatar{animation-duration:.22s}
-.student.run .mod-leg.left,.student.run .mod-leg.right,.student.run .mod-arm.left,.student.run .mod-arm.right{animation-duration:.26s}
+.student.locomotion .standing-rig{animation:avatarBob .34s infinite alternate}
+.student.locomotion .standing-rig .mod-leg.left{animation:legForward .42s infinite alternate}
+.student.locomotion .standing-rig .mod-leg.right{animation:legBack .42s infinite alternate}
+.student.locomotion .standing-rig .mod-arm.left{animation:armBack .42s infinite alternate}
+.student.locomotion .standing-rig .mod-arm.right{animation:armForward .42s infinite alternate}
+.student.run .standing-rig{animation-duration:.22s}
+.student.run .standing-rig .mod-leg.left,.student.run .standing-rig .mod-leg.right,.student.run .standing-rig .mod-arm.left,.student.run .standing-rig .mod-arm.right{animation-duration:.26s}
 
-.student.raise_hand .mod-arm.right,.student.report_incident .mod-arm.right,.student.help .mod-arm.right{transform:rotate(-128deg)}
+/* Classroom pose presets */
+.student.work.seated .mod-arm.left{transform:rotate(-55deg)}
+.student.work.seated .mod-arm.right,.student.doodle.seated .mod-arm.right{transform:rotate(58deg)}
+.student.read.seated .mod-arm.left{transform:rotate(-38deg)}
+.student.read.seated .mod-arm.right{transform:rotate(38deg)}
+.student.attend.seated .mod-arm.left{transform:rotate(-8deg)}
+.student.attend.seated .mod-arm.right{transform:rotate(8deg)}
+.student.pair_work.seated .mod-arm.right,.student.talk.seated .mod-arm.right{animation:seatedTalk .55s infinite alternate}
+.student.raise_hand .mod-arm.right,.student.report_incident .mod-arm.right,.student.help .mod-arm.right{transform:rotate(-128deg)!important}
 .student.present .mod-arm.left,.student.present .mod-arm.right{animation:presentGesture .65s infinite alternate}
-.student.talk .mod-arm.right,.student.pair_work .mod-arm.right,.student.tease .mod-arm.right,.student.argue .mod-arm.right,.student.shout_teacher .mod-arm.right,.student.insult_teacher .mod-arm.right{animation:talkArm .55s infinite alternate}
+.student.talk:not(.seated) .mod-arm.right,.student.pair_work:not(.seated) .mod-arm.right,.student.tease .mod-arm.right,.student.argue .mod-arm.right,.student.shout_teacher .mod-arm.right,.student.insult_teacher .mod-arm.right{animation:talkArm .55s infinite alternate}
 .student.help_peer .mod-arm.left,.student.comfort .mod-arm.left,.student.defend_peer .mod-arm.left{transform:rotate(38deg)}
 .student.compete .mod-arm.left,.student.compete .mod-arm.right,.student.threaten .mod-arm.left,.student.threaten .mod-arm.right{transform:rotate(24deg)}
 .student.hit .mod-arm.right,.student.shove .mod-arm.right,.student.throw_at_teacher .mod-arm.right{transform:rotate(-54deg)}
-.student.sleep .modular-avatar{transform:translateY(7px) rotate(10deg) scale(.9);filter:brightness(.9)}
-.student.rejected .modular-avatar,.student.hurt .modular-avatar{transform:translateY(3px) rotate(-6deg);filter:brightness(.9)}
+.student.sleep .seated-rig{transform:translateY(5px) rotate(7deg) scale(.94);filter:brightness(.9)}
+.student.rejected .standing-rig,.student.hurt .standing-rig{transform:translateY(3px) rotate(-6deg);filter:brightness(.9)}
 .student.stretch .mod-arm.left{transform:rotate(150deg)}
 .student.stretch .mod-arm.right{transform:rotate(-150deg)}
 
@@ -152,6 +173,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 @keyframes armForward{to{transform:rotate(28deg)}}
 @keyframes armBack{to{transform:rotate(-28deg)}}
 @keyframes talkArm{to{transform:rotate(-34deg)}}
+@keyframes seatedTalk{to{transform:rotate(18deg)}}
 @keyframes presentGesture{to{transform:rotate(-48deg)}}
 
 .student-name{position:absolute;left:50%;bottom:-2px;z-index:22;transform:translateX(-50%);font-size:8px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
@@ -212,9 +234,10 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   .metrics{grid-template-columns:1fr 1fr}
   .report-cols{grid-template-columns:1fr}
   .panel{margin-top:0}
-  .student{width:54px;height:80px}
-  .sprite-wrap{width:46px;height:70px}
-  .modular-avatar{width:46px;height:68px}
+  .student{width:50px;height:76px}
+  .sprite-wrap{transform:translateX(-50%) scale(.92);transform-origin:50% 72%}
+  .student.face-left .sprite-wrap{transform:translateX(-50%) scaleX(-1) scale(.92)}
+  .teacher{transform:translate(-50%,-50%) scale(.94);transform-origin:50% 70%}
   .instruction-actions{grid-template-columns:repeat(7,108px)}
   .student-selected .panel{
     position:fixed;
