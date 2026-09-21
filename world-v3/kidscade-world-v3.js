@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=15';
-import {createTownEconomy} from './kidscade-world-economy.js?v=11';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=5';
+import {createTownEconomy} from './kidscade-world-economy.js?v=12';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=6';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
-import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=2';
+import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=3';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -409,7 +409,10 @@ function helpPanel(){
     '<div class="helpItem"><b>❤ 생존</b>왼쪽 구는 체력, 오른쪽 구는 허기예요. 음식과 휴식으로 관리해요.</div>'+
     '<div class="helpItem"><b>📬 바로가기</b>위쪽의 📬 택배와 📋 오늘 할 일을 어디서든 바로 눌러 확인할 수 있어요.</div>'+
     '<div class="helpItem"><b>🧰 직접 제작</b>농장 제작대에서 재료를 3×3 칸에 직접 놓아 도구·반도체·TV를 만들어요.</div>'+
-    '<div class="helpItem"><b>🏗️ 마을 성장</b>씨앗으로 밭·낚시터·광산·기술 공방을 발전시키면 월드에서 실제로 가능한 일이 늘어나요.</div>'+
+    '<div class="helpItem"><b>🏗️ 마을 성장</b>씨앗으로 밭·과수원·목장·낚시·광산·집을 키우면 월드의 모습과 생활이 달라져요.</div>'+
+    '<div class="helpItem"><b>💧 물 생활</b>처음엔 강물을 들고 와요. 우물 → 펌프 → 집 수도 순서로 점점 편해집니다.</div>'+
+    '<div class="helpItem"><b>🎒 수납</b>처음 가방은 8칸뿐이에요. 집 상자에 내려놓고 더 좋은 가방과 수납가구를 마련하세요.</div>'+
+    '<div class="helpItem"><b>🪚 목수공방</b>마트 재료와 직접 모은 자원으로 침대·옷장·주방가구를 만들어 집에 배치해요.</div>'+
     '</div><p><b>현재 지역 이름</b>을 누르면 씨앗버스 지도가 열립니다. 자원 총량과 음식은 가방에서 확인하세요.</p>');
 }
 function activateQuickSlot(key){
