@@ -669,9 +669,30 @@ function worldMapPanel(){
   const rows=Object.entries(TRAVEL_POINTS).map(([id,d])=>'<button data-world-travel="'+id+'">'+d.name+'</button>').join(' ');
   openPanel('<h2>🗺️ 씨앗버스 빠른 이동</h2><p>큰 월드를 오래 걷지 않아도 돼요. 가고 싶은 구역을 바로 선택하세요.</p><div style="display:flex;gap:7px;flex-wrap:wrap">'+rows+'</div>');
 }
+function nextHomesteadGoal(){
+  const p=prog(),d=devState(),h=p.homestead,i=inv();
+  if((i.water||0)<=0&&d.waterLevel===0)return {icon:'💧',title:'강물 한 통 떠오기',text:'북쪽 강가에서 물을 떠와 첫 밭과 요리에 써보세요.'};
+  if(h.kitchenLevel<1)return {icon:'🔥',title:'집 앞 캠프파이어 만들기',text:'농장 3×3 제작대에서 돌과 목재를 직접 배치해 캠프파이어를 만드세요.'};
+  if(!Object.values(p.crops||{}).some(v=>v&&v.phase&&v.phase!=='empty'))return {icon:'🥕',title:'첫 작물 키우기',text:'밭 1칸에 씨앗을 심고 가져온 물을 주세요.'};
+  if(d.waterLevel<1)return {icon:'🪣',title:'우물 만들기',text:'강까지 왕복하지 않도록 집 앞 우물을 건설하세요.'};
+  if(d.carpenterLevel<1)return {icon:'🪚',title:'목수공방 세우기',text:'생활 가구를 직접 만들 수 있는 목수공방을 열어보세요.'};
+  if((p.housing.owned.bedSingle||0)<=0&&!p.housing.placed.some(v=>v.key==='bedSingle'))return {icon:'🛏️',title:'바닥 이불 졸업하기',text:'목수공방에서 나무 침대를 만들어 집에 배치하세요.'};
+  if(d.houseLevel<2)return {icon:'🏠',title:'집을 두 칸으로 확장하기',text:'목재와 못을 모아 잠긴 옆방을 열어보세요.'};
+  if(d.orchardLevel<1)return {icon:'🍎',title:'첫 과수원 만들기',text:'과수원 터를 열어 매일 다시 열리는 사과나무를 심으세요.'};
+  if(d.ranchLevel<1)return {icon:'🐄',title:'작은 목장 만들기',text:'울타리를 세워 첫 목장 동물을 데려올 자리를 만드세요.'};
+  if(d.fishingLevel<1)return {icon:'🎣',title:'집 연못 만들기',text:'집 근처에서도 낚시할 수 있도록 작은 연못을 조성하세요.'};
+  if(d.waterLevel<2)return {icon:'🚰',title:'수동 펌프 설치하기',text:'우물물을 더 빠르게 채우는 수동 펌프로 발전하세요.'};
+  if(d.houseLevel<3)return {icon:'🏡',title:'큰 집 만들기',text:'거실과 주방을 꾸밀 수 있도록 집을 마지막 단계로 넓히세요.'};
+  if(d.waterLevel<3)return {icon:'🚿',title:'집까지 수도 연결하기',text:'구리·전선·유리를 준비해 수도를 집까지 끌어오세요.'};
+  if(!p.housing.placed.some(v=>v.key==='kitchenSink'))return {icon:'🚰',title:'싱크대·수도꼭지 놓기',text:'목수공방에서 싱크대를 만들어 집에 배치하면 물 운반에서 해방돼요.'};
+  if(d.techLevel<2)return {icon:'💾',title:'반도체 시대 열기',text:'광산을 발전시키고 기술 공방 2단계에서 반도체를 만들어보세요.'};
+  if((p.housing.owned.television||0)<=0&&!p.housing.placed.some(v=>v.key==='television'))return {icon:'📺',title:'내 손으로 TV 만들기',text:'반도체·금·철·목재를 조합해 모던 TV를 완성하세요.'};
+  return {icon:'⭐',title:'내 방식대로 마을 키우기',text:'과수원·목장·농장·광산을 원하는 순서로 5성 마을까지 발전시켜 보세요.'};
+}
+
 function homeHubPanel(){
-  const s=Meta?.summary?.()||{pendingMail:0,trophies:0,dailyDone:0,dailyTotal:3};
-  openPanel('<h2>🌱 씨앗 생활 보드 · '+ '⭐'.repeat(villageStars())+'</h2><p>오늘 할 일과 Kidscade에서 가져온 보상을 여기서 한 번에 확인해요.</p>'+
+  const s=Meta?.summary?.()||{pendingMail:0,trophies:0,dailyDone:0,dailyTotal:3},goal=nextHomesteadGoal();
+  openPanel('<h2>🌱 씨앗 생활 보드 · '+ '⭐'.repeat(villageStars())+'</h2><div class="item" style="margin-bottom:10px"><b>'+goal.icon+' 다음 개척 목표 · '+goal.title+'</b><div>'+goal.text+'</div></div><p>오늘 할 일과 Kidscade에서 가져온 보상을 여기서 한 번에 확인해요.</p>'+
     '<div class="grid">'+
     '<div class="item"><b>📬 게임 택배</b><div>도착 '+s.pendingMail+'개</div><button data-world-hub="mail">열기</button></div>'+
     '<div class="item"><b>📋 오늘 할 일</b><div>'+s.dailyDone+'/'+s.dailyTotal+' 완료</div><button data-world-hub="daily">보기</button></div>'+
@@ -1012,13 +1033,10 @@ function claimStarterKit(){
   toast('초보자 보급: 목재 +5 · 돌 +5! 이제 돌도끼와 돌곡괭이를 만들 수 있어요.');
 }
 function showStarterHintOnce(){
-  const p=prog(),i=inv();
-  if(p.starterHintSeen)return;
-  const hasAxe=(p.tools.axe?.dur||0)>0,hasPick=(p.tools.pick?.dur||0)>0;
-  const enoughForBoth=(i.wood||0)>=5&&(i.stone||0)>=5;
-  if(hasAxe&&hasPick||enoughForBoth){p.starterHintSeen=true;persist();return;}
+  const p=prog();if(p.starterHintSeen)return;
   p.starterHintSeen=true;persist();
-  setTimeout(()=>toast('첫 도구 만들기: 집 주변 나뭇가지·작은 돌을 맨손으로 줍거나, 집 앞 초보자 보급상자를 열어보세요.'),650);
+  const goal=nextHomesteadGoal();
+  setTimeout(()=>toast('첫 개척 목표 · '+goal.icon+' '+goal.title),650);
 }
 function isBlocked(nx,nz){
   const bounds=mode==='outdoor'?WORLD_BOUNDS:currentHouseBounds();
