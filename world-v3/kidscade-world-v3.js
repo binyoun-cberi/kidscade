@@ -511,6 +511,17 @@ function developmentRequirement(track,nextLevel){
   return '';
 }
 function developmentMaterials(def,currentLevel){return def.reqs?.[currentLevel]||{}}
+function developmentTrackDiscovered(id){
+  const d=devState(),h=prog().homestead;
+  if(['farm','water','house'].includes(id))return true;
+  if(id==='carpenter')return h.campfireBuilt||d.waterLevel>=1||d.carpenterLevel>0;
+  if(id==='stone'||id==='iron')return d.carpenterLevel>=1||d[id==='stone'?'stoneMineLevel':'ironMineLevel']>1;
+  if(id==='orchard')return d.houseLevel>=2||d.orchardLevel>0;
+  if(id==='ranch')return d.orchardLevel>=1||d.ranchLevel>0;
+  if(id==='fishing')return d.ranchLevel>=1||d.fishingLevel>0;
+  if(id==='tech')return (d.stoneMineLevel>=2&&d.ironMineLevel>=2)||d.techLevel>1;
+  return false;
+}
 function developmentMaterialsText(req){
   const rows=Object.entries(req||{});return rows.length?rows.map(([k,v])=>itemName(k)+' '+v).join(' · '):'추가 재료 없음';
 }
@@ -519,16 +530,16 @@ function payDevelopmentMaterials(req){const i=inv();Object.entries(req||{}).forE
 function developmentPanel(){
   const d=devState(),seeds=Bridge?.readSeeds?.()||0,stars=villageStars();
   const groups=['생산','생활','자원·기술'].map(group=>{
-    const cards=Object.entries(DEVELOPMENT_TRACKS).filter(([,def])=>def.group===group).map(([id,def])=>{
+    const cards=Object.entries(DEVELOPMENT_TRACKS).filter(([id,def])=>def.group===group&&developmentTrackDiscovered(id)).map(([id,def])=>{
       const level=d[def.key],maxed=level>=def.max,next=Math.min(def.max,level+1),cost=maxed?0:(def.costs[level]||0),req=maxed?{}:developmentMaterials(def,level),gate=maxed?'':developmentRequirement(id,next);
       const enough=hasDevelopmentMaterials(req),button=maxed?'최대 단계':gate?gate:(!enough?'재료 부족':'🌱 '+cost+' 투자');
       return '<div class="item"><b>'+def.icon+' '+def.name+' '+level+'/'+def.max+'</b><div>'+developmentEffect(def,level)+'</div>'+
         (maxed?'':'<small>다음: '+developmentEffect(def,next)+'<br>'+developmentMaterialsText(req)+'</small><br>')+
         '<button data-dev-upgrade="'+id+'" '+(maxed||gate||!enough?'disabled':'')+'>'+button+'</button></div>';
     }).join('');
-    return '<h3>'+group+'</h3><div class="grid">'+cards+'</div>';
+    return cards?'<h3>'+group+'</h3><div class="grid">'+cards+'</div>':'';
   }).join('');
-  openPanel('<h2>🏗️ 씨앗마을 성장 · '+ '⭐'.repeat(stars)+'</h2><p>씨앗과 직접 모은 재료를 투자하면 <b>월드의 모습과 생활 방식 자체</b>가 달라져요. 보유 🌱 '+seeds+'</p>'+groups+'<p style="font-size:12px">강물을 뜨던 생활이 수도로 바뀌고, 빈 땅은 과수원·목장으로, 단칸방은 큰 집으로 성장합니다.</p>');
+  openPanel('<h2>🏗️ 씨앗마을 성장 · '+ '⭐'.repeat(stars)+'</h2><p>지금 생활에서 자연스럽게 발견한 발전만 보여요. 새 시설은 개척을 이어가면 하나씩 나타납니다. · 보유 🌱 '+seeds+'</p>'+groups+'<p style="font-size:12px">처음부터 완성된 마을이 아니라, 불편한 생활을 하나씩 해결하며 월드가 실제로 커집니다.</p>');
 }
 function upgradeDevelopment(track){
   const def=DEVELOPMENT_TRACKS[track],d=devState();if(!def)return;
@@ -734,9 +745,17 @@ function cosmeticShopPanel(){
   }).join('');
   openPanel('<h2>✨ 씨앗 꾸미기 상점</h2><p>다른 게임에서 번 <b>공용 씨앗</b>으로 월드 전용 꾸미기를 해금해요. 능력치는 오르지 않고 내 공간만 더 특별해집니다.</p><div class="grid">'+cards+'</div><button data-world-cosmetic-clear="1">오라 끄기</button>');
 }
+function travelPointDiscovered(id){
+  const d=devState();
+  if(['home','farm','forest','quarry','river','camp','city'].includes(id))return true;
+  if(id==='orchard')return d.orchardLevel>0;
+  if(id==='ranch')return d.ranchLevel>0;
+  if(id==='beach')return d.fishingLevel>=3;
+  return false;
+}
 function worldMapPanel(){
-  const rows=Object.entries(TRAVEL_POINTS).map(([id,d])=>'<button data-world-travel="'+id+'">'+d.name+'</button>').join(' ');
-  openPanel('<h2>🗺️ 씨앗버스 빠른 이동</h2><p>큰 월드를 오래 걷지 않아도 돼요. 가고 싶은 구역을 바로 선택하세요.</p><div style="display:flex;gap:7px;flex-wrap:wrap">'+rows+'</div>');
+  const rows=Object.entries(TRAVEL_POINTS).filter(([id])=>travelPointDiscovered(id)).map(([id,d])=>'<button data-world-travel="'+id+'">'+d.name+'</button>').join(' ');
+  openPanel('<h2>🗺️ 씨앗버스 빠른 이동</h2><p>직접 발견하거나 만들어 낸 생활 구역만 지도에 표시돼요.</p><div style="display:flex;gap:7px;flex-wrap:wrap">'+rows+'</div>');
 }
 function nextHomesteadGoal(){
   const p=prog(),d=devState(),h=p.homestead,i=inv();
@@ -1869,10 +1888,10 @@ function updateSurvival(dt,moving){
   s.hunger=Math.max(0,s.hunger-dt*(moving?.085:.055)*hungerMul);
   townEconomy?.tick?.(dt);
   if(s.hunger<=0)p.energy=Math.max(0,p.energy-dt*.55);
-  if(night&&mode==='outdoor'){
-    const nearFire=Math.hypot(player.x+37.5,player.z-24)<4.2;
-    const nightMul=pet==='cat' ? .68 : 1;
-    if(!nearFire)p.energy=Math.max(0,p.energy-dt*.04*nightMul);
+  // Night changes lighting and activity, but simply being outdoors no longer causes damage.
+  // Survival pressure comes from hunger and work so the world can still feel like a life sim.
+  if(night&&mode==='outdoor'&&pet==='cat'){
+    s.hunger=Math.min(100,s.hunger+dt*.006);
   }
   const hour=s.time/60;
   const daylight=Math.max(.16,Math.min(1,Math.sin(((hour-5)/15)*Math.PI)));
