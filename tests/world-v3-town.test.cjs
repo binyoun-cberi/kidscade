@@ -146,7 +146,7 @@ test('starter resources provide six hand pickups per material and one-time guida
 test('World v3 furnishing supports persistent craft buy place rotate move and store loops',()=>{
   assert.match(storage,/housing:\{version:4,owned:\{\},placed:\[\],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1\}/);
   assert.match(runtime,/createFurnishingSystem/);
-  assert.match(runtime,/가구 창고 · 집 꾸미기/);
+  assert.match(furnishing,/가구 창고 · 집 꾸미기/);
   assert.match(runtime,/canPlaceFurniture/);
   assert.match(furnishing,/FURNITURE_CATALOG/);
   assert.match(furnishing,/data-furnish-rotate/);
