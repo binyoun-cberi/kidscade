@@ -397,3 +397,13 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 @media(max-width:560px){
  .stockPremium{font-size:6.5px}
 }
+
+
+/* v34 behavior-driven hunt */
+#lightBtn.off,#lightMobile.off{opacity:.72;filter:saturate(.55)}
+#lightBtn:not(.off){box-shadow:0 0 0 1px rgba(157,236,255,.18),0 0 14px rgba(131,232,255,.08)}
+#rightHud #lightBtn{padding:5px 8px;font-size:8px}
+#observeSub{line-height:1.45}
+@media(max-width:760px){
+ #rightHud #lightBtn{display:none}
+}
