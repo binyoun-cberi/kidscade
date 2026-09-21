@@ -190,7 +190,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   var teacher={x:50,y:24};
 
   function pairKey(a,b){return [a,b].sort().join("|")}
-  function friendship(a,b){return friends[pairKey(a.name,b.name)]===undefined?.34:friends[pairKey(a.name,b.name)]}
+  function friendship(a,b){return friends[pairKey(a.name,b.name)]===undefined ? .34 : friends[pairKey(a.name,b.name)]}
   function current(){return schedule[Math.min(periodIndex,schedule.length-1)]}
   function gameMinute(){return Math.floor(gameSec/60)}
   function fmtMin(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
