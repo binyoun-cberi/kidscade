@@ -17,14 +17,6 @@
         <option value="4">×4</option>
       </select>
     </label>
-    <label>수업 방식
-      <select id="lesson" aria-label="수업 방식">
-        <option value="lecture">설명 + 개별문제</option>
-        <option value="hands">조작활동</option>
-        <option value="pair">짝활동</option>
-        <option value="quiz">퀴즈형 수업</option>
-      </select>
-    </label>
     <button id="showReport" type="button">현재 교시 결과 보기</button>
     <button id="reset" type="button">하루 다시 시작</button>
   </div>
@@ -43,6 +35,19 @@
       <div id="locationName" class="period">교실</div>
       <div class="sub">교사가 보고 있는 공간</div>
     </div>
+  </section>
+
+  <section id="lessonFlow" class="lesson-flow" hidden>
+    <div class="lesson-flow-head">
+      <div>
+        <div class="lesson-kicker">수업 진행</div>
+        <strong id="lessonPhaseName">수업 준비</strong>
+        <div id="lessonPhaseDesc" class="sub">학생들이 준비되면 수업 행동을 선택하세요.</div>
+      </div>
+      <div id="lessonPhaseTimer" class="lesson-phase-timer">—</div>
+    </div>
+    <div id="instructionActions" class="instruction-actions" aria-live="polite"></div>
+    <div id="lessonHistory" class="lesson-history"></div>
   </section>
 
   <nav class="scene-nav" aria-label="학교 공간 이동">
