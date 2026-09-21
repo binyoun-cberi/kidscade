@@ -71,7 +71,7 @@ const CONTRACTS=[
  {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 기록하고 고대 표식판을 회수하세요.',reward:2700,unlock:2,target:'ruins',recommended:430},
  {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰 골목을 지나 침몰선의 항해기록 장치를 회수하세요.',reward:3900,unlock:3,target:'wreck',recommended:575},
  {id:'abyss',title:'05 · 심해 생물 조사',desc:'600m 아래 포식자 해구에서 대형 심해 상어를 A등급 이상 촬영하세요.',reward:5600,unlock:4,target:'abyss',recommended:760},
- {id:'hadal',title:'06 · 영구 암흑 해구 조사',desc:'고래 낙하 지대·심해 크레바스·해저 화산 분화구를 모두 통과하고 심해 아귀나 대왕등각류를 A등급 이상 촬영하세요.',reward:8200,unlock:5,target:'hadal',recommended:1080},
+ {id:'hadal',title:'06 · 영구 암흑 해구 조사',desc:'고래 낙하 지대·심해 크레바스·해저 화산 분화구를 모두 통과하고 심해 아귀나 대왕등각류를 A등급 이상 촬영하세요.',reward:8200,unlock:5,target:'hadal',recommended:2200},
  {id:'harvest',title:'07 · 오늘의 해조 식재료 조사',desc:'미역·다시마·성게를 각각 1개 이상 확보하세요. 식당 신메뉴 연구용 의뢰입니다.',reward:2400,unlock:2,target:'kelp',recommended:260}
 ];
 const UPGRADES={
@@ -156,7 +156,7 @@ const SPECIES={
  brown:{name:'갈색 난파어',img:'brown',depth:[280,585],weight:1.7,value:280,protected:false,rare:false,behavior:'territorial',speed:60,damage:8,catchMethods:['harpoon'],catchDifficulty:2},
  dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[245,720],weight:1.6,value:360,protected:false,rare:true,behavior:'territorial',speed:92,damage:10,catchMethods:['harpoon'],catchDifficulty:3},
  hunter:{name:'큰이빨 포식어',img:'fishBig',animated:true,fw:48,fh:32,frames:4,depth:[300,750],weight:2.8,value:610,protected:false,rare:true,behavior:'predator',speed:112,damage:14,catchMethods:['harpoon'],catchDifficulty:4},
- angler:{name:'심해 아귀',img:'genDeepAngler',stripFrames:4,stripFps:4,depth:[430,755],weight:2.4,value:760,protected:false,rare:true,behavior:'ambush',speed:86,damage:15,draw:[104,60],catchMethods:['harpoon'],catchDifficulty:4},
+ angler:{name:'심해 아귀',img:'genDeepAngler',stripFrames:4,stripFps:4,depth:[430,2700],weight:2.4,value:760,protected:false,rare:true,behavior:'ambush',speed:86,damage:15,draw:[104,60],catchMethods:['harpoon'],catchDifficulty:4},
  giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[600,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:24},
  crab:{name:'바위게',img:'crab1',depth:[8,360],weight:.8,value:240,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:24,draw:[54,54],catchMethods:['gloves','trap'],catchDifficulty:2},
  mantis:{name:'공작갯가재',img:'mantis',depth:[45,160],weight:0,value:0,protected:true,rare:true,behavior:'territorial',motion:'crawlerBoss',speed:58,damage:19,draw:[112,64]},
@@ -164,13 +164,13 @@ const SPECIES={
  ochreStar:{name:'황토불가사리',img:'ochreStar',depth:[5,220],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[31,31]},
  crownStar:{name:'가시왕관불가사리',img:'crownStar',depth:[20,180],weight:0,value:0,protected:true,rare:true,behavior:'sessile',motion:'sessile',speed:0,draw:[34,34]},
  nautilus:{name:'앵무조개',img:'nautilus',depth:[115,390],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:31,draw:[63,41]},
- squid:{name:'심해 오징어',img:'squid',depth:[210,650],weight:2.2,value:620,protected:false,rare:true,behavior:'skittish',motion:'jet',speed:88,draw:[82,60],catchMethods:['net','trap'],catchDifficulty:3},
+ squid:{name:'심해 오징어',img:'squid',depth:[210,1800],weight:2.2,value:620,protected:false,rare:true,behavior:'skittish',motion:'jet',speed:88,draw:[82,60],catchMethods:['net','trap'],catchDifficulty:3},
  jelly:{name:'푸른 해파리',img:'jelly01',depth:[90,610],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'jelly',speed:22,damage:7,draw:[58,58]},
  whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150],spriteFacing:'left'},
  vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78],spriteFacing:'left'},
- shark2:{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8,depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
+ shark2:{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8,depth:[250,1500],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
  barracuda:{name:'바라쿠다',img:'genBarracuda',stripFrames:4,stripFps:7,depth:[35,390],weight:3.4,value:720,protected:false,rare:false,behavior:'predator',speed:124,damage:13,draw:[108,46],catchMethods:['harpoon'],catchDifficulty:4},
- giantIsopod:{name:'대왕등각류',img:'genIsopod',stripFrames:4,stripFps:4,depth:[500,755],weight:0,value:0,protected:true,rare:true,behavior:'crawler',motion:'crawler',speed:13,draw:[82,48]},
+ giantIsopod:{name:'대왕등각류',img:'genIsopod',stripFrames:4,stripFps:4,depth:[500,2700],weight:0,value:0,protected:true,rare:true,behavior:'crawler',motion:'crawler',speed:13,draw:[82,48]},
  bream:{name:'도미',img:'genBream',stripFrames:4,stripFps:6,depth:[8,210],weight:1.5,value:260,protected:false,rare:false,behavior:'school',speed:48,draw:[72,50],catchMethods:['net'],catchDifficulty:2},
  cuttlefish:{name:'갑오징어',img:'genCuttlefish',stripFrames:4,stripFps:6,depth:[55,430],weight:1.7,value:460,protected:false,rare:false,behavior:'skittish',motion:'jet',speed:76,draw:[78,54],catchMethods:['net','trap'],catchDifficulty:3},
  hermitCrab:{name:'소라게',img:'genHermit',stripFrames:4,stripFps:4,depth:[5,260],weight:.45,value:180,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:16,draw:[58,46],catchMethods:['gloves','trap'],catchDifficulty:1},
@@ -183,7 +183,7 @@ const SPECIES={
  scallop:{name:'가리비',img:'genScallop',stripFrames:4,stripFps:4,depth:[8,300],weight:.45,value:270,protected:false,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[44,36],catchMethods:['gloves'],catchDifficulty:1},
  seaCucumber:{name:'해삼',img:'genSeaCucumber',stripFrames:4,stripFps:3,depth:[20,520],weight:.65,value:310,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:8,draw:[64,34],catchMethods:['gloves'],catchDifficulty:2},
  seahorse:{name:'해마',img:'genSeahorse',stripFrames:4,stripFps:4,depth:[5,190],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:18,draw:[40,60]},
- coelacanth:{name:'실러캔스',img:'genCoelacanth',stripFrames:4,stripFps:5,depth:[520,755],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:38,draw:[108,58]},
+ coelacanth:{name:'실러캔스',img:'genCoelacanth',stripFrames:4,stripFps:5,depth:[520,2400],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:38,draw:[108,58]},
  skate:{name:'저서 가오리',img:'genSkate',stripFrames:4,stripFps:5,depth:[85,500],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'drifter',speed:34,draw:[96,64]},
  starfishStrip:{name:'별불가사리',img:'genStarfish',stripFrames:4,stripFps:3,depth:[5,260],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[46,46]},
  mackerel:{name:'고등어',img:'genMackerel',stripFrames:4,stripFps:8,depth:[8,250],weight:1.1,value:230,protected:false,rare:false,behavior:'school',speed:74,draw:[88,46],catchMethods:['net'],catchDifficulty:2},
@@ -193,7 +193,7 @@ const SPECIES={
  flounder:{name:'가자미',img:'genFlounder',stripFrames:4,stripFps:4,depth:[18,500],weight:1.4,value:310,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:12,draw:[94,52],catchMethods:['gloves','net'],catchDifficulty:2},
  shrimp:{name:'새우',img:'genShrimp',stripFrames:4,stripFps:7,depth:[8,360],weight:.25,value:150,protected:false,rare:false,behavior:'drifter',motion:'drifter',speed:32,draw:[86,48],catchMethods:['net','trap'],catchDifficulty:1},
  slipperLobster:{name:'부채새우',img:'genSlipperLobster',stripFrames:4,stripFps:4,depth:[80,560],weight:.85,value:430,protected:false,rare:true,behavior:'crawler',motion:'crawler',speed:10,draw:[96,46],catchMethods:['gloves','trap'],catchDifficulty:3},
- lanternfish:{name:'랜턴피시',img:'genLanternfish',stripFrames:4,stripFps:6,depth:[420,755],weight:.35,value:210,protected:false,rare:false,behavior:'school',speed:42,draw:[78,48],catchMethods:['net'],catchDifficulty:2},
+ lanternfish:{name:'랜턴피시',img:'genLanternfish',stripFrames:4,stripFps:6,depth:[420,2700],weight:.35,value:210,protected:false,rare:false,behavior:'school',speed:42,draw:[78,48],catchMethods:['net'],catchDifficulty:2},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
 const BIOME_POPULATIONS={
@@ -241,7 +241,7 @@ const ATTACK_PROFILE={
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
 const JELLY_SWIM_KEYS=Array.from({length:12},(_,i)=>'jelly'+String(i+1).padStart(2,'0'));
 const JELLY_ATTACK_KEYS=Array.from({length:12},(_,i)=>'jellyAtk'+String(i+1).padStart(2,'0'));
-const CONTRACT_DEPTH_RATING=[150,285,430,575,760,1080];
+const CONTRACT_DEPTH_RATING=[150,285,430,575,760,2200];
 const GRADE_SCORE={C:1,B:2,A:3,S:4};
 const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
 const COOK_ASSETS={
@@ -281,7 +281,7 @@ let restaurant=null,dockMissionId=null,dockTab='missions';
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rnd=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t;
-const depthOf=y=>Math.max(0,(y-WORLD.surface)/WORLD.scaleDepth);
+const depthOf=y=>{const shallowEnd=(4200-WORLD.surface)/WORLD.scaleDepth;if(y<=4200)return Math.max(0,(y-WORLD.surface)/WORLD.scaleDepth);return shallowEnd+Math.max(0,y-4200)/1.2};
 const zoneForY=y=>ZONES.find(z=>y>=z.y0&&y<z.y1)||ZONES[ZONES.length-1];
 const money=n=>Math.round(n).toLocaleString('ko-KR')+'원';
 function stats(){return{oxygen:105+meta.up.oxygen*15,speed:168*(1+meta.up.fins*.065),bag:8+meta.up.bag*3,catchCap:CATCH_CAP_LEVELS[clamp(meta.up.catchCap||0,0,CATCH_CAP_LEVELS.length-1)],toolSlots:2+(meta.up.slots||0),camera:185+meta.up.camera*26,harpoon:300+meta.up.harpoon*42,sonar:Math.max(4,10-meta.up.sonar*1.15),armor:1-meta.up.suit*.11}}
@@ -964,7 +964,7 @@ function photoValue(f,grade){
  const sp=SPECIES[f.key],depth=depthOf(f.y),base=sp.rare?150:72,depthFactor=1+Math.min(1.15,depth/620*.9),sr=subRuleForY(f.y);
  const habitat=(sr.photo||1)*(sp.rare?(sr.rarePhoto||1):1);return Math.round(base*PHOTO_MULT[grade]*depthFactor*habitat)
 }
-function ratedDepth(){return 180+(meta.up.suit||0)*205}
+function ratedDepth(){const ratings=[180,420,720,1150,1850,2750];return ratings[clamp(meta.up.suit||0,0,ratings.length-1)]}
 function oxygenReserveStatus(){
  if(!world)return{code:'safe',label:'여유',ratio:9,need:0};const p=world.player,vertical=Math.max(0,p.y-WORLD.surface),travel=vertical/Math.max(95,world.st.speed*.74)*1.48;
  const z=zoneForY(p.y),rule=ZONE_RULES[z.id]||ZONE_RULES.reef,pressure=1+Math.min(.8,(world.pressureOver||0)/180*.45),load=1+clamp(world.bagWeight/Math.max(1,world.st.bag),0,1)*.12;
