@@ -408,6 +408,11 @@
     if(!model||!s||!s.knowledge||!s.knowledge[p.subject])return false;
     return Object.keys(model.concepts).some(function(k){return s.knowledge[p.subject][k].evidence>0});
   }
+  function diagnosticEvidenceCount(s){
+    var p=current(),model=subjectModel(p.subject);
+    if(!model||!s||!s.knowledge||!s.knowledge[p.subject])return 0;
+    return Object.keys(model.concepts).reduce(function(sum,k){return sum+s.knowledge[p.subject][k].evidence},0);
+  }
   function diagnosisSummary(s){
     var p=current(),model=subjectModel(p.subject);
     if(!model||!s.knowledge||!s.knowledge[p.subject])return [];
@@ -1670,6 +1675,19 @@
         log(s.name+"에게 확인 질문을 해 "+(ev?ev.label+" 관련 반응":"이해 정도")+"을(를) 살폈다.","learning",teacherScene);
       }
     },
+    probeConcept:{
+      id:"probeConcept",category:"observe",label:"짧은 진단문항 제시",duration:40,near:true,repeatPenalty:.03,
+      desc:"비슷한 개념을 다른 형태로 한 번 더 물어 같은 어려움이 반복되는지 확인합니다. 정답을 가르치는 행동은 아닙니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.observedWork||hasDiagnosticEvidence(s))},
+      recommended:function(s){return diagnosticEvidenceCount(s)===1},
+      effect:function(s,m){
+        s.observation+=1;s.focus=clamp(s.focus+.018*m);
+        var ev=recordDiagnosticEvidence(s,"진단문항");
+        remember(s,"비슷한 개념의 짧은 진단문항에 응답함",.34);
+        if(ev&&ev.evidence>=2)log(s.name+"에게서 "+ev.label+"과(와) 관련된 비슷한 어려움이 반복해서 관찰됐다.","learning",teacherScene);
+        else log(s.name+"에게 비슷한 개념을 다른 방식으로 한 번 더 확인했다.","learning",teacherScene);
+      }
+    },
 
     hint:{
       id:"hint",category:"support",label:"힌트 하나 주기",duration:30,near:true,repeatPenalty:.07,
@@ -1954,6 +1972,18 @@
     if(support){
       var weak=weakestConcept(support,current().subject),model=subjectModel(current().subject);
       findings.push(support.name+"은(는) "+(weak&&model?model.concepts[weak].label:"현재 개념")+"을(를) 추가로 확인할 필요가 있어 보인다.");
+    }
+    var reportModel=subjectModel(current().subject),diagnosed={};
+    if(reportModel){
+      students.forEach(function(st){
+        Object.keys(reportModel.concepts).forEach(function(key){
+          var node=st.knowledge[current().subject][key];
+          if(node.evidence>=2)diagnosed[key]=(diagnosed[key]||0)+1;
+        });
+      });
+      Object.keys(diagnosed).sort(function(a,b){return diagnosed[b]-diagnosed[a]}).slice(0,2).forEach(function(key){
+        findings.push("교사가 모은 근거에서 "+reportModel.concepts[key].label+" 관련 반복 어려움이 "+diagnosed[key]+"명에게서 확인됐다.");
+      });
     }
     var isolated=students.slice().sort(function(a,b){return a.belonging-b.belonging})[0];
     if(isolated&&isolated.belonging<.53)findings.push(isolated.name+"은(는) 또래 활동에서 소속감이 낮아진 모습이 보였다.");
