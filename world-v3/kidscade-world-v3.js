@@ -1398,4 +1398,4 @@ async function init(){
 window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
+window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateCropVisuals();updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
