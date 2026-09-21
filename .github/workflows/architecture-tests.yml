@@ -160,6 +160,8 @@ jobs:
         run: node --test tests/garden.test.cjs
       - name: Run Seed World HUD regression tests
         run: node --test tests/world-v3-hud.test.cjs
+      - name: Run Seed World crafting and development tests
+        run: node --test tests/world-v3-progression.test.cjs
       - name: Run Seed World meta loop tests
         run: node --test tests/seed-world-meta.test.cjs
       - name: Run main architecture tests
