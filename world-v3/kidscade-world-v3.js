@@ -299,7 +299,13 @@ function carriedSlotCount(){
   return materialSlots+foodSlots;
 }
 function backpackCapacity(){return BACKPACK_SLOTS[prog().homestead.backpackLevel]||8}
-function homeStorageCapacity(){return HOME_STORAGE_SLOTS[prog().homestead.storageLevel]||10}
+function hasPlacedFurniture(key){return prog().housing?.placed?.some?.(v=>v?.key===key)||false}
+function effectiveStorageLevel(){
+  if(hasPlacedFurniture('kitchenCabinet'))return 3;
+  if(hasPlacedFurniture('homeDrawers'))return 2;
+  return 1;
+}
+function homeStorageCapacity(){return HOME_STORAGE_SLOTS[effectiveStorageLevel()]||10}
 function canCarryNewKey(key){
   if((inv()[key]||0)>0)return true;
   return carriedSlotCount()<backpackCapacity();
@@ -320,7 +326,7 @@ function addWater(qty){
   i.water=Math.min(max,before+Math.max(0,Math.floor(Number(qty)||0)));
   return i.water-before;
 }
-function hasIndoorTap(){return devState().waterLevel>=3&&mode==='indoor'}
+function hasIndoorTap(){return devState().waterLevel>=3&&mode==='indoor'&&hasPlacedFurniture('kitchenSink')}
 function useWater(amount=1){
   if(hasIndoorTap())return true;
   const i=inv(),need=Math.max(1,Math.floor(Number(amount)||1));
@@ -347,7 +353,7 @@ function homeStoragePanel(){
   const i=inv(),s=homeStorage();
   const carried=Object.entries(i).filter(([,v])=>Number(v)>0);
   const stored=Object.entries(s).filter(([,v])=>Number(v)>0);
-  openPanel('<h2>📦 집 수납</h2><p><b>가방 '+carriedSlotCount()+'/'+backpackCapacity()+'칸</b> · 집 수납 '+homeStorageSlotCount()+'/'+homeStorageCapacity()+'칸</p>'+
+  openPanel('<h2>📦 집 수납</h2><p><b>가방 '+carriedSlotCount()+'/'+backpackCapacity()+'칸</b> · 집 수납 '+homeStorageSlotCount()+'/'+homeStorageCapacity()+'칸'+(effectiveStorageLevel()===1?' (임시 상자)':effectiveStorageLevel()===2?' (서랍장)':' (큰 수납장)')+'</p>'+
     '<h3>가방에서 넣기</h3><div class="grid">'+(carried.length?carried.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-in="'+k+'">전부 넣기</button></div>').join(''):'<div class="item">가방이 비어 있어요.</div>')+'</div>'+
     '<h3>집에서 꺼내기</h3><div class="grid">'+(stored.length?stored.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-out="'+k+'">전부 꺼내기</button></div>').join(''):'<div class="item">보관 중인 재료가 없어요.</div>')+'</div>'+
     '<p><button data-open-furniture="1">🪑 가구 창고 · 배치</button></p>');
@@ -1013,8 +1019,9 @@ function updateHomesteadVisuals(){
   if(homePumpInteraction)homePumpInteraction.enabled=d.waterLevel>=2;
   if(homeCampfireObject)homeCampfireObject.visible=h.kitchenLevel>=1;
   if(homeCampfireInteraction)homeCampfireInteraction.enabled=h.kitchenLevel>=1;
-  if(starterBeddingGroup)starterBeddingGroup.visible=h.bedLevel===0;
-  if(starterBeddingInteraction)starterBeddingInteraction.enabled=h.bedLevel===0;
+  const realBed=hasPlacedFurniture('bedSingle');
+  if(starterBeddingGroup)starterBeddingGroup.visible=!realBed;
+  if(starterBeddingInteraction)starterBeddingInteraction.enabled=!realBed;
   for(const cover of houseExpansionCovers)cover.object.visible=d.houseLevel<cover.unlockAt;
   if(homeHouseObject&&homeHouseBaseScale){
     const mul=d.houseLevel===1?.78:d.houseLevel===2?.90:1;
