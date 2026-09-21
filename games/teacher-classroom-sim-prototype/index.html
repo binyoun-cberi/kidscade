@@ -4,459 +4,126 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반 - 교사 시뮬레이터 프로토타입</title>
-<style>
-:root{
-  --bg:#f4f0e8;--panel:#fffdf8;--card:#ffffff;--ink:#252525;--muted:#6f6a62;
-  --line:#d8d0c3;--accent:#4e73a8;--accent2:#dfe9f7;--good:#5c8a63;--warn:#b7833f;
-  --bad:#a85555;--wood:#b98757;--board:#315b4c;--floor:#e9dfcf;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
-button,select{font:inherit}
-button{cursor:pointer}
-#app{max-width:1180px;margin:0 auto;padding:12px}
-.topbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-button,select{min-height:42px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px}
-button.primary{background:var(--accent2);border-color:var(--accent)}
-button:disabled{opacity:.45;cursor:not-allowed}
-.daybar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
-.time{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-.period{font-weight:800}
-.sub{font-size:12px;color:var(--muted);line-height:1.45}
-.track{height:7px;border-radius:99px;background:#eee8df;overflow:hidden;margin-top:6px}.track i{display:block;height:100%;width:0;background:var(--accent)}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
-.world{position:relative;min-height:560px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--floor)}
-.world::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(90deg,rgba(80,60,40,.06) 1px,transparent 1px),linear-gradient(rgba(80,60,40,.06) 1px,transparent 1px);background-size:48px 48px}
-.scene-label{position:absolute;left:10px;top:10px;z-index:8;background:rgba(255,255,255,.92);border:1px solid var(--line);padding:5px 8px;border-radius:8px;font-size:12px;font-weight:700}
-.board{position:absolute;z-index:2;left:18%;right:18%;top:16px;height:68px;border:5px solid #775c42;border-radius:7px;background:var(--board);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;padding:8px}
-.door{position:absolute;z-index:2;right:2.5%;top:27%;width:52px;height:112px;border:4px solid #876747;border-bottom:0;border-radius:5px 5px 0 0;background:#d8bd94}.door:after{content:"";position:absolute;left:9px;top:50%;width:6px;height:6px;border-radius:50%;background:#5c4937}
-.teacher{position:absolute;z-index:7;width:58px;text-align:center;transform:translate(-50%,-50%);transition:left .35s linear,top .35s linear}
-.thead{width:28px;height:28px;border:2px solid var(--ink);border-radius:50%;background:#dfb18d;margin:auto}
-.tbody{width:34px;height:32px;border:2px solid var(--ink);border-radius:8px 8px 5px 5px;background:#738cae;margin:-2px auto 0}
-.tlabel{font-size:10px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 4px;display:inline-block;margin-top:2px}
-.student{position:absolute;z-index:5;width:80px;height:110px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .45s linear,top .45s linear}
-.student.selected .desk{outline:3px solid var(--accent);outline-offset:3px}
-.desk{position:absolute;left:7px;right:7px;bottom:6px;height:44px;border:2px solid #66503c;border-radius:7px;background:var(--wood)}
-.paper{position:absolute;width:32px;height:16px;left:24px;bottom:37px;border:1px solid var(--line);background:white;transform:skewX(-8deg)}
-.body{position:absolute;left:50%;top:8px;width:46px;height:63px;transform:translateX(-50%);transform-origin:50% 82%;transition:transform .2s}
-.head{position:absolute;left:9px;top:0;width:28px;height:28px;border:2px solid var(--ink);border-radius:50%;background:var(--skin)}
-.hair{position:absolute;left:7px;top:-2px;width:32px;height:13px;border-radius:16px 16px 7px 7px;background:var(--hair)}
-.eyes{position:absolute;left:5px;right:5px;top:12px;display:flex;justify-content:space-between}.eyes i{width:3px;height:3px;background:var(--ink);border-radius:50%}
-.torso{position:absolute;left:7px;top:25px;width:31px;height:30px;border:2px solid var(--ink);border-radius:7px;background:var(--shirt)}
-.arm{position:absolute;top:30px;width:7px;height:28px;border:1px solid var(--ink);border-radius:8px;background:var(--skin);transform-origin:50% 2px}.arm.l{left:3px;transform:rotate(20deg)}.arm.r{right:3px;transform:rotate(-20deg)}
-.name{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 5px}
-.signal{position:absolute;z-index:9;left:55px;top:-4px;min-width:28px;height:25px;padding:0 5px;border:1px solid var(--line);background:#fff;border-radius:13px;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
-.signal:after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:#fff;border:1px solid var(--line);left:-6px;bottom:1px}
-.student.work .arm.r{animation:write .28s infinite alternate}
-.student.talk .body{transform:translateX(-50%) rotate(7deg)}
-.student.talk .head{transform:translateX(4px)}
-.student.doodle .arm.r{animation:scrib .22s infinite alternate}
-.student.help .arm.r{top:9px;transform:rotate(-150deg)}
-.student.sleep .head{transform:translateY(16px) rotate(8deg)}.student.sleep .eyes i{width:7px;height:1px;border-radius:0}
-.student.move .body{animation:fidget .32s infinite alternate}
-@keyframes write{to{transform:rotate(-32deg) translateY(2px)}}@keyframes scrib{to{transform:rotate(18deg)}}@keyframes fidget{to{transform:translateX(-50%) translateY(-4px)}}
-.side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-.side h3{margin:0 0 4px;font-size:18px}.state{margin:10px 0;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;font-weight:700}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.actions button{font-size:12px;padding:7px}
-.feed{margin-top:12px;border-top:1px solid var(--line);padding-top:9px}.feed h4{font-size:12px;margin:0 0 7px}
-.feed-list{display:grid;gap:5px}.feed-item{font-size:11px;line-height:1.35;padding:6px 7px;background:#fff;border-left:3px solid var(--line);border-radius:4px}.feed-time{color:var(--muted);margin-right:5px;font-variant-numeric:tabular-nums}
-.schedule{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:4px}.sched{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 7px;font-size:10px;color:var(--muted)}.sched.now{border-color:var(--accent);background:var(--accent2);color:var(--ink)}.sched.done{opacity:.5}
-.report{position:absolute;z-index:30;inset:18px;background:rgba(255,253,248,.98);border:2px solid var(--line);border-radius:15px;padding:16px;overflow:auto}
-.report[hidden]{display:none}.report-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.grade{font-size:38px;font-weight:900}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.metric{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px}.metric strong{display:block;font-size:21px}.metric span{font-size:10px;color:var(--muted)}
-.report-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report h4{font-size:13px;margin:8px 0}.report ul{margin:0;padding-left:18px;font-size:12px;line-height:1.55}.report-actions{display:flex;justify-content:flex-end;margin-top:13px}
-@media(max-width:760px){#app{padding:7px}.grid{grid-template-columns:1fr}.world{min-height:470px}.daybar{grid-template-columns:1fr auto}.daybar .middle{grid-column:1/-1;grid-row:2}.metrics{grid-template-columns:1fr 1fr}.report-cols{grid-template-columns:1fr}.side{margin-top:0}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<div id="app">
-  <div class="topbar">
-    <button id="pause" class="primary">일시정지</button>
+<main id="app">
+  <div class="toolbar">
+    <button id="pause" class="primary" type="button">일시정지</button>
     <label>속도
-      <select id="speed">
+      <select id="speed" aria-label="게임 속도">
         <option value="1">×1</option>
         <option value="2">×2</option>
         <option value="4">×4</option>
       </select>
     </label>
     <label>수업 방식
-      <select id="lesson">
+      <select id="lesson" aria-label="수업 방식">
         <option value="lecture">설명 + 개별문제</option>
         <option value="hands">조작활동</option>
         <option value="pair">짝활동</option>
         <option value="quiz">퀴즈형 수업</option>
       </select>
     </label>
-    <button id="showReport">현재 교시 결과 보기</button>
-    <button id="reset">하루 다시 시작</button>
+    <button id="showReport" type="button">현재 교시 결과 보기</button>
+    <button id="reset" type="button">하루 다시 시작</button>
   </div>
 
-  <div class="daybar">
-    <div><div id="time" class="time">08:40</div><div class="sub">기본 속도: 실제 1초 = 게임 10초</div></div>
-    <div class="middle"><div id="periodName" class="period">등교·아침활동</div><div id="periodDesc" class="sub">학생들이 교실에 모이고 있습니다.</div><div class="track"><i id="progress"></i></div></div>
-    <div><div id="locationName" class="period">교실</div><div id="locationSub" class="sub">생활 공간</div></div>
-  </div>
-
-  <div class="grid">
+  <section class="daybar">
     <div>
-      <div id="world" class="world">
-        <div id="sceneLabel" class="scene-label">교실</div>
-        <div id="board" class="board">가방 정리와 아침 독서</div>
-        <div class="door"></div>
-        <div id="teacher" class="teacher" style="left:50%;top:24%">
-          <div class="thead"></div><div class="tbody"></div><div class="tlabel">선생님</div>
-        </div>
-        <div id="students"></div>
+      <div id="time" class="time">08:40</div>
+      <div class="sub">기본 속도 · 실제 1초 = 게임 10초</div>
+    </div>
+    <div class="middle">
+      <div id="periodName" class="period">등교·아침활동</div>
+      <div id="periodDesc" class="sub">학생들이 교실에 모이고 있습니다.</div>
+      <div class="progress"><i id="progress"></i></div>
+    </div>
+    <div>
+      <div id="locationName" class="period">교실</div>
+      <div class="sub">교사가 보고 있는 공간</div>
+    </div>
+  </section>
 
-        <section id="report" class="report" hidden>
+  <nav class="scene-nav" aria-label="학교 공간 이동">
+    <button type="button" data-scene="classroom">교실 <span class="count">0</span></button>
+    <button type="button" data-scene="hallway">복도 <span class="count">0</span></button>
+    <button type="button" data-scene="gym">체육관 <span class="count">0</span></button>
+    <button type="button" data-scene="playground">운동장 <span class="count">0</span></button>
+    <button type="button" data-scene="cafeteria">급식실 <span class="count">0</span></button>
+  </nav>
+
+  <div class="layout">
+    <section>
+      <div id="world" class="world scene-classroom" aria-label="학교 생활 시뮬레이션">
+        <div id="sceneTitle" class="scene-title">교실</div>
+        <div id="props"></div>
+
+        <div id="teacher" class="teacher" style="left:50%;top:22%">
+          <img src="../../assets/game/characters/people/kenney-platformer-characters/adventurer/poses/adventurer-stand.png" alt="">
+          <span>선생님</span>
+        </div>
+
+        <div id="students"></div>
+        <div id="offscreen" class="offscreen-note">8명 보임</div>
+
+        <section id="report" class="report" hidden aria-live="polite">
           <div class="report-head">
-            <div><div id="reportTitle" class="period">1교시 결과</div><div id="reportSub" class="sub"></div></div>
+            <div>
+              <div id="reportTitle" class="period">1교시 결과</div>
+              <div id="reportSub" class="sub"></div>
+            </div>
             <div id="grade" class="grade">B+</div>
           </div>
+
           <div class="metrics">
             <div class="metric"><strong id="mDesign">0</strong><span>수업 설계 적합성</span></div>
             <div class="metric"><strong id="mEngage">0</strong><span>실제 참여도</span></div>
             <div class="metric"><strong id="mLearn">0</strong><span>학습 성과</span></div>
             <div class="metric"><strong id="mClimate">0</strong><span>교실 안정성</span></div>
           </div>
+
           <div class="report-cols">
-            <div><h4>이번 시간에 있었던 일</h4><ul id="incidentList"></ul></div>
-            <div><h4>교사가 발견한 것</h4><ul id="findingList"></ul></div>
+            <div>
+              <h4>이번 시간에 있었던 일</h4>
+              <ul id="incidentList"></ul>
+            </div>
+            <div>
+              <h4>교사가 발견한 것</h4>
+              <ul id="findingList"></ul>
+            </div>
           </div>
-          <div class="report-actions"><button id="continueBtn" class="primary">다음 시간으로</button></div>
+
+          <div class="report-actions">
+            <button id="continueBtn" class="primary" type="button">다음 시간으로</button>
+          </div>
         </section>
       </div>
-      <div id="schedule" class="schedule"></div>
-    </div>
 
-    <aside class="side">
+      <div id="schedule" class="schedule" aria-label="오늘 시간표"></div>
+    </section>
+
+    <aside class="panel">
       <h3 id="studentName">학생 선택</h3>
-      <div id="studentSummary" class="sub">학생을 눌러 직접 개입할 수 있습니다. 평소에는 몸짓과 행동을 먼저 보세요.</div>
+      <div id="studentSummary" class="sub">학생을 눌러 직접 개입할 수 있습니다. 다른 공간의 일은 직접 이동해서 확인해야 합니다.</div>
       <div id="studentState" class="state">—</div>
       <div class="actions">
-        <button id="approach" disabled>가까이 가기</button>
-        <button id="call" disabled>이름 부르기</button>
-        <button id="praise" disabled>칭찬하기</button>
-        <button id="hint" disabled>힌트 주기</button>
-        <button id="chalk" disabled>분필 톡</button>
-        <button id="seat" disabled>자리 바꾸기</button>
+        <button id="approach" type="button" disabled>가까이 가기</button>
+        <button id="call" type="button" disabled>이름 부르기</button>
+        <button id="praise" type="button" disabled>칭찬하기</button>
+        <button id="hint" type="button" disabled>힌트 주기</button>
+        <button id="chalk" type="button" disabled>분필 톡</button>
+        <button id="seat" type="button" disabled>자리 바꾸기</button>
       </div>
-      <div class="feed"><h4>교실에서 보이고 들리는 일</h4><div id="feed" class="feed-list"></div></div>
+      <div id="memory" class="sub" style="margin-top:9px"></div>
+
+      <div class="observe">
+        <h4>이 공간에서 보이고 들리는 일</h4>
+        <div id="feed" class="feed"></div>
+      </div>
     </aside>
   </div>
-</div>
-
-<script>
-(function(){
-  var app=document.getElementById("app");
-  var q=function(s){return app.querySelector(s)};
-  var clamp=function(v){return Math.max(0,Math.min(1,v))};
-
-  var schedule=[
-    {start:520,end:540,name:"등교·아침활동",loc:"교실",kind:"morning"},
-    {start:540,end:580,name:"1교시 · 수학",loc:"교실",kind:"lesson",subject:"수학"},
-    {start:580,end:590,name:"쉬는시간",loc:"교실·복도",kind:"break"},
-    {start:590,end:630,name:"2교시 · 국어",loc:"교실",kind:"lesson",subject:"국어"},
-    {start:630,end:640,name:"쉬는시간",loc:"교실·복도",kind:"break"},
-    {start:640,end:680,name:"3교시 · 체육",loc:"체육관",kind:"lesson",subject:"체육"},
-    {start:680,end:690,name:"쉬는시간",loc:"복도",kind:"break"},
-    {start:690,end:730,name:"4교시 · 과학",loc:"교실",kind:"lesson",subject:"과학"},
-    {start:730,end:780,name:"점심시간",loc:"급식실·운동장",kind:"lunch"},
-    {start:780,end:820,name:"5교시 · 사회",loc:"교실",kind:"lesson",subject:"사회"},
-    {start:820,end:830,name:"쉬는시간",loc:"교실·복도",kind:"break"},
-    {start:830,end:870,name:"6교시 · 미술",loc:"교실",kind:"lesson",subject:"미술"},
-    {start:870,end:890,name:"청소·종례",loc:"교실",kind:"closing"}
-  ];
-
-  var seats=[
-    {x:15,y:47},{x:38,y:47},{x:61,y:47},{x:84,y:47},
-    {x:15,y:75},{x:38,y:75},{x:61,y:75},{x:84,y:75}
-  ];
-
-  var templates=[
-    {name:"민수",imp:.84,soc:.84,persist:.34,energy:.84,skill:.48,move:.78,hands:.82,visual:.38,verbal:.46,shirt:"#6e8dbb",hair:"#2b2622",skin:"#d8ab89"},
-    {name:"지우",imp:.35,soc:.73,persist:.68,energy:.75,skill:.66,move:.38,hands:.63,visual:.70,verbal:.68,shirt:"#b88165",hair:"#46362d",skin:"#dfb795"},
-    {name:"서연",imp:.18,soc:.36,persist:.91,energy:.72,skill:.84,move:.20,hands:.56,visual:.83,verbal:.81,shirt:"#79977d",hair:"#211f20",skin:"#e5bd9d"},
-    {name:"준호",imp:.67,soc:.79,persist:.55,energy:.88,skill:.61,move:.72,hands:.86,visual:.43,verbal:.55,shirt:"#a27ca5",hair:"#372c27",skin:"#d3a885"},
-    {name:"태호",imp:.43,soc:.44,persist:.47,energy:.62,skill:.30,move:.42,hands:.90,visual:.76,verbal:.34,shirt:"#b99758",hair:"#26201d",skin:"#ddb18f"},
-    {name:"유나",imp:.29,soc:.59,persist:.74,energy:.49,skill:.73,move:.28,hands:.52,visual:.78,verbal:.72,shirt:"#5f8d9c",hair:"#563f32",skin:"#ecc3a4"},
-    {name:"현우",imp:.76,soc:.50,persist:.28,energy:.80,skill:.55,move:.91,hands:.93,visual:.34,verbal:.42,shirt:"#9b6f59",hair:"#2e2823",skin:"#d8aa89"},
-    {name:"소라",imp:.22,soc:.42,persist:.84,energy:.74,skill:.44,move:.25,hands:.64,visual:.91,verbal:.62,shirt:"#7772a4",hair:"#49352d",skin:"#e4b997"}
-  ];
-
-  var friends={"민수|지우":.88,"민수|준호":.78,"지우|서연":.57,"준호|현우":.71,"소라|유나":.77,"태호|유나":.48,"민수|태호":.26};
-  var students=[],gameSec=520*60,periodIndex=0,running=true,selected=null,swap=false,stats=null,feed=[],reportOpen=false,lastThink=0,lastFrame=performance.now();
-  var teacher={x:50,y:24};
-
-  function pairKey(a,b){return [a,b].sort().join("|")}
-  function friendship(a,b){return friends[pairKey(a.name,b.name)]===undefined ? .34 : friends[pairKey(a.name,b.name)]}
-  function current(){return schedule[Math.min(periodIndex,schedule.length-1)]}
-  function gameMinute(){return Math.floor(gameSec/60)}
-  function fmtMin(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
-  function resetStudents(){
-    students=templates.map(function(t,i){
-      return Object.assign({},t,{id:i,seat:i,focus:.72,boredom:.14,talk:.14,moveNeed:t.move*.14,help:.08,sleep:(1-t.energy)*.24,action:"WORK",intent:null,intentTicks:0,actionTicks:0,trust:.62,learned:0,interventions:0});
-    });
-  }
-  function newStats(){
-    stats={events:[],fitSamples:[],engageSamples:[],learningStart:students.map(function(s){return s.skill}),teacherActs:0,disruptions:0,helped:0,praises:0};
-  }
-  function log(text,type){
-    type=type||"normal";
-    var item={stamp:fmtMin(gameMinute()),text:text,type:type};
-    feed.unshift(item);feed=feed.slice(0,8);renderFeed();
-    if(stats&&current().kind==="lesson"&&type!=="ambient")stats.events.push(item);
-  }
-  function seatDist(a,b){var A=seats[a.seat],B=seats[b.seat];return Math.hypot(A.x-B.x,A.y-B.y)}
-  function teacherNear(s){var p=seats[s.seat];return clamp(1-Math.hypot(p.x-teacher.x,p.y-teacher.y)/52)}
-  function bestPartner(s){
-    var best=null,score=-1;
-    students.forEach(function(o){if(o===s||seatDist(s,o)>30)return;var f=friendship(s,o);if(f>score){score=f;best=o}});
-    return best;
-  }
-  function lessonFit(s){
-    var mode=q("#lesson").value;
-    if(current().subject==="체육")return .65*s.move+.35*s.soc;
-    if(current().subject==="미술")return .55*s.hands+.45*s.visual;
-    if(mode==="hands")return s.hands;
-    if(mode==="pair")return s.soc;
-    if(mode==="quiz")return .45*s.verbal+.35*s.soc+.20*s.persist;
-    return .55*s.verbal+.45*s.persist;
-  }
-  function startAction(s,a){
-    s.action=a;s.actionTicks=a==="TALK"?5:4;
-    if(a==="TALK"){
-      stats.disruptions++;
-      if(Math.random()<.46)log(s.name+"이(가) 옆 친구에게 말을 걸기 시작했다.","incident");
-    }
-    if(a==="MOVE"&&Math.random()<.38){
-      stats.disruptions++;
-      log(s.name+"이(가) 자리에서 몸을 크게 움직여 주변의 시선을 끌었다.","incident");
-    }
-    if(a==="SLEEP")log(s.name+"이(가) 점점 고개를 떨구기 시작했다.","incident");
-    if(a==="HELP")log(s.name+"이(가) 문제에서 막혀 손을 들었다.","learning");
-  }
-  function decide(s){
-    var p=bestPartner(s),near=teacherNear(s),fit=lessonFit(s),hard=clamp(.67-s.skill+.18);
-    var vals={
-      WORK:.37+s.persist*.25+s.focus*.25+fit*.22,
-      TALK:s.talk*.43+s.soc*.22+s.imp*.16+(p?friendship(s,p)*.22:0)-near*s.trust*.45+(1-fit)*.14+(Math.random()-.5)*.06,
-      DOODLE:s.boredom*.52+s.imp*.13+(1-fit)*.20-near*.22+(Math.random()-.5)*.05,
-      HELP:s.help*.48+hard*.38+s.persist*.08+near*.08,
-      SLEEP:s.sleep*.65+(1-s.energy)*.25-near*.18,
-      MOVE:s.moveNeed*.57+s.move*.22+s.imp*.15-near*.36+(Math.random()-.5)*.05
-    };
-    var best="WORK";
-    Object.keys(vals).forEach(function(k){if(vals[k]>vals[best])best=k});
-    if(best!=="WORK"&&vals[best]>.54){
-      if(s.intent===best)s.intentTicks++;else{s.intent=best;s.intentTicks=1}
-      if(s.intentTicks>=2){startAction(s,best);s.intent=null;s.intentTicks=0}
-    }else{
-      s.intent=null;s.intentTicks=0;
-      if(s.actionTicks<=0)s.action="WORK";
-    }
-  }
-  function updateStudent(s){
-    if(current().kind!=="lesson"){s.action="WORK";s.intent=null;return}
-    var fit=lessonFit(s);
-    s.talk=clamp(s.talk+.018*s.soc+.014*(1-fit));
-    s.moveNeed=clamp(s.moveNeed+.016*s.move);
-    s.help=clamp(s.help+.015*clamp(.68-s.skill));
-    s.sleep=clamp(s.sleep+.006*(1-s.energy));
-    s.boredom=clamp(s.boredom+.013*(1-fit)-.006*s.persist);
-    if(s.actionTicks>0)s.actionTicks--;
-    if(s.action==="WORK"){
-      s.focus=clamp(s.focus+.009*fit-.006*s.boredom);
-      var gain=.0016*fit*s.focus;s.skill=clamp(s.skill+gain);s.learned+=gain;
-    }else if(s.action==="TALK"){
-      s.talk=clamp(s.talk-.13);s.focus=clamp(s.focus-.032);
-      var p=bestPartner(s);if(p){p.talk=clamp(p.talk+.04);p.focus=clamp(p.focus-.01)}
-    }else if(s.action==="DOODLE"){
-      s.boredom=clamp(s.boredom-.10);s.focus=clamp(s.focus-.018);
-    }else if(s.action==="HELP"){
-      s.help=clamp(s.help-.07);
-    }else if(s.action==="SLEEP"){
-      s.sleep=clamp(s.sleep-.08);s.focus=clamp(s.focus-.03);
-    }else if(s.action==="MOVE"){
-      s.moveNeed=clamp(s.moveNeed-.10);s.focus=clamp(s.focus-.015);
-    }
-    if(s.actionTicks<=0){s.action="WORK";decide(s)}else if(s.action==="WORK")decide(s);
-  }
-  function sampleStats(){
-    if(current().kind!=="lesson")return;
-    var eng=students.reduce(function(a,s){
-      var active=(s.action==="WORK"||s.action==="HELP")?s.focus:Math.max(.15,s.focus-.25);
-      return a+active;
-    },0)/students.length;
-    stats.engageSamples.push(eng);
-    stats.fitSamples.push(students.reduce(function(a,s){return a+lessonFit(s)},0)/students.length);
-  }
-  function teacherAct(kind){
-    var s=students.find(function(x){return x.id===selected});if(!s)return;
-    stats.teacherActs++;s.interventions++;
-    if(kind==="approach"){
-      var p=seats[s.seat];teacher.x=Math.max(5,p.x-8);teacher.y=Math.max(17,p.y-13);
-      s.focus=clamp(s.focus+.07);s.action="WORK";s.intent=null;log("선생님이 "+s.name+" 가까이 다가가자 다시 과제로 시선을 돌렸다.","teacher");
-    }
-    if(kind==="call"){
-      s.focus=clamp(s.focus+.13);s.action="WORK";s.intent=null;log(s.name+"의 이름을 불러 수업으로 다시 끌어왔다.","teacher");
-    }
-    if(kind==="praise"){
-      s.focus=clamp(s.focus+.08);s.trust=clamp(s.trust+.04);stats.praises++;log(s.name+"의 시도를 구체적으로 칭찬했다.","teacher");
-    }
-    if(kind==="hint"){
-      s.help=clamp(s.help-.16);s.skill=clamp(s.skill+.008);s.focus=clamp(s.focus+.08);stats.helped++;log(s.name+"에게 문제의 핵심을 짚는 힌트를 주었다.","learning");
-    }
-    if(kind==="chalk"){
-      s.focus=clamp(s.focus+.18);s.trust=clamp(s.trust-.02);s.action="WORK";s.intent=null;
-      students.forEach(function(o){if(seatDist(s,o)<31)o.focus=clamp(o.focus+.025)});
-      log("분필이 책상 가까이에 톡 닿자 "+s.name+"과 주변 학생들이 잠시 조용해졌다.","teacher");
-    }
-    render();
-  }
-  function computeReport(force){
-    if(reportOpen)return;
-    var p=current();if(p.kind!=="lesson"&&!force)return;
-    reportOpen=true;running=false;
-    var fitAvg=stats.fitSamples.length?stats.fitSamples.reduce(function(a,b){return a+b},0)/stats.fitSamples.length:.60;
-    var engAvg=stats.engageSamples.length?stats.engageSamples.reduce(function(a,b){return a+b},0)/stats.engageSamples.length:.60;
-    var design=Math.round(100*fitAvg);
-    var engage=Math.round(100*engAvg);
-    var gain=students.reduce(function(a,s,i){return a+Math.max(0,s.skill-stats.learningStart[i])},0)/students.length;
-    var learning=Math.round(Math.min(100,55+gain*3400+stats.helped*3));
-    var climate=Math.round(Math.max(20,92-stats.disruptions*7+Math.min(10,stats.teacherActs*1.5)));
-    var avg=(design+engage+learning+climate)/4;
-    var grade=avg>=90?"A+":avg>=84?"A":avg>=78?"B+":avg>=70?"B":avg>=62?"C+":"C";
-    q("#reportTitle").textContent=p.name+" 결과";
-    q("#reportSub").textContent=fmtMin(p.start)+"~"+fmtMin(p.end)+" · "+q("#lesson").selectedOptions[0].textContent;
-    q("#grade").textContent=grade;
-    q("#mDesign").textContent=design;
-    q("#mEngage").textContent=engage;
-    q("#mLearn").textContent=learning;
-    q("#mClimate").textContent=climate;
-    var events=stats.events.filter(function(e){return e.type!=="ambient"}).slice(-8);
-    q("#incidentList").innerHTML=events.length?events.map(function(e){return "<li><strong>"+e.stamp+"</strong> "+e.text+"</li>"}).join(""):"<li>큰 사건 없이 수업이 진행되었다.</li>";
-    var findings=[];
-    students.filter(function(s){return s.focus<.48}).sort(function(a,b){return a.focus-b.focus}).slice(0,2).forEach(function(s){findings.push(s.name+"은(는) 이번 시간에 집중을 오래 유지하지 못했다.")});
-    var support=students.slice().sort(function(a,b){return a.skill-b.skill})[0];
-    if(support)findings.push(support.name+"은(는) 현재 개념을 추가로 확인할 필요가 있어 보인다.");
-    var strong=students.slice().sort(function(a,b){return b.focus-a.focus})[0];
-    if(strong)findings.push(strong.name+"은(는) 현재 수업 구조에 안정적으로 참여했다.");
-    if(stats.disruptions>=3)findings.push("후반으로 갈수록 작은 행동이 주변 학생에게 번지는 장면이 여러 번 나타났다.");
-    if(stats.helped>0)findings.push("개별 힌트를 받은 학생에게 즉각적인 학습 회복이 나타났다.");
-    q("#findingList").innerHTML=findings.map(function(x){return "<li>"+x+"</li>"}).join("");
-    q("#report").hidden=false;
-  }
-  function periodForMinute(m){
-    for(var i=0;i<schedule.length;i++)if(m>=schedule[i].start&&m<schedule[i].end)return i;
-    return schedule.length-1;
-  }
-  function changePeriodIfNeeded(){
-    var idx=periodForMinute(gameMinute());
-    if(idx!==periodIndex){
-      var old=schedule[periodIndex];
-      if(old.kind==="lesson"){
-        gameSec=old.end*60-1;computeReport(false);return false;
-      }
-      periodIndex=idx;newStats();log(current().name+"이(가) 시작되었다.","ambient");
-    }
-    return true;
-  }
-  function nextPeriod(){
-    reportOpen=false;q("#report").hidden=true;
-    var p=current();gameSec=p.end*60;periodIndex=Math.min(periodIndex+1,schedule.length-1);
-    var n=current();if(gameSec<n.start*60)gameSec=n.start*60;
-    newStats();
-    students.forEach(function(s){s.action="WORK";s.intent=null;s.intentTicks=0;s.boredom=clamp(s.boredom*.5);s.talk=clamp(s.talk*.6)});
-    teacher.x=50;teacher.y=24;running=true;log(n.name+"이(가) 시작되었다.","ambient");render();
-  }
-  function renderFeed(){
-    q("#feed").innerHTML=feed.map(function(x){return '<div class="feed-item"><span class="feed-time">'+x.stamp+"</span>"+x.text+"</div>"}).join("");
-  }
-  function renderSchedule(){
-    q("#schedule").innerHTML=schedule.map(function(p,i){
-      return '<div class="sched '+(i===periodIndex?"now":i<periodIndex?"done":"")+'">'+fmtMin(p.start)+"<br>"+p.name.replace(/ · /g," ")+"</div>";
-    }).join("");
-  }
-  function sceneText(){
-    var p=current();
-    if(p.kind==="lesson")return p.subject+" · "+q("#lesson").selectedOptions[0].textContent;
-    if(p.kind==="break")return "쉬는시간 · 친구 관계와 이동이 드러나는 시간";
-    if(p.kind==="lunch")return "점심 · 식사와 놀이";
-    if(p.kind==="morning")return "가방 정리와 아침 독서";
-    return "청소와 하루 마무리";
-  }
-  function render(){
-    var p=current();
-    q("#time").textContent=fmtMin(gameMinute());
-    q("#periodName").textContent=p.name;
-    q("#periodDesc").textContent=p.kind==="lesson"?"수업 중 학생의 행동과 학습 반응을 관찰하세요.":p.kind==="break"?"학생들이 자유롭게 움직이며 관계가 드러납니다.":p.kind==="lunch"?"점심과 놀이에서 생긴 관계가 오후까지 이어집니다.":"학생들이 하루 일과를 준비하거나 정리합니다.";
-    q("#locationName").textContent=p.loc;q("#sceneLabel").textContent=p.loc;q("#board").textContent=sceneText();
-    var frac=clamp((gameSec/60-p.start)/(p.end-p.start));q("#progress").style.width=(frac*100)+"%";
-    q("#teacher").style.left=teacher.x+"%";q("#teacher").style.top=teacher.y+"%";
-    var layer=q("#students");layer.innerHTML="";
-    students.forEach(function(s){
-      var pos=seats[s.seat],b=document.createElement("button");b.type="button";b.className="student "+s.action.toLowerCase()+(selected===s.id?" selected":"");
-      b.style.left=pos.x+"%";b.style.top=pos.y+"%";b.style.setProperty("--shirt",s.shirt);b.style.setProperty("--hair",s.hair);b.style.setProperty("--skin",s.skin);
-      var mark=s.intent?({TALK:"•••",DOODLE:"✎",HELP:"?",SLEEP:"Z",MOVE:"↔"}[s.intent]||""):"";
-      b.innerHTML=(mark?'<span class="signal">'+mark+"</span>":"")+'<span class="body"><span class="hair"></span><span class="head"><span class="eyes"><i></i><i></i></span></span><span class="torso"></span><span class="arm l"></span><span class="arm r"></span></span><span class="paper"></span><span class="desk"></span><span class="name">'+s.name+"</span>";
-      b.addEventListener("click",function(){
-        if(swap&&selected!==null&&selected!==s.id){
-          var a=students.find(function(x){return x.id===selected}),tmp=a.seat;a.seat=s.seat;s.seat=tmp;swap=false;log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher");
-        }
-        selected=s.id;render();
-      });
-      layer.appendChild(b);
-    });
-    renderSchedule();updatePanel();
-  }
-  function updatePanel(){
-    var s=students.find(function(x){return x.id===selected});
-    ["#approach","#call","#praise","#hint","#chalk","#seat"].forEach(function(id){q(id).disabled=!s});
-    if(!s){q("#studentName").textContent="학생 선택";q("#studentSummary").textContent="학생을 눌러 직접 개입할 수 있습니다. 평소에는 몸짓과 행동을 먼저 보세요.";q("#studentState").textContent="—";return}
-    var labels={WORK:"과제에 참여하고 있음",TALK:"친구와 이야기 중",DOODLE:"과제와 다른 일을 하고 있음",HELP:"도움을 기다리고 있음",SLEEP:"졸고 있음",MOVE:"몸이 들썩이고 있음"};
-    q("#studentName").textContent=s.name;q("#studentState").textContent=labels[s.action];
-    q("#studentSummary").textContent=s.intent?"행동으로 넘어가기 전의 작은 전조가 보입니다.":"현재 몸짓과 시선을 관찰해 보세요.";
-    q("#seat").textContent=swap?"바꿀 학생 선택 중":"자리 바꾸기";
-  }
-  function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swap=false;feed=[];reportOpen=false;teacher.x=50;teacher.y=24;
-    resetStudents();newStats();q("#report").hidden=true;log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient");render();
-  }
-  function loop(now){
-    var dt=(now-lastFrame)/1000;lastFrame=now;
-    if(running&&!reportOpen){
-      var speed=Number(q("#speed").value)||1;gameSec+=dt*10*speed;
-      if(changePeriodIfNeeded()){
-        lastThink+=dt*speed;
-        if(lastThink>.55){lastThink=0;students.forEach(updateStudent);sampleStats()}
-        render();
-      }
-    }
-    requestAnimationFrame(loop);
-  }
-
-  q("#pause").addEventListener("click",function(){running=!running;this.textContent=running?"일시정지":"계속하기"});
-  q("#lesson").addEventListener("change",function(){log("수업 방식을 "+this.selectedOptions[0].textContent+"로 조정했다.","teacher");render()});
-  q("#approach").addEventListener("click",function(){teacherAct("approach")});
-  q("#call").addEventListener("click",function(){teacherAct("call")});
-  q("#praise").addEventListener("click",function(){teacherAct("praise")});
-  q("#hint").addEventListener("click",function(){teacherAct("hint")});
-  q("#chalk").addEventListener("click",function(){teacherAct("chalk")});
-  q("#seat").addEventListener("click",function(){swap=!swap;updatePanel()});
-  q("#showReport").addEventListener("click",function(){
-    if(current().kind==="lesson")computeReport(true);
-    else{
-      var next=-1;for(var i=periodIndex+1;i<schedule.length;i++){if(schedule[i].kind==="lesson"){next=i;break}}
-      if(next>=0){periodIndex=next;gameSec=schedule[next].start*60;newStats();render();log(current().name+"으로 이동했다.","ambient")}
-    }
-  });
-  q("#continueBtn").addEventListener("click",nextPeriod);
-  q("#reset").addEventListener("click",reset);
-
-  reset();requestAnimationFrame(loop);
-})();
-</script>
+</main>
+<script src="./game.js"></script>
 </body>
 </html>
