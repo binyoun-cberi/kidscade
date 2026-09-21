@@ -22,7 +22,7 @@ export const FURNITURE_CATALOG={
   rugRound:{name:'둥근 러그',file:'rug-round.glb',w:2.2,h:.10,d:2.2,cw:0,cd:0},
   floorLamp:{name:'플로어 램프',file:'lamp-round-floor.glb',w:.7,h:2.0,d:.7,cw:.46,cd:.46},
   teddy:{name:'곰 인형',file:'bear.glb',w:.8,h:.95,d:.75,cw:.45,cd:.42},
-  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,use:'TV 보기'},
+  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,source:'기술 공방 3단계 · 3×3 제작대',use:'TV 보기'},
   minjiPlanter:{name:'민지의 시장 화분',file:'plant-small3.glb',w:.8,h:1.0,d:.8,cw:.5,cd:.5,source:'민지 친밀도 희귀 보상'},
   junhoStool:{name:'준호의 작업 스툴',file:'stool-bar-square.glb',w:.85,h:1.25,d:.85,cw:.6,cd:.6,source:'준호 친밀도 희귀 보상'},
   haneulTable:{name:'하늘의 카페 테이블',file:'table-round.glb',w:1.6,h:1.15,d:1.6,cw:1.3,cd:1.3,source:'하늘 친밀도 희귀 보상'},
