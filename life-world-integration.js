@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v3/kidscade-world.html?v=23';
+  const WORLD_URL='world-v3/kidscade-world.html?v=24';
   let overlay=null, frame=null, activated=false;
   const CUBE_PET_NAMES={dog:'강아지',cat:'고양이',bunny:'토끼',pig:'돼지',cow:'소',chick:'병아리',fox:'여우',deer:'사슴',parrot:'앵무새',beaver:'비버'};
   const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
@@ -82,6 +82,9 @@
       #kidscade-life-world-bar strong{font-size:1rem}#kidscade-life-world-bar span{font-size:.78rem;opacity:.72;margin-left:8px}
       #kidscade-life-world-close{border:2px solid #5e684e;background:#fff7d1;color:#30382a;border-radius:6px;padding:7px 12px;font-weight:900;cursor:pointer}
       [data-open-life-world="garden-entry"]{margin-left:auto;border:2px solid #5e684e;background:#ecf8df;color:#35533a;border-radius:8px;padding:8px 12px;font-weight:900;cursor:pointer;white-space:nowrap}
+      #btn-open-shop.has-world-alert{position:relative;box-shadow:0 0 0 3px rgba(245,158,11,.20),0 8px 20px rgba(217,119,6,.20);animation:kidscadeWorldAttention 1.7s ease-in-out infinite}
+      #btn-open-shop.has-world-alert:after{content:"!";position:absolute;right:-7px;top:-8px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#ef4444;color:#fff;font-size:12px;font-weight:1000;border:2px solid #fff}
+      @keyframes kidscadeWorldAttention{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
       #${FRAME_ID}{display:block;width:min(1500px,100%);height:100%;margin:0 auto;border:3px solid #30382a;border-radius:0 0 10px 10px;background:#111a14;box-shadow:5px 8px 0 rgba(0,0,0,.24)}
       @media(max-width:700px){#${OVERLAY_ID}{padding:0}#kidscade-life-world-bar{border-radius:0;border-left:0;border-right:0}#kidscade-life-world-bar span{display:none}#${FRAME_ID}{border-radius:0;border-left:0;border-right:0;border-bottom:0}}
     `;
@@ -96,8 +99,8 @@
 
   function ensure(){
     if(overlay)return;installStyles();overlay=document.createElement('div');overlay.id=OVERLAY_ID;overlay.setAttribute('aria-hidden','true');overlay.innerHTML=`
-      <div id="kidscade-life-world-bar"><div><strong>🌿 Kidscade 생활·생존 월드 v3</strong><span>집 · 농장 · 숲 · 돌산 · 강가 · 씨앗마을에서 Cube Pets와 생활합니다</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
-      <iframe id="${FRAME_ID}" title="Kidscade 생활 월드 v3" src="about:blank"></iframe>`;
+      <div id="kidscade-life-world-bar"><div><strong>🌱 씨앗 월드</strong><span>게임 선물 · 오늘 할 일 · 집 꾸미기 · Cube Pets · 농사와 탐험</span></div><button id="kidscade-life-world-close" type="button">닫기 ✕</button></div>
+      <iframe id="${FRAME_ID}" title="Kidscade 씨앗 월드" src="about:blank"></iframe>`;
     document.body.appendChild(overlay);frame=overlay.querySelector('#'+FRAME_ID);overlay.querySelector('#kidscade-life-world-close').addEventListener('click',close);overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
   }
 
