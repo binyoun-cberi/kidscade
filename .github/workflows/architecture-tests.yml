@@ -162,6 +162,8 @@ jobs:
         run: node --test tests/world-v3-hud.test.cjs
       - name: Run Seed World crafting and development tests
         run: node --test tests/world-v3-progression.test.cjs
+      - name: Run Seed World homestead starter town and pet tests
+        run: node --test tests/world-v3-homestead.test.cjs tests/world-v3-starter-loop.test.cjs tests/world-v3-town.test.cjs tests/world-v3-survival-pets.test.cjs
       - name: Run Seed World meta loop tests
         run: node --test tests/seed-world-meta.test.cjs
       - name: Run main architecture tests
