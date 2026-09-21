@@ -327,6 +327,31 @@ function useWater(amount=1){
   if((i.water||0)<need){toast('💧 물이 부족해요. 강이나 우물에서 물을 떠오세요.');return false;}
   i.water-=need;return true;
 }
+function canCarryBundle(items){
+  const i=inv(),newKeys=Object.entries(items||{}).filter(([k,v])=>Number(v)>0&&(i[k]||0)<=0).map(([k])=>k);
+  return carriedSlotCount()+newKeys.length<=backpackCapacity();
+}
+function homeStorage(){return prog().homestead.homeStorage}
+function homeStorageSlotCount(){return Object.values(homeStorage()).filter(v=>Number(v)>0).length}
+function transferToHomeStorage(key){
+  const i=inv(),s=homeStorage(),qty=Math.max(0,Math.floor(Number(i[key])||0));if(!qty)return;
+  if((s[key]||0)<=0&&homeStorageSlotCount()>=homeStorageCapacity()){toast('집 수납공간도 가득 찼어요. 수납 가구를 더 만들어 보세요.');return;}
+  s[key]=(s[key]||0)+qty;i[key]=0;persist();homeStoragePanel();
+}
+function transferFromHomeStorage(key){
+  const i=inv(),s=homeStorage(),qty=Math.max(0,Math.floor(Number(s[key])||0));if(!qty)return;
+  if((i[key]||0)<=0&&carriedSlotCount()>=backpackCapacity()){toast('🎒 가방에 빈 칸이 없어요.');return;}
+  i[key]=(i[key]||0)+qty;s[key]=0;persist();homeStoragePanel();
+}
+function homeStoragePanel(){
+  const i=inv(),s=homeStorage();
+  const carried=Object.entries(i).filter(([,v])=>Number(v)>0);
+  const stored=Object.entries(s).filter(([,v])=>Number(v)>0);
+  openPanel('<h2>📦 집 수납</h2><p><b>가방 '+carriedSlotCount()+'/'+backpackCapacity()+'칸</b> · 집 수납 '+homeStorageSlotCount()+'/'+homeStorageCapacity()+'칸</p>'+
+    '<h3>가방에서 넣기</h3><div class="grid">'+(carried.length?carried.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-in="'+k+'">전부 넣기</button></div>').join(''):'<div class="item">가방이 비어 있어요.</div>')+'</div>'+
+    '<h3>집에서 꺼내기</h3><div class="grid">'+(stored.length?stored.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-out="'+k+'">전부 꺼내기</button></div>').join(''):'<div class="item">보관 중인 재료가 없어요.</div>')+'</div>');
+}
+
 
 function toolName(key,p=prog()){
   if(key==='hand')return '맨손';
@@ -512,21 +537,37 @@ const FOOD_DEF={
   bakedPotato:{name:'구운 감자',hunger:25,energy:6},
   veggieSoup:{name:'채소 수프',hunger:42,energy:12},
   mushroomSoup:{name:'버섯 수프',hunger:38,energy:10},
+  omelet:{name:'달걀 오믈렛',hunger:44,energy:13},
+  fruitSalad:{name:'과일 샐러드',hunger:35,energy:10},
   cityLunch:{name:'도시락',hunger:46,energy:14},
   cafeToast:{name:'카페 토스트',hunger:28,energy:9}
 };
 const RECIPES={
   grilledFish:{name:'구운 생선',req:{fish:1}},
   bakedPotato:{name:'구운 감자',req:{potato:1}},
-  veggieSoup:{name:'채소 수프',req:{carrot:1,tomato:1}},
-  mushroomSoup:{name:'버섯 수프',req:{mushroom:2}}
+  veggieSoup:{name:'채소 수프',req:{carrot:1,tomato:1,water:1}},
+  mushroomSoup:{name:'버섯 수프',req:{mushroom:2,water:1}},
+  omelet:{name:'달걀 오믈렛',req:{egg:2,milk:1}},
+  fruitSalad:{name:'과일 샐러드',req:{apple:1,pear:1,peach:1}}
 };
+function recipeHasIngredients(recipe,kind='stove'){
+  const i=inv();return Object.entries(recipe.req).every(([k,v])=>k==='water'&&kind==='stove'&&hasIndoorTap()?true:(i[k]||0)>=v);
+}
+function consumeRecipeIngredients(recipe,kind='stove'){
+  const i=inv();
+  for(const [k,v] of Object.entries(recipe.req)){
+    if(k==='water'&&kind==='stove'&&hasIndoorTap())continue;
+    i[k]=Math.max(0,(i[k]||0)-v);
+  }
+}
+
 
 function applyParcelReward(reward){
   if(!reward||typeof reward!=='object')return false;
   const p=prog(),i=inv(),town=townEconomy?.ensureState?.(p)||p.town;
   if(reward.kind==='resources'){
-    for(const [key,qty] of Object.entries(reward.items||{}))i[key]=(i[key]||0)+Math.max(0,Number(qty)||0);
+    if(!canCarryBundle(reward.items||{})){toast('🎒 택배를 받으려면 가방을 조금 비워주세요.');return false;}
+    for(const [key,qty] of Object.entries(reward.items||{}))addInventoryItem(key,qty,{silent:true});
   }else if(reward.kind==='townCoins'){
     if(town)town.coins=(Number(town.coins)||0)+Math.max(0,Number(reward.amount)||0);
   }else if(reward.kind==='fun'){
@@ -597,16 +638,18 @@ function syncCosmeticAura(){
 function inventoryPanel(){
   const items=Object.entries(inv()).filter(([,v])=>Number(v)>0);
   const food=Object.entries(prog().food).filter(([k,v])=>FOOD_DEF[k]&&Number(v)>0);
-  openPanel(`<h2>보관함</h2>
-    <h3>재료</h3><div class="grid">${items.length?items.map(([k,v])=>`<div class="item"><b>${itemName(k)}</b><div>${v}개</div></div>`).join(''):'<div class="item">아직 보관한 재료가 없어요.</div>'}</div>
-    <h3>조리 음식</h3><div class="grid">${food.length?food.map(([k,v])=>`<div class="item"><b>${FOOD_DEF[k].name}</b><div>${v}개 · 허기 +${FOOD_DEF[k].hunger}</div><button data-eat="${k}">먹기</button></div>`).join(''):'<div class="item">아직 만든 음식이 없어요.</div>'}</div>`);
+  openPanel('<h2>🎒 내 가방 · '+carriedSlotCount()+'/'+backpackCapacity()+'칸</h2>'+
+    '<p>같은 물건은 한 칸에 모여요. 가방이 가득 차면 집의 수납함에 내려놓아야 해요.</p>'+
+    '<h3>재료</h3><div class="grid">'+(items.length?items.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div></div>').join(''):'<div class="item">가방이 비어 있어요.</div>')+'</div>'+
+    '<h3>조리 음식</h3><div class="grid">'+(food.length?food.map(([k,v])=>'<div class="item"><b>'+FOOD_DEF[k].name+'</b><div>'+v+'개 · 허기 +'+FOOD_DEF[k].hunger+'</div><button data-eat="'+k+'">먹기</button></div>').join(''):'<div class="item">아직 만든 음식이 없어요.</div>')+'</div>'+
+    '<p style="font-size:12px">집 수납은 집 안의 임시 상자·서랍장에서 관리할 수 있어요.</p>');
 }
 function workbenchPanel(){craftGridPanel();}
 function cookingPanel(kind='stove'){
   panel.dataset.cookKind=kind;
   const i=inv(),allowed=kind==='campfire'?['grilledFish','bakedPotato']:Object.keys(RECIPES);
   const cards=allowed.map(key=>{
-    const r=RECIPES[key],have=Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v);
+    const r=RECIPES[key],have=recipeHasIngredients(r,kind);
     const req=Object.entries(r.req).map(([k,v])=>itemName(k)+' '+v).join(' · ');
     return `<div class="item"><b>${r.name}</b><div>${req}</div><button data-cook="${key}" ${have?'':'disabled'}>요리</button></div>`;
   }).join('');
@@ -614,8 +657,10 @@ function cookingPanel(kind='stove'){
 }
 function cookFood(key){
   const r=RECIPES[key],i=inv(),p=prog();if(!r)return;
-  if(!Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v)){toast('요리 재료가 부족해요.');return;}
-  Object.entries(r.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  const kind=panel.dataset.cookKind||'stove';
+  if(!recipeHasIngredients(r,kind)){toast('요리 재료나 물이 부족해요.');return;}
+  consumeRecipeIngredients(r,kind);
+  if((p.food[key]||0)<=0&&carriedSlotCount()>=backpackCapacity()){toast('🎒 완성된 음식을 넣을 가방 칸이 없어요.');return;}
   p.food[key]=(p.food[key]||0)+1;persist();setAvatarAction('smile',750);worldAudio.sfx('success',.09);toast(r.name+' 완성!');updateStatus();
 }
 function eatFood(key){
@@ -651,6 +696,8 @@ panel.addEventListener('click',e=>{
     Meta?.equipCosmetic?.(def.id);syncCosmeticAura();updateStatus();worldAudio.sfx('purchase',.14);toast(def.name+' 장착!');cosmeticShopPanel();return;
   }
   if(e.target.closest('[data-world-cosmetic-clear]')){Meta?.equipCosmetic?.('');syncCosmeticAura();cosmeticShopPanel();return;}
+  const storeIn=e.target.closest('[data-store-in]');if(storeIn){transferToHomeStorage(storeIn.dataset.storeIn);return;}
+  const storeOut=e.target.closest('[data-store-out]');if(storeOut){transferFromHomeStorage(storeOut.dataset.storeOut);return;}
   const devUpgrade=e.target.closest('[data-dev-upgrade]');if(devUpgrade){upgradeDevelopment(devUpgrade.dataset.devUpgrade);return;}
   const material=e.target.closest('[data-craft-material]');if(material){craftSelected=material.dataset.craftMaterial;craftGridPanel();return;}
   const cell=e.target.closest('[data-craft-cell]');if(cell){
