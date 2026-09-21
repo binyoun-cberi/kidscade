@@ -18,6 +18,9 @@ test('avatar customize action lives inside the avatar preview and Seed World sta
   assert.match(indexBase,/id="avatar-plaza-preview"[\s\S]*id="avatar-open-btn"[\s\S]*<\/div>/);
   assert.match(indexBase,/avatar-preview-edit/);
   assert.match(indexBase,/id="btn-open-shop"[\s\S]*씨앗 월드/);
+  assert.match(avatar,/function ensurePreviewEditButton/);
+  assert.match(avatar,/z-index:80/);
+  assert.match(avatar,/button\.textContent = '👕 꾸미기'/);
 });
 
 test('Seed World uses the compact survival HUD instead of the old debug panels',()=>{
@@ -75,11 +78,11 @@ test('hidden avatar runtimes are silenced while games or Seed World are active',
 });
 
 test('Seed World HUD release is cache-bumped and scripts parse',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=25/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=25/);
-  assert.match(garden,/avatar-preview-inline-edit-v4/);
-  assert.match(garden,/world-v3-homebase-v25/);
-  assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-homebase-2/);
+  assert.match(html,/kidscade-world-v3\.js\?v=26/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=26/);
+  assert.match(garden,/avatar-preview-inline-edit-v5/);
+  assert.match(garden,/world-v3-growth-v26/);
+  assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-growth-1/);
 
   const moduleSource=runtime.replace(/^import .*$/gm,'').replace(/^export /gm,'');
   const moduleCheck=spawnSync(process.execPath,['--check'],{input:moduleSource,encoding:'utf8'});
