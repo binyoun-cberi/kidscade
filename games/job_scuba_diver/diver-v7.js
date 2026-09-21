@@ -1017,11 +1017,6 @@ function reelHarpoon(){
  const f=t.fish,p=world.player,dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1;f.x+=dx/d*(12+meta.up.harpoon*3);f.y+=dy/d*(12+meta.up.harpoon*3);
  beep(430,.035);showHint('릴 감기 · '+Math.round(t.progress*100)+'%',500)
 }
-function fireHarpoon(){
- const p=world.player;if(world.tether){reelHarpoon();return}if(world.shots.length>2)return;
- const speed=520+meta.up.harpoon*55,ax=p.aimX||p.face||1,ay=p.aimY||0,mag=Math.hypot(ax,ay)||1,ux=ax/mag,uy=ay/mag;
- world.shots.push({x:p.x+ux*24,y:p.y+uy*24,vx:ux*speed,vy:uy*speed,life:world.st.harpoon/speed});beep(330,.04)
-}
 function useSonar(){
  if(world.sonarCd>0){showHint('소나 재사용까지 '+world.sonarCd.toFixed(1)+'초',900);return}world.sonar=4.5;world.sonarCd=world.st.sonar;document.body.classList.add('sonarActive');setTimeout(()=>document.body.classList.remove('sonarActive'),1250);beep(220,.18);setTimeout(()=>beep(760,.12),80);
  const sr=subRuleForY(world.player.y);
@@ -1289,17 +1284,33 @@ function update(dt){
  if(p.oxygen<=0||p.hp<=0){finishDive(false,p.oxygen<=0?'산소가 고갈되어 구조되었습니다.':'부상으로 긴급 구조되었습니다.');return}
  if(world.boat&&Math.hypot(p.x-world.boat.x,p.y-world.boat.y)<145&&world.time>4&&world.catchWeight>=world.st.catchCap-.05){showHint('오늘 어획 한도에 도달했습니다 · E로 탐사선에 올라가세요.',650)}
 }
+function openNextMorning(toHome=false){
+ restaurant=null;world=null;dockMissionId=null;dockTab='none';state='menu';
+ ['resultScreen','restaurantScreen','contractScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ if(toHome){$('startScreen').classList.remove('hidden');updateStartButtons();syncAmbience();return}
+ openContracts('none')
+}
+function restToNextMorning(toHome=false){
+ meta.day=Math.max(1,(meta.day||1)+1);save();openNextMorning(toHome)
+}
 function finishDive(ok,reason){
  if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();syncAmbience();
- const hasMission=world.contract.id!=='free',complete=hasMission&&missionComplete(),base=ok&&complete?world.contract.reward:0,depthBonus=ok?Math.round(world.maxDepth*1.25):0,survival=ok?250:0,gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
+ const hasMission=world.contract.id!=='free',complete=hasMission&&missionComplete(),base=ok&&complete?world.contract.reward:0;
+ const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0;
+ const gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];
  if(ok){for(const [key,count] of Object.entries(world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(ingredientInfo(key).name+' ×'+count)}}
- meta.money+=gain;meta.bestDepth=Math.max(meta.bestDepth,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
+ meta.money+=gain;meta.bestDepth=Math.max(previousBest,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
  $('resultTitle').textContent=ok?'탐사선 귀환 · 낮 탐사 종료':'긴급 구조 · 잠수 보고서';
  const loss=ok?'':'<div class="notice">구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다. 사진 도감 기록만 남습니다.</div>';
  const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 어획 '+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg · 식재료 '+stocked+'개를 냉장고에 옮겼습니다.</b>'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>가게 식재료</span><b>'+stocked+'개</b></div><div class="card"><span>의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>';
- const canNight=ok&&stockCount()>0;$('nextBtn').textContent=canNight?'밤 장사 시작':'선착장으로';$('nextBtn').onclick=canNight?startRestaurant:openContracts;$('resultScreen').classList.remove('hidden')
+ const evening='<div class="eveningNote"><b>낮 탐사가 끝났습니다.</b><span>'+(ok?'밤 장사를 하거나 바로 휴식할 수 있습니다. 어느 쪽을 골라도 다음 잠수는 DAY '+(meta.day+1)+'입니다.':'구조 후에는 휴식하고 다음 날 다시 준비합니다.')+'</span></div>';
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
+ const canNight=ok&&availableRecipes().length>0;
+ $('nextBtn').textContent=canNight?'밤 장사 시작':'밤 장사 · 만들 메뉴 없음';$('nextBtn').disabled=!canNight;$('nextBtn').onclick=canNight?startRestaurant:null;
+ const rest=$('restBtn');rest.disabled=false;rest.textContent=ok?'휴식하고 다음 날':'치료받고 다음 날';rest.onclick=()=>restToNextMorning(false);
+ $('homeBtn').textContent='하루 마치고 시작 화면';$('homeBtn').onclick=()=>restToNextMorning(true);
+ $('resultScreen').classList.remove('hidden')
 }
 
 function frame(now){const dt=clamp((now-last)/1000,0,.033);last=now;if(state==='playing'){update(dt);render()}requestAnimationFrame(frame)}requestAnimationFrame(frame);
@@ -1482,8 +1493,8 @@ function finishRestaurant(reason='영업 종료'){
  if(!restaurant||restaurant.finished)return;restaurant.finished=true;if(restaurant.tickId)clearInterval(restaurant.tickId);
  const repGain=restaurant.served*.72+restaurant.bestStreak*.16-restaurant.repPenalty;
  meta.money+=restaurant.earnings;meta.day=Math.max(1,(meta.day||1)+1);meta.shop.totalServed=(meta.shop.totalServed||0)+restaurant.served;meta.shop.reputation=clamp((meta.shop.reputation||0)+repGain,0,99);meta.shop.bestNight=Math.max(meta.shop.bestNight||0,restaurant.earnings);save();
- $('restaurantBody').innerHTML='<div class="nightSummary"><span class="nightBadge">'+reason+'</span><h3>오늘의 장사 결과</h3><div class="report"><div class="card"><span>서빙</span><b>'+restaurant.served+'팀</b></div><div class="card"><span>놓친 손님</span><b>'+restaurant.missed+'팀</b></div><div class="card"><span>최고 연속</span><b>'+restaurant.bestStreak+'</b></div><div class="card"><span>밤 매출</span><b>'+money(restaurant.earnings)+'</b></div><div class="card"><span>가게 평판</span><b>'+Math.round(meta.shop.reputation)+'</b></div><div class="card"><span>남은 재고</span><b>'+stockCount()+'개</b></div></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn gold" id="nextDayBtn">다음 날 잠수 준비</button></div></div>';
- $('nextDayBtn').onclick=()=>{restaurant=null;$('restaurantScreen').classList.add('hidden');openContracts()}
+ $('restaurantBody').innerHTML='<div class="nightSummary"><span class="nightBadge">'+reason+'</span><h3>오늘의 장사 결과</h3><div class="report"><div class="card"><span>서빙</span><b>'+restaurant.served+'팀</b></div><div class="card"><span>놓친 손님</span><b>'+restaurant.missed+'팀</b></div><div class="card"><span>최고 연속</span><b>'+restaurant.bestStreak+'</b></div><div class="card"><span>밤 매출</span><b>'+money(restaurant.earnings)+'</b></div><div class="card"><span>가게 평판</span><b>'+Math.round(meta.shop.reputation)+'</b></div><div class="card"><span>남은 재고</span><b>'+stockCount()+'개</b></div></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="notice"><b>DAY '+(meta.day-1)+' 종료</b> · 다음 날 아침 선착장에서 장비와 의뢰를 다시 준비합니다.</div><div class="toolbar"><button class="btn gold" id="nextDayBtn">DAY '+meta.day+' 잠수 준비</button></div></div>';
+ $('nextDayBtn').onclick=()=>openNextMorning(false)
 }
 
 function contractCards(){
@@ -1551,7 +1562,7 @@ function openCodex(){
 function bind(){
  $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;dockTab='none';save();openContracts('none')};
  $('continueBtn').onclick=()=>{if(!ready)return;load();dockTab='none';openContracts('none')};
- $('nextBtn').onclick=openContracts;$('homeBtn').onclick=()=>{$('resultScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');state='menu'};
+ $('nextBtn').onclick=()=>{};$('restBtn').onclick=()=>{};$('homeBtn').onclick=()=>{};
  $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};
  document.querySelectorAll('#toolBar [data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));document.querySelectorAll('#mActions [data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);useTool()});
  $('actionMain').onclick=useTool;$('interactMain').onclick=interact;$('actionMobile').onclick=useTool;$('interactMobile').onclick=interact;$('dashMobile').onpointerdown=e=>{e.preventDefault();touch.dash=true};$('dashMobile').onpointerup=$('dashMobile').onpointercancel=$('dashMobile').onlostpointercapture=()=>touch.dash=false;
