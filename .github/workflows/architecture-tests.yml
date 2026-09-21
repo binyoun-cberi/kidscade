@@ -157,6 +157,8 @@ jobs:
         run: node --test tests/recommendations.test.cjs
       - name: Run garden regression tests
         run: node --test tests/garden.test.cjs
+      - name: Run Seed World HUD regression tests
+        run: node --test tests/world-v3-hud.test.cjs
       - name: Run main architecture tests
         run: node --test tests/main-architecture.test.cjs
       - name: Enforce deployment-safe paths
