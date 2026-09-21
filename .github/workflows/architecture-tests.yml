@@ -35,6 +35,7 @@ jobs:
             seed-balance-sync.js \
             playtime-state.js \
             seed-wallet.js \
+            seed-world-meta.js \
             daily-progress.js \
             achievement-state.js \
             shop-state.js \
@@ -159,6 +160,8 @@ jobs:
         run: node --test tests/garden.test.cjs
       - name: Run Seed World HUD regression tests
         run: node --test tests/world-v3-hud.test.cjs
+      - name: Run Seed World meta loop tests
+        run: node --test tests/seed-world-meta.test.cjs
       - name: Run main architecture tests
         run: node --test tests/main-architecture.test.cjs
       - name: Enforce deployment-safe paths
