@@ -71,9 +71,36 @@ const CONTRACTS=[
  {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 기록하고 고대 표식판을 회수하세요.',reward:2700,unlock:2,target:'ruins',recommended:430},
  {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰 골목을 지나 침몰선의 항해기록 장치를 회수하세요.',reward:3900,unlock:3,target:'wreck',recommended:575},
  {id:'abyss',title:'05 · 심해 생물 조사',desc:'600m 아래 포식자 해구에서 대형 심해 상어를 A등급 이상 촬영하세요.',reward:5600,unlock:4,target:'abyss',recommended:760},
- {id:'hadal',title:'06 · 영구 암흑 해구 조사',desc:'고래 낙하 지대·심해 크레바스·해저 화산 분화구를 모두 통과하고 심해 아귀나 대왕등각류를 A등급 이상 촬영하세요.',reward:8200,unlock:5,target:'hadal',recommended:2200},
- {id:'harvest',title:'07 · 오늘의 해조 식재료 조사',desc:'미역·다시마·성게를 각각 1개 이상 확보하세요. 식당 신메뉴 연구용 의뢰입니다.',reward:2400,unlock:2,target:'kelp',recommended:260}
+ {id:'hadal',title:'06 · 영구 암흑 해구 조사',desc:'고래 낙하 지대·심해 크레바스·해저 화산 분화구를 모두 통과하고 심해 아귀나 대왕등각류를 A등급 이상 촬영하세요.',reward:8200,unlock:5,target:'hadal',recommended:2200}
 ];
+const DAILY_TASKS=[
+ {id:'reefPhotos',title:'오늘의 사진 기록',desc:'서로 다른 생물 2종을 B등급 이상 촬영하세요.',reward:650,unlock:0,type:'photos',goal:2,grade:'B'},
+ {id:'catchWeight',title:'오늘의 식재료 조달',desc:'먹을 수 있는 생물을 합계 1.5kg 이상 확보하세요.',reward:720,unlock:0,type:'weight',goal:1.5},
+ {id:'seaGreens',title:'오늘의 해조 채집',desc:'미역·다시마·붉은 해조·바다상추 중 2개를 채집하세요.',reward:820,unlock:1,type:'groupCount',keys:['seaweed','kelp','redAlgae','seaLettuce'],goal:2},
+ {id:'mackerelRun',title:'고등어 납품',desc:'고등어 2마리를 가져오세요.',reward:980,unlock:1,type:'count',key:'mackerel',goal:2},
+ {id:'qualityPhoto',title:'연구소 고화질 요청',desc:'A등급 이상 생물 사진을 2종 촬영하세요.',reward:1150,unlock:2,type:'photos',goal:2,grade:'A'},
+ {id:'depthRun',title:'심도 기록 보조',desc:'350m 이상 내려갔다 안전하게 귀환하세요.',reward:1300,unlock:2,type:'depth',goal:350}
+];
+function dailyTaskForDay(day=1){
+ const eligible=DAILY_TASKS.filter(t=>(t.unlock||0)<=meta.unlocked);return eligible[(Math.max(1,day)-1)%Math.max(1,eligible.length)]||DAILY_TASKS[0]
+}
+function dailyTaskProgress(task,worldRef=world){
+ if(!task||!worldRef)return 0;
+ if(task.type==='weight')return worldRef.catchWeight||0;
+ if(task.type==='count')return worldRef.catchCounts?.[task.key]||0;
+ if(task.type==='groupCount')return (task.keys||[]).reduce((n,k)=>n+(worldRef.catchCounts?.[k]||0),0);
+ if(task.type==='depth')return worldRef.maxDepth||0;
+ if(task.type==='photos')return Object.values(worldRef.mission?.photoGrades||{}).filter(g=>gradeAtLeast(g,task.grade||'B')).length;
+ return 0
+}
+function dailyTaskComplete(task,worldRef=world){return dailyTaskProgress(task,worldRef)>=(task?.goal||1)}
+function dailyTaskProgressText(task,worldRef=world){
+ const value=dailyTaskProgress(task,worldRef),goal=task?.goal||1;
+ if(task?.type==='weight')return value.toFixed(1)+' / '+goal.toFixed(1)+'kg';
+ if(task?.type==='depth')return Math.round(value)+' / '+goal+'m';
+ return Math.min(goal,Math.floor(value))+' / '+goal
+}
+
 const UPGRADES={
  oxygen:{name:'산소통',desc:'최대 산소 +15초',base:900,max:5},
  fins:{name:'추진 핀',desc:'수영 속도 +6.5%',base:850,max:5},
@@ -563,7 +590,7 @@ function buildWorld(contract=FREE_DIVE){
  const mission=contract||FREE_DIVE,st=stats(),seed=meta.day*9127+(mission.unlock||0)*503+57,r=seedRand(seed);contract=mission;
  const loadout=(meta.loadout||[]).filter(k=>GEAR_DEFS[k]).slice(0,st.toolSlots);
  world={
-   contract,st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
+   contract,daily:dailyTaskForDay(meta.day),st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],fishGrid:new Map(),decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,catchWeight:0,catchCounts:{},income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
@@ -1009,7 +1036,6 @@ function missionText(){
  if(id==='kelp')return'긴꼬리어 A+ '+(gradeAtLeast(m.photoGrades.long,'A')?(m.photoGrades.long+'등급'):'미달')+' · 식재료 '+m.samples+'/2 · 조류 협곡 '+(m.visited.currentCut?'통과':'미탐사');
  if(id==='ruins')return'유적 '+((m.statue?1:0)+(m.arch?1:0))+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
- if(id==='harvest')return'미역 '+(world.catchCounts.seaweed||0)+'/1 · 다시마 '+(world.catchCounts.kelp||0)+'/1 · 성게 '+(world.catchCounts.urchin||0)+'/1';
  if(id==='hadal'){const deepPhoto=['angler','giantIsopod'].map(k=>m.photoGrades[k]).filter(Boolean).sort((a,b)=>GRADE_SCORE[b]-GRADE_SCORE[a])[0];return'고래 낙하 '+(m.visited.whaleFall?'도달':'미탐사')+' · 크레바스 '+(m.visited.riftAbyss?'도달':'미탐사')+' · 화산 '+(m.visited.volcanoCaldera?'도달':'미탐사')+' · 심해 생물 '+(deepPhoto||'미촬영')}
  return'600m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
@@ -1020,7 +1046,6 @@ function missionComplete(){
  if(id==='kelp')return !!(gradeAtLeast(m.photoGrades.long,'A')&&m.samples>=2&&m.visited.currentCut);
  if(id==='ruins')return !!(m.statue&&m.arch&&m.relic);
  if(id==='wreck')return !!m.recorder;
- if(id==='harvest')return !!((world.catchCounts.seaweed||0)>=1&&(world.catchCounts.kelp||0)>=1&&(world.catchCounts.urchin||0)>=1);
  if(id==='hadal')return !!(m.visited.whaleFall&&m.visited.riftAbyss&&m.visited.volcanoCaldera&&['angler','giantIsopod'].some(k=>gradeAtLeast(m.photoGrades[k],'A')));
  return !!(m.deep&&['A','S'].includes(m.giantGrade));
 }
@@ -1028,7 +1053,7 @@ function updateHud(){
  const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y),reserve=oxygenReserveStatus();
  $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y),sub=subzoneForY(p.y),sr=SUBZONE_RULES[sub.id]||{},pressure=world.pressureOver>0?' · 압력+'+Math.round(world.pressureOver)+'m':'';
  $('zoneText').textContent=sub.name+' · '+(sr.short||ZONE_RULES[z.id]?.danger||'')+pressure;
- $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionText();$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
+ $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionText()+' · 오늘 '+world.daily.title+' '+dailyTaskProgressText(world.daily);$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
  const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}
 }
 function setTool(name){
@@ -1362,8 +1387,8 @@ function restToNextMorning(toHome=false){
 function finishDive(ok,reason){
  if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();syncAmbience();
  const hasMission=world.contract.id!=='free',complete=hasMission&&missionComplete(),base=ok&&complete?world.contract.reward:0;
- const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0;
- const gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
+ const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0,dailyComplete=ok&&dailyTaskComplete(world.daily),dailyBonus=dailyComplete?world.daily.reward:0;
+ const gain=ok?Math.max(0,world.income+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];
  if(ok){for(const [key,count] of Object.entries(world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(ingredientInfo(key).name+' ×'+count)}}
  meta.money+=gain;meta.bestDepth=Math.max(previousBest,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
@@ -1371,7 +1396,7 @@ function finishDive(ok,reason){
  const loss=ok?'':'<div class="notice">구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다. 사진 도감 기록만 남습니다.</div>';
  const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 어획 '+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg · 식재료 '+stocked+'개를 냉장고에 옮겼습니다.</b>'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
  const evening='<div class="eveningNote"><b>낮 탐사가 끝났습니다.</b><span>'+(ok?'밤 장사를 하거나 바로 휴식할 수 있습니다. 어느 쪽을 골라도 다음 잠수는 DAY '+(meta.day+1)+'입니다.':'구조 후에는 휴식하고 다음 날 다시 준비합니다.')+'</span></div>';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>주요 의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>오늘의 보너스</span><b>'+(dailyComplete?money(dailyBonus):'미완료')+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
  const canNight=ok&&availableRecipes().length>0;
  $('nextBtn').textContent=canNight?'밤 장사 시작':'밤 장사 · 만들 메뉴 없음';$('nextBtn').disabled=!canNight;$('nextBtn').onclick=canNight?startRestaurant:null;
  const rest=$('restBtn');rest.disabled=false;rest.textContent=ok?'휴식하고 다음 날':'치료받고 다음 날';rest.onclick=()=>restToNextMorning(false);
@@ -1571,7 +1596,8 @@ function finishRestaurant(reason='영업 종료'){
 }
 
 function contractCards(){
- return CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 의뢰':'선택 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
+ const daily=dailyTaskForDay(meta.day),dailyCard='<div class="missionCard dailyMission"><span>오늘의 보너스 · 자동 적용</span><h3>'+daily.title+'</h3><p>'+daily.desc+'</p><div class="depthRating">안전 귀환 시 '+money(daily.reward)+'</div><b>주요 의뢰와 동시에 진행됩니다.</b></div>';
+ return dailyCard+CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 주요 의뢰':'주요 탐사 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 주요 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
 }
 function gearLoadoutCards(){
  const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'</small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
@@ -1592,9 +1618,9 @@ function dockDetailHtml(){
 }
 function openContracts(tab=dockTab){
  dockTab=tab||'none';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount(),plan=selected?selected.title:'자유 잠수';
+ const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount(),plan=selected?selected.title:'자유 잠수',daily=dailyTaskForDay(meta.day);
  $('contractBody').innerHTML=
- '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><em>'+plan+'</em></div>'+
+ '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><span class="dailyStatus">오늘 +'+money(daily.reward)+'</span><em>'+plan+'</em></div>'+
  '<div class="dockScene">'+
    '<div class="dockSky"><i></i><i></i><i></i></div><div class="dockHills"></div>'+
    dockBuildingHtml('Office','의뢰 사무소','탐사 의뢰 선택','house-beige.png','roof-red-mid.png','window-checkered.png',dockTab==='missions')+
