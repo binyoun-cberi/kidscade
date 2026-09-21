@@ -35,8 +35,11 @@
     try{
       const raw=JSON.parse(localStorage.getItem('kidscade_world_v2')||'null');
       const d=raw?.progression?.development||{};
-      const score=Math.max(0,(Number(d.farmLevel)||1)-1)+Math.max(0,(Number(d.fishingLevel)||1)-1)+Math.max(0,(Number(d.stoneMineLevel)||1)-1)+Math.max(0,(Number(d.ironMineLevel)||1)-1)+Math.max(0,(Number(d.techLevel)||1)-1);
-      return Math.max(1,Math.min(5,1+Math.floor(score/3)));
+      const score=Math.max(0,(Number(d.farmLevel)||1)-1)+Math.max(0,Number(d.fishingLevel)||0)+
+        Math.max(0,(Number(d.stoneMineLevel)||1)-1)+Math.max(0,(Number(d.ironMineLevel)||1)-1)+Math.max(0,(Number(d.techLevel)||1)-1)+
+        Math.max(0,Number(d.orchardLevel)||0)+Math.max(0,Number(d.ranchLevel)||0)+Math.max(0,Number(d.waterLevel)||0)+
+        Math.max(0,(Number(d.houseLevel)||1)-1)+Math.max(0,Number(d.carpenterLevel)||0);
+      if(score>=22)return 5;if(score>=15)return 4;if(score>=9)return 3;if(score>=4)return 2;return 1;
     }catch(_){return 1}
   }
   function syncWorldEntryStatus(){
@@ -122,7 +125,14 @@
 
   document.addEventListener('click',e=>{const trigger=e.target.closest?.('[data-open-life-world]');if(!trigger)return;e.preventDefault();e.stopImmediatePropagation?.();open();},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay?.classList.contains('open')){e.preventDefault();close()}},true);
-  window.addEventListener('message',e=>{if(e.source!==frame?.contentWindow)return;if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close')close();});
+  window.addEventListener('message',e=>{
+    if(e.source!==frame?.contentWindow)return;
+    if(e.data?.type==='kidscade-life-world-close'||e.data?.type==='kidscade-world-v2-close'){close();return;}
+    if(e.data?.type==='kidscade:open-avatar-studio'){
+      close();
+      setTimeout(()=>document.getElementById('avatar-open-btn')?.click(),80);
+    }
+  });
 
   installStyles();syncCubePetsSidebar();syncWorldEntryStatus();if(!installEntryButton()){const observer=new MutationObserver(()=>{if(installEntryButton()){syncCubePetsSidebar();observer.disconnect()}});observer.observe(document.documentElement,{childList:true,subtree:true});}
   window.addEventListener('pageshow',()=>{syncCubePetsSidebar();syncWorldEntryStatus();});
