@@ -121,11 +121,11 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/createTownEconomy/);
   assert.match(runtime,/kidscade-world-city\.js\?v=16/);
   assert.match(runtime,/kidscade-world-grid\.js\?v=3/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=12/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=13/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=6/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=28/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=28/);
+  assert.match(html,/kidscade-world-v3\.js\?v=29/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=29/);
 });
 
 test('starter resources provide six hand pickups per material and one-time guidance',()=>{
