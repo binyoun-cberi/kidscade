@@ -138,3 +138,62 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .dishReady{display:flex;gap:10px;align-items:center;margin:8px 0 10px;padding:10px;border-radius:12px;background:rgba(101,219,154,.09);border:1px solid rgba(101,219,154,.22)}.dishReady>span{font-size:31px}.dishReady b,.dishReady small{display:block}.dishReady b{color:#e9ffef}.dishReady small{margin-top:3px;color:#a8d7b8;font-size:9px}
 @media(max-width:700px){.restaurantPanel{padding:12px}.diningRoom{padding-left:7px;padding-right:7px}.seatRow{gap:5px}.tycoonSeat{min-height:160px;padding:39px 4px 6px}.customerSprite{height:64px}.orderBubble{font-size:8px;padding:5px}.counterLine{font-size:16px;padding-left:12%;padding-right:12%}.kitchenHead{display:block}.kitchenHead small{display:block;text-align:left;margin-top:3px}.ingredientShelf{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.restaurantHero h3{font-size:28px}.restaurantHero p{display:none}.tycoonStatus{gap:4px}.tycoonStatus span{padding:4px 6px}.tycoonSeat{min-height:148px}.customerSprite{height:54px}.customerName{font-size:9px}.patienceText{display:none}.orderBubble b{display:block}.counterLine{margin-top:7px}.ingredientBtn{padding:7px}.cookAction{min-height:44px}}
+
+
+/* v14 free-dive dock, capture gear and richer kitchen */
+.loadoutHidden{display:none!important}
+.dockPanel{width:min(1040px,97vw)}
+.dockSummary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px 0 14px}
+.dockSummary>div{padding:12px;border-radius:14px;background:linear-gradient(135deg,rgba(15,87,103,.62),rgba(7,39,51,.82));border:1px solid rgba(126,224,239,.18)}
+.dockSummary span,.dockSummary small,.dockSummary b{display:block}
+.dockSummary span{font-size:9px;color:#75dce9;font-weight:1000}
+.dockSummary b{margin:4px 0;color:#fff0ae;font-size:17px}
+.dockSummary small{font-size:9px;color:#b8d5da;line-height:1.4}
+.sectionTitle{margin:17px 0 7px;font-size:15px;color:#e8fbff}
+.sectionTitle small{font-size:9px;color:#91bec6;font-weight:800}
+.missionGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.missionCard{padding:12px;border-radius:13px;border:1px solid rgba(122,216,231,.18);background:rgba(6,48,61,.78);color:#eafcff;text-align:left;cursor:pointer}
+.missionCard>span{font-size:8px;color:#6fd8e7;font-weight:1000}
+.missionCard h3{margin:4px 0 5px;font-size:13px}
+.missionCard p{min-height:47px;margin:0;color:#b7d4da;font-size:9px;line-height:1.45}
+.missionCard>b{display:block;margin-top:7px;color:#81e9ba;font-size:10px}
+.missionCard.selected{border-color:#ffd66d;background:linear-gradient(135deg,rgba(120,86,21,.55),rgba(7,52,64,.88));box-shadow:0 0 0 2px rgba(255,214,109,.08)}
+.gearGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.gearCard{min-height:174px;padding:10px;border:2px solid var(--tier);border-radius:14px;background:linear-gradient(180deg,rgba(8,51,64,.9),rgba(3,30,40,.95));color:#eafdff;text-align:left;cursor:pointer;box-shadow:inset 0 4px 0 var(--tier)}
+.gearCard.selected{background:linear-gradient(180deg,rgba(16,77,89,.96),rgba(4,31,40,.96));box-shadow:0 0 0 2px var(--tier),inset 0 4px 0 var(--tier)}
+.gearArt{display:flex;align-items:center;gap:4px;height:54px}
+.gearArt img{width:48px;height:48px;object-fit:contain;image-rendering:pixelated}
+.gearArt span{font-size:25px}
+.gearCard>b,.gearCard>em,.gearCard>small,.gearCard>strong{display:block}
+.gearCard>b{font-size:13px}
+.gearCard>em{margin:3px 0;color:var(--tier);font-size:9px;font-style:normal;font-weight:1000}
+.gearCard>small{min-height:40px;color:#adcfd5;font-size:9px;line-height:1.4}
+.gearCard>strong{margin-top:7px;color:#ffe078;font-size:9px}
+.loadoutCount{grid-column:1/-1;padding:7px 9px;border-radius:9px;background:rgba(255,211,91,.08);color:#ffe59a;font-size:9px;font-weight:900}
+.dockActions{margin-top:14px}
+.gearUpgrade{border-top:4px solid var(--tier)}
+.recipeNeeds{margin:5px 0 8px;padding:6px 8px;border-radius:8px;background:rgba(255,215,104,.08);border:1px dashed rgba(255,215,104,.22);color:#ffe6a3;font-size:9px;font-weight:900}
+.ingredientBtn{min-height:69px;position:relative;padding-left:54px}
+.ingredientSprite{position:absolute;left:7px;top:50%;transform:translateY(-50%);width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
+.seatRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+#toolBar{max-width:calc(100vw - 20px);flex-wrap:wrap;justify-content:center}
+.toolBtn{min-width:72px;padding:8px 9px;font-size:10px}
+#mActions{grid-template-columns:repeat(3,60px)}
+#interactMobile{grid-column:1 / span 3}
+@media(max-width:720px){
+  .dockSummary{grid-template-columns:1fr}
+  .missionGrid{grid-template-columns:1fr 1fr}
+  .gearGrid{grid-template-columns:repeat(3,1fr)}
+  .gearCard{min-height:150px}
+  .gearArt{height:42px}
+  .gearArt img{width:36px;height:36px}
+  .gearCard>small{min-height:35px}
+}
+@media(max-width:480px){
+  .missionGrid{grid-template-columns:1fr}
+  .gearGrid{grid-template-columns:repeat(2,1fr)}
+  #mActions{grid-template-columns:62px 62px}
+  #interactMobile{grid-column:1 / span 2}
+  .ingredientBtn{padding-left:44px}
+  .ingredientSprite{width:32px;height:32px}
+}
