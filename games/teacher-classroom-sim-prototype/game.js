@@ -79,6 +79,7 @@
   var connectMode=false;
   var activeActionCategory="observe";
   var teacherTask=null;
+  var lessonState={phase:"ready",phaseStart:0,history:[],presenterId:null};
   var teacherScene="classroom";
   var teacher={x:50,y:22};
   var stats=null;
@@ -224,7 +225,7 @@
         action:"READ",intent:null,intentTicks:0,actionTicks:rand(2,5),trust:.62,learned:0,interventions:0,
         memory:[],moving:false,observation:0,observedWork:false,teacherUse:{},socialTarget:null,socialGoal:null,groupId:null,
         conflictWith:null,conflictUntil:0,avoidId:null,avoidUntil:0,
-        pairWith:null,pairUntil:0,role:null,roleUntil:0,correctionLoad:0
+        pairWith:null,pairUntil:0,lessonPartner:null,role:null,roleUntil:0,correctionLoad:0
       });
     });
   }
@@ -232,8 +233,10 @@
     stats={
       events:[],fitSamples:[],engageSamples:[],learningStart:students.map(function(s){return s.skill}),
       teacherActs:0,disruptions:0,helped:0,praises:0,lateTicks:0,
-      conflicts:0,reconciled:0,connections:0,roles:0
+      conflicts:0,reconciled:0,connections:0,roles:0,
+      instructionMoves:[],phaseSamples:{},phaseTransitions:0
     };
+    resetLessonState();
   }
   function remember(s,text,weight){
     s.memory.unshift({text:text,weight:weight||.5,time:gameMinute()});
@@ -319,19 +322,77 @@
     if(s.scene!==teacherScene)return 0;
     return clamp(1-Math.hypot(s.x-teacher.x,s.y-teacher.y)/48);
   }
+  var LESSON_PHASES={
+    ready:{label:"수업 준비",desc:"아직 본격적인 수업 행동을 시작하지 않았습니다.",dims:{verbal:.25,visual:.25,hands:.15,social:.10,activity:.10,independent:.25}},
+    explain:{label:"설명 듣기",desc:"교사의 설명을 중심으로 개념을 만나는 시간입니다.",dims:{verbal:.92,visual:.32,hands:.05,social:.04,activity:.04,independent:.12}},
+    question:{label:"질문과 응답",desc:"질문을 던지고 학생의 생각과 이해 정도를 확인합니다.",dims:{verbal:.78,visual:.28,hands:.08,social:.34,activity:.12,independent:.20}},
+    demo:{label:"시범·예시",desc:"말보다 실제 예시나 시범을 보여주며 이해를 돕습니다.",dims:{verbal:.46,visual:.88,hands:.62,social:.08,activity:.18,independent:.12}},
+    individual:{label:"개별 활동",desc:"학생이 자기 속도로 문제나 과제를 해결합니다.",dims:{verbal:.18,visual:.40,hands:.34,social:.04,activity:.14,independent:.94}},
+    pair:{label:"짝 활동",desc:"두 학생이 이야기하고 서로 확인하며 과제를 해결합니다.",dims:{verbal:.48,visual:.35,hands:.42,social:.94,activity:.42,independent:.30}},
+    presentation:{label:"발표·공유",desc:"한 학생의 생각이나 결과를 학급과 공유합니다.",dims:{verbal:.86,visual:.48,hands:.16,social:.62,activity:.18,independent:.18}},
+    closure:{label:"정리하기",desc:"핵심 내용을 다시 모으고 오늘 배운 것을 확인합니다.",dims:{verbal:.66,visual:.46,hands:.10,social:.16,activity:.06,independent:.42}}
+  };
+  function resetLessonState(){
+    lessonState={phase:"ready",phaseStart:gameSec,history:[],presenterId:null};
+    students.forEach(function(s){s.lessonPartner=null});
+  }
+  function currentPhase(){
+    return LESSON_PHASES[lessonState.phase]||LESSON_PHASES.ready;
+  }
+  function subjectFit(s){
+    var p=current();
+    if(p.subject==="체육")return .58*s.move+.24*s.soc+.18*s.compete;
+    if(p.subject==="미술")return .52*s.hands+.34*s.visual+.14*s.creative;
+    if(p.subject==="국어")return .46*s.verbal+.34*s.reading+.20*s.visual;
+    if(p.subject==="과학")return .38*s.hands+.34*s.visual+.28*s.persist;
+    if(p.subject==="사회")return .40*s.verbal+.30*s.reading+.30*s.soc;
+    return .46*s.persist+.30*s.visual+.24*s.hands;
+  }
   function lessonFit(s){
-    var p=current(),mode=q("#lesson").value;
-    if(p.subject==="체육")return .62*s.move+.23*s.soc+.15*s.compete;
-    if(p.subject==="미술")return .55*s.hands+.45*s.visual;
-    if(mode==="hands")return s.hands;
-    if(mode==="pair")return s.soc;
-    if(mode==="quiz")return .45*s.verbal+.30*s.soc+.25*s.persist;
-    return .55*s.verbal+.45*s.persist;
+    var d=currentPhase().dims;
+    var phaseScore=
+      d.verbal*s.verbal+
+      d.visual*s.visual+
+      d.hands*s.hands+
+      d.social*s.soc+
+      d.activity*s.move+
+      d.independent*s.persist;
+    var total=d.verbal+d.visual+d.hands+d.social+d.activity+d.independent;
+    return clamp((phaseScore/(total||1))*.78+subjectFit(s)*.22);
+  }
+  function assignLessonPairs(){
+    var ordered=students.filter(function(s){return s.scene===current().loc}).slice().sort(function(a,b){return a.seat-b.seat});
+    ordered.forEach(function(s){s.lessonPartner=null});
+    for(var i=0;i<ordered.length-1;i+=2){
+      ordered[i].lessonPartner=ordered[i+1].id;
+      ordered[i+1].lessonPartner=ordered[i].id;
+    }
+  }
+  function setLessonPhase(action){
+    lessonState.phase=action.phase;
+    lessonState.phaseStart=gameSec;
+    lessonState.presenterId=null;
+    students.forEach(function(s){s.lessonPartner=null;s.intent=null;s.intentTicks=0});
+    if(action.phase==="pair")assignLessonPairs();
+    if(action.phase==="presentation"){
+      var candidates=students.filter(function(s){return s.scene===current().loc});
+      candidates.sort(function(a,b){return (b.focus+b.skill+b.assert)-(a.focus+a.skill+a.assert)});
+      var presenter=candidates[0]||null;
+      if(presenter){lessonState.presenterId=presenter.id;presenter.action="PRESENT";presenter.actionTicks=action.duration}
+    }
+    lessonState.history.push({id:action.id,phase:action.phase,label:action.label,time:gameMinute()});
+    if(stats){
+      stats.instructionMoves.push(action.id);
+      stats.phaseTransitions++;
+    }
+    log(action.label+"으로 수업 흐름을 전환했다.","teacher",teacherScene);
   }
   function nearbyStudents(s,maxDist){
     return students.filter(function(o){return o!==s&&o.scene===s.scene&&!o.targetScene&&distance(s,o)<=maxDist});
   }
   function chooseSocialTarget(s,purpose){
+    var lp=(current().kind==="lesson"&&lessonState.phase==="pair"&&s.lessonPartner!==null)?studentById(s.lessonPartner):null;
+    if(lp&&lp.scene===s.scene&&lp.id!==s.avoidId)return lp;
     var pair=activePair(s);
     if(pair&&pair.scene===s.scene&&pair.id!==s.avoidId)return pair;
     var preferred=circlePeers(s,s.scene).filter(function(o){return !(s.avoidUntil>gameSec&&s.avoidId===o.id)});
@@ -462,13 +523,18 @@
 
     if(a==="TALK"){
       s.talkNeed=clamp(s.talkNeed-.15);s.socialNeed=clamp(s.socialNeed-.08);
-      if(current().kind==="lesson"&&q("#lesson").value!=="pair"){
+      if(current().kind==="lesson"&&lessonState.phase!=="pair"){
         stats.disruptions++;
         if(Math.random()<.48)log(s.name+"이(가) "+(p?p.name+"에게":"옆자리 쪽으로")+" 말을 걸기 시작했다.","incident",s.scene);
       }else if(p){
         changeRelation(s,p,{affinity:.005,irritation:-.003});
         if(Math.random()<.25)log(s.name+"와 "+p.name+"이(가) 이야기를 나누고 있다.","social",s.scene);
       }
+    }
+    if(a==="PAIR_WORK"&&p){
+      s.socialNeed=clamp(s.socialNeed-.10);s.focus=clamp(s.focus+.018);s.socialTarget=p.id;
+      changeRelation(s,p,{affinity:.003,irritation:-.002});
+      if(Math.random()<.18)log(s.name+"와 "+p.name+"이(가) 짝 과제를 함께 확인하고 있다.","learning",s.scene);
     }
     if(a==="MOVE"&&current().kind==="lesson"&&Math.random()<.40){stats.disruptions++;log(s.name+"이(가) 몸을 크게 움직여 주변의 시선을 끌었다.","incident",s.scene)}
     if(a==="SLEEP")log(s.name+"이(가) 점점 고개를 떨구기 시작했다.","incident",s.scene);
@@ -528,10 +594,11 @@
     }
     if(s.action==="REJECTED"&&s.actionTicks>0)return;
 
-    var fit=lessonFit(s),near=teacherNear(s),hard=clamp(.70-s.skill+.16),target=chooseSocialTarget(s,"SOCIAL");
+    var phase=lessonState.phase,fit=lessonFit(s),near=teacherNear(s),hard=clamp(.70-s.skill+.16),target=chooseSocialTarget(s,"SOCIAL");
     var roleActive=s.roleUntil>gameSec;
     var vals={
-      WORK:.38+s.persist*.25+s.focus*.25+fit*.22+(roleActive?.06:0),
+      WORK:.24+s.persist*.22+s.focus*.20+fit*.18+(roleActive?.05:0),
+      ATTEND:.18+s.focus*.26+fit*.24+s.rule*.08,
       TALK:s.talkNeed*.42+s.soc*.22+s.imp*.16+(target?relation(s,target).affinity*.18:0)-near*s.trust*.48+(1-fit)*.14+rand(-.035,.035),
       DOODLE:s.boredom*.50+s.imp*.12+(1-fit)*.22-near*.20+rand(-.03,.03),
       HELP:s.helpNeed*.48+hard*.38+s.persist*.08+near*.08,
@@ -539,20 +606,52 @@
       MOVE:s.moveNeed*.57+s.move*.22+s.imp*.15-near*.36+rand(-.03,.03)
     };
 
+    if(["explain","demo","closure","presentation"].indexOf(phase)>=0){
+      vals.ATTEND+=.24;vals.WORK-=.13;
+    }
+    if(phase==="question"){
+      vals.ATTEND+=.10;
+      vals.RAISE_HAND=.18+s.verbal*.24+s.assert*.19+s.skill*.15+s.focus*.16;
+      vals.WORK-=.10;
+    }
+    if(phase==="individual"){
+      vals.WORK+=.26;vals.ATTEND-=.10;vals.TALK-=.06;
+    }
+    if(phase==="pair"){
+      var lp=s.lessonPartner!==null?studentById(s.lessonPartner):null;
+      vals.PAIR_WORK=.34+s.soc*.24+fit*.20+s.focus*.15+(lp?relation(s,lp).affinity*.09:0);
+      vals.WORK+=.04;vals.TALK-=.03;vals.ATTEND-=.08;
+    }
+    if(phase==="presentation"&&lessonState.presenterId===s.id){
+      vals.PRESENT=1.3;vals.ATTEND=-1;vals.WORK=-1;vals.TALK=-1;vals.DOODLE=-1;
+    }
+
     var helpTarget=roleActive?chooseSocialTarget(s,"HELP"):null;
     if(roleActive&&helpTarget&&helpTarget.helpNeed>.18)vals.HELP_PEER=.37+s.helpful*.32+helpTarget.helpNeed*.28-near*.02;
 
-    if(current().subject==="체육"){
+    if(current().subject==="체육"&&["individual","pair"].indexOf(phase)>=0){
       var rival=chooseSocialTarget(s,"COMPETE");
-      vals.PLAY=.42+s.move*.30+s.energy*.18+s.soc*.10;
-      vals.COMPETE=.25+s.compete*.38+s.soc*.14+s.energy*.12+(rival?relation(s,rival).rivalry*.12:0);
-      vals.REST=.16+(1-s.energy)*.45;
-      vals.WORK=-1;vals.DOODLE=-1;vals.HELP=-1;vals.HELP_PEER=-1;
+      vals.PLAY=.36+s.move*.30+s.energy*.18+s.soc*.10;
+      vals.COMPETE=.22+s.compete*.38+s.soc*.14+s.energy*.12+(rival?relation(s,rival).rivalry*.12:0);
+      vals.REST=.12+(1-s.energy)*.40;
+      if(phase==="pair")vals.PAIR_WORK+=.12;
     }
 
     var best=Object.keys(vals)[0];
     Object.keys(vals).forEach(function(k){if(vals[k]>vals[best])best=k});
-    if(best!=="WORK"&&vals[best]>.54){
+
+    var productive=["WORK","ATTEND","PAIR_WORK","RAISE_HAND","PRESENT"].indexOf(best)>=0;
+    if(productive){
+      s.intent=null;s.intentTicks=0;
+      s.action=best;s.actionTicks=best==="PRESENT"?6:rand(2.5,5);
+      if(best==="PAIR_WORK"){
+        var partner=s.lessonPartner!==null?studentById(s.lessonPartner):null;
+        if(partner)s.socialTarget=partner.id;
+      }
+      return;
+    }
+
+    if(vals[best]>.54){
       if(s.intent===best)s.intentTicks++;else{s.intent=best;s.intentTicks=1}
       if(s.intentTicks>=2){
         if(best==="HELP_PEER")beginPeerHelp(s,helpTarget);
@@ -562,7 +661,7 @@
       }
     }else{
       s.intent=null;s.intentTicks=0;
-      if(s.actionTicks<=0)s.action=current().subject==="체육"?"PLAY":"WORK";
+      if(s.actionTicks<=0)s.action=phase==="individual"?"WORK":"ATTEND";
     }
   }
 
@@ -662,8 +761,22 @@
 
       if(s.action==="WORK"&&s.scene===current().loc){
         s.focus=clamp(s.focus+.009*fit-.006*s.boredom);
-        var gain=.00155*fit*s.focus;s.skill=clamp(s.skill+gain);s.learned+=gain;
-      }else if(s.action==="TALK"){s.focus=clamp(s.focus-.03)}
+        var gain=.00165*fit*s.focus;s.skill=clamp(s.skill+gain);s.learned+=gain;
+      }else if(s.action==="ATTEND"){
+        s.focus=clamp(s.focus+.006*fit-.004*s.boredom);
+        var listenGain=.00105*fit*s.focus;s.skill=clamp(s.skill+listenGain);s.learned+=listenGain;
+      }else if(s.action==="PAIR_WORK"){
+        var partner=s.lessonPartner!==null?studentById(s.lessonPartner):null;
+        var pairFit=partner?relation(s,partner).affinity:.35;
+        s.focus=clamp(s.focus+.005*fit-.002*s.boredom);
+        var pairGain=.00145*fit*s.focus*(.82+pairFit*.22);s.skill=clamp(s.skill+pairGain);s.learned+=pairGain;
+      }else if(s.action==="RAISE_HAND"){
+        s.focus=clamp(s.focus+.012);s.mood=clamp(s.mood+.006);
+        var qGain=.0008*fit;s.skill=clamp(s.skill+qGain);s.learned+=qGain;
+      }else if(s.action==="PRESENT"){
+        s.focus=clamp(s.focus+.01);s.mood=clamp(s.mood+.008);
+        var pGain=.0009*fit;s.skill=clamp(s.skill+pGain);s.learned+=pGain;
+      }else if(s.action==="TALK"){s.focus=clamp(s.focus-(lessonState.phase==="pair"?.012:.03))}
       else if(s.action==="DOODLE"){s.boredom=clamp(s.boredom-.09);s.focus=clamp(s.focus-.018)}
       else if(s.action==="SLEEP"){s.focus=clamp(s.focus-.03);s.sleepNeed=clamp(s.sleepNeed-.07)}
       else if(s.action==="MOVE"){s.moveNeed=clamp(s.moveNeed-.10);s.focus=clamp(s.focus-.015)}
@@ -721,6 +834,7 @@
       return a+(good?s.focus:Math.max(.10,s.focus-.27));
     },0)/students.length;
     stats.fitSamples.push(fit);stats.engageSamples.push(eng);
+    stats.phaseSamples[lessonState.phase]=(stats.phaseSamples[lessonState.phase]||0)+1;
   }
 
   function mediateConflict(s){
@@ -812,11 +926,14 @@
   function effectMultiplier(action,s){
     return actionCompatibility(action,s)*repeatMultiplier(action,s);
   }
+  function actionById(id){
+    return TEACHER_ACTIONS[id]||CLASS_ACTIONS[id]||INSTRUCTION_ACTIONS[id]||null;
+  }
   function finishTeacherTask(){
     if(!teacherTask)return;
     var task=teacherTask;
     teacherTask=null;
-    var action=TEACHER_ACTIONS[task.actionId]||CLASS_ACTIONS[task.actionId];
+    var action=actionById(task.actionId);
     var s=task.targetId===null?null:studentById(task.targetId);
     if(s&&s.scene!==task.scene){
       log((s?s.name+"의 ":"")+"상황이 바뀌어 교사 행동이 중간에 끊겼다.","teacher",task.scene);
@@ -847,6 +964,7 @@
     if(action.near&&s){
       teacher.x=clamp(s.x-7,5,95);teacher.y=clamp(s.y-10,15,91);
     }
+    if(action.instruction)setLessonPhase(action);
     var duration=action.duration||10;
     teacherTask={
       actionId:action.id,
@@ -865,6 +983,61 @@
     teacherTask={actionId:null,targetId:null,start:gameSec,end:gameSec+duration,duration:duration,multiplier:1,label:label};
     return true;
   }
+
+  var INSTRUCTION_ACTIONS={
+    explain:{
+      id:"explain",instruction:true,phase:"explain",label:"설명하기",duration:35,
+      desc:"핵심 개념을 짧게 설명합니다. 오래 이어지면 일부 학생의 집중이 빠르게 떨어집니다.",
+      effect:function(){
+        students.filter(function(s){return s.scene===current().loc}).forEach(function(s){s.focus=clamp(s.focus+.018*lessonFit(s));});
+      }
+    },
+    question:{
+      id:"question",instruction:true,phase:"question",label:"질문 던지기",duration:22,
+      desc:"학생의 생각을 묻고 손들기·응답을 유도합니다.",
+      effect:function(){
+        var raised=students.filter(function(s){return s.scene===current().loc&&s.action==="RAISE_HAND"});
+        if(raised.length){var r=pick(raised);r.mood=clamp(r.mood+.018);r.focus=clamp(r.focus+.025);log(r.name+"이(가) 질문에 답하며 자신의 생각을 설명했다.","learning",teacherScene);}
+        else log("질문을 던졌지만 바로 손을 드는 학생은 없었다.","learning",teacherScene);
+      }
+    },
+    demo:{
+      id:"demo",instruction:true,phase:"demo",label:"시범 보이기",duration:35,
+      desc:"판서·교구·실제 예시를 보여주며 말로만 설명하지 않습니다.",
+      effect:function(){
+        students.filter(function(s){return s.scene===current().loc}).forEach(function(s){s.focus=clamp(s.focus+.015*s.visual+.012*s.hands);});
+      }
+    },
+    individual:{
+      id:"individual",instruction:true,phase:"individual",label:"개별활동 시작",duration:15,
+      desc:"학생들이 자기 속도로 문제나 과제를 해결하게 합니다. 교사는 이때 돌아다니며 관찰·지원할 수 있습니다.",
+      effect:function(){
+        students.filter(function(s){return s.scene===current().loc}).forEach(function(s){s.action="WORK";s.actionTicks=2;});
+      }
+    },
+    pair:{
+      id:"pair",instruction:true,phase:"pair",label:"짝활동 전환",duration:20,
+      desc:"자리 가까운 학생끼리 짝을 만들어 서로 설명하고 확인하게 합니다. 관계가 좋다고 항상 학습적인 대화가 되는 것은 아닙니다.",
+      effect:function(){
+        students.filter(function(s){return s.scene===current().loc&&s.lessonPartner!==null}).forEach(function(s){s.action="PAIR_WORK";s.actionTicks=3;});
+      }
+    },
+    presentation:{
+      id:"presentation",instruction:true,phase:"presentation",label:"발표시키기",duration:28,
+      desc:"한 학생의 생각이나 결과를 학급 전체와 공유합니다. 발표자는 경험을 얻고 다른 학생은 듣는 시간이 됩니다.",
+      effect:function(){
+        var presenter=studentById(lessonState.presenterId);
+        if(presenter){presenter.mood=clamp(presenter.mood+.025);presenter.belonging=clamp(presenter.belonging+.018);remember(presenter,"수업 중 학급 앞에서 발표함",.42);}
+      }
+    },
+    closure:{
+      id:"closure",instruction:true,phase:"closure",label:"정리하기",duration:25,
+      desc:"수업의 핵심을 다시 모으고 학생들이 무엇을 배웠는지 짧게 확인합니다.",
+      effect:function(){
+        students.filter(function(s){return s.scene===current().loc}).forEach(function(s){s.focus=clamp(s.focus+.015);});
+      }
+    }
+  };
 
   var TEACHER_ACTIONS={
     watch:{
@@ -1071,7 +1244,16 @@
     var fitAvg=stats.fitSamples.length?stats.fitSamples.reduce(function(a,b){return a+b},0)/stats.fitSamples.length:.60;
     var engAvg=stats.engageSamples.length?stats.engageSamples.reduce(function(a,b){return a+b},0)/stats.engageSamples.length:.55;
     var gain=students.reduce(function(a,s,i){return a+Math.max(0,s.skill-stats.learningStart[i])},0)/students.length;
-    var design=Math.round(fitAvg*100);
+    var phases=Object.keys(stats.phaseSamples);
+    var structure=42;
+    if(phases.indexOf("explain")>=0||phases.indexOf("demo")>=0)structure+=12;
+    if(phases.indexOf("question")>=0)structure+=8;
+    if(phases.indexOf("individual")>=0||phases.indexOf("pair")>=0)structure+=15;
+    if(phases.indexOf("closure")>=0)structure+=11;
+    if(stats.instructionMoves.length>=3)structure+=7;
+    if(stats.instructionMoves.length>9)structure-=Math.min(14,(stats.instructionMoves.length-9)*3);
+    structure=clamp(structure/100);
+    var design=Math.round((fitAvg*.64+structure*.36)*100);
     var engage=Math.round(engAvg*100);
     var learning=Math.round(Math.min(100,52+gain*3500+stats.helped*3));
     var latenessPenalty=Math.min(14,stats.lateTicks*.22);
@@ -1088,7 +1270,7 @@
     reportOpen=true;running=false;
     var r=scoreReport();
     q("#reportTitle").textContent=r.p.name+" 결과";
-    q("#reportSub").textContent=fmtMin(r.p.start)+"~"+fmtMin(r.p.end)+" · "+q("#lesson").selectedOptions[0].textContent;
+    q("#reportSub").textContent=fmtMin(r.p.start)+"~"+fmtMin(r.p.end)+" · 수업 행동 "+stats.instructionMoves.length+"회";
     q("#grade").textContent=r.grade;q("#mDesign").textContent=r.design;q("#mEngage").textContent=r.engage;q("#mLearn").textContent=r.learning;q("#mClimate").textContent=r.climate;
     var events=stats.events.filter(function(e){return e.type!=="ambient"}).slice(-10);
     q("#incidentList").innerHTML=events.length?events.map(function(e){return "<li><strong>"+e.stamp+"</strong> ["+SCENE_NAME[e.scene]+"] "+e.text+"</li>"}).join(""):"<li>큰 사건 없이 수업이 진행되었다.</li>";
@@ -1103,6 +1285,9 @@
     if(stats.roles) findings.push("역할을 맡긴 학생의 행동 방향이 도움·정리 쪽으로 바뀌는 장면이 있었다.");
     if(stats.connections) findings.push("교사가 연결한 또래 관계가 이후 상호작용의 기회를 만들었다.");
     if(stats.helped>0)findings.push("개별 힌트를 받은 학생에게 즉각적인 학습 회복이 나타났다.");
+    if(stats.instructionMoves.length<2)findings.push("수업 방식의 전환이 거의 없어 한 가지 흐름이 오래 지속되었다.");
+    if(!stats.phaseSamples.closure)findings.push("수업 마무리 단계 없이 시간이 끝나 핵심 내용을 다시 모을 기회가 적었다.");
+    if(stats.phaseSamples.pair&&stats.disruptions>2)findings.push("짝활동 중 일부 대화가 학습에서 벗어나 생활지도 부담으로 이어졌다.");
     socialCircles.slice().sort(function(a,b){return b.cohesion-a.cohesion}).slice(0,2).forEach(function(circle){
       var names=circle.members.map(studentById).filter(Boolean).map(function(x){return x.name}).join("·");
       findings.push(names+"이(가) 반복적으로 함께 움직이며 '"+circle.label+"' 성향의 무리를 형성하고 있다.");
@@ -1115,7 +1300,7 @@
     reportOpen=false;q("#report").hidden=true;
     var old=current();gameSec=old.end*60;periodIndex=Math.min(periodIndex+1,schedule.length-1);
     if(gameSec<current().start*60)gameSec=current().start*60;
-    newStats();assignPeriodDestinations();running=true;selected=null;connectMode=false;
+    teacherTask=null;newStats();assignPeriodDestinations();running=true;selected=null;connectMode=false;
     log(current().name+"이(가) 시작되었다.","ambient",teacherScene);render();
   }
   function periodForMinute(m){
@@ -1127,7 +1312,7 @@
     if(idx!==periodIndex){
       var old=schedule[periodIndex];
       if(old.kind==="lesson"){gameSec=old.end*60-1;openReport(false);return false}
-      periodIndex=idx;newStats();assignPeriodDestinations();selected=null;connectMode=false;
+      periodIndex=idx;teacherTask=null;newStats();assignPeriodDestinations();selected=null;connectMode=false;
       log(current().name+"이(가) 시작되었다.","ambient",teacherScene);
     }
     return true;
@@ -1139,7 +1324,7 @@
       WORK:"action1",READ:"stand",TALK:"action2",DOODLE:"action1",HELP:"cheer1",SLEEP:"duck",MOVE:"idle",
       WALK:"walk1",RUN:"walk2",WAIT:"idle",PLAY:"jump",COMPETE:"kick",REST:"duck",EAT:"hold1",SHARE:"hold2",
       CLEAN:"action1",SEEK:"walk1",JOIN:"stand",REJECTED:"hurt",ARGUE:"action2",SHOVE:"kick",HURT:"hurt",
-      WATCH:"stand",HELP_PEER:"hold1"
+      WATCH:"stand",HELP_PEER:"hold1",ATTEND:"stand",PAIR_WORK:"action2",RAISE_HAND:"cheer1",PRESENT:"cheer2"
     };
     return map[s.action]||"stand";
   }
@@ -1148,7 +1333,7 @@
   }
   function seated(s){
     if(s.scene!=="classroom")return false;
-    return ["WORK","READ","TALK","DOODLE","HELP","SLEEP"].indexOf(s.action)>=0&&current().kind!=="closing";
+    return ["WORK","READ","TALK","DOODLE","HELP","SLEEP","ATTEND","PAIR_WORK","RAISE_HAND"].indexOf(s.action)>=0&&current().kind!=="closing";
   }
   function thoughtMark(s){
     var map={TALK:"•••",DOODLE:"✎",HELP:"?",SLEEP:"Z",MOVE:"↔",PLAY:"○",COMPETE:"!",SEEK:"→",HELP_PEER:"+",ARGUE:"!"};
@@ -1174,7 +1359,7 @@
   }
   function boardText(){
     var p=current();
-    if(p.kind==="lesson")return p.subject+" · "+q("#lesson").selectedOptions[0].textContent;
+    if(p.kind==="lesson")return p.subject+" · "+currentPhase().label;
     if(p.kind==="morning")return "가방 정리 · 아침 독서";
     if(p.kind==="closing")return "청소 · 오늘 하루 돌아보기";
     return "우리 반";
@@ -1224,7 +1409,7 @@
       SLEEP:"졸고 있음",MOVE:"몸을 움직이고 있음",WALK:"이동 중",RUN:"뛰는 중",WAIT:"잠시 머무는 중",PLAY:"친구와 놀이 중",
       COMPETE:"승부 활동 중",REST:"쉬는 중",EAT:"식사 중",SHARE:"음식을 나누는 중",CLEAN:"정리 중",SEEK:"친구에게 다가가는 중",
       REJECTED:"함께하지 못해 머뭇거리는 중",ARGUE:"친구와 말다툼 중",SHOVE:"거친 몸짓이 나온 상태",HURT:"뒤로 물러난 상태",
-      WATCH:"친구들 상황을 지켜보는 중",HELP_PEER:"친구를 도우러 가는 중"
+      WATCH:"친구들 상황을 지켜보는 중",HELP_PEER:"친구를 도우러 가는 중",ATTEND:"수업을 듣고 있음",PAIR_WORK:"짝과 과제를 함께 확인 중",RAISE_HAND:"손을 들고 답할 준비 중",PRESENT:"학급 앞에서 발표 중"
     };
     return s.moving?"이동 중":(map[s.action]||"주변을 살피는 중");
   }
@@ -1250,7 +1435,7 @@
     if(!busy){
       txt.textContent="지금 개입 가능";fill.style.width="0%";return;
     }
-    var action=TEACHER_ACTIONS[teacherTask.actionId]||CLASS_ACTIONS[teacherTask.actionId];
+    var action=actionById(teacherTask.actionId);
     var target=teacherTask.targetId===null?null:studentById(teacherTask.targetId);
     var done=clamp((gameSec-teacherTask.start)/teacherTask.duration);
     txt.textContent=(target?target.name+" · ":"")+(action?action.label:(teacherTask.label||"교사 행동"))+" 중";
@@ -1325,6 +1510,42 @@
       return '<div class="sched '+(i===periodIndex?"now":i<periodIndex?"done":"")+'">'+fmtMin(p.start)+"<br>"+p.name.replace(/ · /g," ")+"</div>";
     }).join("");
   }
+  function recommendedInstruction(id){
+    var h=lessonState.history.map(function(x){return x.id});
+    if(id==="explain")return h.length===0;
+    if(id==="question")return ["explain","demo"].indexOf(lessonState.phase)>=0;
+    if(id==="demo")return lessonState.phase==="explain";
+    if(id==="individual")return ["explain","demo","question"].indexOf(lessonState.phase)>=0;
+    if(id==="pair")return lessonState.phase==="individual"&&students.some(function(s){return s.socialNeed>.26});
+    if(id==="presentation")return ["individual","pair"].indexOf(lessonState.phase)>=0;
+    if(id==="closure")return (gameMinute()>=current().end-7)&&lessonState.phase!=="closure";
+    return false;
+  }
+  function renderLessonFlow(){
+    var box=q("#lessonFlow");
+    if(current().kind!=="lesson"){
+      box.hidden=true;return;
+    }
+    box.hidden=false;
+    var phase=currentPhase();
+    q("#lessonPhaseName").textContent=phase.label;
+    q("#lessonPhaseDesc").textContent=phase.desc;
+    var elapsed=Math.max(0,Math.floor(gameSec-lessonState.phaseStart));
+    q("#lessonPhaseTimer").textContent=Math.floor(elapsed/60)+"분 "+String(elapsed%60).padStart(2,"0")+"초";
+    var wrap=q("#instructionActions");wrap.innerHTML="";
+    Object.keys(INSTRUCTION_ACTIONS).forEach(function(id){
+      var a=INSTRUCTION_ACTIONS[id],b=document.createElement("button");b.type="button";
+      b.className="instruction-action"+(lessonState.phase===a.phase?" current":"")+(recommendedInstruction(id)?" recommended":"");
+      b.disabled=teacherIsBusy()||teacherScene!==current().loc;
+      b.innerHTML="<strong>"+a.label+"</strong><small>"+a.duration+"초 · "+a.desc+"</small>";
+      b.addEventListener("click",function(){if(!teacherIsBusy())startTeacherTask(a,null)});
+      wrap.appendChild(b);
+    });
+    q("#lessonHistory").innerHTML=lessonState.history.length?lessonState.history.map(function(h,i){
+      return '<span class="lesson-chip '+(i===lessonState.history.length-1?"active":"")+'">'+fmtMin(h.time)+" "+h.label+"</span>";
+    }).join(""):'<span class="lesson-chip active">수업 행동을 선택하세요</span>';
+  }
+
   function renderHeader(){
     var p=current();
     q("#time").textContent=fmtMin(gameMinute());q("#periodName").textContent=p.name;
@@ -1333,7 +1554,7 @@
     q("#progress").style.width=(clamp((gameSec/60-p.start)/(p.end-p.start))*100)+"%";
   }
   function render(){
-    renderHeader();renderProps();renderStudents();renderSceneNav();renderSchedule();renderPanel();renderFeed();
+    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderPanel();renderFeed();
     q("#teacher").style.left=teacher.x+"%";q("#teacher").style.top=teacher.y+"%";
   }
   function openScene(scene){
@@ -1369,7 +1590,6 @@
   }
 
   q("#pause").addEventListener("click",function(){running=!running;this.textContent=running?"일시정지":"계속하기"});
-  q("#lesson").addEventListener("change",function(){log("수업 방식을 "+this.selectedOptions[0].textContent+"로 조정했다.","teacher",teacherScene);render()});
   qa("#actionTabs button").forEach(function(b){
     b.addEventListener("click",function(){
       activeActionCategory=this.dataset.category;
@@ -1380,7 +1600,7 @@
     if(current().kind==="lesson")openReport(true);
     else{
       var next=-1;for(var i=periodIndex+1;i<schedule.length;i++){if(schedule[i].kind==="lesson"){next=i;break}}
-      if(next>=0){periodIndex=next;gameSec=schedule[next].start*60;newStats();assignPeriodDestinations();render();log(current().name+"으로 이동했다.","ambient",teacherScene)}
+      if(next>=0){periodIndex=next;gameSec=schedule[next].start*60;teacherTask=null;newStats();assignPeriodDestinations();render();log(current().name+"으로 이동했다.","ambient",teacherScene)}
     }
   });
   q("#continueBtn").addEventListener("click",nextPeriod);
