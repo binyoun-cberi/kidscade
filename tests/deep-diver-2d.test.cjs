@@ -367,14 +367,14 @@ test('Deep Diver v15 camera uses the visible photo frame',()=>{
 test('Deep Diver v15 sonar guides off-screen targets',()=>{
   assert.match(js,/function drawSonarGuides/);
   assert.match(js,/function sonarGuideTargets/);
-  assert.match(js,/수면 귀환/);
+  assert.match(js,/탐사선 · 귀환/);
 });
 
 test('Deep Diver v15 requires safe return for all economic rewards',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
   assert.match(js,/depthBonus=ok\?Math\.round\(world\.maxDepth\*1\.25\):0/);
   assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);
-  assert.match(js,/구조 시 현장 표본·유물·사진 연구 보상은 회수되지 않습니다/);
+  assert.match(js,/구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다/);
 });
 
 test('Deep Diver v15 separates collision primitives from visible terrain',()=>{
