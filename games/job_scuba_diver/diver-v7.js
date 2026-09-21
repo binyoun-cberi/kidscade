@@ -420,7 +420,7 @@ function captureBlockMessage(f,method,result){
  const sp=SPECIES[f.key],label=catchMethodLabel(method);
  if(result.reason==='protected')return sp.name+'은 보호 관찰 대상입니다. 포획하지 말고 촬영하세요.';
  if(result.reason==='tier')return sp.name+'은 '+GEAR_TIER_NAMES[result.required]+' 등급 이상의 '+label+'이 필요합니다.';
- if(result.reason==='size')return creatureSizeBand(f).label+' '+sp.name+'은 '+GEAR_TIER_NAMES[gearTier(method)]+' '+label+'의 크기 한계를 넘습니다.';
+ if(result.reason==='size')return creatureSizeBand(f).label+' '+sp.name+'은 '+GEAR_TIER_NAMES[gearTier(method)]+' '+label+'의 크기 한계를 넘습니다. 대형 어획 장비가 필요합니다.';
  return sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집하는 생물입니다.'
 }
 const BIOME_POPULATIONS={
