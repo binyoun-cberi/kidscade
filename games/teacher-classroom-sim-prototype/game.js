@@ -71,6 +71,7 @@
   var circleHistory={};
   var circleAccumulator=0;
   var students=[];
+  var studentNodes={};
   var gameSec=520*60;
   var periodIndex=0;
   var running=true;
@@ -226,7 +227,8 @@
         memory:[],moving:false,observation:0,observedWork:false,teacherUse:{},socialTarget:null,socialGoal:null,groupId:null,
         conflictWith:null,conflictUntil:0,avoidId:null,avoidUntil:0,
         pairWith:null,pairUntil:0,lessonPartner:null,role:null,roleUntil:0,correctionLoad:0,
-        severeCooldown:0,victimStress:0,teacherDefiance:0,lastSeriousIncident:null
+        severeCooldown:0,victimStress:0,teacherDefiance:0,lastSeriousIncident:null,
+        actionStartedAt:gameSec,actionLockedUntil:gameSec+25,behaviorPhase:"idle",phaseUntil:0,facing:1
       });
     });
   }
@@ -318,6 +320,59 @@
         if(current().kind==="lesson"&&target===current().loc&&Math.random()<.28)log(s.name+"이(가) 조금 늦게 "+SCENE_NAME[target]+"에 도착했다.","incident",target);
       }
     });
+  }
+
+  var ACTION_MIN_SECONDS={
+    READ:35,WORK:35,ATTEND:30,PAIR_WORK:45,RAISE_HAND:25,PRESENT:45,
+    TALK:40,DOODLE:35,HELP:35,SLEEP:45,MOVE:30,PLAY:50,COMPETE:45,REST:35,EAT:45,SHARE:30,
+    BORROW_ITEM:30,LOOK_OUTSIDE:35,STRETCH:25,DRINK_WATER:25,DROP_ITEM:20,ASK_BATHROOM:30,PASS_NOTE:30,
+    COMFORT:45,TEASE:40,REJECTED:35,ARGUE:50,SHOVE:30,HURT:35,
+    EXCLUDE_TARGET:50,TAKE_ITEM_FORCE:45,THREATEN:45,HIT:35,
+    REFUSE_INSTRUCTION:45,SHOUT_TEACHER:40,INSULT_TEACHER:40,THROW_AT_TEACHER:35,
+    DEFEND_PEER:35,REPORT_INCIDENT:35,HELP_PEER:40,CLEAN:40,WAIT:25
+  };
+  var CHOREOGRAPHED_ACTIONS=[
+    "TALK","PAIR_WORK","HELP_PEER","BORROW_ITEM","COMFORT","TEASE","EXCLUDE_TARGET",
+    "TAKE_ITEM_FORCE","THREATEN","HIT","ARGUE","SHARE","PASS_NOTE","DEFEND_PEER"
+  ];
+  function actionMinSeconds(a){return ACTION_MIN_SECONDS[a]||30}
+  function actionLocked(s){return gameSec<(s.actionLockedUntil||0)}
+  function setSimpleAction(s,a,duration){
+    var changed=s.action!==a;
+    s.action=a;
+    s.actionTicks=Math.max(s.actionTicks||0,Math.ceil((duration||actionMinSeconds(a))/10));
+    if(changed||!actionLocked(s)){
+      s.actionStartedAt=gameSec;
+      s.actionLockedUntil=gameSec+(duration||actionMinSeconds(a));
+      if(s.behaviorPhase!=="approach"&&s.behaviorPhase!=="settle")s.behaviorPhase="idle";
+    }
+  }
+  function beginInteractionPhase(s,a,target,duration){
+    s.action=a;
+    s.actionStartedAt=gameSec;
+    s.actionLockedUntil=gameSec+(duration||actionMinSeconds(a));
+    s.behaviorPhase="interact";
+    s.phaseUntil=s.actionLockedUntil;
+    if(target){s.socialTarget=target.id;s.facing=target.x<s.x?-1:1}
+  }
+  function updateBehaviorLifecycle(s){
+    if(s.behaviorPhase==="interact"&&gameSec>=s.phaseUntil){
+      s.behaviorPhase="resolve";
+      s.phaseUntil=gameSec+6;
+      s.actionLockedUntil=s.phaseUntil;
+      if(CHOREOGRAPHED_ACTIONS.indexOf(s.action)>=0&&s.action!=="ARGUE"){
+        s.action="WAIT";s.actionTicks=2;
+      }
+      return;
+    }
+    if(s.behaviorPhase==="resolve"&&gameSec>=s.phaseUntil){
+      s.behaviorPhase="idle";s.phaseUntil=0;s.actionLockedUntil=gameSec;
+      if(s.action==="WAIT")s.socialTarget=null;
+    }
+  }
+  function isMeaningfulInteractionAction(a){
+    return ["SEEK","TALK","PAIR_WORK","HELP_PEER","BORROW_ITEM","COMFORT","TEASE","EXCLUDE_TARGET",
+      "TAKE_ITEM_FORCE","THREATEN","HIT","ARGUE","SHOVE","DEFEND_PEER","REPORT_INCIDENT","PASS_NOTE"].indexOf(a)>=0;
   }
 
   function teacherNear(s){
@@ -437,7 +492,10 @@
   }
   function beginSeek(s,target,goal){
     if(!target)return false;
-    s.socialTarget=target.id;s.socialGoal=goal;s.action="SEEK";s.actionTicks=7;setNear(s,target,7);
+    s.socialTarget=target.id;s.socialGoal=goal;s.action="SEEK";s.actionTicks=12;
+    s.behaviorPhase="approach";s.phaseUntil=0;s.actionStartedAt=gameSec;s.actionLockedUntil=gameSec+120;
+    s.facing=target.x<s.x?-1:1;
+    setNear(s,target,7);
     return true;
   }
   function acceptJoin(s,target,goal){
@@ -445,14 +503,14 @@
     s.socialNeed=clamp(s.socialNeed-.22);s.belonging=clamp(s.belonging+.08);s.mood=clamp(s.mood+.045);s.frustration=clamp(s.frustration-.08);
     target.belonging=clamp(target.belonging+.025);
     changeRelation(s,target,{affinity:.012,irritation:-.012});
-    s.action=goal==="COMPETE"?"COMPETE":goal==="PLAY"?"PLAY":"TALK";
-    s.actionTicks=rand(4,8);s.socialTarget=target.id;
+    beginInteractionPhase(s,goal==="COMPETE"?"COMPETE":goal==="PLAY"?"PLAY":"TALK",target,goal==="PLAY"?55:45);
+    s.socialTarget=target.id;
     if(target.action==="WAIT"||target.action==="REST"||target.action==="READ")target.action=s.action==="COMPETE"?"COMPETE":s.action==="PLAY"?"PLAY":"TALK";
     if(Math.random()<.30)log(s.name+"이(가) "+target.name+"에게 다가가 함께 "+(s.action==="PLAY"?"놀기":"COMPETE"===s.action?"겨루기":"이야기")+" 시작했다.","social",s.scene);
   }
   function rejectJoin(s,target){
     var r=relation(s,target);
-    s.action="REJECTED";s.actionTicks=rand(2.5,4.5);s.socialTarget=null;s.groupId=null;
+    setSimpleAction(s,"REJECTED",38);s.behaviorPhase="resolve";s.phaseUntil=s.actionLockedUntil;s.socialTarget=null;s.groupId=null;
     s.frustration=clamp(s.frustration+.10+.13*s.rejection);s.belonging=clamp(s.belonging-.055);s.mood=clamp(s.mood-.055);
     changeRelation(s,target,{affinity:-.008,irritation:.025+.025*s.rejection});
     remember(s,target.name+"에게 함께하자고 했지만 받아들여지지 않음",.58);
@@ -462,15 +520,27 @@
   }
   function resolveSeek(s){
     var target=studentById(s.socialTarget);
-    if(!target||target.scene!==s.scene){s.socialTarget=null;s.socialGoal=null;s.action="WAIT";s.actionTicks=2;return}
-    setNear(s,target,6);
-    if(distance(s,target)>9)return;
-    var goal=s.socialGoal||"TALK";
-    if(["BORROW_ITEM","COMFORT","TEASE"].indexOf(goal)>=0){
-      startAction(s,goal,target);
-    }else if(Math.random()<joinAcceptance(s,target))acceptJoin(s,target,goal);
-    else rejectJoin(s,target);
-    s.socialGoal=null;
+    if(!target||target.scene!==s.scene){
+      s.socialTarget=null;s.socialGoal=null;s.behaviorPhase="idle";setSimpleAction(s,"WAIT",25);return;
+    }
+    s.facing=target.x<s.x?-1:1;
+    if(s.behaviorPhase==="approach"){
+      setNear(s,target,6);
+      if(distance(s,target)>8.5)return;
+      s.dx=s.x;s.dy=s.y;s.moving=false;s.behaviorPhase="settle";s.phaseUntil=gameSec+5;
+      return;
+    }
+    if(s.behaviorPhase==="settle"){
+      s.dx=s.x;s.dy=s.y;
+      if(gameSec<s.phaseUntil)return;
+      var goal=s.socialGoal||"TALK";
+      var direct=["BORROW_ITEM","COMFORT","TEASE","PASS_NOTE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT"];
+      if(direct.indexOf(goal)>=0){
+        startAction(s,goal,target);
+      }else if(Math.random()<joinAcceptance(s,target))acceptJoin(s,target,goal);
+      else rejectJoin(s,target);
+      s.socialGoal=null;
+    }
   }
   function beginConflict(a,b,reason){
     if(!a||!b||a.scene!==b.scene)return;
@@ -478,7 +548,7 @@
     a.conflictWith=b.id;b.conflictWith=a.id;
     a.conflictUntil=gameSec+5*60;b.conflictUntil=gameSec+5*60;
     a.socialTarget=b.id;b.socialTarget=a.id;
-    a.action="ARGUE";b.action="ARGUE";a.actionTicks=rand(4,7);b.actionTicks=rand(4,7);
+    beginInteractionPhase(a,"ARGUE",b,55);beginInteractionPhase(b,"ARGUE",a,55);
     a.frustration=clamp(a.frustration+.10);b.frustration=clamp(b.frustration+.08);
     changeRelation(a,b,{affinity:-.018,irritation:.07,rivalry:.015});
     stats.conflicts++;
@@ -494,7 +564,7 @@
     var r=relation(s,target);
     var chance=(s.react*.34+s.imp*.24+s.frustration*.28+r.irritation*.22)*(1-teacherNear(s)*.72);
     if(chance>.58&&Math.random()<.34){
-      s.action="SHOVE";s.actionTicks=2.5;target.action="HURT";target.actionTicks=2.5;
+      beginInteractionPhase(s,"SHOVE",target,32);setSimpleAction(target,"HURT",35);
       s.frustration=clamp(s.frustration+.08);target.frustration=clamp(target.frustration+.15);
       changeRelation(s,target,{affinity:-.025,irritation:.08});
       remember(s,target.name+"와 갈등 중 거친 몸짓이 나옴",.8);remember(target,s.name+"와 갈등 중 거친 몸짓을 겪음",.8);
@@ -506,18 +576,25 @@
   }
   function beginPeerHelp(s,target){
     if(!target)return false;
-    s.socialTarget=target.id;s.socialGoal="HELP";s.action="HELP_PEER";s.actionTicks=7;setNear(s,target,6);return true;
+    s.socialTarget=target.id;s.socialGoal="HELP";s.action="HELP_PEER";s.actionTicks=10;s.behaviorPhase="approach";s.actionLockedUntil=gameSec+100;setNear(s,target,6);return true;
   }
   function resolvePeerHelp(s){
     var target=studentById(s.socialTarget);
-    if(!target||target.scene!==s.scene){s.socialTarget=null;s.action="WAIT";return}
-    setNear(s,target,6);
-    if(distance(s,target)>9)return;
-    target.helpNeed=clamp(target.helpNeed-.12);target.focus=clamp(target.focus+.05);target.skill=clamp(target.skill+.0035);
-    s.belonging=clamp(s.belonging+.035);s.mood=clamp(s.mood+.02);changeRelation(s,target,{affinity:.01,irritation:-.008});
-    remember(s,target.name+"을 도와줌",.38);remember(target,s.name+"에게 도움받음",.38);
-    if(Math.random()<.34)log(s.name+"이(가) "+target.name+"을(를) 잠깐 도와주었다.","social",s.scene);
-    s.action="WAIT";s.actionTicks=2;s.socialTarget=null;s.socialGoal=null;
+    if(!target||target.scene!==s.scene){s.socialTarget=null;s.behaviorPhase="idle";setSimpleAction(s,"WAIT",25);return}
+    s.facing=target.x<s.x?-1:1;
+    if(s.behaviorPhase==="approach"){
+      setNear(s,target,6);
+      if(distance(s,target)>8.5)return;
+      s.dx=s.x;s.dy=s.y;s.moving=false;s.behaviorPhase="settle";s.phaseUntil=gameSec+5;return;
+    }
+    if(s.behaviorPhase==="settle"){
+      s.dx=s.x;s.dy=s.y;if(gameSec<s.phaseUntil)return;
+      target.helpNeed=clamp(target.helpNeed-.12);target.focus=clamp(target.focus+.05);target.skill=clamp(target.skill+.0035);
+      s.belonging=clamp(s.belonging+.035);s.mood=clamp(s.mood+.02);changeRelation(s,target,{affinity:.01,irritation:-.008});
+      remember(s,target.name+"을 도와줌",.38);remember(target,s.name+"에게 도움받음",.38);
+      if(Math.random()<.34)log(s.name+"이(가) "+target.name+"을(를) 잠깐 도와주었다.","social",s.scene);
+      beginInteractionPhase(s,"HELP_PEER",target,42);s.socialGoal=null;
+    }
   }
 
   function isSevereAction(s){
@@ -597,7 +674,7 @@
         }else{
           action=pick(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE"]);
         }
-        startAction(s,action,peer);
+        if(distance(s,peer)>9)beginSeek(s,peer,action);else startAction(s,action,peer);
         return true;
       }
     }
@@ -616,8 +693,10 @@
   }
 
   function startAction(s,a,target){
-    s.action=a;s.actionTicks=rand(2.5,6);
-    if(target){s.socialTarget=target.id}
+    var visualDuration=actionMinSeconds(a);
+    if(target||CHOREOGRAPHED_ACTIONS.indexOf(a)>=0)beginInteractionPhase(s,a,target,visualDuration);
+    else setSimpleAction(s,a,visualDuration);
+    if(target){s.socialTarget=target.id;s.facing=target.x<s.x?-1:1}
     var p=target||chooseSocialTarget(s,a==="COMPETE"?"COMPETE":"SOCIAL");
 
     if(a==="TALK"){
@@ -751,6 +830,7 @@
     if(s.action==="SEEK"){resolveSeek(s);return}
     if(s.action==="HELP_PEER"){resolvePeerHelp(s);return}
     if(s.action==="ARGUE"){
+      if(actionLocked(s))return;
       if(s.actionTicks<=0)maybeEscalateConflict(s);
       return;
     }
@@ -758,6 +838,8 @@
       if(s.actionTicks<=0){s.action="WAIT";s.actionTicks=2;setDestination(s,s.scene,true)}
       return;
     }
+    updateBehaviorLifecycle(s);
+    if(actionLocked(s))return;
     if(s.action==="REJECTED"&&s.actionTicks>0)return;
     if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
     if(s.actionTicks<=0&&maybeSeriousIncident(s))return;
@@ -818,7 +900,7 @@
     var productive=["WORK","ATTEND","PAIR_WORK","RAISE_HAND","PRESENT"].indexOf(best)>=0;
     if(productive){
       s.intent=null;s.intentTicks=0;
-      s.action=best;s.actionTicks=best==="PRESENT"?6:rand(2.5,5);
+      if(s.action!==best||!actionLocked(s))setSimpleAction(s,best,best==="PRESENT"?50:actionMinSeconds(best));
       if(best==="PAIR_WORK"){
         var partner=s.lessonPartner!==null?studentById(s.lessonPartner):null;
         if(partner)s.socialTarget=partner.id;
@@ -856,6 +938,8 @@
       if(s.actionTicks<=0){s.action="WAIT";s.actionTicks=2;setDestination(s,s.scene,true)}
       return;
     }
+    updateBehaviorLifecycle(s);
+    if(actionLocked(s))return;
     if(s.action==="REJECTED"&&s.actionTicks>0)return;
     if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
     if(s.actionTicks<=0&&maybeSeriousIncident(s))return;
@@ -985,7 +1069,10 @@
     students.forEach(function(s){
       var target=studentById(s.socialTarget);
       if(!target||target.scene!==s.scene)return;
-      if(["SEEK","HELP_PEER","ARGUE","TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT"].indexOf(s.action)>=0)setNear(s,target,["ARGUE","THREATEN","HIT"].indexOf(s.action)>=0?5:7);
+      if(["SEEK","HELP_PEER"].indexOf(s.action)>=0&&s.behaviorPhase==="approach")setNear(s,target,7);
+      if(["ARGUE","TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT"].indexOf(s.action)>=0&&s.behaviorPhase==="interact"){
+        s.dx=s.x;s.dy=s.y;s.facing=target.x<s.x?-1:1;
+      }
       if(s.groupId&&["TALK","PLAY","COMPETE"].indexOf(s.action)>=0&&distance(s,target)>13)setNear(s,target,8);
     });
     students.forEach(function(s){
@@ -1003,17 +1090,43 @@
       }
     });
   }
+  function isSeatAnchored(s){
+    return s.scene==="classroom"&&current().kind==="lesson"&&seated(s)&&!s.moving&&s.behaviorPhase!=="approach";
+  }
+  function resolveStudentCrowding(){
+    for(var i=0;i<students.length;i++){
+      var a=students[i];if(a.targetScene)continue;
+      for(var j=i+1;j<students.length;j++){
+        var b=students[j];if(a.scene!==b.scene||b.targetScene)continue;
+        if(isSeatAnchored(a)&&isSeatAnchored(b))continue;
+        var dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+        var interacting=a.socialTarget===b.id||b.socialTarget===a.id;
+        var min=interacting?4.8:7.2;
+        if(d>=min)continue;
+        if(d<.05){dx=(a.id%2?1:-1);dy=.3;d=Math.hypot(dx,dy)}
+        var push=(min-d)*.16,nx=dx/d,ny=dy/d;
+        if(!isSeatAnchored(a)){a.x=clamp(a.x-nx*push,5,95);a.y=clamp(a.y-ny*push,16,92)}
+        if(!isSeatAnchored(b)){b.x=clamp(b.x+nx*push,5,95);b.y=clamp(b.y+ny*push,16,92)}
+      }
+    }
+  }
   function updateMovement(dt,speed){
     students.forEach(function(s){
       var dx=s.dx-s.x,dy=s.dy-s.y,d=Math.hypot(dx,dy);
-      s.moving=d>.7;
-      if(d>.7){
-        var boost=s.action==="RUN"?1.55:1;
-        var step=Math.min(d,dt*(8+speed*3)*boost);
+      s.moving=d>.55;
+      if(d>.55){
+        s.facing=dx<0?-1:1;
+        var boost=s.action==="RUN"?1.5:1;
+        var pace=(9.2+Math.min(3,speed))*boost;
+        var step=Math.min(d,dt*pace);
         s.x+=dx/d*step;s.y+=dy/d*step;
-        if(s.action!=="RUN"&&["SEEK","HELP_PEER","ARGUE"].indexOf(s.action)<0)s.action="WALK";
+      }else{
+        s.x=s.dx;s.y=s.dy;s.moving=false;
+        var target=studentById(s.socialTarget);
+        if(target&&target.scene===s.scene)s.facing=target.x<s.x?-1:1;
       }
     });
+    resolveStudentCrowding();
   }
   function sampleStats(){
     if(current().kind!=="lesson")return;
@@ -1562,7 +1675,8 @@
   }
 
   function poseFor(s){
-    if(s.moving)return Math.floor(gameSec)%2?"walk1":"walk2";
+    if(s.behaviorPhase==="settle")return "stand";
+    if(s.moving)return Math.floor(gameSec/3)%2?"walk1":"walk2";
     var map={
       WORK:"action1",READ:"stand",TALK:"action2",DOODLE:"action1",HELP:"cheer1",SLEEP:"duck",MOVE:"idle",
       WALK:"walk1",RUN:"walk2",WAIT:"idle",PLAY:"jump",COMPETE:"kick",REST:"duck",EAT:"hold1",SHARE:"hold2",
@@ -1576,15 +1690,35 @@
     return map[s.action]||"stand";
   }
   function actionClass(s){
-    var a=s.action.toLowerCase();if(s.moving)a="walk";return a;
+    return s.action.toLowerCase();
   }
   function seated(s){
     if(s.scene!=="classroom")return false;
     return ["WORK","READ","TALK","DOODLE","HELP","SLEEP","ATTEND","PAIR_WORK","RAISE_HAND"].indexOf(s.action)>=0&&current().kind!=="closing";
   }
-  function thoughtMark(s){
-    var map={TALK:"•••",DOODLE:"✎",HELP:"?",SLEEP:"Z",MOVE:"↔",PLAY:"○",COMPETE:"!",SEEK:"→",HELP_PEER:"+",ARGUE:"!"};
-    return s.intent?map[s.intent]||"":"";
+  function intentText(s){
+    if(!s.intent)return "";
+    var map={TALK:"말하고 싶음",DOODLE:"딴짓하고 싶음",HELP:"도움 필요",SLEEP:"졸림",MOVE:"움직이고 싶음",PLAY:"같이 놀고 싶음",COMPETE:"겨뤄보고 싶음",HELP_PEER:"도와주고 싶음",ARGUE:"따지고 싶음"};
+    return map[s.intent]||"다른 행동을 생각 중";
+  }
+  function shortAction(s){
+    var target=studentById(s.socialTarget);
+    var t=target?target.name:"";
+    var map={
+      SEEK:t?t+"에게 감":"친구에게 감",TALK:"대화 중",PAIR_WORK:"짝활동",HELP_PEER:"친구 도움",HELP:"도움 기다림",
+      COMFORT:"위로 중",BORROW_ITEM:"준비물 빌림",PASS_NOTE:"쪽지 건넴",TEASE:"놀림",REJECTED:"머뭇거림",
+      ARGUE:"말다툼",SHOVE:"거친 몸짓",HIT:"신체갈등",THREATEN:"위협",EXCLUDE_TARGET:"배제",
+      TAKE_ITEM_FORCE:"물건 빼앗음",DEFEND_PEER:"친구 보호",REPORT_INCIDENT:"교사에게 알림",
+      REFUSE_INSTRUCTION:"안내 거부",SHOUT_TEACHER:"교사에게 고성",INSULT_TEACHER:"모욕적 말",THROW_AT_TEACHER:"물건 던짐",
+      RAISE_HAND:"손듦",PRESENT:"발표 중",SLEEP:"졸고 있음",LOOK_OUTSIDE:"창밖 봄",RUN:"뜀"
+    };
+    return map[s.action]||"";
+  }
+  function actionTone(s){
+    if(["COMFORT","HELP_PEER","DEFEND_PEER","REPORT_INCIDENT","PAIR_WORK"].indexOf(s.action)>=0)return "positive";
+    if(["TEASE","REJECTED","ARGUE","REFUSE_INSTRUCTION","SHOUT_TEACHER"].indexOf(s.action)>=0)return "warning";
+    if(["SHOVE","HIT","THREATEN","EXCLUDE_TARGET","TAKE_ITEM_FORCE","INSULT_TEACHER","THROW_AT_TEACHER"].indexOf(s.action)>=0)return "danger";
+    return "neutral";
   }
   function renderProps(){
     var world=q("#world"),scene=teacherScene;
@@ -1611,42 +1745,78 @@
     if(p.kind==="closing")return "청소 · 오늘 하루 돌아보기";
     return "우리 반";
   }
-  function renderStudents(){
-    var layer=q("#students");layer.innerHTML="";
-    var visible=students.filter(function(s){return s.scene===teacherScene});
-    visible.forEach(function(s){
-      var b=document.createElement("button");b.type="button";
-      b.className="student "+actionClass(s)+(seated(s)?" seated":"")+(selected===s.id?" selected":"");
-      b.style.left=s.x+"%";b.style.top=s.y+"%";b.setAttribute("aria-label",s.name+" "+humanAction(s));
-      var mark=thoughtMark(s);
-      var img=document.createElement("img");img.className="sprite";img.alt="";img.src=posePath(s,poseFor(s));
-      img.onerror=function(){if(this.dataset.fallback)return;this.dataset.fallback="1";this.src=fallbackPose(s)};
-      var wrap=document.createElement("span");wrap.className="sprite-wrap";wrap.appendChild(img);
-      if(mark){var th=document.createElement("span");th.className="thought";th.textContent=mark;b.appendChild(th)}
-      b.appendChild(wrap);
-      var mask=document.createElement("span");mask.className="student-desk-mask";b.appendChild(mask);
-      var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
-
-      b.addEventListener("click",function(){
-        if(connectMode&&selected!==null&&selected!==s.id){
-          var first=studentById(selected);
-          if(first&&first.scene===s.scene&&!teacherIsBusy()){
-            connectStudents(first,s);connectMode=false;consumeTeacherTime("친구 연결",30);
-          }
-          selected=s.id;render();return;
-        }
-        if(swapMode&&selected!==null&&selected!==s.id&&teacherScene==="classroom"){
-          var a=studentById(selected);
-          if(a&&a.scene==="classroom"&&s.scene==="classroom"){
-            var tmp=a.seat;a.seat=s.seat;s.seat=tmp;
-            if(current().kind==="lesson"){setDestination(a,"classroom",false);setDestination(s,"classroom",false)}
-            swapMode=false;stats.teacherActs++;consumeTeacherTime("자리 조정",35);log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
-          }
-        }
-        selected=s.id;render();
-      });
-      layer.appendChild(b);
+  function handleStudentClick(id){
+    var s=studentById(id);if(!s)return;
+    if(connectMode&&selected!==null&&selected!==s.id){
+      var first=studentById(selected);
+      if(first&&first.scene===s.scene&&!teacherIsBusy()){
+        connectStudents(first,s);connectMode=false;consumeTeacherTime("친구 연결",30);
+      }
+      selected=s.id;render();return;
+    }
+    if(swapMode&&selected!==null&&selected!==s.id&&teacherScene==="classroom"){
+      var a=studentById(selected);
+      if(a&&a.scene==="classroom"&&s.scene==="classroom"){
+        var tmp=a.seat;a.seat=s.seat;s.seat=tmp;
+        if(current().kind==="lesson"){setDestination(a,"classroom",false);setDestination(s,"classroom",false)}
+        swapMode=false;stats.teacherActs++;consumeTeacherTime("자리 조정",35);
+        log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
+      }
+    }
+    selected=s.id;render();
+  }
+  function ensureStudentNode(s){
+    if(studentNodes[s.id])return studentNodes[s.id];
+    var b=document.createElement("button");b.type="button";b.className="student";b.dataset.studentId=s.id;
+    var status=document.createElement("span");status.className="status-stack";
+    var intent=document.createElement("span");intent.className="intent-tag";intent.hidden=true;
+    var action=document.createElement("span");action.className="action-tag";action.hidden=true;
+    status.appendChild(intent);status.appendChild(action);b.appendChild(status);
+    var wrap=document.createElement("span");wrap.className="sprite-wrap";
+    var img=document.createElement("img");img.className="sprite";img.alt="";
+    img.onerror=function(){if(this.dataset.fallback)return;this.dataset.fallback="1";var cur=studentById(Number(b.dataset.studentId));if(cur)this.src=fallbackPose(cur)};
+    wrap.appendChild(img);b.appendChild(wrap);
+    var mask=document.createElement("span");mask.className="student-desk-mask";b.appendChild(mask);
+    var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
+    b.addEventListener("click",function(){handleStudentClick(Number(this.dataset.studentId))});
+    q("#students").appendChild(b);
+    studentNodes[s.id]={root:b,img:img,intent:intent,action:action,name:nm};
+    return studentNodes[s.id];
+  }
+  function renderInteractionLinks(){
+    var svg=q("#interactionLinks"),seen={};svg.innerHTML="";
+    students.filter(function(s){return s.scene===teacherScene&&s.socialTarget!==null&&isMeaningfulInteractionAction(s.action)}).forEach(function(s){
+      var t=studentById(s.socialTarget);if(!t||t.scene!==teacherScene)return;
+      var symmetric=["TALK","PAIR_WORK","ARGUE","COMPETE"].indexOf(s.action)>=0;
+      var key=symmetric?[s.id,t.id].sort().join("-"):s.id+"-"+t.id+"-"+s.action;
+      if(seen[key])return;seen[key]=1;
+      var line=document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute("x1",s.x);line.setAttribute("y1",s.y);line.setAttribute("x2",t.x);line.setAttribute("y2",t.y);
+      line.setAttribute("class",actionTone(s));
+      svg.appendChild(line);
     });
+  }
+  function renderStudents(){
+    var visible=students.filter(function(s){return s.scene===teacherScene});
+    students.forEach(function(s){
+      var n=ensureStudentNode(s),show=s.scene===teacherScene;
+      n.root.style.display=show?"block":"none";
+      if(!show)return;
+      n.root.className="student "+actionClass(s)+(seated(s)?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
+      n.root.style.left=s.x+"%";n.root.style.top=s.y+"%";
+      n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
+      var pose=poseFor(s);
+      if(n.img.dataset.pose!==pose){
+        n.img.dataset.pose=pose;n.img.dataset.fallback="";
+        n.img.src=posePath(s,pose);
+      }
+      var it=intentText(s);
+      n.intent.hidden=!it;if(it)n.intent.textContent=it;
+      var at=shortAction(s);
+      n.action.hidden=!at;
+      if(at){n.action.textContent=at;n.action.className="action-tag "+actionTone(s)}
+    });
+    renderInteractionLinks();
     q("#offscreen").textContent=visible.length+"명 보임 · 다른 공간 "+(students.length-visible.length)+"명";
   }
 
@@ -1833,7 +2003,7 @@
         aiAccumulator+=dt*speed;renderAccumulator+=dt;
         if(aiAccumulator>=.55){
           aiAccumulator=0;
-          students.forEach(updateStudent);sampleStats();
+          students.forEach(function(s){updateBehaviorLifecycle(s);updateStudent(s)});sampleStats();
           circleAccumulator+=.55*speed;
           if(circleAccumulator>=7){circleAccumulator=0;rebuildSocialCircles();}
         }
