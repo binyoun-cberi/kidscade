@@ -454,7 +454,7 @@ test('Deep Diver v15 uses the wider vegetation library',()=>{
 
 test('Deep Diver v16 fixes the opaque shark variant and adds a day-night restaurant loop',()=>{
   assert.match(html,/id="restaurantScreen"/);
-  assert.match(html,/DIVE BY DAY \/ COOK BY NIGHT/);
+  assert.match(html,/DIVE BY DAY \/ TYCOON BY NIGHT/);
   assert.match(js,/shark2:SHARK\+'shark-swim-atlas\.png'/);
   assert.match(js,/shark2:\{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8/);
   assert.doesNotMatch(js,/shark2:FAUNA\+'shark\/variants\/shark-001-64px\.gif'/);
