@@ -52,7 +52,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
     <div class="chips" id="chips"></div>
   </section>
 
-  <div class="controls"><button class="btn danger" id="leaveMatchBtn" disabled>방 나가기</button><button class="btn" onclick="location.href='./index.html?v=6'">혼자 하기</button><button class="btn" onclick="location.href='../../'">Kidscade</button></div>
+  <div class="controls"><button class="btn danger" id="leaveMatchBtn" disabled>방 나가기</button><button class="btn" onclick="location.href='./index.html?v=9'">혼자 하기</button><button class="btn" data-exit-kidscade>Kidscade로 나가기</button></div>
 </div>
 
 <div class="overlay" id="entryOverlay">
@@ -70,7 +70,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
       <div class="joinRow"><input id="roomCodeInput" maxlength="6" placeholder="방 코드"><button class="btn" id="joinBtn">코드로 참가</button></div>
       <div class="rule">한방단어로 다음에 이을 수 있는 단어가 없으면 다음 플레이어가 즉시 목숨 1개를 잃고 새 시작 단어로 이어집니다.</div>
     </div>
-    <div id="loginNeeded" style="display:none;text-align:center"><p class="sub">온라인 대결은 로그인이 필요합니다.</p><button class="btn" onclick="location.href='../../'">Kidscade에서 로그인</button></div>
+    <div id="loginNeeded" style="display:none;text-align:center"><p class="sub">온라인 대결은 로그인이 필요합니다.</p><button class="btn" data-exit-kidscade>Kidscade에서 로그인</button></div>
   </section>
 </div>
 
@@ -80,7 +80,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
     <div class="sub">방 코드</div><div class="roomCode" id="roomCodeText">------</div>
     <div class="controls"><button class="btn" id="copyBtn">코드 복사</button><span class="account" id="roomRuleText">최대 2명</span></div>
     <div class="lobbyList" id="lobbyPlayers"></div>
-    <div class="controls"><button class="btn primary" id="readyBtn">준비 완료</button><button class="btn primary" id="startBtn" style="display:none">방장 시작</button><button class="btn danger" id="leaveLobbyBtn">나가기</button></div>
+    <div class="controls"><button class="btn primary" id="readyBtn">준비 완료</button><button class="btn primary" id="startBtn" style="display:none">방장 시작</button><button class="btn danger" id="leaveLobbyBtn">방 나가기</button><button class="btn" data-exit-kidscade>Kidscade로 나가기</button></div>
     <div class="rule" id="lobbyHint">참가자가 모두 준비되면 방장이 시작할 수 있습니다.</div>
   </section>
 </div>
@@ -90,7 +90,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
     <div class="resultTitle" id="resultTitle">경기 종료</div>
     <p class="sub" id="resultSub"></p>
     <div class="resultPlayers" id="resultPlayers"></div>
-    <div class="controls"><button class="btn primary" id="newMatchBtn">새 대결</button><button class="btn" onclick="location.href='./index.html'">혼자 하기</button><button class="btn" onclick="location.href='../../'">Kidscade</button></div>
+    <div class="controls"><button class="btn primary" id="newMatchBtn">새 대결</button><button class="btn" onclick="location.href='./index.html?v=9'">혼자 하기</button><button class="btn" data-exit-kidscade>Kidscade로 나가기</button></div>
   </section>
 </div>
 
@@ -116,6 +116,12 @@ async function ensureBgm(){
 }
 function updateSoundButton(){const muted=Boolean(window.KidscadeAudio?.getSettings?.().muted);$('soundBtn').textContent=muted?'🔇 소리':'🔊 소리';$('soundBtn').title=muted?'소리 켜기':'소리 끄기';$('soundBtn').setAttribute('aria-label',$('soundBtn').title)}
 function toggleSound(){const api=window.KidscadeAudio;if(!api)return;const muted=!api.getSettings().muted;api.setMuted(muted);updateSoundButton();if(!muted){ensureBgm();sfx('collect.coin_pickup',{volume:.24,rate:1.15})}}
+function exitKidscade(){
+ if(window.parent!==window){
+  try{window.parent.postMessage({type:'kidscade:close-game'},location.origin);return}catch(_){}
+ }
+ location.href='../../';
+}
 function playTurnCue(){sfx('collect.coin_pickup',{volume:.30,rate:1.18,cooldownMs:240})}
 function playTimerWarning(second){sfx('collect.coin_drop',{volume:.25,rate:1+(3-second)*.14,cooldownMs:180})}
 
@@ -318,6 +324,7 @@ function showResult(next){
  $('resultPlayers').innerHTML=next.players.map(p=>'<div class="resultP"><b>'+esc(p.nickname)+'</b><div style="color:'+(p.eliminated?'#fda4af':'#86efac')+'">'+(p.eliminated?'탈락':'생존')+' · '+hearts(p.lives)+'</div></div>').join('');
 }
 $('soundBtn').addEventListener('click',toggleSound);
+document.querySelectorAll('[data-exit-kidscade]').forEach(btn=>btn.addEventListener('click',exitKidscade));
 $('createDuel').addEventListener('click',()=>create(2));$('createMulti').addEventListener('click',()=>create(Number($('multiSize').value)||4));$('joinBtn').addEventListener('click',join);
 $('roomCodeInput').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6));$('roomCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')join()});
 $('readyBtn').addEventListener('click',toggleReady);$('startBtn').addEventListener('click',startMatch);$('leaveLobbyBtn').addEventListener('click',leave);$('leaveMatchBtn').addEventListener('click',leave);$('newMatchBtn').addEventListener('click',resetToEntry);
