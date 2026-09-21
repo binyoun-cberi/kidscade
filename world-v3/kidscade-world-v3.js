@@ -491,7 +491,8 @@ const GRID_RECIPES=[
   {id:'ironAxe',name:'철도끼',minTech:1,pattern:['iron','iron','', 'iron','wood','', '','wood',''],out:{kind:'tool',slot:'axe',tier:'iron',dur:38}},
   {id:'ironPick',name:'철곡괭이',minTech:1,pattern:['iron','iron','iron', '','wood','', '','wood',''],out:{kind:'tool',slot:'pick',tier:'iron',dur:38}},
   {id:'semiconductor',name:'반도체',minTech:2,pattern:['quartz','copper','quartz', 'copper','iron','copper', 'quartz','copper','quartz'],out:{kind:'item',item:'semiconductor',qty:1}},
-  {id:'television',name:'모던 TV',minTech:3,pattern:['iron','semiconductor','gold', 'wood','semiconductor','wood', 'wood','wood','wood'],out:{kind:'furniture',item:'television',qty:1}}
+  {id:'television',name:'모던 TV',minTech:3,pattern:['iron','semiconductor','gold', 'wood','semiconductor','wood', 'wood','wood','wood'],out:{kind:'furniture',item:'television',qty:1}},
+  {id:'homeCampfire',name:'집 앞 캠프파이어',minTech:1,pattern:['stone','','stone', '','wood','', 'stone','wood','stone'],out:{kind:'homestead',upgrade:'campfire'}}
 ];
 let craftGrid=Array(9).fill(''),craftSelected='wood';
 function gridCounts(grid=craftGrid){const out={};for(const k of grid)if(k)out[k]=(out[k]||0)+1;return out}
@@ -528,8 +529,10 @@ function performGridCraft(){
     i[recipe.out.item]=(i[recipe.out.item]||0)+(recipe.out.qty||1);
   }else if(recipe.out.kind==='furniture'){
     p.housing.owned[recipe.out.item]=(p.housing.owned[recipe.out.item]||0)+(recipe.out.qty||1);
+  }else if(recipe.out.kind==='homestead'&&recipe.out.upgrade==='campfire'){
+    p.homestead.kitchenLevel=Math.max(1,p.homestead.kitchenLevel);
   }
-  craftGrid=Array(9).fill('');persist();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
+  craftGrid=Array(9).fill('');persist();updateHomesteadVisuals();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
   toast('🔨 '+recipe.name+' 제작 완료!');craftGridPanel();
 }
 const FOOD_DEF={
@@ -877,7 +880,11 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
 });
 document.getElementById('mobileInteract').onclick=doInteract;
 
-const LAYOUT_VERSION=7;
+const LAYOUT_VERSION=8;
+let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
+let homeCampfireObject=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
+let starterBeddingGroup=null,starterBeddingInteraction=null;
+const orchardActors=[],ranchVisualActors=[];
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
@@ -893,6 +900,7 @@ const TRAVEL_POINTS={
   city:{x:-12,z:18.0,name:'씨앗마을 상점가'},
   river:{x:-12,z:-18.0,name:'북쪽 강가'},
   ranch:{x:12,z:-18.0,name:'목장'},
+  orchard:{x:36,z:-18.0,name:'과수원'},
   beach:{x:-36,z:-18.0,name:'해변가'}
 };
 function travelTo(id){
@@ -900,6 +908,49 @@ function travelTo(id){
   if(mode!=='outdoor'){mode='outdoor';outdoor.visible=true;indoor.visible=false;}
   resetInput(true);player.x=d.x;player.z=d.z;near=null;panel.classList.remove('open');setAvatarAction('smile',450);
   toast('씨앗버스 도착 · '+d.name);
+}
+const HOUSE_BOUNDS=[
+  null,
+  {x1:-3.35,x2:3.35,z1:-3.65,z2:3.85},
+  {x1:-5.05,x2:5.05,z1:-4.25,z2:4.05},
+  {x1:-6.55,x2:6.55,z1:-4.75,z2:4.15}
+];
+function currentHouseBounds(){return HOUSE_BOUNDS[devState().houseLevel]||HOUSE_BOUNDS[1]}
+function collectWater(source){
+  const level=devState().waterLevel;
+  if(source==='well'&&level<1){toast('먼저 우물을 만들어야 해요.');return}
+  if(source==='pump'&&level<2){toast('수동 펌프를 먼저 설치해야 해요.');return}
+  const amount=source==='river'?3:source==='well'?5:8,added=addWater(amount);
+  if(!added){toast('💧 물통이 이미 가득 찼어요. · '+(inv().water||0)+'/'+waterCarryLimit());return}
+  persist();updateStatus();worldAudio.sfx('pickup',.12);
+  toast('💧 '+(source==='river'?'강물':source==='well'?'우물물':'펌프 물')+' +'+added+' · '+(inv().water||0)+'/'+waterCarryLimit());
+}
+function sleepOnFloor(){
+  const p=prog(),s=p.survival;
+  p.energy=Math.max(p.energy,Math.round((p.maxEnergy||100)*.72));
+  s.hunger=Math.max(0,s.hunger-12);s.day+=1;s.time=420;
+  persist();updateStatus();toast('바닥 이불에서 잤어요. 몸이 조금 뻐근하지만 아침이 됐어요.');
+}
+function updateHomesteadVisuals(){
+  const d=devState(),h=prog().homestead;
+  if(homePondGroup)homePondGroup.visible=d.fishingLevel>=1;
+  if(homePondInteraction)homePondInteraction.enabled=d.fishingLevel>=1;
+  if(homeWellGroup)homeWellGroup.visible=d.waterLevel>=1;
+  if(homeWellInteraction)homeWellInteraction.enabled=d.waterLevel>=1;
+  if(homePumpGroup)homePumpGroup.visible=d.waterLevel>=2;
+  if(homePumpInteraction)homePumpInteraction.enabled=d.waterLevel>=2;
+  if(homeCampfireObject)homeCampfireObject.visible=h.kitchenLevel>=1;
+  if(homeCampfireInteraction)homeCampfireInteraction.enabled=h.kitchenLevel>=1;
+  if(starterBeddingGroup)starterBeddingGroup.visible=h.bedLevel===0;
+  if(starterBeddingInteraction)starterBeddingInteraction.enabled=h.bedLevel===0;
+  if(homeHouseObject&&homeHouseBaseScale){
+    const mul=d.houseLevel===1?.78:d.houseLevel===2?.90:1;
+    homeHouseObject.scale.copy(homeHouseBaseScale).multiplyScalar(mul);
+  }
+  if(homeHouseCollider){
+    const size=d.houseLevel===1?4.3:d.houseLevel===2?5.1:5.8;
+    homeHouseCollider.w=size;homeHouseCollider.d=d.houseLevel===1?3.45:d.houseLevel===2?3.9:4.4;
+  }
 }
 function claimStarterKit(){
   const p=prog(),i=inv();
@@ -918,7 +969,7 @@ function showStarterHintOnce(){
   setTimeout(()=>toast('첫 도구 만들기: 집 주변 나뭇가지·작은 돌을 맨손으로 줍거나, 집 앞 초보자 보급상자를 열어보세요.'),650);
 }
 function isBlocked(nx,nz){
-  const bounds=mode==='outdoor'?WORLD_BOUNDS:{x1:-6.6,x2:6.6,z1:-4.7,z2:4.7};
+  const bounds=mode==='outdoor'?WORLD_BOUNDS:currentHouseBounds();
   if(nx<bounds.x1+.25||nx>bounds.x2-.25||nz<bounds.z1+.25||nz>bounds.z2-.25)return true;
   if(mode==='outdoor'&&!zoneAt(nx,nz)&&!isTravelCorridor(nx,nz))return true;
   return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
@@ -965,9 +1016,10 @@ function spendTool(kind,item){
   toast((kind==='wood'?'목재':'돌')+' +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
 }
 function canPlaceFurniture(x,z,w,d,ignore=null){
-  if(w<=0||d<=0)return x>-6.55&&x<6.55&&z>-4.75&&z<4.15;
-  if(x-w/2<-6.55||x+w/2>6.55||z-d/2<-4.75||z+d/2>4.15)return false;
-  if(z+d/2>3.05&&Math.abs(x)<1.45)return false;
+  const b=currentHouseBounds(),pad=.08;
+  if(w<=0||d<=0)return x>b.x1+pad&&x<b.x2-pad&&z>b.z1+pad&&z<b.z2-pad;
+  if(x-w/2<b.x1+pad||x+w/2>b.x2-pad||z-d/2<b.z1+pad||z+d/2>b.z2-pad)return false;
+  if(z+d/2>Math.min(3.05,b.z2-.35)&&Math.abs(x)<1.45)return false;
   return !colliders.indoor.some(c=>c!==ignore&&c.enabled!==false&&Math.abs(x-c.x)<(w+c.w)/2+.12&&Math.abs(z-c.z)<(d+c.d)/2+.12);
 }
 function sleep(){
