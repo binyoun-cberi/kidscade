@@ -753,3 +753,13 @@ test('Deep Diver v25 has exactly one harpoon firing implementation',()=>{
   assert.equal((js.match(/function fireHarpoon\(/g)||[]).length,1);
   assert.match(js,/gearTier\('harpoon'\)\*18/);
 });
+
+
+test('Deep Diver v25 keeps morning kitchen management separate from night service',()=>{
+  assert.match(js,/function openKitchenPrep/);
+  assert.match(js,/아침에는 재고와 메뉴만 확인합니다/);
+  assert.match(js,/if\(a==='kitchen'\)\{openKitchenPrep\(\);return\}/);
+  assert.doesNotMatch(js,/if\(a==='kitchen'\)\{if\(stockCount\(\)>0\)startRestaurant/);
+  assert.match(js,/actual|실제 밤 장사는 낮 잠수에서 귀환한 뒤 선택할 수 있습니다/);
+  assert.match(css,/\.kitchenPrepHero/);
+});
