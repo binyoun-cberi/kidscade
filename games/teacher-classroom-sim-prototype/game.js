@@ -641,7 +641,7 @@
     if(action.phase==="pair")assignLessonPairs();
     if(action.phase==="presentation"){
       var candidates=students.filter(function(s){return s.scene===current().loc});
-      candidates.sort(function(a,b){return (b.focus+b.skill+b.assert)-(a.focus+a.skill+a.assert)});
+      candidates.sort(function(a,b){return (b.focus+currentMastery(b)+b.assert)-(a.focus+currentMastery(a)+a.assert)});
       var presenter=candidates[0]||null;
       if(presenter){lessonState.presenterId=presenter.id;requestStudentAction(presenter,"PRESENT",{duration:action.duration,force:true})}
     }
@@ -671,7 +671,7 @@
       if(purpose==="COMPETE"){
         score=r.rivalry*.46+s.compete*.22+o.compete*.13+r.affinity*.08-r.irritation*.12-d*.001;
       }else if(purpose==="HELP"){
-        score=(1-o.skill)*.32+o.helpNeed*.32+s.helpful*.20+r.affinity*.12-r.irritation*.18;
+        score=(1-currentMastery(o))*.32+o.helpNeed*.32+s.helpful*.20+r.affinity*.12-r.irritation*.18;
       }else{
         score=r.affinity*.56-r.irritation*.34+s.soc*.12+o.soc*.08+s.socialNeed*.12-d*.002;
         if(o.groupId)score-=Math.max(0,groupMembers(o.groupId).length-2)*.025;
@@ -797,7 +797,7 @@
     }
     if(s.behaviorPhase==="settle"){
       s.dx=s.x;s.dy=s.y;if(gameSec<s.phaseUntil)return;
-      target.helpNeed=clamp(target.helpNeed-.12);target.focus=clamp(target.focus+.05);target.skill=clamp(target.skill+.0035);
+      target.helpNeed=clamp(target.helpNeed-.12);target.focus=clamp(target.focus+.05);applyLearning(target,.0042,"pair");
       s.belonging=clamp(s.belonging+.035);s.mood=clamp(s.mood+.02);changeRelation(s,target,{affinity:.01,irritation:-.008});
       remember(s,target.name+"을 도와줌",.38);remember(target,s.name+"에게 도움받음",.38);
       if(Math.random()<.34)log(s.name+"이(가) "+target.name+"을(를) 잠깐 도와주었다.","social",s.scene);
@@ -1053,7 +1053,7 @@
     if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
     if(s.actionTicks<=0&&maybeSeriousIncident(s))return;
 
-    var phase=lessonState.phase,fit=lessonFit(s),near=teacherNear(s),hard=clamp(.70-s.skill+.16),target=chooseSocialTarget(s,"SOCIAL");
+    var phase=lessonState.phase,fit=lessonFit(s),near=teacherNear(s),mastery=currentMastery(s),hard=clamp(.70-mastery+.16),target=chooseSocialTarget(s,"SOCIAL");
     var roleActive=s.roleUntil>gameSec;
     var vals={
       WORK:.24+s.persist*.22+s.focus*.20+fit*.18+(roleActive?.05:0),
@@ -1077,7 +1077,7 @@
     }
     if(phase==="question"){
       vals.ATTEND+=.10;
-      vals.RAISE_HAND=.18+s.verbal*.24+s.assert*.19+s.skill*.15+s.focus*.16;
+      vals.RAISE_HAND=.18+s.verbal*.24+s.assert*.19+mastery*.15+s.focus*.16;
       vals.WORK-=.10;
     }
     if(phase==="individual"){
@@ -1225,7 +1225,7 @@
       var fit=lessonFit(s);
       s.talkNeed=clamp(s.talkNeed+.018*s.soc+.014*(1-fit));
       s.moveNeed=clamp(s.moveNeed+.016*s.move);
-      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-s.skill));
+      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-currentMastery(s)));
       s.sleepNeed=clamp(s.sleepNeed+.006*(1-s.energy));
       s.socialNeed=clamp(s.socialNeed+.006*s.soc);
       s.boredom=clamp(s.boredom+.013*(1-fit)-.006*s.persist);
@@ -1240,21 +1240,21 @@
 
       if(s.action==="WORK"&&s.scene===current().loc){
         s.focus=clamp(s.focus+.009*fit-.006*s.boredom);
-        var gain=.00165*fit*s.focus;s.skill=clamp(s.skill+gain);s.learned+=gain;
+        var gain=.00055*fit*s.focus;applyLearning(s,gain,"work");
       }else if(s.action==="ATTEND"){
         s.focus=clamp(s.focus+.006*fit-.004*s.boredom);
-        var listenGain=.00105*fit*s.focus;s.skill=clamp(s.skill+listenGain);s.learned+=listenGain;
+        var listenGain=.00025*fit*s.focus;applyLearning(s,listenGain,"listen");
       }else if(s.action==="PAIR_WORK"){
         var partner=s.lessonPartner!==null?studentById(s.lessonPartner):null;
         var pairFit=partner?relation(s,partner).affinity:.35;
         s.focus=clamp(s.focus+.005*fit-.002*s.boredom);
-        var pairGain=.00145*fit*s.focus*(.82+pairFit*.22);s.skill=clamp(s.skill+pairGain);s.learned+=pairGain;
+        var pairGain=.00045*fit*s.focus*(.82+pairFit*.22);applyLearning(s,pairGain,"pair");
       }else if(s.action==="RAISE_HAND"){
         s.focus=clamp(s.focus+.012);s.mood=clamp(s.mood+.006);
-        var qGain=.0008*fit;s.skill=clamp(s.skill+qGain);s.learned+=qGain;
+        var qGain=.00018*fit;applyLearning(s,qGain,"question");
       }else if(s.action==="PRESENT"){
         s.focus=clamp(s.focus+.01);s.mood=clamp(s.mood+.008);
-        var pGain=.0009*fit;s.skill=clamp(s.skill+pGain);s.learned+=pGain;
+        var pGain=.00016*fit;applyLearning(s,pGain,"presentation");
       }else if(s.action==="TALK"){s.focus=clamp(s.focus-(lessonState.phase==="pair"?.012:.03))}
       else if(s.action==="DOODLE"){s.boredom=clamp(s.boredom-.09);s.focus=clamp(s.focus-.018)}
       else if(s.action==="SLEEP"){s.focus=clamp(s.focus-.03);s.sleepNeed=clamp(s.sleepNeed-.07)}
@@ -1422,8 +1422,8 @@
     if(action.id==="redirect")v=.65+s.persist*.12+s.trust*.12;
     if(action.id==="chalk")v=.83-s.rejection*.18-s.correctionLoad*.25;
     if(action.id==="hint")v=.68+s.persist*.12+s.visual*.08;
-    if(action.id==="firstStep")v=.74+(1-s.skill)*.16+s.hands*.06;
-    if(action.id==="simplify")v=.72+(1-s.skill)*.18;
+    if(action.id==="firstStep")v=.74+(1-currentMastery(s))*.16+s.hands*.06;
+    if(action.id==="simplify")v=.72+(1-currentMastery(s))*.18;
     if(action.id==="movementJob")v=.65+s.move*.28;
     if(action.id==="praise")v=.72+s.trust*.15+s.rejection*.06;
     if(action.id==="listen")v=.70+s.rejection*.15+s.trust*.08;
@@ -1599,36 +1599,56 @@
       id:"inspectWork",category:"observe",label:"활동지·과제 확인",duration:30,near:true,repeatPenalty:.025,
       desc:"정답보다 풀이 흔적과 막히는 지점을 확인합니다.",
       when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&teacherScene==="classroom"},
-      recommended:function(s){return s.action==="HELP"||s.helpNeed>.16||s.skill<.52},
-      effect:function(s,m){s.observation+=2;s.observedWork=true;s.helpNeed=clamp(s.helpNeed-.025*m);remember(s,"선생님이 풀이 과정을 확인함",.30);log(s.name+"의 과제를 살펴보며 어디에서 막히는지 확인했다.","learning",teacherScene)}
+      recommended:function(s){return s.action==="HELP"||s.helpNeed>.16||currentMastery(s)<.52},
+      effect:function(s,m){
+        s.observation+=2;s.observedWork=true;s.helpNeed=clamp(s.helpNeed-.025*m);
+        var ev=recordDiagnosticEvidence(s,"활동지 확인");
+        remember(s,"선생님이 풀이 과정을 확인함",.30);
+        log(s.name+"의 과제를 살펴보며 "+(ev?ev.text:"풀이 흐름")+"을(를) 확인했다.","learning",teacherScene);
+      }
     },
     checkQuestion:{
       id:"checkQuestion",category:"observe",label:"확인 질문하기",duration:25,near:true,repeatPenalty:.04,
       desc:"짧은 질문으로 이해한 정도를 확인합니다. 틀려도 바로 정답을 주지는 않습니다.",
       when:function(s){return current().kind==="lesson"&&s.scene===teacherScene},
       recommended:function(s){return s.action==="HELP"||s.helpNeed>.13},
-      effect:function(s,m){s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedWork=true;remember(s,"선생님의 확인 질문에 답해봄",.28);log(s.name+"에게 짧은 확인 질문을 해 이해 정도를 살폈다.","learning",teacherScene)}
+      effect:function(s,m){
+        s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedWork=true;
+        var ev=recordDiagnosticEvidence(s,"확인 질문");
+        remember(s,"선생님의 확인 질문에 답해봄",.28);
+        log(s.name+"에게 확인 질문을 해 "+(ev?ev.label+" 관련 반응":"이해 정도")+"을(를) 살폈다.","learning",teacherScene);
+      }
     },
 
     hint:{
       id:"hint",category:"support",label:"힌트 하나 주기",duration:30,near:true,repeatPenalty:.07,
       desc:"해결 방향만 짚어 스스로 다음 단계를 찾게 합니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.helpNeed>.08||s.skill<.62)},
-      recommended:function(s){return s.action==="HELP"&&s.skill>.34},
-      effect:function(s,m){s.helpNeed=clamp(s.helpNeed-.14*m);s.skill=clamp(s.skill+.006*m);s.focus=clamp(s.focus+.07*m);stats.helped++;remember(s,"힌트를 받고 다시 문제에 접근함",.50);log(s.name+"에게 정답 대신 작은 힌트를 주었다.","learning",teacherScene)}
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.helpNeed>.08||currentMastery(s)<.62)},
+      recommended:function(s){return s.action==="HELP"&&currentMastery(s)>.34},
+      effect:function(s,m){
+        if(!s.observedWork)recordDiagnosticEvidence(s,"힌트 전 반응");
+        s.helpNeed=clamp(s.helpNeed-.14*m);applyLearning(s,.012*m,"hint");s.focus=clamp(s.focus+.07*m);stats.helped++;
+        remember(s,"힌트를 받고 다시 문제에 접근함",.50);
+        log(s.name+"에게 정답 대신 작은 힌트를 주고 반응을 관찰했다.","learning",teacherScene);
+      }
     },
     firstStep:{
       id:"firstStep",category:"support",label:"첫 단계 같이 하기",duration:45,near:true,repeatPenalty:.09,
       desc:"막힘이 큰 학생과 첫 단계만 함께 해결합니다. 효과는 크지만 교사 시간이 많이 듭니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.skill<.55)},
-      recommended:function(s){return s.skill<.40||s.helpNeed>.24},
-      effect:function(s,m){s.helpNeed=clamp(s.helpNeed-.22*m);s.skill=clamp(s.skill+.011*m);s.focus=clamp(s.focus+.10*m);s.trust=clamp(s.trust+.012);stats.helped++;remember(s,"선생님과 첫 단계를 함께 해결함",.58);log(s.name+"과 첫 단계를 함께 풀고 나머지는 스스로 이어가게 했다.","learning",teacherScene)}
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||currentMastery(s)<.55)},
+      recommended:function(s){return currentMastery(s)<.40||s.helpNeed>.24},
+      effect:function(s,m){
+        recordDiagnosticEvidence(s,"첫 단계 함께 하기");
+        s.helpNeed=clamp(s.helpNeed-.22*m);applyLearning(s,.022*m,"firstStep");s.focus=clamp(s.focus+.10*m);s.trust=clamp(s.trust+.012);stats.helped++;
+        remember(s,"선생님과 첫 단계를 함께 해결함",.58);
+        log(s.name+"과 첫 단계를 함께 풀고 이후 반응을 살폈다.","learning",teacherScene);
+      }
     },
     simplify:{
       id:"simplify",category:"support",label:"과제를 작게 나누기",duration:35,near:true,repeatPenalty:.05,
       desc:"해야 할 일을 더 작은 단계로 나누어 부담을 낮춥니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.skill<.58||s.frustration>.24)},
-      recommended:function(s){return s.frustration>.34||s.skill<.34},
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(currentMastery(s)<.58||s.frustration>.24)},
+      recommended:function(s){return s.frustration>.34||currentMastery(s)<.34},
       effect:function(s,m){s.frustration=clamp(s.frustration-.13*m);s.helpNeed=clamp(s.helpNeed-.11*m);s.focus=clamp(s.focus+.055*m);s.boredom=clamp(s.boredom-.025);remember(s,"과제를 작은 단계로 나눠 다시 시작함",.48);log(s.name+"의 과제를 더 작은 단계로 나누어 다시 시작하게 했다.","learning",teacherScene)}
     },
     movementJob:{
@@ -1837,7 +1857,7 @@
     var p=current();
     var fitAvg=stats.fitSamples.length?stats.fitSamples.reduce(function(a,b){return a+b},0)/stats.fitSamples.length:.60;
     var engAvg=stats.engageSamples.length?stats.engageSamples.reduce(function(a,b){return a+b},0)/stats.engageSamples.length:.55;
-    var gain=students.reduce(function(a,s,i){return a+Math.max(0,s.skill-stats.learningStart[i])},0)/students.length;
+    var gain=students.reduce(function(a,s,i){return a+Math.max(0,currentMastery(s)-stats.learningStart[i])},0)/students.length;
     var phases=Object.keys(stats.phaseSamples);
     var structure=42;
     if(phases.indexOf("explain")>=0||phases.indexOf("demo")>=0)structure+=12;
@@ -1854,7 +1874,7 @@
     structure=clamp(structure/100);
     var design=Math.round((fitAvg*.64+structure*.36)*100);
     var engage=Math.round(engAvg*100);
-    var learning=Math.round(Math.min(100,50+gain*3800));
+    var learning=Math.round(Math.min(100,45+gain*900));
     var latenessPenalty=Math.min(14,stats.lateTicks*.22);
     var conflictPenalty=Math.min(18,stats.conflicts*5);
     var seriousPenalty=Math.min(26,stats.seriousIncidents*8);
@@ -1879,8 +1899,11 @@
       findings.push("수업 흐름: "+lessonState.history.map(function(h){return h.label}).join(" → "));
     }
     students.filter(function(s){return s.focus<.48}).sort(function(a,b){return a.focus-b.focus}).slice(0,2).forEach(function(s){findings.push(s.name+"은(는) 이번 시간에 집중을 오래 유지하지 못했다.")});
-    var support=students.slice().sort(function(a,b){return a.skill-b.skill})[0];
-    if(support)findings.push(support.name+"은(는) 현재 개념을 추가로 확인할 필요가 있어 보인다.");
+    var support=students.slice().sort(function(a,b){return currentMastery(a)-currentMastery(b)})[0];
+    if(support){
+      var weak=weakestConcept(support,current().subject),model=subjectModel(current().subject);
+      findings.push(support.name+"은(는) "+(weak&&model?model.concepts[weak].label:"현재 개념")+"을(를) 추가로 확인할 필요가 있어 보인다.");
+    }
     var isolated=students.slice().sort(function(a,b){return a.belonging-b.belonging})[0];
     if(isolated&&isolated.belonging<.53)findings.push(isolated.name+"은(는) 또래 활동에서 소속감이 낮아진 모습이 보였다.");
     if(stats.conflicts) findings.push("수업 중 또래 갈등 "+stats.conflicts+"건이 행동과 집중에 영향을 주었다.");
@@ -2163,7 +2186,7 @@
       if(s.socialNeed>.38)notes.push("관찰 단서: 또래 쪽으로 시선과 접근이 자주 향함");
       if(s.frustration>.34)notes.push("관찰 단서: 막히거나 거절된 뒤 감정이 오래 남는 편");
     }
-    if(s.observedWork&&s.skill<.45)notes.push("학습 단서: 현재 과제의 기초 단계부터 다시 확인할 필요가 있어 보임");
+    diagnosisSummary(s).forEach(function(line){notes.push(line)});
     if(s.roleUntil>gameSec)notes.push("현재 역할을 맡고 있음");
     var pair=activePair(s);if(pair)notes.push(pair.name+"와 함께 해보도록 연결된 상태");
     var conflict=conflictPartner(s);if(conflict)notes.push(conflict.name+"와 감정이 남아 있음");
