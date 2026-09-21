@@ -562,15 +562,23 @@ function performGridCraft(){
   const need=gridCounts();
   if(!Object.entries(need).every(([k,v])=>(i[k]||0)>=v)){toast('재료가 부족해요.');return;}
   Object.entries(need).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+
+  let outputOk=true;
   if(recipe.out.kind==='tool'){
     p.tools[recipe.out.slot]={dur:recipe.out.dur,max:recipe.out.dur,tier:recipe.out.tier,craftedAt:Date.now()};p.equippedTool=recipe.out.slot;
   }else if(recipe.out.kind==='item'){
-    i[recipe.out.item]=(i[recipe.out.item]||0)+(recipe.out.qty||1);
+    outputOk=!!addInventoryItem(recipe.out.item,recipe.out.qty||1,{silent:true});
   }else if(recipe.out.kind==='furniture'){
     p.housing.owned[recipe.out.item]=(p.housing.owned[recipe.out.item]||0)+(recipe.out.qty||1);
   }else if(recipe.out.kind==='homestead'&&recipe.out.upgrade==='campfire'){
     p.homestead.campfireBuilt=true;
   }
+  if(!outputOk){
+    for(const [k,v] of Object.entries(need))i[k]=(i[k]||0)+v;
+    toast('🎒 완성품을 넣을 가방 칸이 없어요. 제작 재료는 돌려놓았어요.');
+    craftGridPanel();return;
+  }
+
   craftGrid=Array(9).fill('');persist();updateHomesteadVisuals();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
   toast('🔨 '+recipe.name+' 제작 완료!');craftGridPanel();
 }
@@ -1078,9 +1086,10 @@ function updateHomesteadVisuals(){
   }
 }
 function claimStarterKit(){
-  const p=prog(),i=inv();
+  const p=prog();
   if(p.starterKitClaimed){toast('초보자 보급 상자는 이미 받았어요. 주변 나뭇가지와 작은 돌도 맨손으로 주울 수 있어요.');return;}
-  p.starterKitClaimed=true;i.wood=(i.wood||0)+5;i.stone=(i.stone||0)+5;
+  if(!canCarryBundle({wood:5,stone:5})){toast('🎒 초보자 보급품을 받을 가방 칸이 부족해요. 집 수납함에 물건을 내려놓고 다시 열어보세요.');return;}
+  addInventoryItem('wood',5,{silent:true});addInventoryItem('stone',5,{silent:true});p.starterKitClaimed=true;
   persist();setAvatarAction('smile',700);updateStatus();
   toast('초보자 보급: 목재 +5 · 돌 +5! 이제 돌도끼와 돌곡괭이를 만들 수 있어요.');
 }
