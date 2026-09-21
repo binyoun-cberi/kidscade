@@ -76,11 +76,11 @@
   function pairKey(a,b){return [a,b].sort().join("|")}
   function friendship(a,b){
     var v=relations[pairKey(a.name,b.name)];
-    return v===undefined?.34:v;
+    return v===undefined ? .34 : v;
   }
   function changeFriendship(a,b,delta){
     var k=pairKey(a.name,b.name);
-    relations[k]=clamp((relations[k]===undefined?.34:relations[k])+delta);
+    relations[k]=clamp((relations[k]===undefined ? .34 : relations[k])+delta);
   }
   function current(){return schedule[Math.min(periodIndex,schedule.length-1)]}
   function gameMinute(){return Math.floor(gameSec/60)}
