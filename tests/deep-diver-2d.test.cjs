@@ -724,7 +724,7 @@ test('Deep Diver v24 normalizes creature visual scale',()=>{
   assert.match(js,/giant:\{draw:\[154,76\]/);
   assert.match(js,/baseScale=creatureVisualScale\(key,rr\)/);
   assert.doesNotMatch(js,/d\.behavior==='predator'\?1\.24/);
-  assert.match(js,/const sp=SPECIES\[key\],d=creatureVisualDraw\(key\)/);
+  assert.match(js,/const sp=SPECIES\[key\],m=creatureBodyMetrics\(key\)/);
   assert.match(js,/const d=creatureVisualDraw\(f\.key\)/);
 });
 
