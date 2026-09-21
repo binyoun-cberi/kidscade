@@ -105,3 +105,13 @@ test('homestead runtime still parses after the progression rework',()=>{
   const result=spawnSync(process.execPath,['--check'],{input:src,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
 });
+
+
+test('legacy furnished saves are rebased to the primitive v3.22 homestead once',()=>{
+  assert.match(runtime,/HOMESTEAD_REWORK_VERSION=2/);
+  assert.match(runtime,/reworkVersion:HOMESTEAD_REWORK_VERSION/);
+  assert.match(runtime,/progressionFurniture=new Set/);
+  assert.match(runtime,/p\.housing\.placed=p\.housing\.placed\.filter/);
+  assert.match(storage,/reworkVersion:2/);
+  assert.match(storage,/p\.homestead\?\.reworkVersion/);
+});
