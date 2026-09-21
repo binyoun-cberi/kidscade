@@ -15,11 +15,11 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\\.js\\?v=10/);
+  assert.match(html,/police-patrol-loader\.js\?v=10/);
   assert.match(html,/police-patrol\.css\?v=7/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\\.js\\?v=10/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\\.js\\?v=10/);
+  assert.match(loader,/police-patrol\.js\?v=10/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=10/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
 });
 
