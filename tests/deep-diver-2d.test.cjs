@@ -920,3 +920,46 @@ test('Deep Diver v31 shows specimen size and state before capture',()=>{
   assert.match(js,/다음 등급: '\+next/);
   assert.match(js,/gearCapabilityText\(k,lv\)/);
 });
+
+
+test('Deep Diver v32 turns observation into a readable hunting loop',()=>{
+  assert.match(html,/id="observeHud"/);
+  assert.match(html,/id="observeMode"/);
+  assert.match(html,/id="observeTitle"/);
+  assert.match(js,/function observationWeightRange/);
+  assert.match(js,/function observeCreature/);
+  assert.match(js,/function findObservationTarget/);
+  assert.match(js,/function observationDetail/);
+  assert.match(js,/function updateObservationHud/);
+  assert.match(js,/소나로 스캔하거나 카메라로 촬영하면 판별됩니다/);
+  assert.match(js,/카메라 정밀 관찰/);
+  assert.match(js,/SONAR 관찰/);
+  assert.match(js,/scanRange=520\+\(meta\.up\.sonar\|\|0\)\*70/);
+  assert.match(js,/observeCreature\(f,1\)/);
+  assert.match(js,/observeCreature\(f,2\)/);
+  assert.match(css,/v32 observation \+ specimen record loop/);
+});
+
+test('Deep Diver v32 stores real catch records separately from photo records',()=>{
+  assert.match(js,/codex:\{\},records:\{\}/);
+  assert.match(js,/meta\.records=r\.records/);
+  assert.match(js,/function recordCatch/);
+  assert.match(js,/caughtCount/);
+  assert.match(js,/largestCaught/);
+  assert.match(js,/heaviest/);
+  assert.match(js,/first 포획 기록|첫 포획 기록/);
+  assert.match(js,/최고 무게 기록/);
+  assert.match(js,/최대 크기 기록/);
+  assert.match(js,/포획 기록/);
+  assert.match(js,/trophyRecord/);
+});
+
+test('Deep Diver v32 keeps uncertainty before observation and reveals gear judgment after scanning',()=>{
+  assert.match(js,/크기 미상 · 상태 미상/);
+  assert.match(js,/function observationGearHint/);
+  assert.match(js,/오늘 사용 가능/);
+  assert.match(js,/오늘 미장착/);
+  assert.match(js,/상위 장비 필요/);
+  assert.match(js,/detail\.level>0\?detail\.short/);
+  assert.match(js,/크기\/상태 미상 · 촬영하면 정밀 관찰/);
+});
