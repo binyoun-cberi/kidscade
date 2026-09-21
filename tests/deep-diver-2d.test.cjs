@@ -351,9 +351,9 @@ test('Deep Diver v15 harpoon aims freely and reels hooked fish',()=>{
 });
 
 test('Deep Diver v18 softly gates free-dive depth by suit rating',()=>{
-  assert.match(js,/const CONTRACT_DEPTH_RATING=\[150,285,430,575,760,1080\]/);
+  assert.match(js,/const CONTRACT_DEPTH_RATING=\[150,285,430,575,760,2200\]/);
   assert.match(js,/function ratedDepth/);
-  assert.match(js,/180\+\(meta\.up\.suit\|\|0\)\*205/);
+  assert.match(js,/const ratings=\[180,420,720,1150,1850,2750\]/);
   assert.match(js,/function applyDepthPressure/);
   assert.match(js,/수압 한계 초과/);
   assert.match(js,/class="depthRating"/);
@@ -666,9 +666,18 @@ test('Deep Diver v21 gives the whale fall a scavenger ecology',()=>{
 
 test('Deep Diver v21 adds a late-game hadal contract',()=>{
   assert.match(js,/id:'hadal',title:'06 · 영구 암흑 해구 조사'/);
-  assert.match(js,/recommended:1080/);
+  assert.match(js,/recommended:2200/);
   assert.match(js,/m\.visited\.whaleFall/);
   assert.match(js,/m\.visited\.riftAbyss/);
   assert.match(js,/m\.visited\.volcanoCaldera/);
   assert.match(js,/\['angler','giantIsopod'\]\.some/);
+});
+
+
+test('Deep Diver v21 compresses the hadal trench into multi-kilometer depth',()=>{
+  assert.match(js,/if\(y<=4200\)return Math\.max\(0,\(y-WORLD\.surface\)\/WORLD\.scaleDepth\)/);
+  assert.match(js,/return shallowEnd\+Math\.max\(0,y-4200\)\/1\.2/);
+  assert.match(js,/const ratings=\[180,420,720,1150,1850,2750\]/);
+  assert.match(js,/depth:\[430,2700\]/);
+  assert.match(js,/depth:\[500,2700\]/);
 });
