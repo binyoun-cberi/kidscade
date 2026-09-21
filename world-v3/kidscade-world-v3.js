@@ -300,7 +300,8 @@ function helpPanel(){
     '<div class="helpItem"><b>🎒 가방</b>4번 슬롯에서 재료와 음식을 확인하고 먹을 수 있어요.</div>'+
     '<div class="helpItem"><b>🐾 Cube Pets</b>5번 슬롯에서 내가 만난 펫을 즉시 동행시킬 수 있어요.</div>'+
     '<div class="helpItem"><b>❤ 생존</b>왼쪽 구는 체력, 오른쪽 구는 허기예요. 음식과 휴식으로 관리해요.</div>'+
-    '</div><p><b>화면 위쪽</b>에는 현재 지역, 날짜·시간, 코인·씨앗만 간단히 표시돼요. 자원 총량과 음식은 가방에서 확인하세요.</p>');
+    '<div class="helpItem"><b>📬 바로가기</b>위쪽의 📬 택배와 📋 오늘 할 일을 어디서든 바로 눌러 확인할 수 있어요.</div>'+
+    '</div><p><b>현재 지역 이름</b>을 누르면 씨앗버스 지도가 열립니다. 자원 총량과 음식은 가방에서 확인하세요.</p>');
 }
 function activateQuickSlot(key){
   if(key==='hand'||key==='axe'||key==='pick'){setEquippedTool(key);return}
@@ -701,6 +702,8 @@ function updateZone(){
   if(zoneId!==lastMetaZone){lastMetaZone=zoneId;Meta?.recordExplore?.(zoneId);}
 }
 zoneEl?.addEventListener('click',worldMapPanel);
+worldMailChip?.addEventListener('click',mailboxPanel);
+worldTaskChip?.addEventListener('click',dailyLifePanel);
 function setMode(next){
   resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
@@ -1325,6 +1328,7 @@ function tick(now){
   shadow.position.set(player.x,.035,player.z+.08);
   cosmeticAura.position.set(player.x,.045,player.z+.04);
   cosmeticAura.rotation.z=now/1800;
+  if(cosmeticAura.visible){const pulse=1+Math.sin(now/330)*.06;cosmeticAura.scale.setScalar(pulse);}
   updateAvatarFrame(now,moving);
   applyAvatarMotion(now,moving);
   updatePets(now,dt);
