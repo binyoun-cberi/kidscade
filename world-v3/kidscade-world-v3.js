@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=15';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=16';
 import {createTownEconomy} from './kidscade-world-economy.js?v=12';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=6';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
