@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=17/);
-  assert.match(html,/diver-v7\.js\?v=24/);
+  assert.match(html,/deep-diver-2d\.css\?v=18/);
+  assert.match(html,/diver-v7\.js\?v=25/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=24');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=25');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -373,8 +373,8 @@ test('Deep Diver v15 sonar guides off-screen targets',()=>{
 
 test('Deep Diver v15 requires safe return for all economic rewards',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
-  assert.match(js,/depthBonus=ok\?Math\.round\(world\.maxDepth\*1\.25\):0/);
-  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);
+  assert.match(js,/recordDepth=ok\?Math\.max\(0,world\.maxDepth-previousBest\):0/);
+  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);\n  assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
   assert.match(js,/구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다/);
 });
 
@@ -725,4 +725,30 @@ test('Deep Diver v24 normalizes creature visual scale',()=>{
   assert.doesNotMatch(js,/d\.behavior==='predator'\?1\.24/);
   assert.match(js,/const sp=SPECIES\[key\],d=creatureVisualDraw\(key\)/);
   assert.match(js,/const d=creatureVisualDraw\(f\.key\)/);
+});
+
+
+test('Deep Diver v25 separates day progression from the restaurant',()=>{
+  assert.match(html,/id="restBtn"/);
+  assert.match(js,/function openNextMorning/);
+  assert.match(js,/function restToNextMorning/);
+  assert.match(js,/밤 장사를 하거나 바로 휴식할 수 있습니다/);
+  assert.match(js,/휴식하고 다음 날/);
+  assert.match(js,/rest\.onclick=\(\)=>restToNextMorning\(false\)/);
+  assert.match(js,/homeBtn'\)\.onclick=\(\)=>restToNextMorning\(true\)/);
+  assert.match(js,/meta\.day=Math\.max\(1,\(meta\.day\|\|1\)\+1\)/);
+  assert.match(js,/nextDayBtn'\)\.onclick=\(\)=>openNextMorning\(false\)/);
+});
+
+test('Deep Diver v25 only pays depth bonus for a new personal record',()=>{
+  assert.match(js,/previousBest=Math\.max\(0,meta\.bestDepth\|\|0\)/);
+  assert.match(js,/recordDepth=ok\?Math\.max\(0,world\.maxDepth-previousBest\):0/);
+  assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
+  assert.doesNotMatch(js,/world\.maxDepth\*1\.25/);
+  assert.match(js,/신규 수심 보상/);
+});
+
+test('Deep Diver v25 has exactly one harpoon firing implementation',()=>{
+  assert.equal((js.match(/function fireHarpoon\(/g)||[]).length,1);
+  assert.match(js,/gearTier\('harpoon'\)\*18/);
 });
