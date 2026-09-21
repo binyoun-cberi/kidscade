@@ -487,3 +487,69 @@ test('Deep Diver v17 turns night service into an active mini tycoon',()=>{
   assert.match(css,/\.timingBar/);
   assert.match(css,/\.customerSprite/);
 });
+
+test('Deep Diver v18 makes exploration missions optional and returns through the surface boat',()=>{
+  assert.match(js,/const FREE_DIVE=\{/);
+  assert.match(js,/의뢰는 완전히 선택 사항입니다/);
+  assert.match(js,/function drawBoat/);
+  assert.match(js,/dinghy-large2\.png/);
+  assert.match(js,/탐사선으로 돌아와 오늘의 낮 탐사를 마쳤습니다/);
+  assert.doesNotMatch(js,/if\(p\.y<WORLD\.surface\+45&&missionComplete\(\)/);
+  assert.match(html,/선착장 · 오늘의 출항 준비/);
+});
+
+test('Deep Diver v18 has a low upgradeable daily catch weight',()=>{
+  assert.match(js,/const CATCH_CAP_LEVELS=\[4,7,11,16,22,30\]/);
+  assert.match(js,/catchCap:\{name:'선상 냉장 어획함'/);
+  assert.match(js,/world\.catchWeight\+weight>world\.st\.catchCap/);
+  assert.match(html,/오늘 어획/);
+});
+
+test('Deep Diver v18 has loadout capture tools with colored gear tiers',()=>{
+  for(const token of ["harpoon:{name:'작살'","net:{name:'그물'","gloves:{name:'철제 장갑'","knife:{name:'채집칼'","trap:{name:'통발'"]) assert.ok(js.includes(token),token);
+  assert.match(js,/const GEAR_TIER_COLORS=/);
+  assert.match(js,/function gearLoadoutCards/);
+  assert.match(js,/function useNet/);
+  assert.match(js,/function useGloves/);
+  assert.match(js,/function useKnife/);
+  assert.match(js,/function useTrap/);
+  assert.match(css,/\.gearCard/);
+  assert.match(html,/data-tool="net"/);
+  assert.match(html,/data-tool="gloves"/);
+});
+
+test('Deep Diver v18 harvests sea plants and shellfish for richer recipes',()=>{
+  for(const token of ["seaweed:{name:'미역'","kelp:{name:'다시마'","redAlgae:{name:'붉은 해조'","seaLettuce:{name:'바다상추'","mussel:{name:'홍합'"]) assert.ok(js.includes(token),token);
+  assert.match(js,/function buildHarvestables/);
+  assert.match(js,/function drawHarvestables/);
+  assert.match(js,/name:'성게 해초 덮밥'/);
+  assert.match(js,/name:'홍합 다시마 국'/);
+  assert.match(js,/name:'오징어 붉은해조 무침'/);
+  assert.match(js,/groups:\[\['mussel'\],\['kelp','seaweed'\]\]/);
+});
+
+test('Deep Diver v18 adds restaurant and expedition upgrade trees',()=>{
+  for(const key of ['seats','stove','prep','fridge','tray','menu','helper']) assert.ok(js.includes(key+':{name:'),key);
+  assert.match(js,/slots:\{name:'채집 장비 랙'/);
+  assert.match(js,/function shopUpCost/);
+  assert.match(js,/function gearUpCost/);
+  assert.match(js,/restaurantSeatCount/);
+  assert.match(js,/meta\.shopUp\.stove/);
+  assert.match(js,/meta\.shopUp\.prep/);
+});
+
+test('Deep Diver v18 links existing cooking assets',()=>{
+  const required=[
+    'assets/game/food/fish.glb',
+    'assets/game/food/mussel.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/sea-urchin-open.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/squid.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/ramen.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/plate.glb',
+    'assets/game/3d/interiors/modular-sushi-restaurant-kit/pan.glb'
+  ];
+  for(const rel of required) assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
+  assert.match(js,/const COOK_ASSETS=\{/);
+  assert.match(js,/sea-urchin-open\.glb/);
+  assert.match(css,/\.ingredientSprite/);
+});
