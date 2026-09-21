@@ -940,7 +940,7 @@
       render();return;
     }
     if(action){
-      stats.teacherActs++;
+      if(!action.instruction)stats.teacherActs++;
       if(s){
         s.teacherUse[action.id]=(s.teacherUse[action.id]||0)+1;
         s.interventions++;
@@ -975,7 +975,7 @@
       multiplier:effectMultiplier(action,s),
       scene:teacherScene
     };
-    log((s?s.name+"에게 ":"")+action.label+"을(를) 시작했다.","teacher",teacherScene);
+    if(!action.instruction)log((s?s.name+"에게 ":"")+action.label+"을(를) 시작했다.","teacher",teacherScene);
     render();
   }
   function consumeTeacherTime(label,duration){
@@ -1275,6 +1275,9 @@
     var events=stats.events.filter(function(e){return e.type!=="ambient"}).slice(-10);
     q("#incidentList").innerHTML=events.length?events.map(function(e){return "<li><strong>"+e.stamp+"</strong> ["+SCENE_NAME[e.scene]+"] "+e.text+"</li>"}).join(""):"<li>큰 사건 없이 수업이 진행되었다.</li>";
     var findings=[];
+    if(lessonState.history.length){
+      findings.push("수업 흐름: "+lessonState.history.map(function(h){return h.label}).join(" → "));
+    }
     students.filter(function(s){return s.focus<.48}).sort(function(a,b){return a.focus-b.focus}).slice(0,2).forEach(function(s){findings.push(s.name+"은(는) 이번 시간에 집중을 오래 유지하지 못했다.")});
     var support=students.slice().sort(function(a,b){return a.skill-b.skill})[0];
     if(support)findings.push(support.name+"은(는) 현재 개념을 추가로 확인할 필요가 있어 보인다.");
