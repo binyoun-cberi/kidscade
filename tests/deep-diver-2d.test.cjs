@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=17/);
-  assert.match(html,/diver-v7\.js\?v=23/);
+  assert.match(html,/diver-v7\.js\?v=24/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=23');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=24');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -705,4 +705,24 @@ test('Deep Diver v23 starts from a compact asset-backed harbor hub',()=>{
   assert.match(css,/v23 harbor asset polish/);
   assert.match(css,/\.dockBuildingArt/);
   assert.match(css,/@media\(max-width:760px\)/);
+});
+
+
+test('Deep Diver v24 normalizes creature visual scale',()=>{
+  assert.match(js,/const CREATURE_VISUAL_PROFILE=/);
+  assert.match(js,/function creatureVisualDraw/);
+  assert.match(js,/function creatureVisualScale/);
+  assert.match(js,/shrimp:\{draw:\[30,18\]/);
+  assert.match(js,/lanternfish:\{draw:\[34,18\]/);
+  assert.match(js,/slipperLobster:\{draw:\[44,22\]/);
+  assert.match(js,/angler:\{draw:\[54,34\]/);
+  assert.match(js,/mackerel:\{draw:\[52,24\]/);
+  assert.match(js,/yellowfin:\{draw:\[96,40\]/);
+  assert.match(js,/swordfish:\{draw:\[120,34\]/);
+  assert.match(js,/whale:\{draw:\[270,92\]/);
+  assert.match(js,/giant:\{draw:\[154,76\]/);
+  assert.match(js,/baseScale=creatureVisualScale\(key,rr\)/);
+  assert.doesNotMatch(js,/d\.behavior==='predator'\?1\.24/);
+  assert.match(js,/const sp=SPECIES\[key\],d=creatureVisualDraw\(key\)/);
+  assert.match(js,/const d=creatureVisualDraw\(f\.key\)/);
 });
