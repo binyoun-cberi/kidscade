@@ -15,11 +15,11 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\.js\?v=9/);
+  assert.match(html,/police-patrol-loader\\.js\\?v=10/);
   assert.match(html,/police-patrol\.css\?v=7/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\.js\?v=9/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=9/);
+  assert.match(loader,/police-patrol\\.js\\?v=10/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\\.js\\?v=10/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
 });
 
@@ -59,7 +59,7 @@ test('Police Patrol v10 adds moving pedestrians using existing people assets',()
   assert.match(js,/function syncPedestrians3D/);
   assert.match(js,/gameAssetUrl3\('characters\/people\/character-male-a\.glb'\)/);
   assert.match(js,/gameAssetUrl3\('characters\/people\/character-female-c\.glb'\)/);
-  assert.match(js,/spawnPedestrians\(\)/);
+  assert.match(js,/spawnPedestrians\([^)]*\)/);
 });
 
 test('Police Patrol v10 uses a bounded road graph for traffic and pursuit AI',()=>{
