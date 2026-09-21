@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "format": "horizontal transparent PNG strips",
+  "runtime": {
+    "frames": 4,
+    "trimAlpha": true,
+    "notes": "Each source image stays as one strip. Deep Diver splits it into four equal horizontal cells at runtime, trims transparent padding per cell, normalizes frame scale, and animates without generating GIFs or separate frame files."
+  },
+  "classified": [
+    {
+      "path": "fish/barracuda.png",
+      "name": "바라쿠다",
+      "from": "assets/baracuda.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "crustaceans/giant-isopod.png",
+      "name": "대왕등각류",
+      "from": "assets/bathynomus.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/sea-bream.png",
+      "name": "도미",
+      "from": "assets/bream.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "cephalopods/cuttlefish.png",
+      "name": "갑오징어",
+      "from": "assets/cuttlefish.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "crustaceans/hermit-crab.png",
+      "name": "소라게",
+      "from": "assets/hermit crab.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "cnidarians/jellyfish.png",
+      "name": "보름달해파리",
+      "from": "assets/jellyfish.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/lionfish.png",
+      "name": "쏠배감펭",
+      "from": "assets/lionfish.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "rays/manta-ray.png",
+      "name": "대형 쥐가오리",
+      "from": "assets/manta ray.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/moray-eel.png",
+      "name": "곰치",
+      "from": "assets/moray eel.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "cephalopods/octopus.png",
+      "name": "문어",
+      "from": "assets/octopus.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/pufferfish.png",
+      "name": "복어",
+      "from": "assets/pufferfish.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "mollusks/scallop.png",
+      "name": "가리비",
+      "from": "assets/scallop.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "echinoderms/sea-cucumber.png",
+      "name": "해삼",
+      "from": "assets/sea cucumber.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/seahorse.png",
+      "name": "해마",
+      "from": "assets/sea horse.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "fish/coelacanth.png",
+      "name": "실러캔스",
+      "from": "assets/sillucanse.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "rays/skate.png",
+      "name": "저서 가오리",
+      "from": "assets/skate.png",
+      "frames": 4,
+      "status": "wired"
+    },
+    {
+      "path": "echinoderms/starfish.png",
+      "name": "별불가사리",
+      "from": "assets/starfish.png",
+      "frames": 4,
+      "status": "wired"
+    }
+  ],
+  "unclassified": [
+    {
+      "path": "_unclassified/generated-2026-09-21-01.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-02.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-03.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-04.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-05.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-06.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-07.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-08.png",
+      "status": "stored-not-wired"
+    },
+    {
+      "path": "_unclassified/generated-2026-09-21-09.png",
+      "status": "stored-not-wired"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ const F='../../assets/game/2d/fish/';
 const P='../../assets/game/2d/pirate/';
 const SHARK='../../assets/game/2d/underwater/deep-diver/creatures/shark/';
 const FAUNA='../../assets/game/2d/underwater/deep-diver/creatures/';
+const GEN_FAUNA=FAUNA+'generated/';
 const PICKUP='../../assets/game/2d/underwater/deep-diver/pickups/icons_128/';
 const VEG='../../assets/game/2d/underwater/deep-diver/vegetation/';
 const AMBIENCE_SRC='../../assets/audio/incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3';
@@ -123,6 +124,9 @@ const ASSETS={
  jelly01:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-01.png',jelly02:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-02.png',jelly03:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-03.png',jelly04:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-04.png',jelly05:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-05.png',jelly06:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-06.png',jelly07:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-07.png',jelly08:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-08.png',jelly09:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-09.png',jelly10:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-10.png',jelly11:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-11.png',jelly12:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-12.png',
  jellyAtk01:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-01.png',jellyAtk02:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-02.png',jellyAtk03:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-03.png',jellyAtk04:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-04.png',jellyAtk05:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-05.png',jellyAtk06:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-06.png',jellyAtk07:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-07.png',jellyAtk08:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-08.png',jellyAtk09:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-09.png',jellyAtk10:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-10.png',jellyAtk11:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-11.png',jellyAtk12:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-12.png',
  whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:SHARK+'shark-swim-atlas.png',
+ genBarracuda:GEN_FAUNA+'fish/barracuda.png',genBream:GEN_FAUNA+'fish/sea-bream.png',genLionfish:GEN_FAUNA+'fish/lionfish.png',genMoray:GEN_FAUNA+'fish/moray-eel.png',genPuffer:GEN_FAUNA+'fish/pufferfish.png',genSeahorse:GEN_FAUNA+'fish/seahorse.png',genCoelacanth:GEN_FAUNA+'fish/coelacanth.png',
+ genManta:GEN_FAUNA+'rays/manta-ray.png',genSkate:GEN_FAUNA+'rays/skate.png',genCuttlefish:GEN_FAUNA+'cephalopods/cuttlefish.png',genOctopus:GEN_FAUNA+'cephalopods/octopus.png',
+ genIsopod:GEN_FAUNA+'crustaceans/giant-isopod.png',genHermit:GEN_FAUNA+'crustaceans/hermit-crab.png',genMoonJelly:GEN_FAUNA+'cnidarians/jellyfish.png',genScallop:GEN_FAUNA+'mollusks/scallop.png',genSeaCucumber:GEN_FAUNA+'echinoderms/sea-cucumber.png',genStarfish:GEN_FAUNA+'echinoderms/starfish.png',
  waterPlant2:VEG+'water-plant-02.png',grassClump:VEG+'grass-clump-01.png',
  pickupBucket:PICKUP+'bucket.png',pickupFishingrod:PICKUP+'fishingrod.png',pickupGold:PICKUP+'gold.png',pickupKey:PICKUP+'key.png',
  pickupRuby:PICKUP+'ruby.png',pickupSaphire:PICKUP+'saphire.png',pickupSeashell:PICKUP+'seashell.png',pickupSilvercup:PICKUP+'silvercup.png',
@@ -156,6 +160,23 @@ const SPECIES={
  whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150],spriteFacing:'left'},
  vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78],spriteFacing:'left'},
  shark2:{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8,depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
+ barracuda:{name:'바라쿠다',img:'genBarracuda',stripFrames:4,stripFps:7,depth:[35,390],weight:3.4,value:720,protected:false,rare:false,behavior:'predator',speed:124,damage:13,draw:[108,46],catchMethods:['harpoon'],catchDifficulty:4},
+ giantIsopod:{name:'대왕등각류',img:'genIsopod',stripFrames:4,stripFps:4,depth:[500,755],weight:0,value:0,protected:true,rare:true,behavior:'crawler',motion:'crawler',speed:13,draw:[82,48]},
+ bream:{name:'도미',img:'genBream',stripFrames:4,stripFps:6,depth:[8,210],weight:1.5,value:260,protected:false,rare:false,behavior:'school',speed:48,draw:[72,50],catchMethods:['net'],catchDifficulty:2},
+ cuttlefish:{name:'갑오징어',img:'genCuttlefish',stripFrames:4,stripFps:6,depth:[55,430],weight:1.7,value:460,protected:false,rare:false,behavior:'skittish',motion:'jet',speed:76,draw:[78,54],catchMethods:['net','trap'],catchDifficulty:3},
+ hermitCrab:{name:'소라게',img:'genHermit',stripFrames:4,stripFps:4,depth:[5,260],weight:.45,value:180,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:16,draw:[58,46],catchMethods:['gloves','trap'],catchDifficulty:1},
+ moonJelly:{name:'보름달해파리',img:'genMoonJelly',stripFrames:4,stripFps:6,depth:[80,540],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'jelly',speed:18,damage:5,draw:[60,64]},
+ lionfish:{name:'쏠배감펭',img:'genLionfish',stripFrames:4,stripFps:5,depth:[20,280],weight:0,value:0,protected:true,rare:true,behavior:'territorial',speed:58,damage:10,draw:[82,58]},
+ manta:{name:'대형 쥐가오리',img:'genManta',stripFrames:4,stripFps:5,depth:[70,520],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:42,draw:[150,90]},
+ moray:{name:'곰치',img:'genMoray',stripFrames:4,stripFps:6,depth:[45,430],weight:0,value:0,protected:true,rare:true,behavior:'ambush',speed:82,damage:12,draw:[112,44]},
+ octopus:{name:'문어',img:'genOctopus',stripFrames:4,stripFps:6,depth:[35,470],weight:2.1,value:580,protected:false,rare:false,behavior:'skittish',motion:'jet',speed:70,draw:[80,64],catchMethods:['net','trap'],catchDifficulty:3},
+ puffer:{name:'복어',img:'genPuffer',stripFrames:4,stripFps:5,depth:[8,260],weight:0,value:0,protected:true,rare:false,behavior:'flee',speed:43,draw:[58,52]},
+ scallop:{name:'가리비',img:'genScallop',stripFrames:4,stripFps:4,depth:[8,300],weight:.45,value:270,protected:false,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[44,36],catchMethods:['gloves'],catchDifficulty:1},
+ seaCucumber:{name:'해삼',img:'genSeaCucumber',stripFrames:4,stripFps:3,depth:[20,520],weight:.65,value:310,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:8,draw:[64,34],catchMethods:['gloves'],catchDifficulty:2},
+ seahorse:{name:'해마',img:'genSeahorse',stripFrames:4,stripFps:4,depth:[5,190],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:18,draw:[40,60]},
+ coelacanth:{name:'실러캔스',img:'genCoelacanth',stripFrames:4,stripFps:5,depth:[520,755],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:38,draw:[108,58]},
+ skate:{name:'저서 가오리',img:'genSkate',stripFrames:4,stripFps:5,depth:[85,500],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'drifter',speed:34,draw:[96,64]},
+ starfishStrip:{name:'별불가사리',img:'genStarfish',stripFrames:4,stripFps:3,depth:[5,260],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[46,46]},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
 const BIOME_POPULATIONS={
@@ -166,11 +187,11 @@ const BIOME_POPULATIONS={
  abyss:[['angler',10],['hunter',8],['dart',5]]
 };
 const FAUNA_POPULATIONS={
- reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1]],
- kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1]],
- ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5]],
- wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3]],
- abyss:[['jelly',6],['squid',5],['shark2',4]]
+ reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1],['bream',5],['hermitCrab',4],['lionfish',2],['puffer',3],['seahorse',2],['starfishStrip',3]],
+ kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1],['bream',3],['barracuda',3],['cuttlefish',3],['octopus',2],['manta',1],['seaCucumber',4],['skate',2]],
+ ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5],['moray',3],['cuttlefish',2],['octopus',2],['scallop',4],['skate',2]],
+ wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3],['barracuda',3],['moray',4],['octopus',2],['skate',2],['giantIsopod',2]],
+ abyss:[['jelly',6],['squid',5],['shark2',4],['coelacanth',3],['giantIsopod',5],['seaCucumber',2]]
 };
 const ZONE_RULES={
  reef:{oxygen:1,current:0,visibility:1,danger:'낮음'},
@@ -188,7 +209,10 @@ const ATTACK_PROFILE={
  giant:{sense:590,windup:.72,lunge:.62,speed:405,cooldown:3.55,damage:1.35,label:'심해 상어 돌진'},
  mantis:{sense:180,windup:.58,lunge:.20,speed:460,cooldown:3.1,damage:1.45,label:'갯가재 초고속 펀치'},
  shark2:{sense:430,windup:.42,lunge:.38,speed:335,cooldown:2.55,damage:1.18,label:'상어 돌진'},
- kraken:{sense:690,windup:.95,lunge:.70,speed:250,cooldown:4.2,damage:1.30,label:'크라켄 촉수 돌진'}
+ kraken:{sense:690,windup:.95,lunge:.70,speed:250,cooldown:4.2,damage:1.30,label:'크라켄 촉수 돌진'},
+ barracuda:{sense:350,windup:.24,lunge:.30,speed:360,cooldown:2.0,damage:1.15,label:'바라쿠다 돌진'},
+ moray:{sense:260,windup:.38,lunge:.32,speed:270,cooldown:2.6,damage:1.18,label:'곰치 기습'},
+ lionfish:{sense:165,windup:.55,lunge:.18,speed:180,cooldown:3.2,damage:1.25,label:'쏠배감펭 가시 공격'}
 };
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
 const JELLY_SWIM_KEYS=Array.from({length:12},(_,i)=>'jelly'+String(i+1).padStart(2,'0'));
@@ -206,13 +230,13 @@ const COOK_ASSETS={
  pan:'../../assets/game/3d/interiors/modular-sushi-restaurant-kit/pan.glb'
 };
 const RECIPES=[
- {id:'reefGrill',name:'산호어 소금구이',icon:'🐟',keys:['blue','orange','pink','green','grey'],groups:[['blue','orange','pink','green','grey']],bonus:190,desc:'얕은 바다 생선을 바삭하게 구운 기본 메뉴',asset:COOK_ASSETS.fish},
+ {id:'reefGrill',name:'산호어 소금구이',icon:'🐟',keys:['blue','orange','pink','green','grey','bream'],groups:[['blue','orange','pink','green','grey','bream']],bonus:190,desc:'얕은 바다 생선을 바삭하게 구운 기본 메뉴',asset:COOK_ASSETS.fish},
  {id:'crabRice',name:'바위게 해조 볶음밥',icon:'🦀',keys:['crab'],groups:[['crab'],['seaweed','seaLettuce']],bonus:390,desc:'바위게와 오늘 채집한 해조를 함께 볶은 한 그릇',asset:COOK_ASSETS.plate},
- {id:'spicyBowl',name:'매콤 심해 덮밥',icon:'🌶️',keys:['red','brown','dart'],groups:[['red','brown','dart']],bonus:360,desc:'매콤한 양념으로 맛을 살린 인기 메뉴',asset:COOK_ASSETS.plate},
+ {id:'spicyBowl',name:'매콤 심해 덮밥',icon:'🌶️',keys:['red','brown','dart','barracuda'],groups:[['red','brown','dart','barracuda']],bonus:360,desc:'매콤한 양념으로 맛을 살린 인기 메뉴',asset:COOK_ASSETS.plate},
  {id:'hunterSteak',name:'포식어 스테이크',icon:'🍽️',keys:['hunter'],groups:[['hunter']],bonus:640,desc:'위험한 포식어를 손질해 만든 고급 메뉴',asset:COOK_ASSETS.pan},
- {id:'squidGrill',name:'심해 오징어 구이',icon:'🦑',keys:['squid'],groups:[['squid']],bonus:520,desc:'쫄깃한 오징어를 불향 나게 구운 메뉴',asset:COOK_ASSETS.squid},
+ {id:'squidGrill',name:'두족류 구이',icon:'🦑',keys:['squid','cuttlefish','octopus'],groups:[['squid','cuttlefish','octopus']],bonus:520,desc:'오징어·갑오징어·문어를 불향 나게 구운 메뉴',asset:COOK_ASSETS.squid},
  {id:'urchinRice',name:'성게 해초 덮밥',icon:'🟣',keys:['urchin'],groups:[['urchin'],['seaweed','seaLettuce']],bonus:620,desc:'성게와 신선한 해초를 올린 고급 덮밥',asset:COOK_ASSETS.seaUrchin},
- {id:'musselSoup',name:'홍합 다시마 국',icon:'🥣',keys:['mussel'],groups:[['mussel'],['kelp','seaweed']],bonus:430,desc:'홍합과 다시마로 우린 따뜻한 바다 국물',asset:COOK_ASSETS.mussel},
+ {id:'musselSoup',name:'패류 다시마 국',icon:'🥣',keys:['mussel','scallop'],groups:[['mussel','scallop'],['kelp','seaweed']],bonus:430,desc:'홍합이나 가리비와 다시마로 우린 따뜻한 바다 국물',asset:COOK_ASSETS.mussel},
  {id:'seaweedSoup',name:'바다 채소국',icon:'🌿',keys:['seaweed','kelp','seaLettuce'],groups:[['seaweed','kelp','seaLettuce']],bonus:210,desc:'미역·다시마·바다상추로 만드는 가벼운 메뉴',asset:COOK_ASSETS.ramen},
  {id:'squidSalad',name:'오징어 붉은해조 무침',icon:'🥗',keys:['squid'],groups:[['squid'],['redAlgae']],bonus:760,desc:'심해 오징어와 붉은 해조를 함께 쓰는 특별 메뉴',asset:COOK_ASSETS.squid}
 ];
@@ -443,7 +467,8 @@ function buildWorld(contract=FREE_DIVE){
    ['nautilus',2140,980,19311],['jelly',3620,1110,19312],['jelly',5340,1325,19313],
    ['squid',1760,1705,19321],['nautilus',4210,1990,19322],['squid',3220,2240,19323],
    ['crab',1040,2570,19331],['squid',4560,2860,19332],['shark2',6040,3100,19333],
-   ['jelly',1840,3410,19341],['squid',4380,3710,19342]
+   ['jelly',1840,3410,19341],['squid',4380,3710,19342],
+   ['seahorse',890,185,19501],['manta',5120,1320,19502],['moray',2580,1910,19503],['giantIsopod',2360,3880,19504],['coelacanth',4860,3690,19505]
  ];
  for(const [key,x,y,seed] of encounters)world.fish.push(spawnCreature(key,x,y,seed,subzoneForY(y).id));
  // Boss encounters are unique: mantis shrimp in the reef maze, kraken in the predator trench.
@@ -496,6 +521,19 @@ function buildWorld(contract=FREE_DIVE){
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
 function sheetFrame(im,frames,t){if(!im||!im.complete)return null;const fh=im.naturalHeight,fw=Math.floor(im.naturalWidth/frames),frame=Math.floor(t*8)%frames;return{sx:frame*fw,sy:0,sw:fw,sh:fh}}
+const STRIP_FRAME_CACHE=new WeakMap();
+function trimmedStripFrames(im,frames=4){
+ if(!im||!im.complete||!im.naturalWidth)return null;const cached=STRIP_FRAME_CACHE.get(im);if(cached&&cached.frames===frames&&cached.w===im.naturalWidth&&cached.h===im.naturalHeight)return cached;
+ const iw=im.naturalWidth,ih=im.naturalHeight,canvas=document.createElement('canvas');canvas.width=iw;canvas.height=ih;const g=canvas.getContext('2d',{willReadFrequently:true});
+ if(!g)return null;let bounds=[];
+ try{g.clearRect(0,0,iw,ih);g.drawImage(im,0,0);const data=g.getImageData(0,0,iw,ih).data;
+  for(let i=0;i<frames;i++){const x0=Math.floor(i*iw/frames),x1=Math.floor((i+1)*iw/frames);let minX=x1,minY=ih,maxX=x0-1,maxY=-1;
+   for(let y=0;y<ih;y++){let a=(y*iw+x0)*4+3;for(let x=x0;x<x1;x++,a+=4)if(data[a]>8){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y}}
+   if(maxX<minX){bounds.push({sx:x0,sy:0,sw:Math.max(1,x1-x0),sh:ih});continue}const pad=Math.max(2,Math.floor(Math.min(x1-x0,ih)*.006));minX=Math.max(x0,minX-pad);maxX=Math.min(x1-1,maxX+pad);minY=Math.max(0,minY-pad);maxY=Math.min(ih-1,maxY+pad);bounds.push({sx:minX,sy:minY,sw:maxX-minX+1,sh:maxY-minY+1})}
+ }catch(_){bounds=Array.from({length:frames},(_,i)=>{const x0=Math.floor(i*iw/frames),x1=Math.floor((i+1)*iw/frames);return{sx:x0,sy:0,sw:Math.max(1,x1-x0),sh:ih}})}
+ const out={frames,w:iw,h:ih,bounds,maxW:Math.max(...bounds.map(b=>b.sw)),maxH:Math.max(...bounds.map(b=>b.sh))};STRIP_FRAME_CACHE.set(im,out);canvas.width=1;canvas.height=1;return out
+}
+function drawTrimmedStrip(im,x,y,frames,w,h,flip=false,alpha=1,fps=6,phase=0){if(!im||!im.complete||!im.naturalWidth)return;const set=trimmedStripFrames(im,frames);if(!set)return;const idx=Math.floor((world.time+phase)*fps)%frames,f=set.bounds[idx],scale=Math.min(w/set.maxW,h/set.maxH),dw=f.sw*scale,dh=f.sh*scale;ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,f.sy,f.sw,f.sh,-dw/2,-dh/2,dw,dh);ctx.restore()}
 function drawImg(im,x,y,w,h,flip=false,rot=0,alpha=1,filter='none'){if(!im||!im.complete||!im.naturalWidth)return;ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.filter=filter;ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore()}
 function drawSheet(im,x,y,frames,w,h,flip=false,alpha=1){if(!im||!im.complete)return;const f=sheetFrame(im,frames,world.time);if(!f)return;ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,f.sy,f.sw,f.sh,-w/2,-h/2,w,h);ctx.restore()}
 function drawSequence(keys,x,y,w,h,flip=false,alpha=1,fps=8,phase=0){const idx=Math.floor((world.time+phase)*fps)%keys.length,im=imgs[keys[idx]];drawImg(im,x,y,w,h,flip,0,alpha)}
@@ -653,7 +691,8 @@ function drawPickups(){
 function drawFish(f){
  if(!f.alive)return;const sp=SPECIES[f.key],p=screenPos(f.x,f.y);if(p.x<-280||p.x>view.w+280||p.y<-220||p.y>view.h+220)return;const dir=f.faceDir||f.patrolDir||1,flip=sp.spriteFacing==='left'?dir>0:dir<0;
  const camo=f.hidden&&world.sonar<=0,alpha=camo?.20:(f.key==='giant'||sp.motion==='boss'?.98:.92),[dw,dh]=creatureDrawSize(sp,f);
- if(f.key==='crab')drawSequence(['crab1','crab2'],p.x,p.y,dw,dh,flip,alpha,5,f.phase);
+ if(sp.stripFrames)drawTrimmedStrip(imgs[sp.img],p.x,p.y,sp.stripFrames,dw,dh,flip,alpha,sp.stripFps||6,f.phase);
+ else if(f.key==='crab')drawSequence(['crab1','crab2'],p.x,p.y,dw,dh,flip,alpha,5,f.phase);
  else if(f.key==='jelly'){const attacking=f.alert>0||f.contactCd>0;drawSequence(attacking?JELLY_ATTACK_KEYS:JELLY_SWIM_KEYS,p.x,p.y,dw,dh,false,alpha,9,f.phase)}
  else if(f.key==='squid')drawSheet(imgs.squid,p.x,p.y,2,dw,dh,flip,alpha);
  else if(sp.animated)drawSheet(imgs[sp.img],p.x,p.y,sp.frames,sp.fw*1.75*f.scale,sp.fh*1.75*f.scale,flip,alpha);

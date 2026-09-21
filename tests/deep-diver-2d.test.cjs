@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=18');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=19');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -552,4 +552,22 @@ test('Deep Diver v18 links existing cooking assets',()=>{
   assert.match(js,/const COOK_ASSETS=\{/);
   assert.match(js,/sea-urchin-open\.glb/);
   assert.match(css,/\.ingredientSprite/);
+});
+
+
+test('Deep Diver v19 consumes generated four-frame creature strips without pre-cut PNG files',()=>{
+  assert.match(js,/const GEN_FAUNA=FAUNA\+'generated\/'/);
+  assert.match(js,/function trimmedStripFrames/);
+  assert.match(js,/getImageData\(0,0,iw,ih\)/);
+  assert.match(js,/function drawTrimmedStrip/);
+  assert.match(js,/if\(sp\.stripFrames\)drawTrimmedStrip/);
+  for(const key of ['barracuda','giantIsopod','bream','cuttlefish','hermitCrab','moonJelly','lionfish','manta','moray','octopus','puffer','scallop','seaCucumber','seahorse','coelacanth','skate','starfishStrip']) assert.match(js,new RegExp(key+":\\{name:"),key);
+});
+
+test('Deep Diver v19 generated species are distributed across all five biomes',()=>{
+  assert.match(js,/reef:\[.*\['bream',5\].*\['seahorse',2\]/);
+  assert.match(js,/kelp:\[.*\['barracuda',3\].*\['manta',1\]/);
+  assert.match(js,/ruins:\[.*\['moray',3\].*\['scallop',4\]/);
+  assert.match(js,/wreck:\[.*\['giantIsopod',2\]/);
+  assert.match(js,/abyss:\[.*\['coelacanth',3\].*\['giantIsopod',5\]/);
 });
