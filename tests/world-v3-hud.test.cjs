@@ -62,11 +62,11 @@ test('hidden avatar runtimes are silenced while games or Seed World are active',
 });
 
 test('Seed World HUD release is cache-bumped and scripts parse',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=23/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=23/);
+  assert.match(html,/kidscade-world-v3\.js\?v=24/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=24/);
   assert.match(garden,/avatar-preview-inline-edit-v4/);
   assert.match(garden,/world-v3-homebase-v24/);
-  assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-hud-1/);
+  assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-homebase-1/);
 
   const moduleSource=runtime.replace(/^import .*$/gm,'').replace(/^export /gm,'');
   const moduleCheck=spawnSync(process.execPath,['--check'],{input:moduleSource,encoding:'utf8'});
