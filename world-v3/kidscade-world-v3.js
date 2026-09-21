@@ -1130,6 +1130,30 @@ function updateCropVisuals(){
   });
 }
 
+const ORCHARD_FRUIT_SEQUENCE=['apple','pear','apple','peach','pear','orange','apple','cherry','peach'];
+const ORCHARD_FRUIT_COLORS={apple:0xc83e3e,pear:0xb7c85a,peach:0xf09a7c,orange:0xf09a32,cherry:0xb51f3a};
+function orchardFruitName(key){return itemName(key)}
+function updateOrchardVisuals(){
+  const count=orchardTreeCount();
+  for(const actor of orchardActors){
+    const open=actor.index<count;actor.group.visible=open;actor.interaction.enabled=open;
+  }
+}
+function harvestOrchardTree(actor){
+  const p=prog(),day=p.survival.day,key=actor.fruit,last=Number(p.orchard.harvests[actor.id]||0);
+  if(last===day){toast(orchardFruitName(key)+'나무는 오늘 이미 수확했어요.');return;}
+  const gain=key==='cherry'?3:2;
+  if(!addInventoryItem(key,gain))return;
+  p.orchard.harvests[actor.id]=day;persist();Meta?.advanceTask?.('harvest',1);setAvatarAction('smile',650);worldAudio.sfx('pickup',.16);updateStatus();
+  toast('🍎 '+orchardFruitName(key)+' +'+gain+' · 내일 다시 열려요.');
+}
+function addFruitDots(group,color){
+  const mat=new THREE.MeshStandardMaterial({color,roughness:.62});
+  for(const [x,y,z] of [[-.45,2.15,.2],[.38,2.35,.12],[-.18,2.55,-.3],[.55,2.05,-.25]]){
+    const fruit=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),mat);fruit.position.set(x,y,z);fruit.castShadow=true;group.add(fruit);
+  }
+}
+
 function addColliderFor(modeName,x,z,w,d){collider(modeName,x,z,w,d)}
 function isPathClearance(x,z,w=0,d=0){return footprintTouchesRoad(x,z,w,d,.18)}
 function addNatureCollider(x,z,w,d){
@@ -1289,6 +1313,7 @@ async function buildOutdoor(){
     river.rotation.x=-Math.PI/2;river.position.set(w.x,.06,w.z);river.receiveShadow=true;outdoor.add(river);
     collider('outdoor',w.x-6.0,w.z,7.0,5.1);collider('outdoor',w.x+6.0,w.z,7.0,5.1);
     await addModel(outdoor,ASSET.bridge,{x:w.x,z:w.z,w:4.2,h:.9,d:5.4,rot:Math.PI/2,name:'northBridge'});
+    interact('outdoor',w.x-4.4,w.z-2.25,1.65,'💧 강물 떠가기',()=>collectWater('river'));
     interact('outdoor',w.x+1.8,w.z-2.2,1.8,'강가 낚시터 이용하기',()=>{setAvatarAction('smile',850);fish('river');});
     await addZoneSign('waterfront',6.5,6.8,'북쪽 강가 · 2단계 낚시터 · 비버',0);
   }
@@ -1302,6 +1327,25 @@ async function buildOutdoor(){
     interact('outdoor',b.x,b.z-4.4,2.0,'해변에서 낚시하기',()=>{setAvatarAction('smile',850);fish('beach');});
     await addModel(outdoor,ASSET.logStack,{x:b.x-5.8,z:b.z+5.8,w:2.2,h:1.0,d:1.15,rot:.25});
     await addZoneSign('beach',6.4,6.6,'해변가 · 낚시 · 해안',0);
+  }
+
+  // ORCHARD square (26..46 / -34..-14) — empty land at first, then 1 → 9 fruit trees.
+  {
+    const o=point('orchard');
+    const slots=[[-6,-5],[-2,-5],[2,-5],[6,-5],[-6,0],[-2,0],[2,0],[6,0],[0,5.5]];
+    for(let idx=0;idx<slots.length;idx++){
+      const [dx,dz]=slots[idx],group=new THREE.Group();group.position.set(o.x+dx,0,o.z+dz);outdoor.add(group);
+      await addModel(group,idx%3===0?ASSET.oak:ASSET.tree,{x:0,z:0,w:2.35,h:3.9,d:2.35,rot:idx*.39,name:'orchard-tree-'+idx});
+      const fruit=ORCHARD_FRUIT_SEQUENCE[idx],color=ORCHARD_FRUIT_COLORS[fruit]||0xd94b45;addFruitDots(group,color);
+      const interaction=interact('outdoor',o.x+dx,o.z+dz,1.35,orchardFruitName(fruit)+' 수확하기',()=>harvestOrchardTree(orchardActors[idx]));
+      orchardActors.push({id:'orchard-'+idx,index:idx,fruit,group,interaction});
+    }
+    for(const [dx,dz,rot] of [[-7.8,-7.7,0],[-2.7,-7.7,0],[2.7,-7.7,0],[7.8,-7.7,0],[-7.8,7.7,0],[-2.7,7.7,0],[2.7,7.7,0],[7.8,7.7,0],[-8.7,-4.8,Math.PI/2],[-8.7,0,Math.PI/2],[-8.7,4.8,Math.PI/2],[8.7,-4.8,Math.PI/2],[8.7,0,Math.PI/2],[8.7,4.8,Math.PI/2]]){
+      const fence=await addModel(outdoor,ASSET.fence,{x:o.x+dx,z:o.z+dz,w:2.5,h:.82,d:.30,rot,name:'orchard-fence'});
+      if(fence)orchardActors.push({id:'orchard-fence-'+dx+'-'+dz,index:0,fruit:'',group:fence,interaction:{enabled:false}});
+    }
+    await addZoneSign('orchard',6.8,6.7,'과수원 · 반복 수확 과일나무',0,developmentPanel);
+    updateOrchardVisuals();
   }
 
   // FOREST square (-46..-26 / -10..10)
