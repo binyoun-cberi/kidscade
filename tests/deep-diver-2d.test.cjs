@@ -686,7 +686,7 @@ test('Deep Diver v21 compresses the hadal trench into multi-kilometer depth',()=
 
 test('Deep Diver v21 locks the hadal contract behind expedition progress',()=>{
   assert.match(js,/const locked=\(c\.unlock\|\|0\)>meta\.unlocked/);
-  assert.match(js,/잠긴 의뢰/);
+  assert.match(js,/잠긴 주요 의뢰/);
   assert.match(js,/이전 단계 조사를 완료하면 개방/);
   assert.match(css,/\.missionCard\.locked/);
 });
