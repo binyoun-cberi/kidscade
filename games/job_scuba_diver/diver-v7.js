@@ -292,6 +292,16 @@ function creaturePortions(f){
  if(q>=1.12)return 2;
  return 1
 }
+function specimenKitchenPremium(f){
+ const id=creatureSizeBand(f).id;
+ return id==='trophy'?1.30:id==='large'?1.10:id==='small'?.95:1
+}
+function ingredientQualityLabel(mult=1){
+ return mult>=1.25?'특대 +30%':mult>=1.08?'대형 +10%':mult<.98?'소형 -5%':'보통'
+}
+function specimenRawValue(f){
+ const base=SPECIES[f.key]?.value||0;return Math.round(base*creaturePortions(f)*specimenKitchenPremium(f))
+}
 function observationWeightRange(f,precision='sonar'){
  const w=creatureCatchWeight(f);if(!(w>0))return'비채집 대상';
  const spread=precision==='camera'?.06:.18,lo=Math.max(.01,w*(1-spread)),hi=w*(1+spread);
@@ -331,8 +341,8 @@ function findObservationTarget(){
 function observationDetail(f){
  const sp=SPECIES[f.key],level=f.observed||0;
  if(level<=0)return{level,title:sp.name,main:'크기 미상 · 상태 미상',sub:'소나로 스캔하거나 카메라로 촬영하면 판별됩니다.',short:sp.name+' · 분석 필요',trophy:false};
- const band=creatureSizeBand(f),state=creatureCaptureState(f),precision=level>=2?'camera':'sonar',range=observationWeightRange(f,precision);
- return{level,title:band.label+' '+sp.name,main:range+' 추정 · '+state.label,sub:(level>=2?'카메라 정밀 관찰':'SONAR 관찰')+' · '+observationGearHint(f)+' · '+specimenRecordLine(f),short:band.label+' · '+range+' · '+state.label,trophy:band.id==='trophy'}
+ const band=creatureSizeBand(f),state=creatureCaptureState(f),precision=level>=2?'camera':'sonar',range=observationWeightRange(f,precision),premium=sp.weight>0?specimenKitchenPremium(f):1,portions=sp.weight>0?creaturePortions(f):0,economy=sp.weight>0?(' · '+ingredientQualityLabel(premium)+' · '+portions+'회분 약 '+money(specimenRawValue(f))):'';
+ return{level,title:band.label+' '+sp.name,main:range+' 추정 · '+state.label,sub:(level>=2?'카메라 정밀 관찰':'SONAR 관찰')+economy+' · '+observationGearHint(f)+' · '+specimenRecordLine(f),short:band.label+' · '+range+' · '+state.label+(sp.weight>0?' · '+ingredientQualityLabel(premium):''),trophy:band.id==='trophy'}
 }
 function creatureCaptureState(f){
  if(f.hooked)return{id:'hooked',label:'저항 중'};
@@ -501,7 +511,7 @@ const keys={},touch={x:0,y:0,dash:false},meta={
  gear:{harpoon:1,net:1,gloves:1,knife:1,trap:1},
  loadout:['harpoon','net'],
  shopUp:{seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0},
- codex:{},records:{},bestDepth:0,bestScore:0,stock:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}
+ codex:{},records:{},bestDepth:0,bestScore:0,stock:{},stockQuality:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}
 };
 let restaurant=null,dockMissionId=null,dockTab='none';
 
@@ -517,7 +527,7 @@ function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
   if(!r){try{r=JSON.parse(localStorage.getItem(OLD)||'null')}catch(e){}}
   if(!r){try{const o=JSON.parse(localStorage.getItem(LEGACY)||'null');if(o)r={money:o.money||0,unlocked:Math.min(4,o.unlocked||0),up:o.up||{},codex:o.codex||{},bestDepth:o.bestDepth||0,bestScore:o.bestScore||0}}catch(e){}}
-  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,2+(meta.up.slots||0)):meta.loadout;meta.codex=r.codex||{};meta.records=r.records&&typeof r.records==='object'?r.records:{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
+  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,2+(meta.up.slots||0)):meta.loadout;meta.codex=r.codex||{};meta.records=r.records&&typeof r.records==='object'?r.records:{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.stockQuality=r.stockQuality&&typeof r.stockQuality==='object'?r.stockQuality:{};syncStockQuality();meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
 function ensureAmbience(){
@@ -695,7 +705,7 @@ function buildWorld(contract=FREE_DIVE){
  world={
    contract,daily:dailyTaskForDay(meta.day),st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],fishGrid:new Map(),decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
-   bag:[],bagWeight:0,catchWeight:0,catchCounts:{},catchPortions:{},income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
+   bag:[],bagWeight:0,catchWeight:0,catchCounts:{},catchPortions:{},catchLots:{},catchRawValue:0,premiumPortions:0,income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},photoValues:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
@@ -1240,15 +1250,15 @@ function nearestMethodFish(method,range=100){const p=world.player;return world.f
 function captureChance(difficulty,method,f=null){const tier=gearTier(method),sizePenalty=f?Math.max(-.04,((f.sizeFactor||1)-1)*.22):0,stateMod=f?captureStateModifier(f,method):0;return clamp(.56+tier*.11-(difficulty||1)*.09-sizePenalty+stateMod,.16,.97)}
 function captureFish(f,method='harpoon'){
  const sp=SPECIES[f.key],check=captureCompatibility(f,method);if(!check.ok){showHint(captureBlockMessage(f,method,check),1250);return false}
- const weight=creatureCatchWeight(f),portions=creaturePortions(f),band=creatureSizeBand(f),state=creatureCaptureState(f);
+ const weight=creatureCatchWeight(f),portions=creaturePortions(f),band=creatureSizeBand(f),state=creatureCaptureState(f),premium=specimenKitchenPremium(f),rawValue=specimenRawValue(f);
  if(!canAddCatch(weight))return false;
  const record=recordCatch(f,weight),recordTag=record.first?' · 첫 포획 기록!':record.newWeight?' · 최고 무게 기록!':record.newSize?' · 최대 크기 기록!':'';
- f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.catchPortions[f.key]=(world.catchPortions[f.key]||0)+portions;world.mission.samples++;beep(650,.06);showHint(band.label+' '+sp.name+' 확보 · '+state.label+' · '+weight.toFixed(2)+'kg · 식재료 '+portions+'회분'+(check.preferred?'':' · 대체 장비')+recordTag,1450);return true
+ f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.catchPortions[f.key]=(world.catchPortions[f.key]||0)+portions;world.catchLots[f.key]=world.catchLots[f.key]||[];for(let i=0;i<portions;i++)world.catchLots[f.key].push(premium);world.catchRawValue+=rawValue;if(premium>1.001)world.premiumPortions+=portions;world.mission.samples++;beep(650,.06);showHint(band.label+' '+sp.name+' 확보 · '+state.label+' · '+weight.toFixed(2)+'kg · 식재료 '+portions+'회분 · '+ingredientQualityLabel(premium)+' · 원재료 약 '+money(rawValue)+(check.preferred?'':' · 대체 장비')+recordTag,1650);return true
 }
 function instantCapture(f,method){if(!f)return false;const sp=SPECIES[f.key],check=captureCompatibility(f,method);if(!check.ok){showHint(captureBlockMessage(f,method,check),1250);beep(170,.05,'sawtooth');return false}const difficulty=(sp.catchDifficulty||2)+(check.preferred?0:2),chance=captureChance(difficulty,method,f);if(Math.random()>chance){f.panic=Math.max(f.panic,1.8);f.vx+=(f.x-world.player.x>=0?1:-1)*(90+(sp.speed||20));beep(150,.05,'sawtooth');showHint(sp.name+' 포획 실패'+(check.preferred?'':' · 대체 장비')+' · '+GEAR_TIER_NAMES[gearTier(method)]+' '+catchMethodLabel(method)+'을 강화하면 쉬워집니다.',1150);return false}return captureFish(f,method)}
 function useNet(){const tier=gearTier('net'),range=105+tier*18,p=world.player,candidates=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'net')).map(f=>({f,d:creatureEdgeDistance(f,p.x,p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&o.front>-20).sort((a,b)=>a.d-b.d);if(!candidates.length){const near=world.fish.filter(f=>f.alive&&!SPECIES[f.key].protected&&SPECIES[f.key].weight>0).map(f=>({f,d:creatureEdgeDistance(f,p.x,p.y)})).filter(o=>o.d<range).sort((a,b)=>a.d-b.d)[0]?.f;if(near){const check=captureCompatibility(near,'net');showHint(captureBlockMessage(near,'net',check),1100)}else showHint('그물 범위 안에 잡을 수 있는 생물이 없습니다.',850);return}const maxCatch=tier>=4?3:tier>=3?2:1;let caught=0;for(const o of candidates.slice(0,maxCatch)){if(instantCapture(o.f,'net'))caught++}world.effects.push({type:'wake',x:p.x+p.face*42,y:p.y,t:0,big:false});beep(caught?620:190,.055)}
 function nearestHarvest(method,range=90){const p=world.player;return world.harvestables.filter(h=>!h.taken&&h.method===method).map(h=>({h,d:Math.hypot(h.x-p.x,h.y-p.y)})).filter(o=>o.d<range).sort((a,b)=>a.d-b.d)[0]?.h||null}
-function harvestNode(h,method){const tier=gearTier(method),power=.34+tier*.12,need=.55+(h.difficulty||1)*.28;h.progress=clamp(h.progress+power/need,0,1);if(h.progress<1){beep(method==='knife'?470:360,.035);showHint(h.name+' 채집 '+Math.round(h.progress*100)+'%',650);return false}if(!canAddCatch(h.weight)){h.progress=.82;return false}h.taken=true;world.catchWeight+=h.weight;world.catchCounts[h.key]=(world.catchCounts[h.key]||0)+1;world.catchPortions[h.key]=(world.catchPortions[h.key]||0)+1;world.mission.samples++;beep(820,.07);showHint(h.name+' 채집 완료 · '+h.weight+'kg',850);return true}
+function harvestNode(h,method){const tier=gearTier(method),power=.34+tier*.12,need=.55+(h.difficulty||1)*.28;h.progress=clamp(h.progress+power/need,0,1);if(h.progress<1){beep(method==='knife'?470:360,.035);showHint(h.name+' 채집 '+Math.round(h.progress*100)+'%',650);return false}if(!canAddCatch(h.weight)){h.progress=.82;return false}h.taken=true;world.catchWeight+=h.weight;world.catchCounts[h.key]=(world.catchCounts[h.key]||0)+1;world.catchPortions[h.key]=(world.catchPortions[h.key]||0)+1;world.catchLots[h.key]=world.catchLots[h.key]||[];world.catchLots[h.key].push(1);world.catchRawValue+=ingredientInfo(h.key).value||0;world.mission.samples++;beep(820,.07);showHint(h.name+' 채집 완료 · '+h.weight+'kg · 원재료 '+money(ingredientInfo(h.key).value||0),950);return true}
 function useGloves(){const h=nearestHarvest('gloves',92+gearTier('gloves')*8);if(h){harvestNode(h,'gloves');return}const f=nearestMethodFish('gloves',78+gearTier('gloves')*10);if(f){instantCapture(f,'gloves');return}showHint('장갑으로 잡을 게·성게·패류가 가까이 없습니다.',850)}
 function useKnife(){const h=nearestHarvest('knife',92+gearTier('knife')*9);if(h){harvestNode(h,'knife');return}showHint('채집칼로 벨 미역·다시마·해조가 가까이 없습니다.',850)}
 function useTrap(){const tier=gearTier('trap'),max=1+Math.floor(tier/2);if(world.traps.length>=max){showHint('설치한 통발이 가득합니다. 잠시 기다리세요.',900);return}const p=world.player;world.traps.push({id:++world.trapSeq,x:p.x+p.face*34,y:p.y+18,timer:4.8-tier*.45,ready:false,tier});beep(430,.05);showHint('통발 설치 · 게나 오징어가 지나가면 자동으로 잡습니다.',950)}
@@ -1504,13 +1514,13 @@ function finishDive(ok,reason){
  const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0,dailyComplete=ok&&dailyTaskComplete(world.daily),dailyBonus=dailyComplete?world.daily.reward:0;
  const gain=ok?Math.max(0,world.income+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];
- if(ok){for(const [key,count] of Object.entries(world.catchPortions||world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(ingredientInfo(key).name+' ×'+count)}}
+ if(ok){meta.stockQuality=meta.stockQuality||{};for(const [key,count] of Object.entries(world.catchPortions||world.catchCounts||{})){if(count<=0)continue;const lots=(world.catchLots?.[key]||[]).slice(0,count);while(lots.length<count)lots.push(1);meta.stock[key]=(meta.stock[key]||0)+count;meta.stockQuality[key]=(meta.stockQuality[key]||[]).concat(lots).sort((a,b)=>b-a);stocked+=count;const best=Math.max(...lots,1);stockedNames.push(ingredientInfo(key).name+' ×'+count+(best>1.001?' · 최고 '+ingredientQualityLabel(best):''))}syncStockQuality()}
  meta.money+=gain;meta.bestDepth=Math.max(previousBest,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
  $('resultTitle').textContent=ok?'탐사선 귀환 · 낮 탐사 종료':'긴급 구조 · 잠수 보고서';
  const loss=ok?'':'<div class="notice">구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다. 사진 도감 기록만 남습니다.</div>';
- const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 어획 '+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg · 식재료 '+stocked+'개를 냉장고에 옮겼습니다.</b>'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
+ const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 어획 '+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg · 식재료 '+stocked+'개를 냉장고에 옮겼습니다.</b><br>원재료 가치 약 '+money(world.catchRawValue)+' · 대형/특대 프리미엄 '+world.premiumPortions+'회분'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
  const evening='<div class="eveningNote"><b>낮 탐사가 끝났습니다.</b><span>'+(ok?'밤 장사를 하거나 바로 휴식할 수 있습니다. 어느 쪽을 골라도 다음 잠수는 DAY '+(meta.day+1)+'입니다.':'구조 후에는 휴식하고 다음 날 다시 준비합니다.')+'</span></div>';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>주요 의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>오늘의 보너스</span><b>'+(dailyComplete?money(dailyBonus):'미완료')+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>원재료 가치</span><b>'+money(world.catchRawValue)+'</b></div><div class="card"><span>고급 식재료</span><b>'+world.premiumPortions+'회분</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>주요 의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>오늘의 보너스</span><b>'+(dailyComplete?money(dailyBonus):'미완료')+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
  const canNight=ok&&availableRecipes().length>0;
  $('nextBtn').textContent=canNight?'밤 장사 시작':'밤 장사 · 만들 메뉴 없음';$('nextBtn').disabled=!canNight;$('nextBtn').onclick=canNight?startRestaurant:null;
  const rest=$('restBtn');rest.disabled=false;rest.textContent=ok?'휴식하고 다음 날':'치료받고 다음 날';rest.onclick=()=>restToNextMorning(false);
@@ -1521,16 +1531,24 @@ function finishDive(ok,reason){
 function frame(now){const dt=clamp((now-last)/1000,0,.033);last=now;if(state==='playing'){update(dt);render()}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
 function stockCount(){return Object.values(meta.stock||{}).reduce((a,b)=>a+(Number(b)||0),0)}
+function syncStockQuality(){
+ meta.stockQuality=meta.stockQuality||{};for(const [k,n0] of Object.entries(meta.stock||{})){const n=Math.max(0,Number(n0)||0),arr=Array.isArray(meta.stockQuality[k])?meta.stockQuality[k].map(Number).filter(Number.isFinite):[];while(arr.length<n)arr.push(1);meta.stockQuality[k]=arr.slice(0,n).sort((a,b)=>b-a)}
+ for(const k of Object.keys(meta.stockQuality))if(!(meta.stock?.[k]>0))delete meta.stockQuality[k]
+}
+function stockQualityPeek(key){syncStockQuality();return meta.stockQuality[key]?.[0]||1}
+function stockQualityTake(key){syncStockQuality();const arr=meta.stockQuality[key]||[];const q=arr.length?arr.shift():1;if(!arr.length&&!(meta.stock?.[key]>1))delete meta.stockQuality[key];return q}
+function stockQualitySummary(key){syncStockQuality();const arr=meta.stockQuality[key]||[],premium=arr.filter(q=>q>1.001).length,best=arr.length?Math.max(...arr):1;return{best,premium,label:ingredientQualityLabel(best)}}
 function recipeGroups(recipe){return recipe.groups?.length?recipe.groups:[recipe.keys||[]]}
 function recipeIngredients(recipe){return recipeGroups(recipe)[0].filter(k=>(meta.stock[k]||0)>0)}
 function recipeCanMake(recipe){return recipeGroups(recipe).every(group=>group.some(k=>(meta.stock[k]||0)>0))}
 function availableRecipes(){return RECIPES.filter(recipeCanMake)}
-function chooseIngredient(recipe){const keys=recipeIngredients(recipe);if(!keys.length)return null;return keys.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0)||(ingredientInfo(a).value||0)-(ingredientInfo(b).value||0))[0]}
-function chooseRecipeParts(recipe,primary){const groups=recipeGroups(recipe),used=[];for(let i=0;i<groups.length;i++){const options=groups[i].filter(k=>(meta.stock[k]||0)>0);if(!options.length)return null;const k=i===0&&primary&&options.includes(primary)?primary:options.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0))[0];used.push(k)}return used}
-function recipePrice(recipe,key){const parts=chooseRecipeParts(recipe,key)||[key],raw=parts.reduce((s,k)=>s+(ingredientInfo(k).value||120),0);return Math.round(raw*1.55+recipe.bonus)}
-function consumeRecipeParts(recipe,key){const parts=chooseRecipeParts(recipe,key);if(!parts)return null;for(const k of parts){meta.stock[k]--;if(meta.stock[k]<=0)delete meta.stock[k]}return parts}
+function chooseIngredient(recipe){const keys=recipeIngredients(recipe);if(!keys.length)return null;return keys.sort((a,b)=>stockQualityPeek(b)-stockQualityPeek(a)||(meta.stock[b]||0)-(meta.stock[a]||0)||(ingredientInfo(a).value||0)-(ingredientInfo(b).value||0))[0]}
+function chooseRecipeParts(recipe,primary){const groups=recipeGroups(recipe),used=[];for(let i=0;i<groups.length;i++){const options=groups[i].filter(k=>(meta.stock[k]||0)>0);if(!options.length)return null;const k=i===0&&primary&&options.includes(primary)?primary:options.sort((a,b)=>stockQualityPeek(b)-stockQualityPeek(a)||(meta.stock[b]||0)-(meta.stock[a]||0))[0];used.push(k)}return used}
+function recipeIngredientQuality(recipe,key){const parts=chooseRecipeParts(recipe,key)||[key];return parts.reduce((s,k)=>s+stockQualityPeek(k),0)/Math.max(1,parts.length)}
+function recipePrice(recipe,key){const parts=chooseRecipeParts(recipe,key)||[key],raw=parts.reduce((s,k)=>s+(ingredientInfo(k).value||120)*stockQualityPeek(k),0);return Math.round(raw*1.55+recipe.bonus)}
+function consumeRecipeParts(recipe,key){const parts=chooseRecipeParts(recipe,key);if(!parts)return null;for(const k of parts){stockQualityTake(k);meta.stock[k]--;if(meta.stock[k]<=0){delete meta.stock[k];delete meta.stockQuality[k]}}return parts}
 function ingredientSpriteSrc(key){const info=ingredientInfo(key),assetKey=info.img;if(!assetKey)return'';return ASSETS[assetKey]||''}
-function restaurantStockHtml(){const entries=Object.entries(meta.stock||{}).filter(([,n])=>n>0);if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';return entries.map(([k,n])=>'<span class="stockChip">'+ingredientInfo(k).name+' <b>×'+n+'</b></span>').join('')}
+function restaurantStockHtml(){const entries=Object.entries(meta.stock||{}).filter(([,n])=>n>0);if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';return entries.map(([k,n])=>{const q=stockQualitySummary(k),badge=q.premium?('<em class="stockPremium">'+q.label+' · 고급 '+q.premium+'</em>'):'';return'<span class="stockChip">'+ingredientInfo(k).name+' <b>×'+n+'</b>'+badge+'</span>'}).join('')}
 
 const CUSTOMER_SPRITES=[
  '../../assets/game/characters/people/kenney-platformer-characters/female/poses/female-stand.png',
@@ -1585,7 +1603,7 @@ function restaurantKitchenHtml(){
  const c=restaurantCustomerById(restaurant.selectedId);
  if(!c)return'<div class="workEmpty"><b>주문을 골라 주세요</b><span>손님을 누르면 주방에서 손질 → 굽기 → 플레이팅 → 서빙 순서로 요리합니다.</span></div>';
  const recipe=RECIPES.find(r=>r.id===c.recipeId),w=restaurant.work;
- const primary=recipeGroups(recipe)[0],extraGroups=recipeGroups(recipe).slice(1),ingredientButtons=primary.map(k=>{const n=meta.stock[k]||0,src=ingredientSpriteSrc(k);return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'>'+(src?'<img class="ingredientSprite" src="'+src+'" alt="">':'')+'<b>'+ingredientInfo(k).name+'</b><small>재고 '+n+' · 예상 '+money(recipePrice(recipe,k))+'</small></button>'}).join(''),extraNeed=extraGroups.length?'<div class="recipeNeeds">추가 재료 · '+extraGroups.map(g=>g.map(k=>ingredientInfo(k).name).join(' / ')).join(' + ')+'</div>':'';
+ const primary=recipeGroups(recipe)[0],extraGroups=recipeGroups(recipe).slice(1),ingredientButtons=primary.map(k=>{const n=meta.stock[k]||0,src=ingredientSpriteSrc(k),sq=stockQualitySummary(k);return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'>'+(src?'<img class="ingredientSprite" src="'+src+'" alt="">':'')+'<b>'+ingredientInfo(k).name+'</b><small>재고 '+n+(sq.premium?' · '+sq.label:'')+' · 예상 '+money(recipePrice(recipe,k))+'</small></button>'}).join(''),extraNeed=extraGroups.length?'<div class="recipeNeeds">추가 재료 · '+extraGroups.map(g=>g.map(k=>ingredientInfo(k).name).join(' / ')).join(' + ')+'</div>':'';
  let action='';
  if(w.stage==='idle'&&!w.key)action='<div class="workInstruction">먼저 사용할 식재료를 고르세요.</div>';
  else if(w.stage==='idle')action='<button class="cookAction prep" id="prepStartBtn">🔪 손질 시작</button>';
@@ -1674,11 +1692,11 @@ function serveRestaurantDish(){
  if(!restaurant||restaurant.finished)return;
  const w=restaurant.work,c=restaurantCustomerById(w.customerId);if(w.stage!=='ready'||!c)return;
  const recipe=RECIPES.find(r=>r.id===w.recipeId),key=w.key;if(!recipe||!key||(meta.stock[key]||0)<=0){restaurant.message='그 사이 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
- const used=consumeRecipeParts(recipe,key);if(!used){restaurant.message='필요한 추가 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
+ const ingredientQuality=recipeIngredientQuality(recipe,key),basePrice=recipePrice(recipe,key),used=consumeRecipeParts(recipe,key);if(!used){restaurant.message='필요한 추가 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
  const qualityMult=.76+clamp(w.quality,.5,1.15)*.36,patienceMult=.88+.28*clamp(c.patience/c.maxPatience,0,1),combo=1+Math.min(.28+(meta.shopUp.tray||0)*.035,restaurant.streak*(.045+(meta.shopUp.tray||0)*.004)),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006),menu=1+(meta.shopUp.menu||0)*.08;
- const sale=Math.round(recipePrice(recipe,key)*qualityMult*patienceMult*combo*rep*menu),grade=restaurantQualityLabel(w.quality);
+ const sale=Math.round(basePrice*qualityMult*patienceMult*combo*rep*menu),grade=restaurantQualityLabel(w.quality),ingredientTag=ingredientQualityLabel(ingredientQuality);
  restaurant.earnings+=sale;restaurant.served++;restaurant.streak++;restaurant.bestStreak=Math.max(restaurant.bestStreak,restaurant.streak);restaurant.customers=restaurant.customers.filter(x=>x.id!==c.id);
- restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! '+used.map(k=>ingredientInfo(k).name).join('+')+' · +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
+ restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! '+used.map(k=>ingredientInfo(k).name).join('+')+' · 원재료 '+ingredientTag+' · +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
  beep(920,.05);setTimeout(()=>beep(1280,.06),55);renderRestaurant()
 }
 function serveRestaurant(recipeId){
@@ -1773,7 +1791,7 @@ function openCodex(){
 }
 
 function bind(){
- $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0,buoyancy:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.records={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;dockTab='none';save();openContracts('none')};
+ $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0,buoyancy:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.records={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.stockQuality={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;dockTab='none';save();openContracts('none')};
  $('continueBtn').onclick=()=>{if(!ready)return;load();dockTab='none';openContracts('none')};
  $('nextBtn').onclick=()=>{};$('restBtn').onclick=()=>{};$('homeBtn').onclick=()=>{};
  $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};
