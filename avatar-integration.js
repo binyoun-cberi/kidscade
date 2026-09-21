@@ -144,11 +144,12 @@
       #kidscade-avatar-studio-bar strong{font-size:1rem}#kidscade-avatar-studio-bar span{font-size:.76rem;opacity:.8;margin-left:8px}
       #kidscade-avatar-studio-close{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}
       #kidscade-avatar-studio-frame{display:block;max-width:1420px;width:100%;height:100%;margin:0 auto;border:0;border-radius:0 0 18px 18px;background:#f8f5fa;box-shadow:0 16px 40px rgba(0,0,0,.28)}
-      #avatar-plaza-preview > :not(#kidscade-deluxe-avatar-preview){display:none!important}
+      #avatar-plaza-preview > :not(#kidscade-deluxe-avatar-preview):not(#avatar-open-btn){display:none!important}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-stage{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:auto;transform-origin:50% 92%;will-change:transform;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center;will-change:transform,opacity}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#756c86;font-size:.85rem}
+      #avatar-plaza-preview .avatar-preview-edit{position:absolute;right:10px;bottom:10px;z-index:35;min-height:34px!important;padding:0 11px!important;border-radius:999px!important;font-size:.72rem!important;box-shadow:0 6px 16px rgba(83,51,145,.28)!important;pointer-events:auto}
       @media(max-width:700px){#kidscade-avatar-studio-overlay{padding:0}#kidscade-avatar-studio-bar{border-radius:0;padding:8px 10px}#kidscade-avatar-studio-bar span{display:none}#kidscade-avatar-studio-frame{border-radius:0}}
       @media(prefers-reduced-motion:reduce){#kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{transition:none!important}}
     `;
@@ -157,7 +158,7 @@
 
   function purgeLegacyPreview(host, keep) {
     for (const child of [...host.children]) {
-      if (child !== keep) child.remove();
+      if (child !== keep && child.id !== 'avatar-open-btn') child.remove();
     }
   }
 
