@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle}=ctx;
 
   const BUY={
     market:{
@@ -152,22 +152,49 @@ export function createTownEconomy(ctx){
     const p=prog(),t=ensureState(p),claimKey=id+':'+reward.at;
     if(t.rewardClaims[claimKey])return false;
     if((t.friendship[id]||0)<reward.at)return false;
-    t.rewardClaims[claimKey]=true;
+
+    if(reward.type==='item'&&canCarryNewKey&&!canCarryNewKey(reward.key)){
+      toast('🎒 '+reward.name+'을(를) 받을 가방 칸이 없어요. 공간을 비우면 다시 받을 수 있어요.');return false;
+    }
+    if(reward.type==='food'&&canCarryFoodKey&&!canCarryFoodKey(reward.key)){
+      toast('🎒 '+reward.name+'을(를) 받을 가방 칸이 없어요. 공간을 비우면 다시 받을 수 있어요.');return false;
+    }
+    if(reward.type==='petBundle'&&canCarryBundle&&!canCarryBundle({carrot:2,tomato:2,fish:1,mushroom:1})){
+      toast('🎒 Cube Pets 간식 꾸러미를 받을 공간이 부족해요. 가방을 비우면 다시 받을 수 있어요.');return false;
+    }
+
     if(reward.type==='coins')t.coins+=reward.qty||0;
-    else if(reward.type==='item'){if(addInventoryItem)addInventoryItem(reward.key,reward.qty||1,{silent:true});else inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);}
-    else if(reward.type==='food')p.food[reward.key]=(p.food[reward.key]||0)+(reward.qty||1);
+    else if(reward.type==='item'){
+      if(addInventoryItem&&!addInventoryItem(reward.key,reward.qty||1,{silent:true}))return false;
+      if(!addInventoryItem)inv()[reward.key]=(inv()[reward.key]||0)+(reward.qty||1);
+    }
+    else if(reward.type==='food'){
+      if(addFoodItem&&!addFoodItem(reward.key,reward.qty||1,{silent:true}))return false;
+      if(!addFoodItem)p.food[reward.key]=(p.food[reward.key]||0)+(reward.qty||1);
+    }
     else if(reward.type==='seedBundle'){for(const key of ['potato','carrot','tomato','strawberry','corn','pumpkin'])p.seeds[key]=(p.seeds[key]||0)+(key==='potato'||key==='carrot'||key==='tomato'?2:1);}
-    else if(reward.type==='petBundle'){inv().carrot=(inv().carrot||0)+2;inv().tomato=(inv().tomato||0)+2;inv().fish=(inv().fish||0)+1;inv().mushroom=(inv().mushroom||0)+1;}
+    else if(reward.type==='petBundle'){
+      const bundle={carrot:2,tomato:2,fish:1,mushroom:1};
+      for(const [key,qty] of Object.entries(bundle)){
+        if(addInventoryItem)addInventoryItem(key,qty,{silent:true});
+        else inv()[key]=(inv()[key]||0)+qty;
+      }
+    }
     else if(reward.type==='perk')t.perks[reward.key]=reward.value??1;
     else if(reward.type==='furniture')addFurniture(reward.key,reward.qty||1);
+    else return false;
+
+    t.rewardClaims[claimKey]=true;
     persist();updateStatus();toast((RESIDENTS[id]?.name||id)+' 친밀도 보상 · '+reward.name);return true;
   }
   function claimFriendshipRewards(id){
     for(const r of FRIENDSHIP_REWARDS[id]||[])grantReward(id,r);
   }
   function nextRewardText(id){
-    const t=ensureState(),f=t.friendship[id]||0;
-    const next=(FRIENDSHIP_REWARDS[id]||[]).find(r=>f<r.at);
+    const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
+    const pending=rewards.find(r=>f>=r.at&&!t.rewardClaims[id+':'+r.at]);
+    if(pending)return '받을 수 있는 보상 ♥ '+pending.at+' · '+pending.name;
+    const next=rewards.find(r=>f<r.at);
     return next?'다음 보상 ♥ '+next.at+' · '+next.name:'모든 친밀도 보상을 받았어요.';
   }
   function discountFor(kind){
@@ -210,10 +237,11 @@ export function createTownEconomy(ctx){
     const unlock=itemUnlockState(d);if(!unlock.ok){toast(unlock.text);return;}
     const p=prog(),t=ensureState(p),price=priceFor(kind,d.price);if(t.coins<price){toast('코인이 부족해요.');return;}
     if(d.type==='inv'&&canCarryNewKey&&!canCarryNewKey(d.key)){toast('🎒 가방에 빈 칸이 없어요.');return;}
+    if(d.type==='food'&&canCarryFoodKey&&!canCarryFoodKey(d.key)){toast('🎒 음식을 넣을 가방 칸이 없어요.');return;}
     t.coins-=price;
     if(d.type==='seed')p.seeds[d.key]=(p.seeds[d.key]||0)+d.qty;
     else if(d.type==='inv'){if(addInventoryItem)addInventoryItem(d.key,d.qty,{silent:true});else inv()[d.key]=(inv()[d.key]||0)+d.qty;}
-    else if(d.type==='food')p.food[d.key]=(p.food[d.key]||0)+d.qty;
+    else if(d.type==='food'){if(addFoodItem)addFoodItem(d.key,d.qty,{silent:true});else p.food[d.key]=(p.food[d.key]||0)+d.qty;}
     else if(d.type==='furniture'){
       p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:4,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1};
       p.housing.owned=p.housing.owned&&typeof p.housing.owned==='object'?p.housing.owned:{};
