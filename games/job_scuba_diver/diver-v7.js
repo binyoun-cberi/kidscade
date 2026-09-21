@@ -294,10 +294,13 @@ function creaturePortions(f){
 }
 function specimenKitchenPremium(f){
  const id=creatureSizeBand(f).id;
- return id==='trophy'?1.30:id==='large'?1.10:id==='small'?.95:1
+ return id==='trophy'?1.30:id==='large'?1.10:id==='small'?0.95:1
 }
 function ingredientQualityLabel(mult=1){
  return mult>=1.25?'특대 +30%':mult>=1.08?'대형 +10%':mult<.98?'소형 -5%':'보통'
+}
+function recipeIngredientQualityLabel(mult=1){
+ const pct=Math.round((mult-1)*100);return pct>0?'원재료 프리미엄 +'+pct+'%':pct<0?'원재료 가치 '+pct+'%':'원재료 보통'
 }
 function specimenRawValue(f){
  const base=SPECIES[f.key]?.value||0;return Math.round(base*creaturePortions(f)*specimenKitchenPremium(f))
@@ -341,7 +344,7 @@ function findObservationTarget(){
 function observationDetail(f){
  const sp=SPECIES[f.key],level=f.observed||0;
  if(level<=0)return{level,title:sp.name,main:'크기 미상 · 상태 미상',sub:'소나로 스캔하거나 카메라로 촬영하면 판별됩니다.',short:sp.name+' · 분석 필요',trophy:false};
- const band=creatureSizeBand(f),state=creatureCaptureState(f),precision=level>=2?'camera':'sonar',range=observationWeightRange(f,precision),premium=sp.weight>0?specimenKitchenPremium(f):1,portions=sp.weight>0?creaturePortions(f):0,economy=sp.weight>0?(' · '+ingredientQualityLabel(premium)+' · '+portions+'회분 약 '+money(specimenRawValue(f))):'';
+ const band=creatureSizeBand(f),state=creatureCaptureState(f),precision=level>=2?'camera':'sonar',range=observationWeightRange(f,precision),premium=sp.weight>0?specimenKitchenPremium(f):1,portions=sp.weight>0?creaturePortions(f):0,raw=sp.weight>0?specimenRawValue(f):0,valuePerKg=sp.weight>0?Math.round(raw/Math.max(.01,creatureCatchWeight(f))):0,economy=sp.weight>0?(' · '+ingredientQualityLabel(premium)+' · '+portions+'회분 약 '+money(raw)+' · '+money(valuePerKg)+'/kg'):'';
  return{level,title:band.label+' '+sp.name,main:range+' 추정 · '+state.label,sub:(level>=2?'카메라 정밀 관찰':'SONAR 관찰')+economy+' · '+observationGearHint(f)+' · '+specimenRecordLine(f),short:band.label+' · '+range+' · '+state.label+(sp.weight>0?' · '+ingredientQualityLabel(premium):''),trophy:band.id==='trophy'}
 }
 function creatureCaptureState(f){
@@ -1694,7 +1697,7 @@ function serveRestaurantDish(){
  const recipe=RECIPES.find(r=>r.id===w.recipeId),key=w.key;if(!recipe||!key||(meta.stock[key]||0)<=0){restaurant.message='그 사이 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
  const ingredientQuality=recipeIngredientQuality(recipe,key),basePrice=recipePrice(recipe,key),used=consumeRecipeParts(recipe,key);if(!used){restaurant.message='필요한 추가 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
  const qualityMult=.76+clamp(w.quality,.5,1.15)*.36,patienceMult=.88+.28*clamp(c.patience/c.maxPatience,0,1),combo=1+Math.min(.28+(meta.shopUp.tray||0)*.035,restaurant.streak*(.045+(meta.shopUp.tray||0)*.004)),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006),menu=1+(meta.shopUp.menu||0)*.08;
- const sale=Math.round(basePrice*qualityMult*patienceMult*combo*rep*menu),grade=restaurantQualityLabel(w.quality),ingredientTag=ingredientQualityLabel(ingredientQuality);
+ const sale=Math.round(basePrice*qualityMult*patienceMult*combo*rep*menu),grade=restaurantQualityLabel(w.quality),ingredientTag=recipeIngredientQualityLabel(ingredientQuality);
  restaurant.earnings+=sale;restaurant.served++;restaurant.streak++;restaurant.bestStreak=Math.max(restaurant.bestStreak,restaurant.streak);restaurant.customers=restaurant.customers.filter(x=>x.id!==c.id);
  restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! '+used.map(k=>ingredientInfo(k).name).join('+')+' · 원재료 '+ingredientTag+' · +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
  beep(920,.05);setTimeout(()=>beep(1280,.06),55);renderRestaurant()
