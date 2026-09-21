@@ -15,7 +15,7 @@ test('farm growth physically expands from one plot to nine plots',()=>{
   assert.match(runtime,/function farmPlotCount/);
   assert.match(runtime,/function updateFarmExpansionVisuals/);
   assert.match(runtime,/farmPlotActors\.push/);
-  assert.match(runtime,/farmLevel:Math\.max\(1,Math\.min\(5/);
+  assert.match(runtime,/farmLevel:clampLevel\(rawDev\.farmLevel,1,5,1\)/);
 });
 
 test('fishing and mines unlock better gathering results as the village grows',()=>{
@@ -29,6 +29,10 @@ test('fishing and mines unlock better gathering results as the village grows',()
   assert.match(runtime,/quartz/);
   assert.match(runtime,/copper/);
   assert.match(runtime,/gold/);
+  assert.match(runtime,/ORCHARD_TREE_COUNTS=\[0,1,2,4,6,9\]/);
+  assert.match(runtime,/RANCH_CAPACITY=\[0,1,2,3,4\]/);
+  assert.match(runtime,/waterLevel/);
+  assert.match(runtime,/carpenterLevel/);
 });
 
 test('3x3 crafting uses shaped recipes and unlocks semiconductors then a placeable TV',()=>{
@@ -54,7 +58,7 @@ test('shared seeds fund village upgrades and the lobby displays village stars',(
 
 test('advanced materials and development levels persist in the World save',()=>{
   for(const key of ['copper:0','quartz:0','gold:0','semiconductor:0','rareFish:0','pearl:0'])assert.match(storage,new RegExp(key));
-  assert.match(storage,/development:\{farmLevel:1,fishingLevel:1,stoneMineLevel:1,ironMineLevel:1,techLevel:1\}/);
+  assert.match(storage,/development:\{farmLevel:1,fishingLevel:0,stoneMineLevel:1,ironMineLevel:1,techLevel:1,orchardLevel:0,ranchLevel:0,waterLevel:0,houseLevel:1,carpenterLevel:0\}/);
   assert.match(storage,/development:\{\.\.\.base\.progression\.development/);
 });
 
