@@ -498,6 +498,21 @@ test('Deep Diver v18 makes exploration missions optional and returns through the
   assert.match(html,/선착장 · 오늘의 출항 준비/);
 });
 
+test('Deep Diver v19 free dive allows non-protected swimmers to be caught without mission gating',()=>{
+  assert.match(js,/function fallbackCatchAllowed/);
+  assert.match(js,/preferredCatchMethod\(sp,method\)\|\|fallbackCatchAllowed\(sp,method\)/);
+  assert.match(js,/비추천 장비라 더 거세게 저항합니다/);
+  assert.match(js,/이 생물에는 비추천 장비/);
+  assert.match(js,/sp\.protected\|\|!\(sp\.weight>0\)/);
+});
+
+test('Deep Diver v19 renders a side-profile research boat instead of stretching a top-down dinghy',()=>{
+  assert.match(js,/function drawSurveyBoat/);
+  assert.match(js,/Stern dive ladder/);
+  assert.doesNotMatch(js,/dinghy-large2\.png/);
+  assert.match(js,/E · 사다리로 올라가 낮 탐사 종료/);
+});
+
 test('Deep Diver v18 has a low upgradeable daily catch weight',()=>{
   assert.match(js,/const CATCH_CAP_LEVELS=\[4,7,11,16,22,30\]/);
   assert.match(js,/catchCap:\{name:'선상 냉장 어획함'/);

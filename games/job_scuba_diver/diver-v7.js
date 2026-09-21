@@ -131,7 +131,7 @@ const ASSETS={
  pickupBucket:PICKUP+'bucket.png',pickupFishingrod:PICKUP+'fishingrod.png',pickupGold:PICKUP+'gold.png',pickupKey:PICKUP+'key.png',
  pickupRuby:PICKUP+'ruby.png',pickupSaphire:PICKUP+'saphire.png',pickupSeashell:PICKUP+'seashell.png',pickupSilvercup:PICKUP+'silvercup.png',
  pickupSilverplate:PICKUP+'silverplate.png',pickupTelescope:PICKUP+'telescope.png',pickupTincan:PICKUP+'tincan.png',pickupTrout:PICKUP+'trout.png',
- wreck:P+'ships/ship-8.png',boat:P+'ships/dinghy-large2.png',wood1:P+'ship-parts/wood-1.png',wood2:P+'ship-parts/wood-2.png'
+ wreck:P+'ships/ship-8.png',wood1:P+'ship-parts/wood-1.png',wood2:P+'ship-parts/wood-2.png'
 };
 const imgs={}; let ready=false,loaded=0;
 for(const [k,src] of Object.entries(ASSETS)){const im=new Image();imgs[k]=im;im.onload=im.onerror=()=>{loaded++;if(loaded===Object.keys(ASSETS).length){ready=true;updateStartButtons()}};im.src=src}
@@ -568,9 +568,26 @@ function renderBackground(){
  ctx.restore()
 }
 function drawSurface(){const y=screenPos(0,WORLD.surface).y;if(y>-60&&y<view.h+60){ctx.fillStyle='rgba(211,251,255,.18)';ctx.fillRect(0,y-8,view.w,16);ctx.strokeStyle='rgba(220,255,255,.7)';ctx.lineWidth=3;ctx.beginPath();for(let x=0;x<=view.w;x+=18){const yy=y+Math.sin(world.time*2+x*.035)*3;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}}
+function drawSurveyBoat(x,y,bob=0){
+ ctx.save();ctx.translate(x,y+bob-19);ctx.imageSmoothingEnabled=false;
+ // Deep Diver is side-view, so use a purpose-built side-profile research skiff instead of
+ // stretching the top-down pirate dinghy sideways.
+ ctx.fillStyle='rgba(8,31,42,.22)';ctx.beginPath();ctx.ellipse(0,30,78,10,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#173a49';ctx.beginPath();ctx.moveTo(-76,8);ctx.lineTo(74,8);ctx.lineTo(48,31);ctx.lineTo(-51,31);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#2f7182';ctx.beginPath();ctx.moveTo(-68,8);ctx.lineTo(66,8);ctx.lineTo(48,21);ctx.lineTo(-57,21);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#e7edf0';ctx.fillRect(-35,-17,61,25);ctx.fillStyle='#d9e5e9';ctx.fillRect(-28,-24,42,8);
+ ctx.fillStyle='#164150';ctx.fillRect(-27,-13,16,12);ctx.fillRect(-7,-13,16,12);ctx.fillRect(13,-13,9,12);
+ ctx.fillStyle='#f4b548';ctx.fillRect(-42,1,16,7);ctx.fillStyle='#4ad3dd';ctx.fillRect(-56,14,101,4);
+ ctx.fillStyle='#d9e6e8';ctx.fillRect(31,-5,19,5);ctx.fillStyle='#253b43';ctx.fillRect(46,-9,5,14);
+ ctx.fillStyle='#b6c9cf';ctx.fillRect(-4,-39,3,15);ctx.fillRect(-12,-39,19,3);ctx.fillStyle='#ff665f';ctx.fillRect(-3,-45,5,6);
+ ctx.strokeStyle='#cbdde1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-55,-1);ctx.lineTo(-55,-12);ctx.lineTo(-36,-12);ctx.stroke();
+ // Stern dive ladder extends into the water and makes the return point visually obvious.
+ ctx.strokeStyle='#d5e5e8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(55,15);ctx.lineTo(64,36);ctx.moveTo(61,22);ctx.lineTo(54,24);ctx.moveTo(64,30);ctx.lineTo(57,32);ctx.stroke();
+ ctx.restore()
+}
 function drawBoat(){
- if(!world?.boat)return;const p=screenPos(world.boat.x,world.boat.y),bob=Math.sin(world.time*1.8)*3;drawImg(imgs.boat,p.x,p.y+bob,132,76,false,0,.98);const d=Math.hypot(world.player.x-world.boat.x,world.player.y-world.boat.y);
- if(d<230){ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.fillStyle='#fff1a8';ctx.strokeStyle='rgba(0,20,28,.85)';ctx.lineWidth=4;const label=d<125?'E · 배로 귀환해 낮 탐사 종료':'탐사선 · 수면 중앙';ctx.strokeText(label,p.x,p.y+bob+54);ctx.fillText(label,p.x,p.y+bob+54);ctx.restore()}
+ if(!world?.boat)return;const p=screenPos(world.boat.x,world.boat.y),bob=Math.sin(world.time*1.8)*3;drawSurveyBoat(p.x,p.y,bob);const d=Math.hypot(world.player.x-world.boat.x,world.player.y-world.boat.y);
+ if(d<230){ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.fillStyle='#fff1a8';ctx.strokeStyle='rgba(0,20,28,.85)';ctx.lineWidth=4;const label=d<125?'E · 사다리로 올라가 낮 탐사 종료':'탐사선 · 수면 중앙';ctx.strokeText(label,p.x,p.y+bob+52);ctx.fillText(label,p.x,p.y+bob+52);ctx.restore()}
 }
 function drawHarvestables(){for(const h of world.harvestables){if(h.taken)continue;const p=screenPos(h.x,h.y);if(p.x<-80||p.x>view.w+80||p.y<-80||p.y>view.h+80)continue;const bob=Math.sin(world.time*1.4+h.phase)*2,[dw,dh]=h.draw||[34,44];drawImg(imgs[h.img],p.x,p.y+bob,dw*h.scale,dh*h.scale,false,0,.94);if(world.sonar>0){ctx.save();ctx.strokeStyle='#80f0c0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,22+h.difficulty*3,0,Math.PI*2);ctx.stroke();ctx.restore()}if(Math.hypot(h.x-world.player.x,h.y-world.player.y)<92){ctx.save();ctx.textAlign='center';ctx.font='800 9px system-ui';ctx.fillStyle='#eaffd9';ctx.fillText(h.name+' · '+catchMethodLabel(h.method)+(h.progress>0?' '+Math.round(h.progress*100)+'%':''),p.x,p.y-dh*.55-7);ctx.restore()}}}
 function drawTraps(){for(const t of world.traps){const p=screenPos(t.x,t.y);drawImg(imgs.pickupBucket,p.x,p.y,34,34,false,0,.9);ctx.save();ctx.textAlign='center';ctx.font='800 9px system-ui';ctx.fillStyle=t.ready?'#ffdf78':'#c7edf2';ctx.fillText(t.ready?'통발 확인!':'통발 '+Math.max(0,Math.ceil(t.timer))+'초',p.x,p.y-24);ctx.restore()}}
@@ -901,14 +918,23 @@ function useSonar(){
  if(sr.sonarAggro){let n=0;for(const f of world.fish){const sp=SPECIES[f.key];if(!f.alive||!HOSTILE_BEHAVIORS.has(sp.behavior))continue;const d=Math.hypot(f.x-world.player.x,f.y-world.player.y);if(d<980){f.alert=Math.max(f.alert,2.2);f.specialCd=Math.min(f.specialCd,.18);n++}}showHint('소나 펄스가 포식자에게 들켰습니다! · 반응 '+n+'마리',1450)}
  else showHint('소나 펄스 · 희귀 생물과 위험물이 표시됩니다.',1200)
 }
-function fishAllowsMethod(f,method){const sp=SPECIES[f.key];return !!(!sp.protected&&sp.catchMethods?.includes(method))}
+function preferredCatchMethod(sp,method){return !!sp.catchMethods?.includes(method)}
+function fallbackCatchAllowed(sp,method){
+ if(sp.protected||!(sp.weight>0))return false;
+ const motion=sp.motion||'swimmer';
+ if(method==='harpoon')return !['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion);
+ if(method==='net')return !['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion);
+ return false
+}
+function fishAllowsMethod(f,method){const sp=SPECIES[f.key];return !!(!sp.protected&&(preferredCatchMethod(sp,method)||fallbackCatchAllowed(sp,method)))}
 function nearestMethodFish(method,range=100){const p=world.player;return world.fish.filter(f=>f.alive&&fishAllowsMethod(f,method)).map(f=>({f,d:Math.hypot(f.x-p.x,f.y-p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&(method==='gloves'||o.front>-28)).sort((a,b)=>a.d-b.d)[0]?.f||null}
 function captureChance(difficulty,method){const tier=gearTier(method);return clamp(.56+tier*.11-(difficulty||1)*.09,.28,.96)}
 function captureFish(f,method='harpoon'){
- const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호 관찰 대상입니다. 촬영하세요.',1200);return false}if(!sp.catchMethods?.includes(method)){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 장비')+'로 잡아야 합니다.',1100);return false}if(!canAddCatch(sp.weight))return false;
- f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=sp.weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.mission.samples++;beep(650,.06);showHint(sp.name+' 확보 · '+sp.weight+'kg · 오늘 '+world.catchWeight.toFixed(1)+'/'+world.st.catchCap+'kg',1050);return true
+ const sp=SPECIES[f.key];if(sp.protected||!(sp.weight>0)){showHint(sp.name+'은 보호 관찰 대상입니다. 포획하지 말고 촬영하세요.',1200);return false}
+ const preferred=preferredCatchMethod(sp,method);if(!preferred&&!fallbackCatchAllowed(sp,method)){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집해야 합니다.',1100);return false}if(!canAddCatch(sp.weight))return false;
+ f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=sp.weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.mission.samples++;beep(650,.06);showHint(sp.name+' 확보'+(preferred?'':' · 비추천 장비')+' · '+sp.weight+'kg · 오늘 '+world.catchWeight.toFixed(1)+'/'+world.st.catchCap+'kg',1050);return true
 }
-function instantCapture(f,method){if(!f)return false;const sp=SPECIES[f.key],chance=captureChance(sp.catchDifficulty||1,method);if(Math.random()>chance){f.panic=Math.max(f.panic,1.8);f.vx+=(f.x-world.player.x>=0?1:-1)*(90+(sp.speed||20));beep(150,.05,'sawtooth');showHint(sp.name+' 포획 실패 · '+GEAR_TIER_NAMES[gearTier(method)]+' '+catchMethodLabel(method)+'을 강화하면 쉬워집니다.',1150);return false}return captureFish(f,method)}
+function instantCapture(f,method){if(!f)return false;const sp=SPECIES[f.key],preferred=preferredCatchMethod(sp,method),difficulty=(sp.catchDifficulty||2)+(preferred?0:2),chance=captureChance(difficulty,method);if(Math.random()>chance){f.panic=Math.max(f.panic,1.8);f.vx+=(f.x-world.player.x>=0?1:-1)*(90+(sp.speed||20));beep(150,.05,'sawtooth');showHint(sp.name+' 포획 실패'+(preferred?'':' · 이 생물에는 비추천 장비')+' · '+GEAR_TIER_NAMES[gearTier(method)]+' '+catchMethodLabel(method)+'을 강화하면 쉬워집니다.',1150);return false}return captureFish(f,method)}
 function useNet(){const tier=gearTier('net'),range=105+tier*18,p=world.player,candidates=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'net')).map(f=>({f,d:Math.hypot(f.x-p.x,f.y-p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&o.front>-20).sort((a,b)=>a.d-b.d);if(!candidates.length){showHint('그물 범위 안에 잡을 수 있는 생물이 없습니다.',850);return}const maxCatch=tier>=4?3:tier>=3?2:1;let caught=0;for(const o of candidates.slice(0,maxCatch)){if(instantCapture(o.f,'net'))caught++}world.effects.push({type:'wake',x:p.x+p.face*42,y:p.y,t:0,big:false});beep(caught?620:190,.055)}
 function nearestHarvest(method,range=90){const p=world.player;return world.harvestables.filter(h=>!h.taken&&h.method===method).map(h=>({h,d:Math.hypot(h.x-p.x,h.y-p.y)})).filter(o=>o.d<range).sort((a,b)=>a.d-b.d)[0]?.h||null}
 function harvestNode(h,method){const tier=gearTier(method),power=.34+tier*.12,need=.55+(h.difficulty||1)*.28;h.progress=clamp(h.progress+power/need,0,1);if(h.progress<1){beep(method==='knife'?470:360,.035);showHint(h.name+' 채집 '+Math.round(h.progress*100)+'%',650);return false}if(!canAddCatch(h.weight)){h.progress=.82;return false}h.taken=true;world.catchWeight+=h.weight;world.catchCounts[h.key]=(world.catchCounts[h.key]||0)+1;world.mission.samples++;beep(820,.07);showHint(h.name+' 채집 완료 · '+h.weight+'kg',850);return true}
@@ -924,7 +950,8 @@ function interact(){
  for(const o of world.props){if(o.done)continue;if(Math.hypot(o.x-p.x,o.y-p.y)<95){o.done=true;world.mission[o.id]=true;beep(880,.08);showHint((o.id==='statue'?'침수 석상':'거대 석조 아치')+' 기록 완료',1000);return}}showHint('가까운 조사 대상이나 탐사선이 없습니다.',800)
 }
 function hookFish(f){
- const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호종입니다. 작살 대신 촬영하세요.',1100);beep(150,.05);return false}if(!sp.catchMethods?.includes('harpoon')){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 잡는 편이 안전합니다.',1000);beep(210,.04);return false}if(!canAddCatch(sp.weight))return false;if(world.tether)return false;f.hooked=true;f.attackMode='';f.specialCd=Math.max(f.specialCd,3);f.panic=2;const struggle=1.05+sp.weight*.24+(sp.behavior==='predator'?.42:0)-gearTier('harpoon')*.07;world.tether={fish:f,progress:0,tension:0,reelPulse:0,struggle};world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false});beep(520,.055);showHint(sp.name+' 명중! 작살을 다시 사용해 릴을 감으세요.',1250);return true
+ const sp=SPECIES[f.key];if(sp.protected||!(sp.weight>0)){showHint(sp.name+'은 보호종입니다. 작살 대신 촬영하세요.',1100);beep(150,.05);return false}
+ const preferred=preferredCatchMethod(sp,'harpoon');if(!preferred&&!fallbackCatchAllowed(sp,'harpoon')){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집해야 합니다.',1000);beep(210,.04);return false}if(!canAddCatch(sp.weight))return false;if(world.tether)return false;f.hooked=true;f.attackMode='';f.specialCd=Math.max(f.specialCd,3);f.panic=2;const struggle=1.05+sp.weight*.24+(sp.behavior==='predator'?.42:0)+(preferred?0:.38)-gearTier('harpoon')*.07;world.tether={fish:f,progress:0,tension:0,reelPulse:0,struggle};world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false});beep(520,.055);showHint(sp.name+' 명중! 작살을 다시 사용해 릴을 감으세요.'+(preferred?'':' · 비추천 장비라 더 거세게 저항합니다.'),1350);return true
 }
 function updateTether(dt){
  const t=world.tether;if(!t)return;const f=t.fish,p=world.player;if(!f?.alive){world.tether=null;return}
