@@ -726,7 +726,6 @@
   function mediateConflict(s){
     var other=conflictPartner(s);
     if(!other){log(s.name+" 주변에는 지금 중재할 만한 갈등이 뚜렷하지 않다.","teacher",teacherScene);return}
-    stats.teacherActs++;
     var r=relation(s,other);
     var success=clamp(.34+(s.trust+other.trust)*.16+(s.empathy+other.empathy)*.09-r.irritation*.28);
     s.action="WAIT";other.action="WAIT";s.actionTicks=2;other.actionTicks=2;
@@ -744,7 +743,6 @@
   }
   function separateConflict(s){
     var other=conflictPartner(s);
-    stats.teacherActs++;
     s.action="WAIT";s.groupId=null;s.socialTarget=null;s.frustration=clamp(s.frustration-.13);
     if(other){
       s.avoidId=other.id;s.avoidUntil=gameSec+6*60;other.avoidId=s.id;other.avoidUntil=gameSec+6*60;
@@ -758,7 +756,7 @@
     }
   }
   function giveRole(s){
-    stats.teacherActs++;stats.roles++;
+    stats.roles++;
     s.role="helper";s.roleUntil=gameSec+12*60;s.belonging=clamp(s.belonging+.09);s.mood=clamp(s.mood+.045);
     circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<28)o.helpful=clamp(o.helpful+.003)});
     s.focus=clamp(s.focus+.055);s.talkNeed=clamp(s.talkNeed-.06);s.moveNeed=clamp(s.moveNeed-.06);
@@ -820,6 +818,10 @@
     teacherTask=null;
     var action=TEACHER_ACTIONS[task.actionId]||CLASS_ACTIONS[task.actionId];
     var s=task.targetId===null?null:studentById(task.targetId);
+    if(s&&s.scene!==task.scene){
+      log((s?s.name+"의 ":"")+"상황이 바뀌어 교사 행동이 중간에 끊겼다.","teacher",task.scene);
+      render();return;
+    }
     if(action){
       stats.teacherActs++;
       if(s){
@@ -852,7 +854,8 @@
       start:gameSec,
       end:gameSec+duration,
       duration:duration,
-      multiplier:effectMultiplier(action,s)
+      multiplier:effectMultiplier(action,s),
+      scene:teacherScene
     };
     log((s?s.name+"에게 ":"")+action.label+"을(를) 시작했다.","teacher",teacherScene);
     render();
@@ -947,7 +950,7 @@
       id:"seatAdjust",category:"guide",label:"자리 조정하기",duration:0,mode:"seat",
       desc:"반복적으로 영향을 주고받는 두 학생의 물리적 거리를 바꿉니다.",
       when:function(s){return teacherScene==="classroom"&&s.scene==="classroom"},
-      recommended:function(s){var p=chooseSocialTarget(s,"SOCIAL");return current().kind==="lesson"&&p&&relation(s,p).affinity>.68&&s.talkNeed>.28},
+      recommended:function(s){return current().kind==="lesson"&&s.talkNeed>.28&&nearbyStudents(s,28).some(function(p){return relation(s,p).affinity>.68})},
       effect:function(){}
     },
     separate:{
@@ -1205,7 +1208,7 @@
           if(a&&a.scene==="classroom"&&s.scene==="classroom"){
             var tmp=a.seat;a.seat=s.seat;s.seat=tmp;
             if(current().kind==="lesson"){setDestination(a,"classroom",false);setDestination(s,"classroom",false)}
-            swapMode=false;consumeTeacherTime("자리 조정",35);log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
+            swapMode=false;stats.teacherActs++;consumeTeacherTime("자리 조정",35);log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
           }
         }
         selected=s.id;render();
@@ -1289,6 +1292,12 @@
     var notes=[];
     if(s.memory.length)notes.push("최근 관찰: "+s.memory[0].text);
     if(s.observedWork)notes.push("과제 풀이 과정 확인됨");
+    if(s.observation>=1){
+      if(s.moveNeed>.38)notes.push("관찰 단서: 오래 앉아 있을수록 몸 움직임이 커짐");
+      if(s.socialNeed>.38)notes.push("관찰 단서: 또래 쪽으로 시선과 접근이 자주 향함");
+      if(s.frustration>.34)notes.push("관찰 단서: 막히거나 거절된 뒤 감정이 오래 남는 편");
+    }
+    if(s.observedWork&&s.skill<.45)notes.push("학습 단서: 현재 과제의 기초 단계부터 다시 확인할 필요가 있어 보임");
     if(s.roleUntil>gameSec)notes.push("현재 역할을 맡고 있음");
     var pair=activePair(s);if(pair)notes.push(pair.name+"와 함께 해보도록 연결된 상태");
     var conflict=conflictPartner(s);if(conflict)notes.push(conflict.name+"와 감정이 남아 있음");
@@ -1328,6 +1337,7 @@
     q("#teacher").style.left=teacher.x+"%";q("#teacher").style.top=teacher.y+"%";
   }
   function openScene(scene){
+    if(teacherIsBusy()){log("지금은 교사 행동을 수행 중이라 다른 공간으로 바로 이동할 수 없다.","teacher",teacherScene);return}
     teacherScene=scene;teacher.x=50;teacher.y=18;selected=null;connectMode=false;swapMode=false;
     log("선생님이 "+SCENE_NAME[scene]+" 쪽으로 이동했다.","teacher",scene);render();
   }
