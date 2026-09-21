@@ -265,6 +265,7 @@ function prog(){
   p.homestead={
     version:1,
     initialized:true,
+    campfireBuilt:rawHome.campfireBuilt===true||legacyComfort,
     kitchenLevel:clampLevel(rawHome.kitchenLevel,0,2,legacyComfort?2:0),
     bedLevel:clampLevel(rawHome.bedLevel,0,2,legacyComfort?2:0),
     backpackLevel:clampLevel(rawHome.backpackLevel,1,4,legacyComfort?2:1),
@@ -537,7 +538,7 @@ function performGridCraft(){
   }else if(recipe.out.kind==='furniture'){
     p.housing.owned[recipe.out.item]=(p.housing.owned[recipe.out.item]||0)+(recipe.out.qty||1);
   }else if(recipe.out.kind==='homestead'&&recipe.out.upgrade==='campfire'){
-    p.homestead.kitchenLevel=Math.max(1,p.homestead.kitchenLevel);
+    p.homestead.campfireBuilt=true;
   }
   craftGrid=Array(9).fill('');persist();updateHomesteadVisuals();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
   toast('🔨 '+recipe.name+' 제작 완료!');craftGridPanel();
@@ -678,7 +679,7 @@ function worldMapPanel(){
 function nextHomesteadGoal(){
   const p=prog(),d=devState(),h=p.homestead,i=inv();
   if((i.water||0)<=0&&d.waterLevel===0)return {icon:'💧',title:'강물 한 통 떠오기',text:'북쪽 강가에서 물을 떠와 첫 밭과 요리에 써보세요.'};
-  if(h.kitchenLevel<1)return {icon:'🔥',title:'집 앞 캠프파이어 만들기',text:'농장 3×3 제작대에서 돌과 목재를 직접 배치해 캠프파이어를 만드세요.'};
+  if(!h.campfireBuilt)return {icon:'🔥',title:'집 앞 캠프파이어 만들기',text:'농장 3×3 제작대에서 돌과 목재를 직접 배치해 캠프파이어를 만드세요.'};
   if(!Object.values(p.crops||{}).some(v=>v&&v.phase&&v.phase!=='empty'))return {icon:'🥕',title:'첫 작물 키우기',text:'밭 1칸에 씨앗을 심고 가져온 물을 주세요.'};
   if(d.waterLevel<1)return {icon:'🪣',title:'우물 만들기',text:'강까지 왕복하지 않도록 집 앞 우물을 건설하세요.'};
   if(d.carpenterLevel<1)return {icon:'🪚',title:'목수공방 세우기',text:'생활 가구를 직접 만들 수 있는 목수공방을 열어보세요.'};
@@ -959,7 +960,7 @@ document.getElementById('mobileInteract').onclick=doInteract;
 
 const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
-let homeCampfireObject=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
+let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
 const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
@@ -1017,8 +1018,9 @@ function updateHomesteadVisuals(){
   if(homeWellInteraction)homeWellInteraction.enabled=d.waterLevel>=1;
   if(homePumpGroup)homePumpGroup.visible=d.waterLevel>=2;
   if(homePumpInteraction)homePumpInteraction.enabled=d.waterLevel>=2;
-  if(homeCampfireObject)homeCampfireObject.visible=h.kitchenLevel>=1;
-  if(homeCampfireInteraction)homeCampfireInteraction.enabled=h.kitchenLevel>=1;
+  if(homeCampfireObject)homeCampfireObject.visible=!!h.campfireBuilt;
+  if(homeCampfireLight)homeCampfireLight.visible=!!h.campfireBuilt;
+  if(homeCampfireInteraction)homeCampfireInteraction.enabled=!!h.campfireBuilt;
   const realBed=hasPlacedFurniture('bedSingle');
   if(starterBeddingGroup)starterBeddingGroup.visible=!realBed;
   if(starterBeddingInteraction)starterBeddingInteraction.enabled=!realBed;
@@ -1320,7 +1322,7 @@ async function buildOutdoor(){
     box(homePumpGroup,h.x+3.65,h.z+4.85,.92,.16,.12,0x657c79,1.52);
 
     homeCampfireObject=await addModel(outdoor,ASSET.campfire,{x:h.x+3.2,z:h.z+7.2,w:1.55,h:.72,d:1.55,rot:0,name:'home-campfire'});
-    const homeFireLight=new THREE.PointLight(0xff9b45,0,7,2);homeFireLight.position.set(h.x+3.2,1.25,h.z+7.2);homeFireLight.userData.campfire=true;outdoor.add(homeFireLight);
+    homeCampfireLight=new THREE.PointLight(0xff9b45,0,7,2);homeCampfireLight.position.set(h.x+3.2,1.25,h.z+7.2);homeCampfireLight.userData.campfire=true;outdoor.add(homeCampfireLight);
 
     interact('outdoor',h.x,h.z-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
     interact('outdoor',h.x+6.1,h.z-5.0,1.3,'초보자 보급 상자 열기',claimStarterKit);
