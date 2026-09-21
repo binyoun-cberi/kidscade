@@ -92,7 +92,7 @@ const ASSETS={
  nautilus:FAUNA+'mollusks/nautilus/nautilus.png',squid:FAUNA+'cephalopods/squid/squid-sprites.png',kraken:FAUNA+'cephalopods/kraken/kraken-anim.gif',
  jelly01:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-01.png',jelly02:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-02.png',jelly03:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-03.png',jelly04:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-04.png',jelly05:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-05.png',jelly06:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-06.png',jelly07:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-07.png',jelly08:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-08.png',jelly09:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-09.png',jelly10:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-10.png',jelly11:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-11.png',jelly12:FAUNA+'cnidarians/jellyfish/swim/jellyfish-swim-12.png',
  jellyAtk01:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-01.png',jellyAtk02:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-02.png',jellyAtk03:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-03.png',jellyAtk04:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-04.png',jellyAtk05:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-05.png',jellyAtk06:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-06.png',jellyAtk07:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-07.png',jellyAtk08:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-08.png',jellyAtk09:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-09.png',jellyAtk10:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-10.png',jellyAtk11:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-11.png',jellyAtk12:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-12.png',
- whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:FAUNA+'shark/variants/shark-001-64px.gif',
+ whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:SHARK+'shark-swim-atlas.png',
  waterPlant2:VEG+'water-plant-02.png',grassClump:VEG+'grass-clump-01.png',
  pickupBucket:PICKUP+'bucket.png',pickupFishingrod:PICKUP+'fishingrod.png',pickupGold:PICKUP+'gold.png',pickupKey:PICKUP+'key.png',
  pickupRuby:PICKUP+'ruby.png',pickupSaphire:PICKUP+'saphire.png',pickupSeashell:PICKUP+'seashell.png',pickupSilvercup:PICKUP+'silvercup.png',
@@ -125,7 +125,7 @@ const SPECIES={
  jelly:{name:'푸른 해파리',img:'jelly01',depth:[90,610],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'jelly',speed:22,damage:7,draw:[58,58]},
  whale:{name:'대형 고래',img:'whale',depth:[45,310],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:30,draw:[280,150],spriteFacing:'left'},
  vaquita:{name:'바키타',img:'vaquita',depth:[15,160],weight:0,value:0,protected:true,rare:true,behavior:'megafauna',motion:'megafauna',speed:54,draw:[170,78],spriteFacing:'left'},
- shark2:{name:'회유성 상어',img:'shark2',depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
+ shark2:{name:'회유성 상어',img:'shark2',animated:true,fw:32,fh:32,frames:8,depth:[250,690],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'swimmer',speed:118,damage:16,draw:[88,58]},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
 const BIOME_POPULATIONS={
@@ -166,9 +166,17 @@ const JELLY_ATTACK_KEYS=Array.from({length:12},(_,i)=>'jellyAtk'+String(i+1).pad
 const CONTRACT_DEPTH_RATING=[150,285,430,575,760];
 const GRADE_SCORE={C:1,B:2,A:3,S:4};
 const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
+const RECIPES=[
+ {id:'reefGrill',name:'산호어 소금구이',icon:'🐟',keys:['blue','orange','pink','green','grey'],bonus:190,desc:'얕은 바다 생선을 바삭하게 구운 기본 메뉴'},
+ {id:'crabRice',name:'바위게 볶음밥',icon:'🦀',keys:['crab'],bonus:310,desc:'바위게 살을 듬뿍 넣은 든든한 한 그릇'},
+ {id:'spicyBowl',name:'매콤 심해 덮밥',icon:'🌶️',keys:['red','brown','dart'],bonus:360,desc:'매콤한 양념으로 맛을 살린 인기 메뉴'},
+ {id:'hunterSteak',name:'포식어 스테이크',icon:'🍽️',keys:['hunter'],bonus:640,desc:'위험한 포식어를 손질해 만든 고급 메뉴'},
+ {id:'squidGrill',name:'심해 오징어 구이',icon:'🦑',keys:['squid'],bonus:520,desc:'쫄깃한 오징어를 불향 나게 구운 메뉴'}
+];
 
 let view={w:innerWidth,h:innerHeight,dpr:1},last=performance.now(),state='menu',world=null,sound=false,ac=null,ambience=null;
-const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0};
+const keys={},touch={x:0,y:0,dash:false},meta={money:0,unlocked:0,up:{oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0},codex:{},bestDepth:0,bestScore:0,stock:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}};
+let restaurant=null;
 
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
@@ -182,7 +190,7 @@ function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
   if(!r){try{r=JSON.parse(localStorage.getItem(OLD)||'null')}catch(e){}}
   if(!r){try{const o=JSON.parse(localStorage.getItem(LEGACY)||'null');if(o)r={money:o.money||0,unlocked:Math.min(4,o.unlocked||0),up:o.up||{},codex:o.codex||{},bestDepth:o.bestDepth||0,bestScore:o.bestScore||0}}catch(e){}}
-  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});meta.codex=r.codex||{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;save()}
+  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});meta.codex=r.codex||{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
 function ensureAmbience(){
@@ -334,7 +342,7 @@ function buildWorld(contract){
  world={
    contract,st,time:0,camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],decor:[],foreground:buildForeground(contract.unlock*9127+57),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
-   bag:[],bagWeight:0,income:0,photoIncome:0,maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
+   bag:[],bagWeight:0,income:0,photoIncome:0,catchCounts:{},maxDepth:0,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
@@ -786,7 +794,7 @@ function interact(){
 function captureFish(f){
  const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호 관찰 대상입니다. 촬영하세요.',1200);return false}
  if(world.bagWeight+sp.weight>world.st.bag){showHint('가방 무게가 부족합니다.',900);return false}
- f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.bagWeight+=sp.weight;world.bag.push(f.key);world.income+=sp.value;world.mission.samples++;beep(650,.06);showHint(sp.name+' 표본 확보 +'+money(sp.value),1000);return true
+ f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.bagWeight+=sp.weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.mission.samples++;beep(650,.06);showHint(sp.name+' 주방 재료 확보 · '+sp.weight+'kg',1000);return true
 }
 function hookFish(f){
  const sp=SPECIES[f.key];if(sp.protected){showHint(sp.name+'은 보호종입니다. 작살 대신 촬영하세요.',1100);beep(150,.05);return false}
@@ -1022,22 +1030,85 @@ function update(dt){
 function finishDive(ok,reason){
  if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();syncAmbience();
  const complete=missionComplete(),base=ok&&complete?world.contract.reward:0,depthBonus=ok?Math.round(world.maxDepth*1.25):0,survival=ok?250:0,gain=ok?Math.max(0,world.income+base+depthBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
+ let stocked=0;const stockedNames=[];
+ if(ok){
+   for(const [key,count] of Object.entries(world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(SPECIES[key].name+' ×'+count)}
+ }
  meta.money+=gain;meta.bestDepth=Math.max(meta.bestDepth,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(CONTRACTS.length-1,world.contract.unlock+1));save();
- $('resultTitle').textContent=ok?'무사 귀환 · 잠수 보고서':'긴급 구조 · 잠수 보고서';
- const loss=ok?'':'<div class="notice">구조 시 현장 표본·유물·사진 연구 보상은 회수되지 않습니다. 도감 기록만 남습니다.</div>';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+'<div class="report"><div class="card"><span>계약</span><b>'+(complete?'완료':'미완료')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>현장 가치</span><b>'+money(world.income)+'</b></div><div class="card"><span>계약 보상</span><b>'+money(base)+'</b></div><div class="card"><span>총 획득</span><b>'+money(gain)+'</b></div><div class="card"><span>탐사 점수</span><b>'+score+'</b></div></div>';
+ $('resultTitle').textContent=ok?'무사 귀환 · 낮 탐사 종료':'긴급 구조 · 잠수 보고서';
+ const loss=ok?'':'<div class="notice">구조 시 현장 표본·유물·사진 연구 보상과 잡은 식재료는 회수되지 않습니다. 도감 기록만 남습니다.</div>';
+ const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 잡은 식재료 '+stocked+'개를 가게 냉장고에 보관했습니다.</b>'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>계약</span><b>'+(complete?'완료':'미완료')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>가게 식재료</span><b>'+stocked+'개</b></div><div class="card"><span>계약 보상</span><b>'+money(base)+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div><div class="card"><span>탐사 점수</span><b>'+score+'</b></div></div>';
+ const canNight=ok&&stockCount()>0;$('nextBtn').textContent=canNight?'밤 장사 시작':'계약 게시판';$('nextBtn').onclick=canNight?startRestaurant:openContracts;
  $('resultScreen').classList.remove('hidden')
 }
 
 function frame(now){const dt=clamp((now-last)/1000,0,.033);last=now;if(state==='playing'){update(dt);render()}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
+function stockCount(){return Object.values(meta.stock||{}).reduce((a,b)=>a+(Number(b)||0),0)}
+function recipeIngredients(recipe){return recipe.keys.filter(k=>(meta.stock[k]||0)>0)}
+function availableRecipes(){return RECIPES.filter(r=>recipeIngredients(r).length)}
+function chooseIngredient(recipe){
+ const keys=recipeIngredients(recipe);if(!keys.length)return null;
+ return keys.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0)||(SPECIES[a].value||0)-(SPECIES[b].value||0))[0]
+}
+function recipePrice(recipe,key){const sp=SPECIES[key];return Math.round((sp?.value||180)*2.05+recipe.bonus)}
+function restaurantStockHtml(){
+ const entries=Object.entries(meta.stock||{}).filter(([,n])=>n>0);
+ if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';
+ return entries.map(([k,n])=>'<span class="stockChip">'+SPECIES[k].name+' <b>×'+n+'</b></span>').join('')
+}
+function nextRestaurantCustomer(){
+ if(!restaurant||restaurant.finished)return;
+ const avail=availableRecipes();
+ if(restaurant.left<=0||!avail.length){finishRestaurant();return}
+ const prev=restaurant.current,currentPool=avail.filter(r=>r.id!==prev);
+ const pool=currentPool.length?currentPool:avail,recipe=pool[Math.floor(Math.random()*pool.length)];
+ restaurant.current=recipe.id;renderRestaurant()
+}
+function renderRestaurant(){
+ if(!restaurant||restaurant.finished)return;
+ const wanted=RECIPES.find(r=>r.id===restaurant.current),available=availableRecipes();
+ const cards=RECIPES.map(r=>{const keys=recipeIngredients(r),disabled=!keys.length,ingredient=keys.length?SPECIES[chooseIngredient(r)].name:'재료 없음',price=keys.length?recipePrice(r,chooseIngredient(r)):0;return'<button class="recipeCard '+(r.id===restaurant.current?'ordered':'')+'" data-recipe="'+r.id+'" '+(disabled?'disabled':'')+'><span class="recipeIcon">'+r.icon+'</span><b>'+r.name+'</b><small>'+r.desc+'</small><em>'+ingredient+(price?' · 약 '+money(price):'')+'</em></button>'}).join('');
+ $('restaurantBody').innerHTML='<div class="restaurantHero"><div><span class="nightBadge">DAY '+meta.day+' · NIGHT</span><h3>BLUE KITCHEN</h3><p>낮에 직접 잡아온 해산물로 손님 주문을 맞춰 요리하세요.</p></div><div class="nightMoney"><span>오늘 매출</span><b>'+money(restaurant.earnings)+'</b><small>연속 '+restaurant.streak+' · 남은 손님 '+restaurant.left+'</small></div></div>'+
+ '<div class="restaurantOrder"><span>손님 주문</span><b>'+wanted.icon+' '+wanted.name+'</b><small>'+(restaurant.message||'주문과 같은 메뉴를 골라 요리해 주세요.')+'</small></div>'+
+ '<div class="restaurantStock"><strong>냉장고</strong>'+restaurantStockHtml()+'</div><div class="recipeGrid">'+cards+'</div>'+
+ '<div class="toolbar"><button class="btn dark" id="closeNightBtn">오늘 영업 마감</button></div>';
+ document.querySelectorAll('#restaurantBody [data-recipe]').forEach(b=>b.onclick=()=>serveRestaurant(b.dataset.recipe));
+ $('closeNightBtn').onclick=finishRestaurant
+}
+function startRestaurant(){
+ state='restaurant';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');
+ ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ $('restaurantScreen').classList.remove('hidden');
+ restaurant={served:0,earnings:0,streak:0,left:Math.min(9,5+Math.floor((meta.shop.reputation||0)/12)),current:null,finished:false,message:'첫 손님이 들어왔습니다.'};
+ nextRestaurantCustomer()
+}
+function serveRestaurant(recipeId){
+ if(!restaurant||restaurant.finished)return;
+ const wanted=RECIPES.find(r=>r.id===restaurant.current),picked=RECIPES.find(r=>r.id===recipeId);if(!wanted||!picked)return;
+ if(recipeId!==wanted.id){restaurant.streak=0;restaurant.message='주문은 “'+wanted.name+'”입니다. 재료는 쓰지 않았어요.';meta.shop.reputation=Math.max(0,(meta.shop.reputation||0)-.2);beep(130,.07,'sawtooth');renderRestaurant();return}
+ const key=chooseIngredient(wanted);if(!key){restaurant.message='이 메뉴의 재료가 다 떨어졌습니다.';nextRestaurantCustomer();return}
+ meta.stock[key]--;if(meta.stock[key]<=0)delete meta.stock[key];
+ const combo=1+Math.min(.35,restaurant.streak*.05),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006),sale=Math.round(recipePrice(wanted,key)*combo*rep);
+ restaurant.earnings+=sale;restaurant.served++;restaurant.left--;restaurant.streak++;restaurant.message=SPECIES[key].name+'으로 조리 완료 · +'+money(sale);beep(860,.055);setTimeout(()=>beep(1180,.055),55);
+ const avail=availableRecipes();if(restaurant.left<=0||!avail.length){finishRestaurant();return}
+ const pool=avail.filter(r=>r.id!==wanted.id),next=(pool.length?pool:avail)[Math.floor(Math.random()*(pool.length?pool:avail).length)];restaurant.current=next.id;renderRestaurant()
+}
+function finishRestaurant(){
+ if(!restaurant||restaurant.finished)return;restaurant.finished=true;
+ meta.money+=restaurant.earnings;meta.day=Math.max(1,(meta.day||1)+1);meta.shop.totalServed=(meta.shop.totalServed||0)+restaurant.served;meta.shop.reputation=clamp((meta.shop.reputation||0)+restaurant.served*.8+Math.min(2,restaurant.streak*.2),0,99);meta.shop.bestNight=Math.max(meta.shop.bestNight||0,restaurant.earnings);save();
+ $('restaurantBody').innerHTML='<div class="nightSummary"><span class="nightBadge">영업 종료</span><h3>오늘의 장사 결과</h3><div class="report"><div class="card"><span>손님</span><b>'+restaurant.served+'팀</b></div><div class="card"><span>밤 매출</span><b>'+money(restaurant.earnings)+'</b></div><div class="card"><span>가게 평판</span><b>'+Math.round(meta.shop.reputation)+'</b></div><div class="card"><span>남은 재고</span><b>'+stockCount()+'개</b></div></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn gold" id="nextDayBtn">다음 날 잠수 준비</button></div></div>';
+ $('nextDayBtn').onclick=()=>{restaurant=null;$('restaurantScreen').classList.add('hidden');openContracts()}
+}
+
 function contractCards(){
  return CONTRACTS.map((c,i)=>'<div class="card '+(i>meta.unlocked?'locked':'')+'"><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">장비 권장 수심 '+(CONTRACT_DEPTH_RATING[i]+meta.up.suit*22)+'m</div><div class="reward">계약 보상 '+money(c.reward)+'</div><button class="btn '+(i>meta.unlocked?'dark':'gold')+'" data-contract="'+c.id+'" '+(i>meta.unlocked?'disabled':'')+'>'+(i>meta.unlocked?'잠김':'잠수 시작')+'</button></div>').join('')
 }
 function openContracts(){
- state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- $('contractBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b> · 최고 수심 <b>'+Math.round(meta.bestDepth)+'m</b> · 최고 점수 <b>'+meta.bestScore+'</b></div><div class="grid">'+contractCards()+'</div><div class="toolbar"><button class="btn" id="shopBtn">장비실</button><button class="btn dark" id="codexBtn">생물 도감</button><button class="btn dark" id="menuBtn">시작 화면</button></div>';
- $('contractScreen').classList.remove('hidden');document.querySelectorAll('[data-contract]').forEach(b=>b.onclick=()=>{const c=CONTRACTS.find(x=>x.id===b.dataset.contract);if(c)buildWorld(c)});$('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
+ state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ $('contractBody').innerHTML='<div class="notice"><b>DAY '+meta.day+' · 낮 탐사 준비</b><br>보유 자금 '+money(meta.money)+' · 가게 재고 '+stockCount()+'개 · 가게 평판 '+Math.round(meta.shop.reputation||0)+' · 최고 수심 '+Math.round(meta.bestDepth)+'m</div><div class="grid">'+contractCards()+'</div><div class="toolbar"><button class="btn" id="shopBtn">장비실</button><button class="btn dark" id="codexBtn">생물 도감</button>'+(stockCount()>0?'<button class="btn gold" id="restaurantBtn">남은 재고로 밤 장사</button>':'')+'<button class="btn dark" id="menuBtn">시작 화면</button></div>';
+ $('contractScreen').classList.remove('hidden');document.querySelectorAll('[data-contract]').forEach(b=>b.onclick=()=>{const c=CONTRACTS.find(x=>x.id===b.dataset.contract);if(c)buildWorld(c)});$('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;const rb=$('restaurantBtn');if(rb)rb.onclick=startRestaurant;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
 function upCost(k){const u=UPGRADES[k];return Math.round(u.base*(1+meta.up[k]*.72))}
 function openShop(){
@@ -1049,7 +1120,7 @@ function openCodex(){
 }
 
 function bind(){
- $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;save();openContracts()};
+ $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,camera:0,harpoon:0,sonar:0,suit:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};save();openContracts()};
  $('continueBtn').onclick=()=>{if(!ready)return;load();openContracts()};
  $('nextBtn').onclick=openContracts;$('homeBtn').onclick=()=>{$('resultScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');state='menu'};
  $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};
