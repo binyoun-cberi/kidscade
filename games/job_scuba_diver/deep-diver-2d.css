@@ -387,3 +387,13 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
  #observeHud{top:82px;width:min(300px,48vw)}
  #observeSub{display:none}
 }
+
+
+/* v33 specimen economy */
+.stockChip{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.stockPremium{display:inline-block;padding:2px 5px;border-radius:999px;background:rgba(255,210,91,.13);border:1px solid rgba(255,221,126,.25);color:#ffe18a;font-size:7px;font-style:normal;font-weight:1000;letter-spacing:.02em}
+.ingredientBtn small{line-height:1.45}
+.kitchenNotice b+br{line-height:1.8}
+@media(max-width:560px){
+ .stockPremium{font-size:6.5px}
+}
