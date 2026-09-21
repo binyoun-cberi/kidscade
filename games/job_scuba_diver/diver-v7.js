@@ -125,6 +125,7 @@ const ASSETS={
  jellyAtk01:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-01.png',jellyAtk02:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-02.png',jellyAtk03:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-03.png',jellyAtk04:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-04.png',jellyAtk05:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-05.png',jellyAtk06:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-06.png',jellyAtk07:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-07.png',jellyAtk08:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-08.png',jellyAtk09:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-09.png',jellyAtk10:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-10.png',jellyAtk11:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-11.png',jellyAtk12:FAUNA+'cnidarians/jellyfish/attack/jellyfish-attack-12.png',
  whale:FAUNA+'megafauna/whale/whale.png',vaquita:FAUNA+'megafauna/vaquita/vaquita-porpoise.png',shark2:SHARK+'shark-swim-atlas.png',
  genBarracuda:GEN_FAUNA+'fish/barracuda.png',genBream:GEN_FAUNA+'fish/sea-bream.png',genLionfish:GEN_FAUNA+'fish/lionfish.png',genMoray:GEN_FAUNA+'fish/moray-eel.png',genPuffer:GEN_FAUNA+'fish/pufferfish.png',genSeahorse:GEN_FAUNA+'fish/seahorse.png',genCoelacanth:GEN_FAUNA+'fish/coelacanth.png',
+ genDeepAngler:GEN_FAUNA+'fish/deepsea anglerfish.png',genFlounder:GEN_FAUNA+'fish/flounder.png',genLanternfish:GEN_FAUNA+'fish/lanternfish.png',genMackerel:GEN_FAUNA+'fish/mackerel.png',genShrimp:GEN_FAUNA+'fish/shrimp.png',genSlipperLobster:GEN_FAUNA+'fish/slippler lobster.png',genSwordfish:GEN_FAUNA+'fish/sword fish.png',genTriggerfish:GEN_FAUNA+'fish/titan triggerfish.png',genYellowfin:GEN_FAUNA+'fish/yellow tuna.png',
  genManta:GEN_FAUNA+'rays/manta-ray.png',genSkate:GEN_FAUNA+'rays/skate.png',genCuttlefish:GEN_FAUNA+'cephalopods/cuttlefish.png',genOctopus:GEN_FAUNA+'cephalopods/octopus.png',
  genIsopod:GEN_FAUNA+'crustaceans/giant-isopod.png',genHermit:GEN_FAUNA+'crustaceans/hermit-crab.png',genMoonJelly:GEN_FAUNA+'cnidarians/jellyfish.png',genScallop:GEN_FAUNA+'mollusks/scallop.png',genSeaCucumber:GEN_FAUNA+'echinoderms/sea-cucumber.png',genStarfish:GEN_FAUNA+'echinoderms/starfish.png',
  waterPlant2:VEG+'water-plant-02.png',grassClump:VEG+'grass-clump-01.png',
@@ -147,7 +148,7 @@ const SPECIES={
  brown:{name:'갈색 난파어',img:'brown',depth:[280,585],weight:1.7,value:280,protected:false,rare:false,behavior:'territorial',speed:60,damage:8,catchMethods:['harpoon'],catchDifficulty:2},
  dart:{name:'빠른 심해어',img:'fishDart',animated:true,fw:39,fh:20,frames:4,depth:[245,720],weight:1.6,value:360,protected:false,rare:true,behavior:'territorial',speed:92,damage:10,catchMethods:['harpoon'],catchDifficulty:3},
  hunter:{name:'큰이빨 포식어',img:'fishBig',animated:true,fw:48,fh:32,frames:4,depth:[300,750],weight:2.8,value:610,protected:false,rare:true,behavior:'predator',speed:112,damage:14,catchMethods:['harpoon'],catchDifficulty:4},
- angler:{name:'등불 심해어',img:'fishAnim',animated:true,fw:32,fh:32,frames:4,depth:[430,755],weight:2.2,value:520,protected:true,rare:true,behavior:'ambush',speed:105,damage:13},
+ angler:{name:'심해 아귀',img:'genDeepAngler',stripFrames:4,stripFps:4,depth:[430,755],weight:2.4,value:760,protected:false,rare:true,behavior:'ambush',speed:86,damage:15,draw:[104,60],catchMethods:['harpoon'],catchDifficulty:4},
  giant:{name:'대형 심해 상어',img:'shark',animated:true,fw:32,fh:32,frames:8,depth:[600,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',speed:128,damage:24},
  crab:{name:'바위게',img:'crab1',depth:[8,360],weight:.8,value:240,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:24,draw:[54,54],catchMethods:['gloves','trap'],catchDifficulty:2},
  mantis:{name:'공작갯가재',img:'mantis',depth:[45,160],weight:0,value:0,protected:true,rare:true,behavior:'territorial',motion:'crawlerBoss',speed:58,damage:19,draw:[112,64]},
@@ -177,20 +178,28 @@ const SPECIES={
  coelacanth:{name:'실러캔스',img:'genCoelacanth',stripFrames:4,stripFps:5,depth:[520,755],weight:0,value:0,protected:true,rare:true,behavior:'drifter',motion:'drifter',speed:38,draw:[108,58]},
  skate:{name:'저서 가오리',img:'genSkate',stripFrames:4,stripFps:5,depth:[85,500],weight:0,value:0,protected:true,rare:false,behavior:'drifter',motion:'drifter',speed:34,draw:[96,64]},
  starfishStrip:{name:'별불가사리',img:'genStarfish',stripFrames:4,stripFps:3,depth:[5,260],weight:0,value:0,protected:true,rare:false,behavior:'sessile',motion:'sessile',speed:0,draw:[46,46]},
+ mackerel:{name:'고등어',img:'genMackerel',stripFrames:4,stripFps:8,depth:[8,250],weight:1.1,value:230,protected:false,rare:false,behavior:'school',speed:74,draw:[88,46],catchMethods:['net'],catchDifficulty:2},
+ yellowfin:{name:'황다랑어',img:'genYellowfin',stripFrames:4,stripFps:8,depth:[55,420],weight:5.6,value:1120,protected:false,rare:true,behavior:'skittish',speed:122,draw:[126,64],catchMethods:['harpoon'],catchDifficulty:4},
+ swordfish:{name:'황새치',img:'genSwordfish',stripFrames:4,stripFps:9,depth:[90,520],weight:6.8,value:1480,protected:false,rare:true,behavior:'skittish',speed:138,draw:[142,60],catchMethods:['harpoon'],catchDifficulty:5},
+ triggerfish:{name:'타이탄 트리거피시',img:'genTriggerfish',stripFrames:4,stripFps:6,depth:[12,245],weight:1.8,value:390,protected:false,rare:false,behavior:'territorial',speed:68,damage:9,draw:[94,60],catchMethods:['net','harpoon'],catchDifficulty:3},
+ flounder:{name:'가자미',img:'genFlounder',stripFrames:4,stripFps:4,depth:[18,500],weight:1.4,value:310,protected:false,rare:false,behavior:'crawler',motion:'crawler',speed:12,draw:[94,52],catchMethods:['gloves','net'],catchDifficulty:2},
+ shrimp:{name:'새우',img:'genShrimp',stripFrames:4,stripFps:7,depth:[8,360],weight:.25,value:150,protected:false,rare:false,behavior:'drifter',motion:'drifter',speed:32,draw:[86,48],catchMethods:['net','trap'],catchDifficulty:1},
+ slipperLobster:{name:'부채새우',img:'genSlipperLobster',stripFrames:4,stripFps:4,depth:[80,560],weight:.85,value:430,protected:false,rare:true,behavior:'crawler',motion:'crawler',speed:10,draw:[96,46],catchMethods:['gloves','trap'],catchDifficulty:3},
+ lanternfish:{name:'랜턴피시',img:'genLanternfish',stripFrames:4,stripFps:6,depth:[420,755],weight:.35,value:210,protected:false,rare:false,behavior:'school',speed:42,draw:[78,48],catchMethods:['net'],catchDifficulty:2},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
 const BIOME_POPULATIONS={
- reef:[['blue',10],['orange',9],['pink',7],['green',7]],
- kelp:[['green',7],['red',8],['grey',7],['long',4]],
- ruins:[['grey',5],['brown',6],['dart',5],['hunter',3]],
- wreck:[['brown',8],['dart',7],['hunter',7],['angler',5]],
- abyss:[['angler',10],['hunter',8],['dart',5]]
+ reef:[['blue',10],['orange',9],['pink',7],['green',7],['mackerel',6],['triggerfish',4],['yellowfin',1]],
+ kelp:[['green',7],['red',8],['grey',7],['long',4],['mackerel',7],['yellowfin',2],['swordfish',1]],
+ ruins:[['grey',5],['brown',6],['dart',5],['hunter',3],['mackerel',3],['yellowfin',1]],
+ wreck:[['brown',8],['dart',7],['hunter',7],['angler',5],['lanternfish',5],['swordfish',1]],
+ abyss:[['angler',8],['hunter',8],['dart',5],['lanternfish',12]]
 };
 const FAUNA_POPULATIONS={
- reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1],['bream',5],['hermitCrab',4],['lionfish',2],['puffer',3],['seahorse',2],['starfishStrip',3]],
- kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1],['bream',3],['barracuda',3],['cuttlefish',3],['octopus',2],['manta',1],['seaCucumber',4],['skate',2]],
- ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5],['moray',3],['cuttlefish',2],['octopus',2],['scallop',4],['skate',2]],
- wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3],['barracuda',3],['moray',4],['octopus',2],['skate',2],['giantIsopod',2]],
+ reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1],['bream',5],['hermitCrab',4],['lionfish',2],['puffer',3],['seahorse',2],['starfishStrip',3],['shrimp',6],['flounder',3]],
+ kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1],['bream',3],['barracuda',3],['cuttlefish',3],['octopus',2],['manta',1],['seaCucumber',4],['skate',2],['shrimp',5],['flounder',3]],
+ ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5],['moray',3],['cuttlefish',2],['octopus',2],['scallop',4],['skate',2],['flounder',6],['slipperLobster',3]],
+ wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3],['barracuda',3],['moray',4],['octopus',2],['skate',2],['giantIsopod',2],['flounder',4],['slipperLobster',5],['shrimp',2]],
  abyss:[['jelly',6],['squid',5],['shark2',4],['coelacanth',3],['giantIsopod',5],['seaCucumber',2]]
 };
 const ZONE_RULES={
@@ -212,7 +221,8 @@ const ATTACK_PROFILE={
  kraken:{sense:690,windup:.95,lunge:.70,speed:250,cooldown:4.2,damage:1.30,label:'크라켄 촉수 돌진'},
  barracuda:{sense:350,windup:.24,lunge:.30,speed:360,cooldown:2.0,damage:1.15,label:'바라쿠다 돌진'},
  moray:{sense:260,windup:.38,lunge:.32,speed:270,cooldown:2.6,damage:1.18,label:'곰치 기습'},
- lionfish:{sense:165,windup:.55,lunge:.18,speed:180,cooldown:3.2,damage:1.25,label:'쏠배감펭 가시 공격'}
+ lionfish:{sense:165,windup:.55,lunge:.18,speed:180,cooldown:3.2,damage:1.25,label:'쏠배감펭 가시 공격'},
+ triggerfish:{sense:195,windup:.42,lunge:.24,speed:230,cooldown:2.8,damage:1.05,label:'타이탄 트리거피시 돌진'}
 };
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
 const JELLY_SWIM_KEYS=Array.from({length:12},(_,i)=>'jelly'+String(i+1).padStart(2,'0'));
@@ -230,10 +240,12 @@ const COOK_ASSETS={
  pan:'../../assets/game/3d/interiors/modular-sushi-restaurant-kit/pan.glb'
 };
 const RECIPES=[
- {id:'reefGrill',name:'산호어 소금구이',icon:'🐟',keys:['blue','orange','pink','green','grey','bream'],groups:[['blue','orange','pink','green','grey','bream']],bonus:190,desc:'얕은 바다 생선을 바삭하게 구운 기본 메뉴',asset:COOK_ASSETS.fish},
+ {id:'reefGrill',name:'산호어 소금구이',icon:'🐟',keys:['blue','orange','pink','green','grey','bream','mackerel','flounder'],groups:[['blue','orange','pink','green','grey','bream','mackerel','flounder']],bonus:190,desc:'얕은 바다 생선을 바삭하게 구운 기본 메뉴',asset:COOK_ASSETS.fish},
  {id:'crabRice',name:'바위게 해조 볶음밥',icon:'🦀',keys:['crab'],groups:[['crab'],['seaweed','seaLettuce']],bonus:390,desc:'바위게와 오늘 채집한 해조를 함께 볶은 한 그릇',asset:COOK_ASSETS.plate},
  {id:'spicyBowl',name:'매콤 심해 덮밥',icon:'🌶️',keys:['red','brown','dart','barracuda'],groups:[['red','brown','dart','barracuda']],bonus:360,desc:'매콤한 양념으로 맛을 살린 인기 메뉴',asset:COOK_ASSETS.plate},
- {id:'hunterSteak',name:'포식어 스테이크',icon:'🍽️',keys:['hunter'],groups:[['hunter']],bonus:640,desc:'위험한 포식어를 손질해 만든 고급 메뉴',asset:COOK_ASSETS.pan},
+ {id:'hunterSteak',name:'포식어 스테이크',icon:'🍽️',keys:['hunter','angler'],groups:[['hunter','angler']],bonus:640,desc:'위험한 포식어와 심해 아귀를 손질해 만든 고급 메뉴',asset:COOK_ASSETS.pan},
+ {id:'pelagicSteak',name:'대형 회유어 스테이크',icon:'🐟',keys:['yellowfin','swordfish'],groups:[['yellowfin','swordfish']],bonus:820,desc:'황다랑어나 황새치를 두툼하게 손질한 고급 메뉴',asset:COOK_ASSETS.pan},
+ {id:'crustaceanGrill',name:'새우·부채새우 구이',icon:'🦐',keys:['shrimp','slipperLobster'],groups:[['shrimp','slipperLobster']],bonus:360,desc:'오늘 잡은 새우나 부채새우를 센 불에 구운 메뉴',asset:COOK_ASSETS.pan},
  {id:'squidGrill',name:'두족류 구이',icon:'🦑',keys:['squid','cuttlefish','octopus'],groups:[['squid','cuttlefish','octopus']],bonus:520,desc:'오징어·갑오징어·문어를 불향 나게 구운 메뉴',asset:COOK_ASSETS.squid},
  {id:'urchinRice',name:'성게 해초 덮밥',icon:'🟣',keys:['urchin'],groups:[['urchin'],['seaweed','seaLettuce']],bonus:620,desc:'성게와 신선한 해초를 올린 고급 덮밥',asset:COOK_ASSETS.seaUrchin},
  {id:'musselSoup',name:'패류 다시마 국',icon:'🥣',keys:['mussel','scallop'],groups:[['mussel','scallop'],['kelp','seaweed']],bonus:430,desc:'홍합이나 가리비와 다시마로 우린 따뜻한 바다 국물',asset:COOK_ASSETS.mussel},
@@ -468,7 +480,9 @@ function buildWorld(contract=FREE_DIVE){
    ['squid',1760,1705,19321],['nautilus',4210,1990,19322],['squid',3220,2240,19323],
    ['crab',1040,2570,19331],['squid',4560,2860,19332],['shark2',6040,3100,19333],
    ['jelly',1840,3410,19341],['squid',4380,3710,19342],
-   ['seahorse',890,185,19501],['manta',5120,1320,19502],['moray',2580,1910,19503],['giantIsopod',2360,3880,19504],['coelacanth',4860,3690,19505]
+   ['seahorse',890,185,19501],['manta',5120,1320,19502],['moray',2580,1910,19503],['giantIsopod',2360,3880,19504],['coelacanth',4860,3690,19505],
+   ['mackerel',1180,210,19601],['triggerfish',4720,390,19602],['yellowfin',6040,890,19603],['swordfish',820,2860,19604],
+   ['shrimp',1880,610,19605],['flounder',3360,2190,19606],['slipperLobster',5480,2860,19607],['lanternfish',1640,3420,19608],['angler',5220,3890,19609]
  ];
  for(const [key,x,y,seed] of encounters)world.fish.push(spawnCreature(key,x,y,seed,subzoneForY(y).id));
  // Boss encounters are unique: mantis shrimp in the reef maze, kraken in the predator trench.
