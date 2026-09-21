@@ -88,12 +88,12 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .interaction-links line.positive{stroke:#5f8a67;stroke-dasharray:4 4}
 .interaction-links line.warning{stroke:#b47a4d;stroke-dasharray:3 4}
 .interaction-links line.danger{stroke:#aa5555;stroke-width:3;stroke-dasharray:2 3;opacity:.8}
-.student{position:absolute;z-index:10;width:72px;height:96px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
+.student{position:absolute;z-index:10;width:62px;height:86px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
 .student.selected .sprite-wrap{outline:3px solid var(--accent);outline-offset:2px;border-radius:9px}
-.sprite-wrap{position:absolute;left:50%;top:4px;width:54px;height:66px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;overflow:visible;transform-origin:50% 70%}
+.sprite-wrap{position:absolute;left:50%;top:4px;width:47px;height:59px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;overflow:visible;transform-origin:50% 70%}
 .student.face-left .sprite-wrap{transform:translateX(-50%) scaleX(-1)}
-.sprite{display:block;max-width:53px;max-height:64px;object-fit:contain;transform-origin:50% 85%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.17))}
-.student.seated .sprite-wrap{height:53px;top:15px;overflow:hidden}
+.sprite{display:block;max-width:46px;max-height:56px;object-fit:contain;transform-origin:50% 85%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.17))}
+.student.seated .sprite-wrap{height:47px;top:13px;overflow:hidden}
 .student.seated .sprite{transform:translateY(7px) scale(.9)}
 .student.talk .sprite,.student.pair_work .sprite,.student.tease .sprite,.student.argue .sprite{animation:talkGesture .55s infinite alternate}
 .student.sleep .sprite{transform:translateY(10px) rotate(13deg) scale(.88);filter:brightness(.9) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
@@ -103,7 +103,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .student.eat .sprite{transform:scale(.94)}
 .student.rejected .sprite,.student.hurt .sprite{filter:brightness(.88) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
 @keyframes bob{to{transform:translateY(-3px)}}@keyframes raise{to{transform:translateY(-2px) rotate(-3deg)}}@keyframes talkGesture{to{transform:rotate(5deg) translateX(1px)}}
-.student-name{position:absolute;left:50%;bottom:-5px;z-index:22;transform:translateX(-50%);font-size:9px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
+.student-name{position:absolute;left:50%;bottom:-4px;z-index:22;transform:translateX(-50%);font-size:8px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
 .status-stack{position:absolute;z-index:23;left:50%;top:-22px;transform:translateX(-50%);display:grid;gap:2px;justify-items:center;pointer-events:none;white-space:nowrap}
 .intent-tag,.action-tag{max-width:105px;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);padding:2px 5px;font-size:8px;line-height:1.2;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .intent-tag{color:var(--muted);border-style:dashed}
@@ -137,6 +137,14 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .teacher.busy img{animation:teacherBusyPulse .6s infinite alternate}
 @keyframes teacherBusyPulse{to{transform:translateY(-2px)}}
 
+.diagnosis-card{margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.diagnosis-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
+.diagnosis-head strong{font-size:12px}
+.diagnosis-head span{font-size:9px;color:var(--muted);text-align:right}
+.diagnosis-evidence{display:grid;gap:5px;font-size:10px;line-height:1.4;color:var(--muted)}
+.diagnosis-item{padding:5px 6px;border-left:3px solid #7e91ae;border-radius:4px;background:#f6f8fb;color:#4e5660}
+.diagnosis-item.hypothesis{border-left-color:#9b7b55;background:#fbf6ef;color:#6d553d}
+
 .observe{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .observe h4{margin:0 0 6px;font-size:12px}.feed{display:grid;gap:5px}
 .feed-item{padding:6px 7px;background:#fff;border-left:3px solid var(--line);border-radius:4px;font-size:11px;line-height:1.4}
@@ -157,9 +165,9 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   .metrics{grid-template-columns:1fr 1fr}
   .report-cols{grid-template-columns:1fr}
   .panel{margin-top:0}
-  .student{width:62px;height:88px}
-  .sprite-wrap{width:47px}
-  .sprite{max-width:47px;max-height:58px}
+  .student{width:54px;height:78px}
+  .sprite-wrap{width:42px}
+  .sprite{max-width:41px;max-height:50px}
   .instruction-actions{grid-template-columns:repeat(7,108px)}
   .student-selected .panel{
     position:fixed;
