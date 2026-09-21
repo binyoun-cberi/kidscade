@@ -364,6 +364,7 @@ function captureStateModifier(f,method){
  return (method==='net'||method==='gloves') ? .05 : 0
 }
 const LIGHT_SENSITIVE_SPECIES=new Set(['angler','lanternfish','squid','cuttlefish','coelacanth','dart']);
+const WHALE_FALL_SCAVENGERS=new Set(['giantIsopod','slipperLobster','seaCucumber','shrimp','crab']);
 function playerApproachProfile(p=world?.player,st=world?.st){
  const speed=Math.hypot(p?.vx||0,p?.vy||0),base=Math.max(1,st?.speed||168),ratio=speed/base,dashing=(p?.dashTime||0)>0;
  const mode=dashing?'dash':ratio>.95?'fast':ratio>.42?'steady':'quiet';
@@ -408,6 +409,11 @@ function nearestTrapLure(f){
  if(!world?.traps?.length||!fishAllowsMethod(f,'trap'))return null;let best=null,bd=Infinity;
  for(const t of world.traps){const d=Math.hypot(f.x-t.x,f.y-t.y),range=185+t.tier*28;if(d<range&&d<bd){bd=d;best=t}}
  return best?{trap:best,d:bd}:null
+}
+function naturalFeedingStimulus(f){
+ if(!WHALE_FALL_SCAVENGERS.has(f.key)||f.panic>.42||f.alert>.65)return false;
+ const d=Math.hypot(f.x-WHALE_FALL.x,f.y-WHALE_FALL.y);if(d>370)return false;
+ f.feeding=Math.max(f.feeding,.88);return true
 }
 function gearSizeCapacity(method,tier){
  const caps={
@@ -1386,7 +1392,7 @@ function fishHitPlayer(f,sp,p,st,mult=1){
 }
 function updateFishAI(f,dt,p,st){
  const sp=SPECIES[f.key],dx=p.x-f.x,dy=p.y-f.y,dist=Math.hypot(dx,dy)||1,behavior=sp.behavior||'flee',playerSub=subzoneForY(p.y),playerRule=SUBZONE_RULES[playerSub.id]||{},approach=creatureApproachSense(f,p,st),senseMod=(world.sonar>0?1:(playerRule.stealth||1))*(playerRule.predatorAggro||1)*approach.hostile;
- f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);f.contactCd=Math.max(0,(f.contactCd||0)-dt);f.faceLock=Math.max(0,(f.faceLock||0)-dt);f.turnLock=Math.max(0,(f.turnLock||0)-dt);
+ f.marked=Math.max(0,f.marked-dt);f.attackCd=Math.max(0,f.attackCd-dt);f.alert=Math.max(0,f.alert-dt);f.specialCd=Math.max(0,f.specialCd-dt);f.panic=Math.max(0,f.panic-dt);f.feeding=Math.max(0,f.feeding-dt);naturalFeedingStimulus(f);f.contactCd=Math.max(0,(f.contactCd||0)-dt);f.faceLock=Math.max(0,(f.faceLock||0)-dt);f.turnLock=Math.max(0,(f.turnLock||0)-dt);
  // Fauna movement classes keep the sea from feeling like one large school of fish.
  if(sp.motion==='sessile'){f.vx=0;f.vy=0;return}
  if(sp.motion==='megafauna'){
