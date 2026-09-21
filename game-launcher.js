@@ -151,6 +151,7 @@
         bridge.updateMission?.(session.category, session.id);
         bridge.recordGardenSession?.({
           game: session.id,
+          title: session.title,
           category: session.category,
           seconds: reward.sessionSec
         });
