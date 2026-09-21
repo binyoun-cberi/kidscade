@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=16';
-import {createTownEconomy} from './kidscade-world-economy.js?v=12';
+import {createTownEconomy} from './kidscade-world-economy.js?v=13';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=6';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=3';
@@ -1930,4 +1930,4 @@ async function init(){
 window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateCropVisuals();updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
+window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();updateHomesteadVisuals();updateCropVisuals();updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
