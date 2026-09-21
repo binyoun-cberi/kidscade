@@ -95,11 +95,11 @@ const SHOP_UPGRADES={
  helper:{name:'보조 직원',desc:'손님의 기다림 감소 속도를 늦춰 줍니다.',base:2600,max:3}
 };
 const GEAR_DEFS={
- harpoon:{name:'작살',icon:'🎯',asset:'pickupFishingrod',desc:'큰 물고기·포식어를 명중시켜 릴로 끌어옵니다.'},
- net:{name:'그물',icon:'🕸️',asset:'pickupBucket',desc:'작고 빠른 떼물고기와 오징어를 넓게 포획합니다.'},
- gloves:{name:'철제 장갑',icon:'🧤',asset:'pickupBucket',desc:'게·성게·패류를 안전하게 손으로 채집합니다.'},
- knife:{name:'채집칼',icon:'🔪',asset:'pickupKey',desc:'미역·다시마·붉은 해조를 베어 채집합니다.'},
- trap:{name:'통발',icon:'🪤',asset:'pickupBucket',desc:'게·오징어가 지나는 길목에 설치해 자동 포획합니다.'}
+ harpoon:{name:'작살',icon:'🎯',asset:'pickupFishingrod',desc:'중형·대형 어류 전용. 빠르고 힘센 생물을 명중시켜 릴로 끌어옵니다.'},
+ net:{name:'그물',icon:'🕸️',asset:'pickupBucket',desc:'소형 떼물고기와 작은 두족류 전용. 등급이 오르면 중형 생물까지 감당합니다.'},
+ gloves:{name:'철제 장갑',icon:'🧤',asset:'pickupBucket',desc:'게·성게·패류·저서생물을 가까이에서 안전하게 채집합니다.'},
+ knife:{name:'채집칼',icon:'🔪',asset:'pickupKey',desc:'미역·다시마·붉은 해조처럼 부착된 식재료를 베어 채집합니다.'},
+ trap:{name:'통발',icon:'🪤',asset:'pickupBucket',desc:'갑각류·두족류가 지나는 길목에 설치하는 기다림형 장비입니다.'}
 };
 const GEAR_TIER_NAMES=['','초록','파랑','보라','주황'];
 const GEAR_TIER_COLORS=['','#68d391','#63b3ed','#b794f4','#f6ad55'];
@@ -224,6 +224,61 @@ function creatureVisualDraw(key){
 function creatureVisualScale(key,rr){
  const v=CREATURE_VISUAL_PROFILE[key]?.variance??.06;
  return 1+(rr()-.5)*v*2
+}
+const CREATURE_SIZE_OVERRIDES={
+ angler:'medium',squid:'medium',jelly:'medium',barracuda:'medium',cuttlefish:'medium',lionfish:'medium',moray:'medium',octopus:'medium',skate:'medium',triggerfish:'medium',
+ yellowfin:'large',swordfish:'large',coelacanth:'large',shark2:'large',
+ giant:'huge',whale:'huge',vaquita:'huge',manta:'huge',kraken:'huge'
+};
+const SIZE_RANK={tiny:0,small:1,medium:2,large:3,huge:4};
+function creatureSizeClass(key){
+ if(CREATURE_SIZE_OVERRIDES[key])return CREATURE_SIZE_OVERRIDES[key];
+ const d=creatureVisualDraw(key),m=Math.max(d[0],d[1]);
+ return m<=34?'tiny':m<=58?'small':m<=90?'medium':m<=140?'large':'huge'
+}
+function creatureBodyMetrics(creature){
+ const key=typeof creature==='string'?creature:creature.key,scale=typeof creature==='string'?1:(creature.scale||1),d=creatureVisualDraw(key),w=d[0]*scale,h=d[1]*scale;
+ const rx=Math.max(7,w*.43),ry=Math.max(6,h*.43);
+ return{key,w,h,rx,ry,size:creatureSizeClass(key),terrainPad:Math.max(7,Math.min(38,Math.min(rx,ry)*.72))}
+}
+function creaturePointHit(f,x,y,pad=0){
+ const m=creatureBodyMetrics(f),rx=m.rx+pad,ry=m.ry+pad,dx=x-f.x,dy=y-f.y;
+ return dx*dx/(rx*rx)+dy*dy/(ry*ry)<=1
+}
+function creatureEdgeDistance(f,x,y){
+ const m=creatureBodyMetrics(f),dx=x-f.x,dy=y-f.y,d=Math.hypot(dx,dy);if(d<=.001)return 0;
+ const ux=dx/d,uy=dy/d,r=1/Math.sqrt((ux*ux)/(m.rx*m.rx)+(uy*uy)/(m.ry*m.ry));
+ return Math.max(0,d-r)
+}
+function speciesDepthAllows(key,y){
+ const sp=SPECIES[key],dep=depthOf(y);return !sp?.depth||(dep>=sp.depth[0]&&dep<=sp.depth[1])
+}
+function requiredGearTier(f,method){
+ const sp=SPECIES[f.key],size=creatureSizeClass(f.key),difficulty=sp.catchDifficulty||1;
+ let tier=difficulty>=5?3:difficulty>=3?2:1;
+ if(method==='net'&&SIZE_RANK[size]>=SIZE_RANK.medium)tier=Math.max(tier,2);
+ if(method==='harpoon'&&SIZE_RANK[size]>=SIZE_RANK.large)tier=Math.max(tier,2);
+ if((method==='gloves'||method==='trap')&&sp.rare)tier=Math.max(tier,2);
+ return clamp(tier,1,4)
+}
+function captureCompatibility(f,method){
+ const sp=SPECIES[f.key],size=creatureSizeClass(f.key),motion=sp.motion||'swimmer';
+ if(sp.protected||!(sp.weight>0))return{ok:false,reason:'protected',preferred:false,required:4};
+ const preferred=preferredCatchMethod(sp,method),fallback=fallbackCatchAllowed(sp,method,f.key);
+ if(!preferred&&!fallback)return{ok:false,reason:'method',preferred:false,required:1};
+ const required=requiredGearTier(f,method);
+ if(gearTier(method)<required)return{ok:false,reason:'tier',preferred,required};
+ if(method==='net'&&SIZE_RANK[size]>SIZE_RANK.medium)return{ok:false,reason:'size',preferred,required};
+ if((method==='gloves'||method==='trap')&&!preferred)return{ok:false,reason:'method',preferred:false,required};
+ if(['sessile','crawlerBoss','megafauna','boss'].includes(motion)&&!preferred)return{ok:false,reason:'method',preferred:false,required};
+ return{ok:true,reason:'',preferred,required}
+}
+function captureBlockMessage(f,method,result){
+ const sp=SPECIES[f.key],label=catchMethodLabel(method);
+ if(result.reason==='protected')return sp.name+'은 보호 관찰 대상입니다. 포획하지 말고 촬영하세요.';
+ if(result.reason==='tier')return sp.name+'은 '+GEAR_TIER_NAMES[result.required]+' 등급 이상의 '+label+'이 필요합니다.';
+ if(result.reason==='size')return sp.name+'은 현재 그물로 감당하기 너무 큽니다. 작살 같은 대형 어획 장비가 필요합니다.';
+ return sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집하는 생물입니다.'
 }
 const BIOME_POPULATIONS={
  reef:[['blue',10],['orange',9],['pink',7],['green',7],['mackerel',6],['triggerfish',4],['yellowfin',1]],
@@ -404,12 +459,11 @@ function pointInSolid(x,y,s,pad=0){
   return x>s.x-pad&&x<s.x+s.w+pad&&y>s.y-pad&&y<s.y+s.h+pad;
 }
 function creatureSpawnPad(key){
- const sp=SPECIES[key],d=creatureVisualDraw(key),base=Math.max(d[0],d[1]);
- if(sp.motion==='megafauna')return Math.max(64,base*.32);
- if(sp.motion==='boss')return Math.max(52,base*.28);
- if(sp.motion==='crawlerBoss')return 30;
- if(sp.motion==='crawler'||sp.motion==='sessile')return 22;
- return sp.behavior==='predator'?30:24
+ const sp=SPECIES[key],m=creatureBodyMetrics(key),base=Math.max(m.w,m.h);
+ if(sp.motion==='megafauna')return Math.max(64,base*.38);
+ if(sp.motion==='boss')return Math.max(58,base*.34);
+ if(sp.motion==='crawlerBoss')return Math.max(24,base*.42);
+ return Math.max(16,Math.min(62,base*.40))
 }
 function spawnScope(scopeId,y){
  const sub=SUBZONES.find(z=>z.id===scopeId),zone=ZONES.find(z=>z.id===scopeId);
@@ -512,8 +566,8 @@ function buildWorld(contract=FREE_DIVE){
          x=130+r()*(WORLD.w-260);
          y=(z.y0+42)+r()*Math.max(40,(z.y1-z.y0)-84);
          tries++;
-       }while(tries<24&&world.terrain.some(t=>pointInSolid(x,y,t,36)));
-       world.fish.push(spawnCreature(key,x,y,12000+fishSeed++*37+contract.unlock*503,z.id));
+       }while(tries<32&&(!speciesDepthAllows(key,y)||world.terrain.some(t=>pointInSolid(x,y,t,36))));
+       if(speciesDepthAllows(key,y))world.fish.push(spawnCreature(key,x,y,12000+fishSeed++*37+contract.unlock*503,z.id));
      }
    }
  }
@@ -521,8 +575,9 @@ function buildWorld(contract=FREE_DIVE){
    const population=FAUNA_POPULATIONS[z.id]||[];
    for(const [key,count] of population){
      for(let i=0;i<count;i++){
-       const x=130+r()*(WORLD.w-260),y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110);
-       world.fish.push(spawnCreature(key,x,y,18000+fishSeed++*43+contract.unlock*701,z.id));
+       let x=0,y=0,tries=0;
+       do{x=130+r()*(WORLD.w-260);y=(z.y0+55)+r()*Math.max(50,(z.y1-z.y0)-110);tries++}while(tries<32&&!speciesDepthAllows(key,y));
+       if(speciesDepthAllows(key,y))world.fish.push(spawnCreature(key,x,y,18000+fishSeed++*43+contract.unlock*701,z.id));
      }
    }
  }
@@ -1024,29 +1079,28 @@ function useSonar(){
  else showHint('소나 펄스 · 희귀 생물과 위험물이 표시됩니다.',1200)
 }
 function preferredCatchMethod(sp,method){return !!sp.catchMethods?.includes(method)}
-function fallbackCatchAllowed(sp,method){
+function fallbackCatchAllowed(sp,method,key=''){
  if(sp.protected||!(sp.weight>0))return false;
- const motion=sp.motion||'swimmer';
- if(method==='harpoon')return !['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion);
- if(method==='net')return !['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion);
+ const motion=sp.motion||'swimmer',size=creatureSizeClass(key);
+ if(method==='harpoon')return SIZE_RANK[size]>=SIZE_RANK.medium&&SIZE_RANK[size]<=SIZE_RANK.large&&!['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion);
+ if(method==='net')return SIZE_RANK[size]<=SIZE_RANK.small&&!['sessile','crawler','crawlerBoss','megafauna','boss'].includes(motion)&&!['predator','ambush'].includes(sp.behavior);
  return false
 }
-function fishAllowsMethod(f,method){const sp=SPECIES[f.key];return !!(!sp.protected&&(preferredCatchMethod(sp,method)||fallbackCatchAllowed(sp,method)))}
-function nearestMethodFish(method,range=100){const p=world.player;return world.fish.filter(f=>f.alive&&fishAllowsMethod(f,method)).map(f=>({f,d:Math.hypot(f.x-p.x,f.y-p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&(method==='gloves'||o.front>-28)).sort((a,b)=>a.d-b.d)[0]?.f||null}
+function fishAllowsMethod(f,method){const sp=SPECIES[f.key];return !!(!sp.protected&&(preferredCatchMethod(sp,method)||fallbackCatchAllowed(sp,method,f.key)))}
+function nearestMethodFish(method,range=100){const p=world.player;return world.fish.filter(f=>f.alive&&fishAllowsMethod(f,method)).map(f=>({f,d:creatureEdgeDistance(f,p.x,p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&(method==='gloves'||o.front>-28)).sort((a,b)=>a.d-b.d)[0]?.f||null}
 function captureChance(difficulty,method){const tier=gearTier(method);return clamp(.56+tier*.11-(difficulty||1)*.09,.28,.96)}
 function captureFish(f,method='harpoon'){
- const sp=SPECIES[f.key];if(sp.protected||!(sp.weight>0)){showHint(sp.name+'은 보호 관찰 대상입니다. 포획하지 말고 촬영하세요.',1200);return false}
- const preferred=preferredCatchMethod(sp,method);if(!preferred&&!fallbackCatchAllowed(sp,method)){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집해야 합니다.',1100);return false}if(!canAddCatch(sp.weight))return false;
- f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=sp.weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.mission.samples++;beep(650,.06);showHint(sp.name+' 확보'+(preferred?'':' · 비추천 장비')+' · '+sp.weight+'kg · 오늘 '+world.catchWeight.toFixed(1)+'/'+world.st.catchCap+'kg',1050);return true
+ const sp=SPECIES[f.key],check=captureCompatibility(f,method);if(!check.ok){showHint(captureBlockMessage(f,method,check),1250);return false}if(!canAddCatch(sp.weight))return false;
+ f.alive=false;f.hooked=false;if(world.tether?.fish===f)world.tether=null;world.catchWeight+=sp.weight;world.bag.push(f.key);world.catchCounts[f.key]=(world.catchCounts[f.key]||0)+1;world.mission.samples++;beep(650,.06);showHint(sp.name+' 확보'+(check.preferred?'':' · 대체 장비')+' · '+sp.weight+'kg · 오늘 '+world.catchWeight.toFixed(1)+'/'+world.st.catchCap+'kg',1050);return true
 }
-function instantCapture(f,method){if(!f)return false;const sp=SPECIES[f.key],preferred=preferredCatchMethod(sp,method),difficulty=(sp.catchDifficulty||2)+(preferred?0:2),chance=captureChance(difficulty,method);if(Math.random()>chance){f.panic=Math.max(f.panic,1.8);f.vx+=(f.x-world.player.x>=0?1:-1)*(90+(sp.speed||20));beep(150,.05,'sawtooth');showHint(sp.name+' 포획 실패'+(preferred?'':' · 이 생물에는 비추천 장비')+' · '+GEAR_TIER_NAMES[gearTier(method)]+' '+catchMethodLabel(method)+'을 강화하면 쉬워집니다.',1150);return false}return captureFish(f,method)}
-function useNet(){const tier=gearTier('net'),range=105+tier*18,p=world.player,candidates=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'net')).map(f=>({f,d:Math.hypot(f.x-p.x,f.y-p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&o.front>-20).sort((a,b)=>a.d-b.d);if(!candidates.length){showHint('그물 범위 안에 잡을 수 있는 생물이 없습니다.',850);return}const maxCatch=tier>=4?3:tier>=3?2:1;let caught=0;for(const o of candidates.slice(0,maxCatch)){if(instantCapture(o.f,'net'))caught++}world.effects.push({type:'wake',x:p.x+p.face*42,y:p.y,t:0,big:false});beep(caught?620:190,.055)}
+function instantCapture(f,method){if(!f)return false;const sp=SPECIES[f.key],check=captureCompatibility(f,method);if(!check.ok){showHint(captureBlockMessage(f,method,check),1250);beep(170,.05,'sawtooth');return false}const difficulty=(sp.catchDifficulty||2)+(check.preferred?0:2),chance=captureChance(difficulty,method);if(Math.random()>chance){f.panic=Math.max(f.panic,1.8);f.vx+=(f.x-world.player.x>=0?1:-1)*(90+(sp.speed||20));beep(150,.05,'sawtooth');showHint(sp.name+' 포획 실패'+(check.preferred?'':' · 대체 장비')+' · '+GEAR_TIER_NAMES[gearTier(method)]+' '+catchMethodLabel(method)+'을 강화하면 쉬워집니다.',1150);return false}return captureFish(f,method)}
+function useNet(){const tier=gearTier('net'),range=105+tier*18,p=world.player,candidates=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'net')).map(f=>({f,d:creatureEdgeDistance(f,p.x,p.y),front:(f.x-p.x)*(p.face||1)})).filter(o=>o.d<range&&o.front>-20).sort((a,b)=>a.d-b.d);if(!candidates.length){const near=world.fish.filter(f=>f.alive&&!SPECIES[f.key].protected&&SPECIES[f.key].weight>0).map(f=>({f,d:creatureEdgeDistance(f,p.x,p.y)})).filter(o=>o.d<range).sort((a,b)=>a.d-b.d)[0]?.f;if(near){const check=captureCompatibility(near,'net');showHint(captureBlockMessage(near,'net',check),1100)}else showHint('그물 범위 안에 잡을 수 있는 생물이 없습니다.',850);return}const maxCatch=tier>=4?3:tier>=3?2:1;let caught=0;for(const o of candidates.slice(0,maxCatch)){if(instantCapture(o.f,'net'))caught++}world.effects.push({type:'wake',x:p.x+p.face*42,y:p.y,t:0,big:false});beep(caught?620:190,.055)}
 function nearestHarvest(method,range=90){const p=world.player;return world.harvestables.filter(h=>!h.taken&&h.method===method).map(h=>({h,d:Math.hypot(h.x-p.x,h.y-p.y)})).filter(o=>o.d<range).sort((a,b)=>a.d-b.d)[0]?.h||null}
 function harvestNode(h,method){const tier=gearTier(method),power=.34+tier*.12,need=.55+(h.difficulty||1)*.28;h.progress=clamp(h.progress+power/need,0,1);if(h.progress<1){beep(method==='knife'?470:360,.035);showHint(h.name+' 채집 '+Math.round(h.progress*100)+'%',650);return false}if(!canAddCatch(h.weight)){h.progress=.82;return false}h.taken=true;world.catchWeight+=h.weight;world.catchCounts[h.key]=(world.catchCounts[h.key]||0)+1;world.mission.samples++;beep(820,.07);showHint(h.name+' 채집 완료 · '+h.weight+'kg',850);return true}
 function useGloves(){const h=nearestHarvest('gloves',92+gearTier('gloves')*8);if(h){harvestNode(h,'gloves');return}const f=nearestMethodFish('gloves',78+gearTier('gloves')*10);if(f){instantCapture(f,'gloves');return}showHint('장갑으로 잡을 게·성게·패류가 가까이 없습니다.',850)}
 function useKnife(){const h=nearestHarvest('knife',92+gearTier('knife')*9);if(h){harvestNode(h,'knife');return}showHint('채집칼로 벨 미역·다시마·해조가 가까이 없습니다.',850)}
 function useTrap(){const tier=gearTier('trap'),max=1+Math.floor(tier/2);if(world.traps.length>=max){showHint('설치한 통발이 가득합니다. 잠시 기다리세요.',900);return}const p=world.player;world.traps.push({id:++world.trapSeq,x:p.x+p.face*34,y:p.y+18,timer:4.8-tier*.45,ready:false,tier});beep(430,.05);showHint('통발 설치 · 게나 오징어가 지나가면 자동으로 잡습니다.',950)}
-function updateTraps(dt){for(const t of [...world.traps]){t.timer-=dt;if(t.timer>0)continue;const targets=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'trap')).map(f=>({f,d:Math.hypot(f.x-t.x,f.y-t.y)})).filter(o=>o.d<145+t.tier*18).sort((a,b)=>a.d-b.d);if(targets.length&&Math.random()<.60+t.tier*.09){if(captureFish(targets[0].f,'trap')){world.traps=world.traps.filter(x=>x!==t);beep(980,.06);continue}}t.timer=3.2;t.ready=true}}
+function updateTraps(dt){for(const t of [...world.traps]){t.timer-=dt;if(t.timer>0)continue;const targets=world.fish.filter(f=>f.alive&&fishAllowsMethod(f,'trap')).map(f=>({f,d:creatureEdgeDistance(f,t.x,t.y)})).filter(o=>o.d<145+t.tier*18).sort((a,b)=>a.d-b.d);if(targets.length&&Math.random()<.60+t.tier*.09){if(captureFish(targets[0].f,'trap')){world.traps=world.traps.filter(x=>x!==t);beep(980,.06);continue}}t.timer=3.2;t.ready=true}}
 function fireHarpoon(){const p=world.player;if(world.tether){reelHarpoon();return}if(world.shots.length>2)return;const speed=520+meta.up.harpoon*55+gearTier('harpoon')*18,ax=p.aimX||p.face||1,ay=p.aimY||0,mag=Math.hypot(ax,ay)||1,ux=ax/mag,uy=ay/mag;world.shots.push({x:p.x+ux*24,y:p.y+uy*24,vx:ux*speed,vy:uy*speed,life:world.st.harpoon/speed});beep(330,.04)}
 function useTool(){if(!world)return;if(world.tool==='camera')useCamera();else if(world.tool==='harpoon')fireHarpoon();else if(world.tool==='net')useNet();else if(world.tool==='gloves')useGloves();else if(world.tool==='knife')useKnife();else if(world.tool==='trap')useTrap();else useSonar()}
 function interact(){
@@ -1055,8 +1109,7 @@ function interact(){
  for(const o of world.props){if(o.done)continue;if(Math.hypot(o.x-p.x,o.y-p.y)<95){o.done=true;world.mission[o.id]=true;beep(880,.08);showHint((o.id==='statue'?'침수 석상':'거대 석조 아치')+' 기록 완료',1000);return}}showHint('가까운 조사 대상이나 탐사선이 없습니다.',800)
 }
 function hookFish(f){
- const sp=SPECIES[f.key];if(sp.protected||!(sp.weight>0)){showHint(sp.name+'은 보호종입니다. 작살 대신 촬영하세요.',1100);beep(150,.05);return false}
- const preferred=preferredCatchMethod(sp,'harpoon');if(!preferred&&!fallbackCatchAllowed(sp,'harpoon')){showHint(sp.name+'은 '+catchMethodLabel(sp.catchMethods?.[0]||'다른 채집 장비')+'로 채집해야 합니다.',1000);beep(210,.04);return false}if(!canAddCatch(sp.weight))return false;if(world.tether)return false;f.hooked=true;f.attackMode='';f.specialCd=Math.max(f.specialCd,3);f.panic=2;const struggle=1.05+sp.weight*.24+(sp.behavior==='predator'?.42:0)+(preferred?0:.38)-gearTier('harpoon')*.07;world.tether={fish:f,progress:0,tension:0,reelPulse:0,struggle};world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false});beep(520,.055);showHint(sp.name+' 명중! 작살을 다시 사용해 릴을 감으세요.'+(preferred?'':' · 비추천 장비라 더 거세게 저항합니다.'),1350);return true
+ const sp=SPECIES[f.key],check=captureCompatibility(f,'harpoon');if(!check.ok){showHint(captureBlockMessage(f,'harpoon',check),1250);beep(170,.05);return false}if(!canAddCatch(sp.weight))return false;if(world.tether)return false;f.hooked=true;f.attackMode='';f.specialCd=Math.max(f.specialCd,3);f.panic=2;const struggle=1.05+sp.weight*.24+(sp.behavior==='predator'?.42:0)+(check.preferred?0:.38)-gearTier('harpoon')*.07;world.tether={fish:f,progress:0,tension:0,reelPulse:0,struggle};world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false});beep(520,.055);showHint(sp.name+' 명중! 작살을 다시 사용해 릴을 감으세요.'+(check.preferred?'':' · 대체 장비라 더 거세게 저항합니다.'),1350);return true
 }
 function updateTether(dt){
  const t=world.tether;if(!t)return;const f=t.fish,p=world.player;if(!f?.alive){world.tether=null;return}
@@ -1110,7 +1163,7 @@ function updateFishAI(f,dt,p,st){
  // Fauna movement classes keep the sea from feeling like one large school of fish.
  if(sp.motion==='sessile'){f.vx=0;f.vy=0;return}
  if(sp.motion==='megafauna'){
-   const half=Math.max(90,(sp.draw?.[0]||180)*f.scale*.48),left=half+35,right=WORLD.w-half-35;
+   const half=Math.max(90,creatureBodyMetrics(f).w*.48),left=half+35,right=WORLD.w-half-35;
    if(f.x<=left&&f.patrolDir<0){f.patrolDir=1;f.faceDir=1;f.faceLock=.25}
    else if(f.x>=right&&f.patrolDir>0){f.patrolDir=-1;f.faceDir=-1;f.faceLock=.25}
    f.vx=lerp(f.vx,f.patrolDir*(sp.speed||34),clamp(dt*.72,0,1));f.vy=Math.sin(world.time*.28+f.phase)*4;f.x=clamp(f.x+f.vx*dt,left,right);f.y=clamp(f.y+f.vy*dt,zoneForY(f.baseY).y0+90,zoneForY(f.baseY).y1-90);
@@ -1131,7 +1184,7 @@ function updateFishAI(f,dt,p,st){
  }
  if(sp.motion==='jelly'){
    f.vx=lerp(f.vx,Math.sin(world.time*.31+f.phase)*18,clamp(dt*.8,0,1));f.vy=Math.sin(world.time*.95+f.phase)*18-5;f.x+=f.vx*dt;f.y+=f.vy*dt;const zz=zoneForY(f.baseY);f.y=clamp(f.y,zz.y0+50,zz.y1-50);
-   if(dist<46&&f.contactCd<=0&&p.inv<=0){const dmg=Math.max(2,Math.round((sp.damage||7)*st.armor));p.hp-=dmg;p.inv=.55;f.contactCd=1.5;f.alert=.9;p.vx*=.55;p.vy*=.55;world.lightJam=Math.max(world.lightJam,.32);showHint('해파리 촉수 접촉! -'+dmg+' HP · 추진력 저하',800);beep(150,.07,'sawtooth')}return
+   if(creaturePointHit(f,p.x,p.y,22)&&f.contactCd<=0&&p.inv<=0){const dmg=Math.max(2,Math.round((sp.damage||7)*st.armor));p.hp-=dmg;p.inv=.55;f.contactCd=1.5;f.alert=.9;p.vx*=.55;p.vy*=.55;world.lightJam=Math.max(world.lightJam,.32);showHint('해파리 촉수 접촉! -'+dmg+' HP · 추진력 저하',800);beep(150,.07,'sawtooth')}return
  }
  if(sp.motion==='jet'&&dist<180&&f.specialCd<=0){const ex=f.x-p.x,ey=f.y-p.y,ed=Math.hypot(ex,ey)||1;f.vx=ex/ed*(sp.speed||88)*2.4;f.vy=ey/ed*(sp.speed||88)*1.9;f.specialCd=1.6;f.panic=1.4;world.effects.push({type:'wake',x:f.x,y:f.y,t:0,big:false})}
  if(sp.motion==='crawlerBoss'){
@@ -1197,15 +1250,15 @@ function updateFishAI(f,dt,p,st){
  if(Math.abs(f.vx)>12&&f.faceLock<=0){const nd=Math.sign(f.vx)||f.faceDir;if(nd!==f.faceDir){f.faceDir=nd;f.faceLock=.16}}
  const zone=zoneForY(f.baseY);f.y=clamp(f.y,zone.y0+26,zone.y1-24);
  if(sp.motion==='crawlerBoss'){f.y=lerp(f.y,f.baseY,clamp(dt*7,0,1));if(f.patrolMin!=null&&f.x<f.patrolMin){f.x=f.patrolMin;f.patrolDir=1}if(f.patrolMax!=null&&f.x>f.patrolMax){f.x=f.patrolMax;f.patrolDir=-1}}
- if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){
+ const body=creatureBodyMetrics(f);if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,body.terrainPad))){
    f.x=prevX;f.y=prevY;
    if(f.turnLock<=0){f.patrolDir=(f.vx>=0?-1:1);f.faceDir=f.patrolDir;f.turnLock=.55;f.faceLock=.20}
    f.vx=f.patrolDir*Math.max(12,(sp.speed||50)*.58);f.vy=(Math.sin(f.phase)>=0?1:-1)*Math.max(8,(sp.speed||50)*.24);
-   if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,10))){const safe=safeCreatureSpawn(f.key,f.homeX,f.baseY,subzoneForY(f.baseY).id);f.x=f.homeX=f.baseX=safe.x;f.y=f.baseY=safe.y;f.patrolMin=safe.patrolMin;f.patrolMax=safe.patrolMax}
+   if(world.terrain.some(t=>pointInSolid(f.x,f.y,t,body.terrainPad))){const safe=safeCreatureSpawn(f.key,f.homeX,f.baseY,subzoneForY(f.baseY).id);f.x=f.homeX=f.baseX=safe.x;f.y=f.baseY=safe.y;f.patrolMin=safe.patrolMin;f.patrolMax=safe.patrolMax}
    if(f.attackMode==='lunge'){f.attackMode='recover';f.attackT=.34}
  }
- const hitRange=48+(f.key==='giant'?48:0),hitDist=Math.hypot(p.x-f.x,p.y-f.y);
- if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&hitDist<hitRange&&f.attackCd<=0){
+ const hitDist=Math.hypot(p.x-f.x,p.y-f.y),bodyHit=creaturePointHit(f,p.x,p.y,22);
+ if(!f.hooked&&HOSTILE_BEHAVIORS.has(behavior)&&bodyHit&&f.attackCd<=0){
    const special=f.attackMode==='lunge';if(fishHitPlayer(f,sp,p,st,special?1.16:.68)&&special){f.attackMode='recover';f.attackT=f.key==='giant'?.82:.52}
  }
 }
@@ -1275,7 +1328,7 @@ function update(dt){
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
  for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  updateTether(dt);updateTraps(dt);
- for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(Math.hypot(f.x-s.x,f.y-s.y)<28){hookFish(f);s.life=0;break}}}
+ for(const s of world.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;if(world.terrain.some(t=>pointInSolid(s.x,s.y,t,2))){s.life=0;world.effects.push({type:'spark',x:s.x,y:s.y,t:0});continue}for(const f of world.fish){if(!f.alive)continue;if(creaturePointHit(f,s.x,s.y,3)){hookFish(f);s.life=0;break}}}
  world.shots=world.shots.filter(s=>s.life>0);
  for(const m of world.mines){if(m.dead)continue;m.marked=Math.max(0,m.marked-dt);let d=Math.hypot(m.x-p.x,m.y-p.y);if(sub.id==='mineLane'&&d<270&&d>2){m.x+=(p.x-m.x)/d*20*dt;m.y+=(p.y-m.y)/d*14*dt;d=Math.hypot(m.x-p.x,m.y-p.y);world.envPulse=Math.max(world.envPulse,.22)}if(d<115&&m.fuse<=0){m.fuse=.92;showHint('기뢰 근접 경보!',700);beep(250,.05)}if(m.fuse>0){m.fuse-=dt;if(m.fuse<=0)explodeMine(m)}}
  for(const b of world.bubbles){b.y-=b.speed*dt;if(b.y<70){b.y=WORLD.h-20;b.x=rnd(0,WORLD.w)}}
