@@ -35,10 +35,11 @@ export function createTownEconomy(ctx){
   };
   const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,apple:14,pear:16,peach:18,orange:20,cherry:26,mushroom:10,milk:18,egg:12,truffle:38};
   const JOBS={
-    market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5},
-    cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6},
-    cleanup:{name:'광장 정리하기',reward:55,energy:9,hunger:3}
+    market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5,steps:['빈 진열대 확인하기','상품 상자 옮기기','가격표 맞춰 놓기']},
+    cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6,steps:['컵 물에 불리기','접시 깨끗이 닦기','마른 그릇 정리하기']},
+    cleanup:{name:'광장 정리하기',reward:55,energy:9,hunger:3,steps:['떨어진 쓰레기 줍기','벤치 닦기','화분 주변 정리하기']}
   };
+  let activeJob=null;
   const HOURS={
     market:{open:7,close:22,label:'07:00~22:00'},
     hardware:{open:8,close:20,label:'08:00~20:00'},
@@ -263,14 +264,31 @@ export function createTownEconomy(ctx){
     const deliveryStatus=t.delivery.completedDay===day?'오늘 배달 완료':t.delivery.active?'배달 진행 중':'현우에게 가면 배달 일을 받을 수 있어요.';
     openPanel('<h2>오늘의 일거리</h2><p>도윤: “마을 일을 도와주면 코인을 벌 수 있어!”</p><div class="grid">'+cards+'</div><p>📦 '+deliveryStatus+'</p>');
   }
+  function jobActivityPanel(){
+    if(!activeJob)return jobs();
+    const j=JOBS[activeJob.id],step=Math.min(activeJob.step,j.steps.length-1);
+    openPanel('<h2>🧤 '+j.name+'</h2><p>버튼 한 번으로 끝나는 알바가 아니라 직접 순서대로 일을 마쳐요.</p>'+
+      '<div class="item"><b>진행 '+activeJob.step+' / '+j.steps.length+'</b><div>'+(activeJob.step<j.steps.length?'다음 작업 · '+j.steps[step]:'마무리 중')+'</div></div>'+
+      '<p><button data-city-job-step="1">'+(activeJob.step<j.steps.length?j.steps[step]:'완료')+'</button></p>');
+  }
   function doJob(id){
     const p=prog(),t=ensureState(p),j=JOBS[id];if(!j)return;
     if(t.jobs[id]===p.survival.day){toast('이 일은 오늘 이미 했어요.');return;}
     if(p.energy<j.energy||p.survival.hunger<j.hunger){toast('체력이나 허기가 부족해요.');return;}
+    activeJob={id,step:0,day:p.survival.day};jobActivityPanel();
+  }
+  function advanceJob(){
+    if(!activeJob)return;
+    const p=prog(),t=ensureState(p),j=JOBS[activeJob.id];
+    if(!j||activeJob.day!==p.survival.day){activeJob=null;toast('날이 바뀌어 알바를 다시 받아야 해요.');jobs();return;}
+    activeJob.step++;
+    setAvatarAction('smile',350);playSfx?.('pickup',.06);
+    if(activeJob.step<j.steps.length){jobActivityPanel();return;}
+    if(p.energy<j.energy||p.survival.hunger<j.hunger){activeJob=null;toast('마무리할 체력이나 허기가 부족해요.');jobs();return;}
     p.energy-=j.energy;p.survival.hunger=Math.max(0,p.survival.hunger-j.hunger);
-    const bonus=1+(Number(t.perks.jobBonus)||0);const reward=Math.round(j.reward*bonus);
-    t.coins+=reward;t.jobs[id]=p.survival.day;t.fun=Math.max(0,t.fun-3);
-    persist();setAvatarAction('smile',700);playSfx?.('success',.10);toast(j.name+' 완료! +'+reward+' 코인');updateStatus();jobs();
+    const bonus=1+(Number(t.perks.jobBonus)||0),reward=Math.round(j.reward*bonus),id=activeJob.id;
+    t.coins+=reward;t.jobs[id]=p.survival.day;t.fun=Math.min(100,Math.max(0,t.fun-1)+4);
+    activeJob=null;persist();setAvatarAction('smile',700);playSfx?.('success',.10);toast(j.name+' 완료! +'+reward+' 코인');updateStatus();jobs();
   }
 
   function delivery(){
@@ -412,6 +430,7 @@ export function createTownEconomy(ctx){
     if(buyBtn){const [kind,key]=buyBtn.dataset.cityBuy.split(':');buy(kind,key);return true;}
     const sellBtn=e.target.closest('[data-city-sell]');if(sellBtn){sell(sellBtn.dataset.citySell);return true;}
     const jobBtn=e.target.closest('[data-city-job]');if(jobBtn){doJob(jobBtn.dataset.cityJob);return true;}
+    if(e.target.closest('[data-city-job-step]')){advanceJob();return true;}
     if(e.target.closest('[data-city-delivery-start]')){startDelivery();return true;}
     if(e.target.closest('[data-city-delivery-complete]')){completeDelivery();return true;}
     const rps=e.target.closest('[data-city-rps]');if(rps){playRps(rps.dataset.cityRps);return true;}
