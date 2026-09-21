@@ -237,16 +237,22 @@ function prog(){
   p.starterHintSeen=!!p.starterHintSeen;
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
   const rawDev=p.development&&typeof p.development==='object'?p.development:{};
+  const clampLevel=(value,min,max,fallback)=>{const n=Number(value);return Math.max(min,Math.min(max,Math.floor(Number.isFinite(n)?n:fallback)))};
   p.development={
-    farmLevel:Math.max(1,Math.min(5,Math.floor(Number(rawDev.farmLevel)||1))),
-    fishingLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.fishingLevel)||1))),
-    stoneMineLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.stoneMineLevel)||1))),
-    ironMineLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.ironMineLevel)||1))),
-    techLevel:Math.max(1,Math.min(3,Math.floor(Number(rawDev.techLevel)||1)))
+    farmLevel:clampLevel(rawDev.farmLevel,1,5,1),
+    fishingLevel:clampLevel(rawDev.fishingLevel,0,3,0),
+    stoneMineLevel:clampLevel(rawDev.stoneMineLevel,1,3,1),
+    ironMineLevel:clampLevel(rawDev.ironMineLevel,1,3,1),
+    techLevel:clampLevel(rawDev.techLevel,1,3,1),
+    orchardLevel:clampLevel(rawDev.orchardLevel,0,5,0),
+    ranchLevel:clampLevel(rawDev.ranchLevel,0,4,0),
+    waterLevel:clampLevel(rawDev.waterLevel,0,3,0),
+    houseLevel:clampLevel(rawDev.houseLevel,1,3,1),
+    carpenterLevel:clampLevel(rawDev.carpenterLevel,0,3,0)
   };
   const rawHousing=p.housing&&typeof p.housing==='object'?p.housing:{};
   p.housing={
-    version:3,
+    version:4,
     owned:rawHousing.owned&&typeof rawHousing.owned==='object'?rawHousing.owned:{},
     placed:Array.isArray(rawHousing.placed)?rawHousing.placed:[],
     starterGiftClaimed:!!rawHousing.starterGiftClaimed,
@@ -254,13 +260,73 @@ function prog(){
     functionalLayoutMigrated:!!rawHousing.functionalLayoutMigrated,
     nextId:Math.max(1,Math.floor(Number(rawHousing.nextId)||1))
   };
+  const rawHome=p.homestead&&typeof p.homestead==='object'?p.homestead:{};
+  const legacyComfort=!rawHome.initialized&&(p.housing.defaultLayoutMigrated||p.housing.functionalLayoutMigrated||p.housing.placed.some(v=>/^home-/.test(String(v?.id||''))));
+  p.homestead={
+    version:1,
+    initialized:true,
+    kitchenLevel:clampLevel(rawHome.kitchenLevel,0,2,legacyComfort?2:0),
+    bedLevel:clampLevel(rawHome.bedLevel,0,2,legacyComfort?2:0),
+    backpackLevel:clampLevel(rawHome.backpackLevel,1,4,legacyComfort?2:1),
+    storageLevel:clampLevel(rawHome.storageLevel,1,4,legacyComfort?2:1),
+    wardrobeBuilt:rawHome.wardrobeBuilt===true||legacyComfort,
+    homeStorage:rawHome.homeStorage&&typeof rawHome.homeStorage==='object'?rawHome.homeStorage:{}
+  };
+  p.orchard=p.orchard&&typeof p.orchard==='object'?p.orchard:{};
+  p.orchard.trees=p.orchard.trees&&typeof p.orchard.trees==='object'?p.orchard.trees:{};
+  p.orchard.harvests=p.orchard.harvests&&typeof p.orchard.harvests==='object'?p.orchard.harvests:{};
+  if(legacyComfort){
+    p.development.waterLevel=Math.max(p.development.waterLevel,3);
+    p.development.houseLevel=Math.max(p.development.houseLevel,3);
+    p.development.carpenterLevel=Math.max(p.development.carpenterLevel,1);
+    p.development.fishingLevel=Math.max(p.development.fishingLevel,1);
+  }
   return p;
 }
 const itemName=k=>({
   wood:'목재',stone:'돌',iron:'철광석',copper:'구리',quartz:'석영',gold:'금',semiconductor:'반도체',
+  water:'물',nails:'못',fabric:'천',glass:'유리',wire:'전선',paint:'페인트',
   potato:'감자',carrot:'당근',tomato:'토마토',strawberry:'딸기',corn:'옥수수',pumpkin:'호박',
+  apple:'사과',pear:'배',peach:'복숭아',orange:'감귤',cherry:'체리',
   milk:'우유',egg:'달걀',truffle:'트러플',fish:'물고기',rareFish:'희귀 물고기',pearl:'진주',bug:'곤충',mushroom:'버섯'
 })[k]||k;
+
+const BACKPACK_SLOTS=[0,8,12,16,20];
+const HOME_STORAGE_SLOTS=[0,10,20,32,48];
+function carriedSlotCount(){
+  const materialSlots=Object.values(inv()).filter(v=>Number(v)>0).length;
+  const foodSlots=Object.values(prog().food||{}).filter(v=>Number(v)>0).length;
+  return materialSlots+foodSlots;
+}
+function backpackCapacity(){return BACKPACK_SLOTS[prog().homestead.backpackLevel]||8}
+function homeStorageCapacity(){return HOME_STORAGE_SLOTS[prog().homestead.storageLevel]||10}
+function canCarryNewKey(key){
+  if((inv()[key]||0)>0)return true;
+  return carriedSlotCount()<backpackCapacity();
+}
+function addInventoryItem(key,qty=1,{silent=false}={}){
+  qty=Math.max(0,Math.floor(Number(qty)||0));if(!qty)return 0;
+  const i=inv();
+  if(!canCarryNewKey(key)){if(!silent)toast('🎒 가방이 가득 찼어요. 집의 수납함에 물건을 넣어 보세요.');return 0;}
+  i[key]=(i[key]||0)+qty;return qty;
+}
+function waterCarryLimit(){
+  const l=devState().waterLevel;
+  return l>=3?12:l>=2?8:l>=1?5:3;
+}
+function addWater(qty){
+  const i=inv(),max=waterCarryLimit(),before=Number(i.water)||0;
+  if(before<=0&&!canCarryNewKey('water')){toast('🎒 물을 담을 가방 칸이 없어요.');return 0;}
+  i.water=Math.min(max,before+Math.max(0,Math.floor(Number(qty)||0)));
+  return i.water-before;
+}
+function hasIndoorTap(){return devState().waterLevel>=3&&mode==='indoor'}
+function useWater(amount=1){
+  if(hasIndoorTap())return true;
+  const i=inv(),need=Math.max(1,Math.floor(Number(amount)||1));
+  if((i.water||0)<need){toast('💧 물이 부족해요. 강이나 우물에서 물을 떠오세요.');return false;}
+  i.water-=need;return true;
+}
 
 function toolName(key,p=prog()){
   if(key==='hand')return '맨손';
