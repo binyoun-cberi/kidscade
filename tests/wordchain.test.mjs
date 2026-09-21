@@ -85,8 +85,8 @@ test('word-chain arena uses the merged offline Korean dictionaries', () => {
   assert.match(html, /showBeginnerHint/);
   assert.match(html, /oneShotChance:\.15/);
   assert.match(html, /if\(difficultyKey==='advanced'\)/);
-  assert.match(html, /multiplayer\.html\?v=8&mode=duel/);
-  assert.match(html, /multiplayer\.html\?v=8&mode=multi/);
+  assert.match(html, /multiplayer\.html\?v=9&mode=duel/);
+  assert.match(html, /multiplayer\.html\?v=9&mode=multi/);
   assert.doesNotMatch(html, /\/api\/wordchain/);
 
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
