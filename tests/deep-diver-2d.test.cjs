@@ -497,7 +497,7 @@ test('Deep Diver v18 makes exploration missions optional and returns through the
   assert.doesNotMatch(js,/dinghy-large2\.png/);
   assert.match(js,/탐사선으로 돌아와 오늘의 낮 탐사를 마쳤습니다/);
   assert.doesNotMatch(js,/if\(p\.y<WORLD\.surface\+45&&missionComplete\(\)/);
-  assert.match(html,/선착장 · 오늘의 출항 준비/);
+  assert.match(html,/BLUE EXPEDITION HARBOR/);
 });
 
 test('Deep Diver v19 free dive allows non-protected swimmers to be caught without mission gating',()=>{
@@ -680,4 +680,12 @@ test('Deep Diver v21 compresses the hadal trench into multi-kilometer depth',()=
   assert.match(js,/const ratings=\[180,420,720,1150,1850,2750\]/);
   assert.match(js,/depth:\[430,2700\]/);
   assert.match(js,/depth:\[500,2700\]/);
+});
+
+
+test('Deep Diver v21 locks the hadal contract behind expedition progress',()=>{
+  assert.match(js,/const locked=\(c\.unlock\|\|0\)>meta\.unlocked/);
+  assert.match(js,/잠긴 의뢰/);
+  assert.match(js,/이전 단계 조사를 완료하면 개방/);
+  assert.match(css,/\.missionCard\.locked/);
 });
