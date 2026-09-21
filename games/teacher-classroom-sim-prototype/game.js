@@ -557,6 +557,25 @@
     }
     remember(actor,text,.82);
     log(text,"incident",actor.scene);
+    if(target){
+      nearbyStudents(target,24).filter(function(o){return o!==actor}).forEach(function(o){
+        var sameActorCircle=circleOf(actor)&&circleOf(o)===circleOf(actor);
+        if(o.empathy>.68&&relation(o,target).affinity>.38&&Math.random()<.34){
+          o.action="DEFEND_PEER";o.actionTicks=3;o.socialTarget=target.id;
+          target.victimStress=clamp(target.victimStress-.025);target.belonging=clamp(target.belonging+.018);
+          changeRelation(o,target,{affinity:.006});
+          if(Math.random()<.35)log(o.name+"이(가) "+target.name+" 곁으로 가서 상황을 멈추려 했다.","social",actor.scene);
+        }else if(o.rule>.70&&o.trust>.55&&Math.random()<.22){
+          o.action="REPORT_INCIDENT";o.actionTicks=3;
+          if(Math.random()<.45)log(o.name+"이(가) 심각한 상황을 교사에게 알리려 했다.","social",actor.scene);
+        }else if(sameActorCircle&&o.rule<.48&&o.mischief>.58&&Math.random()<.20){
+          o.action="WATCH";o.actionTicks=3;
+          target.victimStress=clamp(target.victimStress+.012);
+        }else if(Math.random()<.35){
+          o.action="WATCH";o.actionTicks=2;
+        }
+      });
+    }
   }
   function maybeSeriousIncident(s){
     if(s.severeCooldown>gameSec||s.targetScene||s.scene!==teacherScene&&current().kind==="lesson")return false;
@@ -629,6 +648,15 @@
     if(a==="DRINK_WATER"){s.focus=clamp(s.focus+.012);s.energy=clamp(s.energy+.012);}
     if(a==="DROP_ITEM"){
       if(Math.random()<.50)log(s.name+"의 필기구가 바닥에 떨어졌다.","ambient",s.scene);
+    }
+    if(a==="ASK_BATHROOM"){
+      s.moveNeed=clamp(s.moveNeed-.04);s.actionTicks=3;
+      if(Math.random()<.40)log(s.name+"이(가) 화장실에 다녀와도 되는지 손짓으로 물었다.","ambient",s.scene);
+    }
+    if(a==="PASS_NOTE"&&p){
+      s.talkNeed=clamp(s.talkNeed-.05);p.talkNeed=clamp(p.talkNeed+.035);
+      if(current().kind==="lesson")stats.disruptions++;
+      if(Math.random()<.34)log(s.name+"이(가) "+p.name+" 쪽으로 쪽지를 슬쩍 건넸다.","incident",s.scene);
     }
     if(a==="COMFORT"&&p){
       p.victimStress=clamp(p.victimStress-.07);p.mood=clamp(p.mood+.04);p.belonging=clamp(p.belonging+.035);
@@ -731,7 +759,7 @@
       return;
     }
     if(s.action==="REJECTED"&&s.actionTicks>0)return;
-    if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER"].indexOf(s.action)>=0&&s.actionTicks>0)return;
+    if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
     if(s.actionTicks<=0&&maybeSeriousIncident(s))return;
 
     var phase=lessonState.phase,fit=lessonFit(s),near=teacherNear(s),hard=clamp(.70-s.skill+.16),target=chooseSocialTarget(s,"SOCIAL");
@@ -748,7 +776,9 @@
       STRETCH:s.moveNeed*.25+s.move*.09-near*.12,
       DRINK_WATER:(1-s.energy)*.16+.035,
       BORROW_ITEM:s.helpNeed*.10+s.soc*.06+.025,
-      DROP_ITEM:.015+s.imp*.025
+      DROP_ITEM:.015+s.imp*.025,
+      ASK_BATHROOM:.012+(1-s.energy)*.025,
+      PASS_NOTE:.012+s.soc*.035+s.mischief*.045-near*.04
     };
 
     if(["explain","demo","closure","presentation"].indexOf(phase)>=0){
@@ -801,7 +831,11 @@
       if(s.intentTicks>=2){
         if(best==="HELP_PEER")beginPeerHelp(s,helpTarget);
         else if((best==="PLAY"||best==="COMPETE")&&target&&distance(s,target)>11)beginSeek(s,best==="COMPETE"?chooseSocialTarget(s,"COMPETE"):target,best);
-        else startAction(s,best,best==="COMPETE"?chooseSocialTarget(s,"COMPETE"):target);
+        else {
+          var chosenTarget=best==="COMPETE"?chooseSocialTarget(s,"COMPETE"):target;
+          if(["BORROW_ITEM","PASS_NOTE"].indexOf(best)>=0)chosenTarget=chooseSocialTarget(s,"SOCIAL");
+          startAction(s,best,chosenTarget);
+        }
         s.intent=null;s.intentTicks=0;
       }
     }else{
@@ -823,7 +857,7 @@
       return;
     }
     if(s.action==="REJECTED"&&s.actionTicks>0)return;
-    if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
+    if(["TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0&&s.actionTicks>0)return;
     if(s.actionTicks<=0&&maybeSeriousIncident(s))return;
 
     var paired=activePair(s);
@@ -851,7 +885,7 @@
 
     var p=current(),choices=[];
     if(p.kind==="morning"){
-      choices=[["READ",.36+s.persist*.28+circleNormBoost(s,"READ")],["TALK",.18+s.soc*.35+circleNormBoost(s,"TALK")],["BORROW_ITEM",.035+s.soc*.05],["DRINK_WATER",.035],["WALK",.10+s.move*.20]];
+      choices=[["READ",.36+s.persist*.28+circleNormBoost(s,"READ")],["TALK",.18+s.soc*.35+circleNormBoost(s,"TALK")],["BORROW_ITEM",.035+s.soc*.05],["DRINK_WATER",.035],["STRETCH",.03+s.move*.04],["DROP_ITEM",.012+s.imp*.018],["WALK",.10+s.move*.20]];
     }else if(p.kind==="break"){
       if(s.scene==="hallway")choices=[["WALK",.20],["RUN",.08+s.move*.35+s.imp*.18+circleNormBoost(s,"RUN")],["TALK",.16+s.soc*.38+circleNormBoost(s,"TALK")],["TEASE",.018+s.mischief*.035],["COMFORT",.012+s.empathy*.045],["WAIT",.12]];
       else choices=[["READ",.16+s.persist*.22+circleNormBoost(s,"READ")],["TALK",.18+s.soc*.38+circleNormBoost(s,"TALK")],["BORROW_ITEM",.035+s.soc*.045],["COMFORT",.012+s.empathy*.04],["DOODLE",.12+s.visual*.22],["WALK",.09+s.move*.18]];
@@ -908,6 +942,7 @@
       nearby.forEach(function(o){
         if(o.action==="TALK"||o.action==="MOVE"){s.focus=clamp(s.focus-.004*(.5+s.noise));s.talkNeed=clamp(s.talkNeed+.003*s.soc)}
         if(o.action==="ARGUE"||o.action==="SHOVE"||isSevereAction(o)){s.focus=clamp(s.focus-.014);s.mood=clamp(s.mood-.010)}
+        if(o.action==="DEFEND_PEER"||o.action==="REPORT_INCIDENT"){s.belonging=clamp(s.belonging+.002)}
       });
 
       if(s.action==="WORK"&&s.scene===current().loc){
@@ -931,6 +966,10 @@
       else if(s.action==="DOODLE"){s.boredom=clamp(s.boredom-.09);s.focus=clamp(s.focus-.018)}
       else if(s.action==="SLEEP"){s.focus=clamp(s.focus-.03);s.sleepNeed=clamp(s.sleepNeed-.07)}
       else if(s.action==="MOVE"){s.moveNeed=clamp(s.moveNeed-.10);s.focus=clamp(s.focus-.015)}
+      else if(s.action==="LOOK_OUTSIDE"){s.focus=clamp(s.focus-.014);s.boredom=clamp(s.boredom-.03)}
+      else if(s.action==="STRETCH"){s.moveNeed=clamp(s.moveNeed-.08)}
+      else if(s.action==="PASS_NOTE"){s.focus=clamp(s.focus-.022)}
+      else if(s.action==="ASK_BATHROOM"){s.focus=clamp(s.focus-.006)}
 
       if(s.actionTicks<=0||s.action==="WORK")decideLesson(s);
     }else{
@@ -1531,7 +1570,8 @@
       WATCH:"stand",HELP_PEER:"hold1",ATTEND:"stand",PAIR_WORK:"action2",RAISE_HAND:"cheer1",PRESENT:"cheer2",
       BORROW_ITEM:"hold1",LOOK_OUTSIDE:"stand",STRETCH:"cheer1",DRINK_WATER:"hold1",DROP_ITEM:"duck",COMFORT:"hold2",
       TEASE:"action2",EXCLUDE_TARGET:"action2",TAKE_ITEM_FORCE:"hold2",THREATEN:"action2",HIT:"kick",
-      REFUSE_INSTRUCTION:"idle",SHOUT_TEACHER:"action2",INSULT_TEACHER:"action2",THROW_AT_TEACHER:"action1"
+      REFUSE_INSTRUCTION:"idle",SHOUT_TEACHER:"action2",INSULT_TEACHER:"action2",THROW_AT_TEACHER:"action1",
+      ASK_BATHROOM:"cheer1",PASS_NOTE:"hold2",DEFEND_PEER:"hold2",REPORT_INCIDENT:"cheer1"
     };
     return map[s.action]||"stand";
   }
@@ -1619,7 +1659,8 @@
       WATCH:"친구들 상황을 지켜보는 중",HELP_PEER:"친구를 도우러 가는 중",ATTEND:"수업을 듣고 있음",PAIR_WORK:"짝과 과제를 함께 확인 중",RAISE_HAND:"손을 들고 답할 준비 중",PRESENT:"학급 앞에서 발표 중",
       BORROW_ITEM:"친구에게 준비물을 빌리는 중",LOOK_OUTSIDE:"창밖을 보고 있음",STRETCH:"몸을 풀고 있음",DRINK_WATER:"물을 마시는 중",DROP_ITEM:"떨어진 물건을 줍는 중",COMFORT:"친구 곁에서 위로하는 중",
       TEASE:"친구를 놀리는 중",EXCLUDE_TARGET:"친구를 놀이에서 밀어내는 중",TAKE_ITEM_FORCE:"친구 물건을 억지로 가져가려는 중",THREATEN:"친구를 위협하는 중",HIT:"거친 신체행동이 나온 상태",
-      REFUSE_INSTRUCTION:"교사 안내를 거부하고 있음",SHOUT_TEACHER:"교사에게 큰소리로 반발 중",INSULT_TEACHER:"교사에게 모욕적인 말을 한 상태",THROW_AT_TEACHER:"교사 쪽으로 물건을 던진 상태"
+      REFUSE_INSTRUCTION:"교사 안내를 거부하고 있음",SHOUT_TEACHER:"교사에게 큰소리로 반발 중",INSULT_TEACHER:"교사에게 모욕적인 말을 한 상태",THROW_AT_TEACHER:"교사 쪽으로 물건을 던진 상태",
+      ASK_BATHROOM:"화장실에 가고 싶어 함",PASS_NOTE:"친구에게 쪽지를 건네는 중",DEFEND_PEER:"친구를 보호하려 다가가는 중",REPORT_INCIDENT:"교사에게 상황을 알리려는 중"
     };
     return s.moving?"이동 중":(map[s.action]||"주변을 살피는 중");
   }
