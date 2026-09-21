@@ -1466,29 +1466,36 @@ function gearLoadoutCards(){
 function toggleDockGear(k){
  const slots=2+(meta.up.slots||0),i=meta.loadout.indexOf(k);if(i>=0)meta.loadout.splice(i,1);else if(meta.loadout.length<slots)meta.loadout.push(k);else{showHint('장비 슬롯이 가득 찼습니다. 장비 랙을 업그레이드하세요.',1000);return}save();openContracts()
 }
+const DOCK_BUILD='../../assets/game/2d/platformer-art/expansions/buildings/';
+const DOCK_TILE='../../assets/game/2d/platformer-art/base/tiles/';
+const DOCK_PICKUP='../../assets/game/2d/underwater/deep-diver/pickups/icons_128/';
+function dockBuildingHtml(kind,label,sub,base,roof,feature,active=false,extra=''){
+ return `<button class="dockBuilding dock${kind} ${active?'active':''} ${extra}" data-dock="${kind.toLowerCase()}"><span class="dockBuildingArt"><img class="dockBase" src="${DOCK_BUILD+base}" alt=""><img class="dockRoof" src="${DOCK_BUILD+roof}" alt=""><img class="dockFeature" src="${DOCK_BUILD+feature}" alt=""></span><b>${label}</b><small>${sub}</small></button>`
+}
 function dockDetailHtml(){
  if(dockTab==='gear')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>장비 창고</span><h3>오늘 빌려갈 채집 장비</h3></div><small>슬롯 안에서 장비를 골라 배에 싣습니다.</small></div><div class="gearGrid">'+gearLoadoutCards()+'</div></section>';
- return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 의뢰 없이 바다로 나가도 됩니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
+ return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 자유 잠수도 바로 출항할 수 있습니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
 }
 function openContracts(tab=dockTab){
  dockTab=tab||'missions';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount();
- $('contractBody').innerHTML='<div class="dockSummary"><div><span>DAY '+meta.day+' · BLUE EXPEDITION HARBOR</span><b>'+money(meta.money)+'</b><small>하루 어획 '+st.catchCap+'kg · 장비 '+st.toolSlots+'칸 · 안전 수심 약 '+Math.round(ratedDepth())+'m</small></div><div><span>오늘의 계획</span><b>'+(selected?selected.title:'자유 잠수')+'</b><small>가게와 창고를 둘러본 뒤 오른쪽 바다에서 출항하세요.</small></div></div>'+
+ const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount(),plan=selected?selected.title:'자유 잠수';
+ $('contractBody').innerHTML=
+ '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><em>'+plan+'</em></div>'+
  '<div class="dockScene">'+
    '<div class="dockSky"><i></i><i></i><i></i></div><div class="dockHills"></div>'+
-   '<button class="dockBuilding dockOffice '+(dockTab==='missions'?'active':'')+'" data-dock="missions"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-beige.png" alt=""><b>의뢰 사무소</b><small>탐사 의뢰 선택</small></button>'+
-   '<button class="dockBuilding dockWorkshop" data-dock="workshop"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-dark.png" alt=""><b>업그레이드 공방</b><small>잠수복·어획함·장비 강화</small></button>'+
-   '<button class="dockBuilding dockGear '+(dockTab==='gear'?'active':'')+'" data-dock="gear"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-gray.png" alt=""><b>장비 창고</b><small>오늘 장비 챙기기</small></button>'+
-   '<button class="dockBuilding dockCodex" data-dock="codex"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-beige-alt.png" alt=""><b>해양 연구소</b><small>생물 도감</small></button>'+
-   '<button class="dockBuilding dockKitchen '+(stock?'':'empty')+'" data-dock="kitchen"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-dark-alt.png" alt=""><b>BLUE KITCHEN</b><small>'+(stock?'재고 '+stock+'개 · 밤 장사 가능':'오늘 잡은 재료가 아직 없습니다')+'</small></button>'+
-   '<div class="dockPier"><span></span><span></span><span></span><span></span></div>'+
-   '<div class="dockSea"><div class="dockWave w1"></div><div class="dockWave w2"></div><button class="dockLaunch" data-dock="launch"><span class="dockBoatIcon">▰</span><b>'+(selected?'의뢰 출항':'자유 잠수 출항')+'</b><small>바다로 나가기</small></button></div>'+
-   '<div class="dockSceneLabel"><b>BLUE EXPEDITION</b><small>선착장 · 건물을 눌러 준비하세요</small></div>'+
+   dockBuildingHtml('Office','의뢰 사무소','탐사 의뢰 선택','house-beige.png','roof-red-mid.png','window-checkered.png',dockTab==='missions')+
+   dockBuildingHtml('Workshop','업그레이드 공방','잠수복·어획함 강화','house-dark.png','roof-grey-mid.png','anemometer.png')+
+   dockBuildingHtml('Gear','장비 창고','오늘 장비 챙기기','house-gray.png','roof-yellow-mid.png','window-low-open.png',dockTab==='gear')+
+   dockBuildingHtml('Codex','해양 연구소','생물 도감','house-beige-alt.png','roof-grey-mid.png','window-high-leadlight-bottom.png')+
+   dockBuildingHtml('Kitchen','BLUE KITCHEN',stock?'재고 '+stock+'개 · 밤 장사':'식재료를 잡아오세요','house-dark-alt.png','roof-red-mid.png','sign-cup.png',false,stock?'':'empty')+
+   '<div class="dockPier"><span></span><span></span><span></span><span></span><div class="dockProps"><img src="'+DOCK_TILE+'box.png" alt=""><img src="'+DOCK_PICKUP+'bucket.png" alt=""><img class="rod" src="'+DOCK_PICKUP+'fishingrod.png" alt=""></div></div>'+
+   '<div class="dockSea"><div class="dockWave w1"></div><div class="dockWave w2"></div><button class="dockLaunch" data-dock="launch"><span class="dockBoatVisual"><i></i><i></i><i></i></span><b>'+(selected?'의뢰 출항':'자유 잠수 출항')+'</b><small>잠수 지점으로 이동</small></button></div>'+
+   '<div class="dockSceneLabel"><b>BLUE EXPEDITION</b><small>건물을 눌러 준비 · 바다에서 출항</small></div>'+
  '</div>'+
- '<div class="dockQuick"><button data-dock="missions" class="'+(dockTab==='missions'?'active':'')+'">의뢰</button><button data-dock="gear" class="'+(dockTab==='gear'?'active':'')+'">장비</button><button data-dock="workshop">공방</button><button data-dock="codex">도감</button><button data-dock="kitchen">식당</button><button data-dock="launch">출항</button></div>'+
+ '<div class="dockQuick"><button data-dock="missions" class="'+(dockTab==='missions'?'active':'')+'">의뢰</button><button data-dock="gear" class="'+(dockTab==='gear'?'active':'')+'">장비</button><button data-dock="workshop">공방</button><button data-dock="codex">도감</button><button data-dock="kitchen">식당</button><button data-dock="launch" class="launchQuick">출항</button></div>'+
  '<div class="dockDetail">'+dockDetailHtml()+'</div><div class="toolbar dockActions"><button class="btn dark" id="menuBtn">시작 화면</button></div>';
  $('contractScreen').classList.remove('hidden');
- document.querySelectorAll('[data-dock]').forEach(b=>b.onclick=()=>{const a=b.dataset.dock;if(a==='missions'||a==='gear'){dockTab=a;openContracts(a);return}if(a==='workshop'){openShop();return}if(a==='codex'){openCodex();return}if(a==='kitchen'){if(stockCount()>0)startRestaurant();else showHint('먼저 잠수해서 식재료를 가져오세요.',1200);return}if(a==='launch')buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE)});
+ document.querySelectorAll('[data-dock]').forEach(b=>b.onclick=()=>{const a=b.dataset.dock;if(a==='missions'||a==='office'){dockTab='missions';openContracts('missions');return}if(a==='gear'){dockTab='gear';openContracts('gear');return}if(a==='workshop'){openShop();return}if(a==='codex'){openCodex();return}if(a==='kitchen'){if(stockCount()>0)startRestaurant();else showHint('먼저 잠수해서 식재료를 가져오세요.',1200);return}if(a==='launch')buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE)});
  document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{dockMissionId=dockMissionId===b.dataset.mission?null:b.dataset.mission;openContracts('missions')});document.querySelectorAll('[data-loadout]').forEach(b=>b.onclick=()=>{dockTab='gear';toggleDockGear(b.dataset.loadout)});
  const clear=$('clearMissionBtn');if(clear)clear.onclick=()=>{dockMissionId=null;openContracts('missions')};$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
