@@ -1468,7 +1468,7 @@ function toggleDockGear(k){
 }
 function dockDetailHtml(){
  if(dockTab==='gear')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>장비 창고</span><h3>오늘 빌려갈 채집 장비</h3></div><small>슬롯 안에서 장비를 골라 배에 싣습니다.</small></div><div class="gearGrid">'+gearLoadoutCards()+'</div></section>';
- return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰 없이 바다로 나가도 됩니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
+ return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 의뢰 없이 바다로 나가도 됩니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
 }
 function openContracts(tab=dockTab){
  dockTab=tab||'missions';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
