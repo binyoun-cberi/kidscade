@@ -241,7 +241,7 @@ test('Deep Diver v15 is substantially deeper and wider',()=>{
   assert.match(js,/dashTime/);
   assert.match(js,/visited\.reefMaze/);
   assert.match(js,/visited\.currentCut/);
-  assert.match(js,/d\.behavior==='predator'\?1\.24/);
+  assert.match(js,/baseScale=creatureVisualScale\(key,rr\)/);
 });
 
 test('Deep Diver v15 gives every depth band a distinct biome identity',()=>{
@@ -498,7 +498,7 @@ test('Deep Diver v18 makes exploration missions optional and returns through the
   assert.doesNotMatch(js,/dinghy-large2\.png/);
   assert.match(js,/탐사선으로 돌아와 오늘의 낮 탐사를 마쳤습니다/);
   assert.doesNotMatch(js,/if\(p\.y<WORLD\.surface\+45&&missionComplete\(\)/);
-  assert.match(html,/BLUE EXPEDITION HARBOR/);
+  assert.match(html,/BLUE EXPEDITION · 선착장/);
 });
 
 test('Deep Diver v19 free dive allows non-protected swimmers to be caught without mission gating',()=>{
@@ -626,7 +626,7 @@ test('Deep Diver v20 integrates the newly committed four-frame marine sheets',()
 
 
 test('Deep Diver v21 uses an interactive harbor hub',()=>{
-  assert.match(html,/BLUE EXPEDITION HARBOR/);
+  assert.match(html,/BLUE EXPEDITION · 선착장/);
   assert.match(js,/function dockDetailHtml/);
   assert.match(js,/class="dockScene"/);
   for(const token of ['의뢰 사무소','업그레이드 공방','장비 창고','해양 연구소','BLUE KITCHEN','바다로 나가기']) assert.ok(js.includes(token),token);
@@ -698,8 +698,8 @@ test('Deep Diver v23 starts from a compact asset-backed harbor hub',()=>{
   assert.match(js,/roof-red-mid\.png/);
   assert.match(js,/window-checkered\.png/);
   assert.match(js,/sign-cup\.png/);
-  assert.match(js,/DOCK_PICKUP\+'bucket\.png'/);
-  assert.match(js,/DOCK_PICKUP\+'fishingrod\.png'/);
+  assert.match(js,/bucket\.png/);
+  assert.match(js,/fishingrod\.png/);
   assert.match(js,/dockTab='none'/);
   assert.match(js,/class="dockStatus"/);
   assert.match(js,/class="dockWelcome"/);
