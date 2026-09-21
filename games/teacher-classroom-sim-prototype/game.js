@@ -44,14 +44,14 @@
   };
 
   var templates=[
-    {name:"민수",char:"player",imp:.84,soc:.84,persist:.34,energy:.84,skill:.48,move:.78,hands:.82,visual:.38,verbal:.46,noise:.42,compete:.72,react:.78,empathy:.48,rule:.38,assert:.76,helpful:.45,rejection:.58},
-    {name:"지우",char:"female",imp:.35,soc:.73,persist:.68,energy:.75,skill:.66,move:.38,hands:.63,visual:.70,verbal:.68,noise:.35,compete:.38,react:.38,empathy:.72,rule:.68,assert:.56,helpful:.74,rejection:.48},
-    {name:"서연",char:"female",imp:.18,soc:.36,persist:.91,energy:.72,skill:.84,move:.20,hands:.56,visual:.83,verbal:.81,noise:.28,compete:.54,react:.34,empathy:.78,rule:.82,assert:.44,helpful:.68,rejection:.64},
-    {name:"준호",char:"adventurer",imp:.67,soc:.79,persist:.55,energy:.88,skill:.61,move:.72,hands:.86,visual:.43,verbal:.55,noise:.40,compete:.84,react:.66,empathy:.55,rule:.46,assert:.76,helpful:.50,rejection:.46},
-    {name:"태호",char:"player",imp:.43,soc:.44,persist:.47,energy:.62,skill:.30,move:.42,hands:.90,visual:.76,verbal:.34,noise:.50,compete:.46,react:.58,empathy:.62,rule:.59,assert:.42,helpful:.63,rejection:.72},
-    {name:"유나",char:"female",imp:.29,soc:.59,persist:.74,energy:.49,skill:.73,move:.28,hands:.52,visual:.78,verbal:.72,noise:.33,compete:.31,react:.34,empathy:.80,rule:.74,assert:.48,helpful:.79,rejection:.55},
-    {name:"현우",char:"soldier",imp:.76,soc:.50,persist:.28,energy:.80,skill:.55,move:.91,hands:.93,visual:.34,verbal:.42,noise:.47,compete:.77,react:.80,empathy:.42,rule:.34,assert:.70,helpful:.38,rejection:.45},
-    {name:"소라",char:"adventurer",imp:.22,soc:.42,persist:.84,energy:.74,skill:.44,move:.25,hands:.64,visual:.91,verbal:.62,noise:.61,compete:.29,react:.30,empathy:.76,rule:.79,assert:.38,helpful:.72,rejection:.68}
+    {name:"민수",char:"player",imp:.84,soc:.84,persist:.34,energy:.84,skill:.48,move:.78,hands:.82,visual:.38,verbal:.46,noise:.42,compete:.72,react:.78,empathy:.48,rule:.38,assert:.76,helpful:.45,rejection:.58,reading:.25,sports:.82,creative:.42,mischief:.78},
+    {name:"지우",char:"female",imp:.35,soc:.73,persist:.68,energy:.75,skill:.66,move:.38,hands:.63,visual:.70,verbal:.68,noise:.35,compete:.38,react:.38,empathy:.72,rule:.68,assert:.56,helpful:.74,rejection:.48,reading:.66,sports:.45,creative:.58,mischief:.30},
+    {name:"서연",char:"female",imp:.18,soc:.36,persist:.91,energy:.72,skill:.84,move:.20,hands:.56,visual:.83,verbal:.81,noise:.28,compete:.54,react:.34,empathy:.78,rule:.82,assert:.44,helpful:.68,rejection:.64,reading:.91,sports:.27,creative:.63,mischief:.12},
+    {name:"준호",char:"adventurer",imp:.67,soc:.79,persist:.55,energy:.88,skill:.61,move:.72,hands:.86,visual:.43,verbal:.55,noise:.40,compete:.84,react:.66,empathy:.55,rule:.46,assert:.76,helpful:.50,rejection:.46,reading:.32,sports:.90,creative:.46,mischief:.66},
+    {name:"태호",char:"player",imp:.43,soc:.44,persist:.47,energy:.62,skill:.30,move:.42,hands:.90,visual:.76,verbal:.34,noise:.50,compete:.46,react:.58,empathy:.62,rule:.59,assert:.42,helpful:.63,rejection:.72,reading:.54,sports:.43,creative:.78,mischief:.34},
+    {name:"유나",char:"female",imp:.29,soc:.59,persist:.74,energy:.49,skill:.73,move:.28,hands:.52,visual:.78,verbal:.72,noise:.33,compete:.31,react:.34,empathy:.80,rule:.74,assert:.48,helpful:.79,rejection:.55,reading:.80,sports:.28,creative:.70,mischief:.18},
+    {name:"현우",char:"soldier",imp:.76,soc:.50,persist:.28,energy:.80,skill:.55,move:.91,hands:.93,visual:.34,verbal:.42,noise:.47,compete:.77,react:.80,empathy:.42,rule:.34,assert:.70,helpful:.38,rejection:.45,reading:.20,sports:.94,creative:.33,mischief:.84},
+    {name:"소라",char:"adventurer",imp:.22,soc:.42,persist:.84,energy:.74,skill:.44,move:.25,hands:.64,visual:.91,verbal:.62,noise:.61,compete:.29,react:.30,empathy:.76,rule:.79,assert:.38,helpful:.72,rejection:.68,reading:.88,sports:.23,creative:.90,mischief:.16}
   ];
 
   var relationSeed={
@@ -66,6 +66,10 @@
   };
 
   var relations={};
+  var socialCircles=[];
+  var circleByStudent={};
+  var circleHistory={};
+  var circleAccumulator=0;
   var students=[];
   var gameSec=520*60;
   var periodIndex=0;
@@ -89,7 +93,10 @@
       relations[k]={
         affinity:.34,
         irritation:.06,
-        rivalry:clamp(((a.compete||.3)+(b.compete||.3))*.18,.04,.42)
+        rivalry:clamp(((a.compete||.3)+(b.compete||.3))*.18,.04,.42),
+        positive:0,
+        negative:0,
+        timeTogether:0
       };
     }
     return relations[k];
@@ -100,10 +107,96 @@
     if(delta.affinity)r.affinity=clamp(r.affinity+delta.affinity);
     if(delta.irritation)r.irritation=clamp(r.irritation+delta.irritation);
     if(delta.rivalry)r.rivalry=clamp(r.rivalry+delta.rivalry);
+    if((delta.affinity||0)>0||(delta.irritation||0)<0)r.positive=(r.positive||0)+1;
+    if((delta.affinity||0)<0||(delta.irritation||0)>0)r.negative=(r.negative||0)+1;
   }
   function resetRelations(){
     relations={};
-    Object.keys(relationSeed).forEach(function(k){relations[k]=Object.assign({},relationSeed[k])});
+    Object.keys(relationSeed).forEach(function(k){relations[k]=Object.assign({positive:0,negative:0,timeTogether:0},relationSeed[k])});
+  }
+  function interestSimilarity(a,b){
+    var keys=["reading","sports","creative","mischief","helpful","rule","compete"];
+    var sum=0;
+    keys.forEach(function(k){sum+=1-Math.abs((a[k]||0)-(b[k]||0))});
+    return sum/keys.length;
+  }
+  function bondStrength(a,b){
+    var r=relation(a,b);
+    var history=(r.positive||0)/((r.positive||0)+(r.negative||0)+4);
+    var time=Math.min(.12,(r.timeTogether||0)/180);
+    return clamp(r.affinity*.52 + interestSimilarity(a,b)*.26 + history*.14 + time - r.irritation*.44);
+  }
+  function circleProfile(members){
+    var profile={reading:0,sports:0,creative:0,mischief:0,helpful:0,rule:0,compete:0};
+    members.forEach(function(s){Object.keys(profile).forEach(function(k){profile[k]+=s[k]||0})});
+    Object.keys(profile).forEach(function(k){profile[k]/=members.length||1});
+    return profile;
+  }
+  function circleLabel(profile){
+    var scored=[
+      ["책·이야기",profile.reading],
+      ["운동·활동",profile.sports],
+      ["만들기·표현",profile.creative],
+      ["장난·규칙 이탈",profile.mischief*(1-profile.rule*.35)],
+      ["도움·모범",profile.helpful*.55+profile.rule*.45],
+      ["승부·경쟁",profile.compete]
+    ].sort(function(a,b){return b[1]-a[1]});
+    if(scored[0][1]-scored[1][1]<.08)return scored[0][0]+" + "+scored[1][0];
+    return scored[0][0];
+  }
+  function rebuildSocialCircles(){
+    var parent=students.map(function(_,i){return i});
+    function find(x){while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x]}return x}
+    function union(a,b){a=find(a);b=find(b);if(a!==b)parent[b]=a}
+    for(var i=0;i<students.length;i++){
+      for(var j=i+1;j<students.length;j++){
+        var a=students[i],b=students[j];
+        if(bondStrength(a,b)>.49)union(i,j);
+      }
+    }
+    var buckets={};
+    students.forEach(function(s,i){var r=find(i);(buckets[r]||(buckets[r]=[])).push(s)});
+    socialCircles=[];circleByStudent={};
+    Object.keys(buckets).forEach(function(k){
+      var members=buckets[k];
+      if(members.length<2)return;
+      var ids=members.map(function(s){return s.id}).sort(function(a,b){return a-b});
+      var key=ids.join("-");
+      var profile=circleProfile(members);
+      var old=circleHistory[key]||{cohesion:.5};
+      var cohesion=members.length<2?0:members.reduce(function(total,a){
+        return total+members.reduce(function(t,b){return t+(a===b?0:bondStrength(a,b))},0);
+      },0)/(members.length*(members.length-1));
+      var circle={
+        id:"circle-"+key,
+        key:key,
+        members:ids,
+        profile:profile,
+        label:circleLabel(profile),
+        cohesion:old.cohesion*.65+cohesion*.35
+      };
+      circleHistory[key]={cohesion:circle.cohesion,label:circle.label};
+      socialCircles.push(circle);
+      ids.forEach(function(id){circleByStudent[id]=circle});
+    });
+  }
+  function circleOf(s){return circleByStudent[s.id]||null}
+  function circlePeers(s,scene){
+    var c=circleOf(s);
+    if(!c)return [];
+    return c.members.map(studentById).filter(function(o){return o&&o!==s&&(!scene||o.scene===scene)});
+  }
+  function circleNormBoost(s,action){
+    var c=circleOf(s);if(!c)return 0;
+    var p=c.profile;
+    if(action==="READ")return p.reading*.18;
+    if(action==="PLAY")return p.sports*.18;
+    if(action==="COMPETE")return p.compete*.16;
+    if(action==="RUN")return p.mischief*.12+p.sports*.08;
+    if(action==="TALK")return s.scene==="classroom"?p.mischief*.09:p.helpful*.02+p.mischief*.06;
+    if(action==="HELP_PEER"||action==="SHARE")return p.helpful*.18+p.rule*.06;
+    if(action==="CLEAN")return p.rule*.15+p.helpful*.08;
+    return 0;
   }
   function current(){return schedule[Math.min(periodIndex,schedule.length-1)]}
   function gameMinute(){return Math.floor(gameSec/60)}
@@ -239,7 +332,8 @@
   function chooseSocialTarget(s,purpose){
     var pair=activePair(s);
     if(pair&&pair.scene===s.scene&&pair.id!==s.avoidId)return pair;
-    var candidates=students.filter(function(o){
+    var preferred=circlePeers(s,s.scene).filter(function(o){return !(s.avoidUntil>gameSec&&s.avoidId===o.id)});
+    var candidates=(preferred.length&&Math.random()<.72?preferred:students).filter(function(o){
       return o!==s&&o.scene===s.scene&&!o.targetScene&&!(s.avoidUntil>gameSec&&s.avoidId===o.id);
     });
     if(!candidates.length)return null;
@@ -405,6 +499,16 @@
       log(s.name+"이(가) "+p.name+"에게 반찬을 건넸다.","social","cafeteria");
     }
     if(a==="EAT"&&Math.random()<.025+s.imp*.02)log(s.name+"이(가) 식판에서 음식 하나를 떨어뜨렸다.","incident","cafeteria");
+
+    var peers=circlePeers(s,s.scene);
+    peers.forEach(function(o){
+      if(distance(s,o)>24)return;
+      if(a==="RUN"){o.moveNeed=clamp(o.moveNeed+.025*(.5+o.move));}
+      if(a==="TALK"){o.talkNeed=clamp(o.talkNeed+.018*(.5+o.soc));}
+      if(a==="PLAY"){o.socialNeed=clamp(o.socialNeed+.018);o.mood=clamp(o.mood+.008);}
+      if(a==="HELP_PEER"||a==="SHARE"){o.belonging=clamp(o.belonging+.008);o.mood=clamp(o.mood+.006);}
+      if(a==="ARGUE"||a==="SHOVE"){o.frustration=clamp(o.frustration+.01*o.react);}
+    });
   }
 
   function decideLesson(s){
@@ -499,17 +603,17 @@
 
     var p=current(),choices=[];
     if(p.kind==="morning"){
-      choices=[["READ",.36+s.persist*.28],["TALK",.18+s.soc*.35],["WALK",.10+s.move*.20]];
+      choices=[["READ",.36+s.persist*.28+circleNormBoost(s,"READ")],["TALK",.18+s.soc*.35+circleNormBoost(s,"TALK")],["WALK",.10+s.move*.20]];
     }else if(p.kind==="break"){
-      if(s.scene==="hallway")choices=[["WALK",.20],["RUN",.08+s.move*.35+s.imp*.18],["TALK",.16+s.soc*.38],["WAIT",.12]];
-      else choices=[["READ",.16+s.persist*.22],["TALK",.18+s.soc*.38],["DOODLE",.12+s.visual*.22],["WALK",.09+s.move*.18]];
+      if(s.scene==="hallway")choices=[["WALK",.20],["RUN",.08+s.move*.35+s.imp*.18+circleNormBoost(s,"RUN")],["TALK",.16+s.soc*.38+circleNormBoost(s,"TALK")],["WAIT",.12]];
+      else choices=[["READ",.16+s.persist*.22+circleNormBoost(s,"READ")],["TALK",.18+s.soc*.38+circleNormBoost(s,"TALK")],["DOODLE",.12+s.visual*.22],["WALK",.09+s.move*.18]];
     }else if(p.kind==="lunch"){
-      choices=[["EAT",.45],["TALK",.12+s.soc*.30],["SHARE",.05+s.soc*.16],["WAIT",.08]];
+      choices=[["EAT",.45],["TALK",.12+s.soc*.30+circleNormBoost(s,"TALK")],["SHARE",.05+s.soc*.16+circleNormBoost(s,"SHARE")],["WAIT",.08]];
     }else if(p.kind==="lunchplay"){
-      if(s.scene==="playground")choices=[["PLAY",.20+s.move*.35+s.soc*.12],["COMPETE",.08+s.compete*.30],["RUN",.10+s.move*.25],["TALK",.12+s.soc*.28],["REST",.12+(1-s.energy)*.25]];
-      else choices=[["TALK",.16+s.soc*.36],["READ",.14+s.persist*.18],["WALK",.12+s.move*.22]];
+      if(s.scene==="playground")choices=[["PLAY",.20+s.move*.35+s.soc*.12+circleNormBoost(s,"PLAY")],["COMPETE",.08+s.compete*.30+circleNormBoost(s,"COMPETE")],["RUN",.10+s.move*.25+circleNormBoost(s,"RUN")],["TALK",.12+s.soc*.28+circleNormBoost(s,"TALK")],["REST",.12+(1-s.energy)*.25]];
+      else choices=[["TALK",.16+s.soc*.36+circleNormBoost(s,"TALK")],["READ",.14+s.persist*.18+circleNormBoost(s,"READ")],["WALK",.12+s.move*.22]];
     }else if(p.kind==="closing"){
-      choices=[["CLEAN",.42+s.persist*.15],["TALK",.12+s.soc*.24],["WALK",.10+s.move*.14]];
+      choices=[["CLEAN",.42+s.persist*.15+circleNormBoost(s,"CLEAN")],["TALK",.12+s.soc*.24+circleNormBoost(s,"TALK")],["WALK",.10+s.move*.14]];
     }
 
     if(!choices.length){s.action="WAIT";s.actionTicks=2;return}
@@ -579,6 +683,20 @@
       if(["SEEK","HELP_PEER","ARGUE"].indexOf(s.action)>=0)setNear(s,target,s.action==="ARGUE"?5:7);
       if(s.groupId&&["TALK","PLAY","COMPETE"].indexOf(s.action)>=0&&distance(s,target)>13)setNear(s,target,8);
     });
+    students.forEach(function(s){
+      var peers=circlePeers(s,s.scene);
+      peers.forEach(function(p){
+        if(distance(s,p)<18){
+          var r=relation(s,p);r.timeTogether=(r.timeTogether||0)+.12;
+          if(current().kind!=="lesson"&&s.action!=="REJECTED"&&p.action!=="REJECTED"){
+            s.belonging=clamp(s.belonging+.0007);
+          }
+        }
+      });
+      if(current().kind!=="lesson"&&!s.socialTarget&&peers.length&&s.socialNeed>.30&&Math.random()<.02){
+        beginSeek(s,pick(peers),current().kind==="lunchplay"&&s.scene==="playground"?"PLAY":"TALK");
+      }
+    });
   }
   function updateMovement(dt,speed){
     students.forEach(function(s){
@@ -640,6 +758,7 @@
   function giveRole(s){
     stats.teacherActs++;stats.roles++;
     s.role="helper";s.roleUntil=gameSec+12*60;s.belonging=clamp(s.belonging+.09);s.mood=clamp(s.mood+.045);
+    circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<28)o.helpful=clamp(o.helpful+.003)});
     s.focus=clamp(s.focus+.055);s.talkNeed=clamp(s.talkNeed-.06);s.moveNeed=clamp(s.moveNeed-.06);
     remember(s,"선생님에게 도움 역할을 맡음",.58);
     log(s.name+"에게 친구를 돕거나 정리를 맡는 작은 역할을 주었다.","teacher",teacherScene);
@@ -679,6 +798,7 @@
       log(s.name+"의 이름을 불러 다시 활동으로 시선을 돌렸다.","teacher",teacherScene);
     }else if(kind==="praise"){
       s.focus=clamp(s.focus+.08);s.trust=clamp(s.trust+.04);s.mood=clamp(s.mood+.035);s.belonging=clamp(s.belonging+.025);
+      circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<25){o.belonging=clamp(o.belonging+.008);o.helpful=clamp(o.helpful+.002);}});
       stats.praises++;remember(s,"선생님에게 구체적인 칭찬을 받음",.55);
       log(s.name+"의 시도나 행동을 구체적으로 칭찬했다.","teacher",teacherScene);
     }else if(kind==="hint"){
@@ -731,6 +851,10 @@
     if(stats.roles) findings.push("역할을 맡긴 학생의 행동 방향이 도움·정리 쪽으로 바뀌는 장면이 있었다.");
     if(stats.connections) findings.push("교사가 연결한 또래 관계가 이후 상호작용의 기회를 만들었다.");
     if(stats.helped>0)findings.push("개별 힌트를 받은 학생에게 즉각적인 학습 회복이 나타났다.");
+    socialCircles.slice().sort(function(a,b){return b.cohesion-a.cohesion}).slice(0,2).forEach(function(circle){
+      var names=circle.members.map(studentById).filter(Boolean).map(function(x){return x.name}).join("·");
+      findings.push(names+"이(가) 반복적으로 함께 움직이며 '"+circle.label+"' 성향의 무리를 형성하고 있다.");
+    });
     q("#findingList").innerHTML=findings.map(function(x){return "<li>"+x+"</li>"}).join("");
     q("#report").hidden=false;
   }
@@ -888,6 +1012,11 @@
     if(s.roleUntil>gameSec)notes.push("현재 도움 역할을 맡고 있음");
     var pair=activePair(s);if(pair)notes.push(pair.name+"와 함께 해보도록 연결된 상태");
     var conflict=conflictPartner(s);if(conflict)notes.push(conflict.name+"와 감정이 남아 있음");
+    var circle=circleOf(s);
+    if(circle){
+      var names=circle.members.map(studentById).filter(Boolean).map(function(x){return x.name}).join("·");
+      notes.push("자주 어울리는 무리: "+names+" / "+circle.label);
+    }
     q("#memory").textContent=notes.join(" · ")||"최근에 특별히 기록된 일 없음";
   }
   function renderFeed(){
@@ -923,7 +1052,7 @@
   }
   function reset(){
     gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;teacherScene="classroom";teacher.x=50;teacher.y=22;feed=[];reportOpen=false;
-    resetRelations();resetStudents();newStats();assignPeriodDestinations();q("#report").hidden=true;
+    resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
 
@@ -939,6 +1068,8 @@
         if(aiAccumulator>=.55){
           aiAccumulator=0;
           students.forEach(updateStudent);sampleStats();
+          circleAccumulator+=.55*speed;
+          if(circleAccumulator>=7){circleAccumulator=0;rebuildSocialCircles();}
         }
         if(renderAccumulator>=.10){renderAccumulator=0;render()}
       }
