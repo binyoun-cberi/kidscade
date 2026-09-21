@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v3/kidscade-world.html?v=27';
+  const WORLD_URL='world-v3/kidscade-world.html?v=28';
   let overlay=null, frame=null, activated=false;
   const CUBE_PET_NAMES={dog:'강아지',cat:'고양이',bunny:'토끼',pig:'돼지',cow:'소',chick:'병아리',fox:'여우',deer:'사슴',parrot:'앵무새',beaver:'비버'};
   const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
@@ -31,6 +31,16 @@
     }catch(_){return 0}
   }
 
+  function ripeOrchardCount(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('kidscade_world_v2')||'null');
+      const p=raw?.progression||{},level=Math.max(0,Math.min(5,Number(p.development?.orchardLevel)||0));
+      const counts=[0,1,2,4,6,9],unlocked=counts[level]||0,day=Number(p.survival?.day)||1,harvests=p.orchard?.harvests||{};
+      let ready=0;for(let idx=0;idx<unlocked;idx++)if(Number(harvests['orchard-'+idx]||0)!==day)ready++;
+      return ready;
+    }catch(_){return 0}
+  }
+
   function villageStars(){
     try{
       const raw=JSON.parse(localStorage.getItem('kidscade_world_v2')||'null');
@@ -46,10 +56,11 @@
     const btn=document.getElementById('btn-open-shop')||document.querySelector('[data-open-life-world="profile-world"]');
     if(!btn)return;
     const meta=root.KidscadeSeedWorldMeta?.summary?.()||{pendingMail:0,dailyDone:0,dailyTotal:3};
-    const ripe=ripeCropCount();
+    const ripe=ripeCropCount(),orchard=ripeOrchardCount();
     const extras=[];
     if(meta.pendingMail>0)extras.push('📬 '+meta.pendingMail);
     if(ripe>0)extras.push('🥕 '+ripe);
+    if(orchard>0)extras.push('🍎 '+orchard);
     btn.textContent='🌱 씨앗 월드 · '+ '⭐'.repeat(villageStars())+(extras.length?' · '+extras.join(' · '):'');
     btn.classList.toggle('has-world-alert',meta.pendingMail>0||ripe>0);
     btn.setAttribute('aria-label',extras.length?'씨앗 월드 · '+extras.join(' · '):'씨앗 월드');
