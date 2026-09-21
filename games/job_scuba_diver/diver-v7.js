@@ -196,6 +196,35 @@ const SPECIES={
  lanternfish:{name:'랜턴피시',img:'genLanternfish',stripFrames:4,stripFps:6,depth:[420,2700],weight:.35,value:210,protected:false,rare:false,behavior:'school',speed:42,draw:[78,48],catchMethods:['net'],catchDifficulty:2},
  kraken:{name:'심해 크라켄',img:'kraken',depth:[650,755],weight:0,value:0,protected:true,rare:true,behavior:'predator',motion:'boss',speed:76,damage:28,draw:[190,160]}
 };
+// Visual size normalization: the diver is drawn at 64px. These sizes intentionally compress
+// real-world scale, but preserve a believable biological order instead of inheriting source-image size.
+const CREATURE_VISUAL_PROFILE={
+ blue:{draw:[44,28],variance:.06},orange:{draw:[42,27],variance:.06},pink:{draw:[43,27],variance:.06},
+ green:{draw:[46,28],variance:.06},red:{draw:[48,30],variance:.06},grey:{draw:[48,30],variance:.06},
+ long:{draw:[58,24],variance:.05},brown:{draw:[52,30],variance:.06},dart:{draw:[56,28],variance:.06},
+ hunter:{draw:[72,40],variance:.05},angler:{draw:[54,34],variance:.04},giant:{draw:[154,76],variance:.025},
+ crab:{draw:[34,30],variance:.05},mantis:{draw:[46,28],variance:.035},urchin:{draw:[22,22],variance:.04},
+ ochreStar:{draw:[24,24],variance:.04},crownStar:{draw:[27,27],variance:.04},nautilus:{draw:[42,29],variance:.05},
+ squid:{draw:[62,46],variance:.05},jelly:{draw:[46,46],variance:.05},whale:{draw:[270,92],variance:.02},
+ vaquita:{draw:[126,56],variance:.025},shark2:{draw:[132,60],variance:.035},barracuda:{draw:[86,30],variance:.04},
+ giantIsopod:{draw:[48,26],variance:.035},bream:{draw:[50,34],variance:.05},cuttlefish:{draw:[50,35],variance:.05},
+ hermitCrab:{draw:[30,25],variance:.04},moonJelly:{draw:[46,48],variance:.05},lionfish:{draw:[50,35],variance:.05},
+ manta:{draw:[154,84],variance:.025},moray:{draw:[78,28],variance:.04},octopus:{draw:[60,50],variance:.05},
+ puffer:{draw:[38,34],variance:.05},scallop:{draw:[27,23],variance:.04},seaCucumber:{draw:[38,20],variance:.04},
+ seahorse:{draw:[24,36],variance:.04},coelacanth:{draw:[98,46],variance:.035},skate:{draw:[78,48],variance:.04},
+ starfishStrip:{draw:[26,26],variance:.04},mackerel:{draw:[52,24],variance:.05},yellowfin:{draw:[96,40],variance:.04},
+ swordfish:{draw:[120,34],variance:.035},triggerfish:{draw:[58,36],variance:.05},flounder:{draw:[58,30],variance:.05},
+ shrimp:{draw:[30,18],variance:.04},slipperLobster:{draw:[44,22],variance:.04},lanternfish:{draw:[34,18],variance:.04},
+ kraken:{draw:[210,160],variance:.02}
+};
+function creatureVisualDraw(key){
+ const p=CREATURE_VISUAL_PROFILE[key];
+ return p?.draw||SPECIES[key]?.draw||[52,33]
+}
+function creatureVisualScale(key,rr){
+ const v=CREATURE_VISUAL_PROFILE[key]?.variance??.06;
+ return 1+(rr()-.5)*v*2
+}
 const BIOME_POPULATIONS={
  reef:[['blue',10],['orange',9],['pink',7],['green',7],['mackerel',6],['triggerfish',4],['yellowfin',1]],
  kelp:[['green',7],['red',8],['grey',7],['long',4],['mackerel',7],['yellowfin',2],['swordfish',1]],
@@ -305,7 +334,7 @@ function showZone(zone){const z=typeof zone==='string'?ZONES.find(q=>q.name===zo
 function updateStartButtons(){const s=$('startBtn'),c=$('continueBtn');if(s)s.disabled=!ready;if(c)c.disabled=!ready}
 
 function seedRand(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}}
-function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1,baseScale=d.motion==='boss'?2.15:d===SPECIES.giant?2.65:d.motion==='megafauna'?1.15:d.behavior==='predator'?1.24:.8+rr()*.3;return{kind:'creature',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||12)*(.72+rr()*.28),vy:(rr()-.5)*12,patrolDir:dir,faceDir:dir,faceLock:0,turnLock:0,patrolMin:null,patrolMax:null,phase:rr()*Math.PI*2,scale:baseScale,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0,hooked:false,contactCd:0}}
+function makeFish(key,x,y,seed){const d=SPECIES[key],rr=seedRand(seed||Math.floor(Math.random()*999999)),dir=rr()>.5?1:-1,baseScale=creatureVisualScale(key,rr);return{kind:'creature',key,x,y,baseX:x,baseY:y,homeX:x,vx:dir*(d.speed||12)*(.72+rr()*.28),vy:(rr()-.5)*12,patrolDir:dir,faceDir:dir,faceLock:0,turnLock:0,patrolMin:null,patrolMax:null,phase:rr()*Math.PI*2,scale:baseScale,alive:true,photo:null,marked:0,alert:0,attackCd:0,specialCd:rr()*1.8,attackMode:'',attackKind:'',attackT:0,attackVx:0,attackVy:0,hidden:false,panic:0,feeding:0,hooked:false,contactCd:0}}
 
 function rectSolid(x,y,w,h,zone='reef',edge='sand'){return{shape:'rect',x,y,w,h,zone,edge}}
 function circleSolid(x,y,r,zone='reef',edge='dirt'){return{shape:'circle',x,y,r,zone,edge}}
@@ -375,7 +404,7 @@ function pointInSolid(x,y,s,pad=0){
   return x>s.x-pad&&x<s.x+s.w+pad&&y>s.y-pad&&y<s.y+s.h+pad;
 }
 function creatureSpawnPad(key){
- const sp=SPECIES[key],d=sp.draw||[54,36],base=Math.max(d[0],d[1]);
+ const sp=SPECIES[key],d=creatureVisualDraw(key),base=Math.max(d[0],d[1]);
  if(sp.motion==='megafauna')return Math.max(64,base*.32);
  if(sp.motion==='boss')return Math.max(52,base*.28);
  if(sp.motion==='crawlerBoss')return 30;
@@ -578,7 +607,7 @@ function drawTrimmedStrip(im,x,y,frames,w,h,flip=false,alpha=1,fps=6,phase=0){if
 function drawImg(im,x,y,w,h,flip=false,rot=0,alpha=1,filter='none'){if(!im||!im.complete||!im.naturalWidth)return;ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.filter=filter;ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore()}
 function drawSheet(im,x,y,frames,w,h,flip=false,alpha=1){if(!im||!im.complete)return;const f=sheetFrame(im,frames,world.time);if(!f)return;ctx.save();ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(im,f.sx,f.sy,f.sw,f.sh,-w/2,-h/2,w,h);ctx.restore()}
 function drawSequence(keys,x,y,w,h,flip=false,alpha=1,fps=8,phase=0){const idx=Math.floor((world.time+phase)*fps)%keys.length,im=imgs[keys[idx]];drawImg(im,x,y,w,h,flip,0,alpha)}
-function creatureDrawSize(sp,f){const d=sp.draw||[52,33];return[d[0]*f.scale,d[1]*f.scale]}
+function creatureDrawSize(sp,f){const d=creatureVisualDraw(f.key);return[d[0]*f.scale,d[1]*f.scale]}
 
 function renderBackground(){
  const z=zoneForY(world.player.y),grad=ctx.createLinearGradient(0,0,0,view.h);grad.addColorStop(0,z.bg0);grad.addColorStop(1,z.bg1);ctx.fillStyle=grad;ctx.fillRect(0,0,view.w,view.h);
