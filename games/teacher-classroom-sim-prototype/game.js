@@ -16,42 +16,68 @@
 
   var schedule=[
     {start:520,end:540,name:"등교·아침활동",loc:"classroom",kind:"morning"},
-    {start:540,end:580,name:"1교시 · 수학",loc:"classroom",kind:"lesson",subject:"수학"},
+    {start:540,end:580,name:"1교시 · 수학",loc:"classroom",kind:"lesson",subject:"수학",unit:"받아올림 있는 두 자리 수 덧셈"},
     {start:580,end:590,name:"쉬는시간",loc:"free",kind:"break"},
-    {start:590,end:630,name:"2교시 · 국어",loc:"classroom",kind:"lesson",subject:"국어"},
+    {start:590,end:630,name:"2교시 · 국어",loc:"classroom",kind:"lesson",subject:"국어",unit:"글의 중심 내용 찾기"},
     {start:630,end:640,name:"쉬는시간",loc:"free",kind:"break"},
-    {start:640,end:680,name:"3교시 · 체육",loc:"gym",kind:"lesson",subject:"체육"},
+    {start:640,end:680,name:"3교시 · 체육",loc:"gym",kind:"lesson",subject:"체육",unit:"협동 게임과 규칙"},
     {start:680,end:690,name:"쉬는시간",loc:"free",kind:"break"},
-    {start:690,end:730,name:"4교시 · 과학",loc:"classroom",kind:"lesson",subject:"과학"},
+    {start:690,end:730,name:"4교시 · 과학",loc:"classroom",kind:"lesson",subject:"과학",unit:"관찰한 사실로 설명하기"},
     {start:730,end:755,name:"점심시간 · 식사",loc:"cafeteria",kind:"lunch"},
     {start:755,end:780,name:"점심시간 · 놀이",loc:"freeLunch",kind:"lunchplay"},
-    {start:780,end:820,name:"5교시 · 사회",loc:"classroom",kind:"lesson",subject:"사회"},
+    {start:780,end:820,name:"5교시 · 사회",loc:"classroom",kind:"lesson",subject:"사회",unit:"지도에서 우리 지역 읽기"},
     {start:820,end:830,name:"쉬는시간",loc:"free",kind:"break"},
-    {start:830,end:870,name:"6교시 · 미술",loc:"classroom",kind:"lesson",subject:"미술"},
+    {start:830,end:870,name:"6교시 · 미술",loc:"classroom",kind:"lesson",subject:"미술",unit:"재료를 계획해 표현하기"},
     {start:870,end:890,name:"청소·종례",loc:"classroom",kind:"closing"}
   ];
 
-  var seats=[
-    {x:15,y:44},{x:38,y:44},{x:61,y:44},{x:84,y:44},
-    {x:15,y:73},{x:38,y:73},{x:61,y:73},{x:84,y:73}
-  ];
+  function makeGridSpots(cols,rows,x0,x1,y0,y1){
+    var out=[];
+    for(var r=0;r<rows;r++){
+      for(var col=0;col<cols;col++){
+        out.push({
+          x:cols===1?(x0+x1)/2:x0+(x1-x0)*(col/(cols-1)),
+          y:rows===1?(y0+y1)/2:y0+(y1-y0)*(r/(rows-1))
+        });
+      }
+    }
+    return out;
+  }
+
+  // 25 desks, 22 students: three empty desks remain useful for seat changes and separation.
+  var seats=makeGridSpots(5,5,12,88,31,88);
   var sceneSpots={
-    classroom:[{x:15,y:44},{x:38,y:44},{x:61,y:44},{x:84,y:44},{x:15,y:73},{x:38,y:73},{x:61,y:73},{x:84,y:73},{x:26,y:86},{x:73,y:86}],
-    hallway:[{x:10,y:42},{x:25,y:58},{x:40,y:42},{x:55,y:61},{x:70,y:43},{x:86,y:59},{x:20,y:82},{x:48,y:82},{x:77,y:81}],
-    gym:[{x:18,y:35},{x:31,y:65},{x:44,y:40},{x:56,y:65},{x:68,y:39},{x:82,y:65},{x:38,y:82},{x:64,y:82}],
-    playground:[{x:22,y:34},{x:37,y:60},{x:51,y:35},{x:65,y:61},{x:79,y:36},{x:28,y:78},{x:53,y:78},{x:76,y:77}],
-    cafeteria:[{x:23,y:42},{x:37,y:42},{x:63,y:42},{x:77,y:42},{x:23,y:70},{x:37,y:70},{x:63,y:70},{x:77,y:70}]
+    classroom:seats.concat([{x:8,y:88},{x:92,y:88}]),
+    hallway:makeGridSpots(8,3,8,92,38,86),
+    gym:makeGridSpots(6,4,15,85,29,84),
+    playground:makeGridSpots(6,4,18,82,27,84),
+    cafeteria:makeGridSpots(6,4,16,84,35,84)
   };
 
   var templates=[
-    {name:"민수",char:"player",imp:.84,soc:.84,persist:.34,energy:.84,skill:.48,move:.78,hands:.82,visual:.38,verbal:.46,noise:.42,compete:.72,react:.78,empathy:.48,rule:.38,assert:.76,helpful:.45,rejection:.58,reading:.25,sports:.82,creative:.42,mischief:.78},
-    {name:"지우",char:"female",imp:.35,soc:.73,persist:.68,energy:.75,skill:.66,move:.38,hands:.63,visual:.70,verbal:.68,noise:.35,compete:.38,react:.38,empathy:.72,rule:.68,assert:.56,helpful:.74,rejection:.48,reading:.66,sports:.45,creative:.58,mischief:.30},
-    {name:"서연",char:"female",imp:.18,soc:.36,persist:.91,energy:.72,skill:.84,move:.20,hands:.56,visual:.83,verbal:.81,noise:.28,compete:.54,react:.34,empathy:.78,rule:.82,assert:.44,helpful:.68,rejection:.64,reading:.91,sports:.27,creative:.63,mischief:.12},
-    {name:"준호",char:"adventurer",imp:.67,soc:.79,persist:.55,energy:.88,skill:.61,move:.72,hands:.86,visual:.43,verbal:.55,noise:.40,compete:.84,react:.66,empathy:.55,rule:.46,assert:.76,helpful:.50,rejection:.46,reading:.32,sports:.90,creative:.46,mischief:.66},
-    {name:"태호",char:"player",imp:.43,soc:.44,persist:.47,energy:.62,skill:.30,move:.42,hands:.90,visual:.76,verbal:.34,noise:.50,compete:.46,react:.58,empathy:.62,rule:.59,assert:.42,helpful:.63,rejection:.72,reading:.54,sports:.43,creative:.78,mischief:.34},
-    {name:"유나",char:"female",imp:.29,soc:.59,persist:.74,energy:.49,skill:.73,move:.28,hands:.52,visual:.78,verbal:.72,noise:.33,compete:.31,react:.34,empathy:.80,rule:.74,assert:.48,helpful:.79,rejection:.55,reading:.80,sports:.28,creative:.70,mischief:.18},
-    {name:"현우",char:"soldier",imp:.76,soc:.50,persist:.28,energy:.80,skill:.55,move:.91,hands:.93,visual:.34,verbal:.42,noise:.47,compete:.77,react:.80,empathy:.42,rule:.34,assert:.70,helpful:.38,rejection:.45,reading:.20,sports:.94,creative:.33,mischief:.84},
-    {name:"소라",char:"adventurer",imp:.22,soc:.42,persist:.84,energy:.74,skill:.44,move:.25,hands:.64,visual:.91,verbal:.62,noise:.61,compete:.29,react:.30,empathy:.76,rule:.79,assert:.38,helpful:.72,rejection:.68,reading:.88,sports:.23,creative:.90,mischief:.16}
+    {name:"민수",char:"player",academic:.48,imp:.84,soc:.84,persist:.34,energy:.84,move:.78,hands:.82,visual:.38,verbal:.46,noise:.42,compete:.72,react:.78,empathy:.48,rule:.38,assert:.76,helpful:.45,rejection:.58,reading:.25,sports:.82,creative:.42,mischief:.78},
+    {name:"지우",char:"female",academic:.66,imp:.35,soc:.73,persist:.68,energy:.75,move:.38,hands:.63,visual:.70,verbal:.68,noise:.35,compete:.38,react:.38,empathy:.72,rule:.68,assert:.56,helpful:.74,rejection:.48,reading:.66,sports:.45,creative:.58,mischief:.30},
+    {name:"서연",char:"female",academic:.84,imp:.18,soc:.36,persist:.91,energy:.72,move:.20,hands:.56,visual:.83,verbal:.81,noise:.28,compete:.54,react:.34,empathy:.78,rule:.82,assert:.44,helpful:.68,rejection:.64,reading:.91,sports:.27,creative:.63,mischief:.12},
+    {name:"준호",char:"adventurer",academic:.61,imp:.67,soc:.79,persist:.55,energy:.88,move:.72,hands:.86,visual:.43,verbal:.55,noise:.40,compete:.84,react:.66,empathy:.55,rule:.46,assert:.76,helpful:.50,rejection:.46,reading:.32,sports:.90,creative:.46,mischief:.66},
+    {name:"태호",char:"player",academic:.30,imp:.43,soc:.44,persist:.47,energy:.62,move:.42,hands:.90,visual:.76,verbal:.34,noise:.50,compete:.46,react:.58,empathy:.62,rule:.59,assert:.42,helpful:.63,rejection:.72,reading:.54,sports:.43,creative:.78,mischief:.34},
+    {name:"유나",char:"female",academic:.73,imp:.29,soc:.59,persist:.74,energy:.49,move:.28,hands:.52,visual:.78,verbal:.72,noise:.33,compete:.31,react:.34,empathy:.80,rule:.74,assert:.48,helpful:.79,rejection:.55,reading:.80,sports:.28,creative:.70,mischief:.18},
+    {name:"현우",char:"soldier",academic:.55,imp:.76,soc:.50,persist:.28,energy:.80,move:.91,hands:.93,visual:.34,verbal:.42,noise:.47,compete:.77,react:.80,empathy:.42,rule:.34,assert:.70,helpful:.38,rejection:.45,reading:.20,sports:.94,creative:.33,mischief:.84},
+    {name:"소라",char:"adventurer",academic:.44,imp:.22,soc:.42,persist:.84,energy:.74,move:.25,hands:.64,visual:.91,verbal:.62,noise:.61,compete:.29,react:.30,empathy:.76,rule:.79,assert:.38,helpful:.72,rejection:.68,reading:.88,sports:.23,creative:.90,mischief:.16},
+
+    {name:"도윤",char:"soldier",academic:.58,imp:.54,soc:.67,persist:.62,energy:.86,move:.82,hands:.73,visual:.51,verbal:.59,noise:.37,compete:.71,react:.49,empathy:.60,rule:.58,assert:.65,helpful:.58,rejection:.42,reading:.46,sports:.88,creative:.43,mischief:.48},
+    {name:"하린",char:"female",academic:.79,imp:.20,soc:.46,persist:.86,energy:.63,move:.23,hands:.55,visual:.82,verbal:.76,noise:.24,compete:.28,react:.31,empathy:.82,rule:.85,assert:.42,helpful:.77,rejection:.57,reading:.92,sports:.22,creative:.76,mischief:.10},
+    {name:"예준",char:"player",academic:.70,imp:.60,soc:.62,persist:.69,energy:.82,move:.66,hands:.66,visual:.58,verbal:.65,noise:.38,compete:.88,react:.56,empathy:.53,rule:.57,assert:.79,helpful:.49,rejection:.40,reading:.50,sports:.78,creative:.45,mischief:.49},
+    {name:"채원",char:"female",academic:.64,imp:.26,soc:.53,persist:.76,energy:.65,move:.30,hands:.70,visual:.88,verbal:.61,noise:.31,compete:.25,react:.32,empathy:.83,rule:.80,assert:.46,helpful:.81,rejection:.54,reading:.81,sports:.26,creative:.88,mischief:.13},
+    {name:"시우",char:"adventurer",academic:.42,imp:.72,soc:.81,persist:.32,energy:.91,move:.87,hands:.78,visual:.42,verbal:.52,noise:.45,compete:.73,react:.69,empathy:.47,rule:.36,assert:.73,helpful:.44,rejection:.44,reading:.24,sports:.92,creative:.40,mischief:.79},
+    {name:"다은",char:"female",academic:.68,imp:.24,soc:.57,persist:.80,energy:.58,move:.27,hands:.76,visual:.89,verbal:.64,noise:.29,compete:.26,react:.29,empathy:.86,rule:.82,assert:.41,helpful:.84,rejection:.61,reading:.74,sports:.24,creative:.94,mischief:.11},
+    {name:"건우",char:"soldier",academic:.50,imp:.64,soc:.70,persist:.46,energy:.89,move:.85,hands:.82,visual:.48,verbal:.47,noise:.41,compete:.79,react:.61,empathy:.55,rule:.43,assert:.68,helpful:.52,rejection:.43,reading:.31,sports:.91,creative:.39,mischief:.65},
+    {name:"아린",char:"female",academic:.57,imp:.31,soc:.35,persist:.73,energy:.57,move:.22,hands:.62,visual:.84,verbal:.59,noise:.52,compete:.22,react:.36,empathy:.79,rule:.75,assert:.34,helpful:.73,rejection:.75,reading:.86,sports:.19,creative:.82,mischief:.12},
+    {name:"지호",char:"player",academic:.36,imp:.70,soc:.74,persist:.30,energy:.87,move:.83,hands:.88,visual:.40,verbal:.43,noise:.44,compete:.69,react:.73,empathy:.46,rule:.32,assert:.71,helpful:.41,rejection:.49,reading:.22,sports:.85,creative:.52,mischief:.82},
+    {name:"은서",char:"female",academic:.82,imp:.17,soc:.49,persist:.89,energy:.67,move:.21,hands:.67,visual:.79,verbal:.84,noise:.22,compete:.37,react:.26,empathy:.82,rule:.88,assert:.49,helpful:.80,rejection:.55,reading:.93,sports:.21,creative:.72,mischief:.08},
+    {name:"윤호",char:"adventurer",academic:.63,imp:.47,soc:.64,persist:.67,energy:.79,move:.61,hands:.60,visual:.55,verbal:.72,noise:.36,compete:.60,react:.45,empathy:.66,rule:.64,assert:.67,helpful:.64,rejection:.45,reading:.61,sports:.70,creative:.49,mischief:.39},
+    {name:"나연",char:"female",academic:.52,imp:.33,soc:.68,persist:.55,energy:.61,move:.36,hands:.58,visual:.74,verbal:.77,noise:.34,compete:.29,react:.39,empathy:.88,rule:.70,assert:.58,helpful:.88,rejection:.51,reading:.72,sports:.32,creative:.68,mischief:.20},
+    {name:"승민",char:"soldier",academic:.76,imp:.41,soc:.55,persist:.83,energy:.80,move:.58,hands:.69,visual:.62,verbal:.69,noise:.30,compete:.86,react:.42,empathy:.57,rule:.72,assert:.75,helpful:.55,rejection:.38,reading:.58,sports:.76,creative:.40,mischief:.29},
+    {name:"세아",char:"female",academic:.46,imp:.28,soc:.40,persist:.65,energy:.60,move:.24,hands:.72,visual:.92,verbal:.52,noise:.58,compete:.20,react:.35,empathy:.81,rule:.76,assert:.36,helpful:.76,rejection:.73,reading:.83,sports:.18,creative:.96,mischief:.10}
   ];
 
   var relationSeed={
@@ -62,7 +88,19 @@
     "소라|유나":{affinity:.77,irritation:.02,rivalry:.08},
     "태호|유나":{affinity:.48,irritation:.04,rivalry:.10},
     "민수|태호":{affinity:.26,irritation:.16,rivalry:.30},
-    "서연|소라":{affinity:.55,irritation:.02,rivalry:.10}
+    "서연|소라":{affinity:.55,irritation:.02,rivalry:.10},
+    "도윤|건우":{affinity:.73,irritation:.05,rivalry:.44},
+    "도윤|윤호":{affinity:.62,irritation:.03,rivalry:.31},
+    "하린|은서":{affinity:.79,irritation:.02,rivalry:.15},
+    "하린|아린":{affinity:.64,irritation:.03,rivalry:.08},
+    "채원|다은":{affinity:.82,irritation:.02,rivalry:.07},
+    "다은|세아":{affinity:.71,irritation:.02,rivalry:.06},
+    "예준|승민":{affinity:.67,irritation:.06,rivalry:.65},
+    "시우|건우":{affinity:.72,irritation:.07,rivalry:.50},
+    "시우|지호":{affinity:.76,irritation:.09,rivalry:.42},
+    "나연|유나":{affinity:.63,irritation:.02,rivalry:.08},
+    "나연|지우":{affinity:.60,irritation:.03,rivalry:.09},
+    "은서|서연":{affinity:.69,irritation:.02,rivalry:.22}
   };
 
   var relations={};
@@ -225,10 +263,163 @@
     return groupId?students.filter(function(s){return s.groupId===groupId}):[];
   }
 
+  var SUBJECT_MODELS={
+    "수학":{
+      focus:"regrouping",
+      concepts:{
+        placeValue:{label:"자릿값",error:"십의 자리와 일의 자리 값을 섞어 계산하는 모습"},
+        regrouping:{label:"받아올림",error:"일의 자리에서 생긴 받아올림을 다음 자리에 연결하지 못하는 모습"},
+        procedure:{label:"계산 절차",error:"부분 계산 결과를 이어 붙이거나 계산 순서가 흔들리는 모습"},
+        wordProblem:{label:"문장제 이해",error:"문제 상황에서 어떤 연산을 써야 하는지 결정하기 어려워하는 모습"}
+      }
+    },
+    "국어":{
+      focus:"mainIdea",
+      concepts:{
+        fluency:{label:"읽기 유창성",error:"문장을 여러 번 다시 읽거나 읽던 줄을 놓치는 모습"},
+        vocabulary:{label:"낱말 의미",error:"핵심 낱말의 뜻을 문맥과 다르게 이해하는 모습"},
+        mainIdea:{label:"중심 내용",error:"세부 사실은 찾지만 글 전체의 중심 내용을 고르기 어려워하는 모습"},
+        evidence:{label:"근거 찾기",error:"답은 말하지만 글 속 근거를 다시 찾기 어려워하는 모습"}
+      }
+    },
+    "과학":{
+      focus:"evidence",
+      concepts:{
+        observation:{label:"관찰 사실",error:"직접 본 사실과 자신의 추측을 섞어 말하는 모습"},
+        concept:{label:"과학 개념",error:"관찰 결과는 말하지만 배운 개념과 연결하기 어려워하는 모습"},
+        evidence:{label:"근거 사용",error:"설명에 필요한 관찰 근거를 빠뜨리는 모습"},
+        explanation:{label:"설명 구성",error:"원인과 결과의 순서를 바꾸거나 설명을 끝까지 연결하기 어려워하는 모습"}
+      }
+    },
+    "사회":{
+      focus:"mapReading",
+      concepts:{
+        vocabulary:{label:"사회 낱말",error:"방위·축척·기호 같은 낱말의 의미를 혼동하는 모습"},
+        mapReading:{label:"지도 읽기",error:"지도 기호나 방향 정보를 실제 위치와 연결하기 어려워하는 모습"},
+        causeEffect:{label:"원인과 결과",error:"지역의 특징과 생활 모습 사이의 관계를 단순 나열하는 모습"},
+        evidence:{label:"자료 근거",error:"자료에서 자신의 생각을 뒷받침하는 정보를 고르기 어려워하는 모습"}
+      }
+    },
+    "미술":{
+      focus:"planning",
+      concepts:{
+        planning:{label:"표현 계획",error:"만들기 전에 필요한 재료와 순서를 정리하기 어려워하는 모습"},
+        technique:{label:"재료·기법",error:"재료의 특성에 맞는 사용 방법을 선택하기 어려워하는 모습"},
+        expression:{label:"표현 확장",error:"한 가지 표현을 반복하고 다른 방법으로 발전시키기 어려워하는 모습"},
+        reflection:{label:"작품 돌아보기",error:"자신의 선택과 결과를 말로 설명하기 어려워하는 모습"}
+      }
+    },
+    "체육":{
+      focus:"teamwork",
+      concepts:{
+        rules:{label:"규칙 이해",error:"활동 규칙을 알고도 실제 상황에서 적용하는 데 시간이 걸리는 모습"},
+        movement:{label:"움직임 수행",error:"설명한 움직임 순서를 실제 동작으로 연결하기 어려워하는 모습"},
+        teamwork:{label:"협동",error:"개인 행동은 가능하지만 팀의 움직임에 맞춰 조절하기 어려워하는 모습"},
+        strategy:{label:"전략 선택",error:"상황이 바뀌었을 때 다른 방법을 선택하기 어려워하는 모습"}
+      }
+    }
+  };
+  function deterministicNoise(id,key){
+    var n=(id+1)*97;
+    for(var i=0;i<key.length;i++)n=(n*31+key.charCodeAt(i))%10007;
+    return ((n%1000)/999)-.5;
+  }
+  function makeKnowledge(t,id){
+    var knowledge={};
+    Object.keys(SUBJECT_MODELS).forEach(function(subject){
+      var model=SUBJECT_MODELS[subject],subjectBias=0;
+      if(subject==="국어")subjectBias=(t.reading-.5)*.18;
+      if(subject==="수학")subjectBias=(t.persist-.5)*.09+(t.visual-.5)*.05;
+      if(subject==="과학")subjectBias=(t.hands-.5)*.08+(t.visual-.5)*.06;
+      if(subject==="사회")subjectBias=(t.reading-.5)*.07+(t.verbal-.5)*.07;
+      if(subject==="미술")subjectBias=(t.creative-.5)*.15+(t.hands-.5)*.08;
+      if(subject==="체육")subjectBias=(t.sports-.5)*.16+(t.move-.5)*.07;
+      knowledge[subject]={};
+      Object.keys(model.concepts).forEach(function(key,idx){
+        var variation=deterministicNoise(id,subject+key)*.28;
+        var mastery=clamp((t.academic||.5)+subjectBias+variation,.12,.95);
+        knowledge[subject][key]={
+          mastery:mastery,
+          evidence:0,
+          confidence:0,
+          observations:[],
+          hypothesis:null,
+          lastSeen:0
+        };
+      });
+    });
+    return knowledge;
+  }
+  function subjectModel(subject){return SUBJECT_MODELS[subject]||null}
+  function subjectMastery(s,subject){
+    var model=subjectModel(subject);
+    if(!model||!s.knowledge||!s.knowledge[subject])return s.academic||.5;
+    var vals=Object.keys(model.concepts).map(function(k){return s.knowledge[subject][k].mastery});
+    return vals.reduce(function(a,b){return a+b},0)/(vals.length||1);
+  }
+  function currentMastery(s){
+    var p=current(),model=subjectModel(p.subject);
+    if(!model||!s.knowledge||!s.knowledge[p.subject])return s.academic||.5;
+    var focus=s.knowledge[p.subject][model.focus];
+    var all=subjectMastery(s,p.subject);
+    return clamp(focus.mastery*.62+all*.38);
+  }
+  function currentKnowledgeNode(s){
+    var p=current(),model=subjectModel(p.subject);
+    return model&&s.knowledge&&s.knowledge[p.subject]?s.knowledge[p.subject][model.focus]:null;
+  }
+  function weakestConcept(s,subject){
+    var model=subjectModel(subject);
+    if(!model||!s.knowledge||!s.knowledge[subject])return null;
+    return Object.keys(model.concepts).sort(function(a,b){
+      return s.knowledge[subject][a].mastery-s.knowledge[subject][b].mastery;
+    })[0]||null;
+  }
+  function applyLearning(s,amount,mode){
+    var p=current(),model=subjectModel(p.subject);
+    if(!model||!s.knowledge||!s.knowledge[p.subject])return;
+    var key=model.focus,node=s.knowledge[p.subject][key];
+    var multiplier=mode==="firstStep"?1.45:mode==="hint"?1.22:mode==="pair"?.96:mode==="listen"?.72:1;
+    var effective=amount*multiplier*(.72+s.persist*.18+s.focus*.16);
+    node.mastery=clamp(node.mastery+effective);
+    // A small amount generalizes to the weakest neighboring concept.
+    var weak=weakestConcept(s,p.subject);
+    if(weak&&weak!==key)s.knowledge[p.subject][weak].mastery=clamp(s.knowledge[p.subject][weak].mastery+effective*.18);
+    s.learned+=effective;
+  }
+  function recordDiagnosticEvidence(s,source){
+    var p=current(),model=subjectModel(p.subject);
+    if(!model||!s.knowledge||!s.knowledge[p.subject])return null;
+    var candidates=Object.keys(model.concepts).sort(function(a,b){
+      return s.knowledge[p.subject][a].mastery-s.knowledge[p.subject][b].mastery;
+    });
+    var key=(s.knowledge[p.subject][model.focus].mastery<.62)?model.focus:candidates[0];
+    var node=s.knowledge[p.subject][key],meta=model.concepts[key];
+    node.evidence+=1;
+    node.confidence=clamp(node.evidence/4);
+    node.lastSeen=gameMinute();
+    node.observations.unshift({time:gameMinute(),source:source,text:meta.error});
+    node.observations=node.observations.slice(0,4);
+    if(node.evidence>=2)node.hypothesis=meta.label+"에서 반복적인 어려움이 있을 가능성";
+    return {subject:p.subject,key:key,label:meta.label,text:meta.error,evidence:node.evidence,confidence:node.confidence,hypothesis:node.hypothesis};
+  }
+  function diagnosisSummary(s){
+    var p=current(),model=subjectModel(p.subject);
+    if(!model||!s.knowledge||!s.knowledge[p.subject])return [];
+    var out=[];
+    Object.keys(model.concepts).forEach(function(key){
+      var node=s.knowledge[p.subject][key],meta=model.concepts[key];
+      if(node.evidence<=0)return;
+      if(node.evidence===1)out.push("관찰 1회 · "+meta.label+": "+node.observations[0].text);
+      else out.push("진단 단서 "+node.evidence+"회 · "+meta.label+": "+node.hypothesis);
+    });
+    return out.slice(0,3);
+  }
+
   function resetStudents(){
     students=templates.map(function(t,i){
       var p=seats[i];
-      return Object.assign({},t,{
+      return Object.assign({},t,{knowledge:makeKnowledge(t,i),
         id:i,seat:i,scene:"classroom",targetScene:null,arrivalAt:0,x:p.x,y:p.y,dx:p.x,dy:p.y,
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
@@ -243,7 +434,7 @@
   }
   function newStats(){
     stats={
-      events:[],fitSamples:[],engageSamples:[],learningStart:students.map(function(s){return s.skill}),
+      events:[],fitSamples:[],engageSamples:[],learningStart:students.map(function(s){return current().kind==="lesson"?currentMastery(s):0}),
       teacherActs:0,disruptions:0,helped:0,praises:0,lateTicks:0,
       conflicts:0,reconciled:0,connections:0,roles:0,
       instructionMoves:[],phaseSamples:{},phaseTransitions:0,
