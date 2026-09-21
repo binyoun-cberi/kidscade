@@ -1058,47 +1058,171 @@ function restaurantStockHtml(){
  if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';
  return entries.map(([k,n])=>'<span class="stockChip">'+SPECIES[k].name+' <b>×'+n+'</b></span>').join('')
 }
-function nextRestaurantCustomer(){
- if(!restaurant||restaurant.finished)return;
- const avail=availableRecipes();
- if(restaurant.left<=0||!avail.length){finishRestaurant();return}
- const prev=restaurant.current,currentPool=avail.filter(r=>r.id!==prev);
- const pool=currentPool.length?currentPool:avail,recipe=pool[Math.floor(Math.random()*pool.length)];
- restaurant.current=recipe.id;renderRestaurant()
+const CUSTOMER_SPRITES=[
+ '../../assets/game/characters/people/kenney-platformer-characters/female/poses/female-stand.png',
+ '../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',
+ '../../assets/game/characters/people/kenney-platformer-characters/adventurer/poses/adventurer-stand.png',
+ '../../assets/game/characters/people/kenney-platformer-characters/soldier/poses/soldier-stand.png'
+];
+const CUSTOMER_NAMES=['유나','도윤','민지','준호','하늘','태호','수아','현우'];
+function restaurantCustomerById(id){return restaurant?.customers.find(c=>c.id===id)||null}
+function restaurantWorkIdle(){return{stage:'idle',customerId:null,recipeId:null,key:null,meter:0,dir:1,prepScore:0,cookScore:0,target0:45,target1:70,quality:0}}
+function restaurantTimingScore(value,a,b){
+ const center=(a+b)/2,half=(b-a)/2,dist=Math.abs(value-center);
+ if(value>=a&&value<=b)return 1.15-clamp(dist/Math.max(1,half),0,1)*.12;
+ const edge=Math.min(Math.abs(value-a),Math.abs(value-b));
+ return clamp(.92-edge/55,.55,.92)
+}
+function restaurantQualityLabel(q){
+ return q>=1.08?'S':q>=.94?'A':q>=.78?'B':'C'
+}
+function spawnRestaurantCustomer(){
+ if(!restaurant||restaurant.finished||restaurant.generated>=restaurant.quota||restaurant.customers.length>=3)return false;
+ const avail=availableRecipes();if(!avail.length)return false;
+ const recipe=avail[Math.floor(Math.random()*avail.length)],id=++restaurant.customerSeq;
+ const maxPatience=18+Math.min(7,(meta.shop.reputation||0)*.07)+Math.random()*4;
+ restaurant.customers.push({
+   id,recipeId:recipe.id,patience:maxPatience,maxPatience,
+   sprite:CUSTOMER_SPRITES[(id+meta.day)%CUSTOMER_SPRITES.length],
+   name:CUSTOMER_NAMES[(id*3+meta.day)%CUSTOMER_NAMES.length],
+   mood:'waiting'
+ });
+ restaurant.generated++;restaurant.spawnCd=3.8+Math.random()*2.8;return true
+}
+function restaurantSeatHtml(customer,seat){
+ if(!customer)return'<div class="tycoonSeat empty"><div class="emptyChair">🪑</div><small>빈 자리</small></div>';
+ const recipe=RECIPES.find(r=>r.id===customer.recipeId),selected=restaurant.selectedId===customer.id;
+ const patience=Math.round(clamp(customer.patience/customer.maxPatience,0,1)*100);
+ const danger=patience<28?' danger':patience<55?' warn':'';
+ return'<button class="tycoonSeat'+(selected?' selected':'')+'" data-customer="'+customer.id+'">'+
+   '<div class="orderBubble">'+recipe.icon+' <b>'+recipe.name+'</b></div>'+
+   '<img class="customerSprite" src="'+customer.sprite+'" alt="">'+
+   '<div class="customerName">'+customer.name+' <small>#'+(seat+1)+'</small></div>'+
+   '<div class="patienceBar'+danger+'"><i style="width:'+patience+'%"></i></div>'+
+   '<small class="patienceText">기다림 '+patience+'%</small></button>'
+}
+function restaurantTimingHtml(stage){
+ const w=restaurant.work,targetLeft=w.target0,targetWidth=w.target1-w.target0,label=stage==='prep'?'손질 타이밍':'굽기 타이밍';
+ return'<div class="timingWrap"><div class="timingTitle">'+label+' <small>노란 구간을 노리세요</small></div>'+
+   '<div class="timingBar"><span class="timingTarget" style="left:'+targetLeft+'%;width:'+targetWidth+'%"></span><i id="timingMarker" style="left:'+w.meter+'%"></i></div></div>'
+}
+function restaurantKitchenHtml(){
+ const c=restaurantCustomerById(restaurant.selectedId);
+ if(!c)return'<div class="workEmpty"><b>주문을 골라 주세요</b><span>손님을 누르면 주방에서 손질 → 굽기 → 플레이팅 → 서빙 순서로 요리합니다.</span></div>';
+ const recipe=RECIPES.find(r=>r.id===c.recipeId),w=restaurant.work;
+ const ingredientButtons=recipe.keys.map(k=>{const n=meta.stock[k]||0;return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'><b>'+SPECIES[k].name+'</b><small>재고 '+n+' · 기본 '+money(recipePrice(recipe,k))+'</small></button>'}).join('');
+ let action='';
+ if(w.stage==='idle'&&!w.key)action='<div class="workInstruction">먼저 사용할 식재료를 고르세요.</div>';
+ else if(w.stage==='idle')action='<button class="cookAction prep" id="prepStartBtn">🔪 손질 시작</button>';
+ else if(w.stage==='prep')action=restaurantTimingHtml('prep')+'<button class="cookAction prep" id="prepStopBtn">🔪 지금 손질!</button>';
+ else if(w.stage==='cook')action=restaurantTimingHtml('cook')+'<button class="cookAction fire" id="cookStopBtn">🔥 지금 불 끄기!</button>';
+ else if(w.stage==='ready')action='<div class="dishReady"><span>'+recipe.icon+'</span><b>'+recipe.name+' 완성!</b><small>품질 '+restaurantQualityLabel(w.quality)+' · 손님에게 바로 내세요.</small></div><button class="cookAction serve" id="serveDishBtn">🍽️ 서빙하기</button>';
+ return'<div class="workOrder"><span>선택 주문</span><b>'+recipe.icon+' '+recipe.name+'</b><small>'+c.name+' · 남은 기다림 <strong id="selectedPatience">'+Math.max(0,Math.ceil(c.patience))+'초</strong></small></div>'+
+   '<div class="ingredientShelf">'+ingredientButtons+'</div>'+action
 }
 function renderRestaurant(){
  if(!restaurant||restaurant.finished)return;
- const wanted=RECIPES.find(r=>r.id===restaurant.current),available=availableRecipes();
- const cards=RECIPES.map(r=>{const keys=recipeIngredients(r),disabled=!keys.length,ingredient=keys.length?SPECIES[chooseIngredient(r)].name:'재료 없음',price=keys.length?recipePrice(r,chooseIngredient(r)):0;return'<button class="recipeCard '+(r.id===restaurant.current?'ordered':'')+'" data-recipe="'+r.id+'" '+(disabled?'disabled':'')+'><span class="recipeIcon">'+r.icon+'</span><b>'+r.name+'</b><small>'+r.desc+'</small><em>'+ingredient+(price?' · 약 '+money(price):'')+'</em></button>'}).join('');
- $('restaurantBody').innerHTML='<div class="restaurantHero"><div><span class="nightBadge">DAY '+meta.day+' · NIGHT</span><h3>BLUE KITCHEN</h3><p>낮에 직접 잡아온 해산물로 손님 주문을 맞춰 요리하세요.</p></div><div class="nightMoney"><span>오늘 매출</span><b>'+money(restaurant.earnings)+'</b><small>연속 '+restaurant.streak+' · 남은 손님 '+restaurant.left+'</small></div></div>'+
- '<div class="restaurantOrder"><span>손님 주문</span><b>'+wanted.icon+' '+wanted.name+'</b><small>'+(restaurant.message||'주문과 같은 메뉴를 골라 요리해 주세요.')+'</small></div>'+
- '<div class="restaurantStock"><strong>냉장고</strong>'+restaurantStockHtml()+'</div><div class="recipeGrid">'+cards+'</div>'+
- '<div class="toolbar"><button class="btn dark" id="closeNightBtn">오늘 영업 마감</button></div>';
- document.querySelectorAll('#restaurantBody [data-recipe]').forEach(b=>b.onclick=()=>serveRestaurant(b.dataset.recipe));
- $('closeNightBtn').onclick=finishRestaurant
+ const seats=[0,1,2].map(i=>restaurantSeatHtml(restaurant.customers[i]||null,i)).join('');
+ $('restaurantBody').innerHTML='<div class="restaurantHero"><div><span class="nightBadge">DAY '+meta.day+' · NIGHT</span><h3>BLUE KITCHEN</h3><p>손님 셋의 기다림을 보면서 한 접시씩 빠르게 완성하세요.</p></div><div class="nightMoney"><span>남은 영업</span><b id="nightTimer">'+Math.max(0,Math.ceil(restaurant.timeLeft))+'초</b><small>매출 '+money(restaurant.earnings)+' · 연속 '+restaurant.streak+'</small></div></div>'+
+ '<div class="tycoonStatus"><span>손님 <b>'+restaurant.served+'/'+restaurant.quota+'</b></span><span>놓침 <b>'+restaurant.missed+'</b></span><span>최고 연속 <b>'+restaurant.bestStreak+'</b></span><span>평판 <b>'+Math.round(meta.shop.reputation||0)+'</b></span></div>'+
+ '<div class="diningRoom"><div class="restaurantSign">🌊 BLUE KITCHEN · 오늘의 해산물</div><div class="seatRow">'+seats+'</div><div class="counterLine"><span>🍵</span><span>🥢</span><span>🍽️</span><span>🧂</span><span>🔥</span></div></div>'+
+ '<div class="kitchenTycoon"><div class="kitchenHead"><b>👨‍🍳 주방 작업대</b><small>'+(restaurant.message||'손님을 눌러 주문을 시작하세요.')+'</small></div>'+restaurantKitchenHtml()+'</div>'+
+ '<div class="restaurantStock"><strong>냉장고</strong>'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn dark" id="closeNightBtn">오늘 영업 마감</button></div>';
+ document.querySelectorAll('#restaurantBody [data-customer]').forEach(b=>b.onclick=()=>selectRestaurantCustomer(Number(b.dataset.customer)));
+ document.querySelectorAll('#restaurantBody [data-ingredient]').forEach(b=>b.onclick=()=>chooseRestaurantIngredient(b.dataset.ingredient));
+ const ps=$('prepStartBtn'),pp=$('prepStopBtn'),cp=$('cookStopBtn'),sv=$('serveDishBtn');
+ if(ps)ps.onclick=startRestaurantPrep;if(pp)pp.onclick=stopRestaurantPrep;if(cp)cp.onclick=stopRestaurantCook;if(sv)sv.onclick=serveRestaurantDish;
+ $('closeNightBtn').onclick=()=>finishRestaurant('조기 마감')
+}
+function updateRestaurantLive(){
+ if(!restaurant||restaurant.finished)return;
+ const timer=$('nightTimer');if(timer)timer.textContent=Math.max(0,Math.ceil(restaurant.timeLeft))+'초';
+ for(const c of restaurant.customers){
+   const btn=document.querySelector('[data-customer="'+c.id+'"]');if(!btn)continue;
+   const pct=Math.round(clamp(c.patience/c.maxPatience,0,1)*100),bar=btn.querySelector('.patienceBar'),fill=btn.querySelector('.patienceBar i'),txt=btn.querySelector('.patienceText');
+   if(fill)fill.style.width=pct+'%';if(txt)txt.textContent='기다림 '+pct+'%';if(bar){bar.classList.toggle('danger',pct<28);bar.classList.toggle('warn',pct>=28&&pct<55)}
+ }
+ const marker=$('timingMarker');if(marker)marker.style.left=restaurant.work.meter+'%';
+ const selected=restaurantCustomerById(restaurant.selectedId),sp=$('selectedPatience');if(selected&&sp)sp.textContent=Math.max(0,Math.ceil(selected.patience))+'초'
+}
+function tickRestaurant(){
+ if(!restaurant||restaurant.finished||state!=='restaurant')return;
+ const dt=.1;restaurant.timeLeft-=dt;restaurant.spawnCd-=dt;
+ let changed=false;
+ for(const c of [...restaurant.customers]){
+   c.patience-=dt;
+   if(c.patience<=0){
+     restaurant.customers=restaurant.customers.filter(x=>x!==c);restaurant.missed++;restaurant.streak=0;restaurant.repPenalty+=1.25;changed=true;
+     if(restaurant.selectedId===c.id){restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+' 손님이 너무 오래 기다려서 돌아갔어요.'}
+     beep(105,.07,'sawtooth')
+   }
+ }
+ const w=restaurant.work;
+ if(w.stage==='prep'){
+   w.meter+=w.dir*7.8;if(w.meter>=100){w.meter=100;w.dir=-1}else if(w.meter<=0){w.meter=0;w.dir=1}
+ }else if(w.stage==='cook'){
+   w.meter+=2.8;
+   if(w.meter>=100){w.meter=100;w.cookScore=.5;w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='조금 탔어요! 그래도 서빙은 할 수 있습니다.';beep(115,.09,'sawtooth');changed=true}
+ }
+ if(restaurant.spawnCd<=0&&restaurant.timeLeft>7&&restaurant.generated<restaurant.quota&&restaurant.customers.length<3&&availableRecipes().length){if(spawnRestaurantCustomer())changed=true}
+ if(restaurant.timeLeft<=0){finishRestaurant('영업 시간 종료');return}
+ if(stockCount()<=0&&w.stage==='idle'&&restaurant.customers.length===0){finishRestaurant('재료 소진');return}
+ if(restaurant.generated>=restaurant.quota&&restaurant.customers.length===0&&w.stage==='idle'){finishRestaurant('모든 손님 응대 완료');return}
+ if(changed)renderRestaurant();else updateRestaurantLive()
+}
+function selectRestaurantCustomer(id){
+ if(!restaurant||restaurant.finished)return;
+ if(restaurant.work.stage!=='idle'&&restaurant.work.customerId!==id){restaurant.message='지금 만들고 있는 접시를 먼저 끝내야 합니다.';renderRestaurant();return}
+ const c=restaurantCustomerById(id);if(!c)return;
+ if(restaurant.work.customerId!==id)restaurant.work=restaurantWorkIdle();
+ restaurant.selectedId=id;restaurant.work.customerId=id;restaurant.work.recipeId=c.recipeId;restaurant.message=c.name+'의 주문을 준비합니다.';renderRestaurant()
+}
+function chooseRestaurantIngredient(key){
+ if(!restaurant||restaurant.finished||restaurant.work.stage!=='idle')return;
+ const c=restaurantCustomerById(restaurant.selectedId);if(!c)return;
+ const recipe=RECIPES.find(r=>r.id===c.recipeId);if(!recipe?.keys.includes(key)||(meta.stock[key]||0)<=0)return;
+ restaurant.work.key=key;restaurant.work.customerId=c.id;restaurant.work.recipeId=recipe.id;restaurant.message=SPECIES[key].name+'을 골랐습니다. 이제 손질하세요.';beep(520,.04);renderRestaurant()
+}
+function startRestaurantPrep(){
+ const w=restaurant?.work;if(!w||w.stage!=='idle'||!w.key)return;
+ w.stage='prep';w.meter=Math.random()*25;w.dir=1;const center=48+Math.random()*18;w.target0=center-12;w.target1=center+12;restaurant.message='칼질 타이밍! 노란 구간에서 버튼을 누르세요.';beep(640,.04);renderRestaurant()
+}
+function stopRestaurantPrep(){
+ const w=restaurant?.work;if(!w||w.stage!=='prep')return;
+ w.prepScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.stage='cook';w.meter=0;const center=66+Math.random()*10;w.target0=center-10;w.target1=center+10;restaurant.message='손질 완료! 이제 알맞게 익혀서 불을 끄세요.';beep(w.prepScore>=1?900:430,.05);renderRestaurant()
+}
+function stopRestaurantCook(){
+ const w=restaurant?.work;if(!w||w.stage!=='cook')return;
+ w.cookScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='플레이팅 완료 · 품질 '+restaurantQualityLabel(w.quality)+'!';beep(w.quality>=1.04?1180:760,.06);renderRestaurant()
+}
+function serveRestaurantDish(){
+ if(!restaurant||restaurant.finished)return;
+ const w=restaurant.work,c=restaurantCustomerById(w.customerId);if(w.stage!=='ready'||!c)return;
+ const recipe=RECIPES.find(r=>r.id===w.recipeId),key=w.key;if(!recipe||!key||(meta.stock[key]||0)<=0){restaurant.message='그 사이 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
+ meta.stock[key]--;if(meta.stock[key]<=0)delete meta.stock[key];
+ const qualityMult=.76+clamp(w.quality,.5,1.15)*.36,patienceMult=.88+.28*clamp(c.patience/c.maxPatience,0,1),combo=1+Math.min(.28,restaurant.streak*.045),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006);
+ const sale=Math.round(recipePrice(recipe,key)*qualityMult*patienceMult*combo*rep),grade=restaurantQualityLabel(w.quality);
+ restaurant.earnings+=sale;restaurant.served++;restaurant.streak++;restaurant.bestStreak=Math.max(restaurant.bestStreak,restaurant.streak);restaurant.customers=restaurant.customers.filter(x=>x.id!==c.id);
+ restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
+ beep(920,.05);setTimeout(()=>beep(1280,.06),55);renderRestaurant()
+}
+function serveRestaurant(recipeId){
+ const c=restaurant?.customers.find(x=>x.recipeId===recipeId);if(c)selectRestaurantCustomer(c.id)
 }
 function startRestaurant(){
  state='restaurant';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  $('restaurantScreen').classList.remove('hidden');
- restaurant={served:0,earnings:0,streak:0,left:Math.min(9,5+Math.floor((meta.shop.reputation||0)/12)),current:null,finished:false,message:'첫 손님이 들어왔습니다.'};
- nextRestaurantCustomer()
+ const quota=Math.min(12,7+Math.floor((meta.shop.reputation||0)/16));
+ restaurant={served:0,missed:0,earnings:0,streak:0,bestStreak:0,quota,generated:0,customerSeq:0,customers:[],selectedId:null,work:restaurantWorkIdle(),timeLeft:72,spawnCd:0,repPenalty:0,finished:false,message:'첫 손님들이 들어오고 있습니다.'};
+ spawnRestaurantCustomer();spawnRestaurantCustomer();renderRestaurant();
+ restaurant.tickId=setInterval(tickRestaurant,100)
 }
-function serveRestaurant(recipeId){
- if(!restaurant||restaurant.finished)return;
- const wanted=RECIPES.find(r=>r.id===restaurant.current),picked=RECIPES.find(r=>r.id===recipeId);if(!wanted||!picked)return;
- if(recipeId!==wanted.id){restaurant.streak=0;restaurant.message='주문은 “'+wanted.name+'”입니다. 재료는 쓰지 않았어요.';meta.shop.reputation=Math.max(0,(meta.shop.reputation||0)-.2);beep(130,.07,'sawtooth');renderRestaurant();return}
- const key=chooseIngredient(wanted);if(!key){restaurant.message='이 메뉴의 재료가 다 떨어졌습니다.';nextRestaurantCustomer();return}
- meta.stock[key]--;if(meta.stock[key]<=0)delete meta.stock[key];
- const combo=1+Math.min(.35,restaurant.streak*.05),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006),sale=Math.round(recipePrice(wanted,key)*combo*rep);
- restaurant.earnings+=sale;restaurant.served++;restaurant.left--;restaurant.streak++;restaurant.message=SPECIES[key].name+'으로 조리 완료 · +'+money(sale);beep(860,.055);setTimeout(()=>beep(1180,.055),55);
- const avail=availableRecipes();if(restaurant.left<=0||!avail.length){finishRestaurant();return}
- const pool=avail.filter(r=>r.id!==wanted.id),next=(pool.length?pool:avail)[Math.floor(Math.random()*(pool.length?pool:avail).length)];restaurant.current=next.id;renderRestaurant()
-}
-function finishRestaurant(){
- if(!restaurant||restaurant.finished)return;restaurant.finished=true;
- meta.money+=restaurant.earnings;meta.day=Math.max(1,(meta.day||1)+1);meta.shop.totalServed=(meta.shop.totalServed||0)+restaurant.served;meta.shop.reputation=clamp((meta.shop.reputation||0)+restaurant.served*.8+Math.min(2,restaurant.streak*.2),0,99);meta.shop.bestNight=Math.max(meta.shop.bestNight||0,restaurant.earnings);save();
- $('restaurantBody').innerHTML='<div class="nightSummary"><span class="nightBadge">영업 종료</span><h3>오늘의 장사 결과</h3><div class="report"><div class="card"><span>손님</span><b>'+restaurant.served+'팀</b></div><div class="card"><span>밤 매출</span><b>'+money(restaurant.earnings)+'</b></div><div class="card"><span>가게 평판</span><b>'+Math.round(meta.shop.reputation)+'</b></div><div class="card"><span>남은 재고</span><b>'+stockCount()+'개</b></div></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn gold" id="nextDayBtn">다음 날 잠수 준비</button></div></div>';
+function finishRestaurant(reason='영업 종료'){
+ if(!restaurant||restaurant.finished)return;restaurant.finished=true;if(restaurant.tickId)clearInterval(restaurant.tickId);
+ const repGain=restaurant.served*.72+restaurant.bestStreak*.16-restaurant.repPenalty;
+ meta.money+=restaurant.earnings;meta.day=Math.max(1,(meta.day||1)+1);meta.shop.totalServed=(meta.shop.totalServed||0)+restaurant.served;meta.shop.reputation=clamp((meta.shop.reputation||0)+repGain,0,99);meta.shop.bestNight=Math.max(meta.shop.bestNight||0,restaurant.earnings);save();
+ $('restaurantBody').innerHTML='<div class="nightSummary"><span class="nightBadge">'+reason+'</span><h3>오늘의 장사 결과</h3><div class="report"><div class="card"><span>서빙</span><b>'+restaurant.served+'팀</b></div><div class="card"><span>놓친 손님</span><b>'+restaurant.missed+'팀</b></div><div class="card"><span>최고 연속</span><b>'+restaurant.bestStreak+'</b></div><div class="card"><span>밤 매출</span><b>'+money(restaurant.earnings)+'</b></div><div class="card"><span>가게 평판</span><b>'+Math.round(meta.shop.reputation)+'</b></div><div class="card"><span>남은 재고</span><b>'+stockCount()+'개</b></div></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn gold" id="nextDayBtn">다음 날 잠수 준비</button></div></div>';
  $('nextDayBtn').onclick=()=>{restaurant=null;$('restaurantScreen').classList.add('hidden');openContracts()}
 }
 
