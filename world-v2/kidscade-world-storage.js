@@ -41,7 +41,7 @@
         starterHintSeen:false,
         groundPickups:{},
         development:{farmLevel:1,fishingLevel:0,stoneMineLevel:1,ironMineLevel:1,techLevel:1,orchardLevel:0,ranchLevel:0,waterLevel:0,houseLevel:1,carpenterLevel:0},
-        homestead:{version:1,initialized:false,campfireBuilt:false,kitchenLevel:0,bedLevel:0,backpackLevel:1,storageLevel:1,wardrobeBuilt:false,homeStorage:{}},
+        homestead:{version:1,initialized:false,campfireBuilt:false,kitchenLevel:0,bedLevel:0,backpackLevel:1,storageLevel:1,wardrobeBuilt:false,homeStorage:{},homeFoodStorage:{}},
         orchard:{trees:{},harvests:{}},
         housing:{version:4,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1},
         town:{
@@ -77,7 +77,8 @@
         development:{...base.progression.development,...(p.development||{})},
         homestead:{
           ...base.progression.homestead,...(p.homestead||{}),
-          homeStorage:{...base.progression.homestead.homeStorage,...(p.homestead?.homeStorage||{})}
+          homeStorage:{...base.progression.homestead.homeStorage,...(p.homestead?.homeStorage||{})},
+          homeFoodStorage:{...base.progression.homestead.homeFoodStorage,...(p.homestead?.homeFoodStorage||{})}
         },
         orchard:{
           ...base.progression.orchard,...(p.orchard||{}),
