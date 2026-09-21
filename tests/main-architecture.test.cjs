@@ -180,6 +180,8 @@ test('game launcher owns modal session lifecycle and reward calculation', () => 
   assert.match(bootstrap, /const\s+gameLauncherBridge\s*=/);
   assert.match(bootstrap, /KidscadeGameLauncher\.open/);
   assert.match(bootstrap, /KidscadeGameLauncher\.close/);
+  assert.match(bootstrap, /kidscade:close-game/);
+  assert.match(bootstrap, /event\.source !== gameIframe\.contentWindow/);
   assert.match(bootstrap, /game-launcher\.js/);
 });
 
