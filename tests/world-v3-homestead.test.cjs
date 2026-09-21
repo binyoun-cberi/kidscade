@@ -112,6 +112,6 @@ test('legacy furnished saves are rebased to the primitive v3.22 homestead once',
   assert.match(runtime,/reworkVersion:HOMESTEAD_REWORK_VERSION/);
   assert.match(runtime,/progressionFurniture=new Set/);
   assert.match(runtime,/p\.housing\.placed=p\.housing\.placed\.filter/);
-  assert.match(storage,/reworkVersion:2/);
+  assert.match(storage,/reworkVersion:0/);
   assert.match(storage,/p\.homestead\?\.reworkVersion/);
 });
