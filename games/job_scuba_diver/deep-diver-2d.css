@@ -158,6 +158,7 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .missionCard p{min-height:47px;margin:0;color:#b7d4da;font-size:9px;line-height:1.45}
 .missionCard>b{display:block;margin-top:7px;color:#81e9ba;font-size:10px}
 .missionCard.selected{border-color:#ffd66d;background:linear-gradient(135deg,rgba(120,86,21,.55),rgba(7,52,64,.88));box-shadow:0 0 0 2px rgba(255,214,109,.08)}
+.missionCard.locked{opacity:.42;filter:grayscale(.75);cursor:not-allowed}
 .gearGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .gearCard{min-height:174px;padding:10px;border:2px solid var(--tier);border-radius:14px;background:linear-gradient(180deg,rgba(8,51,64,.9),rgba(3,30,40,.95));color:#eafdff;text-align:left;cursor:pointer;box-shadow:inset 0 4px 0 var(--tier)}
 .gearCard.selected{background:linear-gradient(180deg,rgba(16,77,89,.96),rgba(4,31,40,.96));box-shadow:0 0 0 2px var(--tier),inset 0 4px 0 var(--tier)}
