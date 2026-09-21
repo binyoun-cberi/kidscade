@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=19/);
-  assert.match(html,/diver-v7\.js\?v=27/);
+  assert.match(html,/deep-diver-2d\.css\?v=20/);
+  assert.match(html,/diver-v7\.js\?v=28/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=27');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=28');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -374,7 +374,7 @@ test('Deep Diver v15 sonar guides off-screen targets',()=>{
 test('Deep Diver v15 requires safe return for all economic rewards',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
   assert.match(js,/recordDepth=ok\?Math\.max\(0,world\.maxDepth-previousBest\):0/);
-  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+survival\):0/);
+  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+dailyBonus\+survival\):0/);
   assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
   assert.match(js,/구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다/);
 });
@@ -805,4 +805,33 @@ test('Deep Diver v27 uses a spatial grid for local ecology queries',()=>{
   assert.match(js,/for\(const o of nearbyFish\(f\.x,f\.y,maxDist\)\)/);
   assert.match(js,/for\(const o of nearbyFish\(f\.x,f\.y,170\)\)/);
   assert.match(js,/rebuildFishGrid\(\);for\(const f of world\.fish\)/);
+});
+
+
+test('Deep Diver v28 separates campaign contracts from rotating daily requests',()=>{
+  assert.match(js,/const DAILY_TASKS=\[/);
+  assert.match(js,/function dailyTaskForDay/);
+  assert.match(js,/function dailyTaskProgress/);
+  assert.match(js,/function dailyTaskComplete/);
+  assert.match(js,/function dailyTaskProgressText/);
+  assert.doesNotMatch(js,/id:'harvest',title:'07 · 오늘의 해조 식재료 조사'/);
+  assert.match(js,/world\.daily\.title/);
+  assert.match(js,/오늘의 보너스 · 자동 적용/);
+  assert.match(css,/\.missionCard\.dailyMission/);
+});
+
+test('Deep Diver v28 pays daily requests only after a safe successful return',()=>{
+  assert.match(js,/dailyComplete=ok&&dailyTaskComplete\(world\.daily\)/);
+  assert.match(js,/dailyBonus=dailyComplete\?world\.daily\.reward:0/);
+  assert.match(js,/world\.income\+base\+depthBonus\+dailyBonus\+survival/);
+  assert.match(js,/오늘의 보너스/);
+  assert.match(js,/주요 의뢰 보상/);
+});
+
+test('Deep Diver v28 rotates only daily tasks unlocked by campaign progress',()=>{
+  assert.match(js,/DAILY_TASKS\.filter\(t=>\(t\.unlock\|\|0\)<=meta\.unlocked\)/);
+  assert.match(js,/reefPhotos/);
+  assert.match(js,/mackerelRun/);
+  assert.match(js,/qualityPhoto/);
+  assert.match(js,/depthRun/);
 });
