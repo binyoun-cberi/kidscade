@@ -197,3 +197,56 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
   .ingredientBtn{padding-left:44px}
   .ingredientSprite{width:32px;height:32px}
 }
+
+
+/* v21 interactive harbor hub */
+.dockPanel{width:min(1180px,98vw);padding:16px;background:linear-gradient(180deg,rgba(7,38,50,.97),rgba(1,17,27,.98))}
+.dockScene{position:relative;height:clamp(300px,43vh,430px);margin:10px 0 8px;border-radius:20px;overflow:hidden;border:1px solid rgba(176,235,244,.28);background:linear-gradient(#78cbd7 0 34%,#317d91 35% 48%,#14576b 49% 100%);box-shadow:inset 0 -35px 90px rgba(0,13,24,.34),0 12px 28px rgba(0,0,0,.26)}
+.dockSky{position:absolute;inset:0 0 52% 0;background:linear-gradient(#9ee0e7,#65bac9);overflow:hidden}
+.dockSky i{position:absolute;width:120px;height:28px;border-radius:50%;background:rgba(240,253,255,.58);filter:blur(.2px)}
+.dockSky i:nth-child(1){left:7%;top:19%}.dockSky i:nth-child(2){left:42%;top:10%;transform:scale(.8)}.dockSky i:nth-child(3){right:10%;top:25%;transform:scale(1.15)}
+.dockHills{position:absolute;left:-4%;right:34%;top:26%;height:30%;background:linear-gradient(150deg,transparent 0 9%,rgba(35,94,94,.58) 10% 20%,transparent 21% 27%,rgba(28,78,82,.64) 28% 43%,transparent 44% 52%,rgba(24,70,77,.54) 53% 68%,transparent 69%);opacity:.75}
+.dockSea{position:absolute;right:0;top:43%;bottom:0;width:39%;background:linear-gradient(#2a9ab0,#12657a 56%,#08485b);overflow:hidden}
+.dockSea:before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:rgba(222,251,255,.78);box-shadow:0 6px 0 rgba(135,230,241,.25)}
+.dockWave{position:absolute;left:-20%;width:140%;height:3px;background:rgba(196,246,251,.38);border-radius:50%;animation:dockWave 4.2s linear infinite}
+.dockWave.w1{top:34%;animation-duration:5.4s}.dockWave.w2{top:63%;opacity:.55;animation-duration:4.1s;animation-direction:reverse}
+@keyframes dockWave{0%{transform:translateX(-5%) scaleY(1)}50%{transform:translateX(5%) scaleY(1.5)}100%{transform:translateX(-5%) scaleY(1)}}
+.dockPier{position:absolute;left:0;right:31%;bottom:0;height:34%;background:repeating-linear-gradient(90deg,#80583a 0 52px,#6e492f 53px 58px);border-top:10px solid #a9794e;box-shadow:inset 0 12px 0 rgba(255,222,165,.08)}
+.dockPier span{position:absolute;bottom:-12px;width:18px;height:82px;background:#4b3328;border-radius:0 0 8px 8px;box-shadow:inset 4px 0 rgba(255,255,255,.06)}
+.dockPier span:nth-child(1){left:8%}.dockPier span:nth-child(2){left:31%}.dockPier span:nth-child(3){left:55%}.dockPier span:nth-child(4){left:78%}
+.dockBuilding{position:absolute;z-index:4;width:128px;padding:0 4px 8px;border:0;background:transparent;color:#fff;cursor:pointer;text-align:center;filter:drop-shadow(0 8px 7px rgba(0,0,0,.35));transition:transform .14s ease,filter .14s ease}
+.dockBuilding:hover,.dockBuilding.active{transform:translateY(-5px) scale(1.025);filter:drop-shadow(0 11px 10px rgba(0,0,0,.42)) drop-shadow(0 0 12px rgba(255,220,102,.24))}
+.dockBuilding img{display:block;width:112px;height:112px;margin:0 auto -7px;object-fit:contain;image-rendering:pixelated}
+.dockBuilding b,.dockBuilding small{display:block;margin:auto;width:max-content;max-width:126px;border-radius:7px;padding:3px 7px;background:rgba(1,20,28,.86);border:1px solid rgba(201,242,247,.24)}
+.dockBuilding b{font-size:10px;color:#fff2b4}.dockBuilding small{margin-top:2px;font-size:8px;color:#bfe7ec;font-weight:800}
+.dockBuilding.active b{background:#795817;border-color:#ffe494}.dockBuilding.empty{opacity:.7}
+.dockOffice{left:2.5%;bottom:28%}.dockWorkshop{left:18%;bottom:30%}.dockGear{left:34%;bottom:27%}.dockCodex{left:49%;bottom:29%}.dockKitchen{left:62%;bottom:27%}
+.dockLaunch{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);min-width:150px;padding:16px 18px 12px;border:2px solid #d6f7fb;border-radius:18px;background:rgba(3,37,49,.80);color:#fff;cursor:pointer;box-shadow:0 8px 0 rgba(0,26,36,.5),0 0 22px rgba(108,234,247,.18);animation:dockBoatBob 2.5s ease-in-out infinite}
+.dockLaunch:hover{background:rgba(10,74,87,.94);border-color:#fff0a7}.dockLaunch b,.dockLaunch small{display:block}.dockLaunch b{font-size:12px;color:#ffe996}.dockLaunch small{font-size:8px;color:#b7e1e6}.dockBoatIcon{display:block;margin-bottom:5px;font-size:38px;line-height:.7;color:#e7edf0;text-shadow:-12px 8px 0 #285e70,14px 8px 0 #285e70}
+@keyframes dockBoatBob{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(5px)}}
+.dockSceneLabel{position:absolute;left:14px;top:12px;z-index:5;padding:7px 10px;border-radius:10px;background:rgba(3,29,39,.68);border:1px solid rgba(220,250,253,.22);backdrop-filter:blur(4px)}
+.dockSceneLabel b,.dockSceneLabel small{display:block}.dockSceneLabel b{font:900 13px/1 Impact,"Arial Black",system-ui;letter-spacing:.08em;color:#fff2b1}.dockSceneLabel small{margin-top:3px;font-size:8px;color:#c9edf1}
+.dockQuick{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:7px 0 10px}
+.dockQuick button{min-width:72px;padding:7px 9px;border-radius:999px;border:1px solid rgba(155,229,240,.24);background:rgba(5,48,61,.88);color:#dff9fc;font-size:9px;font-weight:1000;cursor:pointer}
+.dockQuick button.active{background:#a77921;color:#fff4c4;border-color:#ffd774}
+.dockDetail{margin-top:6px}.dockDetailPanel{padding:13px;border-radius:16px;background:rgba(3,30,41,.74);border:1px solid rgba(144,225,237,.16)}
+.dockDetailHead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}.dockDetailHead span{font-size:8px;color:#74dae8;font-weight:1000}.dockDetailHead h3{margin:2px 0 0;font-size:16px}.dockDetailHead small{font-size:9px;color:#9fc9d0}
+@media(max-width:900px){
+ .dockScene{height:390px}
+ .dockBuilding{width:112px}.dockBuilding img{width:96px;height:96px}
+ .dockOffice{left:1%;bottom:29%}.dockWorkshop{left:17%;bottom:31%}.dockGear{left:33%;bottom:28%}.dockCodex{left:48%;bottom:30%}.dockKitchen{left:60%;bottom:28%}
+ .dockSea{width:34%}.dockPier{right:27%}
+}
+@media(max-width:650px){
+ .dockPanel{padding:10px}.dockScene{height:430px}
+ .dockSea{top:57%;width:100%;height:43%;left:0}.dockPier{right:0;height:19%;z-index:2}
+ .dockBuilding{width:92px}.dockBuilding img{width:78px;height:78px}.dockBuilding b{font-size:8px;padding:2px 5px}.dockBuilding small{display:none}
+ .dockOffice{left:1%;top:25%;bottom:auto}.dockWorkshop{left:20%;top:19%;bottom:auto}.dockGear{left:39%;top:24%;bottom:auto}.dockCodex{left:58%;top:18%;bottom:auto}.dockKitchen{left:77%;top:24%;bottom:auto}
+ .dockLaunch{top:75%;min-width:136px;padding:12px 14px}.dockBoatIcon{font-size:31px}
+ .dockDetailHead{display:block}.dockDetailHead small{display:block;margin-top:3px}
+}
+@media(max-width:440px){
+ .dockScene{height:400px}.dockBuilding{width:76px}.dockBuilding img{width:67px;height:67px}
+ .dockOffice{left:0}.dockWorkshop{left:19%}.dockGear{left:38%}.dockCodex{left:57%}.dockKitchen{left:76%}
+ .dockQuick{gap:4px}.dockQuick button{min-width:54px;padding:6px 7px;font-size:8px}
+}
