@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=20/);
-  assert.match(html,/diver-v7\.js\?v=29/);
+  assert.match(html,/diver-v7\.js\?v=30/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=29');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=30');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -853,4 +853,59 @@ test('Deep Diver v29 adds a buoyancy upgrade that changes ascent instead of tele
   assert.match(js,/ascentO2=iy<-\.12\?st\.ascentO2:1/);
   assert.match(js,/world\.st\.speed\*world\.st\.ascent\*\.74/);
   assert.doesNotMatch(js,/teleport/i);
+});
+
+
+test('Deep Diver v30 turns individual specimen size into gameplay',()=>{
+  assert.match(js,/function creatureSizeBand/);
+  assert.match(js,/function creatureIndividualSizeClass/);
+  assert.match(js,/function creatureCatchWeight/);
+  assert.match(js,/function creaturePortions/);
+  assert.match(js,/sizeFactor:baseScale/);
+  assert.match(js,/q<\.90\?\{id:'small',label:'소형'/);
+  assert.match(js,/q<1\.18\?\{id:'large',label:'대형'/);
+  assert.match(js,/label:'특대'/);
+  assert.match(js,/catchPortions:\{\}/);
+  assert.match(js,/world\.catchPortions\[f\.key\]/);
+  assert.match(js,/world\.catchPortions\|\|world\.catchCounts/);
+});
+
+test('Deep Diver v30 makes creature condition alter capture difficulty',()=>{
+  assert.match(js,/function creatureCaptureState/);
+  assert.match(js,/function captureStateModifier/);
+  assert.match(js,/label:'공격\/경계'/);
+  assert.match(js,/label:'도주'/);
+  assert.match(js,/label:'은신'/);
+  assert.match(js,/label:'먹이활동'/);
+  assert.match(js,/captureChance\(difficulty,method,f=null\)/);
+  assert.match(js,/stateMod=f\?captureStateModifier\(f,method\):0/);
+  assert.match(js,/state==='fleeing'.*method==='net'/s);
+  assert.match(js,/state==='feeding'&&method==='trap'/);
+});
+
+test('Deep Diver v30 gives each equipment tier a physical size capacity',()=>{
+  assert.match(js,/function gearSizeCapacity/);
+  assert.match(js,/net:\['small','small','medium','medium'\]/);
+  assert.match(js,/harpoon:\['medium','large','large','huge'\]/);
+  assert.match(js,/gloves:\['small','small','medium','medium'\]/);
+  assert.match(js,/trap:\['small','medium','medium','large'\]/);
+  assert.match(js,/SIZE_RANK\[size\]>SIZE_RANK\[capacity\]/);
+  assert.match(js,/function gearCapabilityText/);
+  assert.match(js,/큰 개체일수록 릴 저항↑/);
+  assert.match(js,/도주\/경계 상태에 약함/);
+});
+
+test('Deep Diver v30 rewards finding unusually large specimens',()=>{
+  assert.match(js,/sizeBonus=creatureSizeBand\(f\)\.value/);
+  assert.match(js,/meta\.codex\[f\.key\]\.largest=Math\.max/);
+  assert.match(js,/photoValues:\{\}/);
+  assert.match(js,/world\.mission\.photoValues\[f\.key\]/);
+  assert.match(js,/최대 개체/);
+  assert.match(js,/식재료 '\+portions\+'회분/);
+});
+
+test('Deep Diver v30 exposes nearby specimen size and condition through sonar',()=>{
+  assert.match(js,/world\.sonar>0&&Math\.hypot\(f\.x-world\.player\.x,f\.y-world\.player\.y\)<260/);
+  assert.match(js,/const tag=band\.label\+' · '\+state\.label/);
+  assert.match(js,/band\.id==='trophy'/);
 });
