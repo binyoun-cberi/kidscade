@@ -12,6 +12,9 @@ const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'u
 test('fresh Seed World starts primitive but cannot deadlock',()=>{
   for(const id of ['starter-wood-1','starter-wood-6','starter-stone-1','starter-stone-6'])assert.ok(runtime.includes(id),id);
   assert.match(runtime,/초보자 보급: 목재 \+5 · 돌 \+5/);
+  assert.match(runtime,/canCarryBundle\(\{wood:5,stone:5\}\)/);
+  assert.match(runtime,/addInventoryItem\('wood',5/);
+  assert.match(runtime,/addInventoryItem\('stone',5/);
   assert.match(runtime,/homeCampfire/);
   assert.match(runtime,/집 앞 캠프파이어/);
   assert.match(runtime,/바닥 이불에서 자기/);
