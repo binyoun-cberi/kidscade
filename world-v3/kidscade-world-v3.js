@@ -271,7 +271,8 @@ function prog(){
     backpackLevel:clampLevel(rawHome.backpackLevel,1,4,legacyComfort?2:1),
     storageLevel:clampLevel(rawHome.storageLevel,1,4,legacyComfort?2:1),
     wardrobeBuilt:rawHome.wardrobeBuilt===true||legacyComfort,
-    homeStorage:rawHome.homeStorage&&typeof rawHome.homeStorage==='object'?rawHome.homeStorage:{}
+    homeStorage:rawHome.homeStorage&&typeof rawHome.homeStorage==='object'?rawHome.homeStorage:{},
+    homeFoodStorage:rawHome.homeFoodStorage&&typeof rawHome.homeFoodStorage==='object'?rawHome.homeFoodStorage:{}
   };
   p.orchard=p.orchard&&typeof p.orchard==='object'?p.orchard:{};
   p.orchard.trees=p.orchard.trees&&typeof p.orchard.trees==='object'?p.orchard.trees:{};
@@ -359,6 +360,23 @@ function homeStoragePanel(){
     '<h3>집에서 꺼내기</h3><div class="grid">'+(stored.length?stored.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-out="'+k+'">전부 꺼내기</button></div>').join(''):'<div class="item">보관 중인 재료가 없어요.</div>')+'</div>'+
     '<p><button data-open-furniture="1">🪑 가구 창고 · 배치</button></p>');
 }
+function homeFoodStorage(){return prog().homestead.homeFoodStorage}
+function homeFoodStoragePanel(){
+  const bag=prog().food||{},cold=homeFoodStorage(),bagRows=Object.entries(bag).filter(([k,v])=>FOOD_DEF[k]&&Number(v)>0),coldRows=Object.entries(cold).filter(([k,v])=>FOOD_DEF[k]&&Number(v)>0);
+  openPanel('<h2>🧊 냉장고</h2><p>조리한 음식을 집에 보관하면 가방 칸을 비울 수 있어요.</p>'+
+    '<h3>가방 음식</h3><div class="grid">'+(bagRows.length?bagRows.map(([k,v])=>'<div class="item"><b>'+FOOD_DEF[k].name+'</b><div>'+v+'개</div><button data-food-store-in="'+k+'">냉장 보관</button></div>').join(''):'<div class="item">가방에 음식이 없어요.</div>')+'</div>'+
+    '<h3>냉장 음식</h3><div class="grid">'+(coldRows.length?coldRows.map(([k,v])=>'<div class="item"><b>'+FOOD_DEF[k].name+'</b><div>'+v+'개</div><button data-food-store-out="'+k+'">가방으로 꺼내기</button></div>').join(''):'<div class="item">냉장고가 비어 있어요.</div>')+'</div>');
+}
+function moveFoodToFridge(key){
+  const bag=prog().food,cold=homeFoodStorage(),qty=Math.max(0,Number(bag[key])||0);if(!qty)return;
+  cold[key]=(cold[key]||0)+qty;bag[key]=0;persist();homeFoodStoragePanel();
+}
+function moveFoodFromFridge(key){
+  const bag=prog().food,cold=homeFoodStorage(),qty=Math.max(0,Number(cold[key])||0);if(!qty)return;
+  if((bag[key]||0)<=0&&carriedSlotCount()>=backpackCapacity()){toast('🎒 가방에 빈 칸이 없어요.');return;}
+  bag[key]=(bag[key]||0)+qty;cold[key]=0;persist();homeFoodStoragePanel();
+}
+
 
 
 function toolName(key,p=prog()){
@@ -686,7 +704,8 @@ function nextHomesteadGoal(){
   if(!Object.values(p.crops||{}).some(v=>v&&v.phase&&v.phase!=='empty'))return {icon:'🥕',title:'첫 작물 키우기',text:'밭 1칸에 씨앗을 심고 가져온 물을 주세요.'};
   if(d.waterLevel<1)return {icon:'🪣',title:'우물 만들기',text:'강까지 왕복하지 않도록 집 앞 우물을 건설하세요.'};
   if(d.carpenterLevel<1)return {icon:'🪚',title:'목수공방 세우기',text:'생활 가구를 직접 만들 수 있는 목수공방을 열어보세요.'};
-  if((p.housing.owned.bedSingle||0)<=0&&!p.housing.placed.some(v=>v.key==='bedSingle'))return {icon:'🛏️',title:'바닥 이불 졸업하기',text:'목수공방에서 나무 침대를 만들어 집에 배치하세요.'};
+  if((p.housing.owned.bedSingle||0)<=0&&!hasPlacedFurniture('bedSingle'))return {icon:'🛏️',title:'나무 침대 만들기',text:'목수공방에서 첫 침대를 만들어 보세요.'};
+  if(!hasPlacedFurniture('bedSingle'))return {icon:'🛏️',title:'침대를 집에 배치하기',text:'임시 수납상자에서 가구 창고를 열고 만든 침대를 실제 방에 놓으세요.'};
   if(d.houseLevel<2)return {icon:'🏠',title:'집을 두 칸으로 확장하기',text:'목재와 못을 모아 잠긴 옆방을 열어보세요.'};
   if(d.orchardLevel<1)return {icon:'🍎',title:'첫 과수원 만들기',text:'과수원 터를 열어 매일 다시 열리는 사과나무를 심으세요.'};
   if(d.ranchLevel<1)return {icon:'🐄',title:'작은 목장 만들기',text:'울타리를 세워 첫 목장 동물을 데려올 자리를 만드세요.'};
@@ -696,7 +715,8 @@ function nextHomesteadGoal(){
   if(d.waterLevel<3)return {icon:'🚿',title:'집까지 수도 연결하기',text:'구리·전선·유리를 준비해 수도를 집까지 끌어오세요.'};
   if(!p.housing.placed.some(v=>v.key==='kitchenSink'))return {icon:'🚰',title:'싱크대·수도꼭지 놓기',text:'목수공방에서 싱크대를 만들어 집에 배치하면 물 운반에서 해방돼요.'};
   if(d.techLevel<2)return {icon:'💾',title:'반도체 시대 열기',text:'광산을 발전시키고 기술 공방 2단계에서 반도체를 만들어보세요.'};
-  if((p.housing.owned.television||0)<=0&&!p.housing.placed.some(v=>v.key==='television'))return {icon:'📺',title:'내 손으로 TV 만들기',text:'반도체·금·철·목재를 조합해 모던 TV를 완성하세요.'};
+  if((p.housing.owned.television||0)<=0&&!hasPlacedFurniture('television'))return {icon:'📺',title:'내 손으로 TV 만들기',text:'반도체·금·철·목재를 조합해 모던 TV를 완성하세요.'};
+  if(!hasPlacedFurniture('television'))return {icon:'📺',title:'TV를 거실에 놓기',text:'완성한 TV를 가구 창고에서 꺼내 넓어진 집에 직접 배치하세요.'};
   return {icon:'⭐',title:'내 방식대로 마을 키우기',text:'과수원·목장·농장·광산을 원하는 순서로 5성 마을까지 발전시켜 보세요.'};
 }
 
@@ -780,6 +800,8 @@ panel.addEventListener('click',e=>{
   if(e.target.closest('[data-world-cosmetic-clear]')){Meta?.equipCosmetic?.('');syncCosmeticAura();cosmeticShopPanel();return;}
   const storeIn=e.target.closest('[data-store-in]');if(storeIn){transferToHomeStorage(storeIn.dataset.storeIn);return;}
   const storeOut=e.target.closest('[data-store-out]');if(storeOut){transferFromHomeStorage(storeOut.dataset.storeOut);return;}
+  const foodIn=e.target.closest('[data-food-store-in]');if(foodIn){moveFoodToFridge(foodIn.dataset.foodStoreIn);return;}
+  const foodOut=e.target.closest('[data-food-store-out]');if(foodOut){moveFoodFromFridge(foodOut.dataset.foodStoreOut);return;}
   if(e.target.closest('[data-open-furniture]')){furnishingSystem?.openCatalog?.();return;}
   const carpenterCraft=e.target.closest('[data-carpenter-craft]');if(carpenterCraft){craftCarpenterFurniture(carpenterCraft.dataset.carpenterCraft);return;}
   const devUpgrade=e.target.closest('[data-dev-upgrade]');if(devUpgrade){upgradeDevelopment(devUpgrade.dataset.devUpgrade);return;}
@@ -1873,7 +1895,7 @@ async function init(){
     canPlace:canPlaceFurniture,
     useFurniture:key=>{
       if(key==='bedSingle'){setAvatarAction('smile',850);sleep();return;}
-      if(key==='kitchenFridge'){homeStoragePanel();return;}
+      if(key==='kitchenFridge'){homeFoodStoragePanel();return;}
       if(key==='kitchenStove'){setAvatarAction('smile',500);cookingPanel('stove');return;}
       if(key==='kitchenSink'){
         if(devState().waterLevel<3){toast('수도가 아직 집까지 연결되지 않았어요.');return;}
