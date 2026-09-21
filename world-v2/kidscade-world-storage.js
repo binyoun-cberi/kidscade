@@ -41,7 +41,7 @@
         starterHintSeen:false,
         groundPickups:{},
         development:{farmLevel:1,fishingLevel:0,stoneMineLevel:1,ironMineLevel:1,techLevel:1,orchardLevel:0,ranchLevel:0,waterLevel:0,houseLevel:1,carpenterLevel:0},
-        homestead:{version:1,initialized:false,campfireBuilt:false,kitchenLevel:0,bedLevel:0,backpackLevel:1,storageLevel:1,wardrobeBuilt:false,homeStorage:{},homeFoodStorage:{}},
+        homestead:{version:2,reworkVersion:2,initialized:false,campfireBuilt:false,kitchenLevel:0,bedLevel:0,backpackLevel:1,storageLevel:1,wardrobeBuilt:false,homeStorage:{},homeFoodStorage:{}},
         orchard:{trees:{},harvests:{}},
         housing:{version:4,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1},
         town:{
@@ -92,13 +92,12 @@
           placed:Array.isArray(p.housing?.placed)?p.housing.placed.map(v=>({...v})):[]
         }
       };
-      // Pre-homestead saves could already own ranch animals. Give them enough ranch capacity
-      // instead of loading those animals into a level-0 empty field.
-      {
+      // Only genuinely old saves receive the historical ranch-capacity repair.
+      // v3.22+ deliberately lets a returning player own Cube Pets before rebuilding the ranch.
+      if((Number(p.homestead?.reworkVersion)||0)<2){
         const owned=Array.isArray(base.progression.cubePets?.owned)?base.progression.cubePets.owned:[];
         const mapped=new Set(owned.map(id=>({rabbit:'bunny',miniPig:'pig'}[id]||id)));
         const legacyRanchCount=['bunny','pig','cow','chick'].filter(id=>mapped.has(id)).length;
-        // Also repairs saves created during the transition where ranchLevel:0 may already exist.
         if(legacyRanchCount>base.progression.development.ranchLevel){
           base.progression.development.ranchLevel=Math.min(4,legacyRanchCount);
         }else if(!hadRanchLevel){
@@ -106,7 +105,7 @@
         }
       }
       base.progression.housing.version=4;
-      base.progression.homestead.version=1;
+      base.progression.homestead.version=2;
     }
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
     if(raw.migration&&typeof raw.migration==='object')base.migration={...base.migration,...raw.migration};
