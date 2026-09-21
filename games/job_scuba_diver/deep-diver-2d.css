@@ -347,3 +347,10 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .eveningNote b{color:#ffe38a;font-size:11px}.eveningNote span{color:#c7e7ec;font-size:9px;line-height:1.45;text-align:right}
 .eveningActions{margin-top:10px}.eveningActions .btn{flex:1 1 180px}
 @media(max-width:620px){.eveningNote{display:block}.eveningNote span{display:block;margin-top:4px;text-align:left}.eveningActions .btn{flex:1 1 100%}}
+
+
+/* v25 kitchen prep */
+.kitchenPrepHero{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px;padding:13px;border-radius:15px;background:linear-gradient(135deg,rgba(11,63,77,.86),rgba(47,38,65,.78));border:1px solid rgba(151,226,238,.17)}
+.kitchenPrepHero h3{margin:3px 0 4px}.kitchenPrepHero p{margin:0;color:#bddce1;font-size:9px;line-height:1.45}.kitchenPrepHero>b{color:#ffe17a;font-size:18px;white-space:nowrap}
+.kitchenPrepCard{min-height:128px}.kitchenPrepCard>span{display:inline-block;margin-bottom:4px;font-size:8px;font-weight:1000;color:#80e7b4}.kitchenPrepCard.locked{opacity:.58}.kitchenPrepCard.locked>span{color:#db9d9d}.kitchenPrepCard small{color:#9fc7cf;font-size:8px;line-height:1.35}
+@media(max-width:620px){.kitchenPrepHero{display:block}.kitchenPrepHero>b{display:block;margin-top:8px}}
