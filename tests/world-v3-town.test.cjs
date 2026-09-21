@@ -35,8 +35,9 @@ test('starter loop cannot deadlock on a fresh save',()=>{
   assert.match(runtime,/작은 돌 줍기/);
   assert.match(runtime,/도구 없이 주웠어요/);
   assert.match(runtime,/초보자 보급 상자 열기/);
-  assert.match(runtime,/i\.wood=\(i\.wood\|\|0\)\+5/);
-  assert.match(runtime,/i\.stone=\(i\.stone\|\|0\)\+5/);
+  assert.match(runtime,/canCarryBundle\(\{wood:5,stone:5\}\)/);
+  assert.match(runtime,/addInventoryItem\('wood',5/);
+  assert.match(runtime,/addInventoryItem\('stone',5/);
   assert.match(runtime,/starterKitClaimed/);
   assert.match(storage,/starterKitClaimed:false/);
 });
@@ -166,9 +167,11 @@ test('World v3 furnishing supports persistent craft buy place rotate move and st
 });
 
 
-test('fresh homes no longer auto-fill study and living furniture',()=>{
-  assert.match(furnishing,/function migrateDefaultLayout/);
-  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateDefaultLayout\(\)/);
+test('fresh homes no longer contain the retired auto-furnishing path',()=>{
+  assert.doesNotMatch(furnishing,/function migrateDefaultLayout/);
+  assert.doesNotMatch(furnishing,/function migrateFunctionalLayout/);
+  assert.doesNotMatch(furnishing,/function claimStarterGift/);
+  assert.doesNotMatch(furnishing,/data-furn-craft/);
   assert.match(runtime,/starter-home-storage/);
   assert.match(runtime,/바닥 이불에서 자기/);
   assert.match(runtime,/HOUSE_BOUNDS/);
@@ -185,7 +188,7 @@ test('bed kitchen storage and wardrobe are earned through homestead progression'
   assert.match(furnishing,/kitchenFridge/);
   assert.match(furnishing,/homeDrawers/);
   assert.match(furnishing,/wardrobe/);
-  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateFunctionalLayout\(\)/);
+  assert.doesNotMatch(furnishing,/function migrateFunctionalLayout/);
   assert.match(runtime,/const CARPENTER_RECIPES=/);
   assert.match(runtime,/kidscade:open-avatar-studio/);
   assert.match(runtime,/hasPlacedFurniture\('kitchenSink'\)/);
