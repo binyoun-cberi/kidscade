@@ -149,7 +149,38 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .report-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report h4{font-size:13px;margin:8px 0}.report ul{margin:0;padding-left:18px;font-size:12px;line-height:1.55}.report-actions{display:flex;justify-content:flex-end;margin-top:13px}
 .offscreen-note{position:absolute;right:10px;bottom:10px;z-index:18;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.9);border:1px solid var(--line);font-size:10px;color:var(--muted)}
 @media(max-width:780px){
-  #app{padding:7px}.layout{grid-template-columns:1fr}.world{min-height:500px}.daybar{grid-template-columns:1fr auto}.daybar .middle{grid-column:1/-1;grid-row:2}
-  .metrics{grid-template-columns:1fr 1fr}.report-cols{grid-template-columns:1fr}.panel{margin-top:0}.student{width:62px;height:88px}.sprite-wrap{width:47px}.sprite{max-width:47px;max-height:58px}.instruction-actions{grid-template-columns:repeat(7,108px)}
+  #app{padding:7px;padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
+  .layout{grid-template-columns:1fr}
+  .world{min-height:500px}
+  .daybar{grid-template-columns:1fr auto}
+  .daybar .middle{grid-column:1/-1;grid-row:2}
+  .metrics{grid-template-columns:1fr 1fr}
+  .report-cols{grid-template-columns:1fr}
+  .panel{margin-top:0}
+  .student{width:62px;height:88px}
+  .sprite-wrap{width:47px}
+  .sprite{max-width:47px;max-height:58px}
+  .instruction-actions{grid-template-columns:repeat(7,108px)}
+  .student-selected .panel{
+    position:fixed;
+    left:7px;right:7px;
+    bottom:calc(env(safe-area-inset-bottom) + 7px);
+    z-index:70;
+    max-height:42vh;
+    overflow:auto;
+    border-radius:16px 16px 12px 12px;
+    box-shadow:0 -8px 30px rgba(36,31,25,.18);
+  }
+  .student-selected .panel:before{
+    content:"";
+    display:block;
+    width:42px;height:4px;
+    border-radius:99px;
+    background:#cfc7bb;
+    margin:0 auto 8px;
+  }
+  .student-selected #contextActions{grid-template-columns:1fr 1fr}
+  .student-selected .context-action{min-height:44px}
+  .student-selected .observe{max-height:130px;overflow:auto}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
