@@ -3,11 +3,13 @@ import * as THREE from 'three';
 const ROOT=new URL('../assets/game/3d/interiors/kenney-furniture-kit/',import.meta.url).href;
 
 export const FURNITURE_CATALOG={
-  bedSingle:{name:'기본 침대',file:'bed-single.glb',w:2.6,h:1.25,d:2.1,cw:1.6,cd:2.35,use:'침대에서 자기',source:'기본 제공 설비'},
-  kitchenStove:{name:'가스레인지',file:'kitchen-stove.glb',w:1.3,h:1.45,d:1.1,cw:1.1,cd:.78,use:'요리하기',source:'기본 제공 설비'},
-  kitchenSink:{name:'싱크대',file:'kitchen-sink.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'손 씻기',source:'기본 제공 설비'},
-  kitchenCabinet:{name:'주방 캐비닛',file:'kitchen-cabinet.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'식재료 보관함 보기',source:'기본 제공 설비'},
-  kitchenFridge:{name:'냉장고',file:'kitchen-fridge.glb',w:1.25,h:2.3,d:1.2,cw:1.0,cd:.9,use:'냉장고 열기',source:'기본 제공 설비'},
+  bedSingle:{name:'나무 침대',file:'bed-single.glb',w:2.6,h:1.25,d:2.1,cw:1.6,cd:2.35,use:'침대에서 자기',source:'목수공방 제작'},
+  kitchenStove:{name:'가스레인지',file:'kitchen-stove.glb',w:1.3,h:1.45,d:1.1,cw:1.1,cd:.78,use:'요리하기',source:'목수공방 2단계 제작'},
+  kitchenSink:{name:'싱크대·수도꼭지',file:'kitchen-sink.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'수도 사용하기',source:'수도 3단계 + 목수공방 제작'},
+  kitchenCabinet:{name:'큰 수납장',file:'kitchen-cabinet.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'집 수납 열기',source:'목수공방 제작'},
+  kitchenFridge:{name:'냉장고',file:'kitchen-fridge.glb',w:1.25,h:2.3,d:1.2,cw:1.0,cd:.9,use:'냉장고 열기',source:'목수공방 3단계 제작'},
+  homeDrawers:{name:'서랍장',file:'side-table-drawers.glb',w:1.15,h:1.05,d:1.0,cw:.85,cd:.76,use:'집 수납 열기',source:'목수공방 1단계 제작'},
+  wardrobe:{name:'옷장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,use:'옷 갈아입기',source:'목수공방 2단계 제작'},
   classicDesk:{name:'기본 책상',file:'desk.glb',w:2.0,h:1.4,d:1.2,cw:1.8,cd:.9,recipe:{wood:8,iron:1},use:'책상 사용하기'},
   tallBookcase:{name:'기본 책장',file:'bookcase-open.glb',w:1.6,h:2.45,d:.78,cw:1.35,cd:.62,recipe:{wood:10},use:'책장 살펴보기'},
   classicSofa:{name:'기본 소파',file:'lounge-sofa.glb',w:2.9,h:1.4,d:1.45,cw:2.5,cd:1.1,recipe:{wood:12,iron:1},use:'소파에 앉기'},
@@ -72,7 +74,7 @@ export function createFurnishingSystem(ctx){
     const cleanOwned={};
     for(const key of Object.keys(FURNITURE_CATALOG))cleanOwned[key]=safeCount(owned[key]);
     p.housing={
-      version:3,
+      version:4,
       owned:cleanOwned,
       placed:Array.isArray(raw.placed)?raw.placed.filter(r=>r&&FURNITURE_CATALOG[r.key]).map(r=>({
         id:String(r.id||'f'+Date.now()),
@@ -167,19 +169,13 @@ export function createFurnishingSystem(ctx){
 
   function catalogPanel(){
     if(getMode()!=='indoor'){toast('집 안에서만 꾸밀 수 있어요.');return;}
-    claimStarterGift();
     const s=ensureState();
     const ownedCards=Object.entries(FURNITURE_CATALOG).map(([key,def])=>{
       const count=s.owned[key]||0;
       return '<div class="item"><b>'+def.name+'</b><div>보관 '+count+'개</div><small>'+recipeText(def,itemName)+'</small><br><button data-furn-place="'+key+'" '+(count>0?'':'disabled')+'>배치하기</button></div>';
     }).join('');
-    const craftCards=Object.entries(FURNITURE_CATALOG).filter(([,d])=>d.recipe).map(([key,def])=>{
-      const enough=Object.entries(def.recipe).every(([k,v])=>(inv()[k]||0)>=v);
-      return '<div class="item"><b>'+def.name+'</b><div>'+recipeText(def,itemName)+'</div><button data-furn-craft="'+key+'" '+(enough?'':'disabled')+'>제작</button></div>';
-    }).join('');
-    openPanel('<h2>🏠 우리 집 꾸미기</h2><p>가구를 고르면 플레이어 앞에 미리보기가 나타나요. 이동해서 자리를 잡고 회전한 뒤 배치하세요.</p><h3>가구 창고</h3><div class="grid">'+ownedCards+'</div><h3>가구 제작</h3><div class="grid">'+craftCards+'</div><p style="font-size:12px">러그·램프·곰 인형·TV 같은 생활용품은 씨앗마을 상점에서도 구할 수 있어요.</p>');
+    openPanel('<h2>🏠 가구 창고 · 집 꾸미기</h2><p>목수공방이나 마을 보상으로 얻은 가구를 집 안에 직접 배치해요.</p><div class="grid">'+ownedCards+'</div><p style="font-size:12px">새 가구 제작은 농장 옆 <b>목수공방</b>에서 할 수 있어요.</p>');
   }
-
   function craft(key){
     const def=FURNITURE_CATALOG[key],s=ensureState(),i=inv();
     if(!def?.recipe)return false;
@@ -299,8 +295,6 @@ export function createFurnishingSystem(ctx){
   }
 
   async function restore(){
-    migrateDefaultLayout();
-    migrateFunctionalLayout();
     const s=ensureState();
     for(const rec of s.placed){
       if(actors.has(String(rec.id)))continue;
