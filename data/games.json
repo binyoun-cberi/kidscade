@@ -99,6 +99,15 @@
       "description": "3D 환자를 관찰하며 채팅처럼 문진하고, 문진→검사→진단→처방을 순서대로 진행하세요. 환자의 말뿐 아니라 기침·홍조·움직임도 단서가 되며 하루 종료 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
     },
     {
+      "id": "job_teacher_classroom",
+      "title": "우리 반: 담임교사 시뮬레이터",
+      "href": "games/teacher-classroom-sim-prototype/index.html?v=1",
+      "category": "trivia",
+      "age": "job",
+      "icon": "🏫",
+      "description": "초등학교 담임교사가 되어 실제 일과에 맞춰 수업을 진행하고, 학생들의 학습·친구관계·그룹 형성·생활지도를 관찰하고 개입하는 살아 있는 학급 운영 시뮬레이션!"
+    },
+    {
       "id": "math_timing_lcd",
       "title": "딱! 타임 LCD",
       "href": "딱! 타임 LCD.html",
