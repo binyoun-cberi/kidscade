@@ -536,6 +536,53 @@ function performGridCraft(){
   craftGrid=Array(9).fill('');persist();updateHomesteadVisuals();updateStatus();setAvatarAction('smile',700);worldAudio.sfx('success',.13);
   toast('🔨 '+recipe.name+' 제작 완료!');craftGridPanel();
 }
+const CARPENTER_RECIPES={
+  bedSingle:{name:'나무 침대',level:1,req:{wood:8,nails:2,fabric:2},desc:'바닥 이불 대신 편하게 잘 수 있어요.'},
+  homeDrawers:{name:'서랍장',level:1,req:{wood:6,nails:2},desc:'집 수납공간이 20칸으로 늘어요.'},
+  woodChair:{name:'나무 의자',level:1,req:{wood:4,nails:1},desc:'첫 생활 가구예요.'},
+  sideTable:{name:'작은 협탁',level:1,req:{wood:5,nails:1,paint:1},desc:'작은 방을 꾸미기 좋아요.'},
+  wardrobe:{name:'옷장',level:2,req:{wood:10,nails:3,fabric:2},friend:'minji',friendNeed:3,desc:'집 안에서 바로 아바타 옷을 갈아입어요.'},
+  kitchenCabinet:{name:'큰 수납장',level:2,req:{wood:8,nails:3,paint:1},friend:'junho',friendNeed:3,desc:'집 수납공간을 32칸으로 확장해요.'},
+  kitchenStove:{name:'가스레인지',level:2,req:{iron:4,nails:2,glass:1},friend:'haneul',friendNeed:3,desc:'수프·오믈렛·과일요리까지 만들 수 있어요.'},
+  kitchenSink:{name:'싱크대·수도꼭지',level:2,req:{wood:4,iron:2,nails:2,glass:1},friend:'junho',friendNeed:3,waterNeed:3,desc:'수도 3단계가 연결되면 집에서 바로 물을 써요.'},
+  classicDesk:{name:'책상',level:2,req:{wood:8,nails:2,paint:1},desc:'넓어진 집의 생활 가구예요.'},
+  diningTable:{name:'식탁',level:2,req:{wood:9,nails:2,paint:1},desc:'주방과 식사 공간을 꾸며요.'},
+  classicSofa:{name:'소파',level:3,req:{wood:12,nails:4,fabric:4},friend:'minji',friendNeed:7,desc:'큰 집 거실용 고급 가구예요.'},
+  kitchenFridge:{name:'냉장고',level:3,req:{iron:6,glass:2,wire:4,semiconductor:1},friend:'haneul',friendNeed:7,desc:'현대식 주방의 핵심 가구예요.'}
+};
+function carpenterFriendship(recipe){
+  if(!recipe.friend)return {ok:true,text:''};
+  const f=Number(townEconomy?.ensureState?.(prog())?.friendship?.[recipe.friend]||0);
+  const name=townEconomy?.RESIDENTS?.[recipe.friend]?.name||recipe.friend;
+  return {ok:f>=recipe.friendNeed,text:name+' 친밀도 ♥ '+recipe.friendNeed};
+}
+function carpenterPanel(){
+  const level=devState().carpenterLevel;
+  if(level<1){openPanel('<h2>🪚 목수공방 터</h2><p>아직 공방이 없어요. 씨앗 생활 보드의 <b>마을 성장</b>에서 목수공방을 세워 보세요.</p><button data-world-hub="develop">성장판 보기</button>');return;}
+  const i=inv(),cards=Object.entries(CARPENTER_RECIPES).map(([key,r])=>{
+    const friend=carpenterFriendship(r),waterOk=!r.waterNeed||devState().waterLevel>=r.waterNeed;
+    const enough=Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v),unlocked=level>=r.level&&friend.ok&&waterOk;
+    const req=Object.entries(r.req).map(([k,v])=>itemName(k)+' '+v).join(' · ');
+    const lock=level<r.level?'목수공방 '+r.level+'단계 필요':!friend.ok?friend.text:!waterOk?'수도 '+r.waterNeed+'단계 필요':'';
+    return '<div class="item"><b>'+(unlocked?'':'🔒 ')+r.name+'</b><div>'+r.desc+'</div><small>'+req+(lock?'<br>'+lock:'')+'</small><br><button data-carpenter-craft="'+key+'" '+(unlocked&&enough?'':'disabled')+'>'+(unlocked?(enough?'제작':'재료 부족'):'잠김')+'</button></div>';
+  }).join('');
+  openPanel('<h2>🪚 목수공방 '+level+'단계</h2><p>목재·광물은 직접 모으고, <b>못·천·유리·전선·페인트는 씨앗마을 상점</b>에서 사서 생활 가구를 만들어요.</p><div class="grid">'+cards+'</div>');
+}
+function craftCarpenterFurniture(key){
+  const r=CARPENTER_RECIPES[key],p=prog(),i=inv();if(!r)return;
+  if(devState().carpenterLevel<r.level){toast('목수공방 단계가 부족해요.');return;}
+  const friend=carpenterFriendship(r);if(!friend.ok){toast(friend.text+'이 필요해요.');return;}
+  if(r.waterNeed&&devState().waterLevel<r.waterNeed){toast('수도 '+r.waterNeed+'단계가 필요해요.');return;}
+  if(!Object.entries(r.req).every(([k,v])=>(i[k]||0)>=v)){toast('가구 재료가 부족해요.');return;}
+  Object.entries(r.req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  p.housing.owned[key]=(p.housing.owned[key]||0)+1;
+  if(key==='homeDrawers')p.homestead.storageLevel=Math.max(2,p.homestead.storageLevel);
+  if(key==='kitchenCabinet')p.homestead.storageLevel=Math.max(3,p.homestead.storageLevel);
+  if(key==='wardrobe')p.homestead.wardrobeBuilt=true;
+  if(key==='kitchenStove')p.homestead.kitchenLevel=Math.max(2,p.homestead.kitchenLevel);
+  if(key==='bedSingle')p.homestead.bedLevel=Math.max(1,p.homestead.bedLevel);
+  persist();updateHomesteadVisuals();setAvatarAction('smile',650);worldAudio.sfx('success',.12);toast('🪚 '+r.name+' 제작 완료! 집 가구 창고에 들어갔어요.');carpenterPanel();
+}
 const FOOD_DEF={
   grilledFish:{name:'구운 생선',hunger:34,energy:10},
   bakedPotato:{name:'구운 감자',hunger:25,energy:6},
@@ -703,6 +750,7 @@ panel.addEventListener('click',e=>{
   const storeIn=e.target.closest('[data-store-in]');if(storeIn){transferToHomeStorage(storeIn.dataset.storeIn);return;}
   const storeOut=e.target.closest('[data-store-out]');if(storeOut){transferFromHomeStorage(storeOut.dataset.storeOut);return;}
   if(e.target.closest('[data-open-furniture]')){furnishingSystem?.openCatalog?.();return;}
+  const carpenterCraft=e.target.closest('[data-carpenter-craft]');if(carpenterCraft){craftCarpenterFurniture(carpenterCraft.dataset.carpenterCraft);return;}
   const devUpgrade=e.target.closest('[data-dev-upgrade]');if(devUpgrade){upgradeDevelopment(devUpgrade.dataset.devUpgrade);return;}
   const material=e.target.closest('[data-craft-material]');if(material){craftSelected=material.dataset.craftMaterial;craftGridPanel();return;}
   const cell=e.target.closest('[data-craft-cell]');if(cell){
@@ -1287,7 +1335,8 @@ async function buildOutdoor(){
     addColliderFor('outdoor',f.x,f.z-5.7,4.0,3.3);
     addColliderFor('outdoor',f.x+6.2,f.z+6.5,1.6,1.0);
     addColliderFor('outdoor',f.x+4.1,f.z+6.9,1.0,.8);
-    interact('outdoor',f.x+6.2,f.z+5.65,1.45,'제작대 사용하기',workbenchPanel);
+    interact('outdoor',f.x+6.2,f.z+5.65,1.45,'3×3 제작대 사용하기',workbenchPanel);
+    interact('outdoor',f.x,f.z-3.25,1.65,'🪚 목수공방 이용하기',carpenterPanel);
     interact('outdoor',f.x+4.1,f.z+6.1,1.35,'보관 상자 보기',inventoryPanel);
     const plotPos=[
       [f.x-6.0,f.z+1.1],[f.x-3.35,f.z+1.1],[f.x-.7,f.z+1.1],
@@ -1765,10 +1814,18 @@ async function init(){
     canPlace:canPlaceFurniture,
     useFurniture:key=>{
       if(key==='bedSingle'){setAvatarAction('smile',850);sleep();return;}
-      if(key==='kitchenFridge'){inventoryPanel();return;}
+      if(key==='kitchenFridge'){homeStoragePanel();return;}
       if(key==='kitchenStove'){setAvatarAction('smile',500);cookingPanel('stove');return;}
-      if(key==='kitchenSink'){setAvatarAction('smile',650);toast('손을 깨끗이 씻었어요.');return;}
-      if(key==='kitchenCabinet'){inventoryPanel();return;}
+      if(key==='kitchenSink'){
+        if(devState().waterLevel<3){toast('수도가 아직 집까지 연결되지 않았어요.');return;}
+        const added=addWater(waterCarryLimit());persist();setAvatarAction('smile',650);updateStatus();toast(added?'🚰 수도에서 물통을 가득 채웠어요.':'🚰 집에서 바로 물을 사용할 수 있어요.');return;
+      }
+      if(key==='kitchenCabinet'||key==='homeDrawers'){homeStoragePanel();return;}
+      if(key==='wardrobe'){
+        setAvatarAction('smile',650);
+        window.parent?.postMessage({type:'kidscade:open-avatar-studio'},location.origin);
+        return;
+      }
       if(key==='classicSofa'){setAvatarAction('smile',700);toast('소파에서 편하게 쉬었어요.');return;}
       if(key==='tallBookcase'){setAvatarAction('smile',600);toast('책이 가지런히 꽂혀 있어요.');return;}
       if(key==='diningTable'){toast('내가 원하는 곳에 놓은 식탁이에요. 식사 공간을 자유롭게 꾸며보세요.');return;}
