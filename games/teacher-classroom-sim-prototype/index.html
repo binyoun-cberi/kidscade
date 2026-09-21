@@ -107,18 +107,20 @@
       <h3 id="studentName">학생 선택</h3>
       <div id="studentSummary" class="sub">학생을 눌러 직접 개입할 수 있습니다. 다른 공간의 일은 직접 이동해서 확인해야 합니다.</div>
       <div id="studentState" class="state">—</div>
-      <div class="actions">
-        <button id="approach" type="button" disabled>가까이 가기</button>
-        <button id="call" type="button" disabled>이름 부르기</button>
-        <button id="praise" type="button" disabled>칭찬하기</button>
-        <button id="hint" type="button" disabled>힌트 주기</button>
-        <button id="chalk" type="button" disabled>분필 톡</button>
-        <button id="seat" type="button" disabled>자리 바꾸기</button>
-        <button id="mediate" type="button" disabled>갈등 중재</button>
-        <button id="separate" type="button" disabled>잠깐 분리</button>
-        <button id="connectPeer" type="button" disabled>친구 연결</button>
-        <button id="giveRole" type="button" disabled>역할 맡기기</button>
+      <div id="teacherBusy" class="teacher-busy">
+        <span>교사 여유</span>
+        <strong id="teacherBusyText">지금 개입 가능</strong>
+        <div class="busy-track"><i id="teacherBusyFill"></i></div>
       </div>
+
+      <div id="actionTabs" class="action-tabs" role="tablist" aria-label="교사 행동 범주">
+        <button type="button" data-category="observe" class="active">관찰</button>
+        <button type="button" data-category="support">지원</button>
+        <button type="button" data-category="guide">지도</button>
+        <button type="button" data-category="relationship">관계</button>
+      </div>
+      <div id="contextActions" class="context-actions" aria-live="polite"></div>
+      <div id="actionDetail" class="action-detail">학생과 상황을 보고 행동을 선택하세요.</div>
       <div id="memory" class="sub" style="margin-top:9px"></div>
 
       <div class="observe">
