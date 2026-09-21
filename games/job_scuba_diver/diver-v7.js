@@ -654,7 +654,7 @@ function buildWorld(contract=FREE_DIVE){
    contract,daily:dailyTaskForDay(meta.day),st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],fishGrid:new Map(),decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,catchWeight:0,catchCounts:{},catchPortions:{},income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
-   mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
+   mission:{photos:{},photoGrades:{},photoValues:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
  for(const z of ZONES){
@@ -982,6 +982,7 @@ function drawFish(f){
    ctx.save();ctx.strokeStyle=f.key==='giant'?'rgba(255,102,70,.75)':'rgba(255,224,148,.58)';ctx.lineWidth=f.key==='giant'?8:4;ctx.globalAlpha=.72;ctx.beginPath();ctx.moveTo(p.x-f.vx*.16,p.y-f.vy*.16);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
  }else if(f.alert>0&&HOSTILE_BEHAVIORS.has(sp.behavior)){ctx.strokeStyle=sp.behavior==='predator'?'rgba(255,92,72,.62)':'rgba(255,180,92,.48)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,28+f.scale*12+Math.sin(world.time*7)*3,0,Math.PI*2);ctx.stroke()}
  if(world.sonar>0&&(sp.rare||f.marked>0)){ctx.strokeStyle=(sp.motion==='boss'||sp===SPECIES.giant)?'#ff987d':'#73f2ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,34+Math.sin(world.time*5)*4+(sp.motion==='boss'?24:0),0,Math.PI*2);ctx.stroke()}
+ if(world.sonar>0&&Math.hypot(f.x-world.player.x,f.y-world.player.y)<260){const band=creatureSizeBand(f),state=creatureCaptureState(f);ctx.save();ctx.font='800 8px system-ui';ctx.textAlign='center';ctx.fillStyle=band.id==='trophy'?'#ffe278':'#bff7ff';ctx.strokeStyle='rgba(0,20,28,.82)';ctx.lineWidth=3;const tag=band.label+' · '+state.label;ctx.strokeText(tag,p.x,p.y-dh*.55-7);ctx.fillText(tag,p.x,p.y-dh*.55-7);ctx.restore()}
  if(sp.motion==='boss'&&f.alive){ctx.save();ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,235,206,.92)';ctx.fillText('대형 개체 · '+sp.name,p.x,p.y-dh*.55-10);ctx.restore()}
 }
 function drawMine(m){if(m.dead)return;const p=screenPos(m.x,m.y);if(p.x<-70||p.x>view.w+70||p.y<-70||p.y>view.h+70)return;const im=imgs[m.size==='B'?'mineB':m.size==='S'?'mineS':'mine'],s=m.size==='B'?60:m.size==='S'?38:50;drawImg(im,p.x,p.y,s,s,false,0,.9);if(world.sonar>0||m.fuse>0){ctx.strokeStyle=m.fuse>0?'#ff7465':'#6df4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,s*.7+Math.sin(world.time*8)*4,0,Math.PI*2);ctx.stroke()}}
@@ -1138,14 +1139,14 @@ function photoGrade(f){
  const r=photoFrameRect(),s=screenPos(f.x,f.y),cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2;
  const nx=Math.abs(s.x-cx)/(r.width*.5),ny=Math.abs(s.y-cy)/(r.height*.5),center=clamp(1-Math.hypot(nx,ny)/1.25,0,1);
  const d=Math.hypot(f.x-world.player.x,f.y-world.player.y),ideal=world.st.camera*.52,range=clamp(1-Math.abs(d-ideal)/Math.max(ideal,1),0,1);
- let q=center*.78+range*.22;const sr=subRuleForY(f.y);if(sr.blackwater&&world.sonar<=0)q-=sr.photoPenalty||.14;
+ let q=center*.78+range*.22;const sr=subRuleForY(f.y),state=creatureCaptureState(f).id;if(sr.blackwater&&world.sonar<=0)q-=sr.photoPenalty||.14;if(state==='fleeing')q-=.08;if(state==='aggressive')q-=.05;if(state==='feeding')q+=.04;
  return q>.82?'S':q>.64?'A':q>.44?'B':'C'
 }
 function betterGrade(a,b){if(!a)return b;if(!b)return a;return GRADE_SCORE[b]>GRADE_SCORE[a]?b:a}
 function gradeAtLeast(g,min){return !!g&&GRADE_SCORE[g]>=GRADE_SCORE[min]}
 function photoValue(f,grade){
  const sp=SPECIES[f.key],depth=depthOf(f.y),base=sp.rare?150:72,depthFactor=1+Math.min(1.15,depth/620*.9),sr=subRuleForY(f.y);
- const habitat=(sr.photo||1)*(sp.rare?(sr.rarePhoto||1):1);return Math.round(base*PHOTO_MULT[grade]*depthFactor*habitat)
+ const habitat=(sr.photo||1)*(sp.rare?(sr.rarePhoto||1):1),sizeBonus=creatureSizeBand(f).value;return Math.round(base*PHOTO_MULT[grade]*depthFactor*habitat*sizeBonus)
 }
 function ratedDepth(){const ratings=[180,420,720,1150,1850,2750];return ratings[clamp(meta.up.suit||0,0,ratings.length-1)]}
 function oxygenReserveStatus(){
@@ -1156,14 +1157,14 @@ function oxygenReserveStatus(){
 }
 function useCamera(){
  const f=findCameraTarget();if(!f){showHint('촬영 대상을 앞쪽 프레임에 맞추세요.',1100);beep(180,.05);return}
- const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade);
+ const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade),band=creatureSizeBand(f),state=creatureCaptureState(f);
  f.photo=betterGrade(f.photo,grade);world.mission.photos[f.key]=true;world.mission.photoGrades[f.key]=newBest;
- meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0};meta.codex[f.key].count++;meta.codex[f.key].best=betterGrade(meta.codex[f.key].best,grade);
- const oldValue=oldDive?photoValue(f,oldDive):0,newValue=photoValue(f,newBest),bonus=Math.max(0,newValue-oldValue);
+ meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0,largest:0};meta.codex[f.key].count++;meta.codex[f.key].best=betterGrade(meta.codex[f.key].best,grade);meta.codex[f.key].largest=Math.max(meta.codex[f.key].largest||0,f.sizeFactor||1);
+ world.mission.photoValues=world.mission.photoValues||{};const oldValue=world.mission.photoValues[f.key]||0,newValue=photoValue(f,grade),bonus=Math.max(0,newValue-oldValue);world.mission.photoValues[f.key]=Math.max(oldValue,newValue);
  if(bonus>0){world.income+=bonus;world.photoIncome+=bonus}
  if(f.key==='giant')world.mission.giantGrade=betterGrade(world.mission.giantGrade,grade);
  save();beep(1050,.06);setTimeout(()=>beep(1500,.07),65);world.effects.push({type:'flash',x:f.x,y:f.y,t:0});
- showHint(SPECIES[f.key].name+' · '+grade+'등급 촬영'+(bonus>0?' · 연구 +'+money(bonus):' · 기존 기록 유지'),1350)
+ showHint(band.label+' '+SPECIES[f.key].name+' · '+state.label+' · '+grade+'등급 촬영'+(bonus>0?' · 연구 +'+money(bonus):' · 기존 기록 유지'),1450)
 }
 function reelHarpoon(){
  const t=world.tether;if(!t||!t.fish?.alive){world.tether=null;return}
@@ -1251,7 +1252,7 @@ function launchFishAttack(f,p){
  else beep(190,.045)
 }
 function fishHitPlayer(f,sp,p,st,mult=1){
- if(p.inv>0)return false;const prof=ATTACK_PROFILE[f.key],dmg=Math.max(1,Math.round((sp.damage||8)*(prof?.damage||1)*mult*st.armor));
+ if(p.inv>0)return false;const prof=ATTACK_PROFILE[f.key],sizeThreat=clamp(.82+(f.sizeFactor||1)*.18,.92,1.08),dmg=Math.max(1,Math.round((sp.damage||8)*(prof?.damage||1)*mult*st.armor*sizeThreat));
  p.hp-=dmg;p.inv=.72;f.attackCd=1.1;
  const dx=p.x-f.x,dy=p.y-f.y,d=Math.hypot(dx,dy)||1,bossKnock=f.key==='giant'||f.key==='kraken';p.vx+=dx/d*(bossKnock?155:72);p.vy+=dy/d*(bossKnock?155:72);
  if(f.key==='angler')world.lightJam=Math.max(world.lightJam,1.7);
@@ -1453,7 +1454,7 @@ function finishDive(ok,reason){
  const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0,dailyComplete=ok&&dailyTaskComplete(world.daily),dailyBonus=dailyComplete?world.daily.reward:0;
  const gain=ok?Math.max(0,world.income+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];
- if(ok){for(const [key,count] of Object.entries(world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(ingredientInfo(key).name+' ×'+count)}}
+ if(ok){for(const [key,count] of Object.entries(world.catchPortions||world.catchCounts||{})){if(count<=0)continue;meta.stock[key]=(meta.stock[key]||0)+count;stocked+=count;stockedNames.push(ingredientInfo(key).name+' ×'+count)}}
  meta.money+=gain;meta.bestDepth=Math.max(previousBest,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
  $('resultTitle').textContent=ok?'탐사선 귀환 · 낮 탐사 종료':'긴급 구조 · 잠수 보고서';
  const loss=ok?'':'<div class="notice">구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다. 사진 도감 기록만 남습니다.</div>';
@@ -1663,7 +1664,7 @@ function contractCards(){
  return dailyCard+CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 주요 의뢰':'주요 탐사 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 주요 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
 }
 function gearLoadoutCards(){
- const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'</small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
+ const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'<br><b>'+gearCapabilityText(k,tier)+'</b></small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
 }
 function toggleDockGear(k){
  const slots=2+(meta.up.slots||0),i=meta.loadout.indexOf(k);if(i>=0)meta.loadout.splice(i,1);else if(meta.loadout.length<slots)meta.loadout.push(k);else{showHint('장비 슬롯이 가득 찼습니다. 장비 랙을 업그레이드하세요.',1000);return}save();openContracts()
@@ -1718,7 +1719,7 @@ function openShop(){
  $('shopBack').onclick=openContracts
 }
 function openCodex(){
- $('contractScreen').classList.add('hidden');const order=Object.keys(SPECIES);$('codexBody').innerHTML='<div class="grid">'+order.map(k=>{const sp=SPECIES[k],rec=meta.codex[k];return'<div class="card codexCard '+(rec?'':'unknown')+'"><h3>'+(rec?sp.name:'??? 미기록 생물')+'</h3><p>'+(rec?('유형 '+(sp.motion||'swimmer')+' · 발견 수심 '+sp.depth[0]+'~'+sp.depth[1]+'m · 최고 사진 '+(rec.best||'C')+' · 촬영 '+(rec.count||0)+'회'):'현장에서 카메라로 촬영하면 도감이 열립니다.')+'</p></div>'}).join('')+'</div><button class="btn" id="codexBack">계약 게시판</button>';$('codexScreen').classList.remove('hidden');$('codexBack').onclick=openContracts
+ $('contractScreen').classList.add('hidden');const order=Object.keys(SPECIES);$('codexBody').innerHTML='<div class="grid">'+order.map(k=>{const sp=SPECIES[k],rec=meta.codex[k],largest=rec?Math.round((rec.largest||1)*100):0;return'<div class="card codexCard '+(rec?'':'unknown')+'"><h3>'+(rec?sp.name:'??? 미기록 생물')+'</h3><p>'+(rec?('유형 '+(sp.motion||'swimmer')+' · 발견 수심 '+sp.depth[0]+'~'+sp.depth[1]+'m · 최고 사진 '+(rec.best||'C')+' · 촬영 '+(rec.count||0)+'회 · 최대 개체 '+largest+'%'):'현장에서 카메라로 촬영하면 도감이 열립니다.')+'</p></div>'}).join('')+'</div><button class="btn" id="codexBack">계약 게시판</button>';$('codexScreen').classList.remove('hidden');$('codexBack').onclick=openContracts
 }
 
 function bind(){
