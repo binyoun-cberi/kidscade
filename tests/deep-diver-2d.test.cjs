@@ -349,15 +349,14 @@ test('Deep Diver v15 harpoon aims freely and reels hooked fish',()=>{
   assert.match(js,/drawTether/);
 });
 
-test('Deep Diver v15 softly gates depth by contract and suit rating',()=>{
+test('Deep Diver v18 softly gates free-dive depth by suit rating',()=>{
   assert.match(js,/const CONTRACT_DEPTH_RATING=\[150,285,430,575,760\]/);
   assert.match(js,/function ratedDepth/);
-  assert.match(js,/meta\.up\.suit\*22/);
+  assert.match(js,/170\+\(meta\.up\.suit\|\|0\)\*115/);
   assert.match(js,/function applyDepthPressure/);
   assert.match(js,/수압 한계 초과/);
   assert.match(js,/class="depthRating"/);
 });
-
 test('Deep Diver v15 camera uses the visible photo frame',()=>{
   assert.match(js,/function photoFrameRect/);
   assert.match(js,/getBoundingClientRect/);
