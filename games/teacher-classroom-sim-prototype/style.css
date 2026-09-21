@@ -82,23 +82,36 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .teacher{position:absolute;z-index:12;width:54px;text-align:center;transform:translate(-50%,-50%);transition:left .35s linear,top .35s linear}
 .teacher img{display:block;width:42px;height:56px;object-fit:contain;image-rendering:auto;margin:0 auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.16))}
 .teacher span{display:inline-block;margin-top:-5px;padding:1px 4px;border:1px solid var(--line);border-radius:5px;background:#fff;font-size:10px}
-.student{position:absolute;z-index:10;width:72px;height:96px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .25s linear,top .25s linear}
+.interaction-links{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:visible}
+.interaction-links line{vector-effect:non-scaling-stroke;stroke-width:2;stroke-linecap:round;opacity:.62}
+.interaction-links line.neutral{stroke:#6f7f8d;stroke-dasharray:5 5}
+.interaction-links line.positive{stroke:#5f8a67;stroke-dasharray:4 4}
+.interaction-links line.warning{stroke:#b47a4d;stroke-dasharray:3 4}
+.interaction-links line.danger{stroke:#aa5555;stroke-width:3;stroke-dasharray:2 3;opacity:.8}
+.student{position:absolute;z-index:10;width:72px;height:96px;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;transition:left .13s linear,top .13s linear;will-change:left,top}
 .student.selected .sprite-wrap{outline:3px solid var(--accent);outline-offset:2px;border-radius:9px}
-.sprite-wrap{position:absolute;left:50%;top:4px;width:54px;height:66px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;overflow:visible}
+.sprite-wrap{position:absolute;left:50%;top:4px;width:54px;height:66px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center;overflow:visible;transform-origin:50% 70%}
+.student.face-left .sprite-wrap{transform:translateX(-50%) scaleX(-1)}
 .sprite{display:block;max-width:53px;max-height:64px;object-fit:contain;transform-origin:50% 85%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.17))}
-.student.seated .sprite-wrap{height:53px;top:16px;overflow:hidden}
+.student.seated .sprite-wrap{height:53px;top:15px;overflow:hidden}
 .student.seated .sprite{transform:translateY(7px) scale(.9)}
-.student.talk .sprite{transform:rotate(6deg)}
+.student.talk .sprite,.student.pair_work .sprite,.student.tease .sprite,.student.argue .sprite{animation:talkGesture .55s infinite alternate}
 .student.sleep .sprite{transform:translateY(10px) rotate(13deg) scale(.88);filter:brightness(.9) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
-.student.move .sprite,.student.walk .sprite,.student.run .sprite{animation:bob .28s infinite alternate}
-.student.help .sprite{animation:raise .55s infinite alternate}
-.student.play .sprite,.student.compete .sprite{animation:bob .25s infinite alternate}
+.student.move .sprite,.student.walk .sprite,.student.run .sprite,.student.seek .sprite,.student.help_peer .sprite{animation:bob .42s infinite alternate}
+.student.help .sprite,.student.raise_hand .sprite,.student.report_incident .sprite{animation:raise .7s infinite alternate}
+.student.play .sprite,.student.compete .sprite{animation:bob .38s infinite alternate}
 .student.eat .sprite{transform:scale(.94)}
-@keyframes bob{to{transform:translateY(-4px)}}@keyframes raise{to{transform:translateY(-2px) rotate(-3deg)}}
-.student-name{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font-size:10px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap}
-.thought{position:absolute;z-index:15;left:51px;top:-5px;min-width:28px;height:24px;padding:0 5px;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
-.thought:after{content:"";position:absolute;width:5px;height:5px;border:1px solid var(--line);border-radius:50%;background:#fff;left:-6px;bottom:0}
-.student-desk-mask{display:none;position:absolute;z-index:11;left:1px;right:1px;bottom:9px;height:34px;border:2px solid #72523a;border-radius:6px;background:var(--wood)}
+.student.rejected .sprite,.student.hurt .sprite{filter:brightness(.88) drop-shadow(0 2px 1px rgba(0,0,0,.15))}
+@keyframes bob{to{transform:translateY(-3px)}}@keyframes raise{to{transform:translateY(-2px) rotate(-3deg)}}@keyframes talkGesture{to{transform:rotate(5deg) translateX(1px)}}
+.student-name{position:absolute;left:50%;bottom:-5px;z-index:22;transform:translateX(-50%);font-size:9px;line-height:1;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:5px;padding:2px 4px;white-space:nowrap;pointer-events:none}
+.status-stack{position:absolute;z-index:23;left:50%;top:-22px;transform:translateX(-50%);display:grid;gap:2px;justify-items:center;pointer-events:none;white-space:nowrap}
+.intent-tag,.action-tag{max-width:105px;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);padding:2px 5px;font-size:8px;line-height:1.2;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.intent-tag{color:var(--muted);border-style:dashed}
+.action-tag{font-weight:800;color:#3f4850}
+.action-tag.positive{border-color:#88a98d;background:#f3faf4;color:#45674a}
+.action-tag.warning{border-color:#c9a078;background:#fff8ef;color:#805d3c}
+.action-tag.danger{border-color:#be7777;background:#fff1f1;color:#8e3f3f}
+.student-desk-mask{display:none;position:absolute;z-index:12;left:7px;right:7px;bottom:20px;height:17px;border:0;border-top:3px solid #72523a;border-radius:0 0 6px 6px;background:linear-gradient(#b98552,#a9784c);pointer-events:none}
 .student.seated .student-desk-mask{display:block}
 .panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:12px}
 .panel h3{font-size:18px;margin:0 0 4px}.state{margin:10px 0;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:700}
