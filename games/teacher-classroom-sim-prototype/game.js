@@ -45,7 +45,7 @@
   }
 
   // 25 desks, 22 students: three empty desks remain useful for seat changes and separation.
-  var seats=makeGridSpots(5,5,12,88,31,88);
+  var seats=makeGridSpots(5,5,15,85,34,88);
   var sceneSpots={
     classroom:seats.concat([{x:8,y:88},{x:92,y:88}]),
     hallway:makeGridSpots(8,3,8,92,38,86),
@@ -252,68 +252,35 @@
     if(sec>=60){var m=Math.floor(sec/60),s=Math.round(sec%60);return s?m+"분 "+s+"초":m+"분"}
     return Math.round(sec)+"초";
   }
-  var HAIR_STYLES=[
-    {folder:"black",prefix:"black"},
-    {folder:"brown-1",prefix:"brown1"},
-    {folder:"brown-2",prefix:"brown2"},
-    {folder:"blonde",prefix:"blonde"},
-    {folder:"red",prefix:"red"},
-    {folder:"tan",prefix:"tan"}
-  ];
-  var SHIRT_STYLES=[
-    {folder:"blue",shirt:"blueShirt",arm:"blueArm"},
-    {folder:"green",shirt:"greenShirt",arm:"greenArm"},
-    {folder:"grey",shirt:"greyShirt",arm:"greyArm"},
-    {folder:"navy",shirt:"navyShirt",arm:"navyArm"},
-    {folder:"pine",shirt:"pineShirt",arm:"pineArm"},
-    {folder:"red",shirt:"redShirt",arm:"redArm"},
-    {folder:"white",shirt:"whiteShirt",arm:"armWhite"}
-  ];
-  var PANTS_STYLES=[
-    {folder:"blue-1",prefix:"pantsBlue1"},
-    {folder:"blue-2",prefix:"pantsBlue2"},
-    {folder:"brown",prefix:"pantsBrown"},
-    {folder:"green",prefix:"pantsGreen"},
-    {folder:"grey",prefix:"pantsGrey"},
-    {folder:"light-blue",prefix:"pantsLightBlue"},
-    {folder:"navy",prefix:"pantsNavy"},
-    {folder:"pine",prefix:"pantsPine"},
-    {folder:"red",prefix:"pantsRed"},
-    {folder:"tan",prefix:"pantsTan"}
-  ];
-  var SHOE_STYLES=[
-    {folder:"black",prefix:"blackShoe"},
-    {folder:"blue",prefix:"blueShoe"},
-    {folder:"brown-1",prefix:"brownShoe"},
-    {folder:"brown-2",prefix:"brown2Shoe"},
-    {folder:"grey",prefix:"greyShoe"},
-    {folder:"red",prefix:"redShoe"},
-    {folder:"tan",prefix:"tanShoe"}
-  ];
-
+  var STUDENT_LOOKS={
+    "민수":{skin:5,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:2,face:1,shirtFolder:"green",shirtPrefix:"greenShirt",armPrefix:"greenArm",shirtIndex:3,pantsFolder:"blue-1",pantsPrefix:"pantsBlue1",shoeFolder:"brown-1",shoePrefix:"brownShoe"},
+    "지우":{skin:2,gender:"Woman",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:2,face:2,shirtFolder:"blue",shirtPrefix:"blueShirt",armPrefix:"blueArm",shirtIndex:4,pantsFolder:"tan",pantsPrefix:"pantsTan",shoeFolder:"black",shoePrefix:"blackShoe"},
+    "서연":{skin:1,gender:"Woman",hairFolder:"black",hairPrefix:"black",hairIndex:3,face:1,shirtFolder:"navy",shirtPrefix:"navyShirt",armPrefix:"navyArm",shirtIndex:2,pantsFolder:"grey",pantsPrefix:"pantsGrey",shoeFolder:"brown-2",shoePrefix:"brown2Shoe"},
+    "준호":{skin:4,gender:"Man",hairFolder:"brown-2",hairPrefix:"brown2",hairIndex:2,face:2,shirtFolder:"red",shirtPrefix:"redShirt",armPrefix:"redArm",shirtIndex:3,pantsFolder:"navy",pantsPrefix:"pantsNavy",shoeFolder:"grey",shoePrefix:"greyShoe"},
+    "태호":{skin:3,gender:"Man",hairFolder:"tan",hairPrefix:"tan",hairIndex:1,face:1,shirtFolder:"pine",shirtPrefix:"pineShirt",armPrefix:"pineArm",shirtIndex:2,pantsFolder:"brown",pantsPrefix:"pantsBrown",shoeFolder:"blue",shoePrefix:"blueShoe"},
+    "유나":{skin:2,gender:"Woman",hairFolder:"red",hairPrefix:"red",hairIndex:2,face:2,shirtFolder:"white",shirtPrefix:"whiteShirt",armPrefix:"armWhite",shirtIndex:3,pantsFolder:"blue-2",pantsPrefix:"pantsBlue2",shoeFolder:"brown-1",shoePrefix:"brownShoe"},
+    "현우":{skin:7,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:4,face:1,shirtFolder:"grey",shirtPrefix:"greyShirt",armPrefix:"greyArm",shirtIndex:2,pantsFolder:"green",pantsPrefix:"pantsGreen",shoeFolder:"black",shoePrefix:"blackShoe"},
+    "소라":{skin:6,gender:"Woman",hairFolder:"brown-2",hairPrefix:"brown2",hairIndex:1,face:2,shirtFolder:"green",shirtPrefix:"greenShirt",armPrefix:"greenArm",shirtIndex:4,pantsFolder:"light-blue",pantsPrefix:"pantsLightBlue",shoeFolder:"tan",shoePrefix:"tanShoe"},
+    "도윤":{skin:4,gender:"Man",hairFolder:"blonde",hairPrefix:"blonde",hairIndex:2,face:1,shirtFolder:"blue",shirtPrefix:"blueShirt",armPrefix:"blueArm",shirtIndex:5,pantsFolder:"grey",pantsPrefix:"pantsGrey",shoeFolder:"red",shoePrefix:"redShoe"},
+    "하린":{skin:1,gender:"Woman",hairFolder:"blonde",hairPrefix:"blonde",hairIndex:3,face:2,shirtFolder:"pine",shirtPrefix:"pineShirt",armPrefix:"pineArm",shirtIndex:4,pantsFolder:"navy",pantsPrefix:"pantsNavy",shoeFolder:"brown-2",shoePrefix:"brown2Shoe"},
+    "예준":{skin:3,gender:"Man",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:4,face:1,shirtFolder:"white",shirtPrefix:"whiteShirt",armPrefix:"armWhite",shirtIndex:5,pantsFolder:"blue-1",pantsPrefix:"pantsBlue1",shoeFolder:"black",shoePrefix:"blackShoe"},
+    "채원":{skin:2,gender:"Woman",hairFolder:"tan",hairPrefix:"tan",hairIndex:2,face:2,shirtFolder:"red",shirtPrefix:"redShirt",armPrefix:"redArm",shirtIndex:4,pantsFolder:"green",pantsPrefix:"pantsGreen",shoeFolder:"grey",shoePrefix:"greyShoe"},
+    "시우":{skin:8,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:1,face:1,shirtFolder:"navy",shirtPrefix:"navyShirt",armPrefix:"navyArm",shirtIndex:5,pantsFolder:"tan",pantsPrefix:"pantsTan",shoeFolder:"blue",shoePrefix:"blueShoe"},
+    "다은":{skin:1,gender:"Woman",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:1,face:2,shirtFolder:"grey",shirtPrefix:"greyShirt",armPrefix:"greyArm",shirtIndex:5,pantsFolder:"red",pantsPrefix:"pantsRed",shoeFolder:"brown-1",shoePrefix:"brownShoe"},
+    "건우":{skin:6,gender:"Man",hairFolder:"red",hairPrefix:"red",hairIndex:3,face:1,shirtFolder:"green",shirtPrefix:"greenShirt",armPrefix:"greenArm",shirtIndex:5,pantsFolder:"navy",pantsPrefix:"pantsNavy",shoeFolder:"black",shoePrefix:"blackShoe"},
+    "아린":{skin:3,gender:"Woman",hairFolder:"black",hairPrefix:"black",hairIndex:2,face:2,shirtFolder:"blue",shirtPrefix:"blueShirt",armPrefix:"blueArm",shirtIndex:2,pantsFolder:"brown",pantsPrefix:"pantsBrown",shoeFolder:"tan",shoePrefix:"tanShoe"},
+    "지호":{skin:5,gender:"Man",hairFolder:"tan",hairPrefix:"tan",hairIndex:3,face:1,shirtFolder:"red",shirtPrefix:"redShirt",armPrefix:"redArm",shirtIndex:5,pantsFolder:"light-blue",pantsPrefix:"pantsLightBlue",shoeFolder:"grey",shoePrefix:"greyShoe"},
+    "은서":{skin:2,gender:"Woman",hairFolder:"blonde",hairPrefix:"blonde",hairIndex:1,face:2,shirtFolder:"white",shirtPrefix:"whiteShirt",armPrefix:"armWhite",shirtIndex:2,pantsFolder:"pine",pantsPrefix:"pantsPine",shoeFolder:"brown-2",shoePrefix:"brown2Shoe"},
+    "윤호":{skin:4,gender:"Man",hairFolder:"brown-2",hairPrefix:"brown2",hairIndex:4,face:1,shirtFolder:"pine",shirtPrefix:"pineShirt",armPrefix:"pineArm",shirtIndex:5,pantsFolder:"blue-2",pantsPrefix:"pantsBlue2",shoeFolder:"red",shoePrefix:"redShoe"},
+    "나연":{skin:3,gender:"Woman",hairFolder:"red",hairPrefix:"red",hairIndex:1,face:2,shirtFolder:"green",shirtPrefix:"greenShirt",armPrefix:"greenArm",shirtIndex:2,pantsFolder:"grey",pantsPrefix:"pantsGrey",shoeFolder:"blue",shoePrefix:"blueShoe"},
+    "승민":{skin:7,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:3,face:1,shirtFolder:"grey",shirtPrefix:"greyShirt",armPrefix:"greyArm",shirtIndex:4,pantsFolder:"brown",pantsPrefix:"pantsBrown",shoeFolder:"black",shoePrefix:"blackShoe"},
+    "세아":{skin:1,gender:"Woman",hairFolder:"brown-2",hairPrefix:"brown2",hairIndex:3,face:2,shirtFolder:"navy",shirtPrefix:"navyShirt",armPrefix:"navyArm",shirtIndex:3,pantsFolder:"red",pantsPrefix:"pantsRed",shoeFolder:"brown-1",shoePrefix:"brownShoe"}
+  };
   function makeLook(t,i){
-    var woman=t.char==="female";
-    var hair=HAIR_STYLES[(i*5+2)%HAIR_STYLES.length];
-    var shirt=SHIRT_STYLES[(i*3+1)%SHIRT_STYLES.length];
-    var pants=PANTS_STYLES[(i*7+2)%PANTS_STYLES.length];
-    var shoes=SHOE_STYLES[(i*4+1)%SHOE_STYLES.length];
-    return {
-      skin:1+((i*3+2)%8),
-      gender:woman?"Woman":"Man",
-      hairFolder:hair.folder,
-      hairPrefix:hair.prefix,
-      hairIndex:1+((i*2+1)%(woman?6:7)),
-      face:1+(i%4),
-      shirtFolder:shirt.folder,
-      shirtPrefix:shirt.shirt,
-      armPrefix:shirt.arm,
-      shirtIndex:1+((i*5+2)%8),
-      pantsFolder:pants.folder,
-      pantsPrefix:pants.prefix,
-      shoeFolder:shoes.folder,
-      shoePrefix:shoes.prefix
-    };
+    var preset=STUDENT_LOOKS[t.name];
+    return preset?Object.assign({},preset):Object.assign({},STUDENT_LOOKS["민수"]);
   }
+
   var TEACHER_LOOK={
     skin:3,gender:"Woman",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:3,face:1,
     shirtFolder:"red",shirtPrefix:"redShirt",armPrefix:"redArm",shirtIndex:2,
@@ -341,21 +308,9 @@
     img.onerror=function(){this.style.display="none"};
     return img;
   }
-  function createModularAvatar(look){
-    var rig=document.createElement("span");rig.className="modular-avatar";
-
-    var leftLeg=document.createElement("span");leftLeg.className="mod-leg left";
-    var leftLegImg=modularImg(look,"leg","leg-img"),leftShoe=modularImg(look,"shoe","shoe");
-    leftLeg.appendChild(leftLegImg);leftLeg.appendChild(leftShoe);
-    var rightLeg=document.createElement("span");rightLeg.className="mod-leg right";
-    var rightLegImg=modularImg(look,"leg","leg-img"),rightShoe=modularImg(look,"shoe","shoe");
-    rightLeg.appendChild(rightLegImg);rightLeg.appendChild(rightShoe);
-    rig.appendChild(leftLeg);rig.appendChild(rightLeg);
-
-    var neck=modularImg(look,"neck","neck");rig.appendChild(neck);
-    var shirt=modularImg(look,"shirt","shirt");rig.appendChild(shirt);
-    var pants=modularImg(look,"pants","pants");rig.appendChild(pants);
-
+  function appendUpperBody(rig,look){
+    rig.appendChild(modularImg(look,"neck","neck"));
+    rig.appendChild(modularImg(look,"shirt","shirt"));
     ["left","right"].forEach(function(side){
       var arm=document.createElement("span");arm.className="mod-arm "+side;
       arm.appendChild(modularImg(look,"arm","skin-arm"));
@@ -363,11 +318,31 @@
       arm.appendChild(modularImg(look,"hand","hand"));
       rig.appendChild(arm);
     });
-
     rig.appendChild(modularImg(look,"head","head"));
     rig.appendChild(modularImg(look,"face","face"));
     rig.appendChild(modularImg(look,"hair","hair"));
+  }
+  function createStandingAvatar(look){
+    var rig=document.createElement("span");rig.className="modular-avatar standing-rig";
+    var leftLeg=document.createElement("span");leftLeg.className="mod-leg left";
+    leftLeg.appendChild(modularImg(look,"leg","leg-img"));leftLeg.appendChild(modularImg(look,"shoe","shoe"));
+    var rightLeg=document.createElement("span");rightLeg.className="mod-leg right";
+    rightLeg.appendChild(modularImg(look,"leg","leg-img"));rightLeg.appendChild(modularImg(look,"shoe","shoe"));
+    rig.appendChild(leftLeg);rig.appendChild(rightLeg);
+    rig.appendChild(modularImg(look,"pants","pants"));
+    appendUpperBody(rig,look);
     return rig;
+  }
+  function createSeatedAvatar(look){
+    var rig=document.createElement("span");rig.className="modular-avatar seated-rig";
+    var lap=document.createElement("span");lap.className="seated-lap";
+    lap.appendChild(modularImg(look,"pants","pants"));
+    rig.appendChild(lap);
+    appendUpperBody(rig,look);
+    return rig;
+  }
+  function createModularAvatar(look,mode){
+    return mode==="seated"?createSeatedAvatar(look):createStandingAvatar(look);
   }
   function studentById(id){return students.find(function(s){return s.id===id})||null}
   function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
@@ -2185,7 +2160,11 @@
     var html="";
     if(scene==="classroom"){
       html+='<div class="room-prop class-board">'+boardText()+'</div><div class="room-prop teacher-desk"></div><div class="room-prop class-window"></div><div class="room-prop class-door"></div><div class="room-prop class-shelf"></div>';
-      seats.forEach(function(p){html+='<div class="fixed-desk" style="left:'+p.x+'%;top:'+p.y+'%"></div>'});
+      seats.forEach(function(p,i){
+        var deskY=clamp(p.y+2.4,0,96);
+        html+='<div class="fixed-desk desk-back" data-seat="'+i+'" style="left:'+p.x+'%;top:'+deskY+'%"><i class="desk-paper"></i></div>';
+        html+='<div class="fixed-desk desk-front" data-seat="'+i+'" style="left:'+p.x+'%;top:'+deskY+'%"></div>';
+      });
     }else if(scene==="hallway"){
       html+='<div class="room-prop hall-lockers">'+new Array(8).fill("<i></i>").join("")+'</div><div class="room-prop hall-line"></div><div class="room-prop hall-windows"><i></i><i></i><i></i></div>';
     }else if(scene==="gym"){
@@ -2233,18 +2212,30 @@
     var intent=document.createElement("span");intent.className="intent-tag";intent.hidden=true;
     var action=document.createElement("span");action.className="action-tag";action.hidden=true;
     status.appendChild(intent);status.appendChild(action);b.appendChild(status);
+
     var wrap=document.createElement("span");wrap.className="sprite-wrap";
-    var avatar=createModularAvatar(s.look);wrap.appendChild(avatar);b.appendChild(wrap);
-    var mask=document.createElement("span");mask.className="student-desk-mask";b.appendChild(mask);
+    var standing=createStandingAvatar(s.look);
+    var seatedRig=createSeatedAvatar(s.look);
+    seatedRig.hidden=true;
+    wrap.appendChild(standing);wrap.appendChild(seatedRig);b.appendChild(wrap);
+
     var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
     b.addEventListener("click",function(){handleStudentClick(Number(this.dataset.studentId))});
     q("#students").appendChild(b);
-    studentNodes[s.id]={root:b,avatar:avatar,intent:intent,action:action,name:nm};
+    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm};
     return studentNodes[s.id];
+  }
+  function isImportantVisualAction(s){
+    return ["HELP","REJECTED","ARGUE","SHOVE","HURT","TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT",
+      "REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0;
   }
   function renderInteractionLinks(){
     var svg=q("#interactionLinks"),seen={};svg.innerHTML="";
-    students.filter(function(s){return s.scene===teacherScene&&s.socialTarget!==null&&isMeaningfulInteractionAction(s.action)}).forEach(function(s){
+    students.filter(function(s){
+      if(s.scene!==teacherScene||s.socialTarget===null||!isMeaningfulInteractionAction(s.action))return false;
+      var t=studentById(s.socialTarget);
+      return selected===s.id||selected===(t&&t.id)||isSevereAction(s)||["ARGUE","SHOVE","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0;
+    }).forEach(function(s){
       var t=studentById(s.socialTarget);if(!t||t.scene!==teacherScene)return;
       var symmetric=["TALK","PAIR_WORK","ARGUE","COMPETE"].indexOf(s.action)>=0;
       var key=symmetric?[s.id,t.id].sort().join("-"):s.id+"-"+t.id+"-"+s.action;
@@ -2261,14 +2252,18 @@
       var n=ensureStudentNode(s),show=s.scene===teacherScene;
       n.root.style.display=show?"block":"none";
       if(!show)return;
-      n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(seated(s)?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
+      var isSeated=seated(s);
+      n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(isSeated?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
       n.root.style.left=s.x+"%";n.root.style.top=s.y+"%";
       n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
-      var it=intentText(s);
+      n.standing.hidden=isSeated;n.seated.hidden=!isSeated;
+      var showIntent=selected===s.id;
+      var it=showIntent?intentText(s):"";
       n.intent.hidden=!it;if(it)n.intent.textContent=it;
       var at=shortAction(s);
-      n.action.hidden=!at;
-      if(at){n.action.textContent=at;n.action.className="action-tag "+actionTone(s)}
+      var showAction=selected===s.id||isImportantVisualAction(s);
+      n.action.hidden=!at||!showAction;
+      if(at&&showAction){n.action.textContent=at;n.action.className="action-tag "+actionTone(s)}
     });
     renderInteractionLinks();
     q("#offscreen").textContent=visible.length+"명 보임 · 다른 공간 "+(students.length-visible.length)+"명";
@@ -2438,7 +2433,7 @@
   }
   function renderTeacherPosition(){
     var teacherEl=q("#teacher"),mount=q("#teacherAvatarMount");
-    if(mount&&!mount.firstChild)mount.appendChild(createModularAvatar(TEACHER_LOOK));
+    if(mount&&!mount.firstChild)mount.appendChild(createStandingAvatar(TEACHER_LOOK));
     teacherEl.style.left=teacher.x+"%";teacherEl.style.top=teacher.y+"%";
     teacherEl.classList.toggle("moving",teacher.moving);
   }
