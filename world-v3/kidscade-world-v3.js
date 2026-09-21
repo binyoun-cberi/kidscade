@@ -312,6 +312,16 @@ function canCarryNewKey(key){
   if((inv()[key]||0)>0)return true;
   return carriedSlotCount()<backpackCapacity();
 }
+function canCarryFoodKey(key){
+  if((prog().food?.[key]||0)>0)return true;
+  return carriedSlotCount()<backpackCapacity();
+}
+function addFoodItem(key,qty=1,{silent=false}={}){
+  qty=Math.max(0,Math.floor(Number(qty)||0));if(!qty)return 0;
+  const food=prog().food;
+  if(!canCarryFoodKey(key)){if(!silent)toast('🎒 음식을 넣을 가방 칸이 없어요.');return 0;}
+  food[key]=(food[key]||0)+qty;return qty;
+}
 function addInventoryItem(key,qty=1,{silent=false}={}){
   qty=Math.max(0,Math.floor(Number(qty)||0));if(!qty)return 0;
   const i=inv();
@@ -633,11 +643,15 @@ function recipeHasIngredients(recipe,kind='stove'){
   const i=inv();return Object.entries(recipe.req).every(([k,v])=>k==='water'&&kind==='stove'&&hasIndoorTap()?true:(i[k]||0)>=v);
 }
 function consumeRecipeIngredients(recipe,kind='stove'){
-  const i=inv();
+  const i=inv(),consumed={};
   for(const [k,v] of Object.entries(recipe.req)){
     if(k==='water'&&kind==='stove'&&hasIndoorTap())continue;
-    i[k]=Math.max(0,(i[k]||0)-v);
+    i[k]=Math.max(0,(i[k]||0)-v);consumed[k]=(consumed[k]||0)+v;
   }
+  return consumed;
+}
+function restoreRecipeIngredients(consumed){
+  const i=inv();for(const [k,v] of Object.entries(consumed||{}))i[k]=(i[k]||0)+v;
 }
 
 
@@ -758,12 +772,16 @@ function cookingPanel(kind='stove'){
   openPanel(`<h2>${kind==='campfire'?'야영지 모닥불':'우리 집 주방'}</h2><div class="grid">${cards}</div><p style="font-size:12px">음식은 허기를 채우고 체력도 조금 회복시켜요.</p>`);
 }
 function cookFood(key){
-  const r=RECIPES[key],i=inv(),p=prog();if(!r)return;
+  const r=RECIPES[key];if(!r)return;
   const kind=panel.dataset.cookKind||'stove';
   if(!recipeHasIngredients(r,kind)){toast('요리 재료나 물이 부족해요.');return;}
-  consumeRecipeIngredients(r,kind);
-  if((p.food[key]||0)<=0&&carriedSlotCount()>=backpackCapacity()){toast('🎒 완성된 음식을 넣을 가방 칸이 없어요.');return;}
-  p.food[key]=(p.food[key]||0)+1;persist();setAvatarAction('smile',750);worldAudio.sfx('success',.09);toast(r.name+' 완성!');updateStatus();
+  const consumed=consumeRecipeIngredients(r,kind);
+  if(!addFoodItem(key,1,{silent:true})){
+    restoreRecipeIngredients(consumed);
+    toast('🎒 완성된 음식을 넣을 가방 칸이 없어요. 재료는 그대로 돌려놓았어요.');
+    return;
+  }
+  persist();setAvatarAction('smile',750);worldAudio.sfx('success',.09);toast(r.name+' 완성!');updateStatus();
 }
 function eatFood(key){
   const p=prog(),f=FOOD_DEF[key];if(!f||(p.food[key]||0)<=0)return;
@@ -1930,7 +1948,7 @@ async function init(){
   townEconomy=createTownEconomy({
     prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,
     foodName:key=>FOOD_DEF[key]?.name||key,
-    addInventoryItem,canCarryNewKey,
+    addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,
     travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
   });
   townEconomy.ensureState(prog());
