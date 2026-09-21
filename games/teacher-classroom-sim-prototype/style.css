@@ -101,7 +101,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 
 .modular-avatar{position:relative;width:52px;height:76px;transform-origin:50% 78%;pointer-events:none}
 .modular-avatar img{position:absolute;display:block;object-fit:contain;user-select:none;-webkit-user-drag:none}
-.mod-part.hair{left:5%;top:-2%;width:90%;height:43%;z-index:7}
+.mod-part.hair{left:5%;top:-2%;width:90%;height:43%;z-index:9}
 .mod-part.head{left:18%;top:5%;width:64%;height:34%;z-index:4}
 .mod-part.face{left:30%;top:14%;width:40%;height:20%;z-index:8}
 .mod-part.neck{left:38%;top:32%;width:24%;height:8%;z-index:3}
@@ -115,6 +115,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .mod-arm .skin-arm{left:0;top:0;width:100%;height:100%;z-index:1}
 .mod-arm .sleeve{left:6%;top:-2%;width:70%;height:68%;z-index:3}
 .mod-arm .hand{left:48%;bottom:-4%;width:38%;height:31%;z-index:4}
+.mod-arm.right img{transform:scaleX(-1)}
 
 .mod-leg{top:68%;width:26%;height:29%;z-index:2}
 .mod-leg.left{left:25%}
@@ -182,8 +183,6 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .context-action:disabled{opacity:.43}
 .action-detail{min-height:42px;margin-top:7px;padding:7px 8px;border-radius:8px;background:#f1ece4;color:var(--muted);font-size:10px;line-height:1.4}
 .action-empty{padding:12px 8px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--muted);font-size:11px}
-.teacher.busy img{animation:teacherBusyPulse .6s infinite alternate}
-@keyframes teacherBusyPulse{to{transform:translateY(-2px)}}
 
 .diagnosis-card{margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
 .diagnosis-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
