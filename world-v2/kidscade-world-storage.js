@@ -94,11 +94,16 @@
       };
       // Pre-homestead saves could already own ranch animals. Give them enough ranch capacity
       // instead of loading those animals into a level-0 empty field.
-      if(!hadRanchLevel){
+      {
         const owned=Array.isArray(base.progression.cubePets?.owned)?base.progression.cubePets.owned:[];
         const mapped=new Set(owned.map(id=>({rabbit:'bunny',miniPig:'pig'}[id]||id)));
         const legacyRanchCount=['bunny','pig','cow','chick'].filter(id=>mapped.has(id)).length;
-        if(legacyRanchCount>0)base.progression.development.ranchLevel=Math.min(4,legacyRanchCount);
+        // Also repairs saves created during the transition where ranchLevel:0 may already exist.
+        if(legacyRanchCount>base.progression.development.ranchLevel){
+          base.progression.development.ranchLevel=Math.min(4,legacyRanchCount);
+        }else if(!hadRanchLevel){
+          base.progression.development.ranchLevel=Math.max(0,base.progression.development.ranchLevel||0);
+        }
       }
       base.progression.housing.version=4;
       base.progression.homestead.version=1;
