@@ -9,6 +9,7 @@ import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTr
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
 const Bridge=V2.Bridge;
+const Meta=window.KidscadeSeedWorldMeta||null;
 const canvas=document.getElementById('world3d');
 const loading=document.getElementById('loading');
 const toastEl=document.getElementById('toast');
@@ -20,6 +21,8 @@ const statusPhaseEl=document.getElementById('statusPhase');
 const coinCountEl=document.getElementById('coinCount');
 const seedCountEl=document.getElementById('seedCount');
 const funCountEl=document.getElementById('funCount');
+const worldMailChip=document.getElementById('worldMailChip');
+const worldTaskChip=document.getElementById('worldTaskChip');
 const healthLiquid=document.getElementById('healthLiquid');
 const hungerLiquid=document.getElementById('hungerLiquid');
 const healthValue=document.getElementById('healthValue');
@@ -327,6 +330,77 @@ const RECIPES={
   mushroomSoup:{name:'버섯 수프',req:{mushroom:2}}
 };
 
+function applyParcelReward(reward){
+  if(!reward||typeof reward!=='object')return false;
+  const p=prog(),i=inv(),town=townEconomy?.ensureState?.(p)||p.town;
+  if(reward.kind==='resources'){
+    for(const [key,qty] of Object.entries(reward.items||{}))i[key]=(i[key]||0)+Math.max(0,Number(qty)||0);
+  }else if(reward.kind==='townCoins'){
+    if(town)town.coins=(Number(town.coins)||0)+Math.max(0,Number(reward.amount)||0);
+  }else if(reward.kind==='fun'){
+    if(town)town.fun=Math.min(100,(Number(town.fun)||0)+Math.max(0,Number(reward.amount)||0));
+  }else if(reward.kind==='seeds'){
+    const result=Bridge?.earnSeeds?.(reward.amount||0,'오늘의 씨앗 생활');
+    if(!result?.ok)return false;
+  }else return false;
+  persist();updateStatus();return true;
+}
+function rewardText(reward){
+  if(!reward)return '선물';
+  if(reward.kind==='resources')return Object.entries(reward.items||{}).map(([k,v])=>itemName(k)+' +'+v).join(' · ');
+  if(reward.kind==='townCoins')return '마을 코인 +'+reward.amount;
+  if(reward.kind==='fun')return '재미 +'+reward.amount;
+  if(reward.kind==='seeds')return '씨앗 +'+reward.amount;
+  return '선물';
+}
+function mailboxPanel(){
+  const list=Meta?.pendingParcels?.()||[];
+  const cards=list.map(parcel=>'<div class="item"><b>'+(parcel.icon||'📦')+' '+parcel.name+'</b><div>'+(parcel.title||'게임 도전')+'</div><small>'+rewardText(parcel.reward)+'</small><br><button data-world-parcel="'+parcel.id+'">선물 열기</button></div>').join('');
+  openPanel('<h2>📬 게임 택배 우편함</h2><p>Kidscade 게임을 제대로 플레이하면 하루 한 번씩 그 게임의 선물이 여기 도착해요.</p><div class="grid">'+(cards||'<div class="item">지금은 새 택배가 없어요. 다른 Kidscade 게임을 플레이하고 돌아와 보세요!</div>')+'</div><p style="font-size:12px">게임을 할수록 트로피도 자동으로 수집됩니다.</p>');
+}
+function dailyLifePanel(){
+  const state=Meta?.getState?.(),daily=state?.daily;
+  const tasks=(daily?.tasks||[]).map(task=>{
+    const done=(Number(task.progress)||0)>=(Number(task.goal)||1);
+    return '<div class="item"><b>'+task.icon+' '+task.title+'</b><div>'+(done?'✅ 완료':Math.min(task.goal,task.progress||0)+' / '+task.goal)+'</div></div>';
+  }).join('');
+  const summary=Meta?.summary?.()||{dailyDone:0,dailyTotal:3};
+  openPanel('<h2>📋 오늘의 씨앗 생활</h2><p>길게 숙제처럼 하지 않아도 돼요. 월드에서 자연스럽게 세 가지만 해보세요.</p><div class="grid">'+tasks+'</div><p><b>'+summary.dailyDone+'/'+summary.dailyTotal+' 완료</b> · 세 가지를 모두 하면 📬 우편함에 씨앗 30개 선물이 도착해요.</p>');
+}
+function trophyPanel(){
+  const list=Meta?.trophies?.()||[];
+  const cards=list.map(t=>'<div class="item"><b>'+(t.icon||'🏆')+' '+(t.title||t.game)+'</b><div>'+t.count+'회 플레이 · '+Math.max(1,Math.round((t.seconds||0)/60))+'분 기록</div></div>').join('');
+  openPanel('<h2>🏆 나의 게임 트로피</h2><p>Kidscade에서 실제로 플레이한 게임들이 씨앗 월드의 수집 기록이 됩니다.</p><div class="grid">'+(cards||'<div class="item">아직 트로피가 없어요. Kidscade 게임을 30초 이상 플레이해 보세요.</div>')+'</div><p><b>수집 '+list.length+'종</b></p>');
+}
+function cosmeticShopPanel(){
+  const state=Meta?.cosmeticState?.()||{owned:[],equipped:'',defs:[]},seeds=Bridge?.readSeeds?.()||0;
+  const cards=state.defs.map(def=>{
+    const owned=state.owned.includes(def.id),equipped=state.equipped===def.id;
+    const action=owned?(equipped?'장착 중':'장착하기'):'🌱 '+def.price;
+    return '<div class="item"><b>'+def.icon+' '+def.name+'</b><div>'+def.desc+'</div><small>보유 씨앗 '+seeds+'</small><br><button data-world-cosmetic="'+def.id+'" '+(equipped?'disabled':'')+'>'+action+'</button></div>';
+  }).join('');
+  openPanel('<h2>✨ 씨앗 꾸미기 상점</h2><p>다른 게임에서 번 <b>공용 씨앗</b>으로 월드 전용 꾸미기를 해금해요. 능력치는 오르지 않고 내 공간만 더 특별해집니다.</p><div class="grid">'+cards+'</div><button data-world-cosmetic-clear="1">오라 끄기</button>');
+}
+function worldMapPanel(){
+  const rows=Object.entries(TRAVEL_POINTS).map(([id,d])=>'<button data-world-travel="'+id+'">'+d.name+'</button>').join(' ');
+  openPanel('<h2>🗺️ 씨앗버스 빠른 이동</h2><p>큰 월드를 오래 걷지 않아도 돼요. 가고 싶은 구역을 바로 선택하세요.</p><div style="display:flex;gap:7px;flex-wrap:wrap">'+rows+'</div>');
+}
+function homeHubPanel(){
+  const s=Meta?.summary?.()||{pendingMail:0,trophies:0,dailyDone:0,dailyTotal:3};
+  openPanel('<h2>🌱 씨앗 생활 보드</h2><p>오늘 할 일과 Kidscade에서 가져온 보상을 여기서 한 번에 확인해요.</p>'+
+    '<div class="grid">'+
+    '<div class="item"><b>📬 게임 택배</b><div>도착 '+s.pendingMail+'개</div><button data-world-hub="mail">열기</button></div>'+
+    '<div class="item"><b>📋 오늘 할 일</b><div>'+s.dailyDone+'/'+s.dailyTotal+' 완료</div><button data-world-hub="daily">보기</button></div>'+
+    '<div class="item"><b>🏆 게임 트로피</b><div>'+s.trophies+'종 수집</div><button data-world-hub="trophy">보기</button></div>'+
+    '<div class="item"><b>✨ 꾸미기 상점</b><div>게임에서 번 씨앗 사용</div><button data-world-hub="shop">보기</button></div>'+
+    '<div class="item"><b>🗺️ 빠른 이동</b><div>씨앗버스로 바로 이동</div><button data-world-hub="map">지도</button></div>'+
+    '</div>');
+}
+function syncCosmeticAura(){
+  const state=Meta?.cosmeticState?.(),def=state?.defs?.find(v=>v.id===state.equipped);
+  cosmeticAura.visible=!!def;
+  if(def)cosmeticAura.material.color.setHex(Number(def.color)||0x75b84b);
+}
 function inventoryPanel(){
   const items=Object.entries(inv()).filter(([,v])=>Number(v)>0);
   const food=Object.entries(prog().food).filter(([k,v])=>FOOD_DEF[k]&&Number(v)>0);
@@ -372,6 +446,31 @@ function eatFood(key){
 }
 
 panel.addEventListener('click',e=>{
+  const parcelBtn=e.target.closest('[data-world-parcel]');
+  if(parcelBtn){
+    const id=parcelBtn.dataset.worldParcel,parcel=(Meta?.pendingParcels?.()||[]).find(p=>p.id===id);
+    if(!parcel)return;
+    if(!applyParcelReward(parcel.reward)){toast('선물을 받는 중 문제가 생겼어요.');return;}
+    const claimed=Meta?.claimParcel?.(id);worldAudio.sfx('success',.13);toast((parcel.icon||'🎁')+' '+rewardText(parcel.reward)+' 받았어요!');
+    updateStatus();mailboxPanel();
+    if(claimed?.bonus)setTimeout(()=>toast('🎁 오늘 할 일 완료! 우편함에 씨앗 선물이 추가됐어요.'),500);
+    return;
+  }
+  const hub=e.target.closest('[data-world-hub]');
+  if(hub){({mail:mailboxPanel,daily:dailyLifePanel,trophy:trophyPanel,shop:cosmeticShopPanel,map:worldMapPanel}[hub.dataset.worldHub]||homeHubPanel)();return;}
+  const travel=e.target.closest('[data-world-travel]');
+  if(travel){closePanel();travelTo(travel.dataset.worldTravel);return;}
+  const cosmetic=e.target.closest('[data-world-cosmetic]');
+  if(cosmetic){
+    const state=Meta?.cosmeticState?.(),def=state?.defs?.find(v=>v.id===cosmetic.dataset.worldCosmetic);if(!def)return;
+    if(!state.owned.includes(def.id)){
+      const spent=Bridge?.spendSeeds?.(def.price,'씨앗 월드 꾸미기 · '+def.name);
+      if(!spent?.ok){toast('씨앗이 부족해요. 다른 게임을 플레이해서 씨앗을 모아보세요.');return;}
+      Meta?.unlockCosmetic?.(def.id);
+    }
+    Meta?.equipCosmetic?.(def.id);syncCosmeticAura();updateStatus();worldAudio.sfx('purchase',.14);toast(def.name+' 장착!');cosmeticShopPanel();return;
+  }
+  if(e.target.closest('[data-world-cosmetic-clear]')){Meta?.equipCosmetic?.('');syncCosmeticAura();cosmeticShopPanel();return;}
   const craft=e.target.closest('[data-craft]');
   if(craft){
     const key=craft.dataset.craft,p=prog(),i=inv();
@@ -403,6 +502,12 @@ const avatarMaterial=new THREE.SpriteMaterial({map:avatarTexture,transparent:tru
 const avatar=new THREE.Sprite(avatarMaterial);avatar.scale.set(1.55,1.94,1);avatar.center.set(.5,.08);avatar.renderOrder=12;scene.add(avatar);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.55,28),new THREE.MeshBasicMaterial({color:0x233123,transparent:true,opacity:.22,depthWrite:false}));
 shadow.rotation.x=-Math.PI/2;scene.add(shadow);
+const cosmeticAura=new THREE.Mesh(
+  new THREE.RingGeometry(.64,.80,48),
+  new THREE.MeshBasicMaterial({color:0x75b84b,transparent:true,opacity:.58,side:THREE.DoubleSide,depthWrite:false})
+);
+cosmeticAura.rotation.x=-Math.PI/2;cosmeticAura.position.y=.045;cosmeticAura.visible=false;scene.add(cosmeticAura);
+
 const avatarImg=new Image();avatarImg.decoding='async';
 const avatarRuntimeFrame=document.getElementById('avatarRuntime');
 let avatarRuntimeGuardDoc=null;
@@ -588,11 +693,14 @@ function nearestInteraction(){
   promptEl.classList.toggle('show',!!best);
 }
 function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confirm();return;}if(near)near.action()}
+let lastMetaZone='';
 function updateZone(){
-  if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역';return;}
-  const cell=zoneAt(player.x,player.z);
-  zoneEl.textContent=cell?(cell.name+' · '+cell.hint):'구역 사이 길';
+  if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역 · 🗺️';if(lastMetaZone!=='indoor'){lastMetaZone='indoor';Meta?.recordExplore?.('indoor');}return;}
+  const cell=zoneAt(player.x,player.z),zoneId=cell?.id||cell?.key||cell?.name||'road';
+  zoneEl.textContent=(cell?(cell.name+' · '+cell.hint):'구역 사이 길')+' · 🗺️';
+  if(zoneId!==lastMetaZone){lastMetaZone=zoneId;Meta?.recordExplore?.(zoneId);}
 }
+zoneEl?.addEventListener('click',worldMapPanel);
 function setMode(next){
   resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
@@ -672,7 +780,7 @@ function cropAction(id){
   }else{
     const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;
     i[state.type]=(i[state.type]||0)+gain;p.seeds[state.type]=(p.seeds[state.type]||0)+seedGain;
-    state.type='';state.phase='empty';state.readyAt=0;state.plantedAt=0;persist();worldAudio.sfx('pickup',.20);toast(def.name+' 수확 +'+gain);updateStatus();
+    state.type='';state.phase='empty';state.readyAt=0;state.plantedAt=0;persist();Meta?.advanceTask?.('harvest',1);worldAudio.sfx('pickup',.20);toast(def.name+' 수확 +'+gain);updateStatus();
   }
   updateCropVisuals();
 }
@@ -756,11 +864,15 @@ async function buildOutdoor(){
     rim.rotation.x=-Math.PI/2;rim.position.set(h.x-4.0,.12,h.z+5.1);outdoor.add(rim);
     await Promise.all([
       addModel(outdoor,ASSET.house,{x:h.x,z:h.z-5.5,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
-      addModel(outdoor,ASSET.chest,{x:h.x+6.1,z:h.z-5.0,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'})
+      addModel(outdoor,ASSET.chest,{x:h.x+6.1,z:h.z-5.0,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'}),
+      addModel(outdoor,ASSET.chest,{x:h.x+5.5,z:h.z-2.6,w:.9,h:.72,d:.72,rot:.05,name:'game-mailbox'}),
+      addModel(outdoor,ASSET.signpost,{x:h.x+5.4,z:h.z+.2,w:.72,h:1.35,d:.7,rot:.03,name:'life-board'})
     ]);
     addColliderFor('outdoor',h.x,h.z-5.5,5.8,4.4);
     interact('outdoor',h.x,h.z-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
     interact('outdoor',h.x+6.1,h.z-5.0,1.3,'초보자 보급 상자 열기',claimStarterKit);
+    interact('outdoor',h.x+5.5,h.z-2.6,1.25,'📬 게임 택배 우편함',mailboxPanel);
+    interact('outdoor',h.x+5.4,h.z+.2,1.25,'🌱 씨앗 생활 보드',homeHubPanel);
     interact('outdoor',h.x-4.0,h.z+6.2,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish();});
     await addZoneSign('home',6.0,4.8,'집 구역 · 집 · 연못 · Cube Pets',.25);
     await Promise.all([
@@ -1013,7 +1125,7 @@ function collectRanchProducts(){
     i[d.key]=(i[d.key]||0)+d.qty;state.products[id]=day;got.push(d.name+' +'+d.qty);
   }
   if(!got.length){toast('오늘 모을 생산물이 아직 없어요.');ranchPanel();return;}
-  persist();worldAudio.sfx('pickup',.20);toast(got.join(' · '));updateStatus();ranchPanel();
+  persist();Meta?.advanceTask?.('harvest',1);worldAudio.sfx('pickup',.20);toast(got.join(' · '));updateStatus();ranchPanel();
 }
 async function tamePet(id){
   const state=petState(),def=CUBE_PETS[id];if(!def)return;
@@ -1123,6 +1235,9 @@ function updateStatus(){
   if(coinCountEl)coinCountEl.textContent='🪙 '+Math.round(Number(t.coins)||0);
   if(seedCountEl)seedCountEl.textContent='🌱 '+(Bridge?.readSeeds?.()||0);
   if(funCountEl)funCountEl.textContent='🙂 '+Math.round(fun);
+  const meta=Meta?.summary?.()||{pendingMail:0,dailyDone:0,dailyTotal:3};
+  if(worldMailChip)worldMailChip.textContent='📬 '+meta.pendingMail;
+  if(worldTaskChip)worldTaskChip.textContent='📋 '+meta.dailyDone+'/'+meta.dailyTotal;
   if(healthLiquid)healthLiquid.style.height=pct+'%';
   if(hungerLiquid)hungerLiquid.style.height=hunger+'%';
   if(healthValue)healthValue.textContent=Math.round(energy);
@@ -1208,6 +1323,8 @@ function tick(now){
   }else wasInCity=false;
   avatar.position.x=player.x;avatar.position.z=player.z;
   shadow.position.set(player.x,.035,player.z+.08);
+  cosmeticAura.position.set(player.x,.045,player.z+.04);
+  cosmeticAura.rotation.z=now/1800;
   updateAvatarFrame(now,moving);
   applyAvatarMotion(now,moving);
   updatePets(now,dt);
@@ -1260,6 +1377,7 @@ async function init(){
   });
   townEconomy=createTownEconomy({prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)});
   townEconomy.ensureState(prog());
+  syncCosmeticAura();
   updateStatus();
   await Promise.all([buildOutdoor(),buildIndoor()]);
   await furnishingSystem.restore();
@@ -1272,6 +1390,8 @@ async function init(){
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);
 }
+
+window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
 window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
