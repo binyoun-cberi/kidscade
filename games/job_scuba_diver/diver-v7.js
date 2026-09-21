@@ -13,13 +13,14 @@ const PICKUP='../../assets/game/2d/underwater/deep-diver/pickups/icons_128/';
 const VEG='../../assets/game/2d/underwater/deep-diver/vegetation/';
 const AMBIENCE_SRC='../../assets/audio/incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3';
 const SAVE='deep_diver_2d_v7',OLD='deep_diver_2d_v5',LEGACY='deep_diver_openwater_v4';
-const WORLD={w:6800,h:4200,surface:60,scaleDepth:5.5};
+const WORLD={w:6800,h:6500,surface:60,scaleDepth:5.5};
 const ZONES=[
  {id:'reef',name:'산호 정원',tag:'햇빛·산호 절벽·얕은 수로',y0:60,y1:720,bg0:'#58c9d0',bg1:'#087792',accent:'#ffd36a'},
  {id:'kelp',name:'해초 숲',tag:'거대한 해초·강한 조류·숨은 통로',y0:720,y1:1500,bg0:'#198b79',bg1:'#07545c',accent:'#6bd88a'},
  {id:'ruins',name:'침수 유적',tag:'석조 회랑·붕괴된 광장·깊은 우물',y0:1500,y1:2350,bg0:'#315f70',bg1:'#17394f',accent:'#c5b78d'},
  {id:'wreck',name:'난파선 지대',tag:'선체 잔해·기뢰 골목·화물 구역',y0:2350,y1:3250,bg0:'#244b5a',bg1:'#102b3e',accent:'#db8b62'},
- {id:'abyss',name:'암흑 심해',tag:'무광층·열수 계곡·포식자 영역',y0:3250,y1:4200,bg0:'#111c35',bg1:'#030713',accent:'#79e9ff'}
+ {id:'abyss',name:'암흑 심해',tag:'무광층·열수 계곡·포식자 영역',y0:3250,y1:4200,bg0:'#111c35',bg1:'#030713',accent:'#79e9ff'},
+ {id:'hadal',name:'영구 암흑 해구',tag:'고래 낙하·심해 크레바스·열수 분출·해저 화산',y0:4200,y1:6500,bg0:'#050817',bg1:'#000104',accent:'#8e8cff'}
 ];
 const SUBZONES=[
  {id:'reefShelf',zone:'reef',name:'산호 선반',y0:60,y1:300},
@@ -36,7 +37,10 @@ const SUBZONES=[
  {id:'cargoGrave',zone:'wreck',name:'화물선 무덤',y0:2940,y1:3250},
  {id:'blackwater',zone:'abyss',name:'무광 수역',y0:3250,y1:3500},
  {id:'ventValley',zone:'abyss',name:'열수 계곡',y0:3500,y1:3840},
- {id:'predatorTrench',zone:'abyss',name:'포식자 해구',y0:3840,y1:4200}
+ {id:'predatorTrench',zone:'abyss',name:'포식자 해구',y0:3840,y1:4200},
+ {id:'whaleFall',zone:'hadal',name:'고래 낙하 지대',y0:4200,y1:4850},
+ {id:'riftAbyss',zone:'hadal',name:'심해 크레바스',y0:4850,y1:5650},
+ {id:'volcanoCaldera',zone:'hadal',name:'해저 화산 분화구',y0:5650,y1:6500}
 ];
 const subzoneForY=y=>SUBZONES.find(z=>y>=z.y0&&y<z.y1)||SUBZONES[SUBZONES.length-1];
 const SUBZONE_RULES={
@@ -54,7 +58,10 @@ const SUBZONE_RULES={
  cargoGrave:{short:'고가 화물',tip:'화물선 무덤 · 무거운 밀봉 화물 상자가 흩어져 있습니다. 욕심낼수록 귀환이 어려워집니다.',salvage:true},
  blackwater:{short:'완전 암흑 · 촬영↓',tip:'무광 수역 · 소나가 꺼져 있으면 시야와 촬영 등급이 크게 불리합니다.',blackwater:true,photoPenalty:.14},
  ventValley:{short:'열수 상승류 · 광물',tip:'열수 계곡 · 분출은 위험하지만 상승류를 타고 빠르게 위로 빠져나갈 수 있고 희귀 광물이 있습니다.',thermal:true},
- predatorTrench:{short:'포식자 해구 · 소나 위험',tip:'포식자 해구 · 사진 연구 +35% · 소나 펄스는 주변 포식자를 끌어들입니다.',photo:1.35,sonarAggro:true,predatorAggro:1.28}
+ predatorTrench:{short:'포식자 해구 · 소나 위험',tip:'포식자 해구 · 사진 연구 +35% · 소나 펄스는 주변 포식자를 끌어들입니다.',photo:1.35,sonarAggro:true,predatorAggro:1.28},
+ whaleFall:{short:'영구 암흑 · 고래 낙하',tip:'햇빛이 완전히 사라진 고래 낙하 지대 · 사체 주변에 대왕등각류와 청소생물이 몰려듭니다.',blackwater:true,photoPenalty:.20,photo:1.48,oxygen:1.12,whaleFall:true},
+ riftAbyss:{short:'크레바스 · 하강류',tip:'거대한 심해 균열 · 중앙부의 하강류가 잠수부를 틈 아래로 끌어당깁니다.',blackwater:true,photoPenalty:.22,photo:1.55,oxygen:1.18,riftPull:true},
+ volcanoCaldera:{short:'해저 화산 · 열수 폭발',tip:'해저 화산 분화구 · 열수 기둥과 화산성 가스가 반복적으로 분출합니다.',blackwater:true,photoPenalty:.24,photo:1.68,oxygen:1.24,thermal:true,volcano:true,sonarAggro:true,predatorAggro:1.35}
 };
 const subRuleForY=y=>SUBZONE_RULES[subzoneForY(y).id]||{};
 const FREE_DIVE={id:'free',title:'자유 잠수',desc:'의뢰 없이 원하는 곳을 탐사하고 식재료를 모은 뒤 배로 돌아오세요.',reward:0,unlock:0,target:'free',recommended:0};
@@ -64,7 +71,8 @@ const CONTRACTS=[
  {id:'ruins',title:'03 · 침수 유적 기록',desc:'침수 석상과 아치를 기록하고 고대 표식판을 회수하세요.',reward:2700,unlock:2,target:'ruins',recommended:430},
  {id:'wreck',title:'04 · 난파선 기록 장치',desc:'기뢰 골목을 지나 침몰선의 항해기록 장치를 회수하세요.',reward:3900,unlock:3,target:'wreck',recommended:575},
  {id:'abyss',title:'05 · 심해 생물 조사',desc:'600m 아래 포식자 해구에서 대형 심해 상어를 A등급 이상 촬영하세요.',reward:5600,unlock:4,target:'abyss',recommended:760},
- {id:'harvest',title:'06 · 오늘의 해조 식재료 조사',desc:'미역·다시마·성게를 각각 1개 이상 확보하세요. 식당 신메뉴 연구용 의뢰입니다.',reward:2400,unlock:2,target:'kelp',recommended:260}
+ {id:'hadal',title:'06 · 영구 암흑 해구 조사',desc:'고래 낙하 지대·심해 크레바스·해저 화산 분화구를 모두 통과하고 심해 아귀나 대왕등각류를 A등급 이상 촬영하세요.',reward:8200,unlock:5,target:'hadal',recommended:1080},
+ {id:'harvest',title:'07 · 오늘의 해조 식재료 조사',desc:'미역·다시마·성게를 각각 1개 이상 확보하세요. 식당 신메뉴 연구용 의뢰입니다.',reward:2400,unlock:2,target:'kelp',recommended:260}
 ];
 const UPGRADES={
  oxygen:{name:'산소통',desc:'최대 산소 +15초',base:900,max:5},
@@ -75,7 +83,7 @@ const UPGRADES={
  camera:{name:'카메라 렌즈',desc:'촬영 판정 거리 증가',base:1100,max:4},
  harpoon:{name:'작살 릴',desc:'작살 사거리·릴 회수력 증가',base:1000,max:4},
  sonar:{name:'소나',desc:'쿨다운 감소',base:1100,max:4},
- suit:{name:'잠수복',desc:'충격 피해 감소 · 안전 잠수 수심 증가',base:1200,max:5}
+ suit:{name:'잠수복',desc:'충격 피해 감소 · 안전 잠수 수심 대폭 증가',base:1200,max:5}
 };
 const SHOP_UPGRADES={
  seats:{name:'손님 좌석',desc:'동시에 받을 수 있는 손님 +1',base:1800,max:2},
@@ -193,23 +201,29 @@ const BIOME_POPULATIONS={
  kelp:[['green',7],['red',8],['grey',7],['long',4],['mackerel',7],['yellowfin',2],['swordfish',1]],
  ruins:[['grey',5],['brown',6],['dart',5],['hunter',3],['mackerel',3],['yellowfin',1]],
  wreck:[['brown',8],['dart',7],['hunter',7],['angler',5],['lanternfish',5],['swordfish',1]],
- abyss:[['angler',8],['hunter',8],['dart',5],['lanternfish',12]]
+ abyss:[['angler',8],['hunter',8],['dart',5],['lanternfish',12]],
+ hadal:[['lanternfish',15],['angler',8],['hunter',6]]
 };
 const FAUNA_POPULATIONS={
  reef:[['crab',8],['urchin',10],['ochreStar',7],['crownStar',3],['vaquita',1],['bream',5],['hermitCrab',4],['lionfish',2],['puffer',3],['seahorse',2],['starfishStrip',3],['shrimp',6],['flounder',3]],
  kelp:[['crab',5],['nautilus',4],['jelly',7],['squid',3],['whale',1],['bream',3],['barracuda',3],['cuttlefish',3],['octopus',2],['manta',1],['seaCucumber',4],['skate',2],['shrimp',5],['flounder',3]],
  ruins:[['crab',4],['nautilus',4],['jelly',5],['squid',5],['moray',3],['cuttlefish',2],['octopus',2],['scallop',4],['skate',2],['flounder',6],['slipperLobster',3]],
  wreck:[['crab',6],['jelly',4],['squid',6],['shark2',3],['barracuda',3],['moray',4],['octopus',2],['skate',2],['giantIsopod',2],['flounder',4],['slipperLobster',5],['shrimp',2]],
- abyss:[['jelly',6],['squid',5],['shark2',4],['coelacanth',3],['giantIsopod',5],['seaCucumber',2]]
+ abyss:[['jelly',6],['squid',5],['shark2',4],['coelacanth',3],['giantIsopod',5],['seaCucumber',2]],
+ hadal:[['giantIsopod',9],['coelacanth',4],['seaCucumber',5],['slipperLobster',5],['jelly',3],['squid',3],['shark2',2]]
 };
 const ZONE_RULES={
  reef:{oxygen:1,current:0,visibility:1,danger:'낮음'},
  kelp:{oxygen:1.08,current:38,visibility:.86,danger:'강한 조류'},
  ruins:{oxygen:1.18,current:16,visibility:.78,danger:'시야 저하·포식어'},
  wreck:{oxygen:1.30,current:24,visibility:.68,danger:'기뢰·포식자'},
- abyss:{oxygen:1.52,current:14,visibility:.46,danger:'고압·열수·대형 포식자'}
+ abyss:{oxygen:1.52,current:14,visibility:.46,danger:'고압·열수·대형 포식자'},
+ hadal:{oxygen:1.95,current:8,visibility:.18,danger:'영구 암흑·초고압·크레바스·화산'}
 };
-const VENTS=[[1180,3650,1.0],[2580,3710,1.25],[4120,3600,.95],[5480,3790,1.15],[6260,3880,.9]];
+const WHALE_FALL={x:1860,y:4690};
+const DEEP_RIFT={x:3460,y:5310,w:520};
+const VOLCANO={x:5480,y:6370,r:420};
+const VENTS=[[1180,3650,1.0],[2580,3710,1.25],[4120,3600,.95],[5480,3790,1.15],[6260,3880,.9],[820,5310,1.05],[4540,5480,1.3],[5160,6050,1.4],[5860,6200,1.2],[6280,5920,.95]];
 const ATTACK_PROFILE={
  brown:{sense:205,windup:.30,lunge:.34,speed:215,cooldown:2.25,damage:1.05,label:'영역 돌진'},
  dart:{sense:285,windup:.18,lunge:.28,speed:335,cooldown:1.75,damage:1.12,label:'고속 찌르기'},
@@ -227,7 +241,7 @@ const ATTACK_PROFILE={
 const HOSTILE_BEHAVIORS=new Set(['territorial','ambush','predator']);
 const JELLY_SWIM_KEYS=Array.from({length:12},(_,i)=>'jelly'+String(i+1).padStart(2,'0'));
 const JELLY_ATTACK_KEYS=Array.from({length:12},(_,i)=>'jellyAtk'+String(i+1).padStart(2,'0'));
-const CONTRACT_DEPTH_RATING=[150,285,430,575,760];
+const CONTRACT_DEPTH_RATING=[150,285,430,575,760,1080];
 const GRADE_SCORE={C:1,B:2,A:3,S:4};
 const PHOTO_MULT={C:.45,B:.85,A:1.45,S:2.25};
 const COOK_ASSETS={
@@ -262,7 +276,7 @@ const keys={},touch={x:0,y:0,dash:false},meta={
  shopUp:{seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0},
  codex:{},bestDepth:0,bestScore:0,stock:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}
 };
-let restaurant=null,dockMissionId=null;
+let restaurant=null,dockMissionId=null,dockTab='missions';
 
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
@@ -321,7 +335,16 @@ function buildTerrain(){
     // ABYSS 3250~4200 : blackwater entry -> vent valley -> predator trench
     rectSolid(0,3420,1250,250,'abyss','dirt'),rectSolid(1570,3650,900,180,'abyss','dirt'),rectSolid(2860,3370,980,260,'abyss','dirt'),rectSolid(4300,3690,980,185,'abyss','dirt'),rectSolid(5720,3410,1080,250,'abyss','dirt'),
     circleSolid(1410,3510,120,'abyss'),circleSolid(2680,3790,105,'abyss'),circleSolid(4080,3510,115,'abyss'),circleSolid(5520,3820,120,'abyss'),
-    rectSolid(0,4090,850,110,'abyss','dirt'),rectSolid(1880,4070,980,130,'abyss','dirt'),rectSolid(3620,4050,920,150,'abyss','dirt'),rectSolid(5900,4060,900,140,'abyss','dirt')
+    rectSolid(0,4090,850,110,'abyss','dirt'),rectSolid(1880,4070,980,130,'abyss','dirt'),rectSolid(3620,4050,920,150,'abyss','dirt'),rectSolid(5900,4060,900,140,'abyss','dirt'),
+
+    // HADAL 4200~6500 : whale fall -> crevasse -> volcanic caldera. Wide gaps create real descent routes.
+    rectSolid(0,4540,1160,170,'hadal','dirt'),rectSolid(1360,4740,1260,155,'hadal','dirt'),rectSolid(2920,4470,1180,190,'hadal','dirt'),rectSolid(4480,4760,940,160,'hadal','dirt'),rectSolid(5740,4500,1060,190,'hadal','dirt'),
+    circleSolid(1210,4680,115,'hadal'),circleSolid(2760,4590,105,'hadal'),circleSolid(4300,4820,125,'hadal'),circleSolid(5560,4660,110,'hadal'),
+    rectSolid(0,5160,1420,185,'hadal','dirt'),rectSolid(1640,5380,1120,170,'hadal','dirt'),rectSolid(4140,5350,1160,185,'hadal','dirt'),rectSolid(5580,5140,1220,210,'hadal','dirt'),
+    circleSolid(1510,5310,105,'hadal'),circleSolid(2940,5530,90,'hadal'),circleSolid(3970,5250,95,'hadal'),circleSolid(5440,5480,100,'hadal'),
+    rectSolid(0,5900,1100,190,'hadal','dirt'),rectSolid(1390,6150,1200,175,'hadal','dirt'),rectSolid(2860,5880,1060,190,'hadal','dirt'),rectSolid(4240,6200,820,150,'hadal','dirt'),rectSolid(6030,6070,770,180,'hadal','dirt'),
+    circleSolid(1220,6070,110,'hadal'),circleSolid(2710,6240,105,'hadal'),circleSolid(4080,6030,110,'hadal'),circleSolid(5920,6230,100,'hadal'),
+    rectSolid(0,6430,2860,70,'hadal','dirt'),rectSolid(4020,6430,2780,70,'hadal','dirt')
   ];
 }
 function zonePlantPool(id,foreground=false){
@@ -329,17 +352,18 @@ function zonePlantPool(id,foreground=false){
   if(id==='kelp')return foreground?['bgSeaA','bgSeaC','bgSeaE','bgSeaG','bgSeaH','seaweedGreenC','seaweedGreenD']:['seaweedA','seaweedGreenB','seaweedGreenC','seaweedGreenD','grassA','grassB','waterPlant2','grassClump'];
   if(id==='ruins')return foreground?['bgSeaF','bgRockA','bgRockB','grassA','seaweedGreenD']:['rockA','rockB','grassA','seaweedGreenD','seaweedPinkD','grassClump'];
   if(id==='wreck')return foreground?['bgRockB','bgSeaH','rockA','rockB','seaweedGreenD']:['rockA','rockB','grassB','seaweedGreenD','grassClump'];
+  if(id==='hadal')return foreground?['bgRockA','bgRockB']:['rockA','rockB'];
   return foreground?['bgRockA','bgRockB','bgSeaH']:['rockA','rockB','grassB'];
 }
 function buildForeground(seed){
   const r=seedRand(seed+4411),items=[];
   for(const z of ZONES){
-    const pool=zonePlantPool(z.id,true),count=z.id==='kelp'?56:z.id==='reef'?45:z.id==='ruins'?35:z.id==='wreck'?32:28;
+    const pool=zonePlantPool(z.id,true),count=z.id==='kelp'?56:z.id==='reef'?45:z.id==='ruins'?35:z.id==='wreck'?32:z.id==='hadal'?42:28;
     for(let i=0;i<count;i++){
       items.push({
         x:rnd(-120,WORLD.w+120),y:rnd(z.y0+35,z.y1-20),
         type:pool[Math.floor(r()*pool.length)],
-        scale:z.id==='kelp'?rnd(2.1,4.0):rnd(1.4,2.8),alpha:z.id==='abyss'?rnd(.10,.20):rnd(.15,.32),
+        scale:z.id==='kelp'?rnd(2.1,4.0):z.id==='hadal'?rnd(1.8,3.4):rnd(1.4,2.8),alpha:z.id==='hadal'?rnd(.06,.14):z.id==='abyss'?rnd(.10,.20):rnd(.15,.32),
         parallax:rnd(1.035,1.09),flip:r()>.5,zone:z.id
       });
     }
@@ -446,7 +470,7 @@ function buildWorld(contract=FREE_DIVE){
    contract,st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
    fish:[],decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,catchWeight:0,catchCounts:{},income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
-   mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,giantGrade:null,visited:{}}
+   mission:{photos:{},photoGrades:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
  };
  let fishSeed=0;
  for(const z of ZONES){
@@ -482,7 +506,10 @@ function buildWorld(contract=FREE_DIVE){
    ['jelly',1840,3410,19341],['squid',4380,3710,19342],
    ['seahorse',890,185,19501],['manta',5120,1320,19502],['moray',2580,1910,19503],['giantIsopod',2360,3880,19504],['coelacanth',4860,3690,19505],
    ['mackerel',1180,210,19601],['triggerfish',4720,390,19602],['yellowfin',6040,890,19603],['swordfish',820,2860,19604],
-   ['shrimp',1880,610,19605],['flounder',3360,2190,19606],['slipperLobster',5480,2860,19607],['lanternfish',1640,3420,19608],['angler',5220,3890,19609]
+   ['shrimp',1880,610,19605],['flounder',3360,2190,19606],['slipperLobster',5480,2860,19607],['lanternfish',1640,3420,19608],['angler',5220,3890,19609],
+   ['giantIsopod',1700,4630,19701],['giantIsopod',1960,4660,19702],['slipperLobster',2130,4700,19703],['seaCucumber',1510,4720,19704],['lanternfish',2480,4450,19705],
+   ['angler',3180,5090,19706],['coelacanth',4260,5480,19707],['giantIsopod',4740,5480,19708],['lanternfish',3730,5200,19709],
+   ['angler',5200,6030,19710],['giantIsopod',5780,6280,19711],['coelacanth',6170,5940,19712],['lanternfish',4920,5780,19713]
  ];
  for(const [key,x,y,seed] of encounters)world.fish.push(spawnCreature(key,x,y,seed,subzoneForY(y).id));
  // Boss encounters are unique: mantis shrimp in the reef maze, kraken in the predator trench.
@@ -496,7 +523,7 @@ function buildWorld(contract=FREE_DIVE){
  world.fish.push(spawnCreature('giant',WORLD.w*.74,3920,9921,'predatorTrench'));
  world.fish.push(spawnCreature('giant',WORLD.w*.31,4010,9922,'predatorTrench'));
  for(const z of ZONES){
-   const pool=zonePlantPool(z.id,false),count=z.id==='reef'?110:z.id==='kelp'?145:z.id==='ruins'?72:z.id==='wreck'?62:50;
+   const pool=zonePlantPool(z.id,false),count=z.id==='reef'?110:z.id==='kelp'?145:z.id==='ruins'?72:z.id==='wreck'?62:z.id==='hadal'?54:50;
    for(let i=0;i<count;i++){
      const y=rnd(z.y0+24,z.y1-28),x=rnd(80,WORLD.w-80),type=pool[Math.floor(r()*pool.length)];
      world.decor.push({x,y,type,scale:z.id==='kelp'?rnd(.9,1.7):rnd(.65,1.3),flip:r()>.5,zone:z.id});
@@ -688,6 +715,39 @@ function drawZoneLandmarks(){
  for(const [x,y,t,sc,rot] of debris){const p=screenPos(x,y);if(onScreen(p))drawImg(imgs[t],p.x,p.y,55*sc,38*sc,false,rot,.72,'brightness(.62) saturate(.65)')}
  ctx.save();for(let vi=0;vi<VENTS.length;vi++){const [x,y,sc]=VENTS[vi],p=screenPos(x,y);if(!onScreen(p,260))continue;ctx.fillStyle='#182132';ctx.beginPath();ctx.moveTo(p.x-34*sc,p.y);ctx.lineTo(p.x-12*sc,p.y-95*sc);ctx.lineTo(p.x+14*sc,p.y-88*sc);ctx.lineTo(p.x+38*sc,p.y);ctx.closePath();ctx.fill();for(let k=0;k<6;k++){const yy=p.y-105*sc-((world.time*22+k*31+vi*17)%150)*sc,xx=p.x+Math.sin(world.time*1.2+k)*12*sc;ctx.fillStyle=k%2?'rgba(120,105,255,.25)':'rgba(86,231,255,.34)';ctx.beginPath();ctx.arc(xx,yy,3+(k%3),0,Math.PI*2);ctx.fill()}}ctx.restore()
 }
+function drawDeepLandmarks(){
+ const onScreen=(p,m=360)=>p.x>-m&&p.x<view.w+m&&p.y>-m&&p.y<view.h+m;
+ // Whale fall: a dark whale body with exposed ribs and a cloud of feeding particles.
+ let p=screenPos(WHALE_FALL.x,WHALE_FALL.y);if(onScreen(p,430)){
+   drawImg(imgs.whale,p.x,p.y-58,330,170,false,-.04,.34,'grayscale(.7) brightness(.42) saturate(.35)');
+   ctx.save();ctx.strokeStyle='rgba(224,222,202,.72)';ctx.lineWidth=5;ctx.lineCap='round';
+   for(let i=0;i<7;i++){const x=p.x-54+i*18;ctx.beginPath();ctx.arc(x,p.y-38,30+i%2*5,.38,Math.PI-.28);ctx.stroke()}
+   ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(p.x-75,p.y-35);ctx.lineTo(p.x+72,p.y-27);ctx.stroke();
+   ctx.fillStyle='rgba(233,225,199,.70)';ctx.beginPath();ctx.ellipse(p.x+106,p.y-40,32,23,-.12,0,Math.PI*2);ctx.fill();
+   for(let i=0;i<18;i++){const a=i*2.17+world.time*.42,r=42+(i%5)*18;ctx.fillStyle='rgba(182,214,206,'+(0.08+(i%4)*.025)+')';ctx.beginPath();ctx.arc(p.x+Math.cos(a)*r,p.y-20+Math.sin(a*.7)*34,1.5+(i%3),0,Math.PI*2);ctx.fill()}
+   if(world.sonar>0){ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#dffcff';ctx.fillText('고래 낙하 지대',p.x,p.y-145)}
+   ctx.restore();
+ }
+ // Crevasse: a jagged black cut that visually continues far below the traversable shelves.
+ p=screenPos(DEEP_RIFT.x,DEEP_RIFT.y);if(onScreen(p,520)){
+   ctx.save();const top=p.y-260,bottom=p.y+360,w=DEEP_RIFT.w*.5;
+   const g=ctx.createLinearGradient(0,top,0,bottom);g.addColorStop(0,'rgba(0,0,4,.55)');g.addColorStop(.45,'rgba(0,0,3,.96)');g.addColorStop(1,'rgba(0,0,0,1)');ctx.fillStyle=g;
+   ctx.beginPath();ctx.moveTo(p.x-w*.72,top);ctx.lineTo(p.x-w*.38,p.y-120);ctx.lineTo(p.x-w*.62,p.y+20);ctx.lineTo(p.x-w*.25,bottom);ctx.lineTo(p.x+w*.28,bottom);ctx.lineTo(p.x+w*.58,p.y+40);ctx.lineTo(p.x+w*.34,p.y-105);ctx.lineTo(p.x+w*.70,top);ctx.closePath();ctx.fill();
+   ctx.strokeStyle='rgba(94,132,163,.20)';ctx.lineWidth=3;ctx.stroke();
+   if(world.sonar>0){ctx.setLineDash([7,9]);ctx.strokeStyle='rgba(112,239,255,.36)';ctx.strokeRect(p.x-w*.76,top,p.x+w*.76-(p.x-w*.76),bottom-top);ctx.setLineDash([])}
+   ctx.restore();
+ }
+ // Underwater volcano and caldera.
+ p=screenPos(VOLCANO.x,VOLCANO.y);if(onScreen(p,620)){
+   ctx.save();const pulse=(Math.sin(world.time*1.85)+1)*.5;
+   const glow=ctx.createRadialGradient(p.x,p.y-135,12,p.x,p.y-135,235);glow.addColorStop(0,'rgba(255,126,61,'+(0.26+pulse*.18)+')');glow.addColorStop(1,'rgba(75,16,18,0)');ctx.fillStyle=glow;ctx.fillRect(p.x-250,p.y-390,500,430);
+   ctx.fillStyle='#11131d';ctx.beginPath();ctx.moveTo(p.x-360,p.y+35);ctx.lineTo(p.x-170,p.y-130);ctx.lineTo(p.x-88,p.y-255);ctx.lineTo(p.x+95,p.y-245);ctx.lineTo(p.x+180,p.y-118);ctx.lineTo(p.x+360,p.y+35);ctx.closePath();ctx.fill();
+   ctx.fillStyle='#02030a';ctx.beginPath();ctx.ellipse(p.x,p.y-240,98,30,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(252,104,59,'+(0.30+pulse*.25)+')';ctx.lineWidth=5;ctx.stroke();
+   for(let i=0;i<13;i++){const yy=p.y-270-((world.time*(26+i%3*5)+i*47)%330),xx=p.x+Math.sin(world.time*.7+i*1.9)*(36+i*2);ctx.fillStyle=i%3?'rgba(74,99,127,.18)':'rgba(255,100,65,.16)';ctx.beginPath();ctx.arc(xx,yy,4+(i%4)*2,0,Math.PI*2);ctx.fill()}
+   if(world.sonar>0){ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd0bd';ctx.fillText('해저 화산 분화구',p.x,p.y-360)}
+   ctx.restore();
+ }
+}
 function drawForeground(){
   for(const d of world.foreground){
     const px=d.x-world.camera.x*d.parallax+view.w/2,py=d.y-world.camera.y*d.parallax+view.h/2;
@@ -778,7 +838,7 @@ function drawBubbles(){
  ctx.save();for(const b of world.bubbles){const p=screenPos(b.x,b.y);if(p.x<0||p.x>view.w||p.y<0||p.y>view.h)continue;ctx.strokeStyle='rgba(213,250,255,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,b.s,0,Math.PI*2);ctx.stroke()}ctx.restore()
 }
 function drawBiomeBoundaries(){
- const bands=[720,1500,2350,3250];
+ const bands=[720,1500,2350,3250,4200];
  ctx.save();
  for(let i=0;i<bands.length;i++){
    const y=screenPos(0,bands[i]).y;if(y<-100||y>view.h+100)continue;
@@ -822,6 +882,11 @@ function drawSubzoneFX(){
  if(id==='predatorTrench'){
    const pulse=.06+Math.max(0,Math.sin(world.time*1.6))*.045;const g=ctx.createRadialGradient(view.w/2,view.h/2,view.h*.18,view.w/2,view.h/2,Math.max(view.w,view.h)*.72);g.addColorStop(0,'rgba(55,0,0,0)');g.addColorStop(1,'rgba(120,9,18,'+pulse+')');ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h)
  }
+ if(id==='whaleFall'||id==='riftAbyss'||id==='volcanoCaldera'){
+   const inner=id==='whaleFall'?85:70,outer=Math.max(view.w,view.h)*.62,g=ctx.createRadialGradient(view.w/2,view.h/2,inner,view.w/2,view.h/2,outer);g.addColorStop(0,'rgba(0,0,6,.08)');g.addColorStop(.28,'rgba(0,1,8,.36)');g.addColorStop(1,'rgba(0,0,3,.86)');ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);
+   if(id==='riftAbyss'){ctx.strokeStyle='rgba(100,164,196,.10)';ctx.lineWidth=2;for(let i=0;i<8;i++){const x=view.w*.5+Math.sin(i*2.2)*view.w*.34,y=((world.time*48+i*97)%Math.max(1,view.h+120))-60;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.sin(world.time+i)*8,y+46);ctx.stroke()}}
+   if(id==='volcanoCaldera'){ctx.fillStyle='rgba(95,15,8,'+(0.05+Math.max(0,Math.sin(world.time*1.85))*.05)+')';ctx.fillRect(0,0,view.w,view.h)}
+ }
  ctx.restore()
 }
 function drawDangerFX(){
@@ -833,7 +898,7 @@ function drawDangerFX(){
  if(world.currentBurst>0){ctx.save();ctx.globalAlpha=clamp(world.currentBurst*.28,0,.22);ctx.strokeStyle='#b8f6ff';ctx.lineWidth=2;for(let y=90;y<view.h;y+=70){const off=(world.time*210+y*1.7)%180;ctx.beginPath();ctx.moveTo(-40+off,y);ctx.lineTo(120+off,y-18);ctx.stroke()}ctx.restore()}
 }
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDeepLandmarks();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updatePhotoLabel()
 }
 function updatePhotoLabel(){
  if(!world||world.tool!=='camera'){$('photoLabel').textContent='';return}
@@ -848,6 +913,7 @@ function missionText(){
  if(id==='ruins')return'유적 '+((m.statue?1:0)+(m.arch?1:0))+'/2 · 표식판 '+(m.relic?'회수':'미회수');
  if(id==='wreck')return'항해기록 장치 '+(m.recorder?'회수':'미회수')+' · 기뢰 주의';
  if(id==='harvest')return'미역 '+(world.catchCounts.seaweed||0)+'/1 · 다시마 '+(world.catchCounts.kelp||0)+'/1 · 성게 '+(world.catchCounts.urchin||0)+'/1';
+ if(id==='hadal'){const deepPhoto=['angler','giantIsopod'].map(k=>m.photoGrades[k]).filter(Boolean).sort((a,b)=>GRADE_SCORE[b]-GRADE_SCORE[a])[0];return'고래 낙하 '+(m.visited.whaleFall?'도달':'미탐사')+' · 크레바스 '+(m.visited.riftAbyss?'도달':'미탐사')+' · 화산 '+(m.visited.volcanoCaldera?'도달':'미탐사')+' · 심해 생물 '+(deepPhoto||'미촬영')}
  return'600m '+(m.deep?'도달':'미도달')+' · 심해 상어 '+(m.giantGrade?m.giantGrade:'미촬영');
 }
 function missionComplete(){
@@ -858,6 +924,7 @@ function missionComplete(){
  if(id==='ruins')return !!(m.statue&&m.arch&&m.relic);
  if(id==='wreck')return !!m.recorder;
  if(id==='harvest')return !!((world.catchCounts.seaweed||0)>=1&&(world.catchCounts.kelp||0)>=1&&(world.catchCounts.urchin||0)>=1);
+ if(id==='hadal')return !!(m.visited.whaleFall&&m.visited.riftAbyss&&m.visited.volcanoCaldera&&['angler','giantIsopod'].some(k=>gradeAtLeast(m.photoGrades[k],'A')));
  return !!(m.deep&&['A','S'].includes(m.giantGrade));
 }
 function updateHud(){
@@ -897,7 +964,7 @@ function photoValue(f,grade){
  const sp=SPECIES[f.key],depth=depthOf(f.y),base=sp.rare?150:72,depthFactor=1+Math.min(1.15,depth/620*.9),sr=subRuleForY(f.y);
  const habitat=(sr.photo||1)*(sp.rare?(sr.rarePhoto||1):1);return Math.round(base*PHOTO_MULT[grade]*depthFactor*habitat)
 }
-function ratedDepth(){return 170+(meta.up.suit||0)*115}
+function ratedDepth(){return 180+(meta.up.suit||0)*205}
 function oxygenReserveStatus(){
  if(!world)return{code:'safe',label:'여유',ratio:9,need:0};const p=world.player,vertical=Math.max(0,p.y-WORLD.surface),travel=vertical/Math.max(95,world.st.speed*.74)*1.48;
  const z=zoneForY(p.y),rule=ZONE_RULES[z.id]||ZONE_RULES.reef,pressure=1+Math.min(.8,(world.pressureOver||0)/180*.45),load=1+clamp(world.bagWeight/Math.max(1,world.st.bag),0,1)*.12;
@@ -1149,6 +1216,9 @@ function applyZoneEnvironment(dt,p){
  }else if(z.id==='abyss'){
    world.envPulse=Math.max(world.envPulse,.32+Math.sin(world.time*2)*.08);
  }
+ if(sr.riftPull){const dx=DEEP_RIFT.x-p.x,ad=Math.abs(dx);if(ad<720){const pull=(1-ad/720)*105;p.vx+=Math.sign(dx)*pull*.45*dt;p.vy+=pull*1.1*dt;world.currentBurst=Math.max(world.currentBurst,.22+pull/180)}}
+ if(sr.volcano){const dx=p.x-VOLCANO.x,dy=p.y-(VOLCANO.y-150),d=Math.hypot(dx,dy),pulse=(Math.sin(world.time*1.85)+1)*.5;if(d<420&&pulse>.62){world.envPulse=Math.max(world.envPulse,.65);p.vy-=42*dt;if(d<235&&pulse>.80&&p.inv<=0){const dmg=Math.max(5,Math.round(12*world.st.armor));p.hp-=dmg;p.inv=.86;p.vx+=dx/(d||1)*90;p.vy-=110;showHint('해저 화산 가스 폭발! -'+dmg+' HP',850);beep(92,.12,'sawtooth')}}}
+ if(z.id==='hadal')world.envPulse=Math.max(world.envPulse,.22+Math.max(0,Math.sin(world.time*.9))*.06);
 }
 function applySubzoneTerrainHazard(hit,p,speed){
  if(!hit||world.scrapeCd>0)return;const sub=subzoneForY(p.y),sr=SUBZONE_RULES[sub.id]||{};if(!sr.terrainHazard)return;
@@ -1174,7 +1244,7 @@ function update(dt){
  const zone=zoneForY(p.y),subNow=subzoneForY(p.y),subRule=SUBZONE_RULES[subNow.id]||{},rule=ZONE_RULES[zone.id]||ZONE_RULES.reef,dep=depthOf(p.y);applyDepthPressure(dt,p,dep);applySubzoneTerrainHazard(terrainHit,p,impactSpeed);
  const bagLoad=clamp(world.bagWeight/Math.max(1,st.bag),0,1),effort=1+len*.10+bagLoad*.18+(dashing?.72:0),pressureBurn=1+Math.min(1.15,world.pressureOver/150*.52);
  p.oxygen-=dt*rule.oxygen*effort*pressureBurn*(subRule.oxygen||1);applyZoneEnvironment(dt,p);if(subRule.sonarRecharge>1)world.sonarCd=Math.max(0,world.sonarCd-dt*(subRule.sonarRecharge-1));
- world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;
+ world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;if(dep>=800)world.mission.hadal=true;
  const reserve=oxygenReserveStatus();if(reserve.code!==world.reserveState){world.reserveState=reserve.code;if(reserve.code==='warn')showHint('귀환 산소가 빠듯합니다. 더 깊이 갈지 돌아갈지 결정하세요.',1500);if(reserve.code==='critical')showHint('귀환 산소 위험 · 지금 상승하세요!',1800)}
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
  const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+(SUBZONE_RULES[sub.id]?.tip||zone.name),2300)}}
@@ -1396,17 +1466,31 @@ function gearLoadoutCards(){
 function toggleDockGear(k){
  const slots=2+(meta.up.slots||0),i=meta.loadout.indexOf(k);if(i>=0)meta.loadout.splice(i,1);else if(meta.loadout.length<slots)meta.loadout.push(k);else{showHint('장비 슬롯이 가득 찼습니다. 장비 랙을 업그레이드하세요.',1000);return}save();openContracts()
 }
-function openContracts(){
- state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId);
- $('contractBody').innerHTML='<div class="dockSummary"><div><span>DAY '+meta.day+' · 낮 출항 준비</span><b>'+money(meta.money)+'</b><small>하루 어획 '+st.catchCap+'kg · 채집 장비 '+st.toolSlots+'칸 · 안전 수심 약 '+Math.round(ratedDepth())+'m</small></div><div><span>선택 의뢰</span><b>'+(selected?selected.title:'없음 · 자유 잠수')+'</b><small>의뢰는 완전히 선택 사항입니다.</small></div></div>'+
- '<h3 class="sectionTitle">오늘 받을 탐사 의뢰 <small>안 받아도 됩니다</small></h3><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button>'+
- '<h3 class="sectionTitle">오늘 빌려갈 채집 장비</h3><div class="gearGrid">'+gearLoadoutCards()+'</div>'+
- '<div class="toolbar dockActions"><button class="btn gold" id="freeDiveBtn">'+(selected?'선택 의뢰와 함께 출항':'자유 잠수 출항')+'</button><button class="btn" id="shopBtn">업그레이드 공방</button><button class="btn dark" id="codexBtn">생물 도감</button>'+(stockCount()>0?'<button class="btn dark" id="restaurantBtn">남은 재고로 밤 장사</button>':'')+'<button class="btn dark" id="menuBtn">시작 화면</button></div>';
+function dockDetailHtml(){
+ if(dockTab==='gear')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>장비 창고</span><h3>오늘 빌려갈 채집 장비</h3></div><small>슬롯 안에서 장비를 골라 배에 싣습니다.</small></div><div class="gearGrid">'+gearLoadoutCards()+'</div></section>';
+ return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰 없이 바다로 나가도 됩니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
+}
+function openContracts(tab=dockTab){
+ dockTab=tab||'missions';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount();
+ $('contractBody').innerHTML='<div class="dockSummary"><div><span>DAY '+meta.day+' · BLUE EXPEDITION HARBOR</span><b>'+money(meta.money)+'</b><small>하루 어획 '+st.catchCap+'kg · 장비 '+st.toolSlots+'칸 · 안전 수심 약 '+Math.round(ratedDepth())+'m</small></div><div><span>오늘의 계획</span><b>'+(selected?selected.title:'자유 잠수')+'</b><small>가게와 창고를 둘러본 뒤 오른쪽 바다에서 출항하세요.</small></div></div>'+
+ '<div class="dockScene">'+
+   '<div class="dockSky"><i></i><i></i><i></i></div><div class="dockHills"></div>'+
+   '<button class="dockBuilding dockOffice '+(dockTab==='missions'?'active':'')+'" data-dock="missions"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-beige.png" alt=""><b>의뢰 사무소</b><small>탐사 의뢰 선택</small></button>'+
+   '<button class="dockBuilding dockWorkshop" data-dock="workshop"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-dark.png" alt=""><b>업그레이드 공방</b><small>잠수복·어획함·장비 강화</small></button>'+
+   '<button class="dockBuilding dockGear '+(dockTab==='gear'?'active':'')+'" data-dock="gear"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-gray.png" alt=""><b>장비 창고</b><small>오늘 장비 챙기기</small></button>'+
+   '<button class="dockBuilding dockCodex" data-dock="codex"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-beige-alt.png" alt=""><b>해양 연구소</b><small>생물 도감</small></button>'+
+   '<button class="dockBuilding dockKitchen '+(stock?'':'empty')+'" data-dock="kitchen"><img src="../../assets/game/2d/platformer-art/expansions/buildings/house-dark-alt.png" alt=""><b>BLUE KITCHEN</b><small>'+(stock?'재고 '+stock+'개 · 밤 장사 가능':'오늘 잡은 재료가 아직 없습니다')+'</small></button>'+
+   '<div class="dockPier"><span></span><span></span><span></span><span></span></div>'+
+   '<div class="dockSea"><div class="dockWave w1"></div><div class="dockWave w2"></div><button class="dockLaunch" data-dock="launch"><span class="dockBoatIcon">▰</span><b>'+(selected?'의뢰 출항':'자유 잠수 출항')+'</b><small>바다로 나가기</small></button></div>'+
+   '<div class="dockSceneLabel"><b>BLUE EXPEDITION</b><small>선착장 · 건물을 눌러 준비하세요</small></div>'+
+ '</div>'+
+ '<div class="dockQuick"><button data-dock="missions" class="'+(dockTab==='missions'?'active':'')+'">의뢰</button><button data-dock="gear" class="'+(dockTab==='gear'?'active':'')+'">장비</button><button data-dock="workshop">공방</button><button data-dock="codex">도감</button><button data-dock="kitchen">식당</button><button data-dock="launch">출항</button></div>'+
+ '<div class="dockDetail">'+dockDetailHtml()+'</div><div class="toolbar dockActions"><button class="btn dark" id="menuBtn">시작 화면</button></div>';
  $('contractScreen').classList.remove('hidden');
- document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{dockMissionId=dockMissionId===b.dataset.mission?null:b.dataset.mission;openContracts()});document.querySelectorAll('[data-loadout]').forEach(b=>b.onclick=()=>toggleDockGear(b.dataset.loadout));
- $('clearMissionBtn').onclick=()=>{dockMissionId=null;openContracts()};$('freeDiveBtn').onclick=()=>buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE);
- $('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;const rb=$('restaurantBtn');if(rb)rb.onclick=startRestaurant;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
+ document.querySelectorAll('[data-dock]').forEach(b=>b.onclick=()=>{const a=b.dataset.dock;if(a==='missions'||a==='gear'){dockTab=a;openContracts(a);return}if(a==='workshop'){openShop();return}if(a==='codex'){openCodex();return}if(a==='kitchen'){if(stockCount()>0)startRestaurant();else showHint('먼저 잠수해서 식재료를 가져오세요.',1200);return}if(a==='launch')buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE)});
+ document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{dockMissionId=dockMissionId===b.dataset.mission?null:b.dataset.mission;openContracts('missions')});document.querySelectorAll('[data-loadout]').forEach(b=>b.onclick=()=>{dockTab='gear';toggleDockGear(b.dataset.loadout)});
+ const clear=$('clearMissionBtn');if(clear)clear.onclick=()=>{dockMissionId=null;openContracts('missions')};$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
 function upCost(k){const u=UPGRADES[k];return Math.round(u.base*(1+(meta.up[k]||0)*.72))}
 function shopUpCost(k){const u=SHOP_UPGRADES[k];return Math.round(u.base*(1+(meta.shopUp[k]||0)*.78))}
