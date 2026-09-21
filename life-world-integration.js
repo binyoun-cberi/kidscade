@@ -6,7 +6,7 @@
 
   const OVERLAY_ID='kidscade-life-world-overlay';
   const FRAME_ID='kidscade-life-world-frame';
-  const WORLD_URL='world-v3/kidscade-world.html?v=25';
+  const WORLD_URL='world-v3/kidscade-world.html?v=26';
   let overlay=null, frame=null, activated=false;
   const CUBE_PET_NAMES={dog:'강아지',cat:'고양이',bunny:'토끼',pig:'돼지',cow:'소',chick:'병아리',fox:'여우',deer:'사슴',parrot:'앵무새',beaver:'비버'};
   const CUBE_PET_ICONS={dog:'🐶',cat:'🐱',bunny:'🐰',pig:'🐷',cow:'🐮',chick:'🐥',fox:'🦊',deer:'🦌',parrot:'🦜',beaver:'🦫'};
@@ -30,6 +30,15 @@
       return n;
     }catch(_){return 0}
   }
+
+  function villageStars(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('kidscade_world_v2')||'null');
+      const d=raw?.progression?.development||{};
+      const score=Math.max(0,(Number(d.farmLevel)||1)-1)+Math.max(0,(Number(d.fishingLevel)||1)-1)+Math.max(0,(Number(d.stoneMineLevel)||1)-1)+Math.max(0,(Number(d.ironMineLevel)||1)-1)+Math.max(0,(Number(d.techLevel)||1)-1);
+      return Math.max(1,Math.min(5,1+Math.floor(score/3)));
+    }catch(_){return 1}
+  }
   function syncWorldEntryStatus(){
     const btn=document.getElementById('btn-open-shop')||document.querySelector('[data-open-life-world="profile-world"]');
     if(!btn)return;
@@ -38,13 +47,13 @@
     const extras=[];
     if(meta.pendingMail>0)extras.push('📬 '+meta.pendingMail);
     if(ripe>0)extras.push('🥕 '+ripe);
-    btn.textContent='🌱 씨앗 월드'+(extras.length?' · '+extras.join(' · '):'');
+    btn.textContent='🌱 씨앗 월드 · '+ '⭐'.repeat(villageStars())+(extras.length?' · '+extras.join(' · '):'');
     btn.classList.toggle('has-world-alert',meta.pendingMail>0||ripe>0);
     btn.setAttribute('aria-label',extras.length?'씨앗 월드 · '+extras.join(' · '):'씨앗 월드');
     const seedLine=document.getElementById('avatar-plaza-seeds');
     if(seedLine){
       const taskText=(Number(meta.dailyDone)||0)+'/'+(Number(meta.dailyTotal)||3);
-      seedLine.textContent=(meta.pendingMail>0?'📬 택배 '+meta.pendingMail+' · ':'')+'📋 오늘 '+taskText+' · 🌱 '+(root.KidscadeSeedWallet?.get?.()??Number(localStorage.getItem('kidscade_coins')||0));
+      seedLine.textContent='🏘️ '+ '⭐'.repeat(villageStars())+' · '+(meta.pendingMail>0?'📬 택배 '+meta.pendingMail+' · ':'')+'📋 오늘 '+taskText+' · 🌱 '+(root.KidscadeSeedWallet?.get?.()??Number(localStorage.getItem('kidscade_coins')||0));
     }
   }
 
