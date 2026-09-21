@@ -349,7 +349,8 @@ function homeStoragePanel(){
   const stored=Object.entries(s).filter(([,v])=>Number(v)>0);
   openPanel('<h2>📦 집 수납</h2><p><b>가방 '+carriedSlotCount()+'/'+backpackCapacity()+'칸</b> · 집 수납 '+homeStorageSlotCount()+'/'+homeStorageCapacity()+'칸</p>'+
     '<h3>가방에서 넣기</h3><div class="grid">'+(carried.length?carried.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-in="'+k+'">전부 넣기</button></div>').join(''):'<div class="item">가방이 비어 있어요.</div>')+'</div>'+
-    '<h3>집에서 꺼내기</h3><div class="grid">'+(stored.length?stored.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-out="'+k+'">전부 꺼내기</button></div>').join(''):'<div class="item">보관 중인 재료가 없어요.</div>')+'</div>');
+    '<h3>집에서 꺼내기</h3><div class="grid">'+(stored.length?stored.map(([k,v])=>'<div class="item"><b>'+itemName(k)+'</b><div>'+v+'개</div><button data-store-out="'+k+'">전부 꺼내기</button></div>').join(''):'<div class="item">보관 중인 재료가 없어요.</div>')+'</div>'+
+    '<p><button data-open-furniture="1">🪑 가구 창고 · 배치</button></p>');
 }
 
 
@@ -701,6 +702,7 @@ panel.addEventListener('click',e=>{
   if(e.target.closest('[data-world-cosmetic-clear]')){Meta?.equipCosmetic?.('');syncCosmeticAura();cosmeticShopPanel();return;}
   const storeIn=e.target.closest('[data-store-in]');if(storeIn){transferToHomeStorage(storeIn.dataset.storeIn);return;}
   const storeOut=e.target.closest('[data-store-out]');if(storeOut){transferFromHomeStorage(storeOut.dataset.storeOut);return;}
+  if(e.target.closest('[data-open-furniture]')){furnishingSystem?.openCatalog?.();return;}
   const devUpgrade=e.target.closest('[data-dev-upgrade]');if(devUpgrade){upgradeDevelopment(devUpgrade.dataset.devUpgrade);return;}
   const material=e.target.closest('[data-craft-material]');if(material){craftSelected=material.dataset.craftMaterial;craftGridPanel();return;}
   const cell=e.target.closest('[data-craft-cell]');if(cell){
@@ -884,6 +886,7 @@ const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
 let homeCampfireObject=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
+const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
 let mode='outdoor';
 const savedLayout=Number(save.player?.v3Layout||0);
@@ -943,6 +946,7 @@ function updateHomesteadVisuals(){
   if(homeCampfireInteraction)homeCampfireInteraction.enabled=h.kitchenLevel>=1;
   if(starterBeddingGroup)starterBeddingGroup.visible=h.bedLevel===0;
   if(starterBeddingInteraction)starterBeddingInteraction.enabled=h.bedLevel===0;
+  for(const cover of houseExpansionCovers)cover.object.visible=d.houseLevel<cover.unlockAt;
   if(homeHouseObject&&homeHouseBaseScale){
     const mul=d.houseLevel===1?.78:d.houseLevel===2?.90:1;
     homeHouseObject.scale.copy(homeHouseBaseScale).multiplyScalar(mul);
@@ -1409,31 +1413,35 @@ async function buildOutdoor(){
 }
 
 async function buildIndoor(){
-  // Open doll-house room with a clear entrance and three zones:
-  // bedroom (left/back), living (left/front), kitchen+dining (right).
+  // The full shell exists for compatibility, but a fresh player can only use the small central room.
   box(indoor,0,0,14,10.5,.24,0xc8a36e,-.18);
   box(indoor,0,-5.25,14,.28,2.75,0xe8d9b4,0);
   box(indoor,-7,0,.28,10.5,2.75,0xe2d0a6,0);
   box(indoor,7,0,.28,10.5,2.75,0xe2d0a6,0);
   box(indoor,0,-5.05,14,.18,.18,0x9f7651,2.75);
 
-  // Subtle floor zones make the layout easier to read without full walls.
-  plane(indoor,-3.8,-2.7,5.4,4.5,0xd6b77f,.005);
-  plane(indoor,-3.5,1.9,5.5,3.3,0xcfaa73,.006);
-  plane(indoor,3.3,-1.8,6.0,6.0,0xdcc89b,.006);
+  // Locked side rooms are visibly covered until the house expands.
+  const leftCover=plane(indoor,-4.85,-.15,3.0,8.0,0x83745e,.018);
+  const rightCover=plane(indoor,4.85,-.15,3.0,8.0,0x83745e,.018);
+  const outerLeft=plane(indoor,-6.0,-.15,1.7,9.0,0x6e6252,.021);
+  const outerRight=plane(indoor,6.0,-.15,1.7,9.0,0x6e6252,.021);
+  houseExpansionCovers.push({object:leftCover,unlockAt:2},{object:rightCover,unlockAt:2},{object:outerLeft,unlockAt:3},{object:outerRight,unlockAt:3});
 
-  await Promise.all([
-    // All home furniture, including bed and kitchen appliances, is restored by the furnishing system.
-    addModel(indoor,ASSET.chest,{x:5.35,z:2.65,w:1.45,h:1.0,d:1.0,rot:Math.PI/2,name:'furniture-storage'})
-  ]);
+  // Fresh home: floor bedding and one temporary crate, no bed, stove, sink or fridge.
+  starterBeddingGroup=new THREE.Group();indoor.add(starterBeddingGroup);
+  const blanket=plane(starterBeddingGroup,0,-1.55,2.25,2.85,0x6f8db2,.026);
+  const pillow=box(starterBeddingGroup,0,-2.42,1.25,.48,.16,0xe9e2d3,.03);
+  blanket.receiveShadow=true;pillow.castShadow=true;
 
-  // Collisions leave a wide central route from door to every zone.
-  addColliderFor('indoor',5.35,2.65,1.05,.75);
+  await addModel(indoor,ASSET.chest,{x:2.55,z:1.85,w:1.35,h:.92,d:.95,rot:Math.PI/2,name:'starter-home-storage'});
+  addColliderFor('indoor',2.55,1.85,.95,.72);
 
-  interact('indoor',0,4.35,1.45,'밖으로 나가기',()=>setMode('outdoor'));
-  interact('indoor',5.35,2.65,1.35,'가구 창고 · 집 꾸미기',()=>furnishingSystem?.openCatalog?.());
+  interact('indoor',0,3.20,1.35,'밖으로 나가기',()=>setMode('outdoor'));
+  starterBeddingInteraction=interact('indoor',0,-1.55,1.45,'🧺 바닥 이불에서 자기',sleepOnFloor);
+  interact('indoor',2.55,1.85,1.35,'📦 임시 수납상자 열기',homeStoragePanel);
+
+  updateHomesteadVisuals();
 }
-
 function clockText(minutes){
   const m=Math.floor(((minutes%1440)+1440)%1440),h=Math.floor(m/60),mm=String(m%60).padStart(2,'0');
   return String(h).padStart(2,'0')+':'+mm;
