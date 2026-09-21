@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=32",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=33",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v32! 소나와 카메라로 개체의 크기·상태·예상 무게를 관찰하고 장비를 판단해 포획합니다. 같은 종도 소형~특대 개체가 존재하며 최고 무게·최대 크기 포획 기록이 도감에 남고, 낮 탐사와 BLUE KITCHEN 운영으로 이어집니다.",
+      "description": "2D 픽셀 잠수 탐사 v33! 소나와 카메라로 개체의 크기·상태·예상 무게뿐 아니라 원재료 가치와 kg당 효율까지 읽고 포획합니다. 대형은 +10%, 특대는 +30% 품질 프리미엄이 회분별로 냉장고에 보존되어 BLUE KITCHEN 실제 메뉴 가격에 이어집니다.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
