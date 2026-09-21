@@ -783,8 +783,10 @@ test('Deep Diver v27 gives capture tools biological size roles',()=>{
   assert.match(js,/function creatureSizeClass/);
   assert.match(js,/function requiredGearTier/);
   assert.match(js,/function captureCompatibility/);
-  assert.match(js,/method==='net'&&SIZE_RANK\[size\]>SIZE_RANK\.medium/);
-  assert.match(js,/method==='harpoon'.*SIZE_RANK\[size\]>=SIZE_RANK\.medium/s);
+  assert.match(js,/function gearSizeCapacity/);
+  assert.match(js,/net:\['small','small','medium','medium'\]/);
+  assert.match(js,/harpoon:\['medium','large','large','huge'\]/);
+  assert.match(js,/SIZE_RANK\[size\]>SIZE_RANK\[capacity\]/);
   assert.match(js,/yellowfin:'large'/);
   assert.match(js,/swordfish:'large'/);
   assert.match(js,/giant:'huge'/);
