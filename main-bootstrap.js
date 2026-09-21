@@ -312,6 +312,11 @@
 
             closeModalBtn.addEventListener('click', () => {
                 window.KidscadeGameLauncher.close(gameLauncherBridge);
+            });
+            window.addEventListener('message', (event) => {
+                if (event.origin !== location.origin || event.source !== gameIframe.contentWindow) return;
+                if (event.data?.type !== 'kidscade:close-game') return;
+                window.KidscadeGameLauncher.close(gameLauncherBridge);
             });`;
     html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
 
