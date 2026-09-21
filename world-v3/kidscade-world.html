@@ -8,7 +8,7 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9d8ee;font-family:"맑은 고딕",system-ui,sans-serif;color:#263226}
 #app{position:fixed;inset:0;background:linear-gradient(#b9d8ee,#e7f3df)}
 #world3d{display:block;width:100%;height:100%;outline:0;touch-action:none}
-.zone{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:12;padding:8px 16px;background:rgba(255,248,214,.94);border:2px solid #526048;border-radius:999px;font-weight:1000;box-shadow:0 5px 14px rgba(0,0,0,.15);pointer-events:none;white-space:nowrap}
+.zone{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:12;padding:8px 16px;background:rgba(255,248,214,.94);color:#263226;border:2px solid #526048;border-radius:999px;font-weight:1000;box-shadow:0 5px 14px rgba(0,0,0,.15);white-space:nowrap;cursor:pointer;touch-action:manipulation}
 .helpBtn,.audioBtn{position:absolute;z-index:14;width:44px;height:44px;border:2px solid #53634a;border-radius:50%;background:rgba(255,248,215,.96);color:#2e3b2d;font-weight:1000;font-size:22px;display:grid;place-items:center;box-shadow:0 5px 14px rgba(0,0,0,.18);cursor:pointer;touch-action:manipulation}
 .helpBtn{left:16px;top:16px}.audioBtn{right:16px;top:16px;font-size:17px}
 .status{position:absolute;right:70px;top:14px;z-index:13;display:flex;align-items:center;gap:8px;min-height:48px;padding:7px 10px;background:rgba(34,47,35,.88);color:#fff9d8;border:2px solid #d8c77e;border-radius:14px;box-shadow:0 8px 22px rgba(0,0,0,.18);font-size:11px;font-weight:900;backdrop-filter:blur(8px)}
@@ -56,10 +56,10 @@
   <button class="helpBtn" id="helpBtn" type="button" aria-label="씨앗 월드 도움말">?</button>
   <div class="status" id="status" aria-label="날짜와 재화">
     <div class="statusMain"><span class="statusClock" id="statusClock">Day 1 · 08:00</span><span class="statusPhase" id="statusPhase">☀ 낮</span></div>
-    <div class="statusCurrency"><span class="statusChip" id="coinCount">🪙 0</span><span class="statusChip" id="seedCount">🌱 0</span><span class="statusChip" id="funCount">🙂 0</span></div>
+    <div class="statusCurrency"><span class="statusChip" id="coinCount">🪙 0</span><span class="statusChip" id="seedCount">🌱 0</span><span class="statusChip" id="funCount">🙂 0</span><span class="statusChip" id="worldMailChip">📬 0</span><span class="statusChip" id="worldTaskChip">📋 0/3</span></div>
   </div>
   <button class="audioBtn" id="audioToggle" type="button" aria-label="씨앗 월드 소리 켜기/끄기">🔊</button>
-  <div class="zone" id="zone">집 구역</div>
+  <button class="zone" id="zone" type="button" aria-label="씨앗 월드 빠른 이동 지도 열기">집 구역 · 🗺️</button>
   <div class="toast" id="toast"></div>
   <div class="prompt" id="prompt"></div>
 
@@ -91,6 +91,7 @@
 </div>
 <script src="../world-v2/kidscade-world-storage.js"></script>
 <script src="../world-v2/kidscade-world-bridge.js"></script>
-<script type="module" src="kidscade-world-v3.js?v=23"></script>
+<script src="../seed-world-meta.js?v=1"></script>
+<script type="module" src="kidscade-world-v3.js?v=24"></script>
 </body>
 </html>
