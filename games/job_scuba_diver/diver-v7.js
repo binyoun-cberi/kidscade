@@ -303,10 +303,10 @@ function creatureCaptureState(f){
 function captureStateModifier(f,method){
  const st=creatureCaptureState(f).id;
  if(st==='fleeing')return method==='net'?-.18:method==='gloves'?-.16:method==='trap'?-.10:method==='harpoon'?-.07:0;
- if(st==='aggressive')return method==='harpoon'?.05:method==='net'?-.12:method==='gloves'?-.18:method==='trap'?-.08:0;
- if(st==='hidden')return method==='trap'?.10:method==='net'?-.14:method==='gloves'?-.08:0;
- if(st==='feeding')return method==='trap'?.16:method==='gloves'?.06:method==='net'?.04:0;
- return method==='net'||method==='gloves'?.05:0
+ if(st==='aggressive')return method==='harpoon' ? .05:method==='net'?-.12:method==='gloves'?-.18:method==='trap'?-.08:0;
+ if(st==='hidden')return method==='trap' ? .10:method==='net'?-.14:method==='gloves'?-.08:0;
+ if(st==='feeding')return method==='trap' ? .16:method==='gloves' ? .06:method==='net' ? .04:0;
+ return (method==='net'||method==='gloves') ? .05 : 0
 }
 function gearSizeCapacity(method,tier){
  const caps={
