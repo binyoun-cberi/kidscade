@@ -394,44 +394,69 @@ helpBtn?.addEventListener('click',helpPanel);
 
 
 const FARM_PLOT_COUNTS=[1,2,3,6,9];
+const ORCHARD_TREE_COUNTS=[0,1,2,4,6,9];
+const RANCH_CAPACITY=[0,1,2,3,4];
 const DEVELOPMENT_TRACKS={
-  farm:{key:'farmLevel',icon:'🥕',name:'농장',max:5,costs:[20,35,70,120],effects:['밭 1칸','밭 2칸','밭 3칸','밭 6칸','밭 9칸']},
-  fishing:{key:'fishingLevel',icon:'🎣',name:'낚시터',max:3,costs:[35,80],effects:['집 연못','강가 낚시터','해변 희귀 낚시']},
-  stone:{key:'stoneMineLevel',icon:'🪨',name:'돌 광산',max:3,costs:[45,100],effects:['돌','석영 발견','석영 증가 · 금 소량']},
-  iron:{key:'ironMineLevel',icon:'⛏️',name:'철 광산',max:3,costs:[55,120],effects:['철광석','구리 발견','구리 증가 · 금 발견']},
-  tech:{key:'techLevel',icon:'⚙️',name:'기술 공방',max:3,costs:[80,160],effects:['기초 도구','반도체 제작','전자제품 · TV 제작']}
+  farm:{key:'farmLevel',icon:'🥕',name:'농장',group:'생산',max:5,costs:[0,20,35,70,120],effects:[null,'밭 1칸','밭 2칸','밭 3칸','밭 6칸','밭 9칸']},
+  orchard:{key:'orchardLevel',icon:'🍎',name:'과수원',group:'생산',max:5,costs:[40,60,90,130,180],effects:['아직 없음','사과나무 1그루','사과·배 2그루','복숭아 포함 4그루','감귤 포함 6그루','체리 포함 9그루'],reqs:{0:{wood:4},1:{wood:4,nails:1},2:{wood:6,nails:2},3:{wood:8,nails:3},4:{wood:10,nails:4}}},
+  ranch:{key:'ranchLevel',icon:'🐄',name:'목장',group:'생산',max:4,costs:[45,75,120,175],effects:['아직 없음','작은 우리 · 동물 1마리','목장 2마리','큰 축사 · 3마리','완성 목장 · 4마리'],reqs:{0:{wood:6,nails:2},1:{wood:8,nails:2},2:{wood:10,stone:4,nails:3},3:{wood:12,iron:3,nails:4}}},
+  fishing:{key:'fishingLevel',icon:'🎣',name:'낚시터',group:'생산',max:3,costs:[30,55,90],effects:['낚시터 없음','집 연못','강가 낚시터','해변 희귀 낚시'],reqs:{0:{stone:2},1:{wood:4,nails:1},2:{wood:6,nails:2}}},
+  water:{key:'waterLevel',icon:'💧',name:'물 생활',group:'생활',max:3,costs:[30,65,120],effects:['강물 직접 운반','집 앞 우물','수동 펌프','집 수도 연결'],reqs:{0:{stone:5,wood:4},1:{iron:3,nails:2},2:{copper:2,wire:2,glass:1}}},
+  house:{key:'houseLevel',icon:'🏠',name:'우리 집',group:'생활',max:3,costs:[0,55,115],effects:[null,'단칸방','방 2개','큰 집 · 거실/주방'],reqs:{1:{wood:12,nails:4},2:{wood:20,stone:8,nails:8,glass:2}}},
+  carpenter:{key:'carpenterLevel',icon:'🪚',name:'목수공방',group:'생활',max:3,costs:[45,90,150],effects:['공방 없음','기본 가구 제작','주방·수납 가구','고급 생활 가구'],reqs:{0:{wood:8,stone:4},1:{wood:8,nails:4,glass:1},2:{iron:4,wire:2,paint:2}}},
+  stone:{key:'stoneMineLevel',icon:'🪨',name:'돌 광산',group:'자원·기술',max:3,costs:[0,45,100],effects:[null,'돌','석영 발견','석영 증가 · 금 소량']},
+  iron:{key:'ironMineLevel',icon:'⛏️',name:'철 광산',group:'자원·기술',max:3,costs:[0,55,120],effects:[null,'철광석','구리 발견','구리 증가 · 금 발견']},
+  tech:{key:'techLevel',icon:'⚙️',name:'기술 공방',group:'자원·기술',max:3,costs:[0,80,160],effects:[null,'기초 도구','반도체 제작','전자제품 · TV 제작']}
 };
 function devState(){return prog().development}
 function farmPlotCount(){return FARM_PLOT_COUNTS[Math.max(0,Math.min(4,devState().farmLevel-1))]||1}
+function orchardTreeCount(){return ORCHARD_TREE_COUNTS[Math.max(0,Math.min(5,devState().orchardLevel))]||0}
+function ranchCapacity(){return RANCH_CAPACITY[Math.max(0,Math.min(4,devState().ranchLevel))]||0}
+function developmentEffect(def,level){return def.effects[Math.max(0,Math.min(def.effects.length-1,level))]||'준비 중'}
 function villageStars(){
-  const d=devState(),score=(d.farmLevel-1)+(d.fishingLevel-1)+(d.stoneMineLevel-1)+(d.ironMineLevel-1)+(d.techLevel-1);
-  return Math.max(1,Math.min(5,1+Math.floor(score/3)));
+  const d=devState();
+  const score=(d.farmLevel-1)+d.fishingLevel+(d.stoneMineLevel-1)+(d.ironMineLevel-1)+(d.techLevel-1)+
+    d.orchardLevel+d.ranchLevel+d.waterLevel+(d.houseLevel-1)+d.carpenterLevel;
+  if(score>=22)return 5;if(score>=15)return 4;if(score>=9)return 3;if(score>=4)return 2;return 1;
 }
 function developmentRequirement(track,nextLevel){
   const d=devState();
   if(track==='tech'&&nextLevel===2&&(d.stoneMineLevel<2||d.ironMineLevel<2))return '돌 광산 2단계와 철 광산 2단계가 필요해요.';
   if(track==='tech'&&nextLevel===3&&(d.stoneMineLevel<3||d.ironMineLevel<3))return '돌 광산 3단계와 철 광산 3단계가 필요해요.';
+  if(track==='water'&&nextLevel===3&&(d.houseLevel<2||d.carpenterLevel<2))return '집 2단계와 목수공방 2단계가 필요해요.';
+  if(track==='carpenter'&&nextLevel>=2&&d.houseLevel<2)return '집을 2단계로 먼저 확장해야 해요.';
   return '';
 }
+function developmentMaterials(def,currentLevel){return def.reqs?.[currentLevel]||{}}
+function developmentMaterialsText(req){
+  const rows=Object.entries(req||{});return rows.length?rows.map(([k,v])=>itemName(k)+' '+v).join(' · '):'추가 재료 없음';
+}
+function hasDevelopmentMaterials(req){const i=inv();return Object.entries(req||{}).every(([k,v])=>(i[k]||0)>=v)}
+function payDevelopmentMaterials(req){const i=inv();Object.entries(req||{}).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v))}
 function developmentPanel(){
   const d=devState(),seeds=Bridge?.readSeeds?.()||0,stars=villageStars();
-  const cards=Object.entries(DEVELOPMENT_TRACKS).map(([id,def])=>{
-    const level=d[def.key],maxed=level>=def.max,next=Math.min(def.max,level+1),cost=maxed?0:def.costs[level-1],req=maxed?'':developmentRequirement(id,next);
-    const button=maxed?'최대 단계':req?req:'🌱 '+cost+' 투자';
-    return '<div class="item"><b>'+def.icon+' '+def.name+' '+level+'/'+def.max+'</b><div>'+def.effects[level-1]+'</div>'+
-      (maxed?'':'<small>다음: '+def.effects[next-1]+'</small><br>')+
-      '<button data-dev-upgrade="'+id+'" '+(maxed||req?'disabled':'')+'>'+button+'</button></div>';
+  const groups=['생산','생활','자원·기술'].map(group=>{
+    const cards=Object.entries(DEVELOPMENT_TRACKS).filter(([,def])=>def.group===group).map(([id,def])=>{
+      const level=d[def.key],maxed=level>=def.max,next=Math.min(def.max,level+1),cost=maxed?0:(def.costs[level]||0),req=maxed?{}:developmentMaterials(def,level),gate=maxed?'':developmentRequirement(id,next);
+      const enough=hasDevelopmentMaterials(req),button=maxed?'최대 단계':gate?gate:(!enough?'재료 부족':'🌱 '+cost+' 투자');
+      return '<div class="item"><b>'+def.icon+' '+def.name+' '+level+'/'+def.max+'</b><div>'+developmentEffect(def,level)+'</div>'+
+        (maxed?'':'<small>다음: '+developmentEffect(def,next)+'<br>'+developmentMaterialsText(req)+'</small><br>')+
+        '<button data-dev-upgrade="'+id+'" '+(maxed||gate||!enough?'disabled':'')+'>'+button+'</button></div>';
+    }).join('');
+    return '<h3>'+group+'</h3><div class="grid">'+cards+'</div>';
   }).join('');
-  openPanel('<h2>🏗️ 씨앗마을 성장 · '+ '⭐'.repeat(stars)+'</h2><p>게임에서 모은 씨앗을 마을에 투자하면 <b>실제로 할 수 있는 일과 월드의 규모</b>가 커져요. 보유 🌱 '+seeds+'</p><div class="grid">'+cards+'</div><p style="font-size:12px">광산을 발전시키면 희귀 광물이 나오고, 기술 공방을 발전시키면 그 광물로 반도체와 전자제품을 만들 수 있어요.</p>');
+  openPanel('<h2>🏗️ 씨앗마을 성장 · '+ '⭐'.repeat(stars)+'</h2><p>씨앗과 직접 모은 재료를 투자하면 <b>월드의 모습과 생활 방식 자체</b>가 달라져요. 보유 🌱 '+seeds+'</p>'+groups+'<p style="font-size:12px">강물을 뜨던 생활이 수도로 바뀌고, 빈 땅은 과수원·목장으로, 단칸방은 큰 집으로 성장합니다.</p>');
 }
 function upgradeDevelopment(track){
   const def=DEVELOPMENT_TRACKS[track],d=devState();if(!def)return;
   const level=d[def.key];if(level>=def.max)return;
-  const next=level+1,req=developmentRequirement(track,next);if(req){toast(req);return;}
-  const cost=def.costs[level-1]||0,spent=Bridge?.spendSeeds?.(cost,'씨앗 월드 성장 · '+def.name);
+  const next=level+1,gate=developmentRequirement(track,next);if(gate){toast(gate);return;}
+  const req=developmentMaterials(def,level);if(!hasDevelopmentMaterials(req)){toast('필요 재료: '+developmentMaterialsText(req));return;}
+  const cost=def.costs[level]||0,spent=Bridge?.spendSeeds?.(cost,'씨앗 월드 성장 · '+def.name);
   if(!spent?.ok){toast('씨앗이 부족해요. 다른 게임을 플레이해서 씨앗을 모아보세요.');return;}
-  d[def.key]=next;persist();updateFarmExpansionVisuals();updateStatus();worldAudio.sfx('success',.14);
-  toast(def.icon+' '+def.name+' '+next+'단계! · '+def.effects[next-1]);developmentPanel();
+  payDevelopmentMaterials(req);d[def.key]=next;persist();
+  updateFarmExpansionVisuals();updateOrchardVisuals?.();updateRanchExpansionVisuals?.();updateHomesteadVisuals?.();updateStatus();
+  worldAudio.sfx('success',.14);toast(def.icon+' '+def.name+' '+next+'단계! · '+developmentEffect(def,next));developmentPanel();
 }
 
 const CRAFT_MATERIAL_ICONS={wood:'🪵',stone:'🪨',iron:'⬛',copper:'🟠',quartz:'💎',gold:'🟡',semiconductor:'💾'};
