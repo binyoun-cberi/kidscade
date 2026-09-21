@@ -163,6 +163,7 @@ test('close records reward, pet experience, mission and garden session in one li
   assert.ok(calls.some(call => call[0] === 'exp' && call[1] === 40 && call[2] === 'math'));
   assert.ok(calls.some(call => call[0] === 'mission'));
   assert.ok(calls.some(call => call[0] === 'garden' && call[1].seconds === 120));
+  assert.ok(calls.some(call => call[0] === 'garden' && Object.hasOwn(call[1], 'title')));
   assert.deepEqual(calls.slice(-2), [['reset'], ['badges']]);
 });
 
