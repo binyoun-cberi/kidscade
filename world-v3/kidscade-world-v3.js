@@ -405,6 +405,17 @@ const shadow=new THREE.Mesh(new THREE.CircleGeometry(.55,28),new THREE.MeshBasic
 shadow.rotation.x=-Math.PI/2;scene.add(shadow);
 const avatarImg=new Image();avatarImg.decoding='async';
 const avatarRuntimeFrame=document.getElementById('avatarRuntime');
+let avatarRuntimeGuardDoc=null;
+function silenceAvatarRuntime(){
+  let doc=null;try{doc=avatarRuntimeFrame?.contentDocument||null}catch(_){}
+  if(!doc)return;
+  if(avatarRuntimeGuardDoc!==doc){
+    avatarRuntimeGuardDoc=doc;
+    const stop=e=>{const m=e.target;if(!m||!/^(AUDIO|VIDEO)$/.test(m.tagName||''))return;try{m.muted=true;m.pause?.()}catch(_){}};
+    doc.addEventListener('play',stop,true);doc.addEventListener('playing',stop,true);
+  }
+  doc.querySelectorAll('audio,video').forEach(m=>{try{m.muted=true;m.pause?.()}catch(_){}});
+}
 let avatarFacing=1,lastAvatarFrame=0,lastAvatarSource='',avatarAction='',avatarActionUntil=0;
 function drawFallbackAvatar(){
   avatarCtx.clearRect(0,0,128,160);avatarCtx.save();
@@ -440,6 +451,7 @@ function currentAvatarMode(now,moving){
 }
 drawFallbackAvatar();setAvatarSource(Bridge?.readAvatarSource?.()||'',true);
 avatarRuntimeFrame?.addEventListener('load',()=>{
+  avatarRuntimeGuardDoc=null;silenceAvatarRuntime();
   try{
     const api=avatarRuntimeFrame.contentWindow?.KidscadeAvatarShop;
     const src=api?.getPreviewDataURL?.()||Bridge?.readAvatarSource?.()||'';
@@ -447,7 +459,7 @@ avatarRuntimeFrame?.addEventListener('load',()=>{
   }catch(_){}
 });
 function updateAvatarFrame(now,moving){
-  if(now-lastAvatarFrame<92)return;lastAvatarFrame=now;
+  if(now-lastAvatarFrame<92)return;lastAvatarFrame=now;silenceAvatarRuntime();
   const mode=currentAvatarMode(now,moving),api=avatarApi();
   if(api){
     try{
