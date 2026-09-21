@@ -13,7 +13,7 @@
 .helpBtn{left:16px;top:16px}.audioBtn{right:16px;top:16px;font-size:17px}
 .status{position:absolute;right:70px;top:14px;z-index:13;display:flex;align-items:center;gap:8px;min-height:48px;padding:7px 10px;background:rgba(34,47,35,.88);color:#fff9d8;border:2px solid #d8c77e;border-radius:14px;box-shadow:0 8px 22px rgba(0,0,0,.18);font-size:11px;font-weight:900;backdrop-filter:blur(8px)}
 .statusMain{display:flex;flex-direction:column;gap:1px;white-space:nowrap}.statusClock{font-size:12px}.statusPhase{opacity:.8;font-size:10px}
-.statusCurrency{display:flex;gap:6px;align-items:center}.statusChip{padding:5px 7px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);white-space:nowrap}
+.statusCurrency{display:flex;gap:6px;align-items:center}.statusChip{padding:5px 7px;border-radius:999px;background:rgba(255,255,255,.09);color:inherit;border:1px solid rgba(255,255,255,.16);white-space:nowrap;font:inherit}.statusChip.action{cursor:pointer;touch-action:manipulation}.statusChip.action:hover{background:rgba(255,255,255,.18)}
 .prompt{position:absolute;left:50%;bottom:126px;transform:translateX(-50%);z-index:15;padding:10px 15px;background:rgba(31,42,31,.92);color:#fff4c7;border:2px solid #decf88;border-radius:12px;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}
 .toast{position:absolute;left:50%;top:70px;transform:translate(-50%,-8px);z-index:20;padding:9px 14px;background:#fff1aa;border:2px solid #675c37;border-radius:10px;font-weight:900;opacity:0;transition:.16s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
 .orbHud{position:absolute;bottom:17px;z-index:14;width:108px;height:108px;border-radius:50%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.24));pointer-events:none}
@@ -56,7 +56,7 @@
   <button class="helpBtn" id="helpBtn" type="button" aria-label="씨앗 월드 도움말">?</button>
   <div class="status" id="status" aria-label="날짜와 재화">
     <div class="statusMain"><span class="statusClock" id="statusClock">Day 1 · 08:00</span><span class="statusPhase" id="statusPhase">☀ 낮</span></div>
-    <div class="statusCurrency"><span class="statusChip" id="coinCount">🪙 0</span><span class="statusChip" id="seedCount">🌱 0</span><span class="statusChip" id="funCount">🙂 0</span><span class="statusChip" id="worldMailChip">📬 0</span><span class="statusChip" id="worldTaskChip">📋 0/3</span></div>
+    <div class="statusCurrency"><span class="statusChip" id="coinCount">🪙 0</span><span class="statusChip" id="seedCount">🌱 0</span><span class="statusChip" id="funCount">🙂 0</span><button class="statusChip action" id="worldMailChip" type="button" aria-label="게임 택배 열기">📬 0</button><button class="statusChip action" id="worldTaskChip" type="button" aria-label="오늘 할 일 보기">📋 0/3</button></div>
   </div>
   <button class="audioBtn" id="audioToggle" type="button" aria-label="씨앗 월드 소리 켜기/끄기">🔊</button>
   <button class="zone" id="zone" type="button" aria-label="씨앗 월드 빠른 이동 지도 열기">집 구역 · 🗺️</button>
