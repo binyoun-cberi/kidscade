@@ -1501,6 +1501,17 @@ const wildPetActors=[];
 const PET_SLOTS=[[-19.2,-7.0],[-17.8,-7.1],[-16.4,-7.0],[-19.0,-5.8],[-17.6,-5.8],[-16.2,-5.7],[-18.8,-4.6],[-17.4,-4.6],[-16.0,-4.5],[-20.1,-5.8]];
 const RANCH_SLOTS={bunny:[6.0,-27.0],pig:[7.5,-22.0],cow:[17.0,-27.0],chick:[17.0,-21.5]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
+const RANCH_ANIMALS=['bunny','pig','cow','chick'];
+let ranchProduceObject=null,ranchSignObject=null,ranchProduceInteraction=null;
+function ranchAnimalCount(){const owned=petState().owned||[];return RANCH_ANIMALS.filter(id=>owned.includes(id)).length}
+function updateRanchExpansionVisuals(){
+  const level=devState().ranchLevel;
+  for(const actor of ranchVisualActors)actor.group.visible=actor.level===level;
+  if(ranchProduceObject)ranchProduceObject.visible=level>0;
+  if(ranchSignObject)ranchSignObject.visible=level>0;
+  if(ranchProduceInteraction)ranchProduceInteraction.enabled=level>0;
+}
+
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const WILD_PETS={
   cat:{habitat:'pond',x:-16.0,z:5.6,roamX:.34,roamZ:.38},
@@ -1529,6 +1540,8 @@ function migrateLegacyCubePets(){
   mapped.add('dog');
   state.owned=[...mapped].filter(id=>CUBE_PETS[id]);
   state.met=[...new Set([...(state.met||[]),...state.owned])];
+  const legacyRanchCount=RANCH_ANIMALS.filter(id=>state.owned.includes(id)).length;
+  if(legacyRanchCount>0&&devState().ranchLevel<legacyRanchCount)devState().ranchLevel=Math.min(4,legacyRanchCount);
   if(!CUBE_PETS[state.companion]||!state.owned.includes(state.companion))state.companion='dog';
   state.migratedLegacy=true;
   if(p.survival&&Object.hasOwn(p.survival,'companion'))delete p.survival.companion;
@@ -1571,13 +1584,14 @@ async function ensureOwnedPetActor(id){
   petActors.push({id,object,homeX:slot[0],homeZ:slot[1],groundY,phase:petActors.length*.83,targetX:slot[0],targetZ:slot[1],nextDecision:0,moving:false,speed:.28+Math.random()*.12});
 }
 function ranchPanel(){
-  const p=prog(),state=petState(),day=p.survival.day;
+  const p=prog(),state=petState(),day=p.survival.day,level=devState().ranchLevel,cap=ranchCapacity(),used=ranchAnimalCount();
+  if(level<1){openPanel('<h2>🐄 목장 터</h2><p>아직 울타리도 축사도 없어요. 마을 성장에서 작은 목장을 먼저 만들어야 동물을 데려올 수 있어요.</p><button data-world-hub="develop">🏗️ 성장판 보기</button>');return;}
   const rows=Object.entries(RANCH_PRODUCTS).map(([id,d])=>{
     const owned=state.owned.includes(id),last=Number(state.products[id]??-999),ready=owned&&(day-last>=d.cooldown);
     return '<div class="item"><b>'+CUBE_PETS[id].name+' · '+d.name+'</b><div>'+(owned?(ready?'수확 가능':'다음 생산까지 기다리는 중'):'아직 목장에 없음')+'</div></div>';
   }).join('');
   const can=Object.entries(RANCH_PRODUCTS).some(([id,d])=>state.owned.includes(id)&&(day-Number(state.products[id]??-999)>=d.cooldown));
-  openPanel('<h2>목장 생산물</h2><div class="grid">'+rows+'</div><button data-ranch-collect="1" '+(can?'':'disabled')+'>오늘 생산물 모으기</button><p style="font-size:12px">소는 우유, 병아리는 달걀, 돼지는 이틀마다 트러플을 가져다줘요.</p>');
+  openPanel('<h2>🐄 목장 '+level+'단계 · '+used+'/'+cap+'마리</h2><p>목장을 키우면 울타리가 넓어지고 함께 살 수 있는 동물이 늘어나요.</p><div class="grid">'+rows+'</div><button data-ranch-collect="1" '+(can?'':'disabled')+'>오늘 생산물 모으기</button> <button data-world-hub="develop">🏗️ 목장 확장</button><p style="font-size:12px">우유·달걀·트러플은 요리하거나 씨앗마트에 팔아 다른 생활 재료를 살 수 있어요.</p>');
 }
 function collectRanchProducts(){
   const p=prog(),state=petState(),day=p.survival.day,i=inv();const got=[];
@@ -1592,6 +1606,10 @@ function collectRanchProducts(){
 async function tamePet(id){
   const state=petState(),def=CUBE_PETS[id];if(!def)return;
   if(state.owned.includes(id)){toast(def.name+'은(는) 이미 우리 친구예요.');return;}
+  if(RANCH_ANIMALS.includes(id)){
+    if(devState().ranchLevel<1){toast('🐄 먼저 목장을 만들어야 이 친구를 데려올 수 있어요.');return;}
+    if(ranchAnimalCount()>=ranchCapacity()){toast('🐄 목장이 가득 찼어요. 목장을 더 크게 확장해 보세요.');return;}
+  }
   if(!canTame(id)){toast(def.name+'에게 다가가려면 '+petReqText(id)+'이(가) 필요해요.');return;}
   payTame(id);state.owned.push(id);if(!state.met.includes(id))state.met.push(id);
   persist();await ensureOwnedPetActor(id);
@@ -1617,13 +1635,24 @@ async function buildPets(){
   await addModel(outdoor,ASSET.signpost,{x:-19.8,z:-2.9,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
   interact('outdoor',-19.8,-2.9,1.35,'Cube Pets 보기',petPanel);
 
-  // Ranch square (x 2..22, z -34..-14); fences stay at least 2m away from road gutters.
-  for(const [x,z,rot] of [[4.5,-31.5,0],[7.5,-31.5,0],[16.5,-31.5,0],[19.5,-31.5,0],[4.5,-16.5,0],[7.5,-16.5,0],[16.5,-16.5,0],[19.5,-16.5,0],[3.5,-28.5,Math.PI/2],[3.5,-19.5,Math.PI/2],[20.5,-28.5,Math.PI/2],[20.5,-19.5,Math.PI/2]]){
-    await addModel(outdoor,ASSET.fence,{x,z,w:2.8,h:.82,d:.30,rot});
+  // Ranch grows physically: each level swaps to a larger paddock boundary.
+  const ranchLayouts={
+    1:[[7.0,-27.5,0],[10.0,-27.5,0],[7.0,-20.5,0],[10.0,-20.5,0],[5.8,-25.2,Math.PI/2],[5.8,-22.8,Math.PI/2],[11.2,-25.2,Math.PI/2],[11.2,-22.8,Math.PI/2]],
+    2:[[5.5,-29.0,0],[9.0,-29.0,0],[12.5,-29.0,0],[5.5,-19.0,0],[9.0,-19.0,0],[12.5,-19.0,0],[4.2,-26.0,Math.PI/2],[4.2,-22.0,Math.PI/2],[13.8,-26.0,Math.PI/2],[13.8,-22.0,Math.PI/2]],
+    3:[[4.5,-30.5,0],[8.0,-30.5,0],[12.0,-30.5,0],[16.0,-30.5,0],[4.5,-17.5,0],[8.0,-17.5,0],[12.0,-17.5,0],[16.0,-17.5,0],[3.4,-27.0,Math.PI/2],[3.4,-21.0,Math.PI/2],[17.2,-27.0,Math.PI/2],[17.2,-21.0,Math.PI/2]],
+    4:[[4.2,-31.5,0],[7.5,-31.5,0],[11.0,-31.5,0],[14.5,-31.5,0],[18.0,-31.5,0],[4.2,-16.5,0],[7.5,-16.5,0],[11.0,-16.5,0],[14.5,-16.5,0],[18.0,-16.5,0],[3.2,-28.0,Math.PI/2],[3.2,-23.5,Math.PI/2],[3.2,-19.0,Math.PI/2],[19.2,-28.0,Math.PI/2],[19.2,-23.5,Math.PI/2],[19.2,-19.0,Math.PI/2]]
+  };
+  for(const [level,parts] of Object.entries(ranchLayouts)){
+    const group=new THREE.Group();outdoor.add(group);
+    for(const [x,z,rot] of parts)await addModel(group,ASSET.fence,{x,z,w:2.8,h:.82,d:.30,rot});
+    const ground=plane(group,11.2,-24,Math.min(16,5+Number(level)*3),Math.min(14,5+Number(level)*2.4),0x91a95f,-.055);
+    ranchVisualActors.push({level:Number(level),group});
   }
-  await addModel(outdoor,ASSET.chest,{x:18.5,z:-17.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
-  await addModel(outdoor,ASSET.signpost,{x:15.8,z:-17.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
-  interact('outdoor',18.0,-17.7,1.7,'목장 생산물 확인하기',ranchPanel);
+  ranchProduceObject=await addModel(outdoor,ASSET.chest,{x:18.5,z:-17.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
+  ranchSignObject=await addModel(outdoor,ASSET.signpost,{x:15.8,z:-17.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
+  ranchProduceInteraction=interact('outdoor',18.0,-17.7,1.7,'목장 생산물 확인하기',ranchPanel);
+  interact('outdoor',15.8,-17.2,1.35,'🏗️ 목장 성장 보기',developmentPanel);
+  updateRanchExpansionVisuals();
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
   for(const [id,pos] of Object.entries(WILD_PETS)){
