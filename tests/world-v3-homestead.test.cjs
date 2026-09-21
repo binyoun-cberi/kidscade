@@ -20,8 +20,10 @@ test('fresh home begins as one room with bedding and no automatic modern facilit
   assert.match(runtime,/HOUSE_BOUNDS=/);
   assert.match(runtime,/starter-home-storage/);
   assert.match(runtime,/바닥 이불에서 자기/);
-  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateDefaultLayout\(\)/);
-  assert.doesNotMatch(furnishing,/async function restore\(\)\{[\s\S]*migrateFunctionalLayout\(\)/);
+  assert.doesNotMatch(furnishing,/function migrateDefaultLayout/);
+  assert.doesNotMatch(furnishing,/function migrateFunctionalLayout/);
+  assert.doesNotMatch(furnishing,/function claimStarterGift/);
+  assert.doesNotMatch(furnishing,/data-furn-craft/);
 });
 
 test('water progression changes where water comes from',()=>{
@@ -77,6 +79,25 @@ test('bag upgrades and placed storage furniture create meaningful capacity progr
   assert.match(economy,/backpack4/);
   assert.match(runtime,/hasPlacedFurniture\('homeDrawers'\)/);
   assert.match(runtime,/hasPlacedFurniture\('kitchenCabinet'\)/);
+});
+
+test('inventory transactions never lose cooking crafting or friendship rewards',()=>{
+  assert.match(runtime,/function addFoodItem/);
+  assert.match(runtime,/function restoreRecipeIngredients/);
+  assert.match(runtime,/재료는 그대로 돌려놓았어요/);
+  assert.match(runtime,/제작 재료는 돌려놓았어요/);
+  assert.match(economy,/공간을 비우면 다시 받을 수 있어요/);
+  assert.ok(economy.indexOf("t.rewardClaims[claimKey]=true;")>economy.indexOf("canCarryFoodKey"));
+  assert.match(economy,/d\.type==='food'&&canCarryFoodKey/);
+});
+
+test('refrigerator food storage and old-ranch migration persist safely',()=>{
+  assert.match(storage,/homeFoodStorage:\{\}/);
+  assert.match(storage,/hadRanchLevel/);
+  assert.match(storage,/legacyRanchCount/);
+  assert.match(runtime,/function homeFoodStoragePanel/);
+  assert.match(runtime,/data-food-store-in/);
+  assert.match(runtime,/data-food-store-out/);
 });
 
 test('homestead runtime still parses after the progression rework',()=>{
