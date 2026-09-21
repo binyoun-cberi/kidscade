@@ -24,15 +24,15 @@ test('World v3 explicitly clears every rendered frame',()=>{
 });
 
 test('World v3 has connected survival regions and progression',()=>{
-  for(const label of ['깊은 숲','돌산','북쪽 강가','남쪽 야영지'])assert.ok(runtime.includes(label),label);
+  for(const label of ['깊은 숲','광산','북쪽 강가','야영지'])assert.ok(runtime.includes(label),label);
   assert.match(runtime,/mushroom-red-group\.glb/);
   assert.match(runtime,/campfire-pit\.glb/);
   assert.match(runtime,/철광석 캐기/);
   assert.match(runtime,/버섯 채집하기/);
   assert.match(runtime,/updateSurvival\(dt,moving\)/);
   assert.match(runtime,/grilledFish/);
-  assert.match(runtime,/axeIron/);
-  assert.match(runtime,/pickIron/);
+  assert.match(runtime,/ironAxe/);
+  assert.match(runtime,/ironPick/);
 });
 
 test('Cube Pets ownership now belongs to World v3 instead of the garden',()=>{
@@ -69,7 +69,7 @@ test('legacy garden runtime is retired from active boot',()=>{
 });
 
 test('Cube Pets survival expansion is the current default cache',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=6/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=6/);
+  assert.match(html,/kidscade-world-v3\.js\?v=26/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=26/);
   assert.match(integration,/syncCubePetsSidebar/);
 });
