@@ -77,6 +77,8 @@
   var selected=null;
   var swapMode=false;
   var connectMode=false;
+  var activeActionCategory="observe";
+  var teacherTask=null;
   var teacherScene="classroom";
   var teacher={x:50,y:22};
   var stats=null;
@@ -220,7 +222,7 @@
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
         action:"READ",intent:null,intentTicks:0,actionTicks:rand(2,5),trust:.62,learned:0,interventions:0,
-        memory:[],moving:false,socialTarget:null,socialGoal:null,groupId:null,
+        memory:[],moving:false,observation:0,observedWork:false,teacherUse:{},socialTarget:null,socialGoal:null,groupId:null,
         conflictWith:null,conflictUntil:0,avoidId:null,avoidUntil:0,
         pairWith:null,pairUntil:0,role:null,roleUntil:0,correctionLoad:0
       });
@@ -777,41 +779,288 @@
       beginSeek(a,b,current().kind==="lunchplay"?"PLAY":"TALK");
     }
   }
-  function teacherAction(kind){
-    var s=studentById(selected);
-    if(!s||s.scene!==teacherScene)return;
 
-    if(kind==="mediate"){mediateConflict(s);render();return}
-    if(kind==="separate"){separateConflict(s);render();return}
-    if(kind==="role"){giveRole(s);render();return}
-
-    stats.teacherActs++;s.interventions++;
-    if(kind==="approach"){
-      teacher.x=clamp(s.x-7,5,95);teacher.y=clamp(s.y-10,15,91);
-      s.focus=clamp(s.focus+.07);s.action=current().subject==="체육"?"PLAY":"WORK";s.intent=null;
-      s.correctionLoad=clamp(s.correctionLoad+.02);
-      log("선생님이 "+s.name+" 가까이 다가가자 행동이 잠시 정돈됐다.","teacher",teacherScene);
-    }else if(kind==="call"){
-      s.focus=clamp(s.focus+.13);s.action=current().subject==="체육"?"PLAY":"WORK";s.intent=null;
-      s.correctionLoad=clamp(s.correctionLoad+.10);s.trust=clamp(s.trust-.006*s.correctionLoad);
-      remember(s,"선생님이 이름을 불러 주의를 환기함",.35);
-      log(s.name+"의 이름을 불러 다시 활동으로 시선을 돌렸다.","teacher",teacherScene);
-    }else if(kind==="praise"){
-      s.focus=clamp(s.focus+.08);s.trust=clamp(s.trust+.04);s.mood=clamp(s.mood+.035);s.belonging=clamp(s.belonging+.025);
-      circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<25){o.belonging=clamp(o.belonging+.008);o.helpful=clamp(o.helpful+.002);}});
-      stats.praises++;remember(s,"선생님에게 구체적인 칭찬을 받음",.55);
-      log(s.name+"의 시도나 행동을 구체적으로 칭찬했다.","teacher",teacherScene);
-    }else if(kind==="hint"){
-      s.helpNeed=clamp(s.helpNeed-.16);s.skill=clamp(s.skill+.008);s.focus=clamp(s.focus+.08);stats.helped++;
-      remember(s,"선생님에게 힌트를 받아 문제를 해결함",.55);
-      log(s.name+"에게 문제의 핵심을 짚는 힌트를 주었다.","learning",teacherScene);
-    }else if(kind==="chalk"){
-      s.focus=clamp(s.focus+.18);s.trust=clamp(s.trust-.02-.02*s.correctionLoad);s.correctionLoad=clamp(s.correctionLoad+.18);
-      s.action="WORK";s.intent=null;remember(s,"분필 톡으로 주의를 환기당함",.30);
-      students.forEach(function(o){if(o.scene===s.scene&&distance(o,s)<28)o.focus=clamp(o.focus+.025)});
-      log("분필이 책상 가까이에 톡 닿자 "+s.name+"과 주변 학생들이 즉시 조용해졌다.","teacher",teacherScene);
+  function isOffTask(s){
+    return ["TALK","DOODLE","SLEEP","MOVE","RUN","REJECTED"].indexOf(s.action)>=0;
+  }
+  function isPositiveAction(s){
+    return ["WORK","READ","HELP_PEER","CLEAN","SHARE","PLAY"].indexOf(s.action)>=0;
+  }
+  function teacherIsBusy(){
+    return !!teacherTask&&teacherTask.end>gameSec;
+  }
+  function actionCompatibility(action,s){
+    if(!s)return 1;
+    var v=.78;
+    if(action.id==="gesture")v=.62+s.rule*.22+s.trust*.10-s.imp*.08;
+    if(action.id==="proximity")v=.72+s.trust*.18+(1-s.assert)*.08;
+    if(action.id==="quietCall")v=.62+s.rule*.15+s.trust*.14-s.rejection*.07;
+    if(action.id==="redirect")v=.65+s.persist*.12+s.trust*.12;
+    if(action.id==="chalk")v=.83-s.rejection*.18-s.correctionLoad*.25;
+    if(action.id==="hint")v=.68+s.persist*.12+s.visual*.08;
+    if(action.id==="firstStep")v=.74+(1-s.skill)*.16+s.hands*.06;
+    if(action.id==="simplify")v=.72+(1-s.skill)*.18;
+    if(action.id==="movementJob")v=.65+s.move*.28;
+    if(action.id==="praise")v=.72+s.trust*.15+s.rejection*.06;
+    if(action.id==="listen")v=.70+s.rejection*.15+s.trust*.08;
+    if(action.id==="role")v=.66+s.helpful*.16+s.soc*.08;
+    return clamp(v,.35,1.12);
+  }
+  function repeatMultiplier(action,s){
+    if(!s)return 1;
+    var uses=s.teacherUse[action.id]||0;
+    return clamp(1-uses*(action.repeatPenalty||.05),.45,1);
+  }
+  function effectMultiplier(action,s){
+    return actionCompatibility(action,s)*repeatMultiplier(action,s);
+  }
+  function finishTeacherTask(){
+    if(!teacherTask)return;
+    var task=teacherTask;
+    teacherTask=null;
+    var action=TEACHER_ACTIONS[task.actionId]||CLASS_ACTIONS[task.actionId];
+    var s=task.targetId===null?null:studentById(task.targetId);
+    if(action){
+      stats.teacherActs++;
+      if(s){
+        s.teacherUse[action.id]=(s.teacherUse[action.id]||0)+1;
+        s.interventions++;
+      }
+      action.effect(s,task.multiplier,task);
     }
     render();
+  }
+  function updateTeacherTask(){
+    if(teacherTask&&gameSec>=teacherTask.end)finishTeacherTask();
+  }
+  function startTeacherTask(action,s){
+    if(!action||teacherIsBusy())return;
+    if(s&&s.scene!==teacherScene)return;
+    if(action.mode==="seat"){
+      swapMode=true;connectMode=false;render();return;
+    }
+    if(action.mode==="connect"){
+      connectMode=true;swapMode=false;render();return;
+    }
+    if(action.near&&s){
+      teacher.x=clamp(s.x-7,5,95);teacher.y=clamp(s.y-10,15,91);
+    }
+    var duration=action.duration||10;
+    teacherTask={
+      actionId:action.id,
+      targetId:s?s.id:null,
+      start:gameSec,
+      end:gameSec+duration,
+      duration:duration,
+      multiplier:effectMultiplier(action,s)
+    };
+    log((s?s.name+"에게 ":"")+action.label+"을(를) 시작했다.","teacher",teacherScene);
+    render();
+  }
+  function consumeTeacherTime(label,duration){
+    if(teacherIsBusy())return false;
+    teacherTask={actionId:null,targetId:null,start:gameSec,end:gameSec+duration,duration:duration,multiplier:1,label:label};
+    return true;
+  }
+
+  var TEACHER_ACTIONS={
+    watch:{
+      id:"watch",category:"observe",label:"잠시 지켜보기",duration:20,repeatPenalty:.01,
+      desc:"바로 개입하지 않고 행동의 원인과 다음 반응을 관찰합니다.",
+      when:function(s){return !!s},
+      recommended:function(s){return !!s.intent||s.action==="REJECTED"||s.action==="ARGUE"},
+      effect:function(s,m){s.observation+=1;remember(s,"선생님이 바로 개입하지 않고 상황을 관찰함",.18);log(s.name+"의 행동을 잠시 지켜보며 맥락을 확인했다.","teacher",teacherScene)}
+    },
+    inspectWork:{
+      id:"inspectWork",category:"observe",label:"활동지·과제 확인",duration:30,near:true,repeatPenalty:.025,
+      desc:"정답보다 풀이 흔적과 막히는 지점을 확인합니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&teacherScene==="classroom"},
+      recommended:function(s){return s.action==="HELP"||s.helpNeed>.16||s.skill<.52},
+      effect:function(s,m){s.observation+=2;s.observedWork=true;s.helpNeed=clamp(s.helpNeed-.025*m);remember(s,"선생님이 풀이 과정을 확인함",.30);log(s.name+"의 과제를 살펴보며 어디에서 막히는지 확인했다.","learning",teacherScene)}
+    },
+    checkQuestion:{
+      id:"checkQuestion",category:"observe",label:"확인 질문하기",duration:25,near:true,repeatPenalty:.04,
+      desc:"짧은 질문으로 이해한 정도를 확인합니다. 틀려도 바로 정답을 주지는 않습니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene},
+      recommended:function(s){return s.action==="HELP"||s.helpNeed>.13},
+      effect:function(s,m){s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedWork=true;remember(s,"선생님의 확인 질문에 답해봄",.28);log(s.name+"에게 짧은 확인 질문을 해 이해 정도를 살폈다.","learning",teacherScene)}
+    },
+
+    hint:{
+      id:"hint",category:"support",label:"힌트 하나 주기",duration:30,near:true,repeatPenalty:.07,
+      desc:"해결 방향만 짚어 스스로 다음 단계를 찾게 합니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.helpNeed>.08||s.skill<.62)},
+      recommended:function(s){return s.action==="HELP"&&s.skill>.34},
+      effect:function(s,m){s.helpNeed=clamp(s.helpNeed-.14*m);s.skill=clamp(s.skill+.006*m);s.focus=clamp(s.focus+.07*m);stats.helped++;remember(s,"힌트를 받고 다시 문제에 접근함",.50);log(s.name+"에게 정답 대신 작은 힌트를 주었다.","learning",teacherScene)}
+    },
+    firstStep:{
+      id:"firstStep",category:"support",label:"첫 단계 같이 하기",duration:45,near:true,repeatPenalty:.09,
+      desc:"막힘이 큰 학생과 첫 단계만 함께 해결합니다. 효과는 크지만 교사 시간이 많이 듭니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.skill<.55)},
+      recommended:function(s){return s.skill<.40||s.helpNeed>.24},
+      effect:function(s,m){s.helpNeed=clamp(s.helpNeed-.22*m);s.skill=clamp(s.skill+.011*m);s.focus=clamp(s.focus+.10*m);s.trust=clamp(s.trust+.012);stats.helped++;remember(s,"선생님과 첫 단계를 함께 해결함",.58);log(s.name+"과 첫 단계를 함께 풀고 나머지는 스스로 이어가게 했다.","learning",teacherScene)}
+    },
+    simplify:{
+      id:"simplify",category:"support",label:"과제를 작게 나누기",duration:35,near:true,repeatPenalty:.05,
+      desc:"해야 할 일을 더 작은 단계로 나누어 부담을 낮춥니다.",
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.skill<.58||s.frustration>.24)},
+      recommended:function(s){return s.frustration>.34||s.skill<.34},
+      effect:function(s,m){s.frustration=clamp(s.frustration-.13*m);s.helpNeed=clamp(s.helpNeed-.11*m);s.focus=clamp(s.focus+.055*m);s.boredom=clamp(s.boredom-.025);remember(s,"과제를 작은 단계로 나눠 다시 시작함",.48);log(s.name+"의 과제를 더 작은 단계로 나누어 다시 시작하게 했다.","learning",teacherScene)}
+    },
+    movementJob:{
+      id:"movementJob",category:"support",label:"움직이는 심부름 주기",duration:25,repeatPenalty:.06,
+      desc:"움직임 욕구를 억누르기보다 짧은 이동 역할로 풀어낸 뒤 돌아오게 합니다.",
+      when:function(s){return s.scene===teacherScene&&(s.action==="MOVE"||s.moveNeed>.30)&&current().kind!=="lunch"},
+      recommended:function(s){return s.moveNeed>.48},
+      effect:function(s,m){s.moveNeed=clamp(s.moveNeed-.28*m);s.focus=clamp(s.focus+.06*m);s.role="errand";s.roleUntil=gameSec+3*60;s.action="WALK";setDestination(s,s.scene,true);remember(s,"짧은 심부름 역할로 움직임을 해결함",.42);log(s.name+"에게 짧게 움직일 수 있는 심부름을 맡겼다.","teacher",teacherScene)}
+    },
+
+    gesture:{
+      id:"gesture",category:"guide",label:"시선·손짓으로 신호",duration:8,repeatPenalty:.04,
+      desc:"수업 흐름을 끊지 않고 비언어적으로 주의를 환기합니다.",
+      when:function(s){return s.scene===teacherScene&&isOffTask(s)&&s.action!=="REJECTED"},
+      recommended:function(s){return isOffTask(s)&&s.correctionLoad<.18},
+      effect:function(s,m){s.focus=clamp(s.focus+.065*m);s.talkNeed=clamp(s.talkNeed-.055*m);s.moveNeed=clamp(s.moveNeed-.045*m);if(m>.55)s.action=current().subject==="체육"?"PLAY":"WORK";s.correctionLoad=clamp(s.correctionLoad+.025);log(s.name+"에게 시선과 손짓으로 조용히 신호를 보냈다.","teacher",teacherScene)}
+    },
+    proximity:{
+      id:"proximity",category:"guide",label:"가까이 서 있기",duration:20,near:true,repeatPenalty:.035,
+      desc:"공개적으로 지적하지 않고 교사의 위치 자체로 행동을 조절합니다.",
+      when:function(s){return s.scene===teacherScene&&(isOffTask(s)||s.action==="ARGUE")},
+      recommended:function(s){return isOffTask(s)&&s.trust>.48},
+      effect:function(s,m){s.focus=clamp(s.focus+.08*m);s.frustration=clamp(s.frustration-.025*m);if(s.action!=="ARGUE")s.action=current().subject==="체육"?"PLAY":"WORK";s.correctionLoad=clamp(s.correctionLoad+.02);log(s.name+" 가까이에 머물며 행동이 스스로 정돈되는지 살폈다.","teacher",teacherScene)}
+    },
+    quietCall:{
+      id:"quietCall",category:"guide",label:"조용히 이름 불러 재안내",duration:12,repeatPenalty:.09,
+      desc:"짧고 분명하게 이름을 부르고 지금 해야 할 행동을 다시 알려줍니다.",
+      when:function(s){return s.scene===teacherScene&&isOffTask(s)&&s.action!=="REJECTED"},
+      recommended:function(s){return isOffTask(s)&&s.correctionLoad<.35},
+      effect:function(s,m){s.focus=clamp(s.focus+.12*m);s.action=current().subject==="체육"?"PLAY":"WORK";s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.10);s.trust=clamp(s.trust-.004*(1-m));remember(s,"선생님이 조용히 이름을 불러 재안내함",.34);log(s.name+"에게 짧게 이름을 부르고 지금 할 일을 다시 알려주었다.","teacher",teacherScene)}
+    },
+    redirect:{
+      id:"redirect",category:"guide",label:"해야 할 행동 다시 제시",duration:20,near:true,repeatPenalty:.06,
+      desc:"하지 말라는 말 대신 지금 해야 할 구체적인 행동을 제시합니다.",
+      when:function(s){return s.scene===teacherScene&&isOffTask(s)},
+      recommended:function(s){return s.action==="DOODLE"||s.action==="MOVE"||s.action==="TALK"},
+      effect:function(s,m){s.focus=clamp(s.focus+.09*m);s.boredom=clamp(s.boredom-.035*m);s.action=current().subject==="체육"?"PLAY":"WORK";s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.055);log(s.name+"에게 지금 해야 할 행동을 짧고 구체적으로 다시 제시했다.","teacher",teacherScene)}
+    },
+    seatAdjust:{
+      id:"seatAdjust",category:"guide",label:"자리 조정하기",duration:0,mode:"seat",
+      desc:"반복적으로 영향을 주고받는 두 학생의 물리적 거리를 바꿉니다.",
+      when:function(s){return teacherScene==="classroom"&&s.scene==="classroom"},
+      recommended:function(s){var p=chooseSocialTarget(s,"SOCIAL");return current().kind==="lesson"&&p&&relation(s,p).affinity>.68&&s.talkNeed>.28},
+      effect:function(){}
+    },
+    separate:{
+      id:"separate",category:"guide",label:"잠깐 거리 두게 하기",duration:35,near:true,repeatPenalty:.04,
+      desc:"감정이 높을 때 해결을 강요하지 않고 먼저 물리적 거리를 확보합니다.",
+      when:function(s){return s.scene===teacherScene&&(!!conflictPartner(s)||s.frustration>.42)},
+      recommended:function(s){return s.action==="SHOVE"||s.frustration>.62},
+      effect:function(s){separateConflict(s)}
+    },
+    chalk:{
+      id:"chalk",category:"guide",label:"분필 톡으로 즉시 환기",duration:6,repeatPenalty:.18,
+      desc:"즉시 효과는 크지만 공개적이고 반복 사용 시 신뢰와 효과가 빠르게 떨어지는 강한 개입입니다.",
+      when:function(s){return teacherScene==="classroom"&&current().kind==="lesson"&&s.scene===teacherScene&&isOffTask(s)},
+      recommended:function(s){return false},
+      effect:function(s,m){s.focus=clamp(s.focus+.18*m);s.trust=clamp(s.trust-.015-.025*s.correctionLoad);s.correctionLoad=clamp(s.correctionLoad+.20);s.action="WORK";s.intent=null;students.forEach(function(o){if(o.scene===s.scene&&distance(o,s)<28)o.focus=clamp(o.focus+.02)});remember(s,"분필 톡으로 공개적인 주의 환기를 받음",.32);log("분필 톡으로 "+s.name+"과 주변의 주의를 즉시 돌렸다.","teacher",teacherScene)}
+    },
+
+    praise:{
+      id:"praise",category:"relationship",label:"구체적으로 인정하기",duration:15,repeatPenalty:.05,
+      desc:"결과보다 실제 시도와 행동을 짧게 짚어 인정합니다.",
+      when:function(s){return s.scene===teacherScene&&isPositiveAction(s)},
+      recommended:function(s){return isPositiveAction(s)&&s.trust<.72},
+      effect:function(s,m){s.focus=clamp(s.focus+.045*m);s.trust=clamp(s.trust+.035*m);s.mood=clamp(s.mood+.035*m);s.belonging=clamp(s.belonging+.022*m);circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<25)o.belonging=clamp(o.belonging+.006*m)});stats.praises++;remember(s,"구체적인 행동을 인정받음",.50);log(s.name+"이 잘한 구체적인 행동을 짧게 인정했다.","teacher",teacherScene)}
+    },
+    listen:{
+      id:"listen",category:"relationship",label:"잠깐 이야기 듣기",duration:40,near:true,repeatPenalty:.025,
+      desc:"해결책을 먼저 말하지 않고 학생의 현재 감정과 상황을 짧게 듣습니다.",
+      when:function(s){return s.scene===teacherScene&&(s.frustration>.18||s.action==="REJECTED"||s.action==="HURT"||!!conflictPartner(s))},
+      recommended:function(s){return s.action==="REJECTED"||s.frustration>.45},
+      effect:function(s,m){s.frustration=clamp(s.frustration-.18*m);s.mood=clamp(s.mood+.065*m);s.trust=clamp(s.trust+.04*m);remember(s,"선생님이 먼저 이야기를 들어줌",.58);log(s.name+"의 이야기를 먼저 듣고 상황을 확인했다.","teacher",teacherScene)}
+    },
+    mediate:{
+      id:"mediate",category:"relationship",label:"둘 사이 갈등 중재",duration:70,near:true,repeatPenalty:.02,
+      desc:"두 학생의 말을 차례로 듣고 관계 회복을 시도합니다. 시간이 많이 들지만 장기 효과가 큽니다.",
+      when:function(s){return s.scene===teacherScene&&!!conflictPartner(s)},
+      recommended:function(s){return !!conflictPartner(s)&&s.action!=="SHOVE"},
+      effect:function(s){mediateConflict(s)}
+    },
+    connectPeer:{
+      id:"connectPeer",category:"relationship",label:"함께할 친구 연결",duration:0,mode:"connect",
+      desc:"두 학생에게 자연스럽게 함께할 기회를 만듭니다. 관계가 너무 나쁘면 역효과가 날 수도 있습니다.",
+      when:function(s){return s.scene===teacherScene&&!conflictPartner(s)},
+      recommended:function(s){return s.belonging<.52||s.action==="REJECTED"},
+      effect:function(){}
+    },
+    role:{
+      id:"role",category:"relationship",label:"의미 있는 역할 맡기기",duration:25,repeatPenalty:.08,
+      desc:"도움·정리·준비 역할을 줘 행동 에너지를 학급에 기여하는 방향으로 돌립니다.",
+      when:function(s){return s.scene===teacherScene},
+      recommended:function(s){return (s.moveNeed>.30||s.mischief>.62)&&s.roleUntil<=gameSec},
+      effect:function(s){giveRole(s)}
+    },
+    circleRole:{
+      id:"circleRole",category:"relationship",label:"무리에 공동 역할 주기",duration:40,repeatPenalty:.06,
+      desc:"자주 어울리는 무리 전체에 공동 책임을 줘 집단 규범을 다른 방향으로 유도합니다.",
+      when:function(s){var circle=circleOf(s);return s.scene===teacherScene&&circle&&circle.members.filter(function(id){var o=studentById(id);return o&&o.scene===s.scene}).length>=2},
+      recommended:function(s){var circle=circleOf(s);return !!circle&&circle.profile.mischief>.58},
+      effect:function(s,m){
+        var circle=circleOf(s);if(!circle)return;
+        circle.members.map(studentById).filter(Boolean).filter(function(o){return o.scene===s.scene}).forEach(function(o){
+          o.role="team-helper";o.roleUntil=gameSec+8*60;o.belonging=clamp(o.belonging+.045*m);o.helpful=clamp(o.helpful+.006*m);o.mischief=clamp(o.mischief-.003*m);
+        });
+        stats.roles++;log(s.name+"이 속한 무리에게 함께 책임질 작은 역할을 맡겼다.","teacher",teacherScene);
+      }
+    }
+  };
+
+  var CLASS_ACTIONS={
+    scanRoom:{
+      id:"scanRoom",category:"observe",label:"교실 전체 훑어보기",duration:20,repeatPenalty:0,
+      desc:"한 학생에게 바로 붙지 않고 현재 공간 전체의 행동 흐름을 살핍니다.",
+      when:function(){return true},
+      recommended:function(){return true},
+      effect:function(){students.filter(function(s){return s.scene===teacherScene}).forEach(function(s){s.observation+=.35});log(SCENE_NAME[teacherScene]+" 전체를 잠시 훑어보며 분위기를 확인했다.","teacher",teacherScene)}
+    },
+    microBreak:{
+      id:"microBreak",category:"support",label:"짧은 움직임 전환",duration:20,
+      desc:"수업 전체의 몸 움직임 욕구가 높을 때 잠깐 일어나 움직이고 다시 앉게 합니다.",
+      when:function(){return current().kind==="lesson"&&students.filter(function(s){return s.scene===teacherScene&&s.moveNeed>.34}).length>=3},
+      recommended:function(){return students.filter(function(s){return s.scene===teacherScene&&s.moveNeed>.42}).length>=3},
+      effect:function(){students.filter(function(s){return s.scene===teacherScene}).forEach(function(s){s.moveNeed=clamp(s.moveNeed-.16);s.boredom=clamp(s.boredom-.06);s.focus=clamp(s.focus+.025)});log("학급 전체가 짧게 몸을 움직이고 다시 활동으로 돌아왔다.","teacher",teacherScene)}
+    },
+    attentionSignal:{
+      id:"attentionSignal",category:"guide",label:"전체 집중 신호",duration:8,
+      desc:"짧은 공동 신호로 학급 전체의 시선을 한 번 모읍니다. 반복하면 효과가 줄어듭니다.",
+      when:function(){return current().kind==="lesson"},
+      recommended:function(){return students.filter(function(s){return s.scene===teacherScene&&isOffTask(s)}).length>=3},
+      effect:function(){students.filter(function(s){return s.scene===teacherScene}).forEach(function(s){s.focus=clamp(s.focus+.045);s.talkNeed=clamp(s.talkNeed-.025)});log("짧은 전체 집중 신호로 학급의 시선을 다시 모았다.","teacher",teacherScene)}
+    },
+    classPraise:{
+      id:"classPraise",category:"relationship",label:"학급의 좋은 흐름 짚기",duration:15,
+      desc:"막연한 칭찬 대신 지금 학급에서 잘 이루어지는 구체적인 행동을 전체에 알려줍니다.",
+      when:function(){return current().kind==="lesson"||current().kind==="closing"},
+      recommended:function(){return students.filter(function(s){return s.scene===teacherScene&&isPositiveAction(s)}).length>=5},
+      effect:function(){students.filter(function(s){return s.scene===teacherScene}).forEach(function(s){s.belonging=clamp(s.belonging+.012);s.mood=clamp(s.mood+.012)});log("지금 학급에서 잘 이루어지는 행동을 구체적으로 짚어 주었다.","teacher",teacherScene)}
+    }
+  };
+
+  function availableActions(s,category){
+    var source=s?TEACHER_ACTIONS:CLASS_ACTIONS;
+    return Object.keys(source).map(function(k){return source[k]}).filter(function(a){
+      return a.category===category&&(!a.when||a.when(s));
+    });
+  }
+  function executeTeacherAction(id){
+    var s=studentById(selected);
+    var action=(s?TEACHER_ACTIONS:CLASS_ACTIONS)[id];
+    if(!action||teacherIsBusy()||!action.when(s))return;
+    startTeacherTask(action,s);
+  }
+  function teacherAction(kind){
+    var map={approach:"proximity",call:"quietCall",praise:"praise",hint:"hint",chalk:"chalk",mediate:"mediate",separate:"separate",role:"role"};
+    if(map[kind])executeTeacherAction(map[kind]);
   }
 
   function scoreReport(){
@@ -946,7 +1195,9 @@
       b.addEventListener("click",function(){
         if(connectMode&&selected!==null&&selected!==s.id){
           var first=studentById(selected);
-          if(first&&first.scene===s.scene){connectStudents(first,s);connectMode=false}
+          if(first&&first.scene===s.scene&&!teacherIsBusy()){
+            connectStudents(first,s);connectMode=false;consumeTeacherTime("친구 연결",30);
+          }
           selected=s.id;render();return;
         }
         if(swapMode&&selected!==null&&selected!==s.id&&teacherScene==="classroom"){
@@ -954,7 +1205,7 @@
           if(a&&a.scene==="classroom"&&s.scene==="classroom"){
             var tmp=a.seat;a.seat=s.seat;s.seat=tmp;
             if(current().kind==="lesson"){setDestination(a,"classroom",false);setDestination(s,"classroom",false)}
-            swapMode=false;log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
+            swapMode=false;consumeTeacherTime("자리 조정",35);log(a.name+"와 "+s.name+"의 자리를 바꾸었다.","teacher","classroom");
           }
         }
         selected=s.id;render();
@@ -989,27 +1240,56 @@
     if(s.roleUntil>gameSec)return "맡은 역할을 의식해 주변 학생과 정리를 자주 살핀다.";
     return "현재 몸짓과 시선에서 특별한 이상은 크게 보이지 않는다.";
   }
+  function renderTeacherBusy(){
+    var busy=teacherIsBusy();
+    var el=q("#teacherBusy"),fill=q("#teacherBusyFill"),txt=q("#teacherBusyText");
+    q("#teacher").classList.toggle("busy",busy);
+    if(!busy){
+      txt.textContent="지금 개입 가능";fill.style.width="0%";return;
+    }
+    var action=TEACHER_ACTIONS[teacherTask.actionId]||CLASS_ACTIONS[teacherTask.actionId];
+    var target=teacherTask.targetId===null?null:studentById(teacherTask.targetId);
+    var done=clamp((gameSec-teacherTask.start)/teacherTask.duration);
+    txt.textContent=(target?target.name+" · ":"")+(action?action.label:(teacherTask.label||"교사 행동"))+" 중";
+    fill.style.width=(done*100)+"%";
+  }
+  function renderActionPanel(s){
+    qa("#actionTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.category===activeActionCategory)});
+    var actions=availableActions(s,activeActionCategory);
+    var wrap=q("#contextActions");
+    if(!actions.length){
+      wrap.innerHTML='<div class="action-empty">지금 이 상황에서 사용할 행동이 없습니다.</div>';
+      q("#actionDetail").textContent="다른 범주를 보거나 상황을 조금 더 관찰해 보세요.";
+      return;
+    }
+    wrap.innerHTML="";
+    actions.forEach(function(a){
+      var b=document.createElement("button");b.type="button";b.className="context-action"+(a.recommended&&a.recommended(s)?" recommended":"");
+      b.disabled=teacherIsBusy();
+      var cost=a.mode?"두 학생 선택":(a.duration+"초");
+      b.innerHTML="<strong>"+a.label+"</strong><span class=\"cost\">"+cost+"</span><small>"+a.desc+"</small>";
+      b.addEventListener("click",function(){executeTeacherAction(a.id)});
+      b.addEventListener("mouseenter",function(){q("#actionDetail").textContent=a.label+" · "+a.desc});
+      b.addEventListener("focus",function(){q("#actionDetail").textContent=a.label+" · "+a.desc});
+      wrap.appendChild(b);
+    });
+    q("#actionDetail").textContent=teacherIsBusy()?"교사가 다른 행동을 수행 중입니다. 그동안 학생들의 상황은 계속 변합니다.":"테두리가 강조된 행동은 현재 상황과 비교적 잘 맞는 선택입니다. 정답을 뜻하지는 않습니다.";
+  }
   function renderPanel(){
     var s=studentById(selected);
-    var basic=["#approach","#call","#praise","#hint","#chalk","#seat","#mediate","#separate","#connectPeer","#giveRole"];
-    basic.forEach(function(id){q(id).disabled=!s||s.scene!==teacherScene});
-    q("#seat").disabled=!s||teacherScene!=="classroom"||s.scene!=="classroom";
-    q("#hint").disabled=!s||s.scene!==teacherScene||current().kind!=="lesson";
-    q("#chalk").disabled=!s||s.scene!==teacherScene||teacherScene!=="classroom"||current().kind!=="lesson";
-    q("#mediate").disabled=!s||s.scene!==teacherScene||!conflictPartner(s);
-    q("#separate").disabled=!s||s.scene!==teacherScene;
     if(!s){
-      q("#studentName").textContent="학생 선택";
-      q("#studentSummary").textContent="학생을 눌러 직접 개입할 수 있습니다. 다른 공간의 일은 직접 이동해서 확인해야 합니다.";
-      q("#studentState").textContent="—";q("#memory").textContent="";return;
+      q("#studentName").textContent="학급 운영";
+      q("#studentSummary").textContent="학생을 선택하지 않으면 현재 공간 전체에 할 수 있는 행동이 나타납니다.";
+      q("#studentState").textContent=SCENE_NAME[teacherScene]+" 전체 관찰";
+      q("#memory").textContent="개별 학생을 선택하면 행동 원인과 관계 상황에 맞는 개별 행동으로 바뀝니다.";
+      renderTeacherBusy();renderActionPanel(null);return;
     }
     q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);
     q("#studentSummary").textContent=connectMode?"함께 해볼 두 번째 학생을 선택하세요.":swapMode?"자리를 바꿀 두 번째 학생을 선택하세요.":observationText(s);
-    q("#seat").textContent=swapMode?"바꿀 학생 선택 중":"자리 바꾸기";
-    q("#connectPeer").textContent=connectMode?"연결할 학생 선택 중":"친구 연결";
     var notes=[];
     if(s.memory.length)notes.push("최근 관찰: "+s.memory[0].text);
-    if(s.roleUntil>gameSec)notes.push("현재 도움 역할을 맡고 있음");
+    if(s.observedWork)notes.push("과제 풀이 과정 확인됨");
+    if(s.roleUntil>gameSec)notes.push("현재 역할을 맡고 있음");
     var pair=activePair(s);if(pair)notes.push(pair.name+"와 함께 해보도록 연결된 상태");
     var conflict=conflictPartner(s);if(conflict)notes.push(conflict.name+"와 감정이 남아 있음");
     var circle=circleOf(s);
@@ -1018,6 +1298,7 @@
       notes.push("자주 어울리는 무리: "+names+" / "+circle.label);
     }
     q("#memory").textContent=notes.join(" · ")||"최근에 특별히 기록된 일 없음";
+    renderTeacherBusy();renderActionPanel(s);
   }
   function renderFeed(){
     var list=feed.filter(function(e){return e.scene===teacherScene}).slice(0,8);
@@ -1051,7 +1332,7 @@
     log("선생님이 "+SCENE_NAME[scene]+" 쪽으로 이동했다.","teacher",scene);render();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;teacherScene="classroom";teacher.x=50;teacher.y=22;feed=[];reportOpen=false;
+    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;feed=[];reportOpen=false;
     resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
@@ -1063,7 +1344,7 @@
       var speed=Number(q("#speed").value)||1;
       gameSec+=dt*10*speed;
       if(handlePeriodChange()){
-        updateTransit();updateSocialTracking();updateMovement(dt,speed);
+        updateTransit();updateTeacherTask();updateSocialTracking();updateMovement(dt,speed);
         aiAccumulator+=dt*speed;renderAccumulator+=dt;
         if(aiAccumulator>=.55){
           aiAccumulator=0;
@@ -1079,16 +1360,12 @@
 
   q("#pause").addEventListener("click",function(){running=!running;this.textContent=running?"일시정지":"계속하기"});
   q("#lesson").addEventListener("change",function(){log("수업 방식을 "+this.selectedOptions[0].textContent+"로 조정했다.","teacher",teacherScene);render()});
-  q("#approach").addEventListener("click",function(){teacherAction("approach")});
-  q("#call").addEventListener("click",function(){teacherAction("call")});
-  q("#praise").addEventListener("click",function(){teacherAction("praise")});
-  q("#hint").addEventListener("click",function(){teacherAction("hint")});
-  q("#chalk").addEventListener("click",function(){teacherAction("chalk")});
-  q("#mediate").addEventListener("click",function(){teacherAction("mediate")});
-  q("#separate").addEventListener("click",function(){teacherAction("separate")});
-  q("#giveRole").addEventListener("click",function(){teacherAction("role")});
-  q("#seat").addEventListener("click",function(){swapMode=!swapMode;connectMode=false;renderPanel()});
-  q("#connectPeer").addEventListener("click",function(){connectMode=!connectMode;swapMode=false;renderPanel()});
+  qa("#actionTabs button").forEach(function(b){
+    b.addEventListener("click",function(){
+      activeActionCategory=this.dataset.category;
+      renderPanel();
+    });
+  });
   q("#showReport").addEventListener("click",function(){
     if(current().kind==="lesson")openReport(true);
     else{
