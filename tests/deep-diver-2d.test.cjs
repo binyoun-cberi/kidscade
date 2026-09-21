@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=20/);
-  assert.match(html,/diver-v7\.js\?v=30/);
+  assert.match(html,/diver-v7\.js\?v=31/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=30');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=31');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -908,4 +908,13 @@ test('Deep Diver v30 exposes nearby specimen size and condition through sonar',(
   assert.match(js,/world\.sonar>0&&Math\.hypot\(f\.x-world\.player\.x,f\.y-world\.player\.y\)<260/);
   assert.match(js,/const tag=band\.label\+' · '\+state\.label/);
   assert.match(js,/band\.id==='trophy'/);
+});
+
+
+test('Deep Diver v31 shows specimen size and state before capture',()=>{
+  assert.match(js,/function updatePhotoLabel/);
+  assert.match(js,/band\.label\+' '\+SPECIES\[t\.key\]\.name\+' · '\+state\.label/);
+  assert.match(js,/현재: '\+now/);
+  assert.match(js,/다음 등급: '\+next/);
+  assert.match(js,/gearCapabilityText\(k,lv\)/);
 });
