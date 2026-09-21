@@ -318,9 +318,10 @@
       arm.appendChild(modularImg(look,"hand","hand"));
       rig.appendChild(arm);
     });
+    rig.appendChild(modularImg(look,"hair","hair-back"));
     rig.appendChild(modularImg(look,"head","head"));
     rig.appendChild(modularImg(look,"face","face"));
-    rig.appendChild(modularImg(look,"hair","hair"));
+    rig.appendChild(modularImg(look,"hair","hair-front"));
   }
   function createStandingAvatar(look){
     var rig=document.createElement("span");rig.className="modular-avatar standing-rig";
