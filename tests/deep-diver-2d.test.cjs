@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=33/);
-  assert.match(html,/diver-v7\.js\?v=33/);
+  assert.match(html,/deep-diver-2d\.css\?v=34/);
+  assert.match(html,/diver-v7\.js\?v=34/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=33');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=34');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -1009,4 +1009,70 @@ test('Deep Diver v33 exposes economic efficiency before the player commits catch
   assert.match(js,/원재료 가치/);
   assert.match(js,/고급 식재료/);
   assert.match(js,/대형\/특대 프리미엄/);
+});
+
+
+test('Deep Diver v34 makes approach speed a hunting mechanic',()=>{
+  assert.match(js,/function playerApproachProfile/);
+  assert.match(js,/mode=dashing\?'dash':ratio>\.95\?'fast':ratio>\.42\?'steady':'quiet'/);
+  assert.match(js,/noise=dashing\?1\.72:ratio>\.95\?1\.38:ratio>\.42\?1:\.58/);
+  assert.match(js,/function creatureApproachSense/);
+  assert.match(js,/105\*approach\.prey/);
+  assert.match(js,/trigger=\(behavior==='skittish'\?195:120\)\*approach\.prey/);
+  assert.match(js,/\*approach\.hostile/);
+  assert.match(js,/approachStatusText\(f\)/);
+  assert.match(js,/은밀 접근/);
+  assert.match(js,/대시 소음/);
+});
+
+test('Deep Diver v34 lets player actions disturb the ecosystem',()=>{
+  assert.match(js,/function disturbanceSensitivity/);
+  assert.match(js,/function disturbCreature/);
+  assert.match(js,/function emitDisturbance/);
+  assert.match(js,/emitDisturbance\(p\.x,p\.y,270,1\.15,'dash'\)/);
+  assert.match(js,/emitDisturbance\(p\.x,p\.y,175,\.76,'net'\)/);
+  assert.match(js,/emitDisturbance\(p\.x,p\.y,235,\.72,'harpoon'\)/);
+  assert.match(js,/emitDisturbance\(f\.x,f\.y,190,\.92,'harpoonHit'\)/);
+  assert.match(js,/disturbCreature\(f,\.48,'sonar'\)/);
+  assert.match(js,/플래시에 반응/);
+});
+
+test('Deep Diver v34 turns traps into bait-driven feeding tools',()=>{
+  assert.match(js,/function nearestTrapLure/);
+  assert.match(js,/lureRange=185\+t\.tier\*28/);
+  assert.match(js,/f\.feeding=Math\.max\(f\.feeding,\.72\)/);
+  assert.match(js,/f\.lureX=t\.x/);
+  assert.match(js,/미끼 냄새가 퍼지며 적합한 생물을 먹이활동 상태로 유도합니다/);
+  assert.match(js,/미끼 유인/);
+});
+
+test('Deep Diver v34 adds natural feeding behavior around the whale fall',()=>{
+  assert.match(js,/const WHALE_FALL_SCAVENGERS=new Set/);
+  assert.match(js,/function naturalFeedingStimulus/);
+  assert.match(js,/Math\.hypot\(f\.x-WHALE_FALL\.x,f\.y-WHALE_FALL\.y\)/);
+  assert.match(js,/f\.feeding=Math\.max\(f\.feeding,\.88\)/);
+  assert.match(js,/naturalFeedingStimulus\(f\)/);
+});
+
+test('Deep Diver v34 makes dive light a stealth tradeoff in deep water',()=>{
+  assert.match(html,/id="lightBtn"/);
+  assert.match(html,/id="lightMobile"/);
+  assert.match(html,/L 다이브 라이트/);
+  assert.match(js,/lightOn:true/);
+  assert.match(js,/const LIGHT_SENSITIVE_SPECIES=new Set/);
+  assert.match(js,/function toggleDiveLight/);
+  assert.match(js,/조명 노출/);
+  assert.match(js,/소등 은폐/);
+  assert.match(js,/다이브 라이트 OFF/);
+  assert.match(js,/world\.lightOn!==false/);
+  assert.match(css,/v34 behavior-driven hunt/);
+});
+
+test('Deep Diver v34 keeps state readable after player-caused changes',()=>{
+  assert.match(js,/label:'도주'/);
+  assert.match(js,/label:'먹이활동'/);
+  assert.match(js,/label:'공격\/경계'/);
+  assert.match(js,/펄스에 반응한 생물/);
+  assert.match(js,/카메라 정밀 관찰/);
+  assert.match(html,/OBSERVE \/ APPROACH \/ HUNT/);
 });
