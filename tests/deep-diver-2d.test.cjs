@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=20/);
-  assert.match(html,/diver-v7\.js\?v=28/);
+  assert.match(html,/diver-v7\.js\?v=29/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=28');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=29');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -834,4 +834,23 @@ test('Deep Diver v28 rotates only daily tasks unlocked by campaign progress',()=
   assert.match(js,/mackerelRun/);
   assert.match(js,/qualityPhoto/);
   assert.match(js,/depthRun/);
+});
+
+
+test('Deep Diver v29 makes heavy loot and catch weight matter during return travel',()=>{
+  assert.match(js,/salvageLoad=clamp\(world\.bagWeight/);
+  assert.match(js,/catchLoad=clamp\(world\.catchWeight/);
+  assert.match(js,/loadDrag=Math\.max\(\.76,1-salvageLoad\*\.06-catchLoad\*\.08\)/);
+  assert.match(js,/effort=1\+len\*\.10\+salvageLoad\*\.12\+catchLoad\*\.18/);
+  assert.match(js,/load=1\+salvageLoad\*\.10\+catchLoad\*\.16/);
+});
+
+test('Deep Diver v29 adds a buoyancy upgrade that changes ascent instead of teleporting the player',()=>{
+  assert.match(js,/buoyancy:\{name:'부력 조절기'/);
+  assert.match(js,/ascent:1\+\(meta\.up\.buoyancy\|\|0\)\*\.09/);
+  assert.match(js,/ascentO2:Math\.max\(\.68,1-\(meta\.up\.buoyancy\|\|0\)\*\.07\)/);
+  assert.match(js,/ascentBoost=iy<-\.12\?st\.ascent:1/);
+  assert.match(js,/ascentO2=iy<-\.12\?st\.ascentO2:1/);
+  assert.match(js,/world\.st\.speed\*world\.st\.ascent\*\.74/);
+  assert.doesNotMatch(js,/teleport/i);
 });
