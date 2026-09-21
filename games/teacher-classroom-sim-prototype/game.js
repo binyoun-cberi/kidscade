@@ -412,8 +412,15 @@
 
     if(s.action==="SEEK"){resolveSeek(s);return}
     if(s.action==="HELP_PEER"){resolvePeerHelp(s);return}
-    if(s.action==="ARGUE"&&s.actionTicks<=0){maybeEscalateConflict(s);return}
-    if(s.action==="SHOVE"||s.action==="HURT")return;
+    if(s.action==="ARGUE"){
+      if(s.actionTicks<=0)maybeEscalateConflict(s);
+      return;
+    }
+    if(s.action==="SHOVE"||s.action==="HURT"){
+      if(s.actionTicks<=0){s.action="WAIT";s.actionTicks=2;setDestination(s,s.scene,true)}
+      return;
+    }
+    if(s.action==="REJECTED"&&s.actionTicks>0)return;
 
     var fit=lessonFit(s),near=teacherNear(s),hard=clamp(.70-s.skill+.16),target=chooseSocialTarget(s,"SOCIAL");
     var roleActive=s.roleUntil>gameSec;
@@ -457,8 +464,15 @@
     if(s.targetScene){s.action="WALK";return}
     if(s.action==="SEEK"){resolveSeek(s);return}
     if(s.action==="HELP_PEER"){resolvePeerHelp(s);return}
-    if(s.action==="ARGUE"&&s.actionTicks<=0){maybeEscalateConflict(s);return}
-    if(s.action==="SHOVE"||s.action==="HURT")return;
+    if(s.action==="ARGUE"){
+      if(s.actionTicks<=0)maybeEscalateConflict(s);
+      return;
+    }
+    if(s.action==="SHOVE"||s.action==="HURT"){
+      if(s.actionTicks<=0){s.action="WAIT";s.actionTicks=2;setDestination(s,s.scene,true)}
+      return;
+    }
+    if(s.action==="REJECTED"&&s.actionTicks>0)return;
 
     var paired=activePair(s);
     if(paired&&paired.scene===s.scene&&distance(s,paired)>12&&Math.random()<.65){
@@ -856,6 +870,8 @@
     var basic=["#approach","#call","#praise","#hint","#chalk","#seat","#mediate","#separate","#connectPeer","#giveRole"];
     basic.forEach(function(id){q(id).disabled=!s||s.scene!==teacherScene});
     q("#seat").disabled=!s||teacherScene!=="classroom"||s.scene!=="classroom";
+    q("#hint").disabled=!s||s.scene!==teacherScene||current().kind!=="lesson";
+    q("#chalk").disabled=!s||s.scene!==teacherScene||teacherScene!=="classroom"||current().kind!=="lesson";
     q("#mediate").disabled=!s||s.scene!==teacherScene||!conflictPartner(s);
     q("#separate").disabled=!s||s.scene!==teacherScene;
     if(!s){
@@ -863,7 +879,8 @@
       q("#studentSummary").textContent="학생을 눌러 직접 개입할 수 있습니다. 다른 공간의 일은 직접 이동해서 확인해야 합니다.";
       q("#studentState").textContent="—";q("#memory").textContent="";return;
     }
-    q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);q("#studentSummary").textContent=observationText(s);
+    q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);
+    q("#studentSummary").textContent=connectMode?"함께 해볼 두 번째 학생을 선택하세요.":swapMode?"자리를 바꿀 두 번째 학생을 선택하세요.":observationText(s);
     q("#seat").textContent=swapMode?"바꿀 학생 선택 중":"자리 바꾸기";
     q("#connectPeer").textContent=connectMode?"연결할 학생 선택 중":"친구 연결";
     var notes=[];
