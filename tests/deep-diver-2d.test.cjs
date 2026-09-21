@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=14/);
-  assert.match(html,/diver-v7\.js\?v=20/);
+  assert.match(html,/deep-diver-2d\.css\?v=15/);
+  assert.match(html,/diver-v7\.js\?v=21/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,13 +227,13 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=20');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=21');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
 
 test('Deep Diver v15 is substantially deeper and wider',()=>{
-  assert.match(js,/const WORLD=\{w:6800,h:4200,surface:60,scaleDepth:5\.5\}/);
+  assert.match(js,/const WORLD=\{w:6800,h:6500,surface:60,scaleDepth:5\.5\}/);
   assert.match(js,/const SUBZONES=\[/);
   assert.match(js,/expandedCount=Math\.max\(count,Math\.round\(count\*1\.55\)\)/);
   assert.match(js,/name:'포식자 해구'/);
@@ -267,7 +267,7 @@ test('Deep Diver v15 has terrain collision and foreground depth',()=>{
   assert.match(js,/world\.terrain\.some/);
   assert.match(js,/drawTerrain\(\).*drawDecor\(\)/s);
   assert.match(js,/drawPlayer\(\).*drawForeground\(\)/s);
-  for(const zone of ['reef','kelp','ruins','wreck','abyss'])assert.ok(js.includes(",'"+zone+"'"),zone);
+  for(const zone of ['reef','kelp','ruins','wreck','abyss','hadal'])assert.ok(js.includes(",'"+zone+"'"),zone);
 });
 
 
@@ -277,7 +277,8 @@ test('Deep Diver v15 gives all fifteen subzones unique gameplay rules',()=>{
     'kelpEdge','kelpCathedral','currentCut',
     'ruinGate','ruinCourt','ruinWell',
     'wreckOuter','mineLane','cargoGrave',
-    'blackwater','ventValley','predatorTrench'
+    'blackwater','ventValley','predatorTrench',
+    'whaleFall','riftAbyss','volcanoCaldera'
   ])assert.match(js,new RegExp(id+":\\{"),id);
   assert.match(js,/photo:1\.15/);
   assert.match(js,/terrainHazard:'coral'/);
@@ -350,9 +351,9 @@ test('Deep Diver v15 harpoon aims freely and reels hooked fish',()=>{
 });
 
 test('Deep Diver v18 softly gates free-dive depth by suit rating',()=>{
-  assert.match(js,/const CONTRACT_DEPTH_RATING=\[150,285,430,575,760\]/);
+  assert.match(js,/const CONTRACT_DEPTH_RATING=\[150,285,430,575,760,1080\]/);
   assert.match(js,/function ratedDepth/);
-  assert.match(js,/170\+\(meta\.up\.suit\|\|0\)\*115/);
+  assert.match(js,/180\+\(meta\.up\.suit\|\|0\)\*205/);
   assert.match(js,/function applyDepthPressure/);
   assert.match(js,/수압 한계 초과/);
   assert.match(js,/class="depthRating"/);
@@ -620,4 +621,54 @@ test('Deep Diver v20 integrates the newly committed four-frame marine sheets',()
   assert.match(js,/pelagicSteak/);
   assert.match(js,/crustaceanGrill/);
   assert.match(js,/triggerfish:\{sense:195/);
+});
+
+
+test('Deep Diver v21 uses an interactive harbor hub',()=>{
+  assert.match(html,/BLUE EXPEDITION HARBOR/);
+  assert.match(js,/function dockDetailHtml/);
+  assert.match(js,/class="dockScene"/);
+  for(const token of ['의뢰 사무소','업그레이드 공방','장비 창고','해양 연구소','BLUE KITCHEN','바다로 나가기']) assert.ok(js.includes(token),token);
+  assert.match(js,/data-dock="workshop"/);
+  assert.match(js,/data-dock="gear"/);
+  assert.match(js,/data-dock="launch"/);
+  assert.match(css,/\.dockScene\{/);
+  assert.match(css,/\.dockBuilding\{/);
+  assert.match(css,/\.dockSea\{/);
+  assert.match(css,/\.dockLaunch\{/);
+});
+
+test('Deep Diver v21 extends the ocean into a permanent-dark hadal zone',()=>{
+  assert.match(js,/name:'영구 암흑 해구'/);
+  assert.match(js,/y0:4200,y1:6500/);
+  assert.match(js,/name:'고래 낙하 지대'/);
+  assert.match(js,/name:'심해 크레바스'/);
+  assert.match(js,/name:'해저 화산 분화구'/);
+  assert.match(js,/const WHALE_FALL=/);
+  assert.match(js,/const DEEP_RIFT=/);
+  assert.match(js,/const VOLCANO=/);
+  assert.match(js,/function drawDeepLandmarks/);
+  assert.match(js,/고래 낙하 지대/);
+  assert.match(js,/해저 화산 분화구/);
+  assert.match(js,/riftPull:true/);
+  assert.match(js,/volcano:true/);
+  assert.match(js,/hadal:\{oxygen:1\.95/);
+  assert.match(js,/if\(z\.id==='hadal'\)/);
+});
+
+test('Deep Diver v21 gives the whale fall a scavenger ecology',()=>{
+  assert.match(js,/hadal:\[\['giantIsopod',9\]/);
+  assert.match(js,/\['giantIsopod',1700,4630,19701\]/);
+  assert.match(js,/\['slipperLobster',2130,4700,19703\]/);
+  assert.match(js,/\['seaCucumber',1510,4720,19704\]/);
+  assert.match(js,/\['lanternfish',2480,4450,19705\]/);
+});
+
+test('Deep Diver v21 adds a late-game hadal contract',()=>{
+  assert.match(js,/id:'hadal',title:'06 · 영구 암흑 해구 조사'/);
+  assert.match(js,/recommended:1080/);
+  assert.match(js,/m\.visited\.whaleFall/);
+  assert.match(js,/m\.visited\.riftAbyss/);
+  assert.match(js,/m\.visited\.volcanoCaldera/);
+  assert.match(js,/\['angler','giantIsopod'\]\.some/);
 });
