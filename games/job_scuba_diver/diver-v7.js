@@ -1126,18 +1126,17 @@ function finishDive(ok,reason){
 function frame(now){const dt=clamp((now-last)/1000,0,.033);last=now;if(state==='playing'){update(dt);render()}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
 function stockCount(){return Object.values(meta.stock||{}).reduce((a,b)=>a+(Number(b)||0),0)}
-function recipeIngredients(recipe){return recipe.keys.filter(k=>(meta.stock[k]||0)>0)}
-function availableRecipes(){return RECIPES.filter(r=>recipeIngredients(r).length)}
-function chooseIngredient(recipe){
- const keys=recipeIngredients(recipe);if(!keys.length)return null;
- return keys.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0)||(SPECIES[a].value||0)-(SPECIES[b].value||0))[0]
-}
-function recipePrice(recipe,key){const sp=SPECIES[key];return Math.round((sp?.value||180)*2.05+recipe.bonus)}
-function restaurantStockHtml(){
- const entries=Object.entries(meta.stock||{}).filter(([,n])=>n>0);
- if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';
- return entries.map(([k,n])=>'<span class="stockChip">'+SPECIES[k].name+' <b>×'+n+'</b></span>').join('')
-}
+function recipeGroups(recipe){return recipe.groups?.length?recipe.groups:[recipe.keys||[]]}
+function recipeIngredients(recipe){return recipeGroups(recipe)[0].filter(k=>(meta.stock[k]||0)>0)}
+function recipeCanMake(recipe){return recipeGroups(recipe).every(group=>group.some(k=>(meta.stock[k]||0)>0))}
+function availableRecipes(){return RECIPES.filter(recipeCanMake)}
+function chooseIngredient(recipe){const keys=recipeIngredients(recipe);if(!keys.length)return null;return keys.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0)||(ingredientInfo(a).value||0)-(ingredientInfo(b).value||0))[0]}
+function chooseRecipeParts(recipe,primary){const groups=recipeGroups(recipe),used=[];for(let i=0;i<groups.length;i++){const options=groups[i].filter(k=>(meta.stock[k]||0)>0);if(!options.length)return null;const k=i===0&&primary&&options.includes(primary)?primary:options.sort((a,b)=>(meta.stock[b]||0)-(meta.stock[a]||0))[0];used.push(k)}return used}
+function recipePrice(recipe,key){const parts=chooseRecipeParts(recipe,key)||[key],raw=parts.reduce((s,k)=>s+(ingredientInfo(k).value||120),0);return Math.round(raw*1.55+recipe.bonus)}
+function consumeRecipeParts(recipe,key){const parts=chooseRecipeParts(recipe,key);if(!parts)return null;for(const k of parts){meta.stock[k]--;if(meta.stock[k]<=0)delete meta.stock[k]}return parts}
+function ingredientSpriteSrc(key){const info=ingredientInfo(key),assetKey=info.img;if(!assetKey)return'';return ASSETS[assetKey]||''}
+function restaurantStockHtml(){const entries=Object.entries(meta.stock||{}).filter(([,n])=>n>0);if(!entries.length)return'<span class="stockChip empty">냉장고가 비었습니다.</span>';return entries.map(([k,n])=>'<span class="stockChip">'+ingredientInfo(k).name+' <b>×'+n+'</b></span>').join('')}
+
 const CUSTOMER_SPRITES=[
  '../../assets/game/characters/people/kenney-platformer-characters/female/poses/female-stand.png',
  '../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',
@@ -1156,11 +1155,12 @@ function restaurantTimingScore(value,a,b){
 function restaurantQualityLabel(q){
  return q>=1.08?'S':q>=.94?'A':q>=.78?'B':'C'
 }
+function restaurantSeatCount(){return 2+(meta.shopUp.seats||0)}
 function spawnRestaurantCustomer(){
- if(!restaurant||restaurant.finished||restaurant.generated>=restaurant.quota||restaurant.customers.length>=3)return false;
+ if(!restaurant||restaurant.finished||restaurant.generated>=restaurant.quota||restaurant.customers.length>=restaurantSeatCount())return false;
  const avail=availableRecipes();if(!avail.length)return false;
  const recipe=avail[Math.floor(Math.random()*avail.length)],id=++restaurant.customerSeq;
- const maxPatience=18+Math.min(7,(meta.shop.reputation||0)*.07)+Math.random()*4;
+ const maxPatience=18+Math.min(7,(meta.shop.reputation||0)*.07)+(meta.shopUp.fridge||0)*1.8+Math.random()*4;
  restaurant.customers.push({
    id,recipeId:recipe.id,patience:maxPatience,maxPatience,
    sprite:CUSTOMER_SPRITES[(id+meta.day)%CUSTOMER_SPRITES.length],
@@ -1190,7 +1190,7 @@ function restaurantKitchenHtml(){
  const c=restaurantCustomerById(restaurant.selectedId);
  if(!c)return'<div class="workEmpty"><b>주문을 골라 주세요</b><span>손님을 누르면 주방에서 손질 → 굽기 → 플레이팅 → 서빙 순서로 요리합니다.</span></div>';
  const recipe=RECIPES.find(r=>r.id===c.recipeId),w=restaurant.work;
- const ingredientButtons=recipe.keys.map(k=>{const n=meta.stock[k]||0;return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'><b>'+SPECIES[k].name+'</b><small>재고 '+n+' · 기본 '+money(recipePrice(recipe,k))+'</small></button>'}).join('');
+ const primary=recipeGroups(recipe)[0],extraGroups=recipeGroups(recipe).slice(1),ingredientButtons=primary.map(k=>{const n=meta.stock[k]||0,src=ingredientSpriteSrc(k);return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'>'+(src?'<img class="ingredientSprite" src="'+src+'" alt="">':'')+'<b>'+ingredientInfo(k).name+'</b><small>재고 '+n+' · 예상 '+money(recipePrice(recipe,k))+'</small></button>'}).join(''),extraNeed=extraGroups.length?'<div class="recipeNeeds">추가 재료 · '+extraGroups.map(g=>g.map(k=>ingredientInfo(k).name).join(' / ')).join(' + ')+'</div>':'';
  let action='';
  if(w.stage==='idle'&&!w.key)action='<div class="workInstruction">먼저 사용할 식재료를 고르세요.</div>';
  else if(w.stage==='idle')action='<button class="cookAction prep" id="prepStartBtn">🔪 손질 시작</button>';
@@ -1198,12 +1198,12 @@ function restaurantKitchenHtml(){
  else if(w.stage==='cook')action=restaurantTimingHtml('cook')+'<button class="cookAction fire" id="cookStopBtn">🔥 지금 불 끄기!</button>';
  else if(w.stage==='ready')action='<div class="dishReady"><span>'+recipe.icon+'</span><b>'+recipe.name+' 완성!</b><small>품질 '+restaurantQualityLabel(w.quality)+' · 손님에게 바로 내세요.</small></div><button class="cookAction serve" id="serveDishBtn">🍽️ 서빙하기</button>';
  return'<div class="workOrder"><span>선택 주문</span><b>'+recipe.icon+' '+recipe.name+'</b><small>'+c.name+' · 남은 기다림 <strong id="selectedPatience">'+Math.max(0,Math.ceil(c.patience))+'초</strong></small></div>'+
-   '<div class="ingredientShelf">'+ingredientButtons+'</div>'+action
+   extraNeed+'<div class="ingredientShelf">'+ingredientButtons+'</div>'+action
 }
 function renderRestaurant(){
  if(!restaurant||restaurant.finished)return;
- const seats=[0,1,2].map(i=>restaurantSeatHtml(restaurant.customers[i]||null,i)).join('');
- $('restaurantBody').innerHTML='<div class="restaurantHero"><div><span class="nightBadge">DAY '+meta.day+' · NIGHT</span><h3>BLUE KITCHEN</h3><p>손님 셋의 기다림을 보면서 한 접시씩 빠르게 완성하세요.</p></div><div class="nightMoney"><span>남은 영업</span><b id="nightTimer">'+Math.max(0,Math.ceil(restaurant.timeLeft))+'초</b><small>매출 '+money(restaurant.earnings)+' · 연속 '+restaurant.streak+'</small></div></div>'+
+ const seats=Array.from({length:restaurantSeatCount()},(_,i)=>restaurantSeatHtml(restaurant.customers[i]||null,i)).join('');
+ $('restaurantBody').innerHTML='<div class="restaurantHero"><div><span class="nightBadge">DAY '+meta.day+' · NIGHT</span><h3>BLUE KITCHEN</h3><p>손님 셋의 기다림을 보면서 한 접시씩 빠르게 완성하세요.</p></div><div class="nightMoney"><span>남은 영업</span><b id="nightTimer">'+Math.max(0,Math.ceil(restaurant.timeLeft))+'초</b><small>매출 '+money(restaurant.earnings)+' · 연속 '+restaurant.streak+' · 좌석 '+restaurantSeatCount()+'</small></div></div>'+
  '<div class="tycoonStatus"><span>손님 <b>'+restaurant.served+'/'+restaurant.quota+'</b></span><span>놓침 <b>'+restaurant.missed+'</b></span><span>최고 연속 <b>'+restaurant.bestStreak+'</b></span><span>평판 <b>'+Math.round(meta.shop.reputation||0)+'</b></span></div>'+
  '<div class="diningRoom"><div class="restaurantSign">🌊 BLUE KITCHEN · 오늘의 해산물</div><div class="seatRow">'+seats+'</div><div class="counterLine"><span>🍵</span><span>🥢</span><span>🍽️</span><span>🧂</span><span>🔥</span></div></div>'+
  '<div class="kitchenTycoon"><div class="kitchenHead"><b>👨‍🍳 주방 작업대</b><small>'+(restaurant.message||'손님을 눌러 주문을 시작하세요.')+'</small></div>'+restaurantKitchenHtml()+'</div>'+
@@ -1230,7 +1230,7 @@ function tickRestaurant(){
  const dt=.1;restaurant.timeLeft-=dt;restaurant.spawnCd-=dt;
  let changed=false;
  for(const c of [...restaurant.customers]){
-   c.patience-=dt;
+   c.patience-=dt*Math.max(.68,1-(meta.shopUp.helper||0)*.08);
    if(c.patience<=0){
      restaurant.customers=restaurant.customers.filter(x=>x!==c);restaurant.missed++;restaurant.streak=0;restaurant.repPenalty+=1.25;changed=true;
      if(restaurant.selectedId===c.id){restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+' 손님이 너무 오래 기다려서 돌아갔어요.'}
@@ -1239,9 +1239,9 @@ function tickRestaurant(){
  }
  const w=restaurant.work;
  if(w.stage==='prep'){
-   w.meter+=w.dir*7.8;if(w.meter>=100){w.meter=100;w.dir=-1}else if(w.meter<=0){w.meter=0;w.dir=1}
+   w.meter+=w.dir*(7.8-(meta.shopUp.prep||0)*.55);if(w.meter>=100){w.meter=100;w.dir=-1}else if(w.meter<=0){w.meter=0;w.dir=1}
  }else if(w.stage==='cook'){
-   w.meter+=2.8;
+   w.meter+=Math.max(1.35,2.8-(meta.shopUp.stove||0)*.38);
    if(w.meter>=100){w.meter=100;w.cookScore=.5;w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='조금 탔어요! 그래도 서빙은 할 수 있습니다.';beep(115,.09,'sawtooth');changed=true}
  }
  if(restaurant.spawnCd<=0&&restaurant.timeLeft>7&&restaurant.generated<restaurant.quota&&restaurant.customers.length<3&&availableRecipes().length){if(spawnRestaurantCustomer())changed=true}
@@ -1260,16 +1260,16 @@ function selectRestaurantCustomer(id){
 function chooseRestaurantIngredient(key){
  if(!restaurant||restaurant.finished||restaurant.work.stage!=='idle')return;
  const c=restaurantCustomerById(restaurant.selectedId);if(!c)return;
- const recipe=RECIPES.find(r=>r.id===c.recipeId);if(!recipe?.keys.includes(key)||(meta.stock[key]||0)<=0)return;
- restaurant.work.key=key;restaurant.work.customerId=c.id;restaurant.work.recipeId=recipe.id;restaurant.message=SPECIES[key].name+'을 골랐습니다. 이제 손질하세요.';beep(520,.04);renderRestaurant()
+ const recipe=RECIPES.find(r=>r.id===c.recipeId);if(!recipeGroups(recipe)[0].includes(key)||(meta.stock[key]||0)<=0)return;
+ restaurant.work.key=key;restaurant.work.customerId=c.id;restaurant.work.recipeId=recipe.id;restaurant.message=ingredientInfo(key).name+'을 골랐습니다. 이제 손질하세요.';beep(520,.04);renderRestaurant()
 }
 function startRestaurantPrep(){
  const w=restaurant?.work;if(!w||w.stage!=='idle'||!w.key)return;
- w.stage='prep';w.meter=Math.random()*25;w.dir=1;const center=48+Math.random()*18;w.target0=center-12;w.target1=center+12;restaurant.message='칼질 타이밍! 노란 구간에서 버튼을 누르세요.';beep(640,.04);renderRestaurant()
+ w.stage='prep';w.meter=Math.random()*25;w.dir=1;const center=48+Math.random()*18,wide=12+(meta.shopUp.prep||0)*3;w.target0=center-wide;w.target1=center+wide;restaurant.message='칼질 타이밍! 노란 구간에서 버튼을 누르세요.';beep(640,.04);renderRestaurant()
 }
 function stopRestaurantPrep(){
  const w=restaurant?.work;if(!w||w.stage!=='prep')return;
- w.prepScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.stage='cook';w.meter=0;const center=66+Math.random()*10;w.target0=center-10;w.target1=center+10;restaurant.message='손질 완료! 이제 알맞게 익혀서 불을 끄세요.';beep(w.prepScore>=1?900:430,.05);renderRestaurant()
+ w.prepScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.stage='cook';w.meter=0;const center=66+Math.random()*10,wide=10+(meta.shopUp.stove||0)*3;w.target0=center-wide;w.target1=center+wide;restaurant.message='손질 완료! 이제 알맞게 익혀서 불을 끄세요.';beep(w.prepScore>=1?900:430,.05);renderRestaurant()
 }
 function stopRestaurantCook(){
  const w=restaurant?.work;if(!w||w.stage!=='cook')return;
@@ -1279,11 +1279,11 @@ function serveRestaurantDish(){
  if(!restaurant||restaurant.finished)return;
  const w=restaurant.work,c=restaurantCustomerById(w.customerId);if(w.stage!=='ready'||!c)return;
  const recipe=RECIPES.find(r=>r.id===w.recipeId),key=w.key;if(!recipe||!key||(meta.stock[key]||0)<=0){restaurant.message='그 사이 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
- meta.stock[key]--;if(meta.stock[key]<=0)delete meta.stock[key];
- const qualityMult=.76+clamp(w.quality,.5,1.15)*.36,patienceMult=.88+.28*clamp(c.patience/c.maxPatience,0,1),combo=1+Math.min(.28,restaurant.streak*.045),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006);
- const sale=Math.round(recipePrice(recipe,key)*qualityMult*patienceMult*combo*rep),grade=restaurantQualityLabel(w.quality);
+ const used=consumeRecipeParts(recipe,key);if(!used){restaurant.message='필요한 추가 식재료가 떨어졌습니다.';restaurant.work=restaurantWorkIdle();renderRestaurant();return}
+ const qualityMult=.76+clamp(w.quality,.5,1.15)*.36,patienceMult=.88+.28*clamp(c.patience/c.maxPatience,0,1),combo=1+Math.min(.28+(meta.shopUp.tray||0)*.035,restaurant.streak*(.045+(meta.shopUp.tray||0)*.004)),rep=1+Math.min(.18,(meta.shop.reputation||0)*.006),menu=1+(meta.shopUp.menu||0)*.08;
+ const sale=Math.round(recipePrice(recipe,key)*qualityMult*patienceMult*combo*rep*menu),grade=restaurantQualityLabel(w.quality);
  restaurant.earnings+=sale;restaurant.served++;restaurant.streak++;restaurant.bestStreak=Math.max(restaurant.bestStreak,restaurant.streak);restaurant.customers=restaurant.customers.filter(x=>x.id!==c.id);
- restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
+ restaurant.selectedId=null;restaurant.work=restaurantWorkIdle();restaurant.message=c.name+'에게 '+grade+'급 '+recipe.name+' 서빙! '+used.map(k=>ingredientInfo(k).name).join('+')+' · +'+money(sale);restaurant.spawnCd=Math.min(restaurant.spawnCd,1.15);
  beep(920,.05);setTimeout(()=>beep(1280,.06),55);renderRestaurant()
 }
 function serveRestaurant(recipeId){
@@ -1293,7 +1293,7 @@ function startRestaurant(){
  state='restaurant';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  $('restaurantScreen').classList.remove('hidden');
- const quota=Math.min(12,7+Math.floor((meta.shop.reputation||0)/16));
+ const quota=Math.min(15,6+restaurantSeatCount()+Math.floor((meta.shop.reputation||0)/16));
  restaurant={served:0,missed:0,earnings:0,streak:0,bestStreak:0,quota,generated:0,customerSeq:0,customers:[],selectedId:null,work:restaurantWorkIdle(),timeLeft:72,spawnCd:0,repPenalty:0,finished:false,message:'첫 손님들이 들어오고 있습니다.'};
  spawnRestaurantCustomer();spawnRestaurantCustomer();renderRestaurant();
  restaurant.tickId=setInterval(tickRestaurant,100)
@@ -1307,17 +1307,40 @@ function finishRestaurant(reason='영업 종료'){
 }
 
 function contractCards(){
- return CONTRACTS.map((c,i)=>'<div class="card '+(i>meta.unlocked?'locked':'')+'"><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">장비 권장 수심 '+(CONTRACT_DEPTH_RATING[i]+meta.up.suit*22)+'m</div><div class="reward">계약 보상 '+money(c.reward)+'</div><button class="btn '+(i>meta.unlocked?'dark':'gold')+'" data-contract="'+c.id+'" '+(i>meta.unlocked?'disabled':'')+'>'+(i>meta.unlocked?'잠김':'잠수 시작')+'</button></div>').join('')
+ return CONTRACTS.map((c,i)=>{const selected=dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected':'')+'" data-mission="'+c.id+'"><span>선택 의뢰</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(selected?'✓ 오늘 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
+}
+function gearLoadoutCards(){
+ const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'</small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
+}
+function toggleDockGear(k){
+ const slots=2+(meta.up.slots||0),i=meta.loadout.indexOf(k);if(i>=0)meta.loadout.splice(i,1);else if(meta.loadout.length<slots)meta.loadout.push(k);else{showHint('장비 슬롯이 가득 찼습니다. 장비 랙을 업그레이드하세요.',1000);return}save();openContracts()
 }
 function openContracts(){
  state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- $('contractBody').innerHTML='<div class="notice"><b>DAY '+meta.day+' · 낮 탐사 준비</b><br>보유 자금 '+money(meta.money)+' · 가게 재고 '+stockCount()+'개 · 가게 평판 '+Math.round(meta.shop.reputation||0)+' · 최고 수심 '+Math.round(meta.bestDepth)+'m</div><div class="grid">'+contractCards()+'</div><div class="toolbar"><button class="btn" id="shopBtn">장비실</button><button class="btn dark" id="codexBtn">생물 도감</button>'+(stockCount()>0?'<button class="btn gold" id="restaurantBtn">남은 재고로 밤 장사</button>':'')+'<button class="btn dark" id="menuBtn">시작 화면</button></div>';
- $('contractScreen').classList.remove('hidden');document.querySelectorAll('[data-contract]').forEach(b=>b.onclick=()=>{const c=CONTRACTS.find(x=>x.id===b.dataset.contract);if(c)buildWorld(c)});$('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;const rb=$('restaurantBtn');if(rb)rb.onclick=startRestaurant;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
+ const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId);
+ $('contractBody').innerHTML='<div class="dockSummary"><div><span>DAY '+meta.day+' · 낮 출항 준비</span><b>'+money(meta.money)+'</b><small>하루 어획 '+st.catchCap+'kg · 채집 장비 '+st.toolSlots+'칸 · 안전 수심 약 '+Math.round(ratedDepth())+'m</small></div><div><span>선택 의뢰</span><b>'+(selected?selected.title:'없음 · 자유 잠수')+'</b><small>의뢰는 완전히 선택 사항입니다.</small></div></div>'+
+ '<h3 class="sectionTitle">오늘 받을 탐사 의뢰 <small>안 받아도 됩니다</small></h3><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button>'+
+ '<h3 class="sectionTitle">오늘 빌려갈 채집 장비</h3><div class="gearGrid">'+gearLoadoutCards()+'</div>'+
+ '<div class="toolbar dockActions"><button class="btn gold" id="freeDiveBtn">'+(selected?'선택 의뢰와 함께 출항':'자유 잠수 출항')+'</button><button class="btn" id="shopBtn">업그레이드 공방</button><button class="btn dark" id="codexBtn">생물 도감</button>'+(stockCount()>0?'<button class="btn dark" id="restaurantBtn">남은 재고로 밤 장사</button>':'')+'<button class="btn dark" id="menuBtn">시작 화면</button></div>';
+ $('contractScreen').classList.remove('hidden');
+ document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{dockMissionId=dockMissionId===b.dataset.mission?null:b.dataset.mission;openContracts()});document.querySelectorAll('[data-loadout]').forEach(b=>b.onclick=()=>toggleDockGear(b.dataset.loadout));
+ $('clearMissionBtn').onclick=()=>{dockMissionId=null;openContracts()};$('freeDiveBtn').onclick=()=>buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE);
+ $('shopBtn').onclick=openShop;$('codexBtn').onclick=openCodex;const rb=$('restaurantBtn');if(rb)rb.onclick=startRestaurant;$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
-function upCost(k){const u=UPGRADES[k];return Math.round(u.base*(1+meta.up[k]*.72))}
+function upCost(k){const u=UPGRADES[k];return Math.round(u.base*(1+(meta.up[k]||0)*.72))}
+function shopUpCost(k){const u=SHOP_UPGRADES[k];return Math.round(u.base*(1+(meta.shopUp[k]||0)*.78))}
+function gearUpCost(k){return Math.round(900*gearTier(k)*(1+(k==='trap'?.28:k==='harpoon'?.18:0)))}
 function openShop(){
- $('contractScreen').classList.add('hidden');const cards=Object.keys(UPGRADES).map(k=>{const u=UPGRADES[k],lv=meta.up[k],max=lv>=u.max,c=upCost(k);return'<div class="card"><h3>'+u.name+' Lv.'+lv+'/'+u.max+'</h3><p>'+u.desc+'</p><button class="btn '+(max?'dark':'gold')+'" data-up="'+k+'" '+(max?'disabled':'')+'>'+(max?'최대 강화':money(c)+' 강화')+'</button></div>'}).join('');
- $('shopBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b></div><div class="grid">'+cards+'</div><button class="btn" id="shopBack">계약 게시판</button>';$('shopScreen').classList.remove('hidden');document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const k=b.dataset.up,c=upCost(k);if(meta.money<c){showHint('자금이 부족합니다.',900);return}meta.money-=c;meta.up[k]++;save();beep(760,.07);openShop()});$('shopBack').onclick=openContracts
+ $('contractScreen').classList.add('hidden');
+ const diveCards=Object.keys(UPGRADES).map(k=>{const u=UPGRADES[k],lv=meta.up[k]||0,max=lv>=u.max,c=upCost(k);return'<div class="card"><h3>'+u.name+' Lv.'+lv+'/'+u.max+'</h3><p>'+u.desc+'</p><button class="btn '+(max?'dark':'gold')+'" data-up="'+k+'" '+(max?'disabled':'')+'>'+(max?'최대 강화':money(c)+' 강화')+'</button></div>'}).join('');
+ const gearCards=Object.entries(GEAR_DEFS).map(([k,g])=>{const lv=gearTier(k),max=lv>=4,c=gearUpCost(k);return'<div class="card gearUpgrade" style="--tier:'+GEAR_TIER_COLORS[lv]+'"><h3>'+g.icon+' '+g.name+' · '+GEAR_TIER_NAMES[lv]+'</h3><p>'+g.desc+' · 등급이 오르면 범위/성공률/조작성이 좋아집니다.</p><button class="btn '+(max?'dark':'gold')+'" data-gearup="'+k+'" '+(max?'disabled':'')+'>'+(max?'최고 등급':money(c)+' 등급 강화')+'</button></div>'}).join('');
+ const shopCards=Object.keys(SHOP_UPGRADES).map(k=>{const u=SHOP_UPGRADES[k],lv=meta.shopUp[k]||0,max=lv>=u.max,c=shopUpCost(k);return'<div class="card"><h3>'+u.name+' Lv.'+lv+'/'+u.max+'</h3><p>'+u.desc+'</p><button class="btn '+(max?'dark':'gold')+'" data-shopup="'+k+'" '+(max?'disabled':'')+'>'+(max?'최대 강화':money(c)+' 강화')+'</button></div>'}).join('');
+ $('shopBody').innerHTML='<div class="notice">보유 자금 <b>'+money(meta.money)+'</b> · 어획 한도 <b>'+stats().catchCap+'kg</b> · 장비 슬롯 <b>'+stats().toolSlots+'칸</b></div><h3 class="sectionTitle">잠수·어획 설비</h3><div class="grid">'+diveCards+'</div><h3 class="sectionTitle">채집 장비 등급</h3><div class="grid">'+gearCards+'</div><h3 class="sectionTitle">BLUE KITCHEN 업그레이드</h3><div class="grid">'+shopCards+'</div><button class="btn" id="shopBack">선착장으로</button>';
+ $('shopScreen').classList.remove('hidden');
+ document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const k=b.dataset.up,c=upCost(k);if(meta.money<c){showHint('자금이 부족합니다.',900);return}meta.money-=c;meta.up[k]=(meta.up[k]||0)+1;save();beep(760,.07);openShop()});
+ document.querySelectorAll('[data-gearup]').forEach(b=>b.onclick=()=>{const k=b.dataset.gearup,c=gearUpCost(k);if(meta.money<c){showHint('자금이 부족합니다.',900);return}meta.money-=c;meta.gear[k]=Math.min(4,gearTier(k)+1);save();beep(820,.07);openShop()});
+ document.querySelectorAll('[data-shopup]').forEach(b=>b.onclick=()=>{const k=b.dataset.shopup,c=shopUpCost(k);if(meta.money<c){showHint('자금이 부족합니다.',900);return}meta.money-=c;meta.shopUp[k]=(meta.shopUp[k]||0)+1;save();beep(900,.07);openShop()});
+ $('shopBack').onclick=openContracts
 }
 function openCodex(){
  $('contractScreen').classList.add('hidden');const order=Object.keys(SPECIES);$('codexBody').innerHTML='<div class="grid">'+order.map(k=>{const sp=SPECIES[k],rec=meta.codex[k];return'<div class="card codexCard '+(rec?'':'unknown')+'"><h3>'+(rec?sp.name:'??? 미기록 생물')+'</h3><p>'+(rec?('유형 '+(sp.motion||'swimmer')+' · 발견 수심 '+sp.depth[0]+'~'+sp.depth[1]+'m · 최고 사진 '+(rec.best||'C')+' · 촬영 '+(rec.count||0)+'회'):'현장에서 카메라로 촬영하면 도감이 열립니다.')+'</p></div>'}).join('')+'</div><button class="btn" id="codexBack">계약 게시판</button>';$('codexScreen').classList.remove('hidden');$('codexBack').onclick=openContracts
