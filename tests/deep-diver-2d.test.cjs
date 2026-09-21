@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=19/);
-  assert.match(html,/diver-v7\.js\?v=26/);
+  assert.match(html,/diver-v7\.js\?v=27/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=26');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=27');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -503,9 +503,9 @@ test('Deep Diver v18 makes exploration missions optional and returns through the
 
 test('Deep Diver v19 free dive allows non-protected swimmers to be caught without mission gating',()=>{
   assert.match(js,/function fallbackCatchAllowed/);
-  assert.match(js,/preferredCatchMethod\(sp,method\)\|\|fallbackCatchAllowed\(sp,method\)/);
-  assert.match(js,/비추천 장비라 더 거세게 저항합니다/);
-  assert.match(js,/이 생물에는 비추천 장비/);
+  assert.match(js,/preferredCatchMethod\(sp,method\)\|\|fallbackCatchAllowed\(sp,method,f\.key\)/);
+  assert.match(js,/대체 장비라 더 거세게 저항합니다/);
+  assert.match(js,/function captureBlockMessage/);
   assert.match(js,/sp\.protected\|\|!\(sp\.weight>0\)/);
 });
 
@@ -629,7 +629,7 @@ test('Deep Diver v21 uses an interactive harbor hub',()=>{
   assert.match(html,/BLUE EXPEDITION · 선착장/);
   assert.match(js,/function dockDetailHtml/);
   assert.match(js,/class="dockScene"/);
-  for(const token of ['의뢰 사무소','업그레이드 공방','장비 창고','해양 연구소','BLUE KITCHEN','바다로 나가기']) assert.ok(js.includes(token),token);
+  for(const token of ['의뢰 사무소','업그레이드 공방','장비 창고','해양 연구소','BLUE KITCHEN','잠수 지점으로 이동']) assert.ok(js.includes(token),token);
   assert.match(js,/data-dock="workshop"/);
   assert.match(js,/data-dock="gear"/);
   assert.match(js,/data-dock="launch"/);
@@ -762,4 +762,47 @@ test('Deep Diver v25 keeps morning kitchen management separate from night servic
   assert.doesNotMatch(js,/if\(a==='kitchen'\)\{if\(stockCount\(\)>0\)startRestaurant/);
   assert.match(js,/actual|실제 밤 장사는 낮 잠수에서 귀환한 뒤 선택할 수 있습니다/);
   assert.match(css,/\.kitchenPrepHero/);
+});
+
+
+test('Deep Diver v27 derives collisions and capture ranges from visible body size',()=>{
+  assert.match(js,/function creatureBodyMetrics/);
+  assert.match(js,/function creaturePointHit/);
+  assert.match(js,/function creatureEdgeDistance/);
+  assert.match(js,/creaturePointHit\(f,s\.x,s\.y,3\)/);
+  assert.match(js,/bodyHit=creaturePointHit\(f,p\.x,p\.y,22\)/);
+  assert.match(js,/creaturePointHit\(f,p\.x,p\.y,22\).*contactCd/s);
+  assert.match(js,/const body=creatureBodyMetrics\(f\)/);
+  assert.doesNotMatch(js,/Math\.hypot\(f\.x-s\.x,f\.y-s\.y\)<28/);
+  assert.doesNotMatch(js,/const hitRange=48\+/);
+});
+
+test('Deep Diver v27 gives capture tools biological size roles',()=>{
+  assert.match(js,/const CREATURE_SIZE_OVERRIDES=/);
+  assert.match(js,/const SIZE_RANK=/);
+  assert.match(js,/function creatureSizeClass/);
+  assert.match(js,/function requiredGearTier/);
+  assert.match(js,/function captureCompatibility/);
+  assert.match(js,/method==='net'&&SIZE_RANK\[size\]>SIZE_RANK\.medium/);
+  assert.match(js,/method==='harpoon'.*SIZE_RANK\[size\]>=SIZE_RANK\.medium/s);
+  assert.match(js,/yellowfin:'large'/);
+  assert.match(js,/swordfish:'large'/);
+  assert.match(js,/giant:'huge'/);
+  assert.match(js,/대형 어획 장비가 필요합니다/);
+  assert.match(js,/등급 이상의.*필요합니다/);
+});
+
+test('Deep Diver v27 respects species depth ranges during biome spawning',()=>{
+  assert.match(js,/function speciesDepthAllows/);
+  assert.match(js,/!speciesDepthAllows\(key,y\)\|\|world\.terrain/);
+  assert.match(js,/if\(speciesDepthAllows\(key,y\)\)world\.fish\.push/);
+});
+
+test('Deep Diver v27 uses a spatial grid for local ecology queries',()=>{
+  assert.match(js,/const FISH_GRID_SIZE=240/);
+  assert.match(js,/function rebuildFishGrid/);
+  assert.match(js,/function nearbyFish/);
+  assert.match(js,/for\(const o of nearbyFish\(f\.x,f\.y,maxDist\)\)/);
+  assert.match(js,/for\(const o of nearbyFish\(f\.x,f\.y,170\)\)/);
+  assert.match(js,/rebuildFishGrid\(\);for\(const f of world\.fish\)/);
 });
