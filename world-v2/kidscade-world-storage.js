@@ -26,7 +26,7 @@
       createdAt:new Date().toISOString(),
       updatedAt:new Date().toISOString(),
       player:{x:620,y:520,lastZone:'home-yard'},
-      inventory:{wood:0,stone:0,iron:0,copper:0,quartz:0,gold:0,semiconductor:0,water:0,nails:0,fabric:0,glass:0,wire:0,paint:0,crop:0,fish:0,rareFish:0,pearl:0,bug:0,potato:0,carrot:0,tomato:0,strawberry:0,corn:0,pumpkin:0,apple:0,pear:0,peach:0,orange:0,cherry:0,milk:0,egg:0,truffle:0},
+      inventory:{wood:0,stone:0,iron:0,copper:0,quartz:0,gold:0,semiconductor:0,water:0,nails:0,fabric:0,glass:0,wire:0,paint:0,crop:0,fish:0,rareFish:0,pearl:0,bug:0,potato:0,carrot:0,tomato:0,strawberry:0,corn:0,pumpkin:0,apple:0,pear:0,peach:0,orange:0,cherry:0,mushroom:0,milk:0,egg:0,truffle:0},
       progression:{
         energy:100,maxEnergy:100,
         tools:{},
@@ -64,6 +64,7 @@
     if(raw.inventory&&typeof raw.inventory==='object')base.inventory={...base.inventory,...raw.inventory};
     if(raw.progression&&typeof raw.progression==='object'){
       const p=raw.progression;
+      const hadRanchLevel=!!(p.development&&Object.prototype.hasOwnProperty.call(p.development,'ranchLevel'));
       base.progression={
         ...base.progression,...p,
         tools:{...base.progression.tools,...(p.tools||{})},
@@ -91,6 +92,16 @@
           placed:Array.isArray(p.housing?.placed)?p.housing.placed.map(v=>({...v})):[]
         }
       };
+      // Pre-homestead saves could already own ranch animals. Give them enough ranch capacity
+      // instead of loading those animals into a level-0 empty field.
+      if(!hadRanchLevel){
+        const owned=Array.isArray(base.progression.cubePets?.owned)?base.progression.cubePets.owned:[];
+        const mapped=new Set(owned.map(id=>({rabbit:'bunny',miniPig:'pig'}[id]||id)));
+        const legacyRanchCount=['bunny','pig','cow','chick'].filter(id=>mapped.has(id)).length;
+        if(legacyRanchCount>0)base.progression.development.ranchLevel=Math.min(4,legacyRanchCount);
+      }
+      base.progression.housing.version=4;
+      base.progression.homestead.version=1;
     }
     if(raw.world&&typeof raw.world==='object')base.world={flags:{...(raw.world.flags||{})},objects:{...(raw.world.objects||{})}};
     if(raw.migration&&typeof raw.migration==='object')base.migration={...base.migration,...raw.migration};
