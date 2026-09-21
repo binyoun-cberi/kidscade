@@ -10,7 +10,7 @@
   var rand=function(a,b){return a+Math.random()*(b-a)};
   var pick=function(arr){return arr[Math.floor(Math.random()*arr.length)]};
 
-  var ASSET="../../assets/game/characters/people/kenney-platformer-characters/";
+  var MODULAR_ASSET="../../assets/game/2d/characters/kenney-modular-characters/";
   var SCENES=["classroom","hallway","gym","playground","cafeteria"];
   var SCENE_NAME={classroom:"교실",hallway:"복도",gym:"체육관",playground:"운동장",cafeteria:"급식실"};
 
@@ -252,8 +252,123 @@
     if(sec>=60){var m=Math.floor(sec/60),s=Math.round(sec%60);return s?m+"분 "+s+"초":m+"분"}
     return Math.round(sec)+"초";
   }
-  function posePath(s,pose){return ASSET+s.char+"/poses/"+s.char+"-"+pose+".png"}
-  function fallbackPose(s){return posePath(s,"stand")}
+  var HAIR_STYLES=[
+    {folder:"black",prefix:"black"},
+    {folder:"brown-1",prefix:"brown1"},
+    {folder:"brown-2",prefix:"brown2"},
+    {folder:"blonde",prefix:"blonde"},
+    {folder:"red",prefix:"red"},
+    {folder:"tan",prefix:"tan"}
+  ];
+  var SHIRT_STYLES=[
+    {folder:"blue",shirt:"blueShirt",arm:"blueArm"},
+    {folder:"green",shirt:"greenShirt",arm:"greenArm"},
+    {folder:"grey",shirt:"greyShirt",arm:"greyArm"},
+    {folder:"navy",shirt:"navyShirt",arm:"navyArm"},
+    {folder:"pine",shirt:"pineShirt",arm:"pineArm"},
+    {folder:"red",shirt:"redShirt",arm:"redArm"},
+    {folder:"white",shirt:"whiteShirt",arm:"armWhite"}
+  ];
+  var PANTS_STYLES=[
+    {folder:"blue-1",prefix:"pantsBlue1"},
+    {folder:"blue-2",prefix:"pantsBlue2"},
+    {folder:"brown",prefix:"pantsBrown"},
+    {folder:"green",prefix:"pantsGreen"},
+    {folder:"grey",prefix:"pantsGrey"},
+    {folder:"light-blue",prefix:"pantsLightBlue"},
+    {folder:"navy",prefix:"pantsNavy"},
+    {folder:"pine",prefix:"pantsPine"},
+    {folder:"red",prefix:"pantsRed"},
+    {folder:"tan",prefix:"pantsTan"}
+  ];
+  var SHOE_STYLES=[
+    {folder:"black",prefix:"blackShoe"},
+    {folder:"blue",prefix:"blueShoe"},
+    {folder:"brown-1",prefix:"brownShoe"},
+    {folder:"brown-2",prefix:"brown2Shoe"},
+    {folder:"grey",prefix:"greyShoe"},
+    {folder:"red",prefix:"redShoe"},
+    {folder:"tan",prefix:"tanShoe"}
+  ];
+
+  function makeLook(t,i){
+    var woman=t.char==="female";
+    var hair=HAIR_STYLES[(i*5+2)%HAIR_STYLES.length];
+    var shirt=SHIRT_STYLES[(i*3+1)%SHIRT_STYLES.length];
+    var pants=PANTS_STYLES[(i*7+2)%PANTS_STYLES.length];
+    var shoes=SHOE_STYLES[(i*4+1)%SHOE_STYLES.length];
+    return {
+      skin:1+((i*3+2)%8),
+      gender:woman?"Woman":"Man",
+      hairFolder:hair.folder,
+      hairPrefix:hair.prefix,
+      hairIndex:1+((i*2+1)%(woman?6:7)),
+      face:1+(i%4),
+      shirtFolder:shirt.folder,
+      shirtPrefix:shirt.shirt,
+      armPrefix:shirt.arm,
+      shirtIndex:1+((i*5+2)%8),
+      pantsFolder:pants.folder,
+      pantsPrefix:pants.prefix,
+      shoeFolder:shoes.folder,
+      shoePrefix:shoes.prefix
+    };
+  }
+  var TEACHER_LOOK={
+    skin:3,gender:"Woman",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:3,face:1,
+    shirtFolder:"red",shirtPrefix:"redShirt",armPrefix:"redArm",shirtIndex:2,
+    pantsFolder:"navy",pantsPrefix:"pantsNavy",shoeFolder:"brown-1",shoePrefix:"brownShoe"
+  };
+  function modularPath(look,part){
+    var tint="tint-"+look.skin,prefix="tint"+look.skin;
+    if(part==="head"||part==="arm"||part==="hand"||part==="neck"){
+      return MODULAR_ASSET+"skin/"+tint+"/"+prefix+"_"+part+".png";
+    }
+    if(part==="face")return MODULAR_ASSET+"face/completes/face"+look.face+".png";
+    if(part==="hair")return MODULAR_ASSET+"hair/"+look.hairFolder+"/"+look.hairPrefix+look.gender+look.hairIndex+".png";
+    if(part==="shirt")return MODULAR_ASSET+"shirts/"+look.shirtFolder+"/"+look.shirtPrefix+look.shirtIndex+".png";
+    if(part==="sleeve")return MODULAR_ASSET+"shirts/"+look.shirtFolder+"/"+look.armPrefix+"_shorter.png";
+    if(part==="pants")return MODULAR_ASSET+"pants/"+look.pantsFolder+"/"+look.pantsPrefix+"1.png";
+    if(part==="leg")return MODULAR_ASSET+"pants/"+look.pantsFolder+"/"+look.pantsPrefix+"_long.png";
+    if(part==="shoe")return MODULAR_ASSET+"shoes/"+look.shoeFolder+"/"+look.shoePrefix+"1.png";
+    return "";
+  }
+  function modularImg(look,part,cls){
+    var img=document.createElement("img");
+    img.className="mod-part "+(cls||part);
+    img.alt="";
+    img.src=modularPath(look,part);
+    img.onerror=function(){this.style.display="none"};
+    return img;
+  }
+  function createModularAvatar(look){
+    var rig=document.createElement("span");rig.className="modular-avatar";
+
+    var leftLeg=document.createElement("span");leftLeg.className="mod-leg left";
+    var leftLegImg=modularImg(look,"leg","leg-img"),leftShoe=modularImg(look,"shoe","shoe");
+    leftLeg.appendChild(leftLegImg);leftLeg.appendChild(leftShoe);
+    var rightLeg=document.createElement("span");rightLeg.className="mod-leg right";
+    var rightLegImg=modularImg(look,"leg","leg-img"),rightShoe=modularImg(look,"shoe","shoe");
+    rightLeg.appendChild(rightLegImg);rightLeg.appendChild(rightShoe);
+    rig.appendChild(leftLeg);rig.appendChild(rightLeg);
+
+    var neck=modularImg(look,"neck","neck");rig.appendChild(neck);
+    var shirt=modularImg(look,"shirt","shirt");rig.appendChild(shirt);
+    var pants=modularImg(look,"pants","pants");rig.appendChild(pants);
+
+    ["left","right"].forEach(function(side){
+      var arm=document.createElement("span");arm.className="mod-arm "+side;
+      arm.appendChild(modularImg(look,"arm","skin-arm"));
+      arm.appendChild(modularImg(look,"sleeve","sleeve"));
+      arm.appendChild(modularImg(look,"hand","hand"));
+      rig.appendChild(arm);
+    });
+
+    rig.appendChild(modularImg(look,"head","head"));
+    rig.appendChild(modularImg(look,"face","face"));
+    rig.appendChild(modularImg(look,"hair","hair"));
+    return rig;
+  }
   function studentById(id){return students.find(function(s){return s.id===id})||null}
   function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
   function activePair(s){
@@ -476,7 +591,7 @@
   function resetStudents(){
     students=templates.map(function(t,i){
       var p=seats[i];
-      return Object.assign({},t,{knowledge:makeKnowledge(t,i),
+      return Object.assign({},t,{knowledge:makeKnowledge(t,i),look:makeLook(t,i),
         id:i,seat:i,scene:"classroom",targetScene:null,arrivalAt:0,x:p.x,y:p.y,dx:p.x,dy:p.y,
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
@@ -2033,21 +2148,6 @@
     return true;
   }
 
-  function poseFor(s){
-    if(s.behaviorPhase==="settle")return "stand";
-    if(s.moving)return Math.floor(gameSec/3)%2?"walk1":"walk2";
-    var map={
-      WORK:"action1",READ:"stand",TALK:"action2",DOODLE:"action1",HELP:"cheer1",SLEEP:"duck",MOVE:"idle",
-      WALK:"walk1",RUN:"walk2",WAIT:"idle",PLAY:"jump",COMPETE:"kick",REST:"duck",EAT:"hold1",SHARE:"hold2",
-      CLEAN:"action1",SEEK:"walk1",JOIN:"stand",REJECTED:"hurt",ARGUE:"action2",SHOVE:"kick",HURT:"hurt",
-      WATCH:"stand",HELP_PEER:"hold1",ATTEND:"stand",PAIR_WORK:"action2",RAISE_HAND:"cheer1",PRESENT:"cheer2",
-      BORROW_ITEM:"hold1",LOOK_OUTSIDE:"stand",STRETCH:"cheer1",DRINK_WATER:"hold1",DROP_ITEM:"duck",COMFORT:"hold2",
-      TEASE:"action2",EXCLUDE_TARGET:"action2",TAKE_ITEM_FORCE:"hold2",THREATEN:"action2",HIT:"kick",
-      REFUSE_INSTRUCTION:"idle",SHOUT_TEACHER:"action2",INSULT_TEACHER:"action2",THROW_AT_TEACHER:"action1",
-      ASK_BATHROOM:"cheer1",PASS_NOTE:"hold2",DEFEND_PEER:"hold2",REPORT_INCIDENT:"cheer1"
-    };
-    return map[s.action]||"stand";
-  }
   function actionClass(s){
     return s.action.toLowerCase();
   }
@@ -2134,14 +2234,12 @@
     var action=document.createElement("span");action.className="action-tag";action.hidden=true;
     status.appendChild(intent);status.appendChild(action);b.appendChild(status);
     var wrap=document.createElement("span");wrap.className="sprite-wrap";
-    var img=document.createElement("img");img.className="sprite";img.alt="";
-    img.onerror=function(){if(this.dataset.fallback)return;this.dataset.fallback="1";var cur=studentById(Number(b.dataset.studentId));if(cur)this.src=fallbackPose(cur)};
-    wrap.appendChild(img);b.appendChild(wrap);
+    var avatar=createModularAvatar(s.look);wrap.appendChild(avatar);b.appendChild(wrap);
     var mask=document.createElement("span");mask.className="student-desk-mask";b.appendChild(mask);
     var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
     b.addEventListener("click",function(){handleStudentClick(Number(this.dataset.studentId))});
     q("#students").appendChild(b);
-    studentNodes[s.id]={root:b,img:img,intent:intent,action:action,name:nm};
+    studentNodes[s.id]={root:b,avatar:avatar,intent:intent,action:action,name:nm};
     return studentNodes[s.id];
   }
   function renderInteractionLinks(){
@@ -2163,14 +2261,9 @@
       var n=ensureStudentNode(s),show=s.scene===teacherScene;
       n.root.style.display=show?"block":"none";
       if(!show)return;
-      n.root.className="student "+actionClass(s)+(seated(s)?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
+      n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(seated(s)?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
       n.root.style.left=s.x+"%";n.root.style.top=s.y+"%";
       n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
-      var pose=poseFor(s);
-      if(n.img.dataset.pose!==pose){
-        n.img.dataset.pose=pose;n.img.dataset.fallback="";
-        n.img.src=posePath(s,pose);
-      }
       var it=intentText(s);
       n.intent.hidden=!it;if(it)n.intent.textContent=it;
       var at=shortAction(s);
@@ -2344,7 +2437,10 @@
     q("#progress").style.width=(clamp((gameSec/60-p.start)/(p.end-p.start))*100)+"%";
   }
   function renderTeacherPosition(){
-    q("#teacher").style.left=teacher.x+"%";q("#teacher").style.top=teacher.y+"%";
+    var teacherEl=q("#teacher"),mount=q("#teacherAvatarMount");
+    if(mount&&!mount.firstChild)mount.appendChild(createModularAvatar(TEACHER_LOOK));
+    teacherEl.style.left=teacher.x+"%";teacherEl.style.top=teacher.y+"%";
+    teacherEl.classList.toggle("moving",teacher.moving);
   }
   function renderFrame(){
     renderHeader();
