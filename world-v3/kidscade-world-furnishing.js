@@ -127,45 +127,6 @@ export function createFurnishingSystem(ctx){
     return registerActor(rec,object);
   }
 
-  function migrateDefaultLayout(){
-    const s=ensureState();if(s.defaultLayoutMigrated)return false;
-    s.defaultLayoutMigrated=true;
-    const defaults=[
-      {id:'home-desk',key:'classicDesk',x:-2.6,z:-3.75,rot:2},
-      {id:'home-bookcase',key:'tallBookcase',x:-5.7,z:-1.45,rot:1},
-      {id:'home-rug',key:'rugRectangle',x:-3.0,z:1.6,rot:0},
-      {id:'home-sofa',key:'classicSofa',x:-4.55,z:1.15,rot:1},
-      {id:'home-table',key:'diningTable',x:1.0,z:1.35,rot:0}
-    ];
-    const ids=new Set(s.placed.map(r=>String(r.id)));
-    for(const rec of defaults){if(!ids.has(rec.id))s.placed.push({...rec});}
-    persist();return true;
-  }
-
-  function migrateFunctionalLayout(){
-    const s=ensureState();if(s.functionalLayoutMigrated)return false;
-    s.functionalLayoutMigrated=true;
-    const defaults=[
-      {id:'home-bed',key:'bedSingle',x:-5.2,z:-3.8,rot:1},
-      {id:'home-stove',key:'kitchenStove',x:1.4,z:-4.0,rot:2},
-      {id:'home-sink',key:'kitchenSink',x:3.0,z:-4.0,rot:2},
-      {id:'home-cabinet',key:'kitchenCabinet',x:4.55,z:-4.0,rot:2},
-      {id:'home-fridge',key:'kitchenFridge',x:5.9,z:-3.7,rot:2}
-    ];
-    const ids=new Set(s.placed.map(r=>String(r.id)));
-    for(const rec of defaults){if(!ids.has(rec.id))s.placed.push({...rec});}
-    persist();return true;
-  }
-
-  function claimStarterGift(){
-    const s=ensureState();if(s.starterGiftClaimed)return false;
-    s.starterGiftClaimed=true;
-    s.owned.woodChair=(s.owned.woodChair||0)+1;
-    s.owned.pottedPlant=(s.owned.pottedPlant||0)+1;
-    persist();
-    toast('집들이 선물: 나무 의자 +1 · 화분 +1');
-    return true;
-  }
 
   function catalogPanel(){
     if(getMode()!=='indoor'){toast('집 안에서만 꾸밀 수 있어요.');return;}
@@ -175,14 +136,6 @@ export function createFurnishingSystem(ctx){
       return '<div class="item"><b>'+def.name+'</b><div>보관 '+count+'개</div><small>'+recipeText(def,itemName)+'</small><br><button data-furn-place="'+key+'" '+(count>0?'':'disabled')+'>배치하기</button></div>';
     }).join('');
     openPanel('<h2>🏠 가구 창고 · 집 꾸미기</h2><p>목수공방이나 마을 보상으로 얻은 가구를 집 안에 직접 배치해요.</p><div class="grid">'+ownedCards+'</div><p style="font-size:12px">새 가구 제작은 농장 옆 <b>목수공방</b>에서 할 수 있어요.</p>');
-  }
-  function craft(key){
-    const def=FURNITURE_CATALOG[key],s=ensureState(),i=inv();
-    if(!def?.recipe)return false;
-    if(!Object.entries(def.recipe).every(([k,v])=>(i[k]||0)>=v)){toast('가구 재료가 부족해요.');return true;}
-    Object.entries(def.recipe).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
-    s.owned[key]=(s.owned[key]||0)+1;
-    persist();setAvatarAction('smile',650);toast(def.name+' 제작 완료!');catalogPanel();return true;
   }
 
   async function beginPlacement(key,actor=null){
@@ -285,7 +238,6 @@ export function createFurnishingSystem(ctx){
   }
 
   function handlePanelClick(e){
-    const craftBtn=e.target.closest('[data-furn-craft]');if(craftBtn)return craft(craftBtn.dataset.furnCraft);
     const placeBtn=e.target.closest('[data-furn-place]');if(placeBtn){beginPlacement(placeBtn.dataset.furnPlace);return true;}
     const useBtn=e.target.closest('[data-furn-use]');if(useBtn)return usePlaced(useBtn.dataset.furnUse);
     const moveBtn=e.target.closest('[data-furn-move]');if(moveBtn){const a=actors.get(moveBtn.dataset.furnMove);if(a)beginPlacement(a.rec.key,a);return true;}
@@ -303,7 +255,7 @@ export function createFurnishingSystem(ctx){
   }
 
   return {
-    ensureState,migrateDefaultLayout,migrateFunctionalLayout,restore,openCatalog:catalogPanel,handlePanelClick,beginPlacement,
+    ensureState,restore,openCatalog:catalogPanel,handlePanelClick,beginPlacement,
     updatePreview,rotate:rotatePlacement,confirm:confirmPlacement,cancel:cancelPlacement,
     isPlacing:()=>!!active,catalog:FURNITURE_CATALOG
   };
