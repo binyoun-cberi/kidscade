@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=31",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=32",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v18! 의뢰 없이 자유 잠수하거나 선택 의뢰를 받고, 매일 다른 채집 장비를 빌려 제한된 어획 중량 안에서 물고기·성게·미역·다시마·홍합을 모은 뒤 수면의 탐사선으로 귀환해 밤 BLUE KITCHEN 타이쿤과 업그레이드로 이어지는 해양 생활 게임.",
+      "description": "2D 픽셀 잠수 탐사 v32! 소나와 카메라로 개체의 크기·상태·예상 무게를 관찰하고 장비를 판단해 포획합니다. 같은 종도 소형~특대 개체가 존재하며 최고 무게·최대 크기 포획 기록이 도감에 남고, 낮 탐사와 BLUE KITCHEN 운영으로 이어집니다.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
