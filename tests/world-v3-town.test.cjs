@@ -198,7 +198,7 @@ test('named Seed Town residents expose roles services friendship milestones and 
   for(const id of ['minji','junho','haneul','doyun','yuna','taeho','sora','hyunwoo','nari','woojin','seoyeon','minseok']){
     assert.ok(economy.includes(id+':{name:'),'resident profile missing '+id);
     assert.ok(economy.includes(id+':['),'friendship reward track missing '+id);
-    assert.ok(city.includes("actions.resident('"+id+"')"),'city interaction missing '+id);
+    assert.ok(city.includes("addNpc(npcCtx,'"+id+"'"),'city NPC missing '+id);
   }
   assert.match(economy,/data-resident-talk/);
   assert.match(economy,/data-resident-service/);
@@ -222,7 +222,7 @@ test('friendship perks affect the systems matching each resident role',()=>{
   assert.match(runtime,/townPerks\(\)\.harvestBonus/);
   assert.match(runtime,/townPerks\(\)\.mushroomBonus/);
   assert.match(runtime,/townPerks\(\)\.petFriendBonus/);
-  assert.match(runtime,/river:\{x:-10,z:-14\.0,name:'북쪽 강가'\}/);
+  assert.match(runtime,/river:\{x:-12,z:-18\.0,name:'북쪽 강가'\}/);
 });
 
 test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
@@ -280,11 +280,11 @@ test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
   for(const habitat of ['pond','ranch','deep-forest','waterfront'])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
   assert.match(runtime,/pet-yard-sign/);
   assert.match(runtime,/Cube Pets 보기/);
-  assert.match(runtime,/Ranch square/);
+  assert.match(runtime,/Ranch grows physically/);
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=7/);
+  assert.match(runtime,/const LAYOUT_VERSION=8/);
 });
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
@@ -321,9 +321,9 @@ test('movement input resets on focus loss and panels without interrupting city c
 
 
 test('outdoor map uses one sub-base plus separated square tiles without overlapping lawn planes',()=>{
-  assert.match(runtime,/box\(outdoor,0,10,80,80,\.24,0x668858,-\.30\)/);
+  assert.match(runtime,/box\(outdoor,0,12,92,92,\.24,0x617b54,-\.34\)/);
   assert.match(runtime,/for\(const cell of Object\.values\(WORLD_GRID\)\)/);
-  assert.match(runtime,/19\.6,19\.6,\.08,cell\.color,-\.08/);
+  assert.match(runtime,/20,20,\.10,cell\.color,-\.10/);
   assert.doesNotMatch(runtime,/plane\(outdoor,0,5,82,96/);
 });
 
@@ -350,15 +350,15 @@ test('v3.14 removes the 2D fallback entry and exposes audio control instead',()=
 
 
 
-test('farm square has six reusable plots and six selectable crops with market seeds',()=>{
+test('farm square expands from one to nine reusable plots with six selectable crops',()=>{
   assert.match(runtime,/const CROP_DEF=\{/);
   for(const crop of ['potato','carrot','tomato','strawberry','corn','pumpkin'])assert.ok(runtime.includes(crop+':{name:'),'missing crop '+crop);
   assert.match(runtime,/const plotPos=\[/);
-  assert.match(runtime,/\[f\.x-6\.0,f\.z\+2\.9\]/);
-  assert.match(runtime,/\[f\.x-\.7,f\.z\+5\.65\]/);
+  assert.match(runtime,/\[f\.x-6\.0,f\.z\+1\.1\]/);
+  assert.match(runtime,/\[f\.x-\.7,f\.z\+6\.5\]/);
   assert.match(runtime,/data-plant/);
   assert.match(runtime,/무엇을 심을까요/);
-  assert.match(runtime,/밭 살펴보기/);
+  assert.match(runtime,/'밭 '\+\(i\+1\)\+' 살펴보기'/);
   for(const seed of ['seedStrawberry','seedCorn','seedPumpkin'])assert.ok(economy.includes(seed+':{name:'),'market missing '+seed);
   assert.match(storage,/strawberry:1,corn:1,pumpkin:1/);
 });
@@ -459,7 +459,7 @@ test('natural props and wayfinding stay inside parcels and off road gutters',()=
   assert.match(runtime,/function isPathClearance\(x,z,w=0,d=0\)\{return footprintTouchesRoad\(x,z,w,d,\.18\)\}/);
   assert.match(runtime,/if\(isPathClearance\(x,z,2\.5,2\.5\)\)continue/);
   assert.match(runtime,/if\(isPathClearance\(x,z,1\.7,1\.6\)\)continue/);
-  assert.match(runtime,/const addZoneSign=async\(id,dx,dz,label,rot=0\)=>/);
+  assert.match(runtime,/const addZoneSign=async\(id,dx,dz,label,rot=0,action=null\)=>/);
   assert.match(runtime,/addZoneSign\('forest',7\.0,6\.6/);
   assert.match(runtime,/addZoneSign\('quarry',-7\.0,6\.6/);
   assert.match(runtime,/addZoneSign\('waterfront',6\.5,6\.8/);
@@ -474,7 +474,7 @@ test('four city squares use only shared road gutters and centered crosswalks',()
   assert.match(city,/for\(const x of \[-12,12\]\)/);
   assert.match(city,/for\(const z of \[10\.8,11\.55,12\.3,13\.05\]\)/);
   assert.match(city,/for\(const z of \[24,48\]\)/);
-  assert.match(runtime,/const LAYOUT_VERSION=7/);
+  assert.match(runtime,/const LAYOUT_VERSION=8/);
 });
 
 
@@ -483,7 +483,7 @@ test('World v3 has one authoritative 20x20 parcel plus 4m road grid',()=>{
   assert.match(grid,/export const ROAD_WIDTH=4/);
   assert.match(grid,/export const CELL_PITCH=CELL_SIZE\+ROAD_WIDTH/);
   for(const spec of [
-    ["beach",-36,-24],["waterfront",-12,-24],["ranch",12,-24],
+    ["beach",-36,-24],["waterfront",-12,-24],["ranch",12,-24],["orchard",36,-24],
     ["forest",-36,0],["home",-12,0],["farm",12,0],["quarry",36,0],
     ["camp",-36,24],["cityMarket",-12,24],["cityLeisure",12,24],
     ["cityCivic",-12,48],["cityTransit",12,48]
@@ -496,11 +496,13 @@ test('World v3 has one authoritative 20x20 parcel plus 4m road grid',()=>{
   assert.match(runtime,/zoneAt\(player\.x,player\.z\)/);
 });
 
-test('Seed Bus exposes the new square ranch and beach districts',()=>{
+test('Seed Bus exposes ranch orchard and beach districts',()=>{
   assert.match(economy,/data-city-travel="ranch"/);
+  assert.match(economy,/data-city-travel="orchard"/);
   assert.match(economy,/data-city-travel="beach"/);
-  assert.match(runtime,/ranch:\{x:10,z:-14\.0,name:'목장'\}/);
-  assert.match(runtime,/beach:\{x:-30,z:-14\.0,name:'해변가'\}/);
+  assert.match(runtime,/ranch:\{x:12,z:-18\.0,name:'목장'\}/);
+  assert.match(runtime,/orchard:\{x:36,z:-18\.0,name:'과수원'\}/);
+  assert.match(runtime,/beach:\{x:-36,z:-18\.0,name:'해변가'\}/);
 });
 
 
