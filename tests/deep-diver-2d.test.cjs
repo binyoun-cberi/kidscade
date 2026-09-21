@@ -492,7 +492,8 @@ test('Deep Diver v18 makes exploration missions optional and returns through the
   assert.match(js,/const FREE_DIVE=\{/);
   assert.match(js,/의뢰는 완전히 선택 사항입니다/);
   assert.match(js,/function drawBoat/);
-  assert.match(js,/dinghy-large2\.png/);
+  assert.match(js,/function drawSurveyBoat/);
+  assert.doesNotMatch(js,/dinghy-large2\.png/);
   assert.match(js,/탐사선으로 돌아와 오늘의 낮 탐사를 마쳤습니다/);
   assert.doesNotMatch(js,/if\(p\.y<WORLD\.surface\+45&&missionComplete\(\)/);
   assert.match(html,/선착장 · 오늘의 출항 준비/);
@@ -538,7 +539,7 @@ test('Deep Diver v18 harvests sea plants and shellfish for richer recipes',()=>{
   assert.match(js,/function buildHarvestables/);
   assert.match(js,/function drawHarvestables/);
   assert.match(js,/name:'성게 해초 덮밥'/);
-  assert.match(js,/name:'홍합 다시마 국'/);
+  assert.match(js,/name:'패류 다시마 국'/);
   assert.match(js,/name:'오징어 붉은해조 무침'/);
   assert.match(js,/groups:\[\['mussel'\],\['kelp','seaweed'\]\]/);
 });
