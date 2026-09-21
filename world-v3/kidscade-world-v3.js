@@ -1629,13 +1629,28 @@ const RANCH_SLOTS={bunny:[6.0,-27.0],pig:[7.5,-22.0],cow:[17.0,-27.0],chick:[17.
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const RANCH_ANIMALS=['bunny','pig','cow','chick'];
 let ranchProduceObject=null,ranchSignObject=null,ranchProduceInteraction=null;
-function ranchAnimalCount(){const owned=petState().owned||[];return RANCH_ANIMALS.filter(id=>owned.includes(id)).length}
+function ranchResidentIds(){
+  const owned=petState().owned||[],cap=ranchCapacity();
+  return RANCH_ANIMALS.filter(id=>owned.includes(id)).slice(0,cap);
+}
+function ranchAnimalCount(){return ranchResidentIds().length}
+function ownedPetHomeSlot(id){
+  const owned=petState().owned||[];
+  if(ranchResidentIds().includes(id)&&RANCH_SLOTS[id])return RANCH_SLOTS[id];
+  return PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
+}
 function updateRanchExpansionVisuals(){
   const level=devState().ranchLevel;
   for(const actor of ranchVisualActors)actor.group.visible=actor.level===level;
   if(ranchProduceObject)ranchProduceObject.visible=level>0;
   if(ranchSignObject)ranchSignObject.visible=level>0;
   if(ranchProduceInteraction)ranchProduceInteraction.enabled=level>0;
+  for(const actor of petActors){
+    const slot=ownedPetHomeSlot(actor.id);
+    if(actor.homeX===slot[0]&&actor.homeZ===slot[1])continue;
+    actor.homeX=slot[0];actor.homeZ=slot[1];actor.targetX=slot[0];actor.targetZ=slot[1];actor.moving=false;
+    if(actor.id!==companionId()){actor.object.position.x=slot[0];actor.object.position.z=slot[1];}
+  }
 }
 
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
@@ -1667,7 +1682,9 @@ function migrateLegacyCubePets(){
   state.owned=[...mapped].filter(id=>CUBE_PETS[id]);
   state.met=[...new Set([...(state.met||[]),...state.owned])];
   const legacyRanchCount=RANCH_ANIMALS.filter(id=>state.owned.includes(id)).length;
-  if(legacyRanchCount>0&&devState().ranchLevel<legacyRanchCount)devState().ranchLevel=Math.min(4,legacyRanchCount);
+  if((Number(p.homestead?.reworkVersion)||0)<2&&legacyRanchCount>0&&devState().ranchLevel<legacyRanchCount){
+    devState().ranchLevel=Math.min(4,legacyRanchCount);
+  }
   if(!CUBE_PETS[state.companion]||!state.owned.includes(state.companion))state.companion='dog';
   state.migratedLegacy=true;
   if(p.survival&&Object.hasOwn(p.survival,'companion'))delete p.survival.companion;
@@ -1705,24 +1722,26 @@ function payTame(id){
 async function ensureOwnedPetActor(id){
   if(petActors.some(a=>a.id===id))return;
   const object=await makeCubePetObject(id);if(!object)return;
-  const owned=petState().owned,slot=RANCH_SLOTS[id]||PET_SLOTS[Math.max(0,owned.indexOf(id))%PET_SLOTS.length];
+  const slot=ownedPetHomeSlot(id);
   const groundY=Number(object.userData.groundY)||0;object.position.set(slot[0],groundY+.015,slot[1]);petLayer.add(object);
   petActors.push({id,object,homeX:slot[0],homeZ:slot[1],groundY,phase:petActors.length*.83,targetX:slot[0],targetZ:slot[1],nextDecision:0,moving:false,speed:.28+Math.random()*.12});
 }
 function ranchPanel(){
   const p=prog(),state=petState(),day=p.survival.day,level=devState().ranchLevel,cap=ranchCapacity(),used=ranchAnimalCount();
   if(level<1){openPanel('<h2>🐄 목장 터</h2><p>아직 울타리도 축사도 없어요. 마을 성장에서 작은 목장을 먼저 만들어야 동물을 데려올 수 있어요.</p><button data-world-hub="develop">🏗️ 성장판 보기</button>');return;}
+  const residents=new Set(ranchResidentIds());
   const rows=Object.entries(RANCH_PRODUCTS).map(([id,d])=>{
-    const owned=state.owned.includes(id),last=Number(state.products[id]??-999),ready=owned&&(day-last>=d.cooldown);
-    return '<div class="item"><b>'+CUBE_PETS[id].name+' · '+d.name+'</b><div>'+(owned?(ready?'수확 가능':'다음 생산까지 기다리는 중'):'아직 목장에 없음')+'</div></div>';
+    const resident=residents.has(id),last=Number(state.products[id]??-999),ready=resident&&(day-last>=d.cooldown);
+    return '<div class="item"><b>'+CUBE_PETS[id].name+' · '+d.name+'</b><div>'+(resident?(ready?'수확 가능':'다음 생산까지 기다리는 중'):(state.owned.includes(id)?'펫 마당에서 지내는 중':'아직 친구가 아님'))+'</div></div>';
   }).join('');
-  const can=Object.entries(RANCH_PRODUCTS).some(([id,d])=>state.owned.includes(id)&&(day-Number(state.products[id]??-999)>=d.cooldown));
+  const can=Object.entries(RANCH_PRODUCTS).some(([id,d])=>residents.has(id)&&(day-Number(state.products[id]??-999)>=d.cooldown));
   openPanel('<h2>🐄 목장 '+level+'단계 · '+used+'/'+cap+'마리</h2><p>목장을 키우면 울타리가 넓어지고 함께 살 수 있는 동물이 늘어나요.</p><div class="grid">'+rows+'</div><button data-ranch-collect="1" '+(can?'':'disabled')+'>오늘 생산물 모으기</button> <button data-world-hub="develop">🏗️ 목장 확장</button><p style="font-size:12px">우유·달걀·트러플은 요리하거나 씨앗마트에 팔아 다른 생활 재료를 살 수 있어요.</p>');
 }
 function collectRanchProducts(){
   const p=prog(),state=petState(),day=p.survival.day,i=inv();const got=[];
+  const residents=new Set(ranchResidentIds());
   for(const [id,d] of Object.entries(RANCH_PRODUCTS)){
-    if(!state.owned.includes(id))continue;
+    if(!residents.has(id))continue;
     const last=Number(state.products[id]??-999);if(day-last<d.cooldown)continue;
     const added=addInventoryItem(d.key,d.qty,{silent:true});if(!added)continue;state.products[id]=day;got.push(d.name+' +'+d.qty);
   }
