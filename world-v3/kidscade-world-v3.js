@@ -1465,7 +1465,7 @@ async function buildOutdoor(){
     const c=point('camp');
     await addModel(outdoor,ASSET.campfire,{x:c.x-1.5,z:c.z,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
     const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(c.x-1.5,1.4,c.z);fireLight.userData.campfire=true;outdoor.add(fireLight);
-    interact('outdoor',c.x-1.5,c.z,1.55,'모닥불 사용하기',()=>cookingPanel('campfire'));
+    interact('outdoor',c.x-1.5,c.z,1.55,'야영지 모닥불 살펴보기',()=>toast('여기는 탐험 중 쉬어가는 공용 모닥불이에요. 요리는 집 앞에 직접 캠프파이어를 만들어서 해보세요.'));
     interact('outdoor',c.x+1.3,c.z,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
     for(const [dx,dz] of [[-7,-7],[-5,6],[6,-7],[7,6]])await addModel(outdoor,ASSET.pine,{x:c.x+dx,z:c.z+dz,w:2.4,h:4.0,d:2.4,rot:.2});
     await addZoneSign('camp',7.0,-6.5,'야영지 · 모닥불 · 휴식',Math.PI/2);
