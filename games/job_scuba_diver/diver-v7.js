@@ -276,7 +276,7 @@ const keys={},touch={x:0,y:0,dash:false},meta={
  shopUp:{seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0},
  codex:{},bestDepth:0,bestScore:0,stock:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}
 };
-let restaurant=null,dockMissionId=null,dockTab='missions';
+let restaurant=null,dockMissionId=null,dockTab='none';
 
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
@@ -1474,10 +1474,11 @@ function dockBuildingHtml(kind,label,sub,base,roof,feature,active=false,extra=''
 }
 function dockDetailHtml(){
  if(dockTab==='gear')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>장비 창고</span><h3>오늘 빌려갈 채집 장비</h3></div><small>슬롯 안에서 장비를 골라 배에 싣습니다.</small></div><div class="gearGrid">'+gearLoadoutCards()+'</div></section>';
- return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 자유 잠수도 바로 출항할 수 있습니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>'
+ if(dockTab==='missions')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 자유 잠수도 바로 출항할 수 있습니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>';
+ return '<section class="dockWelcome"><b>선착장에서 오늘 잠수를 준비하세요.</b><span>건물을 누르면 의뢰·장비·강화·도감을 열 수 있고, 오른쪽 탐사선을 누르면 바로 출항합니다.</span></section>'
 }
 function openContracts(tab=dockTab){
- dockTab=tab||'missions';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
+ dockTab=tab||'none';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount(),plan=selected?selected.title:'자유 잠수';
  $('contractBody').innerHTML=
  '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><em>'+plan+'</em></div>'+
@@ -1519,8 +1520,8 @@ function openCodex(){
 }
 
 function bind(){
- $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;save();openContracts()};
- $('continueBtn').onclick=()=>{if(!ready)return;load();openContracts()};
+ $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;dockTab='none';save();openContracts('none')};
+ $('continueBtn').onclick=()=>{if(!ready)return;load();dockTab='none';openContracts('none')};
  $('nextBtn').onclick=openContracts;$('homeBtn').onclick=()=>{$('resultScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');state='menu'};
  $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};
  document.querySelectorAll('#toolBar [data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));document.querySelectorAll('#mActions [data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);useTool()});
