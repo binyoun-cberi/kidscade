@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel,playSfx}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,travel,playSfx,addInventoryItem,canCarryNewKey}=ctx;
 
   const BUY={
     market:{
@@ -11,21 +11,29 @@ export function createTownEconomy(ctx){
       seedPumpkin:{name:'호박 씨앗',price:22,type:'seed',key:'pumpkin',qty:1},
       lunch:{name:'도시락',price:34,type:'food',key:'cityLunch',qty:1},
       rugRound:{name:'둥근 러그',price:68,type:'furniture',key:'rugRound',qty:1},
-      teddy:{name:'곰 인형',price:55,type:'furniture',key:'teddy',qty:1}
+      teddy:{name:'곰 인형',price:55,type:'furniture',key:'teddy',qty:1},
+      fabric:{name:'튼튼한 천',price:24,type:'inv',key:'fabric',qty:1},
+      paint:{name:'가구용 페인트',price:30,type:'inv',key:'paint',qty:1,friend:'minji',needFriend:3},
+      backpack2:{name:'12칸 배낭',price:90,type:'backpack',level:2},
+      backpack3:{name:'16칸 큰 배낭',price:190,type:'backpack',level:3,friend:'minji',needFriend:5},
+      backpack4:{name:'20칸 탐험가방',price:340,type:'backpack',level:4,friend:'minji',needFriend:9}
     },
     hardware:{
       wood3:{name:'목재 3개',price:24,type:'inv',key:'wood',qty:3},
       stone3:{name:'돌 3개',price:24,type:'inv',key:'stone',qty:3},
       axe:{name:'돌도끼',price:72,type:'tool',key:'axe',tier:'stone',dur:18},
       pick:{name:'돌곡괭이',price:82,type:'tool',key:'pick',tier:'stone',dur:18},
-      floorLamp:{name:'플로어 램프',price:96,type:'furniture',key:'floorLamp',qty:1}
+      floorLamp:{name:'플로어 램프',price:96,type:'furniture',key:'floorLamp',qty:1},
+      nails:{name:'못 묶음',price:18,type:'inv',key:'nails',qty:2},
+      glass:{name:'가공 유리',price:38,type:'inv',key:'glass',qty:1,friend:'junho',needFriend:3},
+      wire:{name:'전선 묶음',price:52,type:'inv',key:'wire',qty:2,friend:'junho',needFriend:7}
     },
     cafe:{
       toast:{name:'카페 토스트',price:26,type:'food',key:'cafeToast',qty:1},
       lunch:{name:'도시락',price:36,type:'food',key:'cityLunch',qty:1}
     }
   };
-  const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,mushroom:10,milk:18,egg:12,truffle:38};
+  const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,apple:14,pear:16,peach:18,orange:20,cherry:26,mushroom:10,milk:18,egg:12,truffle:38};
   const JOBS={
     market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5},
     cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6},
@@ -35,6 +43,11 @@ export function createTownEconomy(ctx){
     market:{open:7,close:22,label:'07:00~22:00'},
     hardware:{open:8,close:20,label:'08:00~20:00'},
     cafe:{open:6,close:23,label:'06:00~23:00'}
+  };
+  const GIFT_FAVORITES={
+    minji:['fruitSalad'],junho:['grilledFish'],haneul:['omelet','fruitSalad'],doyun:['cityLunch'],
+    yuna:['bakedPotato','veggieSoup'],taeho:['cafeToast'],sora:['mushroomSoup'],hyunwoo:['cityLunch'],
+    nari:['veggieSoup'],woojin:['mushroomSoup'],seoyeon:['omelet'],minseok:['grilledFish']
   };
   const RESIDENTS={
     minji:{name:'민지',role:'씨앗마트 운영',service:'market',serviceLabel:'씨앗마트 이용'},
@@ -112,6 +125,7 @@ export function createTownEconomy(ctx){
       friendship:old.friendship&&typeof old.friendship==='object'?old.friendship:{},
       talked:old.talked&&typeof old.talked==='object'?old.talked:{},
       rewardClaims:old.rewardClaims&&typeof old.rewardClaims==='object'?old.rewardClaims:{},
+      gifts:old.gifts&&typeof old.gifts==='object'?old.gifts:{},
       perks:old.perks&&typeof old.perks==='object'?old.perks:{},
       visits:Math.max(0,Math.floor(Number(old.visits)||0)),
       delivery:{
@@ -174,10 +188,16 @@ export function createTownEconomy(ctx){
     openPanel('<h2>'+npcName+' · '+title+'</h2><p>지금은 문을 닫았어요.</p><p><b>영업시간 '+h.label+'</b></p><small>시간을 보내거나 집에서 자고 다시 와보세요.</small>');
   }
 
+  function itemUnlockState(d){
+    const t=ensureState(),friend=d.friend?Number(t.friendship[d.friend]||0):999;
+    if(d.friend&&friend<(d.needFriend||0))return {ok:false,text:(RESIDENTS[d.friend]?.name||d.friend)+' 친밀도 ♥ '+d.needFriend};
+    if(d.type==='backpack'&&(prog().homestead?.backpackLevel||1)>=d.level)return {ok:false,text:'이미 사용 중이거나 더 좋은 가방 보유'};
+    return {ok:true,text:''};
+  }
   function shop(kind,npcName='상인'){
     if(!isOpen(kind)){closedPanel(kind,npcName);return;}
     const p=prog(),t=ensureState(p),items=BUY[kind]||{};
-    const buyCards=Object.entries(items).map(([key,d])=>{const price=priceFor(kind,d.price);return '<div class="item"><b>'+d.name+'</b><div>'+price+' 코인'+(price<d.price?' <small>(단골 할인)</small>':'')+'</div><button data-city-buy="'+kind+':'+key+'">구매</button></div>';}).join('');
+    const buyCards=Object.entries(items).map(([key,d])=>{const price=priceFor(kind,d.price),lock=itemUnlockState(d);return '<div class="item"><b>'+(lock.ok?'':'🔒 ')+d.name+'</b><div>'+price+' 코인'+(price<d.price?' <small>(단골 할인)</small>':'')+'</div>'+(lock.text?'<small>'+lock.text+'</small><br>':'')+'<button data-city-buy="'+kind+':'+key+'" '+(lock.ok?'':'disabled')+'>구매</button></div>';}).join('');
     const sellCards=kind==='market'?Object.entries(SELL).map(([key,price])=>'<div class="item"><b>'+itemName(key)+'</b><div>1개당 '+price+' 코인</div><button data-city-sell="'+key+'" '+((inv()[key]||0)>0?'':'disabled')+'>1개 팔기</button></div>').join(''):'';
     const delivery=kind==='cafe'&&t.delivery.active&&t.delivery.target==='cafe'
       ?'<h3>📦 배달</h3><div class="item"><b>현우의 배달 상자</b><div>하늘에게 전달하면 95코인</div><button data-city-delivery-complete="1">배달 완료</button></div>'
@@ -187,10 +207,12 @@ export function createTownEconomy(ctx){
   }
   function buy(kind,key){
     const d=BUY[kind]?.[key];if(!d)return;
+    const unlock=itemUnlockState(d);if(!unlock.ok){toast(unlock.text);return;}
     const p=prog(),t=ensureState(p),price=priceFor(kind,d.price);if(t.coins<price){toast('코인이 부족해요.');return;}
+    if(d.type==='inv'&&canCarryNewKey&&!canCarryNewKey(d.key)){toast('🎒 가방에 빈 칸이 없어요.');return;}
     t.coins-=price;
     if(d.type==='seed')p.seeds[d.key]=(p.seeds[d.key]||0)+d.qty;
-    else if(d.type==='inv')inv()[d.key]=(inv()[d.key]||0)+d.qty;
+    else if(d.type==='inv'){if(addInventoryItem)addInventoryItem(d.key,d.qty,{silent:true});else inv()[d.key]=(inv()[d.key]||0)+d.qty;}
     else if(d.type==='food')p.food[d.key]=(p.food[d.key]||0)+d.qty;
     else if(d.type==='furniture'){
       p.housing=p.housing&&typeof p.housing==='object'?p.housing:{version:3,owned:{},placed:[],starterGiftClaimed:false,defaultLayoutMigrated:false,functionalLayoutMigrated:false,nextId:1};
@@ -198,6 +220,7 @@ export function createTownEconomy(ctx){
       p.housing.owned[d.key]=(p.housing.owned[d.key]||0)+(d.qty||1);
     }
     else if(d.type==='tool')p.tools[d.key]={dur:d.dur,max:d.dur,tier:d.tier,boughtAt:Date.now()};
+    else if(d.type==='backpack')p.homestead.backpackLevel=Math.max(p.homestead.backpackLevel||1,d.level);
     persist();setAvatarAction('smile',500);playSfx?.('purchase',.18);toast(d.name+' 구매!');updateStatus();
     shop(kind,kind==='market'?'민지':kind==='hardware'?'준호':'하늘');
   }
@@ -260,11 +283,28 @@ export function createTownEconomy(ctx){
     const lines=custom.length?custom:generic;
     openPanel('<h2>'+name+' · 대화</h2><p>'+lines[p.survival.day%lines.length]+'</p><p>친밀도 ♥ '+f+(grew?' <small>오늘 +1</small>':' <small>오늘 대화 완료</small>')+'</p><p><small>'+nextRewardText(id)+'</small></p><button data-resident-back="'+id+'">주민 카드로</button>');
   }
+  function giftPanel(id){
+    const r=RESIDENTS[id];if(!r)return;
+    const p=prog(),t=ensureState(p),day=p.survival.day,foods=Object.entries(p.food||{}).filter(([,qty])=>Number(qty)>0);
+    const cards=foods.map(([key,qty])=>{
+      const favorite=(GIFT_FAVORITES[id]||[]).includes(key);
+      return '<div class="item"><b>'+(favorite?'💖 ':'🍱 ')+key+'</b><div>'+qty+'개</div><button data-resident-gift="'+id+':'+key+'" '+(t.gifts[id]===day?'disabled':'')+'>선물하기</button></div>';
+    }).join('');
+    openPanel('<h2>🎁 '+r.name+'에게 요리 선물</h2><p>좋아하는 요리를 주면 친밀도가 더 많이 올라가요. 하루 한 번 선물할 수 있어요.</p><div class="grid">'+(cards||'<div class="item">가방에 선물할 요리가 없어요.</div>')+'</div><button data-resident-back="'+id+'">돌아가기</button>');
+  }
+  function giftFood(id,key){
+    const p=prog(),t=ensureState(p),day=p.survival.day;if(t.gifts[id]===day){toast('오늘은 이미 선물했어요.');return;}
+    if((p.food[key]||0)<=0){toast('그 요리가 없어요.');return;}
+    p.food[key]--;t.gifts[id]=day;
+    const favorite=(GIFT_FAVORITES[id]||[]).includes(key),gain=favorite?2:1;
+    t.friendship[id]=(t.friendship[id]||0)+gain;t.fun=Math.min(100,t.fun+(favorite?4:2));
+    claimFriendshipRewards(id);persist();setAvatarAction('smile',750);playSfx?.('success',.10);toast((RESIDENTS[id]?.name||id)+' 친밀도 ♥ +'+gain+(favorite?' · 정말 좋아해요!':''));updateStatus();resident(id);
+  }
   function resident(id){
     const r=RESIDENTS[id];if(!r)return;
     const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
     const rewardHtml=rewards.map(x=>'<div class="item"><b>♥ '+x.at+'</b><div>'+x.name+'</div><small>'+(t.rewardClaims[id+':'+x.at]?'획득 완료':f>=x.at?'획득 가능':'친밀도 필요')+'</small></div>').join('');
-    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-service="'+id+'">'+r.serviceLabel+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
+    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+r.serviceLabel+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
   }
   function residentService(id){
     const r=RESIDENTS[id];if(!r)return;
@@ -335,6 +375,8 @@ export function createTownEconomy(ctx){
 
   function handlePanelClick(e){
     const rt=e.target.closest('[data-resident-talk]');if(rt){talk(rt.dataset.residentTalk);return true;}
+    const giftOpen=e.target.closest('[data-resident-gift-open]');if(giftOpen){giftPanel(giftOpen.dataset.residentGiftOpen);return true;}
+    const gift=e.target.closest('[data-resident-gift]');if(gift){const [id,key]=gift.dataset.residentGift.split(':');giftFood(id,key);return true;}
     const rs=e.target.closest('[data-resident-service]');if(rs){residentService(rs.dataset.residentService);return true;}
     const rb=e.target.closest('[data-resident-back]');if(rb){resident(rb.dataset.residentBack);return true;}
     const buyBtn=e.target.closest('[data-city-buy]');
@@ -350,7 +392,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,resident,residentService,arcade,library,clinic,transport,bench,tick,handlePanelClick,
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,tick,handlePanelClick,
     BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS
   };
 }
