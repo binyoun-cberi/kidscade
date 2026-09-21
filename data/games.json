@@ -82,11 +82,11 @@
     {
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
-      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=17",
+      "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=18",
       "category": "trivia",
       "age": "job",
       "icon": "🤿",
-      "description": "2D 픽셀 잠수 탐사 v17! 낮에는 심해에서 식재료를 확보하고, 밤에는 최대 3명의 손님을 상대하며 손질·굽기 타이밍과 기다림 관리를 직접 플레이하는 BLUE KITCHEN 미니 타이쿤으로 이어지는 심해 생태·가게 운영 게임.",
+      "description": "2D 픽셀 잠수 탐사 v18! 의뢰 없이 자유 잠수하거나 선택 의뢰를 받고, 매일 다른 채집 장비를 빌려 제한된 어획 중량 안에서 물고기·성게·미역·다시마·홍합을 모은 뒤 수면의 탐사선으로 귀환해 밤 BLUE KITCHEN 타이쿤과 업그레이드로 이어지는 해양 생활 게임.",
       "scoreKey": "deep_diver_2d_v7"
     },
     {
