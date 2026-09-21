@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=32/);
-  assert.match(html,/diver-v7\.js\?v=32/);
+  assert.match(html,/deep-diver-2d\.css\?v=33/);
+  assert.match(html,/diver-v7\.js\?v=33/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -227,7 +227,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=32');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=33');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -964,4 +964,49 @@ test('Deep Diver v32 keeps uncertainty before observation and reveals gear judgm
   assert.match(js,/상위 장비 필요/);
   assert.match(js,/detail\.level>0\?detail\.short/);
   assert.match(js,/크기\/상태 미상 · 촬영하면 정밀 관찰/);
+});
+
+
+test('Deep Diver v33 preserves specimen quality into the night economy',()=>{
+  assert.match(js,/function specimenKitchenPremium/);
+  assert.match(js,/id==='trophy'\?1\.30/);
+  assert.match(js,/id==='large'\?1\.10/);
+  assert.match(js,/id==='small'\?0\.95/);
+  assert.match(js,/function specimenRawValue/);
+  assert.match(js,/catchLots:\{\}/);
+  assert.match(js,/catchRawValue:0/);
+  assert.match(js,/premiumPortions:0/);
+  assert.match(js,/world\.catchLots\[f\.key\]/);
+  assert.match(js,/world\.catchRawValue\+=rawValue/);
+  assert.match(js,/world\.premiumPortions\+=portions/);
+});
+
+test('Deep Diver v33 stores quality per serving and migrates legacy stock safely',()=>{
+  assert.match(js,/stockQuality:\{\}/);
+  assert.match(js,/meta\.stockQuality=r\.stockQuality/);
+  assert.match(js,/function syncStockQuality/);
+  assert.match(js,/while\(arr\.length<n\)arr\.push\(1\)/);
+  assert.match(js,/function stockQualityPeek/);
+  assert.match(js,/function stockQualityTake/);
+  assert.match(js,/meta\.stockQuality\[key\]=\(meta\.stockQuality\[key\]\|\|\[\]\)\.concat\(lots\)/);
+});
+
+test('Deep Diver v33 makes premium ingredients raise actual menu prices',()=>{
+  assert.match(js,/function recipeIngredientQuality/);
+  assert.match(js,/function recipeIngredientQualityLabel/);
+  assert.match(js,/\(ingredientInfo\(k\)\.value\|\|120\)\*stockQualityPeek\(k\)/);
+  assert.match(js,/basePrice=recipePrice\(recipe,key\)/);
+  assert.match(js,/const sale=Math\.round\(basePrice\*qualityMult/);
+  assert.match(js,/stockQualityTake\(k\)/);
+  assert.match(js,/원재료 프리미엄/);
+  assert.match(js,/class="stockPremium"/);
+  assert.match(css,/v33 specimen economy/);
+});
+
+test('Deep Diver v33 exposes economic efficiency before the player commits catch capacity',()=>{
+  assert.match(js,/valuePerKg=sp\.weight>0\?Math\.round/);
+  assert.match(js,/money\(valuePerKg\)\+'\/kg'/);
+  assert.match(js,/원재료 가치/);
+  assert.match(js,/고급 식재료/);
+  assert.match(js,/대형\/특대 프리미엄/);
 });
