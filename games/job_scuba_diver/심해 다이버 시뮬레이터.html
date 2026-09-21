@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>심해 다이버 시뮬레이터</title>
-<link rel="stylesheet" href="./deep-diver-2d.css?v=33">
+<link rel="stylesheet" href="./deep-diver-2d.css?v=34">
 </head>
 <body>
 <canvas id="game" aria-label="2D 심해 잠수 탐사 게임"></canvas>
@@ -17,7 +17,7 @@
       <div class="row"><span id="depthText">0m</span><b id="zoneText">산호 정원</b></div>
     </div>
     <div class="hudBox" id="missionHud"><div class="missionTitle" id="missionName">생태 조사</div><div class="missionText" id="missionText"></div></div>
-    <div class="hudBox" id="rightHud"><div>오늘 어획 <b id="bagText">0 / 4kg</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
+    <div class="hudBox" id="rightHud"><div>오늘 어획 <b id="bagText">0 / 4kg</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="lightBtn">LIGHT ON · L</button><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
   </div>
   <div class="hudBox hidden" id="observeHud" aria-live="polite">
     <div class="observeHead"><span id="observeMode">미분석</span><b id="observeTitle">관찰 대상</b></div>
@@ -52,6 +52,7 @@
     <button class="mBtn" data-tool="knife">채집칼</button>
     <button class="mBtn" data-tool="trap">통발</button>
     <button class="mBtn" data-tool="sonar">소나</button>
+    <button class="mBtn" id="lightMobile">조명 ON</button>
     <button class="mBtn green" id="dashMobile">대시</button>
     <button class="mBtn gold" id="interactMobile">조사/귀환</button>
     <button class="mBtn" id="actionMobile" aria-hidden="true">사용</button>
@@ -63,7 +64,7 @@
   <div class="panel">
     <div class="hero">
       <div class="heroSprite" style="background-image:url('../../assets/game/2d/underwater/underwater-diving/player/player-swiming.png')"></div>
-      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v33 · OBSERVE / HUNT / VALUE · FREE DIVE / TYCOON BY NIGHT</div></div>
+      <div><h1>BLUE<br>EXPEDITION</h1><div class="sub">심해 다이버 시뮬레이터 · PIXEL 2D v34 · OBSERVE / APPROACH / HUNT · FREE DIVE / TYCOON BY NIGHT</div></div>
     </div>
     <div class="notice"><b>의뢰는 선택 사항. 오늘 필요한 장비를 골라 자유롭게 잠수하세요.</b><br>처음에는 항구 선착장에서 시작합니다. 의뢰 사무소·업그레이드 공방·장비 창고·해양 연구소·BLUE KITCHEN을 직접 눌러 준비하고, 오른쪽 바다의 탐사선으로 출항하세요. 가장 깊은 영구 암흑 해구에는 고래 낙하 지대·심해 크레바스·열수 분출공·해저 화산이 기다립니다.</div>
     <div class="grid">
@@ -73,7 +74,7 @@
       <div class="card"><h3>어획과 식당 성장</h3><p>초반 하루 어획은 단 4kg. 선상 냉장 어획함과 장비 랙을 키우고, 밤에는 좌석·화구·손질대·냉장고·메뉴판·직원까지 업그레이드합니다.</p></div>
       <div class="card"><h3>낮 탐사 · 밤 장사</h3><p>미역·다시마·성게·홍합까지 요리에 들어갑니다. 복합 재료 레시피를 맞추며 BLUE KITCHEN의 메뉴와 매출을 키우세요.</p></div>
     </div>
-    <div class="notice"><b>조작</b> · WASD/방향키 이동 · Shift 대시 · 1 카메라 · 2 작살 · 3 그물 · 4 장갑 · 5 채집칼 · 6 통발 · 7 소나 · X/Space 장비 사용 · E 조사/탐사선 귀환</div>
+    <div class="notice"><b>조작</b> · WASD/방향키 이동 · Shift 대시 · L 다이브 라이트 · 1 카메라 · 2 작살 · 3 그물 · 4 장갑 · 5 채집칼 · 6 통발 · 7 소나 · X/Space 장비 사용 · E 조사/탐사선 귀환</div>
     <div class="toolbar"><button class="btn gold" id="startBtn">새 잠수 경력 시작</button><button class="btn dark" id="continueBtn">이어하기</button></div>
     <div id="credit">Underwater Diving artwork © Luis Zuno (@ansimuz), CC BY 3.0 · 추가 물고기/수중 소품은 Kidscade 공용 무료 에셋 라이브러리와 프로젝트 제작 생물 스프라이트를 사용합니다.</div>
   </div>
@@ -85,6 +86,6 @@
 <section class="overlay hidden" id="restaurantScreen"><div class="panel restaurantPanel"><h2>밤 장사 · BLUE KITCHEN</h2><div id="restaurantBody"></div></div></section>
 <section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar eveningActions"><button class="btn gold" id="nextBtn">밤 장사 시작</button><button class="btn" id="restBtn">휴식하고 다음 날</button><button class="btn dark" id="homeBtn">하루 마치고 시작 화면</button></div></div></section>
 
-<script src="./diver-v7.js?v=33"></script>
+<script src="./diver-v7.js?v=34"></script>
 </body>
 </html>
