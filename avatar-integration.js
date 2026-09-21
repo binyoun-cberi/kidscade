@@ -14,11 +14,90 @@
   let liveShadow = null;
   let frameLoaded = false;
   let fallbackMode = '';
+  let previewSuspended = false;
+  let mediaGuardDoc = null;
 
   const motion = {
     mode: 'idle', start: 0, end: 0, next: 0, x: 0, dir: 1,
     last: 0, lastCapture: 0, y: 0, squash: 1
   };
+
+  function externalGameActive() {
+    const gameModal = document.getElementById('game-modal');
+    const worldOverlay = document.getElementById('kidscade-life-world-overlay');
+    return Boolean(
+      (gameModal && !gameModal.classList.contains('hidden')) ||
+      worldOverlay?.classList.contains('open')
+    );
+  }
+
+  function studioPreviewShouldBeSilent() {
+    return externalGameActive() && !overlay?.classList.contains('open');
+  }
+
+  function installMediaGuard() {
+    let doc = null;
+    try { doc = frame?.contentDocument || null; } catch (_) {}
+    if (!doc || mediaGuardDoc === doc) return;
+    mediaGuardDoc = doc;
+    const stopHiddenMedia = event => {
+      if (!studioPreviewShouldBeSilent()) return;
+      const media = event.target;
+      if (!media || !/^(AUDIO|VIDEO)$/.test(media.tagName || '')) return;
+      try {
+        if (!media.dataset.kcPreviewMuted) media.dataset.kcPreviewMuted = media.muted ? '1' : '0';
+        media.muted = true;
+        media.pause?.();
+      } catch (_) {}
+    };
+    doc.addEventListener('play', stopHiddenMedia, true);
+    doc.addEventListener('playing', stopHiddenMedia, true);
+  }
+
+  function silenceStudioMedia() {
+    installMediaGuard();
+    let doc = null;
+    try { doc = frame?.contentDocument || null; } catch (_) {}
+    if (!doc) return;
+    doc.querySelectorAll('audio,video').forEach(media => {
+      try {
+        if (!media.dataset.kcPreviewMuted) media.dataset.kcPreviewMuted = media.muted ? '1' : '0';
+        media.muted = true;
+        media.pause?.();
+      } catch (_) {}
+    });
+  }
+
+  function restoreStudioMedia() {
+    let doc = null;
+    try { doc = frame?.contentDocument || null; } catch (_) {}
+    if (!doc) return;
+    doc.querySelectorAll('audio[data-kc-preview-muted],video[data-kc-preview-muted]').forEach(media => {
+      try {
+        media.muted = media.dataset.kcPreviewMuted === '1';
+        delete media.dataset.kcPreviewMuted;
+      } catch (_) {}
+    });
+  }
+
+  function setPreviewSuspended(next) {
+    next = Boolean(next);
+    if (previewSuspended === next) {
+      if (next) silenceStudioMedia();
+      return;
+    }
+    previewSuspended = next;
+    if (next) {
+      motion.mode = 'idle';
+      motion.y = 0;
+      motion.squash = 1;
+      motion.last = 0;
+      silenceStudioMedia();
+    } else {
+      restoreStudioMedia();
+      motion.next = performance.now() + 900;
+    }
+  }
 
   function readCoins() {
     const n = parseInt(localStorage.getItem('kidscade_coins') || '0', 10);
@@ -197,6 +276,8 @@
     }
 
     frameLoaded = true;
+    installMediaGuard();
+    if (studioPreviewShouldBeSilent()) silenceStudioMedia();
     try { api.setSeeds?.(readCoins()); } catch (_) {}
     setTimeout(() => {
       snapshotFromStudio();
@@ -221,11 +302,13 @@
     frame = overlay.querySelector('#kidscade-avatar-studio-frame');
     overlay.querySelector('#kidscade-avatar-studio-close').addEventListener('click', closeStudio);
     overlay.addEventListener('pointerdown', e => { if (e.target === overlay) closeStudio(); });
-    frame.addEventListener('load', () => syncFrameReady(0));
+    frame.addEventListener('load', () => { mediaGuardDoc = null; syncFrameReady(0); });
   }
 
   function openStudio() {
     buildOverlay();
+    setPreviewSuspended(false);
+    restoreStudioMedia();
     try { frame.contentWindow.KidscadeAvatarShop?.setSeeds?.(readCoins()); } catch (_) {}
     overlay.dataset.prevOverflow = document.body.style.overflow || '';
     document.body.style.overflow = 'hidden';
@@ -339,6 +422,9 @@
 
   function liveLoop(now) {
     liveRaf = requestAnimationFrame(liveLoop);
+    const blocked = studioPreviewShouldBeSilent();
+    setPreviewSuspended(blocked);
+    if (blocked) return;
     const host = document.getElementById('avatar-plaza-preview');
     if (!host || document.hidden) return;
     const r = host.getBoundingClientRect();
