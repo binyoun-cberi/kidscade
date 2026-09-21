@@ -516,3 +516,13 @@ test('profile Seed World entry replaces legacy garden and shop navigation',()=>{
   assert.match(integration,/if\(openBtn\)openBtn\.remove\(\)/);
   assert.match(seedEntry,/document\.querySelector\('\.kc-seed-house-card'\)\?\.remove\(\)/);
 });
+
+
+test('town jobs now require short playable work sequences',()=>{
+  assert.match(economy,/steps:\['빈 진열대 확인하기'/);
+  assert.match(economy,/steps:\['컵 물에 불리기'/);
+  assert.match(economy,/steps:\['떨어진 쓰레기 줍기'/);
+  assert.match(economy,/function jobActivityPanel/);
+  assert.match(economy,/data-city-job-step/);
+  assert.match(economy,/function advanceJob/);
+});
