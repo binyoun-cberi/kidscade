@@ -18,15 +18,14 @@ export function createTownEconomy(ctx){
       stone3:{name:'돌 3개',price:24,type:'inv',key:'stone',qty:3},
       axe:{name:'돌도끼',price:72,type:'tool',key:'axe',tier:'stone',dur:18},
       pick:{name:'돌곡괭이',price:82,type:'tool',key:'pick',tier:'stone',dur:18},
-      floorLamp:{name:'플로어 램프',price:96,type:'furniture',key:'floorLamp',qty:1},
-      television:{name:'모던 TV',price:185,type:'furniture',key:'television',qty:1}
+      floorLamp:{name:'플로어 램프',price:96,type:'furniture',key:'floorLamp',qty:1}
     },
     cafe:{
       toast:{name:'카페 토스트',price:26,type:'food',key:'cafeToast',qty:1},
       lunch:{name:'도시락',price:36,type:'food',key:'cityLunch',qty:1}
     }
   };
-  const SELL={wood:4,stone:4,iron:12,fish:14,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,mushroom:10,milk:18,egg:12,truffle:38};
+  const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,mushroom:10,milk:18,egg:12,truffle:38};
   const JOBS={
     market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5},
     cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6},
@@ -97,7 +96,9 @@ export function createTownEconomy(ctx){
     '비버와 동행하면 벌목할 때 목재를 하나 더 얻어요.',
     '고양이와 함께라면 밤 야외 피로가 줄어요.',
     '철도구는 돌도구보다 내구도가 높고 채집 효율도 좋아요.',
-    '농작물과 물고기는 씨앗마트에서 코인으로 팔 수 있어요.'
+    '농작물과 물고기는 씨앗마트에서 코인으로 팔 수 있어요.',
+    '광산을 발전시키면 석영·구리·금이 나오고 3×3 제작대의 새 조합이 열려요.',
+    '모던 TV는 상점 판매품이 아니라 기술 공방 3단계에서 직접 만들어야 해요.'
   ];
 
   function ensureState(p=prog()){
