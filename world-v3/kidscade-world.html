@@ -8,51 +8,89 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9d8ee;font-family:"맑은 고딕",system-ui,sans-serif;color:#263226}
 #app{position:fixed;inset:0;background:linear-gradient(#b9d8ee,#e7f3df)}
 #world3d{display:block;width:100%;height:100%;outline:0;touch-action:none}
-.hud{position:absolute;left:14px;top:14px;z-index:8;width:min(460px,calc(100vw - 28px));padding:11px 13px;background:rgba(255,249,220,.92);border:2px solid #59644c;border-radius:12px;box-shadow:0 8px 22px rgba(31,45,31,.18);backdrop-filter:blur(8px);pointer-events:none}
-.hud h1{font-size:17px;margin:0 0 4px}.hud p{font-size:11px;line-height:1.45;margin:0;color:#536050}
-.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.chip{padding:4px 7px;border-radius:999px;background:#eef3d7;border:1px solid #84916a;font:800 10px system-ui}
-.status{position:absolute;right:14px;top:14px;z-index:8;width:220px;padding:10px 11px;background:rgba(34,47,35,.88);color:#fff9d8;border:2px solid #d8c77e;border-radius:11px;box-shadow:0 8px 22px rgba(0,0,0,.18);font-size:11px;line-height:1.5;pointer-events:none}
-.energy{height:9px;margin:5px 0 8px;border:1px solid #e9dfaa;background:#182219;border-radius:999px;overflow:hidden}.energy i{display:block;height:100%;background:#91bd68}
-.zone{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:9;padding:7px 14px;background:rgba(255,248,214,.94);border:2px solid #526048;border-radius:999px;font-weight:900;box-shadow:0 5px 14px rgba(0,0,0,.15);pointer-events:none}
-.prompt{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:12;padding:10px 15px;background:rgba(31,42,31,.92);color:#fff4c7;border:2px solid #decf88;border-radius:12px;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}
-.toast{position:absolute;left:50%;top:64px;transform:translate(-50%,-8px);z-index:15;padding:9px 14px;background:#fff1aa;border:2px solid #675c37;border-radius:10px;font-weight:900;opacity:0;transition:.16s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
-.actions{position:absolute;right:14px;bottom:14px;z-index:11;display:flex;gap:8px}
-.actions button,.mobile button{border:2px solid #53634a;background:rgba(255,248,215,.92);color:#2e3b2d;border-radius:12px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.16);touch-action:none}
-.actions button{padding:9px 11px;cursor:pointer}
+.zone{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:12;padding:8px 16px;background:rgba(255,248,214,.94);border:2px solid #526048;border-radius:999px;font-weight:1000;box-shadow:0 5px 14px rgba(0,0,0,.15);pointer-events:none;white-space:nowrap}
+.helpBtn,.audioBtn{position:absolute;z-index:14;width:44px;height:44px;border:2px solid #53634a;border-radius:50%;background:rgba(255,248,215,.96);color:#2e3b2d;font-weight:1000;font-size:22px;display:grid;place-items:center;box-shadow:0 5px 14px rgba(0,0,0,.18);cursor:pointer;touch-action:manipulation}
+.helpBtn{left:16px;top:16px}.audioBtn{right:16px;top:16px;font-size:17px}
+.status{position:absolute;right:70px;top:14px;z-index:13;display:flex;align-items:center;gap:8px;min-height:48px;padding:7px 10px;background:rgba(34,47,35,.88);color:#fff9d8;border:2px solid #d8c77e;border-radius:14px;box-shadow:0 8px 22px rgba(0,0,0,.18);font-size:11px;font-weight:900;backdrop-filter:blur(8px)}
+.statusMain{display:flex;flex-direction:column;gap:1px;white-space:nowrap}.statusClock{font-size:12px}.statusPhase{opacity:.8;font-size:10px}
+.statusCurrency{display:flex;gap:6px;align-items:center}.statusChip{padding:5px 7px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);white-space:nowrap}
+.prompt{position:absolute;left:50%;bottom:126px;transform:translateX(-50%);z-index:15;padding:10px 15px;background:rgba(31,42,31,.92);color:#fff4c7;border:2px solid #decf88;border-radius:12px;font-weight:900;opacity:0;transition:.12s;pointer-events:none}.prompt.show{opacity:1}
+.toast{position:absolute;left:50%;top:70px;transform:translate(-50%,-8px);z-index:20;padding:9px 14px;background:#fff1aa;border:2px solid #675c37;border-radius:10px;font-weight:900;opacity:0;transition:.16s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+.orbHud{position:absolute;bottom:17px;z-index:14;width:108px;height:108px;border-radius:50%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.24));pointer-events:none}
+.orbHud.health{left:18px}.orbHud.hunger{right:18px}
+.orbGlass{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:rgba(20,28,31,.72);border:5px solid #3c493b;box-shadow:inset 0 0 0 3px rgba(255,255,255,.18),inset 0 8px 20px rgba(255,255,255,.08)}
+.orbLiquid{position:absolute;left:-8%;right:-8%;bottom:-2%;height:100%;transition:height .35s ease;background:linear-gradient(180deg,rgba(255,255,255,.25),#d84d4d 18%,#8e1f34 100%);box-shadow:inset 0 8px 14px rgba(255,255,255,.14)}
+.hunger .orbLiquid{background:linear-gradient(180deg,rgba(255,255,255,.28),#f1b94b 18%,#b66a1e 100%)}
+.orbLiquid:before{content:"";position:absolute;left:4%;right:4%;top:-6px;height:12px;border-radius:50%;background:rgba(255,255,255,.28)}
+.orbShine{position:absolute;left:18%;top:13%;width:24%;height:42%;border-radius:50%;background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(255,255,255,0));transform:rotate(24deg)}
+.orbText{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#fff;font-weight:1000;text-shadow:0 2px 4px rgba(0,0,0,.7);font-size:12px;line-height:1.15}.orbText b{display:block;font-size:16px}.orbIcon{font-size:18px}
+.quickbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:16;display:flex;gap:6px;padding:7px;background:rgba(28,37,31,.88);border:2px solid #697454;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.24);backdrop-filter:blur(8px)}
+.quickSlot{position:relative;width:68px;height:68px;border:2px solid #6d775e;border-radius:12px;background:linear-gradient(180deg,#f7efcf,#d8d2a8);color:#273126;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-weight:1000;touch-action:manipulation}
+.quickSlot:hover{transform:translateY(-2px)}.quickSlot.selected{border-color:#f4d35e;box-shadow:0 0 0 3px rgba(244,211,94,.25),inset 0 0 18px rgba(255,238,146,.32)}
+.quickIcon{font-size:24px;line-height:1}.quickName{font-size:9px;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.slotKey{position:absolute;left:5px;top:3px;font-size:9px;color:#59614d}
+.durTrack{position:absolute;left:7px;right:7px;bottom:5px;height:4px;border-radius:999px;background:rgba(40,48,38,.22);overflow:hidden}.durFill{display:block;height:100%;background:#4d9c58;width:0}
+.petPicker{position:absolute;left:50%;bottom:94px;transform:translateX(-50%);z-index:18;display:none;gap:6px;max-width:min(620px,90vw);overflow-x:auto;padding:7px;background:rgba(28,37,31,.94);border:2px solid #697454;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.25)}.petPicker.open{display:flex}
+.petChoice{min-width:62px;height:58px;border:2px solid #788267;border-radius:11px;background:#f4edce;color:#263226;font-weight:900;cursor:pointer}.petChoice.active{border-color:#f4d35e;box-shadow:0 0 0 2px rgba(244,211,94,.25)}
 .mobile{display:none;position:absolute;inset:0;z-index:10;pointer-events:none}
 .dpad{position:absolute;left:16px;bottom:18px;width:156px;height:156px;pointer-events:auto}.dpad button{position:absolute;width:52px;height:52px;font-size:20px}.up{left:52px;top:0}.down{left:52px;bottom:0}.left{left:0;top:52px}.right{right:0;top:52px}
 .interact{position:absolute;right:18px;bottom:26px;width:76px;height:76px;font-size:15px;pointer-events:auto}
+.mobile button{border:2px solid #53634a;background:rgba(255,248,215,.92);color:#2e3b2d;border-radius:12px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.16);touch-action:none}
 .panel{position:absolute;inset:0;z-index:30;background:rgba(20,28,21,.55);display:none;place-items:center;padding:18px}.panel.open{display:grid}
-.card{width:min(560px,100%);max-height:78vh;overflow:auto;background:#fff8dc;border:3px solid #49573f;border-radius:16px;padding:14px 15px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.card h2{margin:0 0 10px}.card button{border:2px solid #65735a;background:#eef3d7;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}.card .close{float:right}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.item{border:1px solid #a69d72;background:#fffdf1;border-radius:9px;padding:8px}
+.card{width:min(620px,100%);max-height:78vh;overflow:auto;background:#fff8dc;border:3px solid #49573f;border-radius:16px;padding:14px 15px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.card h2{margin:0 0 10px}.card h3{margin:14px 0 6px}.card p{line-height:1.55}.card button{border:2px solid #65735a;background:#eef3d7;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}.card .close{float:right}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.item{border:1px solid #a69d72;background:#fffdf1;border-radius:9px;padding:8px}
+.helpGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.helpItem{padding:10px;border:1px solid #b4a77c;border-radius:12px;background:#fffdf1}.helpItem b{display:block;margin-bottom:4px}
 .loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:#dcebd2;color:#32412f;font-weight:900;transition:.35s}.loading.hide{opacity:0;pointer-events:none}.avatar-runtime{position:fixed;left:-10000px;top:-10000px;width:2px;height:2px;border:0;opacity:0;pointer-events:none}
-@media(max-width:760px){.hud{top:8px;left:8px;width:min(390px,calc(100vw - 16px));padding:8px 10px}.hud p{display:none}.status{top:8px;right:8px;width:160px;font-size:10px}.zone{top:94px}.actions{display:none}.mobile{display:block}.prompt{bottom:112px;max-width:70vw;text-align:center}}
+@media(max-width:760px){
+ .helpBtn{left:8px;top:8px;width:40px;height:40px}.audioBtn{right:8px;top:8px;width:40px;height:40px}.status{right:54px;top:8px;min-height:40px;padding:5px 7px;gap:5px}.statusPhase{display:none}.statusChip{padding:4px 6px}.zone{top:58px;max-width:72vw;overflow:hidden;text-overflow:ellipsis}
+ .quickbar{bottom:7px;gap:3px;padding:4px}.quickSlot{width:min(17vw,58px);height:56px}.quickIcon{font-size:20px}.quickName{font-size:8px}.petPicker{bottom:70px}
+ .orbHud{width:72px;height:72px;bottom:174px}.orbHud.health{left:8px}.orbHud.hunger{right:8px}.orbGlass{border-width:4px}.orbText{font-size:9px}.orbText b{font-size:12px}.orbIcon{font-size:13px}
+ .mobile{display:block}.dpad{left:12px;bottom:68px;width:132px;height:132px}.dpad button{width:44px;height:44px}.up{left:44px}.down{left:44px}.left{top:44px}.right{top:44px}.interact{right:14px;bottom:78px;width:68px;height:68px}
+ .prompt{bottom:220px;max-width:68vw;text-align:center}.toast{top:108px;max-width:78vw;text-align:center}.helpGrid{grid-template-columns:1fr}
+}
 </style>
 <script type="importmap">{"imports":{"three":"../assets/vendor/three-r160/three.module.js","three/addons/":"../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div id="app">
-  <canvas id="world3d" tabindex="0" aria-label="Kidscade 생활 월드 v3 3D"></canvas>
-  <div class="hud">
-    <h1>🌱 씨앗하우스 · 3D 생활·생존 월드</h1>
-    <p>내 Deluxe 아바타와 Cube Pets가 집·자연·씨앗마을을 오가며 채집·농사·낚시·요리·장보기·일·놀이를 이어가는 생활 생존 게임입니다. WASD/방향키 이동 · E/Space 상호작용.</p>
-    <div class="chips"><span class="chip">2D Deluxe 아바타</span><span class="chip">3D Kenney 월드</span><span class="chip">고정 3/4 카메라</span><span class="chip">허기·낮밤</span><span class="chip">20×20 구획 월드</span><span class="chip">씨앗마을 NPC</span><span class="chip">장보기·알바·놀이</span><span class="chip">3D 집 꾸미기</span><span class="chip">펫 동행</span><span class="chip">기존 저장 연동</span></div>
+  <canvas id="world3d" tabindex="0" aria-label="Kidscade 씨앗 월드 3D"></canvas>
+  <button class="helpBtn" id="helpBtn" type="button" aria-label="씨앗 월드 도움말">?</button>
+  <div class="status" id="status" aria-label="날짜와 재화">
+    <div class="statusMain"><span class="statusClock" id="statusClock">Day 1 · 08:00</span><span class="statusPhase" id="statusPhase">☀ 낮</span></div>
+    <div class="statusCurrency"><span class="statusChip" id="coinCount">🪙 0</span><span class="statusChip" id="seedCount">🌱 0</span><span class="statusChip" id="funCount">🙂 0</span></div>
   </div>
-  <div class="status" id="status"></div>
+  <button class="audioBtn" id="audioToggle" type="button" aria-label="씨앗 월드 소리 켜기/끄기">🔊</button>
   <div class="zone" id="zone">집 구역</div>
   <div class="toast" id="toast"></div>
   <div class="prompt" id="prompt"></div>
-  <div class="actions"><button id="audioToggle" type="button">🔊 소리</button><button id="close" type="button">닫기 ✕</button></div>
+
+  <div class="orbHud health" aria-label="체력">
+    <div class="orbGlass"><div class="orbLiquid" id="healthLiquid"></div><div class="orbShine"></div></div>
+    <div class="orbText"><span><span class="orbIcon">❤</span><b id="healthValue">100</b>체력</span></div>
+  </div>
+  <div class="orbHud hunger" aria-label="허기">
+    <div class="orbGlass"><div class="orbLiquid" id="hungerLiquid"></div><div class="orbShine"></div></div>
+    <div class="orbText"><span><span class="orbIcon">🍖</span><b id="hungerValue">100</b>허기</span></div>
+  </div>
+
+  <div class="petPicker" id="petPicker" aria-label="동행 펫 선택"></div>
+  <div class="quickbar" id="quickbar" aria-label="도구와 펫 빠른 선택">
+    <button class="quickSlot" type="button" data-quick="hand"><span class="slotKey">1</span><span class="quickIcon">✋</span><span class="quickName">맨손</span></button>
+    <button class="quickSlot" type="button" data-quick="axe"><span class="slotKey">2</span><span class="quickIcon">🪓</span><span class="quickName" id="axeQuick">도끼 없음</span><span class="durTrack"><i class="durFill" id="axeDur"></i></span></button>
+    <button class="quickSlot" type="button" data-quick="pick"><span class="slotKey">3</span><span class="quickIcon">⛏️</span><span class="quickName" id="pickQuick">곡괭이 없음</span><span class="durTrack"><i class="durFill" id="pickDur"></i></span></button>
+    <button class="quickSlot" type="button" data-quick="bag"><span class="slotKey">4</span><span class="quickIcon">🎒</span><span class="quickName">가방</span></button>
+    <button class="quickSlot" type="button" data-quick="pet"><span class="slotKey">5</span><span class="quickIcon" id="petQuickIcon">🐾</span><span class="quickName" id="petQuickName">펫</span></button>
+  </div>
+
   <div class="mobile">
     <div class="dpad"><button class="up" data-key="ArrowUp">▲</button><button class="left" data-key="ArrowLeft">◀</button><button class="right" data-key="ArrowRight">▶</button><button class="down" data-key="ArrowDown">▼</button></div>
     <button class="interact" id="mobileInteract" type="button">행동</button>
   </div>
   <div class="panel" id="panel"><div class="card"><button class="close" id="panelClose" type="button">닫기</button><div id="panelBody"></div></div></div>
-  <div class="loading" id="loading">3D 씨앗하우스를 준비하고 있어요…</div>
+  <div class="loading" id="loading">3D 씨앗 월드를 준비하고 있어요…</div>
   <iframe id="avatarRuntime" class="avatar-runtime" src="../avatar-studio.html" tabindex="-1" aria-hidden="true"></iframe>
 </div>
 <script src="../world-v2/kidscade-world-storage.js"></script>
 <script src="../world-v2/kidscade-world-bridge.js"></script>
-<script type="module" src="kidscade-world-v3.js?v=22"></script>
+<script type="module" src="kidscade-world-v3.js?v=23"></script>
 </body>
 </html>
