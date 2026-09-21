@@ -9,37 +9,34 @@ const storage=fs.readFileSync(path.join(root,'world-v2','kidscade-world-storage.
 const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf8');
 const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 
-test('starter loop has enough hand-pickable resources for both stone tools',()=>{
-  assert.equal((runtime.match(/addGroundPickup\('starter-wood-/g)||[]).length,6);
-  assert.equal((runtime.match(/addGroundPickup\('starter-stone-/g)||[]).length,6);
-  assert.match(runtime,/돌도끼',\{wood:3,stone:2\}/);
-  assert.match(runtime,/돌곡괭이',\{wood:2,stone:3\}/);
-  assert.match(runtime,/목재 5 · 돌 5/);
+test('fresh Seed World starts primitive but cannot deadlock',()=>{
+  for(const id of ['starter-wood-1','starter-wood-6','starter-stone-1','starter-stone-6'])assert.ok(runtime.includes(id),id);
+  assert.match(runtime,/초보자 보급: 목재 \+5 · 돌 \+5/);
+  assert.match(runtime,/homeCampfire/);
+  assert.match(runtime,/집 앞 캠프파이어/);
+  assert.match(runtime,/바닥 이불에서 자기/);
+  assert.match(runtime,/강물 떠가기/);
+  assert.match(storage,/fishingLevel:0/);
+  assert.match(storage,/waterLevel:0/);
+  assert.match(storage,/orchardLevel:0/);
+  assert.match(storage,/ranchLevel:0/);
 });
 
-test('ground pickups persist their respawn cooldown across reloads',()=>{
-  assert.match(runtime,/GROUND_PICKUP_RESPAWN_MS=45000/);
-  assert.match(runtime,/prog\(\)\.groundPickups\[id\]=nextAt/);
-  assert.match(runtime,/const remain=nextAt-Date\.now\(\)/);
-  assert.match(storage,/groundPickups:\{\}/);
-  assert.match(storage,/groundPickups:\{\.\.\.base\.progression\.groundPickups,/);
+test('starter inventory is limited and home storage matters',()=>{
+  assert.match(runtime,/BACKPACK_SLOTS=\[0,8,12,16,20\]/);
+  assert.match(runtime,/HOME_STORAGE_SLOTS=\[0,10,20,32,48\]/);
+  assert.match(runtime,/function canCarryNewKey/);
+  assert.match(runtime,/function homeStoragePanel/);
+  assert.match(runtime,/가방이 가득 찼어요/);
 });
 
-test('starter crate is a one-time fail-safe',()=>{
-  assert.match(runtime,/starterKitClaimed/);
-  assert.match(runtime,/i\.wood=\(i\.wood\|\|0\)\+5/);
-  assert.match(runtime,/i\.stone=\(i\.stone\|\|0\)\+5/);
-  assert.match(runtime,/초보자 보급 상자는 이미 받았어요/);
+test('starter guidance reveals one homestead goal at a time',()=>{
+  assert.match(runtime,/function nextHomesteadGoal/);
+  for(const phrase of ['강물 한 통 떠오기','집 앞 캠프파이어 만들기','첫 작물 키우기','우물 만들기','바닥 이불 졸업하기'])assert.ok(runtime.includes(phrase),phrase);
+  assert.match(runtime,/첫 개척 목표/);
 });
 
-test('starter guidance is visible in-world and at the workbench',()=>{
-  assert.match(runtime,/초보자 안내 읽기/);
-  assert.match(runtime,/처음 살아남기/);
-  assert.match(runtime,/떨어진 나뭇가지와 작은 돌/);
-  assert.match(runtime,/현재 재료/);
-});
-
-test('starter loop is current cached World v3',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=7/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=7/);
+test('starter loop is current cached Seed World v27',()=>{
+  assert.match(html,/kidscade-world-v3\.js\?v=27/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=27/);
 });
