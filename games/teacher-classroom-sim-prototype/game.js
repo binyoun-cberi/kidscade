@@ -403,6 +403,9 @@
     if(node.evidence>=2)node.hypothesis=meta.label+"에서 반복적인 어려움이 있을 가능성";
     return {subject:p.subject,key:key,label:meta.label,text:meta.error,evidence:node.evidence,confidence:node.confidence,hypothesis:node.hypothesis};
   }
+  function hasObservedCurrentWork(s){
+    return !!(s&&current().kind==="lesson"&&s.observedSubjects&&s.observedSubjects[current().subject]);
+  }
   function hasDiagnosticEvidence(s){
     var p=current(),model=subjectModel(p.subject);
     if(!model||!s||!s.knowledge||!s.knowledge[p.subject])return false;
@@ -478,7 +481,7 @@
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
         action:"READ",intent:null,intentTicks:0,actionTicks:rand(2,5),trust:.62,learned:0,interventions:0,
-        memory:[],moving:false,observation:0,observedWork:false,teacherUse:{},socialTarget:null,socialGoal:null,groupId:null,
+        memory:[],moving:false,observation:0,observedSubjects:{},teacherUse:{},socialTarget:null,socialGoal:null,groupId:null,
         conflictWith:null,conflictUntil:0,avoidId:null,avoidUntil:0,
         pairWith:null,pairUntil:0,lessonPartner:null,role:null,roleUntil:0,correctionLoad:0,
         severeCooldown:0,victimStress:0,teacherDefiance:0,lastSeriousIncident:null,
@@ -1657,7 +1660,7 @@
       when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&teacherScene==="classroom"},
       recommended:function(s){return s.action==="HELP"||s.helpNeed>.16},
       effect:function(s,m){
-        s.observation+=2;s.observedWork=true;s.helpNeed=clamp(s.helpNeed-.025*m);
+        s.observation+=2;s.observedSubjects[current().subject]=true;s.helpNeed=clamp(s.helpNeed-.025*m);
         var ev=recordDiagnosticEvidence(s,"활동지 확인");
         remember(s,"선생님이 풀이 과정을 확인함",.30);
         log(s.name+"의 과제를 살펴보며 "+(ev?ev.text:"풀이 흐름")+"을(를) 확인했다.","learning",teacherScene);
@@ -1669,7 +1672,7 @@
       when:function(s){return current().kind==="lesson"&&s.scene===teacherScene},
       recommended:function(s){return s.action==="HELP"||s.helpNeed>.13},
       effect:function(s,m){
-        s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedWork=true;
+        s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedSubjects[current().subject]=true;
         var ev=recordDiagnosticEvidence(s,"확인 질문");
         remember(s,"선생님의 확인 질문에 답해봄",.28);
         log(s.name+"에게 확인 질문을 해 "+(ev?ev.label+" 관련 반응":"이해 정도")+"을(를) 살폈다.","learning",teacherScene);
@@ -1678,7 +1681,7 @@
     probeConcept:{
       id:"probeConcept",category:"observe",label:"짧은 진단문항 제시",duration:40,near:true,repeatPenalty:.03,
       desc:"비슷한 개념을 다른 형태로 한 번 더 물어 같은 어려움이 반복되는지 확인합니다. 정답을 가르치는 행동은 아닙니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.observedWork||hasDiagnosticEvidence(s))},
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(hasObservedCurrentWork(s)||hasDiagnosticEvidence(s))},
       recommended:function(s){return diagnosticEvidenceCount(s)===1},
       effect:function(s,m){
         s.observation+=1;s.focus=clamp(s.focus+.018*m);
@@ -1692,10 +1695,10 @@
     hint:{
       id:"hint",category:"support",label:"힌트 하나 주기",duration:30,near:true,repeatPenalty:.07,
       desc:"해결 방향만 짚어 스스로 다음 단계를 찾게 합니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.helpNeed>.08||s.observedWork)},
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.action==="HELP"||s.helpNeed>.08||hasObservedCurrentWork(s))},
       recommended:function(s){return s.action==="HELP"||s.helpNeed>.16},
       effect:function(s,m){
-        if(!s.observedWork)recordDiagnosticEvidence(s,"힌트 전 반응");
+        if(!hasObservedCurrentWork(s))recordDiagnosticEvidence(s,"힌트 전 반응");
         s.helpNeed=clamp(s.helpNeed-.14*m);applyLearning(s,.012*m,"hint");s.focus=clamp(s.focus+.07*m);stats.helped++;
         remember(s,"힌트를 받고 다시 문제에 접근함",.50);
         log(s.name+"에게 정답 대신 작은 힌트를 주고 반응을 관찰했다.","learning",teacherScene);
@@ -1716,7 +1719,7 @@
     simplify:{
       id:"simplify",category:"support",label:"과제를 작게 나누기",duration:35,near:true,repeatPenalty:.05,
       desc:"해야 할 일을 더 작은 단계로 나누어 부담을 낮춥니다.",
-      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.frustration>.24||s.observedWork||hasDiagnosticEvidence(s))},
+      when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.frustration>.24||hasObservedCurrentWork(s)||hasDiagnosticEvidence(s))},
       recommended:function(s){return s.frustration>.34||s.helpNeed>.22},
       effect:function(s,m){s.frustration=clamp(s.frustration-.13*m);s.helpNeed=clamp(s.helpNeed-.11*m);s.focus=clamp(s.focus+.055*m);s.boredom=clamp(s.boredom-.025);remember(s,"과제를 작은 단계로 나눠 다시 시작함",.48);log(s.name+"의 과제를 더 작은 단계로 나누어 다시 시작하게 했다.","learning",teacherScene)}
     },
@@ -2262,7 +2265,7 @@
     q("#studentSummary").textContent=connectMode?"함께 해볼 두 번째 학생을 선택하세요.":swapMode?"자리를 바꿀 두 번째 학생을 선택하세요.":observationText(s);
     var notes=[];
     if(s.memory.length)notes.push("최근 관찰: "+s.memory[0].text);
-    if(s.observedWork)notes.push("과제 풀이 과정 확인됨");
+    if(hasObservedCurrentWork(s))notes.push("과제 풀이 과정 확인됨");
     if(s.observation>=1){
       if(s.moveNeed>.38)notes.push("관찰 단서: 오래 앉아 있을수록 몸 움직임이 커짐");
       if(s.socialNeed>.38)notes.push("관찰 단서: 또래 쪽으로 시선과 접근이 자주 향함");
