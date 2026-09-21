@@ -1479,6 +1479,13 @@ function serveRestaurantDish(){
 function serveRestaurant(recipeId){
  const c=restaurant?.customers.find(x=>x.recipeId===recipeId);if(c)selectRestaurantCustomer(c.id)
 }
+function openKitchenPrep(){
+ state='menu';syncAmbience();$('contractScreen').classList.add('hidden');
+ const stock=stockCount(),menus=RECIPES.map(r=>{const options=recipeGroups(r),ready=recipeCanMake(r),need=options.map(group=>group.map(k=>ingredientInfo(k).name).join(' / ')).join(' + ');return'<div class="card kitchenPrepCard '+(ready?'ready':'locked')+'"><span>'+(ready?'오늘 조리 가능':'재료 부족')+'</span><h3>'+r.icon+' '+r.name+'</h3><p>'+r.desc+'</p><small>'+need+'</small></div>'}).join('');
+ $('restaurantBody').innerHTML='<div class="kitchenPrepHero"><div><span class="nightBadge">BLUE KITCHEN · 준비실</span><h3>냉장고와 오늘의 메뉴</h3><p>아침에는 재고와 메뉴만 확인합니다. 실제 밤 장사는 낮 잠수에서 귀환한 뒤 선택할 수 있습니다.</p></div><b>'+stock+'개 보관 중</b></div><div class="restaurantStock">'+restaurantStockHtml()+'</div><div class="grid kitchenPrepGrid">'+menus+'</div><div class="toolbar"><button class="btn" id="kitchenBack">선착장으로</button></div>';
+ $('restaurantScreen').classList.remove('hidden');$('kitchenBack').onclick=()=>{$('restaurantScreen').classList.add('hidden');openContracts(dockTab)}
+}
+
 function startRestaurant(){
  if(!availableRecipes().length){showHint('현재 재고로 만들 수 있는 메뉴가 없습니다. 다음 낮 탐사에서 필요한 재료를 모아오세요.',1500);return}
  state='restaurant';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');
@@ -1536,7 +1543,7 @@ function openContracts(tab=dockTab){
  '<div class="dockQuick"><button data-dock="missions" class="'+(dockTab==='missions'?'active':'')+'">의뢰</button><button data-dock="gear" class="'+(dockTab==='gear'?'active':'')+'">장비</button><button data-dock="workshop">공방</button><button data-dock="codex">도감</button><button data-dock="kitchen">식당</button><button data-dock="launch" class="launchQuick">출항</button></div>'+
  '<div class="dockDetail">'+dockDetailHtml()+'</div><div class="toolbar dockActions"><button class="btn dark" id="menuBtn">시작 화면</button></div>';
  $('contractScreen').classList.remove('hidden');
- document.querySelectorAll('[data-dock]').forEach(b=>b.onclick=()=>{const a=b.dataset.dock;if(a==='missions'||a==='office'){dockTab='missions';openContracts('missions');return}if(a==='gear'){dockTab='gear';openContracts('gear');return}if(a==='workshop'){openShop();return}if(a==='codex'){openCodex();return}if(a==='kitchen'){if(stockCount()>0)startRestaurant();else showHint('먼저 잠수해서 식재료를 가져오세요.',1200);return}if(a==='launch')buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE)});
+ document.querySelectorAll('[data-dock]').forEach(b=>b.onclick=()=>{const a=b.dataset.dock;if(a==='missions'||a==='office'){dockTab='missions';openContracts('missions');return}if(a==='gear'){dockTab='gear';openContracts('gear');return}if(a==='workshop'){openShop();return}if(a==='codex'){openCodex();return}if(a==='kitchen'){openKitchenPrep();return}if(a==='launch')buildWorld(CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE)});
  document.querySelectorAll('[data-mission]').forEach(b=>b.onclick=()=>{dockMissionId=dockMissionId===b.dataset.mission?null:b.dataset.mission;openContracts('missions')});document.querySelectorAll('[data-loadout]').forEach(b=>b.onclick=()=>{dockTab='gear';toggleDockGear(b.dataset.loadout)});
  const clear=$('clearMissionBtn');if(clear)clear.onclick=()=>{dockMissionId=null;openContracts('missions')};$('menuBtn').onclick=()=>{$('contractScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
