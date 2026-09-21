@@ -1183,26 +1183,54 @@ async function buildOutdoor(){
   for(const x of ROAD_X)box(outdoor,x,12,4,92,.08,0xc8b98f,-.02);
   for(const z of ROAD_Z)box(outdoor,0,z,92,4,.08,0xc8b98f,-.02);
 
-  // HOME square (-22..-2 / -10..10)
+  // HOME square (-22..-2 / -10..10) — starts primitive and grows with the player.
   {
     const h=point('home');
+
+    homePondGroup=new THREE.Group();outdoor.add(homePondGroup);
     const pond=new THREE.Mesh(new THREE.CylinderGeometry(3.0,3.14,.12,48),new THREE.MeshStandardMaterial({color:0x67b5d3,roughness:.26,metalness:.03,transparent:true,opacity:.94}));
-    pond.position.set(h.x-4.0,.055,h.z+5.1);pond.receiveShadow=true;outdoor.add(pond);
+    pond.position.set(h.x-4.0,.055,h.z+5.1);pond.receiveShadow=true;homePondGroup.add(pond);
     const rim=new THREE.Mesh(new THREE.RingGeometry(3.0,3.34,48),new THREE.MeshStandardMaterial({color:0xc9b887,roughness:.9,side:THREE.DoubleSide}));
-    rim.rotation.x=-Math.PI/2;rim.position.set(h.x-4.0,.12,h.z+5.1);outdoor.add(rim);
+    rim.rotation.x=-Math.PI/2;rim.position.set(h.x-4.0,.12,h.z+5.1);homePondGroup.add(rim);
+
     await Promise.all([
       addModel(outdoor,ASSET.house,{x:h.x,z:h.z-5.5,w:6.7,h:6.2,d:5.4,rot:Math.PI,name:'home3d'}),
       addModel(outdoor,ASSET.chest,{x:h.x+6.1,z:h.z-5.0,w:1.15,h:.9,d:.95,rot:-.15,name:'starter-crate'}),
       addModel(outdoor,ASSET.chest,{x:h.x+5.5,z:h.z-2.6,w:.9,h:.72,d:.72,rot:.05,name:'game-mailbox'}),
       addModel(outdoor,ASSET.signpost,{x:h.x+5.4,z:h.z+.2,w:.72,h:1.35,d:.7,rot:.03,name:'life-board'})
     ]);
-    addColliderFor('outdoor',h.x,h.z-5.5,5.8,4.4);
+    homeHouseObject=outdoor.getObjectByName('home3d')||null;
+    homeHouseBaseScale=homeHouseObject?.scale?.clone?.()||null;
+    homeHouseCollider=collider('outdoor',h.x,h.z-5.5,5.8,4.4);
+
+    // A simple well and hand pump are built from primitives so their appearance can unlock instantly.
+    homeWellGroup=new THREE.Group();outdoor.add(homeWellGroup);
+    const wellBase=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.06,.70,24),new THREE.MeshStandardMaterial({color:0x8e8b7c,roughness:.92}));
+    wellBase.position.set(h.x+2.1,.35,h.z+5.3);wellBase.castShadow=true;homeWellGroup.add(wellBase);
+    const wellHole=new THREE.Mesh(new THREE.CylinderGeometry(.68,.68,.73,24),new THREE.MeshStandardMaterial({color:0x32495a,roughness:.65}));
+    wellHole.position.set(h.x+2.1,.41,h.z+5.3);homeWellGroup.add(wellHole);
+    const wellRoof=box(homeWellGroup,h.x+2.1,h.z+5.3,2.55,1.35,.16,0x7b513a,2.15);
+    for(const sx of [-.9,.9])box(homeWellGroup,h.x+2.1+sx,h.z+5.3,.14,.14,1.9,0x6d5135,.65);
+
+    homePumpGroup=new THREE.Group();outdoor.add(homePumpGroup);
+    box(homePumpGroup,h.x+3.55,h.z+4.85,.48,.48,1.55,0x54706e,.03);
+    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.72,12),new THREE.MeshStandardMaterial({color:0x788b88,metalness:.30,roughness:.55}));
+    pipe.rotation.z=Math.PI/2;pipe.position.set(h.x+3.85,1.18,h.z+4.85);homePumpGroup.add(pipe);
+    box(homePumpGroup,h.x+3.65,h.z+4.85,.92,.16,.12,0x657c79,1.52);
+
+    homeCampfireObject=await addModel(outdoor,ASSET.campfire,{x:h.x+3.2,z:h.z+7.2,w:1.55,h:.72,d:1.55,rot:0,name:'home-campfire'});
+    const homeFireLight=new THREE.PointLight(0xff9b45,0,7,2);homeFireLight.position.set(h.x+3.2,1.25,h.z+7.2);homeFireLight.userData.campfire=true;outdoor.add(homeFireLight);
+
     interact('outdoor',h.x,h.z-2.35,1.8,'집에 들어가기',()=>setMode('indoor'));
     interact('outdoor',h.x+6.1,h.z-5.0,1.3,'초보자 보급 상자 열기',claimStarterKit);
     interact('outdoor',h.x+5.5,h.z-2.6,1.25,'📬 게임 택배 우편함',mailboxPanel);
     interact('outdoor',h.x+5.4,h.z+.2,1.25,'🌱 씨앗 생활 보드',homeHubPanel);
-    interact('outdoor',h.x-4.0,h.z+6.2,2.0,'연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish('pond');});
-    await addZoneSign('home',6.0,4.8,'집 구역 · 집 · 연못 · Cube Pets',.25);
+    homePondInteraction=interact('outdoor',h.x-4.0,h.z+6.2,2.0,'집 연못에서 낚시하기',()=>{setAvatarAction('smile',850);fish('pond');});
+    homeWellInteraction=interact('outdoor',h.x+2.1,h.z+5.3,1.35,'💧 우물에서 물 뜨기',()=>collectWater('well'));
+    homePumpInteraction=interact('outdoor',h.x+3.55,h.z+4.85,1.25,'💧 수동 펌프로 물 채우기',()=>collectWater('pump'));
+    homeCampfireInteraction=interact('outdoor',h.x+3.2,h.z+7.2,1.45,'🔥 집 앞 캠프파이어에서 요리하기',()=>cookingPanel('campfire'));
+    await addZoneSign('home',6.0,4.8,'집 구역 · 단칸방에서 시작하는 생활 터전',.25,developmentPanel);
+
     await Promise.all([
       addGroundPickup('starter-wood-1','wood',h.x-7.0,h.z+2.8),
       addGroundPickup('starter-wood-2','wood',h.x-3.2,h.z+1.8),
@@ -1217,6 +1245,7 @@ async function buildOutdoor(){
       addGroundPickup('starter-stone-5','stone',h.x-6.6,h.z-7.3),
       addGroundPickup('starter-stone-6','stone',h.x+1.2,h.z+7.9)
     ]);
+    updateHomesteadVisuals();
   }
 
   // FARM square (2..22 / -10..10)
