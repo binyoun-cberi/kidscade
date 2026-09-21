@@ -906,16 +906,18 @@ test('Deep Diver v30 rewards finding unusually large specimens',()=>{
   assert.match(js,/식재료 '\+portions\+'회분/);
 });
 
-test('Deep Diver v30 exposes nearby specimen size and condition through sonar',()=>{
-  assert.match(js,/world\.sonar>0&&Math\.hypot\(f\.x-world\.player\.x,f\.y-world\.player\.y\)<260/);
-  assert.match(js,/const tag=band\.label\+' · '\+state\.label/);
-  assert.match(js,/band\.id==='trophy'/);
+test('Deep Diver v30/v32 exposes specimen information through sonar observation',()=>{
+  assert.match(js,/world\.sonar>0&&Math\.hypot\(f\.x-world\.player\.x,f\.y-world\.player\.y\)<300/);
+  assert.match(js,/const detail=observationDetail\(f\)/);
+  assert.match(js,/detail\.level>0\?detail\.short/);
+  assert.match(js,/detail\.trophy/);
 });
 
 
-test('Deep Diver v31 shows specimen size and state before capture',()=>{
+test('Deep Diver v31/v32 surfaces capture capability while preserving observation uncertainty',()=>{
   assert.match(js,/function updatePhotoLabel/);
-  assert.match(js,/band\.label\+' '\+SPECIES\[t\.key\]\.name\+' · '\+state\.label/);
+  assert.match(js,/const level=t\.observed\|\|0,d=observationDetail\(t\)/);
+  assert.match(js,/크기\/상태 미상 · 촬영하면 정밀 관찰/);
   assert.match(js,/현재: '\+now/);
   assert.match(js,/다음 등급: '\+next/);
   assert.match(js,/gearCapabilityText\(k,lv\)/);
