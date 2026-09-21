@@ -39,10 +39,9 @@ export const FURNITURE_CATALOG={
   minseokTravelBench:{name:'민석의 여행 벤치',file:'bench-cushion-low.glb',w:2.0,h:.75,d:.85,cw:1.7,cd:.7,source:'민석 친밀도 희귀 보상'}
 };
 
-function recipeText(def,itemName){
+function recipeText(def){
   if(def.source)return def.source;
-  if(!def.recipe)return '마을 상점에서 구할 수 있어요.';
-  return Object.entries(def.recipe).map(([k,v])=>itemName(k)+' '+v).join(' · ');
+  return '목수공방 · 씨앗마을 상점 · 주민 보상으로 획득';
 }
 function safeCount(v){return Math.max(0,Math.floor(Number(v)||0));}
 
@@ -133,7 +132,7 @@ export function createFurnishingSystem(ctx){
     const s=ensureState();
     const ownedCards=Object.entries(FURNITURE_CATALOG).map(([key,def])=>{
       const count=s.owned[key]||0;
-      return '<div class="item"><b>'+def.name+'</b><div>보관 '+count+'개</div><small>'+recipeText(def,itemName)+'</small><br><button data-furn-place="'+key+'" '+(count>0?'':'disabled')+'>배치하기</button></div>';
+      return '<div class="item"><b>'+def.name+'</b><div>보관 '+count+'개</div><small>'+recipeText(def)+'</small><br><button data-furn-place="'+key+'" '+(count>0?'':'disabled')+'>배치하기</button></div>';
     }).join('');
     openPanel('<h2>🏠 가구 창고 · 집 꾸미기</h2><p>목수공방이나 마을 보상으로 얻은 가구를 집 안에 직접 배치해요.</p><div class="grid">'+ownedCards+'</div><p style="font-size:12px">새 가구 제작은 농장 옆 <b>목수공방</b>에서 할 수 있어요.</p>');
   }
