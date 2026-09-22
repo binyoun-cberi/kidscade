@@ -2659,7 +2659,7 @@
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
     q("#encounterCategory").textContent=enc.storyId?(enc.category||"이어지는 이야기"):enc.isFollowUp?"그 뒤 이야기":(enc.category||"교실에서 생긴 일");
     q("#encounterKicker").textContent=enc.storyId?("Day "+dayIndex+" · 이야기 "+enc.storyStep+"/"+enc.storyTotal):(enc.kicker||("Day "+dayIndex+" · "+current().name));
-    var card=q("#encounterCard");if(card)card.classList.toggle("followup",!!enc.isFollowUp);
+    var card=q("#encounterCard");if(card){card.classList.toggle("followup",!!enc.isFollowUp);card.classList.toggle("story",!!enc.storyId)}
     renderEncounterPortrait(enc,s);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
