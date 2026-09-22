@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=24">
+<link rel="stylesheet" href="./style.css?v=25">
 </head>
 <body>
 <main id="app">
@@ -42,40 +42,35 @@
 
   <div class="layout">
     <section>
-      <div id="world" class="world scene-classroom" aria-label="학교 생활 시뮬레이션">
+      <div id="world" class="world card-stage" aria-label="담임교사 카드게임">
         <div id="sceneTitle" class="scene-title">우리 반의 하루</div>
         <div id="cardIdle" class="card-idle">
-          <div class="idle-icon">🏫</div>
-          <strong>다음 이야기가 이어지고 있어요</strong>
-          <p>아이들의 하루는 계속 흘러갑니다.</p>
-        </div>
-        <div id="props"></div>
-
-        <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-
-        <div id="teacher" class="teacher" style="left:50%;top:22%">
-          <span id="teacherAvatarMount" class="teacher-avatar-mount" aria-hidden="true"></span>
-          <span class="teacher-label">선생님</span>
+          <div class="idle-icon">📚</div>
+          <strong>다음 이야기가 이어집니다</strong>
+          <p>아이들의 하루를 지켜보다 보면 곧 새로운 일이 생깁니다.</p>
         </div>
 
-        <div id="students"></div>
-        <button id="encounterToken" class="encounter-token" type="button" hidden aria-label="판단 상황 열기"><span>📌</span><small>상황</small></button>
-        <div id="offscreen" class="offscreen-note">22명 보임</div>
-
-        <section id="classroomConsole" class="classroom-console" aria-label="교탁 도구">
-          <button type="button" class="class-tool tool-computer" data-class-tool="computer" title="오늘 현황"><span class="tool-object">🖥️</span><small>현황</small></button>
-          <button type="button" class="class-tool tool-clipboard" data-class-tool="roster" title="학급 명부"><span class="tool-object">📑</span><small>명부</small></button>
-          <button type="button" class="class-tool tool-record" data-class-tool="record" title="생활기록부"><span class="tool-object">📒</span><small>생기부</small></button>
-        </section>
+        <div id="simulationEngine" class="simulation-engine" aria-hidden="true">
+          <div id="props"></div>
+          <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div id="teacher" class="teacher" style="left:50%;top:22%">
+            <span id="teacherAvatarMount" class="teacher-avatar-mount"></span>
+            <span class="teacher-label">선생님</span>
+          </div>
+          <div id="students"></div>
+          <button id="encounterToken" class="encounter-token" type="button" hidden aria-label="상황 열기"><span>📌</span><small>상황</small></button>
+          <div id="offscreen" class="offscreen-note">22명</div>
+          <section id="classroomConsole" class="classroom-console" aria-hidden="true"></section>
+        </div>
 
 
         <section id="encounterOverlay" class="encounter-overlay" hidden aria-live="assertive">
           <div class="encounter-shell">
             <div class="encounter-topline">
               <span id="encounterCategory">교실에서 생긴 일</span>
-              <strong id="encounterTimerText">12초</strong>
+              <strong id="encounterTimerText" hidden></strong>
             </div>
-            <div class="encounter-timer"><i id="encounterTimerFill"></i></div>
+            <div class="encounter-timer" hidden><i id="encounterTimerFill"></i></div>
 
             <button type="button" class="encounter-choice choice-up" data-encounter-dir="up">
               <span class="direction">↑ 원칙</span><strong id="encounterChoiceUp"></strong><small id="encounterEffectUp"></small>
@@ -148,7 +143,7 @@
           </div>
 
           <div class="metrics">
-            <div class="metric"><strong id="mDecisions">0</strong><span>판단 카드</span></div>
+            <div class="metric"><strong id="mDecisions">0</strong><span>선택한 일</span></div>
             <div class="metric"><strong id="mRecords">0</strong><span>기록할 사건</span></div>
             <div class="metric"><strong id="mAffected">0</strong><span>관련 학생</span></div>
             <div class="metric"><strong id="mFlow">0</strong><span>수업 흐름 변화</span></div>
@@ -160,7 +155,7 @@
               <ul id="incidentList"></ul>
             </div>
             <div>
-              <h4>숫자로 본 변화</h4>
+              <h4>눈에 띈 변화</h4>
               <ul id="findingList"></ul>
             </div>
           </div>
@@ -177,6 +172,6 @@
 
   </div>
 </main>
-<script src="./game.js?v=24"></script>
+<script src="./game.js?v=25"></script>
 </body>
 </html>
