@@ -50,7 +50,6 @@
     <section>
       <div id="world" class="world scene-classroom" aria-label="학교 생활 시뮬레이션">
         <div id="sceneTitle" class="scene-title">교실</div>
-        <button id="worldAlert" class="world-alert" type="button" hidden></button>
         <div id="props"></div>
 
         <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -174,56 +173,7 @@
       <div id="schedule" class="schedule" aria-label="오늘 시간표"></div>
     </section>
 
-    <aside id="legacyPanel" class="panel legacy-panel" hidden>
-      <div class="panel-head">
-        <div>
-          <div class="panel-kicker">교사 HUD</div>
-          <h3 id="studentName">학급 운영</h3>
-        </div>
-        <button id="clearSelection" class="clear-selection" type="button" hidden>학급 보기</button>
-      </div>
 
-      <section id="priorityCard" class="priority-card">
-        <div class="priority-head">
-          <strong>지금 볼 것</strong>
-          <span id="priorityCount">현재 공간</span>
-        </div>
-        <div id="roomPulse" class="room-pulse"></div>
-        <div id="priorityBoard" class="priority-board"></div>
-      </section>
-
-      <div id="studentSummary" class="sub">현재 공간의 흐름을 살펴보고 필요한 학생을 선택하세요.</div>
-      <div id="studentState" class="state">교실 전체 관찰</div>
-      <div id="studentVitals" class="student-vitals" aria-live="polite"></div>
-      <div id="teacherBusy" class="teacher-busy">
-        <span>교사 여유</span>
-        <strong id="teacherBusyText">지금 개입 가능</strong>
-        <div class="busy-track"><i id="teacherBusyFill"></i></div>
-      </div>
-
-      <div id="actionTabs" class="action-tabs" role="tablist" aria-label="교사 행동 범주">
-        <button type="button" data-category="observe" class="active"><span>👀</span>관찰</button>
-        <button type="button" data-category="support"><span>🧩</span>도움</button>
-        <button type="button" data-category="guide"><span>↪</span>지도</button>
-        <button type="button" data-category="relationship"><span>💬</span>관계</button>
-      </div>
-      <div id="contextActions" class="context-actions" aria-live="polite"></div>
-      <div id="actionDetail" class="action-detail">학생과 상황을 보고 행동을 선택하세요.</div>
-      <div id="memory" class="sub" style="margin-top:9px"></div>
-
-      <section id="diagnosisCard" class="diagnosis-card">
-        <div class="diagnosis-head">
-          <strong>학습 진단</strong>
-          <span id="diagnosisUnit">수업 중 학생을 선택하세요.</span>
-        </div>
-        <div id="diagnosisEvidence" class="diagnosis-evidence">아직 모은 학습 근거가 없습니다.</div>
-      </section>
-
-      <div class="observe">
-        <h4>이 공간에서 보이고 들리는 일</h4>
-        <div id="feed" class="feed"></div>
-      </div>
-    </aside>
   </div>
 </main>
 <script src="./game.js?v=18"></script>
