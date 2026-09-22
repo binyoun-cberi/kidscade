@@ -115,3 +115,13 @@ test('legacy furnished saves are rebased to the primitive v3.22 homestead once',
   assert.match(storage,/reworkVersion:0/);
   assert.match(storage,/p\.homestead\?\.reworkVersion/);
 });
+
+
+test('static outdoor layout keeps farm fences resources signs and ranch residents separated',()=>{
+  assert.match(runtime,/async function addFence/);
+  assert.doesNotMatch(runtime,/\[-7\.3,1\.3,0\]/);
+  assert.match(runtime,/\[-6\.0,-\.35,0\]/);
+  assert.match(runtime,/\[-5,1\.2\],\[-1,3\.5\],\[7,2\.8\]/);
+  assert.match(runtime,/RANCH_SLOTS=\{bunny:\[8\.0,-24\.8\],pig:\[10\.0,-22\.5\],cow:\[13\.0,-26\.0\],chick:\[16\.0,-21\.0\]\}/);
+  assert.match(runtime,/RANCH_ANIMALS\.indexOf\(a\.id\)<ranchCapacity\(\)/);
+});
