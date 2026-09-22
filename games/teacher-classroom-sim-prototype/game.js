@@ -620,11 +620,11 @@
     var personalOrder=["up","left","down","right"],preferred=personalOrder[index%personalOrder.length];
     var opposite={up:"down",down:"up",left:"right",right:"left"}[preferred];
     var responseValues={up:up,down:down,left:left,right:right};
-    responseValues[preferred]=clamp(responseValues[preferred]+.22,.08,.92);
-    responseValues[opposite]=clamp(responseValues[opposite]-.08,.08,.92);
+    responseValues[preferred]=clamp(responseValues[preferred]+.34,.08,.92);
+    responseValues[opposite]=clamp(responseValues[opposite]-.14,.08,.92);
     up=responseValues.up;down=responseValues.down;left=responseValues.left;right=responseValues.right;
     var sensitivity=clamp(.78+t.react*.38+t.rejection*.12,.78,1.28);
-    var expressiveness=clamp(.34+t.react*.44+t.assert*.22+t.imp*.08,.30,1);
+    var expressiveness=clamp(.22+t.react*.38+t.assert*.18+t.imp*.06,.24,1);
     return {up:up,down:down,left:left,right:right,sensitivity:sensitivity,expressiveness:expressiveness};
   }
   function responseDisposition(s,dir){
@@ -648,12 +648,12 @@
     var hard={
       up:"↑ 강한 통제에는 반발 가능",down:"↓ 감정 질문을 부담스러워함",left:"← 세세한 지도는 간섭으로 느낌",right:"→ 선택이 많으면 오히려 막힘"
     };
-    var expression=p.expressiveness>.74?"반응이 겉으로 크게 드러남":p.expressiveness<.52?"겉반응은 작지만 속으로 오래 남는 편":"반응 표현은 보통";
+    var expression=p.expressiveness>.66?"반응이 겉으로 크게 드러남":p.expressiveness<.50?"겉반응은 작지만 속으로 오래 남는 편":"반응 표현은 보통";
     return [good[high],hard[low],expression];
   }
   function studentStyleReaction(s,dir){
     if(!s||!dir||dir==="timeout"||!s.teacherResponse)return {text:"",dialogue:"",tone:"normal",fit:.5};
-    var fit=responseDisposition(s,dir),visible=s.teacherResponse.expressiveness>.68,subtle=s.teacherResponse.expressiveness<.50;
+    var fit=responseDisposition(s,dir),visible=s.teacherResponse.expressiveness>.64,subtle=s.teacherResponse.expressiveness<.50;
     var positive=fit>=.66,negative=fit<=.36,text="",dialogue="",tone="normal";
     if(positive){
       if(dir==="up"){text=visible?s.name+"은(는) 기준이 분명해지자 바로 행동을 정리했다.":s.name+"은(는) 크게 티 내지 않았지만 지시 뒤 행동이 안정됐다.";dialogue=visible?"네, 알겠어요.":""}
