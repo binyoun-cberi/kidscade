@@ -163,6 +163,11 @@
   var encounterSeq=0;
   var encounterWasRunning=true;
   var encounterPointer=null;
+  var encounterAutoAdvanceTimer=null;
+  var timeRushActive=false;
+  var timeRushTarget=0;
+  var timeRushStart=0;
+  var timeRushMultiplier=14;
   var classMetrics={flow:72,relationship:68,stability:72,trust:64};
   var teacherStyleCounts={up:0,down:0,left:0,right:0};
   var reportOpen=false;
@@ -253,7 +258,7 @@
       id:"world-"+(++worldHistorySeq),day:dayIndex,time:gameMinute(),kind:kind,
       actorId:actor.id,targetId:target?target.id:null,witnessIds:witnessIds,
       scene:opts.scene||actor.scene,severity:clamp(opts.severity===undefined?.3:opts.severity,0,1),
-      text:opts.text||"",tags:(opts.tags||[]).slice(),
+      text:opts.text||"",quote:opts.quote||"",tags:(opts.tags||[]).slice(),
       affinity:r?r.affinity:null,irritation:r?r.irritation:null
     };
     worldHistory.push(event);pruneWorldHistory();
@@ -530,14 +535,21 @@
       return {type:"worried",name:"신경 쓰임",bg:"#7d88a2",brow:3,mouth:"straight",eyes:"small"};
     return {type:"default",name:"지켜봄",bg:"#71869b",brow:1,mouth:"glad",eyes:"large"};
   }
+  function appendPortraitBust(rig,look){
+    rig.appendChild(modularImg(look,"hair","hair-back"));
+    rig.appendChild(modularImg(look,"neck","neck"));
+    rig.appendChild(modularImg(look,"shirt","shirt"));
+    rig.appendChild(modularImg(look,"head","head"));
+    rig.appendChild(modularImg(look,"face","face"));
+    rig.appendChild(modularImg(look,"hair","hair-front"));
+  }
   function makePortraitPerson(person,expression,role){
     var wrap=document.createElement("span");
-    wrap.className="portrait-person "+role;
+    wrap.className="portrait-person "+role+" expression-"+expression.type;
     wrap.style.background=expression.bg;
     var avatar=document.createElement("span");
     avatar.className="modular-avatar portrait-avatar portrait-bust";
-    appendUpperBody(avatar,person.look);
-    applyPortraitExpression(avatar,person.look,expression);
+    appendPortraitBust(avatar,person.look);
     wrap.appendChild(avatar);
     var label=document.createElement("strong");
     label.className="portrait-name";
@@ -557,14 +569,38 @@
     mount.style.background="";
     mount.dataset.expression=expression.name;
   }
-  function advanceCardTurn(){
-    if(dayEncounterOffered>=dayEncounterBudget){
-      nextEncounterAt=Number.POSITIVE_INFINITY;
-      return;
+  function updateTimeRushVisual(){
+    var box=q("#timeRush"),clock=q("#timeRushClock"),caption=q("#timeRushCaption"),day=q("#timeRushDay");
+    if(!box)return;
+    box.hidden=!timeRushActive;
+    if(!timeRushActive)return;
+    if(clock)clock.textContent=fmtMin(gameMinute());
+    if(day)day.textContent="Day "+dayIndex+" · "+current().name;
+    if(caption){
+      var remain=Math.max(0,Math.ceil((timeRushTarget-gameSec)/60));
+      caption.textContent=remain>3?"시간이 빠르게 흐른다":"곧 다른 일이 생긴다";
     }
-    // Encounter pacing never moves the school clock. The simulation keeps running;
-    // the director only decides when it may look for another meaningful moment.
-    nextEncounterAt=gameSec+rand(180,420);
+  }
+  function finishTimeRush(){
+    timeRushActive=false;
+    var box=q("#timeRush");if(box)box.hidden=true;
+    if(!dayEnded&&dayEncounterOffered<dayEncounterBudget)nextEncounterAt=gameSec+1;
+  }
+  function advanceCardTurn(){
+    if(dayEnded)return;
+    var dayEnd=schedule[schedule.length-1].end*60;
+    timeRushStart=gameSec;
+    if(dayEncounterOffered>=dayEncounterBudget){
+      timeRushTarget=dayEnd;
+      timeRushMultiplier=Math.max(14,Math.min(42,(dayEnd-gameSec)/120));
+    }else{
+      timeRushTarget=Math.min(dayEnd-1,gameSec+rand(7*60,15*60));
+      timeRushMultiplier=14;
+    }
+    nextEncounterAt=Number.POSITIVE_INFINITY;
+    timeRushActive=timeRushTarget>gameSec+5;
+    updateTimeRushVisual();
+    if(!timeRushActive)finishTimeRush();
   }
 
   function studentById(id){return students.find(function(s){return s.id===id})||null}
@@ -1422,7 +1458,12 @@
       id:"teacher_defiance",category:"생활지도",title:"교사의 안내에 강하게 반발한다",
       score:function(s){return ["REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER"].indexOf(s.action)>=0?1.9+s.teacherDefiance:0},
       build:function(s){
-        return {text:"교사의 안내 직후 "+s.name+"이(가) 큰 목소리로 반발했다. 주변 학생 몇 명이 수업을 멈추고 바라본다.",dialogue:s.speechText||s.name+' “왜 저만 그래요! 자꾸 말하지 마세요!”',choices:{
+        var defianceEvent=worldHistory.slice().reverse().find(function(e){
+          return e.actorId===s.id&&["teacher_refusal","teacher_shout","teacher_insult","teacher_throw"].indexOf(e.kind)>=0&&e.quote;
+        });
+        var rawLine=s.speechText||(defianceEvent&&defianceEvent.quote)||"왜 저만 그래요! 자꾸 말하지 마세요!";
+        rawLine=String(rawLine).replace(/^[“"']+|[”"']+$/g,"");
+        return {text:"교사의 안내 직후 "+s.name+"이(가) 반발했다. 주변 학생 몇 명이 하던 일을 멈추고 바라본다.",dialogue:s.name+' “'+rawLine+'”',choices:{
           up:encounterChoice("선을 분명히 긋고 지금의 말과 행동은 허용되지 않는다고 즉시 알린다.",{trust:-4,mood:-3,classStability:9,classFlow:4},"교실의 경계는 선명해졌지만 학생의 감정은 아직 높다."),
           down:encounterChoice("목소리를 낮춰 지금 화가 난 이유부터 듣고 진정할 시간을 준다.",{trust:7,mood:7,classFlow:-6,classStability:-1},"수업은 잠시 멈췄지만 감정이 낮아질 통로가 생겼다."),
           left:encounterChoice("화가 났을 때 교사에게 말할 수 있는 다른 표현을 구체적으로 알려준다.",{trust:3,mood:2,classStability:4,classFlow:-4},"문제 행동만 막지 않고 대체할 표현을 가르쳤다."),
@@ -2825,7 +2866,7 @@
   }
   function scheduleNextEncounter(min,max){nextEncounterAt=gameSec+rand(min||420,max||760)}
   function maybeSpawnEncounter(){
-    if(dayEnded||pendingEncounter||activeEncounter||reportOpen||toolModalKind||tutorialState.active||gameSec<nextEncounterAt)return;
+    if(dayEnded||timeRushActive||pendingEncounter||activeEncounter||reportOpen||toolModalKind||tutorialState.active||gameSec<nextEncounterAt)return;
     if(dayEncounterOffered>=dayEncounterBudget){scheduleNextEncounter(600,900);return}
     var cap=periodEncounterCap(current());
     if(cap<=0){nextEncounterAt=Math.max(gameSec+60,current().end*60+15);return}
@@ -2872,8 +2913,8 @@
     if(e.kind==="exclusion")return an+"이(가) "+tn+"을(를) 놀이에서 밀어낸 일이 있었다.";
     if(e.kind==="threat")return an+"이(가) "+tn+"에게 위협적으로 말한 일이 있었다.";
     if(e.kind==="physical")return an+"과(와) "+tn+" 사이에 거친 신체행동이 있었다.";
-    if(e.kind==="teacher_refusal")return an+"이(가) 교사의 안내를 거부한 일이 있었다.";
-    if(e.kind==="teacher_shout"||e.kind==="teacher_insult"||e.kind==="teacher_throw")return an+"의 교사에 대한 강한 반발이 있었다.";
+    if(e.kind==="teacher_refusal")return e.quote?an+"이(가) “"+e.quote+"”라고 하며 안내를 거부했다.":an+"이(가) 교사의 안내를 거부한 일이 있었다.";
+    if(e.kind==="teacher_shout"||e.kind==="teacher_insult"||e.kind==="teacher_throw")return e.quote?an+"이(가) “"+e.quote+"”라고 교사에게 반발했다.":an+"의 교사에 대한 강한 반발이 있었다.";
     if(e.kind==="near_collision")return an+"이(가) "+tn+"과(와) 부딪힐 뻔한 일이 있었다.";
     if(e.kind==="encounter")return an+"에게 비슷한 문제를 두고 한 차례 이야기를 나눈 적이 있었다.";
     return e.text||"";
@@ -2928,6 +2969,7 @@
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
     q("#encounterCategory").textContent=enc.category||current().name||"교실에서 생긴 일";
     q("#encounterKicker").textContent=enc.kicker||("Day "+dayIndex+" · "+current().name);
+    var cardClock=q("#encounterClock");if(cardClock)cardClock.textContent=fmtMin(gameMinute());
     var card=q("#encounterCard");if(card){card.classList.remove("followup","story")}
     renderEncounterPortrait(enc,s);
     var thread=q("#encounterThread"),threadText=encounterContextLine(enc,s,t);
@@ -3056,13 +3098,18 @@
     if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"아이 반응 · "+reaction.text:""}
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
     renderEncounter();
+    if(encounterAutoAdvanceTimer)clearTimeout(encounterAutoAdvanceTimer);
+    encounterAutoAdvanceTimer=setTimeout(function(){
+      if(activeEncounter&&activeEncounter.phase==="result")closeEncounter();
+    },1900);
   }
   function closeEncounter(){
     if(!activeEncounter)return;
+    if(encounterAutoAdvanceTimer){clearTimeout(encounterAutoAdvanceTimer);encounterAutoAdvanceTimer=null}
     activeEncounter=null;q("#encounterOverlay").hidden=true;
     encounterPointer=null;
-    advanceCardTurn();
     running=true;
+    advanceCardTurn();
     render();
   }
   function rosterRowHtml(s){
@@ -3658,9 +3705,13 @@
     return best;
   }
   function recordSeriousIncident(actor,target,kind,text){
-    actor.lastSeriousIncident={kind:kind,targetId:target?target.id:null,time:gameMinute()};
+    var incidentLine="";
+    if(kind==="teacher_shout")incidentLine=pickLine(["왜 저만 그래요! 그만 좀 하세요!","저한테만 뭐라고 하잖아요!","알았다고요! 자꾸 말하지 마세요!","왜 또 저예요? 진짜 그만하세요!"]);
+    if(kind==="teacher_insult")incidentLine=pickLine(["아, 씨… 선생님 진짜 짜증 나요.","선생님 때문에 개짜증 나요.","아 진짜, 왜 자꾸 저한테 뭐라고 해요?","선생님 말 듣기 싫다고요."]);
+    if(kind==="teacher_throw")incidentLine=pickLine(["몰라요!","안 한다고요!","아 진짜, 싫다고요!","하지 말라고요!"]);
+    actor.lastSeriousIncident={kind:kind,targetId:target?target.id:null,time:gameMinute(),quote:incidentLine};
     var severity={exclusion:.68,taking:.72,threat:.88,physical:.96,teacher_shout:.70,teacher_insult:.82,teacher_throw:.94}[kind]||.65;
-    var worldEvent=recordWorldEvent(kind,actor,target,{severity:severity,text:text,tags:["serious",target?"peer":"teacher",kind]});
+    var worldEvent=recordWorldEvent(kind,actor,target,{severity:severity,text:text,quote:incidentLine,tags:["serious",target?"peer":"teacher",kind]});
     actor.severeCooldown=gameSec+10*60;
     stats.seriousIncidents++;
     if(target){
@@ -3690,14 +3741,14 @@
       scriptLog({speaker:target.name,dialogue:pickLine(["아! 하지 마!","밀지 마!","그만해!"]),
         stage:"말다툼이 거친 신체행동으로 번졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",replyBubble:false});
     }else if(kind==="teacher_shout"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["왜 저만 그래요! 그만 좀 하세요!","저한테만 뭐라고 하잖아요!","알았다고요! 자꾸 말하지 마세요!"]),
-        stage:"교실 안에서 "+actor.name+"의 목소리가 갑자기 커졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:40,replyBubble:false});
+      scriptLog({speaker:actor.name,dialogue:incidentLine,
+        stage:"교실 안에서 "+actor.name+"의 목소리가 갑자기 커졌다.",summary:actor.name+"이(가) “"+incidentLine+"”라고 큰소리로 반발했다.",type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:40,replyBubble:false});
     }else if(kind==="teacher_insult"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["아, 씨… 선생님 진짜 짜증 나요.","선생님 때문에 개짜증 나요.","아 진짜, 왜 자꾸 저한테 뭐라고 해요?","선생님 말 듣기 싫다고요."]),
-        stage:"주변 학생 몇 명이 말을 멈추고 쳐다봤다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:42,replyBubble:false});
+      scriptLog({speaker:actor.name,dialogue:incidentLine,
+        stage:"주변 학생 몇 명이 말을 멈추고 쳐다봤다.",summary:actor.name+"이(가) “"+incidentLine+"”라고 말하며 교사에게 강하게 반발했다.",type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:42,replyBubble:false});
     }else if(kind==="teacher_throw"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["몰라요!","안 한다고요!","아 진짜, 싫다고요!"]),
-        stage:actor.name+"이(가) 화가 난 상태에서 교사 쪽으로 물건을 던졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:38,replyBubble:false});
+      scriptLog({speaker:actor.name,dialogue:incidentLine,
+        stage:actor.name+"이(가) 화가 난 상태에서 교사 쪽으로 물건을 던졌다.",summary:actor.name+"이(가) “"+incidentLine+"”라고 외치며 물건을 던졌다.",type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:38,replyBubble:false});
     }else{
       log(text,"incident",actor.scene);
     }
@@ -3884,11 +3935,12 @@
     }
     if(a==="REFUSE_INSTRUCTION"){
       s.teacherDefiance=clamp(s.teacherDefiance+.06);s.focus=clamp(s.focus-.04);
-      recordWorldEvent("teacher_refusal",s,null,{severity:.44,text:s.name+"이(가) 교사의 안내를 거부함",tags:["teacher","defiance"]});
+      var refusalLine=pickLine(["지금 하기 싫어요. 왜 저만 계속 시켜요?","아까 했잖아요. 저 이제 안 할래요.","모르겠는데 자꾸 하라고 하지 마세요.","저 지금 이거 하기 싫다고요.","왜 꼭 지금 해야 돼요? 저 안 할래요."]);
+      recordWorldEvent("teacher_refusal",s,null,{severity:.44,text:s.name+"이(가) 교사의 안내를 거부함",quote:refusalLine,tags:["teacher","defiance"]});
       scriptLog({
-        speaker:s.name,dialogue:pickLine(["지금 하기 싫어요. 왜 저만 계속 시켜요?","아까 했잖아요. 저 이제 안 할래요.","모르겠는데 자꾸 하라고 하지 마세요.","저 지금 이거 하기 싫다고요."]),
+        speaker:s.name,dialogue:refusalLine,
         stage:"교사의 안내 뒤에도 "+s.name+"의 손이 과제로 돌아가지 않았다.",
-        summary:s.name+"이(가) 교사의 안내를 거부했다.",type:"incident",scene:s.scene,
+        summary:s.name+"이(가) “"+refusalLine+"”라고 하며 교사의 안내를 거부했다.",type:"incident",scene:s.scene,
         bubble:true,bubbleTone:"warning",bubbleDuration:36,replyBubble:false
       });
     }
@@ -5446,7 +5498,8 @@
         html+='<div class="tool-section"><h4>최근 며칠의 연결된 사건</h4>'+wh.map(function(e){
           var a=studentById(e.actorId),t=studentById(e.targetId),w=(e.witnessIds||[]).map(studentById).filter(Boolean);
           var people=[a&&a.name,t&&t.name].filter(Boolean).join(" · ");
-          return '<div class="record-student-memory">Day '+(e.day||1)+' · '+fmtMin(e.time||0)+' · '+escHtml(people)+(w.length?' · 주변에서 본 친구 '+w.length+'명':'')+'<br>'+escHtml(e.text||e.kind)+'</div>';
+          var detail=e.text||e.kind;if(e.quote)detail+=' · “'+e.quote+'”';
+          return '<div class="record-student-memory">Day '+(e.day||1)+' · '+fmtMin(e.time||0)+' · '+escHtml(people)+(w.length?' · 주변에서 본 친구 '+w.length+'명':'')+'<br>'+escHtml(detail)+'</div>';
         }).join("")+'</div>';
       }
       if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">Day '+(m.day||1)+' · '+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
@@ -5598,7 +5651,7 @@
     var report=q("#report");if(report)report.hidden=true;
     var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
     var dayEnd=q("#dayEndOverlay");if(dayEnd)dayEnd.hidden=true;
-    scheduleNextEncounter(220,360);
+    scheduleNextEncounter(70,120);
     log("다음 날 아침, 아이들이 다시 교실로 들어왔다.","ambient","classroom");
     render();
   }
@@ -5646,6 +5699,8 @@
     reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;
     cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
     aiAccumulator=0;circleAccumulator=0;renderAccumulator=0;lastFrame=performance.now();
+    if(encounterAutoAdvanceTimer){clearTimeout(encounterAutoAdvanceTimer);encounterAutoAdvanceTimer=null}
+    timeRushActive=false;timeRushTarget=0;timeRushStart=0;timeRushMultiplier=14;
     resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
     var report=q("#report");if(report)report.hidden=true;
     var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
@@ -5661,10 +5716,15 @@
     if(activeEncounter)updateEncounterClock(now);
     if(running&&!reportOpen&&!dayEnded){
       var speedEl=q("#speed"),speed=speedEl?Number(speedEl.value)||1:1;
-      var gameDt=realDt*GAME_SECONDS_PER_REAL_SECOND*speed;
+      var rush=timeRushActive?timeRushMultiplier:1;
+      var gameDt=realDt*GAME_SECONDS_PER_REAL_SECOND*speed*rush;
       gameSec+=gameDt;
+      if(timeRushActive&&gameSec>=timeRushTarget){
+        gameSec=timeRushTarget;finishTimeRush();
+      }
+      updateTimeRushVisual();
       if(gameSec>=schedule[schedule.length-1].end*60){
-        gameSec=schedule[schedule.length-1].end*60;endDay();
+        gameSec=schedule[schedule.length-1].end*60;finishTimeRush();endDay();
       }else if(handlePeriodChange()){
         updateAutoLessonPhase();
         updateTransit();updateTeacherTask();updateTeacherMovement(gameDt);updateSocialTracking(gameDt);updateMovement(gameDt);
@@ -5680,7 +5740,7 @@
         }
         renderAccumulator+=realDt;
         if(renderAccumulator>=.10){renderAccumulator=0;renderFrame()}
-        maybeSpawnEncounter();
+        if(!timeRushActive)maybeSpawnEncounter();
       }
     }
     requestAnimationFrame(loop);
