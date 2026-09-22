@@ -39,7 +39,7 @@ test('starter guidance reveals one homestead goal at a time',()=>{
   assert.match(runtime,/첫 개척 목표/);
 });
 
-test('starter loop is current cached Seed World v34',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=34/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=34/);
+test('starter loop is current cached Seed World v35',()=>{
+  assert.match(html,/kidscade-world-v3\.js\?v=35/);
+  assert.match(integration,/world-v3\/kidscade-world\.html\?v=35/);
 });
