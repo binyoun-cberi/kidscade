@@ -133,6 +133,7 @@
   var feed=[];
   var dayEvents=[];
   var incidentRecords=[];
+  var periodMemoKeys={};
   var reportOpen=false;
   var armedActionId=null;
   var armedActionTargetId=null;
@@ -2353,6 +2354,29 @@
     var grade=avg>=90?"A+":avg>=84?"A":avg>=78?"B+":avg>=70?"B":avg>=62?"C+":"C";
     return {p:p,design:design,engage:engage,learning:learning,climate:climate,grade:grade};
   }
+  function eventStudentNames(item){
+    var names=[];
+    function addName(raw){if(!raw)return;String(raw).split(" · ").forEach(function(part){var name=part.trim();if(studentByName(name)&&names.indexOf(name)<0)names.push(name)})}
+    addName(item&&item.speaker);addName(item&&item.replySpeaker);
+    if(item&&item.text){students.forEach(function(s){if(item.text.indexOf(s.name)>=0&&names.indexOf(s.name)<0)names.push(s.name)})}
+    return names;
+  }
+  function shortMemoText(textValue){var value=String(textValue||"").replace(/\s+/g," ").trim();return value.length>72?value.slice(0,69)+"…":value}
+  function buildPeriodMemo(period,periodStats){
+    if(!period||period.kind!=="lesson"||!periodStats)return null;
+    var events=(periodStats.events||[]).filter(function(e){return e&&e.recordable===true});
+    var noteworthy=events.length>0||periodStats.conflicts>0||periodStats.seriousIncidents>0||periodStats.teacherIncidents>0||periodStats.safetyInterventions>0;
+    if(!noteworthy)return null;
+    var names=[];events.forEach(function(e){eventStudentNames(e).forEach(function(name){if(names.indexOf(name)<0)names.push(name)})});
+    var highlights=[];events.slice(-8).reverse().forEach(function(e){var t=shortMemoText(e.text);if(t&&highlights.indexOf(t)<0&&highlights.length<4)highlights.push(t)});
+    if(periodStats.conflicts>0&&!highlights.some(function(x){return x.indexOf("갈등")>=0||x.indexOf("말다툼")>=0}))highlights.push("또래 갈등 "+periodStats.conflicts+"건이 수업 흐름에 영향을 주었다.");
+    if(periodStats.seriousIncidents>0&&!highlights.some(function(x){return x.indexOf("심각")>=0||x.indexOf("위협")>=0||x.indexOf("신체")>=0}))highlights.push("안전 확인이 필요한 심각 상황 "+periodStats.seriousIncidents+"건이 발생했다.");
+    highlights=highlights.slice(0,4);
+    var responses=[];if(periodStats.safetyInterventions)responses.push("안전 개입 "+periodStats.safetyInterventions+"회");if(periodStats.teacherActs)responses.push("교사 개입 "+periodStats.teacherActs+"회");if(periodStats.reconciled)responses.push("갈등 정리 "+periodStats.reconciled+"건");if(periodStats.helped)responses.push("개별 학습 지원 "+periodStats.helped+"회");
+    return {stamp:fmtMin(period.end),text:period.name+" 종료 메모 · 기록할 만한 상황 "+events.length+"건",type:"period_summary",scene:period.loc||"classroom",script:false,recordable:true,periodSummary:true,periodName:period.name,periodSubject:period.subject||"",periodRange:fmtMin(period.start)+"~"+fmtMin(period.end),studentNames:names.slice(0,8),highlights:highlights,responseSummary:responses.join(" · ")};
+  }
+  function finalizePeriodMemo(period,periodStats){if(!period||period.kind!=="lesson")return;var key=period.start+"-"+period.end+"-"+period.name;if(periodMemoKeys[key])return;periodMemoKeys[key]=true;var memo=buildPeriodMemo(period,periodStats);if(!memo)return;dayEvents.push(memo);dayEvents=dayEvents.slice(-200)}
+
   function openReport(force){
     if(reportOpen)return;
     if(current().kind!=="lesson"&&!force)return;
@@ -2410,7 +2434,7 @@
 
   function nextPeriod(){
     reportOpen=false;q("#report").hidden=true;
-    var old=current();gameSec=old.end*60;periodIndex=Math.min(periodIndex+1,schedule.length-1);
+    var old=current();finalizePeriodMemo(old,stats);gameSec=old.end*60;periodIndex=Math.min(periodIndex+1,schedule.length-1);
     if(gameSec<current().start*60)gameSec=current().start*60;
     teacherTask=null;newStats();assignPeriodDestinations();running=true;selected=null;connectMode=false;
     log(current().name+"이(가) 시작되었다.","ambient",teacherScene);render();
@@ -2836,6 +2860,14 @@
   function recordableEvent(item){return !!item&&item.recordable===true}
   function recordEntryHtml(item){
     var place=SCENE_NAME[item.scene]||item.scene||"";
+    if(item.periodSummary){
+      var names=(item.studentNames||[]).join(" · ");
+      var memoHtml='<article class="record-entry period_summary"><div class="period-memo-title"><strong>🗒️ '+escHtml(item.periodName||"교시")+' 메모</strong><span>교시 종료 정리</span></div>'+
+        '<div class="period-memo-meta">'+escHtml(item.periodRange||"")+(item.periodSubject?" · "+escHtml(item.periodSubject):"")+(names?" · 관련 학생 "+escHtml(names):"")+'</div>';
+      if(item.highlights&&item.highlights.length)memoHtml+='<ul class="period-memo-list">'+item.highlights.map(function(x){return '<li>'+escHtml(x)+'</li>'}).join("")+'</ul>';
+      if(item.responseSummary)memoHtml+='<div class="period-memo-response">교사 대응 · '+escHtml(item.responseSummary)+'</div>';
+      return memoHtml+'</article>';
+    }
     var html='<article class="record-entry '+escHtml(item.type||"normal")+'"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div><div class="record-summary">'+escHtml(item.text||"")+'</div>';
     if(item.script){
       if(item.stage)html+='<div class="record-stage">'+escHtml(item.stage)+'</div>';
@@ -2900,7 +2932,7 @@
   function renderTutorial(){
     var overlay=q("#tutorialOverlay"),title=q("#tutorialTitle"),txt=q("#tutorialText"),btn=q("#tutorialButton");overlay.hidden=false;btn.hidden=false;qa(".tutorial-focus").forEach(function(x){x.classList.remove("tutorial-focus")});
     if(tutorialState.step===0){title.textContent="첫날, 교실을 직접 운영해 봐요";txt.textContent="오른쪽 관리창 대신 교실 안 도구를 사용합니다. 학생의 몸짓과 네 가지 신호를 보고 필요한 행동을 선택해 보세요.";btn.textContent="시작하기";btn.dataset.tutorialAction="start"}
-    else if(tutorialState.step===1){title.textContent="1. 학생을 한 명 살펴보세요";txt.textContent="학생을 누르면 그 학생에게 사용할 행동 카드가 열립니다. ?는 도움, …는 관계·감정, !는 위험, ★는 좋은 순간이에요.";btn.hidden=true;var first=students.find(function(s){return s.scene===teacherScene});if(first&&studentNodes[first.id])studentNodes[first.id].root.classList.add("tutorial-focus")}
+    else if(tutorialState.step===1){title.textContent="1. 학생을 한 명 살펴보세요";txt.textContent="학생을 누르면 그 학생에게 사용할 행동 카드가 열립니다. 머리 위 이모지는 📚 공부, 💬 대화, 😟 감정, 💥 위험 행동처럼 지금 모습을 바로 보여줘요.";btn.hidden=true;var first=students.find(function(s){return s.scene===teacherScene});if(first&&studentNodes[first.id])studentNodes[first.id].root.classList.add("tutorial-focus")}
     else if(tutorialState.step===2){title.textContent="2. 행동 카드를 사용해 보세요";txt.textContent="행동 카드를 학생에게 끌어 놓을 수 있어요. 모바일에서는 카드를 누르면 선택한 학생에게 바로 사용합니다. 먼저 ‘지켜보기’를 사용해 보세요.";btn.hidden=true;renderTeacherCards()}
     else if(tutorialState.step===3){title.textContent="3. 작은 벨을 울려 보세요";txt.textContent="벨은 학급 전체의 시선을 잠깐 모읍니다. 너무 자주 쓰면 효과가 줄어들어요. 교탁의 벨을 눌러 보세요.";btn.hidden=true;renderClassroomTools()}
     else if(tutorialState.step===4){title.textContent="4. 생기부에서 기록을 확인하세요";txt.textContent="교실에서 일어난 일은 화면 옆에 계속 뜨지 않습니다. 교탁의 생기부를 직접 열어 오늘 기록을 확인해 보세요.";btn.hidden=true;renderClassroomTools()}
@@ -3097,7 +3129,7 @@
     log(SCENE_NAME[scene]+" 쪽으로 이동을 시작했다.","teacher",teacherScene);render();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
+    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
     resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
