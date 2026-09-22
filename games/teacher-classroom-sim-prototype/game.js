@@ -2527,6 +2527,7 @@
       if(phase==="pair")vals.PAIR_WORK+=.12;
     }
 
+    applyTraitActionWeights(s,vals);
     var best=Object.keys(vals)[0];
     Object.keys(vals).forEach(function(k){if(vals[k]>vals[best])best=k});
 
@@ -2582,9 +2583,9 @@
       beginSeek(s,paired,current().kind==="lunchplay"?"PLAY":"TALK");return;
     }
 
-    if(s.roleUntil>gameSec&&Math.random()<.38){
+    if((s.roleUntil>gameSec||hasTrait(s,"helper"))&&Math.random()<(hasTrait(s,"helper")?.24:.38)){
       var helpTarget=chooseSocialTarget(s,"HELP");
-      if(helpTarget&&(helpTarget.belonging<.5||helpTarget.helpNeed>.22)){beginPeerHelp(s,helpTarget);return}
+      if(helpTarget&&(helpTarget.belonging<.5||helpTarget.helpNeed>.22||helpTarget.mood<.52)){beginPeerHelp(s,helpTarget);return}
     }
 
     var conflict=conflictPartner(s);
@@ -2592,7 +2593,9 @@
       beginConflict(s,conflict,"쌓인 감정 때문에");return;
     }
 
-    if(s.socialNeed>.34&&Math.random()<.62){
+    var socialThreshold=hasTrait(s,"friend_dependent")?.24:hasTrait(s,"social")?.30:.34;
+    var socialChance=hasTrait(s,"friend_dependent")?.78:hasTrait(s,"social")?.70:.62;
+    if(s.socialNeed>socialThreshold&&Math.random()<socialChance){
       var socialTarget=chooseSocialTarget(s,"SOCIAL");
       if(socialTarget&&distance(s,socialTarget)>9){
         var socialGoal=current().kind==="lunchplay"&&s.scene==="playground"?"PLAY":"TALK";
@@ -2616,6 +2619,7 @@
     }
 
     if(!choices.length){requestStudentAction(s,"WAIT",{duration:20,force:true});return}
+    choices=choices.map(function(row){return [row[0],Math.max(.001,row[1]*traitActionMultiplier(s,row[0]))]});
     var total=choices.reduce(function(a,c){return a+c[1]},0),r=Math.random()*total,chosen=choices[0][0];
     for(var i=0;i<choices.length;i++){r-=choices[i][1];if(r<=0){chosen=choices[i][0];break}}
 
@@ -2647,14 +2651,19 @@
 
     if(current().kind==="lesson"){
       var fit=lessonFit(s);
-      s.talkNeed=clamp(s.talkNeed+.018*s.soc+.014*(1-fit));
-      s.moveNeed=clamp(s.moveNeed+.016*s.move);
+      var talkTrait=(hasTrait(s,"chatterbox")?.010:0)+(hasTrait(s,"social")?.004:0)+(hasTrait(s,"shy")?-.004:0);
+      var moveTrait=(hasTrait(s,"distractible")?.004:0)+(hasTrait(s,"restless")?.009:0)+(hasTrait(s,"active")?.004:0);
+      s.talkNeed=clamp(s.talkNeed+.018*s.soc+.014*(1-fit)+talkTrait);
+      s.moveNeed=clamp(s.moveNeed+.016*s.move+moveTrait);
       var diagNode=currentKnowledgeNode(s);
       var repeatedGap=diagNode?Math.min(.08,diagNode.evidence*.012):0;
-      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-currentMastery(s))+repeatedGap*.08);
+      var masteryNow=currentMastery(s);
+      var helpTrait=(hasTrait(s,"foundational_gaps")?.007:0)+(hasTrait(s,"easily_discouraged")?.004:0)+(hasTrait(s,"independent")?-.004:0);
+      s.helpNeed=clamp(s.helpNeed+.015*clamp(.69-masteryNow)+repeatedGap*.08+helpTrait);
       s.sleepNeed=clamp(s.sleepNeed+.006*(1-s.energy));
-      s.socialNeed=clamp(s.socialNeed+.006*s.soc);
-      s.boredom=clamp(s.boredom+.013*(1-fit)-.006*s.persist);
+      s.socialNeed=clamp(s.socialNeed+.006*s.soc+(hasTrait(s,"friend_dependent")?.005:0));
+      var boredTrait=(hasTrait(s,"distractible")?.004:0)+(hasTrait(s,"quick_learner")&&masteryNow>.78?.008:0)-(hasTrait(s,"persistent")?.003:0);
+      s.boredom=clamp(s.boredom+.013*(1-fit)-.006*s.persist+boredTrait);
       if(s.scene!==current().loc)stats.lateTicks++;
 
       var nearby=nearbyStudents(s,18);
@@ -2692,9 +2701,9 @@
 
       if(s.actionTicks<=0||s.action==="WORK")decideLesson(s);
     }else{
-      s.talkNeed=clamp(s.talkNeed+.008*s.soc);
-      s.moveNeed=clamp(s.moveNeed+.006*s.move);
-      s.socialNeed=clamp(s.socialNeed+.012*s.soc-.004*s.belonging);
+      s.talkNeed=clamp(s.talkNeed+.008*s.soc+(hasTrait(s,"chatterbox")?.006:0));
+      s.moveNeed=clamp(s.moveNeed+.006*s.move+(hasTrait(s,"restless")?.004:0)+(hasTrait(s,"active")?.002:0));
+      s.socialNeed=clamp(s.socialNeed+.012*s.soc-.004*s.belonging+(hasTrait(s,"friend_dependent")?.007:0));
       if(s.groupId&&groupMembers(s.groupId).length>1){s.socialNeed=clamp(s.socialNeed-.014);s.belonging=clamp(s.belonging+.004)}
       if(s.actionTicks<=0)decideFree(s);
     }
