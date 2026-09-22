@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=20">
+<link rel="stylesheet" href="./style.css?v=22">
 </head>
 <body>
 <main id="app">
@@ -86,7 +86,8 @@
             </button>
 
             <article id="encounterCard" class="encounter-card" tabindex="0">
-              <div class="encounter-card-kicker" id="encounterKicker">상황 발생</div>
+              <div class="encounter-card-kicker" id="encounterKicker">무슨 일이 생겼을까?</div>
+              <div id="encounterPortrait" class="encounter-portrait" aria-hidden="true"></div>
               <h2 id="encounterTitle">교실에서 무언가 일어났다</h2>
               <p id="encounterText"></p>
               <blockquote id="encounterDialogue" hidden></blockquote>
@@ -177,6 +178,6 @@
 
   </div>
 </main>
-<script src="./game.js?v=21"></script>
+<script src="./game.js?v=22"></script>
 </body>
 </html>
