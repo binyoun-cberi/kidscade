@@ -21,14 +21,26 @@
 
   <section class="daybar reigns-daybar">
     <div class="day-identity">
-      <div class="day-time-row"><span id="dayNumber" class="day-number">1일차</span></div>
+      <div class="day-time-row"><span id="dayNumber" class="day-number">1일차</span><strong id="hudClock" class="hud-clock">08:40</strong></div>
       <div id="periodName" class="period">등교·아침활동</div>
     </div>
     <div class="class-meter-strip" aria-label="우리 반 상태">
-      <div><span>📚</span><strong id="hudFlow">72</strong><small>수업</small></div>
-      <div><span>🤝</span><strong id="hudRelation">68</strong><small>관계</small></div>
-      <div><span>🧭</span><strong id="hudStability">72</strong><small>생활</small></div>
-      <div><span>❤️</span><strong id="hudTrust">64</strong><small>신뢰</small></div>
+      <div class="class-meter" data-meter="flow">
+        <span class="meter-icon">📚</span><small>수업</small>
+        <div class="meter-track"><i id="hudFlowFill"></i><b id="hudFlowDelta"></b></div>
+      </div>
+      <div class="class-meter" data-meter="relationship">
+        <span class="meter-icon">🤝</span><small>관계</small>
+        <div class="meter-track"><i id="hudRelationFill"></i><b id="hudRelationDelta"></b></div>
+      </div>
+      <div class="class-meter" data-meter="stability">
+        <span class="meter-icon">🧭</span><small>생활</small>
+        <div class="meter-track"><i id="hudStabilityFill"></i><b id="hudStabilityDelta"></b></div>
+      </div>
+      <div class="class-meter" data-meter="trust">
+        <span class="meter-icon">❤️</span><small>신뢰</small>
+        <div class="meter-track"><i id="hudTrustFill"></i><b id="hudTrustDelta"></b></div>
+      </div>
     </div>
     <div class="day-progress-copy">
       <div id="periodDesc" class="sub">아이들이 하나둘 들어오고 있다.</div>
