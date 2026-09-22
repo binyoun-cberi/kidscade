@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
-import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, pickHistoryQuestions, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
 
 test('history live supports a full classroom', () => {
   assert.equal(MAX_PLAYERS, 26);
@@ -48,4 +48,37 @@ test('solo practice runs locally while live mode keeps server play', () => {
   assert.match(html, /checkpointMode/);
   assert.match(html, /hostContinue/);
   assert.match(html, /현재 .*등|현재 \+'등'/);
+});
+
+
+test('chronological mode spans the full timeline without repeating a core fact', () => {
+  const picked = pickHistoryQuestions(40, () => 0.42, 'chronological');
+  assert.equal(picked.length, 40);
+  assert.equal(new Set(picked.map(q => q.sourceFact)).size, 40);
+  const eraPositions = picked.map(q => ERA_ORDER.indexOf(q.era));
+  for (let i = 1; i < eraPositions.length; i += 1) {
+    assert.ok(eraPositions[i] >= eraPositions[i - 1], 'eras must never go backwards');
+  }
+  assert.equal(picked[0].era, '선사');
+  assert.equal(picked.at(-1).era, '6·25 전쟁');
+  const indexes = chronologicalQuestionIndexes(40);
+  assert.equal(indexes.length, 40);
+  assert.equal(new Set(indexes.map(i => QUESTION_BANK[i].sourceFact)).size, 40);
+});
+
+test('mobile quiz controls are touch friendly and both play modes expose chronology choice', () => {
+  const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
+  assert.match(html, /touch-action:manipulation/);
+  assert.match(html, /@media\(hover:none\) and \(pointer:coarse\)/);
+  assert.match(html, /id="orderMode"/);
+  assert.match(html, /id="soloOrderMode"/);
+  assert.match(html, /value="chronological"/);
+  assert.match(html, /pickHistoryQuestions\(count,Math\.random,orderMode\)/);
+});
+
+test('live server records chronology mode in the room plan', () => {
+  const worker = fs.readFileSync(new URL('../worker/history-live.mjs', import.meta.url), 'utf8');
+  assert.match(worker, /chronologicalQuestionIndexes/);
+  assert.match(worker, /orderMode=body\.orderMode==='chronological'/);
+  assert.match(worker, /plan=\{questions:order,checkpoints,orderMode\}/);
 });
