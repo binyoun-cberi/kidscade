@@ -1432,23 +1432,41 @@ export function shuffledQuestion(question, random = Math.random) {
   };
 }
 
+function chronologicalSourceFactIndexes(count = 15) {
+  const wanted=Math.max(1,Math.min(Number(count)||15,CORE_FACTS.length));
+  const eras=ERA_ORDER.filter(era=>CORE_FACTS.some(f=>f.era===era));
+  const buckets=new Map(eras.map(era=>[era,CORE_FACTS.map((f,i)=>({f,i})).filter(x=>x.f.era===era).map(x=>x.i)]));
+  const base=Math.floor(wanted/eras.length),extra=wanted%eras.length;
+  const selected=[];
+  eras.forEach((era,eraIndex)=>{
+    const bucket=buckets.get(era)||[],take=Math.min(bucket.length,base+(eraIndex<extra?1:0));
+    if(!take)return;
+    for(let j=0;j<take;j++){
+      const pos=take===1?Math.floor((bucket.length-1)/2):Math.round(j*(bucket.length-1)/(take-1));
+      selected.push(bucket[pos]);
+    }
+  });
+  if(selected.length<wanted){
+    const used=new Set(selected);
+    for(const era of eras){
+      for(const index of buckets.get(era)||[]){
+        if(!used.has(index)){selected.push(index);used.add(index)}
+        if(selected.length>=wanted)break;
+      }
+      if(selected.length>=wanted)break;
+    }
+  }
+  return selected.slice(0,wanted);
+}
+
 export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random') {
   const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
-  let factIndexes = Array.from({length:CORE_FACTS.length}, (_,i)=>i);
+  let factIndexes;
 
   if (orderMode === 'chronological') {
-    factIndexes.sort((a,b) => {
-      const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
-      return eraDiff || a - b;
-    });
-    if (wanted < factIndexes.length) {
-      factIndexes = Array.from({length:wanted}, (_,i) => {
-        if (wanted === 1) return factIndexes[0];
-        const position = Math.round(i * (factIndexes.length - 1) / (wanted - 1));
-        return factIndexes[position];
-      });
-    }
+    factIndexes = chronologicalSourceFactIndexes(wanted);
   } else {
+    factIndexes = Array.from({length:CORE_FACTS.length}, (_,i)=>i);
     for (let i = factIndexes.length - 1; i > 0; i -= 1) {
       const j = Math.floor(random() * (i + 1));
       [factIndexes[i], factIndexes[j]] = [factIndexes[j], factIndexes[i]];
@@ -1466,17 +1484,8 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
 }
 
 export function chronologicalQuestionIndexes(count = 15) {
-  const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
-  const facts = Array.from({length:CORE_FACTS.length}, (_,i)=>i).sort((a,b) => {
-    const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
-    return eraDiff || a - b;
-  });
-  const selected = wanted >= facts.length ? facts : Array.from({length:wanted}, (_,i) => {
-    if (wanted === 1) return facts[0];
-    return facts[Math.round(i * (facts.length - 1) / (wanted - 1))];
-  });
-  return selected.map((factIndex,position) => {
-    const candidates = QUESTION_BANK.map((q,i)=>({q,i})).filter(x => x.q.sourceFact === factIndex);
-    return candidates[(position * 3 + factIndex) % candidates.length].i;
+  return chronologicalSourceFactIndexes(count).map((factIndex,position)=>{
+    const candidates=QUESTION_BANK.map((q,i)=>({q,i})).filter(x=>x.q.sourceFact===factIndex);
+    return candidates[(position*3+factIndex)%candidates.length].i;
   });
 }
