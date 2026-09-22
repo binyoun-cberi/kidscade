@@ -157,6 +157,8 @@ jobs:
         run: node --test tests/age-navigation.test.cjs
       - name: Run launcher regression tests
         run: node --test tests/game-launcher.test.cjs
+      - name: Run game exit navigation tests
+        run: node --test tests/game-exit-navigation.test.cjs
       - name: Run critical release smoke tests
         run: node --test tests/release-smoke.test.cjs tests/game-filenames.test.cjs
       - name: Run recommendation regression tests
