@@ -605,9 +605,9 @@
 
 
   var TRAIT_CATALOG={
-    adhd:{label:"ADHD",category:"support",desc:"주의 전환·충동 조절·과제 시작과 지속에 지원이 필요할 수 있음",response:{up:-.08,left:.12,right:.06},encounters:{off_task:1.55,careless_fast_work:1.35,missing_homework:1.28,question_monopoly:1.16}},
+    distractible:{label:"산만함",category:"behavior",desc:"주변 자극에 쉽게 주의가 옮겨가고 과제 흐름을 놓치는 경우가 있음",response:{up:-.08,left:.12,right:.06},encounters:{off_task:1.55,careless_fast_work:1.35,missing_homework:1.28,question_monopoly:1.16}},
     impulsive:{label:"충동적",category:"behavior",desc:"생각보다 행동이 먼저 나오는 경우가 많음",response:{up:-.04,left:.10},encounters:{stationery_taken:1.48,careless_fast_work:1.32,teasing_boundary:1.22,game_loss:1.22}},
-    restless:{label:"산만함",category:"behavior",desc:"자극에 쉽게 시선이 이동하고 한 활동을 오래 유지하기 어려움",response:{left:.10,up:.03},encounters:{off_task:1.48,after_lunch_sleepy:.78,missing_homework:1.12}},
+    restless:{label:"주의 전환이 잦음",category:"behavior",desc:"한 활동을 이어가다가 다른 자극으로 시선과 행동이 자주 이동함",response:{left:.10,up:.03},encounters:{off_task:1.48,after_lunch_sleepy:.78,missing_homework:1.12}},
     active:{label:"활동적",category:"behavior",desc:"움직임이 많고 몸을 쓰는 활동에 에너지가 높음",response:{right:.06,left:.04},encounters:{off_task:1.16,game_loss:1.18,after_lunch_sleepy:.82}},
     playful:{label:"장난기 많음",category:"behavior",desc:"재미있는 자극과 장난을 쉽게 찾음",response:{right:.08,up:-.05},encounters:{teasing_boundary:1.48,off_task:1.24,stationery_taken:1.18}},
     chatterbox:{label:"말이 많음",category:"behavior",desc:"생각과 이야기를 말로 표현하는 욕구가 큼",response:{up:.03,down:.04},encounters:{question_monopoly:1.55,off_task:1.42}},
@@ -637,23 +637,23 @@
   };
 
   var STUDENT_TRAITS={
-    "민수":["adhd","impulsive","active","social","authority_resistant","playful"],
+    "민수":["distractible","impulsive","active","social","authority_resistant","playful"],
     "지우":["social","helper","empathetic","fairness_sensitive","persistent"],
     "서연":["model_student","perfectionist","persistent","sensitive_rejection","quiet_internalizer"],
     "준호":["competitive","social","active","autonomy_seeker","impulsive","leadership"],
     "태호":["creative","sensitive_rejection","slow_to_warm","foundational_gaps","easily_discouraged"],
     "유나":["model_student","helper","empathetic","persistent","rule_oriented"],
-    "현우":["adhd","impulsive","restless","active","authority_resistant","competitive"],
+    "현우":["distractible","impulsive","restless","active","authority_resistant","competitive"],
     "소라":["creative","quiet_internalizer","persistent","sensitive_rejection","helper"],
     "도윤":["active","social","competitive","leadership","needs_structure"],
     "하린":["model_student","perfectionist","rule_oriented","persistent","quiet_internalizer"],
     "예준":["competitive","leadership","autonomy_seeker","quick_learner","social"],
     "채원":["creative","helper","empathetic","persistent","quiet_internalizer"],
-    "시우":["adhd","impulsive","restless","social","playful","authority_resistant"],
+    "시우":["distractible","impulsive","restless","social","playful","authority_resistant"],
     "다은":["creative","helper","empathetic","persistent","sensitive_rejection"],
     "건우":["active","competitive","social","impulsive","playful"],
     "아린":["shy","sensitive_rejection","quiet_internalizer","creative","needs_structure"],
-    "지호":["adhd","impulsive","active","playful","authority_resistant","social"],
+    "지호":["distractible","impulsive","active","playful","authority_resistant","social"],
     "은서":["model_student","perfectionist","rule_oriented","quick_learner","persistent"],
     "윤호":["social","leadership","autonomy_seeker","persistent","independent"],
     "나연":["social","helper","empathetic","fairness_sensitive","chatterbox"],
@@ -3911,7 +3911,7 @@
       btn.textContent="다음";
     }else if(tutorialState.step===2){
       title.textContent="숫자는 결과를 확인하는 도구입니다";
-      txt.textContent="📑 명부에는 ADHD, 충동적, 모범생, 완벽주의, 낯가림처럼 학생의 기본 특성이 적혀 있습니다. 특성을 읽으면 어떤 사건이 잘 생기고 어떤 교사 대응에 민감한지 미리 짐작할 수 있으며, 실제 수치 변화도 학생마다 달라집니다.";
+      txt.textContent="📑 명부에는 산만함, 충동적, 모범생, 완벽주의, 낯가림처럼 학생의 기본 특성이 적혀 있습니다. 특성을 읽으면 어떤 사건이 잘 생기고 어떤 교사 대응에 민감한지 미리 짐작할 수 있으며, 실제 수치 변화도 학생마다 달라집니다.";
       var roster=q('[data-class-tool="roster"]');if(roster)roster.classList.add("tutorial-focus");
       btn.textContent="다음";
     }else{
