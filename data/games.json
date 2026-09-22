@@ -44,11 +44,11 @@
     {
       "id": "high_history_timebattle_live",
       "title": "역사 타임배틀 LIVE",
-      "href": "games/high_history_timebattle/history_timebattle.html?v=5",
+      "href": "games/high_history_timebattle/history_timebattle.html?v=6",
       "category": "trivia",
       "age": "high",
       "icon": "⏳",
-      "description": "1,300개가 넘는 핵심 한국사 지식에서 2,400개 이상의 문항을 출제! 혼자 연습·최대 26명 LIVE, 무작위·시대순, 최대 40문제와 중간 순위를 지원합니다."
+      "description": "1,300개가 넘는 핵심 한국사 지식으로 객관식·OX·혼합 문제를 출제! 같은 시대의 비슷한 선택지로 더 헷갈리게 구성하고, 혼자 연습·최대 26명 LIVE·시대순·최대 40문제·중간 순위를 지원합니다."
     },
     {
       "id": "high_quarantine_17",
