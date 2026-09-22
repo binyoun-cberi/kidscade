@@ -790,11 +790,19 @@
     }
     return {title:"지난 판단의 결과가 다시 나타났다",text:who+"에게 있었던 '"+job.sourceTitle+"' 상황이 다른 모습으로 다시 나타났다. 이전의 "+prev+" 선택이 학생의 다음 행동에 영향을 준 듯하다.",dialogue:""};
   }
-  function followUpChoices(s){
+  function followUpChoices(s,job){
+    var leftEffects={focus:2,trust:2,classFlow:-3};
+    var source=job&&job.sourceTemplateId||"";
+    if(["math_foundation_gap","finished_early"].indexOf(source)>=0){leftEffects.learning=4;leftEffects.focus=3}
+    else if(["stationery_taken","peer_conflict","social_exclusion"].indexOf(source)>=0){leftEffects.relation=4;leftEffects.mood=2}
+    else if(source==="teacher_defiance"){leftEffects.trust=4;leftEffects.classStability=3}
+    else if(source==="missing_homework"){leftEffects.focus=4;leftEffects.classStability=2}
+    else if(source==="presentation_anxiety"){leftEffects.mood=4;leftEffects.trust=3}
+    else if(source==="off_task"){leftEffects.focus=5;leftEffects.classStability=1}
     return {
       up:encounterChoice("지금 나타난 변화를 학급의 기준과 연결해 다시 분명히 확인한다.",{focus:2,trust:-1,classStability:4,classFlow:2},"이번 변화가 우연으로 끝나지 않도록 기준과 기대 행동을 다시 분명하게 했다."),
       down:encounterChoice("학생이 지금 어떻게 느끼는지 듣고 필요한 지원을 조금 조정한다.",{mood:4,trust:4,relation:2,classFlow:-2},"학생의 현재 경험을 다시 확인하면서 이전 개입을 상황에 맞게 조정했다."),
-      left:encounterChoice("잘된 점과 아직 어려운 점을 짚고 다음에 사용할 방법을 한 단계 더 연습한다.",{learning:3,focus:3,trust:2,relation:2,classFlow:-3},"이전 경험을 다음 기술 학습으로 연결해 한 단계 더 연습했다."),
+      left:encounterChoice("잘된 점과 아직 어려운 점을 짚고 다음에 사용할 방법을 한 단계 더 연습한다.",leftEffects,"이전 경험을 다음에 사용할 구체적인 방법으로 연결해 한 단계 더 연습했다."),
       right:encounterChoice("이번에는 다음 행동과 목표를 학생이 직접 정하게 한다.",{focus:2,mood:2,trust:3,classStability:0},"이전 경험을 바탕으로 다음 선택의 책임을 학생에게 넘겼다.")
     };
   }
@@ -830,7 +838,7 @@
       id:"enc-"+(++encounterSeq),templateId:"followup_"+job.sourceTemplateId,sourceTemplateId:job.sourceTemplateId,
       category:"후속 · "+(job.sourceTemplateId==="math_foundation_gap"?"학습":"생활"),
       title:n.title,text:n.text,dialogue:n.dialogue||"",studentId:s.id,targetId:t?t.id:null,
-      createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s),
+      createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s,job),
       isFollowUp:true,followUpId:job.id,chainDepth:job.chainDepth||1,
       previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,effectSubject:job.sourceSubject||null,
       kicker:"Day "+dayIndex+" · 후속 상황"
