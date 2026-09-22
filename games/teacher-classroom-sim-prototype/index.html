@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=15">
+<link rel="stylesheet" href="./style.css?v=16">
 </head>
 <body>
 <main id="app">
@@ -74,12 +74,13 @@
         </div>
 
         <div id="students"></div>
+        <button id="encounterToken" class="encounter-token" type="button" hidden aria-label="판단 상황 열기"><span>📌</span><small>상황</small></button>
         <div id="offscreen" class="offscreen-note">22명 보임</div>
 
         <section id="classroomConsole" class="classroom-console" aria-label="교탁 도구">
           <button type="button" class="class-tool tool-computer" data-class-tool="computer" title="수업 컴퓨터"><span class="tool-object">🖥️</span><small>컴퓨터</small></button>
           <button id="classBell" type="button" class="class-tool tool-bell" title="학급 벨"><span class="tool-object">🔔</span><small>벨</small></button>
-          <button type="button" class="class-tool tool-clipboard" data-class-tool="clipboard" title="관찰 클립보드"><span class="tool-object">📋</span><small>관찰판</small></button>
+          <button type="button" class="class-tool tool-clipboard" data-class-tool="roster" title="학급 명부"><span class="tool-object">📑</span><small>명부</small></button>
           <button type="button" class="class-tool tool-seating" data-class-tool="seating" title="자리배치표"><span class="tool-object">🪑</span><small>자리표</small></button>
           <button type="button" class="class-tool tool-record" data-class-tool="record" title="생활기록부"><span class="tool-object">📒</span><small>생기부</small></button>
         </section>
@@ -88,6 +89,46 @@
           <div class="action-tray-head"><span>행동 카드</span><strong id="actionTrayTarget">학생 선택</strong><button id="closeActionTray" type="button" aria-label="행동 카드 닫기">×</button></div>
           <div id="teacherActionCards" class="teacher-action-cards"></div>
           <div class="action-tray-tip">카드를 학생에게 끌어 놓거나 카드를 눌러 바로 사용하세요.</div>
+        </section>
+
+        <section id="encounterOverlay" class="encounter-overlay" hidden aria-live="assertive">
+          <div class="encounter-shell">
+            <div class="encounter-topline">
+              <span id="encounterCategory">교사 판단</span>
+              <strong id="encounterTimerText">12초</strong>
+            </div>
+            <div class="encounter-timer"><i id="encounterTimerFill"></i></div>
+
+            <button type="button" class="encounter-choice choice-up" data-encounter-dir="up">
+              <span class="direction">↑ 원칙 · 권위</span><strong id="encounterChoiceUp"></strong><small id="encounterEffectUp"></small>
+            </button>
+            <button type="button" class="encounter-choice choice-left" data-encounter-dir="left">
+              <span class="direction">← 교육 · 코칭</span><strong id="encounterChoiceLeft"></strong><small id="encounterEffectLeft"></small>
+            </button>
+
+            <article id="encounterCard" class="encounter-card" tabindex="0">
+              <div class="encounter-card-kicker" id="encounterKicker">상황 발생</div>
+              <h2 id="encounterTitle">교실에서 무언가 일어났다</h2>
+              <p id="encounterText"></p>
+              <blockquote id="encounterDialogue" hidden></blockquote>
+              <div class="encounter-student" id="encounterStudent"></div>
+              <div class="encounter-drag-hint">카드를 네 방향으로 밀거나 주변 선택지를 누르세요.</div>
+            </article>
+
+            <button type="button" class="encounter-choice choice-right" data-encounter-dir="right">
+              <span class="direction">자율 · 책임 →</span><strong id="encounterChoiceRight"></strong><small id="encounterEffectRight"></small>
+            </button>
+            <button type="button" class="encounter-choice choice-down" data-encounter-dir="down">
+              <span class="direction">↓ 공감 · 관계</span><strong id="encounterChoiceDown"></strong><small id="encounterEffectDown"></small>
+            </button>
+
+            <section id="encounterResult" class="encounter-result" hidden>
+              <h3 id="encounterResultTitle">판단의 결과</h3>
+              <p id="encounterResultText"></p>
+              <div id="encounterResultStats" class="encounter-result-stats"></div>
+              <button id="encounterReturn" type="button" class="primary">교실로 돌아가기</button>
+            </section>
+          </div>
         </section>
 
         <section id="toolModal" class="tool-modal" hidden aria-live="polite">
@@ -192,6 +233,6 @@
     </aside>
   </div>
 </main>
-<script src="./game.js?v=15"></script>
+<script src="./game.js?v=16"></script>
 </body>
 </html>
