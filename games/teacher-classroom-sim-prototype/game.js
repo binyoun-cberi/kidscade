@@ -135,6 +135,10 @@
   var incidentRecords=[];
   var reportOpen=false;
   var armedActionId=null;
+  var armedActionTargetId=null;
+  var cardDragActive=false;
+  var cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};
+  var cardRenderSignature="";
   var toolModalKind=null;
   var modalWasRunning=true;
   var lastBellAt=-99999;
@@ -360,6 +364,7 @@
     return mode==="seated"?createSeatedAvatar(look):createStandingAvatar(look);
   }
   function studentById(id){return students.find(function(s){return s.id===id})||null}
+  function studentByName(name){return students.find(function(s){return s.name===name})||null}
   function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
   function activePair(s){
     return s.pairWith!==null&&s.pairUntil>gameSec?studentById(s.pairWith):null;
@@ -616,7 +621,28 @@
   }
   function log(text,type,scene){
     type=type||"normal";scene=scene||teacherScene;
-    pushLogItem({stamp:fmtMin(gameMinute()),text:text,type:type,scene:scene,script:false});
+    var item={stamp:fmtMin(gameMinute()),text:text,type:type,scene:scene,script:false,recordable:type==="incident"};
+    pushLogItem(item);
+  }
+  function spawnIncidentEmojiBurst(item){
+    if(!item||item.type!=="incident")return;
+    var names=[item.speaker,item.replySpeaker].filter(Boolean),targets=[];
+    names.forEach(function(name){
+      String(name).split(" · ").forEach(function(part){var s=studentByName(part.trim());if(s&&s.scene===teacherScene&&targets.indexOf(s)<0)targets.push(s)});
+    });
+    if(!targets.length)return;
+    var world=q("#world"),emojis=["😠","💢","❗","💬","😣","⚡","😡"];
+    targets.slice(0,3).forEach(function(s,ti){
+      for(var i=0;i<6;i++){
+        var el=document.createElement("span");el.className="incident-emoji";el.textContent=emojis[(i+ti*2)%emojis.length];
+        el.style.setProperty("--x",s.x+"%");el.style.setProperty("--y",Math.max(7,s.y-5)+"%");
+        var ang=(-145+i*58+ti*17)*Math.PI/180,dist=42+(i%3)*15;
+        el.style.setProperty("--dx",(Math.cos(ang)*dist).toFixed(1)+"px");
+        el.style.setProperty("--dy",(Math.sin(ang)*dist-24).toFixed(1)+"px");
+        el.style.setProperty("--rot",(-18+i*8)+"deg");
+        world.appendChild(el);setTimeout(function(node){return function(){node.remove()}}(el),1450);
+      }
+    });
   }
   function scriptLog(opts){
     opts=opts||{};
@@ -630,15 +656,17 @@
       speaker:opts.speaker||"",
       dialogue:opts.dialogue||"",
       replySpeaker:opts.replySpeaker||"",
-      replyDialogue:opts.replyDialogue||""
+      replyDialogue:opts.replyDialogue||"",
+      recordable:opts.recordable===true||(opts.type||"social")==="incident"
     };
     pushLogItem(item);
+    if(item.type==="incident")spawnIncidentEmojiBurst(item);
   }
   function pickLine(lines){return lines[Math.floor(Math.random()*lines.length)]}
   function studentTalkLine(s,target,mode){
-    if(mode==="pair")return pickLine(["나는 이렇게 했는데, 너는?","여기부터 같이 볼래?","이거 답이 왜 이렇게 되는 거야?","잠깐, 네가 한 것도 보여줘."]);
-    if(mode==="lesson")return pickLine(["이거 끝나면 뭐 할 거야?","아까 그거 봤어?","나 이거 잘 모르겠어.","몇 번까지 했어?"]);
-    if(mode==="play")return pickLine(["같이 할래?","우리 저쪽 가자.","이번엔 내가 먼저 할게.","같이 팀 할래?"]);
+    if(mode==="pair")return pickLine(["나는 이렇게 했는데, 너는 어떻게 했어?","여기부터 같이 확인할래?","이 답이 왜 나왔는지 설명해 줄래?","잠깐, 네 풀이도 보여줘."]);
+    if(mode==="lesson")return pickLine(["야, 쉬는 시간에 운동장 갈래?","오늘 급식 뭐 나오는지 알아?","나 어제 그 게임에서 진짜 웃긴 일 있었어.","아까 복도에서 본 거 말해줄까?","이따 끝나고 같이 놀자."]);
+    if(mode==="play")return pickLine(["같이 할래?","우리 저쪽에서 하자.","이번엔 내가 먼저 할게.","같은 팀 하자."]);
     return pickLine(["뭐 하고 있었어?","같이 있을래?","아까 그거 봤어?","잠깐 이것 좀 봐봐."]);
   }
   function teacherLine(kind,s){
@@ -1001,9 +1029,9 @@
     remember(a,b.name+"와 말다툼이 생김",.62);remember(b,a.name+"와 말다툼이 생김",.62);
     scriptLog({
       speaker:a.name,
-      dialogue:pickLine(["왜 자꾸 그래?","그거 내가 먼저 했잖아.","하지 말라고 했잖아.","내가 그런 거 아니야."]),
+      dialogue:pickLine(["내가 먼저 쓰고 있었잖아. 왜 가져가?","아까부터 하지 말라고 했잖아.","내 자리인데 왜 자꾸 와?","그 말 기분 나쁘다고 했잖아."]),
       replySpeaker:b.name,
-      replyDialogue:pickLine(["너도 그랬잖아.","아니거든.","그만해.","왜 나한테만 그래?"]),
+      replyDialogue:pickLine(["너도 아까 나한테 그랬잖아.","안 가져갔거든. 잠깐 본 거야.","네가 먼저 시작했잖아.","왜 나한테만 뭐라고 해?"]),
       stage:reason+" 두 학생의 목소리가 조금씩 커졌다.",
       summary:a.name+"와 "+b.name+" 사이에 말다툼이 시작됐다.",
       type:"incident",scene:a.scene
@@ -1103,12 +1131,12 @@
     }
     remember(actor,text,.82);
     if(kind==="exclusion"&&target){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["너는 오늘 같이 하지 마.","우리끼리 할 거야.","넌 다른 데 가."]),
-        replySpeaker:target.name,replyDialogue:pickLine(["왜?","나도 같이 하면 안 돼?","…"]),
+      scriptLog({speaker:actor.name,dialogue:pickLine(["너는 이번 판에 끼지 마. 우리끼리 할 거야.","아니, 너랑은 같이 안 할래. 다른 데 가.","우리 이미 팀 정했어. 너는 빠져."]),
+        replySpeaker:target.name,replyDialogue:pickLine(["왜 나만 빼는데?","나도 같이 하기로 했잖아.","한 번만 같이 하면 안 돼?"]),
         stage:"주변의 움직임이 "+target.name+"을(를) 바깥쪽으로 밀어냈다.",summary:text,type:"incident",scene:actor.scene});
     }else if(kind==="taking"&&target){
-      scriptLog({speaker:target.name,dialogue:pickLine(["내 거야. 돌려줘.","하지 마, 내가 쓰고 있었어.","그거 줘."]),
-        replySpeaker:actor.name,replyDialogue:pickLine(["잠깐만 쓸 거야.","내가 먼저 쓸래.","그냥 좀 쓰자."]),
+      scriptLog({speaker:target.name,dialogue:pickLine(["그거 내 거야. 허락도 안 했잖아. 돌려줘.","내가 지금 쓰고 있었어. 왜 가져가?","하지 마. 내 물건이야."]),
+        replySpeaker:actor.name,replyDialogue:pickLine(["잠깐만 쓰고 줄게.","나도 필요한데 왜 안 빌려줘?","조금만 쓰는 건데 왜 그래?"]),
         stage:actor.name+"이(가) "+target.name+"의 물건을 손에 쥐었다.",summary:text,type:"incident",scene:actor.scene});
     }else if(kind==="threat"&&target){
       scriptLog({speaker:actor.name,dialogue:pickLine(["계속 그러면 가만 안 둘 거야.","한 번만 더 해봐.","그만하라고 했지."]),
@@ -1202,7 +1230,7 @@
           speaker:s.name,
           dialogue:studentTalkLine(s,p,"lesson"),
           replySpeaker:p?p.name:"",
-          replyDialogue:p&&Math.random()<.62?pickLine(["응?","잠깐만.","나도 잘 모르겠어.","쉿, 이따 얘기하자."]):"",
+          replyDialogue:p&&Math.random()<.62?pickLine(["응, 나도 갈래.","진짜? 이따 자세히 말해줘.","오늘 급식 맛있는 거 나온대.","쉿, 선생님 보셔.","알겠어. 쉬는 시간에 얘기하자."]):"",
           stage:s.name+"이(가) "+(p?p.name+" 쪽으로 몸을 기울였다.":"옆자리 쪽을 힐끗 봤다."),
           summary:s.name+"이(가) 수업 중 말을 걸기 시작했다.",
           type:"incident",scene:s.scene
@@ -1278,8 +1306,8 @@
       p.frustration=clamp(p.frustration+.07);p.mood=clamp(p.mood-.045);
       remember(p,s.name+"의 놀림을 받음",.48);
       scriptLog({
-        speaker:s.name,dialogue:pickLine(["그것도 몰라?","또 그랬어?","왜 그렇게 해?"]),
-        replySpeaker:p.name,replyDialogue:pickLine(["그만해.","하지 마.","뭐가?"]),
+        speaker:s.name,dialogue:pickLine(["야, 또 틀렸네. 그것도 모르냐?","너 아까부터 계속 실수하네.","그 그림 좀 이상한데?","왜 맨날 그렇게 해?"]),
+        replySpeaker:p.name,replyDialogue:pickLine(["그만 좀 해. 기분 나빠.","하지 말라고 했잖아.","내가 알아서 할 거야.","너나 신경 써."]),
         stage:p.name+"의 표정이 굳고 몸이 조금 뒤로 물러났다.",
         summary:s.name+"이(가) "+p.name+"을(를) 놀렸다.",type:"incident",scene:s.scene
       });
@@ -1307,7 +1335,7 @@
     if(a==="REFUSE_INSTRUCTION"){
       s.teacherDefiance=clamp(s.teacherDefiance+.06);s.focus=clamp(s.focus-.04);
       scriptLog({
-        speaker:s.name,dialogue:pickLine(["저 안 할래요.","왜 해야 돼요?","지금 하기 싫어요."]),
+        speaker:s.name,dialogue:pickLine(["지금 하기 싫어요. 왜 저만 계속 시켜요?","아까 했잖아요. 저 이제 안 할래요.","모르겠는데 자꾸 하라고 하지 마세요.","저 지금 이거 하기 싫다고요."]),
         stage:"교사의 안내 뒤에도 "+s.name+"의 손이 과제로 돌아가지 않았다.",
         summary:s.name+"이(가) 교사의 안내를 거부했다.",type:"incident",scene:s.scene
       });
@@ -2283,8 +2311,11 @@
   }
   function executeActionForStudent(id,studentId){
     var s=studentById(studentId),action=TEACHER_ACTIONS[id];
-    if(!s||!action||teacherIsBusy()||s.scene!==teacherScene||!action.when(s))return;
-    selected=s.id;armedActionId=null;startTeacherTask(action,s);tutorialEvent("action");render();
+    if(!s||!action||teacherIsBusy()||s.scene!==teacherScene)return;
+    var validNow=!action.when||action.when(s);
+    if(!validNow&&!actionWasOffered(id,studentId))return;
+    selected=s.id;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardRenderSignature="";
+    startTeacherTask(action,s);tutorialEvent("action");render();
   }
   function teacherAction(kind){
     var map={approach:"proximity",call:"quietCall",praise:"praise",hint:"hint",chalk:"chalk",mediate:"mediate",separate:"separate",role:"role"};
@@ -2528,10 +2559,29 @@
     return map[s.action]||null;
   }
   function visualSignal(s){
-    if(isSevereAction(s)||s.action==="SHOVE"||s.action==="HURT"||s.victimStress>.15)return {icon:"!",tone:"danger",label:"즉시 확인"};
-    if(s.action==="HELP"||s.action==="RAISE_HAND"||s.action==="REPORT_INCIDENT"||s.helpNeed>.27)return {icon:"?",tone:"help",label:"도움 신호"};
-    if(["ARGUE","TEASE","REFUSE_INSTRUCTION","REJECTED","EXCLUDE_TARGET"].indexOf(s.action)>=0||s.frustration>.54)return {icon:"…",tone:"relation",label:"관계·감정 신호"};
-    if(["HELP_PEER","COMFORT","DEFEND_PEER","PAIR_WORK"].indexOf(s.action)>=0)return {icon:"★",tone:"positive",label:"좋은 순간"};
+    if(["HIT","SHOVE","THREATEN","THROW_AT_TEACHER","TAKE_ITEM_FORCE"].indexOf(s.action)>=0)return {icon:"💥",tone:"danger",label:"위험한 행동"};
+    if(s.action==="HURT"||s.victimStress>.15)return {icon:"😣",tone:"mood",label:"불편하거나 놀란 상태"};
+    if(s.action==="ARGUE")return {icon:"😠",tone:"danger",label:"말다툼"};
+    if(s.action==="TEASE")return {icon:"😏",tone:"danger",label:"놀리는 중"};
+    if(s.action==="EXCLUDE_TARGET")return {icon:"🚫",tone:"danger",label:"친구를 배제하는 중"};
+    if(["REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER"].indexOf(s.action)>=0)return {icon:"😤",tone:"danger",label:"교사 안내에 강하게 반발"};
+    if(s.action==="REJECTED")return {icon:"😞",tone:"mood",label:"속상해하는 중"};
+    if(s.frustration>.58)return {icon:"😠",tone:"mood",label:"기분이 많이 상한 상태"};
+    if(s.mood<.44)return {icon:"😟",tone:"mood",label:"기분이 좋지 않은 상태"};
+    if(["HELP","RAISE_HAND","REPORT_INCIDENT"].indexOf(s.action)>=0||s.helpNeed>.30)return {icon:"🙋",tone:"help",label:"도움이나 말할 것이 있음"};
+    if(["HELP_PEER","COMFORT","DEFEND_PEER"].indexOf(s.action)>=0)return {icon:"🤝",tone:"positive",label:"친구를 돕는 중"};
+    if(["TALK","PAIR_WORK"].indexOf(s.action)>=0)return {icon:"💬",tone:"talk",label:"이야기 중"};
+    if(["WORK","READ","ATTEND"].indexOf(s.action)>=0)return {icon:"📚",tone:"study",label:"공부 중"};
+    if(["DOODLE","PASS_NOTE"].indexOf(s.action)>=0)return {icon:"📝",tone:"activity",label:"다른 행동 중"};
+    if(s.action==="SLEEP")return {icon:"😴",tone:"mood",label:"졸고 있음"};
+    if(["MOVE","RUN","STRETCH"].indexOf(s.action)>=0)return {icon:"🏃",tone:"activity",label:"움직이는 중"};
+    if(["PLAY","COMPETE"].indexOf(s.action)>=0)return {icon:"⚽",tone:"activity",label:"놀이·활동 중"};
+    if(["EAT","SHARE"].indexOf(s.action)>=0)return {icon:"🍱",tone:"activity",label:"식사 중"};
+    if(s.action==="CLEAN")return {icon:"🧹",tone:"activity",label:"정리 중"};
+    if(s.action==="DRINK_WATER")return {icon:"🥤",tone:"activity",label:"물을 마시는 중"};
+    if(["BORROW_ITEM","DROP_ITEM"].indexOf(s.action)>=0)return {icon:"✏️",tone:"activity",label:"준비물을 다루는 중"};
+    if(s.action==="LOOK_OUTSIDE")return {icon:"🪟",tone:"activity",label:"창밖을 보는 중"};
+    if(s.action==="PRESENT")return {icon:"🎤",tone:"activity",label:"발표 중"};
     return null;
   }
   function priorityScore(s){
@@ -2718,8 +2768,7 @@
     }).join("");
   }
 
-  function studentToolActions(s){
-    if(!s)return [];
+  function computeStudentToolActionIds(s){
     var ids;
     if(isSevereAction(s)||s.action==="SHOVE"||s.action==="HURT")ids=["immediateStop","checkSafety","requestSupport","documentIncident"];
     else if(s.action==="ARGUE"||conflictPartner(s))ids=["listen","mediate","separate","watch"];
@@ -2728,7 +2777,21 @@
     else if(isPositiveAction(s))ids=["praise","watch","role","listen"];
     else ids=["watch","praise","listen","role"];
     if(tutorialState.active&&tutorialState.step===2&&ids.indexOf("watch")<0)ids.unshift("watch");
-    return ids.map(function(id){return TEACHER_ACTIONS[id]}).filter(function(a){return a&&(!a.when||a.when(s))}).slice(0,4);
+    return ids.filter(function(id){var a=TEACHER_ACTIONS[id];return a&&(!a.when||a.when(s))}).slice(0,4);
+  }
+  function studentToolActions(s){
+    if(!s)return [];
+    var urgent=isSevereAction(s)||s.action==="SHOVE"||s.action==="HURT";
+    var snapValid=cardTraySnapshot.targetId===s.id&&gameSec<cardTraySnapshot.expiresAt;
+    if(urgent&&!cardTraySnapshot.urgent)snapValid=false;
+    if(!snapValid&&!cardDragActive){
+      cardTraySnapshot={targetId:s.id,ids:computeStudentToolActionIds(s),expiresAt:gameSec+45,urgent:urgent};
+    }
+    var ids=(cardTraySnapshot.targetId===s.id&&cardTraySnapshot.ids.length)?cardTraySnapshot.ids:computeStudentToolActionIds(s);
+    return ids.map(function(id){return TEACHER_ACTIONS[id]}).filter(Boolean);
+  }
+  function actionWasOffered(id,studentId){
+    return cardTraySnapshot.targetId===studentId&&cardTraySnapshot.ids.indexOf(id)>=0&&gameSec<cardTraySnapshot.expiresAt+20;
   }
   function renderTeacherCards(){
     var tray=q("#actionTray"),wrap=q("#teacherActionCards"),target=q("#actionTrayTarget"),s=studentById(selected);
@@ -2738,6 +2801,10 @@
     if(tray.hidden)return;
     target.textContent=s.name+" · "+humanAction(s);
     tray.classList.toggle("tutorial-focus",tutorialState.active&&tutorialState.step===2);
+    var signature=s.id+"|"+actions.map(function(a){return a.id}).join(",")+"|"+(armedActionId||"");
+    if(cardDragActive)return;
+    if(cardRenderSignature===signature)return;
+    cardRenderSignature=signature;
     wrap.innerHTML=actions.map(function(a){
       var ui=actionUi(a.id);
       return '<button type="button" draggable="true" class="teacher-card '+(armedActionId===a.id?"armed":"")+'" data-action-id="'+a.id+'"><span class="card-icon">'+ui.icon+'</span><span><strong>'+escHtml(ui.short)+'</strong><small>'+escHtml(ui.cue)+' · '+escHtml(fmtDuration(a.duration||0))+'</small></span></button>';
@@ -2766,8 +2833,20 @@
     var modal=q("#toolModal");if(modal)modal.hidden=true;toolModalKind=null;
     if(resume!==false)running=modalWasRunning;renderClassroomTools();
   }
+  function recordableEvent(item){return !!item&&item.recordable===true}
   function recordEntryHtml(item){
-    return '<div class="record-entry '+escHtml(item.type||"normal")+'"><time>'+escHtml(item.stamp||"")+'</time><div>'+escHtml(item.text||"")+'</div></div>';
+    var place=SCENE_NAME[item.scene]||item.scene||"";
+    var html='<article class="record-entry '+escHtml(item.type||"normal")+'"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div><div class="record-summary">'+escHtml(item.text||"")+'</div>';
+    if(item.script){
+      if(item.stage)html+='<div class="record-stage">'+escHtml(item.stage)+'</div>';
+      if(item.dialogue||item.replyDialogue){
+        html+='<div class="record-dialogue">';
+        if(item.dialogue)html+='<div class="record-line"><strong>'+escHtml(item.speaker||"학생")+'</strong><span>“'+escHtml(item.dialogue)+'”</span></div>';
+        if(item.replyDialogue)html+='<div class="record-line reply"><strong>'+escHtml(item.replySpeaker||"학생")+'</strong><span>“'+escHtml(item.replyDialogue)+'”</span></div>';
+        html+='</div>';
+      }
+    }
+    return html+'</article>';
   }
   function renderToolModal(kind){
     var title=q("#toolModalTitle"),kicker=q("#toolModalKicker"),body=q("#toolModalBody"),s=studentById(selected);
@@ -2795,8 +2874,8 @@
       body.innerHTML='<div class="tool-section"><h4>현재 자리</h4><div class="seat-mini-grid">'+seatHtml+'</div></div><div class="tool-section"><h4>사용법</h4><div>'+(s?escHtml(s.name)+'을(를) 선택했습니다. 아래 기능으로 두 번째 학생을 선택해 자리를 바꾸거나 친구를 연결할 수 있어요.':'자리표에서 학생을 먼저 선택하세요.')+'</div><div class="tool-grid" style="margin-top:8px">'+(s?'<button type="button" class="tool-choice" data-seating-action="seatAdjust"><strong>🪑 자리 바꾸기</strong><small>다음 학생을 선택해 두 자리를 바꿉니다.</small></button><button type="button" class="tool-choice" data-seating-action="connectPeer"><strong>🧑‍🤝‍🧑 함께할 친구 연결</strong><small>다음 학생과 함께할 기회를 만듭니다.</small></button>':'')+'</div></div>';
     }else if(kind==="record"){
       kicker.textContent="생활기록부";title.textContent=s?s.name+" · 오늘의 기록":"우리 반 · 오늘의 기록";
-      var items=dayEvents.slice(-40).reverse();
-      var html='<div class="tool-section"><h4>오늘 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 기록된 일이 없습니다.</div>')+'</div></div>';
+      var items=dayEvents.filter(recordableEvent).slice(-50).reverse();
+      var html='<div class="tool-section"><h4>생활지도·사건 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 생활지도에 기록할 만한 상황이 없습니다. 평범한 대화나 정상적인 놀이·학습 대화는 생기부에 남기지 않습니다.</div>')+'</div></div>';
       if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">'+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
       body.innerHTML=html;tutorialEvent("record");
     }
@@ -3018,7 +3097,7 @@
     log(SCENE_NAME[scene]+" 쪽으로 이동을 시작했다.","teacher",teacherScene);render();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];reportOpen=false;armedActionId=null;toolModalKind=null;lastBellAt=-99999;
+    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
     resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
@@ -3082,10 +3161,19 @@
   qa(".scene-nav button").forEach(function(b){b.addEventListener("click",function(){openScene(this.dataset.scene)})});
 
 
-  q("#teacherActionCards").addEventListener("dragstart",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;armedActionId=card.dataset.actionId;card.classList.add("dragging");if(e.dataTransfer){e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("text/plain",armedActionId)}});
-  q("#teacherActionCards").addEventListener("dragend",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(card)card.classList.remove("dragging")});
+  q("#teacherActionCards").addEventListener("dragstart",function(e){
+    var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;
+    cardDragActive=true;armedActionId=card.dataset.actionId;armedActionTargetId=selected;
+    card.classList.add("dragging");q("#actionTray").classList.add("drag-active");
+    cardTraySnapshot.expiresAt=Math.max(cardTraySnapshot.expiresAt,gameSec+60);
+    if(e.dataTransfer){e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("text/plain",armedActionId)}
+  });
+  q("#teacherActionCards").addEventListener("dragend",function(e){
+    var card=e.target.closest&&e.target.closest("[data-action-id]");if(card)card.classList.remove("dragging");
+    cardDragActive=false;q("#actionTray").classList.remove("drag-active");cardRenderSignature="";renderTeacherCards();
+  });
   q("#teacherActionCards").addEventListener("click",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;var s=studentById(selected);if(s)executeActionForStudent(card.dataset.actionId,s.id)});
-  q("#closeActionTray").addEventListener("click",function(){selected=null;armedActionId=null;render()});
+  q("#closeActionTray").addEventListener("click",function(){selected=null;armedActionId=null;armedActionTargetId=null;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";render()});
   q("#classBell").addEventListener("click",ringClassBell);
   qa("[data-class-tool]").forEach(function(b){b.addEventListener("click",function(){openToolModal(this.dataset.classTool)})});
   q("#closeToolModal").addEventListener("click",function(){closeToolModal(true);render()});
