@@ -604,11 +604,95 @@
   }
 
 
+  var TRAIT_CATALOG={
+    adhd:{label:"ADHD",category:"support",desc:"주의 전환·충동 조절·과제 시작과 지속에 지원이 필요할 수 있음",response:{up:-.08,left:.12,right:.06},encounters:{off_task:1.55,careless_fast_work:1.35,missing_homework:1.28,question_monopoly:1.16}},
+    impulsive:{label:"충동적",category:"behavior",desc:"생각보다 행동이 먼저 나오는 경우가 많음",response:{up:-.04,left:.10},encounters:{stationery_taken:1.48,careless_fast_work:1.32,teasing_boundary:1.22,game_loss:1.22}},
+    restless:{label:"산만함",category:"behavior",desc:"자극에 쉽게 시선이 이동하고 한 활동을 오래 유지하기 어려움",response:{left:.10,up:.03},encounters:{off_task:1.48,after_lunch_sleepy:.78,missing_homework:1.12}},
+    active:{label:"활동적",category:"behavior",desc:"움직임이 많고 몸을 쓰는 활동에 에너지가 높음",response:{right:.06,left:.04},encounters:{off_task:1.16,game_loss:1.18,after_lunch_sleepy:.82}},
+    playful:{label:"장난기 많음",category:"behavior",desc:"재미있는 자극과 장난을 쉽게 찾음",response:{right:.08,up:-.05},encounters:{teasing_boundary:1.48,off_task:1.24,stationery_taken:1.18}},
+    chatterbox:{label:"말이 많음",category:"behavior",desc:"생각과 이야기를 말로 표현하는 욕구가 큼",response:{up:.03,down:.04},encounters:{question_monopoly:1.55,off_task:1.42}},
+    social:{label:"사교적",category:"social",desc:"또래에게 먼저 다가가고 함께 있는 것을 좋아함",response:{down:.05,right:.05},encounters:{question_monopoly:1.16,teasing_boundary:1.12,friend_dependency:1.08}},
+    shy:{label:"낯가림",category:"social",desc:"많은 사람 앞이나 익숙하지 않은 관계에서 표현이 줄어듦",response:{down:.14,right:.08,up:-.08},encounters:{presentation_anxiety:1.58,group_silent:1.52,praise_embarrassment:1.34}},
+    leadership:{label:"리더형",category:"social",desc:"집단에서 방향을 정하고 주도하려는 성향이 강함",response:{right:.12,up:.04},encounters:{group_dominates:1.52,question_monopoly:1.26}},
+    helper:{label:"도움 주는 걸 좋아함",category:"social",desc:"친구가 어려워하면 먼저 돕고 싶어함",response:{down:.06,left:.05},encounters:{overhelping_friend:1.58,social_exclusion:.90}},
+    empathetic:{label:"공감적",category:"social",desc:"다른 사람의 표정과 감정에 민감하게 반응함",response:{down:.12,left:.04},encounters:{overhelping_friend:1.20,teasing_boundary:.82}},
+    friend_dependent:{label:"친구 의존",category:"social",desc:"특정 친구와의 관계가 안정감에 큰 영향을 줌",response:{down:.12,right:.04},encounters:{friend_dependency:1.70,social_exclusion:1.28}},
+    competitive:{label:"승부욕 강함",category:"social",desc:"비교·승패 상황에서 동기가 크게 올라가지만 감정도 커질 수 있음",response:{right:.09,up:.04},encounters:{game_loss:1.62,group_dominates:1.34,question_monopoly:1.12}},
+    model_student:{label:"모범생",category:"learning",desc:"과제와 규칙을 안정적으로 지키고 교사의 기대를 빠르게 파악함",response:{up:.12,left:.08},encounters:{finished_early:1.30,rule_policing_peer:1.34,fairness_complaint:1.18,missing_homework:.58}},
+    perfectionist:{label:"완벽주의",category:"learning",desc:"틀리는 것을 크게 의식하고 결과의 완성도를 높이려 함",response:{left:.12,down:.08,right:-.05},encounters:{mistake_shutdown:1.52,presentation_anxiety:1.22,praise_embarrassment:1.18,careless_fast_work:.65}},
+    persistent:{label:"끈기 있음",category:"learning",desc:"어려워도 오래 붙잡고 해결하려는 편",response:{left:.09,right:.04},encounters:{finished_early:1.18,missing_homework:.64,mistake_shutdown:.72}},
+    quick_learner:{label:"빠른 이해",category:"learning",desc:"새 개념을 빠르게 파악하고 반복 활동에서 쉽게 지루해질 수 있음",response:{right:.08,left:.06},encounters:{finished_early:1.72,careless_fast_work:1.20}},
+    foundational_gaps:{label:"기초 부족",category:"learning",desc:"현재 과제보다 이전 단계의 개념부터 다시 연결할 필요가 있음",response:{left:.18,right:-.10,down:.04},encounters:{math_foundation_gap:1.82,copies_answer:1.48,help_refusal:1.22}},
+    easily_discouraged:{label:"쉽게 포기함",category:"learning",desc:"실패 경험 뒤 다시 시작하는 데 시간이 오래 걸림",response:{down:.14,left:.12,up:-.12},encounters:{mistake_shutdown:1.78,help_refusal:1.22,copies_answer:1.16}},
+    independent:{label:"혼자 해보려 함",category:"learning",desc:"도움보다 스스로 해결하는 것을 선호함",response:{right:.15,left:-.04},encounters:{help_refusal:1.48}},
+    creative:{label:"창의적",category:"learning",desc:"정해진 한 가지 방식보다 새로운 방법과 표현을 선호함",response:{right:.14,left:.04},encounters:{finished_early:1.22,off_task:1.08}},
+    sensitive_rejection:{label:"거절민감",category:"emotion",desc:"거절·실패·부정적 피드백을 크게 받아들이는 편",response:{down:.16,up:-.12,left:.06},encounters:{presentation_anxiety:1.52,social_exclusion:1.34,praise_embarrassment:1.62,friend_dependency:1.34,mistake_shutdown:1.42}},
+    quiet_internalizer:{label:"속으로 삭임",category:"emotion",desc:"불편함을 겉으로 크게 드러내기보다 안으로 오래 가지고 있음",response:{down:.08,left:.05,up:-.04},encounters:{group_silent:1.48,praise_embarrassment:1.38,help_refusal:1.18}},
+    slow_to_warm:{label:"천천히 적응함",category:"emotion",desc:"새 상황이나 사람에게 익숙해지는 데 시간이 필요함",response:{down:.12,right:.04,up:-.05},encounters:{presentation_anxiety:1.34,group_silent:1.28}},
+    authority_resistant:{label:"권위에 반발",category:"emotion",desc:"강한 통제나 일방적 지시에 특히 민감하게 반응함",response:{up:-.22,down:.08,right:.12},encounters:{teacher_defiance:1.72,fairness_complaint:1.24}},
+    rule_oriented:{label:"규칙중시",category:"value",desc:"예측 가능한 규칙과 공정한 기준을 중요하게 여김",response:{up:.18,right:-.05},encounters:{fairness_complaint:1.52,rule_policing_peer:1.68,missing_homework:.72}},
+    needs_structure:{label:"구조가 필요함",category:"value",desc:"해야 할 순서와 범위가 명확할수록 안정적으로 움직임",response:{up:.16,left:.10,right:-.16},encounters:{off_task:1.20,missing_homework:1.28,help_refusal:1.08}},
+    autonomy_seeker:{label:"선택권 선호",category:"value",desc:"스스로 선택하고 통제감을 가질 때 참여가 좋아짐",response:{right:.20,up:-.14},encounters:{help_refusal:1.42,teacher_defiance:1.26,fairness_complaint:1.10}},
+    fairness_sensitive:{label:"공정성 민감",category:"value",desc:"사람마다 다른 기준이나 예외 상황을 빠르게 알아차림",response:{up:.06,down:.06},encounters:{fairness_complaint:1.82,rule_policing_peer:1.24}}
+  };
+
+  var STUDENT_TRAITS={
+    "민수":["adhd","impulsive","active","social","authority_resistant","playful"],
+    "지우":["social","helper","empathetic","fairness_sensitive","persistent"],
+    "서연":["model_student","perfectionist","persistent","sensitive_rejection","quiet_internalizer"],
+    "준호":["competitive","social","active","autonomy_seeker","impulsive","leadership"],
+    "태호":["creative","sensitive_rejection","slow_to_warm","foundational_gaps","easily_discouraged"],
+    "유나":["model_student","helper","empathetic","persistent","rule_oriented"],
+    "현우":["adhd","impulsive","restless","active","authority_resistant","competitive"],
+    "소라":["creative","quiet_internalizer","persistent","sensitive_rejection","helper"],
+    "도윤":["active","social","competitive","leadership","needs_structure"],
+    "하린":["model_student","perfectionist","rule_oriented","persistent","quiet_internalizer"],
+    "예준":["competitive","leadership","autonomy_seeker","quick_learner","social"],
+    "채원":["creative","helper","empathetic","persistent","quiet_internalizer"],
+    "시우":["adhd","impulsive","restless","social","playful","authority_resistant"],
+    "다은":["creative","helper","empathetic","persistent","sensitive_rejection"],
+    "건우":["active","competitive","social","impulsive","playful"],
+    "아린":["shy","sensitive_rejection","quiet_internalizer","creative","needs_structure"],
+    "지호":["adhd","impulsive","active","playful","authority_resistant","social"],
+    "은서":["model_student","perfectionist","rule_oriented","quick_learner","persistent"],
+    "윤호":["social","leadership","autonomy_seeker","persistent","independent"],
+    "나연":["social","helper","empathetic","fairness_sensitive","chatterbox"],
+    "승민":["competitive","model_student","persistent","rule_oriented","leadership"],
+    "세아":["creative","shy","sensitive_rejection","quiet_internalizer","helper"]
+  };
+
+  function studentTraitIds(name){return (STUDENT_TRAITS[name]||[]).slice()}
+  function studentTraits(s){return (s&&s.traits||[]).map(function(id){return TRAIT_CATALOG[id]}).filter(Boolean)}
+  function hasTrait(s,id){return !!(s&&s.traits&&s.traits.indexOf(id)>=0)}
+  function traitLabels(s,limit){
+    var list=studentTraits(s).map(function(t){return t.label});
+    return limit?list.slice(0,limit):list;
+  }
+  function traitResponseBonus(traitIds,dir){
+    return (traitIds||[]).reduce(function(sum,id){
+      var t=TRAIT_CATALOG[id],r=t&&t.response;return sum+(r&&r[dir]||0);
+    },0);
+  }
+  function traitEncounterMultiplier(s,templateId){
+    if(!s||!s.traits)return 1;
+    return clamp(s.traits.reduce(function(mult,id){
+      var t=TRAIT_CATALOG[id],v=t&&t.encounters&&t.encounters[templateId];
+      return mult*(v===undefined?1:v);
+    },1),.38,3.1);
+  }
+  function traitChipHtml(id){
+    var t=TRAIT_CATALOG[id];if(!t)return "";
+    return '<span class="trait-chip trait-'+escHtml(t.category)+'" title="'+escHtml(t.desc)+'">'+escHtml(t.label)+'</span>';
+  }
+  function traitListHtml(s){
+    return (s.traits||[]).map(traitChipHtml).join("");
+  }
+
   function responseJitter(index,salt){
     var x=Math.sin((index+1)*12.9898+(salt+3)*78.233)*43758.5453;
     return (x-Math.floor(x))-.5;
   }
-  function makeTeacherResponseProfile(t,index){
+  function makeTeacherResponseProfile(t,index,traitIds){
     function spread(v,salt){
       v+=responseJitter(index,salt)*.16;
       return clamp(.5+(v-.5)*1.28,.08,.92);
@@ -620,9 +704,10 @@
     var personalOrder=["up","left","down","right"],preferred=personalOrder[index%personalOrder.length];
     var opposite={up:"down",down:"up",left:"right",right:"left"}[preferred];
     var responseValues={up:up,down:down,left:left,right:right};
-    responseValues[preferred]=clamp(responseValues[preferred]+.34,.08,.92);
-    responseValues[opposite]=clamp(responseValues[opposite]-.14,.08,.92);
-    up=responseValues.up;down=responseValues.down;left=responseValues.left;right=responseValues.right;
+    ["up","down","left","right"].forEach(function(dir){responseValues[dir]+=traitResponseBonus(traitIds,dir)});
+    responseValues[preferred]+= .14;
+    responseValues[opposite]-= .05;
+    up=clamp(responseValues.up,.08,.92);down=clamp(responseValues.down,.08,.92);left=clamp(responseValues.left,.08,.92);right=clamp(responseValues.right,.08,.92);
     var sensitivity=clamp(.78+t.react*.38+t.rejection*.12,.78,1.28);
     var expressiveness=clamp(.22+t.react*.38+t.assert*.18+t.imp*.06,.24,1);
     return {up:up,down:down,left:left,right:right,sensitivity:sensitivity,expressiveness:expressiveness};
@@ -675,8 +760,8 @@
 
   function resetStudents(){
     students=templates.map(function(t,i){
-      var p=seats[i];
-      return Object.assign({},t,{knowledge:makeKnowledge(t,i),look:makeLook(t,i),teacherResponse:makeTeacherResponseProfile(t,i),
+      var p=seats[i],traitIds=studentTraitIds(t.name);
+      return Object.assign({},t,{traits:traitIds,knowledge:makeKnowledge(t,i),look:makeLook(t,i),teacherResponse:makeTeacherResponseProfile(t,i,traitIds),
         id:i,seat:i,scene:"classroom",targetScene:null,arrivalAt:0,x:p.x,y:p.y,dx:p.x,dy:p.y,
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
@@ -1284,7 +1369,7 @@
     var candidates=[];
     visible.forEach(function(s){
       ENCOUNTER_TEMPLATES.forEach(function(t){
-        var weight=Math.max(0,Number(t.score(s))||0);
+        var weight=Math.max(0,Number(t.score(s))||0)*traitEncounterMultiplier(s,t.id);
         var recent=encounterHistory.slice(-8).some(function(h){return h.templateId===t.id&&h.studentId===s.id});
         if(weight>.12&&!recent)candidates.push({student:s,template:t,weight:weight});
       });
@@ -1350,7 +1435,8 @@
     var card=q("#encounterCard");if(card)card.classList.toggle("followup",!!enc.isFollowUp);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
-    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(enc.isFollowUp?" · 이전 판단: "+(enc.previousDirection||""):"");
+    var traitHint=s?traitLabels(s,3).join(" · "):"";
+    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(traitHint?" · "+traitHint:"")+(enc.isFollowUp?" · 이전 판단: "+(enc.previousDirection||""):"");
     var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
@@ -1444,7 +1530,7 @@
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:enc.isFollowUp?"followup_decision":"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,isFollowUp:!!enc.isFollowUp,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
-      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
+      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,studentTraits:s?traitLabels(s,5):[],before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
     };
     dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-320);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
@@ -1471,7 +1557,7 @@
     var d=studentDashboard(s);
     function cls(v){return v<45?"low":v>75?"high":""}
     return '<button type="button" class="roster-row" data-roster-student="'+s.id+'">'+
-      '<span class="roster-name"><strong>'+escHtml(s.name)+'</strong><small>'+escHtml(humanAction(s))+'</small></span>'+
+      '<span class="roster-name"><strong>'+escHtml(s.name)+'</strong><small>'+escHtml(traitLabels(s,3).join(" · "))+'</small></span>'+
       '<span class="roster-score '+cls(d.learning)+'">'+d.learning+'</span>'+
       '<span class="roster-score '+cls(d.focus)+'">'+d.focus+'</span>'+
       '<span class="roster-score '+cls(d.mood)+'">'+d.mood+'</span>'+
@@ -1483,6 +1569,7 @@
     var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s);
     var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
     return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
+      '<div class="trait-panel"><strong>기본 특성</strong><div class="trait-list">'+traitListHtml(s)+'</div><small>특성은 인카운터 발생 가능성과 교사 대응에 대한 반응을 함께 바꿉니다.</small></div>'+
       '<div class="roster-detail-grid">'+
         '<div class="roster-stat"><strong>'+d.learning+'</strong><small>📚 학습</small></div>'+
         '<div class="roster-stat"><strong>'+d.focus+'</strong><small>🎯 집중</small></div>'+
@@ -3727,6 +3814,7 @@
       var classDeltaHtml=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){return '<span>'+classLabels[k]+' '+cb[k]+'→'+ca[k]+'</span>'}).join("");
       return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">후속 판단</span>':'')+'</div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
+        (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">참고 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
         '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
         (item.studentReaction?'<div class="record-stage">학생 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
@@ -3823,7 +3911,7 @@
       btn.textContent="다음";
     }else if(tutorialState.step===2){
       title.textContent="숫자는 결과를 확인하는 도구입니다";
-      txt.textContent="교탁의 📑 명부에서 학생별 학습·집중·정서·관계·교사신뢰와 교사 대응 반응 특성을 확인할 수 있습니다. 같은 선택도 학생에 따라 크게 반발하거나 조용히 받아들이며 실제 수치 변화도 달라집니다.";
+      txt.textContent="📑 명부에는 ADHD, 충동적, 모범생, 완벽주의, 낯가림처럼 학생의 기본 특성이 적혀 있습니다. 특성을 읽으면 어떤 사건이 잘 생기고 어떤 교사 대응에 민감한지 미리 짐작할 수 있으며, 실제 수치 변화도 학생마다 달라집니다.";
       var roster=q('[data-class-tool="roster"]');if(roster)roster.classList.add("tutorial-focus");
       btn.textContent="다음";
     }else{
