@@ -970,6 +970,8 @@
     return items[items.length-1];
   }
   function makeEncounter(){
+    var due=takeDueFollowUp();
+    if(due)return due;
     var visible=students.filter(function(s){return s.scene===teacherScene&&!s.targetScene});
     var candidates=[];
     visible.forEach(function(s){
@@ -1023,7 +1025,8 @@
     overlay.hidden=false;
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
     q("#encounterCategory").textContent=enc.category+" · 4방향 판단";
-    q("#encounterKicker").textContent=current().name;
+    q("#encounterKicker").textContent=enc.kicker||current().name;
+    var card=q("#encounterCard");if(card)card.classList.toggle("followup",!!enc.isFollowUp);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
     q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ");
@@ -1100,24 +1103,29 @@
     var after=s?studentDashboard(s):before,afterClass=classDashboard(),delta=before?dashboardDelta(before,after):{};
     var direction=dir==="timeout"?"시간 초과":ENCOUNTER_DIRECTIONS[dir].label;
     var history={
-      time:gameMinute(),templateId:enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
+      day:dayIndex,time:gameMinute(),templateId:enc.templateId,sourceTemplateId:enc.sourceTemplateId||enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
       dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,before:before,after:after,delta:delta,
       beforeClass:beforeClass,afterClass:afterClass
     };
     encounterHistory.push(history);
     if(s){
-      s.encounterNotes.unshift({time:gameMinute(),text:enc.title+" → "+direction+" · "+choice.text,dir:dir,delta:delta});
+      s.encounterNotes.unshift({day:dayIndex,time:gameMinute(),text:enc.title+" → "+direction+" · "+choice.text,dir:dir,delta:delta,isFollowUp:!!enc.isFollowUp});
       s.encounterNotes=s.encounterNotes.slice(0,8);
       remember(s,"판단 카드: "+enc.title+" / "+direction,.56);
     }
     var decisionItem={
-      stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
-      type:"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,
+      day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
+      type:enc.isFollowUp?"followup_decision":"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,isFollowUp:!!enc.isFollowUp,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
       resultText:choice.result,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass
     };
-    dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-200);
+    dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-320);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
+    if(enc.followUpId){
+      var sourceJob=followUpQueue.find(function(j){return j.id===enc.followUpId});
+      if(sourceJob)sourceJob.status="resolved";
+    }
+    scheduleFollowUp(enc,dir,choice);
     activeEncounter.phase="result";
     q("#encounterResultTitle").textContent=direction+" 선택";
     q("#encounterResultText").textContent=choice.result;
@@ -1143,7 +1151,8 @@
   }
   function rosterDetailHtml(s){
     if(!s)return '<div class="record-empty">학생을 선택하면 최근 판단과 변화 원인을 확인할 수 있습니다.</div>';
-    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,4);
+    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5);
+    var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
     return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
       '<div class="roster-detail-grid">'+
         '<div class="roster-stat"><strong>'+d.learning+'</strong><small>📚 학습</small></div>'+
@@ -1151,7 +1160,8 @@
         '<div class="roster-stat"><strong>'+d.mood+'</strong><small>🙂 정서</small></div>'+
         '<div class="roster-stat"><strong>'+d.relation+'</strong><small>🤝 관계</small></div>'+
         '<div class="roster-stat"><strong>'+d.trust+'</strong><small>❤️ 교사신뢰</small></div>'+
-      '</div><div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">'+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div></div>';
+      '</div><div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div>'+
+      (queued.length?'<div class="roster-followup">📌 후속 관찰 예정 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+'</div>';
   }
 
   function newStats(){
@@ -1165,12 +1175,13 @@
     resetLessonState();
   }
   function remember(s,text,weight){
-    s.memory.unshift({text:text,weight:weight||.5,time:gameMinute()});
-    s.memory=s.memory.slice(0,10);
+    s.memory.unshift({day:dayIndex,text:text,weight:weight||.5,time:gameMinute()});
+    s.memory=s.memory.slice(0,14);
   }
   function pushLogItem(item){
+    if(item.day===undefined)item.day=dayIndex;
     feed.unshift(item);feed=feed.slice(0,18);
-    if(item.type!=="ambient"){dayEvents.push(item);dayEvents=dayEvents.slice(-200);}
+    if(item.type!=="ambient"){dayEvents.push(item);dayEvents=dayEvents.slice(-320);}
     if(stats&&current().kind==="lesson"&&item.type!=="ambient")stats.events.push(item);
     renderFeed();
   }
