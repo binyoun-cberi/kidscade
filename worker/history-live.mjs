@@ -1,4 +1,4 @@
-import { QUESTION_BANK, CORE_HISTORY_FACTS, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -32,10 +32,10 @@ function randomToken(){ const bytes=new Uint8Array(32); crypto.getRandomValues(b
 function randomCode(){ const bytes=new Uint8Array(6); crypto.getRandomValues(bytes); return Array.from(bytes,b=>ROOM_ALPHABET[b%ROOM_ALPHABET.length]).join(''); }
 function readRoomPlan(room){
   let raw=[]; try{raw=JSON.parse(room?.question_order_json||'[]')}catch(_){}
-  if(Array.isArray(raw))return {questions:raw,checkpoints:[],orderMode:'random',questionMode:'choice'};
+  if(Array.isArray(raw))return {questions:raw,checkpoints:[],orderMode:'random',questionMode:'choice',eras:[...ERA_ORDER],scoreMode:'reset',round:1};
   const questions=Array.isArray(raw?.questions)?raw.questions:[];
   const checkpoints=Array.isArray(raw?.checkpoints)?raw.checkpoints.map(Number).filter(Number.isInteger):[];
-  return {questions,checkpoints:[...new Set(checkpoints)].sort((a,b)=>a-b),orderMode:raw?.orderMode==='chronological'?'chronological':'random',questionMode:['ox','mixed'].includes(raw?.questionMode)?raw.questionMode:'choice'};
+  return {questions,checkpoints:[...new Set(checkpoints)].sort((a,b)=>a-b),orderMode:raw?.orderMode==='chronological'?'chronological':'random',questionMode:['ox','mixed'].includes(raw?.questionMode)?raw.questionMode:'choice',eras:normalizeEraSelection(raw?.eras),scoreMode:raw?.scoreMode==='cumulative'?'cumulative':'reset',round:Math.max(1,Number(raw?.round)||1)};
 }
 function normalizeCheckpoints(questionCount,body){
   const count=Number(questionCount)||15, mode=String(body?.checkpointMode||'none');
@@ -48,15 +48,22 @@ function normalizeCheckpoints(questionCount,body){
   }
   return [...new Set(points)].sort((a,b)=>a-b).slice(0,12);
 }
-function randomQuestionIndexes(count,questionMode='choice'){
-  const byFact=new Map();
-  QUESTIONS.forEach((q,index)=>{const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index)});
-  const facts=[...byFact.keys()],bytes=new Uint32Array(Math.max(1,facts.length*2));crypto.getRandomValues(bytes);
+function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
+  const selectedEras=normalizeEraSelection(eras),byFact=new Map();
+  QUESTIONS.forEach((q,index)=>{
+    const fact=CORE_HISTORY_FACTS[Number(q.sourceFact)];
+    if(!fact||!selectedEras.includes(fact.era))return;
+    const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index);
+  });
+  const facts=[...byFact.keys()],bytes=new Uint32Array(Math.max(2,facts.length*3+count+4));crypto.getRandomValues(bytes);
   for(let i=facts.length-1;i>0;i--){const j=bytes[i]%(i+1);[facts[i],facts[j]]=[facts[j],facts[i]]}
-  return facts.slice(0,count).map((fact,pos)=>{
+  if(!facts.length)return [];
+  const pickedFacts=facts.slice(0,Math.min(count,facts.length));
+  let cursor=0;while(pickedFacts.length<count){pickedFacts.push(facts[cursor%facts.length]);cursor++;}
+  return pickedFacts.map((fact,pos)=>{
     const all=byFact.get(fact)||[],ox=all.filter(i=>QUESTIONS[i]?.family==='ox'),choice=all.filter(i=>QUESTIONS[i]?.family!=='ox');
     const options=questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
-    const pick=bytes[facts.length+pos%facts.length]%options.length;
+    const pick=bytes[(facts.length+pos)%bytes.length]%options.length;
     return options[pick];
   });
 }
@@ -148,14 +155,38 @@ async function autoReveal(env,room,now=Date.now()){
 }
 async function createRoom(request,env){
   let body={}; try{body=await parseJson(request)}catch(_){}
-  const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random', questionMode=['ox','mixed'].includes(body.questionMode)?body.questionMode:'choice';
+  const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random', questionMode=['ox','mixed'].includes(body.questionMode)?body.questionMode:'choice', eras=normalizeEraSelection(body.eras), scoreMode=body.scoreMode==='cumulative'?'cumulative':'reset';
   await cleanup(env);
-  const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode):randomQuestionIndexes(questionCount,questionMode),plan={questions:order,checkpoints,orderMode,questionMode};
+  const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras),plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round:1};
   await env.DB.prepare(`INSERT INTO history_live_rooms
     (id,room_code,host_token_hash,status,question_order_json,current_question,question_count,seconds_per_question,created_at,updated_at,expires_at)
     VALUES (?,?,?,'waiting',?,-1,?,?,?,?,?)`)
     .bind(id,code,hash,JSON.stringify(plan),questionCount,seconds,nowIso(now),nowIso(now),nowIso(now+ROOM_TTL_MS)).run();
-  return json({ok:true,code,hostToken:token,maxPlayers:MAX_PLAYERS,questionCount,secondsPerQuestion:seconds,checkpoints,orderMode,questionMode},201);
+  return json({ok:true,code,hostToken:token,maxPlayers:MAX_PLAYERS,questionCount,secondsPerQuestion:seconds,checkpoints,orderMode,questionMode,eras,scoreMode,round:1},201);
+}
+async function reconfigureRoom(request,env){
+  let body={}; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
+  const room=await roomByCode(env,body.code);
+  if(!room)return json({ok:false,error:'room_not_found'},404);
+  const auth=await roleFor(env,room,bearer(request));
+  if(auth.role!=='host')return json({ok:false,error:'host_required'},403);
+  if(!['waiting','finished'].includes(room.status))return json({ok:false,error:'round_in_progress'},409);
+  const previous=readRoomPlan(room),questionCount=clampInt(body.questionCount,5,40,15),seconds=clampInt(body.secondsPerQuestion,8,30,12);
+  const checkpoints=normalizeCheckpoints(questionCount,body),orderMode=body.orderMode==='chronological'?'chronological':'random';
+  const questionMode=['ox','mixed'].includes(body.questionMode)?body.questionMode:'choice',eras=normalizeEraSelection(body.eras),scoreMode=body.scoreMode==='cumulative'?'cumulative':'reset';
+  const round=room.status==='finished'?previous.round+1:previous.round;
+  const order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras);
+  const plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round},now=Date.now();
+  const playerReset=scoreMode==='cumulative'
+    ? env.DB.prepare('UPDATE history_live_players SET streak=0,last_seen_at=? WHERE room_id=?').bind(nowIso(now),room.id)
+    : env.DB.prepare('UPDATE history_live_players SET score=0,streak=0,last_seen_at=? WHERE room_id=?').bind(nowIso(now),room.id);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM history_live_answers WHERE room_id=?').bind(room.id),
+    playerReset,
+    env.DB.prepare("UPDATE history_live_rooms SET status='waiting',question_order_json=?,current_question=-1,question_count=?,seconds_per_question=?,question_started_at=NULL,question_deadline_at=NULL,updated_at=?,expires_at=? WHERE id=?")
+      .bind(JSON.stringify(plan),questionCount,seconds,nowIso(now),nowIso(now+ROOM_TTL_MS),room.id)
+  ]);
+  return json({ok:true,code:room.room_code,questionCount,secondsPerQuestion:seconds,checkpoints,orderMode,questionMode,eras,scoreMode,round});
 }
 async function joinRoom(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
@@ -193,7 +224,7 @@ async function state(request,env){
   const answers=ansRes.results||[], answered=new Set(answers.map(a=>a.player_id)), now=Date.now();
   const roster=players.map((p,i)=>({id:p.id,nickname:p.nickname,score:Number(p.score||0),streak:Number(p.streak||0),rank:i+1,answered:answered.has(p.id),online:now-new Date(p.last_seen_at).getTime()<=ONLINE_WINDOW_MS}));
   const plan=readRoomPlan(fresh),q=currentQuestion(fresh),display=q?displayedQuestion(fresh,q):null;
-  const payload={ok:true,role:auth.role,selfPlayerId:auth.player?.id||null,room:{code:fresh.room_code,status:fresh.status,maxPlayers:MAX_PLAYERS,questionNumber:qi+1,questionCount:Number(fresh.question_count),secondsPerQuestion:Number(fresh.seconds_per_question),deadlineAt:fresh.question_deadline_at||null,serverNow:nowIso(now),checkpoints:plan.checkpoints,orderMode:plan.orderMode,questionMode:plan.questionMode},players:roster};
+  const payload={ok:true,role:auth.role,selfPlayerId:auth.player?.id||null,room:{code:fresh.room_code,status:fresh.status,maxPlayers:MAX_PLAYERS,questionNumber:qi+1,questionCount:Number(fresh.question_count),secondsPerQuestion:Number(fresh.seconds_per_question),deadlineAt:fresh.question_deadline_at||null,serverNow:nowIso(now),checkpoints:plan.checkpoints,orderMode:plan.orderMode,questionMode:plan.questionMode,eras:plan.eras,scoreMode:plan.scoreMode,round:plan.round},players:roster};
   if(q&&display&&['question','reveal','finished'].includes(fresh.status))payload.question={number:qi+1,total:Number(fresh.question_count),era:q.era,difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice'};
   if(q&&fresh.status==='reveal'){
     const stats=Array.from({length:q.o.length},()=>0); answers.forEach(a=>{if(a.option_index>=0&&a.option_index<stats.length)stats[a.option_index]++});
@@ -278,6 +309,7 @@ export async function handleHistoryLiveRequest(request,env){
     await ensureSchema(env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/health')return json({ok:true,database:'ready',questions:QUESTIONS.length,facts:CORE_HISTORY_FACTS.length,maxPlayers:MAX_PLAYERS});
     if(request.method==='POST'&&url.pathname==='/api/history-live/rooms')return createRoom(request,env);
+    if(request.method==='POST'&&url.pathname==='/api/history-live/reconfigure')return reconfigureRoom(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/join')return joinRoom(request,env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/state')return state(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/start')return hostAction(request,env,'start');
