@@ -22,6 +22,8 @@ test('touch interaction guard parses and preserves editable fields',()=>{
   assert.match(js,/input,textarea,select/);
   assert.match(js,/contenteditable/);
   assert.match(js,/contextmenu/);
+  assert.match(js,/event\.preventDefault\(\)/);
+  assert.match(js,/event\.stopPropagation\(\)/);
   assert.match(js,/selectstart/);
   assert.match(js,/pointerType==='touch'/);
   assert.match(js,/pointerType==='pen'/);
