@@ -122,7 +122,7 @@ test('Spelling Frog keeps moving-log rider fix wired in',()=>{
 test('Spelling Frog catalog points to asset rework version',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='spelling_frog');
-  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260918-6');
+  assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260922-1');
   assert.match(game.description,/개구리.*차량.*알파벳/);
   const bootstrap=fs.readFileSync(path.join(root,'main-bootstrap.js'),'utf8');
   assert.match(bootstrap,/스펠링 프로그\.html\?v=20260918-6/);
