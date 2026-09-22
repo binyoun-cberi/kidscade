@@ -1075,7 +1075,33 @@
       actor.teacherDefiance=clamp(actor.teacherDefiance+.12);
     }
     remember(actor,text,.82);
-    log(text,"incident",actor.scene);
+    if(kind==="exclusion"&&target){
+      scriptLog({speaker:actor.name,dialogue:pickLine(["너는 오늘 같이 하지 마.","우리끼리 할 거야.","넌 다른 데 가."]),
+        replySpeaker:target.name,replyDialogue:pickLine(["왜?","나도 같이 하면 안 돼?","…"]),
+        stage:"주변의 움직임이 "+target.name+"을(를) 바깥쪽으로 밀어냈다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="taking"&&target){
+      scriptLog({speaker:target.name,dialogue:pickLine(["내 거야. 돌려줘.","하지 마, 내가 쓰고 있었어.","그거 줘."]),
+        replySpeaker:actor.name,replyDialogue:pickLine(["잠깐만 쓸 거야.","내가 먼저 쓸래.","그냥 좀 쓰자."]),
+        stage:actor.name+"이(가) "+target.name+"의 물건을 손에 쥐었다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="threat"&&target){
+      scriptLog({speaker:actor.name,dialogue:pickLine(["계속 그러면 가만 안 둘 거야.","한 번만 더 해봐.","그만하라고 했지."]),
+        replySpeaker:target.name,replyDialogue:pickLine(["왜 그래…","알았어.","하지 마."]),
+        stage:actor.name+"이(가) "+target.name+" 쪽으로 바짝 다가섰다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="physical"&&target){
+      scriptLog({speaker:target.name,dialogue:pickLine(["아! 하지 마!","밀지 마!","그만해!"]),
+        stage:"말다툼이 거친 신체행동으로 번졌다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="teacher_shout"){
+      scriptLog({speaker:actor.name,dialogue:pickLine(["왜 저만 그래요!","저한테만 뭐라고 하잖아요!","알았다고요!"]),
+        stage:"교실 안에서 "+actor.name+"의 목소리가 갑자기 커졌다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="teacher_insult"){
+      scriptLog({speaker:actor.name,dialogue:pickLine(["선생님 진짜 짜증나요.","선생님 말 듣기 싫어요.","왜 맨날 그러세요?"]),
+        stage:"주변 학생 몇 명이 말을 멈추고 쳐다봤다.",summary:text,type:"incident",scene:actor.scene});
+    }else if(kind==="teacher_throw"){
+      scriptLog({speaker:actor.name,dialogue:pickLine(["몰라요!","안 한다고요!"]),
+        stage:actor.name+"이(가) 화가 난 상태에서 교사 쪽으로 물건을 던졌다.",summary:text,type:"incident",scene:actor.scene});
+    }else{
+      log(text,"incident",actor.scene);
+    }
     if(target){
       nearbyStudents(target,24).filter(function(o){return o!==actor}).forEach(function(o){
         var sameActorCircle=circleOf(actor)&&circleOf(o)===circleOf(actor);
@@ -1145,24 +1171,51 @@
       s.talkNeed=clamp(s.talkNeed-.15);s.socialNeed=clamp(s.socialNeed-.08);
       if(current().kind==="lesson"&&lessonState.phase!=="pair"){
         stats.disruptions++;
-        if(Math.random()<.48)log(s.name+"이(가) "+(p?p.name+"에게":"옆자리 쪽으로")+" 말을 걸기 시작했다.","incident",s.scene);
+        if(Math.random()<.58)scriptLog({
+          speaker:s.name,
+          dialogue:studentTalkLine(s,p,"lesson"),
+          replySpeaker:p?p.name:"",
+          replyDialogue:p&&Math.random()<.62?pickLine(["응?","잠깐만.","나도 잘 모르겠어.","쉿, 이따 얘기하자."]):"",
+          stage:s.name+"이(가) "+(p?p.name+" 쪽으로 몸을 기울였다.":"옆자리 쪽을 힐끗 봤다."),
+          summary:s.name+"이(가) 수업 중 말을 걸기 시작했다.",
+          type:"incident",scene:s.scene
+        });
       }else if(p){
         changeRelation(s,p,{affinity:.005,irritation:-.003});
-        if(Math.random()<.25)log(s.name+"와 "+p.name+"이(가) 이야기를 나누고 있다.","social",s.scene);
+        if(Math.random()<.42)scriptLog({
+          speaker:s.name,dialogue:studentTalkLine(s,p,"social"),
+          replySpeaker:p.name,replyDialogue:pickLine(["응.","진짜?","나도.","그래?"]),
+          stage:"두 학생이 가까이 서서 짧게 이야기를 주고받았다.",
+          summary:s.name+"와 "+p.name+"이(가) 이야기를 나눴다.",type:"social",scene:s.scene
+        });
       }
     }
     if(a==="PAIR_WORK"&&p){
       s.socialNeed=clamp(s.socialNeed-.10);s.focus=clamp(s.focus+.018);s.socialTarget=p.id;
       changeRelation(s,p,{affinity:.003,irritation:-.002});
-      if(Math.random()<.18)log(s.name+"와 "+p.name+"이(가) 짝 과제를 함께 확인하고 있다.","learning",s.scene);
+      if(Math.random()<.42)scriptLog({
+        speaker:s.name,dialogue:studentTalkLine(s,p,"pair"),
+        replySpeaker:p.name,replyDialogue:pickLine(["나는 여기까지 했어.","잠깐, 이 부분부터 보자.","아, 나는 다르게 했는데?","응, 같이 확인해보자."]),
+        stage:"두 학생의 활동지가 책상 가운데로 조금 가까워졌다.",
+        summary:s.name+"와 "+p.name+"이(가) 짝 과제를 함께 확인했다.",type:"learning",scene:s.scene
+      });
     }
     if(a==="MOVE"&&current().kind==="lesson"&&Math.random()<.40){stats.disruptions++;log(s.name+"이(가) 몸을 크게 움직여 주변의 시선을 끌었다.","incident",s.scene)}
     if(a==="SLEEP")log(s.name+"이(가) 점점 고개를 떨구기 시작했다.","incident",s.scene);
-    if(a==="HELP")log(s.name+"이(가) 문제에서 막혀 도움을 기다리고 있다.","learning",s.scene);
+    if(a==="HELP")scriptLog({
+      speaker:s.name,dialogue:pickLine(["선생님, 여기 모르겠어요.","이거 어떻게 하는 거지…","여기서부터 안 돼요."]),
+      stage:s.name+"의 연필이 한동안 같은 자리에서 멈춰 있다.",
+      summary:s.name+"이(가) 문제에서 막혀 도움을 기다리고 있다.",type:"learning",scene:s.scene
+    });
 
     if(a==="BORROW_ITEM"&&p){
       changeRelation(s,p,{affinity:.003});
-      if(Math.random()<.35)log(s.name+"이(가) "+p.name+"에게 연필이나 준비물을 빌렸다.","social",s.scene);
+      if(Math.random()<.58)scriptLog({
+        speaker:s.name,dialogue:pickLine(["연필 좀 빌려줄래?","지우개 잠깐만 써도 돼?","이거 잠깐 빌려도 돼?"]),
+        replySpeaker:p.name,replyDialogue:pickLine(["응, 여기.","쓰고 줘.","그래."]),
+        stage:p.name+"이(가) 책상 위 준비물을 "+s.name+" 쪽으로 밀어주었다.",
+        summary:s.name+"이(가) "+p.name+"에게 준비물을 빌렸다.",type:"social",scene:s.scene
+      });
     }
     if(a==="LOOK_OUTSIDE"){s.boredom=clamp(s.boredom-.035);s.focus=clamp(s.focus-.018);}
     if(a==="STRETCH"){s.moveNeed=clamp(s.moveNeed-.10);s.energy=clamp(s.energy+.015);}
@@ -1172,7 +1225,11 @@
     }
     if(a==="ASK_BATHROOM"){
       s.moveNeed=clamp(s.moveNeed-.04);s.actionTicks=3;
-      if(Math.random()<.40)log(s.name+"이(가) 화장실에 다녀와도 되는지 손짓으로 물었다.","ambient",s.scene);
+      if(Math.random()<.55)scriptLog({
+        speaker:s.name,dialogue:"선생님, 화장실 다녀와도 돼요?",
+        stage:s.name+"이(가) 조심스럽게 손을 들었다.",
+        summary:s.name+"이(가) 화장실에 다녀와도 되는지 물었다.",type:"ambient",scene:s.scene
+      });
     }
     if(a==="PASS_NOTE"&&p){
       s.talkNeed=clamp(s.talkNeed-.05);p.talkNeed=clamp(p.talkNeed+.035);
@@ -1182,13 +1239,23 @@
     if(a==="COMFORT"&&p){
       p.victimStress=clamp(p.victimStress-.07);p.mood=clamp(p.mood+.04);p.belonging=clamp(p.belonging+.035);
       changeRelation(s,p,{affinity:.012,irritation:-.008});
-      log(s.name+"이(가) 기분이 가라앉은 "+p.name+" 곁에 잠깐 머물렀다.","social",s.scene);
+      scriptLog({
+        speaker:s.name,dialogue:pickLine(["괜찮아?","같이 있을까?","신경 쓰지 마."]),
+        replySpeaker:p.name,replyDialogue:Math.random()<.65?pickLine(["응…","괜찮아.","고마워."]):"",
+        stage:s.name+"이(가) "+p.name+" 곁에 잠깐 머물렀다.",
+        summary:s.name+"이(가) "+p.name+"을(를) 위로했다.",type:"social",scene:s.scene
+      });
     }
     if(a==="TEASE"&&p){
       changeRelation(s,p,{affinity:-.010,irritation:.035});
       p.frustration=clamp(p.frustration+.07);p.mood=clamp(p.mood-.045);
       remember(p,s.name+"의 놀림을 받음",.48);
-      log(s.name+"이(가) "+p.name+"을(를) 놀리자 표정이 굳었다.","incident",s.scene);
+      scriptLog({
+        speaker:s.name,dialogue:pickLine(["그것도 몰라?","또 그랬어?","왜 그렇게 해?"]),
+        replySpeaker:p.name,replyDialogue:pickLine(["그만해.","하지 마.","뭐가?"]),
+        stage:p.name+"의 표정이 굳고 몸이 조금 뒤로 물러났다.",
+        summary:s.name+"이(가) "+p.name+"을(를) 놀렸다.",type:"incident",scene:s.scene
+      });
     }
     if(a==="EXCLUDE_TARGET"&&p){
       changeRelation(s,p,{affinity:-.018,irritation:.055});
@@ -1212,7 +1279,11 @@
     }
     if(a==="REFUSE_INSTRUCTION"){
       s.teacherDefiance=clamp(s.teacherDefiance+.06);s.focus=clamp(s.focus-.04);
-      log(s.name+"이(가) 교사의 안내를 듣고도 일부러 과제를 하지 않겠다고 버텼다.","incident",s.scene);
+      scriptLog({
+        speaker:s.name,dialogue:pickLine(["저 안 할래요.","왜 해야 돼요?","지금 하기 싫어요."]),
+        stage:"교사의 안내 뒤에도 "+s.name+"의 손이 과제로 돌아가지 않았다.",
+        summary:s.name+"이(가) 교사의 안내를 거부했다.",type:"incident",scene:s.scene
+      });
     }
     if(a==="SHOUT_TEACHER"){
       s.trust=clamp(s.trust-.035);s.frustration=clamp(s.frustration+.05);
@@ -1246,12 +1317,22 @@
         beginConflict(s,p,"승부를 두고");
       }else{
         changeRelation(s,p,{affinity:.004,rivalry:.006});
-        if(Math.random()<.18)log(s.name+"와 "+p.name+"이(가) 승부를 즐기고 있다.","social",s.scene);
+        if(Math.random()<.35)scriptLog({
+          speaker:s.name,dialogue:pickLine(["이번엔 내가 이길 거야.","한 번 더 하자.","준비됐지?"]),
+          replySpeaker:p.name,replyDialogue:pickLine(["좋아.","해보자.","이번엔 안 져."]),
+          stage:"두 학생이 서로를 보며 승부를 이어갔다.",
+          summary:s.name+"와 "+p.name+"이(가) 승부를 즐겼다.",type:"social",scene:s.scene
+        });
       }
     }
     if(a==="SHARE"&&p){
       changeRelation(s,p,{affinity:.012,irritation:-.006});s.belonging=clamp(s.belonging+.02);
-      log(s.name+"이(가) "+p.name+"에게 반찬을 건넸다.","social","cafeteria");
+      scriptLog({
+        speaker:s.name,dialogue:pickLine(["이거 먹을래?","이거 줄까?","난 이거 괜찮아. 너 먹어."]),
+        replySpeaker:p.name,replyDialogue:pickLine(["응, 고마워.","진짜? 고마워.","응."]),
+        stage:s.name+"이(가) 식판 쪽으로 반찬을 조심스럽게 건넸다.",
+        summary:s.name+"이(가) "+p.name+"에게 반찬을 나눠주었다.",type:"social",scene:"cafeteria"
+      });
     }
     if(a==="EAT"&&Math.random()<.025+s.imp*.02)log(s.name+"이(가) 식판에서 음식 하나를 떨어뜨렸다.","incident","cafeteria");
 
