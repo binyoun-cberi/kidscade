@@ -459,10 +459,7 @@
       ["검토 기준","확인할 점"],
       ["선택 가능한","고를 수 있는"],
       ["선택할 수 없는 선","하면 안 되는 일"],
-      ["선택권","고를 수 있게"],
       ["책임을 학생에게 돌려주고","학생이 직접 정하게 하고"],
-      ["책임을 학생에게","학생이 직접"],
-      ["책임은 학생들에게","학생들이 직접"],
       ["행동 책임","한 행동에 대한 책임"],
       ["분명해졌다.","알 수 있었다."],
       ["구체화됐다.","정리됐다."],
@@ -682,7 +679,7 @@
     box.hidden=!timeRushActive;
     if(!timeRushActive)return;
     if(clock)clock.textContent=fmtMin(gameMinute());
-    if(day)day.textContent="Day "+dayIndex+" · "+current().name;
+    if(day)day.textContent=dayIndex+"일차 · "+current().name;
     if(caption){
       var remain=Math.max(0,Math.ceil((timeRushTarget-gameSec)/60));
       caption.textContent=remain>3?"시간이 빠르게 흐른다":"곧 다른 일이 생긴다";
@@ -1426,7 +1423,7 @@
       if(job.sourceDir==="up")return {title:"추가 문제를 예상하고 기다린다",text:who+"이(가) 활동을 마치자 자연스럽게 추가 문제를 기다린다. 하지만 표정에서는 반복 과제에 대한 흥미가 크지 않아 보인다.",dialogue:who+' “또 문제 풀면 돼요?”'};
       return {title:"남는 시간을 스스로 설계한다",text:who+"이(가) 활동을 끝낸 뒤 오늘은 친구 설명을 선택하고 먼저 도움이 필요한 친구를 찾는다.",dialogue:who+' “누구 도와줘도 돼요?”'};
     }
-    return {title:"지난 판단의 결과가 다시 나타났다",text:who+"에게 있었던 '"+job.sourceTitle+"' 상황이 다른 모습으로 다시 나타났다. 이전의 "+prev+" 선택이 학생의 다음 행동에 영향을 준 듯하다.",dialogue:""};
+    return {title:"지난번 일이 다시 이어졌다",text:who+"에게 비슷한 일이 또 생겼다. 지난번에 선생님이 했던 말이 이번 행동에도 조금 남아 있는 것 같다.",dialogue:""};
   }
   function followUpChoices(s,job){
     var leftEffects={focus:2,trust:2,classFlow:-3};
@@ -1438,10 +1435,10 @@
     else if(source==="presentation_anxiety"){leftEffects.mood=4;leftEffects.trust=3}
     else if(source==="off_task"){leftEffects.focus=5;leftEffects.classStability=1}
     return {
-      up:encounterChoice("지금 나타난 변화를 학급의 기준과 연결해 다시 분명히 확인한다.",{focus:2,trust:-1,classStability:4,classFlow:2},"이번 변화가 우연으로 끝나지 않도록 기준과 기대 행동을 다시 분명하게 했다."),
-      down:encounterChoice("학생이 지금 어떻게 느끼는지 듣고 필요한 지원을 조금 조정한다.",{mood:4,trust:4,relation:2,classFlow:-2},"학생의 현재 경험을 다시 확인하면서 이전 개입을 상황에 맞게 조정했다."),
-      left:encounterChoice("잘된 점과 아직 어려운 점을 짚고 다음에 사용할 방법을 한 단계 더 연습한다.",leftEffects,"이전 경험을 다음에 사용할 구체적인 방법으로 연결해 한 단계 더 연습했다."),
-      right:encounterChoice("이번에는 다음 행동과 목표를 학생이 직접 정하게 한다.",{focus:2,mood:2,trust:3,classStability:0},"이전 경험을 바탕으로 다음 선택의 책임을 학생에게 넘겼다.")
+      up:encounterChoice("지난번에 정한 약속을 다시 짧게 확인한다.",{focus:2,trust:-1,classStability:4,classFlow:2},"해야 할 일을 다시 확인했다."),
+      down:encounterChoice("지금 어떤 기분인지 듣고 도움이 더 필요한지 묻는다.",{mood:4,trust:4,relation:2,classFlow:-2},"아이 말을 듣고 도와주는 방법을 조금 바꿨다."),
+      left:encounterChoice("잘된 점 하나와 아직 어려운 점 하나를 짚고 다시 연습한다.",leftEffects,"지난번에 배운 방법을 한 번 더 연습했다."),
+      right:encounterChoice("이번에는 다음에 뭘 할지 학생이 직접 정하게 한다.",{focus:2,mood:2,trust:3,classStability:0},"이번에는 학생이 직접 다음 행동을 정했다.")
     };
   }
   function applyDelayedFollowUp(job,s,t){
@@ -3075,7 +3072,7 @@
     overlay.hidden=false;
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
     q("#encounterCategory").textContent=simpleEncounterCategory(enc.category||current().name||"교실에서 생긴 일");
-    q("#encounterKicker").textContent=naturalClassroomText(enc.kicker||("Day "+dayIndex+" · "+current().name));
+    q("#encounterKicker").textContent=naturalClassroomText(enc.kicker||dayIndex+"일차 · "+current().name);
     var cardClock=q("#encounterClock");if(cardClock)cardClock.textContent=fmtMin(gameMinute());
     var card=q("#encounterCard");if(card){card.classList.remove("followup","story")}
     renderEncounterPortrait(enc,s);
