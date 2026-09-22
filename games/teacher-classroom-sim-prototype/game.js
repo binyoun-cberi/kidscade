@@ -1698,7 +1698,7 @@
     if(s){
       s.encounterNotes.unshift({day:dayIndex,time:gameMinute(),text:enc.title+" → "+direction+" · "+choice.text,dir:dir,delta:delta,isFollowUp:!!enc.isFollowUp});
       s.encounterNotes=s.encounterNotes.slice(0,8);
-      remember(s,"판단 카드: "+enc.title+" / "+direction,.56);
+      remember(s,"그때 있었던 일: "+enc.title+" / "+direction,.56);
     }
     var decisionItem={
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
@@ -1717,7 +1717,7 @@
     q("#encounterResultTitle").textContent=dir==="timeout"?"잠깐 망설이는 사이":"이렇게 해봤다 · "+direction;
     q("#encounterResultText").textContent=choice.result;
     var reactionBox=q("#encounterReaction");
-    if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"학생 반응 · "+reaction.text:""}
+    if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"아이 반응 · "+reaction.text:""}
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
     renderEncounter();
   }
@@ -1752,8 +1752,8 @@
         '<div class="roster-stat"><strong>'+d.mood+'</strong><small>🙂 정서</small></div>'+
         '<div class="roster-stat"><strong>'+d.relation+'</strong><small>🤝 관계</small></div>'+
         '<div class="roster-stat"><strong>'+d.trust+'</strong><small>❤️ 교사신뢰</small></div>'+
-      '</div><div class="response-profile"><strong>교사 대응 반응 특성</strong><div>'+responseNotes.map(function(x){return '<span class="response-chip">'+escHtml(x)+'</span>'}).join("")+'</div></div>'+
-      '<div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div>'+
+      '</div><div class="response-profile"><strong>이 아이가 편해하는 방식</strong><div>'+responseNotes.map(function(x){return '<span class="response-chip">'+escHtml(x)+'</span>'}).join("")+'</div></div>'+
+      '<div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 눈에 띄는 변화가 없습니다.</div>')+'</div>'+
       (queued.length?'<div class="roster-followup">📌 조금 더 지켜볼 일 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+'</div>';
   }
 
@@ -3552,7 +3552,7 @@
     });
     var flowDelta=nowClass.flow-startClass.flow;
     q("#reportTitle").textContent=p.name+" 정리";
-    q("#reportSub").textContent=fmtMin(p.start)+"~"+fmtMin(Math.min(gameMinute(),p.end))+" · 평점 없이 실제 판단과 변화만 정리합니다.";
+    q("#reportSub").textContent=fmtMin(p.start)+"~"+fmtMin(Math.min(gameMinute(),p.end))+" · 이번 시간에 있었던 일과 달라진 점을 모았습니다.";
     q("#mDecisions").textContent=periodDecisions.length;
     q("#mRecords").textContent=recordEvents.length;
     q("#mAffected").textContent=affected.length;
@@ -3562,7 +3562,7 @@
       var s=studentById(h.studentId);
       return "<li><strong>"+fmtMin(h.time)+"</strong> "+escHtml(s?s.name:"학생")+" · "+escHtml(h.direction)+" · "+escHtml(h.title)+"</li>";
     });
-    if(!eventLines.length)eventLines.push("<li>이 교시에는 판단 카드가 발생하지 않았습니다.</li>");
+    if(!eventLines.length)eventLines.push("<li>이 시간에는 특별히 멈춰 볼 만한 일이 없었습니다.</li>");
     q("#incidentList").innerHTML=eventLines.join("");
 
     var findings=[];
@@ -3986,9 +3986,9 @@
     if(item.followUpOutcome){
       var fd=item.delta||{},fb=item.before||{},fa=item.after||{},fl={learning:"📚 학습"+(item.metricSubject?"("+item.metricSubject+")":""),focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
       var fdelta=Object.keys(fl).filter(function(k){return fd[k]}).map(function(k){return '<span>'+fl[k]+' '+fb[k]+'→'+fa[k]+' ('+(fd[k]>0?"+":"")+fd[k]+')</span>'}).join("");
-      return '<article class="record-entry followup_decision"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="followup-badge">후속 결과</span></div>'+
+      return '<article class="record-entry followup_decision"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="followup-badge">그 뒤</span></div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
-        '<div class="record-stage">이전 판단 · '+escHtml(item.sourceDirection||"")+' · '+escHtml(item.sourceChoice||"")+'</div>'+
+        '<div class="record-stage">전에 선생님은 · '+escHtml(item.sourceDirection||"")+' · '+escHtml(item.sourceChoice||"")+'</div>'+
         '<div class="record-stage">'+escHtml(item.resultText||"")+'</div>'+
         (fdelta?'<div class="decision-deltas">'+fdelta+'</div>':'')+'</article>';
     }
@@ -3997,12 +3997,12 @@
       var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+escHtml(before[k])+'→'+escHtml(after[k])+' ('+(d[k]>0?"+":"")+d[k]+')</span>'}).join("");
       var cb=item.beforeClass||{},ca=item.afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
       var classDeltaHtml=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){return '<span>'+classLabels[k]+' '+cb[k]+'→'+ca[k]+'</span>'}).join("");
-      return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">후속 판단</span>':'')+'</div>'+
+      return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">다시 만난 일</span>':'')+'</div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
-        (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">참고 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
-        '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
+        (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">그때 보인 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
+        '<div class="record-stage">선생님은 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
-        (item.studentReaction?'<div class="record-stage">학생 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
+        (item.studentReaction?'<div class="record-stage">아이 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
         (deltaHtml?'<div class="decision-deltas">'+deltaHtml+'</div>':'')+
         (classDeltaHtml?'<div class="decision-deltas">'+classDeltaHtml+'</div>':'')+'</article>';
     }
@@ -4040,7 +4040,7 @@
           '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div>'+
         '</div>'+
         '<div class="tool-section"><h4>오늘 있었던 일</h4><div class="record-empty">오늘 판단 '+today.length+'회 · 조금 더 지켜볼 일 '+queuedFollowUps().length+'건 · 이번 시간 판단 '+currentCount+'회</div></div>';
-      if(current().kind==="lesson")html+='<button class="tool-choice" type="button" data-computer-report="1"><strong>🗒️ 현재 교시 정리 보기</strong><small>평점 없이 판단과 학생·학급 수치 변화만 확인합니다.</small></button>';
+      if(current().kind==="lesson")html+='<button class="tool-choice" type="button" data-computer-report="1"><strong>🗒️ 현재 교시 정리 보기</strong><small>이번 시간에 있었던 일과 달라진 점을 확인합니다.</small></button>';
       body.innerHTML=html;
     }else if(kind==="roster"){
       kicker.textContent="학급 명부";title.textContent="우리 반 상태";
