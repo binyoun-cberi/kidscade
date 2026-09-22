@@ -2366,6 +2366,7 @@
     log(current().name+"이(가) 시작되었다.","ambient",teacherScene);render();
   }
   function periodForMinute(m){
+    if(m<schedule[0].start)return 0;
     for(var i=0;i<schedule.length;i++)if(m>=schedule[i].start&&m<schedule[i].end)return i;
     return schedule.length-1;
   }
@@ -2469,6 +2470,7 @@
     var intent=document.createElement("span");intent.className="intent-tag";intent.hidden=true;
     var action=document.createElement("span");action.className="action-tag";action.hidden=true;
     status.appendChild(intent);status.appendChild(action);b.appendChild(status);
+    var signal=document.createElement("span");signal.className="student-signal";signal.hidden=true;signal.setAttribute("aria-hidden","true");b.appendChild(signal);
 
     var wrap=document.createElement("span");wrap.className="sprite-wrap";
     var standing=createStandingAvatar(s.look);
@@ -2479,12 +2481,83 @@
     var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
     b.addEventListener("click",function(){handleStudentClick(Number(this.dataset.studentId))});
     q("#students").appendChild(b);
-    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm};
+    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm,signal:signal};
     return studentNodes[s.id];
   }
   function isImportantVisualAction(s){
     return ["HELP","REJECTED","ARGUE","SHOVE","HURT","TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT",
       "REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0;
+  }
+  function visualSignal(s){
+    if(isSevereAction(s)||s.action==="SHOVE")return {icon:"!",tone:"danger",label:"긴급"};
+    if(s.action==="HURT"||s.victimStress>.15)return {icon:"✚",tone:"danger",label:"안전 확인"};
+    if(s.action==="ARGUE"||s.action==="TEASE"||s.action==="REFUSE_INSTRUCTION"||s.action==="REJECTED")return {icon:"!",tone:"warning",label:"주의"};
+    if(s.action==="REPORT_INCIDENT")return {icon:"!",tone:"warning",label:"알림"};
+    if(s.action==="HELP"||s.helpNeed>.27)return {icon:"?",tone:"neutral",label:"도움 필요"};
+    if(s.action==="RAISE_HAND")return {icon:"✋",tone:"positive",label:"손듦"};
+    if(s.action==="SLEEP")return {icon:"Z",tone:"warning",label:"졸림"};
+    return null;
+  }
+  function priorityScore(s){
+    var score=0;
+    if(isSevereAction(s))score=Math.max(score,100);
+    if(s.action==="SHOVE")score=Math.max(score,96);
+    if(s.action==="HURT"||s.victimStress>.15)score=Math.max(score,92);
+    if(s.action==="ARGUE")score=Math.max(score,82);
+    if(s.action==="REPORT_INCIDENT")score=Math.max(score,78);
+    if(["SHOUT_TEACHER","REFUSE_INSTRUCTION"].indexOf(s.action)>=0)score=Math.max(score,72);
+    if(s.action==="HELP")score=Math.max(score,68);
+    if(s.action==="REJECTED"||s.action==="TEASE")score=Math.max(score,58);
+    if(s.action==="SLEEP")score=Math.max(score,50);
+    if(s.helpNeed>.24)score=Math.max(score,44);
+    if(isOffTask(s))score=Math.max(score,35);
+    if(s.intent)score=Math.max(score,30);
+    return score;
+  }
+  function priorityReason(s){
+    var target=studentById(s.socialTarget);
+    if(isSevereAction(s))return target?target.name+" 관련 즉시 안전 확인":"즉시 안전 확인 필요";
+    if(s.action==="HURT"||s.victimStress>.15)return "상태와 안전 확인이 필요해 보임";
+    if(s.action==="ARGUE")return target?target.name+"와 말다툼 중":"말다툼이 이어지는 중";
+    if(s.action==="REPORT_INCIDENT")return "교사에게 상황을 알리려 함";
+    if(s.action==="HELP"||s.helpNeed>.24)return "학습 도움을 기다리는 중";
+    if(s.action==="REJECTED")return "또래 관계에서 머뭇거리는 중";
+    if(s.action==="TEASE")return target?target.name+"을(를) 놀리는 중":"놀림 행동이 보임";
+    if(s.action==="SLEEP")return "집중이 떨어지고 졸고 있음";
+    if(isOffTask(s))return humanAction(s);
+    if(s.intent)return intentText(s);
+    return humanAction(s);
+  }
+  function renderRoomOverview(){
+    var visible=students.filter(function(s){return s.scene===teacherScene});
+    var ranked=visible.map(function(s){return {s:s,score:priorityScore(s)}}).filter(function(x){return x.score>=30}).sort(function(a,b){return b.score-a.score}).slice(0,4);
+    var urgent=visible.filter(function(s){return priorityScore(s)>=80}).length;
+    var help=visible.filter(function(s){return s.action==="HELP"||s.helpNeed>.24}).length;
+    var off=visible.filter(function(s){return isOffTask(s)}).length;
+    var social=visible.filter(function(s){return ["ARGUE","REJECTED","TEASE"].indexOf(s.action)>=0}).length;
+    var pulse=q("#roomPulse");
+    if(pulse)pulse.innerHTML=
+      '<span class="pulse-chip '+(urgent?"danger":"")+'">긴급 '+urgent+'</span>'+
+      '<span class="pulse-chip help">도움 '+help+'</span>'+
+      '<span class="pulse-chip '+(off>=3?"warning":"")+'">흐름 이탈 '+off+'</span>'+
+      '<span class="pulse-chip '+(social?"warning":"")+'">관계 신호 '+social+'</span>';
+    var count=q("#priorityCount");if(count)count.textContent=SCENE_NAME[teacherScene]+" · "+visible.length+"명";
+    var board=q("#priorityBoard");
+    if(board){
+      if(!ranked.length)board.innerHTML='<div class="priority-empty">지금은 크게 두드러지는 신호가 없습니다. 전체 흐름을 보며 수업과 관계 변화를 살펴보세요.</div>';
+      else board.innerHTML=ranked.map(function(item){
+        var s=item.s,signal=visualSignal(s),tone=signal?signal.tone:(item.score>=55?"warning":"neutral");
+        return '<button type="button" class="priority-item" data-student-id="'+s.id+'">'+
+          '<span class="priority-dot '+tone+'"></span>'+
+          '<span class="priority-main"><strong>'+escHtml(s.name)+'</strong><span>'+escHtml(priorityReason(s))+'</span></span>'+
+          '<span class="priority-rank">'+(item.score>=80?"먼저":"보기")+'</span></button>';
+      }).join("");
+    }
+    var alert=q("#worldAlert"),top=ranked[0];
+    if(alert){
+      if(top&&top.score>=80){alert.hidden=false;alert.dataset.studentId=top.s.id;alert.textContent="확인 필요 · "+top.s.name+" · "+priorityReason(top.s)}
+      else{alert.hidden=true;alert.removeAttribute("data-student-id")}
+    }
   }
   function renderInteractionLinks(){
     var svg=q("#interactionLinks"),seen={};svg.innerHTML="";
@@ -2509,9 +2582,12 @@
       var n=ensureStudentNode(s),show=s.scene===teacherScene;
       n.root.style.display=show?"block":"none";
       if(!show)return;
-      var isSeated=seated(s);
-      n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(isSeated?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"");
+      var isSeated=seated(s),signal=visualSignal(s),tone=actionTone(s);
+      n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(isSeated?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"")+" tone-"+tone;
       n.root.style.left=s.x+"%";n.root.style.top=s.y+"%";
+      n.root.style.zIndex=isSeated?"10":String(12+Math.round(s.y/9));
+      n.signal.hidden=!signal;
+      if(signal){n.signal.textContent=signal.icon;n.signal.className="student-signal "+signal.tone;n.signal.title=signal.label}
       n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
       n.standing.hidden=isSeated;n.seated.hidden=!isSeated;
       var showIntent=selected===s.id;
@@ -2595,15 +2671,33 @@
     });
     q("#actionDetail").textContent=teacherIsBusy()?"교사가 다른 행동을 수행 중입니다. 그동안 학생들의 상황은 계속 변합니다.":"테두리가 강조된 행동은 현재 상황과 비교적 잘 맞는 선택입니다. 정답을 뜻하지는 않습니다.";
   }
+  function renderStudentVitals(s){
+    var box=q("#studentVitals");if(!box)return;
+    if(!s){box.innerHTML="";return}
+    var chips=[];
+    var observed=s.observation>=1||hasObservedCurrentWork(s);
+    if(isSevereAction(s)||s.action==="SHOVE")chips.push({text:"즉시 안전 확인",tone:"danger"});
+    else if(s.action==="ARGUE"||s.frustration>.52)chips.push({text:"감정 고조",tone:"warn"});
+    else chips.push({text:"감정 비교적 안정",tone:"good"});
+    if(s.action==="HELP"||s.helpNeed>.24)chips.push({text:"도움 필요",tone:"warn"});
+    if(s.action==="REJECTED"||s.belonging<.50)chips.push({text:"관계 살피기",tone:"warn"});
+    if(observed){
+      chips.push({text:s.focus>.66?"집중 안정":s.focus>.46?"집중 흔들림":"집중 저하",tone:s.focus>.66?"good":s.focus>.46?"":"warn"});
+      if(s.moveNeed>.40)chips.push({text:"움직임 욕구 큼",tone:"warn"});
+    }
+    box.innerHTML=chips.map(function(c){return '<span class="vital-chip '+(c.tone||"")+'">'+escHtml(c.text)+'</span>'}).join("")+
+      (observed?"":'<span class="vital-hint">관찰 행동을 하면 더 많은 상태 단서가 드러납니다.</span>');
+  }
   function renderPanel(){
     var s=studentById(selected);
     app.classList.toggle("student-selected",!!s);
+    var clear=q("#clearSelection");if(clear)clear.hidden=!s;
     if(!s){
       q("#studentName").textContent="학급 운영";
       q("#studentSummary").textContent="학생을 선택하지 않으면 현재 공간 전체에 할 수 있는 행동이 나타납니다.";
       q("#studentState").textContent=SCENE_NAME[teacherScene]+" 전체 관찰";
       q("#memory").textContent="개별 학생을 선택하면 행동 원인과 관계 상황에 맞는 개별 행동으로 바뀝니다.";
-      renderDiagnosisPanel(null);
+      renderStudentVitals(null);renderDiagnosisPanel(null);
       renderTeacherBusy();renderActionPanel(null);return;
     }
     q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);
@@ -2626,7 +2720,7 @@
       notes.push("자주 어울리는 무리: "+names+" / "+circle.label);
     }
     q("#memory").textContent=notes.join(" · ")||"최근에 특별히 기록된 일 없음";
-    renderDiagnosisPanel(s);
+    renderStudentVitals(s);renderDiagnosisPanel(s);
     renderTeacherBusy();renderActionPanel(s);
   }
   function escHtml(value){
@@ -2703,6 +2797,12 @@
   function renderHeader(){
     var p=current();
     q("#time").textContent=fmtMin(gameMinute());q("#periodName").textContent=p.name;
+    var reportBtn=q("#showReport");
+    if(reportBtn){
+      reportBtn.disabled=p.kind!=="lesson";
+      reportBtn.textContent=p.kind==="lesson"?"현재 교시 결과 보기":"수업 중 결과 보기";
+      reportBtn.title=p.kind==="lesson"?"현재 수업의 중간 결과를 확인합니다.":"수업 시간이 시작되면 사용할 수 있습니다.";
+    }
     q("#periodDesc").textContent=p.kind==="lesson"?(p.unit+" · 학생의 몸짓·학습·관계를 보며 수업을 운영하세요."):p.kind==="break"?"아이들이 친구를 찾아가거나 혼자 머무르며 관계가 움직입니다.":p.kind==="lunch"?"급식실에서는 자리·친구·나눔 행동이 드러납니다.":p.kind==="lunchplay"?"아이들이 원하는 공간과 친구를 찾아 움직입니다.":"하루 일과를 준비하거나 정리하는 시간입니다.";
     q("#locationName").textContent=SCENE_NAME[teacherScene];
     q("#progress").style.width=(clamp((gameSec/60-p.start)/(p.end-p.start))*100)+"%";
@@ -2722,10 +2822,11 @@
     renderTeacherBusy();
     renderStudents();
     renderSceneNav();
+    renderRoomOverview();
     renderTeacherPosition();
   }
   function render(){
-    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderPanel();renderFeed();renderTeacherPosition();
+    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderRoomOverview();renderPanel();renderFeed();renderTeacherPosition();
   }
   function openScene(scene){
     if(scene===teacherScene)return;
@@ -2771,8 +2872,19 @@
   }
 
   q("#world").addEventListener("click",function(e){
-    if(e.target.closest&&e.target.closest(".student"))return;
+    if(e.target.closest&&e.target.closest(".student,.world-alert"))return;
     if(selected!==null){selected=null;connectMode=false;swapMode=false;renderPanel();renderStudents();}
+  });
+  q("#priorityBoard").addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest("[data-student-id]");if(!b)return;
+    selected=Number(b.dataset.studentId);connectMode=false;swapMode=false;render();
+  });
+  q("#worldAlert").addEventListener("click",function(){
+    if(!this.dataset.studentId)return;
+    selected=Number(this.dataset.studentId);connectMode=false;swapMode=false;render();
+  });
+  q("#clearSelection").addEventListener("click",function(){
+    selected=null;connectMode=false;swapMode=false;render();
   });
   q("#pause").addEventListener("click",function(){running=!running;this.textContent=running?"일시정지":"계속하기"});
   qa("#actionTabs button").forEach(function(b){
@@ -2783,10 +2895,6 @@
   });
   q("#showReport").addEventListener("click",function(){
     if(current().kind==="lesson")openReport(true);
-    else{
-      var next=-1;for(var i=periodIndex+1;i<schedule.length;i++){if(schedule[i].kind==="lesson"){next=i;break}}
-      if(next>=0){periodIndex=next;gameSec=schedule[next].start*60;teacherTask=null;newStats();assignPeriodDestinations();render();log(current().name+"으로 이동했다.","ambient",teacherScene)}
-    }
   });
   q("#continueBtn").addEventListener("click",nextPeriod);
   q("#reset").addEventListener("click",reset);
