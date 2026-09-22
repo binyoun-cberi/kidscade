@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>역사 타임배틀 LIVE | Kidscade</title>
+<style>
+:root{--bg:#081426;--panel:#102541;--text:#f7fbff;--muted:#abc0d8;--gold:#ffd75e;--green:#35d69a;--blue:#4e98ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Pretendard","Noto Sans KR",sans-serif;background:radial-gradient(circle at 50% -15%,#28598e 0,#102a49 36%,#071321 78%);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}.brand{font-size:clamp(24px,4vw,38px);font-weight:1000}.brand b{color:var(--gold)}.home{color:var(--muted);font-weight:900;text-decoration:none}
+.card{background:linear-gradient(180deg,rgba(24,55,92,.97),rgba(11,31,55,.97));border:1px solid #31597e;border-radius:24px;padding:clamp(18px,3vw,32px);box-shadow:0 18px 58px #0007}.hidden{display:none!important}
+.hero{text-align:center;padding:42px 18px}.badge{display:inline-block;padding:8px 13px;border-radius:999px;background:#1d416d;color:#d9ecff;font-weight:900}.hero h1{font-size:clamp(44px,8vw,78px);line-height:.98;margin:14px 0}.hero p{color:var(--muted);font-size:18px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:760px;margin:28px auto 0}.big,.btn{border:0;border-radius:17px;padding:16px 18px;font-weight:1000}.big{font-size:21px;color:#071423}.host{background:var(--gold)}.join{background:#6ee7b7}.btn{background:#e6f0ff;color:#0b1d31}.btn.primary{background:var(--gold)}.btn.danger{background:#71313b;color:#ffe0e4}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.field{display:grid;gap:8px;margin:14px 0}.field label{font-weight:900}.field input,.field select{width:100%;border:1px solid #466b90;background:#0a1c31;color:white;border-radius:14px;padding:14px;font-weight:850}
+.roomcode{text-align:center;font-size:clamp(48px,10vw,96px);letter-spacing:.12em;font-weight:1000;color:var(--gold)}.sub{text-align:center;color:var(--muted);font-weight:850}.statline{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:900}.roster{display:flex;gap:8px;flex-wrap:wrap;max-height:320px;overflow:auto}.pill{background:#173758;border:1px solid #315a81;border-radius:999px;padding:9px 12px;font-weight:900}.pill.off{opacity:.45}
+.progress{height:13px;background:#081827;border-radius:99px;overflow:hidden;margin-top:9px}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4e98ff,#35d69a)}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:12px}.era{display:inline-block;padding:8px 12px;border-radius:999px;background:#21456f;font-weight:900}.tiny{font-size:13px;color:var(--muted);margin-top:8px}.timer{width:78px;height:78px;border:7px solid var(--gold);border-radius:50%;display:grid;place-items:center;background:#091c31;font-size:29px;font-weight:1000}.question{font-size:clamp(24px,4vw,42px);line-height:1.28;font-weight:1000;margin:22px 0}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.answer{min-height:94px;border:0;border-radius:18px;color:white;padding:16px;font-size:clamp(17px,2.4vw,24px);font-weight:1000;text-align:left}.answer:nth-child(1){background:#d44d59}.answer:nth-child(2){background:#3979d6}.answer:nth-child(3){background:#c98d25}.answer:nth-child(4){background:#38966e}.answer:disabled{opacity:.62;filter:saturate(.5)}.answer.selected{outline:5px solid white;opacity:1}.answer.correct{outline:6px solid #6bf2af;opacity:1;filter:none}.answer.wrong{opacity:.3}
+.notice{text-align:center;padding:25px;font-size:20px;font-weight:900}.score{font-size:36px;font-weight:1000;color:var(--gold)}.explain{margin-top:16px;padding:16px;border-radius:16px;background:#0b2038;color:#dcecff;line-height:1.55;font-weight:750}.rank{display:grid;gap:8px}.rankrow{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:#132f50;font-weight:900}.rankrow.me{outline:2px solid var(--gold)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+@media(max-width:760px){.wrap{padding:11px}.grid,.actions,.answers{grid-template-columns:1fr}.card{border-radius:18px}.hero{padding:28px 13px}.answer{min-height:74px}.timer{width:62px;height:62px;font-size:23px;border-width:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand">KIDScade <b>LIVE</b></div><a class="home" href="../../index.html">← 게임 목록</a></div>
+
+  <main id="landing" class="card hero">
+    <span class="badge">초등 5·6학년 한국사 · 최대 26명</span>
+    <h1>역사<br><span style="color:var(--gold)">타임배틀</span></h1>
+    <p>교실 전체가 같은 문제를 보고, 빠르고 정확하게 답하는 실시간 한국사 퀴즈</p>
+    <div class="actions">
+      <button class="big host" onclick="showSetup('host')">교사용 · 방 만들기</button>
+      <button class="big join" onclick="showSetup('join')">학생용 · 코드로 입장</button>
+    </div>
+  </main>
+
+  <section id="setup" class="card hidden" style="max-width:720px;margin:18px auto">
+    <div id="hostSetup" class="hidden">
+      <h2>수업 방 만들기</h2>
+      <div class="grid">
+        <div class="field"><label>문제 수</label><select id="questionCount"><option>10</option><option selected>15</option><option>20</option></select></div>
+        <div class="field"><label>문제당 시간</label><select id="seconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option></select></div>
+      </div>
+      <button class="btn primary" style="width:100%" onclick="createRoom()">방 만들기</button>
+    </div>
+    <div id="joinSetup" class="hidden">
+      <h2>게임 입장</h2>
+      <div class="field"><label>6자리 방 코드</label><input id="joinCode" maxlength="6" autocomplete="off" placeholder="ABC123" style="text-transform:uppercase;font-size:24px;letter-spacing:.12em"></div>
+      <div class="field"><label>별명</label><input id="nickname" maxlength="14" autocomplete="off" placeholder="예: 세종팬"></div>
+      <button class="btn primary" style="width:100%" onclick="joinRoom()">입장하기</button>
+    </div>
+    <div class="toolbar"><button class="btn" onclick="showOnly('landing')">뒤로</button></div>
+  </section>
+
+  <section id="lobby" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <div class="sub">입장 코드</div>
+        <div id="roomCode" class="roomcode">------</div>
+        <div class="sub">친구들에게 이 코드를 알려 주세요</div>
+        <div class="statline" style="margin-top:24px"><span>참가자 <b id="playerCount">0</b> / 26</span><span id="lobbyRole"></span></div>
+        <div class="progress"><i id="capacityBar"></i></div>
+        <div id="hostLobbyButtons" class="toolbar hidden"><button class="btn primary" onclick="hostStart()">게임 시작</button><button class="btn danger" onclick="closeRoom()">방 닫기</button></div>
+        <div id="studentWait" class="notice hidden">선생님이 게임을 시작할 때까지 기다려 주세요.</div>
+      </div>
+      <div class="card"><h2 style="margin-top:0">참가자</h2><div id="roster" class="roster"></div></div>
+    </div>
+  </section>
+
+  <section id="game" class="card hidden">
+    <div class="qhead">
+      <div><span id="qEra" class="era">시대</span><div id="qNum" class="tiny">1 / 15</div></div>
+      <div id="timer" class="timer">12</div>
+    </div>
+    <div id="question" class="question"></div>
+    <div id="answers" class="answers"></div>
+    <div id="submitted" class="notice hidden">답을 보냈어요! 결과를 기다려 주세요.</div>
+    <div id="hostProgress" class="hidden">
+      <div class="statline"><span>응답 <b id="answeredCount">0</b> / <b id="totalCount">0</b></span><span>서버에서 답안을 판정 중</span></div>
+      <div class="progress"><i id="answerBar"></i></div>
+    </div>
+  </section>
+
+  <section id="reveal" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <div class="qhead"><div><span id="revealEra" class="era"></span><div id="revealNum" class="tiny"></div></div><div id="myScore" class="score"></div></div>
+        <div id="revealQuestion" class="question"></div>
+        <div id="revealAnswers" class="answers"></div>
+        <div id="explanation" class="explain"></div>
+        <div id="hostNext" class="toolbar hidden"><button class="btn primary" onclick="hostNext()">다음 문제</button></div>
+        <div id="studentNext" class="notice hidden">다음 문제를 기다려 주세요.</div>
+      </div>
+      <div class="card"><h2 style="margin-top:0">현재 TOP 5</h2><div id="top5" class="rank"></div></div>
+    </div>
+  </section>
+
+  <section id="finished" class="card hidden" style="max-width:820px;margin:18px auto">
+    <div class="hero" style="padding:10px"><span class="badge">시간 여행 완료</span><h1 style="font-size:48px">최종 결과</h1></div>
+    <div id="results" class="rank"></div>
+    <div class="toolbar"><a class="btn primary" href="history_timebattle.html" style="text-decoration:none">새 게임</a><a class="btn" href="../../index.html" style="text-decoration:none">게임 목록</a></div>
+  </section>
+</div>
+<script>
+const API='/api/history-live';
+let session=null,poller=null,lastState=null,timerRAF=null,answeredFor=-1,serverOffset=0;
+const $=id=>document.getElementById(id);
+function showOnly(id){['landing','setup','lobby','game','reveal','finished'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
+function showSetup(which){showOnly('setup');$('hostSetup').classList.toggle('hidden',which!=='host');$('joinSetup').classList.toggle('hidden',which!=='join')}
+function save(){localStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
+function clearSession(){localStorage.removeItem('kc-history-live-v1');session=null}
+function authHeaders(){return {'Authorization':'Bearer '+session.token}}
+async function api(path,opts={}){const r=await fetch(API+path,{...opts,headers:{'content-type':'application/json',...(opts.headers||{})}});const d=await r.json().catch(()=>({ok:false,error:'bad_response'}));if(!r.ok)throw new Error(d.error||'server_error');return d}
+function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
+async function createRoom(){try{const d=await api('/rooms',{method:'POST',body:JSON.stringify({questionCount:+$('questionCount').value,secondsPerQuestion:+$('seconds').value})});session={role:'host',code:d.code,token:d.hostToken};save();startPolling()}catch(e){alert(errorText(e))}}
+async function joinRoom(){const code=$('joinCode').value.trim().toUpperCase(),nickname=$('nickname').value.trim();if(code.length!==6||!nickname)return alert('방 코드와 별명을 입력해 주세요.');try{const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname})});session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};save();startPolling()}catch(e){alert(errorText(e))}}
+async function hostStart(){try{await api('/start',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
+async function hostNext(){try{await api('/next',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
+async function closeRoom(){if(!confirm('이 방을 닫을까요?'))return;try{await api('/close',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})})}catch(e){}clearSession();location.reload()}
+async function submitAnswer(i,btn){if(session.role!=='player'||answeredFor===lastState.room.questionNumber)return;answeredFor=lastState.room.questionNumber;document.querySelectorAll('#answers .answer').forEach(b=>b.disabled=true);btn.classList.add('selected');try{await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,optionIndex:i})});$('submitted').classList.remove('hidden')}catch(e){answeredFor=-1;alert(errorText(e))}}
+function startPolling(){showOnly('lobby');poll();clearInterval(poller);poller=setInterval(poll,750)}
+async function poll(){if(!session)return;try{const r=await fetch(API+'/state?code='+encodeURIComponent(session.code),{headers:authHeaders()});const d=await r.json();if(!r.ok)throw new Error(d.error);lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();render(d)}catch(e){if(['room_not_found','unauthorized'].includes(String(e.message))){clearInterval(poller);clearSession();alert('방 연결이 끝났어요.');location.reload()}}}
+function render(s){if(s.room.status==='waiting')renderLobby(s);else if(s.room.status==='question')renderQuestion(s);else if(s.room.status==='reveal')renderReveal(s);else if(s.room.status==='finished')renderFinished(s)}
+function renderLobby(s){showOnly('lobby');$('roomCode').textContent=s.room.code;$('playerCount').textContent=s.players.length;$('capacityBar').style.width=(s.players.length/26*100)+'%';$('lobbyRole').textContent=session.role==='host'?'교사용 화면':'대기 중';$('hostLobbyButtons').classList.toggle('hidden',session.role!=='host');$('studentWait').classList.toggle('hidden',session.role!=='player');$('roster').innerHTML=s.players.map(p=>'<span class="pill '+(p.online?'':'off')+'">'+esc(p.nickname)+'</span>').join('')}
+function renderQuestion(s){showOnly('game');const q=s.question;$('qEra').textContent=q.era;$('qNum').textContent=q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');$('hostProgress').classList.toggle('hidden',session.role!=='host');const n=s.players.filter(p=>p.answered).length;$('answeredCount').textContent=n;$('totalCount').textContent=s.players.length;$('answerBar').style.width=(s.players.length?n/s.players.length*100:0)+'%';$('answers').innerHTML=q.options.map((o,i)=>'<button class="answer" '+(session.role==='host'?'disabled':'')+'>'+esc(o)+'</button>').join('');if(session.role==='player')document.querySelectorAll('#answers .answer').forEach((b,i)=>b.onclick=()=>submitAnswer(i,b));if(answeredFor===s.room.questionNumber&&session.role==='player'){$('submitted').classList.remove('hidden');document.querySelectorAll('#answers .answer').forEach(b=>b.disabled=true)}runTimer(s.room.deadlineAt)}
+function runTimer(deadline){cancelAnimationFrame(timerRAF);const end=new Date(deadline).getTime();const step=()=>{const left=Math.max(0,Math.ceil((end-(Date.now()+serverOffset))/1000));$('timer').textContent=left;if(left>0)timerRAF=requestAnimationFrame(step)};step()}
+function renderReveal(s){showOnly('reveal');cancelAnimationFrame(timerRAF);const q=s.question,r=s.reveal;$('revealEra').textContent=q.era;$('revealNum').textContent=q.number+' / '+q.total;$('revealQuestion').textContent=q.prompt;$('revealAnswers').innerHTML=q.options.map((o,i)=>'<div class="answer '+(i===r.answerIndex?'correct':'wrong')+'">'+esc(o)+' <small>('+r.optionStats[i]+'명)</small></div>').join('');$('explanation').textContent=r.explanation;$('hostNext').classList.toggle('hidden',session.role!=='host');$('studentNext').classList.toggle('hidden',session.role!=='player');const me=s.players.find(p=>p.id===session.playerId);$('myScore').textContent=me?me.score.toLocaleString()+'점':'';renderRank('top5',s.players.slice(0,5))}
+function renderFinished(s){showOnly('finished');clearInterval(poller);renderRank('results',s.results||s.players)}
+function renderRank(id,players){$(id).innerHTML=players.map(p=>'<div class="rankrow '+(p.id===session.playerId?'me':'')+'"><b>#'+p.rank+'</b><span>'+esc(p.nickname)+'</span><b>'+Number(p.score).toLocaleString()+'점</b></div>').join('')}
+function esc(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+(function boot(){const qs=new URLSearchParams(location.search),room=qs.get('room');if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}try{const s=JSON.parse(localStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}})();
+</script>
+</body>
+</html>
