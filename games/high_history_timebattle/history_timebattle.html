@@ -27,6 +27,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;ma
     <span class="badge">초등 5·6학년 한국사 · 최대 26명</span>
     <h1>역사<br><span style="color:var(--gold)">타임배틀</span></h1>
     <p>교실 전체가 같은 문제를 보고, 빠르고 정확하게 답하는 실시간 한국사 퀴즈</p>
+    <div id="serverStatus" class="sub" style="margin-top:12px">● 실시간 서버 확인 중...</div>
     <div class="actions">
       <button class="big host" onclick="showSetup('host')">교사용 · 방 만들기</button>
       <button class="big join" onclick="showSetup('join')">학생용 · 코드로 입장</button>
@@ -96,7 +97,7 @@ button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;ma
 
   <section id="finished" class="card hidden" style="max-width:820px;margin:18px auto">
     <div class="hero" style="padding:10px"><span class="badge">시간 여행 완료</span><h1 style="font-size:48px">최종 결과</h1></div>
-    <div id="results" class="rank"></div>
+    <div id="results" class="rank" style="max-height:520px;overflow:auto"></div>
     <div class="toolbar"><a class="btn primary" href="history_timebattle.html" style="text-decoration:none">새 게임</a><a class="btn" href="../../index.html" style="text-decoration:none">게임 목록</a></div>
   </section>
 </div>
@@ -111,6 +112,7 @@ function clearSession(){sessionStorage.removeItem('kc-history-live-v1');session=
 function authHeaders(){return {'Authorization':'Bearer '+session.token}}
 async function api(path,opts={}){const r=await fetch(API+path,{...opts,headers:{'content-type':'application/json',...(opts.headers||{})}});const d=await r.json().catch(()=>({ok:false,error:'bad_response'}));if(!r.ok)throw new Error(d.error||'server_error');return d}
 function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
+async function checkHealth(){const el=$('serverStatus');try{const r=await fetch(API+'/health',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error();el.textContent='● 실시간 서버 연결됨 · 최대 '+d.maxPlayers+'명';el.style.color='#6ee7b7'}catch(_){el.textContent='● 실시간 서버에 연결되지 않았어요 · Cloudflare 배포 주소에서 열어 주세요';el.style.color='#ff9aa5'}}
 async function createRoom(){try{const d=await api('/rooms',{method:'POST',body:JSON.stringify({questionCount:+$('questionCount').value,secondsPerQuestion:+$('seconds').value})});session={role:'host',code:d.code,token:d.hostToken};save();startPolling()}catch(e){alert(errorText(e))}}
 async function joinRoom(){const code=$('joinCode').value.trim().toUpperCase(),nickname=$('nickname').value.trim();if(code.length!==6||!nickname)return alert('방 코드와 별명을 입력해 주세요.');try{const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname})});session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};save();startPolling()}catch(e){alert(errorText(e))}}
 async function hostStart(){try{await api('/start',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
@@ -128,7 +130,7 @@ function renderReveal(s){showOnly('reveal');cancelAnimationFrame(timerRAF);const
 function renderFinished(s){showOnly('finished');clearInterval(poller);renderRank('results',s.results||s.players)}
 function renderRank(id,players){$(id).innerHTML=players.map(p=>'<div class="rankrow '+(p.id===session.playerId?'me':'')+'"><b>#'+p.rank+'</b><span>'+esc(p.nickname)+'</span><b>'+Number(p.score).toLocaleString()+'점</b></div>').join('')}
 function esc(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-(function boot(){const qs=new URLSearchParams(location.search),room=qs.get('room');if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}try{const s=JSON.parse(sessionStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}})();
+(function boot(){checkHealth();const qs=new URLSearchParams(location.search),room=qs.get('room');if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}try{const s=JSON.parse(sessionStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}})();
 </script>
 </body>
 </html>
