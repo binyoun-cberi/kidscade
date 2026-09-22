@@ -1502,31 +1502,34 @@ function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER) {
   const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
   const wanted=Math.max(1,Math.min(Number(count)||15,40));
   const buckets=new Map(selectedEras.map(era=>[era,eligible.filter(x=>x.f.era===era).map(x=>x.i)]));
-  const uniqueTarget=Math.min(wanted,eligible.length),base=Math.floor(uniqueTarget/selectedEras.length),extra=uniqueTarget%selectedEras.length;
+  const uniqueTarget=Math.min(wanted,eligible.length),uniqueCounts=new Map(selectedEras.map(era=>[era,0]));
+  let assigned=0;
+  while(assigned<uniqueTarget){
+    let progressed=false;
+    for(const era of selectedEras){
+      const bucket=buckets.get(era)||[],used=uniqueCounts.get(era)||0;
+      if(used<bucket.length&&assigned<uniqueTarget){uniqueCounts.set(era,used+1);assigned++;progressed=true;}
+    }
+    if(!progressed)break;
+  }
+  const totalCounts=new Map(uniqueCounts);
+  let total=[...totalCounts.values()].reduce((a,b)=>a+b,0);
+  while(total<wanted){
+    let progressed=false;
+    for(const era of selectedEras){
+      const bucket=buckets.get(era)||[];
+      if(bucket.length&&total<wanted){totalCounts.set(era,(totalCounts.get(era)||0)+1);total++;progressed=true;}
+    }
+    if(!progressed)break;
+  }
   const selected=[];
-  selectedEras.forEach((era,eraIndex)=>{
-    const bucket=buckets.get(era)||[],take=Math.min(bucket.length,base+(eraIndex<extra?1:0));
-    if(!take)return;
-    for(let j=0;j<take;j++){
-      const pos=take===1?Math.floor((bucket.length-1)/2):Math.round(j*(bucket.length-1)/(take-1));
+  for(const era of selectedEras){
+    const bucket=buckets.get(era)||[],take=totalCounts.get(era)||0,uniqueTake=Math.min(take,bucket.length);
+    for(let j=0;j<uniqueTake;j++){
+      const pos=uniqueTake===1?Math.floor((bucket.length-1)/2):Math.round(j*(bucket.length-1)/(uniqueTake-1));
       selected.push(bucket[pos]);
     }
-  });
-  if(selected.length<uniqueTarget){
-    const used=new Set(selected);
-    for(const era of selectedEras){
-      for(const index of buckets.get(era)||[]){
-        if(!used.has(index)){selected.push(index);used.add(index)}
-        if(selected.length>=uniqueTarget)break;
-      }
-      if(selected.length>=uniqueTarget)break;
-    }
-  }
-  if(!selected.length)return [];
-  let cursor=0;
-  while(selected.length<wanted){
-    selected.push(selected[cursor%selected.length]);
-    cursor++;
+    for(let j=uniqueTake;j<take;j++)selected.push(bucket[j%bucket.length]);
   }
   return selected.slice(0,wanted);
 }
