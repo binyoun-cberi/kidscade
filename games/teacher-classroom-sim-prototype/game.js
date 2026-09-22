@@ -2750,7 +2750,7 @@
     var noteworthy=events.length>0||periodStats.conflicts>0||periodStats.seriousIncidents>0||periodStats.teacherIncidents>0||periodStats.safetyInterventions>0;
     if(!noteworthy)return null;
     var names=[];events.forEach(function(e){eventStudentNames(e).forEach(function(name){if(names.indexOf(name)<0)names.push(name)})});
-    var highlights=[];events.slice(-8).reverse().forEach(function(e){var t=shortMemoText(e.text);if(t&&highlights.indexOf(t)<0&&highlights.length<4)highlights.push(t)});
+    var highlights=[];events.slice(-8).reverse().forEach(function(e){var memoText=e.encounterDecision?e.text+" — "+e.choiceText:e.text;var t=shortMemoText(memoText);if(t&&highlights.indexOf(t)<0&&highlights.length<4)highlights.push(t)});
     if(periodStats.conflicts>0&&!highlights.some(function(x){return x.indexOf("갈등")>=0||x.indexOf("말다툼")>=0}))highlights.push("또래 갈등 "+periodStats.conflicts+"건이 수업 흐름에 영향을 주었다.");
     if(periodStats.seriousIncidents>0&&!highlights.some(function(x){return x.indexOf("심각")>=0||x.indexOf("위협")>=0||x.indexOf("신체")>=0}))highlights.push("안전 확인이 필요한 심각 상황 "+periodStats.seriousIncidents+"건이 발생했다.");
     highlights=highlights.slice(0,4);
@@ -3254,8 +3254,8 @@
   function recordEntryHtml(item){
     var place=SCENE_NAME[item.scene]||item.scene||"";
     if(item.encounterDecision){
-      var s=studentById(item.studentId),d=item.delta||{},labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
-      var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+(d[k]>0?"+":"")+d[k]+'</span>'}).join("");
+      var s=studentById(item.studentId),d=item.delta||{},before=item.before||{},after=item.after||{},labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+      var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+escHtml(before[k])+'→'+escHtml(after[k])+' ('+(d[k]>0?"+":"")+d[k]+')</span>'}).join("");
       return '<article class="record-entry encounter_decision"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span></div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
@@ -3302,6 +3302,7 @@
         '<div><strong>'+cm.relationship+'</strong><small>🤝 학급 관계</small></div>'+
         '<div><strong>'+cm.stability+'</strong><small>🧭 생활 안정</small></div>'+
         '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div></div>'+
+        '<div class="tool-section"><h4>오늘의 판단 방향</h4><div class="decision-deltas"><span>↑ 원칙 '+teacherStyleCounts.up+'</span><span>↓ 공감 '+teacherStyleCounts.down+'</span><span>← 코칭 '+teacherStyleCounts.left+'</span><span>→ 자율 '+teacherStyleCounts.right+'</span></div></div>'+
         '<div class="tool-section"><h4>학생 상태 · 0~100</h4><div class="roster-table">'+
         '<div class="roster-head"><span>학생</span><span>📚 학습</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
         students.map(rosterRowHtml).join("")+'</div></div>'+rosterDetailHtml(s);
@@ -3321,7 +3322,7 @@
     }else if(kind==="record"){
       kicker.textContent="생활기록부";title.textContent=s?s.name+" · 오늘의 기록":"우리 반 · 오늘의 기록";
       var items=dayEvents.filter(recordableEvent).slice(-50).reverse();
-      var html='<div class="tool-section"><h4>생활지도·사건 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 생활지도에 기록할 만한 상황이 없습니다. 평범한 대화나 정상적인 놀이·학습 대화는 생기부에 남기지 않습니다.</div>')+'</div></div>';
+      var html='<div class="tool-section"><h4>판단·생활지도 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 생활지도에 기록할 만한 상황이 없습니다. 평범한 대화나 정상적인 놀이·학습 대화는 생기부에 남기지 않습니다.</div>')+'</div></div>';
       if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">'+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
       body.innerHTML=html;tutorialEvent("record");
     }
