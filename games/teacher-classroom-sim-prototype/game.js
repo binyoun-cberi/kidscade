@@ -132,7 +132,10 @@
   var stats=null;
   var feed=[];
   var dayEvents=[];
-  var incidentRecords=[];
+  var worldHistory=[];
+  var worldHistorySeq=0;
+  var WORLD_HISTORY_DAYS=8;
+  var MAX_WORLD_HISTORY=700;
   var periodMemoKeys={};
   var dayIndex=1;
   var dayEnded=false;
@@ -144,7 +147,8 @@
   var storySeq=0;
   var dayStoryEventsShown=0;
   var dayStoryStarterReady=false;
-  var MAX_STORY_EVENTS_PER_DAY=1;
+  var MAX_STORY_EVENTS_PER_DAY=2;
+  var MAX_ACTIVE_STORIES=3;
   var dayEncounterBudget=10;
   var dayEncounterOffered=0;
   var dayFollowUpsShown=0;
@@ -207,6 +211,90 @@
   function resetRelations(){
     relations={};
     Object.keys(relationSeed).forEach(function(k){relations[k]=Object.assign({positive:0,negative:0,timeTogether:0},relationSeed[k])});
+  }
+  function pruneWorldHistory(){
+    var minDay=Math.max(1,dayIndex-WORLD_HISTORY_DAYS+1);
+    worldHistory=worldHistory.filter(function(e){return (e.day||1)>=minDay}).slice(-MAX_WORLD_HISTORY);
+  }
+  function worldEventTouches(e,s){
+    if(!e||!s)return false;
+    return e.actorId===s.id||e.targetId===s.id||(e.witnessIds||[]).indexOf(s.id)>=0;
+  }
+  function recentWorldEventsForStudent(s,kinds,days){
+    if(!s)return [];
+    var minDay=Math.max(1,dayIndex-(days||WORLD_HISTORY_DAYS)+1);
+    return worldHistory.filter(function(e){
+      return (e.day||1)>=minDay&&worldEventTouches(e,s)&&(!kinds||!kinds.length||kinds.indexOf(e.kind)>=0||(e.tags||[]).some(function(t){return kinds.indexOf(t)>=0}));
+    });
+  }
+  function recentWorldEventStrength(s,kinds,days){
+    return recentWorldEventsForStudent(s,kinds,days).reduce(function(sum,e){
+      var age=Math.max(0,dayIndex-(e.day||dayIndex));
+      var decay=Math.max(.18,1-age/Math.max(2,(days||WORLD_HISTORY_DAYS)+1));
+      var role=e.targetId===s.id?1:e.actorId===s.id?.86:.42;
+      return sum+(e.severity===undefined?.3:e.severity)*decay*role;
+    },0);
+  }
+  function recentEventCounterpart(s,kinds,days){
+    var list=recentWorldEventsForStudent(s,kinds,days).slice().sort(function(a,b){return (b.day-a.day)||((b.time||0)-(a.time||0))});
+    for(var i=0;i<list.length;i++){
+      var e=list[i],id=e.actorId===s.id?e.targetId:e.targetId===s.id?e.actorId:null,other=studentById(id);
+      if(other&&other!==s)return other;
+    }
+    return null;
+  }
+  function recordWorldEvent(kind,actor,target,opts){
+    opts=opts||{};if(!actor)return null;
+    var witnessIds=(opts.witnessIds||students.filter(function(o){
+      return o!==actor&&o!==target&&o.scene===actor.scene&&!o.targetScene&&distance(o,actor)<=24;
+    }).map(function(o){return o.id})).slice(0,8);
+    var r=target?relation(actor,target):null;
+    var event={
+      id:"world-"+(++worldHistorySeq),day:dayIndex,time:gameMinute(),kind:kind,
+      actorId:actor.id,targetId:target?target.id:null,witnessIds:witnessIds,
+      scene:opts.scene||actor.scene,severity:clamp(opts.severity===undefined?.3:opts.severity,0,1),
+      text:opts.text||"",tags:(opts.tags||[]).slice(),
+      affinity:r?r.affinity:null,irritation:r?r.irritation:null
+    };
+    worldHistory.push(event);pruneWorldHistory();
+    if(opts.witnessMemory!==false&&event.severity>=.42){
+      witnessIds.forEach(function(id){
+        var w=studentById(id);if(!w)return;
+        remember(w,actor.name+"에게서 눈에 띄는 일이 있었음",Math.min(.62,event.severity*.72),{
+          kind:"witness",targetId:actor.id,actorId:actor.id,valence:-event.severity*.55,severity:event.severity,sourceEventId:event.id
+        });
+      });
+    }
+    return event;
+  }
+  function storyletCausalityMultiplier(s,templateId){
+    var map={
+      lost_item_accusation:["borrow_item","taking"],
+      peer_conflict:["conflict","rejection","tease","taking","threat","physical"],
+      social_exclusion:["rejection","exclusion"],
+      teasing_boundary:["tease"],
+      rough_play_boundary:["near_collision","physical","play_conflict"],
+      student_says_teacher_unfair:["teacher_refusal","teacher_shout","teacher_insult"],
+      teacher_defiance:["teacher_refusal","teacher_shout","teacher_insult","teacher_throw"],
+      parent_friend_conflict:["conflict","rejection","tease","exclusion"],
+      school_refusal_signal:["exclusion","threat","physical","rejection"],
+      friend_secret_burden:["threat","exclusion","conflict"]
+    };
+    var kinds=map[templateId];if(!kinds)return 1;
+    var strength=recentWorldEventStrength(s,kinds,4);
+    if(templateId==="lost_item_accusation")return strength>.08?Math.min(3.1,.72+strength*1.8):0;
+    return strength>.04?Math.min(2.7,.78+strength*1.35):.42;
+  }
+  function storyArcWorldMultiplier(arcId,s){
+    var map={
+      friendship_triangle:["rejection","exclusion"],
+      missing_items:["borrow_item","taking"],
+      bullying_escalation:["tease","exclusion","taking","threat","physical"],
+      rule_breaking_clique:["teacher_refusal","teacher_shout","teacher_insult","teacher_throw","conflict","tease"]
+    };
+    var kinds=map[arcId];if(!kinds)return 1;
+    var strength=recentWorldEventStrength(s,kinds,5);
+    return strength>.05?Math.min(2.8,.80+strength*1.25):.62;
   }
   function interestSimilarity(a,b){
     var keys=["reading","sports","creative","mischief","helpful","rule","compete"];
@@ -1185,12 +1273,12 @@
     var n=followUpNarrative(job,s,t);
     return {
       id:"enc-"+(++encounterSeq),templateId:"followup_"+job.sourceTemplateId,sourceTemplateId:job.sourceTemplateId,
-      category:"후속 · "+(job.sourceTemplateId==="math_foundation_gap"?"학습":"생활"),
+      category:current().name,
       title:n.title,text:n.text,dialogue:n.dialogue||"",studentId:s.id,targetId:t?t.id:null,
       createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s,job),
       isFollowUp:true,followUpId:job.id,chainDepth:job.chainDepth||1,
       previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,effectSubject:job.sourceSubject||null,
-      kicker:"Day "+dayIndex+" · 그 뒤 이야기"
+      kicker:"Day "+dayIndex+" · "+current().name
     };
   }
   function takeDueFollowUp(){
@@ -1626,9 +1714,13 @@
     },
     {
       id:"lost_item_accusation",category:"또래관계",title:"잃어버린 물건 때문에 친구를 의심한다",
-      score:function(s){return ["morning","break","lunchplay"].indexOf(current().kind)>=0?Math.max(0,s.rejection*.32+s.imp*.25+(hasTrait(s,"fairness_sensitive")?.18:0)-.12):0},
+      score:function(s){
+        if(["morning","break","lunchplay"].indexOf(current().kind)<0)return 0;
+        var cause=recentWorldEventStrength(s,["borrow_item","taking"],3);if(cause<=.08)return 0;
+        return Math.max(0,.34+cause*.82+s.rejection*.16+(hasTrait(s,"fairness_sensitive")?.14:0));
+      },
       build:function(s){
-        var target=studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        var target=recentEventCounterpart(s,["borrow_item","taking"],3)||studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
         return {targetId:target.id,text:s.name+"이(가) 필통에서 물건이 보이지 않자 바로 "+target.name+"을(를) 바라보며 가져간 것 같다고 말한다. "+target.name+"은(는) 억울한 표정이다.",dialogue:s.name+' “아까 내 자리 왔잖아. 네가 가져갔지?”',choices:{
           up:encounterChoice("확인되지 않은 일로 친구를 지목하면 안 된다고 즉시 멈추게 한다.",{relation:-1,trust:-1,classStability:6,classFlow:2},"친구를 함부로 지목하지 않는 기준은 분명해졌다."),
           down:encounterChoice("물건을 잃어버려 불안한 마음과 억울한 친구의 마음을 차례로 듣는다.",{mood:4,relation:5,trust:4,classFlow:-4},"두 학생의 감정이 먼저 정리되면서 목소리가 낮아졌다."),
@@ -2502,7 +2594,7 @@
   function buildStoryEncounter(st,nodeId){
     var data=storyNodeData(st,nodeId),arc=storyArcFor(st.arcId);if(!data||!arc)return null;
     return Object.assign({
-      id:"enc-"+(++encounterSeq),templateId:"story_"+st.arcId+"_"+nodeId,category:"이어지는 이야기 · "+arc.label,
+      id:"enc-"+(++encounterSeq),templateId:"story_"+st.arcId+"_"+nodeId,category:current().name,
       studentId:st.studentId,targetId:st.data&&st.data.peer!==undefined?st.data.peer:null,
       createdAt:gameSec,expiresAt:gameSec+360,choices:{},
       storyId:st.id,storyArc:st.arcId,storyNode:nodeId,storyStep:storyStepNumber(st,nodeId),storyTotal:arc.steps,storyNext:storyNextMap(st,nodeId),
@@ -2510,41 +2602,81 @@
     },data);
   }
   function storyStarterCandidates(){
-    if(dayIndex<1||!dayStoryStarterReady||dayStoryEventsShown>=MAX_STORY_EVENTS_PER_DAY||activeStoryStates().length)return [];
+    if(dayIndex<1||!dayStoryStarterReady||dayStoryEventsShown>=MAX_STORY_EVENTS_PER_DAY||activeStoryStates().length>=MAX_ACTIVE_STORIES)return [];
     var out=[];
     students.forEach(function(s){
+      if(s.scene!==teacherScene||s.targetScene)return;
       Object.keys(STORY_ARCS).forEach(function(arcId){
-        var arc=STORY_ARCS[arcId],w=Math.max(0,Number(arc.score(s))||0);
-        var already=Object.keys(storyStates).some(function(k){var st=storyStates[k];return st.arcId===arcId&&st.studentId===s.id});
+        var arc=STORY_ARCS[arcId],w=Math.max(0,Number(arc.score(s))||0)*storyArcWorldMultiplier(arcId,s);
+        var already=Object.keys(storyStates).some(function(k){var st=storyStates[k];return st.arcId===arcId&&st.studentId===s.id&&st.status!=="completed"});
         if(w>.12&&!already)out.push({student:s,arcId:arcId,weight:w});
       });
     });
     return out;
   }
-  function startStoryEncounter(){
+  function startStoryEncounter(picked){
     var candidates=storyStarterCandidates();if(!candidates.length)return null;
-    var picked=weightedPick(candidates),arc=storyArcFor(picked.arcId),data=arc.setup(picked.student)||{};
-    var st={id:"story-"+(++storySeq),arcId:picked.arcId,studentId:picked.student.id,data:data,status:"active",startedDay:dayIndex,history:[],style:{up:0,down:0,left:0,right:0}};
+    picked=picked||weightedPick(candidates);
+    var arc=storyArcFor(picked.arcId),data=arc.setup(picked.student)||{};
+    var st={id:"story-"+(++storySeq),arcId:picked.arcId,studentId:picked.student.id,data:data,status:"active",startedDay:dayIndex,startedTime:gameMinute(),history:[],style:{up:0,down:0,left:0,right:0}};
     storyStates[st.id]=st;dayStoryStarterReady=false;
     return buildStoryEncounter(st,"start");
+  }
+  function storyRelevantStudents(st){
+    if(!st)return [];
+    var ids=[st.studentId];
+    ["peer","peerA","peerB","peerC","target"].forEach(function(k){if(st.data&&st.data[k]!==undefined&&st.data[k]!==null)ids.push(st.data[k])});
+    return ids.filter(function(id,i,a){return a.indexOf(id)===i}).map(studentById).filter(Boolean);
+  }
+  function storyWorldBranch(st,fallbackDir){
+    var people=storyRelevantStudents(st),lead=studentById(st.studentId),last=st.history.length?st.history[st.history.length-1]:null;
+    var sinceDay=last?last.day:st.startedDay,sinceTime=last?(last.time||0):(st.startedTime||0),ids=people.map(function(s){return s.id});
+    var events=worldHistory.filter(function(e){
+      var after=(e.day>sinceDay)||(e.day===sinceDay&&(e.time||0)>sinceTime);
+      return after&&(ids.indexOf(e.actorId)>=0||ids.indexOf(e.targetId)>=0||(e.witnessIds||[]).some(function(id){return ids.indexOf(id)>=0}));
+    });
+    var severe=events.reduce(function(n,e){return n+(e.severity||0)},0);
+    var repeated=events.filter(function(e){return ["conflict","rejection","tease","exclusion","taking","threat","physical","teacher_refusal","teacher_shout","teacher_insult","teacher_throw"].indexOf(e.kind)>=0}).length;
+    var peers=people.filter(function(p){return lead&&p!==lead});
+    var avgAff=peers.length?peers.reduce(function(n,p){return n+relation(lead,p).affinity},0)/peers.length:.5;
+    var avgIrr=peers.length?peers.reduce(function(n,p){return n+relation(lead,p).irritation},0)/peers.length:.08;
+    var circleDrift=peers.length?peers.filter(function(p){return circleOf(lead)!==circleOf(p)}).length/peers.length:0;
+    var stress=lead?lead.victimStress+(1-lead.mood)*.55+(1-lead.belonging)*.35:0;
+    var firstPeer=peers[0]||null;
+    var score={
+      up:severe*.72+avgIrr*.95+repeated*.10,
+      down:stress*.88+severe*.24,
+      left:repeated*.23+avgIrr*.35+(firstPeer?Math.max(0,-memorySocialBias(lead,firstPeer))*.35:0),
+      right:circleDrift*.72+(1-avgAff)*.58+Math.max(0,.58-(lead?lead.belonging:.58))*.45
+    };
+    if(fallbackDir&&score[fallbackDir]!==undefined)score[fallbackDir]+=.16;
+    var best="down";Object.keys(score).forEach(function(k){if(score[k]>score[best])best=k});return best;
+  }
+  function resolveQueuedStoryNode(job,st){
+    if(job.nodeId)return job.nodeId;
+    var arc=storyArcFor(st.arcId);if(!arc||!job.fromNode)return null;
+    var dir=storyWorldBranch(st,job.preferredDir||"down");job.worldDir=dir;
+    return arc.next?arc.next(job.fromNode,dir,st):(storyNextMap(st,job.fromNode)[dir]||null);
   }
   function takeDueStoryEncounter(){
     if(dayStoryEventsShown>=MAX_STORY_EVENTS_PER_DAY)return null;
     for(var i=0;i<storyQueue.length;i++){
       var job=storyQueue[i];if(job.status!=="queued"||job.dueDay>dayIndex)continue;
       var st=storyStates[job.storyId];if(!st||st.status!=="active"){job.status="skipped";continue}
-      job.status="shown";return buildStoryEncounter(st,job.nodeId);
+      var s=studentById(st.studentId);if(!s||s.scene!==teacherScene||s.targetScene)continue;
+      var nodeId=resolveQueuedStoryNode(job,st);if(!nodeId){job.status="skipped";continue}
+      job.status="shown";return buildStoryEncounter(st,nodeId);
     }
     return null;
   }
   function advanceStory(enc,dir){
     if(!enc||!enc.storyId)return;
     var st=storyStates[enc.storyId];if(!st)return;
-    st.history.push({day:dayIndex,node:enc.storyNode,dir:dir,title:enc.title});
+    st.history.push({day:dayIndex,time:gameMinute(),node:enc.storyNode,dir:dir,title:enc.title});
     if(st.style&&st.style[dir]!==undefined)st.style[dir]++;
-    var next=enc.storyNext&&enc.storyNext[dir];
-    if(!next){st.status="completed";st.completedDay=dayIndex;return}
-    storyQueue.push({storyId:st.id,nodeId:next,dueDay:dayIndex+1,status:"queued"});
+    var map=enc.storyNext||{},hasNext=Object.keys(map).some(function(k){return !!map[k]});
+    if(!hasNext){st.status="completed";st.completedDay=dayIndex;return}
+    storyQueue.push({storyId:st.id,fromNode:enc.storyNode,preferredDir:dir,dueDay:dayIndex+1,status:"queued"});
   }
 
   function periodEncounterCap(p){
@@ -2573,29 +2705,47 @@
     for(var i=0;i<items.length;i++){r-=items[i].weight;if(r<=0)return items[i]}
     return items[items.length-1];
   }
-  function makeEncounter(){
-    var storyDue=takeDueStoryEncounter();
-    if(storyDue)return storyDue;
-    var due=takeDueFollowUp();
-    if(due)return due;
-    if(dayEncounterOffered>=2){
-      var storyStart=startStoryEncounter();
-      if(storyStart)return storyStart;
+  function storyletDirectorCandidates(){
+    var candidates=[];
+    if(dayStoryEventsShown<MAX_STORY_EVENTS_PER_DAY){
+      storyQueue.forEach(function(job){
+        if(job.status!=="queued"||job.dueDay>dayIndex)return;
+        var st=storyStates[job.storyId],s=st&&studentById(st.studentId);
+        if(!st||st.status!=="active"){job.status="skipped";return}
+        if(!s||s.scene!==teacherScene||s.targetScene)return;
+        var nodeId=resolveQueuedStoryNode(job,st);if(!nodeId)return;
+        candidates.push({kind:"story_due",weight:3.8+storyArcWorldMultiplier(st.arcId,s),job:job,state:st,nodeId:nodeId});
+      });
+    }
+    if(dayFollowUpsShown<MAX_FOLLOWUPS_PER_DAY){
+      followUpQueue.forEach(function(job){
+        if(job.status!=="queued"||job.dueDay>dayIndex)return;
+        var s=studentById(job.studentId);if(!s||s.scene!==teacherScene||s.targetScene)return;
+        candidates.push({kind:"followup",weight:2.45+recentWorldEventStrength(s,null,3)*.18,job:job});
+      });
+    }
+    if(dayEncounterOffered>=1&&dayStoryEventsShown<MAX_STORY_EVENTS_PER_DAY){
+      storyStarterCandidates().forEach(function(p){candidates.push({kind:"story_start",weight:.74+p.weight*.72,starter:p})});
     }
     var visible=students.filter(function(s){return s.scene===teacherScene&&!s.targetScene});
-    var candidates=[];
     visible.forEach(function(s){
       ENCOUNTER_TEMPLATES.forEach(function(t){
         if(t.familyEvent&&dayFamilyEventsShown>=MAX_FAMILY_EVENTS_PER_DAY)return;
-        var weight=Math.max(0,Number(t.score(s))||0)*traitEncounterMultiplier(s,t.id);
+        var weight=Math.max(0,Number(t.score(s))||0)*traitEncounterMultiplier(s,t.id)*storyletCausalityMultiplier(s,t.id);
         if(t.familyEvent)weight*=.58;
         var recent=encounterHistory.slice(-8).some(function(h){return h.templateId===t.id&&h.studentId===s.id});
-        if(weight>.12&&!recent)candidates.push({student:s,template:t,weight:weight});
+        if(weight>.12&&!recent)candidates.push({kind:"encounter",student:s,template:t,weight:weight});
       });
     });
-    if(!candidates.length)return null;
-    var picked=weightedPick(candidates),built=picked.template.build(picked.student);
-    if(!built)return null;
+    return candidates;
+  }
+  function makeEncounter(){
+    var candidates=storyletDirectorCandidates();if(!candidates.length)return null;
+    var picked=weightedPick(candidates);
+    if(picked.kind==="story_due"){picked.job.status="shown";return buildStoryEncounter(picked.state,picked.nodeId)}
+    if(picked.kind==="followup"){picked.job.status="shown";picked.job.shownDay=dayIndex;return buildFollowUpEncounter(picked.job)}
+    if(picked.kind==="story_start")return startStoryEncounter(picked.starter);
+    var built=picked.template.build(picked.student);if(!built)return null;
     return Object.assign({
       id:"enc-"+(++encounterSeq),templateId:picked.template.id,category:picked.template.category,
       title:picked.template.title,studentId:picked.student.id,targetId:null,
@@ -2606,24 +2756,13 @@
   function scheduleNextEncounter(min,max){nextEncounterAt=gameSec+rand(min||420,max||760)}
   function maybeSpawnEncounter(){
     if(dayEnded||pendingEncounter||activeEncounter||reportOpen||toolModalKind||tutorialState.active||gameSec<nextEncounterAt)return;
-    if(dayEncounterOffered>=dayEncounterBudget){gameSec=schedule[schedule.length-1].end*60;endDay();return}
+    if(dayEncounterOffered>=dayEncounterBudget){scheduleNextEncounter(600,900);return}
     var cap=periodEncounterCap(current());
-    if(cap<=0){
-      gameSec=Math.min(schedule[schedule.length-1].end*60-2,current().end*60+60);
-      nextEncounterAt=gameSec+1;return;
-    }
-    if(periodEncounterCount()>=cap){
-      gameSec=Math.min(schedule[schedule.length-1].end*60-2,current().end*60+60);
-      periodIndex=periodForMinute(gameMinute());newStats();assignPeriodDestinations();
-      nextEncounterAt=gameSec+1;return;
-    }
+    if(cap<=0){nextEncounterAt=Math.max(gameSec+60,current().end*60+15);return}
+    if(periodEncounterCount()>=cap){nextEncounterAt=Math.max(gameSec+60,current().end*60+rand(20,80));return}
     var enc=makeEncounter();
-    if(enc){
-      pendingEncounter=enc;markEncounterOffered(enc);openPendingEncounter();
-    }else{
-      gameSec=Math.min(schedule[schedule.length-1].end*60-2,gameSec+8*60);
-      nextEncounterAt=gameSec+1;
-    }
+    if(enc){pendingEncounter=enc;markEncounterOffered(enc);openPendingEncounter()}
+    else scheduleNextEncounter(120,240);
   }
   function renderEncounterToken(){
     var token=q("#encounterToken");
@@ -2641,9 +2780,9 @@
     var s=studentById(pendingEncounter.studentId);
     if(!s||s.scene!==teacherScene){token.hidden=true;return}
     token.hidden=false;token.style.left=s.x+"%";token.style.top=Math.max(12,s.y-5)+"%";
-    var tokenLabel=token.querySelector("small");if(tokenLabel)tokenLabel.textContent=pendingEncounter.isFollowUp?"후속":"상황";
-    token.classList.toggle("followup",!!pendingEncounter.isFollowUp);
-    token.title=pendingEncounter.title;token.setAttribute("aria-label",s.name+"의 "+(pendingEncounter.isFollowUp?"후속 ":"")+"판단 상황: "+pendingEncounter.title);
+    var tokenLabel=token.querySelector("small");if(tokenLabel)tokenLabel.textContent="상황";
+    token.classList.remove("followup");
+    token.title=pendingEncounter.title;token.setAttribute("aria-label",s.name+"의 판단 상황: "+pendingEncounter.title);
   }
   function openPendingEncounter(){
     if(!pendingEncounter||activeEncounter)return;
@@ -2657,15 +2796,15 @@
     if(!activeEncounter){overlay.hidden=true;return}
     overlay.hidden=false;
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
-    q("#encounterCategory").textContent=enc.storyId?(enc.category||"이어지는 이야기"):enc.isFollowUp?"그 뒤 이야기":(enc.category||"교실에서 생긴 일");
-    q("#encounterKicker").textContent=enc.storyId?("Day "+dayIndex+" · 이야기 "+enc.storyStep+"/"+enc.storyTotal):(enc.kicker||("Day "+dayIndex+" · "+current().name));
-    var card=q("#encounterCard");if(card){card.classList.toggle("followup",!!enc.isFollowUp);card.classList.toggle("story",!!enc.storyId)}
+    q("#encounterCategory").textContent=enc.category||current().name||"교실에서 생긴 일";
+    q("#encounterKicker").textContent=enc.kicker||("Day "+dayIndex+" · "+current().name);
+    var card=q("#encounterCard");if(card){card.classList.remove("followup","story")}
     renderEncounterPortrait(enc,s);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
     var traitHint=s?traitLabels(s,3).join(" · "):"";
     var combo=s?traitComboLabel(s):"";
-    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(traitHint?" · "+traitHint:"")+(combo?" · "+combo:"")+(enc.isFollowUp?" · 전에 했던 말: "+(enc.previousDirection||""):"")+(enc.storyId?" · 이어지는 이야기":"");
+    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(traitHint?" · "+traitHint:"")+(combo?" · "+combo:"");
     var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
@@ -2753,10 +2892,15 @@
       storyId:enc.storyId||null,storyArc:enc.storyArc||null,storyNode:enc.storyNode||null,storyStep:enc.storyStep||null,storyTotal:enc.storyTotal||null
     };
     encounterHistory.push(history);
+    var encounterFact=s?recordWorldEvent("encounter",s,studentById(enc.targetId),{
+      severity:enc.safeguarding?.90:enc.storyId?.62:enc.isFollowUp?.46:.34,
+      text:enc.title+" · "+direction+" · "+choice.text,
+      tags:["encounter",enc.sourceTemplateId||enc.templateId,dir].filter(Boolean),witnessMemory:false
+    }):null;
     if(s){
       s.encounterNotes.unshift({day:dayIndex,time:gameMinute(),text:enc.title+" → "+direction+" · "+choice.text,dir:dir,delta:delta,isFollowUp:!!enc.isFollowUp});
       s.encounterNotes=s.encounterNotes.slice(0,8);
-      remember(s,"그때 있었던 일: "+enc.title+" / "+direction,.56);
+      remember(s,"그때 있었던 일: "+enc.title+" / "+direction,.56,{kind:"encounter",targetId:enc.targetId,valence:(delta.mood||0)>0?.18:(delta.mood||0)<0?-.18:0,severity:enc.safeguarding?.9:.36,sourceEventId:encounterFact&&encounterFact.id});
     }
     var decisionItem={
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
@@ -2833,9 +2977,32 @@
     };
     resetLessonState();
   }
-  function remember(s,text,weight){
-    s.memory.unshift({day:dayIndex,text:text,weight:weight||.5,time:gameMinute()});
-    s.memory=s.memory.slice(0,14);
+  function remember(s,text,weight,meta){
+    if(!s)return;meta=meta||{};
+    s.memory.unshift({
+      day:dayIndex,time:gameMinute(),text:text,weight:weight||.5,
+      kind:meta.kind||"note",targetId:meta.targetId===undefined?null:meta.targetId,
+      actorId:meta.actorId===undefined?s.id:meta.actorId,valence:meta.valence||0,
+      severity:meta.severity||0,sourceEventId:meta.sourceEventId||null,tags:(meta.tags||[]).slice()
+    });
+    s.memory=s.memory.slice(0,18);
+  }
+  function memorySocialBias(s,other){
+    if(!s||!other||!s.memory)return 0;
+    var sum=0;
+    s.memory.forEach(function(m){
+      if(m.targetId!==other.id)return;
+      var age=Math.max(0,dayIndex-(m.day||dayIndex));if(age>WORLD_HISTORY_DAYS)return;
+      var decay=Math.max(.18,1-age/(WORLD_HISTORY_DAYS+1));
+      sum+=(m.valence||0)*(m.weight||.5)*decay;
+      if((m.severity||0)>.65&&m.valence<0)sum-=.06*decay;
+    });
+    return clamp(sum,-.72,.50);
+  }
+  function memoryTension(s,other){return Math.max(0,-memorySocialBias(s,other))}
+  function rememberPair(a,b,text,weight,valence,kind,severity){
+    if(!a||!b)return;
+    remember(a,text,weight,{kind:kind||"relationship",targetId:b.id,valence:valence||0,severity:severity||0});
   }
   function pushLogItem(item){
     if(item.day===undefined)item.day=dayIndex;
@@ -3152,13 +3319,13 @@
     if(!candidates.length)return null;
     var best=null,bestScore=-99;
     candidates.forEach(function(o){
-      var r=relation(s,o),d=distance(s,o),score=0;
+      var r=relation(s,o),d=distance(s,o),mem=memorySocialBias(s,o),score=0;
       if(purpose==="COMPETE"){
-        score=r.rivalry*.46+s.compete*.22+o.compete*.13+r.affinity*.08-r.irritation*.12-d*.001;
+        score=r.rivalry*.46+s.compete*.22+o.compete*.13+r.affinity*.08-r.irritation*.12+Math.max(0,-mem)*.10-d*.001;
       }else if(purpose==="HELP"){
-        score=(1-currentMastery(o))*.32+o.helpNeed*.32+s.helpful*.20+r.affinity*.12-r.irritation*.18;
+        score=(1-currentMastery(o))*.32+o.helpNeed*.32+s.helpful*.20+r.affinity*.12-r.irritation*.18+mem*.12;
       }else{
-        score=r.affinity*.56-r.irritation*.34+s.soc*.12+o.soc*.08+s.socialNeed*.12-d*.002;
+        score=r.affinity*.56-r.irritation*.34+s.soc*.12+o.soc*.08+s.socialNeed*.12+mem*.42-d*.002;
         if(o.groupId)score-=Math.max(0,groupMembers(o.groupId).length-2)*.025;
       }
       score+=rand(-.04,.04);
@@ -3169,8 +3336,8 @@
   function conflictPartner(s){
     var p=s.conflictWith!==null?studentById(s.conflictWith):null;
     if(p&&p.scene===s.scene&&s.conflictUntil>gameSec)return p;
-    var candidates=students.filter(function(o){return o!==s&&o.scene===s.scene&&relation(s,o).irritation>.23});
-    candidates.sort(function(a,b){return relation(s,b).irritation-relation(s,a).irritation});
+    var candidates=students.filter(function(o){return o!==s&&o.scene===s.scene&&(relation(s,o).irritation>.23||memoryTension(s,o)>.16)});
+    candidates.sort(function(a,b){return (relation(s,b).irritation+memoryTension(s,b)*.42)-(relation(s,a).irritation+memoryTension(s,a)*.42)});
     return candidates[0]||null;
   }
   function createGroup(a,b){
@@ -3181,7 +3348,8 @@
   function joinAcceptance(s,target){
     var r=relation(s,target),size=target.groupId?groupMembers(target.groupId).length:1;
     var paired=(activePair(s)===target||activePair(target)===s)? .26:0;
-    return clamp(.20+r.affinity*.48+target.soc*.12+target.mood*.10+paired-r.irritation*.42-size*.035);
+    var remembered=memorySocialBias(target,s);
+    return clamp(.20+r.affinity*.48+target.soc*.12+target.mood*.10+paired-r.irritation*.42+remembered*.38-size*.035);
   }
   function beginSeek(s,target,goal){
     if(!target)return false;
@@ -3217,7 +3385,8 @@
     setSimpleAction(s,"REJECTED",38);s.behaviorPhase="resolve";s.phaseUntil=s.actionLockedUntil;s.socialTarget=null;s.groupId=null;
     s.frustration=clamp(s.frustration+.10+.13*s.rejection);s.belonging=clamp(s.belonging-.055);s.mood=clamp(s.mood-.055);
     changeRelation(s,target,{affinity:-.008,irritation:.025+.025*s.rejection});
-    remember(s,target.name+"에게 함께하자고 했지만 받아들여지지 않음",.58);
+    var rejectionEvent=recordWorldEvent("rejection",target,s,{severity:.32,text:target.name+"이(가) "+s.name+"의 합류를 거절함",tags:["social","rejection"]});
+    remember(s,target.name+"에게 함께하자고 했지만 받아들여지지 않음",.58,{kind:"rejection",targetId:target.id,valence:-.58,severity:.32,sourceEventId:rejectionEvent&&rejectionEvent.id});
     scriptLog({
       speaker:s.name,
       dialogue:pickLine(["나도 같이 해도 돼?","같이 하자.","나도 끼워줘."]),
@@ -3264,7 +3433,9 @@
     a.frustration=clamp(a.frustration+.10);b.frustration=clamp(b.frustration+.08);
     changeRelation(a,b,{affinity:-.018,irritation:.07,rivalry:.015});
     stats.conflicts++;
-    remember(a,b.name+"와 말다툼이 생김",.62);remember(b,a.name+"와 말다툼이 생김",.62);
+    var conflictEvent=recordWorldEvent("conflict",a,b,{severity:.55,text:a.name+"와 "+b.name+" 사이에 말다툼이 시작됨",tags:["conflict","peer"]});
+    remember(a,b.name+"와 말다툼이 생김",.62,{kind:"conflict",targetId:b.id,valence:-.58,severity:.55,sourceEventId:conflictEvent&&conflictEvent.id});
+    remember(b,a.name+"와 말다툼이 생김",.62,{kind:"conflict",targetId:a.id,valence:-.58,severity:.55,sourceEventId:conflictEvent&&conflictEvent.id});
     scriptLog({
       speaker:a.name,
       dialogue:pickLine(["내가 먼저 쓰고 있었잖아. 왜 가져가?","아까부터 하지 말라고 했잖아.","내 자리인데 왜 자꾸 와?","그 말 기분 나쁘다고 했잖아."]),
@@ -3355,7 +3526,8 @@
   }
   function recordSeriousIncident(actor,target,kind,text){
     actor.lastSeriousIncident={kind:kind,targetId:target?target.id:null,time:gameMinute()};
-    incidentRecords.push({time:gameMinute(),kind:kind,actorId:actor.id,targetId:target?target.id:null,scene:actor.scene,text:text});
+    var severity={exclusion:.68,taking:.72,threat:.88,physical:.96,teacher_shout:.70,teacher_insult:.82,teacher_throw:.94}[kind]||.65;
+    var worldEvent=recordWorldEvent(kind,actor,target,{severity:severity,text:text,tags:["serious",target?"peer":"teacher",kind]});
     actor.severeCooldown=gameSec+10*60;
     stats.seriousIncidents++;
     if(target){
@@ -3363,12 +3535,12 @@
       target.victimStress=clamp(target.victimStress+.18);
       target.mood=clamp(target.mood-.10);
       target.belonging=clamp(target.belonging-.07);
-      remember(target,actor.name+"에게서 심각한 또래 갈등 행동을 겪음",.88);
+      remember(target,actor.name+"에게서 심각한 또래 갈등 행동을 겪음",.88,{kind:"victim",targetId:actor.id,valence:-1,severity:severity,sourceEventId:worldEvent&&worldEvent.id});
     }else{
       stats.teacherIncidents++;
       actor.teacherDefiance=clamp(actor.teacherDefiance+.12);
     }
-    remember(actor,text,.82);
+    remember(actor,text,.82,{kind:"serious_action",targetId:target?target.id:null,valence:-.42,severity:severity,sourceEventId:worldEvent&&worldEvent.id});
     if(kind==="exclusion"&&target){
       scriptLog({speaker:actor.name,dialogue:pickLine(["너는 이번 판에 끼지 마. 우리끼리 할 거야.","아니, 너랑은 같이 안 할래. 다른 데 가.","우리 이미 팀 정했어. 너는 빠져."]),
         replySpeaker:target.name,replyDialogue:pickLine(["왜 나만 빼는데?","나도 같이 하기로 했잖아.","한 번만 같이 하면 안 돼?"]),
@@ -3505,6 +3677,8 @@
 
     if(a==="BORROW_ITEM"&&p){
       changeRelation(s,p,{affinity:.003});
+      recordWorldEvent("borrow_item",s,p,{severity:.16,text:s.name+"이(가) "+p.name+"에게 준비물을 빌림",tags:["item","borrow"],witnessMemory:false});
+      rememberPair(s,p,p.name+"에게 준비물을 빌림",.24,.12,"borrow_item",.16);
       if(Math.random()<.58)scriptLog({
         speaker:s.name,dialogue:pickLine(["연필 좀 빌려줄래?","지우개 잠깐만 써도 돼?","이거 잠깐 빌려도 돼?"]),
         replySpeaker:p.name,replyDialogue:pickLine(["응, 여기.","쓰고 줘.","그래."]),
@@ -3545,7 +3719,8 @@
     if(a==="TEASE"&&p){
       changeRelation(s,p,{affinity:-.010,irritation:.035});
       p.frustration=clamp(p.frustration+.07);p.mood=clamp(p.mood-.045);
-      remember(p,s.name+"의 놀림을 받음",.48);
+      var teaseEvent=recordWorldEvent("tease",s,p,{severity:.38,text:s.name+"이(가) "+p.name+"을(를) 놀림",tags:["peer","tease"]});
+      remember(p,s.name+"의 놀림을 받음",.48,{kind:"tease",targetId:s.id,valence:-.52,severity:.38,sourceEventId:teaseEvent&&teaseEvent.id});
       scriptLog({
         speaker:s.name,dialogue:pickLine(["야, 또 틀렸네. 그것도 모르냐?","너 아까부터 계속 실수하네.","그 그림 좀 이상한데?","왜 맨날 그렇게 해?"]),
         replySpeaker:p.name,replyDialogue:pickLine(["그만 좀 해. 기분 나빠.","하지 말라고 했잖아.","내가 알아서 할 거야.","너나 신경 써."]),
@@ -3576,6 +3751,7 @@
     }
     if(a==="REFUSE_INSTRUCTION"){
       s.teacherDefiance=clamp(s.teacherDefiance+.06);s.focus=clamp(s.focus-.04);
+      recordWorldEvent("teacher_refusal",s,null,{severity:.44,text:s.name+"이(가) 교사의 안내를 거부함",tags:["teacher","defiance"]});
       scriptLog({
         speaker:s.name,dialogue:pickLine(["지금 하기 싫어요. 왜 저만 계속 시켜요?","아까 했잖아요. 저 이제 안 할래요.","모르겠는데 자꾸 하라고 하지 마세요.","저 지금 이거 하기 싫다고요."]),
         stage:"교사의 안내 뒤에도 "+s.name+"의 손이 과제로 돌아가지 않았다.",
@@ -3601,7 +3777,8 @@
       var near=nearbyStudents(s,13)[0];
       if(near&&Math.random()<s.imp*.18){
         log(s.name+"이(가) 뛰다가 "+near.name+"과(와) 부딪힐 뻔했다.","incident",s.scene);
-        remember(s,"빠르게 움직이다 친구와 부딪힐 뻔함",.42);
+        var nearEvent=recordWorldEvent("near_collision",s,near,{severity:.28,text:s.name+"이(가) "+near.name+"과(와) 부딪힐 뻔함",tags:["play","safety"],witnessMemory:false});
+        remember(s,"빠르게 움직이다 친구와 부딪힐 뻔함",.42,{kind:"near_collision",targetId:near.id,valence:-.18,severity:.28,sourceEventId:nearEvent&&nearEvent.id});
         if(s.react>.65&&near.react>.55&&Math.random()<.18)beginConflict(s,near,"부딪힐 뻔한 일로");
       }
     }
@@ -5203,7 +5380,6 @@
     var overlay=q("#dayEndOverlay");if(!overlay)return;
     overlay.hidden=false;
     var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts(),queued=queuedFollowUps();
-    var storyUpcoming=storyQueue.filter(function(j){return j.status==="queued"}).sort(function(a,b){return a.dueDay-b.dueDay});
     q("#dayEndTitle").textContent="Day "+dayIndex+"이 끝났습니다";
     q("#dayEndText").textContent="오늘은 "+today.length+"번 아이들 일에 멈춰 섰습니다. 오늘 했던 말과 선택은 내일도 아이들 모습에 남을 수 있습니다.";
     q("#dayEndMetrics").innerHTML=
@@ -5222,11 +5398,7 @@
       var s=studentById(j.studentId);
       return '<div class="day-end-followup"><span>Day '+j.dueDay+' · '+escHtml(s?s.name:"학생")+'</span><small>'+escHtml(j.sourceTitle)+'</small></div>';
     }).join("");
-    var storyHtml=storyUpcoming.slice(0,2).map(function(j){
-      var st=storyStates[j.storyId],arc=st&&storyArcFor(st.arcId),s=st&&studentById(st.studentId);
-      return '<div class="day-end-followup"><span>📖 Day '+j.dueDay+' · '+escHtml(s?s.name:"학생")+'</span><small>'+(arc?escHtml(arc.label)+" · 이야기가 이어집니다":"이어지는 이야기가 있습니다")+'</small></div>';
-    }).join("");
-    q("#dayEndFollowups").innerHTML=(storyHtml+followupHtml)||'<div class="day-end-followup"><span>지금은 특별히 더 지켜볼 일이 없습니다.</span><small>내일은 또 다른 일이 생길 수 있습니다.</small></div>';
+    q("#dayEndFollowups").innerHTML=followupHtml||'<div class="day-end-followup"><span>지금은 특별히 더 지켜볼 일이 없습니다.</span><small>내일은 또 다른 일이 생길 수 있습니다.</small></div>';
   }
   function endDay(){
     if(dayEnded)return;
@@ -5275,9 +5447,9 @@
     dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.42;periodEncounterCounts={};
     selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
-    feed=[];incidentRecords=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
+    feed=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
     reportOpen=false;toolModalKind=null;lastBellAt=-99999;aiAccumulator=0;circleAccumulator=0;renderAccumulator=0;
-    prepareNextDayStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
+    pruneWorldHistory();prepareNextDayStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
     var report=q("#report");if(report)report.hidden=true;
     var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
     var dayEnd=q("#dayEndOverlay");if(dayEnd)dayEnd.hidden=true;
@@ -5324,7 +5496,7 @@
     dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.35;periodEncounterCounts={};
     running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
-    feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
+    feed=[];dayEvents=[];worldHistory=[];worldHistorySeq=0;periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
     classMetrics={flow:72,relationship:68,stability:72,trust:64};teacherStyleCounts={up:0,down:0,left:0,right:0};
     reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;
     cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
