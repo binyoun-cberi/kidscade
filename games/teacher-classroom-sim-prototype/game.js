@@ -3412,15 +3412,7 @@
     if(console)console.hidden=teacherScene!=="classroom"||reportOpen||!!toolModalKind||dayEnded;
     qa(".class-tool").forEach(function(el){el.classList.remove("tutorial-focus")});
   }
-  function ringClassBell(){
-    if(teacherIsBusy())return;
-    var elapsed=gameSec-lastBellAt,repeat=elapsed<90,boost=repeat?.018:.055;
-    students.filter(function(s){return s.scene===teacherScene}).forEach(function(s){s.focus=clamp(s.focus+boost);s.talkNeed=clamp(s.talkNeed-(repeat?.012:.045));s.moveNeed=clamp(s.moveNeed-(repeat?.006:.025))});
-    lastBellAt=gameSec;stats.teacherActs++;
-    log(repeat?"벨을 연달아 울렸지만 일부 학생은 금방 다시 하던 행동으로 돌아갔다.":"작은 벨을 울리자 학생들의 시선이 잠시 교사 쪽으로 모였다.","teacher",teacherScene);
-    var bell=q("#classBell");if(bell){bell.classList.remove("ringing");void bell.offsetWidth;bell.classList.add("ringing")}
-    consumeTeacherTime("학급 벨",6);tutorialEvent("bell");render();
-  }
+
   function closeToolModal(resume){
     var modal=q("#toolModal");if(modal)modal.hidden=true;toolModalKind=null;
     if(resume!==false)running=modalWasRunning;renderClassroomTools();
@@ -3505,18 +3497,6 @@
         '<div class="roster-head"><span>학생</span><span>📚 학습'+(current().kind==="lesson"?"("+escHtml(current().subject)+")":"(종합)")+'</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
         students.map(rosterRowHtml).join("")+'</div></div>'+rosterDetailHtml(s);
       body.innerHTML=roster;
-    }else if(kind==="clipboard"){
-      kicker.textContent="관찰 클립보드";title.textContent=s?s.name+" 관찰 기록":"학생 관찰";
-      if(!s){
-        body.innerHTML='<div class="tool-section"><h4>학생 선택</h4><div class="tool-grid">'+students.filter(function(x){return x.scene===teacherScene}).map(function(x){return '<button type="button" class="tool-choice" data-clipboard-student="'+x.id+'"><strong>'+escHtml(x.name)+'</strong><small>'+escHtml(humanAction(x))+'</small></button>'}).join("")+'</div></div>';
-      }else{
-        var d=latestDiagnosisSummary(s),mem=s.memory.slice(0,6);
-        body.innerHTML='<div class="tool-section"><h4>지금 보이는 모습</h4><div>'+escHtml(observationText(s))+'</div></div><div class="tool-section"><h4>학습 진단 근거</h4>'+(d.length?d.map(function(x){return '<div class="diagnosis-item '+(x.hypothesis?"hypothesis":"")+'">'+escHtml(x.text)+'</div>'}).join(""):'<div class="record-empty">아직 학습 진단 근거가 없습니다.</div>')+'</div><div class="tool-section"><h4>최근 관찰 메모</h4>'+(mem.length?mem.map(function(m){return '<div class="record-student-memory">Day '+(m.day||1)+' · '+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">기록된 관찰 메모가 없습니다.</div>')+'</div>';
-      }
-    }else if(kind==="seating"){
-      kicker.textContent="자리배치표";title.textContent="교실 자리와 관계";
-      var seatHtml=seats.map(function(_,i){var st=students.find(function(x){return x.seat===i});return '<button type="button" class="seat-mini '+(st&&selected===st.id?"selected":"")+'" '+(st?'data-seat-student="'+st.id+'"':'disabled')+'>'+(st?escHtml(st.name):"빈 자리")+'</button>'}).join("");
-      body.innerHTML='<div class="tool-section"><h4>현재 자리</h4><div class="seat-mini-grid">'+seatHtml+'</div></div><div class="tool-section"><h4>사용법</h4><div>'+(s?escHtml(s.name)+'을(를) 선택했습니다. 아래 기능으로 두 번째 학생을 선택해 자리를 바꾸거나 친구를 연결할 수 있어요.':'자리표에서 학생을 먼저 선택하세요.')+'</div><div class="tool-grid" style="margin-top:8px">'+(s?'<button type="button" class="tool-choice" data-seating-action="seatAdjust"><strong>🪑 자리 바꾸기</strong><small>다음 학생을 선택해 두 자리를 바꿉니다.</small></button><button type="button" class="tool-choice" data-seating-action="connectPeer"><strong>🧑‍🤝‍🧑 함께할 친구 연결</strong><small>다음 학생과 함께할 기회를 만듭니다.</small></button>':'')+'</div></div>';
     }else if(kind==="record"){
       kicker.textContent="생활기록부";title.textContent=s?s.name+" · 누적 기록":"우리 반 · 누적 기록";
       var items=dayEvents.filter(recordableEvent);
@@ -3866,23 +3846,6 @@
   qa(".scene-nav button").forEach(function(b){b.addEventListener("click",function(){openScene(this.dataset.scene)})});
 
 
-  var teacherActionCards=q("#teacherActionCards");
-  if(teacherActionCards){
-    teacherActionCards.addEventListener("dragstart",function(e){
-      var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;
-      cardDragActive=true;armedActionId=card.dataset.actionId;armedActionTargetId=selected;
-      card.classList.add("dragging");var tray=q("#actionTray");if(tray)tray.classList.add("drag-active");
-      cardTraySnapshot.expiresAt=Math.max(cardTraySnapshot.expiresAt,gameSec+60);
-      if(e.dataTransfer){e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("text/plain",armedActionId)}
-    });
-    teacherActionCards.addEventListener("dragend",function(e){
-      var card=e.target.closest&&e.target.closest("[data-action-id]");if(card)card.classList.remove("dragging");
-      cardDragActive=false;var tray=q("#actionTray");if(tray)tray.classList.remove("drag-active");cardRenderSignature="";renderTeacherCards();
-    });
-    teacherActionCards.addEventListener("click",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;var s=studentById(selected);if(s)executeActionForStudent(card.dataset.actionId,s.id)});
-  }
-  var closeActionTray=q("#closeActionTray");if(closeActionTray)closeActionTray.addEventListener("click",function(){selected=null;armedActionId=null;armedActionTargetId=null;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";render()});
-  var classBell=q("#classBell");if(classBell)classBell.addEventListener("click",ringClassBell);
   qa("[data-class-tool]").forEach(function(b){b.addEventListener("click",function(){openToolModal(this.dataset.classTool)})});
   q("#closeToolModal").addEventListener("click",function(){closeToolModal(true);render()});
   q("#toolModal").addEventListener("click",function(e){if(e.target===this){closeToolModal(true);render()}});
@@ -3891,9 +3854,6 @@
     if(instruction){var a=INSTRUCTION_ACTIONS[instruction.dataset.instructionId];closeToolModal(true);if(a&&!teacherIsBusy())startTeacherTask(a,null);render();return}
     var rep=e.target.closest&&e.target.closest("[data-computer-report]");if(rep){var wasRunning=modalWasRunning;closeToolModal(false);openReport(true);reportWasRunning=wasRunning;return}
     var rosterStudent=e.target.closest&&e.target.closest("[data-roster-student]");if(rosterStudent){selected=Number(rosterStudent.dataset.rosterStudent);renderToolModal("roster");return}
-    var st=e.target.closest&&e.target.closest("[data-clipboard-student]");if(st){selected=Number(st.dataset.clipboardStudent);renderToolModal("clipboard");return}
-    var seat=e.target.closest&&e.target.closest("[data-seat-student]");if(seat){selected=Number(seat.dataset.seatStudent);renderToolModal("seating");return}
-    var sa=e.target.closest&&e.target.closest("[data-seating-action]");if(sa){closeToolModal(true);if(sa.dataset.seatingAction==="seatAdjust"){swapMode=true;connectMode=false}else{connectMode=true;swapMode=false}render();return}
   });
   q("#tutorialButton").addEventListener("click",function(){
     if(this.dataset.tutorialAction==="finish"){finishTutorial();return}
