@@ -139,6 +139,12 @@
   var daySummaries=[];
   var followUpQueue=[];
   var followUpSeq=0;
+  var storyQueue=[];
+  var storyStates={};
+  var storySeq=0;
+  var dayStoryEventsShown=0;
+  var dayStoryStarterReady=false;
+  var MAX_STORY_EVENTS_PER_DAY=1;
   var dayEncounterBudget=10;
   var dayEncounterOffered=0;
   var dayFollowUpsShown=0;
@@ -1051,7 +1057,7 @@
   }
   function scheduleFollowUp(enc,dir,choice){
     if(!enc||!enc.studentId&&enc.studentId!==0)return;
-    if(enc.noFollowUp||enc.familyEvent)return;
+    if(enc.noFollowUp||enc.familyEvent||enc.storyId)return;
     var depth=enc.chainDepth||0;
     if(depth>=2)return;
     var chance=enc.isFollowUp?.26:.62;
@@ -2151,6 +2157,228 @@
     }
   ]);
 
+  var STORY_ARCS={
+    friendship_triangle:{
+      label:"셋이었던 친구들",steps:3,
+      score:function(s){return s.soc>.54&&s.rejection>.40?.28+s.soc*.20+s.rejection*.20:0},
+      setup:function(s){
+        var peers=students.filter(function(o){return o!==s}).sort(function(a,b){return relation(s,b).affinity-relation(s,a).affinity});
+        return {peerA:peers[0]?peers[0].id:null,peerB:peers[1]?peers[1].id:null};
+      },
+      start:function(st,s){
+        var a=studentById(st.data.peerA),b=studentById(st.data.peerB);if(!a||!b)return null;
+        return {title:"늘 셋이 다녔는데 오늘은 한 명이 빠져 있다",text:s.name+"·"+a.name+"·"+b.name+"은(는) 평소 셋이 함께 다녔다. 그런데 요즘 "+s.name+"과(와) "+a.name+"이(가) 둘이 먼저 움직이고, "+b.name+"은(는) 뒤에서 눈치를 보는 일이 늘었다.",dialogue:b.name+' “요즘 둘이 나 빼고 다니는 것 같아.”',choices:{
+          up:encounterChoice("누군가를 일부러 빼는 행동은 안 된다는 학급의 선을 분명히 한다.",{relation:2,classStability:5,trust:1},"세 학생 모두 교사가 이 관계를 보고 있다는 것을 알게 됐다."),
+          down:encounterChoice("셋을 한꺼번에 결론내리지 않고 각각 어떤 마음인지 따로 들어본다.",{mood:4,relation:4,trust:5,classFlow:-3},"겉으로 보이지 않던 서운함과 부담이 조금씩 드러났다."),
+          left:encounterChoice("같이 놀고 싶을 때, 둘만 있고 싶을 때 쓸 말을 세 학생과 연습한다.",{relation:5,trust:3,classFlow:-3},"친구 관계에서도 거절과 초대에 방법이 필요하다는 걸 연습했다."),
+          right:encounterChoice("셋이 항상 붙어 있어야 하는 건 아니라고 하고 각자 원하는 관계를 선택하게 한다.",{mood:2,relation:1,trust:4,classFlow:1},"관계를 강제로 묶지 않고 각자의 선택을 열어 두었다.")
+        }};
+      },
+      middle:function(st,s,branch){
+        var a=studentById(st.data.peerA),b=studentById(st.data.peerB);if(!a||!b)return null;
+        var variants={
+          up:{title:"같이 있기는 하는데 말이 거의 없다",text:"규칙을 확인한 뒤 셋은 다시 함께 움직인다. 하지만 "+b.name+"이(가) 오면 "+s.name+"과(와) "+a.name+"의 대화가 뚝 끊긴다.",dialogue:b.name+' “같이 있긴 한데… 더 어색해졌어요.”'},
+          down:{title:"둘만 놀고 싶은 마음도 있었다",text:"따로 이야기를 듣던 중 "+a.name+"이(가) "+b.name+"을(를) 싫어하는 건 아니지만 가끔은 "+s.name+"과(와) 둘만 놀고 싶었다고 털어놓는다.",dialogue:a.name+' “셋이 꼭 맨날 같이 있어야 해요?”'},
+          left:{title:"배운 말은 썼지만 서운함은 남았다",text:s.name+"이(가) "+b.name+"에게 오늘은 둘이 놀고 싶다고 배운 표현으로 말했다. 말투는 부드러웠지만 "+b.name+"은(는) 혼자 남아 눈물이 고였다.",dialogue:b.name+' “예쁘게 말해도… 나만 혼자인 건 똑같잖아.”'},
+          right:{title:"각자 움직이자 새로운 관계가 생겼다",text:"셋을 억지로 묶지 않자 "+b.name+"은(는) 다른 친구와 놀기 시작했다. 그런데 이번에는 "+s.name+"이(가) 그 모습을 계속 신경 쓴다.",dialogue:s.name+' “쟤는 이제 우리랑 안 노는 거예요?”'}
+        };
+        var v=variants[branch]||variants.down;
+        return {title:v.title,text:v.text,dialogue:v.dialogue,choices:{
+          up:encounterChoice("상대가 싫어할 행동과 말의 선을 다시 분명하게 확인한다.",{relation:2,classStability:4,trust:1},"관계를 강요하지 않되 상처 주는 행동의 선은 다시 세웠다."),
+          down:encounterChoice("지금 가장 서운한 사람이 누구인지부터 충분히 말하게 한다.",{mood:5,relation:4,trust:5,classFlow:-3},"관계의 모양보다 각자의 감정을 먼저 다뤘다."),
+          left:encounterChoice("셋이 함께할 때와 따로 놀 때의 약속을 구체적으로 정해 보게 한다.",{relation:5,focus:2,trust:3,classFlow:-3},"상황별로 사용할 관계 규칙이 조금 더 구체화됐다."),
+          right:encounterChoice("친구를 소유할 수는 없다는 점을 짚고 각자가 다음 행동을 고르게 한다.",{mood:2,relation:3,trust:4,classFlow:0},"친구의 선택을 받아들이는 책임을 각자에게 돌렸다.")
+        }};
+      },
+      final:function(st,s){
+        var a=studentById(st.data.peerA),b=studentById(st.data.peerB);if(!a||!b)return null;
+        return {title:"모둠을 정하는 날, 세 아이가 다시 마주쳤다",text:"며칠 뒤 모둠 활동에서 세 학생이 다시 같은 선택 앞에 섰다. 예전처럼 자동으로 셋이 모이지는 않았지만 서로 눈치를 보기보다 말을 꺼내기 시작한다.",dialogue:s.name+' “이번에는 우리 어떻게 할까?”',choices:{
+          up:encounterChoice("모둠 기준을 모두에게 똑같이 적용하고 그 안에서 정하게 한다.",{relation:3,classStability:5,trust:2},"세 학생의 관계와 별개로 학급의 기준 속에서 모둠이 정해졌다."),
+          down:encounterChoice("세 학생에게 지금 서로에게 바라는 것을 한 문장씩 말하게 한다.",{mood:4,relation:6,trust:5,classFlow:-3},"친구 관계가 ‘같이 있느냐’보다 서로의 마음을 말하는 쪽으로 바뀌었다."),
+          left:encounterChoice("지난 며칠 동안 잘됐던 말과 어려웠던 말을 되짚고 이번 모둠에 적용하게 한다.",{relation:6,focus:2,trust:4,classFlow:-3},"앞선 사건들이 한 번의 훈계가 아니라 관계 기술로 이어졌다."),
+          right:encounterChoice("누구와 할지는 각자가 고르되 상대의 선택도 받아들이기로 한다.",{mood:3,relation:4,trust:5,classFlow:0},"셋은 꼭 같은 모양의 친구 관계가 아니어도 된다는 경험을 남겼다.")
+        }};
+      }
+    },
+    perfection_pressure:{
+      label:"틀리면 안 되는 아이",steps:3,
+      score:function(s){return hasTrait(s,"perfectionist")||hasParentTrait(s,"achievement_pressure")?.62:0},
+      setup:function(s){return {};},
+      start:function(st,s){
+        return {title:"한 문제를 틀리자 활동지를 구겨 버렸다",text:s.name+"은(는) 거의 모든 문제를 맞혔지만 마지막 한 문제를 틀렸다. 친구들은 이미 다음 활동으로 넘어갔는데 "+s.name+"은(는) 틀린 답만 바라보다 종이를 구긴다.",dialogue:s.name+' “이런 것도 틀리면 안 되는데…”',choices:{
+          up:encounterChoice("틀렸더라도 종이를 구기는 행동은 멈추고 수정해야 한다고 한다.",{focus:3,mood:-2,classStability:4},"행동은 바로 멈췄지만 틀린 것에 대한 두려움은 남았다."),
+          down:encounterChoice("한 문제 틀린 것이 왜 이렇게 힘든지 조용히 묻는다.",{mood:6,trust:6,classFlow:-3},"성적보다 틀렸을 때 느끼는 감정을 먼저 들여다봤다."),
+          left:encounterChoice("오답을 ‘틀린 것’이 아니라 다시 볼 표시로 바꾸는 수정 방법을 알려준다.",{learning:3,focus:4,trust:3,classFlow:-2},"실수를 처리하는 구체적인 방법을 하나 만들었다."),
+          right:encounterChoice("지금 고칠지 나중에 다시 볼지 스스로 정하게 한다.",{mood:3,trust:4,focus:2},"실수 뒤의 다음 행동을 자신이 선택하게 했다.")
+        }};
+      },
+      middle:function(st,s,branch){
+        var variants={
+          up:{title:"틀린 답을 지우개로 흔적도 없이 지운다",text:s.name+"은(는) 요즘 답이 틀리면 교사가 보기 전에 몇 번이고 지운다. 맞힌 문제보다 틀린 흔적을 감추는 데 더 신경을 쓴다.",dialogue:s.name+' “틀린 거 남아 있으면 보기 싫어요.”'},
+          down:{title:"집에서 점수를 확인하는 시간이 무섭다고 했다",text:"대화를 이어가던 중 "+s.name+"은(는) 평가지를 집에 가져가는 날이면 긴장된다고 말했다. 보호자가 틀린 문제를 오래 확인하는 편이라고 한다.",dialogue:s.name+' “집에 가면 왜 틀렸는지 다 물어봐요.”'},
+          left:{title:"수정 방법은 잘 쓰지만 매번 확인받으려 한다",text:"오답 수정 순서는 익혔지만 "+s.name+"은(는) 한 문제를 고칠 때마다 교사를 불러 맞게 하고 있는지 확인받으려 한다.",dialogue:s.name+' “이렇게 고치면 진짜 맞죠?”'},
+          right:{title:"자기 목표를 낮췄다가 집에서 다시 높여 왔다",text:s.name+"은(는) 스스로 현실적인 목표를 정했지만 다음 날에는 보호자와 이야기한 뒤 목표를 다시 훨씬 높여 적어 왔다.",dialogue:s.name+' “집에서는 이 정도는 해야 한대요.”'}
+        };
+        var v=variants[branch]||variants.down;
+        return {title:v.title,text:v.text,dialogue:v.dialogue,choices:{
+          up:encounterChoice("학교에서는 실수와 수정이 자연스러운 학습 과정이라는 기준을 계속 유지한다.",{focus:2,classStability:3,trust:2},"교실 안에서는 결과만으로 평가받지 않는 기준을 지켰다."),
+          down:encounterChoice("아이에게 잘해야 인정받는 것처럼 느껴지는 순간이 있는지 더 듣는다.",{mood:6,trust:7,classFlow:-3},"성취 뒤에 있던 긴장과 기대를 말로 꺼낼 수 있었다."),
+          left:encounterChoice("스스로 확인할 체크 기준을 만들어 교사 확인 횟수를 조금씩 줄인다.",{learning:2,focus:5,trust:4,classFlow:-2},"완벽함 대신 자기 점검 방법을 배우기 시작했다."),
+          right:encounterChoice("다음 목표를 아이가 정하고 그 이유도 스스로 설명할 수 있게 한다.",{mood:3,focus:3,trust:5,classFlow:-1},"목표의 주인이 누구인지 다시 아이에게 돌렸다.")
+        }};
+      },
+      final:function(st,s){
+        return {title:"평가지를 집에 가져가는 날이 다시 왔다",text:s.name+"은(는) 오늘 결과가 완벽하지 않다는 걸 알고 있다. 예전처럼 종이를 숨기지는 않지만 한참 동안 가방에 넣지 못하고 교사 주변을 맴돈다.",dialogue:s.name+' “이번에는 그냥 보여드려도 될까요?”',choices:{
+          up:encounterChoice("평가 결과와 별개로 정직하게 보여주고 필요한 수정은 해 오면 된다고 기준을 잡아준다.",{focus:3,trust:4,classStability:3},"완벽한 점수보다 결과를 그대로 받아들이는 기준이 남았다."),
+          down:encounterChoice("걱정되는 마음을 듣고 학교에서 본 노력과 변화를 아이에게 다시 말해준다.",{mood:6,trust:7,classFlow:-2},"점수보다 자신이 달라진 점을 먼저 떠올릴 수 있었다."),
+          left:encounterChoice("평가지에 ‘이번에 배운 것·다음에 해볼 것’을 직접 적어 가져가게 한다.",{learning:3,focus:4,trust:5,classFlow:-2},"평가지를 실패표가 아니라 다음 학습 기록으로 바꿨다."),
+          right:encounterChoice("결과를 어떻게 설명할지 아이가 자기 말로 정리해 보게 한다.",{mood:3,focus:3,trust:6},"어른의 기대 속에서도 자기 결과를 자기 말로 설명하는 경험을 남겼다.")
+        }};
+      }
+    },
+    leader_power:{
+      label:"반장이 된 뒤 달라진 아이",steps:3,
+      score:function(s){return hasTrait(s,"leadership")&&hasTrait(s,"competitive")?.58:0},
+      setup:function(s){var p=chooseSocialTarget(s,"SOCIAL");return {peer:p?p.id:null};},
+      start:function(st,s){
+        var p=studentById(st.data.peer);
+        return {title:"앞장서던 아이가 친구들에게 명령하기 시작했다",text:s.name+"은(는) 모둠을 이끄는 역할을 맡은 뒤부터 친구들의 순서와 방법까지 빠르게 정한다. "+(p?p.name+"이(가) 의견을 내려고 했지만 말이 끊겼다.":"다른 친구들은 점점 말이 줄었다."),dialogue:s.name+' “그냥 내가 말한 대로 하면 빨리 끝나잖아.”',choices:{
+          up:encounterChoice("리더도 친구에게 명령할 권리는 없다는 선을 바로 분명히 한다.",{relation:2,classStability:5,trust:-1},"역할과 권력의 경계가 분명해졌다."),
+          down:encounterChoice("왜 모든 걸 직접 정하려는지 부담과 마음을 먼저 묻는다.",{mood:3,trust:5,relation:2,classFlow:-3},"이기고 잘해내야 한다는 부담이 조금 드러났다."),
+          left:encounterChoice("리더의 역할은 지시보다 의견을 묻고 정리하는 것이라고 연습시킨다.",{relation:5,focus:3,trust:3,classFlow:-3},"주도성을 협력 기술로 바꿔 보는 연습이 시작됐다."),
+          right:encounterChoice("친구들이 받아들일 리더의 권한을 모둠이 직접 정하게 한다.",{relation:4,trust:4,classFlow:-1},"리더의 힘을 모둠 안의 합의로 제한하게 했다.")
+        }};
+      },
+      middle:function(st,s,branch){
+        var p=studentById(st.data.peer),pn=p?p.name:"친구";
+        var variants={
+          up:{title:"명령은 줄었지만 아무 결정도 하지 않으려 한다",text:s.name+"은(는) 교사의 말을 의식한 뒤부터 친구 의견에 거의 개입하지 않는다. 이번에는 "+pn+"이(가) ‘왜 아무 말도 안 하냐’며 답답해한다.",dialogue:s.name+' “말하면 또 제가 시키는 거라고 할 거잖아요.”'},
+          down:{title:"‘제가 못하면 우리 팀이 져요’라고 털어놨다",text:s.name+"은(는) 친구를 무시하려던 게 아니라 결과가 나빠질까 불안해서 전부 통제했다고 말한다.",dialogue:s.name+' “제가 안 챙기면 우리 팀이 질 것 같아요.”'},
+          left:{title:"의견은 묻지만 마음에 안 들면 다시 가져온다",text:s.name+"은(는) 이제 친구들에게 의견을 묻는다. 하지만 시간이 촉박해지면 결국 ‘그냥 내가 할게’라며 다시 일을 가져온다.",dialogue:s.name+' “물어봤는데 너무 느려서요.”'},
+          right:{title:"모둠이 만든 규칙을 두고 또 다툰다",text:"친구들과 권한을 정했지만 실제 활동에서 해석이 달라졌다. "+s.name+"과(와) "+pn+"이(가) 서로 ‘그건 네 역할이 아니다’라고 맞선다.",dialogue:s.name+' “우리 규칙대로면 제가 정하는 거 맞아요.”'}
+        };
+        var v=variants[branch]||variants.left;
+        return {title:v.title,text:v.text,dialogue:v.dialogue,choices:{
+          up:encounterChoice("리더에게 필요한 최소 책임과 넘지 말아야 할 선을 다시 구분한다.",{relation:2,classStability:4,focus:2},"해야 할 일과 하지 말아야 할 일이 조금 더 선명해졌다."),
+          down:encounterChoice("잘해야 한다는 부담과 친구들이 느끼는 답답함을 함께 보게 한다.",{mood:3,relation:5,trust:5,classFlow:-3},"성과와 관계를 동시에 볼 수 있게 했다."),
+          left:encounterChoice("묻기-기다리기-정리하기 세 단계로 리더 행동을 다시 연습한다.",{relation:6,focus:4,trust:3,classFlow:-3},"리더십을 실제 행동 순서로 익혔다."),
+          right:encounterChoice("이번 활동에서 무엇을 직접 하고 무엇을 맡길지 스스로 정하게 한다.",{relation:3,focus:3,trust:4,classFlow:0},"통제와 방임 사이에서 역할을 스스로 조절하게 했다.")
+        }};
+      },
+      final:function(st,s){
+        return {title:"학급 공동 프로젝트의 책임자가 필요하다",text:"며칠 뒤 반 전체가 함께 만드는 활동에서 다시 책임자가 필요해졌다. 친구 몇 명이 "+s.name+"을(를) 바라보지만, 예전처럼 모두가 당연히 맡기려 하지는 않는다.",dialogue:s.name+' “저… 이번에도 제가 해도 돼요?”',choices:{
+          up:encounterChoice("책임자의 권한과 역할을 먼저 공개적으로 정한 뒤 맡기기로 한다.",{relation:4,classStability:5,trust:3},"사람보다 역할의 기준이 먼저 세워졌다."),
+          down:encounterChoice("친구들이 어떤 점이 좋았고 힘들었는지 먼저 말한 뒤 결정하게 한다.",{relation:6,mood:3,trust:5,classFlow:-3},"리더에 대한 실제 피드백이 관계 속에서 오갔다."),
+          left:encounterChoice("이번에는 보조 책임자와 역할을 나눠 협력형 리더십을 연습하게 한다.",{relation:6,focus:4,trust:4,classFlow:-2},"혼자 끌고 가는 방식에서 함께 맡는 방식으로 바뀌었다."),
+          right:encounterChoice("맡을지 말지와 어떤 역할을 할지 본인이 친구들 앞에서 제안하게 한다.",{relation:4,mood:3,trust:5},"리더 자리를 얻는 것보다 책임을 설명하는 경험을 남겼다.")
+        }};
+      }
+    },
+    missing_items:{
+      label:"자꾸 사라지는 준비물",steps:3,
+      score:function(s){return s.soc>.40&&s.imp>.35?.26+s.imp*.18+s.mischief*.15:0},
+      setup:function(s){var p=chooseSocialTarget(s,"SOCIAL");return {peer:p?p.id:null};},
+      start:function(st,s){
+        var p=studentById(st.data.peer);if(!p)return null;
+        return {title:"며칠째 준비물이 하나씩 사라진다",text:p.name+"이(가) 색연필과 지우개가 자꾸 없어진다고 말한다. 오늘은 "+s.name+"이(가) 그 물건을 만지는 걸 봤다는 친구의 말까지 나오며 주변 시선이 한쪽으로 몰린다.",dialogue:p.name+' “제 거 또 없어졌어요. 이번에도 누가 가져간 것 같아요.”',choices:{
+          up:encounterChoice("확인되기 전에는 누구도 범인처럼 지목하지 말고 물건 사용 규칙부터 다시 세운다.",{relation:2,classStability:6,trust:2},"의심이 한 학생에게 몰리는 것은 우선 멈췄다."),
+          down:encounterChoice("잃어버린 학생과 의심받는 학생의 이야기를 따로 차분히 듣는다.",{mood:4,relation:4,trust:5,classFlow:-3},"서로 다른 기억과 감정이 조금씩 드러났다."),
+          left:encounterChoice("마지막으로 본 때와 빌린 사람을 순서대로 확인하는 방법으로 함께 찾아본다.",{focus:4,relation:3,trust:3,classFlow:-3},"추측 대신 확인 가능한 단서를 따라가기 시작했다."),
+          right:encounterChoice("학생들에게 찾는 방법을 제안하게 하되 개인 물건을 함부로 검사하지 않는 선을 정한다.",{focus:3,relation:2,trust:4,classFlow:-1},"학생들도 해결에 참여하되 서로의 경계를 지켰다.")
+        }};
+      },
+      middle:function(st,s,branch){
+        var p=studentById(st.data.peer);if(!p)return null;
+        var variants={
+          up:{title:"규칙은 세웠지만 의심은 사라지지 않았다",text:"물건 사용 규칙을 다시 세운 뒤에도 친구 몇 명은 "+s.name+"의 행동을 계속 유심히 본다. "+s.name+"은(는) 억울하다는 표정으로 혼자 있는 시간이 늘었다.",dialogue:s.name+' “저 아니라고 했는데 아무도 안 믿어요.”'},
+          down:{title:"빌렸다가 돌려놓는 걸 깜빡한 적이 있었다",text:"따로 이야기를 듣던 중 "+s.name+"은(는) 예전에 "+p.name+"의 색연필을 말없이 잠깐 쓴 적은 있다고 인정했다. 하지만 오늘 없어진 물건까지 가져간 것은 아니라고 한다.",dialogue:s.name+' “전에 한 번 쓴 건 맞는데 오늘은 아니에요.”'},
+          left:{title:"찾는 과정에서 공용 상자에서도 물건이 나왔다",text:"마지막 사용 장소를 따라가 보니 잃어버린 것과 비슷한 준비물 일부가 공용 재료 상자에 섞여 있었다. 누군가 일부러 가져갔다고 단정하기 어려워졌다.",dialogue:p.name+' “어? 이거 제 거랑 똑같은데…”'},
+          right:{title:"학생들끼리 찾다가 새로운 지목이 나왔다",text:"학생들이 스스로 단서를 모으는 과정에서 이번에는 다른 친구 이름이 나오기 시작했다. 소문처럼 번질 분위기다.",dialogue:s.name+' “그러면 이번엔 제가 아니라 쟤 아니에요?”'}
+        };
+        var v=variants[branch]||variants.left;
+        return {title:v.title,text:v.text,dialogue:v.dialogue,choices:{
+          up:encounterChoice("증거 없이 사람을 지목하지 않는다는 선을 다시 세우고 물건 관리 방식을 정리한다.",{relation:2,classStability:5,trust:2},"사람 찾기보다 교실의 관리 문제로 초점을 옮겼다."),
+          down:encounterChoice("억울함과 잃어버린 답답함을 각각 듣고 서로 바로 사과를 강요하지 않는다.",{mood:4,relation:5,trust:5,classFlow:-3},"감정을 인정하면서 사실 확인과 관계 회복을 분리했다."),
+          left:encounterChoice("이름 표시·빌림 기록·공용 상자 정리처럼 재발을 줄일 방법을 함께 만든다.",{focus:4,relation:4,classStability:4,classFlow:-3},"누가 그랬는지보다 다시 안 생기게 하는 구조를 만들었다."),
+          right:encounterChoice("각자 자기 물건 관리 방법을 정하고 분실 시 먼저 확인할 순서를 선택하게 한다.",{focus:3,trust:4,classStability:3},"학생들의 자기 관리 책임을 높였다.")
+        }};
+      },
+      final:function(st,s){
+        var p=studentById(st.data.peer);if(!p)return null;
+        return {title:"이번에는 없어진 물건을 바로 찾았다",text:"며칠 뒤 "+p.name+"의 자가 또 보이지 않았다. 하지만 이번에는 누군가를 먼저 지목하기 전에 학생들이 전에 정한 순서대로 확인하기 시작한다. 잠시 뒤 다른 교과서 밑에서 자가 발견됐다.",dialogue:p.name+' “아… 이번엔 여기 있었네.”',choices:{
+          up:encounterChoice("이번 일을 계기로 ‘먼저 확인하고 말하기’를 학급의 공통 기준으로 다시 짚는다.",{relation:3,classStability:5,trust:3},"한 번의 사건이 학급 전체의 기준으로 정리됐다."),
+          down:encounterChoice("그동안 의심받았던 학생이 어떤 기분이었을지도 함께 돌아보게 한다.",{mood:4,relation:6,trust:5,classFlow:-2},"물건을 찾는 것에서 끝나지 않고 관계에 남은 흔적도 다뤘다."),
+          left:encounterChoice("분실물·대여함을 정식으로 만들고 학생들이 관리 방법을 연습하게 한다.",{focus:4,classStability:5,relation:4,classFlow:-2},"반복되는 문제를 교실 시스템으로 해결했다."),
+          right:encounterChoice("새 규칙을 계속 쓸지 학생들이 일주일 뒤 스스로 평가하게 한다.",{focus:3,trust:5,classStability:3},"교사가 만든 규칙을 학생들이 직접 점검하는 단계로 넘겼다.")
+        }};
+      }
+    }
+  };
+
+  function activeStoryStates(){
+    return Object.keys(storyStates).map(function(k){return storyStates[k]}).filter(function(st){return st.status==="active"});
+  }
+  function storyArcFor(id){return STORY_ARCS[id]||null}
+  function storyStepNumber(nodeId){return nodeId==="start"?1:nodeId==="final"?3:2}
+  function storyNodeData(st,nodeId){
+    var arc=storyArcFor(st.arcId),s=studentById(st.studentId);if(!arc||!s)return null;
+    if(nodeId==="start")return arc.start(st,s);
+    if(nodeId==="final")return arc.final(st,s);
+    if(nodeId.indexOf("middle_")===0)return arc.middle(st,s,nodeId.slice(7));
+    return null;
+  }
+  function storyNextMap(nodeId){
+    if(nodeId==="start")return {up:"middle_up",down:"middle_down",left:"middle_left",right:"middle_right"};
+    if(nodeId.indexOf("middle_")===0)return {up:"final",down:"final",left:"final",right:"final"};
+    return {up:null,down:null,left:null,right:null};
+  }
+  function buildStoryEncounter(st,nodeId){
+    var data=storyNodeData(st,nodeId),arc=storyArcFor(st.arcId);if(!data||!arc)return null;
+    return Object.assign({
+      id:"enc-"+(++encounterSeq),templateId:"story_"+st.arcId+"_"+nodeId,category:"이어지는 이야기 · "+arc.label,
+      studentId:st.studentId,targetId:st.data&&st.data.peer!==undefined?st.data.peer:null,
+      createdAt:gameSec,expiresAt:gameSec+360,choices:{},
+      storyId:st.id,storyArc:st.arcId,storyNode:nodeId,storyStep:storyStepNumber(nodeId),storyTotal:arc.steps,storyNext:storyNextMap(nodeId),
+      noFollowUp:true
+    },data);
+  }
+  function storyStarterCandidates(){
+    if(dayIndex<1||!dayStoryStarterReady||dayStoryEventsShown>=MAX_STORY_EVENTS_PER_DAY||activeStoryStates().length)return [];
+    var out=[];
+    students.forEach(function(s){
+      Object.keys(STORY_ARCS).forEach(function(arcId){
+        var arc=STORY_ARCS[arcId],w=Math.max(0,Number(arc.score(s))||0);
+        var already=Object.keys(storyStates).some(function(k){var st=storyStates[k];return st.arcId===arcId&&st.studentId===s.id});
+        if(w>.12&&!already)out.push({student:s,arcId:arcId,weight:w});
+      });
+    });
+    return out;
+  }
+  function startStoryEncounter(){
+    var candidates=storyStarterCandidates();if(!candidates.length)return null;
+    var picked=weightedPick(candidates),arc=storyArcFor(picked.arcId),data=arc.setup(picked.student)||{};
+    var st={id:"story-"+(++storySeq),arcId:picked.arcId,studentId:picked.student.id,data:data,status:"active",startedDay:dayIndex,history:[]};
+    storyStates[st.id]=st;dayStoryStarterReady=false;
+    return buildStoryEncounter(st,"start");
+  }
+  function takeDueStoryEncounter(){
+    if(dayStoryEventsShown>=MAX_STORY_EVENTS_PER_DAY)return null;
+    for(var i=0;i<storyQueue.length;i++){
+      var job=storyQueue[i];if(job.status!=="queued"||job.dueDay>dayIndex)continue;
+      var st=storyStates[job.storyId];if(!st||st.status!=="active"){job.status="skipped";continue}
+      job.status="shown";return buildStoryEncounter(st,job.nodeId);
+    }
+    return null;
+  }
+  function advanceStory(enc,dir){
+    if(!enc||!enc.storyId)return;
+    var st=storyStates[enc.storyId];if(!st)return;
+    st.history.push({day:dayIndex,node:enc.storyNode,dir:dir,title:enc.title});
+    var next=enc.storyNext&&enc.storyNext[dir];
+    if(!next){st.status="completed";st.completedDay=dayIndex;return}
+    storyQueue.push({storyId:st.id,nodeId:next,dueDay:dayIndex+1,status:"queued"});
+  }
+
   function periodEncounterCap(p){
     if(!p)return 0;
     if(p.kind==="closing")return 1;
@@ -2168,6 +2396,7 @@
     periodEncounterCounts[periodIndex]=(periodEncounterCounts[periodIndex]||0)+1;
     if(enc&&enc.isFollowUp)dayFollowUpsShown++;
     if(enc&&enc.familyEvent)dayFamilyEventsShown++;
+    if(enc&&enc.storyId)dayStoryEventsShown++;
   }
 
   function weightedPick(items){
@@ -2177,8 +2406,14 @@
     return items[items.length-1];
   }
   function makeEncounter(){
+    var storyDue=takeDueStoryEncounter();
+    if(storyDue)return storyDue;
     var due=takeDueFollowUp();
     if(due)return due;
+    if(dayEncounterOffered>=2){
+      var storyStart=startStoryEncounter();
+      if(storyStart)return storyStart;
+    }
     var visible=students.filter(function(s){return s.scene===teacherScene&&!s.targetScene});
     var candidates=[];
     visible.forEach(function(s){
@@ -2254,15 +2489,15 @@
     if(!activeEncounter){overlay.hidden=true;return}
     overlay.hidden=false;
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
-    q("#encounterCategory").textContent=enc.isFollowUp?"그 뒤 이야기":(enc.category||"교실에서 생긴 일");
-    q("#encounterKicker").textContent=enc.kicker||("Day "+dayIndex+" · "+current().name);
+    q("#encounterCategory").textContent=enc.storyId?(enc.category||"이어지는 이야기"):enc.isFollowUp?"그 뒤 이야기":(enc.category||"교실에서 생긴 일");
+    q("#encounterKicker").textContent=enc.storyId?("Day "+dayIndex+" · 이야기 "+enc.storyStep+"/"+enc.storyTotal):(enc.kicker||("Day "+dayIndex+" · "+current().name));
     var card=q("#encounterCard");if(card)card.classList.toggle("followup",!!enc.isFollowUp);
     renderEncounterPortrait(enc,s);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
     var traitHint=s?traitLabels(s,3).join(" · "):"";
     var combo=s?traitComboLabel(s):"";
-    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(traitHint?" · "+traitHint:"")+(combo?" · "+combo:"")+(enc.isFollowUp?" · 전에 했던 말: "+(enc.previousDirection||""):"");
+    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(traitHint?" · "+traitHint:"")+(combo?" · "+combo:"")+(enc.isFollowUp?" · 전에 했던 말: "+(enc.previousDirection||""):"")+(enc.storyId?" · 이어지는 이야기":"");
     var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
@@ -2339,13 +2574,15 @@
     var reaction=studentStyleReaction(s,dir);
     applyEncounterEffects(enc,choice,dir);
     if(s&&enc.parentTrait)revealParentTrait(s,enc.parentTrait);
+    if(enc.storyId)advanceStory(enc,dir);
     if(reaction.dialogue)setStudentSpeech(s,reaction.dialogue,reaction.tone,34);
     var after=s?studentDashboard(s,metricSubject):before,afterClass=classDashboard(),delta=before?dashboardDelta(before,after):{};
     var direction=dir==="timeout"?"시간 초과":ENCOUNTER_DIRECTIONS[dir].label;
     var history={
       day:dayIndex,time:gameMinute(),templateId:enc.templateId,sourceTemplateId:enc.sourceTemplateId||enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
       dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,reaction:reaction.text,responseFit:reaction.fit,before:before,after:after,delta:delta,
-      beforeClass:beforeClass,afterClass:afterClass,familyEvent:!!enc.familyEvent,parentTrait:enc.parentTrait||null,safeguarding:!!enc.safeguarding
+      beforeClass:beforeClass,afterClass:afterClass,familyEvent:!!enc.familyEvent,parentTrait:enc.parentTrait||null,safeguarding:!!enc.safeguarding,
+      storyId:enc.storyId||null,storyArc:enc.storyArc||null,storyNode:enc.storyNode||null,storyStep:enc.storyStep||null
     };
     encounterHistory.push(history);
     if(s){
@@ -2357,7 +2594,8 @@
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:enc.isFollowUp?"followup_decision":"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,isFollowUp:!!enc.isFollowUp,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
-      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,studentTraits:s?traitLabels(s,5):[],parentTrait:enc.parentTrait||null,familyEvent:!!enc.familyEvent,safeguarding:!!enc.safeguarding,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
+      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,studentTraits:s?traitLabels(s,5):[],parentTrait:enc.parentTrait||null,familyEvent:!!enc.familyEvent,safeguarding:!!enc.safeguarding,
+      storyId:enc.storyId||null,storyArc:enc.storyArc||null,storyStep:enc.storyStep||null,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
     };
     dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-320);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
@@ -2397,6 +2635,7 @@
     if(!s)return '<div class="record-empty">학생을 선택하면 최근 판단과 변화 원인을 확인할 수 있습니다.</div>';
     var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s),knownParents=knownParentTraits(s);
     var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
+    var activeStories=activeStoryStates().filter(function(st){return st.studentId===s.id});
     var familyHtml='<div class="trait-panel"><strong>가정 소통 메모</strong><div class="trait-list">'+
       (knownParents.length?knownParents.map(function(x){return parentTraitChipHtml(x.id)}).join(""):'<span class="response-chip">아직 특별히 파악된 점 없음</span>')+
       '</div><small>보호자와 실제로 겪은 일을 통해 알게 된 내용만 표시됩니다.</small></div>';
@@ -2410,7 +2649,8 @@
         '<div class="roster-stat"><strong>'+d.trust+'</strong><small>❤️ 교사신뢰</small></div>'+
       '</div><div class="response-profile"><strong>이 아이가 편해하는 방식</strong><div>'+responseNotes.map(function(x){return '<span class="response-chip">'+escHtml(x)+'</span>'}).join("")+'</div></div>'+
       '<div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 눈에 띄는 변화가 없습니다.</div>')+'</div>'+
-      (queued.length?'<div class="roster-followup">📌 조금 더 지켜볼 일 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+'</div>';
+      (queued.length?'<div class="roster-followup">📌 조금 더 지켜볼 일 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+
+      (activeStories.length?'<div class="roster-followup">📖 이어지는 이야기 · '+activeStories.map(function(st){return escHtml(storyArcFor(st.arcId).label)}).join(" · ")+'</div>':'')+'</div>';
   }
 
   function newStats(){
@@ -4657,6 +4897,7 @@
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">그때 보인 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
         (item.parentTrait&&parentTraitMeta(item.parentTrait)?'<div class="record-stage">'+(item.safeguarding?'학생보호 메모':'가정 소통에서 보인 점')+' · '+escHtml(parentTraitMeta(item.parentTrait).label)+'</div>':'')+
+        (item.storyId&&storyArcFor(item.storyArc)?'<div class="record-stage">이어지는 이야기 · '+escHtml(storyArcFor(item.storyArc).label)+' · '+escHtml(item.storyStep||"")+'/3</div>':'')+
         '<div class="record-stage">선생님은 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
         (item.studentReaction?'<div class="record-stage">아이 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
@@ -4857,7 +5098,7 @@
   }
   function startNextDay(){
     dayIndex+=1;dayEnded=false;gameSec=520*60;periodIndex=0;running=true;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.42;periodEncounterCounts={};
     selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];incidentRecords=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
@@ -4905,8 +5146,8 @@
     renderClassroomTools();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;periodEncounterCounts={};
+    gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;storyQueue=[];storyStates={};storySeq=0;
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.35;periodEncounterCounts={};
     running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
