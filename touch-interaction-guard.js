@@ -76,7 +76,10 @@ document.addEventListener('touchcancel',()=>{lastTouchAt=performance.now();relea
 
 document.addEventListener('contextmenu',event=>{
   if(allowsSelection(event.target))return;
-  if(touchLikeNow())event.preventDefault();
+  // Kidscade is an app/game surface: suppress both mouse right-click menus and
+  // touch/pen long-press context menus everywhere except editable/selectable fields.
+  event.preventDefault();
+  event.stopPropagation();
 },true);
 document.addEventListener('selectstart',event=>{
   if(allowsSelection(event.target))return;
