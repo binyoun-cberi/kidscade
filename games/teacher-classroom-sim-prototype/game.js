@@ -2718,16 +2718,16 @@
         }
         if(nodeId.indexOf("secret_")===0){
           var branch=nodeId.slice(7),v={
-            up:{title:"교실에서 막히자 으슥한 곳으로 옮겼다",text:s.name+"은(는) 교실에서는 조심하는 듯했지만 쉬는 시간에 "+group+"화장실 근처나 사람이 적은 곳으로 가 간식을 숨겨 먹는다. 친구들은 몰래 하는 재미에 더 들떠 있다.",dialogue:s.name+' “여기서는 선생님도 모르잖아.”'},
-            down:{title:"‘그냥 답답해서’ 몰래 하는 일이 늘었다",text:"대화를 나눈 뒤에도 "+s.name+"은(는) 답답할 때 규칙을 깨는 게 시원하다고 말한다. 이번에는 공기계를 가져와 친구들과 몰래 화면을 보고 있었다.",dialogue:s.name+' “잠깐 보는 건데 뭐가 그렇게 큰일이에요?”'},
-            left:{title:"대체 행동은 알지만 친구들 앞에서는 다시 달라진다",text:"혼자 있을 때는 약속을 기억하지만 "+group+"친구들이 모이면 "+s.name+"이(가) 다시 큰 소리와 거친 말을 꺼낸다. 친구들의 웃음이 행동을 더 키우는 듯하다.",dialogue:s.name+' “애들이 좋아하니까 그냥 한 거예요.”'},
-            right:{title:"선택권의 빈틈을 자기 식으로 넓혀 간다",text:"정해진 선택지를 주자 "+s.name+"은(는) 그 밖의 행동도 ‘내가 선택한 것’이라고 주장한다. 친구 물건을 말없이 가져가 놓고도 ‘빌린 것’이라고 말한다.",dialogue:s.name+' “훔친 거 아니고 빌린 거예요. 이따 주면 되잖아요.”'}
+            up:{title:"교실에서 못 하게 하자 사람이 없는 곳으로 갔다",text:s.name+"은(는) 교실에서는 조심하는 듯했지만 쉬는 시간에 "+group+"화장실 근처나 사람이 별로 없는 곳으로 가 간식을 몰래 먹었다. 친구들도 들키지 않는 게 재미있다는 듯 따라갔다.",dialogue:s.name+' “여기서는 선생님도 모르잖아.”'},
+            down:{title:"몰래 하는 일이 하나씩 늘어난다",text:"이야기를 나눈 뒤에도 "+s.name+"은(는) 답답하면 규칙을 어겨도 된다고 생각한다. 이번에는 안 쓰는 휴대폰을 가져와 친구들과 몰래 화면을 보고 있었다.",dialogue:s.name+' “잠깐 보는 건데 뭐가 그렇게 큰일이에요?”'},
+            left:{title:"혼자 있을 때는 지키는데 친구들이 모이면 달라진다",text:"혼자 있을 때는 약속을 기억한다. 그런데 "+group+"친구들이 모이면 "+s.name+"이(가) 다시 큰 소리로 말하고 거친 말을 한다. 친구들이 웃어 주면 더 심해진다.",dialogue:s.name+' “애들이 좋아하니까 그냥 한 거예요.”'},
+            right:{title:"‘내가 고른 거잖아요’라며 해야 할 일도 마음대로 바꾼다",text:"몇 가지 중에서 고르게 해 주자 "+s.name+"은(는) 꼭 해야 하는 일까지 자기 마음대로 골라도 된다고 생각한다. 친구 물건을 말없이 가져가 놓고도 ‘빌린 것’이라고 말한다.",dialogue:s.name+' “훔친 거 아니고 빌린 거예요. 이따 주면 되잖아요.”'}
           }[branch];
           return {targetId:a?a.id:null,title:v.title,text:v.text,dialogue:v.dialogue,choices:{
-            up:encounterChoice("숨겨 먹기·공기계·남의 물건 사용처럼 반복되는 행동을 각각 분명한 규칙 위반으로 기록하고 바로잡는다.",{focus:2,classStability:7,trust:-1,classFlow:-2},"여러 행동을 ‘그 아이 원래 그래’로 뭉개지 않고 하나씩 사실로 남겼다."),
-            down:encounterChoice("친구들 앞에서 행동이 더 커지는 이유와 혼자 있을 때의 마음 차이를 들어본다.",{mood:4,trust:6,classFlow:-3},"친구들의 반응이 행동을 강화하는 부분이 보이기 시작했다."),
-            left:encounterChoice("간식·기기·빌리기·쉬는 시간 이동을 각각 어떻게 해야 하는지 구체적인 대체 행동을 정한다.",{focus:5,classStability:5,trust:4,classFlow:-4},"추상적인 ‘잘해라’ 대신 상황별 행동 기준을 만들었다."),
-            right:encounterChoice("친구들과 있을 때도 본인이 책임질 수 있는 선택과 절대 넘지 않을 선을 직접 말하게 한다.",{focus:3,trust:4,classStability:4,classFlow:-2},"자유를 주장하는 만큼 결과도 자기 선택과 연결하게 했다.")
+            up:encounterChoice("몰래 먹기, 휴대폰 보기, 남의 물건 가져가기처럼 있었던 일을 하나씩 따로 기록하고 바로잡는다.",{focus:2,classStability:7,trust:-1,classFlow:-2},"‘원래 그런 아이’라고 넘기지 않고 실제로 있었던 일을 하나씩 남겼다."),
+            down:encounterChoice("왜 친구들이 옆에 있을 때 더 심해지는지, 혼자 있을 때와 뭐가 다른지 물어본다.",{mood:4,trust:6,classFlow:-3},"친구들이 웃거나 맞장구치면 행동이 더 커지는 걸 알 수 있었다."),
+            left:encounterChoice("간식, 휴대폰, 친구 물건, 쉬는 시간에 지켜야 할 약속을 하나씩 다시 정한다.",{focus:5,classStability:5,trust:4,classFlow:-4},"‘잘해’라고만 하지 않고 상황마다 어떻게 해야 하는지 정했다."),
+            right:encounterChoice("친구들과 있을 때도 해도 되는 일과 하면 안 되는 일을 직접 말해 보게 한다.",{focus:3,trust:4,classStability:4,classFlow:-2},"자기가 고른 행동이라도 다른 사람에게 피해를 주면 안 된다는 점을 확인했다.")
           }};
         }
         if(nodeId.indexOf("defiance_")===0){
