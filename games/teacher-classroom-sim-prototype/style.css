@@ -469,3 +469,39 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 .period-memo-list li{position:relative;padding:6px 8px 6px 23px;border-radius:8px;background:rgba(255,255,255,.78);font-size:10.5px;line-height:1.45;word-break:keep-all;overflow-wrap:anywhere}
 .period-memo-list li:before{content:"•";position:absolute;left:10px;top:5px;color:#5879a6;font-weight:900}
 .period-memo-response{margin-top:8px;padding-top:7px;border-top:1px solid #ccd8e6;font-size:9.5px;color:#5e6975;line-height:1.45}
+
+
+/* v15 contextual speech bubbles */
+.student-speech{
+  position:absolute;z-index:58;left:50%;top:-58px;
+  transform:translateX(-50%);
+  max-width:210px;min-width:64px;
+  padding:7px 9px;border:1px solid #cfc7ba;border-radius:12px;
+  background:rgba(255,255,255,.97);color:#363330;
+  box-shadow:0 5px 16px rgba(52,43,34,.16);
+  font-size:10.5px;font-weight:750;line-height:1.35;
+  white-space:normal;word-break:keep-all;overflow-wrap:anywhere;
+  text-align:left;pointer-events:none;
+  animation:speechPop .18s ease-out
+}
+.student-speech:after{
+  content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+  width:12px;height:12px;background:inherit;
+  border-right:1px solid #cfc7ba;border-bottom:1px solid #cfc7ba;
+  rotate:45deg
+}
+.student-speech[hidden]{display:none!important}
+.student-speech.question{border-color:#9eb6d5;background:#f4f8fd;color:#294f7b}
+.student-speech.warning{border-color:#d7b180;background:#fff8eb;color:#754a24}
+.student-speech.danger{border-color:#d29a9a;background:#fff3f3;color:#843838;font-weight:850}
+.student-speech.reply{background:#f7f7f5}
+.student-speech.edge-left{left:0;transform:translateX(0)}
+.student-speech.edge-left:after{left:18px;transform:none}
+.student-speech.edge-right{left:auto;right:0;transform:none}
+.student-speech.edge-right:after{left:auto;right:18px;transform:none}
+@keyframes speechPop{
+  from{opacity:0;transform:translateX(-50%) translateY(4px) scale(.94)}
+  to{opacity:1}
+}
+.student-speech.edge-left,.student-speech.edge-right{animation:speechFade .18s ease-out}
+@keyframes speechFade{from{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}
