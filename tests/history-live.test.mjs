@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
-import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, pickHistoryQuestions, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
 
 test('history live supports a full classroom', () => {
   assert.equal(MAX_PLAYERS, 26);
@@ -154,4 +154,42 @@ test('history live server supports two-choice OX answers', () => {
   assert.match(worker, /q\.family==='ox'\?\[0,1\]/);
   assert.match(worker, /raw>=q\.o\.length/);
   assert.match(worker, /Array\.from\(\{length:q\.o\.length\}/);
+});
+
+
+test('era filtering keeps every picked question inside the selected teaching eras', () => {
+  const eras=['고려','조선 전기'];
+  const picked=pickHistoryQuestions(40,()=>0.31,'random','mixed',eras);
+  assert.equal(picked.length,40);
+  assert.ok(picked.every(q=>eras.includes(q.era)));
+  const chronological=pickHistoryQuestions(40,()=>0.31,'chronological','choice',['조선 후기']);
+  assert.equal(chronological.length,40);
+  assert.ok(chronological.every(q=>q.era==='조선 후기'));
+  assert.deepEqual(normalizeEraSelection(['고려','고려','없는 시대']),['고려']);
+});
+
+test('live server can reconfigure the same room for later rounds', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  assert.match(worker,/\/api\/history-live\/reconfigure/);
+  assert.match(worker,/async function reconfigureRoom/);
+  assert.match(worker,/DELETE FROM history_live_answers WHERE room_id=\?/);
+  assert.match(worker,/status='waiting'/);
+  assert.match(worker,/scoreMode==='cumulative'/);
+  assert.match(worker,/previous\.round\+1/);
+  assert.match(worker,/eras:plan\.eras/);
+});
+
+test('teacher UI supports era selection presets and same-room next rounds', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(html,/id="hostEraPicker"/);
+  assert.match(html,/id="soloEraPicker"/);
+  assert.match(html,/id="roundEraPicker"/);
+  assert.match(html,/같은 방에서 다음 판/);
+  assert.match(html,/function openRoundSetup\(\)/);
+  assert.match(html,/async function saveRoundSetup\(\)/);
+  assert.match(html,/점수 계속 누적/);
+  assert.match(html,/applyHostPreset\('quick'\)/);
+  assert.match(html,/applyRoundPreset\('challenge'\)/);
+  assert.match(html,/selectedEras\('hostEraPicker'\)/);
+  assert.match(html,/pickHistoryQuestions\(count,Math\.random,orderMode,questionMode,eras\)/);
 });
