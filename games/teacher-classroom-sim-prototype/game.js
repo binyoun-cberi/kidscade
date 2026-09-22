@@ -134,6 +134,11 @@
   var dayEvents=[];
   var incidentRecords=[];
   var periodMemoKeys={};
+  var dayIndex=1;
+  var dayEnded=false;
+  var daySummaries=[];
+  var followUpQueue=[];
+  var followUpSeq=0;
   var encounterHistory=[];
   var pendingEncounter=null;
   var activeEncounter=null;
@@ -153,7 +158,7 @@
   var modalWasRunning=true;
   var lastBellAt=-99999;
   var tutorialState={active:false,step:0};
-  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v16";
+  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v17";
   var lastFrame=performance.now();
   var aiAccumulator=0;
   var renderAccumulator=0;
@@ -665,6 +670,185 @@
   function encounterChoice(text,effects,result){
     return {text:text,effects:effects||{},result:result||""};
   }
+  function followUpDirectionEffects(sourceId,dir,s){
+    var e={};
+    if(dir==="up"){e.focus=2;e.trust=-1;e.classStability=2;e.classFlow=1}
+    else if(dir==="down"){e.mood=2;e.trust=2;e.classRelationship=1}
+    else if(dir==="left"){e.learning=2;e.focus=1;e.trust=1;e.classFlow=-1}
+    else if(dir==="right"){e.focus=1;e.mood=1;e.trust=1;e.classStability=-1}
+    else{e.focus=-1;e.trust=-1;e.classStability=-1}
+
+    if(sourceId==="math_foundation_gap"){
+      if(dir==="left"){e.learning=4;e.focus=2}
+      if(dir==="up"){e.learning=2;e.mood=-2}
+      if(dir==="down"){e.learning=1;e.mood=3}
+      if(dir==="right"){e.learning=2;e.focus=2}
+    }else if(["stationery_taken","peer_conflict","social_exclusion"].indexOf(sourceId)>=0){
+      if(dir==="left"){e.relation=3}
+      if(dir==="down"){e.relation=2;e.mood=(e.mood||0)+1}
+      if(dir==="right"){e.relation=1}
+      if(dir==="up"){e.relation=-1}
+    }else if(sourceId==="teacher_defiance"){
+      if(dir==="up"){e.classStability=4;e.trust=-2}
+      if(dir==="down"){e.trust=4;e.mood=3}
+      if(dir==="left"){e.trust=2;e.classStability=2}
+      if(dir==="right"){e.trust=2;e.focus=2}
+    }else if(sourceId==="missing_homework"){
+      if(dir==="left"){e.focus=4;e.classStability=2}
+      if(dir==="right"){e.focus=2}
+    }else if(sourceId==="presentation_anxiety"){
+      if(dir==="left"){e.mood=3;e.trust=2;e.focus=2}
+      if(dir==="down"){e.mood=3;e.trust=3}
+      if(dir==="up"){e.mood=-2;e.focus=2}
+    }else if(sourceId==="off_task"){
+      if(dir==="left"){e.focus=4}
+      if(dir==="up"){e.focus=3;e.trust=-1}
+      if(dir==="down"){e.trust=3}
+      if(dir==="right"){e.focus=2}
+    }else if(sourceId==="finished_early"){
+      if(dir==="left"){e.learning=3;e.focus=2}
+      if(dir==="down"){e.mood=2}
+      if(dir==="right"){e.focus=2;e.mood=2}
+    }
+    return e;
+  }
+  function scheduleFollowUp(enc,dir,choice){
+    if(!enc||!enc.studentId&&enc.studentId!==0)return;
+    var depth=enc.chainDepth||0;
+    if(depth>=2)return;
+    var chance=enc.isFollowUp?.38:.86;
+    if(dir==="timeout")chance=.58;
+    if(Math.random()>chance)return;
+    var delay=Math.random()<.78?1:2;
+    followUpQueue.push({
+      id:"follow-"+(++followUpSeq),
+      sourceEncounterId:enc.id,
+      sourceTemplateId:enc.sourceTemplateId||enc.templateId,
+      studentId:enc.studentId,targetId:enc.targetId,
+      sourceDir:dir,sourceDirection:dir==="timeout"?"시간 초과":(ENCOUNTER_DIRECTIONS[dir]&&ENCOUNTER_DIRECTIONS[dir].label)||dir,
+      sourceChoice:choice&&choice.text||"",
+      sourceTitle:enc.title,
+      createdDay:dayIndex,dueDay:dayIndex+delay,
+      chainDepth:depth+1,status:"queued",applied:false
+    });
+  }
+  function followUpNarrative(job,s,t){
+    var who=s.name,prev=job.sourceDirection||"이전 판단";
+    if(job.sourceTemplateId==="stationery_taken"){
+      if(job.sourceDir==="left")return {title:"이번에는 먼저 물어봤다",text:who+"이(가) 친구의 색연필이 필요해 손을 뻗다가 멈췄다. 그리고 전에 연습했던 말을 떠올린 듯 먼저 친구에게 묻는다.",dialogue:who+' “이거 잠깐 빌려도 돼?”'};
+      if(job.sourceDir==="up")return {title:"규칙은 기억하지만 눈치를 본다",text:who+"이(가) 친구 물건을 보다가 교사 쪽을 한 번 확인한다. 지난번 규칙은 기억하고 있지만 필요한 것을 어떻게 요청할지는 아직 망설인다.",dialogue:who+' “선생님… 이거 써도 돼요?”'};
+      if(job.sourceDir==="down")return {title:"친구의 반응을 먼저 살핀다",text:who+"이(가) 친구의 물건이 필요해 보이지만 바로 집지 않고 친구 표정을 살핀다. 지난 대화가 행동에 조금 남은 듯하다.",dialogue:who+' “너 이거 지금 써?”'};
+      return {title:"이번에는 둘이 먼저 해결하려 한다",text:who+"과(와) "+(t?t.name:"친구")+" 사이에 준비물 문제가 다시 생겼지만 두 학생이 교사를 바로 찾지 않고 먼저 말을 주고받기 시작했다.",dialogue:who+' “이거 내가 잠깐 써도 돼?”'};
+    }
+    if(job.sourceTemplateId==="math_foundation_gap"){
+      if(job.sourceDir==="left")return {title:"어제 배운 방법을 다시 꺼낸다",text:who+"이(가) 비슷한 수학 문제를 만났다. 처음에는 손이 멈췄지만 어제 교사와 함께 풀었던 순서를 떠올리며 식을 다시 써 보기 시작한다.",dialogue:who+' “어제 했던 것처럼 먼저 여기부터 하면 되죠?”'};
+      if(job.sourceDir==="up")return {title:"문제는 풀지만 표정이 굳어 있다",text:who+"이(가) 정해진 기초 문제를 해 왔다. 정답은 늘었지만 틀릴 때마다 지우개를 오래 사용하며 교사 눈치를 살핀다.",dialogue:who+' “이것도 꼭 다 해야 해요?”'};
+      if(job.sourceDir==="down")return {title:"다시 도움을 요청했다",text:who+"이(가) 오늘은 문제를 덮지 않고 교사를 찾았다. 부담은 줄었지만 기초 개념의 빈틈은 여전히 남아 있다.",dialogue:who+' “오늘도 여기까지만 같이 보면 안 돼요?”'};
+      return {title:"자기에게 맞는 방법을 고른다",text:who+"이(가) 비슷한 문제에서 막히자 지난번처럼 해결 방법을 고르려 한다. 이번에는 친구에게 묻기보다 예시를 먼저 찾아본다.",dialogue:who+' “저 먼저 예시 보고 해볼게요.”'};
+    }
+    if(job.sourceTemplateId==="off_task"){
+      if(job.sourceDir==="left")return {title:"스스로 첫 단계부터 시작한다",text:who+"이(가) 다시 집중이 흔들렸지만 이번에는 해야 할 일을 작은 단계로 나누어 첫 줄부터 시작한다.",dialogue:who+' “일단 이것 하나부터 하면 되는 거지…”'};
+      if(job.sourceDir==="up")return {title:"교사를 보자 바로 자세를 고친다",text:who+"이(가) 옆자리와 이야기하다가 교사의 시선을 알아차리자 곧바로 과제로 돌아온다. 다만 스스로 조절했다기보다 교사를 의식한 모습에 가깝다.",dialogue:""};
+      if(job.sourceDir==="down")return {title:"집중이 흐트러지는 이유를 말한다",text:who+"이(가) 또 다른 곳을 보다가 먼저 교사에게 말을 건다. 전보다 자기 상태를 설명하려는 모습이 생겼다.",dialogue:who+' “이거 너무 오래 하니까 머리가 복잡해요.”'};
+      return {title:"세운 목표를 스스로 확인한다",text:who+"이(가) 잠시 딴짓을 하다가 자신이 정했던 목표를 확인하고 다시 과제로 돌아온다.",dialogue:who+' “여기까지만 하고 쉬기로 했지.”'};
+    }
+    if(job.sourceTemplateId==="peer_conflict"){
+      if(job.sourceDir==="left")return {title:"배운 말하기 방법을 써 보려 한다",text:who+"과(와) "+(t?t.name:"친구")+" 사이에 다시 의견 차이가 생겼다. 이번에는 곧바로 소리를 높이기보다 지난번에 연습한 방식으로 말하려 한다.",dialogue:who+' “나는 네가 그냥 가져가서 화났어. 먼저 말해줬으면 좋겠어.”'};
+      if(job.sourceDir==="up")return {title:"싸움은 멈췄지만 감정은 남아 있다",text:who+"과(와) "+(t?t.name:"친구")+"은(는) 지난번 이후 서로 규칙을 어기지 않으려 하지만 작은 일에도 어색하게 거리를 둔다.",dialogue:""};
+      if(job.sourceDir==="down")return {title:"먼저 자기 감정을 설명한다",text:who+"이(가) 갈등이 생기자 상대를 탓하기 전에 자신이 왜 화가 났는지 먼저 말하려 한다.",dialogue:who+' “나 그때 진짜 속상했어.”'};
+      return {title:"둘이 먼저 해결안을 제안한다",text:who+"과(와) "+(t?t.name:"친구")+" 사이에 작은 갈등이 생겼지만 이번에는 두 학생이 먼저 번갈아 하자는 방법을 꺼냈다.",dialogue:who+' “그럼 이번엔 네가 하고 다음에 내가 할게.”'};
+    }
+    if(job.sourceTemplateId==="social_exclusion"){
+      if(job.sourceDir==="left")return {title:"놀이에 들어가는 말을 직접 사용했다",text:who+"이(가) 친구들 곁에서 한참 서 있지 않고 전에 연습한 말을 꺼내며 놀이에 참여하려 한다.",dialogue:who+' “나도 다음 판부터 같이 해도 돼?”'};
+      if(job.sourceDir==="down")return {title:"속상한 순간을 먼저 말해 준다",text:who+"이(가) 친구 관계에서 불편한 일이 생기자 혼자 떨어져 있기보다 교사에게 먼저 자신의 마음을 설명한다.",dialogue:who+' “저 또 혼자 남는 것 같아서 속상해요.”'};
+      if(job.sourceDir==="up")return {title:"자리는 생겼지만 어색함이 남아 있다",text:who+"이(가) 모둠에는 들어가 있지만 친구들과 대화는 많지 않다. 규칙으로 참여는 보장됐지만 관계는 아직 만들어지는 중이다.",dialogue:""};
+      return {title:"스스로 다가갈 친구를 정했다",text:who+"이(가) 여러 친구를 살펴보다가 한 명에게 먼저 다가간다. 교사가 정해준 친구가 아니라 본인이 선택한 상대다.",dialogue:who+' “나 너랑 같이 해도 돼?”'};
+    }
+    if(job.sourceTemplateId==="teacher_defiance"){
+      if(job.sourceDir==="left")return {title:"화가 나도 다른 말로 표현하려 한다",text:who+"이(가) 교사의 안내에 불만스러운 표정을 짓지만 지난번처럼 고성을 지르기 전에 배운 표현을 꺼낸다.",dialogue:who+' “저 지금 화났어요. 잠깐 있다가 하면 안 돼요?”'};
+      if(job.sourceDir==="down")return {title:"먼저 이유를 설명하려 한다",text:who+"이(가) 안내를 바로 따르지는 않았지만 목소리를 높이기 전에 교사에게 자신의 이유를 말한다.",dialogue:who+' “제가 아까부터 계속 이 부분 때문에 힘들었어요.”'};
+      if(job.sourceDir==="up")return {title:"행동은 멈추지만 교사를 피한다",text:who+"이(가) 규칙을 어기지는 않지만 교사가 가까이 오면 시선을 피하고 짧게만 대답한다.",dialogue:who+' “네. 알겠어요.”'};
+      return {title:"스스로 복귀 방법을 고른다",text:who+"이(가) 감정이 올라오자 지난번처럼 바로 반발하기보다 잠깐 쉬었다가 다시 참여하는 쪽을 고른다.",dialogue:who+' “저 2분만 있다가 다시 할게요.”'};
+    }
+    if(job.sourceTemplateId==="presentation_anxiety"){
+      if(job.sourceDir==="left")return {title:"이번에는 한 문장을 먼저 말한다",text:who+"의 발표 차례가 다시 왔다. 여전히 긴장하지만 자리에서 짧은 문장 하나를 먼저 말해 보려 한다.",dialogue:who+' “저는… 여기까지는 말할 수 있어요.”'};
+      if(job.sourceDir==="down")return {title:"발표 전에 먼저 도움을 요청한다",text:who+"이(가) 발표를 앞두고 숨지 않고 교사에게 어떤 방식이면 할 수 있을지 먼저 묻는다.",dialogue:who+' “앞에 말고 자리에서 하면 안 돼요?”'};
+      if(job.sourceDir==="up")return {title:"발표는 하지만 긴장이 크게 남는다",text:who+"이(가) 발표 순서를 피하지는 않았지만 차례가 오기 전부터 손을 꽉 쥐고 있다.",dialogue:""};
+      return {title:"자기가 고른 방식으로 발표를 준비한다",text:who+"이(가) 오늘은 친구와 함께 발표하는 방법을 스스로 선택하고 먼저 역할을 나눈다.",dialogue:who+' “나는 첫 문장 할게. 너는 다음 거 해줘.”'};
+    }
+    if(job.sourceTemplateId==="missing_homework"){
+      if(job.sourceDir==="left")return {title:"준비 절차를 실제로 사용했다",text:who+"이(가) 등교 뒤 가방에서 작은 확인표를 꺼내 준비물을 하나씩 확인한다. 빠진 것이 하나 있지만 스스로 먼저 알아챘다.",dialogue:who+' “아, 이건 집에 두고 왔네. 내일 체크해야겠다.”'};
+      if(job.sourceDir==="down")return {title:"반복되는 이유가 조금 더 드러났다",text:who+"이(가) 다시 준비물을 빠뜨렸지만 이번에는 변명보다 집에서 준비하기 어려웠던 상황을 먼저 설명한다.",dialogue:who+' “어제 집에서 챙길 시간이 없었어요.”'};
+      if(job.sourceDir==="up")return {title:"이번에는 챙겨 왔지만 계속 확인한다",text:who+"이(가) 필요한 것은 모두 챙겨 왔다. 다만 교사에게 몇 번이나 빠진 것이 없는지 확인받으려 한다.",dialogue:who+' “선생님, 오늘은 다 가져왔죠?”'};
+      return {title:"자기 계획을 확인하러 왔다",text:who+"이(가) 자신이 세운 준비 계획을 가지고 먼저 교사에게 와서 오늘 결과를 확인하려 한다.",dialogue:who+' “제가 정한 것 중에 하나 빼고 다 했어요.”'};
+    }
+    if(job.sourceTemplateId==="finished_early"){
+      if(job.sourceDir==="left")return {title:"이번에는 스스로 더 어려운 문제를 찾는다",text:who+"이(가) 활동을 일찍 마친 뒤 같은 문제를 더 풀기보다 난도가 높은 문제를 찾는다.",dialogue:who+' “이거보다 어려운 문제도 해봐도 돼요?”'};
+      if(job.sourceDir==="down")return {title:"끝낸 뒤 쉬는 시간을 안정적으로 사용한다",text:who+"이(가) 먼저 활동을 끝냈지만 친구들을 방해하지 않고 조용히 책을 꺼내 든다.",dialogue:""};
+      if(job.sourceDir==="up")return {title:"추가 문제를 예상하고 기다린다",text:who+"이(가) 활동을 마치자 자연스럽게 추가 문제를 기다린다. 하지만 표정에서는 반복 과제에 대한 흥미가 크지 않아 보인다.",dialogue:who+' “또 문제 풀면 돼요?”'};
+      return {title:"남는 시간을 스스로 설계한다",text:who+"이(가) 활동을 끝낸 뒤 오늘은 친구 설명을 선택하고 먼저 도움이 필요한 친구를 찾는다.",dialogue:who+' “누구 도와줘도 돼요?”'};
+    }
+    return {title:"지난 판단의 결과가 다시 나타났다",text:who+"에게 있었던 '"+job.sourceTitle+"' 상황이 다른 모습으로 다시 나타났다. 이전의 "+prev+" 선택이 학생의 다음 행동에 영향을 준 듯하다.",dialogue:""};
+  }
+  function followUpChoices(s){
+    return {
+      up:encounterChoice("지금 나타난 변화를 학급의 기준과 연결해 다시 분명히 확인한다.",{focus:2,trust:-1,classStability:4,classFlow:2},"이번 변화가 우연으로 끝나지 않도록 기준과 기대 행동을 다시 분명하게 했다."),
+      down:encounterChoice("학생이 지금 어떻게 느끼는지 듣고 필요한 지원을 조금 조정한다.",{mood:4,trust:4,relation:2,classFlow:-2},"학생의 현재 경험을 다시 확인하면서 이전 개입을 상황에 맞게 조정했다."),
+      left:encounterChoice("잘된 점과 아직 어려운 점을 짚고 다음에 사용할 방법을 한 단계 더 연습한다.",{learning:3,focus:3,trust:2,relation:2,classFlow:-3},"이전 경험을 다음 기술 학습으로 연결해 한 단계 더 연습했다."),
+      right:encounterChoice("이번에는 다음 행동과 목표를 학생이 직접 정하게 한다.",{focus:2,mood:2,trust:3,classStability:0},"이전 경험을 바탕으로 다음 선택의 책임을 학생에게 넘겼다.")
+    };
+  }
+  function applyDelayedFollowUp(job,s,t){
+    if(job.applied)return null;
+    var before=studentDashboard(s),beforeClass=classDashboard();
+    var e=followUpDirectionEffects(job.sourceTemplateId,job.sourceDir,s);
+    applyEncounterEffects({studentId:s.id,targetId:t?t.id:null},encounterChoice("",e,""));
+    job.applied=true;
+    var after=studentDashboard(s),afterClass=classDashboard();
+    job.arrivalDelta=dashboardDelta(before,after);
+    job.arrivalBefore=before;job.arrivalAfter=after;job.arrivalBeforeClass=beforeClass;job.arrivalAfterClass=afterClass;
+    var d=job.arrivalDelta;
+    var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+    var change=Object.keys(labels).filter(function(k){return d[k]}).map(function(k){return labels[k]+" "+(d[k]>0?"+":"")+d[k]}).join(" · ");
+    dayEvents.push({
+      day:dayIndex,stamp:fmtMin(gameMinute()),text:"후속 변화 · "+s.name+" · "+job.sourceTitle,
+      type:"followup_decision",scene:s.scene,script:false,recordable:true,followUpOutcome:true,
+      studentId:s.id,targetId:t?t.id:null,sourceDirection:job.sourceDirection,sourceChoice:job.sourceChoice,
+      resultText:"이전 선택의 영향이 다음 날의 행동과 상태에 이어졌다.",before:before,after:after,delta:d,
+      beforeClass:beforeClass,afterClass:afterClass,changeText:change
+    });
+    dayEvents=dayEvents.slice(-320);
+    return d;
+  }
+  function buildFollowUpEncounter(job){
+    var s=studentById(job.studentId),t=studentById(job.targetId);
+    if(!s)return null;
+    applyDelayedFollowUp(job,s,t);
+    var n=followUpNarrative(job,s,t);
+    return {
+      id:"enc-"+(++encounterSeq),templateId:"followup_"+job.sourceTemplateId,sourceTemplateId:job.sourceTemplateId,
+      category:"후속 · "+(job.sourceTemplateId==="math_foundation_gap"?"학습":"생활"),
+      title:n.title,text:n.text,dialogue:n.dialogue||"",studentId:s.id,targetId:t?t.id:null,
+      createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s),
+      isFollowUp:true,followUpId:job.id,chainDepth:job.chainDepth||1,
+      previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,
+      kicker:"Day "+dayIndex+" · 후속 상황"
+    };
+  }
+  function takeDueFollowUp(){
+    for(var i=0;i<followUpQueue.length;i++){
+      var job=followUpQueue[i];
+      if(job.status!=="queued"||job.dueDay>dayIndex)continue;
+      var s=studentById(job.studentId);
+      if(!s||s.scene!==teacherScene||s.targetScene)continue;
+      job.status="shown";job.shownDay=dayIndex;
+      var enc=buildFollowUpEncounter(job);
+      if(enc)return enc;
+      job.status="skipped";
+    }
+    return null;
+  }
+
   var ENCOUNTER_TEMPLATES=[
     {
       id:"stationery_taken",category:"생활지도",title:"말없이 친구 물건을 가져갔다",
