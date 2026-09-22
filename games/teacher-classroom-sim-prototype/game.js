@@ -392,6 +392,98 @@
     if(sec>=60){var m=Math.floor(sec/60),s=Math.round(sec%60);return s?m+"분 "+s+"초":m+"분"}
     return Math.round(sec)+"초";
   }
+  function koreanJong(word){
+    if(!word)return 0;
+    var code=word.charCodeAt(word.length-1);
+    return code>=0xAC00&&code<=0xD7A3?(code-0xAC00)%28:0;
+  }
+  function fixKoreanParticles(value){
+    var s=String(value===undefined||value===null?"":value);
+    s=s.replace(/([가-힣]+)이\(가\)/g,function(_,w){return w+(koreanJong(w)?"이":"가")});
+    s=s.replace(/([가-힣]+)은\(는\)/g,function(_,w){return w+(koreanJong(w)?"은":"는")});
+    s=s.replace(/([가-힣]+)을\(를\)/g,function(_,w){return w+(koreanJong(w)?"을":"를")});
+    s=s.replace(/([가-힣]+)와\(과\)/g,function(_,w){return w+(koreanJong(w)?"과":"와")});
+    s=s.replace(/([가-힣]+)으로\(로\)/g,function(_,w){var j=koreanJong(w);return w+(!j||j===8?"로":"으로")});
+    return s;
+  }
+  function naturalClassroomText(value){
+    var s=fixKoreanParticles(value);
+    var swaps=[
+      ["합류를 거절한","같이 하자는 말을 거절한"],
+      ["합류","같이하기"],
+      ["놀이에 참여","놀이에 같이 끼기"],
+      ["모두가 참여해야 한다는 학급 규칙","누구도 일부러 빼지 않는다는 우리 반 약속"],
+      ["참여 자리는 생겼지만 관계가 자연스럽게 이어질지는 더 지켜봐야 한다.","같이할 자리는 생겼지만 친구 사이가 바로 편해진 것은 아니다."],
+      ["소속감이 떨어진 이유와 학생이 원하는 것이 조금 더 분명해졌다.","왜 혼자라고 느꼈는지, 누구와 같이 있고 싶은지 알 수 있었다."],
+      ["다음에 사용할 구체적인 사회적 방법을 하나 준비했다.","다음에 친구에게 먼저 해볼 말을 하나 정했다."],
+      ["관계의 다음 행동을 선택했다.","누구에게 어떻게 다가갈지 직접 정했다."],
+      ["구체적인 대체 행동","대신 할 행동"],
+      ["대체 행동","대신 할 행동"],
+      ["구체적인 방법","쓸 수 있는 방법"],
+      ["구체적인 준비 절차","준비하는 순서"],
+      ["구체적으로","하나씩"],
+      ["학급의 기준","우리 반 약속"],
+      ["기준과 기대 행동","지켜야 할 약속"],
+      ["필요한 지원을 조금 조정한다.","도와주는 방법을 조금 바꾼다."],
+      ["이전 개입을 상황에 맞게 조정했다.","지난번과 다르게 필요한 만큼 도와줬다."],
+      ["감정이 낮아질 통로가 생겼다.","마음을 가라앉힐 시간을 가질 수 있었다."],
+      ["교실의 경계는 선명해졌지만 학생의 감정은 아직 높다.","안 되는 행동은 분명히 알렸지만 아직 화가 풀리지는 않았다."],
+      ["행동의 경계는 분명해졌고","하면 안 되는 행동은 분명히 알려줬고"],
+      ["안전선은 즉시 분명해졌다.","다칠 수 있는 장난은 바로 멈췄다."],
+      ["교사는 안전선만 정하고","다치게 하거나 욕하지 않는 것만 약속하고"],
+      ["해결안을 하나 정하도록 맡긴다.","어떻게 풀지 둘이 직접 정하게 한다."],
+      ["해결의 책임은 학생들에게 넘어갔다. 잘 풀릴지는 이후 관계에 달려 있다.","어떻게 풀지는 둘이 직접 정했다. 잘 풀리는지는 조금 더 지켜봐야 한다."],
+      ["선택권과 책임을 함께 주면서 수업으로 돌아올 길을 만들었다.","두 가지 방법 중 하나를 고르게 하자 다시 수업으로 돌아갈 수 있었다."],
+      ["다음 선택의 책임을 학생에게 넘겼다.","이번에는 학생이 직접 정하게 했다."],
+      ["관계의 책임을 나눴다.","어디까지 도울지 서로 정하게 했다."],
+      ["관계를 이어갈 방식의 책임을 두 학생에게 맡겼다.","계속 같이할지, 잠깐 떨어질지 둘이 정하게 했다."],
+      ["갈등 해결 방법 자체를 연습하는 시간이 됐다.","서로 싸우지 않고 말하는 방법을 한 번 연습했다."],
+      ["시간은 들었지만 서로 왜 화가 났는지 말로 드러났다.","시간은 좀 걸렸지만 둘 다 왜 화가 났는지 말할 수 있었다."],
+      ["관계 행동 뒤에 있던 불안과 걱정이 말로 드러났다.","친구와 떨어지기 싫었던 마음을 말로 꺼낼 수 있었다."],
+      ["학생의 현재 경험을 다시 확인하면서","지금 아이가 어떤지 다시 보고"],
+      ["이전 경험을 다음에 사용할","지난번 일을 떠올려 다음에 쓸"],
+      ["현재 경험","지금 겪는 일"],
+      ["개입","도움"],
+      ["성취 압박","성적에 대한 부담"],
+      ["성취","잘한 결과"],
+      ["학습 확장","더 어려운 공부"],
+      ["즉각적인 불안","당장의 긴장"],
+      ["낙인","찍어 말하기"],
+      ["돌발 행동","갑자기 하는 말과 행동"],
+      ["기싸움","말싸움"],
+      ["거절 의사","하기 싫다는 마음"],
+      ["복귀","다시 돌아오기"],
+      ["절차","순서"],
+      ["누락","빠뜨린 것"],
+      ["보완","다시 챙기기"],
+      ["검토 기준","확인할 점"],
+      ["선택 가능한","고를 수 있는"],
+      ["선택할 수 없는 선","하면 안 되는 일"],
+      ["선택권","고를 수 있게"],
+      ["책임을 학생에게 돌려주고","학생이 직접 정하게 하고"],
+      ["책임을 학생에게","학생이 직접"],
+      ["책임은 학생들에게","학생들이 직접"],
+      ["행동 책임","한 행동에 대한 책임"],
+      ["분명해졌다.","알 수 있었다."],
+      ["구체화됐다.","정리됐다."],
+      ["강화하는 부분","더 심하게 만드는 점"],
+      ["일관된 결과","같은 약속"],
+      ["분리해 말한다.","따로 나눠 말한다."],
+      ["학습을 방해하는","친구들 공부를 방해하는"],
+      ["수업 흐름에서 벗어나고 있다.","수업은 안 보고 다른 일을 하고 있다."],
+      ["수업 흐름은 빠르게 돌아왔다.","수업은 금방 다시 시작됐다."],
+      ["수업 흐름","수업"],
+      ["또래관계","친구 사이"],
+      ["생활지도","교실 생활"],
+      ["정서","마음"],
+      ["가정연계","가정 연락"]
+    ];
+    swaps.forEach(function(pair){s=s.split(pair[0]).join(pair[1])});
+    return fixKoreanParticles(s);
+  }
+  function simpleEncounterCategory(value){
+    return naturalClassroomText(value||"교실에서 생긴 일");
+  }
   var STUDENT_LOOKS={
     "민수":{skin:5,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:2,face:1,shirtFolder:"green",shirtPrefix:"greenShirt",armPrefix:"greenArm",shirtIndex:3,pantsFolder:"blue-1",pantsPrefix:"pantsBlue1",shoeFolder:"brown-1",shoePrefix:"brownShoe"},
     "지우":{skin:2,gender:"Woman",hairFolder:"brown-1",hairPrefix:"brown1",hairIndex:2,face:2,shirtFolder:"blue",shirtPrefix:"blueShirt",armPrefix:"blueArm",shirtIndex:4,pantsFolder:"tan",pantsPrefix:"pantsTan",shoeFolder:"black",shoePrefix:"blackShoe"},
@@ -416,9 +508,19 @@
     "승민":{skin:7,gender:"Man",hairFolder:"black",hairPrefix:"black",hairIndex:3,face:1,shirtFolder:"grey",shirtPrefix:"greyShirt",armPrefix:"greyArm",shirtIndex:4,pantsFolder:"brown",pantsPrefix:"pantsBrown",shoeFolder:"black",shoePrefix:"blackShoe"},
     "세아":{skin:1,gender:"Woman",hairFolder:"brown-2",hairPrefix:"brown2",hairIndex:3,face:2,shirtFolder:"navy",shirtPrefix:"navyShirt",armPrefix:"navyArm",shirtIndex:3,pantsFolder:"red",pantsPrefix:"pantsRed",shoeFolder:"brown-1",shoePrefix:"brownShoe"}
   };
+  var NATURAL_STUDENT_HAIR={
+    "민수":["black","black",2],"지우":["brown-1","brown1",2],"서연":["black","black",2],"준호":["brown-2","brown2",2],
+    "태호":["black","black",1],"유나":["black","black",2],"현우":["brown-1","brown1",3],"소라":["brown-2","brown2",1],
+    "도윤":["black","black",2],"하린":["brown-1","brown1",3],"예준":["brown-2","brown2",1],"채원":["black","black",2],
+    "시우":["black","black",1],"다은":["brown-1","brown1",1],"건우":["brown-2","brown2",3],"아린":["black","black",2],
+    "지호":["brown-1","brown1",2],"은서":["black","black",1],"윤호":["brown-2","brown2",3],"나연":["brown-1","brown1",1],
+    "승민":["black","black",3],"세아":["brown-2","brown2",2]
+  };
   function makeLook(t,i){
-    var preset=STUDENT_LOOKS[t.name];
-    return preset?Object.assign({},preset):Object.assign({},STUDENT_LOOKS["민수"]);
+    var preset=STUDENT_LOOKS[t.name],look=preset?Object.assign({},preset):Object.assign({},STUDENT_LOOKS["민수"]);
+    var hair=NATURAL_STUDENT_HAIR[t.name];
+    if(hair){look.hairFolder=hair[0];look.hairPrefix=hair[1];look.hairIndex=hair[2]}
+    return look;
   }
 
   var TEACHER_LOOK={
@@ -500,9 +602,8 @@
     if(/math_foundation_gap|help_refusal|group_silent|after_lunch_sleepy|group_free_rider|transition_stuck|lunch_refusal|refuses_partner/.test(id)||/모르|힘들|졸|막혀|못 하/.test(title))return {type:"struggling",name:"힘듦",bg:"#7f907a",brow:3,mouth:"sad",eyes:"small"};
     if(/finished_early/.test(id)||/성공|해냈|맞혔|밝/.test(title))return {type:"happy",name:"기쁨",bg:"#5f927b",brow:1,mouth:"happy",eyes:"large"};
     if(/missing_homework|teacher_defiance|late_arrival|minor_injury|broken_item_denial|forgotten_material|copies_homework/.test(id)||/들켰|당황|깜짝|놓고|넘어져/.test(title))return {type:"startled",name:"당황",bg:"#b58a63",brow:3,mouth:"oh",eyes:"large"};
-    if(enc&&enc.isFollowUp)return {type:"happy",name:"달라진 모습",bg:"#65917f",brow:1,mouth:"glad",eyes:"large"};
     if(s&&s.mood<.42)return {type:"worried",name:"걱정",bg:"#7388ad",brow:3,mouth:"straight",eyes:"small"};
-    return {type:"default",name:"평소",bg:"#607aa5",brow:1,mouth:"glad",eyes:"large"};
+    return {type:"default",name:"생각 중",bg:"#607aa5",brow:1,mouth:"straight",eyes:"small"};
   }
   function expressionBrowPrefix(look){
     var map={"black":"black","brown-1":"brown1","brown-2":"brown2","blonde":"blonde","grey":"grey","red":"red","tan":"tan","white":"white"};
@@ -535,13 +636,19 @@
       return {type:"worried",name:"신경 쓰임",bg:"#7d88a2",brow:3,mouth:"straight",eyes:"small"};
     return {type:"default",name:"지켜봄",bg:"#71869b",brow:1,mouth:"glad",eyes:"large"};
   }
-  function appendPortraitBust(rig,look){
-    rig.appendChild(modularImg(look,"hair","hair-back"));
-    rig.appendChild(modularImg(look,"neck","neck"));
-    rig.appendChild(modularImg(look,"shirt","shirt"));
-    rig.appendChild(modularImg(look,"head","head"));
-    rig.appendChild(modularImg(look,"face","face"));
-    rig.appendChild(modularImg(look,"hair","hair-front"));
+  function portraitFaceIndex(expression,look){
+    if(!expression)return 3;
+    if(expression.type==="happy")return look.face||1;
+    if(expression.type==="angry"||expression.type==="startled")return 4;
+    return 3;
+  }
+  function appendPortraitBust(rig,look,expression){
+    var portraitLook=Object.assign({},look,{face:portraitFaceIndex(expression,look)});
+    rig.appendChild(modularImg(portraitLook,"neck","neck"));
+    rig.appendChild(modularImg(portraitLook,"shirt","shirt"));
+    rig.appendChild(modularImg(portraitLook,"head","head"));
+    rig.appendChild(modularImg(portraitLook,"face","face"));
+    rig.appendChild(modularImg(portraitLook,"hair","portrait-hair"));
   }
   function makePortraitPerson(person,expression,role){
     var wrap=document.createElement("span");
@@ -549,7 +656,7 @@
     wrap.style.background=expression.bg;
     var avatar=document.createElement("span");
     avatar.className="modular-avatar portrait-avatar portrait-bust";
-    appendPortraitBust(avatar,person.look);
+    appendPortraitBust(avatar,person.look,expression);
     wrap.appendChild(avatar);
     var label=document.createElement("strong");
     label.className="portrait-name";
@@ -1434,11 +1541,11 @@
       score:function(s){return s.action==="ARGUE"||conflictPartner(s)?1.8+s.frustration:0},
       build:function(s){
         var target=conflictPartner(s)||studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
-        return {targetId:target.id,text:s.name+"과(와) "+target.name+"의 말다툼이 길어지고 있다. 서로 자기 말만 반복하며 목소리가 점점 커진다.",dialogue:s.name+' “내가 먼저 했잖아.”  ·  '+target.name+' “너도 그랬잖아.”',choices:{
-          up:encounterChoice("둘을 즉시 멈추고 떨어뜨린 뒤 규칙 위반 여부부터 확인한다.",{mood:-2,relation:-2,classStability:7,classFlow:3},"갈등은 즉시 중단됐지만 감정은 아직 남아 있다."),
-          down:encounterChoice("한 명씩 충분히 말하게 하고 서로의 감정을 확인한다.",{mood:5,trust:4,relation:6,classFlow:-6,classRelationship:5},"시간은 들었지만 서로 왜 화가 났는지 말로 드러났다."),
-          left:encounterChoice("사실-기분-원하는 것을 차례로 말하는 방법을 알려주고 다시 말하게 한다.",{relation:7,trust:2,classFlow:-5,classStability:3},"갈등 해결 방법 자체를 연습하는 시간이 됐다."),
-          right:encounterChoice("교사는 안전선만 정하고 두 학생이 해결안을 하나 정하도록 맡긴다.",{relation:3,trust:2,classFlow:1,classStability:-2},"해결의 책임은 학생들에게 넘어갔다. 잘 풀릴지는 이후 관계에 달려 있다.")
+        return {targetId:target.id,text:s.name+"과(와) "+target.name+"이(가) 같은 말을 되풀이하며 목소리가 점점 커지고 있다.",dialogue:s.name+' “내가 먼저 했잖아.”  ·  '+target.name+' “너도 그랬잖아.”',choices:{
+          up:encounterChoice("둘을 먼저 떼어 놓고, 누가 어떤 말을 하고 행동했는지 확인한다.",{mood:-2,relation:-2,classStability:7,classFlow:3},"싸움은 멈췄지만 둘 다 아직 화가 나 있다."),
+          down:encounterChoice("한 명씩 말하게 하고, 서로 어떤 점이 속상했는지 들어 본다.",{mood:5,trust:4,relation:6,classFlow:-6,classRelationship:5},"시간은 좀 걸렸지만 둘 다 왜 화가 났는지 말할 수 있었다."),
+          left:encounterChoice("‘무슨 일이 있었는지 → 어떤 기분인지 → 어떻게 했으면 좋은지’ 순서로 다시 말하게 한다.",{relation:7,trust:2,classFlow:-5,classStability:3},"서로 싸우지 않고 말하는 방법을 한 번 연습했다."),
+          right:encounterChoice("때리거나 욕하지 않는 것만 약속하고, 둘이 어떻게 풀지 직접 정하게 한다.",{relation:3,trust:2,classFlow:1,classStability:-2},"어떻게 풀지는 둘이 직접 정했다. 잘 풀리는지는 조금 더 지켜봐야 한다.")
         }};
       }
     },
@@ -1446,11 +1553,11 @@
       id:"social_exclusion",category:"또래관계",title:"놀이와 모둠에서 자꾸 밀려난다",
       score:function(s){return s.action==="REJECTED"||s.belonging<.48?1.1+(1-s.belonging):0},
       build:function(s){
-        return {text:s.name+"이(가) 친구들 곁에 몇 번 다가갔지만 자리가 생기지 않았다. 지금은 조금 떨어진 곳에서 친구들을 보고 있다.",dialogue:s.name+' “나도 같이 하면 안 돼?”',choices:{
-          up:encounterChoice("모두가 참여해야 한다는 학급 규칙을 확인하고 자리를 만들어 준다.",{relation:4,mood:2,trust:1,classStability:4,classRelationship:2},"참여 자리는 생겼지만 관계가 자연스럽게 이어질지는 더 지켜봐야 한다."),
-          down:encounterChoice(s.name+"의 마음을 먼저 듣고 지금 원하는 관계가 무엇인지 묻는다.",{mood:7,trust:6,relation:2,classFlow:-2},"소속감이 떨어진 이유와 학생이 원하는 것이 조금 더 분명해졌다."),
-          left:encounterChoice("친구에게 다가가거나 놀이에 참여할 때 쓸 말을 함께 연습한다.",{relation:6,trust:3,mood:3,classFlow:-3},"다음에 사용할 구체적인 사회적 방법을 하나 준비했다."),
-          right:encounterChoice("어느 친구에게 어떤 방식으로 다가갈지 학생이 직접 정하게 한다.",{relation:3,mood:2,trust:4,classStability:0},"교사가 친구를 정해주지 않고 학생이 관계의 다음 행동을 선택했다.")
+        return {text:s.name+"이(가) 친구들 옆에 몇 번 갔지만 아무도 자리를 내주지 않았다. 지금은 조금 떨어져서 친구들을 보고 있다.",dialogue:s.name+' “나도 같이 하면 안 돼?”',choices:{
+          up:encounterChoice("일부러 한 명을 빼고 놀면 안 된다고 말하고 같이할 자리를 만들어 준다.",{relation:4,mood:2,trust:1,classStability:4,classRelationship:2},"같이할 자리는 생겼지만 친구 사이가 바로 편해진 것은 아니다."),
+          down:encounterChoice(s.name+"에게 누구와 같이 있고 싶은지, 뭐가 제일 속상한지 먼저 묻는다.",{mood:7,trust:6,relation:2,classFlow:-2},"왜 혼자라고 느꼈는지, 누구와 같이 있고 싶은지 알 수 있었다."),
+          left:encounterChoice("친구에게 먼저 다가갈 때 쓸 말을 같이 정해 보고 한 번 연습한다.",{relation:6,trust:3,mood:3,classFlow:-3},"다음에 친구에게 먼저 해볼 말을 하나 정했다."),
+          right:encounterChoice("누구에게 먼저 가 볼지 학생이 직접 고르게 한다.",{relation:3,mood:2,trust:4,classStability:0},"누구에게 어떻게 다가갈지 직접 정했다.")
         }};
       }
     },
@@ -1463,11 +1570,11 @@
         });
         var rawLine=s.speechText||(defianceEvent&&defianceEvent.quote)||"왜 저만 그래요! 자꾸 말하지 마세요!";
         rawLine=String(rawLine).replace(/^[“"']+|[”"']+$/g,"");
-        return {text:"교사의 안내 직후 "+s.name+"이(가) 반발했다. 주변 학생 몇 명이 하던 일을 멈추고 바라본다.",dialogue:s.name+' “'+rawLine+'”',choices:{
-          up:encounterChoice("선을 분명히 긋고 지금의 말과 행동은 허용되지 않는다고 즉시 알린다.",{trust:-4,mood:-3,classStability:9,classFlow:4},"교실의 경계는 선명해졌지만 학생의 감정은 아직 높다."),
-          down:encounterChoice("목소리를 낮춰 지금 화가 난 이유부터 듣고 진정할 시간을 준다.",{trust:7,mood:7,classFlow:-6,classStability:-1},"수업은 잠시 멈췄지만 감정이 낮아질 통로가 생겼다."),
-          left:encounterChoice("화가 났을 때 교사에게 말할 수 있는 다른 표현을 구체적으로 알려준다.",{trust:3,mood:2,classStability:4,classFlow:-4},"문제 행동만 막지 않고 대체할 표현을 가르쳤다."),
-          right:encounterChoice("수업에 다시 참여하는 방법 두 가지를 제시하고 학생이 하나를 고르게 한다.",{trust:4,focus:3,mood:2,classStability:2},"선택권과 책임을 함께 주면서 수업으로 돌아올 길을 만들었다.")
+        return {text:"선생님이 말하자 "+s.name+"이(가) 바로 받아치며 목소리를 높였다. 주변 아이들도 하던 일을 멈추고 쳐다본다.",dialogue:s.name+' “'+rawLine+'”',choices:{
+          up:encounterChoice("지금처럼 큰소리치거나 무례하게 말하는 건 안 된다고 짧게 말한다.",{trust:-4,mood:-3,classStability:9,classFlow:4},"안 되는 행동은 분명히 알렸지만 아직 화가 풀리지는 않았다."),
+          down:encounterChoice("목소리를 낮추고 왜 화가 났는지 먼저 묻는다.",{trust:7,mood:7,classFlow:-6,classStability:-1},"수업은 잠깐 멈췄지만 마음을 가라앉힐 시간을 가질 수 있었다."),
+          left:encounterChoice("화가 났을 때 선생님에게 어떻게 말하면 좋을지 짧은 문장으로 다시 말해 보게 한다.",{trust:3,mood:2,classStability:4,classFlow:-4},"큰소리 대신 쓸 말을 하나 연습했다."),
+          right:encounterChoice("‘잠깐 쉬었다 하기’와 ‘지금 바로 시작하기’ 중 하나를 고르게 한다.",{trust:4,focus:3,mood:2,classStability:2},"두 가지 방법 중 하나를 고르게 하자 다시 수업으로 돌아갈 수 있었다.")
         }};
       }
     },
@@ -2602,11 +2709,11 @@
         var names=[a,b,c].filter(Boolean).map(function(x){return x.name});
         var group=names.length?names.join("·")+"와(과) ":"친구들과 ";
         if(nodeId==="start"){
-          return {targetId:a?a.id:null,title:"수업보다 그 아이를 보는 친구들이 더 많다",text:s.name+"은(는) 기분이 올라오면 거친 말을 그대로 내뱉고 친구와 작은 기싸움도 자주 벌인다. 수업 중에도 딴짓과 끼어들기가 잦지만, "+group+"몇몇 친구는 그 돌발 행동을 재미있어하며 웃고 따라다닌다.",dialogue:(a?a.name:"친구")+' “쟤랑 있으면 맨날 뭔가 생겨서 웃겨요.”',choices:{
-            up:encounterChoice("욕설·수업 방해·지시 거부는 재미와 별개로 허용하지 않는 행동이라고 즉시 선을 긋는다.",{focus:3,classStability:7,trust:-2},"친구들의 웃음과 별개로 행동의 선을 분명히 했다."),
-            down:encounterChoice("감정이 올라오면 바로 행동으로 나오는 순간이 언제인지 따로 이야기해 본다.",{mood:4,trust:6,classFlow:-3},"‘문제 학생’이라는 말 대신 행동이 시작되는 순간을 함께 살폈다."),
-            left:encounterChoice("화가 날 때 쓸 말, 수업에서 움직이고 싶을 때 할 행동을 구체적으로 정해 연습한다.",{focus:5,classStability:4,trust:4,classFlow:-3},"하지 말라는 말 대신 바꿔 할 행동을 만들었다."),
-            right:encounterChoice("수업 안에서 선택 가능한 행동과 선택할 수 없는 선을 나눠 스스로 고르게 한다.",{focus:3,trust:4,classStability:3},"선택권은 주되 다른 사람의 학습을 방해하는 선택은 제외했다.")
+          return {targetId:a?a.id:null,title:"친구들이 수업보다 이 아이를 더 쳐다본다",text:s.name+"은(는) 화가 나면 생각나는 말을 바로 해 버리고 친구와 말싸움도 자주 한다. 수업 중에 딴짓하거나 끼어드는 일도 많다. 그런데 "+group+"몇몇 친구는 그럴 때마다 웃고 맞장구친다.",dialogue:(a?a.name:"친구")+' “쟤랑 있으면 맨날 뭔가 생겨서 웃겨요.”',choices:{
+            up:encounterChoice("욕하거나 수업을 방해하는 건 웃긴 일이 아니라고 바로 말한다.",{focus:3,classStability:7,trust:-2},"친구들이 웃어도 하면 안 되는 행동은 분명히 말했다."),
+            down:encounterChoice("언제 화가 확 올라오는지, 그때 무슨 생각이 드는지 따로 이야기해 본다.",{mood:4,trust:6,classFlow:-3},"어떤 때에 말과 행동이 거칠어지는지 조금 알 수 있었다."),
+            left:encounterChoice("화날 때 쓸 말과 수업 중 몸이 근질거릴 때 할 일을 하나씩 정해 연습한다.",{focus:5,classStability:4,trust:4,classFlow:-3},"하지 말라는 말 대신 실제로 할 수 있는 행동을 정했다."),
+            right:encounterChoice("수업에서 고를 수 있는 것과 꼭 해야 하는 일을 나눠서 말해 준다.",{focus:3,trust:4,classStability:3},"고를 수 있는 건 고르게 하되 친구들 공부를 방해하는 행동은 안 된다고 했다.")
           }};
         }
         if(nodeId.indexOf("secret_")===0){
@@ -2967,20 +3074,20 @@
     if(!activeEncounter){overlay.hidden=true;return}
     overlay.hidden=false;
     var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
-    q("#encounterCategory").textContent=enc.category||current().name||"교실에서 생긴 일";
-    q("#encounterKicker").textContent=enc.kicker||("Day "+dayIndex+" · "+current().name);
+    q("#encounterCategory").textContent=simpleEncounterCategory(enc.category||current().name||"교실에서 생긴 일");
+    q("#encounterKicker").textContent=naturalClassroomText(enc.kicker||("Day "+dayIndex+" · "+current().name));
     var cardClock=q("#encounterClock");if(cardClock)cardClock.textContent=fmtMin(gameMinute());
     var card=q("#encounterCard");if(card){card.classList.remove("followup","story")}
     renderEncounterPortrait(enc,s);
     var thread=q("#encounterThread"),threadText=encounterContextLine(enc,s,t);
-    if(thread){thread.hidden=!threadText;thread.textContent=threadText||""}
-    q("#encounterTitle").textContent=enc.title;
-    q("#encounterText").textContent=enc.text;
+    if(thread){thread.hidden=!threadText;thread.textContent=naturalClassroomText(threadText||"")}
+    q("#encounterTitle").textContent=naturalClassroomText(enc.title);
+    q("#encounterText").textContent=naturalClassroomText(enc.text);
     q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ");
     var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
-      q("#encounterChoice"+cap).textContent=choice?choice.text:"";
+      q("#encounterChoice"+cap).textContent=choice?naturalClassroomText(choice.text):"";
       q("#encounterEffect"+cap).textContent="";
       var button=q('[data-encounter-dir="'+dir+'"]');if(button)button.disabled=!choice||enc.phase!=="choice";
     });
@@ -3093,7 +3200,7 @@
     activeEncounter.resultMoodShift=(delta.mood||0)+(delta.trust||0)*.35+(delta.relation||0)*.25;
     activeEncounter.resultRelationShift=(delta.relation||0);
     q("#encounterResultTitle").textContent=dir==="timeout"?"잠깐 망설이는 사이":(s?s.name+"의 반응":"그 뒤");
-    q("#encounterResultText").textContent=choice.result;
+    q("#encounterResultText").textContent=naturalClassroomText(choice.result);
     var reactionBox=q("#encounterReaction");
     if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"아이 반응 · "+reaction.text:""}
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
