@@ -21,7 +21,7 @@
 
   <section class="daybar reigns-daybar">
     <div class="day-identity">
-      <div class="day-time-row"><span id="dayNumber" class="day-number">Day 1</span><div id="time" class="time">08:40</div></div>
+      <div class="day-time-row"><span id="dayNumber" class="day-number">Day 1</span></div>
       <div id="periodName" class="period">등교·아침활동</div>
     </div>
     <div class="class-meter-strip" aria-label="우리 반 상태">
@@ -46,8 +46,13 @@
         <div id="sceneTitle" class="scene-title">우리 반의 하루</div>
         <div id="cardIdle" class="card-idle">
           <div class="idle-icon">📚</div>
-          <strong>시간이 흐르고 있습니다</strong>
-          <p>중요한 순간이 생기면 그 장면만 바로 보여줍니다.</p>
+          <strong>우리 반의 하루가 흘러갑니다</strong>
+          <p>중요한 순간만 빠르게 이어서 보여줍니다.</p>
+        </div>
+        <div id="timeRush" class="time-rush" hidden aria-live="polite">
+          <small id="timeRushDay">Day 1 · 등교·아침활동</small>
+          <strong id="timeRushClock">08:40</strong>
+          <span id="timeRushCaption">시간이 빠르게 흐른다</span>
         </div>
 
         <div id="simulationEngine" class="simulation-engine" aria-hidden="true">
@@ -80,7 +85,7 @@
             </button>
 
             <article id="encounterCard" class="encounter-card" tabindex="0">
-              <div class="encounter-card-kicker" id="encounterKicker">무슨 일이 생겼을까?</div>
+              <div class="encounter-card-time"><strong id="encounterClock">08:40</strong><span class="encounter-card-kicker" id="encounterKicker">Day 1 · 등교·아침활동</span></div>
               <div id="encounterPortrait" class="encounter-portrait" aria-hidden="true"></div>
               <div id="encounterThread" class="encounter-thread" hidden></div>
               <h2 id="encounterTitle">교실에서 무언가 일어났다</h2>
@@ -102,7 +107,7 @@
               <p id="encounterResultText"></p>
               <div id="encounterReaction" class="encounter-reaction" hidden></div>
               <div id="encounterResultStats" class="encounter-result-stats"></div>
-              <button id="encounterReturn" type="button" class="primary">계속</button>
+              <button id="encounterReturn" type="button" class="primary">바로 넘기기</button>
             </section>
           </div>
         </section>
