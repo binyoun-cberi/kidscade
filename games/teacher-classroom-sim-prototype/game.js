@@ -920,13 +920,14 @@
       s.encounterNotes=s.encounterNotes.slice(0,8);
       remember(s,"판단 카드: "+enc.title+" / "+direction,.56);
     }
-    dayEvents.push({
+    var decisionItem={
       stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
       resultText:choice.result,before:before,after:after,delta:delta
-    });
-    dayEvents=dayEvents.slice(-200);
+    };
+    dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-200);
+    if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
     activeEncounter.phase="result";
     q("#encounterResultTitle").textContent=direction+" 선택";
     q("#encounterResultText").textContent=choice.result;
