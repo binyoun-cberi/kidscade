@@ -1555,7 +1555,7 @@
     },
     {
       id:"lost_item_accusation",category:"또래관계",title:"잃어버린 물건 때문에 친구를 의심한다",
-      score:function(s){return ["morning","break","lunchplay"].indexOf(current().kind)>=0?Math.max(0,s.rejection*.32+s.imp*.25+s.fairness*.18-.12):0},
+      score:function(s){return ["morning","break","lunchplay"].indexOf(current().kind)>=0?Math.max(0,s.rejection*.32+s.imp*.25+(hasTrait(s,"fairness_sensitive")?.18:0)-.12):0},
       build:function(s){
         var target=studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
         return {targetId:target.id,text:s.name+"이(가) 필통에서 물건이 보이지 않자 바로 "+target.name+"을(를) 바라보며 가져간 것 같다고 말한다. "+target.name+"은(는) 억울한 표정이다.",dialogue:s.name+' “아까 내 자리 왔잖아. 네가 가져갔지?”',choices:{
@@ -1581,7 +1581,7 @@
     },
     {
       id:"group_free_rider",category:"모둠활동",title:"모둠에서 한 명만 일하지 않는다",
-      score:function(s){return current().kind==="lesson"?Math.max(0,(.55-s.persist)*.35+(1-s.helpful)*.20+s.autonomy*.12+s.boredom*.28-.10):0},
+      score:function(s){return current().kind==="lesson"?Math.max(0,(.55-s.persist)*.35+(1-s.helpful)*.20+(hasTrait(s,"autonomy_seeker")?.12:0)+s.boredom*.28-.10):0},
       build:function(s){
         var target=chooseSocialTarget(s,"SOCIAL");
         return {targetId:target?target.id:null,text:"모둠 활동이 진행 중인데 "+s.name+"은(는) 자기 역할을 거의 하지 않고 친구들이 결과물을 만드는 모습을 보고 있다. 몇몇 친구의 표정이 불편해졌다.",dialogue:s.name+' “애들이 잘하니까 제가 안 해도 되잖아요.”',choices:{
@@ -1866,7 +1866,7 @@
     },
     {
       id:"student_says_teacher_unfair",category:"교사관계",title:"‘선생님은 저한테만 그래요’라고 말한다",
-      score:function(s){return ["lesson","closing"].indexOf(current().kind)>=0&&(s.rejection>.48||hasTrait(s,"fairness_sensitive"))?Math.max(0,s.rejection*.28+s.fairness*.32+s.react*.16-.12):0},
+      score:function(s){return ["lesson","closing"].indexOf(current().kind)>=0&&(s.rejection>.48||hasTrait(s,"fairness_sensitive"))?Math.max(0,s.rejection*.28+(hasTrait(s,"fairness_sensitive")?.32:0)+s.react*.16-.12):0},
       build:function(s){
         return {text:"생활지도를 받은 "+s.name+"이(가) 잠시 뒤 교사에게 다시 와서 자신만 자주 지적받는 것 같다고 말한다. 표정에는 억울함이 남아 있다.",dialogue:s.name+' “선생님은 왜 저한테만 뭐라고 해요?”',choices:{
           up:encounterChoice("누구에게나 같은 기준을 적용하고 있으며 지금 행동도 그 기준에 해당한다고 설명한다.",{trust:-1,classStability:5,classFlow:2},"교사의 기준은 분명히 전달됐다."),
