@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>워드 블라스터</title>
+<style>
+:root{font-family:"Pretendard","Noto Sans KR","맑은 고딕",system-ui,sans-serif;color:#17324d}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fd8ff}body{touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+.topbar{position:absolute;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 24px));display:flex;gap:10px;align-items:stretch}
+.card{background:rgba(255,255,255,.92);border:3px solid rgba(255,255,255,.98);box-shadow:0 8px 24px rgba(30,86,122,.18);backdrop-filter:blur(8px);border-radius:20px}
+#mission{flex:1;padding:10px 16px;text-align:center;min-width:0}.meaning{display:flex;justify-content:center;align-items:center;gap:8px;font-size:clamp(16px,2.5vw,22px);font-weight:900}.emoji{font-size:1.25em}.spell{margin-top:4px;font-size:clamp(22px,4vw,34px);font-weight:1000;letter-spacing:.12em;color:#24588a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.spell .done{color:#ff6f61}.spell .blank{color:#9fb7ca}
+#stats{width:128px;padding:10px 12px;display:grid;place-items:center;text-align:center}.round{font-weight:900;font-size:13px;color:#5a7488}.score{font-weight:1000;font-size:22px;color:#ff7b38}
+#timerWrap{position:absolute;top:104px;left:50%;transform:translateX(-50%);width:min(420px,70vw);height:12px;border-radius:999px;background:rgba(20,55,82,.2);overflow:hidden;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7)}#timer{height:100%;width:100%;background:linear-gradient(90deg,#63d58b,#ffd84f,#ff745f);transform-origin:left center}
+#hint{position:absolute;top:126px;left:50%;transform:translateX(-50%) translateY(-6px);padding:7px 16px;border-radius:14px;background:#fff3b0;border:2px solid #ffd54a;font-weight:1000;font-size:clamp(18px,4vw,30px);letter-spacing:.08em;opacity:0;transition:.18s;box-shadow:0 7px 16px rgba(76,64,12,.15)}#hint.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#crosshair{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.95);border-radius:50%;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+#crosshair:before,#crosshair:after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.5);transform:translate(-50%,-50%)}#crosshair:before{width:48px;height:3px}#crosshair:after{width:3px;height:48px}
+#message{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%) scale(.9);padding:10px 18px;border-radius:18px;background:rgba(255,255,255,.94);font-size:clamp(17px,3vw,26px);font-weight:1000;opacity:0;transition:.16s;box-shadow:0 8px 20px rgba(0,0,0,.14)}#message.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#bossTag{position:absolute;left:50%;top:160px;transform:translateX(-50%);padding:6px 14px;border-radius:999px;background:#7047c9;color:#fff;font-weight:1000;letter-spacing:.08em;opacity:0}#bossTag.show{opacity:1}
+#mobileFire{display:none;pointer-events:auto;position:absolute;right:max(22px,env(safe-area-inset-right));bottom:max(26px,env(safe-area-inset-bottom));width:92px;height:92px;border:0;border-radius:50%;background:linear-gradient(#ff8d55,#ff5c4b);color:#fff;font-weight:1000;font-size:17px;box-shadow:0 8px 0 #c94439,0 13px 25px rgba(0,0,0,.22)}#mobileFire:active{transform:translateY(5px);box-shadow:0 3px 0 #c94439}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:linear-gradient(rgba(71,168,230,.78),rgba(71,168,230,.64));backdrop-filter:blur(4px)}.overlay.hidden{display:none}.panel{width:min(590px,94vw);background:#fff;border:5px solid #ffe064;border-radius:30px;padding:25px;text-align:center;box-shadow:0 20px 60px rgba(31,84,120,.28)}.logo{font-size:clamp(35px,9vw,66px);line-height:1}.panel h1{margin:8px 0 5px;font-size:clamp(30px,7vw,50px);color:#24588a}.lead{margin:0 auto 15px;max-width:470px;line-height:1.55;color:#506a80;font-weight:700}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.rule{padding:10px 7px;border-radius:15px;background:#edf8ff;font-size:13px;font-weight:850}.start{border:0;border-radius:18px;padding:14px 28px;background:linear-gradient(#ff8b4d,#ff654d);color:#fff;font-size:20px;font-weight:1000;box-shadow:0 7px 0 #d94b3c;cursor:pointer}.start:active{transform:translateY(4px);box-shadow:0 3px 0 #d94b3c}.small{font-size:12px;color:#7690a4;margin-top:12px}.result{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.result div{background:#f4f9fd;border-radius:14px;padding:10px}.result b{display:block;font-size:22px;color:#ff704d}.result span{font-size:12px;color:#668095}
+@media(max-width:720px),(pointer:coarse){#mobileFire{display:block}.topbar{top:max(8px,env(safe-area-inset-top))}#stats{width:102px}.spell{letter-spacing:.07em}#timerWrap{top:98px}#hint{top:118px}.rules{grid-template-columns:1fr}.rule{padding:7px}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="워드 블라스터 3D 게임 화면"></canvas>
+<div id="hud" aria-live="polite">
+  <div class="topbar">
+    <div id="mission" class="card"><div class="meaning"><span id="emoji" class="emoji">🍎</span><span id="meaning">사과</span></div><div id="spell" class="spell">_ _ _ _ _</div></div>
+    <div id="stats" class="card"><div><div id="round" class="round">1 / 10</div><div id="score" class="score">0</div></div></div>
+  </div>
+  <div id="timerWrap"><div id="timer"></div></div>
+  <div id="hint">APPLE</div>
+  <div id="bossTag">BOSS · 문장을 완성하세요!</div>
+  <div id="crosshair" aria-hidden="true"></div>
+  <div id="message">좋아요!</div>
+  <button id="mobileFire" type="button">BLAST!</button>
+</div>
+<div id="startOverlay" class="overlay">
+  <div class="panel">
+    <div class="logo">☁️🔤✨</div>
+    <h1>WORD BLASTER</h1>
+    <p class="lead">하늘을 날아다니는 알파벳 드론을 <b>영단어 순서대로</b> 맞혀요. 마지막 5초에는 정답이 공개돼요!</p>
+    <div class="rules"><div class="rule">🎯 가운데 조준점으로 겨냥</div><div class="rule">🔤 철자 순서대로 BLAST</div><div class="rule">🐉 10단어 뒤 문장 보스</div></div>
+    <button id="startBtn" class="start" type="button">게임 시작</button>
+    <div class="small">PC: 마우스 조준 · 클릭 발사 · WASD 이동　|　모바일: 화면 드래그 조준 · BLAST 버튼</div>
+  </div>
+</div>
+<div id="endOverlay" class="overlay hidden">
+  <div class="panel"><div id="endIcon" class="logo">🏆</div><h1 id="endTitle">MISSION CLEAR!</h1><p id="endText" class="lead">워드 드래곤을 물리쳤어요!</p><div class="result"><div><b id="resultScore">0</b><span>점수</span></div><div><b id="resultWords">0</b><span>완성 단어</span></div><div><b id="resultNoHint">0</b><span>힌트 없이</span></div></div><button id="retryBtn" class="start" type="button">다시 도전</button></div>
+</div>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="word-blaster.js?v=1"></script>
+</body>
+</html>
