@@ -74,14 +74,14 @@ test('mobile quiz controls are touch friendly and both play modes expose chronol
   assert.match(html, /id="orderMode"/);
   assert.match(html, /id="soloOrderMode"/);
   assert.match(html, /value="chronological"/);
-  assert.match(html, /pickHistoryQuestions\(count,Math\.random,orderMode\)/);
+  assert.match(html, /pickHistoryQuestions\(count,Math\.random,orderMode,questionMode,eras\)/);
 });
 
 test('live server records chronology mode in the room plan', () => {
   const worker = fs.readFileSync(new URL('../worker/history-live.mjs', import.meta.url), 'utf8');
   assert.match(worker, /chronologicalQuestionIndexes/);
   assert.match(worker, /orderMode=body\.orderMode==='chronological'/);
-  assert.match(worker, /plan=\{questions:order,checkpoints,orderMode\}/);
+  assert.match(worker, /plan=\{questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round:1\}/);
 });
 
 
