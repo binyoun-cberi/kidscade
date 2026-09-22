@@ -96,3 +96,12 @@ test('direct timeline facts stay playable and have unique answer choices', () =>
     assert.equal(typeof fact.e, 'string');
   }
 });
+
+
+test('history timebattle exits through the parent launcher instead of nesting Kidscade', () => {
+  const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
+  assert.match(html, /function exitKidscade\(\)/);
+  assert.match(html, /kidscade:close-game/);
+  assert.match(html, /window\.parent\.postMessage/);
+  assert.doesNotMatch(html, /href="\.\.\/\.\.\/index\.html"/);
+});
