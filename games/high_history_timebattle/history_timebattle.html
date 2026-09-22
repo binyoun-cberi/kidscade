@@ -179,7 +179,7 @@ function toggleSound(){const a=audio();if(!a)return;const muted=Boolean(a.getSet
 function flashFx(kind){const el=$('fxFlash');if(!el)return;el.className='fx-flash';void el.offsetWidth;el.classList.add(kind)}
 function toastFx(text){const el=$('fxToast');if(!el)return;el.textContent=text;el.className='fx-toast';void el.offsetWidth;el.classList.add('show')}
 function confettiFx(count=28){
-  const root=$('fxBurst');if(!root||matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+  const root=$('fxBurst');if(!root||window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
   const colors=['#ffd15c','#6ee7b7','#6aa9ff','#ff7f8b','#c7a8ff'];
   for(let i=0;i<count;i++){
     const p=document.createElement('i');p.className='confetti-piece';p.style.setProperty('--c',colors[i%colors.length]);
@@ -385,9 +385,9 @@ function renderReveal(s){
   const me=s.players.find(p=>p.id===session.playerId),revealKey='r:'+String(s.room.round||0)+':'+String(q.number);
   fxOnce(revealKey,()=>{
     if(session.role==='solo'){
-      const ok=Boolean(soloGame?.last?.correct);playSfx(ok?'correct':'wrong',{volume:ok?.32:.28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&soloGame?.streak>=3){playSfx('cheer',{volume:.25,cooldownMs:700});confettiFx(16)}
+      const ok=Boolean(soloGame?.last?.correct);playSfx(ok?'correct':'wrong',{volume:ok ? .32 : .28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&soloGame?.streak>=3){playSfx('cheer',{volume:.25,cooldownMs:700});confettiFx(16)}
     }else if(session.role==='player'&&lastChosenOption>=0){
-      const ok=lastChosenOption===r.answerIndex;playSfx(ok?'correct':'wrong',{volume:ok?.32:.28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&Number(me?.streak||0)>=3){playSfx('cheer',{volume:.24,cooldownMs:700});confettiFx(14)}
+      const ok=lastChosenOption===r.answerIndex;playSfx(ok?'correct':'wrong',{volume:ok ? .32 : .28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&Number(me?.streak||0)>=3){playSfx('cheer',{volume:.24,cooldownMs:700});confettiFx(14)}
     }else if(session.role==='host'){playSfx('ui.confirm',{volume:.22,cooldownMs:300})}
   });
   $('nextQuestionBtn').textContent=session.role==='solo'?'다음 문제로':'다음 문제';
