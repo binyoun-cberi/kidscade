@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "name": "Word Blaster Starter FPS assets",
+  "source": "https://github.com/KenneyNL/Starter-Kit-FPS",
+  "license": "CC0 for selected assets",
+  "files": [
+    "assets/game/3d/word-blaster/blaster.glb",
+    "assets/game/3d/word-blaster/cloud.glb",
+    "assets/game/3d/word-blaster/letter-drone.glb",
+    "assets/game/3d/word-blaster/grass.glb",
+    "assets/game/3d/word-blaster/grass-small.glb",
+    "assets/game/3d/word-blaster/platform-large-grass.glb"
+  ]
+}
