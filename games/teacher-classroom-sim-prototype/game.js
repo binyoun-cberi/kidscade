@@ -890,12 +890,18 @@
     classMetrics.stability=clamp(classMetrics.stability+(e.classStability||0),0,100);
     classMetrics.trust=clamp(classMetrics.trust+(e.classTrust||0)+(e.trust||0)*.12,0,100);
   }
-  function decisionDeltaHtml(delta){
+  function decisionDeltaHtml(delta,beforeClass,afterClass){
     var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
-    return Object.keys(labels).map(function(k){
+    var html=Object.keys(labels).map(function(k){
       var d=delta[k]||0,cls=d>0?"up":d<0?"down":"same";
       return '<span class="encounter-delta '+cls+'">'+labels[k]+" "+(d>0?"+":"")+d+'</span>';
     }).join("");
+    var cb=beforeClass||{},ca=afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
+    html+=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){
+      var d=ca[k]-cb[k],cls=d>0?"up":d<0?"down":"same";
+      return '<span class="encounter-delta '+cls+'">'+classLabels[k]+" "+(d>0?"+":"")+d+'</span>';
+    }).join("");
+    return html;
   }
   function resolveEncounter(dir){
     if(!activeEncounter||activeEncounter.phase!=="choice")return;
@@ -924,14 +930,14 @@
       stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
-      resultText:choice.result,before:before,after:after,delta:delta
+      resultText:choice.result,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass
     };
     dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-200);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
     activeEncounter.phase="result";
     q("#encounterResultTitle").textContent=direction+" 선택";
     q("#encounterResultText").textContent=choice.result;
-    q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta);
+    q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
     renderEncounter();
   }
   function closeEncounter(){
@@ -3256,11 +3262,14 @@
     if(item.encounterDecision){
       var s=studentById(item.studentId),d=item.delta||{},before=item.before||{},after=item.after||{},labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
       var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+escHtml(before[k])+'→'+escHtml(after[k])+' ('+(d[k]>0?"+":"")+d[k]+')</span>'}).join("");
+      var cb=item.beforeClass||{},ca=item.afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
+      var classDeltaHtml=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){return '<span>'+classLabels[k]+' '+cb[k]+'→'+ca[k]+'</span>'}).join("");
       return '<article class="record-entry encounter_decision"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span></div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
-        (deltaHtml?'<div class="decision-deltas">'+deltaHtml+'</div>':'')+'</article>';
+        (deltaHtml?'<div class="decision-deltas">'+deltaHtml+'</div>':'')+
+        (classDeltaHtml?'<div class="decision-deltas">'+classDeltaHtml+'</div>':'')+'</article>';
     }
     if(item.periodSummary){
       var names=(item.studentNames||[]).join(" · ");
@@ -3304,7 +3313,7 @@
         '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div></div>'+
         '<div class="tool-section"><h4>오늘의 판단 방향</h4><div class="decision-deltas"><span>↑ 원칙 '+teacherStyleCounts.up+'</span><span>↓ 공감 '+teacherStyleCounts.down+'</span><span>← 코칭 '+teacherStyleCounts.left+'</span><span>→ 자율 '+teacherStyleCounts.right+'</span></div></div>'+
         '<div class="tool-section"><h4>학생 상태 · 0~100</h4><div class="roster-table">'+
-        '<div class="roster-head"><span>학생</span><span>📚 학습</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
+        '<div class="roster-head"><span>학생</span><span>📚 학습'+(current().kind==="lesson"?"("+escHtml(current().subject)+")":"(종합)")+'</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
         students.map(rosterRowHtml).join("")+'</div></div>'+rosterDetailHtml(s);
       body.innerHTML=roster;
     }else if(kind==="clipboard"){
@@ -3611,7 +3620,7 @@
   q("#clearSelection").addEventListener("click",function(){
     selected=null;connectMode=false;swapMode=false;render();
   });
-  q("#pause").addEventListener("click",function(){running=!running;this.textContent=running?"일시정지":"계속하기"});
+  q("#pause").addEventListener("click",function(){if(activeEncounter)return;running=!running;this.textContent=running?"일시정지":"계속하기"});
   qa("#actionTabs button").forEach(function(b){
     b.addEventListener("click",function(){
       activeActionCategory=this.dataset.category;
