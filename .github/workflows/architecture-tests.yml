@@ -56,6 +56,7 @@ jobs:
             worker/game-records.mjs \
             worker/multiplayer.mjs \
             worker/wordchain-match.mjs \
+            worker/history-live.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -119,6 +120,8 @@ jobs:
         run: node --test tests/multiplayer.test.mjs
       - name: Run word-chain dictionary tests
         run: node --test tests/wordchain.test.mjs
+      - name: Run History Timebattle LIVE tests
+        run: node --test tests/history-live.test.mjs
       - name: Run Rhythm Dash v11 tests
         run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run Alien Pizza DX2 tests
