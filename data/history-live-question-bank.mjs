@@ -747,6 +747,12 @@ const CORE_FACTS = [
 
 const ERA_OPTIONS = [...new Set(CORE_FACTS.map(f => f.era))];
 
+function hasBatchim(value) {
+  const text=String(value||'').trim(), code=text.charCodeAt(text.length-1);
+  return code>=0xac00&&code<=0xd7a3 ? ((code-0xac00)%28)!==0 : false;
+}
+function topicLabel(value){return String(value)+(hasBatchim(value)?'은':'는');}
+
 function hashText(value) {
   let h = 2166136261;
   for (const ch of String(value)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
@@ -790,7 +796,7 @@ const TERM_PROMPTS = [
 const CLUE_PROMPTS = [
   term => `‘${term}’에 대한 설명으로 알맞은 것은 무엇일까요?`,
   term => `‘${term}’와 가장 관련 있는 설명을 고르세요.`,
-  term => `‘${term}’를 바르게 설명한 문장은 무엇일까요?`
+  term => `‘${term}’에 알맞은 설명을 고르세요.`
 ];
 const ERA_PROMPTS = [
   term => `‘${term}’와 가장 관련 깊은 시대·시기는 언제일까요?`,
@@ -815,7 +821,7 @@ function buildBank() {
     ERA_PROMPTS.forEach((makePrompt, variant) => out.push({
       id:`era-${index}-${variant}`, era:fact.era, difficulty:variant + 1,
       q:makePrompt(fact.term), o:[fact.era, ...eraDistractors(fact.era, fact.term + variant)], a:0,
-      e:`${fact.term}은(는) ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`, sourceFact:index, family:'era'
+      e:`${topicLabel(fact.term)} ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`, sourceFact:index, family:'era'
     }));
   });
   return out;
