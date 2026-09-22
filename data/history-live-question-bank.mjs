@@ -854,14 +854,22 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
       const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
       return eraDiff || a - b;
     });
+    if (wanted < factIndexes.length) {
+      factIndexes = Array.from({length:wanted}, (_,i) => {
+        if (wanted === 1) return factIndexes[0];
+        const position = Math.round(i * (factIndexes.length - 1) / (wanted - 1));
+        return factIndexes[position];
+      });
+    }
   } else {
     for (let i = factIndexes.length - 1; i > 0; i -= 1) {
       const j = Math.floor(random() * (i + 1));
       [factIndexes[i], factIndexes[j]] = [factIndexes[j], factIndexes[i]];
     }
+    factIndexes = factIndexes.slice(0,wanted);
   }
 
-  return factIndexes.slice(0,wanted).map((factIndex,position) => {
+  return factIndexes.map((factIndex,position) => {
     const candidates = QUESTION_BANK.filter(q => q.sourceFact === factIndex);
     const variantIndex = orderMode === 'chronological'
       ? (position * 3 + factIndex) % candidates.length
@@ -876,7 +884,11 @@ export function chronologicalQuestionIndexes(count = 15) {
     const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
     return eraDiff || a - b;
   });
-  return facts.slice(0,wanted).map((factIndex,position) => {
+  const selected = wanted >= facts.length ? facts : Array.from({length:wanted}, (_,i) => {
+    if (wanted === 1) return facts[0];
+    return facts[Math.round(i * (facts.length - 1) / (wanted - 1))];
+  });
+  return selected.map((factIndex,position) => {
     const candidates = QUESTION_BANK.map((q,i)=>({q,i})).filter(x => x.q.sourceFact === factIndex);
     return candidates[(position * 3 + factIndex) % candidates.length].i;
   });
