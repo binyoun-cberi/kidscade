@@ -180,7 +180,7 @@
   var lastFrame=performance.now();
   var aiAccumulator=0;
   var renderAccumulator=0;
-  var GAME_SECONDS_PER_REAL_SECOND=45;
+  var GAME_SECONDS_PER_REAL_SECOND=60;
   var AI_STEP_GAME_SECONDS=5.5;
   var GROUP_STEP_GAME_SECONDS=70;
 
