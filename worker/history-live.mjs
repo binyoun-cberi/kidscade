@@ -1,4 +1,4 @@
-import { QUESTION_BANK, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -274,7 +274,7 @@ export async function handleHistoryLiveRequest(request,env){
   if(!url.pathname.startsWith(PREFIX))return null;
   try{
     await ensureSchema(env);
-    if(request.method==='GET'&&url.pathname==='/api/history-live/health')return json({ok:true,database:'ready',questions:QUESTIONS.length,maxPlayers:MAX_PLAYERS});
+    if(request.method==='GET'&&url.pathname==='/api/history-live/health')return json({ok:true,database:'ready',questions:QUESTIONS.length,facts:CORE_HISTORY_FACTS.length,maxPlayers:MAX_PLAYERS});
     if(request.method==='POST'&&url.pathname==='/api/history-live/rooms')return createRoom(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/join')return joinRoom(request,env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/state')return state(request,env);
