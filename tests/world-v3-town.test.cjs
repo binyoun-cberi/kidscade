@@ -526,3 +526,11 @@ test('town jobs now require short playable work sequences',()=>{
   assert.match(economy,/data-city-job-step/);
   assert.match(economy,/function advanceJob/);
 });
+
+
+test('market props are individually tracked and no longer share the register footprint',()=>{
+  assert.match(city,/track\('market-fruit','decor'/);
+  assert.match(city,/track\('market-register','decor'/);
+  assert.match(city,/market\.z\+2\.0/);
+  assert.doesNotMatch(city,/market-register'\}\),\s*addModel[^\n]*market\.z\+\.1/s);
+});
