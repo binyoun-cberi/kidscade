@@ -2733,15 +2733,15 @@
         if(nodeId.indexOf("defiance_")===0){
           var branch2=nodeId.slice(9),v2={
             up:{title:"지적받을수록 더 크게 발을 굴렀다",text:"이동할 때 조용히 하라는 지시를 받은 "+s.name+"은(는) 오히려 발소리를 일부러 크게 내며 걸었다. "+group+"친구 몇 명이 웃었지만 한 명은 더 이상 웃지 않았다.",dialogue:s.name+' “걷는 소리까지 뭐라고 해요?”'},
-            down:{title:"화를 참지 않고 선생님과 기싸움으로 바뀐다",text:"기분이 상한 순간을 알아차리기는 하지만 "+s.name+"은(는) 여전히 교사의 지시를 ‘지는 것’처럼 받아들인다. 작은 안내도 말싸움으로 길어지는 날이 늘었다.",dialogue:s.name+' “왜 제가 선생님 말대로 다 해야 돼요?”'},
-            left:{title:"방법을 알려줘도 일부러 반대로 하는 날이 생겼다",text:"대체 행동을 알고도 기분이 나쁘면 반대로 행동한다. 수업 시작 신호 뒤 일부러 가방을 뒤지거나 친구에게 말을 걸며 분위기를 끈다.",dialogue:s.name+' “하기 싫을 수도 있잖아요.”'},
-            right:{title:"‘내 선택’이라는 말이 지시 거부의 방패가 됐다",text:s.name+"은(는) 해야 할 일까지 선택의 문제로 바꾸며 교사의 지시를 반복해서 넘긴다. 처음엔 웃던 친구들도 수업이 계속 끊기자 표정이 달라진다.",dialogue:(b?b.name:"친구")+' “재밌긴 한데 수업까지 계속 이러는 건 좀…”'}
+            down:{title:"작은 말에도 선생님과 말싸움이 길어진다",text:s.name+"은(는) 기분이 상하면 선생님 말을 들어주는 걸 ‘지는 것’처럼 느낀다. 사소한 안내도 서로 말이 오가며 길어진다.",dialogue:s.name+' “왜 제가 선생님 말대로 다 해야 돼요?”'},
+            left:{title:"방법을 알아도 화가 나면 일부러 반대로 한다",text:"어떻게 해야 하는지는 알고 있다. 그래도 기분이 나쁘면 수업 시작 신호 뒤에 일부러 가방을 뒤지거나 친구에게 말을 건다.",dialogue:s.name+' “하기 싫을 수도 있잖아요.”'},
+            right:{title:"‘제가 고른 거예요’라며 꼭 해야 할 일도 거부한다",text:s.name+"은(는) 꼭 해야 하는 일까지 ‘내가 고르는 것’이라고 말하며 선생님 말을 자꾸 넘긴다. 처음엔 웃던 친구들도 수업이 계속 끊기자 표정이 달라진다.",dialogue:(b?b.name:"친구")+' “재밌긴 한데 수업까지 계속 이러는 건 좀…”'}
           }[branch2];
           return {targetId:b?b.id:(a?a.id:null),title:v2.title,text:v2.text,dialogue:v2.dialogue,choices:{
-            up:encounterChoice("교사와 힘겨루기를 길게 하지 않고 즉시 지켜야 할 선과 이후 책임을 짧게 적용한다.",{focus:3,classStability:8,trust:-1,classFlow:2},"말싸움 대신 일관된 결과로 대응했다."),
-            down:encounterChoice("감정은 인정하되 화난 감정이 다른 사람에게 욕설·방해로 나갈 수는 없다고 분리해 말한다.",{mood:3,trust:6,classStability:4,classFlow:-3},"감정을 없애려 하지 않으면서 행동 책임은 남겼다."),
-            left:encounterChoice("지시를 들은 뒤 10초 멈춤-선택-복귀의 짧은 절차를 반복 연습한다.",{focus:6,classStability:5,trust:4,classFlow:-3},"기분과 행동 사이에 짧은 멈춤을 넣는 연습을 시작했다."),
-            right:encounterChoice("하기 싫다는 말은 할 수 있지만 수업 방해 없이 거절 의사를 표현하는 방법 중 하나를 고르게 한다.",{focus:4,mood:2,trust:5,classStability:4},"거절할 권리와 방해할 권리를 구분했다.")
+            up:encounterChoice("말싸움을 길게 하지 않고 지금 꼭 지켜야 할 약속만 짧게 말한다.",{focus:3,classStability:8,trust:-1,classFlow:2},"같은 말로 계속 다투지 않고 정한 약속대로 처리했다."),
+            down:encounterChoice("화난 건 이해한다고 말하되 욕하거나 수업을 방해하면 안 된다고 따로 이야기한다.",{mood:3,trust:6,classStability:4,classFlow:-3},"화가 난 마음은 들어 주고, 하면 안 되는 행동은 따로 짚었다."),
+            left:encounterChoice("선생님 말을 들으면 10초 멈추고, 어떻게 할지 고른 뒤 다시 시작하는 연습을 한다.",{focus:6,classStability:5,trust:4,classFlow:-3},"화난 순간에 바로 행동하지 않고 잠깐 멈추는 연습을 시작했다."),
+            right:encounterChoice("‘하기 싫어요’라고 말하는 건 괜찮지만 수업을 방해하지 않게 말하는 방법을 고르게 한다.",{focus:4,mood:2,trust:5,classStability:4},"싫다고 말하는 것과 친구들 수업을 방해하는 건 다르다고 알려줬다.")
           }};
         }
         if(nodeId.indexOf("distance_")===0){
