@@ -980,3 +980,5 @@ body{
   .choice-left{left:1px}.choice-right{right:1px}
   .encounter-result{inset:70px 10px 14px}
 }
+
+.encounter-portrait .portrait-avatar{top:auto!important;}
