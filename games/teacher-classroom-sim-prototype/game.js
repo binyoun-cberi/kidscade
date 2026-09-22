@@ -1456,7 +1456,7 @@
     },
     {
       id:"teacher_defiance",category:"생활지도",title:"교사의 안내에 강하게 반발한다",
-      score:function(s){return ["REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER"].indexOf(s.action)>=0?1.9+s.teacherDefiance:0},
+      score:function(s){return ["REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER"].indexOf(s.action)>=0?1.9+s.teacherDefiance:0},
       build:function(s){
         var defianceEvent=worldHistory.slice().reverse().find(function(e){
           return e.actorId===s.id&&["teacher_refusal","teacher_shout","teacher_insult","teacher_throw"].indexOf(e.kind)>=0&&e.quote;
@@ -5606,6 +5606,8 @@
     }
     followUpQueue.forEach(function(j){if(j.status==="queued"&&j.dueDay<=dayIndex)j.dueDay=dayIndex+1});
     dayEnded=true;running=false;teacherTask=null;pendingEncounter=null;
+    timeRushActive=false;var rushBox=q("#timeRush");if(rushBox)rushBox.hidden=true;
+    if(encounterAutoAdvanceTimer){clearTimeout(encounterAutoAdvanceTimer);encounterAutoAdvanceTimer=null}
     var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts();
     daySummaries.push({day:dayIndex,metrics:cm,encounters:today.length,styles:styles,queued:queuedFollowUps().length});
     dayEvents.push({
@@ -5647,6 +5649,9 @@
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
     reportOpen=false;toolModalKind=null;lastBellAt=-99999;aiAccumulator=0;circleAccumulator=0;renderAccumulator=0;
+    if(encounterAutoAdvanceTimer){clearTimeout(encounterAutoAdvanceTimer);encounterAutoAdvanceTimer=null}
+    timeRushActive=false;timeRushTarget=0;timeRushStart=0;timeRushMultiplier=14;
+    var rushBox=q("#timeRush");if(rushBox)rushBox.hidden=true;
     pruneWorldHistory();prepareNextDayStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
     var report=q("#report");if(report)report.hidden=true;
     var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
@@ -5665,7 +5670,6 @@
   function renderHeader(){
     var p=current(),cm=classDashboard();
     var dayEl=q("#dayNumber");if(dayEl)dayEl.textContent="Day "+dayIndex;
-    var timeEl=q("#time");if(timeEl)timeEl.textContent=fmtMin(gameMinute());
     var periodEl=q("#periodName");if(periodEl)periodEl.textContent=p.name;
     var hud={hudFlow:cm.flow,hudRelation:cm.relationship,hudStability:cm.stability,hudTrust:cm.trust};
     Object.keys(hud).forEach(function(id){var el=q("#"+id);if(el)el.textContent=Math.round(hud[id])});
