@@ -2629,9 +2629,28 @@
     renderDiagnosisPanel(s);
     renderTeacherBusy();renderActionPanel(s);
   }
+  function escHtml(value){
+    return String(value===undefined||value===null?"":value)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
   function renderFeed(){
-    var list=feed.filter(function(e){return e.scene===teacherScene}).slice(0,8);
-    q("#feed").innerHTML=list.length?list.map(function(x){return '<div class="feed-item '+x.type+'"><span class="feed-time">'+x.stamp+"</span>"+x.text+"</div>"}).join(""):'<div class="feed-item">이 공간에서 아직 눈에 띄는 일이 없다.</div>';
+    var list=feed.filter(function(e){return e.scene===teacherScene}).slice(0,9);
+    q("#feed").innerHTML=list.length?list.map(function(x){
+      if(!x.script){
+        return '<div class="feed-item '+x.type+' narrative"><span class="feed-time">'+escHtml(x.stamp)+'</span><span class="narrative-text">'+escHtml(x.text)+'</span></div>';
+      }
+      var html='<div class="feed-item '+x.type+' script-entry">';
+      html+='<div class="script-meta"><span class="feed-time">'+escHtml(x.stamp)+'</span></div>';
+      if(x.stage)html+='<div class="script-stage">'+escHtml(x.stage)+'</div>';
+      if(x.speaker&&x.dialogue){
+        html+='<div class="script-line"><strong>'+escHtml(x.speaker)+'</strong><span>“'+escHtml(x.dialogue)+'”</span></div>';
+      }
+      if(x.replySpeaker&&x.replyDialogue){
+        html+='<div class="script-line reply"><strong>'+escHtml(x.replySpeaker)+'</strong><span>“'+escHtml(x.replyDialogue)+'”</span></div>';
+      }
+      html+='</div>';
+      return html;
+    }).join(""):'<div class="feed-item narrative">교실은 아직 조용하다.</div>';
   }
   function renderSceneNav(){
     qa(".scene-nav button").forEach(function(b){
