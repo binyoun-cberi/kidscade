@@ -106,8 +106,8 @@ let session=null,poller=null,lastState=null,timerRAF=null,answeredFor=-1,serverO
 const $=id=>document.getElementById(id);
 function showOnly(id){['landing','setup','lobby','game','reveal','finished'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
 function showSetup(which){showOnly('setup');$('hostSetup').classList.toggle('hidden',which!=='host');$('joinSetup').classList.toggle('hidden',which!=='join')}
-function save(){localStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
-function clearSession(){localStorage.removeItem('kc-history-live-v1');session=null}
+function save(){sessionStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
+function clearSession(){sessionStorage.removeItem('kc-history-live-v1');session=null}
 function authHeaders(){return {'Authorization':'Bearer '+session.token}}
 async function api(path,opts={}){const r=await fetch(API+path,{...opts,headers:{'content-type':'application/json',...(opts.headers||{})}});const d=await r.json().catch(()=>({ok:false,error:'bad_response'}));if(!r.ok)throw new Error(d.error||'server_error');return d}
 function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
@@ -127,7 +127,7 @@ function renderReveal(s){showOnly('reveal');cancelAnimationFrame(timerRAF);const
 function renderFinished(s){showOnly('finished');clearInterval(poller);renderRank('results',s.results||s.players)}
 function renderRank(id,players){$(id).innerHTML=players.map(p=>'<div class="rankrow '+(p.id===session.playerId?'me':'')+'"><b>#'+p.rank+'</b><span>'+esc(p.nickname)+'</span><b>'+Number(p.score).toLocaleString()+'점</b></div>').join('')}
 function esc(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-(function boot(){const qs=new URLSearchParams(location.search),room=qs.get('room');if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}try{const s=JSON.parse(localStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}})();
+(function boot(){const qs=new URLSearchParams(location.search),room=qs.get('room');if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}try{const s=JSON.parse(sessionStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}})();
 </script>
 </body>
 </html>
