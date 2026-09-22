@@ -637,28 +637,28 @@
   };
 
   var STUDENT_TRAITS={
-    "민수":["distractible","impulsive","active","social","authority_resistant","playful"],
-    "지우":["social","helper","empathetic","fairness_sensitive","persistent"],
-    "서연":["model_student","perfectionist","persistent","sensitive_rejection","quiet_internalizer"],
-    "준호":["competitive","social","active","autonomy_seeker","impulsive","leadership"],
-    "태호":["creative","sensitive_rejection","slow_to_warm","foundational_gaps","easily_discouraged"],
-    "유나":["model_student","helper","empathetic","persistent","rule_oriented"],
+    "민수":["distractible","impulsive","active","playful","social","authority_resistant"],
+    "지우":["social","helper","empathetic","fairness_sensitive","chatterbox"],
+    "서연":["model_student","perfectionist","sensitive_rejection","quiet_internalizer","persistent"],
+    "준호":["leadership","competitive","autonomy_seeker","social","impulsive"],
+    "태호":["foundational_gaps","easily_discouraged","slow_to_warm","sensitive_rejection","creative","needs_structure"],
+    "유나":["model_student","helper","empathetic","rule_oriented","persistent"],
     "현우":["distractible","impulsive","restless","active","authority_resistant","competitive"],
-    "소라":["creative","quiet_internalizer","persistent","sensitive_rejection","helper"],
-    "도윤":["active","social","competitive","leadership","needs_structure"],
-    "하린":["model_student","perfectionist","rule_oriented","persistent","quiet_internalizer"],
-    "예준":["competitive","leadership","autonomy_seeker","quick_learner","social"],
-    "채원":["creative","helper","empathetic","persistent","quiet_internalizer"],
-    "시우":["distractible","impulsive","restless","social","playful","authority_resistant"],
-    "다은":["creative","helper","empathetic","persistent","sensitive_rejection"],
-    "건우":["active","competitive","social","impulsive","playful"],
-    "아린":["shy","sensitive_rejection","quiet_internalizer","creative","needs_structure"],
-    "지호":["distractible","impulsive","active","playful","authority_resistant","social"],
-    "은서":["model_student","perfectionist","rule_oriented","quick_learner","persistent"],
-    "윤호":["social","leadership","autonomy_seeker","persistent","independent"],
-    "나연":["social","helper","empathetic","fairness_sensitive","chatterbox"],
-    "승민":["competitive","model_student","persistent","rule_oriented","leadership"],
-    "세아":["creative","shy","sensitive_rejection","quiet_internalizer","helper"]
+    "소라":["creative","quiet_internalizer","helper","persistent","sensitive_rejection"],
+    "도윤":["active","competitive","leadership","social","needs_structure"],
+    "하린":["model_student","perfectionist","rule_oriented","persistent","fairness_sensitive"],
+    "예준":["quick_learner","leadership","competitive","autonomy_seeker","social"],
+    "채원":["helper","empathetic","creative","social","persistent"],
+    "시우":["distractible","quick_learner","impulsive","restless","autonomy_seeker","playful"],
+    "다은":["empathetic","helper","sensitive_rejection","social","friend_dependent"],
+    "건우":["active","competitive","impulsive","playful","social"],
+    "아린":["shy","slow_to_warm","quiet_internalizer","creative","needs_structure","sensitive_rejection"],
+    "지호":["distractible","quick_learner","active","playful","social","independent"],
+    "은서":["model_student","perfectionist","quick_learner","rule_oriented","persistent"],
+    "윤호":["leadership","independent","autonomy_seeker","persistent","social"],
+    "나연":["chatterbox","social","empathetic","helper","fairness_sensitive"],
+    "승민":["model_student","competitive","leadership","rule_oriented","persistent"],
+    "세아":["shy","friend_dependent","sensitive_rejection","quiet_internalizer","helper","creative"]
   };
 
   function studentTraitIds(name){return (STUDENT_TRAITS[name]||[]).slice()}
@@ -680,6 +680,58 @@
       return mult*(v===undefined?1:v);
     },1),.38,3.1);
   }
+  function traitActionMultiplier(s,action){
+    if(!s||!s.traits)return 1;
+    var mult=1;
+    function m(id,map){if(hasTrait(s,id)&&map[action]!==undefined)mult*=map[action]}
+    m("distractible",{ATTEND:.82,WORK:.90,TALK:1.18,DOODLE:1.32,MOVE:1.22,LOOK_OUTSIDE:1.65,PASS_NOTE:1.22,DROP_ITEM:1.20});
+    m("impulsive",{ATTEND:.92,WORK:.94,TALK:1.16,MOVE:1.28,RUN:1.28,DROP_ITEM:1.55,PASS_NOTE:1.38,TEASE:1.18,BORROW_ITEM:1.12});
+    m("restless",{ATTEND:.88,WORK:.92,MOVE:1.52,RUN:1.45,STRETCH:1.38,LOOK_OUTSIDE:1.18});
+    m("active",{MOVE:1.30,RUN:1.38,PLAY:1.28,COMPETE:1.20,STRETCH:1.18,SLEEP:.72});
+    m("playful",{TALK:1.12,PLAY:1.28,TEASE:1.42,PASS_NOTE:1.28,DOODLE:1.12});
+    m("chatterbox",{TALK:1.68,RAISE_HAND:1.34,PRESENT:1.16,PASS_NOTE:1.14,ATTEND:.92});
+    m("social",{TALK:1.24,PAIR_WORK:1.24,PLAY:1.18,SHARE:1.20,SEEK:1.18});
+    m("shy",{TALK:.80,RAISE_HAND:.62,PRESENT:.54,PAIR_WORK:.88,SEEK:.88,READ:1.10});
+    m("leadership",{RAISE_HAND:1.24,PRESENT:1.28,PAIR_WORK:1.16,HELP_PEER:1.18,REPORT_INCIDENT:1.12});
+    m("helper",{HELP_PEER:1.55,COMFORT:1.52,SHARE:1.36,REPORT_INCIDENT:1.18});
+    m("empathetic",{COMFORT:1.46,HELP_PEER:1.28,TEASE:.68});
+    m("friend_dependent",{TALK:1.20,SEEK:1.42,PLAY:1.20,REJECTED:1.30});
+    m("competitive",{COMPETE:1.72,PLAY:1.12,ARGUE:1.10,PRESENT:1.08});
+    m("model_student",{WORK:1.32,ATTEND:1.34,READ:1.24,CLEAN:1.28,TALK:.78,DOODLE:.72,PASS_NOTE:.64,TEASE:.72});
+    m("perfectionist",{WORK:1.18,ATTEND:1.08,HELP:1.12,PRESENT:.82,DROP_ITEM:.78});
+    m("persistent",{WORK:1.25,READ:1.22,CLEAN:1.20,HELP:.92,SLEEP:.82});
+    m("quick_learner",{WORK:1.12,ATTEND:1.04,RAISE_HAND:1.20,DOODLE:1.08,LOOK_OUTSIDE:1.12});
+    m("foundational_gaps",{WORK:.86,HELP:1.46,PAIR_WORK:1.12,COPIES:1.24});
+    m("easily_discouraged",{WORK:.84,HELP:1.28,LOOK_OUTSIDE:1.12,DOODLE:1.10});
+    m("independent",{WORK:1.18,HELP:.62,PAIR_WORK:.90,RIGHT:1.10});
+    m("creative",{DOODLE:1.42,PRESENT:1.10,WORK:1.04,READ:.96});
+    m("sensitive_rejection",{PRESENT:.72,RAISE_HAND:.82,REJECTED:1.38,HELP:1.10});
+    m("quiet_internalizer",{TALK:.78,RAISE_HAND:.72,PRESENT:.76,READ:1.10,WORK:1.06});
+    m("slow_to_warm",{TALK:.84,PAIR_WORK:.86,PRESENT:.70,READ:1.10});
+    m("rule_oriented",{ATTEND:1.22,WORK:1.18,CLEAN:1.22,REPORT_INCIDENT:1.55,TALK:.92});
+    m("needs_structure",{ATTEND:1.18,WORK:1.18,PAIR_WORK:1.04,LOOK_OUTSIDE:.88});
+    m("autonomy_seeker",{WORK:1.08,HELP:.82,ATTEND:.94,MOVE:1.06});
+    m("fairness_sensitive",{REPORT_INCIDENT:1.62,ARGUE:1.08});
+    return clamp(mult,.28,2.65);
+  }
+  function applyTraitActionWeights(s,vals){
+    Object.keys(vals).forEach(function(action){vals[action]*=traitActionMultiplier(s,action)});
+    if(hasTrait(s,"quick_learner")&&current().kind==="lesson"&&currentMastery(s)>.78){vals.DOODLE=(vals.DOODLE||0)+.14;vals.LOOK_OUTSIDE=(vals.LOOK_OUTSIDE||0)+.11}
+    if(hasTrait(s,"foundational_gaps")&&current().kind==="lesson"&&currentMastery(s)<.55){vals.HELP=(vals.HELP||0)+.20;vals.WORK=(vals.WORK||0)*.86}
+    if(hasTrait(s,"perfectionist")&&s.frustration>.30){vals.HELP=(vals.HELP||0)+.10;vals.WORK=(vals.WORK||0)*.88}
+    return vals;
+  }
+  function traitCombo(s,ids){return ids.every(function(id){return hasTrait(s,id)})}
+  function traitComboLabel(s){
+    if(traitCombo(s,["distractible","quick_learner"]))return "집중은 흔들려도 이해는 빠름";
+    if(traitCombo(s,["model_student","perfectionist"]))return "잘하고 싶어서 실수를 크게 의식함";
+    if(traitCombo(s,["leadership","competitive"]))return "앞장서지만 승부가 걸리면 세짐";
+    if(traitCombo(s,["social","sensitive_rejection"]))return "친구를 좋아하지만 관계 변화에 민감함";
+    if(traitCombo(s,["model_student","rule_oriented"]))return "규칙을 잘 지키고 남의 규칙도 잘 봄";
+    if(traitCombo(s,["shy","creative"]))return "말보다 다른 방식으로 표현할 때 편함";
+    return "";
+  }
+
   function traitChipHtml(id){
     var t=TRAIT_CATALOG[id];if(!t)return "";
     return '<span class="trait-chip trait-'+escHtml(t.category)+'" title="'+escHtml(t.desc)+'">'+escHtml(t.label)+'</span>';
