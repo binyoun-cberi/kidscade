@@ -33,7 +33,11 @@ test('Word Blaster has the intended low-grade learning loop',()=>{
 test('Word Blaster has resilient asset fallbacks and Kidscade scenery',()=>{
   assert.match(runtime,/assets\/game\/3d\/word-blaster/);
   assert.match(runtime,/raygun-big\.png/);
-  assert.match(runtime,/ultimate-monsters-bundle\/dragon\.glb/);
+  assert.match(runtime,/ultimate-monsters-bundle\//);
+  assert.match(runtime,/dragon\.glb/);
+  for(const name of ['blaster.glb','cloud.glb','letter-drone.glb','platform-large-grass.glb']){
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','word-blaster',name)),'missing Word Blaster asset: '+name);
+  }
   assert.match(runtime,/function makeProceduralDrone\(/);
   assert.match(runtime,/function proceduralCloud\(/);
 });
