@@ -166,6 +166,24 @@ async function createRoom(request,env){
     .bind(id,code,hash,JSON.stringify(order),questionCount,seconds,nowIso(now),nowIso(now),nowIso(now+ROOM_TTL_MS)).run();
   return json({ok:true,code,hostToken:token,maxPlayers:MAX_PLAYERS,questionCount,secondsPerQuestion:seconds},201);
 }
+async function createSoloRoom(request,env){
+  let body={}; try{body=await parseJson(request)}catch(_){}
+  const questionCount=clampInt(body.questionCount,5,20,15), seconds=clampInt(body.secondsPerQuestion,8,30,12);
+  await cleanup(env);
+  const roomId=crypto.randomUUID(),code=await uniqueRoomCode(env),hostToken=randomToken(),hostHash=await sha256(hostToken);
+  const playerToken=randomToken(),playerHash=await sha256(playerToken),playerId=crypto.randomUUID();
+  const now=Date.now(),deadline=now+seconds*1000,order=shuffleIndexes(questionCount),nick=cleanNickname(body.nickname||'나');
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO history_live_rooms
+      (id,room_code,host_token_hash,status,question_order_json,current_question,question_count,seconds_per_question,question_started_at,question_deadline_at,created_at,updated_at,expires_at)
+      VALUES (?,?,?,'question',?,0,?,?,?,?,?,?,?)`)
+      .bind(roomId,code,hostHash,JSON.stringify(order),questionCount,seconds,nowIso(now),nowIso(deadline),nowIso(now),nowIso(now),nowIso(now+ROOM_TTL_MS)),
+    env.DB.prepare(`INSERT INTO history_live_players
+      (id,room_id,token_hash,nickname,score,streak,joined_at,last_seen_at) VALUES (?,?,?,?,0,0,?,?)`)
+      .bind(playerId,roomId,playerHash,nick,nowIso(now),nowIso(now))
+  ]);
+  return json({ok:true,code,hostToken,playerToken,playerId,nickname:nick,questionCount,secondsPerQuestion:seconds},201);
+}
 async function joinRoom(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   const room=await roomByCode(env,body.code);
@@ -279,6 +297,7 @@ export async function handleHistoryLiveRequest(request,env){
     await ensureSchema(env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/health')return json({ok:true,database:'ready',questions:QUESTIONS.length,maxPlayers:MAX_PLAYERS});
     if(request.method==='POST'&&url.pathname==='/api/history-live/rooms')return createRoom(request,env);
+    if(request.method==='POST'&&url.pathname==='/api/history-live/solo')return createSoloRoom(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/join')return joinRoom(request,env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/state')return state(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/start')return hostAction(request,env,'start');
