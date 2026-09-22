@@ -763,3 +763,30 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   font-size:11px;font-weight:780;line-height:1.5;color:#51493f;text-align:left
 }
 .encounter-reaction[hidden]{display:none!important}
+
+
+/* v20 Project-Zomboid-style student traits */
+.trait-panel{
+  margin:0 0 10px;padding:10px;border:1px solid #d8d1c7;border-radius:11px;background:#fffdf8
+}
+.trait-panel>strong{display:block;margin-bottom:7px;font-size:10px}
+.trait-panel>small{display:block;margin-top:7px;color:#756f68;font-size:8.5px;line-height:1.45}
+.trait-list{display:flex;flex-wrap:wrap;gap:5px}
+.trait-chip{
+  display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;
+  border:1px solid #d8d1c7;background:#f5f3ee;font-size:8.5px;font-weight:900;line-height:1.2
+}
+.trait-support{background:#eef3fb;border-color:#c8d6ea;color:#405f86}
+.trait-behavior{background:#fff0e9;border-color:#efc9b5;color:#855137}
+.trait-social{background:#eef7ef;border-color:#cae0cd;color:#45694d}
+.trait-learning{background:#f3effb;border-color:#d7cbea;color:#665086}
+.trait-emotion{background:#fff2f5;border-color:#e7c9d1;color:#855663}
+.trait-value{background:#f7f3e9;border-color:#ded2b8;color:#6e6045}
+
+.roster-name small{
+  display:block;margin-top:2px;max-width:210px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.encounter-student{
+  max-width:92%;white-space:normal;text-align:center;line-height:1.4
+}
