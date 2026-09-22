@@ -164,7 +164,7 @@
   var modalWasRunning=true;
   var lastBellAt=-99999;
   var tutorialState={active:false,step:0};
-  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v18";
+  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v19";
   var lastFrame=performance.now();
   var aiAccumulator=0;
   var renderAccumulator=0;
@@ -628,7 +628,7 @@
   function responseStyleMultiplier(s,dir,value){
     if(!s||!dir||dir==="timeout"||!value)return 1;
     var fit=responseDisposition(s,dir),sens=(s.teacherResponse&&s.teacherResponse.sensitivity)||1;
-    if(value>0)return clamp((.70+fit*.72)*(.92+(sens-1)*.34),.56,1.62);
+    if(value>0)return clamp((.44+fit*1.02)*(.92+(sens-1)*.34),.42,1.62);
     return clamp((.68+(1-fit)*.92)*(.92+(sens-1)*.62),.58,1.82);
   }
   function responseDescriptor(s){
@@ -1353,6 +1353,7 @@
       var button=q('[data-encounter-dir="'+dir+'"]');if(button)button.disabled=!choice||enc.phase!=="choice";
     });
     q("#encounterResult").hidden=enc.phase!=="result";
+    var reactionBox=q("#encounterReaction");if(reactionBox&&enc.phase!=="result"){reactionBox.hidden=true;reactionBox.textContent=""}
     q("#encounterCard").hidden=enc.phase==="result";
     qa(".encounter-choice").forEach(function(b){b.hidden=enc.phase==="result"});
     if(enc.phase==="choice")updateEncounterClock(performance.now());
@@ -1448,7 +1449,9 @@
     scheduleFollowUp(enc,dir,choice);
     activeEncounter.phase="result";
     q("#encounterResultTitle").textContent=direction+" 선택";
-    q("#encounterResultText").textContent=choice.result+(reaction.text?" "+reaction.text:"");
+    q("#encounterResultText").textContent=choice.result;
+    var reactionBox=q("#encounterReaction");
+    if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"학생 반응 · "+reaction.text:""}
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
     renderEncounter();
   }
