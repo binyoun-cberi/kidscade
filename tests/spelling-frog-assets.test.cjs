@@ -11,10 +11,10 @@ const runtime=fs.readFileSync(path.join(dir,'spelling-frog-runtime.js'),'utf8');
 const loader=fs.readFileSync(path.join(dir,'spelling-frog-loader.js'),'utf8');
 
 test('Spelling Frog uses local Three.js and split runtime files',()=>{
-  assert.match(html,/spelling-frog-loader\.js\?v=20260918-6/);
+  assert.match(html,/spelling-frog-loader\.js\?v=20260922-1/);
   assert.match(html,/\.\.\/\.\.\/assets\/vendor\/three-r160\/three\.module\.js/);
   assert.match(loader,/from 'three'/);
-  assert.match(loader,/spelling-frog-runtime\.js\?v=20260918-6/);
+  assert.match(loader,/spelling-frog-runtime\.js\?v=20260922-1/);
   assert.match(loader,/spelling-frog-log-fix\.js\?v=20260914-1/);
   assert.doesNotMatch(html+runtime+loader,/cdn\.jsdelivr|cdnjs\.cloudflare|https?:\/\//i);
   assert.match(html,/audio-manager\.js\?v=20260917-1/);
@@ -125,7 +125,7 @@ test('Spelling Frog catalog points to asset rework version',()=>{
   assert.equal(game.href,'games/spelling_frog/스펠링 프로그.html?v=20260922-1');
   assert.match(game.description,/개구리.*차량.*알파벳/);
   const bootstrap=fs.readFileSync(path.join(root,'main-bootstrap.js'),'utf8');
-  assert.match(bootstrap,/스펠링 프로그\.html\?v=20260918-6/);
+  assert.match(bootstrap,/스펠링 프로그\.html\?v=20260922-1/);
 });
 
 test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
@@ -134,7 +134,7 @@ test('Cloudflare artifact contains Spelling Frog runtime and assets',()=>{
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-runtime.js')));
   assert.ok(fs.existsSync(path.join(built,'spelling-frog-loader.js')));
   const builtHtml=fs.readFileSync(path.join(built,'스펠링 프로그.html'),'utf8');
-  assert.match(builtHtml,/spelling-frog-loader\.js\?v=20260918-6/);
+  assert.match(builtHtml,/spelling-frog-loader\.js\?v=20260922-1/);
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','3d','characters','quaternius','frog.glb')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','letters','blue','letter-a.png')));
   assert.ok(fs.existsSync(path.join(root,'dist','assets','game','2d','racing','kenney-racing-pack','cars','car_red_1.png')));
