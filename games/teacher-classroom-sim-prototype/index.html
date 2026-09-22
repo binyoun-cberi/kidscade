@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=17">
+<link rel="stylesheet" href="./style.css?v=18">
 </head>
 <body>
 <main id="app">
@@ -78,10 +78,8 @@
         <div id="offscreen" class="offscreen-note">22명 보임</div>
 
         <section id="classroomConsole" class="classroom-console" aria-label="교탁 도구">
-          <button type="button" class="class-tool tool-computer" data-class-tool="computer" title="수업 컴퓨터"><span class="tool-object">🖥️</span><small>컴퓨터</small></button>
-          <button id="classBell" type="button" class="class-tool tool-bell" title="학급 벨"><span class="tool-object">🔔</span><small>벨</small></button>
+          <button type="button" class="class-tool tool-computer" data-class-tool="computer" title="오늘 현황"><span class="tool-object">🖥️</span><small>현황</small></button>
           <button type="button" class="class-tool tool-clipboard" data-class-tool="roster" title="학급 명부"><span class="tool-object">📑</span><small>명부</small></button>
-          <button type="button" class="class-tool tool-seating" data-class-tool="seating" title="자리배치표"><span class="tool-object">🪑</span><small>자리표</small></button>
           <button type="button" class="class-tool tool-record" data-class-tool="record" title="생활기록부"><span class="tool-object">📒</span><small>생기부</small></button>
         </section>
 
@@ -162,17 +160,16 @@
         <section id="report" class="report" hidden aria-live="polite">
           <div class="report-head">
             <div>
-              <div id="reportTitle" class="period">1교시 결과</div>
+              <div id="reportTitle" class="period">1교시 정리</div>
               <div id="reportSub" class="sub"></div>
             </div>
-            <div id="grade" class="grade">B+</div>
           </div>
 
           <div class="metrics">
-            <div class="metric"><strong id="mDesign">0</strong><span>수업 설계 적합성</span></div>
-            <div class="metric"><strong id="mEngage">0</strong><span>실제 참여도</span></div>
-            <div class="metric"><strong id="mLearn">0</strong><span>학습 성과</span></div>
-            <div class="metric"><strong id="mClimate">0</strong><span>교실 안정성</span></div>
+            <div class="metric"><strong id="mDecisions">0</strong><span>판단 카드</span></div>
+            <div class="metric"><strong id="mRecords">0</strong><span>기록할 사건</span></div>
+            <div class="metric"><strong id="mAffected">0</strong><span>관련 학생</span></div>
+            <div class="metric"><strong id="mFlow">0</strong><span>수업 흐름 변화</span></div>
           </div>
 
           <div class="report-cols">
@@ -181,13 +178,13 @@
               <ul id="incidentList"></ul>
             </div>
             <div>
-              <h4>교사가 발견한 것</h4>
+              <h4>숫자로 본 변화</h4>
               <ul id="findingList"></ul>
             </div>
           </div>
 
           <div class="report-actions">
-            <button id="continueBtn" class="primary" type="button">다음 시간으로</button>
+            <button id="continueBtn" class="primary" type="button">교실로 돌아가기</button>
           </div>
         </section>
       </div>
@@ -247,6 +244,6 @@
     </aside>
   </div>
 </main>
-<script src="./game.js?v=17"></script>
+<script src="./game.js?v=18"></script>
 </body>
 </html>
