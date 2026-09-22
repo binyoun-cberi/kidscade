@@ -5,6 +5,7 @@ import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
 import { handleMultiplayerRequest } from './multiplayer.mjs';
 import { handleWordchainMatchRequest } from './wordchain-match.mjs';
+import { handleHistoryLiveRequest } from './history-live.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
@@ -37,6 +38,9 @@ export default {
       }
     }
 
+
+    const historyLiveResponse = await handleHistoryLiveRequest(request, env);
+    if (historyLiveResponse) return historyLiveResponse;
 
     const wordchainMatchResponse = await handleWordchainMatchRequest(request, env);
     if (wordchainMatchResponse) return wordchainMatchResponse;
