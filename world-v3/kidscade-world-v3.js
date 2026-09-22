@@ -1546,11 +1546,11 @@ async function buildOutdoor(){
       await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
       addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
     }
-    for(const [dx,dz] of [[-6,2.8],[-2,4.8],[5,3.2],[-5,-5.2]]){
+    for(const [dx,dz] of [[-5,1.2],[-1,3.5],[7,2.8],[-5,-5.2]]){
       const x=c.x+dx,z=c.z+dz;await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
       interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);if(!addInventoryItem('mushroom',gain))return;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
     }
-    await addModel(outdoor,ASSET.logStack,{x:c.x-5,z:c.z+7.2,w:2.4,h:1.1,d:1.2,rot:.2});
+    await addModel(outdoor,ASSET.logStack,{x:c.x+.5,z:c.z+5.2,w:2.4,h:1.1,d:1.2,rot:.2});
     await addZoneSign('forest',7.0,-6.2,'깊은 숲 · 목재 · 버섯',Math.PI/2);
   }
 
@@ -1580,7 +1580,7 @@ async function buildOutdoor(){
   // Decorative home flowers stay well inside their parcel.
   {
     const h=point('home');
-    for(const [dx,dz] of [[-7,-5],[-6.3,-4.4],[5.8,-5.0],[-1.8,7.4],[5.3,6.7]])await addModel(outdoor,ASSET.flower,{x:h.x+dx,z:h.z+dz,w:.55,h:.5,d:.55,rot:0});
+    for(const [dx,dz] of [[-7,-5],[-6.3,-4.4],[7.5,-1.0],[-8.3,.5],[7.8,6.0]])await addModel(outdoor,ASSET.flower,{x:h.x+dx,z:h.z+dz,w:.55,h:.5,d:.55,rot:0});
   }
 
   cityRuntime=await buildKidscadeCity({
@@ -1635,7 +1635,7 @@ function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||
 const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-19.2,-7.0],[-17.8,-7.1],[-16.4,-7.0],[-19.0,-5.8],[-17.6,-5.8],[-16.2,-5.7],[-18.8,-4.6],[-17.4,-4.6],[-16.0,-4.5],[-20.1,-5.8]];
-const RANCH_SLOTS={bunny:[6.0,-27.0],pig:[7.5,-22.0],cow:[17.0,-27.0],chick:[17.0,-21.5]};
+const RANCH_SLOTS={bunny:[8.0,-24.8],pig:[10.0,-22.5],cow:[13.0,-26.0],chick:[16.0,-21.0]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const RANCH_ANIMALS=['bunny','pig','cow','chick'];
 let ranchProduceObject=null,ranchSignObject=null,ranchProduceInteraction=null;
@@ -1666,10 +1666,10 @@ function updateRanchExpansionVisuals(){
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const WILD_PETS={
   cat:{habitat:'pond',x:-16.0,z:5.6,roamX:.34,roamZ:.38},
-  bunny:{habitat:'ranch',x:6.0,z:-27.0,roamX:.42,roamZ:.36},
-  pig:{habitat:'ranch',x:7.5,z:-22.0,roamX:.40,roamZ:.34},
-  cow:{habitat:'ranch',x:17.0,z:-27.0,roamX:.36,roamZ:.32},
-  chick:{habitat:'ranch',x:17.0,z:-21.5,roamX:.44,roamZ:.38},
+  bunny:{habitat:'ranch',x:8.0,z:-24.8,roamX:.42,roamZ:.36},
+  pig:{habitat:'ranch',x:10.0,z:-22.5,roamX:.40,roamZ:.34},
+  cow:{habitat:'ranch',x:13.0,z:-26.0,roamX:.36,roamZ:.32},
+  chick:{habitat:'ranch',x:16.0,z:-21.0,roamX:.44,roamZ:.38},
   fox:{habitat:'deep-forest',x:-40.0,z:2.8,roamX:.55,roamZ:.44},
   deer:{habitat:'deep-forest',x:-32.0,z:6.2,roamX:.58,roamZ:.46},
   parrot:{habitat:'deep-forest',x:-39.0,z:-5.0,roamX:.40,roamZ:.34},
@@ -1814,7 +1814,7 @@ async function buildPets(){
     const object=await makeCubePetObject(id);if(!object)continue;
     const groundY=Number(object.userData.groundY)||0;object.position.set(pos.x,groundY+.015,pos.z);petLayer.add(object);
     const actor={id,object,x:pos.x,z:pos.z,groundY,habitat:pos.habitat,roamX:Math.max(.45,pos.roamX||.6),roamZ:Math.max(.4,pos.roamZ||.55),interaction:null,phase:wildPetActors.length*.91,targetX:pos.x,targetZ:pos.z,nextDecision:0,moving:false,speed:.22+Math.random()*.18};wildPetActors.push(actor);
-    object.visible=!state.owned.includes(id);
+    object.visible=!state.owned.includes(id)&&(pos.habitat!=='ranch'||RANCH_ANIMALS.indexOf(id)<ranchCapacity());
     actor.interaction=interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
 }
@@ -1861,7 +1861,9 @@ function updatePets(now,dt){
     }
   }
   for(const a of wildPetActors){
-    a.object.visible=mode==='outdoor'&&!state.owned.includes(a.id);
+    const ranchVisible=a.habitat!=='ranch'||RANCH_ANIMALS.indexOf(a.id)<ranchCapacity();
+    a.object.visible=mode==='outdoor'&&!state.owned.includes(a.id)&&ranchVisible;
+    if(a.interaction)a.interaction.enabled=a.object.visible;
     if(!a.object.visible)continue;
     stepAnimal(a,now,dt,a.x,a.z,a.roamX,a.roamZ);
     if(a.interaction){a.interaction.x=a.object.position.x;a.interaction.z=a.object.position.z;}
