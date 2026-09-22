@@ -1492,13 +1492,19 @@ export function shuffledQuestion(question, random = Math.random) {
   };
 }
 
-function chronologicalSourceFactIndexes(count = 15) {
-  const wanted=Math.max(1,Math.min(Number(count)||15,CORE_FACTS.length));
-  const eras=ERA_ORDER.filter(era=>CORE_FACTS.some(f=>f.era===era));
-  const buckets=new Map(eras.map(era=>[era,CORE_FACTS.map((f,i)=>({f,i})).filter(x=>x.f.era===era).map(x=>x.i)]));
-  const base=Math.floor(wanted/eras.length),extra=wanted%eras.length;
+export function normalizeEraSelection(eras) {
+  const chosen=Array.isArray(eras)?eras.filter(era=>ERA_ORDER.includes(era)):[];
+  return chosen.length?[...new Set(chosen)]:[...ERA_ORDER];
+}
+
+function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER) {
+  const selectedEras=normalizeEraSelection(eras);
+  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
+  const wanted=Math.max(1,Math.min(Number(count)||15,40));
+  const buckets=new Map(selectedEras.map(era=>[era,eligible.filter(x=>x.f.era===era).map(x=>x.i)]));
+  const uniqueTarget=Math.min(wanted,eligible.length),base=Math.floor(uniqueTarget/selectedEras.length),extra=uniqueTarget%selectedEras.length;
   const selected=[];
-  eras.forEach((era,eraIndex)=>{
+  selectedEras.forEach((era,eraIndex)=>{
     const bucket=buckets.get(era)||[],take=Math.min(bucket.length,base+(eraIndex<extra?1:0));
     if(!take)return;
     for(let j=0;j<take;j++){
@@ -1506,15 +1512,21 @@ function chronologicalSourceFactIndexes(count = 15) {
       selected.push(bucket[pos]);
     }
   });
-  if(selected.length<wanted){
+  if(selected.length<uniqueTarget){
     const used=new Set(selected);
-    for(const era of eras){
+    for(const era of selectedEras){
       for(const index of buckets.get(era)||[]){
         if(!used.has(index)){selected.push(index);used.add(index)}
-        if(selected.length>=wanted)break;
+        if(selected.length>=uniqueTarget)break;
       }
-      if(selected.length>=wanted)break;
+      if(selected.length>=uniqueTarget)break;
     }
+  }
+  if(!selected.length)return [];
+  let cursor=0;
+  while(selected.length<wanted){
+    selected.push(selected[cursor%selected.length]);
+    cursor++;
   }
   return selected.slice(0,wanted);
 }
@@ -1530,19 +1542,26 @@ function candidatesForFact(factIndex,questionMode,position,random){
   return choice.length?choice:ox;
 }
 
-export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random', questionMode = 'choice') {
-  const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
+export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random', questionMode = 'choice', eras = ERA_ORDER) {
+  const selectedEras=normalizeEraSelection(eras);
+  const wanted=Math.max(1,Math.min(Number(count)||15,40));
   let factIndexes;
 
   if (orderMode === 'chronological') {
-    factIndexes = chronologicalSourceFactIndexes(wanted);
+    factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras);
   } else {
-    factIndexes = Array.from({length:CORE_FACTS.length}, (_,i)=>i);
+    const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era)).map(x=>x.i);
+    factIndexes=[...eligible];
     for (let i = factIndexes.length - 1; i > 0; i -= 1) {
       const j = Math.floor(random() * (i + 1));
       [factIndexes[i], factIndexes[j]] = [factIndexes[j], factIndexes[i]];
     }
-    factIndexes = factIndexes.slice(0,wanted);
+    const unique=[...factIndexes.slice(0,Math.min(wanted,factIndexes.length))];
+    if(unique.length){
+      let cursor=0;
+      while(unique.length<wanted){unique.push(unique[cursor%unique.length]);cursor++;}
+    }
+    factIndexes=unique;
   }
 
   return factIndexes.map((factIndex,position) => {
@@ -1554,8 +1573,8 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   });
 }
 
-export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice') {
-  return chronologicalSourceFactIndexes(count).map((factIndex,position)=>{
+export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice', eras = ERA_ORDER) {
+  return chronologicalSourceFactIndexes(count,eras).map((factIndex,position)=>{
     const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
     return candidates[(position*3+factIndex)%candidates.length];
   });
