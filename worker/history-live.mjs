@@ -32,10 +32,10 @@ function randomToken(){ const bytes=new Uint8Array(32); crypto.getRandomValues(b
 function randomCode(){ const bytes=new Uint8Array(6); crypto.getRandomValues(bytes); return Array.from(bytes,b=>ROOM_ALPHABET[b%ROOM_ALPHABET.length]).join(''); }
 function readRoomPlan(room){
   let raw=[]; try{raw=JSON.parse(room?.question_order_json||'[]')}catch(_){}
-  if(Array.isArray(raw))return {questions:raw,checkpoints:[],orderMode:'random'};
+  if(Array.isArray(raw))return {questions:raw,checkpoints:[],orderMode:'random',questionMode:'choice'};
   const questions=Array.isArray(raw?.questions)?raw.questions:[];
   const checkpoints=Array.isArray(raw?.checkpoints)?raw.checkpoints.map(Number).filter(Number.isInteger):[];
-  return {questions,checkpoints:[...new Set(checkpoints)].sort((a,b)=>a-b),orderMode:raw?.orderMode==='chronological'?'chronological':'random'};
+  return {questions,checkpoints:[...new Set(checkpoints)].sort((a,b)=>a-b),orderMode:raw?.orderMode==='chronological'?'chronological':'random',questionMode:['ox','mixed'].includes(raw?.questionMode)?raw.questionMode:'choice'};
 }
 function normalizeCheckpoints(questionCount,body){
   const count=Number(questionCount)||15, mode=String(body?.checkpointMode||'none');
@@ -48,13 +48,15 @@ function normalizeCheckpoints(questionCount,body){
   }
   return [...new Set(points)].sort((a,b)=>a-b).slice(0,12);
 }
-function randomQuestionIndexes(count){
+function randomQuestionIndexes(count,questionMode='choice'){
   const byFact=new Map();
   QUESTIONS.forEach((q,index)=>{const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index)});
   const facts=[...byFact.keys()],bytes=new Uint32Array(Math.max(1,facts.length*2));crypto.getRandomValues(bytes);
   for(let i=facts.length-1;i>0;i--){const j=bytes[i]%(i+1);[facts[i],facts[j]]=[facts[j],facts[i]]}
   return facts.slice(0,count).map((fact,pos)=>{
-    const options=byFact.get(fact),pick=bytes[facts.length+pos%facts.length]%options.length;
+    const all=byFact.get(fact)||[],ox=all.filter(i=>QUESTIONS[i]?.family==='ox'),choice=all.filter(i=>QUESTIONS[i]?.family!=='ox');
+    const options=questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
+    const pick=bytes[facts.length+pos%facts.length]%options.length;
     return options[pick];
   });
 }
@@ -63,11 +65,11 @@ function shuffleIndexes(count){
   for(let i=a.length-1;i>0;i--){ const j=bytes[i]%(i+1); [a[i],a[j]]=[a[j],a[i]]; }
   return a.slice(0,count);
 }
-function optionOrder(room,position){
+function optionOrder(room,position,count=4){
   let seed=2166136261;
   const key=String(room?.id||'')+':'+String(position);
   for(let i=0;i<key.length;i++) seed=Math.imul(seed^key.charCodeAt(i),16777619)>>>0;
-  const order=[0,1,2,3];
+  const order=Array.from({length:count},(_,i)=>i);
   for(let i=order.length-1;i>0;i--){
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
     const j=seed%(i+1); [order[i],order[j]]=[order[j],order[i]];
@@ -75,7 +77,7 @@ function optionOrder(room,position){
   return order;
 }
 function displayedQuestion(room,q){
-  const order=optionOrder(room,Number(room.current_question));
+  const order=q.family==='ox'?[0,1]:optionOrder(room,Number(room.current_question),q.o.length);
   return {order,options:order.map(index=>q.o[index]),answerIndex:order.indexOf(q.a)};
 }
 async function parseJson(request){
@@ -146,14 +148,14 @@ async function autoReveal(env,room,now=Date.now()){
 }
 async function createRoom(request,env){
   let body={}; try{body=await parseJson(request)}catch(_){}
-  const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random';
+  const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random', questionMode=['ox','mixed'].includes(body.questionMode)?body.questionMode:'choice';
   await cleanup(env);
-  const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount):randomQuestionIndexes(questionCount),plan={questions:order,checkpoints,orderMode};
+  const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode):randomQuestionIndexes(questionCount,questionMode),plan={questions:order,checkpoints,orderMode,questionMode};
   await env.DB.prepare(`INSERT INTO history_live_rooms
     (id,room_code,host_token_hash,status,question_order_json,current_question,question_count,seconds_per_question,created_at,updated_at,expires_at)
     VALUES (?,?,?,'waiting',?,-1,?,?,?,?,?)`)
     .bind(id,code,hash,JSON.stringify(plan),questionCount,seconds,nowIso(now),nowIso(now),nowIso(now+ROOM_TTL_MS)).run();
-  return json({ok:true,code,hostToken:token,maxPlayers:MAX_PLAYERS,questionCount,secondsPerQuestion:seconds,checkpoints,orderMode},201);
+  return json({ok:true,code,hostToken:token,maxPlayers:MAX_PLAYERS,questionCount,secondsPerQuestion:seconds,checkpoints,orderMode,questionMode},201);
 }
 async function joinRoom(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
@@ -191,10 +193,10 @@ async function state(request,env){
   const answers=ansRes.results||[], answered=new Set(answers.map(a=>a.player_id)), now=Date.now();
   const roster=players.map((p,i)=>({id:p.id,nickname:p.nickname,score:Number(p.score||0),streak:Number(p.streak||0),rank:i+1,answered:answered.has(p.id),online:now-new Date(p.last_seen_at).getTime()<=ONLINE_WINDOW_MS}));
   const plan=readRoomPlan(fresh),q=currentQuestion(fresh),display=q?displayedQuestion(fresh,q):null;
-  const payload={ok:true,role:auth.role,selfPlayerId:auth.player?.id||null,room:{code:fresh.room_code,status:fresh.status,maxPlayers:MAX_PLAYERS,questionNumber:qi+1,questionCount:Number(fresh.question_count),secondsPerQuestion:Number(fresh.seconds_per_question),deadlineAt:fresh.question_deadline_at||null,serverNow:nowIso(now),checkpoints:plan.checkpoints,orderMode:plan.orderMode},players:roster};
-  if(q&&display&&['question','reveal','finished'].includes(fresh.status))payload.question={number:qi+1,total:Number(fresh.question_count),era:q.era,difficulty:q.difficulty,prompt:q.q,options:display.options};
+  const payload={ok:true,role:auth.role,selfPlayerId:auth.player?.id||null,room:{code:fresh.room_code,status:fresh.status,maxPlayers:MAX_PLAYERS,questionNumber:qi+1,questionCount:Number(fresh.question_count),secondsPerQuestion:Number(fresh.seconds_per_question),deadlineAt:fresh.question_deadline_at||null,serverNow:nowIso(now),checkpoints:plan.checkpoints,orderMode:plan.orderMode,questionMode:plan.questionMode},players:roster};
+  if(q&&display&&['question','reveal','finished'].includes(fresh.status))payload.question={number:qi+1,total:Number(fresh.question_count),era:q.era,difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice'};
   if(q&&fresh.status==='reveal'){
-    const stats=[0,0,0,0]; answers.forEach(a=>{if(a.option_index>=0&&a.option_index<4)stats[a.option_index]++});
+    const stats=Array.from({length:q.o.length},()=>0); answers.forEach(a=>{if(a.option_index>=0&&a.option_index<stats.length)stats[a.option_index]++});
     payload.reveal={answerIndex:display.answerIndex,explanation:q.e,optionStats:stats,answeredCount:answers.length,correctCount:answers.filter(a=>Number(a.is_correct)===1).length};
   }
   if(fresh.status==='checkpoint')payload.checkpoint={afterQuestion:qi+1,nextQuestion:qi+2,totalPlayers:roster.length};
@@ -253,11 +255,11 @@ async function answerQuestion(request,env){
   const player=await playerByToken(env,room.id,bearer(request));
   if(!player)return json({ok:false,error:'player_required'},403);
   const raw=Number(body.optionIndex);
-  if(!Number.isInteger(raw)||raw<0||raw>3)return json({ok:false,error:'invalid_option'},400);
   const now=Date.now(),deadline=new Date(room.question_deadline_at).getTime(),started=new Date(room.question_started_at).getTime();
   if(!Number.isFinite(deadline)||now>deadline)return json({ok:false,error:'answer_closed'},409);
   const qi=Number(room.current_question),q=currentQuestion(room);
   if(!q)return json({ok:false,error:'question_missing'},500);
+  if(!Number.isInteger(raw)||raw<0||raw>=q.o.length)return json({ok:false,error:'invalid_option'},400);
   const display=displayedQuestion(room,q),originalOption=display.order[raw];
   const correct=originalOption===q.a,duration=Math.max(1,deadline-started),remaining=Math.max(0,deadline-now),speed=Math.round(500*(remaining/duration));
   const newStreak=correct?Number(player.streak||0)+1:0,streakBonus=correct&&newStreak>=2?Math.min(300,(newStreak-1)*100):0,points=correct?1000+speed+streakBonus:0;
