@@ -424,6 +424,10 @@
       ["대체 행동","대신 할 행동"],
       ["구체적인 방법","쓸 수 있는 방법"],
       ["구체적인 준비 절차","준비하는 순서"],
+      ["구체적인 검토 절차","다시 확인하는 순서"],
+      ["구체적인 경계 확인 방법","먼저 물어보고 멈추는 방법"],
+      ["구체적인 다음 행동","다음에 해볼 행동"],
+      ["구체적인 행동","해야 할 행동"],
       ["구체적으로","하나씩"],
       ["학급의 기준","우리 반 약속"],
       ["기준과 기대 행동","지켜야 할 약속"],
@@ -3012,7 +3016,7 @@
   function worldEventShortText(e){
     if(!e)return "";
     var a=studentById(e.actorId),t=studentById(e.targetId),an=a?a.name:"한 학생",tn=t?t.name:"";
-    if(e.kind==="rejection")return an+"이(가) "+tn+"의 합류를 거절한 일이 있었다.";
+    if(e.kind==="rejection")return an+"이(가) "+tn+"에게 같이하자는 말을 거절한 일이 있었다.";
     if(e.kind==="conflict")return an+"와(과) "+tn+" 사이에 말다툼이 있었다.";
     if(e.kind==="tease")return an+"이(가) "+tn+"을(를) 놀린 일이 있었다.";
     if(e.kind==="borrow_item")return an+"이(가) "+tn+"에게 준비물을 빌린 적이 있었다.";
@@ -3672,7 +3676,7 @@
     setSimpleAction(s,"REJECTED",38);s.behaviorPhase="resolve";s.phaseUntil=s.actionLockedUntil;s.socialTarget=null;s.groupId=null;
     s.frustration=clamp(s.frustration+.10+.13*s.rejection);s.belonging=clamp(s.belonging-.055);s.mood=clamp(s.mood-.055);
     changeRelation(s,target,{affinity:-.008,irritation:.025+.025*s.rejection});
-    var rejectionEvent=recordWorldEvent("rejection",target,s,{severity:.32,text:target.name+"이(가) "+s.name+"의 합류를 거절함",tags:["social","rejection"]});
+    var rejectionEvent=recordWorldEvent("rejection",target,s,{severity:.32,text:target.name+"이(가) "+s.name+"에게 같이하자는 말을 거절함",tags:["social","rejection"]});
     remember(s,target.name+"에게 함께하자고 했지만 받아들여지지 않음",.58,{kind:"rejection",targetId:target.id,valence:-.58,severity:.32,sourceEventId:rejectionEvent&&rejectionEvent.id});
     scriptLog({
       speaker:s.name,
@@ -5776,7 +5780,7 @@
   function renderPanel(){ return; }
   function renderHeader(){
     var p=current(),cm=classDashboard();
-    var dayEl=q("#dayNumber");if(dayEl)dayEl.textContent="Day "+dayIndex;
+    var dayEl=q("#dayNumber");if(dayEl)dayEl.textContent=dayIndex+"일차";
     var periodEl=q("#periodName");if(periodEl)periodEl.textContent=p.name;
     var hud={hudFlow:cm.flow,hudRelation:cm.relationship,hudStability:cm.stability,hudTrust:cm.trust};
     Object.keys(hud).forEach(function(id){var el=q("#"+id);if(el)el.textContent=Math.round(hud[id])});
