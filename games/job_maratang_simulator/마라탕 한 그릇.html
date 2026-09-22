@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>마라탕 한 그릇</title>
-<link rel="stylesheet" href="maratang-selfbar.css?v=10">
+<link rel="stylesheet" href="maratang-selfbar.css?v=11">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -32,6 +32,7 @@
       <div class="order-grid">
         <div><small>필수</small><b id="orderNeeds">-</b></div>
         <div><small>제외</small><b id="orderAvoid">-</b></div>
+        <div class="order-sauce"><small>추가 소스</small><b id="orderSauce">기본</b></div>
         <div class="order-meta" id="orderMeta">무게 · 맵기 · 예산</div>
       </div>
       <div class="patience"><span id="patienceFill"></span></div>
@@ -53,11 +54,20 @@
       <button id="checkoutBtn" class="primary" type="button">다 담았어요</button>
     </div>
 
-    <div class="spice-dock" id="spiceDock" hidden>
-      <div class="spice-title">맵기</div>
-      <div class="spice-options" id="spiceOptions"></div>
-      <button id="backToBarBtn" type="button">셀프바로</button>
-      <button id="cookBtn" class="primary" type="button">끓이기</button>
+    <div class="spice-dock seasoning-panel" id="spiceDock" hidden>
+      <div class="seasoning-head"><b>국물 & 소스</b><span>맵기와 향을 골라요</span></div>
+      <div class="seasoning-row">
+        <span>맵기</span>
+        <div class="spice-options" id="spiceOptions"></div>
+      </div>
+      <div class="seasoning-row">
+        <span>추가 소스 <small>최대 3개</small></span>
+        <div class="sauce-options" id="sauceOptions"></div>
+      </div>
+      <div class="seasoning-actions">
+        <button id="backToBarBtn" type="button">셀프바로</button>
+        <button id="cookBtn" class="primary" type="button">이대로 끓이기</button>
+      </div>
     </div>
 
     <div class="cook-dock" id="cookDock" hidden>
@@ -109,6 +119,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="maratang-selfbar.js?v=10"></script>
+<script type="module" src="maratang-selfbar.js?v=11"></script>
 </body>
 </html>
