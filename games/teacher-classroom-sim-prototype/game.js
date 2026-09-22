@@ -646,6 +646,19 @@
     };
     return map[kind]||"";
   }
+  function studentReply(kind,s){
+    if(kind==="inspect")return pickLine(["여기까지 했는데 여기서 막혔어요.","이렇게 했는데 맞는지 모르겠어요.","여기부터 잘 모르겠어요."]);
+    if(kind==="check")return pickLine(["음… 이렇게 생각했어요.","여기 때문에 그렇게 했어요.","잘 모르겠는데, 아마 이거요."]);
+    if(kind==="probe")return pickLine(["이번에는 해볼게요.","잠깐만요.","아, 비슷한 거네요."]);
+    if(kind==="hint")return pickLine(["아, 그러면 여기부터요?","잠깐, 다시 해볼게요.","아! 알 것 같아요."]);
+    if(kind==="first")return pickLine(["네, 그다음은 제가 해볼게요.","아, 이제 조금 알겠어요.","잠깐만요. 제가 이어서 해볼게요."]);
+    if(kind==="simplify")return pickLine(["이것만 먼저 하면 돼요?","네, 이건 할 수 있어요.","그럼 이것부터 할게요."]);
+    if(kind==="quiet"||kind==="redirect")return pickLine(["네.","알겠어요.","아, 네."]);
+    if(kind==="praise")return pickLine(["네!","진짜요?","헤헤."]);
+    if(kind==="listen")return pickLine(["제가 먼저 그런 건 아니에요.","그냥 같이 하고 싶었어요.","계속 그래서 화났어요.","저도 잘 모르겠어요…"]);
+    if(kind==="safety")return pickLine(["네…","알겠어요.","…"]);
+    return "";
+  }
 
   function spotFor(s,scene,free){
     if(scene==="classroom"&&!free&&current().kind==="lesson")return seats[s.seat];
@@ -1678,9 +1691,15 @@
       s.conflictWith=null;other.conflictWith=null;stats.reconciled++;
       s.trust=clamp(s.trust+.018);other.trust=clamp(other.trust+.018);
       remember(s,"선생님 중재로 "+other.name+"와 갈등을 정리함",.58);remember(other,"선생님 중재로 "+s.name+"와 갈등을 정리함",.58);
-      log("두 학생의 말을 차례로 듣자 "+s.name+"와 "+other.name+"의 목소리가 차분해졌다.","teacher",teacherScene);
+      scriptLog({speaker:"선생님",dialogue:teacherLine("mediate",s),
+        replySpeaker:s.name+" · "+other.name,replyDialogue:pickLine(["…알겠어요.","저도 그건 미안해요.","다음엔 그렇게 안 할게요."]),
+        stage:"한 명씩 말을 마치자 두 학생의 목소리가 조금 낮아졌다.",
+        summary:s.name+"와 "+other.name+"의 갈등이 중재 뒤 차분해졌다.",type:"teacher",scene:teacherScene});
     }else{
-      log("중재로 다툼은 멈췄지만 "+s.name+"와 "+other.name+" 사이 감정은 아직 남아 보인다.","teacher",teacherScene);
+      scriptLog({speaker:"선생님",dialogue:teacherLine("mediate",s),
+        replySpeaker:s.name+" · "+other.name,replyDialogue:pickLine(["전 아직 화났어요.","…","알겠는데 아직 싫어요."]),
+        stage:"다툼은 멈췄지만 두 학생은 서로를 바로 보지 않았다.",
+        summary:"중재 뒤에도 "+s.name+"와 "+other.name+" 사이 감정이 남았다.",type:"teacher",scene:teacherScene});
     }
   }
   function separateConflict(s){
@@ -1691,7 +1710,10 @@
       s.conflictUntil=gameSec+90;other.conflictUntil=gameSec+90;
       s.dx=clamp(other.x>50?18:82,8,92);s.dy=clamp(78+rand(-7,7),25,90);
       remember(s,other.name+"와 잠시 떨어져 진정함",.42);
-      log(s.name+"을(를) "+other.name+"에게서 잠시 떨어뜨려 진정할 시간을 주었다.","teacher",teacherScene);
+      scriptLog({speaker:"선생님",dialogue:teacherLine("separate",s),
+        replySpeaker:s.name,replyDialogue:studentReply("safety",s),
+        stage:s.name+"이(가) "+other.name+"과(와) 떨어진 자리로 이동했다.",
+        summary:s.name+"을(를) "+other.name+"에게서 잠시 분리했다.",type:"teacher",scene:teacherScene});
     }else{
       setDestination(s,s.scene,true);
       log(s.name+"에게 잠시 다른 자리에서 정리할 시간을 주었다.","teacher",teacherScene);
@@ -1703,7 +1725,10 @@
     circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<28)o.helpful=clamp(o.helpful+.003)});
     s.focus=clamp(s.focus+.055);s.talkNeed=clamp(s.talkNeed-.06);s.moveNeed=clamp(s.moveNeed-.06);
     remember(s,"선생님에게 도움 역할을 맡음",.58);
-    log(s.name+"에게 친구를 돕거나 정리를 맡는 작은 역할을 주었다.","teacher",teacherScene);
+    scriptLog({speaker:"선생님",dialogue:s.name+"야, 이것 좀 같이 맡아줄래?",
+      replySpeaker:s.name,replyDialogue:pickLine(["네!","제가 할게요.","뭐 하면 돼요?"]),
+      stage:s.name+"이(가) 선생님 쪽으로 몸을 돌렸다.",
+      summary:s.name+"에게 도움 역할을 맡겼다.",type:"teacher",scene:teacherScene});
   }
   function connectStudents(a,b){
     if(!a||!b||a===b||a.scene!==b.scene)return;
@@ -1712,7 +1737,10 @@
     a.socialNeed=clamp(a.socialNeed+.08);b.socialNeed=clamp(b.socialNeed+.05);
     a.groupId=null;b.groupId=null;
     remember(a,"선생님이 "+b.name+"와 함께 해보도록 연결함",.42);remember(b,"선생님이 "+a.name+"와 함께 해보도록 연결함",.42);
-    log("선생님이 "+a.name+"와 "+b.name+"에게 함께 해볼 기회를 만들어 주었다.","teacher",teacherScene);
+    scriptLog({speaker:"선생님",dialogue:a.name+"이랑 "+b.name+", 이번에는 둘이 같이 해볼래?",
+      replySpeaker:a.name+" · "+b.name,replyDialogue:pickLine(["네.","해볼게요.","응, 같이 하자."]),
+      stage:"두 학생이 서로를 한 번 바라봤다.",
+      summary:"선생님이 "+a.name+"와 "+b.name+"에게 함께할 기회를 만들었다.",type:"teacher",scene:teacherScene});
     if(a.conflictWith===b.id||b.conflictWith===a.id){
       a.frustration=clamp(a.frustration+.035);b.frustration=clamp(b.frustration+.035);
     }else{
@@ -1920,7 +1948,13 @@
         s.observation+=2;s.observedSubjects[current().subject]=true;s.helpNeed=clamp(s.helpNeed-.025*m);
         var ev=recordDiagnosticEvidence(s,"활동지 확인");
         remember(s,"선생님이 풀이 과정을 확인함",.30);
-        log(s.name+"의 과제를 살펴보며 "+(ev?ev.text:"풀이 흐름")+"을(를) 확인했다.","learning",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("inspect",s),
+          replySpeaker:s.name,replyDialogue:studentReply("inspect",s),
+          stage:"선생님이 "+s.name+"의 활동지 옆에 몸을 낮추고 풀이 흔적을 따라봤다.",
+          summary:s.name+"의 과제를 살펴보며 "+(ev?ev.text:"풀이 흐름")+"을(를) 확인했다.",
+          type:"learning",scene:teacherScene
+        });
       }
     },
     checkQuestion:{
@@ -1932,7 +1966,13 @@
         s.observation+=1;s.focus=clamp(s.focus+.025*m);s.observedSubjects[current().subject]=true;
         var ev=recordDiagnosticEvidence(s,"확인 질문");
         remember(s,"선생님의 확인 질문에 답해봄",.28);
-        log(s.name+"에게 확인 질문을 해 "+(ev?ev.label+" 관련 반응":"이해 정도")+"을(를) 살폈다.","learning",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("check",s),
+          replySpeaker:s.name,replyDialogue:studentReply("check",s),
+          stage:s.name+"이(가) 자신의 풀이를 다시 내려다봤다.",
+          summary:s.name+"에게 확인 질문을 해 "+(ev?ev.label+" 관련 반응":"이해 정도")+"을(를) 살폈다.",
+          type:"learning",scene:teacherScene
+        });
       }
     },
     probeConcept:{
@@ -1944,8 +1984,13 @@
         s.observation+=1;s.focus=clamp(s.focus+.018*m);
         var ev=recordDiagnosticEvidence(s,"진단문항");
         remember(s,"비슷한 개념의 짧은 진단문항에 응답함",.34);
-        if(ev&&ev.evidence>=2)log(s.name+"에게서 "+ev.label+"과(와) 관련된 비슷한 어려움이 반복해서 관찰됐다.","learning",teacherScene);
-        else log(s.name+"에게 비슷한 개념을 다른 방식으로 한 번 더 확인했다.","learning",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("probe",s),
+          replySpeaker:s.name,replyDialogue:studentReply("probe",s),
+          stage:ev&&ev.evidence>=2?"비슷한 지점에서 "+s.name+"의 손이 다시 멈췄다.":"문제의 모양이 바뀌자 "+s.name+"이(가) 잠깐 생각했다.",
+          summary:ev&&ev.evidence>=2?s.name+"에게서 "+ev.label+" 관련 비슷한 어려움이 반복됐다.":s.name+"에게 비슷한 개념을 다른 방식으로 확인했다.",
+          type:"learning",scene:teacherScene
+        });
       }
     },
 
@@ -1958,7 +2003,12 @@
         if(!hasObservedCurrentWork(s))recordDiagnosticEvidence(s,"힌트 전 반응");
         s.helpNeed=clamp(s.helpNeed-.14*m);applyLearning(s,.012*m,"hint");s.focus=clamp(s.focus+.07*m);stats.helped++;
         remember(s,"힌트를 받고 다시 문제에 접근함",.50);
-        log(s.name+"에게 정답 대신 작은 힌트를 주고 반응을 관찰했다.","learning",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("hint",s),
+          replySpeaker:s.name,replyDialogue:studentReply("hint",s),
+          stage:"선생님은 답을 말하지 않고 "+s.name+"의 풀이 한 곳만 손가락으로 짚었다.",
+          summary:s.name+"에게 정답 대신 작은 힌트를 주었다.",type:"learning",scene:teacherScene
+        });
       }
     },
     firstStep:{
@@ -1970,7 +2020,12 @@
         recordDiagnosticEvidence(s,"첫 단계 함께 하기");
         s.helpNeed=clamp(s.helpNeed-.22*m);applyLearning(s,.022*m,"firstStep");s.focus=clamp(s.focus+.10*m);s.trust=clamp(s.trust+.012);stats.helped++;
         remember(s,"선생님과 첫 단계를 함께 해결함",.58);
-        log(s.name+"과 첫 단계를 함께 풀고 이후 반응을 살폈다.","learning",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("first",s),
+          replySpeaker:s.name,replyDialogue:studentReply("first",s),
+          stage:"첫 단계가 끝나자 선생님이 연필에서 손을 떼고 "+s.name+" 쪽으로 넘겼다.",
+          summary:s.name+"과 첫 단계를 함께 풀고 이후 스스로 이어가게 했다.",type:"learning",scene:teacherScene
+        });
       }
     },
     simplify:{
@@ -1978,7 +2033,12 @@
       desc:"해야 할 일을 더 작은 단계로 나누어 부담을 낮춥니다.",
       when:function(s){return current().kind==="lesson"&&s.scene===teacherScene&&(s.frustration>.24||hasObservedCurrentWork(s)||hasDiagnosticEvidence(s))},
       recommended:function(s){return s.frustration>.34||s.helpNeed>.22},
-      effect:function(s,m){s.frustration=clamp(s.frustration-.13*m);s.helpNeed=clamp(s.helpNeed-.11*m);s.focus=clamp(s.focus+.055*m);s.boredom=clamp(s.boredom-.025);remember(s,"과제를 작은 단계로 나눠 다시 시작함",.48);log(s.name+"의 과제를 더 작은 단계로 나누어 다시 시작하게 했다.","learning",teacherScene)}
+      effect:function(s,m){s.frustration=clamp(s.frustration-.13*m);s.helpNeed=clamp(s.helpNeed-.11*m);s.focus=clamp(s.focus+.055*m);s.boredom=clamp(s.boredom-.025);remember(s,"과제를 작은 단계로 나눠 다시 시작함",.48);scriptLog({
+        speaker:"선생님",dialogue:teacherLine("simplify",s),
+        replySpeaker:s.name,replyDialogue:studentReply("simplify",s),
+        stage:"해야 할 부분을 하나씩 가리키자 "+s.name+"이(가) 다시 연필을 들었다.",
+        summary:s.name+"의 과제를 더 작은 단계로 나누었다.",type:"learning",scene:teacherScene
+      })}
     },
     movementJob:{
       id:"movementJob",category:"support",label:"움직이는 심부름 주기",duration:25,repeatPenalty:.06,
@@ -2007,14 +2067,24 @@
       desc:"짧고 분명하게 이름을 부르고 지금 해야 할 행동을 다시 알려줍니다.",
       when:function(s){return s.scene===teacherScene&&isOffTask(s)&&s.action!=="REJECTED"},
       recommended:function(s){return isOffTask(s)&&s.correctionLoad<.35},
-      effect:function(s,m){s.focus=clamp(s.focus+.12*m);requestStudentAction(s,current().subject==="체육"?"PLAY":"WORK",{duration:35,force:true});s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.10);s.trust=clamp(s.trust-.004*(1-m));remember(s,"선생님이 조용히 이름을 불러 재안내함",.34);log(s.name+"에게 짧게 이름을 부르고 지금 할 일을 다시 알려주었다.","teacher",teacherScene)}
+      effect:function(s,m){s.focus=clamp(s.focus+.12*m);requestStudentAction(s,current().subject==="체육"?"PLAY":"WORK",{duration:35,force:true});s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.10);s.trust=clamp(s.trust-.004*(1-m));remember(s,"선생님이 조용히 이름을 불러 재안내함",.34);scriptLog({
+        speaker:"선생님",dialogue:teacherLine("quiet",s),
+        replySpeaker:s.name,replyDialogue:studentReply("quiet",s),
+        stage:"선생님은 수업을 멈추지 않은 채 "+s.name+" 쪽으로 시선을 보냈다.",
+        summary:s.name+"에게 조용히 재안내했다.",type:"teacher",scene:teacherScene
+      })}
     },
     redirect:{
       id:"redirect",category:"guide",label:"해야 할 행동 다시 제시",duration:20,near:true,repeatPenalty:.06,
       desc:"하지 말라는 말 대신 지금 해야 할 구체적인 행동을 제시합니다.",
       when:function(s){return s.scene===teacherScene&&isOffTask(s)},
       recommended:function(s){return s.action==="DOODLE"||s.action==="MOVE"||s.action==="TALK"},
-      effect:function(s,m){s.focus=clamp(s.focus+.09*m);s.boredom=clamp(s.boredom-.035*m);requestStudentAction(s,current().subject==="체육"?"PLAY":"WORK",{duration:35,force:true});s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.055);log(s.name+"에게 지금 해야 할 행동을 짧고 구체적으로 다시 제시했다.","teacher",teacherScene)}
+      effect:function(s,m){s.focus=clamp(s.focus+.09*m);s.boredom=clamp(s.boredom-.035*m);requestStudentAction(s,current().subject==="체육"?"PLAY":"WORK",{duration:35,force:true});s.intent=null;s.correctionLoad=clamp(s.correctionLoad+.055);scriptLog({
+        speaker:"선생님",dialogue:teacherLine("redirect",s),
+        replySpeaker:s.name,replyDialogue:studentReply("redirect",s),
+        stage:"선생님이 해야 할 부분을 짧게 가리켰다.",
+        summary:s.name+"에게 지금 해야 할 행동을 다시 제시했다.",type:"teacher",scene:teacherScene
+      })}
     },
     seatAdjust:{
       id:"seatAdjust",category:"guide",label:"자리 조정하기",duration:0,mode:"seat",
@@ -2048,7 +2118,12 @@
         requestStudentAction(s,"WAIT",{duration:20,force:true,clearTarget:true});s.frustration=clamp(s.frustration-.07);
         if(target){requestStudentAction(target,"WAIT",{duration:20,force:true});target.dx=clamp(target.x+(target.x<50?-10:10),7,93)}
         stats.safetyInterventions++;
-        log("교사가 즉시 행동을 중단시키고 학생들 사이의 거리를 확보했다.","teacher",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("safety",s),
+          replySpeaker:s.name,replyDialogue:studentReply("safety",s),
+          stage:"선생님이 두 학생 사이로 들어가 서로의 거리를 벌렸다.",
+          summary:"교사가 즉시 행동을 중단시키고 학생들 사이의 거리를 확보했다.",type:"teacher",scene:teacherScene
+        });
       }
     },
     checkSafety:{
@@ -2059,7 +2134,12 @@
       effect:function(s,m){
         s.victimStress=clamp(s.victimStress-.18*m);s.frustration=clamp(s.frustration-.10*m);s.trust=clamp(s.trust+.035*m);s.mood=clamp(s.mood+.05*m);
         stats.safetyInterventions++;remember(s,"교사가 먼저 안전과 상태를 확인해 줌",.72);
-        log(s.name+"의 안전과 상태를 먼저 확인하고 잠시 보호했다.","teacher",teacherScene);
+        scriptLog({
+          speaker:"선생님",dialogue:teacherLine("checkSafety",s),
+          replySpeaker:s.name,replyDialogue:pickLine(["여기가 조금 아파요.","괜찮아요…","조금 놀랐어요."]),
+          stage:"선생님이 "+s.name+"의 상태를 먼저 살피며 주변과 거리를 두었다.",
+          summary:s.name+"의 안전과 상태를 먼저 확인했다.",type:"teacher",scene:teacherScene
+        });
       }
     },
     requestSupport:{
@@ -2089,14 +2169,24 @@
       desc:"결과보다 실제 시도와 행동을 짧게 짚어 인정합니다.",
       when:function(s){return s.scene===teacherScene&&isPositiveAction(s)},
       recommended:function(s){return isPositiveAction(s)&&s.trust<.72},
-      effect:function(s,m){s.focus=clamp(s.focus+.045*m);s.trust=clamp(s.trust+.035*m);s.mood=clamp(s.mood+.035*m);s.belonging=clamp(s.belonging+.022*m);circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<25)o.belonging=clamp(o.belonging+.006*m)});stats.praises++;remember(s,"구체적인 행동을 인정받음",.50);log(s.name+"이 잘한 구체적인 행동을 짧게 인정했다.","teacher",teacherScene)}
+      effect:function(s,m){s.focus=clamp(s.focus+.045*m);s.trust=clamp(s.trust+.035*m);s.mood=clamp(s.mood+.035*m);s.belonging=clamp(s.belonging+.022*m);circlePeers(s,s.scene).forEach(function(o){if(distance(s,o)<25)o.belonging=clamp(o.belonging+.006*m)});stats.praises++;remember(s,"구체적인 행동을 인정받음",.50);scriptLog({
+        speaker:"선생님",dialogue:teacherLine("praise",s),
+        replySpeaker:s.name,replyDialogue:studentReply("praise",s),
+        stage:s.name+"이(가) 잠깐 선생님 쪽을 바라봤다.",
+        summary:s.name+"의 구체적인 행동을 인정했다.",type:"teacher",scene:teacherScene
+      })}
     },
     listen:{
       id:"listen",category:"relationship",label:"잠깐 이야기 듣기",duration:40,near:true,repeatPenalty:.025,
       desc:"해결책을 먼저 말하지 않고 학생의 현재 감정과 상황을 짧게 듣습니다.",
       when:function(s){return s.scene===teacherScene&&(s.frustration>.18||s.action==="REJECTED"||s.action==="HURT"||!!conflictPartner(s))},
       recommended:function(s){return s.action==="REJECTED"||s.frustration>.45},
-      effect:function(s,m){s.frustration=clamp(s.frustration-.18*m);s.mood=clamp(s.mood+.065*m);s.trust=clamp(s.trust+.04*m);remember(s,"선생님이 먼저 이야기를 들어줌",.58);log(s.name+"의 이야기를 먼저 듣고 상황을 확인했다.","teacher",teacherScene)}
+      effect:function(s,m){s.frustration=clamp(s.frustration-.18*m);s.mood=clamp(s.mood+.065*m);s.trust=clamp(s.trust+.04*m);remember(s,"선생님이 먼저 이야기를 들어줌",.58);scriptLog({
+        speaker:"선생님",dialogue:"무슨 일이 있었는지 네 이야기부터 들어볼게.",
+        replySpeaker:s.name,replyDialogue:studentReply("listen",s),
+        stage:"선생님이 바로 해결책을 말하지 않고 "+s.name+"의 말을 기다렸다.",
+        summary:s.name+"의 이야기를 먼저 듣고 상황을 확인했다.",type:"teacher",scene:teacherScene
+      })}
     },
     mediate:{
       id:"mediate",category:"relationship",label:"둘 사이 갈등 중재",duration:70,near:true,repeatPenalty:.02,
