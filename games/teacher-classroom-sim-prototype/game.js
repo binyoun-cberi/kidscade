@@ -2420,7 +2420,7 @@
       seats.forEach(function(p,i){
         var deskY=clamp(p.y+2.4,0,96);
         html+='<div class="fixed-desk desk-back" data-seat="'+i+'" style="left:'+p.x+'%;top:'+deskY+'%"><i class="desk-paper"></i></div>';
-        html+='<div class="fixed-desk desk-front" data-seat="'+i+'" style="left:'+p.x+'%;top:'+deskY+'%"></div>';
+        html+='<div class="desk-apron" data-seat="'+i+'" style="left:'+p.x+'%;top:'+deskY+'%"></div>';
       });
     }else if(scene==="hallway"){
       html+='<div class="room-prop hall-lockers">'+new Array(8).fill("<i></i>").join("")+'</div><div class="room-prop hall-line"></div><div class="room-prop hall-windows"><i></i><i></i><i></i></div>';
