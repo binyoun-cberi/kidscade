@@ -1005,6 +1005,10 @@
       token.hidden=true;return;
     }
     if(gameSec>=pendingEncounter.expiresAt){
+      if(pendingEncounter.followUpId){
+        var expiredJob=followUpQueue.find(function(j){return j.id===pendingEncounter.followUpId});
+        if(expiredJob){expiredJob.status="queued";expiredJob.dueDay=Math.max(dayIndex+1,expiredJob.dueDay)}
+      }
       pendingEncounter=null;scheduleNextEncounter(260,480);token.hidden=true;return;
     }
     var s=studentById(pendingEncounter.studentId);
@@ -2956,7 +2960,7 @@
     if(periodStats.seriousIncidents>0&&!highlights.some(function(x){return x.indexOf("심각")>=0||x.indexOf("위협")>=0||x.indexOf("신체")>=0}))highlights.push("안전 확인이 필요한 심각 상황 "+periodStats.seriousIncidents+"건이 발생했다.");
     highlights=highlights.slice(0,4);
     var responses=[];if(periodStats.safetyInterventions)responses.push("안전 개입 "+periodStats.safetyInterventions+"회");if(periodStats.teacherActs)responses.push("교사 개입 "+periodStats.teacherActs+"회");if(periodStats.reconciled)responses.push("갈등 정리 "+periodStats.reconciled+"건");if(periodStats.helped)responses.push("개별 학습 지원 "+periodStats.helped+"회");
-    return {stamp:fmtMin(period.end),text:period.name+" 종료 메모 · 기록할 만한 상황 "+events.length+"건",type:"period_summary",scene:period.loc||"classroom",script:false,recordable:true,periodSummary:true,periodName:period.name,periodSubject:period.subject||"",periodRange:fmtMin(period.start)+"~"+fmtMin(period.end),studentNames:names.slice(0,8),highlights:highlights,responseSummary:responses.join(" · ")};
+    return {day:dayIndex,stamp:fmtMin(period.end),text:period.name+" 종료 메모 · 기록할 만한 상황 "+events.length+"건",type:"period_summary",scene:period.loc||"classroom",script:false,recordable:true,periodSummary:true,periodName:period.name,periodSubject:period.subject||"",periodRange:fmtMin(period.start)+"~"+fmtMin(period.end),studentNames:names.slice(0,8),highlights:highlights,responseSummary:responses.join(" · ")};
   }
   function finalizePeriodMemo(period,periodStats){if(!period||period.kind!=="lesson")return;var key=period.start+"-"+period.end+"-"+period.name;if(periodMemoKeys[key])return;periodMemoKeys[key]=true;var memo=buildPeriodMemo(period,periodStats);if(!memo)return;dayEvents.push(memo);dayEvents=dayEvents.slice(-200)}
 
@@ -3453,13 +3457,29 @@
   }
   function recordableEvent(item){return !!item&&item.recordable===true}
   function recordEntryHtml(item){
-    var place=SCENE_NAME[item.scene]||item.scene||"";
+    var place=SCENE_NAME[item.scene]||item.scene||"",dayLabel="Day "+(item.day||1)+" · ";
+    if(item.daySummary){
+      var m=item.metrics||{},st=item.styles||{};
+      return '<article class="record-entry period_summary"><div class="period-memo-title"><strong>🌇 Day '+(item.day||1)+' 하루 마무리</strong><span>하루 요약</span></div>'+
+        '<div class="period-memo-meta">판단 '+(item.encounterCount||0)+'회 · 후속 예정 '+(item.followUpCount||0)+'건</div>'+
+        '<div class="decision-deltas"><span>📖 흐름 '+(m.flow||0)+'</span><span>🤝 관계 '+(m.relationship||0)+'</span><span>🧭 안정 '+(m.stability||0)+'</span><span>❤️ 신뢰 '+(m.trust||0)+'</span></div>'+
+        '<div class="decision-deltas"><span>↑ 원칙 '+(st.up||0)+'</span><span>↓ 공감 '+(st.down||0)+'</span><span>← 코칭 '+(st.left||0)+'</span><span>→ 자율 '+(st.right||0)+'</span></div></article>';
+    }
+    if(item.followUpOutcome){
+      var fd=item.delta||{},fb=item.before||{},fa=item.after||{},fl={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+      var fdelta=Object.keys(fl).filter(function(k){return fd[k]}).map(function(k){return '<span>'+fl[k]+' '+fb[k]+'→'+fa[k]+' ('+(fd[k]>0?"+":"")+fd[k]+')</span>'}).join("");
+      return '<article class="record-entry followup_decision"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="followup-badge">후속 결과</span></div>'+
+        '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
+        '<div class="record-stage">이전 판단 · '+escHtml(item.sourceDirection||"")+' · '+escHtml(item.sourceChoice||"")+'</div>'+
+        '<div class="record-stage">'+escHtml(item.resultText||"")+'</div>'+
+        (fdelta?'<div class="decision-deltas">'+fdelta+'</div>':'')+'</article>';
+    }
     if(item.encounterDecision){
       var s=studentById(item.studentId),d=item.delta||{},before=item.before||{},after=item.after||{},labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
       var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+escHtml(before[k])+'→'+escHtml(after[k])+' ('+(d[k]>0?"+":"")+d[k]+')</span>'}).join("");
       var cb=item.beforeClass||{},ca=item.afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
       var classDeltaHtml=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){return '<span>'+classLabels[k]+' '+cb[k]+'→'+ca[k]+'</span>'}).join("");
-      return '<article class="record-entry encounter_decision"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span></div>'+
+      return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">후속 판단</span>':'')+'</div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
@@ -3469,12 +3489,12 @@
     if(item.periodSummary){
       var names=(item.studentNames||[]).join(" · ");
       var memoHtml='<article class="record-entry period_summary"><div class="period-memo-title"><strong>🗒️ '+escHtml(item.periodName||"교시")+' 메모</strong><span>교시 종료 정리</span></div>'+
-        '<div class="period-memo-meta">'+escHtml(item.periodRange||"")+(item.periodSubject?" · "+escHtml(item.periodSubject):"")+(names?" · 관련 학생 "+escHtml(names):"")+'</div>';
+        '<div class="period-memo-meta">Day '+(item.day||1)+' · '+escHtml(item.periodRange||"")+(item.periodSubject?" · "+escHtml(item.periodSubject):"")+(names?" · 관련 학생 "+escHtml(names):"")+'</div>';
       if(item.highlights&&item.highlights.length)memoHtml+='<ul class="period-memo-list">'+item.highlights.map(function(x){return '<li>'+escHtml(x)+'</li>'}).join("")+'</ul>';
       if(item.responseSummary)memoHtml+='<div class="period-memo-response">교사 대응 · '+escHtml(item.responseSummary)+'</div>';
       return memoHtml+'</article>';
     }
-    var html='<article class="record-entry '+escHtml(item.type||"normal")+'"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div><div class="record-summary">'+escHtml(item.text||"")+'</div>';
+    var html='<article class="record-entry '+escHtml(item.type||"normal")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div><div class="record-summary">'+escHtml(item.text||"")+'</div>';
     if(item.script){
       if(item.stage)html+='<div class="record-stage">'+escHtml(item.stage)+'</div>';
       if(item.dialogue||item.replyDialogue){
@@ -3517,17 +3537,19 @@
         body.innerHTML='<div class="tool-section"><h4>학생 선택</h4><div class="tool-grid">'+students.filter(function(x){return x.scene===teacherScene}).map(function(x){return '<button type="button" class="tool-choice" data-clipboard-student="'+x.id+'"><strong>'+escHtml(x.name)+'</strong><small>'+escHtml(humanAction(x))+'</small></button>'}).join("")+'</div></div>';
       }else{
         var d=latestDiagnosisSummary(s),mem=s.memory.slice(0,6);
-        body.innerHTML='<div class="tool-section"><h4>지금 보이는 모습</h4><div>'+escHtml(observationText(s))+'</div></div><div class="tool-section"><h4>학습 진단 근거</h4>'+(d.length?d.map(function(x){return '<div class="diagnosis-item '+(x.hypothesis?"hypothesis":"")+'">'+escHtml(x.text)+'</div>'}).join(""):'<div class="record-empty">아직 학습 진단 근거가 없습니다.</div>')+'</div><div class="tool-section"><h4>최근 관찰 메모</h4>'+(mem.length?mem.map(function(m){return '<div class="record-student-memory">'+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">기록된 관찰 메모가 없습니다.</div>')+'</div>';
+        body.innerHTML='<div class="tool-section"><h4>지금 보이는 모습</h4><div>'+escHtml(observationText(s))+'</div></div><div class="tool-section"><h4>학습 진단 근거</h4>'+(d.length?d.map(function(x){return '<div class="diagnosis-item '+(x.hypothesis?"hypothesis":"")+'">'+escHtml(x.text)+'</div>'}).join(""):'<div class="record-empty">아직 학습 진단 근거가 없습니다.</div>')+'</div><div class="tool-section"><h4>최근 관찰 메모</h4>'+(mem.length?mem.map(function(m){return '<div class="record-student-memory">Day '+(m.day||1)+' · '+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">기록된 관찰 메모가 없습니다.</div>')+'</div>';
       }
     }else if(kind==="seating"){
       kicker.textContent="자리배치표";title.textContent="교실 자리와 관계";
       var seatHtml=seats.map(function(_,i){var st=students.find(function(x){return x.seat===i});return '<button type="button" class="seat-mini '+(st&&selected===st.id?"selected":"")+'" '+(st?'data-seat-student="'+st.id+'"':'disabled')+'>'+(st?escHtml(st.name):"빈 자리")+'</button>'}).join("");
       body.innerHTML='<div class="tool-section"><h4>현재 자리</h4><div class="seat-mini-grid">'+seatHtml+'</div></div><div class="tool-section"><h4>사용법</h4><div>'+(s?escHtml(s.name)+'을(를) 선택했습니다. 아래 기능으로 두 번째 학생을 선택해 자리를 바꾸거나 친구를 연결할 수 있어요.':'자리표에서 학생을 먼저 선택하세요.')+'</div><div class="tool-grid" style="margin-top:8px">'+(s?'<button type="button" class="tool-choice" data-seating-action="seatAdjust"><strong>🪑 자리 바꾸기</strong><small>다음 학생을 선택해 두 자리를 바꿉니다.</small></button><button type="button" class="tool-choice" data-seating-action="connectPeer"><strong>🧑‍🤝‍🧑 함께할 친구 연결</strong><small>다음 학생과 함께할 기회를 만듭니다.</small></button>':'')+'</div></div>';
     }else if(kind==="record"){
-      kicker.textContent="생활기록부";title.textContent=s?s.name+" · 오늘의 기록":"우리 반 · 오늘의 기록";
-      var items=dayEvents.filter(recordableEvent).slice(-50).reverse();
-      var html='<div class="tool-section"><h4>판단·생활지도 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 생활지도에 기록할 만한 상황이 없습니다. 평범한 대화나 정상적인 놀이·학습 대화는 생기부에 남기지 않습니다.</div>')+'</div></div>';
-      if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">'+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
+      kicker.textContent="생활기록부";title.textContent=s?s.name+" · 누적 기록":"우리 반 · 누적 기록";
+      var items=dayEvents.filter(recordableEvent);
+      if(s)items=items.filter(function(item){return item.studentId===s.id||item.targetId===s.id||(item.text&&item.text.indexOf(s.name)>=0)||(item.studentNames&&item.studentNames.indexOf(s.name)>=0)});
+      items=items.slice(-90).reverse();
+      var html='<div class="tool-section"><h4>판단·생활지도 누적 기록</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 기록할 만한 판단이나 생활지도 상황이 없습니다.</div>')+'</div></div>';
+      if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">Day '+(m.day||1)+' · '+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
       body.innerHTML=html;tutorialEvent("record");
     }
   }
