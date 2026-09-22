@@ -2898,6 +2898,7 @@
   }
   function handleStudentClick(id){
     var s=studentById(id);if(!s)return;
+    if(pendingEncounter&&pendingEncounter.studentId===id){openPendingEncounter();return}
     if(armedActionId){executeActionForStudent(armedActionId,id);return}
     tutorialEvent("student");
     if(connectMode&&selected!==null&&selected!==s.id){
@@ -3209,6 +3210,8 @@
   function renderTeacherCards(){
     var tray=q("#actionTray"),wrap=q("#teacherActionCards"),target=q("#actionTrayTarget"),s=studentById(selected);
     if(!tray||!wrap||!target)return;
+    tray.hidden=true;
+    return;
     var actions=s?studentToolActions(s):[];
     tray.hidden=!s||!actions.length||reportOpen||!!toolModalKind;
     if(tray.hidden)return;
@@ -3249,6 +3252,15 @@
   function recordableEvent(item){return !!item&&item.recordable===true}
   function recordEntryHtml(item){
     var place=SCENE_NAME[item.scene]||item.scene||"";
+    if(item.encounterDecision){
+      var s=studentById(item.studentId),d=item.delta||{},labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+      var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+(d[k]>0?"+":"")+d[k]+'</span>'}).join("");
+      return '<article class="record-entry encounter_decision"><div class="record-entry-head"><time>'+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span></div>'+
+        '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
+        '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
+        (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
+        (deltaHtml?'<div class="decision-deltas">'+deltaHtml+'</div>':'')+'</article>';
+    }
     if(item.periodSummary){
       var names=(item.studentNames||[]).join(" · ");
       var memoHtml='<article class="record-entry period_summary"><div class="period-memo-title"><strong>🗒️ '+escHtml(item.periodName||"교시")+' 메모</strong><span>교시 종료 정리</span></div>'+
@@ -3281,6 +3293,18 @@
         html+='</div></div><button class="tool-choice" type="button" data-computer-report="1"><strong>📊 현재 교시 결과 보기</strong><small>지금까지의 수업 흐름과 학습·교실 상태를 확인합니다.</small></button>';
       }else html+='<div class="record-empty">수업 시간에는 여기서 설명·질문·짝활동·정리 같은 수업 흐름을 선택할 수 있습니다.</div>';
       body.innerHTML=html;
+    }else if(kind==="roster"){
+      kicker.textContent="학급 명부";title.textContent="우리 반 상태";
+      var cm=classDashboard();
+      var roster='<div class="roster-summary">'+
+        '<div><strong>'+cm.flow+'</strong><small>📖 수업 흐름</small></div>'+
+        '<div><strong>'+cm.relationship+'</strong><small>🤝 학급 관계</small></div>'+
+        '<div><strong>'+cm.stability+'</strong><small>🧭 생활 안정</small></div>'+
+        '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div></div>'+
+        '<div class="tool-section"><h4>학생 상태 · 0~100</h4><div class="roster-table">'+
+        '<div class="roster-head"><span>학생</span><span>📚 학습</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
+        students.map(rosterRowHtml).join("")+'</div></div>'+rosterDetailHtml(s);
+      body.innerHTML=roster;
     }else if(kind==="clipboard"){
       kicker.textContent="관찰 클립보드";title.textContent=s?s.name+" 관찰 기록":"학생 관찰";
       if(!s){
@@ -3504,10 +3528,11 @@
     renderSceneNav();
     renderRoomOverview();
     renderClassroomTools();
+    renderEncounterToken();
     renderTeacherPosition();
   }
   function render(){
-    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderRoomOverview();renderPanel();renderFeed();renderClassroomTools();renderTeacherPosition();
+    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderRoomOverview();renderPanel();renderFeed();renderClassroomTools();renderEncounterToken();renderTeacherPosition();
   }
   function openScene(scene){
     if(scene===teacherScene)return;
@@ -3518,14 +3543,15 @@
     log(SCENE_NAME[scene]+" 쪽으로 이동을 시작했다.","teacher",teacherScene);render();
   }
   function reset(){
-    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
-    resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;
+    gameSec=520*60;periodIndex=0;running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;classMetrics={flow:72,relationship:68,stability:72,trust:64};teacherStyleCounts={up:0,down:0,left:0,right:0};reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
+    resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();q("#report").hidden=true;q("#encounterOverlay").hidden=true;scheduleNextEncounter(260,420);
     log("학생들이 하나둘 교실로 들어오기 시작했다.","ambient","classroom");render();
   }
 
   function loop(now){
     if(!document.body.contains(app))return;
     var realDt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+    if(activeEncounter)updateEncounterClock(now);
     if(running&&!reportOpen){
       var speed=Number(q("#speed").value)||1;
       var gameDt=realDt*GAME_SECONDS_PER_REAL_SECOND*speed;
@@ -3547,13 +3573,14 @@
         }
         renderAccumulator+=realDt;
         if(renderAccumulator>=.10){renderAccumulator=0;renderFrame()}
+        maybeSpawnEncounter();
       }
     }
     requestAnimationFrame(loop);
   }
 
   q("#world").addEventListener("click",function(e){
-    if(e.target.closest&&e.target.closest(".student,.world-alert,.classroom-console,.action-tray,.tool-modal,.tutorial-overlay"))return;
+    if(e.target.closest&&e.target.closest(".student,.world-alert,.classroom-console,.action-tray,.tool-modal,.tutorial-overlay,.encounter-token,.encounter-overlay"))return;
     if(selected!==null){selected=null;connectMode=false;swapMode=false;renderPanel();renderStudents();}
   });
   q("#priorityBoard").addEventListener("click",function(e){
@@ -3603,6 +3630,7 @@
     var instruction=e.target.closest&&e.target.closest("[data-instruction-id]");
     if(instruction){var a=INSTRUCTION_ACTIONS[instruction.dataset.instructionId];closeToolModal(true);if(a&&!teacherIsBusy())startTeacherTask(a,null);render();return}
     var rep=e.target.closest&&e.target.closest("[data-computer-report]");if(rep){closeToolModal(false);openReport(true);return}
+    var rosterStudent=e.target.closest&&e.target.closest("[data-roster-student]");if(rosterStudent){selected=Number(rosterStudent.dataset.rosterStudent);renderToolModal("roster");return}
     var st=e.target.closest&&e.target.closest("[data-clipboard-student]");if(st){selected=Number(st.dataset.clipboardStudent);renderToolModal("clipboard");return}
     var seat=e.target.closest&&e.target.closest("[data-seat-student]");if(seat){selected=Number(seat.dataset.seatStudent);renderToolModal("seating");return}
     var sa=e.target.closest&&e.target.closest("[data-seating-action]");if(sa){closeToolModal(true);if(sa.dataset.seatingAction==="seatAdjust"){swapMode=true;connectMode=false}else{connectMode=true;swapMode=false}render();return}
