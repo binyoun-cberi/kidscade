@@ -134,6 +134,15 @@
   var dayEvents=[];
   var incidentRecords=[];
   var periodMemoKeys={};
+  var encounterHistory=[];
+  var pendingEncounter=null;
+  var activeEncounter=null;
+  var nextEncounterAt=0;
+  var encounterSeq=0;
+  var encounterWasRunning=true;
+  var encounterPointer=null;
+  var classMetrics={flow:72,relationship:68,stability:72,trust:64};
+  var teacherStyleCounts={up:0,down:0,left:0,right:0};
   var reportOpen=false;
   var armedActionId=null;
   var armedActionTargetId=null;
@@ -144,7 +153,7 @@
   var modalWasRunning=true;
   var lastBellAt=-99999;
   var tutorialState={active:false,step:0};
-  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v11";
+  var TUTORIAL_KEY="kidscade.teacherSim.tutorial.v16";
   var lastFrame=performance.now();
   var aiAccumulator=0;
   var renderAccumulator=0;
@@ -596,10 +605,364 @@
         conflictWith:null,conflictUntil:0,avoidId:null,avoidUntil:0,
         pairWith:null,pairUntil:0,lessonPartner:null,role:null,roleUntil:0,correctionLoad:0,
         severeCooldown:0,victimStress:0,teacherDefiance:0,lastSeriousIncident:null,
+        encounterNotes:[],speechText:"",speechTone:"normal",speechUntil:0,
         actionStartedAt:gameSec,actionLockedUntil:gameSec+25,behaviorPhase:"idle",phaseUntil:0,facing:1
       });
     });
   }
+
+  var ENCOUNTER_DIRECTIONS={
+    up:{label:"원칙 · 권위",icon:"↑",philosophy:"규칙·기준·교사의 명확한 지시를 우선"},
+    down:{label:"공감 · 관계",icon:"↓",philosophy:"학생의 감정·사정·관계 회복을 우선"},
+    left:{label:"교육 · 코칭",icon:"←",philosophy:"필요한 기술을 직접 가르치고 연습"},
+    right:{label:"자율 · 책임",icon:"→",philosophy:"학생이 선택하고 해결하며 결과를 책임"}
+  };
+
+  function averageStudentAffinity(s){
+    if(!students.length)return .5;
+    var peers=students.filter(function(o){return o!==s});
+    if(!peers.length)return .5;
+    var sum=peers.reduce(function(total,o){return total+relation(s,o).affinity},0);
+    return clamp(sum/peers.length);
+  }
+  function studentDashboard(s){
+    var p=current(),learning;
+    if(p&&p.subject&&subjectModel(p.subject))learning=subjectMastery(s,p.subject);
+    else{
+      var vals=Object.keys(SUBJECT_MODELS).map(function(subject){return subjectMastery(s,subject)});
+      learning=vals.length?vals.reduce(function(a,b){return a+b},0)/vals.length:(s.academic||.5);
+    }
+    return {
+      learning:Math.round(clamp(learning)*100),
+      focus:Math.round(clamp(s.focus)*100),
+      mood:Math.round(clamp(s.mood)*100),
+      relation:Math.round(clamp(s.belonging*.62+averageStudentAffinity(s)*.38)*100),
+      trust:Math.round(clamp(s.trust)*100)
+    };
+  }
+  function classDashboard(){
+    var rel=students.length?students.reduce(function(sum,s){return sum+studentDashboard(s).relation},0)/students.length:classMetrics.relationship;
+    var tr=students.length?students.reduce(function(sum,s){return sum+s.trust*100},0)/students.length:classMetrics.trust;
+    return {
+      flow:Math.round(clamp(classMetrics.flow,0,100)),
+      relationship:Math.round(clamp(rel*.55+classMetrics.relationship*.45,0,100)),
+      stability:Math.round(clamp(classMetrics.stability,0,100)),
+      trust:Math.round(clamp(tr*.58+classMetrics.trust*.42,0,100))
+    };
+  }
+  function dashboardDelta(before,after){
+    var out={};
+    Object.keys(before).forEach(function(k){out[k]=(after[k]||0)-(before[k]||0)});
+    return out;
+  }
+  function effectHint(effects){
+    effects=effects||{};
+    var labels={learning:"📚",focus:"🎯",mood:"🙂",relation:"🤝",trust:"❤️",classFlow:"수업",classRelationship:"관계",classStability:"질서",classTrust:"신뢰"};
+    return Object.keys(labels).filter(function(k){return effects[k]}).slice(0,4).map(function(k){
+      return labels[k]+" "+(effects[k]>0?"↑":"↓");
+    }).join("  ")||"결과는 상황에 따라 달라질 수 있음";
+  }
+  function encounterChoice(text,effects,result){
+    return {text:text,effects:effects||{},result:result||""};
+  }
+  var ENCOUNTER_TEMPLATES=[
+    {
+      id:"stationery_taken",category:"생활지도",title:"말없이 친구 물건을 가져갔다",
+      score:function(s){return (s.imp*.45+s.mischief*.35+(1-s.rule)*.35)+(s.action==="TAKE_ITEM_FORCE"?.9:0)},
+      build:function(s){
+        var target=nearbyStudents(s,28).filter(function(o){return o!==s})[0]||chooseSocialTarget(s,"SOCIAL");
+        if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) 아무 말 없이 "+target.name+"의 지우개를 집어 들었다. "+target.name+"은(는) 손을 뻗다가 멈췄다.",dialogue:target.name+' “그거 내 건데…”',choices:{
+          up:encounterChoice("지금 바로 돌려주게 하고 남의 물건은 허락 없이 쓰지 않는다는 규칙을 확인한다.",{trust:-2,relation:-1,classStability:6,classFlow:3},"물건은 바로 돌아갔고 교실의 기준은 분명해졌다. 다만 "+s.name+"은(는) 이유를 설명할 틈이 적었다."),
+          down:encounterChoice("왜 가져갔는지 먼저 듣고 두 학생이 어떤 기분이었는지 차례로 말하게 한다.",{mood:4,trust:4,relation:4,classFlow:-4,classRelationship:4},"시간은 조금 걸렸지만 두 학생이 서로의 입장을 말로 확인했다."),
+          left:encounterChoice("물건을 돌려준 뒤 ‘빌려줄래?’라고 묻는 방법을 직접 연습시킨다.",{trust:2,relation:6,classStability:3,classFlow:-3},"상황을 해결하는 데서 끝내지 않고 다음에 사용할 말을 한 번 연습했다."),
+          right:encounterChoice("두 학생에게 지금 이 상황을 어떻게 해결할지 직접 정해보게 한다.",{mood:1,trust:2,relation:3,classFlow:2,classStability:-1},"교사는 한 걸음 물러났고 두 학생이 해결 방법을 찾아보기 시작했다.")
+        }};
+      }
+    },
+    {
+      id:"math_foundation_gap",category:"학습",title:"기초 개념에서 막혀 있다",
+      score:function(s){return current().kind==="lesson"&&current().subject==="수학"?Math.max(0,.72-currentMastery(s))*2.2:0},
+      build:function(s){
+        return {text:"수학 활동 중 "+s.name+"이(가) 받아올림 문제에서 계속 손을 멈춘다. 확인해 보니 앞 단계의 덧셈도 아직 불안정해 보인다.",dialogue:s.name+' “선생님, 여기서부터 잘 모르겠어요.”',choices:{
+          up:encounterChoice("오늘 필요한 기초 문제를 정해 반드시 끝내게 한다.",{learning:3,focus:2,mood:-4,trust:-2,classFlow:3,classStability:2},"해야 할 양은 분명해졌지만 "+s.name+"의 표정은 조금 굳었다."),
+          down:encounterChoice("오늘은 부담을 줄이고 지금 할 수 있는 수준부터 성공하게 한다.",{learning:1,mood:6,trust:5,classFlow:-1},"과제량은 줄었지만 "+s.name+"이(가) 다시 연필을 들었다."),
+          left:encounterChoice("2~3분을 들여 이전 단계부터 직접 다시 설명한다.",{learning:8,focus:3,trust:4,classFlow:-6},"기초 단계부터 다시 짚는 동안 다른 학생들을 보는 시간은 줄었지만 이해의 실마리가 생겼다."),
+          right:encounterChoice("설명 다시 듣기·친구와 풀기·연습문제 중 방법을 학생이 고르게 한다.",{learning:3,focus:3,mood:2,trust:3,classFlow:0},"선택한 방법으로 다시 시작하게 하자 "+s.name+"이(가) 자기 방식으로 접근했다.")
+        }};
+      }
+    },
+    {
+      id:"off_task",category:"수업운영",title:"수업에서 마음이 멀어지고 있다",
+      score:function(s){return current().kind==="lesson"&&["TALK","DOODLE","MOVE","LOOK_OUTSIDE","SLEEP"].indexOf(s.action)>=0?.9+s.boredom*.5:0},
+      build:function(s){
+        return {text:s.name+"이(가) 과제보다 옆자리와 이야기하거나 다른 곳을 보며 수업 흐름에서 벗어나고 있다.",dialogue:s.action==="TALK"?s.name+' “야, 쉬는 시간에 같이 갈래?”':"",choices:{
+          up:encounterChoice("이름을 부르고 지금 해야 할 행동을 분명하게 지시한다.",{focus:7,trust:-2,classStability:5,classFlow:4},"행동은 빠르게 수업으로 돌아왔지만 교사의 통제가 강하게 느껴질 수 있다."),
+          down:encounterChoice("지금 무엇이 힘든지 짧게 묻고 이유를 듣는다.",{mood:4,trust:5,focus:2,classFlow:-3},"원인을 확인하는 동안 흐름은 잠시 느려졌지만 교사와의 대화가 생겼다."),
+          left:encounterChoice("해야 할 일을 한 단계로 잘라 구체적으로 다시 시작하게 한다.",{focus:7,learning:2,trust:2,classFlow:-2},"해야 할 일이 작아지자 다시 시작하기가 쉬워졌다."),
+          right:encounterChoice("남은 시간의 목표를 학생이 스스로 정하고 끝나면 확인하기로 한다.",{focus:4,trust:3,mood:1,classStability:1},"스스로 세운 목표를 지킬 책임이 학생에게 넘어갔다.")
+        }};
+      }
+    },
+    {
+      id:"peer_conflict",category:"또래관계",title:"두 학생의 목소리가 커지고 있다",
+      score:function(s){return s.action==="ARGUE"||conflictPartner(s)?1.8+s.frustration:0},
+      build:function(s){
+        var target=conflictPartner(s)||studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"과(와) "+target.name+"의 말다툼이 길어지고 있다. 서로 자기 말만 반복하며 목소리가 점점 커진다.",dialogue:s.name+' “내가 먼저 했잖아.”  ·  '+target.name+' “너도 그랬잖아.”',choices:{
+          up:encounterChoice("둘을 즉시 멈추고 떨어뜨린 뒤 규칙 위반 여부부터 확인한다.",{mood:-2,relation:-2,classStability:7,classFlow:3},"갈등은 즉시 중단됐지만 감정은 아직 남아 있다."),
+          down:encounterChoice("한 명씩 충분히 말하게 하고 서로의 감정을 확인한다.",{mood:5,trust:4,relation:6,classFlow:-6,classRelationship:5},"시간은 들었지만 서로 왜 화가 났는지 말로 드러났다."),
+          left:encounterChoice("사실-기분-원하는 것을 차례로 말하는 방법을 알려주고 다시 말하게 한다.",{relation:7,trust:2,classFlow:-5,classStability:3},"갈등 해결 방법 자체를 연습하는 시간이 됐다."),
+          right:encounterChoice("교사는 안전선만 정하고 두 학생이 해결안을 하나 정하도록 맡긴다.",{relation:3,trust:2,classFlow:1,classStability:-2},"해결의 책임은 학생들에게 넘어갔다. 잘 풀릴지는 이후 관계에 달려 있다.")
+        }};
+      }
+    },
+    {
+      id:"social_exclusion",category:"또래관계",title:"놀이와 모둠에서 자꾸 밀려난다",
+      score:function(s){return s.action==="REJECTED"||s.belonging<.48?1.1+(1-s.belonging):0},
+      build:function(s){
+        return {text:s.name+"이(가) 친구들 곁에 몇 번 다가갔지만 자리가 생기지 않았다. 지금은 조금 떨어진 곳에서 친구들을 보고 있다.",dialogue:s.name+' “나도 같이 하면 안 돼?”',choices:{
+          up:encounterChoice("모두가 참여해야 한다는 학급 규칙을 확인하고 자리를 만들어 준다.",{relation:4,mood:2,trust:1,classStability:4,classRelationship:2},"참여 자리는 생겼지만 관계가 자연스럽게 이어질지는 더 지켜봐야 한다."),
+          down:encounterChoice(s.name+"의 마음을 먼저 듣고 지금 원하는 관계가 무엇인지 묻는다.",{mood:7,trust:6,relation:2,classFlow:-2},"소속감이 떨어진 이유와 학생이 원하는 것이 조금 더 분명해졌다."),
+          left:encounterChoice("친구에게 다가가거나 놀이에 참여할 때 쓸 말을 함께 연습한다.",{relation:6,trust:3,mood:3,classFlow:-3},"다음에 사용할 구체적인 사회적 방법을 하나 준비했다."),
+          right:encounterChoice("어느 친구에게 어떤 방식으로 다가갈지 학생이 직접 정하게 한다.",{relation:3,mood:2,trust:4,classStability:0},"교사가 친구를 정해주지 않고 학생이 관계의 다음 행동을 선택했다.")
+        }};
+      }
+    },
+    {
+      id:"teacher_defiance",category:"생활지도",title:"교사의 안내에 강하게 반발한다",
+      score:function(s){return ["REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER"].indexOf(s.action)>=0?1.9+s.teacherDefiance:0},
+      build:function(s){
+        return {text:"교사의 안내 직후 "+s.name+"이(가) 큰 목소리로 반발했다. 주변 학생 몇 명이 수업을 멈추고 바라본다.",dialogue:s.speechText||s.name+' “왜 저만 그래요! 자꾸 말하지 마세요!”',choices:{
+          up:encounterChoice("선을 분명히 긋고 지금의 말과 행동은 허용되지 않는다고 즉시 알린다.",{trust:-4,mood:-3,classStability:9,classFlow:4},"교실의 경계는 선명해졌지만 학생의 감정은 아직 높다."),
+          down:encounterChoice("목소리를 낮춰 지금 화가 난 이유부터 듣고 진정할 시간을 준다.",{trust:7,mood:7,classFlow:-6,classStability:-1},"수업은 잠시 멈췄지만 감정이 낮아질 통로가 생겼다."),
+          left:encounterChoice("화가 났을 때 교사에게 말할 수 있는 다른 표현을 구체적으로 알려준다.",{trust:3,mood:2,classStability:4,classFlow:-4},"문제 행동만 막지 않고 대체할 표현을 가르쳤다."),
+          right:encounterChoice("수업에 다시 참여하는 방법 두 가지를 제시하고 학생이 하나를 고르게 한다.",{trust:4,focus:3,mood:2,classStability:2},"선택권과 책임을 함께 주면서 수업으로 돌아올 길을 만들었다.")
+        }};
+      }
+    },
+    {
+      id:"finished_early",category:"학습",title:"너무 빨리 끝내고 심심해한다",
+      score:function(s){return current().kind==="lesson"&&currentMastery(s)>.82&&s.focus>.62?.45+currentMastery(s):0},
+      build:function(s){
+        return {text:s.name+"이(가) 활동을 일찍 끝냈다. 주변 친구들은 아직 과제를 하는 중이고, "+s.name+"은(는) 무엇을 할지 두리번거린다.",dialogue:s.name+' “선생님, 저 다 했는데 이제 뭐 해요?”',choices:{
+          up:encounterChoice("추가 문제를 정해 조용히 더 풀게 한다.",{learning:2,focus:4,mood:-2,classFlow:4,classStability:3},"수업 흐름은 안정적이지만 학생에게는 반복 과제로 느껴질 수 있다."),
+          down:encounterChoice("충분히 했다고 인정하고 잠깐 쉬거나 책을 보게 한다.",{mood:6,trust:4,learning:0,classFlow:3},"성취를 인정받은 느낌은 커졌지만 학습 확장은 크지 않았다."),
+          left:encounterChoice("같은 개념을 더 깊게 생각하는 도전 과제를 준다.",{learning:6,focus:5,mood:2,classFlow:-2},"추가 양보다 난도를 바꿔 학습을 확장했다."),
+          right:encounterChoice("도전 문제·독서·친구 설명 중 다음 활동을 스스로 고르게 한다.",{focus:3,mood:4,trust:3,learning:2,classFlow:1},"남는 시간을 어떻게 쓸지 스스로 결정하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"presentation_anxiety",category:"정서",title:"발표 차례가 다가오자 굳어 버렸다",
+      score:function(s){return current().kind==="lesson"&&["question","presentation"].indexOf(lessonState.phase)>=0&&s.assert<.48&&s.rejection>.52?.7+s.rejection:0},
+      build:function(s){
+        return {text:s.name+"의 발표 차례가 다가오자 시선이 아래로 향하고 목소리가 거의 나오지 않는다.",dialogue:s.name+' “저… 꼭 해야 해요?”',choices:{
+          up:encounterChoice("모두가 해야 하는 활동임을 알려주고 짧게라도 발표하게 한다.",{focus:2,mood:-5,trust:-2,classStability:3,classFlow:3},"발표 경험은 남았지만 부담도 크게 느껴졌다."),
+          down:encounterChoice("오늘은 건너뛸 수 있게 하고 긴장을 먼저 낮춘다.",{mood:7,trust:6,learning:-1,classFlow:2},"즉각적인 불안은 줄었지만 발표 경험은 다음 기회로 미뤄졌다."),
+          left:encounterChoice("자리에서 한 문장 말하기부터 연습한 뒤 발표 여부를 다시 정한다.",{mood:3,trust:4,learning:3,focus:3,classFlow:-4},"작은 단계의 성공을 만든 뒤 다음 행동을 선택할 수 있게 됐다."),
+          right:encounterChoice("자리 발표·친구와 함께·앞에서 발표 중 방식을 직접 고르게 한다.",{mood:4,trust:4,focus:2,classFlow:0},"발표 자체는 유지하면서 방식에 대한 선택권을 주었다.")
+        }};
+      }
+    },
+    {
+      id:"missing_homework",category:"책임",title:"준비한 것이 또 빠져 있다",
+      score:function(s){return current().kind==="morning"||current().kind==="lesson"?(1-s.persist)*.45+(1-s.rule)*.25:0},
+      build:function(s){
+        return {text:s.name+"이(가) 오늘도 필요한 준비물이나 과제를 챙기지 못했다. 수업을 시작하려면 다른 방법이 필요하다.",dialogue:s.name+' “어제 하려고 했는데 깜빡했어요.”',choices:{
+          up:encounterChoice("정해진 책임을 확인하고 보충해야 할 일을 분명히 적어 준다.",{trust:-1,focus:2,classStability:4,classFlow:2},"해야 할 책임과 기한이 분명해졌다."),
+          down:encounterChoice("왜 반복되는지 생활 상황을 먼저 듣고 부담이 과한지 확인한다.",{mood:4,trust:6,classFlow:-2},"누락 자체보다 반복되는 이유를 확인하는 데 초점을 두었다."),
+          left:encounterChoice("알림장·가방 확인 등 준비하는 절차를 함께 만들어 연습한다.",{focus:4,trust:3,classStability:3,classFlow:-3},"다음 날 사용할 구체적인 준비 절차가 생겼다."),
+          right:encounterChoice("어떻게 보완할지 학생이 계획을 세우고 다음 날 확인하기로 한다.",{trust:3,focus:2,classStability:1},"보완 계획의 책임을 학생에게 돌려주고 다음 확인 시점을 정했다.")
+        }};
+      }
+    }
+  ];
+
+  function weightedPick(items){
+    if(!items.length)return null;
+    var total=items.reduce(function(sum,x){return sum+x.weight},0),r=Math.random()*total;
+    for(var i=0;i<items.length;i++){r-=items[i].weight;if(r<=0)return items[i]}
+    return items[items.length-1];
+  }
+  function makeEncounter(){
+    var visible=students.filter(function(s){return s.scene===teacherScene&&!s.targetScene});
+    var candidates=[];
+    visible.forEach(function(s){
+      ENCOUNTER_TEMPLATES.forEach(function(t){
+        var weight=Math.max(0,Number(t.score(s))||0);
+        var recent=encounterHistory.slice(-8).some(function(h){return h.templateId===t.id&&h.studentId===s.id});
+        if(weight>.12&&!recent)candidates.push({student:s,template:t,weight:weight});
+      });
+    });
+    if(!candidates.length)return null;
+    var picked=weightedPick(candidates),built=picked.template.build(picked.student);
+    if(!built)return null;
+    return Object.assign({
+      id:"enc-"+(++encounterSeq),templateId:picked.template.id,category:picked.template.category,
+      title:picked.template.title,studentId:picked.student.id,targetId:null,
+      createdAt:gameSec,expiresAt:gameSec+260,choices:{}
+    },built);
+  }
+  function scheduleNextEncounter(min,max){nextEncounterAt=gameSec+rand(min||420,max||760)}
+  function maybeSpawnEncounter(){
+    if(pendingEncounter||activeEncounter||reportOpen||toolModalKind||tutorialState.active||gameSec<nextEncounterAt)return;
+    if(current().kind==="closing"){scheduleNextEncounter(300,500);return}
+    var enc=makeEncounter();
+    if(enc){pendingEncounter=enc;renderEncounterToken()}
+    else scheduleNextEncounter(180,320);
+  }
+  function renderEncounterToken(){
+    var token=q("#encounterToken");
+    if(!token)return;
+    if(!pendingEncounter||activeEncounter||reportOpen||toolModalKind||tutorialState.active){
+      token.hidden=true;return;
+    }
+    if(gameSec>=pendingEncounter.expiresAt){
+      pendingEncounter=null;scheduleNextEncounter(260,480);token.hidden=true;return;
+    }
+    var s=studentById(pendingEncounter.studentId);
+    if(!s||s.scene!==teacherScene){token.hidden=true;return}
+    token.hidden=false;token.style.left=s.x+"%";token.style.top=Math.max(12,s.y-5)+"%";
+    token.title=pendingEncounter.title;token.setAttribute("aria-label",s.name+"의 판단 상황: "+pendingEncounter.title);
+  }
+  function openPendingEncounter(){
+    if(!pendingEncounter||activeEncounter)return;
+    activeEncounter=pendingEncounter;pendingEncounter=null;
+    activeEncounter.phase="choice";activeEncounter.deadline=performance.now()+12000;
+    encounterWasRunning=running;running=false;
+    renderEncounter();
+  }
+  function renderEncounter(){
+    var overlay=q("#encounterOverlay");if(!overlay)return;
+    if(!activeEncounter){overlay.hidden=true;return}
+    overlay.hidden=false;
+    var enc=activeEncounter,s=studentById(enc.studentId),t=studentById(enc.targetId);
+    q("#encounterCategory").textContent=enc.category+" · 4방향 판단";
+    q("#encounterKicker").textContent=current().name;
+    q("#encounterTitle").textContent=enc.title;
+    q("#encounterText").textContent=enc.text;
+    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ");
+    var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
+    ["up","down","left","right"].forEach(function(dir){
+      var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
+      q("#encounterChoice"+cap).textContent=choice?choice.text:"";
+      q("#encounterEffect"+cap).textContent=choice?effectHint(choice.effects):"";
+      var button=q('[data-encounter-dir="'+dir+'"]');if(button)button.disabled=!choice||enc.phase!=="choice";
+    });
+    q("#encounterResult").hidden=enc.phase!=="result";
+    q("#encounterCard").hidden=enc.phase==="result";
+    qa(".encounter-choice").forEach(function(b){b.hidden=enc.phase==="result"});
+    if(enc.phase==="choice")updateEncounterClock(performance.now());
+  }
+  function updateEncounterClock(now){
+    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    var remain=Math.max(0,activeEncounter.deadline-now),ratio=clamp(remain/12000);
+    q("#encounterTimerText").textContent=(remain/1000).toFixed(1)+"초";
+    q("#encounterTimerFill").style.transform="scaleX("+ratio+")";
+    if(remain<=0)resolveEncounter("timeout");
+  }
+  function applyEncounterLearning(s,points){
+    if(!points)return;
+    var p=current(),model=subjectModel(p.subject);
+    if(model&&s.knowledge&&s.knowledge[p.subject]){
+      var node=s.knowledge[p.subject][model.focus];
+      node.mastery=clamp(node.mastery+points/100);
+      var weak=weakestConcept(s,p.subject);
+      if(weak&&weak!==model.focus)s.knowledge[p.subject][weak].mastery=clamp(s.knowledge[p.subject][weak].mastery+points/350);
+    }else s.academic=clamp((s.academic||.5)+points/120);
+  }
+  function applyEncounterEffects(enc,choice){
+    var s=studentById(enc.studentId),t=studentById(enc.targetId),e=choice.effects||{};
+    if(!s)return;
+    applyEncounterLearning(s,e.learning||0);
+    s.focus=clamp(s.focus+(e.focus||0)/100);
+    s.mood=clamp(s.mood+(e.mood||0)/100);
+    s.belonging=clamp(s.belonging+(e.relation||0)/100);
+    s.trust=clamp(s.trust+(e.trust||0)/100);
+    if(t&&e.relation){
+      t.belonging=clamp(t.belonging+e.relation/180);
+      changeRelation(s,t,{affinity:e.relation/140,irritation:-Math.max(0,e.relation)/220});
+    }
+    if(t&&e.mood)t.mood=clamp(t.mood+e.mood/220);
+    classMetrics.flow=clamp(classMetrics.flow+(e.classFlow||0),0,100);
+    classMetrics.relationship=clamp(classMetrics.relationship+(e.classRelationship||0)+(e.relation||0)*.18,0,100);
+    classMetrics.stability=clamp(classMetrics.stability+(e.classStability||0),0,100);
+    classMetrics.trust=clamp(classMetrics.trust+(e.classTrust||0)+(e.trust||0)*.12,0,100);
+  }
+  function decisionDeltaHtml(delta){
+    var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+    return Object.keys(labels).map(function(k){
+      var d=delta[k]||0,cls=d>0?"up":d<0?"down":"same";
+      return '<span class="encounter-delta '+cls+'">'+labels[k]+" "+(d>0?"+":"")+d+'</span>';
+    }).join("");
+  }
+  function resolveEncounter(dir){
+    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    var enc=activeEncounter,s=studentById(enc.studentId),before=s?studentDashboard(s):null,beforeClass=classDashboard(),choice;
+    if(dir==="timeout"){
+      choice=encounterChoice("판단하지 못한 채 상황이 흘러감",{focus:-2,trust:-1,classStability:-2},"결정을 미루는 사이 상황이 학생들 사이에서 그대로 흘러갔다.");
+    }else{
+      choice=enc.choices[dir];if(!choice)return;
+      teacherStyleCounts[dir]=(teacherStyleCounts[dir]||0)+1;
+    }
+    applyEncounterEffects(enc,choice);
+    var after=s?studentDashboard(s):before,afterClass=classDashboard(),delta=before?dashboardDelta(before,after):{};
+    var direction=dir==="timeout"?"시간 초과":ENCOUNTER_DIRECTIONS[dir].label;
+    var history={
+      time:gameMinute(),templateId:enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
+      dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,before:before,after:after,delta:delta,
+      beforeClass:beforeClass,afterClass:afterClass
+    };
+    encounterHistory.push(history);
+    if(s){
+      s.encounterNotes.unshift({time:gameMinute(),text:enc.title+" → "+direction+" · "+choice.text,dir:dir,delta:delta});
+      s.encounterNotes=s.encounterNotes.slice(0,8);
+      remember(s,"판단 카드: "+enc.title+" / "+direction,.56);
+    }
+    dayEvents.push({
+      stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
+      type:"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,
+      studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
+      resultText:choice.result,before:before,after:after,delta:delta
+    });
+    dayEvents=dayEvents.slice(-200);
+    activeEncounter.phase="result";
+    q("#encounterResultTitle").textContent=direction+" 선택";
+    q("#encounterResultText").textContent=choice.result;
+    q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta);
+    renderEncounter();
+  }
+  function closeEncounter(){
+    if(!activeEncounter)return;
+    activeEncounter=null;q("#encounterOverlay").hidden=true;
+    encounterPointer=null;scheduleNextEncounter(480,780);
+    running=encounterWasRunning;render();
+  }
+  function rosterRowHtml(s){
+    var d=studentDashboard(s);
+    function cls(v){return v<45?"low":v>75?"high":""}
+    return '<button type="button" class="roster-row" data-roster-student="'+s.id+'">'+
+      '<span class="roster-name"><strong>'+escHtml(s.name)+'</strong><small>'+escHtml(humanAction(s))+'</small></span>'+
+      '<span class="roster-score '+cls(d.learning)+'">'+d.learning+'</span>'+
+      '<span class="roster-score '+cls(d.focus)+'">'+d.focus+'</span>'+
+      '<span class="roster-score '+cls(d.mood)+'">'+d.mood+'</span>'+
+      '<span class="roster-score '+cls(d.relation)+'">'+d.relation+'</span>'+
+      '<span class="roster-score '+cls(d.trust)+'">'+d.trust+'</span></button>';
+  }
+  function rosterDetailHtml(s){
+    if(!s)return '<div class="record-empty">학생을 선택하면 최근 판단과 변화 원인을 확인할 수 있습니다.</div>';
+    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,4);
+    return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
+      '<div class="roster-detail-grid">'+
+        '<div class="roster-stat"><strong>'+d.learning+'</strong><small>📚 학습</small></div>'+
+        '<div class="roster-stat"><strong>'+d.focus+'</strong><small>🎯 집중</small></div>'+
+        '<div class="roster-stat"><strong>'+d.mood+'</strong><small>🙂 정서</small></div>'+
+        '<div class="roster-stat"><strong>'+d.relation+'</strong><small>🤝 관계</small></div>'+
+        '<div class="roster-stat"><strong>'+d.trust+'</strong><small>❤️ 교사신뢰</small></div>'+
+      '</div><div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">'+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div></div>';
+  }
+
   function newStats(){
     stats={
       events:[],fitSamples:[],engageSamples:[],learningStart:students.map(function(s){return current().kind==="lesson"?currentMastery(s):0}),
