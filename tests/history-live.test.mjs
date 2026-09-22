@@ -193,3 +193,10 @@ test('teacher UI supports era selection presets and same-room next rounds', () =
   assert.match(html,/selectedEras\('hostEraPicker'\)/);
   assert.match(html,/pickHistoryQuestions\(count,Math\.random,orderMode,questionMode,eras\)/);
 });
+
+
+test('small era selections still fill the requested round length without leaving the era', () => {
+  const picked=pickHistoryQuestions(40,()=>0.17,'chronological','mixed',['6·25 전쟁']);
+  assert.equal(picked.length,40);
+  assert.ok(picked.every(q=>q.era==='6·25 전쟁'));
+});
