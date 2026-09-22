@@ -662,3 +662,75 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   .roster-table{overflow-x:auto}.roster-head,.roster-row{min-width:490px}
   .roster-summary{grid-template-columns:repeat(2,1fr)}
 }
+
+
+/* v17 multi-day follow-up loop */
+.day-time-row{display:flex;align-items:center;gap:8px}
+.day-number{
+  display:inline-flex;align-items:center;min-height:22px;padding:3px 7px;
+  border-radius:999px;background:#e7edf5;color:#45617f;
+  font-size:9px;font-weight:950;letter-spacing:.04em;white-space:nowrap
+}
+
+.encounter-card.followup{
+  border-color:#9cafc8;
+  background:linear-gradient(180deg,#fbfdff,#f2f6fb)
+}
+.encounter-card.followup .encounter-card-kicker{color:#486b95}
+.encounter-followup-context{
+  margin-top:11px;padding:7px 9px;border-radius:9px;background:#eaf0f7;
+  font-size:9.5px;line-height:1.45;color:#50657f
+}
+
+.day-end-overlay{
+  position:absolute;inset:0;z-index:150;
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(31,34,38,.64);backdrop-filter:blur(4px)
+}
+.day-end-overlay[hidden]{display:none!important}
+.day-end-card{
+  width:min(820px,96%);max-height:92%;overflow:auto;
+  padding:28px;border:1px solid #cfc6b8;border-radius:24px;
+  background:#fffdf8;box-shadow:0 30px 72px rgba(0,0,0,.34)
+}
+.day-end-kicker{font-size:9px;font-weight:950;letter-spacing:.08em;color:#776b5d;text-transform:uppercase}
+.day-end-card h2{margin:5px 0 7px;font-size:25px}.day-end-card>p{margin:0 0 16px;color:#676159;line-height:1.55}
+.day-end-metrics{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 18px
+}
+.day-end-metric{
+  border:1px solid #d7d0c5;border-radius:12px;background:#faf8f3;
+  padding:10px;text-align:center
+}
+.day-end-metric strong{display:block;font-size:21px}.day-end-metric small{font-size:8px;color:#756e66}
+.day-end-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 18px}
+.day-end-cols section{border:1px solid #ddd5c9;border-radius:13px;padding:12px;background:#fbfaf7}
+.day-end-cols h3{margin:0 0 8px;font-size:12px}
+.day-end-styles,.day-end-followups{display:grid;gap:6px}
+.day-end-style,.day-end-followup{
+  display:flex;justify-content:space-between;gap:8px;align-items:center;
+  padding:7px 8px;border-radius:9px;background:#fff;font-size:9.5px;line-height:1.4
+}
+.day-end-style strong{font-size:10.5px}
+.day-end-followup span:first-child{font-weight:850}
+.day-end-followup small{color:#7a736b}
+#nextDayButton{width:100%;min-height:46px}
+
+.followup-badge{
+  display:inline-flex;padding:2px 6px;border-radius:999px;
+  background:#e3ecf7;color:#476b95;font-size:8px;font-weight:900
+}
+.roster-followup{
+  margin-top:7px;padding:7px 8px;border-radius:9px;
+  background:#eef4fb;border:1px solid #d6e0ec;font-size:9px;line-height:1.45
+}
+.record-entry.followup_decision{
+  border-left-color:#5477a5;background:#f4f8fd
+}
+
+@media(max-width:650px){
+  .day-end-overlay{padding:6px}
+  .day-end-card{padding:18px;border-radius:16px}
+  .day-end-metrics{grid-template-columns:repeat(2,1fr)}
+  .day-end-cols{grid-template-columns:1fr}
+}
