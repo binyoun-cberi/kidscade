@@ -7,7 +7,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-fa
 button,select{font:inherit;color:inherit}
 button{cursor:pointer}
 button:disabled{opacity:.42;cursor:not-allowed}
-#app{max-width:1220px;margin:0 auto;padding:12px}
+#app{max-width:1760px;margin:0 auto;padding:14px 18px 18px}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .toolbar button,.toolbar select,.actions button,.scene-nav button{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:7px 11px}
 button.primary{background:var(--accent-soft);border-color:var(--accent)}
@@ -275,3 +275,78 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
   .student-selected .observe{max-height:130px;overflow:auto}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+
+/* v9 full-screen teacher HUD rework */
+:root{--danger:#a94848;--warning:#b8753f;--positive:#4f8059;--shadow:0 10px 34px rgba(63,48,35,.10)}
+.toolbar{margin-bottom:12px}
+.toolbar button,.toolbar select{min-height:44px;padding:8px 13px}
+.daybar{padding:12px 14px;margin-bottom:11px;box-shadow:0 3px 12px rgba(69,54,39,.05)}
+.daybar .period{font-size:16px}.daybar .sub{font-size:12.5px}
+.scene-nav{gap:8px;padding:3px 0 10px}
+.scene-nav button{min-height:40px;padding:7px 12px;font-size:13px}
+.layout{grid-template-columns:minmax(0,1fr) 360px;gap:16px}
+.world{min-height:clamp(620px,72vh,820px);border-radius:18px;box-shadow:var(--shadow);background-image:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,0))}
+.world::before{background-size:54px 54px}
+.scene-title{left:12px;top:12px;padding:6px 10px;font-size:13px}
+.world-alert{position:absolute;z-index:32;right:12px;top:12px;max-width:min(420px,60%);border:1px solid #d7a0a0;border-radius:11px;background:rgba(255,246,246,.96);color:#7f3131;padding:8px 11px;font-size:11px;font-weight:850;text-align:left;box-shadow:0 6px 18px rgba(120,45,45,.12);animation:urgentPulse 1.25s ease-in-out infinite}
+.world-alert[hidden]{display:none}
+@keyframes urgentPulse{50%{transform:translateY(-2px);box-shadow:0 9px 24px rgba(120,45,45,.18)}}
+.student{width:60px;height:86px}
+.student-name{bottom:-4px;font-size:10px;line-height:1.05;padding:3px 5px;border-radius:6px;font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.status-stack{top:-26px}
+.intent-tag,.action-tag{font-size:9px;padding:3px 6px;max-width:128px}
+.student.selected .sprite-wrap{outline:3px solid var(--accent);outline-offset:4px;border-radius:10px;filter:drop-shadow(0 4px 4px rgba(55,82,120,.20))}
+.student.tone-warning .sprite-wrap{filter:drop-shadow(0 2px 3px rgba(184,117,63,.32))}
+.student.tone-danger .sprite-wrap{filter:drop-shadow(0 2px 4px rgba(169,72,72,.45))}
+.student-signal{position:absolute;z-index:26;right:-5px;top:-9px;min-width:23px;height:23px;padding:0 5px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;border-radius:999px;background:#edf2f8;color:#3f5f89;box-shadow:0 2px 7px rgba(0,0,0,.17);font-size:12px;font-weight:950;line-height:1;pointer-events:none}
+.student-signal[hidden]{display:none}
+.student-signal.positive{background:#eaf6ec;color:#3f7048}
+.student-signal.warning{background:#fff1df;color:#8a552b}
+.student-signal.danger{background:#ffe9e9;color:#8f3838;animation:signalDanger .72s ease-in-out infinite alternate}
+@keyframes signalDanger{to{transform:scale(1.12) translateY(-2px)}}
+.student.help .student-signal,.student.raise_hand .student-signal,.student.report_incident .student-signal{animation:signalAsk .7s ease-in-out infinite alternate}
+@keyframes signalAsk{to{transform:translateY(-3px)}}
+.student.argue .modular-avatar:not([hidden]),.student.shout_teacher .modular-avatar:not([hidden]),.student.insult_teacher .modular-avatar:not([hidden]){animation:agitatedBody .26s ease-in-out infinite alternate}
+@keyframes agitatedBody{to{transform:translateX(1.5px) rotate(1.5deg)}}
+.student.hit .modular-avatar:not([hidden]),.student.shove .modular-avatar:not([hidden]),.student.throw_at_teacher .modular-avatar:not([hidden]){animation:dangerLunge .34s ease-in-out infinite alternate}
+@keyframes dangerLunge{to{transform:translateX(3px) rotate(2deg)}}
+.student:hover .student-name{background:#fff;border-color:#aab8cb}
+.panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding:14px;border-radius:16px;box-shadow:0 6px 22px rgba(67,52,39,.07)}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px}
+.panel-kicker{font-size:9px;font-weight:900;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.panel h3{font-size:20px;margin:1px 0 0}
+.clear-selection{flex:0 0 auto;border:1px solid var(--line);border-radius:9px;background:#fff;padding:6px 9px;font-size:10px;font-weight:800}
+.priority-card{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#fff,#fbf8f2)}
+.priority-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.priority-head strong{font-size:13px}.priority-head span{font-size:9px;color:var(--muted)}
+.room-pulse{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.pulse-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;background:#f1ede6;font-size:9px;font-weight:800;color:#625c54}
+.pulse-chip.danger{background:#ffe8e8;color:#8a3535}.pulse-chip.warning{background:#fff0df;color:#87552f}.pulse-chip.help{background:#eaf0f8;color:#456488}
+.priority-board{display:grid;gap:6px}
+.priority-empty{border:1px dashed var(--line);border-radius:9px;padding:9px;font-size:10px;line-height:1.4;color:var(--muted);text-align:center}
+.priority-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:7px 8px;text-align:left}
+.priority-item:hover{border-color:#9fb0c7;background:#fbfdff}
+.priority-dot{width:9px;height:9px;border-radius:50%;background:#8c9bab}
+.priority-dot.warning{background:var(--warning)}.priority-dot.danger{background:var(--danger)}.priority-dot.positive{background:var(--positive)}
+.priority-main{min-width:0}.priority-main strong{display:block;font-size:11px}.priority-main span{display:block;margin-top:1px;font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.priority-rank{font-size:9px;font-weight:850;color:var(--muted)}
+.student-selected .priority-card{display:none}
+.state{font-size:13px;margin:10px 0 7px}
+.student-vitals{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 9px}
+.vital-chip{padding:4px 7px;border:1px solid #ded7ca;border-radius:999px;background:#fff;font-size:9px;font-weight:800;color:#625c54}
+.vital-chip.good{border-color:#bed4c2;background:#f3faf4;color:#47704e}.vital-chip.warn{border-color:#e0c09d;background:#fff8ef;color:#7f5d3e}.vital-chip.danger{border-color:#dda5a5;background:#fff3f3;color:#8a3f3f}
+.vital-hint{font-size:9px;line-height:1.35;color:var(--muted)}
+.teacher-busy{margin:8px 0 9px}
+.action-tabs button{min-height:38px;font-size:11.5px}
+.context-action{min-height:54px;padding:8px 9px}
+.context-action strong{font-size:12.5px}.context-action small{font-size:10.5px}
+.action-detail{font-size:10.5px}
+.diagnosis-head strong{font-size:12.5px}.diagnosis-evidence{font-size:10.5px}
+.observe h4{font-size:12.5px}.feed-item{font-size:11.5px}.script-line span{font-size:11.5px}
+.schedule{display:grid;grid-template-columns:repeat(14,minmax(70px,1fr));gap:6px;overflow-x:auto;padding:9px 0 3px}
+.sched{min-width:70px;padding:7px 7px;font-size:10px;text-align:center}.sched.now{box-shadow:inset 0 0 0 1px var(--accent)}
+@media(min-width:1500px){.layout{grid-template-columns:minmax(0,1fr) 390px}.world{min-height:clamp(680px,74vh,860px)}.panel{padding:16px}}
+@media(max-width:1180px){#app{padding:10px}.layout{grid-template-columns:minmax(0,1fr) 320px;gap:10px}.world{min-height:600px}}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.panel{position:relative;top:auto;max-height:none;overflow:visible}.world{min-height:590px}.priority-board{grid-template-columns:1fr 1fr}}
+@media(max-width:780px){.daybar .period{font-size:14px}.daybar .sub{font-size:11px}.world{min-height:540px}.student{width:54px;height:80px}.student-name{font-size:9px}.world-alert{right:8px;top:8px;max-width:66%;font-size:9.5px}.priority-board{grid-template-columns:1fr}.schedule{display:flex}}
