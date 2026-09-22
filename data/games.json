@@ -101,11 +101,11 @@
     {
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 시뮬레이터",
-      "href": "games/teacher-classroom-sim-prototype/index.html?v=20",
+      "href": "games/teacher-classroom-sim-prototype/index.html?v=21",
       "category": "trivia",
       "age": "job",
       "icon": "🏫",
-      "description": "학생마다 ADHD·충동적·모범생·완벽주의·낯가림 같은 기본 특성을 가진 살아 있는 교실에서 원칙·공감·코칭·자율의 네 방향으로 판단하세요. 특성에 따라 사건과 반응이 달라지고 그 결과가 명부·생기부·후속 상황에 누적됩니다!"
+      "description": "학생마다 산만함·충동적·모범생·완벽주의·낯가림 같은 기본 특성을 가진 살아 있는 교실에서 원칙·공감·코칭·자율의 네 방향으로 판단하세요. 특성에 따라 사건과 반응이 달라지고 그 결과가 명부·생기부·후속 상황에 누적됩니다!"
     },
     {
       "id": "math_timing_lcd",
