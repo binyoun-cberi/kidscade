@@ -1280,3 +1280,70 @@ body{
   .choice-up,.choice-down{width:min(255px,64%)!important;min-height:62px!important}
   .choice-up{top:26px!important}.choice-down{bottom:18px!important}
 }
+
+
+/* v29 — character close-up + tighter dramatic beats */
+.encounter-portrait{
+  width:min(268px,86%)!important;
+  height:188px!important;
+  margin:2px auto 8px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 34%,rgba(255,255,255,.20),rgba(255,255,255,0) 36%),
+    linear-gradient(180deg,#607bab,#526b96)!important;
+}
+.encounter-portrait .portrait-avatar{
+  top:-6px!important;
+  bottom:auto!important;
+  transform:translateX(-50%) scale(5.8)!important;
+  transform-origin:50% 0!important;
+}
+.encounter-portrait::after{display:none!important}
+
+.encounter-thread{
+  width:100%;margin:0 0 9px;padding:7px 10px;
+  border-left:3px solid #8299b7;border-radius:8px;
+  background:#eef3f8;color:#56667b;
+  font-size:10px;line-height:1.45;font-weight:750;
+  word-break:keep-all;
+}
+.encounter-thread[hidden]{display:none!important}
+.encounter-card h2{margin-top:3px!important}
+.encounter-student{
+  font-weight:900!important;letter-spacing:.02em!important;
+  color:#545f70!important
+}
+
+.encounter-result{
+  left:50%!important;right:auto!important;top:50%!important;bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(560px,calc(100% - 72px))!important;
+  min-height:250px!important;height:auto!important;max-height:72%!important;
+  padding:28px 30px!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  overflow:auto!important
+}
+.encounter-result[hidden]{display:none!important}
+.encounter-result h3{margin:0 0 16px!important;font-size:21px!important}
+.encounter-result p{font-size:14px!important;line-height:1.6!important;margin:0 0 14px!important}
+.encounter-reaction{font-size:11px!important;line-height:1.55!important;margin:0 0 12px!important}
+.encounter-result-stats{margin:0 0 16px!important}
+.encounter-delta{font-size:10px!important;padding:5px 8px!important}
+#encounterReturn{align-self:center!important;min-width:100px!important}
+
+@media(max-height:800px) and (min-width:701px){
+  .encounter-portrait{height:158px!important}
+  .encounter-portrait .portrait-avatar{
+    top:-8px!important;bottom:auto!important;
+    transform:translateX(-50%) scale(5.15)!important
+  }
+}
+@media(max-width:700px){
+  .encounter-portrait{height:150px!important;width:92%!important}
+  .encounter-portrait .portrait-avatar{
+    top:-5px!important;bottom:auto!important;
+    transform:translateX(-50%) scale(4.8)!important
+  }
+  .encounter-thread{font-size:9px!important;padding:6px 8px!important}
+  .encounter-result{width:calc(100% - 24px)!important;min-height:230px!important;padding:22px 18px!important}
+}
