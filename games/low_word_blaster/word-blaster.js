@@ -16,7 +16,8 @@ const ROOT='../../';
 const WB3D=ROOT+'assets/game/3d/word-blaster/';
 const NATURE=ROOT+'assets/game/3d/nature/kenney-nature-kit/';
 const MONSTERS=ROOT+'assets/game/3d/characters/monsters/ultimate-monsters-bundle/';
-const RAYGUN=ROOT+'assets/game/2d/platformer-art/expansions/request/raygun-big.png';\nconst SCORE_KEY='kidscade_language_v3_word_blaster_best';
+const RAYGUN=ROOT+'assets/game/2d/platformer-art/expansions/request/raygun-big.png';
+const SCORE_KEY='kidscade_language_v3_word_blaster_best';
 
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
@@ -233,7 +234,8 @@ function completeBossSentence(){
 function showEnd(win,text){
   clearTargets();state.running=false;ui.endOverlay.classList.remove('hidden');ui.endIcon.textContent=win?'🏆':'💫';ui.endTitle.textContent=win?'MISSION CLEAR!':'다시 도전!';ui.endText.textContent=text;
   ui.resultScore.textContent=state.score.toLocaleString('ko-KR');ui.resultWords.textContent=state.completed.length;ui.resultNoHint.textContent=state.noHint;
-  let oldBest=0;try{oldBest=window.KidscadeStorage?.getInt?.(SCORE_KEY,0)||0}catch(_){}\n  const best=Math.max(oldBest,state.score);try{window.KidscadeStorage?.setRaw?.(SCORE_KEY,best)}catch(_){}
+  let oldBest=0;try{oldBest=window.KidscadeStorage?.getInt?.(SCORE_KEY,0)||0}catch(_){}
+  const best=Math.max(oldBest,state.score);try{window.KidscadeStorage?.setRaw?.(SCORE_KEY,best)}catch(_){}
 }
 
 function burst(pos){
