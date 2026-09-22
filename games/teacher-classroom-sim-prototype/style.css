@@ -1080,3 +1080,203 @@ body{
   .encounter-card p,.encounter-card blockquote{font-size:12px!important}
   .encounter-choice{width:82px!important}
 }
+
+
+/* v26 — cleaner encounter composition */
+.reigns-daybar{
+  background:rgba(25,34,50,.97)!important;
+  color:#f7f3df!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:0 8px 24px rgba(32,44,64,.16)!important
+}
+.reigns-daybar .sub{color:#c9d1df!important}
+.reigns-daybar .day-number{background:#f7f9fc!important;color:#40516b!important}
+.class-meter-strip>div{border-left-color:rgba(255,255,255,.10)!important}
+.class-meter-strip small{color:#bfc9d8!important}
+.day-progress-copy .progress{background:#445066!important}
+.day-progress-copy .progress i{background:#e5c968!important}
+
+.card-stage{
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,255,255,.82),rgba(255,255,255,0) 34%),
+    linear-gradient(180deg,#edf2f8 0%,#dfe7f1 52%,#d3deea 100%)!important
+}
+.encounter-overlay{
+  padding:12px!important;
+  background:rgba(223,231,241,.78)!important;
+  backdrop-filter:blur(5px)!important
+}
+.encounter-shell{
+  width:min(930px,calc(100% - 8px))!important;
+  height:min(860px,calc(100% - 8px))!important;
+  min-height:0!important;
+  padding:132px 168px 118px!important;
+  border:0!important;
+  border-radius:24px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important
+}
+.encounter-topline{
+  left:16px!important;right:auto!important;top:14px!important;
+  width:auto!important;height:auto!important;min-height:0!important;
+  padding:8px 12px!important;border-radius:999px!important;
+  background:rgba(255,255,255,.90)!important;
+  border:1px solid rgba(74,91,116,.15)!important;
+  color:#4c5d74!important;
+  box-shadow:0 5px 18px rgba(55,72,98,.08)!important;
+  font-size:10px!important;letter-spacing:.02em
+}
+.encounter-card{
+  width:100%!important;max-width:430px!important;height:100%!important;
+  min-height:0!important;padding:22px 26px 20px!important;
+  border:1px solid #d9d4c8!important;border-radius:24px!important;
+  background:linear-gradient(180deg,#fffdf8 0%,#fbf7ed 100%)!important;
+  box-shadow:0 20px 54px rgba(48,62,82,.18)!important;
+  color:#202633!important
+}
+.encounter-card.dragging{
+  box-shadow:0 28px 70px rgba(48,62,82,.28)!important
+}
+.encounter-card.followup{
+  border:2px solid #9db1ca!important;
+  background:linear-gradient(180deg,#fcfdff 0%,#f1f5fa 100%)!important
+}
+.encounter-card.story{
+  border:2px solid #b99b58!important;
+  background:linear-gradient(180deg,#fffef8 0%,#faf3df 100%)!important
+}
+.encounter-card.story .encounter-card-kicker{color:#85672a!important}
+.encounter-card-kicker{
+  margin:0 0 7px!important;font-size:10px!important;color:#6c7583!important;
+  font-weight:900!important;letter-spacing:.02em!important
+}
+.encounter-portrait{
+  width:min(250px,82%)!important;height:218px!important;margin:2px auto 12px!important;
+  border:1px solid rgba(41,53,72,.12)!important;border-radius:18px!important;
+  background:linear-gradient(180deg,#607bab,#526b96)!important;
+  box-shadow:inset 0 -24px 58px rgba(27,38,58,.12)!important
+}
+.encounter-portrait .portrait-avatar{
+  bottom:-28px!important;
+  transform:translateX(-50%) scale(4.25)!important
+}
+.encounter-portrait::after{
+  right:10px!important;bottom:10px!important;
+  padding:5px 9px!important;background:rgba(255,255,255,.9)!important;
+  color:#465269!important;font-size:9px!important
+}
+.encounter-card h2{
+  margin:2px 0 8px!important;font-size:20px!important;line-height:1.28!important;
+  color:#1f2430!important;word-break:keep-all
+}
+.encounter-card p{
+  margin:0!important;font-size:13px!important;line-height:1.58!important;
+  color:#333a47!important;word-break:keep-all!important
+}
+.encounter-card blockquote{
+  margin:10px 0 0!important;padding:9px 12px!important;
+  border:1px solid #e5ddc7!important;border-radius:12px!important;
+  background:#fff9e8!important;color:#40392e!important;
+  font-size:12px!important;line-height:1.5!important
+}
+.encounter-student{
+  margin-top:auto!important;padding:8px 4px 0!important;
+  border-top:1px solid #e0d9ca!important;
+  color:#6a6254!important;font-size:9.5px!important;line-height:1.45!important
+}
+.encounter-drag-hint{
+  margin-top:6px!important;color:#8b8f97!important;font-size:8.5px!important
+}
+
+.encounter-choice{
+  width:150px!important;min-height:132px!important;padding:13px 14px!important;
+  gap:6px!important;border:1px solid #c8d2df!important;border-radius:18px!important;
+  background:rgba(255,255,255,.96)!important;color:#263345!important;
+  box-shadow:0 10px 28px rgba(48,64,87,.12)!important;
+  text-align:left!important
+}
+.encounter-choice .direction{
+  display:block!important;margin-bottom:2px!important;
+  font-size:11px!important;font-weight:950!important;letter-spacing:.01em!important
+}
+.encounter-choice strong{
+  display:block!important;color:#283344!important;
+  font-size:11px!important;line-height:1.48!important;font-weight:800!important;
+  word-break:keep-all!important;overflow-wrap:anywhere!important
+}
+.choice-left{
+  left:7px!important;top:50%!important;
+  border-left:4px solid #5374a7!important
+}
+.choice-right{
+  right:7px!important;top:50%!important;
+  border-right:4px solid #7d6d9b!important
+}
+.choice-up{
+  top:42px!important;left:50%!important;width:min(390px,62%)!important;
+  min-height:72px!important;padding:11px 16px!important;
+  border-top:4px solid #a5654e!important;text-align:center!important
+}
+.choice-down{
+  bottom:26px!important;left:50%!important;width:min(390px,62%)!important;
+  min-height:72px!important;padding:11px 16px!important;
+  border-bottom:4px solid #4f8192!important;text-align:center!important
+}
+.choice-up .direction{color:#9a5943!important}
+.choice-down .direction{color:#46788a!important}
+.choice-left .direction{color:#4a6b9d!important}
+.choice-right .direction{color:#75668f!important}
+.encounter-choice:hover,.encounter-choice:focus-visible,.encounter-choice.preview{
+  border-color:#8096b3!important;
+  background:#fff!important;
+  box-shadow:0 14px 34px rgba(43,61,86,.20)!important
+}
+.choice-up:hover,.choice-up:focus-visible,.choice-up.preview{
+  transform:translateX(-50%) scale(1.025)!important
+}
+.choice-down:hover,.choice-down:focus-visible,.choice-down.preview{
+  transform:translateX(-50%) scale(1.025)!important
+}
+.choice-left:hover,.choice-left:focus-visible,.choice-left.preview{
+  transform:translateY(-50%) scale(1.025)!important
+}
+.choice-right:hover,.choice-right:focus-visible,.choice-right.preview{
+  transform:translateY(-50%) scale(1.025)!important
+}
+
+.encounter-result{
+  inset:70px 80px 42px!important;border-radius:22px!important;
+  border:1px solid #d7d1c5!important;background:#fffdf8!important;
+  box-shadow:0 20px 52px rgba(48,62,82,.18)!important;color:#252b35!important
+}
+
+@media(max-height:800px) and (min-width:701px){
+  .encounter-shell{padding-top:108px!important;padding-bottom:94px!important}
+  .choice-up{top:26px!important}.choice-down{bottom:16px!important}
+  .encounter-portrait{height:184px!important}
+  .encounter-portrait .portrait-avatar{bottom:-34px!important;transform:translateX(-50%) scale(3.9)!important}
+  .encounter-card h2{font-size:18px!important}
+  .encounter-card p{font-size:12px!important}
+  .encounter-card blockquote{font-size:11px!important}
+}
+@media(max-width:700px){
+  .encounter-overlay{padding:0!important}
+  .encounter-shell{
+    width:100%!important;height:100%!important;
+    padding:96px 88px 92px!important;border-radius:0!important
+  }
+  .encounter-topline{top:8px!important;left:8px!important}
+  .encounter-card{padding:16px 16px 14px!important;border-radius:18px!important}
+  .encounter-portrait{width:90%!important;height:172px!important;margin-bottom:8px!important}
+  .encounter-portrait .portrait-avatar{bottom:-30px!important;transform:translateX(-50%) scale(3.55)!important}
+  .encounter-card h2{font-size:16px!important}
+  .encounter-card p,.encounter-card blockquote{font-size:11px!important}
+  .encounter-student{font-size:8.5px!important}
+  .encounter-choice{width:82px!important;min-height:118px!important;padding:7px!important;border-radius:13px!important}
+  .encounter-choice strong{font-size:8.5px!important;line-height:1.35!important}
+  .encounter-choice .direction{font-size:9px!important}
+  .choice-left{left:2px!important}.choice-right{right:2px!important}
+  .choice-up,.choice-down{width:min(255px,64%)!important;min-height:62px!important}
+  .choice-up{top:26px!important}.choice-down{bottom:18px!important}
+}
