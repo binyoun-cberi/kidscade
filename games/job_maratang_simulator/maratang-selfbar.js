@@ -14,12 +14,22 @@ const UPGRADES = {
   service:{name:'서비스 교육',base:3000,max:4},
   marketing:{name:'지역 홍보',base:4200,max:3}
 };
+const SAUCES = [
+  {id:'peanut',name:'땅콩소스'},
+  {id:'sesame',name:'참깨소스'},
+  {id:'chiliOil',name:'마유'},
+  {id:'garlic',name:'다진마늘'},
+  {id:'vinegar',name:'흑초'},
+  {id:'cilantro',name:'고수'}
+];
 const DISPLAY_TUNING = {
   cabbage:{scale:1.10}, broccoli:{scale:1.12}, carrot:{scale:1.10},
   mushroom:{scale:1.12}, sausage:{scale:1.08}, meat:{scale:1.05},
   corn:{scale:1.22}, leek:{scale:1.28}, onion:{scale:1.10},
   cauliflower:{scale:1.10}, eggplant:{scale:1.12}, radish:{scale:1.08},
-  dimsum:{scale:1.06}, mussel:{scale:1.12}, egg:{scale:1.08}
+  dimsum:{scale:1.06}, mussel:{scale:1.12}, egg:{scale:1.08},
+  yubu:{scale:1.04}, bunmoja:{scale:1.10}, bokchoy:{scale:1.08},
+  enoki:{scale:1.08}, fuzhu:{scale:1.08}, beansprout:{scale:1.08}
 };
 
 const INGREDIENTS = [
@@ -37,7 +47,13 @@ const INGREDIENTS = [
   {id:'radish', name:'무', model:'radish.glb', cost:180, weight:55, size:.72, unlockDay:7},
   {id:'dimsum', name:'만두', model:'dim-sum.glb', cost:390, weight:60, size:.68, unlockDay:9},
   {id:'mussel', name:'홍합', model:'mussel-open.glb', cost:470, weight:45, size:.66, unlockDay:11},
-  {id:'egg', name:'달걀', model:'egg-half.glb', cost:250, weight:50, size:.66, unlockDay:13}
+  {id:'egg', name:'달걀', model:'egg-half.glb', cost:250, weight:50, size:.66, unlockDay:13},
+  {id:'yubu', name:'유부', shape:'yubu', cost:260, weight:42, size:.68, unlockDay:2},
+  {id:'bunmoja', name:'분모자', shape:'bunmoja', cost:360, weight:70, size:.76, unlockDay:4},
+  {id:'bokchoy', name:'청경채', shape:'bokchoy', cost:220, weight:48, size:.76, unlockDay:6},
+  {id:'enoki', name:'팽이버섯', shape:'enoki', cost:250, weight:42, size:.74, unlockDay:8},
+  {id:'fuzhu', name:'푸주', shape:'fuzhu', cost:330, weight:58, size:.74, unlockDay:10},
+  {id:'beansprout', name:'숙주', shape:'beansprout', cost:180, weight:46, size:.74, unlockDay:12}
 ];
 
 const CUSTOMER_TYPES = [
@@ -94,17 +110,27 @@ const ORDERS = [
   {title:'홍합 얼큰탕', must:{mussel:2,mushroom:1,leek:1}, avoid:['sausage'], spice:3, budget:9200,minWeight:240,maxWeight:410,patienceRate:1.08,
    text:'홍합은 두 번, 버섯과 대파도 넣어 주세요. 소시지는 빼고 3단계요.'},
   {title:'달걀 고기 마라탕', must:{egg:2,meat:1,onion:1}, avoid:['broccoli'], spice:1, budget:9000,minWeight:250,maxWeight:420,patienceRate:.98,
-   text:'달걀 두 번, 소고기와 양파를 넣고 브로콜리는 빼 주세요. 1단계로요.'}
+   text:'달걀 두 번, 소고기와 양파를 넣고 브로콜리는 빼 주세요. 1단계로요.'},
+  {title:'유부 분모자 한 그릇', must:{yubu:2,bunmoja:1,bokchoy:1}, avoid:['sausage'], sauces:['peanut'], spice:2, budget:9000,minWeight:240,maxWeight:420,patienceRate:1.0,
+   text:'유부 두 번, 분모자와 청경채를 넣고 소시지는 빼 주세요. 땅콩소스도 조금 넣어 주세요.'},
+  {title:'팽이버섯 푸주탕', must:{enoki:2,fuzhu:1,leek:1}, avoid:['corn'], sauces:['sesame','garlic'], spice:1, budget:8600,minWeight:220,maxWeight:390,patienceRate:.96,
+   text:'팽이버섯 두 번에 푸주와 대파, 참깨소스와 다진마늘을 넣어 주세요.'},
+  {title:'숙주 가득 얼큰탕', must:{beansprout:2,bunmoja:1,meat:1}, avoid:['egg'], sauces:['chiliOil'], spice:3, budget:9800,minWeight:280,maxWeight:460,patienceRate:1.06,
+   text:'숙주는 듬뿍, 분모자와 소고기도 넣고 마유를 더해 3단계로 부탁해요.'},
+  {title:'청경채 담백 마라탕', must:{bokchoy:2,yubu:1,enoki:1}, avoid:['meat'], sauces:['vinegar'], spice:0, budget:7600,minWeight:220,maxWeight:380,patienceRate:.9,
+   text:'청경채 두 번, 유부와 팽이버섯을 넣고 흑초를 살짝 넣어 주세요. 안 맵게요.'},
+  {title:'푸주 향긋 마라탕', must:{fuzhu:2,beansprout:1,mushroom:1}, avoid:['sausage'], sauces:['cilantro','garlic'], spice:2, budget:8800,minWeight:250,maxWeight:420,patienceRate:1.02,
+   text:'푸주 두 번, 숙주와 버섯에 고수와 다진마늘을 넣고 2단계로 부탁해요.'}
 ]
 
 const $ = s => document.querySelector(s);
 const els = {
-  canvas: $('#scene'), labels: $('#ingredientLabels'), orderTitle: $('#orderTitle'), orderText: $('#orderText'),
-  customerTag:$('#customerTag'), orderNeeds:$('#orderNeeds'), orderAvoid:$('#orderAvoid'), orderMeta:$('#orderMeta'), nextUnlock:$('#nextUnlock'),
+  canvas: $('#scene'), labels: $('#ingredientLabels'), orderTicket:$('#orderTicket'), orderTitle: $('#orderTitle'), orderText: $('#orderText'),
+  customerTag:$('#customerTag'), orderNeeds:$('#orderNeeds'), orderAvoid:$('#orderAvoid'), orderSauce:$('#orderSauce'), orderMeta:$('#orderMeta'), nextUnlock:$('#nextUnlock'),
   patienceFill: $('#patienceFill'), weight: $('#weight'), cost: $('#cost'), served: $('#served'), day:$('#day'), cash:$('#cash'),
   reputation:$('#reputation'), dayTarget:$('#dayTarget'), queue:$('#queue'),
   dragTip: $('#dragTip'), shoppingActions: $('#shoppingActions'), spiceDock: $('#spiceDock'),
-  spiceOptions: $('#spiceOptions'), cookDock: $('#cookDock'), cookFill: $('#cookFill'), cookText: $('#cookText'),
+  spiceOptions: $('#spiceOptions'), sauceOptions:$('#sauceOptions'), cookDock: $('#cookDock'), cookFill: $('#cookFill'), cookText: $('#cookText'),
   serveBtn: $('#serveBtn'), startOverlay: $('#startOverlay'), resultOverlay: $('#resultOverlay'),
   resultKicker: $('#resultKicker'), resultTitle: $('#resultTitle'), resultScore: $('#resultScore'), resultUnit:$('#resultUnit'),
   resultText: $('#resultText'), nextBtn: $('#nextBtn'), toast: $('#toast'), soundBtn: $('#soundBtn'), startBtn: $('#startBtn'),
@@ -114,7 +140,7 @@ const els = {
 
 const state = {
   score:0, served:0, day:1, dayServed:0, dayTarget:BASE_CUSTOMERS, queue:0,
-  cash:START_CASH, reputation:50, bowl:[], spice:null, order:null, phase:'idle',
+  cash:START_CASH, reputation:50, bowl:[], spice:null, sauces:[], order:null, phase:'idle',
   patience:100, patienceTimer:null, cookTimer:null, cookProgress:0, readyAt:0,
   sound:true, dragging:false, completed:false, customerSettled:false,
   dayRevenue:0, dayCogs:0, dayWaste:0, dayWalkouts:0,
@@ -234,10 +260,13 @@ function setOrder(order) {
   const type=order.customerType||CUSTOMER_TYPES[0];
   els.customerTag.textContent=type.label;
   els.orderTitle.textContent=order.title;
-  els.orderText.textContent=type.desc;
+  els.orderText.textContent=order.text||type.desc;
   els.orderNeeds.textContent=Object.entries(order.must).map(([id,n])=>ingredientById(id).name+(n>1?` ×${n}`:'')).join(' · ');
   els.orderAvoid.textContent=order.avoid.length?order.avoid.map(id=>ingredientById(id).name).join(' · '):'없음';
+  const requestedSauces=order.sauces||[];
+  els.orderSauce.textContent=requestedSauces.length?requestedSauces.map(id=>SAUCES.find(x=>x.id===id)?.name||id).join(' · '):'기본';
   els.orderMeta.textContent=`${order.minWeight}~${order.maxWeight}g · 맵기 ${order.spice}단계 · ≤ ₩${order.budget.toLocaleString()}`;
+  els.orderTicket?.classList.remove('order-pop');void els.orderTicket?.offsetWidth;els.orderTicket?.classList.add('order-pop');
   state.patience=100;state.customerSettled=false;
   els.patienceFill.style.transform='scaleX(1)';
 }
@@ -281,6 +310,8 @@ class SelfBarScene {
     this.shelfBuildToken=0;
     this.mobileLayout=(canvas.clientWidth||innerWidth)<620;
     this.bowlItems=[];
+    this.hoverId=null;
+    this.bowlPulse=0;
     this.mode='idle';
     this.time=0;
     this.makeLights();
@@ -358,17 +389,48 @@ class SelfBarScene {
   }
   async loadIngredientDisplay(ing,x,y,z,token=this.shelfBuildToken){
     const tune=DISPLAY_TUNING[ing.id]||{};
-    const obj=await this.cloneModel(ing.model,ing.size*(this.mobileLayout?1.08:1)*(tune.scale||1));
+    const obj=await this.cloneIngredient(ing,ing.size*(this.mobileLayout?1.08:1)*(tune.scale||1));
     if(token!==this.shelfBuildToken)return;
     const box=new THREE.Box3().setFromObject(obj);
     const trayTop=y+.08;
     obj.position.add(new THREE.Vector3(x,trayTop-box.min.y,z+.06+(tune.z||0)));obj.rotation.y=(Math.random()-.5)*.32;
+    obj.userData.baseY=obj.position.y;obj.userData.baseScale=obj.scale.clone();obj.userData.floatSeed=Math.random()*Math.PI*2;
     this.markIngredient(obj,ing.id);
     this.displayItems.set(ing.id,obj);obj.visible=(state.stock[ing.id]??0)>0;
     this.shelfGroup.add(obj);
   }
   refreshStockVisuals(){
     for(const [id,obj] of this.displayItems)obj.visible=(state.stock[id]??0)>0;
+  }
+  makeProceduralIngredient(shape){
+    const group=new THREE.Group();
+    const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.72,...extra});
+    const add=(geo,material,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{
+      const mesh=new THREE.Mesh(geo,material);mesh.position.set(x,y,z);mesh.rotation.set(rx,ry,rz);mesh.scale.set(sx,sy,sz);group.add(mesh);return mesh;
+    };
+    if(shape==='yubu'){
+      const m=mat(0xd9a04c);for(const [x,z,r] of [[-.22,-.12,.08],[.18,-.08,-.08],[-.08,.18,.04],[.24,.18,-.04]])add(new THREE.BoxGeometry(.34,.24,.3),m,x,.12,z,0,r,0);
+    }else if(shape==='bunmoja'){
+      const m=mat(0xf4eee6,{transparent:true,opacity:.9});for(let i=0;i<5;i++)add(new THREE.CylinderGeometry(.055,.06,.72,10),m,(i-2)*.12,.08,(i%2)*.10,0,0,Math.PI/2);
+    }else if(shape==='bokchoy'){
+      const stem=mat(0xe6f0cf),leaf=mat(0x4d914e);for(let i=0;i<4;i++){const a=(i-1.5)*.18;add(new THREE.CylinderGeometry(.07,.095,.5,9),stem,a,.14,0,0,0,a*.35);add(new THREE.SphereGeometry(.16,10,8),leaf,a,.42,-.03,0,0,a*.3,.8,1.45,.42);}
+    }else if(shape==='enoki'){
+      const stem=mat(0xf4ead1),cap=mat(0xe8d5ac);for(let i=0;i<8;i++){const x=(i%4-1.5)*.11,z=(Math.floor(i/4)-.5)*.15,h=.42+(i%3)*.05;add(new THREE.CylinderGeometry(.022,.028,h,7),stem,x,h/2,z);add(new THREE.SphereGeometry(.06,9,7),cap,x,h+.02,z);}
+    }else if(shape==='fuzhu'){
+      const m=mat(0xd5a452);for(let i=0;i<5;i++)add(new THREE.CylinderGeometry(.055,.07,.68,8),m,(i-2)*.11,.08,(i%2)*.09,0,0,Math.PI/2);
+    }else{
+      const stem=mat(0xf3eee0),tip=mat(0xd6c95e);for(let i=0;i<8;i++){const x=(i%4-1.5)*.11,z=(Math.floor(i/4)-.5)*.13,h=.35+(i%3)*.04;add(new THREE.CylinderGeometry(.018,.024,h,6),stem,x,h/2,z,0,0,(i-3)*.04);add(new THREE.SphereGeometry(.035,8,6),tip,x,h+.01,z);}
+    }
+    return group;
+  }
+  async cloneIngredient(ing,size=.7){
+    if(ing.model)return this.cloneModel(ing.model,size);
+    const obj=this.makeProceduralIngredient(ing.shape||ing.id);
+    const box=new THREE.Box3().setFromObject(obj),dims=new THREE.Vector3();box.getSize(dims);
+    const max=Math.max(dims.x,dims.y,dims.z)||1;obj.scale.setScalar(size/max);
+    const after=new THREE.Box3().setFromObject(obj),center=new THREE.Vector3();after.getCenter(center);obj.position.sub(center);
+    obj.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+    return obj;
   }
   async cloneModel(file,size=.7){
     let source=this.cache.get(file);
@@ -398,7 +460,11 @@ class SelfBarScene {
   async makePot(){
     this.potRoot=new THREE.Group();this.potRoot.position.set(2.25,.2,1.55);this.potRoot.visible=false;this.scene.add(this.potRoot);
     const pot=await this.cloneModel('pot-stew.glb',2.8);this.potRoot.add(pot);
-    this.steam=[];
+    this.steam=[];this.bubbles=[];
+    this.broth=new THREE.Mesh(new THREE.CylinderGeometry(.72,.76,.055,32),new THREE.MeshStandardMaterial({color:0xb94d33,transparent:true,opacity:.78,roughness:.5}));
+    this.broth.position.y=.72;this.potRoot.add(this.broth);
+    const bubbleMat=new THREE.MeshStandardMaterial({color:0xffd9b0,transparent:true,opacity:.55,roughness:.35});
+    for(let i=0;i<9;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.035+Math.random()*.035,8,6),bubbleMat.clone());b.position.set((Math.random()-.5)*.9,.75+Math.random()*.12,(Math.random()-.5)*.6);b.userData.phase=Math.random()*Math.PI*2;this.potRoot.add(b);this.bubbles.push(b);}
     const mat=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.28,roughness:1});
     for(let i=0;i<10;i++){
       const puff=new THREE.Mesh(new THREE.SphereGeometry(.11+Math.random()*.08,12,8),mat.clone());
@@ -432,14 +498,15 @@ class SelfBarScene {
     e.preventDefault();this.canvas.setPointerCapture?.(e.pointerId);
     this.dragId=id;this.dragStart={x:e.clientX,y:e.clientY};state.dragging=true;this.canvas.classList.add('dragging');
     const ing=ingredientById(id);
-    this.dragObject=await this.cloneModel(ing.model,ing.size*.85);
+    this.dragObject=await this.cloneIngredient(ing,ing.size*.85);
     this.markIngredient(this.dragObject,id);this.scene.add(this.dragObject);
     this.pointerMove(e);
     els.dragTip.classList.add('hidden');
   }
   pointerMove(e){
-    if(!this.dragObject)return;
-    this.setPointer(e);this.raycaster.setFromCamera(this.pointer,this.camera);
+    this.setPointer(e);
+    if(!this.dragObject){this.hoverId=state.phase==='shopping'?this.getIngredientHit():null;return}
+    this.raycaster.setFromCamera(this.pointer,this.camera);
     const p=new THREE.Vector3();
     if(this.raycaster.ray.intersectPlane(this.dragPlane,p)){this.dragObject.position.copy(p);this.dragObject.position.y=.86}
     const near=this.isPointerOverBowl();
@@ -455,13 +522,14 @@ class SelfBarScene {
     const accepted=this.isPointerOverBowl();
     const obj=this.dragObject;this.dragObject=null;this.scene.remove(obj);
     if(this.bowlRoot)this.bowlRoot.scale.setScalar(1);
+    this.hoverId=null;
     const id=this.dragId;this.dragId=null;state.dragging=false;this.canvas.classList.remove('dragging');
     if(accepted)addIngredient(id);
     else els.dragTip.classList.remove('hidden');
   }
   async addBowlItem(id){
     const ing=ingredientById(id);
-    const obj=await this.cloneModel(ing.model,.40);
+    const obj=await this.cloneIngredient(ing,.40);
     const angle=Math.random()*Math.PI*2, radius=Math.random()*.44;
     obj.position.set(Math.cos(angle)*radius,.75+Math.random()*.15,Math.sin(angle)*radius);
     obj.rotation.set(Math.random()*.5,Math.random()*Math.PI*2,Math.random()*.45);
@@ -472,6 +540,7 @@ class SelfBarScene {
       const t=Math.min(1,(now-start)/240);
       obj.position.y=.75+(target-.75)*(1-Math.pow(1-t,2));
       if(t<1)requestAnimationFrame(drop);
+      else this.bowlPulse=1;
     };requestAnimationFrame(drop);
   }
   removeLastBowlItem(){
@@ -517,20 +586,29 @@ class SelfBarScene {
       if(this.cookInset)this.cookInset.position.x=cookX;
       this.camera.lookAt(0,1.3+extra*.42,-.45);
     }else{
-      this.camera.position.set(0,6.35,9.7);this.camera.fov=39;
+      const extra=Math.max(0,rows-3);
+      this.camera.position.set(0,5.65+extra*.5,8.35+extra*.68);this.camera.fov=36+extra*1.5;
       this.bowlCenter.set(-1.15,.45,2.15);
       if(this.bowlRoot)this.bowlRoot.position.copy(this.bowlCenter);
       const cookX=2.35;
       if(this.potRoot)this.potRoot.position.set(cookX,.2,1.55);
       if(this.cookBase){this.cookBase.position.x=cookX;this.cookBase.scale.set(1,1,1)}
       if(this.cookInset)this.cookInset.position.x=cookX;
-      this.camera.lookAt(0,1.15,-.3);
+      this.camera.lookAt(0,1.05+extra*.34,-.3);
     }
     this.camera.updateProjectionMatrix();
   }
   animate(){
     requestAnimationFrame(()=>this.animate());
     const dt=.016;this.time+=dt;
+    for(const [id,obj] of this.displayItems){
+      if(obj.userData.baseY===undefined)continue;
+      const hover=id===this.hoverId,base=obj.userData.baseScale;
+      obj.position.y=obj.userData.baseY+Math.sin(this.time*1.8+obj.userData.floatSeed)*.014+(hover?.035:0);
+      if(base){const f=hover?1.07:1;obj.scale.set(base.x*f,base.y*f,base.z*f)}
+    }
+    if(this.dragObject)this.dragObject.rotation.y+=.018;
+    if(this.bowlRoot&&this.bowlPulse>0){this.bowlPulse=Math.max(0,this.bowlPulse-dt*3.5);const s=1+Math.sin(this.bowlPulse*Math.PI)*.055;this.bowlRoot.scale.setScalar(s)}
     if(this.potRoot?.visible){
       this.steam.forEach((p,i)=>{
         p.position.y+=p.userData.speed*dt;
@@ -538,6 +616,9 @@ class SelfBarScene {
         if(p.position.y>2.15){p.position.y=.55;p.position.x=(Math.random()-.5)*.9;p.position.z=(Math.random()-.5)*.55}
         p.material.opacity=.16+.12*Math.sin(this.time*2+i)*.5+.06;
       });
+      this.bubbles.forEach((b,i)=>{b.position.y=.78+Math.abs(Math.sin(this.time*3.2+b.userData.phase))*.12;b.scale.setScalar(.8+Math.abs(Math.sin(this.time*4+i))*.45)});
+      if(this.broth){this.broth.rotation.y+=.012;this.broth.scale.setScalar(1+Math.sin(this.time*4)*.012)}
+      this.potRoot.rotation.z=state.phase==='cooking'?Math.sin(this.time*7)*.006:0;
     }
     this.updateLabels();
     this.renderer.render(this.scene,this.camera);
@@ -569,7 +650,7 @@ function clearBowl(){
 function checkout(){
   if(state.phase!=='shopping')return;
   if(!state.bowl.length)return toast('재료를 먼저 담아 주세요');
-  state.spice=null;renderSpiceOptions();setPhase('spice');
+  state.spice=null;state.sauces=[];renderSpiceOptions();renderSauceOptions();setPhase('spice');
 }
 function renderSpiceOptions(){
   els.spiceOptions.innerHTML='';
@@ -581,11 +662,24 @@ function renderSpiceOptions(){
     });els.spiceOptions.appendChild(b);
   });
 }
+function renderSauceOptions(){
+  els.sauceOptions.innerHTML='';
+  SAUCES.forEach(sauce=>{
+    const b=document.createElement('button');b.type='button';b.className='sauce-choice';b.textContent=sauce.name;
+    b.addEventListener('click',()=>{
+      const has=state.sauces.includes(sauce.id);
+      if(!has&&state.sauces.length>=3)return toast('추가 소스는 최대 3개까지 골라요');
+      state.sauces=has?state.sauces.filter(x=>x!==sauce.id):[...state.sauces,sauce.id];
+      els.sauceOptions.querySelectorAll('button').forEach((x,i)=>x.classList.toggle('selected',state.sauces.includes(SAUCES[i].id)));
+      scene.bowlPulse=.8;sfx('collect.coin_pickup',{volume:.1,rate:1.32,cooldownMs:70});
+    });els.sauceOptions.appendChild(b);
+  });
+}
 function backToBar(){if(state.phase==='spice')setPhase('shopping')}
 function startCook(){
   if(state.phase!=='spice')return;
   if(state.spice===null)return toast('맵기를 골라 주세요');
-  setPhase('cooking');state.cookProgress=0;state.readyAt=0;els.cookFill.style.width='0%';els.serveBtn.hidden=true;els.cookText.textContent='보글보글 끓이는 중';
+  setPhase('cooking');scene.bowlPulse=1;state.cookProgress=0;state.readyAt=0;els.cookFill.style.width='0%';els.serveBtn.hidden=true;els.cookText.textContent='보글보글 끓이는 중';
   clearInterval(state.cookTimer);
   const speed=1+state.upgrades.burner*.25;
   state.cookTimer=setInterval(()=>{
@@ -622,6 +716,15 @@ function evaluate(){
   if(over<=0){points+=12}else{points-=Math.min(35,Math.ceil(over/500)*7);bad.push('예산 초과')}
   const spiceDiff=Math.abs((state.spice??0)-o.spice);
   if(spiceDiff===0){points+=15;good.push('맵기 맞춤')}else{points-=spiceDiff*12;bad.push('맵기 차이')}
+  const requestedSauces=o.sauces||[];
+  if(requestedSauces.length){
+    const matched=requestedSauces.filter(id=>state.sauces.includes(id));
+    const missing=requestedSauces.filter(id=>!state.sauces.includes(id));
+    points+=matched.length*8;
+    if(matched.length)good.push('소스 맞춤');
+    if(missing.length){points-=missing.length*8;bad.push('소스 빠짐')}
+    const extras=state.sauces.filter(id=>!requestedSauces.includes(id)).length;if(extras>1)points-=(extras-1)*2;
+  }else if(state.sauces.length>=3){points-=3;bad.push('소스가 조금 많음')}
   const readyWait=state.readyAt?Math.max(0,(performance.now()-state.readyAt)/1000):0;
   if(readyWait>7){points-=Math.min(18,Math.round((readyWait-7)*2));bad.push('서빙 지연')}
   points+=Math.round(state.patience/10);
@@ -745,7 +848,7 @@ function startNextDay(){
   beginCustomer();
 }
 function beginCustomer(){
-  state.bowl=[];state.spice=null;state.cookProgress=0;state.readyAt=0;scene.clearBowl();
+  state.bowl=[];state.spice=null;state.sauces=[];state.cookProgress=0;state.readyAt=0;scene.clearBowl();
   if(!state._orderDeck||!state._orderDeck.length)state._orderDeck=makeOrderDeck();
   const base=state._orderDeck.pop()||ORDERS[0],order=makeCustomerOrder(base);
   state.queue=Math.max(0,state.dayTarget-state.dayServed-1);setOrder(order);updateReadout();setPhase('shopping');startPatience();
