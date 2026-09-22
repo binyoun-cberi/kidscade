@@ -12,7 +12,7 @@ test('history question bank has at least one thousand playable questions', () =>
   assert.ok(Array.isArray(QUESTION_BANK));
   assert.ok(QUESTION_BANK_SIZE >= 1000, 'question bank should contain at least 1000 questions');
   assert.equal(QUESTION_BANK_SIZE, QUESTION_BANK.length);
-  assert.ok(CORE_HISTORY_FACTS.length >= 100, 'question bank should be based on a broad set of core facts');
+  assert.ok(CORE_HISTORY_FACTS.length >= 1000, 'source fact pool itself must contain at least 1000 independent history facts');
   for (const [index, q] of QUESTION_BANK.entries()) {
     assert.equal(typeof q.q, 'string', 'question '+index+' needs text');
     assert.equal(typeof q.era, 'string', 'question '+index+' needs an era');
@@ -81,4 +81,18 @@ test('live server records chronology mode in the room plan', () => {
   assert.match(worker, /chronologicalQuestionIndexes/);
   assert.match(worker, /orderMode=body\.orderMode==='chronological'/);
   assert.match(worker, /plan=\{questions:order,checkpoints,orderMode\}/);
+});
+
+
+test('direct timeline facts stay playable and have unique answer choices', () => {
+  const direct = CORE_HISTORY_FACTS.filter(f => f.direct);
+  assert.ok(direct.length >= 800, 'timeline expansion should add hundreds of independent date/order facts');
+  for (const [index, fact] of direct.entries()) {
+    assert.equal(typeof fact.q, 'string', 'direct fact '+index+' needs a question');
+    assert.ok(Array.isArray(fact.o), 'direct fact '+index+' needs options');
+    assert.equal(fact.o.length, 4);
+    assert.equal(new Set(fact.o).size, 4);
+    assert.ok(Number.isInteger(fact.a) && fact.a >= 0 && fact.a < 4);
+    assert.equal(typeof fact.e, 'string');
+  }
 });
