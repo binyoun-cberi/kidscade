@@ -1835,3 +1835,31 @@ body{
 .encounter-portrait.duo .portrait-name{
   bottom:11px!important
 }
+
+
+/* v33 — portrait proportions tuned for close-up cards */
+.encounter-portrait .portrait-bust .mod-part.shirt{
+  left:8px!important;
+  top:29px!important;
+  width:32px!important;
+  height:16px!important;
+  object-fit:cover!important;
+  object-position:top!important;
+}
+.encounter-portrait .portrait-bust .mod-part.neck{
+  top:25px!important;
+}
+.encounter-portrait .portrait-avatar{
+  top:10px!important;
+}
+.encounter-portrait.duo .portrait-avatar{
+  top:34px!important;
+}
+/* Keep serious cards visually calm instead of cheerful. */
+.portrait-person.expression-angry .portrait-name,
+.portrait-person.expression-worried .portrait-name,
+.portrait-person.expression-struggling .portrait-name,
+.portrait-person.expression-tearful .portrait-name{
+  background:rgba(255,255,255,.86)!important;
+  color:#394252!important;
+}
