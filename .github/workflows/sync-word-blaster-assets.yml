@@ -1,0 +1,45 @@
+name: Sync Word Blaster Starter Assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-word-blaster-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Kenney Starter Kit FPS assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://raw.githubusercontent.com/KenneyNL/Starter-Kit-FPS/main/models"
+          DEST="assets/game/3d/word-blaster"
+          mkdir -p "$DEST"
+          curl -fL "$BASE/blaster.glb" -o "$DEST/blaster.glb"
+          curl -fL "$BASE/cloud.glb" -o "$DEST/cloud.glb"
+          curl -fL "$BASE/enemy-flying.glb" -o "$DEST/letter-drone.glb"
+          curl -fL "$BASE/grass.glb" -o "$DEST/grass.glb"
+          curl -fL "$BASE/grass-small.glb" -o "$DEST/grass-small.glb"
+          curl -fL "$BASE/platform-large-grass.glb" -o "$DEST/platform-large-grass.glb"
+
+      - name: Commit synced assets
+        shell: bash
+        run: |
+          if git diff --quiet -- assets/game/3d/word-blaster; then
+            echo "Word Blaster assets already match upstream."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/game/3d/word-blaster
+          git commit -m "Sync Word Blaster Kenney FPS assets"
+          git push
