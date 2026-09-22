@@ -645,6 +645,13 @@
       }
     });
   }
+  function setStudentSpeech(studentOrName,textValue,tone,duration){
+    var s=typeof studentOrName==="string"?studentByName(studentOrName):studentOrName;
+    if(!s||!textValue)return;
+    s.speechText=String(textValue);
+    s.speechTone=tone||"normal";
+    s.speechUntil=gameSec+(duration||32);
+  }
   function scriptLog(opts){
     opts=opts||{};
     var item={
@@ -661,6 +668,12 @@
       recordable:opts.recordable===true||(opts.type||"social")==="incident"
     };
     pushLogItem(item);
+    if(opts.bubble===true&&item.dialogue){
+      setStudentSpeech(item.speaker,item.dialogue,opts.bubbleTone||(item.type==="incident"?"warning":"question"),opts.bubbleDuration||34);
+      if(item.replySpeaker&&item.replyDialogue&&opts.replyBubble!==false){
+        setStudentSpeech(item.replySpeaker,item.replyDialogue,opts.replyTone||(item.type==="incident"?"warning":"normal"),opts.replyDuration||30);
+      }
+    }
     if(item.type==="incident")spawnIncidentEmojiBurst(item);
   }
   function pickLine(lines){return lines[Math.floor(Math.random()*lines.length)]}
@@ -1035,7 +1048,8 @@
       replyDialogue:pickLine(["너도 아까 나한테 그랬잖아.","안 가져갔거든. 잠깐 본 거야.","네가 먼저 시작했잖아.","왜 나한테만 뭐라고 해?"]),
       stage:reason+" 두 학생의 목소리가 조금씩 커졌다.",
       summary:a.name+"와 "+b.name+" 사이에 말다툼이 시작됐다.",
-      type:"incident",scene:a.scene
+      type:"incident",scene:a.scene,
+      bubble:true,bubbleTone:"danger",replyTone:"danger",bubbleDuration:38,replyDuration:36
     });
     nearbyStudents(a,24).forEach(function(o){
       if(o!==b&&Math.random()<o.soc*.28){requestStudentAction(o,"WATCH",{duration:22,force:true});o.mood=clamp(o.mood-.015)}
@@ -1134,27 +1148,27 @@
     if(kind==="exclusion"&&target){
       scriptLog({speaker:actor.name,dialogue:pickLine(["너는 이번 판에 끼지 마. 우리끼리 할 거야.","아니, 너랑은 같이 안 할래. 다른 데 가.","우리 이미 팀 정했어. 너는 빠져."]),
         replySpeaker:target.name,replyDialogue:pickLine(["왜 나만 빼는데?","나도 같이 하기로 했잖아.","한 번만 같이 하면 안 돼?"]),
-        stage:"주변의 움직임이 "+target.name+"을(를) 바깥쪽으로 밀어냈다.",summary:text,type:"incident",scene:actor.scene});
+        stage:"주변의 움직임이 "+target.name+"을(를) 바깥쪽으로 밀어냈다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"warning",replyTone:"warning"});
     }else if(kind==="taking"&&target){
       scriptLog({speaker:target.name,dialogue:pickLine(["그거 내 거야. 허락도 안 했잖아. 돌려줘.","내가 지금 쓰고 있었어. 왜 가져가?","하지 마. 내 물건이야."]),
         replySpeaker:actor.name,replyDialogue:pickLine(["잠깐만 쓰고 줄게.","나도 필요한데 왜 안 빌려줘?","조금만 쓰는 건데 왜 그래?"]),
-        stage:actor.name+"이(가) "+target.name+"의 물건을 손에 쥐었다.",summary:text,type:"incident",scene:actor.scene});
+        stage:actor.name+"이(가) "+target.name+"의 물건을 손에 쥐었다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"warning",replyTone:"warning"});
     }else if(kind==="threat"&&target){
       scriptLog({speaker:actor.name,dialogue:pickLine(["계속 그러면 가만 안 둘 거야.","한 번만 더 해봐.","그만하라고 했지."]),
         replySpeaker:target.name,replyDialogue:pickLine(["왜 그래…","알았어.","하지 마."]),
-        stage:actor.name+"이(가) "+target.name+" 쪽으로 바짝 다가섰다.",summary:text,type:"incident",scene:actor.scene});
+        stage:actor.name+"이(가) "+target.name+" 쪽으로 바짝 다가섰다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",replyTone:"warning"});
     }else if(kind==="physical"&&target){
       scriptLog({speaker:target.name,dialogue:pickLine(["아! 하지 마!","밀지 마!","그만해!"]),
-        stage:"말다툼이 거친 신체행동으로 번졌다.",summary:text,type:"incident",scene:actor.scene});
+        stage:"말다툼이 거친 신체행동으로 번졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",replyBubble:false});
     }else if(kind==="teacher_shout"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["왜 저만 그래요!","저한테만 뭐라고 하잖아요!","알았다고요!"]),
-        stage:"교실 안에서 "+actor.name+"의 목소리가 갑자기 커졌다.",summary:text,type:"incident",scene:actor.scene});
+      scriptLog({speaker:actor.name,dialogue:pickLine(["왜 저만 그래요! 그만 좀 하세요!","저한테만 뭐라고 하잖아요!","알았다고요! 자꾸 말하지 마세요!"]),
+        stage:"교실 안에서 "+actor.name+"의 목소리가 갑자기 커졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:40,replyBubble:false});
     }else if(kind==="teacher_insult"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["선생님 진짜 짜증나요.","선생님 말 듣기 싫어요.","왜 맨날 그러세요?"]),
-        stage:"주변 학생 몇 명이 말을 멈추고 쳐다봤다.",summary:text,type:"incident",scene:actor.scene});
+      scriptLog({speaker:actor.name,dialogue:pickLine(["아, 씨… 선생님 진짜 짜증 나요.","선생님 때문에 개짜증 나요.","아 진짜, 왜 자꾸 저한테 뭐라고 해요?","선생님 말 듣기 싫다고요."]),
+        stage:"주변 학생 몇 명이 말을 멈추고 쳐다봤다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:42,replyBubble:false});
     }else if(kind==="teacher_throw"){
-      scriptLog({speaker:actor.name,dialogue:pickLine(["몰라요!","안 한다고요!"]),
-        stage:actor.name+"이(가) 화가 난 상태에서 교사 쪽으로 물건을 던졌다.",summary:text,type:"incident",scene:actor.scene});
+      scriptLog({speaker:actor.name,dialogue:pickLine(["몰라요!","안 한다고요!","아 진짜, 싫다고요!"]),
+        stage:actor.name+"이(가) 화가 난 상태에서 교사 쪽으로 물건을 던졌다.",summary:text,type:"incident",scene:actor.scene,bubble:true,bubbleTone:"danger",bubbleDuration:38,replyBubble:false});
     }else{
       log(text,"incident",actor.scene);
     }
@@ -1259,9 +1273,10 @@
     if(a==="MOVE"&&current().kind==="lesson"&&Math.random()<.40){stats.disruptions++;log(s.name+"이(가) 몸을 크게 움직여 주변의 시선을 끌었다.","incident",s.scene)}
     if(a==="SLEEP")log(s.name+"이(가) 점점 고개를 떨구기 시작했다.","incident",s.scene);
     if(a==="HELP")scriptLog({
-      speaker:s.name,dialogue:pickLine(["선생님, 여기 모르겠어요.","이거 어떻게 하는 거지…","여기서부터 안 돼요."]),
+      speaker:s.name,dialogue:pickLine(["선생님, 여기부터 잘 모르겠어요.","선생님, 이 문제 어떻게 시작해야 해요?","선생님, 여기까지 했는데 다음이 안 돼요.","선생님, 제가 이렇게 하는 게 맞아요?"]),
       stage:s.name+"의 연필이 한동안 같은 자리에서 멈춰 있다.",
-      summary:s.name+"이(가) 문제에서 막혀 도움을 기다리고 있다.",type:"learning",scene:s.scene
+      summary:s.name+"이(가) 문제에서 막혀 도움을 기다리고 있다.",type:"learning",scene:s.scene,
+      bubble:true,bubbleTone:"question",bubbleDuration:38,replyBubble:false
     });
 
     if(a==="BORROW_ITEM"&&p){
@@ -1284,7 +1299,8 @@
       if(Math.random()<.55)scriptLog({
         speaker:s.name,dialogue:"선생님, 화장실 다녀와도 돼요?",
         stage:s.name+"이(가) 조심스럽게 손을 들었다.",
-        summary:s.name+"이(가) 화장실에 다녀와도 되는지 물었다.",type:"ambient",scene:s.scene
+        summary:s.name+"이(가) 화장실에 다녀와도 되는지 물었다.",type:"ambient",scene:s.scene,
+        bubble:true,bubbleTone:"question",bubbleDuration:34,replyBubble:false
       });
     }
     if(a==="PASS_NOTE"&&p){
@@ -1310,7 +1326,8 @@
         speaker:s.name,dialogue:pickLine(["야, 또 틀렸네. 그것도 모르냐?","너 아까부터 계속 실수하네.","그 그림 좀 이상한데?","왜 맨날 그렇게 해?"]),
         replySpeaker:p.name,replyDialogue:pickLine(["그만 좀 해. 기분 나빠.","하지 말라고 했잖아.","내가 알아서 할 거야.","너나 신경 써."]),
         stage:p.name+"의 표정이 굳고 몸이 조금 뒤로 물러났다.",
-        summary:s.name+"이(가) "+p.name+"을(를) 놀렸다.",type:"incident",scene:s.scene
+        summary:s.name+"이(가) "+p.name+"을(를) 놀렸다.",type:"incident",scene:s.scene,
+        bubble:true,bubbleTone:"warning",replyTone:"warning",bubbleDuration:34,replyDuration:28
       });
     }
     if(a==="EXCLUDE_TARGET"&&p){
@@ -1338,7 +1355,8 @@
       scriptLog({
         speaker:s.name,dialogue:pickLine(["지금 하기 싫어요. 왜 저만 계속 시켜요?","아까 했잖아요. 저 이제 안 할래요.","모르겠는데 자꾸 하라고 하지 마세요.","저 지금 이거 하기 싫다고요."]),
         stage:"교사의 안내 뒤에도 "+s.name+"의 손이 과제로 돌아가지 않았다.",
-        summary:s.name+"이(가) 교사의 안내를 거부했다.",type:"incident",scene:s.scene
+        summary:s.name+"이(가) 교사의 안내를 거부했다.",type:"incident",scene:s.scene,
+        bubble:true,bubbleTone:"warning",bubbleDuration:36,replyBubble:false
       });
     }
     if(a==="SHOUT_TEACHER"){
@@ -2547,6 +2565,7 @@
     var action=document.createElement("span");action.className="action-tag";action.hidden=true;
     status.appendChild(intent);status.appendChild(action);b.appendChild(status);
     var signal=document.createElement("span");signal.className="student-signal";signal.hidden=true;signal.setAttribute("aria-hidden","true");b.appendChild(signal);
+    var speech=document.createElement("span");speech.className="student-speech";speech.hidden=true;speech.setAttribute("aria-live","polite");b.appendChild(speech);
     var fx=document.createElement("span");fx.className="student-action-fx";fx.hidden=true;fx.setAttribute("aria-hidden","true");b.appendChild(fx);
 
     var wrap=document.createElement("span");wrap.className="sprite-wrap";
@@ -2565,7 +2584,7 @@
       if(actionId)executeActionForStudent(actionId,Number(this.dataset.studentId));
     });
     q("#students").appendChild(b);
-    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm,signal:signal,fx:fx};
+    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm,signal:signal,speech:speech,fx:fx};
     return studentNodes[s.id];
   }
   function isImportantVisualAction(s){
@@ -2698,6 +2717,13 @@
       n.root.style.zIndex=isSeated?"10":String(12+Math.round(s.y/9));
       n.signal.hidden=!signal;
       if(signal){n.signal.textContent=signal.icon;n.signal.className="student-signal "+signal.tone;n.signal.title=signal.label}
+      var showSpeech=!!s.speechText&&gameSec<(s.speechUntil||0);
+      n.speech.hidden=!showSpeech;
+      if(showSpeech){
+        n.speech.textContent=s.speechText;
+        var edge=s.x<14?" edge-left":s.x>86?" edge-right":"";
+        n.speech.className="student-speech "+(s.speechTone||"normal")+edge;
+      }else if(s.speechText&&gameSec>=(s.speechUntil||0)){s.speechText="";s.speechTone="normal"}
       n.fx.hidden=true;
       n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
       n.standing.hidden=isSeated;n.seated.hidden=!isSeated;
@@ -2932,7 +2958,7 @@
   function renderTutorial(){
     var overlay=q("#tutorialOverlay"),title=q("#tutorialTitle"),txt=q("#tutorialText"),btn=q("#tutorialButton");overlay.hidden=false;btn.hidden=false;qa(".tutorial-focus").forEach(function(x){x.classList.remove("tutorial-focus")});
     if(tutorialState.step===0){title.textContent="첫날, 교실을 직접 운영해 봐요";txt.textContent="오른쪽 관리창 대신 교실 안 도구를 사용합니다. 학생의 몸짓과 네 가지 신호를 보고 필요한 행동을 선택해 보세요.";btn.textContent="시작하기";btn.dataset.tutorialAction="start"}
-    else if(tutorialState.step===1){title.textContent="1. 학생을 한 명 살펴보세요";txt.textContent="학생을 누르면 그 학생에게 사용할 행동 카드가 열립니다. 머리 위 이모지는 📚 공부, 💬 대화, 😟 감정, 💥 위험 행동처럼 지금 모습을 바로 보여줘요.";btn.hidden=true;var first=students.find(function(s){return s.scene===teacherScene});if(first&&studentNodes[first.id])studentNodes[first.id].root.classList.add("tutorial-focus")}
+    else if(tutorialState.step===1){title.textContent="1. 학생을 한 명 살펴보세요";txt.textContent="학생을 누르면 그 학생에게 사용할 행동 카드가 열립니다. 머리 위 이모지는 지금 상태를, 말풍선은 질문·갈등·욕설처럼 실제로 주의해서 들어야 할 말을 보여줘요.";btn.hidden=true;var first=students.find(function(s){return s.scene===teacherScene});if(first&&studentNodes[first.id])studentNodes[first.id].root.classList.add("tutorial-focus")}
     else if(tutorialState.step===2){title.textContent="2. 행동 카드를 사용해 보세요";txt.textContent="행동 카드를 학생에게 끌어 놓을 수 있어요. 모바일에서는 카드를 누르면 선택한 학생에게 바로 사용합니다. 먼저 ‘지켜보기’를 사용해 보세요.";btn.hidden=true;renderTeacherCards()}
     else if(tutorialState.step===3){title.textContent="3. 작은 벨을 울려 보세요";txt.textContent="벨은 학급 전체의 시선을 잠깐 모읍니다. 너무 자주 쓰면 효과가 줄어들어요. 교탁의 벨을 눌러 보세요.";btn.hidden=true;renderClassroomTools()}
     else if(tutorialState.step===4){title.textContent="4. 생기부에서 기록을 확인하세요";txt.textContent="교실에서 일어난 일은 화면 옆에 계속 뜨지 않습니다. 교탁의 생기부를 직접 열어 오늘 기록을 확인해 보세요.";btn.hidden=true;renderClassroomTools()}
