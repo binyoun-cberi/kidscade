@@ -745,6 +745,584 @@ const CORE_FACTS = [
   }
 ];
 
+
+const MODERN_TIMELINE_EVENTS = Object.freeze([
+  {
+    "name": "고종 즉위",
+    "date": "1863년",
+    "year": 1863,
+    "month": null
+  },
+  {
+    "name": "흥선 대원군 섭정 시작",
+    "date": "1863년",
+    "year": 1863,
+    "month": null
+  },
+  {
+    "name": "경복궁 중건 시작",
+    "date": "1865년",
+    "year": 1865,
+    "month": null
+  },
+  {
+    "name": "병인박해",
+    "date": "1866년",
+    "year": 1866,
+    "month": null
+  },
+  {
+    "name": "병인양요",
+    "date": "1866년",
+    "year": 1866,
+    "month": null
+  },
+  {
+    "name": "제너럴 셔먼호 사건",
+    "date": "1866년",
+    "year": 1866,
+    "month": null
+  },
+  {
+    "name": "오페르트 도굴 사건",
+    "date": "1868년",
+    "year": 1868,
+    "month": null
+  },
+  {
+    "name": "신미양요",
+    "date": "1871년",
+    "year": 1871,
+    "month": null
+  },
+  {
+    "name": "척화비 건립",
+    "date": "1871년(신미양요 이후)",
+    "year": 1871,
+    "month": null
+  },
+  {
+    "name": "고종 친정 시작",
+    "date": "1873년",
+    "year": 1873,
+    "month": null
+  },
+  {
+    "name": "흥선 대원군 하야",
+    "date": "1873년",
+    "year": 1873,
+    "month": null
+  },
+  {
+    "name": "운요호 사건",
+    "date": "1875년",
+    "year": 1875,
+    "month": null
+  },
+  {
+    "name": "강화도 조약(조일 수호 조규) 체결",
+    "date": "1876년",
+    "year": 1876,
+    "month": null
+  },
+  {
+    "name": "제1차 수신사 파견",
+    "date": "1876년",
+    "year": 1876,
+    "month": null
+  },
+  {
+    "name": "통리기무아문 설치",
+    "date": "1880년",
+    "year": 1880,
+    "month": null
+  },
+  {
+    "name": "별기군 창설",
+    "date": "1881년",
+    "year": 1881,
+    "month": null
+  },
+  {
+    "name": "영선사 파견",
+    "date": "1881년",
+    "year": 1881,
+    "month": null
+  },
+  {
+    "name": "조사 시찰단 파견",
+    "date": "1881년",
+    "year": 1881,
+    "month": null
+  },
+  {
+    "name": "임오군란",
+    "date": "1882년",
+    "year": 1882,
+    "month": null
+  },
+  {
+    "name": "제물포 조약 체결",
+    "date": "1882년",
+    "year": 1882,
+    "month": null
+  },
+  {
+    "name": "조미 수호 통상 조약 체결",
+    "date": "1882년",
+    "year": 1882,
+    "month": null
+  },
+  {
+    "name": "보빙사 파견",
+    "date": "1883년 9월",
+    "year": 1883,
+    "month": 9
+  },
+  {
+    "name": "한성순보 발간",
+    "date": "1883년",
+    "year": 1883,
+    "month": null
+  },
+  {
+    "name": "기기창 설치",
+    "date": "1883년",
+    "year": 1883,
+    "month": null
+  },
+  {
+    "name": "전환국·박문국 마련",
+    "date": "1883년",
+    "year": 1883,
+    "month": null
+  },
+  {
+    "name": "갑신정변",
+    "date": "1884년",
+    "year": 1884,
+    "month": null
+  },
+  {
+    "name": "한성 조약 체결",
+    "date": "1884년",
+    "year": 1884,
+    "month": null
+  },
+  {
+    "name": "거문도 사건",
+    "date": "1885년",
+    "year": 1885,
+    "month": null
+  },
+  {
+    "name": "고부 농민 봉기",
+    "date": "1894년 1월",
+    "year": 1894,
+    "month": 1
+  },
+  {
+    "name": "제1차 농민 봉기",
+    "date": "1894년 3월",
+    "year": 1894,
+    "month": 3
+  },
+  {
+    "name": "전주성 점령",
+    "date": "1894년 4월",
+    "year": 1894,
+    "month": 4
+  },
+  {
+    "name": "황토현 전투",
+    "date": "1894년 4월",
+    "year": 1894,
+    "month": 4
+  },
+  {
+    "name": "황룡촌 전투",
+    "date": "1894년 4월",
+    "year": 1894,
+    "month": 4
+  },
+  {
+    "name": "전주 화약 체결",
+    "date": "1894년 5월",
+    "year": 1894,
+    "month": 5
+  },
+  {
+    "name": "집강소 설치 및 폐정 개혁 실천 시작",
+    "date": "1894년 5월",
+    "year": 1894,
+    "month": 5
+  },
+  {
+    "name": "군국기무처 설치",
+    "date": "1894년 7월",
+    "year": 1894,
+    "month": 7
+  },
+  {
+    "name": "제1차 갑오개혁 실시",
+    "date": "1894년 7월",
+    "year": 1894,
+    "month": 7
+  },
+  {
+    "name": "제2차 농민 봉기",
+    "date": "1894년 9월",
+    "year": 1894,
+    "month": 9
+  },
+  {
+    "name": "우금치 전투 패배",
+    "date": "1894년 11월",
+    "year": 1894,
+    "month": 11
+  },
+  {
+    "name": "제2차 갑오개혁 실시",
+    "date": "1894년 12월",
+    "year": 1894,
+    "month": 12
+  },
+  {
+    "name": "홍범 14조 반포",
+    "date": "1894년 12월",
+    "year": 1894,
+    "month": 12
+  },
+  {
+    "name": "을미개혁 실시",
+    "date": "1895년 8월",
+    "year": 1895,
+    "month": 8
+  },
+  {
+    "name": "을미사변",
+    "date": "1895년 8월",
+    "year": 1895,
+    "month": 8
+  },
+  {
+    "name": "을미의병",
+    "date": "1895년",
+    "year": 1895,
+    "month": null
+  },
+  {
+    "name": "아관 파천",
+    "date": "1896년 2월",
+    "year": 1896,
+    "month": 2
+  },
+  {
+    "name": "독립신문 창간",
+    "date": "1896년 4월",
+    "year": 1896,
+    "month": 4
+  },
+  {
+    "name": "독립 협회 창립",
+    "date": "1896년 7월",
+    "year": 1896,
+    "month": 7
+  },
+  {
+    "name": "고종의 경운궁(덕수궁) 환궁",
+    "date": "1897년 2월",
+    "year": 1897,
+    "month": 2
+  },
+  {
+    "name": "독립문 건립",
+    "date": "1897년 11월",
+    "year": 1897,
+    "month": 11
+  },
+  {
+    "name": "독립 협회, 러시아 절영도 조차 요구 저지",
+    "date": "1898년 3월",
+    "year": 1898,
+    "month": 3
+  },
+  {
+    "name": "만민 공동회 개최",
+    "date": "1898년 3월",
+    "year": 1898,
+    "month": 3
+  },
+  {
+    "name": "관민 공동회 개최 및 헌의 6조 결의",
+    "date": "1898년 10월",
+    "year": 1898,
+    "month": 10
+  },
+  {
+    "name": "독립 협회 강제 해산",
+    "date": "1898년 12월",
+    "year": 1898,
+    "month": 12
+  },
+  {
+    "name": "대한국 국제 반포",
+    "date": "1899년",
+    "year": 1899,
+    "month": null
+  },
+  {
+    "name": "대한 제국 칙령 제41호 공포",
+    "date": "1900년",
+    "year": 1900,
+    "month": null
+  },
+  {
+    "name": "지계 발행 사업 실시",
+    "date": "1901년",
+    "year": 1901,
+    "month": null
+  },
+  {
+    "name": "간도를 함경도에 편입, 이범윤을 간도 관리사로 임명",
+    "date": "1903년",
+    "year": 1903,
+    "month": null
+  },
+  {
+    "name": "한일 의정서 체결",
+    "date": "1904년 2월",
+    "year": 1904,
+    "month": 2
+  },
+  {
+    "name": "보안회의 황무지 개간권 반대 상소",
+    "date": "1904년 7월",
+    "year": 1904,
+    "month": 7
+  },
+  {
+    "name": "제1차 한일 협약 체결",
+    "date": "1904년 8월",
+    "year": 1904,
+    "month": 8
+  },
+  {
+    "name": "고종의 국외 중립 선언",
+    "date": "1904년",
+    "year": 1904,
+    "month": null
+  },
+  {
+    "name": "보안회 조직",
+    "date": "1904년",
+    "year": 1904,
+    "month": null
+  },
+  {
+    "name": "을사늑약 체결",
+    "date": "1905년 11월",
+    "year": 1905,
+    "month": 11
+  },
+  {
+    "name": "장지연, 「시일야방성대곡」 게재",
+    "date": "1905년 11월",
+    "year": 1905,
+    "month": 11
+  },
+  {
+    "name": "통감부 설치",
+    "date": "1905년 11월",
+    "year": 1905,
+    "month": 11
+  },
+  {
+    "name": "민영환 자결",
+    "date": "1905년 12월",
+    "year": 1905,
+    "month": 12
+  },
+  {
+    "name": "을사의병",
+    "date": "1905년",
+    "year": 1905,
+    "month": null
+  },
+  {
+    "name": "일본의 독도 시마네현 편입",
+    "date": "1905년",
+    "year": 1905,
+    "month": null
+  },
+  {
+    "name": "헌정 연구회 조직",
+    "date": "1905년",
+    "year": 1905,
+    "month": null
+  },
+  {
+    "name": "화폐 정리 사업 실시",
+    "date": "1905년",
+    "year": 1905,
+    "month": null
+  },
+  {
+    "name": "대한 자강회 조직",
+    "date": "1906년",
+    "year": 1906,
+    "month": null
+  },
+  {
+    "name": "헤이그 특사 파견",
+    "date": "1907년 6월",
+    "year": 1907,
+    "month": 6
+  },
+  {
+    "name": "고종 강제 퇴위",
+    "date": "1907년 6월",
+    "year": 1907,
+    "month": 6
+  },
+  {
+    "name": "대한 제국 군대 해산",
+    "date": "1907년 7월",
+    "year": 1907,
+    "month": 7
+  },
+  {
+    "name": "한일 신협약(정미 7조약) 체결",
+    "date": "1907년 7월",
+    "year": 1907,
+    "month": 7
+  },
+  {
+    "name": "13도 창의군 결성",
+    "date": "1907년",
+    "year": 1907,
+    "month": null
+  },
+  {
+    "name": "국채 보상 운동 시작",
+    "date": "1907년",
+    "year": 1907,
+    "month": null
+  },
+  {
+    "name": "신민회 조직",
+    "date": "1907년",
+    "year": 1907,
+    "month": null
+  },
+  {
+    "name": "정미의병",
+    "date": "1907년",
+    "year": 1907,
+    "month": null
+  },
+  {
+    "name": "동양 척식 주식회사 설립",
+    "date": "1908년",
+    "year": 1908,
+    "month": null
+  },
+  {
+    "name": "서울 진공 작전",
+    "date": "1908년",
+    "year": 1908,
+    "month": null
+  },
+  {
+    "name": "남한 대토벌 작전 전개",
+    "date": "1909년",
+    "year": 1909,
+    "month": null
+  },
+  {
+    "name": "한국 병합 조약 체결(국권 피탈)",
+    "date": "1910년 8월",
+    "year": 1910,
+    "month": 8
+  },
+  {
+    "name": "105인 사건",
+    "date": "1911년",
+    "year": 1911,
+    "month": null
+  }
+]);
+
+function modernEraForYear(year) {
+  const y=Number(year)||0;
+  if(y>=1910)return '일제강점기';
+  if(y>=1905)return '국권 피탈';
+  if(y>=1897)return '대한제국';
+  return '개항기';
+}
+function timelineKey(event) {
+  return [Number(event.year)||0,Number(event.month)||0];
+}
+function definitelyBefore(a,b) {
+  const [ay,am]=timelineKey(a),[by,bm]=timelineKey(b);
+  return ay<by || (ay===by && am>0 && bm>0 && am<bm);
+}
+function uniqueDateChoices(index) {
+  const correct=MODERN_TIMELINE_EVENTS[index].date;
+  const out=[correct];
+  for(let step=1;out.length<4 && step<MODERN_TIMELINE_EVENTS.length;step++){
+    for(const pos of [index-step,index+step]){
+      const value=MODERN_TIMELINE_EVENTS[pos]?.date;
+      if(value&&!out.includes(value))out.push(value);
+      if(out.length===4)break;
+    }
+  }
+  return out;
+}
+function addDirectFact({era,type,term,clue,q,o,e,family}) {
+  if(!q||!Array.isArray(o)||o.length!==4||new Set(o).size!==4)return;
+  CORE_FACTS.push({era,type,term,clue,direct:true,q,o,a:0,e,family});
+}
+
+// 서로 다른 사건·연도 관계 자체를 독립 지식 항목으로 추가한다.
+// 단순 문장 바꾸기가 아니라 사건↔연도, 두 사건의 앞뒤 관계를 각각 직접 묻는다.
+MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
+  const options=uniqueDateChoices(index);
+  if(options.length===4)addDirectFact({
+    era:modernEraForYear(event.year),type:'연도',term:event.date,
+    clue:`‘${event.name}’이 일어난 시기를 찾는 연표 지식`,
+    q:`‘${event.name}’이 일어난 시기로 알맞은 것은 무엇일까요?`,
+    o:options,
+    e:`${event.name}은(는) ${event.date}에 해당합니다.`,
+    family:'date'
+  });
+});
+
+for(let distance=1;distance<=8;distance++){
+  for(let i=0;i+distance<MODERN_TIMELINE_EVENTS.length;i++){
+    const first=MODERN_TIMELINE_EVENTS[i],second=MODERN_TIMELINE_EVENTS[i+distance];
+    if(!definitelyBefore(first,second))continue;
+    const era=modernEraForYear(second.year);
+    const options=[first.name,second.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'];
+    addDirectFact({
+      era,type:'순서',term:first.name,
+      clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
+      q:`다음 두 사건 가운데 먼저 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
+      o:options,
+      e:`${first.name}(${first.date})이(가) ${second.name}(${second.date})보다 먼저입니다.`,
+      family:'chronology-before'
+    });
+    addDirectFact({
+      era,type:'순서',term:second.name,
+      clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
+      q:`다음 두 사건 가운데 나중에 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
+      o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
+      e:`${second.name}(${second.date})이(가) ${first.name}(${first.date})보다 뒤입니다.`,
+      family:'chronology-after'
+    });
+  }
+}
+
 export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
 const ERA_OPTIONS = [...ERA_ORDER];
 
@@ -807,6 +1385,14 @@ const ERA_PROMPTS = [
 function buildBank() {
   const out = [];
   CORE_FACTS.forEach((fact, index) => {
+    if(fact.direct){
+      out.push({
+        id:`direct-${index}`,era:fact.era,difficulty:2,
+        q:fact.q,o:[...fact.o],a:Number(fact.a)||0,e:fact.e,
+        sourceFact:index,family:fact.family||'direct'
+      });
+      return;
+    }
     const termOptions = [fact.term, ...pickDistractors(index, 'term')];
     const clueOptions = [fact.clue, ...pickDistractors(index, 'clue')];
     TERM_PROMPTS.forEach((makePrompt, variant) => out.push({
