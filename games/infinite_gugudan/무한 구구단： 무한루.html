@@ -207,6 +207,39 @@
       *,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
       .beam,.fighter,.door{transition:none!important}
     }
+  
+    /* 실제 Kidscade 캐릭터 에셋 기반 전투 포즈 */
+    .fighter{bottom:13%;width:25%;transition:transform .18s ease,filter .18s ease}
+    .fighter-core{position:relative;width:min(156px,92%);margin:0 auto;aspect-ratio:1/1.08;display:flex;align-items:flex-end;justify-content:center}
+    .fighter-shadow{position:absolute;left:50%;bottom:1%;width:66%;height:12%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(0,0,0,.52),rgba(0,0,0,0) 72%);filter:blur(3px)}
+    .sprite-wrap{position:relative;z-index:2;width:88%;height:88%;display:flex;align-items:flex-end;justify-content:center;transform-origin:50% 100%}
+    .fighter-sprite{display:block;max-width:100%;max-height:100%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 10px 9px rgba(0,0,0,.5));transform-origin:50% 100%;transition:filter .15s ease,opacity .15s ease}
+    .fighter.right .fighter-sprite{transform:scaleX(-1)}
+    .aura{position:absolute;left:50%;bottom:10%;width:74%;aspect-ratio:1;transform:translateX(-50%) scale(.9);border-radius:50%;opacity:.38;filter:blur(11px);transition:opacity .16s ease,transform .16s ease}
+    .fighter.left .aura{background:radial-gradient(circle,rgba(85,215,255,.92),rgba(20,107,255,.25) 50%,transparent 72%)}
+    .fighter.right .aura{background:radial-gradient(circle,rgba(255,107,138,.92),rgba(179,18,69,.25) 50%,transparent 72%)}
+    .fighter[data-state="idle"] .sprite-wrap{animation:fIdle .82s ease-in-out infinite alternate}
+    .fighter[data-state="charge"] .sprite-wrap{animation:fCharge .23s ease-in-out infinite alternate}
+    .fighter[data-state="charge"] .aura{opacity:.82;transform:translateX(-50%) scale(1.16)}
+    .fighter[data-state="fire"] .sprite-wrap{animation:fFire .2s ease-out 1}
+    .fighter[data-state="fire"] .aura{opacity:1;transform:translateX(-50%) scale(1.3)}
+    .fighter[data-state="hit"] .sprite-wrap{animation:fSpriteHit .28s ease 1}
+    .fighter[data-state="lose"] .sprite-wrap{animation:fLose .72s cubic-bezier(.2,.75,.25,1) forwards}
+    .fighter[data-state="lose"] .fighter-sprite{filter:grayscale(.45) brightness(.78) drop-shadow(0 10px 9px rgba(0,0,0,.5))}
+    .fighter[data-state="win"] .sprite-wrap{animation:fWin .48s ease-in-out infinite alternate}
+    .fighter[data-state="win"] .aura{opacity:1;transform:translateX(-50%) scale(1.28)}
+    .emoji-fallback{font-size:clamp(3.8rem,10vw,7rem);line-height:1;filter:drop-shadow(0 10px 9px rgba(0,0,0,.5))}
+    .fighter.right .emoji-fallback{transform:scaleX(-1)}
+    .impact-burst{position:absolute;left:var(--clash-x);top:47%;z-index:9;width:clamp(58px,9vw,92px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.45);border-radius:50%;pointer-events:none;opacity:0;background:radial-gradient(circle,#fff 0 10%,#fff2a6 16%,rgba(109,225,255,.85) 30%,rgba(255,107,138,.65) 47%,transparent 69%);filter:drop-shadow(0 0 18px #fff)}
+    .impact-burst.show{animation:impactBurst .26s ease-out 1}
+    @keyframes fIdle{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+    @keyframes fCharge{from{transform:translateY(0) scale(1)}to{transform:translateY(-4px) scale(1.035)}}
+    @keyframes fFire{0%{transform:translateY(0) scale(1)}42%{transform:translateY(-2px) scale(1.1)}100%{transform:translateY(0) scale(1)}}
+    @keyframes fSpriteHit{0%,100%{transform:translateX(0) rotate(0)}28%{transform:translateX(-10px) rotate(-4deg)}62%{transform:translateX(8px) rotate(3deg)}}
+    @keyframes fLose{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(0,18px) rotate(9deg) scale(.9);opacity:.72}}
+    @keyframes fWin{from{transform:translateY(0) scale(1)}to{transform:translateY(-9px) scale(1.055)}}
+    @keyframes impactBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0)}32%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(12deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.52) rotate(25deg)}}
+
   </style>
 </head>
 <body>
@@ -281,8 +314,23 @@
         <div class="speed-lines"></div>
         <div class="status-float" id="battleStatus">준비!</div>
         <div class="cpu-question" id="cpuQuestion">CPU 계산 중...</div>
-        <div class="fighter left" id="leftFighter"><div class="avatar">🥋</div><div class="fighter-label" id="leftComboLabel">COMBO 0</div></div>
-        <div class="fighter right" id="rightFighter"><div class="avatar" id="rightAvatar">👹</div><div class="fighter-label" id="rightComboLabel">COMBO 0</div></div>
+        <div class="impact-burst" id="impactBurst" aria-hidden="true"></div>
+        <div class="fighter left" id="leftFighter" data-state="idle">
+          <div class="fighter-core">
+            <div class="aura"></div>
+            <div class="fighter-shadow"></div>
+            <div class="sprite-wrap"><img class="fighter-sprite" id="leftSprite" alt="왼쪽 대전 캐릭터"></div>
+          </div>
+          <div class="fighter-label" id="leftComboLabel">COMBO 0</div>
+        </div>
+        <div class="fighter right" id="rightFighter" data-state="idle">
+          <div class="fighter-core">
+            <div class="aura"></div>
+            <div class="fighter-shadow"></div>
+            <div class="sprite-wrap"><img class="fighter-sprite" id="rightSprite" alt="오른쪽 대전 캐릭터"></div>
+          </div>
+          <div class="fighter-label" id="rightComboLabel">COMBO 0</div>
+        </div>
         <div class="beam left" id="leftBeam"></div>
         <div class="beam right" id="rightBeam"></div>
         <div class="clash"></div>
@@ -375,6 +423,41 @@
       normal:{label:"중급",base:3000,jitter:950,error:.065},
       hard:{label:"고급",base:1850,jitter:620,error:.025}
     };
+    var CHARACTER_ROOT="../../assets/game/characters/people/kenney-platformer-characters/";
+    var CHARACTER_SETS={
+      player:{
+        idle:CHARACTER_ROOT+"player/poses/player-stand.png",
+        charge:CHARACTER_ROOT+"player/poses/player-idle.png",
+        fire:CHARACTER_ROOT+"player/poses/player-action1.png",
+        hit:CHARACTER_ROOT+"player/poses/player-hurt.png",
+        win:CHARACTER_ROOT+"player/poses/player-action2.png",
+        lose:CHARACTER_ROOT+"player/poses/player-hurt.png"
+      },
+      female:{
+        idle:CHARACTER_ROOT+"female/poses/female-stand.png",
+        charge:CHARACTER_ROOT+"female/poses/female-idle.png",
+        fire:CHARACTER_ROOT+"female/poses/female-action1.png",
+        hit:CHARACTER_ROOT+"female/poses/female-hurt.png",
+        win:CHARACTER_ROOT+"female/poses/female-action2.png",
+        lose:CHARACTER_ROOT+"female/poses/female-hurt.png"
+      },
+      adventurer:{
+        idle:CHARACTER_ROOT+"adventurer/poses/adventurer-stand.png",
+        charge:CHARACTER_ROOT+"adventurer/poses/adventurer-idle.png",
+        fire:CHARACTER_ROOT+"adventurer/poses/adventurer-action1.png",
+        hit:CHARACTER_ROOT+"adventurer/poses/adventurer-hurt.png",
+        win:CHARACTER_ROOT+"adventurer/poses/adventurer-action2.png",
+        lose:CHARACTER_ROOT+"adventurer/poses/adventurer-hurt.png"
+      },
+      soldier:{
+        idle:CHARACTER_ROOT+"soldier/poses/soldier-stand.png",
+        charge:CHARACTER_ROOT+"soldier/poses/soldier-idle.png",
+        fire:CHARACTER_ROOT+"soldier/poses/soldier-action1.png",
+        hit:CHARACTER_ROOT+"soldier/poses/soldier-hurt.png",
+        win:CHARACTER_ROOT+"soldier/poses/soldier-action2.png",
+        lose:CHARACTER_ROOT+"soldier/poses/soldier-hurt.png"
+      }
+    };
     var state = {
       mode:"cpu",cpu:"easy",table:"all",sound:true,
       round:1,wins:[0,0],active:false,paused:false,ending:false,
@@ -398,6 +481,7 @@
        "localQuitBtn","pauseOverlay","resumeBtn","confirmQuitBtn","menuBtn","retryBtn","resultIcon","resultTitle","resultSub","statCorrect",
        "statCombo","statSpeed","statScore","flash","doors"].forEach(function(id){els[id]=$(id)});
       loadSettings();
+      preloadCharacterSprites();
       bind();
       updateMenu();
       animate();
@@ -423,6 +507,67 @@
       if(state.mode!=="cpu"||state.wins[0]<2)return;
       var w=getWins();w[state.cpu]=(w[state.cpu]||0)+1;
       try{localStorage.setItem("guguDuelWins",JSON.stringify(w))}catch(e){}
+    }
+
+    function characterSetFor(side){
+      if(side===0)return CHARACTER_SETS.player;
+      if(state.mode==="local")return CHARACTER_SETS.adventurer;
+      if(state.cpu==="easy")return CHARACTER_SETS.female;
+      if(state.cpu==="normal")return CHARACTER_SETS.adventurer;
+      return CHARACTER_SETS.soldier;
+    }
+    function spriteFor(side){return side===0?$("leftSprite"):$("rightSprite")}
+    function fallbackEmoji(side){return side===0?"🥋":(state.mode==="cpu"?"👹":"🥋")}
+    function ensureSpriteFallback(side){
+      var img=spriteFor(side);if(!img)return;
+      img.onerror=function(){
+        img.style.display="none";
+        var wrap=img.parentElement;
+        if(wrap&&!wrap.querySelector(".emoji-fallback")){
+          var d=document.createElement("div");
+          d.className="emoji-fallback";
+          d.textContent=fallbackEmoji(side);
+          wrap.appendChild(d);
+        }
+      };
+    }
+    function clearSpriteFallback(side){
+      var img=spriteFor(side);if(!img)return;
+      var f=img.parentElement&&img.parentElement.querySelector(".emoji-fallback");
+      if(f)f.remove();
+      img.style.display="block";
+    }
+    function setFighterState(side,next){
+      var el=side===0?els.leftFighter:els.rightFighter;
+      var img=spriteFor(side);
+      if(!el||!img)return;
+      var set=characterSetFor(side);
+      var pose=set[next]||set.idle;
+      el.dataset.state=next;
+      clearSpriteFallback(side);
+      ensureSpriteFallback(side);
+      if(img.getAttribute("src")!==pose)img.src=pose;
+    }
+    function pulseState(side,next,ms,fallback){
+      setFighterState(side,next);
+      setTimeout(function(){
+        if(state.active&&!state.ending&&!state.paused)setFighterState(side,fallback||"idle");
+      },ms||190);
+    }
+    function showImpact(){
+      var burst=$("impactBurst");if(!burst)return;
+      burst.classList.remove("show");void burst.offsetWidth;burst.classList.add("show");
+    }
+    function setupCharacterSprites(){
+      ensureSpriteFallback(0);ensureSpriteFallback(1);
+      setFighterState(0,"idle");setFighterState(1,"idle");
+    }
+    function preloadCharacterSprites(){
+      Object.keys(CHARACTER_SETS).forEach(function(key){
+        Object.keys(CHARACTER_SETS[key]).forEach(function(pose){
+          var img=new Image();img.src=CHARACTER_SETS[key][pose];
+        });
+      });
     }
 
     function bind(){
@@ -489,7 +634,7 @@
       showOnly(els.battleScreen);
       els.soloControls.classList.toggle("hidden",state.mode!=="cpu");
       els.localControls.classList.toggle("hidden",state.mode!=="local");
-      els.rightAvatar.textContent=state.mode==="cpu"?"👹":"🥋";
+      setupCharacterSprites();
       els.leftName.textContent=state.mode==="cpu"?"나":"PLAYER 1";
       els.rightName.textContent=state.mode==="cpu"?"CPU "+CPU[state.cpu].label:"PLAYER 2";
       els.cpuQuestion.classList.toggle("hidden",state.mode!=="cpu");
@@ -501,6 +646,7 @@
     function startRound(){
       clearCpu();
       state.active=false;state.ending=false;state.target=0;
+      setFighterState(0,"charge");setFighterState(1,"charge");
       state.fighters[0].combo=0;state.fighters[1].combo=0;
       newQuestion(0);newQuestion(1);
       updateQuestions();updateCombo();
@@ -514,6 +660,7 @@
         else{
           clearInterval(state.countdownTimer);state.countdownTimer=0;
           els.battleStatus.textContent="발사!";
+          setFighterState(0,"idle");setFighterState(1,"idle");
           state.active=true;
           state.fighters[0].started=performance.now();
           state.fighters[1].started=performance.now();
@@ -589,6 +736,8 @@
         var p=powerFor(elapsed,f.combo);
         applyForce(side,p);
         feedback(side,speedWord(elapsed)+"  +"+Math.round(p)+" 출력",true);
+        pulseState(side,"fire",210,"idle");
+        showImpact();
         sfxCorrect(side,f.combo);
         boostBeam(side);
         setTimeout(function(){if(state.active)newQuestion(side)},110);
@@ -596,6 +745,7 @@
         f.wrong++;f.combo=0;
         applyPenalty(side,5.5);
         feedback(side,"오답! 출력이 흔들렸어요",false);
+        pulseState(side,"hit",290,"idle");
         sfxWrong();
         hitFighter(side);
         f.entry="";
@@ -643,12 +793,12 @@
         if(!state.active||state.paused||state.ending)return;
         var miss=Math.random()<d.error;
         if(miss){
-          f.wrong++;f.combo=0;applyPenalty(1,4.5);feedback(1,"CPU가 실수!",false);sfxWrong();hitFighter(1);
+          f.wrong++;f.combo=0;applyPenalty(1,4.5);feedback(1,"CPU가 실수!",false);pulseState(1,"hit",290,"idle");sfxWrong();hitFighter(1);
         }else{
           var elapsed=performance.now()-f.started;
           f.correct++;f.answered++;f.totalMs+=elapsed;f.combo++;f.maxCombo=Math.max(f.maxCombo,f.combo);
           var p=powerFor(elapsed,f.combo);
-          applyForce(1,p);feedback(1,"CPU "+speedWord(elapsed),true);sfxCorrect(1,f.combo);boostBeam(1);
+          applyForce(1,p);feedback(1,"CPU "+speedWord(elapsed),true);pulseState(1,"fire",210,"idle");showImpact();sfxCorrect(1,f.combo);boostBeam(1);
         }
         updateCombo();
         if(state.active){newQuestion(1);scheduleCpu()}
@@ -659,6 +809,8 @@
       if(state.ending)return;
       state.ending=true;state.active=false;clearCpu();
       state.wins[winner]++;
+      setFighterState(winner,"win");
+      setFighterState(winner===0?1:0,"lose");
       state.target=winner===0?105:-105;
       updateRoundHud();
       els.battleStatus.textContent=(winner===0?(state.mode==="cpu"?"내":"PLAYER 1"):(state.mode==="cpu"?"CPU":"PLAYER 2"))+" 라운드 승리!";
