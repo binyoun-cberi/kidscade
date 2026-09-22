@@ -5035,6 +5035,7 @@
     var overlay=q("#dayEndOverlay");if(!overlay)return;
     overlay.hidden=false;
     var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts(),queued=queuedFollowUps();
+    var storyUpcoming=storyQueue.filter(function(j){return j.status==="queued"}).sort(function(a,b){return a.dueDay-b.dueDay});
     q("#dayEndTitle").textContent="Day "+dayIndex+"이 끝났습니다";
     q("#dayEndText").textContent="오늘은 "+today.length+"번 아이들 일에 멈춰 섰습니다. 오늘 했던 말과 선택은 내일도 아이들 모습에 남을 수 있습니다.";
     q("#dayEndMetrics").innerHTML=
@@ -5049,10 +5050,15 @@
       '<div class="day-end-style"><span>→ 자율</span><strong>'+styles.right+'회</strong></div>'+
       (styles.timeout?'<div class="day-end-style"><span>⌛ 망설임</span><strong>'+styles.timeout+'회</strong></div>':'');
     var upcoming=queued.slice().sort(function(a,b){return a.dueDay-b.dueDay}).slice(0,5);
-    q("#dayEndFollowups").innerHTML=upcoming.length?upcoming.map(function(j){
+    var followupHtml=upcoming.map(function(j){
       var s=studentById(j.studentId);
       return '<div class="day-end-followup"><span>Day '+j.dueDay+' · '+escHtml(s?s.name:"학생")+'</span><small>'+escHtml(j.sourceTitle)+'</small></div>';
-    }).join(""):'<div class="day-end-followup"><span>지금은 특별히 더 지켜볼 일이 없습니다.</span><small>내일은 또 다른 일이 생길 수 있습니다.</small></div>';
+    }).join("");
+    var storyHtml=storyUpcoming.slice(0,2).map(function(j){
+      var st=storyStates[j.storyId],arc=st&&storyArcFor(st.arcId),s=st&&studentById(st.studentId);
+      return '<div class="day-end-followup"><span>📖 Day '+j.dueDay+' · '+escHtml(s?s.name:"학생")+'</span><small>'+(arc?escHtml(arc.label)+" · 이야기가 이어집니다":"이어지는 이야기가 있습니다")+'</small></div>';
+    }).join("");
+    q("#dayEndFollowups").innerHTML=(storyHtml+followupHtml)||'<div class="day-end-followup"><span>지금은 특별히 더 지켜볼 일이 없습니다.</span><small>내일은 또 다른 일이 생길 수 있습니다.</small></div>';
   }
   function endDay(){
     if(dayEnded)return;
