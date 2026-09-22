@@ -98,3 +98,55 @@ button.big{width:100%;min-height:48px;border-radius:12px;font-size:12px;font-wei
   .ingredient-label{font-size:5.5px}
   .spice-dock{grid-template-columns:1fr 1fr}.spice-title{display:none}.spice-options{grid-column:1/-1;justify-content:center}.spice-dock button{min-height:34px}
 }
+
+
+/* v11 readability + seasoning UX */
+@keyframes maratangTicketIn{0%{transform:translateY(-8px) rotate(-.35deg);opacity:.72}100%{transform:translateY(0) rotate(-.35deg);opacity:1}}
+@keyframes maratangDockIn{0%{transform:translate(-50%,10px);opacity:0}100%{transform:translate(-50%,0);opacity:1}}
+@keyframes maratangCookGlow{0%,100%{box-shadow:0 8px 22px rgba(56,31,15,.2)}50%{box-shadow:0 10px 34px rgba(217,77,63,.32)}}
+.order-ticket.order-pop{animation:maratangTicketIn .3s cubic-bezier(.2,.8,.2,1)}
+.topbar{height:62px;padding:8px 14px;gap:12px}
+.shop-name{font-size:20px}
+.event-chip{max-width:340px;padding:7px 11px;border-radius:11px}.event-chip b{font-size:11px}.event-chip span{font-size:10px}
+.top-stats{gap:7px}.top-stats span,.top-stats button{height:38px;padding:0 11px;border-radius:11px;font-size:10.5px}
+.order-ticket{left:16px;top:16px;width:min(440px,calc(100% - 32px));padding:16px 17px 14px;border-radius:16px}
+.order-ticket small{font-size:9px}.order-head>span{padding:5px 9px;font-size:10px}
+.order-ticket h2{margin:6px 0 5px;font-size:20px}.order-ticket p{margin:0 0 10px;font-size:12px;line-height:1.5}
+.order-grid{grid-template-columns:repeat(3,1fr);gap:7px}.order-grid>div{padding:8px 9px;border-radius:9px}
+.order-grid small{font-size:8px}.order-grid b{margin-top:2px;font-size:11px;line-height:1.35}.order-grid .order-meta{padding:7px 9px;font-size:10.5px}
+.patience{height:7px;margin-top:11px}
+.scale-readout{right:16px;top:16px;padding:8px;gap:6px;border-radius:12px}.scale-readout div{min-width:82px;padding:6px 9px}.scale-readout small{font-size:8px}.scale-readout b{font-size:16px}
+.ingredient-label{padding:5px 9px;border-radius:6px;font-size:10px;box-shadow:0 3px 7px rgba(0,0,0,.2)}
+.next-unlock{right:16px;top:102px;padding:7px 10px;font-size:9.5px}
+.drag-tip{bottom:75px;padding:8px 13px;font-size:11px}
+.shopping-actions,.spice-dock,.cook-dock{bottom:max(12px,env(safe-area-inset-bottom));gap:8px;padding:8px;border-radius:15px}
+.shopping-actions button,.spice-dock button,.cook-dock button{min-height:46px;padding:10px 14px;border-radius:10px;font-size:11.5px}
+.shopping-actions{min-width:390px}
+.seasoning-panel{width:min(700px,calc(100% - 24px));display:grid;grid-template-columns:1fr;gap:7px;animation:maratangDockIn .22s ease-out}
+.seasoning-head{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px}.seasoning-head b{font-size:14px}.seasoning-head span{font-size:10px;font-weight:850;color:#8a6c58}
+.seasoning-row{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:8px}.seasoning-row>span{font-size:11px;font-weight:1000;padding-left:4px}.seasoning-row>span small{font-size:8px;color:#9a7b65}
+.spice-options,.sauce-options{display:flex;gap:6px;flex-wrap:wrap}
+.spice-choice,.sauce-choice{min-width:58px!important;padding:9px 10px!important}
+.sauce-choice{border-color:#ddcbb6!important;background:#fffaf4!important}.sauce-choice.selected{background:#f4d7b0!important;border-color:#c87b4b!important;color:#7d4027;transform:translateY(-1px)}
+.seasoning-actions{display:flex;justify-content:flex-end;gap:7px;padding-top:1px}.seasoning-actions button{min-width:112px}
+.cook-dock{animation:maratangCookGlow 1.25s ease-in-out infinite}.cook-progress{height:11px}.cook-dock #cookText{font-size:11px}
+.toast{top:76px;padding:9px 13px;font-size:11px}
+.result-card small,.manage-card>small{font-size:10px}.start-card p,.result-card p{font-size:13px}.result-card h2{font-size:28px}
+.stock-row span,.stock-row b{font-size:10px}.stock-row button{font-size:9px}.upgrade-grid button span,.upgrade-grid button em{font-size:10px}
+
+@media(max-width:720px){
+  .topbar{height:54px;padding:7px 8px;gap:7px}.shop-name{font-size:15px}.event-chip{max-width:138px}.event-chip b{font-size:9px}
+  .top-stats span,.top-stats button{height:34px;padding:0 8px;font-size:8.5px}
+  .order-ticket{left:8px;top:8px;width:min(390px,74vw);padding:12px 13px}.order-ticket h2{font-size:16px}.order-ticket p{font-size:10px}.order-grid b{font-size:9px}.order-grid small{font-size:7px}.order-grid .order-meta{font-size:8.5px}
+  .scale-readout{right:8px;top:8px;padding:6px}.scale-readout div{min-width:64px}.scale-readout b{font-size:13px}.scale-readout small{font-size:7px}
+  .ingredient-label{font-size:8px;padding:4px 7px}.drag-tip{bottom:68px;font-size:9px}.next-unlock{right:8px;top:88px;font-size:8px}
+  .shopping-actions{width:calc(100% - 14px);min-width:0}.shopping-actions button{font-size:10px;min-height:43px}
+  .seasoning-panel{width:calc(100% - 14px);padding:7px}.seasoning-row{grid-template-columns:72px 1fr}.seasoning-row>span{font-size:9px}
+  .spice-choice,.sauce-choice{min-width:48px!important;padding:7px 8px!important;font-size:9px!important}
+  .seasoning-actions button{min-width:96px;font-size:10px}
+}
+@media(max-width:430px){
+  .shop-name{font-size:13px;max-width:98px}.order-ticket{width:76vw}.order-ticket h2{font-size:15px}.order-ticket p{font-size:9px}
+  .order-grid{grid-template-columns:repeat(2,1fr)}.order-grid .order-sauce{grid-column:1/-1}.order-grid b{font-size:8.5px}.order-grid .order-meta{font-size:8px}
+  .ingredient-label{font-size:7.5px}.seasoning-row{grid-template-columns:1fr}.seasoning-row>span{padding-left:2px}.spice-options,.sauce-options{justify-content:flex-start}
+}
