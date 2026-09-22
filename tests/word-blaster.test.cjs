@@ -26,8 +26,10 @@ test('Word Blaster has the intended low-grade learning loop',()=>{
   assert.match(runtime,/function startBoss\(/);
   assert.match(runtime,/state\.round>=rounds\.length/);
   assert.match(runtime,/kidscade_language_v3_word_blaster_best/);
-  assert.match(html,/kidscade-storage\\.js/);
-  assert.doesNotMatch(runtime,/localStorage\\.(?:getItem|setItem|removeItem)/);
+  assert.ok(html.includes('kidscade-storage.js'));
+  assert.ok(!runtime.includes('localStorage.getItem('));
+  assert.ok(!runtime.includes('localStorage.setItem('));
+  assert.ok(!runtime.includes('localStorage.removeItem('));
   assert.match(data,/en:'APPLE'/);
   assert.match(data,/boss:\['I','LIKE','APPLES'\]/);
 });
