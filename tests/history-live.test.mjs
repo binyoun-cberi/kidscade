@@ -200,3 +200,34 @@ test('small era selections still fill the requested round length without leaving
   assert.equal(picked.length,40);
   assert.ok(picked.every(q=>q.era==='6·25 전쟁'));
 });
+
+
+test('history timebattle uses shared asset-backed audio and visual feedback', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(html,/audio-manager\.js/);
+  assert.match(html,/KidscadeAudio/);
+  assert.match(html,/playSfx\('ui\.tick'/);
+  assert.match(html,/playSfx\(ok\?'correct':'wrong'/);
+  assert.match(html,/playSfx\('victory'/);
+  assert.match(html,/function confettiFx/);
+  assert.match(html,/fx-correct/);
+  assert.match(html,/fx-wrong/);
+  assert.match(html,/fx-rise/);
+  assert.match(html,/prefers-reduced-motion/);
+  assert.match(html,/id="soundToggle"/);
+});
+
+test('shared audio catalog exposes history UI assets', () => {
+  const catalog=JSON.parse(fs.readFileSync(new URL('../assets/audio/audio-catalog.json',import.meta.url),'utf8'));
+  for(const key of ['ui.click','ui.confirm','ui.error','ui.tick','ui.open','ui.select']){
+    assert.ok(Array.isArray(catalog.sounds[key])&&catalog.sounds[key].length>0,key+' must have an asset');
+    assert.ok(catalog.sounds[key].every(path=>path.includes('history_royale/audio/ui/kenney_interface/')));
+  }
+});
+
+test('history timebattle inline game script parses', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(Boolean);
+  assert.ok(scripts.length>0);
+  for(const script of scripts)new Function(script);
+});
