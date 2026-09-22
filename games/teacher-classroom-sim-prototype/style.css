@@ -982,3 +982,101 @@ body{
 }
 
 .encounter-portrait .portrait-avatar{top:auto!important;}
+
+
+/* v25 — card-first teacher sim */
+.card-stage{
+  height:calc(100vh - 126px);
+  min-height:620px;
+  border-radius:0;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.9),rgba(255,255,255,0) 30%),
+    linear-gradient(180deg,#e8edf6 0%,#d9e1ee 48%,#cbd7e8 100%);
+  overflow:hidden;
+}
+.card-stage::before{
+  content:"";
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.13) 1px,transparent 1px),
+    linear-gradient(rgba(255,255,255,.13) 1px,transparent 1px);
+  background-size:32px 32px;
+  mask-image:linear-gradient(to bottom,black,transparent 78%);
+}
+.simulation-engine{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;left:-9999px!important;top:-9999px!important}
+.card-stage .scene-title{display:none!important}
+.card-stage .card-idle{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(420px,82%);padding:34px 30px;border-radius:22px;
+  background:rgba(255,255,255,.76);border:1px solid rgba(53,68,94,.12);
+  box-shadow:0 18px 55px rgba(50,66,92,.13);backdrop-filter:blur(10px);
+  text-align:center;color:#43516a;
+}
+.card-stage .card-idle .idle-icon{font-size:40px;margin-bottom:12px}
+.card-stage .card-idle strong{display:block;font-size:18px;margin-bottom:8px}
+.card-stage .card-idle p{margin:0;font-size:12px;line-height:1.6;color:#728098}
+.schedule{display:none!important}
+.encounter-overlay{background:rgba(224,231,241,.92)!important;backdrop-filter:blur(8px)}
+.encounter-shell{max-width:980px;margin:0 auto}
+.encounter-timer,#encounterTimerText{display:none!important}
+.encounter-choice small{display:none!important}
+.encounter-card{
+  max-width:390px;
+  min-height:500px;
+  padding:24px 28px 22px;
+  border-radius:20px;
+  box-shadow:0 24px 70px rgba(53,63,80,.23);
+}
+.encounter-card-kicker{font-size:11px!important}
+.encounter-card h2{font-size:21px!important;line-height:1.25;margin:7px 0 10px!important}
+.encounter-card p{font-size:14px!important;line-height:1.55!important}
+.encounter-card blockquote{font-size:14px!important;line-height:1.5!important}
+.encounter-student{font-size:11px!important;line-height:1.55!important}
+.encounter-portrait{
+  width:min(270px,84%)!important;height:250px!important;border-radius:16px!important;
+  box-shadow:inset 0 -30px 70px rgba(26,30,42,.14);
+}
+.encounter-portrait::after{
+  content:attr(data-expression);
+  position:absolute;right:10px;bottom:10px;z-index:30;
+  padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.82);
+  border:1px solid rgba(34,39,52,.12);font-size:9px;font-weight:900;color:#4e5668;
+}
+.encounter-portrait .portrait-expression{display:none!important}
+.encounter-portrait .portrait-avatar{bottom:-68px!important;transform:translateX(-50%) scale(5.7)!important}
+.portrait-face{
+  position:absolute;left:16px;top:10px;width:16px;height:12px;z-index:12;
+  pointer-events:none;
+}
+.portrait-face-part{position:absolute!important;display:block!important;object-fit:contain!important;max-width:none!important}
+.portrait-face .expr-brow{left:0;top:-2px;width:16px;height:10px}
+.portrait-face .expr-eyes{left:0;top:1px;width:16px;height:10px}
+.portrait-face .expr-mouth{left:0;top:4px;width:16px;height:10px}
+.portrait-face.expression-angry .expr-brow{transform:rotate(180deg) scaleY(.9)}
+.portrait-face.expression-worried .expr-brow,
+.portrait-face.expression-tearful .expr-brow,
+.portrait-face.expression-struggling .expr-brow{transform:scaleY(-1)}
+.portrait-face.expression-playful .expr-brow{transform:translateY(1px) rotate(-4deg)}
+.portrait-face.expression-startled .expr-eyes{transform:scale(1.12)}
+.expr-tear{
+  position:absolute;left:12px;top:7px;width:2px;height:4px;border-radius:60% 60% 70% 70%;
+  background:#8fc7e8;transform:rotate(10deg);z-index:4
+}
+.encounter-choice{
+  border-radius:16px!important;padding:13px 12px!important;
+  background:rgba(255,255,255,.82)!important;box-shadow:0 10px 28px rgba(51,63,84,.10)!important
+}
+.encounter-choice .direction{font-size:11px!important}
+.encounter-choice strong{font-size:12px!important;line-height:1.45!important}
+.encounter-choice.preview{transform:scale(1.06);box-shadow:0 14px 36px rgba(47,62,86,.20)!important}
+.report .metric span{font-size:9px}
+@media(max-width:700px){
+  .card-stage{height:calc(100dvh - 116px);min-height:520px}
+  .encounter-shell{padding:60px 62px 76px!important}
+  .encounter-card{max-width:100%;min-height:440px;padding:18px 20px 17px}
+  .encounter-portrait{height:200px!important;width:88%!important}
+  .encounter-portrait .portrait-avatar{bottom:-62px!important;transform:translateX(-50%) scale(4.8)!important}
+  .encounter-card h2{font-size:17px!important}
+  .encounter-card p,.encounter-card blockquote{font-size:12px!important}
+  .encounter-choice{width:82px!important}
+}
