@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
 
 test('history live supports a full classroom', () => {
@@ -19,4 +20,16 @@ test('history live question bank is classroom-ready', () => {
     assert.equal(typeof q.e, 'string', 'question '+index+' needs an explanation');
     assert.ok(q.e.length >= 10, 'question '+index+' explanation is too short');
   }
+});
+
+
+test('history live exposes solo practice without removing classroom play', () => {
+  const worker = fs.readFileSync(new URL('../worker/history-live.mjs', import.meta.url), 'utf8');
+  const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
+  assert.match(worker, /\/api\/history-live\/solo/);
+  assert.match(worker, /createSoloRoom/);
+  assert.match(html, /혼자 연습/);
+  assert.match(html, /startSolo\(\)/);
+  assert.match(html, /role:'solo'/);
+  assert.match(html, /hostToken/);
 });
