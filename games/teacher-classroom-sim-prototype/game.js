@@ -3242,35 +3242,8 @@
     return humanAction(s);
   }
   function renderRoomOverview(){
-    var visible=students.filter(function(s){return s.scene===teacherScene});
-    var ranked=visible.map(function(s){return {s:s,score:priorityScore(s)}}).filter(function(x){return x.score>=30}).sort(function(a,b){return b.score-a.score}).slice(0,4);
-    var urgent=visible.filter(function(s){return priorityScore(s)>=80}).length;
-    var help=visible.filter(function(s){return s.action==="HELP"||s.helpNeed>.24}).length;
-    var off=visible.filter(function(s){return isOffTask(s)}).length;
-    var social=visible.filter(function(s){return ["ARGUE","REJECTED","TEASE"].indexOf(s.action)>=0}).length;
-    var pulse=q("#roomPulse");
-    if(pulse)pulse.innerHTML=
-      '<span class="pulse-chip '+(urgent?"danger":"")+'">긴급 '+urgent+'</span>'+
-      '<span class="pulse-chip help">도움 '+help+'</span>'+
-      '<span class="pulse-chip '+(off>=3?"warning":"")+'">흐름 이탈 '+off+'</span>'+
-      '<span class="pulse-chip '+(social?"warning":"")+'">관계 신호 '+social+'</span>';
-    var count=q("#priorityCount");if(count)count.textContent=SCENE_NAME[teacherScene]+" · "+visible.length+"명";
-    var board=q("#priorityBoard");
-    if(board){
-      if(!ranked.length)board.innerHTML='<div class="priority-empty">지금은 크게 두드러지는 신호가 없습니다. 전체 흐름을 보며 수업과 관계 변화를 살펴보세요.</div>';
-      else board.innerHTML=ranked.map(function(item){
-        var s=item.s,signal=visualSignal(s),tone=signal?signal.tone:(item.score>=55?"warning":"neutral");
-        return '<button type="button" class="priority-item" data-student-id="'+s.id+'">'+
-          '<span class="priority-dot '+tone+'"></span>'+
-          '<span class="priority-main"><strong>'+escHtml(s.name)+'</strong><span>'+escHtml(priorityReason(s))+'</span></span>'+
-          '<span class="priority-rank">'+(item.score>=80?"먼저":"보기")+'</span></button>';
-      }).join("");
-    }
-    var alert=q("#worldAlert"),top=ranked[0];
-    if(alert){
-      if(top&&top.score>=80){alert.hidden=false;alert.dataset.studentId=top.s.id;alert.textContent="확인 필요 · "+top.s.name+" · "+priorityReason(top.s)}
-      else{alert.hidden=true;alert.removeAttribute("data-student-id")}
-    }
+    var visible=students.filter(function(s){return s.scene===teacherScene}).length;
+    var note=q("#offscreen");if(note)note.textContent=visible+"명 보임";
   }
   function renderInteractionLinks(){
     var svg=q("#interactionLinks"),seen={};svg.innerHTML="";
@@ -3356,19 +3329,7 @@
     return "현재 몸짓과 시선에서 특별한 이상은 크게 보이지 않는다.";
   }
   function renderTeacherBusy(){
-    var busy=teacherIsBusy();
-    var el=q("#teacherBusy"),fill=q("#teacherBusyFill"),txt=q("#teacherBusyText");
-    q("#teacher").classList.toggle("busy",busy);
-    if(!busy){
-      txt.textContent="지금 개입 가능";fill.style.width="0%";return;
-    }
-    var action=actionById(teacherTask.actionId);
-    var target=teacherTask.targetId===null?null:studentById(teacherTask.targetId);
-    var done=clamp((gameSec-teacherTask.start)/teacherTask.duration);
-    if(teacherTask.kind==="sceneTravel")txt.textContent=SCENE_NAME[teacherTask.targetScene]+"으로 이동 중";
-    else if(target&&gameSec<(teacherTask.actionStart||teacherTask.start))txt.textContent=target.name+"에게 이동 중";
-    else txt.textContent=(target?target.name+" · ":"")+(action?action.label:(teacherTask.label||"교사 행동"))+" 중";
-    fill.style.width=(done*100)+"%";
+    var teacherEl=q("#teacher");if(teacherEl)teacherEl.classList.toggle("busy",teacherIsBusy());
   }
   function quickActionScore(a,s){
     var base={immediateStop:220,checkSafety:210,requestSupport:195,mediate:145,separate:140,documentIncident:125,probeConcept:110,inspectWork:104,checkQuestion:100,hint:98,firstStep:96,gesture:94,redirect:92,proximity:88,quietCall:86,listen:84,praise:78,simplify:76,movementJob:74,watch:68,role:62,seatAdjust:58,connectPeer:55,circleRole:52,chalk:25,attentionSignal:100,microBreak:96,scanRoom:90,classPraise:82};
@@ -3520,7 +3481,7 @@
     if(!title||!body)return;
     if(kind==="computer"){
       kicker.textContent="오늘 현황";title.textContent=current().name;
-      var cm=classDashboard(),today=todayEncounters(),remaining=encounterBudgetRemaining(),currentCount=periodEncounterCount();
+      var cm=classDashboard(),today=todayEncounters(),currentCount=periodEncounterCount();
       var html='<div class="tool-section"><h4>현재 일과</h4><div>'+escHtml(current().unit||current().name)+'</div></div>'+
         '<div class="roster-summary">'+
           '<div><strong>'+cm.flow+'</strong><small>📖 수업 흐름</small></div>'+
@@ -3647,62 +3608,14 @@
       (observed?"":'<span class="vital-hint">관찰 행동을 하면 더 많은 상태 단서가 드러납니다.</span>');
   }
   function renderPanel(){
-    var s=studentById(selected);
-    app.classList.toggle("student-selected",!!s);
-    var clear=q("#clearSelection");if(clear)clear.hidden=!s;
-    if(!s){
-      q("#studentName").textContent="학급 운영";
-      q("#studentSummary").textContent="학생을 선택하지 않으면 현재 공간 전체에 할 수 있는 행동이 나타납니다.";
-      q("#studentState").textContent=SCENE_NAME[teacherScene]+" 전체 관찰";
-      q("#memory").textContent="개별 학생을 선택하면 행동 원인과 관계 상황에 맞는 개별 행동으로 바뀝니다.";
-      renderStudentVitals(null);renderDiagnosisPanel(null);
-      renderTeacherBusy();renderActionPanel(null);return;
-    }
-    q("#studentName").textContent=s.name;q("#studentState").textContent=humanAction(s);
-    q("#studentSummary").textContent=connectMode?"함께 해볼 두 번째 학생을 선택하세요.":swapMode?"자리를 바꿀 두 번째 학생을 선택하세요.":observationText(s);
-    var notes=[];
-    if(s.memory.length)notes.push("최근 관찰: "+s.memory[0].text);
-    if(hasObservedCurrentWork(s))notes.push("과제 풀이 과정 확인됨");
-    if(s.observation>=1){
-      if(s.moveNeed>.38)notes.push("관찰 단서: 오래 앉아 있을수록 몸 움직임이 커짐");
-      if(s.socialNeed>.38)notes.push("관찰 단서: 또래 쪽으로 시선과 접근이 자주 향함");
-      if(s.frustration>.34)notes.push("관찰 단서: 막히거나 거절된 뒤 감정이 오래 남는 편");
-    }
-    diagnosisSummary(s).forEach(function(line){notes.push(line)});
-    if(s.roleUntil>gameSec)notes.push("현재 역할을 맡고 있음");
-    var pair=activePair(s);if(pair)notes.push(pair.name+"와 함께 해보도록 연결된 상태");
-    var conflict=conflictPartner(s);if(conflict)notes.push(conflict.name+"와 감정이 남아 있음");
-    var circle=circleOf(s);
-    if(circle){
-      var names=circle.members.map(studentById).filter(Boolean).map(function(x){return x.name}).join("·");
-      notes.push("자주 어울리는 무리: "+names+" / "+circle.label);
-    }
-    q("#memory").textContent=notes.join(" · ")||"최근에 특별히 기록된 일 없음";
-    renderStudentVitals(s);renderDiagnosisPanel(s);
-    renderTeacherBusy();renderActionPanel(s);
+    return;
   }
   function escHtml(value){
     return String(value===undefined||value===null?"":value)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
   function renderFeed(){
-    var list=feed.filter(function(e){return e.scene===teacherScene}).slice(0,9);
-    q("#feed").innerHTML=list.length?list.map(function(x){
-      if(!x.script){
-        return '<div class="feed-item '+x.type+' narrative"><span class="feed-time">'+escHtml(x.stamp)+'</span><span class="narrative-text">'+escHtml(x.text)+'</span></div>';
-      }
-      var html='<div class="feed-item '+x.type+' script-entry">';
-      html+='<div class="script-meta"><span class="feed-time">'+escHtml(x.stamp)+'</span></div>';
-      if(x.stage)html+='<div class="script-stage">'+escHtml(x.stage)+'</div>';
-      if(x.speaker&&x.dialogue){
-        html+='<div class="script-line"><strong>'+escHtml(x.speaker)+'</strong><span>“'+escHtml(x.dialogue)+'”</span></div>';
-      }
-      if(x.replySpeaker&&x.replyDialogue){
-        html+='<div class="script-line reply"><strong>'+escHtml(x.replySpeaker)+'</strong><span>“'+escHtml(x.replyDialogue)+'”</span></div>';
-      }
-      html+='</div>';
-      return html;
-    }).join(""):'<div class="feed-item narrative">교실은 아직 조용하다.</div>';
+    return;
   }
   function renderSceneNav(){
     qa(".scene-nav button").forEach(function(b){
@@ -3927,15 +3840,15 @@
     if(e.target.closest&&e.target.closest(".student,.world-alert,.classroom-console,.action-tray,.tool-modal,.tutorial-overlay,.encounter-token,.encounter-overlay"))return;
     if(selected!==null){selected=null;connectMode=false;swapMode=false;renderPanel();renderStudents();}
   });
-  q("#priorityBoard").addEventListener("click",function(e){
+  var priorityBoard=q("#priorityBoard");if(priorityBoard)priorityBoard.addEventListener("click",function(e){
     var b=e.target.closest&&e.target.closest("[data-student-id]");if(!b)return;
     selected=Number(b.dataset.studentId);connectMode=false;swapMode=false;render();
   });
-  q("#worldAlert").addEventListener("click",function(){
+  var worldAlert=q("#worldAlert");if(worldAlert)worldAlert.addEventListener("click",function(){
     if(!this.dataset.studentId)return;
     selected=Number(this.dataset.studentId);connectMode=false;swapMode=false;render();
   });
-  q("#clearSelection").addEventListener("click",function(){
+  var clearSelection=q("#clearSelection");if(clearSelection)clearSelection.addEventListener("click",function(){
     selected=null;connectMode=false;swapMode=false;render();
   });
   q("#pause").addEventListener("click",function(){if(activeEncounter)return;running=!running;this.textContent=running?"일시정지":"계속하기"});
