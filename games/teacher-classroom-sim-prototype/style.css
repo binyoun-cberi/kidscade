@@ -458,3 +458,14 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--accent);outlin
 }
 .record-line.reply span{background:#f6f8fb}
 .record-empty{line-height:1.55}
+
+
+/* v14 end-of-period memo cards */
+.record-entry.period_summary{border:1px solid #9fb2ca!important;border-left:6px solid #5879a6!important;background:linear-gradient(180deg,#f5f8fc,#eef3f9)!important;padding:12px 13px!important}
+.period-memo-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.period-memo-title strong{font-size:13px;color:#314d72}.period-memo-title span{flex:0 0 auto;padding:2px 6px;border-radius:999px;background:#dce7f4;color:#456486;font-size:8px;font-weight:900}
+.period-memo-meta{margin-bottom:8px;font-size:9.5px;color:#676f78;line-height:1.45}
+.period-memo-list{display:grid;gap:5px;margin:0;padding:0;list-style:none}
+.period-memo-list li{position:relative;padding:6px 8px 6px 23px;border-radius:8px;background:rgba(255,255,255,.78);font-size:10.5px;line-height:1.45;word-break:keep-all;overflow-wrap:anywhere}
+.period-memo-list li:before{content:"•";position:absolute;left:10px;top:5px;color:#5879a6;font-weight:900}
+.period-memo-response{margin-top:8px;padding-top:7px;border-top:1px solid #ccd8e6;font-size:9.5px;color:#5e6975;line-height:1.45}
