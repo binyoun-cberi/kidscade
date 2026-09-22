@@ -155,7 +155,7 @@ const bowlCost = () => Math.max(0,Math.round((bowlWeight()/100*PRICE_PER_100G)/1
 const bowlIngredientCost = () => state.bowl.reduce((sum,id)=>sum+(ingredientById(id)?.cost||0),0);
 const stockCapacity = () => BASE_STOCK + state.upgrades.fridge*3;
 const isIngredientUnlocked = (id,day=state.day) => (ingredientById(typeof id==='string'?id:id.id)?.unlockDay||1)<=day;
-const activeIngredients = (day=state.day) => INGREDIENTS.filter(ing=>ing.unlockDay<=day);
+const activeIngredients = (day=state.day) => INGREDIENTS.filter(ing=>ing.unlockDay<=day).sort((a,b)=>a.unlockDay-b.unlockDay||a.name.localeCompare(b.name,'ko'));
 const customersForDay = (day=state.day,event=state.event) => Math.max(3,BASE_CUSTOMERS+Math.min(4,Math.floor((day-1)/3))+state.upgrades.marketing+(event?.customerDelta||0));
 const purchaseUnitCost = (ing,event=state.nextEvent||state.event) => Math.max(50,Math.round(ing.cost*(event?.costMult||1)*(event?.costById?.[ing.id]||1)/10)*10);
 const orderAvailable = (order,day=state.day) => [...Object.keys(order.must),...order.avoid].every(id=>isIngredientUnlocked(id,day));
@@ -239,7 +239,7 @@ function updateReadout() {
     els.eventBanner.innerHTML=`<b>${e.title}</b><span>${e.desc}</span>`;
   }
   if(els.nextUnlock){
-    const next=INGREDIENTS.find(ing=>ing.unlockDay>state.day);
+    const next=INGREDIENTS.filter(ing=>ing.unlockDay>state.day).sort((a,b)=>a.unlockDay-b.unlockDay)[0];
     els.nextUnlock.hidden=!next;
     if(next)els.nextUnlock.textContent=`다음 입고 · DAY ${next.unlockDay} ${next.name}`;
   }
