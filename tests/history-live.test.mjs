@@ -105,3 +105,52 @@ test('history timebattle exits through the parent launcher instead of nesting Ki
   assert.match(html, /window\.parent\.postMessage/);
   assert.doesNotMatch(html, /href="\.\.\/\.\.\/index\.html"/);
 });
+
+
+test('OX bank covers the source fact pool and keeps both O and X answers', () => {
+  const ox = QUESTION_BANK.filter(q => q.family === 'ox');
+  assert.ok(ox.length >= 1000, 'OX mode needs a large independent pool');
+  assert.ok(ox.filter(q => q.a === 0).length > 400, 'O answers should be common');
+  assert.ok(ox.filter(q => q.a === 1).length > 400, 'X answers should be common');
+  for (const q of ox.slice(0, 100)) {
+    assert.deepEqual(q.o, ['O','X']);
+  }
+  const picked = pickHistoryQuestions(40, () => 0.37, 'random', 'ox');
+  assert.equal(picked.length, 40);
+  assert.ok(picked.every(q => q.family === 'ox'));
+  const mixed = pickHistoryQuestions(40, () => 0.37, 'random', 'mixed');
+  assert.ok(mixed.some(q => q.family === 'ox'));
+  assert.ok(mixed.some(q => q.family !== 'ox'));
+});
+
+test('multiple-choice distractors prefer the same era and same category', () => {
+  const candidates = CORE_HISTORY_FACTS
+    .map((fact,index)=>({fact,index}))
+    .filter(({fact,index}) => !fact.direct && CORE_HISTORY_FACTS.filter((other,j)=>j!==index&&!other.direct&&other.era===fact.era&&other.type===fact.type).length >= 3);
+  assert.ok(candidates.length > 0);
+  for (const {fact,index} of candidates.slice(0, 20)) {
+    const q = QUESTION_BANK.find(item => item.sourceFact === index && item.family === 'identify');
+    assert.ok(q);
+    const optionFacts = q.o.map(term => CORE_HISTORY_FACTS.find(other => !other.direct && other.term === term)).filter(Boolean);
+    assert.equal(optionFacts.length, 4);
+    assert.ok(optionFacts.every(other => other.era === fact.era), 'all four choices should stay in '+fact.era+' when enough peers exist');
+  }
+});
+
+test('history live UI exposes choice OX and mixed modes', () => {
+  const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
+  assert.match(html, /id="questionMode"/);
+  assert.match(html, /id="soloQuestionMode"/);
+  assert.match(html, /value="ox"/);
+  assert.match(html, /value="mixed"/);
+  assert.match(html, /answers\.ox/);
+  assert.match(html, /questionMode:\$\('questionMode'\)\.value/);
+});
+
+test('history live server supports two-choice OX answers', () => {
+  const worker = fs.readFileSync(new URL('../worker/history-live.mjs', import.meta.url), 'utf8');
+  assert.match(worker, /questionMode/);
+  assert.match(worker, /q\.family==='ox'\?\[0,1\]/);
+  assert.match(worker, /raw>=q\.o\.length/);
+  assert.match(worker, /Array\.from\(\{length:q\.o\.length\}/);
+});
