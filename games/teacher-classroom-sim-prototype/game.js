@@ -2359,7 +2359,7 @@
             left:{title:"친구들은 배운 말을 알면서도 웃음을 멈추지 못했다",text:"무엇이 문제인지 설명할 수는 있게 됐지만 실제 상황에서는 누군가 "+target.name+"을 건드리면 또 웃음이 터진다. 반복이 무리의 놀이처럼 굳어지고 있다.",dialogue:(witness?witness.name:"친구")+' “하지 말아야 하는 건 아는데… 그때는 그냥 웃겨서요.”'},
             right:{title:"피해 학생이 거리를 두자 ‘삐졌다’는 말이 퍼졌다",text:target.name+"이(가) 스스로 거리를 두기 시작하자 무리는 오히려 ‘예민하다’, ‘삐졌다’는 말을 하며 책임을 피해 학생에게 돌린다.",dialogue:s.name+' “자기가 혼자 있으려고 한 거예요.”'}
           }[branch2];
-          return {targetId:target.id,title:v2.title,text:v2.text,dialogue:v2.dialogue,choices:{
+          return {targetId:target.id,safeguarding:true,title:v2.title,text:v2.text,dialogue:v2.dialogue,choices:{
             up:encounterChoice("반복·배제·집단 가담을 포함해 학교에서 정한 학생 보호 절차로 다루기 시작한다.",{relation:2,classStability:8,trust:3,classFlow:-4},"이제 단순한 장난으로 처리하지 않고 공식적인 보호와 확인 단계로 넘어갔다."),
             down:encounterChoice(target.name+"의 안전과 학교생활 영향을 먼저 확인하고 혼자 버티지 않아도 된다고 말한다.",{mood:7,trust:8,classFlow:-4},"피해 학생의 안전과 일상 회복을 가장 먼저 챙겼다."),
             left:encounterChoice("누가 언제 무엇을 했는지 반복 양상과 목격 내용을 정리해 관련 교직원과 공유한다.",{classStability:7,trust:6,classFlow:-5},"감정적인 추측이 아니라 반복된 사실을 중심으로 대응할 기반을 만들었다."),
@@ -2373,14 +2373,14 @@
             left:{title:"목격한 친구들이 서로 다른 장면을 이야기한다",text:"기록을 맞춰 보니 한 사람이 한 번 크게 한 사건보다, 여러 친구가 조금씩 가담하며 반복된 장면이 이어졌다는 점이 드러난다.",dialogue:(witness?witness.name:"친구")+' “저는 직접 하진 않았는데… 웃은 적은 있어요.”'},
             right:{title:"안전한 거리를 두자 피해 학생의 표정이 달라졌다",text:target.name+"은(는) 당분간 가까이 마주치지 않는 선택을 한 뒤 수업 참여가 조금씩 돌아온다. 하지만 관계를 다시 회복하고 싶은지는 아직 모르겠다고 한다.",dialogue:target.name+' “지금은 그냥 안 마주치고 싶어요.”'}
           }[branch3];
-          return {targetId:target.id,title:v3.title,text:v3.text,dialogue:v3.dialogue,choices:{
+          return {targetId:target.id,safeguarding:true,title:v3.title,text:v3.text,dialogue:v3.dialogue,choices:{
             up:encounterChoice("의도보다 반복된 행동과 피해를 기준으로 학교의 절차와 보호 조치를 끝까지 진행한다.",{classStability:8,trust:5,classTrust:3,classFlow:-4},"‘장난이었다’는 말만으로 사건을 끝내지 않고 필요한 절차를 이어갔다."),
             down:encounterChoice("피해 학생이 원하는 회복 속도를 존중하고 불필요한 대면이나 화해를 강요하지 않는다.",{mood:7,trust:8,relation:2,classFlow:-3},"회복을 위해 피해 학생이 다시 상대를 만나야 한다는 부담을 주지 않았다."),
             left:encounterChoice("가해·가담·방관 행동을 구분해 각 학생에게 필요한 지도와 재발 방지 계획을 세운다.",{relation:4,classStability:7,trust:5,classFlow:-4},"무리 전체를 똑같이 취급하지 않고 행동별 책임과 교육을 나눴다."),
             right:encounterChoice("피해 학생의 안전 선택은 유지하면서 이후 관계 회복 여부는 나중에 스스로 결정하게 한다.",{mood:6,trust:8,classStability:5,classFlow:-2},"지금 당장 화해를 결말로 삼지 않고 선택권을 남겼다.")
           }};
         }
-        return {targetId:target.id,title:"이제는 ‘장난’이라고만 부를 수 없었다",text:"처음에는 웃음으로 시작됐던 일이 반복과 배제, 불안으로 이어졌다. "+target.name+"의 생활에는 실제 변화가 생겼고, "+s.name+"과(와) 주변 친구들도 각자의 행동이 남긴 결과를 마주하게 됐다.",dialogue:s.name+' “처음엔 진짜 이렇게 될 줄 몰랐어요.”',choices:{
+        return {targetId:target.id,safeguarding:true,title:"이제는 ‘장난’이라고만 부를 수 없었다",text:"처음에는 웃음으로 시작됐던 일이 반복과 배제, 불안으로 이어졌다. "+target.name+"의 생활에는 실제 변화가 생겼고, "+s.name+"과(와) 주변 친구들도 각자의 행동이 남긴 결과를 마주하게 됐다.",dialogue:s.name+' “처음엔 진짜 이렇게 될 줄 몰랐어요.”',choices:{
           up:encounterChoice("사건 이후에도 같은 행동이 반복되지 않는지 명확한 기준과 관찰을 계속 유지한다.",{classStability:7,trust:4},"이야기는 처분 한 번으로 끝나지 않고 재발 방지와 관찰로 이어졌다."),
           down:encounterChoice("피해 학생의 일상 회복과 신뢰를 먼저 살피고 관계 회복은 서두르지 않는다.",{mood:7,trust:8,relation:3},"결말을 억지 화해로 만들지 않고 피해 학생의 회복을 중심에 뒀다."),
           left:encounterChoice("관련 학생들이 각자 무엇을 바꿔야 하는지 구체적인 행동 계획을 세우고 확인한다.",{relation:5,classStability:6,trust:5},"‘다시는 안 그럴게요’보다 실제로 바꿀 행동을 남겼다."),
