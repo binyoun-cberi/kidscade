@@ -142,8 +142,10 @@
   var dayEncounterBudget=10;
   var dayEncounterOffered=0;
   var dayFollowUpsShown=0;
+  var dayFamilyEventsShown=0;
   var periodEncounterCounts={};
   var MAX_FOLLOWUPS_PER_DAY=3;
+  var MAX_FAMILY_EVENTS_PER_DAY=1;
   var encounterHistory=[];
   var pendingEncounter=null;
   var activeEncounter=null;
@@ -722,6 +724,68 @@
     "세아":["shy","friend_dependent","sensitive_rejection","quiet_internalizer","helper","creative"]
   };
 
+  var PARENT_TRAIT_CATALOG={
+    supportive_partner:{label:"든든한 협력형",tone:"positive",desc:"교사와 정보를 나누고 아이의 성장 방향을 함께 맞추려는 보호자"},
+    communicative:{label:"소통 적극형",tone:"positive",desc:"학교의 안내에 빠르게 응답하고 필요한 정보를 먼저 공유하는 편"},
+    anxious:{label:"걱정이 많은 보호자",tone:"mixed",desc:"작은 변화도 크게 걱정해 자주 확인하고 안심을 필요로 하는 편"},
+    overprotective:{label:"과보호형",tone:"mixed",desc:"아이가 불편하거나 실패할 상황을 미리 없애 주려는 경향이 강함"},
+    achievement_pressure:{label:"성취 압박형",tone:"warning",desc:"결과와 성취를 중요하게 여기며 아이에게 높은 기준을 요구함"},
+    child_first:{label:"내 아이 우선형",tone:"warning",desc:"갈등 상황에서 다른 맥락보다 자기 아이의 말과 이익을 먼저 보는 편"},
+    permissive:{label:"다 해주는형",tone:"mixed",desc:"아이가 싫다고 하면 책임이나 규칙을 대신 없애 주려는 경향이 있음"},
+    disengaged:{label:"연락이 뜸한 보호자",tone:"mixed",desc:"학교 연락과 준비에 반응이 늦고 가정 연계가 잘 이어지지 않는 편"},
+    inconsistent:{label:"기준이 자주 바뀜",tone:"mixed",desc:"그날 상황에 따라 약속과 규칙이 달라져 아이가 기준을 잡기 어려울 수 있음"},
+    image_using:{label:"아이 성과를 앞세움",tone:"warning",desc:"아이의 의사보다 성과·체면·보여지는 결과를 더 중요하게 여기는 모습이 나타남"},
+    school_distrust:{label:"학교 불신형",tone:"warning",desc:"교사의 설명보다 먼저 학교의 잘못을 의심하고 강한 확인을 요구하는 편"},
+    neglect_risk:{label:"돌봄 공백 위험",tone:"alert",desc:"준비·식사·건강 관리가 반복해서 비는 등 추가 지원이 필요한 신호가 보임"},
+    harm_risk:{label:"보호가 필요한 신호",tone:"alert",desc:"아이가 가정에서의 강한 위협이나 처벌을 두려워하는 등 안전 확인이 필요한 신호"}
+  };
+
+  var STUDENT_PARENT_TRAITS={
+    "민수":["child_first"],
+    "지우":["supportive_partner","communicative"],
+    "서연":["achievement_pressure"],
+    "준호":["anxious","overprotective"],
+    "태호":["disengaged"],
+    "유나":["supportive_partner","communicative"],
+    "현우":["school_distrust"],
+    "소라":["supportive_partner"],
+    "도윤":["permissive"],
+    "하린":["achievement_pressure","image_using"],
+    "예준":["image_using"],
+    "채원":["supportive_partner"],
+    "시우":["child_first","school_distrust"],
+    "다은":["anxious"],
+    "건우":["inconsistent"],
+    "아린":["overprotective"],
+    "지호":["disengaged"],
+    "은서":["achievement_pressure"],
+    "윤호":["communicative"],
+    "나연":["supportive_partner"],
+    "승민":["child_first"],
+    "세아":["neglect_risk","harm_risk"]
+  };
+
+  function studentParentTraitIds(name){return (STUDENT_PARENT_TRAITS[name]||[]).slice()}
+  function hasParentTrait(s,id){return !!(s&&s.parentTraits&&s.parentTraits.indexOf(id)>=0)}
+  function parentTraitMeta(id){return PARENT_TRAIT_CATALOG[id]||null}
+  function revealParentTrait(s,id){
+    if(!s||!id||!hasParentTrait(s,id))return;
+    s.parentKnown=s.parentKnown||[];
+    if(s.parentKnown.indexOf(id)<0)s.parentKnown.push(id);
+  }
+  function knownParentTraits(s){
+    return (s&&s.parentKnown||[]).map(function(id){return {id:id,meta:parentTraitMeta(id)}}).filter(function(x){return x.meta});
+  }
+  function parentTraitChipHtml(id){
+    var t=parentTraitMeta(id);if(!t)return "";
+    return '<span class="response-chip parent-'+escHtml(t.tone)+'" title="'+escHtml(t.desc)+'">'+escHtml(t.label)+'</span>';
+  }
+  function familyEventScore(s,trait,base){
+    if(!hasParentTrait(s,trait))return 0;
+    if(["morning","closing","break"].indexOf(current().kind)<0)return 0;
+    return base||.34;
+  }
+
   function studentTraitIds(name){return (STUDENT_TRAITS[name]||[]).slice()}
   function studentTraits(s){return (s&&s.traits||[]).map(function(id){return TRAIT_CATALOG[id]}).filter(Boolean)}
   function hasTrait(s,id){return !!(s&&s.traits&&s.traits.indexOf(id)>=0)}
@@ -873,8 +937,8 @@
 
   function resetStudents(){
     students=templates.map(function(t,i){
-      var p=seats[i],traitIds=studentTraitIds(t.name);
-      return Object.assign({},t,{traits:traitIds,knowledge:makeKnowledge(t,i),look:makeLook(t,i),teacherResponse:makeTeacherResponseProfile(t,i,traitIds),
+      var p=seats[i],traitIds=studentTraitIds(t.name),parentTraitIds=studentParentTraitIds(t.name);
+      return Object.assign({},t,{traits:traitIds,parentTraits:parentTraitIds,parentKnown:[],knowledge:makeKnowledge(t,i),look:makeLook(t,i),teacherResponse:makeTeacherResponseProfile(t,i,traitIds),
         id:i,seat:i,scene:"classroom",targetScene:null,arrivalAt:0,x:p.x,y:p.y,dx:p.x,dy:p.y,
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
@@ -987,6 +1051,7 @@
   }
   function scheduleFollowUp(enc,dir,choice){
     if(!enc||!enc.studentId&&enc.studentId!==0)return;
+    if(enc.noFollowUp)return;
     var depth=enc.chainDepth||0;
     if(depth>=2)return;
     var chance=enc.isFollowUp?.26:.62;
@@ -1767,7 +1832,7 @@
       }
     },
     {
-      id:"parent_homework_complaint",category:"가정연계",title:"과제가 너무 많다는 보호자 연락이 왔다",
+      id:"parent_homework_complaint",category:"가정연계",title:"과제가 너무 많다는 보호자 연락이 왔다",familyEvent:true,
       score:function(s){return ["morning","closing"].indexOf(current().kind)>=0&&(hasTrait(s,"perfectionist")||hasTrait(s,"foundational_gaps")||s.persist<.42)?Math.max(0,.12+s.rejection*.12+(1-s.academic)*.16):0},
       build:function(s){
         return {text:"보호자가 "+s.name+"이(가) 집에서 과제를 하며 너무 힘들어한다는 연락을 보냈다. "+s.name+"도 교사를 보며 반응을 살핀다.",dialogue:s.name+' “엄마가 숙제 좀 줄여 달라고 했어요.”',choices:{
@@ -1779,7 +1844,7 @@
       }
     },
     {
-      id:"parent_friend_conflict",category:"가정연계",title:"보호자가 친구 관계를 바로 해결해 달라고 한다",
+      id:"parent_friend_conflict",category:"가정연계",title:"보호자가 친구 관계를 바로 해결해 달라고 한다",familyEvent:true,
       score:function(s){return ["morning","closing"].indexOf(current().kind)>=0&&s.rejection>.56&&s.soc>.42?Math.max(0,.10+s.rejection*.22+s.soc*.10):0},
       build:function(s){
         var target=chooseSocialTarget(s,"SOCIAL");
@@ -1927,6 +1992,165 @@
     }
   ]);
 
+  ENCOUNTER_TEMPLATES=ENCOUNTER_TEMPLATES.concat([
+    {
+      id:"parent_supportive_checkin",category:"가정연계",title:"보호자가 먼저 아이의 변화를 알려왔다",familyEvent:true,parentTrait:"supportive_partner",
+      score:function(s){return familyEventScore(s,"supportive_partner",.42)},
+      build:function(s){
+        return {text:s.name+"의 보호자가 최근 집에서 달라진 모습을 짧게 알려주며 학교에서는 어떤지 묻는다. 교사를 탓하거나 답을 정해 두기보다 함께 살펴보자는 분위기다.",dialogue:'보호자 메시지 · “집에서는 요즘 혼자 해보려는 게 늘었어요. 학교에서는 어떤가요?”',choices:{
+          up:encounterChoice("학교에서도 지켜야 할 기준과 가정에서 이어 주면 좋은 약속을 분명히 맞춘다.",{trust:3,classStability:3,classTrust:4,classFlow:-1},"학교와 가정이 같은 기준을 공유하게 됐다."),
+          down:encounterChoice("아이의 정서와 관계에서 좋아진 점을 구체적으로 나누고 보호자의 관찰도 더 듣는다.",{mood:2,trust:5,classTrust:5,classFlow:-2},"아이를 둘러싼 관찰이 학교와 가정 사이에서 자연스럽게 이어졌다."),
+          left:encounterChoice("집에서도 써볼 수 있는 한 가지 방법을 구체적으로 제안하고 다음에 함께 확인하기로 한다.",{focus:2,trust:4,classTrust:5,classFlow:-2},"가정과 학교가 같은 방법을 시험해 볼 수 있게 됐다."),
+          right:encounterChoice("아이에게도 최근 잘 된 점을 물어보고 다음 목표 하나를 직접 고르게 한다.",{mood:3,focus:2,trust:4,classTrust:4,classFlow:0},"보호자와 교사뿐 아니라 아이도 자신의 성장 계획에 참여했다.")
+        }};
+      }
+    },
+    {
+      id:"parent_communicative_followthrough",category:"가정연계",title:"지난 상담에서 정한 약속을 집에서도 이어왔다",familyEvent:true,parentTrait:"communicative",
+      score:function(s){return familyEventScore(s,"communicative",.36)},
+      build:function(s){
+        return {text:"며칠 전 학교에서 이야기한 생활 습관을 "+s.name+"의 보호자가 집에서도 함께 해봤다며 결과를 알려왔다. 잘 된 점과 어려운 점을 비교적 솔직하게 적어 보냈다.",dialogue:'보호자 메시지 · “해보니까 이 부분은 잘 됐고, 이건 아직 어렵네요. 학교에서는 어떨까요?”',choices:{
+          up:encounterChoice("효과가 있었던 약속은 당분간 학교와 가정에서 같은 기준으로 유지하자고 한다.",{focus:2,classStability:4,classTrust:4},"일관된 기준이 만들어졌다."),
+          down:encounterChoice("잘 안 된 부분도 충분히 자연스러운 과정이라고 말하고 보호자의 부담도 줄여 준다.",{mood:2,trust:4,classTrust:5,classFlow:-1},"가정 연계가 평가받는 느낌보다 협력에 가까워졌다."),
+          left:encounterChoice("잘 된 조건과 어려웠던 조건을 비교해 다음 시도 방법을 한 단계 조정한다.",{focus:3,learning:1,trust:4,classTrust:5,classFlow:-2},"막연한 조언보다 다음 시도가 구체적으로 정리됐다."),
+          right:encounterChoice("다음 주에는 아이가 직접 선택한 목표 하나만 집과 학교에서 확인해 보기로 한다.",{focus:2,mood:2,trust:4,classTrust:4},"가정 연계의 중심을 아이에게 조금 더 돌렸다.")
+        }};
+      }
+    },
+    {
+      id:"parent_anxious_message_barrage",category:"가정연계",title:"작은 일 뒤 확인 연락이 계속 온다",familyEvent:true,parentTrait:"anxious",
+      score:function(s){return familyEventScore(s,"anxious",.48)},
+      build:function(s){
+        return {text:"오늘 "+s.name+"에게 있었던 작은 일에 대해 보호자의 메시지가 연달아 들어왔다. 다친 곳은 없는지, 친구가 일부러 그런 건지, 내일도 같은 일이 생길지 여러 번 확인한다.",dialogue:'보호자 메시지 · “정말 괜찮은 거 맞죠? 혹시 또 그러면 바로 연락 주실 수 있나요?”',choices:{
+          up:encounterChoice("확인된 사실과 학교에서 연락드리는 기준을 짧고 분명하게 정리해 전달한다.",{classStability:4,classTrust:2,classFlow:1},"연락의 기준과 사실 관계가 선명해졌다."),
+          down:encounterChoice("걱정되는 마음을 인정한 뒤 지금 확인된 아이 상태를 차분하게 설명한다.",{trust:3,classTrust:5,classFlow:-2},"보호자의 불안이 조금 낮아졌다."),
+          left:encounterChoice("비슷한 일이 생기면 학교가 어떤 순서로 확인하고 안내하는지 구체적으로 알려준다.",{classStability:3,classTrust:5,classFlow:-2},"무엇이 일어날지 알 수 있게 되면서 불확실성이 줄었다."),
+          right:encounterChoice("오늘은 아이가 집에서 직접 말해볼 부분과 교사가 전달할 부분을 나눠 보자고 제안한다.",{trust:3,classTrust:3,mood:2,classFlow:0},"아이의 설명 기회와 교사의 안내 범위를 나눴다.")
+        }};
+      }
+    },
+    {
+      id:"parent_overprotective_exemption",category:"가정연계",title:"힘들어할까 봐 활동에서 빼 달라고 한다",familyEvent:true,parentTrait:"overprotective",
+      score:function(s){return familyEventScore(s,"overprotective",.45)},
+      build:function(s){
+        return {text:s.name+"의 보호자가 발표나 모둠 활동에서 아이가 긴장할 것 같다며 이번에는 아예 참여하지 않게 해달라고 요청했다. "+s.name+"은(는) 아직 자기 의견을 말하지 않았다.",dialogue:'보호자 메시지 · “애가 힘들어하니까 그냥 이번 활동은 빼 주세요.”',choices:{
+          up:encounterChoice("모든 참여를 없애기보다 교육활동의 기본 참여 원칙은 유지하겠다고 설명한다.",{focus:2,classStability:4,classTrust:1},"참여의 기준은 지켰지만 부담을 줄일 방법은 더 필요하다."),
+          down:encounterChoice("보호자가 걱정하는 장면을 듣고 아이에게도 실제로 무엇이 어려운지 따로 확인한다.",{mood:3,trust:5,classTrust:4,classFlow:-3},"보호자의 걱정과 아이의 실제 어려움을 구분해 볼 수 있었다."),
+          left:encounterChoice("완전 제외 대신 짧은 발표·친구와 함께하기처럼 단계적으로 참여할 방법을 제안한다.",{focus:3,mood:2,trust:4,classTrust:5,classFlow:-2},"도전은 남기면서 부담을 조절하는 방법을 만들었다."),
+          right:encounterChoice("참여 방식 몇 가지 중 아이가 직접 고르게 하고 보호자에게 그 선택을 존중해 달라고 한다.",{mood:4,trust:5,classTrust:4,classFlow:-1},"보호자의 보호와 아이의 선택권 사이에 균형을 만들었다.")
+        }};
+      }
+    },
+    {
+      id:"parent_child_first_blame",category:"가정연계",title:"‘우리 아이가 그럴 리 없다’며 상대 아이만 탓한다",familyEvent:true,parentTrait:"child_first",
+      score:function(s){return familyEventScore(s,"child_first",.52)},
+      build:function(s){
+        return {text:"친구 갈등을 안내하자 "+s.name+"의 보호자가 자기 아이의 설명은 전부 맞다며 상대 학생만 지도해 달라고 강하게 말한다. 학교에서 확인한 내용에는 두 학생의 행동이 모두 포함돼 있다.",dialogue:'보호자 메시지 · “우리 애는 먼저 그런 애가 아니에요. 상대 아이부터 제대로 지도해 주세요.”',choices:{
+          up:encounterChoice("확인된 사실과 같은 기준을 양쪽 학생에게 적용한다는 원칙을 분명하게 설명한다.",{classStability:6,classTrust:2,classFlow:-1},"교사의 판단 기준을 개인 요구와 분리해 지켰다."),
+          down:encounterChoice("보호자가 속상한 이유는 듣되 아이가 말하지 않은 장면도 있을 수 있음을 차분히 설명한다.",{trust:2,classTrust:4,classFlow:-3},"감정은 듣되 한쪽 이야기만으로 결론 내리지는 않았다."),
+          left:encounterChoice("학교에서 확인한 행동을 시간 순서대로 정리해 어떤 부분을 각각 지도할지 설명한다.",{classStability:4,classTrust:5,classFlow:-3},"누구 편을 드는 대신 구체적인 행동을 중심으로 대화했다."),
+          right:encounterChoice("아이에게도 자기 행동 중 다시 생각할 부분을 직접 말하게 하고 보호자가 들어보게 한다.",{mood:1,trust:4,classTrust:3,classFlow:-2},"아이 스스로 자기 몫을 설명할 기회를 만들었다.")
+        }};
+      }
+    },
+    {
+      id:"parent_achievement_pressure_score",category:"가정연계",title:"한 문제 틀린 것까지 이유를 묻는다",familyEvent:true,parentTrait:"achievement_pressure",
+      score:function(s){return familyEventScore(s,"achievement_pressure",.48)},
+      build:function(s){
+        return {text:s.name+"의 보호자가 평가 결과를 본 뒤 틀린 문제 하나하나의 이유와 반 석차를 묻는다. "+s.name+"은(는) 옆에서 결과표를 계속 접었다 폈다 한다.",dialogue:'보호자 메시지 · “이 정도는 원래 맞아야 하는데 왜 틀렸는지 정확히 알고 싶습니다.”',choices:{
+          up:encounterChoice("평가는 정해진 기준으로 안내하되 다른 학생과의 비교 자료는 제공하지 않는다고 분명히 한다.",{classStability:4,trust:1,classTrust:3},"평가의 기준과 비교의 선을 분명하게 지켰다."),
+          down:encounterChoice("아이에게 결과를 어떻게 받아들였는지 먼저 묻고 노력 과정도 보호자에게 함께 전달한다.",{mood:5,trust:6,classTrust:4,classFlow:-2},"점수만 보던 대화에 아이의 경험이 들어왔다."),
+          left:encounterChoice("틀린 문제를 ‘못한 결과’가 아니라 다음 학습 목표로 바꿔 구체적인 보완 방법을 제시한다.",{learning:3,focus:3,trust:4,classTrust:5,classFlow:-2},"성취 압박을 다음 학습 계획으로 전환했다."),
+          right:encounterChoice("다음 목표를 아이가 직접 하나 정하고 보호자는 그 목표를 지원해 달라고 제안한다.",{mood:3,focus:2,trust:5,classTrust:3},"성적 관리의 주체를 조금 더 아이에게 돌렸다.")
+        }};
+      }
+    },
+    {
+      id:"parent_permissive_excuse",category:"가정연계",title:"‘아이가 싫다니까 안 해도 되죠?’라고 한다",familyEvent:true,parentTrait:"permissive",
+      score:function(s){return familyEventScore(s,"permissive",.42)},
+      build:function(s){
+        return {text:"반복해서 빠지는 준비나 과제에 대해 이야기하자 "+s.name+"의 보호자가 아이가 싫어하는 일은 억지로 시키고 싶지 않다고 답했다.",dialogue:'보호자 메시지 · “싫다는데 꼭 해야 하나요? 스트레스 받게 하고 싶진 않아요.”',choices:{
+          up:encounterChoice("아이의 감정과 별개로 학교생활에서 맡아야 할 기본 책임은 있다고 설명한다.",{classStability:5,classTrust:2,focus:2},"싫은 감정과 해야 할 책임을 구분했다."),
+          down:encounterChoice("싫어하는 이유를 함께 살펴보되 모든 불편함을 없애 주는 것이 해결은 아님을 이야기한다.",{mood:2,trust:4,classTrust:4,classFlow:-2},"감정을 인정하면서도 회피만 남지 않게 했다."),
+          left:encounterChoice("해야 할 일을 작은 단계로 줄이고 가정에서 도울 수 있는 최소한의 방법을 제안한다.",{focus:4,trust:3,classTrust:5,classFlow:-2},"책임을 없애기보다 성공 가능한 크기로 조정했다."),
+          right:encounterChoice("해야 할 범위 안에서 순서와 방법은 아이가 고르게 해보자고 제안한다.",{focus:3,mood:2,trust:4,classTrust:4},"선택권과 책임을 함께 남겼다.")
+        }};
+      }
+    },
+    {
+      id:"parent_disengaged_no_response",category:"가정연계",title:"여러 번 연락해도 답이 오지 않는다",familyEvent:true,parentTrait:"disengaged",
+      score:function(s){return familyEventScore(s,"disengaged",.44)},
+      build:function(s){
+        return {text:s.name+"의 준비와 생활에 확인할 일이 있어 며칠째 연락했지만 답이 없다. 안내장도 계속 돌아오지 않고 "+s.name+"은(는) ‘잘 모르겠다’고만 한다.",dialogue:s.name+' “집에서는 그냥 바빠서 못 봤나 봐요.”',choices:{
+          up:encounterChoice("필요한 학교 절차와 제출 기한은 학생에게도 다시 분명하게 안내한다.",{focus:2,classStability:4,trust:0},"가정 연락이 닿지 않아도 학교 안에서 해야 할 일은 정리됐다."),
+          down:encounterChoice("아이에게 책임을 돌리지 않고 집에서 연락을 확인하기 어려운 상황이 있는지 조심스럽게 묻는다.",{mood:3,trust:6,classFlow:-2},"아이에게 부담을 얹지 않으면서 상황을 조금 더 파악했다."),
+          left:encounterChoice("학교 안에서 확인 가능한 지원 방법과 다른 연락 경로를 차례로 점검한다.",{classStability:3,classTrust:3,classFlow:-3},"한 가지 연락 수단만 반복하지 않고 지원 경로를 넓혔다."),
+          right:encounterChoice("아이가 직접 할 수 있는 준비와 어른의 확인이 필요한 일을 구분해 준다.",{focus:3,trust:4,classFlow:-1},"가정의 몫까지 아이가 떠안지 않도록 책임을 나눴다.")
+        }};
+      }
+    },
+    {
+      id:"parent_inconsistent_rule",category:"가정연계",title:"어제 합의한 약속이 오늘 다시 바뀌었다",familyEvent:true,parentTrait:"inconsistent",
+      score:function(s){return familyEventScore(s,"inconsistent",.38)},
+      build:function(s){
+        return {text:"학교와 가정이 함께 지키기로 한 약속이 있었는데 오늘 "+s.name+"은(는) 집에서는 이제 하지 않아도 된다고 들었다고 말한다. 보호자도 상황이 달라졌으니 약속을 바꾸자고 연락했다.",dialogue:s.name+' “엄마가 오늘부터는 안 해도 된댔어요.”',choices:{
+          up:encounterChoice("바꾸기 전까지는 기존 약속을 유지하고 변경은 어른끼리 먼저 합의하자고 한다.",{classStability:5,trust:1,classTrust:2},"아이 앞에서 기준이 매번 달라지는 일을 줄였다."),
+          down:encounterChoice("왜 약속을 바꾸고 싶어졌는지 보호자의 상황과 아이의 반응을 먼저 듣는다.",{mood:2,trust:4,classTrust:4,classFlow:-2},"변경 이유를 알고 필요한 조정인지 확인했다."),
+          left:encounterChoice("꼭 유지할 한 가지와 조정 가능한 한 가지를 나눠 새 약속을 다시 적는다.",{focus:3,classStability:4,classTrust:5,classFlow:-2},"기준을 전부 뒤집지 않고 핵심을 남겼다."),
+          right:encounterChoice("어른들이 정한 범위 안에서 아이가 지킬 방법 하나를 직접 고르게 한다.",{focus:3,trust:4,classTrust:3},"변하는 환경 속에서도 아이가 자기 기준을 하나 가질 수 있게 했다.")
+        }};
+      }
+    },
+    {
+      id:"parent_image_using_showcase",category:"가정연계",title:"아이의 성과를 보여주는 일을 더 중요하게 여긴다",familyEvent:true,parentTrait:"image_using",
+      score:function(s){return familyEventScore(s,"image_using",.40)},
+      build:function(s){
+        return {text:s.name+"의 보호자가 대회·대표 발표·촬영 같은 눈에 띄는 활동에 아이를 꼭 넣어 달라고 요청했다. 정작 "+s.name+"은(는) 그 활동 이야기가 나오자 표정이 굳는다.",dialogue:'보호자 메시지 · “기회가 있으면 무조건 시켜 주세요. 이런 경험이 다 아이에게 남는 거잖아요.”',choices:{
+          up:encounterChoice("학교 활동은 아이의 준비도와 교육적 기준에 따라 참여를 정한다고 설명한다.",{classStability:5,classTrust:2,trust:2},"보여지는 성과보다 학교의 참여 기준을 지켰다."),
+          down:encounterChoice("보호자의 기대는 듣되 아이가 이 활동을 어떻게 느끼는지도 함께 확인한다.",{mood:4,trust:6,classTrust:4,classFlow:-2},"어른의 기대 뒤에 가려진 아이의 마음을 대화에 넣었다."),
+          left:encounterChoice("현재 아이에게 맞는 도전 수준과 준비해야 할 것을 구체적으로 설명한다.",{focus:3,trust:4,classTrust:5,classFlow:-2},"막연한 ‘기회’보다 아이에게 필요한 준비를 중심으로 이야기했다."),
+          right:encounterChoice("참여 여부를 아이가 충분히 듣고 직접 의사를 말할 수 있게 한다.",{mood:4,trust:6,classTrust:3,classFlow:-1},"성과를 위해 아이의 의사를 대신 결정하지 않게 했다.")
+        }};
+      }
+    },
+    {
+      id:"parent_school_distrust_demand",category:"가정연계",title:"설명보다 먼저 학교가 잘못했다고 단정한다",familyEvent:true,parentTrait:"school_distrust",
+      score:function(s){return familyEventScore(s,"school_distrust",.46)},
+      build:function(s){
+        return {text:"생활지도 내용을 안내하자 "+s.name+"의 보호자가 상황 설명을 끝까지 듣기 전에 교사가 아이를 오해했다고 말한다. 모든 과정을 다시 증명해 달라는 요구가 이어진다.",dialogue:'보호자 메시지 · “선생님이 먼저 잘못 본 건 아닌지부터 확인해 주세요.”',choices:{
+          up:encounterChoice("확인된 사실, 아직 확인되지 않은 부분, 학교가 한 조치를 구분해 차분히 전달한다.",{classStability:5,classTrust:3,classFlow:-1},"감정적인 공방 대신 확인된 사실의 선을 세웠다."),
+          down:encounterChoice("왜 학교 설명을 믿기 어려운지 먼저 듣되 확인되지 않은 주장은 사실처럼 받아들이지 않는다.",{trust:2,classTrust:4,classFlow:-3},"불신의 이유는 들으면서 사실 판단은 분리했다."),
+          left:encounterChoice("기록과 관찰 내용을 시간 순서로 정리해 함께 확인할 수 있게 한다.",{classStability:4,classTrust:5,classFlow:-3},"누가 맞느냐보다 무엇을 확인했는지 중심으로 대화했다."),
+          right:encounterChoice("추가로 확인이 필요한 지점을 보호자에게 하나씩 제안받아 가능한 범위를 정한다.",{classTrust:4,classStability:3,classFlow:-2},"끝없는 의심이 아니라 확인 가능한 질문으로 범위를 좁혔다.")
+        }};
+      }
+    },
+    {
+      id:"parent_neglect_basic_care",category:"학생보호",title:"생활 돌봄이 반복해서 비는 신호가 보인다",familyEvent:true,parentTrait:"neglect_risk",safeguarding:true,noFollowUp:true,
+      score:function(s){return familyEventScore(s,"neglect_risk",.34)},
+      build:function(s){
+        return {text:s.name+"에게 준비·식사·건강 관리가 비는 일이 여러 날 반복되고 있다. 한 번의 실수라기보다 아이가 혼자 감당하는 부분이 많아 보인다. 지금은 원인을 단정하기보다 지원과 안전 확인이 필요해 보인다.",dialogue:s.name+' “집에서는 제가 알아서 챙겨야 해요. 가끔은 그냥 못 챙겨요.”',choices:{
+          up:encounterChoice("반복된 사실을 날짜와 상황 중심으로 기록하고 학교의 학생 지원·보호 담당자와 공유한다.",{trust:4,classStability:5,classTrust:4},"추측 대신 반복된 사실을 기록해 학교 안의 지원 체계로 연결했다."),
+          down:encounterChoice("아이에게 책임을 묻지 않고 생활에서 가장 힘든 부분이 무엇인지 안전하게 듣는다.",{mood:6,trust:7,classFlow:-3},"아이 혼자 감당하던 어려움을 말할 수 있는 공간을 만들었다."),
+          left:encounterChoice("학교에서 바로 도울 수 있는 식사·준비·상담 지원을 확인하고 필요한 연결을 요청한다.",{mood:3,trust:6,classStability:5,classFlow:-4},"아이의 일상에 실제 도움이 닿을 수 있는 경로를 찾았다."),
+          right:encounterChoice("아이가 학교에서 도움받기 편한 어른과 방법을 직접 고르게 하되 보호 절차는 어른들이 책임진다.",{mood:4,trust:7,classStability:4,classFlow:-2},"아이에게 선택권을 주면서도 보호 책임을 아이에게 넘기지는 않았다.")
+        }};
+      }
+    },
+    {
+      id:"parent_harm_fear_home",category:"학생보호",title:"집에 알려지는 것을 유난히 두려워한다",familyEvent:true,parentTrait:"harm_risk",safeguarding:true,noFollowUp:true,
+      score:function(s){return familyEventScore(s,"harm_risk",.30)},
+      build:function(s){
+        return {text:"작은 실수를 안내하려 하자 "+s.name+"이(가) 갑자기 보호자에게는 절대 말하지 말아 달라며 심하게 긴장한다. 집에서 큰 위협이나 과도한 처벌을 받을까 두렵다는 말도 조심스럽게 꺼냈다. 교사가 혼자 판단하기보다 즉시 안전을 확인해야 하는 상황이다.",dialogue:s.name+' “집에는 말하지 마세요… 알면 진짜 무서워요.”',choices:{
+          up:encounterChoice("아이 앞에서 보호자에게 바로 따지지 않고, 들은 말과 관찰 사실을 정확히 기록해 학교의 보호 절차에 즉시 연결한다.",{trust:7,classStability:6,classTrust:4},"아이의 말을 가볍게 넘기지 않고 학교의 보호 체계 안에서 다루기 시작했다."),
+          down:encounterChoice("유도해서 캐묻지 않고 아이가 말하고 싶은 만큼만 듣고, 도움을 요청한 것은 잘한 일이라고 알려준다.",{mood:7,trust:8,classFlow:-4},"아이가 더 말하도록 압박하지 않으면서 안전하게 도움을 요청할 수 있게 했다."),
+          left:encounterChoice("혼자 해결하려 하지 않고 학생보호 담당자와 즉시 상의해 다음 안전 조치를 함께 정한다.",{trust:6,classStability:7,classTrust:5,classFlow:-4},"교사 개인의 판단에 머물지 않고 학교의 보호 체계로 넘겼다."),
+          right:encounterChoice("보호 절차는 어른들이 진행하되 아이가 지금 함께 있고 싶은 믿을 만한 어른이나 장소를 고르게 한다.",{mood:6,trust:8,classStability:5,classFlow:-3},"아이에게 보호 책임을 떠넘기지 않으면서 당장의 안전감에 선택권을 줬다.")
+        }};
+      }
+    }
+  ]);
+
   function periodEncounterCap(p){
     if(!p)return 0;
     if(p.kind==="closing")return 1;
@@ -1943,6 +2167,7 @@
     dayEncounterOffered++;
     periodEncounterCounts[periodIndex]=(periodEncounterCounts[periodIndex]||0)+1;
     if(enc&&enc.isFollowUp)dayFollowUpsShown++;
+    if(enc&&enc.familyEvent)dayFamilyEventsShown++;
   }
 
   function weightedPick(items){
@@ -1958,7 +2183,9 @@
     var candidates=[];
     visible.forEach(function(s){
       ENCOUNTER_TEMPLATES.forEach(function(t){
+        if(t.familyEvent&&dayFamilyEventsShown>=MAX_FAMILY_EVENTS_PER_DAY)return;
         var weight=Math.max(0,Number(t.score(s))||0)*traitEncounterMultiplier(s,t.id);
+        if(t.familyEvent)weight*=.58;
         var recent=encounterHistory.slice(-8).some(function(h){return h.templateId===t.id&&h.studentId===s.id});
         if(weight>.12&&!recent)candidates.push({student:s,template:t,weight:weight});
       });
@@ -1969,6 +2196,7 @@
     return Object.assign({
       id:"enc-"+(++encounterSeq),templateId:picked.template.id,category:picked.template.category,
       title:picked.template.title,studentId:picked.student.id,targetId:null,
+      familyEvent:!!picked.template.familyEvent,parentTrait:picked.template.parentTrait||null,safeguarding:!!picked.template.safeguarding,noFollowUp:!!picked.template.noFollowUp,
       createdAt:gameSec,expiresAt:gameSec+260,choices:{}
     },built);
   }
@@ -2110,13 +2338,14 @@
     }
     var reaction=studentStyleReaction(s,dir);
     applyEncounterEffects(enc,choice,dir);
+    if(s&&enc.parentTrait)revealParentTrait(s,enc.parentTrait);
     if(reaction.dialogue)setStudentSpeech(s,reaction.dialogue,reaction.tone,34);
     var after=s?studentDashboard(s,metricSubject):before,afterClass=classDashboard(),delta=before?dashboardDelta(before,after):{};
     var direction=dir==="timeout"?"시간 초과":ENCOUNTER_DIRECTIONS[dir].label;
     var history={
       day:dayIndex,time:gameMinute(),templateId:enc.templateId,sourceTemplateId:enc.sourceTemplateId||enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
       dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,reaction:reaction.text,responseFit:reaction.fit,before:before,after:after,delta:delta,
-      beforeClass:beforeClass,afterClass:afterClass
+      beforeClass:beforeClass,afterClass:afterClass,familyEvent:!!enc.familyEvent,parentTrait:enc.parentTrait||null,safeguarding:!!enc.safeguarding
     };
     encounterHistory.push(history);
     if(s){
@@ -2128,7 +2357,7 @@
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:enc.isFollowUp?"followup_decision":"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,isFollowUp:!!enc.isFollowUp,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
-      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,studentTraits:s?traitLabels(s,5):[],before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
+      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,studentTraits:s?traitLabels(s,5):[],parentTrait:enc.parentTrait||null,familyEvent:!!enc.familyEvent,safeguarding:!!enc.safeguarding,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
     };
     dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-320);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
@@ -2166,10 +2395,13 @@
   }
   function rosterDetailHtml(s){
     if(!s)return '<div class="record-empty">학생을 선택하면 최근 판단과 변화 원인을 확인할 수 있습니다.</div>';
-    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s);
+    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s),knownParents=knownParentTraits(s);
     var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
+    var familyHtml='<div class="trait-panel"><strong>가정 소통 메모</strong><div class="trait-list">'+
+      (knownParents.length?knownParents.map(function(x){return parentTraitChipHtml(x.id)}).join(""):'<span class="response-chip">아직 특별히 파악된 점 없음</span>')+
+      '</div><small>보호자와 실제로 겪은 일을 통해 알게 된 내용만 표시됩니다.</small></div>';
     return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
-      '<div class="trait-panel"><strong>기본 특성</strong><div class="trait-list">'+traitListHtml(s)+'</div><small>이런 모습은 어떤 일이 자주 생기는지, 선생님의 말을 어떻게 받아들이는지에도 영향을 줍니다.</small></div>'+
+      '<div class="trait-panel"><strong>기본 특성</strong><div class="trait-list">'+traitListHtml(s)+'</div><small>이런 모습은 어떤 일이 자주 생기는지, 선생님의 말을 어떻게 받아들이는지에도 영향을 줍니다.</small></div>'+familyHtml+
       '<div class="roster-detail-grid">'+
         '<div class="roster-stat"><strong>'+d.learning+'</strong><small>📚 학습</small></div>'+
         '<div class="roster-stat"><strong>'+d.focus+'</strong><small>🎯 집중</small></div>'+
@@ -4424,6 +4656,7 @@
       return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">다시 만난 일</span>':'')+'</div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">그때 보인 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
+        (item.parentTrait&&parentTraitMeta(item.parentTrait)?'<div class="record-stage">'+(item.safeguarding?'학생보호 메모':'가정 소통에서 보인 점')+' · '+escHtml(parentTraitMeta(item.parentTrait).label)+'</div>':'')+
         '<div class="record-stage">선생님은 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
         (item.studentReaction?'<div class="record-stage">아이 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
@@ -4624,7 +4857,7 @@
   }
   function startNextDay(){
     dayIndex+=1;dayEnded=false;gameSec=520*60;periodIndex=0;running=true;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;periodEncounterCounts={};
     selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];incidentRecords=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
@@ -4673,7 +4906,7 @@
   }
   function reset(){
     gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;periodEncounterCounts={};
     running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
