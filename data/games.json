@@ -101,11 +101,11 @@
     {
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 시뮬레이터",
-      "href": "games/teacher-classroom-sim-prototype/index.html?v=17",
+      "href": "games/teacher-classroom-sim-prototype/index.html?v=18",
       "category": "trivia",
       "age": "job",
       "icon": "🏫",
-      "description": "살아 움직이는 교실에서 4방향 판단 카드를 선택하고, 학생별 학습·집중·정서·관계·신뢰 변화를 확인하세요. 이전 선택이 다음 날 후속 상황으로 돌아오며 여러 날에 걸쳐 학급의 이야기가 누적되는 담임교사 시뮬레이션!"
+      "description": "살아 움직이는 교실에서 하루 8~12개의 핵심 판단 카드를 만나고 원칙·공감·코칭·자율의 네 방향으로 결정하세요. 학생별 상태와 생기부 기록이 누적되고, 일부 선택은 며칠 뒤 후속 상황으로 다시 돌아오는 담임교사 시뮬레이션!"
     },
     {
       "id": "math_timing_lcd",
