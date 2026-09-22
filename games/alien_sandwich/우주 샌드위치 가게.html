@@ -45,7 +45,7 @@ button,a{font:inherit}button{cursor:pointer}.hidden{display:none!important}
 .actionGrid{display:grid;grid-template-columns:52px 52px 1fr;gap:6px;height:100%}.btn{border:0;border-radius:12px;min-height:48px;background:#28465b;color:#ecf7fa;font-weight:1000;box-shadow:inset 0 -4px 0 #0002}.btn:active{transform:translateY(2px)}.btn.cut{background:#ffd766;color:#4b390d}.btn.serve{background:#72dfbb;color:#12392e}.btn:disabled{opacity:.34;cursor:default;transform:none}
 #toast{position:absolute;z-index:30;left:50%;top:43%;transform:translate(-50%,-50%) scale(.92);max-width:min(86vw,620px);background:#18344eef;border:2px solid #ffffff66;border-radius:18px;padding:12px 18px;text-align:center;font-size:clamp(14px,2.2vw,21px);font-weight:1000;color:white;box-shadow:0 20px 60px #0009;opacity:0;pointer-events:none;transition:.15s}.toastShow{opacity:1;transform:translate(-50%,-50%) scale(1)}.toastGood{background:#1b725eef}.toastBad{background:#913d58ef}
 #fx{position:absolute;inset:0;z-index:25;pointer-events:none;overflow:hidden}.particle{position:absolute;width:8px;height:11px;border-radius:2px;animation:burst .75s cubic-bezier(.14,.72,.3,1) forwards}@keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
-#overlay{position:absolute;z-index:50;inset:0;display:grid;place-items:center;padding:18px;background:rgba(4,10,25,.78);backdrop-filter:blur(8px)}.modal{width:min(700px,95vw);background:linear-gradient(155deg,#fdf8e8,#eaf6ef);color:#1a2d3e;border:3px solid white;border-radius:28px;padding:clamp(20px,4.5vw,38px);box-shadow:0 28px 90px #0009;text-align:center}.tag{display:inline-block;border-radius:999px;background:#102b45;color:#8ff2d1;padding:6px 11px;font-size:9px;font-weight:1000;letter-spacing:.15em}.modal h1{font-size:clamp(34px,7vw,62px);line-height:.94;letter-spacing:-.065em;margin:11px 0 8px;color:#133f55}.modal h1 span{color:#d95d81}.modal p{margin:8px auto;max-width:580px;color:#5b6975;line-height:1.55;font-size:13px;font-weight:750}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0}.how div{background:#e7eee7;border-radius:14px;padding:10px 7px;font-size:11px;font-weight:900}.how b{display:block;color:#d65479;font-size:18px;margin-bottom:2px}.open{border:0;border-radius:15px;background:#69d8bc;color:#153b31;padding:13px 24px;min-width:210px;font-size:17px;font-weight:1000;box-shadow:inset 0 -5px 0 #0002}.open:disabled{opacity:.45}.load{font-size:10px;color:#72808c;font-weight:800;margin-top:8px}#finishScore{font-size:clamp(38px,9vw,66px);font-weight:1000;color:#d85a7e;margin:8px 0}.finishBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.finishBtns a{text-decoration:none}
+#overlay{position:absolute;z-index:50;inset:0;display:grid;place-items:center;padding:18px;background:rgba(4,10,25,.78);backdrop-filter:blur(8px)}.modal{width:min(700px,95vw);background:linear-gradient(155deg,#fdf8e8,#eaf6ef);color:#1a2d3e;border:3px solid white;border-radius:28px;padding:clamp(20px,4.5vw,38px);box-shadow:0 28px 90px #0009;text-align:center}.tag{display:inline-block;border-radius:999px;background:#102b45;color:#8ff2d1;padding:6px 11px;font-size:9px;font-weight:1000;letter-spacing:.15em}.modal h1{font-size:clamp(34px,7vw,62px);line-height:.94;letter-spacing:-.065em;margin:11px 0 8px;color:#133f55}.modal h1 span{color:#d95d81}.modal p{margin:8px auto;max-width:580px;color:#5b6975;line-height:1.55;font-size:13px;font-weight:750}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0}.how div{background:#e7eee7;border-radius:14px;padding:10px 7px;font-size:11px;font-weight:900}.how b{display:block;color:#d65479;font-size:18px;margin-bottom:2px}.open{border:0;border-radius:15px;background:#69d8bc;color:#153b31;padding:13px 24px;min-width:210px;font-size:17px;font-weight:1000;box-shadow:inset 0 -5px 0 #0002}.open:disabled{opacity:.45}.load{font-size:10px;color:#72808c;font-weight:800;margin-top:8px}#finishScore{font-size:clamp(38px,9vw,66px);font-weight:1000;color:#d85a7e;margin:8px 0}.finishBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.finishBtns a{text-decoration:none}#home{border:0}.finishBtns button.open{border:0}
 @media(max-width:760px){
  #planet{width:54vw;right:-15vw;top:10vh;opacity:.62}#home,#soundBtn{top:7px;width:39px;height:39px;border-radius:12px}#home{left:7px}#soundBtn{right:7px}
  #hud{left:53px;right:53px;top:7px;display:block}#orderCard{padding:7px 9px;border-radius:15px}.alienBadge{width:35px;height:35px;flex-basis:35px}.alienBadge:before,.alienBadge:after{top:11px;width:7px;height:9px}.alienBadge:before{left:7px}.alienBadge:after{right:7px}.alienBadge i{left:9px;right:9px;bottom:6px}#orderLabel{font-size:7px}#orderTitle{font-size:14px}#taskText{font-size:9px}#recipe{margin-top:5px}.chip{padding:3px 6px;font-size:8px}
@@ -61,7 +61,7 @@ button,a{font:inherit}button{cursor:pointer}.hidden{display:none!important}
 <div id="app">
  <div id="spaceBg"><div id="stars"></div><img id="planet" src="../../assets/game/space/planets/planet03.png" alt=""></div>
  <canvas id="scene" aria-label="우주 샌드위치 가게 3D 조리대"></canvas>
- <a id="home" href="../../index.html" title="메인으로">←</a><button id="soundBtn" title="소리">🔊</button>
+ <button id="home" type="button" title="메인으로">←</button><button id="soundBtn" title="소리">🔊</button>
  <div id="hud">
   <div id="orderCard"><div class="orderTop"><div class="alienBadge"><i></i></div><div><div id="orderLabel">GALACTIC ORDER</div><div id="orderTitle">손님이 도착하는 중…</div><div id="taskText">재료를 준비하고 있어요.</div></div></div><div id="recipe"></div></div>
   <div id="stats"><div class="stat"><small>주문</small><strong id="round">1/8</strong></div><div class="stat"><small>크레딧</small><strong id="score">0</strong></div><div class="stat"><small>콤보</small><strong id="combo">0</strong></div></div>
@@ -77,13 +77,23 @@ button,a{font:inherit}button{cursor:pointer}.hidden{display:none!important}
  </div>
  <div id="toast"></div><div id="fx"></div>
  <div id="overlay"><section class="modal" id="startPanel"><span class="tag">KIDSCADE · SPACE DINER</span><h1>우주 <span>샌드위치</span><br>가게</h1><p>우주 정거장에 손님들이 줄을 섰어요. 주문표를 보고 재료를 고른 뒤 자의 눈금으로 정확한 길이를 재서 샌드위치를 완성하세요.</p><div class="how"><div><b>1</b>주문 재료 확인</div><div><b>2</b>1~8cm 정확히 측정</div><div><b>3</b>완성 후 손님에게 서빙</div></div><button class="open" id="open" disabled>주방 여는 중…</button><div class="load" id="load">3D 재료를 준비하고 있어요.</div></section>
- <section class="modal hidden" id="finishPanel"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 영업 <span>완료!</span></h1><p id="finishText"></p><div id="finishScore">0 CR</div><div class="finishBtns"><button class="open" id="again">다시 영업</button><a class="open" href="../../index.html">게임 목록</a></div></section></div>
+ <section class="modal hidden" id="finishPanel"><span class="tag">SHIFT COMPLETE</span><h1>오늘의 영업 <span>완료!</span></h1><p id="finishText"></p><div id="finishScore">0 CR</div><div class="finishBtns"><button class="open" id="again">다시 영업</button><button class="open" id="exitGame" type="button">게임 목록</button></div></section></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function exitKidscade(){
+  if(window.parent!==window){
+    try{window.parent.postMessage({type:'kidscade:close-game'},location.origin);return}catch(_){}
+  }
+  if(history.length>1){history.back();return}
+  location.href='../../';
+}
+
+$('#home').addEventListener('click',exitKidscade);
+$('#exitGame').addEventListener('click',exitKidscade);
 const ROOT='../../assets/game/';
 const SAVE_KEY='spaceSandwichV4';
 const MODEL={
