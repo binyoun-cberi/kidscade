@@ -390,7 +390,7 @@
     var id=(enc&&((enc.sourceTemplateId)||enc.templateId))||"",title=(enc&&enc.title)||"";
     if(/social_exclusion|mistake_shutdown|friend_dependency|crying_after_feedback/.test(id)||/울|눈물|혼자/.test(title))return {type:"tearful",name:"울먹임",bg:"#7788aa",brow:3,mouth:"sad",eyes:"small"};
     if(/teacher_defiance|game_loss|peer_conflict|fairness_complaint|lost_item_accusation|student_says_teacher_unfair/.test(id)||/반발|화|말다툼|억울/.test(title))return {type:"angry",name:"화남",bg:"#b96b63",brow:2,mouth:"straight",eyes:"small"};
-    if(/presentation_anxiety|praise_embarrassment|test_blank_freeze|sensory_overload|school_refusal_signal|friend_secret_burden|nurse_request|public_correction_hurt/.test(id)||/불안|긴장|발표|걱정|아프|힘들/.test(title))return {type:"worried",name:"걱정",bg:"#7388ad",brow:3,mouth:"straight",eyes:"small"};
+    if(/presentation_anxiety|praise_embarrassment|test_blank_freeze|sensory_overload|school_refusal_signal|friend_secret_burden|nurse_request|public_correction_hurt|parent_overprotective_exemption|parent_achievement_pressure_score|parent_neglect_basic_care|parent_harm_fear_home/.test(id)||/불안|긴장|발표|걱정|아프|힘들|무서/.test(title))return {type:"worried",name:"걱정",bg:"#7388ad",brow:3,mouth:"straight",eyes:"small"};
     if(/teasing_boundary|stationery_taken|copies_answer|careless_fast_work|pass_note_distraction|food_trade|rough_play_boundary|expensive_item_showoff/.test(id)||/장난|가져|베껴|쪽지|자랑/.test(title))return {type:"playful",name:"장난",bg:"#8d7197",brow:1,mouth:"teethUpper",eyes:"large"};
     if(/math_foundation_gap|help_refusal|group_silent|after_lunch_sleepy|group_free_rider|transition_stuck|lunch_refusal|refuses_partner/.test(id)||/모르|힘들|졸|막혀|못 하/.test(title))return {type:"struggling",name:"힘듦",bg:"#7f907a",brow:3,mouth:"sad",eyes:"small"};
     if(/finished_early/.test(id)||/성공|해냈|맞혔|밝/.test(title))return {type:"happy",name:"기쁨",bg:"#5f927b",brow:1,mouth:"happy",eyes:"large"};
@@ -1051,7 +1051,7 @@
   }
   function scheduleFollowUp(enc,dir,choice){
     if(!enc||!enc.studentId&&enc.studentId!==0)return;
-    if(enc.noFollowUp)return;
+    if(enc.noFollowUp||enc.familyEvent)return;
     var depth=enc.chainDepth||0;
     if(depth>=2)return;
     var chance=enc.isFollowUp?.26:.62;
