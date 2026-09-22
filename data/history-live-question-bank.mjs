@@ -745,7 +745,8 @@ const CORE_FACTS = [
   }
 ];
 
-const ERA_OPTIONS = [...new Set(CORE_FACTS.map(f => f.era))];
+export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
+const ERA_OPTIONS = [...ERA_ORDER];
 
 function hasBatchim(value) {
   const text=String(value||'').trim(), code=text.charCodeAt(text.length-1);
@@ -844,12 +845,39 @@ export function shuffledQuestion(question, random = Math.random) {
   };
 }
 
-export function pickHistoryQuestions(count = 15, random = Math.random) {
-  const indexes = Array.from({length:QUESTION_BANK.length}, (_,i)=>i);
-  for (let i = indexes.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random') {
+  const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
+  let factIndexes = Array.from({length:CORE_FACTS.length}, (_,i)=>i);
+
+  if (orderMode === 'chronological') {
+    factIndexes.sort((a,b) => {
+      const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
+      return eraDiff || a - b;
+    });
+  } else {
+    for (let i = factIndexes.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      [factIndexes[i], factIndexes[j]] = [factIndexes[j], factIndexes[i]];
+    }
   }
-  return indexes.slice(0, Math.max(1, Math.min(Number(count)||15, QUESTION_BANK.length)))
-    .map(i => shuffledQuestion(QUESTION_BANK[i], random));
+
+  return factIndexes.slice(0,wanted).map((factIndex,position) => {
+    const candidates = QUESTION_BANK.filter(q => q.sourceFact === factIndex);
+    const variantIndex = orderMode === 'chronological'
+      ? (position * 3 + factIndex) % candidates.length
+      : Math.floor(random() * candidates.length);
+    return shuffledQuestion(candidates[variantIndex], random);
+  });
+}
+
+export function chronologicalQuestionIndexes(count = 15) {
+  const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
+  const facts = Array.from({length:CORE_FACTS.length}, (_,i)=>i).sort((a,b) => {
+    const eraDiff = ERA_ORDER.indexOf(CORE_FACTS[a].era) - ERA_ORDER.indexOf(CORE_FACTS[b].era);
+    return eraDiff || a - b;
+  });
+  return facts.slice(0,wanted).map((factIndex,position) => {
+    const candidates = QUESTION_BANK.map((q,i)=>({q,i})).filter(x => x.q.sourceFact === factIndex);
+    return candidates[(position * 3 + factIndex) % candidates.length].i;
+  });
 }
