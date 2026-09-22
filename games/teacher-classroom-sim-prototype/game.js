@@ -617,6 +617,12 @@
     var down=spread(.27+t.empathy*.38+t.rejection*.24+(1-t.assert)*.12-t.compete*.08,2);
     var left=spread(.30+t.persist*.34+(1-t.academic)*.18+t.visual*.10-t.imp*.08,3);
     var right=spread(.30+t.assert*.30+t.persist*.16+t.compete*.10-t.rejection*.20+(1-t.rule)*.08,4);
+    var personalOrder=["up","left","down","right"],preferred=personalOrder[index%personalOrder.length];
+    var opposite={up:"down",down:"up",left:"right",right:"left"}[preferred];
+    var responseValues={up:up,down:down,left:left,right:right};
+    responseValues[preferred]=clamp(responseValues[preferred]+.22,.08,.92);
+    responseValues[opposite]=clamp(responseValues[opposite]-.08,.08,.92);
+    up=responseValues.up;down=responseValues.down;left=responseValues.left;right=responseValues.right;
     var sensitivity=clamp(.78+t.react*.38+t.rejection*.12,.78,1.28);
     var expressiveness=clamp(.34+t.react*.44+t.assert*.22+t.imp*.08,.30,1);
     return {up:up,down:down,left:left,right:right,sensitivity:sensitivity,expressiveness:expressiveness};
@@ -3817,7 +3823,7 @@
       btn.textContent="다음";
     }else if(tutorialState.step===2){
       title.textContent="숫자는 결과를 확인하는 도구입니다";
-      txt.textContent="교탁의 📑 명부에서 학생별 학습·집중·정서·관계·교사신뢰를 0~100으로 확인할 수 있습니다. 선택으로 숫자가 변하고, 최근 변화 원인도 명부에 남습니다.";
+      txt.textContent="교탁의 📑 명부에서 학생별 학습·집중·정서·관계·교사신뢰와 교사 대응 반응 특성을 확인할 수 있습니다. 같은 선택도 학생에 따라 크게 반발하거나 조용히 받아들이며 실제 수치 변화도 달라집니다.";
       var roster=q('[data-class-tool="roster"]');if(roster)roster.classList.add("tutorial-focus");
       btn.textContent="다음";
     }else{
