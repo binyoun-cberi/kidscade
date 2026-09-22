@@ -604,10 +604,73 @@
   }
 
 
+  function responseJitter(index,salt){
+    var x=Math.sin((index+1)*12.9898+(salt+3)*78.233)*43758.5453;
+    return (x-Math.floor(x))-.5;
+  }
+  function makeTeacherResponseProfile(t,index){
+    function spread(v,salt){
+      v+=responseJitter(index,salt)*.16;
+      return clamp(.5+(v-.5)*1.28,.08,.92);
+    }
+    var up=spread(.28+t.rule*.50+t.persist*.18-t.imp*.28-t.mischief*.10,1);
+    var down=spread(.27+t.empathy*.38+t.rejection*.24+(1-t.assert)*.12-t.compete*.08,2);
+    var left=spread(.30+t.persist*.34+(1-t.academic)*.18+t.visual*.10-t.imp*.08,3);
+    var right=spread(.30+t.assert*.30+t.persist*.16+t.compete*.10-t.rejection*.20+(1-t.rule)*.08,4);
+    var sensitivity=clamp(.78+t.react*.38+t.rejection*.12,.78,1.28);
+    var expressiveness=clamp(.34+t.react*.44+t.assert*.22+t.imp*.08,.30,1);
+    return {up:up,down:down,left:left,right:right,sensitivity:sensitivity,expressiveness:expressiveness};
+  }
+  function responseDisposition(s,dir){
+    var p=s&&s.teacherResponse;if(!p)return .5;
+    return p[dir]===undefined?.5:p[dir];
+  }
+  function responseStyleMultiplier(s,dir,value){
+    if(!s||!dir||dir==="timeout"||!value)return 1;
+    var fit=responseDisposition(s,dir),sens=(s.teacherResponse&&s.teacherResponse.sensitivity)||1;
+    if(value>0)return clamp((.70+fit*.72)*(.92+(sens-1)*.34),.56,1.62);
+    return clamp((.68+(1-fit)*.92)*(.92+(sens-1)*.62),.58,1.82);
+  }
+  function responseDescriptor(s){
+    if(!s||!s.teacherResponse)return [];
+    var p=s.teacherResponse,dirs=["up","down","left","right"];
+    var high=dirs.slice().sort(function(a,b){return p[b]-p[a]})[0];
+    var low=dirs.slice().sort(function(a,b){return p[a]-p[b]})[0];
+    var good={
+      up:"↑ 명확한 기준에 안정",down:"↓ 공감하면 마음을 잘 엶",left:"← 단계별 코칭을 잘 받음",right:"→ 선택권을 주면 잘 움직임"
+    };
+    var hard={
+      up:"↑ 강한 통제에는 반발 가능",down:"↓ 감정 질문을 부담스러워함",left:"← 세세한 지도는 간섭으로 느낌",right:"→ 선택이 많으면 오히려 막힘"
+    };
+    var expression=p.expressiveness>.74?"반응이 겉으로 크게 드러남":p.expressiveness<.52?"겉반응은 작지만 속으로 오래 남는 편":"반응 표현은 보통";
+    return [good[high],hard[low],expression];
+  }
+  function studentStyleReaction(s,dir){
+    if(!s||!dir||dir==="timeout"||!s.teacherResponse)return {text:"",dialogue:"",tone:"normal",fit:.5};
+    var fit=responseDisposition(s,dir),visible=s.teacherResponse.expressiveness>.68,subtle=s.teacherResponse.expressiveness<.50;
+    var positive=fit>=.66,negative=fit<=.36,text="",dialogue="",tone="normal";
+    if(positive){
+      if(dir==="up"){text=visible?s.name+"은(는) 기준이 분명해지자 바로 행동을 정리했다.":s.name+"은(는) 크게 티 내지 않았지만 지시 뒤 행동이 안정됐다.";dialogue=visible?"네, 알겠어요.":""}
+      else if(dir==="down"){text=visible?s.name+"은(는) 자신의 이야기를 꺼내며 표정이 빠르게 풀렸다.":s.name+"은(는) 조용히 듣다가 조금씩 긴장을 내려놓았다.";dialogue=visible?"사실은요…":""}
+      else if(dir==="left"){text=visible?s.name+"은(는) 방법이 구체적으로 보이자 바로 다시 해보려 했다.":s.name+"은(는) 말없이 순서를 따라가며 다시 시작했다.";dialogue=visible?"그럼 이거부터 하면 돼요?":""}
+      else{text=visible?s.name+"은(는) 선택권이 생기자 스스로 다음 행동을 바로 정했다.":s.name+"은(는) 한참 생각한 뒤 자기 방식으로 움직이기 시작했다.";dialogue=visible?"제가 이걸로 해볼게요.":""}
+      tone="normal";
+    }else if(negative){
+      if(dir==="up"){text=visible?s.name+"은(는) 통제받는 느낌에 즉각 표정이 굳고 반발했다.":s.name+"은(는) 겉으로는 따랐지만 시선을 피하며 한동안 굳어 있었다.";dialogue=visible?"왜 또 저만 그래요?":"네…"}
+      else if(dir==="down"){text=visible?s.name+"은(는) 감정을 묻는 대화 자체를 부담스러워하며 선을 그었다.":s.name+"은(는) 대답은 짧게 했지만 이후 말수가 더 줄었다.";dialogue=visible?"괜찮아요. 그냥 할게요.":""}
+      else if(dir==="left"){text=visible?s.name+"은(는) 세세한 설명이 이어지자 답답하다는 반응을 보였다.":s.name+"은(는) 고개는 끄덕였지만 점점 수동적으로 따라갔다.";dialogue=visible?"아, 그냥 제가 해볼게요.":""}
+      else{text=visible?s.name+"은(는) 선택을 맡기자 오히려 결정을 못 하고 짜증이 섞였다.":s.name+"은(는) 한참 고르지 못한 채 주변만 살폈다.";dialogue=visible?"그냥 선생님이 정해 주세요.":""}
+      tone=visible?"warning":"normal";
+    }else{
+      text=subtle?s.name+"에게서는 즉각적인 겉반응은 크지 않았다.":s.name+"은(는) 잠깐 생각한 뒤 큰 반발 없이 상황을 받아들였다.";
+    }
+    return {text:text,dialogue:dialogue,tone:tone,fit:fit};
+  }
+
   function resetStudents(){
     students=templates.map(function(t,i){
       var p=seats[i];
-      return Object.assign({},t,{knowledge:makeKnowledge(t,i),look:makeLook(t,i),
+      return Object.assign({},t,{knowledge:makeKnowledge(t,i),look:makeLook(t,i),teacherResponse:makeTeacherResponseProfile(t,i),
         id:i,seat:i,scene:"classroom",targetScene:null,arrivalAt:0,x:p.x,y:p.y,dx:p.x,dy:p.y,
         focus:.72,boredom:.14,talkNeed:.14,moveNeed:t.move*.14,helpNeed:.08,sleepNeed:(1-t.energy)*.24,
         socialNeed:.16+t.soc*.12,mood:.70,belonging:.62,frustration:.08,
@@ -723,6 +786,11 @@
     var depth=enc.chainDepth||0;
     if(depth>=2)return;
     var chance=enc.isFollowUp?.26:.62;
+    var sourceStudent=studentById(enc.studentId);
+    if(dir!=="timeout"&&sourceStudent&&sourceStudent.teacherResponse){
+      var fit=responseDisposition(sourceStudent,dir),memorable=Math.abs(fit-.5)*.24+(sourceStudent.teacherResponse.expressiveness-.5)*.10;
+      chance=clamp(chance+memorable,.18,.82);
+    }
     if(dir==="timeout")chance=.42;
     if(Math.random()>chance)return;
     var delay=Math.random()<.78?1:2;
@@ -816,7 +884,7 @@
     if(job.applied)return null;
     var before=studentDashboard(s,job.sourceSubject),beforeClass=classDashboard();
     var e=followUpDirectionEffects(job.sourceTemplateId,job.sourceDir,s);
-    applyEncounterEffects({studentId:s.id,targetId:t?t.id:null,effectSubject:job.sourceSubject||null},encounterChoice("",e,""));
+    applyEncounterEffects({studentId:s.id,targetId:t?t.id:null,effectSubject:job.sourceSubject||null},encounterChoice("",e,""),job.sourceDir);
     job.applied=true;
     var after=studentDashboard(s,job.sourceSubject),afterClass=classDashboard();
     job.arrivalDelta=dashboardDelta(before,after);
@@ -1105,23 +1173,26 @@
       if(weak&&weak!==model.focus)s.knowledge[subject][weak].mastery=clamp(s.knowledge[subject][weak].mastery+points/350);
     }else s.academic=clamp((s.academic||.5)+points/120);
   }
-  function applyEncounterEffects(enc,choice){
+  function applyEncounterEffects(enc,choice,dir){
     var s=studentById(enc.studentId),t=studentById(enc.targetId),e=choice.effects||{};
     if(!s)return;
-    applyEncounterLearning(s,e.learning||0,enc&&enc.effectSubject);
-    s.focus=clamp(s.focus+(e.focus||0)/100);
-    s.mood=clamp(s.mood+(e.mood||0)/100);
-    s.belonging=clamp(s.belonging+(e.relation||0)/100);
-    s.trust=clamp(s.trust+(e.trust||0)/100);
-    if(t&&e.relation){
-      t.belonging=clamp(t.belonging+e.relation/180);
-      changeRelation(s,t,{affinity:e.relation/140,irritation:-Math.max(0,e.relation)/220});
+    function personal(key){var v=e[key]||0;return v*responseStyleMultiplier(s,dir,v)}
+    var learning=personal("learning"),focus=personal("focus"),mood=personal("mood"),relationValue=personal("relation"),trustValue=personal("trust");
+    applyEncounterLearning(s,learning,enc&&enc.effectSubject);
+    s.focus=clamp(s.focus+focus/100);
+    s.mood=clamp(s.mood+mood/100);
+    s.belonging=clamp(s.belonging+relationValue/100);
+    s.trust=clamp(s.trust+trustValue/100);
+    if(t&&relationValue){
+      t.belonging=clamp(t.belonging+relationValue/180);
+      changeRelation(s,t,{affinity:relationValue/140,irritation:-Math.max(0,relationValue)/220});
     }
-    if(t&&e.mood)t.mood=clamp(t.mood+e.mood/220);
-    classMetrics.flow=clamp(classMetrics.flow+(e.classFlow||0),0,100);
-    classMetrics.relationship=clamp(classMetrics.relationship+(e.classRelationship||0)+(e.relation||0)*.18,0,100);
-    classMetrics.stability=clamp(classMetrics.stability+(e.classStability||0),0,100);
-    classMetrics.trust=clamp(classMetrics.trust+(e.classTrust||0)+(e.trust||0)*.12,0,100);
+    if(t&&mood)t.mood=clamp(t.mood+mood/220);
+    var classReaction=dir&&dir!=="timeout"?(.88+((s.teacherResponse&&s.teacherResponse.sensitivity)||1)*.12):1;
+    classMetrics.flow=clamp(classMetrics.flow+(e.classFlow||0)*classReaction,0,100);
+    classMetrics.relationship=clamp(classMetrics.relationship+(e.classRelationship||0)+(relationValue||0)*.18,0,100);
+    classMetrics.stability=clamp(classMetrics.stability+(e.classStability||0)*classReaction,0,100);
+    classMetrics.trust=clamp(classMetrics.trust+(e.classTrust||0)+(trustValue||0)*.12,0,100);
   }
   function decisionDeltaHtml(delta,beforeClass,afterClass){
     var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
@@ -1145,12 +1216,14 @@
       choice=enc.choices[dir];if(!choice)return;
       teacherStyleCounts[dir]=(teacherStyleCounts[dir]||0)+1;
     }
-    applyEncounterEffects(enc,choice);
+    var reaction=studentStyleReaction(s,dir);
+    applyEncounterEffects(enc,choice,dir);
+    if(reaction.dialogue)setStudentSpeech(s,reaction.dialogue,reaction.tone,34);
     var after=s?studentDashboard(s,metricSubject):before,afterClass=classDashboard(),delta=before?dashboardDelta(before,after):{};
     var direction=dir==="timeout"?"시간 초과":ENCOUNTER_DIRECTIONS[dir].label;
     var history={
       day:dayIndex,time:gameMinute(),templateId:enc.templateId,sourceTemplateId:enc.sourceTemplateId||enc.templateId,encounterId:enc.id,studentId:enc.studentId,targetId:enc.targetId,
-      dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,before:before,after:after,delta:delta,
+      dir:dir,direction:direction,title:enc.title,choice:choice.text,result:choice.result,reaction:reaction.text,responseFit:reaction.fit,before:before,after:after,delta:delta,
       beforeClass:beforeClass,afterClass:afterClass
     };
     encounterHistory.push(history);
@@ -1163,7 +1236,7 @@
       day:dayIndex,stamp:fmtMin(gameMinute()),text:enc.title+" · "+(s?s.name:"")+" · "+direction,
       type:enc.isFollowUp?"followup_decision":"encounter_decision",scene:teacherScene,script:false,recordable:true,encounterDecision:true,isFollowUp:!!enc.isFollowUp,
       studentId:enc.studentId,targetId:enc.targetId,direction:direction,directionKey:dir,choiceText:choice.text,
-      resultText:choice.result,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
+      resultText:choice.result,studentReaction:reaction.text,responseFit:reaction.fit,before:before,after:after,delta:delta,beforeClass:beforeClass,afterClass:afterClass,metricSubject:metricSubject
     };
     dayEvents.push(decisionItem);dayEvents=dayEvents.slice(-320);
     if(stats&&current().kind==="lesson")stats.events.push(decisionItem);
@@ -1174,7 +1247,7 @@
     scheduleFollowUp(enc,dir,choice);
     activeEncounter.phase="result";
     q("#encounterResultTitle").textContent=direction+" 선택";
-    q("#encounterResultText").textContent=choice.result;
+    q("#encounterResultText").textContent=choice.result+(reaction.text?" "+reaction.text:"");
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
     renderEncounter();
   }
@@ -1197,7 +1270,7 @@
   }
   function rosterDetailHtml(s){
     if(!s)return '<div class="record-empty">학생을 선택하면 최근 판단과 변화 원인을 확인할 수 있습니다.</div>';
-    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5);
+    var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s);
     var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
     return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
       '<div class="roster-detail-grid">'+
@@ -1206,7 +1279,8 @@
         '<div class="roster-stat"><strong>'+d.mood+'</strong><small>🙂 정서</small></div>'+
         '<div class="roster-stat"><strong>'+d.relation+'</strong><small>🤝 관계</small></div>'+
         '<div class="roster-stat"><strong>'+d.trust+'</strong><small>❤️ 교사신뢰</small></div>'+
-      '</div><div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div>'+
+      '</div><div class="response-profile"><strong>교사 대응 반응 특성</strong><div>'+responseNotes.map(function(x){return '<span class="response-chip">'+escHtml(x)+'</span>'}).join("")+'</div></div>'+
+      '<div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 4방향 판단 카드로 누적된 변화가 없습니다.</div>')+'</div>'+
       (queued.length?'<div class="roster-followup">📌 후속 관찰 예정 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+'</div>';
   }
 
@@ -3445,6 +3519,7 @@
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         '<div class="record-stage">교사의 판단 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
+        (item.studentReaction?'<div class="record-stage">학생 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
         (deltaHtml?'<div class="decision-deltas">'+deltaHtml+'</div>':'')+
         (classDeltaHtml?'<div class="decision-deltas">'+classDeltaHtml+'</div>':'')+'</article>';
     }
