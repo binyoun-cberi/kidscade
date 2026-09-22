@@ -594,13 +594,57 @@
     s.memory.unshift({text:text,weight:weight||.5,time:gameMinute()});
     s.memory=s.memory.slice(0,10);
   }
+  function pushLogItem(item){
+    feed.unshift(item);feed=feed.slice(0,18);
+    if(item.type!=="ambient"){dayEvents.push(item);dayEvents=dayEvents.slice(-200);}
+    if(stats&&current().kind==="lesson"&&item.type!=="ambient")stats.events.push(item);
+    renderFeed();
+  }
   function log(text,type,scene){
     type=type||"normal";scene=scene||teacherScene;
-    var item={stamp:fmtMin(gameMinute()),text:text,type:type,scene:scene};
-    feed.unshift(item);feed=feed.slice(0,14);
-    if(type!=="ambient"){dayEvents.push(item);dayEvents=dayEvents.slice(-160);}
-    if(stats&&current().kind==="lesson"&&type!=="ambient")stats.events.push(item);
-    renderFeed();
+    pushLogItem({stamp:fmtMin(gameMinute()),text:text,type:type,scene:scene,script:false});
+  }
+  function scriptLog(opts){
+    opts=opts||{};
+    var item={
+      stamp:fmtMin(gameMinute()),
+      text:opts.summary||opts.stage||((opts.speaker||"")+" "+(opts.dialogue||"")),
+      type:opts.type||"social",
+      scene:opts.scene||teacherScene,
+      script:true,
+      stage:opts.stage||"",
+      speaker:opts.speaker||"",
+      dialogue:opts.dialogue||"",
+      replySpeaker:opts.replySpeaker||"",
+      replyDialogue:opts.replyDialogue||""
+    };
+    pushLogItem(item);
+  }
+  function pickLine(lines){return lines[Math.floor(Math.random()*lines.length)]}
+  function studentTalkLine(s,target,mode){
+    if(mode==="pair")return pickLine(["나는 이렇게 했는데, 너는?","여기부터 같이 볼래?","이거 답이 왜 이렇게 되는 거야?","잠깐, 네가 한 것도 보여줘."]);
+    if(mode==="lesson")return pickLine(["이거 끝나면 뭐 할 거야?","아까 그거 봤어?","나 이거 잘 모르겠어.","몇 번까지 했어?"]);
+    if(mode==="play")return pickLine(["같이 할래?","우리 저쪽 가자.","이번엔 내가 먼저 할게.","같이 팀 할래?"]);
+    return pickLine(["뭐 하고 있었어?","같이 있을래?","아까 그거 봤어?","잠깐 이것 좀 봐봐."]);
+  }
+  function teacherLine(kind,s){
+    var name=s?s.name:"";
+    var map={
+      inspect:"어디에서 막혔는지 풀이한 걸 보여줄래?",
+      check:"왜 그렇게 생각했는지 말해줄래?",
+      probe:"비슷한 문제 하나만 더 해보자.",
+      hint:"여기까지는 맞았어. 다음엔 뭘 해야 할까?",
+      first:"첫 번째만 같이 해보자. 그다음은 네가 해볼래?",
+      simplify:"일단 이것 하나만 먼저 끝내자.",
+      quiet:name+"야, 지금 해야 할 것부터 다시 해보자.",
+      redirect:"지금은 여기부터 해보자.",
+      praise:"방금 그건 네가 스스로 잘 해냈어.",
+      mediate:"한 명씩 말해보자. 먼저 무슨 일이 있었는지 이야기해줄래?",
+      separate:"지금은 잠깐 떨어져서 진정할 시간이 필요해.",
+      safety:"멈춰. 서로 거리를 두자.",
+      checkSafety:"괜찮아? 다친 곳이나 불편한 곳부터 확인하자."
+    };
+    return map[kind]||"";
   }
 
   function spotFor(s,scene,free){
@@ -862,7 +906,18 @@
     beginInteractionPhase(s,goal==="COMPETE"?"COMPETE":goal==="PLAY"?"PLAY":"TALK",target,goal==="PLAY"?55:45);
     s.socialTarget=target.id;
     if(target.action==="WAIT"||target.action==="REST"||target.action==="READ")requestStudentAction(target,s.action==="COMPETE"?"COMPETE":s.action==="PLAY"?"PLAY":"TALK",{duration:45,force:true,target:s});
-    if(Math.random()<.30)log(s.name+"이(가) "+target.name+"에게 다가가 함께 "+(s.action==="PLAY"?"놀기":"COMPETE"===s.action?"겨루기":"이야기")+" 시작했다.","social",s.scene);
+    if(Math.random()<.52){
+      var joinMode=s.action==="PLAY"?"play":s.action==="COMPETE"?"play":"social";
+      scriptLog({
+        speaker:s.name,
+        dialogue:studentTalkLine(s,target,joinMode),
+        replySpeaker:target.name,
+        replyDialogue:s.action==="COMPETE"?pickLine(["좋아, 해보자.","이번엔 내가 이길걸?"]):pickLine(["응, 같이 하자.","그래, 여기 있어.","좋아."]),
+        stage:s.name+"이(가) "+target.name+" 곁에 멈춰 섰다.",
+        summary:s.name+"과 "+target.name+"이(가) 함께 어울리기 시작했다.",
+        type:"social",scene:s.scene
+      });
+    }
   }
   function rejectJoin(s,target){
     var r=relation(s,target);
@@ -870,7 +925,15 @@
     s.frustration=clamp(s.frustration+.10+.13*s.rejection);s.belonging=clamp(s.belonging-.055);s.mood=clamp(s.mood-.055);
     changeRelation(s,target,{affinity:-.008,irritation:.025+.025*s.rejection});
     remember(s,target.name+"에게 함께하자고 했지만 받아들여지지 않음",.58);
-    log(s.name+"이(가) "+target.name+" 쪽에 다가갔지만 자연스럽게 함께하지 못했다.","social",s.scene);
+    scriptLog({
+      speaker:s.name,
+      dialogue:pickLine(["나도 같이 해도 돼?","같이 하자.","나도 끼워줘."]),
+      replySpeaker:target.name,
+      replyDialogue:pickLine(["지금은 우리끼리 할래.","미안, 지금은 좀 그래.","조금 있다가 하자."]),
+      stage:target.name+"의 대답 뒤 "+s.name+"이(가) 잠깐 그 자리에 머뭇거렸다.",
+      summary:s.name+"이(가) "+target.name+"에게 함께하자고 했지만 받아들여지지 않았다.",
+      type:"social",scene:s.scene
+    });
     var confront=(s.react*.48+s.frustration*.40+s.assert*.12)*(1-teacherNear(s)*.55);
     if(confront>.54&&r.irritation>.12)beginConflict(s,target,"거절 뒤 감정이 올라감");
   }
@@ -909,7 +972,15 @@
     changeRelation(a,b,{affinity:-.018,irritation:.07,rivalry:.015});
     stats.conflicts++;
     remember(a,b.name+"와 말다툼이 생김",.62);remember(b,a.name+"와 말다툼이 생김",.62);
-    log(a.name+"와 "+b.name+" 사이에 "+reason+" 작은 말다툼이 시작됐다.","incident",a.scene);
+    scriptLog({
+      speaker:a.name,
+      dialogue:pickLine(["왜 자꾸 그래?","그거 내가 먼저 했잖아.","하지 말라고 했잖아.","내가 그런 거 아니야."]),
+      replySpeaker:b.name,
+      replyDialogue:pickLine(["너도 그랬잖아.","아니거든.","그만해.","왜 나한테만 그래?"]),
+      stage:reason+" 두 학생의 목소리가 조금씩 커졌다.",
+      summary:a.name+"와 "+b.name+" 사이에 말다툼이 시작됐다.",
+      type:"incident",scene:a.scene
+    });
     nearbyStudents(a,24).forEach(function(o){
       if(o!==b&&Math.random()<o.soc*.28){requestStudentAction(o,"WATCH",{duration:22,force:true});o.mood=clamp(o.mood-.015)}
     });
@@ -924,7 +995,13 @@
       s.frustration=clamp(s.frustration+.08);target.frustration=clamp(target.frustration+.15);
       changeRelation(s,target,{affinity:-.025,irritation:.08});
       remember(s,target.name+"와 갈등 중 거친 몸짓이 나옴",.8);remember(target,s.name+"와 갈등 중 거친 몸짓을 겪음",.8);
-      log(s.name+"의 거친 몸짓 때문에 "+target.name+"이(가) 뒤로 물러났다.","incident",s.scene);
+      scriptLog({
+        speaker:target.name,
+        dialogue:pickLine(["하지 마!","밀지 마!","그만해!"]),
+        stage:s.name+"의 거친 몸짓에 "+target.name+"이(가) 뒤로 한 걸음 물러났다.",
+        summary:s.name+"의 거친 몸짓으로 "+target.name+"이(가) 물러났다.",
+        type:"incident",scene:s.scene
+      });
     }else{
       requestStudentAction(s,"WAIT",{duration:18,force:true});
       setDestination(s,s.scene,true);
@@ -948,7 +1025,15 @@
       target.helpNeed=clamp(target.helpNeed-.12);target.focus=clamp(target.focus+.05);applyLearning(target,.0042,"pair");
       s.belonging=clamp(s.belonging+.035);s.mood=clamp(s.mood+.02);changeRelation(s,target,{affinity:.01,irritation:-.008});
       remember(s,target.name+"을 도와줌",.38);remember(target,s.name+"에게 도움받음",.38);
-      if(Math.random()<.34)log(s.name+"이(가) "+target.name+"을(를) 잠깐 도와주었다.","social",s.scene);
+      if(Math.random()<.52)scriptLog({
+        speaker:s.name,
+        dialogue:pickLine(["여기부터 같이 볼까?","이거는 이렇게 하면 돼.","어디가 안 되는지 보여줘."]),
+        replySpeaker:target.name,
+        replyDialogue:pickLine(["아, 이제 알겠어.","잠깐만, 다시 해볼게.","응, 고마워."]),
+        stage:s.name+"이(가) "+target.name+"의 활동지 쪽으로 몸을 기울였다.",
+        summary:s.name+"이(가) "+target.name+"을(를) 도왔다.",
+        type:"learning",scene:s.scene
+      });
       beginInteractionPhase(s,"HELP_PEER",target,42);s.socialGoal=null;
     }
   }
