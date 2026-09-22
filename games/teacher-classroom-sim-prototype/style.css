@@ -1863,3 +1863,400 @@ body{
   background:rgba(255,255,255,.86)!important;
   color:#394252!important;
 }
+
+
+/* v34 — event-first pacing, Reigns meters, dense vertical scene */
+
+/* HUD: clock stays visible while the world rushes forward. */
+.reigns-daybar{
+  grid-template-columns:145px minmax(310px,1fr) minmax(185px,230px)!important;
+}
+.day-time-row{
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+}
+.hud-clock{
+  color:#fff7d6;
+  font-size:20px;
+  line-height:1;
+  font-weight:950;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.04em;
+  transition:color .16s ease,transform .16s ease,text-shadow .16s ease;
+}
+.hud-clock.rushing{
+  color:#9ed4ff;
+  text-shadow:0 0 14px rgba(77,163,255,.55);
+  animation:hudClockRush .28s ease-in-out infinite alternate;
+}
+@keyframes hudClockRush{
+  from{transform:translateY(0) scale(1)}
+  to{transform:translateY(-1px) scale(1.045)}
+}
+
+/* Replace numerical class stats with compact resource bars. */
+.class-meter-strip{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(58px,1fr))!important;
+  gap:5px!important;
+  align-items:center!important;
+}
+.class-meter-strip>div.class-meter{
+  min-width:0;
+  padding:4px 7px!important;
+  border-left:1px solid rgba(255,255,255,.09);
+  text-align:center;
+}
+.class-meter .meter-icon{
+  display:inline-block!important;
+  margin-right:3px;
+  font-size:16px!important;
+  vertical-align:middle;
+}
+.class-meter small{
+  display:inline-block!important;
+  color:#d5d8df!important;
+  font-size:8px!important;
+  vertical-align:middle;
+}
+.meter-track{
+  position:relative;
+  width:100%;
+  height:7px;
+  margin-top:5px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#49566b;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.25);
+}
+.meter-track>i{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:50%;
+  border-radius:inherit;
+  background:#e3dfcf;
+  transition:width .38s cubic-bezier(.2,.8,.2,1);
+}
+.meter-track>b{
+  position:absolute;
+  top:0;bottom:0;
+  width:0;
+  opacity:0;
+  border-radius:999px;
+  pointer-events:none;
+}
+.class-meter.gain .meter-track>b{
+  background:#5eaeff;
+  opacity:1;
+  box-shadow:0 0 9px rgba(68,161,255,.85);
+  animation:meterGainFlash .9s ease-out forwards;
+}
+.class-meter.loss .meter-track>b{
+  background:#ef5e64;
+  opacity:1;
+  box-shadow:0 0 9px rgba(239,75,83,.85);
+  animation:meterLossFlash .9s ease-out forwards;
+}
+.class-meter.gain .meter-icon{animation:meterIconGain .55s ease-out}
+.class-meter.loss .meter-icon{animation:meterIconLoss .55s ease-out}
+@keyframes meterGainFlash{
+  0%{opacity:1;transform:scaleY(1.45)}
+  45%{opacity:.95;transform:scaleY(1)}
+  100%{opacity:0}
+}
+@keyframes meterLossFlash{
+  0%{opacity:1;transform:scaleY(1.55)}
+  35%{opacity:1}
+  100%{opacity:0;transform:translateX(-4px)}
+}
+@keyframes meterIconGain{0%{transform:scale(1)}45%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes meterIconLoss{0%{transform:translateX(0)}35%{transform:translateX(-2px)}65%{transform:translateX(2px)}100%{transform:translateX(0)}}
+
+/* The stage no longer wastes most of the viewport. */
+.card-stage{
+  height:min(720px,calc(100vh - 175px))!important;
+  min-height:555px!important;
+}
+.encounter-overlay{
+  align-items:center!important;
+  justify-content:center!important;
+  padding:12px!important;
+}
+.encounter-shell{
+  width:min(680px,96%)!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:calc(100% - 14px)!important;
+  padding:16px!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  grid-template-rows:auto auto auto!important;
+  gap:9px 10px!important;
+  align-content:center!important;
+  border-radius:22px!important;
+  background:rgba(231,237,246,.54)!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.encounter-topline{
+  left:4px!important;
+  top:-28px!important;
+  right:auto!important;
+  padding:6px 10px!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.92)!important;
+  color:#536377!important;
+  box-shadow:0 6px 20px rgba(52,69,94,.09)!important;
+}
+
+/* Main scene is now vertical: time -> faces -> context -> event -> dialogue. */
+.encounter-card{
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  width:100%!important;
+  max-width:none!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:14px 17px 15px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  gap:7px!important;
+  border-radius:20px!important;
+  text-align:left!important;
+  box-shadow:0 16px 42px rgba(52,68,89,.16)!important;
+}
+.encounter-card-time{
+  order:1!important;
+  display:flex!important;
+  justify-content:flex-start!important;
+  align-items:baseline!important;
+  gap:9px!important;
+  padding-bottom:8px!important;
+  margin:0!important;
+}
+.encounter-card-time strong{font-size:19px!important}
+.encounter-card-time .encounter-card-kicker{font-size:9px!important}
+
+.encounter-portrait{
+  order:2!important;
+  width:100%!important;
+  height:168px!important;
+  min-height:168px!important;
+  margin:0!important;
+  display:flex!important;
+  border-radius:16px!important;
+  overflow:hidden!important;
+}
+.encounter-thread{
+  order:3!important;
+  margin:0!important;
+  padding:7px 10px!important;
+  font-size:9.5px!important;
+}
+.encounter-card h2{
+  order:4!important;
+  margin:2px 0 0!important;
+  font-size:22px!important;
+  line-height:1.18!important;
+  text-align:left!important;
+}
+.encounter-card>p{
+  order:5!important;
+  margin:0!important;
+  max-width:none!important;
+  font-size:12.5px!important;
+  line-height:1.52!important;
+  text-align:left!important;
+}
+.encounter-card blockquote{
+  order:6!important;
+  margin:4px 0 0!important;
+  max-width:none!important;
+  padding:8px 11px!important;
+  font-size:11.5px!important;
+  line-height:1.45!important;
+}
+.encounter-student{
+  order:7!important;
+  align-self:flex-start!important;
+  margin:2px 0 0!important;
+  padding:4px 7px!important;
+  font-size:9px!important;
+}
+.encounter-drag-hint{display:none!important}
+
+/* Choices sit immediately under the event instead of at the far edge of the screen. */
+.encounter-choice{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
+  min-height:72px!important;
+  padding:9px 11px!important;
+  border-radius:14px!important;
+  justify-content:flex-start!important;
+  gap:3px!important;
+  text-align:left!important;
+  box-shadow:0 7px 20px rgba(53,67,88,.10)!important;
+}
+.encounter-choice:hover,.encounter-choice:focus-visible,.encounter-choice.preview{
+  transform:translateY(-2px)!important;
+}
+.encounter-choice .direction{
+  margin:0!important;
+  font-size:9px!important;
+}
+.encounter-choice strong{
+  font-size:10.5px!important;
+  line-height:1.38!important;
+}
+.choice-up{grid-column:1!important;grid-row:2!important;border-top:3px solid #ae654d!important}
+.choice-left{grid-column:2!important;grid-row:2!important;border-left:3px solid #5579ad!important}
+.choice-right{grid-column:1!important;grid-row:3!important;border-right:3px solid #806da0!important}
+.choice-down{grid-column:2!important;grid-row:3!important;border-bottom:3px solid #4f8595!important}
+
+/* Result occupies the choice area; no second giant modal. */
+.encounter-card.result-mode{
+  transform:none!important;
+  opacity:.96!important;
+}
+.encounter-result{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  grid-column:1 / -1!important;
+  grid-row:2 / 4!important;
+  width:100%!important;
+  min-height:0!important;
+  padding:13px 15px!important;
+  border-radius:15px!important;
+  box-shadow:0 9px 25px rgba(53,67,88,.12)!important;
+}
+.encounter-result[hidden]{display:none!important}
+
+/* Stable, simple hair silhouettes for close-up portraits.
+   Classroom sprites can keep the asset hair; the story portrait no longer uses it. */
+.portrait-hair-shape{
+  --hair:#252729;
+  position:absolute;
+  z-index:10;
+  left:10px;
+  top:2px;
+  width:28px;
+  height:10px;
+  display:block;
+  background:var(--hair);
+  border-radius:55% 55% 34% 34%;
+  pointer-events:none;
+}
+.portrait-hair-shape::before,
+.portrait-hair-shape::after{
+  content:"";
+  position:absolute;
+  display:block;
+  background:var(--hair);
+}
+.portrait-hair-shape.hair-black{--hair:#27282a}
+.portrait-hair-shape.hair-darkbrown{--hair:#49362f}
+.portrait-hair-shape.hair-brown{--hair:#67483a}
+.portrait-hair-shape.hair-short::after{
+  left:2px;top:6px;width:24px;height:5px;
+  border-radius:0 0 45% 40%;
+  clip-path:polygon(0 0,100% 0,80% 45%,62% 25%,45% 70%,27% 34%,0 62%);
+}
+.portrait-hair-shape.hair-crop{
+  left:12px;width:24px;height:8px;border-radius:50% 50% 25% 25%;
+}
+.portrait-hair-shape.hair-crop::after{
+  left:2px;top:5px;width:20px;height:4px;border-radius:0 0 45% 45%;
+}
+.portrait-hair-shape.hair-side::after{
+  right:-1px;top:6px;width:12px;height:9px;
+  border-radius:0 0 80% 15%;
+  transform:skewX(-18deg);
+}
+.portrait-hair-shape.hair-part::before{
+  left:1px;top:6px;width:13px;height:6px;border-radius:0 0 70% 10%;
+  transform:skewX(20deg);
+}
+.portrait-hair-shape.hair-part::after{
+  right:1px;top:6px;width:12px;height:5px;border-radius:0 0 10% 70%;
+  transform:skewX(-16deg);
+}
+.portrait-hair-shape.hair-bob{
+  height:9px;
+}
+.portrait-hair-shape.hair-bob::before{
+  left:-2px;top:5px;width:6px;height:19px;border-radius:6px 2px 5px 8px;
+}
+.portrait-hair-shape.hair-bob::after{
+  right:-2px;top:5px;width:6px;height:19px;border-radius:2px 6px 8px 5px;
+}
+.portrait-hair-shape.hair-tie::before{
+  left:-1px;top:5px;width:6px;height:15px;border-radius:7px;
+}
+.portrait-hair-shape.hair-tie::after{
+  right:-7px;top:8px;width:9px;height:9px;border-radius:50%;
+}
+.encounter-portrait .mod-part.portrait-hair{display:none!important}
+
+/* Portraits now fill a shallow cinematic strip. */
+.encounter-portrait .portrait-avatar{
+  top:-4px!important;
+  transform:translateX(-50%) scale(4.7)!important;
+}
+.encounter-portrait.duo .portrait-avatar{
+  top:-1px!important;
+  transform:translateX(-50%) scale(4.15)!important;
+}
+.portrait-name{
+  bottom:9px!important;
+  font-size:9px!important;
+}
+
+/* Time-rush remains visible but no longer becomes a large empty card. */
+.time-rush{
+  top:50%!important;
+  width:min(310px,72%)!important;
+  padding:18px 20px 16px!important;
+  border-radius:18px!important;
+}
+.time-rush strong{font-size:34px!important}
+.time-rush span{margin-top:5px!important}
+.time-rush::after{margin-top:10px!important}
+
+@media(max-height:760px) and (min-width:701px){
+  .card-stage{min-height:520px!important;height:calc(100vh - 160px)!important}
+  .encounter-shell{gap:7px 8px!important;padding:12px!important}
+  .encounter-card{padding:11px 14px 12px!important;gap:5px!important}
+  .encounter-portrait{height:135px!important;min-height:135px!important}
+  .encounter-portrait .portrait-avatar{top:-7px!important;transform:translateX(-50%) scale(4.05)!important}
+  .encounter-portrait.duo .portrait-avatar{top:-5px!important;transform:translateX(-50%) scale(3.65)!important}
+  .encounter-card h2{font-size:19px!important}
+  .encounter-card>p{font-size:11.5px!important}
+  .encounter-choice{min-height:60px!important;padding:7px 9px!important}
+  .encounter-choice strong{font-size:9.5px!important}
+}
+@media(max-width:700px){
+  .reigns-daybar{grid-template-columns:112px 1fr!important}
+  .hud-clock{font-size:16px}
+  .class-meter-strip{gap:2px!important}
+  .class-meter-strip>div.class-meter{padding:3px!important}
+  .class-meter small{display:none!important}
+  .meter-track{height:6px!important}
+  .card-stage{height:calc(100vh - 155px)!important;min-height:540px!important}
+  .encounter-shell{width:98%!important;padding:9px!important;gap:7px!important}
+  .encounter-portrait{height:145px!important;min-height:145px!important}
+  .encounter-portrait .portrait-avatar{top:-5px!important;transform:translateX(-50%) scale(4.2)!important}
+  .encounter-portrait.duo .portrait-avatar{top:-3px!important;transform:translateX(-50%) scale(3.7)!important}
+  .encounter-card h2{font-size:19px!important}
+  .encounter-card>p{font-size:11px!important}
+  .encounter-choice{min-height:68px!important}
+  .encounter-choice strong{font-size:9px!important}
+}
