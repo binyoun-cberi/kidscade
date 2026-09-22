@@ -44,11 +44,11 @@
     {
       "id": "high_history_timebattle_live",
       "title": "역사 타임배틀 LIVE",
-      "href": "games/high_history_timebattle/history_timebattle.html?v=3",
+      "href": "games/high_history_timebattle/history_timebattle.html?v=4",
       "category": "trivia",
       "age": "high",
       "icon": "⏳",
-      "description": "1,000개가 넘는 한국사 문제은행으로 혼자 연습하거나, 최대 26명이 한 방에서 최대 40문제를 풀며 교사가 정한 시점마다 중간 순위를 확인하는 실시간 퀴즈 배틀!"
+      "description": "1,000개가 넘는 한국사 문제은행으로 혼자 연습하거나 최대 26명이 LIVE로 플레이! 무작위·시대순 출제, 최대 40문제, 원하는 시점의 중간 순위 확인을 지원합니다."
     },
     {
       "id": "high_quarantine_17",
