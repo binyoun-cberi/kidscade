@@ -1523,7 +1523,409 @@
         }};
       }
     }
+
   ];
+
+  // v26: everyday homeroom-teacher situations. These sit beside the behavior-driven
+  // encounters above so a school day includes learning, care, relationships and family contact.
+  ENCOUNTER_TEMPLATES=ENCOUNTER_TEMPLATES.concat([
+    {
+      id:"late_arrival",category:"등교",title:"수업 직전에 헐레벌떡 들어왔다",
+      score:function(s){return current().kind==="morning"?Math.max(0,(.58-s.rule)*.75+(.58-s.persist)*.45+s.imp*.22):0},
+      build:function(s){
+        return {text:s.name+"이(가) 가방을 멘 채 숨을 고르며 교실로 들어왔다. 아침 준비 시간은 거의 끝났고 친구들은 이미 자리에 앉아 있다.",dialogue:s.name+' “늦잠 잤어요… 준비는 지금 하면 돼요?”',choices:{
+          up:encounterChoice("늦었더라도 해야 할 아침 준비 순서를 바로 지키게 한다.",{focus:3,trust:-1,classStability:4,classFlow:2},"늦게 온 뒤 무엇을 해야 하는지는 분명해졌다."),
+          down:encounterChoice("무슨 일이 있었는지 짧게 듣고 마음을 가라앉힌 뒤 준비하게 한다.",{mood:4,trust:5,classFlow:-2},"서두르던 마음이 조금 가라앉은 뒤 교실에 들어올 수 있었다."),
+          left:encounterChoice("늦게 왔을 때 할 준비를 세 단계로 정해 바로 따라 해 보게 한다.",{focus:5,trust:2,classStability:3,classFlow:-2},"다음에도 사용할 수 있는 아침 준비 순서가 생겼다."),
+          right:encounterChoice("지금 꼭 해야 할 준비 두 가지를 스스로 골라 먼저 끝내게 한다.",{focus:3,mood:2,trust:3,classFlow:1},"시간이 부족한 상황에서 우선순위를 스스로 정하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"forgotten_material",category:"수업준비",title:"수업 준비물이 없다",
+      score:function(s){return current().kind==="lesson"?Math.max(0,(.56-s.persist)*.42+(.52-s.rule)*.34+s.imp*.16):0},
+      build:function(s){
+        return {text:"활동을 시작하려는데 "+s.name+"의 책상에 필요한 준비물이 없다. 주변 친구들은 이미 활동을 시작했다.",dialogue:s.name+' “아… 그거 집에 두고 왔어요.”',choices:{
+          up:encounterChoice("준비물은 학생의 책임임을 확인하고 오늘은 대체 자료를 쓰게 한다.",{focus:2,trust:-1,classStability:4,classFlow:3},"수업은 바로 이어졌고 준비 책임도 분명히 남았다."),
+          down:encounterChoice("자주 빠뜨리는 이유가 있는지 먼저 묻고 오늘은 부담 없이 참여하게 한다.",{mood:3,trust:5,classFlow:-2},"준비물이 빠지는 이유를 조금 더 알 수 있었다."),
+          left:encounterChoice("수업이 끝난 뒤 가방 확인표를 하나 만들어 다음 날부터 써 보게 한다.",{focus:4,trust:3,classStability:3,classFlow:-2},"반복되는 준비 문제를 줄일 구체적인 방법을 만들었다."),
+          right:encounterChoice("빌리기·대체하기·친구와 함께 쓰기 중 오늘 방법을 직접 고르게 한다.",{focus:2,trust:3,mood:2,classFlow:1},"수업에 참여하는 방법을 스스로 정하고 책임지게 했다.")
+        }};
+      }
+    },
+    {
+      id:"lost_item_accusation",category:"또래관계",title:"잃어버린 물건 때문에 친구를 의심한다",
+      score:function(s){return ["morning","break","lunchplay"].indexOf(current().kind)>=0?Math.max(0,s.rejection*.32+s.imp*.25+s.fairness*.18-.12):0},
+      build:function(s){
+        var target=studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) 필통에서 물건이 보이지 않자 바로 "+target.name+"을(를) 바라보며 가져간 것 같다고 말한다. "+target.name+"은(는) 억울한 표정이다.",dialogue:s.name+' “아까 내 자리 왔잖아. 네가 가져갔지?”',choices:{
+          up:encounterChoice("확인되지 않은 일로 친구를 지목하면 안 된다고 즉시 멈추게 한다.",{relation:-1,trust:-1,classStability:6,classFlow:2},"친구를 함부로 지목하지 않는 기준은 분명해졌다."),
+          down:encounterChoice("물건을 잃어버려 불안한 마음과 억울한 친구의 마음을 차례로 듣는다.",{mood:4,relation:5,trust:4,classFlow:-4},"두 학생의 감정이 먼저 정리되면서 목소리가 낮아졌다."),
+          left:encounterChoice("마지막으로 본 곳부터 함께 확인하는 순서로 사실을 찾아보게 한다.",{focus:3,relation:4,trust:3,classFlow:-3},"추측 대신 사실을 확인하는 방법을 연습했다."),
+          right:encounterChoice("어디부터 찾아볼지 학생이 정하고, 확인 전에는 친구를 지목하지 않기로 한다.",{focus:2,relation:2,trust:3,classStability:2},"찾는 책임은 학생에게 주되 친구를 보호하는 선은 유지했다.")
+        }};
+      }
+    },
+    {
+      id:"seat_change_request",category:"교실생활",title:"옆자리 때문에 집중이 안 된다고 한다",
+      score:function(s){return current().kind==="lesson"?Math.max(0,s.rejection*.26+s.soc*.16+s.noise*.24+s.frustration*.32-.12):0},
+      build:function(s){
+        var target=nearbyStudents(s,30).filter(function(o){return o!==s})[0]||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) 수업 중 교사에게 와서 "+target.name+" 옆에서는 자꾸 신경이 쓰여 집중하기 어렵다고 말한다.",dialogue:s.name+' “저 자리 바꾸면 안 돼요? 계속 말 걸어요.”',choices:{
+          up:encounterChoice("지금은 정해진 자리에서 수업하고 반복되면 교사가 조정하겠다고 한다.",{focus:2,trust:-1,classStability:4,classFlow:3},"자리 원칙은 유지됐지만 불편함은 더 지켜봐야 한다."),
+          down:encounterChoice("어떤 점이 가장 힘든지 듣고 두 학생의 상황을 먼저 확인한다.",{mood:3,trust:5,relation:3,classFlow:-3},"단순히 싫어서가 아니라 구체적인 방해가 무엇인지 드러났다."),
+          left:encounterChoice("옆자리와 지킬 수업 약속을 두 가지 정해 잠시 적용해 본다.",{focus:5,relation:4,trust:2,classFlow:-3},"자리 이동 전에 함께 지킬 행동을 먼저 연습했다."),
+          right:encounterChoice("현재 자리에서 해볼 방법과 자리 이동 중 하나를 학생이 제안하게 한다.",{focus:3,trust:3,relation:2,classFlow:0},"학생도 자리 문제의 해결책을 함께 고민하게 됐다.")
+        }};
+      }
+    },
+    {
+      id:"group_free_rider",category:"모둠활동",title:"모둠에서 한 명만 일하지 않는다",
+      score:function(s){return current().kind==="lesson"?Math.max(0,(.55-s.persist)*.35+(1-s.helpful)*.20+s.autonomy*.12+s.boredom*.28-.10):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");
+        return {targetId:target?target.id:null,text:"모둠 활동이 진행 중인데 "+s.name+"은(는) 자기 역할을 거의 하지 않고 친구들이 결과물을 만드는 모습을 보고 있다. 몇몇 친구의 표정이 불편해졌다.",dialogue:s.name+' “애들이 잘하니까 제가 안 해도 되잖아요.”',choices:{
+          up:encounterChoice("모둠에서도 각자 맡은 몫은 해야 한다고 하고 역할을 바로 수행하게 한다.",{focus:4,trust:-2,relation:-1,classStability:5,classFlow:3},"역할 수행은 시작됐지만 자발성은 크지 않았다."),
+          down:encounterChoice("왜 참여하지 않는지 묻고 어렵거나 부담되는 부분이 있는지 확인한다.",{mood:3,trust:5,relation:2,classFlow:-3},"게으름처럼 보이던 행동 뒤의 이유를 확인할 수 있었다."),
+          left:encounterChoice("해야 할 역할을 더 작고 분명하게 나눠 첫 단계부터 하게 한다.",{focus:5,learning:2,relation:3,trust:2,classFlow:-3},"할 일이 구체적으로 보이자 모둠에 다시 들어오기 쉬워졌다."),
+          right:encounterChoice("모둠에 기여할 수 있는 역할 중 하나를 직접 고르게 한다.",{focus:3,relation:3,trust:3,classFlow:0},"역할 선택권과 참여 책임을 함께 줬다.")
+        }};
+      }
+    },
+    {
+      id:"public_correction_hurt",category:"정서",title:"지적을 받은 뒤 표정이 굳었다",
+      score:function(s){return current().kind==="lesson"&&s.rejection>.54?Math.max(0,s.rejection*.55+s.react*.22-.20):0},
+      build:function(s){
+        return {text:"교사가 방금 답을 고쳐 말해 준 뒤 "+s.name+"이(가) 연필을 내려놓고 시선을 피한다. 주변 친구들이 들은 것이 신경 쓰이는 눈치다.",dialogue:s.name+' “저만 맨날 틀리는 것 같아요.”',choices:{
+          up:encounterChoice("틀린 답을 고치는 건 수업의 자연스러운 과정이라고 분명히 말한다.",{focus:2,mood:-1,trust:0,classStability:2,classFlow:3},"수업 기준은 유지됐지만 학생의 민망함은 바로 사라지지 않았다."),
+          down:encounterChoice("사람들 앞에서 틀린 느낌이 힘들었는지 조용히 확인한다.",{mood:6,trust:6,classFlow:-2},"민망했던 마음을 교사에게 말할 수 있게 됐다."),
+          left:encounterChoice("정답보다 어디까지 생각했는지를 짚어 주고 다음 한 단계만 다시 해 보게 한다.",{learning:3,focus:3,mood:3,trust:4,classFlow:-2},"실수보다 사고 과정에 다시 집중할 수 있었다."),
+          right:encounterChoice("지금 다시 해볼지, 잠시 뒤 다시 볼지 학생이 선택하게 한다.",{mood:3,focus:2,trust:4,classFlow:1},"회복할 속도를 스스로 선택하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"peer_laughs_mistake",category:"학급관계",title:"친구의 실수에 웃음이 터졌다",
+      score:function(s){return current().kind==="lesson"&&s.mischief>.42?Math.max(0,s.mischief*.44+s.soc*.18-s.empathy*.18):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:target.name+"이(가) 발표에서 말을 잘못하자 "+s.name+"을(를) 포함한 몇 명이 웃었다. "+target.name+"은(는) 곧바로 입을 다물었다.",dialogue:s.name+' “아니, 그게 너무 웃겨서…”',choices:{
+          up:encounterChoice("친구의 실수를 웃음거리로 만들지 않는다는 기준을 바로 확인한다.",{relation:1,trust:-1,classStability:6,classFlow:3},"교실에서 지켜야 할 선은 곧바로 분명해졌다."),
+          down:encounterChoice("웃은 학생과 당사자가 각각 어떻게 느꼈는지 짧게 듣는다.",{mood:2,relation:5,trust:4,classFlow:-4},"웃음 뒤에 남은 민망함을 서로 확인했다."),
+          left:encounterChoice("실수한 친구에게 할 수 있는 반응을 예로 들어 다시 표현하게 한다.",{relation:6,trust:2,classStability:2,classFlow:-3},"친구의 실수에 반응하는 다른 방법을 직접 연습했다."),
+          right:encounterChoice("지금 분위기를 어떻게 다시 편하게 만들지 학생들이 제안하게 한다.",{relation:4,trust:3,classFlow:0},"교실 분위기를 회복하는 책임을 학생들에게도 나눴다.")
+        }};
+      }
+    },
+    {
+      id:"pass_note_distraction",category:"수업운영",title:"수업 중 쪽지가 오간다",
+      score:function(s){return current().kind==="lesson"&&(s.action==="PASS_NOTE"||s.mischief>.56)?Math.max(.18,s.mischief*.38+s.soc*.20+s.imp*.15):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");
+        return {targetId:target?target.id:null,text:"설명하는 사이 "+s.name+"의 책상 아래로 접힌 쪽지가 건너갔다. 받는 친구도 웃음을 참으며 다시 무언가를 적으려 한다.",dialogue:s.name+' “수업 끝나고 보려고 한 거예요.”',choices:{
+          up:encounterChoice("쪽지는 지금 치우고 수업 중에는 주고받지 않는다고 분명히 한다.",{focus:5,trust:-1,classStability:5,classFlow:4},"수업 흐름은 빠르게 돌아왔다."),
+          down:encounterChoice("왜 지금 꼭 전달하고 싶었는지 짧게 묻고 수업 뒤에 이야기하도록 한다.",{focus:2,trust:4,mood:2,classFlow:-2},"대화 욕구를 인정하면서 수업과 시간을 분리했다."),
+          left:encounterChoice("메모하고 싶은 내용은 개인 메모칸에 적어 두고 쉬는 시간에 전달하게 한다.",{focus:4,trust:2,classStability:3,classFlow:-2},"충동을 바로 행동으로 옮기지 않는 방법을 하나 만들었다."),
+          right:encounterChoice("쪽지를 보관했다가 쉬는 시간에 전달할지 버릴지 스스로 고르게 한다.",{focus:3,trust:3,classFlow:1},"선택권을 주면서도 수업 중 전달은 멈췄다.")
+        }};
+      }
+    },
+    {
+      id:"bathroom_urgent",category:"생활",title:"수업 중 갑자기 화장실이 급하다고 한다",
+      score:function(s){return current().kind==="lesson"?Math.max(0,.10+s.imp*.08+s.react*.08+(s.mood<.5?.12:0)):0},
+      build:function(s){
+        return {text:"활동이 한창 진행되는 중 "+s.name+"이(가) 몸을 들썩이며 손을 들었다. 표정이 꽤 급해 보인다.",dialogue:s.name+' “선생님, 저 화장실 진짜 급해요.”',choices:{
+          up:encounterChoice("안전하게 다녀오도록 하고 돌아오면 빠진 부분을 바로 이어 하게 한다.",{mood:2,trust:2,classStability:2,classFlow:-1},"필요한 이동은 허용하면서 수업 복귀 기준도 함께 잡았다."),
+          down:encounterChoice("괜찮은지 먼저 확인하고 서두르지 말고 다녀오라고 한다.",{mood:4,trust:5,classFlow:-2},"학생이 불안해하지 않고 필요한 시간을 가질 수 있었다."),
+          left:encounterChoice("다녀온 뒤 놓친 부분을 확인할 위치를 미리 표시해 준다.",{focus:3,trust:3,classFlow:-2},"화장실 이후에도 다시 수업에 들어올 길이 분명해졌다."),
+          right:encounterChoice("지금 바로 다녀올지 활동의 이 단계만 끝내고 갈지 상태를 보고 스스로 말하게 한다.",{trust:3,focus:1,mood:2,classFlow:0},"자기 몸 상태를 판단해 말하는 책임을 학생에게 줬다.")
+        }};
+      }
+    },
+    {
+      id:"nurse_request",category:"건강",title:"배가 아프다며 보건실에 가고 싶어 한다",
+      score:function(s){return ["morning","lesson"].indexOf(current().kind)>=0?Math.max(0,.08+(1-s.energy)*.20+s.rejection*.06):0},
+      build:function(s){
+        return {text:s.name+"이(가) 책상에 엎드렸다가 배가 아프다며 보건실에 가고 싶다고 한다. 겉으로 크게 아파 보이지는 않지만 수업에 집중하지 못하고 있다.",dialogue:s.name+' “계속 배가 아픈 것 같아요. 보건실 가면 안 돼요?”',choices:{
+          up:encounterChoice("몸이 불편하다고 말한 만큼 학교 절차에 따라 상태를 확인하고 보건실에 다녀오게 한다.",{trust:2,classStability:3,classFlow:-2},"몸 상태는 추측하지 않고 학교 안에서 확인받게 했다."),
+          down:encounterChoice("어디가 어떻게 불편한지 차분히 듣고 불안한 점도 함께 확인한다.",{mood:4,trust:5,classFlow:-3},"몸의 불편함과 마음의 불편함을 모두 말할 기회를 줬다."),
+          left:encounterChoice("보건실에 전달할 증상을 짧게 정리해 말할 수 있도록 도와준다.",{focus:1,trust:4,classFlow:-3},"학생이 자기 상태를 구체적으로 설명할 수 있게 했다."),
+          right:encounterChoice("교사에게 더 설명할지 바로 보건실에서 확인받을지 학생이 선택해 말하게 한다.",{trust:4,mood:2,classFlow:-2},"학생이 자기 몸 상태에 대해 직접 의사 표현을 하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"minor_injury",category:"안전",title:"쉬는 시간에 넘어져 울고 있다",
+      score:function(s){return ["break","lunchplay"].indexOf(current().kind)>=0&&s.energy>.6?Math.max(0,s.energy*.30+s.move*.34+s.imp*.18-.18):0},
+      build:function(s){
+        return {text:"쉬는 시간에 뛰던 "+s.name+"이(가) 넘어졌다. 크게 다친 것 같지는 않지만 놀란 표정으로 무릎을 감싸고 있다.",dialogue:s.name+' “아파요… 피 난 것 같아요.”',choices:{
+          up:encounterChoice("주변 놀이를 멈추고 다친 정도를 확인한 뒤 필요한 안전 절차부터 따른다.",{mood:1,trust:3,classStability:6,classFlow:-2},"놀이보다 안전 확인을 먼저 두었다."),
+          down:encounterChoice("놀란 마음을 진정시키며 어디가 얼마나 아픈지 천천히 확인한다.",{mood:5,trust:6,classFlow:-3},"학생이 진정하면서 자기 상태를 더 잘 말할 수 있었다."),
+          left:encounterChoice("상처 확인 뒤 다음에 같은 장소에서 어떻게 움직일지 짧게 짚어 준다.",{focus:2,trust:3,classStability:4,classFlow:-3},"사고 처리와 함께 다음 안전 행동까지 연결했다."),
+          right:encounterChoice("상태를 확인한 뒤 쉬기와 보건실 확인 중 필요한 쪽을 학생과 함께 정한다.",{mood:3,trust:4,classStability:2,classFlow:-2},"상태를 무시하지 않으면서 학생도 다음 행동에 참여했다.")
+        }};
+      }
+    },
+    {
+      id:"lunch_refusal",category:"급식",title:"급식을 거의 먹지 않고 앉아 있다",
+      score:function(s){return current().kind==="lunch"?Math.max(0,(1-s.persist)*.18+s.rejection*.13+(1-s.energy)*.16):0},
+      build:function(s){
+        return {text:"점심시간이 꽤 지났는데 "+s.name+"의 식판은 거의 그대로다. 먹으라는 말에 숟가락을 들었다가 다시 내려놓는다.",dialogue:s.name+' “오늘은 진짜 먹기 싫어요.”',choices:{
+          up:encounterChoice("먹어야 할 최소한의 기준을 정하고 그만큼은 먹어 보게 한다.",{mood:-2,trust:-1,classStability:3,classFlow:1},"식사 기준은 생겼지만 거부감은 남았다."),
+          down:encounterChoice("왜 먹기 싫은지 묻고 맛·냄새·속 상태 등 이유를 먼저 확인한다.",{mood:4,trust:5,classFlow:-3},"단순한 편식인지 다른 불편함이 있는지 조금 더 알 수 있었다."),
+          left:encounterChoice("먹을 수 있는 음식부터 작은 양으로 시작해 보게 한다.",{mood:2,trust:3,focus:1,classFlow:-2},"식사 전체보다 가능한 한 입부터 시작하게 했다."),
+          right:encounterChoice("먹을 수 있는 것과 어려운 것을 스스로 구분해 먼저 먹게 한다.",{mood:3,trust:4,classFlow:0},"자기 상태를 말하고 선택하며 식사에 참여하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"food_trade",category:"급식",title:"친구끼리 반찬을 바꿔 먹으려 한다",
+      score:function(s){return current().kind==="lunch"&&s.soc>.55?Math.max(0,s.soc*.24+s.imp*.16+s.mischief*.12):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"과(와) "+target.name+"이(가) 서로 먹기 싫은 반찬을 바꿔 먹자며 식판을 가까이 붙였다. 다른 친구들도 따라 하려는 눈치다.",dialogue:s.name+' “나는 이거 줄게. 너는 그거 줘.”',choices:{
+          up:encounterChoice("급식은 서로 바꾸지 않는다는 식사 규칙을 바로 확인한다.",{classStability:6,classFlow:3,trust:-1},"급식시간의 기준은 빠르게 정리됐다."),
+          down:encounterChoice("왜 바꾸고 싶은지 듣되 서로의 음식을 주고받는 건 멈추게 한다.",{mood:2,trust:4,classStability:4,classFlow:-2},"학생의 이유는 들으면서 식사 안전의 선은 유지했다."),
+          left:encounterChoice("먹기 어려운 음식은 남기거나 도움을 요청하는 방식으로 해결하도록 알려준다.",{focus:2,trust:3,classStability:4,classFlow:-2},"반찬을 교환하는 대신 사용할 수 있는 방법을 가르쳤다."),
+          right:encounterChoice("자기 식판 안에서 먹을 순서와 양을 스스로 조절하게 한다.",{mood:2,trust:3,classStability:3,classFlow:0},"선택권을 식판 안으로 제한해 책임 있게 먹게 했다.")
+        }};
+      }
+    },
+    {
+      id:"group_chat_conflict",category:"친구",title:"어젯밤 단체 대화방 일이 교실까지 이어졌다",
+      score:function(s){return ["morning","break"].indexOf(current().kind)>=0&&s.soc>.55&&s.rejection>.42?Math.max(0,s.soc*.28+s.rejection*.30+s.react*.18-.18):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:"등교 뒤 "+s.name+"과(와) "+target.name+"이(가) 서로 말을 피한다. 어젯밤 단체 대화방에서 한 말 때문에 다툰 것 같고 주변 친구들도 내용을 알고 있다.",dialogue:s.name+' “선생님, 얘가 단톡에서 먼저 그랬어요.”',choices:{
+          up:encounterChoice("학교에서도 이어지는 갈등인 만큼 서로 비난하는 말을 멈추고 사실부터 정리하게 한다.",{relation:1,classStability:5,trust:0,classFlow:-2},"교실에서 갈등이 더 번지는 것은 먼저 막았다."),
+          down:encounterChoice("온라인에서 어떤 말이 상처였는지 두 학생을 따로 들어본다.",{mood:3,relation:5,trust:5,classFlow:-4},"화면 밖에서 커진 감정을 차례로 말할 수 있었다."),
+          left:encounterChoice("온라인에서도 오해를 키우지 않는 말하기와 멈추는 방법을 함께 정리한다.",{relation:5,trust:3,classStability:3,classFlow:-4},"다음에 비슷한 갈등이 생겼을 때 쓸 방법을 배웠다."),
+          right:encounterChoice("학교에서 관계를 어떻게 회복할지 두 학생이 한 가지씩 제안하게 한다.",{relation:4,trust:3,classFlow:-1},"온라인 갈등 이후의 관계 회복에 학생들도 책임을 나눴다.")
+        }};
+      }
+    },
+    {
+      id:"rumor_spread",category:"친구",title:"확인되지 않은 이야기가 반에 퍼지고 있다",
+      score:function(s){return ["break","lunchplay"].indexOf(current().kind)>=0&&s.soc>.58?Math.max(0,s.soc*.26+s.verbal*.24+s.mischief*.10-.12):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) 친구들에게 "+target.name+"에 관한 이야기를 전하고 있다. 어디서 들었는지 묻자 정확히는 모르지만 여러 명이 이미 알고 있다고 한다.",dialogue:s.name+' “저만 말한 거 아니에요. 다들 알고 있어요.”',choices:{
+          up:encounterChoice("확인되지 않은 이야기를 더 퍼뜨리지 말라고 즉시 멈추게 한다.",{classStability:6,relation:1,trust:-1,classFlow:2},"소문이 더 퍼지는 것은 우선 멈췄다."),
+          down:encounterChoice("그 이야기를 왜 전하고 싶었는지, 당사자는 어떻게 느낄지 생각하게 한다.",{mood:2,relation:5,trust:4,classFlow:-3},"소문이 관계에 남길 감정을 함께 보게 했다."),
+          left:encounterChoice("사실이 아닌 이야기를 들었을 때 확인하거나 멈추는 말을 직접 연습한다.",{relation:5,trust:3,classStability:3,classFlow:-3},"다음에 소문을 들었을 때 할 행동을 구체적으로 익혔다."),
+          right:encounterChoice("이미 말한 친구들에게 어떻게 바로잡을지 스스로 방법을 정하게 한다.",{relation:4,trust:3,classFlow:-1},"퍼뜨린 뒤의 책임까지 학생이 직접 맡게 했다.")
+        }};
+      }
+    },
+    {
+      id:"refuses_partner",category:"모둠활동",title:"특정 친구와는 절대 같이 못 하겠다고 한다",
+      score:function(s){return current().kind==="lesson"&&s.rejection>.46?Math.max(0,s.rejection*.28+s.assert*.25+s.compete*.12-.10):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:"짝 활동을 안내하자 "+s.name+"이(가) "+target.name+"을(를) 보며 고개를 세게 젓는다. 주변 학생들도 두 사람을 바라본다.",dialogue:s.name+' “저는 얘랑은 진짜 못 해요.”',choices:{
+          up:encounterChoice("친구를 공개적으로 거부하는 말은 멈추고 정해진 활동에 참여하게 한다.",{relation:-1,classStability:6,classFlow:3,trust:-1},"공개적인 거부는 멈췄지만 관계의 이유는 남아 있다."),
+          down:encounterChoice("두 학생을 잠깐 분리해 왜 함께하기 힘든지 먼저 듣는다.",{mood:3,relation:4,trust:5,classFlow:-4},"거부 뒤에 있던 갈등이나 부담을 확인할 수 있었다."),
+          left:encounterChoice("역할과 대화 규칙을 아주 분명히 나눠 짧은 시간부터 함께 해보게 한다.",{relation:4,focus:4,trust:2,classFlow:-4},"함께해야 할 범위를 작게 만들어 협동을 연습했다."),
+          right:encounterChoice("짝은 유지하되 역할 배분이나 앉는 위치는 두 학생이 정하게 한다.",{relation:3,trust:3,focus:2,classFlow:-1},"완전한 회피 대신 함께할 방식을 스스로 조정하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"sensory_overload",category:"정서",title:"교실 소리가 커지자 버티기 힘들어한다",
+      score:function(s){return ["lesson","break","lunch"].indexOf(current().kind)>=0&&(hasTrait(s,"sensitive_rejection")||hasTrait(s,"quiet_internalizer")||s.noise>.58)?Math.max(0,s.noise*.34+s.react*.22+(1-s.energy)*.15-.12):0},
+      build:function(s){
+        return {text:"교실 소리가 커지자 "+s.name+"이(가) 귀를 막고 고개를 숙인다. 말을 걸어도 바로 대답하지 못하고 주변 소리에 계속 신경을 쓴다.",dialogue:s.name+' “너무 시끄러워요… 머리가 아파요.”',choices:{
+          up:encounterChoice("교실 전체 소음을 먼저 낮추고 조용히 활동할 기준을 다시 잡는다.",{mood:2,trust:2,classStability:6,classFlow:-2},"학생 한 명의 어려움을 계기로 전체 환경부터 안정시켰다."),
+          down:encounterChoice("말을 재촉하지 않고 잠깐 조용한 곳에서 진정할 시간을 준다.",{mood:7,trust:6,classFlow:-4},"자극에서 떨어져 숨을 돌릴 시간이 생겼다."),
+          left:encounterChoice("다음에 소리가 힘들 때 사용할 신호와 쉴 방법을 함께 정한다.",{mood:3,trust:4,focus:3,classFlow:-3},"힘들어지기 전에 도움을 요청할 방법을 만들었다."),
+          right:encounterChoice("자리에서 쉬기와 조용한 위치로 이동하기 중 편한 방법을 고르게 한다.",{mood:4,trust:5,focus:2,classFlow:-2},"자기 상태에 맞는 조절 방법을 직접 선택하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"transition_stuck",category:"생활",title:"활동이 끝났는데도 전환하지 못한다",
+      score:function(s){return ["break","lesson","closing"].indexOf(current().kind)>=0&&(hasTrait(s,"needs_structure")||hasTrait(s,"slow_to_warm")||s.persist>.76)?Math.max(0,s.persist*.18+s.rejection*.16+(hasTrait(s,"needs_structure")?.30:0)):0},
+      build:function(s){
+        return {text:"다음 활동으로 넘어갈 시간이 됐지만 "+s.name+"은(는) 하던 것을 계속 붙잡고 있다. 주변 친구들이 정리를 마쳐도 움직이지 않는다.",dialogue:s.name+' “이거 아직 안 끝났어요. 조금만 더 하면 안 돼요?”',choices:{
+          up:encounterChoice("전환 시간임을 분명히 알리고 지금 정리한 뒤 다음 시간에 이어 하게 한다.",{focus:2,mood:-2,classStability:5,classFlow:4},"학급 흐름은 유지됐지만 아쉬움은 남았다."),
+          down:encounterChoice("끝내고 싶은 마음을 인정하고 어디까지 하면 마음이 놓일지 묻는다.",{mood:4,trust:5,classFlow:-3},"멈추기 어려웠던 이유를 학생이 말할 수 있었다."),
+          left:encounterChoice("마지막 한 단계-정리-다음 활동 순서를 눈앞에서 짚어 준다.",{focus:5,trust:3,classStability:3,classFlow:-2},"전환 과정을 작게 나누자 다음 활동으로 넘어가기 쉬워졌다."),
+          right:encounterChoice("지금 사진으로 남기기와 다음 시간에 이어 하기 중 방법을 고르게 한다.",{mood:3,trust:4,focus:2,classFlow:0},"하던 것을 잃지 않는 방법을 스스로 선택하고 전환했다.")
+        }};
+      }
+    },
+    {
+      id:"broken_item_denial",category:"생활지도",title:"교실 물건이 망가졌는데 아무도 말하지 않는다",
+      score:function(s){return ["break","closing"].indexOf(current().kind)>=0&&s.imp>.5?Math.max(0,s.imp*.28+s.mischief*.30+(1-s.rule)*.20-.12):0},
+      build:function(s){
+        return {text:"교실에서 함께 쓰는 물건 하나가 망가진 채 발견됐다. 근처에 있던 "+s.name+"에게 묻자 시선을 피하며 모른다고 한다.",dialogue:s.name+' “저 아니에요. 그냥 여기 있었어요.”',choices:{
+          up:encounterChoice("망가뜨린 것보다 숨기는 것이 더 큰 문제라고 하고 사실대로 말할 기회를 준다.",{trust:-1,classStability:6,classFlow:1},"책임져야 할 기준을 분명히 세웠다."),
+          down:encounterChoice("혼날까 봐 말하기 어려운 건지 조용히 묻고 사실을 말해도 먼저 듣겠다고 한다.",{mood:3,trust:6,classFlow:-3},"방어적인 태도가 조금 누그러졌다."),
+          left:encounterChoice("실수했을 때 알리기-정리하기-도움 요청하기 순서를 구체적으로 알려준다.",{focus:2,trust:3,classStability:4,classFlow:-3},"물건을 망가뜨렸을 때 책임지는 방법을 배웠다."),
+          right:encounterChoice("알고 있는 만큼 설명하고 이후 어떻게 정리할지 스스로 제안하게 한다.",{trust:3,classStability:3,classFlow:-1},"사실을 말하는 것과 뒷정리 책임을 학생에게 연결했다.")
+        }};
+      }
+    },
+    {
+      id:"parent_homework_complaint",category:"가정연계",title:"과제가 너무 많다는 보호자 연락이 왔다",
+      score:function(s){return ["morning","closing"].indexOf(current().kind)>=0&&(hasTrait(s,"perfectionist")||hasTrait(s,"foundational_gaps")||s.persist<.42)?Math.max(0,.12+s.rejection*.12+(1-s.academic)*.16):0},
+      build:function(s){
+        return {text:"보호자가 "+s.name+"이(가) 집에서 과제를 하며 너무 힘들어한다는 연락을 보냈다. "+s.name+"도 교사를 보며 반응을 살핀다.",dialogue:s.name+' “엄마가 숙제 좀 줄여 달라고 했어요.”',choices:{
+          up:encounterChoice("학급 과제의 기본 기준과 목적을 보호자와 학생에게 분명히 설명한다.",{trust:-1,classStability:4,classFlow:2},"과제 기준은 명확해졌지만 부담감은 더 살펴볼 필요가 있다."),
+          down:encounterChoice("집에서 실제로 얼마나 힘들었는지 학생과 보호자의 이야기를 먼저 듣는다.",{mood:4,trust:6,classFlow:-3},"과제량보다 어떤 지점에서 힘든지 구체적으로 확인했다."),
+          left:encounterChoice("핵심 과제와 선택 과제를 나누고 집에서 적용할 방법을 안내한다.",{learning:2,focus:3,trust:4,classFlow:-3},"학습 목표는 유지하면서 부담을 조절할 방법을 만들었다."),
+          right:encounterChoice("필수 과제를 한 뒤 추가 연습 여부를 학생이 스스로 선택하게 한다.",{mood:3,trust:4,focus:2,classFlow:0},"해야 할 것과 선택할 것을 구분해 책임을 나눴다.")
+        }};
+      }
+    },
+    {
+      id:"parent_friend_conflict",category:"가정연계",title:"보호자가 친구 관계를 바로 해결해 달라고 한다",
+      score:function(s){return ["morning","closing"].indexOf(current().kind)>=0&&s.rejection>.56&&s.soc>.42?Math.max(0,.10+s.rejection*.22+s.soc*.10):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");
+        return {targetId:target?target.id:null,text:"보호자가 "+s.name+"이(가) 친구 문제로 집에서 속상해했다며 상대 학생과 떨어뜨려 달라고 연락했다. 교실에서는 두 학생이 완전히 멀어진 모습은 아니다.",dialogue:s.name+' “엄마한테는 어제 있었던 일 말했어요.”',choices:{
+          up:encounterChoice("자리나 모둠을 바로 바꾸기 전에 학교에서 확인된 사실과 학급 기준부터 정리한다.",{classStability:4,trust:1,classFlow:-1},"보호자 요구만으로 관계를 바로 결정하지 않고 교실 상황을 먼저 확인했다."),
+          down:encounterChoice("학생에게 집에서 말한 일과 지금 느끼는 마음을 다시 차분히 듣는다.",{mood:4,trust:6,relation:2,classFlow:-3},"학생이 원하는 것이 무엇인지 조금 더 분명해졌다."),
+          left:encounterChoice("두 학생 관계를 며칠 관찰하고 필요한 경우 대화나 자리 조정을 하겠다는 계획을 세운다.",{relation:3,trust:4,classStability:3,classFlow:-3},"즉시 분리보다 관찰과 개입의 순서를 만들었다."),
+          right:encounterChoice("학생에게 지금 원하는 거리와 도움을 말하게 하고 가능한 범위에서 선택하게 한다.",{mood:3,trust:5,relation:2,classFlow:-1},"학생 본인의 의사를 관계 조정에 반영했다.")
+        }};
+      }
+    },
+    {
+      id:"school_refusal_signal",category:"정서",title:"아침마다 학교 오기 싫다고 했다고 한다",
+      score:function(s){return current().kind==="morning"&&(s.rejection>.58||hasTrait(s,"slow_to_warm")||s.mood<.48)?Math.max(0,s.rejection*.26+(1-s.mood)*.35+.08):0},
+      build:function(s){
+        return {text:"등교한 "+s.name+"이(가) 평소보다 말이 없다. 보호자가 아침마다 학교 가기 싫다는 말을 반복한다고 전했고, 오늘도 교실 문 앞에서 한동안 들어오지 못했다고 한다.",dialogue:s.name+' “그냥… 집에 있고 싶었어요.”',choices:{
+          up:encounterChoice("학교에 온 뒤 해야 할 하루의 기본 흐름을 간단하고 분명하게 안내한다.",{focus:2,mood:-1,trust:1,classStability:3},"하루의 틀은 선명해졌지만 마음의 이유는 더 살펴봐야 한다."),
+          down:encounterChoice("오늘 가장 걱정되는 것이 무엇인지 조용히 묻고 충분히 듣는다.",{mood:6,trust:7,classFlow:-3},"학교가 싫다는 말 안에 어떤 불편함이 있는지 들을 수 있었다."),
+          left:encounterChoice("첫 교시까지 할 일만 작게 정하고 하나씩 지나가 보자고 한다.",{focus:4,mood:3,trust:4,classFlow:-2},"하루 전체보다 가까운 다음 단계에 집중하게 했다."),
+          right:encounterChoice("아침에 먼저 할 활동 두 가지 중 편한 것을 고르게 한다.",{mood:3,trust:4,focus:2,classFlow:0},"등교 직후부터 작은 선택권을 갖고 교실에 들어오게 했다.")
+        }};
+      }
+    },
+    {
+      id:"teacher_answer_challenge",category:"수업",title:"학생이 교사의 설명이 틀린 것 같다고 말한다",
+      score:function(s){return current().kind==="lesson"&&(hasTrait(s,"quick_learner")||s.academic>.76)&&s.assert>.48?Math.max(0,s.academic*.22+s.assert*.24+.06):0},
+      build:function(s){
+        return {text:"설명 중 "+s.name+"이(가) 손을 들고 교사의 풀이가 이상하다고 말한다. 몇몇 학생이 교과서와 칠판을 번갈아 본다.",dialogue:s.name+' “선생님, 여기 계산이 다른 것 같은데요?”',choices:{
+          up:encounterChoice("말할 때의 예의를 지키되 근거가 있다면 확인할 수 있다고 기준을 세운다.",{focus:3,trust:1,classStability:3,classFlow:-1},"질문하는 태도와 교실의 기준을 함께 지켰다."),
+          down:encounterChoice("잘 봤다고 인정하고 어떤 점에서 이상하다고 느꼈는지 충분히 말하게 한다.",{mood:3,trust:6,learning:2,classFlow:-3},"학생의 문제 제기를 수업 안에서 안전하게 다뤘다."),
+          left:encounterChoice("교과서와 풀이를 함께 대조하며 누구의 답이 맞는지 근거로 확인한다.",{learning:5,focus:4,trust:4,classFlow:-4},"교사도 확인할 수 있다는 모습을 학습 과정으로 만들었다."),
+          right:encounterChoice("학생에게 자신의 풀이를 칠판에 설명하고 친구들이 검토하게 한다.",{learning:4,focus:3,trust:4,classFlow:-3},"정답을 권위로 정하기보다 근거를 공개적으로 확인했다.")
+        }};
+      }
+    },
+    {
+      id:"class_job_ignored",category:"책임",title:"맡은 학급 일을 계속 미룬다",
+      score:function(s){return ["morning","closing"].indexOf(current().kind)>=0?Math.max(0,(.62-s.persist)*.30+(1-s.rule)*.18+s.boredom*.18-.08):0},
+      build:function(s){
+        return {text:s.name+"이(가) 오늘 맡은 학급 일을 몇 번이나 미루고 있다. 다른 친구가 대신 하려 하자 자연스럽게 물러서려 한다.",dialogue:s.name+' “쟤가 한다니까 그냥 해도 되잖아요.”',choices:{
+          up:encounterChoice("맡은 일은 본인이 마무리해야 한다고 하고 지금 끝내게 한다.",{focus:3,trust:-1,classStability:5,classFlow:2},"책임의 주인은 분명해졌다."),
+          down:encounterChoice("왜 계속 미루는지 묻고 역할이 어렵거나 싫은 이유를 듣는다.",{mood:2,trust:5,classFlow:-2},"하기 싫다는 말 뒤의 이유를 확인했다."),
+          left:encounterChoice("역할을 작은 순서로 나눠 첫 단계부터 같이 시작한다.",{focus:4,trust:3,classStability:3,classFlow:-2},"시작이 어려운 역할을 구체적인 행동으로 바꿨다."),
+          right:encounterChoice("오늘 맡은 일을 끝낸 뒤 다음 역할은 바꿀 수 있게 선택권을 준다.",{focus:2,trust:3,classStability:2,classFlow:0},"오늘 책임은 지키되 다음에는 선택할 여지를 줬다.")
+        }};
+      }
+    },
+    {
+      id:"rough_play_boundary",category:"안전",title:"장난이 점점 거칠어지고 있다",
+      score:function(s){return ["break","lunchplay"].indexOf(current().kind)>=0&&s.energy>.66?Math.max(0,s.energy*.24+s.imp*.28+s.mischief*.28-.14):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"과(와) "+target.name+"이(가) 웃으며 밀고 잡는 장난을 한다. 둘 다 처음에는 즐거워 보였지만 힘이 점점 세지고 주변 친구들과도 부딪힐 뻔했다.",dialogue:s.name+' “장난인데요? 얘도 웃었어요.”',choices:{
+          up:encounterChoice("다칠 수 있는 몸 장난은 여기서 끝이라고 즉시 멈추게 한다.",{classStability:7,trust:-1,classFlow:2},"안전선은 즉시 분명해졌다."),
+          down:encounterChoice("두 학생 모두 정말 괜찮았는지 따로 확인하고 불편했던 순간이 있었는지 듣는다.",{mood:3,relation:4,trust:5,classFlow:-3},"웃고 있었다고 해서 모두 편했던 것은 아닌지 확인했다."),
+          left:encounterChoice("몸으로 놀 때 멈춤 신호와 힘 조절 규칙을 정해 연습하게 한다.",{relation:4,classStability:4,trust:3,classFlow:-3},"장난과 위험 사이의 경계를 구체적인 행동으로 가르쳤다."),
+          right:encounterChoice("계속 놀고 싶다면 안전하게 바꿀 방법을 둘이 정하게 한다.",{relation:3,trust:3,classStability:3,classFlow:0},"놀이를 완전히 빼앗지 않고 안전 책임을 함께 맡겼다.")
+        }};
+      }
+    },
+    {
+      id:"test_blank_freeze",category:"평가",title:"아는 문제인데 시험지만 보고 멈춰 있다",
+      score:function(s){return current().kind==="lesson"&&(hasTrait(s,"perfectionist")||hasTrait(s,"sensitive_rejection"))?Math.max(0,s.rejection*.30+s.persist*.12+s.frustration*.30+.08):0},
+      build:function(s){
+        return {text:"평소에는 풀던 유형인데 "+s.name+"이(가) 평가지를 받은 뒤 첫 문제에서 오래 멈춰 있다. 지우개를 여러 번 만지며 답을 쓰지 못한다.",dialogue:s.name+' “틀리면 어떡해요… 갑자기 하나도 모르겠어요.”',choices:{
+          up:encounterChoice("평가는 지금 아는 만큼 보여 주는 시간이라고 하고 일단 첫 문제부터 시작하게 한다.",{focus:3,mood:-1,trust:1,classStability:2},"시작은 했지만 긴장은 여전히 남아 있다."),
+          down:encounterChoice("불안해진 마음을 짧게 인정하고 숨을 고를 시간을 준다.",{mood:6,trust:6,classFlow:-2},"긴장이 조금 내려가면서 문제를 다시 볼 수 있었다."),
+          left:encounterChoice("쉬운 문제부터 표시해 풀고 어려운 문제는 뒤로 넘기는 전략을 알려준다.",{focus:5,learning:1,trust:4,classFlow:-2},"시험 중 막혔을 때 사용할 구체적인 방법을 익혔다."),
+          right:encounterChoice("어느 문제부터 시작할지 스스로 고르게 하고 그 선택을 존중한다.",{focus:3,mood:3,trust:4,classFlow:0},"자기가 통제할 수 있는 부분부터 다시 시작했다.")
+        }};
+      }
+    },
+    {
+      id:"expensive_item_showoff",category:"생활",title:"비싼 물건을 가져와 친구들에게 보여 준다",
+      score:function(s){return ["morning","break"].indexOf(current().kind)>=0&&s.soc>.56?Math.max(0,s.soc*.20+s.assert*.18+s.compete*.14+.05):0},
+      build:function(s){
+        return {text:s.name+"이(가) 집에서 가져온 비싼 물건을 친구들 사이에 꺼내 보여 준다. 만져보려는 아이들이 몰리고, 없는 친구를 놀리는 말도 살짝 나온다.",dialogue:s.name+' “이거 엄청 비싼 거예요. 너희는 이런 거 없지?”',choices:{
+          up:encounterChoice("학습에 필요하지 않은 귀중품은 꺼내지 않는다는 기준을 바로 적용한다.",{classStability:6,classFlow:3,trust:-1},"분실과 비교가 커지기 전에 물건을 정리했다."),
+          down:encounterChoice("자랑하고 싶었던 마음은 듣되 친구를 비교하는 말은 상처가 될 수 있음을 짚는다.",{mood:2,relation:4,trust:4,classFlow:-3},"물건보다 친구 관계에 남는 말을 함께 보게 했다."),
+          left:encounterChoice("보여 주고 싶은 물건이 있을 때 학교에서 허락받는 방법과 시간을 알려준다.",{focus:2,classStability:4,trust:3,classFlow:-2},"다음에 사용할 수 있는 규칙과 절차를 구체적으로 배웠다."),
+          right:encounterChoice("오늘은 보관하고, 나중에 필요한 경우 소개할 방법을 스스로 정해 보게 한다.",{trust:3,relation:2,classStability:3,classFlow:0},"즉시 자랑하는 대신 책임 있게 다룰 방법을 선택하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"student_says_teacher_unfair",category:"교사관계",title:"‘선생님은 저한테만 그래요’라고 말한다",
+      score:function(s){return ["lesson","closing"].indexOf(current().kind)>=0&&(s.rejection>.48||hasTrait(s,"fairness_sensitive"))?Math.max(0,s.rejection*.28+s.fairness*.32+s.react*.16-.12):0},
+      build:function(s){
+        return {text:"생활지도를 받은 "+s.name+"이(가) 잠시 뒤 교사에게 다시 와서 자신만 자주 지적받는 것 같다고 말한다. 표정에는 억울함이 남아 있다.",dialogue:s.name+' “선생님은 왜 저한테만 뭐라고 해요?”',choices:{
+          up:encounterChoice("누구에게나 같은 기준을 적용하고 있으며 지금 행동도 그 기준에 해당한다고 설명한다.",{trust:-1,classStability:5,classFlow:2},"교사의 기준은 분명히 전달됐다."),
+          down:encounterChoice("그렇게 느낀 장면이 언제였는지 구체적으로 말해 보게 하고 먼저 듣는다.",{mood:3,trust:6,classFlow:-3},"막연한 억울함이 구체적인 경험으로 바뀌었다."),
+          left:encounterChoice("최근 있었던 지도 상황을 함께 되짚고 행동과 사람을 구분해 설명한다.",{focus:2,trust:5,classStability:3,classFlow:-3},"‘나를 싫어해서’라는 해석과 실제 행동 지도를 구분해 볼 수 있었다."),
+          right:encounterChoice("앞으로 지적이 필요할 때 어떤 방식이면 더 잘 받아들일 수 있을지 제안하게 한다.",{trust:5,mood:2,classStability:2,classFlow:-1},"학생도 교사와의 소통 방식을 만드는 데 참여했다.")
+        }};
+      }
+    },
+    {
+      id:"crying_after_feedback",category:"정서",title:"짧은 피드백 뒤 갑자기 눈물이 난다",
+      score:function(s){return current().kind==="lesson"&&(s.rejection>.60||hasTrait(s,"easily_discouraged"))?Math.max(0,s.rejection*.34+s.react*.28+(1-s.mood)*.22):0},
+      build:function(s){
+        return {text:"교사가 활동지를 고쳐 보자고 말한 직후 "+s.name+"의 눈에 눈물이 맺혔다. 큰 목소리로 혼낸 것도 아닌데 학생은 말을 못 하고 고개를 숙인다.",dialogue:s.name+' “저 진짜 열심히 했는데…”',choices:{
+          up:encounterChoice("수정이 필요한 부분은 그대로 두되 울었다고 과제를 없애지는 않는다고 한다.",{focus:2,mood:-2,trust:-1,classStability:3},"해야 할 일의 기준은 유지됐다."),
+          down:encounterChoice("열심히 한 마음이 무시된 것처럼 느껴졌는지 먼저 듣는다.",{mood:7,trust:7,classFlow:-3},"눈물 뒤에 있던 서운함을 말할 수 있게 됐다."),
+          left:encounterChoice("잘한 부분을 하나 짚고 고칠 부분은 한 가지씩만 다시 보게 한다.",{learning:3,focus:3,mood:4,trust:4,classFlow:-3},"피드백을 실패 전체가 아니라 다음 한 단계로 바꿨다."),
+          right:encounterChoice("지금 고치기와 잠시 쉬었다가 고치기 중 스스로 고르게 한다.",{mood:4,trust:4,focus:2,classFlow:0},"해야 할 일은 남기면서 회복할 속도는 학생이 정했다.")
+        }};
+      }
+    },
+    {
+      id:"copies_homework",category:"학습",title:"친구 과제를 그대로 옮겨 적고 있다",
+      score:function(s){return ["morning","lesson"].indexOf(current().kind)>=0&&(hasTrait(s,"foundational_gaps")||s.persist<.46)?Math.max(0,(1-s.academic)*.22+(1-s.persist)*.28+s.rejection*.12):0},
+      build:function(s){
+        var target=chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) "+target.name+"의 과제를 옆에 두고 답을 거의 그대로 적고 있다. 들키자 두 학생 모두 손을 멈췄다.",dialogue:s.name+' “모르는 것만 좀 본 거예요.”',choices:{
+          up:encounterChoice("베껴 쓴 부분은 자기 과제로 인정할 수 없다고 하고 다시 하게 한다.",{learning:1,mood:-2,trust:-2,classStability:5,classFlow:-2},"과제의 기준과 책임은 분명해졌다."),
+          down:encounterChoice("왜 베껴야 할 만큼 막혔는지 먼저 묻고 어려웠던 부분을 확인한다.",{mood:3,trust:5,learning:1,classFlow:-3},"부정행동 뒤에 있던 학습 어려움을 확인했다."),
+          left:encounterChoice("모르는 문제는 표시하고 도움을 요청한 뒤 다시 풀도록 방법을 알려준다.",{learning:4,focus:3,trust:3,classFlow:-3},"모를 때 베끼는 대신 사용할 방법을 연습했다."),
+          right:encounterChoice("지금 다시 풀 문제를 스스로 고르고 나머지는 도움받아 마무리하게 한다.",{learning:2,focus:2,trust:3,classFlow:0},"책임을 전부 빼앗지 않고 다시 해볼 부분을 직접 정하게 했다.")
+        }};
+      }
+    },
+    {
+      id:"friend_secret_burden",category:"친구",title:"친구의 비밀 때문에 마음이 무겁다고 한다",
+      score:function(s){return ["break","lunchplay","closing"].indexOf(current().kind)>=0&&hasTrait(s,"empathetic")?Math.max(0,s.empathy*.25+s.rejection*.18+.06):0},
+      build:function(s){
+        return {text:s.name+"이(가) 친구에게서 들은 이야기가 계속 마음에 걸린다며 교사에게 조용히 다가왔다. 약속 때문에 자세히 말해도 되는지 망설인다.",dialogue:s.name+' “비밀로 하라고 했는데… 제가 계속 신경 쓰여요.”',choices:{
+          up:encounterChoice("친구의 안전이나 도움이 필요한 일이라면 어른에게 말해도 된다는 기준을 알려준다.",{trust:5,classStability:4,classFlow:-2},"비밀보다 도움을 요청해야 하는 경우가 있음을 분명히 했다."),
+          down:encounterChoice("혼자 품고 있어서 힘들었는지 먼저 듣고 말할 수 있는 만큼만 말하게 한다.",{mood:5,trust:7,classFlow:-3},"학생이 혼자 책임지고 있던 부담을 조금 내려놓았다."),
+          left:encounterChoice("비밀·사생활·도움이 필요한 위험한 이야기의 차이를 예로 들어 알려준다.",{focus:2,trust:5,classStability:3,classFlow:-3},"어떤 이야기는 어른에게 알려야 하는지 판단 기준을 배웠다."),
+          right:encounterChoice("누구에게 어떤 방식으로 도움을 요청할지 학생과 함께 선택한다.",{mood:3,trust:6,classFlow:-2},"말할 상대와 방식을 선택하며 도움 요청에 참여했다.")
+        }};
+      }
+    },
+    {
+      id:"cleanup_perfectionism",category:"생활",title:"정리를 너무 완벽하게 하느라 종례를 못 따라온다",
+      score:function(s){return current().kind==="closing"&&hasTrait(s,"perfectionist")?Math.max(0,s.persist*.28+s.rule*.22+.08):0},
+      build:function(s){
+        return {text:"종례 준비가 끝났는데 "+s.name+"은(는) 책상과 사물함을 계속 다시 맞추고 있다. 친구들은 거의 준비를 마쳤지만 본인은 작은 어긋남도 그냥 두지 못한다.",dialogue:s.name+' “잠깐만요. 이거 똑바로 해놓고 가야 돼요.”',choices:{
+          up:encounterChoice("정리 시간은 끝났다고 알리고 지금 상태에서 멈추게 한다.",{focus:1,mood:-2,classStability:5,classFlow:4},"하교 흐름은 지켰지만 학생은 마무리가 덜 된 느낌을 받았다."),
+          down:encounterChoice("어긋난 채 두면 어떤 기분이 드는지 듣고 불편함을 인정해 준다.",{mood:4,trust:5,classFlow:-2},"완벽하게 해야 마음이 놓이는 이유를 조금 더 알게 됐다."),
+          left:encounterChoice("정리의 완료 기준을 세 가지로 정하고 그 기준만 확인하게 한다.",{focus:5,mood:2,trust:3,classStability:3,classFlow:-2},"끝없이 확인하지 않도록 ‘충분히 됐다’는 기준을 만들었다."),
+          right:encounterChoice("오늘 남겨둘 한 가지와 꼭 마칠 한 가지를 직접 고르게 한다.",{mood:3,focus:3,trust:4,classFlow:0},"완벽 대신 우선순위를 선택하며 마무리하게 했다.")
+        }};
+      }
+    }
+  ]);
 
   function periodEncounterCap(p){
     if(!p)return 0;
