@@ -4214,6 +4214,10 @@
     render();
   }
 
+  function escHtml(value){
+    return String(value===undefined||value===null?"":value)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
   function renderFeed(){ return; }
   function renderPanel(){ return; }
   function renderHeader(){
