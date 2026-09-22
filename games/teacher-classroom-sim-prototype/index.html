@@ -4,52 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=22">
+<link rel="stylesheet" href="./style.css?v=23">
 </head>
 <body>
 <main id="app">
-  <div class="toolbar">
-    <button id="pause" class="primary" type="button">일시정지</button>
-    <label>속도
-      <select id="speed" aria-label="게임 속도">
-        <option value="1">×1</option>
-        <option value="2">×2</option>
-        <option value="4">×4</option>
-      </select>
-    </label>
-    <button id="helpTutorial" type="button" aria-label="튜토리얼 다시 보기">? 도움말</button>
-    <button id="reset" type="button">처음부터 다시</button>
+  <div class="toolbar card-toolbar">
+    <button type="button" data-class-tool="roster">📑 학급 명부</button>
+    <button type="button" data-class-tool="record">📒 우리 반 기록</button>
+    <button type="button" data-class-tool="computer">🖥️ 오늘 한눈에</button>
+    <span class="toolbar-spacer"></span>
+    <button id="helpTutorial" type="button" aria-label="도움말 다시 보기">? 도움말</button>
+    <button id="reset" type="button">처음부터</button>
+    <button id="pause" type="button" hidden>일시정지</button>
+    <select id="speed" aria-label="게임 속도" hidden><option value="1">×1</option></select>
   </div>
 
-  <section class="daybar">
-    <div>
+  <section class="daybar reigns-daybar">
+    <div class="day-identity">
       <div class="day-time-row"><span id="dayNumber" class="day-number">Day 1</span><div id="time" class="time">08:40</div></div>
-      <div class="sub">기본 속도 · 실제 1초 = 게임 10초</div>
-    </div>
-    <div class="middle">
       <div id="periodName" class="period">등교·아침활동</div>
-      <div id="periodDesc" class="sub">학생들이 교실에 모이고 있습니다.</div>
-      <div class="progress"><i id="progress"></i></div>
     </div>
-    <div>
-      <div id="locationName" class="period">교실</div>
-      <div class="sub">교사가 보고 있는 공간</div>
+    <div class="class-meter-strip" aria-label="우리 반 상태">
+      <div><span>📚</span><strong id="hudFlow">72</strong><small>수업</small></div>
+      <div><span>🤝</span><strong id="hudRelation">68</strong><small>관계</small></div>
+      <div><span>🧭</span><strong id="hudStability">72</strong><small>생활</small></div>
+      <div><span>❤️</span><strong id="hudTrust">64</strong><small>신뢰</small></div>
+    </div>
+    <div class="day-progress-copy">
+      <div id="periodDesc" class="sub">아이들이 하나둘 들어오고 있다.</div>
+      <div class="progress"><i id="progress"></i></div>
+      <div id="locationName" class="sub" hidden>교실</div>
     </div>
   </section>
 
 
-  <nav class="scene-nav" aria-label="학교 공간 이동">
-    <button type="button" data-scene="classroom">교실 <span class="count">0</span></button>
-    <button type="button" data-scene="hallway">복도 <span class="count">0</span></button>
-    <button type="button" data-scene="gym">체육관 <span class="count">0</span></button>
-    <button type="button" data-scene="playground">운동장 <span class="count">0</span></button>
-    <button type="button" data-scene="cafeteria">급식실 <span class="count">0</span></button>
-  </nav>
+
 
   <div class="layout">
     <section>
       <div id="world" class="world scene-classroom" aria-label="학교 생활 시뮬레이션">
-        <div id="sceneTitle" class="scene-title">교실</div>
+        <div id="sceneTitle" class="scene-title">우리 반의 하루</div>
+        <div id="cardIdle" class="card-idle">
+          <div class="idle-icon">🏫</div>
+          <strong>다음 이야기가 이어지고 있어요</strong>
+          <p>아이들의 하루는 계속 흘러갑니다.</p>
+        </div>
         <div id="props"></div>
 
         <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -73,16 +72,16 @@
         <section id="encounterOverlay" class="encounter-overlay" hidden aria-live="assertive">
           <div class="encounter-shell">
             <div class="encounter-topline">
-              <span id="encounterCategory">교사 판단</span>
+              <span id="encounterCategory">교실에서 생긴 일</span>
               <strong id="encounterTimerText">12초</strong>
             </div>
             <div class="encounter-timer"><i id="encounterTimerFill"></i></div>
 
             <button type="button" class="encounter-choice choice-up" data-encounter-dir="up">
-              <span class="direction">↑ 원칙 · 권위</span><strong id="encounterChoiceUp"></strong><small id="encounterEffectUp"></small>
+              <span class="direction">↑ 원칙</span><strong id="encounterChoiceUp"></strong><small id="encounterEffectUp"></small>
             </button>
             <button type="button" class="encounter-choice choice-left" data-encounter-dir="left">
-              <span class="direction">← 교육 · 코칭</span><strong id="encounterChoiceLeft"></strong><small id="encounterEffectLeft"></small>
+              <span class="direction">← 코칭</span><strong id="encounterChoiceLeft"></strong><small id="encounterEffectLeft"></small>
             </button>
 
             <article id="encounterCard" class="encounter-card" tabindex="0">
@@ -92,35 +91,35 @@
               <p id="encounterText"></p>
               <blockquote id="encounterDialogue" hidden></blockquote>
               <div class="encounter-student" id="encounterStudent"></div>
-              <div class="encounter-drag-hint">카드를 네 방향으로 밀거나 주변 선택지를 누르세요.</div>
+              <div class="encounter-drag-hint">카드를 끌어 보세요. 선택지가 보이면 놓아서 결정합니다.</div>
             </article>
 
             <button type="button" class="encounter-choice choice-right" data-encounter-dir="right">
-              <span class="direction">자율 · 책임 →</span><strong id="encounterChoiceRight"></strong><small id="encounterEffectRight"></small>
+              <span class="direction">자율 →</span><strong id="encounterChoiceRight"></strong><small id="encounterEffectRight"></small>
             </button>
             <button type="button" class="encounter-choice choice-down" data-encounter-dir="down">
-              <span class="direction">↓ 공감 · 관계</span><strong id="encounterChoiceDown"></strong><small id="encounterEffectDown"></small>
+              <span class="direction">↓ 공감</span><strong id="encounterChoiceDown"></strong><small id="encounterEffectDown"></small>
             </button>
 
             <section id="encounterResult" class="encounter-result" hidden>
-              <h3 id="encounterResultTitle">판단의 결과</h3>
+              <h3 id="encounterResultTitle">그 뒤</h3>
               <p id="encounterResultText"></p>
               <div id="encounterReaction" class="encounter-reaction" hidden></div>
               <div id="encounterResultStats" class="encounter-result-stats"></div>
-              <button id="encounterReturn" type="button" class="primary">교실로 돌아가기</button>
+              <button id="encounterReturn" type="button" class="primary">다음 이야기</button>
             </section>
           </div>
         </section>
 
         <section id="dayEndOverlay" class="day-end-overlay" hidden aria-live="assertive">
           <article class="day-end-card">
-            <div class="day-end-kicker">하루 마무리</div>
+            <div class="day-end-kicker">오늘 하루</div>
             <h2 id="dayEndTitle">Day 1이 끝났습니다</h2>
             <p id="dayEndText"></p>
             <div id="dayEndMetrics" class="day-end-metrics"></div>
             <div class="day-end-cols">
-              <section><h3>오늘의 판단 경향</h3><div id="dayEndStyles" class="day-end-styles"></div></section>
-              <section><h3>내일 이어질 일</h3><div id="dayEndFollowups" class="day-end-followups"></div></section>
+              <section><h3>내가 자주 택한 방식</h3><div id="dayEndStyles" class="day-end-styles"></div></section>
+              <section><h3>조금 더 지켜볼 아이들</h3><div id="dayEndFollowups" class="day-end-followups"></div></section>
             </div>
             <button id="nextDayButton" type="button" class="primary">다음 날 시작</button>
           </article>
@@ -178,6 +177,6 @@
 
   </div>
 </main>
-<script src="./game.js?v=22"></script>
+<script src="./game.js?v=23"></script>
 </body>
 </html>
