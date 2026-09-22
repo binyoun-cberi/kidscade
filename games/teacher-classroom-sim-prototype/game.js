@@ -727,7 +727,7 @@
       studentId:enc.studentId,targetId:enc.targetId,
       sourceDir:dir,sourceDirection:dir==="timeout"?"시간 초과":(ENCOUNTER_DIRECTIONS[dir]&&ENCOUNTER_DIRECTIONS[dir].label)||dir,
       sourceChoice:choice&&choice.text||"",
-      sourceTitle:enc.title,
+      sourceTitle:enc.title,sourceSubject:enc.effectSubject||current().subject||null,
       createdDay:dayIndex,dueDay:dayIndex+delay,
       chainDepth:depth+1,status:"queued",applied:false
     });
@@ -823,6 +823,7 @@
   function buildFollowUpEncounter(job){
     var s=studentById(job.studentId),t=studentById(job.targetId);
     if(!s)return null;
+    if(t&&t.scene!==s.scene)t=null;
     applyDelayedFollowUp(job,s,t);
     var n=followUpNarrative(job,s,t);
     return {
@@ -831,7 +832,7 @@
       title:n.title,text:n.text,dialogue:n.dialogue||"",studentId:s.id,targetId:t?t.id:null,
       createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s),
       isFollowUp:true,followUpId:job.id,chainDepth:job.chainDepth||1,
-      previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,
+      previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,effectSubject:job.sourceSubject||null,
       kicker:"Day "+dayIndex+" · 후속 상황"
     };
   }
@@ -1055,20 +1056,20 @@
     q("#encounterTimerFill").style.transform="scaleX("+ratio+")";
     if(remain<=0)resolveEncounter("timeout");
   }
-  function applyEncounterLearning(s,points){
+  function applyEncounterLearning(s,points,subjectOverride){
     if(!points)return;
-    var p=current(),model=subjectModel(p.subject);
-    if(model&&s.knowledge&&s.knowledge[p.subject]){
-      var node=s.knowledge[p.subject][model.focus];
+    var subject=subjectOverride||current().subject,model=subjectModel(subject);
+    if(model&&s.knowledge&&s.knowledge[subject]){
+      var node=s.knowledge[subject][model.focus];
       node.mastery=clamp(node.mastery+points/100);
-      var weak=weakestConcept(s,p.subject);
-      if(weak&&weak!==model.focus)s.knowledge[p.subject][weak].mastery=clamp(s.knowledge[p.subject][weak].mastery+points/350);
+      var weak=weakestConcept(s,subject);
+      if(weak&&weak!==model.focus)s.knowledge[subject][weak].mastery=clamp(s.knowledge[subject][weak].mastery+points/350);
     }else s.academic=clamp((s.academic||.5)+points/120);
   }
   function applyEncounterEffects(enc,choice){
     var s=studentById(enc.studentId),t=studentById(enc.targetId),e=choice.effects||{};
     if(!s)return;
-    applyEncounterLearning(s,e.learning||0);
+    applyEncounterLearning(s,e.learning||0,enc&&enc.effectSubject);
     s.focus=clamp(s.focus+(e.focus||0)/100);
     s.mood=clamp(s.mood+(e.mood||0)/100);
     s.belonging=clamp(s.belonging+(e.relation||0)/100);
@@ -3528,7 +3529,7 @@
         '<div><strong>'+cm.relationship+'</strong><small>🤝 학급 관계</small></div>'+
         '<div><strong>'+cm.stability+'</strong><small>🧭 생활 안정</small></div>'+
         '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div></div>'+
-        '<div class="tool-section"><h4>오늘의 판단 방향</h4><div class="decision-deltas"><span>↑ 원칙 '+teacherStyleCounts.up+'</span><span>↓ 공감 '+teacherStyleCounts.down+'</span><span>← 코칭 '+teacherStyleCounts.left+'</span><span>→ 자율 '+teacherStyleCounts.right+'</span></div></div>'+
+        '<div class="tool-section"><h4>누적 판단 방향</h4><div class="decision-deltas"><span>↑ 원칙 '+teacherStyleCounts.up+'</span><span>↓ 공감 '+teacherStyleCounts.down+'</span><span>← 코칭 '+teacherStyleCounts.left+'</span><span>→ 자율 '+teacherStyleCounts.right+'</span></div></div>'+
         '<div class="tool-section"><h4>학생 상태 · 0~100</h4><div class="roster-table">'+
         '<div class="roster-head"><span>학생</span><span>📚 학습'+(current().kind==="lesson"?"("+escHtml(current().subject)+")":"(종합)")+'</span><span>🎯 집중</span><span>🙂 정서</span><span>🤝 관계</span><span>❤️ 신뢰</span></div>'+
         students.map(rosterRowHtml).join("")+'</div></div>'+rosterDetailHtml(s);
@@ -3782,6 +3783,7 @@
       var pendingJob=followUpQueue.find(function(j){return j.id===pendingEncounter.followUpId});
       if(pendingJob){pendingJob.status="queued";pendingJob.dueDay=Math.max(dayIndex+1,pendingJob.dueDay)}
     }
+    followUpQueue.forEach(function(j){if(j.status==="queued"&&j.dueDay<=dayIndex)j.dueDay=dayIndex+1});
     dayEnded=true;running=false;teacherTask=null;pendingEncounter=null;
     var token=q("#encounterToken");if(token)token.hidden=true;
     var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts();
