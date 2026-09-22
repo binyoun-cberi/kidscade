@@ -209,7 +209,7 @@ async function state(request,env){
     const stats=[0,0,0,0]; answers.forEach(a=>{if(a.option_index>=0&&a.option_index<4)stats[a.option_index]++});
     payload.reveal={answerIndex:display.answerIndex,explanation:q.e,optionStats:stats,answeredCount:answers.length,correctCount:answers.filter(a=>Number(a.is_correct)===1).length};
   }
-  if(fresh.status==='finished')payload.results=roster.slice(0,10);
+  if(fresh.status==='finished')payload.results=roster;
   return json(payload);
 }
 async function hostAction(request,env,action){
