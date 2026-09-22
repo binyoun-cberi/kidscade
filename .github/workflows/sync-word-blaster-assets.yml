@@ -34,7 +34,7 @@ jobs:
       - name: Commit synced assets
         shell: bash
         run: |
-          if git diff --quiet -- assets/game/3d/word-blaster; then
+          if [ -z "$(git status --porcelain -- assets/game/3d/word-blaster)" ]; then
             echo "Word Blaster assets already match upstream."
             exit 0
           fi
