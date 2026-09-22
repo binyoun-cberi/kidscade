@@ -4104,6 +4104,116 @@
       btn.textContent="첫날 시작";
     }
   }
+  function updateAutoLessonPhase(){
+    if(current().kind!=="lesson")return;
+    var span=Math.max(1,current().end-current().start);
+    var ratio=clamp((gameMinute()-current().start)/span);
+    var phase=ratio<.16?"explain":ratio<.28?"question":ratio<.66?"individual":ratio<.80?"pair":ratio<.92?"presentation":"closure";
+    if(lessonState.phase===phase)return;
+    lessonState.phase=phase;lessonState.phaseStart=gameSec;lessonState.presenterId=null;
+    students.forEach(function(s){s.lessonPartner=null;s.intent=null;s.intentTicks=0});
+    if(phase==="pair")assignLessonPairs();
+    if(phase==="presentation"){
+      var candidates=students.filter(function(s){return s.scene===current().loc});
+      candidates.sort(function(a,b){return (b.focus+currentMastery(b)+b.assert)-(a.focus+currentMastery(a)+a.assert)});
+      var presenter=candidates[0]||null;
+      if(presenter){lessonState.presenterId=presenter.id;requestStudentAction(presenter,"PRESENT",{duration:35,force:true})}
+    }
+    var phaseInfo=LESSON_PHASES[phase]||{label:phase};
+    lessonState.history.push({id:"auto_"+phase,phase:phase,label:phaseInfo.label,time:gameMinute()});
+  }
+  function todayEncounters(){
+    return encounterHistory.filter(function(h){return (h.day||1)===dayIndex});
+  }
+  function todayStyleCounts(){
+    var out={up:0,down:0,left:0,right:0,timeout:0};
+    todayEncounters().forEach(function(h){if(out[h.dir]!==undefined)out[h.dir]++;else out.timeout++});
+    return out;
+  }
+  function queuedFollowUps(){
+    return followUpQueue.filter(function(j){return j.status==="queued"});
+  }
+  function renderDayEnd(){
+    var overlay=q("#dayEndOverlay");if(!overlay)return;
+    overlay.hidden=false;
+    var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts(),queued=queuedFollowUps();
+    q("#dayEndTitle").textContent="Day "+dayIndex+"이 끝났습니다";
+    q("#dayEndText").textContent="오늘은 "+today.length+"번 아이들 일에 멈춰 섰습니다. 오늘 했던 말과 선택은 내일도 아이들 모습에 남을 수 있습니다.";
+    q("#dayEndMetrics").innerHTML=
+      '<div class="day-end-metric"><strong>'+cm.flow+'</strong><small>📚 수업</small></div>'+
+      '<div class="day-end-metric"><strong>'+cm.relationship+'</strong><small>🤝 관계</small></div>'+
+      '<div class="day-end-metric"><strong>'+cm.stability+'</strong><small>🧭 생활</small></div>'+
+      '<div class="day-end-metric"><strong>'+cm.trust+'</strong><small>❤️ 신뢰</small></div>';
+    q("#dayEndStyles").innerHTML=
+      '<div class="day-end-style"><span>↑ 원칙</span><strong>'+styles.up+'회</strong></div>'+
+      '<div class="day-end-style"><span>↓ 공감</span><strong>'+styles.down+'회</strong></div>'+
+      '<div class="day-end-style"><span>← 코칭</span><strong>'+styles.left+'회</strong></div>'+
+      '<div class="day-end-style"><span>→ 자율</span><strong>'+styles.right+'회</strong></div>'+
+      (styles.timeout?'<div class="day-end-style"><span>⌛ 망설임</span><strong>'+styles.timeout+'회</strong></div>':'');
+    var upcoming=queued.slice().sort(function(a,b){return a.dueDay-b.dueDay}).slice(0,5);
+    q("#dayEndFollowups").innerHTML=upcoming.length?upcoming.map(function(j){
+      var s=studentById(j.studentId);
+      return '<div class="day-end-followup"><span>Day '+j.dueDay+' · '+escHtml(s?s.name:"학생")+'</span><small>'+escHtml(j.sourceTitle)+'</small></div>';
+    }).join(""):'<div class="day-end-followup"><span>지금은 특별히 더 지켜볼 일이 없습니다.</span><small>내일은 또 다른 일이 생길 수 있습니다.</small></div>';
+  }
+  function endDay(){
+    if(dayEnded)return;
+    if(pendingEncounter&&pendingEncounter.followUpId){
+      var pendingJob=followUpQueue.find(function(j){return j.id===pendingEncounter.followUpId});
+      if(pendingJob){pendingJob.status="queued";pendingJob.dueDay=Math.max(dayIndex+1,pendingJob.dueDay)}
+    }
+    followUpQueue.forEach(function(j){if(j.status==="queued"&&j.dueDay<=dayIndex)j.dueDay=dayIndex+1});
+    dayEnded=true;running=false;teacherTask=null;pendingEncounter=null;
+    var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts();
+    daySummaries.push({day:dayIndex,metrics:cm,encounters:today.length,styles:styles,queued:queuedFollowUps().length});
+    dayEvents.push({
+      day:dayIndex,stamp:fmtMin(schedule[schedule.length-1].end),text:"Day "+dayIndex+" 하루 마무리",
+      type:"day_summary",scene:"classroom",script:false,recordable:true,daySummary:true,
+      metrics:cm,styles:styles,encounterCount:today.length,followUpCount:queuedFollowUps().length
+    });
+    dayEvents=dayEvents.slice(-320);
+    renderDayEnd();
+  }
+  function prepareNextDayStudents(){
+    students.forEach(function(s,i){
+      var p=seats[s.seat]||seats[i]||{x:50,y:50};
+      s.scene="classroom";s.targetScene=null;s.arrivalAt=0;s.x=p.x;s.y=p.y;s.dx=p.x;s.dy=p.y;
+      s.focus=clamp(s.focus*.38+.72*.62);s.boredom=.14;
+      s.talkNeed=.14;s.moveNeed=s.move*.14;s.helpNeed=.08;s.sleepNeed=(1-s.energy)*.24;
+      s.socialNeed=.16+s.soc*.12;s.mood=clamp(s.mood*.78+.70*.22);
+      s.belonging=clamp(s.belonging*.96+.62*.04);s.frustration=clamp(s.frustration*.24);
+      s.correctionLoad=0;s.victimStress=clamp(s.victimStress*.52);s.teacherDefiance=clamp(s.teacherDefiance*.70);
+      s.action="READ";s.intent=null;s.intentTicks=0;s.actionTicks=rand(2,5);
+      s.moving=false;s.observation=0;s.observedSubjects={};s.teacherUse={};s.socialTarget=null;s.socialGoal=null;s.groupId=null;
+      s.conflictWith=null;s.conflictUntil=0;s.avoidId=null;s.avoidUntil=0;s.pairWith=null;s.pairUntil=0;s.lessonPartner=null;
+      s.role=null;s.roleUntil=0;s.severeCooldown=0;s.lastSeriousIncident=null;
+      s.actionStartedAt=gameSec;s.actionLockedUntil=gameSec+25;s.behaviorPhase="idle";s.phaseUntil=0;s.facing=1;
+      s.speechText="";s.speechTone="normal";s.speechUntil=0;
+    });
+    Object.keys(relations).forEach(function(k){
+      var rel=relations[k];rel.irritation=clamp(rel.irritation*.82);rel.rivalry=clamp(rel.rivalry*.98);
+    });
+    classMetrics.flow=clamp(classMetrics.flow*.82+72*.18,0,100);
+    classMetrics.relationship=clamp(classMetrics.relationship*.90+68*.10,0,100);
+    classMetrics.stability=clamp(classMetrics.stability*.84+72*.16,0,100);
+    classMetrics.trust=clamp(classMetrics.trust*.94+64*.06,0,100);
+  }
+  function startNextDay(){
+    dayIndex+=1;dayEnded=false;gameSec=520*60;periodIndex=0;running=true;
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;periodEncounterCounts={};
+    selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
+    teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
+    feed=[];incidentRecords=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
+    reportOpen=false;toolModalKind=null;lastBellAt=-99999;aiAccumulator=0;circleAccumulator=0;renderAccumulator=0;
+    prepareNextDayStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
+    var report=q("#report");if(report)report.hidden=true;
+    var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
+    var dayEnd=q("#dayEndOverlay");if(dayEnd)dayEnd.hidden=true;
+    scheduleNextEncounter(2,4);
+    log("다음 날 아침, 아이들이 다시 교실로 들어왔다.","ambient","classroom");
+    render();
+  }
+
   function renderFeed(){ return; }
   function renderPanel(){ return; }
   function renderHeader(){
