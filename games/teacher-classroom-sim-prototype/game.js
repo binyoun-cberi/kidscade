@@ -386,25 +386,47 @@
   }
   function encounterExpression(enc,s){
     var id=(enc&&((enc.sourceTemplateId)||enc.templateId))||"",title=(enc&&enc.title)||"";
-    if(/teacher_defiance|game_loss|peer_conflict|fairness_complaint/.test(id)||/반발|화|말다툼/.test(title))return {emoji:"😠",name:"화남",bg:"#c95d59"};
-    if(/social_exclusion|presentation_anxiety|mistake_shutdown|friend_dependency|praise_embarrassment/.test(id)||/불안|울|속상|밀려/.test(title))return {emoji:"😟",name:"걱정",bg:"#667ca8"};
-    if(/teasing_boundary|stationery_taken|copies_answer|careless_fast_work|playful/.test(id)||/장난|가져|베껴/.test(title))return {emoji:"😏",name:"장난",bg:"#8d638f"};
-    if(/math_foundation_gap|help_refusal|group_silent|after_lunch_sleepy/.test(id)||/모르|힘들|졸/.test(title))return {emoji:"😣",name:"곤란",bg:"#7f8f76"};
-    if(enc&&enc.isFollowUp)return {emoji:"🙂",name:"달라진 모습",bg:"#588879"};
-    if(s&&s.mood<.42)return {emoji:"😟",name:"걱정",bg:"#667ca8"};
-    return {emoji:"🙂",name:"평소",bg:"#4a67a2"};
+    if(/social_exclusion|mistake_shutdown|friend_dependency/.test(id)||/울|눈물|혼자/.test(title))return {type:"tearful",name:"울먹임",bg:"#7788aa",brow:3,mouth:"sad",eyes:"small"};
+    if(/teacher_defiance|game_loss|peer_conflict|fairness_complaint/.test(id)||/반발|화|말다툼/.test(title))return {type:"angry",name:"화남",bg:"#b96b63",brow:2,mouth:"straight",eyes:"small"};
+    if(/presentation_anxiety|praise_embarrassment/.test(id)||/불안|긴장|발표/.test(title))return {type:"worried",name:"걱정",bg:"#7388ad",brow:3,mouth:"straight",eyes:"small"};
+    if(/teasing_boundary|stationery_taken|copies_answer|careless_fast_work/.test(id)||/장난|가져|베껴/.test(title))return {type:"playful",name:"장난",bg:"#8d7197",brow:1,mouth:"teethUpper",eyes:"large"};
+    if(/math_foundation_gap|help_refusal|group_silent|after_lunch_sleepy/.test(id)||/모르|힘들|졸|막혀/.test(title))return {type:"struggling",name:"힘듦",bg:"#7f907a",brow:3,mouth:"sad",eyes:"small"};
+    if(/finished_early/.test(id)||/성공|해냈|맞혔|밝/.test(title))return {type:"happy",name:"기쁨",bg:"#5f927b",brow:1,mouth:"happy",eyes:"large"};
+    if(/missing_homework|teacher_defiance/.test(id)||/들켰|당황|깜짝|놓고/.test(title))return {type:"startled",name:"당황",bg:"#b58a63",brow:3,mouth:"oh",eyes:"large"};
+    if(enc&&enc.isFollowUp)return {type:"happy",name:"달라진 모습",bg:"#65917f",brow:1,mouth:"glad",eyes:"large"};
+    if(s&&s.mood<.42)return {type:"worried",name:"걱정",bg:"#7388ad",brow:3,mouth:"straight",eyes:"small"};
+    return {type:"default",name:"평소",bg:"#607aa5",brow:1,mouth:"glad",eyes:"large"};
+  }
+  function expressionBrowPrefix(look){
+    var map={"black":"black","brown-1":"brown1","brown-2":"brown2","blonde":"blonde","grey":"grey","red":"red","tan":"tan","white":"white"};
+    return map[look.hairFolder]||"black";
+  }
+  function expressionPart(src,cls){
+    var img=document.createElement("img");img.className="portrait-face-part "+cls;img.alt="";img.src=MODULAR_ASSET+src;
+    img.onerror=function(){this.style.display="none"};return img;
+  }
+  function applyPortraitExpression(avatar,look,expression){
+    avatar.classList.add("expression-"+expression.type);
+    var original=avatar.querySelector(".mod-part.face");if(original)original.style.opacity="0";
+    var face=document.createElement("span");face.className="portrait-face expression-"+expression.type;
+    var brow=expressionBrowPrefix(look);
+    face.appendChild(expressionPart("face/eyebrows/"+brow+"Brow"+expression.brow+".png","expr-brow"));
+    face.appendChild(expressionPart("face/eyes/eyeBlack_"+expression.eyes+".png","expr-eyes"));
+    face.appendChild(expressionPart("face/mouth/mouth_"+expression.mouth+".png","expr-mouth"));
+    if(expression.type==="tearful"){var tear=document.createElement("i");tear.className="expr-tear";face.appendChild(tear)}
+    avatar.appendChild(face);
   }
   function renderEncounterPortrait(enc,s){
     var mount=q("#encounterPortrait");if(!mount)return;
     mount.innerHTML="";
     if(!s)return;
+    var expression=encounterExpression(enc,s);
     var avatar=createStandingAvatar(s.look);
     avatar.classList.add("portrait-avatar");
+    applyPortraitExpression(avatar,s.look,expression);
     mount.appendChild(avatar);
-    var expression=encounterExpression(enc,s);
     mount.style.background=expression.bg;
-    var badge=document.createElement("span");badge.className="portrait-expression";badge.textContent=expression.emoji;
-    badge.title=expression.name;mount.appendChild(badge);
+    mount.dataset.expression=expression.name;
   }
   function advanceCardTurn(){
     var dayEnd=schedule[schedule.length-1].end*60;
@@ -1097,7 +1119,7 @@
       createdAt:gameSec,expiresAt:gameSec+320,choices:followUpChoices(s,job),
       isFollowUp:true,followUpId:job.id,chainDepth:job.chainDepth||1,
       previousDirection:job.sourceDirection,previousChoice:job.sourceChoice,effectSubject:job.sourceSubject||null,
-      kicker:"Day "+dayIndex+" · 후속 상황"
+      kicker:"Day "+dayIndex+" · 그 뒤 이야기"
     };
   }
   function takeDueFollowUp(){
@@ -1593,7 +1615,7 @@
   function openPendingEncounter(){
     if(!pendingEncounter||activeEncounter)return;
     activeEncounter=pendingEncounter;pendingEncounter=null;
-    activeEncounter.phase="choice";activeEncounter.deadline=performance.now()+12000;
+    activeEncounter.phase="choice";activeEncounter.deadline=Number.POSITIVE_INFINITY;
     encounterWasRunning=running;running=false;
     renderEncounter();
   }
@@ -1615,7 +1637,7 @@
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
       q("#encounterChoice"+cap).textContent=choice?choice.text:"";
-      q("#encounterEffect"+cap).textContent=choice?effectHint(choice.effects):"";
+      q("#encounterEffect"+cap).textContent="";
       var button=q('[data-encounter-dir="'+dir+'"]');if(button)button.disabled=!choice||enc.phase!=="choice";
     });
     q("#encounterResult").hidden=enc.phase!=="result";
@@ -1625,7 +1647,7 @@
     if(enc.phase==="choice")updateEncounterClock(performance.now());
   }
   function updateEncounterClock(now){
-    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    if(!activeEncounter||activeEncounter.phase!=="choice"||!Number.isFinite(activeEncounter.deadline))return;
     var remain=Math.max(0,activeEncounter.deadline-now),ratio=clamp(remain/12000);
     q("#encounterTimerText").textContent=(remain/1000).toFixed(1)+"초";
     q("#encounterTimerFill").style.transform="scaleX("+ratio+")";
@@ -1745,7 +1767,7 @@
     var d=studentDashboard(s),notes=(s.encounterNotes||[]).slice(0,5),responseNotes=responseDescriptor(s);
     var queued=followUpQueue.filter(function(j){return j.status==="queued"&&j.studentId===s.id});
     return '<div class="roster-detail"><h4>'+escHtml(s.name)+' · 현재 상태</h4>'+
-      '<div class="trait-panel"><strong>기본 특성</strong><div class="trait-list">'+traitListHtml(s)+'</div><small>특성은 인카운터 발생 가능성과 교사 대응에 대한 반응을 함께 바꿉니다.</small></div>'+
+      '<div class="trait-panel"><strong>기본 특성</strong><div class="trait-list">'+traitListHtml(s)+'</div><small>이런 모습은 어떤 일이 자주 생기는지, 선생님의 말을 어떻게 받아들이는지에도 영향을 줍니다.</small></div>'+
       '<div class="roster-detail-grid">'+
         '<div class="roster-stat"><strong>'+d.learning+'</strong><small>📚 학습</small></div>'+
         '<div class="roster-stat"><strong>'+d.focus+'</strong><small>🎯 집중</small></div>'+
@@ -3586,7 +3608,7 @@
       });
       if(parts.length)findings.push(row.s.name+" · "+parts.join(" · "));
     });
-    if(!findings.length)findings.push("큰 수치 변화 없이 교시가 진행되었습니다.");
+    if(!findings.length)findings.push("눈에 띄는 변화 없이 시간이 흘렀습니다.");
     q("#findingList").innerHTML=findings.map(function(x){return "<li>"+escHtml(x)+"</li>"}).join("");
     q("#report").hidden=false;
   }
@@ -4011,7 +4033,7 @@
       var memoHtml='<article class="record-entry period_summary"><div class="period-memo-title"><strong>🗒️ '+escHtml(item.periodName||"교시")+' 메모</strong><span>교시 종료 정리</span></div>'+
         '<div class="period-memo-meta">Day '+(item.day||1)+' · '+escHtml(item.periodRange||"")+(item.periodSubject?" · "+escHtml(item.periodSubject):"")+(names?" · 관련 학생 "+escHtml(names):"")+'</div>';
       if(item.highlights&&item.highlights.length)memoHtml+='<ul class="period-memo-list">'+item.highlights.map(function(x){return '<li>'+escHtml(x)+'</li>'}).join("")+'</ul>';
-      if(item.responseSummary)memoHtml+='<div class="period-memo-response">교사 대응 · '+escHtml(item.responseSummary)+'</div>';
+      if(item.responseSummary)memoHtml+='<div class="period-memo-response">선생님은 · '+escHtml(item.responseSummary)+'</div>';
       return memoHtml+'</article>';
     }
     var html='<article class="record-entry '+escHtml(item.type||"normal")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div><div class="record-summary">'+escHtml(item.text||"")+'</div>';
