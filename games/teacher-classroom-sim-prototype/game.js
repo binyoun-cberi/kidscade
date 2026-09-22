@@ -153,6 +153,8 @@
   var dayEncounterOffered=0;
   var dayFollowUpsShown=0;
   var dayFamilyEventsShown=0;
+  var dayBreakScenesShown=0;
+  var MAX_BREAK_SCENES_PER_DAY=1;
   var periodEncounterCounts={};
   var MAX_FOLLOWUPS_PER_DAY=3;
   var MAX_FAMILY_EVENTS_PER_DAY=1;
@@ -647,13 +649,21 @@
     if(expression.type==="angry"||expression.type==="startled")return 4;
     return 3;
   }
-  function appendPortraitBust(rig,look,expression){
+  function portraitHairMeta(person){
+    var female=person&&person.look&&person.look.gender==="Woman";
+    var styles=female?["bob","side","tie","short"]:["short","side","crop","part"];
+    var seed=(person&&person.id!==undefined?person.id:String(person&&person.name||"").charCodeAt(0)||0);
+    return {style:styles[Math.abs(seed)%styles.length],tone:["black","darkbrown","brown"][Math.abs(seed*7+3)%3]};
+  }
+  function appendPortraitBust(rig,look,expression,person){
     var portraitLook=Object.assign({},look,{face:portraitFaceIndex(expression,look)});
     rig.appendChild(modularImg(portraitLook,"neck","neck"));
     rig.appendChild(modularImg(portraitLook,"shirt","shirt"));
     rig.appendChild(modularImg(portraitLook,"head","head"));
     rig.appendChild(modularImg(portraitLook,"face","face"));
-    rig.appendChild(modularImg(portraitLook,"hair","portrait-hair"));
+    var hm=portraitHairMeta(person),hair=document.createElement("span");
+    hair.className="portrait-hair-shape hair-"+hm.style+" hair-"+hm.tone;
+    rig.appendChild(hair);
   }
   function makePortraitPerson(person,expression,role){
     var wrap=document.createElement("span");
@@ -661,7 +671,7 @@
     wrap.style.background=expression.bg;
     var avatar=document.createElement("span");
     avatar.className="modular-avatar portrait-avatar portrait-bust";
-    appendPortraitBust(avatar,person.look,expression);
+    appendPortraitBust(avatar,person.look,expression,person);
     wrap.appendChild(avatar);
     var label=document.createElement("strong");
     label.className="portrait-name";
@@ -698,16 +708,40 @@
     var box=q("#timeRush");if(box)box.hidden=true;
     if(!dayEnded&&dayEncounterOffered<dayEncounterBudget)nextEncounterAt=gameSec+1;
   }
+  function queuedNarrativeBeatReady(){
+    var storyReady=storyQueue.some(function(job){
+      var st=storyStates[job.storyId];
+      return job.status==="queued"&&job.dueDay<=dayIndex&&st&&st.status==="active";
+    });
+    var followReady=followUpQueue.some(function(job){return job.status==="queued"&&job.dueDay<=dayIndex});
+    return storyReady||followReady;
+  }
+  function nextNarrativeRushTarget(){
+    var p=current(),dayEnd=schedule[schedule.length-1].end*60,hasBeat=queuedNarrativeBeatReady(),target;
+    if(dayEncounterOffered>=dayEncounterBudget)return dayEnd;
+    if(p.kind==="break"&&!hasBeat)return Math.min(dayEnd-1,p.end*60+rand(45,110));
+    var jump=hasBeat?rand(2.2*60,5*60):
+      p.kind==="lesson"?rand(4*60,9*60):
+      p.kind==="morning"?rand(3*60,7*60):
+      p.kind==="lunch"||p.kind==="lunchplay"?rand(4*60,8*60):
+      rand(3*60,7*60);
+    target=Math.min(dayEnd-1,gameSec+jump);
+    var idx=periodForMinute(Math.floor(target/60)),tp=schedule[idx];
+    if(tp&&tp.kind==="break"&&!hasBeat&&(dayBreakScenesShown>=MAX_BREAK_SCENES_PER_DAY||Math.random()<.78)){
+      target=Math.min(dayEnd-1,tp.end*60+rand(45,110));
+    }
+    return target;
+  }
   function advanceCardTurn(){
     if(dayEnded)return;
     var dayEnd=schedule[schedule.length-1].end*60;
     timeRushStart=gameSec;
+    timeRushTarget=nextNarrativeRushTarget();
     if(dayEncounterOffered>=dayEncounterBudget){
       timeRushTarget=dayEnd;
-      timeRushMultiplier=Math.max(14,Math.min(42,(dayEnd-gameSec)/120));
+      timeRushMultiplier=Math.max(18,Math.min(48,(dayEnd-gameSec)/100));
     }else{
-      timeRushTarget=Math.min(dayEnd-1,gameSec+rand(7*60,15*60));
-      timeRushMultiplier=14;
+      timeRushMultiplier=queuedNarrativeBeatReady()?18:22;
     }
     nextEncounterAt=Number.POSITIVE_INFINITY;
     timeRushActive=timeRushTarget>gameSec+5;
@@ -2894,6 +2928,7 @@
     if(!p)return 0;
     if(p.kind==="closing")return 1;
     if(p.kind==="lesson")return 2;
+    if(p.kind==="break"&&dayBreakScenesShown>=MAX_BREAK_SCENES_PER_DAY&&!queuedNarrativeBeatReady())return 0;
     return 1;
   }
   function periodEncounterCount(){
@@ -2905,6 +2940,7 @@
   function markEncounterOffered(enc){
     dayEncounterOffered++;
     periodEncounterCounts[periodIndex]=(periodEncounterCounts[periodIndex]||0)+1;
+    if(current().kind==="break")dayBreakScenesShown++;
     if(enc&&enc.isFollowUp)dayFollowUpsShown++;
     if(enc&&enc.familyEvent)dayFamilyEventsShown++;
     if(enc&&enc.storyId)dayStoryEventsShown++;
@@ -3142,15 +3178,15 @@
     classMetrics.trust=clamp(classMetrics.trust+(e.classTrust||0)+(trustValue||0)*.12,0,100);
   }
   function decisionDeltaHtml(delta,beforeClass,afterClass){
-    var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
+    var labels={learning:"📚 학습",focus:"🎯 집중",mood:"🙂 마음",relation:"🤝 관계",trust:"❤️ 신뢰"};
     var html=Object.keys(labels).filter(function(k){return (delta[k]||0)!==0}).slice(0,4).map(function(k){
       var d=delta[k]||0,cls=d>0?"up":"down";
-      return '<span class="encounter-delta '+cls+'">'+labels[k]+" "+(d>0?"+":"")+d+'</span>';
+      return '<span class="encounter-delta '+cls+'">'+labels[k]+" "+(d>0?"↑":"↓")+'</span>';
     }).join("");
-    var cb=beforeClass||{},ca=afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
+    var cb=beforeClass||{},ca=afterClass||{},classLabels={flow:"📚 수업",relationship:"🤝 관계",stability:"🧭 생활",trust:"❤️ 신뢰"};
     html+=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){
       var d=ca[k]-cb[k],cls=d>0?"up":d<0?"down":"same";
-      return '<span class="encounter-delta '+cls+'">'+classLabels[k]+" "+(d>0?"+":"")+d+'</span>';
+      return '<span class="encounter-delta '+cls+'">'+classLabels[k]+" "+(d>0?"↑":"↓")+'</span>';
     }).join("");
     return html;
   }
@@ -3209,6 +3245,7 @@
     var reactionBox=q("#encounterReaction");
     if(reactionBox){reactionBox.hidden=!reaction.text;reactionBox.textContent=reaction.text?"아이 반응 · "+reaction.text:""}
     q("#encounterResultStats").innerHTML=decisionDeltaHtml(delta,beforeClass,afterClass);
+    animateClassMeters(beforeClass,afterClass);
     renderEncounter();
     if(encounterAutoAdvanceTimer)clearTimeout(encounterAutoAdvanceTimer);
     encounterAutoAdvanceTimer=setTimeout(function(){
@@ -5756,7 +5793,7 @@
   }
   function startNextDay(){
     dayIndex+=1;dayEnded=false;gameSec=520*60;periodIndex=0;running=true;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.66;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayBreakScenesShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.66;periodEncounterCounts={};
     selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
@@ -5779,12 +5816,31 @@
   }
   function renderFeed(){ return; }
   function renderPanel(){ return; }
+  function setClassMeter(key,value){
+    var ids={flow:"hudFlowFill",relationship:"hudRelationFill",stability:"hudStabilityFill",trust:"hudTrustFill"};
+    var fill=q("#"+ids[key]);if(fill)fill.style.width=clamp(value,0,100)+"%";
+  }
+  function animateClassMeters(before,after){
+    if(!before||!after)return;
+    var ids={flow:["hudFlowFill","hudFlowDelta"],relationship:["hudRelationFill","hudRelationDelta"],stability:["hudStabilityFill","hudStabilityDelta"],trust:["hudTrustFill","hudTrustDelta"]};
+    Object.keys(ids).forEach(function(key){
+      var oldV=clamp(before[key]||0,0,100),newV=clamp(after[key]||0,0,100),d=newV-oldV;
+      var fill=q("#"+ids[key][0]),delta=q("#"+ids[key][1]),meter=q('.class-meter[data-meter="'+key+'"]');
+      if(fill)fill.style.width=newV+"%";
+      if(!delta||!meter||Math.abs(d)<.2)return;
+      delta.style.left=Math.min(oldV,newV)+"%";
+      delta.style.width=Math.max(2,Math.abs(d))+"%";
+      meter.classList.remove("gain","loss","meter-flash");void meter.offsetWidth;
+      meter.classList.add(d>0?"gain":"loss","meter-flash");
+      setTimeout(function(){meter.classList.remove("gain","loss","meter-flash")},900);
+    });
+  }
   function renderHeader(){
     var p=current(),cm=classDashboard();
     var dayEl=q("#dayNumber");if(dayEl)dayEl.textContent=dayIndex+"일차";
+    var clockEl=q("#hudClock");if(clockEl){clockEl.textContent=fmtMin(gameMinute());clockEl.classList.toggle("rushing",timeRushActive)}
     var periodEl=q("#periodName");if(periodEl)periodEl.textContent=p.name;
-    var hud={hudFlow:cm.flow,hudRelation:cm.relationship,hudStability:cm.stability,hudTrust:cm.trust};
-    Object.keys(hud).forEach(function(id){var el=q("#"+id);if(el)el.textContent=Math.round(hud[id])});
+    setClassMeter("flow",cm.flow);setClassMeter("relationship",cm.relationship);setClassMeter("stability",cm.stability);setClassMeter("trust",cm.trust);
     var descriptions={
       morning:"아이들이 하나둘 교실로 들어온다.",
       lesson:(p.subject||"수업")+" 시간이 흐르고 있다.",
@@ -5807,7 +5863,7 @@
   }
   function reset(){
     gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;storyQueue=[];storyStates={};storySeq=0;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.58;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayBreakScenesShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.58;periodEncounterCounts={};
     running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];dayEvents=[];worldHistory=[];worldHistorySeq=0;periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
