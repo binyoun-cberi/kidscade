@@ -3528,7 +3528,7 @@
           '<div><strong>'+cm.stability+'</strong><small>🧭 생활 안정</small></div>'+
           '<div><strong>'+cm.trust+'</strong><small>❤️ 교사 신뢰</small></div>'+
         '</div>'+
-        '<div class="tool-section"><h4>오늘의 판단 흐름</h4><div class="record-empty">오늘 판단 '+today.length+'회 · 남은 카드 예산 '+remaining+'장 · 이번 시간 '+currentCount+'/'+periodEncounterCap(current())+'장</div></div>';
+        '<div class="tool-section"><h4>오늘의 판단 흐름</h4><div class="record-empty">오늘 판단 '+today.length+'회 · 후속 관찰 예정 '+queuedFollowUps().length+'건 · 이번 시간 판단 '+currentCount+'회</div></div>';
       if(current().kind==="lesson")html+='<button class="tool-choice" type="button" data-computer-report="1"><strong>🗒️ 현재 교시 정리 보기</strong><small>평점 없이 판단과 학생·학급 수치 변화만 확인합니다.</small></button>';
       body.innerHTML=html;
     }else if(kind==="roster"){
@@ -3848,8 +3848,8 @@
     var reportBtn=q("#showReport");
     if(reportBtn){
       reportBtn.disabled=p.kind!=="lesson";
-      reportBtn.textContent=p.kind==="lesson"?"현재 교시 결과 보기":"수업 중 결과 보기";
-      reportBtn.title=p.kind==="lesson"?"현재 수업의 중간 결과를 확인합니다.":"수업 시간이 시작되면 사용할 수 있습니다.";
+      reportBtn.textContent=p.kind==="lesson"?"현재 교시 정리 보기":"수업 중 정리 보기";
+      reportBtn.title=p.kind==="lesson"?"현재 교시의 판단과 수치 변화를 확인합니다.":"수업 시간이 시작되면 사용할 수 있습니다.";
     }
     q("#periodDesc").textContent=p.kind==="lesson"?(p.unit+" · 학생의 몸짓·학습·관계를 보며 수업을 운영하세요."):p.kind==="break"?"아이들이 친구를 찾아가거나 혼자 머무르며 관계가 움직입니다.":p.kind==="lunch"?"급식실에서는 자리·친구·나눔 행동이 드러납니다.":p.kind==="lunchplay"?"아이들이 원하는 공간과 친구를 찾아 움직입니다.":"하루 일과를 준비하거나 정리하는 시간입니다.";
     q("#locationName").textContent=SCENE_NAME[teacherScene];
@@ -3945,7 +3945,7 @@
       renderPanel();
     });
   });
-  q("#showReport").addEventListener("click",function(){
+  var showReportButton=q("#showReport");if(showReportButton)showReportButton.addEventListener("click",function(){
     if(current().kind==="lesson")openReport(true);
   });
   q("#continueBtn").addEventListener("click",nextPeriod);
@@ -3953,19 +3953,22 @@
   qa(".scene-nav button").forEach(function(b){b.addEventListener("click",function(){openScene(this.dataset.scene)})});
 
 
-  q("#teacherActionCards").addEventListener("dragstart",function(e){
-    var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;
-    cardDragActive=true;armedActionId=card.dataset.actionId;armedActionTargetId=selected;
-    card.classList.add("dragging");q("#actionTray").classList.add("drag-active");
-    cardTraySnapshot.expiresAt=Math.max(cardTraySnapshot.expiresAt,gameSec+60);
-    if(e.dataTransfer){e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("text/plain",armedActionId)}
-  });
-  q("#teacherActionCards").addEventListener("dragend",function(e){
-    var card=e.target.closest&&e.target.closest("[data-action-id]");if(card)card.classList.remove("dragging");
-    cardDragActive=false;q("#actionTray").classList.remove("drag-active");cardRenderSignature="";renderTeacherCards();
-  });
-  q("#teacherActionCards").addEventListener("click",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;var s=studentById(selected);if(s)executeActionForStudent(card.dataset.actionId,s.id)});
-  q("#closeActionTray").addEventListener("click",function(){selected=null;armedActionId=null;armedActionTargetId=null;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";render()});
+  var teacherActionCards=q("#teacherActionCards");
+  if(teacherActionCards){
+    teacherActionCards.addEventListener("dragstart",function(e){
+      var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;
+      cardDragActive=true;armedActionId=card.dataset.actionId;armedActionTargetId=selected;
+      card.classList.add("dragging");var tray=q("#actionTray");if(tray)tray.classList.add("drag-active");
+      cardTraySnapshot.expiresAt=Math.max(cardTraySnapshot.expiresAt,gameSec+60);
+      if(e.dataTransfer){e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("text/plain",armedActionId)}
+    });
+    teacherActionCards.addEventListener("dragend",function(e){
+      var card=e.target.closest&&e.target.closest("[data-action-id]");if(card)card.classList.remove("dragging");
+      cardDragActive=false;var tray=q("#actionTray");if(tray)tray.classList.remove("drag-active");cardRenderSignature="";renderTeacherCards();
+    });
+    teacherActionCards.addEventListener("click",function(e){var card=e.target.closest&&e.target.closest("[data-action-id]");if(!card)return;var s=studentById(selected);if(s)executeActionForStudent(card.dataset.actionId,s.id)});
+  }
+  var closeActionTray=q("#closeActionTray");if(closeActionTray)closeActionTray.addEventListener("click",function(){selected=null;armedActionId=null;armedActionTargetId=null;cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";render()});
   var classBell=q("#classBell");if(classBell)classBell.addEventListener("click",ringClassBell);
   qa("[data-class-tool]").forEach(function(b){b.addEventListener("click",function(){openToolModal(this.dataset.classTool)})});
   q("#closeToolModal").addEventListener("click",function(){closeToolModal(true);render()});
@@ -3973,7 +3976,7 @@
   q("#toolModalBody").addEventListener("click",function(e){
     var instruction=e.target.closest&&e.target.closest("[data-instruction-id]");
     if(instruction){var a=INSTRUCTION_ACTIONS[instruction.dataset.instructionId];closeToolModal(true);if(a&&!teacherIsBusy())startTeacherTask(a,null);render();return}
-    var rep=e.target.closest&&e.target.closest("[data-computer-report]");if(rep){closeToolModal(false);openReport(true);return}
+    var rep=e.target.closest&&e.target.closest("[data-computer-report]");if(rep){var wasRunning=modalWasRunning;closeToolModal(false);openReport(true);reportWasRunning=wasRunning;return}
     var rosterStudent=e.target.closest&&e.target.closest("[data-roster-student]");if(rosterStudent){selected=Number(rosterStudent.dataset.rosterStudent);renderToolModal("roster");return}
     var st=e.target.closest&&e.target.closest("[data-clipboard-student]");if(st){selected=Number(st.dataset.clipboardStudent);renderToolModal("clipboard");return}
     var seat=e.target.closest&&e.target.closest("[data-seat-student]");if(seat){selected=Number(seat.dataset.seatStudent);renderToolModal("seating");return}
