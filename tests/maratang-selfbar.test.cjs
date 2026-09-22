@@ -18,8 +18,8 @@ const foodModels = [
 
 test('Maratang v8 keeps the 3D selfbar and adds tycoon UI', () => {
   assert.match(html, /<title>마라탕 한 그릇<\/title>/);
-  assert.match(html, /maratang-selfbar\.css\?v=10/);
-  assert.match(html, /maratang-selfbar\.js\?v=10/);
+  assert.match(html, /maratang-selfbar\.css\?v=11/);
+  assert.match(html, /maratang-selfbar\.js\?v=11/);
   assert.doesNotMatch(html, /maratang-dx|maratang-ui-v4/i);
   assert.match(html, /id="orderTicket"/);
   assert.match(html, /id="weight"/);
@@ -103,13 +103,13 @@ test('Maratang Selfbar uses valid shared audio keys', () => {
 test('Maratang Selfbar build output is v9 and contains only new runtime files', () => {
   const distCatalog = JSON.parse(fs.readFileSync(path.join(root,'dist','data','games.json'),'utf8'));
   const game = distCatalog.games.find(g=>g.id==='job_maratang_simulator');
-  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=10');
+  assert.equal(game.href, 'games/job_maratang_simulator/마라탕 한 그릇.html?v=11');
 
   const builtDir=path.join(root,'dist','games','job_maratang_simulator');
   const built=fs.readFileSync(path.join(builtDir,'마라탕 한 그릇.html'),'utf8');
   assert.match(built,/audio-manager\.js\?v=20260917-1/);
-  assert.match(built,/maratang-selfbar\.css\?v=10/);
-  assert.match(built,/maratang-selfbar\.js\?v=10/);
+  assert.match(built,/maratang-selfbar\.css\?v=11/);
+  assert.match(built,/maratang-selfbar\.js\?v=11/);
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.css')));
   assert.ok(fs.existsSync(path.join(builtDir,'maratang-selfbar.js')));
   assert.ok(!fs.existsSync(path.join(builtDir,'maratang-dx.js')));
@@ -244,4 +244,19 @@ test('Maratang v10 shrinks the bowl and pulls the mobile cooking station inward'
 test('Maratang v10 ingredient labels render as compact tray nameplates',()=>{
   assert.match(css,/\.ingredient-label\{[^}]*border-radius:4px/);
   assert.match(css,/background:rgba\(66,45,32,\.94\)/);
+});
+
+
+test('Maratang v11 improves readability, adds common ingredients, sauces and motion',()=>{
+  for(const id of ['yubu','bunmoja','bokchoy','enoki','fuzhu','beansprout']) assert.ok(js.includes(`id:'${id}'`),id);
+  assert.match(js,/const SAUCES = \[/);
+  assert.match(html,/id="sauceOptions"/);
+  assert.match(html,/id="orderSauce"/);
+  assert.match(js,/function renderSauceOptions/);
+  assert.match(js,/makeProceduralIngredient/);
+  assert.match(js,/this\.bubbles/);
+  assert.match(js,/this\.hoverId/);
+  assert.match(css,/v11 readability \+ seasoning UX/);
+  assert.match(css,/\.order-ticket\.order-pop/);
+  assert.match(css,/font-size:20px/);
 });
