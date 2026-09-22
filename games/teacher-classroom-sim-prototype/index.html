@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=8">
+<link rel="stylesheet" href="./style.css?v=9">
 </head>
 <body>
 <main id="app">
@@ -62,6 +62,7 @@
     <section>
       <div id="world" class="world scene-classroom" aria-label="학교 생활 시뮬레이션">
         <div id="sceneTitle" class="scene-title">교실</div>
+        <button id="worldAlert" class="world-alert" type="button" hidden></button>
         <div id="props"></div>
 
         <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -111,9 +112,26 @@
     </section>
 
     <aside class="panel">
-      <h3 id="studentName">학생 선택</h3>
-      <div id="studentSummary" class="sub">학생을 눌러 직접 개입할 수 있습니다. 다른 공간의 일은 직접 이동해서 확인해야 합니다.</div>
-      <div id="studentState" class="state">—</div>
+      <div class="panel-head">
+        <div>
+          <div class="panel-kicker">교사 HUD</div>
+          <h3 id="studentName">학급 운영</h3>
+        </div>
+        <button id="clearSelection" class="clear-selection" type="button" hidden>학급 보기</button>
+      </div>
+
+      <section id="priorityCard" class="priority-card">
+        <div class="priority-head">
+          <strong>지금 볼 것</strong>
+          <span id="priorityCount">현재 공간</span>
+        </div>
+        <div id="roomPulse" class="room-pulse"></div>
+        <div id="priorityBoard" class="priority-board"></div>
+      </section>
+
+      <div id="studentSummary" class="sub">현재 공간의 흐름을 살펴보고 필요한 학생을 선택하세요.</div>
+      <div id="studentState" class="state">교실 전체 관찰</div>
+      <div id="studentVitals" class="student-vitals" aria-live="polite"></div>
       <div id="teacherBusy" class="teacher-busy">
         <span>교사 여유</span>
         <strong id="teacherBusyText">지금 개입 가능</strong>
@@ -145,6 +163,6 @@
     </aside>
   </div>
 </main>
-<script src="./game.js?v=8"></script>
+<script src="./game.js?v=9"></script>
 </body>
 </html>
