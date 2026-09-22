@@ -13,6 +13,14 @@
   var MODULAR_ASSET="../../assets/game/2d/characters/kenney-modular-characters/";
   var SCENES=["classroom","hallway","gym","playground","cafeteria"];
   var SCENE_NAME={classroom:"교실",hallway:"복도",gym:"체육관",playground:"운동장",cafeteria:"급식실"};
+  var ACTION_UI={
+    explain:{icon:"🗣️",short:"설명",cue:"개념 설명"},question:{icon:"❓",short:"질문",cue:"생각 확인"},demo:{icon:"👆",short:"시범",cue:"직접 보여주기"},individual:{icon:"✏️",short:"개별활동",cue:"혼자 해보기"},pair:{icon:"👥",short:"짝활동",cue:"서로 설명"},presentation:{icon:"🎤",short:"발표",cue:"생각 공유"},closure:{icon:"✅",short:"정리",cue:"핵심 확인"},
+    watch:{icon:"👀",short:"지켜보기",cue:"맥락 관찰"},inspectWork:{icon:"📄",short:"활동지 보기",cue:"막힌 곳 확인"},checkQuestion:{icon:"❓",short:"확인 질문",cue:"이해 확인"},probeConcept:{icon:"🧪",short:"한 문제 더",cue:"진단 근거"},hint:{icon:"💡",short:"힌트 주기",cue:"방향만 제시"},firstStep:{icon:"🧩",short:"첫 단계 같이",cue:"시작 돕기"},simplify:{icon:"✂️",short:"작게 나누기",cue:"부담 줄이기"},movementJob:{icon:"🚶",short:"움직임 역할",cue:"에너지 전환"},
+    gesture:{icon:"👁️",short:"손짓 신호",cue:"조용한 환기"},proximity:{icon:"👣",short:"가까이 가기",cue:"비언어 지도"},quietCall:{icon:"🗣️",short:"조용히 재안내",cue:"짧은 안내"},redirect:{icon:"↪",short:"할 일 짚기",cue:"행동 재제시"},seatAdjust:{icon:"🪑",short:"자리 바꾸기",cue:"거리 조정"},separate:{icon:"↔️",short:"거리 두기",cue:"감정 낮추기"},chalk:{icon:"⚠️",short:"강한 환기",cue:"즉시 주의"},immediateStop:{icon:"✋",short:"즉시 멈추기",cue:"안전 확보"},checkSafety:{icon:"🛟",short:"안전 확인",cue:"피해 학생 보호"},requestSupport:{icon:"📣",short:"지원 요청",cue:"교직원 도움"},documentIncident:{icon:"📝",short:"사건 기록",cue:"사실 기록"},
+    praise:{icon:"⭐",short:"구체적 인정",cue:"좋은 행동 강화"},listen:{icon:"💬",short:"이야기 듣기",cue:"감정 확인"},mediate:{icon:"🤝",short:"갈등 중재",cue:"두 학생 조정"},connectPeer:{icon:"🧑‍🤝‍🧑",short:"친구 연결",cue:"관계 기회"},role:{icon:"🎯",short:"역할 맡기기",cue:"에너지 전환"},circleRole:{icon:"👥",short:"무리 역할",cue:"집단 규범"},
+    scanRoom:{icon:"🔎",short:"전체 훑기",cue:"교실 스캔"},microBreak:{icon:"🙆",short:"잠깐 움직이기",cue:"집중 환기"},attentionSignal:{icon:"🔔",short:"전체 집중",cue:"시선 모으기"},classPraise:{icon:"🌟",short:"좋은 흐름 짚기",cue:"학급 강화"}
+  };
+  function actionUi(id){return ACTION_UI[id]||{icon:"•",short:"행동",cue:"교사 행동"}}
 
   var schedule=[
     {start:520,end:540,name:"등교·아침활동",loc:"classroom",kind:"morning"},
@@ -2471,6 +2479,7 @@
     var action=document.createElement("span");action.className="action-tag";action.hidden=true;
     status.appendChild(intent);status.appendChild(action);b.appendChild(status);
     var signal=document.createElement("span");signal.className="student-signal";signal.hidden=true;signal.setAttribute("aria-hidden","true");b.appendChild(signal);
+    var fx=document.createElement("span");fx.className="student-action-fx";fx.hidden=true;fx.setAttribute("aria-hidden","true");b.appendChild(fx);
 
     var wrap=document.createElement("span");wrap.className="sprite-wrap";
     var standing=createStandingAvatar(s.look);
@@ -2481,12 +2490,22 @@
     var nm=document.createElement("span");nm.className="student-name";nm.textContent=s.name;b.appendChild(nm);
     b.addEventListener("click",function(){handleStudentClick(Number(this.dataset.studentId))});
     q("#students").appendChild(b);
-    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm,signal:signal};
+    studentNodes[s.id]={root:b,standing:standing,seated:seatedRig,intent:intent,action:action,name:nm,signal:signal,fx:fx};
     return studentNodes[s.id];
   }
   function isImportantVisualAction(s){
     return ["HELP","REJECTED","ARGUE","SHOVE","HURT","TEASE","EXCLUDE_TARGET","TAKE_ITEM_FORCE","THREATEN","HIT",
       "REFUSE_INSTRUCTION","SHOUT_TEACHER","INSULT_TEACHER","THROW_AT_TEACHER","DEFEND_PEER","REPORT_INCIDENT"].indexOf(s.action)>=0;
+  }
+  function visualActionFx(s){
+    var map={
+      WORK:{icon:"✎",cls:"write"},READ:{icon:"▤",cls:"read"},TALK:{icon:"…",cls:"talk"},DOODLE:{icon:"✦",cls:"write"},
+      DRINK_WATER:{icon:"💧",cls:"water"},BORROW_ITEM:{icon:"✏️",cls:"item"},DROP_ITEM:{icon:"↓",cls:"item"},PASS_NOTE:{icon:"✉",cls:"item"},
+      LOOK_OUTSIDE:{icon:"↗",cls:"read"},EAT:{icon:"🍴",cls:"item"},SHARE:{icon:"↔",cls:"item"},CLEAN:{icon:"🧹",cls:"clean"},
+      PLAY:{icon:"★",cls:"play"},COMPETE:{icon:"⚡",cls:"play"},COMFORT:{icon:"♥",cls:"care"},HELP_PEER:{icon:"+",cls:"care"},
+      PRESENT:{icon:"✦",cls:"play"},ASK_BATHROOM:{icon:"🚻",cls:"item"},TEASE:{icon:"…!",cls:"alert"}
+    };
+    return map[s.action]||null;
   }
   function visualSignal(s){
     if(isSevereAction(s)||s.action==="SHOVE")return {icon:"!",tone:"danger",label:"긴급"};
@@ -2582,12 +2601,15 @@
       var n=ensureStudentNode(s),show=s.scene===teacherScene;
       n.root.style.display=show?"block":"none";
       if(!show)return;
-      var isSeated=seated(s),signal=visualSignal(s),tone=actionTone(s);
+      var isSeated=seated(s),signal=visualSignal(s),fx=visualActionFx(s),tone=actionTone(s);
       n.root.className="student "+actionClass(s)+(s.moving?" locomotion":"")+(isSeated?" seated":"")+(selected===s.id?" selected":"")+(s.facing<0?" face-left":"")+" tone-"+tone;
       n.root.style.left=s.x+"%";n.root.style.top=s.y+"%";
       n.root.style.zIndex=isSeated?"10":String(12+Math.round(s.y/9));
       n.signal.hidden=!signal;
       if(signal){n.signal.textContent=signal.icon;n.signal.className="student-signal "+signal.tone;n.signal.title=signal.label}
+      var showFx=!!fx&&(selected===s.id||["WORK","READ","ATTEND","WAIT"].indexOf(s.action)<0);
+      n.fx.hidden=!showFx;
+      if(showFx){n.fx.textContent=fx.icon;n.fx.className="student-action-fx "+fx.cls}
       n.root.setAttribute("aria-label",s.name+" "+humanAction(s));
       n.standing.hidden=isSeated;n.seated.hidden=!isSeated;
       var showIntent=selected===s.id;
@@ -2649,6 +2671,37 @@
     else txt.textContent=(target?target.name+" · ":"")+(action?action.label:(teacherTask.label||"교사 행동"))+" 중";
     fill.style.width=(done*100)+"%";
   }
+  function quickActionScore(a,s){
+    var base={immediateStop:220,checkSafety:210,requestSupport:195,mediate:145,separate:140,documentIncident:125,probeConcept:110,inspectWork:104,checkQuestion:100,hint:98,firstStep:96,gesture:94,redirect:92,proximity:88,quietCall:86,listen:84,praise:78,simplify:76,movementJob:74,watch:68,role:62,seatAdjust:58,connectPeer:55,circleRole:52,chalk:25,attentionSignal:100,microBreak:96,scanRoom:90,classPraise:82};
+    var score=base[a.id]||40;
+    if(a.recommended&&a.recommended(s))score+=120;
+    if(s){
+      if(isSevereAction(s)||s.action==="SHOVE"){if(["immediateStop","requestSupport","documentIncident"].indexOf(a.id)>=0)score+=160}
+      else if(s.action==="ARGUE"){if(["mediate","separate","listen","watch"].indexOf(a.id)>=0)score+=100}
+      else if(s.action==="HELP"||s.helpNeed>.24){if(["inspectWork","checkQuestion","hint","firstStep","probeConcept"].indexOf(a.id)>=0)score+=90}
+      else if(isOffTask(s)){if(["gesture","proximity","redirect","quietCall"].indexOf(a.id)>=0)score+=80}
+      else if(isPositiveAction(s)&&a.id==="praise")score+=70;
+    }
+    return score;
+  }
+  function quickActionsFor(s){
+    var source=s?TEACHER_ACTIONS:CLASS_ACTIONS;
+    return Object.keys(source).map(function(k){return source[k]}).filter(function(a){return !a.instruction&&(!a.when||a.when(s))}).sort(function(a,b){return quickActionScore(b,s)-quickActionScore(a,s)}).slice(0,4);
+  }
+  function renderQuickActions(){
+    var box=q("#quickActions"),wrap=q("#quickActionButtons"),target=q("#quickTarget");
+    if(!box||!wrap||!target)return;
+    box.hidden=!!reportOpen;if(reportOpen)return;
+    var s=studentById(selected),actions=quickActionsFor(s);
+    target.textContent=s?s.name+" · "+humanAction(s):SCENE_NAME[teacherScene]+" 전체";
+    wrap.innerHTML=actions.map(function(a){
+      var ui=actionUi(a.id),recommended=!!(a.recommended&&a.recommended(s)),urgent=["immediateStop","checkSafety","requestSupport"].indexOf(a.id)>=0;
+      var cost=a.mode?"두 명 선택":fmtDuration(a.duration||0);
+      return '<button type="button" class="quick-action '+(recommended?"recommended ":"")+(urgent?"urgent":"")+'" data-action-id="'+a.id+'" '+(teacherIsBusy()?"disabled":"")+'>'+
+        '<span class="quick-action-icon">'+ui.icon+'</span><span class="quick-action-copy"><strong>'+escHtml(ui.short)+'</strong><small>'+escHtml(ui.cue)+' · '+escHtml(cost)+'</small></span>'+
+        (recommended?'<span class="quick-action-badge">'+(urgent?"우선":"추천")+'</span>':'')+'</button>';
+    }).join("");
+  }
   function renderActionPanel(s){
     qa("#actionTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.category===activeActionCategory)});
     var actions=availableActions(s,activeActionCategory);
@@ -2662,8 +2715,8 @@
     actions.forEach(function(a){
       var b=document.createElement("button");b.type="button";b.className="context-action"+(a.recommended&&a.recommended(s)?" recommended":"");
       b.disabled=teacherIsBusy();
-      var cost=a.mode?"두 학생 선택":(a.duration+"초");
-      b.innerHTML="<strong>"+a.label+"</strong><span class=\"cost\">"+cost+"</span><small>"+a.desc+"</small>";
+      var cost=a.mode?"두 학생 선택":fmtDuration(a.duration||0),ui=actionUi(a.id);
+      b.innerHTML='<span class="action-icon">'+ui.icon+'</span><span class="action-copy"><strong>'+ui.short+'</strong><small>'+a.desc+'</small></span><span class="cost">'+cost+'</span>';
       b.addEventListener("click",function(){executeTeacherAction(a.id)});
       b.addEventListener("mouseenter",function(){q("#actionDetail").textContent=a.label+" · "+a.desc});
       b.addEventListener("focus",function(){q("#actionDetail").textContent=a.label+" · "+a.desc});
@@ -2785,7 +2838,8 @@
       var a=INSTRUCTION_ACTIONS[id],b=document.createElement("button");b.type="button";
       b.className="instruction-action"+(lessonState.phase===a.phase?" current":"")+(recommendedInstruction(id)?" recommended":"");
       b.disabled=teacherIsBusy()||teacherScene!==current().loc;
-      b.innerHTML="<strong>"+a.label+"</strong><small>"+fmtDuration(a.duration)+" · "+a.desc+"</small>";
+      var ui=actionUi(id);
+      b.innerHTML='<span class="instruction-icon">'+ui.icon+'</span><strong>'+ui.short+'</strong><small>'+fmtDuration(a.duration)+' · '+a.desc+'</small>';
       b.addEventListener("click",function(){if(!teacherIsBusy())startTeacherTask(a,null)});
       wrap.appendChild(b);
     });
@@ -2812,6 +2866,7 @@
     if(mount&&!mount.firstChild)mount.appendChild(createStandingAvatar(TEACHER_LOOK));
     teacherEl.style.left=teacher.x+"%";teacherEl.style.top=teacher.y+"%";
     teacherEl.classList.toggle("moving",teacher.moving);
+    teacherEl.dataset.action=teacherTask&&teacherTask.actionId?teacherTask.actionId:"";
   }
   function renderFrame(){
     renderHeader();
@@ -2823,10 +2878,11 @@
     renderStudents();
     renderSceneNav();
     renderRoomOverview();
+    renderQuickActions();
     renderTeacherPosition();
   }
   function render(){
-    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderRoomOverview();renderPanel();renderFeed();renderTeacherPosition();
+    renderHeader();renderLessonFlow();renderProps();renderStudents();renderSceneNav();renderSchedule();renderRoomOverview();renderPanel();renderFeed();renderQuickActions();renderTeacherPosition();
   }
   function openScene(scene){
     if(scene===teacherScene)return;
@@ -2878,6 +2934,10 @@
   q("#priorityBoard").addEventListener("click",function(e){
     var b=e.target.closest&&e.target.closest("[data-student-id]");if(!b)return;
     selected=Number(b.dataset.studentId);connectMode=false;swapMode=false;render();
+  });
+  q("#quickActionButtons").addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest("[data-action-id]");if(!b||teacherIsBusy())return;
+    executeTeacherAction(b.dataset.actionId);
   });
   q("#worldAlert").addEventListener("click",function(){
     if(!this.dataset.studentId)return;
