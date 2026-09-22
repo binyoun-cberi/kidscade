@@ -1426,6 +1426,80 @@
           right:encounterChoice("정말 위험하거나 방해되는 일만 알리기 위한 자기 기준을 학생이 정하게 한다.",{relation:3,trust:3,focus:2,classFlow:0},"모든 규칙 위반을 통제하기보다 개입할 상황을 스스로 구분하게 했다.")
         }};
       }
+    },
+    {
+      id:"combo_fast_but_distracted",category:"수업",title:"안 듣는 것 같은데 답은 맞힌다",
+      score:function(s){return current().kind==="lesson"&&traitCombo(s,["distractible","quick_learner"])?1.45:0},
+      build:function(s){
+        return {text:s.name+"은(는) 아까부터 창밖도 보고 연필도 돌리고 있었다. 그런데 갑자기 어려운 문제를 정확하게 풀어냈다.",dialogue:s.name+' “저 이거 알아요. 답은 이거예요.”',choices:{
+          up:encounterChoice("알고 있어도 수업 중에는 집중하는 태도가 필요하다고 짚는다.",{focus:4,trust:-1,classStability:3},"태도에 대한 기준은 분명해졌지만 "+s.name+"은(는) 조금 억울한 표정을 지었다."),
+          down:encounterChoice("내용은 잘 따라오고 있었는지 묻고, 왜 자꾸 다른 데로 시선이 가는지 들어본다.",{mood:3,trust:5,focus:1,classFlow:-2},"알고 있는 것과 집중을 유지하는 어려움을 따로 볼 수 있게 됐다."),
+          left:encounterChoice("이미 아는 문제는 줄이고 더 어려운 문제를 하나 건넨다.",{learning:5,focus:5,trust:3,classFlow:-2},"반복보다 도전이 필요한 순간인지 확인해 볼 수 있었다."),
+          right:encounterChoice("기본 문제를 빨리 끝내고 도전 문제로 넘어갈지 스스로 정하게 한다.",{focus:3,mood:2,trust:4},"자기 속도에 맞춰 수업에 머무는 방법을 찾게 했다.")
+        }};
+      }
+    },
+    {
+      id:"combo_perfect_student_pressure",category:"학습",title:"95점인데도 울 것 같은 얼굴이다",
+      score:function(s){return current().kind==="lesson"&&traitCombo(s,["model_student","perfectionist"])?1.30:0},
+      build:function(s){
+        return {text:s.name+"이(가) 틀린 한 문제만 몇 번이고 보고 있다. 다른 아이들은 점수를 좋아하는데 "+s.name+"은(는) 종이를 접어 숨긴다.",dialogue:s.name+' “이것만 안 틀렸으면 100점인데…”',choices:{
+          up:encounterChoice("한 문제 틀린 것으로 스스로를 몰아붙이지 말고 다음에 고치면 된다고 말한다.",{mood:2,trust:1,classStability:1},"기준을 낮추기보다 실수를 다루는 태도를 분명히 짚었다."),
+          down:encounterChoice("속상한 마음을 인정하고 점수보다 지금 마음이 어떤지 먼저 묻는다.",{mood:7,trust:6,classFlow:-2},"점수 이야기를 잠시 내려놓자 "+s.name+"의 표정이 조금 풀렸다."),
+          left:encounterChoice("틀린 문제 하나만 같이 보며 어디서 실수가 났는지 차분히 찾는다.",{learning:4,mood:3,trust:4,classFlow:-2},"실패를 자책 대신 배울 거리로 바꿔 볼 수 있었다."),
+          right:encounterChoice("지금 다시 볼지, 집에서 볼지, 오늘은 덮어둘지 스스로 고르게 한다.",{mood:3,trust:4,focus:1},"실수를 다루는 속도를 학생에게 맡겼다.")
+        }};
+      }
+    },
+    {
+      id:"combo_leader_competitive",category:"친구",title:"이기고 싶은 마음이 팀을 끌고 간다",
+      score:function(s){return (current().subject==="체육"||lessonState.phase==="pair")&&traitCombo(s,["leadership","competitive"])?1.42:0},
+      build:function(s){
+        var target=studentById(s.lessonPartner)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"이(가) 팀을 빠르게 이끌고 있지만 친구 의견을 거의 듣지 않는다. "+target.name+"이(가) 끼어들 틈을 찾고 있다.",dialogue:s.name+' “시간 없으니까 그냥 내가 정할게.”',choices:{
+          up:encounterChoice("리더도 친구 의견을 들어야 한다고 멈춰 세우고 차례를 정한다.",{relation:2,focus:2,classStability:4},"팀은 잠시 멈췄지만 말할 순서가 생겼다."),
+          down:encounterChoice("왜 서두르는지 묻고, 다른 친구가 어떤 기분일지도 같이 보게 한다.",{relation:4,mood:2,trust:4,classFlow:-3},"이기고 싶은 마음과 친구의 답답함을 함께 보게 했다."),
+          left:encounterChoice("리더가 할 일은 답을 정하는 게 아니라 의견을 묻는 것이라고 직접 연습시킨다.",{relation:6,focus:3,trust:2,classFlow:-3},"주도하는 힘을 협동하는 방법으로 바꿔 볼 수 있었다."),
+          right:encounterChoice("팀이 따를 방식을 친구들과 직접 합의하게 한다.",{relation:4,trust:3,classFlow:0},"리더 역할의 책임을 팀 안에서 다시 나누게 했다.")
+        }};
+      }
+    },
+    {
+      id:"combo_social_rejection",category:"친구",title:"친구는 많은데 한마디에 크게 흔들린다",
+      score:function(s){return ["break","lunchplay"].indexOf(current().kind)>=0&&traitCombo(s,["social","sensitive_rejection"])?1.28:0},
+      build:function(s){
+        return {text:s.name+"은(는) 평소 친구들과 잘 어울리는데, 오늘 한 친구가 다른 아이와 놀겠다고 하자 갑자기 혼자 떨어져 앉았다.",dialogue:s.name+' “됐어. 그냥 나 혼자 있을래.”',choices:{
+          up:encounterChoice("친구가 다른 친구와 노는 건 자연스러운 일이라고 분명히 말해 준다.",{mood:-1,trust:1,classStability:2},"상황은 정리됐지만 서운함은 바로 없어지지 않았다."),
+          down:encounterChoice("서운했던 마음을 먼저 듣고, 친구를 빼앗긴 것처럼 느꼈는지 물어본다.",{mood:7,trust:6,relation:3,classFlow:-2},"말로 꺼내자 감정의 크기가 조금 줄었다."),
+          left:encounterChoice("한 친구가 다른 곳에 있을 때 할 수 있는 선택을 두세 가지 같이 떠올린다.",{relation:5,mood:3,trust:3},"관계가 흔들릴 때 쓸 방법을 미리 만들어 봤다."),
+          right:encounterChoice("지금 누구와 무엇을 하고 싶은지 스스로 정하게 한다.",{mood:3,relation:3,trust:4},"서운함 속에서도 다음 행동을 자신이 고르게 했다.")
+        }};
+      }
+    },
+    {
+      id:"combo_rule_model",category:"생활",title:"모범생이 친구들을 자꾸 단속한다",
+      score:function(s){return traitCombo(s,["model_student","rule_oriented"])?1.18:0},
+      build:function(s){
+        var target=studentById(s.socialTarget)||chooseSocialTarget(s,"SOCIAL");if(!target)return null;
+        return {targetId:target.id,text:s.name+"은(는) 규칙을 잘 지키지만 오늘은 "+target.name+"에게도 계속 ‘그러면 안 돼’라고 말하고 있다. "+target.name+"의 표정이 점점 굳는다.",dialogue:s.name+' “선생님이 하지 말라고 했잖아.”',choices:{
+          up:encounterChoice("규칙을 알려 주는 역할은 선생님에게 맡기고 자기 할 일에 집중하라고 한다.",{focus:3,relation:1,classStability:4},"역할의 경계는 바로 분명해졌다."),
+          down:encounterChoice("규칙이 어겨질 때 왜 그렇게 신경 쓰이는지 먼저 들어본다.",{mood:3,trust:5,relation:2,classFlow:-2},"통제하려는 행동 뒤에 있던 불편함을 확인했다."),
+          left:encounterChoice("위험하거나 큰 방해가 아니라면 친구에게 직접 지적하지 않는 연습을 한다.",{relation:5,focus:3,trust:3,classFlow:-2},"규칙을 지키는 힘을 친구를 존중하는 방식으로 바꿔 봤다."),
+          right:encounterChoice("어떤 일은 그냥 두고 어떤 일은 선생님에게 말할지 자기 기준을 세우게 한다.",{relation:3,trust:3,focus:2},"모든 일을 바로잡으려 하지 않고 개입할 일을 가려 보게 했다.")
+        }};
+      }
+    },
+    {
+      id:"combo_shy_creative",category:"표현",title:"말은 없는데 작품에는 이야기가 가득하다",
+      score:function(s){return current().subject==="미술"&&traitCombo(s,["shy","creative"])?1.46:0},
+      build:function(s){
+        return {text:s.name+"은(는) 발표하라는 말에는 고개를 숙였지만 작품에는 작은 이야기와 세세한 표현이 가득하다.",dialogue:s.name+' “말로 설명하는 건 좀 싫어요…”',choices:{
+          up:encounterChoice("짧게라도 자기 작품을 직접 설명해 보게 한다.",{focus:2,mood:-2,trust:-1,classStability:2},"발표 경험은 남았지만 긴장도 함께 커졌다."),
+          down:encounterChoice("말하지 않아도 괜찮다고 하고 작품을 먼저 충분히 봐 준다.",{mood:6,trust:6,classFlow:-1},"표현 방식 자체를 인정받았다는 느낌을 줬다."),
+          left:encounterChoice("작품 옆에 한 줄 설명을 적고, 원하면 그 문장만 읽게 한다.",{learning:2,mood:3,trust:4,classFlow:-2},"말하기 부담을 줄이면서 생각을 밖으로 꺼낼 다리를 만들었다."),
+          right:encounterChoice("말하기·글쓰기·친구에게만 설명하기 중 원하는 방식을 고르게 한다.",{mood:4,trust:5,focus:2},"자기 생각을 보여 주는 방법을 스스로 선택하게 했다.")
+        }};
+      }
     }
   ];
 
