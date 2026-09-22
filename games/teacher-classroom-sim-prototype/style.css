@@ -1793,3 +1793,45 @@ body{
   .time-rush{width:82%!important;padding:24px 20px!important}
   .time-rush strong{font-size:38px!important}
 }
+
+
+/* v32 — calmer student portraits */
+.encounter-portrait .mod-part.portrait-hair{
+  left:6px!important;
+  top:0!important;
+  width:36px!important;
+  height:28px!important;
+  z-index:9!important;
+  clip-path:none!important;
+}
+.encounter-portrait .portrait-bust .mod-part.hair-back,
+.encounter-portrait .portrait-bust .mod-part.hair-front{
+  display:none!important;
+}
+.portrait-person.expression-angry{
+  background:linear-gradient(180deg,#a06e6b 0%,#795f69 100%)!important
+}
+.portrait-person.expression-worried,
+.portrait-person.expression-struggling,
+.portrait-person.expression-tearful{
+  background:linear-gradient(180deg,#7e8da3 0%,#69788f 100%)!important
+}
+.portrait-person.expression-startled{
+  background:linear-gradient(180deg,#9a806c 0%,#796b67 100%)!important
+}
+.portrait-person.expression-default{
+  background:linear-gradient(180deg,#8190a3 0%,#6b7a90 100%)!important
+}
+.portrait-person.expression-happy{
+  background:linear-gradient(180deg,#77927f 0%,#687c73 100%)!important
+}
+/* Expressions should read as a classroom moment, not a cheerful profile card. */
+.encounter-portrait .portrait-bust .mod-part.face{
+  width:17px!important;
+  height:12px!important;
+  left:15.5px!important;
+  top:10.5px!important;
+}
+.encounter-portrait.duo .portrait-name{
+  bottom:11px!important
+}
