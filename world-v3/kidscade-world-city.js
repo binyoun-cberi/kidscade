@@ -171,13 +171,17 @@ export async function buildKidscadeCity(ctx){
 
   // Commerce props stay deep inside the market parcel, never on the south or center roads.
   await Promise.all([
-    addModel(parent,CITY_ASSET.fruit,{x:market.x-5.6,z:market.z+.5,w:1.6,h:1.35,d:1.0,rot:0,name:'market-fruit'}),
-    addModel(parent,CITY_ASSET.bread,{x:market.x-3.4,z:market.z+.5,w:1.6,h:1.35,d:1.0,rot:0,name:'market-bread'}),
-    addModel(parent,CITY_ASSET.register,{x:market.x-4.5,z:market.z+.1,w:.8,h:.62,d:.7,rot:Math.PI,name:'market-register'}),
+    addModel(parent,CITY_ASSET.fruit,{x:market.x-5.8,z:market.z+.6,w:1.6,h:1.35,d:1.0,rot:0,name:'market-fruit'}),
+    addModel(parent,CITY_ASSET.bread,{x:market.x-3.5,z:market.z+.6,w:1.6,h:1.35,d:1.0,rot:0,name:'market-bread'}),
+    addModel(parent,CITY_ASSET.register,{x:market.x-4.7,z:market.z+2.0,w:.8,h:.62,d:.7,rot:Math.PI,name:'market-register'}),
     addModel(parent,CITY_ASSET.cart,{x:market.x-.8,z:market.z+.4,w:1.0,h:.95,d:1.1,rot:.1,name:'market-cart'}),
-    addModel(parent,CITY_ASSET.atm,{x:market.x-7.2,z:market.z+.4,w:.75,h:1.45,d:.65,rot:Math.PI/2,name:'market-atm'})
+    addModel(parent,CITY_ASSET.atm,{x:market.x-7.3,z:market.z+2.0,w:.75,h:1.45,d:.65,rot:Math.PI/2,name:'market-atm'})
   ]);
-  track('market-display','decor',market.x-4.0,market.z+.5,7.0,1.6);
+  track('market-fruit','decor',market.x-5.8,market.z+.6,1.6,1.0);
+  track('market-bread','decor',market.x-3.5,market.z+.6,1.6,1.0);
+  track('market-register','decor',market.x-4.7,market.z+2.0,.8,.7);
+  track('market-cart','decor',market.x-.8,market.z+.4,1.0,1.1);
+  track('market-atm','decor',market.x-7.3,market.z+2.0,.75,.65);
 
   // Leisure parcel keeps a large empty center for NPCs and events.
   await Promise.all([
