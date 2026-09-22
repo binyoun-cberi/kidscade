@@ -2966,7 +2966,7 @@
       '</div><div class="response-profile"><strong>이 아이가 편해하는 방식</strong><div>'+responseNotes.map(function(x){return '<span class="response-chip">'+escHtml(x)+'</span>'}).join("")+'</div></div>'+
       '<div class="roster-notes">'+(notes.length?notes.map(function(n){return '<div class="roster-note">Day '+(n.day||1)+' · '+fmtMin(n.time)+' · '+escHtml(n.text)+'</div>'}).join(""):'<div class="roster-note">아직 눈에 띄는 변화가 없습니다.</div>')+'</div>'+
       (queued.length?'<div class="roster-followup">📌 조금 더 지켜볼 일 '+queued.length+'건 · 가장 가까운 일정 Day '+Math.min.apply(null,queued.map(function(j){return j.dueDay}))+'</div>':'')+
-      (activeStories.length?'<div class="roster-followup">📖 이어지는 이야기 · '+activeStories.map(function(st){return escHtml(storyArcFor(st.arcId).label)}).join(" · ")+'</div>':'')+'</div>';
+      (activeStories.length?'<div class="roster-followup">최근 며칠의 변화가 이어지고 있어 조금 더 지켜보고 있습니다.</div>':'')+'</div>';
   }
 
   function newStats(){
@@ -5231,7 +5231,7 @@
     if(item.followUpOutcome){
       var fd=item.delta||{},fb=item.before||{},fa=item.after||{},fl={learning:"📚 학습"+(item.metricSubject?"("+item.metricSubject+")":""),focus:"🎯 집중",mood:"🙂 정서",relation:"🤝 관계",trust:"❤️ 신뢰"};
       var fdelta=Object.keys(fl).filter(function(k){return fd[k]}).map(function(k){return '<span>'+fl[k]+' '+fb[k]+'→'+fa[k]+' ('+(fd[k]>0?"+":"")+fd[k]+')</span>'}).join("");
-      return '<article class="record-entry followup_decision"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="followup-badge">그 뒤</span></div>'+
+      return '<article class="record-entry followup_decision"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span></div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         '<div class="record-stage">전에 선생님은 · '+escHtml(item.sourceDirection||"")+' · '+escHtml(item.sourceChoice||"")+'</div>'+
         '<div class="record-stage">'+escHtml(item.resultText||"")+'</div>'+
@@ -5242,11 +5242,11 @@
       var deltaHtml=Object.keys(labels).filter(function(k){return d[k]!==undefined&&d[k]!==0}).map(function(k){return '<span>'+labels[k]+' '+escHtml(before[k])+'→'+escHtml(after[k])+' ('+(d[k]>0?"+":"")+d[k]+')</span>'}).join("");
       var cb=item.beforeClass||{},ca=item.afterClass||{},classLabels={flow:"📖 흐름",relationship:"🏫 관계",stability:"🧭 안정",trust:"❤️ 학급신뢰"};
       var classDeltaHtml=Object.keys(classLabels).filter(function(k){return cb[k]!==undefined&&ca[k]!==undefined&&cb[k]!==ca[k]}).map(function(k){return '<span>'+classLabels[k]+' '+cb[k]+'→'+ca[k]+'</span>'}).join("");
-      return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span>'+(item.isFollowUp?'<span class="followup-badge">다시 만난 일</span>':'')+'</div>'+
+      return '<article class="record-entry '+(item.isFollowUp?"followup_decision":"encounter_decision")+'"><div class="record-entry-head"><time>'+dayLabel+escHtml(item.stamp||"")+'</time><span class="record-place">'+escHtml(place)+'</span><span class="decision-philosophy">'+escHtml(item.direction||"판단")+'</span></div>'+
         '<div class="record-summary">'+escHtml(item.text||"")+'</div>'+
         (item.studentTraits&&item.studentTraits.length?'<div class="record-stage">그때 보인 특성 · '+escHtml(item.studentTraits.join(" · "))+'</div>':'')+
         (item.parentTrait&&parentTraitMeta(item.parentTrait)?'<div class="record-stage">'+(item.safeguarding?'학생보호 메모':'가정 소통에서 보인 점')+' · '+escHtml(parentTraitMeta(item.parentTrait).label)+'</div>':'')+
-        (item.storyId&&storyArcFor(item.storyArc)?'<div class="record-stage">이어지는 이야기 · '+escHtml(storyArcFor(item.storyArc).label)+' · '+escHtml(item.storyStep||"")+'/'+escHtml(item.storyTotal||storyArcFor(item.storyArc).steps)+'</div>':'')+
+        ''+
         '<div class="record-stage">선생님은 · '+escHtml(item.choiceText||"")+'</div>'+
         (item.resultText?'<div class="record-stage">결과 · '+escHtml(item.resultText)+'</div>':'')+
         (item.studentReaction?'<div class="record-stage">아이 반응 · '+escHtml(item.studentReaction)+'</div>':'')+
@@ -5308,6 +5308,16 @@
       if(s)items=items.filter(function(item){return item.studentId===s.id||item.targetId===s.id||(item.text&&item.text.indexOf(s.name)>=0)||(item.studentNames&&item.studentNames.indexOf(s.name)>=0)});
       items=items.slice(-90).reverse();
       var html='<div class="tool-section"><h4>우리 반에 있었던 일</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 기록할 만한 판단이나 생활지도 상황이 없습니다.</div>')+'</div></div>';
+      var wh=worldHistory.filter(function(e){
+        return !s||e.actorId===s.id||e.targetId===s.id||(e.witnessIds||[]).indexOf(s.id)>=0;
+      }).slice(-35).reverse();
+      if(wh.length){
+        html+='<div class="tool-section"><h4>최근 며칠의 연결된 사건</h4>'+wh.map(function(e){
+          var a=studentById(e.actorId),t=studentById(e.targetId),w=(e.witnessIds||[]).map(studentById).filter(Boolean);
+          var people=[a&&a.name,t&&t.name].filter(Boolean).join(" · ");
+          return '<div class="record-student-memory">Day '+(e.day||1)+' · '+fmtMin(e.time||0)+' · '+escHtml(people)+(w.length?' · 주변에서 본 친구 '+w.length+'명':'')+'<br>'+escHtml(e.text||e.kind)+'</div>';
+        }).join("")+'</div>';
+      }
       if(s)html+='<div class="tool-section"><h4>'+escHtml(s.name)+' 누적 관찰</h4>'+(s.memory.length?s.memory.map(function(m){return '<div class="record-student-memory">Day '+(m.day||1)+' · '+fmtMin(m.time)+' · '+escHtml(m.text)+'</div>'}).join(""):'<div class="record-empty">아직 개별 기록이 없습니다.</div>')+'</div>';
       body.innerHTML=html;tutorialEvent("record");
     }
