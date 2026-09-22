@@ -17,7 +17,6 @@
         <option value="4">×4</option>
       </select>
     </label>
-    <button id="showReport" type="button">현재 교시 결과 보기</button>
     <button id="helpTutorial" type="button" aria-label="튜토리얼 다시 보기">? 도움말</button>
     <button id="reset" type="button">처음부터 다시</button>
   </div>
@@ -38,20 +37,7 @@
     </div>
   </section>
 
-  <section id="lessonFlow" class="lesson-flow" hidden>
-    <div class="lesson-flow-head">
-      <div>
-        <div class="lesson-kicker">수업 진행</div>
-        <strong id="lessonPhaseName">수업 준비</strong>
-        <div id="lessonPhaseDesc" class="sub">학생들이 준비되면 수업 행동을 선택하세요.</div>
-      </div>
-      <div id="lessonPhaseTimer" class="lesson-phase-timer">—</div>
-    </div>
-    <div id="instructionActions" class="instruction-actions" aria-live="polite"></div>
-    <div id="lessonHistory" class="lesson-history"></div>
-  </section>
 
-  <nav class="scene-nav" aria-label="학교 공간 이동">
     <button type="button" data-scene="classroom">교실 <span class="count">0</span></button>
     <button type="button" data-scene="hallway">복도 <span class="count">0</span></button>
     <button type="button" data-scene="gym">체육관 <span class="count">0</span></button>
@@ -83,13 +69,7 @@
           <button type="button" class="class-tool tool-record" data-class-tool="record" title="생활기록부"><span class="tool-object">📒</span><small>생기부</small></button>
         </section>
 
-        <section id="actionTray" class="action-tray" hidden aria-label="교사 행동 카드">
-          <div class="action-tray-head"><span>행동 카드</span><strong id="actionTrayTarget">학생 선택</strong><button id="closeActionTray" type="button" aria-label="행동 카드 닫기">×</button></div>
-          <div id="teacherActionCards" class="teacher-action-cards"></div>
-          <div class="action-tray-tip">카드를 학생에게 끌어 놓거나 카드를 눌러 바로 사용하세요.</div>
-        </section>
 
-        <section id="encounterOverlay" class="encounter-overlay" hidden aria-live="assertive">
           <div class="encounter-shell">
             <div class="encounter-topline">
               <span id="encounterCategory">교사 판단</span>
