@@ -1340,9 +1340,10 @@ function hashText(value) {
 
 function pickDistractors(index, field, count = 3) {
   const fact = CORE_FACTS[index];
-  const sameType = CORE_FACTS.map((f,i)=>({f,i})).filter(x => x.i !== index && x.f.type === fact.type);
-  const sameEra = CORE_FACTS.map((f,i)=>({f,i})).filter(x => x.i !== index && x.f.era === fact.era && x.f.type !== fact.type);
-  const rest = CORE_FACTS.map((f,i)=>({f,i})).filter(x => x.i !== index);
+  const regular = CORE_FACTS.map((f,i)=>({f,i})).filter(x => !x.f.direct && x.i !== index);
+  const sameType = regular.filter(x => x.f.type === fact.type);
+  const sameEra = regular.filter(x => x.f.era === fact.era && x.f.type !== fact.type);
+  const rest = regular;
   const pool = [...sameType, ...sameEra, ...rest];
   const used = new Set([fact[field]]);
   const out = [];
