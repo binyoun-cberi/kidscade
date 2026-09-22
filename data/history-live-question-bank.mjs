@@ -1279,9 +1279,9 @@ function uniqueDateChoices(index) {
   }
   return out;
 }
-function addDirectFact({era,type,term,clue,q,o,e,family}) {
+function addDirectFact({era,type,term,clue,q,o,e,family,oxStatement=null,oxAnswer=true}) {
   if(!q||!Array.isArray(o)||o.length!==4||new Set(o).size!==4)return;
-  CORE_FACTS.push({era,type,term,clue,direct:true,q,o,a:0,e,family});
+  CORE_FACTS.push({era,type,term,clue,direct:true,q,o,a:0,e,family,oxStatement,oxAnswer:Boolean(oxAnswer)});
 }
 
 // 서로 다른 사건·연도 관계 자체를 독립 지식 항목으로 추가한다.
@@ -1294,7 +1294,11 @@ MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
     q:`‘${event.name}’이 일어난 시기로 알맞은 것은 무엇일까요?`,
     o:options,
     e:`${event.name}은(는) ${event.date}에 해당합니다.`,
-    family:'date'
+    family:'date',
+    oxStatement:index%2===0
+      ? `${event.name}은(는) ${event.date}에 일어났다.`
+      : `${event.name}은(는) ${options[1]}에 일어났다.`,
+    oxAnswer:index%2===0
   });
 });
 
@@ -1310,7 +1314,11 @@ for(let distance=1;distance<=8;distance++){
       q:`다음 두 사건 가운데 먼저 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:options,
       e:`${first.name}(${first.date})이(가) ${second.name}(${second.date})보다 먼저입니다.`,
-      family:'chronology-before'
+      family:'chronology-before',
+      oxStatement:(i+distance)%2===0
+        ? `${first.name}은(는) ${second.name}보다 먼저 일어났다.`
+        : `${second.name}은(는) ${first.name}보다 먼저 일어났다.`,
+      oxAnswer:(i+distance)%2===0
     });
     addDirectFact({
       era,type:'순서',term:second.name,
@@ -1318,7 +1326,11 @@ for(let distance=1;distance<=8;distance++){
       q:`다음 두 사건 가운데 나중에 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
       e:`${second.name}(${second.date})이(가) ${first.name}(${first.date})보다 뒤입니다.`,
-      family:'chronology-after'
+      family:'chronology-after',
+      oxStatement:(i+distance)%2!==0
+        ? `${second.name}은(는) ${first.name}보다 나중에 일어났다.`
+        : `${first.name}은(는) ${second.name}보다 나중에 일어났다.`,
+      oxAnswer:(i+distance)%2!==0
     });
   }
 }
@@ -1341,27 +1353,40 @@ function hashText(value) {
 function pickDistractors(index, field, count = 3) {
   const fact = CORE_FACTS[index];
   const regular = CORE_FACTS.map((f,i)=>({f,i})).filter(x => !x.f.direct && x.i !== index);
-  const sameType = regular.filter(x => x.f.type === fact.type);
-  const sameEra = regular.filter(x => x.f.era === fact.era && x.f.type !== fact.type);
-  const rest = regular;
-  const pool = [...sameType, ...sameEra, ...rest];
+  const eraPos = ERA_OPTIONS.indexOf(fact.era);
+  const adjacentEras = [ERA_OPTIONS[eraPos-1],ERA_OPTIONS[eraPos+1]].filter(Boolean);
+  const groups = [
+    regular.filter(x => x.f.era === fact.era && x.f.type === fact.type),
+    regular.filter(x => x.f.era === fact.era && x.f.type !== fact.type),
+    regular.filter(x => adjacentEras.includes(x.f.era) && x.f.type === fact.type),
+    regular.filter(x => x.f.type === fact.type),
+    regular
+  ];
   const used = new Set([fact[field]]);
   const out = [];
-  let cursor = hashText(fact.term + ':' + field) % Math.max(1, pool.length);
-  for (let step = 0; out.length < count && step < pool.length * 2; step += 1) {
-    const item = pool[(cursor + step * 7) % pool.length]?.f?.[field];
-    if (item && !used.has(item)) { used.add(item); out.push(item); }
-  }
-  return out.slice(0, count);
+  const takeFrom = (group,salt) => {
+    if(!group.length||out.length>=count)return;
+    const start=hashText(fact.term+':'+field+':'+salt)%group.length;
+    for(let step=0;step<group.length&&out.length<count;step++){
+      const item=group[(start+step)%group.length]?.f?.[field];
+      if(item&&!used.has(item)){used.add(item);out.push(item);}
+    }
+  };
+  groups.forEach((group,i)=>takeFrom(group,i));
+  return out.slice(0,count);
 }
 
 function eraDistractors(correct, seed) {
-  const rest = ERA_OPTIONS.filter(x => x !== correct);
-  const out = [];
-  let cursor = hashText(seed) % rest.length;
-  for (let i = 0; out.length < 3 && i < rest.length * 2; i += 1) {
-    const value = rest[(cursor + i * 5) % rest.length];
-    if (!out.includes(value)) out.push(value);
+  const pos=ERA_OPTIONS.indexOf(correct),out=[];
+  const candidates=[];
+  for(let distance=1;distance<ERA_OPTIONS.length;distance++){
+    if(pos-distance>=0)candidates.push(ERA_OPTIONS[pos-distance]);
+    if(pos+distance<ERA_OPTIONS.length)candidates.push(ERA_OPTIONS[pos+distance]);
+  }
+  const start=hashText(seed)%Math.max(1,candidates.length);
+  for(let i=0;i<candidates.length&&out.length<3;i++){
+    const value=candidates[(start+i)%candidates.length];
+    if(value!==correct&&!out.includes(value))out.push(value);
   }
   return out;
 }
@@ -1383,6 +1408,31 @@ const ERA_PROMPTS = [
   term => `‘${term}’를 공부할 때 함께 살펴볼 역사 시기로 알맞은 것은?`
 ];
 
+function adjacentWrongEra(era,index){
+  const pos=ERA_OPTIONS.indexOf(era);
+  if(pos<0)return ERA_OPTIONS[0];
+  const left=ERA_OPTIONS[pos-1],right=ERA_OPTIONS[pos+1];
+  return index%2===0?(right||left):(left||right);
+}
+function regularOxQuestion(fact,index){
+  const isTrue=index%2===0;
+  if(isTrue){
+    return {
+      id:`ox-${index}`,era:fact.era,difficulty:2,
+      q:`OX 문제\n‘${fact.term}’에 대한 다음 설명은 맞을까요?\n${fact.clue}`,
+      o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
+      sourceFact:index,family:'ox'
+    };
+  }
+  const wrongEra=adjacentWrongEra(fact.era,index);
+  return {
+    id:`ox-${index}`,era:fact.era,difficulty:2,
+    q:`OX 문제\n‘${fact.term}’은(는) ${wrongEra}와 가장 관련 깊다.`,
+    o:['O','X'],a:1,e:`X가 정답입니다. ${topicLabel(fact.term)} ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`,
+    sourceFact:index,family:'ox'
+  };
+}
+
 function buildBank() {
   const out = [];
   CORE_FACTS.forEach((fact, index) => {
@@ -1392,6 +1442,14 @@ function buildBank() {
         q:fact.q,o:[...fact.o],a:Number(fact.a)||0,e:fact.e,
         sourceFact:index,family:fact.family||'direct'
       });
+      if(fact.oxStatement){
+        out.push({
+          id:`ox-direct-${index}`,era:fact.era,difficulty:2,
+          q:`OX 문제\n${fact.oxStatement}`,
+          o:['O','X'],a:fact.oxAnswer?0:1,e:`${fact.oxAnswer?'O':'X'}가 정답입니다. ${fact.e}`,
+          sourceFact:index,family:'ox'
+        });
+      }
       return;
     }
     const termOptions = [fact.term, ...pickDistractors(index, 'term')];
@@ -1411,6 +1469,7 @@ function buildBank() {
       q:makePrompt(fact.term), o:[fact.era, ...eraDistractors(fact.era, fact.term + variant)], a:0,
       e:`${topicLabel(fact.term)} ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`, sourceFact:index, family:'era'
     }));
+    out.push(regularOxQuestion(fact,index));
   });
   return out;
 }
@@ -1420,7 +1479,8 @@ export const CORE_HISTORY_FACTS = Object.freeze(CORE_FACTS);
 export const QUESTION_BANK_SIZE = QUESTION_BANK.length;
 
 export function shuffledQuestion(question, random = Math.random) {
-  const order = [0,1,2,3];
+  if(question.family==='ox')return {...question,o:[...question.o]};
+  const order = Array.from({length:question.o.length},(_,i)=>i);
   for (let i = order.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
@@ -1459,7 +1519,18 @@ function chronologicalSourceFactIndexes(count = 15) {
   return selected.slice(0,wanted);
 }
 
-export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random') {
+function candidatesForFact(factIndex,questionMode,position,random){
+  const all=QUESTION_BANK.filter(q=>q.sourceFact===factIndex);
+  const ox=all.filter(q=>q.family==='ox'),choice=all.filter(q=>q.family!=='ox');
+  if(questionMode==='ox')return ox.length?ox:choice;
+  if(questionMode==='mixed'){
+    const useOx=position%2===1;
+    return useOx&&ox.length?ox:(choice.length?choice:ox);
+  }
+  return choice.length?choice:ox;
+}
+
+export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random', questionMode = 'choice') {
   const wanted = Math.max(1, Math.min(Number(count)||15, CORE_FACTS.length));
   let factIndexes;
 
@@ -1475,7 +1546,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   }
 
   return factIndexes.map((factIndex,position) => {
-    const candidates = QUESTION_BANK.filter(q => q.sourceFact === factIndex);
+    const candidates = candidatesForFact(factIndex,questionMode,position,random);
     const variantIndex = orderMode === 'chronological'
       ? (position * 3 + factIndex) % candidates.length
       : Math.floor(random() * candidates.length);
@@ -1483,9 +1554,9 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   });
 }
 
-export function chronologicalQuestionIndexes(count = 15) {
+export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice') {
   return chronologicalSourceFactIndexes(count).map((factIndex,position)=>{
-    const candidates=QUESTION_BANK.map((q,i)=>({q,i})).filter(x=>x.q.sourceFact===factIndex);
-    return candidates[(position*3+factIndex)%candidates.length].i;
+    const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
+    return candidates[(position*3+factIndex)%candidates.length];
   });
 }
