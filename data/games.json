@@ -101,11 +101,11 @@
     {
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 시뮬레이터",
-      "href": "games/teacher-classroom-sim-prototype/index.html?v=15",
+      "href": "games/teacher-classroom-sim-prototype/index.html?v=16",
       "category": "trivia",
       "age": "job",
       "icon": "🏫",
-      "description": "초등학교 담임교사가 되어 실제 일과에 맞춰 수업을 진행하고, 학생들의 학습·친구관계·그룹 형성·생활지도를 관찰하고 개입하는 살아 있는 학급 운영 시뮬레이션!"
+      "description": "살아 움직이는 교실에서 판단이 필요한 상황 카드를 발견하고, 원칙·공감·코칭·자율의 네 방향으로 결정하세요. 학생별 학습·집중·정서·관계·신뢰 수치와 생기부 기록으로 선택의 결과가 이어지는 담임교사 시뮬레이션!"
     },
     {
       "id": "math_timing_lcd",
