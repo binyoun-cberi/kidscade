@@ -5401,7 +5401,9 @@
       items=items.slice(-90).reverse();
       var html='<div class="tool-section"><h4>우리 반에 있었던 일</h4><div class="record-list">'+(items.length?items.map(recordEntryHtml).join(""):'<div class="record-empty">아직 기록할 만한 판단이나 생활지도 상황이 없습니다.</div>')+'</div></div>';
       var wh=worldHistory.filter(function(e){
-        return !s||e.actorId===s.id||e.targetId===s.id||(e.witnessIds||[]).indexOf(s.id)>=0;
+        var touches=!s||e.actorId===s.id||e.targetId===s.id||(e.witnessIds||[]).indexOf(s.id)>=0;
+        if(!touches)return false;
+        return s?true:((e.severity||0)>=.28||e.kind==="encounter");
       }).slice(-35).reverse();
       if(wh.length){
         html+='<div class="tool-section"><h4>최근 며칠의 연결된 사건</h4>'+wh.map(function(e){
