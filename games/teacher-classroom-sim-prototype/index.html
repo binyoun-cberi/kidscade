@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=26">
+<link rel="stylesheet" href="./style.css?v=29">
 </head>
 <body>
 <main id="app">
@@ -46,8 +46,8 @@
         <div id="sceneTitle" class="scene-title">우리 반의 하루</div>
         <div id="cardIdle" class="card-idle">
           <div class="idle-icon">📚</div>
-          <strong>다음 이야기가 이어집니다</strong>
-          <p>아이들의 하루를 지켜보다 보면 곧 새로운 일이 생깁니다.</p>
+          <strong>시간이 흐르고 있습니다</strong>
+          <p>중요한 순간이 생기면 그 장면만 바로 보여줍니다.</p>
         </div>
 
         <div id="simulationEngine" class="simulation-engine" aria-hidden="true">
@@ -82,6 +82,7 @@
             <article id="encounterCard" class="encounter-card" tabindex="0">
               <div class="encounter-card-kicker" id="encounterKicker">무슨 일이 생겼을까?</div>
               <div id="encounterPortrait" class="encounter-portrait" aria-hidden="true"></div>
+              <div id="encounterThread" class="encounter-thread" hidden></div>
               <h2 id="encounterTitle">교실에서 무언가 일어났다</h2>
               <p id="encounterText"></p>
               <blockquote id="encounterDialogue" hidden></blockquote>
@@ -101,7 +102,7 @@
               <p id="encounterResultText"></p>
               <div id="encounterReaction" class="encounter-reaction" hidden></div>
               <div id="encounterResultStats" class="encounter-result-stats"></div>
-              <button id="encounterReturn" type="button" class="primary">다음 이야기</button>
+              <button id="encounterReturn" type="button" class="primary">계속</button>
             </section>
           </div>
         </section>
@@ -172,6 +173,6 @@
 
   </div>
 </main>
-<script src="./game.js?v=28"></script>
+<script src="./game.js?v=29"></script>
 </body>
 </html>
