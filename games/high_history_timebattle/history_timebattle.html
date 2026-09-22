@@ -38,6 +38,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
   <section id="setup" class="card hidden" style="max-width:720px;margin:18px auto">
     <div id="hostSetup" class="hidden">
       <h2>수업 방 만들기</h2>
+      <div class="preset-row"><button class="mini" onclick="applyHostPreset('quick')">⚡ 빠른 복습</button><button class="mini" onclick="applyHostPreset('ox')">⭕ OX 번개</button><button class="mini" onclick="applyHostPreset('flow')">⏳ 시대 흐름</button></div>
       <div class="grid">
         <div class="field"><label>문제 수</label><select id="questionCount"><option>10</option><option selected>15</option><option>20</option><option>30</option><option>40</option></select></div>
         <div class="field"><label>문제당 시간</label><select id="seconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option></select></div>
@@ -190,6 +191,14 @@ function errorText(e){const m=String(e.message||e);return ({room_not_found:'방�
 async function checkHealth(){const el=$('serverStatus');try{const r=await fetch(API+'/health',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error();el.textContent='● LIVE 서버 연결됨 · 핵심 지식 '+Number(d.facts||0).toLocaleString()+'개 · 출제 문항 '+Number(d.questions||0).toLocaleString()+'개';el.style.color='#6ee7b7'}catch(_){el.textContent='● LIVE 서버에 연결되지 않았어요 · 혼자 연습은 그대로 이용할 수 있어요';el.style.color='#ff9aa5'}}
 
 function checkpointBody(){return {checkpointMode:$('checkpointMode').value,checkpointQuestions:$('checkpointQuestions').value}}
+function applyHostPreset(kind){
+  const map={
+    quick:{count:'10',seconds:'10',order:'random',type:'mixed',checkpoint:'none'},
+    ox:{count:'15',seconds:'10',order:'random',type:'ox',checkpoint:'every5'},
+    flow:{count:'20',seconds:'12',order:'chronological',type:'mixed',checkpoint:'every10'}
+  },p=map[kind];if(!p)return;
+  $('questionCount').value=p.count;$('seconds').value=p.seconds;$('orderMode').value=p.order;$('questionMode').value=p.type;$('checkpointMode').value=p.checkpoint;toggleCheckpointCustom();
+}
 async function createRoom(){
   try{
     if(!selectedEras('hostEraPicker').length)return alert('가르칠 시대를 하나 이상 선택해 주세요.');
