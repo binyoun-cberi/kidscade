@@ -1014,7 +1014,9 @@
     var s=studentById(pendingEncounter.studentId);
     if(!s||s.scene!==teacherScene){token.hidden=true;return}
     token.hidden=false;token.style.left=s.x+"%";token.style.top=Math.max(12,s.y-5)+"%";
-    token.title=pendingEncounter.title;token.setAttribute("aria-label",s.name+"의 판단 상황: "+pendingEncounter.title);
+    var tokenLabel=token.querySelector("small");if(tokenLabel)tokenLabel.textContent=pendingEncounter.isFollowUp?"후속":"상황";
+    token.classList.toggle("followup",!!pendingEncounter.isFollowUp);
+    token.title=pendingEncounter.title;token.setAttribute("aria-label",s.name+"의 "+(pendingEncounter.isFollowUp?"후속 ":"")+"판단 상황: "+pendingEncounter.title);
   }
   function openPendingEncounter(){
     if(!pendingEncounter||activeEncounter)return;
@@ -1033,7 +1035,7 @@
     var card=q("#encounterCard");if(card)card.classList.toggle("followup",!!enc.isFollowUp);
     q("#encounterTitle").textContent=enc.title;
     q("#encounterText").textContent=enc.text;
-    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ");
+    q("#encounterStudent").textContent=[s&&s.name,t&&t.name].filter(Boolean).join(" · ")+(enc.isFollowUp?" · 이전 판단: "+(enc.previousDirection||""):"");
     var dialogue=q("#encounterDialogue");dialogue.hidden=!enc.dialogue;dialogue.textContent=enc.dialogue||"";
     ["up","down","left","right"].forEach(function(dir){
       var cap=dir.charAt(0).toUpperCase()+dir.slice(1),choice=enc.choices[dir];
@@ -3589,7 +3591,7 @@
       btn.textContent="다음";
     }else{
       title.textContent="생기부에는 선택과 결과가 남습니다";
-      txt.textContent="📒 생기부에는 사건, 교사가 고른 방향, 실제 선택 문장, 그 뒤 학생 상태 변화가 기록됩니다. 한 교시가 끝나면 기록할 만한 판단도 자동으로 정리됩니다.";
+      txt.textContent="📒 생기부에는 사건, 선택 방향, 실제 판단 문장과 학생 상태 변화가 누적됩니다. 하루가 끝나면 다음 날로 이어지고, 일부 선택은 며칠 뒤 📌 후속 상황으로 다시 돌아옵니다.";
       var record=q('[data-class-tool="record"]');if(record)record.classList.add("tutorial-focus");
       btn.textContent="하루 시작";
     }
@@ -3776,6 +3778,10 @@
   }
   function endDay(){
     if(dayEnded)return;
+    if(pendingEncounter&&pendingEncounter.followUpId){
+      var pendingJob=followUpQueue.find(function(j){return j.id===pendingEncounter.followUpId});
+      if(pendingJob){pendingJob.status="queued";pendingJob.dueDay=Math.max(dayIndex+1,pendingJob.dueDay)}
+    }
     dayEnded=true;running=false;teacherTask=null;pendingEncounter=null;
     var token=q("#encounterToken");if(token)token.hidden=true;
     var cm=classDashboard(),today=todayEncounters(),styles=todayStyleCounts();
