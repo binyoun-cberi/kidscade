@@ -4066,7 +4066,7 @@
     }
   }
   function openToolModal(kind){
-    if(teacherScene!=="classroom")return;toolModalKind=kind;modalWasRunning=running;running=false;q("#toolModal").hidden=false;renderToolModal(kind);renderClassroomTools();
+    toolModalKind=kind;modalWasRunning=running;running=false;q("#toolModal").hidden=false;renderToolModal(kind);renderClassroomTools();
   }
   function tutorialCompleted(){try{return localStorage.getItem(TUTORIAL_KEY)==="1"}catch(e){return false}}
   function startTutorial(force){
@@ -4104,6 +4104,98 @@
       btn.textContent="첫날 시작";
     }
   }
+  function renderFeed(){ return; }
+  function renderPanel(){ return; }
+  function renderHeader(){
+    var p=current(),cm=classDashboard();
+    var dayEl=q("#dayNumber");if(dayEl)dayEl.textContent="Day "+dayIndex;
+    var timeEl=q("#time");if(timeEl)timeEl.textContent=fmtMin(gameMinute());
+    var periodEl=q("#periodName");if(periodEl)periodEl.textContent=p.name;
+    var hud={hudFlow:cm.flow,hudRelation:cm.relationship,hudStability:cm.stability,hudTrust:cm.trust};
+    Object.keys(hud).forEach(function(id){var el=q("#"+id);if(el)el.textContent=Math.round(hud[id])});
+    var descriptions={
+      morning:"아이들이 하나둘 교실로 들어온다.",
+      lesson:(p.subject||"수업")+" 시간이 흐르고 있다.",
+      break:"쉬는 시간, 여기저기서 작은 일이 생긴다.",
+      lunch:"점심시간, 친구 사이 모습이 잘 보인다.",
+      lunchplay:"점심 뒤 자유시간이 이어진다.",
+      closing:"하루를 정리할 시간이다."
+    };
+    var desc=q("#periodDesc");if(desc)desc.textContent=descriptions[p.kind]||"우리 반의 하루가 흘러가고 있다.";
+    var location=q("#locationName");if(location)location.textContent=SCENE_NAME[teacherScene]||"";
+    var progress=q("#progress");if(progress)progress.style.width=(clamp((gameSec/60-p.start)/(p.end-p.start))*100)+"%";
+  }
+  function renderFrame(){
+    renderHeader();
+    renderClassroomTools();
+  }
+  function render(){
+    renderHeader();
+    renderClassroomTools();
+  }
+  function reset(){
+    gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;periodEncounterCounts={};
+    running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
+    teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
+    feed=[];dayEvents=[];incidentRecords=[];periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
+    classMetrics={flow:72,relationship:68,stability:72,trust:64};teacherStyleCounts={up:0,down:0,left:0,right:0};
+    reportOpen=false;armedActionId=null;armedActionTargetId=null;cardDragActive=false;
+    cardTraySnapshot={targetId:null,ids:[],expiresAt:0,urgent:false};cardRenderSignature="";toolModalKind=null;lastBellAt=-99999;
+    aiAccumulator=0;circleAccumulator=0;renderAccumulator=0;lastFrame=performance.now();
+    resetRelations();resetStudents();rebuildSocialCircles();newStats();assignPeriodDestinations();
+    var report=q("#report");if(report)report.hidden=true;
+    var encounter=q("#encounterOverlay");if(encounter)encounter.hidden=true;
+    var dayEnd=q("#dayEndOverlay");if(dayEnd)dayEnd.hidden=true;
+    var tool=q("#toolModal");if(tool)tool.hidden=true;
+    scheduleNextEncounter(2,4);
+    log("아이들이 하나둘 교실로 들어왔다.","ambient","classroom");
+    render();
+  }
+  function loop(now){
+    if(!document.body.contains(app))return;
+    var realDt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+    if(activeEncounter)updateEncounterClock(now);
+    if(running&&!reportOpen&&!dayEnded){
+      var speedEl=q("#speed"),speed=speedEl?Number(speedEl.value)||1:1;
+      var gameDt=realDt*GAME_SECONDS_PER_REAL_SECOND*speed;
+      gameSec+=gameDt;
+      if(gameSec>=schedule[schedule.length-1].end*60){
+        gameSec=schedule[schedule.length-1].end*60;endDay();
+      }else if(handlePeriodChange()){
+        updateAutoLessonPhase();
+        updateTransit();updateTeacherTask();updateTeacherMovement(gameDt);updateSocialTracking(gameDt);updateMovement(gameDt);
+        aiAccumulator+=gameDt;circleAccumulator+=gameDt;
+        var guard=0;
+        while(aiAccumulator>=AI_STEP_GAME_SECONDS&&guard<8){
+          aiAccumulator-=AI_STEP_GAME_SECONDS;
+          students.forEach(function(s){updateBehaviorLifecycle(s);updateStudent(s)});
+          sampleStats();guard++;
+        }
+        if(circleAccumulator>=GROUP_STEP_GAME_SECONDS){
+          circleAccumulator%=GROUP_STEP_GAME_SECONDS;rebuildSocialCircles();
+        }
+        renderAccumulator+=realDt;
+        if(renderAccumulator>=.10){renderAccumulator=0;renderFrame()}
+        maybeSpawnEncounter();
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  qa("[data-class-tool]").forEach(function(b){
+    b.addEventListener("click",function(){openToolModal(this.dataset.classTool)});
+  });
+  var closeTool=q("#closeToolModal");if(closeTool)closeTool.addEventListener("click",function(){closeToolModal(true);render()});
+  var toolModal=q("#toolModal");if(toolModal)toolModal.addEventListener("click",function(e){if(e.target===this){closeToolModal(true);render()}});
+  var toolBody=q("#toolModalBody");if(toolBody)toolBody.addEventListener("click",function(e){
+    var rosterStudent=e.target.closest&&e.target.closest("[data-roster-student]");
+    if(rosterStudent){selected=Number(rosterStudent.dataset.rosterStudent);renderToolModal("roster");return}
+    var rep=e.target.closest&&e.target.closest("[data-computer-report]");
+    if(rep){var wasRunning=modalWasRunning;closeToolModal(false);openReport(true);reportWasRunning=wasRunning;return}
+  });
+  var resetButton=q("#reset");if(resetButton)resetButton.addEventListener("click",reset);
+
   q("#tutorialButton").addEventListener("click",function(){
     if(this.dataset.tutorialAction==="finish"){finishTutorial();return}
     tutorialState.step=Math.min(3,tutorialState.step+1);renderTutorial();
