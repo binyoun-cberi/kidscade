@@ -3329,27 +3329,42 @@
     if(teacherScene!=="classroom")return;toolModalKind=kind;modalWasRunning=running;running=false;q("#toolModal").hidden=false;renderToolModal(kind);renderClassroomTools();
   }
   function tutorialCompleted(){try{return localStorage.getItem(TUTORIAL_KEY)==="1"}catch(e){return false}}
-  function startTutorial(force){if(!force&&tutorialCompleted())return;closeToolModal(false);tutorialState.active=true;tutorialState.step=0;running=false;renderTutorial()}
+  function startTutorial(force){
+    if(!force&&tutorialCompleted())return;
+    if(toolModalKind)closeToolModal(false);
+    pendingEncounter=null;
+    tutorialState.active=true;tutorialState.step=0;running=false;renderTutorial();renderEncounterToken();
+  }
   function finishTutorial(){
     if(toolModalKind)closeToolModal(false);
     tutorialState.active=false;q("#tutorialOverlay").hidden=true;qa(".tutorial-focus").forEach(function(x){x.classList.remove("tutorial-focus")});
-    try{localStorage.setItem(TUTORIAL_KEY,"1")}catch(e){} running=true;render();
+    try{localStorage.setItem(TUTORIAL_KEY,"1")}catch(e){}
+    running=true;scheduleNextEncounter(120,220);render();
   }
-  function tutorialEvent(type){
-    if(!tutorialState.active)return;
-    if(tutorialState.step===1&&type==="student"){tutorialState.step=2;renderTutorial()}
-    else if(tutorialState.step===2&&type==="action"){tutorialState.step=3;renderTutorial()}
-    else if(tutorialState.step===3&&type==="bell"){tutorialState.step=4;renderTutorial()}
-    else if(tutorialState.step===4&&type==="record"){tutorialState.step=5;renderTutorial()}
-  }
+  function tutorialEvent(type){}
   function renderTutorial(){
-    var overlay=q("#tutorialOverlay"),title=q("#tutorialTitle"),txt=q("#tutorialText"),btn=q("#tutorialButton");overlay.hidden=false;btn.hidden=false;qa(".tutorial-focus").forEach(function(x){x.classList.remove("tutorial-focus")});
-    if(tutorialState.step===0){title.textContent="첫날, 교실을 직접 운영해 봐요";txt.textContent="오른쪽 관리창 대신 교실 안 도구를 사용합니다. 학생의 몸짓과 네 가지 신호를 보고 필요한 행동을 선택해 보세요.";btn.textContent="시작하기";btn.dataset.tutorialAction="start"}
-    else if(tutorialState.step===1){title.textContent="1. 학생을 한 명 살펴보세요";txt.textContent="학생을 누르면 그 학생에게 사용할 행동 카드가 열립니다. 머리 위 이모지는 지금 상태를, 말풍선은 질문·갈등·욕설처럼 실제로 주의해서 들어야 할 말을 보여줘요.";btn.hidden=true;var first=students.find(function(s){return s.scene===teacherScene});if(first&&studentNodes[first.id])studentNodes[first.id].root.classList.add("tutorial-focus")}
-    else if(tutorialState.step===2){title.textContent="2. 행동 카드를 사용해 보세요";txt.textContent="행동 카드를 학생에게 끌어 놓을 수 있어요. 모바일에서는 카드를 누르면 선택한 학생에게 바로 사용합니다. 먼저 ‘지켜보기’를 사용해 보세요.";btn.hidden=true;renderTeacherCards()}
-    else if(tutorialState.step===3){title.textContent="3. 작은 벨을 울려 보세요";txt.textContent="벨은 학급 전체의 시선을 잠깐 모읍니다. 너무 자주 쓰면 효과가 줄어들어요. 교탁의 벨을 눌러 보세요.";btn.hidden=true;renderClassroomTools()}
-    else if(tutorialState.step===4){title.textContent="4. 생기부에서 기록을 확인하세요";txt.textContent="교실에서 일어난 일은 화면 옆에 계속 뜨지 않습니다. 교탁의 생기부를 직접 열어 오늘 기록을 확인해 보세요.";btn.hidden=true;renderClassroomTools()}
-    else{title.textContent="준비 완료";txt.textContent="컴퓨터에서는 수업 흐름을 바꾸고, 관찰판에서는 학습 근거를 확인하고, 자리표에서는 학생 관계와 자리를 조정할 수 있어요. 이제 우리 반의 하루를 운영해 보세요.";btn.textContent="수업 시작";btn.dataset.tutorialAction="finish"}
+    var overlay=q("#tutorialOverlay"),title=q("#tutorialTitle"),txt=q("#tutorialText"),btn=q("#tutorialButton");
+    overlay.hidden=false;btn.hidden=false;qa(".tutorial-focus").forEach(function(x){x.classList.remove("tutorial-focus")});
+    btn.dataset.tutorialAction=tutorialState.step>=3?"finish":"next";
+    if(tutorialState.step===0){
+      title.textContent="교실을 보고, 판단할 순간만 고르세요";
+      txt.textContent="학생 AI와 관계·학습 상태는 계속 돌아가지만 이제 직접 관리할 버튼은 줄었습니다. 교실에서 📌 상황 표시가 생기면 중요한 판단 장면을 발견한 것입니다.";
+      btn.textContent="다음";
+    }else if(tutorialState.step===1){
+      title.textContent="카드는 네 방향으로 판단합니다";
+      txt.textContent="↑ 원칙·권위, ↓ 공감·관계, ← 교육·코칭, → 자율·책임. 어느 방향도 항상 정답은 아닙니다. 카드를 밀거나 네 선택지를 눌러 제한 시간 안에 판단하세요.";
+      btn.textContent="다음";
+    }else if(tutorialState.step===2){
+      title.textContent="숫자는 결과를 확인하는 도구입니다";
+      txt.textContent="교탁의 📑 명부에서 학생별 학습·집중·정서·관계·교사신뢰를 0~100으로 확인할 수 있습니다. 선택으로 숫자가 변하고, 최근 변화 원인도 명부에 남습니다.";
+      var roster=q('[data-class-tool="roster"]');if(roster)roster.classList.add("tutorial-focus");
+      btn.textContent="다음";
+    }else{
+      title.textContent="생기부에는 선택과 결과가 남습니다";
+      txt.textContent="📒 생기부에는 사건, 교사가 고른 방향, 실제 선택 문장, 그 뒤 학생 상태 변화가 기록됩니다. 한 교시가 끝나면 기록할 만한 판단도 자동으로 정리됩니다.";
+      var record=q('[data-class-tool="record"]');if(record)record.classList.add("tutorial-focus");
+      btn.textContent="하루 시작";
+    }
   }
   function renderActionPanel(s){
     qa("#actionTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.category===activeActionCategory)});
@@ -3635,7 +3650,57 @@
     var seat=e.target.closest&&e.target.closest("[data-seat-student]");if(seat){selected=Number(seat.dataset.seatStudent);renderToolModal("seating");return}
     var sa=e.target.closest&&e.target.closest("[data-seating-action]");if(sa){closeToolModal(true);if(sa.dataset.seatingAction==="seatAdjust"){swapMode=true;connectMode=false}else{connectMode=true;swapMode=false}render();return}
   });
-  q("#tutorialButton").addEventListener("click",function(){if(this.dataset.tutorialAction==="start"){tutorialState.step=1;running=true;renderTutorial();render()}else if(this.dataset.tutorialAction==="finish")finishTutorial()});
+  q("#tutorialButton").addEventListener("click",function(){
+    if(this.dataset.tutorialAction==="finish"){finishTutorial();return}
+    tutorialState.step=Math.min(3,tutorialState.step+1);renderTutorial();
+  });
+  q("#encounterToken").addEventListener("click",openPendingEncounter);
+  qa("[data-encounter-dir]").forEach(function(b){
+    b.addEventListener("click",function(){resolveEncounter(this.dataset.encounterDir)});
+  });
+  q("#encounterReturn").addEventListener("click",closeEncounter);
+
+  function encounterPreviewDirection(dx,dy){
+    if(Math.max(Math.abs(dx),Math.abs(dy))<26)return null;
+    return Math.abs(dx)>Math.abs(dy)?(dx<0?"left":"right"):(dy<0?"up":"down");
+  }
+  function updateEncounterPreview(dir){
+    qa(".encounter-choice").forEach(function(b){b.classList.toggle("preview",b.dataset.encounterDir===dir)});
+  }
+  var encounterCard=q("#encounterCard");
+  encounterCard.addEventListener("pointerdown",function(e){
+    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    encounterPointer={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0};
+    this.classList.add("dragging");
+    if(this.setPointerCapture)this.setPointerCapture(e.pointerId);
+  });
+  encounterCard.addEventListener("pointermove",function(e){
+    if(!encounterPointer||encounterPointer.id!==e.pointerId||!activeEncounter||activeEncounter.phase!=="choice")return;
+    var dx=e.clientX-encounterPointer.x,dy=e.clientY-encounterPointer.y;
+    encounterPointer.dx=dx;encounterPointer.dy=dy;
+    var tx=clamp(dx,-95,95),ty=clamp(dy,-95,95);
+    this.style.transform="translate("+tx+"px,"+ty+"px) rotate("+(tx/35)+"deg)";
+    updateEncounterPreview(encounterPreviewDirection(dx,dy));
+  });
+  function finishEncounterPointer(e){
+    if(!encounterPointer||encounterPointer.id!==e.pointerId)return;
+    var dx=encounterPointer.dx,dy=encounterPointer.dy,dir=encounterPreviewDirection(dx,dy);
+    encounterPointer=null;encounterCard.classList.remove("dragging");encounterCard.style.transform="";updateEncounterPreview(null);
+    if(dir&&Math.max(Math.abs(dx),Math.abs(dy))>=64)resolveEncounter(dir);
+  }
+  encounterCard.addEventListener("pointerup",finishEncounterPointer);
+  encounterCard.addEventListener("pointercancel",finishEncounterPointer);
+  encounterCard.addEventListener("keydown",function(e){
+    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    var map={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"};
+    if(map[e.key]){e.preventDefault();resolveEncounter(map[e.key])}
+  });
+  document.addEventListener("keydown",function(e){
+    if(!activeEncounter||activeEncounter.phase!=="choice")return;
+    var map={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"};
+    if(map[e.key]){e.preventDefault();resolveEncounter(map[e.key])}
+  });
+
   q("#helpTutorial").addEventListener("click",function(){startTutorial(true)});
 
   reset();
