@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=16">
+<link rel="stylesheet" href="./style.css?v=17">
 </head>
 <body>
 <main id="app">
@@ -24,7 +24,7 @@
 
   <section class="daybar">
     <div>
-      <div id="time" class="time">08:40</div>
+      <div class="day-time-row"><span id="dayNumber" class="day-number">Day 1</span><div id="time" class="time">08:40</div></div>
       <div class="sub">기본 속도 · 실제 1초 = 게임 10초</div>
     </div>
     <div class="middle">
@@ -131,6 +131,20 @@
           </div>
         </section>
 
+        <section id="dayEndOverlay" class="day-end-overlay" hidden aria-live="assertive">
+          <article class="day-end-card">
+            <div class="day-end-kicker">하루 마무리</div>
+            <h2 id="dayEndTitle">Day 1이 끝났습니다</h2>
+            <p id="dayEndText"></p>
+            <div id="dayEndMetrics" class="day-end-metrics"></div>
+            <div class="day-end-cols">
+              <section><h3>오늘의 판단 경향</h3><div id="dayEndStyles" class="day-end-styles"></div></section>
+              <section><h3>내일 이어질 일</h3><div id="dayEndFollowups" class="day-end-followups"></div></section>
+            </div>
+            <button id="nextDayButton" type="button" class="primary">다음 날 시작</button>
+          </article>
+        </section>
+
         <section id="toolModal" class="tool-modal" hidden aria-live="polite">
           <div class="tool-modal-card">
             <div class="tool-modal-head"><div><small id="toolModalKicker">교탁 도구</small><h3 id="toolModalTitle">도구</h3></div><button id="closeToolModal" type="button" aria-label="닫기">×</button></div>
@@ -233,6 +247,6 @@
     </aside>
   </div>
 </main>
-<script src="./game.js?v=16"></script>
+<script src="./game.js?v=17"></script>
 </body>
 </html>
