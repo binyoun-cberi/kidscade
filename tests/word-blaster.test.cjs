@@ -25,7 +25,7 @@ test('Word Blaster has the intended low-grade learning loop',()=>{
   assert.match(runtime,/reveal=state\.boss\?7:5/);
   assert.match(runtime,/function startBoss\(/);
   assert.match(runtime,/state\.round>=rounds\.length/);
-  assert.match(runtime,/wordBlasterBestScore/);
+  assert.match(runtime,/kidscade_language_v3_word_blaster_best/);\n  assert.match(html,/kidscade-storage\\.js/);\n  assert.doesNotMatch(runtime,/localStorage\\.(?:getItem|setItem|removeItem)/);
   assert.match(data,/en:'APPLE'/);
   assert.match(data,/boss:\['I','LIKE','APPLES'\]/);
 });
@@ -50,7 +50,7 @@ test('Word Blaster is registered as a low-grade language game',()=>{
   assert.equal(game.href,'games/low_word_blaster/index.html?v=1');
   assert.equal(game.category,'lang');
   assert.equal(game.age,'low');
-  assert.equal(game.scoreKey,'wordBlasterBestScore');
+  assert.equal(game.scoreKey,'kidscade_language_v3_word_blaster_best');
 });
 
 test('Word Blaster package tracks the Kenney Starter Kit asset source',()=>{
