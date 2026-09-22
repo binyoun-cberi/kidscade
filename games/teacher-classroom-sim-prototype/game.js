@@ -525,20 +525,13 @@
     mount.dataset.expression=expression.name;
   }
   function advanceCardTurn(){
-    var dayEnd=schedule[schedule.length-1].end*60;
     if(dayEncounterOffered>=dayEncounterBudget){
-      gameSec=Math.min(dayEnd-1,Math.max(gameSec,dayEnd-2));
       nextEncounterAt=Number.POSITIVE_INFINITY;
       return;
     }
-    var remainCards=Math.max(1,dayEncounterBudget-dayEncounterOffered);
-    var remainTime=Math.max(60,dayEnd-gameSec);
-    var ideal=remainTime/(remainCards+1);
-    var step=clamp(ideal*rand(.72,1.05),8*60,42*60);
-    gameSec=Math.min(dayEnd-2,gameSec+step);
-    periodIndex=periodForMinute(gameMinute());
-    newStats();assignPeriodDestinations();updateAutoLessonPhase();
-    nextEncounterAt=gameSec+1;
+    // Encounter pacing never moves the school clock. The simulation keeps running;
+    // the director only decides when it may look for another meaningful moment.
+    nextEncounterAt=gameSec+rand(180,420);
   }
 
   function studentById(id){return students.find(function(s){return s.id===id})||null}
@@ -2741,7 +2734,18 @@
   }
   function makeEncounter(){
     var candidates=storyletDirectorCandidates();if(!candidates.length)return null;
-    var picked=weightedPick(candidates);
+    // Normalize by storylet family so hundreds of ordinary candidates cannot drown out
+    // one meaningful continuation. The director chooses a camera lane first, then a scene.
+    var dueStories=candidates.filter(function(x){return x.kind==="story_due"});
+    var followups=candidates.filter(function(x){return x.kind==="followup"});
+    var starters=candidates.filter(function(x){return x.kind==="story_start"});
+    var ordinary=candidates.filter(function(x){return x.kind==="encounter"});
+    var pools=[];
+    if(dueStories.length)pools.push({weight:dayStoryEventsShown===0?5.6:3.8,item:weightedPick(dueStories)});
+    if(followups.length)pools.push({weight:3.0,item:weightedPick(followups)});
+    if(starters.length)pools.push({weight:1.8,item:weightedPick(starters)});
+    if(ordinary.length)pools.push({weight:5.0,item:weightedPick(ordinary)});
+    var picked=weightedPick(pools).item;
     if(picked.kind==="story_due"){picked.job.status="shown";return buildStoryEncounter(picked.state,picked.nodeId)}
     if(picked.kind==="followup"){picked.job.status="shown";picked.job.shownDay=dayIndex;return buildFollowUpEncounter(picked.job)}
     if(picked.kind==="story_start")return startStoryEncounter(picked.starter);
@@ -5444,7 +5448,7 @@
   }
   function startNextDay(){
     dayIndex+=1;dayEnded=false;gameSec=520*60;periodIndex=0;running=true;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.42;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.66;periodEncounterCounts={};
     selected=null;swapMode=false;connectMode=false;teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];periodMemoKeys={};pendingEncounter=null;activeEncounter=null;encounterPointer=null;
@@ -5493,7 +5497,7 @@
   }
   function reset(){
     gameSec=520*60;periodIndex=0;dayIndex=1;dayEnded=false;daySummaries=[];followUpQueue=[];followUpSeq=0;storyQueue=[];storyStates={};storySeq=0;
-    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.35;periodEncounterCounts={};
+    dayEncounterBudget=8+Math.floor(Math.random()*5);dayEncounterOffered=0;dayFollowUpsShown=0;dayFamilyEventsShown=0;dayStoryEventsShown=0;dayStoryStarterReady=Math.random()<.58;periodEncounterCounts={};
     running=true;selected=null;swapMode=false;connectMode=false;activeActionCategory="observe";teacherTask=null;teacherScene="classroom";
     teacher.x=50;teacher.y=22;teacher.dx=50;teacher.dy=22;teacher.moving=false;
     feed=[];dayEvents=[];worldHistory=[];worldHistorySeq=0;periodMemoKeys={};encounterHistory=[];pendingEncounter=null;activeEncounter=null;encounterSeq=0;encounterPointer=null;
