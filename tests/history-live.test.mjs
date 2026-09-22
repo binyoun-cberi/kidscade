@@ -17,9 +17,10 @@ test('history question bank has at least one thousand playable questions', () =>
     assert.equal(typeof q.q, 'string', 'question '+index+' needs text');
     assert.equal(typeof q.era, 'string', 'question '+index+' needs an era');
     assert.ok(Array.isArray(q.o), 'question '+index+' needs options');
-    assert.equal(q.o.length, 4, 'question '+index+' must have four options');
-    assert.equal(new Set(q.o).size, 4, 'question '+index+' options must be unique');
-    assert.ok(Number.isInteger(q.a) && q.a >= 0 && q.a < 4, 'question '+index+' needs a valid answer index');
+    const expectedOptions = q.family === 'ox' ? 2 : 4;
+    assert.equal(q.o.length, expectedOptions, 'question '+index+' has the wrong option count');
+    assert.equal(new Set(q.o).size, expectedOptions, 'question '+index+' options must be unique');
+    assert.ok(Number.isInteger(q.a) && q.a >= 0 && q.a < expectedOptions, 'question '+index+' needs a valid answer index');
     assert.equal(typeof q.e, 'string', 'question '+index+' needs an explanation');
     assert.ok(q.e.length >= 10, 'question '+index+' explanation is too short');
   }
