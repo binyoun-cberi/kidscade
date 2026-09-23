@@ -24,39 +24,61 @@ const css=[
 '.q17-dead-card{width:min(620px,100%);border:1px solid #65383b;background:#171112;padding:25px;text-align:center;box-shadow:0 20px 80px #000}.q17-dead-card h1{color:#e36b70;margin-top:0}.q17-dead-card p{color:#c8c1c1;line-height:1.65}.q17-dead-card button{border:0;background:#d2b450;color:#171717;font-weight:950;padding:12px 18px;cursor:pointer}',
 '.q17-iso-btn{border:1px solid #6b747d;background:#222a32;color:#eef2f5;padding:6px 10px;font-size:11px;font-weight:900;box-shadow:inset 0 -2px #0005;cursor:pointer;white-space:nowrap}.q17-iso-btn:hover{background:#303a44}.q17-iso-btn.alert{border-color:#d45d64;color:#ff9ba1;background:#321a1d;animation:q17pulse .8s ease-in-out 2}',
 '#q17Isolation{position:fixed;inset:0;z-index:245;background:#050708dc;display:none;align-items:center;justify-content:center;padding:15px}#q17Isolation.show{display:flex}',
-'.q17-iso-card{width:min(900px,100%);max-height:90vh;overflow:auto;background:#11161b;border:1px solid #59636e;box-shadow:0 25px 80px #000}',
+'.q17-iso-card{width:min(1160px,100%);max-height:92vh;overflow:auto;background:#11161b;border:1px solid #59636e;box-shadow:0 25px 80px #000}',
 '.q17-iso-head{position:sticky;top:0;z-index:2;background:#20262d;border-bottom:1px solid #47515b;padding:11px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center}.q17-iso-head h2{font-size:15px;margin:0}.q17-iso-head-actions{display:flex;gap:7px;flex-wrap:wrap}.q17-iso-close,.q17-burn-room{border:1px solid #59636e;background:#12171c;color:#dde2e5;padding:6px 10px;cursor:pointer}.q17-burn-room{border-color:#93474c;background:#391b1e;color:#ffb5b8;font-weight:900}',
 '.q17-iso-note{margin:12px 14px;background:#251e18;border-left:4px solid #b99847;padding:9px 11px;color:#c9c0ae;font-size:11px;line-height:1.55}',
-'.q17-iso-room{margin:12px 14px;padding:16px;background:repeating-linear-gradient(90deg,#171d22 0 62px,#232b31 62px 64px);border:9px solid #333c43;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-height:230px}',
+'.q17-iso-room{margin:12px 14px;padding:18px;background:linear-gradient(#202930 0 16%,#11171b 16% 82%,#28231d 82%);border:9px solid #333c43;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;min-height:270px;position:relative}.q17-iso-room:before{content:"격리동 A · 안전문 / 차단벽 / 관찰창";position:absolute;left:12px;top:8px;color:#7f8b94;font-size:9px;letter-spacing:.08em}.q17-iso-room:after{content:"";position:absolute;left:0;right:0;bottom:42px;height:10px;background:repeating-linear-gradient(135deg,#c2a843 0 14px,#202326 14px 28px);opacity:.6;pointer-events:none}',
 '.q17-detainee{position:relative;background:#0d1115cc;border:1px solid #46515a;min-height:180px;padding:7px;text-align:center;overflow:hidden}.q17-detainee:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 24px,#86919a36 24px 27px);pointer-events:none}',
 '.q17-detainee img{height:105px;max-width:90%;object-fit:contain;filter:drop-shadow(0 6px 5px #0008)}.q17-detainee.zombie{border-color:#873f43;background:#241315cc}.q17-detainee.exposed{border-color:#9c7e3e}',
 '.q17-detainee b{display:block;font-size:11px}.q17-detainee small{display:block;color:#9da7af;font-size:9px;margin-top:2px}.q17-detainee .q17-status{margin-top:5px;font-size:10px;font-weight:900;color:#d8c46b}.q17-detainee.zombie .q17-status{color:#ff7777}',
 '.q17-wrong{display:inline-block;margin-top:4px;background:#71383b;color:#ffd5d5;font-size:8px;font-weight:900;padding:2px 4px}.q17-detainee-actions{position:relative;z-index:2;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:7px}.q17-detainee-actions button{border:1px solid #56616b;background:#1a2026;color:#e2e7ea;padding:4px 6px;font-size:9px;font-weight:850;cursor:pointer}.q17-detainee-actions .release{border-color:#477b58;background:#183021;color:#9ee0af}.q17-detainee-actions .burn{border-color:#8c4449;background:#33191c;color:#ff9da2}',
 '.q17-iso-log{margin:12px 14px 16px;background:#0b0f12;border:1px solid #343d45;padding:10px;max-height:150px;overflow:auto;font-size:10px;color:#aeb7be;line-height:1.6}.q17-iso-log b{color:#e7c65c}',
 '.q17-camp-label{position:absolute;left:14px;top:14px;color:#c7d0d6;font-size:10px;background:#111a;padding:5px 7px;border:1px solid #4a555e}',
+'.q17-help-btn{border:1px solid #65717c;background:#202830;color:#e8edf0;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer}.q17-help-btn:hover{background:#303b45}',
+'#q17Tutorial{position:fixed;inset:0;z-index:520;background:#050709e8;display:none;align-items:center;justify-content:center;padding:18px}#q17Tutorial.show{display:flex}',
+'.q17-tutorial-card{width:min(720px,100%);background:#161c22;border:1px solid #66727e;box-shadow:0 24px 90px #000;padding:22px}.q17-tutorial-card h2{margin:0 0 8px;color:#efd06f}.q17-tutorial-card p{color:#c2cad0;line-height:1.7}.q17-tutorial-demo{background:#0d1216;border:1px solid #3d4852;padding:14px;margin:14px 0;min-height:112px}.q17-tutorial-demo b{color:#fff}.q17-tutorial-nav{display:flex;justify-content:space-between;gap:8px}.q17-tutorial-nav button{border:1px solid #596570;background:#222a31;color:#eef2f4;padding:9px 14px;font-weight:850;cursor:pointer}.q17-tutorial-nav .next{background:#c4a84b;color:#171717;border:0}.q17-tutorial-progress{color:#7f8b94;font-size:10px;margin-bottom:6px}',
 '@keyframes q17pulse{50%{transform:scale(1.06);box-shadow:0 0 24px #b34b4b88}}',
-'@media(max-width:680px){#q17Outbreak{padding:0}.q17-combat-shell{height:100%;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:1;min-height:0;aspect-ratio:auto}.q17-combat-help{font-size:9px;padding:6px 8px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.q17-iso-btn{padding:5px 7px;font-size:10px}}'
+'@media(max-width:680px){#q17Outbreak{padding:0}.q17-combat-shell{height:100%;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:1;min-height:0;aspect-ratio:auto}.q17-combat-help{font-size:9px;padding:6px 8px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.q17-iso-btn,.q17-help-btn{padding:5px 7px;font-size:10px}.q17-tutorial-card{padding:16px}}'
 ].join('\n');
 const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
 
 const wrap=document.createElement('div');wrap.id='q17Outbreak';
-wrap.innerHTML='<div class="q17-combat-shell"><div class="q17-combat-head"><div class="q17-combat-title" id="q17CombatTitle">⚠ 격리선 붕괴 · 긴급 진압</div><div class="q17-combat-stats"><span>체력 <b id="q17Hp">100</b></span><span>잔여 좀비 <b id="q17Left">0</b></span><span id="q17SurvivorStat" style="display:none">캠프 생존자 <b id="q17Survivors">0</b></span><span>탄창 <b id="q17Ammo">12</b></span><span>감염률 <b id="q17Risk">0%</b></span></div></div><canvas id="q17CombatCanvas" width="960" height="540"></canvas><div class="q17-combat-help"><span>이동 WASD / 방향키 · 조준 마우스 · 클릭/스페이스 사격 · R 재장전</span><span>모바일: 누른 방향으로 이동하며 가까운 좀비를 자동 사격</span></div><div class="q17-alert" id="q17Alert"><h2 id="q17AlertTitle">격리선 붕괴</h2><p id="q17AlertText"></p><button id="q17AlertBtn" type="button">진압 시작</button></div></div>';
+wrap.innerHTML='<div class="q17-combat-shell"><div class="q17-combat-head"><div class="q17-combat-title" id="q17CombatTitle">⚠ 격리선 붕괴 · 긴급 진압</div><div class="q17-combat-stats"><span>체력 <b id="q17Hp">100</b></span><span>잔여 좀비 <b id="q17Left">0</b></span><span id="q17SurvivorStat" style="display:none">캠프 생존자 <b id="q17Survivors">0</b></span><span>탄창 <b id="q17Ammo">12</b></span><span>감염률 <b id="q17Risk">0%</b></span></div></div><canvas id="q17CombatCanvas" width="960" height="540"></canvas><div class="q17-combat-help"><span>달리기 A/D · 점프 W/↑/Space · 조준 마우스 · 클릭/J 사격 · F 근접 타격 · R 재장전</span><span>플레이어는 매우 빠름 · 좀비는 시민보다 조금 빠름 · 장애물과 발판을 이용하세요</span></div><div class="q17-alert" id="q17Alert"><h2 id="q17AlertTitle">격리선 붕괴</h2><p id="q17AlertText"></p><button id="q17AlertBtn" type="button">진압 시작</button></div></div>';
 document.body.appendChild(wrap);
 
 const dead=document.createElement('div');dead.className='q17-dead';dead.id='q17Dead';
 dead.innerHTML='<div class="q17-dead-card"><h1 id="q17DeadTitle">검역소 함락</h1><p id="q17DeadText"></p><p><b>검역 단계의 한 번의 판정이 뒤쪽 생존 상황까지 이어집니다.</b></p><button type="button" id="q17Restart">처음부터 다시</button></div>';
 document.body.appendChild(dead);
 
-const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 0/6 · CCTV';(document.querySelector('.meters')||document.body).appendChild(isoBtn);
+const metersHost=document.querySelector('.meters')||document.body;const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 0/6 · CCTV';metersHost.appendChild(isoBtn);const helpBtn=document.createElement('button');helpBtn.type='button';helpBtn.className='q17-help-btn';helpBtn.textContent='튜토리얼';metersHost.appendChild(helpBtn);
 const iso=document.createElement('div');iso.id='q17Isolation';
 iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>공동 격리실 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-burn-room" id="q17BurnRoom">격리실 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note">정원은 6명입니다. 정상으로 보이는 사람은 충분히 관찰한 뒤 생존자 캠프로 돌려보낼 수 있습니다. <b>비상 소각은 격리실 전체</b>를 태우므로 정상인이 남아 있다면 큰 불이익이 생깁니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
 document.body.appendChild(iso);
+
+const tutorial=document.createElement('div');tutorial.id='q17Tutorial';
+tutorial.innerHTML='<div class="q17-tutorial-card"><div class="q17-tutorial-progress" id="q17TutProgress"></div><h2 id="q17TutTitle"></h2><p id="q17TutText"></p><div class="q17-tutorial-demo" id="q17TutDemo"></div><div class="q17-tutorial-nav"><button type="button" id="q17TutPrev">이전</button><button type="button" id="q17TutClose">닫기</button><button type="button" class="next" id="q17TutNext">다음</button></div></div>';
+document.body.appendChild(tutorial);
+const tutorialSteps=[
+ {title:'1. 검역 판정',text:'시민을 바로 찍어 맞히는 게임이 아니라, 필요한 검사를 하고 현재 주차의 지침과 대조하는 게임입니다.',demo:'<b>I/T/U/B/R/G</b>로 검사 · <b>V</b>로 지금까지 본 검사 결과 다시보기 · <b>1/2/3</b>으로 통과/추가검사/격리'},
+ {title:'2. 격리실 관리',text:'격리 판정을 받은 시민은 정원 6명의 공동 격리실로 이동합니다. 정상인은 관찰 후 다시 생존자 캠프로 보낼 수 있고, 감염이 확실하면 개별 소각실로 이송할 수 있습니다.',demo:'상단의 <b>격리실 CCTV</b>에서 상태를 확인하세요. 좀비를 방치하면 오판 격리된 정상인까지 감염될 수 있습니다.'},
+ {title:'3. 잘못 통과시키면',text:'감염자를 통과시키면 생존자 캠프로 들어가 버립니다. 캠프에 들어가 직접 제압해야 하며, 늦으면 시민이 물리고 시간이 지난 뒤 새 좀비가 됩니다.',demo:'생존자 한 명이 감염되는 순간 즉시 모두 좀비가 되지는 않습니다. 도망칠 시간과 구조할 시간이 있습니다.'},
+ {title:'4. 전투',text:'전투는 넓은 횡스크롤 구역입니다. 플레이어는 좀비보다 훨씬 빠르고, 좀비는 시민보다 조금 빠릅니다. 장애물과 발판을 넘나들며 거리를 벌리세요.',demo:'<b>A/D</b> 달리기 · <b>W/↑/Space</b> 점프 · <b>마우스 클릭 또는 J</b> 사격 · <b>F</b> 근접 타격 · <b>R</b> 재장전<br>총은 안전하지만 탄약과 재장전이 필요하고, 근접 공격은 강하지만 가까이 가야 해서 위험합니다.'}
+];
+let tutorialIndex=0;
+function renderTutorial(){const s=tutorialSteps[tutorialIndex];document.getElementById('q17TutProgress').textContent=(tutorialIndex+1)+' / '+tutorialSteps.length;document.getElementById('q17TutTitle').textContent=s.title;document.getElementById('q17TutText').textContent=s.text;document.getElementById('q17TutDemo').innerHTML=s.demo;document.getElementById('q17TutPrev').disabled=tutorialIndex===0;document.getElementById('q17TutNext').textContent=tutorialIndex===tutorialSteps.length-1?'완료':'다음'}
+function openTutorial(step){tutorialIndex=Math.max(0,Math.min(tutorialSteps.length-1,step||0));renderTutorial();tutorial.classList.add('show')}
+function closeTutorial(){tutorial.classList.remove('show');try{localStorage.setItem('q17TutorialSeen','1')}catch(e){}}
+helpBtn.addEventListener('click',function(){openTutorial(0)});
+document.getElementById('q17TutPrev').addEventListener('click',function(){if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
+document.getElementById('q17TutNext').addEventListener('click',function(){if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
+document.getElementById('q17TutClose').addEventListener('click',closeTutorial);
+const startForTutorial=document.getElementById('startBtnV2');if(startForTutorial)startForTutorial.addEventListener('click',function(){let seen=false;try{seen=localStorage.getItem('q17TutorialSeen')==='1'}catch(e){}if(!seen)setTimeout(function(){openTutorial(0)},450)});
 
 const canvas=document.getElementById('q17CombatCanvas'),ctx=canvas.getContext('2d');
 const images={};Object.keys(SPRITES).forEach(function(k){const im=new Image();im.src=SPRITES[k];images[k]=im});
 const keys={},mouse={x:canvas.width/2,y:canvas.height/2,down:false};
 
-let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,autoTarget=null;
+let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,meleeCd=0,autoTarget=null;let cameraX=0,worldW=0,worldH=0,groundY=0,obstacles=[];
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
 const ISOLATION_CAPACITY=6;
 let isolation=[],isoLog=[],isoSeq=0;
@@ -167,33 +189,41 @@ renderIsolation();
 
 function difficulty(){
  const inf=infection();
- return {inf:inf,count:Math.max(5,Math.min(26,6+Math.floor((inf-18)*.75))),speed:46+Math.max(0,inf-20)*1.2,hp:1+Math.floor(Math.max(0,inf-28)/10)};
+ return {inf:inf,count:Math.max(5,Math.min(26,6+Math.floor((inf-18)*.75))),speed:120+Math.max(0,inf-20)*1.15,hp:2+Math.floor(Math.max(0,inf-34)/12)};
 }
 function resizeCanvas(){
  const r=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
  const w=Math.max(320,Math.round(r.width*dpr)),h=Math.max(240,Math.round(r.height*dpr));
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
 }
-function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,r:22*(window.devicePixelRatio||1),hp:hp||1,speed:speed||70*(window.devicePixelRatio||1),hit:0,name:name||'',attackDelay:attackDelay||0})}
+function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,vx:0,vy:0,r:22*(window.devicePixelRatio||1),hp:hp||2,speed:speed||130*(window.devicePixelRatio||1),hit:0,name:name||'',attackDelay:attackDelay||0,onGround:true,knock:0})}
+function makeWorld(kind){
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ worldH=canvas.height;worldW=Math.max(canvas.width*2.7,2200*dpr);groundY=worldH-64*dpr;
+ obstacles=[
+  {x:420*dpr,y:groundY-80*dpr,w:86*dpr,h:80*dpr,type:'crate'},
+  {x:760*dpr,y:groundY-45*dpr,w:130*dpr,h:45*dpr,type:'barrier'},
+  {x:1060*dpr,y:groundY-125*dpr,w:145*dpr,h:125*dpr,type:'container'},
+  {x:1380*dpr,y:groundY-65*dpr,w:100*dpr,h:65*dpr,type:'crate'},
+  {x:1690*dpr,y:groundY-105*dpr,w:170*dpr,h:105*dpr,type:'container'},
+  {x:2020*dpr,y:groundY-55*dpr,w:115*dpr,h:55*dpr,type:'barrier'}
+ ];
+}
 function setupCombat(kind,payload){
- resizeCanvas();mode=kind;currentIncidentInf=infection();currentIntruder=payload&&payload.name||'';campLosses=0;
- const W=canvas.width,H=canvas.height,dpr=window.devicePixelRatio||1;
- player={x:W/2,y:H*.82,r:25*dpr,hp:100,ammo:12,maxAmmo:12};
- zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;autoTarget=null;
+ resizeCanvas();mode=kind;currentIncidentInf=infection();currentIntruder=payload&&payload.name||'';campLosses=0;makeWorld(kind);
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ player={x:110*dpr,y:groundY,r:23*dpr,hp:100,ammo:12,maxAmmo:12,vx:0,vy:0,onGround:true,facing:1};
+ zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;meleeCd=0;autoTarget=null;cameraX=0;
  if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer','soldier'];
-  const pts=[[.34,.34],[.48,.28],[.62,.36],[.40,.48],[.58,.50],[.47,.60],[.68,.58]];
-  pts.forEach(function(p,i){survivors.push({x:W*p[0],y:H*p[1],r:20*dpr,sprite:survivorSprites[i],alive:true,wander:(i%2?1:-1)*(14+i*1.5)*dpr,bite:0,bitten:false,turnTimer:0})});
-  spawnZombie(W*.10,H*.46,1,58*dpr,currentIntruder,1.5);
+  const xs=[720,940,1210,1510,1740,1940,2140];
+  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:19*dpr,sprite:survivorSprites[i],alive:true,speed:(96+(i%3)*5)*dpr,dir:i%2?1:-1,bite:0,bitten:false,turnTimer:0})});
+  spawnZombie(560*dpr,groundY,2,132*dpr,currentIntruder,1.7);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
   document.getElementById('q17SurvivorStat').style.display='';
  }else{
   const d=difficulty();
-  for(let i=0;i<d.count;i++){
-   const side=i%4;let x,y;
-   if(side===0){x=Math.random()*W;y=-30}else if(side===1){x=W+30;y=Math.random()*H}else if(side===2){x=Math.random()*W;y=H+30}else{x=-30;y=Math.random()*H}
-   spawnZombie(x,y,d.hp,d.speed*(.8+Math.random()*.35)*dpr,'');
-  }
+  for(let i=0;i<d.count;i++){const x=(520+i*(worldW-650)/Math.max(1,d.count-1));spawnZombie(x,groundY,d.hp,d.speed*dpr*(.9+Math.random()*.18),'',.8+Math.random()*.7)}
   document.getElementById('q17CombatTitle').textContent='⚠ 격리선 붕괴 · 긴급 진압';
   document.getElementById('q17SurvivorStat').style.display='none';
  }
@@ -221,89 +251,108 @@ function showCampBreach(payload,next){
  active=true;started=false;continuation=typeof next==='function'?next:null;setupCombat('camp',payload);
  wrap.classList.add('show');
  document.getElementById('q17AlertTitle').textContent='생존자 캠프 긴급 경보';
- document.getElementById('q17AlertText').innerHTML='<b>'+escapeHtml(payload.name)+'</b>을(를) 통과시켰지만 감염자였습니다.<br>이미 생존자 캠프로 들어갔습니다. <b>다른 생존자를 물기 전에</b> 직접 들어가 제압하십시오. 늦을수록 좀비 수가 늘어납니다.';
+ document.getElementById('q17AlertText').innerHTML='<b>'+escapeHtml(payload.name)+'</b>을(를) 통과시켰지만 감염자였습니다.<br>이미 생존자 캠프로 들어갔습니다. <b>다른 생존자를 물기 전에</b> 직접 들어가 제압하십시오.<br>플레이어는 좀비보다 훨씬 빠릅니다. 장애물을 넘고 거리를 벌려 사격하거나, 가까이 붙었을 때 F로 강하게 밀쳐내세요.';
  document.getElementById('q17Alert').classList.add('show');
  return true;
 }
 function shoot(tx,ty){
  if(!started||shootCd>0||reload>0)return;
  if(player.ammo<=0){startReload();return}
- const dx=tx-player.x,dy=ty-player.y,len=Math.hypot(dx,dy)||1;
- bullets.push({x:player.x,y:player.y,vx:dx/len*650*(window.devicePixelRatio||1),vy:dy/len*650*(window.devicePixelRatio||1),life:1.2});
- player.ammo--;shootCd=.13;updateHud();if(player.ammo<=0)startReload();
+ const dx=tx-player.x,dy=ty-(player.y-30*(window.devicePixelRatio||1)),len=Math.hypot(dx,dy)||1;
+ bullets.push({x:player.x+player.facing*18*(window.devicePixelRatio||1),y:player.y-30*(window.devicePixelRatio||1),vx:dx/len*720*(window.devicePixelRatio||1),vy:dy/len*720*(window.devicePixelRatio||1),life:1.35});
+ player.facing=dx>=0?1:-1;player.ammo--;shootCd=.18;updateHud();if(player.ammo<=0)startReload();
+}
+function melee(){
+ if(!started||meleeCd>0)return;meleeCd=.55;
+ const range=78*(window.devicePixelRatio||1),targets=zombies.filter(function(z){return Math.abs(z.x-player.x)<range&&Math.abs(z.y-player.y)<70*(window.devicePixelRatio||1)});
+ let hit=false;targets.forEach(function(z){const side=z.x>=player.x?1:-1;z.hp-=2;z.knock=side*210*(window.devicePixelRatio||1);z.hit=.22;hit=true});
+ if(hit)notify('근접 타격 · 강한 피해');else notify('근접 공격이 빗나갔습니다.');
 }
 function startReload(){if(!player||reload>0||player.ammo===player.maxAmmo)return;reload=1.05}
-function nearestZombie(){let best=null,bd=Infinity;zombies.forEach(function(z){const d=(z.x-player.x)*(z.x-player.x)+(z.y-player.y)*(z.y-player.y);if(d<bd){bd=d;best=z}});return best}
+function nearestZombie(){let best=null,bd=Infinity;zombies.forEach(function(z){const d=Math.abs(z.x-player.x);if(d<bd){bd=d;best=z}});return best}
 function nearestTargetForZombie(z){
- let target=player,bd=Math.hypot(z.x-player.x,z.y-player.y);
+ let target=player,bd=Math.abs(z.x-player.x);
  if(mode==='camp'&&z.attackDelay<=0){
-  survivors.forEach(function(s){if(!s.alive||s.bitten)return;const d=Math.hypot(z.x-s.x,z.y-s.y)*.86;if(d<bd){bd=d;target=s}});
+  survivors.forEach(function(s){if(!s.alive||s.bitten)return;const d=Math.abs(z.x-s.x)*.92;if(d<bd){bd=d;target=s}});
  }
  return target;
 }
 function convertSurvivor(s){
  if(!s.alive)return;s.alive=false;campLosses++;
- spawnZombie(s.x,s.y,1,68*(window.devicePixelRatio||1),'캠프 감염자',2.0);
- notify('캠프 감염 확산 · 생존자 1명이 좀비로 변했습니다.');
- updateHud();
+ spawnZombie(s.x,groundY,2,128*(window.devicePixelRatio||1),'캠프 감염자',2.2);
+ notify('캠프 감염 확산 · 생존자 1명이 좀비로 변했습니다.');updateHud();
 }
+function collidesObstacle(x,y,r){
+ return obstacles.some(function(o){return x+r>o.x&&x-r<o.x+o.w&&y>o.y&&y-r*1.6<o.y+o.h});
+}
+function obstacleAhead(entity,dir){
+ return obstacles.find(function(o){return dir>0?entity.x+entity.r+10>o.x&&entity.x<o.x&&entity.x+entity.r<o.x+o.w:entity.x-entity.r-10<o.x+o.w&&entity.x>o.x+o.w&&entity.x-entity.r>o.x});
+}
+function worldMouse(e){const r=canvas.getBoundingClientRect();return{x:cameraX+(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
 function update(dt){
  if(!started)return;
- shootCd=Math.max(0,shootCd-dt);
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ shootCd=Math.max(0,shootCd-dt);meleeCd=Math.max(0,meleeCd-dt);
  if(reload>0){reload-=dt;if(reload<=0){player.ammo=player.maxAmmo;updateHud()}}
- let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
- if(dx||dy){const l=Math.hypot(dx,dy);player.x+=dx/l*220*dt*(window.devicePixelRatio||1);player.y+=dy/l*220*dt*(window.devicePixelRatio||1)}
- player.x=Math.max(player.r,Math.min(canvas.width-player.r,player.x));player.y=Math.max(player.r,Math.min(canvas.height-player.r,player.y));
+ const move=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+ const playerSpeed=330*dpr;
+ if(move){player.vx=move*playerSpeed;player.facing=move}else player.vx*=Math.pow(.0008,dt);
+ if((keys.w||keys.arrowup||keys[' '])&&player.onGround){player.vy=-470*dpr;player.onGround=false;keys.w=false;keys.arrowup=false;keys[' ']=false}
+ player.vy+=1080*dpr*dt;
+ let nx=player.x+player.vx*dt,ny=player.y+player.vy*dt;
+ const hitObs=collidesObstacle(nx,ny,player.r);
+ if(hitObs&&player.y>=groundY-2*dpr){nx=player.x;player.vx=0}
+ player.x=Math.max(player.r,Math.min(worldW-player.r,nx));player.y=ny;
+ if(player.y>=groundY){player.y=groundY;player.vy=0;player.onGround=true}
+ obstacles.forEach(function(o){if(player.vy>0&&player.x+player.r*.6>o.x&&player.x-player.r*.6<o.x+o.w&&player.y>=o.y&&player.y-player.vy*dt<o.y){player.y=o.y;player.vy=0;player.onGround=true}});
  if(mouse.down)shoot(mouse.x,mouse.y);
- if(autoTarget){const ax=autoTarget.x-player.x,ay=autoTarget.y-player.y,l=Math.hypot(ax,ay);if(l>55*(window.devicePixelRatio||1)){player.x+=ax/l*150*dt*(window.devicePixelRatio||1);player.y+=ay/l*150*dt*(window.devicePixelRatio||1)}const n=nearestZombie();if(n)shoot(n.x,n.y)}
+ if(autoTarget){const dx=autoTarget.x-player.x;if(Math.abs(dx)>45*dpr){player.vx=Math.sign(dx)*260*dpr;player.facing=Math.sign(dx)}const n=nearestZombie();if(n)shoot(n.x,n.y-25*dpr)}
  if(mode==='camp'){
   survivors.forEach(function(s){
    if(!s.alive)return;
    if(s.bitten){s.turnTimer-=dt;if(s.turnTimer<=0){convertSurvivor(s);return}}
-   let nearest=null,nd=Infinity;zombies.forEach(function(z){const d=Math.hypot(z.x-s.x,z.y-s.y);if(d<nd){nd=d;nearest=z}});
-   if(nearest&&nd<155*(window.devicePixelRatio||1)&&!s.bitten){
-    const ax=s.x-nearest.x,ay=s.y-nearest.y,l=Math.hypot(ax,ay)||1;
-    s.x+=ax/l*72*dt*(window.devicePixelRatio||1);s.y+=ay/l*72*dt*(window.devicePixelRatio||1);
-   }else if(!s.bitten){s.x+=s.wander*dt;if(s.x<canvas.width*.28||s.x>canvas.width*.74)s.wander*=-1}
-   s.x=Math.max(canvas.width*.27,Math.min(canvas.width*.76,s.x));s.y=Math.max(canvas.height*.25,Math.min(canvas.height*.66,s.y));
-   if(!s.bitten)s.bite=Math.max(0,s.bite-dt*.35);
+   let near=null,nd=Infinity;zombies.forEach(function(z){const d=Math.abs(z.x-s.x);if(d<nd){nd=d;near=z}});
+   if(near&&nd<210*dpr&&!s.bitten){s.dir=near.x<s.x?1:-1}
+   s.x+=s.dir*s.speed*dt;
+   const obs=obstacleAhead(s,s.dir);if(obs){s.dir*=-1}
+   if(s.x<520*dpr){s.x=520*dpr;s.dir=1}if(s.x>worldW-80*dpr){s.x=worldW-80*dpr;s.dir=-1}
+   if(!s.bitten)s.bite=Math.max(0,s.bite-dt*.22);
   });
  }
- bullets.forEach(function(b){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt});
- bullets=bullets.filter(function(b){return b.life>0&&b.x>-20&&b.y>-20&&b.x<canvas.width+20&&b.y<canvas.height+20});
+ bullets.forEach(function(b){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(obstacles.some(function(o){return b.x>o.x&&b.x<o.x+o.w&&b.y>o.y&&b.y<o.y+o.h}))b.life=0});
+ bullets=bullets.filter(function(b){return b.life>0&&b.x>-20&&b.x<worldW+20&&b.y>-20&&b.y<worldH+20});
  zombies.forEach(function(z){
-  z.attackDelay=Math.max(0,z.attackDelay-dt);
-  const target=nearestTargetForZombie(z),ax=target.x-z.x,ay=target.y-z.y,l=Math.hypot(ax,ay)||1;
-  z.x+=ax/l*z.speed*dt;z.y+=ay/l*z.speed*dt;z.hit=Math.max(0,z.hit-dt);
+  z.attackDelay=Math.max(0,z.attackDelay-dt);z.hit=Math.max(0,z.hit-dt);
+  const target=nearestTargetForZombie(z),dir=target.x>=z.x?1:-1;
+  if(Math.abs(z.knock)>1){z.x+=z.knock*dt;z.knock*=Math.pow(.02,dt)}
+  else{z.x+=dir*z.speed*dt;const obs=obstacleAhead(z,dir);if(obs){z.x+=dir*z.speed*.45*dt}}
+  const dist=Math.abs(target.x-z.x);
   if(target===player){
-   if(l<player.r+z.r&&z.hit<=0){player.hp=Math.max(0,player.hp-12);z.hit=.65;updateHud();if(player.hp<=0){lose();return}}
-  }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&l<target.r+z.r){
-   target.bite=(target.bite||0)+dt;
-   if(target.bite>=1.35){target.bitten=true;target.turnTimer=4.2;target.bite=0;z.attackDelay=.8;notify('생존자 물림 · 약 4초 뒤 변이 위험');}
+   if(dist<player.r+z.r&&Math.abs(player.y-groundY)<60*dpr&&z.hit<=0){player.hp=Math.max(0,player.hp-12);z.hit=.65;player.vx=dir*180*dpr;updateHud();if(player.hp<=0){lose();return}}
+  }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&dist<target.r+z.r+6*dpr){
+   target.bite=(target.bite||0)+dt;if(target.bite>=1.55){target.bitten=true;target.turnTimer=4.8;target.bite=0;z.attackDelay=.9;notify('생존자 물림 · 약 5초 뒤 변이 위험')}
   }
  });
- bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+5){z.hp--;b.life=0}})});
+ bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;const dx=b.x-z.x,dy=b.y-(z.y-28*dpr);if(Math.abs(dx)<z.r*1.05&&Math.abs(dy)<z.r*1.55){const headshot=b.y<z.y-38*dpr;z.hp-=headshot?2:1;z.hit=.16;z.knock=(b.vx>0?1:-1)*95*dpr;b.life=0;if(headshot)notify('헤드샷 · 추가 피해')}})});
  zombies=zombies.filter(function(z){return z.hp>0});updateHud();
+ cameraX=Math.max(0,Math.min(worldW-canvas.width,player.x-canvas.width*.42));
  if(zombies.length===0&&!survivors.some(function(s){return s.alive&&s.bitten}))win();
 }
 function draw(){
- const W=canvas.width,H=canvas.height,dpr=window.devicePixelRatio||1;ctx.clearRect(0,0,W,H);
- ctx.fillStyle=mode==='camp'?'#18211d':'#151b20';ctx.fillRect(0,0,W,H);
- ctx.strokeStyle=mode==='camp'?'#32443a':'#2a343d';ctx.lineWidth=2;const g=64*dpr;
- for(let x=0;x<W;x+=g){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
- for(let y=0;y<H;y+=g){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
- if(mode==='camp'){
-  ctx.fillStyle='#2e3c32';ctx.fillRect(W*.24,H*.18,W*.56,H*.52);
-  ctx.strokeStyle='#8a8e76';ctx.lineWidth=5*dpr;ctx.strokeRect(W*.24,H*.18,W*.56,H*.52);
-  ctx.fillStyle='#d7c45e';ctx.font=(12*dpr)+'px sans-serif';ctx.fillText('SURVIVOR CAMP',W*.27,H*.23);
-  survivors.forEach(function(s){if(!s.alive)return;const im=images[s.sprite]||images.player,ss=s.r*3;ctx.drawImage(im,s.x-ss/2,s.y-ss*.67,ss,ss);if(s.bitten){ctx.fillStyle='#d6575f';ctx.beginPath();ctx.arc(s.x,s.y-ss*.6,6*dpr,0,Math.PI*2);ctx.fill()}});
- }else{
-  ctx.fillStyle='#784047';ctx.fillRect(0,0,W,8*dpr);ctx.fillRect(0,H-8*dpr,W,8*dpr);ctx.fillRect(0,0,8*dpr,H);ctx.fillRect(W-8*dpr,0,8*dpr,H);
- }
+ const W=canvas.width,H=canvas.height,dpr=Math.min(2,window.devicePixelRatio||1);ctx.clearRect(0,0,W,H);
+ ctx.fillStyle=mode==='camp'?'#18211d':'#161d22';ctx.fillRect(0,0,W,H);
+ ctx.save();ctx.translate(-cameraX,0);
+ ctx.fillStyle='#263139';ctx.fillRect(0,groundY,worldW,H-groundY);
+ ctx.fillStyle='#36424a';for(let x=0;x<worldW;x+=180*dpr){ctx.fillRect(x,groundY-4*dpr,120*dpr,4*dpr)}
+ if(mode==='camp'){ctx.fillStyle='#293b30';ctx.fillRect(480*dpr,groundY-260*dpr,worldW-570*dpr,260*dpr);ctx.strokeStyle='#8a8e76';ctx.lineWidth=5*dpr;ctx.strokeRect(480*dpr,groundY-260*dpr,worldW-570*dpr,260*dpr);ctx.fillStyle='#d7c45e';ctx.font=(13*dpr)+'px sans-serif';ctx.fillText('SURVIVOR CAMP · SECTOR 17',520*dpr,groundY-220*dpr)}
+ obstacles.forEach(function(o){ctx.fillStyle=o.type==='container'?'#39464d':o.type==='crate'?'#564737':'#4b5052';ctx.fillRect(o.x,o.y,o.w,o.h);ctx.strokeStyle='#78828a';ctx.lineWidth=2*dpr;ctx.strokeRect(o.x,o.y,o.w,o.h);if(o.type==='crate'){ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x+o.w,o.y+o.h);ctx.moveTo(o.x+o.w,o.y);ctx.lineTo(o.x,o.y+o.h);ctx.stroke()}})
+ if(mode==='camp'){survivors.forEach(function(s){if(!s.alive)return;const im=images[s.sprite]||images.player,ss=s.r*3;ctx.drawImage(im,s.x-ss/2,s.y-ss*.72,ss,ss);if(s.bitten){ctx.fillStyle='#d6575f';ctx.beginPath();ctx.arc(s.x,s.y-ss*.76,6*dpr,0,Math.PI*2);ctx.fill()}})}
  bullets.forEach(function(b){ctx.fillStyle='#f6d86d';ctx.beginPath();ctx.arc(b.x,b.y,4*dpr,0,Math.PI*2);ctx.fill()});
- zombies.forEach(function(z){const s=z.r*3;ctx.save();ctx.translate(z.x,z.y);const flip=player.x<z.x?-1:1;ctx.scale(flip,1);if(z.hit>0)ctx.globalAlpha=.55;ctx.drawImage(images.zombie,-s/2,-s*.68,s,s);ctx.restore()});
- const ps=player.r*3.1;ctx.drawImage(images.player,player.x-ps/2,player.y-ps*.7,ps,ps);
- if(reload>0){ctx.fillStyle='#000a';ctx.fillRect(player.x-35*dpr,player.y+35*dpr,70*dpr,8*dpr);ctx.fillStyle='#e2c65c';ctx.fillRect(player.x-35*dpr,player.y+35*dpr,70*dpr*(1-reload/1.05),8*dpr)}
+ zombies.forEach(function(z){const s=z.r*3;ctx.save();ctx.translate(z.x,z.y);const flip=player.x<z.x?-1:1;ctx.scale(flip,1);if(z.hit>0)ctx.globalAlpha=.55;ctx.drawImage(images.zombie,-s/2,-s*.75,s,s);ctx.restore()});
+ const ps=player.r*3.1;ctx.save();ctx.translate(player.x,player.y);ctx.scale(player.facing,1);ctx.drawImage(images.player,-ps/2,-ps*.75,ps,ps);ctx.restore();
+ if(reload>0){ctx.fillStyle='#000a';ctx.fillRect(player.x-35*dpr,player.y+10*dpr,70*dpr,8*dpr);ctx.fillStyle='#e2c65c';ctx.fillRect(player.x-35*dpr,player.y+10*dpr,70*dpr*(1-reload/1.05),8*dpr)}
+ ctx.restore();
+ ctx.fillStyle='#0a0d10bb';ctx.fillRect(10,10,210*dpr,26*dpr);ctx.fillStyle='#c7d0d6';ctx.font=(10*dpr)+'px sans-serif';ctx.fillText('거리 '+Math.round(player.x/dpr)+'m / '+Math.round(worldW/dpr)+'m',18*dpr,28*dpr);
 }
 function loop(t){if(!active)return;const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();if(active)requestAnimationFrame(loop)}
 function win(){
@@ -332,11 +381,10 @@ function lose(){
 
 document.getElementById('q17AlertBtn').addEventListener('click',function(){document.getElementById('q17Alert').classList.remove('show');started=true;last=performance.now();requestAnimationFrame(loop)});
 document.getElementById('q17Restart').addEventListener('click',function(){dead.classList.remove('show');location.reload()});
-window.addEventListener('keydown',function(e){keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')startReload();if(e.code==='Space'&&active){e.preventDefault();const n=nearestZombie();if(n)shoot(n.x,n.y)}});
+window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();keys[k]=true;if(k==='r')startReload();if(k==='f'&&active)melee();if(k==='j'&&active){const n=nearestZombie();if(n)shoot(n.x,n.y-25*(window.devicePixelRatio||1))}if(e.code==='Space'&&active)e.preventDefault()});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false});
-function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
-canvas.addEventListener('pointermove',function(e){const p=pos(e);mouse.x=p.x;mouse.y=p.y});
-canvas.addEventListener('pointerdown',function(e){const p=pos(e);mouse.x=p.x;mouse.y=p.y;if(e.pointerType==='touch'){autoTarget=p}else{mouse.down=true;shoot(p.x,p.y)}});
+canvas.addEventListener('pointermove',function(e){const p=worldMouse(e);mouse.x=p.x;mouse.y=p.y});
+canvas.addEventListener('pointerdown',function(e){const p=worldMouse(e);mouse.x=p.x;mouse.y=p.y;if(e.pointerType==='touch'){autoTarget=p}else{mouse.down=true;shoot(p.x,p.y)}});
 canvas.addEventListener('pointerup',function(e){mouse.down=false;if(e.pointerType==='touch')autoTarget=null});
 canvas.addEventListener('pointercancel',function(){mouse.down=false;autoTarget=null});
 window.addEventListener('resize',function(){if(active)resizeCanvas()});
