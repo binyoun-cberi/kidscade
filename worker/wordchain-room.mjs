@@ -119,7 +119,7 @@ export class WordchainRoom {
     const action=url.pathname.split('/').pop();
     const now=Date.now();
     const getAction=request.method==='GET' && ['state','socket'].includes(action);
-    const postAction=request.method==='POST' && !['state','socket'].includes(action);
+    const postAction=request.method==='POST' && action!=='socket';
     if (!getAction && !postAction) fail('method_not_allowed',405);
     const body=request.method==='POST'?await request.json():{};
     await this.due();
