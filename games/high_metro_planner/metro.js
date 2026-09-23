@@ -37,6 +37,7 @@ let drag=null;
 let pointer={x:0,y:0};
 let selectedLine=0;
 let pendingTrain=false;
+let pendingTrim=false;
 let tutorialStep=0;
 
 const state={
@@ -170,7 +171,7 @@ function updateLineButtons(){
     b.addEventListener('click',()=>{
       play('click');
       if(pendingTrain){assignTrain(i);return}
-      selectedLine=i;pendingTrain=false;updateLineButtons();ui.trainTool.classList.remove('ready');
+      selectedLine=i;pendingTrain=false;pendingTrim=false;updateLineButtons();ui.trainTool.classList.remove('ready');ui.trimTool.classList.remove('ready');
       showNotice(line.name+' 선택 · 노선 끝에서 다른 역으로 드래그',1200);
     });
     ui.lineTools.appendChild(b);
@@ -288,7 +289,7 @@ function assignTrain(lineId){
 ui.trainTool.addEventListener('click',()=>{
   if(!state.running)return;
   if(state.spareTrains<=0){play('error');showNotice('도시 지원에서 열차를 더 받아야 해요.');return}
-  pendingTrain=!pendingTrain;updateLineButtons();play('click');showNotice(pendingTrain?'열차를 넣을 노선 색을 누르세요.':'열차 배치를 취소했어요.',1200);
+  pendingTrain=!pendingTrain;pendingTrim=false;updateLineButtons();play('click');showNotice(pendingTrain?'열차를 넣을 노선 색을 누르세요.':'열차 배치를 취소했어요.',1200);
 });
 ui.bridgeTool.addEventListener('click',()=>{play('click');showNotice('교량은 강을 건너는 새 구간에 자동으로 사용돼요. · '+state.bridges+'개 남음',1700)});
 ui.trimTool.addEventListener('click',()=>{
