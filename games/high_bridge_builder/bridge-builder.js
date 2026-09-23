@@ -158,6 +158,8 @@ function updateUI(){
   items.push("예산 "+lv.budget+" 이하");
   items.push(names+" 안전 통과");
   if(lv.storm)items.push("시험 중 강한 옆바람");
+  if(lv.maxSag)items.push("다리 처짐 "+lv.maxSag+"m 이하");
+  if(lv.maxSway)items.push("좌우 흔들림 "+lv.maxSway+"m 이하");
   if((lv.foundations||[]).length===0)items.push("강바닥 고정점 없음");
   items.push(lv.tip);
  }
@@ -174,6 +176,15 @@ function addMember(a,b,type){
  S.members.push({id:Date.now()+Math.random(),a:a.id,b:b.id,type:type,rest:d,cost:cost,broken:false,stress:0,peak:0});
  calcSpent();snapshot();updateUI();tone(type==="road"?430:type==="beam"?560:700,.045,"triangle");return true;
 }
+
+function fitCanvas(){
+ var wrap=document.getElementById("canvasWrap");if(!wrap)return;
+ var ww=Math.max(1,wrap.clientWidth),wh=Math.max(1,wrap.clientHeight),ratio=W/H,cw,ch;
+ if(ww/wh>ratio){ch=wh;cw=ch*ratio}else{cw=ww;ch=cw/ratio}
+ canvas.style.width=Math.floor(cw)+"px";canvas.style.height=Math.floor(ch)+"px";
+}
+if(window.ResizeObserver)new ResizeObserver(fitCanvas).observe(document.getElementById("canvasWrap"));
+window.addEventListener("resize",fitCanvas);
 
 function canvasPoint(ev){
  var r=canvas.getBoundingClientRect();
@@ -247,17 +258,22 @@ function structuralSupportSet(){
 
 function computeRouteFlexStress(){
  var out={};if(!S.route||S.route.length<2)return out;
- var supported=structuralSupportSet(),start=0,i,j,total,m;
+ var supported=structuralSupportSet(),start=0,i,j,total,m,segments,cursor;
  for(i=1;i<S.route.length;i++){
   if(!supported[S.route[i]]&&i!==S.route.length-1)continue;
-  total=0;
+  total=0;segments=[];
   for(j=start;j<i;j++){
-   m=roadMemberFor(S.route[j],S.route[j+1]);if(m)total+=m.rest;
+   m=roadMemberFor(S.route[j],S.route[j+1]);
+   if(m){segments.push(m);total+=m.rest}
   }
-  var stress=Math.pow(Math.max(.01,total/MAT.road.freeSpan),1.45)*.72;
-  for(j=start;j<i;j++){
-   m=roadMemberFor(S.route[j],S.route[j+1]);if(m)out[String(m.id)]=Math.max(out[String(m.id)]||0,stress);
-  }
+  var base=Math.pow(Math.max(.01,total/MAT.road.freeSpan),1.45)*.72;
+  cursor=0;
+  segments.forEach(function(seg){
+   var mid=total>0?(cursor+seg.rest*.5)/total:.5;
+   var centerFactor=.72+.42*Math.sin(Math.PI*mid);
+   out[String(seg.id)]=Math.max(out[String(seg.id)]||0,base*centerFactor);
+   cursor+=seg.rest;
+  });
   start=i;
  }
  return out;
@@ -502,5 +518,5 @@ el.gap.addEventListener("input",function(){el.gapValue.textContent=el.gap.value+
 el.vehicleSelect.addEventListener("change",function(){if(S.mode==="sandbox")resetLevel()});
 
 try{if(!sessionStorage.getItem("bridgeBuilderTutorialSeen"))el.tutorial.classList.remove("hidden")}catch(e){el.tutorial.classList.remove("hidden")}
-resetLevel();
+resetLevel();fitCanvas();
 })();
