@@ -7,7 +7,13 @@ const root = path.resolve(__dirname, '..');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/games.json')));
 const aliases = JSON.parse(fs.readFileSync(path.join(root, 'data/game-path-aliases.json')));
 const reserved = { ':': '：', '?': '？', '/': '／', '\\': '＼', '*': '＊', '"': '＂', '<': '＜', '>': '＞', '|': '｜' };
-const reviewedEntryFilenames = new Map([['high_byeokrando_voyage', '벽란도 상행기-launch.html']]);
+const reviewedEntryFilenames = new Map([
+  ['high_byeokrando_voyage', '벽란도 상행기-launch.html'],
+  ['high_history_timebattle_live', 'history_timebattle.html'],
+  ['job_teacher_classroom', 'index.html'],
+  ['low_word_blaster', 'index.html'],
+  ['low_wordchain_arena', 'index.html']
+]);
 
 test('renamed games live below games without increasing the root HTML baseline', () => {
   const rootHtml = fs.readdirSync(root).filter(file => /\.html?$/i.test(file));
