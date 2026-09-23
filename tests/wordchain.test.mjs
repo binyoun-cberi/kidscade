@@ -102,10 +102,11 @@ test('normal builds do not overwrite the imported dictionary', () => {
   assert.doesNotMatch(pkg.scripts['build:cloudflare'], /wordchain:build/);
 });
 
-test('main Worker has no word-chain dictionary API route', () => {
+test('main Worker has no dynamic dictionary API route and uses the realtime room router', () => {
   const main = read('worker/main.mjs');
   assert.doesNotMatch(main, /handleWordchainRequest/);
-  assert.doesNotMatch(main, /WORDCHAIN_PREFIX/);
+  assert.match(main, /routeWordchainRoom/);
+  assert.match(main, /WORDCHAIN_PREFIX/);
 });
 
 
