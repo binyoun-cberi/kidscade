@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>청소 특공대</title>
+<style>
+:root{font-family:Pretendard,"Noto Sans KR","맑은 고딕",system-ui,sans-serif;color:#effcff;background:#0d2631}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d2631}body{touch-action:none}
+button{font:inherit}.hidden{display:none!important}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+.topbar{position:absolute;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);display:flex;gap:8px;align-items:center;max-width:calc(100% - 20px);white-space:nowrap}
+.pill{background:rgba(8,28,37,.86);border:2px solid rgba(170,239,255,.45);box-shadow:0 8px 25px rgba(0,0,0,.24);padding:8px 12px;border-radius:999px;font-weight:950;font-size:clamp(12px,2.8vw,16px);backdrop-filter:blur(8px)}
+#cleanPill strong{color:#7ff3c0}#combo{color:#ffe36d}
+#roomPanel{position:absolute;top:64px;left:12px;width:min(190px,42vw);padding:10px;border-radius:16px;background:rgba(8,28,37,.76);border:2px solid rgba(170,239,255,.26);font-size:12px;font-weight:900;line-height:1.65;backdrop-filter:blur(7px)}
+.room{display:flex;justify-content:space-between;gap:6px}.room .ok{color:#7ff3c0}.room .warn{color:#ffe36d}.room .bad{color:#ff8e8e}
+#mission{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(680px,88vw);padding:8px 14px;border-radius:999px;background:rgba(8,28,37,.8);border:2px solid rgba(255,255,255,.25);font-weight:950;text-align:center;font-size:13px}
+#crosshair{position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%)}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;border-radius:5px;box-shadow:0 0 6px #38d9ff}
+#crosshair:before{width:3px;height:24px;left:10.5px;top:0}#crosshair:after{height:3px;width:24px;left:0;top:10.5px}
+#message{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.92);padding:11px 18px;border-radius:14px;background:rgba(8,28,37,.9);border:2px solid #8cefff;font-weight:1000;font-size:clamp(15px,4vw,22px);opacity:0;transition:.16s;max-width:80vw;text-align:center}
+#message.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#tutorialCard{position:absolute;left:50%;top:78px;transform:translateX(-50%);width:min(620px,88vw);padding:12px 16px;border-radius:18px;background:rgba(10,47,59,.92);border:3px solid #7deaff;box-shadow:0 12px 34px rgba(0,0,0,.28);pointer-events:auto;text-align:center}
+#tutorialCard .step{font-size:12px;color:#8cefff;font-weight:1000;letter-spacing:.05em}#tutorialText{margin:5px 0 10px;font-size:15px;font-weight:950;line-height:1.45}
+.tutorialBtns{display:flex;justify-content:center;gap:8px}.smallBtn{border:0;border-radius:12px;padding:8px 12px;font-weight:950;background:#dffaff;color:#103442}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:18px;background:linear-gradient(160deg,rgba(4,22,31,.88),rgba(5,50,62,.82));backdrop-filter:blur(9px)}
+.panel{width:min(720px,94vw);border-radius:28px;padding:clamp(20px,5vw,38px);background:linear-gradient(180deg,#f7feff,#dffaff);color:#123845;border:4px solid #fff;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center}
+.logo{font-size:52px;filter:drop-shadow(0 5px 0 rgba(12,82,97,.12))}.panel h1{margin:4px 0 6px;font-size:clamp(34px,8vw,62px);line-height:1;color:#0e7188;letter-spacing:-.04em}.lead{margin:0 auto 15px;max-width:570px;line-height:1.55;font-weight:800;color:#345c68}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.rule{padding:11px 8px;border-radius:15px;background:#fff;border:2px solid #bdebf3;font-size:12px;font-weight:950;line-height:1.4}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bigBtn{border:0;border-radius:18px;padding:15px 12px;font-weight:1000;font-size:17px;cursor:pointer;box-shadow:0 6px 0 rgba(8,68,78,.16)}
+#tutorialBtn{background:#fff;color:#0d7087;border:3px solid #57cfe3}#startBtn,#retryBtn{background:#1fc598;color:#fff}#menuBtn{background:#fff;color:#345c68;border:2px solid #aedbe4}
+.resultGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}.result{padding:12px 6px;border-radius:15px;background:#fff;border:2px solid #ccebf1}.result b{display:block;font-size:23px;color:#0d7087}.result span{font-size:11px;font-weight:900;color:#5c7780}
+#mobile{position:fixed;inset:0;z-index:8;pointer-events:none}
+#movePad{position:absolute;left:14px;bottom:max(16px,env(safe-area-inset-bottom));width:142px;height:142px;pointer-events:auto}
+.padBtn{position:absolute;width:48px;height:48px;border:0;border-radius:15px;background:rgba(8,35,44,.72);color:#fff;font-size:23px;font-weight:1000;border:2px solid rgba(199,248,255,.4)}
+.padBtn[data-key="KeyW"]{left:47px;top:0}.padBtn[data-key="KeyA"]{left:0;top:47px}.padBtn[data-key="KeyS"]{left:47px;top:94px}.padBtn[data-key="KeyD"]{left:94px;top:47px}
+#fireBtn{position:absolute;right:18px;bottom:max(26px,env(safe-area-inset-bottom));width:94px;height:94px;border-radius:50%;border:5px solid rgba(255,255,255,.7);background:rgba(34,204,164,.82);color:#fff;font-weight:1000;font-size:17px;pointer-events:auto;box-shadow:0 7px 24px rgba(0,0,0,.28)}
+@media(pointer:fine) and (min-width:801px){#mobile{display:none}}
+@media(max-width:600px){.rules{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.panel{padding:18px}.logo{font-size:40px}.panel h1{font-size:40px}.topbar{gap:4px}.pill{padding:7px 9px}#roomPanel{top:58px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud" class="hidden">
+  <div class="topbar">
+    <div class="pill">⏱ <span id="timer">04:00</span></div>
+    <div class="pill" id="cleanPill">✨ 청소율 <strong id="cleanPct">0%</strong></div>
+    <div class="pill">⭐ <span id="score">0</span></div>
+    <div class="pill" id="combo">COMBO ×1</div>
+  </div>
+  <div id="roomPanel"></div>
+  <div id="crosshair"></div>
+  <div id="message"></div>
+  <div id="mission">쓰레기와 얼룩을 청소하고, 악당에게 한 방 맞혀 잠시 멈춰 세우세요!</div>
+  <div id="tutorialCard" class="hidden">
+    <div class="step" id="tutorialStep">연습 1 / 4</div>
+    <div id="tutorialText">WASD 또는 왼쪽 방향 버튼으로 움직여 보세요.</div>
+    <div class="tutorialBtns"><button id="tutorialSkip" class="smallBtn">연습 건너뛰기</button><button id="tutorialDone" class="smallBtn hidden">실전 시작!</button></div>
+  </div>
+</div>
+
+<div id="mobile" class="hidden">
+  <div id="movePad">
+    <button class="padBtn" data-key="KeyW">▲</button><button class="padBtn" data-key="KeyA">◀</button>
+    <button class="padBtn" data-key="KeyS">▼</button><button class="padBtn" data-key="KeyD">▶</button>
+  </div>
+  <button id="fireBtn">CLEAN!</button>
+</div>
+
+<div id="startOverlay" class="overlay">
+  <section class="panel">
+    <div class="logo">🧹🔫✨</div>
+    <h1>청소 특공대</h1>
+    <p class="lead">학교를 돌아다니며 별별 쓰레기를 버리는 악당이 나타났어요! 청소 블래스터로 쓰레기와 얼룩을 없애고 학교를 다시 반짝반짝하게 만들어 주세요.</p>
+    <div class="rules">
+      <div class="rule">🎮 WASD / 방향 버튼<br>학교를 돌아다녀요</div>
+      <div class="rule">🎯 마우스 / 화면 드래그<br>가운데 조준점으로 겨냥</div>
+      <div class="rule">💦 클릭 / CLEAN 버튼<br>쓰레기를 청소해요</div>
+    </div>
+    <div class="actions">
+      <button id="tutorialBtn" class="bigBtn">🎓 튜토리얼부터</button>
+      <button id="startBtn" class="bigBtn">⚡ 바로 시작</button>
+    </div>
+    <p style="font-size:11px;font-weight:800;color:#6b858d;margin:12px 0 0">악당은 쓰러뜨리는 대상이 아니에요. 청소총을 맞히면 잠깐 멈춰서 쓰레기를 버리지 못해요.</p>
+  </section>
+</div>
+
+<div id="endOverlay" class="overlay hidden">
+  <section class="panel">
+    <div class="logo" id="endIcon">🏆</div>
+    <h1 id="endTitle" style="font-size:42px">학교가 반짝반짝!</h1>
+    <p class="lead" id="endText">청소 작전 결과예요.</p>
+    <div class="resultGrid">
+      <div class="result"><b id="resultClean">0%</b><span>최종 청소율</span></div>
+      <div class="result"><b id="resultCount">0</b><span>청소한 오염</span></div>
+      <div class="result"><b id="resultCombo">0</b><span>최고 콤보</span></div>
+    </div>
+    <div class="actions">
+      <button id="retryBtn" class="bigBtn">🔁 다시 출동</button>
+      <button id="menuBtn" class="bigBtn">🏠 처음 화면</button>
+    </div>
+  </section>
+</div>
+
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="./cleanup-squad.js?v=1"></script>
+</body>
+</html>
