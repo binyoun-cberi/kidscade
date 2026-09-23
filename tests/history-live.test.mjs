@@ -222,7 +222,7 @@ test('shared audio catalog exposes history UI assets', () => {
   const catalog=JSON.parse(fs.readFileSync(new URL('../assets/audio/audio-catalog.json',import.meta.url),'utf8'));
   for(const key of ['ui.click','ui.confirm','ui.error','ui.tick','ui.open','ui.select']){
     assert.ok(Array.isArray(catalog.sounds[key])&&catalog.sounds[key].length>0,key+' must have an asset');
-    assert.ok(catalog.sounds[key].every(path=>path.includes('history_royale/audio/ui/kenney_interface/')));
+    assert.ok(catalog.sounds[key].every(path=>path.includes('ui/kenney_interface/')));
   }
 });
 
