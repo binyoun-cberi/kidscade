@@ -326,15 +326,17 @@ async function answerQuestion(request,env){
   if(!room)return json({ok:false,error:'room_not_found'},404);
   const player=await playerByToken(env,room.id,bearer(request));
   if(!player)return json({ok:false,error:'player_required'},403);
-  const qi=Number(room.current_question);
-  if(qi>=0){
+  const currentQi=Number(room.current_question);
+  const requestedQi=Number.isInteger(Number(body.questionIndex))?Number(body.questionIndex):currentQi;
+  if(requestedQi>=0){
     const prior=await env.DB.prepare('SELECT option_index,is_correct,points FROM history_live_answers WHERE room_id=? AND player_id=? AND question_index=?')
-      .bind(room.id,player.id,qi).first();
+      .bind(room.id,player.id,requestedQi).first();
     if(prior)return json({ok:true,submitted:true,duplicate:true,optionIndex:Number(prior.option_index),correct:Number(prior.is_correct)===1,points:Number(prior.points||0)});
   }
+  if(requestedQi!==currentQi)return json({ok:false,error:'stale_question'},409);
   room=await autoReveal(env,room);
   if(room.status!=='question')return json({ok:false,error:'answer_closed'},409);
-  const raw=Number(body.optionIndex);
+  const qi=currentQi,raw=Number(body.optionIndex);
   const now=Date.now(),deadline=new Date(room.question_deadline_at).getTime(),started=new Date(room.question_started_at).getTime();
   if(!Number.isFinite(deadline)||now>deadline)return json({ok:false,error:'answer_closed'},409);
   const q=currentQuestion(room);
