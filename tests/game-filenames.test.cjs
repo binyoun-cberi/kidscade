@@ -12,7 +12,9 @@ const reviewedEntryFilenames = new Map([
   ['high_history_timebattle_live', 'history_timebattle.html'],
   ['job_teacher_classroom', 'index.html'],
   ['low_word_blaster', 'index.html'],
-  ['low_wordchain_arena', 'index.html']
+  ['low_wordchain_arena', 'index.html'],
+  ['high_seed_volleyball', 'index.html'],
+  ['high_bridge_builder', 'index.html']
 ]);
 
 test('renamed games live below games without increasing the root HTML baseline', () => {
