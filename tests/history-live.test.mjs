@@ -316,3 +316,13 @@ test('connection recovery keeps room and nickname instead of hard reloading imme
   assert.match(html,/playerId:pendingReconnectPlayerId\|\|undefined/);
   assert.match(html,/다시 연결 필요/);
 });
+
+
+test('answer retries cannot spill into the next question', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(worker,/requestedQi/);
+  assert.match(worker,/requestedQi!==currentQi/);
+  assert.match(worker,/stale_question/);
+  assert.match(html,/questionIndex:Math\.max\(0,Number\(lastState\?\.room\?\.questionNumber\|\|1\)-1\)/);
+});
