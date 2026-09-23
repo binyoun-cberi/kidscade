@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { HistoryQuizRoom } from '../worker/history-room.mjs';
 import { routeHistoryRoom } from '../worker/history-room-router.mjs';
 import { createState,addPlayer,hostCommand,answer,advanceDeadline,snapshot } from '../worker/history-room-model.mjs';
@@ -101,10 +102,10 @@ test('result export retries are bounded and result ID stable',async()=>{
  }
  assert.equal(calls,6);assert.equal(h.room.state.outbox[0].key,key);assert.equal(h.room.state.outbox[0].retryAt,null);
 });
-test('legacy room routes remain legacy; v2 rooms never fall back to legacy D1',async()=>{
- assert.equal(await routeHistoryRoom(req('answer',{code:'ABC234'}),{}),null);
+test('history live uses Durable Objects exclusively and does not revive old D1 room codes',async()=>{
+ assert.equal((await routeHistoryRoom(req('answer',{code:'ABC234'}),{HISTORY_ROOMS:{}})).status,404);
  assert.equal((await routeHistoryRoom(req('answer',{code:'0ABCDE'}),{})).status,503);
- assert.equal(await routeHistoryRoom(req('rooms',{transport:'v2'}),{HISTORY_LIVE_V2:'false'}),null);
+ assert.equal((await routeHistoryRoom(req('rooms',{}),{})).status,503);
 });
 test('cross-origin mutations are rejected before invoking room binding',async()=>{
  const r=new Request('https://game.test/api/history-live/answer',{method:'POST',headers:{'content-type':'application/json',origin:'https://evil.test'},body:'{"code":"0ABCDE"}'});
@@ -114,10 +115,12 @@ test('largest room snapshot fits below KV value limit with bounded history',()=>
  const s=model(26);Object.assign(s,(createState('0ABCDE','host',{questionCount:40},Date.now())) ,{players:s.players});
  assert.ok(new TextEncoder().encode(JSON.stringify(s)).length<100000);
 });
-test('pilot at zero keeps new rooms legacy without redirecting existing v2 rooms',async()=>{
- const env={HISTORY_LIVE_V2:'true',HISTORY_LIVE_V2_PERCENT:'0'};
- assert.equal(await routeHistoryRoom(req('rooms',{transport:'v2'}),env),null);
- assert.equal((await routeHistoryRoom(req('answer',{code:'0ABCDE'}),env)).status,503);
+test('history cutover has no rollout percentage or legacy-enable flags',()=>{
+ const router=fs.readFileSync(new URL('../worker/history-room-router.mjs',import.meta.url),'utf8');
+ const wrangler=fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8');
+ assert.doesNotMatch(router,/HISTORY_LIVE_V2_PERCENT|HISTORY_LIVE_V2/);
+ assert.doesNotMatch(wrangler,/HISTORY_LIVE_V2_PERCENT|HISTORY_LIVE_V2/);
+ assert.match(wrangler,/HISTORY_ROOMS/);
 });
 test('question payload is not rewritten on each answer',async()=>{
  const h=await setup();const key='questions:'+h.room.state.roundId;
