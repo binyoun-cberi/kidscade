@@ -703,11 +703,11 @@
     {
       "id": "low_cleanup_squad",
       "title": "청소 특공대",
-      "href": "games/low_cleanup_squad/index.html?v=1",
+      "href": "games/low_cleanup_squad/index.html?v=2",
       "category": "trivia",
       "age": "low",
       "icon": "🧹",
-      "description": "학교를 돌아다니며 캔·봉투·음식물 쓰레기와 바닥 얼룩을 청소 블래스터로 제거하는 3D 1인칭 청소 액션! 쓰레기 악당을 잠시 멈춰 세우고 제한 시간 안에 학교 청소율 90%에 도전해요.",
+      "description": "학교를 쓰레기와 얼룩으로 왕창 뒤덮는 악당을 쫓아, 연사되는 청소 블래스터로 넓은 범위를 와구와구 쓸어내는 3D 1인칭 청소 액션! 바닥을 훑어 청소율 90%에 도전해요.",
       "scoreKey": "cleanupSquadBestScore"
     },
     {
