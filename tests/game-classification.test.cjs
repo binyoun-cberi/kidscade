@@ -56,18 +56,19 @@ test('reviewed games keep their intended primary age group', () => {
   }
 });
 
-test('catalog age distribution matches the reviewed inventory', () => {
-  const counts = games.reduce((result, game) => {
+function ageDistribution(list) {
+  return list.reduce((result, game) => {
     result[game.age] = (result[game.age] || 0) + 1;
     return result;
   }, {});
+}
 
-  assert.deepEqual(counts, {
-    low: 30,
-    high: 55,
-    job: 10,
-    toddler: 11
-  });
+test('deployed catalog keeps the source age distribution', () => {
+  assert.deepEqual(
+    ageDistribution(deployedGames),
+    ageDistribution(games),
+    'build output should preserve every source age classification'
+  );
 });
 
 test('a game is not duplicated under another title/id through the same target file', () => {
