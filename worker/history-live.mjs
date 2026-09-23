@@ -213,7 +213,8 @@ async function joinRoom(request,env){
   const same=existing.find(p=>String(p.nickname).toLowerCase()===nick.toLowerCase());
   if(same){
     const age=now-new Date(same.last_seen_at).getTime();
-    if(!Number.isFinite(age)||age>=RECONNECT_RECLAIM_MS){
+    const exactReconnect=String(body.playerId||'')===String(same.id);
+    if(exactReconnect||!Number.isFinite(age)||age>=RECONNECT_RECLAIM_MS){
       const token=randomToken(),hash=await sha256(token);
       await env.DB.prepare('UPDATE history_live_players SET token_hash=?,last_seen_at=? WHERE id=? AND room_id=?')
         .bind(hash,at,same.id,room.id).run();
