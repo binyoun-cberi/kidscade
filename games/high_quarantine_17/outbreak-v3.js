@@ -290,16 +290,15 @@ function updateHud(){
 }
 function showIsolationFight(){
  const count=isolation.filter(function(d){return d.status==='zombie'}).length;if(!count){notify('격리실에 좀비가 없습니다.');return}
- if(active)return;active=true;started=false;continuation=null;iso.classList.remove('show');setupCombat('isolation',{});
- wrap.classList.add('show');document.getElementById('q17AlertTitle').textContent='격리실 진입';
+ if(active)return;active=true;started=false;continuation=null;iso.classList.remove('show');wrap.classList.add('show');setupCombat('isolation',{});
+ document.getElementById('q17AlertTitle').textContent='격리실 진입';
  document.getElementById('q17AlertText').innerHTML='격리실 내부에 <b>'+count+'명</b>의 좀비가 확인됐습니다.<br>소각 대신 직접 진입합니다. 장애물 위로 뛰어넘고 거리를 벌리며 제압하세요. <b>F 근접 타격</b>은 강하지만 물릴 위험이 큽니다.';
  document.getElementById('q17Alert').classList.add('show');
 }
 function showGlobalOutbreak(){
  if(active||!bridge())return;
  const d=difficulty();if(d.inf<20)return;
- active=true;started=false;continuation=null;setupCombat('outbreak',{});
- wrap.classList.add('show');
+ active=true;started=false;continuation=null;wrap.classList.add('show');setupCombat('outbreak',{});
  const severity=d.inf>=40?'대규모 붕괴':d.inf>=30?'중대 경보':'국지적 돌파';
  document.getElementById('q17AlertTitle').textContent=severity;
  document.getElementById('q17AlertText').innerHTML='도시 감염률이 <b>'+d.inf+'%</b>까지 올라 격리선 바깥에서 집단 감염이 발생했습니다.<br>이번 진압 대상은 <b>'+d.count+'명</b>입니다. 검역 단계에서 놓친 감염이 많을수록 더 위험합니다.';
@@ -307,10 +306,9 @@ function showGlobalOutbreak(){
 }
 function showCampBreach(payload,next){
  if(active)return false;
- active=true;started=false;continuation=typeof next==='function'?next:null;setupCombat('camp',payload);
- wrap.classList.add('show');
+ active=true;started=false;continuation=typeof next==='function'?next:null;wrap.classList.add('show');setupCombat('camp',payload);
  document.getElementById('q17AlertTitle').textContent='생존자 캠프 긴급 경보';
- document.getElementById('q17AlertText').innerHTML='<b>'+escapeHtml(payload.name)+'</b>을(를) 통과시켰지만 감염자였습니다.<br>이미 생존자 캠프로 들어갔습니다. <b>다른 생존자를 물기 전에</b> 직접 들어가 제압하십시오.<br>플레이어는 좀비보다 훨씬 빠릅니다. 장애물을 넘고 거리를 벌려 사격하거나, 가까이 붙었을 때 F로 강하게 밀쳐내세요.';
+ document.getElementById('q17AlertText').innerHTML='<b>'+escapeHtml(payload.name)+'</b>이(가) 감염자였습니다.<br><b>짧은 캠프 구역</b> 안에서 다른 생존자에게 닿기 전에 끊어내세요.<br>달리기와 점프로 거리를 만들고, 사격 또는 밀치기로 빠르게 제압합니다.';
  document.getElementById('q17Alert').classList.add('show');
  return true;
 }
@@ -321,11 +319,14 @@ function shoot(tx,ty){
  bullets.push({x:player.x+player.facing*24*(window.devicePixelRatio||1),y:player.y-29*(window.devicePixelRatio||1),px:player.x,py:player.y-29*(window.devicePixelRatio||1),vx:dx/len*850*(window.devicePixelRatio||1),vy:dy/len*850*(window.devicePixelRatio||1),life:1.1});
  player.facing=dx>=0?1:-1;player.ammo--;shootCd=.17;player.shot=.12;muzzle=.07;screenShake=Math.max(screenShake,2.8);playGunshot();updateHud();if(player.ammo<=0)startReload();
 }
+function burstFx(x,y,count){
+ for(let i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-.5)*180,vy:(Math.random()-.9)*150,life:.24+Math.random()*.22,size:2+Math.random()*3});
+}
 function melee(){
- if(!started||meleeCd>0)return;meleeCd=.55;
- const range=78*(window.devicePixelRatio||1),targets=zombies.filter(function(z){return Math.abs(z.x-player.x)<range&&Math.abs(z.y-player.y)<70*(window.devicePixelRatio||1)});
- let hit=false;targets.forEach(function(z){const side=z.x>=player.x?1:-1;z.hp-=2;z.knock=side*210*(window.devicePixelRatio||1);z.hit=.22;hit=true});
- if(hit)notify('근접 타격 · 강한 피해');else notify('근접 공격이 빗나갔습니다.');
+ if(!started||meleeCd>0)return;meleeCd=.5;
+ const dpr=Math.min(2,window.devicePixelRatio||1),range=82*dpr,targets=zombies.filter(function(z){return Math.abs(z.x-player.x)<range&&Math.abs(z.y-player.y)<70*dpr});
+ let hit=false;targets.forEach(function(z){const side=z.x>=player.x?1:-1;z.hp-=2;z.knock=side*245*dpr;z.hit=.24;burstFx(z.x,z.y-30*dpr,7);hit=true});
+ if(hit){screenShake=Math.max(screenShake,5);notify('밀치기 성공')}else notify('밀치기가 빗나갔습니다.');
 }
 function startReload(){if(!player||reload>0||player.ammo===player.maxAmmo)return;reload=1.05}
 function nearestZombie(){let best=null,bd=Infinity;zombies.forEach(function(z){const d=Math.abs(z.x-player.x);if(d<bd){bd=d;best=z}});return best}
@@ -351,7 +352,10 @@ function worldMouse(e){const r=canvas.getBoundingClientRect(),sx=(e.clientX-r.le
 function update(dt){
  if(!started)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
+ combatTime+=dt;muzzle=Math.max(0,muzzle-dt);screenShake=Math.max(0,screenShake-dt*18);damageFlash=Math.max(0,damageFlash-dt*3.4);
  shootCd=Math.max(0,shootCd-dt);meleeCd=Math.max(0,meleeCd-dt);
+ if(player){player.iframes=Math.max(0,player.iframes-dt);player.hurt=Math.max(0,player.hurt-dt);player.shot=Math.max(0,player.shot-dt)}
+ particles.forEach(function(p){p.x+=p.vx*dt*dpr;p.y+=p.vy*dt*dpr;p.vy+=330*dt;p.life-=dt});particles=particles.filter(function(p){return p.life>0});
  if(reload>0){reload-=dt;if(reload<=0){player.ammo=player.maxAmmo;updateHud()}}
  const move=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
  const playerSpeed=330*dpr;
@@ -365,7 +369,7 @@ function update(dt){
  if(player.y>=groundY){player.y=groundY;player.vy=0;player.onGround=true}
  obstacles.forEach(function(o){if(player.vy>0&&player.x+player.r*.6>o.x&&player.x-player.r*.6<o.x+o.w&&player.y>=o.y&&player.y-player.vy*dt<o.y){player.y=o.y;player.vy=0;player.onGround=true}});
  if(mouse.down)shoot(mouse.x,mouse.y);
- if(autoTarget){const dx=autoTarget.x-player.x;if(Math.abs(dx)>45*dpr){player.vx=Math.sign(dx)*260*dpr;player.facing=Math.sign(dx)}const n=nearestZombie();if(n)shoot(n.x,n.y-25*dpr)}
+ if(keys.mobileShoot){const n=nearestZombie();if(n)shoot(n.x,n.y-28*dpr)}
  if(mode==='camp'){
   survivors.forEach(function(s){
    if(!s.alive)return;
@@ -378,21 +382,21 @@ function update(dt){
    if(!s.bitten)s.bite=Math.max(0,s.bite-dt*.22);
   });
  }
- bullets.forEach(function(b){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(obstacles.some(function(o){return b.x>o.x&&b.x<o.x+o.w&&b.y>o.y&&b.y<o.y+o.h}))b.life=0});
+ bullets.forEach(function(b){b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(obstacles.some(function(o){return b.x>o.x&&b.x<o.x+o.w&&b.y>o.y&&b.y<o.y+o.h}))b.life=0});
  bullets=bullets.filter(function(b){return b.life>0&&b.x>-20&&b.x<worldW+20&&b.y>-20&&b.y<worldH+20});
  zombies.forEach(function(z){
-  z.attackDelay=Math.max(0,z.attackDelay-dt);z.hit=Math.max(0,z.hit-dt);
+  z.attackDelay=Math.max(0,z.attackDelay-dt);z.hit=Math.max(0,z.hit-dt);z.attack=Math.max(0,z.attack-dt);
   const target=nearestTargetForZombie(z),dir=target.x>=z.x?1:-1;
   if(Math.abs(z.knock)>1){z.x+=z.knock*dt;z.knock*=Math.pow(.02,dt)}
   else{z.x+=dir*z.speed*dt;const obs=obstacleAhead(z,dir);if(obs){z.x+=dir*z.speed*.45*dt}}
   const dist=Math.abs(target.x-z.x);
   if(target===player){
-   if(dist<player.r+z.r&&Math.abs(player.y-groundY)<60*dpr&&z.hit<=0){player.hp=Math.max(0,player.hp-12);z.hit=.65;player.vx=dir*180*dpr;updateHud();if(player.hp<=0){lose();return}}
+   if(dist<player.r+z.r&&Math.abs(player.y-groundY)<60*dpr&&player.iframes<=0){player.hp=Math.max(0,player.hp-10);player.iframes=.72;player.hurt=.28;z.attack=.22;player.vx=dir*210*dpr;damageFlash=.45;screenShake=Math.max(screenShake,8);updateHud();if(player.hp<=0){lose();return}}
   }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&dist<target.r+z.r+6*dpr){
-   target.bite=(target.bite||0)+dt;if(target.bite>=1.55){target.bitten=true;target.turnTimer=4.8;target.bite=0;z.attackDelay=.9;notify('생존자 물림 · 약 5초 뒤 변이 위험')}
+   z.attack=.18;target.bite=(target.bite||0)+dt;if(target.bite>=1.85){target.bitten=true;target.turnTimer=5.5;target.bite=0;z.attackDelay=1.05;notify('생존자 물림 · 약 5초 안에 제압 필요')}
   }
  });
- bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;const dx=b.x-z.x,dy=b.y-(z.y-28*dpr);if(Math.abs(dx)<z.r*1.05&&Math.abs(dy)<z.r*1.55){const headshot=b.y<z.y-38*dpr;z.hp-=headshot?2:1;z.hit=.16;z.knock=(b.vx>0?1:-1)*95*dpr;b.life=0;if(headshot)notify('헤드샷 · 추가 피해')}})});
+ bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;const dx=b.x-z.x,dy=b.y-(z.y-28*dpr);if(Math.abs(dx)<z.r*1.05&&Math.abs(dy)<z.r*1.55){const headshot=b.y<z.y-38*dpr;z.hp-=headshot?2:1;z.hit=.18;z.knock=(b.vx>0?1:-1)*115*dpr;b.life=0;burstFx(z.x,b.y,headshot?8:5);screenShake=Math.max(screenShake,headshot?5:3);if(headshot)notify('헤드샷')}})});
  zombies=zombies.filter(function(z){return z.hp>0});updateHud();
  cameraX=Math.max(0,Math.min(Math.max(0,worldW-canvas.width/viewScale),player.x-(canvas.width/viewScale)*.40));
  if(zombies.length===0&&!survivors.some(function(s){return s.alive&&s.bitten}))win();
@@ -433,10 +437,22 @@ function win(){
 }
 function lose(){
  if(!active)return;
- const lostMode=mode;started=false;active=false;continuation=null;wrap.classList.remove('show');
- const b=bridge();if(b)b.applyOutbreakResult({won:false,infectionDelta:8,trustDelta:-15,scoreDelta:-500,gameOver:true});
- document.getElementById('q17DeadTitle').textContent=lostMode==='camp'?'생존자 캠프 붕괴':lostMode==='isolation'?'격리실 진입 실패':'검역소 함락';
- document.getElementById('q17DeadText').innerHTML=lostMode==='camp'?'통과시킨 감염자를 제때 막지 못했습니다.<br>캠프에서 감염이 연쇄적으로 번졌고 플레이어도 공격을 받아 사망했습니다.':lostMode==='isolation'?'격리실 내부 소탕 중 좀비에게 포위되었습니다.<br>직접 진입은 소각보다 보상은 크지만 훨씬 위험합니다.':'격리선이 무너졌고 감염자들이 검역소 안까지 들어왔습니다.<br>진압에 실패해 제17구역은 폐쇄되었습니다.';
+ const lostMode=mode,next=continuation;started=false;active=false;continuation=null;wrap.classList.remove('show');
+ const b=bridge();
+ if(lostMode==='camp'){
+  if(b)b.applyOutbreakResult({won:false,infectionDelta:5,trustDelta:-7,scoreDelta:-240});
+  notify('캠프 진압 실패 · 감염률 상승');
+  if(next)setTimeout(next,450);
+  return;
+ }
+ if(lostMode==='isolation'){
+  if(b)b.applyOutbreakResult({won:false,infectionDelta:2,trustDelta:-3,scoreDelta:-140});
+  addIsoLog('<b>직접 진입 실패</b> · 남은 좀비는 격리실에 계속 존재함');renderIsolation();notify('격리실에서 긴급 철수했습니다.');
+  return;
+ }
+ if(b)b.applyOutbreakResult({won:false,infectionDelta:8,trustDelta:-15,scoreDelta:-500,gameOver:true});
+ document.getElementById('q17DeadTitle').textContent='검역소 함락';
+ document.getElementById('q17DeadText').innerHTML='격리선이 무너졌고 감염자들이 검역소 안까지 들어왔습니다.<br>대규모 진압에 실패해 제17구역은 폐쇄되었습니다.';
  dead.classList.add('show');
 }
 
