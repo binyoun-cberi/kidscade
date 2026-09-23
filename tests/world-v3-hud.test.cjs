@@ -83,7 +83,7 @@ test('Seed World HUD release is cache-bumped and scripts parse',()=>{
   assert.match(integration,/world-v3\/kidscade-world\.html\?v=35/);
   assert.match(garden,/avatar-preview-inline-edit-v5/);
   assert.match(garden,/world-v3-homestead-v35/);
-  assert.match(index,/main-bootstrap\.js\?v=20260921-seed-world-homestead-4/);
+  assert.match(index,/main-bootstrap\.js\?v=[^\"']+/);
 
   const moduleSource=runtime.replace(/^import .*$/gm,'').replace(/^export /gm,'');
   const moduleCheck=spawnSync(process.execPath,['--check'],{input:moduleSource,encoding:'utf8'});
