@@ -49,8 +49,14 @@ const dirt=[],hitTargets=[],fx=[],colliders=[];
 const state={
   ready:false,mode:'menu',running:false,time:240,totalTime:240,score:0,cleaned:0,totalSpawned:0,
   combo:1,bestCombo:1,lastCleanAt:0,yaw:0,pitch:.05,player:new THREE.Vector3(0,1.7,6.5),
-  keys:new Set(),lastShot:0,recoil:0,cameraKick:0,kickSide:0,firing:false,lastTouch:null,mobileAim:false,tutorialStep:0,tutorialStart:new THREE.Vector3(),
+  keys:new Set(),lastShot:0,recoil:0,cameraKick:0,kickSide:0,firing:false,weapon:'water',bombReadyAt:0,lastTouch:null,mobileAim:false,tutorialStep:0,tutorialStart:new THREE.Vector3(),
   missionToken:0,roomCleanBonus:new Set(),tutorialAdvancePending:false
+};
+const WEAPONS={
+  water:{id:'water',name:'물줄기',icon:'💦',color:0x48dff2,fireLabel:'물줄기!',interval:68},
+  foam:{id:'foam',name:'거품 분사기',icon:'🫧',color:0xe9ffff,fireLabel:'거품!',interval:145},
+  bomb:{id:'bomb',name:'비누폭탄',icon:'🧼',color:0xffd86e,fireLabel:'폭탄!',interval:300},
+  vacuum:{id:'vacuum',name:'강력흡입청소기',icon:'🌪️',color:0x9b8cff,fireLabel:'흡입!',interval:72}
 };
 const zones=[
   {id:'c1',name:'1반 교실',x1:-16,x2:-1,z1:-11,z2:-2.5},
@@ -155,11 +161,37 @@ function buildSchool(){
 let weapon;
 function mountWeapon(){
   if(weapon)camera.remove(weapon);weapon=new THREE.Group();camera.add(weapon);
-  const b=modelOrBox('blaster',.63,0x32c8b4);b.rotation.set(-.06,Math.PI,.02);b.position.set(.5,-.46,-.9);
-  b.traverse(n=>{if(n.isMesh&&n.material){const multi=Array.isArray(n.material),mats=multi?n.material:[n.material];const recolored=mats.map(src=>{const m=src.clone();if(!m.map)m.color.lerp(new THREE.Color(0x3fd7ca),.48);m.roughness=Math.max(.42,m.roughness??.6);return m});n.material=multi?recolored:recolored[0]}});
+  const cfg=WEAPONS[state.weapon]||WEAPONS.water;
+  const b=modelOrBox('blaster',state.weapon==='vacuum'?.74:.63,cfg.color);b.rotation.set(-.06,Math.PI,.02);b.position.set(.5,-.46,-.9);
+  b.traverse(n=>{if(n.isMesh&&n.material){const multi=Array.isArray(n.material),mats=multi?n.material:[n.material];const recolored=mats.map(src=>{const m=src.clone();if(!m.map)m.color.lerp(new THREE.Color(cfg.color),.62);m.roughness=Math.max(.42,m.roughness??.6);return m});n.material=multi?recolored:recolored[0]}});
   weapon.add(b);
-  const tank=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.28,12),new THREE.MeshStandardMaterial({color:0x8ff7ff,transparent:true,opacity:.85,roughness:.2}));
-  tank.rotation.z=Math.PI/2;tank.position.set(.42,-.32,-.75);weapon.add(tank)
+  if(state.weapon==='water'){
+    const tank=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.32,12),new THREE.MeshStandardMaterial({color:0x9af8ff,transparent:true,opacity:.88,roughness:.18}));
+    tank.rotation.z=Math.PI/2;tank.position.set(.42,-.31,-.74);weapon.add(tank)
+  }else if(state.weapon==='foam'){
+    const chamber=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xbbefff,emissiveIntensity:.28,roughness:.2}));
+    chamber.position.set(.42,-.3,-.72);weapon.add(chamber)
+  }else if(state.weapon==='bomb'){
+    const can=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.28,14),new THREE.MeshStandardMaterial({color:0xffdd72,roughness:.45}));
+    can.rotation.z=Math.PI/2;can.position.set(.41,-.31,-.72);weapon.add(can)
+  }else{
+    const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(.16,.24,.44,16),new THREE.MeshStandardMaterial({color:0x544b80,roughness:.6}));
+    nozzle.rotation.x=Math.PI/2;nozzle.position.set(.43,-.37,-1.03);weapon.add(nozzle)
+  }
+}
+function setWeapon(id,quiet=false){
+  if(!WEAPONS[id]||state.weapon===id)return;
+  state.weapon=id;state.firing=false;mountWeapon();updateWeaponUI();
+  if(!quiet)showMessage(WEAPONS[id].icon+' '+WEAPONS[id].name+' 장착!',520)
+}
+function updateWeaponUI(){
+  const now=performance.now();
+  document.querySelectorAll('.weaponBtn').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.weapon===state.weapon);
+    btn.classList.toggle('cooling',btn.dataset.weapon==='bomb'&&now<state.bombReadyAt)
+  });
+  const cfg=WEAPONS[state.weapon]||WEAPONS.water;
+  ui.fireBtn.textContent=cfg.icon+' '+cfg.fireLabel;
 }
 
 function buildVillain(){
@@ -240,25 +272,27 @@ function resetStats(){
   updateHud()
 }
 function startGame(){
-  if(!state.ready)return;state.missionToken++;state.mode='game';state.running=true;resetStats();initialMess();resetVillain();
+  if(!state.ready)return;state.missionToken++;state.mode='game';state.running=true;state.weapon='water';state.bombReadyAt=0;mountWeapon();updateWeaponUI();resetStats();initialMess();resetVillain();
   state.player.set(0,1.7,1);state.yaw=0;state.pitch=.04;ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.hud.classList.remove('hidden');ui.tutorialCard.classList.add('hidden');
   ui.mobile.classList.toggle('hidden',!isCoarse());setMission('청소총을 누른 채 바닥을 넓게 쓸어 주세요! 악당은 계속 오염을 왕창 뿌립니다. 청소율 90%가 목표예요.');
   showMessage('청소 특공대 출동!',900);if(!isCoarse())canvas.requestPointerLock?.()
 }
 function startTutorial(){
-  if(!state.ready)return;state.missionToken++;state.mode='tutorial';state.running=true;resetStats();clearDirt();resetVillain();villain.group.visible=false;
+  if(!state.ready)return;state.missionToken++;state.mode='tutorial';state.running=true;state.weapon='water';state.bombReadyAt=0;mountWeapon();updateWeaponUI();resetStats();clearDirt();resetVillain();villain.group.visible=false;
   state.player.set(0,1.7,1);state.yaw=0;state.pitch=.04;state.tutorialStart.copy(state.player);state.tutorialStep=0;
   ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.hud.classList.remove('hidden');ui.tutorialCard.classList.remove('hidden');ui.tutorialDone.classList.add('hidden');
   ui.mobile.classList.toggle('hidden',!isCoarse());setMission('연습 중에는 시간이 줄지 않아요. 하나씩 직접 해보면 돼요.');renderTutorial();
   if(!isCoarse())canvas.requestPointerLock?.()
 }
 function renderTutorial(){
-  const s=state.tutorialStep;ui.tutorialStep.textContent='연습 '+Math.min(4,s+1)+' / 4';
-  if(s===0)ui.tutorialText.textContent='WASD 또는 왼쪽 방향 버튼으로 조금 움직여 보세요.';
-  if(s===1){ui.tutorialText.textContent='클릭/CLEAN 버튼을 누르고 있으면 청소물이 연속으로 나가요. 앞의 쓰레기 더미를 와구와구 쓸어 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.4,8,1.35,true)}
-  if(s===2){ui.tutorialText.textContent='한 점만 맞힐 필요 없어요. 조준점 주변이 넓게 씻겨 나가니 바닥을 좌우로 훑으며 청소해 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.8,12,1.8,true)}
-  if(s===3){ui.tutorialText.textContent='마지막! 쓰레기 악당을 청소총으로 맞혀 보세요. 악당은 잠시 어질어질해져 투기를 멈춰요.';villain.group.visible=true;villain.group.position.set(0,0,-4.8);villain.stunned=0}
-  if(s>=4){ui.tutorialStep.textContent='연습 완료!';ui.tutorialText.textContent='준비 끝! 실전에서는 악당을 쫓기보다 학교 전체를 깨끗하게 만드는 것이 목표예요.';ui.tutorialDone.classList.remove('hidden');villain.group.visible=false;sfx('clear')}
+  const s=state.tutorialStep;ui.tutorialStep.textContent='연습 '+Math.min(6,s+1)+' / 6';
+  if(s===0){setWeapon('water',true);ui.tutorialText.textContent='WASD 또는 왼쪽 방향 버튼으로 조금 움직여 보세요.'}
+  if(s===1){setWeapon('water',true);ui.tutorialText.textContent='💦 물줄기: 버튼을 누른 채 바닥을 좌우로 훑어 넓게 씻어 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.4,10,1.45,true)}
+  if(s===2){setWeapon('foam',true);ui.tutorialText.textContent='🫧 거품: 바닥에 거품을 뿌리면 잠시 남아서 얼룩을 계속 녹여요.';if(!dirt.some(d=>d.tutorial&&!d.dead))for(let i=0;i<10;i++)spawnStain(rand(-1.7,1.7),rand(-4.6,-2.6),true,false)}
+  if(s===3){setWeapon('bomb',true);state.bombReadyAt=0;ui.tutorialText.textContent='🧼 비누폭탄: 더러운 곳 한가운데에 한 발! 넓은 범위를 한꺼번에 날려 버려요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.8,18,2.1,true)}
+  if(s===4){setWeapon('vacuum',true);ui.tutorialText.textContent='🌪️ 강력흡입: 캔·병·봉투 같은 쓰레기 더미를 바라보고 누르면 여러 개가 동시에 빨려 와요.';if(!dirt.some(d=>d.tutorial&&!d.dead)){for(let i=0;i<13;i++)spawnTrash(rand(-2.1,2.1),rand(-5,-2.5),choice(trashDefs),true)}}
+  if(s===5){setWeapon('water',true);ui.tutorialText.textContent='마지막! 빠르게 돌아다니는 악당에게 청소 장비를 맞혀 잠시 투기를 멈춰 보세요.';villain.group.visible=true;villain.group.position.set(0,0,-4.8);villain.stunned=0}
+  if(s>=6){ui.tutorialStep.textContent='연습 완료!';ui.tutorialText.textContent='준비 끝! 물줄기·거품·비누폭탄·강력흡입을 바꿔 쓰며 학교 전체를 쓸어버리세요.';ui.tutorialDone.classList.remove('hidden');villain.group.visible=false;sfx('clear')}
 }
 function queueTutorialAdvance(expectedStep,delay=260){
   if(state.mode!=='tutorial'||state.tutorialStep!==expectedStep||state.tutorialAdvancePending)return;
@@ -275,11 +309,11 @@ function tutorialCheckMovement(){
 function cleanRecord(rec,point,quiet=false){
   if(!rec||rec.dead)return;
   if(rec.kind==='trash'){
-    rec.dead=true;rec.hit.visible=false;const start=rec.group.position.clone(),target=camera.position.clone();rec.suck={t:0,start,target};state.cleaned++;rewardClean(rec,100);sfx('clean');
+    rec.dead=true;rec.hit.visible=false;const start=rec.group.position.clone(),target=camera.position.clone();rec.suck={t:0,start,target};state.cleaned++;rewardClean(rec,100);if(!quiet)sfx('clean');
     if(state.mode==='tutorial'&&state.tutorialStep===1&&dirt.filter(d=>d.tutorial&&!d.dead).length<=2)queueTutorialAdvance(1)
   }else{
     rec.hp--;rec.group.scale.multiplyScalar(rec.kind==='gum'?.88:.82);rec.group.material.opacity=Math.max(.2,.72*(rec.hp/rec.maxHp));burst(point,0x79eeff,4);
-    if(rec.hp<=0){rec.dead=true;state.cleaned++;rewardClean(rec,rec.kind==='gum'?180:130);sfx('clean');fadeRemove(rec);
+    if(rec.hp<=0){rec.dead=true;state.cleaned++;rewardClean(rec,rec.kind==='gum'?180:130);if(!quiet)sfx('clean');fadeRemove(rec);
       if(state.mode==='tutorial'&&state.tutorialStep===2&&dirt.filter(d=>d.tutorial&&!d.dead).length<=3)queueTutorialAdvance(2)
     }else if(!quiet)showMessage(rec.kind==='gum'?'껌은 조금 더 문질러야 해요!':'얼룩이 옅어지고 있어요!',380)
   }
@@ -297,38 +331,85 @@ function projectile(to){
   const from=new THREE.Vector3();camera.getWorldPosition(from);const dir=new THREE.Vector3();camera.getWorldDirection(dir);from.add(dir.multiplyScalar(.75)).add(new THREE.Vector3(.25,-.18,0));
   const m=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBasicMaterial({color:0x6ff6ff}));m.position.copy(from);fxRoot.add(m);fx.push({kind:'projectile',obj:m,life:.13,total:.13,from:from.clone(),to:to.clone()})
 }
-const CLEAN_RADIUS=1.85;
 function aimImpact(){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
   const targets=[...hitTargets.filter(x=>x.visible!==false)];if(villain.group.visible&&villain.hit)targets.push(villain.hit);
   const hits=raycaster.intersectObjects(targets,false);
   if(hits.length)return {point:hits[0].point.clone(),object:hits[0].object};
   const floorPoint=new THREE.Vector3(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),-.02);
-  if(raycaster.ray.intersectPlane(plane,floorPoint)&&floorPoint.distanceTo(camera.position)<=15)return {point:floorPoint,object:null};
+  if(raycaster.ray.intersectPlane(plane,floorPoint)&&floorPoint.distanceTo(camera.position)<=16)return {point:floorPoint,object:null};
   return {point:camera.position.clone().add(new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).multiplyScalar(11)),object:null}
 }
-function sprayClean(center){
+function sprayClean(center,radius=1.8,filter=null,hits=1){
   let touched=0;
-  const active=dirt.filter(d=>!d.dead);
-  for(const rec of active){
+  for(const rec of dirt.filter(d=>!d.dead)){
+    if(filter&&!filter(rec))continue;
     const p=rec.group.position,dx=p.x-center.x,dz=p.z-center.z;
-    if(dx*dx+dz*dz<=CLEAN_RADIUS*CLEAN_RADIUS){cleanRecord(rec,center,true);touched++}
+    if(dx*dx+dz*dz<=radius*radius){
+      for(let n=0;n<hits&&!rec.dead;n++)cleanRecord(rec,center,true);
+      touched++
+    }
   }
-  if(touched)burst(center,0x79eeff,Math.min(14,4+touched));
   return touched
 }
+function streamFx(to,color=0x6ff6ff,count=7,size=.055){
+  const from=new THREE.Vector3();camera.getWorldPosition(from);const dir=new THREE.Vector3();camera.getWorldDirection(dir);from.add(dir.multiplyScalar(.72)).add(new THREE.Vector3(.22,-.18,0));
+  for(let i=0;i<count;i++){
+    const target=to.clone().add(new THREE.Vector3(rand(-.14,.14),rand(-.04,.18),rand(-.14,.14)));
+    const m=new THREE.Mesh(new THREE.SphereGeometry(size,7,5),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9}));
+    m.position.copy(from);fxRoot.add(m);fx.push({kind:'projectile',obj:m,life:.11+i*.006,total:.11+i*.006,from:from.clone(),to:target})
+  }
+}
+function spawnFoamField(center){
+  const geo=new THREE.CircleGeometry(2.05,24),material=new THREE.MeshBasicMaterial({color:0xe9ffff,transparent:true,opacity:.32,depthWrite:false});
+  const m=new THREE.Mesh(geo,material);m.rotation.x=-Math.PI/2;m.position.set(center.x,.025,center.z);fxRoot.add(m);
+  fx.push({kind:'foamField',obj:m,life:2.65,total:2.65,center:new THREE.Vector3(center.x,0,center.z),tick:0})
+}
+function waterShot(impact){
+  state.recoil=Math.min(1.55,state.recoil+.72);state.cameraKick=Math.min(.065,state.cameraKick+.013);state.kickSide+=(Math.random()-.5)*.009;
+  streamFx(impact.point,0x55eaff,8,.05);const touched=sprayClean(impact.point,1.9,null,1);
+  burst(impact.point,0x79eeff,touched?Math.min(12,4+touched):3);if(impact.object?.userData.villain)stunVillain()
+}
+function foamShot(impact){
+  state.recoil=Math.min(1.35,state.recoil+.52);state.cameraKick=Math.min(.05,state.cameraKick+.008);
+  streamFx(impact.point,0xf2ffff,5,.11);spawnFoamField(impact.point);sprayClean(impact.point,1.35,rec=>rec.kind!=='trash',1);
+  burst(impact.point,0xffffff,7);if(impact.object?.userData.villain)stunVillain()
+}
+function soapBomb(impact,now){
+  if(now<state.bombReadyAt){showMessage('비누폭탄 충전 중!',300);return}
+  state.bombReadyAt=now+3400;state.firing=false;state.recoil=1.8;state.cameraKick=Math.min(.11,state.cameraKick+.06);
+  streamFx(impact.point,0xffdd72,1,.18);
+  const touched=sprayClean(impact.point,4.5,null,5);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.25,4.4,40),new THREE.MeshBasicMaterial({color:0xffffdd,transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(impact.point.x,.035,impact.point.z);fxRoot.add(ring);fx.push({kind:'soapRing',obj:ring,life:.48,total:.48});
+  burst(impact.point,0xfff3a0,Math.min(28,12+touched));tone(160,.18,'square',.035);setTimeout(()=>tone(720,.18,'sine',.03),60);
+  if(villain.group.visible&&villain.group.position.distanceTo(impact.point)<4.7)stunVillain();
+  if(state.mode==='tutorial'&&state.tutorialStep===3)queueTutorialAdvance(3,520)
+}
+function vacuumShot(){
+  const origin=camera.position.clone(),forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
+  let sucked=0;
+  for(const rec of dirt.filter(d=>!d.dead&&d.kind==='trash')){
+    const delta=rec.group.position.clone().sub(origin);delta.y=0;const dist=delta.length();if(dist<.2||dist>9.2)continue;
+    delta.normalize();if(delta.dot(forward)<.66)continue;
+    cleanRecord(rec,origin,true);sucked++
+  }
+  state.recoil=Math.min(1.15,state.recoil+.22);state.cameraKick=Math.max(-.03,state.cameraKick-.006);
+  if(sucked){tone(250,.055,'sawtooth',.018);showMessage('쑤우욱! ×'+sucked,260)}
+  if(state.mode==='tutorial'&&state.tutorialStep===4&&dirt.filter(d=>d.tutorial&&!d.dead).length<=2)queueTutorialAdvance(4,380)
+}
 function shoot(){
-  if(!state.running)return;const now=performance.now();if(now-state.lastShot<78)return;state.lastShot=now;
-  state.recoil=Math.min(1.5,state.recoil+.82);state.cameraKick=Math.min(.075,state.cameraKick+.018);state.kickSide+=(Math.random()-.5)*.012;sfx('shot');
-  const impact=aimImpact();projectile(impact.point);
-  const touched=sprayClean(impact.point);
-  if(impact.object?.userData.villain)stunVillain();
-  if(!touched)burst(impact.point,0x79eeff,3)
+  if(!state.running)return;const cfg=WEAPONS[state.weapon]||WEAPONS.water,now=performance.now();if(now-state.lastShot<cfg.interval)return;state.lastShot=now;sfx('shot');
+  if(state.weapon==='vacuum'){vacuumShot();return}
+  const impact=aimImpact();
+  if(state.weapon==='water')waterShot(impact);
+  else if(state.weapon==='foam')foamShot(impact);
+  else soapBomb(impact,now)
 }
 function stunVillain(){
   if(villain.stunned>1.2)return;villain.stunned=3.2;sfx('stun');burst(villain.group.position.clone().add(new THREE.Vector3(0,1.4,0)),0xffee72,9);showMessage('악당 멈춤! 3초 동안 투기 금지!',700);
   if(state.mode==='game'){state.score+=75;updateHud()}
-  if(state.mode==='tutorial'&&state.tutorialStep===3)queueTutorialAdvance(3,450)
+  if(state.mode==='tutorial'&&state.tutorialStep===5)queueTutorialAdvance(5,450)
 }
 
 function cleanliness(){
@@ -338,7 +419,7 @@ function cleanliness(){
 function updateHud(){
   ui.score.textContent=state.score.toLocaleString('ko-KR');ui.combo.textContent='COMBO ×'+state.combo;ui.cleanPct.textContent=cleanliness()+'%';
   const sec=Math.max(0,Math.ceil(state.time));ui.timer.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
-  renderRooms()
+  renderRooms();updateWeaponUI()
 }
 function renderRooms(){
   if(state.mode==='tutorial'){ui.roomPanel.innerHTML='<div style="font-weight:1000;margin-bottom:3px">🎓 연습장</div><div>기본 조작을 하나씩 익히는 중이에요.</div>';return}
@@ -392,6 +473,11 @@ function updateFx(dt){
   for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.life-=dt;const t=1-Math.max(0,f.life)/f.total;
     if(f.kind==='particle'){f.v.y-=3*dt;f.obj.position.addScaledVector(f.v,dt);f.obj.scale.setScalar(Math.max(.1,1-t))}
     else if(f.kind==='projectile')f.obj.position.lerpVectors(f.from,f.to,Math.min(1,t));
+    else if(f.kind==='foamField'){
+      f.tick-=dt;if(f.tick<=0){f.tick=.22;sprayClean(f.center,2.05,rec=>rec.kind!=='trash',1)}
+      f.obj.material.opacity=Math.max(0,.32*(1-t));f.obj.scale.setScalar(1+t*.18)
+    }
+    else if(f.kind==='soapRing'){f.obj.material.opacity=Math.max(0,.75*(1-t));f.obj.scale.setScalar(.7+t*.55)}
     else if(f.kind==='fade'){f.obj.scale.setScalar(Math.max(.05,1-t));if(f.obj.material)f.obj.material.opacity=Math.max(0,1-t)}
     if(f.life<=0){if(f.kind==='fade')dirtRoot.remove(f.obj);else fxRoot.remove(f.obj);if(f.obj.geometry&&f.kind!=='fade')f.obj.geometry.dispose?.();if(f.obj.material&&f.kind!=='fade')f.obj.material.dispose?.();fx.splice(i,1)}
   }
@@ -410,7 +496,10 @@ function loop(){
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
-document.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code)){state.keys.add(e.code);e.preventDefault()}});
+document.addEventListener('keydown',e=>{
+  if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code)){state.keys.add(e.code);e.preventDefault()}
+  const pick={Digit1:'water',Digit2:'foam',Digit3:'bomb',Digit4:'vacuum'}[e.code];if(pick){setWeapon(pick);e.preventDefault()}
+});
 document.addEventListener('keyup',e=>state.keys.delete(e.code));
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&state.running){state.yaw-=e.movementX*.0023;state.pitch=clamp(state.pitch-e.movementY*.002,-1.18,1.18)}});
 canvas.addEventListener('mousedown',e=>{if(e.button!==0||!state.running)return;if(!isCoarse()&&document.pointerLockElement!==canvas){canvas.requestPointerLock?.();return}state.firing=true;shoot()});
@@ -423,6 +512,7 @@ canvas.addEventListener('touchmove',e=>{if(!lookTouch)return;for(const t of e.ch
 canvas.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(lookTouch&&t.identifier===lookTouch.id)lookTouch=null});
 
 for(const b of document.querySelectorAll('.padBtn')){const key=b.dataset.key;const on=e=>{e.preventDefault();state.keys.add(key)},off=e=>{e.preventDefault();state.keys.delete(key)};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off)}
+document.querySelectorAll('.weaponBtn').forEach(btn=>btn.addEventListener('pointerdown',e=>{e.preventDefault();setWeapon(btn.dataset.weapon)}));
 ui.fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();state.firing=true;shoot()});
 ui.fireBtn.addEventListener('pointerup',e=>{e.preventDefault();state.firing=false});
 ui.fireBtn.addEventListener('pointercancel',()=>state.firing=false);
