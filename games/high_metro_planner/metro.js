@@ -270,13 +270,13 @@ function addSegment(a,b){
   updateLineButtons();play('confirm',1.06);showNotice(line.name+' 연결 완료',900);tutorialRouteDone();
 }
 function makeTrain(lineId,offset=0){
-  return {lineId,stopIndex:0,dir:1,phase:'dwell',dwell:.55+offset,progress:0,nextIndex:1,passengers:[]};
+  return {lineId,stopIndex:0,dir:1,phase:'dwell',dwell:.55+offset,progress:0,nextIndex:1,passengers:[],prepared:false};
 }
 function resetLineTrains(line){
   const first=stationById(line.stops[0]);
   for(const t of line.trains){
     if(first&&t.passengers.length)first.queue.push(...t.passengers);
-    t.passengers=[];t.stopIndex=0;t.dir=1;t.phase='dwell';t.dwell=.55;t.progress=0;t.nextIndex=Math.min(1,line.stops.length-1);
+    t.passengers=[];t.stopIndex=0;t.dir=1;t.phase='dwell';t.dwell=.55;t.progress=0;t.nextIndex=Math.min(1,line.stops.length-1);t.prepared=false;
   }
 }
 function assignTrain(lineId){
@@ -316,7 +316,7 @@ function shortestPath(startId,targetShape){
     const st=stationById(cur.sid);
     if(cur.sid!==startId&&st&&st.shape===targetShape){found=cur;break}
     for(const e of adj.get(cur.sid)||[]){
-      const transfer=cur.line!==-1&&cur.line!==e.line?.52:0;
+      const transfer=cur.line!==-1&&cur.line!==e.line ? .52 : 0;
       const cost=cur.cost+e.w+transfer;
       const key=e.to+'|'+e.line;
       if(cost<(best.get(key)??Infinity)){best.set(key,cost);prev.set(key,cur.key);todo.push({sid:e.to,line:e.line,cost,key})}
@@ -356,14 +356,15 @@ function updateTrain(line,t,dt){
   if(line.stops.length<2)return;
   t.stopIndex=clamp(t.stopIndex,0,line.stops.length-1);
   if(t.phase==='dwell'){
+    if(!t.prepared){processStop(line,t);t.prepared=true}
     t.dwell-=dt;
-    if(t.dwell<=0){processStop(line,t);t.phase='travel';t.progress=0}
+    if(t.dwell<=0){t.phase='travel';t.progress=0}
     return;
   }
   const a=stationById(line.stops[t.stopIndex]),b=stationById(line.stops[t.nextIndex]);
   if(!a||!b){t.phase='dwell';t.dwell=.5;return}
   const d=Math.max(1,dist(a,b));t.progress+=92*dt/d;
-  if(t.progress>=1){t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=.62;processStop(line,t)}
+  if(t.progress>=1){t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=.62;t.prepared=false}
 }
 function spawnPassenger(){
   if(state.stations.length<2)return;
