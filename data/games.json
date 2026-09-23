@@ -79,6 +79,15 @@
       "description": "낮아진 3인칭 카메라로 3D 경찰차를 직접 운전해 도시를 순찰하며 수배차 추격, 사고 현장 안전 확보, 교통 정리와 도로 위험 신고를 해결하는 경찰 직업 시뮬레이터!"
     },
     {
+      "id": "job_drone_pilot",
+      "title": "드론조종사 시뮬레이터",
+      "href": "games/job_drone_pilot/index.html?v=1",
+      "category": "job",
+      "age": "job",
+      "icon": "🛸",
+      "description": "두 개의 조종 스틱으로 3D 드론을 직접 날리며 항공 촬영·시설 점검·긴급 배송·실종자 수색·정밀 장애물 비행을 수행하는 드론조종사 직업 체험 시뮬레이터! 자동 호버, FPV 카메라, 배터리와 자동귀환(RTH), 모바일 터치 조종을 지원합니다."
+    },
+    {
       "id": "job_takoyaki_simulator",
       "title": "빙글빙글 타코야키집",
       "href": "games/job_takoyaki_simulator/빙글빙글 타코야키집.html",
