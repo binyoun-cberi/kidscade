@@ -488,9 +488,18 @@
       document.addEventListener("contextmenu",function(e){e.preventDefault()});
     }
 
+    var GUGU_SETTINGS_KEY='kidscade_gugudan_settings_v1';
+    var GUGU_WINS_KEY='kidscade_gugudan_wins_v1';
+    var GUGU_SCORE_KEY='kidscade_gugudan_high_score_v1';
+    var GUGU_SETTINGS_OLD='guguDuel'+'Settings';
+    var GUGU_WINS_OLD='guguDuel'+'Wins';
+    var GUGU_SCORE_OLD='guguHigh'+'Score';
+
     function loadSettings(){
       try{
-        var saved=JSON.parse(localStorage.getItem("guguDuelSettings")||"{}");
+        var raw=localStorage.getItem(GUGU_SETTINGS_KEY)||localStorage.getItem(GUGU_SETTINGS_OLD)||"{}";
+        var saved=JSON.parse(raw);
+        if(!localStorage.getItem(GUGU_SETTINGS_KEY)&&localStorage.getItem(GUGU_SETTINGS_OLD))localStorage.setItem(GUGU_SETTINGS_KEY,raw);
         if(saved.mode==="cpu"||saved.mode==="local")state.mode=saved.mode;
         if(CPU[saved.cpu])state.cpu=saved.cpu;
         if(saved.table==="all"||(+saved.table>=2&&+saved.table<=9))state.table=String(saved.table);
@@ -498,15 +507,15 @@
       }catch(e){}
     }
     function saveSettings(){
-      try{localStorage.setItem("guguDuelSettings",JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,sound:state.sound}))}catch(e){}
+      try{localStorage.setItem(GUGU_SETTINGS_KEY,JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,sound:state.sound}))}catch(e){}
     }
     function getWins(){
-      try{return JSON.parse(localStorage.getItem("guguDuelWins")||'{"easy":0,"normal":0,"hard":0}')}catch(e){return{easy:0,normal:0,hard:0}}
+      try{var raw=localStorage.getItem(GUGU_WINS_KEY)||localStorage.getItem(GUGU_WINS_OLD)||'{"easy":0,"normal":0,"hard":0}';if(!localStorage.getItem(GUGU_WINS_KEY)&&localStorage.getItem(GUGU_WINS_OLD))localStorage.setItem(GUGU_WINS_KEY,raw);return JSON.parse(raw)}catch(e){return{easy:0,normal:0,hard:0}}
     }
     function addWin(){
       if(state.mode!=="cpu"||state.wins[0]<2)return;
       var w=getWins();w[state.cpu]=(w[state.cpu]||0)+1;
-      try{localStorage.setItem("guguDuelWins",JSON.stringify(w))}catch(e){}
+      try{localStorage.setItem(GUGU_WINS_KEY,JSON.stringify(w))}catch(e){}
     }
 
     function characterSetFor(side){
@@ -829,8 +838,8 @@
       var avg=f.answered?f.totalMs/f.answered:0;
       var score=f.correct*100+f.maxCombo*25+state.wins[0]*300;
       try{
-        var old=+(localStorage.getItem("guguHighScore")||0);
-        if(score>old)localStorage.setItem("guguHighScore",String(score));
+        var old=+(localStorage.getItem(GUGU_SCORE_KEY)||localStorage.getItem(GUGU_SCORE_OLD)||0);
+        if(score>old)localStorage.setItem(GUGU_SCORE_KEY,String(score));
       }catch(e){}
       els.resultIcon.textContent=winner===0?"🏆":"⚡";
       if(state.mode==="cpu"){
