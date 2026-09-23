@@ -52,7 +52,7 @@ document.body.appendChild(dead);
 
 const metersHost=document.querySelector('.meters')||document.body;const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 0/6 · CCTV';metersHost.appendChild(isoBtn);const helpBtn=document.createElement('button');helpBtn.type='button';helpBtn.className='q17-help-btn';helpBtn.textContent='튜토리얼';metersHost.appendChild(helpBtn);
 const iso=document.createElement('div');iso.id='q17Isolation';
-iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>공동 격리실 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-burn-room" id="q17BurnRoom">격리실 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note">정원은 6명입니다. 정상으로 보이는 사람은 충분히 관찰한 뒤 생존자 캠프로 돌려보낼 수 있습니다. <b>비상 소각은 격리실 전체</b>를 태우므로 정상인이 남아 있다면 큰 불이익이 생깁니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
+iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>공동 격리실 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-iso-close" id="q17FightRoom">직접 진입 · 좀비 소탕</button><button type="button" class="q17-burn-room" id="q17BurnRoom">격리실 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note">정원은 6명입니다. 정상으로 보이는 사람은 충분히 관찰한 뒤 생존자 캠프로 돌려보낼 수 있습니다. <b>비상 소각은 격리실 전체</b>를 태우므로 정상인이 남아 있다면 큰 불이익이 생깁니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
 document.body.appendChild(iso);
 
 const tutorial=document.createElement('div');tutorial.id='q17Tutorial';
@@ -60,7 +60,7 @@ tutorial.innerHTML='<div class="q17-tutorial-card"><div class="q17-tutorial-prog
 document.body.appendChild(tutorial);
 const tutorialSteps=[
  {title:'1. 검역 판정',text:'시민을 바로 찍어 맞히는 게임이 아니라, 필요한 검사를 하고 현재 주차의 지침과 대조하는 게임입니다.',demo:'<b>I/T/U/B/R/G</b>로 검사 · <b>V</b>로 지금까지 본 검사 결과 다시보기 · <b>1/2/3</b>으로 통과/추가검사/격리'},
- {title:'2. 격리실 관리',text:'격리 판정을 받은 시민은 정원 6명의 공동 격리실로 이동합니다. 정상인은 관찰 후 다시 생존자 캠프로 보낼 수 있고, 감염이 확실하면 개별 소각실로 이송할 수 있습니다.',demo:'상단의 <b>격리실 CCTV</b>에서 상태를 확인하세요. 좀비를 방치하면 오판 격리된 정상인까지 감염될 수 있습니다.'},
+ {title:'2. 격리실 관리',text:'격리 판정을 받은 시민은 정원 6명의 공동 격리실로 이동합니다. 정상인은 관찰 후 다시 생존자 캠프로 보낼 수 있고, 감염이 확실하면 개별 소각실로 이송할 수 있습니다.',demo:'상단의 <b>격리실 CCTV</b>에서 상태를 확인하세요. 좀비가 생기면 소각하거나 <b>직접 진입</b>해 넓은 격리동에서 소탕할 수 있습니다. 방치하면 오판 격리된 정상인까지 감염될 수 있습니다.'},
  {title:'3. 잘못 통과시키면',text:'감염자를 통과시키면 생존자 캠프로 들어가 버립니다. 캠프에 들어가 직접 제압해야 하며, 늦으면 시민이 물리고 시간이 지난 뒤 새 좀비가 됩니다.',demo:'생존자 한 명이 감염되는 순간 즉시 모두 좀비가 되지는 않습니다. 도망칠 시간과 구조할 시간이 있습니다.'},
  {title:'4. 전투',text:'전투는 넓은 횡스크롤 구역입니다. 플레이어는 좀비보다 훨씬 빠르고, 좀비는 시민보다 조금 빠릅니다. 장애물과 발판을 넘나들며 거리를 벌리세요.',demo:'<b>A/D</b> 달리기 · <b>W/↑/Space</b> 점프 · <b>마우스 클릭 또는 J</b> 사격 · <b>F</b> 근접 타격 · <b>R</b> 재장전<br>총은 안전하지만 탄약과 재장전이 필요하고, 근접 공격은 강하지만 가까이 가야 해서 위험합니다.'}
 ];
@@ -102,7 +102,7 @@ function isoStatus(d){
 function renderIsolation(){
  isoBtn.textContent='격리실 '+isolation.length+'/'+ISOLATION_CAPACITY+' · CCTV';
  const cap=document.getElementById('q17IsoCapacity');if(cap)cap.textContent=isolation.length+' / '+ISOLATION_CAPACITY;
- const zombiesHere=isolation.filter(function(d){return d.status==='zombie'}).length;
+ const zombiesHere=isolation.filter(function(d){return d.status==='zombie'}).length;const fightBtn=document.getElementById('q17FightRoom');if(fightBtn){fightBtn.disabled=zombiesHere===0;fightBtn.textContent=zombiesHere?'직접 진입 · 좀비 '+zombiesHere+'명 소탕':'직접 진입 · 좀비 없음'}
  isoBtn.classList.toggle('alert',zombiesHere>0||isolation.some(function(d){return d.status==='exposed'||d.acquired}));
  const room=document.getElementById('q17IsoRoom');
  if(!isolation.length){room.innerHTML='<div style="grid-column:1/-1;color:#7f8a93;text-align:center;padding:70px 10px">현재 격리 중인 시민이 없습니다.</div>'}
@@ -182,7 +182,7 @@ function resetIsolation(){isolation=[];isoLog=[];isoSeq=0;renderIsolation();iso.
 
 isoBtn.addEventListener('click',openIsolation);
 document.getElementById('q17IsoClose').addEventListener('click',function(){iso.classList.remove('show')});
-document.getElementById('q17BurnRoom').addEventListener('click',burnRoom);
+document.getElementById('q17FightRoom').addEventListener('click',showIsolationFight);document.getElementById('q17BurnRoom').addEventListener('click',burnRoom);
 document.getElementById('q17IsoRoom').addEventListener('click',function(e){const btn=e.target.closest('button[data-iso-action]');if(!btn)return;const id=Number(btn.dataset.id);if(btn.dataset.isoAction==='release')releaseDetainee(id);else if(btn.dataset.isoAction==='burn')burnDetainee(id)});
 iso.addEventListener('click',function(e){if(e.target===iso)iso.classList.remove('show')});
 renderIsolation();
@@ -214,7 +214,9 @@ function setupCombat(kind,payload){
  const dpr=Math.min(2,window.devicePixelRatio||1);
  player={x:110*dpr,y:groundY,r:23*dpr,hp:100,ammo:12,maxAmmo:12,vx:0,vy:0,onGround:true,facing:1};
  zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;meleeCd=0;autoTarget=null;cameraX=0;
- if(kind==='camp'){
+ if(kind==='isolation'){
+  const roomZombies=isolation.filter(function(d){return d.status==='zombie'});roomZombies.forEach(function(d,i){spawnZombie((620+i*260)*dpr,groundY,2,126*dpr,d.name,.8+i*.15)});document.getElementById('q17CombatTitle').textContent='⚠ 격리실 직접 진입 · 좀비 소탕';document.getElementById('q17SurvivorStat').style.display='none';
+ }else if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer','soldier'];
   const xs=[720,940,1210,1510,1740,1940,2140];
   xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:19*dpr,sprite:survivorSprites[i],alive:true,speed:(96+(i%3)*5)*dpr,dir:i%2?1:-1,bite:0,bitten:false,turnTimer:0})});
@@ -235,6 +237,13 @@ function updateHud(){
  document.getElementById('q17Ammo').textContent=player?player.ammo:12;
  document.getElementById('q17Risk').textContent=currentIncidentInf+'%';
  document.getElementById('q17Survivors').textContent=survivors.filter(function(s){return s.alive}).length;
+}
+function showIsolationFight(){
+ const count=isolation.filter(function(d){return d.status==='zombie'}).length;if(!count){notify('격리실에 좀비가 없습니다.');return}
+ if(active)return;active=true;started=false;continuation=null;iso.classList.remove('show');setupCombat('isolation',{});
+ wrap.classList.add('show');document.getElementById('q17AlertTitle').textContent='격리실 진입';
+ document.getElementById('q17AlertText').innerHTML='격리실 내부에 <b>'+count+'명</b>의 좀비가 확인됐습니다.<br>소각 대신 직접 진입합니다. 장애물 위로 뛰어넘고 거리를 벌리며 제압하세요. <b>F 근접 타격</b>은 강하지만 물릴 위험이 큽니다.';
+ document.getElementById('q17Alert').classList.add('show');
 }
 function showGlobalOutbreak(){
  if(active||!bridge())return;
@@ -360,7 +369,9 @@ function win(){
  const wonMode=mode,losses=campLosses,inf=currentIncidentInf,next=continuation;
  started=false;active=false;continuation=null;wrap.classList.remove('show');
  const b=bridge();
- if(wonMode==='camp'){
+ if(wonMode==='isolation'){
+  const cleared=isolation.filter(function(d){return d.status==='zombie'}).length;isolation=isolation.filter(function(d){return d.status!=='zombie'});addIsoLog('<b>직접 진입 소탕 완료</b> · 좀비 '+cleared+'명 제거');renderIsolation();if(b)b.applyOutbreakResult({infectionDelta:-Math.min(5,cleared),trustDelta:1,scoreDelta:cleared*110});notify('격리실 소탕 완료 · '+cleared+'명 제거');
+ }else if(wonMode==='camp'){
   const reduction=losses===0?4:Math.max(1,3-losses);
   if(b)b.applyOutbreakResult({won:true,infectionDelta:-reduction,trustDelta:-(1+losses*2),scoreDelta:Math.max(60,320-losses*70)});
   notify(losses===0?'생존자 캠프 진압 성공 · 추가 감염 없음':'생존자 캠프 진압 성공 · 추가 감염 '+losses+'명');
@@ -374,8 +385,8 @@ function lose(){
  if(!active)return;
  const lostMode=mode;started=false;active=false;continuation=null;wrap.classList.remove('show');
  const b=bridge();if(b)b.applyOutbreakResult({won:false,infectionDelta:8,trustDelta:-15,scoreDelta:-500,gameOver:true});
- document.getElementById('q17DeadTitle').textContent=lostMode==='camp'?'생존자 캠프 붕괴':'검역소 함락';
- document.getElementById('q17DeadText').innerHTML=lostMode==='camp'?'통과시킨 감염자를 제때 막지 못했습니다.<br>캠프에서 감염이 연쇄적으로 번졌고 플레이어도 공격을 받아 사망했습니다.':'격리선이 무너졌고 감염자들이 검역소 안까지 들어왔습니다.<br>진압에 실패해 제17구역은 폐쇄되었습니다.';
+ document.getElementById('q17DeadTitle').textContent=lostMode==='camp'?'생존자 캠프 붕괴':lostMode==='isolation'?'격리실 진입 실패':'검역소 함락';
+ document.getElementById('q17DeadText').innerHTML=lostMode==='camp'?'통과시킨 감염자를 제때 막지 못했습니다.<br>캠프에서 감염이 연쇄적으로 번졌고 플레이어도 공격을 받아 사망했습니다.':lostMode==='isolation'?'격리실 내부 소탕 중 좀비에게 포위되었습니다.<br>직접 진입은 소각보다 보상은 크지만 훨씬 위험합니다.':'격리선이 무너졌고 감염자들이 검역소 안까지 들어왔습니다.<br>진압에 실패해 제17구역은 폐쇄되었습니다.';
  dead.classList.add('show');
 }
 
