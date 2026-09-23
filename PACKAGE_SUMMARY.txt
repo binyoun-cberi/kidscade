@@ -1,6 +1,22 @@
-Kidscade Asset Library v3 ADDON
-Runtime files: 1687
-Exact duplicates removed: 9
-Runtime bytes: 12034671
-Case-insensitive path collision fixes: 0
-Excluded/non-runtime source files: 277
+Kidscade Word Blaster drop-in package
+
+New game:
+- games/low_word_blaster/index.html
+- games/low_word_blaster/word-blaster.js
+- games/low_word_blaster/word-blaster-data.js
+
+Imported Starter Kit FPS assets:
+- 6 GLB models
+- 3 UI sprites
+- 3 OGG sound effects
+- temporary game-card screenshot
+
+License/provenance:
+- Kenney Starter Kit FPS source README preserved
+- MIT license preserved
+- imported visual/audio assets are marked CC0 by source README
+
+Safety:
+- no existing Kidscade core file is overwritten
+- no Godot runtime/project files are included
+- catalog entry is supplied separately as WORD_BLASTER_CATALOG_ENTRY.json

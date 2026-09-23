@@ -1,0 +1,15 @@
+WORD BLASTER IMPORTED ASSET LICENSE NOTE
+
+Source package: Kenney — Starter Kit FPS
+Source package README states:
+- Code: MIT License
+- Included 2D sprites, 3D models and sound effects: CC0
+
+Kidscade Word Blaster imports only the package assets listed in:
+assets/game/manifest/word-blaster-pack.json
+
+The original MIT license and source README are preserved as:
+- assets/game/licenses/kenney-starter-kit-fps-MIT.txt
+- assets/game/licenses/kenney-starter-kit-fps-source.md
+
+The Word Blaster browser runtime in games/low_word_blaster/ is a new Three.js implementation for Kidscade and does not require the Godot project files at runtime.
