@@ -21,8 +21,8 @@ test('Word Blaster uses local Three.js and parses as modules',()=>{
 
 test('Word Blaster has the intended low-grade learning loop',()=>{
   assert.match(runtime,/new THREE\.Raycaster\(\)/);
-  assert.match(runtime,/state\.time=state\.totalTime=20/);
-  assert.match(runtime,/reveal=state\.boss\?7:5/);
+  assert.match(runtime,/state\.time=state\.totalTime=35/);
+  assert.match(runtime,/reveal=state\.boss\?12:10/);
   assert.match(runtime,/function startBoss\(/);
   assert.match(runtime,/state\.round>=rounds\.length/);
   assert.match(runtime,/kidscade_language_v3_word_blaster_best/);
@@ -44,6 +44,8 @@ test('Word Blaster has resilient asset fallbacks and Kidscade scenery',()=>{
   }
   assert.match(runtime,/function makeProceduralDrone\(/);
   assert.match(runtime,/function proceduralCloud\(/);
+  assert.doesNotMatch(runtime,/world\.add\(p\)/);
+  assert.match(runtime,/PerspectiveCamera\(80/);
 });
 
 test('Word Blaster is registered as a low-grade language game',()=>{
@@ -51,7 +53,7 @@ test('Word Blaster is registered as a low-grade language game',()=>{
   const game=catalog.games.find(g=>g.id==='low_word_blaster');
   assert.ok(game);
   assert.equal(game.title,'워드 블라스터');
-  assert.equal(game.href,'games/low_word_blaster/index.html?v=1');
+  assert.equal(game.href,'games/low_word_blaster/index.html?v=2');
   assert.equal(game.category,'lang');
   assert.equal(game.age,'low');
   assert.equal(game.scoreKey,'kidscade_language_v3_word_blaster_best');
