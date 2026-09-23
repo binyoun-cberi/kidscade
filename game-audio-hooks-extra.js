@@ -235,44 +235,6 @@
     });
   }
 
-  function setupHistoryRoyale() {
-    soundAllowed = () => !document.getElementById('soundBtn')?.classList.contains('muted');
-    preload(['music.korea_welcome', 'success.victory_fanfare', 'failure.fail_sting', 'failure.disappointed_voice']);
-
-    let bgmStarted = false;
-    const startBgm = () => {
-      if (bgmStarted || !soundAllowed()) return;
-      bgmStarted = true;
-      play('music.korea_welcome', { loop: true, volume: 0.12, cooldownMs: 700 });
-      document.removeEventListener('pointerdown', startBgm);
-      document.removeEventListener('keydown', startBgm);
-    };
-    document.addEventListener('pointerdown', startBgm, { passive: true });
-    document.addEventListener('keydown', startBgm);
-
-    waitFor('#soundBtn', button => {
-      button.addEventListener('click', () => {
-        if (!bgmStarted) setTimeout(startBgm, 0);
-      });
-    });
-
-    waitFor('#result', result => {
-      let wasOpen = result.style.display === 'grid';
-      let lastTitle = '';
-      observe(result, () => {
-        const open = result.style.display === 'grid';
-        const resultTitle = document.getElementById('resultTitle')?.textContent?.trim() || '';
-        if (open && (!wasOpen || resultTitle !== lastTitle)) {
-          if (resultTitle.includes('승리')) play('success.victory_fanfare', { volume: 0.46, cooldownMs: 1400 });
-          else if (resultTitle.includes('패배')) play('failure.fail_sting', { volume: 0.42, cooldownMs: 1200 });
-          else if (resultTitle.includes('무승부')) play('failure.disappointed_voice', { volume: 0.28, cooldownMs: 1200 });
-          lastTitle = resultTitle;
-        }
-        wasOpen = open;
-      }, { attributes: true, attributeFilter: ['style'], childList: true, subtree: true });
-    });
-  }
-
   function setupOmokArena() {
     soundAllowed = () => !(document.getElementById('sound')?.textContent || '').includes('🔇');
     preload(['collect.coin_drop', 'success.victory_fanfare', 'failure.fail_sting']);
@@ -307,7 +269,6 @@
     else if (path.includes('문방구 사장님') || title.includes('문방구 사장님')) setupStationeryBoss();
     else if (path.includes('약수 타워 디펜스') || title.includes('숫자몬스터 연산 디펜스')) setupTowerDefense();
     else if (path.includes('넘버 시그널') || title.includes('룬의 숲')) setupRuneForest();
-    else if (path.includes('역사 로얄') || title.includes('역사 로얄')) setupHistoryRoyale();
     else if (path.includes('오목 아레나') || title.includes('오목 아레나')) setupOmokArena();
   }
 
