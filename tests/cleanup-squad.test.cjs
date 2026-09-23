@@ -19,6 +19,16 @@ test('Cleanup Squad files expose tutorial and local Three runtime',()=>{
   assert.match(runtime,/soda-can\.glb/);
 });
 
+test('Cleanup Squad uses rapid area-cleaning instead of one-object-at-a-time shooting',()=>{
+  assert.match(runtime,/const CLEAN_RADIUS=1\.85/);
+  assert.match(runtime,/function sprayClean\(/);
+  assert.match(runtime,/state\.firing=true/);
+  assert.match(runtime,/now-state\.lastShot<78/);
+  assert.match(runtime,/speed:4\.15/);
+  assert.match(runtime,/function messBurst\(/);
+  assert.match(runtime,/cameraKick/);
+});
+
 test('Cleanup Squad is registered in game catalog',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='low_cleanup_squad');
