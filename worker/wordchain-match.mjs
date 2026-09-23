@@ -9,7 +9,8 @@ const SESSION_COOKIE = 'kc_session';
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 6;
 const ROOM_TTL_MS = 45 * 60 * 1000;
-const ONLINE_WINDOW_MS = 6500;
+const ONLINE_WINDOW_MS = 45000;
+const PRESENCE_WRITE_MS = 15000;
 const TURN_MS = 12000;
 const START_DELAY_MS = 3000;
 const GAME_ID = 'wordchain_arena';
@@ -563,8 +564,8 @@ async function finishRoom(env, bundle, winnerId, now, history = null) {
   ]);
 }
 
-async function advanceExpiredTurn(env, roomId, now = Date.now()) {
-  let bundle = await fetchRoomBundle(env, roomId);
+async function advanceExpiredTurn(env, roomId, now = Date.now(), existingBundle = null) {
+  let bundle = existingBundle || await fetchRoomBundle(env, roomId);
   if (!bundle || bundle.room.status !== 'playing' || !bundle.state) return bundle;
   const startMs = bundle.room.start_at ? new Date(bundle.room.start_at).getTime() : NaN;
   if (Number.isFinite(startMs) && now < startMs) return bundle;
@@ -771,10 +772,14 @@ async function stateRoom(request, env) {
   const self = bundle.players.find(player => player.student_id === auth.row.student_id);
   if (!self) return json({ ok: false, error: 'not_room_participant' }, 403);
   const now = Date.now();
-  await env.DB.prepare(`
-    UPDATE multiplayer_room_players SET last_seen_at = ? WHERE room_id = ? AND student_id = ?
-  `).bind(nowIso(now), roomId, auth.row.student_id).run();
-  bundle = await advanceExpiredTurn(env, roomId, now);
+  const seen = Date.parse(self.last_seen_at);
+  if (!Number.isFinite(seen) || now - seen >= PRESENCE_WRITE_MS) {
+    await env.DB.prepare(`
+      UPDATE multiplayer_room_players SET last_seen_at = ? WHERE room_id = ? AND student_id = ?
+    `).bind(nowIso(now), roomId, auth.row.student_id).run();
+    self.last_seen_at = nowIso(now);
+  }
+  bundle = await advanceExpiredTurn(env, roomId, now, bundle);
   return json({ ok: true, room: serializeRoom(bundle, auth.row.student_id, now) });
 }
 
@@ -855,3 +860,4 @@ export async function handleWordchainMatchRequest(request, env) {
     return json({ ok: false, error: 'multiplayer_internal_error' }, 500);
   }
 }
+

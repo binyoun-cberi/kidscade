@@ -49,7 +49,7 @@ test('Patience Tower duel client keeps the three-minute current-height rule and 
   assert.match(html, /patience_tower_duel/);
   assert.match(html, /Math\.random=/);
   assert.match(html, /KeyP.*KeyR/s);
-  assert.match(html, /setInterval\(syncTick,400\)/);
+  assert.match(html, /room\?\.status==='playing'\?400:2500/);
   assert.match(html, /readCurrentPose/);
   assert.match(html, /pose,finished/);
   assert.match(html, /setOpponentPose/);
@@ -257,3 +257,4 @@ test('main Worker performs multiplayer schema preflight and exposes a health end
   assert.match(main, /\/api\/multiplayer\/health/);
   assert.match(main, /multiplayer_database_not_ready/);
 });
+

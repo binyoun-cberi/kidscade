@@ -152,7 +152,7 @@ const errors={
 };
 
 async function api(path,body={}){
- const res=await fetch('/api/multiplayer/wordchain/'+path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+ const res=await fetch('/api/multiplayer/wordchain/'+path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
  let data={};try{data=await res.json()}catch(_){}
  if(!res.ok||data.ok===false){const e=new Error(errors[data.error]||data.error||'요청 실패');e.code=data.error;e.data=data;throw e}
  return data;
@@ -164,8 +164,12 @@ function hearts(n){return n>0?'♥ '.repeat(n).trim():'—'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function actionId(){return crypto.randomUUID?crypto.randomUUID().replaceAll('-',''):(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2))}
 function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.eliminated&&Number(room.match?.currentSlot)===Number(room.self.slot)&&nowServer()>=new Date(room.startAt||0).getTime()}
-function stopPoll(){clearInterval(pollTimer);pollTimer=null}
-function startPoll(){stopPoll();pollTimer=setInterval(sync,500);sync()}
+let pollEnabled=false,pollBusy=false,pollFailures=0,pollGeneration=0;
+function stopPoll(){pollEnabled=false;pollGeneration++;clearTimeout(pollTimer);pollTimer=null}
+function scheduleSync(delay){clearTimeout(pollTimer);if(pollEnabled)pollTimer=setTimeout(sync,delay)}
+function startPoll(){stopPoll();pollEnabled=true;pollFailures=0;scheduleSync(0)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pollEnabled)scheduleSync(0)});
+window.addEventListener('online',()=>{if(pollEnabled){pollFailures=0;scheduleSync(0)}});
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
 function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 function applyRequestedMode(){
@@ -297,9 +301,22 @@ function animateTimer(){
  const tick=()=>{if(!room||room.status!=='playing')return;const deadline=new Date(room.match?.turnDeadline||0).getTime();const turnKey=String(room.match?.currentSlot||'')+':'+String(room.match?.turnDeadline||'');if(soundState.warningTurn!==turnKey){soundState.warningTurn=turnKey;soundState.warningSecond=0}const left=Math.max(0,deadline-nowServer());$('timerFill').style.width=Math.max(0,Math.min(100,left/12000*100))+'%';$('timerBar').classList.toggle('urgent',left>0&&left<=4000);const warningSecond=Math.ceil(left/1000);if(myTurn()&&warningSecond>=1&&warningSecond<=3&&warningSecond!==soundState.warningSecond){soundState.warningSecond=warningSecond;playTimerWarning(warningSecond)}timerRAF=requestAnimationFrame(tick)};tick();
 }
 async function sync(){
- if(!room)return;
- try{const data=await api('state',{roomId:room.id});render(data.room)}
- catch(e){if(e.code==='room_not_found'){resetToEntry();return}if(e.code==='not_authenticated'||e.code==='session_expired'){stopPoll();alert(e.message);location.href='../../'}}
+ if(!room||!pollEnabled)return;
+ if(pollBusy){scheduleSync(250);return}
+ const id=room.id,generation=pollGeneration;pollBusy=true;
+ try{const data=await api('state',{roomId:id});if(generation===pollGeneration&&room?.id===id){pollFailures=0;render(data.room)}}
+ catch(e){
+  if(generation!==pollGeneration)return;
+  pollFailures++;
+  if(e.code==='room_not_found'){resetToEntry();return}
+  if(e.code==='not_authenticated'||e.code==='session_expired'){stopPoll();alert(e.message);location.href='../../'}
+ }finally{
+  pollBusy=false;
+  if(generation===pollGeneration&&pollEnabled){
+   const base=document.hidden?10000:room?.status==='playing'?1000:2500;
+   scheduleSync(Math.min(15000,base*2**Math.min(pollFailures,4))+Math.random()*150);
+  }
+ }
 }
 async function toggleReady(){if(!room)return;try{const data=await api('ready',{roomId:room.id,ready:!room.self?.ready});sfx('movement.jump',{volume:.20,rate:data.room.self?.ready?1.12:.92,cooldownMs:180});render(data.room)}catch(e){sfx('failure.fail_sting',{volume:.24,cooldownMs:250});alert(e.message)}}
 async function startMatch(){if(!room)return;try{$('startBtn').disabled=true;sfx('shop.register_open',{volume:.22,cooldownMs:500});const data=await api('start',{roomId:room.id});render(data.room)}catch(e){sfx('failure.fail_sting',{volume:.24,cooldownMs:250});alert(e.message)}}

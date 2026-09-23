@@ -10,7 +10,8 @@ const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 6;
 const ROOM_TTL_MS = 30 * 60 * 1000;
 const RESULT_GRACE_MS = 2500;
-const ONLINE_WINDOW_MS = 6000;
+const ONLINE_WINDOW_MS = 45000;
+const PRESENCE_WRITE_MS = 15000;
 const MAX_HEIGHT_M = 2000;
 const ALLOWED_DUEL_SKINS = new Set(['green','blue','pink','yellow','beige']);
 
@@ -376,11 +377,10 @@ async function syncRoom(request, env) {
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const roomId = String(body?.roomId || '').trim();
   if (!roomId) return json({ ok: false, error: 'room_required' }, 400);
-  const participant = await ensureParticipant(env, roomId, auth.row.student_id);
-  if (!participant) return json({ ok: false, error: 'not_room_participant' }, 403);
-
   let bundle = await fetchRoom(env, roomId);
   if (!bundle) return json({ ok: false, error: 'room_not_found' }, 404);
+  const participant = bundle.players.find(player => player.student_id === auth.row.student_id);
+  if (!participant) return json({ ok: false, error: 'not_room_participant' }, 403);
   const now = Date.now();
   const room = bundle.room;
   const startMs = room.start_at ? new Date(room.start_at).getTime() : NaN;
@@ -404,15 +404,16 @@ async function syncRoom(request, env) {
     `).bind(
       current, best, best, poseJson, markFinished ? 1 : 0, nowIso(now), nowIso(now), roomId, auth.row.student_id
     ).run();
-  } else {
+    bundle = await fetchRoom(env, roomId);
+  } else if (!Number.isFinite(Date.parse(participant.last_seen_at)) || now - Date.parse(participant.last_seen_at) >= PRESENCE_WRITE_MS) {
     await env.DB.prepare(`
       UPDATE multiplayer_room_players
       SET last_seen_at = ?
       WHERE room_id = ? AND student_id = ?
     `).bind(nowIso(now), roomId, auth.row.student_id).run();
+    participant.last_seen_at = nowIso(now);
   }
 
-  bundle = await fetchRoom(env, roomId);
   bundle = await finalizeRoomIfNeeded(env, bundle, now);
   return json({ ok: true, room: serializeRoom(bundle, auth.row.student_id, now) });
 }
@@ -479,3 +480,4 @@ export async function handleMultiplayerRequest(request, env) {
     return json({ ok: false, error: 'multiplayer_internal_error' }, 500);
   }
 }
+

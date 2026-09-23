@@ -280,9 +280,9 @@ async function sendHeartbeat(){
   scheduleHeartbeat(30000);
 }
 function pollingDelay(){
-  if(document.hidden)return 3500;
+  if(document.hidden)return Math.min(30000,10000*Math.pow(2,Math.min(pollFailures,2)));
   const status=lastState?.room?.status;
-  const base=status==='question'?1200:(status==='waiting'?1800:1600);
+  const base=status==='question'?1200:(status==='waiting'?2500:status==='finished'?5000:2000);
   return Math.min(6500,base*Math.pow(1.65,Math.min(pollFailures,3)));
 }
 function schedulePoll(delay){
@@ -421,13 +421,16 @@ function startPolling(){
 async function poll(){
   if(!session||session.role==='solo')return;
   if(pollInFlight){schedulePoll(250);return}
+  const activeSession=session;
   pollInFlight=true;
   try{
     const d=await requestJson(API+'/state?code='+encodeURIComponent(session.code),{headers:authHeaders()},6000);
+    if(session!==activeSession)return;
     lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();
     pollFailures=0;terminalFailures=0;setConnectionState('','');
     if(!roundEditing)render(d);
   }catch(e){
+    if(session!==activeSession)return;
     pollFailures+=1;
     const terminal=['room_not_found','unauthorized','room_closed'].includes(String(e.message));
     terminalFailures=terminal?terminalFailures+1:0;

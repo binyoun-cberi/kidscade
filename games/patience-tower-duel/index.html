@@ -114,7 +114,7 @@
   };
 
   async function api(path, body = {}) {
-    const response = await fetch(path, {method:'POST', credentials:'same-origin', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+    const response = await fetch(path, {method:'POST', credentials:'same-origin', headers:{'content-type':'application/json'}, body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
     let data = {};
     try { data = await response.json(); } catch (_) {}
     if (!response.ok || data.ok === false) {
@@ -199,11 +199,12 @@
     } catch(error){showToast(error.message,2600)}
   }
 
-  function startPolling() {
-    clearInterval(pollTimer);
-    pollTimer=setInterval(syncTick,400);
-    syncTick();
-  }
+  let pollEnabled=false,syncBusy=false,syncFailures=0,pollGeneration=0,finishPending=false;
+  function stopPolling(){pollEnabled=false;pollGeneration++;clearTimeout(pollTimer)}
+  function scheduleSync(delay){clearTimeout(pollTimer);if(pollEnabled)pollTimer=setTimeout(()=>syncTick(),delay)}
+  function startPolling(){stopPolling();pollEnabled=true;syncFailures=0;finishPending=false;scheduleSync(0)}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pollEnabled)scheduleSync(0)});
+  window.addEventListener('online',()=>{if(pollEnabled){syncFailures=0;scheduleSync(0)}});
 
   function nowServer() { return Date.now()+serverOffsetMs; }
 
@@ -236,19 +237,33 @@
 
   async function syncTick(forceFinished=false) {
     if (!room) return;
+    if(forceFinished)finishPending=true;
+    if(syncBusy){if(pollEnabled)scheduleSync(250);return;}
+    syncBusy=true;
+    const id=room.id,generation=pollGeneration;
     const current=readCurrentHeight();
     const pose=readCurrentPose();
     const endMs=room.endAt?new Date(room.endAt).getTime():Infinity;
-    const finished=forceFinished || (room.status==='playing' && nowServer()>=endMs);
+    const finished=finishPending || (room.status==='playing' && nowServer()>=endMs);
     if (finished) freezeGame();
     try {
       const data=await api('/api/multiplayer/sync',{roomId:room.id,currentHeight:current,bestHeight:localBest,pose,finished});
+      if(generation!==pollGeneration||room?.id!==id)return;
+      syncFailures=0;if(finished)finishPending=false;
       room=data.room;
       if (room.serverNow) serverOffsetMs=new Date(room.serverNow).getTime()-Date.now();
       renderRoom(room);
       pushOpponentPose(room.opponent);
     } catch(error){
-      if (error.code==='not_authenticated'||error.code==='session_expired'){clearInterval(pollTimer);alert(error.message);location.href='/';}
+      if(generation!==pollGeneration)return;
+      syncFailures++;
+      if (error.code==='not_authenticated'||error.code==='session_expired'){stopPolling();alert(error.message);location.href='/';}
+    } finally {
+      syncBusy=false;
+      if(generation===pollGeneration&&pollEnabled){
+        const base=document.hidden?5000:room?.status==='playing'?400:2500;
+        scheduleSync(finishPending&&!syncFailures?0:Math.min(15000,base*2**Math.min(syncFailures,5)));
+      }
     }
   }
 
@@ -313,7 +328,7 @@
   }
 
   function showResult(next) {
-    clearInterval(pollTimer); freezeGame(); countdown.classList.remove('show'); duelHud.style.display='none'; resultOverlay.classList.remove('hidden'); lobbyOverlay.classList.add('hidden');
+    stopPolling(); freezeGame(); countdown.classList.remove('show'); duelHud.style.display='none'; resultOverlay.classList.remove('hidden'); lobbyOverlay.classList.add('hidden');
     const outcome=next.result?.outcome||'draw';
     $('resultTitle').textContent=outcome==='win'?'🏆 승리!':outcome==='lose'?'😵 패배!':'🤝 무승부!';
     $('resultSub').textContent='타이머가 끝난 순간의 높이로 결정되었습니다.';
@@ -329,7 +344,7 @@
   }
 
   function resetLobby() {
-    clearInterval(pollTimer); room=null; frameReady=false;gameStarted=false;gameFrozen=false;finalSent=false;localBest=0;preparingSeed=null;
+    stopPolling(); room=null; frameReady=false;gameStarted=false;gameFrozen=false;finalSent=false;localBest=0;preparingSeed=null;
     frame.classList.remove('active');frame.removeAttribute('srcdoc');resultOverlay.classList.add('hidden');countdown.classList.remove('show');duelHud.style.display='none';
     $('roomLobby').style.display='none';$('lobbyChooser').style.display='block';$('roomCodeInput').value='';lobbyOverlay.classList.remove('hidden');
   }
@@ -345,3 +360,4 @@
 </script>
 </body>
 </html>
+
