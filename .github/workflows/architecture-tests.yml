@@ -59,6 +59,9 @@ jobs:
             worker/wordchain-room.mjs \
             worker/wordchain-room-router.mjs \
             wordchain-realtime.js \
+            worker/tower-room.mjs \
+            worker/tower-room-router.mjs \
+            tower-realtime.js \
             worker/history-live.mjs \
             worker/main.mjs \
             game-registry.js \
