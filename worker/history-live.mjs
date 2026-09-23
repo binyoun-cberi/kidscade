@@ -255,6 +255,7 @@ async function heartbeat(request,env){
 async function state(request,env){
   const url=new URL(request.url), room=await roomByCode(env,url.searchParams.get('code'));
   if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
   const auth=await roleFor(env,room,bearer(request));
   if(!auth.role)return json({ok:false,error:'unauthorized'},401);
   const now=Date.now(),fresh=await autoReveal(env,room,now);
@@ -266,7 +267,7 @@ async function state(request,env){
       LEFT JOIN history_live_answers a
         ON a.room_id=p.room_id AND a.player_id=p.id AND a.question_index=?
       WHERE p.room_id=?
-      ORDER BY p.score DESC,p.joined_at ASC`).bind(qi,fresh.id).all()
+      ORDER BY p.score DESC,p.joined_at ASC`).bind(slot,fresh.id).all()
     : await env.DB.prepare(`SELECT id,nickname,score,streak,last_seen_at,joined_at,
         NULL option_index,NULL is_correct,NULL points
       FROM history_live_players WHERE room_id=? ORDER BY score DESC,joined_at ASC`).bind(fresh.id).all();
@@ -290,6 +291,7 @@ async function hostAction(request,env,action){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   let room=await roomByCode(env,body.code);
   if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
   const auth=await roleFor(env,room,bearer(request));
   if(auth.role!=='host')return json({ok:false,error:'host_required'},403);
   const now=Date.now();
@@ -330,6 +332,7 @@ async function answerQuestion(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   let room=await roomByCode(env,body.code);
   if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
   const player=await playerByToken(env,room.id,bearer(request));
   if(!player)return json({ok:false,error:'player_required'},403);
   const currentQi=Number(room.current_question);
