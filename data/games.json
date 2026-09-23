@@ -380,11 +380,11 @@
     {
       "id": "low_word_blaster",
       "title": "워드 블라스터",
-      "href": "games/low_word_blaster/index.html?v=1",
+      "href": "games/low_word_blaster/index.html?v=2",
       "category": "lang",
       "age": "low",
       "icon": "🎯",
-      "description": "하늘을 날아다니는 알파벳 드론을 영단어 철자 순서대로 맞히는 3D 1인칭 영어 슈팅! 마지막 5초에 정답을 확인해 끝까지 도전하고, 10단어를 통과하면 배운 단어로 문장 보스에 맞서요.",
+      "description": "하늘을 날아다니는 알파벳 드론을 영단어 철자 순서대로 맞히는 3D 1인칭 영어 슈팅! 넉넉한 제한시간과 마지막 10초 정답 힌트로 끝까지 도전하고, 10단어를 통과하면 배운 단어로 문장 보스에 맞서요.",
       "scoreKey": "kidscade_language_v3_word_blaster_best"
     },
     {
