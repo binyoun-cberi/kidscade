@@ -43,11 +43,11 @@
     {
       "id": "high_seed_volleyball",
       "title": "씨앗 배구",
-      "href": "games/high_seed_volleyball/index.html?v=2",
+      "href": "games/high_seed_volleyball/index.html?v=3",
       "category": "trivia",
       "age": "high",
       "icon": "🏐",
-      "description": "빠른 캐릭터 이동과 읽기 쉬운 공 속도, 고정 스텝 물리로 다듬은 1:1 아케이드 배구! 점프 타점과 방향 스매시, CPU 난이도전, 한 키보드 2인 대전, 모바일 터치 조작을 지원합니다."
+      "description": "Kenney 캐릭터 에셋으로 플레이하고, 서브는 버튼 한 번으로 안정적으로 상대 코트에 넘긴 뒤 직접 이동·점프·스매시로 랠리를 이어가는 1:1 아케이드 배구입니다."
     },
     {
       "id": "high_quarantine_17",
