@@ -1133,9 +1133,9 @@ const MODERN_TIMELINE_EVENTS = Object.freeze([
   },
   {
     "name": "통감부 설치",
-    "date": "1905년 11월",
-    "year": 1905,
-    "month": 11
+    "date": "1906년 2월",
+    "year": 1906,
+    "month": 2
   },
   {
     "name": "민영환 자결",
@@ -1181,15 +1181,15 @@ const MODERN_TIMELINE_EVENTS = Object.freeze([
   },
   {
     "name": "고종 강제 퇴위",
-    "date": "1907년 6월",
-    "year": 1907,
-    "month": 6
-  },
-  {
-    "name": "대한 제국 군대 해산",
     "date": "1907년 7월",
     "year": 1907,
     "month": 7
+  },
+  {
+    "name": "대한 제국 군대 해산",
+    "date": "1907년 8월",
+    "year": 1907,
+    "month": 8
   },
   {
     "name": "한일 신협약(정미 7조약) 체결",
@@ -1293,11 +1293,11 @@ MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
     clue:`‘${event.name}’이 일어난 시기를 찾는 연표 지식`,
     q:`‘${event.name}’이 일어난 시기로 알맞은 것은 무엇일까요?`,
     o:options,
-    e:`${event.name}은(는) ${event.date}에 해당합니다.`,
+    e:`${event.name}: ${event.date}에 일어난 일입니다.`,
     family:'date',
     oxStatement:index%2===0
-      ? `${event.name}은(는) ${event.date}에 일어났다.`
-      : `${event.name}은(는) ${options[1]}에 일어났다.`,
+      ? `‘${event.name}’의 시기는 ${event.date}이다.`
+      : `‘${event.name}’의 시기는 ${options[1]}이다.`,
     oxAnswer:index%2===0
   });
 });
@@ -1310,14 +1310,14 @@ for(let distance=1;distance<=8;distance++){
     const options=[first.name,second.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'];
     addDirectFact({
       era,type:'순서',term:first.name,
-      clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
+      clue:`${first.name} · ${second.name}의 앞뒤 순서`,
       q:`다음 두 사건 가운데 먼저 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:options,
-      e:`${first.name}(${first.date})이(가) ${second.name}(${second.date})보다 먼저입니다.`,
+      e:`시간순으로 ${first.name}(${first.date}) → ${second.name}(${second.date})입니다.`,
       family:'chronology-before',
       oxStatement:(i+distance)%2===0
-        ? `${first.name}은(는) ${second.name}보다 먼저 일어났다.`
-        : `${second.name}은(는) ${first.name}보다 먼저 일어났다.`,
+        ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
+        : `시간순으로 ‘${second.name} → ${first.name}’이다.`,
       oxAnswer:(i+distance)%2===0
     });
     addDirectFact({
@@ -1325,11 +1325,11 @@ for(let distance=1;distance<=8;distance++){
       clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
       q:`다음 두 사건 가운데 나중에 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
-      e:`${second.name}(${second.date})이(가) ${first.name}(${first.date})보다 뒤입니다.`,
+      e:`시간순으로 ${first.name}(${first.date}) → ${second.name}(${second.date})입니다.`,
       family:'chronology-after',
       oxStatement:(i+distance)%2!==0
-        ? `${second.name}은(는) ${first.name}보다 나중에 일어났다.`
-        : `${first.name}은(는) ${second.name}보다 나중에 일어났다.`,
+        ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
+        : `시간순으로 ‘${second.name} → ${first.name}’이다.`,
       oxAnswer:(i+distance)%2!==0
     });
   }
@@ -1339,8 +1339,12 @@ export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국
 const ERA_OPTIONS = [...ERA_ORDER];
 
 function hasBatchim(value) {
-  const text=String(value||'').trim(), code=text.charCodeAt(text.length-1);
-  return code>=0xac00&&code<=0xd7a3 ? ((code-0xac00)%28)!==0 : false;
+  const text=String(value||'').trim();
+  for(let i=text.length-1;i>=0;i--){
+    const code=text.charCodeAt(i);
+    if(code>=0xac00&&code<=0xd7a3)return ((code-0xac00)%28)!==0;
+  }
+  return false;
 }
 function topicLabel(value){return String(value)+(hasBatchim(value)?'은':'는');}
 
@@ -1408,27 +1412,45 @@ const ERA_PROMPTS = [
   term => `‘${term}’를 공부할 때 함께 살펴볼 역사 시기로 알맞은 것은?`
 ];
 
-function adjacentWrongEra(era,index){
-  const pos=ERA_OPTIONS.indexOf(era);
-  if(pos<0)return ERA_OPTIONS[0];
-  const left=ERA_OPTIONS[pos-1],right=ERA_OPTIONS[pos+1];
-  return index%2===0?(right||left):(left||right);
+function wrongFactForOx(fact,index){
+  const all=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>!x.f.direct&&x.i!==index&&x.f.term!==fact.term);
+  const groups=[
+    all.filter(x=>x.f.era===fact.era&&x.f.type===fact.type),
+    all.filter(x=>x.f.era===fact.era),
+    all.filter(x=>x.f.type===fact.type),
+    all
+  ];
+  for(let g=0;g<groups.length;g++){
+    const group=groups[g];if(!group.length)continue;
+    const pick=hashText(fact.term+':ox:'+g)%group.length;
+    return group[pick].f;
+  }
+  return null;
 }
 function regularOxQuestion(fact,index){
   const isTrue=index%2===0;
   if(isTrue){
     return {
       id:`ox-${index}`,era:fact.era,difficulty:2,
-      q:`OX 문제\n‘${fact.term}’에 대한 다음 설명은 맞을까요?\n${fact.clue}`,
+      q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
       o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
       sourceFact:index,family:'ox'
     };
   }
-  const wrongEra=adjacentWrongEra(fact.era,index);
+  const wrong=wrongFactForOx(fact,index);
+  if(!wrong){
+    return {
+      id:`ox-${index}`,era:fact.era,difficulty:2,
+      q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
+      o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
+      sourceFact:index,family:'ox'
+    };
+  }
   return {
     id:`ox-${index}`,era:fact.era,difficulty:2,
-    q:`OX 문제\n‘${fact.term}’은(는) ${wrongEra}와 가장 관련 깊다.`,
-    o:['O','X'],a:1,e:`X가 정답입니다. ${topicLabel(fact.term)} ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${wrong.clue}`,
+    o:['O','X'],a:1,
+    e:`X가 정답입니다. 제시된 설명은 ‘${wrong.term}’에 더 알맞습니다. ${fact.term}: ${fact.clue}`,
     sourceFact:index,family:'ox'
   };
 }
