@@ -1,6 +1,9 @@
 {
   "math_timing_lcd": {
-    "ages": ["low", "high"]
+    "ages": [
+      "low",
+      "high"
+    ]
   },
   "job_nail_artist": {
     "category": "job"
@@ -24,6 +27,12 @@
     "category": "job"
   },
   "burger_master": {
+    "category": "job"
+  },
+  "job_internal_medicine": {
+    "category": "job"
+  },
+  "job_teacher_classroom": {
     "category": "job"
   }
 }
