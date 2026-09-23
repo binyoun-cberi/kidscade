@@ -89,7 +89,7 @@ kbd{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border
 <div id="help" class="hidden">
   <div class="panel">
     <h2>플레이 요령</h2>
-    <p>캐릭터는 공보다 빠르게 코트를 커버할 수 있습니다. 먼저 낙하지점으로 이동한 뒤 점프 타이밍을 잡으세요.</p>
+    <p><b>서브는 실패하지 않습니다.</b> 초록 팀은 <b>S</b>, 파랑 팀은 <b>↓</b>를 누르면 공이 안정적인 포물선으로 상대 코트에 넘어갑니다. 그 뒤 랠리부터 직접 움직이고 점프해 받아치세요.</p><p>캐릭터는 공보다 빠르게 코트를 커버할 수 있습니다. 먼저 낙하지점으로 이동한 뒤 점프 타이밍을 잡으세요.</p>
     <p>공의 <b>아래</b>를 맞히면 높게 뜨고, <b>옆</b>을 맞히면 낮고 빠르게 갑니다. 공중에서 스매시를 쓰면 공격 각도가 커집니다.</p>
     <p><b>스매시 + 좌우</b>를 함께 누르면 원하는 쪽으로 밀어 칠 수 있습니다. 공 속도에는 상한이 있어 랠리가 갑자기 통제 불가능해지지 않습니다.</p>
     <button class="primary" id="closeHelp" type="button">알겠어요</button>
@@ -134,6 +134,13 @@ function player(side){
 }
 let p=[player(0),player(1)];
 let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
+const CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
+function makeSpriteSet(name){
+ const pose=(p)=>{const img=new Image();img.src=CHARACTER_ROOT+name+'/poses/'+name+'-'+p+'.png';return img};
+ return {stand:pose('stand'),walk1:pose('walk1'),walk2:pose('walk2'),jump:pose('jump'),action:pose('action1'),cheer:pose('cheer1'),hurt:pose('hurt')};
+}
+const athleteSprites=[makeSpriteSet('player'),makeSpriteSet('female')];
+let serveArmed=false;
 
 const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getContext('2d');
 (function buildBackground(){
@@ -152,7 +159,11 @@ function resetEntities(server){
  const sx=server===0?305:655;
  ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;
  ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
- rally=0;rallyEl.textContent='랠리 0';setPhase('serve',.85);serveText.textContent=(server===0?'초록 팀':'파랑 팀')+' 서브';serveText.classList.add('show');
+ rally=0;rallyEl.textContent='랠리 0';serveArmed=false;setPhase('serve',.62);
+ const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;
+ const serveKey=server===0?'S':'↓';
+ serveText.textContent=cpuServing?'파랑 팀 서브 준비':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 눌러 서브';
+ serveText.classList.add('show');
 }
 function startGame(){
  mode=document.querySelector('.mode.active[data-mode]')?.dataset.mode||'cpu';
@@ -239,7 +250,10 @@ function netCollision(prevX,prevY){
  }
 }
 function launchServe(){
- const dir=serveSide===0?1:-1;ball.vx=dir*165;ball.vy=-285;ball.hitLock=.12;setPhase('play',0);serveText.classList.remove('show');
+ const dir=serveSide===0?1:-1;
+ ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;
+ ball.vx=dir*300;ball.vy=-470;ball.hitLock=.14;p[serveSide].attack=.12;
+ setPhase('play',0);serveText.classList.remove('show');sound('hit',1.32);
 }
 function scorePoint(winner){
  if(phase!=='play')return;
@@ -264,8 +278,12 @@ function update(dt){
  const in0=inputFor(0),in1=mode==='cpu'||mode==='practice'?cpuInput(dt):inputFor(1);
  updatePlayer(p[0],in0,dt);updatePlayer(p[1],in1,dt);updateParticles(dt);shake=Math.max(0,shake-dt*18);
  if(phase==='serve'){
-   phaseTimer-=dt;const me=p[serveSide],dir=serveSide===0?1:-1;ball.x=me.x+dir*44;ball.y=me.y-82+Math.sin((.85-phaseTimer)*8)*4;ball.vx=ball.vy=0;
-   if(phaseTimer<=0)launchServe();
+   const me=p[serveSide],dir=serveSide===0?1:-1,serveInput=serveSide===0?in0:in1;
+   ball.x=me.x+dir*44;ball.y=me.y-82+Math.sin(performance.now()*.008)*3;ball.vx=ball.vy=0;
+   if(!serveInput.s)serveArmed=true;
+   const cpuServing=(mode==='cpu'||mode==='practice')&&serveSide===1;
+   if(cpuServing){phaseTimer-=dt;if(phaseTimer<=0)launchServe();}
+   else if(serveArmed&&serveInput.s)launchServe();
    return;
  }
  if(phase==='point'){phaseTimer-=dt;if(phaseTimer<=0)resetEntities(serveSide);return}
@@ -276,32 +294,25 @@ function update(dt){
  for(const t of ball.trail)t.a=Math.max(0,t.a-dt*3.8);
  if(ball.y+ball.r>=GROUND){ball.y=GROUND-ball.r;ball.vx=ball.vy=0;scorePoint(ball.x<NETX?1:0)}
 }
-function limb(x1,y1,x2,y2,width,color){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
 function drawAthlete(me,color,dark,number){
- const x=me.x,y=me.y,air=!me.onGround,speed=Math.abs(me.vx)/420,phaseRun=me.run,dir=me.face;
- const squash=me.land>0?.88:1,stretch=air?1.045:1;
- ctx.save();ctx.translate(x,y+me.h*.48);
- ctx.fillStyle='rgba(15,23,42,.15)';ctx.beginPath();ctx.ellipse(0,4,31*(air?.75:1),8*(air?.7:1),0,0,7);ctx.fill();
- ctx.translate(0,-me.h*.48);ctx.scale(1/squash,squash*stretch);
- const hipY=27,shoulderY=-5,headY=-34;
- let legA=0,legB=0,armA=0,armB=0;
- if(air){legA=-.55;legB=.45;armA=-1.05;armB=.85}
- else if(speed>.08){legA=Math.sin(phaseRun)*.62*speed;legB=-legA;armA=-legA*.8;armB=-legB*.8}
- if(me.attack>0){armA=-1.6*dir;armB=-.55*dir}
- limb(-9,hipY,-15+Math.sin(legA)*14,48-Math.abs(Math.sin(legA))*5,10,dark);
- limb(9,hipY,15+Math.sin(legB)*14,48-Math.abs(Math.sin(legB))*5,10,dark);
- ctx.fillStyle='#f8fafc';ctx.beginPath();ctx.ellipse(-15+Math.sin(legA)*14,49,11,5,0,0,7);ctx.ellipse(15+Math.sin(legB)*14,49,11,5,0,0,7);ctx.fill();
- ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-25,-12,50,52,15);ctx.fill();
- ctx.fillStyle='rgba(255,255,255,.22)';ctx.fillRect(-3,-9,6,46);
- ctx.fillStyle='#fff';ctx.font='900 18px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(number,0,13);
- const hand1X=-28+Math.sin(armA)*18,hand1Y=6+Math.cos(armA)*20,hand2X=28+Math.sin(armB)*18,hand2Y=6+Math.cos(armB)*20;
- limb(-20,shoulderY,hand1X,hand1Y,9,'#f2c7a5');limb(20,shoulderY,hand2X,hand2Y,9,'#f2c7a5');
- ctx.fillStyle='#f2c7a5';ctx.beginPath();ctx.arc(0,headY,23,0,7);ctx.fill();
- ctx.fillStyle=dark;ctx.beginPath();ctx.arc(-dir*7,headY-2,3.1,0,7);ctx.arc(dir*7,headY-2,3.1,0,7);ctx.fill();
- ctx.strokeStyle=dark;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(dir*4,headY+8,7,.15,1.7);ctx.stroke();
- ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-8,headY-20,15,7,-.25,0,7);ctx.ellipse(7,headY-22,16,7,.2,0,7);ctx.fill();
- ctx.fillStyle='#22c55e';ctx.save();ctx.translate(0,headY-25);ctx.rotate(-.25);ctx.beginPath();ctx.ellipse(-5,-8,5,12,-.55,0,7);ctx.ellipse(6,-8,5,12,.55,0,7);ctx.fill();ctx.restore();
- if(me.attack>0){ctx.fillStyle='rgba(250,204,21,.28)';ctx.beginPath();ctx.arc(dir*33,-13,18,0,7);ctx.fill()}
+ const set=athleteSprites[me.side];
+ let img=set.stand;
+ if(me.attack>0)img=set.action;
+ else if(!me.onGround)img=set.jump;
+ else if(Math.abs(me.vx)>38)img=(Math.floor(me.run)%2===0?set.walk1:set.walk2);
+ const footY=me.y+me.h*.5;
+ ctx.save();
+ ctx.fillStyle='rgba(15,23,42,.16)';ctx.beginPath();ctx.ellipse(me.x,GROUND+3,30*(me.onGround?1:.72),7*(me.onGround?1:.72),0,0,Math.PI*2);ctx.fill();
+ if(img&&img.complete&&img.naturalWidth){
+   const h=126,w=h*(img.naturalWidth/img.naturalHeight);
+   ctx.translate(me.x,footY);
+   ctx.scale(me.face>=0?1:-1,1);
+   ctx.drawImage(img,-w/2,-h,w,h);
+   if(me.attack>0){ctx.fillStyle='rgba(250,204,21,.24)';ctx.beginPath();ctx.arc(34,-70,18,0,Math.PI*2);ctx.fill();}
+ }else{
+   ctx.fillStyle=color;ctx.fillRect(me.x-24,footY-92,48,92);
+   ctx.fillStyle='#fff';ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.fillText(number,me.x,footY-45);
+ }
  ctx.restore();
 }
 function drawNet(){
