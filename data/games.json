@@ -44,11 +44,11 @@
     {
       "id": "high_history_timebattle_live",
       "title": "역사 타임배틀 LIVE",
-      "href": "games/high_history_timebattle/history_timebattle.html?v=9",
+      "href": "games/high_history_timebattle/history_timebattle.html?v=10",
       "category": "trivia",
       "age": "high",
       "icon": "⏳",
-      "description": "최대 26명이 안정적으로 재접속하며 여러 판을 이어가는 한국사 LIVE 퀴즈. 시대 선택·객관식/OX·40문제·중간 순위·점수 누적·효과음과 네트워크 자동 복구를 지원합니다."
+      "description": "가르칠 시대를 골라 여러 판을 안정적으로 이어가는 한국사 LIVE 퀴즈. 객관식·OX·40문제·중간 순위·효과음과 재접속을 지원하며 D1 쓰기를 크게 줄인 저부하 실시간 구조를 사용합니다."
     },
     {
       "id": "high_quarantine_17",
