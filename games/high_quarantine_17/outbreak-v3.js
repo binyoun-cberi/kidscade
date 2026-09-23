@@ -64,15 +64,16 @@ const tutorialSteps=[
  {title:'3. 잘못 통과시키면',text:'감염자를 통과시키면 생존자 캠프로 들어가 버립니다. 캠프에 들어가 직접 제압해야 하며, 늦으면 시민이 물리고 시간이 지난 뒤 새 좀비가 됩니다.',demo:'생존자 한 명이 감염되는 순간 즉시 모두 좀비가 되지는 않습니다. 도망칠 시간과 구조할 시간이 있습니다.'},
  {title:'4. 전투',text:'전투는 넓은 횡스크롤 구역입니다. 플레이어는 좀비보다 훨씬 빠르고, 좀비는 시민보다 조금 빠릅니다. 장애물과 발판을 넘나들며 거리를 벌리세요.',demo:'<b>A/D</b> 달리기 · <b>W/↑/Space</b> 점프 · <b>마우스 클릭 또는 J</b> 사격 · <b>F</b> 근접 타격 · <b>R</b> 재장전<br>총은 안전하지만 탄약과 재장전이 필요하고, 근접 공격은 강하지만 가까이 가야 해서 위험합니다.'}
 ];
+const Q17_TUTORIAL_KEY='kidscade_quarantine17_tutorial_seen',Q17_TUTORIAL_LEGACY='q17Tutorial'+'Seen';
 let tutorialIndex=0;
 function renderTutorial(){const s=tutorialSteps[tutorialIndex];document.getElementById('q17TutProgress').textContent=(tutorialIndex+1)+' / '+tutorialSteps.length;document.getElementById('q17TutTitle').textContent=s.title;document.getElementById('q17TutText').textContent=s.text;document.getElementById('q17TutDemo').innerHTML=s.demo;document.getElementById('q17TutPrev').disabled=tutorialIndex===0;document.getElementById('q17TutNext').textContent=tutorialIndex===tutorialSteps.length-1?'완료':'다음'}
 function openTutorial(step){tutorialIndex=Math.max(0,Math.min(tutorialSteps.length-1,step||0));renderTutorial();tutorial.classList.add('show')}
-function closeTutorial(){tutorial.classList.remove('show');try{localStorage.setItem('q17TutorialSeen','1')}catch(e){}}
+function closeTutorial(){tutorial.classList.remove('show');try{localStorage.setItem(Q17_TUTORIAL_KEY,'1')}catch(e){}}
 helpBtn.addEventListener('click',function(){openTutorial(0)});
 document.getElementById('q17TutPrev').addEventListener('click',function(){if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
 document.getElementById('q17TutNext').addEventListener('click',function(){if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
 document.getElementById('q17TutClose').addEventListener('click',closeTutorial);
-const startForTutorial=document.getElementById('startBtnV2');if(startForTutorial)startForTutorial.addEventListener('click',function(){let seen=false;try{seen=localStorage.getItem('q17TutorialSeen')==='1'}catch(e){}if(!seen)setTimeout(function(){openTutorial(0)},450)});
+const startForTutorial=document.getElementById('startBtnV2');if(startForTutorial)startForTutorial.addEventListener('click',function(){let seen=false;try{seen=localStorage.getItem(Q17_TUTORIAL_KEY)==='1'||localStorage.getItem(Q17_TUTORIAL_LEGACY)==='1';if(seen&&!localStorage.getItem(Q17_TUTORIAL_KEY))localStorage.setItem(Q17_TUTORIAL_KEY,'1')}catch(e){}if(!seen)setTimeout(function(){openTutorial(0)},450)});
 
 const canvas=document.getElementById('q17CombatCanvas'),ctx=canvas.getContext('2d');
 const images={};Object.keys(SPRITES).forEach(function(k){const im=new Image();im.src=SPRITES[k];images[k]=im});
