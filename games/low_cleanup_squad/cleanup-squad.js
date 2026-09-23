@@ -156,7 +156,7 @@ let weapon;
 function mountWeapon(){
   if(weapon)camera.remove(weapon);weapon=new THREE.Group();camera.add(weapon);
   const b=modelOrBox('blaster',.63,0x32c8b4);b.rotation.set(-.06,Math.PI,.02);b.position.set(.5,-.46,-.9);
-  b.traverse(n=>{if(n.isMesh&&n.material){const mats=Array.isArray(n.material)?n.material:[n.material];n.material=mats.map(src=>{const m=src.clone();if(!m.map)m.color.lerp(new THREE.Color(0x3fd7ca),.48);m.roughness=Math.max(.42,m.roughness??.6);return m});if(!Array.isArray(n.material))n.material=n.material[0]}});
+  b.traverse(n=>{if(n.isMesh&&n.material){const multi=Array.isArray(n.material),mats=multi?n.material:[n.material];const recolored=mats.map(src=>{const m=src.clone();if(!m.map)m.color.lerp(new THREE.Color(0x3fd7ca),.48);m.roughness=Math.max(.42,m.roughness??.6);return m});n.material=multi?recolored:recolored[0]}});
   weapon.add(b);
   const tank=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.28,12),new THREE.MeshStandardMaterial({color:0x8ff7ff,transparent:true,opacity:.85,roughness:.2}));
   tank.rotation.z=Math.PI/2;tank.position.set(.42,-.32,-.75);weapon.add(tank)
@@ -321,7 +321,7 @@ function endGame(forceWin=false){
   state.mode='end';ui.endOverlay.classList.remove('hidden');ui.mobile.classList.add('hidden');ui.endIcon.textContent=win?'🏆':'🧽';ui.endTitle.textContent=win?'학교가 반짝반짝!':'조금만 더 청소!';
   ui.endText.textContent=win?'청소 특공대 임무 성공! 학교가 다시 깨끗해졌어요.':'악당이 꽤 많이 어질렀네요. 다시 출동하면 더 깨끗하게 만들 수 있어요.';
   ui.resultClean.textContent=pct+'%';ui.resultCount.textContent=state.cleaned;ui.resultCombo.textContent=state.bestCombo;
-  const old=Number(localStorage.getItem(SCORE_KEY)||0);if(state.score>old)localStorage.setItem(SCORE_KEY,String(state.score))
+  let old=0;try{old=window.KidscadeStorage?.getInt?.(SCORE_KEY,0)||0}catch(_){};if(state.score>old){try{window.KidscadeStorage?.setRaw?.(SCORE_KEY,state.score)}catch(_){}}
 }
 function goMenu(){
   state.running=false;state.mode='menu';clearDirt();resetVillain();document.exitPointerLock?.();ui.hud.classList.add('hidden');ui.mobile.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.startOverlay.classList.remove('hidden')
