@@ -5,7 +5,8 @@
   "main": "./worker/main.mjs",
   "vars": {
     "HISTORY_LIVE_V2": "true",
-    "WORDCHAIN_LIVE_V2": "true"
+    "WORDCHAIN_LIVE_V2": "true",
+    "TOWER_LIVE_V2": "true"
   },
   "ratelimits": [
     {
@@ -42,6 +43,10 @@
       {
         "name": "WORDCHAIN_ROOMS",
         "class_name": "WordchainRoom"
+      },
+      {
+        "name": "TOWER_ROOMS",
+        "class_name": "TowerRoom"
       }
     ]
   },
@@ -56,6 +61,12 @@
       "tag": "wordchain-room-v1",
       "new_sqlite_classes": [
         "WordchainRoom"
+      ]
+    },
+    {
+      "tag": "tower-room-v1",
+      "new_sqlite_classes": [
+        "TowerRoom"
       ]
     }
   ],
