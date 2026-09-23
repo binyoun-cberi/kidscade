@@ -78,6 +78,40 @@ const startForTutorial=document.getElementById('startBtnV2');if(startForTutorial
 const canvas=document.getElementById('q17CombatCanvas'),ctx=canvas.getContext('2d');
 const images={};Object.keys(SPRITES).forEach(function(k){const im=new Image();im.src=SPRITES[k];images[k]=im});
 const keys={},mouse={x:canvas.width/2,y:canvas.height/2,down:false};
+let viewScale=.82;
+let audioCtx=null;
+
+function getCombatAudio(){
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC)return null;
+ if(!audioCtx)audioCtx=new AC();
+ if(audioCtx.state==='suspended')audioCtx.resume().catch(function(){});
+ return audioCtx;
+}
+function playGunshot(){
+ const ac=getCombatAudio();if(!ac)return;
+ const now=ac.currentTime+.004;
+ const comp=ac.createDynamicsCompressor();
+ comp.threshold.setValueAtTime(-10,now);comp.knee.setValueAtTime(8,now);comp.ratio.setValueAtTime(10,now);comp.attack.setValueAtTime(.002,now);comp.release.setValueAtTime(.12,now);
+ comp.connect(ac.destination);
+
+ const noiseLen=Math.max(1,Math.floor(ac.sampleRate*.105)),buffer=ac.createBuffer(1,noiseLen,ac.sampleRate),data=buffer.getChannelData(0);
+ for(let i=0;i<noiseLen;i++){const p=1-i/noiseLen;data[i]=(Math.random()*2-1)*p*p}
+ const noise=ac.createBufferSource(),band=ac.createBiquadFilter(),ng=ac.createGain();
+ noise.buffer=buffer;band.type='bandpass';band.frequency.setValueAtTime(1250,now);band.Q.setValueAtTime(.8,now);
+ ng.gain.setValueAtTime(.82,now);ng.gain.exponentialRampToValueAtTime(.001,now+.105);
+ noise.connect(band);band.connect(ng);ng.connect(comp);noise.start(now);noise.stop(now+.11);
+
+ const crack=ac.createOscillator(),cg=ac.createGain();
+ crack.type='square';crack.frequency.setValueAtTime(210,now);crack.frequency.exponentialRampToValueAtTime(72,now+.055);
+ cg.gain.setValueAtTime(.42,now);cg.gain.exponentialRampToValueAtTime(.001,now+.065);
+ crack.connect(cg);cg.connect(comp);crack.start(now);crack.stop(now+.07);
+
+ const thump=ac.createOscillator(),tg=ac.createGain();
+ thump.type='sine';thump.frequency.setValueAtTime(105,now);thump.frequency.exponentialRampToValueAtTime(48,now+.11);
+ tg.gain.setValueAtTime(.62,now);tg.gain.exponentialRampToValueAtTime(.001,now+.13);
+ thump.connect(tg);tg.connect(comp);thump.start(now);thump.stop(now+.14);
+}
 
 let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,meleeCd=0,autoTarget=null;let cameraX=0,worldW=0,worldH=0,groundY=0,obstacles=[];
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
@@ -194,6 +228,7 @@ function difficulty(){
 }
 function resizeCanvas(){
  const r=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+ viewScale=r.width<=700?.72:.82;
  const w=Math.max(320,Math.round(r.width*dpr)),h=Math.max(240,Math.round(r.height*dpr));
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
 }
@@ -270,7 +305,7 @@ function shoot(tx,ty){
  if(player.ammo<=0){startReload();return}
  const dx=tx-player.x,dy=ty-(player.y-30*(window.devicePixelRatio||1)),len=Math.hypot(dx,dy)||1;
  bullets.push({x:player.x+player.facing*18*(window.devicePixelRatio||1),y:player.y-30*(window.devicePixelRatio||1),vx:dx/len*720*(window.devicePixelRatio||1),vy:dy/len*720*(window.devicePixelRatio||1),life:1.35});
- player.facing=dx>=0?1:-1;player.ammo--;shootCd=.18;updateHud();if(player.ammo<=0)startReload();
+ player.facing=dx>=0?1:-1;player.ammo--;shootCd=.18;playGunshot();updateHud();if(player.ammo<=0)startReload();
 }
 function melee(){
  if(!started||meleeCd>0)return;meleeCd=.55;
@@ -298,7 +333,7 @@ function collidesObstacle(x,y,r){
 function obstacleAhead(entity,dir){
  return obstacles.find(function(o){return dir>0?entity.x+entity.r+10>o.x&&entity.x<o.x&&entity.x+entity.r<o.x+o.w:entity.x-entity.r-10<o.x+o.w&&entity.x>o.x+o.w&&entity.x-entity.r>o.x});
 }
-function worldMouse(e){const r=canvas.getBoundingClientRect();return{x:cameraX+(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
+function worldMouse(e){const r=canvas.getBoundingClientRect(),sx=(e.clientX-r.left)*canvas.width/r.width,sy=(e.clientY-r.top)*canvas.height/r.height;return{x:cameraX+sx/viewScale,y:(sy-canvas.height*(1-viewScale))/viewScale}}
 function update(dt){
  if(!started)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
@@ -345,13 +380,13 @@ function update(dt){
  });
  bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;const dx=b.x-z.x,dy=b.y-(z.y-28*dpr);if(Math.abs(dx)<z.r*1.05&&Math.abs(dy)<z.r*1.55){const headshot=b.y<z.y-38*dpr;z.hp-=headshot?2:1;z.hit=.16;z.knock=(b.vx>0?1:-1)*95*dpr;b.life=0;if(headshot)notify('헤드샷 · 추가 피해')}})});
  zombies=zombies.filter(function(z){return z.hp>0});updateHud();
- cameraX=Math.max(0,Math.min(worldW-canvas.width,player.x-canvas.width*.42));
+ cameraX=Math.max(0,Math.min(Math.max(0,worldW-canvas.width/viewScale),player.x-(canvas.width/viewScale)*.40));
  if(zombies.length===0&&!survivors.some(function(s){return s.alive&&s.bitten}))win();
 }
 function draw(){
  const W=canvas.width,H=canvas.height,dpr=Math.min(2,window.devicePixelRatio||1);ctx.clearRect(0,0,W,H);
  ctx.fillStyle=mode==='camp'?'#18211d':'#161d22';ctx.fillRect(0,0,W,H);
- ctx.save();ctx.translate(-cameraX,0);
+ ctx.save();ctx.translate(0,H*(1-viewScale));ctx.scale(viewScale,viewScale);ctx.translate(-cameraX,0);
  ctx.fillStyle='#263139';ctx.fillRect(0,groundY,worldW,H-groundY);
  ctx.fillStyle='#36424a';for(let x=0;x<worldW;x+=180*dpr){ctx.fillRect(x,groundY-4*dpr,120*dpr,4*dpr)}
  if(mode==='camp'){ctx.fillStyle='#293b30';ctx.fillRect(480*dpr,groundY-260*dpr,worldW-570*dpr,260*dpr);ctx.strokeStyle='#8a8e76';ctx.lineWidth=5*dpr;ctx.strokeRect(480*dpr,groundY-260*dpr,worldW-570*dpr,260*dpr);ctx.fillStyle='#d7c45e';ctx.font=(13*dpr)+'px sans-serif';ctx.fillText('SURVIVOR CAMP · SECTOR 17',520*dpr,groundY-220*dpr)}
