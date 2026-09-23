@@ -403,7 +403,7 @@ function drawPreview(){
  ctx.fillStyle="rgba(13,22,37,.82)";ctx.fillRect((a.x+b.x)/2-40,(a.y+b.y)/2-29,80,20);ctx.fillStyle="#fff";ctx.font="800 10px system-ui";ctx.textAlign="center";ctx.fillText(Math.round(d)+"m",(a.x+b.x)/2,(a.y+b.y)/2-15);ctx.restore();
 }
 function drawVehicle(){
- var v=S.vehicle;if(!v)return,im=vehicleImages[v.key],meta=VEHICLES[v.key];ctx.save();ctx.translate(v.x,v.y);ctx.rotate(v.angle||0);
+ var v=S.vehicle;if(!v)return;var im=vehicleImages[v.key],meta=VEHICLES[v.key];ctx.save();ctx.translate(v.x,v.y);ctx.rotate(v.angle||0);
  var iw=im.naturalWidth||48,ih=im.naturalHeight||22,w=iw*meta.scale,h=ih*meta.scale;
  if(im.complete&&im.naturalWidth){ctx.imageSmoothingEnabled=false;ctx.drawImage(im,-w*.5,-h+4,w,h)}
  else{ctx.fillStyle="#ffcf3f";ctx.fillRect(-35,-24,70,24);ctx.fillStyle="#1f2937";ctx.beginPath();ctx.arc(-20,2,8,0,TAU);ctx.arc(20,2,8,0,TAU);ctx.fill()}
