@@ -30,7 +30,6 @@ const EXTRA_ENHANCED_TITLES = [
   '문방구 사장님',
   '약수 타워 디펜스',
   '넘버 시그널 (룬의 숲)',
-  '역사 로얄',
   '오목 아레나'
 ];
 
@@ -177,7 +176,6 @@ test('third audio pass uses game-specific events in the extra hook layer', () =>
     'setupStationeryBoss',
     'setupTowerDefense',
     'setupRuneForest',
-    'setupHistoryRoyale',
     'setupOmokArena'
   ]) assert.match(hooks, new RegExp(`function ${fn}\\(`), `${fn} is missing`);
 
@@ -198,7 +196,7 @@ test('third audio pass uses game-specific events in the extra hook layer', () =>
 require('./audio-v4-integration.test.cjs');
 
 
-test('Korea BGM is wired into Byeokrando and History Royale', () => {
+test('Korea BGM is wired into Byeokrando', () => {
   const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
   assert.deepEqual(catalog.sounds['music.korea_welcome'], ['music/korea/welcome-to-korea-01.mp3']);
 
@@ -210,10 +208,4 @@ test('Korea BGM is wired into Byeokrando and History Royale', () => {
   assert.match(byeokrandoBgm, /loop:\s*true/);
   assert.doesNotThrow(() => new Function(byeokrandoBgm));
 
-  const extra = read('game-audio-hooks-extra.js');
-  const start = extra.indexOf('function setupHistoryRoyale()');
-  assert.ok(start >= 0);
-  const section = extra.slice(start, extra.indexOf('function setupOmokArena()', start));
-  assert.match(section, /music\.korea_welcome/);
-  assert.match(section, /loop:\s*true/);
 });
