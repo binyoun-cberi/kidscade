@@ -104,7 +104,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 'use strict';
 const $=id=>document.getElementById(id);
 let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='',roomToken='',realtime=null;
-const ROOM_STORAGE='kidscadeWordchainRoomId',V2_STORAGE='kidscadeWordchainV2Session';
+const ROOM_STORAGE='kidscade_wordchain_room_id',V2_STORAGE='kidscade_wordchain_v2_session';
 const requestedMode=new URLSearchParams(location.search).get('mode');
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};
 let bgmHandle=null;
