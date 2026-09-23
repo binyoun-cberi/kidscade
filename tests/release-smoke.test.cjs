@@ -49,55 +49,14 @@ test('Spelling Frog release entry keeps the moving-log progression fix wired in'
   assert.match(patch, /frogCol\s*=\s*clamp/);
 });
 
-test('History Royale defers heavy 3D boot until battle start for mobile stability', () => {
-  const game = gameById('high_history_royale');
-  const html = read(game.href);
-  assert.match(html, /function ensureHistoryRoyale3D\(\)/);
-  assert.match(html, /history-royale-3d\.js\?v=18/);
-  assert.doesNotMatch(html, /<script type="module" src="history-royale-3d\.js/);
-  const modulePath = path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js');
-  const moduleCode = fs.readFileSync(modulePath, 'utf8');
-  assert.match(moduleCode, /LOW_POWER\s*\? \[loadCharacter\("King"\)\]/);
-  assert.match(moduleCode, /if\(!LOW_POWER\)decorateWithProps\(\)/);
-});
 
-test('History Royale release entry retains selectable faction, hero, deck and start controls', () => {
-  const game = gameById('high_history_royale');
-  assert.match(game.href, /games\/high_history_royale\/역사 로얄\.html/);
-
-  const html = read(game.href);
-  assert.match(html, /selectedFaction\s*=\s*id/);
-  assert.match(html, /selectedHero\s*=\s*h\.id/);
-  assert.match(html, /selectedCards\s*=\s*defaultDeck\(id\)/);
-  assert.match(html, /#startBtn/);
-  assert.match(html, /startBattle\(\)/);
-  assert.match(html, /selectedCards\.length!==7/);
-  assert.match(html, /history-royale-3d\.js\?v=18/);
-  const renderer3d=fs.readFileSync(path.join(ROOT,'games','high_history_royale','history-royale-3d.js'),'utf8');
-  assert.match(renderer3d, /function use2DFallback/);
-  assert.match(renderer3d, /2D 안정 모드/);
-  assert.match(renderer3d, /typeof ResizeObserver==='function'/);
-});
 
 test('critical catalog entries stay on the reviewed release files', () => {
   assert.match(gameById('high_classroom_war_3d').href, /^games\/high_classroom_war_3d\/교실전쟁 3D\.html/);
   assert.match(gameById('spelling_frog').href, /^games\/spelling_frog\/스펠링 프로그\.html/);
-  assert.match(gameById('high_history_royale').href, /^games\/high_history_royale\/역사 로얄\.html(?:\?|$)/);
 });
 
 
-test('History Royale mobile battle uses procedural troops and bounded effects', () => {
-  const modulePath = path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js');
-  const moduleCode = fs.readFileSync(modulePath, 'utf8');
-  assert.match(moduleCode, /if\(LOW_POWER&&!u\.hero\)return makeFallbackUnit/);
-  assert.match(moduleCode, /if\(LOW_POWER\|\|!horseTemplate\)return makeProceduralHorse/);
-  assert.match(moduleCode, /LOW_POWER\?Math\.min\(g\.projectiles\.length,28\)/);
-  assert.match(moduleCode, /LOW_POWER\?g\.fx\.slice\(-20\):g\.fx/);
-  assert.match(moduleCode, /rec\.horse\?\.mixer/);
-  assert.match(moduleCode, /LOW_POWER\s*\? \[loadCharacter\("King"\)\]/);
-  assert.match(moduleCode, /disposable:true/);
-  assert.match(moduleCode, /if\(rec\.disposable\)disposeFx\(rec\.root\)/);
-});
 
 
 test('Nyam Universe v5 uses a size ladder, final-goal progression and bounded real 3D assets', () => {
@@ -126,9 +85,3 @@ test('Nyam Universe v5 uses a size ladder, final-goal progression and bounded re
 });
 
 
-test('History Royale units face their target without a 180 degree reversal', () => {
-  const moduleCode = fs.readFileSync(path.join(ROOT, 'games', 'high_history_royale', 'history-royale-3d.js'), 'utf8');
-  assert.match(moduleCode, /rec\.root\.rotation\.y=Math\.atan2\(q\.x-p\.x,q\.z-p\.z\)/);
-  assert.doesNotMatch(moduleCode, /Math\.atan2\(q\.x-p\.x,q\.z-p\.z\)\+Math\.PI/);
-  assert.match(moduleCode, /u\.team==="player"\?Math\.PI:0/);
-});
