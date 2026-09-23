@@ -1323,7 +1323,7 @@ for(let distance=1;distance<=8;distance++){
     });
     addDirectFact({
       era,type:'순서',term:second.name,
-      clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
+      clue:`${first.name} · ${second.name}의 앞뒤 순서`,
       q:`다음 두 사건 가운데 나중에 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
       e:`시간순으로 ${first.name}(${first.year}년) → ${second.name}(${second.year}년)입니다.`,
