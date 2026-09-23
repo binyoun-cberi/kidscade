@@ -259,9 +259,7 @@ function showResult(ok,text,stars){
  el.cont.classList.toggle("hidden",!ok||S.mode==="sandbox"||S.level===LEVELS.length-1);
 }
 function saveProgress(stars){
- try{
-  var data=JSON.parse(localStorage.getItem("bridgeBuilderProgress_v1")||"{}");var key=String(S.level);data[key]=Math.max(Number(data[key]||0),stars);localStorage.setItem("bridgeBuilderProgress_v1",JSON.stringify(data));
- }catch(e){}
+ S.bestStars=S.bestStars||{};var key=String(S.level);S.bestStars[key]=Math.max(Number(S.bestStars[key]||0),stars);
 }
 
 function breakMember(m){
@@ -437,10 +435,10 @@ el.mode.addEventListener("click",function(){
 });
 el.sound.addEventListener("click",function(){S.sound=!S.sound;el.sound.textContent=S.sound?"🔊":"🔇";if(S.sound)tone(520,.05,"sine")});
 el.help.addEventListener("click",function(){el.tutorial.classList.remove("hidden")});
-el.tutorialClose.addEventListener("click",function(){el.tutorial.classList.add("hidden");try{localStorage.setItem("bridgeBuilderTutorialSeen","1")}catch(e){}});
+el.tutorialClose.addEventListener("click",function(){el.tutorial.classList.add("hidden");try{sessionStorage.setItem("bridgeBuilderTutorialSeen","1")}catch(e){}});
 el.gap.addEventListener("input",function(){el.gapValue.textContent=el.gap.value+"m";if(S.mode==="sandbox")resetLevel()});
 el.vehicleSelect.addEventListener("change",function(){if(S.mode==="sandbox")resetLevel()});
 
-try{if(!localStorage.getItem("bridgeBuilderTutorialSeen"))el.tutorial.classList.remove("hidden")}catch(e){}
+try{if(!sessionStorage.getItem("bridgeBuilderTutorialSeen"))el.tutorial.classList.remove("hidden")}catch(e){el.tutorial.classList.remove("hidden")}
 resetLevel();
 })();
