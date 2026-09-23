@@ -221,8 +221,10 @@ let pausedAt = 0;
 let collisionCount = 0;
 let lastCollisionAt = -99;
 
+const TOP_KING_RECORD_KEY='kidscade_top_king_record_v1';
+const TOP_KING_RECORD_OLD='topKing3D'+'ShrinkArenaRecord';
 let saved={time:0,score:0};
-try{saved=JSON.parse(localStorage.getItem('topKing3DShrinkArenaRecord')||'{"time":0,"score":0}')||saved}catch(e){}
+try{const raw=localStorage.getItem(TOP_KING_RECORD_KEY)||localStorage.getItem(TOP_KING_RECORD_OLD)||'{"time":0,"score":0}';saved=JSON.parse(raw)||saved;if(!localStorage.getItem(TOP_KING_RECORD_KEY)&&localStorage.getItem(TOP_KING_RECORD_OLD))localStorage.setItem(TOP_KING_RECORD_KEY,raw)}catch(e){}
 let bestTime = Number(saved.time) || 0;
 let bestScore = Number(saved.score) || 0;
 UI.bestMini.textContent = `최고 ${bestTime.toFixed(1)}초`;
@@ -569,7 +571,7 @@ function endGame(reason='stop'){
   sfxGameOver();
   const isRecord=elapsed>bestTime+.05;
   bestTime=Math.max(bestTime,elapsed);bestScore=Math.max(bestScore,Math.round(score));
-  localStorage.setItem('topKing3DShrinkArenaRecord',JSON.stringify({time:bestTime,score:bestScore}));
+  localStorage.setItem(TOP_KING_RECORD_KEY,JSON.stringify({time:bestTime,score:bestScore}));
   UI.resultTime.textContent=elapsed.toFixed(1)+'초';
   UI.resultScore.textContent=`CPU와 ${collisionCount}회 충돌 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
   UI.bestTimeResult.textContent=bestTime.toFixed(1)+'초';
