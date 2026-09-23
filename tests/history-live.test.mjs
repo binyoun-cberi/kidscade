@@ -265,3 +265,54 @@ test('regular false OX uses another concrete fact instead of a neighboring-era g
   assert.ok(falseOx.every(q=>q.q.includes('다음 설명은')));
   assert.ok(falseOx.every(q=>!q.q.includes('가장 관련 깊다')));
 });
+
+
+test('live polling avoids overlapping requests and backs off on bad networks', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.doesNotMatch(html,/setInterval\(poll,750\)/);
+  assert.match(html,/pollInFlight/);
+  assert.match(html,/function schedulePoll/);
+  assert.match(html,/function pollingDelay/);
+  assert.match(html,/AbortController/);
+  assert.match(html,/timeoutMs=6500/);
+  assert.match(html,/terminalFailures>=3/);
+  assert.match(html,/window\.addEventListener\('online'/);
+  assert.match(html,/visibilitychange/);
+});
+
+test('live server throttles heartbeat writes and supports active-room reconnects', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  assert.match(worker,/ONLINE_WINDOW_MS = 20000/);
+  assert.match(worker,/HEARTBEAT_WRITE_MS = 7000/);
+  assert.match(worker,/RECONNECT_RECLAIM_MS = 12000/);
+  assert.doesNotMatch(worker,/if\(room\.status!=='waiting'\)return json\(\{ok:false,error:'room_already_started'/);
+  assert.match(worker,/exactReconnect/);
+  assert.match(worker,/reconnected:true/);
+  assert.match(worker,/reconnected:false/);
+});
+
+test('state polling no longer runs two answer-count queries on every request', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  assert.match(worker,/LEFT JOIN history_live_answers/);
+  assert.match(worker,/now-seen>=HEARTBEAT_WRITE_MS/);
+  const auto=worker.slice(worker.indexOf('async function autoReveal'),worker.indexOf('async function revealIfEveryoneAnswered'));
+  assert.doesNotMatch(auto,/SELECT COUNT/);
+  assert.match(auto,/question_deadline_at/);
+});
+
+test('answer submission is safe to retry after a lost response', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(worker,/duplicate:true/);
+  assert.match(worker,/SELECT option_index,is_correct,points FROM history_live_answers/);
+  assert.match(worker,/revealIfEveryoneAnswered/);
+  assert.match(html,/api\('\/answer',[\s\S]{0,260}\},1\)/);
+});
+
+test('connection recovery keeps room and nickname instead of hard reloading immediately', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(html,/function recoverToJoin/);
+  assert.match(html,/pendingReconnectPlayerId/);
+  assert.match(html,/playerId:pendingReconnectPlayerId\|\|undefined/);
+  assert.match(html,/다시 연결 필요/);
+});
