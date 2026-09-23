@@ -76,6 +76,7 @@ jobs:
             ui-information-architecture.js \
             ui-visual-polish.js \
             seed-house-entry.js \
+            games/low_cleanup_squad/cleanup-squad.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
             scripts/apply-game-classification-overrides.cjs \
